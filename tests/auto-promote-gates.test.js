@@ -42,10 +42,11 @@ function recentTimestamp(daysAgo = 0) {
 }
 
 function makeNegativeEntry(tags, context, daysAgo = 0) {
+  // Default context is an executable action — enforcement groups by command, not tags.
   return {
     signal: 'negative',
     tags,
-    context: context || `Error context for ${tags.join(',')}`,
+    context: context || `npm test -- ${tags.join('-')}`,
     whatWentWrong: 'Something broke',
     timestamp: recentTimestamp(daysAgo),
   };
@@ -67,20 +68,31 @@ test('isNegative: returns false for positive/unknown signals', () => {
 
 // -- extractPatternKey --
 
-test('extractPatternKey: uses sorted tags as key', () => {
-  const key = extractPatternKey({ tags: ['git-workflow', 'push'], signal: 'negative' });
-  assert.strictEqual(key, 'git-workflow+push');
+test('extractPatternKey: groups by executable command, not tags', () => {
+  const key = extractPatternKey({
+    tags: ['git-workflow', 'push'],
+    signal: 'negative',
+    context: 'git push --force origin main',
+  });
+  assert.strictEqual(key, normalizeCommandSignature('git push --force origin main'));
 });
 
-test('extractPatternKey: falls back to normalized context', () => {
-  const key = extractPatternKey({ tags: [], context: 'this is a long enough context string for grouping', signal: 'negative' });
+test('extractPatternKey: accepts known CLI prefixes as executable', () => {
+  const key = extractPatternKey({
+    tags: [],
+    context: 'kubectl delete deploy checkout-api -n prod',
+    signal: 'negative',
+  });
   assert.ok(key);
-  assert.ok(!key.includes('/Users/'));
+  assert.match(key, /kubectl delete deploy/);
 });
 
-test('extractPatternKey: returns null for short context and no tags', () => {
-  const key = extractPatternKey({ tags: [], context: 'short', signal: 'negative' });
-  assert.strictEqual(key, null);
+test('extractPatternKey: returns null for pure prose or short context', () => {
+  assert.strictEqual(
+    extractPatternKey({ tags: ['testing'], context: 'agent broke deploy', signal: 'negative' }),
+    null,
+  );
+  assert.strictEqual(extractPatternKey({ tags: [], context: 'short', signal: 'negative' }), null);
 });
 
 test('getAutoGatesPath: resolves inside the active feedback directory', () => {
@@ -111,56 +123,57 @@ test('patternToGateId: converts pattern to kebab-case id', () => {
 
 // -- groupNegativeFeedback --
 
-test('groupNegativeFeedback: groups by tags within window', () => {
+test('groupNegativeFeedback: groups by executable action within window', () => {
   const entries = [
-    makeNegativeEntry(['testing'], 'test failure 1', 1),
-    makeNegativeEntry(['testing'], 'test failure 2', 2),
-    makeNegativeEntry(['testing'], 'test failure 3', 3),
-    makeNegativeEntry(['security'], 'sec issue', 1),
+    makeNegativeEntry(['testing'], 'npm test -- unit-a', 1),
+    makeNegativeEntry(['testing'], 'npm test -- unit-a', 2),
+    makeNegativeEntry(['testing'], 'npm test -- unit-a', 3),
+    makeNegativeEntry(['security'], 'npm audit --json', 1),
   ];
   const groups = groupNegativeFeedback(entries, WINDOW_DAYS);
-  assert.strictEqual(groups['testing'].count, 3);
-  assert.strictEqual(groups['security'].count, 1);
+  const unitKey = normalizeCommandSignature('npm test -- unit-a');
+  const auditKey = normalizeCommandSignature('npm audit --json');
+  assert.strictEqual(groups[unitKey].count, 3);
+  assert.strictEqual(groups[auditKey].count, 1);
 });
 
 test('groupNegativeFeedback: excludes entries outside window', () => {
   const entries = [
-    makeNegativeEntry(['testing'], 'old failure', 35), // outside 30-day window
-    makeNegativeEntry(['testing'], 'recent failure', 1),
+    makeNegativeEntry(['testing'], 'npm test -- old-failure', 35), // outside 30-day window
+    makeNegativeEntry(['testing'], 'npm test -- recent-failure', 1),
   ];
   const groups = groupNegativeFeedback(entries, WINDOW_DAYS);
-  assert.strictEqual(groups['testing'].count, 1);
+  const recentKey = normalizeCommandSignature('npm test -- recent-failure');
+  assert.strictEqual(groups[recentKey].count, 1);
+  assert.equal(groups[normalizeCommandSignature('npm test -- old-failure')], undefined);
 });
 
 test('groupNegativeFeedback: ignores positive signals', () => {
   const entries = [
-    { signal: 'positive', tags: ['testing'], context: 'good job', timestamp: recentTimestamp(1) },
-    makeNegativeEntry(['testing'], 'failure', 1),
+    { signal: 'positive', tags: ['testing'], context: 'npm test -- good', timestamp: recentTimestamp(1) },
+    makeNegativeEntry(['testing'], 'npm test -- failure', 1),
   ];
   const groups = groupNegativeFeedback(entries, WINDOW_DAYS);
-  assert.strictEqual(groups['testing'].count, 1);
+  const failKey = normalizeCommandSignature('npm test -- failure');
+  assert.strictEqual(groups[failKey].count, 1);
 });
 
-test('groupNegativeFeedback: also groups repeated diagnostic categories', () => {
+test('groupNegativeFeedback: does not create enforcement groups from diagnosis tags alone', () => {
   const entries = [
     {
-      ...makeNegativeEntry(['testing'], 'failure 1', 1),
+      signal: 'negative',
+      tags: ['testing'],
+      context: 'agent broke deploy',
       diagnosis: {
         rootCauseCategory: 'guardrail_triggered',
         violations: [{ constraintId: 'rubric:verification_evidence' }],
       },
-    },
-    {
-      ...makeNegativeEntry(['testing'], 'failure 2', 2),
-      diagnosis: {
-        rootCauseCategory: 'guardrail_triggered',
-        violations: [{ constraintId: 'rubric:verification_evidence' }],
-      },
+      timestamp: recentTimestamp(1),
     },
   ];
   const groups = groupNegativeFeedback(entries, WINDOW_DAYS);
-  assert.strictEqual(groups['diagnosis:guardrail_triggered'].count, 2);
-  assert.strictEqual(groups['constraint:rubric:verification_evidence'].count, 2);
+  assert.equal(groups['diagnosis:guardrail_triggered'], undefined);
+  assert.equal(Object.keys(groups).length, 0);
 });
 
 // -- promote: repeated failures below block threshold trigger warn gate --
@@ -176,7 +189,7 @@ test('promote: repeated failures below block threshold trigger warn gate', (t) =
 
   const warnCount = BLOCK_THRESHOLD - 1;
   for (let i = 0; i < warnCount; i++) {
-    appendJSONL(logPath, makeNegativeEntry(['pr-review'], 'forgot thread check', i));
+    appendJSONL(logPath, makeNegativeEntry(['pr-review'], 'git push --force origin main', i));
   }
 
   const result = promote(logPath);
@@ -204,15 +217,16 @@ test('promote: block threshold upgrades gate from warn to block', (t) => {
   });
 
   const warnCount = BLOCK_THRESHOLD - 1;
+  const cmd = 'git push --force origin feature/x';
   // First create a warn gate below the block threshold.
   for (let i = 0; i < warnCount; i++) {
-    appendJSONL(logPath, makeNegativeEntry(['execution-gap'], 'did not push', i));
+    appendJSONL(logPath, makeNegativeEntry(['execution-gap'], cmd, i));
   }
   promote(logPath);
 
   // Add enough additional failures to reach the block threshold.
   for (let i = warnCount; i < BLOCK_THRESHOLD; i++) {
-    appendJSONL(logPath, makeNegativeEntry(['execution-gap'], 'did not push again', i));
+    appendJSONL(logPath, makeNegativeEntry(['execution-gap'], cmd, i));
   }
   const result = promote(logPath);
   const upgrade = result.promotions.find((p) => p.type === 'upgrade');
@@ -220,7 +234,8 @@ test('promote: block threshold upgrades gate from warn to block', (t) => {
   assert.strictEqual(upgrade.to, 'block');
 
   const data = loadAutoGates();
-  const gate = data.gates.find((g) => g.id === 'auto-execution-gap');
+  const gate = data.gates.find((g) => (g.pattern || '').includes('git push --force'));
+  assert.ok(gate);
   assert.strictEqual(gate.action, 'block');
 });
 
@@ -235,18 +250,19 @@ test('promote: does not create duplicate gates', (t) => {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
+  const cmd = 'npm test -- dedup-suite';
   for (let i = 0; i < 4; i++) {
-    appendJSONL(logPath, makeNegativeEntry(['dedup-test'], 'same error', i));
+    appendJSONL(logPath, makeNegativeEntry(['dedup-test'], cmd, i));
   }
 
   promote(logPath);
   const first = loadAutoGates();
-  const countBefore = first.gates.filter((g) => g.id === 'auto-dedup-test').length;
+  const countBefore = first.gates.filter((g) => (g.pattern || '').includes('npm test -- dedup-suite')).length;
 
   // Run again — should not create duplicate
   promote(logPath);
   const second = loadAutoGates();
-  const countAfter = second.gates.filter((g) => g.id === 'auto-dedup-test').length;
+  const countAfter = second.gates.filter((g) => (g.pattern || '').includes('npm test -- dedup-suite')).length;
 
   assert.strictEqual(countBefore, 1);
   assert.strictEqual(countAfter, 1);
@@ -328,7 +344,7 @@ test('promote: called from feedback-loop on negative capture', (t) => {
   for (let i = 0; i < warnCount; i++) {
     captureFeedback({
       signal: 'down',
-      context: `Pipeline integration test failure ${i}`,
+      context: 'npm test -- pipeline-integration',
       whatWentWrong: 'Integration broke',
       tags: ['pipeline-integration-test'],
     });
@@ -336,7 +352,7 @@ test('promote: called from feedback-loop on negative capture', (t) => {
 
   // The auto-promote should create a warn gate before the hard block threshold.
   const data = loadAutoGates();
-  const gate = data.gates.find((g) => g.id === 'auto-pipeline-integration-test');
+  const gate = data.gates.find((g) => (g.pattern || '').includes('npm test -- pipeline-integration'));
   assert.ok(gate, 'auto-promoted gate should exist before the block threshold is reached');
   assert.strictEqual(gate.action, 'warn');
 });
@@ -345,10 +361,11 @@ test('promote: called from feedback-loop on negative capture', (t) => {
 
 test('buildGateRule: returns gate object with correct fields', () => {
   const group = {
-    key: 'testing',
+    key: normalizeCommandSignature('npm test -- suite'),
     count: BLOCK_THRESHOLD - 1,
     entries: [],
-    latestContext: 'Test failure context',
+    latestContext: 'npm test -- suite',
+    latestExecutable: 'npm test -- suite',
     latestTimestamp: new Date().toISOString(),
   };
   const gate = buildGateRule(group);
@@ -357,14 +374,16 @@ test('buildGateRule: returns gate object with correct fields', () => {
   assert.strictEqual(gate.severity, 'medium');
   assert.ok(gate.message.includes(`${BLOCK_THRESHOLD - 1} occurrences`));
   assert.strictEqual(gate.source, 'auto-promote');
+  assert.match(gate.pattern, /npm test -- suite/);
 });
 
 test('buildGateRule: count at block threshold produces block action', () => {
   const group = {
-    key: 'critical-error',
+    key: normalizeCommandSignature('kubectl delete ns prod'),
     count: BLOCK_THRESHOLD,
     entries: [],
-    latestContext: 'Critical failure',
+    latestContext: 'kubectl delete ns prod',
+    latestExecutable: 'kubectl delete ns prod',
     latestTimestamp: new Date().toISOString(),
   };
   const gate = buildGateRule(group);
@@ -625,13 +644,13 @@ test('extractPatternKey: variants of rm -rf node_modules produce the same gate k
   assert.ok(keys[0] && keys[0].includes('rm -rf node_modules'));
 });
 
-test('extractPatternKey: still prefers tags when present', () => {
+test('extractPatternKey: prefers executable command even when tags present', () => {
   const k = extractPatternKey({
     tags: ['feedback', 'destructive-fs', 'negative'],
     context: 'rm -rf node_modules',
   });
-  // Tag-based key wins over command normalization.
-  assert.strictEqual(k, 'destructive-fs');
+  // Executable action wins — tags are memory metadata, not enforcement keys.
+  assert.strictEqual(k, normalizeCommandSignature('rm -rf node_modules'));
 });
 
 // --- Regression: promoted gates must actually enforce -------------------------
@@ -739,4 +758,48 @@ test('P0: tagged multi-thumbs promote produces a pattern that gate-check denies'
   const parsed = JSON.parse(raw);
   const decision = (parsed.hookSpecificOutput || parsed).permissionDecision;
   assert.equal(decision, 'deny', 'auto-promoted gate must deny the originating command');
+});
+
+test('extractExecutableAction: prefers toolInput.command over prose context', () => {
+  const { extractExecutableAction } = require('../scripts/auto-promote-gates');
+  const action = extractExecutableAction({
+    context: 'agent broke the deploy again',
+    toolInput: { command: 'kubectl delete deploy checkout-api -n prod' },
+  });
+  assert.equal(action, 'kubectl delete deploy checkout-api -n prod');
+});
+
+test('extractExecutableAction: rejects pure prose', () => {
+  const { extractExecutableAction } = require('../scripts/auto-promote-gates');
+  assert.equal(extractExecutableAction({ context: 'agent broke deploy' }), null);
+});
+
+test('promote: tag-only groups without executable actions do not hard-block a single latest command', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-tag-only-'));
+  const logPath = path.join(dir, 'feedback-log.jsonl');
+  process.env.THUMBGATE_FEEDBACK_DIR = dir;
+
+  // Three different commands sharing the same tags — must NOT block only the latest
+  // using a count of 3 from unrelated tag co-occurrence.
+  const rows = [
+    { context: 'kubectl get pods -n staging', tags: ['entity:Customer', 'entity:Funnel'] },
+    { context: 'kubectl logs deploy/web -n staging', tags: ['entity:Customer', 'entity:Funnel'] },
+    { context: 'kubectl delete deploy checkout-api -n prod', tags: ['entity:Customer', 'entity:Funnel'] },
+  ].map((r) => JSON.stringify({
+    signal: 'negative',
+    feedback: 'down',
+    tags: r.tags,
+    context: r.context,
+    timestamp: new Date().toISOString(),
+  }));
+  fs.writeFileSync(logPath, rows.join('\n') + '\n');
+
+  const result = promote(logPath, { skipRegression: true });
+  // Each command appears once → below BLOCK_THRESHOLD; may warn at WARN_THRESHOLD=1
+  // but must not create a block for delete using a tag count of 3.
+  const deleteGate = (result.data.gates || []).find((g) => (g.pattern || '').includes('delete deploy'));
+  if (deleteGate) {
+    assert.notEqual(deleteGate.action, 'block', 'single-command delete must not hard-block from tag co-counts');
+    assert.equal(deleteGate.occurrences, 1);
+  }
 });

@@ -82,7 +82,7 @@ test('promote: quarantines a would-be BLOCK to warn when it would block prior sa
     const entries = [0, 1, 2].map((d) => ({
       signal: 'negative',
       tags: ['echomarker'],
-      context: 'agent ran echomarker and it failed',
+      context: 'python scripts/echomarker.py --apply',
       timestamp: recentTimestamp(d),
     }));
     fs.writeFileSync(logPath, entries.map((e) => JSON.stringify(e)).join('\n') + '\n');
@@ -99,7 +99,7 @@ test('promote: quarantines a would-be BLOCK to warn when it would block prior sa
     writeAudit(dir, [{
       decision: 'allow',
       toolName: 'Bash',
-      toolInput: { command: `notify-team --dry-run "agent ran echomarker and it failed"` },
+      toolInput: { command: 'notify-team --dry-run "python scripts/echomarker.py --apply"' },
     }]);
 
     const result = promote(logPath);

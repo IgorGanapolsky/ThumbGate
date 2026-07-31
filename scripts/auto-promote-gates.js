@@ -187,14 +187,43 @@ function normalizeCommandSignature(input) {
   return tokens.join(' ').trim();
 }
 
-function extractPatternKey(entry) {
-  // Use tags as primary grouping key; fall back to context normalization
-  const tags = (entry.tags || []).filter((t) => !['feedback', 'negative', 'positive'].includes(t));
-  if (tags.length > 0) return tags.sort().join('+');
+/**
+ * Prefer an executable action we can match at PreToolUse time.
+ * Tag-only or pure prose feedback is useful memory — not an enforcement pattern.
+ */
+function extractExecutableAction(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  const fromTool =
+    (entry.toolInput && (entry.toolInput.command || entry.toolInput.pattern))
+    || (entry.tool_input && (entry.tool_input.command || entry.tool_input.pattern))
+    || entry.command
+    || entry.failedCommand
+    || null;
+  if (fromTool && String(fromTool).trim().length >= 4) {
+    return String(fromTool).trim();
+  }
 
-  const ctx = (entry.context || entry.whatWentWrong || '').trim();
-  if (ctx.length < 10) return null;
-  return normalizeCommandSignature(ctx).slice(0, 100);
+  const ctx = String(entry.context || entry.whatWentWrong || '').trim();
+  if (ctx.length < 4) return null;
+
+  // Looks like a shell / CLI invocation (not free-form prose).
+  const looksExecutable = /^(?:sudo\s+)?(?:~\/|\.\/|\/)?(?:[A-Za-z0-9._+-]+\/)*[A-Za-z0-9._+-]+(?:\s|$)/.test(ctx)
+    && /\s|^[a-z0-9._+-]+(?:\s|$)/i.test(ctx)
+    && !/\s+(?:broke|failed|wrong|should|never|please|the agent)\b/i.test(ctx.slice(0, 80));
+  // Strong signal: known tool prefixes
+  const known = /^(?:sudo\s+)?(?:kubectl|git|npm|npx|yarn|pnpm|python|python3|node|curl|wget|docker|podman|rm|mv|cp|chmod|chown|psql|mysql|mongo|terraform|pulumi|aws|gcloud|az|helm|ssh|scp|rsync|make|cargo|go|ruby|perl|bash|sh|zsh)\b/i.test(ctx);
+  if (known || (looksExecutable && /[\s-]/.test(ctx) && ctx.length <= 200)) {
+    return ctx;
+  }
+  return null;
+}
+
+function extractPatternKey(entry) {
+  // Enforcement groups by executable action only. Tags remain diagnostic metadata
+  // and must not create hard-block thresholds for a single unrelated latest command.
+  const action = extractExecutableAction(entry);
+  if (!action) return null;
+  return normalizeCommandSignature(action).slice(0, 100);
 }
 
 function extractDiagnosticKeys(entry) {
@@ -227,27 +256,29 @@ function groupNegativeFeedback(entries, windowDays) {
     const ts = entry.timestamp ? new Date(entry.timestamp).getTime() : 0;
     if (ts < cutoff) continue;
 
-    const keys = [extractPatternKey(entry), ...extractDiagnosticKeys(entry)]
-      .filter(Boolean)
-      .filter((value, index, values) => values.indexOf(value) === index);
-    if (keys.length === 0) continue;
+    // Enforcement groups ONLY by executable action. Tag/diagnosis metadata is
+    // useful for memory and dashboards, but must not create hard-block thresholds
+    // that attach to an unrelated latest command.
+    const key = extractPatternKey(entry);
+    if (!key) continue;
 
-    for (const key of keys) {
-      if (!groups[key]) {
-        groups[key] = {
-          key,
-          count: 0,
-          entries: [],
-          latestContext: '',
-          latestTimestamp: '',
-        };
-      }
-      groups[key].count++;
-      groups[key].entries.push(entry);
-      if (!groups[key].latestTimestamp || (entry.timestamp && entry.timestamp > groups[key].latestTimestamp)) {
-        groups[key].latestTimestamp = entry.timestamp || '';
-        groups[key].latestContext = entry.context || entry.whatWentWrong || '';
-      }
+    if (!groups[key]) {
+      groups[key] = {
+        key,
+        count: 0,
+        entries: [],
+        latestContext: '',
+        latestTimestamp: '',
+        latestExecutable: '',
+      };
+    }
+    groups[key].count++;
+    groups[key].entries.push(entry);
+    if (!groups[key].latestTimestamp || (entry.timestamp && entry.timestamp > groups[key].latestTimestamp)) {
+      groups[key].latestTimestamp = entry.timestamp || '';
+      const action = extractExecutableAction(entry);
+      groups[key].latestContext = action || entry.context || entry.whatWentWrong || '';
+      groups[key].latestExecutable = action || '';
     }
   }
 
@@ -293,12 +324,13 @@ function gateMatchesOwnContext(gate, context) {
 function buildGateRule(group, actionOverride) {
   const action = actionOverride || (group.count === 'MANUAL' ? group.manualAction || 'block' : (group.count >= BLOCK_THRESHOLD ? 'block' : 'warn'));
   const severity = action === 'block' ? 'critical' : action === 'approve' ? 'high' : 'medium';
-  const context = group.latestContext.slice(0, 120);
+  const executable = (group.latestExecutable || extractExecutableAction({ context: group.latestContext }) || group.latestContext || '').slice(0, 120);
+  const context = executable;
   const kind = group.key.startsWith('diagnosis:')
     ? 'repeated diagnosis'
     : group.key.startsWith('constraint:')
       ? 'repeated constraint violation'
-      : 'repeated pattern';
+      : 'repeated executable action';
 
   const occurrencesText = group.count === 'MANUAL' ? 'manual' : `${group.count} occurrences`;
   const suggestedMessage = `Auto-promoted ${kind}: "${context}" (${occurrencesText} in ${WINDOW_DAYS} days)`;
@@ -313,8 +345,8 @@ function buildGateRule(group, actionOverride) {
   return {
     id: patternToGateId(group.key),
     trigger: `auto:${group.key}`,
-    // Derived from the captured command, NOT from group.key — see contextToPattern.
-    pattern: contextToPattern(group.latestContext),
+    // Derived from the executable action, NOT from tag keys — see contextToPattern.
+    pattern: contextToPattern(executable),
     action,
     message: suggestedMessage,
     severity,
@@ -592,6 +624,7 @@ module.exports = {
   getAuditTrailPath,
   REGRESSION_FALSE_BLOCK_LIMIT,
   extractPatternKey,
+  extractExecutableAction,
   normalizeCommandSignature,
   isNegative,
   expireGates,
