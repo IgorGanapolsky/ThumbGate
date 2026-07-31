@@ -62,6 +62,30 @@ test('quick-start does not execute detected plugin managers by default', () => {
   }
 });
 
+test('quick-start imports Gemini through an agy-only installation when explicitly requested', () => {
+  const tmp = makeTmpDir();
+  const fakeBinDir = path.join(tmp, 'bin');
+  const sentinelPath = path.join(tmp, 'agy-plugin-import-ran');
+  fs.mkdirSync(fakeBinDir, { recursive: true });
+  const fakeAgy = path.join(fakeBinDir, 'agy');
+  fs.writeFileSync(fakeAgy, `#!/bin/sh\n/usr/bin/touch "${sentinelPath}"\n`);
+  fs.chmodSync(fakeAgy, 0o755);
+
+  const previousPath = process.env.PATH;
+  try {
+    process.env.PATH = fakeBinDir;
+    runQuickStart(tmp, ['--agent=gemini', '--import-agent-plugins']);
+    assert.strictEqual(
+      fs.existsSync(sentinelPath),
+      true,
+      'explicit plugin import should honor the supported agy manager without gemini installed',
+    );
+  } finally {
+    process.env.PATH = previousPath;
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('quick-start creates .thumbgate/config.json with correct defaults', () => {
   const tmp = makeTmpDir();
   try {

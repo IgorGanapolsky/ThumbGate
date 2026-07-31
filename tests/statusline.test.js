@@ -670,22 +670,32 @@ test('hook runtime preserves subcommands in external fallback launchers', () => 
   }
 });
 
-test('hook runtime preserves subcommands for source-checkout launchers', () => {
+test('Codex hook runtime stays durable in source worktrees unless explicitly pinned', () => {
   const hookRuntimePath = require.resolve('../scripts/hook-runtime');
   const mcpConfigPath = require.resolve('../scripts/mcp-config');
   const mcpConfig = require(mcpConfigPath);
   const originalIsSourceCheckout = mcpConfig.isSourceCheckout;
   const originalPublishedCliAvailable = mcpConfig.publishedCliAvailable;
+  const originalSourceOverride = process.env.THUMBGATE_CODEX_USE_SOURCE_RUNTIME;
 
   try {
+    delete process.env.THUMBGATE_CODEX_USE_SOURCE_RUNTIME;
     delete require.cache[hookRuntimePath];
     mcpConfig.isSourceCheckout = () => true;
     mcpConfig.publishedCliAvailable = () => false;
     const sourceRuntime = require(hookRuntimePath);
 
     assert.match(sourceRuntime.statuslineCommand(), /bin\/cli\.js"\s+statusline-render/);
-    assert.match(sourceRuntime.codexStatuslineCommand(), /bin\/cli\.js"\s+statusline-render/);
+    assert.match(sourceRuntime.codexStatuslineCommand(), /thumbgate@latest/);
+    assert.doesNotMatch(sourceRuntime.codexStatuslineCommand(), /bin\/cli\.js"\s+statusline-render/);
+
+    process.env.THUMBGATE_CODEX_USE_SOURCE_RUNTIME = '1';
+    delete require.cache[hookRuntimePath];
+    const pinnedRuntime = require(hookRuntimePath);
+    assert.match(pinnedRuntime.codexStatuslineCommand(), /bin\/cli\.js"\s+statusline-render/);
   } finally {
+    if (originalSourceOverride === undefined) delete process.env.THUMBGATE_CODEX_USE_SOURCE_RUNTIME;
+    else process.env.THUMBGATE_CODEX_USE_SOURCE_RUNTIME = originalSourceOverride;
     mcpConfig.isSourceCheckout = originalIsSourceCheckout;
     mcpConfig.publishedCliAvailable = originalPublishedCliAvailable;
     delete require.cache[hookRuntimePath];

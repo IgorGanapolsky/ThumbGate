@@ -410,14 +410,17 @@ function canonicalMcpEntry(scope = 'project') {
 }
 
 function canonicalCodexMcpEntry() {
-  if (isSourceCheckout(PKG_ROOT)) {
+  // Codex config is user-global and must survive disposable worktree cleanup.
+  // Use the stable published launcher even when init is invoked from source;
+  // developers can explicitly opt into a checkout-pinned runtime when needed.
+  if (isSourceCheckout(PKG_ROOT) && process.env.THUMBGATE_CODEX_USE_SOURCE_RUNTIME === '1') {
     return localMcpEntry(PKG_ROOT, 'home');
   }
   return codexAutoUpdateMcpEntry();
 }
 
 function canonicalCodexCliEntry(commandArgs) {
-  if (isSourceCheckout(PKG_ROOT)) {
+  if (isSourceCheckout(PKG_ROOT) && process.env.THUMBGATE_CODEX_USE_SOURCE_RUNTIME === '1') {
     return {
       command: 'node',
       args: [path.join(PKG_ROOT, 'bin', 'cli.js'), ...commandArgs],
@@ -1133,7 +1136,11 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
     {
       agent: 'gemini',
       name: 'Gemini',
-      detect: [() => whichExists('gemini'), () => fs.existsSync(path.join(HOME, '.gemini'))],
+      detect: [
+        () => whichExists('gemini'),
+        () => whichExists('agy'),
+        () => fs.existsSync(path.join(HOME, '.gemini')),
+      ],
       setup: () => setupGemini({ importPlugin: args['import-agent-plugins'] === true }),
     },
     { agent: 'amp', name: 'Amp', detect: [() => whichExists('amp'), () => fs.existsSync(path.join(HOME, '.amp'))], setup: setupAmp },
