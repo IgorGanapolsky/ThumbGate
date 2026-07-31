@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.31.1
+
+### Patch Changes
+
+- Fix `sync-version.js` missing three adapter package pins.
+
+  `scripts/sync-version.js` listed `adapters/claude/.mcp.json` plus the `config.toml` and `opencode.json` siblings for claw, hermes and perplexity — but not those three adapters' own `.mcp.json` files. Every version bump left them pinned to the previous release:
+
+  ```
+  adapters/claw/.mcp.json        -> thumbgate@1.30.0
+  adapters/hermes/.mcp.json      -> thumbgate@1.30.0 (x2)
+  adapters/perplexity/.mcp.json  -> thumbgate@1.30.0 (x2)
+  ```
+
+  Not cosmetic drift. 1.30.0 is the build whose auto-promoted gates carried tag-derived patterns and could never match a command, so a Claw, Hermes or Perplexity user running the pinned version received the inert-gate build while believing they had the fix — the same failure as the stale npm publish, one layer further out.
+
+  Fixed the target list rather than the three files, so the next bump cannot reintroduce it. `sync-version` now covers 41 targets, up from 38. `tests/adapter-version-pins.test.js` already guards this and is what caught it.
+
 ## 1.31.0
 
 ### Minor Changes
