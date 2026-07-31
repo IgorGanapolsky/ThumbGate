@@ -9,6 +9,9 @@ const {
   shouldEscalate,
   FrontierBudget,
   recommendExecutionPlan,
+  createOpenAiCompatibleAdapter,
+  executeRoutedGeneration,
+  evaluateRoutingHoldout,
 } = require('../scripts/model-tier-router');
 
 const config = require('../config/model-tiers.json');
@@ -330,4 +333,147 @@ test('recommendExecutionPlan keeps frontier tier when no local GLM backend', () 
   }, {});
 
   assert.equal(plan.tier, 'frontier');
+});
+
+test('execution plan calls the architecture risk-aware routing, not MoE', () => {
+  const plan = recommendExecutionPlan({ type: 'review' }, {});
+  assert.equal(plan.architecture, 'risk-aware-model-routing');
+  assert.equal(plan.mixtureOfExperts, false);
+});
+
+test('executeRoutedGeneration dispatches the selected adapter and emits prompt-free telemetry', async () => {
+  const events = [];
+  const result = await executeRoutedGeneration({
+    type: 'classification',
+    riskLevel: 'low',
+  }, {
+    userPrompt: 'secret prompt body must not enter telemetry',
+  }, {
+    adapters: {
+      openai: async ({ model, provider }) => ({
+        text: 'classified',
+        model,
+        provider,
+        usage: { prompt_tokens: 11, completion_tokens: 3 },
+        costCents: 0.2,
+      }),
+    },
+    telemetrySink: (event) => events.push(event),
+    now: (() => {
+      const times = [1000, 1025];
+      return () => times.shift();
+    })(),
+  });
+
+  assert.equal(result.text, 'classified');
+  assert.equal(result.route.tier, 'nano');
+  assert.equal(result.telemetry.outcome, 'success');
+  assert.equal(result.telemetry.inputTokens, 11);
+  assert.equal(result.telemetry.outputTokens, 3);
+  assert.equal(result.telemetry.latencyMs, 25);
+  assert.equal(events.length, 1);
+  assert.equal(JSON.stringify(events).includes('secret prompt body'), false);
+});
+
+test('OpenAI-compatible adapter uses the selected model and standard endpoint contract', async () => {
+  let observed;
+  const adapter = createOpenAiCompatibleAdapter({
+    env: { OPENAI_API_KEY: 'test-key', OPENAI_BASE_URL: 'https://models.example/v1/' },
+    fetchImpl: async (url, options) => {
+      observed = { url, options };
+      return {
+        ok: true,
+        json: async () => ({
+          model: 'gpt-test',
+          choices: [{ message: { content: 'ok' } }],
+          usage: { prompt_tokens: 2, completion_tokens: 1 },
+        }),
+      };
+    },
+  });
+  const result = await adapter({
+    request: { userPrompt: 'hello' },
+    model: 'gpt-test',
+    provider: 'openai',
+  });
+
+  assert.equal(observed.url, 'https://models.example/v1/chat/completions');
+  assert.equal(JSON.parse(observed.options.body).model, 'gpt-test');
+  assert.equal(result.text, 'ok');
+  assert.equal(result.costCents, null);
+});
+
+test('failed routed generation emits a redacted error outcome', async () => {
+  const events = [];
+  await assert.rejects(
+    executeRoutedGeneration({ type: 'review' }, { userPrompt: 'private' }, {
+      adapters: {
+        openai: async () => {
+          throw new Error('request failed with sk-testsecretvalue1234567890');
+        },
+      },
+      telemetrySink: (event) => events.push(event),
+    }),
+    /request failed/,
+  );
+  assert.equal(events[0].outcome, 'error');
+  assert.equal(events[0].error.includes('sk-testsecretvalue'), false);
+  assert.match(events[0].error, /REDACTED/);
+});
+
+test('routing holdout reports quality regret and cost against a fixed baseline', async () => {
+  const cases = [
+    { id: 'simple', expected: 'safe', task: { type: 'classification' } },
+    { id: 'complex', expected: 'correct', task: { type: 'architecture' } },
+  ];
+  const report = await evaluateRoutingHoldout(cases, {
+    routedGenerate: async (testCase) => ({
+      text: testCase.expected,
+      model: testCase.id === 'simple' ? 'nano' : 'frontier',
+      route: { tier: testCase.task.type === 'classification' ? 'nano' : 'frontier' },
+      costCents: testCase.id === 'simple' ? 0.1 : 0.8,
+      telemetry: { latencyMs: 10 },
+    }),
+    fixedGenerate: async (testCase) => ({
+      text: testCase.expected,
+      model: 'fixed-frontier',
+      costCents: 1,
+      telemetry: { latencyMs: 25 },
+    }),
+    scoreOutput: (output, testCase) => output.text === testCase.expected ? 1 : 0,
+    maxQualityRegret: 0,
+  });
+
+  assert.equal(report.caseCount, 2);
+  assert.equal(report.judgeStage, 'external-scorer');
+  assert.equal(report.metrics.averageQualityRegret, 0);
+  assert.equal(report.metrics.worstCaseQualityRegret, 0);
+  assert.equal(report.metrics.routedCostCents, 0.45);
+  assert.equal(report.metrics.fixedCostCents, 1);
+  assert.equal(report.metrics.costSavingsCents, 0.55);
+  assert.deepEqual(report.metrics.costCoverage, { measuredCases: 2, totalCases: 2 });
+  assert.equal(report.passed, true);
+});
+
+test('routing holdout refuses to self-judge without an external scorer', async () => {
+  await assert.rejects(
+    evaluateRoutingHoldout([{ id: 'one' }], { fixedGenerate: async () => ({ text: 'x' }) }),
+    /scoreOutput is required/,
+  );
+});
+
+test('routing holdout fails on one regressed case even when averages cancel out', async () => {
+  const cases = [{ id: 'regression' }, { id: 'improvement' }];
+  const routedScores = { regression: 0, improvement: 1 };
+  const fixedScores = { regression: 1, improvement: 0 };
+  const report = await evaluateRoutingHoldout(cases, {
+    routedGenerate: async (testCase) => ({ text: String(routedScores[testCase.id]) }),
+    fixedGenerate: async (testCase) => ({ text: String(fixedScores[testCase.id]) }),
+    scoreOutput: (output) => Number(output.text),
+    maxQualityRegret: 0,
+  });
+
+  assert.equal(report.metrics.averageQualityRegret, 0);
+  assert.equal(report.metrics.worstCaseQualityRegret, 1);
+  assert.equal(report.passed, false);
 });

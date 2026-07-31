@@ -2,13 +2,16 @@
 'use strict';
 
 /**
- * GPT tier router — routes tasks to nano/mini/frontier based on
- * task complexity, context size, risk level, and retry count.
- * Includes frontier budget control.
+ * Risk-aware model router — routes whole generation requests to an external
+ * provider/model tier based on task complexity, context size, risk level, and
+ * retry count. This is application-level routing, not a neural Mixture of
+ * Experts (MoE): it never routes tokens through internal expert subnetworks.
  */
 
+const fs = require('fs');
 const path = require('path');
 const { recommendInferenceBackend } = require('./local-model-profile');
+const { redactSecrets } = require('./secret-redaction');
 
 const CONFIG_PATH = path.join(__dirname, '..', 'config', 'model-tiers.json');
 
@@ -278,6 +281,8 @@ function recommendExecutionPlan(task = {}, env = process.env) {
     : classification.tier;
 
   return {
+    architecture: 'risk-aware-model-routing',
+    mixtureOfExperts: false,
     tier: effectiveTier,
     escalated: classification.escalated,
     tierReason: classification.reason,
@@ -292,10 +297,245 @@ function recommendExecutionPlan(task = {}, env = process.env) {
 }
 
 // ---------------------------------------------------------------------------
+// Executable generation routing
+// ---------------------------------------------------------------------------
+
+function inferProvider(modelId, tier) {
+  if (tier === 'localFrontier') return 'openai-compatible';
+  if (/^(gpt-|o\d)/i.test(modelId || '')) return 'openai';
+  if (/^claude-/i.test(modelId || '')) return 'anthropic';
+  if (/^(gemini|vertex)/i.test(modelId || '')) return 'gemini';
+  return 'custom';
+}
+
+function normalizeGenerationResult(result, fallback = {}) {
+  if (typeof result === 'string') {
+    return {
+      text: result,
+      model: fallback.model,
+      provider: fallback.provider,
+      usage: null,
+      costCents: null,
+    };
+  }
+  if (!result || typeof result !== 'object') {
+    throw new Error('generation adapter returned no result');
+  }
+  return {
+    ...result,
+    text: String(result.text || ''),
+    model: result.model || fallback.model,
+    provider: result.provider || fallback.provider,
+    usage: result.usage || null,
+    costCents: Number.isFinite(Number(result.costCents)) ? Number(result.costCents) : null,
+  };
+}
+
+function createOpenAiCompatibleAdapter(options = {}) {
+  const env = options.env || process.env;
+  const fetchImpl = options.fetchImpl || global.fetch;
+
+  return async function openAiCompatibleAdapter({ request, model, provider }) {
+    if (typeof fetchImpl !== 'function') throw new Error('fetch is unavailable');
+    const local = provider === 'openai-compatible';
+    const baseUrl = local
+      ? env.THUMBGATE_LOCAL_MODEL_BASE_URL
+      : (env.OPENAI_BASE_URL || 'https://api.openai.com/v1');
+    const apiKey = local ? env.THUMBGATE_LOCAL_MODEL_API_KEY : env.OPENAI_API_KEY;
+    if (!baseUrl) throw new Error('THUMBGATE_LOCAL_MODEL_BASE_URL is required for local routing');
+    if (!local && !apiKey) throw new Error('OPENAI_API_KEY is required for OpenAI routing');
+
+    const messages = Array.isArray(request.messages) && request.messages.length > 0
+      ? request.messages
+      : [
+        ...(request.systemPrompt ? [{ role: 'system', content: request.systemPrompt }] : []),
+        { role: 'user', content: request.userPrompt || request.prompt || '' },
+      ];
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+    const response = await fetchImpl(`${String(baseUrl).replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model,
+        messages,
+        max_tokens: request.maxTokens || 1024,
+        temperature: Number.isFinite(request.temperature) ? request.temperature : 0,
+      }),
+    });
+    if (!response.ok) throw new Error(`${provider} generation failed with HTTP ${response.status}`);
+    const payload = await response.json();
+    return {
+      text: payload?.choices?.[0]?.message?.content || '',
+      model: payload?.model || model,
+      provider,
+      usage: payload?.usage || null,
+      costCents: null,
+    };
+  };
+}
+
+function createDefaultGenerationAdapters(options = {}) {
+  const openAiCompatible = createOpenAiCompatibleAdapter(options);
+  return {
+    openai: openAiCompatible,
+    'openai-compatible': openAiCompatible,
+  };
+}
+
+function createJsonlTelemetrySink(filePath) {
+  if (!filePath) throw new Error('telemetry file path is required');
+  return (event) => {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.appendFileSync(filePath, `${JSON.stringify(event)}\n`, 'utf8');
+  };
+}
+
+async function executeRoutedGeneration(task = {}, request = {}, options = {}) {
+  const env = options.env || process.env;
+  const config = options.config || loadConfig();
+  const plan = recommendExecutionPlan(task, env);
+  const tierConfig = config.tiers[plan.tier];
+  if (!tierConfig) throw new Error(`missing configuration for tier "${plan.tier}"`);
+  const model = options.modelOverrides?.[plan.tier] || tierConfig.modelId;
+  if (!model) throw new Error(`missing modelId for tier "${plan.tier}"`);
+  const provider = options.providerOverrides?.[plan.tier]
+    || tierConfig.provider
+    || inferProvider(model, plan.tier);
+  const adapters = options.adapters || createDefaultGenerationAdapters({ env, fetchImpl: options.fetchImpl });
+  const adapter = adapters[plan.tier] || adapters[provider];
+  if (typeof adapter !== 'function') throw new Error(`no generation adapter registered for provider "${provider}"`);
+
+  const now = options.now || (() => Date.now());
+  const startedAt = now();
+  const baseEvent = {
+    timestamp: new Date().toISOString(),
+    architecture: plan.architecture,
+    taskType: task.type || 'unknown',
+    riskLevel: task.riskLevel || 'unspecified',
+    tier: plan.tier,
+    provider,
+    model,
+    escalated: plan.escalated,
+    routeReason: plan.reason,
+  };
+
+  try {
+    const raw = await adapter({ task, request, plan, model, provider });
+    const result = normalizeGenerationResult(raw, { model, provider });
+    const event = {
+      ...baseEvent,
+      latencyMs: Math.max(0, now() - startedAt),
+      inputTokens: Number(result.usage?.input_tokens || result.usage?.prompt_tokens || 0) || null,
+      outputTokens: Number(result.usage?.output_tokens || result.usage?.completion_tokens || 0) || null,
+      costCents: result.costCents,
+      outcome: 'success',
+    };
+    if (options.telemetrySink) await options.telemetrySink(event);
+    return { ...result, route: plan, telemetry: event };
+  } catch (error) {
+    const event = {
+      ...baseEvent,
+      latencyMs: Math.max(0, now() - startedAt),
+      inputTokens: null,
+      outputTokens: null,
+      costCents: null,
+      outcome: 'error',
+      error: redactSecrets(String(error?.message || error)).split('\n')[0].slice(0, 300),
+    };
+    if (options.telemetrySink) await options.telemetrySink(event);
+    throw error;
+  }
+}
+
+function average(values) {
+  const finite = values.filter((value) => Number.isFinite(value));
+  return finite.length ? finite.reduce((sum, value) => sum + value, 0) / finite.length : null;
+}
+
+async function evaluateRoutingHoldout(cases, options = {}) {
+  if (!Array.isArray(cases) || cases.length === 0) throw new Error('holdout cases are required');
+  if (typeof options.fixedGenerate !== 'function') throw new Error('fixedGenerate baseline is required');
+  if (typeof options.scoreOutput !== 'function') {
+    throw new Error('scoreOutput is required; model routing and output judging must remain separate');
+  }
+  const routedGenerate = options.routedGenerate
+    || ((testCase) => executeRoutedGeneration(testCase.task, testCase.request, options.routerOptions));
+  const results = [];
+
+  for (const testCase of cases) {
+    const routed = await routedGenerate(testCase);
+    const fixed = await options.fixedGenerate(testCase);
+    const routedScore = Number(await options.scoreOutput(routed, testCase, 'routed'));
+    const fixedScore = Number(await options.scoreOutput(fixed, testCase, 'fixed'));
+    if (!Number.isFinite(routedScore) || !Number.isFinite(fixedScore)) {
+      throw new Error(`non-numeric holdout score for case "${testCase.id || 'unknown'}"`);
+    }
+    results.push({
+      id: testCase.id || `case-${results.length + 1}`,
+      routed: {
+        tier: routed.route?.tier || null,
+        model: routed.model || null,
+        score: routedScore,
+        costCents: Number.isFinite(routed.costCents) ? routed.costCents : null,
+        latencyMs: Number.isFinite(routed.telemetry?.latencyMs) ? routed.telemetry.latencyMs : null,
+      },
+      fixed: {
+        model: fixed.model || options.fixedModel || null,
+        score: fixedScore,
+        costCents: Number.isFinite(fixed.costCents) ? fixed.costCents : null,
+        latencyMs: Number.isFinite(fixed.telemetry?.latencyMs) ? fixed.telemetry.latencyMs : null,
+      },
+      qualityRegret: fixedScore - routedScore,
+    });
+  }
+
+  const costPairs = results.filter((result) => (
+    Number.isFinite(result.routed.costCents) && Number.isFinite(result.fixed.costCents)
+  ));
+  const routedCost = average(costPairs.map((result) => result.routed.costCents));
+  const fixedCost = average(costPairs.map((result) => result.fixed.costCents));
+  const averageQualityRegret = average(results.map((result) => result.qualityRegret));
+  const worstCaseQualityRegret = Math.max(...results.map((result) => result.qualityRegret));
+  const maxQualityRegret = Number.isFinite(options.maxQualityRegret) ? options.maxQualityRegret : 0;
+  return {
+    architecture: 'risk-aware-model-routing',
+    judgeStage: 'external-scorer',
+    caseCount: results.length,
+    metrics: {
+      routedQuality: average(results.map((result) => result.routed.score)),
+      fixedQuality: average(results.map((result) => result.fixed.score)),
+      averageQualityRegret,
+      worstCaseQualityRegret,
+      routedCostCents: routedCost,
+      fixedCostCents: fixedCost,
+      costSavingsCents: routedCost === null || fixedCost === null ? null : fixedCost - routedCost,
+      costCoverage: { measuredCases: costPairs.length, totalCases: results.length },
+    },
+    thresholds: { maxQualityRegret },
+    passed: worstCaseQualityRegret <= maxQualityRegret,
+    results,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
-module.exports = { TIERS, classifyTask, shouldEscalate, FrontierBudget, recommendExecutionPlan };
+module.exports = {
+  TIERS,
+  classifyTask,
+  shouldEscalate,
+  FrontierBudget,
+  recommendExecutionPlan,
+  inferProvider,
+  normalizeGenerationResult,
+  createOpenAiCompatibleAdapter,
+  createDefaultGenerationAdapters,
+  createJsonlTelemetrySink,
+  executeRoutedGeneration,
+  evaluateRoutingHoldout,
+};
 
 // ---------------------------------------------------------------------------
 // CLI
