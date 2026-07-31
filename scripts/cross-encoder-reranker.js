@@ -2,20 +2,17 @@
 'use strict';
 
 /**
- * Cross-Encoder Reranker for ThumbGate lesson retrieval.
+ * Cross-encoder style reranker for ThumbGate lesson retrieval.
  *
- * Two-stage retrieval:
- *   Stage 1: Fast candidate retrieval (existing bigram Jaccard + keyword matching)
- *   Stage 2: Cross-encoder reranking scores query-document pairs jointly
+ * Honesty (2026-07-31 A+ stack):
+ *   - Default production path uses the multi-stage pipeline in rerank-pipeline.js:
+ *       BM25F → ColBERT-style MaxSim → heuristic joint pair scorer → optional LLM
+ *   - `heuristicCrossEncode` is a *feature-based* pair scorer, not a neural CE
+ *   - LLM listwise scoring is optional (`useLLM` or THUMBGATE_RERANK_LLM=1)
+ *   - ColBERT-style MaxSim is hashed multi-vector late interaction unless a
+ *     tokenEmbedder is injected
  *
- * The cross-encoder evaluates the query AND each lesson together (not independently),
- * catching false positives that keyword/vector search misses.
- *
- * Architecture reference: "Advanced RAG Retrieval: Cross-Encoders & Reranking"
- * (Towards Data Science, April 2026)
- *
- * When LLM is available (ANTHROPIC_API_KEY), uses Claude as the cross-encoder.
- * Falls back to enhanced heuristic scoring when LLM is unavailable.
+ * PreToolUse uses the sync pipeline (no LLM) so the gate stays offline-capable.
  */
 
 const {
@@ -24,9 +21,8 @@ const {
 } = require('./lesson-retrieval');
 
 /**
- * Heuristic cross-encoder: scores a (query, document) pair jointly.
- * Unlike bi-encoder (independent embeddings), this examines the pair together
- * to find semantic relationships that keyword matching misses.
+ * Heuristic joint pair scorer (cross-encoder *style*, not a transformer CE).
+ * Scores a (query, document) pair jointly.
  */
 function heuristicCrossEncode(query, document) {
   const queryLower = (query || '').toLowerCase();
@@ -62,26 +58,33 @@ function heuristicCrossEncode(query, document) {
     const docHit = terms.some((t) => docLower.includes(t));
     if (queryHit && docHit) {
       score += 0.25;
-      break; // Only count strongest category match
+      break;
     }
   }
 
-  // 4. Action-target alignment (e.g., "git push" in query matches "push to main" in doc)
+  // 4. Action-target alignment
   const queryVerbs = extractVerbs(queryLower);
   const docVerbs = extractVerbs(docLower);
   const verbOverlap = queryVerbs.filter((v) => docVerbs.includes(v));
   score += Math.min(verbOverlap.length * 0.1, 0.3);
 
-  // 5. Negation alignment (both about what NOT to do)
+  // 5. Negation alignment
   const queryNegated = /\b(don'?t|never|avoid|block|prevent|stop)\b/.test(queryLower);
   const docNegated = /\b(don'?t|never|avoid|block|prevent|stop)\b/.test(docLower);
   if (queryNegated && docNegated) score += 0.1;
+
+  // 6. Structural near-miss penalty: query asserts X, doc asserts NOT X (role/negation flip)
+  if (queryNegated !== docNegated) {
+    // Shared content tokens but polarity mismatch → soft demotion of raw phrase score
+    // (still can rank high if phrases match; fusion stages rebalance)
+    score *= 0.92;
+  }
 
   return Math.min(score, 1);
 }
 
 /**
- * LLM cross-encoder: uses Claude to score relevance of query-document pairs.
+ * LLM listwise cross-encoder: Claude scores query-document pairs.
  * More accurate but requires API key and costs tokens.
  */
 async function llmCrossEncode(query, documents) {
@@ -118,11 +121,9 @@ No other text.`;
 }
 
 /**
- * Two-stage retrieval with cross-encoder reranking.
- *
- * Stage 1: Retrieve top N candidates using existing keyword + bigram matching
- * Stage 2: Rerank candidates using cross-encoder (LLM or heuristic)
- * Return top K results by cross-encoder score
+ * Two-stage retrieval with A+ multi-stage reranking.
+ * Stage 1: Fast candidate retrieval
+ * Stage 2: BM25F → MaxSim → heuristic CE → optional LLM
  */
 async function retrieveWithReranking(toolName, actionContext, options = {}) {
   const {
@@ -132,7 +133,6 @@ async function retrieveWithReranking(toolName, actionContext, options = {}) {
     feedbackDir,
   } = options;
 
-  // Stage 1: Fast candidate retrieval (existing system)
   const candidates = await retrieveRelevantLessonsAsync(toolName, actionContext, {
     maxResults: candidateCount,
     feedbackDir,
@@ -147,40 +147,40 @@ async function retrieveWithReranking(toolName, actionContext, options = {}) {
   });
 
   if (candidates.length === 0) return [];
-  if (candidates.length <= maxResults) return candidates;
+  if (candidates.length <= maxResults && !options.forceRerank) {
+    return candidates.map((c) => ({
+      ...c,
+      combinedScore: c.relevanceScore ?? c.score ?? 0,
+      crossEncoderScore: c.relevanceScore ?? 0,
+    }));
+  }
 
   const query = `${toolName || ''} ${actionContext || ''}`.trim();
+  // Lazy require avoids circular init with rerank-pipeline → this module
+  const { rerankPipeline } = require('./rerank-pipeline');
+  const { results, meta } = await rerankPipeline(query, candidates, {
+    topK: maxResults,
+    toolName,
+    useLLM,
+    useMaxSim: options.useMaxSim !== false,
+    useHeuristicCe: options.useHeuristicCe !== false,
+    tokenEmbedder: options.tokenEmbedder,
+    dim: options.dim,
+    ngram: options.ngram,
+  });
 
-  // Stage 2: Cross-encoder reranking
-  let rerankedScores;
-
-  if (useLLM) {
-    rerankedScores = await llmCrossEncode(query, candidates);
-  }
-
-  // Fall back to heuristic cross-encoder if LLM unavailable or failed
-  if (!rerankedScores) {
-    rerankedScores = candidates.map((c) => {
-      const docText = `${c.title || ''} ${c.content || ''}`;
-      return heuristicCrossEncode(query, docText);
-    });
-  }
-
-  // Combine original relevance score with cross-encoder score
-  // Weight: 40% original, 60% cross-encoder (cross-encoder is more precise)
-  const reranked = candidates.map((c, i) => ({
+  return results.map((c) => ({
     ...c,
-    crossEncoderScore: rerankedScores[i],
-    combinedScore: c.relevanceScore * 0.4 + rerankedScores[i] * 0.6,
+    retrievalMeta: {
+      ...(c.retrievalMeta || {}),
+      rerank: meta,
+    },
   }));
-
-  return reranked
-    .sort((a, b) => b.combinedScore - a.combinedScore)
-    .slice(0, maxResults);
 }
 
 /**
- * Synchronous version for use in PreToolUse hooks (cannot be async).
+ * Synchronous version for PreToolUse hooks (cannot be async).
+ * Always runs BM25F + MaxSim + heuristic CE. Never calls LLM.
  */
 function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
   const {
@@ -201,27 +201,31 @@ function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
   });
 
   if (candidates.length === 0) return [];
-  if (candidates.length <= maxResults) return candidates;
+  if (candidates.length <= maxResults && !options.forceRerank) {
+    return candidates.map((c) => ({
+      ...c,
+      combinedScore: c.relevanceScore ?? c.score ?? 0,
+      crossEncoderScore: c.relevanceScore ?? 0,
+    }));
+  }
 
   const query = `${toolName || ''} ${actionContext || ''}`.trim();
-
-  const rerankedScores = candidates.map((c) => {
-    const docText = `${c.title || ''} ${c.content || ''}`;
-    return heuristicCrossEncode(query, docText);
+  const { rerankPipelineSync } = require('./rerank-pipeline');
+  const { results, meta } = rerankPipelineSync(query, candidates, {
+    topK: maxResults,
+    toolName,
+    useMaxSim: options.useMaxSim !== false,
+    useHeuristicCe: options.useHeuristicCe !== false,
   });
 
-  const reranked = candidates.map((c, i) => ({
+  return results.map((c) => ({
     ...c,
-    crossEncoderScore: rerankedScores[i],
-    combinedScore: c.relevanceScore * 0.4 + rerankedScores[i] * 0.6,
+    retrievalMeta: {
+      ...(c.retrievalMeta || {}),
+      rerank: meta,
+    },
   }));
-
-  return reranked
-    .sort((a, b) => b.combinedScore - a.combinedScore)
-    .slice(0, maxResults);
 }
-
-// --- Utility functions ---
 
 function extractPhrases(text) {
   const words = text.split(/\s+/).filter((w) => w.length > 2);

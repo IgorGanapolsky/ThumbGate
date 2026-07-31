@@ -24,6 +24,11 @@
 
 ### Patch Changes
 
+- Reranking A+ stack: ColBERT-style MaxSim late interaction, multi-stage
+  fusion pipeline (BM25F → MaxSim → heuristic pair CE → optional LLM),
+  entity channel fix, golden eval floors (`npm run eval:rerank`), and honest
+  scorecard in `docs/RERANKING_A_PLUS.md`. PreToolUse uses the offline sync path.
+
 - 83d9d88: Update the development coverage toolchain to c8 12.
 - e0465e5: Add canonical campaign attribution, safe buyer-route verification, and hourly
   hosted outcome monitoring for the seven-channel marketing-agent campaign.

@@ -1,11 +1,11 @@
 'use strict';
 
 /**
- * Cross-encoder reranker for lesson retrieval.
+ * Field-weighted BM25F second-stage scorer for lesson retrieval.
  *
- * Unlike the bi-encoders already in use (Jaccard + bigram Jaccard), a
- * cross-encoder processes the (query, lesson) pair jointly — so it can
- * catch relevance signals that independent scoring misses:
+ * Honesty: this is *not* a neural cross-encoder. It is a domain-tuned BM25F
+ * pair scorer used as stage 1 of the A+ pipeline (see rerank-pipeline.js).
+ * Joint signals:
  *
  *   - Field-weighted BM25: a query term in `whatWentWrong` is worth more
  *     than the same term in `tags`
@@ -14,7 +14,8 @@
  *   - Signal coherence: failure-sounding queries boost negative-signal lessons
  *   - Tool name joint scoring: query toolName × lesson toolsUsed
  *   - Score blending: reranked score is blended with the original retrieval
- *     score so we never fully discard the bi-encoder's signal
+ *     score so we never fully discard the first-stage signal
+ *   - Optional entity channel (when tags/entities present — no longer always 0)
  *
  * Usage:
  *   const { rerankLessons } = require('./lesson-reranker');
@@ -263,7 +264,18 @@ function rerankLessons(query, candidates, options = {}) {
       }
     }
 
-    return { ...candidate, rerankedScore: Number(finalScore.toFixed(6)) };
+    // Entity channel: extract light entities from tags + title (was dead at 0)
+    const entityScore = entityOverlapScore(queryTerms, candidate);
+    if (entityScore > 0) {
+      finalScore *= 1 + 0.15 * entityScore;
+    }
+
+    return {
+      ...candidate,
+      rerankedScore: Number(finalScore.toFixed(6)),
+      entityScore: Number(entityScore.toFixed(4)),
+      bm25Component: Number(normBm25.toFixed(4)),
+    };
   });
 
   return reranked
@@ -271,4 +283,32 @@ function rerankLessons(query, candidates, options = {}) {
     .slice(0, topK);
 }
 
-module.exports = { rerankLessons, fieldWeightedBM25, tokenize, expandTerms };
+/**
+ * Overlap between expanded query terms and lesson entity-like fields.
+ * Returns 0..1. Keeps the "entity channel" alive when tags/titles exist.
+ */
+function entityOverlapScore(queryTerms, candidate) {
+  const entityBag = new Set();
+  const tags = candidate.tags || candidate.metadata?.tags || [];
+  if (Array.isArray(tags)) {
+    for (const t of tags) tokenize(String(t)).forEach((w) => entityBag.add(w));
+  }
+  tokenize(getField(candidate, 'title') || candidate.title || '').forEach((w) => {
+    if (w.length >= 4) entityBag.add(w);
+  });
+  tokenize(getField(candidate, 'category') || candidate.category || '').forEach((w) => entityBag.add(w));
+  if (entityBag.size === 0) return 0;
+  let hits = 0;
+  for (const term of queryTerms) {
+    if (entityBag.has(term)) hits += 1;
+  }
+  return Math.min(1, hits / Math.max(1, Math.min(queryTerms.length, 8)));
+}
+
+module.exports = {
+  rerankLessons,
+  fieldWeightedBM25,
+  tokenize,
+  expandTerms,
+  entityOverlapScore,
+};
