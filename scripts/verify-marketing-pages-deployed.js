@@ -22,6 +22,8 @@
  *   --json    machine-readable report on stdout, suitable for piping
  *             into the GitHub Actions PR comment step.
  *   --quiet   suppress per-route lines; only print the final summary.
+ *   --max-attempts=N     retry only transient transport/5xx failures.
+ *   --retry-delay-ms=N   bounded delay between transient retries.
  *
  * Exit code is 0 when every page passes, 1 if any sentinel is missing
  * or any route returns non-200.
@@ -32,6 +34,8 @@ const path = require('node:path');
 
 const DEFAULT_PROD_URL = 'https://thumbgate-production.up.railway.app';
 const DEFAULT_TIMEOUT_MS = 12000;
+const DEFAULT_MAX_ATTEMPTS = 2;
+const DEFAULT_RETRY_DELAY_MS = 500;
 const DEFAULT_MANIFEST_PATH = path.resolve(__dirname, '..', 'config', 'post-deploy-marketing-pages.json');
 
 function parseArgs(argv = []) {
@@ -41,6 +45,8 @@ function parseArgs(argv = []) {
     json: false,
     quiet: false,
     timeoutMs: DEFAULT_TIMEOUT_MS,
+    maxAttempts: DEFAULT_MAX_ATTEMPTS,
+    retryDelayMs: DEFAULT_RETRY_DELAY_MS,
   };
   for (const arg of argv) {
     if (arg === '--json') out.json = true;
@@ -50,6 +56,12 @@ function parseArgs(argv = []) {
     else if (arg.startsWith('--timeout-ms=')) {
       const n = Number(arg.slice('--timeout-ms='.length));
       if (Number.isFinite(n) && n > 0) out.timeoutMs = n;
+    } else if (arg.startsWith('--max-attempts=')) {
+      const n = Number(arg.slice('--max-attempts='.length));
+      if (Number.isInteger(n) && n > 0 && n <= 5) out.maxAttempts = n;
+    } else if (arg.startsWith('--retry-delay-ms=')) {
+      const n = Number(arg.slice('--retry-delay-ms='.length));
+      if (Number.isInteger(n) && n >= 0 && n <= 5000) out.retryDelayMs = n;
     }
   }
   return out;
@@ -80,7 +92,7 @@ function loadManifest(manifestPath) {
   return parsed;
 }
 
-async function probePage({ prodUrl, route, sentinel, mustNotContain = [], userAgent, fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS }) {
+async function probePageOnce({ prodUrl, route, sentinel, mustNotContain = [], userAgent, fetchImpl, timeoutMs }) {
   if (typeof fetchImpl !== 'function') {
     return { route, ok: false, error: 'fetch_unavailable' };
   }
@@ -97,7 +109,10 @@ async function probePage({ prodUrl, route, sentinel, mustNotContain = [], userAg
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
     });
-    const body = await res.text().catch(() => '');
+    // Keep body-read transport failures visible to the outer retry classifier.
+    // Treating a disconnected 2xx stream as an empty body would incorrectly
+    // turn an operational failure into a deterministic sentinel mismatch.
+    const body = await res.text();
     const sentinelPresent = body.includes(sentinel);
     const forbiddenPresent = Array.isArray(mustNotContain)
       ? mustNotContain.filter((value) => body.includes(value))
@@ -122,7 +137,67 @@ async function probePage({ prodUrl, route, sentinel, mustNotContain = [], userAg
   }
 }
 
-async function runVerification({ prodUrl, manifestPath, fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+function isTransientProbeFailure(result = {}) {
+  if (result.ok) return false;
+  if (result.error && result.error !== 'fetch_unavailable') return true;
+  return result.status === 429 || result.status >= 500;
+}
+
+function waitForRetry(delayMs) {
+  if (!delayMs) return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+async function probePage({
+  prodUrl,
+  route,
+  sentinel,
+  mustNotContain = [],
+  userAgent,
+  fetchImpl = globalThis.fetch,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  maxAttempts = DEFAULT_MAX_ATTEMPTS,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
+}) {
+  const boundedAttempts = Number.isInteger(maxAttempts)
+    ? Math.min(Math.max(maxAttempts, 1), 5)
+    : DEFAULT_MAX_ATTEMPTS;
+  let result;
+  for (let attempt = 1; attempt <= boundedAttempts; attempt += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    result = await probePageOnce({
+      prodUrl,
+      route,
+      sentinel,
+      mustNotContain,
+      userAgent,
+      fetchImpl,
+      timeoutMs,
+    });
+    if (!isTransientProbeFailure(result) || attempt === boundedAttempts) {
+      return {
+        ...result,
+        attempts: attempt,
+        recoveredAfterRetry: Boolean(result.ok && attempt > 1),
+      };
+    }
+    // A deploy can pass /health while the first buyer-page request still
+    // wakes a cold instance. Retry only transient failures; content contract
+    // mismatches remain immediate, deterministic failures.
+    // eslint-disable-next-line no-await-in-loop
+    await waitForRetry(retryDelayMs);
+  }
+  return { ...result, attempts: boundedAttempts, recoveredAfterRetry: false };
+}
+
+async function runVerification({
+  prodUrl,
+  manifestPath,
+  fetchImpl = globalThis.fetch,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  maxAttempts = DEFAULT_MAX_ATTEMPTS,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
+} = {}) {
   const manifest = loadManifest(manifestPath);
   const results = [];
   // Sequential is fine — manifest has <20 entries; parallelism would
@@ -137,6 +212,8 @@ async function runVerification({ prodUrl, manifestPath, fetchImpl = globalThis.f
       userAgent: entry.userAgent,
       fetchImpl,
       timeoutMs,
+      maxAttempts,
+      retryDelayMs,
     });
     results.push({ ...result, sentinel: entry.sentinel, description: entry.description });
   }
@@ -183,6 +260,8 @@ async function main(argv) {
       prodUrl: args.prodUrl,
       manifestPath: args.manifestPath,
       timeoutMs: args.timeoutMs,
+      maxAttempts: args.maxAttempts,
+      retryDelayMs: args.retryDelayMs,
     });
   } catch (error) {
     process.stderr.write(`verify-marketing-pages-deployed FAILED: ${error.message}\n`);
@@ -199,9 +278,12 @@ async function main(argv) {
 module.exports = {
   DEFAULT_PROD_URL,
   DEFAULT_TIMEOUT_MS,
+  DEFAULT_MAX_ATTEMPTS,
+  DEFAULT_RETRY_DELAY_MS,
   DEFAULT_MANIFEST_PATH,
   parseArgs,
   loadManifest,
+  isTransientProbeFailure,
   probePage,
   runVerification,
   renderHuman,
