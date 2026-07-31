@@ -563,4 +563,37 @@ describe('/checkout/pro bot guard', () => {
       'deflection reason should be populated',
     );
   });
+
+  it('bot deflects /go/pro-direct to /checkout/pro without Stripe URL', async () => {
+    try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
+    const res = await fetch(`${origin}/go/pro-direct`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        accept: 'text/html,*/*',
+      },
+    });
+    assert.equal(res.status, 302);
+    const loc = res.headers.get('location') || '';
+    assert.match(loc, /\/checkout\/pro/);
+    assert.doesNotMatch(loc, /buy\.stripe\.com/);
+    const events = readFunnelEvents();
+    assert.ok(
+      events.some((e) => e.eventType === 'checkout_bot_deflected'),
+      'bot pro-direct should log checkout_bot_deflected',
+    );
+  });
+
+  it('human /go/pro-direct redirects to live Stripe Payment Link', async () => {
+    const res = await fetch(`${origin}/go/pro-direct?utm_content=skip_form`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': BROWSER_UA,
+        accept: BROWSER_ACCEPT,
+      },
+    });
+    assert.equal(res.status, 302);
+    const loc = res.headers.get('location') || '';
+    assert.match(loc, /buy\.stripe\.com\//);
+  });
 });
