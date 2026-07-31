@@ -10,6 +10,8 @@ ThumbGate routes complete generation requests between external model tiers. It d
 
 The default runtime supports OpenAI and OpenAI-compatible local endpoints. Other providers register an adapter under their provider or tier name. Cost remains `null` unless the provider or adapter returns a verified cost; ThumbGate does not invent price data.
 
+`privacyRoute: 'local'` is fail closed: execution requires an active local backend, forces the OpenAI-compatible local adapter, and rejects cloud provider overrides. The served model is resolved from the active local model family or role override rather than a hard-coded model ID.
+
 ```js
 const {
   executeRoutedGeneration,
@@ -24,3 +26,11 @@ const result = await executeRoutedGeneration(
 ```
 
 Treat a routing policy as production-ready only after a held-out workload shows acceptable quality regret against a fixed frontier baseline and the recorded cost/latency tradeoff justifies the route.
+
+## Verification evidence
+
+- [Human-readable verification log](./VERIFICATION_EVIDENCE.md)
+- [Machine-readable risk-model report](../evals/risk-model-report.json), which validates the risk signal available to the policy but does not prove routed output quality
+- `node --test tests/model-tier-router.test.js tests/local-model-profile.test.js` for deterministic routing, privacy, provider, telemetry, and holdout contracts
+
+The holdout evaluator deliberately requires an external scorer. A deployment must persist its own machine-readable holdout report before claiming a quality or cost improvement; the checked-in risk report alone is not such proof.

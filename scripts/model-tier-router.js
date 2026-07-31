@@ -10,7 +10,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { recommendInferenceBackend } = require('./local-model-profile');
+const { recommendInferenceBackend, resolveModelRole } = require('./local-model-profile');
 const { redactSecrets } = require('./secret-redaction');
 
 const CONFIG_PATH = path.join(__dirname, '..', 'config', 'model-tiers.json');
@@ -288,6 +288,7 @@ function recommendExecutionPlan(task = {}, env = process.env) {
     tierReason: classification.reason,
     backendId: inference.backend.id,
     providerMode: inference.backend.providerMode,
+    modelFamily: inference.backend.modelFamily,
     workloadClass: inference.workloadClass,
     recommendationClass: inference.recommendationClass,
     indexCacheEligible: inference.backend.indexCacheEligible,
@@ -321,13 +322,58 @@ function normalizeGenerationResult(result, fallback = {}) {
   if (!result || typeof result !== 'object') {
     throw new Error('generation adapter returned no result');
   }
+  const rawCostCents = result.costCents;
   return {
     ...result,
     text: String(result.text || ''),
     model: result.model || fallback.model,
     provider: result.provider || fallback.provider,
     usage: result.usage || null,
-    costCents: Number.isFinite(Number(result.costCents)) ? Number(result.costCents) : null,
+    costCents: rawCostCents === null || rawCostCents === undefined || rawCostCents === ''
+      ? null
+      : (Number.isFinite(Number(rawCostCents)) ? Number(rawCostCents) : null),
+  };
+}
+
+function resolveLocalGenerationModel(env, plan) {
+  const role = resolveModelRole('normal', env);
+  if (role.provider === 'local') return role.model;
+
+  const configuredModel = [
+    env.THUMBGATE_MODEL_ROLE_NORMAL,
+    env.THUMBGATE_LOCAL_MODEL,
+    env.THUMBGATE_MODEL_ID,
+    env.THUMBGATE_LOCAL_MODEL_FAMILY,
+    plan.modelFamily,
+  ].find((value) => value && String(value).trim() && String(value).trim() !== 'unknown');
+  if (configuredModel) return String(configuredModel).trim();
+  throw new Error('a local model ID or family is required for local routing');
+}
+
+function resolveGenerationTarget(plan, task, tierConfig, options, env) {
+  const modelOverride = options.modelOverrides?.[plan.tier];
+  const providerOverride = options.providerOverrides?.[plan.tier];
+  const localOnly = task.privacyRoute === 'local';
+
+  if (localOnly && plan.providerMode !== 'local') {
+    throw new Error('privacyRoute "local" requires a configured local inference backend');
+  }
+
+  if (plan.providerMode === 'local') {
+    if (providerOverride && providerOverride !== 'openai-compatible') {
+      throw new Error('local inference cannot use a cloud provider override');
+    }
+    return {
+      model: modelOverride || resolveLocalGenerationModel(env, plan),
+      provider: 'openai-compatible',
+    };
+  }
+
+  const model = modelOverride || tierConfig.modelId;
+  if (!model) throw new Error(`missing modelId for tier "${plan.tier}"`);
+  return {
+    model,
+    provider: providerOverride || tierConfig.provider || inferProvider(model, plan.tier),
   };
 }
 
@@ -397,11 +443,7 @@ async function executeRoutedGeneration(task = {}, request = {}, options = {}) {
   const plan = recommendExecutionPlan(task, env);
   const tierConfig = config.tiers[plan.tier];
   if (!tierConfig) throw new Error(`missing configuration for tier "${plan.tier}"`);
-  const model = options.modelOverrides?.[plan.tier] || tierConfig.modelId;
-  if (!model) throw new Error(`missing modelId for tier "${plan.tier}"`);
-  const provider = options.providerOverrides?.[plan.tier]
-    || tierConfig.provider
-    || inferProvider(model, plan.tier);
+  const { model, provider } = resolveGenerationTarget(plan, task, tierConfig, options, env);
   const adapters = options.adapters || createDefaultGenerationAdapters({ env, fetchImpl: options.fetchImpl });
   const adapter = adapters[plan.tier] || adapters[provider];
   if (typeof adapter !== 'function') throw new Error(`no generation adapter registered for provider "${provider}"`);
@@ -530,6 +572,7 @@ module.exports = {
   recommendExecutionPlan,
   inferProvider,
   normalizeGenerationResult,
+  resolveGenerationTarget,
   createOpenAiCompatibleAdapter,
   createDefaultGenerationAdapters,
   createJsonlTelemetrySink,

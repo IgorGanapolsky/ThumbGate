@@ -30,8 +30,8 @@
       }
     },
     "localFrontier": {
-      "label": "GLM 5.1",
-      "modelId": "glm-5.1",
+      "label": "Configured local frontier",
+      "modelId": null,
       "provider": "openai-compatible",
       "taskTypes": [],
       "maxContextTokens": 1000000,
@@ -40,7 +40,7 @@
         "tokenCap": 2000000,
         "requireReason": false
       },
-      "notes": "Self-hosted open-source tier. Activate via THUMBGATE_LOCAL_MODEL_FAMILY=glm-*. Zero marginal cost; no token budget enforcement needed."
+      "notes": "Self-hosted open-source tier. The runtime derives the served model from THUMBGATE_MODEL_ROLE_NORMAL, THUMBGATE_LOCAL_MODEL, THUMBGATE_MODEL_ID, or THUMBGATE_LOCAL_MODEL_FAMILY. Zero marginal API cost; no token budget enforcement needed."
     }
   },
   "escalationRules": {

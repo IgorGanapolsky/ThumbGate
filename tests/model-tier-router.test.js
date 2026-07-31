@@ -14,6 +14,7 @@ const {
   recommendExecutionPlan,
   inferProvider,
   normalizeGenerationResult,
+  resolveGenerationTarget,
   createOpenAiCompatibleAdapter,
   createDefaultGenerationAdapters,
   createJsonlTelemetrySink,
@@ -380,6 +381,27 @@ test('generation result normalization supports text adapters and rejects empty r
     usage: null,
     costCents: null,
   });
+  assert.equal(normalizeGenerationResult({ text: 'unknown', costCents: null }).costCents, null);
+  assert.equal(normalizeGenerationResult({ text: 'unknown' }).costCents, null);
+  assert.equal(normalizeGenerationResult({ text: 'known', costCents: '0.25' }).costCents, 0.25);
+});
+
+test('local execution target uses the activated model family instead of a hard-coded model', () => {
+  const env = {
+    THUMBGATE_PROVIDER_MODE: 'local',
+    THUMBGATE_LOCAL_MODEL_FAMILY: 'glm-z1',
+  };
+  const plan = recommendExecutionPlan({ type: 'architecture' }, env);
+  const target = resolveGenerationTarget(
+    plan,
+    { type: 'architecture' },
+    config.tiers[plan.tier],
+    {},
+    env,
+  );
+  assert.equal(target.provider, 'openai-compatible');
+  assert.equal(target.model, 'glm-z1-9b');
+  assert.notEqual(target.model, 'glm-5.1');
 });
 
 test('default adapters share the OpenAI-compatible contract and JSONL telemetry is durable', async (t) => {
@@ -463,6 +485,56 @@ test('executeRoutedGeneration dispatches the selected adapter and emits prompt-f
   assert.equal(result.telemetry.latencyMs, 25);
   assert.equal(events.length, 1);
   assert.equal(JSON.stringify(events).includes('secret prompt body'), false);
+});
+
+test('privacy-local execution cannot fall through to a configured cloud provider', async () => {
+  let fetchedUrl = null;
+  const result = await executeRoutedGeneration({
+    type: 'classification',
+    privacyRoute: 'local',
+  }, {
+    userPrompt: 'private prompt',
+  }, {
+    env: {
+      THUMBGATE_PROVIDER_MODE: 'local',
+      THUMBGATE_LOCAL_MODEL_FAMILY: 'glm-z1',
+      THUMBGATE_LOCAL_MODEL_BASE_URL: 'http://127.0.0.1:9000/v1',
+      OPENAI_API_KEY: 'cloud-key-must-not-be-used',
+    },
+    fetchImpl: async (url, options) => {
+      fetchedUrl = url;
+      assert.equal(options.headers.Authorization, undefined);
+      assert.equal(JSON.parse(options.body).model, 'glm-z1-9b');
+      return {
+        ok: true,
+        json: async () => ({ choices: [{ message: { content: 'local-only' } }] }),
+      };
+    },
+  });
+  assert.equal(fetchedUrl, 'http://127.0.0.1:9000/v1/chat/completions');
+  assert.equal(result.provider, 'openai-compatible');
+  assert.equal(result.model, 'glm-z1-9b');
+});
+
+test('privacy-local execution fails closed without a local backend or with a cloud override', async () => {
+  await assert.rejects(
+    executeRoutedGeneration({ type: 'classification', privacyRoute: 'local' }, {}, {
+      env: { OPENAI_API_KEY: 'cloud-key-must-not-be-used' },
+    }),
+    /requires a configured local inference backend/,
+  );
+
+  await assert.rejects(
+    executeRoutedGeneration({ type: 'classification', privacyRoute: 'local' }, {}, {
+      env: {
+        THUMBGATE_PROVIDER_MODE: 'local',
+        THUMBGATE_LOCAL_MODEL_FAMILY: 'deepseek-v3',
+        THUMBGATE_LOCAL_MODEL_BASE_URL: 'http://127.0.0.1:9000/v1',
+      },
+      providerOverrides: { nano: 'openai' },
+    }),
+    /cannot use a cloud provider override/,
+  );
 });
 
 test('OpenAI-compatible adapter uses the selected model and standard endpoint contract', async () => {
