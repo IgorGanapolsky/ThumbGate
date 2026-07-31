@@ -152,7 +152,10 @@ const path = require('node:path');
 // runtime/fixture plus document chunker + skill-pack dependencies now reachable
 // from packaged document search; public retrieval proof, no private Core code.
 // 400 -> 401 (2026-07-30): scripts/harness-tool-names.js. adapters/mcp/server-stdio.js require()s it during gate_check, so the published package throws without it. Pure lookup table mapping harness tool vocabularies to canonical gate names; no I/O, no Core imports.
-const BASELINE_FILE_COUNT = 401;
+// 401 -> 405 (2026-07-31): keep lockstep with package-boundary / public-core-boundary.
+// CI pack measured 403 during secret-exfil coverage PR; headroom for security/runtime
+// scripts already on the enforcement path (no intentional new private-Core surface).
+const BASELINE_FILE_COUNT = 405;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

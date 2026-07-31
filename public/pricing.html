@@ -146,7 +146,7 @@
             <button class="button" type="submit">Get Started — $499 Diagnostic</button>
           </form>
           <p class="fine">Secure payment. We reply with scheduling and the workflow checklist.</p>
-          <div class="boundary">Detected secret exfiltration and gate-process bypass attempts deny by default. Other destructive actions warn by default and deny when strict enforcement is enabled.</div>
+          <div class="boundary">Detected secret exfiltration denies by default: literal secrets, secret-file paths in uploads/pipes/redirections/command-substitution, secret env vars to network tools, scp/rsync/cloud CLI uploads of credential files, and common interpreter one-liners. Not a full network sandbox. Other destructive actions warn by default and deny when strict enforcement is enabled.</div>
         </aside>
         <aside class="pro-card" id="pro" aria-label="ThumbGate Pro">
           <div class="eyebrow">Self-serve</div>
