@@ -69,6 +69,9 @@ test('FAR.AI comparison keeps research, evaluation, and runtime enforcement sepa
   assert.match(farAiHtml, /That absence is our inference/i);
   assert.match(farAiHtml, /https:\/\/www\.far\.ai\/research/);
   assert.match(farAiHtml, /utm_source=far_ai_comparison/);
+  assert.equal((farAiHtml.match(/When should I use ThumbGate\?/g) || []).length, 2);
+  assert.match(farAiHtml, /\$499 Managed AI Agent Workflow Gate/);
+  assert.doesNotMatch(farAiHtml, /managed workflow hardening sprint/i);
   assert.match(compareHtml, /href="\/compare\/far-ai"/);
 });
 
