@@ -80,6 +80,42 @@ function hasLocalTransformerProvider() {
   }
 }
 
+function getOllamaEmbeddingConfig() {
+  const model = String(process.env.THUMBGATE_OLLAMA_EMBED_MODEL || '').trim();
+  let endpoint = String(
+    process.env.THUMBGATE_OLLAMA_ENDPOINT
+    || process.env.OLLAMA_HOST
+    || 'http://127.0.0.1:11434',
+  ).trim();
+  if (endpoint && !/^https?:\/\//i.test(endpoint)) endpoint = `http://${endpoint}`;
+  while (endpoint.endsWith('/')) endpoint = endpoint.slice(0, -1);
+  return {
+    enabled: Boolean(model),
+    model,
+    endpoint,
+    timeoutMs: Math.max(
+      250,
+      Math.min(30_000, Number(process.env.THUMBGATE_OLLAMA_TIMEOUT_MS) || 10_000),
+    ),
+  };
+}
+
+/**
+ * Synchronous capability check used by hot-path routing. This reports only
+ * semantic providers, never the deterministic feature-hash degradation.
+ */
+function hasSemanticEmbeddingProvider() {
+  if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') return true;
+  if (getOllamaEmbeddingConfig().enabled) return true;
+  if (hasLocalTransformerProvider()) return true;
+  try {
+    const config = resolveGeminiEmbeddingConfig();
+    return config.provider === 'coreai' || Boolean(config.enabled && config.apiKey);
+  } catch {
+    return false;
+  }
+}
+
 function fnv1a32(value) {
   let hash = 0x811c9dc5;
   const bytes = Buffer.from(String(value), 'utf8');
@@ -98,7 +134,7 @@ function addHashedFeature(vector, feature, weight) {
 }
 
 function embedWithFeatureHash(text) {
-  const vector = Array(FEATURE_HASH_DIMENSIONS).fill(0);
+  const vector = new Array(FEATURE_HASH_DIMENSIONS).fill(0);
   const tokens = String(text || '').toLowerCase().match(/[\p{L}\p{N}_-]+/gu) || [];
 
   for (let index = 0; index < tokens.length; index += 1) {
@@ -249,6 +285,43 @@ async function embedWithCoreAI(text, options = {}) {
   throw new Error('Core AI local service did not return a valid embedding');
 }
 
+async function embedWithOllama(text, options = {}) {
+  const config = getOllamaEmbeddingConfig();
+  if (!config.enabled) {
+    throw new Error('Ollama embeddings require THUMBGATE_OLLAMA_EMBED_MODEL');
+  }
+  if (typeof fetch !== 'function') {
+    throw new Error('Ollama embeddings require global fetch. Use Node 18.18+.');
+  }
+
+  let response;
+  try {
+    response = await fetch(`${config.endpoint}/api/embed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: config.model,
+        input: String(text || ''),
+        truncate: true,
+        dimensions: options.outputDimensionality || undefined,
+      }),
+      signal: AbortSignal.timeout(config.timeoutMs),
+    });
+  } catch (error) {
+    throw new Error(`Ollama embedding service unavailable: ${error.message}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(`Ollama embedding request failed: ${response.status} ${response.statusText}`);
+  }
+  const payload = await response.json();
+  const vector = Array.isArray(payload.embeddings) ? payload.embeddings[0] : null;
+  if (!Array.isArray(vector) || vector.length === 0) {
+    throw new Error('Ollama embedding response did not include vector values');
+  }
+  return vector.map(Number);
+}
+
 async function embed(text, options = {}) {
   if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') {
     // Deterministic 384-dim unit vector: first element = 1.0, rest = 0.0
@@ -275,6 +348,28 @@ async function embed(text, options = {}) {
       return vector;
     } catch (coreaiError) {
       console.warn(`Core AI embedding failed, falling back to local: ${coreaiError.message}`);
+    }
+  }
+  const ollamaConfig = getOllamaEmbeddingConfig();
+  if (ollamaConfig.enabled) {
+    try {
+      const vector = await embedWithOllama(text, options);
+      _lastEmbeddingProfile = {
+        generatedAt: new Date().toISOString(),
+        source: 'local-ollama',
+        activeProfile: {
+          id: 'ollama',
+          model: ollamaConfig.model,
+          outputDimensionality: vector.length,
+          task: options.task || 'code retrieval',
+          rationale: 'Explicit local Ollama semantic embedding provider.',
+          qualityTier: 'production',
+        },
+        fallbackUsed: false,
+      };
+      return vector;
+    } catch (ollamaError) {
+      console.warn(`Ollama embedding failed, falling back: ${ollamaError.message}`);
     }
   }
   if (geminiConfig.enabled) {
@@ -446,4 +541,7 @@ module.exports = {
   setGeminiEmbedderForTests,
   truncateForEmbedding,
   embedWithFeatureHash,
+  embedWithOllama,
+  getOllamaEmbeddingConfig,
+  hasSemanticEmbeddingProvider,
 };

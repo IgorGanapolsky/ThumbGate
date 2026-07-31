@@ -212,3 +212,21 @@ test('homepage preserves brand, version, repository, and deployment placeholders
   assert.match(landingPage, /__GA_BOOTSTRAP__/);
   assert.doesNotMatch(landingPage, /Math\.random\(/);
 });
+
+test('homepage features thumbs branding and self-improving diagrams above the fold story', () => {
+  assert.match(landingPage, /class="hero-thumbs"/);
+  assert.match(landingPage, /class="hero-thumbs"[\s\S]{0,120}👍[\s\S]{0,80}👎/);
+  assert.match(landingPage, /\/assets\/diagrams\/hero-thumbs\.svg/);
+  assert.match(landingPage, /\/assets\/diagrams\/before-after\.svg/);
+  assert.match(landingPage, /\/assets\/diagrams\/loop\.svg/);
+  assert.match(landingPage, /\/assets\/diagrams\/self-improving-thumbs-loop\.svg/);
+  assert.match(landingPage, /Is it really self-improving\?/);
+  assert.match(landingPage, /Thumbs teach\. The gate enforces\./);
+  assert.match(landingPage, /control layer, not the LLM/i);
+
+  const heroStart = landingPage.indexOf('<!-- HERO -->');
+  const howStart = landingPage.indexOf('id="how-it-works"');
+  const heroBlock = landingPage.slice(heroStart, howStart);
+  assert.ok(heroBlock.includes('hero-thumbs.svg'), 'hero diagram must appear before how-it-works');
+  assert.ok(heroBlock.includes('class="hero-thumbs"'), 'big thumbs must appear in hero');
+});

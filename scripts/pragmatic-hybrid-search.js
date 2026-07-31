@@ -182,7 +182,11 @@ function pragmaticHybridSearch(params = {}) {
   const rrfK = options.rrfK || DEFAULT_RRF_K;
   const diversify = options.diversify !== false;
   const denseRankedIds = options.denseRankedIds || []; // precomputed dense order (optional)
-  const actionSig = buildActionSignature(toolName, query);
+  const queryVariants = [...new Set(
+    [query, ...(options.queryVariants || [])]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean),
+  )].slice(0, 3);
 
   // --- Query 1: lexical / sparse (always) ---
   // Attribute boost reorders candidates that already have lexical signal (or will
@@ -191,34 +195,55 @@ function pragmaticHybridSearch(params = {}) {
   // with recent-but-unrelated mistakes (turbopuffer: attr is another clause, not
   // a substitute for matching).
   const denseIdSet = new Set((denseRankedIds || []).slice(0, pool));
-  const lexicalScored = corpus.map((mem) => {
-    const base = scoreRelevance(mem, toolName, query, actionSig);
-    const attr = attributeBoost(mem, options.attribute);
-    const inDense = denseIdSet.has(mem.id);
-    // First-stage combined objective only when text or dense already matched.
-    const relevanceScore = (base > 0.1 || inDense) ? (base + attr) : 0;
-    return {
-      ...mem,
-      lexicalScore: base,
-      attributeBoost: attr,
-      relevanceScore,
-    };
-  })
-    .filter((m) => m.relevanceScore > 0.05)
-    .sort((a, b) => b.relevanceScore - a.relevanceScore);
+  const lexicalLists = [];
+  const bestLexicalById = new Map();
+  for (const variant of queryVariants) {
+    const actionSig = buildActionSignature(toolName, variant);
+    const scoredForVariant = corpus.map((mem) => {
+      const base = scoreRelevance(mem, toolName, variant, actionSig);
+      const attr = attributeBoost(mem, options.attribute);
+      const inDense = denseIdSet.has(mem.id);
+      const relevanceScore = (base > 0.1 || inDense) ? (base + attr) : 0;
+      return {
+        ...mem,
+        lexicalScore: base,
+        attributeBoost: attr,
+        relevanceScore,
+      };
+    })
+      .filter((memory) => memory.relevanceScore > 0.05)
+      .sort((left, right) => right.relevanceScore - left.relevanceScore);
+    lexicalLists.push(scoredForVariant.slice(0, pool).map((memory) => memory.id));
+    for (const memory of scoredForVariant) {
+      const previous = bestLexicalById.get(memory.id);
+      if (!previous || memory.relevanceScore > previous.relevanceScore) {
+        bestLexicalById.set(memory.id, memory);
+      }
+    }
+  }
 
-  const lexicalRanked = lexicalScored.slice(0, pool).map((m) => m.id);
+  const lexicalScored = [...bestLexicalById.values()]
+    .sort((left, right) => right.relevanceScore - left.relevanceScore);
+  /*
+   * The best score carries candidate metadata; each query variant keeps its
+   * own ranked list for RRF so expansion cannot overwrite the original query.
+   */
+  const lexicalRanked = lexicalLists[0] || [];
 
   // --- Query 2: dense (optional; caller supplies ids when embedder ran) ---
   const denseRanked = (denseRankedIds || []).slice(0, pool);
+  const denseWeight = Math.max(0.1, Number(options.denseWeight) || 1.5);
 
   // --- Fuse multi-query ranks (RRF) ---
   const lists = denseRanked.length > 0
-    ? [lexicalRanked, denseRanked]
-    : [lexicalRanked];
+    ? [...lexicalLists, denseRanked]
+    : lexicalLists;
+  const weights = denseRanked.length > 0
+    ? [...lexicalLists.map(() => 1), denseWeight]
+    : lexicalLists.map(() => 1);
   const fuse = typeof rrfFromLesson === 'function'
-    ? rrfFromLesson(lists, { k: rrfK })
-    : reciprocalRankFusion(lists, { k: rrfK });
+    ? rrfFromLesson(lists, { k: rrfK, weights })
+    : reciprocalRankFusion(lists, { k: rrfK, weights });
 
   const byId = new Map(corpus.map((m) => [m.id, m]));
   const lexMeta = new Map(lexicalScored.map((m, i) => [m.id, {
@@ -229,6 +254,7 @@ function pragmaticHybridSearch(params = {}) {
   }]));
   const denseRankMap = new Map(denseRanked.map((id, i) => [id, i + 1]));
 
+  const maxFusionScore = fuse[0]?.score || 1;
   const candidates = fuse.slice(0, pool).map((entry) => {
     const mem = byId.get(entry.id);
     if (!mem) return null;
@@ -239,6 +265,7 @@ function pragmaticHybridSearch(params = {}) {
       rrfScore: entry.score,
       lexicalRank: meta.lexicalRank || null,
       denseRank: denseRankMap.get(entry.id) || null,
+      fusionScoreNormalized: entry.score / maxFusionScore,
       lexicalScore: meta.lexicalScore ?? 0,
       attributeBoost: meta.attributeBoost ?? 0,
       hybridFeatures: {
@@ -246,6 +273,7 @@ function pragmaticHybridSearch(params = {}) {
         lexicalRank: meta.lexicalRank || null,
         denseRank: denseRankMap.get(entry.id) || null,
         attributeBoost: meta.attributeBoost ?? 0,
+        fusionScoreNormalized: entry.score / maxFusionScore,
       },
     };
   }).filter(Boolean);
@@ -258,6 +286,8 @@ function pragmaticHybridSearch(params = {}) {
         lexicalPool: lexicalRanked.length,
         densePool: denseRanked.length,
         fused: 0,
+        rerankApplied: false,
+        queryVariants,
       },
     };
   }
@@ -269,10 +299,17 @@ function pragmaticHybridSearch(params = {}) {
   reranked = reranked.map((doc) => {
     const attr = doc.attributeBoost ?? attributeBoost(doc, options.attribute);
     const base = doc.rerankedScore ?? doc.relevanceScore ?? 0;
+    const fusionWeight = denseRanked.length > 0
+      ? Math.max(0, Math.min(1, Number(options.fusionWeight) || 0.7))
+      : 0;
     return {
       ...doc,
       attributeBoost: attr,
-      rerankedScore: base + 0.15 * attr,
+      rerankedScore: (
+        (1 - fusionWeight) * base
+        + fusionWeight * (doc.fusionScoreNormalized || 0)
+        + 0.05 * attr
+      ),
     };
   }).sort((a, b) => (b.rerankedScore || 0) - (a.rerankedScore || 0));
 
@@ -292,6 +329,9 @@ function pragmaticHybridSearch(params = {}) {
       fused: fuse.length,
       diversified: diversify,
       rrfK,
+      denseWeight,
+      queryVariants,
+      rerankApplied: true,
     },
   };
 }

@@ -103,7 +103,7 @@ test.describe('/ dual-offer conversion path', () => {
 
   test('proof link lands on the honest strict-mode boundary', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.proof-link').click();
+    await page.locator('.proof-link[href="#proof"]').click();
 
     await expect(page).toHaveURL(/#proof$/);
     await expect(page.locator('#proof .terminal')).toBeVisible();

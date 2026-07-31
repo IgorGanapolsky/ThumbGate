@@ -1,0 +1,66 @@
+{
+  "kValues": [1, 3],
+  "corpus": [
+    {
+      "id": "destructive",
+      "title": "MISTAKE: rm -rf wiped the folder",
+      "content": "Never delete files without a recoverable snapshot.",
+      "tags": ["negative", "filesystem"],
+      "metadata": { "domain": "filesystem", "toolsUsed": ["Bash"] }
+    },
+    {
+      "id": "force-push",
+      "title": "MISTAKE: git push --force clobbered main",
+      "content": "Use force-with-lease and protect the trunk branch.",
+      "tags": ["negative", "git"],
+      "metadata": { "domain": "git", "toolsUsed": ["Bash"] }
+    },
+    {
+      "id": "idempotency",
+      "title": "MISTAKE: duplicate Stripe payment",
+      "content": "Use an idempotency key before creating a charge.",
+      "tags": ["negative", "billing"],
+      "metadata": { "domain": "billing", "toolsUsed": ["Bash"] }
+    },
+    {
+      "id": "stale-session",
+      "title": "MISTAKE: session not found",
+      "content": "Refresh the conversation identifier before resuming an expired mobile task.",
+      "tags": ["negative", "session"],
+      "metadata": { "domain": "continuity", "toolsUsed": ["Read"] }
+    },
+    {
+      "id": "noise",
+      "title": "SUCCESS: dashboard color tokens",
+      "content": "Use the design system palette for visual consistency.",
+      "tags": ["positive", "ui"],
+      "metadata": { "domain": "ui", "toolsUsed": ["Edit"] }
+    }
+  ],
+  "queries": [
+    {
+      "id": "erase-tree",
+      "toolName": "Bash",
+      "query": "permanently erase a directory tree",
+      "qrels": { "destructive": 3 }
+    },
+    {
+      "id": "rewrite-history",
+      "toolName": "Bash",
+      "query": "overwrite remote repository history",
+      "qrels": { "force-push": 3 }
+    },
+    {
+      "id": "replay-charge",
+      "toolName": "Bash",
+      "query": "prevent replaying the same purchase twice",
+      "qrels": { "idempotency": 3 }
+    },
+    {
+      "id": "expired-conversation",
+      "toolName": "Read",
+      "query": "the phone resumed an expired conversation identifier",
+      "qrels": { "stale-session": 3 }
+    }
+  ]
+}

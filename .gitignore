@@ -124,3 +124,6 @@ tmp/
 **/lancedb/
 nova-*.png
 shawn-*.png
+
+# npm pack artifacts from local packaging verification
+*.tgz

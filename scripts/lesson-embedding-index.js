@@ -12,7 +12,8 @@
  *
  * Design constraints:
  *   - Embedding the whole corpus on every tool call is too expensive. We cache
- *     document vectors keyed by `id + sha1(text)` in <feedbackDir>/lesson-embeddings.json.
+ *     document vectors keyed by `id + sha256(text) + provider + dimension` in
+ *     <feedbackDir>/lesson-embeddings.json.
  *     Only the query is embedded per call; only new/changed lessons re-embed.
  *   - The embedder is reused from vector-store.embed (Gemini -> local transformers
  *     -> stub). No new embedding dependency.
@@ -92,15 +93,12 @@ function cosineSimilarity(a, b) {
  * WITHOUT loading a model. Returns true for the deterministic stub (test/CI safe).
  */
 function isEmbedderAvailable() {
-  if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') return true;
-  // Managed Gemini path
   try {
-    const { resolveGeminiEmbeddingConfig } = require('./gemini-embedding-policy');
-    const cfg = resolveGeminiEmbeddingConfig();
-    if (cfg && cfg.enabled && cfg.apiKey) return true;
-  } catch { /* policy module unavailable */ }
-  // The zero-dependency feature-hash provider is always available locally.
-  return true;
+    const { hasSemanticEmbeddingProvider } = require('./vector-store');
+    return hasSemanticEmbeddingProvider();
+  } catch {
+    return false;
+  }
 }
 
 function defaultEmbedder() {
@@ -122,9 +120,31 @@ function readCache(cachePath) {
 function writeCache(cachePath, cache) {
   try {
     fs.mkdirSync(path.dirname(cachePath), { recursive: true });
-    fs.writeFileSync(cachePath, JSON.stringify(cache));
+    const tmpPath = `${cachePath}.${process.pid}.tmp`;
+    fs.writeFileSync(tmpPath, JSON.stringify(cache), { mode: 0o600 });
+    fs.renameSync(tmpPath, cachePath);
+    fs.chmodSync(cachePath, 0o600);
   } catch {
     /* cache is best-effort; never throw into the hot path */
+  }
+}
+
+function resolveProviderFingerprint(options, vector) {
+  if (options.embedder) {
+    return String(options.embedderId || options.embedder.providerId || 'injected-test');
+  }
+  try {
+    const { getLastEmbeddingProfile } = require('./vector-store');
+    const profile = getLastEmbeddingProfile();
+    const active = profile && profile.activeProfile;
+    return [
+      profile && profile.source,
+      active && active.id,
+      active && active.model,
+      Array.isArray(vector) ? vector.length : 0,
+    ].filter(Boolean).join(':') || 'unknown';
+  } catch {
+    return 'unknown';
   }
 }
 
@@ -136,10 +156,17 @@ function writeCache(cachePath, cache) {
  * @returns {Promise<Array<{id:string, score:number}>>}
  */
 async function semanticRank(queryText, lessons = [], options = {}) {
-  const { feedbackDir, embedder = defaultEmbedder(), persist = true, truncateDimension = null } = options;
+  const {
+    feedbackDir,
+    embedder = defaultEmbedder(),
+    persist = true,
+    pruneCache = true,
+    truncateDimension = null,
+    cacheFile = CACHE_FILE,
+  } = options;
   if (!queryText || !Array.isArray(lessons) || lessons.length === 0) return [];
 
-  const cachePath = getCachePath(feedbackDir);
+  const cachePath = path.join(resolveFeedbackDir(feedbackDir), path.basename(cacheFile));
   const cache = readCache(cachePath);
   let cacheDirty = false;
 
@@ -148,6 +175,11 @@ async function semanticRank(queryText, lessons = [], options = {}) {
   
   if (truncateDimension) {
     queryVector = truncateVector(queryVector, truncateDimension);
+  }
+  const provider = resolveProviderFingerprint(options, queryVector);
+  const dimension = queryVector.length;
+  if (!options.embedder && /(?:built-in|feature-hash)/i.test(provider)) {
+    throw new Error('Semantic embedding provider degraded to feature hashing');
   }
 
   const scored = [];
@@ -158,14 +190,22 @@ async function semanticRank(queryText, lessons = [], options = {}) {
     const hash = hashText(text);
 
     let entry = cache[lesson.id];
-    if (!entry || entry.hash !== hash || !Array.isArray(entry.vector)) {
+    if (
+      !entry
+      || entry.hash !== hash
+      || entry.provider !== provider
+      || entry.dimension !== dimension
+      || !Array.isArray(entry.vector)
+      || entry.vector.length !== dimension
+    ) {
       const vector = await embedder(text, {
         kind: 'document',
         task: 'code retrieval',
         title: lesson.title || undefined,
       });
       if (!Array.isArray(vector) || vector.length === 0) continue;
-      entry = { hash, vector };
+      if (vector.length !== dimension) continue;
+      entry = { hash, provider, dimension, vector };
       cache[lesson.id] = entry;
       cacheDirty = true;
     }
@@ -174,12 +214,16 @@ async function semanticRank(queryText, lessons = [], options = {}) {
     scored.push({ id: lesson.id, score: cosineSimilarity(queryVector, docVector) });
   }
 
-  // Prune cache entries for lessons no longer present (bounded growth).
-  const liveIds = new Set(lessons.map((l) => l && l.id).filter(Boolean));
-  for (const id of Object.keys(cache)) {
-    if (!liveIds.has(id)) {
-      delete cache[id];
-      cacheDirty = true;
+  // Prune only when the caller supplied the complete corpus. Metadata-filtered
+  // searches pass pruneCache=false so alternating filters cannot evict and
+  // regenerate one another's vectors.
+  if (pruneCache) {
+    const liveIds = new Set(lessons.map((l) => l && l.id).filter(Boolean));
+    for (const id of Object.keys(cache)) {
+      if (!liveIds.has(id)) {
+        delete cache[id];
+        cacheDirty = true;
+      }
     }
   }
 
@@ -196,4 +240,7 @@ module.exports = {
   lessonText,
   hashText,
   getCachePath,
+  readCache,
+  writeCache,
+  resolveProviderFingerprint,
 };

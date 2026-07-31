@@ -317,22 +317,40 @@ Each recommendation ships with the benchmark commands to run next: feedback-deri
 
 ## Install for Your Agent
 
-| Agent | Command |
-|-------|---------|
-| **Claude Code** | `npx thumbgate init --agent claude-code` |
-| **Cursor** | `npx thumbgate init --agent cursor` |
-| **VS Code / Open VSX** | [plugins/vscode-extension/README.md](plugins/vscode-extension/README.md) |
-| **Antigravity-compatible** | [plugins/antigravity-extension/INSTALL.md](plugins/antigravity-extension/INSTALL.md) |
-| **JetBrains** | [plugins/jetbrains-plugin/README.md](plugins/jetbrains-plugin/README.md) |
-| **Codex** | `npx thumbgate init --agent codex` |
-| **Gemini CLI** | `npx thumbgate init --agent gemini` |
-| **Amp** | `npx thumbgate init --agent amp` |
-| **Cline** (Roo Code successor) | `npx thumbgate init --agent cline` |
-| **OpenCode** | `npx thumbgate init --agent opencode` |
-| **Claude Desktop** | [Download extension bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb) |
-| **Any MCP agent** | `npx thumbgate serve` |
+Enforcement depends on what the harness lets us intercept, so the table says which
+you get. This distinction is real: with a pre-tool hook ThumbGate stops the action
+before it runs; over MCP only, ThumbGate answers `gate_check` and the agent decides
+whether to obey.
 
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode**, and any MCP-compatible agent. Migrating from Roo Code (sunsetting 2026-05-15)? See [`adapters/cline/INSTALL.md`](./adapters/cline/INSTALL.md).
+| Agent | Command | Enforcement |
+|-------|---------|-------------|
+| **Claude Code** | `npx thumbgate init --agent claude-code` | Hard — PreToolUse hook |
+| **Codex** | `npx thumbgate init --agent codex` | Hard — `pre_tool_use` hook |
+| **Gemini CLI** | `npx thumbgate init --agent gemini` | Hard — PreToolUse hook |
+| **ForgeCode** | `npx thumbgate init --agent forge` | Hard — `pre_tool_use` trigger |
+| **Cursor** | `npx thumbgate init --agent cursor` | Advisory — MCP `gate_check` |
+| **Cline** (Roo Code successor) | `npx thumbgate init --agent cline` | Advisory — MCP `gate_check` + `.clinerules` |
+| **OpenCode** | `npx thumbgate init --agent opencode` | Advisory — MCP `gate_check` |
+| **Any MCP agent** | `npx thumbgate serve` | Advisory — MCP `gate_check` |
+| **Amp** | `npx thumbgate init --agent amp` | Feedback capture only |
+| **Claude Desktop** | [Download extension bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb) | Advisory — MCP |
+| **VS Code / Open VSX** | [plugins/vscode-extension/README.md](plugins/vscode-extension/README.md) | See plugin README |
+| **Antigravity-compatible** | [plugins/antigravity-extension/INSTALL.md](plugins/antigravity-extension/INSTALL.md) | See plugin README |
+| **JetBrains** | [plugins/jetbrains-plugin/README.md](plugins/jetbrains-plugin/README.md) | See plugin README |
+
+**Advisory means the agent can ignore it.** Harnesses without a pre-tool hook expose no
+interception point, so ThumbGate cannot stop the call itself — it returns a verdict the
+agent is instructed to honor. Treat advisory coverage as a strong default, not a
+guarantee, and prefer a hard-enforcement harness for anything irreversible.
+
+The gate is **model-agnostic**: verdicts come from deterministic policy evaluation over
+the proposed tool call (`scripts/gates-engine.js`), never from an LLM. Swapping the model
+behind any harness does not change what is allowed.
+
+> **Enforcement posture:** ThumbGate ships **warn-by-default** — a matched gate is logged
+> and surfaced, not blocked. Set `THUMBGATE_STRICT_ENFORCEMENT=1` to hard-block. The
+> `gate_check` tool reports `warn` (never `allow`) when a gate matched but posture
+> downgraded it, so an agent is never told a flagged action is fine.
 
 ### Install scope: machine-wide vs per-project
 

@@ -133,9 +133,7 @@ const {
     throw error;
   },
 }));
-const {
-  searchThumbgate,
-} = require('../../scripts/thumbgate-search');
+const { searchThumbgateAsync } = require('../../scripts/thumbgate-search');
 const {
   buildMultimodalRetrievalPlan,
 } = require('../../scripts/multimodal-retrieval-plan');
@@ -971,14 +969,14 @@ async function callToolInner(name, args) {
       return buildSuggestFixResponse(args);
     case 'retrieve_lessons': {
       // Cross-encoder reranking: retrieve more candidates, then rerank for precision
-      const { retrieveWithRerankingSync } = loadOptionalModule(path.join(__dirname, '../../scripts/cross-encoder-reranker'), () => ({
-        retrieveWithRerankingSync: (toolName, actionContext, options = {}) => retrieveRelevantLessons(
+      const { retrieveWithReranking } = loadOptionalModule(path.join(__dirname, '../../scripts/cross-encoder-reranker'), () => ({
+        retrieveWithReranking: async (toolName, actionContext, options = {}) => retrieveRelevantLessons(
           toolName,
           actionContext,
           { maxResults: options.maxResults || 5 },
         ),
       }));
-      return toTextResult(retrieveWithRerankingSync(
+      return toTextResult(await retrieveWithReranking(
         args.toolName,
         args.actionContext || '',
         {
@@ -987,6 +985,9 @@ async function callToolInner(name, args) {
           scope: args.scope,
           requireScope: args.requireScope === true,
           includeShared: args.includeShared !== false,
+          metadataFilters: args.filters,
+          queryRewrite: args.queryRewrite !== false,
+          includeRetrievalMeta: args.includeRetrievalMeta === true,
         },
       ));
     }
@@ -1009,11 +1010,13 @@ async function callToolInner(name, args) {
     }
     case 'search_thumbgate':
       enforceLimit('search_thumbgate');
-      return toTextResult(searchThumbgate({
+      return toTextResult(await searchThumbgateAsync({
         query: args.query,
         limit: args.limit,
         source: args.source,
         signal: args.signal,
+        metadataFilters: args.filters,
+        queryRewrite: args.queryRewrite !== false,
       }));
     case 'import_document':
       return toTextResult(importDocument({
@@ -1037,6 +1040,61 @@ async function callToolInner(name, args) {
         throw new Error(`Imported document not found: ${args.documentId}`);
       }
       return toTextResult(document);
+    }
+    case 'gate_check': {
+      // Same engine the PreToolUse hook uses, so an MCP client and a hook cannot
+      // disagree about whether an action is allowed.
+      const { runAsync } = require('../../scripts/gates-engine');
+      const { canonicalizeToolCall } = require('../../scripts/harness-tool-names');
+      const canonical = canonicalizeToolCall(args.tool_name, args.tool_input || {});
+      const raw = await runAsync({
+        tool_name: canonical.toolName,
+        tool_input: canonical.toolInput,
+      });
+      let decision = 'allow';
+      let reason = '';
+      let flagged = false;
+      try {
+        const parsed = JSON.parse(raw);
+        const hook = parsed.hookSpecificOutput || {};
+        const verdict = hook.permissionDecision || parsed.decision || '';
+        reason = hook.permissionDecisionReason || parsed.reason || hook.additionalContext || '';
+        // The hook wire format says "deny"; the documented tool contract says "block".
+        if (verdict === 'deny' || verdict === 'block') {
+          decision = 'block';
+          flagged = true;
+        } else if (/\[GATE:/.test(reason)) {
+          // A gate MATCHED but the warn-by-default posture downgraded it. Reporting
+          // "allow" here is how this tool would become theater: .clinerules tells the
+          // agent to abort only on "block", so a matched rm -rf / would have been run
+          // with the warning text ignored. "warn" is the honest third state.
+          decision = 'warn';
+          flagged = true;
+        }
+      } catch (_) {
+        // Unparseable engine output must never read as "allow" — fail closed.
+        decision = 'error';
+        reason = 'gate engine returned unparseable output';
+      }
+      const strict = process.env.THUMBGATE_STRICT_ENFORCEMENT === '1';
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            decision,
+            flagged,
+            enforcement: strict ? 'strict' : 'warn-by-default',
+            guidance: decision === 'block'
+              ? 'Do NOT run this action. Surface the reason to the user.'
+              : decision === 'warn'
+                ? 'A policy gate matched but enforcement is warn-by-default. Do NOT run this action without explicit user confirmation; show them the reason.'
+                : decision === 'error'
+                  ? 'Gate evaluation failed. Treat as unsafe and ask the user.'
+                  : 'No policy gate matched.',
+            reason,
+          }, null, 2),
+        }],
+      };
     }
     case 'feedback_stats':
       return toTextResult(analyzeFeedback(undefined, { humanOnly: true }));

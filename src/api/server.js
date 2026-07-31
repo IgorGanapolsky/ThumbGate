@@ -210,7 +210,7 @@ const {
   getSettingsStatus,
 } = require('../../scripts/settings-hierarchy');
 const {
-  searchThumbgate,
+  searchThumbgateAsync,
 } = require('../../scripts/thumbgate-search');
 const {
   appendTelemetryPing,
@@ -479,6 +479,25 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       billing_cycle: 'monthly',
     },
     allowCustomerEmail: true,
+  },
+  // Human skip from Pro interstitial: same-origin hop so crawlers never see buy.stripe.com
+  // in the interstitial HTML (bot-guard contract). Bots are deflected to /checkout/pro.
+  'pro-direct': {
+    fallbackHref: PRO_CHECKOUT_URL,
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_direct_stripe',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'pro_checkout_direct_stripe',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'pro_upgrade',
+      plan_id: 'pro',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+    prefillStripeEmail: true,
   },
   // 2026-06-02: Teams/Aiventyx deprecated. Redirect legacy links to Pro.
   teams: {
@@ -2501,8 +2520,9 @@ ${hiddenInputs}
 <p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
+<a class="secondary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">Skip form — open Stripe checkout directly →</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
-<p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages.</p>
+<p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages. Email path keeps receipts attributable; skip uses a same-origin hop that bot-deflects crawlers.</p>
 <div class="objection-box" aria-label="Checkout feedback">
 <strong>Not buying today?</strong>
 <p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
@@ -2825,6 +2845,37 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
 
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
+  const botClassification = classifyRequester(req.headers);
+  if (target.botDeflectPath && botClassification.isBot) {
+    const deflectUrl = new URL(target.botDeflectPath, hostedConfig.appOrigin);
+    appendTrackedLinkQueryParams(deflectUrl, parsed, target);
+    if (!isHeadRequest) {
+      appendBestEffortTelemetry(
+        FEEDBACK_DIR,
+        {
+          eventType: 'checkout_bot_deflected',
+          clientType: 'web',
+          page: `/go/${target.slug}`,
+          reason: botClassification.reason || 'bot',
+          destinationSlug: target.slug,
+          acquisitionId: journeyState.acquisitionId,
+          visitorId: journeyState.visitorId,
+          sessionId: journeyState.sessionId,
+        },
+        req.headers,
+        `tracked_link_bot_deflect:${target.slug}`
+      );
+    }
+    res.writeHead(302, {
+      ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+      'Cache-Control': 'no-store',
+      'X-Robots-Tag': 'noindex,nofollow',
+      'X-ThumbGate-Link-Slug': target.slug,
+      Location: deflectUrl.toString(),
+    });
+    res.end();
+    return;
+  }
   const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
   const attribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl);
   if (target.external) {
@@ -9392,12 +9443,18 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         let results;
         try {
           const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
-          results = searchThumbgate({
+          results = await searchThumbgateAsync({
             query,
             limit: Number.isFinite(limit) ? limit : 10,
             source,
             signal,
             feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
+            metadataFilters: {
+              tags: (parsed.searchParams.get('tags') || '').split(',').map((tag) => tag.trim()).filter(Boolean),
+              sourceFormat: parsed.searchParams.get('sourceFormat') || undefined,
+              sourceType: parsed.searchParams.get('sourceType') || undefined,
+            },
+            queryRewrite: parsed.searchParams.get('queryRewrite') !== 'false',
           });
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid ThumbGate search request');
@@ -9416,12 +9473,14 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         let results;
         try {
           const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
-          results = searchThumbgate({
+          results = await searchThumbgateAsync({
             query: body.query || body.q || '',
             limit: body.limit,
             source: body.source,
             signal: body.signal,
             feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
+            metadataFilters: body.filters,
+            queryRewrite: body.queryRewrite !== false,
           });
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid ThumbGate search request');

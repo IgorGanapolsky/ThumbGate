@@ -248,6 +248,20 @@ const TOOLS = [
         scope: MEMORY_SCOPE_SCHEMA,
         requireScope: { type: 'boolean', description: 'Fail closed unless a complete four-field scope is supplied.' },
         includeShared: { type: 'boolean', description: 'Include explicitly shared memories with scoped results. Defaults true.' },
+        filters: {
+          type: 'object',
+          description: 'Pre-filter the candidate corpus before lexical or vector ranking.',
+          properties: {
+            domain: { type: ['string', 'array'], items: { type: 'string' } },
+            signal: { type: ['string', 'array'], items: { type: 'string' } },
+            source: { type: ['string', 'array'], items: { type: 'string' } },
+            toolsUsed: { type: ['string', 'array'], items: { type: 'string' } },
+            tags: { type: 'array', items: { type: 'string' } },
+            requireAllTags: { type: 'boolean' },
+          },
+        },
+        queryRewrite: { type: 'boolean', description: 'Enable bounded deterministic synonym expansion when the original lexical match is weak. Defaults true.' },
+        includeRetrievalMeta: { type: 'boolean', description: 'Include path provenance such as lexical/dense pools and query variants.' },
       },
       required: ['toolName'],
     },
@@ -276,6 +290,17 @@ const TOOLS = [
         limit: { type: 'number', description: 'Maximum results to return (default 10)' },
         source: { type: 'string', enum: ['all', 'feedback', 'context', 'rules', 'documents'], description: 'Restrict search to a single ThumbGate source.' },
         signal: { type: 'string', enum: ['up', 'down', 'positive', 'negative'], description: 'Optional feedback-signal filter when searching feedback data.' },
+        filters: {
+          type: 'object',
+          description: 'Pre-filter imported documents before chunk ranking.',
+          properties: {
+            tags: { type: 'array', items: { type: 'string' } },
+            requireAllTags: { type: 'boolean' },
+            sourceFormat: { type: 'string' },
+            sourceType: { type: 'string' },
+          },
+        },
+        queryRewrite: { type: 'boolean', description: 'Enable bounded deterministic synonym expansion. Defaults true.' },
       },
     },
   }),
@@ -1282,6 +1307,27 @@ const TOOLS = [
           description: 'Tracked actions that must be present before the claim is verified',
         },
         message: { type: 'string', description: 'Custom message returned when evidence is missing' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'gate_check',
+    // Harnesses with a native pre-tool hook (Claude Code, Codex, Gemini, Forge) get hard
+    // enforcement and never need this. MCP-only harnesses (Cline, Cursor, OpenCode) have no
+    // interception point, so this exposes the SAME gates engine as a tool the agent calls
+    // before acting. adapters/cline/.clinerules has instructed agents to call
+    // `thumbgate.gate_check` since the adapter shipped — but the tool did not exist, so
+    // that enforcement was inert. This makes the documented contract real.
+    description: 'Evaluate a proposed tool call against ThumbGate policy BEFORE executing it. Returns decision "block" (do not run the action; surface the reason) or "allow". Use this when about to run a shell command, write/edit a file, or take any irreversible action.',
+    inputSchema: {
+      type: 'object',
+      required: ['tool_name'],
+      properties: {
+        tool_name: { type: 'string', description: 'The tool about to be invoked (e.g. Bash, Write, Edit)' },
+        tool_input: {
+          type: 'object',
+          description: 'The proposed arguments, e.g. { "command": "rm -rf /" } for Bash or { "file_path": "..." } for Write',
+        },
       },
     },
   }),

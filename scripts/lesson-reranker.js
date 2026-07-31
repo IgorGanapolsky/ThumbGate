@@ -55,6 +55,11 @@ const SYNONYM_GROUPS = [
   ['auth', 'authentication', 'authorization', 'token', 'api key', 'credential'],
   ['delete', 'remove', 'rm', 'drop', 'destroy', 'wipe'],
   ['merge', 'pull request', 'pr', 'rebase', 'squash'],
+  ['tablet', 'ipad', 'ios device'],
+  ['overlay', 'tailscale', 'mesh network', 'vpn'],
+  ['laptop', 'macbook', 'mac'],
+  ['phone', 'mobile', 'android', 'device'],
+  ['conversation', 'session', 'thread', 'chat'],
 ];
 
 // Regex patterns that indicate the query is about a failure/mistake.
@@ -83,7 +88,13 @@ function expandTerms(terms) {
   const expanded = new Set(terms);
   for (const term of terms) {
     for (const group of SYNONYM_GROUPS) {
-      if (group.some((syn) => syn.split(/\s+/).some((w) => w === term || term.includes(w)))) {
+      if (group.some((syn) => tokenize(syn).some((word) => (
+        word === term
+        || (word.length >= 4 && term.length >= 4 && (
+          word.startsWith(term)
+          || term.startsWith(word)
+        ))
+      )))) {
         group.forEach((syn) => tokenize(syn).forEach((t) => expanded.add(t)));
       }
     }

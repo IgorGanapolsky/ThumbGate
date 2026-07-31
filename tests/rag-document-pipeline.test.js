@@ -6,6 +6,7 @@ const {
   parseDocument,
   cleanRecord,
   chunkText,
+  chunkTextWithOffsets,
   extractMetadata,
   runDocumentPipeline,
   skillPacksToDocuments,
@@ -52,6 +53,25 @@ test('chunkText splits long docs with overlap and respects max', () => {
   assert.ok(chunks.length > 1);
   assert.ok(chunks.every((c) => c.length <= 220));
   assert.ok(chunks.some((c) => c.includes('back up') || c.includes('database')));
+});
+
+test('chunk metadata records stable offsets and version hashes for incremental re-indexing', () => {
+  const source = `${'alpha sentence. '.repeat(30)}needle at the end`;
+  const offsets = chunkTextWithOffsets(source, { maxChars: 120, overlap: 20 });
+  assert.ok(offsets.length > 1);
+  for (const chunk of offsets) {
+    assert.equal(source.slice(chunk.startChar, chunk.endChar), chunk.content);
+  }
+
+  const { chunks } = runDocumentPipeline([{
+    type: 'text',
+    id: 'versioned',
+    title: 'Versioned',
+    content: source,
+  }], { maxChars: 120, overlap: 20 });
+  assert.ok(chunks.every((chunk) => /^[a-f0-9]{64}$/.test(chunk.metadata.contentHash)));
+  assert.ok(chunks.every((chunk) => /^[a-f0-9]{64}$/.test(chunk.metadata.parentVersionHash)));
+  assert.ok(chunks.some((chunk) => chunk.metadata.startChar > 0));
 });
 
 test('extractMetadata finds tools and domain hints', () => {
