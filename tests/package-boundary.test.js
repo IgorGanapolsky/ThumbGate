@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const packageJson = require('../package.json');
 
 const root = path.join(__dirname, '..');
 
@@ -114,6 +115,13 @@ test('npm package ships static dependencies needed for packaged entrypoints', ()
   assert.deepEqual(revenueEligibilityMissing, []);
   assert.deepEqual(revenueRemediationMissing, []);
   assert.deepEqual(workflowIntakeQueueMissing, []);
+});
+
+test('API runtime declares its YAML parser as a production dependency', () => {
+  const apiSource = fs.readFileSync(path.join(root, 'src', 'api', 'server.js'), 'utf8');
+
+  assert.match(apiSource, /require\(['"]js-yaml['"]\)/);
+  assert.equal(packageJson.dependencies['js-yaml'], '4.3.0');
 });
 
 test('npm package ships a slim runtime boundary instead of repo/dev surfaces', () => {

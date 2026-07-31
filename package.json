@@ -959,6 +959,7 @@
     "apache-arrow": "^18.1.0",
     "better-sqlite3": "^12.9.0",
     "dotenv": "^17.4.2",
+    "js-yaml": "4.3.0",
     "playwright-core": "^1.59.1",
     "protobufjs": "^8.7.1",
     "stripe": "^22.2.0"
