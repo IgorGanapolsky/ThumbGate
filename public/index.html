@@ -1149,7 +1149,7 @@ next      decision recorded before execution</pre>
             'mode      <span class="y">warn-by-default</span>\n' +
             'decision  <span class="y">WARN</span>\n' +
             'note      logged + flagged; tool may still proceed\n\n' +
-            'secret exfil / gate-bypass floors  →  <span class="r">DENY</span> regardless',
+            'secret exfil / gate process bypass floors  →  <span class="r">DENY</span> regardless',
           bodyStrict:
             'proposed  git push --force origin main\n' +
             'hook      PreToolUse → gates-engine\n' +
@@ -1159,7 +1159,7 @@ next      decision recorded before execution</pre>
             'next      blocked before execution',
           facts: [
             'PreToolUse hooks check Bash / Edit / Write before the tool runs',
-            'Outcomes: ALLOW, WARN, or DENY',
+            'Outcomes: allowed, warned, or denied (ALLOW / WARN / DENY)',
             'Default install is warn + audit; hard deny needs strict mode (plus secret floors)',
           ],
           honest: 'Default is not “block everything.” Default warns. Strict mode denies matching high-risk actions. Secrets/exfil still hard-deny.',
