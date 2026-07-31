@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 300" role="img" aria-labelledby="t d">
   <title id="t">Before and after ThumbGate</title>
-  <desc id="d">Without ThumbGate the same mistake repeats. With ThumbGate one thumbs-down becomes a permanent pre-action gate.</desc>
+  <desc id="d">Without ThumbGate the same mistake repeats. With ThumbGate one thumbs-down becomes a local pre-action gate that can refresh or expire.</desc>
   <rect width="960" height="300" rx="24" fill="#0a0a0b"/>
   <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif">
     <!-- WITHOUT -->
@@ -17,6 +17,6 @@
     <text x="714" y="130" text-anchor="middle" fill="#f5f5f7" font-size="32" font-weight="900">👎 once</text>
     <text x="714" y="172" text-anchor="middle" fill="#e5e7eb" font-size="18">Rule saved locally</text>
     <text x="714" y="204" text-anchor="middle" fill="#e5e7eb" font-size="18">Next attempt is gated</text>
-    <text x="714" y="240" text-anchor="middle" fill="#9ca3af" font-size="14">one correction → permanent pre-action gate</text>
+    <text x="714" y="240" text-anchor="middle" fill="#9ca3af" font-size="14">one correction → local gate (auto-promoted gates expire)</text>
   </g>
 </svg>

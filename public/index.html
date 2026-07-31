@@ -598,12 +598,29 @@
     }
     .diagram-strip { padding: 56px 0 12px; }
     .diagram-frame {
-      margin-top: 28px;
+      margin: 28px 0 0;
       border: 1px solid rgba(56, 215, 255, 0.2);
       border-radius: 20px;
-      overflow: hidden;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
       background: #0a0a0b;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    .diagram-frame img {
+      min-width: 640px;
+    }
+    .hero-visual img {
+      min-width: 0;
+    }
+    @media (max-width: 720px) {
+      .diagram-frame img {
+        min-width: 720px;
+      }
+      .hero-visual {
+        margin-left: -4px;
+        margin-right: -4px;
+      }
     }
     .diagram-caption {
       margin: 14px 0 0;
@@ -730,7 +747,7 @@
         <h2 class="section-title">Thumbs teach. The gate enforces.</h2>
         <div class="visual-pair">
           <figure class="diagram-frame">
-            <img src="/assets/diagrams/before-after.svg" width="960" height="300" alt="Without ThumbGate the same AI agent mistake repeats. With ThumbGate one thumbs-down becomes a permanent pre-action gate." loading="lazy" decoding="async">
+            <img src="/assets/diagrams/before-after.svg" width="960" height="300" alt="Without ThumbGate the same AI agent mistake repeats. With ThumbGate one thumbs-down becomes a local pre-action gate that can refresh or expire." loading="lazy" decoding="async">
           </figure>
           <figure class="diagram-frame">
             <img src="/assets/diagrams/loop.svg" width="960" height="300" alt="Agent proposes a tool, ThumbGate decides ALLOW WARN or DENY, thumbs feedback becomes a rule that closes the loop." loading="lazy" decoding="async">
