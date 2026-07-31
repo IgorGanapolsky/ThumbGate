@@ -23,13 +23,11 @@ const path = require('path');
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { PRO_MONTHLY_PAYMENT_LINK } = require('../scripts/commercial-offer');
-const { resolveLocalServerPath } = require('../scripts/mcp-config');
+const { publishedCliShellCommand } = require('../scripts/published-cli');
 const PKG_VERSION = require('../package.json').version;
 
 const CLI = path.resolve(__dirname, '../bin/cli.js');
 const PKG_ROOT = path.resolve(__dirname, '..');
-const MCP_SERVER_PATH = path.resolve(__dirname, '../adapters/mcp/server-stdio.js');
-const HOME_MCP_SERVER_PATH = resolveLocalServerPath(PKG_ROOT, 'home');
 const savedFunnelPath = process.env._TEST_FUNNEL_LEDGER_PATH;
 const savedHome = process.env.HOME;
 const savedUserProfile = process.env.USERPROFILE;
@@ -59,28 +57,21 @@ function assertPortableTomlMcpBlock(content) {
   assert.match(content, /\.thumbgate\/runtime/);
 }
 
-function assertLocalMcpEntry(entry, expectedPath = MCP_SERVER_PATH) {
-  assert.equal(entry.command, 'node');
-  assert.deepEqual(entry.args, [expectedPath]);
+function assertDurableCodexCommand(command, subcommand) {
+  assert.equal(command, publishedCliShellCommand('latest', [subcommand]));
 }
 
-function assertLocalTomlMcpBlock(content, expectedPath = MCP_SERVER_PATH) {
-  assert.match(content, /\[mcp_servers\.thumbgate\]/);
-  assert.match(content, /command = "node"/);
-  assert.match(content, new RegExp(escapeRegExp(expectedPath)));
-}
-
-function assertLocalCodexPreToolHook(content) {
-  assert.match(content, /\[hooks\.pre_tool_use\]/);
-  assert.match(content, /command = "node"/);
-  assert.match(content, new RegExp(escapeRegExp(path.join(PKG_ROOT, 'bin', 'cli.js'))));
-  assert.match(content, /"gate-check"/);
-}
-
-function assertLocalCodexUserPromptHook(content) {
-  assert.match(content, /\[hooks\.user_prompt_submit\]/);
-  assert.match(content, new RegExp(escapeRegExp(path.join(PKG_ROOT, 'bin', 'cli.js'))));
-  assert.match(content, /hook-auto-capture/);
+function assertDurableCodexTomlEntry(content, sectionName, subcommand) {
+  const sectionPattern = new RegExp(
+    `^\\[${escapeRegExp(sectionName)}\\]\\n(?:^(?!\\[).*(?:\\n|$))*`,
+    'm'
+  );
+  const section = content.match(sectionPattern)?.[0];
+  assert.ok(section, `missing TOML section ${sectionName}`);
+  assert.match(section, /command = "sh"/);
+  assert.match(section, /\.thumbgate\/runtime/);
+  assert.match(section, /thumbgate@latest/);
+  assert.match(section, new RegExp(escapeRegExp(subcommand)));
 }
 
 function escapeRegExp(value) {
@@ -2427,26 +2418,11 @@ describe('bin/cli.js', () => {
     const settingsPath = path.join(isolatedHome, '.codex', 'config.json');
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
     assert.match(result.stdout, /Added hooks for codex:/);
-    assert.equal(
-      settings.hooks.PreToolUse[0].hooks[0].command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} gate-check`
-    );
-    assert.equal(
-      settings.hooks.UserPromptSubmit[0].hooks[0].command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} hook-auto-capture`
-    );
-    assert.equal(
-      settings.hooks.PostToolUse[0].hooks[0].command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} cache-update`
-    );
-    assert.equal(
-      settings.hooks.SessionStart[0].hooks[0].command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} session-start`
-    );
-    assert.equal(
-      settings.statusLine.command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} statusline-render`
-    );
+    assertDurableCodexCommand(settings.hooks.PreToolUse[0].hooks[0].command, 'gate-check');
+    assertDurableCodexCommand(settings.hooks.UserPromptSubmit[0].hooks[0].command, 'hook-auto-capture');
+    assertDurableCodexCommand(settings.hooks.PostToolUse[0].hooks[0].command, 'cache-update');
+    assertDurableCodexCommand(settings.hooks.SessionStart[0].hooks[0].command, 'session-start');
+    assertDurableCodexCommand(settings.statusLine.command, 'statusline-render');
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     fs.rmSync(isolatedHome, { recursive: true, force: true });
@@ -2489,26 +2465,11 @@ describe('bin/cli.js', () => {
 
     assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-    assert.equal(
-      settings.hooks.PreToolUse[0].hooks[0].command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} gate-check`
-    );
-    assert.equal(
-      settings.hooks.UserPromptSubmit[0].hooks[0].command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} hook-auto-capture`
-    );
-    assert.equal(
-      settings.hooks.PostToolUse[0].hooks[0].command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} cache-update`
-    );
-    assert.equal(
-      settings.hooks.SessionStart[0].hooks[0].command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} session-start`
-    );
-    assert.equal(
-      settings.statusLine.command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} statusline-render`
-    );
+    assertDurableCodexCommand(settings.hooks.PreToolUse[0].hooks[0].command, 'gate-check');
+    assertDurableCodexCommand(settings.hooks.UserPromptSubmit[0].hooks[0].command, 'hook-auto-capture');
+    assertDurableCodexCommand(settings.hooks.PostToolUse[0].hooks[0].command, 'cache-update');
+    assertDurableCodexCommand(settings.hooks.SessionStart[0].hooks[0].command, 'session-start');
+    assertDurableCodexCommand(settings.statusLine.command, 'statusline-render');
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     fs.rmSync(isolatedHome, { recursive: true, force: true });
@@ -2735,7 +2696,7 @@ describe('bin/cli.js', () => {
     assert.match(spec, /\/v1\/feedback\/capture/);
   });
 
-  test('init writes a stable local codex MCP launcher when running from source checkout', () => {
+  test('init writes a durable published Codex launcher when running from source checkout', () => {
     const isolatedDir = makeTmpDir();
     const isolatedHome = makeTmpDir();
     const codexHome = path.join(isolatedHome, '.codex');
@@ -2755,26 +2716,20 @@ describe('bin/cli.js', () => {
 
     const configPath = path.join(codexHome, 'config.toml');
     const content = fs.readFileSync(configPath, 'utf8');
-    assertLocalTomlMcpBlock(content, HOME_MCP_SERVER_PATH);
-    assertLocalCodexPreToolHook(content);
-    assertLocalCodexUserPromptHook(content);
+    assertDurableCodexTomlEntry(content, 'mcp_servers.thumbgate', 'serve');
+    assertDurableCodexTomlEntry(content, 'hooks.pre_tool_use', 'gate-check');
+    assertDurableCodexTomlEntry(content, 'hooks.user_prompt_submit', 'hook-auto-capture');
     assert.doesNotMatch(content, /\/tmp\/disposable-worktree\/adapters\/mcp\/server-stdio\.js/);
     const hooksPath = path.join(codexHome, 'config.json');
     const hooksConfig = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
-    assert.equal(
-      hooksConfig.statusLine.command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} statusline-render`
-    );
-    assert.equal(
-      hooksConfig.hooks.PostToolUse[0].hooks[0].command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} cache-update`
-    );
+    assertDurableCodexCommand(hooksConfig.statusLine.command, 'statusline-render');
+    assertDurableCodexCommand(hooksConfig.hooks.PostToolUse[0].hooks[0].command, 'cache-update');
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     fs.rmSync(isolatedHome, { recursive: true, force: true });
   });
 
-  test('init rewrites an existing codex MCP launcher to the stable local home path', () => {
+  test('init rewrites an existing Codex launcher to the durable published runtime', () => {
     const isolatedDir = makeTmpDir();
     const isolatedHome = makeTmpDir();
     const codexHome = path.join(isolatedHome, '.codex');
@@ -2799,17 +2754,14 @@ describe('bin/cli.js', () => {
     assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
 
     const content = fs.readFileSync(configPath, 'utf8');
-    assertLocalTomlMcpBlock(content, HOME_MCP_SERVER_PATH);
-    assertLocalCodexPreToolHook(content);
-    assertLocalCodexUserPromptHook(content);
+    assertDurableCodexTomlEntry(content, 'mcp_servers.thumbgate', 'serve');
+    assertDurableCodexTomlEntry(content, 'hooks.pre_tool_use', 'gate-check');
+    assertDurableCodexTomlEntry(content, 'hooks.user_prompt_submit', 'hook-auto-capture');
     assert.doesNotMatch(content, /disposable-worktree/);
     assert.doesNotMatch(content, /thumbgate@1\.4\.6/);
     const hooksPath = path.join(codexHome, 'config.json');
     const hooksConfig = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
-    assert.equal(
-      hooksConfig.statusLine.command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} statusline-render`
-    );
+    assertDurableCodexCommand(hooksConfig.statusLine.command, 'statusline-render');
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     fs.rmSync(isolatedHome, { recursive: true, force: true });
