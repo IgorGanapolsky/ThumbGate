@@ -154,6 +154,7 @@ async function getDocumentResultsAsync(query, limit, feedbackDir, options = {}) 
     queryRewrite: options.queryRewrite,
     embedder: options.embedder,
     embedderId: options.embedderId,
+    accessContext: options.accessContext,
   });
   return documents.map(mapDocumentResult);
 }
@@ -170,7 +171,7 @@ function sortResults(results) {
 function extractFeedbackId(str) {
   if (!str) return null;
   const match = str.match(/fb[_-]\d+[_-][a-z0-9]+/i);
-  return match ? match[0].replace(/-/g, '_').toLowerCase() : null;
+  return match ? match[0].replaceAll('-', '_').toLowerCase() : null;
 }
 
 function deduplicateResults(results) {
@@ -243,11 +244,23 @@ function getRuleResults(query, limit, feedbackDir) {
   return searchPreventionRulesSync(query, limit, { feedbackDir }).map(mapRuleResult);
 }
 
-function getDocumentResults(query, limit, feedbackDir) {
-  return searchImportedDocuments({ query, limit, feedbackDir }).map(mapDocumentResult);
+function getDocumentResults(query, limit, feedbackDir, accessContext) {
+  return searchImportedDocuments({
+    query,
+    limit,
+    feedbackDir,
+    accessContext,
+  }).map(mapDocumentResult);
 }
 
-function searchThumbgate({ query, source = 'all', limit = 10, signal = null, feedbackDir = null } = {}) {
+function searchThumbgate({
+  query,
+  source = 'all',
+  limit = 10,
+  signal = null,
+  feedbackDir = null,
+  accessContext = null,
+} = {}) {
   const trimmedQuery = String(query || '').trim();
   if (!trimmedQuery) {
     throw new Error('query is required');
@@ -270,14 +283,14 @@ function searchThumbgate({ query, source = 'all', limit = 10, signal = null, fee
     const raw = getRuleResults(trimmedQuery, fetchLimit, feedbackDir);
     results = deduplicateResults(raw).slice(0, normalizedLimit);
   } else if (normalizedSource === 'documents') {
-    const raw = getDocumentResults(trimmedQuery, fetchLimit, feedbackDir);
+    const raw = getDocumentResults(trimmedQuery, fetchLimit, feedbackDir, accessContext);
     results = deduplicateResults(raw).slice(0, normalizedLimit);
   } else {
     const combined = [
       ...getFeedbackResults(trimmedQuery, fetchLimit, normalizedSignal, feedbackDir),
       ...getContextResults(trimmedQuery, fetchLimit, feedbackDir),
       ...getRuleResults(trimmedQuery, fetchLimit, feedbackDir),
-      ...getDocumentResults(trimmedQuery, fetchLimit, feedbackDir),
+      ...getDocumentResults(trimmedQuery, fetchLimit, feedbackDir, accessContext),
     ];
     results = deduplicateResults(sortResults(combined)).slice(0, normalizedLimit);
   }
@@ -304,6 +317,7 @@ async function searchThumbgateAsync({
   queryRewrite = true,
   embedder,
   embedderId,
+  accessContext = null,
 } = {}) {
   const trimmedQuery = String(query || '').trim();
   if (!trimmedQuery) throw new Error('query is required');
@@ -316,6 +330,7 @@ async function searchThumbgateAsync({
     queryRewrite,
     embedder,
     embedderId,
+    accessContext,
   };
 
   let results;
@@ -338,6 +353,7 @@ async function searchThumbgateAsync({
       limit: normalizedLimit,
       signal: normalizedSignal,
       feedbackDir,
+      accessContext,
     });
   }
 

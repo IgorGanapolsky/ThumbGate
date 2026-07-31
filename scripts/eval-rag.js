@@ -22,6 +22,7 @@ const {
   evaluateRankingGolden,
   formatRankingReport,
 } = require('./retrieval-ranking-eval');
+const { evaluateAnswerGolden } = require('./rag-answer-quality-eval');
 
 const REPORT_PATH = path.join(__dirname, '..', 'reports', 'eval-rag-report.md');
 const STAGE_REPORT_PATH = path.join(__dirname, '..', 'reports', 'rag-stage-contracts.md');
@@ -434,6 +435,7 @@ function buildRagReportMarkdown({
   releasePassed,
   gate,
   ranking,
+  answerQuality,
   avgRecall,
   avgPrecision,
   casesEvaluated,
@@ -442,6 +444,7 @@ function buildRagReportMarkdown({
   results,
 }) {
   const rankingStatus = ranking ? (ranking.passed ? 'PASS' : 'FAIL') : 'SKIPPED';
+  const answerQualityStatus = answerQuality ? (answerQuality.passed ? 'PASS' : 'FAIL') : 'SKIPPED';
   const lines = [
     '# RAG Precision & Evaluation Report',
     '',
@@ -449,6 +452,7 @@ function buildRagReportMarkdown({
     `**Release Gate**: ${releasePassed ? 'PASS' : 'FAIL'}`,
     `**Skill-pack keyword smoke**: ${gate.passed ? 'PASS' : 'FAIL'} (contains-string recall/precision — not IR ranking)`,
     `**Ranking gate (Recall@k / MRR / nDCG)**: ${rankingStatus}`,
+    `**Answer-quality proxy gate (faithfulness / groundedness / relevance)**: ${answerQualityStatus}`,
     `**Deterministic Context Recall (skill-pack)**: ${(avgRecall * 100).toFixed(1)}%`,
     `**Deterministic Context Precision (skill-pack)**: ${(avgPrecision * 100).toFixed(1)}%`,
     rankingHeadline(ranking),
@@ -490,6 +494,19 @@ function buildRagReportMarkdown({
     lines.push('', '## Skill-pack smoke failures', '', ...gate.failures.map((f) => `- ${f}`));
   }
   if (ranking) lines.push('', formatRankingReport(ranking));
+  if (answerQuality) {
+    lines.push(
+      '',
+      '## Answer-quality metric behavior',
+      '',
+      `**Mode:** ${answerQuality.mode}`,
+      `**Adversarial cases:** ${answerQuality.summary.cases}`,
+      `**Classification accuracy:** ${(answerQuality.summary.classificationAccuracy * 100).toFixed(1)}%`,
+      `**False passes:** ${answerQuality.summary.falsePasses}`,
+      '',
+      'This gate validates deterministic metric behavior; it is not evidence that a live generator achieves these scores.',
+    );
+  }
   lines.push('', '## Diagnostics and Reasoning');
   for (const r of results) {
     if (r.llmMetrics && r.llmMetrics.reasoning) {
@@ -552,12 +569,22 @@ async function runRagEval(options = {}) {
     }
   }
 
+  const answerQuality = options.skipAnswerQuality === true
+    ? null
+    : evaluateAnswerGolden({
+      goldenPath: options.answerQualityGoldenPath,
+      thresholds: options.answerQualityThresholds,
+      metricThresholds: options.answerMetricThresholds,
+    });
+
   const rankingOk = !ranking || ranking.passed;
-  const releasePassed = gate.passed && rankingOk;
+  const answerQualityOk = !answerQuality || answerQuality.passed;
+  const releasePassed = gate.passed && rankingOk && answerQualityOk;
   const reportContent = buildRagReportMarkdown({
     releasePassed,
     gate,
     ranking,
+    answerQuality,
     avgRecall,
     avgPrecision,
     casesEvaluated,
@@ -570,11 +597,13 @@ async function runRagEval(options = {}) {
   const combinedFailures = [
     ...gate.failures,
     ...(ranking && !ranking.passed ? (ranking.failures || ['ranking gate failed']) : []),
+    ...(answerQuality && !answerQuality.passed ? (answerQuality.failures || ['answer-quality gate failed']) : []),
   ];
 
   return {
     results,
     ranking,
+    answerQuality,
     stageMetrics,
     stageStatus,
     summary: {
@@ -588,6 +617,7 @@ async function runRagEval(options = {}) {
       passedThresholds: releasePassed,
       skillPackPassed: gate.passed,
       rankingPassed: ranking ? ranking.passed : null,
+      answerQualityPassed: answerQuality ? answerQuality.passed : null,
       mrr: ranking?.summary?.mrr,
       recallAt5: ranking?.summary?.['recall@5'],
       ndcgAt5: ranking?.summary?.['ndcg@5'],
