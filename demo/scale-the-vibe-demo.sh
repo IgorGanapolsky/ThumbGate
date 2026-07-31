@@ -10,8 +10,9 @@
 #
 # Honesty:
 #   - Default product is warn-by-default; demo pins STRICT so blocks show.
-#   - Learning uses force-promote (operator permanent gate). Auto multi-thumbs
-#     promotion is being hardened (PR #3119) so tag patterns are not inert.
+#   - Learning uses force-promote (operator permanent gate) as the demo path.
+#     Auto multi-thumbs promotion also enforces as of PR #3119; before that fix,
+#     promoted gates carried tag-derived patterns and sat inert.
 #
 # Usage:
 #   bash demo/scale-the-vibe-demo.sh
@@ -202,8 +203,8 @@ else
   printf '  %s\n' "${RED}✖ Still allowed after promote — do not claim learning in the room${OFF}"
   printf '  %s\n' "${DIM}BEFORE=$BEFORE AFTER=$AFTER FEEDBACK_DIR=$THUMBGATE_FEEDBACK_DIR${OFF}"
 fi
-printf '\n  %s\n' "${DIM}Honest boundary: force-promote is the proven permanent path. Auto multi-👎${OFF}"
-printf '  %s\n' "${DIM}promotion is being hardened so tag-derived patterns cannot sit inert (PR #3119).${OFF}"
+printf '\n  %s\n' "${DIM}Honest boundary: force-promote is the operator-confirmed permanent path shown${OFF}"
+printf '  %s\n' "${DIM}here. Auto promotion (3x 👎 → block) also enforces as of PR #3119.${OFF}"
 
 if [ "$FAST" -eq 0 ] && [ "$LEARN_ONLY" -eq 0 ]; then
 section "6. No PreToolUse hook? Still get a verdict over MCP"
