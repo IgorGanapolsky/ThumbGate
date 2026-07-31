@@ -3,11 +3,19 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const {
+  claimSupportScore,
+  evaluateAnswerQuality,
+  queryCoverage,
+  splitAnswerClaims,
+} = require('./rag-structured-output');
 
 const DEFAULT_THRESHOLDS = {
   faithfulness: 0.72,
   answerRelevance: 0.45,
   contextPrecision: 0.5,
+  groundedness: 0.75,
+  citationPrecision: 1,
 };
 
 function tokenize(value) {
@@ -30,10 +38,7 @@ function overlapScore(left, right) {
 }
 
 function splitClaims(response) {
-  return String(response || '')
-    .split(/(?:[.!?]\s+|\n+)/)
-    .map((claim) => claim.trim())
-    .filter((claim) => claim.length > 0);
+  return splitAnswerClaims(response);
 }
 
 function normalizeContexts(contexts) {
@@ -44,11 +49,10 @@ function normalizeContexts(contexts) {
 
 function scoreFaithfulness(response, contexts) {
   const claims = splitClaims(response);
-  const contextText = normalizeContexts(contexts).join('\n');
+  const contextItems = normalizeContexts(contexts);
   if (claims.length === 0) return { score: 0, supportedClaims: 0, totalClaims: 0 };
   const supportedClaims = claims.filter((claim) => {
-    const normalized = claim.toLowerCase();
-    return contextText.toLowerCase().includes(normalized) || overlapScore(claim, contextText) >= 0.58;
+    return contextItems.some((context) => claimSupportScore(claim, context) >= 0.4);
   }).length;
   return {
     score: Number((supportedClaims / claims.length).toFixed(4)),
@@ -58,7 +62,7 @@ function scoreFaithfulness(response, contexts) {
 }
 
 function scoreAnswerRelevance(question, response) {
-  const score = overlapScore(question, response);
+  const score = queryCoverage(question, response);
   return {
     score: Number(score.toFixed(4)),
     matchedQuestionTerms: unique(tokenize(question).filter((token) => tokenize(response).includes(token))),
@@ -97,14 +101,29 @@ function evaluateGeneration(testCase, options = {}) {
     contexts,
     testCase.reference || testCase.groundTruth || ''
   );
+  const answerQuality = evaluateAnswerQuality({
+    query: testCase.question || testCase.user_input,
+    answer: testCase.response || testCase.answer,
+    referenceAnswer: testCase.reference || testCase.groundTruth || '',
+    citations: testCase.citations,
+    contexts: contexts.map((text, index) => ({ id: `context-${index + 1}`, text })),
+  }, {
+    minFaithfulness: thresholds.faithfulness,
+    minGroundedness: thresholds.groundedness,
+    minAnswerRelevance: thresholds.answerRelevance,
+  });
   const scores = {
     faithfulness: faithfulness.score,
     answerRelevance: answerRelevance.score,
     contextPrecision: contextPrecision.score,
+    groundedness: answerQuality.metrics.groundedness,
+    citationPrecision: answerQuality.metrics.citationPrecision,
   };
   const passed = scores.faithfulness >= thresholds.faithfulness
     && scores.answerRelevance >= thresholds.answerRelevance
-    && scores.contextPrecision >= thresholds.contextPrecision;
+    && scores.contextPrecision >= thresholds.contextPrecision
+    && scores.groundedness >= thresholds.groundedness
+    && scores.citationPrecision >= thresholds.citationPrecision;
 
   return {
     id: String(testCase.id || testCase.traceId || 'case'),
@@ -116,6 +135,7 @@ function evaluateGeneration(testCase, options = {}) {
       faithfulness,
       answerRelevance,
       contextPrecision,
+      answerQuality,
     },
   };
 }
@@ -155,6 +175,8 @@ function buildEvalReport(cases, options = {}) {
     faithfulness: average(results.map((result) => result.scores.faithfulness)),
     answerRelevance: average(results.map((result) => result.scores.answerRelevance)),
     contextPrecision: average(results.map((result) => result.scores.contextPrecision)),
+    groundedness: average(results.map((result) => result.scores.groundedness)),
+    citationPrecision: average(results.map((result) => result.scores.citationPrecision)),
   };
 
   return {
@@ -166,7 +188,7 @@ function buildEvalReport(cases, options = {}) {
     passRate: results.length === 0 ? 0 : Number(((passed / results.length) * 100).toFixed(2)),
     aggregate,
     passedThreshold: failed === 0,
-    metrics: ['faithfulness', 'answerRelevance', 'contextPrecision'],
+    metrics: ['faithfulness', 'answerRelevance', 'contextPrecision', 'groundedness', 'citationPrecision'],
     sinks: {
       ci: true,
       langsmithCompatible: true,

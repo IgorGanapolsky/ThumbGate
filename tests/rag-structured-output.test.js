@@ -76,3 +76,22 @@ test('validateStructuredAnswer rejects missing confidence', () => {
   assert.equal(r.ok, false);
   assert.ok(r.errors.includes('missing_confidence'));
 });
+
+test('grounded output fails closed when it has no valid citations', () => {
+  const result = validateStructuredAnswer({
+    answer: 'This sounds supported but cites nothing.',
+    citations: [],
+    grounded: true,
+    confidence: 0.95,
+  }, sources);
+
+  assert.equal(result.value.grounded, false);
+  assert.ok(result.errors.includes('grounded_forced_false_no_valid_citations'));
+});
+
+test('free text without citations is explicitly ungrounded even when sources exist', () => {
+  const result = coerceFreeTextToStructured('Use idempotency keys.', sources);
+
+  assert.equal(result.value.grounded, false);
+  assert.equal(result.value.abstain_reason, 'model_output_missing_valid_citation');
+});

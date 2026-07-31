@@ -155,6 +155,53 @@ function buildSafeProviderError(error) {
   return summary;
 }
 
+function normalizeUsageTelemetry(usage = null) {
+  if (!usage || typeof usage !== 'object') {
+    return {
+      inputTokens: null,
+      outputTokens: null,
+      cacheReadInputTokens: null,
+      cacheWriteInputTokens: null,
+    };
+  }
+  const finiteOrNull = (...values) => {
+    const value = values.map(Number).find(Number.isFinite);
+    return value === undefined ? null : value;
+  };
+  return {
+    inputTokens: finiteOrNull(usage.input_tokens, usage.prompt_tokens, usage.promptTokenCount),
+    outputTokens: finiteOrNull(usage.output_tokens, usage.completion_tokens, usage.candidatesTokenCount),
+    cacheReadInputTokens: finiteOrNull(usage.cache_read_input_tokens),
+    cacheWriteInputTokens: finiteOrNull(usage.cache_creation_input_tokens),
+  };
+}
+
+function buildLlmTrace(options = {}, event = {}) {
+  const usage = normalizeUsageTelemetry(event.usage);
+  return {
+    timestamp: new Date().toISOString(),
+    traceId: String(options.traceId || options.metadata?.traceId || '').trim() || null,
+    provider: event.provider || 'unknown',
+    model: event.model || options.model || null,
+    outcome: event.outcome || 'unknown',
+    latencyMs: Number.isFinite(event.latencyMs) ? Math.max(0, event.latencyMs) : null,
+    ...usage,
+    stopReason: event.stopReason || null,
+    requestId: event.requestId || null,
+    httpStatus: Number.isFinite(event.httpStatus) ? event.httpStatus : null,
+    errorCode: event.errorCode == null ? null : String(event.errorCode).slice(0, 80),
+  };
+}
+
+async function emitLlmTrace(options = {}, event = {}) {
+  if (typeof options.onTrace !== 'function') return;
+  try {
+    await options.onTrace(buildLlmTrace(options, event));
+  } catch {
+    // Observability must never break the generation path.
+  }
+}
+
 function getZaiApiKey(env = process.env) {
   return env.ZAI_API_KEY || env.THUMBGATE_ZAI_API_KEY || '';
 }
@@ -169,7 +216,18 @@ function getZaiModel(env = process.env) {
 
 async function callZaiInternal(options = {}, env = process.env) {
   const apiKey = getZaiApiKey(env);
-  if (!apiKey || typeof fetch !== 'function') return null;
+  const model = options.model || getZaiModel(env);
+  const startedAt = Date.now();
+  if (!apiKey || typeof fetch !== 'function') {
+    await emitLlmTrace(options, {
+      provider: 'zai',
+      model,
+      outcome: 'unavailable',
+      latencyMs: Date.now() - startedAt,
+      errorCode: !apiKey ? 'missing_api_key' : 'fetch_unavailable',
+    });
+    return null;
+  }
 
   const messages = Array.isArray(options.messages) && options.messages.length > 0
     ? options.messages
@@ -186,23 +244,52 @@ async function callZaiInternal(options = {}, env = process.env) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: options.model || getZaiModel(env),
+        model,
         messages,
         max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
         temperature: Number.isFinite(options.temperature) ? options.temperature : 0,
       }),
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      await emitLlmTrace(options, {
+        provider: 'zai',
+        model,
+        outcome: 'error',
+        latencyMs: Date.now() - startedAt,
+        httpStatus: response.status,
+        errorCode: 'http_error',
+      });
+      return null;
+    }
     const json = await response.json();
-    return {
+    const result = {
       text: stripCodeFences(json?.choices?.[0]?.message?.content || ''),
       usage: json?.usage || null,
       stopReason: json?.choices?.[0]?.finish_reason || null,
       id: json?.id || null,
-      model: json?.model || options.model || getZaiModel(env),
+      model: json?.model || model,
     };
-  } catch {
+    await emitLlmTrace(options, {
+      provider: 'zai',
+      model: result.model,
+      outcome: 'success',
+      latencyMs: Date.now() - startedAt,
+      usage: result.usage,
+      stopReason: result.stopReason,
+      requestId: result.id,
+    });
+    return result;
+  } catch (error) {
+    const safe = buildSafeProviderError(error);
+    await emitLlmTrace(options, {
+      provider: 'zai',
+      model,
+      outcome: 'error',
+      latencyMs: Date.now() - startedAt,
+      httpStatus: safe.status,
+      errorCode: safe.code || safe.name,
+    });
     return null;
   }
 }
@@ -211,8 +298,19 @@ async function callGeminiInternal(options = {}) {
   const env = process.env;
   const { detectInferenceBackend } = require('./local-model-profile');
   const providerMode = detectInferenceBackend(env).providerMode;
+  const provider = providerMode === 'vertex' ? 'vertex' : 'gemini';
+  const startedAt = Date.now();
 
-  if (providerMode !== 'vertex' && !env.GEMINI_API_KEY) return null;
+  if (providerMode !== 'vertex' && !env.GEMINI_API_KEY) {
+    await emitLlmTrace(options, {
+      provider,
+      model: options.model,
+      outcome: 'unavailable',
+      latencyMs: Date.now() - startedAt,
+      errorCode: 'missing_api_key',
+    });
+    return null;
+  }
 
   try {
     const { GoogleGenAI } = require('@google/genai');
@@ -251,7 +349,7 @@ async function callGeminiInternal(options = {}) {
       config,
     }));
 
-    return {
+    const result = {
       text: response.text || '',
       usage: response.usageMetadata ? {
         input_tokens: response.usageMetadata.promptTokenCount,
@@ -261,8 +359,27 @@ async function callGeminiInternal(options = {}) {
       id: null,
       model: options.model,
     };
+    await emitLlmTrace(options, {
+      provider,
+      model: result.model,
+      outcome: 'success',
+      latencyMs: Date.now() - startedAt,
+      usage: result.usage,
+      stopReason: result.stopReason,
+      requestId: result.id,
+    });
+    return result;
   } catch (err) {
-    console.error('Gemini/Vertex AI execution error:', JSON.stringify(buildSafeProviderError(err)));
+    const safe = buildSafeProviderError(err);
+    console.error('Gemini/Vertex AI execution error:', JSON.stringify(safe));
+    await emitLlmTrace(options, {
+      provider,
+      model: options.model,
+      outcome: 'error',
+      latencyMs: Date.now() - startedAt,
+      httpStatus: safe.status,
+      errorCode: safe.code || safe.name,
+    });
     return null;
   }
 }
@@ -296,7 +413,18 @@ async function callClaudeInternal(options = {}) {
   }
 
   const client = getClient();
-  if (!client) return null;
+  const model = options.model || DEFAULT_MODEL;
+  const startedAt = Date.now();
+  if (!client) {
+    await emitLlmTrace(options, {
+      provider: 'anthropic',
+      model,
+      outcome: 'unavailable',
+      latencyMs: Date.now() - startedAt,
+      errorCode: 'missing_client_or_api_key',
+    });
+    return null;
+  }
 
   try {
     const response = await runStep('llm.callClaude', {
@@ -305,14 +433,33 @@ async function callClaudeInternal(options = {}) {
     }, async () => client.messages.create(buildClaudeRequest(options)));
 
     const text = stripCodeFences(extractTextContent(response));
-    return {
+    const result = {
       text,
       usage: response?.usage || null,
       stopReason: response?.stop_reason || null,
       id: response?.id || null,
-      model: response?.model || options.model || DEFAULT_MODEL,
+      model: response?.model || model,
     };
-  } catch {
+    await emitLlmTrace(options, {
+      provider: 'anthropic',
+      model: result.model,
+      outcome: 'success',
+      latencyMs: Date.now() - startedAt,
+      usage: result.usage,
+      stopReason: result.stopReason,
+      requestId: result.id,
+    });
+    return result;
+  } catch (error) {
+    const safe = buildSafeProviderError(error);
+    await emitLlmTrace(options, {
+      provider: 'anthropic',
+      model,
+      outcome: 'error',
+      latencyMs: Date.now() - startedAt,
+      httpStatus: safe.status,
+      errorCode: safe.code || safe.name,
+    });
     return null;
   }
 }
@@ -383,5 +530,8 @@ module.exports = {
   normalizeCacheOptions,
   buildClaudeRequest,
   buildSafeProviderError,
+  normalizeUsageTelemetry,
+  buildLlmTrace,
+  emitLlmTrace,
   MODELS,
 };

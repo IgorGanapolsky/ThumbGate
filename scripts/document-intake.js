@@ -189,6 +189,70 @@ function normalizeTags(tags) {
     .filter(Boolean)));
 }
 
+function normalizeAccessIdentifier(value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return null;
+  return normalized.slice(0, 160);
+}
+
+function normalizeAccessContext(context = {}) {
+  const source = context && typeof context === 'object' ? context : {};
+  return {
+    tenantId: normalizeAccessIdentifier(source.tenantId),
+    principalId: normalizeAccessIdentifier(source.principalId),
+    isAdmin: source.isAdmin === true,
+  };
+}
+
+function buildDocumentAccess(options = {}) {
+  const context = normalizeAccessContext(options.accessContext);
+  if (!context.tenantId && !context.principalId) return null;
+  const visibility = options.visibility === 'private' ? 'private' : 'tenant';
+  const allowedPrincipals = safeArray(options.allowedPrincipals)
+    .map(normalizeAccessIdentifier)
+    .filter(Boolean);
+  return {
+    tenantId: context.tenantId,
+    ownerId: context.principalId,
+    visibility,
+    allowedPrincipals: [...new Set(allowedPrincipals)],
+  };
+}
+
+/**
+ * Fail-closed authorization for protected imported documents.
+ *
+ * Legacy local documents without access metadata stay readable for backwards
+ * compatibility. Once a document carries a tenant, owner, or principal ACL,
+ * callers must present a matching authorization context on every read path.
+ */
+function documentAccessAllowed(document = {}, accessContext = {}) {
+  const access = document.access;
+  const protectedDocument = access && typeof access === 'object' && (
+    normalizeAccessIdentifier(access.tenantId)
+    || normalizeAccessIdentifier(access.ownerId)
+    || safeArray(access.allowedPrincipals).length > 0
+  );
+  if (!protectedDocument) return true;
+
+  const caller = normalizeAccessContext(accessContext);
+  if (caller.isAdmin) return true;
+
+  const tenantId = normalizeAccessIdentifier(access.tenantId);
+  if (tenantId && (!caller.tenantId || caller.tenantId !== tenantId)) return false;
+
+  if (access.visibility === 'tenant') {
+    return Boolean(caller.tenantId && caller.tenantId === tenantId);
+  }
+
+  if (!caller.principalId) return false;
+  const allowed = new Set([
+    normalizeAccessIdentifier(access.ownerId),
+    ...safeArray(access.allowedPrincipals).map(normalizeAccessIdentifier),
+  ].filter(Boolean));
+  return allowed.has(caller.principalId);
+}
+
 function normalizeNewlines(value) {
   let result = '';
   const text = String(value || '');
@@ -716,6 +780,7 @@ function buildDocumentSummary(document) {
     proposalCount: safeArray(document.proposals).length,
     matchedTemplateIds: safeArray(document.matchedTemplateIds),
     fingerprint: document.fingerprint,
+    access: document.access || null,
   };
 }
 
@@ -723,7 +788,8 @@ function readImportedDocument(documentId, options = {}) {
   const filePath = getDocumentPath(String(documentId || '').trim(), options);
   if (!fs.existsSync(filePath)) return null;
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const document = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return documentAccessAllowed(document, options.accessContext) ? document : null;
   } catch {
     return null;
   }
@@ -739,6 +805,7 @@ function listImportedDocuments(options = {}) {
   const documents = readJsonl(catalogPath);
 
   const filtered = documents.filter((document) => {
+    if (!documentAccessAllowed(document, options.accessContext)) return false;
     const tags = safeArray(document.tags).map((tag) => String(tag).toLowerCase());
     const matchedTemplateIds = safeArray(document.matchedTemplateIds).map((tag) => String(tag).toLowerCase());
     if (requestedTag && !tags.includes(requestedTag) && !matchedTemplateIds.includes(requestedTag)) {
@@ -765,10 +832,11 @@ function persistDocument(document, options = {}) {
   const paths = getDocumentStorePaths(options);
   ensureDir(paths.documentsDir);
   writeJson(getDocumentPath(document.documentId, options), document);
-  const summaries = listImportedDocuments({
-    ...options,
-    limit: MAX_SEARCH_SCAN,
-  }).documents.filter((entry) => entry.documentId !== document.documentId);
+  // Persistence must retain entries the current principal cannot read; using
+  // the public list function here would silently delete other principals'
+  // catalog rows during an import.
+  const summaries = readJsonl(paths.catalogPath)
+    .filter((entry) => entry.documentId !== document.documentId);
   const nextSummaries = [
     buildDocumentSummary(document),
     ...summaries,
@@ -902,7 +970,7 @@ async function searchImportedDocumentsAsync(options = {}) {
 
   const { runDocumentPipeline } = require('./rag-document-pipeline');
   const { pragmaticHybridSearch } = require('./pragmatic-hybrid-search');
-  const { buildQueryVariants, reciprocalRankFusion } = require('./lesson-retrieval');
+  const { buildQueryPlan, reciprocalRankFusion } = require('./lesson-retrieval');
   const pipeline = runDocumentPipeline(documents.map((document) => ({
     type: 'text',
     id: document.documentId,
@@ -923,7 +991,8 @@ async function searchImportedDocumentsAsync(options = {}) {
   const chunks = pipeline.chunks;
   if (chunks.length === 0) return [];
 
-  const queryVariants = buildQueryVariants(query, options);
+  const queryPlan = await buildQueryPlan(query, options);
+  const queryVariants = queryPlan.variants;
   let denseRankedIds = [];
   let semanticProvider = null;
   try {
@@ -1022,6 +1091,7 @@ async function searchImportedDocumentsAsync(options = {}) {
           parentChild: true,
           chunkCount: chunks.length,
           queryVariants,
+          queryTransformation: queryPlan,
           densePool: meta.densePool,
           semanticProvider,
         },
@@ -1082,6 +1152,8 @@ function importDocument(options = {}) {
     lineCount: normalizedContent.split('\n').filter(Boolean).length,
     headings: extractHeadings(normalizedContent),
   };
+  const access = buildDocumentAccess(options);
+  if (access) document.access = access;
   document.proposals = options.proposeGates === false
     ? []
     : proposeGatesFromDocument(document, options);
@@ -1106,4 +1178,7 @@ module.exports = {
   searchImportedDocuments,
   searchImportedDocumentsAsync,
   importedDocumentMatchesFilters,
+  buildDocumentAccess,
+  documentAccessAllowed,
+  normalizeAccessContext,
 };

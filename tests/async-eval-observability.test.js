@@ -51,7 +51,7 @@ test('buildEvalReport emits CI, Ragas-compatible, and LangSmith-compatible paylo
       id: 'good',
       traceId: 'trace-1',
       question: 'Should Letta force-push?',
-      response: 'Letta should not force-push because ThumbGate blocks force push before execution.',
+    response: 'Letta should not force-push because ThumbGate blocks force push before execution [context-1].',
       retrievedContexts: ['ThumbGate blocks force push before execution for Letta tool calls.'],
       reference: 'ThumbGate blocks high-risk Letta tool calls.',
     },
@@ -63,7 +63,7 @@ test('buildEvalReport emits CI, Ragas-compatible, and LangSmith-compatible paylo
   assert.equal(report.sinks.ci, true);
   assert.equal(report.sinks.langsmithCompatible, true);
   assert.equal(report.sinks.ragasCompatible, true);
-  assert.deepEqual(report.metrics, ['faithfulness', 'answerRelevance', 'contextPrecision']);
+  assert.deepEqual(report.metrics, ['faithfulness', 'answerRelevance', 'contextPrecision', 'groundedness', 'citationPrecision']);
   assert.equal(report.ragasDataset[0].user_input, cases[0].question);
   assert.equal(report.langsmithRuns[0].id, 'trace-1');
   assert.ok(report.langsmithRuns[0].feedback.some((entry) => entry.key === 'faithfulness'));
@@ -72,7 +72,7 @@ test('buildEvalReport emits CI, Ragas-compatible, and LangSmith-compatible paylo
 test('compatibility helpers produce expected external shapes', () => {
   const cases = [{
     question: 'What was retrieved?',
-    response: 'The checkout proof was retrieved.',
+    response: 'The checkout proof was retrieved [context-1].',
     retrievedContexts: ['checkout proof'],
     reference: 'checkout proof',
   }];
@@ -92,7 +92,7 @@ test('runAsyncEvaluation writes a report after generation without blocking the c
   const report = await runAsyncEvaluation([{
     id: 'async-good',
     question: 'Should execution continue?',
-    response: 'Execution should continue because the retrieved context says the gate allowed the action.',
+    response: 'Execution should continue because the retrieved context says the gate allowed the action [context-1].',
     retrievedContexts: ['The gate allowed the action and execution should continue.'],
     reference: 'The gate allowed execution.',
   }], { outputPath });

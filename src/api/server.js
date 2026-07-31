@@ -856,6 +856,44 @@ function getRequestFeedbackPaths(req, parsed) {
   });
 }
 
+function hashDataIdentity(prefix, value) {
+  return `${prefix}_${crypto.createHash('sha256')
+    .update(String(value || ''))
+    .digest('hex')
+    .slice(0, 24)}`;
+}
+
+function buildHostedTenantIdentity(validation = {}, fallbackKey = '') {
+  if (!validation || validation.valid !== true) return null;
+  const tenantSeed = validation.customerId || `key:${fallbackKey}`;
+  const principalSeed = validation.installId || tenantSeed;
+  const tenantId = hashDataIdentity('tenant', tenantSeed);
+  return {
+    partition: tenantId,
+    accessContext: {
+      tenantId,
+      principalId: hashDataIdentity('principal', principalSeed),
+      isAdmin: false,
+    },
+  };
+}
+
+function resolveRequestDataIdentity(req, expectedApiKey) {
+  const token = extractApiKey(req);
+  if (!token || (expectedApiKey && safeKeyEqual(token, expectedApiKey))) {
+    return { partition: null, accessContext: null };
+  }
+  return buildHostedTenantIdentity(validateApiKey(token), token)
+    || { partition: null, accessContext: null };
+}
+
+function partitionFeedbackPaths(paths, dataIdentity) {
+  if (!dataIdentity?.partition) return paths;
+  return getFeedbackPaths({
+    feedbackDir: path.join(paths.FEEDBACK_DIR, 'tenants', dataIdentity.partition),
+  });
+}
+
 function getSafeDataDir(req, parsed) {
   const { FEEDBACK_LOG_PATH } = getRequestFeedbackPaths(req, parsed);
   return path.resolve(path.dirname(FEEDBACK_LOG_PATH));
@@ -5275,9 +5313,10 @@ function createApiServer() {
       sendJson(res, 403, { error: 'project selection is only available on localhost requests' });
       return;
     }
-    const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
-    const requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
-    const requestSafeDataDir = getSafeDataDir(req, parsed);
+    let requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
+    let requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
+    let requestSafeDataDir = getSafeDataDir(req, parsed);
+    let requestDocumentAccessContext = null;
 
     // PostHog reverse proxy -- bypasses ad blockers.
     // Only allow known PostHog API paths to prevent SSRF (CodeQL js/request-forgery).
@@ -8696,6 +8735,16 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       return;
     }
 
+    // Provisioned hosted keys are authenticated identities, not merely valid
+    // booleans. Bind every private data path to a hash of the billing customer
+    // before any endpoint reads or writes feedback, documents, traces, or jobs.
+    // Static admin/local operation retains the existing single-tenant path.
+    const requestDataIdentity = resolveRequestDataIdentity(req, expectedApiKey);
+    requestFeedbackPaths = partitionFeedbackPaths(requestFeedbackPaths, requestDataIdentity);
+    requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
+    requestSafeDataDir = path.resolve(requestFeedbackDir);
+    requestDocumentAccessContext = requestDataIdentity.accessContext;
+
     // Usage metering — record request for billing keys (not static THUMBGATE_API_KEY)
     const _token = extractBearerToken(req);
     if (_token && _token !== expectedApiKey) {
@@ -9455,6 +9504,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
               sourceType: parsed.searchParams.get('sourceType') || undefined,
             },
             queryRewrite: parsed.searchParams.get('queryRewrite') !== 'false',
+            accessContext: requestDocumentAccessContext,
           });
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid ThumbGate search request');
@@ -9481,6 +9531,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
             feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
             metadataFilters: body.filters,
             queryRewrite: body.queryRewrite !== false,
+            accessContext: requestDocumentAccessContext,
           });
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid ThumbGate search request');
@@ -9498,6 +9549,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           limit: Number.isFinite(limit) ? limit : 20,
           query,
           tag,
+          accessContext: requestDocumentAccessContext,
         });
         sendJson(res, 200, results);
         return;
@@ -9511,6 +9563,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           }
           const document = readImportedDocument(documentId, {
             feedbackDir: requestFeedbackDir,
+            accessContext: requestDocumentAccessContext,
           });
           if (!document) {
             throw createHttpError(404, `Imported document not found: ${escapeHtml(documentId)}`);
@@ -9643,6 +9696,11 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           tags: extractTags(body.tags),
           proposeGates: body.proposeGates !== false,
           feedbackDir: requestFeedbackDir,
+          accessContext: requestDocumentAccessContext,
+          visibility: body.visibility === 'private' ? 'private' : 'tenant',
+          allowedPrincipals: Array.isArray(body.allowedPrincipals)
+            ? body.allowedPrincipals.map((value) => String(value || '').trim()).filter(Boolean)
+            : [],
         });
         sendJson(res, 201, {
           ok: true,
@@ -10731,6 +10789,8 @@ module.exports = {
     buildLossAnalyticsResponse,
     buildIntakeAlertRateLimitKey,
     sanitizeHtmlUnsafeJsonValue,
+    buildHostedTenantIdentity,
+    partitionFeedbackPaths,
   },
 };
 

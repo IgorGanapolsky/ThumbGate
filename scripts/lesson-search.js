@@ -518,7 +518,7 @@ function searchLessons(query = '', options = {}) {
     return String(b.timestamp || '').localeCompare(String(a.timestamp || ''));
   });
 
-  // Cross-encoder reranking: when a query is present, rerank the top-50 bi-encoder
+  // Field-aware BM25F reranking: when a query is present, rerank the top-50 first-stage
   // candidates using field-weighted BM25 so the most relevant lessons surface first.
   if (query && results.length > 1) {
     const { rerankLessons } = loadOptionalModule('./lesson-reranker', () => ({

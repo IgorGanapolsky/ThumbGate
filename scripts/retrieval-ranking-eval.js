@@ -3,7 +3,7 @@
 
 /**
  * Rank a self-contained golden corpus with the same scoring stack gates use
- * (scoreRelevance + field-weighted BM25 rerank) and compute Recall@k / MRR / nDCG.
+ * (scoreRelevance + field-weighted BM25F rerank) and compute Recall@k / MRR / nDCG.
  *
  * This is the ranking evaluation path — distinct from skill-pack keyword smoke.
  */

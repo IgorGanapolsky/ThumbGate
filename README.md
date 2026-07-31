@@ -271,6 +271,11 @@ evaluation/observability—is maintained in
 architecture exists, what can fail, how it is measured and secured, how it is
 deployed, and what evidence is required before claiming it works.
 
+The full framework decision and one end-to-end RAG request—tenant authorization,
+query transformation, parent-child retrieval, hybrid fusion, reranking,
+structured generation, evaluation, and tracing—are documented in
+[`docs/RAG_PRODUCTION_ARCHITECTURE.md`](./docs/RAG_PRODUCTION_ARCHITECTURE.md).
+
 ### Retrieval & latency: local-first, zero network hops
 
 ThumbGate's latency advantage is structural, not a tuned cloud cluster: there is no retrieval service and no model on the enforcement path, so the gate decision never leaves your machine.

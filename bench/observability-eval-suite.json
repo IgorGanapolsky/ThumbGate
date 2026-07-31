@@ -4,7 +4,7 @@
       "id": "checkout-link-grounding",
       "traceId": "trace_checkout_001",
       "question": "Is the Pro checkout link working?",
-      "response": "The Pro checkout link is working because the checkout diagnostic confirms Stripe Pro checkout is reachable.",
+      "response": "The Pro checkout link is working because the checkout diagnostic confirms Stripe Pro checkout is reachable [context-1].",
       "retrievedContexts": [
         "Stripe Pro checkout diagnostic confirms the Pro checkout link is reachable and returns a valid checkout target.",
         "The workflow sprint checkout is intake-led and should not expose a stale payment link."
@@ -15,7 +15,7 @@
       "id": "letta-tool-gate",
       "traceId": "trace_letta_001",
       "question": "Should Letta execute a force push tool call?",
-      "response": "ThumbGate blocks force push before execution for Letta tool calls.",
+      "response": "ThumbGate blocks force push before execution for Letta tool calls [context-1].",
       "retrievedContexts": [
         "ThumbGate's Letta adapter wraps Letta tool calls and runs gate-check before the executor is called.",
         "Force push to main is a blocked high-risk git action."

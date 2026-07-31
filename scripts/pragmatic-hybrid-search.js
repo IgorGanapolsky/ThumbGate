@@ -186,7 +186,7 @@ function pragmaticHybridSearch(params = {}) {
     [query, ...(options.queryVariants || [])]
       .map((value) => String(value || '').trim())
       .filter(Boolean),
-  )].slice(0, 3);
+  )].slice(0, 4);
 
   // --- Query 1: lexical / sparse (always) ---
   // Attribute boost reorders candidates that already have lexical signal (or will
@@ -292,7 +292,7 @@ function pragmaticHybridSearch(params = {}) {
     };
   }
 
-  // --- Second stage: field-weighted BM25 cross-style rerank ---
+  // --- Second stage: field-weighted BM25F rerank ---
   let reranked = rerankLessons(query, candidates, { topK: pool, toolName });
 
   // Light blend of attribute boost into reranked score (keeps recency after BM25)
