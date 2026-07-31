@@ -403,7 +403,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 395 -> 400 (2026-07-30): embedding maintenance + hybrid ablation runtime/fixture
     // plus document chunker + skill-pack dependencies required by packed search
     // 400 -> 401 (2026-07-30): scripts/harness-tool-names.js. adapters/mcp/server-stdio.js require()s it during gate_check, so the published package throws without it. Pure lookup table mapping harness tool vocabularies to canonical gate names; no I/O, no Core imports.
-    // 401 -> 405 (2026-07-31): headroom for security/runtime scripts already on the enforcement path; CI pack observed 403 during secret-exfil coverage PR without intentional new package entries. Cap raised with deliberate note so the ratchet stays honest.
+    // 401 -> 405 (2026-07-31). Two separate causes, recorded accurately:
+    //   401 -> 403: #3116 added public/assets/diagrams/hero-thumbs.svg and
+    //     self-improving-thumbs-loop.svg. public/index.html ships (server.js reads it
+    //     at runtime) and <img>-references both, so they must ship too. #3116 added
+    //     them without moving the ceiling, which left main red.
+    //   403 -> 405: #3117 raised the cap to 405 for headroom on enforcement-path
+    //     security scripts. Its note attributed the observed 403 to "no intentional
+    //     new package entries" — that was a misread of #3116's SVGs, corrected here.
     manifest.fileCount <= 405,
     `npm package should stay <= 405 files, got ${manifest.fileCount}`
   );
