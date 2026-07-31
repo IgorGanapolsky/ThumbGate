@@ -14,6 +14,8 @@ const {
   renderHuman,
   DEFAULT_PROD_URL,
   DEFAULT_MANIFEST_PATH,
+  DEFAULT_MAX_ATTEMPTS,
+  DEFAULT_RETRY_DELAY_MS,
 } = require('../scripts/verify-marketing-pages-deployed');
 
 function writeManifest(pages, extra = {}) {
@@ -38,16 +40,20 @@ test('parseArgs: defaults + each flag', () => {
   assert.equal(def.quiet, false);
   assert.equal(def.manifestPath, DEFAULT_MANIFEST_PATH);
 
-  const flagged = parseArgs(['--json', '--quiet', '--prod-url=https://staging.example.com', '--manifest=/tmp/x.json', '--timeout-ms=5000']);
+  const flagged = parseArgs(['--json', '--quiet', '--prod-url=https://staging.example.com', '--manifest=/tmp/x.json', '--timeout-ms=5000', '--max-attempts=3', '--retry-delay-ms=250']);
   assert.equal(flagged.json, true);
   assert.equal(flagged.quiet, true);
   assert.equal(flagged.prodUrl, 'https://staging.example.com');
   assert.equal(flagged.manifestPath, '/tmp/x.json');
   assert.equal(flagged.timeoutMs, 5000);
+  assert.equal(flagged.maxAttempts, 3);
+  assert.equal(flagged.retryDelayMs, 250);
 
   // Negative + non-numeric --timeout-ms is ignored (defaults preserved)
   const bad = parseArgs(['--timeout-ms=not-a-number']);
   assert.equal(bad.timeoutMs, 12000);
+  assert.equal(bad.maxAttempts, DEFAULT_MAX_ATTEMPTS);
+  assert.equal(bad.retryDelayMs, DEFAULT_RETRY_DELAY_MS);
 });
 
 test('loadManifest: rejects empty pages array', () => {
@@ -146,6 +152,7 @@ test('probePage: surfaces fetch errors as error field', async () => {
     prodUrl: 'https://x.test',
     route: '/whatever',
     sentinel: 'x',
+    retryDelayMs: 0,
     fetchImpl: async () => { throw new Error('ECONNREFUSED'); },
   });
   assert.equal(r.ok, false);
@@ -158,6 +165,7 @@ test('probePage: aborts on timeout', async () => {
     route: '/slow',
     sentinel: 'x',
     timeoutMs: 5,
+    retryDelayMs: 0,
     fetchImpl: async (_url, opts) => new Promise((_, reject) => {
       if (opts?.signal) opts.signal.addEventListener('abort', () => {
         const e = new Error('aborted'); e.name = 'AbortError'; reject(e);
@@ -166,6 +174,49 @@ test('probePage: aborts on timeout', async () => {
   });
   assert.equal(r.ok, false);
   assert.match(r.error, /^timeout_after_/);
+  assert.equal(r.attempts, DEFAULT_MAX_ATTEMPTS);
+});
+
+test('probePage: retries a transient timeout and records recovery', async () => {
+  let calls = 0;
+  const r = await probePage({
+    prodUrl: 'https://x.test',
+    route: '/',
+    sentinel: 'buyer page',
+    retryDelayMs: 0,
+    fetchImpl: async () => {
+      calls += 1;
+      if (calls === 1) {
+        const error = new Error('aborted');
+        error.name = 'AbortError';
+        throw error;
+      }
+      return response('buyer page');
+    },
+  });
+
+  assert.equal(r.ok, true);
+  assert.equal(r.attempts, 2);
+  assert.equal(r.recoveredAfterRetry, true);
+  assert.equal(calls, 2);
+});
+
+test('probePage: does not retry a deterministic content mismatch', async () => {
+  let calls = 0;
+  const r = await probePage({
+    prodUrl: 'https://x.test',
+    route: '/',
+    sentinel: 'expected buyer page',
+    retryDelayMs: 0,
+    fetchImpl: async () => {
+      calls += 1;
+      return response('wrong content');
+    },
+  });
+
+  assert.equal(r.ok, false);
+  assert.equal(r.attempts, 1);
+  assert.equal(calls, 1);
 });
 
 test('probePage: ok=false when fetch is unavailable', async () => {
