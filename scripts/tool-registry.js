@@ -1311,6 +1311,27 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'gate_check',
+    // Harnesses with a native pre-tool hook (Claude Code, Codex, Gemini, Forge) get hard
+    // enforcement and never need this. MCP-only harnesses (Cline, Cursor, OpenCode) have no
+    // interception point, so this exposes the SAME gates engine as a tool the agent calls
+    // before acting. adapters/cline/.clinerules has instructed agents to call
+    // `thumbgate.gate_check` since the adapter shipped — but the tool did not exist, so
+    // that enforcement was inert. This makes the documented contract real.
+    description: 'Evaluate a proposed tool call against ThumbGate policy BEFORE executing it. Returns decision "block" (do not run the action; surface the reason) or "allow". Use this when about to run a shell command, write/edit a file, or take any irreversible action.',
+    inputSchema: {
+      type: 'object',
+      required: ['tool_name'],
+      properties: {
+        tool_name: { type: 'string', description: 'The tool about to be invoked (e.g. Bash, Write, Edit)' },
+        tool_input: {
+          type: 'object',
+          description: 'The proposed arguments, e.g. { "command": "rm -rf /" } for Bash or { "file_path": "..." } for Write',
+        },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'gate_stats',
     description: 'Get gate enforcement statistics -- blocked count, warned count, top gates',
     inputSchema: {

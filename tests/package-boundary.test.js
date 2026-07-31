@@ -402,8 +402,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 392 -> 395 (2026-07-30): server.json + glama.json + smithery.yaml for MCP registry start
     // 395 -> 400 (2026-07-30): embedding maintenance + hybrid ablation runtime/fixture
     // plus document chunker + skill-pack dependencies required by packed search
-    manifest.fileCount <= 400,
-    `npm package should stay <= 400 files, got ${manifest.fileCount}`
+    // 400 -> 401 (2026-07-30): scripts/harness-tool-names.js. adapters/mcp/server-stdio.js require()s it during gate_check, so the published package throws without it. Pure lookup table mapping harness tool vocabularies to canonical gate names; no I/O, no Core imports.
+    manifest.fileCount <= 401,
+    `npm package should stay <= 401 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

@@ -6,14 +6,20 @@
       "layer": "Identity",
       "pattern": "^(git\\s+(add|commit|push|tag)|gh\\s+pr\\s+|gh\\s+release\\s+create|npm\\s+publish|yarn\\s+publish|pnpm\\s+publish)",
       "action": "block",
-      "when": { "constraints": { "local_only": true } },
+      "when": {
+        "constraints": {
+          "local_only": true
+        }
+      },
       "message": "User requested local-only work. Git writes, PR operations, and release actions are blocked.",
       "severity": "critical"
     },
     {
       "id": "raw-gh-auto-merge-blocked",
       "layer": "Execution",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "gh\\s+pr\\s+merge\\b[^\\n]*--auto",
       "action": "block",
       "message": "Raw GitHub auto-merge is blocked. Use npm run pr:manage after all critical quality checks have terminal success.",
@@ -22,7 +28,9 @@
     {
       "id": "task-scope-required",
       "layer": "Decisions",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "^(git\\s+(add|commit|push)|gh\\s+pr\\s+(create|merge)|gh\\s+api\\b(?=.*(?:/pulls\\b|repos/[^\\s]+/[^\\s]+/pulls\\b))(?=.*(?:-f\\b|--field\\b|-F\\b|--raw-field\\b|--method\\s+POST\\b|-X\\s+POST\\b))|gh\\s+release\\s+create|git\\s+tag\\b|npm\\s+publish|yarn\\s+publish|pnpm\\s+publish)",
       "requireTaskScope": true,
       "action": "block",
@@ -32,7 +40,11 @@
     {
       "id": "task-scope-edit-boundary",
       "layer": "Decisions",
-      "toolNames": ["Edit", "Write", "MultiEdit"],
+      "toolNames": [
+        "Edit",
+        "Write",
+        "MultiEdit"
+      ],
       "pattern": ".*",
       "requireTaskScope": true,
       "scopeMode": "declared-only",
@@ -43,7 +55,12 @@
     {
       "id": "protected-file-approval-required",
       "layer": "Decisions",
-      "toolNames": ["Edit", "Write", "MultiEdit", "Bash"],
+      "toolNames": [
+        "Edit",
+        "Write",
+        "MultiEdit",
+        "Bash"
+      ],
       "pattern": ".*",
       "requireProtectedApproval": true,
       "protectedGlobs": [
@@ -93,7 +110,9 @@
     {
       "id": "branch-governance-required",
       "layer": "Decisions",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "^(gh\\s+pr\\s+(create|merge)|gh\\s+api\\b(?=.*(?:/pulls\\b|repos/[^\\s]+/[^\\s]+/pulls\\b))(?=.*(?:-f\\b|--field\\b|-F\\b|--raw-field\\b|--method\\s+POST\\b|-X\\s+POST\\b))|gh\\s+release\\s+create|git\\s+tag\\b|npm\\s+publish|yarn\\s+publish|pnpm\\s+publish)",
       "requireBranchGovernance": true,
       "action": "block",
@@ -103,7 +122,9 @@
     {
       "id": "release-readiness-required",
       "layer": "Execution",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "^(gh\\s+release\\s+create|git\\s+tag\\b|npm\\s+publish|yarn\\s+publish|pnpm\\s+publish)",
       "requireReleaseReadiness": true,
       "action": "block",
@@ -153,29 +174,45 @@
       "action": "block",
       "message": "Force push blocked. This is destructive and irreversible.",
       "severity": "critical",
-      "compliance": ["NIST-CM-5", "SOC2-CC8.1", "CWE-863"]
+      "compliance": [
+        "NIST-CM-5",
+        "SOC2-CC8.1",
+        "CWE-863"
+      ]
     },
     {
       "id": "git-reset-hard",
       "layer": "Execution",
       "trigger": "Bash:git_reset_hard",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "(?:^|[;&|]\\s*)git\\s+reset\\s+--hard\\b",
       "action": "block",
       "message": "git reset --hard is blocked because it can destroy uncommitted work. Stash or use a non-destructive restore path with explicit user approval.",
       "severity": "critical",
-      "compliance": ["NIST-CM-5", "SOC2-CC8.1", "CWE-863"]
+      "compliance": [
+        "NIST-CM-5",
+        "SOC2-CC8.1",
+        "CWE-863"
+      ]
     },
     {
       "id": "git-clean-force",
       "layer": "Execution",
       "trigger": "Bash:git_clean_force",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "(?:^|[;&|]\\s*)git\\s+clean\\s+(?:-[^\\s]*f[^\\s]*|--force)\\b",
       "action": "block",
       "message": "git clean --force is blocked because it can delete untracked user work. Inventory files and get explicit approval before destructive cleanup.",
       "severity": "critical",
-      "compliance": ["NIST-CM-5", "SOC2-CC8.1", "CWE-863"]
+      "compliance": [
+        "NIST-CM-5",
+        "SOC2-CC8.1",
+        "CWE-863"
+      ]
     },
     {
       "id": "protected-branch-push",
@@ -190,12 +227,30 @@
       "id": "rm-rf-home-or-root",
       "layer": "Execution",
       "trigger": "Bash:rm_rf_home_or_root",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "(?:^|[;&|]\\s*)rm\\s+-(?=[^\\s]*r)(?=[^\\s]*f)[^\\s]+\\s+(?:/|/\\*|~(?:/[^\\s]*)?|\\$HOME(?:/[^\\s]*)?)(?:\\s|$)",
       "action": "block",
       "message": "Broad rm -rf against root or home is blocked. Use a narrow, reviewed path and explicit approval for destructive deletes.",
       "severity": "critical",
-      "compliance": ["NIST-CM-5", "SOC2-CC8.1", "CWE-732"]
+      "compliance": [
+        "NIST-CM-5",
+        "SOC2-CC8.1",
+        "CWE-732"
+      ]
+    },
+    {
+      "id": "secret-egress",
+      "layer": "Execution",
+      "toolNames": [
+        "Bash"
+      ],
+      "pattern": "(?=.*(?:\\.env\\b|\\.env\\.[a-z]+|id_rsa|id_ed25519|\\.ssh/id_|\\.aws/credentials|\\.npmrc|\\.pypirc|\\.netrc|[\\w./-]*\\.pem\\b|[\\w./-]*\\.p12\\b|credentials\\.json|service[-_]account[\\w-]*\\.json|\\$\\{?[A-Z0-9_]*(?:API_KEY|APIKEY|SECRET|TOKEN|PASSWORD|PRIVATE_KEY)\\}?))(?=.*(?:\\bcurl\\b|\\bwget\\b|\\bnc\\b|\\bncat\\b|\\bnetcat\\b|\\bscp\\b|\\bsftp\\b|\\bftp\\b|\\bhttpie\\b|\\bhttp\\s+(?:POST|PUT)\\b|\\brsync\\b\\s+[^|]*@))",
+      "action": "block",
+      "message": "Blocked: this command reads credential material AND sends it off the machine. If this is intentional, move the secret through an approved secret manager rather than piping it to a network sink.",
+      "severity": "critical",
+      "_ordering": "MUST precede env-file-edit and deny-network-egress: both are action:warn and match broadly (any .env mention / any curl to a non-allowlisted host). First-match-wins means either would swallow this critical block."
     },
     {
       "id": "env-file-edit",
@@ -203,27 +258,41 @@
       "trigger": "Edit:env_file",
       "pattern": "\\.env",
       "action": "warn",
-      "message": "Editing .env file — verify you are not deleting existing tokens",
+      "message": "Editing .env file \u2014 verify you are not deleting existing tokens",
       "severity": "medium",
-      "compliance": ["NIST-IA-5", "SOC2-CC6.1", "CWE-798"]
+      "compliance": [
+        "NIST-IA-5",
+        "SOC2-CC6.1",
+        "CWE-798"
+      ]
     },
     {
       "id": "deny-network-egress",
       "layer": "Cloud",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "(?:\\b(?:curl|wget)\\b[^\\n]{0,600}https?://(?!(?:github\\.com|registry\\.npmjs\\.org|api\\.anthropic\\.com|localhost|127\\.0\\.0\\.1|\\[::1\\]|0\\.0\\.0\\.0)(?:[:/?#]|$))[\\w.-]+|\\b(?:curl|wget)\\b\\s+(?:-\\S+\\s+)*(?!(?:https?://)?(?:github\\.com|registry\\.npmjs\\.org|api\\.anthropic\\.com|localhost|127\\.0\\.0\\.1|\\[::1\\]|0\\.0\\.0\\.0)(?:[:/?#]|$))(?:[\\w.-]+\\.)+[a-z]{2,}(?:[:/?#]|\\s|$)|\\bopen\\b[^\\n]{0,240}https?://(?!(?:github\\.com|registry\\.npmjs\\.org|api\\.anthropic\\.com|localhost|127\\.0\\.0\\.1|\\[::1\\]|0\\.0\\.0\\.0)(?:[:/?#]|$))[\\w.-]+|\\bnode\\b[^\\n]{0,240}\\bfetch\\s*\\(|\\bpython3?\\b[^\\n]{0,240}\\b(?:requests\\.(?:get|post)|urllib\\.request))",
       "action": "warn",
       "unless": "egress_approved",
       "message": "Potential unauthorized network egress detected.",
       "severity": "medium",
-      "compliance": ["NIST-SC-7", "SOC2-CC6.6", "OWASP-A10"]
+      "compliance": [
+        "NIST-SC-7",
+        "SOC2-CC6.6",
+        "OWASP-A10"
+      ]
     },
     {
       "id": "unverified-skill-use",
       "layer": "Supply Chain",
       "trigger": "Skill:load",
       "pattern": ".*",
-      "when": { "constraints": { "THUMBGATE_DELEGATION_MODE": true } },
+      "when": {
+        "constraints": {
+          "THUMBGATE_DELEGATION_MODE": true
+        }
+      },
       "action": "warn",
       "unless": "skill_verified",
       "message": "Skill provenance check failed. Run 'npm run skill:verify' or satisfy 'skill_verified' with a valid signature to proceed.",
@@ -232,12 +301,19 @@
     {
       "id": "supply-chain-dep-add",
       "layer": "Supply Chain",
-      "toolNames": ["Edit", "Write"],
+      "toolNames": [
+        "Edit",
+        "Write"
+      ],
       "pattern": "package\\.json$",
       "action": "warn",
       "message": "Dependency mutation detected in package.json. Security scanner will audit for typosquatting, wildcard versions, and suspicious install scripts.",
       "severity": "high",
-      "compliance": ["NIST-SA-12", "OWASP-A06", "CWE-1357"]
+      "compliance": [
+        "NIST-SA-12",
+        "OWASP-A06",
+        "CWE-1357"
+      ]
     },
     {
       "id": "blocked-npx-content",
@@ -245,7 +321,11 @@
       "trigger": "Bash:exec",
       "pattern": ".*",
       "executable_hash": "237adf8f3747cad8b9b62fcfd0d9c8d509a64e550337707f55100afcb79e8900",
-      "when": { "constraints": { "THUMBGATE_DELEGATION_MODE": true } },
+      "when": {
+        "constraints": {
+          "THUMBGATE_DELEGATION_MODE": true
+        }
+      },
       "action": "block",
       "message": "Blocked npx execution by content hash. Renaming the binary does not bypass this gate.",
       "severity": "critical"
@@ -253,57 +333,91 @@
     {
       "id": "production-deploy-approval",
       "layer": "Execution",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "(?:railway|fly|heroku|vercel|render|kubectl|helm)\\s+(?:deploy|up|apply|release|push|rollout)",
       "action": "approve",
       "message": "Production deploy detected. Human approval required before this action can proceed.",
       "severity": "high",
-      "compliance": ["NIST-CM-3", "SOC2-CC8.1", "OWASP-A05"]
+      "compliance": [
+        "NIST-CM-3",
+        "SOC2-CC8.1",
+        "OWASP-A05"
+      ]
     },
     {
       "id": "schema-migration-approval",
       "layer": "Execution",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "(?:npx\\s+(?:sequelize|typeorm|prisma|knex|drizzle|flyway|liquibase)|alembic\\s+upgrade|rails\\s+db:migrate|php\\s+artisan\\s+migrate)\\b",
       "action": "approve",
       "message": "Database schema migration detected. Human approval required before this action can proceed.",
       "severity": "high",
-      "compliance": ["NIST-CM-3", "SOC2-CC8.1", "CWE-89"]
+      "compliance": [
+        "NIST-CM-3",
+        "SOC2-CC8.1",
+        "CWE-89"
+      ]
     },
     {
       "id": "permission-change-approval",
       "layer": "Execution",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "(?:chmod|chown|setfacl|iam|policy|role|grant|revoke)\\s+",
       "action": "approve",
       "message": "Permission or IAM change detected. Human approval required before this action can proceed.",
       "severity": "high",
-      "compliance": ["NIST-AC-6", "SOC2-CC6.1", "CWE-732"]
+      "compliance": [
+        "NIST-AC-6",
+        "SOC2-CC6.1",
+        "CWE-732"
+      ]
     },
     {
       "id": "style-violation-log",
       "layer": "Decisions",
-      "toolNames": ["Edit", "Write", "MultiEdit"],
+      "toolNames": [
+        "Edit",
+        "Write",
+        "MultiEdit"
+      ],
       "pattern": ".*",
       "action": "log",
-      "when": { "constraints": { "THUMBGATE_STYLE_AUDIT": true } },
+      "when": {
+        "constraints": {
+          "THUMBGATE_STYLE_AUDIT": true
+        }
+      },
       "message": "Style audit mode active. Action recorded for review but allowed to proceed.",
       "severity": "low"
     },
     {
       "id": "large-file-creation-log",
       "layer": "Execution",
-      "toolNames": ["Write"],
+      "toolNames": [
+        "Write"
+      ],
       "pattern": ".*",
       "action": "log",
-      "when": { "constraints": { "THUMBGATE_LARGE_FILE_AUDIT": true } },
+      "when": {
+        "constraints": {
+          "THUMBGATE_LARGE_FILE_AUDIT": true
+        }
+      },
       "message": "Large file write detected. Action recorded for audit trail but allowed to proceed.",
       "severity": "low"
     },
     {
       "id": "non-critical-warning-log",
       "layer": "Decisions",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "(?:console\\.log|debugger|TODO|FIXME|HACK|XXX)",
       "action": "log",
       "message": "Non-critical code pattern detected. Action recorded for audit trail but allowed to proceed.",
@@ -312,18 +426,26 @@
     {
       "id": "mcp-sql-delete-block",
       "layer": "Execution",
-      "toolNames": ["delete_record"],
+      "toolNames": [
+        "delete_record"
+      ],
       "pattern": ".*",
       "requireTaskScope": true,
       "action": "block",
       "message": "SQL MCP delete_record requires explicit task scope. Destructive database operations must be scoped to prevent accidental data loss.",
       "severity": "critical",
-      "compliance": ["NIST-AC-3", "SOC2-CC6.1", "CWE-89"]
+      "compliance": [
+        "NIST-AC-3",
+        "SOC2-CC6.1",
+        "CWE-89"
+      ]
     },
     {
       "id": "mcp-sql-execute-warn",
       "layer": "Execution",
-      "toolNames": ["execute_entity"],
+      "toolNames": [
+        "execute_entity"
+      ],
       "pattern": "(?:drop|truncate|alter|grant|revoke)",
       "action": "warn",
       "message": "SQL MCP execute_entity matches a potentially destructive DDL pattern. Review before proceeding.",
@@ -332,70 +454,115 @@
     {
       "id": "mcp-sql-bulk-update-warn",
       "layer": "Execution",
-      "toolNames": ["update_record"],
+      "toolNames": [
+        "update_record"
+      ],
       "pattern": "(?:WHERE\\s+1\\s*=\\s*1|WHERE\\s+true|WITHOUT\\s+WHERE)",
       "action": "block",
       "message": "SQL MCP bulk update without a safe WHERE clause. This could modify all records in the table.",
       "severity": "critical",
-      "compliance": ["NIST-AC-3", "CWE-89"]
+      "compliance": [
+        "NIST-AC-3",
+        "CWE-89"
+      ]
     },
     {
       "id": "self-protect-config",
       "layer": "Execution",
-      "toolNames": ["Edit", "Write", "MultiEdit"],
+      "toolNames": [
+        "Edit",
+        "Write",
+        "MultiEdit"
+      ],
       "pattern": "(?:config/gates/|config/(?:budget|enforcement|mcp-allowlists)\\.json|\\.thumbgate/config\\.json|thumbgate\\.json)",
       "action": "block",
       "message": "Self-protection: agent cannot modify ThumbGate configuration, gate rules, or budget settings.",
       "severity": "critical",
-      "compliance": ["NIST-AC-3", "OWASP-A01", "SOC2-CC6.1"]
+      "compliance": [
+        "NIST-AC-3",
+        "OWASP-A01",
+        "SOC2-CC6.1"
+      ]
     },
     {
       "id": "self-protect-kill",
       "layer": "Execution",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "(?:kill|pkill|killall)\\s+.*(?:thumbgate|gates-engine|budget-enforcer)",
       "action": "block",
       "message": "Self-protection: agent cannot terminate ThumbGate processes.",
       "severity": "critical",
-      "compliance": ["NIST-AC-3", "OWASP-A01"]
+      "compliance": [
+        "NIST-AC-3",
+        "OWASP-A01"
+      ]
     },
     {
       "id": "self-protect-env-override",
       "layer": "Execution",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "(?:export|unset)\\s+(?:THUMBGATE_|LANEKEEP_)",
       "action": "block",
       "message": "Self-protection: agent cannot modify ThumbGate environment variables.",
       "severity": "critical",
-      "compliance": ["NIST-AC-3", "SOC2-CC6.1"]
+      "compliance": [
+        "NIST-AC-3",
+        "SOC2-CC6.1"
+      ]
     },
     {
       "id": "self-protect-hooks-disable",
       "layer": "Execution",
-      "toolNames": ["Edit", "Write", "Bash"],
+      "toolNames": [
+        "Edit",
+        "Write",
+        "Bash"
+      ],
       "pattern": "(?:\\.claude/settings(?:\\.local)?\\.json|\\.codex/config\\.toml|scripts/hook-[^/]+\\.(?:js|sh))",
       "action": "block",
       "message": "Self-protection: agent cannot modify hook registrations.",
       "severity": "critical",
-      "compliance": ["NIST-AC-3", "OWASP-A01", "SOC2-CC6.1"]
+      "compliance": [
+        "NIST-AC-3",
+        "OWASP-A01",
+        "SOC2-CC6.1"
+      ]
     },
     {
       "id": "on-demand-careful-mode",
       "layer": "Execution",
-      "toolNames": ["Bash"],
+      "toolNames": [
+        "Bash"
+      ],
       "pattern": "(rm\\s+-rf|drop\\s+table|force-push|git\\s+push\\s+-[fF]|git\\s+push\\s+--force|kubectl\\s+delete)",
       "action": "block",
-      "when": { "constraints": { "careful_mode": true } },
+      "when": {
+        "constraints": {
+          "careful_mode": true
+        }
+      },
       "message": "Careful mode is active. Dangerous command is blocked.",
       "severity": "critical"
     },
     {
       "id": "on-demand-freeze-mode",
       "layer": "Decisions",
-      "toolNames": ["Edit", "Write", "MultiEdit"],
+      "toolNames": [
+        "Edit",
+        "Write",
+        "MultiEdit"
+      ],
       "pattern": ".*",
       "action": "block",
-      "when": { "constraints": { "freeze_mode": true } },
+      "when": {
+        "constraints": {
+          "freeze_mode": true
+        }
+      },
       "message": "Freeze mode is active. Edits outside the frozen directory are blocked.",
       "severity": "high"
     }

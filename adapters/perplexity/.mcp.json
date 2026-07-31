@@ -2,7 +2,7 @@
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["--yes", "--package", "thumbgate@1.26.8", "thumbgate", "serve"]
+      "args": ["--yes", "--package", "thumbgate@1.30.0", "thumbgate", "serve"]
     },
     "perplexity": {
       "command": "npx",
@@ -18,7 +18,7 @@
       "args": [
         "--yes",
         "--package",
-        "thumbgate@1.26.8",
+        "thumbgate@1.30.0",
         "thumbgate",
         "gate-check"
       ]

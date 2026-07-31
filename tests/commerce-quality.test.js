@@ -213,6 +213,11 @@ test('commerce MCP profile has the right tools', () => {
   ));
   const expected = [
     'approve_protected_action',
+    // gate_check joined every profile when it was implemented: a commerce agent with no
+    // pre-tool hook has no other way to ask whether an action is permitted, and this
+    // profile already carries the safety family (approve_protected_action,
+    // check_operational_integrity, track_action, verify_claim).
+    'gate_check',
     'capture_feedback',
     'check_operational_integrity',
     'recall',
