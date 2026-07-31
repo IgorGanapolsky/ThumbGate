@@ -154,6 +154,58 @@ function isGenericFeedbackText(value, signal) {
   return rules.some((pattern) => pattern.test(normalized));
 }
 
+/**
+ * Score a captured feedback entry with the reward rubric in judge-reward-function.
+ *
+ * `assessFeedbackActionability` answers a binary question — is this promotable at
+ * all. This answers the graded one: how good is the correction the operator wrote.
+ * A 👎 whose whatToChange is "be better" and a 👎 that says "run npm test before
+ * claiming green, see commit abc123" are both promotable; only one of them makes a
+ * useful prevention rule.
+ *
+ * Deterministic by construction. `buildCompositeReward` runs its Boolean rubric
+ * first and only consults an LLM judge if one is injected; we deliberately inject
+ * none, so this returns `scoringMode: 'deterministic_only'` and costs nothing. That
+ * matters: ANTHROPIC_API_KEY is frequently absent, and a scorer that silently
+ * degrades to nothing is worse than one that never claimed the LLM path.
+ *
+ * Reporting only — nothing here gates promotion. Wiring a fresh quality signal
+ * straight into enforcement would change which lessons become blocking rules, and
+ * that decision deserves its own change with its own evidence.
+ *
+ * @returns {{score: number, label: string, scoringMode: string, dimensions: object, passed: boolean}|null}
+ *   null when there is no corrective text worth scoring.
+ */
+function scoreFeedbackReward(params = {}) {
+  const signal = normalizeFeedbackSignal(params.signal);
+  const prediction = normalizeFeedbackText(
+    signal === 'positive'
+      ? (params.whatWorked || params.context)
+      : (params.whatToChange || params.whatWentWrong || params.context),
+  );
+  if (!prediction) return null;
+
+  // Lazy-require: judge-reward-function is a leaf, but feedback-quality is required
+  // by feedback-loop and three other modules — keep the import cost off that path
+  // until someone actually asks for a score.
+  let buildCompositeReward;
+  try {
+    ({ buildCompositeReward } = require('./judge-reward-function'));
+  } catch {
+    return null;
+  }
+  if (typeof buildCompositeReward !== 'function') return null;
+
+  const reward = buildCompositeReward({ prediction });
+  return {
+    score: reward.score,
+    label: reward.label,
+    scoringMode: reward.scoringMode || 'deterministic_only',
+    dimensions: reward.deterministic ? reward.deterministic.dimensions : {},
+    passed: Boolean(reward.deterministic && reward.deterministic.passed),
+  };
+}
+
 function assessFeedbackActionability(params = {}) {
   const signal = normalizeFeedbackSignal(params.signal);
   const primaryFields = signal === 'positive'
@@ -222,4 +274,5 @@ module.exports = {
   isGenericFeedbackText,
   assessFeedbackActionability,
   buildClarificationMessage,
+  scoreFeedbackReward,
 };
