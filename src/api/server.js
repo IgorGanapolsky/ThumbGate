@@ -9523,13 +9523,12 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         const signal = parsed.searchParams.get('signal') || null;
         let results;
         try {
-          const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
           results = await searchThumbgateAsync({
             query,
             limit: Number.isFinite(limit) ? limit : 10,
             source,
             signal,
-            feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
+            feedbackDir: requestFeedbackDir,
             metadataFilters: {
               tags: (parsed.searchParams.get('tags') || '').split(',').map((tag) => tag.trim()).filter(Boolean),
               sourceFormat: parsed.searchParams.get('sourceFormat') || undefined,
@@ -9554,13 +9553,12 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         const body = await parseJsonBody(req);
         let results;
         try {
-          const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
           results = await searchThumbgateAsync({
             query: body.query || body.q || '',
             limit: body.limit,
             source: body.source,
             signal: body.signal,
-            feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
+            feedbackDir: requestFeedbackDir,
             metadataFilters: body.filters,
             queryRewrite: body.queryRewrite !== false,
             accessContext: requestDocumentAccessContext,

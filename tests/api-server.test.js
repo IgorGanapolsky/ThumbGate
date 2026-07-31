@@ -737,6 +737,32 @@ test('hosted billing keys cannot list, read, or search another tenant documents'
   assert.equal(ownList.status, 200);
   assert.ok((await ownList.json()).documents.some((entry) => entry.documentId === imported.documentId));
 
+  const ownGetSearch = await fetch(apiUrl('/v1/search?q=saffron-isolation-marker&source=documents'), {
+    headers: tenantAHeaders,
+  });
+  assert.equal(ownGetSearch.status, 200);
+  assert.ok((await ownGetSearch.json()).results.some(
+    (entry) => entry.documentId === imported.documentId,
+  ));
+
+  const ownPostSearch = await fetch(apiUrl('/v1/search'), {
+    method: 'POST',
+    headers: tenantAHeaders,
+    body: JSON.stringify({ query: 'saffron-isolation-marker', source: 'documents' }),
+  });
+  assert.equal(ownPostSearch.status, 200);
+  assert.ok((await ownPostSearch.json()).results.some(
+    (entry) => entry.documentId === imported.documentId,
+  ));
+
+  const sharedRootSearch = await fetch(apiUrl('/v1/search?q=force-push&source=documents'), {
+    headers: tenantAHeaders,
+  });
+  assert.equal(sharedRootSearch.status, 200);
+  assert.equal((await sharedRootSearch.json()).results.some(
+    (entry) => entry.title === 'Release Policy',
+  ), false, 'hosted tenant search never reads legacy documents from the shared root');
+
   const crossTenantList = await fetch(apiUrl('/v1/documents?query=Isolation'), {
     headers: tenantBHeaders,
   });

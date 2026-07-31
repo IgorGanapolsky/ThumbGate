@@ -1131,10 +1131,30 @@ function importDocument(options = {}) {
     normalizedContent,
     sourceFormat,
   });
+  const access = buildDocumentAccess(options);
   const fingerprint = sha256(`${title}\n${normalizedContent}`);
+  // Protected documents need a storage identity that includes their owning
+  // scope. Otherwise identical content imported by two private principals (or
+  // as both tenant-visible and private) would overwrite the first document and
+  // silently replace its ACL. Keep legacy local IDs unchanged.
+  const storageScope = !access
+    ? null
+    : access.visibility === 'private'
+      ? JSON.stringify({
+        tenantId: access.tenantId,
+        visibility: 'private',
+        ownerId: access.ownerId,
+      })
+      : JSON.stringify({
+        tenantId: access.tenantId,
+        visibility: 'tenant',
+      });
+  const storageFingerprint = storageScope
+    ? sha256(`${fingerprint}\n${storageScope}`)
+    : fingerprint;
   const importedAt = nowIso();
   const sourceName = sourcePath ? path.basename(sourcePath) : null;
-  const documentId = `doc_${slugify(title || sourceName || 'document').slice(0, 24) || 'document'}_${fingerprint.slice(0, 12)}`;
+  const documentId = `doc_${slugify(title || sourceName || 'document').slice(0, 24) || 'document'}_${storageFingerprint.slice(0, 12)}`;
   const document = {
     documentId,
     title,
@@ -1152,7 +1172,6 @@ function importDocument(options = {}) {
     lineCount: normalizedContent.split('\n').filter(Boolean).length,
     headings: extractHeadings(normalizedContent),
   };
-  const access = buildDocumentAccess(options);
   if (access) document.access = access;
   document.proposals = options.proposeGates === false
     ? []

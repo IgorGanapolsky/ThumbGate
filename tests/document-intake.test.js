@@ -258,6 +258,43 @@ test('tenant and document ACLs fail closed across list, read, and search paths',
   }
 });
 
+test('private document storage identity prevents cross-principal ACL overwrite', () => {
+  const isolatedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-document-owner-scope-'));
+  const alice = { tenantId: 'tenant-shared', principalId: 'alice' };
+  const bob = { tenantId: 'tenant-shared', principalId: 'bob' };
+  try {
+    const common = {
+      feedbackDir: isolatedDir,
+      title: 'Shared Title',
+      content: 'Identical private source content.',
+      sourceFormat: 'text',
+      visibility: 'private',
+    };
+    const aliceDocument = importDocument({ ...common, accessContext: alice });
+    const bobDocument = importDocument({ ...common, accessContext: bob });
+
+    assert.notEqual(aliceDocument.documentId, bobDocument.documentId);
+    assert.equal(readImportedDocument(aliceDocument.documentId, {
+      feedbackDir: isolatedDir,
+      accessContext: alice,
+    })?.access.ownerId, 'alice');
+    assert.equal(readImportedDocument(bobDocument.documentId, {
+      feedbackDir: isolatedDir,
+      accessContext: bob,
+    })?.access.ownerId, 'bob');
+    assert.equal(readImportedDocument(aliceDocument.documentId, {
+      feedbackDir: isolatedDir,
+      accessContext: bob,
+    }), null);
+    assert.equal(listImportedDocuments({
+      feedbackDir: isolatedDir,
+      accessContext: alice,
+    }).documents.some((entry) => entry.documentId === bobDocument.documentId), false);
+  } finally {
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  }
+});
+
 test('hosted customer identities map to stable opaque tenant partitions', () => {
   const first = apiServerTest.buildHostedTenantIdentity({
     valid: true,
