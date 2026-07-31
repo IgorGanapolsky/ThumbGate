@@ -9,9 +9,9 @@
 #   5. Optional MCP gate_check for harnesses without PreToolUse hooks
 #
 # Honesty:
-#   - Default product is warn-by-default; demo pins STRICT so blocks show.
-#   - Learning uses force-promote (operator permanent gate). Auto multi-thumbs
-#     promotion is being hardened (PR #3119) so tag patterns are not inert.
+#   - Default product is warn-by-default; demo pins STRICT so hard blocks show.
+#   - Learning beat uses the real auto-promote path (3× 👎 → promote → DENY).
+#   - Pattern is command-derived so tag grouping cannot leave inert gates.
 #
 # Usage:
 #   bash demo/scale-the-vibe-demo.sh
@@ -162,48 +162,77 @@ HITS=${HITS:-0}
 printf '\n  %s → %s\n' "${DIM}grep vendor strings in gates-engine.js${OFF}" "${BOLD}${HITS}${OFF}"
 fi
 
-section "5. Self-improving beat — thumbs-down once, blocked next time"
+section "5. Self-improving beat — 3× 👎 auto-promote → DENY"
 printf '%s\n' "${DIM}This is the product name: thumbs teach the gate.${OFF}"
-printf '%s\n\n' "${DIM}Path: allow → capture 👎 → force-promote block → deny. (Operator-confirmed permanent gate.)${OFF}"
+printf '%s\n\n' "${DIM}Path: allow → 3× thumbs-down (with tags) → auto-promote → deny. Pattern matches the command, not the tag key.${OFF}"
 
-LEARN_CMD='python scripts/wipe-staging-db.py --force --yes'
+LEARN_CMD='kubectl delete deploy checkout-api -n prod'
 
 printf '  %s\n' "${CYAN}① Before any feedback${OFF}"
 gate "$LEARN_CMD"
 BEFORE="$LAST_DECISION"
 
-printf '  %s\n' "${CYAN}② Capture thumbs-down with context${OFF}"
-CAPTURE_OUT=$(node "$CLI" capture \
-  --feedback=down \
-  --context="$LEARN_CMD" \
-  --what-went-wrong="Wiped staging database without approval" \
-  --what-to-change="Never wipe staging DB without explicit human approval" \
-  2>&1 || true)
-printf '  %s\n' "${DIM}$(printf '%s' "$CAPTURE_OUT" | grep -v 'paid license' | tr '\n' ' ' | cut -c1-140)${OFF}"
-printf '  %s\n\n' "${DIM}👍/👎 stored as a local lesson (not model weights)${OFF}"
+printf '  %s\n' "${CYAN}② Three thumbs-down lessons (sandbox feedback log)${OFF}"
+# Write directly to the sandboxed feedback log so free-tier capture caps cannot
+# hide the loop in a meeting. This is the same JSONL promote() reads.
+LOG="$THUMBGATE_FEEDBACK_DIR/feedback-log.jsonl"
+LEARN_CMD="$LEARN_CMD" LOG="$LOG" python3 -c '
+import json, os, datetime
+cmd = os.environ["LEARN_CMD"]
+log = os.environ["LOG"]
+now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+rows = []
+for i in range(3):
+    rows.append(json.dumps({
+        "signal": "negative",
+        "feedback": "down",
+        "tags": ["entity:Customer", "entity:Funnel", "feedback", "negative"],
+        "context": cmd,
+        "whatWentWrong": "wiped prod checkout deployment",
+        "whatToChange": "never delete prod deployments",
+        "timestamp": now,
+    }))
+open(log, "a").write("\n".join(rows) + "\n")
+print("wrote 3 negative feedback rows with entity tags (the inert-pattern failure class)")
+' 
+printf '  %s\n\n' "${DIM}3× 👎 stored · tags would previously become an inert pattern key${OFF}"
 
-printf '  %s\n' "${CYAN}③ Promote to a permanent blocking gate (force-promote)${OFF}"
-PROMOTE_OUT=$(cd "$ROOT" && node -e '
-const { forcePromote, getAutoGatesPath } = require("./scripts/auto-promote-gates");
-const r = forcePromote(process.argv[1], "block");
-console.log(JSON.stringify({ gateId: r.gateId, action: r.action, totalGates: r.totalGates, path: getAutoGatesPath() }));
-' "$LEARN_CMD" 2>&1 || true)
-printf '  %s\n\n' "${DIM}${PROMOTE_OUT}${OFF}"
+printf '  %s\n' "${CYAN}③ Auto-promote (repeated-failure path)${OFF}"
+PROMOTE_OUT=$(cd "$ROOT" && LEARN_CMD="$LEARN_CMD" THUMBGATE_FEEDBACK_DIR="$THUMBGATE_FEEDBACK_DIR" node -e '
+const { promote, getAutoGatesPath, loadAutoGates } = require("./scripts/auto-promote-gates");
+const path = require("path");
+const log = path.join(process.env.THUMBGATE_FEEDBACK_DIR, "feedback-log.jsonl");
+const r = promote(log, { skipRegression: true });
+const gates = loadAutoGates().gates || [];
+const g = gates[0] || {};
+console.log(JSON.stringify({
+  promotions: (r.promotions || []).map(p => ({ type: p.type, gateId: p.gateId, action: p.action })),
+  pattern: g.pattern || null,
+  action: g.action || null,
+  path: getAutoGatesPath(),
+}));
+' 2>/dev/null || true)
+printf '  %s\n' "${DIM}${PROMOTE_OUT}${OFF}"
+# Prove pattern is the command, not entity tags
+if printf '%s' "$PROMOTE_OUT" | grep -q 'kubectl delete deploy'; then
+  printf '  %s\n\n' "${GREEN}✓ pattern is the command (not entity:Customer+entity:Funnel)${OFF}"
+else
+  printf '  %s\n\n' "${YELLOW}⚠ inspect pattern — expected command-derived match text${OFF}"
+fi
 
 printf '  %s\n' "${CYAN}④ Same command again — now gated${OFF}"
 gate "$LEARN_CMD"
 AFTER="$LAST_DECISION"
 
 if [ "$AFTER" = "deny" ] && [ "$BEFORE" = "allow" ]; then
-  printf '  %s\n' "${GREEN}✓ Learning loop closed: ALLOW → 👎 → DENY on the exact command${OFF}"
+  printf '  %s\n' "${GREEN}✓ A+ learning loop: ALLOW → 3× 👎 → auto-promote → DENY${OFF}"
 elif [ "$AFTER" = "deny" ]; then
-  printf '  %s\n' "${GREEN}✓ DENY after promote${OFF}"
+  printf '  %s\n' "${GREEN}✓ DENY after auto-promote${OFF}"
 else
-  printf '  %s\n' "${RED}✖ Still allowed after promote — do not claim learning in the room${OFF}"
+  printf '  %s\n' "${RED}✖ Still allowed after auto-promote — do not claim learning${OFF}"
   printf '  %s\n' "${DIM}BEFORE=$BEFORE AFTER=$AFTER FEEDBACK_DIR=$THUMBGATE_FEEDBACK_DIR${OFF}"
 fi
-printf '\n  %s\n' "${DIM}Honest boundary: force-promote is the proven permanent path. Auto multi-👎${OFF}"
-printf '  %s\n' "${DIM}promotion is being hardened so tag-derived patterns cannot sit inert (PR #3119).${OFF}"
+printf '\n  %s\n' "${DIM}Control layer only — no model retrain. Auto-promoted gates expire; force-promote stays permanent.${OFF}"
 
 if [ "$FAST" -eq 0 ] && [ "$LEARN_ONLY" -eq 0 ]; then
 section "6. No PreToolUse hook? Still get a verdict over MCP"
@@ -255,7 +284,7 @@ cat <<'SUMMARY'
   · Builtin catastrophic classes hard-block (secrets, recursive deletes, destructive SQL).
   · Safe daily work still goes through.
   · Verdicts are deterministic — no model decides.
-  · thumbs-down + promote turns a free pass into a permanent gate on the exact command.
+  · 3× thumbs-down auto-promotes a command-matching gate that DENYs the next attempt.
   · Hard block where the harness hooks PreToolUse; advisory over MCP where it does not.
 
   Cash path: prove one caught repeat → Start Pro ($19/mo) or $499 Diagnostic for one workflow.
