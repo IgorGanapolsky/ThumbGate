@@ -29,6 +29,10 @@
   entity channel fix, golden eval floors (`npm run eval:rerank`), and honest
   scorecard in `docs/RERANKING_A_PLUS.md`. PreToolUse uses the offline sync path.
 
+- Evaluation A+ suite: expand the ranking golden with additional slices;
+  add offline Ragas-style faithfulness, groundedness, and answer-relevance
+  regressions; and expose one unified `npm run eval:quality` gate.
+
 - 83d9d88: Update the development coverage toolchain to c8 12.
 - e0465e5: Add canonical campaign attribution, safe buyer-route verification, and hourly
   hosted outcome monitoring for the seven-channel marketing-agent campaign.

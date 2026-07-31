@@ -143,6 +143,9 @@ function evaluateRankingGolden(options = {}) {
   if (thresholds.minNdcgAt5 != null && summary['ndcg@5'] < thresholds.minNdcgAt5) {
     failures.push(`ndcg@5 ${summary['ndcg@5'].toFixed(3)} < ${thresholds.minNdcgAt5}`);
   }
+  if (thresholds.minPrecisionAt5 != null && summary['precision@5'] < thresholds.minPrecisionAt5) {
+    failures.push(`precision@5 ${summary['precision@5'].toFixed(3)} < ${thresholds.minPrecisionAt5}`);
+  }
   if (thresholds.minExactMrr != null && sliceSummary.exact) {
     if (sliceSummary.exact.mrr < thresholds.minExactMrr) {
       failures.push(

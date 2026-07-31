@@ -1,13 +1,18 @@
 {
-  "version": 1,
-  "description": "Graded qrels for ThumbGate retrieval ranking (Recall@k / MRR / nDCG). Corpus is self-contained so CI does not depend on operator feedbackDir. Slices: exact, paraphrase, tool-scoped, distractor-heavy.",
-  "kValues": [1, 5, 10],
+  "version": 2,
+  "description": "Graded qrels for ThumbGate retrieval ranking (Recall@k / MRR / nDCG / Precision@k). Expanded A+ set (2026-07-31). Self-contained CI corpus.",
+  "kValues": [
+    1,
+    5,
+    10
+  ],
   "thresholds": {
-    "minMrr": 0.55,
-    "minRecallAt5": 0.75,
-    "minNdcgAt5": 0.55,
+    "minMrr": 0.6,
+    "minRecallAt5": 0.8,
+    "minNdcgAt5": 0.58,
+    "minPrecisionAt5": 0.25,
     "minExactMrr": 0.85,
-    "minQueries": 8
+    "minQueries": 18
   },
   "corpus": [
     {
@@ -15,96 +20,301 @@
       "title": "MISTAKE: force-push to main",
       "content": "NEVER force-push or git push --force to main/master. Use --force-with-lease only on personal branches after review. Protected branch history must not be rewritten.",
       "signal": "negative",
-      "tags": ["git", "force-push", "main", "negative"],
-      "metadata": { "toolsUsed": ["Bash"], "domain": "git" }
+      "tags": [
+        "git",
+        "force-push",
+        "main",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Bash"
+        ],
+        "domain": "git"
+      }
     },
     {
       "id": "doc:deploy-health",
       "title": "MISTAKE: claimed deployed without health check",
       "content": "ALWAYS verify /health endpoint returns the new version after deploy. NEVER say deployed without curling health and matching version. Wait 2-5 minutes after Railway rebuild.",
       "signal": "negative",
-      "tags": ["deploy", "railway", "health", "negative"],
-      "metadata": { "toolsUsed": ["Bash"], "domain": "railway-deploy" }
+      "tags": [
+        "deploy",
+        "railway",
+        "health",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Bash"
+        ],
+        "domain": "railway-deploy"
+      }
     },
     {
       "id": "doc:stripe-idempotency",
       "title": "MISTAKE: PaymentIntent without idempotency key",
       "content": "ALWAYS use idempotency keys on PaymentIntent creation to prevent duplicate charges. NEVER create charges without an idempotency key in production Stripe flows.",
       "signal": "negative",
-      "tags": ["stripe", "payment", "idempotency", "negative"],
-      "metadata": { "toolsUsed": ["Edit", "Bash"], "domain": "stripe-integration" }
+      "tags": [
+        "stripe",
+        "payment",
+        "idempotency",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Edit",
+          "Bash"
+        ],
+        "domain": "stripe-integration"
+      }
     },
     {
       "id": "doc:stripe-raw-card",
       "title": "MISTAKE: stored raw card numbers",
       "content": "NEVER log or store raw card numbers. Use Stripe tokens or PaymentMethod IDs. Card PAN storage is a PCI violation.",
       "signal": "negative",
-      "tags": ["stripe", "pci", "card", "negative"],
-      "metadata": { "toolsUsed": ["Edit", "Write"], "domain": "stripe-integration" }
+      "tags": [
+        "stripe",
+        "pci",
+        "card",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Edit",
+          "Write"
+        ],
+        "domain": "stripe-integration"
+      }
     },
     {
       "id": "doc:db-backup",
       "title": "MISTAKE: drop table without backup",
       "content": "ALWAYS back up the database before running destructive migrations. NEVER drop users table or truncate production tables without a restore point.",
       "signal": "negative",
-      "tags": ["database", "migration", "backup", "negative"],
-      "metadata": { "toolsUsed": ["Bash"], "domain": "database-migration" }
+      "tags": [
+        "database",
+        "migration",
+        "backup",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Bash"
+        ],
+        "domain": "database-migration"
+      }
     },
     {
       "id": "doc:db-test-first",
       "title": "MISTAKE: migrate deploy without test database",
       "content": "ALWAYS run migrations against a test database first. NEVER run prisma migrate deploy in production without verifying on staging.",
       "signal": "negative",
-      "tags": ["database", "prisma", "migration", "negative"],
-      "metadata": { "toolsUsed": ["Bash"], "domain": "database-migration" }
+      "tags": [
+        "database",
+        "prisma",
+        "migration",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Bash"
+        ],
+        "domain": "database-migration"
+      }
     },
     {
       "id": "doc:secrets-env",
       "title": "MISTAKE: committed .env secrets",
       "content": "NEVER commit .env files, API keys, or PEMs to git. Redact secrets from logs and PR bodies. Rotate any leaked credential immediately.",
       "signal": "negative",
-      "tags": ["security", "secrets", "env", "negative"],
-      "metadata": { "toolsUsed": ["Write", "Edit"], "domain": "security" }
+      "tags": [
+        "security",
+        "secrets",
+        "env",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Write",
+          "Edit"
+        ],
+        "domain": "security"
+      }
     },
     {
       "id": "doc:false-done",
       "title": "MISTAKE: said done without gh pr view",
       "content": "NEVER say done, pushed, or shipped without showing gh pr view output and green CI. Open PR with auto-merge is not done.",
       "signal": "negative",
-      "tags": ["pr", "ci", "verification", "negative"],
-      "metadata": { "toolsUsed": ["Bash"], "domain": "verification" }
+      "tags": [
+        "pr",
+        "ci",
+        "verification",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Bash"
+        ],
+        "domain": "verification"
+      }
     },
     {
       "id": "doc:noise-ui",
       "title": "SUCCESS: dashboard button spacing",
       "content": "Adjusted CSS padding on the dashboard stat cards for mobile. Visual polish only; no gate or retrieval impact.",
       "signal": "positive",
-      "tags": ["css", "dashboard", "positive"],
-      "metadata": { "toolsUsed": ["Edit"], "domain": "ui" }
+      "tags": [
+        "css",
+        "dashboard",
+        "positive"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Edit"
+        ],
+        "domain": "ui"
+      }
     },
     {
       "id": "doc:noise-docs",
       "title": "SUCCESS: typo in README",
       "content": "Fixed a spelling typo in the install section of the README. No behavioral change.",
       "signal": "positive",
-      "tags": ["docs", "readme", "positive"],
-      "metadata": { "toolsUsed": ["Edit"], "domain": "docs" }
+      "tags": [
+        "docs",
+        "readme",
+        "positive"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Edit"
+        ],
+        "domain": "docs"
+      }
     },
     {
       "id": "doc:related-git-rebase",
       "title": "MISTAKE: rebase of shared branch",
       "content": "NEVER rebase a branch that others have already pulled. Prefer merge commits on shared feature branches.",
       "signal": "negative",
-      "tags": ["git", "rebase", "negative"],
-      "metadata": { "toolsUsed": ["Bash"], "domain": "git" }
+      "tags": [
+        "git",
+        "rebase",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Bash"
+        ],
+        "domain": "git"
+      }
     },
     {
       "id": "doc:related-stripe-webhook",
       "title": "MISTAKE: webhook without signature verify",
       "content": "ALWAYS verify Stripe webhook signatures with constructEvent before processing. NEVER trust raw webhook bodies.",
       "signal": "negative",
-      "tags": ["stripe", "webhook", "negative"],
-      "metadata": { "toolsUsed": ["Edit"], "domain": "stripe-integration" }
+      "tags": [
+        "stripe",
+        "webhook",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Edit"
+        ],
+        "domain": "stripe-integration"
+      }
+    },
+    {
+      "id": "doc:recursive-delete",
+      "title": "MISTAKE: recursive delete of production data",
+      "content": "NEVER run recursive force-delete on production paths or database directories without a restore snapshot. Prefer soft-delete and scoped cleanup scripts.",
+      "signal": "negative",
+      "tags": [
+        "delete",
+        "destructive",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Bash"
+        ],
+        "domain": "filesystem"
+      }
+    },
+    {
+      "id": "doc:lease-double-exec",
+      "title": "MISTAKE: two executors on one agent thread",
+      "content": "ALWAYS enforce one-thread-one-executor with a 90-second renewable lease. Two active executors cause double writes worse than stall.",
+      "signal": "negative",
+      "tags": [
+        "lease",
+        "continuity",
+        "failover",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Bash"
+        ],
+        "domain": "continuity"
+      }
+    },
+    {
+      "id": "doc:hashnode-frozen",
+      "title": "MISTAKE: republish on Hashnode after AutoMod",
+      "content": "NEVER publish or re-publish on Hashnode while AutoMod freeze is active. Prefer Medium and dev.to for longform with buy links.",
+      "signal": "negative",
+      "tags": [
+        "hashnode",
+        "social",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Bash"
+        ],
+        "domain": "social"
+      }
+    },
+    {
+      "id": "doc:trunk-merge",
+      "title": "MISTAKE: raw gh pr merge auto on main",
+      "content": "ALWAYS use npm run pr:manage or trunk merge for main. NEVER raw gh pr merge auto around required checks.",
+      "signal": "negative",
+      "tags": [
+        "pr",
+        "trunk",
+        "merge",
+        "negative"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Bash"
+        ],
+        "domain": "verification"
+      }
+    },
+    {
+      "id": "doc:noise-weather",
+      "title": "SUCCESS: weather note",
+      "content": "Recorded that the office AC was fixed. Unrelated to agents or gates.",
+      "signal": "positive",
+      "tags": [
+        "ops",
+        "positive"
+      ],
+      "metadata": {
+        "toolsUsed": [
+          "Edit"
+        ],
+        "domain": "noise"
+      }
     }
   ],
   "queries": [
@@ -207,6 +417,105 @@
         "doc:related-git-rebase": 1,
         "doc:noise-ui": 0,
         "doc:noise-docs": 0
+      }
+    },
+    {
+      "id": "exact-recursive-delete",
+      "slice": "exact",
+      "query": "recursively force-delete the production data directory",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:recursive-delete": 2,
+        "doc:db-backup": 1
+      }
+    },
+    {
+      "id": "para-recursive-delete",
+      "slice": "paraphrase",
+      "query": "wipe the whole prod folder recursively without a snapshot",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:recursive-delete": 2,
+        "doc:db-backup": 1
+      }
+    },
+    {
+      "id": "exact-lease",
+      "slice": "exact",
+      "query": "two cloud runners claimed the same task lease",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:lease-double-exec": 2
+      }
+    },
+    {
+      "id": "para-lease",
+      "slice": "paraphrase",
+      "query": "Mac went offline mid-run and Continuity double-wrote the migration",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:lease-double-exec": 2,
+        "doc:deploy-health": 1
+      }
+    },
+    {
+      "id": "exact-hashnode",
+      "slice": "exact",
+      "query": "republish the Hashnode post AutoMod archived",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:hashnode-frozen": 2
+      }
+    },
+    {
+      "id": "exact-trunk",
+      "slice": "exact",
+      "query": "gh pr merge auto the green PR into main",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:trunk-merge": 2,
+        "doc:false-done": 1
+      }
+    },
+    {
+      "id": "para-secrets",
+      "slice": "paraphrase",
+      "query": "push API keys and pem files into the git remote",
+      "toolName": "Write",
+      "qrels": {
+        "doc:secrets-env": 2
+      }
+    },
+    {
+      "id": "distractor-noise",
+      "slice": "distractor",
+      "query": "verify deploy health after Railway rebuild",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:deploy-health": 2,
+        "doc:false-done": 1,
+        "doc:noise-ui": 0,
+        "doc:noise-weather": 0
+      }
+    },
+    {
+      "id": "tool-scoped-card",
+      "slice": "tool-scoped",
+      "query": "persist full credit card PAN next to the user row",
+      "toolName": "Write",
+      "qrels": {
+        "doc:stripe-raw-card": 2,
+        "doc:secrets-env": 1
+      }
+    },
+    {
+      "id": "para-idempotency",
+      "slice": "paraphrase",
+      "query": "create stripe charge for fifty dollars without duplicate risk",
+      "toolName": "Edit",
+      "qrels": {
+        "doc:stripe-idempotency": 2,
+        "doc:related-stripe-webhook": 1
       }
     }
   ]
