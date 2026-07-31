@@ -419,7 +419,15 @@ function classifyTelemetryAudience(entry = {}, raw = {}) {
 }
 
 function sanitizeTelemetryPayload(payload = {}, headers = {}) {
-  const raw = payload && typeof payload === 'object' ? payload : {};
+  const envelope = payload && typeof payload === 'object' ? payload : {};
+  const nestedProps = envelope.props
+    && typeof envelope.props === 'object'
+    && !Array.isArray(envelope.props)
+    ? envelope.props
+    : {};
+  // Browser analytics libraries conventionally wrap event properties in
+  // `props`. Flatten that envelope while letting explicit top-level fields win.
+  const raw = { ...nestedProps, ...envelope };
   const clientType = inferClientType(raw);
   const eventType = inferEventType(raw, clientType);
   const source = pickFirstText(raw.source, raw.utmSource, clientType === 'cli' ? 'cli' : 'direct');
@@ -471,6 +479,10 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     ctaId: pickFirstText(raw.ctaId),
     ctaPlacement: pickFirstText(raw.ctaPlacement),
     planId: pickFirstText(raw.planId),
+    segment: pickFirstText(raw.segment, raw.buyerSegment, raw.campaignVariant, raw.variant),
+    experimentId: pickFirstText(raw.experimentId, raw.experiment, raw.utmCampaign),
+    value: normalizeInteger(raw.value),
+    currency: pickFirstText(raw.currency),
     linkSlug: pickFirstText(raw.linkSlug, raw.destinationSlug),
     destinationPath: pickFirstText(raw.destinationPath),
     pipelineStatus: pickFirstText(raw.pipelineStatus, raw.workflowSprintStatus, raw.status),

@@ -83,35 +83,45 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "Service",
-    "name": "ThumbGate Managed Workflow Diagnostic",
-    "description": "A bounded implementation for one supported local AI-agent workflow: review, configured pre-action gate, regression test, and rollout and rollback proof.",
-    "provider": { "@type": "Organization", "name": "ThumbGate", "url": "__APP_ORIGIN__/" },
-    "audience": { "@type": "BusinessAudience", "audienceType": "Engineering and platform teams with a repeated AI-agent failure" },
-    "offers": [
+    "@graph": [
       {
-        "@type": "Offer",
-        "name": "Managed workflow diagnostic",
-        "price": "499",
-        "priceCurrency": "USD",
-        "url": "__APP_ORIGIN__/pricing#buy",
-        "availability": "https://schema.org/InStock"
+        "@type": "Service",
+        "name": "ThumbGate Managed Workflow Diagnostic",
+        "description": "A bounded implementation for one supported local AI-agent workflow: review, configured pre-action gate, regression test, and rollout and rollback proof.",
+        "provider": { "@type": "Organization", "name": "ThumbGate", "url": "__APP_ORIGIN__/" },
+        "audience": { "@type": "BusinessAudience", "audienceType": "Engineering and platform teams with a repeated AI-agent failure" },
+        "offers": {
+          "@type": "Offer",
+          "name": "Managed workflow diagnostic",
+          "price": "499",
+          "priceCurrency": "USD",
+          "url": "__APP_ORIGIN__/pricing#buy",
+          "availability": "https://schema.org/InStock"
+        }
       },
       {
-        "@type": "Offer",
-        "name": "ThumbGate Pro monthly",
-        "price": "19",
-        "priceCurrency": "USD",
-        "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro",
-        "availability": "https://schema.org/InStock"
-      },
-      {
-        "@type": "Offer",
-        "name": "ThumbGate Pro annual",
-        "price": "149",
-        "priceCurrency": "USD",
-        "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro",
-        "availability": "https://schema.org/InStock"
+        "@type": "SoftwareApplication",
+        "name": "ThumbGate Pro",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Linux, Windows",
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "ThumbGate Pro monthly",
+            "price": "19",
+            "priceCurrency": "USD",
+            "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro",
+            "availability": "https://schema.org/InStock"
+          },
+          {
+            "@type": "Offer",
+            "name": "ThumbGate Pro annual",
+            "price": "149",
+            "priceCurrency": "USD",
+            "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro",
+            "availability": "https://schema.org/InStock"
+          }
+        ]
       }
     ]
   }
@@ -172,7 +182,8 @@
             <input type="hidden" name="plan_id" value="sprint_diagnostic">
             <input type="hidden" name="utm_source" value="pricing">
             <input type="hidden" name="utm_medium" value="direct_checkout">
-            <input type="hidden" name="utm_campaign" value="rally_style_gtm">
+            <input type="hidden" name="utm_campaign" value="value_packaging_v1">
+            <input id="pricing-buyer-segment" type="hidden" name="campaign_variant" value="workflow_team">
             <input type="hidden" name="cta_id" value="pricing_managed_gate_buy">
             <input type="hidden" name="cta_placement" value="pricing">
             <input type="hidden" name="landing_path" value="/pricing">
@@ -345,6 +356,10 @@
 
     document.querySelectorAll('[data-offer-link]').forEach(function (link) {
       link.addEventListener('click', function () {
+        if (link.getAttribute('href') === '#enterprise-gate') {
+          const buyerSegment = document.querySelector('#pricing-buyer-segment');
+          if (buyerSegment) buyerSegment.value = link.dataset.segment || 'workflow_team';
+        }
         const props = offerProps(
           link.dataset.ctaId || 'pricing_anchor',
           'pricing_anchor',
@@ -360,7 +375,14 @@
     const checkoutForm = document.querySelector('[data-primary-checkout]');
     if (checkoutForm) {
       checkoutForm.addEventListener('submit', function () {
-        const props = offerProps('pricing_managed_gate_buy', 'pricing', 'sprint_diagnostic', 499, 'workflow_team');
+        const buyerSegment = document.querySelector('#pricing-buyer-segment');
+        const props = offerProps(
+          'pricing_managed_gate_buy',
+          'pricing',
+          'sprint_diagnostic',
+          499,
+          buyerSegment ? buyerSegment.value : 'workflow_team'
+        );
         window.plausible('checkout_start', { props: props });
         sendFirstPartyTelemetry('checkout_start', props);
       });

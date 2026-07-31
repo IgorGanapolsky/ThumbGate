@@ -1026,6 +1026,8 @@ test('/go/diagnostic-pay requires POST plus a valid buyer email before Stripe', 
       customer_email: 'buyer@example.com',
       utm_source: 'audit',
       utm_medium: 'codex',
+      utm_campaign: 'value_packaging_v1',
+      campaign_variant: 'regulated_team',
       offer_code: 'VERIFY',
     }),
   });
@@ -1037,6 +1039,8 @@ test('/go/diagnostic-pay requires POST plus a valid buyer email before Stripe', 
   assert.equal(url.searchParams.get('customer_email'), null);
   assert.equal(url.searchParams.get('utm_source'), 'audit');
   assert.equal(url.searchParams.get('utm_medium'), 'codex');
+  assert.equal(url.searchParams.get('utm_campaign'), 'value_packaging_v1');
+  assert.equal(url.searchParams.get('campaign_variant'), 'regulated_team');
   assert.equal(url.searchParams.get('offer_code'), 'VERIFY');
   assert.equal(url.searchParams.get('cta_id'), 'go_diagnostic_pay');
   assert.equal(url.searchParams.get('landing_path'), '/go/diagnostic-pay');
@@ -1051,11 +1055,14 @@ test('/go/diagnostic-pay requires POST plus a valid buyer email before Stripe', 
     && entry.ctaId === 'go_diagnostic_pay'
     && entry.source === 'audit'
     && entry.utmMedium === 'codex'
+    && entry.utmCampaign === 'value_packaging_v1'
   ));
   assert.ok(confirmed, 'records the buyer-confirmed Payment Link redirect');
   assert.equal(confirmed.planId, 'sprint_diagnostic');
   assert.equal(confirmed.linkSlug, 'diagnostic-pay');
   assert.equal(confirmed.clientType, 'web');
+  assert.equal(confirmed.segment, 'regulated_team');
+  assert.equal(confirmed.experimentId, 'value_packaging_v1');
   assert.equal(confirmed.customerEmail, undefined, 'telemetry must not retain the receipt email');
 });
 

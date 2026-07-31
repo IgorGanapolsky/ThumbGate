@@ -113,6 +113,34 @@ test('sanitizeTelemetryPayload normalizes modern web payloads', () => {
   assert.equal(entry.attributionTagged, true);
 });
 
+test('sanitizeTelemetryPayload preserves nested browser offer attribution', () => {
+  const entry = sanitizeTelemetryPayload({
+    event: 'checkout_start',
+    clientType: 'web',
+    page: '/pricing',
+    props: {
+      ctaId: 'pricing_managed_gate_buy',
+      ctaPlacement: 'pricing',
+      planId: 'sprint_diagnostic',
+      segment: 'regulated_team',
+      experimentId: 'value_packaging_v1',
+      value: 499,
+      currency: 'USD',
+      page: '/nested-must-not-win',
+    },
+  });
+
+  assert.equal(entry.eventType, 'checkout_start');
+  assert.equal(entry.page, '/pricing', 'explicit top-level fields win over nested props');
+  assert.equal(entry.ctaId, 'pricing_managed_gate_buy');
+  assert.equal(entry.ctaPlacement, 'pricing');
+  assert.equal(entry.planId, 'sprint_diagnostic');
+  assert.equal(entry.segment, 'regulated_team');
+  assert.equal(entry.experimentId, 'value_packaging_v1');
+  assert.equal(entry.value, 499);
+  assert.equal(entry.currency, 'USD');
+});
+
 test('sanitizeTelemetryPayload normalizes buyer-loss and SEO fields', () => {
   const entry = sanitizeTelemetryPayload({
     eventType: 'reason_not_buying',

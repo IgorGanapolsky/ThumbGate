@@ -51,6 +51,23 @@ test.describe('/pricing dual-offer cash path', () => {
     await expect.poll(() => submitted).toContain('customer_email=buyer%40example.com');
     expect(submitted).toContain('plan_id=sprint_diagnostic');
     expect(submitted).toContain('utm_source=pricing');
+    expect(submitted).toContain('utm_campaign=value_packaging_v1');
+    expect(submitted).toContain('campaign_variant=workflow_team');
+  });
+
+  test('regulated-team selection survives the diagnostic checkout POST', async ({ page }) => {
+    let submitted;
+    await page.route('**/go/diagnostic-pay', async (route) => {
+      submitted = route.request().postData();
+      await route.fulfill({ status: 204, body: '' });
+    });
+    await page.goto('/pricing');
+    await page.locator('[data-cta-id="pricing_segment_enterprise"]').click();
+    await expect(page.locator('#pricing-buyer-segment')).toHaveValue('regulated_team');
+    await page.locator('#pricing-email').fill('buyer@example.com');
+    await page.getByRole('button', { name: 'Get Started — $499 Diagnostic' }).click();
+    await expect.poll(() => submitted).toContain('campaign_variant=regulated_team');
+    expect(submitted).toContain('utm_campaign=value_packaging_v1');
   });
 
   test('browser validation blocks checkout without a valid email', async ({ page }) => {
