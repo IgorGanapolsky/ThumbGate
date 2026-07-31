@@ -1118,11 +1118,11 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
-  assert.match(body, /Enterprise Workflow Gate/i);
+  assert.match(body, /Managed Workflow Diagnostic/i);
   assert.match(body, /\$499/);
   assert.match(body, /\$19/);
   assert.match(body, /\$149/);
-  assert.match(body, /Start Pro — \$19\/mo/);
+  assert.match(body, />Start Pro<\/a>/);
   assert.match(body, /\/checkout\/pro/);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(body, /name="customer_email"[^>]*required/);
