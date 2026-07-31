@@ -15,7 +15,7 @@ So "the code exists" is not a passing grade anywhere below.
 
 | Area | Repo | Deployed |
 |---|---|---|
-| RAG / retrieval | B | C− |
+| RAG / retrieval | A− | B |
 | Agent with tools | A− | B+ |
 | Multi-agent workflow | B+ | B |
 | MCP enterprise integration | B+ | B− |
@@ -23,11 +23,13 @@ So "the code exists" is not a passing grade anywhere below.
 
 ---
 
-## 1. RAG / retrieval — repo **B**, deployed **C−**
+## 1. RAG / retrieval — repo **A−**, deployed **B** (rerank path A+ after 2026-07-31)
 
 **Why this architecture.** Lessons from past failures are retrieved and injected before a tool
 call so the agent sees prior mistakes at decision time. Retrieval is hybrid: `lesson-db.js`
-(SQLite), `lesson-retrieval.js`, embeddings, and `cross-encoder-reranker.js`.
+(SQLite), `lesson-retrieval.js`, embeddings, and the multi-stage A+ rerank pipeline
+(`rerank-pipeline.js`: BM25F → ColBERT-style MaxSim → heuristic pair CE → optional LLM).
+See `docs/RERANKING_A_PLUS.md` for the honesty contract and golden floors.
 
 **What can fail.** Three modes, all observed:
 1. *Retrieval matches on noise.* Guard keywords were substring-matched against a JSON envelope,

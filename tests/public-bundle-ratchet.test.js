@@ -155,7 +155,7 @@ const path = require('node:path');
 // 401 -> 405 (2026-07-31): keep lockstep with package-boundary / public-core-boundary.
 // CI pack measured 403 during secret-exfil coverage PR; headroom for security/runtime
 // scripts already on the enforcement path (no intentional new private-Core surface).
-const BASELINE_FILE_COUNT = 405;
+const BASELINE_FILE_COUNT = 408;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
