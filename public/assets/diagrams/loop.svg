@@ -1,34 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 280" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 300" role="img" aria-labelledby="t d">
   <title id="t">ThumbGate feedback loop</title>
-  <desc id="d">Agent proposes a tool call, ThumbGate decides allow warn or deny, feedback becomes a rule.</desc>
-  <rect width="960" height="280" fill="#0a0a0b"/>
+  <desc id="d">Agent proposes a tool call, ThumbGate decides allow warn or deny, thumbs feedback becomes a rule that closes the loop.</desc>
+  <rect width="960" height="300" rx="24" fill="#0a0a0b"/>
   <defs>
     <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#22d3ee"/></marker>
+    <marker id="arrG" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#4ade80"/></marker>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#4ade80"/></linearGradient>
   </defs>
+
   <!-- Step 1 -->
-  <rect x="40" y="70" width="180" height="110" rx="18" fill="#161618" stroke="#333"/>
+  <rect x="40" y="70" width="180" height="120" rx="18" fill="#161618" stroke="#333"/>
   <circle cx="70" cy="100" r="16" fill="#222" stroke="#22d3ee" stroke-width="2"/>
   <text x="70" y="105" text-anchor="middle" fill="#22d3ee" font-family="system-ui,sans-serif" font-size="14" font-weight="800">1</text>
-  <text x="130" y="120" text-anchor="middle" fill="#f5f5f7" font-family="system-ui,sans-serif" font-size="18" font-weight="800">Agent</text>
+  <text x="130" y="118" text-anchor="middle" fill="#f5f5f7" font-family="system-ui,sans-serif" font-size="18" font-weight="800">Agent</text>
   <text x="130" y="146" text-anchor="middle" fill="#9ca3af" font-family="system-ui,sans-serif" font-size="13">proposes a tool</text>
-  <line x1="230" y1="125" x2="290" y2="125" stroke="#22d3ee" stroke-width="3" marker-end="url(#arr)"/>
+  <line x1="230" y1="130" x2="290" y2="130" stroke="#22d3ee" stroke-width="3" marker-end="url(#arr)"/>
+
   <!-- Step 2 -->
-  <rect x="300" y="50" width="240" height="150" rx="18" fill="#07151a" stroke="url(#g)" stroke-width="2.5"/>
+  <rect x="300" y="50" width="240" height="160" rx="18" fill="#07151a" stroke="url(#g)" stroke-width="2.5"/>
   <circle cx="340" cy="90" r="16" fill="#0d2530" stroke="#22d3ee" stroke-width="2"/>
   <text x="340" y="95" text-anchor="middle" fill="#22d3ee" font-family="system-ui,sans-serif" font-size="14" font-weight="800">2</text>
   <text x="420" y="95" text-anchor="middle" fill="#22d3ee" font-family="system-ui,sans-serif" font-size="20" font-weight="900">ThumbGate</text>
   <text x="420" y="130" text-anchor="middle" fill="#f5f5f7" font-family="system-ui,sans-serif" font-size="16" font-weight="700">ALLOW · WARN · DENY</text>
   <text x="420" y="158" text-anchor="middle" fill="#9ca3af" font-family="system-ui,sans-serif" font-size="13">before the tool runs</text>
-  <line x1="550" y1="125" x2="610" y2="125" stroke="#22d3ee" stroke-width="3" marker-end="url(#arr)"/>
+  <text x="420" y="184" text-anchor="middle" fill="#4ade80" font-family="system-ui,sans-serif" font-size="18" font-weight="800">👍  👎</text>
+  <line x1="550" y1="130" x2="610" y2="130" stroke="#22d3ee" stroke-width="3" marker-end="url(#arr)"/>
+
   <!-- Step 3 -->
-  <rect x="620" y="70" width="180" height="110" rx="18" fill="#161618" stroke="#333"/>
+  <rect x="620" y="70" width="180" height="120" rx="18" fill="#161618" stroke="#333"/>
   <circle cx="650" cy="100" r="16" fill="#222" stroke="#4ade80" stroke-width="2"/>
   <text x="650" y="105" text-anchor="middle" fill="#4ade80" font-family="system-ui,sans-serif" font-size="14" font-weight="800">3</text>
-  <text x="710" y="120" text-anchor="middle" fill="#f5f5f7" font-family="system-ui,sans-serif" font-size="18" font-weight="800">Action</text>
+  <text x="710" y="118" text-anchor="middle" fill="#f5f5f7" font-family="system-ui,sans-serif" font-size="18" font-weight="800">Action</text>
   <text x="710" y="146" text-anchor="middle" fill="#9ca3af" font-family="system-ui,sans-serif" font-size="13">shell · git · db</text>
+
   <!-- Feedback loop -->
-  <path d="M710 185 C710 240 130 240 130 185" fill="none" stroke="#4ade80" stroke-width="3" stroke-dasharray="6 4" marker-end="url(#arr)"/>
-  <rect x="280" y="218" width="280" height="36" rx="18" fill="#0d1b14" stroke="#4ade80"/>
-  <text x="420" y="241" text-anchor="middle" fill="#4ade80" font-family="system-ui,sans-serif" font-size="14" font-weight="700">👍 👎 feedback → lesson → rule</text>
+  <path d="M710 200 C710 250 130 250 130 200" fill="none" stroke="#4ade80" stroke-width="3" stroke-dasharray="6 4" marker-end="url(#arrG)"/>
+  <rect x="260" y="232" width="320" height="40" rx="20" fill="#0d1b14" stroke="#4ade80"/>
+  <text x="420" y="258" text-anchor="middle" fill="#4ade80" font-family="system-ui,sans-serif" font-size="15" font-weight="800">👍 👎 feedback → lesson → rule → gate</text>
 </svg>

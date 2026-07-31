@@ -1,21 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 280" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 300" role="img" aria-labelledby="t d">
   <title id="t">Before and after ThumbGate</title>
-  <desc id="d">Without ThumbGate the same mistake repeats. With ThumbGate the second attempt is caught.</desc>
-  <rect width="960" height="280" fill="#0a0a0b"/>
-  <g font-family="system-ui,sans-serif">
+  <desc id="d">Without ThumbGate the same mistake repeats. With ThumbGate one thumbs-down becomes a local pre-action gate that can refresh or expire.</desc>
+  <rect width="960" height="300" rx="24" fill="#0a0a0b"/>
+  <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif">
     <!-- WITHOUT -->
-    <rect x="40" y="36" width="400" height="208" rx="20" fill="#1a1012" stroke="#f87171" stroke-width="2"/>
-    <text x="240" y="72" text-anchor="middle" fill="#f87171" font-size="18" font-weight="900">WITHOUT</text>
-    <text x="240" y="118" text-anchor="middle" fill="#f5f5f7" font-size="20" font-weight="700">🔥 force-push / bad shell</text>
-    <text x="240" y="152" text-anchor="middle" fill="#e5e7eb" font-size="16">You clean it up…</text>
-    <text x="240" y="182" text-anchor="middle" fill="#e5e7eb" font-size="16">…and it happens again.</text>
-    <text x="240" y="218" text-anchor="middle" fill="#9ca3af" font-size="14">time × trust × risk</text>
+    <rect x="36" y="36" width="420" height="228" rx="22" fill="#1a1012" stroke="#f87171" stroke-width="2.5"/>
+    <text x="246" y="78" text-anchor="middle" fill="#f87171" font-size="16" font-weight="900" letter-spacing="1.5">WITHOUT THUMBGATE</text>
+    <text x="246" y="130" text-anchor="middle" fill="#f5f5f7" font-size="28" font-weight="800">🔥 force-push · bad shell</text>
+    <text x="246" y="172" text-anchor="middle" fill="#e5e7eb" font-size="18">You clean it up…</text>
+    <text x="246" y="204" text-anchor="middle" fill="#e5e7eb" font-size="18">…and the agent does it again.</text>
+    <text x="246" y="240" text-anchor="middle" fill="#9ca3af" font-size="14">time × trust × risk × token burn</text>
+
     <!-- WITH -->
-    <rect x="520" y="36" width="400" height="208" rx="20" fill="#0c1a14" stroke="#4ade80" stroke-width="2"/>
-    <text x="720" y="72" text-anchor="middle" fill="#4ade80" font-size="18" font-weight="900">WITH THUMBGATE</text>
-    <text x="720" y="118" text-anchor="middle" fill="#f5f5f7" font-size="20" font-weight="700">👎 once</text>
-    <text x="720" y="152" text-anchor="middle" fill="#e5e7eb" font-size="16">Rule saved locally</text>
-    <text x="720" y="182" text-anchor="middle" fill="#e5e7eb" font-size="16">Next attempt is checked</text>
-    <text x="720" y="218" text-anchor="middle" fill="#9ca3af" font-size="14">one correction → permanent gate</text>
+    <rect x="504" y="36" width="420" height="228" rx="22" fill="#0c1a14" stroke="#4ade80" stroke-width="2.5"/>
+    <text x="714" y="78" text-anchor="middle" fill="#4ade80" font-size="16" font-weight="900" letter-spacing="1.5">WITH THUMBGATE</text>
+    <text x="714" y="130" text-anchor="middle" fill="#f5f5f7" font-size="32" font-weight="900">👎 once</text>
+    <text x="714" y="172" text-anchor="middle" fill="#e5e7eb" font-size="18">Rule saved locally</text>
+    <text x="714" y="204" text-anchor="middle" fill="#e5e7eb" font-size="18">Next attempt is gated</text>
+    <text x="714" y="240" text-anchor="middle" fill="#9ca3af" font-size="14">one correction → local gate (auto-promoted gates expire)</text>
   </g>
 </svg>
