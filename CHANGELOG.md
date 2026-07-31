@@ -33,6 +33,10 @@
   add offline Ragas-style faithfulness, groundedness, and answer-relevance
   regressions; and expose one unified `npm run eval:quality` gate.
 
+- Production P0: request envelope (trace, latency, tokens, retrieval scores), hard
+  tier cost/latency budgets with deny/degrade, and degraded/stale retrieval quality
+  tier flags on dashboard chat and lesson retrieval.
+
 - 83d9d88: Update the development coverage toolchain to c8 12.
 - e0465e5: Add canonical campaign attribution, safe buyer-route verification, and hourly
   hosted outcome monitoring for the seven-channel marketing-agent campaign.

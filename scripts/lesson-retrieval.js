@@ -251,7 +251,7 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
   const deduped = dedupeSupersededLessons(reranked);
   const selected = filterTopP(deduped, resolveTopP(options), { minKeep: options.minKeep });
 
-  return selected.map((m) => ({
+  const shaped = selected.map((m) => ({
     id: m.id,
     title: m.title,
     content: m.content,
@@ -260,6 +260,28 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
     relevanceScore: m.rerankedScore ?? m.relevanceScore,
     timestamp: m.timestamp,
   }));
+
+  // Attach retrieval quality tier once (non-enumerable-ish via property on array)
+  try {
+    const { probeEmbeddingQuality } = require('./retrieval-quality-tier');
+    const quality = probeEmbeddingQuality({
+      indexUpdatedAtMs: options.indexUpdatedAtMs ?? null,
+    });
+    Object.defineProperty(shaped, 'retrievalMeta', {
+      value: {
+        strategy: 'lexical+bm25',
+        qualityTier: quality.qualityTier,
+        semanticClaimsAllowed: quality.semanticClaimsAllowed,
+        degradedReasons: quality.degradedReasons,
+        count: shaped.length,
+      },
+      enumerable: false,
+      configurable: true,
+    });
+  } catch {
+    // optional
+  }
+  return shaped;
 }
 
 /**
@@ -318,6 +340,31 @@ function shapeLesson(m, retrieval = null) {
   };
   if (retrieval) shaped.retrieval = retrieval;
   return shaped;
+}
+
+/** Attach non-enumerable retrieval quality meta onto a result array. */
+function attachArrayRetrievalMeta(rows, options = {}) {
+  if (!Array.isArray(rows)) return rows;
+  try {
+    const { probeEmbeddingQuality } = require('./retrieval-quality-tier');
+    const quality = probeEmbeddingQuality({
+      indexUpdatedAtMs: options.indexUpdatedAtMs ?? null,
+    });
+    Object.defineProperty(rows, 'retrievalMeta', {
+      value: {
+        strategy: options.strategy || 'hybrid',
+        qualityTier: quality.qualityTier,
+        semanticClaimsAllowed: quality.semanticClaimsAllowed,
+        degradedReasons: quality.degradedReasons,
+        count: rows.length,
+      },
+      enumerable: false,
+      configurable: true,
+    });
+  } catch {
+    // optional
+  }
+  return rows;
 }
 
 /**
@@ -530,7 +577,11 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
 
   const { rerankLessons } = require('./lesson-reranker');
   const reranked = rerankLessons(actionContext, candidates, { topK: maxResults, toolName });
-  return filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep }).map(shapeLesson);
+  const rows = filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep }).map(shapeLesson);
+  return attachArrayRetrievalMeta(rows, {
+    strategy: 'hybrid-rrf+bm25',
+    indexUpdatedAtMs: options.indexUpdatedAtMs ?? null,
+  });
 }
 
 function buildActionSignature(toolName, actionContext) {
@@ -771,6 +822,7 @@ module.exports = {
   matchesMetadataFilters,
   buildQueryVariants,
   buildQueryPlan,
+  attachArrayRetrievalMeta,
   MAX_RETRIEVAL_MEMORY_CHARS,
   MAX_RETRIEVAL_MEMORY_LINES,
 };

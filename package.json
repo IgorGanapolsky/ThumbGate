@@ -208,6 +208,9 @@
     "scripts/repeat-metric.js",
     "scripts/rerank-pipeline.js",
     "scripts/rerank-quality-eval.js",
+    "scripts/request-envelope.js",
+    "scripts/retrieval-quality-tier.js",
+    "scripts/tier-budget-guard.js",
     "scripts/revenue-action-eligibility.js",
     "scripts/revenue-evidence-remediation.js",
     "scripts/reward-hacking-guardrails.js",
@@ -841,7 +844,7 @@
     "test:dashboard-page-clickability": "playwright test tests/e2e/dashboard-page-clickability.spec.js",
     "test:agent-manager-page-clickability": "playwright test tests/e2e/agent-manager-page-clickability.spec.js",
     "test:pricing-page-clickability": "playwright test tests/e2e/pricing-page-clickability.spec.js",
-    "test:proof:truth": "node --test tests/knowledge-entropy.test.js tests/mcp-wiring-doctor.test.js tests/sequence-guard.test.js tests/slopsquat-guard.test.js tests/slopsquat-stress.test.js tests/truth-and-proof.test.js tests/wire-proof-gate.test.js tests/adaptive-reliability.test.js tests/coderabbit-patterns.test.js && npm run test:capability-wiring && npm run test:colbert-maxsim && npm run test:rerank-pipeline && npm run test:eval-quality && npm run test:llm-gateway",
+    "test:proof:truth": "node --test tests/knowledge-entropy.test.js tests/mcp-wiring-doctor.test.js tests/sequence-guard.test.js tests/slopsquat-guard.test.js tests/slopsquat-stress.test.js tests/truth-and-proof.test.js tests/wire-proof-gate.test.js tests/adaptive-reliability.test.js tests/coderabbit-patterns.test.js && npm run test:capability-wiring && npm run test:colbert-maxsim && npm run test:rerank-pipeline && npm run test:eval-quality && npm run test:llm-gateway && npm run test:request-envelope",
     "build:grok-plugin": "node scripts/build-grok-plugin.js",
     "feedback:ingest": "node scripts/ingest-manual-feedback.js",
     "verify-proof": "node scripts/require-proof.js",
@@ -911,7 +914,8 @@
     "test:harness-tool-names": "node --test tests/harness-tool-names.test.js",
     "test:feedback-reward": "node --test tests/feedback-reward-score.test.js",
     "test:capability-wiring": "node --test tests/capability-wiring-ratchet.test.js",
-    "test:llm-gateway": "node --test tests/llm-gateway-provider.test.js"
+    "test:llm-gateway": "node --test tests/llm-gateway-provider.test.js",
+    "test:request-envelope": "node --test tests/request-envelope.test.js"
   },
   "keywords": [
     "mcp",
