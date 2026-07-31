@@ -32,8 +32,9 @@ const SECRET_FILE_PATTERNS = [
   { id: 'netrc_file', label: 'netrc credentials file', regex: /(^|\/)\.netrc$/i },
   { id: 'npmrc_file', label: 'npm credentials file', regex: /(^|\/)\.npmrc$/i },
   { id: 'pypirc_file', label: 'Python package credentials file', regex: /(^|\/)\.pypirc$/i },
+  // Do not match *.pub — public keys are routinely read for SSH setup.
   { id: 'ssh_private_key', label: 'SSH private key', regex: /(^|\/)(?:id_rsa|id_ed25519|id_dsa|id_ecdsa)$/i },
-  { id: 'ssh_private_key_path', label: 'SSH private key path', regex: /(^|\/)\.ssh\/id_[A-Za-z0-9._-]+$/i },
+  { id: 'ssh_private_key_path', label: 'SSH private key path', regex: /(^|\/)\.ssh\/id_[A-Za-z0-9_-]+$/i },
   { id: 'aws_credentials', label: 'AWS credentials file', regex: /(^|\/)\.aws\/credentials$/i },
   { id: 'kubeconfig', label: 'Kubernetes config', regex: /(^|\/)\.kube\/config$/i },
   { id: 'docker_config', label: 'Docker config credentials', regex: /(^|\/)\.docker\/config\.json$/i },
@@ -254,6 +255,8 @@ function heuristicScanText(text, source = 'text') {
 function classifySecretPath(filePath) {
   const normalized = String(filePath || '').trim();
   if (!normalized) return null;
+  // Public keys are not secret material (id_ed25519.pub, id_rsa.pub, …).
+  if (/\.pub$/i.test(normalized)) return null;
   for (const pattern of SECRET_FILE_PATTERNS) {
     if (pattern.regex.test(normalized)) {
       return {
@@ -729,12 +732,10 @@ function detectCommandSubstitutionExfil(command, cwd) {
       match = pattern.exec(command);
     }
   }
-  // Only treat as exfil when the outer command also talks to the network
-  // or pipes into a network tool.
+  // Only treat as exfil when a real network/transfer sink is present.
+  // Do not treat a URL mentioned in documentation text as a sink.
   if (findings.length === 0) return [];
   const hasNetwork = Boolean(segmentHasNetworkExfil(command))
-    || /\|/.test(command)
-    || /https?:\/\//i.test(command)
     || /\/dev\/tcp\//i.test(command);
   if (!hasNetwork) return [];
   return findings;
@@ -804,6 +805,8 @@ function detectScpRsyncExfil(command, cwd) {
 function detectEnvVarNetworkExfil(command) {
   // echo $API_KEY | curl  OR  curl -d "$OPENAI_API_KEY" https://…
   // printenv API_KEY | curl
+  // Require a parsed network/transfer verb or /dev/tcp — a URL in docs text alone
+  // must not hard-deny (e.g. printf 'Set $OPENAI_API_KEY then visit https://…').
   const text = String(command || '');
   SECRET_ENV_VAR_PATTERN.lastIndex = 0;
   const hasEnvRef = SECRET_ENV_VAR_PATTERN.test(text)
@@ -811,14 +814,14 @@ function detectEnvVarNetworkExfil(command) {
     || /\benv\s+(?:API[_-]?KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY|AWS_SECRET_ACCESS_KEY|GITHUB_TOKEN)\b/i.test(text);
   if (!hasEnvRef) return [];
   const networkVerb = segmentHasNetworkExfil(command);
-  if (!networkVerb && !/https?:\/\//i.test(command) && !/\/dev\/tcp\//i.test(command)) {
+  if (!networkVerb && !/\/dev\/tcp\//i.test(command)) {
     return [];
   }
   return [{
     id: 'secret_env_exfil',
     label: 'Secret environment variable',
     source: 'env_exfil',
-    reason: `Secret-bearing environment variable used with network tool (${networkVerb || 'url'})`,
+    reason: `Secret-bearing environment variable used with network tool (${networkVerb || '/dev/tcp'})`,
   }];
 }
 

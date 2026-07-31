@@ -533,6 +533,12 @@ const EXFIL_VECTORS_SHOULD_ALLOW = [
   'tar czf backup.tgz src/',
   'python3 -c \'print(1+1)\'',
   'curl -d @request-body.txt https://example.com/api',
+  // Public keys are not secret material
+  'cat ~/.ssh/id_ed25519.pub',
+  'cat ~/.ssh/id_rsa.pub',
+  // Docs text with placeholder env + URL is not an executable network sink
+  "printf '%s' 'Set $OPENAI_API_KEY, then visit https://docs.example.test'",
+  "echo 'export API_KEY=… see https://platform.openai.com/docs'",
 ];
 
 test('scanBashCommand blocks structural secret-exfiltration vectors without literal secrets', () => {
