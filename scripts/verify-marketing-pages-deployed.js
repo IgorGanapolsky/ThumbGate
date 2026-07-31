@@ -109,7 +109,10 @@ async function probePageOnce({ prodUrl, route, sentinel, mustNotContain = [], us
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
     });
-    const body = await res.text().catch(() => '');
+    // Keep body-read transport failures visible to the outer retry classifier.
+    // Treating a disconnected 2xx stream as an empty body would incorrectly
+    // turn an operational failure into a deterministic sentinel mismatch.
+    const body = await res.text();
     const sentinelPresent = body.includes(sentinel);
     const forbiddenPresent = Array.isArray(mustNotContain)
       ? mustNotContain.filter((value) => body.includes(value))

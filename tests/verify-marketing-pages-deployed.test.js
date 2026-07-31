@@ -201,6 +201,32 @@ test('probePage: retries a transient timeout and records recovery', async () => 
   assert.equal(calls, 2);
 });
 
+test('probePage: retries a transient response-body disconnect', async () => {
+  let calls = 0;
+  const r = await probePage({
+    prodUrl: 'https://x.test',
+    route: '/',
+    sentinel: 'buyer page',
+    retryDelayMs: 0,
+    fetchImpl: async () => {
+      calls += 1;
+      if (calls === 1) {
+        return {
+          status: 200,
+          ok: true,
+          async text() { throw new Error('terminated'); },
+        };
+      }
+      return response('buyer page');
+    },
+  });
+
+  assert.equal(r.ok, true);
+  assert.equal(r.attempts, 2);
+  assert.equal(r.recoveredAfterRetry, true);
+  assert.equal(calls, 2);
+});
+
 test('probePage: does not retry a deterministic content mismatch', async () => {
   let calls = 0;
   const r = await probePage({
