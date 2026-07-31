@@ -63,3 +63,39 @@ test('isAvailable is true for a gateway with no Anthropic key', () => {
   assert.strictEqual(isAvailable({}), false);
   assert.strictEqual(isAvailable({ THUMBGATE_LLM_GATEWAY_URL: 'http://127.0.0.1:4010/v1' }), true);
 });
+
+// --- Review findings from #3138 (chatgpt-codex-connector) ---------------------
+// Three real defects the reviewer caught, two of them pre-existing consumers
+// that bypassed the abstraction and one regression this PR introduced.
+
+test('gateway forwards a supplied message history instead of dropping it', () => {
+  // Regression introduced by this PR: callGatewayInternal built messages from
+  // systemPrompt/userPrompt only, so a caller passing `messages` had its whole
+  // history discarded and one empty user message sent. The Anthropic path
+  // preserves options.messages in buildClaudeRequest; the gateway must match.
+  const { buildGatewayMessages } = require('../scripts/llm-client');
+  const history = [
+    { role: 'user', content: 'first' },
+    { role: 'assistant', content: 'reply' },
+    { role: 'user', content: 'second' },
+  ];
+  const built = buildGatewayMessages({ systemPrompt: 'sys', messages: history });
+  assert.strictEqual(built.length, 4, 'system + 3 history entries');
+  assert.deepStrictEqual(built.slice(1), history, 'history preserved verbatim');
+
+  const single = buildGatewayMessages({ userPrompt: 'only' });
+  assert.deepStrictEqual(single, [{ role: 'user', content: 'only' }]);
+});
+
+test('managed lesson runs report the model that actually ran', () => {
+  // Was hard-coded to 'claude-haiku-4-5' off a boolean, so a gateway-backed run
+  // persisted a manifest claiming Claude produced the lessons.
+  const { describeInferenceAvailability } = require('../scripts/llm-client');
+  const viaGateway = describeInferenceAvailability({
+    THUMBGATE_LLM_GATEWAY_URL: 'http://127.0.0.1:4010/v1',
+    THUMBGATE_LLM_GATEWAY_MODEL: 'kimi-code-k3',
+  });
+  assert.strictEqual(viaGateway.provider, 'gateway');
+  assert.strictEqual(viaGateway.model, 'kimi-code-k3',
+    'the manifest label must come from this, never a hard-coded vendor string');
+});
