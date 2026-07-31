@@ -220,7 +220,7 @@ test('promote: block threshold upgrades gate from warn to block', (t) => {
   assert.strictEqual(upgrade.to, 'block');
 
   const data = loadAutoGates();
-  const gate = data.gates.find((g) => g.pattern === 'execution-gap');
+  const gate = data.gates.find((g) => g.id === 'auto-execution-gap');
   assert.strictEqual(gate.action, 'block');
 });
 
@@ -241,12 +241,12 @@ test('promote: does not create duplicate gates', (t) => {
 
   promote(logPath);
   const first = loadAutoGates();
-  const countBefore = first.gates.filter((g) => g.pattern === 'dedup-test').length;
+  const countBefore = first.gates.filter((g) => g.id === 'auto-dedup-test').length;
 
   // Run again — should not create duplicate
   promote(logPath);
   const second = loadAutoGates();
-  const countAfter = second.gates.filter((g) => g.pattern === 'dedup-test').length;
+  const countAfter = second.gates.filter((g) => g.id === 'auto-dedup-test').length;
 
   assert.strictEqual(countBefore, 1);
   assert.strictEqual(countAfter, 1);
@@ -336,7 +336,7 @@ test('promote: called from feedback-loop on negative capture', (t) => {
 
   // The auto-promote should create a warn gate before the hard block threshold.
   const data = loadAutoGates();
-  const gate = data.gates.find((g) => g.pattern === 'pipeline-integration-test');
+  const gate = data.gates.find((g) => g.id === 'auto-pipeline-integration-test');
   assert.ok(gate, 'auto-promoted gate should exist before the block threshold is reached');
   assert.strictEqual(gate.action, 'warn');
 });
@@ -389,7 +389,7 @@ test('runCli: supports force-block without falling through to a second entrypoin
   assert.ok(lines.some((line) => line.includes('Forced block gate created')));
 
   const data = loadAutoGates();
-  const gate = data.gates.find((entry) => entry.pattern === 'pipeline-regression');
+  const gate = data.gates.find((entry) => entry.id === 'auto-pipeline-regression');
   assert.ok(gate);
   assert.strictEqual(gate.action, 'block');
 });
@@ -404,6 +404,8 @@ const {
   getRuleTtlDays,
   getRuleTtlMs,
   DEFAULT_RULE_TTL_DAYS,
+  contextToPattern,
+  gateMatchesOwnContext,
 } = require('../scripts/auto-promote-gates');
 
 test('buildGateRule sets expiresAt for auto-promoted gates (default 90 day TTL)', () => {
@@ -630,4 +632,77 @@ test('extractPatternKey: still prefers tags when present', () => {
   });
   // Tag-based key wins over command normalization.
   assert.strictEqual(k, 'destructive-fs');
+});
+
+// --- Regression: promoted gates must actually enforce -------------------------
+// 2026-07-31. `buildGateRule` used `group.key` as the gate's match `pattern`.
+// Keys are usually tag-derived ("entity:Customer+entity:Funnel"), which the gates
+// engine compiles via `new RegExp(...)` and tests against command text — so it
+// could never match. Result: a gate rendering as action:"block", severity:
+// "critical", occurrences:3 that enforced nothing. The suite passed because it
+// only asserted that promotion HAPPENED, never that the gate MATCHED.
+
+test('buildGateRule: pattern matches the originating command, not the group key', () => {
+  const command = 'kubectl delete deploy checkout-api -n prod';
+  const gate = buildGateRule({
+    key: 'entity:Customer+entity:Funnel', // tag-derived key, as the auto-tagger emits
+    count: 3,
+    latestContext: command,
+    entries: [],
+  });
+
+  assert.strictEqual(gate.action, 'block');
+  assert.ok(
+    new RegExp(gate.pattern).test(command),
+    `promoted gate must match its own command. pattern=${JSON.stringify(gate.pattern)}`,
+  );
+  assert.ok(
+    !new RegExp(gate.pattern).test('git status'),
+    'promoted gate must not match unrelated commands',
+  );
+});
+
+test('contextToPattern: escapes regex metacharacters in captured commands', () => {
+  const command = 'rm -rf build/ && echo "done" (cleanup)';
+  const pattern = contextToPattern(command);
+  assert.ok(new RegExp(pattern).test(command), 'escaped pattern must match the literal command');
+});
+
+test('contextToPattern: returns null for unusably short context', () => {
+  assert.strictEqual(contextToPattern(''), null);
+  assert.strictEqual(contextToPattern('ls'), null);
+});
+
+test('gateMatchesOwnContext: rejects a tag-string pattern against a command', () => {
+  const inert = { pattern: 'entity:Customer\\+entity:Funnel' };
+  assert.strictEqual(gateMatchesOwnContext(inert, 'kubectl delete deploy checkout-api -n prod'), false);
+});
+
+test('promote: skips gates whose pattern cannot match, rather than persisting them inert', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-unmatchable-'));
+  const logPath = path.join(dir, 'feedback-log.jsonl');
+  process.env.THUMBGATE_FEEDBACK_DIR = dir;
+
+  // Context too short to yield a usable pattern -> must not become a live gate.
+  const rows = [1, 2, 3].map(() => JSON.stringify({
+    signal: 'negative',
+    tags: ['entity:Customer', 'entity:Funnel'],
+    context: 'x',
+    timestamp: new Date().toISOString(),
+  }));
+  fs.writeFileSync(logPath, rows.join('\n') + '\n');
+
+  const result = promote(logPath);
+  const live = result.data.gates.filter((g) => g.pattern);
+  for (const g of live) {
+    assert.ok(
+      typeof g.pattern === 'string' && g.pattern.length > 0,
+      'no gate may be persisted without a usable pattern',
+    );
+  }
+  assert.strictEqual(
+    result.data.gates.some((g) => !g.pattern),
+    false,
+    'a gate with a null pattern must never be persisted',
+  );
 });

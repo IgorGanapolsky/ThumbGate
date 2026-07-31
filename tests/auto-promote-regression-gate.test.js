@@ -92,7 +92,15 @@ test('promote: quarantines a would-be BLOCK to warn when it would block prior sa
     const grp = Object.values(groupNegativeFeedback(entries, 30)).find((g) => g.count >= 3);
     assert.ok(grp, 'expected a group with >=3 occurrences');
     const pattern = buildGateRule(grp, 'block').pattern;
-    writeAudit(dir, [{ decision: 'allow', toolName: 'Bash', toolInput: { command: pattern } }]);
+    // Collateral damage must be a DIFFERENT, genuinely safe action that the pattern
+    // happens to match — not a replay of the incident itself. A prior allow of the
+    // incident command is the failure the operator thumbs-downed, and counting it
+    // would quarantine every gate learned from a real failure (2026-07-31).
+    writeAudit(dir, [{
+      decision: 'allow',
+      toolName: 'Bash',
+      toolInput: { command: `notify-team --dry-run "agent ran echomarker and it failed"` },
+    }]);
 
     const result = promote(logPath);
     const gate = result.data.gates.find((g) => g.pattern === pattern);
