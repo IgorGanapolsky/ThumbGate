@@ -17,18 +17,18 @@ function planInferenceBudget(input = {}) {
   const maxCostCents = Number.isFinite(Number(input.maxCostCents)) ? Number(input.maxCostCents) : 50;
   let depth = 'shallow';
   let reasoningEffort = 'low';
-  let expertCount = 1;
+  let parallelCandidates = 1;
   let humanHandoff = false;
 
   if (difficulty >= 70) {
     depth = 'deep';
     reasoningEffort = 'high';
-    expertCount = 4;
+    parallelCandidates = 4;
     humanHandoff = true;
   } else if (difficulty >= 35) {
     depth = 'standard';
     reasoningEffort = 'medium';
-    expertCount = 2;
+    parallelCandidates = 2;
   }
 
   if (maxCostCents < 20 && depth === 'deep') {
@@ -41,9 +41,13 @@ function planInferenceBudget(input = {}) {
     maxCostCents,
     depth,
     reasoningEffort,
-    activeExperts: expertCount,
+    parallelCandidates,
+    // Backward-compatible alias. This is candidate-level application routing,
+    // not internal MoE expert activation; remove after downstream migration.
+    activeExperts: parallelCandidates,
+    activeExpertsDeprecated: true,
     humanHandoff,
-    telemetry: ['difficulty', 'depth', 'reasoningEffort', 'activeExperts', 'latencyMs', 'costCents', 'outcome'],
+    telemetry: ['difficulty', 'depth', 'reasoningEffort', 'parallelCandidates', 'latencyMs', 'costCents', 'outcome'],
   };
 }
 

@@ -782,6 +782,11 @@ test('inference economics planner scales reasoning depth by difficulty and budge
   });
   assert.equal(hard.depth, 'deep');
   assert.equal(hard.humanHandoff, true);
+  assert.equal(hard.parallelCandidates, 4);
+  assert.equal(hard.activeExperts, 4);
+  assert.equal(hard.activeExpertsDeprecated, true);
+  assert.ok(hard.telemetry.includes('parallelCandidates'));
+  assert.equal(hard.telemetry.includes('activeExperts'), false);
 
   const constrained = planInferenceBudget({
     difficulty: 90,
