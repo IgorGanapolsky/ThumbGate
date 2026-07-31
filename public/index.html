@@ -39,7 +39,7 @@
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "macOS, Linux, Windows",
     "url": "__APP_ORIGIN__",
-    "description": "Self-improving firewall for AI coding agents. ThumbGate captures feedback as local lessons, re-ranks relevant lessons for each action, promotes repeated negative patterns into warning or blocking gates, expires stale auto-promoted gates, and runs pre-action checks before shell, file, git, deploy, or API tool calls. Detected secret exfiltration and gate-bypass commands are denied by default; strict mode blocks matching destructive-action rules.",
+    "description": "Self-improving firewall for AI coding agents. ThumbGate captures feedback as local lessons, re-ranks relevant lessons for each action, promotes repeated negative patterns into warning or blocking gates, expires stale auto-promoted gates, and runs pre-action checks before shell, file, git, deploy, or API tool calls. Detected secret exfiltration and process-kill/environment-override self-disable commands (gate-process bypass) are denied by default; strict mode blocks matching destructive-action rules.",
     "codeRepository": "https://github.com/IgorGanapolsky/ThumbGate",
     "featureList": [
       "Pre-action PreToolUse checks for coding agents",
@@ -685,7 +685,7 @@
           <div class="hero-thumbs" aria-hidden="true"><span class="up">👍</span><span class="down">👎</span></div>
           <h1>Stop AI agent mistakes before they cost you.</h1>
           <p class="hero-lede">Hard allow/deny at the <strong>tool-call boundary</strong>. Audit entry written at decision time. Every approval teaches the next gate.</p>
-          <p class="fit-line"><strong>Dual path:</strong> <strong>$499 Diagnostic</strong> maps one expensive failure and installs a hard gate with proof — or self-serve <strong>Pro at $19/mo</strong>. Free local evaluate stays free.</p>
+          <p class="fit-line"><strong>Dual path (buy + book):</strong> <strong>$499 Diagnostic</strong> maps one expensive failure on Claude Code, Cursor, Codex, or similar agents and installs a hard gate with proof — or self-serve <strong>Pro at $19/mo</strong> if you already know the loop. Free local evaluate stays free.</p>
           <div class="spec-chips" aria-label="What ThumbGate does">
             <span class="spec-chip"><strong>Capture</strong> feedback</span>
             <span class="spec-chip"><strong>Rank</strong> lessons</span>
@@ -796,7 +796,7 @@
             <span class="loop-number">4</span>
             <div class="thumb-icon" aria-hidden="true">🛡️</div>
             <h3>Gate the next action</h3>
-            <p>ALLOW, WARN, or DENY before the tool proceeds.</p>
+            <p>The action is allowed, warned, or denied before the tool proceeds.</p>
             <div class="decisions" aria-label="Possible decisions">
               <span class="decision allow">ALLOW</span>
               <span class="decision warn">WARN</span>
@@ -889,7 +889,7 @@ next      decision recorded before execution</pre>
             </div>
           </div>
           <div class="proof-copy">
-            <p>Detected secret exfiltration and gate-bypass attempts are denied by default. Matching destructive actions warn by default and deny in strict mode.</p>
+            <p>Detected secret exfiltration and gate-process bypass attempts are denied by default (process-kill/environment-override self-disable floors). Matching destructive actions warn by default and deny in strict mode.</p>
             <p>Managed strict-mode example—not a claim that every free install blocks every risky command automatically.</p>
             <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
             <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">Cases</a></p>
