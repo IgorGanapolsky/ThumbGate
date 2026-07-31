@@ -41,8 +41,18 @@ function extractJsonObject(text) {
   const raw = String(text || '').trim();
   if (!raw) return null;
   // Strip markdown fences if present.
-  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1].trim() : raw;
+  const openingFence = raw.indexOf('```');
+  let contentStart = openingFence >= 0 ? openingFence + 3 : -1;
+  if (contentStart >= 0 && raw.slice(contentStart, contentStart + 4).toLowerCase() === 'json') {
+    contentStart += 4;
+  }
+  while (contentStart >= 0 && contentStart < raw.length && /\s/.test(raw[contentStart])) {
+    contentStart += 1;
+  }
+  const closingFence = contentStart >= 0 ? raw.indexOf('```', contentStart) : -1;
+  const candidate = closingFence >= 0
+    ? raw.slice(contentStart, closingFence).trim()
+    : raw;
   try {
     return JSON.parse(candidate);
   } catch {

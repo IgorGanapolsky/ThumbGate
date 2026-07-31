@@ -250,7 +250,10 @@ module.exports = {
   scoreFaithfulness,
 };
 
-if (require.main === module) {
+const invokedDirectly = Boolean(process.argv[1])
+  && path.resolve(process.argv[1]) === __filename;
+
+if (invokedDirectly) {
   main().catch((err) => {
     console.error(err.stack || err.message);
     process.exitCode = 1;

@@ -169,7 +169,7 @@ function writeJsonl(filePath, records) {
 }
 
 function normalizeText(value) {
-  const withoutBom = String(value || '').split('\uFEFF').join('');
+  const withoutBom = String(value || '').replaceAll('\uFEFF', '');
   const normalizedNewlines = normalizeNewlines(withoutBom);
   const trimmedLines = normalizedNewlines
     .split('\n')

@@ -265,9 +265,17 @@ function checkGroundTruth(claim, projectRoot = process.cwd()) {
     switch (claim.type) {
       case 'test_result': {
         // Pattern: "X tests pass"
-        const countMatch = claim.context.match(/(\d+)\s+tests?\s+(?:pass|run|fail)/i);
-        if (countMatch) {
-          const expected = parseInt(countMatch[1], 10);
+        const tokens = String(claim.context || '')
+          .toLowerCase()
+          .split(/[^a-z0-9]+/)
+          .filter(Boolean);
+        const countIndex = tokens.findIndex((token, index) => (
+          Number.isSafeInteger(Number(token))
+          && ['test', 'tests'].includes(tokens[index + 1])
+          && ['pass', 'run', 'fail'].includes(tokens[index + 2])
+        ));
+        if (countIndex >= 0) {
+          const expected = Number(tokens[countIndex]);
           // Run a dry-run or quick test listing
           const output = execSync('npm test -- --listTests', { cwd: projectRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
           const actual = (output.match(/\.test\.js/g) || []).length;

@@ -171,7 +171,7 @@ function sortResults(results) {
 function extractFeedbackId(str) {
   if (!str) return null;
   const match = str.match(/fb[_-]\d+[_-][a-z0-9]+/i);
-  return match ? match[0].replace(/-/g, '_').toLowerCase() : null;
+  return match ? match[0].replaceAll('-', '_').toLowerCase() : null;
 }
 
 function deduplicateResults(results) {
