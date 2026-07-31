@@ -88,7 +88,8 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     assert.match(body, /name="confirm" value="1"/);
     assert.match(body, /name="customer_email"[^>]*required/);
     assert.match(body, /pro_checkout_direct_stripe/);
-    assert.match(body, /buy\.stripe\.com/);
+    assert.match(body, /\/go\/pro-direct/);
+    assert.doesNotMatch(body, /buy\.stripe\.com\//);
     assert.match(body, /hosted team sync and a hosted org dashboard are not generally available/i);
     assert.doesNotMatch(body, /Shared hosted lessons and org dashboards are Enterprise/i);
     assert.doesNotMatch(body, /<form action="https:\/\/buy\.stripe\.com\//);
