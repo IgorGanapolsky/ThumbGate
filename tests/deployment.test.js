@@ -373,21 +373,29 @@ test('Deploy to Railway workflow waits long enough to verify the promoted build 
   assert.match(workflow, /Expected build SHA/);
 });
 
-test('Deploy to Railway workflow fails closed on post-deploy revenue and buyer-path readiness', () => {
+test('Deploy to Railway hard-gates build health and keeps revenue readiness advisory with evidence', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
   const healthIndex = workflow.indexOf('name: Verify deployment health');
   const revenueIndex = workflow.indexOf('name: Verify revenue and buyer-path readiness');
+  const evidenceIndex = workflow.indexOf('name: Upload revenue observability evidence');
 
   assert.notEqual(healthIndex, -1);
   assert.ok(revenueIndex > healthIndex, 'revenue readiness must inspect the promoted build after SHA verification');
-  assert.match(workflow, /railway run \\/);
-  assert.match(workflow, /--project "\$RAILWAY_PROJECT_ID"/);
-  assert.match(workflow, /--environment "\$RAILWAY_ENVIRONMENT_ID"/);
-  assert.match(workflow, /--no-local/);
-  assert.match(workflow, /node scripts\/revenue-observability-doctor\.js --json/);
-  assert.match(workflow, /> revenue-observability-doctor\.json/);
-  assert.match(workflow, /globalRevenueClaimVerified !== false/);
-  assert.match(workflow, /Revenue and buyer-path readiness is blocked/);
+  assert.ok(evidenceIndex > revenueIndex, 'revenue evidence upload must follow the advisory probe');
+  const healthStep = workflow.slice(healthIndex, revenueIndex);
+  const revenueStep = workflow.slice(revenueIndex, evidenceIndex);
+  assert.doesNotMatch(healthStep, /continue-on-error:\s*true/, 'deployment SHA health remains fail-closed');
+  assert.match(revenueStep, /continue-on-error:\s*true/);
+  assert.match(revenueStep, /railway run \\/);
+  assert.match(revenueStep, /--project "\$RAILWAY_PROJECT_ID"/);
+  assert.match(revenueStep, /--environment "\$RAILWAY_ENVIRONMENT_ID"/);
+  assert.match(revenueStep, /--no-local/);
+  assert.match(revenueStep, /node scripts\/revenue-observability-doctor\.js --json/);
+  assert.match(revenueStep, /> revenue-observability-doctor\.json/);
+  assert.match(revenueStep, /globalRevenueClaimVerified !== false/);
+  assert.match(revenueStep, /::warning::Revenue and buyer-path readiness is blocked \(advisory; deploy health already verified\)/);
+  assert.match(revenueStep, /revenue_ready=false.*GITHUB_OUTPUT/s);
+  assert.match(revenueStep, /revenue_ready=true.*GITHUB_OUTPUT/s);
   assert.match(workflow, /name: Upload revenue observability evidence/);
   assert.match(workflow, /revenue-observability-\$\{\{\s*github\.run_id\s*\}\}/);
   assert.match(workflow, /if-no-files-found: warn/);
@@ -399,8 +407,8 @@ test('Deploy to Railway workflow fails closed on the reviewed public conversion-
   const surfaceGate = workflow.indexOf('name: Verify public conversion surfaces');
   const surfaceArtifact = workflow.indexOf('name: Upload public conversion-surface evidence');
 
-  assert.ok(revenueGate >= 0, 'authoritative revenue gate must exist');
-  assert.ok(surfaceGate > revenueGate, 'public conversion-surface gate must run after the revenue gate');
+  assert.ok(revenueGate >= 0, 'advisory revenue probe must exist');
+  assert.ok(surfaceGate > revenueGate, 'public conversion-surface gate must run after the revenue probe');
   assert.ok(surfaceArtifact > surfaceGate, 'public conversion-surface artifact must follow its verifier');
   const surfaceStep = workflow.slice(surfaceGate, surfaceArtifact);
   assert.match(surfaceStep, /if:\s*always\(\)\s*&&\s*steps\.railway-config\.outputs\.enabled == 'true'/);
