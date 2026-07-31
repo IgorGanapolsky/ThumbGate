@@ -45,12 +45,14 @@ authenticated request
 
 ### 1. Authentication, tenancy, and authorization
 
-Hosted billing keys resolve to a stable customer identity. The API hashes that
-identity into an opaque tenant directory before reading or writing feedback,
-documents, traces, or jobs. Imported documents may additionally be tenant-wide
-or private to a principal. Protected documents fail closed during list, direct
-read, lexical search, and hybrid search. Legacy unscoped documents remain local
-single-user data; they are not assigned an invented owner.
+Hosted billing keys resolve to a stable customer identity. The API derives a
+memory-hard, opaque tenant pseudonym before reading or writing feedback,
+documents, traces, or jobs; it never uses the API key as a fast-hash seed.
+Imported documents may additionally be tenant-wide or private to a principal.
+Protected document storage IDs include their authorization scope, and protected
+documents fail closed during list, direct read, lexical search, and hybrid
+search. Legacy unscoped documents remain local single-user data; they are not
+assigned an invented owner or exposed through hosted tenant search.
 
 Why: metadata filtering is not authorization. Filtering must happen before
 chunking, embedding, ranking, and hydration so an unauthorized document cannot
