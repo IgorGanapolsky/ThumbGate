@@ -84,8 +84,32 @@ function regressionCheck(gate, options = {}) {
   let matchesGate;
   try { ({ matchesGate } = require('./gates-engine')); } catch { return null; }
   if (typeof matchesGate !== 'function') return null;
-  const allowed = entries.filter((e) => e && e.decision === 'allow' && e.toolName);
+  let allowed = entries.filter((e) => e && e.decision === 'allow' && e.toolName);
   if (!allowed.length) return null;
+
+  // The command we just learned to block was, by definition, ALLOWED before we
+  // learned it — that prior allow IS the incident the operator thumbs-downed.
+  // Counting it as a false block quarantines every gate learned from a real
+  // failure, which is the normal path (run it, get burned, 👎 it). Exclude the
+  // originating contexts so the check only measures collateral damage to
+  // genuinely unrelated actions.
+  // Match on normalized command EQUALITY, not substring containment: a longer,
+  // genuinely different command that merely quotes the incident text (e.g.
+  // `notify-team --dry-run "<incident>"`) is real collateral damage and must
+  // still count toward quarantine.
+  const incidentSignatures = new Set(
+    (options.incidentContexts || [])
+      .map((c) => normalizeCommandSignature(String(c || '')))
+      .filter(Boolean),
+  );
+  if (incidentSignatures.size > 0) {
+    allowed = allowed.filter((e) => {
+      const cmd = (e.toolInput && (e.toolInput.command || e.toolInput.pattern)) || '';
+      return !incidentSignatures.has(normalizeCommandSignature(String(cmd)));
+    });
+    if (!allowed.length) return { falseBlocks: 0, allowSampleSize: 0 };
+  }
+
   let falseBlocks = 0;
   for (const e of allowed) {
     try {
@@ -163,14 +187,43 @@ function normalizeCommandSignature(input) {
   return tokens.join(' ').trim();
 }
 
-function extractPatternKey(entry) {
-  // Use tags as primary grouping key; fall back to context normalization
-  const tags = (entry.tags || []).filter((t) => !['feedback', 'negative', 'positive'].includes(t));
-  if (tags.length > 0) return tags.sort().join('+');
+/**
+ * Prefer an executable action we can match at PreToolUse time.
+ * Tag-only or pure prose feedback is useful memory — not an enforcement pattern.
+ */
+function extractExecutableAction(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  const fromTool =
+    (entry.toolInput && (entry.toolInput.command || entry.toolInput.pattern))
+    || (entry.tool_input && (entry.tool_input.command || entry.tool_input.pattern))
+    || entry.command
+    || entry.failedCommand
+    || null;
+  if (fromTool && String(fromTool).trim().length >= 4) {
+    return String(fromTool).trim();
+  }
 
-  const ctx = (entry.context || entry.whatWentWrong || '').trim();
-  if (ctx.length < 10) return null;
-  return normalizeCommandSignature(ctx).slice(0, 100);
+  const ctx = String(entry.context || entry.whatWentWrong || '').trim();
+  if (ctx.length < 4) return null;
+
+  // Looks like a shell / CLI invocation (not free-form prose).
+  const looksExecutable = /^(?:sudo\s+)?(?:~\/|\.\/|\/)?(?:[A-Za-z0-9._+-]+\/)*[A-Za-z0-9._+-]+(?:\s|$)/.test(ctx)
+    && /\s|^[a-z0-9._+-]+(?:\s|$)/i.test(ctx)
+    && !/\s+(?:broke|failed|wrong|should|never|please|the agent)\b/i.test(ctx.slice(0, 80));
+  // Strong signal: known tool prefixes
+  const known = /^(?:sudo\s+)?(?:kubectl|git|npm|npx|yarn|pnpm|python|python3|node|curl|wget|docker|podman|rm|mv|cp|chmod|chown|psql|mysql|mongo|terraform|pulumi|aws|gcloud|az|helm|ssh|scp|rsync|make|cargo|go|ruby|perl|bash|sh|zsh)\b/i.test(ctx);
+  if (known || (looksExecutable && /[\s-]/.test(ctx) && ctx.length <= 200)) {
+    return ctx;
+  }
+  return null;
+}
+
+function extractPatternKey(entry) {
+  // Enforcement groups by executable action only. Tags remain diagnostic metadata
+  // and must not create hard-block thresholds for a single unrelated latest command.
+  const action = extractExecutableAction(entry);
+  if (!action) return null;
+  return normalizeCommandSignature(action).slice(0, 100);
 }
 
 function extractDiagnosticKeys(entry) {
@@ -203,27 +256,29 @@ function groupNegativeFeedback(entries, windowDays) {
     const ts = entry.timestamp ? new Date(entry.timestamp).getTime() : 0;
     if (ts < cutoff) continue;
 
-    const keys = [extractPatternKey(entry), ...extractDiagnosticKeys(entry)]
-      .filter(Boolean)
-      .filter((value, index, values) => values.indexOf(value) === index);
-    if (keys.length === 0) continue;
+    // Enforcement groups ONLY by executable action. Tag/diagnosis metadata is
+    // useful for memory and dashboards, but must not create hard-block thresholds
+    // that attach to an unrelated latest command.
+    const key = extractPatternKey(entry);
+    if (!key) continue;
 
-    for (const key of keys) {
-      if (!groups[key]) {
-        groups[key] = {
-          key,
-          count: 0,
-          entries: [],
-          latestContext: '',
-          latestTimestamp: '',
-        };
-      }
-      groups[key].count++;
-      groups[key].entries.push(entry);
-      if (!groups[key].latestTimestamp || (entry.timestamp && entry.timestamp > groups[key].latestTimestamp)) {
-        groups[key].latestTimestamp = entry.timestamp || '';
-        groups[key].latestContext = entry.context || entry.whatWentWrong || '';
-      }
+    if (!groups[key]) {
+      groups[key] = {
+        key,
+        count: 0,
+        entries: [],
+        latestContext: '',
+        latestTimestamp: '',
+        latestExecutable: '',
+      };
+    }
+    groups[key].count++;
+    groups[key].entries.push(entry);
+    if (!groups[key].latestTimestamp || (entry.timestamp && entry.timestamp > groups[key].latestTimestamp)) {
+      groups[key].latestTimestamp = entry.timestamp || '';
+      const action = extractExecutableAction(entry);
+      groups[key].latestContext = action || entry.context || entry.whatWentWrong || '';
+      groups[key].latestExecutable = action || '';
     }
   }
 
@@ -234,15 +289,48 @@ function patternToGateId(key) {
   return 'auto-' + key.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 50).toLowerCase();
 }
 
+/**
+ * Turn a captured context string into a pattern the gates engine can actually
+ * match. `gates-engine.js` compiles `gate.pattern` with `new RegExp(...)` and
+ * tests it against the tool-call text, so the pattern MUST be regex-safe text
+ * drawn from the command itself.
+ *
+ * It must NOT be the group key: keys are frequently tag-derived
+ * ("entity:Customer+entity:Funnel"), which is both meaningless against a command
+ * string and actively hazardous as a regex ('+' is a quantifier). Grouping by tag
+ * is correct — reusing that key as the match pattern is not.
+ */
+function contextToPattern(context) {
+  const raw = String(context || '').trim();
+  if (raw.length < 4) return null;
+  // Escape every regex metacharacter: the captured command is literal text.
+  return raw.slice(0, 120).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * A gate that cannot match the very context that produced it is inert — it
+ * shows up in the dashboard as an active blocking rule while enforcing nothing.
+ * That failure mode is worse than no gate at all, so callers drop these.
+ */
+function gateMatchesOwnContext(gate, context) {
+  if (!gate || !gate.pattern) return false;
+  try {
+    return new RegExp(gate.pattern).test(String(context || ''));
+  } catch {
+    return false;
+  }
+}
+
 function buildGateRule(group, actionOverride) {
   const action = actionOverride || (group.count === 'MANUAL' ? group.manualAction || 'block' : (group.count >= BLOCK_THRESHOLD ? 'block' : 'warn'));
   const severity = action === 'block' ? 'critical' : action === 'approve' ? 'high' : 'medium';
-  const context = group.latestContext.slice(0, 120);
+  const executable = (group.latestExecutable || extractExecutableAction({ context: group.latestContext }) || group.latestContext || '').slice(0, 120);
+  const context = executable;
   const kind = group.key.startsWith('diagnosis:')
     ? 'repeated diagnosis'
     : group.key.startsWith('constraint:')
       ? 'repeated constraint violation'
-      : 'repeated pattern';
+      : 'repeated executable action';
 
   const occurrencesText = group.count === 'MANUAL' ? 'manual' : `${group.count} occurrences`;
   const suggestedMessage = `Auto-promoted ${kind}: "${context}" (${occurrencesText} in ${WINDOW_DAYS} days)`;
@@ -257,7 +345,8 @@ function buildGateRule(group, actionOverride) {
   return {
     id: patternToGateId(group.key),
     trigger: `auto:${group.key}`,
-    pattern: group.key.replace(/^diagnosis:|constraint:/, ''),
+    // Derived from the executable action, NOT from tag keys — see contextToPattern.
+    pattern: contextToPattern(executable),
     action,
     message: suggestedMessage,
     severity,
@@ -393,6 +482,16 @@ function promote(feedbackLogPath, options) {
 
     const gateId = patternToGateId(group.key);
 
+    // Contexts that produced this gate. Their prior "allow" decisions are the
+    // incident the operator thumbs-downed, not false positives — both the
+    // new-gate and the warn->block upgrade path must exclude them from the
+    // regression check, or every gate learned from a real failure is held at warn.
+    const incidentContexts = [
+      group.latestContext,
+      ...(group.entries || []).map((e) => e && (e.context || e.whatWentWrong)),
+    ].filter(Boolean);
+    const regressionOpts = { ...opts, incidentContexts };
+
     // Check for existing gate — possibly upgrade
     const existingIdx = data.gates.findIndex((g) => g.id === gateId);
     if (existingIdx !== -1) {
@@ -400,7 +499,7 @@ function promote(feedbackLogPath, options) {
       const newAction = group.count >= BLOCK_THRESHOLD ? 'block' : 'warn';
       if (existing.action !== newAction && newAction === 'block') {
         // Self-Harness stage 3: regression-test before upgrading warn -> block.
-        const regression = opts.skipRegression ? null : safeRegressionCheck(buildGateRule(group, 'block'), opts);
+        const regression = opts.skipRegression ? null : safeRegressionCheck(buildGateRule(group, 'block'), regressionOpts);
         if (regression && regression.falseBlocks > REGRESSION_FALSE_BLOCK_LIMIT) {
           // Would block prior safe actions — hold at warn instead of upgrading.
           promotions.push({ type: 'upgrade-quarantined', gateId, from: existing.action, occurrences: group.count, falseBlocks: regression.falseBlocks });
@@ -418,12 +517,25 @@ function promote(feedbackLogPath, options) {
     // New gate — respect explicit gateAction override (e.g. 'approve' for human-approval rules)
     const gate = buildGateRule(group, opts.gateAction);
 
+    // Never persist a gate that cannot match the context that produced it. Such a
+    // gate renders in the dashboard as an active blocking rule while enforcing
+    // nothing, which reads as "the agent learned" when it did not.
+    if (!gateMatchesOwnContext(gate, group.latestContext)) {
+      promotions.push({
+        type: 'skipped-unmatchable',
+        gateId: gate.id,
+        reason: 'derived pattern does not match originating context',
+        occurrences: group.count,
+      });
+      continue;
+    }
+
     // Self-Harness stage 3: before a feedback rule goes live as a hard block,
     // regression-test it against prior allowed actions. If it would have blocked
     // safe actions, quarantine it to `warn` instead of `block`.
     let regression = null;
     if (gate.action === 'block' && !opts.gateAction && !opts.skipRegression) {
-      regression = safeRegressionCheck(gate, opts);
+      regression = safeRegressionCheck(gate, regressionOpts);
       if (regression && regression.falseBlocks > REGRESSION_FALSE_BLOCK_LIMIT) {
         gate.action = 'warn';
         gate.severity = 'medium';
@@ -506,10 +618,13 @@ module.exports = {
   groupNegativeFeedback,
   patternToGateId,
   buildGateRule,
+  contextToPattern,
+  gateMatchesOwnContext,
   regressionCheck,
   getAuditTrailPath,
   REGRESSION_FALSE_BLOCK_LIMIT,
   extractPatternKey,
+  extractExecutableAction,
   normalizeCommandSignature,
   isNegative,
   expireGates,
