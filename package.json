@@ -164,6 +164,7 @@
     "scripts/meta-agent-loop.js",
     "scripts/model-access-eligibility.js",
     "scripts/model-migration-readiness.js",
+    "scripts/model-tier-router.js",
     "scripts/multimodal-retrieval-plan.js",
     "scripts/native-messaging-audit.js",
     "scripts/natural-language-harness.js",
