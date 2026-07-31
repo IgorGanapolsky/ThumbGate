@@ -503,7 +503,7 @@
     "eval:rag": "node scripts/eval-rag.js",
     "test:eval-rag": "node --test tests/eval-rag.test.js tests/retrieval-hybrid-ablation.test.js",
     "eval:async-observability": "node scripts/async-eval-observability.js",
-    "test:async-eval-observability": "node --test tests/async-eval-observability.test.js",
+    "test:async-eval-observability": "node --test tests/async-eval-observability.test.js tests/rag-answer-metrics.test.js",
     "test:decision-trace": "node --test tests/decision-trace.test.js",
     "test:feedback-fallback": "node --test tests/feedback-fallback.test.js",
     "test:metaclaw": "node --test tests/metaclaw-features.test.js",

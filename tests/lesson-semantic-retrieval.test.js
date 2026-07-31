@@ -11,6 +11,7 @@ const {
   retrieveRelevantLessonsAsync,
   reciprocalRankFusion,
   buildQueryVariants,
+  buildQueryPlan,
 } = require('../scripts/lesson-retrieval');
 const {
   cosineSimilarity,
@@ -275,8 +276,9 @@ test('runtime provider failure degrades to lexical instead of accepting feature-
 test('bounded query rewriting preserves the original and expands known concepts only', () => {
   const variants = buildQueryVariants('wipe the folder');
   assert.equal(variants[0], 'wipe the folder');
-  assert.equal(variants.length, 2);
+  assert.equal(variants.length, 3);
   assert.match(variants[1], /\b(delete|remove|destroy)\b/);
+  assert.match(variants[2], /^failure prevention /);
 
   const formatting = buildQueryVariants('format the report');
   assert.equal(formatting.some((variant) => /\brm\b/.test(variant)), false,
@@ -285,6 +287,35 @@ test('bounded query rewriting preserves the original and expands known concepts 
   const device = buildQueryVariants('tablet over the overlay');
   assert.match(device[1], /\bipad\b/);
   assert.match(device[1], /\btailscale\b/);
+});
+
+test('HyDE is explicit, bounded, and auditable in the query plan', async () => {
+  const plan = await buildQueryPlan('wipe the folder', {
+    hydeProvider: 'local-fixture',
+    hydeGenerator: async (query, contract) => {
+      assert.equal(query, 'wipe the folder');
+      assert.equal(contract.maxChars, 700);
+      return {
+        text: 'A prevention lesson would require a recoverable snapshot before deleting a directory tree.',
+        provider: 'local-fixture',
+      };
+    },
+  });
+  assert.equal(plan.hydeApplied, true);
+  assert.equal(plan.hydeProvider, 'local-fixture');
+  assert.equal(plan.strategy, 'deterministic-multi-query+hyde');
+  assert.equal(plan.variants.length, 4);
+  assert.match(plan.variants[3], /recoverable snapshot/);
+});
+
+test('HyDE generator failure degrades to deterministic multi-query with provenance', async () => {
+  const plan = await buildQueryPlan('wipe the folder', {
+    hydeGenerator: async () => { throw new Error('offline'); },
+  });
+  assert.equal(plan.hydeApplied, false);
+  assert.equal(plan.strategy, 'deterministic-multi-query');
+  assert.ok(plan.fallbacks.includes('hyde-generator-failed'));
+  assert.deepEqual(plan.variants, buildQueryVariants('wipe the folder'));
 });
 
 test('metadata filters prune domain, tags, signal, source, and tools before embedding', async () => {

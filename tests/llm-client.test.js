@@ -52,6 +52,42 @@ test('callClaude returns null without API key', async () => {
   assert.equal(result, null);
 });
 
+test('callClaude emits secret-safe provider telemetry when unavailable', async () => {
+  delete process.env.ANTHROPIC_API_KEY;
+  delete require.cache[require.resolve('../scripts/llm-client')];
+  const { callClaude } = require('../scripts/llm-client');
+  const traces = [];
+  const result = await callClaude({
+    model: 'claude-test-model',
+    userPrompt: 'private customer text that must not appear in telemetry',
+    traceId: 'trace-123',
+    onTrace: (event) => traces.push(event),
+  });
+
+  assert.equal(result, null);
+  assert.equal(traces.length, 1);
+  assert.equal(traces[0].provider, 'anthropic');
+  assert.equal(traces[0].model, 'claude-test-model');
+  assert.equal(traces[0].outcome, 'unavailable');
+  assert.equal(traces[0].traceId, 'trace-123');
+  assert.equal(JSON.stringify(traces[0]).includes('private customer text'), false);
+});
+
+test('normalizeUsageTelemetry captures provider token and cache counters', () => {
+  const { normalizeUsageTelemetry } = require('../scripts/llm-client');
+  assert.deepEqual(normalizeUsageTelemetry({
+    input_tokens: 120,
+    output_tokens: 30,
+    cache_read_input_tokens: 90,
+    cache_creation_input_tokens: 10,
+  }), {
+    inputTokens: 120,
+    outputTokens: 30,
+    cacheReadInputTokens: 90,
+    cacheWriteInputTokens: 10,
+  });
+});
+
 test('stripCodeFences removes json fences', () => {
   const { stripCodeFences } = require('../scripts/llm-client');
   assert.equal(stripCodeFences('```json\n{"a":1}\n```'), '{"a":1}');

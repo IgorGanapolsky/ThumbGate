@@ -1,11 +1,11 @@
 'use strict';
 
 /**
- * Cross-encoder reranker for lesson retrieval.
+ * Field-aware BM25F reranker for lesson retrieval.
  *
- * Unlike the bi-encoders already in use (Jaccard + bigram Jaccard), a
- * cross-encoder processes the (query, lesson) pair jointly — so it can
- * catch relevance signals that independent scoring misses:
+ * This is a deterministic lexical second stage, not a neural cross-encoder.
+ * It scores query terms against lesson fields jointly and catches relevance
+ * signals that the first-stage overlap score can miss:
  *
  *   - Field-weighted BM25: a query term in `whatWentWrong` is worth more
  *     than the same term in `tags`
@@ -200,7 +200,7 @@ function fieldWeightedBM25(queryTerms, candidates) {
 }
 
 /**
- * Rerank a list of lesson candidates using a cross-encoder approach.
+ * Rerank a list of lesson candidates using field-aware BM25F.
  *
  * @param {string} query          - The original retrieval query / action context
  * @param {Array}  candidates     - Lesson objects from the bi-encoder stage

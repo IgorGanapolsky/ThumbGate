@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "description": "Adversarial deterministic answer-quality proxy holdout. This validates metric behavior, not model quality.",
+  "thresholds": {
+    "minCases": 8,
+    "minClassificationAccuracy": 1,
+    "maxFalsePasses": 0
+  },
+  "cases": [
+    {
+      "id": "supported-git-policy",
+      "shouldPass": true,
+      "query": "How should I update protected main?",
+      "answer": "Use a reviewed pull request and never force-push protected main [git-policy].",
+      "referenceAnswer": "Use a reviewed pull request and never force-push protected main.",
+      "contexts": [
+        { "id": "git-policy", "text": "Use a reviewed pull request. Never force-push protected main." }
+      ]
+    },
+    {
+      "id": "negation-flip",
+      "shouldPass": false,
+      "query": "Can I force-push protected main?",
+      "answer": "Force-push is safe on protected main [git-policy].",
+      "referenceAnswer": "Never force-push protected main.",
+      "contexts": [
+        { "id": "git-policy", "text": "Never force-push protected main because it rewrites shared history." }
+      ]
+    },
+    {
+      "id": "numeric-drift",
+      "shouldPass": false,
+      "query": "Which build is live?",
+      "answer": "Build 43 is live in production [health].",
+      "referenceAnswer": "Build 42 is live in production.",
+      "contexts": [
+        { "id": "health", "text": "The production health response reports build 42." }
+      ]
+    },
+    {
+      "id": "off-topic-answer",
+      "shouldPass": false,
+      "query": "How do I prevent duplicate Stripe charges?",
+      "answer": "Use medium heat and stir the sauce slowly [cooking].",
+      "referenceAnswer": "Use a Stripe idempotency key.",
+      "contexts": [
+        { "id": "cooking", "text": "Use medium heat and stir the sauce slowly." }
+      ]
+    },
+    {
+      "id": "partial-hallucination",
+      "shouldPass": false,
+      "query": "What proves the deployment?",
+      "answer": "The health endpoint matches build abc123 [deploy]. Revenue also doubled overnight.",
+      "referenceAnswer": "The health endpoint must match build abc123.",
+      "contexts": [
+        { "id": "deploy", "text": "The production health endpoint matches build abc123." }
+      ]
+    },
+    {
+      "id": "invalid-citation",
+      "shouldPass": false,
+      "query": "What proves the deployment?",
+      "answer": "The health endpoint matches build abc123 [invented-source].",
+      "referenceAnswer": "The health endpoint must match build abc123.",
+      "contexts": [
+        { "id": "deploy", "text": "The production health endpoint matches build abc123." }
+      ]
+    },
+    {
+      "id": "supported-idempotency",
+      "shouldPass": true,
+      "query": "How do I prevent duplicate Stripe charges?",
+      "answer": "Use the same Stripe idempotency key when retrying a PaymentIntent [billing-policy].",
+      "referenceAnswer": "Use a Stripe idempotency key for PaymentIntent retries.",
+      "contexts": [
+        { "id": "billing-policy", "text": "Use the same Stripe idempotency key when retrying a PaymentIntent to prevent duplicate charges." }
+      ]
+    },
+    {
+      "id": "uncited-supported-claim",
+      "shouldPass": false,
+      "query": "How should I run a destructive migration?",
+      "answer": "Create a recoverable database backup before the migration.",
+      "referenceAnswer": "Create a recoverable database backup before a destructive migration.",
+      "contexts": [
+        { "id": "database-policy", "text": "Create a recoverable database backup before a destructive migration." }
+      ]
+    }
+  ]
+}

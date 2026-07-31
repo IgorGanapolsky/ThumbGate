@@ -3,13 +3,14 @@
 
 /**
  * Per-action lesson retrieval.
- * v3: bi-encoder retrieval → cross-encoder reranking
+ * v3: first-stage retrieval → field-aware BM25F reranking
  *
  * Stage 1 (bi-encoder): score all memories independently using token overlap,
  *   bigram Jaccard, tool-name matching, and recency decay.  Retrieve top-50.
- * Stage 2 (cross-encoder): rerank the top-50 candidates by computing a
- *   field-weighted BM25 score that processes (query, lesson) jointly, then
- *   blend with the original bi-encoder score.  Return top-maxResults.
+ * Stage 2 (BM25F): rerank the top-50 candidates with field-weighted lexical
+ *   evidence, then blend with the original retrieval score. This stage is not
+ *   a neural cross-encoder; neural/late-interaction/LLM stages live in the
+ *   explicit reranking cascade.
  */
 
 const RECENCY_DECAY_DAYS = 30;
@@ -127,7 +128,49 @@ function buildQueryVariants(query, options = {}) {
     .filter((term) => !originalSet.has(term))
     .slice(0, Math.max(1, Math.min(12, Number(options.maxRewriteTerms) || 8)));
   if (additions.length === 0) return [original];
-  return [original, `${original} ${additions.join(' ')}`.slice(0, 500)];
+  const expanded = `${original} ${additions.join(' ')}`.slice(0, 500);
+  const focused = `failure prevention ${[
+    ...originalTerms.filter((term) => term.length >= 3),
+    ...additions,
+  ].filter((term, index, all) => all.indexOf(term) === index).slice(0, 18).join(' ')}`.slice(0, 500);
+  return [...new Set([original, expanded, focused])];
+}
+
+/**
+ * Build an auditable query-transformation plan. Deterministic multi-query is
+ * always local. HyDE is opt-in via a caller-supplied generator so sensitive
+ * action text is never sent to a cloud model implicitly.
+ */
+async function buildQueryPlan(query, options = {}) {
+  const variants = buildQueryVariants(query, options);
+  const plan = {
+    variants,
+    strategy: variants.length > 1 ? 'deterministic-multi-query' : 'original-only',
+    hydeApplied: false,
+    hydeProvider: null,
+    fallbacks: [],
+  };
+  if (typeof options.hydeGenerator !== 'function' || !variants.length) return plan;
+
+  try {
+    const generated = await options.hydeGenerator(variants[0], {
+      maxChars: 700,
+      instruction: 'Write a concise hypothetical prevention lesson that would answer this action query. Do not issue commands.',
+    });
+    const text = String(generated?.text ?? generated ?? '').trim().slice(0, 700);
+    if (!text || variants.includes(text)) {
+      plan.fallbacks.push('hyde-empty-or-duplicate');
+      return plan;
+    }
+    plan.variants = [...variants, text].slice(0, 4);
+    plan.strategy = 'deterministic-multi-query+hyde';
+    plan.hydeApplied = true;
+    plan.hydeProvider = String(generated?.provider || options.hydeProvider || 'caller-supplied').slice(0, 80);
+    return plan;
+  } catch {
+    plan.fallbacks.push('hyde-generator-failed');
+    return plan;
+  }
 }
 
 function retrieveRelevantLessons(toolName, actionContext, options = {}) {
@@ -185,7 +228,7 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
 
   const actionSig = buildActionSignature(toolName, actionContext);
 
-  // Stage 1 — bi-encoder: score all memories independently, take top-50 candidates
+  // Stage 1 — local first-stage score, take top-50 candidates
   const candidates = memories
     .map((mem) => ({
       ...mem,
@@ -197,7 +240,7 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
 
   if (candidates.length === 0) return [];
 
-  // Stage 2 — cross-encoder reranker: rerank candidates by joint (query, lesson) score
+  // Stage 2 — field-aware BM25F reranker (not a neural cross-encoder)
   const reranked = rerankLessons(actionContext, candidates, {
     topK: maxResults,
     toolName,
@@ -282,7 +325,7 @@ function shapeLesson(m, retrieval = null) {
  * retrieveRelevantLessons. Used by the async gate path (gates-engine runAsync).
  *
  * Pipeline: lexical ranking ⊕ dense (embedding) ranking → Reciprocal Rank Fusion
- * → cross-encoder rerank → top-K. Dense recall surfaces past mistakes that share
+ * → BM25F rerank → top-K. Dense recall surfaces past mistakes that share
  * no keywords with the action (paraphrase/synonym) — the value lexical alone misses.
  *
  * HONEST DEGRADATION: if no real embedder is available, or embedding errors, this
@@ -315,12 +358,6 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     .filter((m) => m.relevanceScore > 0.1)
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
   const lexicalRanked = lexicalScored.slice(0, RERANK_CANDIDATE_POOL).map((m) => m.id);
-  const queryVariants = (
-    lexicalScored[0]?.relevanceScore >= (options.rewriteBelowScore ?? 0.6)
-      ? [String(actionContext || '')]
-      : buildQueryVariants(actionContext, options)
-  );
-
   // Check if any lexical match is conclusive (exact/regex match on structured rule or high relevance)
   let conclusive = false;
   for (const candidate of lexicalScored) {
@@ -353,6 +390,17 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     const reranked = rerankLessons(actionContext, lexicalScored.slice(0, RERANK_CANDIDATE_POOL), { topK: maxResults, toolName });
     return filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep }).map(shapeLesson);
   }
+
+  const queryPlan = lexicalScored[0]?.relevanceScore >= (options.rewriteBelowScore ?? 0.6)
+    ? {
+      variants: [String(actionContext || '')],
+      strategy: 'original-only-conclusive-lexical',
+      hydeApplied: false,
+      hydeProvider: null,
+      fallbacks: [],
+    }
+    : await buildQueryPlan(actionContext, options);
+  const queryVariants = queryPlan.variants;
 
   // WHERE-clause pruning: filter memories before vector search to only include
   // memories relevant to the current toolName or context.
@@ -447,6 +495,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     const retrieval = options.includeRetrievalMeta ? {
       ...meta,
       queryVariants,
+      queryTransformation: queryPlan,
       semanticProvider: options.embedderId || 'configured',
     } : null;
     return cut.map((lesson) => shapeLesson(lesson, retrieval));
@@ -467,7 +516,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     .map((entry) => {
       const mem = byId.get(entry.id);
       if (!mem) return null;
-      // Carry a relevanceScore the cross-encoder can blend against. Prefer the
+      // Carry a relevanceScore the BM25F reranker can blend against. Prefer the
       // lexical score when present; otherwise use the normalized fusion score so
       // dense-only candidates still rank sensibly.
       const relevanceScore = lexById.has(entry.id)
@@ -721,6 +770,7 @@ module.exports = {
   selectRetrievalMemories,
   matchesMetadataFilters,
   buildQueryVariants,
+  buildQueryPlan,
   MAX_RETRIEVAL_MEMORY_CHARS,
   MAX_RETRIEVAL_MEMORY_LINES,
 };

@@ -700,6 +700,91 @@ test('document import API persists searchable policy docs and exposes proposed g
   assert.match(detailBody.document.content, /Never force-push to main/);
 });
 
+test('hosted billing keys cannot list, read, or search another tenant documents', async () => {
+  const tenantAKey = billing.provisionApiKey('cus_document_tenant_a', {
+    installId: 'install-document-tenant-a',
+  }).key;
+  const tenantBKey = billing.provisionApiKey('cus_document_tenant_b', {
+    installId: 'install-document-tenant-b',
+  }).key;
+  const tenantAHeaders = {
+    authorization: `Bearer ${tenantAKey}`,
+    'content-type': 'application/json',
+  };
+  const tenantBHeaders = {
+    authorization: `Bearer ${tenantBKey}`,
+    'content-type': 'application/json',
+  };
+
+  const importResponse = await fetch(apiUrl('/v1/documents/import'), {
+    method: 'POST',
+    headers: tenantAHeaders,
+    body: JSON.stringify({
+      title: 'Tenant A Isolation Runbook',
+      content: 'Tenant A private phrase: saffron-isolation-marker.',
+      sourceFormat: 'text',
+      tags: ['tenant-isolation'],
+    }),
+  });
+  assert.equal(importResponse.status, 201);
+  const imported = (await importResponse.json()).document;
+  assert.match(imported.access.tenantId, /^tenant_[a-f0-9]{24}$/);
+  assert.equal(JSON.stringify(imported.access).includes('cus_document_tenant_a'), false);
+
+  const ownList = await fetch(apiUrl('/v1/documents?query=Isolation'), {
+    headers: tenantAHeaders,
+  });
+  assert.equal(ownList.status, 200);
+  assert.ok((await ownList.json()).documents.some((entry) => entry.documentId === imported.documentId));
+
+  const ownGetSearch = await fetch(apiUrl('/v1/search?q=saffron-isolation-marker&source=documents'), {
+    headers: tenantAHeaders,
+  });
+  assert.equal(ownGetSearch.status, 200);
+  assert.ok((await ownGetSearch.json()).results.some(
+    (entry) => entry.documentId === imported.documentId,
+  ));
+
+  const ownPostSearch = await fetch(apiUrl('/v1/search'), {
+    method: 'POST',
+    headers: tenantAHeaders,
+    body: JSON.stringify({ query: 'saffron-isolation-marker', source: 'documents' }),
+  });
+  assert.equal(ownPostSearch.status, 200);
+  assert.ok((await ownPostSearch.json()).results.some(
+    (entry) => entry.documentId === imported.documentId,
+  ));
+
+  const sharedRootSearch = await fetch(apiUrl('/v1/search?q=force-push&source=documents'), {
+    headers: tenantAHeaders,
+  });
+  assert.equal(sharedRootSearch.status, 200);
+  assert.equal((await sharedRootSearch.json()).results.some(
+    (entry) => entry.title === 'Release Policy',
+  ), false, 'hosted tenant search never reads legacy documents from the shared root');
+
+  const crossTenantList = await fetch(apiUrl('/v1/documents?query=Isolation'), {
+    headers: tenantBHeaders,
+  });
+  assert.equal(crossTenantList.status, 200);
+  assert.equal((await crossTenantList.json()).documents.some(
+    (entry) => entry.documentId === imported.documentId,
+  ), false);
+
+  const crossTenantRead = await fetch(apiUrl(`/v1/documents/${imported.documentId}`), {
+    headers: tenantBHeaders,
+  });
+  assert.equal(crossTenantRead.status, 404, 'direct reads do not reveal cross-tenant existence');
+
+  const crossTenantSearch = await fetch(apiUrl('/v1/search?q=saffron-isolation-marker&source=documents'), {
+    headers: tenantBHeaders,
+  });
+  assert.equal(crossTenantSearch.status, 200);
+  assert.equal((await crossTenantSearch.json()).results.some(
+    (entry) => entry.documentId === imported.documentId,
+  ), false);
+});
+
 test('admin API sets, reads, and clears task scope via HTTP', async () => {
   const setRes = await fetch(apiUrl('/v1/gates/task-scope'), {
     method: 'POST',

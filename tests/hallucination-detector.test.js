@@ -145,6 +145,21 @@ test('retrievalGroundedCheck handles empty input', () => {
   assert.equal(retrievalGroundedCheck(null).grounded, true);
 });
 
+test('retrievalGroundedCheck fails closed when evidence retrieval is unavailable', () => {
+  const result = retrievalGroundedCheck('deploy this change to production', {
+    contextProvider: () => {
+      throw new Error('simulated retrieval outage with secret=do-not-log');
+    },
+  });
+
+  assert.equal(result.grounded, false);
+  assert.equal(result.evidenceAvailable, false);
+  assert.equal(result.verdict, 'evidence_unavailable');
+  assert.equal(result.errorCode, 'context_retrieval_failed');
+  assert.equal(result.groundingScore, 0);
+  assert.equal(JSON.stringify(result).includes('do-not-log'), false);
+});
+
 // === Full Hallucination Check ===
 test('fullHallucinationCheck with verified claims', () => {
   const r = fullHallucinationCheck('Tests pass and fix is deployed.', { test_output: true, exit_code: true, health_check: true, version_match: '1.0' });

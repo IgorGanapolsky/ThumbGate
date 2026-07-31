@@ -137,16 +137,45 @@ function confidenceWeightedDecision({ confidence, reliability, samples }) {
  *
  * Returns { grounded, contradictions, relevantRules, groundingScore }.
  */
-function retrievalGroundedCheck(proposedAction, { maxItems = 5, maxChars = 3000 } = {}) {
+function retrievalGroundedCheck(proposedAction, {
+  maxItems = 5,
+  maxChars = 3000,
+  contextProvider = constructContextPack,
+} = {}) {
   const actionText = String(proposedAction || '').toLowerCase();
-  if (!actionText.trim()) return { grounded: true, contradictions: [], relevantRules: [], groundingScore: 100 };
+  if (!actionText.trim()) {
+    return {
+      grounded: true,
+      evidenceAvailable: true,
+      verdict: 'no_action',
+      contradictions: [],
+      relevantRules: [],
+      groundingScore: 100,
+    };
+  }
 
   // Retrieve relevant context
   let pack;
   try {
-    pack = constructContextPack({ query: proposedAction, maxItems, maxChars, namespaces: ['rules', 'memoryError'] });
+    pack = contextProvider({
+      query: proposedAction,
+      maxItems,
+      maxChars,
+      namespaces: ['rules', 'memoryError'],
+    });
   } catch {
-    return { grounded: true, contradictions: [], relevantRules: [], groundingScore: 100 };
+    // A retrieval outage is absence of evidence, never evidence of safety.
+    // Fail closed without echoing provider/filesystem error details.
+    return {
+      grounded: false,
+      evidenceAvailable: false,
+      verdict: 'evidence_unavailable',
+      errorCode: 'context_retrieval_failed',
+      contradictions: [],
+      relevantRules: [],
+      groundingScore: 0,
+      packItemCount: 0,
+    };
   }
 
   const contradictions = [];
@@ -182,6 +211,8 @@ function retrievalGroundedCheck(proposedAction, { maxItems = 5, maxChars = 3000 
 
   return {
     grounded: contradictions.length === 0,
+    evidenceAvailable: true,
+    verdict: contradictions.length === 0 ? 'grounded' : 'contradiction_detected',
     contradictions,
     relevantRules,
     groundingScore,
@@ -212,7 +243,11 @@ function fullHallucinationCheck(agentOutput, evidence = {}) {
       partial: totalClaims - verifiedCount - hallucinationCount,
       claimPassRate: totalClaims > 0 ? Math.round((verifiedCount / totalClaims) * 1000) / 10 : 100,
       groundingScore: grounding.groundingScore,
-      overallVerdict: hallucinationCount > 0 ? 'hallucination_detected' : (grounding.grounded ? 'grounded' : 'contradiction_detected'),
+      overallVerdict: hallucinationCount > 0
+        ? 'hallucination_detected'
+        : grounding.verdict === 'evidence_unavailable'
+          ? 'evidence_unavailable'
+          : (grounding.grounded ? 'grounded' : 'contradiction_detected'),
     },
     checkedAt: new Date().toISOString(),
   };
@@ -230,9 +265,17 @@ function checkGroundTruth(claim, projectRoot = process.cwd()) {
     switch (claim.type) {
       case 'test_result': {
         // Pattern: "X tests pass"
-        const countMatch = claim.context.match(/(\d+)\s+tests?\s+(?:pass|run|fail)/i);
-        if (countMatch) {
-          const expected = parseInt(countMatch[1], 10);
+        const tokens = String(claim.context || '')
+          .toLowerCase()
+          .split(/[^a-z0-9]+/)
+          .filter(Boolean);
+        const countIndex = tokens.findIndex((token, index) => (
+          Number.isSafeInteger(Number(token))
+          && ['test', 'tests'].includes(tokens[index + 1])
+          && ['pass', 'run', 'fail'].includes(tokens[index + 2])
+        ));
+        if (countIndex >= 0) {
+          const expected = Number(tokens[countIndex]);
           // Run a dry-run or quick test listing
           const output = execSync('npm test -- --listTests', { cwd: projectRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
           const actual = (output.match(/\.test\.js/g) || []).length;
