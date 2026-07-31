@@ -51,12 +51,14 @@ function resolveCliCommand(subcommand) {
 }
 
 function resolveCodexCliCommand(subcommand) {
+  // Source checkouts already contain the requested hook command. Resolve them
+  // locally before any registry probe so init stays offline and deterministic.
+  if (isSourceCheckout(PKG_ROOT)) {
+    return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))} ${subcommand}`;
+  }
   const version = packageVersion();
   if (publishedHookCommandsAvailable(version)) {
     return publishedCliShellCommand('latest', [subcommand]);
-  }
-  if (isSourceCheckout(PKG_ROOT)) {
-    return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))} ${subcommand}`;
   }
   return publishedCliShellCommand('latest', [subcommand]);
 }

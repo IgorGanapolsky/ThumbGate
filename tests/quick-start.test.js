@@ -32,6 +32,36 @@ function runQuickStart(cwd, extraArgs = []) {
   });
 }
 
+test('quick-start does not execute detected plugin managers by default', () => {
+  const tmp = makeTmpDir();
+  const fakeBinDir = path.join(tmp, 'bin');
+  const sentinelPath = path.join(tmp, 'plugin-manager-ran');
+  fs.mkdirSync(fakeBinDir, { recursive: true });
+  const fakeGemini = path.join(fakeBinDir, 'gemini');
+  fs.writeFileSync(fakeGemini, `#!/bin/sh\ntouch "${sentinelPath}"\n`);
+  fs.chmodSync(fakeGemini, 0o755);
+
+  const previousPath = process.env.PATH;
+  try {
+    process.env.PATH = `${fakeBinDir}${path.delimiter}${previousPath}`;
+    runQuickStart(tmp, ['--agent=gemini']);
+    assert.strictEqual(fs.existsSync(sentinelPath), false, 'plugin manager should require explicit opt-in');
+    assert.strictEqual(
+      fs.existsSync(path.join(tmp, '.home', '.codex', 'config.toml')),
+      false,
+      'a Gemini quick-start should not configure unrelated Codex state',
+    );
+    assert.strictEqual(
+      fs.existsSync(path.join(tmp, '.home', '.claude', 'settings.local.json')),
+      false,
+      'a Gemini quick-start should not configure unrelated Claude state',
+    );
+  } finally {
+    process.env.PATH = previousPath;
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('quick-start creates .thumbgate/config.json with correct defaults', () => {
   const tmp = makeTmpDir();
   try {
