@@ -856,16 +856,35 @@ function getRequestFeedbackPaths(req, parsed) {
   });
 }
 
+const DATA_IDENTITY_CACHE = new Map();
+const DATA_IDENTITY_CACHE_LIMIT = 2048;
+
 function hashDataIdentity(prefix, value) {
-  return `${prefix}_${crypto.createHash('sha256')
-    .update(String(value || ''))
-    .digest('hex')
-    .slice(0, 24)}`;
+  const normalized = String(value || '');
+  const cacheKey = `${prefix}\0${normalized}`;
+  const cached = DATA_IDENTITY_CACHE.get(cacheKey);
+  if (cached) return cached;
+
+  // Billing identifiers can be email-like and API keys must never be made
+  // guessable through a fast digest. A memory-hard KDF gives us a stable,
+  // path-safe pseudonym without persisting the source identifier.
+  const derived = `${prefix}_${crypto.scryptSync(
+    normalized,
+    `thumbgate-${prefix}-data-identity-v1`,
+    16,
+    { N: 16384, r: 8, p: 1 }
+  ).toString('hex').slice(0, 24)}`;
+
+  if (DATA_IDENTITY_CACHE.size >= DATA_IDENTITY_CACHE_LIMIT) {
+    DATA_IDENTITY_CACHE.clear();
+  }
+  DATA_IDENTITY_CACHE.set(cacheKey, derived);
+  return derived;
 }
 
-function buildHostedTenantIdentity(validation = {}, fallbackKey = '') {
-  if (!validation || validation.valid !== true) return null;
-  const tenantSeed = validation.customerId || `key:${fallbackKey}`;
+function buildHostedTenantIdentity(validation = {}) {
+  if (!validation || validation.valid !== true || !validation.customerId) return null;
+  const tenantSeed = validation.customerId;
   const principalSeed = validation.installId || tenantSeed;
   const tenantId = hashDataIdentity('tenant', tenantSeed);
   return {
@@ -883,8 +902,12 @@ function resolveRequestDataIdentity(req, expectedApiKey) {
   if (!token || (expectedApiKey && safeKeyEqual(token, expectedApiKey))) {
     return { partition: null, accessContext: null };
   }
-  return buildHostedTenantIdentity(validateApiKey(token), token)
-    || { partition: null, accessContext: null };
+  const validation = validateApiKey(token);
+  const identity = buildHostedTenantIdentity(validation);
+  if (validation.valid === true && !identity) {
+    return { partition: null, accessContext: null, invalidHostedIdentity: true };
+  }
+  return identity || { partition: null, accessContext: null };
 }
 
 function partitionFeedbackPaths(paths, dataIdentity) {
@@ -8740,6 +8763,15 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     // before any endpoint reads or writes feedback, documents, traces, or jobs.
     // Static admin/local operation retains the existing single-tenant path.
     const requestDataIdentity = resolveRequestDataIdentity(req, expectedApiKey);
+    if (requestDataIdentity.invalidHostedIdentity) {
+      sendProblem(res, {
+        type: PROBLEM_TYPES.UNAUTHORIZED,
+        title: 'Unauthorized',
+        status: 403,
+        detail: 'The hosted API key is not bound to a customer identity.',
+      });
+      return;
+    }
     requestFeedbackPaths = partitionFeedbackPaths(requestFeedbackPaths, requestDataIdentity);
     requestFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
     requestSafeDataDir = path.resolve(requestFeedbackDir);

@@ -282,6 +282,13 @@ test('hosted customer identities map to stable opaque tenant partitions', () => 
   assert.match(first.partition, /^tenant_[a-f0-9]{24}$/);
 });
 
+test('hosted keys without a customer identity fail closed', () => {
+  assert.equal(apiServerTest.buildHostedTenantIdentity({
+    valid: true,
+    installId: 'orphaned-install',
+  }), null);
+});
+
 test('tenant partitions cannot escape the configured feedback root', () => {
   const base = { FEEDBACK_DIR: path.resolve('/tmp/thumbgate-tenant-root') };
   const identity = apiServerTest.buildHostedTenantIdentity({
