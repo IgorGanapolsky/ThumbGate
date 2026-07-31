@@ -51,12 +51,19 @@ function resolveCliCommand(subcommand) {
 }
 
 function resolveCodexCliCommand(subcommand) {
+  // Codex hooks live in user-global config. Pinning them to a disposable source
+  // worktree breaks every hook as soon as normal post-merge cleanup removes it.
+  // The stable @latest launcher stays offline at configuration time and survives
+  // cleanup. Checkout-pinned hooks remain available as an explicit dev override.
+  if (isSourceCheckout(PKG_ROOT) && process.env.THUMBGATE_CODEX_USE_SOURCE_RUNTIME === '1') {
+    return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))} ${subcommand}`;
+  }
+  if (isSourceCheckout(PKG_ROOT)) {
+    return publishedCliShellCommand('latest', [subcommand]);
+  }
   const version = packageVersion();
   if (publishedHookCommandsAvailable(version)) {
     return publishedCliShellCommand('latest', [subcommand]);
-  }
-  if (isSourceCheckout(PKG_ROOT)) {
-    return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))} ${subcommand}`;
   }
   return publishedCliShellCommand('latest', [subcommand]);
 }

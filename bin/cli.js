@@ -39,7 +39,6 @@ const {
   codexAutoUpdateCliEntry,
   codexAutoUpdateMcpEntry,
   isSourceCheckout,
-  publishedCliAvailable,
   localMcpEntry,
   resolveMcpEntry,
 } = require(path.join(__dirname, '..', 'scripts', 'mcp-config'));
@@ -411,16 +410,17 @@ function canonicalMcpEntry(scope = 'project') {
 }
 
 function canonicalCodexMcpEntry() {
-  const version = pkgVersion();
-  if (isSourceCheckout(PKG_ROOT) && !publishedCliAvailable(version)) {
+  // Codex config is user-global and must survive disposable worktree cleanup.
+  // Use the stable published launcher even when init is invoked from source;
+  // developers can explicitly opt into a checkout-pinned runtime when needed.
+  if (isSourceCheckout(PKG_ROOT) && process.env.THUMBGATE_CODEX_USE_SOURCE_RUNTIME === '1') {
     return localMcpEntry(PKG_ROOT, 'home');
   }
   return codexAutoUpdateMcpEntry();
 }
 
 function canonicalCodexCliEntry(commandArgs) {
-  const version = pkgVersion();
-  if (isSourceCheckout(PKG_ROOT) && !publishedCliAvailable(version)) {
+  if (isSourceCheckout(PKG_ROOT) && process.env.THUMBGATE_CODEX_USE_SOURCE_RUNTIME === '1') {
     return {
       command: 'node',
       args: [path.join(PKG_ROOT, 'bin', 'cli.js'), ...commandArgs],
@@ -584,7 +584,20 @@ function detectPlatform(name, checks) {
 }
 
 function whichExists(cmd) {
-  try { execSync(`which ${cmd}`, { stdio: 'pipe' }); return true; } catch (_) { return false; }
+  if (!cmd || /[\\/]/.test(cmd)) return false;
+  const pathEntries = String(process.env.PATH || '').split(path.delimiter).filter(Boolean);
+  const extensions = process.platform === 'win32'
+    ? String(process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM').split(';')
+    : [''];
+  return pathEntries.some((entry) => extensions.some((extension) => {
+    const candidate = path.join(entry, `${cmd}${extension}`);
+    try {
+      fs.accessSync(candidate, fs.constants.X_OK);
+      return fs.statSync(candidate).isFile();
+    } catch (_) {
+      return false;
+    }
+  }));
 }
 
 function setupClaude() {
@@ -636,18 +649,26 @@ function setupCodex() {
   return configChanged || hookResult.changed;
 }
 
-function setupGemini() {
-  // Try to import custom commands as a Gemini plugin if the CLI is installed
-  const { execSync } = require('child_process');
+function setupGemini(options = {}) {
+  // Importing a plugin executes an external package manager and can mutate
+  // machine-wide Gemini state. Keep ordinary init/quick-start deterministic;
+  // operators can opt in explicitly when they want the plugin import too.
+  const importPlugin = options.importPlugin === true
+    || process.env.THUMBGATE_IMPORT_AGENT_PLUGINS === '1';
   let pluginImported = false;
-  for (const binName of ['agy', 'gemini']) {
-    try {
-      execSync(`${binName} plugin import "${PKG_ROOT}" --force`, { stdio: 'ignore' });
-      console.log(`  Gemini: imported thumbgate plugin via ${binName}`);
-      pluginImported = true;
-      break;
-    } catch (err) {
-      // ignore errors if command doesn't exist or fails
+  if (importPlugin) {
+    for (const binName of ['agy', 'gemini']) {
+      try {
+        execFileSync(binName, ['plugin', 'import', PKG_ROOT, '--force'], {
+          stdio: 'ignore',
+          timeout: 5000,
+        });
+        console.log(`  Gemini: imported thumbgate plugin via ${binName}`);
+        pluginImported = true;
+        break;
+      } catch (err) {
+        // A missing, failing, or slow optional plugin manager must not block init.
+      }
     }
   }
 
@@ -1003,13 +1024,14 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
     process.exit(1);
   }
   if (args.help || args.h) {
-    console.log('Usage: npx thumbgate init [--agent <name>] [--wire-hooks] [--email you@company.com]');
+    console.log('Usage: npx thumbgate init [--agent <name>] [--wire-hooks] [--import-agent-plugins] [--email you@company.com]');
     console.log('');
     console.log('Scaffold ThumbGate in the current project and wire detected agent integrations.');
     console.log('');
     console.log('Options:');
     console.log(`  --agent <name>           Wire a specific agent: ${Object.keys(SUPPORTED_AGENTS).join(', ')}`);
     console.log('  --wire-hooks             Wire hooks only; do not scaffold project files');
+    console.log('  --import-agent-plugins   Also import optional agent plugins when supported');
     console.log('  --email <email>          Subscribe installer to the setup guide and trial reminders');
     console.log('  --dry-run                Show hook changes without writing them');
     return;
@@ -1105,17 +1127,26 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   let configured = 0;
 
   const platforms = [
-    { name: 'Claude Code', detect: [
+    { agent: 'claude-code', name: 'Claude Code', detect: [
       () => whichExists('claude'),
       () => fs.existsSync(path.join(HOME, '.claude')),
       () => fs.existsSync(path.join(CWD, '.claude')),
     ], setup: setupClaude },
-    { name: 'Codex', detect: [() => whichExists('codex'), () => fs.existsSync(path.join(HOME, '.codex'))], setup: setupCodex },
-    { name: 'Gemini', detect: [() => whichExists('gemini'), () => fs.existsSync(path.join(HOME, '.gemini'))], setup: setupGemini },
-    { name: 'Amp', detect: [() => whichExists('amp'), () => fs.existsSync(path.join(HOME, '.amp'))], setup: setupAmp },
-    { name: 'Cursor', detect: [() => fs.existsSync(path.join(HOME, '.cursor', 'mcp.json')), () => fs.existsSync(path.join(CWD, '.cursor'))], setup: setupCursor },
-    { name: 'ForgeCode', detect: [() => whichExists('forge'), () => fs.existsSync(path.join(CWD, 'forge.yaml'))], setup: setupForge },
-    { name: 'Cline', detect: [
+    { agent: 'codex', name: 'Codex', detect: [() => whichExists('codex'), () => fs.existsSync(path.join(HOME, '.codex'))], setup: setupCodex },
+    {
+      agent: 'gemini',
+      name: 'Gemini',
+      detect: [
+        () => whichExists('gemini'),
+        () => whichExists('agy'),
+        () => fs.existsSync(path.join(HOME, '.gemini')),
+      ],
+      setup: () => setupGemini({ importPlugin: args['import-agent-plugins'] === true }),
+    },
+    { agent: 'amp', name: 'Amp', detect: [() => whichExists('amp'), () => fs.existsSync(path.join(HOME, '.amp'))], setup: setupAmp },
+    { agent: 'cursor', name: 'Cursor', detect: [() => fs.existsSync(path.join(HOME, '.cursor', 'mcp.json')), () => fs.existsSync(path.join(CWD, '.cursor'))], setup: setupCursor },
+    { agent: 'forge', name: 'ForgeCode', detect: [() => whichExists('forge'), () => fs.existsSync(path.join(CWD, 'forge.yaml'))], setup: setupForge },
+    { agent: 'cline', name: 'Cline', detect: [
       () => fs.existsSync(path.join(CWD, '.clinerules')),
       () => process.platform === 'darwin' && fs.existsSync(path.join(HOME, 'Library', 'Application Support', 'Code', 'User', 'globalStorage', 'saoudrizwan.claude-dev')),
       () => process.platform === 'linux' && fs.existsSync(path.join(HOME, '.config', 'Code', 'User', 'globalStorage', 'saoudrizwan.claude-dev')),
@@ -1124,6 +1155,11 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   ];
 
   for (const p of platforms) {
+    // An explicit target must stay scoped to that integration. Quick-start
+    // always resolves one target before calling init; configuring every other
+    // CLI merely because it exists on PATH caused surprise machine mutations
+    // and multi-second hangs in ordinary onboarding.
+    if (args.agent && p.agent !== args.agent) continue;
     if (detectPlatform(p.name, p.detect)) {
       const didSetup = p.setup();
       if (didSetup) configured++;
