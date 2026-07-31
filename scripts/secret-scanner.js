@@ -32,9 +32,18 @@ const SECRET_FILE_PATTERNS = [
   { id: 'netrc_file', label: 'netrc credentials file', regex: /(^|\/)\.netrc$/i },
   { id: 'npmrc_file', label: 'npm credentials file', regex: /(^|\/)\.npmrc$/i },
   { id: 'pypirc_file', label: 'Python package credentials file', regex: /(^|\/)\.pypirc$/i },
-  { id: 'ssh_private_key', label: 'SSH private key', regex: /(^|\/)(?:id_rsa|id_ed25519|id_dsa)$/i },
+  { id: 'ssh_private_key', label: 'SSH private key', regex: /(^|\/)(?:id_rsa|id_ed25519|id_dsa|id_ecdsa)$/i },
+  { id: 'ssh_private_key_path', label: 'SSH private key path', regex: /(^|\/)\.ssh\/id_[A-Za-z0-9._-]+$/i },
+  { id: 'aws_credentials', label: 'AWS credentials file', regex: /(^|\/)\.aws\/credentials$/i },
+  { id: 'kubeconfig', label: 'Kubernetes config', regex: /(^|\/)\.kube\/config$/i },
+  { id: 'docker_config', label: 'Docker config credentials', regex: /(^|\/)\.docker\/config\.json$/i },
+  { id: 'gcloud_adc', label: 'GCP application default credentials', regex: /application_default_credentials\.json$/i },
   { id: 'pem_key_file', label: 'PEM key file', regex: /\.pem$/i },
 ];
+
+// Env vars that commonly hold secrets. Used to catch exfil when the secret
+// never appears as a literal in the command (e.g. echo $API_KEY | curl ...).
+const SECRET_ENV_VAR_PATTERN = /\$\{?(?:API[_-]?KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY|GEMINI_API_KEY|AWS_SECRET_ACCESS_KEY|AWS_ACCESS_KEY_ID|AWS_SESSION_TOKEN|GITHUB_TOKEN|GH_TOKEN|STRIPE_SECRET_KEY|STRIPE_API_KEY|NPM_TOKEN|HF_TOKEN|HUGGINGFACE_TOKEN|DATABASE_URL|DB_PASSWORD|POSTGRES_PASSWORD|MYSQL_PWD|PRIVATE_KEY|SECRET_KEY|ACCESS_TOKEN|AUTH_TOKEN|CLIENT_SECRET|SLACK_BOT_TOKEN|DISCORD_TOKEN)(?!\w)/i;
 
 const BASH_SECRET_READ_PREFIXES = [
   'cat',
@@ -52,9 +61,20 @@ const BASH_SECRET_READ_PREFIXES = [
   'strings',
   'env',
   'printenv',
+  'base64',
+  'xxd',
+  'od',
+  'hexdump',
 ];
 
+// Tools that can carry secret material off-box.
 const OUTBOUND_FILE_COMMANDS = new Set(['curl', 'wget']);
+const NETWORK_EXFIL_COMMANDS = new Set([
+  'curl', 'wget', 'nc', 'ncat', 'netcat', 'scp', 'rsync', 'sftp', 'ftp', 'lftp',
+]);
+const SECRET_FILE_READ_COMMANDS = new Set([
+  'cat', 'head', 'tail', 'less', 'more', 'base64', 'xxd', 'od', 'hexdump', 'gzip', 'bzip2', 'xz',
+]);
 const OUTBOUND_COMMAND_WRAPPERS = new Set(['command', 'env', 'nohup', 'sudo']);
 const SHELL_QUOTES = new Set(['"', "'"]);
 const SHELL_SEGMENT_SEPARATORS = new Set([';', '|', '&', '\n']);
@@ -66,6 +86,8 @@ const WRAPPER_OPTIONS_WITH_VALUE = {
     '-D', '--chdir',
   ]),
 };
+// Note: --data-raw does NOT treat @ as a file reference (curl man page).
+// Keep it out so literal @payload strings are not false-positive scanned.
 const CURL_DATA_FILE_OPTIONS = new Set([
   '-d',
   '--data',
@@ -610,19 +632,190 @@ function scanOutboundCommandFiles(command, cwd, provider) {
   const findings = [];
   const fileHashes = [];
   for (const reference of extractOutboundFileReferences(command, cwd)) {
+    // Path findings count: curl --data-binary @.env must deny even when the
+    // file is missing or empty. Content findings still apply when present.
     const fileScan = scanFile(reference.path, {
       provider,
-      includePathFinding: false,
+      includePathFinding: true,
     });
     if (!fileScan.detected) continue;
     findings.push(...fileScan.findings.map((finding) => ({
       ...finding,
       source: 'outbound_file',
-      reason: `${finding.label} found in file referenced by ${reference.command} ${reference.option}`,
+      reason: finding.reason
+        || `${finding.label} found in file referenced by ${reference.command} ${reference.option}`,
     })));
     if (fileScan.fileHash) fileHashes.push(fileScan.fileHash);
   }
   return { findings, fileHashes };
+}
+
+function classifySecretPathToken(token) {
+  const raw = String(token || '').trim().replace(/^["']|["']$/g, '');
+  if (!raw || raw === '-') return null;
+  // Strip curl @file / form field=@file / <file prefixes.
+  let candidate = raw;
+  if (candidate.startsWith('@')) candidate = candidate.slice(1);
+  const formAt = candidate.indexOf('=@');
+  if (formAt > 0) candidate = candidate.slice(formAt + 2);
+  const formLt = candidate.indexOf('=<');
+  if (formLt > 0) candidate = candidate.slice(formLt + 2);
+  candidate = candidate.split(';', 1)[0];
+  // Drop remote scp host:path → keep local path side when present.
+  if (/^[A-Za-z0-9._-]+@[^:]+:/.test(candidate)) return null;
+  return classifySecretPath(candidate) || classifySecretPath(path.basename(candidate));
+}
+
+function segmentHasNetworkExfil(segment) {
+  const tokens = tokenizeCommand(segment);
+  for (const token of tokens) {
+    const verb = path.basename(String(token || '')).toLowerCase();
+    if (NETWORK_EXFIL_COMMANDS.has(verb)) return verb;
+  }
+  return null;
+}
+
+function segmentSecretPathFindings(segment, cwd) {
+  const findings = [];
+  const tokens = tokenizeCommand(segment);
+  for (const token of tokens) {
+    const pathFinding = classifySecretPathToken(token);
+    if (!pathFinding) continue;
+    const resolved = resolvePathToken(
+      String(token).replace(/^@/, '').split('=@').pop().split('=<').pop().split(';', 1)[0],
+      cwd
+    );
+    findings.push({
+      ...pathFinding,
+      path: resolved || pathFinding.path,
+      source: 'exfil_path',
+      reason: `${pathFinding.label} referenced in potential exfiltration command`,
+    });
+  }
+  return findings;
+}
+
+function detectCommandSubstitutionExfil(command, cwd) {
+  // $(cat .env), $(base64 .env), `cat .env` — secret is not literal in argv of curl.
+  const findings = [];
+  const patterns = [
+    /\$\(\s*([a-z0-9._+-]+)\s+([^)]+)\)/gi,
+    /`\s*([a-z0-9._+-]+)\s+([^`]+)`/gi,
+  ];
+  for (const pattern of patterns) {
+    pattern.lastIndex = 0;
+    let match = pattern.exec(command);
+    while (match) {
+      const verb = path.basename(String(match[1] || '')).toLowerCase();
+      if (!SECRET_FILE_READ_COMMANDS.has(verb)) {
+        match = pattern.exec(command);
+        continue;
+      }
+      const args = tokenizeCommand(match[2] || '');
+      for (const arg of args) {
+        const pathFinding = classifySecretPathToken(arg);
+        if (!pathFinding) continue;
+        findings.push({
+          ...pathFinding,
+          source: 'command_substitution',
+          reason: `${pathFinding.label} read via command substitution (${verb}) for possible exfiltration`,
+        });
+      }
+      match = pattern.exec(command);
+    }
+  }
+  // Only treat as exfil when the outer command also talks to the network
+  // or pipes into a network tool.
+  if (findings.length === 0) return [];
+  const hasNetwork = Boolean(segmentHasNetworkExfil(command))
+    || /\|/.test(command)
+    || /https?:\/\//i.test(command);
+  if (!hasNetwork) return [];
+  return findings;
+}
+
+function detectPipelineExfil(command, cwd) {
+  // cat .env | nc … ; base64 .env | curl … ; echo $API_KEY | curl …
+  const findings = [];
+  const segments = String(command || '').split(/(?<![|])\|(?![|])/);
+  if (segments.length < 2) return findings;
+
+  for (let i = 0; i < segments.length - 1; i += 1) {
+    const left = segments[i];
+    const right = segments.slice(i + 1).join('|');
+    const networkVerb = segmentHasNetworkExfil(right);
+    if (!networkVerb) continue;
+
+    const pathFindings = segmentSecretPathFindings(left, cwd);
+    for (const finding of pathFindings) {
+      findings.push({
+        ...finding,
+        source: 'pipeline_exfil',
+        reason: `${finding.label} piped into ${networkVerb}`,
+      });
+    }
+
+    SECRET_ENV_VAR_PATTERN.lastIndex = 0;
+    if (SECRET_ENV_VAR_PATTERN.test(left) || SECRET_ENV_VAR_PATTERN.test(right)) {
+      findings.push({
+        id: 'secret_env_exfil',
+        label: 'Secret environment variable',
+        source: 'pipeline_exfil',
+        reason: `Secret-bearing environment variable piped into ${networkVerb}`,
+      });
+    }
+  }
+  return findings;
+}
+
+function detectScpRsyncExfil(command, cwd) {
+  const findings = [];
+  for (const segment of splitCommandSegments(command)) {
+    const tokens = tokenizeCommand(segment);
+    if (!tokens.length) continue;
+    let index = 0;
+    while (isShellAssignment(tokens[index])) index += 1;
+    const verb = path.basename(String(tokens[index] || '')).toLowerCase();
+    if (verb !== 'scp' && verb !== 'rsync' && verb !== 'sftp') continue;
+    for (const token of tokens.slice(index + 1)) {
+      if (String(token).startsWith('-')) continue;
+      // scp local secret → remote  OR  remote → local (still sensitive move)
+      const localSide = String(token).includes(':') && !String(token).startsWith('/')
+        ? String(token).split(':').slice(1).join(':')
+        : token;
+      const pathFinding = classifySecretPathToken(localSide) || classifySecretPathToken(token);
+      if (!pathFinding) continue;
+      findings.push({
+        ...pathFinding,
+        source: 'transfer_exfil',
+        reason: `${pathFinding.label} referenced by ${verb} transfer`,
+      });
+    }
+  }
+  return findings;
+}
+
+function detectEnvVarNetworkExfil(command) {
+  // echo $API_KEY | curl  OR  curl -d "$OPENAI_API_KEY" https://…
+  SECRET_ENV_VAR_PATTERN.lastIndex = 0;
+  if (!SECRET_ENV_VAR_PATTERN.test(command)) return [];
+  const networkVerb = segmentHasNetworkExfil(command);
+  if (!networkVerb && !/https?:\/\//i.test(command)) return [];
+  return [{
+    id: 'secret_env_exfil',
+    label: 'Secret environment variable',
+    source: 'env_exfil',
+    reason: `Secret-bearing environment variable used with network tool (${networkVerb || 'url'})`,
+  }];
+}
+
+function detectStructuralExfiltration(command, cwd) {
+  return uniqueFindings([
+    ...detectCommandSubstitutionExfil(command, cwd),
+    ...detectPipelineExfil(command, cwd),
+    ...detectScpRsyncExfil(command, cwd),
+    ...detectEnvVarNetworkExfil(command),
+  ]);
 }
 
 function scanBashCommand(command, options = {}) {
@@ -635,6 +828,12 @@ function scanBashCommand(command, options = {}) {
     ? { findings: [], fileHashes: [] }
     : scanOutboundCommandFiles(command, cwd, options.provider);
   findings.push(...outboundScan.findings);
+
+  // Structural vectors: secret never appears as a literal in the command text
+  // (pipe, command substitution, scp, env-var → network).
+  if (inlineScan.provider !== 'off') {
+    findings.push(...detectStructuralExfiltration(command, cwd));
+  }
 
   const uniqueFileHashes = [...new Set(outboundScan.fileHashes)];
 
