@@ -4,7 +4,7 @@ test.describe('/pricing dual-offer cash path', () => {
   test('shows Pro self-serve and fixed-price managed gate', async ({ page }) => {
     await page.goto('/pricing');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Stop paying for the same AI mistake twice');
-    await expect(page.getByRole('link', { name: 'Start Pro — $19/mo' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Start Pro', exact: true })).toBeVisible();
     await expect(page.locator('a[href*="/checkout/pro"]')).not.toHaveCount(0);
     await expect(page.locator('#enterprise-gate .price')).toHaveText('$499');
     await expect(page.locator('form[data-primary-checkout]')).toHaveCount(1);
@@ -16,6 +16,27 @@ test.describe('/pricing dual-offer cash path', () => {
     await page.locator('[data-cta-id="pricing_nav_buy"]').click();
     await expect(page).toHaveURL(/\/pricing#enterprise-gate$/);
     await expect(page.locator('#pricing-email')).toBeVisible();
+  });
+
+  test('offer clicks preserve plan, value, and buyer segment attribution', async ({ page }) => {
+    await page.goto('/pricing');
+    await page.locator('a[data-offer-link]').evaluateAll((links) => {
+      links.forEach((link) => link.addEventListener('click', (event) => event.preventDefault(), { capture: true }));
+    });
+
+    await page.locator('[data-cta-id="pricing_pro_buy"]').click();
+    await page.locator('[data-cta-id="pricing_segment_diagnostic"]').click();
+    await page.locator('[data-cta-id="pricing_segment_enterprise"]').click();
+
+    const events = await page.evaluate(() => window.plausible.q
+      .filter((entry) => entry[0] === 'pricing_cta_click')
+      .map((entry) => entry[1].props));
+    expect(events).toEqual(expect.arrayContaining([
+      expect.objectContaining({ planId: 'pro', value: 19, segment: 'solo_operator' }),
+      expect.objectContaining({ planId: 'sprint_diagnostic', value: 499, segment: 'workflow_team' }),
+      expect.objectContaining({ planId: 'enterprise_service', value: 0, segment: 'regulated_team' })
+    ]));
+    expect(events.every((event) => event.experimentId === 'value_packaging_v1')).toBe(true);
   });
 
   test('valid buyer email posts directly to the canonical checkout route', async ({ page }) => {

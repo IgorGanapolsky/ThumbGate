@@ -28,7 +28,7 @@ test('pricing surfaces Pro self-serve and Diagnostic managed gate together', () 
   assert.match(PRICING_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(PRICING_HTML, /\$499/);
   assert.match(PRICING_HTML, /\/checkout\/pro/);
-  assert.match(PRICING_HTML, /Start Pro — \$19\/mo/);
+  assert.match(PRICING_HTML, />Start Pro<\/a>/);
   assert.match(PRICING_HTML, /\$19/);
   assert.match(PRICING_HTML, /\$149/);
   assert.doesNotMatch(PRICING_HTML, /workflow-sprint-intake|\/go\/sprint/i);
