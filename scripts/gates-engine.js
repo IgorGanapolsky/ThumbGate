@@ -1236,11 +1236,28 @@ const COMMAND_WRAPPERS = new Set([
 ]);
 const ENV_ASSIGNMENT_PREFIX = /^[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s]*)\s+/;
 const WRAPPER_HEAD = /^([A-Za-z_][\w.-]*)\s+/;
+const LITERAL_COMMAND_SUBSTITUTION_HEADS = [
+  /^\$\(\s*printf\s+(?:(?:['"]?%s['"]?)\s+)?(['"]?)([A-Za-z_][\w.-]*)\1\s*\)\s+/,
+  /^\$\(\s*echo\s+(['"]?)([A-Za-z_][\w.-]*)\1\s*\)\s+/,
+  /^\$\(\s*(?:command\s+-v|which)\s+(['"]?)([A-Za-z_][\w.-]*)\1\s*\)\s+/,
+];
+
+function canonicalizeLiteralCommandSubstitutionHead(segment) {
+  for (const pattern of LITERAL_COMMAND_SUBSTITUTION_HEADS) {
+    const match = String(segment || '').match(pattern);
+    if (match) return `${match[2]} ${String(segment).slice(match[0].length)}`;
+  }
+  return segment;
+}
 
 function canonicalizeSegmentHead(segment) {
   let text = String(segment || '').trim();
   for (let i = 0; i < 12; i += 1) {
     const before = text;
+    // Resolve only literal, side-effect-free command-position substitutions.
+    // Never execute or guess arbitrary shell; this closes common `$(printf git)`
+    // and `$(command -v git)` spellings while keeping matching deterministic.
+    text = canonicalizeLiteralCommandSubstitutionHead(text);
     text = text.replace(ENV_ASSIGNMENT_PREFIX, '');
     const wrapper = text.match(WRAPPER_HEAD);
     if (wrapper && COMMAND_WRAPPERS.has(wrapper[1].toLowerCase())) {

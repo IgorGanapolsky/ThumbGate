@@ -5,6 +5,23 @@ See CLAUDE.md and AGENTS.md.
 When using Gemini inside this repo, use the local dev ThumbGate wiring defined in `.mcp.json`.
 
 Key: Always dogfood the latest local changes before publishing.
+
+## Session PR Management and System Hygiene
+
+- Start by reading all three repo directives, querying local ThumbGate memory,
+  and inspecting open PRs, remote branches, worktrees, and current `main` CI.
+- Merge only review-complete PRs with terminal-green required checks, using
+  `npm run pr:manage` and Trunk. Never approve, dismiss, bypass, or weaken a
+  human-review or branch-protection requirement.
+- Classify orphan branches before cleanup and preserve unique commits before
+  deleting a branch or worktree.
+- Verify required CI on the exact resulting `main` SHA and run the standard
+  clean-worktree suite before any completion claim.
+- Record session lessons in local ThumbGate memory and report whether the
+  memory and ML feedback pipeline helped or hindered the work.
+- Use the mandatory completion sentence from `AGENTS.md` only when every PR,
+  cleanup, CI, dry-run, and lesson-recording item is verified; otherwise report
+  blockers without claiming session completion.
  
 ## NEVER Bypass Branch Protection (ABSOLUTE)
 

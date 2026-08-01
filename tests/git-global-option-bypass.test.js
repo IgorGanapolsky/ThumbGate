@@ -265,20 +265,18 @@ test('command-position canonicalization terminates on stacked wrappers', () => {
   assert.ok(Date.now() - started < 2000, 'canonicalization must not stall');
 });
 
-// KNOWN RESIDUAL, recorded deliberately. Resolving the binary through a subshell still
-// evades: canonicalization is static, and `$(which git)` cannot be resolved without
-// executing it. Documented so this is a known limit rather than a silent gap, and so
-// closing it later is a deliberate change. Covering it properly needs a different
-// mechanism than pattern matching (e.g. gating at exec time).
-test('KNOWN GAP: subshell-resolved binary still evades', async () => {
+// Literal, side-effect-free command substitutions are resolved statically. The
+// canonicalizer never executes arbitrary shell; it recognizes a bounded set of
+// common binary lookups and keeps the catastrophic gate fail-closed.
+test('literal subshell-resolved binary stays denied', async () => {
   const repo = makeRepo();
   const verdict = await evaluateGatesAsync('Bash', {
     command: '$(which git) reset --hard HEAD~5',
     cwd: repo,
   });
   const denied = Boolean(verdict && verdict.decision === 'deny');
-  assert.equal(denied, false,
-    'If this now passes, the subshell gap was closed — update this test and the changeset.');
+  assert.equal(denied, true,
+    '$(which git) reset --hard must stay behind the catastrophic gate.');
 });
 
 test('command-position canonicalization handles empty input', () => {

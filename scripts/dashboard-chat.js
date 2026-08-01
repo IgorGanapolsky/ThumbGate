@@ -24,6 +24,11 @@ const PERPLEXITY_ENDPOINT = 'https://api.perplexity.ai/chat/completions';
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 const MAX_QUESTION_CHARS = 2000;
 const MAX_CONTEXT_LESSONS = 8;
+const GEMINI_MODEL_BY_TIER = Object.freeze({
+  nano: 'gemini-2.5-flash-lite',
+  mini: 'gemini-2.5-flash',
+  frontier: 'gemini-2.5-pro',
+});
 
 // Allowlist the model so a user-supplied `model` cannot route the call to an
 // arbitrary / unexpected (or more expensive) endpoint. Anything not on the list
@@ -51,6 +56,63 @@ function resolveApiKey(opts = {}) {
   }
   if (!key) return '';
   return key.trim().replace(/^["']|["']$/g, '');
+}
+
+function resolveBudgetedProviderRoute({
+  localEndpoint,
+  localModel,
+  isPerplexity,
+  requestedModel,
+  budgetTier,
+  perplexityFrontierModel,
+} = {}) {
+  const tier = String(budgetTier || 'mini');
+  if (localEndpoint) {
+    return {
+      allowed: true,
+      provider: 'local',
+      model: localModel,
+      tier: 'localFrontier',
+    };
+  }
+
+  if (isPerplexity) {
+    if (tier === 'mini') {
+      return { allowed: true, provider: 'perplexity', model: 'sonar', tier };
+    }
+    if (tier === 'frontier' && String(perplexityFrontierModel || '').trim()) {
+      return {
+        allowed: true,
+        provider: 'perplexity',
+        model: String(perplexityFrontierModel).trim(),
+        tier,
+      };
+    }
+    return {
+      allowed: false,
+      provider: 'perplexity',
+      model: null,
+      tier,
+      reason: `no_perplexity_model_for_tier:${tier}`,
+    };
+  }
+
+  const mappedModel = GEMINI_MODEL_BY_TIER[tier];
+  if (!mappedModel) {
+    return {
+      allowed: false,
+      provider: 'gemini',
+      model: null,
+      tier,
+      reason: `no_gemini_model_for_tier:${tier}`,
+    };
+  }
+  const requested = String(requestedModel || '');
+  const requestedMatchesTier = (tier === 'frontier' && /pro/i.test(requested))
+    || (tier === 'mini' && /flash/i.test(requested) && !/lite/i.test(requested))
+    || (tier === 'nano' && /lite/i.test(requested));
+  const model = requestedMatchesTier ? requested : mappedModel;
+  return { allowed: true, provider: 'gemini', model, tier };
 }
 
 function debugChatFallback(label, err) {
@@ -299,18 +361,18 @@ async function callLocalOpenAiEndpoint({ endpoint, apiKey, model, prompt, fetchI
   return { ok: true, answer: answer.trim() || '(no answer returned)', sources, model: json.model || model };
 }
 
-async function callPerplexityEndpoint({ apiKey, prompt, fetchImpl, sources }) {
+async function callPerplexityEndpoint({ apiKey, model, prompt, fetchImpl, sources }) {
   const res = await fetchImpl(PERPLEXITY_ENDPOINT, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-    body: buildOpenAiChatPayload(prompt, 'sonar'),
+    body: buildOpenAiChatPayload(prompt, model),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     return { ok: false, error: 'perplexity_error', status: res.status, message: parseModelError(json, res.status), sources };
   }
   const answer = parseOpenAiChatAnswer(json);
-  return { ok: true, answer: answer.trim() || '(no answer returned)', sources, model: json.model || 'perplexity-hybrid' };
+  return { ok: true, answer: answer.trim() || '(no answer returned)', sources, model: json.model || model };
 }
 
 async function callGeminiEndpoint({ apiKey, model, prompt, fetchImpl, sources }) {
@@ -346,23 +408,65 @@ function attachStructured(result, sources) {
 }
 
 // Answer a question grounded in this install's lessons. Returns
-// { ok, answer, sources, model, structured? } or { ok:false, error, ... }.
+// { ok, answer, sources, model, structured?, envelope? } or { ok:false, error, ... }.
 async function answerDataQuestion(question, opts = {}) {
+  const {
+    createRequestEnvelope,
+    finalizeRequestEnvelope,
+    summarizeRetrieval,
+    estimateTokensFromText,
+    estimateCostCents,
+    hashSensitiveText,
+  } = require('./request-envelope');
+  const { probeEmbeddingQuality } = require('./retrieval-quality-tier');
+  const { classifyTask } = require('./model-tier-router');
+  const {
+    enforceTierBudgets,
+    recordFrontierInvocation,
+  } = require('./tier-budget-guard');
+
   const q = String(question || '').trim();
-  if (!q) return { ok: false, error: 'empty_question', message: 'Ask a question about your data.' };
+  const envelope = createRequestEnvelope({
+    surface: 'dashboard_chat',
+    startedAt: Date.now(),
+    promptHash: hashSensitiveText(q),
+  });
+
+  if (!q) {
+    return {
+      ok: false,
+      error: 'empty_question',
+      message: 'Ask a question about your data.',
+      envelope: finalizeRequestEnvelope(envelope, { outcome: 'error', error: 'empty_question' }),
+    };
+  }
   if (q.length > MAX_QUESTION_CHARS) {
-    return { ok: false, error: 'question_too_long', message: `Question exceeds ${MAX_QUESTION_CHARS} characters.` };
+    return {
+      ok: false,
+      error: 'question_too_long',
+      message: `Question exceeds ${MAX_QUESTION_CHARS} characters.`,
+      envelope: finalizeRequestEnvelope(envelope, { outcome: 'error', error: 'question_too_long' }),
+    };
   }
 
   const localEndpoint = opts.localEndpoint || process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || '';
   const localModel = opts.localModel || process.env.THUMBGATE_LOCAL_LLM_MODEL || 'llama3';
   const apiKey = resolveApiKey(opts);
+  const quality = typeof opts.qualityTier === 'object' && opts.qualityTier
+    ? opts.qualityTier
+    : probeEmbeddingQuality({ indexUpdatedAtMs: opts.indexUpdatedAtMs ?? null });
+
   const lessons = await retrieveContext(q, opts);
   const sources = lessons.map((l, i) => ({
     id: l.id || `lesson-${i + 1}`,
     title: l.title,
     signal: l.signal,
   }));
+  const retrievalSummary = summarizeRetrieval(lessons, {
+    strategy: 'dashboard_hybrid',
+    qualityTier: quality.qualityTier,
+    degradedReasons: quality.degradedReasons,
+  });
 
   if (!apiKey && !localEndpoint) {
     return {
@@ -370,30 +474,182 @@ async function answerDataQuestion(question, opts = {}) {
       error: 'no_api_key',
       message: 'Chat is not configured. Set a valid GEMINI_API_KEY, PERPLEXITY_API_KEY, or THUMBGATE_LOCAL_LLM_ENDPOINT in the project .env.',
       sources,
+      qualityTier: quality.qualityTier,
+      semanticClaimsAllowed: quality.semanticClaimsAllowed,
+      envelope: finalizeRequestEnvelope(envelope, {
+        outcome: 'error',
+        error: 'no_api_key',
+        retrieval: retrievalSummary,
+        qualityTier: quality.qualityTier,
+      }),
     };
   }
 
-  const model = resolveModel(opts.model);
+  // Risk-aware tier + hard budgets (cost / frontier daily / session)
+  const classification = classifyTask({
+    type: opts.taskType || 'review',
+    contextTokens: estimateTokensFromText(q) + lessons.length * 200,
+    riskLevel: opts.riskLevel || 'low',
+    tags: opts.tags || [],
+  });
+  const budgetedTokens = estimateTokensFromText(q) + 2500;
+  const budgetDecision = enforceTierBudgets(
+    {
+      type: opts.taskType || 'review',
+      contextTokens: classification.contextTokens,
+      riskLevel: opts.riskLevel || 'low',
+      tags: opts.tags || [],
+      reason: 'dashboard_chat',
+      expectedLatencyMs: opts.expectedLatencyMs,
+    },
+    {
+      classification,
+      frontierBudget: opts.frontierBudget || null,
+      estimatedTokens: budgetedTokens,
+    },
+  );
+
+  if (!budgetDecision.allowed) {
+    return {
+      ok: false,
+      error: 'budget_exceeded',
+      message: `Request denied by cost/latency budget: ${budgetDecision.reasons.join('; ')}`,
+      sources,
+      qualityTier: quality.qualityTier,
+      semanticClaimsAllowed: quality.semanticClaimsAllowed,
+      envelope: finalizeRequestEnvelope(envelope, {
+        outcome: 'denied',
+        error: 'budget_exceeded',
+        tier: budgetDecision.tier,
+        budget: budgetDecision,
+        retrieval: retrievalSummary,
+        qualityTier: quality.qualityTier,
+        estimatedCostCents: budgetDecision.estimatedCostCents,
+      }),
+    };
+  }
+
+  const requestedModel = resolveModel(opts.model);
   const metrics = retrieveMetricsContext();
   const prompt = buildChatPrompt(q, lessons, metrics, { structured: opts.structured !== false });
   const fetchImpl = opts.fetch || globalThis.fetch;
   const isPerplexity = apiKey && (apiKey.startsWith('pplx-') || apiKey.includes('perplexity'));
+  const route = resolveBudgetedProviderRoute({
+    localEndpoint,
+    localModel,
+    isPerplexity,
+    requestedModel,
+    budgetTier: budgetDecision.tier,
+    perplexityFrontierModel: opts.perplexityFrontierModel
+      || process.env.THUMBGATE_PERPLEXITY_FRONTIER_MODEL,
+  });
+  const inputTokens = estimateTokensFromText(prompt);
+
+  if (!route.allowed) {
+    return {
+      ok: false,
+      error: 'budget_route_unavailable',
+      message: `Request denied: ${route.reason}`,
+      sources,
+      qualityTier: quality.qualityTier,
+      semanticClaimsAllowed: quality.semanticClaimsAllowed,
+      envelope: finalizeRequestEnvelope(envelope, {
+        outcome: 'denied',
+        error: 'budget_route_unavailable',
+        provider: route.provider,
+        tier: route.tier,
+        budget: { ...budgetDecision, route },
+        retrieval: retrievalSummary,
+        qualityTier: quality.qualityTier,
+      }),
+    };
+  }
 
   try {
     let result;
     if (localEndpoint) {
       result = await callLocalOpenAiEndpoint({
-        endpoint: localEndpoint, apiKey, model: localModel, prompt, fetchImpl, sources,
+        endpoint: localEndpoint,
+        apiKey,
+        model: route.model,
+        prompt,
+        fetchImpl,
+        sources,
       });
     } else if (isPerplexity) {
-      result = await callPerplexityEndpoint({ apiKey, prompt, fetchImpl, sources });
+      result = await callPerplexityEndpoint({
+        apiKey,
+        model: route.model,
+        prompt,
+        fetchImpl,
+        sources,
+      });
     } else {
-      result = await callGeminiEndpoint({ apiKey, model, prompt, fetchImpl, sources });
+      result = await callGeminiEndpoint({
+        apiKey,
+        model: route.model,
+        prompt,
+        fetchImpl,
+        sources,
+      });
     }
-    return attachStructured(result, sources);
+
+    let frontierSessionCharge = null;
+    if (route.tier === 'frontier' && result?.ok) {
+      recordFrontierInvocation();
+      if (opts.frontierBudget && typeof opts.frontierBudget.spend === 'function') {
+        frontierSessionCharge = opts.frontierBudget.spend(budgetedTokens, 'dashboard_chat');
+      }
+    }
+
+    const structured = attachStructured(result, sources);
+    const outputTokens = estimateTokensFromText(structured.answer || '');
+    const estimatedCostCents = estimateCostCents({ inputTokens, outputTokens });
+    const finalized = finalizeRequestEnvelope(envelope, {
+      outcome: structured.ok ? 'ok' : 'error',
+      error: structured.ok ? null : structured.error,
+      model: structured.model || route.model,
+      tier: route.tier,
+      provider: route.provider,
+      inputTokens,
+      outputTokens,
+      estimatedCostCents,
+      budget: { ...budgetDecision, route, frontierSessionCharge },
+      retrieval: retrievalSummary,
+      qualityTier: quality.qualityTier,
+      structured: {
+        ok: structured.structuredValid !== false && structured.ok !== false,
+        mode: structured.structuredMode || null,
+        grounded: structured.structured?.grounded ?? null,
+      },
+    });
+
+    return {
+      ...structured,
+      qualityTier: quality.qualityTier,
+      semanticClaimsAllowed: quality.semanticClaimsAllowed,
+      degradedReasons: quality.degradedReasons,
+      envelope: finalized,
+    };
   } catch (err) {
     const safeMessage = (err && err.message) ? String(err.message).split('\n')[0].slice(0, 100) : 'An unexpected error occurred.';
-    return { ok: false, error: 'network', message: safeMessage, sources };
+    return {
+      ok: false,
+      error: 'network',
+      message: safeMessage,
+      sources,
+      qualityTier: quality.qualityTier,
+      semanticClaimsAllowed: quality.semanticClaimsAllowed,
+      envelope: finalizeRequestEnvelope(envelope, {
+        outcome: 'error',
+        error: 'network',
+        retrieval: retrievalSummary,
+        qualityTier: quality.qualityTier,
+        budget: { ...budgetDecision, route },
+        tier: route.tier,
+        provider: route.provider,
+      }),
+    };
   }
 }
 
@@ -403,6 +659,7 @@ module.exports = {
   parseGeminiAnswer,
   retrieveContext,
   retrieveHybridLessonContext,
+  resolveBudgetedProviderRoute,
   DEFAULT_MODEL,
   MAX_QUESTION_CHARS,
 };

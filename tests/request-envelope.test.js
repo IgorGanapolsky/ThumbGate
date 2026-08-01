@@ -1,0 +1,179 @@
+'use strict';
+
+const { describe, it } = require('node:test');
+const assert = require('node:assert/strict');
+const {
+  createRequestEnvelope,
+  finalizeRequestEnvelope,
+  summarizeRetrieval,
+  estimateTokensFromText,
+  estimateCostCents,
+  hashSensitiveText,
+  ENVELOPE_VERSION,
+} = require('../scripts/request-envelope');
+const {
+  assessRetrievalQualityTier,
+  probeEmbeddingQuality,
+} = require('../scripts/retrieval-quality-tier');
+const {
+  enforceTierBudgets,
+  recordFrontierInvocation,
+  _resetFrontierDayCounts,
+  getBudgetConfig,
+} = require('../scripts/tier-budget-guard');
+
+describe('request envelope', () => {
+  it('creates and finalizes with latency', () => {
+    const prompt = 'private operator question';
+    const env = createRequestEnvelope({
+      surface: 'test',
+      startedAt: 1000,
+      promptHash: hashSensitiveText(prompt),
+    });
+    assert.equal(env.envelopeVersion, ENVELOPE_VERSION);
+    assert.ok(env.traceId);
+    const done = finalizeRequestEnvelope(env, {
+      endedAt: 1500,
+      outcome: 'ok',
+      model: 'x',
+      retrieval: { top: [{ id: 'lesson-1' }] },
+    });
+    assert.equal(done.latencyMs, 500);
+    assert.equal(done.model, 'x');
+    assert.equal(done.auditTrace.evaluation.decision, 'allow');
+    assert.equal(done.auditTrace.spans.length, 2);
+    assert.equal(JSON.stringify(done).includes(prompt), false);
+  });
+
+  it('summarizes retrieval without bodies', () => {
+    const s = summarizeRetrieval([
+      { id: 'a', relevanceScore: 0.9, content: 'SECRET should not appear as field dump' },
+    ], { strategy: 'hybrid', qualityTier: 'degraded' });
+    assert.equal(s.count, 1);
+    assert.equal(s.top[0].id, 'a');
+    assert.equal(s.qualityTier, 'degraded');
+    assert.equal(JSON.stringify(s).includes('SECRET'), false);
+  });
+
+  it('prefers the final rerank score and preserves an unknown score as null', () => {
+    const s = summarizeRetrieval([
+      { id: 'reranked', relevanceScore: 0.2, rerankedScore: 0.9 },
+      { id: 'unknown' },
+    ]);
+    assert.equal(s.top[0].score, 0.9);
+    assert.equal(s.top[1].score, null);
+  });
+
+  it('estimates tokens and cost', () => {
+    assert.ok(estimateTokensFromText('abcd'.repeat(100)) >= 50);
+    assert.ok(estimateCostCents({ inputTokens: 1_000_000, outputTokens: 0 }) >= 2);
+  });
+});
+
+describe('retrieval quality tier', () => {
+  it('fails closed when no embedding profile has completed', () => {
+    const q = assessRetrievalQualityTier({
+      embeddingProfile: null,
+      embedderAvailable: true,
+      indexUpdatedAtMs: Date.now(),
+    });
+    assert.equal(q.qualityTier, 'degraded');
+    assert.equal(q.semanticClaimsAllowed, false);
+    assert.ok(q.degradedReasons.includes('embedding_profile_missing'));
+  });
+
+  it('requires explicit index freshness before allowing semantic claims', () => {
+    const q = assessRetrievalQualityTier({
+      embeddingProfile: { id: 'gemini', qualityTier: 'production' },
+      embedderAvailable: true,
+    });
+    assert.equal(q.qualityTier, 'degraded');
+    assert.equal(q.semanticClaimsAllowed, false);
+    assert.ok(q.degradedReasons.includes('index_freshness_unknown'));
+  });
+
+  it('allows semantic claims only with a production profile and fresh index evidence', () => {
+    const now = Date.now();
+    const q = assessRetrievalQualityTier({
+      embeddingProfile: { id: 'gemini', qualityTier: 'production' },
+      embedderAvailable: true,
+      indexUpdatedAtMs: now - 1000,
+      nowMs: now,
+    });
+    assert.equal(q.qualityTier, 'production');
+    assert.equal(q.semanticClaimsAllowed, true);
+  });
+
+  it('marks feature-hash as degraded', () => {
+    const q = assessRetrievalQualityTier({
+      embeddingProfile: { id: 'feature-hash-v1', qualityTier: 'degraded' },
+      embedderAvailable: true,
+    });
+    assert.equal(q.qualityTier, 'degraded');
+    assert.equal(q.semanticClaimsAllowed, false);
+  });
+
+  it('marks stale index as degraded', () => {
+    const now = Date.now();
+    const q = assessRetrievalQualityTier({
+      embeddingProfile: { id: 'gemini', qualityTier: 'production' },
+      embedderAvailable: true,
+      indexUpdatedAtMs: now - 30 * 24 * 60 * 60 * 1000,
+      nowMs: now,
+      maxIndexAgeMs: 7 * 24 * 60 * 60 * 1000,
+    });
+    assert.equal(q.qualityTier, 'degraded');
+    assert.ok(q.degradedReasons.includes('index_stale'));
+  });
+
+  it('probe does not throw', () => {
+    const q = probeEmbeddingQuality();
+    assert.ok(['production', 'degraded', 'unavailable'].includes(q.qualityTier));
+  });
+});
+
+describe('tier budget guard', () => {
+  it('degrades frontier when daily cap exhausted', () => {
+    _resetFrontierDayCounts();
+    const cfg = getBudgetConfig({ maxFrontierPerDay: 1 });
+    recordFrontierInvocation(1_700_000_000_000);
+    // force day key by using fixed now and max 0
+    for (let i = 0; i < 5; i += 1) recordFrontierInvocation();
+    const decision = enforceTierBudgets(
+      { type: 'architecture', tags: ['architecture'], riskLevel: 'high', reason: 'test' },
+      {
+        classification: { tier: 'frontier', reason: 'test', escalated: true },
+        maxFrontierPerDay: 0,
+        estimatedTokens: 1000,
+      },
+    );
+    assert.ok(decision.tier === 'mini' || decision.action === 'degrade' || decision.action === 'deny');
+    assert.ok(decision.reasons.length >= 1);
+  });
+
+  it('denies when cost still over cap at nano-equivalent paid tier', () => {
+    const decision = enforceTierBudgets(
+      { type: 'code-edit', reason: 'expensive' },
+      {
+        classification: { tier: 'frontier', reason: 'x', escalated: true },
+        estimatedTokens: 50_000_000, // absurd → high cost
+        maxCostCentsPerRequest: 0.0001,
+      },
+    );
+    assert.equal(decision.allowed, false);
+    assert.equal(decision.action, 'deny');
+  });
+
+  it('allows cheap mini within defaults', () => {
+    _resetFrontierDayCounts();
+    const decision = enforceTierBudgets(
+      { type: 'code-edit', reason: 'normal' },
+      {
+        classification: { tier: 'mini', reason: 'code-edit', escalated: false },
+        estimatedTokens: 2000,
+      },
+    );
+    assert.equal(decision.allowed, true);
+    assert.equal(decision.action, 'allow');
+  });
+});

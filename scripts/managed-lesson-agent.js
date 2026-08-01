@@ -81,8 +81,16 @@ async function runManagedAgent({ dryRun = false, limit, model } = {}) {
     return { entriesProcessed: 0, lessonsCreated: 0, gatesPromoted: 0, model: 'none', durationMs: Date.now() - startTime, message: 'All entries already processed' };
   }
 
-  const useLLM = isAvailable();
-  const modelUsed = useLLM ? 'claude-haiku-4-5' : 'heuristic';
+  // Report the model that actually ran. Hard-coding 'claude-haiku-4-5' off a
+  // boolean meant a gateway-backed run persisted a manifest claiming Claude
+  // produced the lessons — a provenance lie in the exact artifact an operator
+  // would consult to audit them.
+  const { describeInferenceAvailability } = require('./llm-client');
+  const inference = describeInferenceAvailability();
+  const useLLM = inference.available;
+  const modelUsed = !useLLM
+    ? 'heuristic'
+    : (inference.provider === 'gateway' ? (inference.model || 'gateway') : 'claude-haiku-4-5');
   let lessonsCreated = 0;
   const newProcessedIds = [];
 

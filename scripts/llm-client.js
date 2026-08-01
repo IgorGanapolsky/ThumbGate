@@ -14,12 +14,51 @@ const DEFAULT_MAX_TOKENS = 1024;
 const DEFAULT_CACHE_TTL = '5m';
 const DEFAULT_ZAI_BASE_URL = 'https://api.z.ai/api/paas/v4';
 const DEFAULT_ZAI_MODEL = 'glm-5.2-flash';
+const DEFAULT_GATEWAY_MODEL = 'glm-5.2';
+const GATEWAY_TIMEOUT_MS = 30000;
 
 let _anthropicClient = null;
 let _geminiClient = null;
 
-function isAvailable() {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+function getGatewayConfig(env = process.env) {
+  const baseUrl = String(env.THUMBGATE_LLM_GATEWAY_URL || '').trim();
+  if (!baseUrl) return null;
+  return {
+    baseUrl: baseUrl.replace(/\/+$/, ''),
+    model: String(env.THUMBGATE_LLM_GATEWAY_MODEL || DEFAULT_GATEWAY_MODEL).trim(),
+    credentialEnvVar: 'THUMBGATE_LLM_GATEWAY_TOKEN',
+  };
+}
+
+function isGatewayConfigured(env = process.env) {
+  return Boolean(getGatewayConfig(env));
+}
+
+function resolveGatewayModel(options = {}, config = getGatewayConfig()) {
+  const explicitGatewayModel = String(options.gatewayModel || '').trim();
+  if (explicitGatewayModel) return explicitGatewayModel;
+  return String(config?.model || DEFAULT_GATEWAY_MODEL).trim();
+}
+
+function describeInferenceAvailability(env = process.env) {
+  if (env.ANTHROPIC_API_KEY) return { available: true, provider: 'anthropic' };
+  const gateway = getGatewayConfig(env);
+  if (gateway) {
+    return {
+      available: true,
+      provider: 'gateway',
+      model: gateway.model,
+    };
+  }
+  return {
+    available: false,
+    provider: 'none',
+    reason: 'no ANTHROPIC_API_KEY and no THUMBGATE_LLM_GATEWAY_URL',
+  };
+}
+
+function isAvailable(env = process.env) {
+  return describeInferenceAvailability(env).available;
 }
 
 function getClient() {
@@ -199,6 +238,97 @@ async function emitLlmTrace(options = {}, event = {}) {
     await options.onTrace(buildLlmTrace(options, event));
   } catch {
     // Observability must never break the generation path.
+  }
+}
+
+function gatewayRequestHeaders(config, env = process.env) {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = env[config.credentialEnvVar];
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
+function buildGatewayMessages(options = {}) {
+  const supplied = Array.isArray(options.messages)
+    ? options.messages.filter(Boolean)
+    : [];
+  const messages = [];
+  if (options.systemPrompt) {
+    messages.push({ role: 'system', content: options.systemPrompt });
+  }
+  if (supplied.length > 0) messages.push(...supplied);
+  else messages.push({ role: 'user', content: options.userPrompt || '' });
+  return messages;
+}
+
+async function callGatewayInternal(options = {}, env = process.env) {
+  const config = getGatewayConfig(env);
+  if (!config || typeof fetch !== 'function') return null;
+  const model = resolveGatewayModel(options, config);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GATEWAY_TIMEOUT_MS);
+  const startedAt = Date.now();
+  try {
+    const response = await fetch(`${config.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: gatewayRequestHeaders(config, env),
+      body: JSON.stringify({
+        model,
+        messages: buildGatewayMessages(options),
+        max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
+        temperature: Number.isFinite(options.temperature) ? options.temperature : 0,
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      await emitLlmTrace(options, {
+        provider: 'gateway',
+        model,
+        outcome: 'error',
+        latencyMs: Date.now() - startedAt,
+        httpStatus: response.status,
+        errorCode: 'http_error',
+      });
+      return null;
+    }
+    const payload = await response.json();
+    const choice = payload?.choices?.[0] || {};
+    const message = choice.message || {};
+    const truncated = choice.finish_reason === 'length';
+    const raw = message.content || (truncated ? '' : message.reasoning_content) || '';
+    const text = stripCodeFences(raw);
+    if (!text) return null;
+    const result = {
+      text,
+      usage: payload?.usage || null,
+      stopReason: choice.finish_reason || null,
+      id: payload?.id || null,
+      model: payload?.model || model,
+      provider: 'gateway',
+    };
+    await emitLlmTrace(options, {
+      provider: 'gateway',
+      model: result.model,
+      outcome: 'success',
+      latencyMs: Date.now() - startedAt,
+      usage: result.usage,
+      stopReason: result.stopReason,
+      requestId: result.id,
+    });
+    return result;
+  } catch (error) {
+    const safe = buildSafeProviderError(error);
+    await emitLlmTrace(options, {
+      provider: 'gateway',
+      model,
+      outcome: 'error',
+      latencyMs: Date.now() - startedAt,
+      httpStatus: safe.status,
+      errorCode: safe.code || safe.name,
+    });
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -416,6 +546,9 @@ async function callClaudeInternal(options = {}) {
   const model = options.model || DEFAULT_MODEL;
   const startedAt = Date.now();
   if (!client) {
+    if (isGatewayConfigured()) {
+      return callGatewayInternal(options);
+    }
     await emitLlmTrace(options, {
       provider: 'anthropic',
       model,
@@ -519,6 +652,12 @@ async function callZaiJson(options = {}) {
 
 module.exports = {
   isAvailable,
+  getGatewayConfig,
+  isGatewayConfigured,
+  resolveGatewayModel,
+  describeInferenceAvailability,
+  callGatewayInternal,
+  buildGatewayMessages,
   callClaude,
   callClaudeJson,
   callZaiJson,

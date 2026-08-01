@@ -2252,19 +2252,99 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
     return Math.exp(-lambda * daysSince);
   }
 
+  // CEO contract tags beat generic richContext.domain=general so honesty/overclaim
+  // whatToChange is not drowned by hook noise in the "general" bucket.
+  const PRIORITY_DOMAIN_TAGS = [
+    'honesty',
+    'overclaim',
+    'completion-claim',
+    'production-truth',
+    'false-completion',
+    'pr-hygiene',
+    'ceo-feedback',
+  ];
+  const GENERIC_TAGS = new Set([
+    'feedback',
+    'negative',
+    'positive',
+    'entity:Customer',
+    'thumbs-down',
+    'thumbs-up',
+  ]);
+
+  function isNoiseTitle(title) {
+    const t = String(title || '');
+    return /hookEventName|user_prompt_submit|"sessionId"/i.test(t);
+  }
+
+  function extractAvoidLine(content) {
+    return String(content || '')
+      .split('\n')
+      .find((l) => l.toLowerCase().startsWith('how to avoid:')) || null;
+  }
+
+  function domainKeyForMemory(m) {
+    const tags = Array.isArray(m.tags) ? m.tags : [];
+    for (const tag of PRIORITY_DOMAIN_TAGS) {
+      if (tags.includes(tag)) return tag;
+    }
+    const rcDomain = m.richContext && m.richContext.domain;
+    if (rcDomain && rcDomain !== 'unknown' && rcDomain !== 'general') {
+      return rcDomain;
+    }
+    return tags.find((t) => !GENERIC_TAGS.has(t)) || 'general';
+  }
+
+  function pickBestMemory(items) {
+    let best = items[items.length - 1];
+    let bestScore = -Infinity;
+    items.forEach((m, index) => {
+      let score = index;
+      if (isNoiseTitle(m.title)) score -= 1000;
+      const avoid = extractAvoidLine(m.content);
+      if (avoid) score += 100;
+      if (avoid && /never/i.test(avoid)) score += 50;
+      if ((m.tags || []).some((t) => PRIORITY_DOMAIN_TAGS.includes(t))) score += 40;
+      if ((m.occurrences || 1) > 1) score += 10;
+      if (score >= bestScore) {
+        bestScore = score;
+        best = m;
+      }
+    });
+    return best;
+  }
+
   const buckets = {};
   const rubricBuckets = {};
   const diagnosisBuckets = {};
   const repeatedViolationBuckets = {};
+  const priorityContracts = [];
   for (const m of memories) {
-    const key = (m.richContext && m.richContext.domain && m.richContext.domain !== 'unknown')
-      ? m.richContext.domain
-      : (m.tags || []).find((t) => !['feedback', 'negative', 'positive'].includes(t)) || 'general';
+    if (isNoiseTitle(m.title) && !extractAvoidLine(m.content)) {
+      // Skip pure hook-noise shells with no actionable avoid line.
+      continue;
+    }
+    const key = domainKeyForMemory(m);
     if (!buckets[key]) buckets[key] = { items: [], weightedCount: 0 };
     const w = decayWeight(m);
     const occ = m.occurrences || 1;
     buckets[key].items.push(m);
     buckets[key].weightedCount += w * occ;
+
+    const tags = Array.isArray(m.tags) ? m.tags : [];
+    const avoid = extractAvoidLine(m.content);
+    if (
+      avoid
+      && tags.some((t) => PRIORITY_DOMAIN_TAGS.includes(t))
+    ) {
+      priorityContracts.push({
+        id: m.id,
+        tags: tags.filter((t) => PRIORITY_DOMAIN_TAGS.includes(t)),
+        rule: avoid.replace(/^How to avoid:\s*/i, ''),
+        title: m.title,
+        occurrences: occ,
+      });
+    }
 
     const failed = m.rubricSummary && Array.isArray(m.rubricSummary.failingCriteria)
       ? m.rubricSummary.failingCriteria
@@ -2303,18 +2383,37 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
 
   const lines = ['# Prevention Rules', '', 'Generated from negative feedback memories (time-weighted, half-life: ' + decayHalfLifeDays + 'd).'];
 
+  // High-priority CEO contracts: always emit actionable whatToChange (threshold 1).
+  if (priorityContracts.length > 0) {
+    lines.push('');
+    lines.push('## High-Priority Contracts');
+    const seen = new Set();
+    priorityContracts
+      .sort((a, b) => (b.occurrences || 1) - (a.occurrences || 1))
+      .forEach((c) => {
+        const dedupe = c.rule.slice(0, 120);
+        if (seen.has(dedupe)) return;
+        seen.add(dedupe);
+        lines.push(`- **[${c.tags.join(', ')}]** ${c.rule}`);
+        lines.push(`  - Source: ${c.title}`);
+      });
+  }
+
   Object.entries(buckets)
     .sort((a, b) => b[1].weightedCount - a[1].weightedCount)
     .forEach(([domain, { items, weightedCount }]) => {
       const effectiveOccurrences = Math.round(weightedCount);
-      if (effectiveOccurrences < resolvedMinOccurrences) return;
-      const latest = items[items.length - 1];
-      const avoid = (latest.content || '').split('\n').find((l) => l.toLowerCase().startsWith('how to avoid:')) || 'How to avoid: Investigate and prevent recurrence';
+      // Priority domains promote with a single solid memory (CEO contracts).
+      const threshold = PRIORITY_DOMAIN_TAGS.includes(domain) ? 1 : resolvedMinOccurrences;
+      if (effectiveOccurrences < threshold) return;
+      const best = pickBestMemory(items);
+      const avoid = extractAvoidLine(best.content)
+        || 'How to avoid: Investigate and prevent recurrence';
       lines.push('');
       lines.push(`## ${domain}`);
       lines.push(`- Recurrence count: ${items.length} (weighted: ${weightedCount.toFixed(1)})`);
       lines.push(`- Rule: ${avoid.replace(/^How to avoid:\s*/i, '')}`);
-      lines.push(`- Latest mistake: ${latest.title}`);
+      lines.push(`- Latest mistake: ${best.title}`);
     });
 
   const rubricEntries = Object.entries(rubricBuckets)

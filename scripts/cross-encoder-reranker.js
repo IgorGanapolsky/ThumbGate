@@ -222,12 +222,15 @@ function resolveLLMProvider(options = {}) {
   }
 
   const client = require('./llm-client');
-  if (client.isAvailable()) {
+  const availability = typeof client.describeInferenceAvailability === 'function'
+    ? client.describeInferenceAvailability()
+    : { available: client.isAvailable(), provider: 'anthropic' };
+  if (availability.available) {
     return {
       available: true,
       callJson: client.callClaudeJson,
-      model: options.model || client.MODELS.FAST,
-      provider: 'anthropic',
+      model: options.model || availability.model || client.MODELS.FAST,
+      provider: availability.provider || 'anthropic',
     };
   }
   if (typeof client.getZaiApiKey === 'function' && client.getZaiApiKey()) {
@@ -417,14 +420,15 @@ function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
   if (candidates.length === 0) return [];
 
   const query = `${toolName || ''} ${actionContext || ''}`.trim();
-  const heuristic = candidates.map((candidate) => heuristicPairScore(query, candidateText(candidate)));
-  return combineScores(candidates, { heuristic }, {
-    lateInteraction: false,
-    neuralCrossEncoder: false,
-    llmListwise: false,
-  }, 0)
-    .sort((a, b) => b.combinedScore - a.combinedScore)
-    .slice(0, maxResults);
+  // Lazily require the fusion pipeline to avoid the intentional module cycle:
+  // it reuses this module's evidence-grade pair scorer. At call time both
+  // modules are initialized, and the PreToolUse path now actually executes the
+  // documented BM25F -> local MaxSim -> pairwise heuristic stages.
+  const { rerankPipelineSync } = require('./rerank-pipeline');
+  return rerankPipelineSync(query, candidates, {
+    topK: maxResults,
+    toolName,
+  }).results;
 }
 
 function extractPhrases(text) {

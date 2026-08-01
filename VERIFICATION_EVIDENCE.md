@@ -29,7 +29,8 @@ layer. It deliberately separates three different claims:
 ThumbGate uses a local-first retrieval pipeline because lessons can contain
 private code, operational failures, and security context. SQLite provides the
 durable lesson store and FTS5 sparse retrieval. Optional local embeddings add
-dense candidates, and a cross-encoder reranker orders the combined candidate
+dense candidates, and the A+ multi-stage reranker (BM25F → ColBERT-style MaxSim →
+heuristic pair CE → optional LLM) orders the combined candidate
 set. Deterministic prevention gates remain separate from retrieval, so a
 retrieval outage cannot silently disable literal or AST safety checks and no
 LLM is required on the enforcement path.
@@ -40,6 +41,10 @@ Primary implementation:
 - `scripts/lesson-retrieval.js`
 - `scripts/lesson-embedding-index.js`
 - `scripts/lesson-reranker.js`
+- `scripts/colbert-style-maxsim.js`
+- `scripts/rerank-pipeline.js`
+- `scripts/rerank-quality-eval.js`
+- `docs/RERANKING_A_PLUS.md`
 - `scripts/memory-firewall.js`
 - `scripts/eval-rag.js`
 

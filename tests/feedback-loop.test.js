@@ -592,6 +592,89 @@ test('buildPreventionRules: includes diagnostic sections for repeated root cause
   assert.match(rules, /Repeated Failure Constraints/);
 });
 
+test('buildPreventionRules: promotes honesty/overclaim whatToChange over general noise', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const fsPaths = getFeedbackPaths();
+  const memoryPath = fsPaths.MEMORY_LOG_PATH;
+  fs.mkdirSync(path.dirname(memoryPath), { recursive: true });
+  // Noise: generic domain + hook-style title (must not drown the contract rule)
+  const noise = {
+    id: 'mem_noise_hook',
+    category: 'error',
+    title: 'MISTAKE: {"hookEventName":"user_prompt_submit","sessionId":"x"}',
+    content: 'What went wrong: hook\nHow to avoid: Investigate and prevent recurrence',
+    tags: ['feedback', 'negative'],
+    richContext: { domain: 'general' },
+    occurrences: 5,
+    timestamp: new Date().toISOString(),
+  };
+  const contract = {
+    id: 'mem_overclaim_ceo',
+    category: 'error',
+    title: 'MISTAKE: Overclaimed completion: kill switch complete',
+    content:
+      'What went wrong: Overclaimed completion\n'
+      + 'How to avoid: NEVER claim complete/fixed/shipped without matching /health buildSha and terminal CI',
+    tags: ['feedback', 'negative', 'honesty', 'overclaim', 'completion-claim'],
+    richContext: { domain: 'general' },
+    occurrences: 2,
+    timestamp: new Date().toISOString(),
+  };
+  fs.writeFileSync(
+    memoryPath,
+    `${JSON.stringify(noise)}\n${JSON.stringify(contract)}\n`,
+  );
+
+  const rules = buildPreventionRules(2);
+  assert.match(rules, /High-Priority Contracts/);
+  assert.match(rules, /NEVER claim complete\/fixed\/shipped without matching \/health buildSha/);
+  assert.match(rules, /## honesty|## overclaim|## completion-claim/);
+  // Must not use only the generic hook avoid as the sole honesty rule surface
+  assert.ok(
+    /NEVER claim complete/.test(rules),
+    'CEO whatToChange must appear in generated prevention rules',
+  );
+});
+
+test('buildPreventionRules: skips pure hookEventName noise without actionable avoid', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const fsPaths = getFeedbackPaths();
+  const memoryPath = fsPaths.MEMORY_LOG_PATH;
+  fs.mkdirSync(path.dirname(memoryPath), { recursive: true });
+  fs.writeFileSync(
+    memoryPath,
+    `${JSON.stringify({
+      id: 'mem_hook_only',
+      category: 'error',
+      title: 'MISTAKE: {"hookEventName":"user_prompt_submit","sessionId":"y"}',
+      content: 'What went wrong: bare hook payload',
+      tags: ['feedback', 'negative'],
+      richContext: { domain: 'general' },
+      occurrences: 3,
+      timestamp: new Date().toISOString(),
+    })}\n`,
+  );
+
+  const rules = buildPreventionRules(1);
+  assert.ok(
+    !/user_prompt_submit/.test(rules) || /No domain has reached/.test(rules) || rules.includes('# Prevention Rules'),
+    'rules remain valid markdown',
+  );
+  assert.ok(!/## general[\s\S]*user_prompt_submit/.test(rules), 'hook noise must not head a general domain rule');
+});
+
 // -- feedbackSummary --
 
 test('feedbackSummary: returns string with "Positive:"', (t) => {

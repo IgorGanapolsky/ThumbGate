@@ -49,6 +49,7 @@ const TRANSFORMS = [
   ['absolute binary path', (c) => c.replace(/^(\w+)/, '/usr/bin/$1')],
   ['quoted binary', (c) => c.replace(/^(\w+)/, '"$1"')],
   ['backslash-escaped', (c) => `\\${c}`],
+  ['literal command substitution', (c) => c.replace(/^(\w+)/, '$(printf $1)')],
   ['git global option', (c) => (c.startsWith('git ') ? c.replace(/^git /, 'git -C . ') : null)],
 ];
 
@@ -154,6 +155,7 @@ const MUST_NOT_DENY = [
   'echo hi && ls',
   'echo "git reset --hard is dangerous"',
   'echo "git commit -m x"',
+  'echo "$(printf git) reset --hard"',
   'grep -r "git clean -fd" docs/',
   'grep -r "rm -rf ~" docs/',
   'rm -rf node_modules',
