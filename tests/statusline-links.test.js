@@ -5,15 +5,39 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const net = require('net');
 
 const {
   getStatuslineLinks,
   isLoopbackHost,
+  isPidAlive,
+  launchLocalServer,
+  probeLocalServer,
   readRuntimeState,
   runtimeStatePath,
   shouldReuseBootingState,
   writeRuntimeState,
 } = require('../scripts/statusline-links');
+
+async function unusedPort() {
+  const server = net.createServer();
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const port = server.address().port;
+  await new Promise((resolve) => server.close(resolve));
+  return port;
+}
+
+async function waitFor(predicate, timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await predicate()) return true;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return predicate();
+}
 
 test('getStatuslineLinks returns clickable local URLs when the dashboard is live', async () => {
   const result = await getStatuslineLinks({
@@ -135,4 +159,43 @@ test('isLoopbackHost only allows localhost addresses', () => {
   assert.equal(isLoopbackHost('127.0.0.1'), true);
   assert.equal(isLoopbackHost('::1'), true);
   assert.equal(isLoopbackHost('thumbgate.example.com'), false);
+});
+
+test('launchLocalServer records the real API PID and SIGTERM closes its health endpoint', async () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-owned-pid-'));
+  const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-project-'));
+  const port = await unusedPort();
+  const origin = `http://127.0.0.1:${port}`;
+  let state = null;
+  try {
+    state = launchLocalServer({
+      homeDir,
+      cwd: projectDir,
+      origin,
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        USERPROFILE: homeDir,
+        THUMBGATE_ALLOW_INSECURE: 'true',
+        THUMBGATE_NO_TELEMETRY: '1',
+      },
+      resolveKey: () => ({ key: 'tg_statusline_test' }),
+    });
+
+    assert.equal(await waitFor(() => probeLocalServer(origin, { timeoutMs: 250 }), 8000), true);
+    process.kill(state.pid, 'SIGTERM');
+    assert.equal(await waitFor(() => !isPidAlive(state.pid), 5000), true, 'recorded server PID should exit');
+    assert.equal(
+      await waitFor(async () => !(await probeLocalServer(origin, { timeoutMs: 250 })), 5000),
+      true,
+      'health endpoint must close when the recorded PID is terminated',
+    );
+  } finally {
+    if (state) {
+      try { process.kill(-state.pid, 'SIGKILL'); } catch { /* process group already gone */ }
+      try { process.kill(state.pid, 'SIGKILL'); } catch { /* process already gone */ }
+    }
+    fs.rmSync(homeDir, { recursive: true, force: true });
+    fs.rmSync(projectDir, { recursive: true, force: true });
+  }
 });

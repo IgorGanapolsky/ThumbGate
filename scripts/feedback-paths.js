@@ -78,6 +78,15 @@ function isTransientProjectDir(dirPath, options = {}) {
   if (!normalizedDir) return true;
   if (!dirExists(normalizedDir)) return true;
 
+  // MCP hosts and desktop launchers commonly start global servers from `/` or
+  // the user's home directory. Those are launcher contexts, not projects. If
+  // they win resolution they create `projects/default` / `~/.thumbgate` split
+  // stores and make the same lesson corpus depend on which client started the
+  // process. A durable active-project state is a better signal.
+  if (normalizedDir === path.parse(normalizedDir).root) return true;
+  const homeDir = normalizeDir(getHomeDir(options));
+  if (homeDir && normalizedDir === homeDir) return true;
+
   const runtimeDir = getRuntimeDir(options);
   if (isWithinDir(normalizedDir, runtimeDir)) return true;
 
@@ -119,11 +128,12 @@ function writeActiveProjectState(projectDir, options = {}) {
 function resolveProjectDir(options = {}) {
   const env = options.env || process.env;
   const stored = options.includeStored === false ? null : readActiveProjectState(options);
-  const cwdCandidates = uniquePaths([
-    options.cwd,
-    env.PWD,
-    process.cwd(),
-  ]);
+  // An injected cwd is authoritative for callers that resolve on behalf of a
+  // different process. Mixing in this Node process's cwd can silently route a
+  // global launcher back into ThumbGate's own checkout during diagnostics.
+  const cwdCandidates = uniquePaths(options.cwd
+    ? [options.cwd]
+    : [env.PWD, process.cwd()]);
   const isTransientExecution = cwdCandidates.length > 0
     && cwdCandidates.every((candidate) => isTransientProjectDir(candidate, options));
   const candidates = uniquePaths([
@@ -167,14 +177,11 @@ function getExplicitFeedbackDir(options = {}) {
   const env = options.env || process.env;
   if (options.feedbackDir) return options.feedbackDir;
   if (options.skipExplicitFeedbackDir) return null;
-  // A caller-provided feedback root should stay authoritative over stored
-  // active-project state so isolated CLI/test commands do not drift into a
-  // different project. Only direct project overrides suppress it.
-  if (env.THUMBGATE_FEEDBACK_DIR && !hasDirectProjectScope(options)) {
+  // An explicit storage root is the strongest storage instruction. Project
+  // metadata may still identify the project, but it must not redirect writes
+  // out of an isolated test/runtime directory.
+  if (env.THUMBGATE_FEEDBACK_DIR) {
     return env.THUMBGATE_FEEDBACK_DIR;
-  }
-  if (hasDirectProjectScope(options)) {
-    return null;
   }
   if (env.RAILWAY_VOLUME_MOUNT_PATH) {
     return path.join(env.RAILWAY_VOLUME_MOUNT_PATH, 'feedback');
@@ -221,7 +228,19 @@ function resolveFeedbackDir(options = {}) {
   const localLegacy = getLegacyFeedbackDir(options);
   if (dirExists(localLegacy)) return localLegacy;
 
-  return getGlobalFeedbackDir(options);
+  // Existing installations may only have the pre-1.31 basename-scoped store.
+  // Preserve that corpus instead of silently switching to an empty directory.
+  // New projects never create this legacy global shape, so same-basename
+  // projects remain isolated going forward.
+  const globalLegacy = getGlobalFeedbackDir(options);
+  if (dirExists(globalLegacy)) return globalLegacy;
+
+  const projectDir = resolveProjectDir(options);
+  // New real projects select their collision-free local store before it is
+  // created, preventing the old first-write flip from global to local.
+  if (!isTransientProjectDir(projectDir, options)) return localThumbgate;
+
+  return globalLegacy;
 }
 
 function getFeedbackPaths(options = {}) {

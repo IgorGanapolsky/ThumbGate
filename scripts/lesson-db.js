@@ -15,14 +15,16 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const { readJsonl } = require('./fs-utils');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
-const PROJECT_ROOT = path.join(__dirname, '..');
-const DEFAULT_DB_PATH = path.join(PROJECT_ROOT, '.claude', 'memory', 'lessons.sqlite');
+function resolveDefaultDbPath(options = {}) {
+  return path.join(resolveFeedbackDir(options), 'lessons.sqlite');
+}
 
 /** @returns {import('better-sqlite3').Database} */
 function initDB(dbPath) {
   const Database = require('better-sqlite3');
-  const resolvedPath = dbPath || process.env.LESSON_DB_PATH || DEFAULT_DB_PATH;
+  const resolvedPath = dbPath || process.env.LESSON_DB_PATH || resolveDefaultDbPath();
 
   // Ensure parent directory exists
   const dir = path.dirname(resolvedPath);
@@ -643,7 +645,7 @@ function safeParseTags(tagsStr) {
   }
 }
 
-module.exports = {
+const lessonDbApi = {
   initDB,
   upsertLesson,
   upsertSession,
@@ -655,5 +657,14 @@ module.exports = {
   getStats,
   getStatsFromDB,
   backfillFromJsonl,
-  DEFAULT_DB_PATH,
+  resolveDefaultDbPath,
 };
+
+// Preserve the public property while resolving it at access time so callers
+// cannot cache a package-checkout path before project selection is known.
+Object.defineProperty(lessonDbApi, 'DEFAULT_DB_PATH', {
+  enumerable: true,
+  get: resolveDefaultDbPath,
+});
+
+module.exports = lessonDbApi;
