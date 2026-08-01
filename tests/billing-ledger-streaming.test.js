@@ -74,3 +74,37 @@ test('empty file yields an empty ledger', () => {
   const file = writeLedger([]);
   assert.deepStrictEqual(readJsonlRowsStreaming(file), []);
 });
+
+// --- Review finding on #3145 (chatgpt-codex-connector) ------------------------
+// My first version called buffer.toString('utf8', 0, bytesRead) per chunk, which
+// decodes each buffer independently. A multibyte character straddling a chunk
+// boundary became replacement chars: {"id":"é"} read in 8-byte chunks decoded to
+// {"id":"��"}. Silent data corruption in a revenue ledger. The original tests
+// missed it because every fixture was ASCII.
+
+test('preserves multibyte UTF-8 split across a chunk boundary', () => {
+  const rows = [
+    { id: 'é', customer: 'Café Ünïcode', amount: 100 },
+    { id: '日本語', customer: 'Ω≈ç√', amount: 200 },
+    { id: '🎉', customer: 'emoji is 4 bytes', amount: 300 },
+  ];
+  const file = writeLedger(rows.map((r) => JSON.stringify(r)));
+
+  // 8-byte chunks guarantee multibyte sequences land mid-boundary.
+  const parsed = readJsonlRowsStreaming(file, { chunkBytes: 8 });
+
+  assert.deepStrictEqual(parsed, rows, 'characters must survive chunk seams intact');
+  const flat = JSON.stringify(parsed);
+  assert.ok(!flat.includes('�'), 'no U+FFFD replacement characters');
+});
+
+test('multibyte content matches the whole-file read it replaces', () => {
+  const rows = Array.from({ length: 60 }, (_, i) => ({ id: i, note: `naïve—“${i}” 日本 🎉` }));
+  const file = writeLedger(rows.map((r) => JSON.stringify(r)));
+
+  const legacy = fs.readFileSync(file, 'utf-8')
+    .split('\n').map((l) => l.trim()).filter(Boolean)
+    .map((l) => JSON.parse(l));
+
+  assert.deepStrictEqual(readJsonlRowsStreaming(file, { chunkBytes: 16 }), legacy);
+});

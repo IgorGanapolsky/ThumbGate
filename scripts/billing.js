@@ -230,6 +230,12 @@ function readJsonlRowsStreaming(filePath, { chunkBytes = 1024 * 1024 } = {}) {
   }
 
   try {
+    // StringDecoder holds back an incomplete multibyte sequence at a chunk edge
+    // and prepends it to the next write. Calling buffer.toString('utf8') per
+    // chunk instead corrupts any character straddling the boundary — `é` split
+    // across two reads decodes to `��`, which silently mangles ledger rows.
+    const { StringDecoder } = require('string_decoder');
+    const decoder = new StringDecoder('utf8');
     const buffer = Buffer.alloc(chunkBytes);
     let carry = '';
     let position = 0;
@@ -241,7 +247,7 @@ function readJsonlRowsStreaming(filePath, { chunkBytes = 1024 * 1024 } = {}) {
 
       // Split on newlines; the final fragment may be a partial line, so it is
       // carried into the next chunk rather than parsed.
-      const text = carry + buffer.toString('utf8', 0, bytesRead);
+      const text = carry + decoder.write(buffer.subarray(0, bytesRead));
       const lines = text.split('\n');
       carry = lines.pop() || '';
 
@@ -254,7 +260,8 @@ function readJsonlRowsStreaming(filePath, { chunkBytes = 1024 * 1024 } = {}) {
       }
     }
 
-    const tail = carry.trim();
+    // Flush any bytes the decoder is still holding, then parse the last line.
+    const tail = (carry + decoder.end()).trim();
     if (tail) {
       try {
         rows.push(JSON.parse(tail));
