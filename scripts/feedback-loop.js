@@ -21,6 +21,7 @@ const {
   buildClarificationMessage,
   isGenericFeedbackText,
   normalizeFeedbackText,
+  scoreFeedbackReward,
 } = require('./feedback-quality');
 const {
   buildRubricEvaluation,
@@ -1612,6 +1613,14 @@ function captureFeedback(params) {
   if (firewallBlocked) {
     return firewallBlocked;
   }
+
+  // Grade the correction the operator actually wrote, and persist it with the
+  // entry. assessFeedbackActionability already answered the binary question
+  // (promotable at all); this is the graded one, and without computing it here
+  // the scorer would be reachable-but-never-called — the same defect class it
+  // was added to help detect.
+  const rewardScore = scoreFeedbackReward(feedbackEvent);
+  if (rewardScore) feedbackEvent.rewardScore = rewardScore;
 
   appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
   emitAnonymousFeedbackPing(signal);
