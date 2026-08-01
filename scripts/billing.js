@@ -220,6 +220,17 @@ function appendJsonlRecord(filePath, payload) {
  * would bound memory too, but it would silently drop older revenue events and
  * report a total that is wrong in a quieter way.
  */
+/** Parse complete JSONL lines into `rows`; a malformed row never invalidates the ledger. */
+function pushParsedJsonlLines(lines, rows) {
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      rows.push(JSON.parse(trimmed));
+    } catch { /* skip the bad row, keep the good ones */ }
+  }
+}
+
 function readJsonlRowsStreaming(filePath, { chunkBytes = 1024 * 1024 } = {}) {
   const rows = [];
   let fd;
@@ -234,7 +245,7 @@ function readJsonlRowsStreaming(filePath, { chunkBytes = 1024 * 1024 } = {}) {
     // and prepends it to the next write. Calling buffer.toString('utf8') per
     // chunk instead corrupts any character straddling the boundary — `é` split
     // across two reads decodes to `��`, which silently mangles ledger rows.
-    const { StringDecoder } = require('string_decoder');
+    const { StringDecoder } = require('node:string_decoder');
     const decoder = new StringDecoder('utf8');
     const buffer = Buffer.alloc(chunkBytes);
     let carry = '';
@@ -250,22 +261,13 @@ function readJsonlRowsStreaming(filePath, { chunkBytes = 1024 * 1024 } = {}) {
       const text = carry + decoder.write(buffer.subarray(0, bytesRead));
       const lines = text.split('\n');
       carry = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        try {
-          rows.push(JSON.parse(trimmed));
-        } catch { /* a malformed row never invalidates the ledger */ }
-      }
+      pushParsedJsonlLines(lines, rows);
     }
 
     // Flush any bytes the decoder is still holding, then parse the last line.
     const tail = (carry + decoder.end()).trim();
     if (tail) {
-      try {
-        rows.push(JSON.parse(tail));
-      } catch { /* trailing partial write — ignore */ }
+      pushParsedJsonlLines([tail], rows);
     }
   } catch {
     // Return what was parsed rather than nothing: a partial ledger beats a zero.
