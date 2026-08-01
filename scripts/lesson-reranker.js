@@ -115,6 +115,28 @@ function getField(candidate, field) {
 }
 
 /**
+ * Score exact entity-channel overlap separately from prose relevance.
+ *
+ * Tags, categories, and tool identities are low-cardinality metadata. Keeping
+ * this score visible prevents a tag-only hit from being swallowed by BM25
+ * field-length normalization and makes reranking traces explainable.
+ */
+function scoreEntityOverlap(queryTerms, candidate) {
+  const entityText = [
+    getField(candidate, 'tags'),
+    getField(candidate, 'category'),
+    getField(candidate, 'toolUsed'),
+    getField(candidate, 'toolName'),
+    ...(candidate.metadata?.toolsUsed || []),
+  ].filter(Boolean).join(' ');
+  const entityTokens = new Set(expandTerms(tokenize(entityText)));
+  const uniqueQueryTerms = [...new Set(queryTerms)];
+  if (uniqueQueryTerms.length === 0 || entityTokens.size === 0) return 0;
+  const hits = uniqueQueryTerms.filter((term) => entityTokens.has(term)).length;
+  return Number((hits / uniqueQueryTerms.length).toFixed(6));
+}
+
+/**
  * Compute field-weighted BM25 scores for a list of candidates (BM25F variant).
  *
  * BM25F processes the (query, lesson) pair jointly: query terms are weighted
@@ -235,12 +257,15 @@ function rerankLessons(query, candidates, options = {}) {
 
   const reranked = bm25Results.map(({ candidate, bm25Score }) => {
     const normBm25 = bm25Score / maxBm25;
+    const entityScore = scoreEntityOverlap(queryTerms, candidate);
 
     // Original bi-encoder score (field name differs between retrieval paths)
     const origScore = candidate.relevanceScore ?? candidate.score ?? 0;
 
     // Blend BM25 with original score
-    let finalScore = blendWeight * normBm25 + (1 - blendWeight) * origScore;
+    let finalScore = 0.85 * (
+      blendWeight * normBm25 + (1 - blendWeight) * origScore
+    ) + 0.15 * entityScore;
 
     // Signal coherence bonus: failure queries → negative lessons rank higher
     const candidateSignal =
@@ -263,7 +288,11 @@ function rerankLessons(query, candidates, options = {}) {
       }
     }
 
-    return { ...candidate, rerankedScore: Number(finalScore.toFixed(6)) };
+    return {
+      ...candidate,
+      entityScore,
+      rerankedScore: Number(finalScore.toFixed(6)),
+    };
   });
 
   return reranked
@@ -271,4 +300,10 @@ function rerankLessons(query, candidates, options = {}) {
     .slice(0, topK);
 }
 
-module.exports = { rerankLessons, fieldWeightedBM25, tokenize, expandTerms };
+module.exports = {
+  rerankLessons,
+  fieldWeightedBM25,
+  scoreEntityOverlap,
+  tokenize,
+  expandTerms,
+};

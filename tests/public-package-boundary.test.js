@@ -22,10 +22,13 @@ const PRIVATE_CORE_MODULES = [
   'scripts/reflector-agent.js',
 ];
 const REQUIRED_PUBLIC_CAPABILITY_MODULES = [
+  'scripts/colbert-style-maxsim.js',
   'scripts/cross-encoder-reranker.js',
   'scripts/feedback-history-distiller.js',
   'scripts/lesson-embedding-index.js',
   'scripts/lesson-reranker.js',
+  'scripts/rerank-pipeline.js',
+  'scripts/rerank-quality-eval.js',
   'scripts/lesson-retrieval.js',
 ];
 

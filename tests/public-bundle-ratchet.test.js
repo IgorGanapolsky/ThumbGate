@@ -155,7 +155,12 @@ const path = require('node:path');
 // 401 -> 405 (2026-07-31): keep lockstep with package-boundary / public-core-boundary.
 // CI pack measured 403 during secret-exfil coverage PR; headroom for security/runtime
 // scripts already on the enforcement path (no intentional new private-Core surface).
-const BASELINE_FILE_COUNT = 405;
+// 408 -> 416 (2026-08-01): the measured package adds ten public runtime files
+// for bounded evals, reranking, request budgets/quality tiers, and the fail-closed
+// A+ evidence scorecard, including the npm-reachable slow feedback loop. Main
+// packed 406 files; this branch packs exactly 416.
+// Each file is directly callable from the package and contains no buyer state.
+const BASELINE_FILE_COUNT = 416;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
