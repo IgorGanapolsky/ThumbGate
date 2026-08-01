@@ -64,6 +64,10 @@
 
 ### Patch Changes
 
+- Keep the Claw, Hermes, and Perplexity MCP launch manifests synchronized with
+  the package version so those adapters cannot silently install an older
+  ThumbGate runtime after a release.
+
 - 8b3a515: Make auto-promoted gates actually enforce: group and match only by executable actions (not tag co-counts), derive command patterns, skip unmatchable/prose-only feedback, exclude originating incidents from regression quarantine, and prove capture→promote→deny end-to-end including the entity-tag failure class. Demo proves ALLOW → 3× 👎 → auto-promote → DENY.
 - cf386d4: Antithesis-inspired autonomous reliability explorer: high-ROI invariants (force-push, rm -rf, secrets, audit), fault injection, deterministic seed/replay, prove:reliability CI lane, self-heal check, and findings→feedback/memory promotion. Also fixes circular tool-input crashes in audit-trail during gate evaluation.
 - f724721: Ratchet against capability modules that ship with no caller.
