@@ -12,6 +12,10 @@ relevance regressions. Provider-neutral LLM routing, request envelopes, hard
 cost/tier budgets, and stale/degraded retrieval flags make fallback state
 observable.
 
+The dashboard request envelope now evaluates prompt-safe input and decision audit
+spans, and reports the final rerank score rather than the superseded first-stage
+score.
+
 `npm run score:a-plus` separates repository, deterministic-eval, provider,
 production, security-review, and commercial proof. A+/10 is awarded only when
 every evidence surface passes; missing live or buyer evidence fails closed.

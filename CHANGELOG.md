@@ -33,9 +33,10 @@
   add offline Ragas-style faithfulness, groundedness, and answer-relevance
   regressions; and expose one unified `npm run eval:quality` gate.
 
-- Production P0: request envelope (trace, latency, tokens, retrieval scores), hard
-  tier cost/latency budgets with deny/degrade, and degraded/stale retrieval quality
-  tier flags on dashboard chat and lesson retrieval.
+- Production P0: request envelope (trace, latency, tokens, final rerank scores,
+  prompt-safe agent audit spans), hard tier cost/latency budgets with deny/degrade,
+  and degraded/stale retrieval quality tier flags on dashboard chat and lesson
+  retrieval.
 
 - Evidence contract: ship a fail-closed ten-area A+ scorecard and ten public
   runtime modules for bounded retrieval/answer evals, production-wired reranking,

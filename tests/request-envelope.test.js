@@ -8,6 +8,7 @@ const {
   summarizeRetrieval,
   estimateTokensFromText,
   estimateCostCents,
+  hashSensitiveText,
   ENVELOPE_VERSION,
 } = require('../scripts/request-envelope');
 const {
@@ -23,12 +24,25 @@ const {
 
 describe('request envelope', () => {
   it('creates and finalizes with latency', () => {
-    const env = createRequestEnvelope({ surface: 'test', startedAt: 1000 });
+    const prompt = 'private operator question';
+    const env = createRequestEnvelope({
+      surface: 'test',
+      startedAt: 1000,
+      promptHash: hashSensitiveText(prompt),
+    });
     assert.equal(env.envelopeVersion, ENVELOPE_VERSION);
     assert.ok(env.traceId);
-    const done = finalizeRequestEnvelope(env, { endedAt: 1500, outcome: 'ok', model: 'x' });
+    const done = finalizeRequestEnvelope(env, {
+      endedAt: 1500,
+      outcome: 'ok',
+      model: 'x',
+      retrieval: { top: [{ id: 'lesson-1' }] },
+    });
     assert.equal(done.latencyMs, 500);
     assert.equal(done.model, 'x');
+    assert.equal(done.auditTrace.evaluation.decision, 'allow');
+    assert.equal(done.auditTrace.spans.length, 2);
+    assert.equal(JSON.stringify(done).includes(prompt), false);
   });
 
   it('summarizes retrieval without bodies', () => {
@@ -39,6 +53,15 @@ describe('request envelope', () => {
     assert.equal(s.top[0].id, 'a');
     assert.equal(s.qualityTier, 'degraded');
     assert.equal(JSON.stringify(s).includes('SECRET'), false);
+  });
+
+  it('prefers the final rerank score and preserves an unknown score as null', () => {
+    const s = summarizeRetrieval([
+      { id: 'reranked', relevanceScore: 0.2, rerankedScore: 0.9 },
+      { id: 'unknown' },
+    ]);
+    assert.equal(s.top[0].score, 0.9);
+    assert.equal(s.top[1].score, null);
   });
 
   it('estimates tokens and cost', () => {

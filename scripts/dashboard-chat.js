@@ -354,6 +354,7 @@ async function answerDataQuestion(question, opts = {}) {
     summarizeRetrieval,
     estimateTokensFromText,
     estimateCostCents,
+    hashSensitiveText,
   } = require('./request-envelope');
   const { probeEmbeddingQuality } = require('./retrieval-quality-tier');
   const { classifyTask } = require('./model-tier-router');
@@ -366,6 +367,7 @@ async function answerDataQuestion(question, opts = {}) {
   const envelope = createRequestEnvelope({
     surface: 'dashboard_chat',
     startedAt: Date.now(),
+    promptHash: hashSensitiveText(q),
   });
 
   if (!q) {
