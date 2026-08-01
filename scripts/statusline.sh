@@ -21,7 +21,14 @@ PROJECT_CWD="${PROJECT_CWD:-}"
 if [ -n "$PROJECT_CWD" ] && [ -d "$PROJECT_CWD" ]; then
   export THUMBGATE_PROJECT_DIR="$PROJECT_CWD"
   if [ -z "${THUMBGATE_FEEDBACK_DIR:-}" ]; then
-    export THUMBGATE_FEEDBACK_DIR="${PROJECT_CWD}/.claude/memory/feedback"
+    THUMBGATE_FEEDBACK_DIR="$(node -e '
+      const { resolveFeedbackDir } = require(process.argv[1]);
+      process.stdout.write(resolveFeedbackDir({
+        projectDir: process.env.THUMBGATE_PROJECT_DIR,
+        env: process.env,
+      }));
+    ' "${SCRIPT_DIR}/feedback-paths.js" 2>/dev/null)"
+    export THUMBGATE_FEEDBACK_DIR="${THUMBGATE_FEEDBACK_DIR:-${PROJECT_CWD}/.thumbgate}"
   fi
 fi
 

@@ -15,6 +15,7 @@ describe('filesystem-search', () => {
     originalEnv = {
       THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
       THUMBGATE_CONTEXTFS_DIR: process.env.THUMBGATE_CONTEXTFS_DIR,
+      LESSON_DB_PATH: process.env.LESSON_DB_PATH,
     };
 
     // Set up test data
@@ -58,8 +59,10 @@ describe('filesystem-search', () => {
   after(() => {
     process.env.THUMBGATE_FEEDBACK_DIR = originalEnv.THUMBGATE_FEEDBACK_DIR || '';
     process.env.THUMBGATE_CONTEXTFS_DIR = originalEnv.THUMBGATE_CONTEXTFS_DIR || '';
+    process.env.LESSON_DB_PATH = originalEnv.LESSON_DB_PATH || '';
     if (!originalEnv.THUMBGATE_FEEDBACK_DIR) delete process.env.THUMBGATE_FEEDBACK_DIR;
     if (!originalEnv.THUMBGATE_CONTEXTFS_DIR) delete process.env.THUMBGATE_CONTEXTFS_DIR;
+    if (!originalEnv.LESSON_DB_PATH) delete process.env.LESSON_DB_PATH;
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
@@ -98,6 +101,74 @@ describe('filesystem-search', () => {
       const results = mod.searchFeedbackLog('quantum physics spacetime');
       // Unrelated queries should score very low (near zero)
       results.forEach((r) => assert.ok(r._score <= 0.2, `Unrelated result score should be <=0.2, got ${r._score}`));
+    });
+
+    it('never falls back from an explicitly scoped project to a global lesson database', () => {
+      const selectedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fs-search-selected-'));
+      const globalDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fs-search-global-'));
+      const globalDbPath = path.join(globalDir, 'lessons.sqlite');
+      fs.writeFileSync(path.join(selectedDir, 'feedback-log.jsonl'), '');
+      const { initDB, upsertLesson } = require('../scripts/lesson-db');
+      const db = initDB(globalDbPath);
+      try {
+        upsertLesson(db, {
+          id: 'fb_global',
+          signal: 'negative',
+          context: 'dashboard search record from another project',
+          whatToChange: 'Never cross project boundaries.',
+          timestamp: new Date().toISOString(),
+        }, { id: 'mem_global', importance: 'high' });
+      } finally {
+        db.close();
+      }
+
+      process.env.LESSON_DB_PATH = globalDbPath;
+      try {
+        const mod = loadModule();
+        assert.deepEqual(
+          mod.searchFeedbackLog('dashboard search', 5, { feedbackDir: selectedDir }),
+          [],
+        );
+      } finally {
+        fs.rmSync(selectedDir, { recursive: true, force: true });
+        fs.rmSync(globalDir, { recursive: true, force: true });
+      }
+    });
+
+    it('uses only the selected project SQLite fallback and preserves corrective fields', () => {
+      const selectedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fs-search-local-'));
+      const unrelatedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fs-search-unrelated-'));
+      const localDbPath = path.join(selectedDir, 'lessons.sqlite');
+      fs.writeFileSync(path.join(selectedDir, 'feedback-log.jsonl'), '');
+      const { initDB, upsertLesson } = require('../scripts/lesson-db');
+      const db = initDB(localDbPath);
+      try {
+        upsertLesson(db, {
+          id: 'fb_local',
+          signal: 'negative',
+          context: 'dashboard search local project record',
+          whatWentWrong: 'Search used the wrong lesson store.',
+          whatWorked: 'The scoped database returned the local lesson.',
+          whatToChange: 'Open only the database under the selected feedback directory.',
+          timestamp: new Date().toISOString(),
+        }, { id: 'mem_local', importance: 'high' });
+      } finally {
+        db.close();
+      }
+
+      process.env.LESSON_DB_PATH = path.join(unrelatedDir, 'lessons.sqlite');
+      try {
+        const mod = loadModule();
+        const results = mod.searchFeedbackLog('dashboard search local', 5, { feedbackDir: selectedDir });
+        assert.equal(results.length, 1);
+        assert.equal(results[0].id, 'mem_local');
+        assert.equal(results[0].whatWentWrong, 'Search used the wrong lesson store.');
+        assert.equal(results[0].whatWorked, 'The scoped database returned the local lesson.');
+        assert.equal(results[0].whatToChange, 'Open only the database under the selected feedback directory.');
+      } finally {
+        fs.rmSync(selectedDir, { recursive: true, force: true });
+        fs.rmSync(unrelatedDir, { recursive: true, force: true });
+      }
     });
   });
 
