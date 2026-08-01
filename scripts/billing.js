@@ -205,6 +205,70 @@ function appendJsonlRecord(filePath, payload) {
   }
 }
 
+/**
+ * Read every row of a JSONL ledger without ever building the file into one string.
+ *
+ * `fs.readFileSync(path, 'utf-8')` throws
+ * "Cannot create a string longer than 0x1fffffe8 characters" once a file passes
+ * V8's ~512MB string cap. These ledgers are append-only with no rotation, so that
+ * is reachable in production — and when it threw, getBillingSummary caught it and
+ * returned `revenue: { total: 0 }`. A crash rendered as zero revenue is worse than
+ * an outage, because it reads as a business fact instead of a failure.
+ *
+ * Reads in fixed chunks and parses line-by-line, so peak string size is one chunk
+ * plus one line. Full-file semantics are preserved deliberately: a tail window
+ * would bound memory too, but it would silently drop older revenue events and
+ * report a total that is wrong in a quieter way.
+ */
+function readJsonlRowsStreaming(filePath, { chunkBytes = 1024 * 1024 } = {}) {
+  const rows = [];
+  let fd;
+  try {
+    fd = fs.openSync(filePath, 'r');
+  } catch {
+    return rows;
+  }
+
+  try {
+    const buffer = Buffer.alloc(chunkBytes);
+    let carry = '';
+    let position = 0;
+
+    for (;;) {
+      const bytesRead = fs.readSync(fd, buffer, 0, chunkBytes, position);
+      if (bytesRead <= 0) break;
+      position += bytesRead;
+
+      // Split on newlines; the final fragment may be a partial line, so it is
+      // carried into the next chunk rather than parsed.
+      const text = carry + buffer.toString('utf8', 0, bytesRead);
+      const lines = text.split('\n');
+      carry = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        try {
+          rows.push(JSON.parse(trimmed));
+        } catch { /* a malformed row never invalidates the ledger */ }
+      }
+    }
+
+    const tail = carry.trim();
+    if (tail) {
+      try {
+        rows.push(JSON.parse(tail));
+      } catch { /* trailing partial write — ignore */ }
+    }
+  } catch {
+    // Return what was parsed rather than nothing: a partial ledger beats a zero.
+  } finally {
+    try { fs.closeSync(fd); } catch { /* already closed */ }
+  }
+
+  return rows;
+}
+
 function loadJsonlRecords(filePath, legacyPath = null) {
   try {
     const paths = [];
@@ -225,18 +289,7 @@ function loadJsonlRecords(filePath, legacyPath = null) {
 
     for (const target of paths) {
       if (!fs.existsSync(target)) continue;
-      const rows = fs.readFileSync(target, 'utf-8')
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line) => {
-          try {
-            return JSON.parse(line);
-          } catch {
-            return null;
-          }
-        })
-        .filter(Boolean);
+      const rows = readJsonlRowsStreaming(target);
 
       for (const row of rows) {
         const key = JSON.stringify(row);
@@ -4220,6 +4273,7 @@ function handleGithubWebhook(event, provenance = {}) {
 }
 
 module.exports = {
+  readJsonlRowsStreaming,
   CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _buildTrialActivationEmail: buildTrialActivationEmail,
