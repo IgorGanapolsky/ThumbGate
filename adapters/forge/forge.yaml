@@ -9,12 +9,12 @@ version: "1"
 skills:
   thumbgate-gate-check:
     description: "ThumbGate PreToolUse gate — blocks known-bad tool calls"
-    command: "npx --yes --package thumbgate@1.31.1 thumbgate gate-check"
+    command: "npx --yes --package thumbgate@1.32.0 thumbgate gate-check"
     trigger: pre_tool_use
 
   thumbgate-feedback:
     description: "ThumbGate feedback capture — logs user prompt context"
-    command: "npx --yes --package thumbgate@1.31.1 thumbgate hook-auto-capture"
+    command: "npx --yes --package thumbgate@1.32.0 thumbgate hook-auto-capture"
     trigger: user_prompt
 
 mcp:
@@ -23,6 +23,6 @@ mcp:
     args:
       - "--yes"
       - "--package"
-      - "thumbgate@1.31.1"
+      - "thumbgate@1.32.0"
       - "thumbgate"
       - "serve"
