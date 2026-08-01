@@ -313,11 +313,20 @@ function syncVersion(opts) {
     'adapters/claude/.mcp.json',
     'adapters/claw/config.toml',
     'adapters/claw/opencode.json',
+    // The .mcp.json pins for claw/hermes/perplexity were missing from this list
+    // while their config.toml and opencode.json siblings were present, so a
+    // version bump left them pinned to the previous release. Users of those
+    // harnesses would npx a stale package — 1.30.0 shipped auto-promoted gates
+    // that could never match a command, so this was not a cosmetic drift.
+    // tests/adapter-version-pins.test.js fails the release if it recurs.
+    'adapters/claw/.mcp.json',
     'adapters/forge/forge.yaml',
     'adapters/hermes/config.toml',
     'adapters/hermes/opencode.json',
+    'adapters/hermes/.mcp.json',
     'adapters/perplexity/config.toml',
     'adapters/perplexity/opencode.json',
+    'adapters/perplexity/.mcp.json',
     'docs/PLUGIN_DISTRIBUTION.md',
     'adapters/README.md',
     'adapters/opencode/opencode.json',
