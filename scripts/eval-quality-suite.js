@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * Unified A+ evaluation suite:
+ * Unified bounded offline evaluation suite:
  *   1) IR ranking — Recall@k / MRR / nDCG / Precision@k (retrieval-ranking-golden)
  *   2) Generation quality — faithfulness / groundedness / answer_relevance (offline)
  *
@@ -111,7 +111,7 @@ function formatMarkdown(report) {
   const r = report.ranking.summary || {};
   const g = report.generation.summary || {};
   const lines = [
-    '# Evaluation quality suite (A+)',
+    '# Evaluation quality suite (bounded offline)',
     '',
     `Suite version: \`${report.suiteVersion}\``,
     `Overall: **${report.passed ? 'PASS' : 'FAIL'}** · grade **${report.grades.overall}**`,
@@ -178,7 +178,7 @@ function main() {
       console.log('\n' + formatRankingReport(ranking));
     }
     console.error(report.passed
-      ? 'eval-quality-suite: PASS (A+ floors met)'
+      ? 'eval-quality-suite: PASS (bounded offline floors met)'
       : `eval-quality-suite: FAIL — ${report.failures.join('; ')}`);
   }
   process.exit(report.passed ? 0 : 1);

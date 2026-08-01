@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * A+ multi-stage rerank pipeline for ThumbGate.
+ * Multi-stage rerank pipeline for ThumbGate's A+ target.
  *
  * Stages (always local-first; LLM optional and last):
  *   1) Field-weighted BM25F pair scoring (lesson-reranker)
@@ -160,8 +160,20 @@ async function rerankPipeline(query, candidates, options = {}) {
       ...c,
       fusedScore: Number(fused.toFixed(6)),
       rerankedScore: Number(fused.toFixed(6)),
-      crossEncoderScore: nHe,
+      pairwiseHeuristicScore: nHe,
+      lateInteractionScore: nMs,
+      crossEncoderScore: null,
       combinedScore: Number(fused.toFixed(6)),
+      reranker: {
+        stages: [
+          'first-stage',
+          'bm25f',
+          'colbert-style-maxsim-hashed',
+          'pairwise-heuristic',
+          'score-fusion',
+        ],
+        fallbacks: ['neural-cross-encoder-not-configured'],
+      },
     };
   }).sort((a, b) => b.fusedScore - a.fusedScore);
 
@@ -292,9 +304,21 @@ function rerankPipelineSyncImpl(query, candidates, options = {}) {
       ...c,
       fusedScore: Number(fused.toFixed(6)),
       rerankedScore: Number(fused.toFixed(6)),
-      crossEncoderScore: nHe,
+      pairwiseHeuristicScore: nHe,
+      lateInteractionScore: nMs,
+      crossEncoderScore: null,
       combinedScore: Number(fused.toFixed(6)),
       rerankPipelineVersion: PIPELINE_VERSION,
+      reranker: {
+        stages: [
+          'first-stage',
+          'bm25f',
+          'colbert-style-maxsim-hashed',
+          'pairwise-heuristic',
+          'score-fusion',
+        ],
+        fallbacks: ['neural-cross-encoder-not-configured'],
+      },
     };
   }).sort((a, b) => b.fusedScore - a.fusedScore);
 

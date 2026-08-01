@@ -164,7 +164,14 @@ describe('retrieveWithRerankingSync', () => {
       assert.equal(r.crossEncoderScore, null);
       assert.ok('combinedScore' in r, 'Missing combinedScore');
       assert.ok(r.combinedScore >= 0 && r.combinedScore <= 1, `combinedScore out of range: ${r.combinedScore}`);
-      assert.deepEqual(r.reranker.stages, ['first-stage', 'pairwise-heuristic']);
+      assert.deepEqual(r.reranker.stages, [
+        'first-stage',
+        'bm25f',
+        'colbert-style-maxsim-hashed',
+        'pairwise-heuristic',
+        'score-fusion',
+      ]);
+      assert.ok(typeof r.lateInteractionScore === 'number');
     }
 
     fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -294,6 +301,31 @@ describe('llmCrossEncode', () => {
     ]));
 
     assert.deepEqual(scores, [1, 0, 0.4]);
+  });
+
+  it('uses the configured gateway model and labels its provider honestly', async () => {
+    let requestedModel = null;
+    const result = await withMockedLlmClient({
+      isAvailable: () => true,
+      describeInferenceAvailability: () => ({
+        available: true,
+        provider: 'gateway',
+        model: 'glm-gateway-model',
+      }),
+      callClaudeJson: async ({ model }) => {
+        requestedModel = model;
+        return {
+          parsed: { scores: [{ id: 'candidate-0', score: 0.8 }] },
+          model,
+          usage: { input_tokens: 12, output_tokens: 4 },
+        };
+      },
+      MODELS: { FAST: 'anthropic-fast-model' },
+    }, () => llmListwiseRerank('git push', [{ title: 'safe push' }]));
+
+    assert.equal(requestedModel, 'glm-gateway-model');
+    assert.equal(result.provider, 'gateway');
+    assert.equal(result.model, 'glm-gateway-model');
   });
 
   it('falls back when the LLM response is not a matching JSON score array', async () => {

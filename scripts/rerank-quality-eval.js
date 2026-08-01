@@ -2,14 +2,15 @@
 'use strict';
 
 /**
- * Golden-set quality eval for the A+ rerank pipeline.
+ * Golden-set regression eval for the rerank pipeline.
  *
  * Measures:
  *   - Precision@1 / MRR on planted force-push / secret / deploy cases
  *   - Rank-delta rate (how often #1 flips vs first-stage order)
  *   - Stage presence (BM25, MaxSim, heuristic CE)
  *
- * Exit 0 when floors are met. Used as CI-adjacent proof for A+ claim.
+ * Exit 0 when bounded deterministic floors are met. Provider holdouts and live
+ * traces are separate A+ requirements.
  */
 
 const { rerankPipelineSync, PIPELINE_VERSION } = require('./rerank-pipeline');
@@ -138,7 +139,7 @@ function main() {
     console.error('rerank-quality-eval: FAILED floors');
     process.exit(1);
   }
-  console.error('rerank-quality-eval: PASS (A+ golden floors met)');
+  console.error('rerank-quality-eval: PASS (bounded golden floors met)');
 }
 
 if (require.main === module || (process.argv[1] && require('path').resolve(process.argv[1]) === __filename)) {
