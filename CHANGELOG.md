@@ -24,6 +24,30 @@
 
 ### Patch Changes
 
+- Reranking stack: ColBERT-style MaxSim late interaction, multi-stage
+  fusion pipeline (BM25F → MaxSim → heuristic pair CE → optional LLM),
+  entity channel fix, golden eval floors (`npm run eval:rerank`), and honest
+  scorecard in `docs/RERANKING_A_PLUS.md`. PreToolUse uses the offline sync path.
+
+- Bounded evaluation suite: expand the ranking golden with additional slices;
+  add offline Ragas-style faithfulness, groundedness, and answer-relevance
+  regressions; and expose one unified `npm run eval:quality` gate.
+
+- Production P0: request envelope (trace, latency, tokens, final rerank scores,
+  prompt-safe agent audit spans), hard tier cost/latency budgets with deny/degrade,
+  and degraded/stale retrieval quality tier flags on dashboard chat and lesson
+  retrieval.
+
+- Evidence contract: ship a fail-closed ten-area A+ scorecard and ten public
+  runtime modules for bounded retrieval/answer evals, production-wired reranking,
+  request budgets, quality tiers, and the npm-reachable slow feedback loop. The
+  measured npm bundle grows from 406 to 416 files; no buyer state or private
+  intelligence is included.
+
+- Command-position hardening: canonicalize literal, side-effect-free binary
+  substitutions such as `$(printf git)` and `$(command -v git)` so the evasion
+  matrix still denies destructive commands without executing arbitrary shell.
+
 - 83d9d88: Update the development coverage toolchain to c8 12.
 - e0465e5: Add canonical campaign attribution, safe buyer-route verification, and hourly
   hosted outcome monitoring for the seven-channel marketing-agent campaign.

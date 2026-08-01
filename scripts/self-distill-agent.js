@@ -399,7 +399,13 @@ function readRunManifests() {
 async function runSelfDistill({ dryRun = false, limit = 20, model } = {}) {
   const startedAt = new Date().toISOString();
   const logPaths = discoverConversationLogs({ limit });
-  const hasApiKey = Boolean(process.env.ANTHROPIC_API_KEY);
+  // Ask llm-client which provider is actually live rather than testing for one
+  // vendor's key. Checking ANTHROPIC_API_KEY directly meant an operator running
+  // a configured gateway got heuristic distillation while a working model sat
+  // one call away — and the manifest said 'heuristic' without explaining why.
+  const { describeInferenceAvailability } = require('./llm-client');
+  const inference = describeInferenceAvailability();
+  const hasApiKey = inference.available;
   const analysisMode = hasApiKey ? 'llm' : 'heuristic';
 
   const allLessons = [];

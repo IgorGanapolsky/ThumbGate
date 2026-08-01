@@ -221,9 +221,11 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // retrieval runtime/eval surfaces and import no private Core module.
   // 400 -> 401 (2026-07-30): scripts/harness-tool-names.js. adapters/mcp/server-stdio.js require()s it during gate_check, so the published package throws without it. Pure lookup table mapping harness tool vocabularies to canonical gate names; no I/O, no Core imports.
   // 401 -> 405 (2026-07-31): keep lockstep with package-boundary / public-bundle-ratchet.
+  // 405 -> 416 (2026-08-01): exact package count for the ten public
+  // evidence/runtime files documented in CHANGELOG.md. No headroom.
   // CI pack measured 403 during secret-exfil coverage PR (no intentional new package
   // entries beyond security/runtime scripts already on the enforcement path).
-  const CEILING = 405;
+  const CEILING = 416;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

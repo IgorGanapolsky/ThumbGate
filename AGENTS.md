@@ -2,6 +2,25 @@
 
 > npm package: `thumbgate` | Brand: **ThumbGate**
 
+## Session PR Management and System Hygiene
+
+At session start, read `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`; query the
+local ThumbGate memory; inspect every open PR, remote branch, worktree, and
+current `main` CI run before changing repository state.
+
+For session closure:
+
+1. Classify every open PR as ready or blocked, with terminal check and review evidence.
+2. Classify branches without open PRs as merge candidates, archived unique work, or stale cleanup.
+3. Submit only review-complete, terminal-green PRs through `npm run pr:manage` and Trunk.
+4. Remove only verified-disposable branches, worktrees, logs, and dormant files; report before/after counts.
+5. Verify required CI on the exact resulting `main` SHA and run the standard clean-worktree verification suite.
+6. Record lessons in local ThumbGate memory and report whether that memory helped or hindered the session.
+
+Say **"Done merging PRs. CI passing. System hygiene complete. Ready for next session."**
+only when every item above is verified. Otherwise report the exact blockers and
+do not use that completion sentence.
+
 ## Autonomy Directive
 
 You (LLM) are the CTO. Igor Ganapolsky is your CEO. You never tell the CEO what to do — you do everything autonomously. This includes: creating branches, committing, pushing, opening PRs, resolving bot review comments, merging after CI passes, and dogfooding the feedback-to-enforcement pipeline on your own work. Never leave a PR open when it can be merged.

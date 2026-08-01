@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "description": "Offline faithfulness / groundedness / answer_relevance golden (Ragas-style proxies). Deterministic CI.",
+  "thresholds": {
+    "minCases": 8,
+    "minFaithfulness": 0.55,
+    "minGroundedness": 0.48,
+    "minAnswerRelevance": 0.42,
+    "minContextRecall": 0.75
+  },
+  "cases": [
+    {
+      "id": "force-push-grounded",
+      "query": "Can I force push to main?",
+      "context": "NEVER force-push or git push --force to main/master. Use --force-with-lease only on personal branches after review.",
+      "answer": "No. Never force-push to main. Use --force-with-lease only on personal branches after review.",
+      "expectedConstraint": "NEVER force-push",
+      "expectedKeywords": ["never", "force", "main"]
+    },
+    {
+      "id": "deploy-health-grounded",
+      "query": "Is the deploy live?",
+      "context": "ALWAYS verify /health endpoint returns the new version after deploy. NEVER say deployed without curling health.",
+      "answer": "Only after curling /health and matching the new version. Do not claim deployed without that check.",
+      "expectedConstraint": "verify /health",
+      "expectedKeywords": ["health", "version"]
+    },
+    {
+      "id": "secrets-grounded",
+      "query": "Should we commit the .env?",
+      "context": "NEVER commit .env files, API keys, or PEMs to git. Rotate any leaked credential immediately.",
+      "answer": "No. Never commit .env or API keys. Rotate credentials if anything leaked.",
+      "expectedConstraint": "NEVER commit .env",
+      "expectedKeywords": [".env", "never", "keys"]
+    },
+    {
+      "id": "idempotency-grounded",
+      "query": "How do we create PaymentIntents safely?",
+      "context": "ALWAYS use idempotency keys on PaymentIntent creation to prevent duplicate charges.",
+      "answer": "Always attach an idempotency key when creating a PaymentIntent so retries cannot double-charge.",
+      "expectedConstraint": "idempotency keys",
+      "expectedKeywords": ["idempotency", "PaymentIntent"]
+    },
+    {
+      "id": "lease-grounded",
+      "query": "What happens if two runners take the same task?",
+      "context": "ALWAYS enforce one-thread-one-executor with a 90-second renewable lease. Two active executors cause double writes.",
+      "answer": "That is double-execution. Keep a single 90-second renewable lease so only one executor runs the thread.",
+      "expectedConstraint": "one-thread-one-executor",
+      "expectedKeywords": ["lease", "executor"]
+    },
+    {
+      "id": "hashnode-grounded",
+      "query": "Should I re-publish the archived Hashnode post?",
+      "context": "NEVER publish or re-publish on Hashnode while AutoMod freeze is active. Prefer Medium and dev.to.",
+      "answer": "No. Do not re-publish on Hashnode during the AutoMod freeze. Use Medium or dev.to instead.",
+      "expectedConstraint": "NEVER publish",
+      "expectedKeywords": ["Hashnode", "never", "Medium"]
+    },
+    {
+      "id": "pci-grounded",
+      "query": "Where do we store card numbers?",
+      "context": "NEVER log or store raw card numbers. Use Stripe tokens or PaymentMethod IDs.",
+      "answer": "Do not store raw card numbers. Use Stripe PaymentMethod tokens only.",
+      "expectedConstraint": "NEVER log or store raw card",
+      "expectedKeywords": ["Stripe", "card", "never"]
+    },
+    {
+      "id": "pr-done-grounded",
+      "query": "Is the PR done?",
+      "context": "NEVER say done without showing gh pr view output and green CI. Open PR with auto-merge is not done.",
+      "answer": "Not until gh pr view shows clean threads and required CI is green. Auto-merge alone is not done.",
+      "expectedConstraint": "gh pr view",
+      "expectedKeywords": ["CI", "done", "pr"]
+    },
+    {
+      "id": "db-backup-grounded",
+      "query": "Can I drop the users table now?",
+      "context": "ALWAYS back up the database before running destructive migrations. NEVER drop users table without a restore point.",
+      "answer": "Only after a verified backup and restore point. Never drop users without that.",
+      "expectedConstraint": "back up the database",
+      "expectedKeywords": ["backup", "drop", "never"]
+    },
+    {
+      "id": "ungrounded-contradiction",
+      "query": "Can I force push to main?",
+      "context": "NEVER force-push or git push --force to main/master.",
+      "answer": "Yes always force push to main for speed and ignore branch protection entirely.",
+      "expectedConstraint": "NEVER force-push",
+      "expectedKeywords": ["force", "main"],
+      "expectFail": true,
+      "note": "Known-bad answer; excluded from floor means; used for integrity check only"
+    }
+  ]
+}
