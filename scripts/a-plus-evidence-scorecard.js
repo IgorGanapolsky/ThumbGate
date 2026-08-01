@@ -288,11 +288,16 @@ function main() {
   if (process.argv.includes('--require-a-plus') && !report.atTarget) process.exitCode = 1;
 }
 
-if (require.main === module) main();
+function isCliEntrypoint(argv = process.argv) {
+  return Boolean(argv[1]) && path.resolve(argv[1]) === path.resolve(__filename);
+}
+
+if (isCliEntrypoint()) main();
 
 module.exports = {
   SCORECARD_VERSION,
   collectRepositoryEvidence,
   evaluateReadiness,
   formatMarkdown,
+  isCliEntrypoint,
 };

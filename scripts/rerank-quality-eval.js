@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const path = require('node:path');
+
 /**
  * Golden-set regression eval for the rerank pipeline.
  *
@@ -142,8 +144,12 @@ function main() {
   console.error('rerank-quality-eval: PASS (bounded golden floors met)');
 }
 
-if (require.main === module || (process.argv[1] && require('path').resolve(process.argv[1]) === __filename)) {
+function isCliEntrypoint(argv = process.argv) {
+  return Boolean(argv[1]) && path.resolve(argv[1]) === path.resolve(__filename);
+}
+
+if (isCliEntrypoint()) {
   main();
 }
 
-module.exports = { evaluate, GOLDEN };
+module.exports = { evaluate, GOLDEN, isCliEntrypoint };

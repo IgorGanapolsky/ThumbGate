@@ -9,6 +9,7 @@ const {
   computeRankDelta,
   scorePair,
 } = require('../scripts/rerank-pipeline');
+const { isCliEntrypoint } = require('../scripts/rerank-quality-eval');
 
 const FORCE_LESSON = {
   id: 'lesson-force',
@@ -39,6 +40,12 @@ const WEATHER = {
 describe('A+ rerank pipeline', () => {
   it('exports a pinned pipeline version', () => {
     assert.match(PIPELINE_VERSION, /^2026-07-31/);
+  });
+
+  it('detects rerank evaluation CLI execution by resolved path', () => {
+    assert.equal(isCliEntrypoint(['node', require.resolve('../scripts/rerank-quality-eval')]), true);
+    assert.equal(isCliEntrypoint(['node', __filename]), false);
+    assert.equal(isCliEntrypoint(['node']), false);
   });
 
   it('sync path runs BM25 + MaxSim + heuristic CE fusion', () => {

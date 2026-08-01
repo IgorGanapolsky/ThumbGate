@@ -9,7 +9,11 @@ const {
   scoreGenerationCase,
   evaluateGenerationGolden,
 } = require('../scripts/ragas-style-metrics');
-const { loadGenerationGolden, runSuite } = require('../scripts/eval-quality-suite');
+const {
+  loadGenerationGolden,
+  runSuite,
+  isCliEntrypoint,
+} = require('../scripts/eval-quality-suite');
 
 describe('offline Ragas-style metrics', () => {
   it('scores grounded force-push answer high on faithfulness', () => {
@@ -68,5 +72,11 @@ describe('eval quality suite', () => {
     assert.equal(report.grades.overall, 'A+');
     assert.ok(report.ranking.queryCount >= 18);
     assert.ok(report.generation.caseCount >= 8);
+  });
+
+  it('detects direct CLI execution without treating imports as entrypoints', () => {
+    assert.equal(isCliEntrypoint(['node', require.resolve('../scripts/eval-quality-suite')]), true);
+    assert.equal(isCliEntrypoint(['node', __filename]), false);
+    assert.equal(isCliEntrypoint(['node']), false);
   });
 });

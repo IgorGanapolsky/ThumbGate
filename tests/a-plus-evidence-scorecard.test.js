@@ -6,6 +6,7 @@ const {
   collectRepositoryEvidence,
   evaluateReadiness,
   formatMarkdown,
+  isCliEntrypoint,
 } = require('../scripts/a-plus-evidence-scorecard');
 
 function allRepositoryEvidence() {
@@ -83,4 +84,10 @@ test('current repository evidence is collected and rendered', () => {
   const markdown = formatMarkdown(evaluateReadiness({ repo }));
   assert.match(markdown, /Target verified: \*\*NO\*\*/);
   assert.match(markdown, /Remaining evidence blockers/);
+});
+
+test('CLI entrypoint detection is path-based and import-safe', () => {
+  assert.equal(isCliEntrypoint(['node', require.resolve('../scripts/a-plus-evidence-scorecard')]), true);
+  assert.equal(isCliEntrypoint(['node', __filename]), false);
+  assert.equal(isCliEntrypoint(['node']), false);
 });

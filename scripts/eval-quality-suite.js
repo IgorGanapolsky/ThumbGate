@@ -184,8 +184,11 @@ function main() {
   process.exit(report.passed ? 0 : 1);
 }
 
-if (require.main === module
-  || (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename))) {
+function isCliEntrypoint(argv = process.argv) {
+  return Boolean(argv[1]) && path.resolve(argv[1]) === path.resolve(__filename);
+}
+
+if (isCliEntrypoint()) {
   main();
 }
 
@@ -197,4 +200,5 @@ module.exports = {
   GEN_GOLDEN,
   REPORT_MD,
   REPORT_JSON,
+  isCliEntrypoint,
 };
