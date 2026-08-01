@@ -314,6 +314,31 @@ test('same-basename projects resolve to isolated local feedback stores', () => {
   }
 });
 
+test('existing local and global lesson stores remain selected during upgrade', () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-home-'));
+  const localProject = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-local-legacy-'));
+  const globalProject = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-global-legacy-'));
+  const localLegacy = path.join(localProject, '.claude', 'memory', 'feedback');
+  const globalLegacy = path.join(homeDir, '.thumbgate', 'projects', path.basename(globalProject));
+  const { resolveFeedbackDir } = require('../scripts/feedback-paths');
+  try {
+    fs.mkdirSync(localLegacy, { recursive: true });
+    fs.mkdirSync(globalLegacy, { recursive: true });
+    assert.equal(resolveFeedbackDir({
+      cwd: localProject,
+      env: { HOME: homeDir, USERPROFILE: homeDir, THUMBGATE_PROJECT_DIR: localProject },
+    }), localLegacy);
+    assert.equal(resolveFeedbackDir({
+      cwd: globalProject,
+      env: { HOME: homeDir, USERPROFILE: homeDir, THUMBGATE_PROJECT_DIR: globalProject },
+    }), globalLegacy);
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+    fs.rmSync(localProject, { recursive: true, force: true });
+    fs.rmSync(globalProject, { recursive: true, force: true });
+  }
+});
+
 test('explicit feedback directory wins even when a project directory is inherited', () => {
   const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-project-'));
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-explicit-feedback-'));

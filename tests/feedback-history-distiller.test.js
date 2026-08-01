@@ -215,7 +215,6 @@ test('getConversationPaths honors environment overrides and keeps a stable proje
   process.chdir(cwd);
   const expectedFeedbackDir = path.join(fs.realpathSync(cwd), '.thumbgate');
   assert.equal(getConversationPaths().feedbackDir, expectedFeedbackDir);
-  fs.mkdirSync(path.join(cwd, '.claude', 'memory', 'feedback'), { recursive: true });
   assert.equal(getConversationPaths().feedbackDir, expectedFeedbackDir);
   process.chdir(prevCwd);
 

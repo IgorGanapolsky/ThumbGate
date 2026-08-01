@@ -220,11 +220,7 @@ function resolveFeedbackDir(options = {}) {
   if (explicit) return explicit;
 
   const localThumbgate = getThumbgateFeedbackDir(options);
-  const projectDir = resolveProjectDir(options);
-  // A real project always owns one stable local store. Directory existence is
-  // not a routing signal: using it caused a project to start in a basename-only
-  // global store and then silently switch roots after `.thumbgate` was created.
-  if (!isTransientProjectDir(projectDir, options)) return localThumbgate;
+  if (dirExists(localThumbgate)) return localThumbgate;
 
   const localFallback = getFallbackFeedbackDir(options);
   if (dirExists(localFallback)) return localFallback;
@@ -232,7 +228,19 @@ function resolveFeedbackDir(options = {}) {
   const localLegacy = getLegacyFeedbackDir(options);
   if (dirExists(localLegacy)) return localLegacy;
 
-  return getGlobalFeedbackDir(options);
+  // Existing installations may only have the pre-1.31 basename-scoped store.
+  // Preserve that corpus instead of silently switching to an empty directory.
+  // New projects never create this legacy global shape, so same-basename
+  // projects remain isolated going forward.
+  const globalLegacy = getGlobalFeedbackDir(options);
+  if (dirExists(globalLegacy)) return globalLegacy;
+
+  const projectDir = resolveProjectDir(options);
+  // New real projects select their collision-free local store before it is
+  // created, preventing the old first-write flip from global to local.
+  if (!isTransientProjectDir(projectDir, options)) return localThumbgate;
+
+  return globalLegacy;
 }
 
 function getFeedbackPaths(options = {}) {

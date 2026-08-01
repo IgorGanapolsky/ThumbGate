@@ -386,6 +386,49 @@ test('statusline resolves project feedback from Claude cwd instead of the runtim
   }
 });
 
+test('statusline starts a new project in the collision-free local store', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-new-project-'));
+  const homeDir = path.join(tmpDir, 'home');
+  const projectDir = path.join(tmpDir, 'project-delta');
+  fs.mkdirSync(homeDir, { recursive: true });
+  fs.mkdirSync(projectDir, { recursive: true });
+  const env = {
+    ...process.env,
+    HOME: homeDir,
+    USERPROFILE: homeDir,
+    PATH: SAFE_SYSTEM_PATH,
+    PWD: projectDir,
+  };
+  delete env.THUMBGATE_FEEDBACK_DIR;
+  delete env.THUMBGATE_PROJECT_DIR;
+  delete env.CLAUDE_PROJECT_DIR;
+
+  try {
+    execFileSync('bash', [STATUSLINE_PATH], {
+      cwd: projectDir,
+      encoding: 'utf8',
+      input: JSON.stringify({
+        cwd: projectDir,
+        context_window: { used_percentage: 1 },
+      }),
+      env,
+      timeout: 5000,
+    });
+
+    assert.ok(
+      fs.existsSync(path.join(projectDir, '.thumbgate', 'statusline_cache.json')),
+      'new project status must use the local ThumbGate store',
+    );
+    assert.equal(
+      fs.existsSync(path.join(projectDir, '.claude', 'memory', 'feedback')),
+      false,
+      'statusline must not create the retired split store for new projects',
+    );
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test('statusline shows Pro when a valid ThumbGate license is present', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-statusline-license-'));
   const homeDir = path.join(tmpDir, 'home');
