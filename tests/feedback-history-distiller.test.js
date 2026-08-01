@@ -197,7 +197,7 @@ test('distillFeedbackHistory can reuse related feedback context when follow-up a
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-test('getConversationPaths honors feedback-dir environment overrides and cwd fallbacks', () => {
+test('getConversationPaths honors environment overrides and keeps a stable project-local store', () => {
   const tmpDir = makeTmpDir();
   const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const savedRailwayDir = process.env.RAILWAY_VOLUME_MOUNT_PATH;
@@ -211,16 +211,12 @@ test('getConversationPaths honors feedback-dir environment overrides and cwd fal
 
   delete process.env.RAILWAY_VOLUME_MOUNT_PATH;
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-history-cwd-'));
-  fs.mkdirSync(path.join(cwd, '.thumbgate'), { recursive: true });
   const prevCwd = process.cwd();
   process.chdir(cwd);
-  assert.equal(fs.realpathSync(getConversationPaths().feedbackDir), fs.realpathSync(path.join(cwd, '.thumbgate')));
-  fs.rmSync(path.join(cwd, '.thumbgate'), { recursive: true, force: true });
+  const expectedFeedbackDir = path.join(fs.realpathSync(cwd), '.thumbgate');
+  assert.equal(getConversationPaths().feedbackDir, expectedFeedbackDir);
   fs.mkdirSync(path.join(cwd, '.claude', 'memory', 'feedback'), { recursive: true });
-  assert.equal(
-    fs.realpathSync(getConversationPaths().feedbackDir),
-    fs.realpathSync(path.join(cwd, '.claude', 'memory', 'feedback'))
-  );
+  assert.equal(getConversationPaths().feedbackDir, expectedFeedbackDir);
   process.chdir(prevCwd);
 
   if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
@@ -232,7 +228,7 @@ test('getConversationPaths honors feedback-dir environment overrides and cwd fal
   fs.rmSync(cwd, { recursive: true, force: true });
 });
 
-test('getConversationPaths falls back to HOME project path when no local dirs exist', () => {
+test('getConversationPaths uses the project-local store when no local dirs exist yet', () => {
   const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const savedRailwayDir = process.env.RAILWAY_VOLUME_MOUNT_PATH;
   const prevCwd = process.cwd();
@@ -242,7 +238,7 @@ test('getConversationPaths falls back to HOME project path when no local dirs ex
   delete process.env.RAILWAY_VOLUME_MOUNT_PATH;
   process.chdir(cwd);
 
-  const expected = path.join(process.env.HOME || process.env.USERPROFILE || '', '.thumbgate', 'projects', path.basename(cwd));
+  const expected = path.join(fs.realpathSync(cwd), '.thumbgate');
   assert.equal(getConversationPaths().feedbackDir, expected);
 
   process.chdir(prevCwd);
