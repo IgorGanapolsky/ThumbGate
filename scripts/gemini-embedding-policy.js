@@ -190,6 +190,7 @@ module.exports = {
   GEMINI_TASK_TYPES,
   buildGeminiEmbeddingRolloutPlan,
   isSymmetricTask,
+  normalizeEmbeddingKind,
   normalizeOutputDimensionality,
   normalizeTask,
   prepareEmbeddingText,
