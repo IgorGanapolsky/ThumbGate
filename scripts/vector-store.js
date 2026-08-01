@@ -342,6 +342,7 @@ async function embed(text, options = {}) {
           outputDimensionality: vector.length,
           task: options.task || 'code retrieval',
           rationale: 'Local Core AI Apple Silicon accelerated path.',
+          qualityTier: 'production',
         },
         fallbackUsed: false,
       };
@@ -384,6 +385,7 @@ async function embed(text, options = {}) {
           outputDimensionality: geminiConfig.outputDimensionality,
           task: options.task || geminiConfig.defaultTask,
           rationale: 'Managed Gemini Embedding 2 path with task-specific query/document prefixes.',
+          qualityTier: 'production',
         },
         fallbackUsed: false,
       };
@@ -404,6 +406,19 @@ async function embed(text, options = {}) {
         pooling: 'mean',
         normalize: true,
       });
+      // Attach production quality tier so doctor/prove/chat never mislabel MiniLM as degraded.
+      _lastEmbeddingProfile = {
+        ...(profile || {}),
+        generatedAt: new Date().toISOString(),
+        source: profile?.source || 'local-transformers',
+        activeProfile: {
+          ...(profile?.activeProfile || {}),
+          qualityTier: 'production',
+          rationale: profile?.activeProfile?.rationale
+            || 'Local Transformers.js embedding (Xenova/all-MiniLM-L6-v2 by default).',
+        },
+        fallbackUsed: Boolean(profile?.fallbackUsed),
+      };
       return Array.from(output.data); // Float32Array -> plain number[] for LanceDB Arrow serialization
     } catch (transformerError) {
       console.warn(`Transformers.js embedding fallback: ${transformerError.message}`);

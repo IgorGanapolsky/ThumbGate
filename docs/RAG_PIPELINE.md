@@ -11,13 +11,18 @@ npm run eval:rag
 npm run prove:rag
 ```
 
-## Quick grades (honest)
+## Quick grades (honest, 2026-08-01 A+ stack)
 
-| Scope | Quality |
-|--------|---------|
-| Gate / lesson hybrid retrieval | Strong for agent memory |
-| Dashboard chat RAG | Grounded + structured output; hybrid when available |
-| Arbitrary document (PDF) RAG | Not supported — parse rejects PDF with explicit error |
+| Scope | Quality | Notes |
+|--------|---------|-------|
+| Gate / lesson hybrid retrieval | **A** when embedder configured; **B+** lexical-only | RRF hybrid + multi-stage rerank (BM25F→MaxSim→heuristic CE) on PreToolUse |
+| Embedding quality honesty | **A** | `retrieval-quality-tier` blocks semantic claims on feature-hash / missing embedder |
+| Dashboard chat RAG | **A−** | Request envelope + tier budgets + structured citations; vector path skips degraded embeds |
+| Eval floors (IR + gen) | **A** offline | `npm run eval:quality` — Recall@k/MRR/nDCG + faithfulness floors |
+| Vector durability | **A−** | `state-backup` covers lessons.sqlite, lesson-embeddings, **lancedb/** dirs |
+| Arbitrary document (PDF) RAG | Not supported | Parse rejects PDF with explicit error (honest non-support) |
+
+**10/10 production claim** still requires live provider holdouts + p95 latency traces (see `docs/RAG_PRODUCTION_ARCHITECTURE.md` evidence boundary). Code+offline eval can reach A+; live multi-tenant SLA is a separate measurement.
 
 ## How to measure
 

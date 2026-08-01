@@ -193,7 +193,7 @@ Concrete thumbs-up/down feedback can be captured through the MCP protocol, CLI, 
 ### Layer 2: Check Engine
 The check engine can promote qualifying recurring lessons into rules. **The runtime gate decision is deterministic** — literal pattern match → AST match → scoped rule lookup. No LLM call runs on the enforcement path.
 
-Where retrieval is needed (an agent is about to run a destructive command not on the literal block list, but semantically similar to a prior rule), ThumbGate uses local CPU-only `bge-small` embeddings via LanceDB's built-in pipeline. That path makes no external inference API call. So **"no LLM in enforcement"** holds: the gate decision uses no LLM; the rule corpus is searchable via local embeddings.
+Where retrieval is needed (an agent is about to run a destructive command not on the literal block list, but semantically similar to a prior rule), ThumbGate uses a **hybrid path**: SQLite+FTS5 / BM25 lexical first, then optional dense embeddings when a real provider is configured (Ollama, Gemini Embedding 2, Core AI, or local Transformers.js defaulting to `Xenova/all-MiniLM-L6-v2`). Dense vectors live in LanceDB (feedback) and a lesson-embedding cache. When no semantic embedder is available, retrieval stays lexical and is labeled `qualityTier=degraded` — never marketed as semantic search. The gate decision itself uses no LLM.
 
 **Thompson Sampling tunes per-rule confidence weights** for soft-gating rules so high-noise rules quiet down and high-signal rules sharpen. It does not decide whether a hard pattern matches. A force-push pattern match is deterministic, while the public runtime warns by default and denies the matching action under strict enforcement.
 
@@ -284,7 +284,7 @@ ThumbGate's latency advantage is structural, not a tuned cloud cluster: there is
 flowchart LR
     A["Agent about to run<br/>a tool call"] --> B{"Literal / AST match<br/>on an active rule?"}
     B -- "exact match" --> D["Deterministic gate decision<br/>(no model, on-device)"]
-    B -- "no exact match, but<br/>semantically near a<br/>blocked pattern" --> C["Local CPU embeddings<br/>bge-small via LanceDB<br/>(no external API)"]
+    B -- "no exact match, but<br/>semantically near a<br/>blocked pattern" --> C["Optional dense embeddings<br/>(Ollama / Gemini / MiniLM)<br/>+ LanceDB when configured"]
     C --> D
     D -- "secret exfil / self-protect" --> E["⛔ Hard-block before execution"]
     D -- "other known-bad" --> G["⚠️ Warn + log<br/>(hard-block under strict)"]
@@ -292,7 +292,7 @@ flowchart LR
 ```
 
 - **Deterministic first.** Most decisions are a local literal or AST pattern match against active rules and do not require embeddings.
-- **Local semantic fallback.** When an action isn't on the literal block list but is semantically near one you've blocked before, ThumbGate searches the rule corpus with CPU-only `bge-small` embeddings via LanceDB — still local, still no external API call.
+- **Optional dense semantic fallback.** When an action isn't on the literal block list but is near a prior lesson, hybrid retrieval fuses lexical + dense ranks (RRF) and multi-stage rerank (BM25F → MaxSim → heuristic pair CE). Dense requires a configured embedder; otherwise the system stays lexical and reports degraded quality honestly.
 - **No LLM on the enforcement path.** The gate never calls a model to decide allow, warn, or deny. Thompson Sampling only tunes soft-rule confidence weights; hard-pattern matching remains deterministic, and the enforcement posture determines whether a match warns or denies (see Layer 2).
 
 The enforcement decision is local: there is no cloud retrieval or model-inference hop on that path. Measure end-to-end latency in your own agent and machine configuration.

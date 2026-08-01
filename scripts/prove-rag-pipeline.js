@@ -11,6 +11,8 @@ const path = require('node:path');
 const { STAGES, formatStageContractsMarkdown } = require('./rag-stage-contracts');
 const { runRagEval } = require('./eval-rag');
 const { ensureDir } = require('./fs-utils');
+const { probeEmbeddingQuality } = require('./retrieval-quality-tier');
+const { PIPELINE_VERSION: RERANK_PIPELINE_VERSION } = require('./rerank-pipeline');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -82,6 +84,53 @@ async function proveRagPipeline(options = {}) {
     });
   }
 
+  // Honesty probe: semantic claims require a production embedder. This check
+  // never fails the proof when degraded — it records quality so marketing and
+  // operators cannot claim LanceDB "semantic search" on feature-hash installs.
+  const quality = probeEmbeddingQuality();
+  checks.push({
+    id: 'embedding_quality_tier',
+    name: 'Embedding quality tier (honesty)',
+    status: 'pass',
+    qualityTier: quality.qualityTier,
+    semanticClaimsAllowed: quality.semanticClaimsAllowed,
+    degradedReasons: quality.degradedReasons,
+    note: quality.semanticClaimsAllowed
+      ? 'Production semantic embeddings available'
+      : 'Semantic claims disallowed until Ollama/Gemini/Transformers is configured',
+  });
+
+  checks.push({
+    id: 'rerank_pipeline',
+    name: 'A+ multi-stage rerank pipeline wired',
+    status: RERANK_PIPELINE_VERSION ? 'pass' : 'fail',
+    pipelineVersion: RERANK_PIPELINE_VERSION,
+  });
+
+  // Optional unified quality suite (IR + offline generation) when present.
+  try {
+    const { runSuite } = require('./eval-quality-suite');
+    const { report: qualityReport } = runSuite({
+      rankingGoldenPath: options.rankingGoldenPath,
+    });
+    checks.push({
+      id: 'eval_quality_suite',
+      name: 'Unified IR + generation quality suite',
+      status: qualityReport.passed ? 'pass' : 'fail',
+      suiteVersion: qualityReport.suiteVersion,
+      failures: qualityReport.failures || [],
+      ranking: qualityReport.ranking?.summary,
+      generation: qualityReport.generation?.summary,
+    });
+  } catch (err) {
+    checks.push({
+      id: 'eval_quality_suite',
+      name: 'Unified IR + generation quality suite',
+      status: 'fail',
+      failures: [`eval-quality-suite unavailable: ${err.message}`],
+    });
+  }
+
   const failed = checks.filter((c) => c.status === 'fail');
   const report = {
     generatedAt: new Date().toISOString(),
@@ -90,6 +139,8 @@ async function proveRagPipeline(options = {}) {
     checks,
     evalSummary: evalOut.summary,
     stageMetrics: evalOut.stageMetrics,
+    embeddingQuality: quality,
+    rerankPipelineVersion: RERANK_PIPELINE_VERSION,
   };
 
   ensureDir(PROOF_DIR);

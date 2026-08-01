@@ -263,7 +263,18 @@ function rerankLessons(query, candidates, options = {}) {
       }
     }
 
-    return { ...candidate, rerankedScore: Number(finalScore.toFixed(6)) };
+    // Entity channel: tags / title tokens / category boost paraphrased matches
+    // that pure BM25 under-weights (e.g. "force-push" tag vs "force push" query).
+    const entityScore = entityOverlapScore(queryTerms, candidate);
+    if (entityScore > 0) {
+      finalScore *= 1 + 0.15 * entityScore;
+    }
+
+    return {
+      ...candidate,
+      rerankedScore: Number(finalScore.toFixed(6)),
+      entityScore: Number(entityScore.toFixed(4)),
+    };
   });
 
   return reranked
@@ -271,4 +282,34 @@ function rerankLessons(query, candidates, options = {}) {
     .slice(0, topK);
 }
 
-module.exports = { rerankLessons, fieldWeightedBM25, tokenize, expandTerms };
+/**
+ * Overlap between expanded query terms and lesson entity-like fields.
+ * Returns 0..1. Keeps the "entity channel" alive when tags/titles exist.
+ */
+function entityOverlapScore(queryTerms, candidate) {
+  const entityBag = new Set();
+  const tags = candidate.tags || candidate.metadata?.tags || [];
+  if (Array.isArray(tags)) {
+    for (const t of tags) tokenize(String(t)).forEach((w) => entityBag.add(w));
+  }
+  for (const w of tokenize(getField(candidate, 'title') || candidate.title || '')) {
+    if (w.length >= 4) entityBag.add(w);
+  }
+  tokenize(getField(candidate, 'category') || candidate.category || '').forEach((w) => entityBag.add(w));
+  if (entityBag.size === 0) return 0;
+
+  let hits = 0;
+  for (const term of queryTerms) {
+    if (entityBag.has(term)) hits += 1;
+  }
+  if (hits === 0) return 0;
+  return Math.min(1, hits / Math.max(1, Math.min(queryTerms.length, 8)));
+}
+
+module.exports = {
+  rerankLessons,
+  fieldWeightedBM25,
+  tokenize,
+  expandTerms,
+  entityOverlapScore,
+};

@@ -120,13 +120,27 @@ function retrieveLessonContext(question, opts = {}) {
 async function retrieveVectorContext(question, opts = {}) {
   if (opts.useVectorSearch === false) return [];
   try {
+    const { probeEmbeddingQuality } = require(path.join(__dirname, 'retrieval-quality-tier'));
+    const quality = probeEmbeddingQuality();
+    // Never run "semantic" vector search when the embedder is degraded/unavailable —
+    // feature-hash vectors would look like retrieval while ranking nonsense.
+    if (!quality.semanticClaimsAllowed && opts.allowDegradedVector !== true) {
+      debugChatFallback(
+        'vector retrieval skipped',
+        new Error(`quality_tier=${quality.qualityTier}; ${quality.degradedReasons.join(',')}`),
+      );
+      return [];
+    }
     const vectorStore = require(path.join(__dirname, 'vector-store'));
     const vecResults = vectorStore.searchSimilar
       ? await vectorStore.searchSimilar(String(question || ''), opts.vectorLimit || 4)
       : [];
     return vecResults
       .filter((match) => match?.text)
-      .map(vectorMatchToContextItem);
+      .map((match) => ({
+        ...vectorMatchToContextItem(match),
+        qualityTier: quality.qualityTier,
+      }));
   } catch (err) {
     debugChatFallback('vector retrieval failed', err);
     return [];
@@ -346,23 +360,63 @@ function attachStructured(result, sources) {
 }
 
 // Answer a question grounded in this install's lessons. Returns
-// { ok, answer, sources, model, structured? } or { ok:false, error, ... }.
+// { ok, answer, sources, model, structured?, envelope? } or { ok:false, error, ... }.
 async function answerDataQuestion(question, opts = {}) {
+  const {
+    createRequestEnvelope,
+    finalizeRequestEnvelope,
+    summarizeRetrieval,
+    estimateTokensFromText,
+    estimateCostCents,
+  } = require('./request-envelope');
+  const { probeEmbeddingQuality } = require('./retrieval-quality-tier');
+  const { classifyTask } = require('./model-tier-router');
+  const {
+    enforceTierBudgets,
+    recordFrontierInvocation,
+  } = require('./tier-budget-guard');
+
   const q = String(question || '').trim();
-  if (!q) return { ok: false, error: 'empty_question', message: 'Ask a question about your data.' };
+  const envelope = createRequestEnvelope({
+    surface: 'dashboard_chat',
+    startedAt: Date.now(),
+  });
+
+  if (!q) {
+    return {
+      ok: false,
+      error: 'empty_question',
+      message: 'Ask a question about your data.',
+      envelope: finalizeRequestEnvelope(envelope, { outcome: 'error', error: 'empty_question' }),
+    };
+  }
   if (q.length > MAX_QUESTION_CHARS) {
-    return { ok: false, error: 'question_too_long', message: `Question exceeds ${MAX_QUESTION_CHARS} characters.` };
+    return {
+      ok: false,
+      error: 'question_too_long',
+      message: `Question exceeds ${MAX_QUESTION_CHARS} characters.`,
+      envelope: finalizeRequestEnvelope(envelope, { outcome: 'error', error: 'question_too_long' }),
+    };
   }
 
   const localEndpoint = opts.localEndpoint || process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || '';
   const localModel = opts.localModel || process.env.THUMBGATE_LOCAL_LLM_MODEL || 'llama3';
   const apiKey = resolveApiKey(opts);
+  const quality = typeof opts.qualityTier === 'object' && opts.qualityTier
+    ? opts.qualityTier
+    : probeEmbeddingQuality({ indexUpdatedAtMs: opts.indexUpdatedAtMs ?? null });
+
   const lessons = await retrieveContext(q, opts);
   const sources = lessons.map((l, i) => ({
     id: l.id || `lesson-${i + 1}`,
     title: l.title,
     signal: l.signal,
   }));
+  const retrievalSummary = summarizeRetrieval(lessons, {
+    strategy: 'dashboard_hybrid',
+    qualityTier: quality.qualityTier,
+    degradedReasons: quality.degradedReasons,
+  });
 
   if (!apiKey && !localEndpoint) {
     return {
@@ -370,6 +424,56 @@ async function answerDataQuestion(question, opts = {}) {
       error: 'no_api_key',
       message: 'Chat is not configured. Set a valid GEMINI_API_KEY, PERPLEXITY_API_KEY, or THUMBGATE_LOCAL_LLM_ENDPOINT in the project .env.',
       sources,
+      qualityTier: quality.qualityTier,
+      semanticClaimsAllowed: quality.semanticClaimsAllowed,
+      envelope: finalizeRequestEnvelope(envelope, {
+        outcome: 'error',
+        error: 'no_api_key',
+        retrieval: retrievalSummary,
+        qualityTier: quality.qualityTier,
+      }),
+    };
+  }
+
+  const classification = classifyTask({
+    type: opts.taskType || 'review',
+    contextTokens: estimateTokensFromText(q) + lessons.length * 200,
+    riskLevel: opts.riskLevel || 'low',
+    tags: opts.tags || [],
+  });
+  const budgetDecision = enforceTierBudgets(
+    {
+      type: opts.taskType || 'review',
+      contextTokens: classification.contextTokens,
+      riskLevel: opts.riskLevel || 'low',
+      tags: opts.tags || [],
+      reason: 'dashboard_chat',
+      expectedLatencyMs: opts.expectedLatencyMs,
+    },
+    {
+      classification,
+      frontierBudget: opts.frontierBudget || null,
+      estimatedTokens: estimateTokensFromText(q) + 2500,
+    },
+  );
+
+  if (!budgetDecision.allowed) {
+    return {
+      ok: false,
+      error: 'budget_exceeded',
+      message: `Request denied by cost/latency budget: ${budgetDecision.reasons.join('; ')}`,
+      sources,
+      qualityTier: quality.qualityTier,
+      semanticClaimsAllowed: quality.semanticClaimsAllowed,
+      envelope: finalizeRequestEnvelope(envelope, {
+        outcome: 'denied',
+        error: 'budget_exceeded',
+        tier: budgetDecision.tier,
+        budget: budgetDecision,
+        retrieval: retrievalSummary,
+        qualityTier: quality.qualityTier,
+        estimatedCostCents: budgetDecision.estimatedCostCents,
+      }),
     };
   }
 
@@ -378,6 +482,7 @@ async function answerDataQuestion(question, opts = {}) {
   const prompt = buildChatPrompt(q, lessons, metrics, { structured: opts.structured !== false });
   const fetchImpl = opts.fetch || globalThis.fetch;
   const isPerplexity = apiKey && (apiKey.startsWith('pplx-') || apiKey.includes('perplexity'));
+  const inputTokens = estimateTokensFromText(prompt);
 
   try {
     let result;
@@ -390,10 +495,49 @@ async function answerDataQuestion(question, opts = {}) {
     } else {
       result = await callGeminiEndpoint({ apiKey, model, prompt, fetchImpl, sources });
     }
-    return attachStructured(result, sources);
+    const structured = attachStructured(result, sources);
+    const outputTokens = estimateTokensFromText(structured.answer || '');
+    if (budgetDecision.tier === 'frontier') {
+      recordFrontierInvocation();
+    }
+    return {
+      ...structured,
+      qualityTier: quality.qualityTier,
+      semanticClaimsAllowed: quality.semanticClaimsAllowed,
+      envelope: finalizeRequestEnvelope(envelope, {
+        outcome: structured.ok ? 'ok' : 'error',
+        error: structured.ok ? null : structured.error,
+        model: structured.model || model,
+        tier: budgetDecision.tier,
+        provider: localEndpoint ? 'local' : (isPerplexity ? 'perplexity' : 'gemini'),
+        inputTokens,
+        outputTokens,
+        estimatedCostCents: estimateCostCents({ inputTokens, outputTokens }),
+        budget: budgetDecision,
+        retrieval: retrievalSummary,
+        qualityTier: quality.qualityTier,
+        structured: {
+          valid: structured.structuredValid,
+          mode: structured.structuredMode,
+        },
+      }),
+    };
   } catch (err) {
     const safeMessage = (err && err.message) ? String(err.message).split('\n')[0].slice(0, 100) : 'An unexpected error occurred.';
-    return { ok: false, error: 'network', message: safeMessage, sources };
+    return {
+      ok: false,
+      error: 'network',
+      message: safeMessage,
+      sources,
+      qualityTier: quality.qualityTier,
+      semanticClaimsAllowed: quality.semanticClaimsAllowed,
+      envelope: finalizeRequestEnvelope(envelope, {
+        outcome: 'error',
+        error: 'network',
+        retrieval: retrievalSummary,
+        qualityTier: quality.qualityTier,
+      }),
+    };
   }
 }
 

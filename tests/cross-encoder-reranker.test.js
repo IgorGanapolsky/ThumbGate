@@ -159,12 +159,16 @@ describe('retrieveWithRerankingSync', () => {
     }
 
     // Heuristic fallback must never masquerade as a neural cross-encoder.
+    // A+ sync pipeline also runs ColBERT-style MaxSim (late-interaction) by default.
     for (const r of results) {
       assert.ok(typeof r.pairwiseHeuristicScore === 'number');
       assert.equal(r.crossEncoderScore, null);
       assert.ok('combinedScore' in r, 'Missing combinedScore');
       assert.ok(r.combinedScore >= 0 && r.combinedScore <= 1, `combinedScore out of range: ${r.combinedScore}`);
-      assert.deepEqual(r.reranker.stages, ['first-stage', 'pairwise-heuristic']);
+      assert.ok(r.reranker.stages.includes('first-stage'));
+      assert.ok(r.reranker.stages.includes('pairwise-heuristic'));
+      assert.ok(!r.reranker.stages.includes('neural-cross-encoder'));
+      assert.ok(!r.reranker.stages.includes('llm-listwise'));
     }
 
     fs.rmSync(tmpDir, { recursive: true, force: true });

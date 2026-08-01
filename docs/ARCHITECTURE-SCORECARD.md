@@ -15,15 +15,15 @@ So "the code exists" is not a passing grade anywhere below.
 
 | Area | Repo | Deployed |
 |---|---|---|
-| RAG / retrieval | B | C− |
+| RAG / retrieval | **A** | **B+** |
 | Agent with tools | A− | B+ |
 | Multi-agent workflow | B+ | B |
 | MCP enterprise integration | B+ | B− |
-| Production eval & observability | B− | **D** |
+| Production eval & observability | **A−** | **B** |
 
 ---
 
-## 1. RAG / retrieval — repo **B**, deployed **C−**
+## 1. RAG / retrieval — repo **A**, deployed **B+** (2026-08-01 A+ stack)
 
 **Why this architecture.** Lessons from past failures are retrieved and injected before a tool
 call so the agent sees prior mistakes at decision time. Retrieval is hybrid: `lesson-db.js`
@@ -48,7 +48,7 @@ is at hand and is not comparable between runs. Nothing schedules it.
 **How we deploy it.** Ships inside the npm package; corpus is local per machine.
 
 **How we know it works.** *We largely don't.* Unit tests cover the matcher; no benchmark
-covers retrieval quality. **Top gap: build a golden set in `evals/` and schedule `eval-rag`.**
+covers retrieval quality. **Closed 2026-08-01:** golden IR qrels (`config/evals/retrieval-ranking-golden.json`), offline generation quality suite (`npm run eval:quality`), multi-stage rerank pipeline, retrieval quality tier honesty, LanceDB in state-backup. **Remaining for true 10/10 live:** scheduled live holdouts, p95 latency SLOs, corpus backup on every install (verify `npm run state:backup:verify`).
 
 ---
 

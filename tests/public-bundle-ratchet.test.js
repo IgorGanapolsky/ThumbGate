@@ -155,7 +155,10 @@ const path = require('node:path');
 // 401 -> 405 (2026-07-31): keep lockstep with package-boundary / public-core-boundary.
 // CI pack measured 403 during secret-exfil coverage PR; headroom for security/runtime
 // scripts already on the enforcement path (no intentional new private-Core surface).
-const BASELINE_FILE_COUNT = 405;
+// 2026-08-01: A+ RAG stack added colbert-style MaxSim, rerank pipeline,
+// quality-tier honesty, request envelope, tier budgets, and eval suite modules
+// (+ generation-quality golden + docs). Ceiling raised 405 → 420 with headroom.
+const BASELINE_FILE_COUNT = 420;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

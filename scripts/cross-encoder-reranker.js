@@ -394,8 +394,72 @@ async function retrieveWithReranking(toolName, actionContext, options = {}) {
   if (candidates.length === 0) return [];
 
   const query = `${toolName || ''} ${actionContext || ''}`.trim();
+
+  // Pipeline path for default hybrid quality; legacy cascade when LLM/neural opts set.
+  const preferPipeline = options.useRerankPipeline !== false
+    && options.useLLM !== true
+    && typeof options.pairScorer !== 'function'
+    && typeof options.tokenEmbedder !== 'function';
+  if (preferPipeline) {
+    try {
+      const { rerankPipeline } = require('./rerank-pipeline');
+      const { results } = await rerankPipeline(query, candidates, {
+        topK: maxResults,
+        toolName,
+        useLLM: false,
+        useMaxSim: options.useMaxSim !== false,
+        useHeuristicCe: options.useHeuristicCe !== false,
+        bm25Pool: options.bm25Pool,
+        llmShortlist: options.llmShortlist,
+      });
+      if (Array.isArray(results) && results.length > 0) {
+        return results.map((row) => normalizePipelineResult(row, { llmRequested: false }));
+      }
+    } catch {
+      // fall through to legacy cascade
+    }
+  }
+
   const reranked = await rerankCandidatePool(query, candidates, options);
   return reranked.slice(0, maxResults);
+}
+
+/**
+ * Map A+ pipeline fields onto the legacy cross-encoder result contract so
+ * callers and tests that inspect pairwiseHeuristicScore keep working.
+ */
+function normalizePipelineResult(row, { llmRequested = false } = {}) {
+  const heuristic = Number(row.heuristicCeScore ?? row.pairwiseHeuristicScore ?? 0);
+  const hasRealLlm = llmRequested && row.llmScore != null;
+  const hasNeural = row.neuralCrossEncoderScore != null;
+  const hasMaxSim = Number(row.maxSimScore || 0) > 0;
+  // Keep the public contract compatible with combineScores(): stages list is
+  // what tests and telemetry inspect. Pipeline fusion still ran MaxSim internally;
+  // we only expose stages that map to the shared score fields.
+  const stages = ['first-stage', 'pairwise-heuristic'];
+  if (hasMaxSim) stages.push('late-interaction');
+  if (hasNeural) stages.push('neural-cross-encoder');
+  if (hasRealLlm) stages.push('llm-listwise');
+
+  const combined = Number(row.fusedScore ?? row.combinedScore ?? row.rerankedScore ?? heuristic);
+  return {
+    ...row,
+    pairwiseHeuristicScore: heuristic,
+    lateInteractionScore: hasMaxSim ? Number(row.maxSimScore) : null,
+    // Honest labeling: never put a heuristic score in crossEncoderScore —
+    // that field is reserved for neural stages (null when only heuristic ran).
+    crossEncoderScore: hasNeural ? Number(row.neuralCrossEncoderScore) : null,
+    llmRerankScore: hasRealLlm ? Number(row.llmScore) : null,
+    combinedScore: Number(Math.max(0, Math.min(1, combined)).toFixed(6)),
+    reranker: {
+      stages,
+      fallbacks: [],
+      elapsedMs: row.rerankElapsedMs ?? 0,
+      pipeline: 'rerank-pipeline',
+      pipelineVersion: row.rerankPipelineVersion || null,
+      llm: null,
+    },
+  };
 }
 
 function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
@@ -417,6 +481,32 @@ function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
   if (candidates.length === 0) return [];
 
   const query = `${toolName || ''} ${actionContext || ''}`.trim();
+
+  // A+ multi-stage fusion (BM25F → ColBERT-style MaxSim → heuristic pair CE).
+  // Prefer the dedicated pipeline when present; fall back to heuristic-only.
+  // Skip when callers request explicit neural/LLM stages — those use the legacy cascade.
+  const preferPipeline = options.useRerankPipeline !== false
+    && options.useLLM !== true
+    && typeof options.pairScorer !== 'function'
+    && typeof options.tokenEmbedder !== 'function';
+  if (preferPipeline) {
+    try {
+      const { rerankPipelineSync } = require('./rerank-pipeline');
+      const { results } = rerankPipelineSync(query, candidates, {
+        topK: maxResults,
+        toolName,
+        useMaxSim: options.useMaxSim !== false,
+        useHeuristicCe: options.useHeuristicCe !== false,
+        bm25Pool: options.bm25Pool,
+      });
+      if (Array.isArray(results) && results.length > 0) {
+        return results.map((row) => normalizePipelineResult(row, { llmRequested: false }));
+      }
+    } catch {
+      // fall through to heuristic-only
+    }
+  }
+
   const heuristic = candidates.map((candidate) => heuristicPairScore(query, candidateText(candidate)));
   return combineScores(candidates, { heuristic }, {
     lateInteraction: false,

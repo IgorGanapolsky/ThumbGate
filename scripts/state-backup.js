@@ -37,6 +37,7 @@ const PRECIOUS = [
   'lessons.sqlite',
   'lessons-index.jsonl',
   'lesson-embeddings.json',
+  'document-chunk-embeddings.json',
   'feedback-log.jsonl',
   'attributed-feedback.jsonl',
   'gate-stats.json',
@@ -54,10 +55,40 @@ const PRECIOUS = [
   'config.json',
   'install-id',
   'gate-canary-baseline.json',
+  // LanceDB is a directory of vector segments; losing it silently forces a full
+  // re-embed of the feedback corpus and can leave chat on a degraded hash path.
+  'lancedb',
 ];
 
 function timestamp(nowMs) {
   return new Date(nowMs).toISOString().replace(/[:.]/g, '-');
+}
+
+function directoryBytes(dir) {
+  let total = 0;
+  const stack = [dir];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    let entries;
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const abs = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(abs);
+        continue;
+      }
+      try {
+        total += fs.statSync(abs).size;
+      } catch {
+        /* skip unreadable */
+      }
+    }
+  }
+  return total;
 }
 
 function listSnapshots() {
@@ -96,8 +127,16 @@ function backup(nowMs) {
     const src = path.join(HOME, name);
     if (!fs.existsSync(src)) continue;
     try {
-      fs.copyFileSync(src, path.join(dest, name));
-      bytes += fs.statSync(src).size;
+      const st = fs.statSync(src);
+      const target = path.join(dest, name);
+      if (st.isDirectory()) {
+        // Node 16.7+: recursive directory copy for LanceDB segments.
+        fs.cpSync(src, target, { recursive: true });
+        bytes += directoryBytes(src);
+      } else {
+        fs.copyFileSync(src, target);
+        bytes += st.size;
+      }
       copied += 1;
     } catch (error) {
       process.stderr.write(`state-backup: could not copy ${name}: ${error.message}\n`);
@@ -151,9 +190,15 @@ function restore(name) {
     return 2;
   }
   let restored = 0;
-  for (const file of fs.readdirSync(src)) {
-    if (file === 'MANIFEST.json') continue;
-    fs.copyFileSync(path.join(src, file), path.join(HOME, file));
+  for (const file of fs.readdirSync(src, { withFileTypes: true })) {
+    if (file.name === 'MANIFEST.json') continue;
+    const from = path.join(src, file.name);
+    const to = path.join(HOME, file.name);
+    if (file.isDirectory()) {
+      fs.cpSync(from, to, { recursive: true });
+    } else {
+      fs.copyFileSync(from, to);
+    }
     restored += 1;
   }
   process.stdout.write(`Restored ${restored} files from ${name} -> ${HOME}\n`);
