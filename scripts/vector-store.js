@@ -296,12 +296,12 @@ async function embedWithOllama(text, options = {}) {
   }
 
   // Apply Nomic-style asymmetric prefixes. nomic-embed-text was trained
-  // with "query:" / "search_document:" role prefixes, which improve
+  // with "search_query:" / "search_document:" role prefixes, which improve
   // query-document matching fidelity on the dense retrieval path.
   const kind = normalizeEmbeddingKind(options.kind);
   let inputText = String(text || '');
   if (kind === 'query') {
-    inputText = `query: ${inputText}`;
+    inputText = `search_query: ${inputText}`;
   } else if (kind === 'document') {
     inputText = `search_document: ${inputText}`;
   }
