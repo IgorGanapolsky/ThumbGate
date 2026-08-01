@@ -71,6 +71,39 @@ describe('request envelope', () => {
 });
 
 describe('retrieval quality tier', () => {
+  it('fails closed when no embedding profile has completed', () => {
+    const q = assessRetrievalQualityTier({
+      embeddingProfile: null,
+      embedderAvailable: true,
+      indexUpdatedAtMs: Date.now(),
+    });
+    assert.equal(q.qualityTier, 'degraded');
+    assert.equal(q.semanticClaimsAllowed, false);
+    assert.ok(q.degradedReasons.includes('embedding_profile_missing'));
+  });
+
+  it('requires explicit index freshness before allowing semantic claims', () => {
+    const q = assessRetrievalQualityTier({
+      embeddingProfile: { id: 'gemini', qualityTier: 'production' },
+      embedderAvailable: true,
+    });
+    assert.equal(q.qualityTier, 'degraded');
+    assert.equal(q.semanticClaimsAllowed, false);
+    assert.ok(q.degradedReasons.includes('index_freshness_unknown'));
+  });
+
+  it('allows semantic claims only with a production profile and fresh index evidence', () => {
+    const now = Date.now();
+    const q = assessRetrievalQualityTier({
+      embeddingProfile: { id: 'gemini', qualityTier: 'production' },
+      embedderAvailable: true,
+      indexUpdatedAtMs: now - 1000,
+      nowMs: now,
+    });
+    assert.equal(q.qualityTier, 'production');
+    assert.equal(q.semanticClaimsAllowed, true);
+  });
+
   it('marks feature-hash as degraded', () => {
     const q = assessRetrievalQualityTier({
       embeddingProfile: { id: 'feature-hash-v1', qualityTier: 'degraded' },

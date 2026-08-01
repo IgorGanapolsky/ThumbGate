@@ -16,6 +16,8 @@ const {
   isGatewayConfigured,
   describeInferenceAvailability,
   isAvailable,
+  resolveGatewayModel,
+  MODELS,
 } = require('../scripts/llm-client');
 
 test('gateway is opt-in: absent config means no gateway', () => {
@@ -37,6 +39,18 @@ test('gateway model is overridable', () => {
     THUMBGATE_LLM_GATEWAY_MODEL: 'kimi-code-k3',
   });
   assert.strictEqual(cfg.model, 'kimi-code-k3');
+});
+
+test('gateway dispatch ignores generic provider model IDs unless override is gateway-specific', () => {
+  const config = {
+    baseUrl: 'http://127.0.0.1:4010/v1',
+    model: 'kimi-code-k3',
+  };
+  assert.strictEqual(resolveGatewayModel({ model: MODELS.FAST }, config), 'kimi-code-k3');
+  assert.strictEqual(
+    resolveGatewayModel({ model: MODELS.SMART, gatewayModel: 'glm-5.2' }, config),
+    'glm-5.2',
+  );
 });
 
 test('availability reports WHICH provider is live, not just a boolean', () => {

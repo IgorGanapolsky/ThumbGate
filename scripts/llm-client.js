@@ -34,6 +34,12 @@ function isGatewayConfigured(env = process.env) {
   return Boolean(getGatewayConfig(env));
 }
 
+function resolveGatewayModel(options = {}, config = getGatewayConfig()) {
+  const explicitGatewayModel = String(options.gatewayModel || '').trim();
+  if (explicitGatewayModel) return explicitGatewayModel;
+  return String(config?.model || DEFAULT_GATEWAY_MODEL).trim();
+}
+
 function describeInferenceAvailability(env = process.env) {
   if (env.ANTHROPIC_API_KEY) return { available: true, provider: 'anthropic' };
   const gateway = getGatewayConfig(env);
@@ -258,6 +264,7 @@ function buildGatewayMessages(options = {}) {
 async function callGatewayInternal(options = {}, env = process.env) {
   const config = getGatewayConfig(env);
   if (!config || typeof fetch !== 'function') return null;
+  const model = resolveGatewayModel(options, config);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GATEWAY_TIMEOUT_MS);
   const startedAt = Date.now();
@@ -266,7 +273,7 @@ async function callGatewayInternal(options = {}, env = process.env) {
       method: 'POST',
       headers: gatewayRequestHeaders(config, env),
       body: JSON.stringify({
-        model: options.model || config.model,
+        model,
         messages: buildGatewayMessages(options),
         max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
         temperature: Number.isFinite(options.temperature) ? options.temperature : 0,
@@ -276,7 +283,7 @@ async function callGatewayInternal(options = {}, env = process.env) {
     if (!response.ok) {
       await emitLlmTrace(options, {
         provider: 'gateway',
-        model: options.model || config.model,
+        model,
         outcome: 'error',
         latencyMs: Date.now() - startedAt,
         httpStatus: response.status,
@@ -296,7 +303,7 @@ async function callGatewayInternal(options = {}, env = process.env) {
       usage: payload?.usage || null,
       stopReason: choice.finish_reason || null,
       id: payload?.id || null,
-      model: payload?.model || options.model || config.model,
+      model: payload?.model || model,
       provider: 'gateway',
     };
     await emitLlmTrace(options, {
@@ -313,7 +320,7 @@ async function callGatewayInternal(options = {}, env = process.env) {
     const safe = buildSafeProviderError(error);
     await emitLlmTrace(options, {
       provider: 'gateway',
-      model: options.model || config.model,
+      model,
       outcome: 'error',
       latencyMs: Date.now() - startedAt,
       httpStatus: safe.status,
@@ -647,6 +654,7 @@ module.exports = {
   isAvailable,
   getGatewayConfig,
   isGatewayConfigured,
+  resolveGatewayModel,
   describeInferenceAvailability,
   callGatewayInternal,
   buildGatewayMessages,

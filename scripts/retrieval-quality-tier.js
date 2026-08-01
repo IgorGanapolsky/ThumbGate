@@ -39,6 +39,9 @@ function assessRetrievalQualityTier(input = {}) {
   if (input.embedderAvailable === false) {
     qualityTier = 'unavailable';
     reasons.push('embedder_unavailable');
+  } else if (!profile) {
+    qualityTier = 'degraded';
+    reasons.push('embedding_profile_missing');
   } else if (/feature-hash|built-in|stub/i.test(profileId) || /degraded|test_stub/i.test(profileTier)) {
     qualityTier = 'degraded';
     reasons.push('embedding_tier_degraded');
@@ -48,7 +51,10 @@ function assessRetrievalQualityTier(input = {}) {
   }
 
   let indexAgeMs = null;
-  if (Number.isFinite(input.indexUpdatedAtMs)) {
+  if (qualityTier !== 'unavailable' && !Number.isFinite(input.indexUpdatedAtMs)) {
+    if (qualityTier === 'production') qualityTier = 'degraded';
+    reasons.push('index_freshness_unknown');
+  } else if (Number.isFinite(input.indexUpdatedAtMs)) {
     indexAgeMs = Math.max(0, now - Number(input.indexUpdatedAtMs));
     if (indexAgeMs > maxAge) {
       if (qualityTier === 'production') qualityTier = 'degraded';

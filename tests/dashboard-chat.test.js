@@ -8,7 +8,10 @@ const {
   buildChatPrompt,
   parseGeminiAnswer,
   answerDataQuestion,
+  resolveBudgetedProviderRoute,
 } = require(path.join(__dirname, '..', 'scripts', 'dashboard-chat'));
+const { FrontierBudget } = require('../scripts/model-tier-router');
+const { _resetFrontierDayCounts } = require('../scripts/tier-budget-guard');
 
 test('buildChatPrompt grounds on the provided lessons and the question', () => {
   const prompt = buildChatPrompt('what went wrong?', [
@@ -27,6 +30,25 @@ test('parseGeminiAnswer extracts text and tolerates malformed responses', () => 
   assert.equal(parseGeminiAnswer({}), '');
   assert.equal(parseGeminiAnswer(null), '');
   assert.equal(parseGeminiAnswer({ candidates: [] }), '');
+});
+
+test('budget tiers map to the actual Gemini model and fail closed when unmapped', () => {
+  const mini = resolveBudgetedProviderRoute({
+    requestedModel: 'gemini-2.5-pro',
+    budgetTier: 'mini',
+  });
+  assert.deepEqual(mini, {
+    allowed: true,
+    provider: 'gemini',
+    model: 'gemini-2.5-flash',
+    tier: 'mini',
+  });
+  const unmapped = resolveBudgetedProviderRoute({
+    isPerplexity: true,
+    budgetTier: 'nano',
+  });
+  assert.equal(unmapped.allowed, false);
+  assert.match(unmapped.reason, /no_perplexity_model_for_tier:nano/);
 });
 
 test('answerDataQuestion rejects empty questions without calling the model', async () => {
@@ -153,4 +175,61 @@ test('answerDataQuestion can use a local endpoint without an API key', async () 
   assert.equal(r.ok, true);
   assert.equal(r.answer, 'response without apiKey');
   assert.equal(calledHeaders.Authorization, 'Bearer local');
+});
+
+test('a frontier budget downgrade changes the actual provider model', async () => {
+  const previous = process.env.THUMBGATE_MAX_FRONTIER_PER_DAY;
+  process.env.THUMBGATE_MAX_FRONTIER_PER_DAY = '0';
+  _resetFrontierDayCounts();
+  let calledUrl = '';
+  try {
+    const result = await answerDataQuestion('review architecture', {
+      apiKey: 'k',
+      feedbackDir: '/tmp/does-not-exist-xyz',
+      taskType: 'review',
+      tags: ['cross-file'],
+      model: 'gemini-2.5-pro',
+      qualityTier: { qualityTier: 'degraded', semanticClaimsAllowed: false, degradedReasons: [] },
+      fetch: async (url) => {
+        calledUrl = url;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }),
+        };
+      },
+    });
+    assert.equal(result.ok, true);
+    assert.match(calledUrl, /gemini-2\.5-flash:generateContent$/);
+    assert.equal(result.envelope.tier, 'mini');
+    assert.equal(result.envelope.model, 'gemini-2.5-flash');
+  } finally {
+    if (previous == null) delete process.env.THUMBGATE_MAX_FRONTIER_PER_DAY;
+    else process.env.THUMBGATE_MAX_FRONTIER_PER_DAY = previous;
+    _resetFrontierDayCounts();
+  }
+});
+
+test('successful frontier calls charge the reusable session budget', async () => {
+  const budget = new FrontierBudget({ tokenCap: 10_000 });
+  _resetFrontierDayCounts();
+  const result = await answerDataQuestion('review architecture', {
+    apiKey: 'k',
+    feedbackDir: '/tmp/does-not-exist-xyz',
+    taskType: 'review',
+    tags: ['cross-file'],
+    model: 'gemini-2.5-pro',
+    frontierBudget: budget,
+    qualityTier: { qualityTier: 'degraded', semanticClaimsAllowed: false, degradedReasons: [] },
+    fetch: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }),
+    }),
+  });
+  assert.equal(result.ok, true);
+  assert.ok(budget.spent > 0);
+  assert.equal(budget.invocations.length, 1);
+  assert.equal(result.envelope.budget.frontierSessionCharge.success, true);
+  _resetFrontierDayCounts();
 });

@@ -24,6 +24,11 @@ const PERPLEXITY_ENDPOINT = 'https://api.perplexity.ai/chat/completions';
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 const MAX_QUESTION_CHARS = 2000;
 const MAX_CONTEXT_LESSONS = 8;
+const GEMINI_MODEL_BY_TIER = Object.freeze({
+  nano: 'gemini-2.5-flash-lite',
+  mini: 'gemini-2.5-flash',
+  frontier: 'gemini-2.5-pro',
+});
 
 // Allowlist the model so a user-supplied `model` cannot route the call to an
 // arbitrary / unexpected (or more expensive) endpoint. Anything not on the list
@@ -51,6 +56,63 @@ function resolveApiKey(opts = {}) {
   }
   if (!key) return '';
   return key.trim().replace(/^["']|["']$/g, '');
+}
+
+function resolveBudgetedProviderRoute({
+  localEndpoint,
+  localModel,
+  isPerplexity,
+  requestedModel,
+  budgetTier,
+  perplexityFrontierModel,
+} = {}) {
+  const tier = String(budgetTier || 'mini');
+  if (localEndpoint) {
+    return {
+      allowed: true,
+      provider: 'local',
+      model: localModel,
+      tier: 'localFrontier',
+    };
+  }
+
+  if (isPerplexity) {
+    if (tier === 'mini') {
+      return { allowed: true, provider: 'perplexity', model: 'sonar', tier };
+    }
+    if (tier === 'frontier' && String(perplexityFrontierModel || '').trim()) {
+      return {
+        allowed: true,
+        provider: 'perplexity',
+        model: String(perplexityFrontierModel).trim(),
+        tier,
+      };
+    }
+    return {
+      allowed: false,
+      provider: 'perplexity',
+      model: null,
+      tier,
+      reason: `no_perplexity_model_for_tier:${tier}`,
+    };
+  }
+
+  const mappedModel = GEMINI_MODEL_BY_TIER[tier];
+  if (!mappedModel) {
+    return {
+      allowed: false,
+      provider: 'gemini',
+      model: null,
+      tier,
+      reason: `no_gemini_model_for_tier:${tier}`,
+    };
+  }
+  const requested = String(requestedModel || '');
+  const requestedMatchesTier = (tier === 'frontier' && /pro/i.test(requested))
+    || (tier === 'mini' && /flash/i.test(requested) && !/lite/i.test(requested))
+    || (tier === 'nano' && /lite/i.test(requested));
+  const model = requestedMatchesTier ? requested : mappedModel;
+  return { allowed: true, provider: 'gemini', model, tier };
 }
 
 function debugChatFallback(label, err) {
@@ -299,18 +361,18 @@ async function callLocalOpenAiEndpoint({ endpoint, apiKey, model, prompt, fetchI
   return { ok: true, answer: answer.trim() || '(no answer returned)', sources, model: json.model || model };
 }
 
-async function callPerplexityEndpoint({ apiKey, prompt, fetchImpl, sources }) {
+async function callPerplexityEndpoint({ apiKey, model, prompt, fetchImpl, sources }) {
   const res = await fetchImpl(PERPLEXITY_ENDPOINT, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-    body: buildOpenAiChatPayload(prompt, 'sonar'),
+    body: buildOpenAiChatPayload(prompt, model),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     return { ok: false, error: 'perplexity_error', status: res.status, message: parseModelError(json, res.status), sources };
   }
   const answer = parseOpenAiChatAnswer(json);
-  return { ok: true, answer: answer.trim() || '(no answer returned)', sources, model: json.model || 'perplexity-hybrid' };
+  return { ok: true, answer: answer.trim() || '(no answer returned)', sources, model: json.model || model };
 }
 
 async function callGeminiEndpoint({ apiKey, model, prompt, fetchImpl, sources }) {
@@ -430,6 +492,7 @@ async function answerDataQuestion(question, opts = {}) {
     riskLevel: opts.riskLevel || 'low',
     tags: opts.tags || [],
   });
+  const budgetedTokens = estimateTokensFromText(q) + 2500;
   const budgetDecision = enforceTierBudgets(
     {
       type: opts.taskType || 'review',
@@ -442,7 +505,7 @@ async function answerDataQuestion(question, opts = {}) {
     {
       classification,
       frontierBudget: opts.frontierBudget || null,
-      estimatedTokens: estimateTokensFromText(q) + 2500,
+      estimatedTokens: budgetedTokens,
     },
   );
 
@@ -466,12 +529,41 @@ async function answerDataQuestion(question, opts = {}) {
     };
   }
 
-  const model = resolveModel(opts.model);
+  const requestedModel = resolveModel(opts.model);
   const metrics = retrieveMetricsContext();
   const prompt = buildChatPrompt(q, lessons, metrics, { structured: opts.structured !== false });
   const fetchImpl = opts.fetch || globalThis.fetch;
   const isPerplexity = apiKey && (apiKey.startsWith('pplx-') || apiKey.includes('perplexity'));
+  const route = resolveBudgetedProviderRoute({
+    localEndpoint,
+    localModel,
+    isPerplexity,
+    requestedModel,
+    budgetTier: budgetDecision.tier,
+    perplexityFrontierModel: opts.perplexityFrontierModel
+      || process.env.THUMBGATE_PERPLEXITY_FRONTIER_MODEL,
+  });
   const inputTokens = estimateTokensFromText(prompt);
+
+  if (!route.allowed) {
+    return {
+      ok: false,
+      error: 'budget_route_unavailable',
+      message: `Request denied: ${route.reason}`,
+      sources,
+      qualityTier: quality.qualityTier,
+      semanticClaimsAllowed: quality.semanticClaimsAllowed,
+      envelope: finalizeRequestEnvelope(envelope, {
+        outcome: 'denied',
+        error: 'budget_route_unavailable',
+        provider: route.provider,
+        tier: route.tier,
+        budget: { ...budgetDecision, route },
+        retrieval: retrievalSummary,
+        qualityTier: quality.qualityTier,
+      }),
+    };
+  }
 
   try {
     let result;
@@ -479,19 +571,35 @@ async function answerDataQuestion(question, opts = {}) {
       result = await callLocalOpenAiEndpoint({
         endpoint: localEndpoint,
         apiKey,
-        model: localModel,
+        model: route.model,
         prompt,
         fetchImpl,
         sources,
       });
     } else if (isPerplexity) {
-      result = await callPerplexityEndpoint({ apiKey, prompt, fetchImpl, sources });
+      result = await callPerplexityEndpoint({
+        apiKey,
+        model: route.model,
+        prompt,
+        fetchImpl,
+        sources,
+      });
     } else {
-      result = await callGeminiEndpoint({ apiKey, model, prompt, fetchImpl, sources });
+      result = await callGeminiEndpoint({
+        apiKey,
+        model: route.model,
+        prompt,
+        fetchImpl,
+        sources,
+      });
     }
 
-    if (budgetDecision.tier === 'frontier' && result?.ok) {
+    let frontierSessionCharge = null;
+    if (route.tier === 'frontier' && result?.ok) {
       recordFrontierInvocation();
+      if (opts.frontierBudget && typeof opts.frontierBudget.spend === 'function') {
+        frontierSessionCharge = opts.frontierBudget.spend(budgetedTokens, 'dashboard_chat');
+      }
     }
 
     const structured = attachStructured(result, sources);
@@ -500,13 +608,13 @@ async function answerDataQuestion(question, opts = {}) {
     const finalized = finalizeRequestEnvelope(envelope, {
       outcome: structured.ok ? 'ok' : 'error',
       error: structured.ok ? null : structured.error,
-      model: structured.model || model || localModel,
-      tier: budgetDecision.tier,
-      provider: localEndpoint ? 'local' : (isPerplexity ? 'perplexity' : 'gemini'),
+      model: structured.model || route.model,
+      tier: route.tier,
+      provider: route.provider,
       inputTokens,
       outputTokens,
       estimatedCostCents,
-      budget: budgetDecision,
+      budget: { ...budgetDecision, route, frontierSessionCharge },
       retrieval: retrievalSummary,
       qualityTier: quality.qualityTier,
       structured: {
@@ -537,8 +645,9 @@ async function answerDataQuestion(question, opts = {}) {
         error: 'network',
         retrieval: retrievalSummary,
         qualityTier: quality.qualityTier,
-        budget: budgetDecision,
-        tier: budgetDecision.tier,
+        budget: { ...budgetDecision, route },
+        tier: route.tier,
+        provider: route.provider,
       }),
     };
   }
@@ -550,6 +659,7 @@ module.exports = {
   parseGeminiAnswer,
   retrieveContext,
   retrieveHybridLessonContext,
+  resolveBudgetedProviderRoute,
   DEFAULT_MODEL,
   MAX_QUESTION_CHARS,
 };
