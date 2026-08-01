@@ -895,7 +895,7 @@
     "test:proof-pack-cadence": "node --test tests/refresh-proof-pack.test.js tests/case-study-outreach.test.js",
     "test:evaluations-page": "node --test tests/evaluations-page.test.js",
     "prove:rag": "node scripts/prove-rag-pipeline.js",
-    "test:rag-pipeline": "node --test tests/rag-document-pipeline.test.js tests/rag-structured-output.test.js tests/rag-stage-contracts.test.js tests/prove-rag-pipeline.test.js tests/ir-metrics.test.js tests/retrieval-ranking-eval.test.js tests/pragmatic-hybrid-search.test.js && npm run test:rerank-pipeline && npm run test:colbert-maxsim && npm run test:retrieval-quality-tier",
+    "test:rag-pipeline": "node --test tests/rag-document-pipeline.test.js tests/rag-structured-output.test.js tests/rag-stage-contracts.test.js tests/prove-rag-pipeline.test.js tests/ir-metrics.test.js tests/retrieval-ranking-eval.test.js tests/pragmatic-hybrid-search.test.js && npm run test:rerank-pipeline && npm run test:colbert-maxsim && npm run test:retrieval-quality-tier && npm run test:eval-quality",
     "eval:ranking": "node scripts/retrieval-ranking-eval.js",
     "test:ir-metrics": "node --test tests/ir-metrics.test.js tests/retrieval-ranking-eval.test.js",
     "test:pragmatic-hybrid": "node --test tests/pragmatic-hybrid-search.test.js",
