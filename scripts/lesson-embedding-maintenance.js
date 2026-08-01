@@ -62,9 +62,9 @@ function evaluateEmbeddingIndexDrift(options = {}) {
 
   const orphanedIds = Object.keys(cache)
     .filter((id) => !corpusIds.has(id))
-    .sort();
-  missingIds.sort();
-  staleIds.sort();
+    .sort((left, right) => left.localeCompare(right));
+  missingIds.sort((left, right) => left.localeCompare(right));
+  staleIds.sort((left, right) => left.localeCompare(right));
 
   const corpusCount = lessons.length;
   const coverage = corpusCount ? indexedCount / corpusCount : 1;
