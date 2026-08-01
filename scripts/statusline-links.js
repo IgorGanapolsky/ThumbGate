@@ -109,7 +109,7 @@ function launchLocalServer(options = {}) {
 
   const child = spawn(
     process.execPath,
-    [path.join(PKG_ROOT, 'bin', 'cli.js'), 'start-api'],
+    [path.join(PKG_ROOT, 'src', 'api', 'server.js')],
     {
       cwd: projectDir,
       env: childEnv,

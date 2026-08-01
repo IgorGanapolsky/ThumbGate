@@ -154,14 +154,19 @@ function scoreRecord(queryTokens, queryText, record) {
 // ---------------------------------------------------------------------------
 
 function searchFeedbackLog(queryText, limit = 5, options = {}) {
-  const logPath = path.join(options.feedbackDir || getFeedbackDir(), 'feedback-log.jsonl');
+  const feedbackDir = options.feedbackDir || getFeedbackDir();
+  const logPath = path.join(feedbackDir, 'feedback-log.jsonl');
   let records = readJsonl(logPath);
 
-  // SQLite fallback: if JSONL is empty/tiny, pull records from the lesson DB
-  if (records.length <= 1) {
+  // SQLite fallback is allowed only inside the exact selected feedback root.
+  // Falling back through lesson-db's ambient default can cross project/tenant
+  // boundaries when a sparse project has zero or one JSONL row.
+  const lessonDbPath = path.join(feedbackDir, 'lessons.sqlite');
+  if (records.length <= 1 && fs.existsSync(lessonDbPath)) {
+    let db = null;
     try {
       const { initDB } = require('./lesson-db');
-      const db = initDB();
+      db = initDB(lessonDbPath);
       const rows = db.prepare('SELECT * FROM lessons ORDER BY timestamp DESC LIMIT 500').all();
       if (rows.length > records.length) {
         records = rows.map((r) => ({
@@ -171,12 +176,17 @@ function searchFeedbackLog(queryText, limit = 5, options = {}) {
           title: r.title || r.context,
           tags: r.tags ? JSON.parse(r.tags) : [],
           timestamp: r.timestamp,
-          whatWentWrong: r.what_went_wrong,
-          whatWorked: r.what_worked,
-          whatToChange: r.what_to_change,
+          whatWentWrong: r.whatWentWrong ?? r.what_went_wrong,
+          whatWorked: r.whatWorked ?? r.what_worked,
+          whatToChange: r.whatToChange ?? r.what_to_change,
         }));
       }
     } catch { /* lesson-db not available */ }
+    finally {
+      if (db) {
+        try { db.close(); } catch { /* best-effort close */ }
+      }
+    }
   }
 
   // Wildcard query: return all records sorted by recency

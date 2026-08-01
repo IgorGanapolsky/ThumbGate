@@ -6,6 +6,9 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { spawn } = require('child_process');
+
+const CLI = path.resolve(__dirname, '../bin/cli.js');
 
 let tmpDir;
 
@@ -165,4 +168,167 @@ test('acquireLock: registers exit handler that removes lock file', () => {
 
   // Clean up the listener to avoid side effects on other tests
   process.removeListener('exit', ourListener);
+});
+
+function isProcessAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function waitFor(predicate, timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (predicate()) return true;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return predicate();
+}
+
+function spawnServe(feedbackDir) {
+  return spawn(process.execPath, [CLI, 'serve'], {
+    env: {
+      ...process.env,
+      THUMBGATE_FEEDBACK_DIR: feedbackDir,
+      THUMBGATE_NO_TELEMETRY: '1',
+    },
+    stdio: ['pipe', 'ignore', 'pipe'],
+  });
+}
+
+test('two live stdio sessions coexist and closing one does not terminate its peer', async () => {
+  const first = spawnServe(tmpDir);
+  const second = spawnServe(tmpDir);
+  try {
+    const bothStarted = await waitFor(
+      () => isProcessAlive(first.pid) && isProcessAlive(second.pid),
+      2000,
+    );
+    assert.equal(bothStarted, true, 'both MCP sessions should be alive');
+
+    first.stdin.end();
+    const firstExited = await waitFor(() => !isProcessAlive(first.pid), 5000);
+    assert.equal(firstExited, true, 'session should exit after its own stdin closes');
+    assert.equal(isProcessAlive(second.pid), true, 'closing one session must not terminate its live peer');
+  } finally {
+    try { first.stdin.end(); } catch { /* cleanup */ }
+    try { second.stdin.end(); } catch { /* cleanup */ }
+    await waitFor(() => !isProcessAlive(first.pid), 1000);
+    await waitFor(() => !isProcessAlive(second.pid), 1000);
+    if (isProcessAlive(first.pid)) try { process.kill(first.pid, 'SIGKILL'); } catch { /* cleanup */ }
+    if (isProcessAlive(second.pid)) try { process.kill(second.pid, 'SIGKILL'); } catch { /* cleanup */ }
+  }
+});
+
+test('project resolution prefers active project over unscoped launcher roots', () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-home-'));
+  const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-project-'));
+  const runtimeDir = path.join(homeDir, '.thumbgate', 'runtime');
+  fs.mkdirSync(runtimeDir, { recursive: true });
+
+  const {
+    resolveProjectDir,
+    writeActiveProjectState,
+  } = require('../scripts/feedback-paths');
+  const env = { HOME: homeDir, USERPROFILE: homeDir, PWD: path.parse(homeDir).root };
+  try {
+    writeActiveProjectState(projectDir, { env });
+
+    for (const cwd of [path.parse(homeDir).root, homeDir, runtimeDir]) {
+      assert.equal(
+        resolveProjectDir({ cwd, env: { ...env, PWD: cwd } }),
+        projectDir,
+        `${cwd} must not become a project store when a valid active project exists`,
+      );
+    }
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+    fs.rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('explicit project and feedback scopes remain authoritative', () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-home-'));
+  const activeProject = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-active-'));
+  const explicitProject = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-explicit-'));
+  const explicitFeedback = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-feedback-'));
+  const { resolveFeedbackDir, resolveProjectDir, writeActiveProjectState } = require('../scripts/feedback-paths');
+  const env = { HOME: homeDir, USERPROFILE: homeDir, PWD: path.parse(homeDir).root };
+  try {
+    writeActiveProjectState(activeProject, { env });
+    assert.equal(resolveProjectDir({ cwd: '/', env: { ...env, THUMBGATE_PROJECT_DIR: explicitProject } }), explicitProject);
+    assert.equal(resolveProjectDir({ cwd: '/', env: { ...env, CLAUDE_PROJECT_DIR: explicitProject } }), explicitProject);
+    assert.equal(resolveFeedbackDir({ cwd: '/', env: { ...env, THUMBGATE_FEEDBACK_DIR: explicitFeedback } }), explicitFeedback);
+  } finally {
+    for (const dir of [homeDir, activeProject, explicitProject, explicitFeedback]) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+});
+
+test('project feedback store is stable before and after local directory creation', () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-home-'));
+  const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-store-project-'));
+  const { resolveFeedbackDir } = require('../scripts/feedback-paths');
+  const env = { HOME: homeDir, USERPROFILE: homeDir, THUMBGATE_PROJECT_DIR: projectDir };
+  try {
+    const before = resolveFeedbackDir({ cwd: projectDir, env });
+    fs.mkdirSync(path.join(projectDir, '.thumbgate'), { recursive: true });
+    const after = resolveFeedbackDir({ cwd: projectDir, env });
+    assert.equal(before, path.join(projectDir, '.thumbgate'));
+    assert.equal(after, before);
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+    fs.rmSync(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('same-basename projects resolve to isolated local feedback stores', () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-home-'));
+  const parentA = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-parent-a-'));
+  const parentB = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-parent-b-'));
+  const projectA = path.join(parentA, 'service');
+  const projectB = path.join(parentB, 'service');
+  fs.mkdirSync(projectA);
+  fs.mkdirSync(projectB);
+  const { resolveFeedbackDir } = require('../scripts/feedback-paths');
+  try {
+    const first = resolveFeedbackDir({
+      cwd: projectA,
+      env: { HOME: homeDir, USERPROFILE: homeDir, THUMBGATE_PROJECT_DIR: projectA },
+    });
+    const second = resolveFeedbackDir({
+      cwd: projectB,
+      env: { HOME: homeDir, USERPROFILE: homeDir, THUMBGATE_PROJECT_DIR: projectB },
+    });
+    assert.equal(first, path.join(projectA, '.thumbgate'));
+    assert.equal(second, path.join(projectB, '.thumbgate'));
+    assert.notEqual(first, second);
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+    fs.rmSync(parentA, { recursive: true, force: true });
+    fs.rmSync(parentB, { recursive: true, force: true });
+  }
+});
+
+test('explicit feedback directory wins even when a project directory is inherited', () => {
+  const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-project-'));
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-explicit-feedback-'));
+  const { resolveFeedbackDir } = require('../scripts/feedback-paths');
+  try {
+    assert.equal(resolveFeedbackDir({
+      cwd: projectDir,
+      env: {
+        HOME: os.homedir(),
+        THUMBGATE_PROJECT_DIR: projectDir,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+      },
+    }), feedbackDir);
+  } finally {
+    fs.rmSync(projectDir, { recursive: true, force: true });
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
 });
