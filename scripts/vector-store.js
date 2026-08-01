@@ -10,6 +10,7 @@ const {
 } = require('./local-model-profile');
 const {
   prepareEmbeddingText,
+  normalizeEmbeddingKind,
   resolveGeminiEmbeddingConfig,
   resolveGeminiModelResource,
   resolveGeminiTaskType,
@@ -294,6 +295,17 @@ async function embedWithOllama(text, options = {}) {
     throw new Error('Ollama embeddings require global fetch. Use Node 18.18+.');
   }
 
+  // Apply Nomic-style asymmetric prefixes. nomic-embed-text was trained
+  // with "search_query:" / "search_document:" role prefixes, which improve
+  // query-document matching fidelity on the dense retrieval path.
+  const kind = normalizeEmbeddingKind(options.kind);
+  let inputText = String(text || '');
+  if (kind === 'query') {
+    inputText = `search_query: ${inputText}`;
+  } else if (kind === 'document') {
+    inputText = `search_document: ${inputText}`;
+  }
+
   let response;
   try {
     response = await fetch(`${config.endpoint}/api/embed`, {
@@ -301,7 +313,7 @@ async function embedWithOllama(text, options = {}) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: config.model,
-        input: String(text || ''),
+        input: inputText,
         truncate: true,
         dimensions: options.outputDimensionality || undefined,
       }),
