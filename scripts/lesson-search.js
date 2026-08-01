@@ -403,6 +403,8 @@ function scoreLesson(queryText, memory, parsed, sourceFeedback) {
   if (!queryText) {
     return {
       score: recencyScore(memory.timestamp),
+      evidenceScore: 0,
+      priorScore: recencyScore(memory.timestamp),
       matchedTokens: [],
     };
   }
@@ -410,14 +412,16 @@ function scoreLesson(queryText, memory, parsed, sourceFeedback) {
   const lessonText = buildLessonQuery(memory, parsed, sourceFeedback);
   const queryTokens = tokenize(queryText);
   const lessonTokens = tokenize(lessonText);
-  const score = jaccardSimilarity(queryTokens, lessonTokens)
-    + substringBoost(queryText, lessonText)
-    + recencyScore(memory.timestamp)
+  const evidenceScore = jaccardSimilarity(queryTokens, lessonTokens)
+    + substringBoost(queryText, lessonText);
+  const priorScore = recencyScore(memory.timestamp)
     + (memory.category === 'error' ? 0.05 : 0)
     + Math.min(0.2, scoreHybridMemoryMatch(queryText, memory).score * 0.1);
 
   return {
-    score,
+    score: evidenceScore + priorScore,
+    evidenceScore,
+    priorScore,
     matchedTokens: unique(queryTokens.filter((token) => lessonTokens.includes(token))),
   };
 }
@@ -427,7 +431,7 @@ function buildLessonResult(memory, sourceFeedback, options = {}) {
   const lessonQuery = buildLessonQuery(memory, parsed, sourceFeedback);
   const ruleMatches = readPreventionRuleMatches(lessonQuery, Number(options.ruleLimit || 3), options);
   const gateMatches = buildGateMatches(memory, parsed, Number(options.gateLimit || 3), options);
-  const { score, matchedTokens } = scoreLesson(options.query || '', memory, parsed, sourceFeedback);
+  const { score, evidenceScore, priorScore, matchedTokens } = scoreLesson(options.query || '', memory, parsed, sourceFeedback);
   const harnessRecommendations = buildHarnessRecommendations(memory, parsed, sourceFeedback, ruleMatches, gateMatches);
   const lifecycle = buildLifecycle(memory, parsed, sourceFeedback, ruleMatches, gateMatches, harnessRecommendations);
   const memoryLifecycle = buildMemoryLifecycleView(memory, { query: options.query || '' });
@@ -441,6 +445,8 @@ function buildLessonResult(memory, sourceFeedback, options = {}) {
     timestamp: memory.timestamp || null,
     sourceFeedbackId: memory.sourceFeedbackId || null,
     score: Number(score.toFixed(4)),
+    evidenceScore: Number(evidenceScore.toFixed(4)),
+    priorScore: Number(priorScore.toFixed(4)),
     matchedTokens,
     lesson: {
       summary: parsed.summary,
@@ -510,7 +516,10 @@ function searchLessons(query = '', options = {}) {
     results = results.filter((entry) => requiredTags.every((tag) => entry.tags.includes(tag)));
   }
   if (query) {
-    results = results.filter((entry) => entry.score > 0);
+    // Recency, error severity, and lifecycle priors can reorder candidates,
+    // but they are never evidence that a lesson answers the query. Returning a
+    // recent unrelated incident is worse than an honest empty result.
+    results = results.filter((entry) => entry.evidenceScore > 0);
   }
 
   results.sort((a, b) => {
@@ -558,9 +567,10 @@ function tryFts5Search(query, options) {
   // silently searching across tenants or sessions.
   if (options.scope || options.requireScope) return null;
   if (!process.env.LESSON_DB_SEARCH && !options.useFts5) return null;
+  let db = null;
   try {
     const { initDB, searchLessons: fts5Search, getStats } = require('./lesson-db');
-    const db = initDB();
+    db = initDB();
     const stats = getStats(db);
 
     // If DB is empty, skip (not yet backfilled)
@@ -629,6 +639,10 @@ function tryFts5Search(query, options) {
     };
   } catch (_err) {
     return null; // SQLite unavailable — fall through to JSONL
+  } finally {
+    if (db) {
+      try { db.close(); } catch { /* best-effort close */ }
+    }
   }
 }
 

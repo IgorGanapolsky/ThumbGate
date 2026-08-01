@@ -86,3 +86,65 @@ test('embedding maintenance invalidates content changes instead of counting stal
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('embedding maintenance fails exact-corpus coverage even when rounded coverage reaches 95%', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-embedding-exact-'));
+  try {
+    const lessons = Array.from({ length: 20 }, (_, index) => ({
+      id: `lesson-${index}`,
+      title: `Lesson ${index}`,
+      content: `Corrective action ${index}`,
+      tags: ['negative'],
+      timestamp: new Date().toISOString(),
+    }));
+    fs.writeFileSync(
+      path.join(directory, 'memory-log.jsonl'),
+      `${lessons.map((lesson) => JSON.stringify(lesson)).join('\n')}\n`,
+    );
+    await backfillLessonEmbeddings({
+      feedbackDir: directory,
+      embedder: async () => [1, 0, 0],
+      embedderId: 'maintenance-test',
+    });
+    const cachePath = path.join(directory, 'lesson-embeddings.json');
+    const cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    delete cache['lesson-19'];
+    fs.writeFileSync(cachePath, JSON.stringify(cache));
+
+    const report = evaluateEmbeddingIndexDrift({
+      feedbackDir: directory,
+      embedder: async () => [1, 0, 0],
+    });
+    assert.equal(report.coverage, 0.95);
+    assert.equal(report.status, 'unhealthy');
+    assert.deepEqual(report.missingIds, ['lesson-19']);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('embedding maintenance fails when the cache contains orphaned lesson vectors', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-embedding-orphan-'));
+  try {
+    writeCorpus(directory);
+    await backfillLessonEmbeddings({
+      feedbackDir: directory,
+      embedder: async () => [1, 0, 0],
+      embedderId: 'maintenance-test',
+    });
+    const cachePath = path.join(directory, 'lesson-embeddings.json');
+    const cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+    cache['orphaned-lesson'] = { ...cache['lesson-a'] };
+    fs.writeFileSync(cachePath, JSON.stringify(cache));
+
+    const report = evaluateEmbeddingIndexDrift({
+      feedbackDir: directory,
+      embedder: async () => [1, 0, 0],
+    });
+    assert.equal(report.coverage, 1);
+    assert.equal(report.status, 'unhealthy');
+    assert.deepEqual(report.orphanedIds, ['orphaned-lesson']);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});

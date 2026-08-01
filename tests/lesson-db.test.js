@@ -88,6 +88,26 @@ describe('lesson-db', () => {
       assert.ok(names.includes('idx_lessons_timestamp'));
       assert.ok(names.includes('idx_lessons_skill'));
     });
+
+    it('defaults SQLite to the active feedback store instead of the package checkout', () => {
+      const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-db-scoped-'));
+      const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+      const previousDbPath = process.env.LESSON_DB_PATH;
+      process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
+      delete process.env.LESSON_DB_PATH;
+      let scopedDb;
+      try {
+        scopedDb = initDB();
+        assert.equal(path.resolve(scopedDb.name), path.join(feedbackDir, 'lessons.sqlite'));
+      } finally {
+        if (scopedDb) scopedDb.close();
+        if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+        else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+        if (previousDbPath === undefined) delete process.env.LESSON_DB_PATH;
+        else process.env.LESSON_DB_PATH = previousDbPath;
+        fs.rmSync(feedbackDir, { recursive: true, force: true });
+      }
+    });
   });
 
   describe('upsertLesson', () => {

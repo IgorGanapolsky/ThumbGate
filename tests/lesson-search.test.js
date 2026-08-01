@@ -252,3 +252,39 @@ test('searchLessons applies transport and size filters to SQLite FTS5 results', 
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('searchLessons abstains when recency and error priors have no query evidence', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-search-abstain-'));
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  try {
+    const timestamp = new Date().toISOString();
+    writeJsonl(path.join(tmpDir, 'memory-log.jsonl'), [
+      {
+        id: 'mem_reddit',
+        title: 'MISTAKE: Reddit campaign reply lacked a permalink',
+        content: 'How to avoid: verify the public social post before reporting it live.',
+        category: 'error',
+        tags: ['negative', 'marketing'],
+        timestamp,
+      },
+      {
+        id: 'mem_stripe',
+        title: 'MISTAKE: Stripe receipt was not reconciled',
+        content: 'How to avoid: verify a non-owner payment before claiming revenue.',
+        category: 'error',
+        tags: ['negative', 'billing'],
+        timestamp,
+      },
+    ]);
+
+    delete require.cache[require.resolve('../scripts/lesson-search')];
+    const { searchLessons } = require('../scripts/lesson-search');
+    const result = searchLessons('dashboard search export reliability', { limit: 10 });
+
+    assert.equal(result.totalLessons, 2);
+    assert.equal(result.returned, 0);
+    assert.deepEqual(result.results, []);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});

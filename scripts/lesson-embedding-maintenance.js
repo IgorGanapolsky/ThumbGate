@@ -35,9 +35,11 @@ function evaluateEmbeddingIndexDrift(options = {}) {
   );
   const cache = readCache(cachePath);
   let indexedCount = 0;
-  let staleCount = 0;
+  const missingIds = [];
+  const staleIds = [];
   const providers = {};
   const dimensions = {};
+  const corpusIds = new Set(lessons.map((lesson) => lesson.id));
 
   for (const lesson of lessons) {
     const entry = cache[lesson.id];
@@ -52,9 +54,17 @@ function evaluateEmbeddingIndexDrift(options = {}) {
       providers[entry.provider] = (providers[entry.provider] || 0) + 1;
       dimensions[entry.dimension] = (dimensions[entry.dimension] || 0) + 1;
     } else if (entry) {
-      staleCount += 1;
+      staleIds.push(lesson.id);
+    } else {
+      missingIds.push(lesson.id);
     }
   }
+
+  const orphanedIds = Object.keys(cache)
+    .filter((id) => !corpusIds.has(id))
+    .sort((left, right) => left.localeCompare(right));
+  missingIds.sort((left, right) => left.localeCompare(right));
+  staleIds.sort((left, right) => left.localeCompare(right));
 
   const corpusCount = lessons.length;
   const coverage = corpusCount ? indexedCount / corpusCount : 1;
@@ -62,10 +72,17 @@ function evaluateEmbeddingIndexDrift(options = {}) {
     ? true
     : isEmbedderAvailable();
   const minCoverage = Math.max(0, Math.min(1, Number(options.minCoverage) || 0.95));
+  const requireExact = options.requireExact !== false;
   const enabled = semanticProviderAvailable || Object.keys(cache).length > 0;
+  const exactIdSet = missingIds.length === 0
+    && staleIds.length === 0
+    && orphanedIds.length === 0;
   const status = !enabled
     ? 'not_configured'
-    : coverage >= minCoverage && staleCount === 0
+    : coverage >= minCoverage
+      && staleIds.length === 0
+      && orphanedIds.length === 0
+      && (!requireExact || exactIdSet)
       ? 'healthy'
       : 'unhealthy';
   return {
@@ -74,8 +91,14 @@ function evaluateEmbeddingIndexDrift(options = {}) {
     semanticProviderAvailable,
     corpusCount,
     indexedCount,
-    staleCount,
-    orphanedCount: Object.keys(cache).filter((id) => !lessons.some((lesson) => lesson.id === id)).length,
+    missingCount: missingIds.length,
+    missingIds,
+    staleCount: staleIds.length,
+    staleIds,
+    orphanedCount: orphanedIds.length,
+    orphanedIds,
+    exactIdSet,
+    requireExact,
     coverage: Number(coverage.toFixed(4)),
     minCoverage,
     providers,
