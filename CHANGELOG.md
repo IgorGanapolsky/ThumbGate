@@ -17,10 +17,19 @@
 ### Minor Changes
 
 - f11df24: Enable local Ollama `nomic-embed-text` (768-dim) as the primary semantic embedding provider, replacing the degraded feature-hash fallback. Adds Nomic-style asymmetric query/document prefixes, exports `normalizeEmbeddingKind`, loads dotenv in the eval entry point, adds `@huggingface/transformers` as an optional secondary local fallback, and configures `THUMBGATE_LOCAL_LLM_ENDPOINT` for local LLM generation via Ollama chat completions.
+- 533ca93: Add a universal claim evaluator that parses supported factual free-text claims (row counts, file lines/bytes/existence, package versions), rechecks operator-bound SQLite/filesystem/JSON verifiers, and fails closed through MCP completion gates, the Claude Stop hook, or the portable `verify-claims` CLI on mismatch, missing verifier, invalid config, or verifier error.
 
 ### Patch Changes
 
-- Fail closed after production deploys unless the exact build SHA passes an anonymous-auth boundary check plus schema-valid search, lesson search, live dashboard, and non-empty DPO export. Release automation now serializes npm publication, attests registry `gitHead`, blocks a Railway deploy when the package version belongs to another commit, and isolates claim-evidence tests from operator state.
+- 0acac0b: Keep Apollo buyer research usable when the legacy tracker is absent or global People Search is not included in the current plan by falling back to saved contacts with explicit provider and credit evidence.
+- 75de5d5: Recognize Gemini embedding provider automatically when `GEMINI_API_KEY` is
+  present, even without `THUMBGATE_EMBED_PROVIDER=gemini`. The key activates
+  Gemini as an automatic fallback after Ollama without changing the primary
+  local path. Also exports `getActiveEmbeddingProfile` as an alias for
+  `getLastEmbeddingProfile`, and adds `claw-style`, `hybrid-inference`, and
+  `agent-identity` tag inference rules to the feedback schema for claw-style
+  enterprise agent governance capture.
+- Fail closed after production deploys unless the exact build SHA passes an anonymous-auth boundary check plus schema-valid search, lesson search, live dashboard, and non-empty DPO export. Serialize npm publication, attest the registry `gitHead`, block a Railway deploy when the package version belongs to another commit, and isolate claim-evidence tests from operator state.
 
 ## 1.31.0
 
