@@ -69,7 +69,10 @@ function compileConfiguredClaimTemplate(template) {
   const literalPattern = parts
     .map((part) => escapeRegExp(part).replaceAll(/\s+/g, String.raw`\s+`))
     .join(`(?<value>${NUMBER_PATTERN_SOURCE})`);
-  return new RegExp(String.raw`(?:^|(?<=\s))${literalPattern}(?=$|[\s.,;:!?])`, 'giu');
+  return new RegExp(
+    String.raw`(?<![\p{L}\p{N}_])${literalPattern}(?![\p{L}\p{N}_])`,
+    'giu',
+  );
 }
 
 function validateConfiguredClaimTemplates(verifiers = []) {

@@ -66,6 +66,37 @@ describe('parseFactualClaims', () => {
     assert.equal(claims[0].verifierId, 'nightly-invoices');
   });
 
+  it('parses configured claims wrapped in common prose and Markdown punctuation', () => {
+    const options = {
+      verifiers: [{
+        id: 'nightly-invoices',
+        kind: 'json_path',
+        claimTemplate: 'The nightly batch built {{value}} invoices',
+      }],
+    };
+    for (const text of [
+      '**The nightly batch built 17 invoices.**',
+      '"The nightly batch built 17 invoices."',
+      '(The nightly batch built 17 invoices.)',
+    ]) {
+      const claims = parseFactualClaims(text, options);
+      assert.equal(claims.length, 1, text);
+      assert.equal(claims[0].expected, 17, text);
+      assert.equal(claims[0].verifierId, 'nightly-invoices', text);
+    }
+  });
+
+  it('does not parse a configured claim embedded inside a word', () => {
+    const claims = parseFactualClaims('prefixThe nightly batch built 17 invoicessuffix', {
+      verifiers: [{
+        id: 'nightly-invoices',
+        kind: 'json_path',
+        claimTemplate: 'The nightly batch built {{value}} invoices',
+      }],
+    });
+    assert.deepEqual(claims, []);
+  });
+
   it('rejects unsafe or ambiguous configured templates', () => {
     assert.throws(() => compileConfiguredClaimTemplate('{{value}}'), /literal characters/);
     assert.throws(
