@@ -27,6 +27,15 @@ describe('parseFactualClaims', () => {
     assert.match(claims[0].subject, /row count/);
   });
 
+  it('parses equals wording for counts and versions', () => {
+    const countClaims = parseFactualClaims('the row count equals 1,284');
+    assert.equal(countClaims.length, 1);
+    assert.equal(countClaims[0].expected, 1284);
+    const versionClaims = parseFactualClaims('package version equals 1.31.0');
+    assert.equal(versionClaims.length, 1);
+    assert.equal(versionClaims[0].expected, '1.31.0');
+  });
+
   it('parses there-are-N-rows phrasing', () => {
     const claims = parseFactualClaims('There are 42 orders in the table.');
     assert.equal(claims.length, 1);

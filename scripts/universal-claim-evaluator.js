@@ -117,7 +117,7 @@ function parseCountClaims(source, push) {
   // subject + count is N
   eachMatch(
     source,
-    /\b((?:the |total )?[a-z][\w .-]{0,40}? count)\s*(?:is|are|=|:)\s*([\d,]+(?:\.\d+)?)\b/gi,
+    /\b((?:the |total )?[a-z][\w .-]{0,40}? count)\s*(?:is|are|=|:|equals)\s*([\d,]+(?:\.\d+)?)\b/gi,
     (match) => {
       const expected = parseNumberToken(match[2]);
       if (expected == null) return;
@@ -139,7 +139,7 @@ function parseCountClaims(source, push) {
   // COUNT(*) = N
   eachMatch(
     source,
-    /\bCOUNT\s*\(\s*\*\s*\)\s*(?:=|is|:)\s*([\d,]+)\b/gi,
+    /\bCOUNT\s*\(\s*\*\s*\)\s*(?:=|is|:|equals)\s*([\d,]+)\b/gi,
     (match) => {
       const expected = parseNumberToken(match[1]);
       if (expected == null) return;
@@ -187,7 +187,7 @@ function parseFileMetricClaims(source, push) {
 function parseValueClaims(source, push) {
   eachMatch(
     source,
-    /\b((?:package )?version)\s*(?:is|=|:)\s*(v?\d+\.\d+\.\d+[\w.+-]*)\b/gi,
+    /\b((?:package )?version)\s*(?:is|=|:|equals)\s*(v?\d+\.\d+\.\d+[\w.+-]*)\b/gi,
     (match) => {
       push({
         kind: 'value',
