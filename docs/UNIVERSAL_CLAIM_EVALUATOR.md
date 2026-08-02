@@ -35,7 +35,9 @@ Wired into:
 
 ## Configure verifiers
 
-Copy the example and edit:
+ThumbGate ships a default config at `config/gates/claim-verifiers.json` that
+rechecks `package version` and `package.json` existence. For project-specific
+facts (row counts, inventory files, service health), copy the example and edit:
 
 ```bash
 cp config/gates/claim-verifiers.example.json .thumbgate/claim-verifiers.json
@@ -47,7 +49,7 @@ Load order:
 2. `options.configPath` or `$THUMBGATE_CLAIM_VERIFIERS_PATH`
 3. `$THUMBGATE_FEEDBACK_DIR/claim-verifiers.json`
 4. `.thumbgate/claim-verifiers.json`
-5. `config/gates/claim-verifiers.json`
+5. `config/gates/claim-verifiers.json` (shipped default)
 
 An existing but malformed config is a verifier error. ThumbGate does not skip
 it and silently fall through to a different file.

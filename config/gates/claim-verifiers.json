@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "description": "Default factual claim verifiers shipped with ThumbGate. Override with .thumbgate/claim-verifiers.json or THUMBGATE_CLAIM_VERIFIERS_PATH. Queries and paths are operator-owned — never taken from claim text.",
+  "verifiers": [
+    {
+      "id": "package-version",
+      "kind": "json_path",
+      "match": {
+        "kinds": ["value"],
+        "subjects": ["version", "package version"]
+      },
+      "path": "package.json",
+      "jsonPath": "version"
+    },
+    {
+      "id": "package-json-exists",
+      "kind": "file_exists",
+      "match": {
+        "kinds": ["file_exists"],
+        "paths": ["package.json"]
+      },
+      "path": "package.json"
+    }
+  ]
+}
