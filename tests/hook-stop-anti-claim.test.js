@@ -30,13 +30,29 @@ function writeTranscript(message) {
   return file;
 }
 
-function runHook(transcriptPath) {
+function runHook(transcriptPath, options = {}) {
   const res = spawnSync(process.execPath, [HOOK], {
-    input: JSON.stringify({ transcript_path: transcriptPath }),
+    input: JSON.stringify({ transcript_path: transcriptPath, ...(options.payload || {}) }),
     encoding: 'utf8',
     timeout: 5000,
+    env: { ...process.env, ...(options.env || {}) },
   });
   return { stdout: res.stdout || '', stderr: res.stderr || '', status: res.status };
+}
+
+function makeVerifierRoot() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-anticlaim-verifier-'));
+  fs.mkdirSync(path.join(root, '.thumbgate'));
+  fs.writeFileSync(path.join(root, 'README.md'), 'one\ntwo\nthree\n');
+  fs.writeFileSync(path.join(root, '.thumbgate', 'claim-verifiers.json'), JSON.stringify({
+    verifiers: [{
+      id: 'readme-lines',
+      kind: 'file_lines',
+      match: { kinds: ['file_lines'], paths: ['README.md'] },
+      path: 'README.md',
+    }],
+  }));
+  return root;
 }
 
 test('findClaim matches "is live" / "deployed" / "fixed" wording', () => {
@@ -208,6 +224,73 @@ test('hook stays silent when no claim phrase appears', () => {
   });
   const { stdout } = runHook(transcript);
   assert.equal(stdout.trim(), '');
+});
+
+test('hook hard-blocks a factual mismatch without requiring an MCP tool call', () => {
+  const root = makeVerifierRoot();
+  const res = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({
+      hook_event_name: 'Stop',
+      stop_hook_active: false,
+      cwd: root,
+      last_assistant_message: 'file README.md has 4 lines',
+    }),
+    encoding: 'utf8',
+    timeout: 5000,
+  });
+  const out = JSON.parse((res.stdout || '').trim());
+  assert.equal(out.decision, 'block');
+  assert.equal(out.verification.verified, false);
+  assert.equal(out.verification.failures[0].status, 'mismatch');
+  assert.equal(out.verification.failures[0].actual, 3);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('hook allows a factual claim only after the configured source matches', () => {
+  const root = makeVerifierRoot();
+  const res = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({
+      hook_event_name: 'Stop',
+      stop_hook_active: false,
+      cwd: root,
+      last_assistant_message: 'file README.md has 3 lines',
+    }),
+    encoding: 'utf8',
+    timeout: 5000,
+  });
+  assert.equal((res.stdout || '').trim(), '');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('hook fails closed when a parsed factual claim has no configured verifier', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-anticlaim-unconfigured-'));
+  const res = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({
+      hook_event_name: 'Stop',
+      stop_hook_active: false,
+      cwd: root,
+      last_assistant_message: 'the row count is 1,284',
+    }),
+    encoding: 'utf8',
+    timeout: 5000,
+  });
+  const out = JSON.parse((res.stdout || '').trim());
+  assert.equal(out.decision, 'block');
+  assert.equal(out.verification.failures[0].status, 'unconfigured');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('hook yields on the host correction retry marker', () => {
+  const res = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({
+      hook_event_name: 'Stop',
+      stop_hook_active: true,
+      last_assistant_message: 'the row count is 1,284',
+    }),
+    encoding: 'utf8',
+    timeout: 5000,
+  });
+  assert.equal((res.stdout || '').trim(), '');
 });
 
 test('hook is safe with missing transcript_path', () => {

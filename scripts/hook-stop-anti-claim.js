@@ -29,6 +29,10 @@
  */
 
 const fs = require('node:fs');
+const {
+  parseFactualClaims,
+  evaluateUniversalClaims,
+} = require('./universal-claim-evaluator');
 
 // Lie-phrase patterns. These match common "claim of completion" wording
 // the agent emits without verification. Word-boundary anchored to avoid
@@ -233,6 +237,47 @@ function readStdinSync() {
   }
 }
 
+function factualClaimBlock(text, options = {}) {
+  const parsed = parseFactualClaims(text);
+  if (parsed.length === 0) return null;
+
+  try {
+    const result = evaluateUniversalClaims(text, {
+      cwd: options.cwd,
+      configPath: options.configPath,
+      feedbackDir: options.feedbackDir,
+      failUnconfigured: true,
+    });
+    if (result.verified) return null;
+    const failures = result.checks.filter((check) => !check.passed);
+    return {
+      decision: 'block',
+      reason: `ThumbGate factual-claim gate: ${failures.map((check) => check.message).join('; ')}. Recheck the configured source of truth and restate the observed value, or retract the claim.`,
+      verification: {
+        verified: false,
+        parsedCount: result.parsedCount,
+        failures: failures.map((check) => ({
+          status: check.status,
+          kind: check.kind,
+          verifierId: check.verifierId || null,
+          expected: check.expected,
+          actual: Object.prototype.hasOwnProperty.call(check, 'actual') ? check.actual : null,
+        })),
+      },
+    };
+  } catch (error) {
+    return {
+      decision: 'block',
+      reason: `ThumbGate factual-claim gate failed closed: ${error.message}`,
+      verification: {
+        verified: false,
+        parsedCount: parsed.length,
+        failures: [{ status: 'evaluator_error' }],
+      },
+    };
+  }
+}
+
 function main() {
   const raw = readStdinSync();
   let payload = {};
@@ -242,12 +287,28 @@ function main() {
     payload = {};
   }
 
+  // Claude Code invokes a blocked Stop hook once more with this marker so the
+  // agent can correct its response. Re-blocking the same payload would hit the
+  // host's block cap instead of giving the agent a correction turn.
+  if (payload.stop_hook_active === true) return;
+
   const transcriptPath = payload.transcript_path || process.env.CLAUDE_TRANSCRIPT_PATH;
   const message = readLastAssistantTurn(transcriptPath);
-  if (!message) return; // no transcript visible; nothing to check
+  const text = message
+    ? extractText(message)
+    : String(payload.last_assistant_message || process.env.CLAUDE_RESPONSE || '');
+  if (!text.trim()) return; // no assistant response visible; nothing to check
 
-  const text = extractText(message);
-  const toolUseSummary = extractToolUseSummary(message);
+  const toolUseSummary = message ? extractToolUseSummary(message) : '';
+  const factualBlock = factualClaimBlock(text, {
+    cwd: payload.cwd || payload.workspace_root || process.cwd(),
+    configPath: process.env.THUMBGATE_CLAIM_VERIFIERS_PATH,
+  });
+  if (factualBlock) {
+    process.stdout.write(`${JSON.stringify(factualBlock)}\n`);
+    return;
+  }
+
   const claim = findClaim(text);
   if (!claim) return; // no completion claim made; silent
 
@@ -298,4 +359,5 @@ module.exports = {
   hasProof,
   extractText,
   extractToolUseSummary,
+  factualClaimBlock,
 };

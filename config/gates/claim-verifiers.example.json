@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "description": "Configured sources of truth for the universal claim evaluator. Copy to .thumbgate/claim-verifiers.json or config/gates/claim-verifiers.json. Queries and paths come only from this file — never from claim text.",
+  "verifiers": [
+    {
+      "id": "orders-row-count",
+      "kind": "sqlite_count",
+      "match": {
+        "kinds": ["count"],
+        "subjects": ["row count", "rows", "orders", "order count", "total rows"]
+      },
+      "dbPath": "data/app.sqlite",
+      "query": "SELECT COUNT(*) AS n FROM orders"
+    },
+    {
+      "id": "readme-line-count",
+      "kind": "file_lines",
+      "match": {
+        "kinds": ["file_lines"],
+        "paths": ["README.md"]
+      },
+      "path": "README.md"
+    },
+    {
+      "id": "package-version",
+      "kind": "json_path",
+      "match": {
+        "kinds": ["value"],
+        "subjects": ["version", "package version"]
+      },
+      "path": "package.json",
+      "jsonPath": "version"
+    }
+  ]
+}
