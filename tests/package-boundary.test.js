@@ -417,8 +417,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 416 -> 418 (2026-08-02): scripts/universal-claim-evaluator.js +
     // config/gates/claim-verifiers.example.json for fail-closed factual claim rechecks.
     // 418 -> 419 (2026-08-02): default config/gates/claim-verifiers.json (package version + package.json exists).
-    manifest.fileCount <= 419,
-    `npm package should stay <= 419 files, got ${manifest.fileCount}`
+    // 419 -> 422 (2026-08-02): ERP financial control plane — scripts/financial-control-plane.js,
+    // scripts/thumbgate-spend-guard.js, config/financial-control.json (agent spend hard deny).
+    manifest.fileCount <= 422,
+    `npm package should stay <= 422 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
