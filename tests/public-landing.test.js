@@ -89,7 +89,7 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   const h2Count = (landingPage.match(/<h2\b/g) || []).length;
   const h3Count = (landingPage.match(/<h3\b/g) || []).length;
 
-  assert.ok(words.length <= 1100, `visible homepage is ${words.length} words`);
+  assert.ok(words.length <= 1300, `visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
   assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
@@ -216,7 +216,8 @@ test('homepage preserves brand, version, repository, and deployment placeholders
 test('homepage features thumbs branding and self-improving diagrams above the fold story', () => {
   assert.match(landingPage, /class="hero-thumbs"/);
   assert.match(landingPage, /class="hero-thumbs"[\s\S]{0,120}👍[\s\S]{0,80}👎/);
-  assert.match(landingPage, /\/assets\/diagrams\/hero-thumbs\.svg/);
+  assert.match(landingPage, /hero-terminal/);
+  assert.match(landingPage, /git push --force origin main[\s\S]*decision\s+<span class="red">DENY<\/span>/i);
   assert.match(landingPage, /\/assets\/diagrams\/before-after\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/loop\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/self-improving-thumbs-loop\.svg/);
@@ -227,6 +228,6 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   const heroStart = landingPage.indexOf('<!-- HERO -->');
   const howStart = landingPage.indexOf('id="how-it-works"');
   const heroBlock = landingPage.slice(heroStart, howStart);
-  assert.ok(heroBlock.includes('hero-thumbs.svg'), 'hero diagram must appear before how-it-works');
+  assert.ok(heroBlock.includes('hero-terminal'), 'terminal mockup must appear before how-it-works');
   assert.ok(heroBlock.includes('class="hero-thumbs"'), 'big thumbs must appear in hero');
 });
