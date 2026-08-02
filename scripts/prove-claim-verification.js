@@ -208,6 +208,68 @@ async function run() {
         });
       },
     },
+    {
+      id: 'CLAIM-07',
+      desc: 'universal evaluator fails closed on row-count mismatch against a configured sqlite verifier',
+      fn: async () => {
+        await withIsolatedRuntime(async ({ gatesEngine }) => {
+          const root = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-claim-universal-'));
+          try {
+            fs.mkdirSync(path.join(root, 'data'), { recursive: true });
+            const Database = require('better-sqlite3');
+            const dbPath = path.join(root, 'data', 'app.sqlite');
+            const db = new Database(dbPath);
+            db.exec('CREATE TABLE orders (id INTEGER PRIMARY KEY); INSERT INTO orders (id) VALUES (1),(2);');
+            db.close();
+
+            const result = gatesEngine.verifyClaimEvidence('the row count is 1,284', {
+              cwd: root,
+              verifiers: [{
+                id: 'orders-row-count',
+                kind: 'sqlite_count',
+                match: { subjects: ['row count', 'rows', 'orders'] },
+                dbPath: 'data/app.sqlite',
+                query: 'SELECT COUNT(*) AS n FROM orders',
+              }],
+            });
+            if (result.verified) {
+              throw new Error('Expected row-count mismatch to fail verification');
+            }
+            const gateChecks = result.universal?.checks || [];
+            const claimResults = result.universal?.claims || [];
+            const universalFail = claimResults.find((check) => check.status === 'mismatch')
+              || gateChecks.map((check) => check.universal || check).find((check) => check.status === 'mismatch');
+            if (!universalFail) {
+              throw new Error(`Expected universal mismatch check, got ${JSON.stringify(result.universal)}`);
+            }
+            if (universalFail.actual !== 2 || universalFail.expected !== 1284) {
+              throw new Error(`Unexpected mismatch values: ${JSON.stringify(universalFail)}`);
+            }
+          } finally {
+            fs.rmSync(root, { recursive: true, force: true });
+          }
+        });
+      },
+    },
+    {
+      id: 'CLAIM-08',
+      desc: 'universal evaluator verifies package version from the shipped default verifier config',
+      fn: async () => {
+        await withIsolatedRuntime(async ({ gatesEngine }) => {
+          const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+          const result = gatesEngine.verifyClaimEvidence(`package version is ${pkg.version}`, {
+            cwd: ROOT,
+            claimVerifiersPath: path.join(ROOT, 'config', 'gates', 'claim-verifiers.json'),
+          });
+          if (!result.verified) {
+            throw new Error(`Expected package version claim to verify, got ${JSON.stringify(result)}`);
+          }
+          if (!result.universal || result.universal.parsedCount < 1) {
+            throw new Error('Expected universal evaluator to parse the version claim');
+          }
+        });
+      },
+    },
   ];
 
   console.log('Claim Verification Gates - Proof Gate\n');
