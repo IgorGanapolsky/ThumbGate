@@ -31,6 +31,9 @@ const {
 } = require('./feedback-quality');
 
 const INFERRED_TAG_RULES = [
+  { tag: 'claw-style', keywords: ['claw', 'enterprise-claw', 'openshell', 'dynamic-tool', 'screen-interaction', 'computer-use'] },
+  { tag: 'hybrid-inference', keywords: ['hybrid', 'cloud-escalation', 'local-route', 'hybrid-route', 'perplexity-pc'] },
+  { tag: 'agent-identity', keywords: ['agent identity', 'audit trail', 'identity separation', 'agent-credential'] },
   { tag: 'thumbgate', keywords: ['thumbgate', 'feedback-loop', 'statusline', 'dashboard', 'mcp'] },
   { tag: 'testing', keywords: ['test', 'testing', 'jest', 'coverage', 'verify', 'verification'] },
   { tag: 'security', keywords: ['security', 'secret', 'credential', 'token', 'auth'] },
