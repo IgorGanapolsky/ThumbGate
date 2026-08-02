@@ -80,6 +80,14 @@ function preToolHookCommand() {
   return buildPortableHookCommand('gate-check');
 }
 
+function spendGuardHookCommand() {
+  // Prefer package script path so npm installs get ERP spend-guard without manual ~/.thumbgate wiring.
+  if (isSourceCheckout(PKG_ROOT)) {
+    return `node ${shellQuote(path.join(PKG_ROOT, 'scripts', 'thumbgate-spend-guard.js'))}`;
+  }
+  return `node ${shellQuote(path.join(PKG_ROOT, 'scripts', 'thumbgate-spend-guard.js'))}`;
+}
+
 function userPromptHookCommand() {
   return buildPortableHookCommand('hook-auto-capture');
 }
@@ -136,6 +144,7 @@ module.exports = {
   resolveCodexCliCommand,
   resolveCliCommand,
   sessionStartHookCommand,
+  spendGuardHookCommand,
   statuslineCommand,
   userPromptHookCommand,
 };

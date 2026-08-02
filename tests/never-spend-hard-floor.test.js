@@ -80,7 +80,11 @@ test('never-spend force-promote block is not warn-by-default soft-denied', () =>
     });
     assert.ok(denied, 'expected a gate result');
     assert.equal(denied.decision, 'deny');
-    assert.equal(denied.gate, 'hard-never-spend-any');
+    // ERP plane may deny first (financial-control-plane); pattern hard-floor is backup.
+    assert.ok(
+      ['hard-never-spend-any', 'financial-control-plane', 'financial-control-envelope'].includes(denied.gate),
+      `unexpected gate ${denied.gate}`,
+    );
     assert.equal(!!denied.warnByDefault, false);
 
     // Posture must not soft-warn never-spend even without STRICT.

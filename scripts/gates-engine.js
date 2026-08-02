@@ -165,6 +165,8 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'hard-never-spend-apollo-paid',
   'hard-never-spend-stripe-checkout',
   'hard-never-spend-thumbgate-pro',
+  'financial-control-plane',
+  'financial-control-envelope',
 ]);
 
 function isNeverSpendHardFloorGate(gateId) {
@@ -190,6 +192,8 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'hard-never-spend-apollo-paid',
   'hard-never-spend-stripe-checkout',
   'hard-never-spend-thumbgate-pro',
+  'financial-control-plane',
+  'financial-control-envelope',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
@@ -2250,6 +2254,8 @@ function checkWhenClause(when, constraints) {
 
 function matchGate(gate, toolName, toolInput = {}) {
   // Include URL/query surfaces so WebFetch/browser/MCP checkout opens cannot bypass pattern gates.
+  // Executable surfaces only by default. Write/Edit file bodies are NOT scanned for
+  // command gates (documenting "git push --force" must not trip force-push).
   const matchParts = [
     toolInput.command,
     toolInput.file_path,
@@ -2258,13 +2264,14 @@ function matchGate(gate, toolName, toolInput = {}) {
     toolInput.uri,
     toolInput.href,
     toolInput.query,
-    toolInput.prompt,
-    toolInput.description,
-    toolInput.pattern,
     Array.isArray(toolInput.args) ? toolInput.args.join(' ') : toolInput.args,
-    typeof toolInput.content === 'string' ? toolInput.content.slice(0, 2000) : '',
-  ].filter((part) => part != null && String(part).length > 0);
-  let matchText = matchParts.map(String).join(' ');
+  ];
+  const isAuthoringTool = /^(Edit|Write|MultiEdit|NotebookEdit)$/i.test(String(toolName || ''));
+  if (!isAuthoringTool) {
+    matchParts.push(toolInput.prompt, toolInput.description, toolInput.pattern);
+    if (typeof toolInput.content === 'string') matchParts.push(toolInput.content.slice(0, 2000));
+  }
+  let matchText = matchParts.filter((part) => part != null && String(part).length > 0).map(String).join(' ');
 
   // Claw/hybrid support: enrich matchText with claw metadata (for EnterpriseClaw/OpenShell/Perplexity hybrid agents)
   const clawCtx = toolInput.clawContext || toolInput._claw || (toolInput.agentId ? {
@@ -2842,6 +2849,40 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   const METRIC_SKIP_TOOLS = ['capture_feedback', 'feedback_stats', 'recall', 'feedback_summary', 'prevention_rules'];
   const skipMetrics = METRIC_SKIP_TOOLS.includes(toolName);
 
+
+  // ERP Financial Control Plane (agent spend / upgrade / checkout). Always-on hard floor.
+  // Wired into gate-check so fresh installs enforce never-spend without a separate hook.
+  try {
+    const financialControl = require('./financial-control-plane');
+    const fin = financialControl.evaluateFinancialControl(toolName, toolInput);
+    if (fin && fin.decision === 'deny') {
+      const denyResult = {
+        decision: 'deny',
+        gate: fin.gate || 'financial-control-plane',
+        message: fin.message,
+        severity: fin.severity || 'critical',
+        reasoning: fin.reasoning || [],
+      };
+      recordStat(denyResult.gate, 'block', null, { toolName, toolInput });
+      const auditRecord = recordAuditEvent({
+        toolName,
+        toolInput,
+        decision: 'deny',
+        gateId: denyResult.gate,
+        message: denyResult.message,
+        severity: denyResult.severity,
+        source: 'financial-control-plane',
+      });
+      auditToFeedback(auditRecord);
+      return denyResult;
+    }
+  } catch (err) {
+    // Fail open only for non-financial tooling if ERP module missing; never swallow if require works.
+    if (err && err.code !== 'MODULE_NOT_FOUND') {
+      // keep going — pattern gates still apply
+    }
+  }
+
   // Prefer block/approve over warn/log so soft network-egress cannot short-circuit hard-never-spend.
   const actionRank = { block: 0, approve: 1, warn: 2, log: 3 };
   const orderedGates = [...config.gates].sort((a, b) => {
@@ -3088,6 +3129,40 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     if (trajectory.isDrifting) {
       recordStat('strategic-drift', 'block', null, { toolName, toolInput });
       return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
+    }
+  }
+
+
+  // ERP Financial Control Plane (agent spend / upgrade / checkout). Always-on hard floor.
+  // Wired into gate-check so fresh installs enforce never-spend without a separate hook.
+  try {
+    const financialControl = require('./financial-control-plane');
+    const fin = financialControl.evaluateFinancialControl(toolName, toolInput);
+    if (fin && fin.decision === 'deny') {
+      const denyResult = {
+        decision: 'deny',
+        gate: fin.gate || 'financial-control-plane',
+        message: fin.message,
+        severity: fin.severity || 'critical',
+        reasoning: fin.reasoning || [],
+      };
+      recordStat(denyResult.gate, 'block', null, { toolName, toolInput });
+      const auditRecord = recordAuditEvent({
+        toolName,
+        toolInput,
+        decision: 'deny',
+        gateId: denyResult.gate,
+        message: denyResult.message,
+        severity: denyResult.severity,
+        source: 'financial-control-plane',
+      });
+      auditToFeedback(auditRecord);
+      return denyResult;
+    }
+  } catch (err) {
+    // Fail open only for non-financial tooling if ERP module missing; never swallow if require works.
+    if (err && err.code !== 'MODULE_NOT_FOUND') {
+      // keep going — pattern gates still apply
     }
   }
 

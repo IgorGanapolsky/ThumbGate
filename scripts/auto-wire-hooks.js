@@ -24,6 +24,7 @@ const {
   codexStatuslineCommand,
   codexUserPromptHookCommand,
   preToolHookCommand,
+  spendGuardHookCommand,
   sessionStartHookCommand,
   statuslineCommand,
   userPromptHookCommand,
@@ -35,9 +36,10 @@ function getHome() {
 }
 
 // --- Hook definitions ---
+const CLAUDE_PRETool_MATCHER = 'Bash|Edit|Write|MultiEdit|WebFetch|mcp__.*';
 const CLAUDE_HOOKS = {
   PreToolUse: {
-    matcher: 'Bash|Edit|Write|MultiEdit',
+    matcher: CLAUDE_PRETool_MATCHER,
     hooks: [{ type: 'command', command: preToolHookCommand() }],
   },
   UserPromptSubmit: {
@@ -412,6 +414,9 @@ function wireClaudeHooks(options) {
     added.push({ lifecycle, command: hookCommand });
   }
 
+  // ERP spend-guard must be present on fresh installs (Codex P1: distributed runtime).
+  ensureSpendGuardHook(settings, added);
+
   if (added.length === 0) {
     if (!settings.statusLine || settings.statusLine.command !== desiredStatusLine) {
       if (!dryRun) {
@@ -752,6 +757,22 @@ function parseFlags(argv) {
 }
 
 // --- Exports ---
+
+
+function ensureSpendGuardHook(settings, added) {
+  const spendCmd = spendGuardHookCommand();
+  settings.hooks = settings.hooks || {};
+  settings.hooks.PreToolUse = settings.hooks.PreToolUse || [];
+  if (!hookAlreadyPresent(settings.hooks.PreToolUse, spendCmd)) {
+    // Spend guard first: hard deny financial mutations before advisory gate-check.
+    settings.hooks.PreToolUse.unshift({
+      matcher: '.*',
+      hooks: [{ type: 'command', command: spendCmd, timeout: 5 }],
+    });
+    added.push({ lifecycle: 'PreToolUse', command: spendCmd });
+  }
+  return spendCmd;
+}
 
 module.exports = {
   detectAgent,
