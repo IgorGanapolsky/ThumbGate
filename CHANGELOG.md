@@ -12,6 +12,12 @@
   `scripts/financial-control-plane.js` and its crash-recoverable shared ledger
   lock are both required at the enforcement boundary.
 
+## 1.33.0
+
+### Minor Changes
+
+- a525966: Verify operator-configured quantitative claim wording with safe literal templates and live sources.
+
 ## 1.32.0
 
 ### Minor Changes
