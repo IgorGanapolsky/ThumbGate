@@ -3989,6 +3989,12 @@ switch (COMMAND) {
     console.log(`Total auto-promoted gates: ${result.totalGates}`);
     break;
   }
+  case 'spend-gate':
+  case 'operator-spend-gate': {
+    // ERP-lite operator money gate CLI (2026-08-02)
+    require('../scripts/operator-spend-gate').main(process.argv.slice(3));
+    break;
+  }
   case 'meta-agent': {
     const metaArgs = parseArgs(process.argv.slice(3));
     if (metaArgs.status) {

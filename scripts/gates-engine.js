@@ -157,6 +157,9 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'secret-exfiltration',
   'security-vuln-scan',
   'slopsquat-guard',
+  // Operator money: never warn-downgrade. Incident 2026-08-02 Apollo $588.
+  'operator-spend-gate',
+  'hard-ban-never-spend-operator-money',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -174,6 +177,9 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'git-reset-hard',
   'git-clean-force',
   'rm-rf-home-or-root',
+  // Financial disaster class — never daily-cap discount (2026-08-02 $588 Apollo).
+  'operator-spend-gate',
+  'hard-ban-never-spend-operator-money',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
@@ -1936,6 +1942,47 @@ function recordStructuralGateBlock(toolName, toolInput, result) {
   return result;
 }
 
+/**
+ * ERP-lite operator money gate (2026-08-02 Apollo $588 incident).
+ * Blocks upgrade/credits/checkout/pay tool intents unless same-message
+ * authorization with exact USD amount. Refund/cancel/dispute always allowed.
+ * Hard floor: never warn-downgraded, never daily-cap discounted.
+ */
+function evaluateOperatorSpendGate(toolName, toolInput = {}) {
+  let spend;
+  try {
+    spend = require('./operator-spend-gate');
+  } catch {
+    return null;
+  }
+  const operatorMessage = String(
+    toolInput.operatorMessage
+      || toolInput.user_message
+      || toolInput.message
+      || process.env.HERMES_OPERATOR_MESSAGE
+      || process.env.THUMBGATE_OPERATOR_MESSAGE
+      || '',
+  );
+  const result = spend.evaluateToolCall({
+    toolName,
+    toolInput,
+    message: operatorMessage,
+    log: true,
+    agentId: toolInput.agentId || process.env.HERMES_AGENT_ID || 'gates-engine',
+  });
+  if (!result || result.decision !== 'BLOCK') return null;
+  return {
+    decision: 'deny',
+    gate: 'operator-spend-gate',
+    message:
+      `${result.reason}: never spend operator money without same-message ` +
+      `"I authorize spend $N on …". Refund/cancel/dispute are allowed. ` +
+      `hits=${(result.classification && result.classification.spendHits || []).join(',') || '-'}`,
+    severity: 'critical',
+    spendGate: result,
+  };
+}
+
 function isScopeEnforcedAction(toolName, toolInput = {}, affectedFiles = []) {
   if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) return true;
   if (toolName !== 'Bash') return false;
@@ -2776,6 +2823,11 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     return boostedRiskGuard;
   }
 
+  const operatorSpendGate = evaluateOperatorSpendGate(toolName, toolInput);
+  if (operatorSpendGate) {
+    return recordStructuralGateBlock(toolName, toolInput, operatorSpendGate);
+  }
+
   // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern).
   // Keep runtime enforcement explicit so advisory planning checks do not mask
   // higher-priority deny/approve gates in established workflows.
@@ -3020,6 +3072,11 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     });
     auditToFeedback(auditRecord);
     return boostedRiskGuard;
+  }
+
+  const operatorSpendGate = evaluateOperatorSpendGate(toolName, toolInput);
+  if (operatorSpendGate) {
+    return recordStructuralGateBlock(toolName, toolInput, operatorSpendGate);
   }
 
   // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern).
@@ -4156,6 +4213,7 @@ module.exports = {
   isBoostedRiskHigh,
   riskTagMatchesAction,
   evaluateBoostedRiskTagGuard,
+  evaluateOperatorSpendGate,
   registerPrThreadResolutionClaimGate,
   evaluatePendingPrThreadResolutionGate,
   checkPrDormantForBranch,

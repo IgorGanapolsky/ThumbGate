@@ -358,7 +358,8 @@
     "scripts/pragmatic-hybrid-search.js",
     "server.json",
     "glama.json",
-    "smithery.yaml"
+    "smithery.yaml",
+    "scripts/operator-spend-gate.js"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
@@ -616,7 +617,7 @@
     "test:session-analyzer": "node --test tests/session-analyzer.test.js",
     "test:tessl": "node --test tests/tessl-export.test.js",
     "test:gates": "node --test --test-concurrency=1 tests/gate-templates.test.js tests/gates-engine.test.js tests/claim-verification.test.js tests/universal-claim-evaluator.test.js tests/secret-scanner.test.js tests/secret-fixture-safety.test.js tests/prompt-guard.test.js tests/audit-trail.test.js tests/profile-router.test.js tests/workflow-sentinel.test.js tests/docker-sandbox-planner.test.js tests/mcp-tools-suggest-fix.test.js tests/deny-network-egress-pattern.test.js tests/git-pathspec-scope.test.js tests/git-global-option-bypass.test.js tests/gate-evasion-matrix.test.js",
-    "test:budget": "node --test tests/budget-guard.test.js tests/budget-enforcer.test.js tests/tokenomics-cost-guard.test.js tests/hook-no-budget-lockout.test.js",
+    "test:budget": "node --test tests/budget-guard.test.js tests/budget-enforcer.test.js tests/tokenomics-cost-guard.test.js tests/hook-no-budget-lockout.test.js tests/operator-spend-gate.test.js tests/operator-spend-gate-engine.test.js",
     "test:workers": "npm --prefix workers ci && npm --prefix workers test",
     "test:evoskill": "node --test tests/evoskill.test.js",
     "test:gates-hardening": "node --test tests/gates-hardening.test.js",

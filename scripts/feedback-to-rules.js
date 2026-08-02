@@ -42,6 +42,8 @@ const HIGH_RISK_TAGS = new Set([
   'destructive', 'force-push', 'delete', 'drop', 'force-overwrite',
   'production', 'database', 'payment', 'credentials', 'secrets',
   'rm-rf', 'reset-hard', 'truncate', 'data-loss',
+  // Financial disaster class (2026-08-02 Apollo $588) — first 👎 can promote spend gates
+  'never-spend', 'money-crisis', 'billing', 'operator-spend', 'spend', 'checkout',
 ]);
 function analyze(entries) {
   let positiveCount = 0, negativeCount = 0;
