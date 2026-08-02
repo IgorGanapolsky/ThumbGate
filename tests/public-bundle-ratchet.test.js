@@ -159,8 +159,10 @@ const path = require('node:path');
 // for bounded evals, reranking, request budgets/quality tiers, and the fail-closed
 // A+ evidence scorecard, including the npm-reachable slow feedback loop. Main
 // packed 406 files; this branch packs exactly 416.
+// Bumped 416 -> 418 (2026-08-02): universal claim evaluator runtime + claim
+// verifier example config so agents can recheck factual claims against SQLite/FS/JSON.
 // Each file is directly callable from the package and contains no buyer state.
-const BASELINE_FILE_COUNT = 416;
+const BASELINE_FILE_COUNT = 418;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

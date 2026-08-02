@@ -506,6 +506,20 @@ const CLI_COMMANDS = [
     flags: [],
   },
   {
+    name: 'verify-claims',
+    aliases: ['verify-claim'],
+    description: 'Recheck factual claims against configured SQLite, filesystem, and JSON sources',
+    group: 'gates',
+    mcpTool: 'verify_claim',
+    flags: [
+      { name: 'claim', type: 'string', required: true, description: 'Factual claim text to verify' },
+      { name: 'config', type: 'string', description: 'Verifier config path (default .thumbgate/claim-verifiers.json)' },
+      { name: 'cwd', type: 'string', description: 'Root directory that contains configured sources' },
+      { name: 'advisory', type: 'boolean', description: 'Do not fail an otherwise parseable claim only because no verifier is configured' },
+      { name: 'json', type: 'boolean', description: 'Output a machine-readable verdict' },
+    ],
+  },
+  {
     name: 'hermes-gate',
     description: 'Hermes Agent pre_tool_call hook: gate runtime tool calls (incl. skill_manage) before they run',
     group: 'gates',

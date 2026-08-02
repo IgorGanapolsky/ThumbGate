@@ -223,9 +223,12 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 401 -> 405 (2026-07-31): keep lockstep with package-boundary / public-bundle-ratchet.
   // 405 -> 416 (2026-08-01): exact package count for the ten public
   // evidence/runtime files documented in CHANGELOG.md. No headroom.
+  // 416 -> 418 (2026-08-02): the universal claim evaluator runtime and its
+  // operator-owned verifier example. Both are public enforcement surfaces;
+  // neither imports private Core code or buyer state.
   // CI pack measured 403 during secret-exfil coverage PR (no intentional new package
   // entries beyond security/runtime scripts already on the enforcement path).
-  const CEILING = 416;
+  const CEILING = 418;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

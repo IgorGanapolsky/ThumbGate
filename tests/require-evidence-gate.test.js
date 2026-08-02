@@ -96,6 +96,34 @@ test('require_evidence_for_claim returns blocking=false when no claim pattern ma
   assert.deepEqual(response.checks, []);
 });
 
+test('require_evidence_for_claim blocks an MCP completion on configured factual mismatch', async () => {
+  const configPath = path.join(tmpProofDir, 'claim-verifiers.json');
+  fs.writeFileSync(configPath, JSON.stringify({
+    verifiers: [{
+      id: 'package-version',
+      kind: 'json_path',
+      match: { kinds: ['value'], subjects: ['package version'] },
+      path: 'package.json',
+      jsonPath: 'version',
+    }],
+  }));
+  const previous = process.env.THUMBGATE_CLAIM_VERIFIERS_PATH;
+  process.env.THUMBGATE_CLAIM_VERIFIERS_PATH = configPath;
+  try {
+    const response = await callTool('require_evidence_for_claim', {
+      claim: 'package version is 0.0.0',
+    });
+    assert.equal(response.blocking, true);
+    assert.equal(response.verified, false);
+    assert.equal(response.factualMismatches.length, 1);
+    assert.equal(response.factualMismatches[0].universal.status, 'mismatch');
+    assert.equal(response.factualMismatches[0].universal.actual, '1.31.0');
+  } finally {
+    if (previous === undefined) delete process.env.THUMBGATE_CLAIM_VERIFIERS_PATH;
+    else process.env.THUMBGATE_CLAIM_VERIFIERS_PATH = previous;
+  }
+});
+
 test('require_evidence_for_claim blocks goal contract until handoff evidence exists', async () => {
   clearSessionActions();
   const response = await callTool('require_evidence_for_claim', {

@@ -3236,6 +3236,11 @@ function aiInventory() {
   console.log(payload);
 }
 
+function verifyClaimsCmd() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'universal-claim-evaluator'));
+  process.exitCode = runCli(process.argv.slice(3));
+}
+
 function help() {
   const v = pkgVersion();
   const helpArgs = process.argv.slice(3);
@@ -3258,6 +3263,7 @@ function help() {
     console.log('  explore                                           Interactive TUI for lessons, gates, stats');
     console.log('  dashboard                                         Open the local ThumbGate dashboard');
     console.log('  ai-inventory                                      Scan AI/ML components and export ML-BOM evidence');
+    console.log('  verify-claims --claim="..."                     Recheck factual claims against configured sources');
     console.log('  doctor                                            Audit runtime isolation + bootstrap context');
     console.log('  break-glass --reason="..."                       Short TTL recovery if gates over-fire');
     console.log('  brain [--write]                                   Build the agent-readable context brain (lessons + rules + gates)');
@@ -3412,6 +3418,7 @@ const SUBCOMMAND_HELP = {
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
+  'verify-claims': 'Usage: npx thumbgate verify-claims --claim="the row count is 1,284" [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nRecheck supported factual claims against operator-configured SQLite, filesystem, and JSON sources. Exits non-zero on mismatch, missing verifier, or verifier error.',
   'hermes-gate': 'Usage: npx thumbgate hermes-gate\n\nNous Research Hermes Agent pre_tool_call shell hook: reads Hermes tool-call JSON from stdin, runs the ThumbGate gate pipeline (strict by default), and outputs {"decision":"block","reason":...} to veto or {} to allow. Gates terminal/patch/skill_manage etc. See adapters/hermes/config.yaml.',
   'break-glass': 'Usage: npx thumbgate break-glass --reason="why" [--ttl=5m] [--json]\n\nShort-lived recovery path for over-firing gates. Allows hook settings edits and satisfies PR-create/thread-check gates without disabling core destructive-action protections.',
   serve:         'Usage: npx thumbgate serve\n\nStart the MCP stdio server. This is for agent runtimes, not the local HTTP dashboard.',
@@ -4184,6 +4191,10 @@ switch (COMMAND) {
   }
   case 'gate-stats':
     gateStats();
+    break;
+  case 'verify-claims':
+  case 'verify-claim':
+    verifyClaimsCmd();
     break;
   case 'eval':
   case 'prompt-eval':
