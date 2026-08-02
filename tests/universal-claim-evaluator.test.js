@@ -10,6 +10,7 @@ const { spawnSync } = require('node:child_process');
 const {
   parseFactualClaims,
   evaluateUniversalClaims,
+  loadVerifierConfig,
   assertSelectOnly,
   resolveSafePath,
   pathMatches,
@@ -273,6 +274,33 @@ describe('verifyClaimEvidence integration', () => {
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
       clearSessionActions();
+    }
+  });
+});
+
+describe('loadVerifierConfig package-root defaults', () => {
+  it('loads shipped package defaults when consumer cwd has no claim-verifiers.json', () => {
+    const consumerRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-claim-consumer-'));
+    try {
+      // Simulate npm install consumer project: empty cwd, no local config.
+      fs.writeFileSync(path.join(consumerRoot, 'package.json'), JSON.stringify({
+        name: 'consumer',
+        version: '2.3.4',
+      }));
+      const loaded = loadVerifierConfig({ cwd: consumerRoot });
+      assert.ok(loaded.verifierCount === undefined || Array.isArray(loaded.verifiers));
+      assert.ok(loaded.verifiers.length >= 1, 'expected shipped default verifiers');
+      assert.match(String(loaded.source), /config[\\/]gates[\\/]claim-verifiers\.json/);
+      // Source should be the package install path, not the empty consumer root.
+      assert.ok(!String(loaded.source).startsWith(consumerRoot));
+
+      const result = evaluateUniversalClaims('package version is 2.3.4', {
+        cwd: consumerRoot,
+      });
+      assert.equal(result.verified, true);
+      assert.equal(result.checks[0].status, 'match');
+    } finally {
+      fs.rmSync(consumerRoot, { recursive: true, force: true });
     }
   });
 });

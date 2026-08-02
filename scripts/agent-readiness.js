@@ -232,6 +232,7 @@ function summarizeClaimVerification(projectRoot = PROJECT_ROOT, deps = {}) {
     verifierCount,
     configSource,
     stopHookRegistered,
+    configLoadFailed,
     recommendation,
   };
 }
@@ -250,8 +251,11 @@ function generateAgentReadinessReport({
   if (!bootstrap.ready) warnings.push(bootstrap.recommendation);
   if (!permissions.ready) warnings.push(permissions.recommendation);
   // Missing operator verifiers is advisory (not every project asserts SQL row counts).
-  // A missing evaluator module is a packaging failure and must surface as needs_attention.
-  if (!claimVerification.evaluatorReady) warnings.push(claimVerification.recommendation);
+  // A missing evaluator module or a broken claim-verifier config is not advisory —
+  // both make factual recheck fail closed at runtime and must surface here.
+  if (!claimVerification.evaluatorReady || claimVerification.configLoadFailed) {
+    warnings.push(claimVerification.recommendation);
+  }
 
   return {
     generatedAt: new Date().toISOString(),
