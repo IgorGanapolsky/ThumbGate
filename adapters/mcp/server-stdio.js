@@ -97,11 +97,13 @@ const {
 } = require('../../scripts/human-escalation');
 const {
   createPurchaseRequisition,
+  getRuntimePrincipal,
   listPurchaseRequisitions,
   reconcilePurchaseLedger,
   reservePurchaseRequisition,
   settlePurchaseRequisition,
 } = require('../../scripts/financial-control-plane');
+const MCP_FINANCIAL_PRINCIPAL = getRuntimePrincipal();
 const { recordReasoningTrace } = require('../../scripts/agent-reasoning-traces');
 const { recordToolCall } = require('../../scripts/tool-kpi-tracker');
 const {
@@ -1376,7 +1378,7 @@ async function callToolInner(name, args) {
     case 'list_human_escalations':
       return toTextResult(listEscalations({ status: args.status }).slice(0, Number(args.limit || 20)));
     case 'create_purchase_requisition':
-      return toTextResult(createPurchaseRequisition(args));
+      return toTextResult(createPurchaseRequisition(args, { authenticatedPrincipal: MCP_FINANCIAL_PRINCIPAL }));
     case 'list_purchase_requisitions': {
       const rows = listPurchaseRequisitions()
         .filter((entry) => !args.status || entry.status === args.status)
@@ -1384,9 +1386,9 @@ async function callToolInner(name, args) {
       return toTextResult(rows);
     }
     case 'reserve_purchase_requisition':
-      return toTextResult(reservePurchaseRequisition(args));
+      return toTextResult(reservePurchaseRequisition(args, { authenticatedPrincipal: MCP_FINANCIAL_PRINCIPAL }));
     case 'settle_purchase_requisition':
-      return toTextResult(settlePurchaseRequisition(args));
+      return toTextResult(settlePurchaseRequisition(args, { authenticatedPrincipal: MCP_FINANCIAL_PRINCIPAL }));
     case 'reconcile_purchase_ledger':
       return toTextResult(reconcilePurchaseLedger());
     case 'verify_claim':

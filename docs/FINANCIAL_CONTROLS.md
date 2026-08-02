@@ -5,14 +5,16 @@ The workflow sentinel and real pre-tool gate fail closed until the following
 append-only lifecycle is complete:
 
 1. `create_purchase_requisition` records the vendor, exact USD amount, purpose,
-   source-message identifier, requester identity, and evidence. It also creates
-   a critical human escalation.
+   source-message identifier, authenticated runtime principal, and evidence. It
+   also creates a critical human escalation. The caller cannot select or supply
+   the requester identity.
 2. An independently configured human reviewer approves or rejects that escalation
    through `POST /v1/escalations/{id}/decision`. The agent MCP surface has no
    approval operation, and the requester cannot approve their own request.
 3. `reserve_purchase_requisition` creates a short-lived, single-use reservation
    whose vendor, purpose, amount, and source-message identifier match the approved
-   request.
+   request. Only the authenticated runtime principal that created the request can
+   reserve or settle it.
 4. The economic tool call includes `costUsd`, an explicit positive budget, and:
 
    ```json
@@ -20,6 +22,7 @@ append-only lifecycle is complete:
      "financialControl": {
        "requisitionId": "req_...",
        "reservationId": "res_...",
+       "actionId": "unique-provider-action-id",
        "vendor": "Example vendor",
        "purpose": "Exact approved purpose",
        "sourceMessageId": "user-message-..."
@@ -27,10 +30,15 @@ append-only lifecycle is complete:
    }
    ```
 
-5. `settle_purchase_requisition` commits actual spend with receipt evidence or
+5. The pre-tool gate atomically changes the reservation to `authorized` before
+   returning allow. A second invocation cannot reuse it, including a parallel or
+   retrying invocation.
+6. `settle_purchase_requisition` commits actual spend with receipt evidence or
    releases the unused reservation.
-6. `reconcile_purchase_ledger` reports totals, stale reservations, projected
-   statuses, and any event-hash mismatch.
+7. `reconcile_purchase_ledger` reports totals, stale reservations, projected
+   statuses, event-hash mismatches, malformed rows, and broken global hash-chain
+   links. A separately written ledger-head checkpoint also detects tail
+   truncation.
 
 ## Fail-closed rules
 
@@ -40,6 +48,15 @@ append-only lifecycle is complete:
   blocked.
 - Missing, pending, expired, released, mismatched, or previously committed
   authorizations are blocked.
+- A reservation is single-use and is consumed at authorization, not at optional
+  post-action settlement.
+- Ledger deletion, reordering, malformed rows, event mutation, and disagreement
+  with the atomically updated head checkpoint cause the financial path to fail
+  closed. This is tamper-evident, not a cryptographic defense against an attacker
+  who can rewrite both the ledger and its checkpoint.
+- The trusted host should assign a unique `THUMBGATE_RUNTIME_PRINCIPAL_ID` per
+  agent runtime when MCP and hook processes must share an approved requisition.
+  Without a shared trusted identity, approved execution fails closed.
 - Approval and reservation scope must match the execution scope exactly.
 - Deterministic financial-control decisions take priority over learned-policy
   predictions, memories, and prompt instructions.

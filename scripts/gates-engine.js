@@ -3384,6 +3384,7 @@ function evaluateUnconditionalHardFloor(input = {}) {
     toolName,
     toolInput,
     usage: input.usage || toolInput.usage,
+    costUsd: input.costUsd ?? toolInput.costUsd,
     budget: input.budget || toolInput.budget,
   });
   const costControl = buildCostControl(
@@ -3397,7 +3398,7 @@ function evaluateUnconditionalHardFloor(input = {}) {
       economicAction: undefined,
     },
     costControl,
-  });
+  }, { consumeReservation: true });
   if (financialControl.mode === 'block') {
     const result = {
       decision: 'deny',

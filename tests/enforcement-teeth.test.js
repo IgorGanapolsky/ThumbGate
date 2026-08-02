@@ -728,7 +728,7 @@ test('hook-pre-tool-use hard-blocks an economic action with a zero-dollar budget
         tool_name: 'Browser',
         tool_input: {
           command: 'Upgrade Apollo to paid, add a payment method, and click Subscribe',
-          usage: { costUsd: 588 },
+          costUsd: 588,
           budget: {
             maxCostUsdPerAction: 0,
             remainingCostUsd: 0,
@@ -744,6 +744,7 @@ test('hook-pre-tool-use hard-blocks an economic action with a zero-dollar budget
     assert.equal(res.parsed?.decision, 'block');
     assert.match(res.parsed?.reason || '', /financial-control/);
     assert.match(res.parsed?.reason || '', /\$0\.00/);
+    assert.doesNotMatch(res.parsed?.reason || '', /positive, explicit cost estimate/i);
     assert.doesNotMatch(res.parsed?.reason || '', /thumbgate\.ai\/go\/pro/i);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });

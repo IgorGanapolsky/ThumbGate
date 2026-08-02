@@ -60,17 +60,6 @@ const GOAL_CONTRACT_SCHEMA = {
   },
 };
 
-const FINANCIAL_REQUESTER_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['id', 'kind'],
-  properties: {
-    id: { type: 'string', minLength: 1 },
-    kind: { type: 'string', enum: ['agent', 'service', 'human'] },
-    displayName: { type: 'string' },
-  },
-};
-
 const TASK_OUTCOME_INPUT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -1202,10 +1191,9 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       additionalProperties: false,
-      required: ['taskId', 'requester', 'vendor', 'amountUsd', 'purpose', 'sourceMessageId', 'evidence'],
+      required: ['taskId', 'vendor', 'amountUsd', 'purpose', 'sourceMessageId', 'evidence'],
       properties: {
         taskId: { type: 'string', minLength: 1 },
-        requester: FINANCIAL_REQUESTER_SCHEMA,
         vendor: { type: 'string', minLength: 1 },
         amountUsd: { type: 'number', exclusiveMinimum: 0 },
         purpose: { type: 'string', minLength: 1 },
@@ -1234,10 +1222,9 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       additionalProperties: false,
-      required: ['requisitionId', 'requester', 'amountUsd', 'vendor', 'purpose', 'sourceMessageId'],
+      required: ['requisitionId', 'amountUsd', 'vendor', 'purpose', 'sourceMessageId'],
       properties: {
         requisitionId: { type: 'string', minLength: 1 },
-        requester: FINANCIAL_REQUESTER_SCHEMA,
         amountUsd: { type: 'number', exclusiveMinimum: 0 },
         vendor: { type: 'string', minLength: 1 },
         purpose: { type: 'string', minLength: 1 },
@@ -1253,11 +1240,10 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       additionalProperties: false,
-      required: ['requisitionId', 'reservationId', 'requester', 'status'],
+      required: ['requisitionId', 'reservationId', 'status'],
       properties: {
         requisitionId: { type: 'string', minLength: 1 },
         reservationId: { type: 'string', minLength: 1 },
-        requester: FINANCIAL_REQUESTER_SCHEMA,
         status: { type: 'string', enum: ['committed', 'released'] },
         actualAmountUsd: { type: 'number', minimum: 0 },
         evidence: { type: 'array', items: { type: 'string', minLength: 1 } },

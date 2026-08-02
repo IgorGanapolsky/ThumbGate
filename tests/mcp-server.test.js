@@ -429,7 +429,6 @@ test('purchase-control MCP tools expose request, reserve, settle, and reconcilia
   try {
     const createdResult = await callTool('create_purchase_requisition', {
       taskId: 'mcp-finance-test',
-      requester: { id: 'mcp-agent', kind: 'agent' },
       vendor: 'Example Vendor',
       amountUsd: 1,
       purpose: 'Verify the MCP authorization boundary',
@@ -442,7 +441,6 @@ test('purchase-control MCP tools expose request, reserve, settle, and reconcilia
     await assert.rejects(
       callTool('reserve_purchase_requisition', {
         requisitionId: created.requisition.requisitionId,
-        requester: { id: 'mcp-agent', kind: 'agent' },
         amountUsd: 1,
         vendor: 'Example Vendor',
         purpose: 'Verify the MCP authorization boundary',

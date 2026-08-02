@@ -108,7 +108,7 @@ function assessPayPalPaymentProofReadiness(env = process.env) {
     webhookUrl = null;
   }
   const webhookIdValid = /^[A-Za-z0-9]{1,50}$/.test(String(config.webhookId || ''));
-  const webhookUrlValid = Boolean(webhookUrl && webhookUrl.protocol === 'https:' &&
+  const webhookUrlValid = Boolean(webhookUrl?.protocol === 'https:' &&
     !webhookUrl.username && !webhookUrl.password && !webhookUrl.hash &&
     webhookUrl.pathname === '/v1/billing/paypal-webhook');
   const ledgerPathValid = path.isAbsolute(String(config.webhookLedgerPath || ''));
