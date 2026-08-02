@@ -235,8 +235,8 @@ async function run() {
             if (result.verified) {
               throw new Error('Expected row-count mismatch to fail verification');
             }
-            const gateChecks = (result.universal && result.universal.checks) || [];
-            const claimResults = (result.universal && result.universal.claims) || [];
+            const gateChecks = result.universal?.checks || [];
+            const claimResults = result.universal?.claims || [];
             const universalFail = claimResults.find((check) => check.status === 'mismatch')
               || gateChecks.map((check) => check.universal || check).find((check) => check.status === 'mismatch');
             if (!universalFail) {
