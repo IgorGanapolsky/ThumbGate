@@ -75,7 +75,17 @@ test('generateAgentReadinessReport aligns bootstrap and permission findings', ()
   assert.equal(report.articleAlignment.contextConditioning, true);
   assert.equal(report.articleAlignment.permissionEnvelope, true);
   assert.equal(report.articleAlignment.runtimeIsolation, true);
+  assert.equal(report.claimVerification.evaluatorReady, true);
   assert.equal(report.overallStatus, 'ready');
 
   fs.rmSync(projectRoot, { recursive: true, force: true });
+});
+
+test('summarizeClaimVerification reports shipped default verifiers in this repo', () => {
+  const { summarizeClaimVerification } = require('../scripts/agent-readiness');
+  const summary = summarizeClaimVerification(path.join(__dirname, '..'));
+  assert.equal(summary.evaluatorReady, true);
+  assert.ok(summary.verifierCount >= 1);
+  assert.equal(summary.stopHookRegistered, true);
+  assert.equal(summary.ready, true);
 });

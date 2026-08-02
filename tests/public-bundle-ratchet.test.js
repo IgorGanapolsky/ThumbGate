@@ -161,8 +161,10 @@ const path = require('node:path');
 // packed 406 files; this branch packs exactly 416.
 // Bumped 416 -> 418 (2026-08-02): universal claim evaluator runtime + claim
 // verifier example config so agents can recheck factual claims against SQLite/FS/JSON.
+// Bumped 418 -> 419 (2026-08-02): ship default config/gates/claim-verifiers.json
+// so package-version factual claims recheck without a local override.
 // Each file is directly callable from the package and contains no buyer state.
-const BASELINE_FILE_COUNT = 418;
+const BASELINE_FILE_COUNT = 419;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
