@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 'use strict';
 
-const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 
 const DEFAULT_MAX_ATTEMPTS = 1;
@@ -37,24 +36,17 @@ function parseArgs(argv = []) {
   return options;
 }
 
-function queryRegistry(packageName, version) {
-  const result = spawnSync('npm', [
-    'view',
-    `${packageName}@${version}`,
-    'version',
-    'gitHead',
-    '--json',
-  ], { encoding: 'utf8', timeout: 20_000 });
-
-  if (result.status !== 0) {
-    const diagnostic = `${result.stderr || ''}\n${result.stdout || ''}`;
-    return diagnostic.includes('E404')
-      ? { state: 'unpublished', metadata: null }
-      : { state: 'registry_error', metadata: null };
-  }
-
+async function queryRegistry(packageName, version, fetchImpl = globalThis.fetch) {
   try {
-    const metadata = JSON.parse(result.stdout || '{}');
+    const packagePath = encodeURIComponent(packageName);
+    const versionPath = encodeURIComponent(version);
+    const response = await fetchImpl(`https://registry.npmjs.org/${packagePath}/${versionPath}`, {
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (response.status === 404) return { state: 'unpublished', metadata: null };
+    if (!response.ok) return { state: 'registry_error', metadata: null };
+    const metadata = await response.json();
     return { state: 'published', metadata };
   } catch {
     return { state: 'registry_error', metadata: null };
@@ -126,7 +118,7 @@ async function verifyNpmGitHead(options = {}) {
       version,
       expectedSha,
       allowUnpublished,
-      registryResult: resolver(packageName, version),
+      registryResult: await resolver(packageName, version),
       attempts: attempt,
     });
     if (report.verdict !== 'retry') return report;

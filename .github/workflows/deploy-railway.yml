@@ -318,6 +318,16 @@ jobs:
             --max-attempts=6 \
             --retry-delay-ms=10000 \
             --json
+      - name: Verify deployed package ownership after publication
+        if: steps.railway-config.outputs.enabled == 'true'
+        timeout-minutes: 12
+        run: |
+          node scripts/verify-npm-githead.js \
+            --version="$(node -p "require('./package.json').version")" \
+            --expected-sha="$GITHUB_SHA" \
+            --max-attempts=60 \
+            --retry-delay-ms=10000 \
+            --json
       # Health prove is the hard deploy gate. Revenue/observability doctor is
       # advisory here so missing operator/analytics secrets do not paint a
       # successful Railway ship as a failed deploy (CEO: code live ≠ doctor ready).

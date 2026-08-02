@@ -380,11 +380,18 @@ test('Deploy to Railway hard-gates build health and keeps revenue readiness advi
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
   const healthIndex = workflow.indexOf('name: Verify deployment health');
   const behaviorIndex = workflow.indexOf('name: Verify authenticated production behavior');
+  const packageOwnershipIndex = workflow.indexOf('name: Verify deployed package ownership after publication');
   const revenueIndex = workflow.indexOf('name: Verify revenue and buyer-path readiness');
   const evidenceIndex = workflow.indexOf('name: Upload revenue observability evidence');
 
   assert.notEqual(healthIndex, -1);
   assert.ok(behaviorIndex > healthIndex, 'authenticated behavior must inspect the exact promoted SHA');
+  assert.ok(packageOwnershipIndex > behaviorIndex, 'final package ownership must be rechecked after production behavior');
+  const ownershipStep = workflow.slice(packageOwnershipIndex, workflow.indexOf('      - name:', packageOwnershipIndex + 20));
+  assert.match(ownershipStep, /node scripts\/verify-npm-githead\.js/);
+  assert.match(ownershipStep, /--expected-sha="\$GITHUB_SHA"/);
+  assert.match(ownershipStep, /--max-attempts=(?:[3-9][0-9]|[1-9][0-9]{2,})/);
+  assert.doesNotMatch(ownershipStep, /--allow-unpublished/);
   assert.ok(revenueIndex > healthIndex, 'revenue readiness must inspect the promoted build after SHA verification');
   assert.ok(revenueIndex > behaviorIndex, 'revenue readiness follows the hard authenticated behavior gate');
   assert.ok(evidenceIndex > revenueIndex, 'revenue evidence upload must follow the advisory probe');
