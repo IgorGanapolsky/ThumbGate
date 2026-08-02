@@ -309,6 +309,9 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /THUMBGATE_API_KEY/);
   assert.match(workflow, /Enforce deploy policy/);
   assert.match(workflow, /node scripts\/deploy-policy\.js --profiles=billing,deploy/);
+  assert.match(workflow, /name: Verify deploy SHA owns the package version/);
+  assert.match(workflow, /node scripts\/verify-npm-githead\.js/);
+  assert.match(workflow, /--allow-unpublished/);
   assert.match(workflow, /steps\.railway-config\.outputs\.enabled == 'true'/);
   assert.match(workflow, /RAILWAY_PROJECT_ID/);
   assert.match(workflow, /RAILWAY_ENVIRONMENT_ID/);
@@ -376,15 +379,20 @@ test('Deploy to Railway workflow waits long enough to verify the promoted build 
 test('Deploy to Railway hard-gates build health and keeps revenue readiness advisory with evidence', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
   const healthIndex = workflow.indexOf('name: Verify deployment health');
+  const behaviorIndex = workflow.indexOf('name: Verify authenticated production behavior');
   const revenueIndex = workflow.indexOf('name: Verify revenue and buyer-path readiness');
   const evidenceIndex = workflow.indexOf('name: Upload revenue observability evidence');
 
   assert.notEqual(healthIndex, -1);
+  assert.ok(behaviorIndex > healthIndex, 'authenticated behavior must inspect the exact promoted SHA');
   assert.ok(revenueIndex > healthIndex, 'revenue readiness must inspect the promoted build after SHA verification');
+  assert.ok(revenueIndex > behaviorIndex, 'revenue readiness follows the hard authenticated behavior gate');
   assert.ok(evidenceIndex > revenueIndex, 'revenue evidence upload must follow the advisory probe');
   const healthStep = workflow.slice(healthIndex, revenueIndex);
   const revenueStep = workflow.slice(revenueIndex, evidenceIndex);
   assert.doesNotMatch(healthStep, /continue-on-error:\s*true/, 'deployment SHA health remains fail-closed');
+  assert.match(healthStep, /node scripts\/prove-production-authenticated\.js/);
+  assert.match(healthStep, /--expected-sha="\$GITHUB_SHA"/);
   assert.match(revenueStep, /continue-on-error:\s*true/);
   assert.match(revenueStep, /railway run \\/);
   assert.match(revenueStep, /--project "\$RAILWAY_PROJECT_ID"/);
@@ -639,6 +647,18 @@ test('Deploy verification reports authoritative failures and route-only checks c
   assert.doesNotMatch(routeOnly, /Production deploy verified/);
 });
 
+test('Deploy verification fails closed on authenticated production search and export', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-verify.yml'), 'utf8');
+
+  assert.match(workflow, /name: Verify authenticated production search and export/);
+  assert.match(workflow, /THUMBGATE_API_KEY:\s*\$\{\{ secrets\.THUMBGATE_API_KEY \}\}/);
+  assert.match(workflow, /node scripts\/prove-production-authenticated\.js/);
+  assert.match(workflow, /--expected-version="\$\{\{ steps\.pkg\.outputs\.version \}\}"/);
+  assert.match(workflow, /--expected-sha="\$\{GITHUB_SHA\}"/);
+  assert.match(workflow, /--max-attempts=6/);
+  assert.match(workflow, /--retry-delay-ms=10000/);
+});
+
 test('Deploy verification workflow keeps embedded heredoc scripts valid YAML', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'verify-deploy-comment.yml'), 'utf8');
   const lines = workflow.split('\n');
@@ -673,7 +693,7 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /name:\s*Publish to NPM/);
   assert.match(workflow, /concurrency:/);
   assert.match(workflow, /group:\s*publish-npm-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
-  assert.match(workflow, /cancel-in-progress:\s*true/);
+  assert.match(workflow, /cancel-in-progress:\s*false/);
   assert.match(workflow, /permissions:\s+contents:\s+write\s+id-token:\s+write/s);
   assert.match(workflow, /node-version:\s*'24\.x'/);
   assert.match(workflow, /timeout-minutes:\s*25/);
@@ -685,6 +705,9 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /npm run prove:runtime/);
   assert.match(workflow, /name: Audit npm package boundary/);
   assert.match(workflow, /npm pack --dry-run/);
+  assert.match(workflow, /name: Verify published npm commit identity/);
+  assert.match(workflow, /node scripts\/verify-npm-githead\.js/);
+  assert.match(workflow, /--expected-sha="\$\{GITHUB_SHA\}"/);
   assert.doesNotMatch(workflow, /run:\s*npm test/);
   assert.match(workflow, /name: Plan publish action/);
   assert.match(workflow, /run: node scripts\/publish-decision\.js/);

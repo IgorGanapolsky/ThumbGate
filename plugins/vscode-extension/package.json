@@ -2,7 +2,7 @@
   "name": "thumbgate",
   "displayName": "ThumbGate",
   "description": "Deterministic pre-action checks, feedback capture, and MCP guardrails for AI coding agents in VS Code-compatible IDEs.",
-  "version": "1.31.0",
+  "version": "1.32.0",
   "publisher": "igorganapolsky",
   "license": "MIT",
   "icon": "assets/logo-400x400.png",

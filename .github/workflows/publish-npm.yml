@@ -18,7 +18,9 @@ permissions:
 
 concurrency:
   group: publish-npm-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel a release after it may have created its immutable tag. A later
+  # main push waits instead of stranding or racing the npm publication.
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -152,6 +154,17 @@ jobs:
         env:
           VERSION: ${{ steps.package.outputs.version }}
         run: node scripts/prove-packaged-runtime.js --package-spec "thumbgate@${VERSION}" --expected-version "${VERSION}" --install-attempts 12 --install-delay-ms 10000
+      - name: Verify published npm commit identity
+        if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.publish_npm == 'true') || (github.event_name == 'release' && steps.npm.outputs.published == 'false')
+        env:
+          VERSION: ${{ steps.package.outputs.version }}
+        run: |
+          node scripts/verify-npm-githead.js \
+            --version="${VERSION}" \
+            --expected-sha="${GITHUB_SHA}" \
+            --max-attempts=12 \
+            --retry-delay-ms=10000 \
+            --json
       - name: Resolve npm publish receipt
         id: receipt
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.ensure_release == 'true'

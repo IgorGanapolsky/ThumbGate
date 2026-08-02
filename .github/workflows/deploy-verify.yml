@@ -87,6 +87,18 @@ jobs:
         with:
           node-version: 20
 
+      - name: Verify authenticated production search and export
+        env:
+          THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
+        run: |
+          node scripts/prove-production-authenticated.js \
+            --base-url="${PROD_URL}" \
+            --expected-version="${{ steps.pkg.outputs.version }}" \
+            --expected-sha="${GITHUB_SHA}" \
+            --max-attempts=6 \
+            --retry-delay-ms=10000 \
+            --json
+
       - name: Verify top-level marketing pages still match sentinels
         id: marketing
         run: |

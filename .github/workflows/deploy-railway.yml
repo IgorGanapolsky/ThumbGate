@@ -103,6 +103,14 @@ jobs:
       - name: Enforce deploy policy
         if: steps.railway-config.outputs.enabled == 'true'
         run: node scripts/deploy-policy.js --profiles=billing,deploy
+      - name: Verify deploy SHA owns the package version
+        if: steps.railway-config.outputs.enabled == 'true'
+        run: |
+          node scripts/verify-npm-githead.js \
+            --version="$(node -p "require('./package.json').version")" \
+            --expected-sha="${GITHUB_SHA}" \
+            --allow-unpublished \
+            --json
       - name: Stamp immutable build metadata
         if: steps.railway-config.outputs.enabled == 'true'
         run: node scripts/build-metadata.js --sha "$GITHUB_SHA" --output config/build-metadata.json
@@ -299,6 +307,17 @@ jobs:
             echo "Observed build SHA: ${LIVE_SHA:-<missing>}"
             exit 1
           fi
+      - name: Verify authenticated production behavior
+        if: steps.railway-config.outputs.enabled == 'true'
+        timeout-minutes: 6
+        run: |
+          node scripts/prove-production-authenticated.js \
+            --base-url="$THUMBGATE_PUBLIC_APP_ORIGIN" \
+            --expected-version="$(node -p "require('./package.json').version")" \
+            --expected-sha="$GITHUB_SHA" \
+            --max-attempts=6 \
+            --retry-delay-ms=10000 \
+            --json
       # Health prove is the hard deploy gate. Revenue/observability doctor is
       # advisory here so missing operator/analytics secrets do not paint a
       # successful Railway ship as a failed deploy (CEO: code live ≠ doctor ready).
