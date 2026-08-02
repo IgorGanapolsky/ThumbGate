@@ -112,7 +112,7 @@ async function backfillLessonEmbeddings(options = {}) {
   const feedbackDir = options.feedbackDir || process.env.THUMBGATE_FEEDBACK_DIR;
   if (!options.embedder && !isEmbedderAvailable()) {
     const error = new Error(
-      'No semantic embedding provider configured. Set THUMBGATE_OLLAMA_EMBED_MODEL or configure another real provider.',
+      'No semantic embedding provider configured. Install optional @huggingface/transformers, set THUMBGATE_OLLAMA_EMBED_MODEL, or configure Gemini/Core AI.',
     );
     error.code = 'THUMBGATE_SEMANTIC_PROVIDER_UNAVAILABLE';
     throw error;

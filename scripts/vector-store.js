@@ -167,7 +167,14 @@ async function getEmbeddingPipeline() {
     const pipe = await loadPipelineForProfile(resolved.selectedProfile);
     _lastEmbeddingProfile = {
       ...report,
-      activeProfile: resolved.selectedProfile,
+      source: 'local-transformers',
+      activeProfile: {
+        ...resolved.selectedProfile,
+        qualityTier: 'production',
+        outputDimensionality: 384,
+        rationale: resolved.selectedProfile.rationale
+          || 'Local Transformers.js feature-extraction (Xenova/all-MiniLM-L6-v2).',
+      },
       fallbackUsed: false,
     };
     return { pipe, profile: _lastEmbeddingProfile };
@@ -176,7 +183,14 @@ async function getEmbeddingPipeline() {
     const pipe = await loadPipelineForProfile(fallback);
     _lastEmbeddingProfile = {
       ...report,
-      activeProfile: fallback,
+      source: 'local-transformers',
+      activeProfile: {
+        ...fallback,
+        qualityTier: 'production',
+        outputDimensionality: 384,
+        rationale: fallback.rationale
+          || 'Local Transformers.js fallback profile after primary profile load failure.',
+      },
       fallbackUsed: true,
       fallbackReason: primaryError.message,
     };
@@ -555,5 +569,6 @@ module.exports = {
   embedWithFeatureHash,
   embedWithOllama,
   getOllamaEmbeddingConfig,
+  hasLocalTransformerProvider,
   hasSemanticEmbeddingProvider,
 };

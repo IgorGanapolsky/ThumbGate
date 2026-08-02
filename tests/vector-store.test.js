@@ -114,6 +114,59 @@ describe('vector-store — built-in feature-hash embeddings', () => {
   });
 });
 
+describe('vector-store — local Transformers.js provider', () => {
+  it('detects optional @huggingface/transformers and records production provenance', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-transformers-'));
+    try {
+      process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+      process.env.THUMBGATE_RAM_BYTES_OVERRIDE = String(4 * 1024 ** 3);
+      process.env.THUMBGATE_CPU_COUNT_OVERRIDE = '4';
+      delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
+      delete process.env.THUMBGATE_EMBED_PROVIDER;
+      delete process.env.THUMBGATE_OLLAMA_EMBED_MODEL;
+      delete process.env.GEMINI_API_KEY;
+      delete process.env.GOOGLE_API_KEY;
+      delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      const vectorStore = require('../scripts/vector-store');
+
+      // Inject a fake pipeline so CI never downloads ONNX weights.
+      vectorStore.setPipelineLoaderForTests(async () => async () => ({
+        data: Float32Array.from([0, 1, 0, 0]),
+      }));
+
+      assert.equal(vectorStore.hasLocalTransformerProvider(), true);
+      assert.equal(vectorStore.hasSemanticEmbeddingProvider(), true);
+
+      const vector = await vectorStore.embed('block a destructive shell command', { kind: 'query' });
+      assert.deepEqual(vector, [0, 1, 0, 0]);
+      const profile = vectorStore.getLastEmbeddingProfile();
+      assert.equal(profile.source, 'local-transformers');
+      assert.equal(profile.activeProfile.qualityTier, 'production');
+      assert.equal(profile.activeProfile.id, 'compact');
+      assert.match(String(profile.activeProfile.model), /MiniLM|all-MiniLM/i);
+    } finally {
+      delete process.env.THUMBGATE_RAM_BYTES_OVERRIDE;
+      delete process.env.THUMBGATE_CPU_COUNT_OVERRIDE;
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('reports capability from package resolve without requiring a test loader', () => {
+    delete require.cache[require.resolve('../scripts/vector-store')];
+    const vectorStore = require('../scripts/vector-store');
+    let resolved = false;
+    try {
+      require.resolve('@huggingface/transformers');
+      resolved = true;
+    } catch {
+      resolved = false;
+    }
+    assert.equal(vectorStore.hasLocalTransformerProvider(), resolved);
+  });
+});
+
 describe('vector-store — Ollama semantic embedding provider', () => {
   it('uses the explicitly configured local model and records production provenance', async () => {
     const originalFetch = global.fetch;
