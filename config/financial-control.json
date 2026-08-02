@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "mode": "hard",
+  "description": "ERP-like agent financial control plane. Default zero agent-initiated spend. Human authorization required for any exception.",
+  "defaultAgentSpendUsd": 0,
+  "dailyAgentSpendCapUsd": 0,
+  "monthlyAgentSpendCapUsd": 0,
+  "requireExplicitAuthorization": true,
+  "authorizationTtlMinutes": 30,
+  "journalMaxEntries": 5000,
+  "freeAllowlist": [
+    "apollo people search",
+    "apollo search",
+    "apollo usage",
+    "apollo credits remaining",
+    "npm view",
+    "npm install",
+    "git ",
+    "gh pr",
+    "gh run",
+    "curl -s https://thumbgate",
+    "curl -s https://api.github.com"
+  ],
+  "paidMutationClasses": [
+    "saas_upgrade",
+    "checkout",
+    "payment_method",
+    "credit_purchase",
+    "subscription_change",
+    "billing_portal",
+    "invoice_pay"
+  ],
+  "vendorPatterns": {
+    "apollo": "(?:apollo|app\\.apollo\\.io)",
+    "stripe": "(?:stripe|checkout\\.stripe\\.com|buy\\.stripe\\.com)",
+    "thumbgate": "(?:thumbgate\\s*pro|thumbgate\\.ai/(?:go/)?pro|pricing)",
+    "openai": "(?:openai|platform\\.openai\\.com)",
+    "anthropic": "(?:anthropic|console\\.anthropic\\.com)"
+  }
+}

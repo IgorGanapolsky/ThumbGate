@@ -2,25 +2,34 @@
 'use strict';
 
 /**
- * ThumbGate financial mutation guard (HARD DENY).
+ * ThumbGate financial mutation guard (HARD DENY) — ERP front door.
  *
- * Locked after CEO $588 Apollo annual charge (2026-08-02):
- * agent-initiated spend/upgrade must be mechanically refused, not soft-warned.
- * No env-var bypass. Free Apollo search/usage remains allowed.
+ * PreToolUse entrypoint that:
+ *  1. Runs the Financial Control Plane (ERP: AP + Budget + Auth + Journal)
+ *  2. Applies pattern hard-denies for checkout/upgrade/payment paths
  *
- * If this file keeps getting weakened by another agent, restore from:
- *   ~/.thumbgate/bin/thumbgate-spend-guard.HARDENED.js
- * and re-apply: chflags uchg ~/.thumbgate/bin/thumbgate-spend-guard.js
+ * Default agent spend envelope is $0. Free search/usage stays allowed.
+ * No env-var bypass for denials. Human authorizations only via
+ * ~/.thumbgate/spend-authorizations.jsonl (amountUsd > 0 + vendor + TTL).
+ *
+ * Incident: 2026-08-02 ~$588 Apollo annual charge under soft warn-only gates.
  */
 
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
+const {
+  evaluateFinancialControl,
+  formatHookDeny,
+  flatten: erpFlatten,
+} = require('./financial-control-plane');
+
 const DENY_REASON =
   'ThumbGate HARD BLOCK: agent-initiated spend/upgrade is forbidden. '
   + 'Do not buy credits, open checkout, change billing, or recommend a paid upgrade. '
-  + 'A human must complete purchases outside the agent runtime. Free-tier Apollo search/usage remains allowed.';
+  + 'A human must complete purchases outside the agent runtime (or issue a spend authorization). '
+  + 'Free-tier Apollo search/usage remains allowed.';
 
 const DIRECT_TOOL_RULES = [
   { id: 'purchase_tool', re: /(?:^|[_-])(?:domain_|email_account_)?purchase(?:[_-]|$)|buy[_-]credits?/i },
@@ -46,7 +55,6 @@ const FINANCIAL_OBJECT =
 const MUTATION_ACTION =
   /\b(?:buy|purchase|upgrade|subscribe|activate|checkout|pay|charge|confirm|submit|create|attach|change|update|switch|cancel|refund|add\s+payment|enter\s+card|post|put|patch)\b/i;
 
-// Matches plans/upgrade, /checkout, billing portals, stripe checkout hosts, etc.
 const DIRECT_CHECKOUT_PATH =
   /(?:checkout\.stripe\.com|buy\.stripe\.com|app\.apollo\.io|(?:\/|#|\b)(?:checkout|purchase|upgrade|subscribe|plans?(?:\/|#|\b)|billing(?:\/|#|\b)))/i;
 
@@ -54,9 +62,10 @@ const VENDOR_UPSELL =
   /\b(?:apollo|stripe|sendgrid|twilio|openai|anthropic|resend|mailgun|postmark|thumbgate)\b[\s\S]{0,100}\b(?:upgrade|pro\b|paid|checkout|billing|subscribe|credits?)\b|\b(?:upgrade|pro\b|paid|checkout|billing|subscribe|credits?)\b[\s\S]{0,100}\b(?:apollo|stripe|sendgrid|twilio|openai|anthropic|resend|thumbgate)\b/i;
 
 const PROTECTED_GUARD_PATH =
-  /(?:^|[\s"'])(?:~\/|\$(?:HOME|\{HOME\})["']?\/|\/Users\/[^/\s"']+\/)?\.(?:thumbgate\/bin\/thumbgate-spend-guard(?:\.HARDENED)?\.js|claude\/settings\.json)(?:$|[\s"'])/i;
+  /(?:^|[\s"'])(?:~\/|\$(?:HOME|\{HOME\})["']?\/|\/Users\/[^/\s"']+\/)?\.(?:thumbgate\/(?:bin\/thumbgate-spend-guard(?:\.HARDENED)?\.js|financial\/)|claude\/settings\.json)(?:$|[\s"'])/i;
 
 function flatten(value, depth = 0) {
+  if (typeof erpFlatten === 'function') return erpFlatten(value, depth);
   if (depth > 5 || value == null) return '';
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return String(value);
@@ -75,6 +84,30 @@ function evaluateSpend(toolName, toolInput) {
   const text = flatten(toolInput);
   const combined = `${name} ${text}`;
 
+  // ERP plane first (journal + classification + auth + envelope)
+  try {
+    const erp = evaluateFinancialControl(name, toolInput);
+    if (erp && erp.decision === 'deny') {
+      return {
+        decision: 'deny',
+        ruleId: erp.gate || 'financial-control-plane',
+        reason: erp.message || DENY_REASON,
+        erp,
+      };
+    }
+    if (erp && erp.decision === 'warn') {
+      // Front-door guard still hard-denies warn-mode ERP for agent spend safety
+      return {
+        decision: 'deny',
+        ruleId: erp.gate || 'financial-control-plane-warn-as-deny',
+        reason: erp.message || DENY_REASON,
+        erp,
+      };
+    }
+  } catch {
+    // Fail closed on paid-looking traffic if ERP throws; allow only clear free traffic below.
+  }
+
   for (const rule of DIRECT_TOOL_RULES) {
     if (rule.re.test(name)) {
       return { decision: 'deny', ruleId: rule.id, reason: DENY_REASON };
@@ -86,7 +119,6 @@ function evaluateSpend(toolName, toolInput) {
     return { decision: 'deny', ruleId: 'guard_tampering', reason: DENY_REASON };
   }
 
-  // Interactive browser spend UIs
   const isInteractiveUi = /(?:browser|chrome|computer[_-]?use|playwright)/i.test(name);
   const hasInteractiveAction =
     /\b(?:click|type|press|tap|fill|select|submit|interact|drag)\b/i.test(combined);
@@ -106,7 +138,6 @@ function evaluateSpend(toolName, toolInput) {
     return { decision: 'deny', ruleId: 'vendor_upsell', reason: DENY_REASON };
   }
 
-  // ANY tool payload with a checkout/upgrade path (WebFetch url, Bash open/curl, MCP, …)
   if (DIRECT_CHECKOUT_PATH.test(text) || DIRECT_CHECKOUT_PATH.test(combined)) {
     return { decision: 'deny', ruleId: 'checkout_path', reason: DENY_REASON };
   }
@@ -144,15 +175,17 @@ function writeDenyReceipt(toolName, ruleId) {
 function output(verdict) {
   const payload =
     verdict.decision === 'deny'
-      ? {
-          decision: 'deny',
-          reason: verdict.reason,
-          hookSpecificOutput: {
-            hookEventName: 'PreToolUse',
-            permissionDecision: 'deny',
-            permissionDecisionReason: verdict.reason,
-          },
-        }
+      ? (verdict.erp
+        ? formatHookDeny(verdict.erp)
+        : {
+            decision: 'deny',
+            reason: verdict.reason,
+            hookSpecificOutput: {
+              hookEventName: 'PreToolUse',
+              permissionDecision: 'deny',
+              permissionDecisionReason: verdict.reason,
+            },
+          })
       : { decision: 'allow' };
   process.stdout.write(`${JSON.stringify(payload)}\n`);
 }
@@ -172,7 +205,7 @@ function main() {
   if (verdict.decision === 'deny') {
     writeDenyReceipt(toolName, verdict.ruleId);
     output(verdict);
-    process.stderr.write(`${verdict.reason}\n`);
+    process.stderr.write(`${verdict.reason || DENY_REASON}\n`);
     return 2;
   }
 

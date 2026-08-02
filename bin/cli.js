@@ -3898,6 +3898,15 @@ switch (COMMAND) {
     process.exit(report.overallStatus === 'ready' ? 0 : 1);
     break;
   }
+  case 'finance':
+  case 'erp':
+  case 'financial-control': {
+    // ERP-like financial control plane (GL journal, AP purchase block, budget envelopes, auth).
+    // Human authorize: thumbgate finance authorize --amount=5 --vendor=apollo --note="..."
+    const { runCli: runFinanceCli } = require(path.join(PKG_ROOT, 'scripts', 'financial-control-plane'));
+    process.exitCode = runFinanceCli(process.argv.slice(3));
+    break;
+  }
   case 'export-dpo':
   case 'dpo':
     exportDpo();
