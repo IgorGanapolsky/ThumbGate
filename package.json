@@ -922,7 +922,8 @@
     "test:request-envelope": "node --test tests/request-envelope.test.js",
     "test:a-plus-evidence": "node --test tests/a-plus-evidence-scorecard.test.js",
     "score:a-plus": "node scripts/a-plus-evidence-scorecard.js",
-    "test:universal-claim-evaluator": "node --test tests/universal-claim-evaluator.test.js"
+    "test:universal-claim-evaluator": "node --test tests/universal-claim-evaluator.test.js",
+    "verify:claims": "node scripts/universal-claim-evaluator.js"
   },
   "keywords": [
     "mcp",

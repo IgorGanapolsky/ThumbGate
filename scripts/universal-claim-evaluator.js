@@ -39,6 +39,20 @@ function resolveRepoRoot(cwd) {
   return path.resolve(cwd || process.cwd());
 }
 
+function pathExistsOrIsSymlink(targetPath) {
+  try {
+    fs.lstatSync(targetPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function pathIsWithin(rootPath, candidatePath) {
+  const rootWithSep = rootPath.endsWith(path.sep) ? rootPath : `${rootPath}${path.sep}`;
+  return candidatePath === rootPath || candidatePath.startsWith(rootWithSep);
+}
+
 function resolveSafePath(repoRoot, targetPath) {
   if (!targetPath || typeof targetPath !== 'string') {
     throw new Error('path is required');
@@ -49,10 +63,30 @@ function resolveSafePath(repoRoot, targetPath) {
   if (targetPath.includes('\0')) {
     throw new Error('invalid path');
   }
-  const resolved = path.resolve(repoRoot, targetPath);
-  const rootWithSep = repoRoot.endsWith(path.sep) ? repoRoot : `${repoRoot}${path.sep}`;
-  if (resolved !== repoRoot && !resolved.startsWith(rootWithSep)) {
+  const lexicalRoot = path.resolve(repoRoot);
+  const resolved = path.resolve(lexicalRoot, targetPath);
+  if (!pathIsWithin(lexicalRoot, resolved)) {
     throw new Error(`path escapes repo root: ${targetPath}`);
+  }
+
+  // A lexical prefix check is insufficient when an in-root symlink points
+  // outside the root. Resolve the target when it exists, or its closest
+  // existing ancestor for not-yet-created paths, and enforce the real root.
+  const realRoot = fs.realpathSync(lexicalRoot);
+  let existing = resolved;
+  while (!pathExistsOrIsSymlink(existing)) {
+    const parent = path.dirname(existing);
+    if (parent === existing) break;
+    existing = parent;
+  }
+  let realExisting;
+  try {
+    realExisting = fs.realpathSync(existing);
+  } catch {
+    throw new Error(`path cannot be resolved safely: ${targetPath}`);
+  }
+  if (!pathIsWithin(realRoot, realExisting)) {
+    throw new Error(`path resolves outside repo root through a symlink: ${targetPath}`);
   }
   return resolved;
 }
@@ -77,7 +111,7 @@ function parseFactualClaims(text) {
 
   // "the row count is 1,284" / "row count = 1284" / "orders count: 42"
   const countPatterns = [
-    /\b((?:the\s+)?(?:total\s+)?(?:[a-z][\w\s.-]{0,40}?)?\s*(?:row|rows|record|records|entry|entries|item|items|order|orders|user|users|lesson|lessons|line|lines)?\s*counts?)\s*(?:is|are|=|:|equals?)\s*([-+]?\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\b/gi,
+    /\b((?:the\s+)?(?:total\s+)?(?:[a-z][\w\s.-]{0,40}?)?\s*(?:row|rows|record|records|entry|entries|item|items|order|orders|user|users|lesson|lessons|line|lines)?\s+counts?\b)\s*(?:is|are|=|:|equals?)\s*([-+]?\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\b/gi,
     /\bthere\s+(?:is|are)\s+([-+]?\d{1,3}(?:,\d{3})*|\d+)\s+((?:rows?|records?|entries|items?|orders?|users?|lessons?|lines?))\b/gi,
     /\bCOUNT\s*\(\s*\*\s*\)\s*(?:=|is|:)\s*([-+]?\d{1,3}(?:,\d{3})*|\d+)\b/gi,
   ];
@@ -201,28 +235,46 @@ function loadVerifierConfig(options = {}) {
   if (Array.isArray(options.verifiers)) {
     return { verifiers: options.verifiers, source: 'options' };
   }
+  if (Array.isArray(options.claimVerifiers)) {
+    return { verifiers: options.claimVerifiers, source: 'options.claimVerifiers' };
+  }
   if (options.config && Array.isArray(options.config.verifiers)) {
     return { verifiers: options.config.verifiers, source: 'options.config' };
   }
-
-  const candidates = [];
-  if (options.configPath) candidates.push(options.configPath);
-
-  const feedbackDir = options.feedbackDir || resolveFeedbackDir();
-  candidates.push(path.join(feedbackDir, DEFAULT_VERIFIERS_FILENAME));
+  if (options.claimVerifiers && Array.isArray(options.claimVerifiers.verifiers)) {
+    return { verifiers: options.claimVerifiers.verifiers, source: 'options.claimVerifiers' };
+  }
 
   const repoRoot = resolveRepoRoot(options.cwd);
+  const candidates = [];
+  const explicitConfigPath = options.configPath || process.env.THUMBGATE_CLAIM_VERIFIERS_PATH;
+  if (explicitConfigPath) {
+    const resolvedExplicit = path.isAbsolute(explicitConfigPath)
+      ? explicitConfigPath
+      : path.resolve(repoRoot, explicitConfigPath);
+    if (!fs.existsSync(resolvedExplicit)) {
+      throw new Error(`claim verifier config not found: ${resolvedExplicit}`);
+    }
+    candidates.push(resolvedExplicit);
+  }
+
+  const feedbackDir = options.feedbackDir || resolveFeedbackDir({ cwd: repoRoot });
+  candidates.push(path.join(feedbackDir, DEFAULT_VERIFIERS_FILENAME));
+
   candidates.push(path.join(repoRoot, '.thumbgate', DEFAULT_VERIFIERS_FILENAME));
   candidates.push(path.join(repoRoot, 'config', 'gates', DEFAULT_VERIFIERS_FILENAME));
 
-  for (const candidate of candidates) {
+  for (const candidate of [...new Set(candidates)]) {
+    if (!candidate || !fs.existsSync(candidate)) continue;
     try {
-      if (!candidate || !fs.existsSync(candidate)) continue;
       const raw = JSON.parse(fs.readFileSync(candidate, 'utf8'));
-      const verifiers = Array.isArray(raw.verifiers) ? raw.verifiers : Array.isArray(raw) ? raw : [];
+      const verifiers = Array.isArray(raw?.verifiers) ? raw.verifiers : Array.isArray(raw) ? raw : null;
+      if (!verifiers) {
+        throw new Error('expected an array or an object with a verifiers array');
+      }
       return { verifiers, source: candidate, path: candidate };
-    } catch {
-      // try next candidate
+    } catch (error) {
+      throw new Error(`invalid claim verifier config ${candidate}: ${error.message}`);
     }
   }
 
@@ -240,16 +292,18 @@ function subjectMatches(claimSubject, matcherSubjects = []) {
   return false;
 }
 
+function normalizeVerifierPath(value) {
+  const normalized = path.posix.normalize(String(value || '').replace(/\\/g, '/'));
+  return normalized.replace(/^\.\//, '').toLowerCase();
+}
+
 function pathMatches(claimPath, matcherPaths = []) {
   if (!claimPath) return matcherPaths.length === 0;
-  const normalized = claimPath.replace(/\\/g, '/').toLowerCase();
-  const base = path.posix.basename(normalized);
+  const normalized = normalizeVerifierPath(claimPath);
   for (const candidate of matcherPaths) {
-    const c = String(candidate || '').replace(/\\/g, '/').toLowerCase();
+    const c = normalizeVerifierPath(candidate);
     if (!c) continue;
-    if (normalized === c || normalized.endsWith(`/${c}`) || base === path.posix.basename(c)) {
-      return true;
-    }
+    if (normalized === c) return true;
   }
   return false;
 }
@@ -365,7 +419,9 @@ function readJsonPath(repoRoot, verifier) {
   const segments = pointer.split('.').filter(Boolean);
   let cursor = data;
   for (const segment of segments) {
-    if (cursor == null || typeof cursor !== 'object' || !(segment in cursor)) {
+    if (cursor == null
+      || typeof cursor !== 'object'
+      || !Object.prototype.hasOwnProperty.call(cursor, segment)) {
       throw new Error(`json path not found: ${pointer}`);
     }
     cursor = cursor[segment];
@@ -379,16 +435,13 @@ function runVerifier(claim, verifier, repoRoot) {
     return readSqliteCount(repoRoot, verifier);
   }
   if (kind === 'file_lines') {
-    const target = claim.path || verifier.path;
-    return readFileLines(repoRoot, target);
+    return readFileLines(repoRoot, verifier.path);
   }
   if (kind === 'file_bytes') {
-    const target = claim.path || verifier.path;
-    return readFileBytes(repoRoot, target);
+    return readFileBytes(repoRoot, verifier.path);
   }
   if (kind === 'file_exists') {
-    const target = claim.path || verifier.path;
-    return readFileExists(repoRoot, target);
+    return readFileExists(repoRoot, verifier.path);
   }
   if (kind === 'json_path' || kind === 'value') {
     return readJsonPath(repoRoot, verifier);
@@ -427,8 +480,19 @@ function valuesEqual(expected, actual) {
 function evaluateUniversalClaims(claimText, options = {}) {
   const repoRoot = resolveRepoRoot(options.cwd);
   const failUnconfigured = options.failUnconfigured !== false;
-  const { verifiers, source: configSource } = loadVerifierConfig(options);
   const parsed = parseFactualClaims(claimText);
+  if (parsed.length === 0) {
+    return {
+      verified: true,
+      claims: [],
+      checks: [],
+      configSource: 'not_loaded',
+      verifierCount: 0,
+      parsedCount: 0,
+    };
+  }
+
+  const { verifiers, source: configSource } = loadVerifierConfig(options);
   const checks = [];
   const claimResults = [];
 
@@ -460,7 +524,8 @@ function evaluateUniversalClaims(claimText, options = {}) {
         claim: claim.raw,
         kind: claim.kind,
         subject: claim.subject,
-        path: claim.path || verifier.path || null,
+        claimedPath: claim.path || null,
+        path: verifier.path || null,
         expected: claim.expected,
         actual,
         verifierId: verifier.id || null,
@@ -479,7 +544,8 @@ function evaluateUniversalClaims(claimText, options = {}) {
         claim: claim.raw,
         kind: claim.kind,
         subject: claim.subject,
-        path: claim.path || verifier.path || null,
+        claimedPath: claim.path || null,
+        path: verifier.path || null,
         expected: claim.expected,
         verifierId: verifier.id || null,
         verifierKind: verifier.kind,
@@ -517,6 +583,74 @@ function evaluateUniversalClaimsAsGateChecks(claimText, options = {}) {
   };
 }
 
+function parseCliArgs(argv = []) {
+  const options = {};
+  const positional = [];
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--json') options.json = true;
+    else if (arg === '--claim') options.claim = argv[++index];
+    else if (arg.startsWith('--claim=')) options.claim = arg.slice('--claim='.length);
+    else if (arg === '--config') options.configPath = argv[++index];
+    else if (arg.startsWith('--config=')) options.configPath = arg.slice('--config='.length);
+    else if (arg === '--cwd') options.cwd = argv[++index];
+    else if (arg.startsWith('--cwd=')) options.cwd = arg.slice('--cwd='.length);
+    else if (arg === '--advisory') options.failUnconfigured = false;
+    else if (!arg.startsWith('--')) positional.push(arg);
+  }
+  if (!options.claim && positional.length > 0) options.claim = positional.join(' ');
+  return options;
+}
+
+function formatCliSummary(report) {
+  const lines = [
+    report.verified ? 'ThumbGate claim verification: PASS' : 'ThumbGate claim verification: BLOCK',
+    `Parsed claims: ${report.parsedCount}`,
+    `Verifier config: ${report.configSource}`,
+  ];
+  for (const check of report.checks) {
+    lines.push(`- ${check.status}: ${check.message}`);
+  }
+  return `${lines.join('\n')}\n`;
+}
+
+function runCli(argv = process.argv.slice(2), io = {}) {
+  const stdout = io.stdout || process.stdout;
+  const stderr = io.stderr || process.stderr;
+  const options = parseCliArgs(argv);
+  let claim = String(options.claim || '').trim();
+  if (!claim && !process.stdin.isTTY) {
+    try {
+      claim = fs.readFileSync(0, 'utf8').trim();
+    } catch {
+      claim = '';
+    }
+  }
+  if (!claim) {
+    stderr.write('Usage: thumbgate verify-claims --claim "the row count is 1,284" [--config path] [--json]\n');
+    return 2;
+  }
+
+  try {
+    const report = evaluateUniversalClaims(claim, options);
+    stdout.write(options.json ? `${JSON.stringify(report, null, 2)}\n` : formatCliSummary(report));
+    return report.verified ? 0 : 1;
+  } catch (error) {
+    const failure = {
+      verified: false,
+      status: 'evaluator_error',
+      message: error.message,
+    };
+    if (options.json) stdout.write(`${JSON.stringify(failure, null, 2)}\n`);
+    else stderr.write(`ThumbGate claim verification failed closed: ${error.message}\n`);
+    return 1;
+  }
+}
+
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
+  process.exitCode = runCli();
+}
+
 module.exports = {
   parseFactualClaims,
   parseNumberToken,
@@ -524,7 +658,11 @@ module.exports = {
   findVerifierForClaim,
   evaluateUniversalClaims,
   evaluateUniversalClaimsAsGateChecks,
+  parseCliArgs,
+  formatCliSummary,
+  runCli,
   assertSelectOnly,
   resolveSafePath,
+  pathMatches,
   DEFAULT_VERIFIERS_FILENAME,
 };
