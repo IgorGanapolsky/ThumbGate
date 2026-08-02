@@ -159,7 +159,18 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'slopsquat-guard',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
+  // Financial mutation hard floor (CEO 2026-08-02 Apollo spend incident)
+  'hard-never-spend-any',
+  'hard-never-spend-upgrade-checkout',
+  'hard-never-spend-apollo-paid',
+  'hard-never-spend-stripe-checkout',
+  'hard-never-spend-thumbgate-pro',
 ]);
+
+function isNeverSpendHardFloorGate(gateId) {
+  const id = String(gateId || '');
+  return id.startsWith('hard-never-spend') || UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(id);
+}
 // Issue #2782 (reported by Andy Martin, 2026-07-08): after the free-tier daily
 // block cap is hit, applyDailyBlockCap() downgraded EVERY config-declared
 // "block" gate to a warning — including these catastrophic, effectively
@@ -174,6 +185,11 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'git-reset-hard',
   'git-clean-force',
   'rm-rf-home-or-root',
+  'hard-never-spend-any',
+  'hard-never-spend-upgrade-checkout',
+  'hard-never-spend-apollo-paid',
+  'hard-never-spend-stripe-checkout',
+  'hard-never-spend-thumbgate-pro',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
@@ -188,7 +204,7 @@ function isSelfProtectGate(gateId) {
 function applyEnforcementPosture(result) {
   if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
   // Defensive backstop: hard-floor results must never be posture-downgraded.
-  if (UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(result.gate)) return result;
+  if (isNeverSpendHardFloorGate(result.gate) || UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(result.gate)) return result;
   // Full hard enforcement opt-in: keep every deny.
   if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') return result;
   // Honor the explicit strict-knowledge-conflict opt-in for that gate.
@@ -309,9 +325,18 @@ function loadGatesConfig(configPath, harnessPath) {
   const autoConfigPath = getAutoGatesPath();
   if (!configPath && fs.existsSync(autoConfigPath)) {
     const autoGates = loadOne(autoConfigPath, false).map(g => ({ ...g, layer: g.layer || 'Execution' }));
-    const limitedAutoGates = isProTier()
-      ? autoGates
-      : autoGates.slice(0, FREE_TIER_MAX_GATES);
+    // Free tier still always loads permanent/force-promoted hard blocks (never-spend etc).
+    let limitedAutoGates;
+    if (isProTier()) {
+      limitedAutoGates = autoGates;
+    } else {
+      const hardKeep = autoGates.filter((g) =>
+        g.action === 'block'
+        && (g.hardFloor === true || g.permanent === true || g.source === 'force-promote'
+          || String(g.id || '').startsWith('hard-never-spend')));
+      const soft = autoGates.filter((g) => !hardKeep.includes(g));
+      limitedAutoGates = [...hardKeep, ...soft.slice(0, Math.max(0, FREE_TIER_MAX_GATES))];
+    }
     mergedConfig.gates.push(...limitedAutoGates);
   }
 
@@ -834,7 +859,7 @@ function applyDailyBlockCap(denyResult) {
   // clean -f, rm -rf on home/root) never get the free-tier daily-cap
   // discount — see issue #2782. Checked first, before any tier/CI shortcut,
   // so nothing can accidentally exempt a catastrophic gate from this floor.
-  if (denyResult && CATASTROPHIC_DECLARATIVE_GATE_IDS.has(denyResult.gate)) return null;
+  if (denyResult && (CATASTROPHIC_DECLARATIVE_GATE_IDS.has(denyResult.gate) || isNeverSpendHardFloorGate(denyResult.gate))) return null;
   // Pro, trial, CI, and THUMBGATE_NO_RATE_LIMIT users are uncapped
   if (isProTier()) return null;
   if (process.env.CI || process.env.GITHUB_ACTIONS) return null;
@@ -2224,7 +2249,22 @@ function checkWhenClause(when, constraints) {
 }
 
 function matchGate(gate, toolName, toolInput = {}) {
-  let matchText = toolInput.command || toolInput.file_path || toolInput.path || '';
+  // Include URL/query surfaces so WebFetch/browser/MCP checkout opens cannot bypass pattern gates.
+  const matchParts = [
+    toolInput.command,
+    toolInput.file_path,
+    toolInput.path,
+    toolInput.url,
+    toolInput.uri,
+    toolInput.href,
+    toolInput.query,
+    toolInput.prompt,
+    toolInput.description,
+    toolInput.pattern,
+    Array.isArray(toolInput.args) ? toolInput.args.join(' ') : toolInput.args,
+    typeof toolInput.content === 'string' ? toolInput.content.slice(0, 2000) : '',
+  ].filter((part) => part != null && String(part).length > 0);
+  let matchText = matchParts.map(String).join(' ');
 
   // Claw/hybrid support: enrich matchText with claw metadata (for EnterpriseClaw/OpenShell/Perplexity hybrid agents)
   const clawCtx = toolInput.clawContext || toolInput._claw || (toolInput.agentId ? {
@@ -2298,7 +2338,12 @@ function matchGate(gate, toolName, toolInput = {}) {
 
   if (gate.pattern) {
     try {
-      const regex = new RegExp(gate.pattern);
+      const caseInsensitive = gate.hardFloor === true
+        || gate.permanent === true
+        || gate.source === 'force-promote'
+        || String(gate.id || '').startsWith('hard-never-spend')
+        || gate.caseInsensitive === true;
+      const regex = new RegExp(gate.pattern, caseInsensitive ? 'i' : undefined);
       // Match the original text or its git-canonical form, so `git -C <dir> push --force`
       // is caught by the same pattern as `git push --force`.
       if (!patternMatchesCommand(regex, matchText)) {
@@ -2797,7 +2842,14 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   const METRIC_SKIP_TOOLS = ['capture_feedback', 'feedback_stats', 'recall', 'feedback_summary', 'prevention_rules'];
   const skipMetrics = METRIC_SKIP_TOOLS.includes(toolName);
 
-  for (const gate of config.gates) {
+  // Prefer block/approve over warn/log so soft network-egress cannot short-circuit hard-never-spend.
+  const actionRank = { block: 0, approve: 1, warn: 2, log: 3 };
+  const orderedGates = [...config.gates].sort((a, b) => {
+    const ra = actionRank[a && a.action] != null ? actionRank[a.action] : 9;
+    const rb = actionRank[b && b.action] != null ? actionRank[b.action] : 9;
+    return ra - rb;
+  });
+  for (const gate of orderedGates) {
     const matchDetails = matchGate(gate, toolName, toolInput);
     if (!matchDetails.matched) continue;
 
@@ -3039,7 +3091,14 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     }
   }
 
-  for (const gate of config.gates) {
+  // Prefer block/approve over warn/log so soft network-egress cannot short-circuit hard-never-spend.
+  const actionRank = { block: 0, approve: 1, warn: 2, log: 3 };
+  const orderedGates = [...config.gates].sort((a, b) => {
+    const ra = actionRank[a && a.action] != null ? actionRank[a.action] : 9;
+    const rb = actionRank[b && b.action] != null ? actionRank[b.action] : 9;
+    return ra - rb;
+  });
+  for (const gate of orderedGates) {
     const matchDetails = matchGate(gate, toolName, toolInput);
     if (!matchDetails.matched) continue;
 
