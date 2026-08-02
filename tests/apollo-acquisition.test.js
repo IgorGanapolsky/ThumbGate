@@ -132,6 +132,89 @@ test('dry run returns a reusable plan without calling Apollo', () => {
   assert.equal(result.plan.trackerSearches.length, 1);
 });
 
+test('missing legacy default tracker no longer crashes config-only planning', () => {
+  const missing = path.join(os.tmpdir(), `missing-apollo-tracker-${Date.now()}.csv`);
+  const result = runCli(['--skip-organizations'], { defaultInput: missing });
+
+  assert.equal(result.mode, 'dry_run');
+  assert.equal(result.plan.trackerSearches.length, 0);
+  assert.equal(result.plan.trackerSource.loaded, false);
+  assert.equal(result.plan.trackerSource.reason, 'default_tracker_missing');
+});
+
+test('an explicitly requested missing tracker still fails closed', () => {
+  const missing = path.join(os.tmpdir(), `missing-explicit-apollo-tracker-${Date.now()}.csv`);
+  assert.throws(
+    () => runCli(['--input', missing, '--skip-organizations']),
+    /Acquisition tracker not found/,
+  );
+});
+
+test('free-plan People Search denial falls back to saved contacts without spending credits', () => {
+  const calls = [];
+  const runner = (_command, args) => {
+    calls.push(args);
+    if (args[0] === 'usage') {
+      return { status: 0, stdout: JSON.stringify({ credit_usage_stats: { lead_credit: { consumed: 5 } } }) };
+    }
+    if (args[0] === 'people') {
+      return {
+        status: 1,
+        stdout: '',
+        stderr: 'Apollo API error 403: {"error_code":"API_INACCESSIBLE","error":"not included in your Free plan"}',
+      };
+    }
+    if (args[0] === 'contacts' && args.includes('Jeffery Aronhalt')) {
+      return {
+        status: 0,
+        stdout: JSON.stringify({
+          contacts: [{
+            id: 'saved-known',
+            first_name: 'Jeffery',
+            last_name: 'Aronhalt',
+            title: 'Principal Software Engineer',
+            organization_name: 'Gametime',
+            last_activity_date: '2026-07-01',
+          }],
+          pagination: { total_entries: 1 },
+        }),
+      };
+    }
+    if (args[0] === 'contacts') {
+      return {
+        status: 0,
+        stdout: JSON.stringify({
+          contacts: [{
+            id: 'saved-buyer',
+            first_name: 'Ryan',
+            last_name: 'Miller',
+            title: 'Director of AI Governance',
+            organization_name: 'Gametime',
+            email: 'buyer@example.test',
+          }],
+          pagination: { total_entries: 1 },
+        }),
+      };
+    }
+    throw new Error(`Unexpected Apollo call: ${args.join(' ')}`);
+  };
+  const plan = buildSearchPlan({
+    rows: [{ target_name: 'Jeffery Aronhalt', organization: 'Gametime', status: 'Contacted' }],
+    config,
+    options: {},
+  });
+  const report = executeSearchPlan(plan, { runner, perPage: 25 });
+
+  assert.equal(report.searchBackend.backend, 'saved_contacts');
+  assert.equal(report.safety.netNewSearchAvailable, false);
+  assert.equal(report.safety.savedContactsFallback, true);
+  assert.equal(report.safety.zeroCreditSearchVerified, true);
+  assert.equal(report.trackerResults[0].identityMatchCount, 1);
+  assert.equal(report.trackerResults[0].candidates[0].duplicateOutreachSuppressed, true);
+  assert.equal(report.organizationResults[0].candidates[0].title, 'Director of AI Governance');
+  assert.ok(calls.some((args) => args[0] === 'contacts'));
+});
+
 test('executed CLI writes JSON and Markdown evidence without enrichment or sends', () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'apollo-acquisition-execute-'));
   const input = path.join(tempDir, 'targets.csv');
