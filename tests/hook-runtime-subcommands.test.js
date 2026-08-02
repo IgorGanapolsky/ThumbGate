@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 
 const {
   preToolHookCommand,
+  claimStopHookCommand,
   userPromptHookCommand,
   sessionStartHookCommand,
   cacheUpdateHookCommand,
@@ -21,6 +22,7 @@ const {
 const HOOKS = [
   ['statuslineCommand', statuslineCommand, 'statusline-render'],
   ['preToolHookCommand', preToolHookCommand, 'gate-check'],
+  ['claimStopHookCommand', claimStopHookCommand, 'claim-stop-check'],
   ['userPromptHookCommand', userPromptHookCommand, 'hook-auto-capture'],
   ['sessionStartHookCommand', sessionStartHookCommand, 'session-start'],
   ['cacheUpdateHookCommand', cacheUpdateHookCommand, 'cache-update'],

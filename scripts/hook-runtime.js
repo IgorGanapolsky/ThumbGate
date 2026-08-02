@@ -92,6 +92,10 @@ function cacheUpdateHookCommand() {
   return buildPortableHookCommand('cache-update');
 }
 
+function claimStopHookCommand() {
+  return buildPortableHookCommand('claim-stop-check');
+}
+
 function statuslineCommand() {
   return buildPortableHookCommand('statusline-render');
 }
@@ -120,6 +124,7 @@ module.exports = {
   buildPortableHookCommand,
   buildCodexPortableHookCommand,
   cacheUpdateHookCommand,
+  claimStopHookCommand,
   codexCacheUpdateHookCommand,
   codexPreToolHookCommand,
   codexSessionStartHookCommand,

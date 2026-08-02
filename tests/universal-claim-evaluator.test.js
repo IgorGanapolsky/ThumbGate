@@ -13,6 +13,7 @@ const {
   assertSelectOnly,
   resolveSafePath,
   pathMatches,
+  compileConfiguredClaimTemplate,
   runCli,
 } = require('../scripts/universal-claim-evaluator');
 const { verifyClaimEvidence, clearSessionActions } = require('../scripts/gates-engine');
@@ -49,6 +50,68 @@ describe('parseFactualClaims', () => {
   it('does not parse count inside unrelated words', () => {
     assert.deepEqual(parseFactualClaims('the discount is 10%'), []);
     assert.deepEqual(parseFactualClaims('the account is 6'), []);
+  });
+
+  it('parses arbitrary operator-configured quantitative wording', () => {
+    const claims = parseFactualClaims('The nightly batch built 17 invoices.', {
+      verifiers: [{
+        id: 'nightly-invoices',
+        kind: 'json_path',
+        claimTemplate: 'The nightly batch built {{value}} invoices',
+      }],
+    });
+    assert.equal(claims.length, 1);
+    assert.equal(claims[0].kind, 'configured_value');
+    assert.equal(claims[0].expected, 17);
+    assert.equal(claims[0].verifierId, 'nightly-invoices');
+  });
+
+  it('parses configured claims wrapped in common prose and Markdown punctuation', () => {
+    const options = {
+      verifiers: [{
+        id: 'nightly-invoices',
+        kind: 'json_path',
+        claimTemplate: 'The nightly batch built {{value}} invoices',
+      }],
+    };
+    for (const text of [
+      '**The nightly batch built 17 invoices.**',
+      '"The nightly batch built 17 invoices."',
+      '(The nightly batch built 17 invoices.)',
+    ]) {
+      const claims = parseFactualClaims(text, options);
+      assert.equal(claims.length, 1, text);
+      assert.equal(claims[0].expected, 17, text);
+      assert.equal(claims[0].verifierId, 'nightly-invoices', text);
+    }
+  });
+
+  it('does not parse a configured claim embedded inside a word', () => {
+    const claims = parseFactualClaims('prefixThe nightly batch built 17 invoicessuffix', {
+      verifiers: [{
+        id: 'nightly-invoices',
+        kind: 'json_path',
+        claimTemplate: 'The nightly batch built {{value}} invoices',
+      }],
+    });
+    assert.deepEqual(claims, []);
+  });
+
+  it('rejects unsafe or ambiguous configured templates', () => {
+    assert.throws(() => compileConfiguredClaimTemplate('{{value}}'), /literal characters/);
+    assert.throws(
+      () => compileConfiguredClaimTemplate('built {{value}} of {{value}}'),
+      /exactly one/,
+    );
+    assert.throws(
+      () => parseFactualClaims('built 17 invoices', {
+        verifiers: [
+          { id: 'invoices-a', kind: 'json_path', claimTemplate: 'built {{value}} invoices' },
+          { id: 'invoices-b', kind: 'json_path', claimTemplate: 'built {{value}} invoices' },
+        ],
+      }),
+      /multiple configured verifiers/,
+    );
   });
 });
 
@@ -96,6 +159,7 @@ describe('evaluateUniversalClaims', () => {
     fs.mkdirSync(path.join(tmpDir, 'fake'));
     fs.writeFileSync(path.join(tmpDir, 'fake', 'README.md'), 'spoof\n'.repeat(99));
     fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ version: '9.9.9' }));
+    fs.writeFileSync(path.join(tmpDir, 'metrics.json'), JSON.stringify({ nightly: { invoices: 12 } }));
 
     const Database = require('better-sqlite3');
     dbPath = path.join(tmpDir, 'data', 'app.sqlite');
@@ -129,6 +193,13 @@ describe('evaluateUniversalClaims', () => {
       path: 'package.json',
       jsonPath: 'version',
     },
+    {
+      id: 'nightly-invoices',
+      kind: 'json_path',
+      claimTemplate: 'The nightly batch built {{value}} invoices',
+      path: 'metrics.json',
+      jsonPath: 'nightly.invoices',
+    },
   ]);
 
   it('passes when row count matches the database', () => {
@@ -150,6 +221,64 @@ describe('evaluateUniversalClaims', () => {
     assert.equal(result.checks[0].status, 'mismatch');
     assert.equal(result.checks[0].expected, 1284);
     assert.equal(result.checks[0].actual, 3);
+  });
+
+  it('rechecks an arbitrary configured claim template and passes on a match', () => {
+    const result = evaluateUniversalClaims('The nightly batch built 12 invoices.', {
+      cwd: tmpDir,
+      verifiers: verifiers(),
+    });
+    assert.equal(result.verified, true);
+    assert.equal(result.checks[0].status, 'match');
+    assert.equal(result.checks[0].actual, 12);
+    assert.equal(result.checks[0].verifierId, 'nightly-invoices');
+  });
+
+  it('rechecks an arbitrary configured claim template and blocks a mismatch', () => {
+    const result = evaluateUniversalClaims('The nightly batch built 17 invoices.', {
+      cwd: tmpDir,
+      verifiers: verifiers(),
+    });
+    assert.equal(result.verified, false);
+    assert.equal(result.checks[0].status, 'mismatch');
+    assert.equal(result.checks[0].expected, 17);
+    assert.equal(result.checks[0].actual, 12);
+  });
+
+  it('binds a configured template directly even when built-in grammar also matches', () => {
+    const result = evaluateUniversalClaims('the row count is 12', {
+      cwd: tmpDir,
+      verifiers: [
+        ...verifiers(),
+        {
+          id: 'template-row-count',
+          kind: 'json_path',
+          claimTemplate: 'the row count is {{value}}',
+          path: 'metrics.json',
+          jsonPath: 'nightly.invoices',
+        },
+      ],
+    });
+    assert.equal(result.verified, true);
+    assert.equal(result.checks.length, 1);
+    assert.equal(result.checks[0].actual, 12);
+    assert.equal(result.checks[0].verifierId, 'template-row-count');
+  });
+
+  it('fails closed on malformed claim-template configuration before parsing', () => {
+    assert.throws(
+      () => evaluateUniversalClaims('No built-in factual wording here.', {
+        cwd: tmpDir,
+        verifiers: [{
+          id: 'invalid-template',
+          kind: 'json_path',
+          claimTemplate: 'The nightly batch built invoices',
+          path: 'metrics.json',
+          jsonPath: 'nightly.invoices',
+        }],
+      }),
+      /exactly one/,
+    );
   });
 
   it('fails closed when a claim is parseable but no verifier is configured', () => {
@@ -270,6 +399,30 @@ describe('verifyClaimEvidence integration', () => {
       assert.equal(result.verified, false);
       assert.ok(result.universal);
       assert.ok(result.checks.some((c) => String(c.claim).startsWith('universal:') || c.universal));
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      clearSessionActions();
+    }
+  });
+
+  it('blocks MCP-style verification for an arbitrary configured claim template', () => {
+    clearSessionActions();
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-claim-template-int-'));
+    try {
+      fs.writeFileSync(path.join(tmpDir, 'metrics.json'), JSON.stringify({ nightly: { invoices: 12 } }));
+      const result = verifyClaimEvidence('The nightly batch built 17 invoices.', {
+        cwd: tmpDir,
+        verifiers: [{
+          id: 'nightly-invoices',
+          kind: 'json_path',
+          claimTemplate: 'The nightly batch built {{value}} invoices',
+          path: 'metrics.json',
+          jsonPath: 'nightly.invoices',
+        }],
+      });
+      assert.equal(result.verified, false);
+      assert.equal(result.universal.checks[0].universal.status, 'mismatch');
+      assert.equal(result.universal.checks[0].universal.actual, 12);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
       clearSessionActions();

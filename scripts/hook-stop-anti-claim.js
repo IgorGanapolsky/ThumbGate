@@ -30,7 +30,6 @@
 
 const fs = require('node:fs');
 const {
-  parseFactualClaims,
   evaluateUniversalClaims,
 } = require('./universal-claim-evaluator');
 
@@ -238,9 +237,6 @@ function readStdinSync() {
 }
 
 function factualClaimBlock(text, options = {}) {
-  const parsed = parseFactualClaims(text);
-  if (parsed.length === 0) return null;
-
   try {
     const result = evaluateUniversalClaims(text, {
       cwd: options.cwd,
@@ -248,6 +244,7 @@ function factualClaimBlock(text, options = {}) {
       feedbackDir: options.feedbackDir,
       failUnconfigured: true,
     });
+    if (result.parsedCount === 0) return null;
     if (result.verified) return null;
     const failures = result.checks.filter((check) => !check.passed);
     return {
@@ -261,7 +258,7 @@ function factualClaimBlock(text, options = {}) {
           kind: check.kind,
           verifierId: check.verifierId || null,
           expected: check.expected,
-          actual: Object.prototype.hasOwnProperty.call(check, 'actual') ? check.actual : null,
+          actual: Object.hasOwn(check, 'actual') ? check.actual : null,
         })),
       },
     };
@@ -271,7 +268,7 @@ function factualClaimBlock(text, options = {}) {
       reason: `ThumbGate factual-claim gate failed closed: ${error.message}`,
       verification: {
         verified: false,
-        parsedCount: parsed.length,
+        parsedCount: null,
         failures: [{ status: 'evaluator_error' }],
       },
     };
@@ -360,4 +357,5 @@ module.exports = {
   extractText,
   extractToolUseSummary,
   factualClaimBlock,
+  main,
 };
