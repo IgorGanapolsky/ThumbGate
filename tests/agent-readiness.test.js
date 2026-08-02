@@ -181,3 +181,34 @@ test('reportToText includes claim verification status', () => {
   assert.match(text, /Evaluator:/i);
   assert.match(text, /Stop hook:/i);
 });
+
+test('generateAgentReadinessReport warns when claim verifier config fails to load', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-claim-ready-warn-'));
+  try {
+    for (const fileName of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
+      fs.writeFileSync(path.join(projectRoot, fileName), `# ${fileName}\n`);
+    }
+    fs.writeFileSync(path.join(projectRoot, '.mcp.json'), JSON.stringify({ mcpServers: {} }));
+    fs.mkdirSync(path.join(projectRoot, '.thumbgate'), { recursive: true });
+    fs.writeFileSync(path.join(projectRoot, '.thumbgate', 'config.json'), JSON.stringify({ version: 1 }));
+
+    // Force a load failure through summarizeClaimVerification deps by writing
+    // a malformed project config that is discovered first.
+    fs.writeFileSync(path.join(projectRoot, '.thumbgate', 'claim-verifiers.json'), '{not-json');
+
+    const previousContainer = process.env.container;
+    process.env.container = '1';
+    const report = generateAgentReadinessReport({
+      projectRoot,
+      mcpProfile: 'default',
+    });
+    if (previousContainer === undefined) delete process.env.container;
+    else process.env.container = previousContainer;
+
+    assert.equal(report.claimVerification.configLoadFailed, true);
+    assert.equal(report.overallStatus, 'needs_attention');
+    assert.ok(report.warnings.some((w) => /failed to load/i.test(w)));
+  } finally {
+    fs.rmSync(projectRoot, { recursive: true, force: true });
+  }
+});

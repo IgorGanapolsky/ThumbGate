@@ -18,6 +18,8 @@ const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 
 const DEFAULT_VERIFIERS_FILENAME = 'claim-verifiers.json';
+// Package install root (node_modules/thumbgate), not the consumer project cwd.
+const PACKAGE_ROOT = path.join(__dirname, '..');
 
 function parseNumberToken(raw) {
   if (raw == null) return null;
@@ -261,8 +263,12 @@ function loadVerifierConfig(options = {}) {
   const feedbackDir = options.feedbackDir || resolveFeedbackDir({ cwd: repoRoot });
   candidates.push(path.join(feedbackDir, DEFAULT_VERIFIERS_FILENAME));
 
+  // Project overrides first (consumer cwd), then the shipped package default.
+  // Verifier path fields still resolve against repoRoot/cwd so package-owned
+  // configs evaluate files inside the target project, not inside node_modules.
   candidates.push(path.join(repoRoot, '.thumbgate', DEFAULT_VERIFIERS_FILENAME));
   candidates.push(path.join(repoRoot, 'config', 'gates', DEFAULT_VERIFIERS_FILENAME));
+  candidates.push(path.join(PACKAGE_ROOT, 'config', 'gates', DEFAULT_VERIFIERS_FILENAME));
 
   for (const candidate of [...new Set(candidates)]) {
     if (!candidate || !fs.existsSync(candidate)) continue;
