@@ -334,6 +334,39 @@ async function embedWithOllama(text, options = {}) {
   return vector.map(Number);
 }
 
+async function tryGeminiManagedEmbedding(text, options, geminiConfig) {
+  if (!geminiConfig.apiKey && !_geminiEmbedderForTests) {
+    return null;
+  }
+  try {
+    const vector = await embedWithGemini(text, options);
+    _lastEmbeddingProfile = {
+      generatedAt: new Date().toISOString(),
+      source: 'managed',
+      activeProfile: {
+        id: 'gemini',
+        model: geminiConfig.model,
+        outputDimensionality: geminiConfig.outputDimensionality,
+        task: options.task || geminiConfig.defaultTask,
+        rationale: geminiConfig.enabled
+          ? 'Managed Gemini Embedding 2 path with task-specific query/document prefixes.'
+          : 'Managed Gemini Embedding 2 fallback after local providers exhausted.',
+      },
+      fallbackUsed: !geminiConfig.enabled,
+      ...(!geminiConfig.enabled ? { fallbackReason: 'local_providers_exhausted' } : {}),
+    };
+    return vector;
+  } catch (geminiError) {
+    if (!geminiConfig.fallbackToLocal) {
+      throw geminiError;
+    }
+    // Do not log raw provider/user-controlled error text (Sonar jssecurity:S5145).
+    const code = geminiError && (geminiError.code || geminiError.name || 'Error');
+    console.warn(`Gemini embedding fallback: ${code}`);
+    return null;
+  }
+}
+
 async function embed(text, options = {}) {
   if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') {
     // Deterministic 384-dim unit vector: first element = 1.0, rest = 0.0
@@ -384,31 +417,9 @@ async function embed(text, options = {}) {
       console.warn(`Ollama embedding failed, falling back: ${ollamaError.message}`);
     }
   }
-  const useGeminiFallback = geminiConfig.apiKey && geminiConfig.fallbackToLocal;
-  if (geminiConfig.enabled || useGeminiFallback) {
-    try {
-      const vector = await embedWithGemini(text, options);
-      _lastEmbeddingProfile = {
-        generatedAt: new Date().toISOString(),
-        source: 'managed',
-        activeProfile: {
-          id: 'gemini',
-          model: geminiConfig.model,
-          outputDimensionality: geminiConfig.outputDimensionality,
-          task: options.task || geminiConfig.defaultTask,
-          rationale: 'Managed Gemini Embedding 2 path with task-specific query/document prefixes.',
-        },
-        fallbackUsed: false,
-      };
-      return vector;
-    } catch (geminiError) {
-      if (!geminiConfig.fallbackToLocal) {
-        throw geminiError;
-      }
-      // Do not log raw provider/user-controlled error text (Sonar jssecurity:S5145).
-      const code = geminiError && (geminiError.code || geminiError.name || 'Error');
-      console.warn(`Gemini embedding fallback: ${code}`);
-    }
+  if (geminiConfig.enabled) {
+    const vector = await tryGeminiManagedEmbedding(text, options, geminiConfig);
+    if (vector) return vector;
   }
   if (hasLocalTransformerProvider()) {
     try {
@@ -421,6 +432,14 @@ async function embed(text, options = {}) {
     } catch (transformerError) {
       console.warn(`Transformers.js embedding fallback: ${transformerError.message}`);
     }
+  }
+
+  // Gemini managed fallback — only when API key present but Gemini is not the
+  // explicitly selected provider. Honors fallbackToLocal in the catch block
+  // so that THUMBGATE_GEMINI_EMBED_FALLBACK_LOCAL=false makes Gemini mandatory.
+  if (geminiConfig.apiKey && !geminiConfig.enabled) {
+    const vector = await tryGeminiManagedEmbedding(text, options, geminiConfig);
+    if (vector) return vector;
   }
 
   const vector = embedWithFeatureHash(text);

@@ -218,7 +218,6 @@ describe('vector-store — Gemini Embedding 2 provider', () => {
 
 describe('vector-store — Gemini fallback recognition', () => {
   it('recognizes Gemini as available when API key is present (without THUMBGATE_EMBED_PROVIDER=gemini)', () => {
-    const originalEnv = { ...process.env };
     try {
       delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
       delete process.env.THUMBGATE_OLLAMA_EMBED_MODEL;
@@ -233,7 +232,11 @@ describe('vector-store — Gemini fallback recognition', () => {
       assert.equal(config.managed.apiKey, 'test-fallback-key');
       assert.equal(config.managed.fallbackToLocal, true);
     } finally {
-      Object.assign(process.env, originalEnv);
+      delete process.env.GEMINI_API_KEY;
+      delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
+      delete process.env.THUMBGATE_OLLAMA_EMBED_MODEL;
+      delete process.env.THUMBGATE_OLLAMA_ENDPOINT;
+      delete process.env.THUMBGATE_EMBED_PROVIDER;
       delete require.cache[require.resolve('../scripts/vector-store')];
     }
   });
