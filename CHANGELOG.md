@@ -12,6 +12,12 @@
   `scripts/financial-control-plane.js` and its crash-recoverable shared ledger
   lock are both required at the enforcement boundary.
 
+## 1.33.1
+
+### Patch Changes
+
+- 0c1fc00: Ship default claim verifiers for package-version dogfood, surface factual claim recheck status in agent readiness, and expand the claim-verification proof lane (CLAIM-07/08).
+
 ## 1.33.0
 
 ### Minor Changes

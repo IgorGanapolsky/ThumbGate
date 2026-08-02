@@ -2,7 +2,7 @@
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": ["--yes", "--package", "thumbgate@1.33.0", "thumbgate", "serve"]
+      "args": ["--yes", "--package", "thumbgate@1.33.1", "thumbgate", "serve"]
     }
   },
   "notes": "For claw-style agents (Automation Anywhere EnterpriseClaw, Nvidia OpenShell): enable ThumbGate gates for dynamic tool creation, screen/UI interaction, file system access, agent identity. See adapters/claw/CLAW.md. Combine with adapters/perplexity/HYBRID.md for hybrid local-cloud claw agents. Use new model candidates (automation-anywhere/enterprise-claw, nvidia/openshell-claw) and gate templates in 'Claw-Style Enterprise Agent Governance' category."
