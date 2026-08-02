@@ -212,7 +212,7 @@ async function embedWithGemini(text, options = {}) {
   }
 
   if (typeof fetch !== 'function') {
-    throw new Error('Gemini embeddings require global fetch. Use Node 18.18+ or the local embedding provider.');
+    throw new TypeError('Gemini embeddings require global fetch. Use Node 18.18+ or the local embedding provider.');
   }
 
   const modelResource = resolveGeminiModelResource(config.model);
@@ -292,7 +292,7 @@ async function embedWithOllama(text, options = {}) {
     throw new Error('Ollama embeddings require THUMBGATE_OLLAMA_EMBED_MODEL');
   }
   if (typeof fetch !== 'function') {
-    throw new Error('Ollama embeddings require global fetch. Use Node 18.18+.');
+    throw new TypeError('Ollama embeddings require global fetch. Use Node 18.18+.');
   }
 
   // Apply Nomic-style asymmetric prefixes. nomic-embed-text was trained
@@ -384,7 +384,8 @@ async function embed(text, options = {}) {
       console.warn(`Ollama embedding failed, falling back: ${ollamaError.message}`);
     }
   }
-  if (geminiConfig.enabled || (geminiConfig.apiKey && geminiConfig.fallbackToLocal)) {
+  const useGeminiFallback = geminiConfig.apiKey && geminiConfig.fallbackToLocal;
+  if (geminiConfig.enabled || useGeminiFallback) {
     try {
       const vector = await embedWithGemini(text, options);
       _lastEmbeddingProfile = {
