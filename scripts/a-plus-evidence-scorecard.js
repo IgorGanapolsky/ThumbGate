@@ -57,10 +57,11 @@ function collectRepositoryEvidence(root = ROOT) {
 
   return {
     landingVisualLoop: hasAll(landing, [
-      'hero-thumbs',
-      'before-after.svg',
-      'self-improving-thumbs-loop.svg',
-      'Is it really self-improving?',
+      'class="thumb-mark up"',
+      'class="thumb-mark down"',
+      'data-loop-step="1"',
+      'data-loop-step="4"',
+      'That is “self-improving”:',
     ]),
     landingBuyerRoutes: hasAll(landing, ['/checkout/pro', '/go/diagnostic-pay'])
       && hasAll(buyerPaths, ['/go/pro', '/go/sprint', '/diagnostic']),

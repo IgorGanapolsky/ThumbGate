@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "description": "One 👎 becomes a hard rule the agent cannot bypass. Captures thumbs-down feedback, distills it into PreToolUse Pre-Action Checks, enforced across every future Claude Code session.",
+  "description": "Reviewed 👎 feedback becomes local lessons; repeated concrete failures can become reviewable Pre-Action Checks. Critical built-in floors block secrets and unapproved spend before execution.",
   "version": "1.31.0",
   "author": {
     "name": "Igor Ganapolsky",

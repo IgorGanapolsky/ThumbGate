@@ -24,6 +24,10 @@ const {
   actionFingerprint,
   sanitizeFeedbackText,
 } = require('./feedback-sanitizer');
+const {
+  SPEND_CONTROL_GATE_ID,
+  evaluateSpendControl,
+} = require('./spend-control');
 
 /**
  * Computes the SHA-256 hash of an executable binary to prevent path-based bypasses.
@@ -157,6 +161,7 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'secret-exfiltration',
   'security-vuln-scan',
   'slopsquat-guard',
+  SPEND_CONTROL_GATE_ID,
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -175,9 +180,9 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'git-clean-force',
   'rm-rf-home-or-root',
 ]);
-const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
+const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/(?:config\.json|spend-authorizations\.json|spend-decision-receipts\.jsonl)$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
-const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)/i;
+const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/(?:config\.json|spend-authorizations\.json|spend-decision-receipts\.jsonl)\b|thumbgate\.json\b)/i;
 const SELF_PROTECT_HOOK_COMMAND_PATTERN = /(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^\s'";|]+\.(?:js|sh))\b/i;
 const SHELL_FILE_MUTATION_PATTERN = /\b(?:sed\s+-i|perl\s+-pi|python\d*\s+-c|node\s+-e|ruby\s+-e|tee|truncate|rm|mv|cp|install|patch|jq)\b|(?:^|[\s;&|])>{1,2}\s*\S/i;
 
@@ -3307,6 +3312,16 @@ function evaluateUnconditionalHardFloor(input = {}) {
   const secretGuard = evaluateSecretGuard(input);
   if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
 
+  const spendControl = evaluateSpendControl(input);
+  if (spendControl) {
+    const toolName = input.tool_name || input.toolName || 'unknown';
+    const toolInput = input.tool_input || input.toolInput || {};
+    return {
+      hardFloor: recordStructuralGateBlock(toolName, toolInput, spendControl),
+      securityScan: null,
+    };
+  }
+
   const securityScan = evaluateSecurityScan(input);
   if (securityScan && securityScan.decision === 'deny') {
     return { hardFloor: securityScan, securityScan };
@@ -3393,7 +3408,12 @@ function formatOutput(result, behavioralContext) {
   if (result.decision === 'deny') {
     const reminder = behavioralContext ? buildReminderOutput(behavioralContext) : {};
     const reminderSuffix = behavioralContext ? `\n\nSystem reminder:\n${behavioralContext}` : '';
-    const proCta = buildBlockActionProCta() || '';
+    // Never upsell during an unconditional safety incident. A user who just hit
+    // a secret, self-protection, lease, or spend hard floor needs a refusal and
+    // receipt—not a paid-product prompt.
+    const proCta = UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(result.gate)
+      ? ''
+      : (buildBlockActionProCta() || '');
     return JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',

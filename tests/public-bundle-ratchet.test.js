@@ -163,8 +163,10 @@ const path = require('node:path');
 // verifier example config so agents can recheck factual claims against SQLite/FS/JSON.
 // Bumped 418 -> 419 (2026-08-02): ship default config/gates/claim-verifiers.json
 // so package-version factual claims recheck without a local override.
+// Bumped 419 -> 420 (2026-08-02): scripts/spend-control.js is the public hook
+// runtime for current-turn purchase-order enforcement; no Core or buyer state.
 // Each file is directly callable from the package and contains no buyer state.
-const BASELINE_FILE_COUNT = 419;
+const BASELINE_FILE_COUNT = 420;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

@@ -10,7 +10,7 @@
 
 **Self-Improving Firewall for Your AI Agents.** AI coding agents repeat mistakes — and one wrong tool call can wipe a directory, leak a key, or push broken code.
 
-ThumbGate is the local-first Pre-Action Checks engine for AI coding agents. It runs in the PreToolUse hook on your machine: it evaluates a proposed tool call and logs the decision before tool execution. It **hard-blocks detected secret leaks and two direct self-disable command classes by default** — commands that terminate the ThumbGate gate process or enable its bypass environment override. Other high-risk classes, including destructive deletes (`rm -rf`), force-push, fetch-and-run, direct guardrail-file edits, off-scope edits, and deploys, **warn and log by default**. Set `THUMBGATE_STRICT_ENFORCEMENT=1` to preserve deny decisions for every matched blocking rule. Works across configured Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode integrations. No server is required on the local enforcement path. (Regulated-industry policy templates are roadmap directions, not shipped compliance claims.)
+ThumbGate is the local-first Pre-Action Checks engine for AI coding agents. It runs in the PreToolUse hook on your machine: it evaluates a proposed tool call and logs the decision before tool execution. It **hard-blocks detected secret leaks, direct guardrail tampering, and supported unapproved financial mutations by default**. Other high-risk classes, including destructive deletes (`rm -rf`), force-push, fetch-and-run, off-scope edits, and deploys, **warn and log by default**. Set `THUMBGATE_STRICT_ENFORCEMENT=1` to preserve deny decisions for every other matched blocking rule. Works across configured Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode integrations. No server is required on the local enforcement path. (Regulated-industry policy templates are roadmap directions, not shipped compliance claims.)
 
 Accepted feedback is stored as local lessons. Repeated concrete failures can become prevention rules that promote from warnings to blocking gates; relevant lessons are re-ranked for each proposed action; stale auto-promoted gates expire; and stale lessons archive. The firewall improves from operations without retraining the model.
 
@@ -178,6 +178,20 @@ That command stores a concrete negative lesson and applies promotion rules. If t
    Pattern: DROP.*production
    Verdict: WARN + LOG   (BLOCK when THUMBGATE_STRICT_ENFORCEMENT=1)
 ```
+
+## Financial purchase-order hard floor
+
+A detected purchase, checkout, plan change, billing action, or transfer is denied unless the current human message explicitly authorizes the vendor and maximum amount and a supported adapter declares the proposed vendor, currency, amount, and operation. The authorization expires after ten minutes, the next human prompt revokes it, and atomic reservations prevent duplicate consumption.
+
+```text
+I explicitly authorize you to spend up to $100 on Apollo credits.
+```
+
+```bash
+npx thumbgate spend-status --json
+```
+
+Financial decisions are appended to a local receipt ledger. This is an ERP-style purchase-order interlock, not a bank: it cannot reverse a charge or independently prove the vendor's final settlement amount. Keep provider-side card and account limits. See [Financial spend control](docs/guides/financial-spend-control.md) for the adapter contract and security boundary.
 
 ---
 

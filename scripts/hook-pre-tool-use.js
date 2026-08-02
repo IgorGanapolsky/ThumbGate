@@ -531,7 +531,13 @@ function main() {
   // The plugin hook and `thumbgate gate-check` share one hard-floor evaluator.
   // Environment bypasses may skip advisory gates, but not secrets, critical
   // security findings, or changes that disable the guardrail itself.
-  const hardFloorOutput = runHardFloor({ tool_name: toolName, tool_input: effectiveInput });
+  const hardFloorOutput = runHardFloor({
+    hook_event_name: input.hook_event_name || input.hookEventName,
+    session_id: input.session_id || input.sessionId,
+    cwd: input.cwd,
+    tool_name: toolName,
+    tool_input: effectiveInput,
+  });
   if (hardFloorOutput) {
     try {
       const parsed = JSON.parse(hardFloorOutput);

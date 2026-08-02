@@ -278,16 +278,16 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the Enterprise tier'
   );
   check(
-    /one hard, test-backed safety gate/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must describe the one test-backed gate'
+    /self-improving firewall for AI agents/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must preserve the product category'
   );
   check(
-    /supported AI-agent workflow/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must keep the supported-workflow boundary'
+    /unapproved spend/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must name the financial hard floor'
   );
   check(
-    /two business days/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must state the managed delivery window'
+    /before tools execute/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must state the pre-execution timing'
   );
   check(
     /\$19\/mo or \$149\/yr/i.test(readmeMd),

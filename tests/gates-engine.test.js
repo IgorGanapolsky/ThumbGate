@@ -62,6 +62,7 @@ const {
   PROTECTED_APPROVAL_TTL_MS,
 } = gatesEngine;
 const { getAutoGatesPath } = require('../scripts/auto-promote-gates');
+const { capturePromptSpendAuthorization } = require('../scripts/spend-control');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -2760,9 +2761,18 @@ test('evaluateSecretGuard returns null when no secrets detected', () => {
   assert.equal(result, null);
 });
 
-test('runHardFloor denies secret, security, and all four self-protect classes', () => {
+test('runHardFloor denies spend, secret, security, and all four self-protect classes', () => {
   cleanupStateFiles();
   const cases = [
+    ['financial-spend-authorization-required', {
+      session_id: 'no-spend-authorization',
+      tool_name: 'Browser',
+      tool_input: {
+        action: 'click',
+        description: 'Confirm Apollo purchase',
+        thumbgateSpend: { vendor: 'Apollo', amount: '99', currency: 'USD', operation: 'purchase' },
+      },
+    }],
     ['secret-exfiltration', {
       tool_name: 'Bash',
       tool_input: { command: `echo ${buildStripeKey()}` },
@@ -2774,6 +2784,10 @@ test('runHardFloor denies secret, security, and all four self-protect classes', 
     ['self-protect-config', {
       tool_name: 'Write',
       tool_input: { file_path: 'config/gates/default.json', content: '{}' },
+    }],
+    ['self-protect-config', {
+      tool_name: 'Write',
+      tool_input: { file_path: '.thumbgate/spend-authorizations.json', content: '{"authorizations":[]}' },
     }],
     ['self-protect-kill', {
       tool_name: 'Bash',
@@ -2800,6 +2814,30 @@ test('runHardFloor denies secret, security, and all four self-protect classes', 
     assert.match(hook.permissionDecisionReason, new RegExp(`\\[GATE:${expectedGate}\\]`));
   }
   cleanupStateFiles();
+});
+
+test('financial hard floor accepts a matching same-turn purchase order and never appends a Pro upsell to denials', () => {
+  capturePromptSpendAuthorization(
+    'I explicitly authorize you to spend up to $100 on Apollo credits.',
+    { sessionId: 'spend-session', promptId: 'prompt-1' },
+    { feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR },
+  );
+  const input = {
+    session_id: 'spend-session',
+    tool_name: 'Browser',
+    tool_input: {
+      action: 'click',
+      description: 'Confirm Apollo credit purchase',
+      thumbgateSpend: { vendor: 'Apollo', amount: '99', currency: 'USD', operation: 'purchase' },
+    },
+  };
+  assert.equal(runHardFloor(input), null);
+
+  const denied = runHardFloor({ ...input, session_id: 'unapproved-session' });
+  const hook = JSON.parse(denied).hookSpecificOutput;
+  assert.equal(hook.permissionDecision, 'deny');
+  assert.match(hook.permissionDecisionReason, /financial-spend-authorization-required/);
+  assert.doesNotMatch(hook.permissionDecisionReason, /thumbgate\.ai\/go\/pro|Pro \$19/i);
 });
 
 test('runHardFloor ignores ordinary block gates', () => {

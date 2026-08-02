@@ -22,6 +22,7 @@
  *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
  *   npx thumbgate background-governance  # background-agent run report + risk check
  *   npx thumbgate cfo           # local operational billing summary
+ *   npx thumbgate spend-status  # local financial authorization ledger
  *   npx thumbgate pro           # solo dashboard + exports side lane
  *   npx thumbgate diagnostic    # team workflow diagnostic intake + checkout path
  *   npx thumbgate audit <file>  # audit an agent transcript for repeat-mistake token waste
@@ -1634,6 +1635,49 @@ function stats() {
   proNudge();
 }
 
+function spendStatus() {
+  const args = parseArgs(process.argv.slice(3));
+  const { getSpendControlStatus } = require(path.join(PKG_ROOT, 'scripts', 'spend-control'));
+  const status = getSpendControlStatus({ projectDir: CWD });
+  const authorizations = status.authorizations.map((entry) => ({
+    id: entry.id,
+    sessionId: entry.sessionId,
+    promptId: entry.promptId,
+    vendor: entry.vendor,
+    currency: entry.currency,
+    maxAmountCents: entry.maxAmountCents,
+    remainingAmountCents: entry.remainingAmountCents,
+    status: entry.status,
+    createdAt: entry.createdAt,
+    expiresAt: entry.expiresAt,
+    reservations: Array.isArray(entry.reservations) ? entry.reservations.length : 0,
+    auditReceiptId: entry.auditReceiptId || null,
+  }));
+  const payload = {
+    mode: 'deny_by_default',
+    currentPromptRequired: true,
+    pending: authorizations.filter((entry) => entry.status === 'pending' && Date.now() < Number(entry.expiresAt || 0)),
+    authorizations,
+    statePath: status.paths.statePath,
+    receiptsPath: status.paths.receiptsPath,
+  };
+
+  if (args.json) {
+    console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+  console.log('\nThumbGate financial control');
+  console.log('─'.repeat(50));
+  console.log('  Mode            : deny by default');
+  console.log('  Human authority : current prompt + vendor + maximum amount');
+  console.log(`  Pending POs     : ${payload.pending.length}`);
+  console.log(`  Ledger          : ${payload.receiptsPath}`);
+  for (const authorization of payload.pending) {
+    const remaining = (authorization.remainingAmountCents / 100).toFixed(2);
+    console.log(`  ${authorization.vendor}: ${authorization.currency} ${remaining} remaining`);
+  }
+}
+
 function compact() {
   const args = parseArgs(process.argv.slice(3));
   const { compactMemories } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
@@ -2902,6 +2946,19 @@ function hookAutoCapture() {
     || process.env.CODEX_USER_PROMPT
     || process.env.USER_PROMPT
     || promptEnvelope.prompt;
+  // Every human turn revokes the prior turn's spend authority. A new
+  // authorization is created only from explicit human wording with vendor and
+  // amount; agents cannot mint one through MCP or PreToolUse inputs.
+  try {
+    const { capturePromptSpendAuthorization } = require(path.join(PKG_ROOT, 'scripts', 'spend-control'));
+    capturePromptSpendAuthorization(prompt, {
+      sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID || process.env.CODEX_SESSION_ID,
+      promptId: promptEnvelope.promptId,
+      timestamp: promptEnvelope.timestamp,
+    }, {
+      projectDir: promptEnvelope.projectDir || CWD,
+    });
+  } catch (_) { /* PreToolUse fails closed later when no valid authorization exists. */ }
   const { evaluatePromptGuard } = require(path.join(PKG_ROOT, 'scripts', 'prompt-guard'));
   const { processInlineFeedback, formatCliOutput } = require(path.join(PKG_ROOT, 'scripts', 'cli-feedback'));
   const { detectFeedbackSignal, isGenericFeedbackText } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
@@ -3327,6 +3384,7 @@ function help() {
   console.log('                            --no-hooks: MCP only, skip hook wiring');
   console.log('  break-glass           Short TTL recovery if gates over-fire');
   console.log('  cfo                   Hosted billing summary (local fallback JSON)');
+  console.log('  spend-status          Read-only purchase-order and receipt ledger (--json)');
   console.log('  billing:setup         Generate operator key + print Railway setup instructions');
   console.log('  repair-github-marketplace  Repair legacy GitHub Marketplace amount mappings');
   console.log('  north-star            Show proof-backed workflow-run progress toward the North Star');
@@ -3732,6 +3790,9 @@ switch (COMMAND) {
   case 'cfo':
   case 'revenue':
     cfo();
+    break;
+  case 'spend-status':
+    spendStatus();
     break;
   case 'cost':
   case 'savings':

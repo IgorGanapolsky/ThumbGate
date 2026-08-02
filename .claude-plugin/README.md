@@ -1,16 +1,18 @@
 # ThumbGate for Claude Desktop
 
-**Give thumbs up 👍 or thumbs down 👎 on any agent action. ThumbGate captures it, runs History-aware lesson distillation across up to 8 prior recorded entries, and blocks the pattern from repeating. Just type "thumbs up" or "thumbs down" in the chat.**
+**Give thumbs up 👍 or thumbs down 👎 on an agent action. ThumbGate captures the context, distills a local lesson, and can promote repeated concrete failures into reviewable PreToolUse rules.**
+
+For vague feedback, the current Claude hook can use up to 8 prior recorded entries to propose a reviewable lesson.
 
 ## Try it now
 
 1. Install ThumbGate
 2. Start a Claude Desktop session
 3. When the agent does something wrong, type: **thumbs down**
-4. ThumbGate captures the mistake, distills a lesson, and creates a prevention rule
-5. Next session: the agent physically cannot repeat that mistake
+4. ThumbGate captures the mistake and distills a reviewable local lesson
+5. Repeated concrete failures can promote a prevention rule; strict policy can deny the next matching action
 
-That's it. One thumbs-down, never again.
+Critical built-in floors are different: detected secret exfiltration and supported unapproved financial mutations deny before execution without relying on warn-by-default policy.
 
 ## If a gate over-fires
 
@@ -35,13 +37,14 @@ After changing MCP or hook settings, restart Claude Desktop or Claude Code so it
 
 ## What it does
 
-- **👎 Thumbs down** → captures the mistake → distills a lesson → auto-promotes to a prevention rule → PreToolUse hook blocks the pattern before execution
-- **👍 Thumbs up** → reinforces good patterns → agent starts preferring your approved flows without re-explaining them each session
-- **33 pre-action checks** → block destructive actions (force-push, mass delete, destructive SQL) before they execute
-- **Budget enforcement** → action count + time limits prevent runaway sessions
-- **Self-protection** → agent cannot disable its own governance
+- **👎 Thumbs down** → captures the mistake → distills a lesson → repeated concrete failures can promote a prevention rule
+- **👍 Thumbs up** → records an accepted outcome for local recall and evaluation
+- **Pre-action checks** → flag risky actions and deny when strict or unconditional policy requires it
+- **Financial hard floor** → requires current-turn human vendor + amount authority and an adapter spend declaration
+- **Budget tracking** → records action count and session time; enforcement is an explicit operator choice
+- **Self-protection** → hard-gates direct edits to configured hook and governance files, with audited repair paths
 - **Compliance tags** → NIST, SOC2, OWASP, CWE on prevention rules for enterprise teams
-- **Shared team enforcement** → one engineer's thumbs-down protects the whole team
+- **Local-first enforcement** → lessons and receipts remain reviewable in the active project; hosted team sync is not general availability
 - **60-second follow-up** → feedback can link to a prior mistake with `relatedFeedbackId` so delayed corrections still become useful prevention rules
 
 ## Installation

@@ -6,10 +6,16 @@ test.describe('/ dual-offer conversion path', () => {
     await mockDashboardApis(page);
   });
 
-  test('renders Pro $19/mo and Enterprise $499 offers plus the enforcement loop', async ({ page }) => {
+  test('renders a product-shaped hero before the Pro and Diagnostic offers', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.locator('.hero h1')).toHaveText('Stop AI agent mistakes before they cost you.');
+    await expect(page.locator('.hero h1')).toHaveText('Thumbs teach. The gate enforces.');
+    await expect(page.locator('.thumb-mark')).toHaveCount(2);
+    await expect(page.locator('.incident-console')).toBeVisible();
+    await expect(page.locator('.incident-console')).toContainText('repeat 3/3');
+    await expect(page.locator('.incident-console')).toContainText('DENY before execution');
+    await expect(page.locator('.hero [data-primary-checkout]')).toHaveCount(0);
+    await expect(page.locator('[data-scenario]')).toHaveCount(4);
     await expect(page.locator('[data-primary-checkout]')).toBeVisible();
     await expect(page.locator('[data-primary-checkout] .price')).toContainText('$499');
     await expect(page.locator('[data-primary-checkout]')).toContainText('Diagnostic Gate');
@@ -19,6 +25,36 @@ test.describe('/ dual-offer conversion path', () => {
     await expect(page.locator('.loop-step')).toHaveCount(4);
     await expect(page.locator('.decision')).toHaveText(['ALLOW', 'WARN', 'DENY']);
     await expect(page.locator('#workflow-sprint-intake[data-legacy-intake-alias]')).toHaveCount(1);
+
+    const heroBox = await page.locator('.hero').boundingBox();
+    const offerBox = await page.locator('#offers').boundingBox();
+    expect(heroBox).not.toBeNull();
+    expect(offerBox).not.toBeNull();
+    expect(offerBox.y).toBeGreaterThan(heroBox.y + heroBox.height);
+  });
+
+  test('install CTA gives immediate copy feedback', async ({ page }) => {
+    await page.goto('/');
+    const install = page.locator('#hero-install-copy');
+
+    await expect(install).toContainText('npx thumbgate init');
+    await install.click();
+    await expect(install).toContainText('Copied: npx thumbgate init');
+  });
+
+  test('mobile keeps one paid nav action and no horizontal overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+
+    await expect(page.locator('nav [data-cta-id="nav_diagnostic_buy"]')).toBeVisible();
+    await expect(page.locator('nav [data-cta-id="nav_pro_buy"]')).toBeHidden();
+    await expect(page.locator('.thumb-pair')).toBeVisible();
+    await expect(page.locator('.hero h1')).toBeVisible();
+    await page.locator('.incident-console').scrollIntoViewIfNeeded();
+    await expect(page.locator('.incident-console')).toBeVisible();
+
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
   });
 
   test('loop cards open under-the-hood demos with default vs strict gate modes', async ({ page }) => {
@@ -82,7 +118,7 @@ test.describe('/ dual-offer conversion path', () => {
     const form = new URLSearchParams(capturedRequest.postData());
     expect(form.get('customer_email')).toBe('buyer@company.com');
     expect(form.get('plan_id')).toBe('sprint_diagnostic');
-    expect(form.get('utm_campaign')).toBe('rally_style_gtm');
+    expect(form.get('utm_campaign')).toBe('product_replay');
     expect(form.get('cta_id')).toBe('homepage_diagnostic_buy');
   });
 
@@ -101,13 +137,13 @@ test.describe('/ dual-offer conversion path', () => {
     await expect(page).toHaveURL(/\/$/);
   });
 
-  test('proof link lands on the honest strict-mode boundary', async ({ page }) => {
+  test('hero managed CTA lands on the canonical Diagnostic form', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.proof-link[href="#proof"]').click();
+    await page.locator('.hero [data-cta-id="hero_diagnostic_buy"]').click();
 
-    await expect(page).toHaveURL(/#proof$/);
-    await expect(page.locator('#proof .terminal')).toBeVisible();
-    await expect(page.locator('#proof')).toContainText('Matching destructive actions warn by default and deny in strict mode.');
+    await expect(page).toHaveURL(/#enterprise-gate$/);
+    await expect(page.locator('[data-primary-checkout]')).toBeVisible();
+    await expect(page.locator('[data-primary-checkout]')).toContainText('One configured local gate and its regression test');
   });
 
   test('FAQ interaction updates both visibility and aria-expanded', async ({ page }) => {

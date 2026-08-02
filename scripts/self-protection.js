@@ -33,6 +33,8 @@ const SELF_GOVERNANCE_PATH_PATTERNS = [
   /(?:^|\/)config\/enforcement\.json$/i, // enforcement policy
   /(?:^|\/)config\/mcp-allowlists\.json$/i, // MCP policy surface
   /(?:^|\/)\.thumbgate\/config\.json$/i,
+  /(?:^|\/)\.thumbgate\/spend-authorizations\.json$/i,
+  /(?:^|\/)\.thumbgate\/spend-decision-receipts\.jsonl$/i,
   /(?:^|\/)thumbgate\.json$/i,
 ];
 

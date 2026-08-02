@@ -191,9 +191,10 @@ describe('auto-wire-hooks', () => {
         assert.ok(settings.hooks.Stop, 'Stop should exist');
         assert.ok(settings.statusLine, 'statusLine should exist');
 
-        // Check PreToolUse has matcher
+        // No matcher means the financial hard floor sees every tool, including
+        // browser and MCP purchase actions.
         const preToolEntry = settings.hooks.PreToolUse[0];
-        assert.equal(preToolEntry.matcher, 'Bash|Edit|Write|MultiEdit');
+        assert.equal(preToolEntry.matcher, undefined);
         assert.equal(preToolEntry.hooks[0].command, preToolHookCommand());
 
         const promptEntry = settings.hooks.UserPromptSubmit[0];

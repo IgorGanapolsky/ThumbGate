@@ -37,7 +37,6 @@ function getHome() {
 // --- Hook definitions ---
 const CLAUDE_HOOKS = {
   PreToolUse: {
-    matcher: 'Bash|Edit|Write|MultiEdit',
     hooks: [{ type: 'command', command: preToolHookCommand() }],
   },
   UserPromptSubmit: {
@@ -57,7 +56,6 @@ const CLAUDE_HOOKS = {
 
 const CODEX_HOOKS = {
   PreToolUse: {
-    matcher: 'Bash',
     hooks: [{ type: 'command', command: codexPreToolHookCommand() }],
   },
   UserPromptSubmit: {
@@ -176,6 +174,21 @@ function hookAlreadyPresent(hookArray, command) {
       Array.isArray(entry.hooks) &&
       entry.hooks.some((h) => h.command === command)
   );
+}
+
+function pruneNarrowPreToolEntries(hookArray, expectedCommand) {
+  if (!Array.isArray(hookArray)) return { hooks: [], removed: false };
+  let removed = false;
+  const hooks = hookArray.filter((entry) => {
+    const ownsCommand = Array.isArray(entry && entry.hooks)
+      && entry.hooks.some((hook) => hook && hook.command === expectedCommand);
+    if (ownsCommand && typeof entry.matcher === 'string' && entry.matcher.trim()) {
+      removed = true;
+      return false;
+    }
+    return true;
+  });
+  return { hooks, removed };
 }
 
 /**
@@ -398,6 +411,13 @@ function wireClaudeHooks(options) {
     if (pruned.removed) {
       added.push({ lifecycle, command: `${hookCommand} (replaced legacy ThumbGate hook)` });
     }
+    if (lifecycle === 'PreToolUse') {
+      const coverage = pruneNarrowPreToolEntries(settings.hooks[lifecycle], hookCommand);
+      settings.hooks[lifecycle] = coverage.hooks;
+      if (coverage.removed) {
+        added.push({ lifecycle, command: `${hookCommand} (expanded to all tools)` });
+      }
+    }
 
     if (hookAlreadyPresent(settings.hooks[lifecycle], hookCommand)) {
       continue;
@@ -522,6 +542,13 @@ function upsertCodexHook(configHooks, lifecycle, hookDef, legacyPattern) {
   if (pruned.removed) {
     added.push({ lifecycle, command: `${hookCommand} (replaced legacy ThumbGate hook)` });
   }
+  if (lifecycle === 'PreToolUse') {
+    const coverage = pruneNarrowPreToolEntries(configHooks[lifecycle], hookCommand);
+    configHooks[lifecycle] = coverage.hooks;
+    if (coverage.removed) {
+      added.push({ lifecycle, command: `${hookCommand} (expanded to all tools)` });
+    }
+  }
 
   if (hookAlreadyPresent(configHooks[lifecycle], hookCommand)) {
     return added;
@@ -615,13 +642,13 @@ function wireGeminiHooks(options) {
 
   const preToolPruned = pruneLegacyHookEntries(settings.hooks.PreToolUse, preToolCmd, /(generate-pretool-hook\.sh|\bgate-check\b)/);
   settings.hooks.PreToolUse = preToolPruned.hooks;
+  settings.hooks.PreToolUse = pruneNarrowPreToolEntries(settings.hooks.PreToolUse, preToolCmd).hooks;
   const userPromptPruned = pruneLegacyHookEntries(settings.hooks.UserPromptSubmit, userPromptCmd, /(hook-auto-capture\.sh|hook-auto-capture\b)/);
   settings.hooks.UserPromptSubmit = userPromptPruned.hooks;
 
   if (!hookAlreadyPresent(settings.hooks.PreToolUse, preToolCmd)) {
     settings.hooks.PreToolUse = settings.hooks.PreToolUse || [];
     settings.hooks.PreToolUse.push({
-      matcher: 'Bash',
       hooks: [{ type: 'command', command: preToolCmd }],
     });
     added.push({ lifecycle: 'PreToolUse', command: preToolCmd });
@@ -669,10 +696,11 @@ function wireForgeHooks(options) {
 
   const added = [];
 
+  existing.hooks.PreToolUse = pruneNarrowPreToolEntries(existing.hooks.PreToolUse, preToolCmd).hooks;
+
   if (!hookAlreadyPresent(existing.hooks.PreToolUse, preToolCmd)) {
     existing.hooks.PreToolUse = existing.hooks.PreToolUse || [];
     existing.hooks.PreToolUse.push({
-      matcher: 'Bash',
       hooks: [{ type: 'command', command: preToolCmd }],
     });
     added.push({ lifecycle: 'PreToolUse', command: preToolCmd });
@@ -761,6 +789,7 @@ module.exports = {
   wireGeminiHooks,
   wireForgeHooks,
   hookAlreadyPresent,
+  pruneNarrowPreToolEntries,
   loadJsonFile,
   parseFlags,
   claudeSettingsPath,

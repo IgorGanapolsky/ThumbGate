@@ -282,9 +282,9 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /\/checkout\/pro/);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
-  assert.match(publicLanding, /Stop AI agent mistakes before they cost you/i);
+  assert.match(publicLanding, /Thumbs teach\. The gate enforces/i);
   assert.match(publicLanding, /test-backed verification evidence/i);
-  assert.match(publicLanding, /strict-mode deny example/i);
+  assert.match(publicLanding, /strict-mode example/i);
   assert.match(publicLanding, /configured local gate and its regression test/i);
   assert.doesNotMatch(publicLanding, /billingDuration/);
   assert.doesNotMatch(publicLanding, /P1M/);

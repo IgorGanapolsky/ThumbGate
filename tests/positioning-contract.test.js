@@ -17,9 +17,9 @@ test('package metadata leads with the concrete enforcement contract', () => {
   const packageJson = readJson('package.json');
 
   assert.match(packageJson.description, /ThumbGate Pre-Action Checks/i);
-  assert.match(packageJson.description, /repeated failures/i);
+  assert.match(packageJson.description, /reviewed agent feedback/i);
   assert.match(packageJson.description, /hard-block detected secret leaks/i);
-  assert.match(packageJson.description, /strict mode/i);
+  assert.match(packageJson.description, /unapproved spend/i);
   assert.doesNotMatch(packageJson.description, /every mistake|every thumbs-down/i);
   assert.doesNotMatch(packageJson.description, /Universal Context & Memory Layer/i);
 });
@@ -30,8 +30,8 @@ test('README explains the observed feedback and enforcement boundaries', () => {
   assert.match(readme, /Accepted feedback is stored as local lessons/i);
   assert.match(readme, /Repeated concrete failures can become prevention rules/i);
   assert.match(readme, /warn and log by default/i);
-  assert.match(readme, /hard-blocks detected secret leaks and two direct self-disable command classes by default/i);
-  assert.match(readme, /terminate the ThumbGate gate process or enable its bypass environment override/i);
+  assert.match(readme, /hard-blocks detected secret leaks, direct guardrail tampering, and supported unapproved financial mutations by default/i);
+  assert.match(readme, /current human message explicitly authorizes the vendor and maximum amount/i);
   assert.match(readme, /THUMBGATE_STRICT_ENFORCEMENT=1/i);
   assert.match(readme, /prompt evaluation/i);
 });
@@ -50,7 +50,7 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
 
   assert.match(readme, /AI coding agents repeat mistakes/i);
   assert.match(readme, /evaluate the proposed tool call before execution/i);
-  assert.match(landingPage, /Stop AI agent mistakes before they cost you/i);
+  assert.match(landingPage, /Thumbs teach\. The gate enforces/i);
   assert.match(landingPage, /allowed, warned, or denied/i);
   assert.match(landingPage, /one configured local gate/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
@@ -238,7 +238,7 @@ test('public landing copy stays vendor-neutral while offering Pro and Enterprise
   assert.match(landingPage, /Claude Code/i);
   assert.match(landingPage, /Cursor/i);
   assert.match(landingPage, /Codex/i);
-  assert.match(landingPage, /or similar agents/i);
+  assert.match(landingPage, /aria-label="Verified agent and runtime adapters"/i);
   assert.match(landingPage, /Managed AI Agent Workflow Gate/i);
   assert.match(landingPage, /\$499/);
   assert.match(landingPage, /Pro · \$19\/mo/);

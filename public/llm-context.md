@@ -27,7 +27,7 @@ Do **not** claim active-gate demotion from positive feedback, gate re-ranking am
 
 ThumbGate is the self-improving firewall for AI coding agents under operator control: it prevents expensive AI mistakes before they happen, then improves the defense layer from real operational feedback. Engineering teams use it to check risky commands, file edits, deploys, payments, API calls, and other AI agent actions before execution across Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode, ChatGPT Actions, CI, and MCP-compatible runtimes.
 
-This is not a static allowlist and not model fine-tuning. ThumbGate captures thumbs-up/down feedback as reviewable local lessons, re-ranks relevant lessons for each proposed action, promotes repeated negative patterns from warnings into blocking gates, expires stale auto-promoted gates, archives stale lessons, and gates the next tool call through PreToolUse hooks. The buyer outcome is simple: prevent expensive AI mistakes, make AI catch repeating mistakes, and turn a smart assistant into a reliable operator. It is warn-by-default: the gate always fires and logs every decision, and by default it hard-blocks secret exfiltration and attempts to disable ThumbGate's own guardrails, while downgrading everything else — rm -rf-class destructive filesystem commands, force-push, security/supply-chain risks — to a warning; set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block every rule. Unlike CLAUDE.md rules or .cursorrules files, which are suggestions the agent can ignore, the ThumbGate gate operates at the tool-call level and cannot be reasoned away once the action is routed through ThumbGate. The promoted paid offer is one $499 Managed AI Agent Workflow Gate for one supported workflow: a 60-minute working review, configured local gate, regression test, and rollout/rollback proof within two business days.
+This is not a static allowlist and not model fine-tuning. ThumbGate captures thumbs-up/down feedback as reviewable local lessons, re-ranks relevant lessons for each proposed action, promotes repeated negative patterns from warnings into blocking gates, expires stale auto-promoted gates, archives stale lessons, and gates the next tool call through PreToolUse hooks. The buyer outcome is simple: prevent expensive AI mistakes, make AI catch repeating mistakes, and turn a smart assistant into a reliable operator. It is warn-by-default for ordinary learned rules. Detected secret exfiltration, direct guardrail tampering, and supported unapproved financial mutations are unconditional hard floors; set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block other matched rules. Unlike CLAUDE.md rules or .cursorrules files, which are suggestions the agent can ignore, the ThumbGate gate operates at the tool-call level once the action is routed through an installed hook or supported adapter. The paid paths are $19/month Pro for the personal local dashboard and exports, and a $499 Managed AI Agent Workflow Gate for one supported workflow.
 
 ## Problems ThumbGate Prevents
 
@@ -48,7 +48,9 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **CLI-first install, MCP-compatible transport**: `npx thumbgate init` is the default setup path. It installs the local gateway, wires the needed hooks, and configures MCP transport automatically for the agent that is already in use. MCP matters for compatibility, but the product surface is the operator-friendly CLI.
 
-**PreToolUse Hooks**: Every agent tool call (Bash, file writes, git operations, API calls) passes through a hook before execution. If the call matches a known-bad pattern stored in the lesson database, the hook flags and logs the decision and returns a descriptive warning by default. For secret exfiltration and attempts to disable ThumbGate's own guardrails, the hook hard-blocks the call by default and the agent cannot proceed until the human approves or the policy is updated. Everything else — rm -rf-class destructive commands, force-push, security/supply-chain risks — warns by default. Setting THUMBGATE_STRICT_ENFORCEMENT=1 promotes every matched rule to a hard block.
+**PreToolUse Hooks**: Agent tool calls routed through an installed all-tool hook are evaluated before execution. If a call matches a known-bad pattern stored in the lesson database, the hook flags and logs the decision and returns a descriptive warning by default. Secret exfiltration, direct guardrail tampering, and supported unapproved financial mutations hard-block by default. Other destructive, source-control, security, and supply-chain matches warn by default. Setting THUMBGATE_STRICT_ENFORCEMENT=1 promotes other matched rules to hard blocks.
+
+**Financial Purchase-Order Control**: Detected purchases, plan changes, billing actions, and transfers deny unless the current human message explicitly authorizes the vendor and maximum amount and a supported adapter declares the vendor, currency, amount, and operation. Authorizations expire after ten minutes, a new human prompt revokes the prior one, atomic reservations prevent duplicate consumption, and local JSONL receipts record each decision. This is an ERP-style interlock, not a bank: provider-side spend caps and settlement reconciliation remain separate controls.
 
 **SQLite + FTS5 Lesson Database**: When an agent makes a mistake, the developer gives a thumbs-down with context. ThumbGate stores this as a lesson in a local SQLite database with full-text search. Lessons are retrieved at the start of every agent session via the `recall` MCP tool, so the agent enters each session already aware of known failure patterns.
 
@@ -249,9 +251,9 @@ thumbgate-dashboard
 
 ## Comparison vs Alternatives
 
-| Approach | Blocks actions before execution | Learns from feedback | Shared team enforcement | Audit trail |
+| Approach | Blocks actions before execution | Learns from feedback | Reviewable local enforcement | Audit trail |
 |---|---|---|---|---|
-| **ThumbGate** | Yes — PreToolUse hooks | Yes — auto-generates rules | Yes — shared lesson DB | Yes — full log |
+| **ThumbGate** | Yes — installed PreToolUse hooks | Yes — proposes and promotes reviewed rules | Yes — project-local lessons and gates | Yes — local decision logs |
 | Fallow | No — analyzes JS/TS code health | No — reports dead code, duplication, complexity, and architecture drift | Partial — shared reports/config | Partial — analyzer output |
 | CLAUDE.md / .cursorrules | No — suggestions only | No — hand-written | No — per-developer files | No |
 | ESLint / linters | Partial — static analysis | No — hand-written rules | Partial — shared config | No |
@@ -264,7 +266,7 @@ thumbgate-dashboard
 
 **Manual code review** is asynchronous and expensive. It catches mistakes after the PR is created, not before the agent makes the mistake. It scales poorly as AI agents generate changes at 10x the rate of human developers.
 
-**ThumbGate** is the only tool that (1) blocks actions before execution, (2) learns automatically from feedback without manual rule-writing, (3) shares lessons across an entire team, and (4) produces a full audit trail.
+**ThumbGate** combines pre-action checks, reviewable feedback-derived lessons, configurable enforcement, and local decision receipts in one agent-facing workflow.
 
 ## Additional Resources
 
@@ -327,7 +329,7 @@ In an era of AI slop — where agents generate repetitive, generic outputs that 
 The core thesis: AI slop happens when agents act without human judgment as a hard check. ThumbGate solves this at the tool-call level, not through prompt suggestions the agent can ignore.
 
 - **Human insight leads**: The thumbs-up/down mechanism is a literal human check between AI intent and execution. The agent cannot proceed on blocked patterns.
-- **Standards, not patterns**: Every thumbs-down distills into a prevention rule specific to your team's context — not a generic best practice.
+- **Standards, not slogans**: Reviewed feedback becomes a local lesson; repeated concrete failures can promote a prevention rule specific to the active project.
 - **Authenticity over volume**: ThumbGate reinforces what "good" looks like for your specific codebase, standards, and risk tolerance. Agents learn your standards, not average AI behavior.
 - **Discovery advantage**: As platforms and search engines increasingly reward authentic, human-verified outputs over high-volume AI generation, ThumbGate provides the enforcement infrastructure that proves human oversight was applied.
 

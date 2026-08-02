@@ -89,9 +89,9 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   const h2Count = (landingPage.match(/<h2\b/g) || []).length;
   const h3Count = (landingPage.match(/<h3\b/g) || []).length;
 
-  assert.ok(words.length <= 1100, `visible homepage is ${words.length} words`);
+  assert.ok(words.length <= 900, `visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
-  assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
+  assert.ok(h3Count <= 14, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
     // DPO may appear in Pro bullets intentionally — only ban heavy infra jargon
     if (jargon === 'DPO') continue;
@@ -106,32 +106,32 @@ test('hero names both paid paths and the self-improving product outcome', () => 
   );
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
-  assert.match(landingPage, /Stop AI agent mistakes before they cost you/i);
-  assert.match(landingPage, /ThumbGate — Stop AI agent mistakes before they cost you/i);
-  assert.match(hero, /<h1>Stop AI agent mistakes before they cost you\.<\/h1>/i);
-  assert.match(hero, /Not a prompt · Not a postmortem/i);
-  assert.match(hero, /tool-call boundary/i);
-  assert.match(hero, /Pro at \$19\/mo/);
-  assert.match(hero, /\$499 Diagnostic/);
-  assert.match(hero, /Diagnostic Gate/);
-  assert.match(hero, /Rank[\s\S]*lessons/i);
-  assert.match(hero, /Promote[\s\S]*gates/i);
+  assert.match(landingPage, /ThumbGate — Thumbs teach\. The gate enforces\./i);
+  assert.match(hero, /<h1>Thumbs teach\. The gate enforces\.<\/h1>/i);
+  assert.match(hero, /Self-improving firewall for AI agents/i);
+  assert.match(hero, /next tool call is checked before it runs/i);
+  assert.match(hero, /Pro \$19\/mo/);
+  assert.match(hero, /\$499/);
+  assert.match(hero, /repeat 3\/3[\s\S]*gate promoted[\s\S]*DENY before execution/i);
   assert.match(hero, /npx thumbgate init/);
   assert.match(hero, /thumbgate-dashboard/);
-  assert.match(hero, /\/thumbgate-dashboard/);
   assert.match(hero, /npx thumbgate dashboard --open/);
   assert.match(hero, /id="thumbgate-dashboard-command"/);
+  assert.match(hero, /class="thumb-mark up"[\s\S]*class="thumb-mark down"/);
+  assert.match(hero, /model weights unchanged/i);
+  assert.match(hero, /audit receipt written/i);
+  assert.doesNotMatch(hero, /receipt tg_/i);
   assert.ok(lede.split(/\s+/).length <= 40, `hero lede is ${lede.split(/\s+/).length} words`);
 });
 
 test('how-it-works sells the self-improving loop, not a static allowlist', () => {
-  assert.match(landingPage, /Pre-action checks—and the systems that refine them/i);
-  assert.match(landingPage, /Lessons are re-ranked per action/i);
-  assert.match(landingPage, /repeated failures can promote into gates/i);
-  assert.match(landingPage, /stale auto-promoted gates expire/i);
+  assert.match(landingPage, /The gate gets better\. Your model stays untouched/i);
+  assert.match(landingPage, /Reviewed outcomes refine local rules/i);
+  assert.match(landingPage, /Repeated failures can promote/i);
+  assert.match(landingPage, /stale gates expire/i);
   assert.match(landingPage, /under your control/i);
-  assert.match(landingPage, /silently rewriting policy|does not silently rewrite/i);
-  assert.match(landingPage, /firewall improves from explicit feedback without retraining the model/i);
+  assert.match(landingPage, /policy without review/i);
+  assert.match(landingPage, /feedback changes enforcement/i);
   assert.match(landingPage, /source\s+core protection · strict mode/i);
 });
 
@@ -144,7 +144,7 @@ test('homepage explains the product with one four-stage self-improving loop', ()
   assert.match(landingPage, />ALLOW</);
   assert.match(landingPage, />WARN</);
   assert.match(landingPage, />DENY</);
-  assert.match(landingPage, /Each reviewed outcome closes the loop/);
+  assert.match(landingPage, /That is “self-improving”/);
   assert.match(landingPage, /data-loop-step="1"/);
   assert.match(landingPage, /data-loop-step="4"/);
   assert.match(landingPage, /id="loop-panel"/);
@@ -167,13 +167,14 @@ test('paid wedge includes managed implementation, regression, and rollout proof'
 });
 
 test('enforcement promise distinguishes default denies from strict-mode blocks', () => {
-  assert.match(landingPage, /Detected secret exfiltration[\s\S]*denied by default/i);
+  assert.match(landingPage, /Detected secret exfiltration and gate-process bypass attempts are denied by default/i);
+  assert.match(landingPage, /Supported unapproved financial mutations are denied/i);
   assert.match(landingPage, /Matching destructive actions warn by default and deny in strict mode/i);
-  assert.match(landingPage, /not a claim that every free install blocks every risky command automatically/i);
+  assert.match(landingPage, /does not mean every free install blocks every risky command/i);
   assert.match(landingPage, /mode\s+strict enforcement[\s\S]*decision\s+<span class="red">DENY<\/span>/i);
 });
 
-test('FAQPage JSON-LD matches the five visible buyer questions', () => {
+test('FAQPage JSON-LD matches the three visible buyer questions', () => {
   const jsonLd = parseJsonLd(landingPage);
   const faqSchema = jsonLd.find((document) => document['@type'] === 'FAQPage');
   const visibleFaq = visibleFaqAnswers(landingPage);
@@ -181,8 +182,8 @@ test('FAQPage JSON-LD matches the five visible buyer questions', () => {
   assert.ok(jsonLd.some((document) => document['@type'] === 'SoftwareApplication'));
   assert.ok(jsonLd.some((document) => document['@type'] === 'Service'));
   assert.ok(faqSchema);
-  assert.equal(faqSchema.mainEntity.length, 5);
-  assert.equal(visibleFaq.size, 5);
+  assert.equal(faqSchema.mainEntity.length, 3);
+  assert.equal(visibleFaq.size, 3);
   for (const entity of faqSchema.mainEntity) {
     const question = normalizeHtmlText(entity.name);
     const answer = normalizeHtmlText(entity.acceptedAnswer.text);
@@ -198,6 +199,9 @@ test('checkout intent keeps first-party, Plausible, and optional GA4 telemetry',
   assert.match(landingPage, /sendGa4Event\('begin_checkout'/);
   assert.match(landingPage, /sendFirstPartyTelemetry\('checkout_start'/);
   assert.match(landingPage, /planId: 'sprint_diagnostic'/);
+  assert.match(landingPage, /selectedPlan === 'pro' \? 19 : 499/);
+  assert.match(landingPage, /pro_offer_click/);
+  assert.match(landingPage, /install_copy/);
   assert.match(landingPage, /const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true'/);
 });
 
@@ -213,20 +217,26 @@ test('homepage preserves brand, version, repository, and deployment placeholders
   assert.doesNotMatch(landingPage, /Math\.random\(/);
 });
 
-test('homepage features thumbs branding and self-improving diagrams above the fold story', () => {
-  assert.match(landingPage, /class="hero-thumbs"/);
-  assert.match(landingPage, /class="hero-thumbs"[\s\S]{0,120}👍[\s\S]{0,80}👎/);
-  assert.match(landingPage, /\/assets\/diagrams\/hero-thumbs\.svg/);
-  assert.match(landingPage, /\/assets\/diagrams\/before-after\.svg/);
-  assert.match(landingPage, /\/assets\/diagrams\/loop\.svg/);
-  assert.match(landingPage, /\/assets\/diagrams\/self-improving-thumbs-loop\.svg/);
-  assert.match(landingPage, /Is it really self-improving\?/);
+test('homepage uses vector thumbs and one product-shaped incident replay instead of redundant diagrams', () => {
+  assert.match(landingPage, /class="thumb-pair"/);
+  assert.match(landingPage, /aria-label="Thumbs up"[\s\S]*aria-label="Thumbs down"/);
+  assert.match(landingPage, /class="incident-console"/);
+  assert.match(landingPage, /incident replay/i);
   assert.match(landingPage, /Thumbs teach\. The gate enforces\./);
-  assert.match(landingPage, /control layer, not the LLM/i);
+  assert.doesNotMatch(landingPage, /\/assets\/diagrams\/(?:hero-thumbs|before-after|loop|self-improving-thumbs-loop)\.svg/);
 
   const heroStart = landingPage.indexOf('<!-- HERO -->');
   const howStart = landingPage.indexOf('id="how-it-works"');
   const heroBlock = landingPage.slice(heroStart, howStart);
-  assert.ok(heroBlock.includes('hero-thumbs.svg'), 'hero diagram must appear before how-it-works');
-  assert.ok(heroBlock.includes('class="hero-thumbs"'), 'big thumbs must appear in hero');
+  assert.ok(heroBlock.includes('class="incident-console"'), 'product replay must appear before how-it-works');
+  assert.ok(heroBlock.includes('class="thumb-pair"'), 'vector thumbs must appear in hero');
+});
+
+test('homepage proves four incident classes and differentiates the execution layer', () => {
+  assert.match(landingPage, /data-scenario="git"[\s\S]*protect-main[\s\S]*DENY/i);
+  assert.match(landingPage, /data-scenario="secret"[\s\S]*credential egress[\s\S]*DENY/i);
+  assert.match(landingPage, /data-scenario="claim"[\s\S]*row count is 1,284[\s\S]*1,283[\s\S]*BLOCK RESPONSE/i);
+  assert.match(landingPage, /data-scenario="spend"[\s\S]*Apollo[\s\S]*none this turn[\s\S]*DENY/i);
+  assert.match(landingPage, /Not a prompt\. Not a judge\. Not a postmortem\./i);
+  assert.match(landingPage, /Checks configured boundaries before execution/i);
 });

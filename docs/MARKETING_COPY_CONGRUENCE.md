@@ -8,20 +8,25 @@
 **Product Name:** ThumbGate
 **Primary Value Proposition:** Inspect risky agent actions before execution and block them when policy requires it
 
+**Canonical meta description:** Self-improving firewall for AI agents. Reviewed outcomes become local rules; secret leaks and unapproved spend hard-block before tools execute.
+
 ## Surface Descriptions
 
 ### Cursor Directory (cursor.directory/thumbgate)
 > Pre-action checks that flag repeated risky actions before execution and block matching actions when strict policy is enabled. Accepted feedback becomes local lessons; repeated failures can become prevention rules.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> Stop AI agent mistakes before they cost you. Self-serve is $19/mo; the $499 Diagnostic installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.
+> Thumbs teach. The gate enforces. Reviewed outcomes become local lessons; repeated concrete failures can become reviewable gates; the next tool call is checked before it runs.
+
+### Financial control boundary
+> Detected financial mutations routed through supported ThumbGate hooks deny by default unless the current human message authorizes the exact vendor and maximum amount and the adapter declares the proposed spend. ThumbGate reserves that budget and writes a local decision receipt. It is not a bank, refund service, or proof of the vendor's final settlement amount.
 
 ### NPM package.json
-> ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.
+> ThumbGate Pre-Action Checks turn reviewed agent feedback into local rules and hard-block detected secret leaks and unapproved spend before tools execute.
 
 ### GitHub Repo About
 **Canonical source:** `config/github-about.json`
-> ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.
+> ThumbGate Pre-Action Checks turn reviewed agent feedback into local rules and hard-block detected secret leaks and unapproved spend before tools execute.
 
 **Canonical topics:** `thumbgate`, `pre-action-checks`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`, `self-improving-agents`
 
@@ -97,4 +102,6 @@
 - Root landing page stays vendor-neutral. Claude-first positioning belongs only on Claude-specific distribution pages, extension docs, and Anthropic-facing partner assets.
 - Promote shipped surfaces explicitly: Claude Code, Cursor plugin, Codex, Gemini CLI, Amp, OpenCode, and any MCP-compatible agent.
 - Mention history-aware lesson distillation when the surface is describing vague thumbs feedback, linked follow-up notes, or rule proposals from conversation history.
+- Never say one thumbs-down automatically becomes a hard block. Ordinary learned rules remain reviewed and warn by default unless strict policy is enabled; unconditional built-in floors must be named explicitly.
+- Never say a same-privilege local agent is impossible to bypass. Scope enforcement claims to actions routed through an installed ThumbGate hook or supported adapter.
 - Do not claim a standalone VS Code extension. Say VS Code works through the MCP-compatible agent running inside the editor.

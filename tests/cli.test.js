@@ -796,6 +796,71 @@ describe('bin/cli.js', () => {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
+  test('human prompt authorization is the only path through the spend hard floor', () => {
+    const feedbackDir = makeTmpDir();
+    const promptResult = runCliSync(['hook-auto-capture'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_NO_NUDGE: '1',
+      },
+      input: JSON.stringify({
+        hook_event_name: 'UserPromptSubmit',
+        session_id: 'cli-spend-session',
+        prompt_id: 'prompt-1',
+        prompt: 'I explicitly authorize you to spend up to $100 on Apollo credits.',
+      }),
+    });
+    assert.equal(promptResult.status, 0, `hook-auto-capture failed:\n${promptResult.stderr}`);
+
+    const spendInput = JSON.stringify({
+      hook_event_name: 'PreToolUse',
+      session_id: 'cli-spend-session',
+      tool_name: 'Browser',
+      tool_input: {
+        action: 'click',
+        description: 'Confirm Apollo credit purchase',
+        thumbgateSpend: { vendor: 'Apollo', amount: '99', currency: 'USD', operation: 'purchase' },
+      },
+    });
+    const allowed = runCliSync(['gate-check'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_HOTFIX_BYPASS: '1',
+        THUMBGATE_STRICT_ENFORCEMENT: '0',
+      },
+      input: spendInput,
+    });
+    assert.equal(allowed.status, 0, `gate-check failed:\n${allowed.stderr}`);
+    assert.equal(JSON.parse(allowed.stdout).decision, 'approve');
+
+    const spendStatusResult = runCliSync(['spend-status', '--json'], {
+      env: { ...process.env, THUMBGATE_FEEDBACK_DIR: feedbackDir, THUMBGATE_NO_NUDGE: '1' },
+    });
+    assert.equal(spendStatusResult.status, 0, `spend-status failed:\n${spendStatusResult.stderr}`);
+    const spendLedger = JSON.parse(spendStatusResult.stdout);
+    assert.equal(spendLedger.mode, 'deny_by_default');
+    assert.equal(spendLedger.authorizations.length, 1);
+    assert.equal(spendLedger.authorizations[0].vendor, 'Apollo');
+    assert.equal(spendLedger.authorizations[0].reservations, 1);
+
+    const unapproved = runCliSync(['gate-check'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_HOTFIX_BYPASS: '1',
+        THUMBGATE_STRICT_ENFORCEMENT: '0',
+      },
+      input: spendInput.replace('cli-spend-session', 'cli-unapproved-session'),
+    });
+    const deniedHook = JSON.parse(unapproved.stdout).hookSpecificOutput;
+    assert.equal(deniedHook.permissionDecision, 'deny');
+    assert.match(deniedHook.permissionDecisionReason, /financial-spend-authorization-required/);
+    assert.doesNotMatch(deniedHook.permissionDecisionReason, /thumbgate\.ai\/go\/pro|Pro \$19/i);
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
   test('hook-auto-capture records the user prompt and refreshes statusline counts', () => {
     const feedbackDir = makeTmpDir();
     const result = runCliSync(['hook-auto-capture'], {
@@ -2390,7 +2455,7 @@ describe('bin/cli.js', () => {
 
     const settingsPath = path.join(isolatedHome, '.claude', 'settings.local.json');
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-    assert.equal(settings.hooks.PreToolUse[0].matcher, 'Bash|Edit|Write|MultiEdit');
+    assert.equal(settings.hooks.PreToolUse[0].matcher, undefined);
     assert.match(settings.hooks.PreToolUse[0].hooks[0].command, /gate-check/);
     assert.match(settings.hooks.UserPromptSubmit[0].hooks[0].command, /hook-auto-capture/);
     assert.match(settings.hooks.PostToolUse[0].hooks[0].command, /cache-update/);
