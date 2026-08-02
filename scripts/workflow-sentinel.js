@@ -22,6 +22,10 @@ const {
   buildWorkflowControl,
   normalizeProviderAction,
 } = require('./provider-action-normalizer');
+const {
+  detectEconomicAction,
+  evaluateFinancialControl,
+} = require('./financial-control-plane');
 
 const GOVERNANCE_STATE_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'governance-state.json');
 const DEFAULT_PROTECTED_FILE_GLOBS = [
@@ -40,7 +44,6 @@ const DEFAULT_PROTECTED_FILE_GLOBS = [
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+(?:pr\s+(?:create|merge)|workflow\s+run|release\s+create)|npm\s+publish|yarn\s+publish|pnpm\s+publish|rm\s+-rf)\b/i;
 const BACKGROUND_AGENT_PATTERN = /\b(?:async(?:-job|-task)?|autonomous|background|cron|dispatch|heartbeat|job runner|job-runner|queue|queued|schedule|scheduled|worker|workflow run)\b/i;
-const ECONOMIC_ACTION_PATTERN = /\b(?:billing|charge|credit memo|invoice|payment(?: link|s)?|payout|refund|stripe|subscription(?:s| creation| update| cancel| delete)?|top-?up)\b/i;
 const CUSTOMER_SYSTEM_PATTERN = /\b(?:crm|customer|email|hubspot|intercom|mailgun|resend|salesforce|support|zendesk)\b/i;
 
 const SURFACE_RULES = [
@@ -259,7 +262,7 @@ function classifyActionProfile(toolInput = {}) {
   const economicAction = Boolean(
     toolInput.economicAction === true
       || metadata.economicAction === true
-      || ECONOMIC_ACTION_PATTERN.test(combined)
+      || detectEconomicAction('', { ...toolInput, metadata: { ...metadata, context: combined } })
   );
   const customerSystemAction = Boolean(
     toolInput.customerSystemAction === true
@@ -573,6 +576,7 @@ function scoreRisk({
   taskScopeViolation,
   protectedSurface,
   costControl,
+  financialControl,
   workflowControl,
   workflowContract,
   actionProfile,
@@ -690,6 +694,15 @@ function scoreRisk({
         ? 'Estimated model usage exceeds the configured per-action budget.'
         : 'Estimated model usage is high enough to require review.',
       { mode: costControl.mode, reasons: costControl.reasons }
+    );
+  }
+  if (financialControl?.mode === 'block') {
+    addDriver(
+      drivers,
+      'financial_control',
+      0.65,
+      'Deterministic purchase controls rejected the economic action.',
+      { reasonCodes: financialControl.reasonCodes }
     );
   }
   if (workflowControl && workflowControl.workflow && workflowControl.workflow.pattern !== 'single_action') {
@@ -814,6 +827,7 @@ function buildEvidence({
   protectedSurface,
   normalizedAction,
   costControl,
+  financialControl,
   workflowControl,
   workflowContract,
   actionProfile,
@@ -826,6 +840,13 @@ function buildEvidence({
   }
   if (costControl && costControl.mode && costControl.mode !== 'allow') {
     evidence.push(`Cost control ${costControl.mode}: ${costControl.reasons.join(' ')}`);
+  }
+  if (financialControl?.economicAction) {
+    evidence.push(
+      financialControl.mode === 'allow'
+        ? `Financial control allow: approved reservation ${financialControl.authorization?.reservationId || 'unknown'}.`
+        : `Financial control block: ${financialControl.reasons.join(' ')}`
+    );
   }
   if (workflowControl && workflowControl.workflow && workflowControl.workflow.pattern !== 'single_action') {
     const workflow = workflowControl.workflow;
@@ -960,6 +981,7 @@ function buildRemediations({
   learnedPolicy,
   executionSurface,
   costControl,
+  financialControl,
   workflowControl,
   workflowContract,
   actionProfile,
@@ -1000,10 +1022,10 @@ function buildRemediations({
   }
   if (actionProfile && actionProfile.economicAction) {
     push(
-      'economic_action_approval',
-      'Require operator approval for money movement',
-      'Require an explicit operator checkpoint before refunds, payouts, invoice sends, or subscription changes execute.',
-      'Money-touching actions are costly to reverse and need a clear human owner.'
+      'financial_requisition_lifecycle',
+      'Complete the purchase-control lifecycle',
+      'Create a purchase requisition, obtain independent human approval through the reviewer API, reserve its exact budget, and attach the matching source-message scope before retrying.',
+      'Money-touching actions require a single-use, auditable authorization instead of an advisory checkpoint.'
     );
   }
   if (actionProfile && actionProfile.customerSystemAction) {
@@ -1062,6 +1084,14 @@ function buildRemediations({
       'Reduce model budget before execution',
       'Trim context, lower max output, batch the work, or split the action before retrying.',
       'High token or cost estimates should be reviewed before the model/tool loop continues.'
+    );
+  }
+  if (financialControl?.mode === 'block' && financialControl.reasonCodes.includes('zero_spend_budget')) {
+    push(
+      'honor_zero_spend_budget',
+      'Honor the zero-spend budget',
+      'Use a no-cost path. Do not add a card, start a paid trial, buy credits, or upgrade a plan.',
+      'An explicit $0 budget is a hard prohibition, not an omitted configuration value.'
     );
   }
   if (workflowContract?.active && workflowContract.violations.length > 0) {
@@ -1144,6 +1174,13 @@ function buildReasoning(report) {
   }
   if (report.costControl && report.costControl.mode !== 'allow') {
     lines.push(`Cost control: ${report.costControl.mode} — ${report.costControl.reasons.join(' ')}`);
+  }
+  if (report.financialControl?.economicAction) {
+    lines.push(
+      report.financialControl.mode === 'allow'
+        ? `Financial control: approved reservation ${report.financialControl.authorization?.reservationId || 'unknown'}.`
+        : `Financial control: block — ${report.financialControl.reasons.join(' ')}`
+    );
   }
   if (report.workflowControl && report.workflowControl.workflow.pattern !== 'single_action') {
     lines.push(
@@ -1255,6 +1292,7 @@ function buildDecisionControl({
   integrity,
   protectedSurface,
   costControl,
+  financialControl,
   workflowControl,
   workflowContract,
   actionProfile,
@@ -1269,6 +1307,7 @@ function buildDecisionControl({
   const hasOperationalBlockers = Boolean(integrity?.blockers?.length);
   const hasCostWarning = costControl?.mode === 'warn';
   const hasCostBlock = costControl?.mode === 'block';
+  const hasFinancialBlock = financialControl?.mode === 'block';
   const hasWorkflowWarning = workflowControl?.mode === 'warn';
   const hasWorkflowBlock = workflowControl?.mode === 'block';
   const hasContractWarning = workflowContract?.mode === 'warn';
@@ -1277,6 +1316,7 @@ function buildDecisionControl({
     || (decision === 'allow' && (reversibility !== 'two_way_door' || hasOperationalBlockers || hasCostWarning || hasWorkflowWarning || hasContractWarning));
   const executionMode = decision === 'deny'
     || hasCostBlock
+    || hasFinancialBlock
     || hasWorkflowBlock
     || hasContractBlock
     ? 'blocked'
@@ -1302,7 +1342,7 @@ function buildDecisionControl({
     decisionOwner,
     reversibility,
     deliberation,
-    requiresHumanApproval: (executionMode === 'checkpoint_required' && decisionOwner !== 'agent') || hasCostBlock || hasWorkflowBlock || hasContractBlock,
+    requiresHumanApproval: (executionMode === 'checkpoint_required' && decisionOwner !== 'agent') || hasCostBlock || hasFinancialBlock || hasWorkflowBlock || hasContractBlock,
     recommendedAction: executionMode === 'blocked'
       ? 'halt'
       : executionMode === 'checkpoint_required'
@@ -1379,8 +1419,8 @@ function hasSoftControlWarning({ workflowContract, workflowControl, costControl,
     || (learnedRecall && riskScore >= 0.34);
 }
 
-function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command, costControl, workflowControl, workflowContract, actionProfile }) {
-  if (costControl?.mode === 'block' || workflowControl?.mode === 'block' || workflowContract?.mode === 'block') {
+function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command, costControl, financialControl, workflowControl, workflowContract, actionProfile }) {
+  if (financialControl?.mode === 'block' || costControl?.mode === 'block' || workflowControl?.mode === 'block' || workflowContract?.mode === 'block') {
     return 'deny';
   }
 
@@ -1406,7 +1446,7 @@ function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blas
     return 'deny';
   }
 
-  if (actionProfile?.economicAction || (actionProfile?.backgroundAgent && riskScore >= 0.3)) {
+  if ((actionProfile?.economicAction && financialControl?.mode !== 'allow') || (actionProfile?.backgroundAgent && riskScore >= 0.3)) {
     return 'warn';
   }
 
@@ -1449,6 +1489,18 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     ? options.affectedFiles.map((filePath) => normalizePosix(filePath)).filter(Boolean)
     : collectAffectedFiles(normalizedToolName, normalizedToolInput, repoRoot);
   const actionProfile = classifyActionProfile(normalizedToolInput);
+  const financialControl = evaluateFinancialControl({
+    toolName: normalizedToolName,
+    toolInput: normalizedToolInput,
+    actionProfile,
+    costControl,
+    budget: options.budget || toolInput.budget || {},
+    financialControl: options.financialControl || toolInput.financialControl,
+  }, {
+    feedbackDir: options.feedbackDir
+      || process.env.THUMBGATE_FEEDBACK_DIR
+      || (repoRoot ? path.join(repoRoot, '.thumbgate') : null),
+  });
   const highRiskAction = isHighRiskAction(normalizedToolName, normalizedToolInput, affectedFiles);
   const baseBranch = options.baseBranch
     || (governanceState.branchGovernance && governanceState.branchGovernance.baseBranch)
@@ -1540,6 +1592,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     taskScopeViolation,
     protectedSurface: protectedSurfaceForRisk,
     costControl,
+    financialControl,
     workflowControl,
     workflowContract,
     actionProfile,
@@ -1567,6 +1620,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     },
     command: normalizedToolInput.command || '',
     costControl,
+    financialControl,
     workflowControl,
     workflowContract,
     actionProfile,
@@ -1580,6 +1634,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     protectedSurface: protectedSurfaceForRisk,
     normalizedAction,
     costControl,
+    financialControl,
     workflowControl,
     workflowContract,
     actionProfile,
@@ -1593,6 +1648,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     learnedPolicy,
     executionSurface,
     costControl,
+    financialControl,
     workflowControl,
     workflowContract,
     actionProfile,
@@ -1607,6 +1663,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     toolName: normalizedToolName,
     normalizedAction,
     costControl,
+    financialControl,
     workflowControl,
     workflowContract,
     decision,
@@ -1643,6 +1700,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     integrity,
     protectedSurface: protectedSurfaceForRisk,
     costControl,
+    financialControl,
     workflowControl,
     workflowContract,
     actionProfile,

@@ -224,6 +224,7 @@ test('commerce MCP profile has the right tools', () => {
     'retrieve_lessons',
     'search_thumbgate',
     'commerce_recall',
+    'create_purchase_requisition',
     'set_branch_governance',
     'set_task_scope',
     'suggest_fix',
@@ -237,8 +238,12 @@ test('commerce MCP profile has the right tools', () => {
     'get_agent_outcome_metrics',
     'get_task_outcomes',
     'list_human_escalations',
+    'list_purchase_requisitions',
+    'reconcile_purchase_ledger',
     'record_task_outcome',
     'request_human_escalation',
+    'reserve_purchase_requisition',
+    'settle_purchase_requisition',
     'workflow_sentinel',
   ];
   assert.deepEqual(allowlists.profiles.commerce.sort(), expected.sort());

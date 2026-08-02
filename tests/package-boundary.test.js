@@ -135,6 +135,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'adapters/mcp/server-stdio.js',
     'scripts/bot-detection.js',
     'scripts/feedback-loop.js',
+    'scripts/financial-control-plane.js',
     'scripts/gates-engine.js',
     'scripts/grafana-revenue-evidence.js',
     'scripts/hf-papers.js',
@@ -417,8 +418,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 416 -> 418 (2026-08-02): scripts/universal-claim-evaluator.js +
     // config/gates/claim-verifiers.example.json for fail-closed factual claim rechecks.
     // 418 -> 419 (2026-08-02): default config/gates/claim-verifiers.json (package version + package.json exists).
-    manifest.fileCount <= 419,
-    `npm package should stay <= 419 files, got ${manifest.fileCount}`
+    // 419 -> 420 (2026-08-02): scripts/financial-control-plane.js is the
+    // deterministic purchase requisition, reservation, settlement, and
+    // reconciliation boundary used by the packaged MCP and pre-tool hook.
+    manifest.fileCount <= 420,
+    `npm package should stay <= 420 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

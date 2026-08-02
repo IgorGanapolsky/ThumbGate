@@ -718,3 +718,34 @@ test('hook-pre-tool-use does NOT block when monetary budget spend limit is excee
   }
 });
 
+test('hook-pre-tool-use hard-blocks an economic action with a zero-dollar budget', () => {
+  const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tg-financial-control-test-'));
+  try {
+    const res = runHook({
+      input: {
+        session_id: 'test',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Browser',
+        tool_input: {
+          command: 'Upgrade Apollo to paid, add a payment method, and click Subscribe',
+          usage: { costUsd: 588 },
+          budget: {
+            maxCostUsdPerAction: 0,
+            remainingCostUsd: 0,
+          },
+        },
+      },
+      env: {
+        THUMBGATE_FEEDBACK_DIR: tempDir,
+      },
+    });
+
+    assert.equal(res.status, 0, res.stderr);
+    assert.equal(res.parsed?.decision, 'block');
+    assert.match(res.parsed?.reason || '', /financial-control/);
+    assert.match(res.parsed?.reason || '', /\$0\.00/);
+    assert.doesNotMatch(res.parsed?.reason || '', /thumbgate\.ai\/go\/pro/i);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

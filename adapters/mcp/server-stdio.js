@@ -95,6 +95,13 @@ const {
   listEscalations,
   requestEscalation,
 } = require('../../scripts/human-escalation');
+const {
+  createPurchaseRequisition,
+  listPurchaseRequisitions,
+  reconcilePurchaseLedger,
+  reservePurchaseRequisition,
+  settlePurchaseRequisition,
+} = require('../../scripts/financial-control-plane');
 const { recordReasoningTrace } = require('../../scripts/agent-reasoning-traces');
 const { recordToolCall } = require('../../scripts/tool-kpi-tracker');
 const {
@@ -1368,6 +1375,20 @@ async function callToolInner(name, args) {
       return toTextResult(requestEscalation(args));
     case 'list_human_escalations':
       return toTextResult(listEscalations({ status: args.status }).slice(0, Number(args.limit || 20)));
+    case 'create_purchase_requisition':
+      return toTextResult(createPurchaseRequisition(args));
+    case 'list_purchase_requisitions': {
+      const rows = listPurchaseRequisitions()
+        .filter((entry) => !args.status || entry.status === args.status)
+        .slice(0, Number(args.limit || 20));
+      return toTextResult(rows);
+    }
+    case 'reserve_purchase_requisition':
+      return toTextResult(reservePurchaseRequisition(args));
+    case 'settle_purchase_requisition':
+      return toTextResult(settlePurchaseRequisition(args));
+    case 'reconcile_purchase_ledger':
+      return toTextResult(reconcilePurchaseLedger());
     case 'verify_claim':
       return toTextResult(verifyClaimEvidence(args.claim, { goalContract: args.goalContract }));
     case 'require_evidence_for_claim': {
@@ -1485,6 +1506,7 @@ async function callToolInner(name, args) {
         mcp: args.mcp,
         mcpToolCall: args.mcpToolCall,
         budget: args.budget,
+        financialControl: args.financialControl,
         usage: args.usage,
       }, {
         provider: args.provider,
@@ -1494,6 +1516,7 @@ async function callToolInner(name, args) {
         tokenEstimate: args.tokenEstimate,
         costUsd: args.costUsd,
         budget: args.budget,
+        financialControl: args.financialControl,
         repoPath: args.repoPath,
         baseBranch: args.baseBranch,
         affectedFiles: changedFiles.length > 0 ? changedFiles : undefined,

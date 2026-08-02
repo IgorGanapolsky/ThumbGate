@@ -321,15 +321,18 @@ async function buildRevenueObservabilityDoctor({
     || DEFAULT_PUBLIC_APP_ORIGIN;
   appOrigin = resolvedAppOrigin;
 
-  // Prefer managed Stripe files when env is empty.
-  try {
-    const { resolveStripeSecretKey } = require('./stripe-credentials');
-    const resolved = resolveStripeSecretKey({ env });
-    if (resolved.secretKey && !String(env.STRIPE_SECRET_KEY || '').trim()) {
-      env.STRIPE_SECRET_KEY = resolved.secretKey;
+  // Prefer managed Stripe files when local secret loading is enabled. Callers
+  // that explicitly disable it must remain isolated from machine credentials.
+  if (loadLocalSecrets) {
+    try {
+      const { resolveStripeSecretKey } = require('./stripe-credentials');
+      const resolved = resolveStripeSecretKey({ env });
+      if (resolved.secretKey && !String(env.STRIPE_SECRET_KEY || '').trim()) {
+        env.STRIPE_SECRET_KEY = resolved.secretKey;
+      }
+    } catch {
+      // optional
     }
-  } catch {
-    // optional
   }
 
   const hostedApiKey = resolveHostedAuditApiKey(env, { operatorKey: null });

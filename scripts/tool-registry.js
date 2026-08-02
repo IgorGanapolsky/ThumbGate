@@ -60,6 +60,17 @@ const GOAL_CONTRACT_SCHEMA = {
   },
 };
 
+const FINANCIAL_REQUESTER_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['id', 'kind'],
+  properties: {
+    id: { type: 'string', minLength: 1 },
+    kind: { type: 'string', enum: ['agent', 'service', 'human'] },
+    displayName: { type: 'string' },
+  },
+};
+
 const TASK_OUTCOME_INPUT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -1185,6 +1196,84 @@ const TOOLS = [
       },
     },
   }),
+  destructiveTool({
+    name: 'create_purchase_requisition',
+    description: 'Create an append-only purchase requisition and independent human-escalation request. This does not authorize spending.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['taskId', 'requester', 'vendor', 'amountUsd', 'purpose', 'sourceMessageId', 'evidence'],
+      properties: {
+        taskId: { type: 'string', minLength: 1 },
+        requester: FINANCIAL_REQUESTER_SCHEMA,
+        vendor: { type: 'string', minLength: 1 },
+        amountUsd: { type: 'number', exclusiveMinimum: 0 },
+        purpose: { type: 'string', minLength: 1 },
+        sourceMessageId: { type: 'string', minLength: 1, description: 'Stable identifier for the exact user message authorizing the request.' },
+        evidence: { type: 'array', minItems: 1, items: { type: 'string', minLength: 1 } },
+        ttlMs: { type: 'number', minimum: 1 },
+        idempotencyKey: { type: 'string', minLength: 1 },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'list_purchase_requisitions',
+    description: 'List projected purchase-requisition states from the append-only financial ledger and human-review queue.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        status: { type: 'string' },
+        limit: { type: 'integer', minimum: 1, maximum: 100 },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'reserve_purchase_requisition',
+    description: 'Reserve a single-use amount from an independently approved purchase requisition. Approval is unavailable from the agent tool surface.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['requisitionId', 'requester', 'amountUsd', 'vendor', 'purpose', 'sourceMessageId'],
+      properties: {
+        requisitionId: { type: 'string', minLength: 1 },
+        requester: FINANCIAL_REQUESTER_SCHEMA,
+        amountUsd: { type: 'number', exclusiveMinimum: 0 },
+        vendor: { type: 'string', minLength: 1 },
+        purpose: { type: 'string', minLength: 1 },
+        sourceMessageId: { type: 'string', minLength: 1 },
+        ttlMs: { type: 'number', minimum: 1 },
+        idempotencyKey: { type: 'string', minLength: 1 },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'settle_purchase_requisition',
+    description: 'Commit actual spend with receipt evidence or release an unused reservation. Events are append-only.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['requisitionId', 'reservationId', 'requester', 'status'],
+      properties: {
+        requisitionId: { type: 'string', minLength: 1 },
+        reservationId: { type: 'string', minLength: 1 },
+        requester: FINANCIAL_REQUESTER_SCHEMA,
+        status: { type: 'string', enum: ['committed', 'released'] },
+        actualAmountUsd: { type: 'number', minimum: 0 },
+        evidence: { type: 'array', items: { type: 'string', minLength: 1 } },
+        reason: { type: 'string' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'reconcile_purchase_ledger',
+    description: 'Reconcile the append-only financial ledger, including totals, stale reservations, status counts, and tamper-evident event hashes.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+  }),
   readOnlyTool({
     name: 'verify_claim',
     description: 'Check whether a claim has enough tracked evidence and, for parseable factual claims (row counts, file lines/bytes/existence, versions), recheck configured SQLite/filesystem/JSON verifiers before the agent asserts it.',
@@ -1247,6 +1336,18 @@ const TOOLS = [
           type: 'object',
           additionalProperties: true,
           description: 'Optional per-action budget controls: maxTokensPerAction, remainingTokens, maxCostUsdPerAction, remainingCostUsd, maxParallelBranches',
+        },
+        financialControl: {
+          type: 'object',
+          additionalProperties: false,
+          description: 'Single-use purchase authorization scope from the append-only financial ledger.',
+          properties: {
+            requisitionId: { type: 'string' },
+            reservationId: { type: 'string' },
+            vendor: { type: 'string' },
+            purpose: { type: 'string' },
+            sourceMessageId: { type: 'string' },
+          },
         },
         workflowPattern: {
           type: 'string',

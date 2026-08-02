@@ -17,6 +17,13 @@ const {
   evaluateWorkflowSentinel,
 } = require('./workflow-sentinel');
 const {
+  evaluateFinancialControl,
+} = require('./financial-control-plane');
+const {
+  buildCostControl,
+  normalizeProviderAction,
+} = require('./provider-action-normalizer');
+const {
   recordDecisionEvaluation,
   recordDecisionOutcome,
 } = require('./decision-journal');
@@ -1936,6 +1943,43 @@ function recordStructuralGateBlock(toolName, toolInput, result) {
   return result;
 }
 
+/**
+ * Resolve catastrophic declarative gates before the ordinary first-match loop.
+ *
+ * Config order is useful for normal policy routing, but it must not let a broad
+ * rule mask a narrower irreversible-action rule. For example, the generic
+ * `push-without-thread-check` gate also matches `git push --force`; selecting it
+ * first allowed the free-tier daily cap to downgrade the action to a warning
+ * before the exempt `force-push` gate was ever evaluated.
+ *
+ * Catastrophic gates are deliberately limited to the audited allowlist above.
+ * Metric-backed gates are excluded because their condition is asynchronous and
+ * none of the catastrophic command boundaries may depend on a remote metric.
+ */
+function evaluateCatastrophicDeclarativeGate(config, constraints, toolName, toolInput) {
+  if (!config || !Array.isArray(config.gates)) return null;
+
+  for (const gate of config.gates) {
+    if (!CATASTROPHIC_DECLARATIVE_GATE_IDS.has(gate.id)) continue;
+    if (gate.action !== 'block' || gate.metrics) continue;
+
+    const matchDetails = matchGate(gate, toolName, toolInput);
+    if (!matchDetails.matched) continue;
+    if (gate.when && !checkWhenClause(gate.when, constraints)) continue;
+    if (gate.unless && isConditionSatisfied(gate.unless)) continue;
+
+    return {
+      decision: 'deny',
+      gate: gate.id,
+      message: buildGateMessage(gate, matchDetails),
+      severity: gate.severity,
+      reasoning: buildReasoning(gate, toolName, toolInput, matchDetails),
+    };
+  }
+
+  return null;
+}
+
 function isScopeEnforcedAction(toolName, toolInput = {}, affectedFiles = []) {
   if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) return true;
   if (toolName !== 'Bash') return false;
@@ -2776,6 +2820,16 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     return boostedRiskGuard;
   }
 
+  const catastrophicDeclarativeGate = evaluateCatastrophicDeclarativeGate(
+    config,
+    constraints,
+    toolName,
+    toolInput,
+  );
+  if (catastrophicDeclarativeGate) {
+    return recordStructuralGateBlock(toolName, toolInput, catastrophicDeclarativeGate);
+  }
+
   // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern).
   // Keep runtime enforcement explicit so advisory planning checks do not mask
   // higher-priority deny/approve gates in established workflows.
@@ -3020,6 +3074,16 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     });
     auditToFeedback(auditRecord);
     return boostedRiskGuard;
+  }
+
+  const catastrophicDeclarativeGate = evaluateCatastrophicDeclarativeGate(
+    config,
+    constraints,
+    toolName,
+    toolInput,
+  );
+  if (catastrophicDeclarativeGate) {
+    return recordStructuralGateBlock(toolName, toolInput, catastrophicDeclarativeGate);
   }
 
   // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern).
@@ -3312,6 +3376,54 @@ function evaluateUnconditionalHardFloor(input = {}) {
     return { hardFloor: securityScan, securityScan };
   }
 
+  const toolName = input.tool_name || input.toolName || 'unknown';
+  const toolInput = input.tool_input && typeof input.tool_input === 'object'
+    ? input.tool_input
+    : {};
+  const normalizedAction = normalizeProviderAction({
+    toolName,
+    toolInput,
+    usage: input.usage || toolInput.usage,
+    budget: input.budget || toolInput.budget,
+  });
+  const costControl = buildCostControl(
+    normalizedAction,
+    input.budget || toolInput.budget || {}
+  );
+  const financialControl = evaluateFinancialControl({
+    toolName,
+    toolInput,
+    actionProfile: {
+      economicAction: undefined,
+    },
+    costControl,
+  });
+  if (financialControl.mode === 'block') {
+    const result = {
+      decision: 'deny',
+      gate: 'financial-control',
+      message: financialControl.reasons.join(' '),
+      severity: 'critical',
+      financialControl,
+      reasoning: [
+        'Economic actions default to deny at the pre-tool boundary.',
+        'Learned policy and advisory memories cannot override this deterministic control.',
+      ],
+    };
+    recordStat('financial-control', 'block', null, { toolName, toolInput });
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: 'financial-control',
+      message: result.message,
+      severity: result.severity,
+      source: 'financial-control',
+    });
+    auditToFeedback(auditRecord);
+    return { hardFloor: result, securityScan };
+  }
+
   return {
     hardFloor: evaluateSelfProtectHardFloor(input),
     securityScan,
@@ -3393,7 +3505,7 @@ function formatOutput(result, behavioralContext) {
   if (result.decision === 'deny') {
     const reminder = behavioralContext ? buildReminderOutput(behavioralContext) : {};
     const reminderSuffix = behavioralContext ? `\n\nSystem reminder:\n${behavioralContext}` : '';
-    const proCta = buildBlockActionProCta() || '';
+    const proCta = result.gate === 'financial-control' ? '' : (buildBlockActionProCta() || '');
     return JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
