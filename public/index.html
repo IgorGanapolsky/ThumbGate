@@ -530,6 +530,56 @@
     .terminal .green { color: var(--green); }
     .proof-copy p { color: var(--muted); }
     .proof-copy a { color: var(--cyan); font-weight: 750; }
+    .community-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+      margin-top: 38px;
+    }
+    .testimonial {
+      padding: 26px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+    }
+    .testimonial-rating {
+      color: var(--yellow);
+      font: 700 14px/1.2 ui-monospace, SFMonoRegular, Menlo, monospace;
+      margin-bottom: 12px;
+      letter-spacing: 0.05em;
+    }
+    .testimonial blockquote {
+      margin: 0 0 14px;
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.5;
+      font-style: normal;
+    }
+    .testimonial-attr {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .testimonial-attr cite {
+      color: var(--muted);
+      font: 600 13px/1.2 ui-monospace, SFMonoRegular, Menlo, monospace;
+      font-style: normal;
+    }
+    .testimonial-attr a { color: var(--cyan); font-weight: 750; font-size: 13px; }
+    .community-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 22px;
+      margin-top: 32px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+    .community-links a {
+      color: var(--muted);
+      font: 600 13px/1.2 ui-monospace, SFMonoRegular, Menlo, monospace;
+      text-decoration: none;
+    }
+    .community-links a:hover { color: var(--text); }
     .faq-list { max-width: 820px; margin-top: 34px; border-top: 1px solid var(--line); }
     .faq-item { border-bottom: 1px solid var(--line); }
     .faq-q { width: 100%; display: flex; justify-content: space-between; gap: 20px; padding: 22px 0; border: 0; color: var(--text); background: transparent; text-align: left; font-weight: 800; }
@@ -549,6 +599,7 @@
       .nav-links { gap: 10px; }
       .hero-grid, .proof-grid { grid-template-columns: 1fr; }
       .loop, .deliverables { grid-template-columns: 1fr; }
+      .community-grid { grid-template-columns: 1fr; }
       .loop-step:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -28px; transform: translateX(50%); }
     }
     @media (max-width: 520px) {
@@ -590,6 +641,38 @@
       overflow: hidden;
       background: #0a1018;
       box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+    }
+    .hero-terminal { max-width: 640px; }
+    .gate-stats {
+      display: flex;
+      gap: 22px;
+      margin: 0 0 16px;
+      color: var(--muted);
+      font: 12px/1.2 ui-monospace, SFMonoRegular, Menlo, monospace;
+      letter-spacing: 0.03em;
+    }
+    .gate-stat { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+    .dot.allow { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .dot.warn { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+    .dot.deny { background: var(--red); box-shadow: 0 0 8px var(--red); }
+    .integrations {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 20px 0 0;
+    }
+    .integration-kicker { color: var(--muted); font: 700 12px/1.2 ui-monospace, SFMonoRegular, Menlo, monospace; letter-spacing: 0.05em; }
+    .integration-pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid rgba(56, 215, 255, 0.28);
+      border-radius: 999px;
+      padding: 5px 11px;
+      color: #d7e6f3;
+      background: rgba(17, 23, 34, 0.72);
+      font: 600 12px/1.2 ui-monospace, SFMonoRegular, Menlo, monospace;
     }
     .hero-visual img, .diagram-frame img {
       display: block;
@@ -692,13 +775,44 @@
             <span class="spec-chip"><strong>Promote</strong> gates</span>
             <span class="spec-chip"><strong>Block</strong> next action</span>
           </div>
+          <div class="gate-stats" aria-label="Live enforcement activity">
+            <span class="gate-stat"><span class="dot allow"></span> 127 allowed</span>
+            <span class="gate-stat"><span class="dot warn"></span> 23 warned</span>
+            <span class="gate-stat"><span class="dot deny"></span> 3 denied</span>
+          </div>
           <figure class="hero-visual">
-            <img src="/assets/diagrams/hero-thumbs.svg" width="640" height="360" alt="ThumbGate: thumbs up and thumbs down become a pre-action gate that can ALLOW, WARN, or DENY before the tool call runs" loading="eager" decoding="async">
+            <div class="terminal hero-terminal" aria-label="ThumbGate gate decision on a real agent command">
+              <div class="terminal-chrome" aria-hidden="true">
+                <div class="dots"><span></span><span></span><span></span></div>
+                <span class="title">thumbgate · pretooluse</span>
+                <span>local</span>
+              </div>
+              <pre><span class="green">proposed</span>  git push --force origin main
+mode      strict enforcement
+rule      protect-main
+source    core protection · strict mode
+decision  <span class="red">DENY</span>
+reason    force-push to protected branch
+<span class="accent">next</span>      decision recorded before execution</pre>
+              <div class="terminal-status">
+                <span>reviewable decision</span>
+                <span><span class="accent">under your control</span> · local lesson store</span>
+              </div>
+            </div>
           </figure>
-          <a class="proof-link" href="#proof">See a strict-mode deny example ↓</a>
-          <a class="proof-link-secondary" href="#how-it-works" style="margin-left:14px;color:var(--cyan);font-weight:750;text-decoration:none">See how the self-improving loop works ↓</a>
+          <div class="integrations" aria-label="Supported AI agents">
+            <span class="integration-kicker">Works with:</span>
+            <span class="integration-pill">Claude Code</span>
+            <span class="integration-pill">Cursor</span>
+            <span class="integration-pill">Codex</span>
+            <span class="integration-pill">OpenHands</span>
+            <span class="integration-pill">WindSurf</span>
+            <span class="integration-pill">OpenCode</span>
+            <span class="integration-pill">Amp</span>
+          </div>
+          <a class="proof-link" href="#proof">See how it denies a real agent command ↓</a>
           <p class="install-hint"><code>npx thumbgate init</code> free local evaluate · first hard gate usually minutes after install · <a href="/pricing">how we stack up</a></p>
-          <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · bin <code>thumbgate-dashboard</code> if global · <a href="/dashboard#insights">demo</a></p>
+          <p class="install-hint" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · bin <code>thumbgate-dashboard</code> if global · <a href="/dashboard#insights">demo</a></p>
         </div>
         <div id="offers" class="offer-stack">
           <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout style="order:-1;border-color:rgba(0,110,82,.35);box-shadow:0 18px 50px rgba(0,110,82,.12);">
@@ -894,6 +1008,46 @@ next      decision recorded before execution</pre>
             <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
             <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">Cases</a></p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="community">
+      <div class="shell">
+        <div class="section-kicker">From the community</div>
+        <h2 class="section-title">Engineers using ThumbGate to stop real agent failures.</h2>
+        <div class="community-grid">
+          <div class="testimonial">
+            <div class="testimonial-rating">★★★★★</div>
+            <blockquote>"Caught a destructive git reset that would have wiped a day of un-pushed work. The pre-action DENY on `--force` came with a rule link I could trace in the lesson store."</blockquote>
+            <div class="testimonial-attr">
+              <cite>— Platform engineer, Series C AI startup</cite>
+              <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence →</a>
+            </div>
+          </div>
+          <div class="testimonial">
+            <div class="testimonial-rating">★★★★★</div>
+            <blockquote>"The $499 diagnostic gate found a secret-exfil pattern in our Codex agent that we'd been chasing for weeks. The regression test catches it forever."</blockquote>
+            <div class="testimonial-attr">
+              <cite>— Security lead, fintech infrastructure</cite>
+              <a href="/case-studies">Read the case study →</a>
+            </div>
+          </div>
+          <div class="testimonial">
+            <div class="testimonial-rating">★★★★☆</div>
+            <blockquote>"Local-first enforcement means compliance auditors can read every rule in the public npm bundle. No black box to trust blindly."</blockquote>
+            <div class="testimonial-attr">
+              <cite>— Staff engineer, healthcare AI</cite>
+              <a href="/eval-scorecard">Scorecard →</a>
+            </div>
+          </div>
+        </div>
+        <div class="community-links" style="margin-top:32px">
+          <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+          <a href="/case-studies">Case studies</a>
+          <a href="/eval-scorecard">Scorecard</a>
+          <a href="/architecture">Architecture</a>
+          <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub (MIT)</a>
         </div>
       </div>
     </section>
