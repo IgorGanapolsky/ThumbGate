@@ -11,6 +11,8 @@ const DEFAULT_INPUT = path.join(
   'Downloads',
   'ThumbGate_Client_Acquisition_July_2026.csv'
 );
+const GLOBAL_SEARCH_BACKEND = 'global_people';
+const SAVED_CONTACTS_BACKEND = 'saved_contacts';
 
 function parseCsvLine(line) {
   const cells = [];
@@ -57,6 +59,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     input: DEFAULT_INPUT,
     output: null,
     execute: false,
+    inputExplicit: false,
     maxTargets: null,
     perPage: 25,
     includeTracker: true,
@@ -68,7 +71,10 @@ function parseArgs(argv = process.argv.slice(2)) {
     if (arg === '--execute') options.execute = true;
     else if (arg === '--skip-tracker') options.includeTracker = false;
     else if (arg === '--skip-organizations') options.includeOrganizations = false;
-    else if (arg === '--input') options.input = argv[++index];
+    else if (arg === '--input') {
+      options.input = argv[++index];
+      options.inputExplicit = true;
+    }
     else if (arg === '--config') options.config = argv[++index];
     else if (arg === '--output') options.output = argv[++index];
     else if (arg === '--max-targets') options.maxTargets = Number.parseInt(argv[++index], 10);
@@ -184,6 +190,41 @@ function peopleFromResponse(response = {}) {
   return Array.isArray(response.people) ? response.people : [];
 }
 
+function contactsFromResponse(response = {}) {
+  return Array.isArray(response.contacts) ? response.contacts : [];
+}
+
+function totalEntriesFromResponse(response = {}) {
+  return Number(response.total_entries || response.pagination?.total_entries || 0);
+}
+
+function isGlobalSearchUnavailable(error) {
+  return /API_INACCESSIBLE|not included in your Free plan/i.test(String(error?.message || error || ''));
+}
+
+function detectSearchBackend(dependencies = {}) {
+  try {
+    runApollo([
+      'people', 'search', '--query', '__thumbgate_access_probe__',
+      '--per-page', '1', '--format', 'json',
+    ], dependencies);
+    return { backend: GLOBAL_SEARCH_BACKEND, reason: null };
+  } catch (error) {
+    if (!isGlobalSearchUnavailable(error)) throw error;
+    return {
+      backend: SAVED_CONTACTS_BACKEND,
+      reason: 'Apollo global People Search is unavailable on the current plan; using saved contacts only.',
+    };
+  }
+}
+
+function searchSavedContacts(query, perPage, dependencies = {}) {
+  return runApollo([
+    'contacts', 'search', '--query', query,
+    '--per-page', String(perPage), '--format', 'json',
+  ], dependencies);
+}
+
 function searchKnownTarget(spec, dependencies = {}) {
   const baseArgs = ['people', 'search', '--query', spec.targetName, '--per-page', '10', '--format', 'json'];
   if (spec.domain) {
@@ -215,12 +256,18 @@ function sanitizeCandidate(person = {}) {
   return {
     apolloId: person.id || null,
     firstName: person.first_name || null,
-    lastNameObfuscated: person.last_name_obfuscated || null,
+    lastNameObfuscated: person.last_name_obfuscated || person.last_name || null,
     title: person.title || null,
-    organization: person.organization?.name || null,
-    hasEmail: Boolean(person.has_email),
+    organization: person.organization?.name || person.organization_name || null,
+    hasEmail: Boolean(person.has_email || person.email),
     hasDirectPhone: person.has_direct_phone === 'Yes',
     lastRefreshedAt: person.last_refreshed_at || null,
+    source: person.last_name_obfuscated ? GLOBAL_SEARCH_BACKEND : SAVED_CONTACTS_BACKEND,
+    duplicateOutreachSuppressed: Boolean(
+      person.last_activity_date
+      || person.emailer_campaign_ids?.length
+      || person.contact_campaign_statuses?.length
+    ),
   };
 }
 
@@ -247,29 +294,46 @@ function scoreOrganizationCandidate(candidate = {}) {
 
 function executeSearchPlan(plan, { perPage = 25, ...dependencies } = {}) {
   const beforeCredits = readCreditSnapshot(dependencies);
+  const searchBackend = detectSearchBackend(dependencies);
   const trackerResults = plan.trackerSearches.map((spec) => {
-    const { response, strategy } = searchKnownTarget(spec, dependencies);
-    const candidates = peopleFromResponse(response)
+    const search = searchBackend.backend === GLOBAL_SEARCH_BACKEND
+      ? searchKnownTarget(spec, dependencies)
+      : {
+        response: searchSavedContacts(spec.targetName, 25, dependencies),
+        strategy: SAVED_CONTACTS_BACKEND,
+      };
+    const rawCandidates = searchBackend.backend === GLOBAL_SEARCH_BACKEND
+      ? peopleFromResponse(search.response)
+      : contactsFromResponse(search.response);
+    const candidates = rawCandidates
       .map(sanitizeCandidate)
       .filter((candidate) => knownTargetIdentityMatches(spec.targetName, candidate))
       .filter((candidate) => !spec.organization || normalize(candidate.organization) === normalize(spec.organization));
     return {
       ...spec,
-      searchStrategy: strategy,
-      totalEntries: Number(response.total_entries || 0),
+      searchStrategy: search.strategy,
+      totalEntries: totalEntriesFromResponse(search.response),
       identityMatchCount: candidates.length,
       candidates,
     };
   });
   const organizationResults = plan.organizationSearches.map((spec) => {
-    const response = searchOrganizationBuyers(spec, perPage, dependencies);
-    const candidates = peopleFromResponse(response)
+    const response = searchBackend.backend === GLOBAL_SEARCH_BACKEND
+      ? searchOrganizationBuyers(spec, perPage, dependencies)
+      : searchSavedContacts(spec.organization, perPage, dependencies);
+    const rawCandidates = searchBackend.backend === GLOBAL_SEARCH_BACKEND
+      ? peopleFromResponse(response)
+      : contactsFromResponse(response);
+    const candidates = rawCandidates
       .map(sanitizeCandidate)
+      .filter((candidate) => normalize(candidate.organization) === normalize(spec.organization))
       .map((candidate) => ({ ...candidate, ...scoreOrganizationCandidate(candidate) }))
+      .filter((candidate) => candidate.priorityScore > 0)
       .sort((left, right) => right.priorityScore - left.priorityScore);
     return {
       ...spec,
-      totalEntries: Number(response.total_entries || 0),
+      searchStrategy: searchBackend.backend,
+      totalEntries: totalEntriesFromResponse(response),
       candidates,
     };
   });
@@ -280,16 +344,20 @@ function executeSearchPlan(plan, { perPage = 25, ...dependencies } = {}) {
   return {
     generatedAt: new Date().toISOString(),
     mode: 'search_only',
+    searchBackend,
     safety: {
       createsContacts: false,
       enrichesPeople: false,
       enrollsSequences: false,
       sendsMessages: false,
       duplicateOutreachSuppressed: true,
+      netNewSearchAvailable: searchBackend.backend === GLOBAL_SEARCH_BACKEND,
+      savedContactsFallback: searchBackend.backend === SAVED_CONTACTS_BACKEND,
       creditDelta: delta,
       zeroCreditSearchVerified: consumed.length === 0,
     },
     buyerHypothesis: plan.buyerHypothesis,
+    trackerSource: plan.trackerSource || null,
     trackerResults,
     organizationResults,
     credits: {
@@ -314,6 +382,10 @@ function renderMarkdown(report) {
     '## Safety proof',
     '',
     `- Search-only: ${report.mode === 'search_only' ? 'yes' : 'no'}`,
+    `- Search backend: ${report.searchBackend.backend}`,
+    `- Net-new search available: ${report.safety.netNewSearchAvailable ? 'yes' : 'no'}`,
+    ...(report.searchBackend.reason ? [`- Provider constraint: ${report.searchBackend.reason}`] : []),
+    `- Tracker loaded: ${report.trackerSource?.loaded ? 'yes' : 'no'}`,
     `- Credits consumed during this report run: ${Object.values(report.safety.creditDelta).reduce((sum, value) => sum + Math.max(0, value), 0)}`,
     '- Contacts created: 0',
     '- Sequences enrolled: 0',
@@ -361,10 +433,26 @@ function runCli(argv = process.argv.slice(2), dependencies = {}) {
   const options = parseArgs(argv);
   if (options.help) return { help: usage() };
   const config = JSON.parse(fs.readFileSync(path.resolve(options.config), 'utf8'));
-  const rows = options.includeTracker
-    ? parseCsv(fs.readFileSync(path.resolve(options.input), 'utf8'))
-    : [];
+  const inputPath = path.resolve(options.inputExplicit ? options.input : (dependencies.defaultInput || options.input));
+  const trackerSource = {
+    requested: options.includeTracker,
+    path: inputPath,
+    loaded: false,
+    rowCount: 0,
+    reason: options.includeTracker ? null : 'disabled',
+  };
+  let rows = [];
+  if (options.includeTracker && fs.existsSync(inputPath)) {
+    rows = parseCsv(fs.readFileSync(inputPath, 'utf8'));
+    trackerSource.loaded = true;
+    trackerSource.rowCount = rows.length;
+  } else if (options.includeTracker && options.inputExplicit) {
+    throw new Error(`Acquisition tracker not found: ${inputPath}`);
+  } else if (options.includeTracker) {
+    trackerSource.reason = 'default_tracker_missing';
+  }
   const plan = buildSearchPlan({ rows, config, options });
+  plan.trackerSource = trackerSource;
   if (!options.execute) return { mode: 'dry_run', plan };
   const report = executeSearchPlan(plan, { perPage: options.perPage, ...dependencies });
   return { mode: 'executed', report, files: writeReport(report, options.output) };
