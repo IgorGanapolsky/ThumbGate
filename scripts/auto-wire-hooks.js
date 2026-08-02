@@ -17,6 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   cacheUpdateHookCommand,
+  claimStopHookCommand,
   codexCacheUpdateHookCommand,
   codexPreToolHookCommand,
   codexSessionStartHookCommand,
@@ -48,6 +49,9 @@ const CLAUDE_HOOKS = {
   },
   SessionStart: {
     hooks: [{ type: 'command', command: sessionStartHookCommand() }],
+  },
+  Stop: {
+    hooks: [{ type: 'command', command: claimStopHookCommand() }],
   },
 };
 
@@ -384,6 +388,7 @@ function wireClaudeHooks(options) {
     UserPromptSubmit: /(hook-auto-capture\.sh|hook-auto-capture\b)/,
     PostToolUse: /(hook-thumbgate-cache-updater|cache-update\b)/,
     SessionStart: /(thumbgate_session_start\.sh|session-start\b)/,
+    Stop: /(hook-stop-anti-claim\.js|claim-stop-check\b)/,
   };
 
   for (const [lifecycle, hookDef] of Object.entries(CLAUDE_HOOKS)) {
@@ -456,8 +461,13 @@ function codexTomlConfigPath(configPath = codexConfigPath()) {
   return path.join(path.dirname(configPath), 'config.toml');
 }
 
+function escapeRegexLiteral(value) {
+  return String(value).replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+}
+
 function tomlSectionRegex(name) {
-  return new RegExp(`^\\[${String(name).replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\]\\n(?:^(?!\\[).*(?:\\n|$))*`, 'm');
+  const sectionName = escapeRegexLiteral(name);
+  return new RegExp(String.raw`^\[${sectionName}\]\n(?:^(?!\[).*(?:\n|$))*`, 'm');
 }
 
 function codexUserPromptTomlBlock() {
@@ -470,10 +480,11 @@ function upsertCodexUserPromptToml(configPath, dryRun = false) {
   const current = fs.existsSync(tomlPath) ? fs.readFileSync(tomlPath, 'utf8') : '';
   const canonicalBlock = codexUserPromptTomlBlock();
   const sectionRegex = tomlSectionRegex('hooks.user_prompt_submit');
-  let next = current;
+  const existingMatch = sectionRegex.exec(current);
+  let next;
 
-  if (sectionRegex.test(current)) {
-    const existingBlock = current.match(sectionRegex)[0];
+  if (existingMatch) {
+    const existingBlock = existingMatch[0];
     if (existingBlock === canonicalBlock) {
       return { changed: false, settingsPath: tomlPath };
     }
@@ -765,6 +776,7 @@ module.exports = {
   pruneStaleHooksInFile,
   CLAUDE_HOOKS,
   preToolHookCommand,
+  claimStopHookCommand,
   userPromptHookCommand,
   sessionStartHookCommand,
 };

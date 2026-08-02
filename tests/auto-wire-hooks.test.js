@@ -32,6 +32,7 @@ const {
   parseFlags,
   CLAUDE_HOOKS,
   preToolHookCommand,
+  claimStopHookCommand,
   userPromptHookCommand,
   sessionStartHookCommand,
   pruneStaleFileHooks,
@@ -180,13 +181,14 @@ describe('auto-wire-hooks', () => {
       try {
         const result = wireClaudeHooks({ settingsPath, sharedSettingsPath });
         assert.equal(result.changed, true);
-        assert.equal(result.added.length, 5);
+        assert.equal(result.added.length, 6);
 
         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
         assert.ok(settings.hooks.PreToolUse, 'PreToolUse should exist');
         assert.ok(settings.hooks.UserPromptSubmit, 'UserPromptSubmit should exist');
         assert.ok(settings.hooks.PostToolUse, 'PostToolUse should exist');
         assert.ok(settings.hooks.SessionStart, 'SessionStart should exist');
+        assert.ok(settings.hooks.Stop, 'Stop should exist');
         assert.ok(settings.statusLine, 'statusLine should exist');
 
         // Check PreToolUse has matcher
@@ -202,6 +204,8 @@ describe('auto-wire-hooks', () => {
 
         const sessionEntry = settings.hooks.SessionStart[0];
         assert.equal(sessionEntry.hooks[0].command, sessionStartHookCommand());
+        const stopEntry = settings.hooks.Stop[0];
+        assert.equal(stopEntry.hooks[0].command, claimStopHookCommand());
         assert.equal(settings.statusLine.command, require('../scripts/hook-runtime').statuslineCommand());
         const sharedSettings = JSON.parse(fs.readFileSync(sharedSettingsPath, 'utf8'));
         assert.equal(sharedSettings.statusLine.command, require('../scripts/hook-runtime').statuslineCommand());
@@ -249,7 +253,7 @@ describe('auto-wire-hooks', () => {
       try {
         const result1 = wireClaudeHooks({ settingsPath, sharedSettingsPath });
         assert.equal(result1.changed, true);
-        assert.equal(result1.added.length, 5);
+        assert.equal(result1.added.length, 6);
 
         const result2 = wireClaudeHooks({ settingsPath, sharedSettingsPath });
         assert.equal(result2.changed, false);
@@ -261,6 +265,7 @@ describe('auto-wire-hooks', () => {
         assert.equal(settings.hooks.UserPromptSubmit.length, 1);
         assert.equal(settings.hooks.PostToolUse.length, 1);
         assert.equal(settings.hooks.SessionStart.length, 1);
+        assert.equal(settings.hooks.Stop.length, 1);
         assert.ok(settings.statusLine);
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -275,7 +280,7 @@ describe('auto-wire-hooks', () => {
       try {
         const result = wireClaudeHooks({ settingsPath, sharedSettingsPath, dryRun: true });
         assert.equal(result.changed, true);
-        assert.equal(result.added.length, 5);
+        assert.equal(result.added.length, 6);
         assert.equal(fs.existsSync(settingsPath), false);
         assert.equal(fs.existsSync(sharedSettingsPath), false);
       } finally {
