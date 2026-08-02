@@ -1187,12 +1187,12 @@ const TOOLS = [
   }),
   readOnlyTool({
     name: 'verify_claim',
-    description: 'Check whether a claim has enough tracked evidence before the agent asserts it.',
+    description: 'Check whether a claim has enough tracked evidence and, for parseable factual claims (row counts, file lines/bytes/existence, versions), recheck configured SQLite/filesystem/JSON verifiers before the agent asserts it.',
     inputSchema: {
       type: 'object',
       required: ['claim'],
       properties: {
-        claim: { type: 'string', description: 'The claim text to verify' },
+        claim: { type: 'string', description: 'The claim text to verify (e.g. "the row count is 1,284" or "all tests pass")' },
         goalContract: GOAL_CONTRACT_SCHEMA,
       },
     },
@@ -1655,13 +1655,13 @@ const TOOLS = [
   }),
   readOnlyTool({
     name: 'require_evidence_for_claim',
-    description: 'Leader-Agent completion gate. Before any agent declares done/fixed/shipped/resolved, require tracked evidence. Blocking response when evidence missing; callers honor the blocking flag to stop completion claims.',
+    description: 'Leader-Agent completion gate. Before any agent declares done/fixed/shipped/resolved, require tracked session evidence AND recheck parseable factual claims (row counts, file metrics, versions) against configured verifiers. Blocking response when evidence is missing or a factual claim mismatches; callers honor the blocking flag to stop completion claims.',
     inputSchema: {
       type: 'object',
       required: ['claim'],
       properties: {
-        claim: { type: 'string', description: 'The completion claim text to verify (e.g. "Fix shipped", "Tests passing")' },
-        mode: { type: 'string', enum: ['blocking', 'advisory'], description: 'blocking (default) returns blocking=true when evidence missing; advisory returns blocking=false' },
+        claim: { type: 'string', description: 'The completion claim text to verify (e.g. "Fix shipped", "the row count is 1,284")' },
+        mode: { type: 'string', enum: ['blocking', 'advisory'], description: 'blocking (default) returns blocking=true when evidence missing or factual claim mismatches; advisory returns blocking=false' },
         sessionId: { type: 'string', description: 'Optional session id to associate with the gate decision' },
         goalContract: GOAL_CONTRACT_SCHEMA,
       },

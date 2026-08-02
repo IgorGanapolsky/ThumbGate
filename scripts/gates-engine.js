@@ -4037,10 +4037,40 @@ function verifyClaimEvidence(claimText, options = {}) {
     });
   }
 
+  // Universal factual claims (row counts, file lines/bytes/existence, version values)
+  // recheck the configured source of truth. Fail-closed on mismatch or missing verifier.
+  let universal = null;
+  if (options.skipUniversal !== true) {
+    try {
+      const {
+        evaluateUniversalClaimsAsGateChecks,
+      } = require('./universal-claim-evaluator');
+      universal = evaluateUniversalClaimsAsGateChecks(normalizedClaimText, {
+        cwd: options.cwd,
+        verifiers: options.verifiers,
+        configPath: options.claimVerifiersPath,
+        config: options.claimVerifiers,
+        feedbackDir: options.feedbackDir,
+        failUnconfigured: options.failUnconfigured,
+      });
+      for (const check of universal.checks) {
+        checks.push(check);
+      }
+    } catch (error) {
+      checks.push({
+        claim: 'universal_evaluator',
+        passed: false,
+        missing: ['universal_claim_evaluator'],
+        message: `Universal claim evaluator failed closed: ${error && error.message ? error.message : 'unknown error'}`,
+      });
+    }
+  }
+
   return {
-    verified: checks.every((check) => check.passed),
+    verified: checks.length === 0 ? true : checks.every((check) => check.passed),
     checks,
     goalContract,
+    universal,
   };
 }
 

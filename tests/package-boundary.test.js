@@ -414,8 +414,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 401 -> 405 (2026-07-31): headroom for security/runtime scripts already on the enforcement path; CI pack observed 403 during secret-exfil coverage PR without intentional new package entries. Cap raised with deliberate note so the ratchet stays honest.
     // 405 -> 416 (2026-08-01): exact measured artifact after adding the ten
     // public A+ evidence/runtime files documented in CHANGELOG.md. No headroom.
-    manifest.fileCount <= 416,
-    `npm package should stay <= 416 files, got ${manifest.fileCount}`
+    // 416 -> 418 (2026-08-02): scripts/universal-claim-evaluator.js +
+    // config/gates/claim-verifiers.example.json for fail-closed factual claim rechecks.
+    manifest.fileCount <= 418,
+    `npm package should stay <= 418 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

@@ -1382,6 +1382,9 @@ async function callToolInner(name, args) {
       const missingActions = hasMatchingChecks
         ? Array.from(new Set(verification.checks.flatMap((check) => check.missing || [])))
         : [];
+      const factualMismatches = Array.isArray(verification.universal && verification.universal.checks)
+        ? verification.universal.checks.filter((check) => !check.passed)
+        : [];
       try {
         const { recordAuditEvent } = require('../../scripts/audit-trail');
         recordAuditEvent({
@@ -1393,13 +1396,16 @@ async function callToolInner(name, args) {
             goalContract: verification.goalContract && verification.goalContract.matched
               ? verification.goalContract
               : null,
+            universalParsed: verification.universal ? verification.universal.parsedCount : 0,
           },
           decision: blocking ? 'deny' : 'allow',
           gateId: verification.goalContract && verification.goalContract.matched
             ? 'completion_goal_contract'
-            : 'completion_claim',
+            : (factualMismatches.length > 0 ? 'completion_claim_factual' : 'completion_claim'),
           message: blocking
-            ? `Completion claim blocked — missing evidence: ${missingActions.join(', ') || 'unknown'}`
+            ? (factualMismatches.length > 0
+              ? `Completion claim blocked — factual mismatch/unconfigured: ${factualMismatches.map((c) => c.message).join('; ')}`
+              : `Completion claim blocked — missing evidence: ${missingActions.join(', ') || 'unknown'}`)
             : `Completion claim verified (${verification.verified ? 'evidence present' : 'no matching gate'})`,
           source: 'completion-gate',
         });
@@ -1413,6 +1419,8 @@ async function callToolInner(name, args) {
         missingActions,
         checks: verification.checks,
         goalContract: verification.goalContract,
+        universal: verification.universal,
+        factualMismatches,
         sessionId: args.sessionId || null,
       });
     }
