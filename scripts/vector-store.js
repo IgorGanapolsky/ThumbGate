@@ -111,7 +111,7 @@ function hasSemanticEmbeddingProvider() {
   if (hasLocalTransformerProvider()) return true;
   try {
     const config = resolveGeminiEmbeddingConfig();
-    return config.provider === 'coreai' || Boolean(config.enabled && config.apiKey);
+    return config.provider === 'coreai' || Boolean(config.apiKey);
   } catch {
     return false;
   }
@@ -384,7 +384,7 @@ async function embed(text, options = {}) {
       console.warn(`Ollama embedding failed, falling back: ${ollamaError.message}`);
     }
   }
-  if (geminiConfig.enabled) {
+  if (geminiConfig.enabled || (geminiConfig.apiKey && geminiConfig.fallbackToLocal)) {
     try {
       const vector = await embedWithGemini(text, options);
       _lastEmbeddingProfile = {
@@ -548,6 +548,7 @@ module.exports = {
   TABLE_NAME,
   getEmbeddingConfig,
   getLastEmbeddingProfile,
+  getActiveEmbeddingProfile: getLastEmbeddingProfile,
   setPipelineLoaderForTests,
   setLanceLoaderForTests,
   setGeminiEmbedderForTests,

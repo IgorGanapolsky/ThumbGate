@@ -42,6 +42,9 @@ const INFERRED_TAG_RULES = [
   { tag: 'debugging', keywords: ['debug', 'debugging', 'error', 'bug', 'fix'] },
   { tag: 'architecture', keywords: ['design', 'architecture', 'system'] },
   { tag: 'data-modeling', keywords: ['schema', 'data', 'model', 'migration'] },
+  { tag: 'claw-style', keywords: ['claw', 'enterprise-claw', 'openshell', 'dynamic-tool', 'screen-interaction', 'computer-use'] },
+  { tag: 'hybrid-inference', keywords: ['hybrid', 'cloud-escalation', 'local-route', 'hybrid-route', 'perplexity-pc'] },
+  { tag: 'agent-identity', keywords: ['agent identity', 'audit trail', 'identity separation', 'agent-credential'] },
 ];
 
 function validateFeedbackMemory(memory) {
