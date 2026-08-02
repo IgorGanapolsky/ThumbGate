@@ -20,11 +20,15 @@ const { resolveFeedbackDir } = require('./feedback-paths');
 const DEFAULT_VERIFIERS_FILENAME = 'claim-verifiers.json';
 // Package install root (node_modules/thumbgate), not the consumer project cwd.
 const PACKAGE_ROOT = path.join(__dirname, '..');
+const CLAIM_VALUE_MARKER = '{{value}}';
+const NUMBER_PATTERN_SOURCE = String.raw`[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?`;
+const INTEGER_PATTERN_SOURCE = String.raw`[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)`;
+const FILE_PATTERN_SOURCE = String.raw`([^\s,]+\.[A-Za-z0-9]+)`;
 
 function parseNumberToken(raw) {
   if (raw == null) return null;
   const cleaned = String(raw).replaceAll(',', '').trim();
-  if (!/^-?\d+(?:\.\d+)?$/.test(cleaned)) return null;
+  if (!/^[+-]?\d+(?:\.\d+)?$/.test(cleaned)) return null;
   const value = Number(cleaned);
   return Number.isFinite(value) ? value : null;
 }
@@ -32,9 +36,80 @@ function parseNumberToken(raw) {
 function normalizeSubject(value) {
   return String(value || '')
     .toLowerCase()
-    .replace(/[_./\\-]+/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/[_./\\-]+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
+}
+
+function escapeRegExp(value) {
+  return String(value).replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+}
+
+function configuredClaimTemplates(verifier) {
+  const templates = [];
+  if (typeof verifier?.claimTemplate === 'string') templates.push(verifier.claimTemplate);
+  if (Array.isArray(verifier?.claimTemplates)) templates.push(...verifier.claimTemplates);
+  return templates;
+}
+
+/**
+ * Compile an operator-authored literal template containing exactly one numeric
+ * {{value}} slot. Everything outside the slot is regex-escaped, so a template
+ * cannot smuggle in executable regex or redirect the configured verifier.
+ */
+function compileConfiguredClaimTemplate(template) {
+  if (typeof template !== 'string' || template.length === 0 || template.length > 500) {
+    throw new Error('claim template must be a non-empty string of at most 500 characters');
+  }
+  const parts = template.split(CLAIM_VALUE_MARKER);
+  if (parts.length !== 2) {
+    throw new Error(`claim template must contain exactly one ${CLAIM_VALUE_MARKER} marker`);
+  }
+  if (parts.join('').replaceAll(/\s+/g, '').length < 3) {
+    throw new Error('claim template needs at least three literal characters outside the value marker');
+  }
+  const literalPattern = parts
+    .map((part) => escapeRegExp(part).replaceAll(/\s+/g, String.raw`\s+`))
+    .join(`(?<value>${NUMBER_PATTERN_SOURCE})`);
+  return new RegExp(
+    String.raw`(?<![\p{L}\p{N}_])${literalPattern}(?![\p{L}\p{N}_])`,
+    'giu',
+  );
+}
+
+function validateConfiguredClaimTemplates(verifiers = []) {
+  for (const verifier of verifiers) {
+    const templates = configuredClaimTemplates(verifier);
+    if (templates.length === 0) continue;
+    const verifierId = typeof verifier?.id === 'string' ? verifier.id.trim() : '';
+    if (!verifierId) {
+      throw new Error('a verifier with claimTemplate or claimTemplates requires a unique id');
+    }
+    const matchingIds = verifiers.filter((candidate) => candidate?.id === verifierId);
+    if (matchingIds.length !== 1) {
+      throw new Error(`duplicate configured claim-template verifier id: ${verifierId}`);
+    }
+    for (const template of templates) compileConfiguredClaimTemplate(template);
+  }
+}
+
+function parseConfiguredClaimTemplates(source, verifiers, push) {
+  for (const verifier of verifiers) {
+    for (const template of configuredClaimTemplates(verifier)) {
+      const pattern = compileConfiguredClaimTemplate(template);
+      for (const match of source.matchAll(pattern)) {
+        const expected = parseNumberToken(match.groups?.value);
+        if (expected == null) continue;
+        push({
+          kind: 'configured_value',
+          subject: normalizeSubject(verifier.id),
+          expected,
+          raw: match[0],
+          verifierId: verifier.id,
+        });
+      }
+    }
+  }
 }
 
 function resolveRepoRoot(cwd) {
@@ -93,144 +168,159 @@ function resolveSafePath(repoRoot, targetPath) {
   return resolved;
 }
 
-
-function createClaimPush(claims) {
+function createClaimCollector() {
+  const claims = [];
   const seen = new Set();
-  return (claim) => {
+  const push = (claim) => {
     const key = `${claim.kind}|${claim.subject}|${claim.path || ''}|${String(claim.expected)}`;
     if (seen.has(key)) return;
     seen.add(key);
     claims.push(claim);
   };
+  return { claims, push };
 }
 
-function eachMatch(source, re, onMatch) {
-  re.lastIndex = 0;
-  let match = re.exec(source);
-  while (match) {
-    onMatch(match);
-    match = re.exec(source);
+function collectPatternClaims(source, pattern, buildClaim, push) {
+  for (const match of source.matchAll(pattern)) {
+    const claim = buildClaim(match);
+    if (claim) push(claim);
   }
 }
 
-function parseCountClaims(source, push) {
-  // subject + count is N
-  eachMatch(
-    source,
-    /\b((?:the |total )?[a-z][\w .-]{0,40}? count)\s*(?:is|are|=|:|equals)\s*([\d,]+(?:\.\d+)?)\b/gi,
-    (match) => {
-      const expected = parseNumberToken(match[2]);
-      if (expected == null) return;
-      push({ kind: 'count', subject: normalizeSubject(match[1]), expected, raw: match[0] });
-    },
-  );
-
-  // there are N rows/orders/...
-  eachMatch(
-    source,
-    /\bthere (?:is|are) ([\d,]+) (rows?|records?|entries|items?|orders?|users?|lessons?|lines?)\b/gi,
-    (match) => {
-      const expected = parseNumberToken(match[1]);
-      if (expected == null) return;
-      push({ kind: 'count', subject: normalizeSubject(match[2]), expected, raw: match[0] });
-    },
-  );
-
-  // COUNT(*) = N
-  eachMatch(
-    source,
-    /\bCOUNT\s*\(\s*\*\s*\)\s*(?:=|is|:|equals)\s*([\d,]+)\b/gi,
-    (match) => {
-      const expected = parseNumberToken(match[1]);
-      if (expected == null) return;
-      push({ kind: 'count', subject: 'count', expected, raw: match[0] });
-    },
-  );
+function numericClaim(match, { kind, subjectIndex, valueIndex, subject }) {
+  const expected = parseNumberToken(match[valueIndex]);
+  if (expected == null) return null;
+  return {
+    kind,
+    subject: subject || normalizeSubject(match[subjectIndex]),
+    expected,
+    raw: match[0],
+  };
 }
 
-function parseFileMetricClaims(source, push) {
-  const pathToken = '([^\\s,]+\\.[A-Za-z0-9]+)';
-  eachMatch(
-    source,
-    new RegExp(`\\b(?:file\\s+)?${pathToken}\\s+(?:has|contains)\\s+([\\d,]+)\\s+lines?\\b`, 'gi'),
-    (match) => {
-      const expected = parseNumberToken(match[2]);
-      if (expected == null) return;
-      push({ kind: 'file_lines', subject: 'lines', path: match[1], expected, raw: match[0] });
-    },
+function collectCountClaims(source, push) {
+  const directCount = new RegExp(
+    String.raw`\b([A-Za-z][\w.-]*(?:\s+[A-Za-z][\w.-]*){0,7}\s+counts?)\s*(?:is|are|=|:|equals?)\s*(${NUMBER_PATTERN_SOURCE})\b`,
+    'giu',
   );
-  eachMatch(
-    source,
-    new RegExp(`\\b(?:file\\s+)?${pathToken}\\s+(?:is|has)\\s+([\\d,]+)\\s+bytes?\\b`, 'gi'),
-    (match) => {
-      const expected = parseNumberToken(match[2]);
-      if (expected == null) return;
-      push({ kind: 'file_bytes', subject: 'bytes', path: match[1], expected, raw: match[0] });
-    },
+  const thereAreCount = new RegExp(
+    String.raw`\bthere\s+(?:is|are)\s+(${INTEGER_PATTERN_SOURCE})\s+(rows?|records?|entries|items?|orders?|users?|lessons?|lines?)\b`,
+    'giu',
   );
-  eachMatch(
-    source,
-    new RegExp(`\\b(?:file\\s+)?${pathToken}\\s+(?:exists|is present|is on disk)\\b`, 'gi'),
-    (match) => {
-      push({ kind: 'file_exists', subject: 'exists', path: match[1], expected: true, raw: match[0] });
-    },
+  const sqlCount = new RegExp(
+    String.raw`\bCOUNT\s*\(\s*\*\s*\)\s*(?:=|is|:)\s*(${INTEGER_PATTERN_SOURCE})\b`,
+    'giu',
   );
-  eachMatch(
-    source,
-    new RegExp(`\\b(?:file\\s+)?${pathToken}\\s+(?:does not exist|is missing|is absent)\\b`, 'gi'),
-    (match) => {
-      push({ kind: 'file_exists', subject: 'exists', path: match[1], expected: false, raw: match[0] });
-    },
-  );
+  collectPatternClaims(source, directCount, (match) => numericClaim(match, {
+    kind: 'count', subjectIndex: 1, valueIndex: 2,
+  }), push);
+  collectPatternClaims(source, thereAreCount, (match) => numericClaim(match, {
+    kind: 'count', subjectIndex: 2, valueIndex: 1,
+  }), push);
+  collectPatternClaims(source, sqlCount, (match) => numericClaim(match, {
+    kind: 'count', valueIndex: 1, subject: 'count',
+  }), push);
 }
 
-function parseValueClaims(source, push) {
-  eachMatch(
-    source,
-    /\b((?:package )?version)\s*(?:is|=|:|equals)\s*(v?\d+\.\d+\.\d+[\w.+-]*)\b/gi,
-    (match) => {
-      push({
-        kind: 'value',
-        subject: normalizeSubject(match[1]),
-        expected: String(match[2]).replace(/^v/i, ''),
-        raw: match[0],
-      });
-    },
+function fileNumericClaim(match, kind, subject) {
+  const claim = numericClaim(match, { kind, valueIndex: 2, subject });
+  return claim ? { ...claim, path: match[1] } : null;
+}
+
+function collectFileClaims(source, push) {
+  const fileLines = new RegExp(
+    String.raw`\b(?:file\s+)?${FILE_PATTERN_SOURCE}\s+(?:has|contains)\s+(${INTEGER_PATTERN_SOURCE})\s+lines?\b`,
+    'giu',
   );
+  const fileBytes = new RegExp(
+    String.raw`\b(?:file\s+)?${FILE_PATTERN_SOURCE}\s+(?:is|has)\s+(${INTEGER_PATTERN_SOURCE})\s+bytes?\b`,
+    'giu',
+  );
+  const fileExists = new RegExp(
+    String.raw`\b(?:file\s+)?${FILE_PATTERN_SOURCE}\s+(?:exists|is present|is on disk)\b`,
+    'giu',
+  );
+  const fileMissing = new RegExp(
+    String.raw`\b(?:file\s+)?${FILE_PATTERN_SOURCE}\s+(?:does not exist|is missing|is absent)\b`,
+    'giu',
+  );
+  collectPatternClaims(source, fileLines, (match) => fileNumericClaim(match, 'file_lines', 'lines'), push);
+  collectPatternClaims(source, fileBytes, (match) => fileNumericClaim(match, 'file_bytes', 'bytes'), push);
+  collectPatternClaims(source, fileExists, (match) => ({
+    kind: 'file_exists', subject: 'exists', path: match[1], expected: true, raw: match[0],
+  }), push);
+  collectPatternClaims(source, fileMissing, (match) => ({
+    kind: 'file_exists', subject: 'exists', path: match[1], expected: false, raw: match[0],
+  }), push);
+}
+
+function collectVersionClaims(source, push) {
+  const versionPattern = new RegExp(
+    String.raw`\b((?:package\s+)?version)\s*(?:is|=|:|equals?)\s*([vV]?\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?)\b`,
+    'giu',
+  );
+  collectPatternClaims(source, versionPattern, (match) => {
+    const rawVersion = String(match[2]);
+    const expected = /^[vV]/.test(rawVersion) ? rawVersion.slice(1) : rawVersion;
+    return {
+      kind: 'value',
+      subject: normalizeSubject(match[1]),
+      expected,
+      raw: match[0],
+    };
+  }, push);
+}
+
+function addConfiguredClaim(claim, claims, push) {
+  const alreadyParsed = claims.find((existing) => (
+    existing.raw.toLowerCase() === claim.raw.toLowerCase()
+    && valuesEqual(existing.expected, claim.expected)
+  ));
+  if (!alreadyParsed) {
+    push(claim);
+    return;
+  }
+  if (alreadyParsed.verifierId && alreadyParsed.verifierId !== claim.verifierId) {
+    throw new Error(
+      `claim matched multiple configured verifiers: ${alreadyParsed.verifierId}, ${claim.verifierId}`,
+    );
+  }
+  alreadyParsed.verifierId = claim.verifierId;
 }
 
 /**
  * Extract structured factual claims from free text.
  * @returns {Array<{kind:string, subject:string, expected:*, path?:string, raw:string}>}
  */
-function parseFactualClaims(text) {
+function parseFactualClaims(text, options = {}) {
   const source = String(text || '');
   if (!source.trim()) return [];
-  const claims = [];
-  const push = createClaimPush(claims);
-  parseCountClaims(source, push);
-  parseFileMetricClaims(source, push);
-  parseValueClaims(source, push);
+
+  let verifiers = [];
+  if (Array.isArray(options)) verifiers = options;
+  else if (Array.isArray(options.verifiers)) verifiers = options.verifiers;
+  validateConfiguredClaimTemplates(verifiers);
+
+  const { claims, push } = createClaimCollector();
+  collectCountClaims(source, push);
+  collectFileClaims(source, push);
+  collectVersionClaims(source, push);
+  parseConfiguredClaimTemplates(source, verifiers, (claim) => addConfiguredClaim(claim, claims, push));
+
   return claims;
 }
 
-function loadConfigFromOptions(options) {
-  if (Array.isArray(options.verifiers)) {
-    return { verifiers: options.verifiers, source: 'options' };
-  }
-  if (Array.isArray(options.claimVerifiers)) {
-    return { verifiers: options.claimVerifiers, source: 'options.claimVerifiers' };
-  }
-  if (options.config && Array.isArray(options.config.verifiers)) {
-    return { verifiers: options.config.verifiers, source: 'options.config' };
-  }
-  if (options.claimVerifiers?.verifiers && Array.isArray(options.claimVerifiers.verifiers)) {
-    return { verifiers: options.claimVerifiers.verifiers, source: 'options.claimVerifiers' };
-  }
-  return null;
+function inlineVerifierConfig(options) {
+  const candidates = [
+    { verifiers: options.verifiers, source: 'options' },
+    { verifiers: options.claimVerifiers, source: 'options.claimVerifiers' },
+    { verifiers: options.config?.verifiers, source: 'options.config' },
+    { verifiers: options.claimVerifiers?.verifiers, source: 'options.claimVerifiers' },
+  ];
+  return candidates.find((candidate) => Array.isArray(candidate.verifiers)) || null;
 }
 
-function collectConfigCandidates(options, repoRoot) {
+function verifierConfigPaths(options, repoRoot) {
   const candidates = [];
   const explicitConfigPath = options.configPath || process.env.THUMBGATE_CLAIM_VERIFIERS_PATH;
   if (explicitConfigPath) {
@@ -242,42 +332,42 @@ function collectConfigCandidates(options, repoRoot) {
     }
     candidates.push(resolvedExplicit);
   }
-
   const feedbackDir = options.feedbackDir || resolveFeedbackDir({ cwd: repoRoot });
   candidates.push(
     path.join(feedbackDir, DEFAULT_VERIFIERS_FILENAME),
     path.join(repoRoot, '.thumbgate', DEFAULT_VERIFIERS_FILENAME),
     path.join(repoRoot, 'config', 'gates', DEFAULT_VERIFIERS_FILENAME),
+    // Shipped defaults from the installed package so npm consumers get dogfood
+    // without copying config into every project cwd.
     path.join(PACKAGE_ROOT, 'config', 'gates', DEFAULT_VERIFIERS_FILENAME),
   );
-  return [...new Set(candidates)];
+  return new Set(candidates);
 }
 
-function readVerifierFile(candidate) {
-  const raw = JSON.parse(fs.readFileSync(candidate, 'utf8'));
-  const verifiers = Array.isArray(raw?.verifiers)
-    ? raw.verifiers
-    : (Array.isArray(raw) ? raw : null);
-  if (!verifiers) {
-    throw new Error('expected an array or an object with a verifiers array');
+function readVerifierConfig(candidate) {
+  try {
+    const raw = JSON.parse(fs.readFileSync(candidate, 'utf8'));
+    let verifiers = null;
+    if (Array.isArray(raw?.verifiers)) verifiers = raw.verifiers;
+    else if (Array.isArray(raw)) verifiers = raw;
+    if (!verifiers) {
+      throw new Error('expected an array or an object with a verifiers array');
+    }
+    return { verifiers, source: candidate, path: candidate };
+  } catch (error) {
+    throw new Error(`invalid claim verifier config ${candidate}: ${error.message}`);
   }
-  return { verifiers, source: candidate, path: candidate };
 }
 
 function loadVerifierConfig(options = {}) {
-  const fromOptions = loadConfigFromOptions(options);
-  if (fromOptions) return fromOptions;
+  const inline = inlineVerifierConfig(options);
+  if (inline) return inline;
 
   const repoRoot = resolveRepoRoot(options.cwd);
-  for (const candidate of collectConfigCandidates(options, repoRoot)) {
+  for (const candidate of verifierConfigPaths(options, repoRoot)) {
     if (!candidate || !fs.existsSync(candidate)) continue;
-    try {
-      return readVerifierFile(candidate);
-    } catch (error) {
-      throw new Error(`invalid claim verifier config ${candidate}: ${error.message}`);
-    }
+    return readVerifierConfig(candidate);
   }
-
   return { verifiers: [], source: 'none' };
 }
 
@@ -293,8 +383,8 @@ function subjectMatches(claimSubject, matcherSubjects = []) {
 }
 
 function normalizeVerifierPath(value) {
-  const normalized = path.posix.normalize(String(value || '').replace(/\\/g, '/'));
-  return normalized.replace(/^\.\//, '').toLowerCase();
+  const normalized = path.posix.normalize(String(value || '').replaceAll('\\', '/'));
+  return normalized.startsWith('./') ? normalized.slice(2).toLowerCase() : normalized.toLowerCase();
 }
 
 function pathMatches(claimPath, matcherPaths = []) {
@@ -308,55 +398,55 @@ function pathMatches(claimPath, matcherPaths = []) {
   return false;
 }
 
-function findVerifierForClaim(claim, verifiers) {
-  for (const verifier of verifiers) {
-    if (!verifier || typeof verifier !== 'object') continue;
-    const match = verifier.match || {};
-    const kinds = Array.isArray(match.kinds) && match.kinds.length > 0
-      ? match.kinds
-      : [verifier.kind];
-
-    if (!kinds.includes(claim.kind) && !(claim.kind === 'count' && kinds.includes('sqlite_count'))) {
-      // allow sqlite_count verifiers to serve generic count claims
-      if (!(claim.kind === 'count' && verifier.kind === 'sqlite_count')) {
-        if (!(claim.kind === 'value' && ['json_path', 'value'].includes(verifier.kind))) {
-          if (!(claim.kind === 'file_lines' && verifier.kind === 'file_lines')) {
-            if (!(claim.kind === 'file_bytes' && verifier.kind === 'file_bytes')) {
-              if (!(claim.kind === 'file_exists' && verifier.kind === 'file_exists')) {
-                continue;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    const subjects = match.subjects || verifier.subjects || [];
-    const paths = match.paths || (verifier.path ? [verifier.path] : []);
-
-    if (claim.path) {
-      if (paths.length > 0 && !pathMatches(claim.path, paths)) continue;
-      // path claim without subject constraint is ok when path matches
-      if (subjects.length > 0 && claim.subject && !subjectMatches(claim.subject, subjects) && claim.kind === 'count') {
-        continue;
-      }
-      return verifier;
-    }
-
-    if (subjects.length === 0) {
-      // bare verifier without subject matchers only binds file-path claims above
-      continue;
-    }
-    if (subjectMatches(claim.subject, subjects)) return verifier;
+function verifierSupportsClaim(verifier, claim) {
+  const match = verifier.match || {};
+  const kinds = Array.isArray(match.kinds) && match.kinds.length > 0
+    ? match.kinds
+    : [verifier.kind];
+  if (kinds.includes(claim.kind)) return true;
+  if (claim.kind === 'count') {
+    return kinds.includes('sqlite_count') || verifier.kind === 'sqlite_count';
   }
-  return null;
+  const compatibleVerifierKinds = {
+    value: ['json_path', 'value'],
+    file_lines: ['file_lines'],
+    file_bytes: ['file_bytes'],
+    file_exists: ['file_exists'],
+  };
+  return compatibleVerifierKinds[claim.kind]?.includes(verifier.kind) || false;
+}
+
+function verifierMatchesClaim(verifier, claim) {
+  if (!verifier || typeof verifier !== 'object' || !verifierSupportsClaim(verifier, claim)) {
+    return false;
+  }
+  const match = verifier.match || {};
+  const subjects = match.subjects || verifier.subjects || [];
+  const paths = match.paths || (verifier.path ? [verifier.path] : []);
+  if (claim.path) {
+    if (paths.length > 0 && !pathMatches(claim.path, paths)) return false;
+    const countSubjectMismatch = claim.kind === 'count'
+      && subjects.length > 0
+      && claim.subject
+      && !subjectMatches(claim.subject, subjects);
+    return !countSubjectMismatch;
+  }
+  return subjects.length > 0 && subjectMatches(claim.subject, subjects);
+}
+
+function findVerifierForClaim(claim, verifiers) {
+  if (claim.verifierId) {
+    return verifiers.find((verifier) => verifier?.id === claim.verifierId) || null;
+  }
+  return verifiers.find((verifier) => verifierMatchesClaim(verifier, claim)) || null;
 }
 
 function assertSelectOnly(query) {
   const normalized = String(query || '').trim();
   if (!normalized) throw new Error('sqlite_count verifier requires query');
   // Strip trailing semicolon and require a single SELECT statement.
-  const body = normalized.replace(/;+\s*$/, '');
+  let body = normalized;
+  while (body.endsWith(';')) body = body.slice(0, -1).trimEnd();
   if (/;/.test(body)) throw new Error('sqlite_count query must be a single statement');
   if (!/^\s*select\b/i.test(body)) throw new Error('sqlite_count query must be SELECT-only');
   if (/\b(insert|update|delete|drop|alter|attach|pragma|create|replace|vacuum|reindex)\b/i.test(body)) {
@@ -396,7 +486,7 @@ function readFileLines(repoRoot, filePath) {
   if (content.length === 0) return 0;
   // Count newline-terminated lines; trailing content without newline still counts as a line.
   const parts = content.split(/\r?\n/);
-  return parts.length > 0 && parts[parts.length - 1] === '' ? parts.length - 1 : parts.length;
+  return parts.length > 0 && parts.at(-1) === '' ? parts.length - 1 : parts.length;
 }
 
 function readFileBytes(repoRoot, filePath) {
@@ -421,7 +511,7 @@ function readJsonPath(repoRoot, verifier) {
   for (const segment of segments) {
     if (cursor == null
       || typeof cursor !== 'object'
-      || !Object.prototype.hasOwnProperty.call(cursor, segment)) {
+      || !Object.hasOwn(cursor, segment)) {
       throw new Error(`json path not found: ${pointer}`);
     }
     cursor = cursor[segment];
@@ -460,6 +550,71 @@ function valuesEqual(expected, actual) {
   return String(actual) === String(expected);
 }
 
+function claimCheckBase(claim) {
+  return {
+    claim: claim.raw,
+    kind: claim.kind,
+    subject: claim.subject,
+    expected: claim.expected,
+  };
+}
+
+function unconfiguredClaimCheck(claim, failUnconfigured) {
+  let message = `Parsed factual claim "${claim.raw}" with no verifier (advisory).`;
+  if (failUnconfigured) {
+    message = `Parsed factual claim "${claim.raw}" but no matching verifier is configured. Add one under .thumbgate/claim-verifiers.json (or config/gates/claim-verifiers.json).`;
+  }
+  return {
+    ...claimCheckBase(claim),
+    path: claim.path || null,
+    passed: !failUnconfigured,
+    status: 'unconfigured',
+    missing: failUnconfigured ? ['claim_verifier_configured'] : [],
+    message,
+  };
+}
+
+function verifierClaimCheck(claim, verifier, repoRoot) {
+  const verifierLabel = verifier.id || verifier.kind;
+  try {
+    const actual = runVerifier(claim, verifier, repoRoot);
+    const passed = valuesEqual(claim.expected, actual);
+    const status = passed ? 'match' : 'mismatch';
+    const message = `Claim ${passed ? 'verified' : 'mismatch'} via ${verifierLabel}: expected ${String(claim.expected)}, observed ${String(actual)}`;
+    return {
+      ...claimCheckBase(claim),
+      claimedPath: claim.path || null,
+      path: verifier.path || null,
+      actual,
+      verifierId: verifier.id || null,
+      verifierKind: verifier.kind,
+      passed,
+      status,
+      missing: passed ? [] : ['claim_value_match'],
+      message,
+    };
+  } catch (error) {
+    return {
+      ...claimCheckBase(claim),
+      claimedPath: claim.path || null,
+      path: verifier.path || null,
+      verifierId: verifier.id || null,
+      verifierKind: verifier.kind,
+      passed: false,
+      status: 'verifier_error',
+      missing: ['claim_verifier_success'],
+      message: `Verifier ${verifierLabel} failed: ${error?.message || 'unknown error'}`,
+    };
+  }
+}
+
+function evaluateClaim(claim, verifiers, repoRoot, failUnconfigured) {
+  const verifier = findVerifierForClaim(claim, verifiers);
+  return verifier
+    ? verifierClaimCheck(claim, verifier, repoRoot)
+    : unconfiguredClaimCheck(claim, failUnconfigured);
+}
+
 /**
  * Evaluate free-text claims against configured verifiers.
  *
@@ -480,87 +635,29 @@ function valuesEqual(expected, actual) {
 function evaluateUniversalClaims(claimText, options = {}) {
   const repoRoot = resolveRepoRoot(options.cwd);
   const failUnconfigured = options.failUnconfigured !== false;
-  const parsed = parseFactualClaims(claimText);
+  const { verifiers, source: configSource } = loadVerifierConfig(options);
+  validateConfiguredClaimTemplates(verifiers);
+  const parsed = parseFactualClaims(claimText, { verifiers });
   if (parsed.length === 0) {
     return {
       verified: true,
       claims: [],
       checks: [],
-      configSource: 'not_loaded',
-      verifierCount: 0,
+      configSource,
+      verifierCount: verifiers.length,
       parsedCount: 0,
     };
   }
-
-  const { verifiers, source: configSource } = loadVerifierConfig(options);
-  const checks = [];
-  const claimResults = [];
-
-  for (const claim of parsed) {
-    const verifier = findVerifierForClaim(claim, verifiers);
-    if (!verifier) {
-      const check = {
-        claim: claim.raw,
-        kind: claim.kind,
-        subject: claim.subject,
-        path: claim.path || null,
-        expected: claim.expected,
-        passed: !failUnconfigured,
-        status: 'unconfigured',
-        missing: failUnconfigured ? ['claim_verifier_configured'] : [],
-        message: failUnconfigured
-          ? `Parsed factual claim "${claim.raw}" but no matching verifier is configured. Add one under .thumbgate/claim-verifiers.json (or config/gates/claim-verifiers.json).`
-          : `Parsed factual claim "${claim.raw}" with no verifier (advisory).`,
-      };
-      checks.push(check);
-      claimResults.push({ ...claim, ...check });
-      continue;
-    }
-
-    try {
-      const actual = runVerifier(claim, verifier, repoRoot);
-      const passed = valuesEqual(claim.expected, actual);
-      const check = {
-        claim: claim.raw,
-        kind: claim.kind,
-        subject: claim.subject,
-        claimedPath: claim.path || null,
-        path: verifier.path || null,
-        expected: claim.expected,
-        actual,
-        verifierId: verifier.id || null,
-        verifierKind: verifier.kind,
-        passed,
-        status: passed ? 'match' : 'mismatch',
-        missing: passed ? [] : ['claim_value_match'],
-        message: passed
-          ? `Claim verified via ${verifier.id || verifier.kind}: expected ${String(claim.expected)}, observed ${String(actual)}`
-          : `Claim mismatch via ${verifier.id || verifier.kind}: expected ${String(claim.expected)}, observed ${String(actual)}`,
-      };
-      checks.push(check);
-      claimResults.push({ ...claim, ...check });
-    } catch (error) {
-      const check = {
-        claim: claim.raw,
-        kind: claim.kind,
-        subject: claim.subject,
-        claimedPath: claim.path || null,
-        path: verifier.path || null,
-        expected: claim.expected,
-        verifierId: verifier.id || null,
-        verifierKind: verifier.kind,
-        passed: false,
-        status: 'verifier_error',
-        missing: ['claim_verifier_success'],
-        message: `Verifier ${verifier.id || verifier.kind} failed: ${error && error.message ? error.message : 'unknown error'}`,
-      };
-      checks.push(check);
-      claimResults.push({ ...claim, ...check });
-    }
-  }
+  const checks = parsed.map((claim) => evaluateClaim(
+    claim,
+    verifiers,
+    repoRoot,
+    failUnconfigured,
+  ));
+  const claimResults = parsed.map((claim, index) => ({ ...claim, ...checks[index] }));
 
   return {
-    verified: checks.length === 0 ? true : checks.every((check) => check.passed),
+    verified: checks.every((check) => check.passed),
     claims: claimResults,
     checks,
     configSource,
@@ -664,5 +761,7 @@ module.exports = {
   assertSelectOnly,
   resolveSafePath,
   pathMatches,
+  compileConfiguredClaimTemplate,
+  validateConfiguredClaimTemplates,
   DEFAULT_VERIFIERS_FILENAME,
 };

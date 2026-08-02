@@ -1343,10 +1343,10 @@ describe('bin/cli.js', () => {
       }),
     });
     assert.strictEqual(result.status, 0);
-    assert.ok(
-      !result.stderr.includes('💡 ThumbGate Pro') && !result.stderr.includes('💡 Unlock Pro') && !result.stderr.includes('💡 Pro tip'),
-      `Pro nudge must be suppressed for Pro-tier env; got stderr:\n${result.stderr}`,
-    );
+    const failureMessage = `Pro nudge must be suppressed for Pro-tier env; got stderr:\n${result.stderr}`;
+    assert.doesNotMatch(result.stderr, /💡 ThumbGate Pro/, failureMessage);
+    assert.doesNotMatch(result.stderr, /💡 Unlock Pro/, failureMessage);
+    assert.doesNotMatch(result.stderr, /💡 Pro tip/, failureMessage);
   });
 
   test('pro command includes hosted link', () => {
@@ -2354,6 +2354,10 @@ describe('bin/cli.js', () => {
     assert.equal(
       settings.hooks.PreToolUse[0].hooks[0].command,
       `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} gate-check`
+    );
+    assert.equal(
+      settings.hooks.Stop[0].hooks[0].command,
+      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} claim-stop-check`
     );
     assert.equal(
       settings.statusLine.command,

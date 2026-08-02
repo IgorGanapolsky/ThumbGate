@@ -15,8 +15,9 @@ Wired into:
 
 - `verifyClaimEvidence()` in `scripts/gates-engine.js`
 - MCP tools `verify_claim` and `require_evidence_for_claim`
-- the configured Claude Code Stop hook (`scripts/hook-stop-anti-claim.js`),
-  which hard-blocks a parsed mismatch even when the agent never calls MCP
+- the Claude Code Stop hook installed by `thumbgate init --agent claude-code`
+  (`thumbgate claim-stop-check`), which hard-blocks a parsed mismatch even when
+  the agent never calls MCP
 - the portable `thumbgate verify-claims` CLI for other agent runtimes and CI
 - npm script `test:universal-claim-evaluator`
 
@@ -32,6 +33,26 @@ Wired into:
 | `config.json exists` | `file_exists` |
 | `secrets.env does not exist` | `file_exists` |
 | `package version is 1.31.0` | `value` |
+| `The nightly batch built 17 invoices` | operator-configured `claimTemplate` |
+
+The built-in grammar stays deliberately small. For any other quantitative
+wording, bind the exact sentence shape to a source with one numeric
+`{{value}}` slot:
+
+```json
+{
+  "id": "nightly-invoices",
+  "kind": "json_path",
+  "claimTemplate": "The nightly batch built {{value}} invoices",
+  "path": "metrics.json",
+  "jsonPath": "nightly.invoices"
+}
+```
+
+Templates are literals, not regexes. ThumbGate escapes every character outside
+the value slot, requires a unique verifier `id`, and rechecks only the path,
+query, or JSON selector supplied by the operator configuration. A malformed
+template fails closed.
 
 ## Configure verifiers
 
@@ -127,11 +148,19 @@ do not support Claude Stop hooks must invoke this command or the MCP completion
 gate before accepting output; ThumbGate cannot intercept a runtime that has no
 hook, MCP, or CLI integration.
 
+Claude Code is automatically wired at install time because it exposes a
+blocking `Stop` lifecycle. Other hosts are enforced only when their adapter
+calls `require_evidence_for_claim` or treats `verify-claims` exit status as a
+completion gate. A runtime without one of those integration points cannot be
+made to fail by an external package.
+
 ## What this is not
 
 - Not an unbounded NL-to-SQL compiler. Queries are operator-authored only.
 - Not a substitute for session `track_action` evidence on qualitative claims ("design matches Figma").
 - Not a guarantee that every English sentence is parsed — only the listed factual shapes.
+- Arbitrary quantitative wording requires an explicit `claimTemplate`; ThumbGate
+  does not guess which database or file a sentence refers to.
 - Not permission to market an arbitrary-English or every-runtime guarantee.
   The deterministic guarantee covers supported claim shapes on runtimes wired
   through the Stop hook, MCP gate, or CLI exit code.

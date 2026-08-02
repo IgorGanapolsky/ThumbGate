@@ -30,6 +30,13 @@
       },
       "path": "package.json",
       "jsonPath": "version"
+    },
+    {
+      "id": "nightly-invoices",
+      "kind": "json_path",
+      "claimTemplate": "The nightly batch built {{value}} invoices",
+      "path": "metrics.json",
+      "jsonPath": "nightly.invoices"
     }
   ]
 }

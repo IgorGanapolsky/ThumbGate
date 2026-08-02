@@ -9,6 +9,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const HOOK = path.join(__dirname, '..', 'scripts', 'hook-stop-anti-claim.js');
+const CLI = path.join(__dirname, '..', 'bin', 'cli.js');
 
 const {
   CLAIM_PATTERNS,
@@ -44,13 +45,23 @@ function makeVerifierRoot() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-anticlaim-verifier-'));
   fs.mkdirSync(path.join(root, '.thumbgate'));
   fs.writeFileSync(path.join(root, 'README.md'), 'one\ntwo\nthree\n');
+  fs.writeFileSync(path.join(root, 'metrics.json'), JSON.stringify({ nightly: { invoices: 12 } }));
   fs.writeFileSync(path.join(root, '.thumbgate', 'claim-verifiers.json'), JSON.stringify({
-    verifiers: [{
-      id: 'readme-lines',
-      kind: 'file_lines',
-      match: { kinds: ['file_lines'], paths: ['README.md'] },
-      path: 'README.md',
-    }],
+    verifiers: [
+      {
+        id: 'readme-lines',
+        kind: 'file_lines',
+        match: { kinds: ['file_lines'], paths: ['README.md'] },
+        path: 'README.md',
+      },
+      {
+        id: 'nightly-invoices',
+        kind: 'json_path',
+        claimTemplate: 'The nightly batch built {{value}} invoices',
+        path: 'metrics.json',
+        jsonPath: 'nightly.invoices',
+      },
+    ],
   }));
   return root;
 }
@@ -259,6 +270,48 @@ test('hook allows a factual claim only after the configured source matches', () 
     timeout: 5000,
   });
   assert.equal((res.stdout || '').trim(), '');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('hook hard-blocks an arbitrary configured claim-template mismatch', () => {
+  const root = makeVerifierRoot();
+  const res = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({
+      hook_event_name: 'Stop',
+      stop_hook_active: false,
+      cwd: root,
+      last_assistant_message: 'The nightly batch built 17 invoices.',
+    }),
+    encoding: 'utf8',
+    timeout: 5000,
+  });
+  const out = JSON.parse((res.stdout || '').trim());
+  assert.equal(out.decision, 'block');
+  assert.equal(out.verification.failures[0].status, 'mismatch');
+  assert.equal(out.verification.failures[0].verifierId, 'nightly-invoices');
+  assert.equal(out.verification.failures[0].expected, 17);
+  assert.equal(out.verification.failures[0].actual, 12);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('published CLI Stop-hook entrypoint hard-blocks a configured claim mismatch', () => {
+  const root = makeVerifierRoot();
+  const res = spawnSync(process.execPath, [CLI, 'claim-stop-check'], {
+    cwd: root,
+    input: JSON.stringify({
+      hook_event_name: 'Stop',
+      stop_hook_active: false,
+      cwd: root,
+      last_assistant_message: 'The nightly batch built 17 invoices.',
+    }),
+    encoding: 'utf8',
+    timeout: 5000,
+  });
+  assert.equal(res.status, 0);
+  const out = JSON.parse((res.stdout || '').trim());
+  assert.equal(out.decision, 'block');
+  assert.equal(out.verification.failures[0].verifierId, 'nightly-invoices');
+  assert.equal(out.verification.failures[0].actual, 12);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
