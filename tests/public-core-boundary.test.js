@@ -226,9 +226,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 416 -> 418 (2026-08-02): the universal claim evaluator runtime and its
   // operator-owned verifier example. Both are public enforcement surfaces;
   // neither imports private Core code or buyer state.
+  // 418 -> 419 (2026-08-02): default config/gates/claim-verifiers.json.
   // CI pack measured 403 during secret-exfil coverage PR (no intentional new package
   // entries beyond security/runtime scripts already on the enforcement path).
-  const CEILING = 418;
+  const CEILING = 419;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
