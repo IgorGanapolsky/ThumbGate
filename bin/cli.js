@@ -3241,6 +3241,11 @@ function verifyClaimsCmd() {
   process.exitCode = runCli(process.argv.slice(3));
 }
 
+function claimStopCheckCmd() {
+  const { main } = require(path.join(PKG_ROOT, 'scripts', 'hook-stop-anti-claim'));
+  main();
+}
+
 function help() {
   const v = pkgVersion();
   const helpArgs = process.argv.slice(3);
@@ -3310,6 +3315,7 @@ function help() {
   console.log('  cache-update          Refresh Claude statusline cache from stdin');
   console.log('  statusline-render     Render ThumbGate Claude status line');
   console.log('  hook-auto-capture     Process Claude UserPromptSubmit inline feedback');
+  console.log('  claim-stop-check      Recheck configured factual claims before Claude stops');
   console.log('  session-start         Refresh local ThumbGate session cache');
   console.log('');
 
@@ -3418,6 +3424,7 @@ const SUBCOMMAND_HELP = {
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
+  'claim-stop-check': 'Usage: npx thumbgate claim-stop-check\n\nClaude Stop-hook interface: reads the hook payload from stdin and blocks factual claims that disagree with configured sources.',
   'verify-claims': 'Usage: npx thumbgate verify-claims --claim="the row count is 1,284" [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nRecheck supported factual claims against operator-configured SQLite, filesystem, and JSON sources. Exits non-zero on mismatch, missing verifier, or verifier error.',
   'hermes-gate': 'Usage: npx thumbgate hermes-gate\n\nNous Research Hermes Agent pre_tool_call shell hook: reads Hermes tool-call JSON from stdin, runs the ThumbGate gate pipeline (strict by default), and outputs {"decision":"block","reason":...} to veto or {} to allow. Gates terminal/patch/skill_manage etc. See adapters/hermes/config.yaml.',
   'break-glass': 'Usage: npx thumbgate break-glass --reason="why" [--ttl=5m] [--json]\n\nShort-lived recovery path for over-firing gates. Allows hook settings edits and satisfies PR-create/thread-check gates without disabling core destructive-action protections.',
@@ -3696,6 +3703,9 @@ switch (COMMAND) {
     break;
   case 'hook-auto-capture':
     hookAutoCapture();
+    break;
+  case 'claim-stop-check':
+    claimStopCheckCmd();
     break;
   case 'session-start':
     sessionStart();
