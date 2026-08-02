@@ -26,6 +26,7 @@ npm run eval:quality      # bounded offline gate: IR + answer-quality proxies
 npm run eval:rag          # skill-pack smoke + IR ranking (Recall@k / MRR / nDCG)
 npm run eval:ranking      # ranking-only gate (gate scoring stack on golden qrels)
 npm run prove:rag         # every stage has why + failure modes + metrics
+npm run prove:transformers # downloads/loads MiniLM and validates a real 384-dim vector
 npm run test:rag-pipeline # unit tests for pipeline + contracts + structured out + IR metrics
 npm run test:eval-quality # IR + Ragas-style unit tests
 npm run test:eval-rag
@@ -90,5 +91,7 @@ Each stage answers three questions — full detail in the contracts module:
 ## Operator notes
 
 - Empty eval reports with 0% recall mean the **corpus was empty or skill packs were not seeded** — fixed by `eval-rag` using skill-pack rules as the retrieval corpus.
+- The default local semantic provider uses the exact official Transformers.js 4.2.0 Node artifact with `Xenova/all-MiniLM-L6-v2`. The artifact is vendored with upstream license and checksum provenance; its narrow optional runtime pins `onnxruntime-node@1.21.0`, `onnxruntime-common@1.21.0`, and security-fixed `sharp@0.35.3`. Node.js 20.9+ is required. Run `npm run prove:transformers` for a real model-load/inference proof; a package declaration or injected test pipeline is not runtime proof.
+- `getEmbeddingConfig().localTransformers` reports `installed`, `unsupported_node`, `missing_vendored_runtime`, or `missing_optional_runtime_dependency`. Installs made with `--omit=optional` are valid core-firewall installs but do not have this semantic provider.
 - `feature-hash` embeddings set `fallbackUsed: true` and `qualityTier: degraded`. Do not claim semantic search quality on that path.
 - PDF ingest is intentionally **not** faked; convert to markdown/text first.

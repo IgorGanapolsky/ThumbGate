@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { pathToFileURL } = require('url');
 
 // Each test block creates its own tmpdir and invalidates require.cache
 // to get a fresh module with the correct THUMBGATE_FEEDBACK_DIR env var.
@@ -115,7 +116,7 @@ describe('vector-store — built-in feature-hash embeddings', () => {
 });
 
 describe('vector-store — local Transformers.js provider', () => {
-  it('detects optional @huggingface/transformers and records production provenance', async () => {
+  it('detects the local Transformers.js runtime and records production provenance', async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-transformers-'));
     try {
       process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
@@ -131,15 +132,18 @@ describe('vector-store — local Transformers.js provider', () => {
       const vectorStore = require('../scripts/vector-store');
 
       // Inject a fake pipeline so CI never downloads ONNX weights.
-      vectorStore.setPipelineLoaderForTests(async () => async () => ({
-        data: Float32Array.from([0, 1, 0, 0]),
-      }));
+      vectorStore.setPipelineLoaderForTests(async () => async () => {
+        const data = new Float32Array(384);
+        data[1] = 1;
+        return { data };
+      });
 
       assert.equal(vectorStore.hasLocalTransformerProvider(), true);
       assert.equal(vectorStore.hasSemanticEmbeddingProvider(), true);
 
       const vector = await vectorStore.embed('block a destructive shell command', { kind: 'query' });
-      assert.deepEqual(vector, [0, 1, 0, 0]);
+      assert.equal(vector.length, 384);
+      assert.equal(vector[1], 1);
       const profile = vectorStore.getLastEmbeddingProfile();
       assert.equal(profile.source, 'local-transformers');
       assert.equal(profile.activeProfile.qualityTier, 'production');
@@ -153,17 +157,78 @@ describe('vector-store — local Transformers.js provider', () => {
     }
   });
 
-  it('reports capability from package resolve without requiring a test loader', () => {
+  it('reports capability from the vendored runtime and exact optional runtime dependencies', () => {
     delete require.cache[require.resolve('../scripts/vector-store')];
     const vectorStore = require('../scripts/vector-store');
-    let resolved = false;
-    try {
-      require.resolve('@huggingface/transformers');
-      resolved = true;
-    } catch {
-      resolved = false;
-    }
-    assert.equal(vectorStore.hasLocalTransformerProvider(), resolved);
+    const status = vectorStore.getLocalTransformerProviderStatus();
+    assert.equal(status.available, true);
+    assert.equal(status.reason, 'installed');
+    assert.equal(status.distribution, 'vendored-node-runtime');
+    assert.equal(status.version, '4.2.0');
+    assert.equal(vectorStore.hasLocalTransformerProvider(), true);
+  });
+
+  it('reports why the optional provider is unavailable instead of implying semantic quality', () => {
+    delete require.cache[require.resolve('../scripts/vector-store')];
+    const vectorStore = require('../scripts/vector-store');
+    const unsupported = vectorStore.getLocalTransformerProviderStatus({
+      nodeVersion: '18.20.8',
+      allowTestLoader: false,
+      resolveModule: () => '/installed/provider.js',
+    });
+    assert.deepEqual(unsupported, {
+      provider: '@huggingface/transformers',
+      version: '4.2.0',
+      distribution: 'vendored-node-runtime',
+      currentNode: '18.20.8',
+      minimumNode: '20.9.0',
+      available: false,
+      reason: 'unsupported_node',
+    });
+
+    const missing = vectorStore.getLocalTransformerProviderStatus({
+      nodeVersion: '22.19.0',
+      allowTestLoader: false,
+      runtimeExists: true,
+      resolveModule: () => { throw new Error('not installed'); },
+    });
+    assert.equal(missing.available, false);
+    assert.equal(missing.reason, 'missing_optional_runtime_dependency');
+    assert.deepEqual(missing.missingDependencies, [
+      'onnxruntime-common',
+      'onnxruntime-node',
+      'sharp',
+    ]);
+  });
+
+  it('imports the vendored provider with audited optional runtime dependencies', async () => {
+    const packageJson = require('../package.json');
+    assert.deepEqual(packageJson.optionalDependencies, {
+      'onnxruntime-common': '1.21.0',
+      'onnxruntime-node': '1.21.0',
+      sharp: '0.35.3',
+    });
+    const runtimePath = path.join(
+      __dirname,
+      '..',
+      'vendor',
+      'transformers-js',
+      'transformers.node.min.mjs',
+    );
+    const transformers = await import(pathToFileURL(runtimePath).href);
+    assert.equal(typeof transformers.pipeline, 'function');
+  });
+
+  it('rejects malformed local model output before it reaches the vector index', async () => {
+    delete require.cache[require.resolve('../scripts/vector-store')];
+    const vectorStore = require('../scripts/vector-store');
+    vectorStore.setPipelineLoaderForTests(async () => async () => ({
+      data: Float32Array.from([1, 0, 0, 0]),
+    }));
+    await assert.rejects(
+      vectorStore.embedWithLocalTransformers('unsafe action', { kind: 'query' }),
+      /dimension mismatch: expected 384, got 4/,
+    );
   });
 });
 

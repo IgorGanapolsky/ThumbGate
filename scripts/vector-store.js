@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const { ensureDir } = require('./fs-utils');
 const {
   resolveEmbeddingProfile,
@@ -30,6 +31,21 @@ let _pipelineLoader = null;
 let _geminiEmbedderForTests = null;
 const TABLE_NAME = 'thumbgate_memories';
 const FEATURE_HASH_DIMENSIONS = 384;
+const LOCAL_TRANSFORMERS_PACKAGE = '@huggingface/transformers';
+const LOCAL_TRANSFORMERS_VERSION = '4.2.0';
+const LOCAL_TRANSFORMERS_MIN_NODE = '20.9.0';
+const LOCAL_TRANSFORMERS_RUNTIME_PATH = path.join(
+  __dirname,
+  '..',
+  'vendor',
+  'transformers-js',
+  'transformers.node.min.mjs',
+);
+const LOCAL_TRANSFORMERS_RUNTIME_DEPENDENCIES = [
+  'onnxruntime-common',
+  'onnxruntime-node',
+  'sharp',
+];
 
 async function getLanceDB() {
   if (!_lancedb) {
@@ -63,7 +79,15 @@ async function loadPipelineForProfile(profile) {
     throw new Error('Forced primary embedding profile failure');
   }
 
-  const pipeline = _pipelineLoader || (await import('@huggingface/transformers')).pipeline;
+  let pipeline = _pipelineLoader;
+  if (!pipeline) {
+    const transformers = await import(pathToFileURL(LOCAL_TRANSFORMERS_RUNTIME_PATH).href);
+    const cacheDir = process.env.THUMBGATE_TRANSFORMERS_CACHE_DIR
+      || path.join(getFeedbackDir(), 'model-cache', 'transformers-js');
+    ensureDir(cacheDir);
+    transformers.env.cacheDir = cacheDir;
+    pipeline = transformers.pipeline;
+  }
   const pipe = await pipeline('feature-extraction', profile.model, {
     quantized: profile.quantized,
   });
@@ -71,14 +95,80 @@ async function loadPipelineForProfile(profile) {
   return pipe;
 }
 
-function hasLocalTransformerProvider() {
-  if (_pipelineLoader) return true;
-  try {
-    require.resolve('@huggingface/transformers');
-    return true;
-  } catch {
-    return false;
+function compareNodeVersions(left, right) {
+  const parse = (value) => String(value || '')
+    .replace(/^v/, '')
+    .split('.')
+    .slice(0, 3)
+    .map((part) => Number.parseInt(part, 10) || 0);
+  const leftParts = parse(left);
+  const rightParts = parse(right);
+  for (let index = 0; index < 3; index += 1) {
+    if (leftParts[index] > rightParts[index]) return 1;
+    if (leftParts[index] < rightParts[index]) return -1;
   }
+  return 0;
+}
+
+function getLocalTransformerProviderStatus(options = {}) {
+  const currentNode = options.nodeVersion || process.versions.node;
+  const base = {
+    provider: LOCAL_TRANSFORMERS_PACKAGE,
+    version: LOCAL_TRANSFORMERS_VERSION,
+    distribution: 'vendored-node-runtime',
+    currentNode,
+    minimumNode: LOCAL_TRANSFORMERS_MIN_NODE,
+  };
+  if (options.allowTestLoader !== false && _pipelineLoader) {
+    return {
+      ...base,
+      available: true,
+      reason: 'injected_pipeline',
+    };
+  }
+  if (compareNodeVersions(currentNode, LOCAL_TRANSFORMERS_MIN_NODE) < 0) {
+    return {
+      ...base,
+      available: false,
+      reason: 'unsupported_node',
+    };
+  }
+  const runtimeExists = options.runtimeExists === undefined
+    ? fs.existsSync(LOCAL_TRANSFORMERS_RUNTIME_PATH)
+    : options.runtimeExists;
+  if (!runtimeExists) {
+    return {
+      ...base,
+      available: false,
+      reason: 'missing_vendored_runtime',
+    };
+  }
+  const resolveModule = options.resolveModule || require.resolve;
+  const missingDependencies = LOCAL_TRANSFORMERS_RUNTIME_DEPENDENCIES.filter((dependency) => {
+    try {
+      resolveModule(dependency);
+      return false;
+    } catch {
+      return true;
+    }
+  });
+  if (missingDependencies.length > 0) {
+    return {
+      ...base,
+      available: false,
+      reason: 'missing_optional_runtime_dependency',
+      missingDependencies,
+    };
+  }
+  return {
+    ...base,
+    available: true,
+    reason: 'installed',
+  };
+}
+
+function hasLocalTransformerProvider() {
+  return getLocalTransformerProviderStatus().available;
 }
 
 function getOllamaEmbeddingConfig() {
@@ -202,6 +292,29 @@ async function getEmbeddingPipeline() {
     });
     return { pipe, profile: _lastEmbeddingProfile };
   }
+}
+
+async function embedWithLocalTransformers(text, options = {}) {
+  const { pipe, profile } = await getEmbeddingPipeline();
+  const output = await pipe(truncateForEmbedding(text, profile.activeProfile.maxChars), {
+    pooling: 'mean',
+    normalize: true,
+  });
+  const vector = Array.from(output?.data || []);
+  const expectedDimensions = profile.activeProfile.outputDimensionality;
+  if (vector.length !== expectedDimensions) {
+    throw new Error(
+      `Transformers.js embedding dimension mismatch: expected ${expectedDimensions}, got ${vector.length}`,
+    );
+  }
+  if (!vector.every(Number.isFinite)) {
+    throw new Error('Transformers.js embedding contained non-finite values');
+  }
+  const norm = Math.sqrt(vector.reduce((sum, value) => sum + (value * value), 0));
+  if (norm < 0.9 || norm > 1.1) {
+    throw new Error(`Transformers.js embedding was not normalized: norm=${norm}`);
+  }
+  return vector;
 }
 
 // Stub embed support for unit tests — avoids HuggingFace ONNX model download.
@@ -425,12 +538,7 @@ async function embed(text, options = {}) {
   }
   if (hasLocalTransformerProvider()) {
     try {
-      const { pipe, profile } = await getEmbeddingPipeline();
-      const output = await pipe(truncateForEmbedding(text, profile.activeProfile.maxChars), {
-        pooling: 'mean',
-        normalize: true,
-      });
-      return Array.from(output.data); // Float32Array -> plain number[] for LanceDB Arrow serialization
+      return await embedWithLocalTransformers(text, options);
     } catch (transformerError) {
       console.warn(`Transformers.js embedding fallback: ${transformerError.message}`);
     }
@@ -532,6 +640,7 @@ function getEmbeddingConfig() {
   return {
     ...resolveEmbeddingProfile(),
     managed: resolveGeminiEmbeddingConfig(),
+    localTransformers: getLocalTransformerProviderStatus(),
   };
 }
 
@@ -567,8 +676,10 @@ module.exports = {
   setGeminiEmbedderForTests,
   truncateForEmbedding,
   embedWithFeatureHash,
+  embedWithLocalTransformers,
   embedWithOllama,
   getOllamaEmbeddingConfig,
+  getLocalTransformerProviderStatus,
   hasLocalTransformerProvider,
   hasSemanticEmbeddingProvider,
 };

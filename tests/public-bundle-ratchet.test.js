@@ -160,7 +160,10 @@ const path = require('node:path');
 // A+ evidence scorecard, including the npm-reachable slow feedback loop. Main
 // packed 406 files; this branch packs exactly 416.
 // Each file is directly callable from the package and contains no buyer state.
-const BASELINE_FILE_COUNT = 416;
+// 416 -> 420 (2026-08-02): checksummed Transformers.js Node artifact, its
+// Apache-2.0 license/provenance, and the real-model proof command. No model
+// weights, browser runtime, private Core code, credentials, or buyer state.
+const BASELINE_FILE_COUNT = 420;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

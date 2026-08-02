@@ -1,0 +1,41 @@
+name: Transformers.js Runtime Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: transformers-runtime-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-model-inference:
+    name: real MiniLM inference
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Prove installed provider with real MiniLM inference
+        run: npm run prove:transformers -- --output proof/transformers-runtime-smoke.json
+
+      - name: Upload machine-readable proof
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: transformers-runtime-smoke-${{ github.sha }}
+          path: proof/transformers-runtime-smoke.json
+          if-no-files-found: error
+          retention-days: 14

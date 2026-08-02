@@ -193,7 +193,9 @@ Concrete thumbs-up/down feedback can be captured through the MCP protocol, CLI, 
 ### Layer 2: Check Engine
 The check engine can promote qualifying recurring lessons into rules. **The runtime gate decision is deterministic** — literal pattern match → AST match → scoped rule lookup. No LLM call runs on the enforcement path.
 
-Where retrieval is needed (an agent is about to run a destructive command not on the literal block list, but semantically similar to a prior rule), ThumbGate uses local CPU-only `bge-small` embeddings via LanceDB's built-in pipeline. That path makes no external inference API call. So **"no LLM in enforcement"** holds: the gate decision uses no LLM; the rule corpus is searchable via local embeddings.
+Where retrieval is needed (an agent is about to run a destructive command not on the literal block list, but semantically similar to a prior rule), ThumbGate can use the optional local Transformers.js provider with `Xenova/all-MiniLM-L6-v2` (384 dimensions) and store those vectors in LanceDB. That path makes no external inference API call after the model is available locally. So **"no LLM in enforcement"** holds: the encoder retrieves related lessons, while the deterministic gate still makes the enforcement decision.
+
+ThumbGate ships the exact official Transformers.js 4.2.0 Node artifact under its Apache-2.0 license, plus a narrow, exactly pinned optional runtime (`onnxruntime-node@1.21.0`, `onnxruntime-common@1.21.0`, and `sharp@0.35.3`). This avoids the upstream package's currently vulnerable consumer dependency ranges while keeping the core firewall resilient when optional native packages cannot install. Node.js 20.9+ is required for this local provider; `npm install --omit=optional`, an unsupported platform/runtime, or a failed optional install leaves it unavailable. ThumbGate reports that state explicitly and treats its built-in feature-hash fallback as **degraded**, not semantic search. Verify real inference with `npm run prove:transformers` in this repository (or `npm explore thumbgate -- npm run prove:transformers` from a consuming project). On older runtimes, configure the explicit Ollama path or another semantic provider instead of claiming MiniLM coverage.
 
 **Thompson Sampling tunes per-rule confidence weights** for soft-gating rules so high-noise rules quiet down and high-signal rules sharpen. It does not decide whether a hard pattern matches. A force-push pattern match is deterministic, while the public runtime warns by default and denies the matching action under strict enforcement.
 
@@ -284,7 +286,7 @@ ThumbGate's latency advantage is structural, not a tuned cloud cluster: there is
 flowchart LR
     A["Agent about to run<br/>a tool call"] --> B{"Literal / AST match<br/>on an active rule?"}
     B -- "exact match" --> D["Deterministic gate decision<br/>(no model, on-device)"]
-    B -- "no exact match, but<br/>semantically near a<br/>blocked pattern" --> C["Local CPU embeddings<br/>bge-small via LanceDB<br/>(no external API)"]
+    B -- "no exact match, but<br/>semantically near a<br/>blocked pattern" --> C["Local CPU embeddings<br/>MiniLM via Transformers.js<br/>vectors in LanceDB"]
     C --> D
     D -- "secret exfil / self-protect" --> E["⛔ Hard-block before execution"]
     D -- "other known-bad" --> G["⚠️ Warn + log<br/>(hard-block under strict)"]
@@ -292,7 +294,7 @@ flowchart LR
 ```
 
 - **Deterministic first.** Most decisions are a local literal or AST pattern match against active rules and do not require embeddings.
-- **Local semantic fallback.** When an action isn't on the literal block list but is semantically near one you've blocked before, ThumbGate searches the rule corpus with CPU-only `bge-small` embeddings via LanceDB — still local, still no external API call.
+- **Local semantic fallback.** When an action isn't on the literal block list but is semantically near one you've blocked before, ThumbGate can encode the query with CPU-only `Xenova/all-MiniLM-L6-v2` through Transformers.js and search its LanceDB vectors. The optional provider requires Node.js 20.9+; without a configured semantic provider, the fallback is explicitly degraded feature hashing.
 - **No LLM on the enforcement path.** The gate never calls a model to decide allow, warn, or deny. Thompson Sampling only tunes soft-rule confidence weights; hard-pattern matching remains deterministic, and the enforcement posture determines whether a match warns or denies (see Layer 2).
 
 The enforcement decision is local: there is no cloud retrieval or model-inference hop on that path. Measure end-to-end latency in your own agent and machine configuration.

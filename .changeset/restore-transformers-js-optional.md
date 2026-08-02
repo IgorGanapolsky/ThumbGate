@@ -2,4 +2,4 @@
 "thumbgate": patch
 ---
 
-Restore optional local Transformers.js embeddings (`@huggingface/transformers` + MiniLM) with a secure `sharp` override so `hasLocalTransformerProvider()` can light up without reintroducing the libvips advisory path.
+Restore local Transformers.js + MiniLM embeddings with the checksummed official 4.2.0 Node artifact, an audit-clean exactly pinned optional runtime, structured availability reasons, output validation, and a real-model smoke proof. The provider now reports its Node.js 20.9+ runtime floor instead of silently implying semantic quality when optional native dependencies are unavailable.

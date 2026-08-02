@@ -144,6 +144,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/provider-live-evidence.js',
     'scripts/provider-payment-reconciler.js',
     'scripts/provider-revenue-evidence.js',
+    'scripts/prove-transformers-runtime.js',
     'scripts/revenue-action-eligibility.js',
     'scripts/revenue-evidence-remediation.js',
     'scripts/sales-pipeline.js',
@@ -163,6 +164,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'config/pro/thompson-presets.json',
     'config/pro/reminders-pro.json',
     '.claude-plugin/plugin.json',
+    'vendor/transformers-js/LICENSE',
+    'vendor/transformers-js/PROVENANCE.md',
+    'vendor/transformers-js/transformers.node.min.mjs',
     'README.md',
     'LICENSE',
   ];
@@ -414,8 +418,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 401 -> 405 (2026-07-31): headroom for security/runtime scripts already on the enforcement path; CI pack observed 403 during secret-exfil coverage PR without intentional new package entries. Cap raised with deliberate note so the ratchet stays honest.
     // 405 -> 416 (2026-08-01): exact measured artifact after adding the ten
     // public A+ evidence/runtime files documented in CHANGELOG.md. No headroom.
-    manifest.fileCount <= 416,
-    `npm package should stay <= 416 files, got ${manifest.fileCount}`
+    // 416 -> 420 (2026-08-02): real Transformers.js proof script plus the
+    // checksummed upstream Node artifact, Apache-2.0 license, and provenance.
+    // These replace the vulnerable upstream consumer dependency graph.
+    manifest.fileCount <= 420,
+    `npm package should stay <= 420 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
