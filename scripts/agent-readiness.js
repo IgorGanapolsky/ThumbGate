@@ -165,13 +165,46 @@ function summarizePermissionTier(profileName = getActiveMcpProfile()) {
   };
 }
 
-function summarizeClaimVerification(projectRoot = PROJECT_ROOT, deps = {}) {
-  let evaluatorReady = false;
-  let verifierCount = 0;
-  let configSource = 'none';
-  let stopHookRegistered = false;
-  let recommendation = 'Install ThumbGate and configure claim verifiers under .thumbgate/claim-verifiers.json.';
 
+function detectStopHookRegistered(projectRoot, existsSync, readFileSync) {
+  try {
+    const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
+    if (!existsSync(settingsPath)) return false;
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+    const stopHooks = settings?.hooks?.Stop || [];
+    const flat = Array.isArray(stopHooks)
+      ? stopHooks.flatMap((entry) => entry?.hooks || [entry])
+      : [];
+    return flat.some((hook) => String(hook?.command || '').includes('hook-stop-anti-claim'));
+  } catch {
+    return false;
+  }
+}
+
+function recommendationForClaimState({
+  evaluatorReady,
+  configLoadFailed,
+  verifierCount,
+  stopHookRegistered,
+  configSource,
+  loadErrorMessage,
+}) {
+  if (!evaluatorReady) {
+    return 'Universal claim evaluator module is missing from this install.';
+  }
+  if (configLoadFailed) {
+    return loadErrorMessage;
+  }
+  if (verifierCount === 0) {
+    return 'No claim verifiers configured. Copy config/gates/claim-verifiers.example.json to .thumbgate/claim-verifiers.json and point subjects at your sources of truth.';
+  }
+  if (!stopHookRegistered) {
+    return 'Claim verifiers are present, but the Claude Stop anti-claim hook is not registered in .claude/settings.json.';
+  }
+  return `Factual claim recheck is ready (${verifierCount} verifier(s) from ${configSource}).`;
+}
+
+function summarizeClaimVerification(projectRoot = PROJECT_ROOT, deps = {}) {
   const resolveEvaluator = deps.resolveEvaluator
     || (() => require.resolve('./universal-claim-evaluator'));
   const loadVerifierConfig = deps.loadVerifierConfig
@@ -179,6 +212,7 @@ function summarizeClaimVerification(projectRoot = PROJECT_ROOT, deps = {}) {
   const readFileSync = deps.readFileSync || fs.readFileSync;
   const existsSync = deps.existsSync || fs.existsSync;
 
+  let evaluatorReady = false;
   try {
     resolveEvaluator();
     evaluatorReady = true;
@@ -186,48 +220,31 @@ function summarizeClaimVerification(projectRoot = PROJECT_ROOT, deps = {}) {
     evaluatorReady = false;
   }
 
+  let verifierCount = 0;
+  let configSource = 'none';
   let configLoadFailed = false;
+  let loadErrorMessage = 'Install ThumbGate and configure claim verifiers under .thumbgate/claim-verifiers.json.';
   try {
     const loaded = loadVerifierConfig()({ cwd: projectRoot });
     verifierCount = Array.isArray(loaded.verifiers) ? loaded.verifiers.length : 0;
     configSource = loaded.source || 'none';
   } catch (error) {
     configLoadFailed = true;
-    recommendation = `Claim verifier config failed to load: ${error && error.message ? error.message : 'unknown error'}`;
+    loadErrorMessage = `Claim verifier config failed to load: ${error?.message || 'unknown error'}`;
   }
 
-  try {
-    const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
-    if (existsSync(settingsPath)) {
-      const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
-      const stopHooks = (((settings.hooks || {}).Stop) || []);
-      const flat = Array.isArray(stopHooks)
-        ? stopHooks.flatMap((entry) => (entry && entry.hooks) || [entry])
-        : [];
-      stopHookRegistered = flat.some((hook) => {
-        const command = String((hook && hook.command) || '');
-        return command.includes('hook-stop-anti-claim');
-      });
-    }
-  } catch {
-    stopHookRegistered = false;
-  }
-
-  const ready = evaluatorReady && verifierCount > 0 && stopHookRegistered && !configLoadFailed;
-  if (!evaluatorReady) {
-    recommendation = 'Universal claim evaluator module is missing from this install.';
-  } else if (configLoadFailed) {
-    // keep the load-error recommendation set above
-  } else if (verifierCount === 0) {
-    recommendation = 'No claim verifiers configured. Copy config/gates/claim-verifiers.example.json to .thumbgate/claim-verifiers.json and point subjects at your sources of truth.';
-  } else if (!stopHookRegistered) {
-    recommendation = 'Claim verifiers are present, but the Claude Stop anti-claim hook is not registered in .claude/settings.json.';
-  } else {
-    recommendation = `Factual claim recheck is ready (${verifierCount} verifier(s) from ${configSource}).`;
-  }
+  const stopHookRegistered = detectStopHookRegistered(projectRoot, existsSync, readFileSync);
+  const recommendation = recommendationForClaimState({
+    evaluatorReady,
+    configLoadFailed,
+    verifierCount,
+    stopHookRegistered,
+    configSource,
+    loadErrorMessage,
+  });
 
   return {
-    ready,
+    ready: evaluatorReady && verifierCount > 0 && stopHookRegistered && !configLoadFailed,
     evaluatorReady,
     verifierCount,
     configSource,
@@ -290,11 +307,13 @@ function reportToText(report) {
   lines.push(`  Write-capable tools: ${report.permissions.writeCapableTools.length}`);
   lines.push(`  Recommendation: ${report.permissions.recommendation}`);
   if (report.claimVerification) {
-    lines.push(`Claim verification: ${report.claimVerification.ready ? 'ready' : 'needs_attention'}`);
-    lines.push(`  Evaluator: ${report.claimVerification.evaluatorReady ? 'present' : 'missing'}`);
-    lines.push(`  Verifiers: ${report.claimVerification.verifierCount} (${report.claimVerification.configSource})`);
-    lines.push(`  Stop hook: ${report.claimVerification.stopHookRegistered ? 'registered' : 'missing'}`);
-    lines.push(`  Recommendation: ${report.claimVerification.recommendation}`);
+    lines.push(
+      `Claim verification: ${report.claimVerification.ready ? 'ready' : 'needs_attention'}`,
+      `  Evaluator: ${report.claimVerification.evaluatorReady ? 'present' : 'missing'}`,
+      `  Verifiers: ${report.claimVerification.verifierCount} (${report.claimVerification.configSource})`,
+      `  Stop hook: ${report.claimVerification.stopHookRegistered ? 'registered' : 'missing'}`,
+      `  Recommendation: ${report.claimVerification.recommendation}`,
+    );
   }
 
   if (report.warnings.length > 0) {
@@ -315,6 +334,8 @@ module.exports = {
   collectBootstrapFiles,
   summarizePermissionTier,
   summarizeClaimVerification,
+  recommendationForClaimState,
+  detectStopHookRegistered,
   generateAgentReadinessReport,
   reportToText,
 };

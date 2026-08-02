@@ -13,8 +13,8 @@
  * so agents cannot inject SQL or path traversal through the claim string.
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 
 const DEFAULT_VERIFIERS_FILENAME = 'claim-verifiers.json';
@@ -23,7 +23,7 @@ const PACKAGE_ROOT = path.join(__dirname, '..');
 
 function parseNumberToken(raw) {
   if (raw == null) return null;
-  const cleaned = String(raw).replace(/,/g, '').trim();
+  const cleaned = String(raw).replaceAll(',', '').trim();
   if (!/^-?\d+(?:\.\d+)?$/.test(cleaned)) return null;
   const value = Number(cleaned);
   return Number.isFinite(value) ? value : null;
@@ -93,6 +93,112 @@ function resolveSafePath(repoRoot, targetPath) {
   return resolved;
 }
 
+
+function createClaimPush(claims) {
+  const seen = new Set();
+  return (claim) => {
+    const key = `${claim.kind}|${claim.subject}|${claim.path || ''}|${String(claim.expected)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    claims.push(claim);
+  };
+}
+
+function eachMatch(source, re, onMatch) {
+  re.lastIndex = 0;
+  let match = re.exec(source);
+  while (match) {
+    onMatch(match);
+    match = re.exec(source);
+  }
+}
+
+function parseCountClaims(source, push) {
+  // subject + count is N
+  eachMatch(
+    source,
+    /\b((?:the |total )?[a-z][\w .-]{0,40}? count)\s*(?:is|are|=|:)\s*([\d,]+(?:\.\d+)?)\b/gi,
+    (match) => {
+      const expected = parseNumberToken(match[2]);
+      if (expected == null) return;
+      push({ kind: 'count', subject: normalizeSubject(match[1]), expected, raw: match[0] });
+    },
+  );
+
+  // there are N rows/orders/...
+  eachMatch(
+    source,
+    /\bthere (?:is|are) ([\d,]+) (rows?|records?|entries|items?|orders?|users?|lessons?|lines?)\b/gi,
+    (match) => {
+      const expected = parseNumberToken(match[1]);
+      if (expected == null) return;
+      push({ kind: 'count', subject: normalizeSubject(match[2]), expected, raw: match[0] });
+    },
+  );
+
+  // COUNT(*) = N
+  eachMatch(
+    source,
+    /\bCOUNT\s*\(\s*\*\s*\)\s*(?:=|is|:)\s*([\d,]+)\b/gi,
+    (match) => {
+      const expected = parseNumberToken(match[1]);
+      if (expected == null) return;
+      push({ kind: 'count', subject: 'count', expected, raw: match[0] });
+    },
+  );
+}
+
+function parseFileMetricClaims(source, push) {
+  const pathToken = '([^\\s,]+\\.[A-Za-z0-9]+)';
+  eachMatch(
+    source,
+    new RegExp(`\\b(?:file\\s+)?${pathToken}\\s+(?:has|contains)\\s+([\\d,]+)\\s+lines?\\b`, 'gi'),
+    (match) => {
+      const expected = parseNumberToken(match[2]);
+      if (expected == null) return;
+      push({ kind: 'file_lines', subject: 'lines', path: match[1], expected, raw: match[0] });
+    },
+  );
+  eachMatch(
+    source,
+    new RegExp(`\\b(?:file\\s+)?${pathToken}\\s+(?:is|has)\\s+([\\d,]+)\\s+bytes?\\b`, 'gi'),
+    (match) => {
+      const expected = parseNumberToken(match[2]);
+      if (expected == null) return;
+      push({ kind: 'file_bytes', subject: 'bytes', path: match[1], expected, raw: match[0] });
+    },
+  );
+  eachMatch(
+    source,
+    new RegExp(`\\b(?:file\\s+)?${pathToken}\\s+(?:exists|is present|is on disk)\\b`, 'gi'),
+    (match) => {
+      push({ kind: 'file_exists', subject: 'exists', path: match[1], expected: true, raw: match[0] });
+    },
+  );
+  eachMatch(
+    source,
+    new RegExp(`\\b(?:file\\s+)?${pathToken}\\s+(?:does not exist|is missing|is absent)\\b`, 'gi'),
+    (match) => {
+      push({ kind: 'file_exists', subject: 'exists', path: match[1], expected: false, raw: match[0] });
+    },
+  );
+}
+
+function parseValueClaims(source, push) {
+  eachMatch(
+    source,
+    /\b((?:package )?version)\s*(?:is|=|:)\s*(v?\d+\.\d+\.\d+[\w.+-]*)\b/gi,
+    (match) => {
+      push({
+        kind: 'value',
+        subject: normalizeSubject(match[1]),
+        expected: String(match[2]).replace(/^v/i, ''),
+        raw: match[0],
+      });
+    },
+  );
+}
+
 /**
  * Extract structured factual claims from free text.
  * @returns {Array<{kind:string, subject:string, expected:*, path?:string, raw:string}>}
@@ -100,140 +206,15 @@ function resolveSafePath(repoRoot, targetPath) {
 function parseFactualClaims(text) {
   const source = String(text || '');
   if (!source.trim()) return [];
-
   const claims = [];
-  const seen = new Set();
-
-  const push = (claim) => {
-    const key = `${claim.kind}|${claim.subject}|${claim.path || ''}|${String(claim.expected)}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    claims.push(claim);
-  };
-
-  // "the row count is 1,284" / "row count = 1284" / "orders count: 42"
-  const countPatterns = [
-    /\b((?:the\s+)?(?:total\s+)?(?:[a-z][\w\s.-]{0,40}?)?\s*(?:row|rows|record|records|entry|entries|item|items|order|orders|user|users|lesson|lessons|line|lines)?\s+counts?\b)\s*(?:is|are|=|:|equals?)\s*([-+]?\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\b/gi,
-    /\bthere\s+(?:is|are)\s+([-+]?\d{1,3}(?:,\d{3})*|\d+)\s+((?:rows?|records?|entries|items?|orders?|users?|lessons?|lines?))\b/gi,
-    /\bCOUNT\s*\(\s*\*\s*\)\s*(?:=|is|:)\s*([-+]?\d{1,3}(?:,\d{3})*|\d+)\b/gi,
-  ];
-
-  for (const re of countPatterns) {
-    re.lastIndex = 0;
-    let match = re.exec(source);
-    while (match) {
-      if (re === countPatterns[1]) {
-        // there are N rows
-        const expected = parseNumberToken(match[1]);
-        if (expected != null) {
-          push({
-            kind: 'count',
-            subject: normalizeSubject(match[2]),
-            expected,
-            raw: match[0],
-          });
-        }
-      } else if (re === countPatterns[2]) {
-        const expected = parseNumberToken(match[1]);
-        if (expected != null) {
-          push({
-            kind: 'count',
-            subject: 'count',
-            expected,
-            raw: match[0],
-          });
-        }
-      } else {
-        const expected = parseNumberToken(match[2]);
-        if (expected != null) {
-          push({
-            kind: 'count',
-            subject: normalizeSubject(match[1]),
-            expected,
-            raw: match[0],
-          });
-        }
-      }
-      match = re.exec(source);
-    }
-  }
-
-  // "file README.md has 120 lines" / "README.md is 1024 bytes"
-  const fileLineRe = /\b(?:file\s+)?([^\s,]+\.[A-Za-z0-9]+)\s+(?:has|contains)\s+([-+]?\d{1,3}(?:,\d{3})*|\d+)\s+lines?\b/gi;
-  let fileMatch = fileLineRe.exec(source);
-  while (fileMatch) {
-    const expected = parseNumberToken(fileMatch[2]);
-    if (expected != null) {
-      push({
-        kind: 'file_lines',
-        subject: 'lines',
-        path: fileMatch[1],
-        expected,
-        raw: fileMatch[0],
-      });
-    }
-    fileMatch = fileLineRe.exec(source);
-  }
-
-  const fileBytesRe = /\b(?:file\s+)?([^\s,]+\.[A-Za-z0-9]+)\s+(?:is|has)\s+([-+]?\d{1,3}(?:,\d{3})*|\d+)\s+bytes?\b/gi;
-  fileMatch = fileBytesRe.exec(source);
-  while (fileMatch) {
-    const expected = parseNumberToken(fileMatch[2]);
-    if (expected != null) {
-      push({
-        kind: 'file_bytes',
-        subject: 'bytes',
-        path: fileMatch[1],
-        expected,
-        raw: fileMatch[0],
-      });
-    }
-    fileMatch = fileBytesRe.exec(source);
-  }
-
-  const fileExistsRe = /\b(?:file\s+)?([^\s,]+\.[A-Za-z0-9]+)\s+(?:exists|is present|is on disk)\b/gi;
-  fileMatch = fileExistsRe.exec(source);
-  while (fileMatch) {
-    push({
-      kind: 'file_exists',
-      subject: 'exists',
-      path: fileMatch[1],
-      expected: true,
-      raw: fileMatch[0],
-    });
-    fileMatch = fileExistsRe.exec(source);
-  }
-
-  const fileMissingRe = /\b(?:file\s+)?([^\s,]+\.[A-Za-z0-9]+)\s+(?:does not exist|is missing|is absent)\b/gi;
-  fileMatch = fileMissingRe.exec(source);
-  while (fileMatch) {
-    push({
-      kind: 'file_exists',
-      subject: 'exists',
-      path: fileMatch[1],
-      expected: false,
-      raw: fileMatch[0],
-    });
-    fileMatch = fileMissingRe.exec(source);
-  }
-
-  // "version is 1.31.0" / "package version equals 1.2.3"
-  const versionRe = /\b((?:package\s+)?version)\s*(?:is|=|:|equals?)\s*([vV]?\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?)\b/gi;
-  let versionMatch = versionRe.exec(source);
-  while (versionMatch) {
-    push({
-      kind: 'value',
-      subject: normalizeSubject(versionMatch[1]),
-      expected: String(versionMatch[2]).replace(/^v/i, ''),
-      raw: versionMatch[0],
-    });
-    versionMatch = versionRe.exec(source);
-  }
-
+  const push = createClaimPush(claims);
+  parseCountClaims(source, push);
+  parseFileMetricClaims(source, push);
+  parseValueClaims(source, push);
   return claims;
 }
 
-function loadVerifierConfig(options = {}) {
+function loadConfigFromOptions(options) {
   if (Array.isArray(options.verifiers)) {
     return { verifiers: options.verifiers, source: 'options' };
   }
@@ -243,11 +224,13 @@ function loadVerifierConfig(options = {}) {
   if (options.config && Array.isArray(options.config.verifiers)) {
     return { verifiers: options.config.verifiers, source: 'options.config' };
   }
-  if (options.claimVerifiers && Array.isArray(options.claimVerifiers.verifiers)) {
+  if (options.claimVerifiers?.verifiers && Array.isArray(options.claimVerifiers.verifiers)) {
     return { verifiers: options.claimVerifiers.verifiers, source: 'options.claimVerifiers' };
   }
+  return null;
+}
 
-  const repoRoot = resolveRepoRoot(options.cwd);
+function collectConfigCandidates(options, repoRoot) {
   const candidates = [];
   const explicitConfigPath = options.configPath || process.env.THUMBGATE_CLAIM_VERIFIERS_PATH;
   if (explicitConfigPath) {
@@ -261,24 +244,35 @@ function loadVerifierConfig(options = {}) {
   }
 
   const feedbackDir = options.feedbackDir || resolveFeedbackDir({ cwd: repoRoot });
-  candidates.push(path.join(feedbackDir, DEFAULT_VERIFIERS_FILENAME));
+  candidates.push(
+    path.join(feedbackDir, DEFAULT_VERIFIERS_FILENAME),
+    path.join(repoRoot, '.thumbgate', DEFAULT_VERIFIERS_FILENAME),
+    path.join(repoRoot, 'config', 'gates', DEFAULT_VERIFIERS_FILENAME),
+    path.join(PACKAGE_ROOT, 'config', 'gates', DEFAULT_VERIFIERS_FILENAME),
+  );
+  return [...new Set(candidates)];
+}
 
-  // Project overrides first (consumer cwd), then the shipped package default.
-  // Verifier path fields still resolve against repoRoot/cwd so package-owned
-  // configs evaluate files inside the target project, not inside node_modules.
-  candidates.push(path.join(repoRoot, '.thumbgate', DEFAULT_VERIFIERS_FILENAME));
-  candidates.push(path.join(repoRoot, 'config', 'gates', DEFAULT_VERIFIERS_FILENAME));
-  candidates.push(path.join(PACKAGE_ROOT, 'config', 'gates', DEFAULT_VERIFIERS_FILENAME));
+function readVerifierFile(candidate) {
+  const raw = JSON.parse(fs.readFileSync(candidate, 'utf8'));
+  const verifiers = Array.isArray(raw?.verifiers)
+    ? raw.verifiers
+    : (Array.isArray(raw) ? raw : null);
+  if (!verifiers) {
+    throw new Error('expected an array or an object with a verifiers array');
+  }
+  return { verifiers, source: candidate, path: candidate };
+}
 
-  for (const candidate of [...new Set(candidates)]) {
+function loadVerifierConfig(options = {}) {
+  const fromOptions = loadConfigFromOptions(options);
+  if (fromOptions) return fromOptions;
+
+  const repoRoot = resolveRepoRoot(options.cwd);
+  for (const candidate of collectConfigCandidates(options, repoRoot)) {
     if (!candidate || !fs.existsSync(candidate)) continue;
     try {
-      const raw = JSON.parse(fs.readFileSync(candidate, 'utf8'));
-      const verifiers = Array.isArray(raw?.verifiers) ? raw.verifiers : Array.isArray(raw) ? raw : null;
-      if (!verifiers) {
-        throw new Error('expected an array or an object with a verifiers array');
-      }
-      return { verifiers, source: candidate, path: candidate };
+      return readVerifierFile(candidate);
     } catch (error) {
       throw new Error(`invalid claim verifier config ${candidate}: ${error.message}`);
     }
