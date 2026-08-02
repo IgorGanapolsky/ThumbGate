@@ -111,7 +111,7 @@ function hasSemanticEmbeddingProvider() {
   if (hasLocalTransformerProvider()) return true;
   try {
     const config = resolveGeminiEmbeddingConfig();
-    return config.provider === 'coreai' || Boolean(config.enabled && config.apiKey);
+    return config.provider === 'coreai' || Boolean(config.apiKey);
   } catch {
     return false;
   }
@@ -212,7 +212,7 @@ async function embedWithGemini(text, options = {}) {
   }
 
   if (typeof fetch !== 'function') {
-    throw new Error('Gemini embeddings require global fetch. Use Node 18.18+ or the local embedding provider.');
+    throw new TypeError('Gemini embeddings require global fetch. Use Node 18.18+ or the local embedding provider.');
   }
 
   const modelResource = resolveGeminiModelResource(config.model);
@@ -292,7 +292,7 @@ async function embedWithOllama(text, options = {}) {
     throw new Error('Ollama embeddings require THUMBGATE_OLLAMA_EMBED_MODEL');
   }
   if (typeof fetch !== 'function') {
-    throw new Error('Ollama embeddings require global fetch. Use Node 18.18+.');
+    throw new TypeError('Ollama embeddings require global fetch. Use Node 18.18+.');
   }
 
   // Apply Nomic-style asymmetric prefixes. nomic-embed-text was trained
@@ -332,6 +332,39 @@ async function embedWithOllama(text, options = {}) {
     throw new Error('Ollama embedding response did not include vector values');
   }
   return vector.map(Number);
+}
+
+async function tryGeminiManagedEmbedding(text, options, geminiConfig) {
+  if (!geminiConfig.apiKey && !_geminiEmbedderForTests) {
+    return null;
+  }
+  try {
+    const vector = await embedWithGemini(text, options);
+    _lastEmbeddingProfile = {
+      generatedAt: new Date().toISOString(),
+      source: 'managed',
+      activeProfile: {
+        id: 'gemini',
+        model: geminiConfig.model,
+        outputDimensionality: geminiConfig.outputDimensionality,
+        task: options.task || geminiConfig.defaultTask,
+        rationale: geminiConfig.enabled
+          ? 'Managed Gemini Embedding 2 path with task-specific query/document prefixes.'
+          : 'Managed Gemini Embedding 2 fallback after local providers exhausted.',
+      },
+      fallbackUsed: !geminiConfig.enabled,
+      ...(!geminiConfig.enabled ? { fallbackReason: 'local_providers_exhausted' } : {}),
+    };
+    return vector;
+  } catch (geminiError) {
+    if (!geminiConfig.fallbackToLocal) {
+      throw geminiError;
+    }
+    // Do not log raw provider/user-controlled error text (Sonar jssecurity:S5145).
+    const code = geminiError && (geminiError.code || geminiError.name || 'Error');
+    console.warn(`Gemini embedding fallback: ${code}`);
+    return null;
+  }
 }
 
 async function embed(text, options = {}) {
@@ -385,29 +418,8 @@ async function embed(text, options = {}) {
     }
   }
   if (geminiConfig.enabled) {
-    try {
-      const vector = await embedWithGemini(text, options);
-      _lastEmbeddingProfile = {
-        generatedAt: new Date().toISOString(),
-        source: 'managed',
-        activeProfile: {
-          id: 'gemini',
-          model: geminiConfig.model,
-          outputDimensionality: geminiConfig.outputDimensionality,
-          task: options.task || geminiConfig.defaultTask,
-          rationale: 'Managed Gemini Embedding 2 path with task-specific query/document prefixes.',
-        },
-        fallbackUsed: false,
-      };
-      return vector;
-    } catch (geminiError) {
-      if (!geminiConfig.fallbackToLocal) {
-        throw geminiError;
-      }
-      // Do not log raw provider/user-controlled error text (Sonar jssecurity:S5145).
-      const code = geminiError && (geminiError.code || geminiError.name || 'Error');
-      console.warn(`Gemini embedding fallback: ${code}`);
-    }
+    const vector = await tryGeminiManagedEmbedding(text, options, geminiConfig);
+    if (vector) return vector;
   }
   if (hasLocalTransformerProvider()) {
     try {
@@ -420,6 +432,14 @@ async function embed(text, options = {}) {
     } catch (transformerError) {
       console.warn(`Transformers.js embedding fallback: ${transformerError.message}`);
     }
+  }
+
+  // Gemini managed fallback — only when API key present but Gemini is not the
+  // explicitly selected provider. Honors fallbackToLocal in the catch block
+  // so that THUMBGATE_GEMINI_EMBED_FALLBACK_LOCAL=false makes Gemini mandatory.
+  if (geminiConfig.apiKey && !geminiConfig.enabled) {
+    const vector = await tryGeminiManagedEmbedding(text, options, geminiConfig);
+    if (vector) return vector;
   }
 
   const vector = embedWithFeatureHash(text);
@@ -548,6 +568,7 @@ module.exports = {
   TABLE_NAME,
   getEmbeddingConfig,
   getLastEmbeddingProfile,
+  getActiveEmbeddingProfile: getLastEmbeddingProfile,
   setPipelineLoaderForTests,
   setLanceLoaderForTests,
   setGeminiEmbedderForTests,

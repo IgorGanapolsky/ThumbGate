@@ -216,6 +216,32 @@ describe('vector-store — Gemini Embedding 2 provider', () => {
   });
 });
 
+describe('vector-store — Gemini fallback recognition', () => {
+  it('recognizes Gemini as available when API key is present (without THUMBGATE_EMBED_PROVIDER=gemini)', () => {
+    try {
+      delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
+      delete process.env.THUMBGATE_OLLAMA_EMBED_MODEL;
+      delete process.env.THUMBGATE_OLLAMA_ENDPOINT;
+      delete process.env.THUMBGATE_EMBED_PROVIDER;
+      process.env.GEMINI_API_KEY = 'test-fallback-key';
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      const vectorStore = require('../scripts/vector-store');
+
+      assert.equal(vectorStore.hasSemanticEmbeddingProvider(), true);
+      const config = vectorStore.getEmbeddingConfig();
+      assert.equal(config.managed.apiKey, 'test-fallback-key');
+      assert.equal(config.managed.fallbackToLocal, true);
+    } finally {
+      delete process.env.GEMINI_API_KEY;
+      delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
+      delete process.env.THUMBGATE_OLLAMA_EMBED_MODEL;
+      delete process.env.THUMBGATE_OLLAMA_ENDPOINT;
+      delete process.env.THUMBGATE_EMBED_PROVIDER;
+      delete require.cache[require.resolve('../scripts/vector-store')];
+    }
+  });
+});
+
 describe('vector-store — searchSimilar() on empty store', () => {
   it('returns empty array when table does not exist', async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-02-'));
