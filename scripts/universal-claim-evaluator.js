@@ -18,6 +18,8 @@ const path = require('node:path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 
 const DEFAULT_VERIFIERS_FILENAME = 'claim-verifiers.json';
+// Package install root (node_modules/thumbgate), not the consumer project cwd.
+const PACKAGE_ROOT = path.join(__dirname, '..');
 const CLAIM_VALUE_MARKER = '{{value}}';
 const NUMBER_PATTERN_SOURCE = String.raw`[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?`;
 const INTEGER_PATTERN_SOURCE = String.raw`[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)`;
@@ -335,6 +337,9 @@ function verifierConfigPaths(options, repoRoot) {
     path.join(feedbackDir, DEFAULT_VERIFIERS_FILENAME),
     path.join(repoRoot, '.thumbgate', DEFAULT_VERIFIERS_FILENAME),
     path.join(repoRoot, 'config', 'gates', DEFAULT_VERIFIERS_FILENAME),
+    // Shipped defaults from the installed package so npm consumers get dogfood
+    // without copying config into every project cwd.
+    path.join(PACKAGE_ROOT, 'config', 'gates', DEFAULT_VERIFIERS_FILENAME),
   );
   return new Set(candidates);
 }

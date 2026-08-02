@@ -165,6 +165,95 @@ function summarizePermissionTier(profileName = getActiveMcpProfile()) {
   };
 }
 
+
+function detectStopHookRegistered(projectRoot, existsSync, readFileSync) {
+  try {
+    const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
+    if (!existsSync(settingsPath)) return false;
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+    const stopHooks = settings?.hooks?.Stop || [];
+    const flat = Array.isArray(stopHooks)
+      ? stopHooks.flatMap((entry) => entry?.hooks || [entry])
+      : [];
+    return flat.some((hook) => String(hook?.command || '').includes('hook-stop-anti-claim'));
+  } catch {
+    return false;
+  }
+}
+
+function recommendationForClaimState({
+  evaluatorReady,
+  configLoadFailed,
+  verifierCount,
+  stopHookRegistered,
+  configSource,
+  loadErrorMessage,
+}) {
+  if (!evaluatorReady) {
+    return 'Universal claim evaluator module is missing from this install.';
+  }
+  if (configLoadFailed) {
+    return loadErrorMessage;
+  }
+  if (verifierCount === 0) {
+    return 'No claim verifiers configured. Copy config/gates/claim-verifiers.example.json to .thumbgate/claim-verifiers.json and point subjects at your sources of truth.';
+  }
+  if (!stopHookRegistered) {
+    return 'Claim verifiers are present, but the Claude Stop anti-claim hook is not registered in .claude/settings.json.';
+  }
+  return `Factual claim recheck is ready (${verifierCount} verifier(s) from ${configSource}).`;
+}
+
+function summarizeClaimVerification(projectRoot = PROJECT_ROOT, deps = {}) {
+  const resolveEvaluator = deps.resolveEvaluator
+    || (() => require.resolve('./universal-claim-evaluator'));
+  const loadVerifierConfig = deps.loadVerifierConfig
+    || (() => require('./universal-claim-evaluator').loadVerifierConfig);
+  const readFileSync = deps.readFileSync || fs.readFileSync;
+  const existsSync = deps.existsSync || fs.existsSync;
+
+  let evaluatorReady = false;
+  try {
+    resolveEvaluator();
+    evaluatorReady = true;
+  } catch {
+    evaluatorReady = false;
+  }
+
+  let verifierCount = 0;
+  let configSource = 'none';
+  let configLoadFailed = false;
+  let loadErrorMessage = 'Install ThumbGate and configure claim verifiers under .thumbgate/claim-verifiers.json.';
+  try {
+    const loaded = loadVerifierConfig()({ cwd: projectRoot });
+    verifierCount = Array.isArray(loaded.verifiers) ? loaded.verifiers.length : 0;
+    configSource = loaded.source || 'none';
+  } catch (error) {
+    configLoadFailed = true;
+    loadErrorMessage = `Claim verifier config failed to load: ${error?.message || 'unknown error'}`;
+  }
+
+  const stopHookRegistered = detectStopHookRegistered(projectRoot, existsSync, readFileSync);
+  const recommendation = recommendationForClaimState({
+    evaluatorReady,
+    configLoadFailed,
+    verifierCount,
+    stopHookRegistered,
+    configSource,
+    loadErrorMessage,
+  });
+
+  return {
+    ready: evaluatorReady && verifierCount > 0 && stopHookRegistered && !configLoadFailed,
+    evaluatorReady,
+    verifierCount,
+    configSource,
+    stopHookRegistered,
+    configLoadFailed,
+    recommendation,
+  };
+}
+
 function generateAgentReadinessReport({
   projectRoot = PROJECT_ROOT,
   mcpProfile = null,
@@ -172,11 +261,18 @@ function generateAgentReadinessReport({
   const runtime = detectRuntimeIsolation();
   const bootstrap = collectBootstrapFiles(projectRoot);
   const permissions = summarizePermissionTier(mcpProfile || getActiveMcpProfile());
+  const claimVerification = summarizeClaimVerification(projectRoot);
 
   const warnings = [];
   if (!runtime.isolated) warnings.push(runtime.recommendation);
   if (!bootstrap.ready) warnings.push(bootstrap.recommendation);
   if (!permissions.ready) warnings.push(permissions.recommendation);
+  // Missing operator verifiers is advisory (not every project asserts SQL row counts).
+  // A missing evaluator module or a broken claim-verifier config is not advisory —
+  // both make factual recheck fail closed at runtime and must surface here.
+  if (!claimVerification.evaluatorReady || claimVerification.configLoadFailed) {
+    warnings.push(claimVerification.recommendation);
+  }
 
   return {
     generatedAt: new Date().toISOString(),
@@ -185,10 +281,12 @@ function generateAgentReadinessReport({
     runtime,
     bootstrap,
     permissions,
+    claimVerification,
     articleAlignment: {
       runtimeIsolation: runtime.isolated,
       contextConditioning: bootstrap.ready,
       permissionEnvelope: permissions.ready,
+      factualClaimRecheck: claimVerification.ready,
     },
     warnings,
   };
@@ -208,6 +306,15 @@ function reportToText(report) {
   lines.push(`Permissions: ${report.permissions.profile} (${report.permissions.tier})`);
   lines.push(`  Write-capable tools: ${report.permissions.writeCapableTools.length}`);
   lines.push(`  Recommendation: ${report.permissions.recommendation}`);
+  if (report.claimVerification) {
+    lines.push(
+      `Claim verification: ${report.claimVerification.ready ? 'ready' : 'needs_attention'}`,
+      `  Evaluator: ${report.claimVerification.evaluatorReady ? 'present' : 'missing'}`,
+      `  Verifiers: ${report.claimVerification.verifierCount} (${report.claimVerification.configSource})`,
+      `  Stop hook: ${report.claimVerification.stopHookRegistered ? 'registered' : 'missing'}`,
+      `  Recommendation: ${report.claimVerification.recommendation}`,
+    );
+  }
 
   if (report.warnings.length > 0) {
     lines.push('');
@@ -226,6 +333,9 @@ module.exports = {
   detectRuntimeIsolation,
   collectBootstrapFiles,
   summarizePermissionTier,
+  summarizeClaimVerification,
+  recommendationForClaimState,
+  detectStopHookRegistered,
   generateAgentReadinessReport,
   reportToText,
 };
