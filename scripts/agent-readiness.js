@@ -165,33 +165,41 @@ function summarizePermissionTier(profileName = getActiveMcpProfile()) {
   };
 }
 
-function summarizeClaimVerification(projectRoot = PROJECT_ROOT) {
+function summarizeClaimVerification(projectRoot = PROJECT_ROOT, deps = {}) {
   let evaluatorReady = false;
   let verifierCount = 0;
   let configSource = 'none';
   let stopHookRegistered = false;
   let recommendation = 'Install ThumbGate and configure claim verifiers under .thumbgate/claim-verifiers.json.';
 
+  const resolveEvaluator = deps.resolveEvaluator
+    || (() => require.resolve('./universal-claim-evaluator'));
+  const loadVerifierConfig = deps.loadVerifierConfig
+    || (() => require('./universal-claim-evaluator').loadVerifierConfig);
+  const readFileSync = deps.readFileSync || fs.readFileSync;
+  const existsSync = deps.existsSync || fs.existsSync;
+
   try {
-    require.resolve('./universal-claim-evaluator');
+    resolveEvaluator();
     evaluatorReady = true;
   } catch {
     evaluatorReady = false;
   }
 
+  let configLoadFailed = false;
   try {
-    const { loadVerifierConfig } = require('./universal-claim-evaluator');
-    const loaded = loadVerifierConfig({ cwd: projectRoot });
+    const loaded = loadVerifierConfig()({ cwd: projectRoot });
     verifierCount = Array.isArray(loaded.verifiers) ? loaded.verifiers.length : 0;
     configSource = loaded.source || 'none';
   } catch (error) {
+    configLoadFailed = true;
     recommendation = `Claim verifier config failed to load: ${error && error.message ? error.message : 'unknown error'}`;
   }
 
   try {
     const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
-    if (fs.existsSync(settingsPath)) {
-      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    if (existsSync(settingsPath)) {
+      const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
       const stopHooks = (((settings.hooks || {}).Stop) || []);
       const flat = Array.isArray(stopHooks)
         ? stopHooks.flatMap((entry) => (entry && entry.hooks) || [entry])
@@ -205,9 +213,11 @@ function summarizeClaimVerification(projectRoot = PROJECT_ROOT) {
     stopHookRegistered = false;
   }
 
-  const ready = evaluatorReady && verifierCount > 0 && stopHookRegistered;
+  const ready = evaluatorReady && verifierCount > 0 && stopHookRegistered && !configLoadFailed;
   if (!evaluatorReady) {
     recommendation = 'Universal claim evaluator module is missing from this install.';
+  } else if (configLoadFailed) {
+    // keep the load-error recommendation set above
   } else if (verifierCount === 0) {
     recommendation = 'No claim verifiers configured. Copy config/gates/claim-verifiers.example.json to .thumbgate/claim-verifiers.json and point subjects at your sources of truth.';
   } else if (!stopHookRegistered) {
