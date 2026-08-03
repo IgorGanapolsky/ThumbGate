@@ -20,6 +20,7 @@ function withFileLedgerLock(lockPath, callback, options = {}) {
   fs.mkdirSync(path.dirname(resolvedLockPath), { recursive: true });
   const owner = acquireLock(resolvedLockPath, options);
   try {
+    if (typeof options.beforeCallback === 'function') options.beforeCallback();
     return callback();
   } finally {
     releaseOwnedLock(resolvedLockPath, owner);

@@ -254,6 +254,27 @@ test('workflow sentinel fails closed on an Apollo upgrade with an explicit zero-
   assert.equal(report.decisionControl.executionMode, 'blocked');
 });
 
+test('workflow sentinel treats opaque browser and computer-use mutations as economic', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-opaque-screen-'));
+  try {
+    for (const [toolName, toolInput] of [
+      ['Browser', { ref_id: 'page', id: 17 }],
+      ['computer', { action: 'click', coordinate: [920, 640] }],
+    ]) {
+      const report = evaluateWorkflowSentinel(toolName, toolInput, {
+        feedbackDir,
+        repoPath: process.cwd(),
+      });
+      assert.equal(report.actionProfile.economicAction, true);
+      assert.equal(report.financialControl.mode, 'block');
+      assert.ok(report.financialControl.reasonCodes.includes('missing_purchase_requisition'));
+      assert.equal(report.decision, 'deny');
+    }
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
 test('workflow sentinel denies unapproved background invoicing actions', () => {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-background-'));
   const report = evaluateWorkflowSentinel('Bash', {

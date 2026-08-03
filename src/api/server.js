@@ -10578,6 +10578,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           params: body.params,
           mcp: body.mcp,
           mcpToolCall: body.mcpToolCall,
+          financialControl: body.financialControl || body.financial_control,
           budget: body.budget,
           usage: body.usage,
         };

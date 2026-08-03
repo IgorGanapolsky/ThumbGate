@@ -10,8 +10,10 @@ const { spawn } = require('node:child_process');
 const {
   createPurchaseRequisition,
   detectEconomicAction,
+  detectOpaqueScreenMutation,
   evaluateFinancialControl,
   getLedgerHeadPath,
+  getLedgerJournalPath,
   getLedgerPath,
   getRuntimePrincipal,
   projectRequisition,
@@ -67,6 +69,17 @@ function reviewerOptions(feedbackDir) {
 }
 
 function hashEscalationEvent(event) {
+  const copy = { ...event };
+  delete copy.eventHash;
+  const stableStringify = (value) => {
+    if (!value || typeof value !== 'object') return JSON.stringify(value);
+    if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+  };
+  return require('node:crypto').createHash('sha256').update(stableStringify(copy)).digest('hex');
+}
+
+function hashFinancialEvent(event) {
   const copy = { ...event };
   delete copy.eventHash;
   const stableStringify = (value) => {
@@ -272,6 +285,44 @@ test('provider names in credential paths and read-only billing commands are not 
   assert.equal(detectEconomicAction('mcp__billing__create_subscription', {
     customer: 'cus_123',
   }), true);
+  assert.equal(detectOpaqueScreenMutation('Browser', { ref_id: 'page', id: 17 }), true);
+  assert.equal(detectEconomicAction('Browser', { ref_id: 'page', id: 17 }), true);
+  assert.equal(detectEconomicAction('computer', { action: 'click', coordinate: [920, 640] }), true);
+  assert.equal(detectEconomicAction('Browser', { action: 'screenshot', pageno: 0 }), false);
+});
+
+test('signed human approval is bound to the immutable purchase request digest', () => {
+  const { feedbackDir, requester, request } = fixture();
+  try {
+    const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Approve only the signed $588 Apollo request.',
+    }, reviewerOptions(feedbackDir));
+
+    const ledgerPath = getLedgerPath({ feedbackDir });
+    const event = JSON.parse(fs.readFileSync(ledgerPath, 'utf8').trim());
+    event.amountUsd = 1000;
+    event.approvalContextDigest = 'a'.repeat(64);
+    event.eventHash = hashFinancialEvent(event);
+    fs.writeFileSync(ledgerPath, `${JSON.stringify(event)}\n`, 'utf8');
+    fs.writeFileSync(getLedgerHeadPath({ feedbackDir }), `${JSON.stringify({
+      schemaVersion: 'financial-ledger-head-v1',
+      sequence: event.sequence,
+      eventHash: event.eventHash,
+    })}\n`, 'utf8');
+
+    assert.throws(() => reservePurchaseRequisition({
+      requisitionId: event.requisitionId,
+      amountUsd: 1000,
+      vendor: 'Apollo',
+      purpose: 'Annual data plan',
+      sourceMessageId: 'user-message-42',
+    }, authOptions(feedbackDir, requester)), /approval is not bound to its exact purchase request/);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
 });
 
 test('concurrent callers cannot create two requisitions for one idempotency key', async () => {
@@ -328,6 +379,53 @@ test('financial ledger recovers a stale lock left by a dead process', () => {
     }));
     assert.equal(created.recorded, true);
     assert.equal(fs.existsSync(lockPath), false);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('financial ledger journal repairs a crash after event append but before head commit', () => {
+  const { feedbackDir, requester, request } = fixture();
+  try {
+    const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Approve crash-recovery test.',
+    }, reviewerOptions(feedbackDir));
+    const reserved = reservePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      amountUsd: 588,
+      vendor: 'Apollo',
+      purpose: 'Annual data plan',
+      sourceMessageId: 'user-message-42',
+    }, authOptions(feedbackDir, requester));
+
+    const ledgerPath = getLedgerPath({ feedbackDir });
+    const events = fs.readFileSync(ledgerPath, 'utf8').trim().split('\n').map(JSON.parse);
+    const previous = events.at(-2);
+    const interrupted = events.at(-1);
+    fs.writeFileSync(getLedgerHeadPath({ feedbackDir }), `${JSON.stringify({
+      schemaVersion: 'financial-ledger-head-v1',
+      sequence: previous.sequence,
+      eventHash: previous.eventHash,
+    })}\n`, 'utf8');
+    const journalPath = getLedgerJournalPath({ feedbackDir });
+    fs.writeFileSync(journalPath, `${JSON.stringify({
+      schemaVersion: 'financial-ledger-journal-v1',
+      previousHead: { sequence: previous.sequence, eventHash: previous.eventHash },
+      event: interrupted,
+    })}\n`, 'utf8');
+
+    const released = settlePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      reservationId: reserved.requisition.reservationId,
+      status: 'released',
+      reason: 'Recovery proved; no spend occurred.',
+    }, authOptions(feedbackDir, requester));
+    assert.equal(released.requisition.status, 'released');
+    assert.equal(fs.existsSync(journalPath), false);
+    assert.equal(reconcilePurchaseLedger({ feedbackDir }).ok, true);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }

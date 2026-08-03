@@ -42,6 +42,7 @@ function requestEscalation(input = {}, options = {}) {
   if (!SEVERITIES.has(severity)) throw escalationError(`severity must be one of ${Array.from(SEVERITIES).join(', ')}`);
   const ttlMs = Math.min(MAX_TTL_MS, Math.max(1, finiteNumber(input.ttlMs, DEFAULT_TTL_MS)));
   const idempotencyKey = requiredString(input.idempotencyKey || taskId, 'idempotencyKey');
+  const approvalContextDigest = optionalDigest(input.approvalContextDigest, 'approvalContextDigest');
   const request = {
     escalationId: input.escalationId || `esc_${crypto.randomUUID()}`,
     idempotencyKey,
@@ -55,6 +56,7 @@ function requestEscalation(input = {}, options = {}) {
     status: 'pending',
     eventType: 'requested',
   };
+  if (approvalContextDigest) request.approvalContextDigest = approvalContextDigest;
   return withEscalationLock(options, () => {
     const ledger = readLedger(options);
     assertLedgerHealthy(ledger);
@@ -103,6 +105,9 @@ function decideEscalation(input = {}, options = {}) {
       reason,
       decidedAt: now.toISOString(),
     };
+    if (current.approvalContextDigest) {
+      event.approvalContextDigest = current.approvalContextDigest;
+    }
     const signingKey = optionalString(options.approvalSigningKey);
     if (signingKey) event.approvalReceipt = signApprovalReceipt(event, signingKey);
     const recorded = appendEventUnlocked(event, options, ledger.events);
@@ -124,6 +129,9 @@ function getVerifiedApproval(escalationId, options = {}) {
   const decided = events.findLast((event) => event.eventType === 'decided');
   if (!requested || !decided || decided.status !== 'approved') return null;
   if (decided.taskId !== requested.taskId) throw escalationError('approval task does not match its request');
+  if ((requested.approvalContextDigest || null) !== (decided.approvalContextDigest || null)) {
+    throw escalationError('approval context does not match its request');
+  }
   if (decided.actor?.kind !== 'human' || sameIdentity(requested.requester, decided.actor)) {
     throw escalationError('approval is not from an independent human actor');
   }
@@ -327,7 +335,7 @@ function verifyApprovalReceipt(event, verificationKey) {
 }
 
 function approvalPayload(event) {
-  return stableStringify({
+  const payload = {
     escalationId: event.escalationId,
     taskId: event.taskId,
     status: event.status,
@@ -335,7 +343,9 @@ function approvalPayload(event) {
     actor: event.actor,
     reason: event.reason,
     decidedAt: event.decidedAt,
-  });
+  };
+  if (event.approvalContextDigest) payload.approvalContextDigest = event.approvalContextDigest;
+  return stableStringify(payload);
 }
 
 function requiredIdentity(value, field) {
@@ -358,6 +368,14 @@ function requiredString(value, field) {
 function optionalString(value) {
   const clean = String(value ?? '').trim();
   return clean || undefined;
+}
+
+function optionalDigest(value, field) {
+  const digest = optionalString(value);
+  if (digest && !/^[a-f0-9]{64}$/i.test(digest)) {
+    throw escalationError(`${field} must be a SHA-256 hex digest`);
+  }
+  return digest?.toLowerCase();
 }
 
 function stringArray(value) {
@@ -388,6 +406,7 @@ function eventComparableHash(event) {
     requester: event.requester,
     evidence: event.evidence,
   };
+  if (event.approvalContextDigest) comparable.approvalContextDigest = event.approvalContextDigest;
   return crypto.createHash('sha256').update(stableStringify(comparable)).digest('hex');
 }
 

@@ -25,6 +25,7 @@ const {
 
 const LEDGER_FILE = 'financial-control-ledger.jsonl';
 const LEDGER_HEAD_FILE = 'financial-control-ledger.head.json';
+const LEDGER_JOURNAL_FILE = 'financial-control-ledger.journal.json';
 const DEFAULT_TTL_MS = 60 * 60 * 1000;
 const MAX_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_RESERVATION_TTL_MS = 15 * 60 * 1000;
@@ -57,6 +58,9 @@ const ECONOMIC_ACTION_PATTERNS = [
   /\b(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\s+(?:a\s+)?(?:charge|invoice|payment|payment\s+method|payout|refund|subscription|top-?up|transfer)\b/i,
 ];
 
+const SCREEN_TOOL_PATTERN = /(?:browser|computer|playwright|puppeteer|selenium|click|tap|press)/i;
+const SCREEN_MUTATION_PATTERN = /(?:click|double[_ -]?click|tap|press|select|submit|confirm|activate)/i;
+
 // A process principal cannot be selected through a tool call. Operators that
 // need an approved purchase to survive separate MCP/hook processes must set a
 // unique THUMBGATE_RUNTIME_PRINCIPAL_ID in the trusted host configuration.
@@ -79,6 +83,11 @@ function getLedgerHeadPath(options = {}) {
   return path.join(getFeedbackPaths(options).FEEDBACK_DIR, LEDGER_HEAD_FILE);
 }
 
+function getLedgerJournalPath(options = {}) {
+  if (options.inputPath) return `${path.resolve(options.inputPath)}.journal.json`;
+  return path.join(getFeedbackPaths(options).FEEDBACK_DIR, LEDGER_JOURNAL_FILE);
+}
+
 function detectEconomicAction(toolName, toolInput = {}) {
   const normalizedToolName = String(toolName || '').trim();
   if ([...CONTROL_PLANE_TOOLS].some((name) => (
@@ -88,6 +97,10 @@ function detectEconomicAction(toolName, toolInput = {}) {
   const financialControl = objectValue(toolInput.financialControl || toolInput.financial_control);
   if (toolInput.economicAction === true || metadata.economicAction === true) return true;
   if (financialControl.requisitionId || financialControl.reservationId) return true;
+  // Native browser/computer-use locators do not reveal what a click will do.
+  // Treat them as economic until the exact screen mutation is independently
+  // approved; caller-supplied prose must never downgrade a blind click.
+  if (detectOpaqueScreenMutation(normalizedToolName, toolInput)) return true;
   const command = shellEconomicText(normalizedToolName, toolInput.command || toolInput.cmd);
   const combined = [
     normalizedToolName.replace(/[_-]+/g, ' '),
@@ -98,6 +111,26 @@ function detectEconomicAction(toolName, toolInput = {}) {
     metadata.context,
   ].map((value) => String(value || '')).join(' ');
   return ECONOMIC_ACTION_PATTERNS.some((pattern) => pattern.test(combined));
+}
+
+function detectOpaqueScreenMutation(toolName, toolInput = {}) {
+  const normalizedToolName = String(toolName || '').trim();
+  const input = objectValue(toolInput);
+  const hasCoordinate = Object.hasOwn(input, 'coordinate') || Object.hasOwn(input, 'coordinates')
+    || (Object.hasOwn(input, 'x') && Object.hasOwn(input, 'y'));
+  const hasOpaqueLocator = hasCoordinate
+    || Object.hasOwn(input, 'selector')
+    || Object.hasOwn(input, 'elementId')
+    || Object.hasOwn(input, 'element_id')
+    || Object.hasOwn(input, 'nodeId')
+    || Object.hasOwn(input, 'node_id')
+    || (Object.hasOwn(input, 'ref_id') && Object.hasOwn(input, 'id'));
+  if (!hasOpaqueLocator || !SCREEN_TOOL_PATTERN.test(normalizedToolName)) return false;
+  const operation = [normalizedToolName, input.action, input.operation, input.type]
+    .map((value) => String(value || ''))
+    .join(' ');
+  return SCREEN_MUTATION_PATTERN.test(operation)
+    || /(?:browser|computer|playwright|puppeteer|selenium)/i.test(normalizedToolName);
 }
 
 function shellEconomicText(toolName, rawCommand) {
@@ -145,6 +178,7 @@ function createPurchaseRequisition(input = {}, options = {}) {
     actionFingerprint: approvedAction.fingerprint,
     evidence,
   };
+  const approvalContextDigest = requestComparableHash(comparableRequest);
   return withLedgerLock(options, () => {
     const ledger = readLedger(options);
     const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head);
@@ -170,6 +204,7 @@ function createPurchaseRequisition(input = {}, options = {}) {
         `sourceMessageId:${sourceMessageId}`,
         `requisitionId:${requisitionId}`,
       ],
+      approvalContextDigest,
       ttlMs,
       idempotencyKey: `purchase:${idempotencyKey}`,
     }, options);
@@ -188,6 +223,7 @@ function createPurchaseRequisition(input = {}, options = {}) {
       amountUsd,
       approvedToolName: approvedAction.toolName,
       actionFingerprint: approvedAction.fingerprint,
+      approvalContextDigest,
       currency: 'USD',
       evidence,
       requestedAt: now.toISOString(),
@@ -220,6 +256,12 @@ function reservePurchaseRequisition(input = {}, options = {}) {
     }
     if (!escalation || escalation.status !== 'approved') {
       throw financialError(`requisition '${requisitionId}' does not have independent human approval`);
+    }
+    const expectedApprovalContextDigest = requestComparableHash(requisition);
+    if (!requisition.approvalContextDigest
+      || requisition.approvalContextDigest !== expectedApprovalContextDigest
+      || escalation.approvalContextDigest !== expectedApprovalContextDigest) {
+      throw financialError(`requisition '${requisitionId}' approval is not bound to its exact purchase request`);
     }
     if (sameIdentity(requisition.requester, escalation.actor)) {
       throw financialError('requester cannot approve their own requisition');
@@ -706,8 +748,21 @@ function appendEventUnlocked(event, options, existingEvents) {
   };
   chained.eventHash = hashEvent(chained);
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-  fs.appendFileSync(outputPath, `${JSON.stringify(chained)}\n`, 'utf8');
+  const journalPath = getLedgerJournalPath(options);
+  writeAtomicJson(journalPath, {
+    schemaVersion: 'financial-ledger-journal-v1',
+    previousHead: previous ? { sequence: previous.sequence, eventHash: previous.eventHash } : null,
+    event: chained,
+  });
+  const ledgerFd = fs.openSync(outputPath, 'a', 0o600);
+  try {
+    fs.writeSync(ledgerFd, `${JSON.stringify(chained)}\n`, null, 'utf8');
+    fs.fsyncSync(ledgerFd);
+  } finally {
+    fs.closeSync(ledgerFd);
+  }
   writeLedgerHead(chained, options);
+  fs.unlinkSync(journalPath);
   return chained;
 }
 
@@ -719,8 +774,7 @@ function writeLedgerHead(event, options) {
     sequence: event.sequence,
     eventHash: event.eventHash,
   };
-  fs.writeFileSync(temporaryPath, `${JSON.stringify(head)}\n`, { encoding: 'utf8', mode: 0o600 });
-  fs.renameSync(temporaryPath, headPath);
+  writeAtomicJson(headPath, head, temporaryPath);
 }
 
 function withLedgerLock(options, callback) {
@@ -728,7 +782,80 @@ function withLedgerLock(options, callback) {
     now: options.now,
     lockStaleMs: options.lockStaleMs,
     errorFactory: (message) => financialError(message),
+    beforeCallback: () => recoverLedgerTransaction(options),
   });
+}
+
+function recoverLedgerTransaction(options = {}) {
+  const journalPath = getLedgerJournalPath(options);
+  let journal;
+  try {
+    journal = JSON.parse(fs.readFileSync(journalPath, 'utf8'));
+  } catch (error) {
+    if (error.code === 'ENOENT') return;
+    throw financialError(`cannot recover financial ledger journal: ${error.message}`);
+  }
+  if (journal?.schemaVersion !== 'financial-ledger-journal-v1'
+    || !journal.event
+    || journal.event.eventHash !== hashEvent(journal.event)) {
+    throw financialError('financial ledger journal integrity verification failed');
+  }
+
+  const ledger = readLedger(options);
+  const event = journal.event;
+  const currentLast = ledger.events.at(-1) || null;
+  const previousHead = journal.previousHead;
+  const currentHead = ledger.head;
+  const eventAlreadyAppended = currentLast?.sequence === event.sequence
+    && currentLast?.eventHash === event.eventHash;
+  const headAtPrevious = sameHead(currentHead, previousHead);
+  const headAtEvent = sameHead(currentHead, { sequence: event.sequence, eventHash: event.eventHash });
+
+  if (eventAlreadyAppended) {
+    const preceding = ledger.events.at(-2) || null;
+    const expectedPrevious = preceding
+      ? { sequence: preceding.sequence, eventHash: preceding.eventHash }
+      : null;
+    const chain = validateLedgerChain(
+      ledger.events,
+      ledger.malformedRows,
+      { schemaVersion: 'financial-ledger-head-v1', sequence: event.sequence, eventHash: event.eventHash }
+    );
+    if (!sameHead(previousHead, expectedPrevious) || !chain.ok || (!headAtPrevious && !headAtEvent)) {
+      throw financialError('financial ledger journal does not match the recoverable append');
+    }
+    if (!headAtEvent) writeLedgerHead(event, options);
+    fs.unlinkSync(journalPath);
+    return;
+  }
+
+  const currentChain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head);
+  if (currentChain.ok && headAtPrevious && event.sequence === ledger.events.length + 1) {
+    // The crash happened before the event append. The caller never received a
+    // success response, so discard the prepared transaction instead of
+    // executing it during recovery.
+    fs.unlinkSync(journalPath);
+    return;
+  }
+  throw financialError('financial ledger journal cannot be reconciled safely');
+}
+
+function sameHead(left, right) {
+  if (!left && !right) return true;
+  return left?.sequence === right?.sequence && left?.eventHash === right?.eventHash;
+}
+
+function writeAtomicJson(targetPath, value, temporaryPath = null) {
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  const temporary = temporaryPath || `${targetPath}.tmp-${process.pid}-${crypto.randomUUID()}`;
+  const fd = fs.openSync(temporary, 'w', 0o600);
+  try {
+    fs.writeSync(fd, `${JSON.stringify(value)}\n`, null, 'utf8');
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  fs.renameSync(temporary, targetPath);
 }
 
 function validateLedgerChain(events, malformedRows = [], ledgerHead = null) {
@@ -938,8 +1065,10 @@ module.exports = {
   createPurchaseRequisition,
   buildActionAuthorization,
   detectEconomicAction,
+  detectOpaqueScreenMutation,
   evaluateFinancialControl,
   getLedgerHeadPath,
+  getLedgerJournalPath,
   getLedgerPath,
   getRuntimePrincipal,
   listPurchaseRequisitions,

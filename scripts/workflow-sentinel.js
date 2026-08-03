@@ -1488,7 +1488,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
   const affectedFiles = Array.isArray(options.affectedFiles)
     ? options.affectedFiles.map((filePath) => normalizePosix(filePath)).filter(Boolean)
     : collectAffectedFiles(normalizedToolName, normalizedToolInput, repoRoot);
-  const actionProfile = classifyActionProfile(normalizedToolInput);
+  let actionProfile = classifyActionProfile(normalizedToolInput);
   const financialControl = evaluateFinancialControl({
     toolName: normalizedToolName,
     toolInput: normalizedToolInput,
@@ -1501,6 +1501,13 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
       || process.env.THUMBGATE_FEEDBACK_DIR
       || (repoRoot ? path.join(repoRoot, '.thumbgate') : null),
   });
+  // The financial detector has additional fail-closed classifiers for opaque
+  // browser/computer mutations. Reflect its verdict in the shared action
+  // profile so downstream learning, risk scoring, and reporting cannot treat
+  // a blocked financial action as non-economic.
+  if (financialControl.economicAction && !actionProfile.economicAction) {
+    actionProfile = { ...actionProfile, economicAction: true };
+  }
   const highRiskAction = isHighRiskAction(normalizedToolName, normalizedToolInput, affectedFiles);
   const baseBranch = options.baseBranch
     || (governanceState.branchGovernance && governanceState.branchGovernance.baseBranch)
