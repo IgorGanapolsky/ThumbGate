@@ -48,7 +48,8 @@ const ECONOMIC_ACTION_PATTERNS = [
   /\badd\s+(?:a\s+)?(?:credit\s+)?card\b/i,
   /\badd\s+(?:a\s+)?payment\s+method\b/i,
   /\b(?:buy|purchase|subscribe|top-?up|upgrade)\b/i,
-  /\b(?:activate|cancel|change|create|update|upgrade)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:plan|subscription|tier|seat|checkout|payment\s+method)\b/i,
+  /\b(?:activate|cancel|change|create|update|upgrade)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:plan|subscription|tier|seat)\b/i,
+  /\b(?:activate|cancel|change|create|update|upgrade)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:checkout|payment\s+method)\b/i,
   /\b(?:confirm|complete|open|start)\s+(?:the\s+)?checkout\b/i,
   /\bcheckout\s+(?:flow|page|session)\b/i,
   /\b(?:issue|send)\s+(?:a\s+)?(?:invoice|payout|refund)\b/i,
@@ -59,8 +60,20 @@ const ECONOMIC_ACTION_PATTERNS = [
   /\brenew\s+(?:a\s+)?subscription\b/i,
   /\btransfer\s+(?:dollars?|funds|money|usd)\b/i,
   /\bupgrade\s+(?:a\s+)?plan\b/i,
-  /\b(?:charges?|checkout[\s_-]*sessions?|invoices?|payment[\s_-]*intents?|payment[\s_-]*methods?|payouts?|refunds?|subscriptions?|top[\s_-]*ups?|transfers?)\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
-  /\b(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\s+(?:a\s+)?(?:charge|invoice|payment|payment\s+method|payout|refund|subscription|top-?up|transfer)\b/i,
+  /\bcharges?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
+  /\bcheckout[\s_-]*sessions?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
+  /\binvoices?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
+  /\bpayment[\s_-]*intents?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
+  /\bpayment[\s_-]*methods?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
+  /\bpayouts?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
+  /\brefunds?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
+  /\bsubscriptions?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
+  /\btop[\s_-]*ups?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
+  /\btransfers?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
+  /\b(?:attach|cancel|capture|confirm|create|detach)\s+(?:a\s+)?(?:charge|invoice|payment|payment\s+method)\b/i,
+  /\b(?:finalize|pay|refund|send|update)\s+(?:a\s+)?(?:charge|invoice|payment|payment\s+method)\b/i,
+  /\b(?:attach|cancel|capture|confirm|create|detach)\s+(?:a\s+)?(?:payout|refund|subscription|top-?up|transfer)\b/i,
+  /\b(?:finalize|pay|refund|send|update)\s+(?:a\s+)?(?:payout|refund|subscription|top-?up|transfer)\b/i,
 ];
 
 const SCREEN_TOOL_PATTERN = /(?:browser|computer|playwright|puppeteer|selenium|click|tap|press)/i;
@@ -157,14 +170,14 @@ function remoteFinancialLedgerAnchorStore(options = {}) {
   return {
     read({ ledgerId }) {
       const response = invoke({ operation: 'read', ledgerId });
-      if (!response || response.ok !== true || !Object.hasOwn(response, 'anchor')) {
+      if (response?.ok !== true || !Object.hasOwn(response, 'anchor')) {
         throw financialError('remote financial anchor returned an invalid read response');
       }
       return response.anchor;
     },
     compareAndSet({ ledgerId, expected, next }) {
       const response = invoke({ operation: 'compareAndSet', ledgerId, expected, next });
-      if (!response || response.ok !== true || typeof response.applied !== 'boolean') {
+      if (response?.ok !== true || typeof response.applied !== 'boolean') {
         throw financialError('remote financial anchor returned an invalid compare-and-set response');
       }
       return response.applied;
@@ -375,8 +388,8 @@ function shellEconomicText(toolName, rawCommand) {
   return command
     .split(/(?:&&|\|\||[;\n]|(?<!\|)\|(?!\|))/)
     .map((segment) => {
-      const clean = segment.trim().replace(/^(?:sudo\s+)?(?:env\s+)?(?:[A-Za-z_][A-Za-z0-9_]*=[^\s]+\s+)*/, '');
-      const executable = clean.match(/^([A-Za-z0-9_.\/-]+)/)?.[1]?.split('/').at(-1)?.toLowerCase();
+      const clean = segment.trim().replace(/^(?:sudo\s+)?(?:env\s+)?(?:[A-Za-z_]\w*=[^\s]+\s+)*/, '');
+      const executable = /^([\w./-]+)/.exec(clean)?.[1]?.split('/').at(-1)?.toLowerCase();
       if (['rg', 'grep', 'git', 'cat', 'head', 'tail', 'less', 'more', 'echo', 'printf'].includes(executable)) return '';
       return clean;
     })
@@ -783,40 +796,38 @@ function validateAttachedControl(result) {
   }
 }
 
-function validateRequisition(result, options) {
-  const reconciliation = reconcilePurchaseLedger(options);
-  if (!reconciliation.ok && (reconciliation.invalidEventHashes.length > 0
+function reconciliationHasIntegrityFailure(reconciliation) {
+  return !reconciliation.ok && (
+    reconciliation.invalidEventHashes.length > 0
     || reconciliation.invalidChainLinks.length > 0
     || reconciliation.ledgerHeadMismatches.length > 0
-    || reconciliation.malformedRows.length > 0)) {
-    const anchorUnavailable = reconciliation.ledgerHeadMismatches.some(
-      (entry) => optionalString(entry.rollbackResistantAnchorError)
+    || reconciliation.malformedRows.length > 0
+  );
+}
+
+function blockLedgerIntegrityFailures(result, reconciliation) {
+  const anchorUnavailable = reconciliation.ledgerHeadMismatches.some(
+    (entry) => optionalString(entry.rollbackResistantAnchorError)
+  );
+  const independentTampering = reconciliation.invalidEventHashes.length > 0
+    || reconciliation.invalidChainLinks.length > 0
+    || reconciliation.malformedRows.length > 0
+    || reconciliation.ledgerHeadMismatches.some(
+      (entry) => !optionalString(entry.rollbackResistantAnchorError)
     );
-    const independentTampering = reconciliation.invalidEventHashes.length > 0
-      || reconciliation.invalidChainLinks.length > 0
-      || reconciliation.malformedRows.length > 0
-      || reconciliation.ledgerHeadMismatches.some(
-        (entry) => !optionalString(entry.rollbackResistantAnchorError)
-      );
-    if (independentTampering) {
-      addBlock(result, 'financial_ledger_tampered', 'Financial ledger integrity verification failed.');
-    }
-    if (anchorUnavailable) {
-      addBlock(
-        result,
-        'financial_ledger_anchor_unavailable',
-        'Rollback-resistant financial ledger anchor is unavailable; financial actions fail closed.'
-      );
-    }
-    return;
+  if (independentTampering) {
+    addBlock(result, 'financial_ledger_tampered', 'Financial ledger integrity verification failed.');
   }
-  if (!result.requisitionId) return;
-  const requisition = projectRequisition(result.requisitionId, options);
-  result.requisition = requisition;
-  if (!requisition) {
-    addBlock(result, 'unknown_purchase_requisition', `Purchase requisition '${result.requisitionId}' does not exist.`);
-    return;
+  if (anchorUnavailable) {
+    addBlock(
+      result,
+      'financial_ledger_anchor_unavailable',
+      'Rollback-resistant financial ledger anchor is unavailable; financial actions fail closed.'
+    );
   }
+}
+
+function validateRequisitionBindings(result, requisition, options) {
   try {
     verifyPurchaseApprovalBinding(requisition, options);
   } catch (error) {
@@ -827,6 +838,9 @@ function validateRequisition(result, options) {
   } catch (error) {
     addBlock(result, 'reservation_not_bound_to_approval', error.message);
   }
+}
+
+function validateRequisitionConstraints(result, requisition) {
   if (requisition.status !== 'reserved') {
     addBlock(result, 'requisition_not_reserved', `Purchase requisition '${result.requisitionId}' is ${requisition.status}, not reserved.`);
   }
@@ -849,6 +863,23 @@ function validateRequisition(result, options) {
   if (normalizeToolName(result.actionBinding.toolName) !== normalizeToolName(requisition.approvedToolName)) {
     addBlock(result, 'financial_tool_mismatch', 'Actual financial tool does not match the approved tool.');
   }
+}
+
+function validateRequisition(result, options) {
+  const reconciliation = reconcilePurchaseLedger(options);
+  if (reconciliationHasIntegrityFailure(reconciliation)) {
+    blockLedgerIntegrityFailures(result, reconciliation);
+    return;
+  }
+  if (!result.requisitionId) return;
+  const requisition = projectRequisition(result.requisitionId, options);
+  result.requisition = requisition;
+  if (!requisition) {
+    addBlock(result, 'unknown_purchase_requisition', `Purchase requisition '${result.requisitionId}' does not exist.`);
+    return;
+  }
+  validateRequisitionBindings(result, requisition, options);
+  validateRequisitionConstraints(result, requisition);
   validateScope(result, requisition);
 }
 
@@ -900,7 +931,7 @@ function consumeReservation(input, options) {
     const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head, options);
     if (!chain.ok) throw financialError('financial ledger integrity check failed before authorization');
     const current = projectRequisitionFromEvents(ledger.events, input.requisitionId, options);
-    if (!current || current.status !== 'reserved') {
+    if (current?.status !== 'reserved') {
       throw financialError(`purchase requisition '${input.requisitionId}' is not available for single-use authorization`);
     }
     if (current.reservationId !== input.reservationId) {
@@ -1073,25 +1104,74 @@ function withLedgerLock(options, callback) {
   });
 }
 
-function recoverLedgerTransaction(options = {}) {
-  const journalPath = getLedgerJournalPath(options);
-  let journal;
+function readLedgerJournal(journalPath) {
   try {
-    journal = JSON.parse(fs.readFileSync(journalPath, 'utf8'));
+    return JSON.parse(fs.readFileSync(journalPath, 'utf8'));
   } catch (error) {
-    if (error.code === 'ENOENT') return;
+    if (error.code === 'ENOENT') return null;
     throw financialError(`cannot recover financial ledger journal: ${error.message}`);
   }
-  const integrityKey = ledgerIntegrityKey(options);
+}
+
+function verifiedJournalEvent(journal, integrityKey) {
+  const event = journal?.event;
   if (journal?.schemaVersion !== LEDGER_JOURNAL_SCHEMA
-    || !journal.event
-    || journal.event.eventHash !== hashEvent(journal.event)
+    || !event
+    || event.eventHash !== hashEvent(event)
     || !verifyIntegrityRecord(journal, integrityKey)) {
     throw financialError('financial ledger journal integrity verification failed');
   }
+  return event;
+}
 
+function recoverAppendedLedgerEvent({
+  ledger,
+  event,
+  previousHead,
+  currentAnchor,
+  headAtPrevious,
+  headAtEvent,
+  journalPath,
+  options,
+}) {
+  const preceding = ledger.events.at(-2) || null;
+  const expectedPrevious = preceding
+    ? { sequence: preceding.sequence, eventHash: preceding.eventHash }
+    : null;
+  const chain = validateLedgerChain(
+    ledger.events,
+    ledger.malformedRows,
+    null,
+    { ...options, skipLedgerHead: true }
+  );
+  const anchorAtPrevious = sameHead(currentAnchor, previousHead);
+  const anchorAtEvent = sameHead(currentAnchor, { sequence: event.sequence, eventHash: event.eventHash });
+  if (!sameHead(previousHead, expectedPrevious)
+    || !chain.ok
+    || (!headAtPrevious && !headAtEvent)
+    || (!anchorAtPrevious && !anchorAtEvent)) {
+    throw financialError('financial ledger journal does not match the recoverable append');
+  }
+  if (!headAtEvent) writeLedgerHeadFile(event, options);
+  if (!anchorAtEvent) advanceFinancialLedgerAnchor(previousHead, event, options);
+  removeDurableFile(journalPath);
+}
+
+function canDiscardPreparedLedgerEvent({ ledger, event, previousHead, currentAnchor, headAtPrevious, options }) {
+  const currentChain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head, options);
+  return currentChain.ok
+    && headAtPrevious
+    && sameHead(currentAnchor, previousHead)
+    && event.sequence === ledger.events.length + 1;
+}
+
+function recoverLedgerTransaction(options = {}) {
+  const journalPath = getLedgerJournalPath(options);
+  const journal = readLedgerJournal(journalPath);
+  if (!journal) return;
+  const integrityKey = ledgerIntegrityKey(options);
+  const event = verifiedJournalEvent(journal, integrityKey);
   const ledger = readLedger(options);
-  const event = journal.event;
   const currentLast = ledger.events.at(-1) || null;
   const previousHead = journal.previousHead;
   const currentHead = ledger.head;
@@ -1102,35 +1182,27 @@ function recoverLedgerTransaction(options = {}) {
   const headAtEvent = sameHead(currentHead, { sequence: event.sequence, eventHash: event.eventHash });
 
   if (eventAlreadyAppended) {
-    const preceding = ledger.events.at(-2) || null;
-    const expectedPrevious = preceding
-      ? { sequence: preceding.sequence, eventHash: preceding.eventHash }
-      : null;
-    const chain = validateLedgerChain(
-      ledger.events,
-      ledger.malformedRows,
-      null,
-      { ...options, skipLedgerHead: true }
-    );
-    const anchorAtPrevious = sameHead(currentAnchor, previousHead);
-    const anchorAtEvent = sameHead(currentAnchor, { sequence: event.sequence, eventHash: event.eventHash });
-    if (!sameHead(previousHead, expectedPrevious)
-      || !chain.ok
-      || (!headAtPrevious && !headAtEvent)
-      || (!anchorAtPrevious && !anchorAtEvent)) {
-      throw financialError('financial ledger journal does not match the recoverable append');
-    }
-    if (!headAtEvent) writeLedgerHeadFile(event, options);
-    if (!anchorAtEvent) advanceFinancialLedgerAnchor(previousHead, event, options);
-    removeDurableFile(journalPath);
+    recoverAppendedLedgerEvent({
+      ledger,
+      event,
+      previousHead,
+      currentAnchor,
+      headAtPrevious,
+      headAtEvent,
+      journalPath,
+      options,
+    });
     return;
   }
 
-  const currentChain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head, options);
-  if (currentChain.ok
-    && headAtPrevious
-    && sameHead(currentAnchor, previousHead)
-    && event.sequence === ledger.events.length + 1) {
+  if (canDiscardPreparedLedgerEvent({
+    ledger,
+    event,
+    previousHead,
+    currentAnchor,
+    headAtPrevious,
+    options,
+  })) {
     // The crash happened before the event append. The caller never received a
     // success response, so discard the prepared transaction instead of
     // executing it during recovery.
@@ -1271,7 +1343,7 @@ function signIntegrityRecord(record, key) {
 
 function verifyIntegrityRecord(record, key) {
   const auth = record?.auth;
-  if (!record || !auth || auth.algorithm !== 'hmac-sha256') return false;
+  if (!record || auth?.algorithm !== 'hmac-sha256') return false;
   const expectedKeyId = crypto.createHash('sha256').update(key).digest('hex').slice(0, 16);
   if (auth.keyId !== expectedKeyId || !/^[a-f0-9]{64}$/i.test(String(auth.signature || ''))) return false;
   const expected = crypto.createHmac('sha256', key).update(integrityPayload(record)).digest();
@@ -1368,7 +1440,7 @@ function verifyPurchaseApprovalBinding(requisition, options) {
   } catch (error) {
     throw financialError(`requisition '${requisition.requisitionId}' approval verification failed: ${error.message}`);
   }
-  if (!escalation || escalation.status !== 'approved') {
+  if (escalation?.status !== 'approved') {
     throw financialError(`requisition '${requisition.requisitionId}' does not have independent human approval`);
   }
   const expectedApprovalContextDigest = requestComparableHash(requisition);
