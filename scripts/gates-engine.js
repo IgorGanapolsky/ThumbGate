@@ -164,6 +164,10 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'secret-exfiltration',
   'security-vuln-scan',
   'slopsquat-guard',
+  // Money path: even if a refactor later routes financial denials through
+  // applyEnforcementPosture, never demote spend blocks to warn-by-default.
+  // Apollo $588 incident class (2026-08).
+  'financial-control',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -175,12 +179,15 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
 // `git reset --hard`, or `git clean -f` silently allowed through. These four
 // map directly to CLAUDE.md's own hard-block list and must never be subject
 // to the daily cap discount, regardless of tier or strict-mode setting.
+// financial-control is included for the same reason: a daily-cap discount on
+// checkout/subscription spends would re-open the never-spend interlock.
 const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   'force-push',
   'git-reset-hard',
   'git-clean-force',
   'rm-rf-home-or-root',
+  'financial-control',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;

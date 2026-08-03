@@ -161,7 +161,7 @@ test('applyDailyBlockCap never downgrades catastrophic gates even over limit and
 
     ge.STATS_PATH = statsPath;
 
-    for (const gateId of ['force-push', 'git-reset-hard', 'git-clean-force', 'rm-rf-home-or-root']) {
+    for (const gateId of ['force-push', 'git-reset-hard', 'git-clean-force', 'rm-rf-home-or-root', 'financial-control']) {
       const denyResult = { decision: 'deny', gate: gateId, message: 'Destructive command blocked', severity: 'critical', reasoning: ['test'] };
       const result = ge.applyDailyBlockCap(denyResult);
       assert.equal(result, null, `${gateId} must never be downgraded by the daily block cap`);

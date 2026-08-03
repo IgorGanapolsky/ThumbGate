@@ -62,17 +62,20 @@ if (errors.length) {
 # Run only the regression-guard tests that protect against common mistakes
 if [ -f tests/public-package-parity.test.js ]; then
   echo -e "${YELLOW}pre-push:${NC} running regression-guard tests..."
+  # Money attack matrix is mandatory: never-spend class must fail the push, not CI later.
   if ! node --test \
       tests/public-package-parity.test.js \
       tests/test-suite-parity.test.js \
       $( [ -f tests/landing-page-claims.test.js ] && echo tests/landing-page-claims.test.js ) \
+      $( [ -f tests/financial-spend-attack-matrix.test.js ] && echo tests/financial-spend-attack-matrix.test.js ) \
       >/dev/null 2>&1; then
     echo -e "${RED}✗ Regression-guard tests failed${NC}"
     node --test \
       tests/public-package-parity.test.js \
       tests/test-suite-parity.test.js \
       $( [ -f tests/landing-page-claims.test.js ] && echo tests/landing-page-claims.test.js ) \
-      2>&1 | grep -A3 "not ok" | head -20
+      $( [ -f tests/financial-spend-attack-matrix.test.js ] && echo tests/financial-spend-attack-matrix.test.js ) \
+      2>&1 | grep -A3 "not ok" | head -40
     exit 1
   fi
 fi
