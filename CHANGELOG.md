@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.34.2
+
+### Patch Changes
+
+- 7376069: Bump brace-expansion override to 5.0.9 so npm audit --audit-level=low no longer fails Trunk merge on GHSA-rgw5-rvv9-x895.
+- 7376069: Pin financial-control as a non-demotable hard floor and add a pre-push money attack matrix so Apollo/Stripe tool-surface regressions fail before CI.
+- 33f6a0d: Fail-closed financial hard floor now treats Apollo upgrade and Stripe checkout URLs as economic actions for Bash open/curl and WebFetch, closing the URL-only spend path that prose patterns missed.
+
 ## 1.34.1
 
 ### Patch Changes
