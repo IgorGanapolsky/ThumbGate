@@ -44,6 +44,9 @@ const FINANCIAL_RESOURCE_WORDS = new Set([
   'billing', 'plan', 'seat', 'seats', 'credit', 'credits', 'checkout', 'subscription', 'payment',
 ]);
 const TRANSFER_TOOL_WORDS = new Set(['bank', 'wire', 'fund', 'funds', 'money']);
+const VENDOR_SUFFIX_WORDS = new Set([
+  'credit', 'credits', 'subscription', 'plan', 'purchase', 'checkout', 'upgrade', 'license', 'seat', 'seats',
+]);
 const SPEND_ENVELOPE_KEYS = new Set(['thumbgateSpend', 'thumbgate_spend', 'purchaseOrder']);
 const SENSITIVE_ACTION_KEY_PATTERN = /token|secret|password|authorization|cookie|api.?key/i;
 const BASH_EXTERNAL_ACTION_PATTERN = /\b(?:curl|wget|http|open|osascript|playwright|selenium|stripe|apollo|browser|chrome)\b/i;
@@ -142,10 +145,19 @@ function truncateAtMatch(value, pattern) {
   return match ? value.slice(0, match.index) : value;
 }
 
+function truncateAtVendorSuffix(value) {
+  const words = value.split(' ');
+  const suffixIndex = words.findIndex((word) => {
+    const normalizedWord = word.toLowerCase().replace(/[.,;:]+$/, '');
+    return VENDOR_SUFFIX_WORDS.has(normalizedWord);
+  });
+  return suffixIndex === -1 ? value : words.slice(0, suffixIndex).join(' ');
+}
+
 function parseVendor(text) {
   const match = /\b(?:for|on|from|with)\s+(?:the\s+)?([a-z0-9][a-z0-9 .&+'_-]{1,80})/i.exec(normalizeText(text));
   if (!match) return null;
-  let vendor = truncateAtMatch(match[1], /\s+(?:credits?|subscription|plan|purchase|checkout|upgrade|license|seats?)\b/i);
+  let vendor = truncateAtVendorSuffix(match[1]);
   vendor = truncateAtMatch(vendor, /\b(?:up\s+to|maximum|max)\b/i);
   vendor = truncateAtMatch(vendor, /[.,;:]/).trim();
   return vendor.length >= 2 ? vendor : null;
