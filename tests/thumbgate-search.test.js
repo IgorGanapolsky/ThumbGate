@@ -67,6 +67,34 @@ fs.writeFileSync(
 );
 
 fs.writeFileSync(
+  path.join(tmpDir, 'memory-log.jsonl'),
+  `${[
+    {
+      id: 'mem-database-proof-error',
+      title: 'MISTAKE: Database integration proof was skipped',
+      content: 'Skipped the database integration test and missed a migration failure.',
+      category: 'error',
+      importance: 'high',
+      tags: ['database', 'testing'],
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: 'mem-database-proof-learning',
+      title: 'Database integration proof',
+      content: 'Use real database integration tests before release.',
+      category: 'learning',
+      importance: 'high',
+      tags: ['database', 'testing'],
+      timestamp: new Date().toISOString(),
+      lesson: {
+        summary: 'Real database integration tests catch migration failures.',
+        content: 'Use real database integration tests before release.',
+      },
+    },
+  ].map((entry) => JSON.stringify(entry)).join('\n')}\n`
+);
+
+fs.writeFileSync(
   path.join(tmpDir, 'prevention-rules.md'),
   [
     '# Never mock databases in integration tests',
@@ -169,6 +197,21 @@ async function apiFetch(pathname, options = {}) {
 }
 
 const authHeader = { authorization: 'Bearer test-search-key' };
+
+test('authenticated production proof exercises real search, dashboard, and export routes', async () => {
+  const { runAuthenticatedProductionProof } = require('../scripts/prove-production-authenticated');
+  const report = await runAuthenticatedProductionProof({
+    apiKey: 'test-search-key',
+    baseUrl: apiOrigin,
+    expectedSha: 'test-sha',
+    expectedVersion: require('../package.json').version,
+    query: 'database',
+    maxAttempts: 1,
+  });
+
+  assert.equal(report.verdict, 'pass', JSON.stringify(report));
+  assert.ok(report.checks.every((check) => check.ok), JSON.stringify(report));
+});
 
 test('MCP registers search_thumbgate as a read-only tool', () => {
   const { TOOLS } = loadMcpServer();

@@ -3,17 +3,26 @@ const assert = require('node:assert/strict');
 const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
+const { version: packageVersion } = require('../package.json');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evidence-gate-test-'));
 const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evidence-gate-proof-'));
+const tmpStateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evidence-gate-state-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
+process.env.THUMBGATE_STATE_DIR = tmpStateDir;
 process.env.THUMBGATE_NO_RATE_LIMIT = '1';
 // This suite intentionally exercises the expanded coordination/reporting tools.
 process.env.THUMBGATE_MCP_PROFILE = 'default';
 
 const { handleRequest, TOOLS } = require('../adapters/mcp/server-stdio');
-const { clearSessionActions, trackAction } = require('../scripts/gates-engine');
+const gatesEngine = require('../scripts/gates-engine');
+const { clearSessionActions, trackAction } = gatesEngine;
+
+test('claim-evidence state is isolated from the operator home directory', () => {
+  assert.equal(gatesEngine.SESSION_ACTIONS_PATH, path.join(tmpStateDir, 'session-actions.json'));
+  assert.equal(gatesEngine.SESSION_ACTIONS_PATH.startsWith(os.homedir()), false);
+});
 
 async function callTool(name, args) {
   const result = await handleRequest({
@@ -117,7 +126,7 @@ test('require_evidence_for_claim blocks an MCP completion on configured factual 
     assert.equal(response.verified, false);
     assert.equal(response.factualMismatches.length, 1);
     assert.equal(response.factualMismatches[0].universal.status, 'mismatch');
-    assert.equal(response.factualMismatches[0].universal.actual, '1.31.0');
+    assert.equal(response.factualMismatches[0].universal.actual, packageVersion);
   } finally {
     if (previous === undefined) delete process.env.THUMBGATE_CLAIM_VERIFIERS_PATH;
     else process.env.THUMBGATE_CLAIM_VERIFIERS_PATH = previous;
