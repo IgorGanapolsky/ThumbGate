@@ -16,6 +16,10 @@ const CACHE_UPDATER_PATH = path.join(__dirname, '..', 'scripts', 'hook-thumbgate
 const AUTO_CAPTURE_HOOK_PATH = path.join(__dirname, '..', 'scripts', 'hook-auto-capture.sh');
 const LOCAL_STATS_PATH = path.join(__dirname, '..', 'scripts', 'statusline-local-stats.js');
 const PKG_VERSION = require('../package.json').version;
+// This timeout is a deadlock guard, not a latency SLO. A cold statusline starts
+// several short-lived Node helpers, which can exceed five seconds on a loaded CI
+// host even though each helper is making progress.
+const STATUSLINE_PROCESS_TIMEOUT_MS = 15_000;
 const SAFE_SYSTEM_PATH = Array.from(new Set([
   path.dirname(process.execPath),
   '/usr/bin',
@@ -63,7 +67,7 @@ function runStatusline(cachePayload, extraEnv = {}) {
         THUMBGATE_API_KEY: '',
         ...extraEnv,
       },
-      timeout: 5000,
+      timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -185,7 +189,7 @@ test('statusline rebuilds counters from local feedback logs when cache is empty'
         THUMBGATE_OPERATOR_KEY: '',
         THUMBGATE_API_KEY: '',
       },
-      timeout: 5000,
+      timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
     assert.ok(out.includes('1'), 'should show reconstructed positive count');
     assert.ok(out.includes('2'), 'should show reconstructed negative count');
@@ -232,7 +236,7 @@ test('statusline rebuilds counters from Claude history when the prompt hook miss
         THUMBGATE_PROJECT_DIR: projectDir,
         THUMBGATE_CLAUDE_HISTORY_PATH: historyPath,
       },
-      timeout: 5000,
+      timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
     assert.ok(out.includes('1'), 'should show the synced negative count');
 
@@ -277,7 +281,7 @@ test('statusline follows the persisted active project when Claude is running fro
         PATH: SAFE_SYSTEM_PATH,
         PWD: transientDir,
       },
-      timeout: 5000,
+      timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
     assert.ok(out.includes('7'), 'should show the active project thumbs up count');
     assert.ok(out.includes('3'), 'should show the active project thumbs down count');
@@ -329,7 +333,7 @@ test('local stats syncs Claude history for the persisted active project from tra
       cwd: transientDir,
       encoding: 'utf8',
       env,
-      timeout: 5000,
+      timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
     const payload = JSON.parse(out);
     assert.equal(payload.thumbs_up, '1');
@@ -372,7 +376,7 @@ test('statusline resolves project feedback from Claude cwd instead of the runtim
         PATH: SAFE_SYSTEM_PATH,
         PWD: runtimeDir,
       },
-      timeout: 5000,
+      timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
 
     assert.ok(out.includes('2'), 'should show project thumbs up count from Claude cwd');
@@ -412,7 +416,7 @@ test('statusline starts a new project in the collision-free local store', () => 
         context_window: { used_percentage: 1 },
       }),
       env,
-      timeout: 5000,
+      timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
 
     assert.ok(
@@ -450,7 +454,7 @@ test('statusline shows Pro when a valid ThumbGate license is present', () => {
         THUMBGATE_OPERATOR_KEY: '',
         THUMBGATE_API_KEY: '',
       },
-      timeout: 5000,
+      timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
     assert.ok(out.includes('Pro'), 'should show Pro tier when a license is active');
   } finally {
@@ -557,7 +561,7 @@ test('statusline preserves dashboard links under a tight width budget', () => {
         THUMBGATE_STATUSLINE_MAX_CHARS: '72',
         _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture()),
       },
-      timeout: 5000,
+      timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
     });
     const plain = stripStatuslineFormatting(out).trim();
     assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
@@ -591,7 +595,7 @@ test('user prompt hook records recent conversation history for statusline distil
       THUMBGATE_FEEDBACK_DIR: tmpDir,
       CLAUDE_USER_PROMPT: 'Need proof before saying deployed',
     },
-    timeout: 5000,
+    timeout: STATUSLINE_PROCESS_TIMEOUT_MS,
   });
 
   assert.ok(fs.existsSync(conversationPath), 'conversation-window.jsonl should be created');
@@ -620,7 +624,7 @@ test('cache updater writes cache from feedback_stats input', () => {
     encoding: 'utf8',
     input: JSON.stringify(event),
     env: { ...process.env, THUMBGATE_FEEDBACK_DIR: tmpDir },
-    timeout: 5000
+    timeout: STATUSLINE_PROCESS_TIMEOUT_MS
   });
 
   assert.ok(fs.existsSync(tmpCache), 'cache file should be created');
