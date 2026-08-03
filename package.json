@@ -986,7 +986,7 @@
     "apache-arrow": "^18.1.0",
     "better-sqlite3": "^12.9.0",
     "dotenv": "^17.4.2",
-    "js-yaml": "4.3.0",
+    "js-yaml": "5.2.2",
     "playwright-core": "^1.59.1",
     "protobufjs": "^8.7.1",
     "stripe": "^22.2.0"
@@ -1003,7 +1003,7 @@
     "express@4.22.1": {
       "path-to-regexp": "0.1.13"
     },
-    "js-yaml": "4.3.0",
+    "js-yaml": "5.2.2",
     "undici": "8.10.0"
   },
   "mcpName": "io.github.IgorGanapolsky/thumbgate",
