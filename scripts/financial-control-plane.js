@@ -60,6 +60,7 @@ const ECONOMIC_ACTION_PATTERNS = [
 
 const SCREEN_TOOL_PATTERN = /(?:browser|computer|playwright|puppeteer|selenium|click|tap|press)/i;
 const SCREEN_MUTATION_PATTERN = /(?:click|double[_ -]?click|tap|press|select|submit|confirm|activate)/i;
+const SCREEN_OBSERVATION_PATTERN = /(?:screenshot|snapshot)/i;
 
 // A process principal cannot be selected through a tool call. Operators that
 // need an approved purchase to survive separate MCP/hook processes must set a
@@ -116,20 +117,29 @@ function detectEconomicAction(toolName, toolInput = {}) {
 function detectOpaqueScreenMutation(toolName, toolInput = {}) {
   const normalizedToolName = String(toolName || '').trim();
   const input = objectValue(toolInput);
+  const declaredOperation = [input.action, input.operation, input.type]
+    .map((value) => String(value || ''))
+    .join(' ');
+  const toolDeclaresMutation = SCREEN_MUTATION_PATTERN.test(normalizedToolName);
+  const declaredMutation = SCREEN_MUTATION_PATTERN.test(declaredOperation);
+  const toolDeclaresObservation = SCREEN_OBSERVATION_PATTERN.test(normalizedToolName);
+  const declaredObservation = SCREEN_OBSERVATION_PATTERN.test(declaredOperation);
+  if (toolDeclaresObservation || (!toolDeclaresMutation && !declaredMutation && declaredObservation)) {
+    return false;
+  }
   const hasCoordinate = Object.hasOwn(input, 'coordinate') || Object.hasOwn(input, 'coordinates')
     || (Object.hasOwn(input, 'x') && Object.hasOwn(input, 'y'));
   const hasOpaqueLocator = hasCoordinate
     || Object.hasOwn(input, 'selector')
+    || Object.hasOwn(input, 'element')
+    || Object.hasOwn(input, 'ref')
     || Object.hasOwn(input, 'elementId')
     || Object.hasOwn(input, 'element_id')
     || Object.hasOwn(input, 'nodeId')
     || Object.hasOwn(input, 'node_id')
     || (Object.hasOwn(input, 'ref_id') && Object.hasOwn(input, 'id'));
   if (!hasOpaqueLocator || !SCREEN_TOOL_PATTERN.test(normalizedToolName)) return false;
-  const operation = [normalizedToolName, input.action, input.operation, input.type]
-    .map((value) => String(value || ''))
-    .join(' ');
-  return SCREEN_MUTATION_PATTERN.test(operation)
+  return toolDeclaresMutation || declaredMutation
     || /(?:browser|computer|playwright|puppeteer|selenium)/i.test(normalizedToolName);
 }
 
@@ -166,7 +176,7 @@ function createPurchaseRequisition(input = {}, options = {}) {
   if (evidence.length === 0) throw financialError('evidence must contain at least one item');
   const ttlMs = boundedTtl(input.ttlMs, DEFAULT_TTL_MS);
   const idempotencyKey = requiredString(input.idempotencyKey || `${taskId}:${sourceMessageId}`, 'idempotencyKey');
-  const comparableRequest = {
+  const requestIntent = {
     idempotencyKey,
     taskId,
     requester,
@@ -178,7 +188,6 @@ function createPurchaseRequisition(input = {}, options = {}) {
     actionFingerprint: approvedAction.fingerprint,
     evidence,
   };
-  const approvalContextDigest = requestComparableHash(comparableRequest);
   return withLedgerLock(options, () => {
     const ledger = readLedger(options);
     const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head);
@@ -186,7 +195,8 @@ function createPurchaseRequisition(input = {}, options = {}) {
     const existing = requisitionsFromEvents(ledger.events, options)
       .find((entry) => entry.idempotencyKey === idempotencyKey);
     if (existing) {
-      if (requestComparableHash(existing) !== requestComparableHash(comparableRequest)) {
+      if (requestIntentHash(existing) !== requestIntentHash(requestIntent)
+        || (input.requisitionId && input.requisitionId !== existing.requisitionId)) {
         const error = financialError(`conflicting requisition for idempotency key '${idempotencyKey}'`);
         error.code = 'THUMBGATE_IDEMPOTENCY_CONFLICT';
         throw error;
@@ -194,6 +204,7 @@ function createPurchaseRequisition(input = {}, options = {}) {
       return { recorded: false, duplicate: true, requisition: existing };
     }
     const requisitionId = input.requisitionId || `req_${crypto.randomUUID()}`;
+    const approvalContextDigest = requestComparableHash({ requisitionId, ...requestIntent });
     const escalationResult = requestEscalation({
       taskId,
       reason: `Purchase approval required: $${amountUsd.toFixed(2)} USD to ${vendor} for ${purpose}; exact action ${approvedAction.fingerprint}`,
@@ -452,6 +463,10 @@ function applyFinancialEvent(state, event, now) {
 }
 
 function reconcilePurchaseLedger(options = {}) {
+  return withLedgerLock(options, () => reconcilePurchaseLedgerUnlocked(options));
+}
+
+function reconcilePurchaseLedgerUnlocked(options = {}) {
   const ledger = readLedger(options);
   const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head);
   const requisitions = listPurchaseRequisitions(options);
@@ -761,8 +776,9 @@ function appendEventUnlocked(event, options, existingEvents) {
   } finally {
     fs.closeSync(ledgerFd);
   }
+  fsyncDirectoryFor(outputPath);
   writeLedgerHead(chained, options);
-  fs.unlinkSync(journalPath);
+  removeDurableFile(journalPath);
   return chained;
 }
 
@@ -825,7 +841,7 @@ function recoverLedgerTransaction(options = {}) {
       throw financialError('financial ledger journal does not match the recoverable append');
     }
     if (!headAtEvent) writeLedgerHead(event, options);
-    fs.unlinkSync(journalPath);
+    removeDurableFile(journalPath);
     return;
   }
 
@@ -834,7 +850,7 @@ function recoverLedgerTransaction(options = {}) {
     // The crash happened before the event append. The caller never received a
     // success response, so discard the prepared transaction instead of
     // executing it during recovery.
-    fs.unlinkSync(journalPath);
+    removeDurableFile(journalPath);
     return;
   }
   throw financialError('financial ledger journal cannot be reconciled safely');
@@ -856,6 +872,21 @@ function writeAtomicJson(targetPath, value, temporaryPath = null) {
     fs.closeSync(fd);
   }
   fs.renameSync(temporary, targetPath);
+  fsyncDirectoryFor(targetPath);
+}
+
+function removeDurableFile(targetPath) {
+  fs.unlinkSync(targetPath);
+  fsyncDirectoryFor(targetPath);
+}
+
+function fsyncDirectoryFor(targetPath) {
+  const directoryFd = fs.openSync(path.dirname(targetPath), 'r');
+  try {
+    fs.fsyncSync(directoryFd);
+  } finally {
+    fs.closeSync(directoryFd);
+  }
 }
 
 function validateLedgerChain(events, malformedRows = [], ledgerHead = null) {
@@ -917,6 +948,18 @@ function hashEvent(event) {
 
 function requestComparableHash(event) {
   const comparable = {
+    requisitionId: event.requisitionId,
+    ...requestIntentComparable(event),
+  };
+  return crypto.createHash('sha256').update(stableStringify(comparable)).digest('hex');
+}
+
+function requestIntentHash(event) {
+  return crypto.createHash('sha256').update(stableStringify(requestIntentComparable(event))).digest('hex');
+}
+
+function requestIntentComparable(event) {
+  return {
     idempotencyKey: event.idempotencyKey,
     taskId: event.taskId,
     requester: event.requester,
@@ -928,7 +971,6 @@ function requestComparableHash(event) {
     actionFingerprint: event.actionFingerprint,
     evidence: event.evidence,
   };
-  return crypto.createHash('sha256').update(stableStringify(comparable)).digest('hex');
 }
 
 function stableStringify(value) {

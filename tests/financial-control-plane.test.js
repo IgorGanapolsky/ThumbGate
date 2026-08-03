@@ -288,7 +288,21 @@ test('provider names in credential paths and read-only billing commands are not 
   assert.equal(detectOpaqueScreenMutation('Browser', { ref_id: 'page', id: 17 }), true);
   assert.equal(detectEconomicAction('Browser', { ref_id: 'page', id: 17 }), true);
   assert.equal(detectEconomicAction('computer', { action: 'click', coordinate: [920, 640] }), true);
+  assert.equal(detectEconomicAction('mcp__playwright__browser_click', {
+    element: 'Subscribe',
+    ref: 'e42',
+  }), true);
+  assert.equal(detectEconomicAction('mcp__playwright__browser_click', {
+    action: 'screenshot',
+    element: 'Subscribe',
+    ref: 'e42',
+  }), true);
   assert.equal(detectEconomicAction('Browser', { action: 'screenshot', pageno: 0 }), false);
+  assert.equal(detectEconomicAction('Browser', { action: 'screenshot', selector: '#receipt' }), false);
+  assert.equal(detectEconomicAction('mcp__playwright__browser_take_screenshot', {
+    element: 'Receipt',
+    ref: 'e99',
+  }), false);
 });
 
 test('signed human approval is bound to the immutable purchase request digest', () => {
@@ -316,6 +330,44 @@ test('signed human approval is bound to the immutable purchase request digest', 
     assert.throws(() => reservePurchaseRequisition({
       requisitionId: event.requisitionId,
       amountUsd: 1000,
+      vendor: 'Apollo',
+      purpose: 'Annual data plan',
+      sourceMessageId: 'user-message-42',
+    }, authOptions(feedbackDir, requester)), /approval is not bound to its exact purchase request/);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('one signed approval cannot be cloned onto a second requisition identity', () => {
+  const { feedbackDir, requester, request } = fixture();
+  try {
+    const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Approve exactly one requisition identity.',
+    }, reviewerOptions(feedbackDir));
+
+    const ledgerPath = getLedgerPath({ feedbackDir });
+    const original = JSON.parse(fs.readFileSync(ledgerPath, 'utf8').trim());
+    const cloned = {
+      ...original,
+      requisitionId: 'req_cloned_approval',
+      sequence: original.sequence + 1,
+      previousEventHash: original.eventHash,
+    };
+    cloned.eventHash = hashFinancialEvent(cloned);
+    fs.appendFileSync(ledgerPath, `${JSON.stringify(cloned)}\n`, 'utf8');
+    fs.writeFileSync(getLedgerHeadPath({ feedbackDir }), `${JSON.stringify({
+      schemaVersion: 'financial-ledger-head-v1',
+      sequence: cloned.sequence,
+      eventHash: cloned.eventHash,
+    })}\n`, 'utf8');
+
+    assert.throws(() => reservePurchaseRequisition({
+      requisitionId: cloned.requisitionId,
+      amountUsd: 588,
       vendor: 'Apollo',
       purpose: 'Annual data plan',
       sourceMessageId: 'user-message-42',
@@ -427,6 +479,92 @@ test('financial ledger journal repairs a crash after event append but before hea
     assert.equal(fs.existsSync(journalPath), false);
     assert.equal(reconcilePurchaseLedger({ feedbackDir }).ok, true);
   } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('pre-tool authorization recovers a committed journal before initial reconciliation', () => {
+  const { feedbackDir, requester, request } = fixture();
+  try {
+    const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Approve crash-recovery authorization test.',
+    }, reviewerOptions(feedbackDir));
+    const reserved = reservePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      amountUsd: 588,
+      vendor: 'Apollo',
+      purpose: 'Annual data plan',
+      sourceMessageId: 'user-message-42',
+    }, authOptions(feedbackDir, requester));
+
+    const ledgerPath = getLedgerPath({ feedbackDir });
+    const events = fs.readFileSync(ledgerPath, 'utf8').trim().split('\n').map(JSON.parse);
+    const previous = events.at(-2);
+    const interrupted = events.at(-1);
+    fs.writeFileSync(getLedgerHeadPath({ feedbackDir }), `${JSON.stringify({
+      schemaVersion: 'financial-ledger-head-v1',
+      sequence: previous.sequence,
+      eventHash: previous.eventHash,
+    })}\n`, 'utf8');
+    const journalPath = getLedgerJournalPath({ feedbackDir });
+    fs.writeFileSync(journalPath, `${JSON.stringify({
+      schemaVersion: 'financial-ledger-journal-v1',
+      previousHead: { sequence: previous.sequence, eventHash: previous.eventHash },
+      event: interrupted,
+    })}\n`, 'utf8');
+
+    const decision = evaluateFinancialControl({
+      toolName: 'Browser',
+      toolInput: {
+        command: 'Click Subscribe and confirm checkout',
+        costUsd: 588,
+        financialControl: {
+          requisitionId: reserved.requisition.requisitionId,
+          reservationId: reserved.requisition.reservationId,
+          actionId: 'journal-recovery-checkout',
+          vendor: 'Apollo',
+          purpose: 'Annual data plan',
+          sourceMessageId: 'user-message-42',
+        },
+      },
+      actionProfile: { economicAction: true },
+      costControl: {
+        mode: 'allow',
+        budget: {
+          maxCostUsdPerAction: 588,
+          remainingCostUsd: 588,
+          hasMaxCostUsdPerAction: true,
+          hasRemainingCostUsd: true,
+        },
+        usage: { estimatedCostUsd: 588 },
+      },
+    }, authOptions(feedbackDir, requester, { consumeReservation: true }));
+
+    assert.equal(decision.mode, 'allow');
+    assert.equal(decision.authorization.status, 'authorized');
+    assert.equal(fs.existsSync(journalPath), false);
+    assert.equal(reconcilePurchaseLedger({ feedbackDir }).ok, true);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('financial transaction publishes and deletes metadata with directory fsync', () => {
+  const { feedbackDir, requester, request } = fixture();
+  const originalFsync = fs.fsyncSync;
+  let directoryFsyncs = 0;
+  fs.fsyncSync = (fd) => {
+    if (fs.fstatSync(fd).isDirectory()) directoryFsyncs += 1;
+    return originalFsync(fd);
+  };
+  try {
+    createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    assert.ok(directoryFsyncs >= 3, `expected durable directory metadata fsyncs, observed ${directoryFsyncs}`);
+  } finally {
+    fs.fsyncSync = originalFsync;
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
 });
