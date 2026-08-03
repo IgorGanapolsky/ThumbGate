@@ -78,6 +78,12 @@ test('managed gate promise is bounded and backed by the canonical checkout rail'
 
 test('public enforcement claims match the implemented default and strict boundaries', () => {
   const { spawnSync } = require('node:child_process');
+  // Pin enforcement mode so an operator shell with THUMBGATE_STRICT_ENFORCEMENT=1
+  // (common after never-spend hardening) cannot flip the default-mode assertion.
+  const baseEnv = {
+    ...process.env,
+    THUMBGATE_STRICT_ENFORCEMENT: '',
+  };
   const runGate = (command, env = {}) => {
     const result = spawnSync('node', ['bin/cli.js', 'gate-check'], {
       cwd: ROOT,
@@ -86,7 +92,7 @@ test('public enforcement claims match the implemented default and strict boundar
         tool_input: { command },
         cwd: ROOT,
       }),
-      env: { ...process.env, ...env },
+      env: { ...baseEnv, ...env },
       encoding: 'utf8',
     });
     assert.equal(result.status, 0, result.stderr || result.stdout);
