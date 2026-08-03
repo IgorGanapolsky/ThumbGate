@@ -227,12 +227,13 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // operator-owned verifier example. Both are public enforcement surfaces;
   // neither imports private Core code or buyer state.
   // 418 -> 419 (2026-08-02): default config/gates/claim-verifiers.json.
-  // 419 -> 420 (2026-08-02): scripts/financial-control-plane.js. This is the
-  // fail-closed public hook/MCP transaction boundary; it imports no private
-  // Core module and persists only operator-owned requisition/ledger state.
+  // 419 -> 421 (2026-08-02): scripts/financial-control-plane.js and its shared
+  // crash-recoverable ledger lock. Together they form the fail-closed public
+  // hook/MCP transaction boundary; neither imports private Core code or buyer
+  // state. The measured package contains exactly 421 files, with no headroom.
   // CI pack measured 403 during secret-exfil coverage PR (no intentional new package
   // entries beyond security/runtime scripts already on the enforcement path).
-  const CEILING = 420;
+  const CEILING = 421;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
