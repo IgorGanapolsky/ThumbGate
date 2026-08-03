@@ -25,6 +25,7 @@ const {
 const {
   decideEscalation,
   getEscalationsHeadPath,
+  getEscalationsJournalPath,
   getEscalationsPath,
   requestEscalation,
   validateEscalationLedger,
@@ -89,6 +90,22 @@ function hashFinancialEvent(event) {
     return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
   };
   return require('node:crypto').createHash('sha256').update(stableStringify(copy)).digest('hex');
+}
+
+function authenticateFinancialRecord(record) {
+  const crypto = require('node:crypto');
+  const stableStringify = (value) => {
+    if (!value || typeof value !== 'object') return JSON.stringify(value);
+    if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+  };
+  const authenticated = { ...record };
+  authenticated.auth = {
+    algorithm: 'hmac-sha256',
+    keyId: crypto.createHash('sha256').update(APPROVAL_KEY).digest('hex').slice(0, 16),
+    signature: crypto.createHmac('sha256', APPROVAL_KEY).update(stableStringify(record)).digest('hex'),
+  };
+  return authenticated;
 }
 
 test('purchase lifecycle requires independent approval, exact scope, reservation, and receipt', () => {
@@ -204,7 +221,7 @@ test('purchase lifecycle requires independent approval, exact scope, reservation
     }, authOptions(feedbackDir, requester));
     assert.equal(settled.requisition.status, 'committed');
 
-    const reconciliation = reconcilePurchaseLedger({ feedbackDir });
+    const reconciliation = reconcilePurchaseLedger(authOptions(feedbackDir, requester));
     assert.equal(reconciliation.ok, true);
     assert.deepEqual(reconciliation.totals, {
       approvedUsd: 588,
@@ -334,7 +351,7 @@ test('signed human approval is bound to the immutable purchase request digest', 
       vendor: 'Apollo',
       purpose: 'Annual data plan',
       sourceMessageId: 'user-message-42',
-    }, authOptions(feedbackDir, requester)), /approval is not bound to its exact purchase request/);
+    }, authOptions(feedbackDir, requester)), /ledger integrity verification failed/);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
@@ -372,7 +389,7 @@ test('one signed approval cannot be cloned onto a second requisition identity', 
       vendor: 'Apollo',
       purpose: 'Annual data plan',
       sourceMessageId: 'user-message-42',
-    }, authOptions(feedbackDir, requester)), /approval is not bound to its exact purchase request/);
+    }, authOptions(feedbackDir, requester)), /ledger integrity verification failed/);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
@@ -387,6 +404,7 @@ test('concurrent callers cannot create two requisitions for one idempotency key'
       const result = createPurchaseRequisition(${JSON.stringify(request)}, {
         feedbackDir: ${JSON.stringify(feedbackDir)},
         authenticatedPrincipal: ${JSON.stringify(requester)},
+        approvalVerificationKey: ${JSON.stringify(APPROVAL_KEY)},
       });
       process.stdout.write(result.recorded ? 'recorded' : 'duplicate');
     } catch (error) {
@@ -410,7 +428,7 @@ test('concurrent callers cannot create two requisitions for one idempotency key'
     const events = fs.readFileSync(getLedgerPath({ feedbackDir }), 'utf8')
       .trim().split('\n').filter(Boolean).map(JSON.parse);
     assert.equal(events.filter((event) => event.eventType === 'requested').length, 1);
-    assert.equal(reconcilePurchaseLedger({ feedbackDir }).requisitionCount, 1);
+    assert.equal(reconcilePurchaseLedger(authOptions(feedbackDir, requester)).requisitionCount, 1);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
@@ -446,6 +464,7 @@ test('financial ledger journal repairs a crash after event append but before hea
       decision: 'approved',
       reason: 'Approve crash-recovery test.',
     }, reviewerOptions(feedbackDir));
+    const previousHead = JSON.parse(fs.readFileSync(getLedgerHeadPath({ feedbackDir }), 'utf8'));
     const reserved = reservePurchaseRequisition({
       requisitionId: created.requisition.requisitionId,
       amountUsd: 588,
@@ -458,17 +477,13 @@ test('financial ledger journal repairs a crash after event append but before hea
     const events = fs.readFileSync(ledgerPath, 'utf8').trim().split('\n').map(JSON.parse);
     const previous = events.at(-2);
     const interrupted = events.at(-1);
-    fs.writeFileSync(getLedgerHeadPath({ feedbackDir }), `${JSON.stringify({
-      schemaVersion: 'financial-ledger-head-v1',
-      sequence: previous.sequence,
-      eventHash: previous.eventHash,
-    })}\n`, 'utf8');
+    fs.writeFileSync(getLedgerHeadPath({ feedbackDir }), `${JSON.stringify(previousHead)}\n`, 'utf8');
     const journalPath = getLedgerJournalPath({ feedbackDir });
-    fs.writeFileSync(journalPath, `${JSON.stringify({
-      schemaVersion: 'financial-ledger-journal-v1',
-      previousHead: { sequence: previous.sequence, eventHash: previous.eventHash },
+    fs.writeFileSync(journalPath, `${JSON.stringify(authenticateFinancialRecord({
+      schemaVersion: 'financial-ledger-journal-v2',
+      previousHead,
       event: interrupted,
-    })}\n`, 'utf8');
+    }))}\n`, 'utf8');
 
     const released = settlePurchaseRequisition({
       requisitionId: created.requisition.requisitionId,
@@ -478,7 +493,7 @@ test('financial ledger journal repairs a crash after event append but before hea
     }, authOptions(feedbackDir, requester));
     assert.equal(released.requisition.status, 'released');
     assert.equal(fs.existsSync(journalPath), false);
-    assert.equal(reconcilePurchaseLedger({ feedbackDir }).ok, true);
+    assert.equal(reconcilePurchaseLedger(authOptions(feedbackDir, requester)).ok, true);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
@@ -493,6 +508,7 @@ test('pre-tool authorization recovers a committed journal before initial reconci
       decision: 'approved',
       reason: 'Approve crash-recovery authorization test.',
     }, reviewerOptions(feedbackDir));
+    const previousHead = JSON.parse(fs.readFileSync(getLedgerHeadPath({ feedbackDir }), 'utf8'));
     const reserved = reservePurchaseRequisition({
       requisitionId: created.requisition.requisitionId,
       amountUsd: 588,
@@ -505,17 +521,13 @@ test('pre-tool authorization recovers a committed journal before initial reconci
     const events = fs.readFileSync(ledgerPath, 'utf8').trim().split('\n').map(JSON.parse);
     const previous = events.at(-2);
     const interrupted = events.at(-1);
-    fs.writeFileSync(getLedgerHeadPath({ feedbackDir }), `${JSON.stringify({
-      schemaVersion: 'financial-ledger-head-v1',
-      sequence: previous.sequence,
-      eventHash: previous.eventHash,
-    })}\n`, 'utf8');
+    fs.writeFileSync(getLedgerHeadPath({ feedbackDir }), `${JSON.stringify(previousHead)}\n`, 'utf8');
     const journalPath = getLedgerJournalPath({ feedbackDir });
-    fs.writeFileSync(journalPath, `${JSON.stringify({
-      schemaVersion: 'financial-ledger-journal-v1',
-      previousHead: { sequence: previous.sequence, eventHash: previous.eventHash },
+    fs.writeFileSync(journalPath, `${JSON.stringify(authenticateFinancialRecord({
+      schemaVersion: 'financial-ledger-journal-v2',
+      previousHead,
       event: interrupted,
-    })}\n`, 'utf8');
+    }))}\n`, 'utf8');
 
     const decision = evaluateFinancialControl({
       toolName: 'Browser',
@@ -547,7 +559,7 @@ test('pre-tool authorization recovers a committed journal before initial reconci
     assert.equal(decision.mode, 'allow');
     assert.equal(decision.authorization.status, 'authorized');
     assert.equal(fs.existsSync(journalPath), false);
-    assert.equal(reconcilePurchaseLedger({ feedbackDir }).ok, true);
+    assert.equal(reconcilePurchaseLedger(authOptions(feedbackDir, requester)).ok, true);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
@@ -608,6 +620,57 @@ test('concurrent escalation writers cannot fork the append-only chain', async ()
     const head = JSON.parse(fs.readFileSync(getEscalationsHeadPath({ feedbackDir }), 'utf8'));
     assert.equal(validateEscalationLedger(events, [], head).ok, true);
     assert.equal(new Set(events.map((event) => event.sequence)).size, events.length);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('human escalation journal repairs a crash after append before head publication', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-escalation-journal-'));
+  const headPath = getEscalationsHeadPath({ feedbackDir });
+  const journalPath = getEscalationsJournalPath({ feedbackDir });
+  const originalRename = fs.renameSync;
+  let interrupted = false;
+  fs.renameSync = (source, target) => {
+    if (!interrupted && target === headPath) {
+      interrupted = true;
+      const error = new Error('simulated crash before escalation head publication');
+      error.code = 'EIO';
+      throw error;
+    }
+    return originalRename(source, target);
+  };
+  try {
+    assert.throws(() => requestEscalation({
+      taskId: 'approval-crash-1',
+      reason: 'Prove recovery of an interrupted human approval append',
+      severity: 'critical',
+      requester: { id: 'agent-crash-test', kind: 'agent' },
+      evidence: ['fault injection at atomic head rename'],
+      idempotencyKey: 'approval-crash-1',
+    }, { feedbackDir }), /simulated crash/);
+  } finally {
+    fs.renameSync = originalRename;
+  }
+
+  try {
+    assert.equal(fs.existsSync(journalPath), true);
+    const second = requestEscalation({
+      taskId: 'approval-crash-2',
+      reason: 'Append after automatic recovery',
+      severity: 'high',
+      requester: { id: 'agent-crash-test', kind: 'agent' },
+      evidence: ['recovery must publish the first head exactly once'],
+      idempotencyKey: 'approval-crash-2',
+    }, { feedbackDir });
+    assert.equal(second.recorded, true);
+    assert.equal(fs.existsSync(journalPath), false);
+    const events = fs.readFileSync(getEscalationsPath({ feedbackDir }), 'utf8')
+      .trim().split('\n').map(JSON.parse);
+    const head = JSON.parse(fs.readFileSync(headPath, 'utf8'));
+    assert.equal(events.length, 2);
+    assert.equal(head.sequence, 2);
+    assert.equal(validateEscalationLedger(events, [], head).ok, true);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
@@ -911,13 +974,13 @@ test('a forged reservation cannot replace the amount or action in the signed pur
     }, authOptions(feedbackDir, requester, { consumeReservation: true }));
 
     assert.equal(control.mode, 'block');
-    assert.ok(control.reasonCodes.includes('reservation_not_bound_to_approval'));
+    assert.ok(control.reasonCodes.includes('financial_ledger_tampered'));
     assert.throws(() => settlePurchaseRequisition({
       requisitionId: created.requisition.requisitionId,
       reservationId: forged.reservationId,
       status: 'released',
       reason: 'Forged reservation must not settle.',
-    }, authOptions(feedbackDir, requester)), /reservation|signed purchase request/);
+    }, authOptions(feedbackDir, requester)), /ledger integrity verification failed/);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
@@ -1147,7 +1210,7 @@ test('hard-floor preview preserves a reservation until the final allow boundary'
 });
 
 test('reconciliation detects tampering without rewriting the ledger', () => {
-  const { feedbackDir, request } = fixture();
+  const { feedbackDir, requester, request } = fixture();
   try {
     createPurchaseRequisition(request, authOptions(feedbackDir, { id: 'agent-operator', kind: 'agent' }));
     const ledgerPath = getLedgerPath({ feedbackDir });
@@ -1156,7 +1219,7 @@ test('reconciliation detects tampering without rewriting the ledger', () => {
     event.amountUsd = 1;
     fs.writeFileSync(ledgerPath, `${JSON.stringify(event)}\n`, 'utf8');
 
-    const reconciliation = reconcilePurchaseLedger({ feedbackDir });
+    const reconciliation = reconcilePurchaseLedger(authOptions(feedbackDir, requester));
     assert.equal(reconciliation.ok, false);
     assert.equal(reconciliation.invalidEventHashes.length, 1);
   } finally {
@@ -1185,7 +1248,7 @@ test('reconciliation detects ledger row deletion and reordering through hash cha
     const rows = fs.readFileSync(ledgerPath, 'utf8').trim().split('\n');
     fs.writeFileSync(ledgerPath, `${rows[1]}\n`, 'utf8');
 
-    const reconciliation = reconcilePurchaseLedger({ feedbackDir });
+    const reconciliation = reconcilePurchaseLedger(authOptions(feedbackDir, requester));
     assert.equal(reconciliation.ok, false);
     assert.equal(reconciliation.invalidChainLinks.length, 1);
     assert.equal(reconciliation.ledgerHeadMismatches.length, 0);
@@ -1224,7 +1287,7 @@ test('reconciliation detects deletion of the final ledger event through the head
 
     const head = JSON.parse(fs.readFileSync(getLedgerHeadPath({ feedbackDir }), 'utf8'));
     assert.equal(head.sequence, 2);
-    const reconciliation = reconcilePurchaseLedger({ feedbackDir });
+    const reconciliation = reconcilePurchaseLedger(authOptions(feedbackDir, requester));
     assert.equal(reconciliation.ok, false);
     assert.equal(reconciliation.invalidChainLinks.length, 0);
     assert.equal(reconciliation.ledgerHeadMismatches.length, 1);
@@ -1232,6 +1295,83 @@ test('reconciliation detects deletion of the final ledger event through the head
       ...request,
       idempotencyKey: 'second-request-after-truncation',
     }, authOptions(feedbackDir, requester)), /integrity verification failed/);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('authenticated financial head blocks rollback to a reusable reservation', () => {
+  const { feedbackDir, requester, request } = fixture();
+  try {
+    const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Approve the exact one-time rollback regression action.',
+    }, reviewerOptions(feedbackDir));
+    const reserved = reservePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      amountUsd: 588,
+      vendor: 'Apollo',
+      purpose: 'Annual data plan',
+      sourceMessageId: 'user-message-42',
+    }, authOptions(feedbackDir, requester));
+
+    const makeAction = (actionId) => ({
+      toolName: 'Browser',
+      toolInput: {
+        command: 'Click Subscribe and confirm checkout',
+        costUsd: 588,
+        financialControl: {
+          requisitionId: reserved.requisition.requisitionId,
+          reservationId: reserved.requisition.reservationId,
+          actionId,
+          vendor: 'Apollo',
+          purpose: 'Annual data plan',
+          sourceMessageId: 'user-message-42',
+        },
+      },
+      actionProfile: { economicAction: true },
+      costControl: {
+        mode: 'allow',
+        budget: {
+          maxCostUsdPerAction: 588,
+          remainingCostUsd: 588,
+          hasMaxCostUsdPerAction: true,
+          hasRemainingCostUsd: true,
+        },
+        usage: { estimatedCostUsd: 588 },
+      },
+    });
+    const first = evaluateFinancialControl(
+      makeAction('authorized-before-rollback'),
+      authOptions(feedbackDir, requester, { consumeReservation: true })
+    );
+    assert.equal(first.mode, 'allow');
+    assert.equal(first.authorization.status, 'authorized');
+
+    const ledgerPath = getLedgerPath({ feedbackDir });
+    const rows = fs.readFileSync(ledgerPath, 'utf8').trim().split('\n');
+    const reservedEvent = JSON.parse(rows[1]);
+    fs.writeFileSync(ledgerPath, `${rows[0]}\n${rows[1]}\n`, 'utf8');
+    fs.writeFileSync(getLedgerHeadPath({ feedbackDir }), `${JSON.stringify({
+      schemaVersion: 'financial-ledger-head-v2',
+      sequence: reservedEvent.sequence,
+      eventHash: reservedEvent.eventHash,
+      auth: {
+        algorithm: 'hmac-sha256',
+        keyId: 'attacker-without-integrity-key',
+        signature: '0'.repeat(64),
+      },
+    })}\n`, 'utf8');
+
+    const replay = evaluateFinancialControl(
+      makeAction('replay-after-ledger-rollback'),
+      authOptions(feedbackDir, requester, { consumeReservation: true })
+    );
+    assert.equal(replay.mode, 'block');
+    assert.ok(replay.reasonCodes.includes('financial_ledger_tampered'));
+    assert.equal(fs.readFileSync(ledgerPath, 'utf8').trim().split('\n').length, 2);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }

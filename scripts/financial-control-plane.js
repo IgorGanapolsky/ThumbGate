@@ -26,6 +26,8 @@ const {
 const LEDGER_FILE = 'financial-control-ledger.jsonl';
 const LEDGER_HEAD_FILE = 'financial-control-ledger.head.json';
 const LEDGER_JOURNAL_FILE = 'financial-control-ledger.journal.json';
+const LEDGER_HEAD_SCHEMA = 'financial-ledger-head-v2';
+const LEDGER_JOURNAL_SCHEMA = 'financial-ledger-journal-v2';
 const DEFAULT_TTL_MS = 60 * 60 * 1000;
 const MAX_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_RESERVATION_TTL_MS = 15 * 60 * 1000;
@@ -196,7 +198,7 @@ function createPurchaseRequisition(input = {}, options = {}) {
   const approvalContextDigest = requestComparableHash({ requisitionId, ...requestIntent });
   return withLedgerLock(options, () => {
     const ledger = readLedger(options);
-    const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head);
+    const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head, options);
     if (!chain.ok) throw financialError('financial ledger integrity verification failed');
     const existing = requisitionsFromEvents(ledger.events, options)
       .find((entry) => entry.idempotencyKey === idempotencyKey);
@@ -262,7 +264,7 @@ function reservePurchaseRequisition(input = {}, options = {}) {
   const requisitionId = requiredString(input.requisitionId, 'requisitionId');
   return withLedgerLock(options, () => {
     const ledger = readLedger(options);
-    assertLedgerHealthyData(ledger);
+    assertLedgerHealthyData(ledger, options);
     const requisition = projectRequisitionFromEvents(ledger.events, requisitionId, options);
     if (!requisition) throw financialError(`unknown requisition '${requisitionId}'`);
     assertPrincipalOwnsRequisition(requester, requisition);
@@ -330,7 +332,7 @@ function settlePurchaseRequisition(input = {}, options = {}) {
   }
   return withLedgerLock(options, () => {
     const ledger = readLedger(options);
-    assertLedgerHealthyData(ledger);
+    assertLedgerHealthyData(ledger, options);
     const requisition = projectRequisitionFromEvents(ledger.events, requisitionId, options);
     if (!requisition) throw financialError(`unknown requisition '${requisitionId}'`);
     const allowedStates = status === 'committed' ? ['authorized'] : ['reserved', 'authorized'];
@@ -458,7 +460,7 @@ function reconcilePurchaseLedger(options = {}) {
 
 function reconcilePurchaseLedgerUnlocked(options = {}) {
   const ledger = readLedger(options);
-  const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head);
+  const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head, options);
   const requisitions = listPurchaseRequisitions(options);
   const staleReservations = requisitions
     .filter((entry) => entry.status === 'reservation_expired')
@@ -655,7 +657,7 @@ function consumeReservationIfAuthorized(result, input, options) {
 function consumeReservation(input, options) {
   return withLedgerLock(options, () => {
     const ledger = readLedger(options);
-    const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head);
+    const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head, options);
     if (!chain.ok) throw financialError('financial ledger integrity check failed before authorization');
     const current = projectRequisitionFromEvents(ledger.events, input.requisitionId, options);
     if (!current || current.status !== 'reserved') {
@@ -779,11 +781,13 @@ function appendEventUnlocked(event, options, existingEvents) {
   chained.eventHash = hashEvent(chained);
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   const journalPath = getLedgerJournalPath(options);
-  writeAtomicJson(journalPath, {
-    schemaVersion: 'financial-ledger-journal-v1',
+  const journal = {
+    schemaVersion: LEDGER_JOURNAL_SCHEMA,
     previousHead: previous ? { sequence: previous.sequence, eventHash: previous.eventHash } : null,
     event: chained,
-  });
+  };
+  journal.auth = signIntegrityRecord(journal, ledgerIntegrityKey(options));
+  writeAtomicJson(journalPath, journal);
   const ledgerFd = fs.openSync(outputPath, 'a', 0o600);
   try {
     fs.writeSync(ledgerFd, `${JSON.stringify(chained)}\n`, null, 'utf8');
@@ -801,10 +805,11 @@ function writeLedgerHead(event, options) {
   const headPath = getLedgerHeadPath(options);
   const temporaryPath = `${headPath}.tmp-${process.pid}-${crypto.randomUUID()}`;
   const head = {
-    schemaVersion: 'financial-ledger-head-v1',
+    schemaVersion: LEDGER_HEAD_SCHEMA,
     sequence: event.sequence,
     eventHash: event.eventHash,
   };
+  head.auth = signIntegrityRecord(head, ledgerIntegrityKey(options));
   writeAtomicJson(headPath, head, temporaryPath);
 }
 
@@ -826,9 +831,11 @@ function recoverLedgerTransaction(options = {}) {
     if (error.code === 'ENOENT') return;
     throw financialError(`cannot recover financial ledger journal: ${error.message}`);
   }
-  if (journal?.schemaVersion !== 'financial-ledger-journal-v1'
+  const integrityKey = ledgerIntegrityKey(options);
+  if (journal?.schemaVersion !== LEDGER_JOURNAL_SCHEMA
     || !journal.event
-    || journal.event.eventHash !== hashEvent(journal.event)) {
+    || journal.event.eventHash !== hashEvent(journal.event)
+    || !verifyIntegrityRecord(journal, integrityKey)) {
     throw financialError('financial ledger journal integrity verification failed');
   }
 
@@ -850,7 +857,8 @@ function recoverLedgerTransaction(options = {}) {
     const chain = validateLedgerChain(
       ledger.events,
       ledger.malformedRows,
-      { schemaVersion: 'financial-ledger-head-v1', sequence: event.sequence, eventHash: event.eventHash }
+      null,
+      { ...options, skipLedgerHead: true }
     );
     if (!sameHead(previousHead, expectedPrevious) || !chain.ok || (!headAtPrevious && !headAtEvent)) {
       throw financialError('financial ledger journal does not match the recoverable append');
@@ -860,7 +868,7 @@ function recoverLedgerTransaction(options = {}) {
     return;
   }
 
-  const currentChain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head);
+  const currentChain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head, options);
   if (currentChain.ok && headAtPrevious && event.sequence === ledger.events.length + 1) {
     // The crash happened before the event append. The caller never received a
     // success response, so discard the prepared transaction instead of
@@ -904,7 +912,7 @@ function fsyncDirectoryFor(targetPath) {
   }
 }
 
-function validateLedgerChain(events, malformedRows = [], ledgerHead = null) {
+function validateLedgerChain(events, malformedRows = [], ledgerHead = null, options = {}) {
   const invalidEventHashes = [];
   const invalidChainLinks = [];
   let previousHash = null;
@@ -923,7 +931,9 @@ function validateLedgerChain(events, malformedRows = [], ledgerHead = null) {
     }
     previousHash = event.eventHash || null;
   });
-  const ledgerHeadMismatches = validateLedgerHead(events, ledgerHead);
+  const ledgerHeadMismatches = options.skipLedgerHead
+    ? []
+    : validateLedgerHead(events, ledgerHead, options);
   return {
     ok: malformedRows.length === 0
       && invalidEventHashes.length === 0
@@ -935,24 +945,72 @@ function validateLedgerChain(events, malformedRows = [], ledgerHead = null) {
   };
 }
 
-function validateLedgerHead(events, ledgerHead) {
+function validateLedgerHead(events, ledgerHead, options = {}) {
   if (events.length === 0 && ledgerHead === null) return [];
   const expected = events.at(-1) || { sequence: 0, eventHash: null };
-  if (ledgerHead?.schemaVersion === 'financial-ledger-head-v1'
+  const key = optionalString(
+    options.financialLedgerIntegrityKey
+      || options.approvalVerificationKey
+      || options.approvalSigningKey
+      || process.env.THUMBGATE_FINANCIAL_LEDGER_KEY
+      || process.env.THUMBGATE_HUMAN_REVIEWER_KEY
+  );
+  if (key
+    && ledgerHead?.schemaVersion === LEDGER_HEAD_SCHEMA
     && ledgerHead.sequence === expected.sequence
-    && ledgerHead.eventHash === expected.eventHash) return [];
+    && ledgerHead.eventHash === expected.eventHash
+    && verifyIntegrityRecord(ledgerHead, key)) return [];
   return [{
     recordedSequence: ledgerHead?.sequence ?? null,
     expectedSequence: expected.sequence,
     recordedEventHash: ledgerHead?.eventHash ?? null,
     expectedEventHash: expected.eventHash,
+    authenticated: Boolean(key && verifyIntegrityRecord(ledgerHead, key)),
   }];
 }
 
-function assertLedgerHealthyData(ledger) {
-  if (!validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head).ok) {
+function assertLedgerHealthyData(ledger, options = {}) {
+  if (!validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head, options).ok) {
     throw financialError('financial ledger integrity verification failed');
   }
+}
+
+function ledgerIntegrityKey(options = {}) {
+  const key = optionalString(
+    options.financialLedgerIntegrityKey
+      || options.approvalVerificationKey
+      || options.approvalSigningKey
+      || process.env.THUMBGATE_FINANCIAL_LEDGER_KEY
+      || process.env.THUMBGATE_HUMAN_REVIEWER_KEY
+  );
+  if (!key) {
+    throw financialError('financial ledger integrity key is required');
+  }
+  return key;
+}
+
+function signIntegrityRecord(record, key) {
+  return {
+    algorithm: 'hmac-sha256',
+    keyId: crypto.createHash('sha256').update(key).digest('hex').slice(0, 16),
+    signature: crypto.createHmac('sha256', key).update(integrityPayload(record)).digest('hex'),
+  };
+}
+
+function verifyIntegrityRecord(record, key) {
+  const auth = record?.auth;
+  if (!record || !auth || auth.algorithm !== 'hmac-sha256') return false;
+  const expectedKeyId = crypto.createHash('sha256').update(key).digest('hex').slice(0, 16);
+  if (auth.keyId !== expectedKeyId || !/^[a-f0-9]{64}$/i.test(String(auth.signature || ''))) return false;
+  const expected = crypto.createHmac('sha256', key).update(integrityPayload(record)).digest();
+  const actual = Buffer.from(auth.signature, 'hex');
+  return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+}
+
+function integrityPayload(record) {
+  const copy = { ...record };
+  delete copy.auth;
+  return stableStringify(copy);
 }
 
 function hashEvent(event) {

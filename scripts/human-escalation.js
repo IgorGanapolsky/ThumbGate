@@ -17,6 +17,7 @@ const { withFileLedgerLock } = require('./file-ledger-lock');
 
 const ESCALATIONS_FILE = 'human-escalations.jsonl';
 const ESCALATIONS_HEAD_FILE = 'human-escalations.head.json';
+const ESCALATIONS_JOURNAL_FILE = 'human-escalations.journal.json';
 const MAX_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
 const SEVERITIES = new Set(['low', 'medium', 'high', 'critical']);
@@ -29,6 +30,11 @@ function getEscalationsPath(options = {}) {
 function getEscalationsHeadPath(options = {}) {
   if (options.inputPath) return `${path.resolve(options.inputPath)}.head.json`;
   return path.join(getFeedbackPaths(options).FEEDBACK_DIR, ESCALATIONS_HEAD_FILE);
+}
+
+function getEscalationsJournalPath(options = {}) {
+  if (options.inputPath) return `${path.resolve(options.inputPath)}.journal.json`;
+  return path.join(getFeedbackPaths(options).FEEDBACK_DIR, ESCALATIONS_JOURNAL_FILE);
 }
 
 function requestEscalation(input = {}, options = {}) {
@@ -238,8 +244,22 @@ function appendEventUnlocked(event, options, existingEvents) {
   };
   chained.eventHash = eventHash(chained);
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-  fs.appendFileSync(outputPath, `${JSON.stringify(chained)}\n`, 'utf8');
+  const journalPath = getEscalationsJournalPath(options);
+  writeAtomicJson(journalPath, {
+    schemaVersion: 'human-escalation-journal-v1',
+    previousHead: readLedgerHead(options),
+    event: chained,
+  });
+  const ledgerFd = fs.openSync(outputPath, 'a', 0o600);
+  try {
+    fs.writeSync(ledgerFd, `${JSON.stringify(chained)}\n`, null, 'utf8');
+    fs.fsyncSync(ledgerFd);
+  } finally {
+    fs.closeSync(ledgerFd);
+  }
+  fsyncDirectoryFor(outputPath);
   writeLedgerHead(chained, options);
+  removeDurableFile(journalPath);
   return chained;
 }
 
@@ -254,6 +274,7 @@ function withEscalationLock(options, callback) {
     now: options.now,
     lockStaleMs: options.lockStaleMs,
     errorFactory: (message) => escalationError(message),
+    beforeCallback: () => recoverEscalationTransaction(options),
   });
 }
 
@@ -268,14 +289,95 @@ function readLedgerHead(options = {}) {
 
 function writeLedgerHead(event, options = {}) {
   const headPath = getEscalationsHeadPath(options);
-  const temporaryPath = `${headPath}.tmp-${process.pid}-${crypto.randomUUID()}`;
   const head = {
     schemaVersion: 'human-escalation-head-v1',
     sequence: event.sequence,
     eventHash: event.eventHash,
   };
-  fs.writeFileSync(temporaryPath, `${JSON.stringify(head)}\n`, { encoding: 'utf8', mode: 0o600 });
-  fs.renameSync(temporaryPath, headPath);
+  writeAtomicJson(headPath, head);
+}
+
+function recoverEscalationTransaction(options = {}) {
+  const journalPath = getEscalationsJournalPath(options);
+  let journal;
+  try {
+    journal = JSON.parse(fs.readFileSync(journalPath, 'utf8'));
+  } catch (error) {
+    if (error.code === 'ENOENT') return;
+    throw escalationError(`cannot recover escalation journal: ${error.message}`);
+  }
+  if (journal?.schemaVersion !== 'human-escalation-journal-v1'
+    || !journal.event
+    || journal.event.eventHash !== eventHash(journal.event)) {
+    throw escalationError('escalation journal integrity verification failed');
+  }
+
+  const ledger = readLedger(options);
+  const event = journal.event;
+  const currentLast = ledger.events.at(-1) || null;
+  const eventHead = { sequence: event.sequence, eventHash: event.eventHash };
+  const eventAlreadyAppended = sameHead(currentLast, eventHead);
+  const headAtPrevious = sameHead(ledger.head, journal.previousHead);
+  const headAtEvent = sameHead(ledger.head, eventHead);
+
+  if (eventAlreadyAppended) {
+    const preceding = ledger.events.at(-2) || null;
+    const precedingMatches = event.sequence === ledger.events.length
+      && event.previousEventHash === (preceding?.eventHash || null);
+    const syntheticHead = {
+      schemaVersion: 'human-escalation-head-v1',
+      ...eventHead,
+    };
+    const integrity = validateEscalationLedger(ledger.events, ledger.malformedRows, syntheticHead);
+    if (!precedingMatches || !integrity.ok || (!headAtPrevious && !headAtEvent)) {
+      throw escalationError('escalation journal does not match the recoverable append');
+    }
+    if (!headAtEvent) writeLedgerHead(event, options);
+    removeDurableFile(journalPath);
+    return;
+  }
+
+  const currentIntegrity = validateEscalationLedger(ledger.events, ledger.malformedRows, ledger.head);
+  if (currentIntegrity.ok && headAtPrevious && event.sequence === ledger.events.length + 1) {
+    // No append became durable, so the caller never received success. Discard
+    // the prepared transaction and let the original operation be retried.
+    removeDurableFile(journalPath);
+    return;
+  }
+  throw escalationError('escalation journal cannot be reconciled safely');
+}
+
+function sameHead(left, right) {
+  if (!left && !right) return true;
+  return left?.sequence === right?.sequence && left?.eventHash === right?.eventHash;
+}
+
+function writeAtomicJson(targetPath, value) {
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  const temporaryPath = `${targetPath}.tmp-${process.pid}-${crypto.randomUUID()}`;
+  const fd = fs.openSync(temporaryPath, 'w', 0o600);
+  try {
+    fs.writeSync(fd, `${JSON.stringify(value)}\n`, null, 'utf8');
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  fs.renameSync(temporaryPath, targetPath);
+  fsyncDirectoryFor(targetPath);
+}
+
+function removeDurableFile(targetPath) {
+  fs.unlinkSync(targetPath);
+  fsyncDirectoryFor(targetPath);
+}
+
+function fsyncDirectoryFor(targetPath) {
+  const directoryFd = fs.openSync(path.dirname(targetPath), 'r');
+  try {
+    fs.fsyncSync(directoryFd);
+  } finally {
+    fs.closeSync(directoryFd);
+  }
 }
 
 function validateEscalationLedger(events, malformedRows = [], head = null) {
@@ -462,6 +564,7 @@ module.exports = {
   decideEscalation,
   getEscalation,
   getEscalationsHeadPath,
+  getEscalationsJournalPath,
   getEscalationsPath,
   getVerifiedApproval,
   listEscalations,
