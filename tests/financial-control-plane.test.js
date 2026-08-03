@@ -423,6 +423,14 @@ test('provider names in credential paths and read-only billing commands are not 
     action: 'click',
     description: 'Create a paid recurring subscription',
   }), true);
+  assert.equal(detectEconomicAction('Task', {
+    goal: 'Upgrade dependencies to supported versions',
+    prompt: 'Review the purchase-control implementation',
+  }), false);
+  assert.equal(detectEconomicAction('Bash', {
+    command: "rg 'cancel subscription' src",
+    description: 'Review how cancel subscription is implemented',
+  }), false);
   assert.equal(detectEconomicAction('Bash', {
     command: 'stripe subscriptions create --customer cus_123',
   }), true);

@@ -212,4 +212,23 @@ test('published plugin hook uses the same bypass-immune hard floor as gate-check
     },
   }, bypassEnv);
   assert.notEqual(allowed.decision, 'block');
+
+  const camelCasePurchase = pluginHook({
+    toolName: 'computer',
+    toolInput: {
+      action: 'click',
+      description: 'Create a paid recurring subscription',
+    },
+  }, bypassEnv);
+  assert.equal(camelCasePurchase.decision, 'block');
+  assert.match(camelCasePurchase.reason, /\[GATE:financial-control\]/);
+
+  const dependencyReview = pluginHook({
+    toolName: 'Task',
+    toolInput: {
+      goal: 'Upgrade dependencies to supported versions',
+      prompt: 'Review the purchase-control implementation',
+    },
+  }, bypassEnv);
+  assert.notEqual(dependencyReview.decision, 'block');
 });

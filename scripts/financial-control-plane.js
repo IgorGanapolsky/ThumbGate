@@ -47,7 +47,9 @@ const CONTROL_PLANE_TOOLS = new Set([
 const ECONOMIC_ACTION_PATTERNS = [
   /\badd\s+(?:a\s+)?(?:credit\s+)?card\b/i,
   /\badd\s+(?:a\s+)?payment\s+method\b/i,
-  /\b(?:buy|purchase|subscribe|top-?up|upgrade)\b/i,
+  /\b(?:buy|purchase|subscribe|top-?up)\b/i,
+  /\bcharge\s+(?:me\s+)?(?:\$|usd\s*)\d/i,
+  /\bupgrade\b.{0,40}\b(?:pro|premium|business|enterprise)\b/i,
   /\b(?:activate|cancel|change|create|update|upgrade)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:plan|subscription|tier|seat)\b/i,
   /\b(?:activate|cancel|change|create|update|upgrade)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:checkout|payment\s+method)\b/i,
   /\b(?:confirm|complete|open|start)\s+(?:the\s+)?checkout\b/i,
@@ -338,17 +340,26 @@ function detectEconomicAction(toolName, toolInput = {}) {
   // approved; caller-supplied prose must never downgrade a blind click.
   if (detectOpaqueScreenMutation(normalizedToolName, toolInput)) return true;
   const command = shellEconomicText(normalizedToolName, toolInput.command || toolInput.cmd);
+  const screenMutationProse = isDeclaredScreenMutation(normalizedToolName, toolInput)
+    ? [toolInput.goal, toolInput.description, toolInput.prompt, metadata.context]
+    : [];
   const combined = [
     normalizedToolName.replace(/[_-]+/g, ' '),
     command,
-    toolInput.goal,
-    toolInput.description,
-    toolInput.prompt,
     toolInput.action,
     toolInput.operation,
-    metadata.context,
+    ...screenMutationProse,
   ].map((value) => String(value || '')).join(' ');
   return ECONOMIC_ACTION_PATTERNS.some((pattern) => pattern.test(combined));
+}
+
+function isDeclaredScreenMutation(toolName, toolInput = {}) {
+  if (!SCREEN_TOOL_PATTERN.test(String(toolName || ''))) return false;
+  const input = objectValue(toolInput);
+  const declaredOperation = [input.action, input.operation, input.type]
+    .map((value) => String(value || ''))
+    .join(' ');
+  return SCREEN_MUTATION_PATTERN.test(toolName) || SCREEN_MUTATION_PATTERN.test(declaredOperation);
 }
 
 function detectOpaqueScreenMutation(toolName, toolInput = {}) {

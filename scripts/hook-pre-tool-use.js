@@ -507,8 +507,8 @@ const {
 
 function main() {
   const input = readStdinSync() || {};
-  const toolName = input.tool_name || process.env.CLAUDE_TOOL_NAME || '';
-  const effectiveInput = resolveEffectiveInput(input.tool_input || null);
+  const toolName = input.tool_name || input.toolName || process.env.CLAUDE_TOOL_NAME || '';
+  const effectiveInput = resolveEffectiveInput(input.tool_input ?? input.toolInput ?? null);
   const economicAction = detectEconomicAction(toolName, effectiveInput);
 
   // Legacy model-token spend tracking remains advisory because a stale
