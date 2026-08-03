@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.34.1
+
+### Patch Changes
+
+- 015fb7d: Keep described computer-use purchases inside the bypass-immune financial hard floor, including camelCase hook payloads.
+
 ## 1.34.0
 
 ### Minor Changes

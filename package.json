@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.34.0",
+  "version": "1.34.1",
   "description": "ThumbGate Pre-Action Checks turn reviewed agent feedback into local rules and hard-block detected secret leaks and unapproved spend before tools execute.",
   "homepage": "https://thumbgate.ai",
   "repository": {

@@ -1,7 +1,7 @@
 {
   "name": "thumbgate",
   "description": "Reviewed 👎 feedback becomes local lessons; repeated concrete failures can become reviewable Pre-Action Checks. Critical built-in floors block secrets and unapproved spend before execution.",
-  "version": "1.34.0",
+  "version": "1.34.1",
   "author": {
     "name": "Igor Ganapolsky",
     "email": "ig5973700@gmail.com",
