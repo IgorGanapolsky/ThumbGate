@@ -566,7 +566,11 @@ function tryFts5Search(query, options) {
   // contract. Fall back to JSONL whenever isolation is requested rather than
   // silently searching across tenants or sessions.
   if (options.scope || options.requireScope) return null;
-  if (!process.env.LESSON_DB_SEARCH && !options.useFts5) return null;
+  // Default ON for A+ retrieval: FTS5 is primary when the DB is populated.
+  // Opt out with LESSON_DB_SEARCH=0 (or useFts5: false).
+  const env = process.env.LESSON_DB_SEARCH;
+  const envDisabled = env != null && ['0', 'false', 'no', 'off'].includes(String(env).toLowerCase());
+  if (options.useFts5 === false || envDisabled) return null;
   let db = null;
   try {
     const { initDB, searchLessons: fts5Search, getStats } = require('./lesson-db');

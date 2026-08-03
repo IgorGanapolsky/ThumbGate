@@ -182,8 +182,37 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
   if (options.pragmatic !== false) {
     try {
       const { pragmaticHybridSearch, sampleRetrievalRecall } = require('./pragmatic-hybrid-search');
-      const memories = loadMemories(feedbackDir, options);
+      // NOTE: Do not call retrieve-for-action from here — CE/rerank-pipeline
+      // needs first-stage candidates with raw scores. PreToolUse calls RFA
+      // directly. This path always applies multi-query@0.6 + pragmatic hybrid.
+
+      let memories = loadMemories(feedbackDir, options);
+      // FTS5 seed merge (default on when DB populated; skipped under scope isolation).
+      let ftsMeta = { applied: false };
+      try {
+        const { mergeFtsSeed } = require('./retrieve-for-action');
+        const merged = mergeFtsSeed(memories, actionContext, options);
+        memories = merged.corpus;
+        ftsMeta = merged.fts || ftsMeta;
+      } catch {
+        /* optional */
+      }
       if (memories.length === 0) return [];
+
+      // Multi-query only when top lexical is weak (same contract as async path).
+      const rewriteBelow = Number.isFinite(options.rewriteBelowScore)
+        ? options.rewriteBelowScore
+        : 0.6;
+      const actionSig = buildActionSignature(toolName, actionContext);
+      let topLexical = 0;
+      for (const mem of memories) {
+        const score = scoreRelevance(mem, toolName, actionContext, actionSig);
+        if (score > topLexical) topLexical = score;
+      }
+      const queryVariants = (options.queryRewrite === false || topLexical >= rewriteBelow)
+        ? [String(actionContext || '')]
+        : buildQueryVariants(actionContext, options).slice(0, 3);
+
       const { results, meta } = pragmaticHybridSearch({
         corpus: memories,
         query: actionContext,
@@ -194,6 +223,7 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
           diversify: options.diversify !== false,
           perLimit: options.perLimit || 3,
           attribute: options.attribute,
+          queryVariants,
         },
       });
       sampleRetrievalRecall({
@@ -202,12 +232,20 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
         strategy: meta.strategy,
         topIds: results.slice(0, maxResults).map((r) => r.id),
         mode: 'sync',
+        topLexical,
+        rewriteApplied: queryVariants.length > 1,
+        fts: ftsMeta,
       }, { feedbackDir });
       return filterTopP(
         dedupeSupersededLessons(results),
         resolveTopP(options),
         { minKeep: options.minKeep },
-      ).slice(0, maxResults).map(shapeLesson);
+      ).slice(0, maxResults).map((row) => shapeLesson(row, {
+        topLexical,
+        rewriteApplied: queryVariants.length > 1,
+        queryVariants,
+        fts: ftsMeta,
+      }));
     } catch {
       // fall through to classic path
     }

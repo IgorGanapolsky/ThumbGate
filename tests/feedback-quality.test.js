@@ -5,7 +5,9 @@ const {
   GENERIC_PHRASE_RULES,
   detectFeedbackSignal,
   isGenericFeedbackText,
+  isLowSpecificityText,
   assessFeedbackActionability,
+  assessPromotionQuality,
   buildClarificationMessage,
 } = require('../scripts/feedback-quality');
 
@@ -89,6 +91,49 @@ test('assessFeedbackActionability returns non-promotable for bare signal', () =>
   });
   assert.equal(result.promotable, false);
   assert.equal(result.isGenericContext, true);
+});
+
+test('isLowSpecificityText rejects empty and tiny corrective phrases', () => {
+  assert.equal(isLowSpecificityText('be better'), true);
+  assert.equal(isLowSpecificityText('fix it'), true);
+  assert.equal(isLowSpecificityText('try harder'), true);
+  assert.equal(
+    isLowSpecificityText('Always run npm test and paste the green output before claiming done'),
+    false,
+  );
+});
+
+test('assessPromotionQuality blocks when all corrective fields are low-spec', () => {
+  const result = assessPromotionQuality({
+    signal: 'negative',
+    context: 'bad',
+    whatWentWrong: 'fix it',
+    whatToChange: 'be better',
+  });
+  assert.equal(result.promotable, false);
+  assert.ok(['specificity', 'actionability'].includes(result.qualityGate));
+});
+
+test('assessPromotionQuality keeps strong whatWentWrong even if whatToChange is vague', () => {
+  const result = assessPromotionQuality({
+    signal: 'negative',
+    context: 'Agent broke production deploy pipeline',
+    whatWentWrong: 'Deployed without running the integration test suite first',
+    whatToChange: 'be better',
+  });
+  assert.equal(result.promotable, true);
+  assert.equal(result.qualityGate, 'passed');
+});
+
+test('assessPromotionQuality promotes specific actionable negative', () => {
+  const result = assessPromotionQuality({
+    signal: 'negative',
+    context: 'PreToolUse allowed a force-push to main',
+    whatWentWrong: 'Agent ran git push --force origin main without approval',
+    whatToChange: 'Block force-push to protected branches and require a PR review',
+  });
+  assert.equal(result.promotable, true);
+  assert.equal(result.qualityGate, 'passed');
 });
 
 test('buildClarificationMessage returns message for vague negative', () => {

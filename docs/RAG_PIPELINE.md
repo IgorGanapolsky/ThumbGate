@@ -15,9 +15,32 @@ npm run prove:rag
 
 | Scope | Quality |
 |--------|---------|
-| Gate / lesson hybrid retrieval | Strong for agent memory |
+| Gate / lesson hybrid retrieval | **A+ defended path** (see below) |
 | Dashboard chat RAG | Grounded + structured output; hybrid when available |
 | Arbitrary document (PDF) RAG | Not supported — parse rejects PDF with explicit error |
+
+## Defended PreToolUse path (A+ contract)
+
+Canonical module: `scripts/retrieve-for-action.js` (wired from `hook-pre-tool-use.js`).
+
+```text
+👎 capture → normalize + promotion quality-gate → JSONL + SQLite FTS5 dual-write
+  → retrieve: FTS5 seed (default on) + lexical bigram-Jaccard/keyword hybrid
+  → multi-query: ≤3 variants only when top lexical < 0.6
+  → rerank: BM25F / MaxSim / pairwise heuristic (LLM listwise when key present, async)
+  → assemble context with citation ids + scores → deterministic PreToolUse gate
+```
+
+| Stage | Module | Measure |
+|--------|--------|---------|
+| Capture + quality-gate | `feedback-quality.assessPromotionQuality` | Bare 👎 / low-spec text not promoted |
+| Store | `lesson-db` FTS5 + JSONL | Dual-write + dedup + prune |
+| Retrieve | `retrieve-for-action` + `pragmatic-hybrid-search` | FTS seed + hybrid features |
+| Multi-query | `buildQueryVariants` @ `rewriteBelowScore=0.6` | Sync **and** async |
+| Rerank | `rerank-pipeline` + heuristic CE | Provenance stages never lie |
+| Gate | `hook-pre-tool-use` / hard floor | Deterministic block or `allowWithContext` |
+
+Opt out of FTS primary search with `LESSON_DB_SEARCH=0`. Scope isolation always falls back to JSONL.
 
 ## How to measure
 

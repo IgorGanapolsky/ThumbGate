@@ -407,6 +407,10 @@ function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
     maxResults = 5,
     feedbackDir,
   } = options;
+
+  // First-stage uses multi-query@0.6 (lesson-retrieval). Avoid re-entering
+  // retrieve-for-action here so the evidence-grade rerank pipeline
+  // (BM25F → hashed MaxSim → pairwise heuristic → fusion) always runs.
   const candidates = retrieveRelevantLessons(toolName, actionContext, {
     maxResults: Math.max(maxResults, candidateCount),
     feedbackDir,
@@ -415,7 +419,10 @@ function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
     includeShared: options.includeShared,
     metadataFilters: options.metadataFilters,
     queryRewrite: options.queryRewrite,
+    rewriteBelowScore: options.rewriteBelowScore,
     includeRetrievalMeta: options.includeRetrievalMeta,
+    // Skip RFA: we need raw candidates for rerank-pipeline stages/provenance.
+    useRetrieveForAction: false,
   });
   if (candidates.length === 0) return [];
 

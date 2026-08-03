@@ -206,6 +206,45 @@ function scoreFeedbackReward(params = {}) {
   };
 }
 
+/** Low-specificity corrective text that is not a bare thumbs phrase but still useless as a lesson. */
+const LOW_SPECIFICITY_RULES = [
+  /^be better\b/,
+  /^do better\b/,
+  /^try harder\b/,
+  /^fix it\b/,
+  /^fix this\b/,
+  /^fix that\b/,
+  /^improve\b/,
+  /^be careful\b/,
+  /^don'?t do that\b/,
+  /^never again\b/,
+  /^stop that\b/,
+  /^keep doing that\b/,
+  /^same as usual\b/,
+  /^continue\b/,
+  /^just fix\b/,
+  /^make it work\b/,
+  /^handle it\b/,
+  /^look into it\b/,
+];
+
+function wordCount(value) {
+  return normalizeFeedbackText(value).split(/\s+/).filter(Boolean).length;
+}
+
+/**
+ * True when text is non-empty but too vague to become a reusable prevention lesson.
+ * Distinct from isGenericFeedbackText (bare thumbs phrases).
+ */
+function isLowSpecificityText(value) {
+  const normalized = normalizeFeedbackText(value);
+  if (!normalized) return true;
+  if (LOW_SPECIFICITY_RULES.some((pattern) => pattern.test(normalized))) return true;
+  // Too short to encode a concrete action or failure mode.
+  if (normalized.length < 18 || wordCount(normalized) < 4) return true;
+  return false;
+}
+
 function assessFeedbackActionability(params = {}) {
   const signal = normalizeFeedbackSignal(params.signal);
   const primaryFields = signal === 'positive'
@@ -249,6 +288,97 @@ function assessFeedbackActionability(params = {}) {
   };
 }
 
+/**
+ * Promotion quality gate for A+ write path.
+ * Layers:
+ *   1) actionability (generic thumbs rejected)
+ *   2) low-specificity denylist / min length on the corrective field
+ *   3) optional reward score floor when the deterministic rubric can run
+ *
+ * Returns a unified { promotable, reason, ... } shape used by feedback-schema.
+ */
+function assessPromotionQuality(params = {}) {
+  const actionability = assessFeedbackActionability(params);
+  if (!actionability.promotable) {
+    return {
+      ...actionability,
+      qualityGate: 'actionability',
+      reason: actionability.issue === 'missing'
+        ? 'Feedback lacks specific context and cannot be promoted'
+        : 'Feedback is too vague to promote to reusable memory',
+    };
+  }
+
+  const signal = actionability.signal;
+  // Prefer the most specific non-empty field so a bad optional whatToChange
+  // does not discard a strong whatWentWrong (and vice versa).
+  const candidates = signal === 'positive'
+    ? [
+      { name: 'whatWorked', value: params.whatWorked },
+      { name: 'context', value: params.context },
+    ]
+    : [
+      { name: 'whatToChange', value: params.whatToChange },
+      { name: 'whatWentWrong', value: params.whatWentWrong },
+      { name: 'context', value: params.context },
+    ];
+  const correctiveField = candidates.find((field) => {
+    const text = normalizeFeedbackText(field.value);
+    return text && !isGenericFeedbackText(field.value, signal) && !isLowSpecificityText(field.value);
+  });
+
+  if (!correctiveField) {
+    const config = CLARIFICATION_CONFIG[signal] || CLARIFICATION_CONFIG.negative;
+    return {
+      promotable: false,
+      signal,
+      sourceField: null,
+      prompt: config.prompt,
+      example: config.example,
+      missingFields: config.missingFields,
+      issue: 'low_specificity',
+      isGenericContext: false,
+      qualityGate: 'specificity',
+      reason: signal === 'positive'
+        ? 'Positive feedback is not specific enough — name the concrete pattern to repeat'
+        : 'Negative feedback is not specific enough — name the failure and the concrete change',
+    };
+  }
+
+  // Graded reward is best-effort. Only hard-fail when the rubric ran and the
+  // text clearly fails actionability dimensions (score near floor).
+  const reward = scoreFeedbackReward({
+    signal,
+    context: params.context,
+    whatWentWrong: params.whatWentWrong,
+    whatToChange: params.whatToChange,
+    whatWorked: params.whatWorked,
+  });
+  if (reward && Number.isFinite(reward.score) && reward.score < 0.2 && reward.passed === false) {
+    return {
+      promotable: false,
+      signal,
+      sourceField: actionability.sourceField,
+      prompt: CLARIFICATION_CONFIG[signal]?.prompt || null,
+      example: CLARIFICATION_CONFIG[signal]?.example || null,
+      missingFields: CLARIFICATION_CONFIG[signal]?.missingFields || [],
+      issue: 'low_reward',
+      isGenericContext: false,
+      qualityGate: 'reward',
+      rewardScore: reward,
+      reason: 'Feedback scored too low on the deterministic reward rubric to promote',
+    };
+  }
+
+  return {
+    ...actionability,
+    promotable: true,
+    qualityGate: 'passed',
+    rewardScore: reward,
+    reason: null,
+  };
+}
+
 function buildClarificationMessage(params = {}) {
   const assessment = assessFeedbackActionability(params);
   if (assessment.promotable) return null;
@@ -268,11 +398,14 @@ function buildClarificationMessage(params = {}) {
 
 module.exports = {
   GENERIC_PHRASE_RULES,
+  LOW_SPECIFICITY_RULES,
   detectFeedbackSignal,
   normalizeFeedbackSignal,
   normalizeFeedbackText,
   isGenericFeedbackText,
+  isLowSpecificityText,
   assessFeedbackActionability,
+  assessPromotionQuality,
   buildClarificationMessage,
   scoreFeedbackReward,
 };

@@ -141,6 +141,21 @@ function extractActionContext(toolName, toolInput) {
 function retrieveLessons(toolName, actionContext) {
   try {
     const pkgRoot = path.resolve(__dirname, '..');
+    // Single defended contract: FTS5 seed + multi-query@0.6 + hybrid + heuristic CE.
+    try {
+      const { retrieveForAction } = require(path.join(pkgRoot, 'scripts', 'retrieve-for-action'));
+      const out = retrieveForAction(toolName, actionContext, {
+        candidateCount: 20,
+        maxResults: MAX_LESSONS,
+      });
+      if (out && Array.isArray(out.lessons)) {
+        // Stash meta for context assembly (non-enumerable-safe attach).
+        out.lessons._retrievalMeta = out.meta || null;
+        return out.lessons;
+      }
+    } catch (rfaErr) {
+      failOpen(rfaErr);
+    }
     const { retrieveWithRerankingSync } = require(path.join(pkgRoot, 'scripts', 'cross-encoder-reranker'));
     const results = retrieveWithRerankingSync(toolName, actionContext, {
       candidateCount: 20,
@@ -276,6 +291,32 @@ function maybeRegisterPrCommitGate(toolName, toolInput) {
 }
 
 function formatLessonsAsReminder(lessons, extras) {
+  // Prefer defended assembly (citations + scores + provenance) when available.
+  try {
+    const pkgRoot = path.resolve(__dirname, '..');
+    const { assembleActionContext } = require(path.join(pkgRoot, 'scripts', 'retrieve-for-action'));
+    const base = assembleActionContext(lessons, {
+      autogate: extras?.autogate,
+      meta: lessons?._retrievalMeta || extras?.retrievalMeta || null,
+    });
+    const lines = [base.replace(/<\/system-reminder>\s*$/, '').trimEnd()];
+    const riskContext = summarizeActionRiskContext(extras?.toolName, extras?.toolInput, lessons);
+    if (riskContext.surfaceSignals.length > 0) {
+      lines.push('', `ACTION PROFILE: ${riskContext.surfaceSignals.join(' · ')}`);
+    }
+    if (riskContext.hotSignals.length > 0) {
+      lines.push(`HOT RISK SIGNALS: ${riskContext.hotSignals.join(' · ')}`);
+    }
+    const saferMove = buildSaferNextMove(lessons);
+    if (saferMove) {
+      lines.push(`SAFER NEXT MOVE: ${saferMove}`);
+    }
+    lines.push('</system-reminder>');
+    return lines.join('\n');
+  } catch (err) {
+    failOpen(err);
+  }
+
   const lines = [
     '<system-reminder>',
     'ThumbGate retrieved prior lessons relevant to this tool call.',
@@ -286,7 +327,8 @@ function formatLessonsAsReminder(lessons, extras) {
     if (!text) return;
     const tags = tagsForLesson(lesson);
     const tagSuffix = tags.length ? ` [${tags.slice(0, 4).join(', ')}]` : '';
-    lines.push(`${idx + 1}. ${String(text).trim().slice(0, MAX_LESSON_TEXT_LEN)}${tagSuffix}`);
+    const idBit = lesson.id ? ` (${lesson.id})` : '';
+    lines.push(`${idx + 1}. ${String(text).trim().slice(0, MAX_LESSON_TEXT_LEN)}${tagSuffix}${idBit}`);
   });
   if (extras?.autogate) {
     lines.push(

@@ -198,15 +198,29 @@ function resolveFeedbackAction(params) {
     : [];
 
   if (signal === 'negative') {
-    const actionability = assessFeedbackActionability({
-      signal: 'negative',
-      context,
-      whatWentWrong,
-    });
+    // Prefer assessPromotionQuality (actionability + specificity + reward floor)
+    // when available; fall back to actionability-only for older installs.
+    let actionability;
+    try {
+      const { assessPromotionQuality } = require('./feedback-quality');
+      actionability = assessPromotionQuality({
+        signal: 'negative',
+        context,
+        whatWentWrong,
+        whatToChange,
+      });
+    } catch {
+      actionability = assessFeedbackActionability({
+        signal: 'negative',
+        context,
+        whatWentWrong,
+      });
+    }
     if (!actionability.promotable) {
-      const reason = actionability.issue === 'missing'
-        ? 'Negative feedback without context — cannot determine what went wrong'
-        : 'Negative feedback is too vague to promote — describe what failed in one sentence';
+      const reason = actionability.reason
+        || (actionability.issue === 'missing'
+          ? 'Negative feedback without context — cannot determine what went wrong'
+          : 'Negative feedback is too vague to promote — describe what failed in one sentence');
       return { type: 'no-action', reason };
     }
 
@@ -259,15 +273,26 @@ function resolveFeedbackAction(params) {
       return { type: 'no-action', reason: `Rubric gate prevented promotion: ${reasons}` };
     }
 
-    const actionability = assessFeedbackActionability({
-      signal: 'positive',
-      context,
-      whatWorked,
-    });
+    let actionability;
+    try {
+      const { assessPromotionQuality } = require('./feedback-quality');
+      actionability = assessPromotionQuality({
+        signal: 'positive',
+        context,
+        whatWorked,
+      });
+    } catch {
+      actionability = assessFeedbackActionability({
+        signal: 'positive',
+        context,
+        whatWorked,
+      });
+    }
     if (!actionability.promotable) {
-      const reason = actionability.issue === 'missing'
-        ? 'Positive feedback without context — cannot determine what worked'
-        : 'Positive feedback is too vague to promote — describe what worked in one sentence';
+      const reason = actionability.reason
+        || (actionability.issue === 'missing'
+          ? 'Positive feedback without context — cannot determine what worked'
+          : 'Positive feedback is too vague to promote — describe what worked in one sentence');
       return { type: 'no-action', reason };
     }
 
