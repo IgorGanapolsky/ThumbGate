@@ -28,6 +28,7 @@ const LEDGER_HEAD_FILE = 'financial-control-ledger.head.json';
 const LEDGER_JOURNAL_FILE = 'financial-control-ledger.journal.json';
 const LEDGER_HEAD_SCHEMA = 'financial-ledger-head-v2';
 const LEDGER_JOURNAL_SCHEMA = 'financial-ledger-journal-v2';
+const LEDGER_ANCHOR_SCHEMA = 'financial-ledger-anchor-v1';
 const DEFAULT_TTL_MS = 60 * 60 * 1000;
 const MAX_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_RESERVATION_TTL_MS = 15 * 60 * 1000;
@@ -89,6 +90,98 @@ function getLedgerHeadPath(options = {}) {
 function getLedgerJournalPath(options = {}) {
   if (options.inputPath) return `${path.resolve(options.inputPath)}.journal.json`;
   return path.join(getFeedbackPaths(options).FEEDBACK_DIR, LEDGER_JOURNAL_FILE);
+}
+
+function financialLedgerId(options = {}) {
+  const configured = optionalString(options.financialLedgerId);
+  if (configured) return configured;
+  return `ledger_${crypto.createHash('sha256').update(getLedgerPath(options)).digest('hex')}`;
+}
+
+/**
+ * Return the operator-owned monotonic anchor store. The store is deliberately
+ * injected by the trusted host instead of selected through tool input. Its
+ * state must live outside the agent-writable device filesystem (for example a
+ * remote compare-and-set service or a hardware-backed host daemon).
+ *
+ * A file-backed implementation is available only behind an explicit test-only
+ * switch. It exercises crash recovery but is not rollback-resistant and must
+ * never be treated as a production control.
+ */
+function financialLedgerAnchorStore(options = {}) {
+  const store = options.financialLedgerAnchorStore;
+  if (store && typeof store.read === 'function' && typeof store.compareAndSet === 'function') {
+    return store;
+  }
+  const testPath = optionalString(process.env.THUMBGATE_TEST_ONLY_FINANCIAL_ANCHOR_FILE);
+  if (testPath && process.env.THUMBGATE_ALLOW_UNTRUSTED_FILE_ANCHOR_FOR_TESTS === '1') {
+    return testOnlyFileAnchorStore(path.resolve(testPath));
+  }
+  throw financialError('rollback-resistant financial ledger anchor is required');
+}
+
+function testOnlyFileAnchorStore(anchorPath) {
+  return {
+    read() {
+      try {
+        return JSON.parse(fs.readFileSync(anchorPath, 'utf8'));
+      } catch (error) {
+        if (error.code === 'ENOENT') return null;
+        throw error;
+      }
+    },
+    compareAndSet({ expected, next }) {
+      let current = null;
+      try {
+        current = JSON.parse(fs.readFileSync(anchorPath, 'utf8'));
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+      }
+      if (!sameHead(current, expected)) return false;
+      writeAtomicJson(anchorPath, next);
+      return true;
+    },
+  };
+}
+
+function readFinancialLedgerAnchor(options = {}) {
+  const anchor = financialLedgerAnchorStore(options).read({
+    ledgerId: financialLedgerId(options),
+  });
+  if (anchor === null || anchor === undefined) return null;
+  if (anchor.schemaVersion !== LEDGER_ANCHOR_SCHEMA
+    || !Number.isInteger(anchor.sequence)
+    || anchor.sequence < 1
+    || !/^[a-f0-9]{64}$/i.test(String(anchor.eventHash || ''))) {
+    throw financialError('rollback-resistant financial ledger anchor is malformed');
+  }
+  return anchor;
+}
+
+function advanceFinancialLedgerAnchor(previousHead, event, options = {}) {
+  const store = financialLedgerAnchorStore(options);
+  const ledgerId = financialLedgerId(options);
+  const next = {
+    schemaVersion: LEDGER_ANCHOR_SCHEMA,
+    sequence: event.sequence,
+    eventHash: event.eventHash,
+  };
+  const current = readFinancialLedgerAnchor(options);
+  if (sameHead(current, next)) return next;
+  if (!sameHead(current, previousHead)) {
+    throw financialError('rollback-resistant financial ledger anchor rejected a stale checkpoint');
+  }
+  const advanced = store.compareAndSet({
+    ledgerId,
+    expected: previousHead
+      ? { schemaVersion: LEDGER_ANCHOR_SCHEMA, sequence: previousHead.sequence, eventHash: previousHead.eventHash }
+      : null,
+    next,
+  });
+  if (advanced !== true || !sameHead(readFinancialLedgerAnchor(options), next)) {
+    throw financialError('rollback-resistant financial ledger anchor compare-and-set failed');
+  }
+  return next;
 }
 
 function detectEconomicAction(toolName, toolInput = {}) {
@@ -773,6 +866,16 @@ function readEvents(options = {}) {
 function appendEventUnlocked(event, options, existingEvents) {
   const outputPath = getLedgerPath(options);
   const previous = existingEvents.at(-1) || null;
+  const previousHead = previous
+    ? { sequence: previous.sequence, eventHash: previous.eventHash }
+    : null;
+  // Resolve and verify the rollback-resistant witness before touching local
+  // durable state. Missing production witness configuration therefore fails
+  // closed without leaving a half-written financial transaction behind.
+  const currentAnchor = readFinancialLedgerAnchor(options);
+  if (!sameHead(currentAnchor, previousHead)) {
+    throw financialError('rollback-resistant financial ledger anchor does not match the current ledger');
+  }
   const chained = {
     ...event,
     sequence: existingEvents.length + 1,
@@ -783,7 +886,7 @@ function appendEventUnlocked(event, options, existingEvents) {
   const journalPath = getLedgerJournalPath(options);
   const journal = {
     schemaVersion: LEDGER_JOURNAL_SCHEMA,
-    previousHead: previous ? { sequence: previous.sequence, eventHash: previous.eventHash } : null,
+    previousHead,
     event: chained,
   };
   journal.auth = signIntegrityRecord(journal, ledgerIntegrityKey(options));
@@ -796,12 +899,13 @@ function appendEventUnlocked(event, options, existingEvents) {
     fs.closeSync(ledgerFd);
   }
   fsyncDirectoryFor(outputPath);
-  writeLedgerHead(chained, options);
+  writeLedgerHeadFile(chained, options);
+  advanceFinancialLedgerAnchor(previousHead, chained, options);
   removeDurableFile(journalPath);
   return chained;
 }
 
-function writeLedgerHead(event, options) {
+function writeLedgerHeadFile(event, options) {
   const headPath = getLedgerHeadPath(options);
   const temporaryPath = `${headPath}.tmp-${process.pid}-${crypto.randomUUID()}`;
   const head = {
@@ -844,6 +948,7 @@ function recoverLedgerTransaction(options = {}) {
   const currentLast = ledger.events.at(-1) || null;
   const previousHead = journal.previousHead;
   const currentHead = ledger.head;
+  const currentAnchor = readFinancialLedgerAnchor(options);
   const eventAlreadyAppended = currentLast?.sequence === event.sequence
     && currentLast?.eventHash === event.eventHash;
   const headAtPrevious = sameHead(currentHead, previousHead);
@@ -860,16 +965,25 @@ function recoverLedgerTransaction(options = {}) {
       null,
       { ...options, skipLedgerHead: true }
     );
-    if (!sameHead(previousHead, expectedPrevious) || !chain.ok || (!headAtPrevious && !headAtEvent)) {
+    const anchorAtPrevious = sameHead(currentAnchor, previousHead);
+    const anchorAtEvent = sameHead(currentAnchor, { sequence: event.sequence, eventHash: event.eventHash });
+    if (!sameHead(previousHead, expectedPrevious)
+      || !chain.ok
+      || (!headAtPrevious && !headAtEvent)
+      || (!anchorAtPrevious && !anchorAtEvent)) {
       throw financialError('financial ledger journal does not match the recoverable append');
     }
-    if (!headAtEvent) writeLedgerHead(event, options);
+    if (!headAtEvent) writeLedgerHeadFile(event, options);
+    if (!anchorAtEvent) advanceFinancialLedgerAnchor(previousHead, event, options);
     removeDurableFile(journalPath);
     return;
   }
 
   const currentChain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head, options);
-  if (currentChain.ok && headAtPrevious && event.sequence === ledger.events.length + 1) {
+  if (currentChain.ok
+    && headAtPrevious
+    && sameHead(currentAnchor, previousHead)
+    && event.sequence === ledger.events.length + 1) {
     // The crash happened before the event append. The caller never received a
     // success response, so discard the prepared transaction instead of
     // executing it during recovery.
@@ -946,7 +1060,6 @@ function validateLedgerChain(events, malformedRows = [], ledgerHead = null, opti
 }
 
 function validateLedgerHead(events, ledgerHead, options = {}) {
-  if (events.length === 0 && ledgerHead === null) return [];
   const expected = events.at(-1) || { sequence: 0, eventHash: null };
   const key = optionalString(
     options.financialLedgerIntegrityKey
@@ -955,17 +1068,29 @@ function validateLedgerHead(events, ledgerHead, options = {}) {
       || process.env.THUMBGATE_FINANCIAL_LEDGER_KEY
       || process.env.THUMBGATE_HUMAN_REVIEWER_KEY
   );
+  let anchor = null;
+  let anchorError = null;
+  try {
+    anchor = readFinancialLedgerAnchor(options);
+  } catch (error) {
+    anchorError = error.message;
+  }
+  if (events.length === 0 && ledgerHead === null && anchor === null && !anchorError) return [];
   if (key
     && ledgerHead?.schemaVersion === LEDGER_HEAD_SCHEMA
     && ledgerHead.sequence === expected.sequence
     && ledgerHead.eventHash === expected.eventHash
-    && verifyIntegrityRecord(ledgerHead, key)) return [];
+    && verifyIntegrityRecord(ledgerHead, key)
+    && sameHead(anchor, expected)) return [];
   return [{
     recordedSequence: ledgerHead?.sequence ?? null,
     expectedSequence: expected.sequence,
     recordedEventHash: ledgerHead?.eventHash ?? null,
     expectedEventHash: expected.eventHash,
     authenticated: Boolean(key && verifyIntegrityRecord(ledgerHead, key)),
+    rollbackResistantAnchorSequence: anchor?.sequence ?? null,
+    rollbackResistantAnchorEventHash: anchor?.eventHash ?? null,
+    rollbackResistantAnchorError: anchorError,
   }];
 }
 

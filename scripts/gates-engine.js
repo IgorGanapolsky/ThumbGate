@@ -3367,7 +3367,7 @@ function evaluateSecretGuard(input = {}) {
   return result;
 }
 
-function evaluateUnconditionalHardFloor(input = {}) {
+function evaluateUnconditionalHardFloor(input = {}, options = {}) {
   const secretGuard = evaluateSecretGuard(input);
   if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
 
@@ -3376,7 +3376,7 @@ function evaluateUnconditionalHardFloor(input = {}) {
     return { hardFloor: securityScan, securityScan };
   }
 
-  const financialHardFloor = evaluateFinancialHardFloor(input, false);
+  const financialHardFloor = evaluateFinancialHardFloor(input, false, options);
   if (financialHardFloor) return { hardFloor: financialHardFloor, securityScan };
 
   return {
@@ -3385,7 +3385,7 @@ function evaluateUnconditionalHardFloor(input = {}) {
   };
 }
 
-function evaluateFinancialHardFloor(input = {}, consumeReservation = false) {
+function evaluateFinancialHardFloor(input = {}, consumeReservation = false, options = {}) {
   const toolName = input.tool_name || input.toolName || 'unknown';
   const toolInput = input.tool_input && typeof input.tool_input === 'object'
     ? input.tool_input
@@ -3408,7 +3408,7 @@ function evaluateFinancialHardFloor(input = {}, consumeReservation = false) {
       economicAction: undefined,
     },
     costControl,
-  }, { consumeReservation });
+  }, { ...options, consumeReservation });
   if (financialControl.mode === 'block') {
     const result = {
       decision: 'deny',
@@ -3441,16 +3441,16 @@ function evaluateFinancialHardFloor(input = {}, consumeReservation = false) {
 // has reached its final allow/warn boundary, never during the preliminary hard
 // floor preview. This prevents a later workflow or learned-risk denial from
 // burning an approval for an action that did not execute.
-function finalizeFinancialAuthorization(input = {}) {
-  return evaluateFinancialHardFloor(input, true);
+function finalizeFinancialAuthorization(input = {}, options = {}) {
+  return evaluateFinancialHardFloor(input, true, options);
 }
 
 function isBlockingDecision(result) {
   return result?.decision === 'deny' || result?.decision === 'approve';
 }
 
-function runHardFloor(input) {
-  const { hardFloor } = evaluateUnconditionalHardFloor(input);
+function runHardFloor(input, options = {}) {
+  const { hardFloor } = evaluateUnconditionalHardFloor(input, options);
   return hardFloor ? formatOutput(hardFloor) : null;
 }
 

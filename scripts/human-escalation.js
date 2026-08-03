@@ -135,6 +135,10 @@ function decideEscalation(input = {}, options = {}) {
  * that the independently authenticated reviewer API produced it.
  */
 function getVerifiedApproval(escalationId, options = {}) {
+  return withEscalationLock(options, () => getVerifiedApprovalUnlocked(escalationId, options));
+}
+
+function getVerifiedApprovalUnlocked(escalationId, options = {}) {
   const ledger = readLedger(options);
   const integrity = validateEscalationLedger(ledger.events, ledger.malformedRows, ledger.head);
   if (!integrity.ok) throw escalationError('escalation ledger integrity verification failed');

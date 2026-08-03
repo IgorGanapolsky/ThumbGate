@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -58,7 +59,34 @@ function authOptions(feedbackDir, requester, extra = {}) {
     feedbackDir,
     authenticatedPrincipal: requester,
     approvalVerificationKey: APPROVAL_KEY,
+    financialLedgerAnchorStore: testFinancialAnchorStore(feedbackDir),
     ...extra,
+  };
+}
+
+function testFinancialAnchorStore(feedbackDir) {
+  const anchorPath = path.join(feedbackDir, '.test-only-trusted-financial-anchor.json');
+  const sameHead = (left, right) => {
+    if (!left && !right) return true;
+    return left?.sequence === right?.sequence && left?.eventHash === right?.eventHash;
+  };
+  return {
+    read() {
+      try {
+        return JSON.parse(fs.readFileSync(anchorPath, 'utf8'));
+      } catch (error) {
+        if (error.code === 'ENOENT') return null;
+        throw error;
+      }
+    },
+    compareAndSet({ expected, next }) {
+      const current = this.read();
+      if (!sameHead(current, expected)) return false;
+      const temporary = `${anchorPath}.tmp-${process.pid}-${crypto.randomUUID()}`;
+      fs.writeFileSync(temporary, `${JSON.stringify(next)}\n`, { mode: 0o600 });
+      fs.renameSync(temporary, anchorPath);
+      return true;
+    },
   };
 }
 
@@ -108,6 +136,22 @@ function authenticateFinancialRecord(record) {
   return authenticated;
 }
 
+test('financial mutations fail closed before writing without a rollback-resistant anchor', () => {
+  const { feedbackDir, requester, request } = fixture();
+  try {
+    assert.throws(() => createPurchaseRequisition(request, {
+      feedbackDir,
+      authenticatedPrincipal: requester,
+      approvalVerificationKey: APPROVAL_KEY,
+    }), /financial ledger integrity verification failed/);
+    assert.equal(fs.existsSync(getLedgerPath({ feedbackDir })), false);
+    assert.equal(fs.existsSync(getLedgerHeadPath({ feedbackDir })), false);
+    assert.equal(fs.existsSync(getLedgerJournalPath({ feedbackDir })), false);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
 test('purchase lifecycle requires independent approval, exact scope, reservation, and receipt', () => {
   const { feedbackDir, requester, request } = fixture();
   try {
@@ -150,6 +194,7 @@ test('purchase lifecycle requires independent approval, exact scope, reservation
       sourceMessageId: 'user-message-42',
       idempotencyKey: 'apollo-annual-reservation',
     }, authOptions(feedbackDir, requester));
+
     assert.equal(reserved.requisition.status, 'reserved');
     assert.equal(reserved.requisition.reservedAmountUsd, 588);
     assert.deepEqual(reserved.requisition.approvedBy, { id: 'finance-reviewer', kind: 'human' });
@@ -399,6 +444,8 @@ test('concurrent callers cannot create two requisitions for one idempotency key'
   const { feedbackDir, requester, request } = fixture();
   const modulePath = path.join(__dirname, '..', 'scripts', 'financial-control-plane.js');
   const childSource = `
+    process.env.THUMBGATE_ALLOW_UNTRUSTED_FILE_ANCHOR_FOR_TESTS = '1';
+    process.env.THUMBGATE_TEST_ONLY_FINANCIAL_ANCHOR_FILE = ${JSON.stringify(path.join(feedbackDir, '.test-only-trusted-financial-anchor.json'))};
     const { createPurchaseRequisition } = require(${JSON.stringify(modulePath)});
     try {
       const result = createPurchaseRequisition(${JSON.stringify(request)}, {
@@ -671,6 +718,51 @@ test('human escalation journal repairs a crash after append before head publicat
     assert.equal(events.length, 2);
     assert.equal(head.sequence, 2);
     assert.equal(validateEscalationLedger(events, [], head).ok, true);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('financial approval read recovers an interrupted decision before reservation', () => {
+  const { feedbackDir, requester, request } = fixture();
+  const headPath = getEscalationsHeadPath({ feedbackDir });
+  const journalPath = getEscalationsJournalPath({ feedbackDir });
+  const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+  const originalRename = fs.renameSync;
+  let interrupted = false;
+  fs.renameSync = (source, target) => {
+    if (!interrupted && target === headPath) {
+      interrupted = true;
+      const error = new Error('simulated crash before approval head publication');
+      error.code = 'EIO';
+      throw error;
+    }
+    return originalRename(source, target);
+  };
+  try {
+    assert.throws(() => decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Approve exact crash-recovery reservation.',
+    }, reviewerOptions(feedbackDir)), /simulated crash/);
+  } finally {
+    fs.renameSync = originalRename;
+  }
+
+  try {
+    assert.equal(fs.existsSync(journalPath), true);
+    const reserved = reservePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      amountUsd: 588,
+      vendor: 'Apollo',
+      purpose: 'Annual data plan',
+      sourceMessageId: 'user-message-42',
+    }, authOptions(feedbackDir, requester));
+    assert.equal(reserved.requisition.status, 'reserved');
+    assert.equal(fs.existsSync(journalPath), false);
+    const events = fs.readFileSync(getEscalationsPath({ feedbackDir }), 'utf8')
+      .trim().split('\n').map(JSON.parse);
+    assert.equal(events.filter((event) => event.eventType === 'decided').length, 1);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
@@ -1195,11 +1287,12 @@ test('hard-floor preview preserves a reservation until the final allow boundary'
       },
     };
 
-    assert.equal(runHardFloor(input), null);
+    const runtimeOptions = authOptions(feedbackDir, requester);
+    assert.equal(runHardFloor(input, runtimeOptions), null);
     assert.equal(projectRequisition(created.requisition.requisitionId, { feedbackDir }).status, 'reserved');
-    assert.equal(finalizeFinancialAuthorization(input), null);
+    assert.equal(finalizeFinancialAuthorization(input, runtimeOptions), null);
     assert.equal(projectRequisition(created.requisition.requisitionId, { feedbackDir }).status, 'authorized');
-    assert.equal(finalizeFinancialAuthorization(input).decision, 'deny');
+    assert.equal(finalizeFinancialAuthorization(input, runtimeOptions).decision, 'deny');
   } finally {
     if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
     else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
@@ -1317,6 +1410,10 @@ test('authenticated financial head blocks rollback to a reusable reservation', (
       sourceMessageId: 'user-message-42',
     }, authOptions(feedbackDir, requester));
 
+    const ledgerPath = getLedgerPath({ feedbackDir });
+    const reservedLedger = fs.readFileSync(ledgerPath, 'utf8');
+    const reservedHead = fs.readFileSync(getLedgerHeadPath({ feedbackDir }), 'utf8');
+
     const makeAction = (actionId) => ({
       toolName: 'Browser',
       toolInput: {
@@ -1350,20 +1447,11 @@ test('authenticated financial head blocks rollback to a reusable reservation', (
     assert.equal(first.mode, 'allow');
     assert.equal(first.authorization.status, 'authorized');
 
-    const ledgerPath = getLedgerPath({ feedbackDir });
-    const rows = fs.readFileSync(ledgerPath, 'utf8').trim().split('\n');
-    const reservedEvent = JSON.parse(rows[1]);
-    fs.writeFileSync(ledgerPath, `${rows[0]}\n${rows[1]}\n`, 'utf8');
-    fs.writeFileSync(getLedgerHeadPath({ feedbackDir }), `${JSON.stringify({
-      schemaVersion: 'financial-ledger-head-v2',
-      sequence: reservedEvent.sequence,
-      eventHash: reservedEvent.eventHash,
-      auth: {
-        algorithm: 'hmac-sha256',
-        keyId: 'attacker-without-integrity-key',
-        signature: '0'.repeat(64),
-      },
-    })}\n`, 'utf8');
+    // Reproduce the stronger rollback: restore the exact, valid signed ledger
+    // and head captured while the reservation was reusable. The independent
+    // monotonic anchor remains at the later authorized checkpoint.
+    fs.writeFileSync(ledgerPath, reservedLedger, 'utf8');
+    fs.writeFileSync(getLedgerHeadPath({ feedbackDir }), reservedHead, 'utf8');
 
     const replay = evaluateFinancialControl(
       makeAction('replay-after-ledger-rollback'),
