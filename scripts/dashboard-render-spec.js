@@ -89,6 +89,27 @@ function summarizeAnomalyTone(anomalySummary) {
   return 'success';
 }
 
+function buildAssuranceTimelineItems(gateAudit, limit = 7) {
+  const days = Array.isArray(gateAudit && gateAudit.days) ? gateAudit.days : [];
+  const boundedLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 7) : 7;
+
+  return days
+    .filter((day) => day && Number(day.total) > 0)
+    .slice()
+    .reverse()
+    .slice(0, boundedLimit)
+    .map((day) => {
+      const deny = Number(day.deny) || 0;
+      const warn = Number(day.warn) || 0;
+      return {
+        title: String(day.dayKey || 'unknown day'),
+        subtitle: `${formatCount(day.total)} evaluated · ${formatCount(day.intercepted)} intercepted`,
+        badge: `${formatCount(deny)} denied · ${formatCount(warn)} warned`,
+        tone: deny > 0 ? 'danger' : warn > 0 ? 'warning' : 'success',
+      };
+    });
+}
+
 function buildTeamReviewSpec(data) {
   const team = data.team || {};
   const predictive = data.predictive || {};
@@ -171,6 +192,7 @@ function buildTeamReviewSpec(data) {
 
 function buildIncidentReviewSpec(data) {
   const gateStats = data.gateStats || {};
+  const gateAudit = data.gateAudit || {};
   const diagnostics = data.diagnostics || {};
   const liveMetrics = data.liveMetrics || {};
   const predictive = data.predictive || {};
@@ -235,6 +257,11 @@ function buildIncidentReviewSpec(data) {
         tone: 'warning',
       },
     ]),
+    buildList(
+      'Daily assurance timeline',
+      buildAssuranceTimelineItems(gateAudit),
+      'No gate decisions were recorded in this window; no safety conclusion is implied.'
+    ),
     buildList(
       'Active gate pressure',
       gates.map((gate) => ({
@@ -390,6 +417,7 @@ function buildDashboardRenderSpec(dashboardData, options = {}) {
 module.exports = {
   ALLOWED_COMPONENT_TYPES,
   DASHBOARD_VIEWS,
+  buildAssuranceTimelineItems,
   buildDashboardRenderSpec,
   normalizeView,
 };

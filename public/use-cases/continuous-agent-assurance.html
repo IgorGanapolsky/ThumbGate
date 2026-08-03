@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Continuous AI Agent Assurance | ThumbGate</title>
+<meta name="description" content="Observe AI agent decisions, enforce deterministic pre-action checks, and verify outcomes without collecting raw prompts or outsourcing control to another model.">
+<meta property="og:title" content="Continuous AI Agent Assurance | ThumbGate">
+<meta property="og:description" content="A local-first observe, enforce, verify loop for AI agent operations.">
+<meta property="og:type" content="article">
+<link rel="canonical" href="https://thumbgate.ai/use-cases/continuous-agent-assurance">
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Continuous AI Agent Assurance",
+  "description": "A local-first observe, enforce, and verify operating loop for AI agent actions.",
+  "datePublished": "2026-08-03",
+  "dateModified": "2026-08-03",
+  "author": { "@type": "Person", "name": "Igor Ganapolsky" },
+  "publisher": { "@type": "Organization", "name": "ThumbGate" }
+}
+</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #080a0f;
+    --surface: #111621;
+    --surface-2: #171e2b;
+    --border: #283246;
+    --text: #f3f7ff;
+    --muted: #9ba8bd;
+    --cyan: #47d7ff;
+    --green: #61e6a6;
+    --amber: #ffc857;
+    --red: #ff718b;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    color: var(--text);
+    background:
+      radial-gradient(circle at 12% 4%, rgba(71, 215, 255, 0.16), transparent 28rem),
+      radial-gradient(circle at 92% 28%, rgba(97, 230, 166, 0.10), transparent 24rem),
+      var(--bg);
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.6;
+  }
+  a { color: inherit; }
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 1.25rem 1.5rem;
+  }
+  nav .links { display: flex; gap: 1rem; color: var(--muted); font-size: 0.9rem; }
+  .brand { font-weight: 800; text-decoration: none; letter-spacing: -0.02em; }
+  main { overflow: hidden; }
+  .wrap { width: min(1120px, calc(100% - 3rem)); margin: 0 auto; }
+  .hero {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    align-items: center;
+    gap: 3.5rem;
+    min-height: 660px;
+    padding: 5rem 0 6rem;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--cyan);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .eyebrow::before { content: ""; width: 1.8rem; height: 1px; background: var(--cyan); }
+  h1 {
+    max-width: 760px;
+    margin: 1rem 0 1.25rem;
+    font-size: clamp(3rem, 7vw, 6rem);
+    line-height: 0.98;
+    letter-spacing: -0.055em;
+  }
+  h1 span { color: var(--cyan); }
+  .lede { max-width: 660px; color: var(--muted); font-size: clamp(1.05rem, 2vw, 1.3rem); }
+  .actions { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 2rem; }
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem;
+    padding: 0.75rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    text-decoration: none;
+    font-weight: 750;
+  }
+  .button.primary { color: #041016; background: var(--cyan); border-color: var(--cyan); }
+  .button.secondary { background: rgba(255, 255, 255, 0.03); }
+  .loop-card {
+    position: relative;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    background: rgba(17, 22, 33, 0.82);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
+  }
+  .loop-card::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(71, 215, 255, 0.45), transparent 45%, rgba(97, 230, 166, 0.35));
+  }
+  .mini-label { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.11em; }
+  .loop-nodes { display: grid; gap: 0.75rem; margin-top: 1rem; }
+  .loop-node {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    background: var(--surface-2);
+  }
+  .loop-node .icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 0.65rem; background: #0c111a; }
+  .loop-node strong { display: block; }
+  .loop-node small { color: var(--muted); }
+  .status { padding: 0.22rem 0.55rem; border-radius: 999px; font-size: 0.72rem; font-weight: 800; }
+  .status.observe { color: var(--cyan); background: rgba(71, 215, 255, 0.12); }
+  .status.enforce { color: var(--red); background: rgba(255, 113, 139, 0.12); }
+  .status.verify { color: var(--green); background: rgba(97, 230, 166, 0.12); }
+  section { padding: 5.5rem 0; }
+  .section-head { max-width: 720px; margin-bottom: 2rem; }
+  h2 { margin: 0.6rem 0; font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1.08; letter-spacing: -0.04em; }
+  .section-head p { color: var(--muted); font-size: 1.08rem; }
+  .three-step { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .step {
+    position: relative;
+    min-height: 260px;
+    padding: 1.4rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  }
+  .step-number { color: var(--cyan); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.1em; }
+  .step h3 { margin: 2.3rem 0 0.75rem; font-size: 1.55rem; }
+  .step p { color: var(--muted); }
+  .step-arrow { position: absolute; top: 50%; right: -1.35rem; z-index: 2; color: var(--cyan); font-size: 1.4rem; }
+  .assurance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .timeline, .feedback {
+    padding: 1.4rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--surface);
+  }
+  .timeline h3, .feedback h3 { margin-top: 0; }
+  .day {
+    display: grid;
+    grid-template-columns: 6.4rem 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-top: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+  .bar { display: flex; height: 0.55rem; overflow: hidden; border-radius: 999px; background: #222a37; }
+  .bar .allow { background: var(--green); }
+  .bar .warn { background: var(--amber); }
+  .bar .deny { background: var(--red); }
+  .day strong { font-size: 0.78rem; }
+  .legend { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.8rem; color: var(--muted); font-size: 0.75rem; }
+  .legend span::before { content: ""; display: inline-block; width: 0.55rem; height: 0.55rem; margin-right: 0.3rem; border-radius: 50%; background: currentColor; }
+  .feedback-path { display: grid; gap: 0.7rem; margin-top: 1rem; }
+  .feedback-row { display: grid; grid-template-columns: 3rem 1fr; gap: 0.8rem; align-items: start; }
+  .thumbs { font-size: 1.4rem; }
+  .feedback-row p { margin: 0; color: var(--muted); }
+  .feedback-row strong { display: block; color: var(--text); }
+  .boundary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .boundary {
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: rgba(17, 22, 33, 0.72);
+  }
+  .boundary .tag { color: var(--green); font-size: 0.76rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.09em; }
+  .boundary h3 { margin: 0.5rem 0; }
+  .boundary p { margin-bottom: 0; color: var(--muted); }
+  .proof-table { overflow: hidden; border: 1px solid var(--border); border-radius: 1rem; }
+  .proof-row { display: grid; grid-template-columns: 1fr 1fr; }
+  .proof-row > div { padding: 1rem 1.2rem; border-top: 1px solid var(--border); }
+  .proof-row > div + div { border-left: 1px solid var(--border); }
+  .proof-row.head { color: var(--muted); background: var(--surface-2); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+  .proof-row.head > div { border-top: 0; }
+  .standards { display: flex; flex-wrap: wrap; gap: 0.65rem; }
+  .standards a { padding: 0.65rem 0.8rem; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); text-decoration: none; font-size: 0.82rem; }
+  .standards a:hover { color: var(--cyan); border-color: var(--cyan); }
+  .closing {
+    margin: 2rem 0 5rem;
+    padding: clamp(2rem, 6vw, 4rem);
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    background: linear-gradient(135deg, rgba(71, 215, 255, 0.12), rgba(97, 230, 166, 0.07));
+    text-align: center;
+  }
+  .closing p { max-width: 650px; margin: 1rem auto; color: var(--muted); }
+  footer { padding: 2rem 1.5rem; border-top: 1px solid var(--border); color: var(--muted); text-align: center; font-size: 0.82rem; }
+  @media (max-width: 800px) {
+    .hero, .assurance-grid { grid-template-columns: 1fr; }
+    .hero { min-height: auto; padding: 4rem 0; }
+    .three-step, .boundary-grid { grid-template-columns: 1fr; }
+    .step-arrow { display: none; }
+    .proof-row { grid-template-columns: 1fr; }
+    .proof-row > div + div { border-left: 0; }
+    nav .links { display: none; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <a class="brand" href="/">ThumbGate</a>
+  <div class="links">
+    <a href="#loop">How it works</a>
+    <a href="#boundaries">Trust boundaries</a>
+    <a href="/dashboard">Dashboard</a>
+  </div>
+</nav>
+<main>
+  <header class="wrap hero">
+    <div>
+      <div class="eyebrow">Continuous agent assurance</div>
+      <h1>Control the action.<br><span>Keep the proof.</span></h1>
+      <p class="lede">Observe aggregate decisions, enforce deterministic checks before execution, and verify outcomes—without turning raw prompts into a surveillance feed or asking another model to police itself.</p>
+      <div class="actions">
+        <a class="button primary" href="/diagnostic">Harden one workflow</a>
+        <a class="button secondary" href="/dashboard">Inspect the dashboard</a>
+      </div>
+    </div>
+    <div class="loop-card" aria-label="Observe, enforce, verify loop">
+      <div class="mini-label">Live operating shape</div>
+      <div class="loop-nodes">
+        <div class="loop-node">
+          <span class="icon">◎</span>
+          <div><strong>Observe</strong><small>Aggregate decisions, not prompt bodies</small></div>
+          <span class="status observe">signal</span>
+        </div>
+        <div class="loop-node">
+          <span class="icon">⛔</span>
+          <div><strong>Enforce</strong><small>Allow, warn, deny, or require approval</small></div>
+          <span class="status enforce">before</span>
+        </div>
+        <div class="loop-node">
+          <span class="icon">✓</span>
+          <div><strong>Verify</strong><small>Bind claims to checks and receipts</small></div>
+          <span class="status verify">proof</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="loop">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">One loop, three jobs</div>
+        <h2>Assurance lives across the full action lifecycle.</h2>
+        <p>Monitoring alone explains what happened. ThumbGate adds the enforcement point and the verification boundary needed to change what happens next.</p>
+      </div>
+      <div class="three-step">
+        <article class="step">
+          <span class="step-number">01 · OBSERVE</span>
+          <h3>See decision pressure</h3>
+          <p>Review daily evaluated, warned, and denied counts. Empty data stays unknown; it never becomes a safety claim.</p>
+          <span class="step-arrow" aria-hidden="true">→</span>
+        </article>
+        <article class="step">
+          <span class="step-number">02 · ENFORCE</span>
+          <h3>Stop the unsafe action</h3>
+          <p>Deterministic checks hold execution authority. Adaptive scores can advise, but they do not silently rewrite policy.</p>
+          <span class="step-arrow" aria-hidden="true">→</span>
+        </article>
+        <article class="step">
+          <span class="step-number">03 · VERIFY</span>
+          <h3>Prove the outcome</h3>
+          <p>Attach test results, review state, and task receipts to completion claims. A green-looking process is not outcome proof.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">Operator view</div>
+        <h2>Useful signal, minimal exposure.</h2>
+        <p>The incident review reads bounded daily aggregates. Raw commands, prompt content, and credentials do not belong in this timeline.</p>
+      </div>
+      <div class="assurance-grid">
+        <div class="timeline">
+          <h3>Daily assurance timeline</h3>
+          <div class="mini-label">Illustrative aggregate · not production telemetry</div>
+          <div class="day">
+            <span>Aug 03</span>
+            <span class="bar" aria-label="8 allow, 1 warn, 2 deny"><i class="allow" style="width:73%"></i><i class="warn" style="width:9%"></i><i class="deny" style="width:18%"></i></span>
+            <strong>2 denied</strong>
+          </div>
+          <div class="day">
+            <span>Aug 02</span>
+            <span class="bar" aria-label="6 allow, 2 warn, 0 deny"><i class="allow" style="width:75%"></i><i class="warn" style="width:25%"></i></span>
+            <strong>2 warned</strong>
+          </div>
+          <div class="day">
+            <span>Aug 01</span>
+            <span class="bar" aria-label="5 allow, 0 warn, 1 deny"><i class="allow" style="width:83%"></i><i class="deny" style="width:17%"></i></span>
+            <strong>1 denied</strong>
+          </div>
+          <div class="legend"><span style="color:var(--green)">allowed</span><span style="color:var(--amber)">warned</span><span style="color:var(--red)">denied</span></div>
+        </div>
+        <div class="feedback">
+          <h3>Feedback becomes policy carefully</h3>
+          <div class="feedback-path">
+            <div class="feedback-row"><div class="thumbs">👍 👎</div><p><strong>Capture</strong>A human marks an outcome and adds concrete context.</p></div>
+            <div class="feedback-row"><div class="thumbs">◇</div><p><strong>Propose</strong>The system drafts a narrow lesson or candidate rule.</p></div>
+            <div class="feedback-row"><div class="thumbs">✓</div><p><strong>Validate</strong>Holdouts, mutations, and false-positive checks test the candidate.</p></div>
+            <div class="feedback-row"><div class="thumbs">⛨</div><p><strong>Promote</strong>An approved deterministic rule governs the next matching action.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="boundaries">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">Trust boundaries</div>
+        <h2>Designed to stay boring where it matters.</h2>
+      </div>
+      <div class="boundary-grid">
+        <article class="boundary"><span class="tag">Content</span><h3>No raw prompts required</h3><p>The daily view is constructed from dates and decision counts. Sensitive bodies remain outside the render contract.</p></article>
+        <article class="boundary"><span class="tag">Authority</span><h3>Deterministic checks decide</h3><p>Learned or predictive components stay advisory until a candidate beats the deterministic baseline and receives approval.</p></article>
+        <article class="boundary"><span class="tag">Network</span><h3>Local-first, offline-capable</h3><p>The enforcement path does not require a new telemetry vendor or paid model call. No external spend is necessary.</p></article>
+        <article class="boundary"><span class="tag">Change control</span><h3>Feedback proposes; humans govern</h3><p>A thumbs signal is evidence for review, not permission to widen a rule across every workflow.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">Evidence boundary</div>
+        <h2>Know what the dashboard proves—and what it cannot.</h2>
+      </div>
+      <div class="proof-table">
+        <div class="proof-row head"><div>This view can show</div><div>This view cannot prove</div></div>
+        <div class="proof-row"><div>How many decisions were evaluated, warned, or denied per day</div><div>That every agent action was observed</div></div>
+        <div class="proof-row"><div>Which deterministic checks are creating current pressure</div><div>That an allowed action was correct or valuable</div></div>
+        <div class="proof-row"><div>Whether attached tests, reviews, and receipts support a claim</div><div>Compliance certification, zero risk, or production success without provider evidence</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">Standards alignment</div>
+        <h2>Built on public risk and telemetry vocabularies.</h2>
+        <p>These sources inform the lifecycle and naming. They do not certify ThumbGate or replace workflow-specific review.</p>
+      </div>
+      <div class="standards">
+        <a href="https://www.nist.gov/itl/ai-risk-management-framework" rel="noopener">NIST AI RMF</a>
+        <a href="https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf" rel="noopener">NIST GenAI Profile</a>
+        <a href="https://genai.owasp.org/" rel="noopener">OWASP GenAI Security</a>
+        <a href="https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/" rel="noopener">OWASP Agentic Top 10</a>
+        <a href="https://atlas.mitre.org/" rel="noopener">MITRE ATLAS</a>
+        <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai/" rel="noopener">OpenTelemetry GenAI conventions</a>
+        <a href="https://developers.openai.com/api/docs/guides/agents/guardrails-approvals" rel="noopener">OpenAI guardrails and approvals</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap closing">
+    <div class="eyebrow">Start with one failure mode</div>
+    <h2>Turn a repeated mistake into a measured control.</h2>
+    <p>Begin with one agent, one workflow, and one costly repeat. Keep the enforcement deterministic and the claims attached to evidence.</p>
+    <div class="actions" style="justify-content:center">
+      <a class="button primary" href="/diagnostic">Harden one workflow</a>
+      <a class="button secondary" href="/dashboard">See incident review</a>
+    </div>
+  </section>
+</main>
+<footer>ThumbGate · Pre-action enforcement and proof for AI agent workflows</footer>
+</body>
+</html>

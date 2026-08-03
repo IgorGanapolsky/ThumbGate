@@ -2,10 +2,13 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const {
   ALLOWED_COMPONENT_TYPES,
   DASHBOARD_VIEWS,
+  buildAssuranceTimelineItems,
   buildDashboardRenderSpec,
   normalizeView,
 } = require('../scripts/dashboard-render-spec');
@@ -35,6 +38,22 @@ function createDashboardFixture() {
         blockedPerDay: 1.7,
         warnedPerDay: 0.4,
       },
+    },
+    gateAudit: {
+      days: [
+        { dayKey: '2026-07-31', allow: 0, deny: 0, warn: 0, intercepted: 0, total: 0 },
+        { dayKey: '2026-08-01', allow: 4, deny: 0, warn: 1, intercepted: 1, total: 5 },
+        {
+          dayKey: '2026-08-02',
+          allow: 5,
+          deny: 2,
+          warn: 0,
+          intercepted: 2,
+          total: 7,
+          command: 'must not reach the render spec',
+          content: 'must not reach the render spec',
+        },
+      ],
     },
     analytics: {
       buyerLoss: {
@@ -118,4 +137,121 @@ test('buildDashboardRenderSpec builds workflow rollout view from acquisition and
 
 test('normalizeView rejects unsupported generated dashboard views', () => {
   assert.throws(() => normalizeView('freeform-ai-page'), /Unsupported dashboard render view/);
+});
+
+test('incident review renders a privacy-safe newest-first daily assurance timeline', () => {
+  const spec = buildDashboardRenderSpec(createDashboardFixture(), {
+    view: DASHBOARD_VIEWS.INCIDENT_REVIEW,
+  });
+  const timeline = spec.components.find(
+    (component) => component.type === 'list' && component.title === 'Daily assurance timeline',
+  );
+
+  assert.ok(timeline);
+  assert.equal(timeline.items.length, 2);
+  assert.deepEqual(timeline.items[0], {
+    title: '2026-08-02',
+    subtitle: '7 evaluated · 2 intercepted',
+    badge: '2 denied · 0 warned',
+    tone: 'danger',
+  });
+  assert.equal(timeline.items[1].title, '2026-08-01');
+  assert.doesNotMatch(JSON.stringify(timeline), /must not reach the render spec/);
+});
+
+test('assurance timeline is capped at seven non-empty aggregate days', () => {
+  const days = Array.from({ length: 10 }, (_, index) => ({
+    dayKey: `2026-07-${String(index + 20).padStart(2, '0')}`,
+    allow: 1,
+    deny: 0,
+    warn: 0,
+    intercepted: 0,
+    total: 1,
+  }));
+
+  const items = buildAssuranceTimelineItems({ days });
+  assert.equal(items.length, 7);
+  assert.equal(items[0].title, '2026-07-29');
+  assert.equal(items[6].title, '2026-07-23');
+});
+
+test('incident review does not convert missing gate evidence into a safety claim', () => {
+  const fixture = createDashboardFixture();
+  fixture.gateAudit = { days: [] };
+  const spec = buildDashboardRenderSpec(fixture, {
+    view: DASHBOARD_VIEWS.INCIDENT_REVIEW,
+  });
+  const timeline = spec.components.find(
+    (component) => component.type === 'list' && component.title === 'Daily assurance timeline',
+  );
+
+  assert.deepEqual(timeline.items, []);
+  assert.equal(
+    timeline.emptyMessage,
+    'No gate decisions were recorded in this window; no safety conclusion is implied.',
+  );
+});
+
+const assurancePagePath = path.join(
+  __dirname,
+  '..',
+  'public',
+  'use-cases',
+  'continuous-agent-assurance.html',
+);
+const assurancePageHtml = fs.readFileSync(assurancePagePath, 'utf8');
+
+test('continuous agent assurance page has a canonical, structured public contract', () => {
+  assert.match(assurancePageHtml, /<link rel="canonical" href="https:\/\/thumbgate\.ai\/use-cases\/continuous-agent-assurance">/);
+  assert.match(assurancePageHtml, /"@type": "TechArticle"/);
+  assert.match(assurancePageHtml, /Continuous AI Agent Assurance/i);
+});
+
+test('assurance page explains the observe, enforce, verify lifecycle in order', () => {
+  const observe = assurancePageHtml.indexOf('01 · OBSERVE');
+  const enforce = assurancePageHtml.indexOf('02 · ENFORCE');
+  const verify = assurancePageHtml.indexOf('03 · VERIFY');
+
+  assert.ok(observe >= 0);
+  assert.ok(enforce > observe);
+  assert.ok(verify > enforce);
+  assert.match(assurancePageHtml, /Deterministic checks hold execution authority/i);
+});
+
+test('assurance page makes feedback-to-enforcement staging explicit', () => {
+  assert.match(assurancePageHtml, /👍 👎/);
+  assert.match(assurancePageHtml, /Capture/);
+  assert.match(assurancePageHtml, /Propose/);
+  assert.match(assurancePageHtml, /Validate/);
+  assert.match(assurancePageHtml, /Promote/);
+  assert.match(assurancePageHtml, /Feedback proposes; humans govern/i);
+});
+
+test('assurance page keeps privacy, spend, and evidence boundaries explicit', () => {
+  assert.match(assurancePageHtml, /No raw prompts required/i);
+  assert.match(assurancePageHtml, /Local-first, offline-capable/i);
+  assert.match(assurancePageHtml, /No external spend is necessary/i);
+  assert.match(assurancePageHtml, /cannot prove/i);
+  assert.match(assurancePageHtml, /zero risk/i);
+  assert.doesNotMatch(assurancePageHtml, /guarantees? safety|100% safe|fully compliant/i);
+});
+
+test('assurance page links authoritative references and existing buyer paths', () => {
+  for (const expected of [
+    'https://www.nist.gov/itl/ai-risk-management-framework',
+    'https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf',
+    'https://genai.owasp.org/',
+    'https://atlas.mitre.org/',
+    'https://opentelemetry.io/docs/specs/semconv/gen-ai/',
+    'https://developers.openai.com/api/docs/guides/agents/guardrails-approvals',
+    'href="/diagnostic"',
+    'href="/dashboard"',
+  ]) {
+    assert.ok(assurancePageHtml.includes(expected), `missing expected reference: ${expected}`);
+  }
+});
+
+test('assurance page adapts operating mechanics without copying competitor branding or slogans', () => {
+  assert.doesNotMatch(assurancePageHtml, /District Cyber|Imagine, Innovate, Ignite|full-cycle model development|24\/7 monitoring/i);
+  assert.doesNotMatch(assurancePageHtml, /\$\d/);
 });
