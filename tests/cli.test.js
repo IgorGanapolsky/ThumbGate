@@ -2351,9 +2351,17 @@ describe('bin/cli.js', () => {
     const settingsPath = path.join(isolatedHome, '.claude', 'settings.local.json');
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
     assert.match(result.stdout, /Added hooks for claude-code:/);
-    assert.equal(
-      settings.hooks.PreToolUse[0].hooks[0].command,
-      `node ${JSON.stringify(path.join(PKG_ROOT, 'bin', 'cli.js'))} gate-check`
+    const preToolCommands = (settings.hooks.PreToolUse || []).flatMap((entry) =>
+      (entry.hooks || []).map((hook) => String(hook.command || ''))
+    );
+    // ERP spend-guard is first; gate-check remains the canonical pattern engine.
+    assert.ok(
+      preToolCommands.some((command) => command.includes('thumbgate-spend-guard')),
+      `expected spend-guard in PreToolUse, got: ${JSON.stringify(preToolCommands)}`
+    );
+    assert.ok(
+      preToolCommands.some((command) => command.includes('gate-check')),
+      `expected gate-check in PreToolUse, got: ${JSON.stringify(preToolCommands)}`
     );
     assert.equal(
       settings.hooks.Stop[0].hooks[0].command,
@@ -2390,9 +2398,17 @@ describe('bin/cli.js', () => {
 
     const settingsPath = path.join(isolatedHome, '.claude', 'settings.local.json');
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-    const gateEntry = settings.hooks.PreToolUse.find((e) => (e.hooks||[]).some((h) => String(h.command||'').includes('gate-check'))) || settings.hooks.PreToolUse[0];
+    const gateEntry = settings.hooks.PreToolUse.find((e) =>
+      (e.hooks || []).some((h) => String(h.command || '').includes('gate-check'))
+    );
+    const spendEntry = settings.hooks.PreToolUse.find((e) =>
+      (e.hooks || []).some((h) => String(h.command || '').includes('thumbgate-spend-guard'))
+    );
+    assert.ok(gateEntry, 'expected gate-check PreToolUse entry');
+    assert.ok(spendEntry, 'expected spend-guard PreToolUse entry');
     assert.match(gateEntry.matcher || '', /WebFetch|Bash/);
-    assert.match(settings.hooks.PreToolUse[0].hooks[0].command, /gate-check/);
+    assert.match(gateEntry.hooks[0].command, /gate-check/);
+    assert.match(spendEntry.hooks[0].command, /thumbgate-spend-guard/);
     assert.match(settings.hooks.UserPromptSubmit[0].hooks[0].command, /hook-auto-capture/);
     assert.match(settings.hooks.PostToolUse[0].hooks[0].command, /cache-update/);
     assert.match(settings.hooks.SessionStart[0].hooks[0].command, /session-start/);
