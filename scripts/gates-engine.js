@@ -3387,8 +3387,9 @@ function evaluateUnconditionalHardFloor(input = {}, options = {}) {
 
 function evaluateFinancialHardFloor(input = {}, consumeReservation = false, options = {}) {
   const toolName = input.tool_name || input.toolName || 'unknown';
-  const toolInput = input.tool_input && typeof input.tool_input === 'object'
-    ? input.tool_input
+  const rawToolInput = input.tool_input ?? input.toolInput;
+  const toolInput = rawToolInput && typeof rawToolInput === 'object'
+    ? rawToolInput
     : {};
   const normalizedAction = normalizeProviderAction({
     toolName,

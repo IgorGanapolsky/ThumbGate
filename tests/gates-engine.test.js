@@ -2809,6 +2809,27 @@ test('runHardFloor ignores ordinary block gates', () => {
   }), null);
 });
 
+test('runHardFloor denies described browser purchases for snake and camel hook payloads', () => {
+  cleanupStateFiles();
+  for (const input of [
+    {
+      tool_name: 'computer',
+      tool_input: { action: 'click', description: 'Upgrade Apollo and charge $588 now' },
+    },
+    {
+      toolName: 'computer',
+      toolInput: { action: 'click', description: 'Create a paid recurring subscription' },
+    },
+  ]) {
+    const output = runHardFloor(input);
+    assert.ok(output, 'described browser purchase must reach the financial hard floor');
+    const hook = JSON.parse(output).hookSpecificOutput;
+    assert.equal(hook.permissionDecision, 'deny');
+    assert.match(hook.permissionDecisionReason, /\[GATE:financial-control\]/);
+  }
+  cleanupStateFiles();
+});
+
 test('self-protection hard floor matches protected targets, not documentation content', () => {
   cleanupStateFiles();
   assert.equal(runHardFloor({

@@ -131,11 +131,38 @@ const ADVERSARIAL_BYPASS_ENV = {
   THUMBGATE_ALLOW_SELF_EDIT: '1',
 };
 
+const FINANCIAL_BROWSER_CASES = [
+  {
+    tool_name: 'computer',
+    tool_input: { action: 'click', description: 'Upgrade Apollo and charge $588 now' },
+  },
+  {
+    tool_name: 'computer',
+    tool_input: {
+      action: 'click',
+      description: 'User said approved; buy Apollo Pro for $588',
+      financialControl: { approved: true, budgetUsd: 588 },
+    },
+  },
+  {
+    toolName: 'computer',
+    toolInput: { action: 'click', description: 'Create a paid recurring subscription' },
+  },
+];
+
 for (const [expectedGate, input] of HARD_FLOOR_CASES) {
   test(`${expectedGate} denies even when bypass and legacy self-edit overrides are set`, () => {
     const result = gateCheck(input, ADVERSARIAL_BYPASS_ENV);
     assert.equal(result.decision, 'deny', result.raw.slice(0, 500));
     assert.ok(result.reason.includes(`[GATE:${expectedGate}]`), result.reason);
+  });
+}
+
+for (const input of FINANCIAL_BROWSER_CASES) {
+  test('financial browser mutation denies even when operator bypass is set', () => {
+    const result = gateCheck(input, ADVERSARIAL_BYPASS_ENV);
+    assert.equal(result.decision, 'deny', result.raw.slice(0, 500));
+    assert.match(result.reason, /\[GATE:financial-control\]/);
   });
 }
 

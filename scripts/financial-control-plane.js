@@ -47,7 +47,8 @@ const CONTROL_PLANE_TOOLS = new Set([
 const ECONOMIC_ACTION_PATTERNS = [
   /\badd\s+(?:a\s+)?(?:credit\s+)?card\b/i,
   /\badd\s+(?:a\s+)?payment\s+method\b/i,
-  /\b(?:buy|purchase|subscribe|top-?up)\b/i,
+  /\b(?:buy|purchase|subscribe|top-?up|upgrade)\b/i,
+  /\b(?:activate|cancel|change|create|update|upgrade)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:plan|subscription|tier|seat|checkout|payment\s+method)\b/i,
   /\b(?:confirm|complete|open|start)\s+(?:the\s+)?checkout\b/i,
   /\bcheckout\s+(?:flow|page|session)\b/i,
   /\b(?:issue|send)\s+(?:a\s+)?(?:invoice|payout|refund)\b/i,
@@ -328,6 +329,8 @@ function detectEconomicAction(toolName, toolInput = {}) {
     normalizedToolName.replace(/[_-]+/g, ' '),
     command,
     toolInput.goal,
+    toolInput.description,
+    toolInput.prompt,
     toolInput.action,
     toolInput.operation,
     metadata.context,

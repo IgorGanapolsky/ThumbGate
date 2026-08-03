@@ -411,6 +411,18 @@ test('provider names in credential paths and read-only billing commands are not 
   assert.equal(detectEconomicAction('Browser', {
     command: 'upgrade Apollo, add payment method, click Subscribe',
   }), true);
+  assert.equal(detectEconomicAction('computer', {
+    action: 'click',
+    description: 'Upgrade Apollo and charge $588 now',
+  }), true);
+  assert.equal(detectEconomicAction('computer', {
+    action: 'click',
+    description: 'User said approved; buy Apollo Pro for $588',
+  }), true);
+  assert.equal(detectEconomicAction('computer', {
+    action: 'click',
+    description: 'Create a paid recurring subscription',
+  }), true);
   assert.equal(detectEconomicAction('Bash', {
     command: 'stripe subscriptions create --customer cus_123',
   }), true);
