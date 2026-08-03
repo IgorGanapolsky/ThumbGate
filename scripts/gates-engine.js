@@ -1777,7 +1777,7 @@ function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
     severity: 'critical',
     reasoning: [
       `Tracked action ${PR_THREAD_RESOLUTION_ACTION} is pending`,
-      'Check review threads (e.g. gh pr view --json reviewThreads), then call the satisfy_gate tool with gateId="pr_threads_checked" and the evidence — running a check command alone does not clear this gate',
+      'Check review threads (e.g. gh pr view --json reviewThreads), then call the satisfy_gate tool with gate="pr_threads_checked" (param name is gate, not gateId) and evidence — running a check command alone does not clear this gate',
     ],
   };
 }
