@@ -9453,6 +9453,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
             escalationId,
           }, {
             authenticatedActor,
+            approvalSigningKey: humanReviewerConfig.key,
             feedbackDir: requestFeedbackDir,
           }));
         } catch (error) {

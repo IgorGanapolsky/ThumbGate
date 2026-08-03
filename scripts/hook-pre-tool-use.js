@@ -499,17 +499,18 @@ function findDominantTag(tags, lossMatrix) {
 }
 
 const { selfProtectionTarget, evaluateSelfProtection } = require('./self-protection');
-const { runHardFloor } = require('./gates-engine');
+const { finalizeFinancialAuthorization, runHardFloor } = require('./gates-engine');
 
 function main() {
   const input = readStdinSync() || {};
   const toolName = input.tool_name || process.env.CLAUDE_TOOL_NAME || '';
   const effectiveInput = resolveEffectiveInput(input.tool_input || null);
 
-  // Budget gates are intentionally NOT wired here. A stale budget-state.json
-  // once blocked every Bash/Edit/Write call, including the repair path
-  // (self-lockout, 2026-07-07). Spend tracking therefore stays advisory. The
-  // targeted hard floors below retain scoped approval and break-glass recovery.
+  // Legacy model-token spend tracking remains advisory because a stale
+  // budget-state.json once blocked every Bash/Edit/Write call, including the
+  // repair path (self-lockout, 2026-07-07). Provider purchases and other
+  // economic mutations are separate: the financial-control hard floor below
+  // is fail-closed and cannot be bypassed by this advisory accounting path.
   try {
     const pkgRoot = path.resolve(__dirname, '..');
     const { addSpend } = require(path.join(pkgRoot, 'scripts', 'budget-guard'));
@@ -549,6 +550,16 @@ function main() {
 
   const blockReason = maybeBlockOnRisk(lessons);
   if (blockReason) return block(blockReason);
+
+  // This is the final allow boundary for the standalone hook. A valid purchase
+  // reservation is consumed only now, after learned-risk checks have passed.
+  const financialAuthorization = finalizeFinancialAuthorization({
+    tool_name: toolName,
+    tool_input: effectiveInput,
+  });
+  if (financialAuthorization?.decision === 'deny') {
+    return block(financialAuthorization.message || 'ThumbGate financial control denied this action.');
+  }
 
   const autogate = maybeRegisterPrCommitGate(toolName, effectiveInput);
 

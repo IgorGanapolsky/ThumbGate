@@ -3376,6 +3376,16 @@ function evaluateUnconditionalHardFloor(input = {}) {
     return { hardFloor: securityScan, securityScan };
   }
 
+  const financialHardFloor = evaluateFinancialHardFloor(input, false);
+  if (financialHardFloor) return { hardFloor: financialHardFloor, securityScan };
+
+  return {
+    hardFloor: evaluateSelfProtectHardFloor(input),
+    securityScan,
+  };
+}
+
+function evaluateFinancialHardFloor(input = {}, consumeReservation = false) {
   const toolName = input.tool_name || input.toolName || 'unknown';
   const toolInput = input.tool_input && typeof input.tool_input === 'object'
     ? input.tool_input
@@ -3398,7 +3408,7 @@ function evaluateUnconditionalHardFloor(input = {}) {
       economicAction: undefined,
     },
     costControl,
-  }, { consumeReservation: true });
+  }, { consumeReservation });
   if (financialControl.mode === 'block') {
     const result = {
       decision: 'deny',
@@ -3422,13 +3432,21 @@ function evaluateUnconditionalHardFloor(input = {}) {
       source: 'financial-control',
     });
     auditToFeedback(auditRecord);
-    return { hardFloor: result, securityScan };
+    return result;
   }
+  return null;
+}
 
-  return {
-    hardFloor: evaluateSelfProtectHardFloor(input),
-    securityScan,
-  };
+// Reservations are single-use. They are consumed only after every other gate
+// has reached its final allow/warn boundary, never during the preliminary hard
+// floor preview. This prevents a later workflow or learned-risk denial from
+// burning an approval for an action that did not execute.
+function finalizeFinancialAuthorization(input = {}) {
+  return evaluateFinancialHardFloor(input, true);
+}
+
+function isBlockingDecision(result) {
+  return result?.decision === 'deny' || result?.decision === 'approve';
 }
 
 function runHardFloor(input) {
@@ -3820,10 +3838,18 @@ async function runAsync(input) {
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
   }
+
+  const posturedResult = applyEnforcementPosture(result);
+  if (isBlockingDecision(posturedResult)) {
+    return formatOutput(posturedResult);
+  }
+
+  const financialAuthorization = finalizeFinancialAuthorization(input);
+  if (financialAuthorization) return formatOutput(financialAuthorization);
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(applyEnforcementPosture(result), combinedContext);
+  return formatOutput(posturedResult, combinedContext);
 
 }
 
@@ -3859,10 +3885,18 @@ function run(input) {
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
   }
+
+  const posturedResult = applyEnforcementPosture(result);
+  if (isBlockingDecision(posturedResult)) {
+    return formatOutput(posturedResult);
+  }
+
+  const financialAuthorization = finalizeFinancialAuthorization(input);
+  if (financialAuthorization) return formatOutput(financialAuthorization);
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(applyEnforcementPosture(result), combinedContext);
+  return formatOutput(posturedResult, combinedContext);
 
 }
 
@@ -4231,6 +4265,7 @@ module.exports = {
   isAutonomousRun,
   computeExecutableHash,
   formatOutput,
+  finalizeFinancialAuthorization,
   isApprovalGatesEnabled,
   runHardFloor,
   run,

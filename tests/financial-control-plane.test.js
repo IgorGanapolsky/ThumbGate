@@ -12,11 +12,21 @@ const {
   evaluateFinancialControl,
   getLedgerHeadPath,
   getLedgerPath,
+  getRuntimePrincipal,
+  projectRequisition,
   reconcilePurchaseLedger,
   reservePurchaseRequisition,
   settlePurchaseRequisition,
 } = require('../scripts/financial-control-plane');
-const { decideEscalation } = require('../scripts/human-escalation');
+const {
+  decideEscalation,
+  getEscalationsHeadPath,
+  getEscalationsPath,
+  requestEscalation,
+  validateEscalationLedger,
+} = require('../scripts/human-escalation');
+const { finalizeFinancialAuthorization, runHardFloor } = require('../scripts/gates-engine');
+const APPROVAL_KEY = 'independent-human-reviewer-signing-key';
 
 function fixture() {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-financial-control-'));
@@ -34,7 +44,31 @@ function fixture() {
 }
 
 function authOptions(feedbackDir, requester, extra = {}) {
-  return { feedbackDir, authenticatedPrincipal: requester, ...extra };
+  return {
+    feedbackDir,
+    authenticatedPrincipal: requester,
+    approvalVerificationKey: APPROVAL_KEY,
+    ...extra,
+  };
+}
+
+function reviewerOptions(feedbackDir) {
+  return {
+    feedbackDir,
+    authenticatedActor: { id: 'finance-reviewer', kind: 'human' },
+    approvalSigningKey: APPROVAL_KEY,
+  };
+}
+
+function hashEscalationEvent(event) {
+  const copy = { ...event };
+  delete copy.eventHash;
+  const stableStringify = (value) => {
+    if (!value || typeof value !== 'object') return JSON.stringify(value);
+    if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+  };
+  return require('node:crypto').createHash('sha256').update(stableStringify(copy)).digest('hex');
 }
 
 test('purchase lifecycle requires independent approval, exact scope, reservation, and receipt', () => {
@@ -61,10 +95,7 @@ test('purchase lifecycle requires independent approval, exact scope, reservation
       escalationId: created.requisition.escalationId,
       decision: 'approved',
       reason: 'Verified exact vendor, purpose, and amount.',
-    }, {
-      feedbackDir,
-      authenticatedActor: { id: 'finance-reviewer', kind: 'human' },
-    });
+    }, reviewerOptions(feedbackDir));
 
     assert.throws(() => reservePurchaseRequisition({
       requisitionId: created.requisition.requisitionId,
@@ -231,10 +262,7 @@ test('caller cannot select or impersonate the authenticated requester', () => {
       escalationId: created.requisition.escalationId,
       decision: 'approved',
       reason: 'Approved for identity binding test.',
-    }, {
-      feedbackDir,
-      authenticatedActor: { id: 'finance-reviewer', kind: 'human' },
-    });
+    }, reviewerOptions(feedbackDir));
 
     assert.throws(() => reservePurchaseRequisition({
       requisitionId: created.requisition.requisitionId,
@@ -244,6 +272,135 @@ test('caller cannot select or impersonate the authenticated requester', () => {
       sourceMessageId: 'user-message-42',
     }, authOptions(feedbackDir, { id: 'other-agent', kind: 'agent' })), /does not own/);
   } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('financial reservation rejects a validly chained but unauthenticated approval row', () => {
+  const { feedbackDir, requester, request } = fixture();
+  try {
+    const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    // The generic queue may record a human decision without a financial
+    // signing key, but that row must never authorize a purchase.
+    decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Unsigned local row must not authorize funds.',
+    }, {
+      feedbackDir,
+      authenticatedActor: { id: 'fabricated-reviewer', kind: 'human' },
+    });
+
+    assert.throws(() => reservePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      amountUsd: 588,
+      vendor: 'Apollo',
+      purpose: 'Annual data plan',
+      sourceMessageId: 'user-message-42',
+    }, authOptions(feedbackDir, requester)), /approval receipt is missing or unauthenticated/);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('the first v2 decision seals a valid legacy escalation prefix without losing it', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-legacy-escalation-'));
+  try {
+    const requested = requestEscalation({
+      taskId: 'legacy-escalation-task',
+      reason: 'Existing operator decision still needs review',
+      severity: 'high',
+      requester: { id: 'legacy-agent', kind: 'agent' },
+      evidence: ['legacy audit evidence'],
+      idempotencyKey: 'legacy-escalation-key',
+    }, { feedbackDir }).escalation;
+    const legacy = { ...requested };
+    delete legacy.schemaVersion;
+    delete legacy.sequence;
+    delete legacy.previousEventHash;
+    legacy.eventHash = hashEscalationEvent(legacy);
+    fs.writeFileSync(getEscalationsPath({ feedbackDir }), `${JSON.stringify(legacy)}\n`, 'utf8');
+    fs.unlinkSync(getEscalationsHeadPath({ feedbackDir }));
+
+    decideEscalation({
+      escalationId: legacy.escalationId,
+      decision: 'approved',
+      reason: 'Authenticated reviewer sealed the legacy prefix.',
+    }, reviewerOptions(feedbackDir));
+
+    const events = fs.readFileSync(getEscalationsPath({ feedbackDir }), 'utf8')
+      .trim().split('\n').map(JSON.parse);
+    const head = JSON.parse(fs.readFileSync(getEscalationsHeadPath({ feedbackDir }), 'utf8'));
+    assert.equal(events.length, 2);
+    assert.equal(events[0].schemaVersion, undefined);
+    assert.equal(events[1].schemaVersion, 'human-escalation-v2');
+    assert.equal(events[1].sequence, 2);
+    assert.equal(events[1].previousEventHash, events[0].eventHash);
+    assert.equal(validateEscalationLedger(events, [], head).ok, true);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('hard-floor preview preserves a reservation until the final allow boundary', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-final-authorization-'));
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const previousReviewerKey = process.env.THUMBGATE_HUMAN_REVIEWER_KEY;
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
+  process.env.THUMBGATE_HUMAN_REVIEWER_KEY = APPROVAL_KEY;
+  const requester = getRuntimePrincipal();
+  try {
+    const created = createPurchaseRequisition({
+      taskId: 'upgrade-task-final-boundary',
+      vendor: 'Apollo',
+      amountUsd: 588,
+      purpose: 'Annual data plan',
+      sourceMessageId: 'user-message-42',
+      evidence: ['Quoted annual price: $588'],
+      idempotencyKey: 'final-boundary-request',
+    }, authOptions(feedbackDir, requester));
+    decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Approved only for the exact final-boundary test action.',
+    }, reviewerOptions(feedbackDir));
+    const reserved = reservePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      amountUsd: 588,
+      vendor: 'Apollo',
+      purpose: 'Annual data plan',
+      sourceMessageId: 'user-message-42',
+    }, authOptions(feedbackDir, requester));
+    const input = {
+      tool_name: 'Browser',
+      tool_input: {
+        command: 'Click Subscribe and confirm checkout',
+        costUsd: 588,
+        budget: {
+          maxCostUsdPerAction: 588,
+          remainingCostUsd: 588,
+        },
+        financialControl: {
+          requisitionId: reserved.requisition.requisitionId,
+          reservationId: reserved.requisition.reservationId,
+          actionId: 'final-boundary-action',
+          vendor: 'Apollo',
+          purpose: 'Annual data plan',
+          sourceMessageId: 'user-message-42',
+        },
+      },
+    };
+
+    assert.equal(runHardFloor(input), null);
+    assert.equal(projectRequisition(created.requisition.requisitionId, { feedbackDir }).status, 'reserved');
+    assert.equal(finalizeFinancialAuthorization(input), null);
+    assert.equal(projectRequisition(created.requisition.requisitionId, { feedbackDir }).status, 'authorized');
+    assert.equal(finalizeFinancialAuthorization(input).decision, 'deny');
+  } finally {
+    if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+    if (previousReviewerKey === undefined) delete process.env.THUMBGATE_HUMAN_REVIEWER_KEY;
+    else process.env.THUMBGATE_HUMAN_REVIEWER_KEY = previousReviewerKey;
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
 });
@@ -274,10 +431,7 @@ test('reconciliation detects ledger row deletion and reordering through hash cha
       escalationId: created.requisition.escalationId,
       decision: 'approved',
       reason: 'Approved for chain test.',
-    }, {
-      feedbackDir,
-      authenticatedActor: { id: 'finance-reviewer', kind: 'human' },
-    });
+    }, reviewerOptions(feedbackDir));
     reservePurchaseRequisition({
       requisitionId: created.requisition.requisitionId,
       amountUsd: 588,
@@ -314,10 +468,7 @@ test('reconciliation detects deletion of the final ledger event through the head
       escalationId: created.requisition.escalationId,
       decision: 'approved',
       reason: 'Approved for tail truncation test.',
-    }, {
-      feedbackDir,
-      authenticatedActor: { id: 'finance-reviewer', kind: 'human' },
-    });
+    }, reviewerOptions(feedbackDir));
     reservePurchaseRequisition({
       requisitionId: created.requisition.requisitionId,
       amountUsd: 588,

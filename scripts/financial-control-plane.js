@@ -6,9 +6,10 @@
  *
  * Financial lifecycle calls derive their requester from an authenticated
  * runtime principal. Caller arguments cannot select an identity. A reservation
- * is consumed exactly once at the pre-tool boundary, before the economic action
- * runs. Ledger events form a global hash chain so deletion and reordering are
- * detectable during reconciliation and before any new authorization.
+ * is consumed exactly once at the final pre-tool allow boundary, after every
+ * other gate passes and before the economic action runs. Ledger events form a
+ * global hash chain so deletion and reordering are detectable during
+ * reconciliation and before any new authorization.
  */
 
 const crypto = require('node:crypto');
@@ -17,6 +18,7 @@ const path = require('node:path');
 const { getFeedbackPaths } = require('./feedback-paths');
 const {
   getEscalation,
+  getVerifiedApproval,
   requestEscalation,
 } = require('./human-escalation');
 
@@ -171,7 +173,12 @@ function reservePurchaseRequisition(input = {}, options = {}) {
   const requisition = projectRequisition(requisitionId, options);
   if (!requisition) throw financialError(`unknown requisition '${requisitionId}'`);
   assertPrincipalOwnsRequisition(requester, requisition);
-  const escalation = getEscalation(requisition.escalationId, options);
+  let escalation;
+  try {
+    escalation = getVerifiedApproval(requisition.escalationId, options);
+  } catch (error) {
+    throw financialError(`requisition '${requisitionId}' approval verification failed: ${error.message}`);
+  }
   if (!escalation || escalation.status !== 'approved') {
     throw financialError(`requisition '${requisitionId}' does not have independent human approval`);
   }

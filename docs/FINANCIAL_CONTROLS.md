@@ -10,7 +10,9 @@ append-only lifecycle is complete:
    the requester identity.
 2. An independently configured human reviewer approves or rejects that escalation
    through `POST /v1/escalations/{id}/decision`. The agent MCP surface has no
-   approval operation, and the requester cannot approve their own request.
+   approval operation, and the requester cannot approve their own request. The
+   reviewer API signs the decision with `THUMBGATE_HUMAN_REVIEWER_KEY`; a local
+   JSON row without that authenticated receipt cannot authorize funds.
 3. `reserve_purchase_requisition` creates a short-lived, single-use reservation
    whose vendor, purpose, amount, and source-message identifier match the approved
    request. Only the authenticated runtime principal that created the request can
@@ -30,9 +32,11 @@ append-only lifecycle is complete:
    }
    ```
 
-5. The pre-tool gate atomically changes the reservation to `authorized` before
-   returning allow. A second invocation cannot reuse it, including a parallel or
-   retrying invocation.
+5. The pre-tool gate previews the financial hard floor, runs every other
+   deterministic and learned-risk gate, and only then atomically changes the
+   reservation to `authorized` at the final allow boundary. A later denial does
+   not burn the reservation. A second invocation cannot reuse an authorized
+   reservation, including a parallel or retrying invocation.
 6. `settle_purchase_requisition` commits actual spend with receipt evidence or
    releases the unused reservation.
 7. `reconcile_purchase_ledger` reports totals, stale reservations, projected
@@ -49,7 +53,14 @@ append-only lifecycle is complete:
 - Missing, pending, expired, released, mismatched, or previously committed
   authorizations are blocked.
 - A reservation is single-use and is consumed at authorization, not at optional
-  post-action settlement.
+  post-action settlement, but only after all other gates allow the action.
+- Financial reservation requires both an intact, globally hash-chained
+  escalation history and an HMAC-authenticated reviewer receipt. A forged or
+  unsigned `approved` row fails closed even when its ordinary event hash and
+  head checkpoint are structurally valid.
+- Pre-v2 escalation rows remain readable as a legacy prefix. The first new
+  event seals that prefix into the v2 chain and creates the external head;
+  only a signed v2 reviewer decision can authorize a financial reservation.
 - Ledger deletion, reordering, malformed rows, event mutation, and disagreement
   with the atomically updated head checkpoint cause the financial path to fail
   closed. This is tamper-evident, not a cryptographic defense against an attacker
