@@ -21,7 +21,7 @@ const RERANKER_PATH = require.resolve('../scripts/cross-encoder-reranker');
 const SEMANTIC_LAYER_PATH = require.resolve('../scripts/semantic-layer');
 const LESSON_INFERENCE_PATH = require.resolve('../scripts/lesson-inference');
 
-const { handleRequest, TOOLS, SAFE_DATA_DIR, getExposedTools, __test__ } = require('../adapters/mcp/server-stdio');
+const { callTool, handleRequest, TOOLS, SAFE_DATA_DIR, getExposedTools, __test__ } = require('../adapters/mcp/server-stdio');
 
 function initGitRepo() {
   const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-repo-'));
@@ -403,6 +403,85 @@ test('workflow_sentinel accepts provider-native MCP tools/call budget payloads',
   assert.equal(payload.costControl.mode, 'block');
   assert.equal(payload.decision, 'deny');
   assert.equal(payload.decisionControl.executionMode, 'blocked');
+});
+
+test('purchase-control MCP tools expose request, reserve, settle, and reconciliation but no approval tool', async () => {
+  const { TOOLS } = require('../scripts/tool-registry');
+  const names = new Set(TOOLS.map((tool) => tool.name));
+  for (const name of [
+    'create_purchase_requisition',
+    'list_purchase_requisitions',
+    'reserve_purchase_requisition',
+    'settle_purchase_requisition',
+    'reconcile_purchase_ledger',
+  ]) {
+    assert.equal(names.has(name), true, `${name} must be exposed`);
+  }
+  assert.equal(names.has('approve_purchase_requisition'), false);
+
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-financial-control-'));
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const previousStateDir = process.env.THUMBGATE_STATE_DIR;
+  const previousProfile = process.env.THUMBGATE_MCP_PROFILE;
+  const previousFinancialLedgerKey = process.env.THUMBGATE_FINANCIAL_LEDGER_KEY;
+  const previousTestAnchorFile = process.env.THUMBGATE_TEST_ONLY_FINANCIAL_ANCHOR_FILE;
+  const previousTestAnchorOptIn = process.env.THUMBGATE_ALLOW_UNTRUSTED_FILE_ANCHOR_FOR_TESTS;
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
+  process.env.THUMBGATE_STATE_DIR = path.join(feedbackDir, 'state');
+  process.env.THUMBGATE_MCP_PROFILE = 'essential';
+  process.env.THUMBGATE_FINANCIAL_LEDGER_KEY = 'mcp-financial-ledger-test-key';
+  process.env.THUMBGATE_TEST_ONLY_FINANCIAL_ANCHOR_FILE = path.join(feedbackDir, 'test-only-financial-anchor.json');
+  process.env.THUMBGATE_ALLOW_UNTRUSTED_FILE_ANCHOR_FOR_TESTS = '1';
+  try {
+    const createdResult = await callTool('create_purchase_requisition', {
+      taskId: 'mcp-finance-test',
+      vendor: 'Example Vendor',
+      amountUsd: 1,
+      purpose: 'Verify the MCP authorization boundary',
+      sourceMessageId: 'msg-mcp-finance-test',
+      evidence: ['node test evidence'],
+      toolName: 'mcp__billing__create_subscription',
+      toolInput: { customer: 'cus_123', costUsd: 1 },
+    });
+    const created = JSON.parse(createdResult.content[0].text);
+    assert.equal(created.requisition.status, 'pending_approval');
+
+    await assert.rejects(
+      callTool('reserve_purchase_requisition', {
+        requisitionId: created.requisition.requisitionId,
+        amountUsd: 1,
+        vendor: 'Example Vendor',
+        purpose: 'Verify the MCP authorization boundary',
+        sourceMessageId: 'msg-mcp-finance-test',
+      }),
+      /independent human approval/i
+    );
+
+    const listedResult = await callTool('list_purchase_requisitions', {});
+    const listed = JSON.parse(listedResult.content[0].text);
+    assert.equal(listed.length, 1);
+    assert.equal(listed[0].requisitionId, created.requisition.requisitionId);
+
+    const reconciliationResult = await callTool('reconcile_purchase_ledger', {});
+    const reconciliation = JSON.parse(reconciliationResult.content[0].text);
+    assert.equal(reconciliation.ok, true);
+    assert.equal(reconciliation.requisitionCount, 1);
+    assert.equal(reconciliation.totals.committedUsd, 0);
+  } finally {
+    if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+    if (previousStateDir === undefined) delete process.env.THUMBGATE_STATE_DIR;
+    else process.env.THUMBGATE_STATE_DIR = previousStateDir;
+    if (previousProfile === undefined) delete process.env.THUMBGATE_MCP_PROFILE;
+    else process.env.THUMBGATE_MCP_PROFILE = previousProfile;
+    if (previousFinancialLedgerKey === undefined) delete process.env.THUMBGATE_FINANCIAL_LEDGER_KEY;
+    else process.env.THUMBGATE_FINANCIAL_LEDGER_KEY = previousFinancialLedgerKey;
+    if (previousTestAnchorFile === undefined) delete process.env.THUMBGATE_TEST_ONLY_FINANCIAL_ANCHOR_FILE;
+    else process.env.THUMBGATE_TEST_ONLY_FINANCIAL_ANCHOR_FILE = previousTestAnchorFile;
+    if (previousTestAnchorOptIn === undefined) delete process.env.THUMBGATE_ALLOW_UNTRUSTED_FILE_ANCHOR_FOR_TESTS;
+    else process.env.THUMBGATE_ALLOW_UNTRUSTED_FILE_ANCHOR_FOR_TESTS = previousTestAnchorOptIn;
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
 });
 
 test('native_messaging_audit tool returns local browser bridge findings over MCP', async () => {

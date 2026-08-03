@@ -40,7 +40,7 @@ After changing MCP or hook settings, restart Claude Desktop or Claude Code so it
 - **👎 Thumbs down** → captures the mistake → distills a lesson → repeated concrete failures can promote a prevention rule
 - **👍 Thumbs up** → records an accepted outcome for local recall and evaluation
 - **Pre-action checks** → flag risky actions and deny when strict or unconditional policy requires it
-- **Financial hard floor** → requires current-turn human vendor + amount authority and an adapter spend declaration
+- **Financial hard floor** → requires an explicit budget plus an exact-action requisition approved by an independently authenticated human reviewer
 - **Budget tracking** → records action count and session time; enforcement is an explicit operator choice
 - **Self-protection** → hard-gates direct edits to configured hook and governance files, with audited repair paths
 - **Compliance tags** → NIST, SOC2, OWASP, CWE on prevention rules for enterprise teams

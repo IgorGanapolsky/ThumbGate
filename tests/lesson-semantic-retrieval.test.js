@@ -257,6 +257,10 @@ test('runtime provider failure degrades to lexical instead of accepting feature-
     delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
     global.fetch = async () => { throw new Error('provider offline'); };
     delete require.cache[require.resolve('../scripts/vector-store')];
+    const vectorStore = require('../scripts/vector-store');
+    vectorStore.setPipelineLoaderForTests(async () => {
+      throw new Error('transformer provider offline');
+    });
     const lexical = retrieveRelevantLessons('Bash', 'permanently erase a directory', {
       feedbackDir: tmp,
     });
@@ -268,6 +272,8 @@ test('runtime provider failure degrades to lexical instead of accepting feature-
   } finally {
     global.fetch = originalFetch;
     delete process.env.THUMBGATE_OLLAMA_EMBED_MODEL;
+    const vectorStore = require('../scripts/vector-store');
+    vectorStore.setPipelineLoaderForTests(null);
     delete require.cache[require.resolve('../scripts/vector-store')];
     fs.rmSync(tmp, { recursive: true, force: true });
   }

@@ -37,6 +37,7 @@ function getHome() {
 // --- Hook definitions ---
 const CLAUDE_HOOKS = {
   PreToolUse: {
+    matcher: '.*',
     hooks: [{ type: 'command', command: preToolHookCommand() }],
   },
   UserPromptSubmit: {
@@ -56,6 +57,7 @@ const CLAUDE_HOOKS = {
 
 const CODEX_HOOKS = {
   PreToolUse: {
+    matcher: '.*',
     hooks: [{ type: 'command', command: codexPreToolHookCommand() }],
   },
   UserPromptSubmit: {
@@ -182,7 +184,8 @@ function pruneNarrowPreToolEntries(hookArray, expectedCommand) {
   const hooks = hookArray.filter((entry) => {
     const ownsCommand = Array.isArray(entry?.hooks)
       && entry.hooks.some((hook) => hook?.command === expectedCommand);
-    if (ownsCommand && typeof entry.matcher === 'string' && entry.matcher.trim()) {
+    const matcher = typeof entry?.matcher === 'string' ? entry.matcher.trim() : '';
+    if (ownsCommand && matcher && matcher !== '.*') {
       removed = true;
       return false;
     }
@@ -649,6 +652,7 @@ function wireGeminiHooks(options) {
   if (!hookAlreadyPresent(settings.hooks.PreToolUse, preToolCmd)) {
     settings.hooks.PreToolUse = settings.hooks.PreToolUse || [];
     settings.hooks.PreToolUse.push({
+      matcher: '.*',
       hooks: [{ type: 'command', command: preToolCmd }],
     });
     added.push({ lifecycle: 'PreToolUse', command: preToolCmd });
@@ -701,6 +705,7 @@ function wireForgeHooks(options) {
   if (!hookAlreadyPresent(existing.hooks.PreToolUse, preToolCmd)) {
     existing.hooks.PreToolUse = existing.hooks.PreToolUse || [];
     existing.hooks.PreToolUse.push({
+      matcher: '.*',
       hooks: [{ type: 'command', command: preToolCmd }],
     });
     added.push({ lifecycle: 'PreToolUse', command: preToolCmd });

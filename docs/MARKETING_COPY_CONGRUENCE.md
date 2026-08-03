@@ -19,7 +19,7 @@
 > Thumbs teach. The gate enforces. Reviewed outcomes become local lessons; repeated concrete failures can become reviewable gates; the next tool call is checked before it runs.
 
 ### Financial control boundary
-> Detected financial mutations routed through supported ThumbGate hooks deny by default unless the current human message authorizes the exact vendor and maximum amount and the adapter declares the proposed spend. ThumbGate reserves that budget and writes a local decision receipt. It is not a bank, refund service, or proof of the vendor's final settlement amount.
+> Detected financial mutations routed through supported ThumbGate hooks deny by default unless they carry an explicit positive USD budget and an exact-action requisition approved by an independently authenticated human reviewer. ThumbGate consumes a principal-bound single-use reservation only at the final allow boundary and settles it against receipt evidence. It is not a bank, refund service, or proof of the vendor's final settlement amount.
 
 ### NPM package.json
 > ThumbGate Pre-Action Checks turn reviewed agent feedback into local rules and hard-block detected secret leaks and unapproved spend before tools execute.

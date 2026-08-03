@@ -179,19 +179,13 @@ That command stores a concrete negative lesson and applies promotion rules. If t
    Verdict: WARN + LOG   (BLOCK when THUMBGATE_STRICT_ENFORCEMENT=1)
 ```
 
-## Financial purchase-order hard floor
+## Financial transaction hard floor
 
-A detected purchase, checkout, plan change, billing action, or transfer is denied unless the current human message explicitly authorizes the vendor and maximum amount and a supported adapter declares the proposed vendor, currency, amount, and operation. The authorization expires after ten minutes, the next human prompt revokes it, and atomic reservations prevent duplicate consumption.
+Detected purchases, checkouts, paid upgrades, transfers, payouts, refunds, and other economic mutations fail closed unless they carry an explicit positive USD budget and an exact-action purchase requisition approved by an independently authenticated human reviewer. Approved reservations are short-lived, principal-bound, single-use, consumed only at the final allow boundary, and settled against receipt evidence.
 
-```text
-I explicitly authorize you to spend up to $100 on Apollo credits.
-```
+The public MCP exposes requisition, reservation, settlement, and reconciliation operations; it does not expose the reviewer approval operation to the requesting agent. A `$0` budget is a deterministic never-spend mode.
 
-```bash
-npx thumbgate spend-status --json
-```
-
-Financial decisions are appended to a local receipt ledger. This is an ERP-style purchase-order interlock, not a bank: it cannot reverse a charge or independently prove the vendor's final settlement amount. Keep provider-side card and account limits. See [Financial spend control](docs/guides/financial-spend-control.md) for the adapter contract and security boundary.
+This is an ERP-style transaction interlock, not a bank or refund service. Keep provider-side card limits and settlement controls. See [Financial controls](docs/FINANCIAL_CONTROLS.md) for the exact lifecycle, adapter envelope, ledger integrity checks, and security boundary.
 
 ---
 

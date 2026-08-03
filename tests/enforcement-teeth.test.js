@@ -137,38 +137,6 @@ test('hook-pre-tool-use tracks curl-to-prod marker file', () => {
   assert.ok(fs.existsSync(MARKER), 'marker must be written after curl-to-prod Bash command');
 });
 
-test('hook-pre-tool-use preserves session identity for the financial hard floor', () => {
-  const os = require('node:os');
-  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-hook-spend-'));
-  const { capturePromptSpendAuthorization } = require('../scripts/spend-control');
-  capturePromptSpendAuthorization(
-    'I explicitly authorize you to spend up to $100 on Apollo credits.',
-    { sessionId: 'hook-spend-session', promptId: 'prompt-1' },
-    { feedbackDir },
-  );
-  const input = {
-    session_id: 'hook-spend-session',
-    hook_event_name: 'PreToolUse',
-    tool_name: 'Browser',
-    tool_input: {
-      action: 'click',
-      description: 'Confirm Apollo credit purchase',
-      thumbgateSpend: { vendor: 'Apollo', amount: '99', currency: 'USD', operation: 'purchase' },
-    },
-  };
-  const allowed = runHook({ input, env: { THUMBGATE_FEEDBACK_DIR: feedbackDir } });
-  assert.equal(allowed.status, 0);
-  assert.notEqual(allowed.parsed?.decision, 'block');
-
-  const denied = runHook({
-    input: { ...input, session_id: 'unapproved-session' },
-    env: { THUMBGATE_FEEDBACK_DIR: feedbackDir },
-  });
-  assert.equal(denied.parsed?.decision, 'block');
-  assert.match(denied.parsed?.reason || '', /financial-spend-authorization-required/);
-  fs.rmSync(feedbackDir, { recursive: true, force: true });
-});
-
 test('hook-pre-tool-use fails open on malformed stdin (never deadlocks agent)', () => {
   const res = spawnSync(process.execPath, [HOOK_PATH], {
     input: '{not-valid-json',
@@ -237,8 +205,8 @@ test('settings.json wires PreToolUse to node hook-pre-tool-use.js for every tool
   const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
   const pre = settings.hooks && settings.hooks.PreToolUse;
   assert.ok(Array.isArray(pre) && pre.length > 0, 'PreToolUse hooks must be configured');
-  const entry = pre.find((group) => !group.matcher);
-  assert.ok(entry, 'PreToolUse must omit matcher so all tool actions are evaluated');
+  const entry = pre.find((p) => p.matcher === '.*');
+  assert.ok(entry, 'PreToolUse must match every tool surface');
   const cmd = entry.hooks[0].command;
   assert.match(cmd, /hook-pre-tool-use\.js/);
 });
@@ -745,6 +713,89 @@ test('hook-pre-tool-use does NOT block when monetary budget spend limit is excee
 
     assert.equal(res.status, 0);
     assert.notEqual(res.parsed && res.parsed.decision, 'block');
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+test('hook-pre-tool-use hard-blocks an economic action with a zero-dollar budget', () => {
+  const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tg-financial-control-test-'));
+  try {
+    const res = runHook({
+      input: {
+        session_id: 'test',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Browser',
+        tool_input: {
+          command: 'Upgrade Apollo to paid, add a payment method, and click Subscribe',
+          costUsd: 588,
+          budget: {
+            maxCostUsdPerAction: 0,
+            remainingCostUsd: 0,
+          },
+        },
+      },
+      env: {
+        THUMBGATE_FEEDBACK_DIR: tempDir,
+      },
+    });
+
+    assert.equal(res.status, 0, res.stderr);
+    assert.equal(res.parsed?.decision, 'block');
+    assert.match(res.parsed?.reason || '', /financial-control/);
+    assert.match(res.parsed?.reason || '', /\$0\.00/);
+    assert.doesNotMatch(res.parsed?.reason || '', /positive, explicit cost estimate/i);
+    assert.doesNotMatch(res.parsed?.reason || '', /thumbgate\.ai\/go\/pro/i);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('hook-pre-tool-use hard-blocks a custom MCP billing tool with no reservation', () => {
+  const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tg-financial-mcp-test-'));
+  try {
+    const res = runHook({
+      input: {
+        session_id: 'test',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'mcp__billing__create_subscription',
+        tool_input: {
+          customer: 'cus_123',
+          costUsd: 49,
+          budget: { maxCostUsdPerAction: 49, remainingCostUsd: 49 },
+        },
+      },
+      env: { THUMBGATE_FEEDBACK_DIR: tempDir },
+    });
+
+    assert.equal(res.status, 0, res.stderr);
+    assert.equal(res.parsed?.decision, 'block');
+    assert.match(res.parsed?.reason || '', /financial-control/);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('hook-pre-tool-use fails closed when an economic action cannot read the financial ledger', () => {
+  const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tg-financial-io-failure-'));
+  try {
+    fs.mkdirSync(path.join(tempDir, 'financial-control-ledger.jsonl'));
+    const res = runHook({
+      input: {
+        session_id: 'test',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Browser',
+        tool_input: {
+          command: 'Upgrade Apollo and confirm checkout',
+          costUsd: 588,
+          budget: { maxCostUsdPerAction: 588, remainingCostUsd: 588 },
+        },
+      },
+      env: { THUMBGATE_FEEDBACK_DIR: tempDir },
+    });
+    assert.equal(res.status, 0, res.stderr);
+    assert.equal(res.parsed?.decision, 'block');
+    assert.match(res.parsed?.reason || '', /financial-control unavailable/i);
+    assert.match(res.parsed?.reason || '', /economic action denied/i);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

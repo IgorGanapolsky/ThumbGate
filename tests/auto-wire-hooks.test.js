@@ -194,7 +194,7 @@ describe('auto-wire-hooks', () => {
         // No matcher means the financial hard floor sees every tool, including
         // browser and MCP purchase actions.
         const preToolEntry = settings.hooks.PreToolUse[0];
-        assert.equal(preToolEntry.matcher, undefined);
+        assert.equal(preToolEntry.matcher, '.*');
         assert.equal(preToolEntry.hooks[0].command, preToolHookCommand());
 
         const promptEntry = settings.hooks.UserPromptSubmit[0];

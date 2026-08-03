@@ -74,10 +74,10 @@ test('PreToolUse enforcement is wired via ${CLAUDE_PLUGIN_ROOT}', () => {
   const lifecycles = loadLifecycles();
   assert.ok(Array.isArray(lifecycles.PreToolUse), 'PreToolUse lifecycle must be present');
 
-  const allToolGroups = lifecycles.PreToolUse.filter((group) => !group.matcher);
+  const allToolGroups = lifecycles.PreToolUse.filter((group) => group.matcher === '.*');
   assert.ok(
     allToolGroups.length > 0,
-    'PreToolUse must omit matcher so browser, MCP, and shell financial actions are all evaluated',
+    'PreToolUse must match every tool surface',
   );
 
   const hooks = collectHooks(lifecycles.PreToolUse);
@@ -142,5 +142,5 @@ test('plugin copy does not promise one-thumbs-down automatic or impossible-to-by
   const readme = fs.readFileSync(path.join(root, '.claude-plugin/README.md'), 'utf8');
   const copy = `${plugin}\n${marketplace}\n${readme}`;
   assert.doesNotMatch(copy, /one thumbs-down, never again|physically cannot repeat|hard rule the agent cannot bypass/i);
-  assert.match(copy, /current-turn human vendor \+ amount authority|current-turn human authorization/i);
+  assert.match(copy, /independently authenticated human reviewer/i);
 });

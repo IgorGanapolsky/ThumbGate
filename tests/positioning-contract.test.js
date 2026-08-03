@@ -31,7 +31,7 @@ test('README explains the observed feedback and enforcement boundaries', () => {
   assert.match(readme, /Repeated concrete failures can become prevention rules/i);
   assert.match(readme, /warn and log by default/i);
   assert.match(readme, /hard-blocks detected secret leaks, direct guardrail tampering, and supported unapproved financial mutations by default/i);
-  assert.match(readme, /current human message explicitly authorizes the vendor and maximum amount/i);
+  assert.match(readme, /exact-action purchase requisition approved by an independently authenticated human reviewer/i);
   assert.match(readme, /THUMBGATE_STRICT_ENFORCEMENT=1/i);
   assert.match(readme, /prompt evaluation/i);
 });

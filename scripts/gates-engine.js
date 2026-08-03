@@ -17,6 +17,13 @@ const {
   evaluateWorkflowSentinel,
 } = require('./workflow-sentinel');
 const {
+  evaluateFinancialControl,
+} = require('./financial-control-plane');
+const {
+  buildCostControl,
+  normalizeProviderAction,
+} = require('./provider-action-normalizer');
+const {
   recordDecisionEvaluation,
   recordDecisionOutcome,
 } = require('./decision-journal');
@@ -24,11 +31,6 @@ const {
   actionFingerprint,
   sanitizeFeedbackText,
 } = require('./feedback-sanitizer');
-const {
-  SPEND_CONTROL_GATE_ID,
-  evaluateSpendControl,
-} = require('./spend-control');
-
 /**
  * Computes the SHA-256 hash of an executable binary to prevent path-based bypasses.
  * (Layer 5: Supply Chain / Layer 3: Execution)
@@ -161,7 +163,7 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'secret-exfiltration',
   'security-vuln-scan',
   'slopsquat-guard',
-  SPEND_CONTROL_GATE_ID,
+  'financial-control',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -180,9 +182,9 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'git-clean-force',
   'rm-rf-home-or-root',
 ]);
-const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/(?:config\.json|spend-authorizations\.json|spend-decision-receipts\.jsonl)$|thumbgate\.json$)/i;
+const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
-const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/(?:config\.json|spend-authorizations\.json|spend-decision-receipts\.jsonl)\b|thumbgate\.json\b)/i;
+const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)/i;
 const SELF_PROTECT_HOOK_COMMAND_PATTERN = /(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^\s'";|]+\.(?:js|sh))\b/i;
 const SHELL_FILE_MUTATION_PATTERN = /\b(?:sed\s+-i|perl\s+-pi|python\d*\s+-c|node\s+-e|ruby\s+-e|tee|truncate|rm|mv|cp|install|patch|jq)\b|(?:^|[\s;&|])>{1,2}\s*\S/i;
 
@@ -1941,6 +1943,43 @@ function recordStructuralGateBlock(toolName, toolInput, result) {
   return result;
 }
 
+/**
+ * Resolve catastrophic declarative gates before the ordinary first-match loop.
+ *
+ * Config order is useful for normal policy routing, but it must not let a broad
+ * rule mask a narrower irreversible-action rule. For example, the generic
+ * `push-without-thread-check` gate also matches `git push --force`; selecting it
+ * first allowed the free-tier daily cap to downgrade the action to a warning
+ * before the exempt `force-push` gate was ever evaluated.
+ *
+ * Catastrophic gates are deliberately limited to the audited allowlist above.
+ * Metric-backed gates are excluded because their condition is asynchronous and
+ * none of the catastrophic command boundaries may depend on a remote metric.
+ */
+function evaluateCatastrophicDeclarativeGate(config, constraints, toolName, toolInput) {
+  if (!config || !Array.isArray(config.gates)) return null;
+
+  for (const gate of config.gates) {
+    if (!CATASTROPHIC_DECLARATIVE_GATE_IDS.has(gate.id)) continue;
+    if (gate.action !== 'block' || gate.metrics) continue;
+
+    const matchDetails = matchGate(gate, toolName, toolInput);
+    if (!matchDetails.matched) continue;
+    if (gate.when && !checkWhenClause(gate.when, constraints)) continue;
+    if (gate.unless && isConditionSatisfied(gate.unless)) continue;
+
+    return {
+      decision: 'deny',
+      gate: gate.id,
+      message: buildGateMessage(gate, matchDetails),
+      severity: gate.severity,
+      reasoning: buildReasoning(gate, toolName, toolInput, matchDetails),
+    };
+  }
+
+  return null;
+}
+
 function isScopeEnforcedAction(toolName, toolInput = {}, affectedFiles = []) {
   if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) return true;
   if (toolName !== 'Bash') return false;
@@ -2781,6 +2820,16 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     return boostedRiskGuard;
   }
 
+  const catastrophicDeclarativeGate = evaluateCatastrophicDeclarativeGate(
+    config,
+    constraints,
+    toolName,
+    toolInput,
+  );
+  if (catastrophicDeclarativeGate) {
+    return recordStructuralGateBlock(toolName, toolInput, catastrophicDeclarativeGate);
+  }
+
   // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern).
   // Keep runtime enforcement explicit so advisory planning checks do not mask
   // higher-priority deny/approve gates in established workflows.
@@ -3025,6 +3074,16 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     });
     auditToFeedback(auditRecord);
     return boostedRiskGuard;
+  }
+
+  const catastrophicDeclarativeGate = evaluateCatastrophicDeclarativeGate(
+    config,
+    constraints,
+    toolName,
+    toolInput,
+  );
+  if (catastrophicDeclarativeGate) {
+    return recordStructuralGateBlock(toolName, toolInput, catastrophicDeclarativeGate);
   }
 
   // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern).
@@ -3308,24 +3367,17 @@ function evaluateSecretGuard(input = {}) {
   return result;
 }
 
-function evaluateUnconditionalHardFloor(input = {}) {
+function evaluateUnconditionalHardFloor(input = {}, options = {}) {
   const secretGuard = evaluateSecretGuard(input);
   if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
-
-  const spendControl = evaluateSpendControl(input);
-  if (spendControl) {
-    const toolName = input.tool_name || input.toolName || 'unknown';
-    const toolInput = input.tool_input || input.toolInput || {};
-    return {
-      hardFloor: recordStructuralGateBlock(toolName, toolInput, spendControl),
-      securityScan: null,
-    };
-  }
 
   const securityScan = evaluateSecurityScan(input);
   if (securityScan && securityScan.decision === 'deny') {
     return { hardFloor: securityScan, securityScan };
   }
+
+  const financialHardFloor = evaluateFinancialHardFloor(input, false, options);
+  if (financialHardFloor) return { hardFloor: financialHardFloor, securityScan };
 
   return {
     hardFloor: evaluateSelfProtectHardFloor(input),
@@ -3333,8 +3385,72 @@ function evaluateUnconditionalHardFloor(input = {}) {
   };
 }
 
-function runHardFloor(input) {
-  const { hardFloor } = evaluateUnconditionalHardFloor(input);
+function evaluateFinancialHardFloor(input = {}, consumeReservation = false, options = {}) {
+  const toolName = input.tool_name || input.toolName || 'unknown';
+  const toolInput = input.tool_input && typeof input.tool_input === 'object'
+    ? input.tool_input
+    : {};
+  const normalizedAction = normalizeProviderAction({
+    toolName,
+    toolInput,
+    usage: input.usage || toolInput.usage,
+    costUsd: input.costUsd ?? toolInput.costUsd,
+    budget: input.budget || toolInput.budget,
+  });
+  const costControl = buildCostControl(
+    normalizedAction,
+    input.budget || toolInput.budget || {}
+  );
+  const financialControl = evaluateFinancialControl({
+    toolName,
+    toolInput,
+    actionProfile: {
+      economicAction: undefined,
+    },
+    costControl,
+  }, { ...options, consumeReservation });
+  if (financialControl.mode === 'block') {
+    const result = {
+      decision: 'deny',
+      gate: 'financial-control',
+      message: financialControl.reasons.join(' '),
+      severity: 'critical',
+      financialControl,
+      reasoning: [
+        'Economic actions default to deny at the pre-tool boundary.',
+        'Learned policy and advisory memories cannot override this deterministic control.',
+      ],
+    };
+    recordStat('financial-control', 'block', null, { toolName, toolInput });
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: 'financial-control',
+      message: result.message,
+      severity: result.severity,
+      source: 'financial-control',
+    });
+    auditToFeedback(auditRecord);
+    return result;
+  }
+  return null;
+}
+
+// Reservations are single-use. They are consumed only after every other gate
+// has reached its final allow/warn boundary, never during the preliminary hard
+// floor preview. This prevents a later workflow or learned-risk denial from
+// burning an approval for an action that did not execute.
+function finalizeFinancialAuthorization(input = {}, options = {}) {
+  return evaluateFinancialHardFloor(input, true, options);
+}
+
+function isBlockingDecision(result) {
+  return result?.decision === 'deny' || result?.decision === 'approve';
+}
+
+function runHardFloor(input, options = {}) {
+  const { hardFloor } = evaluateUnconditionalHardFloor(input, options);
   return hardFloor ? formatOutput(hardFloor) : null;
 }
 
@@ -3409,7 +3525,7 @@ function formatOutput(result, behavioralContext) {
     const reminder = behavioralContext ? buildReminderOutput(behavioralContext) : {};
     const reminderSuffix = behavioralContext ? `\n\nSystem reminder:\n${behavioralContext}` : '';
     // Never upsell during an unconditional safety incident. A user who just hit
-    // a secret, self-protection, lease, or spend hard floor needs a refusal and
+    // a secret, self-protection, lease, or financial hard floor needs a refusal and
     // receipt—not a paid-product prompt.
     const proCta = UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(result.gate)
       ? ''
@@ -3727,10 +3843,18 @@ async function runAsync(input) {
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
   }
+
+  const posturedResult = applyEnforcementPosture(result);
+  if (isBlockingDecision(posturedResult)) {
+    return formatOutput(posturedResult);
+  }
+
+  const financialAuthorization = finalizeFinancialAuthorization(input);
+  if (financialAuthorization) return formatOutput(financialAuthorization);
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(applyEnforcementPosture(result), combinedContext);
+  return formatOutput(posturedResult, combinedContext);
 
 }
 
@@ -3766,10 +3890,18 @@ function run(input) {
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(applyEnforcementPosture(lessonContext));
   }
+
+  const posturedResult = applyEnforcementPosture(result);
+  if (isBlockingDecision(posturedResult)) {
+    return formatOutput(posturedResult);
+  }
+
+  const financialAuthorization = finalizeFinancialAuthorization(input);
+  if (financialAuthorization) return formatOutput(financialAuthorization);
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(applyEnforcementPosture(result), combinedContext);
+  return formatOutput(posturedResult, combinedContext);
 
 }
 
@@ -4138,6 +4270,7 @@ module.exports = {
   isAutonomousRun,
   computeExecutableHash,
   formatOutput,
+  finalizeFinancialAuthorization,
   isApprovalGatesEnabled,
   runHardFloor,
   run,

@@ -4199,6 +4199,30 @@ test('decision endpoints persist evaluations, outcomes, and live metrics', async
   assert.equal(providerEvaluation.decision, 'deny');
   assert.equal(providerEvaluation.decisionControl.executionMode, 'blocked');
 
+  const financialEvaluateRes = await fetch(apiUrl('/v1/decisions/evaluate'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      toolName: 'Browser',
+      command: 'Upgrade Apollo and confirm checkout',
+      costUsd: 588,
+      budget: { maxCostUsdPerAction: 588, remainingCostUsd: 588 },
+      financialControl: {
+        requisitionId: 'req_http_forwarding_probe',
+        reservationId: 'res_http_forwarding_probe',
+        actionId: 'act_http_forwarding_probe',
+        vendor: 'Apollo',
+        purpose: 'Annual plan',
+        sourceMessageId: 'api-test-message',
+      },
+      repoPath: process.cwd(),
+    }),
+  });
+  assert.equal(financialEvaluateRes.status, 200);
+  const financialEvaluation = await financialEvaluateRes.json();
+  assert.ok(financialEvaluation.financialControl.reasonCodes.includes('financial_ledger_anchor_unavailable'));
+  assert.ok(!financialEvaluation.financialControl.reasonCodes.includes('missing_purchase_requisition'));
+
   const outcomeRes = await fetch(apiUrl('/v1/decisions/outcome'), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...authHeader },

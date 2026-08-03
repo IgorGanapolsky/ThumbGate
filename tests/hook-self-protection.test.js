@@ -35,6 +35,12 @@ const GOVERNANCE_FILES = [
   'config/enforcement.json',
   'config/mcp-allowlists.json',
   '.thumbgate/config.json',
+  '.thumbgate/feedback/financial-control-ledger.jsonl',
+  '.thumbgate/feedback/financial-control-ledger.head.json',
+  '.thumbgate/feedback/financial-control-ledger.journal.json',
+  '.thumbgate/feedback/human-escalations.jsonl',
+  '.thumbgate/feedback/human-escalations.head.json',
+  '.thumbgate/feedback/human-escalations.journal.json',
   'thumbgate.json',
 ];
 

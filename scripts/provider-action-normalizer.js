@@ -491,12 +491,19 @@ function normalizeProviderAction(input = {}) {
 
 function normalizeBudget(input = {}) {
   const budget = asObject(input);
+  const hasNumericAlias = (...keys) => keys.some((key) => (
+    Object.hasOwn(budget, key) && Number.isFinite(Number(budget[key]))
+  ));
   return {
     maxTokensPerAction: firstNumber(budget.maxTokensPerAction, budget.perActionTokens, budget.tokenLimit),
     remainingTokens: firstNumber(budget.remainingTokens, budget.tokensRemaining),
     maxCostUsdPerAction: firstNumber(budget.maxCostUsdPerAction, budget.perActionCostUsd, budget.costLimitUsd),
     remainingCostUsd: firstNumber(budget.remainingCostUsd, budget.costUsdRemaining),
     maxParallelBranches: firstNumber(budget.maxParallelBranches, budget.parallelBranchLimit, DEFAULT_MAX_PARALLEL_BRANCHES),
+    hasMaxTokensPerAction: hasNumericAlias('maxTokensPerAction', 'perActionTokens', 'tokenLimit'),
+    hasRemainingTokens: hasNumericAlias('remainingTokens', 'tokensRemaining'),
+    hasMaxCostUsdPerAction: hasNumericAlias('maxCostUsdPerAction', 'perActionCostUsd', 'costLimitUsd'),
+    hasRemainingCostUsd: hasNumericAlias('remainingCostUsd', 'costUsdRemaining'),
   };
 }
 
@@ -540,16 +547,16 @@ function buildCostControl(normalizedAction = {}, budgetInput = {}) {
   const totalTokens = firstNumber(usage.totalTokens);
   const estimatedCostUsd = firstNumber(usage.estimatedCostUsd);
 
-  if (budget.maxTokensPerAction > 0 && totalTokens > budget.maxTokensPerAction) {
+  if (budget.hasMaxTokensPerAction && totalTokens > budget.maxTokensPerAction) {
     reasons.push(`Token estimate ${totalTokens} exceeds per-action limit ${budget.maxTokensPerAction}.`);
   }
-  if (budget.remainingTokens > 0 && totalTokens > budget.remainingTokens) {
+  if (budget.hasRemainingTokens && totalTokens > budget.remainingTokens) {
     reasons.push(`Token estimate ${totalTokens} exceeds remaining budget ${budget.remainingTokens}.`);
   }
-  if (budget.maxCostUsdPerAction > 0 && estimatedCostUsd > budget.maxCostUsdPerAction) {
+  if (budget.hasMaxCostUsdPerAction && estimatedCostUsd > budget.maxCostUsdPerAction) {
     reasons.push(`Estimated cost $${estimatedCostUsd.toFixed(4)} exceeds per-action limit $${budget.maxCostUsdPerAction.toFixed(4)}.`);
   }
-  if (budget.remainingCostUsd > 0 && estimatedCostUsd > budget.remainingCostUsd) {
+  if (budget.hasRemainingCostUsd && estimatedCostUsd > budget.remainingCostUsd) {
     reasons.push(`Estimated cost $${estimatedCostUsd.toFixed(4)} exceeds remaining budget $${budget.remainingCostUsd.toFixed(4)}.`);
   }
   if (budget.maxParallelBranches > 0 && normalizedAction.workflow?.branchCount > budget.maxParallelBranches) {

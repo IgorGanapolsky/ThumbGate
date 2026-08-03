@@ -95,7 +95,7 @@ test('public enforcement claims match the implemented default and strict boundar
   };
 
   assert.equal(runGate(`echo ghp_${'a'.repeat(36)}`), 'deny');
-  assert.equal(runGate('open https://app.apollo.io/billing'), 'deny');
+  assert.equal(runGate('open checkout'), 'deny');
   assert.equal(runGate('git push --force origin main'), 'allow');
   assert.equal(runGate('git push --force origin main', { THUMBGATE_STRICT_ENFORCEMENT: '1' }), 'deny');
   assert.match(HOME_HTML, /secret exfiltration[\s\S]*denied by default/i);
