@@ -36,8 +36,13 @@ function validateBaseUrl(value, allowedHosts = []) {
     .split(',')
     .map((host) => host.trim().toLowerCase())
     .filter(Boolean);
+  // Canonical public origin is thumbgate.ai; Railway hostname is the
+  // infrastructure default. Both must accept credentials during post-deploy
+  // proof — vars.THUMBGATE_PUBLIC_APP_ORIGIN is set to thumbgate.ai in CI.
   const allowlist = new Set([
     new URL(DEFAULT_BASE_URL).host.toLowerCase(),
+    'thumbgate.ai',
+    'www.thumbgate.ai',
     ...configuredHosts,
     ...allowedHosts.map((host) => String(host || '').trim().toLowerCase()).filter(Boolean),
   ]);

@@ -210,6 +210,19 @@ test('proof rejects credential destinations outside the production allowlist', a
   assert.doesNotMatch(JSON.stringify(report), /user|password|token=1/);
 });
 
+test('proof accepts the public thumbgate.ai origin used by deploy workflows', async () => {
+  const report = await runAuthenticatedProductionProof({
+    apiKey: 'secret-test-key',
+    baseUrl: 'https://thumbgate.ai',
+    expectedSha: 'abc123',
+    expectedVersion: '1.32.0',
+    maxAttempts: 1,
+    fetchImpl: passingFetch,
+  });
+  assert.equal(report.verdict, 'pass', report.reason || JSON.stringify(report.checks));
+  assert.equal(report.baseUrl, 'https://thumbgate.ai');
+});
+
 test('proof rejects shallow dashboard and zero-record export responses', async () => {
   const report = await runAuthenticatedProductionProof({
     apiKey: 'secret-test-key',
