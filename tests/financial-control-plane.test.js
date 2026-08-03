@@ -8,6 +8,7 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 
 const {
+  buildActionAuthorization,
   createPurchaseRequisition,
   detectEconomicAction,
   detectOpaqueScreenMutation,
@@ -689,6 +690,203 @@ test('authorization is bound to the exact approved tool action and amount', () =
     assert.ok(wrongAmount.reasonCodes.includes('financial_action_mismatch'));
     assert.ok(wrongAmount.reasonCodes.includes('reservation_amount_exceeded'));
     assert.equal(projectRequisition(created.requisition.requisitionId, { feedbackDir }).status, 'reserved');
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('provider-native nested budget and usage arguments remain inside the approved fingerprint', () => {
+  const { feedbackDir, requester } = fixture();
+  const request = {
+    taskId: 'provider-budget-binding',
+    vendor: 'Billing Provider',
+    amountUsd: 1,
+    purpose: 'Create one metered subscription',
+    sourceMessageId: 'provider-budget-message',
+    evidence: ['Approved nested provider budget: 1'],
+    idempotencyKey: 'provider-budget-binding',
+    toolName: 'mcp__billing__create_subscription',
+    toolInput: {
+      arguments: {
+        customer: 'cus_exact',
+        budget: 1,
+        usage: { units: 1 },
+      },
+    },
+  };
+  try {
+    const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Approve only the exact nested provider arguments.',
+    }, reviewerOptions(feedbackDir));
+    const reserved = reservePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      amountUsd: 1,
+      vendor: request.vendor,
+      purpose: request.purpose,
+      sourceMessageId: request.sourceMessageId,
+    }, authOptions(feedbackDir, requester));
+
+    const control = evaluateFinancialControl({
+      toolName: request.toolName,
+      toolInput: {
+        arguments: {
+          customer: 'cus_exact',
+          budget: 1000,
+          usage: { units: 1000 },
+        },
+        financialControl: {
+          requisitionId: reserved.requisition.requisitionId,
+          reservationId: reserved.requisition.reservationId,
+          actionId: 'provider-budget-tamper',
+          vendor: request.vendor,
+          purpose: request.purpose,
+          sourceMessageId: request.sourceMessageId,
+        },
+      },
+      actionProfile: { economicAction: true },
+      costControl: {
+        mode: 'allow',
+        budget: {
+          maxCostUsdPerAction: 1,
+          remainingCostUsd: 1,
+          hasMaxCostUsdPerAction: true,
+          hasRemainingCostUsd: true,
+        },
+        usage: { estimatedCostUsd: 1 },
+      },
+    }, authOptions(feedbackDir, requester, { consumeReservation: true }));
+
+    assert.equal(control.mode, 'block');
+    assert.ok(control.reasonCodes.includes('financial_action_mismatch'));
+    assert.equal(projectRequisition(created.requisition.requisitionId, { feedbackDir }).status, 'reserved');
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('a forged reservation cannot replace the amount or action in the signed purchase request', () => {
+  const { feedbackDir, requester } = fixture();
+  const request = {
+    taskId: 'forged-reservation-binding',
+    vendor: 'Apollo',
+    amountUsd: 1,
+    purpose: 'One-dollar test purchase',
+    sourceMessageId: 'forged-reservation-message',
+    evidence: ['Approved amount: $1'],
+    idempotencyKey: 'forged-reservation-binding',
+    toolName: 'Browser',
+    toolInput: { command: 'Click Subscribe and confirm checkout', costUsd: 1 },
+  };
+  try {
+    const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Approve only the signed one-dollar action.',
+    }, reviewerOptions(feedbackDir));
+    reservePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      amountUsd: 1,
+      vendor: request.vendor,
+      purpose: request.purpose,
+      sourceMessageId: request.sourceMessageId,
+    }, authOptions(feedbackDir, requester));
+
+    const ledgerPath = getLedgerPath({ feedbackDir });
+    const events = fs.readFileSync(ledgerPath, 'utf8').trim().split('\n').map(JSON.parse);
+    const requested = events[0];
+    const forged = {
+      ...events[1],
+      amountUsd: 100,
+      actionFingerprint: buildActionAuthorization('Browser', {
+        command: 'Click Subscribe and confirm checkout',
+        costUsd: 100,
+      }, 100).fingerprint,
+      previousEventHash: requested.eventHash,
+    };
+    forged.eventHash = hashFinancialEvent(forged);
+    fs.writeFileSync(ledgerPath, `${JSON.stringify(requested)}\n${JSON.stringify(forged)}\n`, 'utf8');
+    fs.writeFileSync(getLedgerHeadPath({ feedbackDir }), `${JSON.stringify({
+      schemaVersion: 'financial-ledger-head-v1',
+      sequence: forged.sequence,
+      eventHash: forged.eventHash,
+    })}\n`, 'utf8');
+
+    const control = evaluateFinancialControl({
+      toolName: 'Browser',
+      toolInput: {
+        command: 'Click Subscribe and confirm checkout',
+        costUsd: 100,
+        financialControl: {
+          requisitionId: created.requisition.requisitionId,
+          reservationId: forged.reservationId,
+          actionId: 'forged-reservation-spend',
+          vendor: request.vendor,
+          purpose: request.purpose,
+          sourceMessageId: request.sourceMessageId,
+        },
+      },
+      actionProfile: { economicAction: true },
+      costControl: {
+        mode: 'allow',
+        budget: {
+          maxCostUsdPerAction: 100,
+          remainingCostUsd: 100,
+          hasMaxCostUsdPerAction: true,
+          hasRemainingCostUsd: true,
+        },
+        usage: { estimatedCostUsd: 100 },
+      },
+    }, authOptions(feedbackDir, requester, { consumeReservation: true }));
+
+    assert.equal(control.mode, 'block');
+    assert.ok(control.reasonCodes.includes('reservation_not_bound_to_approval'));
+    assert.throws(() => settlePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      reservationId: forged.reservationId,
+      status: 'released',
+      reason: 'Forged reservation must not settle.',
+    }, authOptions(feedbackDir, requester)), /reservation|signed purchase request/);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('requisition retry is stable after escalation append but before financial append', () => {
+  const { feedbackDir, requester, request } = fixture();
+  const originalOpen = fs.openSync;
+  let injected = false;
+  fs.openSync = (targetPath, ...args) => {
+    if (!injected && String(targetPath).includes('financial-control-ledger.journal.json')) {
+      injected = true;
+      const error = new Error('simulated cross-ledger crash');
+      error.code = 'EIO';
+      throw error;
+    }
+    return originalOpen(targetPath, ...args);
+  };
+  try {
+    assert.throws(
+      () => createPurchaseRequisition(request, authOptions(feedbackDir, requester)),
+      /simulated cross-ledger crash/
+    );
+  } finally {
+    fs.openSync = originalOpen;
+  }
+  try {
+    const retried = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    assert.equal(retried.recorded, true);
+    const escalationEvents = fs.readFileSync(getEscalationsPath({ feedbackDir }), 'utf8')
+      .trim().split('\n').filter(Boolean).map(JSON.parse);
+    const financialEvents = fs.readFileSync(getLedgerPath({ feedbackDir }), 'utf8')
+      .trim().split('\n').filter(Boolean).map(JSON.parse);
+    assert.equal(escalationEvents.filter((event) => event.eventType === 'requested').length, 1);
+    assert.equal(financialEvents.filter((event) => event.eventType === 'requested').length, 1);
+    assert.ok(escalationEvents[0].evidence.includes(`requisitionId:${retried.requisition.requisitionId}`));
+    assert.equal(escalationEvents[0].approvalContextDigest, retried.requisition.approvalContextDigest);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }

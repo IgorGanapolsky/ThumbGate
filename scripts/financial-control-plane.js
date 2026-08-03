@@ -188,6 +188,12 @@ function createPurchaseRequisition(input = {}, options = {}) {
     actionFingerprint: approvedAction.fingerprint,
     evidence,
   };
+  // The financial and escalation ledgers are separate durable resources. A
+  // retry after the escalation append but before the financial append must
+  // reproduce the same identity and signed digest instead of stranding the
+  // already-recorded approval behind an idempotency conflict.
+  const requisitionId = input.requisitionId || stableRequisitionId(requestIntent);
+  const approvalContextDigest = requestComparableHash({ requisitionId, ...requestIntent });
   return withLedgerLock(options, () => {
     const ledger = readLedger(options);
     const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head);
@@ -203,8 +209,6 @@ function createPurchaseRequisition(input = {}, options = {}) {
       }
       return { recorded: false, duplicate: true, requisition: existing };
     }
-    const requisitionId = input.requisitionId || `req_${crypto.randomUUID()}`;
-    const approvalContextDigest = requestComparableHash({ requisitionId, ...requestIntent });
     const escalationResult = requestEscalation({
       taskId,
       reason: `Purchase approval required: $${amountUsd.toFixed(2)} USD to ${vendor} for ${purpose}; exact action ${approvedAction.fingerprint}`,
@@ -259,24 +263,7 @@ function reservePurchaseRequisition(input = {}, options = {}) {
     const requisition = projectRequisitionFromEvents(ledger.events, requisitionId, options);
     if (!requisition) throw financialError(`unknown requisition '${requisitionId}'`);
     assertPrincipalOwnsRequisition(requester, requisition);
-    let escalation;
-    try {
-      escalation = getVerifiedApproval(requisition.escalationId, options);
-    } catch (error) {
-      throw financialError(`requisition '${requisitionId}' approval verification failed: ${error.message}`);
-    }
-    if (!escalation || escalation.status !== 'approved') {
-      throw financialError(`requisition '${requisitionId}' does not have independent human approval`);
-    }
-    const expectedApprovalContextDigest = requestComparableHash(requisition);
-    if (!requisition.approvalContextDigest
-      || requisition.approvalContextDigest !== expectedApprovalContextDigest
-      || escalation.approvalContextDigest !== expectedApprovalContextDigest) {
-      throw financialError(`requisition '${requisitionId}' approval is not bound to its exact purchase request`);
-    }
-    if (sameIdentity(requisition.requester, escalation.actor)) {
-      throw financialError('requester cannot approve their own requisition');
-    }
+    const escalation = verifyPurchaseApprovalBinding(requisition, options);
     if (Date.parse(requisition.expiresAt) <= now.getTime()) {
       throw financialError(`requisition '${requisitionId}' is expired`);
     }
@@ -351,6 +338,8 @@ function settlePurchaseRequisition(input = {}, options = {}) {
       throw financialError('reservationId does not match the active reservation');
     }
     assertPrincipalOwnsRequisition(requester, requisition);
+    verifyPurchaseApprovalBinding(requisition, options);
+    assertReservationBoundToApproval(requisition);
 
     const base = {
       schemaVersion: 'financial-control-v2',
@@ -435,8 +424,6 @@ function applyFinancialEvent(state, event, now) {
       reservedAmountUsd: event.amountUsd,
       reservedAt: event.reservedAt,
       reservationExpiresAt: event.reservationExpiresAt,
-      actionFingerprint: event.actionFingerprint || state.actionFingerprint,
-      approvedToolName: event.approvedToolName || state.approvedToolName,
     });
   } else if (event.eventType === 'authorized') {
     Object.assign(state, {
@@ -585,6 +572,16 @@ function validateRequisition(result, options) {
     addBlock(result, 'unknown_purchase_requisition', `Purchase requisition '${result.requisitionId}' does not exist.`);
     return;
   }
+  try {
+    verifyPurchaseApprovalBinding(requisition, options);
+  } catch (error) {
+    addBlock(result, 'financial_approval_binding_invalid', error.message);
+  }
+  try {
+    assertReservationBoundToApproval(requisition);
+  } catch (error) {
+    addBlock(result, 'reservation_not_bound_to_approval', error.message);
+  }
   if (requisition.status !== 'reserved') {
     addBlock(result, 'requisition_not_reserved', `Purchase requisition '${result.requisitionId}' is ${requisition.status}, not reserved.`);
   }
@@ -642,6 +639,9 @@ function consumeReservationIfAuthorized(result, input, options) {
       principal: result.principal,
       toolName: input.toolName,
       actionFingerprint: result.actionBinding.fingerprint,
+      vendor: result.control.vendor,
+      purpose: result.control.purpose,
+      sourceMessageId: result.control.sourceMessageId,
     }, options);
     result.requisition = result.authorization;
   } catch (error) {
@@ -662,6 +662,18 @@ function consumeReservation(input, options) {
       throw financialError('reservation changed before authorization');
     }
     assertPrincipalOwnsRequisition(input.principal, current);
+    verifyPurchaseApprovalBinding(current, options);
+    assertReservationBoundToApproval(current);
+    if (input.estimatedCostUsd > current.reservedAmountUsd) {
+      throw financialError('estimated cost exceeds the signed purchase reservation');
+    }
+    if (input.actionFingerprint !== current.actionFingerprint) {
+      throw financialError('financial action changed before authorization');
+    }
+    if (normalizeToolName(input.toolName) !== normalizeToolName(current.approvedToolName)) {
+      throw financialError('financial tool changed before authorization');
+    }
+    assertScopeMatches(input, current);
     appendEventUnlocked({
       schemaVersion: 'financial-control-v2',
       eventType: 'authorized',
@@ -958,6 +970,10 @@ function requestIntentHash(event) {
   return crypto.createHash('sha256').update(stableStringify(requestIntentComparable(event))).digest('hex');
 }
 
+function stableRequisitionId(requestIntent) {
+  return `req_${requestIntentHash(requestIntent).slice(0, 32)}`;
+}
+
 function requestIntentComparable(event) {
   return {
     idempotencyKey: event.idempotencyKey,
@@ -997,13 +1013,58 @@ function buildActionAuthorization(toolName, toolInput, amountUsd) {
   };
 }
 
-function stripControlMetadata(value) {
-  if (Array.isArray(value)) return value.map(stripControlMetadata);
+function stripControlMetadata(value, depth = 0) {
+  if (Array.isArray(value)) return value.map((entry) => stripControlMetadata(entry, depth + 1));
   if (!value || typeof value !== 'object') return value;
-  const excluded = new Set(['financialControl', 'financial_control', 'budget', 'usage']);
+  // Only the top-level ThumbGate authorization envelope and hook-computed
+  // budget telemetry are transport metadata. Provider-native fields such as
+  // arguments.budget or arguments.usage are economic inputs and must remain
+  // inside the signed fingerprint.
+  const excluded = depth === 0
+    ? new Set(['financialControl', 'financial_control', 'budget', 'usage'])
+    : new Set();
   return Object.fromEntries(Object.entries(value)
     .filter(([key]) => !excluded.has(key))
-    .map(([key, entry]) => [key, stripControlMetadata(entry)]));
+    .map(([key, entry]) => [key, stripControlMetadata(entry, depth + 1)]));
+}
+
+function verifyPurchaseApprovalBinding(requisition, options) {
+  let escalation;
+  try {
+    escalation = getVerifiedApproval(requisition.escalationId, options);
+  } catch (error) {
+    throw financialError(`requisition '${requisition.requisitionId}' approval verification failed: ${error.message}`);
+  }
+  if (!escalation || escalation.status !== 'approved') {
+    throw financialError(`requisition '${requisition.requisitionId}' does not have independent human approval`);
+  }
+  const expectedApprovalContextDigest = requestComparableHash(requisition);
+  if (!requisition.approvalContextDigest
+    || requisition.approvalContextDigest !== expectedApprovalContextDigest
+    || escalation.approvalContextDigest !== expectedApprovalContextDigest) {
+    throw financialError(`requisition '${requisition.requisitionId}' approval is not bound to its exact purchase request`);
+  }
+  if (sameIdentity(requisition.requester, escalation.actor)) {
+    throw financialError('requester cannot approve their own requisition');
+  }
+  return escalation;
+}
+
+function assertReservationBoundToApproval(requisition) {
+  if (!['reserved', 'authorized', 'committed'].includes(requisition.status)) return;
+  const reservation = requisition.timeline.findLast((event) => event.eventType === 'reserved');
+  if (!reservation) throw financialError('reserved purchase has no reservation event');
+  if (positiveMoney(reservation.amountUsd, 'reserved amount') > requisition.amountUsd) {
+    throw financialError('reserved amount exceeds the signed purchase request');
+  }
+  if (reservation.actionFingerprint !== requisition.actionFingerprint
+    || normalizeToolName(reservation.approvedToolName) !== normalizeToolName(requisition.approvedToolName)) {
+    throw financialError('reservation action does not match the signed purchase request');
+  }
+  assertScopeMatches(reservation, requisition);
+  if (!sameIdentity(reservation.requester, requisition.requester)) {
+    throw financialError('reservation requester does not match the signed purchase request');
+  }
 }
 
 function normalizeToolName(value) {
