@@ -88,6 +88,25 @@ function makeAcceptedVerification() {
   };
 }
 
+test('read-only MCP tools skip mutation gates but keep the secret guard', () => {
+  assert.deepEqual(__test__.getMcpFirewallEvaluationPlan('search_lessons', false), {
+    semantic: false,
+    secretGuard: true,
+  });
+  assert.deepEqual(__test__.getMcpFirewallEvaluationPlan('capture_feedback', false), {
+    semantic: true,
+    secretGuard: true,
+  });
+  assert.deepEqual(__test__.getMcpFirewallEvaluationPlan('workflow_sentinel', false), {
+    semantic: false,
+    secretGuard: false,
+  });
+  assert.deepEqual(__test__.getMcpFirewallEvaluationPlan('capture_feedback', true), {
+    semantic: false,
+    secretGuard: false,
+  });
+});
+
 test.after(() => {
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
   fs.rmSync(tmpProofDir, { recursive: true, force: true });
