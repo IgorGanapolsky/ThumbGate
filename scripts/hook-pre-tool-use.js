@@ -500,11 +500,13 @@ function findDominantTag(tags, lossMatrix) {
 
 const { selfProtectionTarget, evaluateSelfProtection } = require('./self-protection');
 const { finalizeFinancialAuthorization, runHardFloor } = require('./gates-engine');
+const { detectEconomicAction } = require('./financial-control-plane');
 
 function main() {
   const input = readStdinSync() || {};
   const toolName = input.tool_name || process.env.CLAUDE_TOOL_NAME || '';
   const effectiveInput = resolveEffectiveInput(input.tool_input || null);
+  const economicAction = detectEconomicAction(toolName, effectiveInput);
 
   // Legacy model-token spend tracking remains advisory because a stale
   // budget-state.json once blocked every Bash/Edit/Write call, including the
@@ -532,7 +534,15 @@ function main() {
   // The plugin hook and `thumbgate gate-check` share one hard-floor evaluator.
   // Environment bypasses may skip advisory gates, but not secrets, critical
   // security findings, or changes that disable the guardrail itself.
-  const hardFloorOutput = runHardFloor({ tool_name: toolName, tool_input: effectiveInput });
+  let hardFloorOutput;
+  try {
+    hardFloorOutput = runHardFloor({ tool_name: toolName, tool_input: effectiveInput });
+  } catch (error) {
+    if (economicAction) {
+      return block(`financial-control unavailable; economic action denied: ${error.message}`);
+    }
+    failOpen(error);
+  }
   if (hardFloorOutput) {
     try {
       const parsed = JSON.parse(hardFloorOutput);
@@ -541,6 +551,9 @@ function main() {
         return block(hook.permissionDecisionReason || 'ThumbGate hard floor denied this action.');
       }
     } catch (err) {
+      if (economicAction) {
+        return block(`financial-control returned an invalid decision; economic action denied: ${err.message}`);
+      }
       failOpen(err);
     }
   }
@@ -553,10 +566,18 @@ function main() {
 
   // This is the final allow boundary for the standalone hook. A valid purchase
   // reservation is consumed only now, after learned-risk checks have passed.
-  const financialAuthorization = finalizeFinancialAuthorization({
-    tool_name: toolName,
-    tool_input: effectiveInput,
-  });
+  let financialAuthorization;
+  try {
+    financialAuthorization = finalizeFinancialAuthorization({
+      tool_name: toolName,
+      tool_input: effectiveInput,
+    });
+  } catch (error) {
+    if (economicAction) {
+      return block(`financial-control authorization failed; economic action denied: ${error.message}`);
+    }
+    failOpen(error);
+  }
   if (financialAuthorization?.decision === 'deny') {
     return block(financialAuthorization.message || 'ThumbGate financial control denied this action.');
   }

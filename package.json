@@ -117,6 +117,7 @@
     "scripts/feedback-session.js",
     "scripts/feedback-to-rules.js",
     "scripts/feedback_quality_eval.py",
+    "scripts/file-ledger-lock.js",
     "scripts/financial-control-plane.js",
     "scripts/filesystem-search.js",
     "scripts/fs-utils.js",

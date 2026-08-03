@@ -775,3 +775,29 @@ test('hook-pre-tool-use hard-blocks a custom MCP billing tool with no reservatio
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test('hook-pre-tool-use fails closed when an economic action cannot read the financial ledger', () => {
+  const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tg-financial-io-failure-'));
+  try {
+    fs.mkdirSync(path.join(tempDir, 'financial-control-ledger.jsonl'));
+    const res = runHook({
+      input: {
+        session_id: 'test',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Browser',
+        tool_input: {
+          command: 'Upgrade Apollo and confirm checkout',
+          costUsd: 588,
+          budget: { maxCostUsdPerAction: 588, remainingCostUsd: 588 },
+        },
+      },
+      env: { THUMBGATE_FEEDBACK_DIR: tempDir },
+    });
+    assert.equal(res.status, 0, res.stderr);
+    assert.equal(res.parsed?.decision, 'block');
+    assert.match(res.parsed?.reason || '', /financial-control unavailable/i);
+    assert.match(res.parsed?.reason || '', /economic action denied/i);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

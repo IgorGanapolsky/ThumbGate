@@ -1191,13 +1191,15 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       additionalProperties: false,
-      required: ['taskId', 'vendor', 'amountUsd', 'purpose', 'sourceMessageId', 'evidence'],
+      required: ['taskId', 'vendor', 'amountUsd', 'purpose', 'sourceMessageId', 'evidence', 'toolName', 'toolInput'],
       properties: {
         taskId: { type: 'string', minLength: 1 },
         vendor: { type: 'string', minLength: 1 },
         amountUsd: { type: 'number', exclusiveMinimum: 0 },
         purpose: { type: 'string', minLength: 1 },
         sourceMessageId: { type: 'string', minLength: 1, description: 'Stable identifier for the exact user message authorizing the request.' },
+        toolName: { type: 'string', minLength: 1, description: 'Exact future economic tool name. The human-approved requisition is cryptographically bound to it.' },
+        toolInput: { type: 'object', minProperties: 1, description: 'Exact future economic tool input before financialControl metadata is attached. Stored only as a fingerprint.' },
         evidence: { type: 'array', minItems: 1, items: { type: 'string', minLength: 1 } },
         ttlMs: { type: 'number', minimum: 1 },
         idempotencyKey: { type: 'string', minLength: 1 },

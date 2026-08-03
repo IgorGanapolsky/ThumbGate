@@ -40,6 +40,11 @@ function fixture() {
     sourceMessageId: 'user-message-42',
     evidence: ['Quoted annual price: $588'],
     idempotencyKey: 'apollo-annual-2026',
+    toolName: 'Browser',
+    toolInput: {
+      command: 'Click Subscribe and confirm checkout',
+      costUsd: 588,
+    },
   };
   return { feedbackDir, requester, request };
 }
@@ -122,6 +127,7 @@ test('purchase lifecycle requires independent approval, exact scope, reservation
       toolName: 'Browser',
       toolInput: {
         command: 'Click Subscribe and confirm checkout',
+        costUsd: 588,
         financialControl: {
           requisitionId: reserved.requisition.requisitionId,
           reservationId: reserved.requisition.reservationId,
@@ -280,7 +286,7 @@ test('concurrent callers cannot create two requisitions for one idempotency key'
       });
       process.stdout.write(result.recorded ? 'recorded' : 'duplicate');
     } catch (error) {
-      if (/financial ledger is busy/.test(error.message)) process.stdout.write('busy');
+      if (/ledger is busy/.test(error.message)) process.stdout.write('busy');
       else { process.stderr.write(error.stack || error.message); process.exitCode = 1; }
     }
   `;
@@ -301,6 +307,152 @@ test('concurrent callers cannot create two requisitions for one idempotency key'
       .trim().split('\n').filter(Boolean).map(JSON.parse);
     assert.equal(events.filter((event) => event.eventType === 'requested').length, 1);
     assert.equal(reconcilePurchaseLedger({ feedbackDir }).requisitionCount, 1);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('financial ledger recovers a stale lock left by a dead process', () => {
+  const { feedbackDir, requester, request } = fixture();
+  const lockPath = `${getLedgerPath({ feedbackDir })}.lock`;
+  try {
+    fs.mkdirSync(lockPath, { recursive: true });
+    fs.writeFileSync(path.join(lockPath, 'owner.json'), `${JSON.stringify({
+      schemaVersion: 'thumbgate-ledger-lock-v1',
+      pid: 2147483647,
+      nonce: 'dead-owner',
+      acquiredAt: '2020-01-01T00:00:00.000Z',
+    })}\n`, 'utf8');
+    const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester, {
+      lockStaleMs: 1,
+    }));
+    assert.equal(created.recorded, true);
+    assert.equal(fs.existsSync(lockPath), false);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('concurrent escalation writers cannot fork the append-only chain', async () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-escalation-lock-'));
+  const modulePath = path.join(__dirname, '..', 'scripts', 'human-escalation.js');
+  const childSource = `
+    const { requestEscalation } = require(${JSON.stringify(modulePath)});
+    const id = process.argv[1];
+    try {
+      requestEscalation({
+        taskId: 'concurrent-' + id,
+        reason: 'Concurrent ledger lock verification ' + id,
+        severity: 'high',
+        requester: { id: 'agent-' + id, kind: 'agent' },
+        evidence: ['worker:' + id],
+        idempotencyKey: 'concurrent-' + id,
+      }, { feedbackDir: ${JSON.stringify(feedbackDir)} });
+      process.stdout.write('recorded');
+    } catch (error) {
+      if (/ledger is busy/.test(error.message)) process.stdout.write('busy');
+      else { process.stderr.write(error.stack || error.message); process.exitCode = 1; }
+    }
+  `;
+  try {
+    const runs = Array.from({ length: 8 }, (_, index) => new Promise((resolve) => {
+      const child = spawn(process.execPath, ['-e', childSource, String(index)], { stdio: ['ignore', 'pipe', 'pipe'] });
+      let stdout = '';
+      let stderr = '';
+      child.stdout.on('data', (chunk) => { stdout += chunk; });
+      child.stderr.on('data', (chunk) => { stderr += chunk; });
+      child.on('close', (code) => resolve({ code, stdout, stderr }));
+    }));
+    const results = await Promise.all(runs);
+    for (const result of results) assert.equal(result.code, 0, result.stderr);
+    assert.ok(results.some((result) => result.stdout === 'recorded'));
+    const events = fs.readFileSync(getEscalationsPath({ feedbackDir }), 'utf8')
+      .trim().split('\n').filter(Boolean).map(JSON.parse);
+    const head = JSON.parse(fs.readFileSync(getEscalationsHeadPath({ feedbackDir }), 'utf8'));
+    assert.equal(validateEscalationLedger(events, [], head).ok, true);
+    assert.equal(new Set(events.map((event) => event.sequence)).size, events.length);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('authorization is bound to the exact approved tool action and amount', () => {
+  const { feedbackDir, requester, request } = fixture();
+  try {
+    const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Approved exact Apollo checkout only.',
+    }, reviewerOptions(feedbackDir));
+    const reserved = reservePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      amountUsd: 588,
+      vendor: 'Apollo',
+      purpose: 'Annual data plan',
+      sourceMessageId: 'user-message-42',
+    }, authOptions(feedbackDir, requester));
+
+    const wrongVendor = evaluateFinancialControl({
+      toolName: 'Browser',
+      toolInput: {
+        command: 'Click Subscribe and confirm checkout for AnotherVendor',
+        costUsd: 588,
+        financialControl: {
+          requisitionId: reserved.requisition.requisitionId,
+          reservationId: reserved.requisition.reservationId,
+          actionId: 'wrong-vendor',
+          vendor: 'Apollo',
+          purpose: 'Annual data plan',
+          sourceMessageId: 'user-message-42',
+        },
+      },
+      actionProfile: { economicAction: true },
+      costControl: {
+        mode: 'allow',
+        budget: {
+          maxCostUsdPerAction: 588,
+          remainingCostUsd: 588,
+          hasMaxCostUsdPerAction: true,
+          hasRemainingCostUsd: true,
+        },
+        usage: { estimatedCostUsd: 588 },
+      },
+    }, authOptions(feedbackDir, requester, { consumeReservation: true }));
+    assert.equal(wrongVendor.mode, 'block');
+    assert.ok(wrongVendor.reasonCodes.includes('financial_action_mismatch'));
+    assert.equal(projectRequisition(created.requisition.requisitionId, { feedbackDir }).status, 'reserved');
+
+    const wrongAmount = evaluateFinancialControl({
+      toolName: 'Browser',
+      toolInput: {
+        command: 'Click Subscribe and confirm checkout',
+        costUsd: 999,
+        financialControl: {
+          requisitionId: reserved.requisition.requisitionId,
+          reservationId: reserved.requisition.reservationId,
+          actionId: 'wrong-amount',
+          vendor: 'Apollo',
+          purpose: 'Annual data plan',
+          sourceMessageId: 'user-message-42',
+        },
+      },
+      actionProfile: { economicAction: true },
+      costControl: {
+        mode: 'allow',
+        budget: {
+          maxCostUsdPerAction: 999,
+          remainingCostUsd: 999,
+          hasMaxCostUsdPerAction: true,
+          hasRemainingCostUsd: true,
+        },
+        usage: { estimatedCostUsd: 999 },
+      },
+    }, authOptions(feedbackDir, requester, { consumeReservation: true }));
+    assert.equal(wrongAmount.mode, 'block');
+    assert.ok(wrongAmount.reasonCodes.includes('financial_action_mismatch'));
+    assert.ok(wrongAmount.reasonCodes.includes('reservation_amount_exceeded'));
+    assert.equal(projectRequisition(created.requisition.requisitionId, { feedbackDir }).status, 'reserved');
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
@@ -415,6 +567,11 @@ test('hard-floor preview preserves a reservation until the final allow boundary'
       sourceMessageId: 'user-message-42',
       evidence: ['Quoted annual price: $588'],
       idempotencyKey: 'final-boundary-request',
+      toolName: 'Browser',
+      toolInput: {
+        command: 'Click Subscribe and confirm checkout',
+        costUsd: 588,
+      },
     }, authOptions(feedbackDir, requester));
     decideEscalation({
       escalationId: created.requisition.escalationId,

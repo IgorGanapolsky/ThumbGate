@@ -434,6 +434,8 @@ test('purchase-control MCP tools expose request, reserve, settle, and reconcilia
       purpose: 'Verify the MCP authorization boundary',
       sourceMessageId: 'msg-mcp-finance-test',
       evidence: ['node test evidence'],
+      toolName: 'mcp__billing__create_subscription',
+      toolInput: { customer: 'cus_123', costUsd: 1 },
     });
     const created = JSON.parse(createdResult.content[0].text);
     assert.equal(created.requisition.status, 'pending_approval');

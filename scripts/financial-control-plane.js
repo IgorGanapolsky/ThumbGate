@@ -16,6 +16,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { getFeedbackPaths } = require('./feedback-paths');
+const { withFileLedgerLock } = require('./file-ledger-lock');
 const {
   getEscalation,
   getVerifiedApproval,
@@ -124,6 +125,10 @@ function createPurchaseRequisition(input = {}, options = {}) {
   const purpose = requiredString(input.purpose, 'purpose');
   const sourceMessageId = requiredString(input.sourceMessageId, 'sourceMessageId');
   const amountUsd = positiveMoney(input.amountUsd, 'amountUsd');
+  const approvedAction = buildActionAuthorization(input.toolName, input.toolInput, amountUsd);
+  if (!detectEconomicAction(approvedAction.toolName, objectValue(input.toolInput))) {
+    throw financialError('purchase requisitions must bind an exact economic tool action');
+  }
   const evidence = stringArray(input.evidence);
   if (evidence.length === 0) throw financialError('evidence must contain at least one item');
   const ttlMs = boundedTtl(input.ttlMs, DEFAULT_TTL_MS);
@@ -136,6 +141,8 @@ function createPurchaseRequisition(input = {}, options = {}) {
     purpose,
     sourceMessageId,
     amountUsd,
+    approvedToolName: approvedAction.toolName,
+    actionFingerprint: approvedAction.fingerprint,
     evidence,
   };
   return withLedgerLock(options, () => {
@@ -155,7 +162,7 @@ function createPurchaseRequisition(input = {}, options = {}) {
     const requisitionId = input.requisitionId || `req_${crypto.randomUUID()}`;
     const escalationResult = requestEscalation({
       taskId,
-      reason: `Purchase approval required: $${amountUsd.toFixed(2)} USD to ${vendor} for ${purpose}`,
+      reason: `Purchase approval required: $${amountUsd.toFixed(2)} USD to ${vendor} for ${purpose}; exact action ${approvedAction.fingerprint}`,
       severity: 'critical',
       requester,
       evidence: [
@@ -179,6 +186,8 @@ function createPurchaseRequisition(input = {}, options = {}) {
       purpose,
       sourceMessageId,
       amountUsd,
+      approvedToolName: approvedAction.toolName,
+      actionFingerprint: approvedAction.fingerprint,
       currency: 'USD',
       evidence,
       requestedAt: now.toISOString(),
@@ -194,69 +203,80 @@ function createPurchaseRequisition(input = {}, options = {}) {
 
 function reservePurchaseRequisition(input = {}, options = {}) {
   rejectCallerSelectedRequester(input);
-  assertLedgerHealthy(options);
   const now = options.now || new Date();
   const requester = authenticatedPrincipal(options);
   const requisitionId = requiredString(input.requisitionId, 'requisitionId');
-  const requisition = projectRequisition(requisitionId, options);
-  if (!requisition) throw financialError(`unknown requisition '${requisitionId}'`);
-  assertPrincipalOwnsRequisition(requester, requisition);
-  let escalation;
-  try {
-    escalation = getVerifiedApproval(requisition.escalationId, options);
-  } catch (error) {
-    throw financialError(`requisition '${requisitionId}' approval verification failed: ${error.message}`);
-  }
-  if (!escalation || escalation.status !== 'approved') {
-    throw financialError(`requisition '${requisitionId}' does not have independent human approval`);
-  }
-  if (sameIdentity(requisition.requester, escalation.actor)) {
-    throw financialError('requester cannot approve their own requisition');
-  }
-  if (Date.parse(requisition.expiresAt) <= now.getTime()) {
-    throw financialError(`requisition '${requisitionId}' is expired`);
-  }
-  if (['reserved', 'authorized', 'committed'].includes(requisition.status)) {
-    const requestedKey = optionalString(input.idempotencyKey);
-    if (requestedKey && requestedKey === requisition.reservationIdempotencyKey) {
-      return { recorded: false, duplicate: true, requisition };
+  return withLedgerLock(options, () => {
+    const ledger = readLedger(options);
+    assertLedgerHealthyData(ledger);
+    const requisition = projectRequisitionFromEvents(ledger.events, requisitionId, options);
+    if (!requisition) throw financialError(`unknown requisition '${requisitionId}'`);
+    assertPrincipalOwnsRequisition(requester, requisition);
+    let escalation;
+    try {
+      escalation = getVerifiedApproval(requisition.escalationId, options);
+    } catch (error) {
+      throw financialError(`requisition '${requisitionId}' approval verification failed: ${error.message}`);
     }
-    throw financialError(`requisition '${requisitionId}' is already ${requisition.status}`);
-  }
-  if (requisition.status === 'released') {
-    throw financialError(`requisition '${requisitionId}' was released and cannot be reused`);
-  }
+    if (!escalation || escalation.status !== 'approved') {
+      throw financialError(`requisition '${requisitionId}' does not have independent human approval`);
+    }
+    if (sameIdentity(requisition.requester, escalation.actor)) {
+      throw financialError('requester cannot approve their own requisition');
+    }
+    if (Date.parse(requisition.expiresAt) <= now.getTime()) {
+      throw financialError(`requisition '${requisitionId}' is expired`);
+    }
+    if (['reserved', 'authorized', 'committed'].includes(requisition.status)) {
+      const requestedKey = optionalString(input.idempotencyKey);
+      if (requestedKey && requestedKey === requisition.reservationIdempotencyKey) {
+        return { recorded: false, duplicate: true, requisition };
+      }
+      throw financialError(`requisition '${requisitionId}' is already ${requisition.status}`);
+    }
+    if (requisition.status === 'released') {
+      throw financialError(`requisition '${requisitionId}' was released and cannot be reused`);
+    }
+    if (!requisition.actionFingerprint || !requisition.approvedToolName) {
+      throw financialError(`requisition '${requisitionId}' predates exact-action authorization and cannot be reserved`);
+    }
 
-  const amountUsd = positiveMoney(input.amountUsd ?? requisition.amountUsd, 'amountUsd');
-  if (amountUsd > requisition.amountUsd) {
-    throw financialError(`reservation $${amountUsd.toFixed(2)} exceeds approved amount $${requisition.amountUsd.toFixed(2)}`);
-  }
-  assertScopeMatches(input, requisition);
-  const ttlMs = boundedTtl(input.ttlMs, DEFAULT_RESERVATION_TTL_MS);
-  appendEvent({
-    schemaVersion: 'financial-control-v2',
-    eventType: 'reserved',
-    status: 'reserved',
-    requisitionId,
-    reservationId: input.reservationId || `res_${crypto.randomUUID()}`,
-    reservationIdempotencyKey: requiredString(input.idempotencyKey || `${requisitionId}:reserve`, 'idempotencyKey'),
-    requester,
-    approvedBy: escalation.actor,
-    approvalReason: escalation.reason,
-    vendor: requisition.vendor,
-    purpose: requisition.purpose,
-    sourceMessageId: requisition.sourceMessageId,
-    amountUsd,
-    currency: 'USD',
-    reservedAt: now.toISOString(),
-    reservationExpiresAt: new Date(now.getTime() + ttlMs).toISOString(),
-  }, options);
-  return { recorded: true, duplicate: false, requisition: projectRequisition(requisitionId, options) };
+    const amountUsd = positiveMoney(input.amountUsd ?? requisition.amountUsd, 'amountUsd');
+    if (amountUsd > requisition.amountUsd) {
+      throw financialError(`reservation $${amountUsd.toFixed(2)} exceeds approved amount $${requisition.amountUsd.toFixed(2)}`);
+    }
+    assertScopeMatches(input, requisition);
+    const ttlMs = boundedTtl(input.ttlMs, DEFAULT_RESERVATION_TTL_MS);
+    const recorded = appendEventUnlocked({
+      schemaVersion: 'financial-control-v2',
+      eventType: 'reserved',
+      status: 'reserved',
+      requisitionId,
+      reservationId: input.reservationId || `res_${crypto.randomUUID()}`,
+      reservationIdempotencyKey: requiredString(input.idempotencyKey || `${requisitionId}:reserve`, 'idempotencyKey'),
+      requester,
+      approvedBy: escalation.actor,
+      approvalReason: escalation.reason,
+      vendor: requisition.vendor,
+      purpose: requisition.purpose,
+      sourceMessageId: requisition.sourceMessageId,
+      approvedToolName: requisition.approvedToolName,
+      actionFingerprint: requisition.actionFingerprint,
+      amountUsd,
+      currency: 'USD',
+      reservedAt: now.toISOString(),
+      reservationExpiresAt: new Date(now.getTime() + ttlMs).toISOString(),
+    }, options, ledger.events);
+    return {
+      recorded: true,
+      duplicate: false,
+      requisition: projectRequisitionFromEvents([...ledger.events, recorded], requisitionId, options),
+    };
+  });
 }
 
 function settlePurchaseRequisition(input = {}, options = {}) {
   rejectCallerSelectedRequester(input);
-  assertLedgerHealthy(options);
   const now = options.now || new Date();
   const requester = authenticatedPrincipal(options);
   const requisitionId = requiredString(input.requisitionId, 'requisitionId');
@@ -265,39 +285,46 @@ function settlePurchaseRequisition(input = {}, options = {}) {
   if (!SETTLEMENT_STATUSES.has(status)) {
     throw financialError('status must be committed or released');
   }
-  const requisition = projectRequisition(requisitionId, options);
-  if (!requisition) throw financialError(`unknown requisition '${requisitionId}'`);
-  const allowedStates = status === 'committed' ? ['authorized'] : ['reserved', 'authorized'];
-  if (!allowedStates.includes(requisition.status)) {
-    throw financialError(`requisition '${requisitionId}' is ${requisition.status}, not ${allowedStates.join(' or ')}`);
-  }
-  if (reservationId !== requisition.reservationId) {
-    throw financialError('reservationId does not match the active reservation');
-  }
-  assertPrincipalOwnsRequisition(requester, requisition);
-
-  const base = {
-    schemaVersion: 'financial-control-v2',
-    eventType: status,
-    status,
-    requisitionId,
-    reservationId,
-    requester,
-    settledAt: now.toISOString(),
-  };
-  if (status === 'committed') {
-    const actualAmountUsd = nonNegativeMoney(input.actualAmountUsd, 'actualAmountUsd');
-    if (actualAmountUsd > requisition.reservedAmountUsd) {
-      throw financialError(`actual amount $${actualAmountUsd.toFixed(2)} exceeds reservation $${requisition.reservedAmountUsd.toFixed(2)}`);
+  return withLedgerLock(options, () => {
+    const ledger = readLedger(options);
+    assertLedgerHealthyData(ledger);
+    const requisition = projectRequisitionFromEvents(ledger.events, requisitionId, options);
+    if (!requisition) throw financialError(`unknown requisition '${requisitionId}'`);
+    const allowedStates = status === 'committed' ? ['authorized'] : ['reserved', 'authorized'];
+    if (!allowedStates.includes(requisition.status)) {
+      throw financialError(`requisition '${requisitionId}' is ${requisition.status}, not ${allowedStates.join(' or ')}`);
     }
-    const evidence = stringArray(input.evidence);
-    if (evidence.length === 0) throw financialError('committed spend requires receipt evidence');
-    Object.assign(base, { actualAmountUsd, currency: 'USD', evidence });
-  } else {
-    base.reason = requiredString(input.reason, 'reason');
-  }
-  appendEvent(base, options);
-  return { recorded: true, requisition: projectRequisition(requisitionId, options) };
+    if (reservationId !== requisition.reservationId) {
+      throw financialError('reservationId does not match the active reservation');
+    }
+    assertPrincipalOwnsRequisition(requester, requisition);
+
+    const base = {
+      schemaVersion: 'financial-control-v2',
+      eventType: status,
+      status,
+      requisitionId,
+      reservationId,
+      requester,
+      settledAt: now.toISOString(),
+    };
+    if (status === 'committed') {
+      const actualAmountUsd = nonNegativeMoney(input.actualAmountUsd, 'actualAmountUsd');
+      if (actualAmountUsd > requisition.reservedAmountUsd) {
+        throw financialError(`actual amount $${actualAmountUsd.toFixed(2)} exceeds reservation $${requisition.reservedAmountUsd.toFixed(2)}`);
+      }
+      const evidence = stringArray(input.evidence);
+      if (evidence.length === 0) throw financialError('committed spend requires receipt evidence');
+      Object.assign(base, { actualAmountUsd, currency: 'USD', evidence });
+    } else {
+      base.reason = requiredString(input.reason, 'reason');
+    }
+    const recorded = appendEventUnlocked(base, options, ledger.events);
+    return {
+      recorded: true,
+      requisition: projectRequisitionFromEvents([...ledger.events, recorded], requisitionId, options),
+    };
+  });
 }
 
 function listPurchaseRequisitions(options = {}) {
@@ -355,6 +382,8 @@ function applyFinancialEvent(state, event, now) {
       reservedAmountUsd: event.amountUsd,
       reservedAt: event.reservedAt,
       reservationExpiresAt: event.reservationExpiresAt,
+      actionFingerprint: event.actionFingerprint || state.actionFingerprint,
+      approvedToolName: event.approvedToolName || state.approvedToolName,
     });
   } else if (event.eventType === 'authorized') {
     Object.assign(state, {
@@ -444,6 +473,7 @@ function financialEvaluationContext(input, options) {
     requisitionId: optionalString(control.requisitionId),
     reservationId: optionalString(control.reservationId),
     actionId: optionalString(control.actionId),
+    actionBinding: buildActionAuthorization(input.toolName, toolInput, finiteNumber(input.costControl?.usage?.estimatedCostUsd, 0)),
     principal: authenticatedPrincipal(options),
     requisition: null,
     authorization: null,
@@ -513,6 +543,13 @@ function validateRequisition(result, options) {
   if (result.estimatedCostUsd > (requisition.reservedAmountUsd || 0)) {
     addBlock(result, 'reservation_amount_exceeded', `Estimated cost $${result.estimatedCostUsd.toFixed(2)} exceeds the reserved amount.`);
   }
+  if (!requisition.actionFingerprint
+    || result.actionBinding.fingerprint !== requisition.actionFingerprint) {
+    addBlock(result, 'financial_action_mismatch', 'Actual tool action or USD amount does not match the independently approved action fingerprint.');
+  }
+  if (normalizeToolName(result.actionBinding.toolName) !== normalizeToolName(requisition.approvedToolName)) {
+    addBlock(result, 'financial_tool_mismatch', 'Actual financial tool does not match the approved tool.');
+  }
   validateScope(result, requisition);
 }
 
@@ -547,6 +584,7 @@ function consumeReservationIfAuthorized(result, input, options) {
       estimatedCostUsd: result.estimatedCostUsd,
       principal: result.principal,
       toolName: input.toolName,
+      actionFingerprint: result.actionBinding.fingerprint,
     }, options);
     result.requisition = result.authorization;
   } catch (error) {
@@ -577,6 +615,7 @@ function consumeReservation(input, options) {
       actionId: input.actionId,
       requester: input.principal,
       toolName: String(input.toolName || 'unknown'),
+      actionFingerprint: input.actionFingerprint,
       estimatedCostUsd: input.estimatedCostUsd,
       currency: 'USD',
       authorizedAt: (options.now || new Date()).toISOString(),
@@ -605,6 +644,8 @@ function buildFinancialDecision(result) {
       approvedAmountUsd: requisition.amountUsd,
       reservedAmountUsd: requisition.reservedAmountUsd || 0,
       approvedBy: requisition.approvedBy || null,
+      actionFingerprint: requisition.actionFingerprint || null,
+      approvedToolName: requisition.approvedToolName || null,
     } : null,
   };
 }
@@ -655,15 +696,6 @@ function readEvents(options = {}) {
   return readLedger(options).events;
 }
 
-function appendEvent(event, options = {}) {
-  return withLedgerLock(options, () => {
-    const ledger = readLedger(options);
-    const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head);
-    if (!chain.ok) throw financialError('refusing to append to a damaged financial ledger');
-    return appendEventUnlocked(event, options, ledger.events);
-  });
-}
-
 function appendEventUnlocked(event, options, existingEvents) {
   const outputPath = getLedgerPath(options);
   const previous = existingEvents.at(-1) || null;
@@ -692,19 +724,11 @@ function writeLedgerHead(event, options) {
 }
 
 function withLedgerLock(options, callback) {
-  const lockPath = `${getLedgerPath(options)}.lock`;
-  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
-  try {
-    fs.mkdirSync(lockPath);
-  } catch (error) {
-    if (error.code === 'EEXIST') throw financialError('financial ledger is busy; deny and retry only with a fresh reservation');
-    throw error;
-  }
-  try {
-    return callback();
-  } finally {
-    try { fs.rmdirSync(lockPath); } catch { /* process recovery removes stale empty lock */ }
-  }
+  return withFileLedgerLock(`${getLedgerPath(options)}.lock`, callback, {
+    now: options.now,
+    lockStaleMs: options.lockStaleMs,
+    errorFactory: (message) => financialError(message),
+  });
 }
 
 function validateLedgerChain(events, malformedRows = [], ledgerHead = null) {
@@ -752,8 +776,7 @@ function validateLedgerHead(events, ledgerHead) {
   }];
 }
 
-function assertLedgerHealthy(options) {
-  const ledger = readLedger(options);
+function assertLedgerHealthyData(ledger) {
   if (!validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head).ok) {
     throw financialError('financial ledger integrity verification failed');
   }
@@ -774,6 +797,8 @@ function requestComparableHash(event) {
     purpose: event.purpose,
     sourceMessageId: event.sourceMessageId,
     amountUsd: event.amountUsd,
+    approvedToolName: event.approvedToolName,
+    actionFingerprint: event.actionFingerprint,
     evidence: event.evidence,
   };
   return crypto.createHash('sha256').update(stableStringify(comparable)).digest('hex');
@@ -785,6 +810,35 @@ function stableStringify(value) {
   const keys = Object.keys(value).sort((left, right) => left.localeCompare(right));
   const properties = keys.map((key) => [JSON.stringify(key), stableStringify(value[key])].join(':'));
   return ['{', properties.join(','), '}'].join('');
+}
+
+function buildActionAuthorization(toolName, toolInput, amountUsd) {
+  const normalizedToolName = normalizeToolName(requiredString(toolName, 'toolName'));
+  const exactToolInput = objectValue(toolInput);
+  if (Object.keys(exactToolInput).length === 0) throw financialError('toolInput for the exact economic action is required');
+  const payload = {
+    schemaVersion: 'financial-action-authorization-v1',
+    toolName: normalizedToolName,
+    toolInput: stripControlMetadata(exactToolInput),
+    amountUsd: roundMoney(Math.max(0, finiteNumber(amountUsd, 0))),
+  };
+  return {
+    toolName: normalizedToolName,
+    fingerprint: crypto.createHash('sha256').update(stableStringify(payload)).digest('hex'),
+  };
+}
+
+function stripControlMetadata(value) {
+  if (Array.isArray(value)) return value.map(stripControlMetadata);
+  if (!value || typeof value !== 'object') return value;
+  const excluded = new Set(['financialControl', 'financial_control', 'budget', 'usage']);
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => !excluded.has(key))
+    .map(([key, entry]) => [key, stripControlMetadata(entry)]));
+}
+
+function normalizeToolName(value) {
+  return String(value || '').trim().toLowerCase();
 }
 
 function rejectCallerSelectedRequester(input) {
@@ -882,6 +936,7 @@ function financialError(message) {
 module.exports = {
   ECONOMIC_ACTION_PATTERNS,
   createPurchaseRequisition,
+  buildActionAuthorization,
   detectEconomicAction,
   evaluateFinancialControl,
   getLedgerHeadPath,

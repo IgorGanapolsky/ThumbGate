@@ -13,6 +13,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { getFeedbackPaths } = require('./feedback-paths');
+const { withFileLedgerLock } = require('./file-ledger-lock');
 
 const ESCALATIONS_FILE = 'human-escalations.jsonl';
 const ESCALATIONS_HEAD_FILE = 'human-escalations.head.json';
@@ -41,8 +42,6 @@ function requestEscalation(input = {}, options = {}) {
   if (!SEVERITIES.has(severity)) throw escalationError(`severity must be one of ${Array.from(SEVERITIES).join(', ')}`);
   const ttlMs = Math.min(MAX_TTL_MS, Math.max(1, finiteNumber(input.ttlMs, DEFAULT_TTL_MS)));
   const idempotencyKey = requiredString(input.idempotencyKey || taskId, 'idempotencyKey');
-  const existing = listEscalations(options).find((entry) => entry.idempotencyKey === idempotencyKey);
-
   const request = {
     escalationId: input.escalationId || `esc_${crypto.randomUUID()}`,
     idempotencyKey,
@@ -56,17 +55,22 @@ function requestEscalation(input = {}, options = {}) {
     status: 'pending',
     eventType: 'requested',
   };
-  if (existing) {
-    if (eventComparableHash(existing) !== eventComparableHash(request)) {
-      const error = escalationError(`conflicting request for idempotency key '${idempotencyKey}'`);
-      error.code = 'THUMBGATE_IDEMPOTENCY_CONFLICT';
-      throw error;
+  return withEscalationLock(options, () => {
+    const ledger = readLedger(options);
+    assertLedgerHealthy(ledger);
+    const existing = projectEscalations(ledger.events, options)
+      .find((entry) => entry.idempotencyKey === idempotencyKey);
+    if (existing) {
+      if (eventComparableHash(existing) !== eventComparableHash(request)) {
+        const error = escalationError(`conflicting request for idempotency key '${idempotencyKey}'`);
+        error.code = 'THUMBGATE_IDEMPOTENCY_CONFLICT';
+        throw error;
+      }
+      return { recorded: false, duplicate: true, escalation: existing };
     }
-    return { recorded: false, duplicate: true, escalation: existing };
-  }
-
-  const recorded = appendEvent(request, options);
-  return { recorded: true, duplicate: false, escalation: recorded };
+    const recorded = appendEventUnlocked(request, options, ledger.events);
+    return { recorded: true, duplicate: false, escalation: recorded };
+  });
 }
 
 function decideEscalation(input = {}, options = {}) {
@@ -79,26 +83,31 @@ function decideEscalation(input = {}, options = {}) {
   const actor = requiredIdentity(options.authenticatedActor, 'authenticatedActor');
   if (actor.kind !== 'human') throw escalationError('authenticatedActor.kind must be human');
   const reason = requiredString(input.reason, 'reason');
-  const current = getEscalation(escalationId, options);
-  if (!current) throw escalationError(`unknown escalation '${escalationId}'`);
-  if (current.status !== 'pending') throw escalationError(`escalation '${escalationId}' is already ${current.status}`);
-  if (sameIdentity(current.requester, actor)) throw escalationError('requester cannot decide their own escalation');
+  return withEscalationLock(options, () => {
+    const ledger = readLedger(options);
+    assertLedgerHealthy(ledger);
+    const current = projectEscalations(ledger.events, options)
+      .find((entry) => entry.escalationId === escalationId);
+    if (!current) throw escalationError(`unknown escalation '${escalationId}'`);
+    if (current.status !== 'pending') throw escalationError(`escalation '${escalationId}' is already ${current.status}`);
+    if (sameIdentity(current.requester, actor)) throw escalationError('requester cannot decide their own escalation');
 
-  const now = options.now || new Date();
-  const event = {
-    escalationId,
-    taskId: current.taskId,
-    status: decision,
-    eventType: 'decided',
-    decision,
-    actor,
-    reason,
-    decidedAt: now.toISOString(),
-  };
-  const signingKey = optionalString(options.approvalSigningKey);
-  if (signingKey) event.approvalReceipt = signApprovalReceipt(event, signingKey);
-  const recorded = appendEvent(event, options);
-  return { recorded: true, escalation: { ...current, ...recorded } };
+    const now = options.now || new Date();
+    const event = {
+      escalationId,
+      taskId: current.taskId,
+      status: decision,
+      eventType: 'decided',
+      decision,
+      actor,
+      reason,
+      decidedAt: now.toISOString(),
+    };
+    const signingKey = optionalString(options.approvalSigningKey);
+    if (signingKey) event.approvalReceipt = signApprovalReceipt(event, signingKey);
+    const recorded = appendEventUnlocked(event, options, ledger.events);
+    return { recorded: true, escalation: { ...current, ...recorded } };
+  });
 }
 
 /**
@@ -128,7 +137,10 @@ function getVerifiedApproval(escalationId, options = {}) {
 }
 
 function listEscalations(options = {}) {
-  const events = readEvents(options);
+  return projectEscalations(readEvents(options), options);
+}
+
+function projectEscalations(events, options = {}) {
   const byId = new Map();
   for (const event of events) {
     const current = byId.get(event.escalationId) || {};
@@ -199,17 +211,13 @@ function readLedger(options = {}) {
   return { events, malformedRows, head: readLedgerHead(options) };
 }
 
-function appendEvent(event, options) {
+function appendEventUnlocked(event, options, existingEvents) {
   const outputPath = getEscalationsPath(options);
-  const ledger = readLedger(options);
-  if (!validateEscalationLedger(ledger.events, ledger.malformedRows, ledger.head).ok) {
-    throw escalationError('refusing to append to a damaged escalation ledger');
-  }
-  const previous = ledger.events.at(-1) || null;
+  const previous = existingEvents.at(-1) || null;
   const chained = {
     ...event,
     schemaVersion: 'human-escalation-v2',
-    sequence: ledger.events.length + 1,
+    sequence: existingEvents.length + 1,
     previousEventHash: previous?.eventHash || null,
   };
   chained.eventHash = eventHash(chained);
@@ -217,6 +225,20 @@ function appendEvent(event, options) {
   fs.appendFileSync(outputPath, `${JSON.stringify(chained)}\n`, 'utf8');
   writeLedgerHead(chained, options);
   return chained;
+}
+
+function assertLedgerHealthy(ledger) {
+  if (!validateEscalationLedger(ledger.events, ledger.malformedRows, ledger.head).ok) {
+    throw escalationError('refusing to append to a damaged escalation ledger');
+  }
+}
+
+function withEscalationLock(options, callback) {
+  return withFileLedgerLock(`${getEscalationsPath(options)}.lock`, callback, {
+    now: options.now,
+    lockStaleMs: options.lockStaleMs,
+    errorFactory: (message) => escalationError(message),
+  });
 }
 
 function readLedgerHead(options = {}) {
