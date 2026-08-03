@@ -1330,6 +1330,7 @@ const TOOLS = [
           properties: {
             requisitionId: { type: 'string' },
             reservationId: { type: 'string' },
+            actionId: { type: 'string' },
             vendor: { type: 'string' },
             purpose: { type: 'string' },
             sourceMessageId: { type: 'string' },

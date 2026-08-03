@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { spawn } = require('node:child_process');
 
 const {
   createPurchaseRequisition,
@@ -247,6 +248,62 @@ test('provider names in credential paths and read-only billing commands are not 
   assert.equal(detectEconomicAction('Bash', {
     command: 'git checkout main',
   }), false);
+  assert.equal(detectEconomicAction('Bash', {
+    command: "rg 'cancel subscription' src",
+  }), false);
+  assert.equal(detectEconomicAction('Bash', {
+    command: "git commit -m 'create subscription UI'",
+  }), false);
+  assert.equal(detectEconomicAction('Bash', {
+    command: "rg 'cancel subscription' src && stripe subscriptions create --customer cus_123",
+  }), true);
+  assert.equal(detectEconomicAction('Bash', {
+    command: "bash -lc 'stripe subscriptions create --customer cus_123'",
+  }), true);
+  assert.equal(detectEconomicAction('mcp__thumbgate__create_purchase_requisition', {
+    purpose: 'Approve a subscription before execution',
+  }), false);
+  assert.equal(detectEconomicAction('mcp__billing__create_subscription', {
+    customer: 'cus_123',
+  }), true);
+});
+
+test('concurrent callers cannot create two requisitions for one idempotency key', async () => {
+  const { feedbackDir, requester, request } = fixture();
+  const modulePath = path.join(__dirname, '..', 'scripts', 'financial-control-plane.js');
+  const childSource = `
+    const { createPurchaseRequisition } = require(${JSON.stringify(modulePath)});
+    try {
+      const result = createPurchaseRequisition(${JSON.stringify(request)}, {
+        feedbackDir: ${JSON.stringify(feedbackDir)},
+        authenticatedPrincipal: ${JSON.stringify(requester)},
+      });
+      process.stdout.write(result.recorded ? 'recorded' : 'duplicate');
+    } catch (error) {
+      if (/financial ledger is busy/.test(error.message)) process.stdout.write('busy');
+      else { process.stderr.write(error.stack || error.message); process.exitCode = 1; }
+    }
+  `;
+  try {
+    const runs = Array.from({ length: 8 }, () => new Promise((resolve) => {
+      const child = spawn(process.execPath, ['-e', childSource], { stdio: ['ignore', 'pipe', 'pipe'] });
+      let stdout = '';
+      let stderr = '';
+      child.stdout.on('data', (chunk) => { stdout += chunk; });
+      child.stderr.on('data', (chunk) => { stderr += chunk; });
+      child.on('close', (code) => resolve({ code, stdout, stderr }));
+    }));
+    const results = await Promise.all(runs);
+    for (const result of results) assert.equal(result.code, 0, result.stderr);
+    assert.equal(results.filter((result) => result.stdout === 'recorded').length, 1);
+
+    const events = fs.readFileSync(getLedgerPath({ feedbackDir }), 'utf8')
+      .trim().split('\n').filter(Boolean).map(JSON.parse);
+    assert.equal(events.filter((event) => event.eventType === 'requested').length, 1);
+    assert.equal(reconcilePurchaseLedger({ feedbackDir }).requisitionCount, 1);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
 });
 
 test('caller cannot select or impersonate the authenticated requester', () => {

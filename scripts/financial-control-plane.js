@@ -79,14 +79,18 @@ function getLedgerHeadPath(options = {}) {
 }
 
 function detectEconomicAction(toolName, toolInput = {}) {
-  if (CONTROL_PLANE_TOOLS.has(String(toolName || '').trim())) return false;
+  const normalizedToolName = String(toolName || '').trim();
+  if ([...CONTROL_PLANE_TOOLS].some((name) => (
+    normalizedToolName === name || normalizedToolName.endsWith(`__${name}`)
+  ))) return false;
   const metadata = objectValue(toolInput.metadata);
   const financialControl = objectValue(toolInput.financialControl || toolInput.financial_control);
   if (toolInput.economicAction === true || metadata.economicAction === true) return true;
   if (financialControl.requisitionId || financialControl.reservationId) return true;
+  const command = shellEconomicText(normalizedToolName, toolInput.command || toolInput.cmd);
   const combined = [
-    toolName,
-    toolInput.command,
+    normalizedToolName.replace(/[_-]+/g, ' '),
+    command,
     toolInput.goal,
     toolInput.action,
     toolInput.operation,
@@ -95,9 +99,24 @@ function detectEconomicAction(toolName, toolInput = {}) {
   return ECONOMIC_ACTION_PATTERNS.some((pattern) => pattern.test(combined));
 }
 
+function shellEconomicText(toolName, rawCommand) {
+  if (!/^(?:bash|shell|terminal|execute_command|exec_command)$/i.test(toolName)) {
+    return rawCommand;
+  }
+  const command = String(rawCommand || '');
+  return command
+    .split(/(?:&&|\|\||[;\n]|(?<!\|)\|(?!\|))/)
+    .map((segment) => {
+      const clean = segment.trim().replace(/^(?:sudo\s+)?(?:env\s+)?(?:[A-Za-z_][A-Za-z0-9_]*=[^\s]+\s+)*/, '');
+      const executable = clean.match(/^([A-Za-z0-9_.\/-]+)/)?.[1]?.split('/').at(-1)?.toLowerCase();
+      if (['rg', 'grep', 'git', 'cat', 'head', 'tail', 'less', 'more', 'echo', 'printf'].includes(executable)) return '';
+      return clean;
+    })
+    .join(' ');
+}
+
 function createPurchaseRequisition(input = {}, options = {}) {
   rejectCallerSelectedRequester(input);
-  assertLedgerHealthy(options);
   const now = options.now || new Date();
   const requester = authenticatedPrincipal(options);
   const taskId = requiredString(input.taskId, 'taskId');
@@ -109,7 +128,6 @@ function createPurchaseRequisition(input = {}, options = {}) {
   if (evidence.length === 0) throw financialError('evidence must contain at least one item');
   const ttlMs = boundedTtl(input.ttlMs, DEFAULT_TTL_MS);
   const idempotencyKey = requiredString(input.idempotencyKey || `${taskId}:${sourceMessageId}`, 'idempotencyKey');
-  const existing = listPurchaseRequisitions(options).find((entry) => entry.idempotencyKey === idempotencyKey);
   const comparableRequest = {
     idempotencyKey,
     taskId,
@@ -120,48 +138,58 @@ function createPurchaseRequisition(input = {}, options = {}) {
     amountUsd,
     evidence,
   };
-  if (existing) {
-    if (requestComparableHash(existing) !== requestComparableHash(comparableRequest)) {
-      const error = financialError(`conflicting requisition for idempotency key '${idempotencyKey}'`);
-      error.code = 'THUMBGATE_IDEMPOTENCY_CONFLICT';
-      throw error;
+  return withLedgerLock(options, () => {
+    const ledger = readLedger(options);
+    const chain = validateLedgerChain(ledger.events, ledger.malformedRows, ledger.head);
+    if (!chain.ok) throw financialError('financial ledger integrity verification failed');
+    const existing = requisitionsFromEvents(ledger.events, options)
+      .find((entry) => entry.idempotencyKey === idempotencyKey);
+    if (existing) {
+      if (requestComparableHash(existing) !== requestComparableHash(comparableRequest)) {
+        const error = financialError(`conflicting requisition for idempotency key '${idempotencyKey}'`);
+        error.code = 'THUMBGATE_IDEMPOTENCY_CONFLICT';
+        throw error;
+      }
+      return { recorded: false, duplicate: true, requisition: existing };
     }
-    return { recorded: false, duplicate: true, requisition: existing };
-  }
-  const requisitionId = input.requisitionId || `req_${crypto.randomUUID()}`;
-  const escalationResult = requestEscalation({
-    taskId,
-    reason: `Purchase approval required: $${amountUsd.toFixed(2)} USD to ${vendor} for ${purpose}`,
-    severity: 'critical',
-    requester,
-    evidence: [
-      ...evidence,
-      `sourceMessageId:${sourceMessageId}`,
-      `requisitionId:${requisitionId}`,
-    ],
-    ttlMs,
-    idempotencyKey: `purchase:${idempotencyKey}`,
-  }, options);
-
-  appendEvent({
-    schemaVersion: 'financial-control-v2',
-    eventType: 'requested',
-    status: 'pending_approval',
-    requisitionId,
-    escalationId: escalationResult.escalation.escalationId,
-    idempotencyKey,
-    taskId,
-    requester,
-    vendor,
-    purpose,
-    sourceMessageId,
-    amountUsd,
-    currency: 'USD',
-    evidence,
-    requestedAt: now.toISOString(),
-    expiresAt: new Date(now.getTime() + ttlMs).toISOString(),
-  }, options);
-  return { recorded: true, duplicate: false, requisition: projectRequisition(requisitionId, options) };
+    const requisitionId = input.requisitionId || `req_${crypto.randomUUID()}`;
+    const escalationResult = requestEscalation({
+      taskId,
+      reason: `Purchase approval required: $${amountUsd.toFixed(2)} USD to ${vendor} for ${purpose}`,
+      severity: 'critical',
+      requester,
+      evidence: [
+        ...evidence,
+        `sourceMessageId:${sourceMessageId}`,
+        `requisitionId:${requisitionId}`,
+      ],
+      ttlMs,
+      idempotencyKey: `purchase:${idempotencyKey}`,
+    }, options);
+    const recorded = appendEventUnlocked({
+      schemaVersion: 'financial-control-v2',
+      eventType: 'requested',
+      status: 'pending_approval',
+      requisitionId,
+      escalationId: escalationResult.escalation.escalationId,
+      idempotencyKey,
+      taskId,
+      requester,
+      vendor,
+      purpose,
+      sourceMessageId,
+      amountUsd,
+      currency: 'USD',
+      evidence,
+      requestedAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + ttlMs).toISOString(),
+    }, options, ledger.events);
+    return {
+      recorded: true,
+      duplicate: false,
+      requisition: projectRequisitionFromEvents([...ledger.events, recorded], requisitionId, options),
+    };
+  });
 }
 
 function reservePurchaseRequisition(input = {}, options = {}) {
@@ -274,6 +302,10 @@ function settlePurchaseRequisition(input = {}, options = {}) {
 
 function listPurchaseRequisitions(options = {}) {
   const events = readEvents(options);
+  return requisitionsFromEvents(events, options);
+}
+
+function requisitionsFromEvents(events, options = {}) {
   const ids = [...new Set(events.map((event) => event.requisitionId).filter(Boolean))];
   return ids
     .map((id) => projectRequisitionFromEvents(events, id, options))

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Hook: PreToolUse (matcher: Bash|Edit|Write)
+// Hook: PreToolUse (matcher: every tool)
 //
 // Replaces the advisory-only hook-verify-before-done.sh with an enforcing
 // PreToolUse hook that:
@@ -22,8 +22,8 @@
 //   stdout : JSON { decision?, reason?, hookSpecificOutput? }
 //   exit   : 0 always; blocking is signaled via decision:"block" in stdout.
 //
-// Defensive: every step is wrapped in try/catch. Any uncaught failure falls
-// through to allow, so a bug in the hook never deadlocks the agent.
+// Advisory lesson/retrieval failures remain fail-open. The financial-control
+// evaluator itself is fail-closed for every tool surface matched by the host.
 
 'use strict';
 
