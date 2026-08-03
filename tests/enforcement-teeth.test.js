@@ -200,13 +200,13 @@ test('hook-pre-tool-use source references both enforcement flags', () => {
   assert.match(source, /decision:\s*['"]block['"]/);
 });
 
-test('settings.json wires PreToolUse to node hook-pre-tool-use.js with Bash|Edit|Write matcher', () => {
+test('settings.json wires PreToolUse to node hook-pre-tool-use.js for every tool', () => {
   const settingsPath = path.join(REPO_ROOT, '.claude', 'settings.json');
   const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
   const pre = settings.hooks && settings.hooks.PreToolUse;
   assert.ok(Array.isArray(pre) && pre.length > 0, 'PreToolUse hooks must be configured');
-  const entry = pre.find((p) => /Bash|Edit|Write/.test(p.matcher || ''));
-  assert.ok(entry, 'PreToolUse must match Bash|Edit|Write');
+  const entry = pre.find((p) => p.matcher === '.*');
+  assert.ok(entry, 'PreToolUse must match every tool surface');
   const cmd = entry.hooks[0].command;
   assert.match(cmd, /hook-pre-tool-use\.js/);
 });
@@ -718,3 +718,86 @@ test('hook-pre-tool-use does NOT block when monetary budget spend limit is excee
   }
 });
 
+test('hook-pre-tool-use hard-blocks an economic action with a zero-dollar budget', () => {
+  const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tg-financial-control-test-'));
+  try {
+    const res = runHook({
+      input: {
+        session_id: 'test',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Browser',
+        tool_input: {
+          command: 'Upgrade Apollo to paid, add a payment method, and click Subscribe',
+          costUsd: 588,
+          budget: {
+            maxCostUsdPerAction: 0,
+            remainingCostUsd: 0,
+          },
+        },
+      },
+      env: {
+        THUMBGATE_FEEDBACK_DIR: tempDir,
+      },
+    });
+
+    assert.equal(res.status, 0, res.stderr);
+    assert.equal(res.parsed?.decision, 'block');
+    assert.match(res.parsed?.reason || '', /financial-control/);
+    assert.match(res.parsed?.reason || '', /\$0\.00/);
+    assert.doesNotMatch(res.parsed?.reason || '', /positive, explicit cost estimate/i);
+    assert.doesNotMatch(res.parsed?.reason || '', /thumbgate\.ai\/go\/pro/i);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('hook-pre-tool-use hard-blocks a custom MCP billing tool with no reservation', () => {
+  const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tg-financial-mcp-test-'));
+  try {
+    const res = runHook({
+      input: {
+        session_id: 'test',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'mcp__billing__create_subscription',
+        tool_input: {
+          customer: 'cus_123',
+          costUsd: 49,
+          budget: { maxCostUsdPerAction: 49, remainingCostUsd: 49 },
+        },
+      },
+      env: { THUMBGATE_FEEDBACK_DIR: tempDir },
+    });
+
+    assert.equal(res.status, 0, res.stderr);
+    assert.equal(res.parsed?.decision, 'block');
+    assert.match(res.parsed?.reason || '', /financial-control/);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('hook-pre-tool-use fails closed when an economic action cannot read the financial ledger', () => {
+  const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tg-financial-io-failure-'));
+  try {
+    fs.mkdirSync(path.join(tempDir, 'financial-control-ledger.jsonl'));
+    const res = runHook({
+      input: {
+        session_id: 'test',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Browser',
+        tool_input: {
+          command: 'Upgrade Apollo and confirm checkout',
+          costUsd: 588,
+          budget: { maxCostUsdPerAction: 588, remainingCostUsd: 588 },
+        },
+      },
+      env: { THUMBGATE_FEEDBACK_DIR: tempDir },
+    });
+    assert.equal(res.status, 0, res.stderr);
+    assert.equal(res.parsed?.decision, 'block');
+    assert.match(res.parsed?.reason || '', /financial-control unavailable/i);
+    assert.match(res.parsed?.reason || '', /economic action denied/i);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

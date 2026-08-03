@@ -108,7 +108,7 @@ function assessPayPalPaymentProofReadiness(env = process.env) {
     webhookUrl = null;
   }
   const webhookIdValid = /^[A-Za-z0-9]{1,50}$/.test(String(config.webhookId || ''));
-  const webhookUrlValid = Boolean(webhookUrl && webhookUrl.protocol === 'https:' &&
+  const webhookUrlValid = Boolean(webhookUrl?.protocol === 'https:' &&
     !webhookUrl.username && !webhookUrl.password && !webhookUrl.hash &&
     webhookUrl.pathname === '/v1/billing/paypal-webhook');
   const ledgerPathValid = path.isAbsolute(String(config.webhookLedgerPath || ''));
@@ -321,15 +321,18 @@ async function buildRevenueObservabilityDoctor({
     || DEFAULT_PUBLIC_APP_ORIGIN;
   appOrigin = resolvedAppOrigin;
 
-  // Prefer managed Stripe files when env is empty.
-  try {
-    const { resolveStripeSecretKey } = require('./stripe-credentials');
-    const resolved = resolveStripeSecretKey({ env });
-    if (resolved.secretKey && !String(env.STRIPE_SECRET_KEY || '').trim()) {
-      env.STRIPE_SECRET_KEY = resolved.secretKey;
+  // Prefer managed Stripe files when local secret loading is enabled. Callers
+  // that explicitly disable it must remain isolated from machine credentials.
+  if (loadLocalSecrets) {
+    try {
+      const { resolveStripeSecretKey } = require('./stripe-credentials');
+      const resolved = resolveStripeSecretKey({ env });
+      if (resolved.secretKey && !String(env.STRIPE_SECRET_KEY || '').trim()) {
+        env.STRIPE_SECRET_KEY = resolved.secretKey;
+      }
+    } catch {
+      // optional
     }
-  } catch {
-    // optional
   }
 
   const hostedApiKey = resolveHostedAuditApiKey(env, { operatorKey: null });

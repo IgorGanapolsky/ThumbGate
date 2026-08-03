@@ -76,8 +76,8 @@ test('PreToolUse enforcement is wired via ${CLAUDE_PLUGIN_ROOT}', () => {
 
   const matchers = lifecycles.PreToolUse.map((g) => g.matcher).filter(Boolean);
   assert.ok(
-    matchers.some((m) => m.includes('Bash') && m.includes('Edit') && m.includes('Write')),
-    'PreToolUse must match Bash|Edit|Write',
+    matchers.some((m) => m === '.*'),
+    'PreToolUse must match every tool surface',
   );
 
   const hooks = collectHooks(lifecycles.PreToolUse);

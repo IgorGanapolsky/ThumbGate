@@ -2390,7 +2390,7 @@ describe('bin/cli.js', () => {
 
     const settingsPath = path.join(isolatedHome, '.claude', 'settings.local.json');
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-    assert.equal(settings.hooks.PreToolUse[0].matcher, 'Bash|Edit|Write|MultiEdit');
+    assert.equal(settings.hooks.PreToolUse[0].matcher, '.*');
     assert.match(settings.hooks.PreToolUse[0].hooks[0].command, /gate-check/);
     assert.match(settings.hooks.UserPromptSubmit[0].hooks[0].command, /hook-auto-capture/);
     assert.match(settings.hooks.PostToolUse[0].hooks[0].command, /cache-update/);

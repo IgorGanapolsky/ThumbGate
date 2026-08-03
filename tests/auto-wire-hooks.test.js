@@ -193,7 +193,7 @@ describe('auto-wire-hooks', () => {
 
         // Check PreToolUse has matcher
         const preToolEntry = settings.hooks.PreToolUse[0];
-        assert.equal(preToolEntry.matcher, 'Bash|Edit|Write|MultiEdit');
+        assert.equal(preToolEntry.matcher, '.*');
         assert.equal(preToolEntry.hooks[0].command, preToolHookCommand());
 
         const promptEntry = settings.hooks.UserPromptSubmit[0];

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Minor Changes
+
+- Add a packaged, fail-closed financial control plane for economic agent actions.
+  The public runtime now enforces explicit budgets, independent human approvals,
+  exact-scope reservations, receipt-backed settlement, and tamper-evident ledger
+  reconciliation before a purchase, subscription, upgrade, transfer, or payment
+  can proceed. The packaged bundle grows from 419 to 421 files because
+  `scripts/financial-control-plane.js` and its crash-recoverable shared ledger
+  lock are both required at the enforcement boundary.
+
 ## 1.31.0
 
 ### Minor Changes

@@ -163,8 +163,12 @@ const path = require('node:path');
 // verifier example config so agents can recheck factual claims against SQLite/FS/JSON.
 // Bumped 418 -> 419 (2026-08-02): ship default config/gates/claim-verifiers.json
 // so package-version factual claims recheck without a local override.
-// Each file is directly callable from the package and contains no buyer state.
-const BASELINE_FILE_COUNT = 419;
+// Bumped 419 -> 421 (2026-08-02): ship scripts/financial-control-plane.js plus
+// its crash-recoverable cross-process ledger lock so zero-budget, approval,
+// reservation, settlement, and reconciliation controls execute from the public
+// npm package instead of existing only in the repository. Both are runtime
+// dependencies, contain no buyer state, and leave no package-count headroom.
+const BASELINE_FILE_COUNT = 421;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

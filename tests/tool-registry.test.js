@@ -183,6 +183,10 @@ test('scope control tools expose the task-scope and protected-approval workflow'
   assert.ok(sentinelTool.inputSchema.properties.changedFiles, 'workflow_sentinel should expose changedFiles');
   assert.ok(sentinelTool.inputSchema.properties.workflowPattern, 'workflow_sentinel should expose workflowPattern');
   assert.ok(sentinelTool.inputSchema.properties.workflow, 'workflow_sentinel should expose workflow metadata');
+  assert.ok(
+    sentinelTool.inputSchema.properties.financialControl.properties.actionId,
+    'workflow_sentinel should accept the actionId required for single-use financial authorization',
+  );
   assert.ok(sentinelTool.inputSchema.properties.goal, 'workflow_sentinel should expose agent goals');
   assert.ok(sentinelTool.inputSchema.properties.tools, 'workflow_sentinel should expose available agent tools');
   assert.ok(sentinelTool.inputSchema.properties.branches, 'workflow_sentinel should expose parallel branches');

@@ -203,7 +203,7 @@ test('workflow sentinel denies recurring destructive pattern with high blast rad
   assert.match(report.evidence.join('\n'), /Memory guard predicted block/);
 });
 
-test('workflow sentinel checkpoints economic actions even before code changes land', () => {
+test('workflow sentinel denies unapproved economic actions even before code changes land', () => {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-economic-'));
   const report = evaluateWorkflowSentinel('Bash', {
     command: 'stripe refunds create re_123 --reason requested_by_customer',
@@ -224,15 +224,58 @@ test('workflow sentinel checkpoints economic actions even before code changes la
     },
   });
 
-  assert.equal(report.decision, 'warn');
+  assert.equal(report.decision, 'deny');
   assert.equal(report.actionProfile.economicAction, true);
-  assert.equal(report.decisionControl.executionMode, 'checkpoint_required');
+  assert.equal(report.financialControl.mode, 'block');
+  assert.equal(report.decisionControl.executionMode, 'blocked');
   assert.equal(report.decisionControl.reversibility, 'one_way_door');
-  assert.ok(report.remediations.some((entry) => entry.id === 'economic_action_approval'));
+  assert.ok(report.remediations.some((entry) => entry.id === 'financial_requisition_lifecycle'));
   assert.match(report.reasoning.join('\n'), /economic action/i);
 });
 
-test('workflow sentinel checkpoints background customer-system actions', () => {
+test('workflow sentinel fails closed on an Apollo upgrade with an explicit zero-dollar budget', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-zero-spend-'));
+  const report = evaluateWorkflowSentinel('Browser', {
+    command: 'Upgrade Apollo to paid, add a payment method, and click Subscribe',
+    usage: { costUsd: 588 },
+    budget: {
+      maxCostUsdPerAction: 0,
+      remainingCostUsd: 0,
+    },
+  }, {
+    feedbackDir,
+    repoPath: process.cwd(),
+  });
+
+  assert.equal(report.costControl.mode, 'block');
+  assert.equal(report.financialControl.mode, 'block');
+  assert.ok(report.financialControl.reasonCodes.includes('zero_spend_budget'));
+  assert.equal(report.decision, 'deny');
+  assert.equal(report.decisionControl.executionMode, 'blocked');
+});
+
+test('workflow sentinel treats opaque browser and computer-use mutations as economic', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-opaque-screen-'));
+  try {
+    for (const [toolName, toolInput] of [
+      ['Browser', { ref_id: 'page', id: 17 }],
+      ['computer', { action: 'click', coordinate: [920, 640] }],
+    ]) {
+      const report = evaluateWorkflowSentinel(toolName, toolInput, {
+        feedbackDir,
+        repoPath: process.cwd(),
+      });
+      assert.equal(report.actionProfile.economicAction, true);
+      assert.equal(report.financialControl.mode, 'block');
+      assert.ok(report.financialControl.reasonCodes.includes('missing_purchase_requisition'));
+      assert.equal(report.decision, 'deny');
+    }
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('workflow sentinel denies unapproved background invoicing actions', () => {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-background-'));
   const report = evaluateWorkflowSentinel('Bash', {
     command: 'node scripts/async-job-runner.js --task "resend customer invoice email"',
@@ -257,12 +300,15 @@ test('workflow sentinel checkpoints background customer-system actions', () => {
     },
   });
 
-  assert.equal(report.decision, 'warn');
+  assert.equal(report.decision, 'deny');
   assert.equal(report.actionProfile.backgroundAgent, true);
   assert.equal(report.actionProfile.customerSystemAction, true);
-  assert.equal(report.decisionControl.executionMode, 'checkpoint_required');
+  assert.equal(report.actionProfile.economicAction, true);
+  assert.equal(report.financialControl.mode, 'block');
+  assert.equal(report.decisionControl.executionMode, 'blocked');
   assert.ok(report.remediations.some((entry) => entry.id === 'background_agent_checkpoint'));
   assert.ok(report.remediations.some((entry) => entry.id === 'customer_system_guardrail'));
+  assert.ok(report.remediations.some((entry) => entry.id === 'financial_requisition_lifecycle'));
 });
 
 test('workflow sentinel denies deterministic workflow blocked actions', () => {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Hook: PreToolUse (matcher: Bash|Edit|Write)
+// Hook: PreToolUse (matcher: every tool)
 //
 // Replaces the advisory-only hook-verify-before-done.sh with an enforcing
 // PreToolUse hook that:
@@ -22,8 +22,8 @@
 //   stdout : JSON { decision?, reason?, hookSpecificOutput? }
 //   exit   : 0 always; blocking is signaled via decision:"block" in stdout.
 //
-// Defensive: every step is wrapped in try/catch. Any uncaught failure falls
-// through to allow, so a bug in the hook never deadlocks the agent.
+// Advisory lesson/retrieval failures remain fail-open. The financial-control
+// evaluator itself is fail-closed for every tool surface matched by the host.
 
 'use strict';
 
@@ -499,17 +499,23 @@ function findDominantTag(tags, lossMatrix) {
 }
 
 const { selfProtectionTarget, evaluateSelfProtection } = require('./self-protection');
-const { runHardFloor } = require('./gates-engine');
+const { finalizeFinancialAuthorization, runHardFloor } = require('./gates-engine');
+const {
+  detectEconomicAction,
+  getFinancialControlRuntimeOptions,
+} = require('./financial-control-plane');
 
 function main() {
   const input = readStdinSync() || {};
   const toolName = input.tool_name || process.env.CLAUDE_TOOL_NAME || '';
   const effectiveInput = resolveEffectiveInput(input.tool_input || null);
+  const economicAction = detectEconomicAction(toolName, effectiveInput);
 
-  // Budget gates are intentionally NOT wired here. A stale budget-state.json
-  // once blocked every Bash/Edit/Write call, including the repair path
-  // (self-lockout, 2026-07-07). Spend tracking therefore stays advisory. The
-  // targeted hard floors below retain scoped approval and break-glass recovery.
+  // Legacy model-token spend tracking remains advisory because a stale
+  // budget-state.json once blocked every Bash/Edit/Write call, including the
+  // repair path (self-lockout, 2026-07-07). Provider purchases and other
+  // economic mutations are separate: the financial-control hard floor below
+  // is fail-closed and cannot be bypassed by this advisory accounting path.
   try {
     const pkgRoot = path.resolve(__dirname, '..');
     const { addSpend } = require(path.join(pkgRoot, 'scripts', 'budget-guard'));
@@ -531,7 +537,18 @@ function main() {
   // The plugin hook and `thumbgate gate-check` share one hard-floor evaluator.
   // Environment bypasses may skip advisory gates, but not secrets, critical
   // security findings, or changes that disable the guardrail itself.
-  const hardFloorOutput = runHardFloor({ tool_name: toolName, tool_input: effectiveInput });
+  let hardFloorOutput;
+  try {
+    hardFloorOutput = runHardFloor(
+      { tool_name: toolName, tool_input: effectiveInput },
+      getFinancialControlRuntimeOptions()
+    );
+  } catch (error) {
+    if (economicAction) {
+      return block(`financial-control unavailable; economic action denied: ${error.message}`);
+    }
+    failOpen(error);
+  }
   if (hardFloorOutput) {
     try {
       const parsed = JSON.parse(hardFloorOutput);
@@ -540,6 +557,9 @@ function main() {
         return block(hook.permissionDecisionReason || 'ThumbGate hard floor denied this action.');
       }
     } catch (err) {
+      if (economicAction) {
+        return block(`financial-control returned an invalid decision; economic action denied: ${err.message}`);
+      }
       failOpen(err);
     }
   }
@@ -549,6 +569,24 @@ function main() {
 
   const blockReason = maybeBlockOnRisk(lessons);
   if (blockReason) return block(blockReason);
+
+  // This is the final allow boundary for the standalone hook. A valid purchase
+  // reservation is consumed only now, after learned-risk checks have passed.
+  let financialAuthorization;
+  try {
+    financialAuthorization = finalizeFinancialAuthorization({
+      tool_name: toolName,
+      tool_input: effectiveInput,
+    });
+  } catch (error) {
+    if (economicAction) {
+      return block(`financial-control authorization failed; economic action denied: ${error.message}`);
+    }
+    failOpen(error);
+  }
+  if (financialAuthorization?.decision === 'deny') {
+    return block(financialAuthorization.message || 'ThumbGate financial control denied this action.');
+  }
 
   const autogate = maybeRegisterPrCommitGate(toolName, effectiveInput);
 
