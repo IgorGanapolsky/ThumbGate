@@ -59,6 +59,7 @@ const {
   evaluateGates,
   evaluateGatesAsync,
   evaluateSecretGuard,
+  isReadOnlyObservabilityTool,
   satisfyCondition,
   loadStats: loadGateStats,
   setTaskScope,
@@ -826,8 +827,15 @@ async function callTool(name, args = {}) {
     }
   }
 
-  if (name !== 'workflow_sentinel' && process.env.THUMBGATE_DISABLE_MCP_FIREWALL !== '1') {
-    const firewallResult = (await evaluateGatesAsync(name, args)) || evaluateSecretGuard({ tool_name: name, tool_input: args });
+  const firewallPlan = getMcpFirewallEvaluationPlan(name);
+  if (firewallPlan.secretGuard) {
+    let firewallResult = null;
+    if (firewallPlan.semantic) {
+      firewallResult = await evaluateGatesAsync(name, args);
+    }
+    if (!firewallResult) {
+      firewallResult = evaluateSecretGuard({ tool_name: name, tool_input: args });
+    }
     if (firewallResult && firewallResult.decision === 'deny') {
       const err = new Error(`Action blocked by Semantic Firewall: ${firewallResult.message}`);
       err.errorCategory = 'permission';
@@ -885,6 +893,17 @@ async function callTool(name, args = {}) {
     });
   } catch { /* audit write failure must never break tool response */ }
   return result;
+}
+
+function getMcpFirewallEvaluationPlan(
+  name,
+  disabled = process.env.THUMBGATE_DISABLE_MCP_FIREWALL === '1',
+) {
+  const enabled = name !== 'workflow_sentinel' && !disabled;
+  return {
+    semantic: enabled && !isReadOnlyObservabilityTool(name),
+    secretGuard: enabled,
+  };
 }
 
 function validateMcpToolOutput(toolDef, result) {
@@ -1909,6 +1928,7 @@ module.exports = {
     listAvailableTools,
     unavailablePrivateMcpFeature,
     callToolInner,
+    getMcpFirewallEvaluationPlan,
     validateMcpToolOutput,
   },
 };
