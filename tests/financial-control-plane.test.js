@@ -106,3 +106,27 @@ test('status reports ERP modules and zero-spend envelope', () => {
   assert.equal(status.envelope.dailyCapUsd, 0);
   assert.equal(status.envelope.monthlyCapUsd, 0);
 });
+
+test('ERP ignores non-execution MCP tools that only mention checkout in narrative', () => {
+  const c = fcp.classifyFinancialIntent('require_evidence_for_claim', {
+    claim: 'ready for handoff',
+    goalContract: {
+      goal: 'Ship the checkout fix',
+      mustNotChange: ['Stripe product ids', 'public package exports'],
+    },
+  });
+  assert.equal(c.financial, false);
+  assert.equal(c.skipped, 'non_spend_surface');
+  const r = fcp.evaluateFinancialControl('require_evidence_for_claim', {
+    claim: 'ready for handoff',
+    goalContract: { goal: 'Ship the checkout fix' },
+  });
+  assert.equal(r.decision, 'allow');
+});
+
+test('ERP allows Bash that only mentions checkout as English text', () => {
+  const r = fcp.evaluateFinancialControl('Bash', {
+    command: 'echo "Ship the checkout fix"',
+  });
+  assert.equal(r.decision, 'allow');
+});

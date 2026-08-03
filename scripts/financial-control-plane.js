@@ -154,13 +154,65 @@ function monthKey(date = new Date()) {
 }
 
 /**
+ * Only execution surfaces can spend money. MCP analysis tools that *mention*
+ * "checkout" in a goal/query (require_evidence_for_claim, distribute_context, …)
+ * must not trip the ERP plane — that false-positive broke CI on #3176.
+ */
+function isSpendSurfaceTool(toolName) {
+  const name = String(toolName || '');
+  if (!name) return false;
+  // Explicit purchase/billing tool names always count.
+  if (/(?:^|[_-])(?:purchase|checkout|billing|payment|subscribe|buy[_-]?credits?)(?:[_-]|$)/i.test(name)) {
+    return true;
+  }
+  // Shell / browser / fetch / computer-use can open checkout URLs or run paid CLIs.
+  if (/^(?:Bash|Shell|Terminal|WebFetch|WebSearch|BashTool|shell_command|run_terminal_command)$/i.test(name)) {
+    return true;
+  }
+  if (/(?:browser|playwright|computer[_-]?use|chrome|puppeteer|web_fetch|webfetch|open_url|navigate)/i.test(name)) {
+    return true;
+  }
+  if (/^mcp__/i.test(name) && /(?:browser|playwright|chrome|computer|shell|bash|fetch|http)/i.test(name)) {
+    return true;
+  }
+  return false;
+}
+
+function spendSurfaceText(toolName, toolInput) {
+  // Prefer executable fields; avoid scanning entire goalContract trees.
+  const input = toolInput && typeof toolInput === 'object' ? toolInput : {};
+  const parts = [
+    toolName,
+    input.command,
+    input.url,
+    input.uri,
+    input.href,
+    input.path,
+    input.file_path,
+    Array.isArray(input.args) ? input.args.join(' ') : input.args,
+  ];
+  return parts.filter((p) => p != null && String(p).length).map(String).join(' ');
+}
+
+/**
  * Classify a tool call for the financial control plane.
  * @returns {{ financial: boolean, class: string|null, vendor: string|null, freeAllowed: boolean, risk: string }}
  */
 function classifyFinancialIntent(toolName, toolInput, policy = loadPolicy()) {
   const name = String(toolName || '');
-  const text = flatten(toolInput);
-  const combined = `${name} ${text}`.toLowerCase();
+  // Non-execution tools: only classify if the tool *name* is itself a purchase tool.
+  if (!isSpendSurfaceTool(name)) {
+    return {
+      financial: false,
+      class: null,
+      vendor: null,
+      freeAllowed: true,
+      risk: 'none',
+      skipped: 'non_spend_surface',
+    };
+  }
+  const text = spendSurfaceText(name, toolInput);
+  const combined = text.toLowerCase();
 
   // Explicit free allowlist (read-only / free-tier search)
   for (const allow of policy.freeAllowlist || []) {
@@ -200,14 +252,18 @@ function classifyFinancialIntent(toolName, toolInput, policy = loadPolicy()) {
 
 function hasPaidMarkers(combined) {
   return (
-    /\b(?:buy|purchase|upgrade|subscribe|checkout|payment\s*method|enter\s+card|billing\s+portal|credit\s*pack|buy\s+credits?)\b/i.test(combined)
-    || /(?:checkout\.stripe\.com|buy\.stripe\.com|\/plans?\/|\/upgrade|\/billing)/i.test(combined)
+    /\b(?:buy\s+credits?|purchase\s+credits?|credit\s*pack)\b/i.test(combined)
+    || /\b(?:upgrade\s+(?:plan|subscription|tier|apollo|pro|to\s+pro)|subscribe\s+(?:to\s+)?(?:pro|paid|plan))\b/i.test(combined)
+    || /\b(?:add\s+payment\s+method|enter\s+card|attach\s+payment|billing\s+portal)\b/i.test(combined)
+    || /(?:create|submit|open|complete|start)\s+checkout|checkout\s+(?:session|page|url|link|flow)/i.test(combined)
+    || /(?:checkout\.stripe\.com|buy\.stripe\.com|app\.apollo\.io[^\s]*(?:plans|upgrade|billing))/i.test(combined)
+    || /(?:\/plans?(?:\/|#)|\/upgrade(?:\/|\?|$)|\/billing(?:\/|\?|$))/i.test(combined)
     || /\b(?:apollo\s*pro|thumbgate\s*pro)\b/i.test(combined)
   );
 }
 
 function detectPaidClass(combined) {
-  if (/(?:checkout\.stripe\.com|buy\.stripe\.com|\/checkout\b|create\s+checkout)/i.test(combined)) {
+  if (/(?:checkout\.stripe\.com|buy\.stripe\.com|(?:create|submit|open|complete|start)\s+checkout|checkout\s+(?:session|page|url|link))/i.test(combined)) {
     return 'checkout';
   }
   if (/(?:add\s+payment\s+method|enter\s+card|attach\s+payment|payment\s*method)/i.test(combined)) {
@@ -216,13 +272,13 @@ function detectPaidClass(combined) {
   if (/(?:buy\s+credits?|credit\s*pack|purchase\s+credits?)/i.test(combined)) {
     return 'credit_purchase';
   }
-  if (/(?:billing\s+portal|\/billing\b|invoice\s+pay|pay\s+invoice)/i.test(combined)) {
+  if (/(?:billing\s+portal|invoice\s+pay|pay\s+invoice|\/billing(?:\/|\?|$))/i.test(combined)) {
     return 'billing_portal';
   }
-  if (/(?:activate\s+subscription|cancel\s+subscription|change\s+subscription|subscribe\s+paid)/i.test(combined)) {
+  if (/(?:activate\s+subscription|cancel\s+subscription|change\s+subscription|subscribe\s+(?:to\s+)?(?:pro|paid|plan))/i.test(combined)) {
     return 'subscription_change';
   }
-  if (/(?:upgrade\s+(?:plan|subscription|tier|apollo|pro)|apollo\s*pro|thumbgate\s*pro|\/plans?(?:\/|#)|app\.apollo\.io[^\s]*(?:plans|upgrade))/i.test(combined)) {
+  if (/(?:upgrade\s+(?:plan|subscription|tier|apollo|pro|to\s+pro)|apollo\s*pro|thumbgate\s*pro|\/plans?(?:\/|#)|app\.apollo\.io[^\s]*(?:plans|upgrade))/i.test(combined)) {
     return 'saas_upgrade';
   }
   if (hasPaidMarkers(combined)) return 'saas_upgrade';
@@ -619,6 +675,8 @@ module.exports = {
   DENY_MESSAGE,
   DEFAULT_POLICY,
   classifyFinancialIntent,
+  isSpendSurfaceTool,
+  spendSurfaceText,
   evaluateFinancialControl,
   getFinancialStatus,
   issueAuthorization,
