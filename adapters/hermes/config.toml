@@ -2,12 +2,12 @@
 # Copy into ~/.codex/config.toml or merge. See HERMES.md for skill-synthesis + channel-posting safety.
 [mcp_servers.thumbgate]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.34.0", "thumbgate", "serve"]
+args = ["--yes", "--package", "thumbgate@1.34.1", "thumbgate", "serve"]
 
 # Hard PreToolUse hook for Codex - includes Hermes safety gates
 [hooks.pre_tool_use]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.34.0", "thumbgate", "gate-check"]
+args = ["--yes", "--package", "thumbgate@1.34.1", "thumbgate", "gate-check"]
 
 # For Hermes Agent: enable templates like block-unauthorized-multi-channel-posts, prevent-infinite-skill-synthesis-loops, validate-synthesized-skills-against-rules.
 # See config/gate-templates.json for "Nous Research Hermes Agent Governance" category.
