@@ -1,16 +1,14 @@
 # Changelog
 
-## Unreleased
+## 1.34.0
 
 ### Minor Changes
 
-- Add a packaged, fail-closed financial control plane for economic agent actions.
-  The public runtime now enforces explicit budgets, independent human approvals,
-  exact-scope reservations, receipt-backed settlement, and tamper-evident ledger
-  reconciliation before a purchase, subscription, upgrade, transfer, or payment
-  can proceed. The packaged bundle grows from 419 to 421 files because
-  `scripts/financial-control-plane.js` and its crash-recoverable shared ledger
-  lock are both required at the enforcement boundary.
+- ceb138b: Add an append-only purchase-control ledger and fail closed on economic actions
+  without an independently approved, single-use budget reservation. Explicit zero
+  budgets now block instead of being treated as unset. MCP, hook, and workflow
+  entry points support an operator-owned HTTPS compare-and-set anchor so valid
+  ledger history cannot be rolled back through local filesystem restoration.
 
 ## 1.33.1
 
