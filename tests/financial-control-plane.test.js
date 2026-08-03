@@ -479,6 +479,33 @@ test('provider names in credential paths and read-only billing commands are not 
     element: 'Receipt',
     ref: 'e99',
   }), false);
+  // URL-only spend surfaces (Apollo $588 class): open/curl/WebFetch must hard-block.
+  assert.equal(detectEconomicAction('Bash', {
+    command: 'open https://app.apollo.io/#/settings/plans/upgrade',
+  }), true);
+  assert.equal(detectEconomicAction('Bash', {
+    command: 'open https://app.apollo.io/settings/plans/upgrade',
+  }), true);
+  assert.equal(detectEconomicAction('Bash', {
+    command: 'curl -X POST https://checkout.stripe.com/c/pay/cs_test_xxx',
+  }), true);
+  assert.equal(detectEconomicAction('WebFetch', {
+    url: 'https://checkout.stripe.com/c/pay/cs_test',
+  }), true);
+  assert.equal(detectEconomicAction('WebFetch', {
+    url: 'https://app.apollo.io/settings/plans/upgrade',
+  }), true);
+  assert.equal(detectEconomicAction('Bash', {
+    command: 'open https://buy.stripe.com/test_xxx',
+  }), true);
+  // Free-tier Apollo search must stay non-economic.
+  assert.equal(detectEconomicAction('Bash', {
+    command: 'apollo people search --q founder',
+  }), false);
+  // Docs / marketing pages that are not provider checkout hosts stay non-economic.
+  assert.equal(detectEconomicAction('WebFetch', {
+    url: 'https://docs.github.com/en/billing',
+  }), false);
 });
 
 test('signed human approval is bound to the immutable purchase request digest', () => {
