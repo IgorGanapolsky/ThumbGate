@@ -4,6 +4,13 @@
 const path = require('node:path');
 
 const DEFAULT_BASE_URL = 'https://thumbgate-production.up.railway.app';
+// Public buyer origin plus Railway hostname. Deploy workflows may probe either
+// (vars.THUMBGATE_PUBLIC_APP_ORIGIN defaults to thumbgate.ai in production CI).
+const DEFAULT_PRODUCTION_PROOF_HOSTS = Object.freeze([
+  'thumbgate-production.up.railway.app',
+  'thumbgate.ai',
+  'www.thumbgate.ai',
+]);
 const DEFAULT_TIMEOUT_MS = 12_000;
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 2_000;
@@ -22,6 +29,18 @@ function normalizeBaseUrl(value) {
   }
 }
 
+function buildProductionHostAllowlist(allowedHosts = [], env = process.env) {
+  const configuredHosts = String(env.THUMBGATE_PROD_ALLOWED_HOSTS || '')
+    .split(',')
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+  return new Set([
+    ...DEFAULT_PRODUCTION_PROOF_HOSTS,
+    ...configuredHosts,
+    ...allowedHosts.map((host) => String(host || '').trim().toLowerCase()).filter(Boolean),
+  ]);
+}
+
 function validateBaseUrl(value, allowedHosts = []) {
   const raw = String(value || DEFAULT_BASE_URL).trim();
   let parsed;
@@ -32,15 +51,7 @@ function validateBaseUrl(value, allowedHosts = []) {
   }
 
   const loopbackHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
-  const configuredHosts = String(process.env.THUMBGATE_PROD_ALLOWED_HOSTS || '')
-    .split(',')
-    .map((host) => host.trim().toLowerCase())
-    .filter(Boolean);
-  const allowlist = new Set([
-    new URL(DEFAULT_BASE_URL).host.toLowerCase(),
-    ...configuredHosts,
-    ...allowedHosts.map((host) => String(host || '').trim().toLowerCase()).filter(Boolean),
-  ]);
+  const allowlist = buildProductionHostAllowlist(allowedHosts);
   const hostname = parsed.hostname.toLowerCase();
   const isLoopback = loopbackHosts.has(hostname);
   const safeBaseUrl = parsed.origin;
@@ -428,10 +439,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename
 
 module.exports = {
   DEFAULT_BASE_URL,
+  DEFAULT_PRODUCTION_PROOF_HOSTS,
   DEFAULT_TIMEOUT_MS,
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_RETRY_DELAY_MS,
   normalizeBaseUrl,
+  buildProductionHostAllowlist,
   validateBaseUrl,
   parseArgs,
   buildChecks,
