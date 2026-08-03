@@ -19,12 +19,31 @@ function response(status, body) {
 }
 
 function passingBody(url) {
+  const parsed = new URL(url);
+  const query = parsed.searchParams.get('q') || '';
   if (url.endsWith('/health')) {
     return { status: 'ok', degraded: false, version: '1.32.0', buildSha: 'abc123' };
   }
   if (url.includes('/v1/lessons/search')) {
+    if (!query) {
+      return {
+        query: '',
+        backend: 'jsonl-jaccard',
+        results: [{
+          id: 'lesson-1',
+          title: 'Database rollback verification',
+          evidenceScore: 0,
+          lesson: { summary: 'Verify the database rollback before release.' },
+          systemResponse: {
+            sourceFeedback: { context: 'Database rollback verification failed.' },
+          },
+        }],
+        returned: 1,
+        totalLessons: 4,
+      };
+    }
     return {
-      query: 'thumbgate',
+      query,
       backend: 'jsonl-jaccard',
       results: [{ id: 'lesson-1', evidenceScore: 0.8 }],
       returned: 1,
@@ -33,7 +52,7 @@ function passingBody(url) {
   }
   if (url.includes('/v1/search')) {
     return {
-      query: 'thumbgate',
+      query,
       source: 'all',
       engine: 'hybrid-parent-child',
       returned: 1,
@@ -93,6 +112,11 @@ test('parseArgs captures release identity and retry controls', () => {
   assert.equal(args.retryDelayMs, 250);
 });
 
+test('parseArgs defaults to corpus-derived production query discovery', () => {
+  const args = parseArgs([]);
+  assert.equal(args.query, '');
+});
+
 test('proof passes only when exact build, search, dashboard, and export contracts pass', async () => {
   const calls = [];
   const report = await runAuthenticatedProductionProof({
@@ -108,13 +132,16 @@ test('proof passes only when exact build, search, dashboard, and export contract
   });
 
   assert.equal(report.verdict, 'pass');
-  assert.equal(report.checks.length, 6);
+  assert.equal(report.checks.length, 7);
   assert.ok(report.checks.every((check) => check.ok));
   assert.equal(calls[0].options.headers.authorization, undefined, 'health stays public');
   assert.equal(calls[1].options.headers.authorization, undefined, 'auth boundary stays anonymous');
   assert.equal(calls[2].options.headers.authorization, 'Bearer secret-test-key');
-  assert.equal(calls[5].options.method, 'POST');
-  assert.deepEqual(JSON.parse(calls[5].options.body), { includePairs: true });
+  assert.match(calls[3].url, /\/v1\/lessons\/search\?limit=1$/);
+  assert.match(calls[4].url, /q=verification/);
+  assert.equal(calls[6].options.method, 'POST');
+  assert.deepEqual(JSON.parse(calls[6].options.body), { includePairs: true });
+  assert.doesNotMatch(JSON.stringify(report), /Database rollback verification failed/);
 });
 
 test('proof fails closed when API key is missing', async () => {
@@ -143,7 +170,9 @@ test('401 fails without leaking the credential into report output', async () => 
   });
 
   assert.equal(report.verdict, 'fail');
-  assert.ok(report.checks.slice(2).every((check) => check.status === 401));
+  const attemptedAuthenticatedChecks = report.checks.filter((check) => check.attempts > 0).slice(2);
+  assert.ok(attemptedAuthenticatedChecks.every((check) => check.status === 401));
+  assert.equal(report.checks.find((check) => check.name === 'search').error, 'probe_query_unavailable');
   assert.doesNotMatch(JSON.stringify(report), new RegExp(secret));
   assert.doesNotMatch(renderHuman(report), new RegExp(secret));
 });

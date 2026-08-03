@@ -1634,6 +1634,78 @@ function resolveBillingSummaryOptions(parsed) {
   });
 }
 
+const DEFAULT_HOSTED_DASHBOARD_CACHE_TTL_MS = 60_000;
+const MAX_HOSTED_DASHBOARD_CACHE_ENTRIES = 16;
+const liveDashboardCache = new Map();
+
+function resolveLiveDashboardCacheTtlMs(env = process.env) {
+  if (Object.prototype.hasOwnProperty.call(env, 'THUMBGATE_DASHBOARD_CACHE_TTL_MS')) {
+    const configured = Number(env.THUMBGATE_DASHBOARD_CACHE_TTL_MS);
+    return Number.isFinite(configured) && configured >= 0
+      ? Math.min(Math.floor(configured), 5 * 60_000)
+      : 0;
+  }
+  return env.RAILWAY_ENVIRONMENT_ID || env.RAILWAY_PROJECT_ID
+    ? DEFAULT_HOSTED_DASHBOARD_CACHE_TTL_MS
+    : 0;
+}
+
+function buildLiveDashboardCacheKey(parsed, feedbackDir, summaryOptions) {
+  return JSON.stringify({
+    feedbackDir: path.resolve(feedbackDir),
+    window: summaryOptions.window,
+    timeZone: summaryOptions.timeZone,
+    startLocalDate: summaryOptions.startLocalDate,
+    endLocalDate: summaryOptions.endLocalDate,
+    explicitNow: parsed.searchParams.has('now') ? summaryOptions.now : null,
+  });
+}
+
+function pruneLiveDashboardCache(cache, now) {
+  for (const [key, entry] of cache.entries()) {
+    if (!entry.pending && entry.expiresAt <= now) cache.delete(key);
+  }
+  while (cache.size >= MAX_HOSTED_DASHBOARD_CACHE_ENTRIES) {
+    const settledKey = [...cache.entries()].find(([, entry]) => !entry.pending)?.[0];
+    cache.delete(settledKey || cache.keys().next().value);
+  }
+}
+
+async function loadCachedLiveDashboardData(cacheKey, loader, options = {}) {
+  const cache = options.cache || liveDashboardCache;
+  const nowFn = options.nowFn || Date.now;
+  const ttlMs = options.ttlMs === undefined
+    ? resolveLiveDashboardCacheTtlMs()
+    : Math.max(0, Number(options.ttlMs) || 0);
+  if (ttlMs === 0) return loader();
+
+  const now = nowFn();
+  const cached = cache.get(cacheKey);
+  if (cached && (cached.pending || cached.expiresAt > now)) return cached.promise;
+  if (cached) cache.delete(cacheKey);
+  pruneLiveDashboardCache(cache, now);
+
+  // Defer the loader by one microtask so the in-flight promise is registered
+  // before any expensive synchronous dashboard work begins. Retries then
+  // coalesce instead of starting another full filesystem scan.
+  const entry = {
+    pending: true,
+    expiresAt: now + ttlMs,
+    promise: null,
+  };
+  entry.promise = Promise.resolve().then(loader);
+  cache.set(cacheKey, entry);
+  try {
+    const result = await entry.promise;
+    entry.pending = false;
+    entry.expiresAt = nowFn() + ttlMs;
+    return result;
+  } catch (error) {
+    if (cache.get(cacheKey) === entry) cache.delete(cacheKey);
+    throw error;
+  }
+}
+
 const BILLING_SUMMARY_BATCH_WINDOWS = Object.freeze(['today', '30d', 'lifetime']);
 const WORKFLOW_INTAKE_QUEUE_DEFAULT_LIMIT = 50;
 const WORKFLOW_INTAKE_QUEUE_MAX_LIMIT = 100;
@@ -1851,14 +1923,17 @@ function resolveBillingSummaryOptionsOrRespondProblem(res, parsed, invalidTitle)
 
 async function buildLiveDashboardData(parsed, feedbackDir) {
   const summaryOptions = resolveBillingSummaryOptions(parsed);
-  const billingSummary = await getBillingSummaryLive(summaryOptions);
-  const data = generateDashboard(feedbackDir, {
-    analyticsWindow: summaryOptions,
-    billingSummary,
-    billingSource: 'live',
-    authContext: { tier: 'pro' },
+  const cacheKey = buildLiveDashboardCacheKey(parsed, feedbackDir, summaryOptions);
+  return loadCachedLiveDashboardData(cacheKey, async () => {
+    const billingSummary = await getBillingSummaryLive(summaryOptions);
+    const data = generateDashboard(feedbackDir, {
+      analyticsWindow: summaryOptions,
+      billingSummary,
+      billingSource: 'live',
+      authContext: { tier: 'pro' },
+    });
+    return { summaryOptions, data };
   });
-  return { summaryOptions, data };
 }
 
 async function loadLiveDashboardDataOrRespondProblem(res, parsed, feedbackDir, invalidTitle) {
@@ -10819,6 +10894,9 @@ module.exports = {
     answerEnterpriseDataChat,
     answerEnterpriseDialogflowChat,
     buildLossAnalyticsResponse,
+    resolveLiveDashboardCacheTtlMs,
+    buildLiveDashboardCacheKey,
+    loadCachedLiveDashboardData,
     buildIntakeAlertRateLimitKey,
     sanitizeHtmlUnsafeJsonValue,
     buildHostedTenantIdentity,

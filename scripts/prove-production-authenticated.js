@@ -74,7 +74,7 @@ function parseArgs(argv = []) {
     baseUrl: process.env.THUMBGATE_PROD_URL || DEFAULT_BASE_URL,
     expectedSha: process.env.GITHUB_SHA || '',
     expectedVersion: process.env.THUMBGATE_EXPECTED_VERSION || '',
-    query: 'thumbgate',
+    query: '',
     timeoutMs: DEFAULT_TIMEOUT_MS,
     maxAttempts: DEFAULT_MAX_ATTEMPTS,
     retryDelayMs: DEFAULT_RETRY_DELAY_MS,
@@ -95,7 +95,7 @@ function parseArgs(argv = []) {
   options.baseUrl = normalizeBaseUrl(options.baseUrl);
   options.expectedSha = String(options.expectedSha || '').trim();
   options.expectedVersion = String(options.expectedVersion || '').trim();
-  options.query = String(options.query || 'thumbgate').trim() || 'thumbgate';
+  options.query = String(options.query || '').trim();
   return options;
 }
 
@@ -105,6 +105,77 @@ function delay(ms) {
 
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+const PROBE_QUERY_STOPWORDS = new Set([
+  'about', 'after', 'again', 'agent', 'agents', 'before', 'being', 'could',
+  'error', 'failure', 'feedback', 'from', 'have', 'into', 'lesson', 'mistake',
+  'never', 'should', 'their', 'there', 'these', 'thing', 'thumbgate', 'using',
+  'what', 'when', 'where', 'which', 'while', 'with', 'would',
+]);
+
+function selectSafeProbeToken(value) {
+  const tokens = String(value || '').toLowerCase().match(/[a-z]{4,24}/g) || [];
+  return [...new Set(tokens)]
+    .filter((token) => !PROBE_QUERY_STOPWORDS.has(token))
+    .sort((left, right) => right.length - left.length || left.localeCompare(right))[0] || '';
+}
+
+function deriveProbeQuery(lessonResult) {
+  if (!isObject(lessonResult)) return null;
+  const sourceFeedback = isObject(lessonResult.systemResponse)
+    && isObject(lessonResult.systemResponse.sourceFeedback)
+    ? lessonResult.systemResponse.sourceFeedback
+    : null;
+  const lesson = isObject(lessonResult.lesson) ? lessonResult.lesson : {};
+  const candidates = [
+    ['source_feedback', sourceFeedback && sourceFeedback.context],
+    ['title', lessonResult.title],
+    ['lesson_summary', lesson.summary],
+    ['lesson_failure', lesson.whatWentWrong],
+    ['lesson_content', lesson.content],
+  ];
+  for (const [source, text] of candidates) {
+    const query = selectSafeProbeToken(text);
+    if (query) return { query, source };
+  }
+  return null;
+}
+
+function buildLessonInventoryCheck() {
+  return {
+    name: 'lesson_inventory',
+    method: 'GET',
+    path: '/v1/lessons/search?limit=1',
+    authenticated: true,
+    validate(body) {
+      const count = Array.isArray(body.results) ? body.results.length : -1;
+      const first = count > 0 ? body.results[0] : null;
+      const candidate = deriveProbeQuery(first);
+      const validResult = isObject(first)
+        && String(first.id || '').trim()
+        && (String(first.title || '').trim() || isObject(first.lesson));
+      return {
+        valid: body.query === ''
+          && typeof body.backend === 'string'
+          && body.backend.length > 0
+          && count === 1
+          && body.returned === count
+          && Number.isFinite(body.totalLessons)
+          && body.totalLessons >= count
+          && Boolean(validResult)
+          && Boolean(candidate),
+        metrics: {
+          results: Math.max(0, count),
+          returned: Number.isFinite(body.returned) ? body.returned : null,
+          totalLessons: Number.isFinite(body.totalLessons) ? body.totalLessons : null,
+          querySource: candidate ? candidate.source : null,
+          queryLength: candidate ? candidate.query.length : 0,
+        },
+        internal: candidate,
+      };
+    },
+  };
 }
 
 function buildChecks({
@@ -314,6 +385,13 @@ async function probeCheck(check, options) {
         schemaValid: Boolean(validation.valid),
         ...validation.metrics,
       };
+      if (validation.internal) {
+        Object.defineProperty(lastResult, '_internal', {
+          value: validation.internal,
+          configurable: true,
+          enumerable: false,
+        });
+      }
       const retryableStatus = response.status >= 500 || [408, 425, 429].includes(response.status);
       const retryableValidationLag = response.ok && !validation.valid;
       if (lastResult.ok || (!retryableStatus && !retryableValidationLag)) return lastResult;
@@ -386,10 +464,51 @@ async function runAuthenticatedProductionProof(options = {}) {
     };
   }
 
+  const requestedQuery = String(options.query || '').trim();
+  const checkMap = new Map(buildChecks({
+    ...options,
+    query: requestedQuery || 'production-proof-boundary',
+  }).map((check) => [check.name, check]));
   const checks = [];
-  for (const check of buildChecks(options)) {
-    checks.push(await probeCheck(check, normalized));
+
+  // Prove the cheap identity and authorization boundaries first. Dashboard
+  // comes before hybrid search because model initialization can put transient
+  // CPU and filesystem pressure on small hosted containers.
+  for (const name of ['health_identity', 'auth_boundary', 'dashboard_data']) {
+    checks.push(await probeCheck(checkMap.get(name), normalized));
   }
+
+  let effectiveQuery = requestedQuery;
+  if (!effectiveQuery) {
+    const inventory = await probeCheck(buildLessonInventoryCheck(), normalized);
+    effectiveQuery = String(inventory && inventory._internal && inventory._internal.query || '').trim();
+    delete inventory._internal;
+    checks.push(inventory);
+  }
+
+  if (effectiveQuery) {
+    const retrievalChecks = new Map(buildChecks({
+      ...options,
+      query: effectiveQuery,
+    }).map((check) => [check.name, check]));
+    for (const name of ['search', 'lesson_search']) {
+      checks.push(await probeCheck(retrievalChecks.get(name), normalized));
+    }
+  } else {
+    for (const name of ['search', 'lesson_search']) {
+      checks.push({
+        name,
+        ok: false,
+        status: null,
+        attempts: 0,
+        durationMs: 0,
+        schemaValid: false,
+        error: 'probe_query_unavailable',
+      });
+    }
+  }
+
+  checks.push(await probeCheck(checkMap.get('dpo_export'), normalized));
 
   return {
     verdict: checks.every((check) => check.ok) ? 'pass' : 'fail',
@@ -434,6 +553,8 @@ module.exports = {
   normalizeBaseUrl,
   validateBaseUrl,
   parseArgs,
+  deriveProbeQuery,
+  buildLessonInventoryCheck,
   buildChecks,
   probeCheck,
   runAuthenticatedProductionProof,
