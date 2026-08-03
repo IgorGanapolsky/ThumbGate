@@ -423,9 +423,11 @@ test('purchase-control MCP tools expose request, reserve, settle, and reconcilia
   const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const previousStateDir = process.env.THUMBGATE_STATE_DIR;
   const previousProfile = process.env.THUMBGATE_MCP_PROFILE;
+  const previousFinancialLedgerKey = process.env.THUMBGATE_FINANCIAL_LEDGER_KEY;
   process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
   process.env.THUMBGATE_STATE_DIR = path.join(feedbackDir, 'state');
   process.env.THUMBGATE_MCP_PROFILE = 'essential';
+  process.env.THUMBGATE_FINANCIAL_LEDGER_KEY = 'mcp-financial-ledger-test-key';
   try {
     const createdResult = await callTool('create_purchase_requisition', {
       taskId: 'mcp-finance-test',
@@ -468,6 +470,8 @@ test('purchase-control MCP tools expose request, reserve, settle, and reconcilia
     else process.env.THUMBGATE_STATE_DIR = previousStateDir;
     if (previousProfile === undefined) delete process.env.THUMBGATE_MCP_PROFILE;
     else process.env.THUMBGATE_MCP_PROFILE = previousProfile;
+    if (previousFinancialLedgerKey === undefined) delete process.env.THUMBGATE_FINANCIAL_LEDGER_KEY;
+    else process.env.THUMBGATE_FINANCIAL_LEDGER_KEY = previousFinancialLedgerKey;
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
 });
