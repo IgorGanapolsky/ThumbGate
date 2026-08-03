@@ -124,116 +124,138 @@ function shaMatches(live = {}) {
   return candidate.length >= 7 && deployed.length >= 7 && candidate === deployed;
 }
 
-function evaluateReadiness({ repo = {}, live = {} } = {}) {
+function readinessArea(id, label, checks) {
+  return { id, label, checks };
+}
+
+function landingConversionArea(repo, production) {
+  return readinessArea('landing_conversion', 'Landing page and conversion', [
+    check('visual_loop', 'Thumb visuals and simple learning diagrams ship', repo.landingVisualLoop, 'repository', 'Ship the visual thumbs-to-gate loop.'),
+    check('buyer_routes', 'First-party buyer routes are present', repo.landingBuyerRoutes, 'repository', 'Restore diagnostic, Pro, and sprint buyer routes.'),
+    check('live_landing', 'Candidate landing page is verified live', production.landingVerified === true && shaMatches(production), 'production', 'Verify the exact candidate SHA on the live landing page.'),
+  ]);
+}
+
+function selfImprovementArea(repo, production) {
+  return readinessArea('self_improvement', 'Self-improving control loop', [
+    check('reward_reachable', 'Feedback reward scoring is invoked by capture', repo.feedbackRewardReachable, 'repository', 'Wire reward scoring into the capture path.'),
+    check('promotion_reachable', 'Reviewed failures reach promotion and pre-action retrieval', repo.feedbackPromotionReachable, 'repository', 'Connect feedback promotion to the pre-action hook.'),
+    check('specific_change', 'Specific what-to-change guidance reaches prevention rules', repo.preventionChangePromoted, 'repository', 'Promote specific corrective instructions, not vague signals.'),
+    check('live_feedback', 'Fresh production feedback closes the loop', production.feedbackLoopVerified === true, 'production', 'Capture one real reviewed outcome and prove its next-action effect.'),
+  ]);
+}
+
+function architectureHonestyArea(repo, production) {
+  return readinessArea('architecture_honesty', 'Judge, routing, and architecture honesty', [
+    check('honest_names', 'Judge, heuristic, neural, and enforcement stages are distinct', repo.architectureNamesHonest, 'repository', 'Document stage placement and prevent misleading model-level MoE claims.'),
+    check('route_trace', 'Live traces identify the provider and routed model', production.providerTraceVerified === true, 'production', 'Attach a secret-safe live route trace.'),
+  ]);
+}
+
+function queryTransformationArea(repo, retrieval) {
+  return readinessArea('query_transformation', 'Query transformation, multi-query, and HyDE', [
+    check('multi_query', 'Bounded deterministic multi-query is implemented', repo.deterministicMultiQuery, 'repository', 'Implement bounded, inspectable query variants.'),
+    check('hyde_contract', 'HyDE is explicit, bounded, and provenance-bearing', repo.hydeExplicitAndBounded, 'repository', 'Add an explicit caller-supplied HyDE contract and fallback.'),
+    check('hyde_holdout', 'HyDE or multi-query improves a provider holdout', retrieval.queryTransformationHoldoutPassed === true, 'provider-holdout', 'Measure lift on a non-fixture provider holdout.'),
+  ]);
+}
+
+function rerankingArea(repo, retrieval) {
+  return readinessArea('reranking', 'Reranking cascade', [
+    check('production_wiring', 'BM25F, local MaxSim, and pairwise fusion run in PreToolUse', repo.rerankProductionWired, 'repository', 'Wire the documented cascade into the production caller.'),
+    check('provenance', 'Heuristic and neural scores cannot masquerade as each other', repo.rerankProvenance, 'repository', 'Emit per-stage provenance and explicit fallbacks.'),
+    check('golden', 'Deterministic rerank golden floors pass', repo.rerankGoldenPassed, 'deterministic-eval', 'Fix rerank golden regressions.'),
+    check('neural_holdout', 'True neural pair/late-interaction holdout passes', retrieval.neuralRerankHoldoutPassed === true, 'provider-holdout', 'Run a pretrained pair scorer or token embedder on an external holdout.'),
+    check('llm_failures', 'LLM rerank failure modes pass live-provider tests', retrieval.llmRerankFailureModesPassed === true, 'provider-holdout', 'Test malformed, partial, injected, timed-out, and unavailable LLM reranks.'),
+  ]);
+}
+
+function evaluationArea(repo, retrieval) {
+  return readinessArea('evaluation', 'Retrieval and answer evaluation', [
+    check('offline_suite', 'Recall, precision, MRR, nDCG, and answer proxy floors pass', repo.qualitySuitePassed, 'deterministic-eval', 'Fix the unified deterministic quality suite.'),
+    check('external_cases', 'External labeled holdout has at least 100 cases', Number(retrieval.externalHoldoutCases) >= 100, 'provider-holdout', 'Label and freeze at least 100 non-fixture cases.'),
+    check('judge_calibration', 'LLM judge is calibrated against human labels', retrieval.judgeCalibrationPassed === true, 'provider-holdout', 'Measure judge agreement and calibration against human-reviewed labels.'),
+  ]);
+}
+
+function productionControlsArea(repo, production) {
+  return readinessArea('production_controls', 'Latency, cost, and observability', [
+    check('request_envelope', 'Request trace, token, cost, and retrieval envelope exists', repo.requestEnvelope, 'repository', 'Add a request envelope.'),
+    check('hard_budgets', 'Per-request and daily tier budgets fail closed', repo.hardBudgets, 'repository', 'Add hard cost and tier budgets.'),
+    check('degraded_flags', 'Stale or stub retrieval is labeled degraded', repo.degradedRetrievalFlags, 'repository', 'Expose retrieval quality tiers.'),
+    check('live_slo', 'Production p95 and cost SLOs pass under load', production.loadTestPassed === true && Number(production.p95LatencyMs) > 0, 'production', 'Run a production-like load test and attach p95/cost evidence.'),
+    check('cache_batch', 'Live cache and batching savings are measured', production.cacheAndBatchingMeasured === true, 'production', 'Measure cache hit rate and batching cost/latency lift.'),
+  ]);
+}
+
+function failureSecurityArea(repo, security) {
+  return readinessArea('failure_security', 'Failure modes, validation, ACL, and tenancy', [
+    check('structured', 'Structured answers and citations are validated', repo.structuredOutputValidation, 'repository', 'Validate output shape and citation relationships.'),
+    check('acl_order', 'Tenant/document ACL runs before retrieval and hydration', repo.tenantAclBeforeRetrieval, 'repository', 'Enforce authorization before ranking.'),
+    check('command_evasion', 'Literal command-substitution evasions are canonicalized and tested', repo.commandPositionHardening, 'repository', 'Ratchet deterministic command-position substitutions in the evasion matrix.'),
+    check('penetration_test', 'Tenant isolation has external penetration evidence', security.tenantPenTestPassed === true, 'security-review', 'Run a professional tenant-isolation penetration test.'),
+    check('incident_drill', 'Hallucination, stale-index, miss, and leak drills pass', security.failureDrillPassed === true, 'production', 'Run and retain production-like failure drills.'),
+  ]);
+}
+
+function frameworkPipelineArea(repo) {
+  return readinessArea('framework_pipeline', 'Framework decision and end-to-end RAG defense', [
+    check('decision', 'Raw versus LangChain/LangGraph/LlamaIndex tradeoffs are defended', repo.rawFrameworkDecisionDefended, 'repository', 'Document the complete pipeline and framework decision.'),
+    check('ratchet', 'The evidence scorecard runs in the main test chain', repo.scorecardInMainTest, 'repository', 'Wire this scorecard into the test chain.'),
+  ]);
+}
+
+function commercialValidationArea(commercial) {
+  return readinessArea('commercial_validation', 'Value, willingness to pay, and captured money', [
+    check('buyer_conversations', 'At least 10 target-buyer value conversations are evidenced', Number(commercial.buyerConversations) >= 10, 'commercial', 'Complete and retain 10 target-buyer value conversations.'),
+    check('payment_asks', 'At least 3 exact-price payment asks are evidenced', Number(commercial.paymentAsks) >= 3, 'commercial', 'Make three exact-price payment asks to qualified buyers.'),
+    check('external_payment', 'At least one non-owner external payment is reconciled', Number(commercial.externalPayments) >= 1, 'provider', 'Capture and reconcile one real external payment.'),
+    check('provider_truth', 'Provider catalog and product attribution are verified', commercial.providerRevenueVerified === true, 'provider', 'Attach exact provider catalog and product-attributed revenue evidence.'),
+  ]);
+}
+
+function gradeForScore(score) {
+  if (score === 10) return 'A+';
+  if (score >= 9) return 'A';
+  if (score >= 8) return 'B';
+  if (score >= 7) return 'C';
+  if (score >= 6) return 'D';
+  return 'F';
+}
+
+function statusForArea(score, passed) {
+  if (score === 10) return 'verified';
+  if (passed === 0) return 'blocked';
+  return 'partial';
+}
+
+function buildReadinessAreas(repo, live) {
   const production = live.production || {};
   const retrieval = live.retrieval || {};
   const security = live.security || {};
   const commercial = live.commercial || {};
-
-  const areas = [
-    {
-      id: 'landing_conversion',
-      label: 'Landing page and conversion',
-      checks: [
-        check('visual_loop', 'Thumb visuals and simple learning diagrams ship', repo.landingVisualLoop, 'repository', 'Ship the visual thumbs-to-gate loop.'),
-        check('buyer_routes', 'First-party buyer routes are present', repo.landingBuyerRoutes, 'repository', 'Restore diagnostic, Pro, and sprint buyer routes.'),
-        check('live_landing', 'Candidate landing page is verified live', production.landingVerified === true && shaMatches(production), 'production', 'Verify the exact candidate SHA on the live landing page.'),
-      ],
-    },
-    {
-      id: 'self_improvement',
-      label: 'Self-improving control loop',
-      checks: [
-        check('reward_reachable', 'Feedback reward scoring is invoked by capture', repo.feedbackRewardReachable, 'repository', 'Wire reward scoring into the capture path.'),
-        check('promotion_reachable', 'Reviewed failures reach promotion and pre-action retrieval', repo.feedbackPromotionReachable, 'repository', 'Connect feedback promotion to the pre-action hook.'),
-        check('specific_change', 'Specific what-to-change guidance reaches prevention rules', repo.preventionChangePromoted, 'repository', 'Promote specific corrective instructions, not vague signals.'),
-        check('live_feedback', 'Fresh production feedback closes the loop', production.feedbackLoopVerified === true, 'production', 'Capture one real reviewed outcome and prove its next-action effect.'),
-      ],
-    },
-    {
-      id: 'architecture_honesty',
-      label: 'Judge, routing, and architecture honesty',
-      checks: [
-        check('honest_names', 'Judge, heuristic, neural, and enforcement stages are distinct', repo.architectureNamesHonest, 'repository', 'Document stage placement and prevent misleading model-level MoE claims.'),
-        check('route_trace', 'Live traces identify the provider and routed model', production.providerTraceVerified === true, 'production', 'Attach a secret-safe live route trace.'),
-      ],
-    },
-    {
-      id: 'query_transformation',
-      label: 'Query transformation, multi-query, and HyDE',
-      checks: [
-        check('multi_query', 'Bounded deterministic multi-query is implemented', repo.deterministicMultiQuery, 'repository', 'Implement bounded, inspectable query variants.'),
-        check('hyde_contract', 'HyDE is explicit, bounded, and provenance-bearing', repo.hydeExplicitAndBounded, 'repository', 'Add an explicit caller-supplied HyDE contract and fallback.'),
-        check('hyde_holdout', 'HyDE or multi-query improves a provider holdout', retrieval.queryTransformationHoldoutPassed === true, 'provider-holdout', 'Measure lift on a non-fixture provider holdout.'),
-      ],
-    },
-    {
-      id: 'reranking',
-      label: 'Reranking cascade',
-      checks: [
-        check('production_wiring', 'BM25F, local MaxSim, and pairwise fusion run in PreToolUse', repo.rerankProductionWired, 'repository', 'Wire the documented cascade into the production caller.'),
-        check('provenance', 'Heuristic and neural scores cannot masquerade as each other', repo.rerankProvenance, 'repository', 'Emit per-stage provenance and explicit fallbacks.'),
-        check('golden', 'Deterministic rerank golden floors pass', repo.rerankGoldenPassed, 'deterministic-eval', 'Fix rerank golden regressions.'),
-        check('neural_holdout', 'True neural pair/late-interaction holdout passes', retrieval.neuralRerankHoldoutPassed === true, 'provider-holdout', 'Run a pretrained pair scorer or token embedder on an external holdout.'),
-        check('llm_failures', 'LLM rerank failure modes pass live-provider tests', retrieval.llmRerankFailureModesPassed === true, 'provider-holdout', 'Test malformed, partial, injected, timed-out, and unavailable LLM reranks.'),
-      ],
-    },
-    {
-      id: 'evaluation',
-      label: 'Retrieval and answer evaluation',
-      checks: [
-        check('offline_suite', 'Recall, precision, MRR, nDCG, and answer proxy floors pass', repo.qualitySuitePassed, 'deterministic-eval', 'Fix the unified deterministic quality suite.'),
-        check('external_cases', 'External labeled holdout has at least 100 cases', Number(retrieval.externalHoldoutCases) >= 100, 'provider-holdout', 'Label and freeze at least 100 non-fixture cases.'),
-        check('judge_calibration', 'LLM judge is calibrated against human labels', retrieval.judgeCalibrationPassed === true, 'provider-holdout', 'Measure judge agreement and calibration against human-reviewed labels.'),
-      ],
-    },
-    {
-      id: 'production_controls',
-      label: 'Latency, cost, and observability',
-      checks: [
-        check('request_envelope', 'Request trace, token, cost, and retrieval envelope exists', repo.requestEnvelope, 'repository', 'Add a request envelope.'),
-        check('hard_budgets', 'Per-request and daily tier budgets fail closed', repo.hardBudgets, 'repository', 'Add hard cost and tier budgets.'),
-        check('degraded_flags', 'Stale or stub retrieval is labeled degraded', repo.degradedRetrievalFlags, 'repository', 'Expose retrieval quality tiers.'),
-        check('live_slo', 'Production p95 and cost SLOs pass under load', production.loadTestPassed === true && Number(production.p95LatencyMs) > 0, 'production', 'Run a production-like load test and attach p95/cost evidence.'),
-        check('cache_batch', 'Live cache and batching savings are measured', production.cacheAndBatchingMeasured === true, 'production', 'Measure cache hit rate and batching cost/latency lift.'),
-      ],
-    },
-    {
-      id: 'failure_security',
-      label: 'Failure modes, validation, ACL, and tenancy',
-      checks: [
-        check('structured', 'Structured answers and citations are validated', repo.structuredOutputValidation, 'repository', 'Validate output shape and citation relationships.'),
-        check('acl_order', 'Tenant/document ACL runs before retrieval and hydration', repo.tenantAclBeforeRetrieval, 'repository', 'Enforce authorization before ranking.'),
-        check('command_evasion', 'Literal command-substitution evasions are canonicalized and tested', repo.commandPositionHardening, 'repository', 'Ratchet deterministic command-position substitutions in the evasion matrix.'),
-        check('penetration_test', 'Tenant isolation has external penetration evidence', security.tenantPenTestPassed === true, 'security-review', 'Run a professional tenant-isolation penetration test.'),
-        check('incident_drill', 'Hallucination, stale-index, miss, and leak drills pass', security.failureDrillPassed === true, 'production', 'Run and retain production-like failure drills.'),
-      ],
-    },
-    {
-      id: 'framework_pipeline',
-      label: 'Framework decision and end-to-end RAG defense',
-      checks: [
-        check('decision', 'Raw versus LangChain/LangGraph/LlamaIndex tradeoffs are defended', repo.rawFrameworkDecisionDefended, 'repository', 'Document the complete pipeline and framework decision.'),
-        check('ratchet', 'The evidence scorecard runs in the main test chain', repo.scorecardInMainTest, 'repository', 'Wire this scorecard into the test chain.'),
-      ],
-    },
-    {
-      id: 'commercial_validation',
-      label: 'Value, willingness to pay, and captured money',
-      checks: [
-        check('buyer_conversations', 'At least 10 target-buyer value conversations are evidenced', Number(commercial.buyerConversations) >= 10, 'commercial', 'Complete and retain 10 target-buyer value conversations.'),
-        check('payment_asks', 'At least 3 exact-price payment asks are evidenced', Number(commercial.paymentAsks) >= 3, 'commercial', 'Make three exact-price payment asks to qualified buyers.'),
-        check('external_payment', 'At least one non-owner external payment is reconciled', Number(commercial.externalPayments) >= 1, 'provider', 'Capture and reconcile one real external payment.'),
-        check('provider_truth', 'Provider catalog and product attribution are verified', commercial.providerRevenueVerified === true, 'provider', 'Attach exact provider catalog and product-attributed revenue evidence.'),
-      ],
-    },
+  return [
+    landingConversionArea(repo, production),
+    selfImprovementArea(repo, production),
+    architectureHonestyArea(repo, production),
+    queryTransformationArea(repo, retrieval),
+    rerankingArea(repo, retrieval),
+    evaluationArea(repo, retrieval),
+    productionControlsArea(repo, production),
+    failureSecurityArea(repo, security),
+    frameworkPipelineArea(repo),
+    commercialValidationArea(commercial),
   ];
+}
+
+function evaluateReadiness({ repo = {}, live = {} } = {}) {
+  const areas = buildReadinessAreas(repo, live);
 
   for (const area of areas) {
     const passed = area.checks.filter((row) => row.passed).length;
     area.score = Number((10 * passed / area.checks.length).toFixed(1));
-    area.grade = area.score === 10 ? 'A+' : area.score >= 9 ? 'A' : area.score >= 8 ? 'B' : area.score >= 7 ? 'C' : area.score >= 6 ? 'D' : 'F';
-    area.status = area.score === 10 ? 'verified' : passed === 0 ? 'blocked' : 'partial';
+    area.grade = gradeForScore(area.score);
+    area.status = statusForArea(area.score, passed);
   }
 
   const score = Number((areas.reduce((sum, area) => sum + area.score, 0) / areas.length).toFixed(1));
@@ -244,7 +266,7 @@ function evaluateReadiness({ repo = {}, live = {} } = {}) {
     target: { score: 10, grade: 'A+' },
     atTarget,
     score,
-    grade: atTarget ? 'A+' : score >= 9 ? 'A' : score >= 8 ? 'B' : score >= 7 ? 'C' : score >= 6 ? 'D' : 'F',
+    grade: gradeForScore(score),
     areas,
     blockers: areas.flatMap((area) => area.checks
       .filter((row) => !row.passed)

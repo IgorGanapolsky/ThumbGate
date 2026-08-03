@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 
 const SPEND_CONTROL_GATE_ID = 'financial-spend-authorization-required';
@@ -14,17 +14,92 @@ const MAX_ACTION_TEXT_CHARS = 20_000;
 const MAX_AMOUNT_CENTS = 100_000_000_000;
 const LOCK_SLEEPER = new Int32Array(new SharedArrayBuffer(4));
 
-const EXPLICIT_AUTHORIZATION_PATTERN = /\b(?:i\s+(?:hereby\s+|explicitly\s+)?(?:authorize|approve)|you\s+(?:may|are\s+(?:explicitly\s+)?authorized\s+to))\b/i;
+const EXPLICIT_AUTHORIZATION_PATTERNS = [
+  /\bi\s+(?:hereby\s+|explicitly\s+)?authorize\b/i,
+  /\bi\s+(?:hereby\s+|explicitly\s+)?approve\b/i,
+  /\byou\s+may\b/i,
+  /\byou\s+are\s+(?:explicitly\s+)?authorized\s+to\b/i,
+];
 const NEGATED_AUTHORIZATION_PATTERN = /\b(?:do\s+not|don['’]?t|never|not)\s+(?:authorize|approve|allow|spend|pay|purchase|buy|upgrade|subscribe|renew)\b/i;
 const FINANCIAL_INTENT_PATTERN = /\b(?:spend|buy|purchase|pay|upgrade|subscribe|renew|checkout|credits?|payment|billing)\b/i;
-const FINANCIAL_ACTION_PATTERN = /\b(?:buy|purchase|pay|upgrade|downgrade|subscribe|unsubscribe|renew|cancel\s+(?:the\s+)?subscription|checkout|billing|pricing|top[ -]?up|transfer|wire|withdraw|refund|invoice|add\s+(?:credits?|funds?|payment\s+method)|place\s+(?:an?\s+)?order|confirm\s+(?:an?\s+)?(?:order|purchase|payment)|submit\s+(?:a\s+)?payment|charge\s+(?:my|the|a\s+)?card)\b/i;
-const DIRECT_FINANCIAL_TOOL_PATTERN = /(?:^|[_:.-])(?:purchase|buy[_-]?credits?|charge[_-]?card|bank[_-]?transfer|wire[_-]?transfer|create[_-]?order|place[_-]?order|submit[_-]?order|confirm[_-]?order|execute[_-]?order|send[_-]?(?:money|funds)|withdraw(?:al)?|create[_-]?payout|send[_-]?payout|execute[_-]?payout|create[_-]?refund|issue[_-]?refund|execute[_-]?refund)(?:$|[_:.-])|checkout.*(?:create|submit|complete)|(?:create|submit|complete).*checkout|subscription.*(?:create|update|change|activate|upgrade|cancel)|(?:create|update|change|activate|upgrade|cancel).*subscription|payment.*(?:create|attach|confirm|submit)|(?:create|attach|confirm|submit).*payment|(?:billing|plan|seat|credits?).*(?:buy|purchase|upgrade|activate|change|update)|(?:buy|purchase|upgrade|activate|change|update).*(?:billing|plan|seat|credits?)/i;
-const READ_ONLY_TOOL_PATTERN = /(?:^|[_:.-])(?:get|list|search|find|lookup|preview|estimate|quote|retrieve|fetch|read)(?:$|[_:.-])|(?:^|[_:.-])status$/i;
+const FINANCIAL_ACTION_PATTERNS = [
+  /\b(?:buy|purchase|pay|upgrade|downgrade|subscribe|unsubscribe|renew)\b/i,
+  /\b(?:checkout|billing|pricing|transfer|wire|withdraw|refund|invoice)\b/i,
+  /\b(?:credits?|top[ -]?up)\b/i,
+  /\bcancel\s+(?:the\s+)?subscription\b/i,
+  /\badd\s+(?:credits?|funds?|payment\s+method)\b/i,
+  /\bplace\s+(?:an?\s+)?order\b/i,
+  /\bconfirm\s+(?:an?\s+)?(?:order|purchase|payment)\b/i,
+  /\bsubmit\s+(?:a\s+)?payment\b/i,
+  /\bcharge\s+(?:my|the|a\s+)?card\b/i,
+];
+const READ_ONLY_TOOL_WORDS = new Set([
+  'get', 'list', 'search', 'find', 'lookup', 'preview', 'estimate', 'quote', 'retrieve', 'fetch', 'read',
+]);
+const MUTATION_TOOL_WORDS = new Set([
+  'create', 'submit', 'complete', 'update', 'change', 'activate', 'upgrade', 'cancel',
+  'attach', 'confirm', 'buy', 'purchase', 'charge', 'place', 'execute', 'send', 'issue',
+]);
+const FINANCIAL_RESOURCE_WORDS = new Set([
+  'billing', 'plan', 'seat', 'seats', 'credit', 'credits', 'checkout', 'subscription', 'payment',
+]);
+const TRANSFER_TOOL_WORDS = new Set(['bank', 'wire', 'fund', 'funds', 'money']);
+const SPEND_ENVELOPE_KEYS = new Set(['thumbgateSpend', 'thumbgate_spend', 'purchaseOrder']);
+const SENSITIVE_ACTION_KEY_PATTERN = /token|secret|password|authorization|cookie|api.?key/i;
 const BASH_EXTERNAL_ACTION_PATTERN = /\b(?:curl|wget|http|open|osascript|playwright|selenium|stripe|apollo|browser|chrome)\b/i;
 const EXTERNAL_TOOL_PATTERN = /(?:bash|shell|exec|browser|chrome|computer|playwright|selenium|web|http|api|click|navigate|mcp)/i;
-const CHECKOUT_ENTRY_TOOL_PATTERN = /(?:^|[_:.-])(?:open|navigate|visit|goto|go[_-]?to)(?:$|[_:.-])/i;
-const CHECKOUT_ENTRY_ACTION_PATTERN = /^(?:open|navigate|visit|goto|go[_-]?to)$/i;
+const CHECKOUT_ENTRY_WORDS = new Set(['open', 'navigate', 'visit', 'goto']);
+const CHECKOUT_ENTRY_ACTIONS = new Set(['open', 'navigate', 'visit', 'goto', 'go_to']);
 const BASH_CHECKOUT_ENTRY_PATTERN = /^\s*(?:open|xdg-open|start)\s+(?:['"]?https?:\/\/)?/i;
+
+function matchesAny(text, patterns) {
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function toolNameWords(toolName) {
+  return normalizeText(toolName)
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .toLowerCase()
+    .split(/[_:.-]+/)
+    .filter(Boolean);
+}
+
+function hasAnyWord(words, candidates) {
+  return words.some((word) => candidates.has(word));
+}
+
+function hasWordPair(words, left, right) {
+  return words.includes(left) && words.includes(right);
+}
+
+function isReadOnlyTool(words) {
+  const hasMutationVerb = hasAnyWord(words, MUTATION_TOOL_WORDS);
+  const endsWithStatus = words.at(-1) === 'status';
+  return !hasMutationVerb && (hasAnyWord(words, READ_ONLY_TOOL_WORDS) || endsWithStatus);
+}
+
+function isNamedPurchaseTool(words) {
+  return words.includes('purchase')
+    || hasWordPair(words, 'buy', 'credits')
+    || hasWordPair(words, 'charge', 'card');
+}
+
+function isTransferOrOrderTool(words) {
+  const transfer = words.includes('transfer')
+    && hasAnyWord(words, TRANSFER_TOOL_WORDS);
+  const remittance = words.includes('send')
+    && hasAnyWord(words, TRANSFER_TOOL_WORDS);
+  const order = words.includes('order') && hasAnyWord(words, MUTATION_TOOL_WORDS);
+  const withdrawal = words.includes('withdraw') || words.includes('withdrawal');
+  const payout = words.includes('payout') && hasAnyWord(words, MUTATION_TOOL_WORDS);
+  const refund = words.includes('refund') && hasAnyWord(words, MUTATION_TOOL_WORDS);
+  return transfer || remittance || order || withdrawal || payout || refund;
+}
+
+function isFinancialResourceMutation(words) {
+  return hasAnyWord(words, FINANCIAL_RESOURCE_WORDS)
+    && hasAnyWord(words, MUTATION_TOOL_WORDS);
+}
 
 function normalizeText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
@@ -51,25 +126,28 @@ function amountToCents(value) {
 
 function parseMoney(text) {
   const value = normalizeText(text);
-  let match = value.match(/\$\s*(\d{1,9}(?:,\d{3})*(?:\.\d{1,2})?)/);
+  let match = /\$\s*(\d{1,9}(?:,\d{3})*(?:\.\d{1,2})?)/.exec(value);
   if (match) return { amountCents: amountToCents(match[1]), currency: 'USD' };
 
-  match = value.match(/\b([A-Z]{3})\s*(\d{1,9}(?:,\d{3})*(?:\.\d{1,2})?)\b/);
+  match = /\b([A-Z]{3})\s*(\d{1,9}(?:,\d{3})*(?:\.\d{1,2})?)\b/.exec(value);
   if (match) return { amountCents: amountToCents(match[2]), currency: match[1].toUpperCase() };
 
-  match = value.match(/\b(\d{1,9}(?:,\d{3})*(?:\.\d{1,2})?)\s*([A-Z]{3})\b/);
+  match = /\b(\d{1,9}(?:,\d{3})*(?:\.\d{1,2})?)\s*([A-Z]{3})\b/.exec(value);
   if (match) return { amountCents: amountToCents(match[1]), currency: match[2].toUpperCase() };
   return null;
 }
 
+function truncateAtMatch(value, pattern) {
+  const match = pattern.exec(value);
+  return match ? value.slice(0, match.index) : value;
+}
+
 function parseVendor(text) {
-  const match = normalizeText(text).match(/\b(?:for|on|from|with)\s+(?:the\s+)?([a-z0-9][a-z0-9 .&+'_-]{1,80})/i);
+  const match = /\b(?:for|on|from|with)\s+(?:the\s+)?([a-z0-9][a-z0-9 .&+'_-]{1,80})/i.exec(normalizeText(text));
   if (!match) return null;
-  const vendor = match[1]
-    .replace(/\s+(?:credits?|subscription|plan|purchase|checkout|upgrade|license|seats?)\b.*$/i, '')
-    .replace(/\b(?:up\s+to|maximum|max)\b.*$/i, '')
-    .replace(/[.,;:].*$/, '')
-    .trim();
+  let vendor = truncateAtMatch(match[1], /\s+(?:credits?|subscription|plan|purchase|checkout|upgrade|license|seats?)\b/i);
+  vendor = truncateAtMatch(vendor, /\b(?:up\s+to|maximum|max)\b/i);
+  vendor = truncateAtMatch(vendor, /[.,;:]/).trim();
   return vendor.length >= 2 ? vendor : null;
 }
 
@@ -78,11 +156,11 @@ function parsePromptSpendAuthorization(prompt, metadata = {}) {
   const sessionId = normalizeText(metadata.sessionId || metadata.session_id);
   if (!text || !sessionId) return null;
   if (NEGATED_AUTHORIZATION_PATTERN.test(text)) return null;
-  if (!EXPLICIT_AUTHORIZATION_PATTERN.test(text) || !FINANCIAL_INTENT_PATTERN.test(text)) return null;
+  if (!matchesAny(text, EXPLICIT_AUTHORIZATION_PATTERNS) || !FINANCIAL_INTENT_PATTERN.test(text)) return null;
 
   const money = parseMoney(text);
   const vendor = parseVendor(text);
-  if (!money || !money.amountCents || !vendor) return null;
+  if (!money?.amountCents || !vendor) return null;
 
   const nowMs = Number.isFinite(metadata.nowMs) ? metadata.nowMs : Date.now();
   return {
@@ -123,6 +201,46 @@ function waitForLock(milliseconds) {
   Atomics.wait(LOCK_SLEEPER, 0, 0, milliseconds);
 }
 
+function removePathIfPresent(targetPath, options = {}) {
+  try {
+    fs.rmSync(targetPath, options);
+    return true;
+  } catch (error) {
+    return error?.code === 'ENOENT';
+  }
+}
+
+function clearStaleLock(lockPath, lockStaleMs) {
+  try {
+    const ageMs = Date.now() - fs.statSync(lockPath).mtimeMs;
+    return ageMs > lockStaleMs
+      ? removePathIfPresent(lockPath, { recursive: true, force: true })
+      : false;
+  } catch (error) {
+    return error?.code === 'ENOENT';
+  }
+}
+
+function acquireSpendControlLock(lockPath, lockTimeoutMs, lockStaleMs) {
+  const startedAt = Date.now();
+
+  while (true) {
+    try {
+      fs.mkdirSync(lockPath, { mode: 0o700 });
+      return { acquired: true };
+    } catch (error) {
+      if (error?.code !== 'EEXIST') {
+        return { acquired: false, error };
+      }
+      if (clearStaleLock(lockPath, lockStaleMs)) continue;
+      if (Date.now() - startedAt >= lockTimeoutMs) {
+        return { acquired: false, error: new Error('spend control ledger is busy') };
+      }
+      waitForLock(10);
+    }
+  }
+}
+
 function withSpendControlLock(callback, options = {}) {
   const { feedbackDir, lockPath } = getSpendControlPaths(options);
   const lockTimeoutMs = Number.isFinite(options.lockTimeoutMs)
@@ -132,36 +250,15 @@ function withSpendControlLock(callback, options = {}) {
     ? Math.max(1, options.lockStaleMs)
     : SPEND_STATE_LOCK_STALE_MS;
   fs.mkdirSync(feedbackDir, { recursive: true });
-  const startedAt = Date.now();
-
-  while (true) {
-    try {
-      fs.mkdirSync(lockPath, { mode: 0o700 });
-      break;
-    } catch (error) {
-      if (!error || error.code !== 'EEXIST') {
-        return { acquired: false, error };
-      }
-      try {
-        const ageMs = Date.now() - fs.statSync(lockPath).mtimeMs;
-        if (ageMs > lockStaleMs) {
-          fs.rmSync(lockPath, { recursive: true, force: true });
-          continue;
-        }
-      } catch (_) { /* The lock changed between checks; retry. */ }
-      if (Date.now() - startedAt >= lockTimeoutMs) {
-        return { acquired: false, error: new Error('spend control ledger is busy') };
-      }
-      waitForLock(10);
-    }
-  }
+  const lock = acquireSpendControlLock(lockPath, lockTimeoutMs, lockStaleMs);
+  if (!lock.acquired) return lock;
 
   try {
     return { acquired: true, value: callback() };
   } catch (error) {
     return { acquired: true, error };
   } finally {
-    try { fs.rmSync(lockPath, { recursive: true, force: true }); } catch (_) {}
+    removePathIfPresent(lockPath, { recursive: true, force: true });
   }
 }
 
@@ -190,7 +287,7 @@ function writeState(state, options = {}) {
     fs.writeFileSync(tempPath, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
     fs.renameSync(tempPath, statePath);
   } finally {
-    try { fs.unlinkSync(tempPath); } catch (_) {}
+    removePathIfPresent(tempPath, { force: true });
   }
 }
 
@@ -205,7 +302,8 @@ function tryAppendReceipt(receipt, options = {}) {
   try {
     appendReceipt(receipt, options);
     return true;
-  } catch (_) {
+  } catch (error) {
+    options.onReceiptError?.(error);
     return false;
   }
 }
@@ -266,7 +364,7 @@ function collectActionText(value, depth = 0) {
   if (Array.isArray(value)) return value.map((entry) => collectActionText(entry, depth + 1)).join(' ');
   if (typeof value !== 'object') return '';
   return Object.entries(value)
-    .filter(([key]) => !/(?:token|secret|password|authorization|cookie|api.?key|thumbgateSpend|thumbgate_spend|purchaseOrder)/i.test(key))
+    .filter(([key]) => !SPEND_ENVELOPE_KEYS.has(key) && !SENSITIVE_ACTION_KEY_PATTERN.test(key))
     .map(([, entry]) => collectActionText(entry, depth + 1))
     .join(' ');
 }
@@ -286,18 +384,21 @@ function normalizeSpendEnvelope(toolInput = {}) {
 }
 
 function isDirectFinancialTool(toolName) {
-  const normalizedTool = normalizeText(toolName);
-  return DIRECT_FINANCIAL_TOOL_PATTERN.test(normalizedTool)
-    && !READ_ONLY_TOOL_PATTERN.test(normalizedTool);
+  const words = toolNameWords(toolName);
+  if (isReadOnlyTool(words)) return false;
+  return isNamedPurchaseTool(words)
+    || isTransferOrOrderTool(words)
+    || isFinancialResourceMutation(words);
 }
 
 function isCheckoutEntryAction(toolName, toolInput = {}) {
   const normalizedTool = normalizeText(toolName);
   if (isDirectFinancialTool(normalizedTool)) return false;
 
-  const action = normalizeText(toolInput.action || toolInput.method || toolInput.commandName);
-  if (CHECKOUT_ENTRY_ACTION_PATTERN.test(action)) return true;
-  if (CHECKOUT_ENTRY_TOOL_PATTERN.test(normalizedTool)) return true;
+  const action = normalizeText(toolInput.action || toolInput.method || toolInput.commandName).toLowerCase();
+  if (CHECKOUT_ENTRY_ACTIONS.has(action)) return true;
+  const words = toolNameWords(normalizedTool);
+  if (hasAnyWord(words, CHECKOUT_ENTRY_WORDS) || hasWordPair(words, 'go', 'to')) return true;
 
   const command = normalizeText(toolInput.command);
   return /^(?:bash|shell|exec)$/i.test(normalizedTool)
@@ -320,7 +421,7 @@ function classifyFinancialAction(toolName, toolInput = {}) {
     };
   }
 
-  if (!directFinancialTool && (!EXTERNAL_TOOL_PATTERN.test(normalizedTool) || !FINANCIAL_ACTION_PATTERN.test(text))) return null;
+  if (!directFinancialTool && (!EXTERNAL_TOOL_PATTERN.test(normalizedTool) || !matchesAny(text, FINANCIAL_ACTION_PATTERNS))) return null;
   if (/^(?:bash|shell|exec)$/i.test(normalizedTool) && !BASH_EXTERNAL_ACTION_PATTERN.test(text)) return null;
 
   return { envelope: null, actionText: text, operation, commit: !checkoutEntry };
@@ -410,7 +511,7 @@ function evaluateSpendControl(input = {}, options = {}) {
   const locked = withSpendControlLock(() => {
     const state = readState(controlOptions);
     const authorization = [...state.authorizations].reverse().find((entry) => (
-      entry && entry.sessionId === sessionId && entry.status === 'pending'
+      entry?.sessionId === sessionId && entry.status === 'pending'
     ));
     if (!authorization) return { reasonCode: 'current_prompt_authorization_required' };
     if (!authorization.auditReceiptId) return { reasonCode: 'authorization_audit_missing' };

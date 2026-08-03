@@ -62,7 +62,7 @@ function evaluateSelfProtection(toolName, toolInput) {
   const output = runHardFloor({ tool_name: toolName, tool_input: toolInput });
   if (!output) return null;
   const parsed = JSON.parse(output);
-  const message = parsed.hookSpecificOutput && parsed.hookSpecificOutput.permissionDecisionReason;
+  const message = parsed.hookSpecificOutput?.permissionDecisionReason;
   return {
     action: 'block',
     target,

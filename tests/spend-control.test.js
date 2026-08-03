@@ -87,6 +87,7 @@ test('purpose-built financial mutation tool names fail closed even with sparse i
     'bank_transfer',
     'wire_transfer',
     'create_order',
+    'send_money',
   ]) {
     const result = evaluateSpendControl({
       tool_name: toolName,

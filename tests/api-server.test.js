@@ -4503,7 +4503,8 @@ test('billing summary batch reuses one authenticated response and exposes an exp
   assert.equal(queued.qualificationCard.route, 'diagnostic');
   assert.equal(queued.qualificationCard.fitBand, 'strong_evidence_for_review');
   assert.equal(queued.qualificationCard.priorityBand, 'review_now');
-  assert.ok(Number.isInteger(queued.priorityRank) && queued.priorityRank >= 1);
+  assert.equal(Number.isInteger(queued.priorityRank), true);
+  assert.ok(queued.priorityRank >= 1);
   assert.equal(queued.qualificationCard.recommendedOffer.offerId, 'workflow_hardening_sprint');
   assert.equal(queued.qualificationCard.recommendedOffer.priceCents, 150000);
   assert.equal(queued.qualificationCard.chronology.freshness, 'same_day');

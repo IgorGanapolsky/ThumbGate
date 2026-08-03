@@ -180,8 +180,8 @@ function pruneNarrowPreToolEntries(hookArray, expectedCommand) {
   if (!Array.isArray(hookArray)) return { hooks: [], removed: false };
   let removed = false;
   const hooks = hookArray.filter((entry) => {
-    const ownsCommand = Array.isArray(entry && entry.hooks)
-      && entry.hooks.some((hook) => hook && hook.command === expectedCommand);
+    const ownsCommand = Array.isArray(entry?.hooks)
+      && entry.hooks.some((hook) => hook?.command === expectedCommand);
     if (ownsCommand && typeof entry.matcher === 'string' && entry.matcher.trim()) {
       removed = true;
       return false;
