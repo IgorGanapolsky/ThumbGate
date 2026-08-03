@@ -78,6 +78,17 @@ const ECONOMIC_ACTION_PATTERNS = [
   /\b(?:finalize|pay|refund|send|update)\s+(?:a\s+)?(?:payout|refund|subscription|top-?up|transfer)\b/i,
 ];
 
+// Host/path URL surfaces that open paid checkout or plan-upgrade flows.
+// These are NOT covered by prose patterns alone (e.g. `open https://app.apollo.io/#/settings/plans/upgrade`
+// or WebFetch { url: 'https://checkout.stripe.com/...' }) — Apollo $588 incident class.
+const ECONOMIC_URL_PATTERNS = [
+  /(?:https?:\/\/)?(?:www\.)?checkout\.stripe\.com\b/i,
+  /(?:https?:\/\/)?(?:www\.)?buy\.stripe\.com\b/i,
+  /(?:https?:\/\/)?(?:www\.)?billing\.stripe\.com\b/i,
+  /(?:https?:\/\/)?(?:www\.)?app\.apollo\.io\b[^\s"'`]*?(?:plans|upgrade|billing|checkout|subscription)/i,
+  /(?:https?:\/\/)?(?:www\.)?apollo\.io\b[^\s"'`]*?(?:plans|upgrade|billing|checkout|subscription)/i,
+];
+
 const SCREEN_TOOL_PATTERN = /(?:browser|computer|playwright|puppeteer|selenium|click|tap|press)/i;
 const SCREEN_MUTATION_PATTERN = /(?:click|double[_ -]?click|tap|press|select|submit|confirm|activate)/i;
 const SCREEN_OBSERVATION_PATTERN = /(?:screenshot|snapshot)/i;
@@ -343,13 +354,24 @@ function detectEconomicAction(toolName, toolInput = {}) {
   const screenMutationProse = isDeclaredScreenMutation(normalizedToolName, toolInput)
     ? [toolInput.goal, toolInput.description, toolInput.prompt, metadata.context]
     : [];
+  // WebFetch / browser navigate often put the spend surface only in url/uri/href.
+  const navigationTargets = [
+    toolInput.url,
+    toolInput.uri,
+    toolInput.href,
+    toolInput.link,
+    toolInput.navigate,
+    toolInput.target,
+  ].map((value) => String(value || '')).join(' ');
   const combined = [
     normalizedToolName.replace(/[_-]+/g, ' '),
     command,
     toolInput.action,
     toolInput.operation,
+    navigationTargets,
     ...screenMutationProse,
   ].map((value) => String(value || '')).join(' ');
+  if (ECONOMIC_URL_PATTERNS.some((pattern) => pattern.test(combined))) return true;
   return ECONOMIC_ACTION_PATTERNS.some((pattern) => pattern.test(combined));
 }
 
@@ -1581,6 +1603,7 @@ function financialError(message) {
 
 module.exports = {
   ECONOMIC_ACTION_PATTERNS,
+  ECONOMIC_URL_PATTERNS,
   createPurchaseRequisition,
   buildActionAuthorization,
   detectEconomicAction,
