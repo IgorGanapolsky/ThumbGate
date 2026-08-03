@@ -47,6 +47,7 @@ const TRANSFER_TOOL_WORDS = new Set(['bank', 'wire', 'fund', 'funds', 'money']);
 const VENDOR_SUFFIX_WORDS = new Set([
   'credit', 'credits', 'subscription', 'plan', 'purchase', 'checkout', 'upgrade', 'license', 'seat', 'seats',
 ]);
+const TRAILING_VENDOR_PUNCTUATION = new Set(['.', ',', ';', ':']);
 const SPEND_ENVELOPE_KEYS = new Set(['thumbgateSpend', 'thumbgate_spend', 'purchaseOrder']);
 const SENSITIVE_ACTION_KEY_PATTERN = /token|secret|password|authorization|cookie|api.?key/i;
 const BASH_EXTERNAL_ACTION_PATTERN = /\b(?:curl|wget|http|open|osascript|playwright|selenium|stripe|apollo|browser|chrome)\b/i;
@@ -148,7 +149,9 @@ function truncateAtMatch(value, pattern) {
 function truncateAtVendorSuffix(value) {
   const words = value.split(' ');
   const suffixIndex = words.findIndex((word) => {
-    const normalizedWord = word.toLowerCase().replace(/[.,;:]+$/, '');
+    let endIndex = word.length;
+    while (endIndex > 0 && TRAILING_VENDOR_PUNCTUATION.has(word[endIndex - 1])) endIndex -= 1;
+    const normalizedWord = word.slice(0, endIndex).toLowerCase();
     return VENDOR_SUFFIX_WORDS.has(normalizedWord);
   });
   return suffixIndex === -1 ? value : words.slice(0, suffixIndex).join(' ');
