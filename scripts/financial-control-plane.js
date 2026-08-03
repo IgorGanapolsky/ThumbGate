@@ -660,6 +660,17 @@ function validateRequisition(result, options) {
     || reconciliation.invalidChainLinks.length > 0
     || reconciliation.ledgerHeadMismatches.length > 0
     || reconciliation.malformedRows.length > 0)) {
+    const anchorUnavailable = reconciliation.ledgerHeadMismatches.some(
+      (entry) => optionalString(entry.rollbackResistantAnchorError)
+    );
+    if (anchorUnavailable) {
+      addBlock(
+        result,
+        'financial_ledger_anchor_unavailable',
+        'Rollback-resistant financial ledger anchor is unavailable; financial actions fail closed.'
+      );
+      return;
+    }
     addBlock(result, 'financial_ledger_tampered', 'Financial ledger integrity verification failed.');
     return;
   }

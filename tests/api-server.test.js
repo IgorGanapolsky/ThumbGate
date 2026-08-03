@@ -4220,7 +4220,7 @@ test('decision endpoints persist evaluations, outcomes, and live metrics', async
   });
   assert.equal(financialEvaluateRes.status, 200);
   const financialEvaluation = await financialEvaluateRes.json();
-  assert.ok(financialEvaluation.financialControl.reasonCodes.includes('unknown_purchase_requisition'));
+  assert.ok(financialEvaluation.financialControl.reasonCodes.includes('financial_ledger_anchor_unavailable'));
   assert.ok(!financialEvaluation.financialControl.reasonCodes.includes('missing_purchase_requisition'));
 
   const outcomeRes = await fetch(apiUrl('/v1/decisions/outcome'), {
