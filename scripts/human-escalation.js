@@ -60,15 +60,23 @@ function requestEscalation(input = {}, options = {}) {
   return withEscalationLock(options, () => {
     const ledger = readLedger(options);
     assertLedgerHealthy(ledger);
-    const existing = projectEscalations(ledger.events, options)
-      .find((entry) => entry.idempotencyKey === idempotencyKey);
-    if (existing) {
-      if (eventComparableHash(existing) !== eventComparableHash(request)) {
+    // Compare retries with the immutable request event. A later decision event
+    // deliberately carries the reviewer's reason and status, so comparing the
+    // projected row would turn an already-approved request into a false
+    // idempotency conflict during cross-ledger recovery.
+    const existingRequest = ledger.events.find((event) => (
+      event.idempotencyKey === idempotencyKey
+      && (!event.eventType || event.eventType === 'requested')
+    ));
+    if (existingRequest) {
+      if (eventComparableHash(existingRequest) !== eventComparableHash(request)) {
         const error = escalationError(`conflicting request for idempotency key '${idempotencyKey}'`);
         error.code = 'THUMBGATE_IDEMPOTENCY_CONFLICT';
         throw error;
       }
-      return { recorded: false, duplicate: true, escalation: existing };
+      const current = projectEscalations(ledger.events, options)
+        .find((entry) => entry.escalationId === existingRequest.escalationId);
+      return { recorded: false, duplicate: true, escalation: current || existingRequest };
     }
     const recorded = appendEventUnlocked(request, options, ledger.events);
     return { recorded: true, duplicate: false, escalation: recorded };

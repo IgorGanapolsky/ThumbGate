@@ -242,7 +242,10 @@ function createPurchaseRequisition(input = {}, options = {}) {
       currency: 'USD',
       evidence,
       requestedAt: now.toISOString(),
-      expiresAt: new Date(now.getTime() + ttlMs).toISOString(),
+      // Cross-ledger retries must retain the deadline of the original human
+      // escalation. Refreshing the financial deadline here would let a retry
+      // resurrect an approval whose signed request already expired.
+      expiresAt: escalationResult.escalation.expiresAt,
     }, options, ledger.events);
     return {
       recorded: true,
@@ -1016,12 +1019,12 @@ function buildActionAuthorization(toolName, toolInput, amountUsd) {
 function stripControlMetadata(value, depth = 0) {
   if (Array.isArray(value)) return value.map((entry) => stripControlMetadata(entry, depth + 1));
   if (!value || typeof value !== 'object') return value;
-  // Only the top-level ThumbGate authorization envelope and hook-computed
-  // budget telemetry are transport metadata. Provider-native fields such as
-  // arguments.budget or arguments.usage are economic inputs and must remain
-  // inside the signed fingerprint.
+  // Only the explicitly namespaced ThumbGate authorization envelope is
+  // transport metadata. Unnamespaced provider fields such as budget and usage
+  // are economic inputs even at the tool_input root and must remain inside the
+  // signed fingerprint. Hook cost telemetry belongs in costControl, not here.
   const excluded = depth === 0
-    ? new Set(['financialControl', 'financial_control', 'budget', 'usage'])
+    ? new Set(['financialControl', 'financial_control'])
     : new Set();
   return Object.fromEntries(Object.entries(value)
     .filter(([key]) => !excluded.has(key))

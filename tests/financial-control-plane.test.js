@@ -767,6 +767,74 @@ test('provider-native nested budget and usage arguments remain inside the approv
   }
 });
 
+test('provider-native top-level budget and usage remain inside the approved fingerprint', () => {
+  const { feedbackDir, requester } = fixture();
+  const request = {
+    taskId: 'provider-root-budget-binding',
+    vendor: 'Billing Provider',
+    amountUsd: 1,
+    purpose: 'Create one metered subscription',
+    sourceMessageId: 'provider-root-budget-message',
+    evidence: ['Approved provider budget: 1'],
+    idempotencyKey: 'provider-root-budget-binding',
+    toolName: 'mcp__billing__create_subscription',
+    toolInput: {
+      customer: 'cus_exact',
+      budget: 1,
+      usage: { units: 1 },
+    },
+  };
+  try {
+    const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Approve only the exact top-level provider arguments.',
+    }, reviewerOptions(feedbackDir));
+    const reserved = reservePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      amountUsd: 1,
+      vendor: request.vendor,
+      purpose: request.purpose,
+      sourceMessageId: request.sourceMessageId,
+    }, authOptions(feedbackDir, requester));
+
+    const control = evaluateFinancialControl({
+      toolName: request.toolName,
+      toolInput: {
+        customer: 'cus_exact',
+        budget: 1000,
+        usage: { units: 1000 },
+        financialControl: {
+          requisitionId: reserved.requisition.requisitionId,
+          reservationId: reserved.requisition.reservationId,
+          actionId: 'provider-root-budget-tamper',
+          vendor: request.vendor,
+          purpose: request.purpose,
+          sourceMessageId: request.sourceMessageId,
+        },
+      },
+      actionProfile: { economicAction: true },
+      costControl: {
+        mode: 'allow',
+        budget: {
+          maxCostUsdPerAction: 1,
+          remainingCostUsd: 1,
+          hasMaxCostUsdPerAction: true,
+          hasRemainingCostUsd: true,
+        },
+        usage: { estimatedCostUsd: 1 },
+      },
+    }, authOptions(feedbackDir, requester, { consumeReservation: true }));
+
+    assert.equal(control.mode, 'block');
+    assert.ok(control.reasonCodes.includes('financial_action_mismatch'));
+    assert.equal(projectRequisition(created.requisition.requisitionId, { feedbackDir }).status, 'reserved');
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
 test('a forged reservation cannot replace the amount or action in the signed purchase request', () => {
   const { feedbackDir, requester } = fixture();
   const request = {
@@ -857,6 +925,9 @@ test('a forged reservation cannot replace the amount or action in the signed pur
 
 test('requisition retry is stable after escalation append but before financial append', () => {
   const { feedbackDir, requester, request } = fixture();
+  const firstAttemptAt = new Date('2026-08-02T12:00:00.000Z');
+  const retryAt = new Date('2026-08-02T12:00:02.000Z');
+  request.ttlMs = 1000;
   const originalOpen = fs.openSync;
   let injected = false;
   fs.openSync = (targetPath, ...args) => {
@@ -870,14 +941,26 @@ test('requisition retry is stable after escalation append but before financial a
   };
   try {
     assert.throws(
-      () => createPurchaseRequisition(request, authOptions(feedbackDir, requester)),
+      () => createPurchaseRequisition(request, authOptions(feedbackDir, requester, { now: firstAttemptAt })),
       /simulated cross-ledger crash/
     );
   } finally {
     fs.openSync = originalOpen;
   }
   try {
-    const retried = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    const originalEscalation = fs.readFileSync(getEscalationsPath({ feedbackDir }), 'utf8')
+      .trim().split('\n').filter(Boolean).map(JSON.parse)
+      .find((event) => event.eventType === 'requested');
+    decideEscalation({
+      escalationId: originalEscalation.escalationId,
+      decision: 'approved',
+      reason: 'Approval remains bound to its original one-second deadline.',
+    }, { ...reviewerOptions(feedbackDir), now: new Date('2026-08-02T12:00:00.100Z') });
+
+    const retried = createPurchaseRequisition(
+      request,
+      authOptions(feedbackDir, requester, { now: retryAt })
+    );
     assert.equal(retried.recorded, true);
     const escalationEvents = fs.readFileSync(getEscalationsPath({ feedbackDir }), 'utf8')
       .trim().split('\n').filter(Boolean).map(JSON.parse);
@@ -887,6 +970,14 @@ test('requisition retry is stable after escalation append but before financial a
     assert.equal(financialEvents.filter((event) => event.eventType === 'requested').length, 1);
     assert.ok(escalationEvents[0].evidence.includes(`requisitionId:${retried.requisition.requisitionId}`));
     assert.equal(escalationEvents[0].approvalContextDigest, retried.requisition.approvalContextDigest);
+    assert.equal(retried.requisition.expiresAt, originalEscalation.expiresAt);
+    assert.throws(() => reservePurchaseRequisition({
+      requisitionId: retried.requisition.requisitionId,
+      amountUsd: request.amountUsd,
+      vendor: request.vendor,
+      purpose: request.purpose,
+      sourceMessageId: request.sourceMessageId,
+    }, authOptions(feedbackDir, requester, { now: retryAt })), /expired/);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
@@ -1024,10 +1115,6 @@ test('hard-floor preview preserves a reservation until the final allow boundary'
       tool_input: {
         command: 'Click Subscribe and confirm checkout',
         costUsd: 588,
-        budget: {
-          maxCostUsdPerAction: 588,
-          remainingCostUsd: 588,
-        },
         financialControl: {
           requisitionId: reserved.requisition.requisitionId,
           reservationId: reserved.requisition.reservationId,
@@ -1036,6 +1123,12 @@ test('hard-floor preview preserves a reservation until the final allow boundary'
           purpose: 'Annual data plan',
           sourceMessageId: 'user-message-42',
         },
+      },
+      // Cost-control telemetry is a hook envelope field. A tool_input budget
+      // belongs to the provider and is therefore part of the signed action.
+      budget: {
+        maxCostUsdPerAction: 588,
+        remainingCostUsd: 588,
       },
     };
 
