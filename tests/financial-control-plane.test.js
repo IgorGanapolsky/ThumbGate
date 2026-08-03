@@ -17,6 +17,7 @@ const {
   getLedgerHeadPath,
   getLedgerJournalPath,
   getLedgerPath,
+  getFinancialControlRuntimeOptions,
   getRuntimePrincipal,
   projectRequisition,
   reconcilePurchaseLedger,
@@ -90,6 +91,32 @@ function testFinancialAnchorStore(feedbackDir) {
   };
 }
 
+function remoteFinancialAnchorTransport() {
+  const anchors = new Map();
+  const sameHead = (left, right) => {
+    if (!left && !right) return true;
+    return left?.sequence === right?.sequence && left?.eventHash === right?.eventHash;
+  };
+  return {
+    anchors,
+    request({ url, token, payload }) {
+      assert.equal(url, 'https://anchor.example.test/v1/checkpoints');
+      assert.equal(token, 'operator-owned-anchor-token');
+      if (payload.operation === 'read') {
+        return { ok: true, anchor: anchors.get(payload.ledgerId) || null };
+      }
+      if (payload.operation === 'compareAndSet') {
+        const current = anchors.get(payload.ledgerId) || null;
+        if (!sameHead(current, payload.expected)) return { ok: true, applied: false };
+        if (current && payload.next.sequence <= current.sequence) return { ok: true, applied: false };
+        anchors.set(payload.ledgerId, payload.next);
+        return { ok: true, applied: true };
+      }
+      throw new Error(`unexpected operation: ${payload.operation}`);
+    },
+  };
+}
+
 function reviewerOptions(feedbackDir) {
   return {
     feedbackDir,
@@ -97,6 +124,72 @@ function reviewerOptions(feedbackDir) {
     approvalSigningKey: APPROVAL_KEY,
   };
 }
+
+test('trusted runtime configuration wires a remote monotonic anchor into production entry points', () => {
+  const { feedbackDir, requester, request } = fixture();
+  const remote = remoteFinancialAnchorTransport();
+  try {
+    const options = getFinancialControlRuntimeOptions({
+      feedbackDir,
+      authenticatedPrincipal: requester,
+      approvalVerificationKey: APPROVAL_KEY,
+      financialLedgerAnchorUrl: 'https://anchor.example.test/v1/checkpoints',
+      financialLedgerAnchorToken: 'operator-owned-anchor-token',
+      financialLedgerAnchorRequest: remote.request,
+    });
+    assert.equal(typeof options.financialLedgerAnchorStore.read, 'function');
+    assert.equal(typeof options.financialLedgerAnchorStore.compareAndSet, 'function');
+
+    const created = createPurchaseRequisition(request, options);
+    assert.equal(created.requisition.status, 'pending_approval');
+    assert.equal(remote.anchors.size, 1);
+    const anchor = [...remote.anchors.values()][0];
+    assert.equal(anchor.schemaVersion, 'financial-ledger-anchor-v1');
+    assert.equal(anchor.sequence, 1);
+    assert.equal(reconcilePurchaseLedger(options).ok, true);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('production remote anchors require HTTPS and a host-owned credential', () => {
+  assert.throws(() => getFinancialControlRuntimeOptions({
+    financialLedgerAnchorUrl: 'http://anchor.example.test/v1/checkpoints',
+    financialLedgerAnchorToken: 'token',
+  }), /requires HTTPS/);
+  assert.throws(() => getFinancialControlRuntimeOptions({
+    financialLedgerAnchorUrl: 'https://anchor.example.test/v1/checkpoints',
+  }), /ANCHOR_TOKEN is required/);
+});
+
+test('missing anchor does not mask independently provable ledger corruption', () => {
+  const { feedbackDir, requester } = fixture();
+  try {
+    fs.writeFileSync(getLedgerPath({ feedbackDir }), '{malformed-json\n', 'utf8');
+    const result = evaluateFinancialControl({
+      toolName: 'mcp__billing__create_subscription',
+      toolInput: { customer: 'cus_123', costUsd: 1 },
+      actionProfile: { economicAction: true },
+      costControl: {
+        budget: {
+          maxCostUsdPerAction: 1,
+          remainingCostUsd: 1,
+          hasMaxCostUsdPerAction: true,
+          hasRemainingCostUsd: true,
+        },
+        usage: { estimatedCostUsd: 1 },
+      },
+    }, {
+      feedbackDir,
+      authenticatedPrincipal: requester,
+    });
+    assert.equal(result.mode, 'block');
+    assert.ok(result.reasonCodes.includes('financial_ledger_tampered'));
+    assert.ok(result.reasonCodes.includes('financial_ledger_anchor_unavailable'));
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
 
 function hashEscalationEvent(event) {
   const copy = { ...event };

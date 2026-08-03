@@ -13,6 +13,7 @@
  */
 
 const crypto = require('node:crypto');
+const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { getFeedbackPaths } = require('./feedback-paths');
@@ -113,11 +114,136 @@ function financialLedgerAnchorStore(options = {}) {
   if (store && typeof store.read === 'function' && typeof store.compareAndSet === 'function') {
     return store;
   }
+  const remoteStore = remoteFinancialLedgerAnchorStore(options);
+  if (remoteStore) return remoteStore;
   const testPath = optionalString(process.env.THUMBGATE_TEST_ONLY_FINANCIAL_ANCHOR_FILE);
   if (testPath && process.env.THUMBGATE_ALLOW_UNTRUSTED_FILE_ANCHOR_FOR_TESTS === '1') {
     return testOnlyFileAnchorStore(path.resolve(testPath));
   }
   throw financialError('rollback-resistant financial ledger anchor is required');
+}
+
+/**
+ * Resolve production financial-control configuration from the trusted host.
+ * Tool input is deliberately ignored: an agent cannot select the endpoint,
+ * bearer credential, or transport used to protect the monotonic checkpoint.
+ *
+ * The remote service contract is one authenticated POST endpoint accepting:
+ *   { operation: "read", ledgerId }
+ *   { operation: "compareAndSet", ledgerId, expected, next }
+ * It must perform compare-and-set atomically and reject sequence rollback.
+ */
+function getFinancialControlRuntimeOptions(options = {}) {
+  if (options.financialLedgerAnchorStore) return { ...options };
+  const remoteStore = remoteFinancialLedgerAnchorStore(options);
+  return remoteStore
+    ? { ...options, financialLedgerAnchorStore: remoteStore }
+    : { ...options };
+}
+
+function remoteFinancialLedgerAnchorStore(options = {}) {
+  const url = optionalString(options.financialLedgerAnchorUrl)
+    || optionalString(process.env.THUMBGATE_FINANCIAL_ANCHOR_URL);
+  if (!url) return null;
+  const token = optionalString(options.financialLedgerAnchorToken)
+    || optionalString(process.env.THUMBGATE_FINANCIAL_ANCHOR_TOKEN);
+  if (!token) throw financialError('THUMBGATE_FINANCIAL_ANCHOR_TOKEN is required for the remote financial anchor');
+  assertTrustedAnchorUrl(url, options);
+  const request = typeof options.financialLedgerAnchorRequest === 'function'
+    ? options.financialLedgerAnchorRequest
+    : requestRemoteFinancialAnchor;
+  const invoke = (payload) => request({ url, token, payload, timeoutMs: options.financialLedgerAnchorTimeoutMs });
+  return {
+    read({ ledgerId }) {
+      const response = invoke({ operation: 'read', ledgerId });
+      if (!response || response.ok !== true || !Object.hasOwn(response, 'anchor')) {
+        throw financialError('remote financial anchor returned an invalid read response');
+      }
+      return response.anchor;
+    },
+    compareAndSet({ ledgerId, expected, next }) {
+      const response = invoke({ operation: 'compareAndSet', ledgerId, expected, next });
+      if (!response || response.ok !== true || typeof response.applied !== 'boolean') {
+        throw financialError('remote financial anchor returned an invalid compare-and-set response');
+      }
+      return response.applied;
+    },
+  };
+}
+
+function assertTrustedAnchorUrl(value, options = {}) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw financialError('THUMBGATE_FINANCIAL_ANCHOR_URL must be an absolute URL');
+  }
+  const allowHttpForTests = options.allowHttpFinancialAnchorForTests === true
+    || process.env.THUMBGATE_ALLOW_HTTP_FINANCIAL_ANCHOR_FOR_TESTS === '1';
+  if (url.protocol !== 'https:' && !(allowHttpForTests && url.protocol === 'http:')) {
+    throw financialError('remote financial anchor requires HTTPS');
+  }
+}
+
+function requestRemoteFinancialAnchor({ url, token, payload, timeoutMs }) {
+  const childSource = [
+    "'use strict';",
+    "const fs = require('node:fs');",
+    "const payload = fs.readFileSync(0, 'utf8');",
+    "const controller = new AbortController();",
+    "const timer = setTimeout(() => controller.abort(), Number(process.env.THUMBGATE_ANCHOR_TIMEOUT_MS));",
+    "fetch(process.env.THUMBGATE_ANCHOR_URL, {",
+    "  method: 'POST',",
+    "  headers: { 'content-type': 'application/json', authorization: `Bearer ${process.env.THUMBGATE_ANCHOR_TOKEN}` },",
+    "  body: payload,",
+    "  signal: controller.signal,",
+    "}).then(async (response) => {",
+    "  const body = await response.text();",
+    "  process.stdout.write(JSON.stringify({ status: response.status, ok: response.ok, body }));",
+    "}).catch((error) => {",
+    "  process.stderr.write(error.message);",
+    "  process.exitCode = 1;",
+    "}).finally(() => clearTimeout(timer));",
+  ].join('\n');
+  const timeout = normalizeAnchorTimeout(timeoutMs);
+  const result = spawnSync(process.execPath, ['-e', childSource], {
+    input: `${JSON.stringify(payload)}\n`,
+    encoding: 'utf8',
+    timeout: timeout + 1_000,
+    maxBuffer: 1024 * 1024,
+    env: {
+      ...process.env,
+      THUMBGATE_ANCHOR_URL: url,
+      THUMBGATE_ANCHOR_TOKEN: token,
+      THUMBGATE_ANCHOR_TIMEOUT_MS: String(timeout),
+    },
+  });
+  if (result.error || result.status !== 0) {
+    const detail = optionalString(result.stderr) || result.error?.message || `exit ${result.status}`;
+    throw financialError(`remote financial anchor request failed: ${detail}`);
+  }
+  let envelope;
+  try {
+    envelope = JSON.parse(result.stdout);
+  } catch {
+    throw financialError('remote financial anchor returned a malformed transport response');
+  }
+  if (!envelope.ok) {
+    throw financialError(`remote financial anchor rejected the request with HTTP ${envelope.status}`);
+  }
+  try {
+    return JSON.parse(envelope.body);
+  } catch {
+    throw financialError('remote financial anchor returned malformed JSON');
+  }
+}
+
+function normalizeAnchorTimeout(value) {
+  const configured = Number(value ?? process.env.THUMBGATE_FINANCIAL_ANCHOR_TIMEOUT_MS ?? 5_000);
+  if (!Number.isFinite(configured) || configured < 250 || configured > 30_000) {
+    throw financialError('financial anchor timeout must be between 250 and 30000 milliseconds');
+  }
+  return Math.floor(configured);
 }
 
 function testOnlyFileAnchorStore(anchorPath) {
@@ -663,15 +789,22 @@ function validateRequisition(result, options) {
     const anchorUnavailable = reconciliation.ledgerHeadMismatches.some(
       (entry) => optionalString(entry.rollbackResistantAnchorError)
     );
+    const independentTampering = reconciliation.invalidEventHashes.length > 0
+      || reconciliation.invalidChainLinks.length > 0
+      || reconciliation.malformedRows.length > 0
+      || reconciliation.ledgerHeadMismatches.some(
+        (entry) => !optionalString(entry.rollbackResistantAnchorError)
+      );
+    if (independentTampering) {
+      addBlock(result, 'financial_ledger_tampered', 'Financial ledger integrity verification failed.');
+    }
     if (anchorUnavailable) {
       addBlock(
         result,
         'financial_ledger_anchor_unavailable',
         'Rollback-resistant financial ledger anchor is unavailable; financial actions fail closed.'
       );
-      return;
     }
-    addBlock(result, 'financial_ledger_tampered', 'Financial ledger integrity verification failed.');
     return;
   }
   if (!result.requisitionId) return;
@@ -1370,6 +1503,7 @@ module.exports = {
   getLedgerHeadPath,
   getLedgerJournalPath,
   getLedgerPath,
+  getFinancialControlRuntimeOptions,
   getRuntimePrincipal,
   listPurchaseRequisitions,
   projectRequisition,

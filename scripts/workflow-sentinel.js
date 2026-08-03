@@ -25,6 +25,7 @@ const {
 const {
   detectEconomicAction,
   evaluateFinancialControl,
+  getFinancialControlRuntimeOptions,
 } = require('./financial-control-plane');
 
 const GOVERNANCE_STATE_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'governance-state.json');
@@ -1496,11 +1497,11 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     costControl,
     budget: options.budget || toolInput.budget || {},
     financialControl: options.financialControl || toolInput.financialControl,
-  }, {
+  }, getFinancialControlRuntimeOptions({
     feedbackDir: options.feedbackDir
       || process.env.THUMBGATE_FEEDBACK_DIR
       || (repoRoot ? path.join(repoRoot, '.thumbgate') : null),
-  });
+  }));
   // The financial detector has additional fail-closed classifiers for opaque
   // browser/computer mutations. Reflect its verdict in the shared action
   // profile so downstream learning, risk scoring, and reporting cannot treat

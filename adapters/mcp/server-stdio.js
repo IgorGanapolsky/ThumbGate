@@ -97,6 +97,7 @@ const {
 } = require('../../scripts/human-escalation');
 const {
   createPurchaseRequisition,
+  getFinancialControlRuntimeOptions,
   getRuntimePrincipal,
   listPurchaseRequisitions,
   reconcilePurchaseLedger,
@@ -104,6 +105,9 @@ const {
   settlePurchaseRequisition,
 } = require('../../scripts/financial-control-plane');
 const MCP_FINANCIAL_PRINCIPAL = getRuntimePrincipal();
+const MCP_FINANCIAL_OPTIONS = getFinancialControlRuntimeOptions({
+  authenticatedPrincipal: MCP_FINANCIAL_PRINCIPAL,
+});
 const { recordReasoningTrace } = require('../../scripts/agent-reasoning-traces');
 const { recordToolCall } = require('../../scripts/tool-kpi-tracker');
 const {
@@ -1378,19 +1382,19 @@ async function callToolInner(name, args) {
     case 'list_human_escalations':
       return toTextResult(listEscalations({ status: args.status }).slice(0, Number(args.limit || 20)));
     case 'create_purchase_requisition':
-      return toTextResult(createPurchaseRequisition(args, { authenticatedPrincipal: MCP_FINANCIAL_PRINCIPAL }));
+      return toTextResult(createPurchaseRequisition(args, MCP_FINANCIAL_OPTIONS));
     case 'list_purchase_requisitions': {
-      const rows = listPurchaseRequisitions()
+      const rows = listPurchaseRequisitions(MCP_FINANCIAL_OPTIONS)
         .filter((entry) => !args.status || entry.status === args.status)
         .slice(0, Number(args.limit || 20));
       return toTextResult(rows);
     }
     case 'reserve_purchase_requisition':
-      return toTextResult(reservePurchaseRequisition(args, { authenticatedPrincipal: MCP_FINANCIAL_PRINCIPAL }));
+      return toTextResult(reservePurchaseRequisition(args, MCP_FINANCIAL_OPTIONS));
     case 'settle_purchase_requisition':
-      return toTextResult(settlePurchaseRequisition(args, { authenticatedPrincipal: MCP_FINANCIAL_PRINCIPAL }));
+      return toTextResult(settlePurchaseRequisition(args, MCP_FINANCIAL_OPTIONS));
     case 'reconcile_purchase_ledger':
-      return toTextResult(reconcilePurchaseLedger());
+      return toTextResult(reconcilePurchaseLedger(MCP_FINANCIAL_OPTIONS));
     case 'verify_claim':
       return toTextResult(verifyClaimEvidence(args.claim, { goalContract: args.goalContract }));
     case 'require_evidence_for_claim': {

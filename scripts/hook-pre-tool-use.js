@@ -500,7 +500,10 @@ function findDominantTag(tags, lossMatrix) {
 
 const { selfProtectionTarget, evaluateSelfProtection } = require('./self-protection');
 const { finalizeFinancialAuthorization, runHardFloor } = require('./gates-engine');
-const { detectEconomicAction } = require('./financial-control-plane');
+const {
+  detectEconomicAction,
+  getFinancialControlRuntimeOptions,
+} = require('./financial-control-plane');
 
 function main() {
   const input = readStdinSync() || {};
@@ -536,7 +539,10 @@ function main() {
   // security findings, or changes that disable the guardrail itself.
   let hardFloorOutput;
   try {
-    hardFloorOutput = runHardFloor({ tool_name: toolName, tool_input: effectiveInput });
+    hardFloorOutput = runHardFloor(
+      { tool_name: toolName, tool_input: effectiveInput },
+      getFinancialControlRuntimeOptions()
+    );
   } catch (error) {
     if (economicAction) {
       return block(`financial-control unavailable; economic action denied: ${error.message}`);
