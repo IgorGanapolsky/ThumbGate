@@ -17,3 +17,5 @@ recurred 2026-08-04 because a prose force-gate could not match any tool call.
 
 Verified: Gmail `send_message` denies with `[GATE:outbound-email-send]`;
 `create_draft` allows; force-push still denies; focused suites green.
+
+Also blocks Python googleapiclient `messages().send()` — the shape used in the Resume/District Cyber incident.

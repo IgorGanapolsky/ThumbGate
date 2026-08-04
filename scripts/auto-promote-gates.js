@@ -340,7 +340,7 @@ function deriveSurfacePattern(context) {
   if (emailish && sendish) {
     // Mirrors config/gates/default.json outbound-email-send + the live
     // ~/.thumbgate/bin/outbound-email-guard.js surface set.
-    return '(?:(?:^|[_.])send[_-]?(?:message|mail|email|now|draft)s?\\b|emailer[_-]?messages?[_-]?send|users\\/[^/\\s"\']+\\/messages\\/send|\\bmessages\\/send\\b|\\bsendmail\\b|\\bmsmtp\\b|\\bsmtplib\\b|\\bnodemailer\\b)';
+    return '(?:(?:^|[_.])send[_-]?(?:message|mail|email|now|draft)s?\\b|emailer[_-]?messages?[_-]?send|users\\/[^/\\s"\']+\\/messages\\/send|\\bmessages\\/send\\b|messages\\s*\\(\\s*\\)\\s*\\.\\s*send\\s*\\(|\\bsendmail\\b|\\bmsmtp\\b|\\bsmtplib\\b|\\bnodemailer\\b)';
   }
 
   if (/\bforce[- ]?push\b|git\s+push\s+(?:-f|--force)\b/i.test(text)) {

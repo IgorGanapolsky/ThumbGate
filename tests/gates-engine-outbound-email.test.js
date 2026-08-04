@@ -67,3 +67,14 @@ test('force-push still blocks after multi-surface match change', () => {
   assert.equal(result.decision, 'deny');
   assert.equal(result.gate, 'force-push');
 });
+
+test('outbound-email-send blocks Python googleapiclient messages().send', () => {
+  const result = evaluateGates(
+    'Bash',
+    { command: "python3 -c \"service.users().messages().send(userId='me', body=raw).execute()\"" },
+    CONFIG,
+  );
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'outbound-email-send');
+});
