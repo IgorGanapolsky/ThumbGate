@@ -181,6 +181,19 @@
       ]
     },
     {
+      "id": "outbound-email-send",
+      "layer": "Execution",
+      "trigger": "any:outbound_email_send",
+      "pattern": "(?:(?:^|[_.])send[_-]?(?:message|mail|email|now|draft)s?\\b|emailer[_-]?messages?[_-]?send|(?:^|[_.])send_draft\\b|users\\/[^/\\s\"']+\\/messages\\/send|\\bmessages\\/send\\b|\\bsendmail\\b|\\bmsmtp\\b|\\bmailx?\\s+-s\\b|\\bsmtplib\\b|\\bnodemailer\\b|createTransport\\s*\\()",
+      "action": "block",
+      "message": "Outbound email SEND is blocked. Save a draft instead; a human reviews Drafts and sends personally. create_draft / update_draft / list_drafts remain allowed.",
+      "severity": "critical",
+      "compliance": [
+        "SOC2-CC6.1",
+        "CWE-285"
+      ]
+    },
+    {
       "id": "git-reset-hard",
       "layer": "Execution",
       "trigger": "Bash:git_reset_hard",

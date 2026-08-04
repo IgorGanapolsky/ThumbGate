@@ -206,13 +206,31 @@ function extractExecutableAction(entry) {
   const ctx = String(entry.context || entry.whatWentWrong || '').trim();
   if (ctx.length < 4) return null;
 
+  // Strong signal: known tool prefixes — accept immediately.
+  const known = /^(?:sudo\s+)?(?:kubectl|git|npm|npx|yarn|pnpm|python|python3|node|curl|wget|docker|podman|rm|mv|cp|chmod|chown|psql|mysql|mongo|terraform|pulumi|aws|gcloud|az|helm|ssh|scp|rsync|make|cargo|go|ruby|perl|bash|sh|zsh)\b/i.test(ctx);
+  if (known && ctx.length <= 240) return ctx;
+
+  // Reject agent-narration prose before the weak "looks like a command" heuristic.
+  // "Agent (grok) auto-sent …" was previously accepted because it starts with a
+  // single token + spaces, then became an inert force-gate pattern (AGENT-259).
+  if (/^(?:agent|the|user|ceo|claude|grok|codex|gemini|assistant|operator)\b/i.test(ctx)) {
+    return null;
+  }
+  if (/(?:without\s+(?:human\s+)?review|thumbs?-?down|auto-sent|always-approve)\b/i.test(ctx)) {
+    return null;
+  }
+  // Parenthetical asides ("Agent (grok, always-approve)") are prose, not argv.
+  if (/\([^)]{0,40}\b(?:grok|claude|codex|always-approve|agent)\b/i.test(ctx)) {
+    return null;
+  }
+
   // Looks like a shell / CLI invocation (not free-form prose).
   const looksExecutable = /^(?:sudo\s+)?(?:~\/|\.\/|\/)?(?:[A-Za-z0-9._+-]+\/)*[A-Za-z0-9._+-]+(?:\s|$)/.test(ctx)
     && /\s|^[a-z0-9._+-]+(?:\s|$)/i.test(ctx)
-    && !/\s+(?:broke|failed|wrong|should|never|please|the agent)\b/i.test(ctx.slice(0, 80));
-  // Strong signal: known tool prefixes
-  const known = /^(?:sudo\s+)?(?:kubectl|git|npm|npx|yarn|pnpm|python|python3|node|curl|wget|docker|podman|rm|mv|cp|chmod|chown|psql|mysql|mongo|terraform|pulumi|aws|gcloud|az|helm|ssh|scp|rsync|make|cargo|go|ruby|perl|bash|sh|zsh)\b/i.test(ctx);
-  if (known || (looksExecutable && /[\s-]/.test(ctx) && ctx.length <= 200)) {
+    && !/\s+(?:broke|failed|wrong|should|never|please|the agent|auto-sent|emailed)\b/i.test(ctx.slice(0, 100));
+  // Weak path: require a flag or path-like token so "Agent wrote a bad summary" fails.
+  const hasCliShape = /(?:\s-{1,2}[A-Za-z][\w-]*|\/[A-Za-z0-9._-]{2,}|\.(?:js|ts|py|sh|json|yml|yaml)\b)/.test(ctx);
+  if (looksExecutable && hasCliShape && ctx.length <= 200) {
     return ctx;
   }
   return null;
@@ -308,6 +326,64 @@ function contextToPattern(context) {
 }
 
 /**
+ * Known incident classes that appear as English prose in force-gate / feedback
+ * but map to a deterministic tool-call surface. Without this, force-promote of
+ * "agent emailed X without review" stores the sentence as a regex and never
+ * matches any tool call (AGENT-259, June 2026 + Aug 2026 recurrence).
+ */
+function deriveSurfacePattern(context) {
+  const text = String(context || '');
+  if (!text.trim()) return null;
+
+  const emailish = /\b(gmail|e-?mail|smtp|sendmail|msmtp|mailx|nodemailer|smtplib|messages\/send|send_message|send_draft|send-mail|outbound\s+email|cold\s+outreach)\b/i.test(text);
+  const sendish = /\b(send|sent|sending|emailed|mail(ed)?)\b/i.test(text);
+  if (emailish && sendish) {
+    // Mirrors config/gates/default.json outbound-email-send + the live
+    // ~/.thumbgate/bin/outbound-email-guard.js surface set.
+    return '(?:(?:^|[_.])send[_-]?(?:message|mail|email|now|draft)s?\\b|emailer[_-]?messages?[_-]?send|users\\/[^/\\s"\']+\\/messages\\/send|\\bmessages\\/send\\b|\\bsendmail\\b|\\bmsmtp\\b|\\bsmtplib\\b|\\bnodemailer\\b)';
+  }
+
+  if (/\bforce[- ]?push\b|git\s+push\s+(?:-f|--force)\b/i.test(text)) {
+    return 'git\\s+push\\s+(--force|-f)';
+  }
+
+  if (/\b(rm\s+-rf\s+\/|sudo\s+rm\s+-rf)\b/i.test(text)) {
+    return '(?:sudo\\s+)?rm\\s+-rf\\s+/';
+  }
+
+  return null;
+}
+
+/**
+ * True when a gate pattern is essentially an English sentence — many words,
+ * no executable tokens — and therefore cannot fire against tool-call text.
+ */
+function isInertProsePattern(pattern) {
+  if (!pattern || typeof pattern !== 'string') return true;
+  // Intentional multi-alternative surface matchers (email send, force-push classes).
+  if (/\(\?:/.test(pattern) && pattern.includes('|')) return false;
+  // Unescape common contextToPattern escapes so we can inspect the words.
+  const unescaped = pattern
+    .replace(/\\([.*+?^${}()|[\]\\])/g, '$1')
+    .replace(/\\\\/g, '\\');
+  const words = (unescaped.match(/[A-Za-z]{3,}/g) || []);
+  if (words.length < 6) return false;
+  // Short CLI / known surface tokens only — a long English sentence that merely
+  // *mentions* "gmail" is still inert (it will never equal a tool-call string).
+  const trimmed = unescaped.trim();
+  const looksLikeCli =
+    /^(?:sudo\s+)?(?:kubectl|git|npm|npx|yarn|pnpm|python|python3|node|curl|wget|docker|podman|rm|bash|sh|zsh)\b/i.test(trimmed)
+    && trimmed.length <= 160;
+  const looksLikeSurfaceToken =
+    words.length <= 8
+    && /(?:send_message|send_draft|messages\/send|sendmail|force-push|git\s+push\s+(?:-f|--force))/i.test(trimmed);
+  if (looksLikeCli || looksLikeSurfaceToken) return false;
+  return true;
+}
+
+
+
+/**
  * A gate that cannot match the very context that produced it is inert — it
  * shows up in the dashboard as an active blocking rule while enforcing nothing.
  * That failure mode is worse than no gate at all, so callers drop these.
@@ -324,13 +400,21 @@ function gateMatchesOwnContext(gate, context) {
 function buildGateRule(group, actionOverride) {
   const action = actionOverride || (group.count === 'MANUAL' ? group.manualAction || 'block' : (group.count >= BLOCK_THRESHOLD ? 'block' : 'warn'));
   const severity = action === 'block' ? 'critical' : action === 'approve' ? 'high' : 'medium';
-  const executable = (group.latestExecutable || extractExecutableAction({ context: group.latestContext }) || group.latestContext || '').slice(0, 120);
-  const context = executable;
+  const fromExecutable = (group.latestExecutable
+    || extractExecutableAction({ context: group.latestContext })
+    || '').slice(0, 120);
+  // Prefer real executable text; else a derived surface regex (email send, force-push).
+  // NEVER fall back to free-form English prose — that produced permanently inert gates.
+  const surfacePattern = group.surfacePattern || deriveSurfacePattern(group.latestContext || group.key || '');
+  const pattern = fromExecutable
+    ? contextToPattern(fromExecutable)
+    : (surfacePattern || null);
+  const context = (fromExecutable || group.latestContext || group.key || '').slice(0, 120);
   const kind = group.key.startsWith('diagnosis:')
     ? 'repeated diagnosis'
     : group.key.startsWith('constraint:')
       ? 'repeated constraint violation'
-      : 'repeated executable action';
+      : (fromExecutable ? 'repeated executable action' : 'derived surface guard');
 
   const occurrencesText = group.count === 'MANUAL' ? 'manual' : `${group.count} occurrences`;
   const suggestedMessage = `Auto-promoted ${kind}: "${context}" (${occurrencesText} in ${WINDOW_DAYS} days)`;
@@ -345,16 +429,18 @@ function buildGateRule(group, actionOverride) {
   return {
     id: patternToGateId(group.key),
     trigger: `auto:${group.key}`,
-    // Derived from the executable action, NOT from tag keys — see contextToPattern.
-    pattern: contextToPattern(executable),
+    // Derived from executable action OR known surface class — never raw prose.
+    pattern,
     action,
     message: suggestedMessage,
     severity,
-    occurrences: group.count,
+    // Always numeric — string 'MANUAL' concatenated into gate-stats totals (0MANUAL…).
+    occurrences: group.count === 'MANUAL' ? 1 : Number(group.count) || 0,
     promotedAt: new Date().toISOString(),
     expiresAt,
     lastFiredAt: null,
     source: group.source || 'auto-promote',
+    ...(surfacePattern && !fromExecutable ? { surfaceDerived: true } : {}),
   };
 }
 
@@ -430,21 +516,51 @@ function recordGateFire(data, gateId, now = Date.now()) {
 
 function forcePromote(context, action = 'block') {
   if (!context) throw new Error('context is required for force-promote');
+  let executable = extractExecutableAction({ context });
+  // If extractExecutableAction returned narration that would become inert prose,
+  // drop it and fall through to surface derivation (email send, force-push, …).
+  if (executable && isInertProsePattern(contextToPattern(executable))) {
+    executable = null;
+  }
+  const surfacePattern = deriveSurfacePattern(context);
+  // Prefer a known surface class over a weak "command-shaped" string when both exist
+  // and the command is not a known CLI prefix — prevents dual wrong-pattern promotion.
+  if (executable && surfacePattern && !/^(?:sudo\s+)?(?:kubectl|git|npm|npx|curl|python|python3|node|bash|sh|zsh|rm)\b/i.test(executable)) {
+    executable = null;
+  }
+  if (!executable && !surfacePattern) {
+    throw new Error(
+      'force-promote refused: context is prose without a matchable tool surface. '
+      + 'Pass an executable command (e.g. "git push --force") or describe a known '
+      + 'class (email send / Gmail messages/send, force-push, rm -rf /).',
+    );
+  }
+
   const data = loadAutoGates();
   const gateId = patternToGateId(context);
-  
+
   // Remove existing if any
   data.gates = data.gates.filter(g => g.id !== gateId);
-  
+
   const gate = buildGateRule({
     key: context,
     latestContext: context,
+    latestExecutable: executable || '',
+    surfacePattern: surfacePattern || undefined,
     count: 'MANUAL',
     manualAction: action,
-    source: 'force-promote'
+    source: 'force-promote',
   });
+
+  if (!gate.pattern || isInertProsePattern(gate.pattern)) {
+    throw new Error(
+      'force-promote refused: derived pattern is inert prose and would never fire. '
+      + `pattern=${JSON.stringify(gate.pattern)}`,
+    );
+  }
+
   data.gates.unshift(gate);
-  
+
   if (data.gates.length > MAX_AUTO_GATES) {
     data.gates = data.gates.slice(0, MAX_AUTO_GATES);
   }
@@ -454,12 +570,20 @@ function forcePromote(context, action = 'block') {
     gateId,
     context,
     action,
+    pattern: gate.pattern,
+    surfaceDerived: Boolean(gate.surfaceDerived),
     promotedAt: new Date().toISOString(),
-    source: 'force-promote'
+    source: 'force-promote',
   });
 
   saveAutoGates(data);
-  return { gateId, action, totalGates: data.gates.length };
+  return {
+    gateId,
+    action,
+    pattern: gate.pattern,
+    surfaceDerived: Boolean(gate.surfaceDerived),
+    totalGates: data.gates.length,
+  };
 }
 
 function promote(feedbackLogPath, options) {
@@ -472,10 +596,22 @@ function promote(feedbackLogPath, options) {
   // path rather than carrying a near-stale expiresAt.
   const { data: expiredData, expired } = expireGates(loadAutoGates());
   const data = expiredData;
-  if (expired.length > 0) {
+  // Drop permanently inert prose gates left by older force-promote / promotion bugs.
+  const inertRemoved = [];
+  data.gates = (data.gates || []).filter((g) => {
+    if (g && isInertProsePattern(g.pattern)) {
+      inertRemoved.push(g);
+      return false;
+    }
+    return true;
+  });
+  if (expired.length > 0 || inertRemoved.length > 0) {
     saveAutoGates(data);
   }
-  const promotions = expired.map((e) => ({ type: 'expired', gateId: e.id, expiredAt: e.expiresAt }));
+  const promotions = [
+    ...expired.map((e) => ({ type: 'expired', gateId: e.id, expiredAt: e.expiresAt })),
+    ...inertRemoved.map((e) => ({ type: 'quarantined-inert-prose', gateId: e.id, pattern: e.pattern })),
+  ];
 
   for (const group of Object.values(groups)) {
     if (group.count < WARN_THRESHOLD) continue;
@@ -520,11 +656,22 @@ function promote(feedbackLogPath, options) {
     // Never persist a gate that cannot match the context that produced it. Such a
     // gate renders in the dashboard as an active blocking rule while enforcing
     // nothing, which reads as "the agent learned" when it did not.
-    if (!gateMatchesOwnContext(gate, group.latestContext)) {
+    // Surface-derived patterns (email send, force-push) intentionally do NOT match
+    // the English prose incident text — they match the tool surface instead.
+    if (!gate.surfaceDerived && !gateMatchesOwnContext(gate, group.latestContext)) {
       promotions.push({
         type: 'skipped-unmatchable',
         gateId: gate.id,
         reason: 'derived pattern does not match originating context',
+        occurrences: group.count,
+      });
+      continue;
+    }
+    if (!gate.pattern || isInertProsePattern(gate.pattern)) {
+      promotions.push({
+        type: 'skipped-inert-prose',
+        gateId: gate.id,
+        reason: 'pattern is English prose and would never match a tool call',
         occurrences: group.count,
       });
       continue;
@@ -619,6 +766,8 @@ module.exports = {
   patternToGateId,
   buildGateRule,
   contextToPattern,
+  deriveSurfacePattern,
+  isInertProsePattern,
   gateMatchesOwnContext,
   regressionCheck,
   getAuditTrailPath,

@@ -279,10 +279,11 @@ test('promote: rotates oldest when exceeding MAX_AUTO_GATES', (t) => {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
-  // Create MAX_AUTO_GATES + 1 distinct patterns, each with 3 occurrences
+  // Create MAX_AUTO_GATES + 1 distinct executable patterns, each with 3 occurrences.
+  // Context must be matchable CLI (AGENT-259: pure prose no longer promotes).
   for (let p = 0; p <= MAX_AUTO_GATES; p++) {
     for (let i = 0; i < 3; i++) {
-      appendJSONL(logPath, makeNegativeEntry([`pattern-${p}`], `error ${p}`, i));
+      appendJSONL(logPath, makeNegativeEntry([`pattern-${p}`], `npm test -- suite-${p}`, i));
     }
   }
 
@@ -403,12 +404,12 @@ test('runCli: supports force-block without falling through to a second entrypoin
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   });
 
-  const exitCode = runCli(['--force-block=pipeline-regression']);
+  const exitCode = runCli(['--force-block=git push --force origin pipeline-regression']);
   assert.strictEqual(exitCode, 0);
   assert.ok(lines.some((line) => line.includes('Forced block gate created')));
 
   const data = loadAutoGates();
-  const gate = data.gates.find((entry) => entry.id === 'auto-pipeline-regression');
+  const gate = data.gates.find((entry) => entry.id && entry.id.includes('pipeline-regression'));
   assert.ok(gate);
   assert.strictEqual(gate.action, 'block');
 });
@@ -802,4 +803,53 @@ test('promote: tag-only groups without executable actions do not hard-block a si
     assert.notEqual(deleteGate.action, 'block', 'single-command delete must not hard-block from tag co-counts');
     assert.equal(deleteGate.occurrences, 1);
   }
+});
+
+// -- AGENT-259: force-promote must not store inert prose ----------------
+
+test('forcePromote: refuses pure prose with no matchable surface', () => {
+  const tmpDir = makeTmpDir();
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  const { forcePromote: fp } = require('../scripts/auto-promote-gates');
+  assert.throws(
+    () => fp('the agent wrote a confusing summary of the dashboard'),
+    /refused|prose|matchable/i,
+  );
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
+});
+
+test('forcePromote: email-send prose becomes a matchable surface pattern', () => {
+  const tmpDir = makeTmpDir();
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  // Reload module path resolution via getAutoGatesPath env
+  const mod = require('../scripts/auto-promote-gates');
+  const result = mod.forcePromote(
+    'Agent (grok, always-approve) auto-sent Igor District Cyber email via Gmail API messages/send without human review',
+    'block',
+  );
+  assert.ok(result.pattern, 'pattern set');
+  assert.ok(result.surfaceDerived, 'surface-derived flag');
+  assert.match(result.pattern, /messages\\\/send|send\[_-]\?\(message/);
+  // Pattern must match a real Gmail send tool name
+  assert.ok(new RegExp(result.pattern).test('mcp__claude_ai_Gmail__send_message'));
+  assert.ok(new RegExp(result.pattern).test('curl -X POST https://gmail.googleapis.com/gmail/v1/users/me/messages/send'));
+  // And must NOT be inert prose
+  assert.ok(!mod.isInertProsePattern(result.pattern));
+  delete process.env.THUMBGATE_FEEDBACK_DIR;
+});
+
+test('isInertProsePattern: flags English sentences, allows surface regex', () => {
+  const { isInertProsePattern, contextToPattern, deriveSurfacePattern } = require('../scripts/auto-promote-gates');
+  const prose = contextToPattern(
+    'Agent gave an inaccurate, unverified explanation of ThumbGate positive feedback architecture instead of reading source',
+  );
+  assert.ok(isInertProsePattern(prose));
+  const surface = deriveSurfacePattern('agent emailed hiring panel via gmail messages/send');
+  assert.ok(surface);
+  assert.ok(!isInertProsePattern(surface));
+});
+
+test('deriveSurfacePattern: null for unrelated prose', () => {
+  const { deriveSurfacePattern } = require('../scripts/auto-promote-gates');
+  assert.equal(deriveSurfacePattern('dashboard chart colors looked wrong'), null);
 });
