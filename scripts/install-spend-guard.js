@@ -57,7 +57,11 @@ function collectTree(seedNames) {
 
 function chflags(file, flag) {
   if (!fs.existsSync(file)) return;
-  const r = spawnSync('chflags', [flag, file], { encoding: 'utf8' });
+  // Absolute binary path: Sonar S4036 (PATH must not be attacker-writable).
+  const r = spawnSync('/usr/bin/chflags', [flag, file], {
+    encoding: 'utf8',
+    env: { ...process.env, PATH: '/usr/bin:/bin' },
+  });
   if (r.status !== 0 && flag === 'nouchg') {
     // already unlocked is fine
   }

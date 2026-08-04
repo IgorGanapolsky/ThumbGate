@@ -69,9 +69,11 @@ function trackedOnDefaultBranch(repoRoot, absolute, defaultBranch) {
   }
   if (!rel || rel.startsWith('..')) return false; // lives outside the repository
   try {
-    execFileSync('git', ['cat-file', '-e', `${defaultBranch}:${rel}`], {
+    // Absolute git path: Sonar S4036 (PATH must not be attacker-writable).
+    execFileSync('/usr/bin/git', ['cat-file', '-e', `${defaultBranch}:${rel}`], {
       cwd: repoRoot,
       stdio: 'ignore',
+      env: { ...process.env, PATH: '/usr/bin:/bin' },
     });
     return true;
   } catch {
