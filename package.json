@@ -927,7 +927,8 @@
     "test:universal-claim-evaluator": "node --test tests/universal-claim-evaluator.test.js",
     "verify:claims": "node scripts/universal-claim-evaluator.js",
     "spend-guard:install": "node scripts/install-spend-guard.js",
-    "spend-guard:diff": "node scripts/proof/spend-guard-decision-diff.js"
+    "spend-guard:diff": "node scripts/proof/spend-guard-decision-diff.js",
+    "enforcement:provenance": "node scripts/enforcement-provenance-check.js"
   },
   "keywords": [
     "mcp",
