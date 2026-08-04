@@ -141,6 +141,21 @@ function extractActionContext(toolName, toolInput) {
 function retrieveLessons(toolName, actionContext) {
   try {
     const pkgRoot = path.resolve(__dirname, '..');
+    // Defended pipeline: pragmatic hybrid + multi-query (<0.6) + cross-encoder rerank.
+    // Falls back to legacy retrieveWithRerankingSync if the orchestrator is unavailable.
+    try {
+      const { retrieveAndGate } = require(path.join(pkgRoot, 'scripts', 'defended-rag-pipeline'));
+      const pack = retrieveAndGate(toolName, { command: actionContext }, {
+        actionContext,
+        candidateCount: 20,
+        maxResults: MAX_LESSONS,
+      });
+      if (Array.isArray(pack?.lessons) && pack.lessons.length) {
+        return pack.lessons;
+      }
+    } catch (_defendedErr) {
+      /* fall through to legacy */
+    }
     const { retrieveWithRerankingSync } = require(path.join(pkgRoot, 'scripts', 'cross-encoder-reranker'));
     const results = retrieveWithRerankingSync(toolName, actionContext, {
       candidateCount: 20,
