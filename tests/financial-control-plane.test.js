@@ -1604,3 +1604,65 @@ test('authenticated financial head blocks rollback to a reusable reservation', (
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
 });
+
+// --- opaque screen-mutation detection -------------------------------------
+// A native browser locator does not reveal what a click will do, so a blind
+// click is treated as an economic action until independently approved. These
+// cases had no coverage before; a regression here silently re-opens the
+// class of incident the control plane exists to prevent.
+
+test('a coordinate-addressed click is an opaque screen mutation', () => {
+  assert.equal(detectOpaqueScreenMutation('mcp__claude-in-chrome__computer', {
+    action: 'left_click', coordinate: [120, 240], tabId: 1,
+  }), true);
+});
+
+test('element-reference and selector locators are equally opaque', () => {
+  for (const locator of [{ ref: 'ref_7' }, { selector: '#confirm' }, { elementId: 'e12' }]) {
+    assert.equal(
+      detectOpaqueScreenMutation('mcp__claude-in-chrome__computer', { action: 'left_click', ...locator }),
+      true,
+      `expected ${Object.keys(locator)[0]} to be treated as opaque`,
+    );
+  }
+});
+
+test('observation-only screen calls are not mutations', () => {
+  assert.equal(detectOpaqueScreenMutation('mcp__claude-in-chrome__computer', {
+    action: 'screenshot', tabId: 1,
+  }), false);
+});
+
+test('a non-screen tool carrying coordinates is not a screen mutation', () => {
+  assert.equal(detectOpaqueScreenMutation('Bash', {
+    command: 'git status', coordinate: [1, 2],
+  }), false);
+});
+
+test('opaque screen mutation escalates to an economic action', () => {
+  assert.equal(detectEconomicAction('mcp__claude-in-chrome__computer', {
+    action: 'left_click', coordinate: [10, 20], tabId: 1,
+  }), true);
+});
+
+test('routine shell work is not an economic action', () => {
+  for (const command of ['git status', 'git switch -c wip', 'npm run test:ops', 'ls -la']) {
+    assert.equal(detectEconomicAction('Bash', { command }), false, `expected "${command}" to be allowed`);
+  }
+});
+
+test('control plane blocks a blind click but allows an observation', () => {
+  const clicked = evaluateFinancialControl({
+    toolName: 'mcp__claude-in-chrome__computer',
+    toolInput: { action: 'left_click', coordinate: [10, 20], tabId: 1 },
+  });
+  assert.equal(clicked.mode, 'block');
+  assert.equal(clicked.economicAction, true);
+
+  const observed = evaluateFinancialControl({
+    toolName: 'mcp__claude-in-chrome__computer',
+    toolInput: { action: 'screenshot', tabId: 1 },
+  });
+  assert.equal(observed.mode, 'allow');
+  assert.equal(observed.economicAction, false);
+});
