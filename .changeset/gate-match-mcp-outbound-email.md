@@ -22,3 +22,6 @@ Also blocks Python googleapiclient `messages().send()` — the shape used in the
 
 
 Hard-floor: outbound-email-send never demotes via applyEnforcementPosture or free-tier daily cap.
+
+Also: hard-floor outbound-email-send; narrow nodemailer/smtplib to import/require shapes
+(no false deny on `rg nodemailer`); prove:vlt dogfood for agent install supply-chain client.

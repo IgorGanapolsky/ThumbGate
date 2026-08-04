@@ -97,3 +97,25 @@ test('outbound-email-send is unconditional hard floor (never warn-by-default)', 
     else delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
   }
 });
+
+test('outbound-email-send allows code search that mentions nodemailer', () => {
+  const result = evaluateGates(
+    'Bash',
+    { command: 'rg -n nodemailer src/' },
+    CONFIG,
+  );
+  if (result && result.gate === 'outbound-email-send') {
+    assert.fail(`false positive: ${JSON.stringify(result)}`);
+  }
+});
+
+test('outbound-email-send blocks nodemailer createTransport usage', () => {
+  const result = evaluateGates(
+    'Bash',
+    { command: "node -e \"require('nodemailer').createTransport({})\"" },
+    CONFIG,
+  );
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'outbound-email-send');
+});
