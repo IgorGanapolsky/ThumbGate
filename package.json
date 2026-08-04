@@ -360,8 +360,7 @@
     "scripts/pragmatic-hybrid-search.js",
     "server.json",
     "glama.json",
-    "smithery.yaml",
-    "scripts/prove-vlt-dogfood.js"
+    "smithery.yaml"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
@@ -920,7 +919,7 @@
     "test:secret-egress": "node --test tests/secret-egress-gate.test.js",
     "test:harness-tool-names": "node --test tests/harness-tool-names.test.js",
     "test:feedback-reward": "node --test tests/feedback-reward-score.test.js",
-    "test:capability-wiring": "node --test tests/capability-wiring-ratchet.test.js && node --test tests/prove-vlt-dogfood.test.js",
+    "test:capability-wiring": "node --test tests/capability-wiring-ratchet.test.js && node --test tests/prove-vlt-dogfood.test.js && node --test tests/context-engineering-checklist.test.js",
     "test:llm-gateway": "node --test tests/llm-gateway-provider.test.js",
     "test:request-envelope": "node --test tests/request-envelope.test.js",
     "test:a-plus-evidence": "node --test tests/a-plus-evidence-scorecard.test.js",
@@ -931,7 +930,8 @@
     "spend-guard:diff": "node docs/guard/spend-guard-decision-diff.js",
     "enforcement:provenance": "node scripts/enforcement-provenance-check.js",
     "prove:vlt": "node scripts/prove-vlt-dogfood.js",
-    "test:vlt-dogfood": "node --test tests/prove-vlt-dogfood.test.js"
+    "test:vlt-dogfood": "node --test tests/prove-vlt-dogfood.test.js",
+    "test:context-engineering": "node --test tests/context-engineering-checklist.test.js"
   },
   "keywords": [
     "mcp",
