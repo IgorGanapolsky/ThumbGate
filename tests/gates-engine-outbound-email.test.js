@@ -78,3 +78,22 @@ test('outbound-email-send blocks Python googleapiclient messages().send', () => 
   assert.equal(result.decision, 'deny');
   assert.equal(result.gate, 'outbound-email-send');
 });
+
+test('outbound-email-send is unconditional hard floor (never warn-by-default)', () => {
+  const { applyEnforcementPosture } = require('../scripts/gates-engine');
+  const prev = process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  try {
+    const postured = applyEnforcementPosture({
+      decision: 'deny',
+      gate: 'outbound-email-send',
+      message: 'Outbound email SEND is blocked.',
+      severity: 'critical',
+    });
+    assert.equal(postured.decision, 'deny', 'must stay deny without STRICT');
+    assert.notEqual(postured.warnByDefault, true);
+  } finally {
+    if (prev !== undefined) process.env.THUMBGATE_STRICT_ENFORCEMENT = prev;
+    else delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  }
+});

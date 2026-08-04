@@ -19,3 +19,6 @@ Verified: Gmail `send_message` denies with `[GATE:outbound-email-send]`;
 `create_draft` allows; force-push still denies; focused suites green.
 
 Also blocks Python googleapiclient `messages().send()` — the shape used in the Resume/District Cyber incident.
+
+
+Hard-floor: outbound-email-send never demotes via applyEnforcementPosture or free-tier daily cap.

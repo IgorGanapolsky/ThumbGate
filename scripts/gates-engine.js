@@ -168,6 +168,9 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   // applyEnforcementPosture, never demote spend blocks to warn-by-default.
   // Apollo $588 incident class (2026-08).
   'financial-control',
+  // Outbound email: irreversible delivery. Must never demote to warn-by-default
+  // even when THUMBGATE_STRICT_ENFORCEMENT is unset (AGENT-259 / District Cyber 2026-08-04).
+  'outbound-email-send',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -188,6 +191,8 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'git-clean-force',
   'rm-rf-home-or-root',
   'financial-control',
+  // Never daily-cap discount agent email send (same class as force-push).
+  'outbound-email-send',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
