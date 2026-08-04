@@ -2,6 +2,7 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 
@@ -47,6 +48,57 @@ function getFeedbackLogPath() {
 
 function getAutoGatesPath() {
   return path.join(path.dirname(getFeedbackLogPath()), 'auto-promoted-gates.json');
+}
+
+// The global store. NOT resolveFeedbackDir() — that is itself cwd-dependent and
+// returns ~/.thumbgate/projects/<name>/ per repository, so using it here yields a
+// path identical to the repo-local one and unions to a single entry.
+function getGlobalAutoGatesPath() {
+  return path.join(os.homedir(), '.thumbgate', 'auto-promoted-gates.json');
+}
+
+// Every per-project store on this machine.
+function getProjectAutoGatesPaths() {
+  const projectsRoot = path.join(os.homedir(), '.thumbgate', 'projects');
+  let entries;
+  try {
+    entries = fs.readdirSync(projectsRoot, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  return entries
+    .filter((e) => e.isDirectory())
+    .map((e) => path.join(projectsRoot, e.name, 'auto-promoted-gates.json'))
+    .filter((p) => fs.existsSync(p));
+}
+
+// A lesson learned in one repository must gate every repository. getAutoGatesPath()
+// resolves to exactly ONE store — repo-local when present, otherwise the global one —
+// so gates promoted in repo A were invisible in repo B.
+//
+// Measured 2026-08-04, same engine and same moment, only cwd differing:
+//   cwd=ThumbGate -> 45 auto-promoted gates loaded
+//   cwd=Resume    ->  4 auto-promoted gates loaded
+// The missing gates included every one promoted from an outbound-send failure, and an
+// agent then sent outbound mail from the repository that could not see them.
+//
+// Global first, repo-local second, so a repo-local entry may override a global one
+// sharing its id.
+function getAutoGatesPaths() {
+  const seen = new Set();
+  const paths = [];
+  const candidates = [
+    getGlobalAutoGatesPath(),
+    ...getProjectAutoGatesPaths(),
+    getAutoGatesPath(),
+  ];
+  for (const candidate of candidates) {
+    const resolved = path.resolve(candidate);
+    if (seen.has(resolved)) continue;
+    seen.add(resolved);
+    paths.push(resolved);
+  }
+  return paths;
 }
 
 function readJSONL(filePath) {
@@ -615,6 +667,8 @@ module.exports = {
   loadAutoGates,
   saveAutoGates,
   getAutoGatesPath,
+  getGlobalAutoGatesPath,
+  getAutoGatesPaths,
   groupNegativeFeedback,
   patternToGateId,
   buildGateRule,

@@ -76,7 +76,7 @@ const { getTrajectoryScore } = require('./trajectory-scorer');
 const { evaluateSequenceState } = loadOptionalModule('./sequence-guard', () => ({
   evaluateSequenceState: () => null,
 }));
-const { getAutoGatesPath } = require('./auto-promote-gates');
+const { getAutoGatesPath, getAutoGatesPaths } = require('./auto-promote-gates');
 const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'default.json');
@@ -320,9 +320,21 @@ function loadGatesConfig(configPath, harnessPath) {
 
   // Always preserve the full primary/default safety policy. Free tier limits apply
   // only to auto-promoted add-on gates so core protections never disappear.
-  const autoConfigPath = getAutoGatesPath();
-  if (!configPath && fs.existsSync(autoConfigPath)) {
-    const autoGates = loadOne(autoConfigPath, false).map(g => ({ ...g, layer: g.layer || 'Execution' }));
+  // Union EVERY promoted-gate store, not just the one process.cwd() happens to
+  // resolve to. A gate promoted from a failure in one repository has to deny the
+  // same action in every other repository, or the learning loop only protects
+  // whichever directory recorded the incident.
+  if (!configPath) {
+    const byId = new Map();
+    for (const storePath of getAutoGatesPaths()) {
+      if (!fs.existsSync(storePath)) continue;
+      for (const gate of loadOne(storePath, false) || []) {
+        if (!gate || !gate.id) continue;
+        // Later store wins on id collision: repo-local overrides global.
+        byId.set(gate.id, { ...gate, layer: gate.layer || 'Execution' });
+      }
+    }
+    const autoGates = [...byId.values()];
     const limitedAutoGates = isProTier()
       ? autoGates
       : autoGates.slice(0, FREE_TIER_MAX_GATES);
