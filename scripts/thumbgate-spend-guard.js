@@ -130,7 +130,15 @@ function evaluateSpend(toolName, toolInput) {
     return { decision: 'deny', ruleId: 'interactive_spend_ui', reason: DENY_REASON };
   }
 
-  if (MUTATION_ACTION.test(combined) && FINANCIAL_OBJECT.test(combined)) {
+  // The action and the object must be TWO distinct things. Several tokens appear
+  // in both lists, so a single word would otherwise satisfy both halves and
+  // self-deny -- which is what blocked ordinary version-control subcommands.
+  const actionMatch = MUTATION_ACTION.exec(combined);
+  const objectMatch = FINANCIAL_OBJECT.exec(combined);
+  const spansOverlap = Boolean(actionMatch && objectMatch)
+    && actionMatch.index < objectMatch.index + objectMatch[0].length
+    && objectMatch.index < actionMatch.index + actionMatch[0].length;
+  if (actionMatch && objectMatch && !spansOverlap) {
     return { decision: 'deny', ruleId: 'financial_action_and_object', reason: DENY_REASON };
   }
 
