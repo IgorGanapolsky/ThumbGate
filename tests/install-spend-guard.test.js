@@ -29,3 +29,9 @@ test('dry-run installer exits 0', () => {
   assert.equal(r.status, 0, r.stderr || r.stdout);
   assert.match(r.stdout, /dry-run complete/);
 });
+
+test('listRelativeRequires finds local deps of the spend guard', () => {
+  const { listRelativeRequires } = require('../scripts/install-spend-guard');
+  const deps = listRelativeRequires(path.join(__dirname, '..', 'scripts', 'thumbgate-spend-guard.js'));
+  assert.ok(deps.some((d) => d.includes('financial-control-plane')));
+});

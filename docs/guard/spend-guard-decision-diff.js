@@ -8,8 +8,8 @@
  * every surface under comparison. Report raw counts, not adjectives.
  *
  * Usage (from repo root):
- *   node scripts/proof/spend-guard-decision-diff.js
- *   OUT_DIR=/tmp/spend-guard-census node scripts/proof/spend-guard-decision-diff.js
+ *   node docs/guard/spend-guard-decision-diff.js
+ *   OUT_DIR=/tmp/spend-guard-census node docs/guard/spend-guard-decision-diff.js
  */
 
 const fs = require('node:fs');

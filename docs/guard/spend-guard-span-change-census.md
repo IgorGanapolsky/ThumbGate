@@ -19,8 +19,8 @@ Diff is gated: comparison aborts unless known-deny vectors still deny on OLD/MID
 | Bare prose "dirty primary checkout" on NEW | allow |
 | Signature form | `(toolName, toolInput)` — wrong-arity harnesses rejected by sanity gate |
 
-Harness: `scripts/proof/spend-guard-decision-diff.js`  
-Raw summary: `scripts/proof/spend-guard-decision-diff-summary.json`
+Harness: `docs/guard/spend-guard-decision-diff.js`  
+Raw summary: `docs/guard/spend-guard-decision-diff-summary.json`
 
 ## Full decision surface (repository text corpus)
 

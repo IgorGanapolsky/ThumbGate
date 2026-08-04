@@ -1,0 +1,30 @@
+{
+  "payloads": 415310,
+  "files": 1838,
+  "oldDenies": 6315,
+  "midDenies": 2670,
+  "newDenies": 1799,
+  "loosened": 4516,
+  "tightened": 0,
+  "loosenedByRule": {
+    "checkout_path": 3645,
+    "financial_action_and_object": 871
+  },
+  "byOldRule": {
+    "vendor_upsell": 429,
+    "checkout_path": 3974,
+    "financial_action_and_object": 1892,
+    "guard_tampering": 20
+  },
+  "byNewRule": {
+    "vendor_upsell": 712,
+    "financial_action_and_object": 389,
+    "checkout_path": 678,
+    "guard_tampering": 20
+  },
+  "spanChange": {
+    "count": 871,
+    "selfDenySharedToken": 871,
+    "anomaly": 0
+  }
+}
