@@ -398,48 +398,50 @@ function gateMatchesOwnContext(gate, context) {
 }
 
 function buildGateRule(group, actionOverride) {
-  const action = actionOverride || (group.count === 'MANUAL' ? group.manualAction || 'block' : (group.count >= BLOCK_THRESHOLD ? 'block' : 'warn'));
+  // Tests and callers may pass partial groups; never crash on missing fields.
+  const g = group && typeof group === 'object' ? group : {};
+  const action = actionOverride || (g.count === 'MANUAL' ? g.manualAction || 'block' : (g.count >= BLOCK_THRESHOLD ? 'block' : 'warn'));
   const severity = action === 'block' ? 'critical' : action === 'approve' ? 'high' : 'medium';
-  const fromExecutable = (group.latestExecutable
-    || extractExecutableAction({ context: group.latestContext })
+  const fromExecutable = (g.latestExecutable
+    || extractExecutableAction({ context: g.latestContext })
     || '').slice(0, 120);
   // Prefer real executable text; else a derived surface regex (email send, force-push).
   // NEVER fall back to free-form English prose — that produced permanently inert gates.
-  const surfacePattern = group.surfacePattern || deriveSurfacePattern(group.latestContext || group.key || '');
+  const surfacePattern = g.surfacePattern || deriveSurfacePattern(g.latestContext || g.key || '');
   const pattern = fromExecutable
     ? contextToPattern(fromExecutable)
     : (surfacePattern || null);
-  const context = (fromExecutable || group.latestContext || group.key || '').slice(0, 120);
-  const kind = group.key.startsWith('diagnosis:')
+  const context = (fromExecutable || g.latestContext || g.key || '').slice(0, 120);
+  const kind = String(g.key || '').startsWith('diagnosis:')
     ? 'repeated diagnosis'
-    : group.key.startsWith('constraint:')
+    : String(g.key || '').startsWith('constraint:')
       ? 'repeated constraint violation'
       : (fromExecutable ? 'repeated executable action' : 'derived surface guard');
 
-  const occurrencesText = group.count === 'MANUAL' ? 'manual' : `${group.count} occurrences`;
+  const occurrencesText = g.count === 'MANUAL' ? 'manual' : `${g.count == null ? 0 : g.count} occurrences`;
   const suggestedMessage = `Auto-promoted ${kind}: "${context}" (${occurrencesText} in ${WINDOW_DAYS} days)`;
 
   // TTL: auto-promoted rules expire after the configured window unless
   // refreshed by a fresh fire. Manual force-promote bypasses TTL — operator
   // says "permanent" by going through the force path.
   const nowMs = Date.now();
-  const isManual = group.count === 'MANUAL';
+  const isManual = g.count === 'MANUAL';
   const expiresAt = isManual ? null : new Date(nowMs + getRuleTtlMs()).toISOString();
 
   return {
-    id: patternToGateId(group.key),
-    trigger: `auto:${group.key}`,
+    id: patternToGateId(String(g.key || 'unknown')),
+    trigger: `auto:${g.key || 'unknown'}`,
     // Derived from executable action OR known surface class — never raw prose.
     pattern,
     action,
     message: suggestedMessage,
     severity,
     // Always numeric — string 'MANUAL' concatenated into gate-stats totals (0MANUAL…).
-    occurrences: group.count === 'MANUAL' ? 1 : Number(group.count) || 0,
+    occurrences: g.count === 'MANUAL' ? 1 : Number(g.count) || 0,
     promotedAt: new Date().toISOString(),
     expiresAt,
     lastFiredAt: null,
-    source: group.source || 'auto-promote',
+    source: g.source || 'auto-promote',
     ...(surfacePattern && !fromExecutable ? { surfaceDerived: true } : {}),
   };
 }
