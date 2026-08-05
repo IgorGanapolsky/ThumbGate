@@ -7,6 +7,7 @@ const {
   parseArgs,
   queryRegistry,
   evaluateRegistryIdentity,
+  resolveAncestryLocally,
   verifyNpmGitHead,
 } = require('../scripts/verify-npm-githead');
 
@@ -126,4 +127,85 @@ test('missing immutable identity fails before querying npm', async () => {
   assert.equal(report.verdict, 'fail');
   assert.equal(report.state, 'invalid_input');
   assert.equal(calls, 0);
+});
+
+const published = (gitHead, version = '1.32.0') => ({
+  state: 'published',
+  metadata: { version, gitHead },
+});
+
+test('main being ahead of the last published release is not drift', () => {
+  const report = evaluateRegistryIdentity({
+    ...base,
+    registryResult: published('older-release-sha'),
+    ancestry: 'ancestor',
+  });
+  assert.equal(report.verdict, 'pass');
+  assert.equal(report.observedSha, 'older-release-sha');
+  assert.match(report.reason, /ancestor/);
+});
+
+test('a published release from a divergent commit is still drift', () => {
+  const report = evaluateRegistryIdentity({
+    ...base,
+    registryResult: published('divergent-sha'),
+    ancestry: 'unrelated',
+  });
+  assert.equal(report.verdict, 'fail');
+  assert.equal(report.reason, 'published version belongs to another commit');
+});
+
+test('unprovable ancestry fails closed rather than passing', () => {
+  const report = evaluateRegistryIdentity({
+    ...base,
+    registryResult: published('shallow-clone-sha'),
+    ancestry: 'unknown',
+  });
+  assert.equal(report.verdict, 'fail', 'unknown ancestry must never pass');
+});
+
+test('resolveAncestryLocally distinguishes ancestor, unrelated and unknown', () => {
+  const fake = (results) => {
+    const calls = [...results];
+    return () => calls.shift();
+  };
+  assert.equal(resolveAncestryLocally('a', 'a'), 'ancestor', 'identical SHAs are trivially ancestors');
+  assert.equal(resolveAncestryLocally('', 'b'), 'unknown');
+  // both objects present, merge-base says yes
+  assert.equal(
+    resolveAncestryLocally('a', 'b', { spawnSync: fake([{ status: 0 }, { status: 0 }, { status: 0 }]) }),
+    'ancestor'
+  );
+  // both objects present, merge-base says no
+  assert.equal(
+    resolveAncestryLocally('a', 'b', { spawnSync: fake([{ status: 0 }, { status: 0 }, { status: 1 }]) }),
+    'unrelated'
+  );
+  // object missing (shallow clone) -> unknown, never a pass
+  assert.equal(
+    resolveAncestryLocally('a', 'b', { spawnSync: fake([{ status: 128 }]) }),
+    'unknown'
+  );
+});
+
+test('verifyNpmGitHead passes when the published release is an ancestor of HEAD', async () => {
+  const report = await verifyNpmGitHead({
+    packageName: 'thumbgate',
+    version: '1.34.3',
+    expectedSha: 'head-sha',
+    queryRegistry: async () => published('release-sha', '1.34.3'),
+    resolveAncestry: async () => 'ancestor',
+  });
+  assert.equal(report.verdict, 'pass');
+});
+
+test('verifyNpmGitHead still fails when HEAD does not descend from the release', async () => {
+  const report = await verifyNpmGitHead({
+    packageName: 'thumbgate',
+    version: '1.34.3',
+    expectedSha: 'head-sha',
+    queryRegistry: async () => published('release-sha', '1.34.3'),
+    resolveAncestry: async () => 'unrelated',
+  });
+  assert.equal(report.verdict, 'fail');
 });
