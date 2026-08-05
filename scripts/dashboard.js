@@ -97,13 +97,64 @@ function buildUnavailableOrgDashboard(windowHours) {
 // Data readers
 // ---------------------------------------------------------------------------
 
-function readJSONL(filePath) {
+// Prod feedback/memory logs can grow past V8's max string size (~512MB–1GB).
+// Full-file readFileSync/stringify then throws:
+//   "Cannot create a string longer than 0x1fffffe8 characters"
+// Cap dashboard JSONL ingestion to a recent tail so /v1/dashboard stays live.
+const DEFAULT_JSONL_MAX_BYTES = 32 * 1024 * 1024; // 32 MiB tail
+const DEFAULT_JSONL_MAX_ENTRIES = 100_000;
+
+function readTextTail(filePath, maxBytes) {
+  const stats = fs.statSync(filePath);
+  const size = stats.size || 0;
+  if (size <= 0) return { text: '', truncated: false, size: 0 };
+  if (!maxBytes || size <= maxBytes) {
+    return { text: fs.readFileSync(filePath, 'utf-8'), truncated: false, size };
+  }
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(maxBytes);
+    fs.readSync(fd, buffer, 0, maxBytes, size - maxBytes);
+    let text = buffer.toString('utf-8');
+    const firstNewline = text.indexOf('\n');
+    if (firstNewline >= 0) text = text.slice(firstNewline + 1);
+    return { text, truncated: true, size };
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+function readJSONL(filePath, options = {}) {
   if (!fs.existsSync(filePath)) return [];
-  const raw = fs.readFileSync(filePath, 'utf-8').trim();
-  if (!raw) return [];
-  return raw.split('\n').map((line) => {
-    try { return JSON.parse(line); } catch { return null; }
-  }).filter(Boolean);
+  const maxBytes = Number(options.maxBytes) > 0
+    ? Number(options.maxBytes)
+    : DEFAULT_JSONL_MAX_BYTES;
+  const maxEntries = Number(options.maxEntries) > 0
+    ? Number(options.maxEntries)
+    : DEFAULT_JSONL_MAX_ENTRIES;
+  let text;
+  try {
+    text = readTextTail(filePath, maxBytes).text;
+  } catch (err) {
+    // Never let a single bloated log take down the whole dashboard.
+    if (err && /string longer than|Cannot create a string|ENOMEM|heap/i.test(String(err.message || err))) {
+      return [];
+    }
+    throw err;
+  }
+  if (!text || !text.trim()) return [];
+  const lines = text.split('\n');
+  const start = Math.max(0, lines.length - maxEntries);
+  const entries = [];
+  for (let i = start; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (!line) continue;
+    try {
+      const parsed = JSON.parse(line);
+      if (parsed) entries.push(parsed);
+    } catch { /* skip bad line */ }
+  }
+  return entries;
 }
 
 function readJsonFile(filePath) {
@@ -2089,8 +2140,11 @@ module.exports = {
   computeSecretGuardStats,
   computeObservabilityStats,
   readJSONL,
+  readTextTail,
   readJsonFile,
   collectAllFeedbackEntries,
+  DEFAULT_JSONL_MAX_BYTES,
+  DEFAULT_JSONL_MAX_ENTRIES,
 };
 
 if (require.main === module) {

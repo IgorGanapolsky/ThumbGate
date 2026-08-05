@@ -1819,7 +1819,23 @@ function buildWorkflowIntakeQueue(parsed, workflowSprintIntake, feedbackDir, opt
   };
 }
 
+function isDashboardDataLimitError(err) {
+  const message = String(err && err.message ? err.message : err || '');
+  return /string longer than|Cannot create a string|ENOMEM|JavaScript heap|out of memory/i.test(message);
+}
+
 function sendInvalidAnalyticsWindowProblem(res, title, err) {
+  if (isDashboardDataLimitError(err)) {
+    sendProblem(res, {
+      type: PROBLEM_TYPES.INTERNAL,
+      title: 'Dashboard data too large',
+      status: 503,
+      detail: 'Feedback/memory logs exceeded the safe in-memory limit for dashboard assembly. '
+        + 'Logs are now tail-capped; if this persists, rotate oversized JSONL under the feedback dir. '
+        + `Cause: ${err?.message || 'string/heap limit'}`,
+    });
+    return;
+  }
   sendProblem(res, {
     type: PROBLEM_TYPES.INVALID_REQUEST,
     title,
@@ -3019,7 +3035,23 @@ function resolveCheckoutOfferSummary(metadata = {}) {
 
 function sendJson(res, statusCode, payload, extraHeaders = {}, options = {}) {
   const { headOnly = false } = options;
-  const body = JSON.stringify(payload);
+  let body;
+  try {
+    body = JSON.stringify(payload);
+  } catch (err) {
+    if (isDashboardDataLimitError(err)) {
+      sendProblem(res, {
+        type: PROBLEM_TYPES.INTERNAL,
+        title: 'Dashboard response too large',
+        status: 503,
+        detail: 'Dashboard JSON exceeded the runtime string limit. '
+          + 'Use a bounded feedback window or rotate oversized logs. '
+          + `Cause: ${err?.message || 'stringify limit'}`,
+      });
+      return;
+    }
+    throw err;
+  }
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
     'X-Content-Type-Options': 'nosniff',
