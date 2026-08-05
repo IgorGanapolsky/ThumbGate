@@ -98,15 +98,25 @@ function prove() {
       input: JSON.stringify(event),
       encoding: 'utf8',
     });
+    // Hook contract: an allow is silent (empty stdout); a deny is one JSON
+    // object carrying hookSpecificOutput.permissionDecision. Root
+    // decision:"allow"/"deny" is not schema-valid and must not come back.
     let decision = '?';
-    try {
-      const line = String(r.stdout || '').trim().split('\n').filter(Boolean).pop();
-      decision = JSON.parse(line).decision;
-    } catch {
-      // ignore
+    const stdout = String(r.stdout || '').trim();
+    if (stdout === '') {
+      decision = 'allow';
+    } else {
+      try {
+        const line = stdout.split('\n').filter(Boolean).pop();
+        const parsed = JSON.parse(line);
+        decision = (parsed.hookSpecificOutput && parsed.hookSpecificOutput.permissionDecision) || '?';
+      } catch {
+        // ignore
+      }
     }
     const exitOk = expect === 'deny' ? r.status === 2 : r.status === 0;
-    const ok = exitOk && decision === expect;
+    const transportOk = expect === 'allow' ? stdout === '' : true;
+    const ok = exitOk && transportOk && decision === expect;
     if (!ok) bad += 1;
     console.log(`${ok ? 'OK' : 'FAIL'} ${label}: exit=${r.status} decision=${decision} expect=${expect}`);
   }

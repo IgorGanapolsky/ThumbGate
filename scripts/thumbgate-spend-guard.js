@@ -21,7 +21,6 @@ const path = require('node:path');
 
 const {
   evaluateFinancialControl,
-  formatHookDeny,
   flatten: erpFlatten,
 } = require('./financial-control-plane');
 
@@ -180,22 +179,21 @@ function writeDenyReceipt(toolName, ruleId) {
   }
 }
 
-function output(verdict) {
-  const payload =
-    verdict.decision === 'deny'
-      ? (verdict.erp
-        ? formatHookDeny(verdict.erp)
-        : {
-            decision: 'deny',
-            reason: verdict.reason,
-            hookSpecificOutput: {
-              hookEventName: 'PreToolUse',
-              permissionDecision: 'deny',
-              permissionDecisionReason: verdict.reason,
-            },
-          })
-      : { decision: 'allow' };
-  process.stdout.write(`${JSON.stringify(payload)}\n`);
+// Claude Code PreToolUse stdout contract: an allow is SILENCE (empty stdout);
+// a deny is exactly one JSON object whose root key is hookSpecificOutput with
+// permissionDecision "deny". Root-level decision:"allow"/"deny" is not in the
+// hook schema (only approve|block) — emitting it makes every tool call print
+// "Hook JSON output validation failed — (root): Invalid input" (2026-08-05:
+// two such errors on every tool call in every session, fleet-wide).
+function toHookOutput(verdict) {
+  if (!verdict || verdict.decision !== 'deny') return null;
+  return {
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'deny',
+      permissionDecisionReason: String(verdict.reason || DENY_REASON),
+    },
+  };
 }
 
 function main() {
@@ -203,8 +201,7 @@ function main() {
   try {
     event = JSON.parse(fs.readFileSync(0, 'utf8') || '{}');
   } catch {
-    output({ decision: 'allow' });
-    return 0;
+    return 0; // unreadable payload: no opinion, stay silent
   }
 
   const toolName = event.toolName || event.tool_name || '';
@@ -212,12 +209,11 @@ function main() {
   const verdict = evaluateSpend(toolName, toolInput);
   if (verdict.decision === 'deny') {
     writeDenyReceipt(toolName, verdict.ruleId);
-    output(verdict);
+    process.stdout.write(`${JSON.stringify(toHookOutput(verdict))}\n`);
     process.stderr.write(`${verdict.reason || DENY_REASON}\n`);
     return 2;
   }
 
-  output(verdict);
   return 0;
 }
 
@@ -231,4 +227,5 @@ module.exports = {
   evaluateSpend,
   flatten,
   safeToolName,
+  toHookOutput,
 };
