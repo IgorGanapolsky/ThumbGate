@@ -617,7 +617,7 @@
     "test:ops": "node --test tests/qa-scenario-planner.test.js tests/adk-consolidator.test.js tests/anthropic-partner-strategy.test.js tests/auto-promote-gates.test.js tests/auto-wire-hooks.test.js tests/claude-skill.test.js tests/codegraph-context.test.js tests/commercial-signals.test.js tests/decision-journal.test.js tests/delegation-runtime.test.js tests/disagreement-mining.test.js tests/failure-diagnostics.test.js tests/financial-control-plane.test.js tests/financial-spend-attack-matrix.test.js tests/gate-stats.test.js tests/gates-engine-upgrade-cta.test.js tests/git-hook-installer.test.js tests/github-billing.test.js tests/intervention-policy.test.js tests/markdown-escape.test.js tests/mcp-tools-gates.test.js tests/native-messaging-audit.test.js tests/project-bayes-e2e.test.js tests/project-bayes.test.js tests/rate-limiter.test.js tests/schedule-manager.test.js tests/session-handoff.test.js tests/skill-generator.test.js tests/smart-learning.test.js tests/spike-and-sink.test.js tests/stripe-revenue.test.js tests/stripe-webhook-route.test.js tests/stripe-webhook-rotation.test.js tests/train-from-feedback.test.js tests/workflow-hardening-sprint.test.js tests/workflow-sentinel.test.js tests/test-suite-parity.test.js tests/a2ui-engine.test.js tests/webhook-delivery.test.js tests/auto-context-packs.test.js tests/daily-block-cap.test.js tests/auto-promote-regression-gate.test.js tests/install-spend-guard.test.js tests/spend-guard-path-precision.test.js tests/spend-guard-hook-contract.test.js tests/enforcement-provenance.test.js",
     "test:session-analyzer": "node --test tests/session-analyzer.test.js",
     "test:tessl": "node --test tests/tessl-export.test.js",
-    "test:gates": "node --test --test-concurrency=1 tests/gate-templates.test.js tests/gates-engine.test.js tests/claim-verification.test.js tests/universal-claim-evaluator.test.js tests/secret-scanner.test.js tests/secret-fixture-safety.test.js tests/prompt-guard.test.js tests/audit-trail.test.js tests/profile-router.test.js tests/workflow-sentinel.test.js tests/docker-sandbox-planner.test.js tests/mcp-tools-suggest-fix.test.js tests/deny-network-egress-pattern.test.js tests/git-pathspec-scope.test.js tests/git-global-option-bypass.test.js tests/gate-evasion-matrix.test.js",
+    "test:gates": "node --test --test-concurrency=1 tests/gate-templates.test.js tests/gates-engine.test.js tests/gates-engine-outbound-email.test.js tests/claim-verification.test.js tests/universal-claim-evaluator.test.js tests/secret-scanner.test.js tests/secret-fixture-safety.test.js tests/prompt-guard.test.js tests/audit-trail.test.js tests/profile-router.test.js tests/workflow-sentinel.test.js tests/docker-sandbox-planner.test.js tests/mcp-tools-suggest-fix.test.js tests/deny-network-egress-pattern.test.js tests/git-pathspec-scope.test.js tests/git-global-option-bypass.test.js tests/gate-evasion-matrix.test.js",
     "test:budget": "node --test tests/budget-guard.test.js tests/budget-enforcer.test.js tests/tokenomics-cost-guard.test.js tests/hook-no-budget-lockout.test.js",
     "test:workers": "npm --prefix workers ci && npm --prefix workers test",
     "test:evoskill": "node --test tests/evoskill.test.js",
@@ -919,7 +919,7 @@
     "test:secret-egress": "node --test tests/secret-egress-gate.test.js",
     "test:harness-tool-names": "node --test tests/harness-tool-names.test.js",
     "test:feedback-reward": "node --test tests/feedback-reward-score.test.js",
-    "test:capability-wiring": "node --test tests/capability-wiring-ratchet.test.js",
+    "test:capability-wiring": "node --test tests/capability-wiring-ratchet.test.js && node --test tests/prove-vlt-dogfood.test.js && node --test tests/context-engineering-checklist.test.js",
     "test:llm-gateway": "node --test tests/llm-gateway-provider.test.js",
     "test:request-envelope": "node --test tests/request-envelope.test.js",
     "test:a-plus-evidence": "node --test tests/a-plus-evidence-scorecard.test.js",
@@ -928,7 +928,10 @@
     "verify:claims": "node scripts/universal-claim-evaluator.js",
     "spend-guard:install": "node scripts/install-spend-guard.js",
     "spend-guard:diff": "node docs/guard/spend-guard-decision-diff.js",
-    "enforcement:provenance": "node scripts/enforcement-provenance-check.js"
+    "enforcement:provenance": "node scripts/enforcement-provenance-check.js",
+    "prove:vlt": "node scripts/prove-vlt-dogfood.js",
+    "test:vlt-dogfood": "node --test tests/prove-vlt-dogfood.test.js",
+    "test:context-engineering": "node --test tests/context-engineering-checklist.test.js"
   },
   "keywords": [
     "mcp",

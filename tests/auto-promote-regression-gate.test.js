@@ -117,10 +117,11 @@ test('promote: still hard-blocks when no prior safe action would be hit', () => 
   process.env.THUMBGATE_FEEDBACK_DIR = dir;
   try {
     const logPath = path.join(dir, 'feedback-log.jsonl');
+    // Executable action required (AGENT-259): pure prose no longer auto-promotes.
     const entries = [0, 1, 2].map((d) => ({
       signal: 'negative',
       tags: ['uniquefailpattern'],
-      context: 'repeated unique failure pattern here',
+      context: 'python scripts/uniquefailpattern.py --apply',
       timestamp: recentTimestamp(d),
     }));
     fs.writeFileSync(logPath, entries.map((e) => JSON.stringify(e)).join('\n') + '\n');
