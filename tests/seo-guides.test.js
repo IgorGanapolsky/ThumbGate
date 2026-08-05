@@ -20,6 +20,7 @@ const GUIDE_FILES = [
   'guides/internal-ai-engineering-stack-guardrails.html',
   'guides/seo-agent-skills-guardrails.html',
   'guides/claude-code-skills-guardrails.html',
+  'guides/claude-code-hooks.html',
   'guides/long-running-agent-context-management.html',
   'guides/reasoning-compression-guardrails.html',
   'guides/headroom-context-compression-guardrails.html',
@@ -140,6 +141,46 @@ describe('SEO guide and comparison pages', () => {
       });
     });
   }
+
+  it('claude code hooks guide targets the hook reference queries it was built for', () => {
+    const html = fs.readFileSync(path.join(PUBLIC_DIR, 'guides/claude-code-hooks.html'), 'utf-8');
+
+    // Head-term coverage: the page exists to rank for "claude code hooks".
+    assert.match(html, /<title>[^<]*Claude Code Hooks[^<]*<\/title>/i);
+    assert.ok(html.includes('rel="canonical" href="https://thumbgate.ai/guides/claude-code-hooks"'));
+
+    // Every blocking-capable hook event must be documented, or the page is not a reference.
+    for (const event of [
+      'PreToolUse', 'PostToolUse', 'UserPromptSubmit', 'SessionStart',
+      'SessionEnd', 'Stop', 'SubagentStop', 'PreCompact', 'Notification',
+    ]) {
+      assert.ok(html.includes(event), `hooks guide missing the ${event} event`);
+    }
+
+    // The two facts a reader actually came for.
+    assert.ok(html.includes('exit 2'), 'hooks guide must explain the blocking exit code');
+    assert.ok(/matcher/i.test(html), 'hooks guide must explain matchers');
+
+    // Question-intent coverage lives in FAQ schema, which is what earns the PAA slots.
+    const faqBlock = html.split('"FAQPage"')[1] || '';
+    for (const question of [
+      'What are hooks in Claude Code?',
+      'How do I use Claude Code hooks?',
+      'What is a Claude Code hook matcher?',
+    ]) {
+      assert.ok(faqBlock.includes(question), `FAQ schema missing: ${question}`);
+    }
+
+    // Schema must be valid JSON, not just present.
+    const blocks = Array.from(
+      html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g),
+      (m) => m[1]
+    );
+    assert.ok(blocks.length >= 2, 'expected TechArticle and FAQPage blocks');
+    for (const block of blocks) {
+      assert.doesNotThrow(() => JSON.parse(block), 'ld+json block must parse');
+    }
+  });
 
   it('browser safety guide routes readers into the native messaging audit', () => {
     const html = fs.readFileSync(
