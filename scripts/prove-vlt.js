@@ -68,7 +68,7 @@ function proveGatePatternsBlock() {
 
   for (const testCase of blockCases) {
     const template = getVltTemplate(testCase.templateId);
-    check(template, `gate template ${testCase.templateId} must exist`);
+    if (!template) throw new Error(`gate template ${testCase.templateId} must exist`);
     check(template.defaultAction === 'block', `${testCase.templateId} must default to block`);
     const matched = patternMatches(template.pattern, testCase.command);
     results.push({ name: `${testCase.templateId} blocks: ${testCase.desc}`, passed: matched, details: { command: testCase.command, pattern: template.pattern, matched } });
@@ -94,7 +94,7 @@ function proveGatePatternsAllow() {
 
   for (const testCase of allowCases) {
     const template = getVltTemplate(testCase.templateId);
-    check(template, `gate template ${testCase.templateId} must exist`);
+    if (!template) throw new Error(`gate template ${testCase.templateId} must exist`);
     const matched = patternMatches(template.pattern, testCase.command);
     const passed = !matched;
     results.push({ name: `${testCase.templateId} allows: ${testCase.desc}`, passed, details: { command: testCase.command, pattern: template.pattern, matched } });

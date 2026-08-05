@@ -11,8 +11,7 @@
 const assert = require('node:assert');
 const { describe, it } = require('node:test');
 
-// We test printReportAndExit by intercepting process.exit and console
-const originalExit = process.exit;
+// We test printReportAndExit by intercepting console output
 const originalLog = console.log;
 const originalError = console.error;
 
@@ -208,34 +207,35 @@ describe('proof-common', () => {
   });
 
   describe('printReportAndExit', () => {
-    it('exits with code 1 when tests fail', () => {
-      let exitCode = null;
-      process.exit = (code) => { exitCode = code; };
+    it('throws with code PROOF_FAILURE when tests fail', () => {
+      const savedExitCode = process.exitCode;
+      process.exitCode = undefined;
       console.log = () => {};
       console.error = () => {};
       const report = {
         summary: { total: 1, passed: 0, failed: 1, suites: {} },
         results: [{ name: 'failed-test', passed: false, error: 'boom' }],
       };
-      printReportAndExit(report, 'test-label');
-      assert.strictEqual(exitCode, 1);
-      process.exit = originalExit;
+      assert.throws(
+        () => printReportAndExit(report, 'test-label'),
+        (err) => err.code === 'PROOF_FAILURE' && err.message.includes('1 proof test'),
+        'should throw PROOF_FAILURE error'
+      );
+      process.exitCode = savedExitCode;
       console.log = originalLog;
       console.error = originalError;
     });
 
-    it('does not exit when tests pass', () => {
-      let exitCode = null;
-      process.exit = (code) => { exitCode = code; };
+    it('does not throw when tests pass', () => {
+      const savedExitCode = process.exitCode;
       console.log = () => {};
       console.error = () => {};
       const report = {
         summary: { total: 1, passed: 1, failed: 0, suites: {} },
         results: [{ name: 'passed-test', passed: true }],
       };
-      printReportAndExit(report, 'test-label');
-      assert.strictEqual(exitCode, null);
-      process.exit = originalExit;
+      assert.doesNotThrow(() => printReportAndExit(report, 'test-label'));
+      process.exitCode = savedExitCode;
       console.log = originalLog;
       console.error = originalError;
     });

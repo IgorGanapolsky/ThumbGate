@@ -20,9 +20,6 @@
     "cancel"
   ],
   "selfReferentialChecks": [
-    "Trunk Merge Queue (main)",
-    "SonarCloud Code Analysis",
-    "SonarCloud",
-    "Merge blob reports"
+    "Trunk Merge Queue (main)"
   ]
 }

@@ -51,7 +51,7 @@ function proveGatePattern() {
   const results = [];
 
   const template = getHfContextTemplate('validate-context-before-codegen');
-  check(template, 'validate-context-before-codegen gate template must exist');
+  if (!template) throw new Error('validate-context-before-codegen gate template must exist');
   check(template.defaultAction === 'block', 'must default to block');
   check(template.category === 'AI Engineering Stack Safety', 'must be in correct category');
 
@@ -121,6 +121,7 @@ function proveGateTemplateContract() {
   const requiredFields = ['id', 'name', 'category', 'signal', 'defaultAction', 'severity', 'pattern', 'problem', 'roi', 'rollout'];
   const results = proveGateTemplateFields('validate-context-before-codegen', requiredFields);
   const template = getHfContextTemplate('validate-context-before-codegen');
+  if (!template) throw new Error('validate-context-before-codegen gate template must exist');
   check(template.signal === '👎', 'must have 👎 signal');
   check(template.defaultAction === 'block', 'must default to block');
   check(['critical', 'high'].includes(template.severity), 'must have valid severity');

@@ -16,11 +16,12 @@
  *   - proveAdapterFilesExist: shared adapter file validation
  *   - proveWorkloadRegistered: shared workload + candidate validation
  *   - proveGateTemplateContractForIds: shared gate template contract validation
+ *   - proveGateTemplateFields: shared field-presence validation
+ *   - proveContentReferences: shared content-reference validation
  */
 
 const fs = require('fs');
 const path = require('path');
-
 const { listGateTemplates } = require('./gate-templates');
 const { loadCatalog, recommendCandidates } = require('./model-candidates');
 
@@ -120,7 +121,9 @@ function runProofSuites(suites, options = {}) {
 }
 
 /**
- * Prints the proof report summary and exits with appropriate code.
+ * Prints the proof report summary and signals failure via a non-zero exit code.
+ *
+ * Uses throw rather than process.exit to allow proper cleanup and testability.
  * @param {Object} report - The proof report from runProofSuites.
  * @param {string} successLabel - Label for the success message.
  */
@@ -134,7 +137,9 @@ function printReportAndExit(report, successLabel) {
         if (result.error) console.error(`    ${result.error}`);
       }
     }
-    process.exit(1);
+    const failureError = new Error(`${report.summary.failed} proof test(s) failed`);
+    failureError.code = 'PROOF_FAILURE';
+    throw failureError;
   }
   console.log(`\nAll ${report.summary.total} ${successLabel} proof tests passed.`);
 }
@@ -172,7 +177,15 @@ function createProofRunner(config) {
 
   function main() {
     const report = runProof();
-    printReportAndExit(report, successLabel);
+    try {
+      printReportAndExit(report, successLabel);
+    } catch (e) {
+      if (e.code === 'PROOF_FAILURE') {
+        process.exitCode = 1;
+      } else {
+        throw e;
+      }
+    }
   }
 
   return { runProof, main };
@@ -192,7 +205,7 @@ function getGateTemplate(id) {
  * Shared adapter file validation: checks existence, version pin, and JSON validity.
  * @param {string} ROOT - Project root path.
  * @param {string} PACKAGE_VERSION - The shipped package version.
- * @param {Array<{file: string, checks?: Function}>} adapterFiles - File specs.
+ * @param {Array<{file: string, extraChecks?: Function}>} adapterFiles - File specs.
  * @returns {Array<Object>} Results array.
  */
 function proveAdapterFilesExist(ROOT, PACKAGE_VERSION, adapterFiles) {
@@ -232,11 +245,11 @@ function proveWorkloadRegistered(workloadId, expectedIds, provider, maxCandidate
 
   const catalog = loadCatalog();
   const workload = catalog.workloads[workloadId];
-  check(workload, `${workloadId} workload must exist in catalog`);
+  if (!workload) throw new Error(`${workloadId} workload must exist in catalog`);
 
   results.push({
     name: `${workloadId} workload exists`,
-    passed: !!workload,
+    passed: true,
     details: { metrics: workload.metrics },
   });
 
@@ -259,7 +272,9 @@ function proveWorkloadRegistered(workloadId, expectedIds, provider, maxCandidate
 
   check(report.recommended.length >= 1, `should recommend at least 1 candidate for ${workloadId}`);
   if (topCandidateId) {
-    check(report.recommended[0].id === topCandidateId, `top recommendation must be ${topCandidateId}`);
+    const topCandidate = report.recommended[0];
+    if (!topCandidate) throw new Error(`no top candidate returned for ${workloadId}`);
+    check(topCandidate.id === topCandidateId, `top recommendation must be ${topCandidateId}`);
   }
 
   results.push({
@@ -292,7 +307,8 @@ function proveGateTemplateContractItem(templateId, options = {}) {
   } = options;
 
   const template = getGateTemplate(templateId);
-  check(template, `gate template ${templateId} must exist`);
+  if (!template) throw new Error(`gate template ${templateId} must exist`);
+
   check(template.category === expectedCategory, `${templateId} must have category ${expectedCategory}`);
   check(template.signal === expectedSignal, `${templateId} must have ${expectedSignal} signal`);
   check(template.defaultAction === expectedAction, `${templateId} must default to ${expectedAction}`);
@@ -317,7 +333,7 @@ function proveGateTemplateContractItem(templateId, options = {}) {
 function proveGateTemplateFields(templateId, requiredFields) {
   const results = [];
   const template = getGateTemplate(templateId);
-  check(template, `gate template ${templateId} must exist`);
+  if (!template) throw new Error(`gate template ${templateId} must exist`);
 
   for (const field of requiredFields) {
     check(template[field], `validate-context-before-codegen must have ${field}`);
@@ -332,7 +348,7 @@ function proveGateTemplateFields(templateId, requiredFields) {
 
 /**
  * Checks that a content string contains all required references.
- * @param {Buffer|string} content - The file content to check.
+ * @param {string} content - The file content to check.
  * @param {Array<{needle: string, label: string}>} requiredRefs - References to find.
  * @returns {Array<Object>} Results array.
  */
