@@ -391,3 +391,20 @@ Adopted 2026-05-12 after a full PR/branch sweep. Persisted here so every future 
 - Record KPI telemetry for every MCP attempt and require idempotent, evidence-backed task outcomes before completion claims.
 - Keep public multi-agent workflows durable and executable without hosted-only modules; persist states, preserve failures, and terminate timed-out worker process groups.
 - Production monitoring is not healthy until at least 20 measured task outcomes and 20 observed tool calls pass the configured threshold set.
+
+## Context Engineering (HF course → ThumbGate)
+
+We practice **context engineering** ([HF Context Course](https://huggingface.co/learn/context-course/unit0/introduction)): structure skills, MCP, plugins/workflows, sub-agents, and hooks so agents find and obey the right knowledge.
+
+| Layer | Location |
+|-------|----------|
+| Skills | `skills/*`, `~/.grok/skills/*` — checklist: `/context-engineering-checklist` |
+| MCP | `adapters/mcp/`, profiles in `config/mcp-allowlists.json` |
+| Workflows | `.grok/workflows/*.rhai` — GSD review: `/context-engineering-pr-check` |
+| Sub-agents | Parallel workflows + Linear/vault ownership (`/gsd-ralph-context-loop`) |
+| Hooks | PreToolUse: `gate-check`, spend-guard, outbound-email-guard |
+
+**GSD:** Capture → Clarify → Organize → Execute → Review.  
+**Ralph:** Observe → Act → Feedback → Promote (**matchable** surfaces) → Enforce.  
+Irreversible policy belongs in hooks/gates, not skill prose alone (AGENT-259).
+
