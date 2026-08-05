@@ -883,7 +883,7 @@ function hashDataIdentity(prefix, value) {
 }
 
 function buildHostedTenantIdentity(validation = {}) {
-  if (!validation || validation.valid !== true || !validation.customerId) return null;
+  if (validation?.valid !== true || !validation.customerId) return null;
   const tenantSeed = validation.customerId;
   const principalSeed = validation.installId || tenantSeed;
   const tenantId = hashDataIdentity('tenant', tenantSeed);
@@ -2775,32 +2775,37 @@ function getTrackedLinkTarget(slug) {
     : null;
 }
 
-function appendTrackedLinkQueryParams(destinationUrl, parsed, target) {
-  const params = parsed.searchParams;
+function applyTrackedLinkDefaults(destinationUrl, target) {
   for (const [key, value] of Object.entries(target.defaults || {})) {
     if (!destinationUrl.searchParams.has(key)) {
       appendQueryParam(destinationUrl, key, value);
     }
   }
+}
+
+function applyTrackedLinkQueryKeys(destinationUrl, params) {
   for (const key of TRACKED_LINK_QUERY_KEYS) {
     const value = params.get(key);
-    if (value && value.trim()) {
-      const normalizedValue = key === 'utm_campaign'
-        ? normalizeCampaignId(value)
-        : value.trim();
-      destinationUrl.searchParams.set(key, normalizedValue);
-    }
+    if (!value || !value.trim()) continue;
+    const normalizedValue = key === 'utm_campaign'
+      ? normalizeCampaignId(value)
+      : value.trim();
+    destinationUrl.searchParams.set(key, normalizedValue);
   }
-  if (target.allowCustomerEmail) {
-    const customerEmail = normalizeCheckoutCustomerEmail(params.get('customer_email'));
-    if (customerEmail) {
-      appendQueryParam(
-        destinationUrl,
-        target.prefillStripeEmail ? 'prefilled_email' : 'customer_email',
-        customerEmail
-      );
-    }
-  }
+}
+
+function applyTrackedLinkCustomerEmail(destinationUrl, params, target) {
+  if (!target.allowCustomerEmail) return;
+  const customerEmail = normalizeCheckoutCustomerEmail(params.get('customer_email'));
+  if (!customerEmail) return;
+  appendQueryParam(
+    destinationUrl,
+    target.prefillStripeEmail ? 'prefilled_email' : 'customer_email',
+    customerEmail,
+  );
+}
+
+function applyTrackedLinkCtaDefaults(destinationUrl, target) {
   if (!destinationUrl.searchParams.has('cta_id')) {
     appendQueryParam(destinationUrl, 'cta_id', target.ctaId);
   }
@@ -2810,6 +2815,14 @@ function appendTrackedLinkQueryParams(destinationUrl, parsed, target) {
   if (!destinationUrl.searchParams.has('landing_path')) {
     appendQueryParam(destinationUrl, 'landing_path', `/go/${target.slug}`);
   }
+}
+
+function appendTrackedLinkQueryParams(destinationUrl, parsed, target) {
+  const params = parsed.searchParams;
+  applyTrackedLinkDefaults(destinationUrl, target);
+  applyTrackedLinkQueryKeys(destinationUrl, params);
+  applyTrackedLinkCustomerEmail(destinationUrl, params, target);
+  applyTrackedLinkCtaDefaults(destinationUrl, target);
 }
 
 function buildTrackedLinkDestination(target, hostedConfig, parsed) {
@@ -5167,6 +5180,23 @@ function isBillingSummaryAuthorized(req, expectedAdminKey, expectedOperatorKey) 
   if (expectedAdminKey && token === expectedAdminKey) return true;
   if (expectedOperatorKey && token === expectedOperatorKey) return true;
   return false;
+}
+
+/** Read-only paths the operator key may access (CLI dashboard / CFO / north-star). */
+const OPERATOR_READONLY_GET_PATHS = new Set([
+  '/v1/billing/summary',
+  '/v1/dashboard',
+  '/v1/dashboard/render-spec',
+  '/v1/dashboard/ai-inventory',
+  '/v1/dashboard/review-state',
+  '/v1/intake/workflow-sprint/queue',
+  '/v1/task-outcomes/monitor',
+]);
+
+function isOperatorReadonlyGet(req, expectedOperatorKey, pathname) {
+  if (!expectedOperatorKey || req.method !== 'GET') return false;
+  if (!OPERATOR_READONLY_GET_PATHS.has(pathname)) return false;
+  return safeKeyEqual(extractApiKey(req), expectedOperatorKey);
 }
 
 function extractTags(input) {
@@ -8736,19 +8766,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       return;
     }
 
-    // Operator key is allowed to bypass the general admin gate for dedicated
-    // read-only operational endpoints.
-    const _reqToken = extractApiKey(req);
-    const isOperatorReadRequest = Boolean(expectedOperatorKey)
-      && safeKeyEqual(_reqToken, expectedOperatorKey)
-      && req.method === 'GET'
-      && [
-        '/v1/billing/summary',
-        '/v1/intake/workflow-sprint/queue',
-        '/v1/task-outcomes/monitor',
-      ].includes(pathname);
-
-    if (!isOperatorReadRequest && !isAuthorized(req, expectedApiKey)) {
+    // Operator key: read-only operational endpoints only (see OPERATOR_READONLY_GET_PATHS).
+    if (!isOperatorReadonlyGet(req, expectedOperatorKey, pathname) && !isAuthorized(req, expectedApiKey)) {
       sendProblem(res, {
         type: PROBLEM_TYPES.UNAUTHORIZED,
         title: 'Unauthorized',

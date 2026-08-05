@@ -87,4 +87,23 @@ describe('operator key auth', () => {
     // 401 from general gate (operator key not valid for non-billing paths)
     assert.equal(res.status, 401);
   });
+
+  it('operator key reaches GET /v1/dashboard (CLI dashboard / north-star)', async () => {
+    const res = await fetch(`${origin}/v1/dashboard?window=today`, {
+      headers: { authorization: `Bearer ${TEST_VARS.THUMBGATE_OPERATOR_KEY}` },
+    });
+    assert.equal(res.status, 200, await res.text());
+  });
+
+  it('operator key still cannot mutate via POST /v1/dashboard/review-state', async () => {
+    const res = await fetch(`${origin}/v1/dashboard/review-state`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${TEST_VARS.THUMBGATE_OPERATOR_KEY}`,
+        'content-type': 'application/json',
+      },
+      body: '{}',
+    });
+    assert.equal(res.status, 401);
+  });
 });
