@@ -23,7 +23,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
 const {
   listGateTemplates,
 } = require('./gate-templates');
@@ -31,22 +30,17 @@ const {
   loadCatalog,
   recommendCandidates,
 } = require('./model-candidates');
+const {
+  check,
+  ensureDir,
+  patternMatches,
+  runProofSuites,
+  printReportAndExit,
+} = require('./proof-common');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_PROOF_DIR = path.join(ROOT, 'proof', 'vlt');
 const PACKAGE_VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8')).version;
-
-function check(condition, message) {
-  if (!condition) {
-    throw new Error(message);
-  }
-}
-
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 /**
  * Returns the gate template matching the given id from the config catalog.
@@ -54,19 +48,6 @@ function ensureDir(dirPath) {
 function getVltTemplate(id) {
   const templates = listGateTemplates();
   return templates.find((template) => template.id === id);
-}
-
-/**
- * Tests that a regex pattern matches the expected input.
- */
-function patternMatches(pattern, input) {
-  if (!pattern) return false;
-  try {
-    const regex = new RegExp(pattern);
-    return regex.test(input);
-  } catch (e) {
-    throw new Error(`Invalid regex pattern "${pattern}": ${e.message}`);
-  }
 }
 
 /**
@@ -336,10 +317,6 @@ function proveGateTemplateContract() {
  */
 function runProof(options = {}) {
   const proofDir = options.proofDir || process.env.THUMBGATE_VLT_PROOF_DIR || DEFAULT_PROOF_DIR;
-  const writeArtifacts = options.writeArtifacts !== false;
-  if (writeArtifacts) ensureDir(proofDir);
-
-  const allResults = [];
 
   const suites = [
     { name: 'gate_patterns_block', fn: proveGatePatternsBlockDangerousCommands },
@@ -349,58 +326,17 @@ function runProof(options = {}) {
     { name: 'gate_template_contract', fn: proveGateTemplateContract },
   ];
 
-  const summary = { total: 0, passed: 0, failed: 0, suites: {} };
-
-  for (const suite of suites) {
-    let suiteResults;
-    let suitePassed = true;
-    try {
-      suiteResults = suite.fn();
-      suitePassed = suiteResults.every((r) => r.passed);
-    } catch (e) {
-      suiteResults = [{ name: `${suite.name} threw`, passed: false, error: e.message }];
-      suitePassed = false;
-    }
-
-    allResults.push(...suiteResults);
-    summary.suites[suite.name] = {
-      passed: suitePassed,
-      tests: suiteResults.length,
-    };
-    summary.total += suiteResults.length;
-    summary.passed += suiteResults.filter((r) => r.passed).length;
-    summary.failed += suiteResults.filter((r) => !r.passed).length;
-  }
-
-  const report = {
+  return runProofSuites(suites, {
     proofDir,
     packageVersion: PACKAGE_VERSION,
-    summary,
-    results: allResults,
-  };
-
-  if (writeArtifacts) {
-    const reportPath = path.join(proofDir, 'vlt-proof-report.json');
-    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n');
-  }
-
-  return report;
+    reportName: 'vlt-proof-report.json',
+    writeArtifacts: options.writeArtifacts !== false,
+  });
 }
 
 if (require.main === module) {
   const report = runProof();
-  console.log(JSON.stringify(report.summary, null, 2));
-  if (report.summary.failed > 0) {
-    console.error(`\n${report.summary.failed} test(s) failed:`);
-    for (const result of report.results) {
-      if (!result.passed) {
-        console.error(`  ✗ ${result.name}`);
-        if (result.error) console.error(`    ${result.error}`);
-      }
-    }
-    process.exit(1);
-  }
-  console.log(`\nAll ${report.summary.total} vlt proof tests passed.`);
+  printReportAndExit(report, 'vlt');
 }
 
 module.exports = {

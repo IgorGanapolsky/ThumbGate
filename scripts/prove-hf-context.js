@@ -23,27 +23,24 @@
 const fs = require('fs');
 const path = require('path');
 
-const { listGateTemplates } = require('./gate-templates');
+const {
+  listGateTemplates,
+} = require('./gate-templates');
 const {
   loadCatalog,
   recommendCandidates,
 } = require('./model-candidates');
+const {
+  check,
+  ensureDir,
+  patternMatches,
+  runProofSuites,
+  printReportAndExit,
+} = require('./proof-common');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_PROOF_DIR = path.join(ROOT, 'proof', 'hf-context-course');
 const PACKAGE_VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8')).version;
-
-function check(condition, message) {
-  if (!condition) {
-    throw new Error(message);
-  }
-}
-
-function ensureDir(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
 
 /**
  * Returns the gate template matching the given id from the config catalog.
@@ -51,19 +48,6 @@ function ensureDir(dirPath) {
 function getHfContextTemplate(id) {
   const templates = listGateTemplates();
   return templates.find((template) => template.id === id);
-}
-
-/**
- * Tests that a regex pattern matches the expected input.
- */
-function patternMatches(pattern, input) {
-  if (!pattern) return false;
-  try {
-    const regex = new RegExp(pattern);
-    return regex.test(input);
-  } catch (e) {
-    throw new Error(`Invalid regex pattern "${pattern}": ${e.message}`);
-  }
 }
 
 /**
@@ -220,7 +204,7 @@ function proveGuideContent() {
   const content = fs.readFileSync(path.join(ROOT, 'adapters/huggingface-context-course/HF_CONTEXT.md'), 'utf-8');
 
   const requiredReferences = [
-    { needle: 'https://huggingface.co/learn/context-course', label: 'course URL' },
+    { needle: 'https://huggingface.co/learn/context-course/unit0/introduction', label: 'course URL' },
     { needle: 'validate-context-before-codegen', label: 'gate template reference' },
     { needle: 'huggingface/context-engineering-agent', label: 'model candidate reference' },
     { needle: 'Unit 1', label: 'Unit 1 (Agent Skills) reference' },
@@ -251,10 +235,6 @@ function proveGuideContent() {
  */
 function runProof(options = {}) {
   const proofDir = options.proofDir || process.env.THUMBGATE_HF_CONTEXT_PROOF_DIR || DEFAULT_PROOF_DIR;
-  const writeArtifacts = options.writeArtifacts !== false;
-  if (writeArtifacts) ensureDir(proofDir);
-
-  const allResults = [];
 
   const suites = [
     { name: 'gate_pattern_covers_codegen', fn: proveGatePatternCoversCodeGen },
@@ -264,58 +244,17 @@ function runProof(options = {}) {
     { name: 'guide_content', fn: proveGuideContent },
   ];
 
-  const summary = { total: 0, passed: 0, failed: 0, suites: {} };
-
-  for (const suite of suites) {
-    let suiteResults;
-    let suitePassed = true;
-    try {
-      suiteResults = suite.fn();
-      suitePassed = suiteResults.every((r) => r.passed);
-    } catch (e) {
-      suiteResults = [{ name: `${suite.name} threw`, passed: false, error: e.message }];
-      suitePassed = false;
-    }
-
-    allResults.push(...suiteResults);
-    summary.suites[suite.name] = {
-      passed: suitePassed,
-      tests: suiteResults.length,
-    };
-    summary.total += suiteResults.length;
-    summary.passed += suiteResults.filter((r) => r.passed).length;
-    summary.failed += suiteResults.filter((r) => !r.passed).length;
-  }
-
-  const report = {
+  return runProofSuites(suites, {
     proofDir,
     packageVersion: PACKAGE_VERSION,
-    summary,
-    results: allResults,
-  };
-
-  if (writeArtifacts) {
-    const reportPath = path.join(proofDir, 'hf-context-course-proof-report.json');
-    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n');
-  }
-
-  return report;
+    reportName: 'hf-context-course-proof-report.json',
+    writeArtifacts: options.writeArtifacts !== false,
+  });
 }
 
 if (require.main === module) {
   const report = runProof();
-  console.log(JSON.stringify(report.summary, null, 2));
-  if (report.summary.failed > 0) {
-    console.error(`\n${report.summary.failed} test(s) failed:`);
-    for (const result of report.results) {
-      if (!result.passed) {
-        console.error(`  ✗ ${result.name}`);
-        if (result.error) console.error(`    ${result.error}`);
-      }
-    }
-    process.exit(1);
-  }
-  console.log(`\nAll ${report.summary.total} HF Context Course proof tests passed.`);
+  printReportAndExit(report, 'HF Context Course');
 }
 
 module.exports = {
