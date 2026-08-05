@@ -136,11 +136,8 @@ function readJSONL(filePath, options = {}) {
   try {
     text = readTextTail(filePath, maxBytes).text;
   } catch (err) {
-    // Never let a single bloated log take down the whole dashboard.
-    if (err && /string longer than|Cannot create a string|ENOMEM|heap/i.test(String(err.message || err))) {
-      return [];
-    }
-    throw err;
+    // Never let a single bloated/unreadable log take down the whole dashboard.
+    return [];
   }
   if (!text || !text.trim()) return [];
   const lines = text.split('\n');

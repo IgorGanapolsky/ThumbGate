@@ -196,6 +196,10 @@ const {
   collectAllFeedbackEntries,
 } = require('../../scripts/dashboard');
 const {
+  isDashboardDataLimitError,
+  formatDashboardLimitDetail,
+} = require('../../scripts/dashboard-limits');
+const {
   collectAggregateLogEntries,
   computeAggregateFeedbackStats,
   shouldAggregateFeedback,
@@ -1819,20 +1823,13 @@ function buildWorkflowIntakeQueue(parsed, workflowSprintIntake, feedbackDir, opt
   };
 }
 
-function isDashboardDataLimitError(err) {
-  const message = String(err && err.message ? err.message : err || '');
-  return /string longer than|Cannot create a string|ENOMEM|JavaScript heap|out of memory/i.test(message);
-}
-
 function sendInvalidAnalyticsWindowProblem(res, title, err) {
   if (isDashboardDataLimitError(err)) {
     sendProblem(res, {
       type: PROBLEM_TYPES.INTERNAL,
       title: 'Dashboard data too large',
       status: 503,
-      detail: 'Feedback/memory logs exceeded the safe in-memory limit for dashboard assembly. '
-        + 'Logs are now tail-capped; if this persists, rotate oversized JSONL under the feedback dir. '
-        + `Cause: ${err?.message || 'string/heap limit'}`,
+      detail: formatDashboardLimitDetail(err, { phase: 'assembly' }),
     });
     return;
   }
@@ -1840,7 +1837,7 @@ function sendInvalidAnalyticsWindowProblem(res, title, err) {
     type: PROBLEM_TYPES.INVALID_REQUEST,
     title,
     status: 400,
-    detail: err?.message ? err.message : 'Invalid analytics window request.',
+    detail: err && err.message ? err.message : 'Invalid analytics window request.',
   });
 }
 
@@ -3044,9 +3041,7 @@ function sendJson(res, statusCode, payload, extraHeaders = {}, options = {}) {
         type: PROBLEM_TYPES.INTERNAL,
         title: 'Dashboard response too large',
         status: 503,
-        detail: 'Dashboard JSON exceeded the runtime string limit. '
-          + 'Use a bounded feedback window or rotate oversized logs. '
-          + `Cause: ${err?.message || 'stringify limit'}`,
+        detail: formatDashboardLimitDetail(err, { phase: 'stringify' }),
       });
       return;
     }

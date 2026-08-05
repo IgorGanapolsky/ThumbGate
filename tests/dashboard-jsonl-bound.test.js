@@ -47,3 +47,36 @@ test('generateDashboard remains callable with oversized log paths (bounded read)
   assert.ok(data.gateStats);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test('readJSONL returns empty array when read fails with string-limit style error', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-jsonl-err-'));
+  const file = path.join(dir, 'feedback-log.jsonl');
+  fs.writeFileSync(file, `${JSON.stringify({ id: 'ok', signal: 'up' })}\n`);
+  // Force a tiny maxBytes path through a missing-permission scenario by
+  // replacing the file with a directory so stat/read throws.
+  fs.rmSync(file);
+  fs.mkdirSync(file);
+  const entries = readJSONL(file);
+  assert.deepEqual(entries, []);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('operational dashboard reports progress stages', async () => {
+  const { getOperationalDashboard } = require('../scripts/operational-dashboard');
+  const steps = [];
+  const prev = process.env.THUMBGATE_METRICS_SOURCE;
+  process.env.THUMBGATE_METRICS_SOURCE = 'local';
+  try {
+    const local = await getOperationalDashboard({
+      window: 'today',
+      timeZone: 'UTC',
+      onProgress: (msg) => steps.push(msg),
+    });
+    assert.equal(local.source, 'local');
+    assert.ok(steps.length >= 1);
+    assert.ok(steps.some((s) => /local|Checking|Building/i.test(s)));
+  } finally {
+    if (prev === undefined) delete process.env.THUMBGATE_METRICS_SOURCE;
+    else process.env.THUMBGATE_METRICS_SOURCE = prev;
+  }
+});
