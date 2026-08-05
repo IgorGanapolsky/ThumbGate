@@ -80,7 +80,7 @@ test('HF Context Course: HF_CONTEXT.md references gate templates, model candidat
     'utf8',
   );
 
-  assert.ok(content.includes('https://huggingface.co/learn/context-course'), 'must reference course URL');
+  assert.match(content, /https:\/\/huggingface\.co\/learn\/context-course\/unit0\/introduction/, 'must reference course URL');
   assert.ok(content.includes('validate-context-before-codegen'), 'must reference gate template');
   assert.ok(content.includes('huggingface/context-engineering-agent'), 'must reference model candidate');
   assert.ok(content.includes('context-engineering'), 'must reference context-engineering workload');
