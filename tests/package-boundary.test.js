@@ -423,8 +423,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // crash-recoverable cross-process ledger lock are the deterministic
     // purchase requisition, reservation, settlement, and reconciliation
     // boundary used by the packaged MCP and pre-tool hook. No headroom.
-    manifest.fileCount <= 421,
-    `npm package should stay <= 421 files, got ${manifest.fileCount}`
+    // 421 -> 423 (2026-08-05): scripts/cli-progress.js (dashboard/cfo/north-star UX)
+    // + scripts/dashboard-limits.js (required by server.js fail-closed size path).
+    // operational-dashboard/summary stay unpackaged (forbiddenFiles ratchet).
+    manifest.fileCount <= 423,
+    `npm package should stay <= 423 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

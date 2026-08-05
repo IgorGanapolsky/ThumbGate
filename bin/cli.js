@@ -1659,13 +1659,18 @@ function compact() {
 
 function cfo() {
   const args = parseArgs(process.argv.slice(3));
+  const { createCliProgress } = require(path.join(PKG_ROOT, 'scripts', 'cli-progress'));
+  const progress = createCliProgress();
   const { getOperationalBillingSummary } = require(path.join(PKG_ROOT, 'scripts', 'operational-summary'));
+  progress.start('Loading CFO billing summary…');
   getOperationalBillingSummary({
     window: args.window,
     timeZone: args.timezone,
     now: args.now,
+    onProgress: (message) => progress.update(message),
   })
     .then(({ source, summary, fallbackReason }) => {
+      progress.succeed(`Billing summary ready (${source})`);
       console.log(JSON.stringify({
         source,
         fallbackReason,
@@ -1674,6 +1679,7 @@ function cfo() {
       process.exit(0);
     })
     .catch((err) => {
+      progress.fail('CFO billing summary failed');
       console.error(err && err.message ? err.message : err);
       process.exit(1);
     });
@@ -1691,14 +1697,19 @@ function repairGithubMarketplace() {
 
 function northStar() {
   const args = parseArgs(process.argv.slice(3));
+  const { createCliProgress } = require(path.join(PKG_ROOT, 'scripts', 'cli-progress'));
+  const progress = createCliProgress();
   const { getOperationalDashboard } = require(path.join(PKG_ROOT, 'scripts', 'operational-dashboard'));
 
+  progress.start('Loading North Star metrics…');
   getOperationalDashboard({
     window: args.window,
     timeZone: args.timezone,
     now: args.now,
+    onProgress: (message) => progress.update(message),
   })
     .then(({ source, data, fallbackReason }) => {
+      progress.succeed(`North Star ready (${source})`);
       const summary = data.analytics.northStar || {};
       const revenue = data.analytics.revenue || {};
 
@@ -1721,6 +1732,7 @@ function northStar() {
       process.exit(0);
     })
     .catch((err) => {
+      progress.fail('North Star failed');
       console.error(err && err.message ? err.message : err);
       process.exit(1);
     });

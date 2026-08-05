@@ -61,6 +61,12 @@ function resolveHostedSummaryConfig() {
   };
 }
 
+function reportSummaryProgress(options, message) {
+  if (typeof options.onProgress === 'function') {
+    options.onProgress(message);
+  }
+}
+
 async function fetchHostedBillingSummary(options = {}, config = resolveHostedSummaryConfig()) {
   const analyticsWindow = resolveAnalyticsWindow(options);
   if (!shouldPreferHostedSummary()) {
@@ -81,6 +87,7 @@ async function fetchHostedBillingSummary(options = {}, config = resolveHostedSum
     requestUrl.searchParams.set('now', analyticsWindow.now);
   }
 
+  reportSummaryProgress(options, `Fetching hosted billing summary (${analyticsWindow.window})…`);
   const response = await fetch(requestUrl, {
     method: 'GET',
     headers: {
@@ -97,13 +104,16 @@ async function fetchHostedBillingSummary(options = {}, config = resolveHostedSum
     throw err;
   }
 
+  reportSummaryProgress(options, 'Parsing hosted billing payload…');
   return response.json();
 }
 
 async function getOperationalBillingSummary(options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options);
   try {
-    const summary = await fetchHostedBillingSummary(analyticsWindow);
+    reportSummaryProgress(options, 'Checking hosted billing summary…');
+    const summary = await fetchHostedBillingSummary(options);
+    reportSummaryProgress(options, 'Hosted billing summary ready');
     return {
       source: 'hosted',
       summary,
@@ -119,6 +129,7 @@ async function getOperationalBillingSummary(options = {}) {
     // Hosted deliberately disabled or never configured — local fallback is
     // intentional, not a degraded state. Tag as plain 'local'.
     if (code === 'hosted_summary_disabled' || code === 'hosted_summary_unconfigured') {
+      reportSummaryProgress(options, 'Building local billing summary…');
       return {
         source: 'local',
         summary: await getBillingSummaryLive(analyticsWindow),
@@ -159,6 +170,7 @@ async function getOperationalBillingSummary(options = {}) {
       `[operational-summary] Hosted billing unreachable (status=${status ?? 'network'}); ` +
       `falling back to LOCAL-UNVERIFIED state. Numbers below may not reflect actual Stripe revenue.`
     );
+    reportSummaryProgress(options, `Hosted billing failed (HTTP ${status ?? 'network'}); building local summary…`);
     return {
       source: 'local-unverified',
       summary: await getBillingSummaryLive(analyticsWindow),

@@ -2,12 +2,13 @@
 "thumbgate": patch
 ---
 
-Bound dashboard JSONL reads so hosted `/v1/dashboard` survives large prod logs.
+Bound dashboard JSONL reads, CLI progress for operator commands, and pack the
+runtime helpers the published CLI/server actually need.
 
-`readJSONL` loaded entire feedback/memory files into one string, which throws
-V8's max-string error on oversized Railway volumes and returned HTTP 400 with
-a misleading "Invalid dashboard query" title after operator auth was fixed.
-Tail-cap reads (32 MiB / 100k lines) and map size/heap failures to HTTP 503.
+- Tail-cap feedback/memory JSONL so hosted `/v1/dashboard` survives large volumes
+- Map size/heap failures to HTTP 503 instead of misleading 400 invalid-query
+- Spinner/step progress for `thumbgate dashboard`, `cfo`, and `north-star`
+- Ship `cli-progress` + `dashboard-limits` in the npm pack (ceiling 423)
 
-Also add CLI progress feedback for `thumbgate dashboard` (spinner/step lines)
-so long hosted fetches and local fallbacks are not silent.
+Also publish a GEO learn page mapping the Hugging Face Context Course to
+ThumbGate hooks (repo deploy surface; not npm-packed under public/learn/).
