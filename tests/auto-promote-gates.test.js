@@ -775,6 +775,46 @@ test('extractExecutableAction: rejects pure prose', () => {
   assert.equal(extractExecutableAction({ context: 'agent broke deploy' }), null);
 });
 
+test('extractExecutableAction: rejects always-approve / without-human-review narration', () => {
+  const { extractExecutableAction } = require('../scripts/auto-promote-gates');
+  assert.equal(
+    extractExecutableAction({
+      context: 'operator auto-sent hiring package without human review via Gmail',
+    }),
+    null,
+  );
+  assert.equal(
+    extractExecutableAction({
+      context: 'assistant always-approve path for messages/send',
+    }),
+    null,
+  );
+  assert.equal(
+    extractExecutableAction({
+      context: 'Codex (claude, always-approve) emailed the panel',
+    }),
+    null,
+  );
+  assert.equal(
+    extractExecutableAction({
+      context: 'thumbs-down on the last Gmail send',
+    }),
+    null,
+  );
+});
+
+test('extractExecutableAction: accepts known CLI prefixes', () => {
+  const { extractExecutableAction } = require('../scripts/auto-promote-gates');
+  assert.equal(
+    extractExecutableAction({ context: 'kubectl get pods -n prod' }),
+    'kubectl get pods -n prod',
+  );
+  assert.equal(
+    extractExecutableAction({ context: 'npm run test:gates -- --test-name-pattern=outbound' }),
+    'npm run test:gates -- --test-name-pattern=outbound',
+  );
+});
+
 test('promote: tag-only groups without executable actions do not hard-block a single latest command', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-tag-only-'));
   const logPath = path.join(dir, 'feedback-log.jsonl');

@@ -216,7 +216,7 @@ function extractExecutableAction(entry) {
   if (/^(?:agent|the|user|ceo|claude|grok|codex|gemini|assistant|operator)\b/i.test(ctx)) {
     return null;
   }
-  if (/(?:without\s+(?:human\s+)?review|thumbs?-?down|auto-sent|always-approve)\b/i.test(ctx)) {
+  if (/\b(?:without\s+(?:human\s+)?review|thumbs?-?down|auto-sent|always-approve)\b/i.test(ctx)) {
     return null;
   }
   // Parenthetical asides ("Agent (grok, always-approve)") are prose, not argv.

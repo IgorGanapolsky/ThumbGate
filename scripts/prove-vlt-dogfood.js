@@ -23,24 +23,29 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const JSON_MODE = process.argv.includes('--json');
-const ALLOW_MISSING = process.argv.includes('--allow-missing');
-const REGISTRY = process.env.VLT_REGISTRY || 'https://registry.npmjs.org/';
+const DEFAULT_REGISTRY = process.env.VLT_REGISTRY || 'https://registry.npmjs.org/';
 
-function log(msg) {
-  if (!JSON_MODE) process.stderr.write(`${msg}\n`);
+function parseCliFlags(argv = process.argv) {
+  return {
+    json: argv.includes('--json'),
+    allowMissing: argv.includes('--allow-missing'),
+  };
 }
 
-function findVlt() {
+function log(msg, { json = false } = {}) {
+  if (!json) process.stderr.write(`${msg}\n`);
+}
+
+function findVlt({ env = process.env, spawn = spawnSync } = {}) {
   const candidates = [
-    process.env.VLT_BIN,
+    env.VLT_BIN,
     'vlt',
     path.join(os.homedir(), '.npm-global', 'bin', 'vlt'),
     path.join(os.homedir(), '.local', 'bin', 'vlt'),
   ].filter(Boolean);
 
   for (const bin of candidates) {
-    const r = spawnSync(bin, ['--version'], { encoding: 'utf8' });
+    const r = spawn(bin, ['--version'], { encoding: 'utf8' });
     if (r.status === 0 && String(r.stdout || r.stderr || '').trim()) {
       return { bin, version: String(r.stdout || r.stderr).trim().split(/\s+/).pop() };
     }
@@ -49,7 +54,8 @@ function findVlt() {
 }
 
 function run(bin, args, opts = {}) {
-  const r = spawnSync(bin, args, {
+  const spawn = opts.spawn || spawnSync;
+  const r = spawn(bin, args, {
     encoding: 'utf8',
     cwd: opts.cwd,
     env: { ...process.env, ...(opts.env || {}) },
@@ -63,7 +69,24 @@ function run(bin, args, opts = {}) {
   };
 }
 
-function main() {
+/**
+ * @param {object} [options]
+ * @param {boolean} [options.json]
+ * @param {boolean} [options.allowMissing]
+ * @param {string} [options.registry]
+ * @param {typeof spawnSync} [options.spawn]
+ * @param {NodeJS.ProcessEnv} [options.env]
+ * @param {(report: object) => void} [options.onReport] — called with report before return
+ * @returns {number} exit code
+ */
+function main(options = {}) {
+  const flags = parseCliFlags(options.argv || process.argv);
+  const json = options.json ?? flags.json;
+  const allowMissing = options.allowMissing ?? flags.allowMissing;
+  const registry = options.registry || DEFAULT_REGISTRY;
+  const spawn = options.spawn || spawnSync;
+  const env = options.env || process.env;
+
   const report = {
     ok: false,
     skipped: false,
@@ -71,24 +94,26 @@ function main() {
     probes: [],
   };
 
-  const found = findVlt();
+  const found = findVlt({ env, spawn });
   if (!found) {
     report.skipped = true;
     report.error = 'vlt CLI not found on PATH';
-    if (ALLOW_MISSING) {
+    if (allowMissing) {
       report.ok = true;
       report.note = 'Skipped — install via: curl -fsSL https://install.vlt.sh | bash';
-      if (JSON_MODE) console.log(JSON.stringify(report, null, 2));
-      else log(`SKIP: ${report.error}`);
+      if (json) console.log(JSON.stringify(report, null, 2));
+      else log(`SKIP: ${report.error}`, { json });
+      if (typeof options.onReport === 'function') options.onReport(report);
       return 0;
     }
-    if (JSON_MODE) console.log(JSON.stringify(report, null, 2));
-    else log(`FAIL: ${report.error}`);
+    if (json) console.log(JSON.stringify(report, null, 2));
+    else log(`FAIL: ${report.error}`, { json });
+    if (typeof options.onReport === 'function') options.onReport(report);
     return 2;
   }
 
   report.version = found.version;
-  log(`vlt ${found.version} @ ${found.bin}`);
+  log(`vlt ${found.version} @ ${found.bin}`, { json });
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-vlt-dogfood-'));
   try {
@@ -105,7 +130,11 @@ function main() {
 
     // 1) install
     const t0 = Date.now();
-    const install = run(found.bin, ['install', `--registry=${REGISTRY}`], { cwd: tmp });
+    const install = run(found.bin, ['install', `--registry=${registry}`], {
+      cwd: tmp,
+      spawn,
+      env,
+    });
     const installMs = Date.now() - t0;
     const installOk = install.status === 0
       && fs.existsSync(path.join(tmp, 'node_modules', 'ms'));
@@ -113,12 +142,21 @@ function main() {
       id: 'install',
       ok: installOk,
       ms: installMs,
-      detail: installOk ? `ms@2.1.3 in ${installMs}ms` : (install.stderr || install.stdout || install.error || 'install failed').slice(0, 300),
+      detail: installOk
+        ? `ms@2.1.3 in ${installMs}ms`
+        : (install.stderr || install.stdout || install.error || 'install failed').slice(0, 300),
     });
-    log(installOk ? `PASS install (${installMs}ms)` : `FAIL install: ${report.probes[0].detail}`);
+    log(
+      installOk ? `PASS install (${installMs}ms)` : `FAIL install: ${report.probes[0].detail}`,
+      { json },
+    );
 
     // 2) query installed package
-    const query = run(found.bin, ['query', '#ms', '--view=count'], { cwd: tmp });
+    const query = run(found.bin, ['query', '#ms', '--view=count'], {
+      cwd: tmp,
+      spawn,
+      env,
+    });
     const queryOut = (query.stdout || query.stderr || '').trim();
     // count view may print a number or json number
     const queryOk = query.status === 0 && /[1-9]/.test(queryOut);
@@ -127,22 +165,30 @@ function main() {
       ok: queryOk,
       detail: queryOut.slice(0, 120) || query.error || 'empty',
     });
-    log(queryOk ? `PASS query #ms → ${queryOut.slice(0, 40)}` : `FAIL query: ${report.probes[1].detail}`);
+    log(
+      queryOk ? `PASS query #ms → ${queryOut.slice(0, 40)}` : `FAIL query: ${report.probes[1].detail}`,
+      { json },
+    );
 
     // 3) security selector runs (0 vulns expected on ms)
-    const vuln = run(found.bin, ['query', ':vuln', '--view=count'], { cwd: tmp });
+    const vuln = run(found.bin, ['query', ':vuln', '--view=count'], {
+      cwd: tmp,
+      spawn,
+      env,
+    });
     const vulnOk = vuln.status === 0;
     report.probes.push({
       id: 'query-vuln-selector',
       ok: vulnOk,
       detail: (vuln.stdout || vuln.stderr || '').trim().slice(0, 80) || (vulnOk ? '0' : 'selector failed'),
     });
-    log(vulnOk ? `PASS query :vuln (security selector executable)` : `FAIL :vuln`);
+    log(vulnOk ? 'PASS query :vuln (security selector executable)' : 'FAIL :vuln', { json });
 
     report.ok = report.probes.every((p) => p.ok);
     report.tmp = tmp;
-    if (JSON_MODE) console.log(JSON.stringify(report, null, 2));
-    else log(report.ok ? 'SELF-TEST: ALL PASS' : 'SELF-TEST: FAILED');
+    if (json) console.log(JSON.stringify(report, null, 2));
+    else log(report.ok ? 'SELF-TEST: ALL PASS' : 'SELF-TEST: FAILED', { json });
+    if (typeof options.onReport === 'function') options.onReport(report);
     return report.ok ? 0 : 1;
   } finally {
     try {
@@ -151,8 +197,9 @@ function main() {
   }
 }
 
-if (require.main === module || path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
+// Path-based CLI entry (not require.main === module — Sonar S3403 always-false under CJS).
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   process.exitCode = main();
 }
 
-module.exports = { main, findVlt };
+module.exports = { main, findVlt, run, parseCliFlags };
