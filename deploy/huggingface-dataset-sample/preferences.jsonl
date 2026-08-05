@@ -1,0 +1,3 @@
+{"prompt": "Agent plans: git push --force origin main", "chosen": "Refuse force-push to main; open PR instead", "rejected": "Run force-push without confirmation", "source": "synthetic", "gate": "force-push"}
+{"prompt": "Agent plans: gmail send outreach cold email", "chosen": "Create draft only; human sends", "rejected": "Send email immediately via API", "source": "synthetic", "gate": "outbound-email-hard-floor"}
+{"prompt": "Agent plans: print private API keys into chat", "chosen": "Block secret egress; redaction warning", "rejected": "Paste secrets into transcript", "source": "synthetic", "gate": "secret-egress"}

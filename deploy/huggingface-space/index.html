@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ThumbGate — Infrastructure Firewall for AI Coding Agents</title>
+  <meta name="description" content="Pre-action gates for Claude Code, Cursor, Codex, and MCP agents. Feedback → lessons → prevention rules that block known-bad tool calls." />
+  <meta property="og:title" content="ThumbGate" />
+  <meta property="og:description" content="Infrastructure firewall for AI coding agents." />
+  <meta property="og:url" content="https://huggingface.co/spaces/IgorGanapolsky/ThumbGate" />
+  <link rel="canonical" href="https://thumbgate.ai/?utm_source=huggingface&utm_medium=space&utm_campaign=thumbgate_space" />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #121a33;
+      --text: #e8eefc;
+      --muted: #9fb0d0;
+      --accent: #6ea8ff;
+      --accent2: #8b5cf6;
+      --ok: #34d399;
+      --border: rgba(255,255,255,0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1a274d 0%, transparent 55%),
+                  radial-gradient(900px 500px at 100% 0%, #2a1450 0%, transparent 50%),
+                  var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      min-height: 100vh;
+    }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 40px 20px 64px; }
+    .badge {
+      display: inline-flex; gap: 8px; align-items: center;
+      border: 1px solid var(--border); background: rgba(255,255,255,0.03);
+      border-radius: 999px; padding: 6px 12px; color: var(--muted); font-size: 13px;
+    }
+    h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; margin: 16px 0 12px; }
+    .lead { color: var(--muted); font-size: 1.08rem; max-width: 62ch; }
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 36px; }
+    a.btn {
+      text-decoration: none; border-radius: 12px; padding: 12px 16px; font-weight: 600;
+      border: 1px solid var(--border);
+    }
+    a.btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #07101f; border: none; }
+    a.btn.secondary { background: var(--card); color: var(--text); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px 16px 14px;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 1rem; }
+    .card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+    pre {
+      background: #0a0f1d; border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px 16px; overflow: auto; color: #d7e4ff; font-size: 0.92rem;
+    }
+    .ok { color: var(--ok); }
+    footer { margin-top: 40px; color: var(--muted); font-size: 0.9rem; }
+    footer a { color: var(--accent); }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="badge">🛡️ Hugging Face Space · AI agent governance</div>
+    <h1>ThumbGate — the infrastructure firewall for AI coding agents</h1>
+    <p class="lead">
+      Capture feedback → promote lessons → generate prevention rules →
+      <strong>block known-bad tool calls</strong> before they run.
+      Built for Claude Code, Cursor, Codex, OpenCode, and MCP runtimes.
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="https://thumbgate.ai/?utm_source=huggingface&utm_medium=space&utm_campaign=thumbgate_space&utm_content=hero_cta" target="_blank" rel="noopener">Open ThumbGate.app</a>
+      <a class="btn secondary" href="https://thumbgate.ai/pricing?utm_source=huggingface&utm_medium=space&utm_campaign=thumbgate_space&utm_content=pricing_cta" target="_blank" rel="noopener">Pricing / Pro</a>
+      <a class="btn secondary" href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn secondary" href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener">npm <code>thumbgate</code></a>
+    </div>
+
+    <h2>Install in 30 seconds</h2>
+    <pre><code>npx thumbgate init
+npx thumbgate doctor
+npx thumbgate dashboard --open</code></pre>
+
+    <h2>What you get</h2>
+    <div class="grid" style="margin-top:14px">
+      <div class="card">
+        <h3 class="ok">Pre-action gates</h3>
+        <p>Force-push, secret egress, outbound email hard-floors, financial control, and more — at the tool boundary.</p>
+      </div>
+      <div class="card">
+        <h3 class="ok">Feedback → rules</h3>
+        <p>Thumbs-down becomes a prevention rule the agent cannot silently bypass.</p>
+      </div>
+      <div class="card">
+        <h3 class="ok">MCP + adapters</h3>
+        <p>Works across agent harnesses with a packaged MCP server and plugin surfaces.</p>
+      </div>
+      <div class="card">
+        <h3 class="ok">Context engineering</h3>
+        <p>Maps the Hugging Face Context Course (skills, MCP, hooks, sub-agents) onto enforceable gates.</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top:36px">Learn</h2>
+    <p class="lead">
+      <a style="color:var(--accent)" href="https://thumbgate.ai/learn/context-engineering-for-coding-agents?utm_source=huggingface&utm_medium=space&utm_campaign=thumbgate_space&utm_content=learn" target="_blank" rel="noopener">Context engineering for coding agents</a>
+      — HF course units → ThumbGate gates.
+    </p>
+
+    <footer>
+      Built by <a href="https://huggingface.co/IgorGanapolsky">Igor Ganapolsky</a>.
+      MIT open-source runtime · hosted Pro optional.
+      Not affiliated with Hugging Face.
+      Production: <a href="https://thumbgate-production.up.railway.app/health" target="_blank" rel="noopener">/health</a>
+    </footer>
+  </main>
+</body>
+</html>
