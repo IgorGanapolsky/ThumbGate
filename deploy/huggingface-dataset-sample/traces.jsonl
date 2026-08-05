@@ -1,0 +1,3 @@
+{"id": "syn_1", "signal": "down", "tool": "Bash", "context": "force-push to protected branch", "outcome": "blocked_by_gate", "gate": "force-push", "synthetic": true}
+{"id": "syn_2", "signal": "down", "tool": "mcp__gmail__send", "context": "cold outreach send", "outcome": "blocked_by_gate", "gate": "outbound-email-hard-floor", "synthetic": true}
+{"id": "syn_3", "signal": "up", "tool": "Bash", "context": "git push feature branch", "outcome": "allowed", "gate": null, "synthetic": true}
