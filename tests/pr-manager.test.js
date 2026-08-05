@@ -737,3 +737,44 @@ test('resolveBlockers still refuses UNSTABLE when a real check is failing', asyn
   assert.equal(outcome.status, 'blocked');
   assert.equal(outcome.reason, 'ci_failure');
 });
+
+const {
+  orderPrsForStackMerge,
+  buildAgentCopyPrompt,
+  summarizeChecks: summarizeChecksExport,
+} = require('../scripts/pr-manager');
+
+test('PR Manager - orderPrsForStackMerge puts stack base before child', () => {
+  const ordered = orderPrsForStackMerge([
+    { number: 2, headRefName: 'feat/child', baseRefName: 'feat/base', title: 'child' },
+    { number: 1, headRefName: 'feat/base', baseRefName: 'main', title: 'base' },
+    { number: 3, headRefName: 'feat/other', baseRefName: 'main', title: 'other' },
+  ]);
+  const nums = ordered.map((pr) => pr.number);
+  assert.equal(nums.indexOf(1) < nums.indexOf(2), true, 'base before child');
+  assert.ok(nums.includes(3));
+});
+
+test('PR Manager - summarizeChecks flags TIMED_OUT as timeout inflation', () => {
+  const summary = summarizeChecksExport([
+    { name: 'CI/test', status: 'COMPLETED', conclusion: 'TIMED_OUT' },
+    { name: 'lint', status: 'COMPLETED', conclusion: 'SUCCESS' },
+  ]);
+  assert.deepEqual(summary.failing, ['CI/test']);
+  assert.deepEqual(summary.timedOut, ['CI/test']);
+});
+
+test('PR Manager - buildAgentCopyPrompt includes failures and trunk guidance', () => {
+  const prompt = buildAgentCopyPrompt({
+    pr: { number: 99, title: 'Fix flakes', url: 'https://example/pr/99', headRefName: 'feat/x', baseRefName: 'main' },
+    checkSummary: {
+      failing: ['CI/test'],
+      pending: [],
+      timedOut: ['CI/test'],
+    },
+  });
+  assert.match(prompt, /PR #99/);
+  assert.match(prompt, /CI\/test/);
+  assert.match(prompt, /Timeout/);
+  assert.match(prompt, /trunk merge/i);
+});

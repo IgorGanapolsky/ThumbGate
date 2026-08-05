@@ -237,7 +237,7 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // and scripts/dashboard-limits.js (shared JSONL/string-limit helpers for the
   // hosted dashboard fail-soft path). Pure public-shell CLI/runtime; no Core.
   // Keep lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 423;
+  const CEILING = 426;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

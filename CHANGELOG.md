@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Patch Changes
+
+- Trunk AI-speed ops (stacked PR merge order, timeout-inflation detection, flaky ticket lifecycle, agent copy-prompt):
+  - `pr-manager` stack-aware merge ordering + TIMED_OUT surfacing + agent copy prompt on CI failure
+  - `scripts/ci-timeout-inflation.js`, `scripts/flaky-test-ticket-lifecycle.js`, `scripts/ci-agent-copy-prompt.js`
+  - npm: `ci:timeout-inflation`, `ci:copy-prompt`, `ci:flaky-ticket`
+
 ## 1.34.3
 
 ### Patch Changes
