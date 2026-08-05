@@ -327,6 +327,17 @@ function syncVersion(opts) {
     'adapters/perplexity/config.toml',
     'adapters/perplexity/opencode.json',
     'adapters/perplexity/.mcp.json',
+    // hf-context-course landed (2026-08-05) with hardcoded pins and was not in
+    // this list, so the 1.35.0 cut left it at 1.34.3 until the pins test caught
+    // it. Every new adapter directory with a version pin belongs here.
+    'adapters/huggingface-context-course/config.toml',
+    'adapters/huggingface-context-course/opencode.json',
+    'adapters/huggingface-context-course/.mcp.json',
+    'adapters/huggingface-context-course/HF_CONTEXT.md',
+    'adapters/vlt/config.toml',
+    'adapters/vlt/opencode.json',
+    'adapters/vlt/.mcp.json',
+    'adapters/vlt/VLT.md',
     'docs/PLUGIN_DISTRIBUTION.md',
     'adapters/README.md',
     'adapters/opencode/opencode.json',
