@@ -196,6 +196,10 @@ const {
   collectAllFeedbackEntries,
 } = require('../../scripts/dashboard');
 const {
+  isDashboardDataLimitError,
+  formatDashboardLimitDetail,
+} = require('../../scripts/dashboard-limits');
+const {
   collectAggregateLogEntries,
   computeAggregateFeedbackStats,
   shouldAggregateFeedback,
@@ -1820,11 +1824,20 @@ function buildWorkflowIntakeQueue(parsed, workflowSprintIntake, feedbackDir, opt
 }
 
 function sendInvalidAnalyticsWindowProblem(res, title, err) {
+  if (isDashboardDataLimitError(err)) {
+    sendProblem(res, {
+      type: PROBLEM_TYPES.INTERNAL,
+      title: 'Dashboard data too large',
+      status: 503,
+      detail: formatDashboardLimitDetail(err, { phase: 'assembly' }),
+    });
+    return;
+  }
   sendProblem(res, {
     type: PROBLEM_TYPES.INVALID_REQUEST,
     title,
     status: 400,
-    detail: err?.message ? err.message : 'Invalid analytics window request.',
+    detail: err && err.message ? err.message : 'Invalid analytics window request.',
   });
 }
 
@@ -3019,7 +3032,21 @@ function resolveCheckoutOfferSummary(metadata = {}) {
 
 function sendJson(res, statusCode, payload, extraHeaders = {}, options = {}) {
   const { headOnly = false } = options;
-  const body = JSON.stringify(payload);
+  let body;
+  try {
+    body = JSON.stringify(payload);
+  } catch (err) {
+    if (isDashboardDataLimitError(err)) {
+      sendProblem(res, {
+        type: PROBLEM_TYPES.INTERNAL,
+        title: 'Dashboard response too large',
+        status: 503,
+        detail: formatDashboardLimitDetail(err, { phase: 'stringify' }),
+      });
+      return;
+    }
+    throw err;
+  }
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
     'X-Content-Type-Options': 'nosniff',

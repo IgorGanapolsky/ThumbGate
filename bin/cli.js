@@ -1659,13 +1659,18 @@ function compact() {
 
 function cfo() {
   const args = parseArgs(process.argv.slice(3));
+  const { createCliProgress } = require(path.join(PKG_ROOT, 'scripts', 'cli-progress'));
+  const progress = createCliProgress();
   const { getOperationalBillingSummary } = require(path.join(PKG_ROOT, 'scripts', 'operational-summary'));
+  progress.start('Loading CFO billing summary…');
   getOperationalBillingSummary({
     window: args.window,
     timeZone: args.timezone,
     now: args.now,
+    onProgress: (message) => progress.update(message),
   })
     .then(({ source, summary, fallbackReason }) => {
+      progress.succeed(`Billing summary ready (${source})`);
       console.log(JSON.stringify({
         source,
         fallbackReason,
@@ -1674,6 +1679,7 @@ function cfo() {
       process.exit(0);
     })
     .catch((err) => {
+      progress.fail('CFO billing summary failed');
       console.error(err && err.message ? err.message : err);
       process.exit(1);
     });
@@ -1691,14 +1697,19 @@ function repairGithubMarketplace() {
 
 function northStar() {
   const args = parseArgs(process.argv.slice(3));
+  const { createCliProgress } = require(path.join(PKG_ROOT, 'scripts', 'cli-progress'));
+  const progress = createCliProgress();
   const { getOperationalDashboard } = require(path.join(PKG_ROOT, 'scripts', 'operational-dashboard'));
 
+  progress.start('Loading North Star metrics…');
   getOperationalDashboard({
     window: args.window,
     timeZone: args.timezone,
     now: args.now,
+    onProgress: (message) => progress.update(message),
   })
     .then(({ source, data, fallbackReason }) => {
+      progress.succeed(`North Star ready (${source})`);
       const summary = data.analytics.northStar || {};
       const revenue = data.analytics.revenue || {};
 
@@ -1721,6 +1732,7 @@ function northStar() {
       process.exit(0);
     })
     .catch((err) => {
+      progress.fail('North Star failed');
       console.error(err && err.message ? err.message : err);
       process.exit(1);
     });
@@ -3038,21 +3050,35 @@ function installMcp() {
 
 function dashboard() {
   const args = parseArgs(process.argv.slice(3));
+  const { createCliProgress } = require(path.join(PKG_ROOT, 'scripts', 'cli-progress'));
+  const progress = createCliProgress();
+
   if (args.open || args.web) {
     const { resolveProjectDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
     const projectDir = resolveProjectDir({ cwd: process.cwd(), env: process.env });
     const port = process.env.PORT || 3456;
     const url = `http://127.0.0.1:${port}/dashboard?project=${encodeURIComponent(projectDir)}`;
 
+    progress.start(`Starting local dashboard on :${port}…`);
     ensureDash(Number(port))
       .then((server) => {
+        // Keep the stable stdout contract: scripts/tests parse `API <port> pid <n>`.
+        // Progress stays on stderr so humans still see a spinner without breaking parsers.
         if (server.started) {
           console.log(`API ${port} pid ${server.pid}`);
+          progress.update(`Local API listening (pid ${server.pid})…`);
+        } else {
+          progress.update('Local API already running…');
         }
+        progress.update('Opening browser…');
         return openBrowser(url);
       })
-      .then(() => process.exit(0))
+      .then(() => {
+        progress.succeed(`Dashboard open: ${url}`);
+        process.exit(0);
+      })
       .catch((err) => {
+        progress.fail('Failed to open local dashboard');
         console.error(err && err.message ? err.message : err);
         process.exit(1);
       });
@@ -3062,16 +3088,25 @@ function dashboard() {
   const { printDashboard } = require(path.join(PKG_ROOT, 'scripts', 'dashboard'));
   const { getOperationalDashboard } = require(path.join(PKG_ROOT, 'scripts', 'operational-dashboard'));
 
+  progress.start('Loading ThumbGate dashboard…');
   getOperationalDashboard({
     window: args.window,
     timeZone: args.timezone,
     now: args.now,
+    onProgress: (message) => progress.update(message),
   })
-    .then(({ data }) => {
+    .then(({ data, source }) => {
+      const sourceLabel = source === 'hosted'
+        ? 'hosted'
+        : source === 'local-unverified'
+          ? 'local (hosted unavailable)'
+          : 'local';
+      progress.succeed(`Dashboard ready (${sourceLabel})`);
       printDashboard(data);
       process.exit(0);
     })
     .catch((err) => {
+      progress.fail('Dashboard failed');
       console.error(err && err.message ? err.message : err);
       process.exit(1);
     });

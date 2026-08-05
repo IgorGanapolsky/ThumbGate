@@ -49,6 +49,12 @@ async function buildOperationalDashboard(options = {}) {
   });
 }
 
+function reportProgress(options, message) {
+  if (typeof options.onProgress === 'function') {
+    options.onProgress(message);
+  }
+}
+
 async function fetchHostedDashboard(options = {}, config = resolveHostedDashboardConfig()) {
   const analyticsWindow = resolveAnalyticsWindow(options);
   if (!shouldPreferHostedDashboard()) {
@@ -67,6 +73,7 @@ async function fetchHostedDashboard(options = {}, config = resolveHostedDashboar
   requestUrl.searchParams.set('timezone', analyticsWindow.timeZone);
   requestUrl.searchParams.set('now', analyticsWindow.now);
 
+  reportProgress(options, `Fetching hosted dashboard (${analyticsWindow.window})…`);
   const response = await fetch(requestUrl, {
     method: 'GET',
     headers: {
@@ -83,13 +90,16 @@ async function fetchHostedDashboard(options = {}, config = resolveHostedDashboar
     throw err;
   }
 
+  reportProgress(options, 'Parsing hosted dashboard payload…');
   return response.json();
 }
 
 async function getOperationalDashboard(options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options);
   try {
-    const data = await fetchHostedDashboard(analyticsWindow);
+    reportProgress(options, 'Checking hosted operational dashboard…');
+    const data = await fetchHostedDashboard(options);
+    reportProgress(options, 'Hosted dashboard ready');
     return {
       source: 'hosted',
       data,
@@ -104,6 +114,7 @@ async function getOperationalDashboard(options = {}) {
     // Hosted deliberately disabled or never configured — local fallback is
     // intentional, not a degraded state. Tag as plain 'local'.
     if (code === 'hosted_dashboard_disabled' || code === 'hosted_dashboard_unconfigured') {
+      reportProgress(options, 'Building local dashboard…');
       return {
         source: 'local',
         data: await buildOperationalDashboard(analyticsWindow),
@@ -142,6 +153,7 @@ async function getOperationalDashboard(options = {}) {
       `[operational-dashboard] Hosted dashboard unreachable (status=${status ?? 'network'}); ` +
       `falling back to LOCAL-UNVERIFIED state. Numbers below may not reflect actual Stripe revenue.`
     );
+    reportProgress(options, `Hosted failed (HTTP ${status ?? 'network'}); building local dashboard…`);
     return {
       source: 'local-unverified',
       data: await buildOperationalDashboard(analyticsWindow),

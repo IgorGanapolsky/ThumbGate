@@ -168,7 +168,10 @@ const path = require('node:path');
 // reservation, settlement, and reconciliation controls execute from the public
 // npm package instead of existing only in the repository. Both are runtime
 // dependencies, contain no buyer state, and leave no package-count headroom.
-const BASELINE_FILE_COUNT = 421;
+// Bumped 421 -> 423 (2026-08-05): scripts/cli-progress.js + scripts/dashboard-limits.js
+// for hosted-dashboard string-limit resilience and CLI progress UX. Public shell
+// only; keep lockstep with package-boundary + public-core-boundary.
+const BASELINE_FILE_COUNT = 423;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
