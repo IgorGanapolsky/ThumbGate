@@ -92,7 +92,7 @@ test('PR Manager - Detects CI Failure', async () => {
 test('PR Manager - Blocks non-required quality failures returned by gh pr checks', async () => {
   const mockPr = {
     number: 650,
-    title: 'Sonar failure PR',
+    title: 'Non-required quality failure PR',
     mergeable: 'MERGEABLE',
     mergeStateStatus: 'CLEAN',
     isDraft: false,
@@ -105,7 +105,7 @@ test('PR Manager - Blocks non-required quality failures returned by gh pr checks
       status: 0,
       stdout: JSON.stringify([
         { bucket: 'pass', name: 'test', state: 'SUCCESS' },
-        { bucket: 'fail', name: 'SonarCloud Code Analysis', state: 'FAILURE' }
+        { bucket: 'fail', name: 'Dependency Review', state: 'FAILURE' }
       ]),
       stderr: ''
     }
@@ -115,7 +115,7 @@ test('PR Manager - Blocks non-required quality failures returned by gh pr checks
   assert.equal(result.status, 'blocked');
   assert.equal(result.reason, 'ci_failure');
   assert.equal(result.checkSource, 'gh pr checks');
-  assert.deepEqual(result.checks, ['SonarCloud Code Analysis']);
+  assert.deepEqual(result.checks, ['Dependency Review']);
 });
 
 test('PR Manager - Detects Pending Checks', async () => {
@@ -687,10 +687,11 @@ test('a genuinely pending quality check STILL blocks — the fix must not be a b
 
 test('a genuinely failing quality check STILL blocks', () => {
   const { failing } = summarizeChecks([
+    { name: 'Dependency Review', bucket: 'fail' },
     { name: 'SonarCloud Code Analysis', bucket: 'fail' },
     { name: 'Trunk Merge Queue (main)', bucket: 'pending' },
   ]);
-  assert.deepEqual(failing, ['SonarCloud Code Analysis']);
+  assert.deepEqual(failing, ['Dependency Review']);
 });
 
 test('a lookalike queue check remains a blocker', () => {
