@@ -51,17 +51,64 @@ function runGuard(payload) {
   return { code: res.status, stdout: (res.stdout || '').trim(), stderr: (res.stderr || '').trim() };
 }
 
-// A hook must emit nothing, or exactly one parseable JSON object. Anything else
-// is reported to the user as an opaque validation failure.
+// A hook must emit nothing, or exactly one JSON object that VALIDATES against
+// Claude Code's PreToolUse hook-output schema (root keys, enum values, and the
+// hookSpecificOutput key set) — not merely something JSON.parse accepts. A root
+// {"decision":"allow"} parses fine and still fails validation ("allow" is not
+// in the root approve|block enum) — that exact shape caused the 2026-08-05
+// errors-on-every-tool-call incident across all sessions.
+const ROOT_KEYS = new Set([
+  'continue', 'stopReason', 'suppressOutput', 'decision', 'reason',
+  'systemMessage', 'hookSpecificOutput',
+]);
+const ROOT_DECISIONS = new Set(['approve', 'block']);
+const HSO_KEYS = new Set([
+  'hookEventName', 'permissionDecision', 'permissionDecisionReason', 'additionalContext',
+]);
+const PERMISSION_DECISIONS = new Set(['allow', 'deny', 'ask']);
+
 function assertTransportContract(out, label) {
   if (out.stdout === '') return;
+  const lines = out.stdout.split('\n').filter((l) => l.trim() !== '');
+  assert.equal(lines.length, 1, `${label}: stdout must be empty or exactly one JSON line`);
   let parsed;
   assert.doesNotThrow(
-    () => { parsed = JSON.parse(out.stdout); },
+    () => { parsed = JSON.parse(lines[0]); },
     `${label}: stdout must be empty or exactly one JSON object, got: ${out.stdout.slice(0, 200)}`,
   );
   assert.equal(typeof parsed, 'object', `${label}: stdout JSON must be an object`);
   assert.notEqual(parsed, null, `${label}: stdout JSON must not be null`);
+  assert.ok(!Array.isArray(parsed), `${label}: stdout JSON must not be an array`);
+  for (const key of Object.keys(parsed)) {
+    assert.ok(ROOT_KEYS.has(key), `${label}: root key "${key}" is not in the hook-output schema`);
+  }
+  if ('decision' in parsed) {
+    assert.ok(
+      ROOT_DECISIONS.has(parsed.decision),
+      `${label}: root decision "${parsed.decision}" invalid — the schema allows only approve|block`,
+    );
+  }
+  if ('hookSpecificOutput' in parsed) {
+    const hso = parsed.hookSpecificOutput;
+    assert.equal(typeof hso, 'object', `${label}: hookSpecificOutput must be an object`);
+    assert.notEqual(hso, null, `${label}: hookSpecificOutput must not be null`);
+    for (const key of Object.keys(hso)) {
+      assert.ok(HSO_KEYS.has(key), `${label}: hookSpecificOutput key "${key}" is not in the schema`);
+    }
+    assert.equal(hso.hookEventName, 'PreToolUse', `${label}: hookEventName must be PreToolUse`);
+    if ('permissionDecision' in hso) {
+      assert.ok(
+        PERMISSION_DECISIONS.has(hso.permissionDecision),
+        `${label}: permissionDecision "${hso.permissionDecision}" invalid`,
+      );
+    }
+    if ('permissionDecisionReason' in hso) {
+      assert.equal(typeof hso.permissionDecisionReason, 'string', `${label}: reason must be a string`);
+    }
+    if ('additionalContext' in hso) {
+      assert.equal(typeof hso.additionalContext, 'string', `${label}: additionalContext must be a string`);
+    }
+  }
 }
 
 test('ordinary developer payloads are not denied', () => {
@@ -71,7 +118,7 @@ test('ordinary developer payloads are not denied', () => {
       { tool_name: 'Write', tool_input: { file_path: 'a.py', content: `"""describe the ${token} tier."""` } },
     ]) {
       const out = runGuard(payload);
-      assertTransportContract(out, `allow/${token}`);
+      assert.equal(out.stdout, '', `allow/${token}: an allow must be silent — any stdout risks schema rejection`);
       assert.equal(out.code, 0, `"${token}" in ordinary context must not be denied (stderr: ${out.stderr.slice(0, 160)})`);
     }
   }
@@ -86,6 +133,12 @@ test('real commerce payloads are still denied', () => {
     const out = runGuard({ tool_name: 'WebFetch', tool_input: { url } });
     assertTransportContract(out, `deny/${url}`);
     assert.notEqual(out.code, 0, `${url} must stay denied`);
+    const parsed = JSON.parse(out.stdout);
+    assert.equal(
+      parsed.hookSpecificOutput && parsed.hookSpecificOutput.permissionDecision,
+      'deny',
+      `${url}: deny must be expressed as hookSpecificOutput.permissionDecision`,
+    );
   }
 });
 
