@@ -3062,7 +3062,10 @@ function dashboard() {
     progress.start(`Starting local dashboard on :${port}…`);
     ensureDash(Number(port))
       .then((server) => {
+        // Keep the stable stdout contract: scripts/tests parse `API <port> pid <n>`.
+        // Progress stays on stderr so humans still see a spinner without breaking parsers.
         if (server.started) {
+          console.log(`API ${port} pid ${server.pid}`);
           progress.update(`Local API listening (pid ${server.pid})…`);
         } else {
           progress.update('Local API already running…');
