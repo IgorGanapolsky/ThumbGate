@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Shared utilities for proof harness scripts.
+ * Shared utilities and test patterns for proof harness scripts.
  *
  * Extracted from prove-vlt.js and prove-hf-context.js to eliminate
  * code duplication flagged by SonarCloud quality gate.
@@ -13,10 +13,16 @@
  *   - runProofSuites: core test runner
  *   - createProofRunner: factory for proof entry points
  *   - printReportAndExit: CLI exit handler
+ *   - proveAdapterFilesExist: shared adapter file validation
+ *   - proveWorkloadRegistered: shared workload + candidate validation
+ *   - proveGateTemplateContractForIds: shared gate template contract validation
  */
 
 const fs = require('fs');
 const path = require('path');
+
+const { listGateTemplates } = require('./gate-templates');
+const { loadCatalog, recommendCandidates } = require('./model-candidates');
 
 /**
  * Throws if condition is falsy.
@@ -138,11 +144,11 @@ function printReportAndExit(report, successLabel) {
  * @param {Object} config - Configuration for the proof runner.
  * @param {string} config.envVar - Environment variable for proof directory.
  * @param {string} config.defaultProofDir - Default proof directory.
- * @param {string} config.reportName - JSON report filename.
- * @param {string} config.successLabel - Label for success message.
+ * @param {string} config.reportName - Filename for the JSON report.
+ * @param {string} config.successLabel - Label for the success message.
  * @param {string} config.packageVersion - The shipped package version.
  * @param {Function} config.buildSuites - Function that returns the suite array.
- * @returns {Function} A runProof function.
+ * @returns {{runProof: Function, main: Function}} The proof runner.
  */
 function createProofRunner(config) {
   const {
@@ -172,6 +178,182 @@ function createProofRunner(config) {
   return { runProof, main };
 }
 
+/**
+ * Returns the gate template matching the given id from the config catalog.
+ * @param {string} id - The template id to find.
+ * @returns {Object|undefined} The matching template, or undefined.
+ */
+function getGateTemplate(id) {
+  const templates = listGateTemplates();
+  return templates.find((template) => template.id === id);
+}
+
+/**
+ * Shared adapter file validation: checks existence, version pin, and JSON validity.
+ * @param {string} ROOT - Project root path.
+ * @param {string} PACKAGE_VERSION - The shipped package version.
+ * @param {Array<{file: string, checks?: Function}>} adapterFiles - File specs.
+ * @returns {Array<Object>} Results array.
+ */
+function proveAdapterFilesExist(ROOT, PACKAGE_VERSION, adapterFiles) {
+  const results = [];
+
+  for (const { file, extraChecks } of adapterFiles) {
+    const filePath = path.join(ROOT, file);
+    check(fs.existsSync(filePath), `${file} must exist`);
+    const content = fs.readFileSync(filePath, 'utf-8');
+    check(content.includes(`thumbgate@${PACKAGE_VERSION}`), `${file} must pin thumbgate@${PACKAGE_VERSION}`);
+    results.push({
+      name: `${file} exists and pins thumbgate@${PACKAGE_VERSION}`,
+      passed: true,
+      details: { file, version: PACKAGE_VERSION },
+    });
+
+    if (extraChecks) {
+      const extraResults = extraChecks(filePath, content);
+      results.push(...extraResults);
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Shared workload + candidate validation.
+ * @param {string} workloadId - The workload identifier.
+ * @param {Array<string>} expectedIds - Expected candidate IDs.
+ * @param {string} provider - Provider name for recommendCandidates.
+ * @param {number} maxCandidates - Expected number of recommendations.
+ * @param {string} topCandidateId - The expected top recommendation ID.
+ * @returns {Array<Object>} Results array.
+ */
+function proveWorkloadRegistered(workloadId, expectedIds, provider, maxCandidates, topCandidateId) {
+  const results = [];
+
+  const catalog = loadCatalog();
+  const workload = catalog.workloads[workloadId];
+  check(workload, `${workloadId} workload must exist in catalog`);
+
+  results.push({
+    name: `${workloadId} workload exists`,
+    passed: !!workload,
+    details: { metrics: workload.metrics },
+  });
+
+  const ids = new Set(catalog.candidates.map((c) => c.id));
+  for (const id of expectedIds) {
+    check(ids.has(id), `${id} candidate must exist`);
+  }
+
+  results.push({
+    name: `${provider} model candidates registered`,
+    passed: expectedIds.every((id) => ids.has(id)),
+    details: { ids: expectedIds },
+  });
+
+  const report = recommendCandidates({
+    workload: workloadId,
+    provider,
+    maxCandidates,
+  });
+
+  check(report.recommended.length >= 1, `should recommend at least 1 candidate for ${workloadId}`);
+  if (topCandidateId) {
+    check(report.recommended[0].id === topCandidateId, `top recommendation must be ${topCandidateId}`);
+  }
+
+  results.push({
+    name: `recommendCandidates returns ${provider} candidate for ${workloadId}`,
+    passed: topCandidateId
+      ? report.recommended[0].id === topCandidateId
+      : report.recommended.length >= 1,
+    details: { recommended: report.recommended.map((r) => r.id) },
+  });
+
+  return results;
+}
+
+/**
+ * Shared gate template contract validation.
+ * @param {string} templateId - The gate template id to validate.
+ * @param {Object} options - Options.
+ * @param {string} options.expectedCategory - Required category.
+ * @param {string} options.expectedSignal - Required signal (default '👎').
+ * @param {string} options.expectedAction - Required defaultAction (default 'block').
+ * @param {Array<string>} options.validSeverities - Allowed severity values.
+ * @returns {Object} Single result object.
+ */
+function proveGateTemplateContractItem(templateId, options = {}) {
+  const {
+    expectedCategory,
+    expectedSignal = '👎',
+    expectedAction = 'block',
+    validSeverities = ['critical', 'high'],
+  } = options;
+
+  const template = getGateTemplate(templateId);
+  check(template, `gate template ${templateId} must exist`);
+  check(template.category === expectedCategory, `${templateId} must have category ${expectedCategory}`);
+  check(template.signal === expectedSignal, `${templateId} must have ${expectedSignal} signal`);
+  check(template.defaultAction === expectedAction, `${templateId} must default to ${expectedAction}`);
+  check(validSeverities.includes(template.severity), `${templateId} must have valid severity`);
+  check(template.problem && template.problem.length > 0, `${templateId} must have a problem statement`);
+  check(template.roi && template.roi.length > 0, `${templateId} must have ROI statement`);
+  check(template.rollout && template.rollout.length > 0, `${templateId} must have rollout guidance`);
+
+  return {
+    name: `${templateId} satisfies gate template contract`,
+    passed: true,
+    details: { severity: template.severity, category: template.category },
+  };
+}
+
+/**
+ * Validates that all required fields are present on a gate template.
+ * @param {string} templateId - The gate template id.
+ * @param {Array<string>} requiredFields - List of required field names.
+ * @returns {Array<Object>} Results array (one per field).
+ */
+function proveGateTemplateFields(templateId, requiredFields) {
+  const results = [];
+  const template = getGateTemplate(templateId);
+  check(template, `gate template ${templateId} must exist`);
+
+  for (const field of requiredFields) {
+    check(template[field], `validate-context-before-codegen must have ${field}`);
+    results.push({
+      name: `${templateId} has ${field}`,
+      passed: true,
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Checks that a content string contains all required references.
+ * @param {Buffer|string} content - The file content to check.
+ * @param {Array<{needle: string, label: string}>} requiredRefs - References to find.
+ * @returns {Array<Object>} Results array.
+ */
+function proveContentReferences(content, requiredRefs) {
+  const results = [];
+
+  for (const { needle, label } of requiredRefs) {
+    const found = content.includes(needle);
+    results.push({
+      name: `guide references ${label}`,
+      passed: found,
+      details: { needle, found },
+    });
+    if (!found) {
+      throw new Error(`guide must reference ${label}: "${needle}"`);
+    }
+  }
+
+  return results;
+}
+
 module.exports = {
   check,
   ensureDir,
@@ -179,4 +361,10 @@ module.exports = {
   runProofSuites,
   printReportAndExit,
   createProofRunner,
+  getGateTemplate,
+  proveAdapterFilesExist,
+  proveWorkloadRegistered,
+  proveGateTemplateContractItem,
+  proveGateTemplateFields,
+  proveContentReferences,
 };

@@ -5,8 +5,8 @@ const assert = require('node:assert/strict');
 
 const {
   runProof,
-  proveGatePatternsBlockDangerousCommands,
-  proveGatePatternsAllowSafeCommands,
+  proveGatePatternsBlock,
+  proveGatePatternsAllow,
   proveModelCandidates,
   proveAdapterFiles,
   proveGateTemplateContract,
@@ -15,12 +15,12 @@ const {
 } = require('../scripts/prove-vlt');
 
 test('vlt gate template patterns match dangerous vlt commands', () => {
-  const results = proveGatePatternsBlockDangerousCommands();
+  const results = proveGatePatternsBlock();
   assert.equal(results.every((r) => r.passed), true, 'all block patterns should match their commands');
 });
 
 test('vlt gate template patterns do not match safe pinned-version installs', () => {
-  const results = proveGatePatternsAllowSafeCommands();
+  const results = proveGatePatternsAllow();
   const pinned = results.find((r) => r.name.includes('pinned version'));
   assert.ok(pinned, 'should have a pinned-version allow test');
   assert.equal(pinned.passed, true, `pinned version must not match: ${pinned.details?.command}`);

@@ -22,19 +22,15 @@
 
 const fs = require('fs');
 const path = require('path');
-
-const {
-  listGateTemplates,
-} = require('./gate-templates');
-const {
-  loadCatalog,
-  recommendCandidates,
-} = require('./model-candidates');
 const {
   check,
-  ensureDir,
   patternMatches,
   createProofRunner,
+  getGateTemplate,
+  proveAdapterFilesExist,
+  proveWorkloadRegistered,
+  proveGateTemplateFields,
+  proveContentReferences,
 } = require('./proof-common');
 
 const ROOT = path.join(__dirname, '..');
@@ -45,19 +41,18 @@ const PACKAGE_VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json
  * Returns the gate template matching the given id from the config catalog.
  */
 function getHfContextTemplate(id) {
-  const templates = listGateTemplates();
-  return templates.find((template) => template.id === id);
+  return getGateTemplate(id);
 }
 
 /**
  * Test suite: validate-context-before-codegen gate covers code-gen tools.
  */
-function proveGatePatternCoversCodeGen() {
+function proveGatePattern() {
   const results = [];
 
   const template = getHfContextTemplate('validate-context-before-codegen');
   check(template, 'validate-context-before-codegen gate template must exist');
-  check(template.defaultAction === 'block', 'validate-context-before-codegen must default to block');
+  check(template.defaultAction === 'block', 'must default to block');
   check(template.category === 'AI Engineering Stack Safety', 'must be in correct category');
 
   const matchCases = [
@@ -74,133 +69,67 @@ function proveGatePatternCoversCodeGen() {
       passed: matched,
       details: { command: testCase.command, pattern: template.pattern, matched },
     });
-
-    if (!matched) {
-      throw new Error(`Gate template ${template.id} should match: "${testCase.command}"`);
-    }
+    if (!matched) throw new Error(`Gate ${template.id} should match: "${testCase.command}"`);
   }
 
   return results;
 }
 
-/**
- * Test suite: model candidates for context-engineering are registered and recommendable.
- */
 function proveModelCandidates() {
-  const results = [];
-
-  const catalog = loadCatalog();
-  const workload = catalog.workloads['context-engineering'];
-  check(workload, 'context-engineering workload must exist in catalog');
-
-  results.push({
-    name: 'context-engineering workload exists',
-    passed: !!workload,
-    details: { metrics: workload.metrics },
-  });
-
-  const ids = new Set(catalog.candidates.map((c) => c.id));
-  check(ids.has('huggingface/context-engineering-agent'), 'huggingface/context-engineering-agent candidate must exist');
-
-  results.push({
-    name: 'huggingface/context-engineering-agent candidate registered',
-    passed: ids.has('huggingface/context-engineering-agent'),
-    details: { id: 'huggingface/context-engineering-agent' },
-  });
-
-  const report = recommendCandidates({
-    workload: 'context-engineering',
-    provider: 'huggingface',
-    maxCandidates: 1,
-  });
-
-  check(report.recommended.length >= 1, 'should recommend at least 1 candidate');
-  check(report.recommended[0].id === 'huggingface/context-engineering-agent', 'top recommendation must be HF context-engineering-agent');
-
-  results.push({
-    name: 'recommendCandidates returns huggingface/context-engineering-agent',
-    passed: report.recommended[0].id === 'huggingface/context-engineering-agent',
-    details: { recommended: report.recommended.map((r) => r.id) },
-  });
-
-  return results;
+  return proveWorkloadRegistered(
+    'context-engineering',
+    ['huggingface/context-engineering-agent'],
+    'huggingface',
+    1,
+    'huggingface/context-engineering-agent'
+  );
 }
 
-/**
- * Test suite: adapter files are valid and pin the shipped version.
- */
 function proveAdapterFiles() {
-  const results = [];
-
-  const adapterFiles = [
-    'adapters/huggingface-context-course/HF_CONTEXT.md',
-    'adapters/huggingface-context-course/config.toml',
-    'adapters/huggingface-context-course/opencode.json',
-    'adapters/huggingface-context-course/.mcp.json',
-  ];
-
-  for (const file of adapterFiles) {
-    const filePath = path.join(ROOT, file);
-    check(fs.existsSync(filePath), `${file} must exist`);
-    const content = fs.readFileSync(filePath, 'utf-8');
-    check(content.includes(`thumbgate@${PACKAGE_VERSION}`), `${file} must pin thumbgate@${PACKAGE_VERSION}`);
-    results.push({
-      name: `${file} exists and pins thumbgate@${PACKAGE_VERSION}`,
-      passed: true,
-      details: { file, version: PACKAGE_VERSION },
-    });
-  }
-
-  const opencodeJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'adapters/huggingface-context-course/opencode.json'), 'utf-8'));
-  check(!!opencodeJson.mcp?.thumbgate, 'opencode.json must have thumbgate MCP server');
-  check(!!opencodeJson.mcp?.thumbgate.enabled, 'opencode.json must have thumbgate MCP enabled');
-  results.push({ name: 'opencode.json is valid JSON with thumbgate MCP', passed: true });
-
-  const mcpJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'adapters/huggingface-context-course/.mcp.json'), 'utf-8'));
-  check(!!mcpJson.mcpServers?.thumbgate, '.mcp.json must have thumbgate MCP server');
-  check(!!mcpJson.hooks?.preToolUse, '.mcp.json must have preToolUse hook');
-  results.push({ name: '.mcp.json is valid JSON with MCP + hook', passed: true });
-
-  const toml = fs.readFileSync(path.join(ROOT, 'adapters/huggingface-context-course/config.toml'), 'utf-8');
-  check(toml.includes('pre_tool_use'), 'config.toml must have pre_tool_use hook');
-  results.push({ name: 'config.toml has gate-check hook', passed: true });
-
-  return results;
+  return proveAdapterFilesExist(ROOT, PACKAGE_VERSION, [
+    { file: 'adapters/huggingface-context-course/HF_CONTEXT.md' },
+    { file: 'adapters/huggingface-context-course/config.toml' },
+    {
+      file: 'adapters/huggingface-context-course/opencode.json',
+      extraChecks: (filePath) => {
+        const json = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        check(!!json.mcp?.thumbgate, 'opencode.json must have thumbgate MCP server');
+        check(!!json.mcp?.thumbgate.enabled, 'opencode.json must have thumbgate MCP enabled');
+        return [{ name: 'opencode.json is valid JSON with thumbgate MCP', passed: true }];
+      },
+    },
+    {
+      file: 'adapters/huggingface-context-course/.mcp.json',
+      extraChecks: (filePath) => {
+        const json = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        check(!!json.mcpServers?.thumbgate, '.mcp.json must have thumbgate MCP server');
+        check(!!json.hooks?.preToolUse, '.mcp.json must have preToolUse hook');
+        return [{ name: '.mcp.json is valid JSON with MCP + hook', passed: true }];
+      },
+    },
+    {
+      file: 'adapters/huggingface-context-course/config.toml',
+      extraChecks: (filePath, content) => {
+        check(content.includes('pre_tool_use'), 'config.toml must have pre_tool_use hook');
+        return [{ name: 'config.toml has gate-check hook', passed: true }];
+      },
+    },
+  ]);
 }
 
-/**
- * Test suite: validate-context-before-codegen gate template follows shared contract.
- */
 function proveGateTemplateContract() {
-  const results = [];
-
-  const template = getHfContextTemplate('validate-context-before-codegen');
-  check(template, 'validate-context-before-codegen gate template must exist');
-
   const requiredFields = ['id', 'name', 'category', 'signal', 'defaultAction', 'severity', 'pattern', 'problem', 'roi', 'rollout'];
-  for (const field of requiredFields) {
-    check(template[field], `validate-context-before-codegen must have ${field}`);
-    results.push({
-      name: `validate-context-before-codegen has ${field}`,
-      passed: true,
-    });
-  }
-
+  const results = proveGateTemplateFields('validate-context-before-codegen', requiredFields);
+  const template = getHfContextTemplate('validate-context-before-codegen');
   check(template.signal === '👎', 'must have 👎 signal');
   check(template.defaultAction === 'block', 'must default to block');
   check(['critical', 'high'].includes(template.severity), 'must have valid severity');
-
   return results;
 }
 
-/**
- * Test suite: HF_CONTEXT.md guide references all required integration points.
- */
 function proveGuideContent() {
-  const results = [];
   const content = fs.readFileSync(path.join(ROOT, 'adapters/huggingface-context-course/HF_CONTEXT.md'), 'utf-8');
-
-  const requiredReferences = [
+  return proveContentReferences(content, [
     { needle: 'https://huggingface.co/learn/context-course/unit0/introduction', label: 'course URL' },
     { needle: 'validate-context-before-codegen', label: 'gate template reference' },
     { needle: 'huggingface/context-engineering-agent', label: 'model candidate reference' },
@@ -210,21 +139,7 @@ function proveGuideContent() {
     { needle: 'Unit 5', label: 'Unit 5 (Hooks) reference' },
     { needle: 'context-engineering', label: 'context-engineering workload' },
     { needle: `thumbgate@${PACKAGE_VERSION}`, label: 'version pin' },
-  ];
-
-  for (const { needle, label } of requiredReferences) {
-    const found = content.includes(needle);
-    results.push({
-      name: `HF_CONTEXT.md references ${label}`,
-      passed: found,
-      details: { needle, found },
-    });
-    if (!found) {
-      throw new Error(`HF_CONTEXT.md must reference ${label}: "${needle}"`);
-    }
-  }
-
-  return results;
+  ]);
 }
 
 const { runProof, main } = createProofRunner({
@@ -234,7 +149,7 @@ const { runProof, main } = createProofRunner({
   successLabel: 'HF Context Course',
   packageVersion: PACKAGE_VERSION,
   buildSuites: () => [
-    { name: 'gate_pattern_covers_codegen', fn: proveGatePatternCoversCodeGen },
+    { name: 'gate_pattern_covers_codegen', fn: proveGatePattern },
     { name: 'model_candidates', fn: proveModelCandidates },
     { name: 'adapter_files', fn: proveAdapterFiles },
     { name: 'gate_template_contract', fn: proveGateTemplateContract },
@@ -248,7 +163,7 @@ if (require.main === module) {
 
 module.exports = {
   runProof,
-  proveGatePatternCoversCodeGen,
+  proveGatePattern,
   proveModelCandidates,
   proveAdapterFiles,
   proveGateTemplateContract,
