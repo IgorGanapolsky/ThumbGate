@@ -23,19 +23,15 @@
 
 const fs = require('fs');
 const path = require('path');
-const {
-  listGateTemplates,
-} = require('./gate-templates');
+const { listGateTemplates } = require('./gate-templates');
 const {
   loadCatalog,
   recommendCandidates,
 } = require('./model-candidates');
 const {
   check,
-  ensureDir,
   patternMatches,
-  runProofSuites,
-  printReportAndExit,
+  createProofRunner,
 } = require('./proof-common');
 
 const ROOT = path.join(__dirname, '..');
@@ -115,19 +111,13 @@ function proveGatePatternsBlockDangerousCommands() {
     check(template.defaultAction === 'block', `${testCase.templateId} must default to block`);
 
     const matched = patternMatches(template.pattern, testCase.command);
-    const passed = matched;
-
     results.push({
       name: `${testCase.templateId} blocks: ${testCase.description}`,
-      passed,
-      details: {
-        command: testCase.command,
-        pattern: template.pattern,
-        matched,
-      },
+      passed: matched,
+      details: { command: testCase.command, pattern: template.pattern, matched },
     });
 
-    if (!passed) {
+    if (!matched) {
       throw new Error(`Gate template ${testCase.templateId} should match: "${testCase.command}"`);
     }
   }
@@ -179,18 +169,10 @@ function proveGatePatternsAllowSafeCommands() {
     results.push({
       name: `${testCase.templateId} allows: ${testCase.description}`,
       passed,
-      details: {
-        command: testCase.command,
-        pattern: template.pattern,
-        matched,
-      },
+      details: { command: testCase.command, pattern: template.pattern, matched },
     });
 
-    // Note: Some "safe" commands may still match due to pattern broadness.
-    // The key assertion is that clearly blocked commands match (tested above).
-    // Here we test that clearly safe commands don't match unnecessarily.
     if (!passed && testCase.description.includes('pinned version')) {
-      // Only enforce strict non-matching for pinned version installs
       throw new Error(`Gate template ${testCase.templateId} should NOT match safe command: "${testCase.command}"`);
     }
   }
@@ -266,7 +248,6 @@ function proveAdapterFiles() {
     });
   }
 
-  // Verify JSON configs are valid
   const opencodeJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'adapters/vlt/opencode.json'), 'utf-8'));
   check(!!opencodeJson.mcp?.thumbgate, 'vlt opencode.json must have thumbgate MCP server');
   results.push({ name: 'vlt opencode.json is valid JSON with thumbgate MCP', passed: true });
@@ -312,31 +293,23 @@ function proveGateTemplateContract() {
   return results;
 }
 
-/**
- * Main proof entry point.
- */
-function runProof(options = {}) {
-  const proofDir = options.proofDir || process.env.THUMBGATE_VLT_PROOF_DIR || DEFAULT_PROOF_DIR;
-
-  const suites = [
+const { runProof, main } = createProofRunner({
+  envVar: 'THUMBGATE_VLT_PROOF_DIR',
+  defaultProofDir: DEFAULT_PROOF_DIR,
+  reportName: 'vlt-proof-report.json',
+  successLabel: 'vlt',
+  packageVersion: PACKAGE_VERSION,
+  buildSuites: () => [
     { name: 'gate_patterns_block', fn: proveGatePatternsBlockDangerousCommands },
     { name: 'gate_patterns_allow', fn: proveGatePatternsAllowSafeCommands },
     { name: 'model_candidates', fn: proveModelCandidates },
     { name: 'adapter_files', fn: proveAdapterFiles },
     { name: 'gate_template_contract', fn: proveGateTemplateContract },
-  ];
-
-  return runProofSuites(suites, {
-    proofDir,
-    packageVersion: PACKAGE_VERSION,
-    reportName: 'vlt-proof-report.json',
-    writeArtifacts: options.writeArtifacts !== false,
-  });
-}
+  ],
+});
 
 if (require.main === module) {
-  const report = runProof();
-  printReportAndExit(report, 'vlt');
+  main();
 }
 
 module.exports = {

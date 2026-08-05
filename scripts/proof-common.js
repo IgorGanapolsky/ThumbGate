@@ -4,7 +4,15 @@
  * Shared utilities for proof harness scripts.
  *
  * Extracted from prove-vlt.js and prove-hf-context.js to eliminate
- * code duplication flagged by SonarCloud quality gate (33.4% duplication).
+ * code duplication flagged by SonarCloud quality gate.
+ *
+ * Exports:
+ *   - check: assertion utility
+ *   - ensureDir: directory creation
+ *   - patternMatches: regex testing
+ *   - runProofSuites: core test runner
+ *   - createProofRunner: factory for proof entry points
+ *   - printReportAndExit: CLI exit handler
  */
 
 const fs = require('fs');
@@ -12,6 +20,8 @@ const path = require('path');
 
 /**
  * Throws if condition is falsy.
+ * @param {*} condition - The condition to check.
+ * @param {string} message - Error message if condition fails.
  */
 function check(condition, message) {
   if (!condition) {
@@ -21,6 +31,7 @@ function check(condition, message) {
 
 /**
  * Recursively creates a directory if it doesn't exist.
+ * @param {string} dirPath - Path to create.
  */
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
@@ -37,8 +48,7 @@ function ensureDir(dirPath) {
 function patternMatches(pattern, input) {
   if (!pattern) return false;
   try {
-    const regex = new RegExp(pattern);
-    return regex.test(input);
+    return new RegExp(pattern).test(input);
   } catch (e) {
     throw new Error(`Invalid regex pattern "${pattern}": ${e.message}`);
   }
@@ -105,6 +115,8 @@ function runProofSuites(suites, options = {}) {
 
 /**
  * Prints the proof report summary and exits with appropriate code.
+ * @param {Object} report - The proof report from runProofSuites.
+ * @param {string} successLabel - Label for the success message.
  */
 function printReportAndExit(report, successLabel) {
   console.log(JSON.stringify(report.summary, null, 2));
@@ -121,10 +133,50 @@ function printReportAndExit(report, successLabel) {
   console.log(`\nAll ${report.summary.total} ${successLabel} proof tests passed.`);
 }
 
+/**
+ * Factory that creates a proof runner for a specific domain.
+ * @param {Object} config - Configuration for the proof runner.
+ * @param {string} config.envVar - Environment variable for proof directory.
+ * @param {string} config.defaultProofDir - Default proof directory.
+ * @param {string} config.reportName - JSON report filename.
+ * @param {string} config.successLabel - Label for success message.
+ * @param {string} config.packageVersion - The shipped package version.
+ * @param {Function} config.buildSuites - Function that returns the suite array.
+ * @returns {Function} A runProof function.
+ */
+function createProofRunner(config) {
+  const {
+    envVar,
+    defaultProofDir,
+    reportName,
+    successLabel,
+    packageVersion,
+    buildSuites,
+  } = config;
+
+  function runProof(options = {}) {
+    const proofDir = options.proofDir || process.env[envVar] || defaultProofDir;
+    return runProofSuites(buildSuites(), {
+      proofDir,
+      packageVersion,
+      reportName,
+      writeArtifacts: options.writeArtifacts !== false,
+    });
+  }
+
+  function main() {
+    const report = runProof();
+    printReportAndExit(report, successLabel);
+  }
+
+  return { runProof, main };
+}
+
 module.exports = {
   check,
   ensureDir,
   patternMatches,
   runProofSuites,
   printReportAndExit,
+  createProofRunner,
 };

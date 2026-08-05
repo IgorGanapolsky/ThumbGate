@@ -34,8 +34,7 @@ const {
   check,
   ensureDir,
   patternMatches,
-  runProofSuites,
-  printReportAndExit,
+  createProofRunner,
 } = require('./proof-common');
 
 const ROOT = path.join(__dirname, '..');
@@ -71,13 +70,13 @@ function proveGatePatternCoversCodeGen() {
   for (const testCase of matchCases) {
     const matched = patternMatches(template.pattern, testCase.command);
     results.push({
-      name: `validate-context-before-codegen matches: ${testCase.description}`,
+      name: `${template.id} matches: ${testCase.description}`,
       passed: matched,
       details: { command: testCase.command, pattern: template.pattern, matched },
     });
 
     if (!matched) {
-      throw new Error(`Gate template validate-context-before-codegen should match: "${testCase.command}"`);
+      throw new Error(`Gate template ${template.id} should match: "${testCase.command}"`);
     }
   }
 
@@ -152,7 +151,6 @@ function proveAdapterFiles() {
     });
   }
 
-  // Verify JSON configs are valid
   const opencodeJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'adapters/huggingface-context-course/opencode.json'), 'utf-8'));
   check(!!opencodeJson.mcp?.thumbgate, 'opencode.json must have thumbgate MCP server');
   check(!!opencodeJson.mcp?.thumbgate.enabled, 'opencode.json must have thumbgate MCP enabled');
@@ -163,9 +161,8 @@ function proveAdapterFiles() {
   check(!!mcpJson.hooks?.preToolUse, '.mcp.json must have preToolUse hook');
   results.push({ name: '.mcp.json is valid JSON with MCP + hook', passed: true });
 
-  // Verify config.toml has hooks
   const toml = fs.readFileSync(path.join(ROOT, 'adapters/huggingface-context-course/config.toml'), 'utf-8');
-  check(toml.includes('[hooks.pre_tool_use]') || toml.includes('pre_tool_use'), 'config.toml must have pre_tool_use hook');
+  check(toml.includes('pre_tool_use'), 'config.toml must have pre_tool_use hook');
   results.push({ name: 'config.toml has gate-check hook', passed: true });
 
   return results;
@@ -230,31 +227,23 @@ function proveGuideContent() {
   return results;
 }
 
-/**
- * Main proof entry point.
- */
-function runProof(options = {}) {
-  const proofDir = options.proofDir || process.env.THUMBGATE_HF_CONTEXT_PROOF_DIR || DEFAULT_PROOF_DIR;
-
-  const suites = [
+const { runProof, main } = createProofRunner({
+  envVar: 'THUMBGATE_HF_CONTEXT_PROOF_DIR',
+  defaultProofDir: DEFAULT_PROOF_DIR,
+  reportName: 'hf-context-course-proof-report.json',
+  successLabel: 'HF Context Course',
+  packageVersion: PACKAGE_VERSION,
+  buildSuites: () => [
     { name: 'gate_pattern_covers_codegen', fn: proveGatePatternCoversCodeGen },
     { name: 'model_candidates', fn: proveModelCandidates },
     { name: 'adapter_files', fn: proveAdapterFiles },
     { name: 'gate_template_contract', fn: proveGateTemplateContract },
     { name: 'guide_content', fn: proveGuideContent },
-  ];
-
-  return runProofSuites(suites, {
-    proofDir,
-    packageVersion: PACKAGE_VERSION,
-    reportName: 'hf-context-course-proof-report.json',
-    writeArtifacts: options.writeArtifacts !== false,
-  });
-}
+  ],
+});
 
 if (require.main === module) {
-  const report = runProof();
-  printReportAndExit(report, 'HF Context Course');
+  main();
 }
 
 module.exports = {
