@@ -39,10 +39,10 @@ function calculateStats() {
   // Count total blocks/warns from occurrences in auto-promoted gates
   const totalBlocked = autoGates
     .filter((g) => g.action === 'block')
-    .reduce((sum, g) => sum + (g.occurrences || 0), 0);
+    .reduce((sum, g) => sum + (Number(g.occurrences) || 0), 0);
   const totalWarned = autoGates
     .filter((g) => g.action === 'warn')
-    .reduce((sum, g) => sum + (g.occurrences || 0), 0);
+    .reduce((sum, g) => sum + (Number(g.occurrences) || 0), 0);
 
   // Top blocked gate. A configured block rule with zero occurrences is not a
   // "top blocker"; only recorded block events should appear here.

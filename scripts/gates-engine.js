@@ -168,6 +168,9 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   // applyEnforcementPosture, never demote spend blocks to warn-by-default.
   // Apollo $588 incident class (2026-08).
   'financial-control',
+  // Outbound email: irreversible delivery. Must never demote to warn-by-default
+  // even when THUMBGATE_STRICT_ENFORCEMENT is unset (AGENT-259 / District Cyber 2026-08-04).
+  'outbound-email-send',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -188,6 +191,8 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'git-clean-force',
   'rm-rf-home-or-root',
   'financial-control',
+  // Never daily-cap discount agent email send (same class as force-push).
+  'outbound-email-send',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
@@ -2274,8 +2279,52 @@ function checkWhenClause(when, constraints) {
   return true;
 }
 
+
+/**
+ * Surfaces a gate pattern can match against.
+ *
+ * Historically only `toolInput.command|file_path|path` was considered. That
+ * made every MCP / non-Bash tool call invisible to pattern gates — including
+ * Gmail `send_message`, Apollo emailer send, and any auto-promoted rule that
+ * mentioned a tool by name. Those gates rendered as "active" with
+ * lastFiredAt:null forever (AGENT-259).
+ *
+ * Surfaces, in order:
+ *   1. Bash/command text (preserves existing `^` anchor behavior)
+ *   2. bare tool name (MCP tools)
+ *   3. tool name + command
+ *   4. common URL/endpoint/action fields (HTTP-shaped tool inputs)
+ *
+ * Body/content is intentionally excluded to avoid false blocks when an agent
+ * *edits code that mentions* a send endpoint.
+ */
+function buildMatchSurfaces(toolName, toolInput = {}) {
+  const name = String(toolName || '').trim();
+  const command = String(toolInput.command || '').trim();
+  const filePath = String(toolInput.file_path || toolInput.path || '').trim();
+  const surfaces = [];
+  const push = (s) => {
+    const v = String(s || '').trim();
+    if (v && !surfaces.includes(v)) surfaces.push(v);
+  };
+  push(command);
+  push(filePath);
+  push(name);
+  if (name && command) push(`${name} ${command}`);
+  if (name && filePath) push(`${name} ${filePath}`);
+  for (const key of ['url', 'endpoint', 'method', 'action', 'path']) {
+    if (toolInput[key] == null) continue;
+    const v = String(toolInput[key]).slice(0, 400);
+    push(v);
+    if (name) push(`${name} ${v}`);
+  }
+  return surfaces;
+}
+
 function matchGate(gate, toolName, toolInput = {}) {
-  let matchText = toolInput.command || toolInput.file_path || toolInput.path || '';
+  // Primary text for audit/reasoning: prefer command, then tool name (MCP).
+  const matchSurfaces = buildMatchSurfaces(toolName, toolInput);
+  let matchText = matchSurfaces[0] || String(toolName || '');
 
   // Claw/hybrid support: enrich matchText with claw metadata (for EnterpriseClaw/OpenShell/Perplexity hybrid agents)
   const clawCtx = toolInput.clawContext || toolInput._claw || (toolInput.agentId ? {
@@ -2309,6 +2358,7 @@ function matchGate(gate, toolName, toolInput = {}) {
     }
 
     matchText = parts.filter(Boolean).join(' | ');
+    if (!matchSurfaces.includes(matchText)) matchSurfaces.push(matchText);
   }
 
   const affected = extractAffectedFiles(toolName, toolInput);
@@ -2350,9 +2400,12 @@ function matchGate(gate, toolName, toolInput = {}) {
   if (gate.pattern) {
     try {
       const regex = new RegExp(gate.pattern);
-      // Match the original text or its git-canonical form, so `git -C <dir> push --force`
-      // is caught by the same pattern as `git push --force`.
-      if (!patternMatchesCommand(regex, matchText)) {
+      // Match command text, tool name, and light payload surfaces. MCP tools
+      // (e.g. Gmail send_message) have no `command` field — without multi-surface
+      // matching, every pattern gate against them is permanently inert.
+      const surfaces = matchSurfaces.length > 0 ? matchSurfaces : [matchText];
+      const anySurfaceMatch = surfaces.some((surface) => patternMatchesCommand(regex, surface));
+      if (!anySurfaceMatch) {
         return { matched: false, matchText, affectedFiles };
       }
       if (gate.id === 'permission-change-approval' && isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
@@ -4264,6 +4317,7 @@ module.exports = {
   matchesGate,
   evaluateGates,
   evaluateGatesAsync,
+  buildMatchSurfaces,
   extractAffectedFiles,
   parseGitPathspec,
   canonicalizeGitCommand,
