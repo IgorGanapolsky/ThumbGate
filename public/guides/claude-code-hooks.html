@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Code Hooks Explained: Events, Matchers, and Exit Codes</title>
+  <meta name="description" content="What Claude Code hooks are, every hook event, how matchers and exit codes work, and a working PreToolUse example that actually blocks a command - plus where hooks beat advisory prompt rules." />
+  <meta property="og:title" content="Claude Code Hooks Explained: Events, Matchers, and Exit Codes" />
+  <meta property="og:description" content="What Claude Code hooks are, every hook event, how matchers and exit codes work, and a working PreToolUse example that actually blocks a command - plus where hooks beat advisory prompt rules." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/claude-code-hooks" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/claude-code-hooks" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+<style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+  <style>
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 15px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    pre { background: var(--bg-card); border: 1px solid var(--line); border-radius: 8px; padding: 16px;
+          overflow-x: auto; font-size: 13.5px; line-height: 1.55; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Claude Code Hooks Explained: Events, Matchers, and Exit Codes",
+  "description": "What Claude Code hooks are, every hook event, how matchers and exit codes work, and a working PreToolUse example that actually blocks a command - plus where hooks beat advisory prompt rules.",
+  "about": [
+    "claude code hooks",
+    "claude code security",
+    "claude code settings"
+  ],
+  "url": "https://thumbgate.ai/guides/claude-code-hooks",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/guides/claude-code-hooks"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What are hooks in Claude Code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Claude Code hooks are shell commands the harness runs automatically at fixed points in the agent loop - before a tool call, after a tool call, when you submit a prompt, when the session starts, and when the agent stops. They are configured in settings.json, they run outside the model, and a PreToolUse hook can block a tool call before it executes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the difference between a hook and a rule in CLAUDE.md?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A CLAUDE.md rule is advisory: it goes into the prompt and the model decides whether to follow it. A hook is deterministic: it is code the harness executes, and its exit status decides whether the tool call runs. Under long sessions or context compaction, advisory rules degrade; hooks do not."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I use Claude Code hooks?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Add a hooks block to .claude/settings.json in your project (or ~/.claude/settings.json for every project), pick an event such as PreToolUse, give it a matcher such as Bash, and point it at a command. Claude Code pipes a JSON payload describing the pending tool call to your command on stdin."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I set up hooks for Claude Code so they block a command?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use the PreToolUse event and exit with status 2 from your hook. Exit code 2 blocks the tool call and returns your stderr text to the model, so the agent sees why it was stopped. Exit code 0 allows the call; any other non-zero code surfaces an error without blocking."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is a Claude Code hook matcher?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The matcher selects which tool calls the hook fires on. It is matched against the tool name - for example Bash, Edit, Write, or a pattern like Edit|Write. Omit it, or use *, to run the hook on every tool call."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do Claude Code hooks work with subagents and background sessions?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Hooks are harness-level, so they apply to tool calls made by subagents too, and SubagentStop fires when a subagent finishes. This is the main reason to enforce policy in hooks rather than in a prompt - a subagent never reads your top-level instructions."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Are Claude Code hooks a security boundary?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "They are a control point, not a sandbox. Hooks run with your user privileges and can deterministically block risky tool calls, but they do not contain a process once it has started. Treat them as policy enforcement - deny-listing destructive commands, requiring approval, capping runaway turns - layered with OS-level isolation."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">guide | claude code hooks</div>
+      <h1>Claude Code Hooks: What They Are and How to Use Them</h1>
+      <p>Claude Code hooks are shell commands the harness runs at fixed points in the agent loop. Unlike a rule in
+      <code>CLAUDE.md</code>, a hook is not a suggestion the model can reason around - it is code that runs, and its
+      exit status decides whether the tool call happens. This page covers every hook event, how matchers select tool
+      calls, what the exit codes mean, and a working example that blocks a command.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">Deterministic: runs outside the model</div>
+        <div class="signal-pill down">Advisory prompt rules decay as context grows</div>
+      </div>
+    </section>
+
+    <section class="detail-section">
+      <h2>What are Claude Code hooks?</h2>
+      <p>A hook is a command Claude Code executes automatically when a specific event fires. The harness pipes a JSON
+      payload to your command on stdin - session id, transcript path, the tool name, and the tool input - and reads
+      your exit status to decide what happens next. Because hooks live in the harness rather than the prompt, they
+      behave the same on turn 1 and turn 400, and they apply to subagents that never saw your top-level instructions.</p>
+      <p>Hooks are configured in <code>settings.json</code>. Project-scoped hooks live in <code>.claude/settings.json</code>
+      (commit these - they are how a team shares policy), <code>.claude/settings.local.json</code> holds machine-specific overrides, and
+      <code>~/.claude/settings.json</code> applies to every project on the machine.</p>
+    </section>
+
+    <section class="detail-section">
+      <h2>Every Claude Code hook event</h2>
+      <p>Only some events can stop what the agent is about to do. That column is the one that matters when you are
+      writing policy rather than telemetry.</p>
+      <table>
+        <thead>
+          <tr><th>Event</th><th>When it fires</th><th>Can it block?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>PreToolUse</code></td><td>Before a tool call runs</td><td>Yes - exit 2 blocks the call</td></tr>
+          <tr><td><code>PostToolUse</code></td><td>After a tool call returns</td><td>No - the call already ran</td></tr>
+          <tr><td><code>UserPromptSubmit</code></td><td>When you submit a prompt</td><td>Yes - can block the prompt</td></tr>
+          <tr><td><code>SessionStart</code></td><td>When a session begins or resumes</td><td>No - used to inject context</td></tr>
+          <tr><td><code>SessionEnd</code></td><td>When a session terminates</td><td>No</td></tr>
+          <tr><td><code>Stop</code></td><td>When the main agent finishes responding</td><td>Yes - can force it to continue</td></tr>
+          <tr><td><code>SubagentStop</code></td><td>When a subagent finishes</td><td>Yes</td></tr>
+          <tr><td><code>PreCompact</code></td><td>Before context compaction runs</td><td>No</td></tr>
+          <tr><td><code>Notification</code></td><td>When Claude Code sends a notification</td><td>No</td></tr>
+        </tbody>
+      </table>
+      <p>Full field-level reference lives in the official
+      <a href="https://code.claude.com/docs/en/hooks" target="_blank" rel="noopener">Claude Code hooks documentation</a>;
+      this guide focuses on the decisions you have to make when turning hooks into enforced policy.</p>
+    </section>
+
+    <section class="detail-section">
+      <h2>Matchers: choosing which tool calls fire the hook</h2>
+      <p>A matcher is compared against the <em>tool name</em>, not the command text. <code>"Bash"</code> fires on shell
+      calls, <code>"Edit|Write"</code> fires on either file-writing tool, and <code>"*"</code> (or omitting the matcher)
+      fires on everything. Matching the command text is your hook's job, not the matcher's - which is why the example
+      below parses <code>tool_input</code> itself.</p>
+      <pre><code>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/deny-force-push.sh"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+    </section>
+
+    <section class="detail-section">
+      <h2>Exit codes: how a hook actually blocks something</h2>
+      <ul>
+        <li><strong>Exit 0</strong> - allow. The tool call proceeds.</li>
+        <li><strong>Exit 2</strong> - block. On <code>PreToolUse</code> the call never runs, and whatever your hook
+        wrote to stderr is fed back to the model, so the agent learns why it was stopped and can pick a different
+        approach.</li>
+        <li><strong>Any other non-zero</strong> - surfaces an error without blocking. Useful for a hook that is still
+        being trialled; dangerous if you believed it was enforcing something.</li>
+      </ul>
+      <p>The stderr message is the part teams under-use. A bare block teaches the agent nothing and it retries a
+      variant three times; a block that explains the constraint redirects it on the first try.</p>
+      <pre><code>#!/usr/bin/env bash
+# .claude/hooks/deny-force-push.sh
+# Claude Code pipes the pending tool call to stdin as JSON.
+payload="$(cat)"
+command="$(printf '%s' "$payload" | python3 -c 'import json,sys; print(json.load(sys.stdin)["tool_input"].get("command",""))')"
+
+if printf '%s' "$command" | grep -Eq 'git +push +(-f|--force)( |$)'; then
+  # stderr is fed back to the model, so say WHY.
+  echo "Blocked: force-push rewrites shared history. Open a PR instead." &gt;&amp;2
+  exit 2   # exit 2 = block the tool call
+fi
+
+exit 0     # anything else runs normally</code></pre>
+      <p>Make the script executable and test it standalone before trusting it - pipe a fake payload into it and check
+      the exit status. A hook that silently fails open is worse than no hook, because you stop checking.</p>
+    </section>
+
+    <section class="detail-section">
+      <h2>Why teams move rules out of CLAUDE.md and into hooks</h2>
+      <p>Advisory rules fail in three predictable places. They decay under context compaction, when the summary that
+      replaces your conversation drops the constraint. They never reach subagents, which start with their own context.
+      And they are negotiable - a model under pressure to finish a task can talk itself past a sentence in a prompt,
+      but it cannot talk itself past a non-zero exit status.</p>
+      <p>The failure that convinces most teams is a runaway turn. An agent handed an open-ended objective can loop for
+      hours without producing anything, exhausting a whole day of model quota while every health check stays green. No
+      component owns that failure: the model is "working", the harness sees a live session, and the usage graph is the
+      only place it shows up. A <code>Stop</code> or <code>PreToolUse</code> hook that counts turns is a ten-line fix.</p>
+    </section>
+
+    <section class="detail-section">
+      <h2>Claude Code security: what hooks do and do not give you</h2>
+      <p>Hooks are a control point, not a sandbox. They run with your user privileges, so they can deterministically
+      refuse a destructive command, require an approval, or cap runaway turns - but they cannot contain a process once
+      it has started. A realistic Claude Code security posture layers them: hooks for policy, OS-level isolation for
+      blast radius, and an audit trail so you can answer what the agent actually did.</p>
+      <p>Two rules worth adopting early. Keep the hook itself trivial and fast - it runs on the critical path of every
+      matching tool call. And make the hook's own configuration something the agent cannot rewrite, or you have built a
+      lock whose key is in the same drawer.</p>
+    </section>
+
+    <section class="detail-section">
+      <h2>Where ThumbGate fits</h2>
+      <p>ThumbGate is a set of Claude Code hooks you do not have to write and maintain yourself. It installs
+      <code>PreToolUse</code> enforcement with a deny-list for destructive commands, runaway-turn limits, and
+      prevention rules generated from mistakes the agent already made - so a correction you give once becomes a gate
+      that holds in every later session, including in subagents.</p>
+      <p>Start with the free CLI and keep your own hooks; ThumbGate composes with them rather than replacing
+      them. If you want the enforcement designed around your actual incidents instead of a generic deny-list,
+      the <strong>$499 Managed AI Agent Workflow Gate</strong> installs one hard, test-backed gate for
+      the failure that is hurting you most -
+      <a href="/diagnostic?utm_source=guide&amp;utm_medium=organic&amp;utm_campaign=claude-code-hooks">see what it covers</a>.</p>
+    </section>
+
+    <section class="detail-section">
+      <h2>Frequently asked questions</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>What are hooks in Claude Code?</h3>
+          <p>Claude Code hooks are shell commands the harness runs automatically at fixed points in the agent loop - before a tool call, after a tool call, when you submit a prompt, when the session starts, and when the agent stops. They are configured in settings.json, they run outside the model, and a PreToolUse hook can block a tool call before it executes.</p>
+        </div>
+        <div class="card">
+          <h3>What is the difference between a hook and a rule in CLAUDE.md?</h3>
+          <p>A CLAUDE.md rule is advisory: it goes into the prompt and the model decides whether to follow it. A hook is deterministic: it is code the harness executes, and its exit status decides whether the tool call runs. Under long sessions or context compaction, advisory rules degrade; hooks do not.</p>
+        </div>
+        <div class="card">
+          <h3>How do I use Claude Code hooks?</h3>
+          <p>Add a hooks block to .claude/settings.json in your project (or ~/.claude/settings.json for every project), pick an event such as PreToolUse, give it a matcher such as Bash, and point it at a command. Claude Code pipes a JSON payload describing the pending tool call to your command on stdin.</p>
+        </div>
+        <div class="card">
+          <h3>How do I set up hooks for Claude Code so they block a command?</h3>
+          <p>Use the PreToolUse event and exit with status 2 from your hook. Exit code 2 blocks the tool call and returns your stderr text to the model, so the agent sees why it was stopped. Exit code 0 allows the call; any other non-zero code surfaces an error without blocking.</p>
+        </div>
+        <div class="card">
+          <h3>What is a Claude Code hook matcher?</h3>
+          <p>The matcher selects which tool calls the hook fires on. It is matched against the tool name - for example Bash, Edit, Write, or a pattern like Edit|Write. Omit it, or use *, to run the hook on every tool call.</p>
+        </div>
+        <div class="card">
+          <h3>Do Claude Code hooks work with subagents and background sessions?</h3>
+          <p>Yes. Hooks are harness-level, so they apply to tool calls made by subagents too, and SubagentStop fires when a subagent finishes. This is the main reason to enforce policy in hooks rather than in a prompt - a subagent never reads your top-level instructions.</p>
+        </div>
+        <div class="card">
+          <h3>Are Claude Code hooks a security boundary?</h3>
+          <p>They are a control point, not a sandbox. Hooks run with your user privileges and can deterministically block risky tool calls, but they do not contain a process once it has started. Treat them as policy enforcement - deny-listing destructive commands, requiring approval, capping runaway turns - layered with OS-level isolation.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-section">
+      <h2>Related guides</h2>
+      <ul>
+        <li><a href="/guides/pretooluse-hooks-vs-advisory-prompt-rules">PreToolUse hooks vs advisory prompt rules</a></li>
+        <li><a href="/guides/claude-code-prevent-repeated-mistakes">Stop Claude Code repeating the same mistake</a></li>
+        <li><a href="/guides/claude-code-skills-guardrails">Turning Claude Code skills into enforced workflows</a></li>
+        <li><a href="/guides/mcp-tool-governance">Governing MCP tools</a></li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
