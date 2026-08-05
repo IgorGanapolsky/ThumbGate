@@ -1,0 +1,110 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{url}
+
+\title{How We Know Pre-Action Gates Work:\\
+An Evaluation Framework for Infrastructure Firewalls\\
+on AI Coding Agents}
+\author{Igor Ganapolsky\\
+\texttt{iganapolsky@gmail.com}\\
+ThumbGate Project\\
+\url{https://thumbgate.ai} \and
+\url{https://huggingface.co/spaces/IgorGanapolsky/ThumbGate}}
+\date{August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+AI coding agents repeatedly commit the same high-cost failures---force-pushes to protected branches, secret egress, unreviewed outbound mail, and other tool actions that should never execute without policy. \emph{Pre-action} enforcement intercepts tool calls before execution (e.g., PreToolUse hooks) and decides allow, warn, or deny from deterministic gates, lessons, and human-review routes. This paper presents a practical evaluation framework for such infrastructure firewalls, instantiated by ThumbGate: an open-source, local-first system that promotes operator feedback into prevention rules and hard blocks. We define seven proof dimensions---golden datasets, offline regression, tool-call correctness, latency structure, cost avoidance, human review, and production monitoring---and map each to committed tests, public scorecards, and re-run commands. The framework requires \texttt{unsafeActionRate} $= 0$ on golden suites and treats production incidents as golden candidates. Artifacts and demos are available on GitHub, npm (\texttt{thumbgate}), and Hugging Face Spaces.
+\end{abstract}
+
+\section{Introduction}
+Coding agents with shell, filesystem, and MCP tool access can burn money and trust in a single wrong command. Training-time alignment and post-hoc log review do not stop the bad tool call \emph{before} it runs. Pre-action gates close that gap: every tool invocation is evaluated against rules derived from prior failures.
+
+ThumbGate implements this loop as: capture thumbs feedback $\rightarrow$ promote lessons $\rightarrow$ generate prevention rules $\rightarrow$ enforce at PreToolUse $\rightarrow$ measure and feed misses back into goldens. The product claim is not ``AI safety in the abstract,'' but measurable decision quality under real agent harnesses (Claude Code, Cursor, Codex, OpenCode, MCP).
+
+This paper does not report multi-institution human studies. It specifies how an operator or buyer should \emph{know} an enforcement layer works, with evidence paths that are public and re-runnable.
+
+\section{Threat model and scope}
+We target local and hybrid agent runtimes that execute developer tools. In scope: force-push, secret egress, financial mutations, outbound messaging hard floors, and supply-chain install patterns. Out of scope: model-internal jailbreak robustness as the primary control, and claims of customer revenue.
+
+\section{System overview}
+ThumbGate is local-first: gates and lessons live on the operator machine; hosted Pro is optional for sync and dashboard. Enforcement is deterministic on the hot path (pattern and rule match first). Semantic retrieval and LLM judges are diagnostic or offline, not required for hard deny of known-bad patterns.
+
+\section{Seven proof dimensions}
+\subsection{Golden evaluation dataset}
+Committed packs define expected allow/deny/warn outcomes, including ThumbGate Bench, agent-safety evals, prompt and observability suites, and shell golden tests. Production failures promote into offline goldens via behavior monitoring (\texttt{goldenCandidates}).
+
+\subsection{Offline regression}
+Standard verification before merge or release:
+\begin{verbatim}
+npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check
+\end{verbatim}
+Evidence is recorded in public verification docs and release-confidence checks (Changesets, SemVer, version sync).
+
+\subsection{Tool-call correctness}
+Bench metrics include task success, \textbf{unsafe action rate (must stay 0)}, blocked-unsafe rate, capability rate (safe work allowed), false-block rate, and replay stability. Public scorecard: \url{https://thumbgate.ai/eval-scorecard}. Reproduce: \texttt{npm run thumbgate:bench -{}- -{}-json}.
+
+\subsection{Latency}
+No LLM on the enforcement decision path. Deterministic match first (sub-millisecond class); local semantic fallback only when needed. Routing budgets constrain low-latency paths (e.g., 300\,ms class budgets in classifier routing config).
+
+\subsection{Cost}
+Blocks avoid model round-trips; budget ledgers and tokenomics guards track spend; public methodology documents avoided-repeat savings without inventing revenue.
+
+\subsection{Human review}
+High-risk classes (credentials, customer data, regulated work, payments) route to human review. Rubrics require verification evidence. Social and email outbound default to draft-only until a human sends.
+
+\subsection{Production monitoring}
+Deploy health endpoints, self-heal checks, gate statistics, silent-gate canaries, and congruence probes. Monitors must feed failures back into goldens---absence of alerts is not evidence of safety.
+
+\section{Buyer audit protocol}
+In about twenty minutes an independent reviewer can:
+\begin{enumerate}[leftmargin=*]
+  \item Clone \url{https://github.com/IgorGanapolsky/ThumbGate} and run \texttt{npm ci}.
+  \item Run the verification suite and bench JSON export.
+  \item Probe production \texttt{/health} and public scorecard pages.
+\end{enumerate}
+
+\section{Limitations}
+This framework measures gate decision quality and operator workflow reliability. It is not a substitute for penetration testing of every integration, nor proof of third-party paid adoption. Default free installs may not hard-block every risky pattern without configuration.
+
+\section{Related work}
+Agent tool use and MCP expand the action surface of LLMs. PreToolUse-style hooks (agent harnesses) provide the interception point. Our contribution is the closed loop from feedback to enforceable gates with an explicit evaluation contract buyers can re-run.
+
+\section{Artifacts}
+\begin{itemize}[leftmargin=*]
+  \item Source: \url{https://github.com/IgorGanapolsky/ThumbGate}
+  \item Package: \texttt{npx thumbgate init}
+  \item White paper (HTML): \url{https://thumbgate.ai/whitepaper}
+  \item Hugging Face Space: \url{https://huggingface.co/spaces/IgorGanapolsky/ThumbGate}
+  \item Sample feedback schema dataset: \url{https://huggingface.co/datasets/IgorGanapolsky/thumbgate-agent-feedback-sample}
+\end{itemize}
+
+\section{Conclusion}
+Pre-action gates for coding agents should be evaluated like safety-critical control software: golden suites with zero unsafe-action rate, offline regression, explicit latency and cost structure, human review for residual risk, and production monitors that regenerate goldens. ThumbGate implements and dogfoods this contract as an open infrastructure firewall.
+
+\section*{Acknowledgments}
+Built for operators of multi-agent coding fleets who need enforcement, not only dashboards.
+
+\begin{thebibliography}{9}
+\bibitem{tg}
+I.~Ganapolsky.
+\newblock ThumbGate documentation and verification evidence.
+\newblock \url{https://github.com/IgorGanapolsky/ThumbGate}, 2026.
+\bibitem{hfspace}
+I.~Ganapolsky.
+\newblock ThumbGate Hugging Face Space.
+\newblock \url{https://huggingface.co/spaces/IgorGanapolsky/ThumbGate}, 2026.
+\end{thebibliography}
+
+\end{document}
