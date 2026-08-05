@@ -8737,13 +8737,19 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     }
 
     // Operator key is allowed to bypass the general admin gate for dedicated
-    // read-only operational endpoints.
+    // read-only operational endpoints used by `thumbgate dashboard`, CFO, and
+    // north-star. Keep this list tight: operator must not reach write/mutation
+    // surfaces (lessons write, feedback capture, jobs, etc.).
     const _reqToken = extractApiKey(req);
     const isOperatorReadRequest = Boolean(expectedOperatorKey)
       && safeKeyEqual(_reqToken, expectedOperatorKey)
       && req.method === 'GET'
       && [
         '/v1/billing/summary',
+        '/v1/dashboard',
+        '/v1/dashboard/render-spec',
+        '/v1/dashboard/ai-inventory',
+        '/v1/dashboard/review-state',
         '/v1/intake/workflow-sprint/queue',
         '/v1/task-outcomes/monitor',
       ].includes(pathname);
