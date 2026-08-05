@@ -18,3 +18,7 @@
 - `hermes/config.toml`, `hermes/opencode.json`, `hermes/.mcp.json`: Adapter configurations for Hermes Agent + ThumbGate gates.
 - `letta/README.md`, `letta/thumbgate-letta-adapter.js`: Letta adapter for memory-first agents. Wraps Letta MCP, server-tool, or client-tool calls so ThumbGate can gate the action before Letta forwards or executes it.
 - `config/model-candidates.json` + `scripts/model-candidates.js`: managed-model catalog and benchmark planner for evaluating candidates like Tinker Kimi/Qwen against ThumbGate workloads before routing production traffic.
+- `vlt/VLT.md`: High-ROI integration guide for vlt's JavaScript package registry ecosystem (hosted registry, self-hosted VSR, secure npm mirror). Covers new gate templates for supply-chain security, model candidates (vlt/vlt-registry-hosted, vlt/vlt-vsr-self-hosted), registry governance, and feedback capture for dependency consumption and publishing decisions.
+- `vlt/config.toml`, `vlt/opencode.json`, `vlt/.mcp.json`: Adapter configurations for vlt registry governance + ThumbGate gates.
+- `huggingface-context-course/HF_CONTEXT.md`: High-ROI integration guide for the Hugging Face Context Course (context engineering for AI code agents — Claude Code, Codex, OpenCode). Maps each course unit to ThumbGate gates, model candidates, and feedback capture patterns.
+- `huggingface-context-course/config.toml`, `huggingface-context-course/opencode.json`, `huggingface-context-course/.mcp.json`: Adapter configurations for HF Context Course exercises + ThumbGate gates.

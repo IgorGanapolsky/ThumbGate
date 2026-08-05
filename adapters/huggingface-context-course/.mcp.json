@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "thumbgate": {
+      "command": "npx",
+      "args": ["--yes", "--package", "thumbgate@1.34.3", "thumbgate", "serve"]
+    }
+  },
+  "hooks": {
+    "preToolUse": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "--package",
+        "thumbgate@1.34.3",
+        "thumbgate",
+        "gate-check"
+      ]
+    }
+  },
+  "notes": "Claude Code MCP config with ThumbGate gates for Hugging Face Context Course exercises. PreToolUse hook gates all tool calls. All configs pin thumbgate@1.34.3. See HF_CONTEXT.md for unit-by-unit integration guide."
+}

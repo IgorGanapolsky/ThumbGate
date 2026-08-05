@@ -1,0 +1,20 @@
+# Hugging Face Context Course — ThumbGate governance (Codex profile)
+# Copy into ~/.codex/config.toml or merge section.
+# Reference: https://huggingface.co/learn/context-course/unit0/introduction
+
+[mcp_servers.thumbgate]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@1.34.3", "thumbgate", "serve"]
+
+# Hard PreToolUse hook for Codex — gates all tool calls before execution
+[hooks.pre_tool_use]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@1.34.3", "thumbgate", "gate-check"]
+
+# Context-engineering gates to enable for HF Context Course exercises:
+# - require-agent-context-freshness: Ensure AGENTS.md is fresh before code edits
+# - validate-synthesized-skills-against-rules: Validate new skills before writing
+# - block-dynamic-tool-creation-without-approval: Gate dynamic tool creation in Unit 1
+# - enforce-agent-identity-separation: Agent vs human credential separation (Unit 4)
+# - mcp-sql-delete-block: SQL MCP safety (Unit 2)
+# See config/gate-templates.json for "AI Engineering Stack Safety" and "Claw-Style Enterprise Agent Governance" categories.

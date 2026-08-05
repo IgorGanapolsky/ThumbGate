@@ -133,6 +133,48 @@
         "medianLatencyMs",
         "costPerEvolutionUsd"
       ]
+    },
+    "js-package-registry-governance": {
+      "label": "JavaScript package registry governance",
+      "summary": "Governance, gating, and supply-chain enforcement for agents consuming and publishing JavaScript packages via npm, vlt registry, and self-hosted VSR (serverless registry). Pre-action checks for dependency installation, registry override, provenance attestation, and workspace dependency pinning.",
+      "desiredStrengths": ["agentic-coding", "tool-use", "supply-chain-security", "reliability", "security", "audit-trail"],
+      "targetContextWindow": 64000,
+      "benchmarkCommands": [
+        "npx thumbgate eval --from-feedback --json --min-score=0",
+        "node scripts/gate-eval.js run",
+        "npx thumbgate bench --json --min-score=90"
+      ],
+      "metrics": [
+        "passRate",
+        "falsePositiveRate",
+        "dependencyAuditRecall",
+        "typosquattingDetectionRate",
+        "registryOverrideBlockRate",
+        "provenanceAttestationRate",
+        "medianLatencyMs",
+        "costPer1kActionsUsd"
+      ]
+    },
+    "context-engineering": {
+      "label": "Context engineering for AI code agents",
+      "summary": "Evaluating models on context structuring, skill synthesis, MCP tool governance, sub-agent coordination, and hook-based lifecycle automation for AI code agent workflows (Claude Code, Codex, OpenCode). Based on the Hugging Face Context Course curriculum.",
+      "desiredStrengths": ["agentic-coding", "tool-use", "context-structuring", "skill-synthesis", "MCP-governance", "reliability", "long-horizon-coding"],
+      "targetContextWindow": 128000,
+      "benchmarkCommands": [
+        "npx thumbgate eval --from-feedback --json --min-score=0",
+        "node scripts/gate-eval.js run",
+        "npx thumbgate bench --json --min-score=90"
+      ],
+      "metrics": [
+        "passRate",
+        "contextFreshnessRate",
+        "skillValidationAccuracy",
+        "mcpToolSafetyRate",
+        "subagentCoordinationCompliance",
+        "falsePositiveRate",
+        "medianLatencyMs",
+        "costPer1kActionsUsd"
+      ]
     }
   },
   "candidates": [
@@ -329,6 +371,39 @@
       "costClass": "medium",
       "strengths": ["agentic-coding", "tool-use", "reliability", "long-context", "data-analysis", "cost-efficiency"],
       "notes": "Google's 3.1 Pro Preview model with 55.5 Coding Index and massive 2M token context window. Strong choice for complex RAG tasks, repository-scale auditing, and long-context trace analysis."
+    },
+    {
+      "id": "vlt/vlt-registry-hosted",
+      "vendor": "vlt",
+      "family": "javascript-package-registry",
+      "provider": "vlt",
+      "model": "hosted-registry",
+      "contextWindow": 10000,
+      "costClass": "low",
+      "strengths": ["supply-chain-security", "package-management", "audit-trail", "reliability", "security"],
+      "notes": "vlt's hosted package registry service (launched Aug 2026) with secure npm mirror, private registries, and VSR (self-hosted serverless registry). ThumbGate gates integrate via preToolUse hooks on vlt install/add/publish and registry config overrides. Pair with require-local-dependency-vulnerability-scan and gate-vlt-package-publishing templates. See adapters/vlt/VLT.md and https://vlt.io/blog/1-0."
+    },
+    {
+      "id": "vlt/vlt-vsr-self-hosted",
+      "vendor": "vlt",
+      "family": "javascript-package-registry",
+      "provider": "vlt",
+      "model": "self-hosted-vsr",
+      "contextWindow": 10000,
+      "costClass": "low",
+      "strengths": ["supply-chain-security", "package-management", "on-prem", "airgap", "audit-trail", "security"],
+      "notes": "vlt's self-hosted VSR (serverless registry) for enterprise on-prem and air-gapped environments. ThumbGate's block-vlt-private-registry-bypass and require-review-vlt-registry-override gate templates enforce approved registry hosts. Critical for enterprises where most data is not cloud-native."
+    },
+    {
+      "id": "huggingface/context-engineering-agent",
+      "vendor": "Hugging Face",
+      "family": "context-engineering",
+      "provider": "huggingface",
+      "model": "context-engineering-agent",
+      "contextWindow": 200000,
+      "costClass": "low",
+      "strengths": ["context-structuring", "skill-synthesis", "MCP-governance", "agentic-coding", "tool-use", "reliability"],
+      "notes": "Model optimized for the Hugging Face Context Course curriculum — context engineering for AI code agents (Claude Code, Codex, OpenCode). Excels at structuring knowledge so agents find context efficiently. Evaluated on MCP tool governance, skill synthesis validation, and hook-based lifecycle automation. See docs/guides/huggingface-context-course-governance.md and adapters/huggingface-context-course/."
     }
   ]
 }
