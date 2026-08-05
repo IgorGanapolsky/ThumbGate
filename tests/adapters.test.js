@@ -60,6 +60,16 @@ test('adapter files exist', () => {
     'plugins/cursor-marketplace/mcp.json',
     'plugins/cursor-marketplace/README.md',
     'docs/guides/opencode-integration.md',
+    'adapters/vlt/VLT.md',
+    'adapters/vlt/config.toml',
+    'adapters/vlt/opencode.json',
+    'adapters/vlt/.mcp.json',
+    'adapters/huggingface-context-course/HF_CONTEXT.md',
+    'adapters/huggingface-context-course/config.toml',
+    'adapters/huggingface-context-course/opencode.json',
+    'adapters/huggingface-context-course/.mcp.json',
+    'docs/guides/vlt-registry-governance.md',
+    'docs/guides/huggingface-context-course-governance.md',
   ];
 
   for (const file of files) {
@@ -478,4 +488,77 @@ test('Claude Codex bridge plugin surface is present and aligned to ThumbGate met
   assert.match(readme, /Claude Code plugin/i);
   assert.match(readme, /adversarial review/i);
   assert.match(readme, /second-pass handoff/i);
+});
+
+test('vlt adapter config.toml pins version and includes gate-check hook', () => {
+  const filePath = path.join(root, 'adapters/vlt/config.toml');
+  const content = fs.readFileSync(filePath, 'utf-8');
+  assert.match(content, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'config.toml must pin shipped version');
+  assert.match(content, /gate-check/, 'config.toml must include gate-check hook');
+});
+
+test('vlt adapter opencode.json pins version and is valid JSON', () => {
+  const filePath = path.join(root, 'adapters/vlt/opencode.json');
+  const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  assert.ok(payload.mcp?.thumbgate, 'vlt opencode.json must have thumbgate MCP server');
+  const serverStr = JSON.stringify(payload.mcp.thumbgate);
+  assert.match(serverStr, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'must pin shipped version');
+});
+
+test('vlt adapter .mcp.json pins version and includes preToolUse hook', () => {
+  const filePath = path.join(root, 'adapters/vlt/.mcp.json');
+  const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  assert.ok(payload.mcpServers?.thumbgate, 'vlt .mcp.json must have thumbgate MCP server');
+  assert.ok(payload.hooks?.preToolUse, 'vlt .mcp.json must have preToolUse hook');
+  const mcpStr = JSON.stringify(payload);
+  assert.match(mcpStr, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'must pin shipped version');
+});
+
+test('vlt adapter VLT.md references gate templates, model candidates, and launch announcement', () => {
+  const filePath = path.join(root, 'adapters/vlt/VLT.md');
+  const content = fs.readFileSync(filePath, 'utf-8');
+  assert.match(content, /gate templates|Gate Template/i, 'VLT.md must reference gate templates');
+  assert.match(content, /model candidates|Model Candidate/i, 'VLT.md must reference model candidates');
+  assert.match(content, /vlt.io|launch|2026/i, 'VLT.md must reference the vlt launch announcement');
+  assert.match(content, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'VLT.md must pin shipped version');
+});
+
+test('hf-context adapter config.toml pins version and includes gate-check hook', () => {
+  const filePath = path.join(root, 'adapters/huggingface-context-course/config.toml');
+  const content = fs.readFileSync(filePath, 'utf-8');
+  assert.match(content, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'config.toml must pin shipped version');
+  assert.match(content, /gate-check/, 'config.toml must include gate-check hook');
+});
+
+test('hf-context adapter opencode.json pins version and is valid JSON', () => {
+  const filePath = path.join(root, 'adapters/huggingface-context-course/opencode.json');
+  const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  assert.ok(payload.mcp?.thumbgate, 'opencode.json must have thumbgate MCP server');
+  assert.equal(payload.mcp.thumbgate.enabled, true, 'thumbgate MCP must be enabled');
+  const notes = (payload.notes || '').toLowerCase();
+  assert.ok(notes.includes('context course'), 'notes must reference the context course');
+  const serverStr = JSON.stringify(payload.mcp.thumbgate);
+  assert.match(serverStr, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'must pin shipped version');
+});
+
+test('hf-context adapter .mcp.json pins version and includes preToolUse hook', () => {
+  const filePath = path.join(root, 'adapters/huggingface-context-course/.mcp.json');
+  const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  assert.ok(payload.mcpServers?.thumbgate, '.mcp.json must have thumbgate MCP server');
+  assert.ok(payload.hooks?.preToolUse, '.mcp.json must have preToolUse hook');
+  assert.match(payload.hooks.preToolUse.args.join(' '), /gate-check/, 'preToolUse must use gate-check');
+  const mcpStr = JSON.stringify(payload);
+  assert.match(mcpStr, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'must pin shipped version');
+});
+
+test('hf-context adapter HF_CONTEXT.md references gate templates, model candidates, and course URL', () => {
+  const filePath = path.join(root, 'adapters/huggingface-context-course/HF_CONTEXT.md');
+  const content = fs.readFileSync(filePath, 'utf-8');
+  assert.match(content, /https:\/\/huggingface\.co\/learn\/context-course/, 'must reference course URL');
+  assert.match(content, /validate-context-before-codegen/, 'must reference gate template');
+  assert.match(content, /huggingface\/context-engineering-agent/, 'must reference model candidate');
+  assert.match(content, /context-engineering/, 'must reference context-engineering workload');
+  assert.match(content, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), 'must pin shipped version');
+  assert.match(content, /Unit 1/, 'must reference Unit 1');
+  assert.match(content, /Unit 5/, 'must reference Unit 5');
 });

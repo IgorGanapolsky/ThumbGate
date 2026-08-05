@@ -1,0 +1,18 @@
+# Codex MCP profile: ThumbGate + vlt registry governance
+# Copy into ~/.codex/config.toml or merge section.
+# Gates pre-action checks for vlt install/add/publish and registry config overrides.
+# See VLT.md for gate templates and feedback capture patterns.
+
+[mcp_servers.thumbgate]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@1.34.3", "thumbgate", "serve"]
+
+# Hard PreToolUse hook for Codex — gates vlt package management and registry changes
+[hooks.pre_tool_use]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@1.34.3", "thumbgate", "gate-check"]
+
+# For hybrid vlt agents: combine with Perplexity hybrid MCP for inference routing.
+# Use new gate templates: block-vlt-install-vulnerable-deps, gate-vlt-package-publishing, etc.
+# See config/gate-templates.json for "JavaScript Package Registry Governance" category.
+# See adapters/perplexity/HYBRID.md for hybrid local-cloud claw agent synergy.

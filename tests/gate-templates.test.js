@@ -33,6 +33,23 @@ test('gate template library exposes curated templates with shared rollout metada
   assert.ok(templates.some((template) => template.id === 'careful-mode'));
   assert.ok(templates.some((template) => template.id === 'freeze-mode'));
   assert.ok(templates.some((template) => template.category === 'On-Demand Dynamic Gating'));
+
+  // vlt / JavaScript Package Registry Governance templates
+  assert.ok(templates.some((template) => template.category === 'JavaScript Package Registry Governance'));
+  assert.ok(templates.some((template) => template.id === 'block-vlt-install-vulnerable-deps'));
+  assert.ok(templates.some((template) => template.id === 'require-review-vlt-registry-override'));
+  assert.ok(templates.some((template) => template.id === 'enforce-vlt-workspace-dep-pinning'));
+  assert.ok(templates.some((template) => template.id === 'gate-vlt-package-publishing'));
+  assert.ok(templates.some((template) => template.id === 'block-vlt-private-registry-bypass'));
+
+  // All three categories of vlt gate severity
+  assert.ok(templates.some((template) => template.id === 'block-vlt-install-vulnerable-deps' && template.severity === 'critical'));
+  assert.ok(templates.some((template) => template.id === 'enforce-vlt-workspace-dep-pinning' && template.severity === 'high'));
+
+  // context-engineering gate template
+  assert.ok(templates.some((template) => template.id === 'validate-context-before-codegen'));
+  assert.ok(templates.some((template) => template.category === 'AI Engineering Stack Safety' && template.id === 'validate-context-before-codegen'));
+
   assert.ok(templates.every((template) => template.category));
   assert.ok(templates.every((template) => template.problem));
   assert.ok(templates.every((template) => template.roi));
@@ -50,8 +67,9 @@ test('gate template library summary groups templates by category and action', ()
   assert.equal(summary.categories['Supply Chain Safety'], 5);
   assert.equal(summary.categories['Document RAG Safety'], 7);
   assert.equal(summary.categories['Sparse Attention Runtime Safety'], 6);
-  assert.equal(summary.categories['AI Engineering Stack Safety'], 6);
+  assert.equal(summary.categories['AI Engineering Stack Safety'], 7);
   assert.equal(summary.categories['On-Demand Dynamic Gating'], 2);
+  assert.equal(summary.categories['JavaScript Package Registry Governance'], 5);
   assert.equal(summary.byAction.block, templates.filter((template) => template.defaultAction === 'block').length);
   assert.equal(summary.byAction.warn, templates.filter((template) => template.defaultAction === 'warn').length);
   assert.equal(summary.byAction.allow, 1);

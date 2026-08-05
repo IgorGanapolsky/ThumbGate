@@ -660,6 +660,78 @@
       "problem": "Blocks any file edit or write tool call that is not within a specified active/target directory.",
       "roi": "Restricts agent edits to a controlled workspace, preventing scope drift, accidental modification of configuration or source files, and unwanted global refactors during focused task debugging.",
       "rollout": "Enable dynamically on-demand using /freeze to specify the only path(s) the agent is allowed to write to during the session."
+    },
+    {
+      "id": "block-vlt-install-vulnerable-deps",
+      "name": "Block vlt install of vulnerable dependencies",
+      "category": "JavaScript Package Registry Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(vlt\\s+install|vlt\\s+add).*?(--audit\\s+critical|vuln|cve|high-severity|known-vuln|left-pad|event-stream|colors|unsafe|insecure|deprecated|obsolete|legacy|vulnerable|unresolved-cve)",
+      "problem": "Blocks vlt install/add of packages flagged with --audit critical or known-vulnerable CVE references (e.g. left-pad, event-stream, colors). vlt's hosted registry provides real-time vulnerability scanning; agents must not bypass the audit pipeline.",
+      "roi": "Prevents supply-chain compromise via known-vulnerable dependencies. Direct 1st-order risk: left-pad-style incidents cause cascading production outages. Second-order: agents that install without audit never learn to check. Captured feedback (thumbgate capture --tag supply-chain-security) turns each bypass into a prevention rule.",
+      "rollout": "Require --audit critical on all vlt install/add. Block packages with known CVE references. Auto-capture feedback for each bypass attempt."
+    },
+    {
+      "id": "require-review-vlt-registry-override",
+      "name": "Require review for vlt registry override to non-approved hosts",
+      "category": "JavaScript Package Registry Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(vlt\\s+config\\s+set|vlt\\s+registry\\s+add|vlt\\s+set\\s+registry).*(registry|registry-url|self-host|override|redirect|mirror|vsr)",
+      "problem": "Blocks vlt registry configuration that redirects dependency resolution to non-approved self-hosted VSR or mirror hosts. Agents must only pull from allowlisted registries (vlt.sh, registry.npmjs.org, approved internal VSR).",
+      "roi": "High: Prevents supply-chain attacks via rogue registry configuration. Critical for enterprise on-prem/air-gapped environments where vlt's self-hosted VSR is the approved source. Captured feedback (thumbgate capture --tag registry-override) generates prevention rules for unauthorized redirect patterns.",
+      "rollout": "Block all registry-setting commands for non-allowlisted hosts. Warn (human review) for internal VSR. Allowlist vlt.sh, registry.npmjs.org, and approved internal domains."
+    },
+    {
+      "id": "enforce-vlt-workspace-dep-pinning",
+      "name": "Enforce pinned dependency versions in vlt workspace installs",
+      "category": "JavaScript Package Registry Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(vlt\\s+add|vlt\\s+install).*?(@\\s*(?:\\^|~|>|<|>=|<=|\\*|latest|next))",
+      "problem": "Blocks vlt add/install with unpinned (wildcard, range, latest/next) dependency versions. vlt workspace installs with @*, @^, @~, @>, @<, @>=, @<=, @latest, @next resolve to potentially vulnerable latest versions instead of audited pinned versions.",
+      "roi": "Pinned dependencies are the bedrock of reproducible builds and vulnerability scanning. vlt's hosted registry provides lockfiles by default; agents must respect them. Feedback (thumbgate capture --tag dep-pinning) from each bypass generates a rule for the specific unpinned package pattern.",
+      "rollout": "Enforce exact version pinning in workspace vlt add/install. Block @* ^ ~ > < >= <= latest next. Allow exact versions like @4.18.2."
+    },
+    {
+      "id": "gate-vlt-package-publishing",
+      "name": "Gate vlt package publishing for provenance and scope safety",
+      "category": "JavaScript Package Registry Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(vlt\\s+publish|vlt\\s+pack|npm\\s+publish).*(no-provenance|unsigned|no-2fa|no-attestation|typosquat|squat|unscoped|no-scope)",
+      "problem": "Blocks vlt/npm publish of packages without provenance attestation, 2FA, or proper scope/access controls. vlt's hosted registry supports provenance; agents must not publish unsigned or unscoped packages.",
+      "roi": "Prevents typosquatting and supply-chain attacks via unsigned package publishing. Aligns with vlt's security posture and npm provenance ecosystem. Captures high-value feedback for prevention rules.",
+      "rollout": "Require provenance attestation and 2FA for all vlt publish operations. Block publishes to scopes matching existing packages (typosquatting detection)."
+    },
+    {
+      "id": "block-vlt-private-registry-bypass",
+      "name": "Block vlt private registry bypass via npmrc or env override",
+      "category": "JavaScript Package Registry Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(\\.npmrc|vlt.*config|NPM_CONFIG_REGISTRY|VLT_REGISTRY).*(https?://(?!(?:registry\\.npmjs\\.org|vlt\\.sh|localhost|127\\.0\\.0\\.1|\\[::1\\]|0\\.0\\.0\\.0)(?:[:/?#]|$))[\\w.-]+)",
+      "problem": "Blocks vlt/npm configuration that redirects dependency resolution to unapproved private or external registries via .npmrc, environment variables, or CLI config overrides.",
+      "roi": "High: Prevents data exfil and supply-chain compromise via rogue registry configuration. Critical for enterprise on-prem/air-gapped environments where vlt's self-hosted VSR is used.",
+      "rollout": "Block all registry overrides to non-allowlisted hosts. Allowlist vlt.sh, registry.npmjs.org, and approved internal VSR domains."
+    },
+    {
+      "id": "validate-context-before-codegen",
+      "name": "Validate context freshness and relevance before code generation",
+      "category": "AI Engineering Stack Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(Edit|Write|MultiEdit|StrReplace).*",
+      "problem": "Agents frequently generate code without first ensuring AGENTS.md, CLAUDE.md, test infrastructure, and ownership context are fresh and relevant. Per the Hugging Face Context Course: 'an agent is only as good as the context it has.' Results in style violations, wrong test commands, and rework.",
+      "roi": "Eliminates rework from stale or missing project context. Direct 1st-order improvement to context-engineering workflows (Hugging Face Context Course Units 1-3). Reduces PR churn and review cycles.",
+      "rollout": "Before any Edit/Write/MultiEdit, verify AGENTS.md exists and is fresh (modified within last 7 days). Require explicit context-freshness check before code edits. Capture feedback with 'missing-context' and 'stale-context' tags."
     }
   ]
 }

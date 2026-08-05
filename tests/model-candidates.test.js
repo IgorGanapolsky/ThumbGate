@@ -35,6 +35,11 @@ test('model candidate catalog includes Kimi K2.6 and Qwen3.6 variants', () => {
   assert.ok(ids.has('nousresearch/hermes-3-llama-3.1-70b'));
   assert.ok(ids.has('anthropic/claude-opus-4-8'));
   assert.ok(ids.has('google/gemini-3.1-pro-preview'));
+  // vlt model candidates
+  assert.ok(ids.has('vlt/vlt-registry-hosted'));
+  assert.ok(ids.has('vlt/vlt-vsr-self-hosted'));
+  // Hugging Face Context Course model candidate
+  assert.ok(ids.has('huggingface/context-engineering-agent'));
 });
 
 test('recommendCandidates prefers Nous Research Hermes for skill synthesis', () => {
@@ -60,6 +65,61 @@ test('recommendCandidates prefers GPT-5.5 for dashboard analysis', () => {
   assert.ok(report.recommended[0].matchedStrengths.includes('data-analysis'));
   assert.ok(report.recommended[0].matchedStrengths.includes('dashboard-creation'));
   assert.ok(report.recommended[0].benchmarkPlan.metrics.includes('chartSpecValidity'));
+});
+
+test('model candidate catalog includes js-package-registry-governance workload', () => {
+  const catalog = loadCatalog(DEFAULT_CATALOG_PATH);
+  const workload = catalog.workloads['js-package-registry-governance'];
+
+  assert.ok(workload, 'js-package-registry-governance workload must exist');
+  assert.ok(workload.desiredStrengths.includes('supply-chain-security'));
+  assert.ok(workload.desiredStrengths.includes('audit-trail'));
+  assert.ok(workload.metrics.includes('dependencyAuditRecall'));
+  assert.ok(workload.metrics.includes('typosquattingDetectionRate'));
+  assert.ok(workload.metrics.includes('registryOverrideBlockRate'));
+  assert.ok(workload.metrics.includes('provenanceAttestationRate'));
+});
+
+test('recommendCandidates supports js-package-registry-governance workload', () => {
+  const report = recommendCandidates({
+    workload: 'js-package-registry-governance',
+    provider: 'vlt',
+    maxCandidates: 2,
+  });
+
+  assert.equal(report.workloadId, 'js-package-registry-governance');
+  assert.equal(report.recommended.length, 2);
+  assert.ok(report.recommended.some((candidate) => candidate.id === 'vlt/vlt-registry-hosted'));
+  assert.ok(report.recommended.some((candidate) => candidate.id === 'vlt/vlt-vsr-self-hosted'));
+  assert.ok(report.recommended[0].matchedStrengths.includes('supply-chain-security'));
+  assert.ok(report.recommended[0].benchmarkPlan.metrics.includes('dependencyAuditRecall'));
+});
+
+test('model candidate catalog includes context-engineering workload', () => {
+  const catalog = loadCatalog(DEFAULT_CATALOG_PATH);
+  const workload = catalog.workloads['context-engineering'];
+
+  assert.ok(workload, 'context-engineering workload must exist');
+  assert.ok(workload.desiredStrengths.includes('context-structuring'));
+  assert.ok(workload.desiredStrengths.includes('skill-synthesis'));
+  assert.ok(workload.desiredStrengths.includes('MCP-governance'));
+  assert.ok(workload.metrics.includes('contextFreshnessRate'));
+  assert.ok(workload.metrics.includes('skillValidationAccuracy'));
+  assert.ok(workload.metrics.includes('mcpToolSafetyRate'));
+});
+
+test('recommendCandidates supports context-engineering workload with HuggingFace candidate', () => {
+  const report = recommendCandidates({
+    workload: 'context-engineering',
+    provider: 'huggingface',
+    maxCandidates: 1,
+  });
+
+  assert.equal(report.workloadId, 'context-engineering');
+  assert.ok(report.recommended.length >= 1);
+  assert.equal(report.recommended[0].id, 'huggingface/context-engineering-agent');
+  assert.ok(report.recommended[0].matchedStrengths.includes('context-structuring'));
+  assert.ok(report.recommended[0].matchedStrengths.includes('skill-synthesis'));
 });
 
 test('recommendCandidates prefers Qwen 3.6 35B A3B for pretool gating', () => {
