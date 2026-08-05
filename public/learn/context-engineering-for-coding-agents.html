@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Engineering for Coding Agents — ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="How Hugging Face context engineering (skills, MCP, plugins, sub-agents, hooks) maps to ThumbGate PreToolUse enforcement — so agents find the right knowledge and cannot run known-bad tools.">
+<meta name="keywords" content="context engineering, Hugging Face context course, agent skills, MCP, PreToolUse hooks, Claude Code, coding agents, ThumbGate, infrastructure firewall">
+<meta property="og:title" content="Context Engineering for Coding Agents">
+<meta property="og:description" content="Skills structure knowledge. Hooks enforce action. Map the HF Context Course onto ThumbGate gates.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/context-engineering-for-coding-agents">
+<link rel="canonical" href="https://thumbgate.ai/learn/context-engineering-for-coding-agents">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Context Engineering for Coding Agents",
+  "description": "How context engineering layers map to ThumbGate pre-action enforcement for AI coding agents.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-08-05",
+  "dateModified": "2026-08-05",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/context-engineering-for-coding-agents",
+  "citation": [
+    {
+      "@type": "CreativeWork",
+      "name": "The Context Course",
+      "url": "https://huggingface.co/learn/context-course/unit0/introduction"
+    }
+  ],
+  "about": [
+    {"@type": "Thing", "name": "Context engineering"},
+    {"@type": "Thing", "name": "Model Context Protocol"},
+    {"@type": "Thing", "name": "PreToolUse hooks"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: top; }
+  th { color: var(--cyan); font-weight: 600; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1.5rem 0; }
+  .cta-row a { display: inline-block; padding: 0.65rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 600; }
+  .cta-primary { background: var(--cyan); color: #0a0a0a; }
+  .cta-secondary { border: 1px solid var(--border); color: var(--text); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Context Engineering</div>
+  <h1>Context Engineering for Coding Agents</h1>
+  <p style="color:var(--muted);">5 min read &middot; Maps the Hugging Face Context Course onto real enforcement</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Context engineering structures knowledge (skills, MCP, plugins, sub-agents). ThumbGate is the <em>hook layer</em> — PreToolUse gates that block known-bad tool calls after context fails. Without matchable surfaces, “promotion” is theater.</div>
+
+  <h2>What the course gets right</h2>
+  <p><a href="https://huggingface.co/learn/context-course/unit0/introduction" rel="noopener" target="_blank">Hugging Face’s Context Course</a> frames the key constraint: an agent is only as good as the context it can find. Skills, MCP tools, plugins, sub-agents, and hooks are the portable layers Claude Code, Codex, and OpenCode all share.</p>
+  <p>That framing is correct — and incomplete for production. Agents also need a hard wall on irreversible actions (email send, force-push, spend, <code>rm -rf</code>). Prompt prose and skill markdown cannot guarantee that wall.</p>
+
+  <h2>Course units → ThumbGate surfaces</h2>
+  <table>
+    <thead>
+      <tr><th>HF unit</th><th>Layer</th><th>ThumbGate / fleet surface</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Agent Skills</td><td><code>skills/*</code>, <code>~/.grok/skills/*</code>, progressive disclosure</td></tr>
+      <tr><td>2</td><td>MCP</td><td>MCP profiles, allowlists, multi-surface gate match (tool name + args)</td></tr>
+      <tr><td>3</td><td>Plugins / workflows</td><td>Workflow packs, Grok Rhai workflows, marketplace adapters</td></tr>
+      <tr><td>4</td><td>Sub-agents</td><td>Parallel agents with Linear/vault ownership (no lock steal)</td></tr>
+      <tr><td>5</td><td>Hooks</td><td><strong>Product core:</strong> PreToolUse gate-check, spend-guard, outbound-email-guard</td></tr>
+      <tr><td>6</td><td>Nano harness</td><td><code>gate-check</code> stdin contract, CLI operational surfaces</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Why hooks are the product wedge</h2>
+  <p>Skills tell the agent what “good” looks like. Hooks decide whether a tool call is allowed to run. When auto-promoted rules only matched shell <code>command</code> strings, MCP Gmail <code>send_message</code> never fired a gate — the classic “prose rule” failure. ThumbGate now matches multiple surfaces (command, tool name, light endpoint fields) and keeps catastrophic actions on a hard floor.</p>
+  <p>See also: <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained</a> and <a href="/learn/ac-dc-runtime-enforcement">AC/DC + runtime enforcement</a>.</p>
+
+  <h2>GSD + Ralph (how we operate)</h2>
+  <ul>
+    <li><strong>GSD:</strong> Capture → Clarify (which layer?) → Organize → Execute → Review with probes</li>
+    <li><strong>Ralph:</strong> Observe → Act → Feedback → Promote <em>matchable</em> surfaces → Enforce</li>
+  </ul>
+  <p>Promotion without a matchable tool surface is not enforcement.</p>
+
+  <div class="cta-row">
+    <a class="cta-primary" href="https://thumbgate.ai/pricing?utm_source=learn&utm_medium=content&utm_campaign=context_engineering&cta_id=learn_context_pricing">Start ThumbGate Pro</a>
+    <a class="cta-secondary" href="https://thumbgate.ai/guide?utm_source=learn&utm_medium=content&utm_campaign=context_engineering&cta_id=learn_context_guide">Setup guide</a>
+    <a class="cta-secondary" href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a>
+  </div>
+
+  <h2>FAQ</h2>
+  <h3>Is ThumbGate a context-engineering framework?</h3>
+  <p>ThumbGate is the infrastructure firewall for agent tools. It pairs with context engineering: you structure skills and MCP; ThumbGate enforces pre-action policy and turns thumbs-down into matchable prevention rules.</p>
+  <h3>Does this replace the HF course?</h3>
+  <p>No. The course teaches layers and practice. Use it as a design checklist; use ThumbGate when irreversible tool calls must not depend on the model obeying prose.</p>
+  <h3>Where do I put irreversible policy?</h3>
+  <p>In hooks/gates with patterns that match real tool surfaces — not only in skill markdown.</p>
+
+  <p style="color:var(--muted);margin-top:2rem;">Related product docs: context engineering map in the ThumbGate repo (<code>docs/context-engineering/</code>).</p>
+</div>
+</body>
+</html>

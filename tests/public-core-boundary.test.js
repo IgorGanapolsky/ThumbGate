@@ -233,7 +233,11 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // state. The measured package contains exactly 421 files, with no headroom.
   // CI pack measured 403 during secret-exfil coverage PR (no intentional new package
   // entries beyond security/runtime scripts already on the enforcement path).
-  const CEILING = 421;
+  // 421 -> 423 (2026-08-05): scripts/cli-progress.js (dashboard/cfo/north-star UX)
+  // and scripts/dashboard-limits.js (shared JSONL/string-limit helpers for the
+  // hosted dashboard fail-soft path). Pure public-shell CLI/runtime; no Core.
+  // Keep lockstep with package-boundary + public-bundle-ratchet.
+  const CEILING = 423;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
