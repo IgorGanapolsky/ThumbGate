@@ -1693,7 +1693,19 @@ function isThreadResolutionSatisfied() {
 
 function isThreadResolutionEvidenceAction(toolName, toolInput = {}) {
   if (isGitCommitCommand(toolName, toolInput)) return true;
-  if (['recall', 'search_lessons', 'verify_claim', 'satisfy_gate', 'track_action'].includes(toolName)) return true;
+  // Hook payloads deliver MCP tools as "mcp__<server>__<tool>", so comparing the
+  // raw toolName against bare names never matched mcp__thumbgate__satisfy_gate --
+  // and satisfy_gate is the ONLY tool that can clear this gate. The result was a
+  // livelock: once pending, the gate denied every tool INCLUDING its own escape
+  // hatch, halting the session permanently after any commit on a feature branch.
+  // Observed 2026-08-06: Bash, Read, Write, Edit, ToolSearch, get_scope_state,
+  // gate_stats and satisfy_gate itself all denied, with no reachable way out.
+  // isReadOnlyObservabilityTool (below) already strips this prefix; this
+  // predicate was missing the same treatment.
+  const bareName = String(toolName || '').includes('__')
+    ? String(toolName).split('__').pop()
+    : String(toolName || '');
+  if (['recall', 'search_lessons', 'verify_claim', 'satisfy_gate', 'track_action'].includes(bareName)) return true;
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '');
   return /\b(?:gate-satisfy|satisfy_gate|track_action|gh\s+pr\s+(?:view|checks|status)|gh\s+api\b.*(?:reviewThreads|reviews|comments|threads)|git\s+(?:status|diff|show))\b/i.test(command);
