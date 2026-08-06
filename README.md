@@ -87,7 +87,7 @@ Spec-driven agent frameworks like **GSD** (get-shit-done) and **GitHub Spec Kit*
 | `/thumbgate-protect` | Show branch/release governance; grant a scoped, expiring approval | `get_branch_governance`, `approve_protected_action` |
 | `/thumbgate-doctor` | Health-check the wiring (hooks, MCP, agent-readiness) | `thumbgate doctor` |
 
-> **Open the dashboard anytime:** after `npx thumbgate init`, run **`npx thumbgate dashboard --open`** (works without a global install). Type **`/thumbgate-dashboard`** in Claude Code / Cursor, or **`/project:thumbgate-dashboard`** in Grok. After `npm i -g thumbgate`, the **`thumbgate-dashboard`** bin is also on your PATH.
+> **Open the dashboard anytime:** after `npx thumbgate init`, run **`npx thumbgate dashboard --open`** (works without a global install). Type **`/thumbgate-dashboard`** in Claude Code / Cursor, or **`/project:thumbgate-dashboard`** in Grok. The web UI header displays the active project directory badge (`📁 Project: <name>`) for current repository context. After `npm i -g thumbgate`, the **`thumbgate-dashboard`** bin is also on your PATH.
 
 Each is a thin wrapper over an existing MCP tool or CLI command — **no new enforcement logic, just discoverability**.
 

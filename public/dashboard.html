@@ -319,7 +319,10 @@
 <div class="container" id="dashboardContent" style="display:none;">
 
   <div style="margin:0 0 24px;padding:24px;background:linear-gradient(135deg,rgba(34,211,238,0.08),rgba(74,222,128,0.05));border:1px solid rgba(34,211,238,0.2);border-radius:12px;">
-    <h1 style="font-size:22px;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em;">🔍 Operations Dashboard</h1>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
+      <h1 style="font-size:22px;font-weight:700;margin:0;letter-spacing:-0.02em;">🔍 Operations Dashboard</h1>
+      <div id="activeProjectBadge" style="display:inline-flex;align-items:center;padding:6px 12px;background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.3);border-radius:8px;font-size:13px;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.1);"></div>
+    </div>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Updated: <time datetime="2026-04-20">2026-04-20</time> · by <a href="https://github.com/IgorGanapolsky" style="color:inherit;">Igor Ganapolsky</a></p>
     <p style="font-size:14px;color:var(--text-muted);line-height:1.6;max-width:700px;">What's happening right now? Search memories, inspect active checks, manage your team, and export training data. <span style="color:var(--cyan);font-weight:600;">This is your control plane for AI agent behavior.</span></p>
     <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted);">
@@ -866,7 +869,20 @@ try {
   ACTIVE_PROJECT_DIR = urlParams.get('project') || '';
 } catch (e) {}
 
+function updateProjectBadge() {
+  var badgeEl = document.getElementById('activeProjectBadge');
+  if (!badgeEl) return;
+  if (ACTIVE_PROJECT_DIR) {
+    var parts = ACTIVE_PROJECT_DIR.split(/[/\\]/).filter(Boolean);
+    var projectName = parts.length > 0 ? parts[parts.length - 1] : ACTIVE_PROJECT_DIR;
+    badgeEl.innerHTML = '📁 Project: <strong style="color:var(--cyan);margin-left:4px;margin-right:6px;">' + chatEscape(projectName) + '</strong> <span style="opacity:0.75;font-size:11px;font-family:var(--mono);">(' + chatEscape(ACTIVE_PROJECT_DIR) + ')</span>';
+  } else {
+    badgeEl.innerHTML = '📁 Project: <strong style="color:var(--cyan);margin-left:4px;">Global Default</strong> <span style="opacity:0.75;font-size:11px;">(~/.thumbgate)</span>';
+  }
+}
+
 function preserveProjectQueryParams() {
+  updateProjectBadge();
   if (!ACTIVE_PROJECT_DIR) return;
   var links = document.querySelectorAll('a[href^="/dashboard"], a[href^="/lessons"], a[href="/"]');
   links.forEach(function(link) {

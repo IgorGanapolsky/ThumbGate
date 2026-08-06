@@ -32,6 +32,13 @@ test('dashboard escapes tag attributes and uses data-tag buttons instead of inli
   assert.doesNotMatch(dashboard, /onclick="searchByTag\(/);
 });
 
+test('dashboard includes active project badge in header', () => {
+  const dashboard = readDashboard();
+
+  assert.match(dashboard, /id="activeProjectBadge"/);
+  assert.match(dashboard, /function updateProjectBadge\(\)/);
+});
+
 test('dashboard routes exception text through escaped message rendering', () => {
   const dashboard = readDashboard();
 
