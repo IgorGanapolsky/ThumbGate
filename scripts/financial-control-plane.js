@@ -58,7 +58,7 @@ const ECONOMIC_ACTION_PATTERNS = [
   /\b(?:re)?send\s+(?:\w+\s+){0,3}invoice\b/i,
   /\b(?:make|send)\s+(?:a\s+)?(?:payment|transfer|wire)\b/i,
   /\bpay\s+(?:an?\s+)?invoice\b/i,
-  /\bpaid\s+trial\b/i,
+  /\bpaid\s+(?:trial|checkout|subscription|plan\s+upgrade)\b/i,
   /\brenew\s+(?:a\s+)?subscription\b/i,
   /\btransfer\s+(?:dollars?|funds|money|usd)\b/i,
   /\bupgrade\s+(?:a\s+)?plan\b/i,
@@ -337,8 +337,23 @@ function advanceFinancialLedgerAnchor(previousHead, event, options = {}) {
   return next;
 }
 
+const READ_ONLY_INSPECTION_TOOLS = new Set([
+  'view_file', 'read_resource', 'read_url_content', 'grep_search', 'list_dir',
+  'get_business_metrics', 'describe_semantic_entity', 'describe_reliability_entity',
+  'get_reliability_rules', 'dashboard', 'org_dashboard', 'gate_stats', 'feedback_stats',
+  'feedback_summary', 'session_report', 'generate_operator_artifact', 'settings_status',
+  'get_scope_state', 'get_branch_governance', 'context_provenance', 'native_messaging_audit',
+  'list_harnesses', 'list_intents', 'list_imported_documents', 'get_imported_document',
+  'check_operational_integrity', 'workflow_sentinel', 'recall', 'search_lessons',
+  'retrieve_lessons', 'search_thumbgate', 'unified_context', 'verify_claim',
+  'list_human_escalations', 'list_purchase_requisitions', 'satisfy_gate', 'track_action',
+  'record_action_receipt', 'record_task_outcome', 'get_task_outcomes', 'get_agent_outcome_metrics',
+]);
+
 function detectEconomicAction(toolName, toolInput = {}) {
   const normalizedToolName = String(toolName || '').trim();
+  const shortToolName = normalizedToolName.includes('__') ? normalizedToolName.split('__').pop() : normalizedToolName;
+  if (READ_ONLY_INSPECTION_TOOLS.has(normalizedToolName) || READ_ONLY_INSPECTION_TOOLS.has(shortToolName)) return false;
   if ([...CONTROL_PLANE_TOOLS].some((name) => (
     normalizedToolName === name || normalizedToolName.endsWith(`__${name}`)
   ))) return false;

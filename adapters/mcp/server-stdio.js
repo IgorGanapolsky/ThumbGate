@@ -1380,7 +1380,7 @@ async function callToolInner(name, args) {
     case 'request_human_escalation':
       return toTextResult(requestEscalation(args));
     case 'list_human_escalations':
-      return toTextResult(listEscalations({ status: args.status }).slice(0, Number(args.limit || 20)));
+      return toTextResult(listEscalations(args).slice(0, Number(args.limit || 20)));
     case 'create_purchase_requisition':
       return toTextResult(createPurchaseRequisition(args, MCP_FINANCIAL_OPTIONS));
     case 'list_purchase_requisitions': {

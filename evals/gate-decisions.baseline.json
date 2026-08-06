@@ -1,8 +1,8 @@
 {
   "cases": 60,
   "counts": {
-    "deny": 17,
-    "none": 33,
+    "deny": 23,
+    "none": 27,
     "approve": 6,
     "warn": 4
   },
@@ -31,11 +31,11 @@
     "Bash|echo \"=== REDDIT r/cursor RECENT FREEZE THREADS ===\" && curl -s -A \"mac-yolo-research/0.1\" \"https://www.reddit.com/r/cursor/search.json?q=(freeze+OR+frozen+OR+%22high+CPU%22+OR+%22load+average%22+OR+%...": "warn",
     "Bash|echo \"=== r/ClaudeAI 1tlg935 — frozen task detection ===\" && curl -s -A \"mac-yolo-research/0.1\" \"https://www.reddit.com/r/ClaudeAI/comments/1tlg935/.json?limit=3\" | python3 -c \"\nimport sys, json\nd = j...": "warn",
     "Bash|git add CHANGELOG.md && git commit -m \"$(cat <<'EOF'\nAdd CHANGELOG.md documenting v0.1.0\n\nCaptures the 2026-05-27 first public release contents, design rules\n(never auto-quit GUI apps, no telemetry, s...": "deny",
-    "Bash|DEST=~/Downloads/mac-yolo-launch-2026-05-27\nmkdir -p \"$DEST\"\ncp -R /Users/redacted/workspace/git/igor/mac-yolo-safeguards/business_os \"$DEST/\"\ncp /Users/redacted/workspace/git/igor/mac-yol...": "none",
-    "Bash|cd /Users/redacted/workspace/git/igor/mac-yolo-safeguards\n# Verify the telemetry claim is true\necho \"=== TELEMETRY AUDIT (must be empty) ===\"\ngrep -rEn 'fetch|http\\.|https\\.|XMLHttpRequest|curl ...": "none",
+    "Bash|DEST=~/Downloads/mac-yolo-launch-2026-05-27\nmkdir -p \"$DEST\"\ncp -R /Users/redacted/workspace/git/igor/mac-yolo-safeguards/business_os \"$DEST/\"\ncp /Users/redacted/workspace/git/igor/mac-yol...": "deny",
+    "Bash|cd /Users/redacted/workspace/git/igor/mac-yolo-safeguards\n# Verify the telemetry claim is true\necho \"=== TELEMETRY AUDIT (must be empty) ===\"\ngrep -rEn 'fetch|http\\.|https\\.|XMLHttpRequest|curl ...": "deny",
     "Bash|echo \"=== CURRENT MAC STATE ===\"\n/usr/bin/uptime\necho \"\"\necho \"=== MEMORY PRESSURE ===\"\n/usr/bin/vm_stat | /usr/bin/head -10\necho \"\"\n/usr/bin/memory_pressure -Q 2>/dev/null || echo \"memory_pressure -Q...": "none",
     "Bash|gh release create v0.1.1 -R IgorGanapolsky/mac-yolo-safeguards --title \"v0.1.1 — Memory-pressure notify + explicit scope\" --notes \"$(cat <<'EOF'\nSoft memory-pressure surfacing and explicit scope docum...": "deny",
-    "Bash|echo \"=== WHAT DOES memory_pressure -Q OUTPUT? ===\"\n/usr/bin/memory_pressure -Q 2>&1 | /usr/bin/tail -5\necho \"\"\necho \"=== AWK PARSE TEST ===\"\n/usr/bin/memory_pressure -Q 2>/dev/null | /usr/bin/awk -F'...": "none",
+    "Bash|echo \"=== WHAT DOES memory_pressure -Q OUTPUT? ===\"\n/usr/bin/memory_pressure -Q 2>&1 | /usr/bin/tail -5\necho \"\"\necho \"=== AWK PARSE TEST ===\"\n/usr/bin/memory_pressure -Q 2>/dev/null | /usr/bin/awk -F'...": "deny",
     "Bash|cd /Users/redacted/workspace/git/igor/mac-yolo-safeguards\ngit status --short\necho \"\"\ngit add sim-runaway-guard.sh CHANGELOG.md yolo-health install.sh com.igor.shutdown-simulators.plist agy-yolo-...": "deny",
     "Bash|cd /Users/redacted/workspace/git/igor/mac-yolo-safeguards\necho \"=== RECENT COMMITS ===\"\ngit log --oneline -8\necho \"\"\necho \"=== TAGS ===\"\ngit tag --list | /usr/bin/tail -5\necho \"\"\necho \"=== VERIF...": "deny",
     "Bash|echo \"=== 1. v0.2.1 RELEASE LIVE ON GITHUB ===\"\ngh api repos/IgorGanapolsky/mac-yolo-safeguards/releases/tags/v0.2.1 --jq '{tag: .tag_name, name: .name, published: .published_at, draft: .draft, url: ....": "none",
@@ -43,7 +43,7 @@
     "Bash|echo \"=== HN POST METRICS ===\"\ncurl -s \"https://hn.algolia.com/api/v1/items/48295683\" | python3 -c \"\nimport sys, json\nd = json.load(sys.stdin)\nprint(f\\\"  Title:    {d.get('title','(not indexed yet)')}...": "warn",
     "Bash|echo \"=== verify thumbgate.ai resolves ===\"\ncurl -s -I -L \"https://thumbgate.ai\" --max-time 5 2>&1 | /usr/bin/head -5\necho \"\"\necho \"=== verify railway production URL ===\"\ncurl -s -I -L \"https://thumbg...": "warn",
     "Bash|cd /Users/redacted/workspace/git/igor/ThumbGate\ngh pr create --repo IgorGanapolsky/ThumbGate --title \"docs(readme): cross-link to mac-yolo-safeguards as OS-layer companion kit\" --body \"$(cat <<'...": "deny",
-    "Bash|cd /Users/redacted/workspace/git/igor/mac-yolo-safeguards\necho \"=== 1. Telemetry grep still clean? ===\"\n/usr/bin/grep -rEn 'fetch|http\\.|https\\.|XMLHttpRequest|curl |wget |require\\(.https.|requi...": "none",
+    "Bash|cd /Users/redacted/workspace/git/igor/mac-yolo-safeguards\necho \"=== 1. Telemetry grep still clean? ===\"\n/usr/bin/grep -rEn 'fetch|http\\.|https\\.|XMLHttpRequest|curl |wget |require\\(.https.|requi...": "deny",
     "Bash|/usr/bin/which terminal-notifier 2>&1\necho \"---\"\n/opt/homebrew/bin/terminal-notifier -help 2>&1 | /usr/bin/head -3": "none",
     "Bash|gh release create v0.2.3 -R IgorGanapolsky/mac-yolo-safeguards --title \"v0.2.3 — Notification renders + honest copy\" --notes \"$(cat <<'EOF'\nTriggered by user screenshot showing the v0.2.2 notification...": "deny",
     "Bash|echo \"=== 1. v0.2.3 RELEASE PUBLISHED ===\"\ngh api repos/IgorGanapolsky/mac-yolo-safeguards/releases/tags/v0.2.3 --jq '{tag:.tag_name, published:.published_at, draft:.draft, prerelease:.prerelease, url...": "none",
@@ -62,10 +62,10 @@
     "Bash|echo \"=== JetsamEvent reports (memory kills) in last 24h ===\"\nls -lt /Library/Logs/DiagnosticReports/JetsamEvent-*.ips ~/Library/Logs/DiagnosticReports/JetsamEvent-*.ips 2>/dev/null | head -8\necho\nech...": "none",
     "Bash|echo \"=== BEFORE: swap + memory pressure ===\"\nsysctl vm.swapusage 2>/dev/null\nmemory_pressure 2>/dev/null | grep -iE \"free percentage\"\necho\necho \"=== Kill iOS Simulators + Android emulator (explicitly...": "none",
     "Bash|echo \"=== Claude Desktop log locations ===\"\nfind ~/Library/Logs/Claude ~/Library/\"Application Support\"/Claude/logs ~/Library/\"Application Support\"/Claude -maxdepth 2 -iname \"*.log\" -mtime -1 2>/dev/nu...": "none",
-    "Bash|echo \"=== sim-runaway-guard.sh — does it kill claude/node by CPU/runtime? ===\"\nsed -n '1,80p' ~/workspace/git/igor/mac-yolo-safeguards/sim-runaway-guard.sh 2>/dev/null | grep -inE \"kill|claude|node|pg...": "none",
+    "Bash|echo \"=== sim-runaway-guard.sh — does it kill claude/node by CPU/runtime? ===\"\nsed -n '1,80p' ~/workspace/git/igor/mac-yolo-safeguards/sim-runaway-guard.sh 2>/dev/null | grep -inE \"kill|claude|node|pg...": "deny",
     "Bash|echo \"=== A. PROOF: guard's CPU_KILL log entries mentioning claude ===\"\nLOG=$(grep -nE 'LOG=' ~/workspace/git/igor/mac-yolo-safeguards/sim-runaway-guard.sh 2>/dev/null | head -1)\necho \"log var line: $...": "none",
     "Bash|echo \"=== PROOF: CPU_KILL / claude entries in guard logs ===\"\nfor f in /tmp/yolo-fires.log /tmp/shutdown-simulators.log; do\n  if [ -f \"$f\" ]; then echo \"########## $f\"; grep -aiE \"CPU_KILL|claude|CDP_...": "none",
     "Bash|G=~/workspace/git/igor/mac-yolo-safeguards/sim-runaway-guard.sh\necho \"=== CPU autokill pattern definitions (the allowlist of what gets kill -9'd) ===\"\ngrep -nE \"CPU_AUTOKILL_PATTERNS=|CPU_AUTOKILL_CMD...": "none",
-    "Bash|sed -n '440,560p' ~/workspace/git/igor/mac-yolo-safeguards/sim-runaway-guard.sh": "none"
+    "Bash|sed -n '440,560p' ~/workspace/git/igor/mac-yolo-safeguards/sim-runaway-guard.sh": "deny"
   }
 }

@@ -1182,6 +1182,10 @@ const TOOLS = [
       properties: {
         status: { type: 'string', enum: ['pending', 'approved', 'rejected', 'cancelled', 'expired'] },
         limit: { type: 'integer', minimum: 1, maximum: 100 },
+        taskId: { type: 'string' },
+        escalationId: { type: 'string' },
+        repoPath: { type: 'string' },
+        feedbackDir: { type: 'string' },
       },
     },
   }),

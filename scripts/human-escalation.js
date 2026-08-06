@@ -181,8 +181,12 @@ function projectEscalations(events, options = {}) {
     return entry;
   });
   const status = options.status;
+  const taskId = options.taskId;
+  const escalationId = options.escalationId;
   return rows
-    .filter((entry) => !status || entry.status === status)
+    .filter((entry) => (!status || entry.status === status)
+      && (!taskId || entry.taskId === taskId)
+      && (!escalationId || entry.escalationId === escalationId))
     .sort((a, b) => Date.parse(b.requestedAt || b.decidedAt) - Date.parse(a.requestedAt || a.decidedAt));
 }
 

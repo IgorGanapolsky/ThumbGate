@@ -474,22 +474,32 @@ function isTaskScopeExpired(taskScope, nowMs = Date.now()) {
 
 function loadGovernanceState() {
   const raw = loadJSON(module.exports.GOVERNANCE_STATE_PATH);
+  const taskScopes = raw && raw.taskScopes && typeof raw.taskScopes === 'object' ? raw.taskScopes : {};
+  const branchGovernances = raw && raw.branchGovernances && typeof raw.branchGovernances === 'object' ? raw.branchGovernances : {};
+
   const state = {
     taskScope: raw && raw.taskScope && typeof raw.taskScope === 'object' ? raw.taskScope : null,
+    taskScopes: { ...taskScopes },
     protectedApprovals: Array.isArray(raw && raw.protectedApprovals) ? raw.protectedApprovals : [],
     branchGovernance: raw && raw.branchGovernance && typeof raw.branchGovernance === 'object'
       ? raw.branchGovernance
       : null,
+    branchGovernances: { ...branchGovernances },
     workflowContract: raw && raw.workflowContract && typeof raw.workflowContract === 'object'
       ? raw.workflowContract
       : null,
   };
   const now = Date.now();
-  // Annotate rather than delete. A vanished scope is indistinguishable from one never set, and
-  // the difference matters: "your lease lapsed, renew it" is a different instruction from
-  // "you never declared a scope".
   if (state.taskScope) {
     state.taskScope = { ...state.taskScope, expired: isTaskScopeExpired(state.taskScope, now) };
+  }
+  for (const key of Object.keys(state.taskScopes)) {
+    if (state.taskScopes[key] && typeof state.taskScopes[key] === 'object') {
+      state.taskScopes[key] = {
+        ...state.taskScopes[key],
+        expired: isTaskScopeExpired(state.taskScopes[key], now),
+      };
+    }
   }
   const activeApprovals = state.protectedApprovals.filter((entry) => {
     if (!entry || typeof entry !== 'object') return false;
@@ -506,24 +516,25 @@ function loadGovernanceState() {
 function saveGovernanceState(state) {
   const next = {
     taskScope: state && state.taskScope ? state.taskScope : null,
+    taskScopes: state && state.taskScopes && typeof state.taskScopes === 'object' ? state.taskScopes : {},
     protectedApprovals: Array.isArray(state && state.protectedApprovals) ? state.protectedApprovals : [],
     branchGovernance: state && state.branchGovernance ? state.branchGovernance : null,
+    branchGovernances: state && state.branchGovernances && typeof state.branchGovernances === 'object' ? state.branchGovernances : {},
     workflowContract: state && state.workflowContract ? state.workflowContract : null,
   };
   saveJSON(module.exports.GOVERNANCE_STATE_PATH, next);
 }
 
 function setTaskScope(scopeInput = {}) {
+  const taskId = String(scopeInput.taskId || '').trim() || 'default';
+  const state = loadGovernanceState();
   if (scopeInput && scopeInput.clear === true) {
-    const currentState = loadGovernanceState();
-    const cleared = {
-      taskScope: null,
-      protectedApprovals: currentState.protectedApprovals,
-      branchGovernance: currentState.branchGovernance,
-      workflowContract: null,
-    };
-    saveGovernanceState(cleared);
-    refreshLocalOnlyConstraint(cleared);
+    delete state.taskScopes[taskId];
+    if (state.taskScope && (state.taskScope.taskId === scopeInput.taskId || taskId === 'default')) {
+      state.taskScope = null;
+    }
+    saveGovernanceState(state);
+    refreshLocalOnlyConstraint(state);
     return null;
   }
 
@@ -538,13 +549,10 @@ function setTaskScope(scopeInput = {}) {
       ? scopeInput.protectedPaths
       : DEFAULT_PROTECTED_FILE_GLOBS
   ), repoPath);
-  // Optional LEASE. Without ttlMs the scope is permanent, which is the historical behaviour
-  // and stays byte-identical. With ttlMs the scope becomes time-bounded authority: "write under
-  // ./src for 90 seconds" rather than a standing approval that never says when it stops.
   const scopeNow = Date.now();
   const leaseMs = scopeInput.ttlMs == null ? null : clampTtlMs(scopeInput.ttlMs, TASK_SCOPE_LEASE_MS);
   const taskScope = {
-    taskId: String(scopeInput.taskId || '').trim() || null,
+    taskId: scopeInput.taskId ? String(scopeInput.taskId).trim() : null,
     summary: String(scopeInput.summary || '').trim() || null,
     allowedPaths,
     protectedPaths,
@@ -555,8 +563,8 @@ function setTaskScope(scopeInput = {}) {
     leaseMs,
     expiresAt: leaseMs == null ? null : scopeNow + leaseMs,
   };
-  const state = loadGovernanceState();
   state.taskScope = taskScope;
+  state.taskScopes[taskId] = taskScope;
   state.workflowContract = scopeInput.workflowContract && typeof scopeInput.workflowContract === 'object'
     ? scopeInput.workflowContract
     : null;
@@ -628,9 +636,13 @@ function breakGlassEmergency(input = {}) {
 }
 
 function setBranchGovernance(input = {}) {
+  const branchKey = String(input.branchName || '').trim() || 'default';
+  const state = loadGovernanceState();
   if (input && input.clear === true) {
-    const state = loadGovernanceState();
-    state.branchGovernance = null;
+    delete state.branchGovernances[branchKey];
+    if (state.branchGovernance && (state.branchGovernance.branchName === input.branchName || branchKey === 'default')) {
+      state.branchGovernance = null;
+    }
     saveGovernanceState(state);
     refreshLocalOnlyConstraint(state);
     return null;
@@ -656,8 +668,8 @@ function setBranchGovernance(input = {}) {
     createdAt: new Date().toISOString(),
   };
 
-  const state = loadGovernanceState();
   state.branchGovernance = governance;
+  state.branchGovernances[branchKey] = governance;
   saveGovernanceState(state);
   if (governance.localOnly) {
     setConstraint('local_only', true);
@@ -665,12 +677,22 @@ function setBranchGovernance(input = {}) {
   return governance;
 }
 
-function getScopeState() {
-  return loadGovernanceState();
+function getScopeState(input = {}) {
+  const state = loadGovernanceState();
+  const taskId = typeof input === 'string' ? input : (input && input.taskId ? String(input.taskId).trim() : null);
+  if (taskId && state.taskScopes && state.taskScopes[taskId]) {
+    return { ...state, taskScope: state.taskScopes[taskId] };
+  }
+  return state;
 }
 
-function getBranchGovernanceState() {
-  return loadGovernanceState().branchGovernance;
+function getBranchGovernanceState(input = {}) {
+  const state = loadGovernanceState();
+  const branchKey = typeof input === 'string' ? input : (input && input.branchName ? String(input.branchName).trim() : null);
+  if (branchKey && state.branchGovernances && state.branchGovernances[branchKey]) {
+    return state.branchGovernances[branchKey];
+  }
+  return state.branchGovernance;
 }
 
 function setConstraint(key, value) {
@@ -1693,22 +1715,12 @@ function isThreadResolutionSatisfied() {
 
 function isThreadResolutionEvidenceAction(toolName, toolInput = {}) {
   if (isGitCommitCommand(toolName, toolInput)) return true;
-  if (['recall', 'search_lessons', 'verify_claim', 'satisfy_gate', 'track_action'].includes(toolName)) return true;
+  if (['recall', 'search_lessons', 'verify_claim', 'satisfy_gate', 'track_action', 'record_action_receipt', 'record_task_outcome', 'get_task_outcomes', 'check_operational_integrity', 'workflow_sentinel'].includes(toolName)) return true;
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '');
-  return /\b(?:gate-satisfy|satisfy_gate|track_action|gh\s+pr\s+(?:view|checks|status)|gh\s+api\b.*(?:reviewThreads|reviews|comments|threads)|git\s+(?:status|diff|show))\b/i.test(command);
+  return /\b(?:gate-satisfy|satisfy_gate|track_action|record_action_receipt|gh\s+pr\s+(?:view|checks|status)|gh\s+api\b.*(?:reviewThreads|reviews|comments|threads)|git\s+(?:status|diff|show))\b/i.test(command);
 }
 
-// Read-only observability/metrics MCP tools must NEVER be blocked by the pending
-// PR-thread-resolution gate. Reading revenue, the dashboard, gate stats, or a
-// semantic entity cannot advance a "done" claim or mutate any state, so gating it
-// only blinds the operator to their own numbers. This is the exact failure the CEO
-// hit on 2026-06-30: `get_business_metrics` denied with "a git commit was made on a
-// PR branch" — a governance gate eating the observability path. The exempt set is
-// sourced from the canonical `readonly` MCP profile (config/mcp-allowlists.json) so
-// it cannot drift from the product's own definition of "safe to read"; the hard-coded
-// fallback guarantees the core observability tools stay readable even if that policy
-// file is unreadable at runtime.
 const READ_ONLY_TOOL_FALLBACK = new Set([
   'get_business_metrics', 'describe_semantic_entity', 'describe_reliability_entity',
   'get_reliability_rules', 'dashboard', 'org_dashboard', 'gate_stats', 'feedback_stats',
@@ -1717,6 +1729,9 @@ const READ_ONLY_TOOL_FALLBACK = new Set([
   'list_harnesses', 'list_intents', 'list_imported_documents', 'get_imported_document',
   'check_operational_integrity', 'workflow_sentinel', 'recall', 'search_lessons',
   'retrieve_lessons', 'search_thumbgate', 'unified_context', 'verify_claim',
+  'track_action', 'record_action_receipt', 'record_task_outcome', 'get_task_outcomes',
+  'get_agent_outcome_metrics', 'list_human_escalations', 'list_purchase_requisitions', 'satisfy_gate',
+  'dfcx:chat-with-data', 'dfcx:status',
 ]);
 let readOnlyToolCache = null;
 function getReadOnlyToolNames() {
@@ -1733,7 +1748,13 @@ function getReadOnlyToolNames() {
   return names;
 }
 function isReadOnlyObservabilityTool(toolName) {
-  return Boolean(toolName) && getReadOnlyToolNames().has(toolName);
+  if (!toolName) return false;
+  if (toolName.startsWith('dfcx:')) return true;
+  if (toolName.includes('__')) {
+    const shortName = toolName.split('__').pop();
+    if (getReadOnlyToolNames().has(shortName)) return true;
+  }
+  return getReadOnlyToolNames().has(toolName);
 }
 
 function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
