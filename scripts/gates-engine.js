@@ -1691,9 +1691,18 @@ function isThreadResolutionSatisfied() {
   ));
 }
 
+// Hook payloads name MCP tools `mcp__<server>__<tool>` while exemption lists
+// hold bare tool names. Exemptions must compare on the stripped name or they
+// never fire for real hook traffic — 2026-08-05: the pending-thread gate
+// blocked `mcp__thumbgate__satisfy_gate` itself, deadlocking its own
+// documented escape hatch until the session-actions TTL expired.
+function bareToolName(toolName) {
+  return String(toolName || '').replace(/^mcp__.+?__/, '');
+}
+
 function isThreadResolutionEvidenceAction(toolName, toolInput = {}) {
   if (isGitCommitCommand(toolName, toolInput)) return true;
-  if (['recall', 'search_lessons', 'verify_claim', 'satisfy_gate', 'track_action'].includes(toolName)) return true;
+  if (['recall', 'search_lessons', 'verify_claim', 'satisfy_gate', 'track_action'].includes(bareToolName(toolName))) return true;
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '');
   return /\b(?:gate-satisfy|satisfy_gate|track_action|gh\s+pr\s+(?:view|checks|status)|gh\s+api\b.*(?:reviewThreads|reviews|comments|threads)|git\s+(?:status|diff|show))\b/i.test(command);
@@ -1733,7 +1742,9 @@ function getReadOnlyToolNames() {
   return names;
 }
 function isReadOnlyObservabilityTool(toolName) {
-  return Boolean(toolName) && getReadOnlyToolNames().has(toolName);
+  if (!toolName) return false;
+  const names = getReadOnlyToolNames();
+  return names.has(toolName) || names.has(bareToolName(toolName));
 }
 
 function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
