@@ -46,7 +46,7 @@ jobs:
         with:
           name: self-healing-health-report
           path: health_report.json
-          retention-days: 14
+          retention-days: 1
 
       - name: Create/update unhealthy issue
         if: steps.status.outputs.status == 'unhealthy'
@@ -183,4 +183,4 @@ jobs:
         with:
           name: self-heal-report
           path: self_heal_report.json
-          retention-days: 14
+          retention-days: 1

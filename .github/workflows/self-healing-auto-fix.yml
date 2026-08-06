@@ -59,4 +59,4 @@ jobs:
         with:
           name: self-healing-auto-fix-report
           path: self_heal_report.json
-          retention-days: 14
+          retention-days: 1

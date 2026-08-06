@@ -216,7 +216,7 @@ jobs:
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.ensure_release == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          retention-days: 7
+          retention-days: 1
           name: thumbgate-${{ steps.package.outputs.version }}-release-notes
           path: thumbgate-${{ steps.package.outputs.version }}-release-notes.md
           if-no-files-found: error

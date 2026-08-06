@@ -81,7 +81,7 @@ jobs:
         with:
           name: blob-report-${{ matrix.shardIndex }}
           path: blob-report
-          retention-days: 7
+          retention-days: 1
 
       - name: Upload trace+screenshots on failure
         if: failure()
@@ -91,7 +91,7 @@ jobs:
           path: |
             test-results/
             playwright-report/
-          retention-days: 14
+          retention-days: 1
 
   merge-reports:
     name: Merge blob reports
@@ -130,4 +130,4 @@ jobs:
         with:
           name: playwright-html-report
           path: playwright-report
-          retention-days: 14
+          retention-days: 1

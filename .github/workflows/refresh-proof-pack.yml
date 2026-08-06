@@ -78,4 +78,4 @@ jobs:
           path: |
             public/eval-scorecard.html
             public/eval-scorecard.json
-          retention-days: 14
+          retention-days: 1

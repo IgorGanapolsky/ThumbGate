@@ -30,4 +30,4 @@ jobs:
         with:
           name: stripe-checkout-diagnostic-${{ github.run_id }}
           path: reports/revenue/
-          retention-days: 14
+          retention-days: 1

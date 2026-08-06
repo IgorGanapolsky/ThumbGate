@@ -80,4 +80,4 @@ jobs:
           name: perplexity-command-center
           path: .thumbgate/perplexity-ci/**
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 1
