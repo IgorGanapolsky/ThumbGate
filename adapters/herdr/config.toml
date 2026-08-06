@@ -1,0 +1,6 @@
+[mcp_servers.thumbgate]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@1.35.0", "thumbgate", "serve"]
+
+[mcp_servers.thumbgate.env]
+THUMBGATE_ENFORCE_ENTITLEMENTS = "1"

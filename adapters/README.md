@@ -22,3 +22,5 @@
 - `vlt/config.toml`, `vlt/opencode.json`, `vlt/.mcp.json`: Adapter configurations for vlt registry governance + ThumbGate gates.
 - `huggingface-context-course/HF_CONTEXT.md`: High-ROI integration guide for the Hugging Face Context Course (context engineering for AI code agents — Claude Code, Codex, OpenCode). Maps each course unit to ThumbGate gates, model candidates, and feedback capture patterns.
 - `huggingface-context-course/config.toml`, `huggingface-context-course/opencode.json`, `huggingface-context-course/.mcp.json`: Adapter configurations for HF Context Course exercises + ThumbGate gates.
+- `herdr/HERDR.md`: High-ROI integration guide & Marketplace plugin specification for Herdr (`herdr.dev`) terminal multiplexer. Provides pre-action tool call interception, cross-pane prevention rules, and spend guard enforcement across multi-agent swarms.
+- `herdr/herdr-plugin.json`, `herdr/herdr-approvals-adapter.js`, `herdr/config.toml`, `herdr/.mcp.json`: Plugin manifest and adapter configurations for Herdr agent multiplexer sessions.

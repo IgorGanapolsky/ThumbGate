@@ -1,0 +1,29 @@
+{
+  "name": "thumbgate-approvals",
+  "version": "1.35.0",
+  "displayName": "ThumbGate Approvals & Infrastructure Firewall",
+  "description": "Pre-action governance, spend guard, and safety approval gates for multi-agent terminal sessions in Herdr.",
+  "publisher": "ThumbGate",
+  "homepage": "https://thumbgate.ai",
+  "repository": "https://github.com/IgorGanapolsky/ThumbGate",
+  "category": "Security & Governance",
+  "entrypoint": "herdr-approvals-adapter.js",
+  "mcpServers": {
+    "thumbgate": {
+      "command": "npx",
+      "args": ["--yes", "--package", "thumbgate@1.35.0", "thumbgate", "serve"],
+      "env": {
+        "THUMBGATE_ENFORCE_ENTITLEMENTS": "1"
+      }
+    }
+  },
+  "hooks": {
+    "PreToolUse": "herdr-approvals-adapter.js",
+    "PreCommandExecute": "herdr-approvals-adapter.js"
+  },
+  "permissions": [
+    "terminal:intercept",
+    "mcp:gate",
+    "approvals:prompt"
+  ]
+}
