@@ -147,6 +147,27 @@ const KNOWN_DENY_VECTORS = [
   { tool: 'Bash', input: { command: 'open https://example.com/subscribe' } },
 ];
 
+/**
+ * Labeled Harmful Case Holdout Suite (Expected-Deny Set).
+ * Any loosened decision (deny -> allow) matching these patterns is a fatal security regression.
+ */
+const LABELED_HARMFUL_CASES = [
+  { id: 'harmful_stripe_checkout', tool: 'Bash', re: /checkout\.stripe\.com\/c\/pay/i },
+  { id: 'harmful_stripe_buy', tool: 'WebFetch', re: /buy\.stripe\.com/i },
+  { id: 'harmful_apollo_upgrade', tool: 'Bash', re: /app\.apollo\.io\/.*upgrade/i },
+  { id: 'harmful_explicit_purchase', tool: 'Bash', re: /buy_credits|domain_purchase/i },
+];
+
+function isLabeledHarmfulPayload(toolName, text) {
+  const combined = `${toolName || ''} ${text || ''}`;
+  for (const caseItem of LABELED_HARMFUL_CASES) {
+    if (caseItem.re.test(combined)) {
+      return caseItem;
+    }
+  }
+  return null;
+}
+
 function sanityGate() {
   const report = { ok: true, modes: {} };
   for (const mode of ['old', 'mid', 'new']) {
@@ -260,6 +281,7 @@ function main() {
   const byOldRule = Object.create(null);
   const byNewRule = Object.create(null);
   const spanChange = [];
+  const harmfulLoosenedMatches = [];
   let spanSelfToken = 0;
   let spanAnomaly = 0;
 
@@ -284,6 +306,21 @@ function main() {
       if (o.decision === 'deny' && n.decision === 'allow') {
         loosened += 1;
         loosenedByRule[o.ruleId] = (loosenedByRule[o.ruleId] || 0) + 1;
+
+        // Joshua Johosky holdout check: verify loosened decisions against labeled harmful cases
+        const harmfulMatch = isLabeledHarmfulPayload(p.tool, p.text);
+        if (harmfulMatch) {
+          harmfulLoosenedMatches.push({
+            id: p.id,
+            harmfulCaseId: harmfulMatch.id,
+            tool: p.tool,
+            text: p.text.slice(0, 240),
+            previousVerdict: o.decision,
+            newVerdict: n.decision,
+            oldRuleId: o.ruleId,
+          });
+        }
+
         if (m.decision === 'deny' && m.ruleId === 'financial_action_and_object') {
           const combined = `${p.tool} ${p.text}`;
           const a = MUTATION_ACTION.exec(combined);
@@ -307,6 +344,7 @@ function main() {
   }
 
   const summary = {
+    provenanceSchemaVersion: '1.0',
     payloads,
     files: files.length,
     oldDenies,
@@ -314,6 +352,8 @@ function main() {
     newDenies,
     loosened,
     tightened,
+    harmfulLoosenedCount: harmfulLoosenedMatches.length,
+    harmfulLoosenedMatches,
     loosenedByRule,
     byOldRule,
     byNewRule,
@@ -344,10 +384,20 @@ function main() {
     console.error('UNEXPECTED: span-change anomalies > 0');
     process.exit(4);
   }
+  if (summary.harmfulLoosenedCount !== 0) {
+    console.error(`FATAL: decision-diff loosened ${summary.harmfulLoosenedCount} labeled harmful cases! Security regression detected.`);
+    process.exit(5);
+  }
 }
 
 if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   main();
 }
 
-module.exports = { evaluateLocal, sanityGate, DENY_REASON };
+module.exports = {
+  evaluateLocal,
+  sanityGate,
+  isLabeledHarmfulPayload,
+  LABELED_HARMFUL_CASES,
+  DENY_REASON,
+};

@@ -1,26 +1,29 @@
 {
-  "payloads": 415310,
-  "files": 1838,
-  "oldDenies": 6315,
-  "midDenies": 2670,
-  "newDenies": 1799,
-  "loosened": 4516,
+  "provenanceSchemaVersion": "1.0",
+  "payloads": 420607,
+  "files": 1882,
+  "oldDenies": 6337,
+  "midDenies": 2679,
+  "newDenies": 1808,
+  "loosened": 4529,
   "tightened": 0,
+  "harmfulLoosenedCount": 0,
+  "harmfulLoosenedMatches": [],
   "loosenedByRule": {
-    "checkout_path": 3645,
+    "checkout_path": 3658,
     "financial_action_and_object": 871
   },
   "byOldRule": {
-    "vendor_upsell": 429,
-    "checkout_path": 3974,
-    "financial_action_and_object": 1892,
-    "guard_tampering": 20
+    "vendor_upsell": 433,
+    "checkout_path": 3988,
+    "financial_action_and_object": 1893,
+    "guard_tampering": 23
   },
   "byNewRule": {
-    "vendor_upsell": 712,
+    "vendor_upsell": 717,
     "financial_action_and_object": 389,
-    "checkout_path": 678,
-    "guard_tampering": 20
+    "checkout_path": 679,
+    "guard_tampering": 23
   },
   "spanChange": {
     "count": 871,
