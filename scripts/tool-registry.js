@@ -12,24 +12,32 @@ function humanizeTitle(name) {
     .join(' ');
 }
 
-function readOnlyTool(tool) {
+function readOnlyTool(tool, options = {}) {
+  const title = tool.title || humanizeTitle(tool.name);
   return {
     ...tool,
-    title: tool.title || humanizeTitle(tool.name),
+    title,
     annotations: {
-      title: tool.title || humanizeTitle(tool.name),
+      title,
       readOnlyHint: true,
+      idempotentHint: options.idempotentHint !== false,
+      openWorldHint: options.openWorldHint === true,
+      ...(tool.annotations || {}),
     },
   };
 }
 
-function destructiveTool(tool) {
+function destructiveTool(tool, options = {}) {
+  const title = tool.title || humanizeTitle(tool.name);
   return {
     ...tool,
-    title: tool.title || humanizeTitle(tool.name),
+    title,
     annotations: {
-      title: tool.title || humanizeTitle(tool.name),
+      title,
       destructiveHint: true,
+      idempotentHint: options.idempotentHint === true,
+      openWorldHint: options.openWorldHint === true,
+      ...(tool.annotations || {}),
     },
   };
 }
@@ -769,7 +777,7 @@ const TOOLS = [
       },
     },
   }),
-  destructiveTool({
+  readOnlyTool({
     name: 'prevention_rules',
     description: 'Generate prevention rules from repeated mistake patterns',
     inputSchema: {
@@ -811,7 +819,7 @@ const TOOLS = [
       },
     },
   }),
-  destructiveTool({
+  readOnlyTool({
     name: 'construct_context_pack',
     description: 'Construct a bounded context pack from contextfs',
     inputSchema: {
@@ -907,15 +915,16 @@ const TOOLS = [
       },
     },
   }),
-  destructiveTool({
+  readOnlyTool({
     name: 'satisfy_gate',
+    title: 'Satisfy Gate',
     description: 'Satisfy a gate condition with optional structured reasoning. Evidence is stored with a 5-minute TTL. When structuredReasoning is provided, the premise/evidence/conclusion chain is stored in the audit trail.',
     inputSchema: {
       type: 'object',
-      required: ['gate'],
       properties: {
         gate: { type: 'string', description: 'Gate condition ID to satisfy (e.g., pr_threads_checked)' },
-        evidence: { type: 'string', description: 'Evidence text (e.g., \"0 unresolved threads\")' },
+        gateId: { type: 'string', description: 'Alias for gate (e.g., pr_threads_checked)' },
+        evidence: { type: 'string', description: 'Evidence text (e.g., "0 unresolved threads")' },
         structuredReasoning: {
           type: 'object',
           description: 'Structured pre-gate reasoning: state premises, trace evidence, assess risk, derive conclusion before unlocking.',
