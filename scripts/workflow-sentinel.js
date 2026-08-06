@@ -205,6 +205,50 @@ function getBranchDiffFiles(repoRoot) {
   return safeExecFileLines('git', ['diff', '--name-only'], repoRoot);
 }
 
+/**
+ * repoRoot comes from the session's working directory, but a Bash command may
+ * `cd` elsewhere first — most often into a git worktree. Inspecting the session
+ * repository's tree while the command runs inside a worktree reports files that
+ * are not part of the work at all.
+ *
+ * Seen 2026-08-06: a 4-file worktree commit was scored as "9 files across 6
+ * surfaces" (then "6 across 4" for a SINGLE file) because the tally came from
+ * the session repository's unrelated dirty files. The gate hard-blocked, and
+ * its own advice — "split the change" — could not help, because the number
+ * never described the work being done. A sentinel that inspects the wrong tree
+ * is not strict, it is wrong, and here it blocked maintenance of its own repo.
+ */
+function resolveCommandRepoRoot(command, repoRoot) {
+  const match = /(?:^|&&|;|\|\|)\s*cd\s+(?:--\s+)?("[^"]+"|'[^']+'|[^\s;&|]+)/.exec(String(command || ''));
+  if (!match) return repoRoot;
+  const target = match[1].replace(/^['"]|['"]$/g, '');
+  const resolved = path.isAbsolute(target)
+    ? target
+    : path.resolve(repoRoot || process.cwd(), target);
+  try {
+    if (fs.statSync(resolved).isDirectory()) return resolved;
+  } catch {
+    /* an unresolvable cd means we keep inspecting the session repository */
+  }
+  return repoRoot;
+}
+
+/**
+ * Explicit pathspecs given to `git add`. Without this, `git add one-file.js`
+ * was measured as if it staged the whole tree, so a one-file commit inherited
+ * the blast radius of every unrelated dirty file in the repository.
+ * `git add -A` and `git add .` really do stage everything, so they still fall
+ * through to the full-tree scan below.
+ */
+function gitAddPathspecs(command) {
+  const match = /\bgit\s+add\b([^&|;]*)/i.exec(String(command || ''));
+  if (!match) return [];
+  return match[1]
+    .split(/\s+/)
+    .map((token) => token.replace(/^['"]|['"]$/g, ''))
+    .filter((token) => token && !token.startsWith('-'));
+}
+
 function collectAffectedFiles(toolName, toolInput = {}, repoRoot) {
   const files = new Set(collectInlineAffectedFiles(toolInput, repoRoot));
   const command = String(toolInput.command || '');
@@ -215,23 +259,33 @@ function collectAffectedFiles(toolName, toolInput = {}, repoRoot) {
       return [...files].filter(Boolean);
     }
 
+    const commandRoot = resolveCommandRepoRoot(command, repoRoot);
+
     if (/\bgit\s+commit\b/i.test(command)) {
-      for (const filePath of safeExecFileLines('git', ['diff', '--cached', '--name-only'], repoRoot)) {
+      for (const filePath of safeExecFileLines('git', ['diff', '--cached', '--name-only'], commandRoot)) {
         files.add(normalizePosix(filePath));
       }
     }
 
     if (/\bgit\s+add\b/i.test(command)) {
-      for (const filePath of safeExecFileLines('git', ['diff', '--name-only'], repoRoot)) {
-        files.add(normalizePosix(filePath));
-      }
-      for (const filePath of safeExecFileLines('git', ['ls-files', '--others', '--exclude-standard'], repoRoot)) {
-        files.add(normalizePosix(filePath));
+      const pathspecs = gitAddPathspecs(command);
+      const stagesWholeTree = pathspecs.length === 0 || pathspecs.includes('.');
+      if (stagesWholeTree) {
+        for (const filePath of safeExecFileLines('git', ['diff', '--name-only'], commandRoot)) {
+          files.add(normalizePosix(filePath));
+        }
+        for (const filePath of safeExecFileLines('git', ['ls-files', '--others', '--exclude-standard'], commandRoot)) {
+          files.add(normalizePosix(filePath));
+        }
+      } else {
+        for (const spec of pathspecs) {
+          files.add(normalizePosix(spec));
+        }
       }
     }
 
     if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command)) {
-      for (const filePath of getBranchDiffFiles(repoRoot)) {
+      for (const filePath of getBranchDiffFiles(commandRoot)) {
         files.add(normalizePosix(filePath));
       }
     }

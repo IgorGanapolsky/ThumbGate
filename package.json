@@ -563,7 +563,7 @@
     "test:operator-key-auth": "node --test tests/api-operator-key-auth.test.js",
     "test:cloudflare-sandbox": "node --test tests/cloudflare-dynamic-sandbox.test.js tests/cloudflare-sandbox-api.test.js",
     "test:mcp-config": "node --test tests/mcp-config.test.js tests/mcp-capability-exposure.test.js",
-    "test:mcp-tool-annotations": "node --test tests/mcp-tool-annotations.test.js",
+    "test:mcp-tool-annotations": "node --test tests/mcp-tool-annotations.test.js tests/mcp-tool-dispatch-parity.test.js",
     "test:mcp-policy": "node --test tests/mcp-policy.test.js",
     "test:mcp-oauth": "node --test tests/mcp-oauth.test.js",
     "test:mcp-oauth-flow": "node --test tests/mcp-oauth-flow.test.js",
