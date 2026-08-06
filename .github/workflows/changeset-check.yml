@@ -11,6 +11,10 @@ on:
   merge_group:
     branches: [main]
     types: [checks_requested]
+  workflow_dispatch:
+    # Manual trigger for when pull_request events fail to deliver to GHA.
+    # Observed: webhook events reach third-party apps but GHA workflows
+    # are not triggered, causing required CI checks to never start.
 
 permissions:
   contents: read
