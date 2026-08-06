@@ -28,6 +28,7 @@ const PENDING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.pendingBuckets || []).map(
 const FAILING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.failingBuckets || []).map((value) => String(value || '').toLowerCase()));
 
 const SELF_REFERENTIAL_CHECKS = new Set(MERGE_QUALITY_CHECKS.selfReferentialChecks || []);
+const REQUIRED_CHECKS = new Set(MERGE_QUALITY_CHECKS.requiredStatusCheckContexts || []);
 
 function assertSafeGhArgs(args) {
   if (!Array.isArray(args) || args.length === 0) {
@@ -176,6 +177,9 @@ function summarizeChecks(checks = []) {
     const name = check.name || 'unknown-check';
 
     if (SELF_REFERENTIAL_CHECKS.has(name)) continue;
+    if (REQUIRED_CHECKS.size > 0 && !REQUIRED_CHECKS.has(name) && ![...REQUIRED_CHECKS].some((req) => name.startsWith(req))) {
+      continue;
+    }
 
     const bucket = String(check.bucket || '').toLowerCase();
     if (bucket) {
