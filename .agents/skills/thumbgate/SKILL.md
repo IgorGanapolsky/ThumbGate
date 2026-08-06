@@ -37,16 +37,16 @@ When an agent action succeeds or fails, capture it:
 
 ```bash
 # Thumbs down — something went wrong
-node .Codex/scripts/feedback/capture-feedback.js \
-  --feedback=down \
+npx thumbgate capture \
+  --signal=down \
   --context="what happened" \
   --what-went-wrong="specific failure" \
   --what-to-change="specific fix" \
   --tags="tag1,tag2"
 
 # Thumbs up — something worked
-node .Codex/scripts/feedback/capture-feedback.js \
-  --feedback=up \
+npx thumbgate capture \
+  --signal=up \
   --context="what happened" \
   --what-worked="specific thing that worked" \
   --tags="tag1,tag2"
