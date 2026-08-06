@@ -1260,18 +1260,21 @@ async function callToolInner(name, args) {
       return toTextResult(formatUnifiedContext(ctx));
     }
     case 'satisfy_gate': {
-      if (!args.gate) {
-        throw new Error('gate is required');
+      // Accept gate | gateId | gate_id — docs/block messages historically said gateId=
+      // while the schema only lists `gate`, which deadlocked agents (2026-08-03).
+      const gateName = args.gate || args.gateId || args.gate_id;
+      if (!gateName) {
+        throw new Error('gate is required (aliases: gateId, gate_id)');
       }
-      const entry = satisfyCondition(args.gate, args.evidence || '', args.structuredReasoning || null);
-      const result = { satisfied: true, gate: args.gate, ...entry };
+      const entry = satisfyCondition(gateName, args.evidence || '', args.structuredReasoning || null);
+      const result = { satisfied: true, gate: gateName, ...entry };
       // Log structured reasoning to audit trail for learning
       if (args.structuredReasoning) {
         recordAuditEvent({
           toolName: 'satisfy_gate',
-          toolInput: { gate: args.gate },
+          toolInput: { gate: gateName },
           decision: 'allow',
-          gateId: args.gate,
+          gateId: gateName,
           message: `Gate satisfied with structured reasoning: ${args.structuredReasoning.conclusion || 'no conclusion'}`,
           source: 'structured-reasoning',
         });
