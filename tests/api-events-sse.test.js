@@ -199,4 +199,40 @@ test('POST /v1/feedback/rules fans out a rules-updated event to subscribers', as
   }
 });
 
+test('POST /v1/events ingests multi-agent hook events and GET /v1/events/recent retrieves them', async () => {
+  const stream = await openEventStream();
+  try {
+    const handshake = await stream.next();
+    assert.equal(handshake.event, 'connected');
+
+    const post = await fetch(`${apiOrigin}/v1/events`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-platform': 'claude-code', ...authHeader },
+      body: JSON.stringify({
+        event: 'PreToolUse',
+        tool: 'Bash',
+        args: 'npm test -- --grep sse',
+      }),
+    });
+    assert.equal(post.status, 200);
+    const postBody = await post.json();
+    assert.equal(postBody.ok, true);
+
+    const frame = await stream.next();
+    assert.equal(frame.event, 'agent_event');
+    assert.equal(frame.data.record.platform, 'claude-code');
+    assert.equal(frame.data.record.event, 'PreToolUse');
+    assert.equal(frame.data.record.tool, 'Bash');
+
+    const recentRes = await fetch(`${apiOrigin}/v1/events/recent`, { headers: authHeader });
+    assert.equal(recentRes.status, 200);
+    const recentBody = await recentRes.json();
+    assert.equal(recentBody.ok, true);
+    assert.ok(Array.isArray(recentBody.events));
+    assert.ok(recentBody.events.some((e) => e.platform === 'claude-code' && e.tool === 'Bash'));
+  } finally {
+    stream.close();
+  }
+});
+
 }

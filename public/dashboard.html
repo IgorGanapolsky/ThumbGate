@@ -390,6 +390,7 @@
   <div class="tabs">
     <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
     <div class="tab" onclick="switchTab('gates')">🛡️ Active Gates</div>
+    <div class="tab" onclick="switchTab('live')">📡 Live Activity</div>
     <div class="tab" onclick="switchTab('team')">👥 Team</div>
     <div class="tab" onclick="switchTab('enterprise')">🏢 Governed Data Chat</div>
     <div class="tab" onclick="switchTab('ai-inventory')">🧬 AI Inventory</div>
@@ -498,6 +499,74 @@
       </details>
 
       <div id="gatesList"><div class="loading">Loading gates...</div></div>
+    </div>
+  </div>
+
+  <!-- LIVE ACTIVITY TAB -->
+  <div class="tab-content" id="tab-live">
+    <div class="panel" style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div>
+          <h2 style="margin:0;font-size:18px;">📡 Multi-Agent Live Activity Feed</h2>
+          <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0;">Real-time hook event stream across Claude Code, Codex, OpenCode, Pi, and Cursor.</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <label style="font-size:12px;color:var(--text-muted);">Platform:</label>
+          <select id="livePlatformFilter" onchange="filterLiveEvents()" class="auth-input" style="padding:4px 8px;font-size:12px;">
+            <option value="all">All Platforms</option>
+            <option value="claude-code">Claude Code</option>
+            <option value="codex">OpenAI Codex</option>
+            <option value="opencode">OpenCode</option>
+            <option value="pi">Pi Agent</option>
+            <option value="cursor">Cursor</option>
+          </select>
+          <button class="btn-outline" style="padding:4px 10px;font-size:12px;" onclick="clearLiveEvents()">Clear</button>
+        </div>
+      </div>
+
+      <!-- Live Summary Metric Cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;">
+        <div style="background:var(--bg-raised);padding:14px 16px;border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Total Events</div>
+          <div id="liveTotalCount" style="font-size:22px;font-weight:700;color:var(--cyan);margin-top:2px;">0</div>
+        </div>
+        <div style="background:var(--bg-raised);padding:14px 16px;border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Active Platforms</div>
+          <div id="livePlatformsCount" style="font-size:22px;font-weight:700;color:var(--green);margin-top:2px;">0</div>
+        </div>
+        <div style="background:var(--bg-raised);padding:14px 16px;border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Unique Tools</div>
+          <div id="liveToolsCount" style="font-size:22px;font-weight:700;color:var(--cyan);margin-top:2px;">0</div>
+        </div>
+      </div>
+
+      <!-- Tool Usage Frequency Badges -->
+      <div style="margin-bottom:20px;">
+        <h4 style="margin:0 0 10px;font-size:14px;color:var(--text);">🧰 Tool Usage Frequency</h4>
+        <div id="liveToolFrequency" style="display:flex;flex-wrap:wrap;gap:8px;">
+          <span style="font-size:12px;color:var(--text-muted);">Waiting for hook events…</span>
+        </div>
+      </div>
+
+      <!-- Live Stream Table -->
+      <div style="overflow-x:auto;">
+        <table class="data-table" style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);text-align:left;color:var(--text-muted);">
+              <th style="padding:10px 8px;">Time</th>
+              <th style="padding:10px 8px;">Platform</th>
+              <th style="padding:10px 8px;">Event</th>
+              <th style="padding:10px 8px;">Tool</th>
+              <th style="padding:10px 8px;">Target / Arguments</th>
+            </tr>
+          </thead>
+          <tbody id="liveEventsTableBody">
+            <tr>
+              <td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted);">No live events received yet. Hook events from Claude Code, Codex, OpenCode, or Pi will stream here in real time.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -2532,9 +2601,108 @@ function loadDemo() {
   });
 }
 
+let liveEventsStore = [];
+
+async function initLiveActivityStream() {
+  try {
+    const res = await fetch('/v1/events/recent', { headers: getHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.events && Array.isArray(data.events)) {
+        liveEventsStore = data.events;
+        renderLiveEvents();
+      }
+    }
+  } catch (_e) {}
+
+  try {
+    const es = new EventSource('/v1/events');
+    es.addEventListener('agent_event', function(e) {
+      try {
+        const payload = JSON.parse(e.data);
+        if (payload.record) {
+          liveEventsStore.unshift(payload.record);
+          if (liveEventsStore.length > 500) liveEventsStore.length = 500;
+          renderLiveEvents();
+        }
+      } catch (_err) {}
+    });
+  } catch (_err) {}
+}
+
+function filterLiveEvents() {
+  renderLiveEvents();
+}
+
+function clearLiveEvents() {
+  liveEventsStore = [];
+  renderLiveEvents();
+}
+
+function renderLiveEvents() {
+  const filterVal = (document.getElementById('livePlatformFilter') || {}).value || 'all';
+  const filtered = filterVal === 'all'
+    ? liveEventsStore
+    : liveEventsStore.filter(function(e) {
+        return String(e.platform || '').toLowerCase().includes(filterVal);
+      });
+
+  const totalCountEl = document.getElementById('liveTotalCount');
+  if (totalCountEl) totalCountEl.textContent = filtered.length;
+
+  const platforms = new Set(filtered.map(function(e) { return e.platform; }).filter(Boolean));
+  const platformsCountEl = document.getElementById('livePlatformsCount');
+  if (platformsCountEl) platformsCountEl.textContent = platforms.size;
+
+  const toolsMap = {};
+  filtered.forEach(function(e) {
+    if (e.tool) {
+      toolsMap[e.tool] = (toolsMap[e.tool] || 0) + 1;
+    }
+  });
+
+  const toolsCountEl = document.getElementById('liveToolsCount');
+  if (toolsCountEl) toolsCountEl.textContent = Object.keys(toolsMap).length;
+
+  const freqEl = document.getElementById('liveToolFrequency');
+  if (freqEl) {
+    const sortedTools = Object.entries(toolsMap).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 10);
+    if (sortedTools.length === 0) {
+      freqEl.innerHTML = '<span style="font-size:12px;color:var(--text-muted);">Waiting for hook events…</span>';
+    } else {
+      freqEl.innerHTML = sortedTools.map(function(item) {
+        return '<span style="background:var(--bg-raised);border:1px solid var(--border);padding:4px 10px;border-radius:6px;font-size:12px;font-family:var(--mono);">' +
+          '<strong>' + chatEscape(item[0]) + '</strong> <span style="color:var(--cyan);font-weight:700;">' + item[1] + '×</span>' +
+          '</span>';
+      }).join('');
+    }
+  }
+
+  const tbody = document.getElementById('liveEventsTableBody');
+  if (tbody) {
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted);">No live events received yet. Hook events from Claude Code, Codex, OpenCode, or Pi will stream here in real time.</td></tr>';
+    } else {
+      tbody.innerHTML = filtered.slice(0, 100).map(function(e) {
+        const timeStr = e.timestamp ? e.timestamp.slice(11, 19) : '';
+        const platformBadge = '<span style="background:rgba(34,211,238,0.15);color:var(--cyan);padding:2px 6px;border-radius:4px;font-weight:600;font-size:11px;">' + chatEscape(e.platform || 'unknown') + '</span>';
+        const eventBadge = '<span style="background:rgba(74,222,128,0.15);color:var(--green);padding:2px 6px;border-radius:4px;font-weight:600;font-size:11px;">' + chatEscape(e.event || 'Event') + '</span>';
+        return '<tr style="border-bottom:1px solid var(--border);">' +
+          '<td style="padding:8px;font-family:var(--mono);">' + chatEscape(timeStr) + '</td>' +
+          '<td style="padding:8px;">' + platformBadge + '</td>' +
+          '<td style="padding:8px;">' + eventBadge + '</td>' +
+          '<td style="padding:8px;font-family:var(--mono);font-weight:600;">' + chatEscape(e.tool || '—') + '</td>' +
+          '<td style="padding:8px;font-family:var(--mono);color:var(--text-muted);word-break:break-all;">' + chatEscape(e.args || '—') + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+  }
+}
+
 // Auto-load demo on first visit so visitors see the product immediately
 window.addEventListener('DOMContentLoaded', function() {
   preserveProjectQueryParams();
+  initLiveActivityStream();
   if (hasBootstrapKey()) {
     connect({ key: BOOTSTRAP_API_KEY, localPro: true });
     return;

@@ -5381,6 +5381,7 @@ function createApiServer() {
 
   const eventBus = new EventEmitter();
   eventBus.setMaxListeners(200);
+  const recentAgentEvents = [];
 
   return http.createServer(async (req, res) => {
     const parsed = new URL(req.url, 'http://localhost');
@@ -9068,6 +9069,40 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         req.on('close', cleanup);
         req.on('aborted', cleanup);
         res.on('close', cleanup);
+        return;
+      }
+
+      if (req.method === 'GET' && (pathname === '/v1/events/recent' || pathname === '/events/recent')) {
+        sendJson(res, 200, { ok: true, events: recentAgentEvents });
+        return;
+      }
+
+      if (req.method === 'POST' && (pathname === '/v1/events' || pathname === '/event')) {
+        const body = await parseJsonBody(req, 64 * 1024).catch(() => ({}));
+        const headersLower = {};
+        for (const k in req.headers) {
+          headersLower[k.toLowerCase()] = req.headers[k];
+        }
+        const platform = String(body.platform || headersLower['x-platform'] || 'unknown');
+        const eventName = String(body.event || body.hook_event_name || 'Unknown');
+        const tool = String(body.tool || body.tool_name || '');
+        const rawArgs = body.args || body.tool_input || body.prompt || '';
+        const argsStr = typeof rawArgs === 'object' ? JSON.stringify(rawArgs) : String(rawArgs || '');
+        const truncatedArgs = argsStr.length > 300 ? argsStr.slice(0, 299) + '…' : argsStr;
+        const record = {
+          id: 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+          timestamp: new Date().toISOString(),
+          platform: platform,
+          event: eventName,
+          tool: tool,
+          args: truncatedArgs,
+        };
+        recentAgentEvents.unshift(record);
+        if (recentAgentEvents.length > 500) {
+          recentAgentEvents.length = 500;
+        }
+        eventBus.emit('broadcast', { type: 'agent_event', record });
+        sendJson(res, 200, { ok: true, id: record.id });
         return;
       }
 
