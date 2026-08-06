@@ -2320,8 +2320,21 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
   const repeatedViolationBuckets = {};
   const priorityContracts = [];
   for (const m of memories) {
-    if (isNoiseTitle(m.title) && !extractAvoidLine(m.content)) {
-      // Skip pure hook-noise shells with no actionable avoid line.
+    // Pruned lessons are Bayesian-invalidated noise — never promote them
+    // into High-Priority Contracts or any domain bucket.
+    if (m.pruned) continue;
+
+    // Skip pure hook-noise shells that have neither an actionable avoid line
+    // nor any diagnostic data (rubric failures, diagnosis, or non-generic tags).
+    // Context-only negative feedback is valid per the schema — it still feeds
+    // rubric/diagnosis buckets when it carries structured diagnostics, so only
+    // skip records that are noise title + no avoid line + no diagnostic data.
+    const hasDiagnosticData = (
+      (Array.isArray(m.rubricSummary?.failingCriteria) && m.rubricSummary.failingCriteria.length > 0)
+      || (m.diagnosis && m.diagnosis.rootCauseCategory)
+      || (Array.isArray(m.tags) && m.tags.some((t) => !GENERIC_TAGS.has(t)))
+    );
+    if (isNoiseTitle(m.title) && !extractAvoidLine(m.content) && !hasDiagnosticData) {
       continue;
     }
     const key = domainKeyForMemory(m);

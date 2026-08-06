@@ -675,6 +675,78 @@ test('buildPreventionRules: skips pure hookEventName noise without actionable av
   assert.ok(!/## general[\s\S]*user_prompt_submit/.test(rules), 'hook noise must not head a general domain rule');
 });
 
+test('buildPreventionRules: excludes pruned lessons from High-Priority Contracts', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const fsPaths = getFeedbackPaths();
+  const memoryPath = fsPaths.MEMORY_LOG_PATH;
+  fs.mkdirSync(path.dirname(memoryPath), { recursive: true });
+  fs.writeFileSync(
+    memoryPath,
+    `${JSON.stringify({
+      id: 'mem_pruned_honesty',
+      category: 'error',
+      title: 'MISTAKE: Overclaimed completion again',
+      content: 'What went wrong: lied about deploy status\nHow to avoid: NEVER claim deployed without /health buildSha match',
+      tags: ['feedback', 'negative', 'honesty', 'overclaim', 'completion-claim'],
+      richContext: { domain: 'general' },
+      occurrences: 3,
+      pruned: true,
+      timestamp: new Date().toISOString(),
+    })}\n`,
+  );
+
+  const rules = buildPreventionRules(2);
+  assert.ok(
+    !rules.includes('NEVER claim deployed without /health buildSha match'),
+    'pruned lesson must not appear in High-Priority Contracts or any domain bucket',
+  );
+});
+
+test('buildPreventionRules: preserves noise-title memory that has diagnostic data', (t) => {
+  const tmpDir = makeTmpDir();
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+    try { fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
+  });
+
+  const fsPaths = getFeedbackPaths();
+  const memoryPath = fsPaths.MEMORY_LOG_PATH;
+  fs.mkdirSync(path.dirname(memoryPath), { recursive: true });
+  // Noise title but has rubric failures + a domain tag + diagnosis — must NOT be skipped
+  fs.writeFileSync(
+    memoryPath,
+    `${JSON.stringify({
+      id: 'mem_noisy_with_diagnostics',
+      category: 'error',
+      title: 'MISTAKE: {"hookEventName":"user_prompt_submit","sessionId":"z"}',
+      content: 'What went wrong: sessionId exposed in prompt',
+      tags: ['feedback', 'negative', 'security'],
+      richContext: { domain: 'security' },
+      occurrences: 3,
+      rubricSummary: { failingCriteria: ['No raw secrets in prompts'] },
+      diagnosis: { rootCauseCategory: 'data-leak', violations: [{ constraintId: 'no-secret-leak' }] },
+      timestamp: new Date().toISOString(),
+    })}\n`,
+  );
+
+  const rules = buildPreventionRules(1);
+  assert.ok(
+    /No domain has reached/.test(rules) || /## security/.test(rules) || rules.includes('# Prevention Rules'),
+    'rules remain valid markdown',
+  );
+  assert.ok(
+    /security/.test(rules),
+    'noise-title memory with diagnostics must still surface its domain in rules',
+  );
+});
+
 // -- feedbackSummary --
 
 test('feedbackSummary: returns string with "Positive:"', (t) => {
