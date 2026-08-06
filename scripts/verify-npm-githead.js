@@ -60,6 +60,7 @@ function evaluateRegistryIdentity({
   allowUnpublished,
   registryResult,
   attempts = 1,
+  ancestry = 'unknown',
 }) {
   const base = { packageName, version, expectedSha, attempts };
   if (registryResult.state === 'unpublished') {
@@ -80,9 +81,42 @@ function evaluateRegistryIdentity({
     return { ...base, verdict: 'fail', state: 'published', observedSha: null, reason: 'published version has no gitHead attestation' };
   }
   if (observedSha !== expectedSha) {
+    // A SHA mismatch is only drift when the published commit is NOT in this
+    // commit's history. Between releases main is simply ahead of the last
+    // published version -- the normal state after every content-only merge.
+    // Requiring exact equality made this check go red on main after any push
+    // touching public/ or src/ until someone cut a release.
+    // 'unknown' fails closed: never pass on an ancestry we could not prove.
+    if (ancestry === 'ancestor') {
+      return {
+        ...base,
+        verdict: 'pass',
+        state: 'published',
+        observedSha,
+        reason: 'published release is an ancestor; main is ahead of the last release',
+      };
+    }
     return { ...base, verdict: 'fail', state: 'published', observedSha, reason: 'published version belongs to another commit' };
   }
   return { ...base, verdict: 'pass', state: 'published', observedSha, reason: 'registry gitHead matches the release commit' };
+}
+
+/**
+ * Is `ancestorSha` reachable from `descendantSha`? Answered with local git so
+ * the guard needs no network and no credentials. Returns 'unknown' when git
+ * cannot answer -- notably on a shallow clone, where the objects are absent --
+ * and the evaluator treats 'unknown' as drift.
+ */
+function resolveAncestryLocally(ancestorSha, descendantSha, deps = {}) {
+  if (!ancestorSha || !descendantSha) return 'unknown';
+  if (ancestorSha === descendantSha) return 'ancestor';
+  const run = deps.spawnSync || require('child_process').spawnSync;
+  const has = (sha) => run('git', ['cat-file', '-e', `${sha}^{commit}`], { encoding: 'utf8' }).status === 0;
+  if (!has(ancestorSha) || !has(descendantSha)) return 'unknown';
+  const res = run('git', ['merge-base', '--is-ancestor', ancestorSha, descendantSha], { encoding: 'utf8' });
+  if (res.status === 0) return 'ancestor';
+  if (res.status === 1) return 'unrelated';
+  return 'unknown';
 }
 
 function delay(ms) {
@@ -97,6 +131,7 @@ async function verifyNpmGitHead(options = {}) {
   const maxAttempts = positiveInteger(options.maxAttempts, DEFAULT_MAX_ATTEMPTS);
   const retryDelayMs = positiveInteger(options.retryDelayMs, DEFAULT_RETRY_DELAY_MS);
   const resolver = options.queryRegistry || queryRegistry;
+  const ancestryResolver = options.resolveAncestry || resolveAncestryLocally;
 
   if (!/^(@[a-z0-9._-]+\/)?[a-z0-9._-]+$/i.test(packageName) || !version || !expectedSha) {
     return {
@@ -113,13 +148,16 @@ async function verifyNpmGitHead(options = {}) {
 
   let report = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const registryResult = await resolver(packageName, version);
+    const observedSha = String((registryResult.metadata || {}).gitHead || '').trim();
     report = evaluateRegistryIdentity({
       packageName,
       version,
       expectedSha,
       allowUnpublished,
-      registryResult: await resolver(packageName, version),
+      registryResult,
       attempts: attempt,
+      ancestry: observedSha ? await ancestryResolver(observedSha, expectedSha) : 'unknown',
     });
     if (report.verdict !== 'retry') return report;
     if (attempt < maxAttempts) await delay(retryDelayMs);
@@ -148,6 +186,7 @@ module.exports = {
   DEFAULT_RETRY_DELAY_MS,
   parseArgs,
   queryRegistry,
+  resolveAncestryLocally,
   evaluateRegistryIdentity,
   verifyNpmGitHead,
 };
