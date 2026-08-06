@@ -1,0 +1,36 @@
+id = "thumbgate.approvals"
+name = "ThumbGate Approvals"
+version = "0.1.0"
+min_herdr_version = "0.7.0"
+description = "Fleet-wide pre-action governance for Herdr: one approval queue across every agent pane, with deterministic gates for spend, secrets, and outbound messages."
+platforms = ["linux", "macos"]
+
+# No [[build]] block: the adapter is plain Node with zero dependencies, so a
+# freshly installed plugin is runnable without a network step.
+
+[[startup]]
+command = ["node", "herdr-approvals-adapter.js", "startup"]
+
+[[actions]]
+id = "queue"
+title = "ThumbGate: fleet approval queue"
+contexts = ["workspace", "tab", "pane"]
+command = ["node", "herdr-approvals-adapter.js", "queue"]
+
+[[actions]]
+id = "gates"
+title = "ThumbGate: active gates and blocks"
+contexts = ["workspace"]
+command = ["node", "herdr-approvals-adapter.js", "gates"]
+
+[[actions]]
+id = "block-last"
+title = "ThumbGate: block this mistake everywhere"
+contexts = ["pane"]
+command = ["node", "herdr-approvals-adapter.js", "block-last"]
+
+# A new worktree is a new blast radius. Seed its governance scope the moment
+# Herdr creates it, so an agent starting there is already gated.
+[[events]]
+on = "worktree.created"
+command = ["node", "herdr-approvals-adapter.js", "seed-scope"]
