@@ -921,6 +921,7 @@ const TOOLS = [
     description: 'Satisfy a gate condition with optional structured reasoning. Evidence is stored with a 5-minute TTL. When structuredReasoning is provided, the premise/evidence/conclusion chain is stored in the audit trail.',
     inputSchema: {
       type: 'object',
+      required: ['gate'],
       properties: {
         gate: { type: 'string', description: 'Gate condition ID to satisfy (e.g., pr_threads_checked)' },
         gateId: { type: 'string', description: 'Alias for gate (e.g., pr_threads_checked)' },
