@@ -247,9 +247,9 @@ describe('end-to-end hook output', () => {
     originalEnv = process.env.THUMBGATE_FEEDBACK_DIR;
     process.env.THUMBGATE_FEEDBACK_DIR = tempDir;
 
-    // Clear require cache for gates-engine to pick up env change
+    // Clear require cache for gates-engine and feedback modules to pick up env change
     for (const key of Object.keys(require.cache)) {
-      if (key.includes('gates-engine') || key.includes('feedback-loop') || key.includes('lesson-retrieval')) {
+      if (key.includes('gates-engine') || key.includes('feedback') || key.includes('lesson') || key.includes('memory') || key.includes('context')) {
         delete require.cache[key];
       }
     }
@@ -267,7 +267,7 @@ describe('end-to-end hook output', () => {
         id: 'm1',
         title: 'MISTAKE: retried flaky CI without reading test',
         content: 'How to avoid: READ THE TEST FIRST before CI retry',
-        tags: ['negative', 'ci-debugging'],
+        tags: ['negative', 'ci-debugging', 'bash'],
         timestamp: new Date().toISOString(),
       },
     ]);
