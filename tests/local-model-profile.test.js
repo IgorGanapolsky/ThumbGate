@@ -203,3 +203,14 @@ test('resolveModelRole maps provider to vertex when Vertex AI is active', () => 
   assert.equal(result.provider, 'vertex');
   assert.equal(result.model, MODEL_ROLES.normal);
 });
+
+test('resolveModelRole maps provider to local and uses VLLM_MODEL_ROLES when vllm model family is active', () => {
+  const { VLLM_MODEL_ROLES } = require('../scripts/local-model-profile');
+  const result = resolveModelRole('thinking', {
+    THUMBGATE_LOCAL_MODEL_FAMILY: 'vllm',
+  });
+
+  assert.equal(result.provider, 'local');
+  assert.equal(result.model, VLLM_MODEL_ROLES.thinking);
+  assert.equal(result.model, 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B');
+});

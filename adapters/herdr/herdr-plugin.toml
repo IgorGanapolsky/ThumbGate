@@ -1,0 +1,18 @@
+[plugin]
+id = "thumbgate-approvals"
+name = "ThumbGate Approvals"
+version = "1.35.0"
+minHerdrVersion = "0.7.0"
+description = "Pre-action governance, spend guard, and safety approval gates for multi-agent terminal sessions in Herdr."
+platforms = ["linux", "macos", "windows"]
+author = "ThumbGate"
+homepage = "https://thumbgate.ai"
+repository = "https://github.com/IgorGanapolsky/ThumbGate"
+category = "Security & Governance"
+
+[mcp_server]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@1.35.0", "thumbgate", "serve"]
+
+[mcp_server.env]
+THUMBGATE_ENFORCE_ENTITLEMENTS = "1"
