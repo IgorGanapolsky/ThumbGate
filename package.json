@@ -653,6 +653,7 @@
     "ops:integrity": "node scripts/operational-integrity.js",
     "ops:integrity:ci": "node scripts/operational-integrity.js --ci",
     "prove:adapters": "node --test tests/prove-adapters.test.js",
+    "prove:herdr": "node --test tests/prove-herdr-adapter.test.js",
     "prove:automation": "node --test tests/prove-automation.test.js",
     "prove:workflow-contract": "node --test tests/prove-workflow-contract.test.js",
     "prove:evolution": "node scripts/prove-evolution.js",
