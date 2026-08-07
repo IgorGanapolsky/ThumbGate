@@ -657,7 +657,10 @@
     "ops:integrity:ci": "node scripts/operational-integrity.js --ci",
     "prove:adapters": "node --test tests/prove-adapters.test.js",
     "prove:herdr": "node --test tests/prove-herdr-adapter.test.js",
+    "prove:memory-pyramid": "node scripts/prove-memory-pyramid-and-symbolic-canvas.js",
+    "gtm:send-proposal": "node scripts/send-outcome-proposal.js",
     "prove:automation": "node --test tests/prove-automation.test.js",
+
     "prove:workflow-contract": "node --test tests/prove-workflow-contract.test.js",
     "prove:evolution": "node scripts/prove-evolution.js",
     "prove:autoresearch": "node scripts/prove-autoresearch.js",
