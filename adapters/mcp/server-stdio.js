@@ -1595,12 +1595,16 @@ async function callToolInner(name, args) {
         tools: TOOLS,
         entries: Array.isArray(args.entries) ? args.entries : undefined,
         anchors: Array.isArray(args.anchors) ? args.anchors : undefined,
+        symbolicCanvas: Boolean(args.symbolicCanvas),
+        symbolicEntries: Array.isArray(args.symbolicEntries) ? args.symbolicEntries : undefined,
+        activeTask: args.activeTask,
         schemaUrlTemplate: args.schemaUrlTemplate || '/.well-known/mcp/tools/{name}.json',
         targetReduction: args.targetReduction,
         windowSize: args.windowSize,
         perEntryMaxChars: args.perEntryMaxChars,
         totalMaxChars: args.totalMaxChars,
       }));
+
     case 'plan_agent_design_governance':
       return toTextResult(buildAgentDesignGovernancePlan(args));
     case 'plan_proactive_agent_eval_guardrails':

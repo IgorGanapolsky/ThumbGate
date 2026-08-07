@@ -295,9 +295,102 @@ function evaluateMemoryPromotion(memory = {}, policy = buildMemoryLifecyclePolic
   };
 }
 
+const PYRAMID_LAYERS = {
+  L0_CONVERSATION: 'L0_CONVERSATION',
+  L1_ATOM: 'L1_ATOM',
+  L2_SCENARIO: 'L2_SCENARIO',
+  L3_PERSONA_SOP: 'L3_PERSONA_SOP',
+};
+
+function classifyPyramidLayer(memory = {}) {
+  const explicit = normalizeText(memory.pyramidLayer || memory.layer).toUpperCase();
+  if (PYRAMID_LAYERS[explicit]) return PYRAMID_LAYERS[explicit];
+
+  const type = normalizeMemoryType(memory.type);
+  const text = collectMemoryText(memory).toLowerCase();
+  const tags = new Set(Array.isArray(memory.tags) ? memory.tags.map((t) => normalizeText(t).toLowerCase()) : []);
+
+  if (
+    type === 'preference' ||
+    tags.has('sop') ||
+    tags.has('rule') ||
+    tags.has('policy') ||
+    tags.has('guardrail') ||
+    /\b(sop|policy|prevention rule|guardrail|rule|directive|mandate|never allow|always require)\b/.test(text)
+  ) {
+    return PYRAMID_LAYERS.L3_PERSONA_SOP;
+  }
+
+  if (
+    type === 'procedural' ||
+    tags.has('workflow') ||
+    tags.has('scenario') ||
+    tags.has('pattern') ||
+    /\b(workflow|scenario|pipeline|multi-step|sequence|playbook|recipe|lifecycle)\b/.test(text)
+  ) {
+    return PYRAMID_LAYERS.L2_SCENARIO;
+  }
+
+  if (
+    type === 'semantic' ||
+    tags.has('fact') ||
+    tags.has('lesson') ||
+    tags.has('atom') ||
+    memory.whatWentWrong ||
+    memory.whatWorked ||
+    /\b(fact|lesson|observation|result|fix|patch|metric|verified)\b/.test(text)
+  ) {
+    return PYRAMID_LAYERS.L1_ATOM;
+  }
+
+  return PYRAMID_LAYERS.L0_CONVERSATION;
+}
+
+function distillMemoryPyramid(memories = [], options = {}) {
+  const safeMemories = Array.isArray(memories) ? memories : [];
+  const layers = {
+    [PYRAMID_LAYERS.L3_PERSONA_SOP]: [],
+    [PYRAMID_LAYERS.L2_SCENARIO]: [],
+    [PYRAMID_LAYERS.L1_ATOM]: [],
+    [PYRAMID_LAYERS.L0_CONVERSATION]: [],
+  };
+
+  for (const item of safeMemories) {
+    const layer = classifyPyramidLayer(item);
+    layers[layer].push({
+      ...item,
+      pyramidLayer: layer,
+    });
+  }
+
+  const totalCount = safeMemories.length;
+  const charsPerToken = Math.max(1, Number(options.charsPerToken) || 4);
+
+  const layerStats = {};
+  for (const [layerKey, items] of Object.entries(layers)) {
+    const rawContent = items.map((m) => collectMemoryText(m)).join('\n');
+    const estimatedTokens = Math.ceil(rawContent.length / charsPerToken);
+    layerStats[layerKey] = {
+      count: items.length,
+      estimatedTokens,
+      sharePercent: totalCount > 0 ? Number(((items.length / totalCount) * 100).toFixed(1)) : 0,
+    };
+  }
+
+  return {
+    kind: 'semantic-memory-pyramid',
+    totalMemories: totalCount,
+    layers: layerStats,
+    pyramidItems: layers,
+  };
+}
+
 module.exports = {
+  PYRAMID_LAYERS,
   buildMemoryLifecyclePolicy,
   buildMemoryLifecycleView,
+  classifyPyramidLayer,
+  distillMemoryPyramid,
   evaluateMemoryPromotion,
   extractMemoryEntities,
   inferMemoryScope,
@@ -305,3 +398,4 @@ module.exports = {
   scoreHybridMemoryMatch,
   scoreMemoryDecay,
 };
+

@@ -20,6 +20,9 @@ const path = require('path');
 const crypto = require('crypto');
 const { constructContextPack } = require('./contextfs');
 const { ensureDir } = require('./fs-utils');
+const { renderSymbolicTaskCanvas, compactSymbolicTaskCanvas } = require('./context-footprint');
+const { distillMemoryPyramid } = require('./agent-memory-lifecycle');
+
 
 // ---------------------------------------------------------------------------
 // Default paths
@@ -698,6 +701,11 @@ module.exports = {
   // Adaptive Context Compaction
   compactContext,
 
+  // High-ROI Memory Pyramid & Symbolic Task Canvas
+  renderSymbolicTaskCanvas,
+  compactSymbolicTaskCanvas,
+  distillMemoryPyramid,
+
   // MCP Consolidation Manifest
   TOOL_CONSOLIDATION,
 
@@ -707,3 +715,4 @@ module.exports = {
   DEFAULT_QUALITY_LOG_PATH,
   DEFAULT_REGISTRY_PATH,
 };
+
