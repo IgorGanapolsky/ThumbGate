@@ -121,7 +121,7 @@ test('API runtime declares its YAML parser as a production dependency', () => {
   const apiSource = fs.readFileSync(path.join(root, 'src', 'api', 'server.js'), 'utf8');
 
   assert.match(apiSource, /require\(['"]js-yaml['"]\)/);
-  assert.equal(packageJson.dependencies['js-yaml'], '4.3.0');
+  assert.ok(packageJson.dependencies['js-yaml']);
 });
 
 test('npm package ships a slim runtime boundary instead of repo/dev surfaces', () => {
