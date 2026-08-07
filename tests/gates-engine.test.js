@@ -2197,6 +2197,63 @@ test('pending PR-thread gate never blocks read-only observability tools (operato
   }
 });
 
+test('pending PR-thread gate exempts mcp__-prefixed tool names — satisfy_gate must never deadlock itself', () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('pr-commit-prefixed-exempt.json');
+  try {
+    setTaskScope({
+      allowedPaths: ['README.md'],
+      summary: 'Keep the prefixed-exemption test isolated from the caller worktree.',
+    });
+    fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+
+    // A PR-branch commit arms the pending thread-resolution gate.
+    const commitResult = evaluateGates('Bash', {
+      command: 'git commit -m "fix review feedback"',
+      branchName: 'fix/review-feedback',
+      prNumber: 123,
+      changedFiles: ['README.md'],
+    }, tmpConfig);
+    assert.equal(commitResult, null);
+    assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
+
+    // Hook payloads carry the FULL MCP tool name (mcp__thumbgate__satisfy_gate),
+    // not the bare name the exemption lists hold. Regression guard for 2026-08-05:
+    // the gate blocked satisfy_gate itself, so the documented escape hatch was
+    // unreachable and every Write/MCP call stayed denied until the TTL expired.
+    for (const tool of [
+      'mcp__thumbgate__satisfy_gate',
+      'mcp__thumbgate__track_action',
+      'mcp__thumbgate__search_lessons',
+      'mcp__thumbgate__verify_claim',
+    ]) {
+      assert.equal(
+        evaluatePendingPrThreadResolutionGate(tool, {}),
+        null,
+        `${tool} is the escape hatch / evidence path and must not be blocked`,
+      );
+    }
+
+    // Prefixed read-only observability tools pass through like their bare forms.
+    assert.equal(evaluatePendingPrThreadResolutionGate('mcp__thumbgate__get_business_metrics', {}), null);
+    assert.equal(isReadOnlyObservabilityTool('mcp__thumbgate__get_business_metrics'), true);
+
+    // Prefix stripping must not over-exempt: a prefixed MUTATING tool stays gated,
+    // and plain file edits stay gated.
+    const blockedMutation = evaluatePendingPrThreadResolutionGate('mcp__thumbgate__capture_feedback', { feedback: 'up' });
+    assert.ok(blockedMutation && blockedMutation.decision === 'deny', 'prefixed mutating MCP tool stays gated');
+    const blockedEdit = evaluatePendingPrThreadResolutionGate('Edit', { file_path: 'README.md' });
+    assert.ok(blockedEdit && blockedEdit.decision === 'deny', 'file Edit stays gated until threads verified');
+
+    // The prefixed satisfy_gate exemption composes with actually satisfying:
+    satisfyCondition('pr_threads_checked', 'reviewThreads first:50 returned 0 unresolved');
+    assert.equal(evaluatePendingPrThreadResolutionGate('Edit', { file_path: 'README.md' }), null);
+  } finally {
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
+
 test('pending PR-thread gate does not leak across repos (regression 2026-07-24 mac-mini lockout)', () => {
   cleanupStateFiles();
   try {
