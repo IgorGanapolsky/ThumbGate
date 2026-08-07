@@ -302,49 +302,44 @@ const PYRAMID_LAYERS = {
   L3_PERSONA_SOP: 'L3_PERSONA_SOP',
 };
 
+const SOP_LAYER_REGEX = /\b(sop|policy|prevention rule|guardrail|rule|directive|mandate|never allow|always require)\b/;
+const WORKFLOW_LAYER_REGEX = /\b(workflow|scenario|pipeline|multi-step|sequence|playbook|recipe|lifecycle)\b/;
+const LESSON_LAYER_REGEX = /\b(fact|lesson|observation|result|fix|patch|metric|verified)\b/;
+
+function isSopLayer(type, tags, text) {
+  if (type === 'preference') return true;
+  if (tags.has('sop') || tags.has('rule') || tags.has('policy') || tags.has('guardrail')) return true;
+  return SOP_LAYER_REGEX.test(text);
+}
+
+function isWorkflowLayer(type, tags, text) {
+  if (type === 'procedural') return true;
+  if (tags.has('workflow') || tags.has('scenario') || tags.has('pattern')) return true;
+  return WORKFLOW_LAYER_REGEX.test(text);
+}
+
+function isAtomLayer(type, tags, text, memory) {
+  if (type === 'semantic') return true;
+  if (tags.has('fact') || tags.has('lesson') || tags.has('atom')) return true;
+  if (Boolean(memory.whatWentWrong) || Boolean(memory.whatWorked)) return true;
+  return LESSON_LAYER_REGEX.test(text);
+}
+
 function classifyPyramidLayer(memory = {}) {
   const explicit = normalizeText(memory.pyramidLayer || memory.layer).toUpperCase();
   if (PYRAMID_LAYERS[explicit]) return PYRAMID_LAYERS[explicit];
 
   const type = normalizeMemoryType(memory.type);
   const text = collectMemoryText(memory).toLowerCase();
-  const tags = new Set(Array.isArray(memory.tags) ? memory.tags.map((t) => normalizeText(t).toLowerCase()) : []);
+  const tagList = Array.isArray(memory.tags) ? memory.tags.map((t) => normalizeText(t).toLowerCase()) : [];
+  const tags = new Set(tagList);
 
-  if (
-    type === 'preference' ||
-    tags.has('sop') ||
-    tags.has('rule') ||
-    tags.has('policy') ||
-    tags.has('guardrail') ||
-    /\b(sop|policy|prevention rule|guardrail|rule|directive|mandate|never allow|always require)\b/.test(text)
-  ) {
-    return PYRAMID_LAYERS.L3_PERSONA_SOP;
-  }
-
-  if (
-    type === 'procedural' ||
-    tags.has('workflow') ||
-    tags.has('scenario') ||
-    tags.has('pattern') ||
-    /\b(workflow|scenario|pipeline|multi-step|sequence|playbook|recipe|lifecycle)\b/.test(text)
-  ) {
-    return PYRAMID_LAYERS.L2_SCENARIO;
-  }
-
-  if (
-    type === 'semantic' ||
-    tags.has('fact') ||
-    tags.has('lesson') ||
-    tags.has('atom') ||
-    memory.whatWentWrong ||
-    memory.whatWorked ||
-    /\b(fact|lesson|observation|result|fix|patch|metric|verified)\b/.test(text)
-  ) {
-    return PYRAMID_LAYERS.L1_ATOM;
-  }
-
+  if (isSopLayer(type, tags, text)) return PYRAMID_LAYERS.L3_PERSONA_SOP;
+  if (isWorkflowLayer(type, tags, text)) return PYRAMID_LAYERS.L2_SCENARIO;
+  if (isAtomLayer(type, tags, text, memory)) return PYRAMID_LAYERS.L1_ATOM;
   return PYRAMID_LAYERS.L0_CONVERSATION;
 }
+
 
 function distillMemoryPyramid(memories = [], options = {}) {
   const safeMemories = Array.isArray(memories) ? memories : [];
