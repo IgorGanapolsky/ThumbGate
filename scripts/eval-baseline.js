@@ -43,6 +43,11 @@ async function main() {
   gatesEngine.SESSION_ACTIONS_PATH = path.join(sandbox, 'session-actions.json');
   gatesEngine.GOVERNANCE_STATE_PATH = path.join(sandbox, 'governance-state.json');
 
+  const emptyFeedbackDir = path.join(sandbox, 'empty-feedback');
+  fs.mkdirSync(emptyFeedbackDir, { recursive: true });
+  process.env.THUMBGATE_FEEDBACK_DIR = emptyFeedbackDir;
+  process.env.CLAUDE_MEMORY_DIR = emptyFeedbackDir;
+
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-baseline-repo-'));
   // Sonar S4036: resolving `git` through the inherited PATH is security-sensitive — a writable
   // directory earlier in PATH could shadow the real binary. Pinning PATH is not enough, because
