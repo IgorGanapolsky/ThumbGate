@@ -123,26 +123,40 @@ test('no enforcement drift on real production commands', async () => {
   assert.ok(Object.keys(baseline.verdicts || {}).length >= 20,
     'baseline is too small to be meaningful');
 
+  const emptyFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-eval-test-feedback-'));
+  const origFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const origMemoryDir = process.env.CLAUDE_MEMORY_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = emptyFeedbackDir;
+  process.env.CLAUDE_MEMORY_DIR = emptyFeedbackDir;
+
   const drift = [];
   let compared = 0;
-  for (const testCase of cases) {
-    const key = `${testCase.toolName}|${testCase.command}`;
-    const expected = baseline.verdicts[key];
-    if (expected === undefined) continue;   // new case, not yet baselined
-    compared += 1;
-    const verdict = await evaluateGatesAsync(testCase.toolName, {
-      command: testCase.command,
-      cwd: repo,
-    });
-    const actual = verdict ? verdict.decision : 'none';
-    if (actual !== expected) {
-      drift.push(`${JSON.stringify(testCase.command.slice(0, 60))}: ${expected} -> ${actual}`);
+  try {
+    for (const testCase of cases) {
+      const key = `${testCase.toolName}|${testCase.command}`;
+      const expected = baseline.verdicts[key];
+      if (expected === undefined) continue;   // new case, not yet baselined
+      compared += 1;
+      const verdict = await evaluateGatesAsync(testCase.toolName, {
+        command: testCase.command,
+        cwd: repo,
+      });
+      const actual = verdict ? verdict.decision : 'none';
+      if (actual !== expected) {
+        drift.push(`${JSON.stringify(testCase.command.slice(0, 60))}: ${expected} -> ${actual}`);
+      }
     }
-  }
 
-  // Vacuity guard: a drift check that compared nothing is not a passing check.
-  assert.ok(compared >= 20, `only ${compared} case(s) compared against baseline`);
-  assert.deepEqual(drift, [],
-    `enforcement changed for real production commands:\n  ${drift.join('\n  ')}\n`
-    + 'If intended, re-run: npm run eval:baseline');
+    // Vacuity guard: a drift check that compared nothing is not a passing check.
+    assert.ok(compared >= 20, `only ${compared} case(s) compared against baseline`);
+    assert.deepEqual(drift, [],
+      `enforcement changed for real production commands:\n  ${drift.join('\n  ')}\n`
+      + 'If intended, re-run: npm run eval:baseline');
+  } finally {
+    fs.rmSync(emptyFeedbackDir, { recursive: true, force: true });
+    if (origFeedbackDir !== undefined) process.env.THUMBGATE_FEEDBACK_DIR = origFeedbackDir;
+    else delete process.env.THUMBGATE_FEEDBACK_DIR;
+    if (origMemoryDir !== undefined) process.env.CLAUDE_MEMORY_DIR = origMemoryDir;
+    else delete process.env.CLAUDE_MEMORY_DIR;
+  }
 });
