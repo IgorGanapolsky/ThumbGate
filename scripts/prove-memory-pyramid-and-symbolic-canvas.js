@@ -40,13 +40,14 @@ function proveMemoryPyramidAndSymbolicCanvas() {
   ];
 
   const pyramidReport = distillMemoryPyramid(sampleMemories);
-  assert.equal(pyramidReport.kind, 'semantic-memory-pyramid');
-  assert.equal(pyramidReport.totalMemories, 4);
-  assert.equal(pyramidReport.layers.L3_PERSONA_SOP.count, 1);
-  assert.equal(pyramidReport.layers.L2_SCENARIO.count, 1);
-  assert.equal(pyramidReport.layers.L1_ATOM.count, 1);
-  assert.equal(pyramidReport.layers.L0_CONVERSATION.count, 1);
+  assert.strictEqual(pyramidReport.kind, 'semantic-memory-pyramid');
+  assert.strictEqual(pyramidReport.totalMemories, 4);
+  assert.strictEqual(pyramidReport.layers.L3_PERSONA_SOP.count, 1);
+  assert.strictEqual(pyramidReport.layers.L2_SCENARIO.count, 1);
+  assert.strictEqual(pyramidReport.layers.L1_ATOM.count, 1);
+  assert.strictEqual(pyramidReport.layers.L0_CONVERSATION.count, 1);
   console.log('✔ Semantic Memory Pyramid (L0-L3) classification & distillation verified');
+
 
   // 2. Prove Symbolic Task Canvas Generation
   const canvas = renderSymbolicTaskCanvas({
@@ -59,8 +60,9 @@ function proveMemoryPyramidAndSymbolicCanvas() {
     blockers: [],
   });
 
-  assert.equal(canvas.milestoneCount, 3);
+  assert.strictEqual(canvas.milestoneCount, 3);
   assert.match(canvas.mermaidDiagram, /graph TD/);
+
   assert.match(canvas.mermaidDiagram, /Implement L0-L3 Pyramid Classifier \[DONE\]/);
   console.log('✔ Symbolic Task Canvas (Mermaid state graph) generation verified');
 
