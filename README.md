@@ -33,11 +33,11 @@ ThumbGate sits in your agent's **PreToolUse** path and evaluates proposed tool c
 
 | Verdict | Default behavior |
 |---------|------------------|
-| ⛔ **Hard-block** | Detected secret leaks; direct process-kill / env-override self-disable |
-| 👎 **Warn + log** | `rm -rf`, `git push --force`, fetch-and-run, direct guardrail edits |
+| ⛔ **Hard-block** | Detected secret leaks; process-kill/environment-override self-disable |
+| 👎 **Warn + log** | `rm -rf`, `git push --force`, fetch-and-run, direct guardrail edits — **warn by default** |
 | 👍 **Allow** | Everything else |
 
-Set `THUMBGATE_STRICT_ENFORCEMENT=1` to turn warnings into hard denies.
+Set `THUMBGATE_STRICT_ENFORCEMENT=1` for **strict enforcement** (warnings become hard denies).
 
 **Honest disclaimer:** ThumbGate does not update model weights. It intercepts tool calls at runtime. Local-first — no cloud required for the enforcement path.
 
@@ -106,6 +106,8 @@ Per-agent guides: [Claude/Codex bridge](plugins/claude-codex-bridge/README.md) �
 
 Both scopes write `mcpServers.thumbgate` plus PreToolUse / UserPromptSubmit / PostToolUse / SessionStart hooks. Machine-wide is the right default for most developers.
 
+**MCP tools (surface):** `gate_check` (read/evaluate proposed tool call), feedback capture + session tools (write), dashboard/stats (read). Destructive agent actions stay blocked/warned by PreToolUse — ThumbGate does not execute user shell commands for you.
+
 ---
 
 ## Slash commands
@@ -125,16 +127,18 @@ Both scopes write `mcpServers.thumbgate` plus PreToolUse / UserPromptSubmit / Po
 
 ## Pricing
 
+Free tier: **2 feedback captures/day (10 total)** and **up to 3 active auto-promoted prevention rules**. Pro ($19/mo or $149/yr) is the individual tier for unlimited rules, history-aware lessons, linked feedback session flow, personal dashboard, and DPO export. **Enterprise is custom and scoped after intake**; hosted team lesson sync and a hosted org dashboard are not general availability.
+
 | | Free | Pro ($19/mo or $149/yr) | Enterprise |
 |---|---|---|---|
 | Local CLI + PreToolUse | ✅ | ✅ | Scoped after intake |
-| Feedback captures | 2/day (10 total) | Unlimited | Scoped after intake |
-| Active auto-promoted rules | 3 | Unlimited | Scoped after intake |
+| Feedback captures | 2 feedback captures/day (10 total) | Unlimited | Scoped after intake |
+| Active auto-promoted rules | up to 3 active auto-promoted prevention rules | Unlimited | Scoped after intake |
 | Personal dashboard + DPO export | — | ✅ | Reviewed during intake |
 | Hosted team lesson sync | — | — | Not general availability |
 | Hosted org dashboard | — | — | Not general availability |
 
-[**Start free**](https://thumbgate.ai/?utm_source=github&utm_medium=readme) · [**Pro $19/mo**](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) · [**Team Sprint intake ($499)**](https://thumbgate.ai/?utm_source=github&utm_medium=readme#workflow-sprint-intake)
+[**Start free**](https://thumbgate.ai/?utm_source=github&utm_medium=readme) · [**Pro $19/mo**](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=pro) · [**Team Sprint intake ($499)**](https://thumbgate.ai/?utm_source=github&utm_medium=readme#workflow-sprint-intake)
 
 ---
 
@@ -231,14 +235,17 @@ Full index: **[docs/README.md](docs/README.md)**
 |------|------|
 | Verification evidence | [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md) |
 | First-dollar activation | [docs/FIRST_DOLLAR_PLAYBOOK.md](docs/FIRST_DOLLAR_PLAYBOOK.md) |
+| Security policy | [SECURITY.md](SECURITY.md) |
+| Threat model | [THREAT_MODEL.md](THREAT_MODEL.md) |
 | Federal / regulated | [docs/FEDERAL.md](docs/FEDERAL.md) |
 | Commercial truth | [docs/COMMERCIAL_TRUTH.md](docs/COMMERCIAL_TRUTH.md) |
+| Staging repo | [ThumbGate-Core](https://github.com/IgorGanapolsky/ThumbGate-Core) |
 | ChatGPT / GPT Action | [thumbgate.ai/chatgpt-app](https://thumbgate.ai/chatgpt-app) |
-| Codex Plugin | [Install Codex Plugin](plugins/codex-profile/INSTALL.md) · [Open the Codex plugin install page](https://thumbgate.ai/codex-plugin) · [zip](https://github.com/IgorGanapolsky/ThumbGate/releases/download/v1.35.0/thumbgate-codex-plugin.zip) |
 | Claude Desktop `.mcpb` | [latest release](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb) |
 | VS Code / JetBrains | [plugins/vscode-extension](plugins/vscode-extension/README.md) · [plugins/jetbrains-plugin](plugins/jetbrains-plugin/README.md) |
+| Issues / PRs | [GitHub Issues](https://github.com/IgorGanapolsky/ThumbGate/issues) · [PR template](.github/pull_request_template.md) |
 
-**FAQ & Compliance:** Not a fine-tuner (runtime intercept only). Different from `CLAUDE.md` / `.cursorrules` (those are context; ThumbGate adds an external allow/warn/deny before tools run). Detected secret leaks and direct process-kill/environment-override commands deny by default; other high-risk commands warn and log by default unless strict enforcement is enabled. Listed IDE marketplaces promote local bundles without claiming active remote store publication.
+**FAQ (one-liners):** Not a fine-tuner (runtime intercept only). Different from `CLAUDE.md` / `.cursorrules` (those are context; ThumbGate is an external allow/warn/deny before tools run).
 
 ---
 
@@ -248,4 +255,4 @@ Full index: **[docs/README.md](docs/README.md)**
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Project policy: [SECURITY.md](SECURITY.md) · [THREAT_MODEL.md](THREAT_MODEL.md).
