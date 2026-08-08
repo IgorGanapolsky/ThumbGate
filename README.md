@@ -242,7 +242,7 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 
 ## Docs
 
-Full index: **[docs/README.md](docs/README.md)**
+Full index: **[docs/INDEX.md](docs/INDEX.md)**
 
 | Need | Link |
 |------|------|
