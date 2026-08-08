@@ -1,5 +1,14 @@
 # ThumbGate RAG production architecture
 
+<p align="center">
+  <b>📍 Jump to Architecture Topic:</b><br/>
+  <a href="#framework-decision">Framework Decision Matrix</a> •
+  <a href="#one-complete-rag-request">One Complete RAG Request (Pipeline)</a> •
+  <a href="#evaluation-and-release-gates">Evaluation & Release Gates</a>
+</p>
+
+---
+
 ThumbGate keeps its enforcement path deterministic and local. Retrieval-augmented
 generation is a separate explanation and dashboard path: it may help an operator
 understand lessons and documents, but it does not get to override a hard gate.

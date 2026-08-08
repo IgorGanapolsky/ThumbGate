@@ -2,6 +2,17 @@
 
 Evidence date: 2026-07-26
 
+<p align="center">
+  <b>📍 Jump to System Verification Layer:</b><br/>
+  <a href="#1-rag-system">1. RAG System</a> •
+  <a href="#2-agent-with-tools">2. Agent with Tools</a> •
+  <a href="#3-multi-agent-workflow">3. Multi-Agent Workflow</a> •
+  <a href="#4-mcp-based-enterprise-integration">4. Enterprise MCP</a> •
+  <a href="#5-production-ai-evaluation-and-observability">5. Observability</a>
+</p>
+
+---
+
 This dossier answers the same six operational questions for every AI-system
 layer. It deliberately separates three different claims:
 
@@ -11,6 +22,10 @@ layer. It deliberately separates three different claims:
 - **Production verified** requires the merged commit, exact-main CI, and a
   successful authenticated production probe. A local or CI pass is not
   production proof.
+
+<p align="center">
+  <img src="docs/media/meme-prompt-vs-hook.svg" alt="Deterministic Verification vs Prompting Meme" width="800" />
+</p>
 
 ## Current verdict
 
@@ -23,6 +38,10 @@ layer. It deliberately separates three different claims:
 | Production AI evaluation and observability | Implemented locally and in CI with fail-closed evaluation | Hosted outcome monitoring remains unverified until the merged runtime and authenticated production endpoint are probed |
 
 ## 1. RAG system
+
+<details>
+<summary><b>🧠 Expand RAG System Architecture, Failures, Security & Verification Evidence</b></summary>
+<br/>
 
 ### Why this architecture?
 
@@ -104,7 +123,13 @@ npm run eval:rag
 Proof is a terminal zero exit plus the generated RAG evaluation report. File
 existence or a successful demo alone is insufficient.
 
+</details>
+
 ## 2. Agent with tools
+
+<details>
+<summary><b>🛠️ Expand Agent Tools Architecture, Security & Verification Proof</b></summary>
+<br/>
 
 ### Why this architecture?
 
@@ -175,7 +200,13 @@ The adapter proof must show initialization, tool listing, representative tool
 calls, auth rejection, policy differentiation, and OpenAPI parity with zero
 failing checks.
 
+</details>
+
 ## 3. Multi-agent workflow
+
+<details>
+<summary><b>🤖 Expand Multi-Agent Workflow Architecture, Failure Modes & Verification</b></summary>
+<br/>
 
 ### Why this architecture?
 
@@ -245,7 +276,13 @@ Proof requires a zero-failure orchestration report plus tests for duplicate
 handoffs, capability boundaries, partial failure, retry recovery, and
 evidence-gated completion.
 
+</details>
+
 ## 4. MCP-based enterprise integration
+
+<details>
+<summary><b>🔌 Expand Enterprise MCP Integration Architecture & OAuth Verification</b></summary>
+<br/>
 
 ### Why this architecture?
 
