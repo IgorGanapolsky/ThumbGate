@@ -246,6 +246,8 @@ Full index: **[docs/README.md](docs/README.md)**
 
 | Need | Link |
 |------|------|
+| Agent workflow contract | [WORKFLOW.md](WORKFLOW.md) |
+| Ready-for-agent intake | [.github/ISSUE_TEMPLATE/ready-for-agent.yml](.github/ISSUE_TEMPLATE/ready-for-agent.yml) |
 | Verification evidence | [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md) |
 | First-dollar activation | [docs/FIRST_DOLLAR_PLAYBOOK.md](docs/FIRST_DOLLAR_PLAYBOOK.md) |
 | Security policy | [SECURITY.md](SECURITY.md) |
