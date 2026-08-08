@@ -227,7 +227,20 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 
 ---
 
-## Docs & integrations
+## Integrations (compact)
+
+| Surface | Start here |
+|---------|------------|
+| **Open ThumbGate GPT** | [thumbgate.ai/go/gpt](https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=readme_gpt) — **ThumbGate GPT: start here.** Paste agent actions, get advice + checkpointing. **No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate** — the **hard enforcement layer still runs where the work happens**. |
+| **Install Codex Plugin** | Open the Codex plugin install page: [thumbgate.ai/codex-plugin](https://thumbgate.ai/codex-plugin) · zip: [thumbgate-codex-plugin.zip](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip) · [plugins/codex-profile/INSTALL.md](plugins/codex-profile/INSTALL.md) |
+| Claude Desktop `.mcpb` | [latest release](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb) |
+| **VS Code / Open VSX** | [plugins/vscode-extension/README.md](plugins/vscode-extension/README.md) |
+| **Antigravity-compatible** | [plugins/antigravity-extension/INSTALL.md](plugins/antigravity-extension/INSTALL.md) |
+| **JetBrains Marketplace** | [plugins/jetbrains-plugin/README.md](plugins/jetbrains-plugin/README.md) |
+| ChatGPT App / GPT Action | [thumbgate.ai/chatgpt-app](https://thumbgate.ai/chatgpt-app) |
+| ThumbGate-Core (staging) | [https://github.com/IgorGanapolsky/ThumbGate-Core](https://github.com/IgorGanapolsky/ThumbGate-Core) — pre-release staging + a few internal cache scripts; **not** the product moat |
+
+## Docs
 
 Full index: **[docs/README.md](docs/README.md)**
 
@@ -238,11 +251,7 @@ Full index: **[docs/README.md](docs/README.md)**
 | Security policy | [SECURITY.md](SECURITY.md) |
 | Threat model | [THREAT_MODEL.md](THREAT_MODEL.md) |
 | Federal / regulated | [docs/FEDERAL.md](docs/FEDERAL.md) |
-| Commercial truth | [docs/COMMERCIAL_TRUTH.md](docs/COMMERCIAL_TRUTH.md) |
-| Staging repo | [ThumbGate-Core](https://github.com/IgorGanapolsky/ThumbGate-Core) |
-| ChatGPT / GPT Action | [thumbgate.ai/chatgpt-app](https://thumbgate.ai/chatgpt-app) |
-| Claude Desktop `.mcpb` | [latest release](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb) |
-| VS Code / JetBrains | [plugins/vscode-extension](plugins/vscode-extension/README.md) · [plugins/jetbrains-plugin](plugins/jetbrains-plugin/README.md) |
+| Commercial Truth | [docs/COMMERCIAL_TRUTH.md](docs/COMMERCIAL_TRUTH.md) |
 | Issues / PRs | [GitHub Issues](https://github.com/IgorGanapolsky/ThumbGate/issues) · [PR template](.github/pull_request_template.md) |
 
 **FAQ (one-liners):** Not a fine-tuner (runtime intercept only). Different from `CLAUDE.md` / `.cursorrules` (those are context; ThumbGate is an external allow/warn/deny before tools run).
