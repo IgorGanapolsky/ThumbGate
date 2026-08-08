@@ -49,6 +49,17 @@ Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and 
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+<p align="center">
+  <b>📍 Jump to:</b>
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#install-for-your-agent">Install Scopes</a> •
+  <a href="#discoverable-slash-commands--the-guardrail-layer-for-spec-driven-agents">Slash Commands</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#cli-reference">CLI Reference</a> •
+  <a href="#pricing">Pricing</a> •
+  <a href="#docs">Docs & FAQ</a>
+</p>
+
 ---
 
 > *"A better dashboard doesn't make the agents more reliable. The hard part isn't visibility. It's trust."*
@@ -76,6 +87,10 @@ In that stack, ThumbGate is the pre-action gate between generated intent and exe
 
 Spec-driven agent frameworks like **GSD** (get-shit-done) and **GitHub Spec Kit** are great at *planning and generating* work — they expose dozens of discoverable `/gsd-*` / `/specify` commands in the agent command palette. ThumbGate is the **guardrail layer for spec-driven agents**: it sits *after* the plan, on the boundary between a generated tool call and its execution. It works **alongside GSD / Spec-Kit, not instead of them** — they decide *what* to build; configured ThumbGate policies evaluate the proposed actions used to build it.
 
+<details>
+<summary><b>⚡ Expand Slash Command Palette Reference</b></summary>
+<br/>
+
 `npx thumbgate init` installs these commands into your agent's palette (`.claude/commands/`, `.gemini/commands/`, `.antigravitycli/commands/`) so the enforcement layer is as browsable as the planning layer:
 
 | Command | What it does | Wraps (existing capability) |
@@ -90,6 +105,8 @@ Spec-driven agent frameworks like **GSD** (get-shit-done) and **GitHub Spec Kit*
 > **Open the dashboard anytime:** after `npx thumbgate init`, run **`npx thumbgate dashboard --open`** (works without a global install). Type **`/thumbgate-dashboard`** in Claude Code / Cursor, or **`/project:thumbgate-dashboard`** in Grok. After `npm i -g thumbgate`, the **`thumbgate-dashboard`** bin is also on your PATH.
 
 Each is a thin wrapper over an existing MCP tool or CLI command — **no new enforcement logic, just discoverability**.
+
+</details>
 
 ---
 
@@ -180,6 +197,10 @@ That command stores a concrete negative lesson and applies promotion rules. If t
 ```
 
 ---
+
+<details>
+<summary><b>🏗️ Expand Full 4-Layer Security Architecture & Zero-Latency Execution Spec</b></summary>
+<br/>
 
 ## Architecture
 
@@ -297,6 +318,8 @@ flowchart LR
 
 The enforcement decision is local: there is no cloud retrieval or model-inference hop on that path. Measure end-to-end latency in your own agent and machine configuration.
 
+</details>
+
 ### Managed model benchmark lane
 
 When a new managed model drops, do not swap ThumbGate over on vendor claims alone. Rank it against the actual ThumbGate workload first:
@@ -361,6 +384,10 @@ behind any harness does not change what is allowed.
 
 ThumbGate supports two install scopes. Pick once when you install — you can switch later by re-running with the other flag.
 
+<details>
+<summary><b>🔍 Expand Install Scope Comparison Matrix (Machine-wide vs Per-project)</b></summary>
+<br/>
+
 | Scope | Command | Settings file | Lesson DB + dashboard live in | When to use |
 |-------|---------|---------------|--------------------------------|-------------|
 | **Machine-wide** (default) | `npx thumbgate init` | `~/.claude/settings.json` | `~/.claude/memory/feedback/` | Solo operator — configured repos can use the same machine-local feedback store. Matching actions are evaluated according to the active policy; cross-repo blocking is not automatic without the relevant integration and rule. |
@@ -369,6 +396,8 @@ ThumbGate supports two install scopes. Pick once when you install — you can sw
 Both scopes write `mcpServers.thumbgate` + the PreToolUse / UserPromptSubmit / PostToolUse / SessionStart hooks; the only difference is *where*. Machine-wide is the right default for most developers. Switch to `--project` only when you have a reason to keep lessons from bleeding between repos.
 
 > Per-project lesson DBs live under each repo's `.claude/memory/feedback/` and **must stay gitignored** — they're a runtime store, not source. ThumbGate's bundled `.gitignore` template handles this.
+
+</details>
 
 ### Status bar proof
 
