@@ -258,18 +258,55 @@
     .fit-line { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
     .fit-line strong { color: var(--text); }
     .spec-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
-    .spec-chip {
+    .spec-chip, .spec-chip-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      border: 1px solid rgba(56, 215, 255, 0.28);
+      border: 1px solid rgba(56, 215, 255, 0.35);
       border-radius: 999px;
-      padding: 6px 11px;
+      padding: 6px 13px;
       color: #d7e6f3;
-      background: rgba(17, 23, 34, 0.72);
+      background: rgba(17, 23, 34, 0.85);
       font: 750 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .spec-chip strong { color: var(--cyan); font-weight: 850; }
+    .spec-chip:hover, .spec-chip-btn:hover {
+      border-color: var(--cyan);
+      background: rgba(56, 215, 255, 0.18);
+      color: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(56, 215, 255, 0.25);
+    }
+    .spec-chip strong, .spec-chip-btn strong { color: var(--cyan); font-weight: 850; }
+    .hero-visual-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+    .hero-hotspot {
+      position: absolute;
+      cursor: pointer;
+      border-radius: 18px;
+      transition: all 0.2s ease;
+    }
+    .hero-hotspot:hover {
+      outline: 2px solid var(--cyan);
+      background: rgba(56, 215, 255, 0.12);
+      box-shadow: 0 0 24px rgba(56, 215, 255, 0.35);
+    }
+    .hero-hotspot-up { top: 27%; left: 7%; width: 23%; height: 53%; }
+    .hero-hotspot-down { top: 27%; left: 34%; width: 23%; height: 53%; }
+    .hero-hotspot-gate { top: 25%; left: 68%; width: 26%; height: 58%; }
+    .interactive-code {
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .interactive-code:hover {
+      background: rgba(56, 215, 255, 0.22) !important;
+      border-color: var(--cyan) !important;
+      box-shadow: 0 0 12px rgba(56, 215, 255, 0.3);
+    }
     .proof-link { color: var(--cyan); font-weight: 750; text-decoration: none; }
     .proof-link:hover { text-decoration: underline; }
     .install-hint {
@@ -687,13 +724,18 @@
           <p class="hero-lede">Hard allow/deny at the <strong>tool-call boundary</strong>. Audit entry written at decision time. Every approval teaches the next gate.</p>
           <p class="fit-line"><strong>Dual path (buy + book):</strong> <strong>$499 Diagnostic</strong> maps one expensive failure on Claude Code, Cursor, Codex, or similar agents and installs a hard gate with proof — or self-serve <strong>Pro at $19/mo</strong> if you already know the loop. Free local evaluate stays free.</p>
           <div class="spec-chips" aria-label="What ThumbGate does">
-            <span class="spec-chip"><strong>Capture</strong> feedback</span>
-            <span class="spec-chip"><strong>Rank</strong> lessons</span>
-            <span class="spec-chip"><strong>Promote</strong> gates</span>
-            <span class="spec-chip"><strong>Block</strong> next action</span>
+            <button type="button" class="spec-chip-btn" data-hero-step="1" title="Interactive demo: Step 1 Capture feedback"><strong>Capture</strong> feedback 👍👎</button>
+            <button type="button" class="spec-chip-btn" data-hero-step="2" title="Interactive demo: Step 2 Rank lessons"><strong>Rank</strong> lessons 🧠</button>
+            <button type="button" class="spec-chip-btn" data-hero-step="3" title="Interactive demo: Step 3 Promote gates"><strong>Promote</strong> gates 📈</button>
+            <button type="button" class="spec-chip-btn" data-hero-step="4" title="Interactive demo: Step 4 Block next action"><strong>Block</strong> next action 🛡️</button>
           </div>
           <figure class="hero-visual">
-            <img src="/assets/diagrams/hero-thumbs.svg" width="640" height="360" alt="ThumbGate: thumbs up and thumbs down become a pre-action gate that can ALLOW, WARN, or DENY before the tool call runs" loading="eager" decoding="async">
+            <div class="hero-visual-wrapper">
+              <img src="/assets/diagrams/hero-thumbs.svg" width="640" height="360" alt="ThumbGate: thumbs up and thumbs down become a pre-action gate that can ALLOW, WARN, or DENY before the tool call runs" loading="eager" decoding="async">
+              <div class="hero-hotspot hero-hotspot-up" data-hero-step="1" title="Click to test 👍 Good Pattern capture" aria-label="👍 Good Pattern capture"></div>
+              <div class="hero-hotspot hero-hotspot-down" data-hero-step="2" title="Click to test 👎 Never Again capture" aria-label="👎 Never Again capture"></div>
+              <div class="hero-hotspot hero-hotspot-gate" data-hero-step="4" title="Click to test Pre-Action Gate (ALLOW / WARN / DENY)" aria-label="Pre-Action Gate"></div>
+            </div>
           </figure>
           <a class="proof-link" href="#proof">See a strict-mode deny example ↓</a>
           <a class="proof-link-secondary" href="#how-it-works" style="margin-left:14px;color:var(--cyan);font-weight:750;text-decoration:none">See how the self-improving loop works ↓</a>
@@ -1266,7 +1308,36 @@ next      decision recorded before execution</pre>
         if (stepParam && demos[stepParam]) {
           setOpen(stepParam);
         }
-      } catch (_) {}
+      // Interactive Hero Spec-Chips & Hero Diagram Hotspots
+      document.querySelectorAll('[data-hero-step]').forEach(function (el) {
+        el.addEventListener('click', function () {
+          const step = el.getAttribute('data-hero-step');
+          const howItWorks = document.getElementById('how-it-works');
+          if (howItWorks) {
+            howItWorks.scrollIntoView({ behavior: 'smooth' });
+          }
+          const tab = document.getElementById('loop-tab-' + step);
+          if (tab) {
+            setTimeout(function () { tab.click(); }, 300);
+          }
+        });
+      });
+
+      // Click-to-copy on code snippets
+      document.querySelectorAll('.install-hint code').forEach(function (codeEl) {
+        codeEl.classList.add('interactive-code');
+        codeEl.title = 'Click to copy command';
+        codeEl.addEventListener('click', function () {
+          const text = codeEl.textContent.trim();
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+              const orig = codeEl.textContent;
+              codeEl.textContent = 'Copied! 📋';
+              setTimeout(function () { codeEl.textContent = orig; }, 1400);
+            }).catch(function () {});
+          }
+        });
+      });
     })();
 
     if (!serverTelemetryCaptured) {
