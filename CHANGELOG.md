@@ -8,6 +8,10 @@
 
 ### Patch Changes
 
+- founders-oceans: Ship Oceans-inspired `/founders` cash-path landing (plus diagnostic
+  conversion blocks) for the $499 managed diagnostic. Public npm bundle ceiling
+  423 → 424 for `public/founders.html` only.
+
 - 1514284: Bound dashboard JSONL reads, CLI progress for operator commands, and pack the
   runtime helpers the published CLI/server actually need.
 

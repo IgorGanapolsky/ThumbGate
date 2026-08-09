@@ -281,6 +281,7 @@ const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const DIAGNOSTIC_PAGE_PATH = path.resolve(__dirname, '../../public/diagnostic.html');
+const FOUNDERS_PAGE_PATH = path.resolve(__dirname, '../../public/founders.html');
 const PARTNER_INTAKE_PAGE_PATH = path.resolve(__dirname, '../../public/partner-intake.html');
 const INSTALL_PAGE_PATH = path.resolve(__dirname, '../../public/install.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
@@ -3343,6 +3344,10 @@ function loadDiagnosticPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(DIAGNOSTIC_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadFoundersPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(FOUNDERS_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function loadPartnerIntakePageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PARTNER_INTAKE_PAGE_PATH, runtimeConfig, pageContext);
 }
@@ -3985,6 +3990,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/diagnostic', changefreq: 'weekly', priority: '0.9' },
+    { path: '/founders', changefreq: 'weekly', priority: '0.95' },
     { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
     { path: '/agent-manager', changefreq: 'weekly', priority: '0.9' },
@@ -6389,6 +6395,35 @@ async function addContext(){
         });
       } catch (err) {
         sendText(res, 500, err.message || 'Partner intake page unavailable');
+      }
+      return;
+    }
+
+    // Oceans-style founder conversion landing (high-ROI cash path).
+    // Mirrors personal operator pages (/peter): pain triad, timed process,
+    // comparison table, refund fence, sticky diagnostic checkout.
+    if (isGetLikeRequest && (
+      pathname === '/founders'
+      || pathname === '/founders.html'
+      || pathname === '/operators'
+      || pathname === '/operators.html'
+      || pathname === '/agent-operators'
+      || pathname === '/agent-operators.html'
+    )) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadFoundersPageHtml,
+          extraTelemetry: {
+            pageType: 'founders',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Founders page unavailable');
       }
       return;
     }

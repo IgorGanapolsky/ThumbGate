@@ -55,7 +55,8 @@ const LEGACY_THUMBGATE_PRICING_PATTERNS = [
   },
   {
     label: 'retired $49 founder lifetime pricing',
-    pattern: /(?:Founding Member|Founder|Founding Member Deal)[^\n]{0,100}\$49|\$49[^\n]{0,100}(?:Pro forever|Founding Member|Founder)/i,
+    // Use (?!\d) so legitimate $499 diagnostic copy is not a false positive.
+    pattern: /(?:Founding Member|Founder|Founding Member Deal)[^\n]{0,100}\$49(?!\d)|\$49(?!\d)[^\n]{0,100}(?:Pro forever|Founding Member|Founder)/i,
   },
   {
     label: 'retired founder-license positioning',

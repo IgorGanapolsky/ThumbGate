@@ -171,7 +171,8 @@ const path = require('node:path');
 // Bumped 421 -> 423 (2026-08-05): scripts/cli-progress.js + scripts/dashboard-limits.js
 // for hosted-dashboard string-limit resilience and CLI progress UX. Public shell
 // only; keep lockstep with package-boundary + public-core-boundary.
-const BASELINE_FILE_COUNT = 423;
+// Bumped 423 -> 424 (2026-08-09): public/founders.html Oceans-inspired $499 cash-path landing.
+const BASELINE_FILE_COUNT = 424;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
