@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="380" rx="16" fill="url(#bg2)"/>
+
+  <text x="450" y="42" font-family="-apple-system, sans-serif" font-size="20" font-weight="bold" fill="#f8fafc" text-anchor="middle">
+    Prompt Engineering vs. PreToolUse Infrastructure Firewall
+  </text>
+
+  <!-- Left: Prompt Engineering -->
+  <rect x="40" y="70" width="390" height="280" rx="12" fill="url(#cardGrad)" stroke="#64748b" stroke-width="1.5"/>
+  <text x="235" y="102" font-family="-apple-system, sans-serif" font-size="16" font-weight="bold" fill="#94a3b8" text-anchor="middle">
+    🤡 Hoping the Prompt Holds
+  </text>
+  
+  <rect x="60" y="120" width="350" height="70" rx="8" fill="#020617" stroke="#334155" stroke-width="1"/>
+  <text x="75" y="145" font-family="monospace" font-size="12" fill="#38bdf8">CLAUDE.md:</text>
+  <text x="75" y="170" font-family="monospace" font-size="12" fill="#cbd5e1">"Please remember to never delete tests."</text>
+
+  <rect x="60" y="205" width="350" height="120" rx="8" fill="#450a0a" stroke="#ef4444" stroke-width="1"/>
+  <text x="75" y="235" font-family="-apple-system, sans-serif" font-size="13" font-weight="bold" fill="#fca5a5">⚠️ Reality during context drift:</text>
+  <text x="75" y="260" font-family="-apple-system, sans-serif" font-size="12" fill="#cbd5e1">• Model forgets context after 50 turns</text>
+  <text x="75" y="285" font-family="-apple-system, sans-serif" font-size="12" fill="#cbd5e1">• Executes tool call anyway: rm -rf tests/</text>
+  <text x="75" y="310" font-family="-apple-system, sans-serif" font-size="12" font-weight="bold" fill="#f87171">❌ Probabilistic hope fails</text>
+
+  <!-- Right: ThumbGate -->
+  <rect x="470" y="70" width="390" height="280" rx="12" fill="url(#cardGrad)" stroke="#818cf8" stroke-width="1.5"/>
+  <text x="665" y="102" font-family="-apple-system, sans-serif" font-size="16" font-weight="bold" fill="#a5b4fc" text-anchor="middle">
+    ⚡ ThumbGate PreToolUse Gate
+  </text>
+
+  <rect x="490" y="120" width="350" height="70" rx="8" fill="#020617" stroke="#4338ca" stroke-width="1"/>
+  <text x="505" y="145" font-family="monospace" font-size="12" fill="#a855f7">ThumbGate Hook Engine:</text>
+  <text x="505" y="170" font-family="monospace" font-size="12" fill="#818cf8">Literal Pattern AST Match (0ms)</text>
+
+  <rect x="490" y="205" width="350" height="120" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1"/>
+  <text x="505" y="235" font-family="-apple-system, sans-serif" font-size="13" font-weight="bold" fill="#6ee7b7">🛡️ Guaranteed Enforcement:</text>
+  <text x="505" y="260" font-family="-apple-system, sans-serif" font-size="12" fill="#e2e8f0">• Intercepts BEFORE tool execution</text>
+  <text x="505" y="285" font-family="-apple-system, sans-serif" font-size="12" fill="#e2e8f0">• Ignores model context loss or hallucination</text>
+  <text x="505" y="310" font-family="-apple-system, sans-serif" font-size="12" font-weight="bold" fill="#34d399">✅ Deterministic Firewall Protection</text>
+</svg>

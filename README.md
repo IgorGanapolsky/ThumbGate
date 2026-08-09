@@ -1,51 +1,36 @@
-# ThumbGate 👍 👎
+# ThumbGate 👍👎
+
+[![MCP Toplist](https://mcptoplist.com/badge/glama%2FIgorGanapolsky%2FThumbGate.svg)](https://mcptoplist.com/server/glama%2FIgorGanapolsky%2FThumbGate)
+[![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 <p align="center">
   <a href="https://thumbgate.ai">
-    <img src="docs/media/thumbgate-hero-banner.svg" alt="ThumbGate Infrastructure Firewall with Thumbs Up and Thumbs Down" width="100%" />
+    <img src="public/assets/brand/thumbgate-icon-512.png" alt="ThumbGate Logo" width="128" height="128" />
   </a>
 </p>
 
-<p align="center">
-  <b>Self-improving pre-action firewall for AI coding agents</b><br>
-  AI coding agents repeat mistakes — and one wrong tool call can wipe a directory, leak a key, or push broken code.
-</p>
+### 🛡️ Self-Improving Firewall for Your AI Agents (Thumbs Up 👍 / Thumbs Down 👎)
 
-<p align="center">
-  <a href="https://mcptoplist.com/server/glama%2FIgorGanapolsky%2FThumbGate"><img src="https://mcptoplist.com/badge/glama%2FIgorGanapolsky%2FThumbGate.svg" alt="MCP Toplist" /></a>
-  <a href="https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml"><img src="https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="https://www.npmjs.com/package/thumbgate"><img src="https://img.shields.io/npm/v/thumbgate" alt="npm" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
-</p>
+AI coding agents repeat mistakes — and one rogue tool call can wipe a directory (`rm -rf`), leak a secret, or force-push broken code to production.
 
-<p align="center">
-  <a href="#quick-start"><img src="https://img.shields.io/badge/⚡_Quick_Start-npx_thumbgate_init-22d3ee?style=for-the-badge" alt="Quick Start" /></a>
-  <a href="https://thumbgate.ai/#demo?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/🎬_Watch-90s_Demo-ff647c?style=for-the-badge" alt="Watch Demo" /></a>
-  <a href="https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/💬_Try-ThumbGate_GPT-56e39f?style=for-the-badge" alt="Try GPT" /></a>
-  <a href="https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/💼_Pro-$19/mo-ffd166?style=for-the-badge" alt="Pro Tier" /></a>
-</p>
+ThumbGate is the local-first **Pre-Action Checks** firewall for AI coding agents. It runs in the `PreToolUse` hook on your machine to evaluate proposed tool calls **before** execution:
+- 🚫 **Hard-blocks detected secret leaks** and direct process-kill/environment-override self-disable commands by default.
+- ⚠️ **Warn and log by default** on high-risk classes like `rm -rf`, `git push --force`, fetch-and-run, and direct guardrail edits.
+- 🔒 Set `THUMBGATE_STRICT_ENFORCEMENT=1` to preserve deny decisions under strict enforcement mode.
+
+*Honest Disclaimer:* ThumbGate does not update model weights — it intercepts tool calls at runtime.
+
+Works seamlessly across **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode**. No cloud server is required on the local enforcement path.
 
 ---
 
-## What it does
+### 🎨 The AI Agent Reality Check (Memes & Visuals)
 
-ThumbGate is the local-first **Pre-Action Checks** engine for AI coding agents. It runs in the PreToolUse hook to evaluate the proposed tool call before execution — so costly mistakes can be caught before they happen.
-
-It **hard-blocks detected secret leaks and two direct self-disable command classes by default** — commands that terminate the ThumbGate gate process or enable its bypass environment override. Other high-risk classes (`rm -rf`, force-push, fetch-and-run, direct guardrail edits) **warn and log by default**. Set `THUMBGATE_STRICT_ENFORCEMENT=1` for strict enforcement (warnings become hard denies).
-
-| Verdict | Default behavior |
-|---------|------------------|
-| ⛔ **Hard-block** | Detected secret leaks; process-kill/environment-override self-disable |
-| 👎 **Warn + log** | `rm -rf`, `git push --force`, fetch-and-run, direct guardrail edits — **warn by default** |
-| 👍 **Allow** | Everything else |
-
-**Accepted feedback is stored as local lessons.** Repeated concrete failures can become prevention rules that promote from warnings to blocking gates. The firewall improves from operations without retraining the model. Prompt evaluation (`npx thumbgate eval`) turns accepted feedback into reusable eval cases and local proof reports.
-
-**Honest disclaimer:** ThumbGate does not update model weights. It intercepts tool calls at runtime. Local-first — no cloud required for the enforcement path.
-
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode**, and other MCP agents.
-
-[![AI Agent without ThumbGate vs Agent guarded by ThumbGate](public/assets/diagrams/thumbgate-agent-meme.jpg)](https://thumbgate.ai/#demo?utm_source=github&utm_medium=readme_meme)
+<p align="center">
+  <img src="public/assets/diagrams/thumbgate-agent-meme.jpg" alt="AI Agent without ThumbGate vs Agent guarded by ThumbGate" width="820" />
+</p>
 
 ```
   Agent tries:   rm -rf tests/
@@ -55,21 +40,51 @@ Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode**, and
                  Strict mode: ⛔ DENY before tool execution
 ```
 
-### Agentic development cycle fit
+<p align="center">
+  <img src="docs/media/thumbgate-demo.gif" alt="ThumbGate gating dangerous commands in real time" width="820" />
+</p>
 
-Agentic development is becoming a loop: **Guide → Generate → Verify → Solve**. ThumbGate is the pre-action gate / pre-action boundary between generated intent and executed action.
+```bash
+npx thumbgate init   # auto-detects your agent and installs PreToolUse hooks 👍
+```
+
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and MCP-compatible agents after their integration is configured. Free tier: 2 feedback captures/day (10 total) and up to 3 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) is the individual tier for unlimited rules, history-aware lessons, `open_feedback_session` feedback session flow, a personal dashboard, and DPO export. Enterprise is custom and scoped after intake; hosted team lesson sync and a hosted org dashboard are not in the current general-availability runtime.
+
+---
+
+## 📌 Table of Contents
+
+- ⚡ [Quick Start](#quick-start)
+- 💻 [Discoverable Slash-Commands](#discoverable-slash-commands-—-the-guardrail-layer-for-spec-driven-agents)
+- 🤖 [Install for Your Agent](#install-for-your-agent)
+- ⚙️ [Install Scope: Machine-wide vs Per-project](#install-scope-machine-wide-vs-per-project)
+- 🎬 [90-Second Demo](#-90-second-demo)
+- 💰 [First-dollar Activation & Ideal Customer](#first-dollar-activation-path)
+- 💼 [Pricing](#pricing)
+- 🔍 **Deep Dives (Collapsible Technical Sections)**
+  - 🧠 [<details><summary>The Context Brain (BRAIN.md)</summary></details>](#-the-context-brain)
+  - 🏗️ [<details><summary>Architecture & Zero-Latency Engine</summary></details>](#architecture)
+  - 📊 [<details><summary>Agent Reliability & Task Outcome Benchmark</summary></details>](#how-thumbgate-knows-an-ai-agent-is-working)
+  - 🏢 [<details><summary>Use Cases & Regulated Industries Roadmap</summary></details>](#use-cases)
+  - 🛡️ [<details><summary>Built-in Checks Reference</summary></details>](#built-in-checks)
+  - 🛠️ [<details><summary>CLI Reference & Break-Glass Recovery</summary></details>](#cli-reference)
+  - 📦 [<details><summary>Portable Lesson Bundles & DPO Fine-Tuning Export (Pro)</summary></details>](#portable-lesson-exportimport-pro)
+  - ⚡ [<details><summary>Tech Stack & Ecosystem Integrations</summary></details>](#tech-stack)
+  - ☁️ [<details><summary>Enterprise Data Chat & GCP Adapters</summary></details>](#enterprise-data-chat-and-optional-google-adapters)
+  - ❓ [<details><summary>FAQ & Documentation Index</summary></details>](#faq)
+- 👤 [Who Builds ThumbGate & Hiring](#who-builds-thumbgate-—-and-hiring-me)
+- 📄 [License](#license)
 
 ---
 
 ## Quick Start
 
 ```bash
-npx thumbgate init                                              # wire PreToolUse hooks
-npx thumbgate capture down "Never run DROP on production tables"  # 👎 lesson
-npx thumbgate doctor                                            # health check
+npx thumbgate init                                                         # initializes local state
+npx thumbgate capture down "Never run DROP on production tables"           # 👎 captured!
 ```
 
-Later `DROP` attempts in the same scope surface the check:
+That command stores a concrete negative lesson (`👎`). If the pattern becomes an active prevention rule, configured agents in the same scope will evaluate later `DROP` attempts:
 
 ```
 ⚠️ Check fired: "Never run DROP on production tables"
@@ -77,230 +92,308 @@ Later `DROP` attempts in the same scope surface the check:
    Verdict: 👎 WARN + LOG   (⛔ BLOCK when THUMBGATE_STRICT_ENFORCEMENT=1)
 ```
 
-### MCP / Glama / registry install (stdio)
+### MCP / Glama / Registry Install (stdio)
 
-Directories and clients that install ThumbGate as an MCP server must start **stdio MCP**, not the HTTP API:
+Directories and clients that install ThumbGate as an MCP server start **stdio MCP**:
 
 ```bash
 npx -y thumbgate serve
 ```
 
-- Equivalent: `npx -y thumbgate mcp`
-- Do **not** use `npm start` for MCP — that launches the hosted HTTP API (`src/api/server.js`), not the agent-facing stdio server.
-
-[**▶ 90-second demo**](https://thumbgate.ai/#demo?utm_source=github&utm_medium=readme&utm_campaign=demo_video) · [GIF walkthrough](docs/media/thumbgate-demo.gif)
-
----
-
-## Install for your agent
-
-| Agent | Command | Enforcement |
-|-------|---------|-------------|
-| **Claude Code** | `npx thumbgate init --agent claude-code` | 🛡️ Hard — PreToolUse |
-| **Codex** | `npx thumbgate init --agent codex` | 🛡️ Hard — `pre_tool_use` |
-| **Gemini CLI** | `npx thumbgate init --agent gemini` | 🛡️ Hard — PreToolUse |
-| **ForgeCode** | `npx thumbgate init --agent forge` | 🛡️ Hard — `pre_tool_use` |
-| **Cursor** | `npx thumbgate init --agent cursor` | 💬 Advisory — MCP `gate_check` |
-| **Cline** | `npx thumbgate init --agent cline` | 💬 Advisory — MCP + `.clinerules` |
-| **OpenCode** | `npx thumbgate init --agent opencode` | 💬 Advisory — MCP `gate_check` |
-| **Any MCP agent** | `npx thumbgate serve` | 💬 Advisory — MCP `gate_check` |
-| **Amp** | `npx thumbgate init --agent amp` | 📝 Feedback capture |
-
-Per-agent guides: [Claude/Codex bridge](plugins/claude-codex-bridge/README.md) · [Codex profile](plugins/codex-profile/README.md) · [Cursor](docs/CURSOR_PLUGIN_OPERATIONS.md) · [MCP setup](docs/MCP_AUTONOMOUS_SETUP.md)
-
-### Install scope: machine-wide vs per-project
-
-| Scope | Command | Settings | Lessons | Best for |
-|-------|---------|----------|---------|----------|
-| **Machine-wide** (default) | `npx thumbgate init` | `~/.claude/settings.json` | `~/.claude/memory/feedback/` | Solo operators — **same machine-local feedback store** across repos |
-| **Per-project** | `npx thumbgate init --project` | `<repo>/.claude/settings.json` | `<repo>/.claude/memory/feedback/` | Client / compliance — **separate dashboard** / isolated lessons per repo |
-
-Both scopes write `mcpServers.thumbgate` plus PreToolUse / UserPromptSubmit / PostToolUse / SessionStart hooks. Machine-wide is the right default for most developers. Cross-repo blocking is not automatic: a lesson learned in one project only applies elsewhere when you share the store (machine-wide) or export/import lessons.
-
-**MCP tools (surface):** `gate_check` (read/evaluate proposed tool call), feedback capture + session tools (write), dashboard/stats (read). Destructive agent actions stay blocked/warned by PreToolUse — ThumbGate does not execute user shell commands for you.
-
 ---
 
 ## Discoverable slash-commands — the guardrail layer for spec-driven agents
 
-Spec-driven agent frameworks like **GSD** (get-shit-done) and **GitHub Spec Kit** plan and generate work. ThumbGate is the **guardrail layer for spec-driven agents**: it sits *after* the plan, on the boundary between a generated tool call and its execution — **alongside GSD / Spec-Kit, not instead of them**.
+Spec-driven agent frameworks (GSD, Spec Kit) plan work. ThumbGate is the **guardrail layer**: it sits *after* the plan to gate proposed tool executions.
 
-`npx thumbgate init` installs these into your agent palette:
+`npx thumbgate init` installs these slash-commands into your agent's palette (`.claude/commands/`, `.gemini/commands/`, `.antigravitycli/commands/`):
 
-| Command | What it does |
-|---------|--------------|
-| `/thumbgate-dashboard` | Open local project dashboard |
-| `/thumbgate-guard` | Turn last mistake into a hard prevention rule |
-| `/thumbgate-rules` | List active rules & lessons |
-| `/thumbgate-blocked` | Gate stats + enforcement matrix |
-| `/thumbgate-protect` | Branch governance + scoped approval |
-| `/thumbgate-doctor` | Health-check hooks, MCP, readiness |
+| Command | What it does | Wraps (existing capability) |
+|---------|--------------|------------------------------|
+| **`/thumbgate-dashboard`** | **Open local project dashboard in browser** 👍 | `npx thumbgate dashboard --open` |
+| `/thumbgate-guard` | Turn last agent mistake into a hard prevention rule | `capture_feedback` + `thumbgate force-gate` |
+| `/thumbgate-rules` | List active prevention rules & lessons guarding this repo | `prevention_rules`, `search_lessons` |
+| `/thumbgate-blocked` | Show gate stats + enforcement matrix | `gate_stats`, `enforcement_matrix` |
+| `/thumbgate-protect` | Show branch governance; grant temporary approval | `get_branch_governance` |
+| `/thumbgate-doctor` | Health-check hooks, MCP, and readiness | `thumbgate doctor` |
 
 ---
 
-## Pricing & buyer paths
+## Install for Your Agent
 
-Free tier: **2 feedback captures/day (10 total)** and **up to 3 active auto-promoted prevention rules**. Pro ($19/mo or $149/yr) is the individual tier for unlimited rules, history-aware lessons, linked feedback session flow, personal dashboard, and DPO export. **Enterprise is custom and scoped after intake**; hosted team lesson sync and a hosted org dashboard are not general availability.
+| Agent | Command | Enforcement |
+|-------|---------|-------------|
+| **Claude Code** | `npx thumbgate init --agent claude-code` | 🛡️ Hard — PreToolUse hook |
+| **Codex** | `npx thumbgate init --agent codex` | 🛡️ Hard — `pre_tool_use` hook |
+| **Gemini CLI** | `npx thumbgate init --agent gemini` | 🛡️ Hard — PreToolUse hook |
+| **ForgeCode** | `npx thumbgate init --agent forge` | 🛡️ Hard — `pre_tool_use` trigger |
+| **Cursor** | `npx thumbgate init --agent cursor` | 💬 Advisory — MCP `gate_check` |
+| **Cline** | `npx thumbgate init --agent cline` | 💬 Advisory — MCP `gate_check` + `.clinerules` |
+| **OpenCode** | `npx thumbgate init --agent opencode` | 💬 Advisory — MCP `gate_check` |
+| **Any MCP agent** | `npx thumbgate serve` | 💬 Advisory — MCP `gate_check` |
+| **Amp** | `npx thumbgate init --agent amp` | 📝 Feedback capture only |
 
-| | Free | Pro ($19/mo or $149/yr) | Enterprise |
+---
+
+## Install Scope: Machine-wide vs Per-project
+
+ThumbGate supports two install scopes. Pick once when installing:
+
+### 1. Machine-wide (default) 👍
+- **Command:** `npx thumbgate init`
+- **Settings file:** `~/.claude/settings.json`
+- **Lesson DB:** `~/.claude/memory/feedback/`
+- **Best for:** Solo operators — configured repos share the machine-local feedback store.
+
+### 2. Per-project 📂
+- **Command:** `npx thumbgate init --project` (run in repo root)
+- **Settings file:** `<repo>/.claude/settings.json`
+- **Lesson DB:** `<repo>/.claude/memory/feedback/`
+- **Best for:** Client work, compliance, or multi-tenant setups — separate dashboard per repo.
+
+---
+
+## 🎬 90-second demo
+
+Watch the force-push scenario: an agent proposes `git push --force`, the rule flags it, and strict mode denies it.
+
+[**▶ Watch the 90-second demo**](https://thumbgate.ai/#demo?utm_source=github&utm_medium=readme&utm_campaign=demo_video) · [Script](docs/marketing/demo-video-script.md) · [Voiceover script](scripts/generate-demo-voiceover.js)
+
+---
+
+## First-dollar activation path
+
+1. **Show the pain:** open the **[ThumbGate GPT](https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=first_dollar_activation&cta_id=readme_first_dollar_open_gpt&cta_placement=readme_first_dollar)** and paste the bad answer or risky command before it runs again.
+2. **Capture the lesson:** type `thumbs down:` or `thumbs up:` with one concrete sentence. Native ChatGPT rating buttons are not the ThumbGate capture path; typed feedback is.
+3. **Enforce the repeat:** run `npx thumbgate init` so the lesson becomes a Pre-Action Check.
+4. **Upgrade only after proof:** Pro adds unlimited rules, personal dashboard, and DPO export.
+
+---
+
+## Pricing
+
+| Feature | Free | Pro ($19/mo or $149/yr) | Enterprise |
 |---|---|---|---|
-| Local CLI + PreToolUse | ✅ | ✅ | Scoped after intake |
-| Feedback captures | 2 feedback captures/day (10 total) | Unlimited | Scoped after intake |
-| Active auto-promoted rules | up to 3 active auto-promoted prevention rules | Unlimited | Scoped after intake |
-| Personal dashboard + DPO export | — | ✅ | Reviewed during intake |
+| Local CLI + PreToolUse checks | ✅ | ✅ | Existing public runtime |
+| Feedback captures | 2/day (10 total) | Unlimited | Scoped after intake |
+| Active auto-promoted prevention rules | 3 | Unlimited | Scoped after intake |
+| Configured agent integrations | ✅ | ✅ | Scoped after intake |
+| Personal dashboard | — | ✅ | Reviewed during intake |
+| DPO export (fine-tuning data) | — | ✅ | Reviewed during intake |
 | Hosted team lesson sync | — | — | Not general availability |
 | Hosted org dashboard | — | — | Not general availability |
 
-**Enterprise intake path:** the **Workflow Hardening Sprint** scopes one repeated failure before any broader rollout commitment. **[Start intake →](https://thumbgate.ai/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
+*Note:* Hosted team lesson sync is not general availability. The hosted org dashboard is not general availability. Pro pricing is $19/mo or $149/yr.
 
-**Local technical path:** install the CLI and use `init` plus the documented setup so Pre-Action Checks evaluate tool calls where the agent actually runs.
-
-**First-dollar activation path:** open the [ThumbGate GPT](https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme), paste the risky action, capture typed feedback (`thumbs down:` / `thumbs up:`). **Native ChatGPT rating buttons are not the ThumbGate capture path.** Ask: **what repeated AI mistake would be worth catching before the tool executes?**
-
-**Paid path for individual operators:** [ThumbGate Pro](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the self-serve side lane for a personal dashboard and export-ready evidence.
-
-[**Start free**](https://thumbgate.ai/?utm_source=github&utm_medium=readme) · [**Pro $19/mo**](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) · [**Live Dashboard**](https://thumbgate.ai/dashboard?utm_source=github&utm_medium=readme) · [**Team Sprint intake**](https://thumbgate.ai/?utm_source=github&utm_medium=readme#workflow-sprint-intake) · [**Workflow Hardening Sprint**](https://thumbgate.ai/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake) · [**First Dollar Playbook**](docs/FIRST_DOLLAR_PLAYBOOK.md)
-
-**Popular buyer questions:** **[AI search topical presence](https://thumbgate.ai/guides/ai-search-topical-presence?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Relational knowledge and AI recommendations](https://thumbgate.ai/guides/relational-knowledge-ai-recommendations?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[AI Mode ads for agent governance](https://thumbgate.ai/guides/ai-mode-ads-agent-governance?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[MCP tool governance](https://thumbgate.ai/guides/mcp-tool-governance?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[AI agent pre-action approval gates](https://thumbgate.ai/guides/ai-agent-pre-action-approval-gates?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Background agent governance](https://thumbgate.ai/guides/background-agent-governance?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[GPT-5.5 model evaluation](https://thumbgate.ai/guides/gpt-5-5-model-evaluation?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Stop repeated AI agent mistakes](https://thumbgate.ai/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Browser automation safety](https://thumbgate.ai/guides/browser-automation-safety?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Native messaging host security](https://thumbgate.ai/guides/native-messaging-host-security?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Autoresearch agent safety](https://thumbgate.ai/guides/autoresearch-agent-safety?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate.ai/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate.ai/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate.ai/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Google Cloud MCP guardrails](https://thumbgate.ai/guides/gcp-mcp-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Roo Code alternative: migrate to Cline](https://thumbgate.ai/guides/roo-code-alternative-cline?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
+**[Start free](https://thumbgate.ai/?utm_source=github&utm_medium=readme)** · **[See Pro](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme)** · **[Team Sprint intake](https://thumbgate.ai/?utm_source=github&utm_medium=readme#workflow-sprint-intake)**
 
 ---
 
-## How it works (short)
-
-1. **Capture** 👍/👎 feedback (CLI, MCP, linked feedback session flow / `open_feedback_session`, or [ThumbGate GPT](https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme))
-2. **Promote** concrete lessons via history-aware lesson distillation into prevention rules
-3. **Evaluate** the next proposed tool call against active rules (literal/AST + local vectors)
-4. **Allow / warn / deny** before the tool runs
-
-```bash
-npx thumbgate brain --write   # → .thumbgate/BRAIN.md (lessons + gates in one artifact)
-```
-
-Pro operators can invoke `search_lessons` through MCP and use `npx thumbgate lessons` from the CLI. History-aware feedback sessions and lesson search are Pro capabilities; Free does not include recall or search.
+## 🔍 Deep Dives & Technical Architecture
 
 <details>
-<summary><b>Architecture diagram & stack</b></summary>
+<summary><b>🧠 The Context Brain (BRAIN.md)</b></summary>
 
-[![ThumbGate Architecture](docs/diagrams/thumbgate_architecture.png)](https://thumbgate.ai/#how-it-works)
+### 🧠 The Context Brain
+
+ThumbGate gives your repo a **context brain**: a single, versioned, agent-readable artifact (`.thumbgate/BRAIN.md`) consolidating lessons, guardrails, history-aware lesson distillation, and enforced gates.
+
+```bash
+npx thumbgate brain --write     # → .thumbgate/BRAIN.md
+```
+
+```
+# ThumbGate Context Brain
+## What this codebase taught its agents (lessons)
+- 👎 Force-pushing to main was rejected — use --force-with-lease on feature branches only
+## Guardrails — do NOT repeat these (prevention rules)
+- ⛔ Never run DROP on production tables
+## Active enforcement (gates)
+- `DROP.*production` → warn + log (hard-block under strict enforcement)
+```
+</details>
+
+<details>
+<summary><b>🏗️ Architecture & Zero-Latency Enforcement Engine</b></summary>
+
+### Architecture
+
+ThumbGate operates as a 4-layer enforcement stack:
+
+![ThumbGate Architecture](docs/diagrams/thumbgate_architecture.png)
+
+- **Layer 1: Feedback Capture (👍 / 👎)** via MCP, CLI, or GPT Action. Use the linked feedback session flow to append detailed context.
+- **Layer 2: Deterministic Check Engine** (Literal / AST match, LanceDB embeddings, Thompson Sampling).
+- **Layer 3: Pre-Action Interception** (Evaluates proposed tool call before execution).
+- **Layer 4: Multi-Agent Distribution** (Cross-agent sharing across Claude Code, Codex, Gemini CLI, Cursor).
 
 ```mermaid
 flowchart LR
-    A["Agent tool call"] --> B{"Rule match?"}
-    B -- exact --> D["On-device gate"]
-    B -- semantic --> C["Local LanceDB"]
+    A["Agent about to run<br/>a tool call"] --> B{"Literal / AST match<br/>on active rule?"}
+    B -- "exact match" --> D["Deterministic gate decision<br/>(on-device, 0ms latency)"]
+    B -- "semantic match" --> C["Local LanceDB bge-small<br/>(no cloud API)"]
     C --> D
-    D -- secret/kill --> E["⛔ Hard-block"]
-    D -- known-bad --> G["👎 Warn + log"]
-    D -- safe --> F["👍 Allow"]
+    D -- "secret exfil / kill" --> E["⛔ Hard-block"]
+    D -- "known-bad" --> G["👎 Warn + log"]
+    D -- "safe" --> F["👍 Allow"]
 ```
-
 </details>
 
 <details>
-<summary><b>Built-in checks</b></summary>
+<summary><b>📊 How ThumbGate Knows an AI Agent Is Working</b></summary>
 
-```
-⛔ secret-exfiltration → hard-block (default)
-⛔ self-protect-kill   → hard-block (default)
-⛔ self-protect-env    → hard-block (default)
-⚠️ force-push          → warn; hard-block under strict
-⚠️ protected-branch    → warn; hard-block under strict
-⚠️ unresolved-threads  → warn; hard-block under strict
-⚠️ package-lock-reset  → warn; hard-block under strict
-```
+### How ThumbGate knows an AI agent is working
 
-</details>
+ThumbGate requires a task-level receipt (`record_task_outcome` MCP tool / `POST /v1/task-outcomes`). A receipt is marked `working: true` only when verification passes, evidence is present, and tool contracts hold.
 
-<details>
-<summary><b>CLI cheatsheet</b></summary>
+| Layer | Measured signals |
+|-------|------------------|
+| Task | verified completion, evidence-backed completion, recovery, rollback |
+| Tool | contract accuracy, execution success, duplicate side effects |
+| Safety | unsafe escapes, policy violations, false blocks |
 
 ```bash
-npx thumbgate init
-npx thumbgate doctor
-npx thumbgate capture up|down "<text>"
-npx thumbgate lessons
-npx thumbgate brain --write
-npx thumbgate dashboard --open
-npx thumbgate break-glass --reason="ThumbGate over-fired"   # 5-min recovery
+npm run eval:agent-outcomes       # 8 reviewed golden cases
+npm run monitor:agent-outcomes    # local production receipts
 ```
-
 </details>
 
 <details>
-<summary><b>Pro: lesson + DPO export</b></summary>
+<summary><b>🏢 Use Cases & Regulated Industries Roadmap</b></summary>
+
+### Use Cases
+
+- **Catch force-push to main** 👍 — Check flags `git push --force` on protected branches.
+- **Catch repeated migration failures** 👎 — Accepted feedback becomes searchable lessons.
+- **Flag unauthorized file edits** 🔒 — Path-based rules warn by default and deny under strict mode.
+
+#### Enterprise & Regulated Industries (roadmap)
+- **Legal AI intake governance** (ABA Rule 5.5 / 1.6 / 1.7 clearance).
+- **Financial compliance & Healthcare** (HIPAA routing & clinician review).
+</details>
+
+<details>
+<summary><b>🛡️ Built-in Checks Reference</b></summary>
+
+### Built-in Checks
+
+```
+⛔ secret-exfiltration → hard-blocks detected secret exposure (default)
+⛔ self-protect-kill   → blocks direct process termination (default)
+⛔ self-protect-env    → blocks direct ThumbGate env override (default)
+⚠️ force-push          → flags git push --force        (hard-block under strict)
+⚠️ protected-branch    → flags direct push to main      (hard-block under strict)
+⚠️ unresolved-threads  → flags push with open reviews   (hard-block under strict)
+⚠️ package-lock-reset  → flags destructive lock edits   (hard-block under strict)
+```
+</details>
+
+<details>
+<summary><b>🛠️ CLI Reference & Recovery</b></summary>
+
+### CLI Reference
 
 ```bash
-# Portable lessons
+npx thumbgate init                                              # detect agent, wire hooks
+npx thumbgate doctor                                            # health check
+npx thumbgate capture up|down "<text>"                         # capture signal (👍/👎)
+npx thumbgate lessons                                           # see stored lessons
+npx thumbgate brain --write                                     # build .thumbgate/BRAIN.md
+npx thumbgate dashboard --open                                  # open local browser dashboard
+npx thumbgate break-glass --reason="ThumbGate over-fired"       # 5-min operator recovery
+```
+</details>
+
+<details>
+<summary><b>📦 Portable Lesson Export & DPO Fine-Tuning (Pro)</b></summary>
+
+### Portable Lesson Export/Import (Pro)
+
+```bash
 curl -X POST http://localhost:3456/v1/lessons/export \
   -H "Authorization: Bearer $THUMBGATE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"outputPath": "./lessons-export.json"}'
+```
 
-# DPO pairs for fine-tuning
+### DPO Export for Fine-Tuning (Pro)
+
+```bash
 curl -X POST http://localhost:3456/v1/dpo/export \
   -H "Authorization: Bearer $THUMBGATE_API_KEY" \
   -o dpo-pairs.jsonl
 ```
+</details>
 
+<details>
+<summary><b>⚡ Tech Stack & Ecosystem Integrations</b></summary>
+
+### Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Storage** | SQLite + FTS5, LanceDB vectors, JSONL logs |
+| **Capture** | 2/day, 10 total on Free; unlimited on Pro/Enterprise |
+| **Intelligence** | MemAlign dual recall, Thompson Sampling |
+| **Interfaces** | MCP stdio, HTTP API, CLI (Node.js >=18) |
+
+### Integrations
+
+- **[ChatGPT App / GPT Action](https://thumbgate.ai/chatgpt-app)**
+- **[Open ThumbGate GPT](https://thumbgate.ai/go/gpt?utm_source=github)** — ThumbGate GPT: start here. Paste agent actions, get advice + checkpointing. No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate — the hard enforcement layer still runs where the work happens.
+- **[Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)**
+- **[Codex Plugin](https://thumbgate.ai/codex-plugin)**
+- **[VS Code Extension](plugins/vscode-extension/README.md)**
+- **[JetBrains Plugin](plugins/jetbrains-plugin/README.md)**
+- **[ThumbGate-Core Staging](https://github.com/IgorGanapolsky/ThumbGate-Core)** — staging repo for pre-release features & internal cache scripts.
+</details>
+
+<details>
+<summary><b>☁️ Enterprise Data Chat & GCP Adapters</b></summary>
+
+### Enterprise Data Chat & Google Adapters
+
+Set `THUMBGATE_LOCAL_LLM_ENDPOINT` to a local endpoint (Ollama, llama.cpp, vLLM) for private answers.
+
+```bash
+npx thumbgate setup-vertex
+```
+</details>
+
+<details>
+<summary><b>❓ FAQ & Key Docs Index</b></summary>
+
+### FAQ
+
+**Is ThumbGate a model fine-tuning tool?**
+No. ThumbGate does not update model weights. It captures feedback, stores lessons, and evaluates proposed tool calls before execution.
+
+**How is this different from CLAUDE.md or .cursorrules?**
+Those are instructions in model context. A ThumbGate hook adds an external allow/warn/deny decision before tool execution.
+
+### Key Documentation
+
+- [**ThumbGate for Federal Agencies**](docs/FEDERAL.md)
+- [First Dollar Playbook](docs/FIRST_DOLLAR_PLAYBOOK.md)
+- [Commercial Truth](docs/COMMERCIAL_TRUTH.md)
+- [Verification Evidence](docs/VERIFICATION_EVIDENCE.md)
+- [Agent Workflow Contract](WORKFLOW.md)
 </details>
 
 ---
 
-## Tech Stack
+## Who builds ThumbGate — and hiring me
 
-| Layer | Tech |
-|-------|------|
-| **Runtime** | Node.js ≥18 |
-| **Interfaces** | MCP stdio, HTTP API, CLI |
-| **Storage** | SQLite + FTS5, LanceDB vectors, JSONL logs |
-| **Intelligence** | MemAlign dual recall, Thompson Sampling, local embeddings |
-| **Billing / host** | Stripe, Railway |
-| **Execution** | Railway, Cloudflare Workers, Docker Sandboxes |
-| **Governance** | Workflow Sentinel, control plane, Docker Sandboxes |
+I'm **Igor Ganapolsky** — I designed and maintain ThumbGate. If you're shipping **payments, AI agents, or Android features** and want them built by someone careful with production code and money, I take a small number of **freelance / contract** engagements.
 
-Every Changeset is tied to the exact `main` merge commit and generates Verification Evidence for Release Confidence.
+- **Payments** — Stripe / Stripe Connect: destination charges, split payouts, 3DS/SCA, webhooks, reconciliation.
+- **Applied AI / agents** — tool-use guardrails, MCP servers, orchestration, evaluation loops.
+- **Android + backend** — native Android and backend APIs.
+
+**$120–150/hr, 1099 · remote, US timezones** → **[LinkedIn](https://www.linkedin.com/in/igor-ganapolsky-859317343/)** · **[thumbgate.ai](https://thumbgate.ai)**
 
 ---
-
-## Integrations (compact)
-
-| Surface | Start here |
-|---------|------------|
-| **Open ThumbGate GPT** | [thumbgate.ai/go/gpt](https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=readme_gpt) — **ThumbGate GPT: start here.** Paste agent actions, get advice + checkpointing. **No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate** — the **hard enforcement layer still runs where the work happens**. |
-| **Install Codex Plugin** | Open the Codex plugin install page: [thumbgate.ai/codex-plugin](https://thumbgate.ai/codex-plugin) · zip: [thumbgate-codex-plugin.zip](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip) · [plugins/codex-profile/INSTALL.md](plugins/codex-profile/INSTALL.md) |
-| Claude Desktop `.mcpb` | [latest release](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb) |
-| **VS Code / Open VSX** | [plugins/vscode-extension/README.md](plugins/vscode-extension/README.md) |
-| **Antigravity-compatible** | [plugins/antigravity-extension/INSTALL.md](plugins/antigravity-extension/INSTALL.md) |
-| **JetBrains** | [plugins/jetbrains-plugin/README.md](plugins/jetbrains-plugin/README.md) · JetBrains Marketplace path for the same runtime |
-| ChatGPT App / GPT Action | [thumbgate.ai/chatgpt-app](https://thumbgate.ai/chatgpt-app) |
-| ThumbGate-Core (staging) | [https://github.com/IgorGanapolsky/ThumbGate-Core](https://github.com/IgorGanapolsky/ThumbGate-Core) — pre-release staging + a few internal cache scripts; **not** the product moat |
-
-## Docs
-
-Full index: **[docs/INDEX.md](docs/INDEX.md)**
-
-| Need | Link |
-|------|------|
-| Agent workflow contract | [WORKFLOW.md](WORKFLOW.md) |
-| Ready-for-agent intake | [.github/ISSUE_TEMPLATE/ready-for-agent.yml](.github/ISSUE_TEMPLATE/ready-for-agent.yml) |
-| Verification Evidence | [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md) |
-| Release Confidence | [docs/RELEASE_CONFIDENCE.md](docs/RELEASE_CONFIDENCE.md) |
-| Changeset strategy | [docs/CHANGESET_STRATEGY.md](docs/CHANGESET_STRATEGY.md) |
-| First Dollar Playbook | [docs/FIRST_DOLLAR_PLAYBOOK.md](docs/FIRST_DOLLAR_PLAYBOOK.md) |
-| Security policy | [SECURITY.md](SECURITY.md) |
-| Threat model | [THREAT_MODEL.md](THREAT_MODEL.md) |
-| Federal / regulated | [docs/FEDERAL.md](docs/FEDERAL.md) |
-| Commercial Truth | [docs/COMMERCIAL_TRUTH.md](docs/COMMERCIAL_TRUTH.md) |
-| Issues / PRs | [GitHub Issues](https://github.com/IgorGanapolsky/ThumbGate/issues) · [PR template](.github/pull_request_template.md) |
-
-**FAQ (one-liners):** Not a fine-tuner (runtime intercept only). Different from `CLAUDE.md` / `.cursorrules` (those are context; ThumbGate is an external allow/warn/deny before tools run).
-
----
-
-## Who builds this
-
-**Igor Ganapolsky** — payments (Stripe/Connect), AI agent guardrails/MCP, Android + backends. Small number of contract slots: **$120–150/hr, 1099, remote US**. [LinkedIn](https://www.linkedin.com/in/igor-ganapolsky-859317343/) · [thumbgate.ai](https://thumbgate.ai)
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Project policy: [SECURITY.md](SECURITY.md) · [THREAT_MODEL.md](THREAT_MODEL.md).
+MIT. See [LICENSE](LICENSE).
