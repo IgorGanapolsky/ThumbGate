@@ -9,7 +9,7 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 
-const VAULT_DIR = path.join(os.homedir(), 'Documents', 'Obsidian Vault');
+const VAULT_DIR = process.env.OBSIDIAN_VAULT_PATH || path.join(os.homedir(), 'Documents', 'Obsidian Vault');
 const AGENT_STATE_DIR = path.join(VAULT_DIR, 'Agent-State');
 const CLAIMS_DIR = path.join(VAULT_DIR, 'linear-claims');
 
@@ -37,8 +37,7 @@ async function queryLinear(token, query) {
 async function main() {
   console.log('[Obsidian-Linear Sync] Initializing sync...');
   if (!fs.existsSync(VAULT_DIR)) {
-    console.error(`[Obsidian-Linear Sync] Vault directory not found at ${VAULT_DIR}`);
-    process.exit(1);
+    fs.mkdirSync(VAULT_DIR, { recursive: true });
   }
 
   fs.mkdirSync(AGENT_STATE_DIR, { recursive: true });
