@@ -106,18 +106,20 @@ npx -y thumbgate serve
 | **Any MCP agent** | `npx thumbgate serve` | 💬 Advisory — MCP `gate_check` |
 | **Amp** | `npx thumbgate init --agent amp` | 📝 Feedback capture |
 
-Per-agent guides: [Claude/Codex bridge](plugins/claude-codex-bridge/README.md) · [Codex profile](plugins/codex-profile/README.md) · [Cursor](docs/CURSOR_PLUGIN_OPERATIONS.md) · [MCP setup](docs/MCP_AUTONOMOUS_SETUP.md)
-
 ### Install scope: machine-wide vs per-project
 
-| Scope | Command | Settings | Lessons | Best for |
-|-------|---------|----------|---------|----------|
-| **Machine-wide** (default) | `npx thumbgate init` | `~/.claude/settings.json` | `~/.claude/memory/feedback/` | Solo operators — **same machine-local feedback store** across repos |
-| **Per-project** | `npx thumbgate init --project` | `<repo>/.claude/settings.json` | `<repo>/.claude/memory/feedback/` | Client / compliance — **separate dashboard** / isolated lessons per repo |
+ThumbGate supports two install scopes. Pick once when you install — you can switch later by re-running with the other flag.
 
-Both scopes write `mcpServers.thumbgate` plus PreToolUse / UserPromptSubmit / PostToolUse / SessionStart hooks. Machine-wide is the right default for most developers. Cross-repo blocking is not automatic: a lesson learned in one project only applies elsewhere when you share the store (machine-wide) or export/import lessons.
+| Scope | Command | Settings file | Lesson DB + dashboard live in | When to use |
+|-------|---------|---------------|--------------------------------|-------------|
+| **Machine-wide** (default) | `npx thumbgate init` | `~/.claude/settings.json` | `~/.claude/memory/feedback/` | Solo operator — configured repos can use the same machine-local feedback store. Matching actions are evaluated according to the active policy; cross-repo blocking is not automatic without the relevant integration and rule. |
+| **Per-project** | `npx thumbgate init --project` (in the repo root) | `<repo>/.claude/settings.json` | `<repo>/.claude/memory/feedback/` | Client work, compliance, or multi-tenant — **separate dashboard per repo**, lessons stay isolated, audit trail belongs to the repo. |
 
-**MCP tools (surface):** `gate_check` (read/evaluate proposed tool call), feedback capture + session tools (write), dashboard/stats (read). Destructive agent actions stay blocked/warned by PreToolUse — ThumbGate does not execute user shell commands for you.
+Both scopes write `mcpServers.thumbgate` + the PreToolUse / UserPromptSubmit / PostToolUse / SessionStart hooks; the only difference is *where*. Machine-wide is the right default for most developers. Switch to `--project` only when you have a reason to keep lessons from bleeding between repos.
+
+> Per-project lesson DBs live under each repo's `.claude/memory/feedback/` and **must stay gitignored** — they're a runtime store, not source. ThumbGate's bundled `.gitignore` template handles this.
+
+Per-agent guides: [Claude/Codex bridge](plugins/claude-codex-bridge/README.md) · [Codex profile](plugins/codex-profile/README.md) · [Cursor](docs/CURSOR_PLUGIN_OPERATIONS.md) · [MCP setup](docs/MCP_AUTONOMOUS_SETUP.md)
 
 ---
 
