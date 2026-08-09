@@ -16,8 +16,9 @@ This skill enforces autonomous, self-directed operation across all coding tasks,
 - **Proactive Remediation**: If a test or CI check fails, immediately fetch the raw error logs, apply targeted fixes, and verify locally before reporting.
 
 ### 2. Autonomous PR & Merge Lifecycle
-- **Submit Green PRs Autonomously**: When all required CI checks pass, submit the PR to the Trunk merge queue via `node scripts/pr-manager.js <PR_NUM>` without asking the user to trigger it.
-- **Continuous Monitoring**: Silently monitor queued PRs (`/trunk merge`) and local background tasks until terminal completion.
+- **Submit Green PRs Autonomously**: When all required CI checks pass, submit the PR to the Trunk merge queue via `node scripts/pr-manager.js <PR_NUM>` (or `/trunk merge`) without asking the user to trigger it.
+- **Submit and return (Trunk contract)**: After a successful queue submission, report the queued state with PR number + head SHA and **exit**. Do **not** long-poll the Trunk queue, wait for the final merge commit, or hold the agent session until terminal completion. Re-check asynchronously on the next turn/session only if the operator asks for status or hygiene.
+- **Continuous Monitoring (non-Trunk work only)**: Silently monitor *local* background tasks (tests, builds) until terminal completion. Trunk merge queue completion is asynchronous and out-of-band.
 
 ### 3. Strict Non-Overclaim Verification
 - **Evidence Required**: Never claim a PR is merged or production is updated without verifying `mergedAt` timestamp, merge commit SHA, and `GET /health` build SHA.
