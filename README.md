@@ -8,7 +8,7 @@
 
 <p align="center">
   <b>Self-improving pre-action firewall for AI coding agents</b><br>
-  Intercept risky tool calls (<code>rm -rf</code>, <code>git push --force</code>, secret leaks) <em>before</em> they run.
+  AI coding agents repeat mistakes — and one wrong tool call can wipe a directory, leak a key, or push broken code.
 </p>
 
 <p align="center">
@@ -29,7 +29,9 @@
 
 ## What it does
 
-ThumbGate sits in your agent's **PreToolUse** path and evaluates proposed tool calls **before execution**:
+ThumbGate is the local-first **Pre-Action Checks** engine for AI coding agents. It runs in the PreToolUse hook to evaluate the proposed tool call before execution — so costly mistakes can be caught before they happen.
+
+It **hard-blocks detected secret leaks and two direct self-disable command classes by default** — commands that terminate the ThumbGate gate process or enable its bypass environment override. Other high-risk classes (`rm -rf`, force-push, fetch-and-run, direct guardrail edits) **warn and log by default**. Set `THUMBGATE_STRICT_ENFORCEMENT=1` for strict enforcement (warnings become hard denies).
 
 | Verdict | Default behavior |
 |---------|------------------|
@@ -37,7 +39,7 @@ ThumbGate sits in your agent's **PreToolUse** path and evaluates proposed tool c
 | 👎 **Warn + log** | `rm -rf`, `git push --force`, fetch-and-run, direct guardrail edits — **warn by default** |
 | 👍 **Allow** | Everything else |
 
-Set `THUMBGATE_STRICT_ENFORCEMENT=1` for **strict enforcement** (warnings become hard denies).
+**Accepted feedback is stored as local lessons.** Repeated concrete failures can become prevention rules that promote from warnings to blocking gates. The firewall improves from operations without retraining the model. Prompt evaluation (`npx thumbgate eval`) turns accepted feedback into reusable eval cases and local proof reports.
 
 **Honest disclaimer:** ThumbGate does not update model weights. It intercepts tool calls at runtime. Local-first — no cloud required for the enforcement path.
 
@@ -52,6 +54,10 @@ Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode**, and
                  Source: your thumbs-down from last Tuesday
                  Strict mode: ⛔ DENY before tool execution
 ```
+
+### Agentic development cycle fit
+
+Agentic development is becoming a loop: **Guide → Generate → Verify → Solve**. ThumbGate is the pre-action gate / pre-action boundary between generated intent and executed action.
 
 ---
 
@@ -125,7 +131,7 @@ Both scopes write `mcpServers.thumbgate` plus PreToolUse / UserPromptSubmit / Po
 
 ---
 
-## Pricing
+## Pricing & buyer paths
 
 Free tier: **2 feedback captures/day (10 total)** and **up to 3 active auto-promoted prevention rules**. Pro ($19/mo or $149/yr) is the individual tier for unlimited rules, history-aware lessons, linked feedback session flow, personal dashboard, and DPO export. **Enterprise is custom and scoped after intake**; hosted team lesson sync and a hosted org dashboard are not general availability.
 
@@ -138,7 +144,17 @@ Free tier: **2 feedback captures/day (10 total)** and **up to 3 active auto-prom
 | Hosted team lesson sync | — | — | Not general availability |
 | Hosted org dashboard | — | — | Not general availability |
 
-[**Start free**](https://thumbgate.ai/?utm_source=github&utm_medium=readme) · [**Pro $19/mo**](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=pro) · [**Team Sprint intake ($499)**](https://thumbgate.ai/?utm_source=github&utm_medium=readme#workflow-sprint-intake)
+**Enterprise intake path:** the **Workflow Hardening Sprint** scopes one repeated failure before any broader rollout commitment. **[Start intake →](https://thumbgate.ai/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
+
+**Local technical path:** install the CLI and use `init` plus the documented setup so Pre-Action Checks evaluate tool calls where the agent actually runs.
+
+**First-dollar activation path:** open the [ThumbGate GPT](https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme), paste the risky action, capture typed feedback (`thumbs down:` / `thumbs up:`). **Native ChatGPT rating buttons are not the ThumbGate capture path.** Ask: **what repeated AI mistake would be worth catching before the tool executes?**
+
+**Paid path for individual operators:** [ThumbGate Pro](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the self-serve side lane for a personal dashboard and export-ready evidence.
+
+[**Start free**](https://thumbgate.ai/?utm_source=github&utm_medium=readme) · [**Pro $19/mo**](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) · [**Live Dashboard**](https://thumbgate.ai/dashboard?utm_source=github&utm_medium=readme) · [**Team Sprint intake**](https://thumbgate.ai/?utm_source=github&utm_medium=readme#workflow-sprint-intake) · [**Workflow Hardening Sprint**](https://thumbgate.ai/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake) · [**First Dollar Playbook**](docs/FIRST_DOLLAR_PLAYBOOK.md)
+
+**Popular buyer questions:** **[AI search topical presence](https://thumbgate.ai/guides/ai-search-topical-presence?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Relational knowledge and AI recommendations](https://thumbgate.ai/guides/relational-knowledge-ai-recommendations?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[AI Mode ads for agent governance](https://thumbgate.ai/guides/ai-mode-ads-agent-governance?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[MCP tool governance](https://thumbgate.ai/guides/mcp-tool-governance?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[AI agent pre-action approval gates](https://thumbgate.ai/guides/ai-agent-pre-action-approval-gates?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Background agent governance](https://thumbgate.ai/guides/background-agent-governance?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[GPT-5.5 model evaluation](https://thumbgate.ai/guides/gpt-5-5-model-evaluation?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Stop repeated AI agent mistakes](https://thumbgate.ai/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Browser automation safety](https://thumbgate.ai/guides/browser-automation-safety?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Native messaging host security](https://thumbgate.ai/guides/native-messaging-host-security?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Autoresearch agent safety](https://thumbgate.ai/guides/autoresearch-agent-safety?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate.ai/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate.ai/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate.ai/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Google Cloud MCP guardrails](https://thumbgate.ai/guides/gcp-mcp-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Roo Code alternative: migrate to Cline](https://thumbgate.ai/guides/roo-code-alternative-cline?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
 
 ---
 
@@ -152,6 +168,8 @@ Free tier: **2 feedback captures/day (10 total)** and **up to 3 active auto-prom
 ```bash
 npx thumbgate brain --write   # → .thumbgate/BRAIN.md (lessons + gates in one artifact)
 ```
+
+Pro operators can invoke `search_lessons` through MCP and use `npx thumbgate lessons` from the CLI. History-aware feedback sessions and lesson search are Pro capabilities; Free does not include recall or search.
 
 <details>
 <summary><b>Architecture diagram & stack</b></summary>
@@ -168,12 +186,6 @@ flowchart LR
     D -- known-bad --> G["👎 Warn + log"]
     D -- safe --> F["👍 Allow"]
 ```
-
-| Layer | Tech |
-|-------|------|
-| Storage | SQLite + FTS5, LanceDB, JSONL |
-| Intelligence | MemAlign dual recall, Thompson Sampling, local embeddings |
-| Interfaces | MCP stdio, HTTP API, CLI (Node.js ≥18) |
 
 </details>
 
@@ -227,6 +239,22 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 
 ---
 
+## Tech Stack
+
+| Layer | Tech |
+|-------|------|
+| **Runtime** | Node.js ≥18 |
+| **Interfaces** | MCP stdio, HTTP API, CLI |
+| **Storage** | SQLite + FTS5, LanceDB vectors, JSONL logs |
+| **Intelligence** | MemAlign dual recall, Thompson Sampling, local embeddings |
+| **Billing / host** | Stripe, Railway |
+| **Execution** | Railway, Cloudflare Workers, Docker Sandboxes |
+| **Governance** | Workflow Sentinel, control plane, Docker Sandboxes |
+
+Every Changeset is tied to the exact `main` merge commit and generates Verification Evidence for Release Confidence.
+
+---
+
 ## Integrations (compact)
 
 | Surface | Start here |
@@ -236,18 +264,22 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 | Claude Desktop `.mcpb` | [latest release](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb) |
 | **VS Code / Open VSX** | [plugins/vscode-extension/README.md](plugins/vscode-extension/README.md) |
 | **Antigravity-compatible** | [plugins/antigravity-extension/INSTALL.md](plugins/antigravity-extension/INSTALL.md) |
-| **JetBrains Marketplace** | [plugins/jetbrains-plugin/README.md](plugins/jetbrains-plugin/README.md) |
+| **JetBrains** | [plugins/jetbrains-plugin/README.md](plugins/jetbrains-plugin/README.md) · JetBrains Marketplace path for the same runtime |
 | ChatGPT App / GPT Action | [thumbgate.ai/chatgpt-app](https://thumbgate.ai/chatgpt-app) |
 | ThumbGate-Core (staging) | [https://github.com/IgorGanapolsky/ThumbGate-Core](https://github.com/IgorGanapolsky/ThumbGate-Core) — pre-release staging + a few internal cache scripts; **not** the product moat |
 
 ## Docs
 
-Full index: **[docs/README.md](docs/README.md)**
+Full index: **[docs/INDEX.md](docs/INDEX.md)**
 
 | Need | Link |
 |------|------|
-| Verification evidence | [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md) |
-| First-dollar activation | [docs/FIRST_DOLLAR_PLAYBOOK.md](docs/FIRST_DOLLAR_PLAYBOOK.md) |
+| Agent workflow contract | [WORKFLOW.md](WORKFLOW.md) |
+| Ready-for-agent intake | [.github/ISSUE_TEMPLATE/ready-for-agent.yml](.github/ISSUE_TEMPLATE/ready-for-agent.yml) |
+| Verification Evidence | [docs/VERIFICATION_EVIDENCE.md](docs/VERIFICATION_EVIDENCE.md) |
+| Release Confidence | [docs/RELEASE_CONFIDENCE.md](docs/RELEASE_CONFIDENCE.md) |
+| Changeset strategy | [docs/CHANGESET_STRATEGY.md](docs/CHANGESET_STRATEGY.md) |
+| First Dollar Playbook | [docs/FIRST_DOLLAR_PLAYBOOK.md](docs/FIRST_DOLLAR_PLAYBOOK.md) |
 | Security policy | [SECURITY.md](SECURITY.md) |
 | Threat model | [THREAT_MODEL.md](THREAT_MODEL.md) |
 | Federal / regulated | [docs/FEDERAL.md](docs/FEDERAL.md) |
