@@ -342,10 +342,16 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 - **[ChatGPT App / GPT Action](https://thumbgate.ai/chatgpt-app)**
 - **[Open ThumbGate GPT](https://thumbgate.ai/go/gpt?utm_source=github)** — ThumbGate GPT: start here. Paste agent actions, get advice + checkpointing. No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate — the hard enforcement layer still runs where the work happens.
 - **[Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)**
-- **[Codex Plugin](https://thumbgate.ai/codex-plugin)**
-- **[VS Code Extension](plugins/vscode-extension/README.md)**
-- **[JetBrains Plugin](plugins/jetbrains-plugin/README.md)**
 - **[ThumbGate-Core Staging](https://github.com/IgorGanapolsky/ThumbGate-Core)** — staging repo for pre-release features & internal cache scripts.
+
+### Install paths (first-class)
+
+| Path | Link |
+|------|------|
+| **Install Codex Plugin** | Open the Codex plugin install page: [thumbgate.ai/codex-plugin](https://thumbgate.ai/codex-plugin) · zip: [thumbgate-codex-plugin.zip](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip) · [plugins/codex-profile/INSTALL.md](plugins/codex-profile/INSTALL.md) |
+| **VS Code / Open VSX** | [plugins/vscode-extension/README.md](plugins/vscode-extension/README.md) |
+| **Antigravity-compatible** | [plugins/antigravity-extension/INSTALL.md](plugins/antigravity-extension/INSTALL.md) |
+| **JetBrains** | [plugins/jetbrains-plugin/README.md](plugins/jetbrains-plugin/README.md) · JetBrains Marketplace path for the same runtime |
 </details>
 
 <details>
