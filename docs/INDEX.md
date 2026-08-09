@@ -46,7 +46,6 @@ This index is for deeper reference. Prefer linking here from PRs and support rep
 | [FEDERAL.md](FEDERAL.md) | Federal agencies |
 | [FINANCIAL_CONTROLS.md](FINANCIAL_CONTROLS.md) | Financial control gates |
 | [enterprise/](enterprise/) | Enterprise materials |
-| [marketing/demo-video-script.md](marketing/demo-video-script.md) | Demo script |
 | [context-engineering/](context-engineering/) | Context engineering notes |
 
 ## Media used by the root README
