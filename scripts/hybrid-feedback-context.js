@@ -203,13 +203,49 @@ function getTimestampMs(value) {
  * Extract meaningful keywords from text.
  * min 4 chars, no stopwords, max 8 tokens.
  */
+// Hook payloads are JSON envelopes. When a malformed one leaks into the feedback
+// store, its FIELD NAMES become "keywords" — and field names appear in every
+// payload, so the resulting pattern matches every action ever taken. One corrupt
+// entry becomes a universal block.
+//
+// Observed 2026-08-06: a truncated payload fragment
+//   { , , ,"workspaceroot":"/users/<redacted>/workspace/git/igor/thumbgate/", , , ,"pe"
+// was admitted as a recurring negative pattern with count 6. "workspaceroot" is
+// long enough that isSpecificKeyword() treats it as decisive on its own, so a
+// SINGLE hit hard-denied every Bash call in the repository — including the
+// commands needed to diagnose it. It blocked 20 times and warned zero times.
+//
+// These tokens describe the transport, never the mistake, so they can never be
+// evidence of a recurring failure.
+const ENVELOPE_TOKENS = new Set([
+  'workspaceroot', 'toolname', 'toolinput', 'tooloutput', 'toolresponse', 'tooluseid',
+  'sessionid', 'transcriptpath', 'hookeventname', 'permissionmode', 'promptid',
+  'cwd', 'timestamp', 'metadata', 'payload', 'stdout', 'stderr',
+  'users', 'workspace', 'thumbgate', 'igor',
+]);
+
 function keywords(text) {
   if (!text) return [];
   const tokens = normalize(text)
     .replace(/[^a-z0-9\s_-]/g, ' ')
     .split(/\s+/)
-    .filter((t) => t.length >= 4 && !STOPWORDS.has(t));
+    .filter((t) => t.length >= 4 && !STOPWORDS.has(t) && !ENVELOPE_TOKENS.has(t));
   return [...new Set(tokens)].slice(0, 8);
+}
+
+/**
+ * True when text is a serialized payload fragment rather than a description of
+ * a mistake. Real lessons are prose; fragments are punctuation and field names.
+ * Admitting one as a pattern is how a transport artifact becomes a gate.
+ */
+function looksLikeSerializedFragment(text) {
+  const raw = String(text || '');
+  if (!raw.trim()) return false;
+  // Runs of empty JSON slots (", , ,") only occur when a serializer dropped keys.
+  if (/(?:,\s*){3,}/.test(raw)) return true;
+  const wordChars = (raw.match(/[a-z]/gi) || []).length;
+  const structural = (raw.match(/["{}[\]:,]/g) || []).length;
+  return wordChars > 0 && structural >= wordChars / 2;
 }
 
 /**
@@ -346,6 +382,8 @@ function buildHybridState(opts) {
     ].join(' ');
     const norm = normalizePatternText(rawText);
     if (!norm) continue;
+    // A serialized payload fragment is a transport artifact, not a lesson.
+    if (looksLikeSerializedFragment(rawText) || looksLikeSerializedFragment(norm)) continue;
     const words = keywords(norm);
     if (words.length < 2) continue;
     const patKey = words.slice(0, 4).join('_');
@@ -861,6 +899,7 @@ module.exports = {
   inferToolName,
   classify,
   keywords,
+  looksLikeSerializedFragment,
   hashText,
   hasTwoKeywordHits,
   buildMatchHaystack,
