@@ -182,10 +182,72 @@ section {
 }
 .box h3 { margin: 0 0 8px; }
 .box p { margin: 0; color: var(--muted); }
+.pain-grid, .steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.pain, .step {
+  min-height: 140px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+.pain h3, .step h3 { margin: 0 0 8px; font-size: 17px; }
+.pain p, .step p { margin: 0; color: var(--muted); font-size: 14px; }
+.step-num { color: var(--cyan); font-weight: 900; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+table.compare {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+  font-size: 14px;
+}
+table.compare th, table.compare td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+table.compare th { background: #0b1114; color: var(--cyan); }
+table.compare td:last-child { color: var(--green); font-weight: 800; }
+.faq-item { border-bottom: 1px solid var(--line); }
+.faq-q {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  padding: 16px 0;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.faq-a { display: none; padding: 0 0 16px; color: var(--muted); }
+.faq-item.open .faq-a { display: block; }
+.cta-band {
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.cta-band p { margin: 0; color: var(--muted); }
 footer { padding: 32px 0 44px; color: var(--muted); }
 @media (max-width: 860px) {
   header { align-items: flex-start; flex-direction: column; }
-  .hero, .grid, .proof-strip { grid-template-columns: 1fr; }
+  .hero, .grid, .proof-strip, .pain-grid, .steps { grid-template-columns: 1fr; }
   h1 { font-size: 42px; }
 }
 </style>
@@ -210,7 +272,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
 }
 </script>
 </head>
-<body>
+<body id="top">
 <header>
   <a class="brand" href="/">
     <img class="mark" src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" width="28" height="28" />
@@ -218,6 +280,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
   </a>
   <nav aria-label="Primary">
     <a href="/">Home</a>
+    <a href="/founders">Founders</a>
     <a href="/pricing">Pricing</a>
     <a href="/llm-context.md">LLM Context</a>
   </nav>
@@ -277,6 +340,45 @@ footer { padding: 32px 0 44px; color: var(--muted); }
       <p class="hint" data-diagnostic-payment-hint>Ready to pay now? Use the $499 managed-gate checkout above. If the workflow is not a supported fit, we refund the order instead of opening a larger consulting scope.</p>
     </form>
   </div>
+  <section data-oceans-pain>
+    <h2>You didn't hire AI agents to manage calendars of incidents.</h2>
+    <p class="lede" style="font-size:17px;">High-converting operator landings name the babysitting tax first. Same play here — then sell the gate, not a vague platform story.</p>
+    <div class="pain-grid">
+      <div class="pain">
+        <h3>Drowning in operational agent tasks</h3>
+        <p>Repeat failures eat strategic time: bad diffs, wrong sends, unsafe deploys, spend without proof.</p>
+      </div>
+      <div class="pain">
+        <h3>Tried prompts before — quality drifts</h3>
+        <p>Rules in markdown get skipped when the agent looks competent. You need a check before the tool runs.</p>
+      </div>
+      <div class="pain">
+        <h3>US hires and GRC suites are slow capital</h3>
+        <p>Months of process for a dashboard. The $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ offer hardens one concrete workflow in two business days after access.</p>
+      </div>
+    </div>
+  </section>
+  <section data-oceans-process>
+    <h2>From first call to a proved gate</h2>
+    <p class="lede" style="font-size:17px;">We'll tell you if ThumbGate is the wrong fit. If you already paid and it is not a supported gate, we refund.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01 · Discovery</div>
+        <h3>Fit check (15–60 min)</h3>
+        <p>Map the repeated failure to a PreToolUse boundary. Submit the form above if you want fit before checkout.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02 · Install</div>
+        <h3>Configure ALLOW / WARN / DENY</h3>
+        <p>One local gate on the agreed workflow — not a multi-system rewrite.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03 · Proof</div>
+        <h3>Two business days after access</h3>
+        <p>Regression test plus rollout and rollback evidence for the next similar action.</p>
+      </div>
+    </div>
+  </section>
   <section>
     <h2>Exactly what the $499 Enterprise Workflow Gate includes</h2>
     <p class="lede" style="font-size:17px;">One workflow, one 60-minute working review, one configured local gate and regression test, plus rollout and rollback proof within two business days after access and the agreed workflow materials are available.</p>
@@ -333,10 +435,88 @@ footer { padding: 32px 0 44px; color: var(--muted); }
       </div>
     </div>
   </section>
+  <section data-oceans-compare>
+    <h2>How ThumbGate stacks up</h2>
+    <p class="lede" style="font-size:17px;">Simple comparison, no surprises — the pattern that converts on operator landings.</p>
+    <div class="table-wrap">
+      <table class="compare">
+        <thead>
+          <tr>
+            <th></th>
+            <th>DIY prompts</th>
+            <th>US full-time platform hire</th>
+            <th>Typical VA / freelance ops</th>
+            <th>ThumbGate diagnostic</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Starting cost</td>
+            <td>Model + review time</td>
+            <td>$5,500–7,000+/mo loaded</td>
+            <td>$2,500–5,000/mo</td>
+            <td>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ once</td>
+          </tr>
+          <tr>
+            <td>Time to first hard boundary</td>
+            <td>Manual upkeep</td>
+            <td>2–4 months</td>
+            <td>1–5 weeks (varies)</td>
+            <td>2 business days after access</td>
+          </tr>
+          <tr>
+            <td>If the match is wrong</td>
+            <td>You keep thrashing</td>
+            <td>Costly to replace</td>
+            <td>Restart search</td>
+            <td>Refund if not a supported fit</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <section data-oceans-faq>
+    <h2>Questions before you book checkout</h2>
+    <div class="faq">
+      <div class="faq-item">
+        <button class="faq-q" type="button" aria-expanded="false">How fast can I get started?</button>
+        <div class="faq-a">Checkout or fit form today. Managed delivery is two business days after access and agreed workflow materials. Free evaluate: <code>npx thumbgate init</code>.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" type="button" aria-expanded="false">What if the workflow is not the right fit?</button>
+        <div class="faq-a">We refund the $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ order instead of expanding into open consulting. Bad matches stay rare because the fence is one supported local gate.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" type="button" aria-expanded="false">Is this a long-term contract?</button>
+        <div class="faq-a">No. Diagnostic is one-time. Pro is $19/mo optional. Multi-workflow enterprise scope is separate after proof.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" type="button" aria-expanded="false">How is this different from Upwork or hiring ops talent?</button>
+        <div class="faq-a">Those add humans. ThumbGate hardens the agents you already run with a pre-action gate, regression test, and written proof. Humans stay for exceptions.</div>
+      </div>
+    </div>
+    <div class="cta-band">
+      <p><strong>Ready to get your time back?</strong> One workflow. One gate. Proof for the team.</p>
+      <div class="actions">
+        <a class="button primary" href="#top" data-revenue-cta data-cta-id="diagnostic_bottom_buy" data-cta-placement="bottom_band">Buy $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ gate</a>
+        <a class="button" href="/founders?utm_source=diagnostic&amp;utm_medium=bottom_band&amp;utm_campaign=oceans_inspired_conversion" data-revenue-cta data-cta-id="diagnostic_bottom_founders" data-cta-placement="bottom_band">Founders landing</a>
+      </div>
+    </div>
+  </section>
 </main>
 <footer>
-  ThumbGate is local-first agent governance. <a href="/pricing">Buy the managed workflow gate</a> or submit one workflow above for a fit check.
+  ThumbGate is local-first agent governance. <a href="/pricing">Buy the managed workflow gate</a>, see the <a href="/founders">founders conversion page</a>, or submit one workflow above for a fit check.
 </footer>
+<script>
+'use strict';
+document.querySelectorAll('.faq-q').forEach((button) => {
+  button.addEventListener('click', () => {
+    const item = button.closest('.faq-item');
+    const open = item.classList.toggle('open');
+    button.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+});
+</script>
 <script>
 (function () {
   const search = new URLSearchParams(window.location.search);
