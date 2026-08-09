@@ -337,6 +337,7 @@
     "public/lessons.html",
     "public/numbers.html",
     "public/assets/diagrams/",
+    "!public/assets/diagrams/thumbgate-agent-meme.jpg",
     "public/whitepaper.html",
     "public/evaluations.html",
     "public/eval-scorecard.html",
