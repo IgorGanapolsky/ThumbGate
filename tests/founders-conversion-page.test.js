@@ -42,6 +42,11 @@ test('founders page is an Oceans-style cash-path landing with intent checkout', 
   assert.match(foundersHtml, /table class="compare"/);
   assert.match(foundersHtml, /we refund|Refund if not a supported fit/i);
   assert.match(foundersHtml, /no affiliation with Oceans Talent/i);
+  assert.match(foundersHtml, /"@type": "FAQPage"/);
+  assert.match(foundersHtml, /"@type": "SoftwareApplication"/);
+  assert.match(foundersHtml, /isAiventyxTraffic/);
+  assert.match(foundersHtml, /founders_cta_click/);
+  assert.match(foundersHtml, /\/v1\/telemetry\/ping/);
   assert.doesNotMatch(foundersHtml, /buy\.stripe\.com/);
 });
 

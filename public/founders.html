@@ -230,18 +230,74 @@ footer {
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "Service",
-  "name": "ThumbGate Managed Workflow Diagnostic",
-  "description": "Managed implementation that turns one repeated AI-agent failure into a configured pre-action gate with regression and rollout proof.",
-  "provider": { "@type": "Organization", "name": "ThumbGate", "url": "__APP_ORIGIN__/" },
-  "offers": {
-    "@type": "Offer",
-    "name": "Managed workflow diagnostic",
-    "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
-    "priceCurrency": "USD",
-    "url": "__APP_ORIGIN__/founders",
-    "availability": "https://schema.org/InStock"
-  }
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "ThumbGate",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Cross-platform",
+      "url": "__APP_ORIGIN__/",
+      "offers": {
+        "@type": "Offer",
+        "name": "Managed workflow diagnostic",
+        "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
+        "priceCurrency": "USD",
+        "url": "__APP_ORIGIN__/founders",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "@type": "Service",
+      "name": "ThumbGate Managed Workflow Diagnostic",
+      "description": "Managed implementation that turns one repeated AI-agent failure into a configured pre-action gate with regression and rollout proof.",
+      "provider": { "@type": "Organization", "name": "ThumbGate", "url": "__APP_ORIGIN__/" },
+      "offers": {
+        "@type": "Offer",
+        "name": "Managed workflow diagnostic",
+        "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
+        "priceCurrency": "USD",
+        "url": "__APP_ORIGIN__/founders",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How fast can I get started?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Buy or submit fit check today. Managed delivery is two business days after access and the agreed workflow materials are available. Free local evaluate is minutes via npx thumbgate init."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What if the workflow is not a fit?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "If the repeated failure cannot be reduced to one supported ThumbGate gate, the managed diagnostic order is refunded. We do not silently expand into open consulting."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is this a long-term contract?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. The diagnostic is one-time. Pro is monthly and cancels anytime. Multi-workflow or enterprise scope is separate after proof."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How is this different from Upwork or hiring an ops person?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Marketplaces give you a human. ThumbGate hardens the agents already in your stack with a pre-action gate, regression proof, and a written fence. Humans stay for exceptions; the repeat failure does not."
+          }
+        }
+      ]
+    }
+  ]
 }
 </script>
 </head>
@@ -293,7 +349,7 @@ footer {
         <li>60-minute working review included</li>
         <li>If it is not a supported fit, we refund</li>
       </ul>
-      <p class="fine">No Stripe session until you submit. Secure checkout. Fit boundary is explicit.</p>
+      <p class="fine" data-founders-payment-hint>No Stripe session until you submit. Secure checkout. Fit boundary is explicit.</p>
       <a class="btn block" style="margin-top:12px;" href="/diagnostic#intake" data-revenue-cta data-cta-id="founders_hero_fit" data-cta-placement="hero">Check workflow fit first</a>
     </aside>
   </div>
@@ -468,6 +524,68 @@ document.querySelectorAll('.faq-q').forEach((button) => {
     button.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
 });
+
+(function () {
+  const search = new URLSearchParams(window.location.search);
+  const paidForm = document.querySelector('[data-founders-pay-form]');
+  const inboundSource = search.get('utm_source') || search.get('source');
+  const isAiventyxTraffic = String(inboundSource || '').trim().toLowerCase() === 'aiventyx';
+  if (paidForm && isAiventyxTraffic) {
+    paidForm.remove();
+    const paymentHint = document.querySelector('[data-founders-payment-hint]');
+    if (paymentHint) {
+      paymentHint.textContent = 'The Aiventyx payment path is paused while seller fees and downstream obligations remain unverified. Use Check workflow fit first without entering a marketplace payment or revenue-share commitment.';
+    }
+  } else if (paidForm) {
+    const passthrough = /^(utm_(source|medium|campaign|content|term)|source|acquisition_id|visitor_id|session_id|visitor_session_id|install_id|trace_id|creator|community|post_id|comment_id|campaign_variant|offer_code|referrer_host)$/i;
+    for (const [key, value] of search.entries()) {
+      if (!passthrough.test(key) || !value.trim()) continue;
+      let input = paidForm.querySelector(`input[name="${CSS.escape(key)}"]`);
+      if (!input) {
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        paidForm.appendChild(input);
+      }
+      input.value = value.trim();
+    }
+    if (inboundSource && inboundSource.trim()) {
+      const sourceInput = paidForm.querySelector('input[name="utm_source"]');
+      if (sourceInput) sourceInput.value = inboundSource.trim();
+    }
+  }
+
+  function telemetry(eventName, props) {
+    try {
+      navigator.sendBeacon && navigator.sendBeacon('/v1/telemetry/ping', JSON.stringify({
+        event: eventName,
+        page: '/founders',
+        source: 'founders_page',
+        props
+      }));
+    } catch (_) {}
+  }
+
+  document.addEventListener('click', function (event) {
+    const cta = event.target.closest('[data-revenue-cta], [data-offer-link]');
+    if (!cta) return;
+    telemetry('founders_cta_click', {
+      ctaId: cta.getAttribute('data-cta-id') || '',
+      ctaPlacement: cta.getAttribute('data-cta-placement') || '',
+      planId: cta.getAttribute('data-plan-id') || 'sprint_diagnostic'
+    });
+  });
+
+  if (paidForm) {
+    paidForm.addEventListener('submit', function () {
+      telemetry('founders_checkout_submit', {
+        ctaId: 'founders_hero_paid',
+        ctaPlacement: 'hero',
+        planId: 'sprint_diagnostic'
+      });
+    });
+  }
+})();
 </script>
 </body>
 </html>
