@@ -369,6 +369,11 @@ npx thumbgate setup-vertex
 <details>
 <summary><b>❓ FAQ & Key Docs Index</b></summary>
 
+### Agent-run contracts
+
+- **Workflow contract**: [WORKFLOW.md](WORKFLOW.md)
+- **Ready-for-agent intake**: [.github/ISSUE_TEMPLATE/ready-for-agent.yml](.github/ISSUE_TEMPLATE/ready-for-agent.yml)
+
 ### FAQ
 
 **Is ThumbGate a model fine-tuning tool?**
