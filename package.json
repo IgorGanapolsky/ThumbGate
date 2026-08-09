@@ -1001,7 +1001,7 @@
     "@google/genai": "2.13.0",
     "@lancedb/lancedb": "^0.30.0",
     "apache-arrow": "^18.1.0",
-    "better-sqlite3": "^12.9.0",
+    "better-sqlite3": "^13.0.2",
     "dotenv": "^17.4.2",
     "js-yaml": "5.2.2",
     "playwright-core": "^1.59.1",
