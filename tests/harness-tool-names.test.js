@@ -46,24 +46,48 @@ function gateCheck(toolName, toolInput, env = {}) {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     let out = '';
-    const timer = setTimeout(() => { child.kill(); reject(new Error('timeout')); }, 60000);
-    child.stdout.on('data', (c) => { out += c; });
-    child.on('error', reject);
-    child.on('close', () => {
+    let settled = false;
+    const finish = (fn) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
-      fs.rmSync(home, { recursive: true, force: true });
-      for (const line of out.split('\n')) {
+      try { child.kill(); } catch { /* already exited */ }
+      try { fs.rmSync(home, { recursive: true, force: true }); } catch { /* best effort */ }
+      fn();
+    };
+    const timer = setTimeout(() => finish(() => reject(new Error('timeout'))), 60000);
+    // Drain stderr so license/model noise cannot block the MCP child on a full pipe.
+    child.stderr.on('data', () => {});
+    child.stdout.on('data', (c) => {
+      out += c;
+      for (const line of String(c).split('\n')) {
         if (!line.trim().startsWith('{')) continue;
         let m; try { m = JSON.parse(line); } catch { continue; }
-        if (m.id === 9) return resolve(JSON.parse(m.result.content[0].text));
+        if (m.id === 9 && m.result && m.result.content && m.result.content[0]) {
+          // Keep stdin open until the tools/call reply arrives; early EOF races
+          // server shutdown and drops gate_check responses under CI load.
+          try { child.stdin.end(); } catch { /* ignore */ }
+          return finish(() => resolve(JSON.parse(m.result.content[0].text)));
+        }
       }
-      reject(new Error('no gate_check response'));
+    });
+    child.on('error', (err) => finish(() => reject(err)));
+    child.on('close', () => {
+      finish(() => {
+        for (const line of out.split('\n')) {
+          if (!line.trim().startsWith('{')) continue;
+          let m; try { m = JSON.parse(line); } catch { continue; }
+          if (m.id === 9 && m.result && m.result.content && m.result.content[0]) {
+            return resolve(JSON.parse(m.result.content[0].text));
+          }
+        }
+        reject(new Error('no gate_check response'));
+      });
     });
     const send = (o) => child.stdin.write(`${JSON.stringify(o)}\n`);
     send({ jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 't', version: '1' } } });
     send({ jsonrpc: '2.0', method: 'notifications/initialized' });
     send({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name: 'gate_check', arguments: { tool_name: toolName, tool_input: toolInput } } });
-    child.stdin.end();
   });
 }
 
