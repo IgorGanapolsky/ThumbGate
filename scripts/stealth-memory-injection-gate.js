@@ -248,9 +248,6 @@ function evaluateStealthMemoryInjection(toolName, toolInput = {}) {
   } else if (hasDurable && hasExternal && hasPoisonLanguage) {
     shouldBlock = true;
     reasonCode = 'durable_carrier_external_poison';
-  } else if (hasDurable && hasExternal && hasStealth) {
-    shouldBlock = true;
-    reasonCode = 'durable_carrier_external_stealth';
   } else if (episodicTargets.length > 0 && hasStealth && hasExternal) {
     shouldBlock = true;
     reasonCode = 'episodic_stealth_external';
@@ -315,9 +312,8 @@ function main() {
   process.exit(result && result.decision === 'deny' ? 2 : 0);
 }
 
-if (require.main === module || (
-  process.argv[1] && require('node:path').resolve(process.argv[1]) === require('node:path').resolve(__filename)
-)) {
+if (process.argv[1]
+  && require('node:path').resolve(process.argv[1]) === require('node:path').resolve(__filename)) {
   main();
 }
 
