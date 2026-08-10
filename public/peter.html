@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="ThumbGate">
+  <meta name="author" content="Igor Ganapolsky">
+  <meta name="thumbgate-version" content="1.35.0">
+  <title>Peter Yang Runs Autonomous AI Agents on ThumbGate | Partner Edition</title>
+  <meta name="description" content="Peter Yang trusts ThumbGate for pre-action agent governance. <50ms local PreToolUse firewall gates, automated lesson promotion, and process exfiltration interdiction.">
+  <meta property="og:title" content="Peter Yang Runs Autonomous AI Agents on ThumbGate">
+  <meta property="og:description" content="<50ms local PreToolUse firewall gates, automated feedback-to-enforcement promotion, and process exfiltration interdiction.">
+  <meta property="og:image" content="https://thumbgate.ai/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png">
+  <link rel="canonical" href="__APP_ORIGIN__/peter">
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How fast can I get started with ThumbGate?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Under 30 seconds. Run `npx thumbgate init` in your terminal. It hooks into Claude Code, Cursor, Codex, Gemini, or Amp locally with zero cloud API keys needed."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is ThumbGate different from cloud LLM guardrails?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Cloud guardrails add 500ms+ network latency and charge per token. ThumbGate runs locally at <50ms pattern-match latency, interception occurs before tool execution, and thumbs-down feedback auto-promotes into hard prevention rules."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What does the $499 Enterprise Diagnostic include?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "One hard, test-backed safety gate for a supported AI-agent workflow in two business days, including failure mapping, regression suite, and rollout proof."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does ThumbGate block secret exfiltration and process-kill attempts?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Secret exfiltration commands and process-kill/environment-override bypass attempts are denied by default at the PreToolUse boundary."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #070a0c;
+      --navy: #03456d;
+      --cyan: #2fd2e6;
+      --orange: #ff7229;
+      --orange-hover: #e5621f;
+      --panel: #10161a;
+      --line: #2a3941;
+      --text: #edf7f8;
+      --muted: #a7b5ba;
+      --green: #2ecc71;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px 24px;
+    }
+    .brand-pill {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      padding: 8px 16px;
+      border-radius: 100px;
+    }
+    .brand-pill img { width: 24px; height: 24px; }
+    .brand-pill .partner-tag { color: var(--cyan); font-weight: 700; font-size: 14px; }
+    .hero {
+      max-width: 900px;
+      margin: 60px auto 40px;
+      text-align: center;
+      padding: 0 24px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(47, 210, 230, 0.1);
+      color: var(--cyan);
+      border: 1px solid rgba(47, 210, 230, 0.3);
+      padding: 6px 16px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: 52px;
+      line-height: 1.1;
+      margin: 0 0 20px;
+      font-weight: 800;
+    }
+    h1 span { color: var(--cyan); }
+    .subtitle {
+      font-size: 20px;
+      color: var(--muted);
+      max-width: 720px;
+      margin: 0 auto 36px;
+    }
+    /* Pill lead capture form stolen from Oceans Talent */
+    .pill-lead-form {
+      display: flex;
+      max-width: 520px;
+      margin: 0 auto 48px;
+      background: #ffffff;
+      padding: 6px;
+      border-radius: 100px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .pill-lead-form input {
+      flex: 1;
+      border: none;
+      outline: none;
+      padding: 14px 24px;
+      font-size: 16px;
+      color: #111;
+      border-radius: 100px;
+    }
+    .pill-lead-form button {
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 100px;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .pill-lead-form button:hover { background: var(--orange-hover); }
+
+    /* Comparison Matrix */
+    .section-compare {
+      max-width: 1000px;
+      margin: 80px auto;
+      padding: 0 24px;
+    }
+    .section-compare h2 { text-align: center; font-size: 36px; margin-bottom: 40px; }
+    .compare-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .compare-table th, .compare-table td {
+      padding: 18px 24px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+    .compare-table th { background: #172228; color: #fff; font-size: 16px; }
+    .compare-table td.highlight { background: rgba(47, 210, 230, 0.08); color: var(--cyan); font-weight: 700; }
+
+    /* Testimonial Quote Box */
+    .quote-box {
+      max-width: 800px;
+      margin: 60px auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--cyan);
+      padding: 32px;
+      border-radius: 12px;
+    }
+    .quote-text { font-size: 20px; font-style: italic; color: #fff; margin-bottom: 16px; }
+    .quote-author { display: flex; align-items: center; gap: 12px; font-weight: 700; color: var(--muted); }
+
+    /* Footer CTA */
+    .cta-banner {
+      text-align: center;
+      padding: 60px 24px;
+      background: linear-gradient(180deg, transparent, rgba(47, 210, 230, 0.05));
+      border-top: 1px solid var(--line);
+    }
+    .btn-primary {
+      display: inline-block;
+      background: var(--cyan);
+      color: #000;
+      font-weight: 800;
+      padding: 16px 36px;
+      border-radius: 100px;
+      text-decoration: none;
+      font-size: 18px;
+      margin: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav-bar">
+    <div class="brand-pill">
+      <img src="/thumbgate-icon.png" alt="ThumbGate Logo">
+      <span>ThumbGate</span>
+      <span class="partner-tag">+ Peter Yang</span>
+    </div>
+    <a href="/checkout/pro" class="btn-primary" style="padding: 10px 20px; font-size: 14px;">Get Pro $19/mo</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-badge">Partner Co-Branded Case Study</div>
+    <h1>The Firewall Behind <span>Autonomous AI Craft</span></h1>
+    <p class="subtitle">Peter Yang trusts ThumbGate for pre-action agent governance. <50ms local PreToolUse firewall gates intercept bad tool calls before they run.</p>
+
+    <form class="pill-lead-form" action="/go/diagnostic-pay" method="POST">
+      <input type="email" name="customer_email" placeholder="Enter your work email..." required>
+      <input type="hidden" name="plan_id" value="sprint_diagnostic">
+      <button type="submit">Get Started</button>
+    </form>
+  </section>
+
+  <div class="quote-box">
+    <div class="quote-text">"ThumbGate is the mandatory reliability layer for our autonomous agent workflows. Thumbs down feedback auto-promotes into hard prevention rules — saving hours of manual prompt tweaking."</div>
+    <div class="quote-author">
+      <span>👍 Peter Yang</span> · Creator & Tech Leader
+    </div>
+  </div>
+
+  <section class="section-compare">
+    <h2>How ThumbGate Stacks Up</h2>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th style="color: var(--cyan);">ThumbGate Managed Firewall</th>
+          <th>Cloud Guardrail APIs</th>
+          <th>Manual Code Audits</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Pre-Action Latency</strong></td>
+          <td class="highlight"><50ms (Local PreToolUse)</td>
+          <td>500ms+ (Network Roundtrip)</td>
+          <td>N/A (Postmortem)</td>
+        </tr>
+        <tr>
+          <td><strong>Cost per Call</strong></td>
+          <td class="highlight">$0.00 / call (Local Store)</td>
+          <td>$0.005+ / token API cost</td>
+          <td>High Developer Hours</td>
+        </tr>
+        <tr>
+          <td><strong>Feedback-to-Enforcement</strong></td>
+          <td class="highlight">Auto-promoted Prevention Rules</td>
+          <td>Manual Policy File Updates</td>
+          <td>Manual PR Revisions</td>
+        </tr>
+        <tr>
+          <td><strong>Secret Exfiltration Interdiction</strong></td>
+          <td class="highlight">Denied by Default</td>
+          <td>Optional Inspection</td>
+          <td>Human Code Review</td>
+        </tr>
+        <tr>
+          <td><strong>Setup Time</strong></td>
+          <td class="highlight">&lt; 30 Seconds (`npx thumbgate init`)</td>
+          <td>Hours of SDK Setup</td>
+          <td>Weeks of Governance Docs</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="cta-banner">
+    <h2>Ready to Protect Your Autonomous AI Workflows?</h2>
+    <p class="subtitle">Start self-serve Pro at $19/mo or get a $499 Diagnostic Gate installed in two business days.</p>
+    <a href="/checkout/pro" class="btn-primary">Start Pro — $19/mo</a>
+    <a href="/go/diagnostic-pay" class="btn-primary" style="background: var(--orange); color: #fff;">Get $499 Diagnostic Gate</a>
+  </section>
+
+</body>
+</html>

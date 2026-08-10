@@ -13,7 +13,8 @@ const fs = require('node:fs');
 
 const HIGH_RISK_TERMS = [
   'secret', 'credential', 'token', 'api key', 'password',
-  'delete', 'rm -rf', 'destructive', 'drop table',
+  'delete', 'rm -rf', 'destructive', 'drop table', 'truncate',
+  'drop database', 'alter table drop', 'delete without where',
   'deploy', 'production', 'charge', 'payment', 'invoice',
   'corrupt', 'state corruption', 'data loss',
 ];
@@ -23,6 +24,7 @@ const ACTION_RISK_TERMS = [
   'tool call', 'browser', 'file edit', 'shell', 'git push',
   'claim', 'citation', 'hallucination', 'overclaim',
   'approval', 'policy', 'identity', 'permission', 'scope',
+  'sql', 'database', 'tencentdb', 'schema', 'migration', 'unindexed query',
 ];
 
 const NEGATIVE_TERMS = [
@@ -99,6 +101,10 @@ function collectMemoryItems(input) {
     ...asArray(object.episodes),
     ...asArray(object.lessons),
     ...asArray(object.cases),
+    ...asArray(object.db_memory),
+    ...asArray(object.sql_memory),
+    ...asArray(object.queries),
+    ...asArray(object.schema_failures),
   ]) {
     const text = textOf(item).trim();
     if (text) items.push({ kind: item.kind || item.role || item.type || 'item', text });

@@ -33,6 +33,16 @@ const GLM_MODEL_ROLES = {
   vlm: 'glm-4v-9b',
 };
 
+// vLLM / vllm.ai high-throughput model IDs for self-hosted local inference serving.
+// Activate by setting THUMBGATE_LOCAL_MODEL_FAMILY=vllm or THUMBGATE_LOCAL_LLM_ENDPOINT.
+const VLLM_MODEL_ROLES = {
+  normal: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+  thinking: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B',
+  critique: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+  compaction: 'Qwen/Qwen2.5-Coder-7B-Instruct',
+  vlm: 'Qwen/Qwen2-VL-7B-Instruct',
+};
+
 const VALID_MODEL_ROLES = Object.keys(MODEL_ROLES);
 
 const EMBEDDING_PROFILES = {
@@ -342,9 +352,12 @@ function resolveModelRole(role, env) {
   const envKey = `THUMBGATE_MODEL_ROLE_${normalized.toUpperCase()}`;
   const modelFamily = resolveModelFamily(e);
   const isLocalGlm = modelFamily.startsWith('glm');
+  const isLocalVllm = modelFamily.startsWith('vllm') || Boolean(e.THUMBGATE_LOCAL_LLM_ENDPOINT);
   const providerMode = resolveProviderMode(e);
-  const provider = isLocalGlm ? 'local' : (providerMode === 'vertex' ? 'vertex' : 'gemini');
-  const defaultModel = isLocalGlm ? (GLM_MODEL_ROLES[normalized] || MODEL_ROLES[normalized]) : MODEL_ROLES[normalized];
+  const provider = (isLocalGlm || isLocalVllm) ? 'local' : (providerMode === 'vertex' ? 'vertex' : 'gemini');
+  const defaultModel = isLocalVllm
+    ? (VLLM_MODEL_ROLES[normalized] || MODEL_ROLES[normalized])
+    : (isLocalGlm ? (GLM_MODEL_ROLES[normalized] || MODEL_ROLES[normalized]) : MODEL_ROLES[normalized]);
   const model = (e[envKey] && String(e[envKey]).trim()) || defaultModel;
   return { role: normalized, model, provider, envKey };
 }
@@ -384,6 +397,7 @@ module.exports = {
   DEFAULT_FEEDBACK_DIR,
   EMBEDDING_PROFILES,
   GLM_MODEL_ROLES,
+  VLLM_MODEL_ROLES,
   INDEXCACHE_SERVER_ENGINES,
   LONG_CONTEXT_TAGS,
   LONG_CONTEXT_TASK_TYPES,

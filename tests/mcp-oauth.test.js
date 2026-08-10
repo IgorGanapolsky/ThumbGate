@@ -136,6 +136,52 @@ test('scopeAllows rejects malformed token scope sets instead of partially author
   assert.equal(oauth.scopeAllows({ scope: 'mcp:read' }, ''), false);
 });
 
+test('scopeAllows hierarchy: mcp:write implies read, gates, and feedback (WorkOS MCP Auth style)', () => {
+  const writeOnly = { scope: 'mcp:write' };
+  assert.equal(oauth.scopeAllows(writeOnly, 'mcp:write'), true);
+  assert.equal(oauth.scopeAllows(writeOnly, 'mcp:read'), true);
+  assert.equal(oauth.scopeAllows(writeOnly, 'mcp:gates'), true);
+  assert.equal(oauth.scopeAllows(writeOnly, 'mcp:feedback'), true);
+
+  const readOnly = { scope: 'mcp:read' };
+  assert.equal(oauth.scopeAllows(readOnly, 'mcp:read'), true);
+  assert.equal(oauth.scopeAllows(readOnly, 'mcp:write'), false);
+  assert.equal(oauth.scopeAllows(readOnly, 'mcp:gates'), false);
+
+  const gatesOnly = { scope: 'mcp:gates' };
+  assert.equal(oauth.scopeAllows(gatesOnly, 'mcp:gates'), true);
+  assert.equal(oauth.scopeAllows(gatesOnly, 'mcp:read'), true);
+  assert.equal(oauth.scopeAllows(gatesOnly, 'mcp:write'), false);
+});
+
+test('requiredScopeForTool maps annotations to minimum scopes', () => {
+  assert.equal(oauth.requiredScopeForTool({ annotations: { readOnlyHint: true } }), 'mcp:read');
+  assert.equal(oauth.requiredScopeForTool({ annotations: {} }), 'mcp:write');
+  assert.equal(oauth.requiredScopeForTool({}), 'mcp:write');
+  assert.equal(
+    oauth.requiredScopeForTool({ annotations: { thumbgateScope: 'mcp:gates' } }),
+    'mcp:gates',
+  );
+  assert.equal(
+    oauth.requiredScopeForTool({ annotations: { thumbgateScope: 'mcp:feedback' } }),
+    'mcp:feedback',
+  );
+  // Unknown explicit scope falls back to write
+  assert.equal(
+    oauth.requiredScopeForTool({ annotations: { thumbgateScope: 'mcp:admin' } }),
+    'mcp:write',
+  );
+});
+
+test('metadata advertises hierarchical scopes including gates and feedback', () => {
+  const resource = oauth.buildProtectedResourceMetadata('https://thumbgate.ai');
+  const server = oauth.buildAuthServerMetadata('https://thumbgate.ai');
+  for (const scope of ['mcp:read', 'mcp:write', 'mcp:gates', 'mcp:feedback']) {
+    assert.ok(resource.scopes_supported.includes(scope), scope);
+    assert.ok(server.scopes_supported.includes(scope), scope);
+  }
+});
+
 test('PKCE is enforced: wrong verifier is rejected', () => {
   const store = oauth.createStore();
   const client = registerTestClient(store);

@@ -283,6 +283,7 @@ const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const DIAGNOSTIC_PAGE_PATH = path.resolve(__dirname, '../../public/diagnostic.html');
 const FOUNDERS_PAGE_PATH = path.resolve(__dirname, '../../public/founders.html');
 const PARTNER_INTAKE_PAGE_PATH = path.resolve(__dirname, '../../public/partner-intake.html');
+const PETER_PAGE_PATH = path.resolve(__dirname, '../../public/peter.html');
 const INSTALL_PAGE_PATH = path.resolve(__dirname, '../../public/install.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
@@ -3352,6 +3353,10 @@ function loadPartnerIntakePageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PARTNER_INTAKE_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadPeterPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(PETER_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function loadInstallPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(INSTALL_PAGE_PATH, runtimeConfig, pageContext);
 }
@@ -3991,6 +3996,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/diagnostic', changefreq: 'weekly', priority: '0.9' },
     { path: '/founders', changefreq: 'weekly', priority: '0.95' },
+    { path: '/peter', changefreq: 'weekly', priority: '0.9' },
     { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
     { path: '/agent-manager', changefreq: 'weekly', priority: '0.9' },
@@ -5523,7 +5529,8 @@ function createApiServer() {
               if (oauthSession) {
                 const name = msg.params && msg.params.name;
                 const tool = MCP_TOOLS.find((candidate) => candidate.name === name);
-                const requiredScope = tool?.annotations?.readOnlyHint === true ? 'mcp:read' : 'mcp:write';
+                // Hierarchy: mcp:write implies read/gates/feedback (WorkOS MCP Auth style).
+                const requiredScope = mcpOauth.requiredScopeForTool(tool || {});
                 if (!mcpOauth.scopeAllows(oauthSession, requiredScope)) {
                   recordToolCall({
                     toolName: name || 'unknown',
@@ -6395,6 +6402,28 @@ async function addContext(){
         });
       } catch (err) {
         sendText(res, 500, err.message || 'Partner intake page unavailable');
+      }
+      return;
+    }
+
+
+    // Partner co-branded case study (Peter Yang / high-ROI acquisition landing).
+    if (isGetLikeRequest && (pathname === '/peter' || pathname === '/peter.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadPeterPageHtml,
+          extraTelemetry: {
+            pageType: 'partner_case_study',
+            partner: 'peter-yang',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Partner case study page unavailable');
       }
       return;
     }
