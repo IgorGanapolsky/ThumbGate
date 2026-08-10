@@ -9752,6 +9752,13 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           guardrails: body.guardrails,
           tags: extractTags(body.tags),
           skill: body.skill,
+          memorySource: body.memorySource && typeof body.memorySource === 'object'
+            ? {
+              type: body.memorySource.type,
+              identifier: body.memorySource.identifier,
+              trust: body.memorySource.trust,
+            }
+            : undefined,
           reviewOrigin: 'human',
         });
         const actionIntegration = inferActionIntegration(body, req.headers);

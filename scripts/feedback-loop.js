@@ -598,6 +598,8 @@ function maybeBlockMemoryIngress({ feedbackEvent, memoryRecord = null, summary, 
       mode: decision.mode || null,
       threatIndicators: decision.threatIndicators || [],
       degraded: Boolean(decision.degraded),
+      provenance: decision.provenance || null,
+      telemetry: decision.telemetry || null,
     },
   };
 }
