@@ -829,8 +829,21 @@ test('CI workflow routes web-only PRs through focused revenue tests', () => {
   assert.match(workflow, /scripts\/dashboard\\.js/);
   assert.match(workflow, /tests\/\(api-server\|dashboard\|public-landing\|landing-page-claims\|funnel-invariants\|verify-marketing-pages-deployed\|public-static-assets\)\\\.test\\\.js/);
   assert.match(workflow, /name:\s*Run focused web\/revenue tests[\s\S]*?if:\s*steps\.ci-scope\.outputs\.mode == 'web'[\s\S]*?tests\/api-server\.test\.js[\s\S]*?tests\/public-landing\.test\.js[\s\S]*?tests\/verify-marketing-pages-deployed\.test\.js/);
-  assert.match(workflow, /name:\s*Run tests[\s\S]*?if:\s*steps\.ci-scope\.outputs\.mode != 'web'[\s\S]*?run:\s*npm test/);
+  assert.match(workflow, /name:\s*Run tests[\s\S]*?if:\s*steps\.ci-scope\.outputs\.mode == 'full'[\s\S]*?run:\s*npm test/);
   assert.match(workflow, /Merge queue and main pushes still run full CI/);
+});
+
+test('CI workflow routes pure-deps and workflow-only PRs through focused smoke tests', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+
+  assert.match(workflow, /reason=deps-or-workflow-surface-only/);
+  assert.match(workflow, /mode=deps/);
+  assert.match(workflow, /package-lock\.json/);
+  assert.match(workflow, /workers\/package-lock\.json/);
+  assert.match(workflow, /\\.github\/workflows\//);
+  assert.match(workflow, /name:\s*Run focused deps\/workflow smoke tests[\s\S]*?if:\s*steps\.ci-scope\.outputs\.mode == 'deps'[\s\S]*?tests\/public-core-boundary\.test\.js[\s\S]*?tests\/deployment\.test\.js/);
+  // Coverage re-runs the full suite; skip it on ordinary PRs to cut wall clock.
+  assert.match(workflow, /name:\s*Run coverage[\s\S]*?if:\s*steps\.ci-scope\.outputs\.mode == 'full' && github\.event_name != 'pull_request'/);
 });
 
 test('CodeQL workflow supports merge queue and cancels stale non-main runs', () => {
