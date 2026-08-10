@@ -143,10 +143,16 @@ function extractTargetPaths(toolName, toolInput = {}) {
   }
   const command = normalizeText(toolInput.command);
   if (command) {
-    // cat > MEMORY.md, tee MEMORY.md, echo >> AGENTS.md
-    const re = /(?:^|[\s'"=])((?:\.\/|\.\.\/|\/)?(?:[\w.@[\]-]+\/)*(?:MEMORY|AGENTS|USER|IDENTITY|SOUL|HEARTBEAT|BRAIN|prevention-rules)\.md|memory\/\d{4}-\d{2}-\d{2}\.md)/gi;
+    // Named durable carriers anywhere in the command (tee MEMORY.md, vim AGENTS.md).
+    const named = /(?:^|[\s'"=])((?:\.\/|\.\.\/|\/)?(?:[\w.@[\]-]+\/)*(?:MEMORY|AGENTS|USER|IDENTITY|SOUL|HEARTBEAT|BRAIN|prevention-rules)\.md|memory\/\d{4}-\d{2}-\d{2}\.md)/gi;
     let match;
-    while ((match = re.exec(command)) !== null) {
+    while ((match = named.exec(command)) !== null) {
+      paths.add(match[1]);
+    }
+    // Shell output redirects: echo ... > MEMORY.md, printf ... >> path
+    // Avoid matching comparison operators by requiring whitespace (or start) before `>`.
+    const redirect = /(?:^|[\s;|&(])>{1,2}\s*['"]?([^\s'"`;&|<>]+)/g;
+    while ((match = redirect.exec(command)) !== null) {
       paths.add(match[1]);
     }
   }
@@ -175,10 +181,12 @@ function isWriteLikeTool(toolName, toolInput = {}) {
   if (WRITE_TOOLS.has(toolName)) return true;
   if (toolName === 'Bash' || toolName === 'bash' || toolName === 'Shell') {
     const cmd = normalizeText(toolInput.command);
-    // Note: do not anchor word-boundary after `>` — `cat > file` has no \b after `>`.
-    const usesRedirectingPrintf = /\bprintf\b/i.test(cmd) && cmd.includes('>');
-    return usesRedirectingPrintf
-      || /(?:\btee\b|\bcat\s*>|>>|\bcp\s+|\bmv\s+|\binstall\s+-m|\bsed\s+-i)/i.test(cmd)
+    // Shell output redirects (echo/printf/cat … > file or >> file). Require a
+    // token boundary before `>` so we do not treat `2>1` / comparison noise only;
+    // still match the common MemGhost path `echo '…' > MEMORY.md`.
+    const hasOutputRedirect = /(?:^|[\s;|&(])>{1,2}\s*\S/.test(cmd);
+    return hasOutputRedirect
+      || /(?:\btee\b|\bcp\s+|\bmv\s+|\binstall\s+-m|\bsed\s+-i)/i.test(cmd)
       || /\b(?:Write|write_file|create_file)\b/i.test(cmd);
   }
   return false;
@@ -204,12 +212,10 @@ function evaluateStealthMemoryInjection(toolName, toolInput = {}) {
   const targets = extractTargetPaths(toolName, toolInput);
   const durableTargets = targets.filter(isDurableCarrier);
   const episodicTargets = targets.filter(isEpisodicMemoryPath);
+  // Require a real memory destination (path or redirect target). Content that only
+  // *describes* MEMORY.md attacks (docs, research notes) must not false-positive.
   if (durableTargets.length === 0 && episodicTargets.length === 0) {
-    // Content-only path: writing via generic path but content targets durable carriers by name
-    const haystackPreview = collectHaystack(toolName, toolInput);
-    const mentionsDurable = /(?:MEMORY|AGENTS|SOUL|USER|IDENTITY|HEARTBEAT)\.md/i.test(haystackPreview)
-      && /(?:write|append|save|store|update|edit)\b/i.test(haystackPreview);
-    if (!mentionsDurable) return null;
+    return null;
   }
 
   const haystack = collectHaystack(toolName, toolInput);
@@ -228,11 +234,9 @@ function evaluateStealthMemoryInjection(toolName, toolInput = {}) {
   const hasExternal = externalHits.length > 0 || explicitExternalFlag;
   const hasStealth = stealthHits.length > 0;
   const hasPoisonLanguage = preferenceHits.length > 0 || factHits.length > 0;
-  const hasDurable = durableTargets.length > 0
-    || /(?:MEMORY|AGENTS|SOUL|USER|IDENTITY|HEARTBEAT)\.md/i.test(haystack);
+  const hasDurable = durableTargets.length > 0;
 
-  // Require durable (or episodic+stealth) write AND (stealth OR external) with poison language
-  // for high precision. Durable + stealth alone is enough (MemGhost core).
+  // Durable + stealth alone is enough (MemGhost core).
   // Durable + external + poison language is enough (provenance risk).
   // Episodic only blocks when stealth + external both present.
   let shouldBlock = false;
@@ -250,15 +254,11 @@ function evaluateStealthMemoryInjection(toolName, toolInput = {}) {
   } else if (episodicTargets.length > 0 && hasStealth && hasExternal) {
     shouldBlock = true;
     reasonCode = 'episodic_stealth_external';
-  } else if (hasStealth && hasExternal && hasPoisonLanguage) {
-    // Write tool with stealth+external+poison even if path is indirect
-    shouldBlock = true;
-    reasonCode = 'stealth_external_poison_write';
   }
 
   if (!shouldBlock) return null;
 
-  const carrierClass = durableTargets.length > 0 || hasDurable ? 'durable' : 'episodic';
+  const carrierClass = hasDurable ? 'durable' : 'episodic';
   const message = [
     'Blocked: suspected stealth memory injection into persistent agent state.',
     `Gate ${GATE_ID} (paper ${PAPER_ID}).`,
