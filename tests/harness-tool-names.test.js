@@ -46,6 +46,7 @@ function gateCheck(toolName, toolInput, env = {}) {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     let out = '';
+    let lineBuffer = '';
     let settled = false;
     const finish = (fn) => {
       if (settled) return;
@@ -59,8 +60,11 @@ function gateCheck(toolName, toolInput, env = {}) {
     // Drain stderr so license/model noise cannot block the MCP child on a full pipe.
     child.stderr.on('data', () => {});
     child.stdout.on('data', (c) => {
-      out += c;
-      for (const line of String(c).split('\n')) {
+      const chunk = String(c);
+      out += chunk;
+      const lines = (lineBuffer + chunk).split('\n');
+      lineBuffer = lines.pop();
+      for (const line of lines) {
         if (!line.trim().startsWith('{')) continue;
         let m; try { m = JSON.parse(line); } catch { continue; }
         if (m.id === 9 && m.result && m.result.content && m.result.content[0]) {

@@ -24,6 +24,7 @@ function mcp(requests, env = {}) {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     let out = '';
+    let lineBuffer = '';
     const expectedIds = new Set(
       [0, ...requests.map((r) => r.id).filter((id) => id !== undefined && id !== null)].map(String)
     );
@@ -48,8 +49,11 @@ function mcp(requests, env = {}) {
     // Drain stderr so license/model noise cannot block the MCP child on a full pipe.
     child.stderr.on('data', () => {});
     child.stdout.on('data', (c) => {
-      out += c;
-      for (const line of String(c).split('\n')) {
+      const chunk = String(c);
+      out += chunk;
+      const lines = (lineBuffer + chunk).split('\n');
+      lineBuffer = lines.pop();
+      for (const line of lines) {
         if (!line.trim().startsWith('{')) continue;
         try {
           const msg = JSON.parse(line);
