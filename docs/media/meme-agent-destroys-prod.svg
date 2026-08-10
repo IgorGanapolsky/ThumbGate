@@ -62,8 +62,8 @@
 
   <!-- ThumbGate Interdiction Gate -->
   <rect x="490" y="230" width="350" height="155" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>
-  <text x="505" y="260" font-family="-apple-system, sans-serif" font-size="14" font-weight="bold" fill="#a7f3d0">⛔ THUMBGATE INTERCEPTED (0ms):</text>
-  <text x="505" y="288" font-family="monospace" font-size="12" fill="#6ee7b7">VERDICT: DENY (PreToolUse Hook)</text>
+  <text x="505" y="260" font-family="-apple-system, sans-serif" font-size="14" font-weight="bold" fill="#a7f3d0">⛔ THUMBGATE INTERCEPTED (&lt;50ms):</text>
+  <text x="505" y="288" font-family="monospace" font-size="12" fill="#6ee7b7">VERDICT: WARN (Strict Enforcement)</text>
   <text x="505" y="312" font-family="monospace" font-size="12" fill="#e2e8f0">RULE: Never force-push to main</text>
   <text x="505" y="336" font-family="-apple-system, sans-serif" font-size="13" fill="#6ee7b7">✓ Tool execution blocked BEFORE run</text>
   <text x="505" y="365" font-family="-apple-system, sans-serif" font-size="13" font-weight="bold" fill="#34d399">😎 Developer: Enjoys weekend in peace</text>
