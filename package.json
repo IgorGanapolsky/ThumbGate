@@ -1023,6 +1023,7 @@
       "path-to-regexp": "0.1.13"
     },
     "js-yaml": "5.2.3",
+    "sharp": "0.35.3",
     "undici": "8.10.0"
   },
   "mcpName": "io.github.IgorGanapolsky/thumbgate",
