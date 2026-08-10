@@ -24,24 +24,65 @@ function mcp(requests, env = {}) {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     let out = '';
-    const timer = setTimeout(() => { child.kill(); reject(new Error('MCP server timeout')); }, 60000);
-    child.stdout.on('data', (c) => { out += c; });
-    child.on('error', reject);
-    child.on('close', () => {
+    let lineBuffer = '';
+    const expectedIds = new Set(
+      [0, ...requests.map((r) => r.id).filter((id) => id !== undefined && id !== null)].map(String)
+    );
+    const seenIds = new Set();
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
-      fs.rmSync(home, { recursive: true, force: true });
+      try { child.kill(); } catch { /* already exited */ }
+      try { fs.rmSync(home, { recursive: true, force: true }); } catch { /* best effort */ }
       const messages = [];
       for (const line of out.split('\n')) {
         if (!line.trim().startsWith('{')) continue;
         try { messages.push(JSON.parse(line)); } catch { /* not a frame */ }
       }
       resolve(messages);
+    };
+    const timer = setTimeout(() => {
+      finish();
+    }, 60000);
+    // Drain stderr so license/model noise cannot block the MCP child on a full pipe.
+    child.stderr.on('data', () => {});
+    child.stdout.on('data', (c) => {
+      const chunk = String(c);
+      out += chunk;
+      const lines = (lineBuffer + chunk).split('\n');
+      lineBuffer = lines.pop();
+      for (const line of lines) {
+        if (!line.trim().startsWith('{')) continue;
+        try {
+          const msg = JSON.parse(line);
+          if (msg && msg.id !== undefined && msg.id !== null) {
+            seenIds.add(String(msg.id));
+          }
+        } catch { /* partial/non-json line */ }
+      }
+      if ([...expectedIds].every((id) => seenIds.has(id))) {
+        // Keep stdin open until all expected RPC responses arrive; closing stdin
+        // immediately races server shutdown and drops tools/call replies under load.
+        try { child.stdin.end(); } catch { /* ignore */ }
+        finish();
+      }
+    });
+    child.on('error', (err) => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        reject(err);
+      }
+    });
+    child.on('close', () => {
+      finish();
     });
     const send = (o) => child.stdin.write(`${JSON.stringify(o)}\n`);
     send({ jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 't', version: '1' } } });
     send({ jsonrpc: '2.0', method: 'notifications/initialized' });
     for (const r of requests) send(r);
-    child.stdin.end();
   });
 }
 
@@ -70,7 +111,7 @@ function verdict(msgs, id) {
 
 test.before(async () => {
   [defaultSession, strictSession] = await Promise.all([
-    session({}),
+    session({ THUMBGATE_STRICT_ENFORCEMENT: '0' }),
     session({ THUMBGATE_STRICT_ENFORCEMENT: '1' }),
   ]);
 });
