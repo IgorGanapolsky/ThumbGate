@@ -31,6 +31,17 @@
 
 ThumbGate is the local-first **Pre-Action Checks** engine for AI coding agents. It runs in the PreToolUse hook to evaluate the proposed tool call before execution — so costly mistakes can be caught before they happen.
 
+### Tech memes (shareable)
+
+Lightweight visuals for how agents fail without a pre-action gate:
+
+| Meme | Meaning |
+|------|---------|
+| ![Agent destroys prod without a gate](docs/media/meme-agent-destroys-prod.svg) | Unchecked tool calls ship destructive commands. |
+| ![Prompt vs PreToolUse hook](docs/media/meme-prompt-vs-hook.svg) | A prompt is advice; a PreToolUse hook is enforcement. |
+
+
+
 It **hard-blocks detected secret leaks and two direct self-disable command classes by default** — commands that terminate the ThumbGate gate process or enable its bypass environment override. Other high-risk classes (`rm -rf`, force-push, fetch-and-run, direct guardrail edits) **warn and log by default**. Set `THUMBGATE_STRICT_ENFORCEMENT=1` for strict enforcement (warnings become hard denies).
 
 | Verdict | Default behavior |
