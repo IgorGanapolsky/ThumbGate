@@ -40,7 +40,7 @@
 
   <rect x="490" y="120" width="350" height="70" rx="8" fill="#020617" stroke="#4338ca" stroke-width="1"/>
   <text x="505" y="145" font-family="monospace" font-size="12" fill="#a855f7">ThumbGate Hook Engine:</text>
-  <text x="505" y="170" font-family="monospace" font-size="12" fill="#818cf8">Literal Pattern AST Match (0ms)</text>
+  <text x="505" y="170" font-family="monospace" font-size="12" fill="#818cf8">Literal Pattern AST Match (&lt;50ms target)</text>
 
   <rect x="490" y="205" width="350" height="120" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1"/>
   <text x="505" y="235" font-family="-apple-system, sans-serif" font-size="13" font-weight="bold" fill="#6ee7b7">🛡️ Guaranteed Enforcement:</text>
