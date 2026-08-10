@@ -277,7 +277,7 @@
       "name": "What failure modes do observability tools miss that ThumbGate catches?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Observability explains what happened after an LLM or tool call. It does not stop a force-push, a silent durable-memory poison write, an unapproved outbound email, or a destructive shell command before it runs. ThumbGate intercepts those at the tool-call boundary via hooks and prevention rules learned from feedback."
+        "text": "Observability explains what happened after an LLM or tool call. It does not stop a force-push, a silent durable-memory poison write, an unapproved outbound email, or a destructive shell command before it runs. ThumbGate intercepts matching patterns at the tool-call boundary: structural default-deny floors and explicit security gates hard-block; many learned or destructive patterns warn and log by default and hard-block under THUMBGATE_STRICT_ENFORCEMENT=1."
       }
     }
   ]
@@ -377,7 +377,7 @@
               <tr>
                 <td>Stops force-push / secret exfil / silent memory poison</td>
                 <td>May detect after the fact if instrumented</td>
-                <td>Can deny at the tool boundary</td>
+                <td>Structural floors + high-severity gates hard-block; many learned/destructive matches warn by default, hard-block in strict mode</td>
               </tr>
               <tr>
                 <td>Best buyer</td>
@@ -402,7 +402,7 @@
           <h2>Recommended stack</h2>
           <ol>
             <li>Instrument the product agent path with Langfuse, LangSmith, Braintrust, or Arize for traces and regression evals.</li>
-            <li>Install ThumbGate on developer agents so known-bad tool calls never leave the laptop or CI runner.</li>
+            <li>Install ThumbGate on developer agents so high-severity / structural default-deny classes are blocked before execution, and other learned matches are warned (or hard-blocked under <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>).</li>
             <li>Export ThumbGate gate blocks / feedback into your SIEM or observability pipeline if you need unified audit—without turning ThumbGate into a fake trace UI.</li>
           </ol>
         </section>
@@ -419,7 +419,7 @@
           </details>
           <details class="faq-item">
             <summary>What does observability miss that ThumbGate catches?</summary>
-            <p>Post-hoc traces explain damage after a force-push, secret leak, silent durable-memory write, or unapproved outbound action. ThumbGate intercepts at the tool-call boundary when a matching prevention rule or structural gate fires.</p>
+            <p>Post-hoc traces explain damage after a force-push, secret leak, silent durable-memory write, or unapproved outbound action. ThumbGate intercepts at the tool-call boundary when a matching prevention rule or structural gate fires — hard-block for structural default-deny floors; warn-by-default (strict hard-block) for many learned destructive patterns.</p>
           </details>
         </div>
       </div>
