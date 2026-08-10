@@ -46,8 +46,26 @@ function gateCheck(toolName, toolInput, env = {}) {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     let out = '';
+    let lineBuffer = '';
+    let inputClosed = false;
     const timer = setTimeout(() => { child.kill(); reject(new Error('timeout')); }, 60000);
-    child.stdout.on('data', (c) => { out += c; });
+    child.stdout.on('data', (chunk) => {
+      const text = chunk.toString();
+      out += text;
+      lineBuffer += text;
+      const lines = lineBuffer.split('\n');
+      lineBuffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.trim().startsWith('{')) continue;
+        try {
+          const message = JSON.parse(line);
+          if (!inputClosed && message.id === 9) {
+            inputClosed = true;
+            child.stdin.end();
+          }
+        } catch { /* not a frame */ }
+      }
+    });
     child.on('error', reject);
     child.on('close', () => {
       clearTimeout(timer);
@@ -63,7 +81,6 @@ function gateCheck(toolName, toolInput, env = {}) {
     send({ jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 't', version: '1' } } });
     send({ jsonrpc: '2.0', method: 'notifications/initialized' });
     send({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name: 'gate_check', arguments: { tool_name: toolName, tool_input: toolInput } } });
-    child.stdin.end();
   });
 }
 
