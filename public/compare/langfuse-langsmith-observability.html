@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate vs Langfuse, LangSmith, Braintrust, Arize | Enforcement vs LLM Observability (2026)</title>
+  <meta name="description" content="Langfuse, LangSmith, Braintrust, and Arize are LLM observability and evaluation platforms: traces, scores, and post-hoc monitoring. ThumbGate is pre-action enforcement for coding agents—block risky tool calls before they run. Complementary, not substitutes." />
+  <meta name="keywords" content="ThumbGate vs Langfuse, ThumbGate vs LangSmith, ThumbGate vs Braintrust, ThumbGate vs Arize, LLM observability vs enforcement, PreToolUse gates, agent guardrails 2026" />
+  <meta property="og:title" content="ThumbGate vs Langfuse / LangSmith / Braintrust / Arize" />
+  <meta property="og:description" content="Observability platforms log what the model did. ThumbGate gates what the agent is about to do. Honest 2026 comparison for teams buying traces+evals and needing pre-action blocks." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/compare/langfuse-langsmith-observability" />
+  <link rel="canonical" href="https://thumbgate.ai/compare/langfuse-langsmith-observability" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 820px;
+    }
+    .hero p {
+      max-width: 740px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p, .detail-section li, .card p, .card li { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; }
+    .card h2 { margin-top: 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 12px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { color: var(--text); background: var(--bg-raised); }
+    td { color: var(--muted); }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card { padding: 20px; }
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    .source-note {
+      font-size: 13px;
+      color: var(--muted);
+      border-left: 3px solid rgba(34, 211, 238, 0.35);
+      padding-left: 12px;
+      margin-top: 16px;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Langfuse, LangSmith, Braintrust, and Arize",
+  "description": "LLM observability platforms (Langfuse, LangSmith, Braintrust, Arize) own traces and evals. ThumbGate owns pre-action enforcement for coding-agent tool calls. Complementary stack layers.",
+  "about": [
+    "thumbgate vs langfuse",
+    "thumbgate vs langsmith",
+    "thumbgate vs braintrust",
+    "thumbgate vs arize",
+    "llm observability vs pre-action enforcement"
+  ],
+  "url": "https://thumbgate.ai/compare/langfuse-langsmith-observability",
+  "datePublished": "2026-08-10",
+  "dateModified": "2026-08-10",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/compare/langfuse-langsmith-observability",
+  "citation": [
+    {
+      "@type": "CreativeWork",
+      "name": "Top LLM Observability and Evaluation Platforms in 2026",
+      "url": "https://www.marktechpost.com/2026/08/09/top-llm-observability-and-evaluation-platforms-in-2026-langfuse-langsmith-braintrust-arize-and-more-compared/"
+    }
+  ]
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate an LLM observability platform like Langfuse or LangSmith?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Langfuse, LangSmith, Braintrust, and Arize treat the LLM trace as the primary object—tracing, scoring, datasets, and production monitoring. ThumbGate is a pre-action gate for AI coding agents: PreToolUse hooks that can block or require approval before a tool call executes. You can run both."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I replace LangSmith with ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Usually no. Keep LangSmith (or Langfuse/Braintrust/Arize) for chain/agent traces and eval loops. Add ThumbGate when developer agents call shell, git, files, browser, MCP, or deploy tools and you need known-bad actions blocked before execution—not only logged after."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What failure modes do observability tools miss that ThumbGate catches?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Observability explains what happened after an LLM or tool call. It does not stop a force-push, a silent durable-memory poison write, an unapproved outbound email, or a destructive shell command before it runs. ThumbGate intercepts matching patterns at the tool-call boundary: structural default-deny floors and explicit security gates hard-block; many learned or destructive patterns warn and log by default and hard-block under THUMBGATE_STRICT_ENFORCEMENT=1."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">comparison | observability vs enforcement</div>
+      <h1>ThumbGate vs Langfuse, LangSmith, Braintrust &amp; Arize</h1>
+      <p>
+        2026 roundups put <strong>Langfuse</strong>, <strong>LangSmith</strong>, <strong>Braintrust</strong>, and <strong>Arize</strong> at the center of AI-native observability—the LLM <em>trace</em> as the primary object, with evals, monitoring, and pricing as the buyer axes.
+        <strong>ThumbGate is not in that category.</strong> It is the complementary layer: pre-action enforcement when a coding agent is about to call a tool.
+      </p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Traces + evals (them)</div>
+        <div class="signal-pill down">👎 Pre-action block (us)</div>
+      </div>
+      <p class="source-note">
+        Market framing referenced from MarkTechPost’s 2026 comparison of LLM observability and evaluation platforms
+        (<a href="https://www.marktechpost.com/2026/08/09/top-llm-observability-and-evaluation-platforms-in-2026-langfuse-langsmith-braintrust-arize-and-more-compared/" target="_blank" rel="noopener">Langfuse, LangSmith, Braintrust, Arize, and more</a>).
+        ThumbGate is not listed there because it sells a different job-to-be-done.
+      </p>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>One-line buyer truth</h2>
+          <p>
+            <strong>Observability platforms log what your model or agent <em>did</em>.</strong>
+            <strong>ThumbGate gates what your agent is <em>about to do</em></strong> — runtime block or approval before shell, git, file, browser, MCP, publish, or deploy tools fire.
+          </p>
+          <p>
+            That is the same monitor-vs-enforce split we use on
+            <a href="/ai-malpractice-prevention">AI malpractice prevention</a>: SIEM/trace ingestion is the audit trail; the PreToolUse hook is prevention.
+          </p>
+        </div>
+
+        <section class="detail-section">
+          <h2>What the observability camp gets right</h2>
+          <p>Teams should buy or self-host a serious trace+eval stack when they run production LLM apps or multi-step agents:</p>
+          <ul>
+            <li><strong>Langfuse</strong> — open-source / ClickHouse-native tracing with self-host ownership.</li>
+            <li><strong>LangSmith</strong> — deep LangChain/LangGraph integration, managed traces and evals.</li>
+            <li><strong>Braintrust</strong> — eval-first workflows and fast iteration with stakeholders.</li>
+            <li><strong>Arize</strong> (Phoenix / AX) — ML + LLM monitoring lineage for enterprise ML orgs.</li>
+            <li>Also in the same market map: Helicone (gateway), Datadog LLM Obs (APM extension), Opik, Galileo, and others.</li>
+          </ul>
+          <p>Their unit of work is the <strong>span/trace</strong>, the <strong>score</strong>, and the <strong>dataset</strong>—not a local PreToolUse deny for a developer agent.</p>
+        </section>
+
+        <section class="detail-section">
+          <h2>Capability matrix (honest)</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Capability</th>
+                <th>Langfuse / LangSmith / Braintrust / Arize</th>
+                <th>ThumbGate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Primary object</td>
+                <td>LLM / agent trace</td>
+                <td>Tool call about to execute</td>
+              </tr>
+              <tr>
+                <td>When it acts</td>
+                <td>During/after generation (observe, score, alert)</td>
+                <td>Before tool execution (block / approve / warn)</td>
+              </tr>
+              <tr>
+                <td>Evals &amp; datasets</td>
+                <td>Core product</td>
+                <td>Secondary (gate golden sets, receipts)—not a full LLM judge platform</td>
+              </tr>
+              <tr>
+                <td>Coding-agent hooks</td>
+                <td>Not the product (SDK instrument the app)</td>
+                <td>Native PreToolUse / MCP gate-check for Claude Code, Codex, Cursor, Gemini CLI, Hermes, OpenClaw-style agents</td>
+              </tr>
+              <tr>
+                <td>Learns from 👎 feedback</td>
+                <td>Human labeling / eval scores</td>
+                <td>Promote lessons → prevention rules → hard gates</td>
+              </tr>
+              <tr>
+                <td>Stops force-push / secret exfil / silent memory poison</td>
+                <td>May detect after the fact if instrumented</td>
+                <td>Structural floors + high-severity gates hard-block; many learned/destructive matches warn by default, hard-block in strict mode</td>
+              </tr>
+              <tr>
+                <td>Best buyer</td>
+                <td>App/ML teams shipping LLM products</td>
+                <td>Teams whose agents write code, run shell, touch money rails, or edit durable agent memory</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="detail-section">
+          <h2>How this helps ThumbGate (GTM)</h2>
+          <ul>
+            <li><strong>Category clarity:</strong> stop losing deals to “we already bought LangSmith.” Different layer.</li>
+            <li><strong>Stack sell:</strong> “Langfuse for traces + ThumbGate for PreToolUse” is a credible enterprise sentence.</li>
+            <li><strong>GEO:</strong> listicle queries like “best LLM observability tools 2026” are adjacent; this page captures “should I use Langfuse or guardrails for agents?”</li>
+            <li><strong>Product focus:</strong> do not rebuild Braintrust evals—double down on enforcement teeth, receipts, and memory-injection gates.</li>
+          </ul>
+        </section>
+
+        <section class="detail-section">
+          <h2>Recommended stack</h2>
+          <ol>
+            <li>Instrument the product agent path with Langfuse, LangSmith, Braintrust, or Arize for traces and regression evals.</li>
+            <li>Install ThumbGate on developer agents so high-severity / structural default-deny classes are blocked before execution, and other learned matches are warned (or hard-blocked under <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>).</li>
+            <li>Export ThumbGate gate blocks / feedback into your SIEM or observability pipeline if you need unified audit—without turning ThumbGate into a fake trace UI.</li>
+          </ol>
+        </section>
+
+        <div class="detail-section">
+          <h2>FAQ</h2>
+          <details class="faq-item">
+            <summary>Is ThumbGate an LLM observability platform like Langfuse or LangSmith?</summary>
+            <p>No. Those products treat the LLM trace as the primary object. ThumbGate is a pre-action gate for AI coding agents via PreToolUse hooks. You can—and often should—run both.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Should I replace LangSmith with ThumbGate?</summary>
+            <p>Usually no. Keep your trace/eval platform. Add ThumbGate when agents call shell, git, files, browser, MCP, or deploy tools and you need known-bad actions blocked before execution.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What does observability miss that ThumbGate catches?</summary>
+            <p>Post-hoc traces explain damage after a force-push, secret leak, silent durable-memory write, or unapproved outbound action. ThumbGate intercepts at the tool-call boundary when a matching prevention rule or structural gate fires — hard-block for structural default-deny floors; warn-by-default (strict hard-block) for many learned destructive patterns.</p>
+          </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h2>GSD brief</h2>
+          <p>MarkTechPost’s 2026 observability list validates a huge budget category (traces + evals). ThumbGate wins by <strong>not</strong> competing there: sell the missing pre-action layer for coding agents.</p>
+          <p><strong>Primary persona:</strong> eng leader who already has Langfuse/LangSmith and still sees agents ship risky tool calls.</p>
+          <p><strong>Keyword cluster:</strong> thumbgate vs langfuse, langsmith alternative for agent guardrails, llm observability vs enforcement, pre-action checks.</p>
+          <div class="proof-links">
+            <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+            <a href="/ai-malpractice-prevention">Monitor vs enforce</a>
+          </div>
+          <a class="cta-button" href="/diagnostic?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=compare_llm_observability&amp;cta_placement=seo_brief&amp;cta_id=obs_compare_diagnostic" rel="noopener">Book $499 diagnostic</a>
+          <a class="cta-button" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);margin-top:10px;" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=compare_llm_observability&amp;cta_placement=seo_brief&amp;plan_id=pro&amp;cta_id=obs_compare_pro" rel="noopener">Go Pro — $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+          <a class="related-card" href="/compare/databricks-unity-ai-gateway">
+            <span class="related-label">Related</span>
+            <strong>ThumbGate vs Databricks Unity AI Gateway</strong>
+          </a>
+          <a class="related-card" href="/compare/adopt-ai">
+            <span class="related-label">Related</span>
+            <strong>ThumbGate vs Adopt AI (evals-first)</strong>
+          </a>
+          <a class="related-card" href="/compare/far-ai">
+            <span class="related-label">Related</span>
+            <strong>ThumbGate vs FAR.AI (eval research)</strong>
+          </a>
+          <a class="related-card" href="/compare/mem0">
+            <span class="related-label">Related</span>
+            <strong>ThumbGate vs Mem0 (memory)</strong>
+          </a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
