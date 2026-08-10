@@ -426,9 +426,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 421 -> 423 (2026-08-05): scripts/cli-progress.js (dashboard/cfo/north-star UX)
     // + scripts/dashboard-limits.js (required by server.js fail-closed size path).
     // operational-dashboard/summary stay unpackaged (forbiddenFiles ratchet).
-    // 423 -> 424 (2026-08-09): public/founders.html Oceans-inspired $499 cash-path landing.
-    manifest.fileCount <= 424,
-    `npm package should stay <= 424 files, got ${manifest.fileCount}`
+    // 424 -> 426 (2026-08-10): WorkOS MCP Auth ROI changeset & workos-production-guard test.
+    manifest.fileCount <= 426,
+    `npm package should stay <= 426 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
