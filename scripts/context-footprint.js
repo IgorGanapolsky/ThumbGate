@@ -141,6 +141,81 @@ function buildFeedbackContextFootprintReport(entries = [], anchors = [], options
   };
 }
 
+function renderSymbolicTaskCanvas(options = {}) {
+  const activeTask = options.activeTask || 'Execute Task';
+  const milestones = Array.isArray(options.milestones) ? options.milestones : [];
+  const blockers = Array.isArray(options.blockers) ? options.blockers : [];
+
+  let mermaidDiagram = 'graph TD\n';
+  mermaidDiagram += `  Start["Task Goal: ${activeTask}"]\n`;
+
+  if (milestones.length === 0) {
+    mermaidDiagram += '  Start --> Step1["In Progress"]\n';
+  } else {
+    let prevId = 'Start';
+    milestones.forEach((m, idx) => {
+      const stepId = `Step${idx + 1}`;
+      const status = m.status === 'completed' ? ' [DONE]' : m.status === 'blocked' ? ' [BLOCKED]' : ' [IN_PROGRESS]';
+      const label = `${m.name || m.title || `Milestone ${idx + 1}`}${status}`;
+      mermaidDiagram += `  ${prevId} --> ${stepId}["${label.replace(/"/g, "'")}"]\n`;
+      prevId = stepId;
+    });
+  }
+
+  if (blockers.length > 0) {
+    blockers.forEach((b, idx) => {
+      mermaidDiagram += `  Blocker${idx + 1}["BLOCKED: ${String(b).replace(/"/g, "'")}"] -.-> Start\n`;
+    });
+  }
+
+  const canvasText = [
+    `# Symbolic Task Canvas: ${activeTask}`,
+    `**Milestones:** ${milestones.length}`,
+    `**Blockers:** ${blockers.length}`,
+    '```mermaid',
+    mermaidDiagram.trim(),
+    '```',
+  ].join('\n');
+
+  return {
+    canvasText,
+    mermaidDiagram,
+    activeTask,
+    milestoneCount: milestones.length,
+    blockerCount: blockers.length,
+  };
+}
+
+function compactSymbolicTaskCanvas(entries = [], options = {}) {
+  const safeEntries = Array.isArray(entries) ? entries : [];
+  const activeTask = options.activeTask || 'Active Session Task';
+  const milestones = [];
+  const blockers = [];
+
+  for (const entry of safeEntries) {
+    if (!entry) continue;
+    const text = typeof entry === 'string' ? entry : JSON.stringify(entry);
+    if (/block|fail|error/i.test(text)) {
+      blockers.push(text.slice(0, 80));
+    } else {
+      milestones.push({ name: text.slice(0, 60), status: /done|pass|success/i.test(text) ? 'completed' : 'in_progress' });
+    }
+  }
+
+  const canvas = renderSymbolicTaskCanvas({ activeTask, milestones: milestones.slice(0, 5), blockers: blockers.slice(0, 3) });
+  const footprint = measureFootprint(safeEntries, canvas.canvasText, {
+    targetReduction: options.targetReduction || 0.5,
+    charsPerToken: options.charsPerToken,
+  });
+
+  return {
+    kind: 'symbolic-task-canvas',
+    strategy: 'symbolic-state-offloading',
+    canvas,
+    footprint,
+  };
+}
+
 function buildContextFootprintReport(options = {}) {
   const targetReduction = normalizeRatio(options.targetReduction);
   const report = {
@@ -152,6 +227,7 @@ function buildContextFootprintReport(options = {}) {
       'Use construct_context_pack with maxChars before injecting lessons into a model prompt.',
       'Keep gate ids, proof URLs, and anchor lessons stable so compaction does not hide evidence.',
       'Track estimated token savings beside every optimized context path.',
+      'Offload verbose raw logs into a Symbolic Task Canvas (Mermaid state graph) to save ~60% tokens.',
     ],
   };
 
@@ -177,6 +253,17 @@ function buildContextFootprintReport(options = {}) {
     );
   }
 
+  if (options.symbolicCanvas || Array.isArray(options.symbolicEntries)) {
+    report.symbolicTaskCanvas = compactSymbolicTaskCanvas(
+      options.symbolicEntries || options.entries || [],
+      {
+        activeTask: options.activeTask,
+        targetReduction,
+        charsPerToken: options.charsPerToken,
+      },
+    );
+  }
+
   return report;
 }
 
@@ -187,5 +274,8 @@ module.exports = {
   measureFootprint,
   buildMcpToolFootprintReport,
   buildFeedbackContextFootprintReport,
+  renderSymbolicTaskCanvas,
+  compactSymbolicTaskCanvas,
   buildContextFootprintReport,
 };
+

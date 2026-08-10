@@ -66,3 +66,17 @@ test('markdown report is useful for operator review and ad evidence', () => {
   assert.match(markdown, /Proposed ThumbGate Gates/);
   assert.match(markdown, /identity scope/);
 });
+
+test('normalizes TencentDB Agent Memory records and compiles blocking SQL safety candidate', () => {
+  const report = buildMemoryProviderBridgeReport({
+    provider: 'tencentdb-agent-memory',
+    db_memory: [
+      { type: 'schema_failure', text: 'Database agent executed unindexed query and attempted TRUNCATE on production table.' },
+    ],
+  });
+  assert.equal(report.provider, 'tencentdb-agent-memory');
+  assert.equal(report.gateCandidates.length, 1);
+  assert.equal(report.gateCandidates[0].action, 'block');
+  assert.match(report.gateCandidates[0].pattern, /truncate/i);
+  assert.ok(report.gateCandidates[0].tags.includes('provider:tencentdb-agent-memory'));
+});

@@ -124,8 +124,14 @@ test('OAuth scope blocks write tools even for an admin-bound token', async () =>
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 10, method: 'tools/list', params: {} }),
   })).json();
-  const writeTool = list.result.tools.find((tool) => tool.annotations?.destructiveHint === true);
+  // Prefer a true mcp:write tool; fall back to any destructive tool whose scope is not satisfied by mcp:read.
+  const writeTool = list.result.tools.find((tool) => tool.annotations?.thumbgateScope === 'mcp:write')
+    || list.result.tools.find((tool) => tool.annotations?.destructiveHint === true
+      && tool.annotations?.thumbgateScope !== 'mcp:read');
   assert.ok(writeTool);
+  const requiredScope = writeTool.annotations?.thumbgateScope
+    || (writeTool.annotations?.readOnlyHint === true ? 'mcp:read' : 'mcp:write');
+  assert.notEqual(requiredScope, 'mcp:read');
   const readOnlyAdminToken = await tokenFor(ADMIN_KEY, 'mcp:read');
   const response = await callTool(readOnlyAdminToken, writeTool.name);
   assert.equal(response.error?.code, -32003);
@@ -137,6 +143,6 @@ test('OAuth scope blocks write tools even for an admin-bound token', async () =>
     entry.toolName === writeTool.name
       && entry.success === false
       && entry.metadata?.deniedReason === 'insufficient_scope'
-      && entry.metadata?.requiredScope === 'mcp:write'
-  )));
+      && entry.metadata?.requiredScope === requiredScope
+  )), `expected insufficient_scope KPI for ${writeTool.name} requiring ${requiredScope}`);
 });

@@ -29,7 +29,17 @@ const crypto = require('crypto');
 const AUTH_CODE_TTL_MS = 60 * 1000; // 1 minute
 const ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const DEFAULT_SCOPE = 'mcp:read mcp:write';
-const SUPPORTED_SCOPES = Object.freeze(['mcp:read', 'mcp:write']);
+// Scope hierarchy (WorkOS / MCP Auth alignment): broader grants imply narrower ones.
+// mcp:write covers side-effecting tools AND read-only tools (write ⇒ read).
+// mcp:gates is for gate-evaluation tools; mcp:write implies mcp:gates.
+// mcp:feedback is for feedback-capture tools; mcp:write implies mcp:feedback.
+const SUPPORTED_SCOPES = Object.freeze(['mcp:read', 'mcp:write', 'mcp:gates', 'mcp:feedback']);
+const SCOPE_IMPLIES = Object.freeze({
+  'mcp:write': Object.freeze(['mcp:read', 'mcp:gates', 'mcp:feedback', 'mcp:write']),
+  'mcp:gates': Object.freeze(['mcp:gates', 'mcp:read']),
+  'mcp:feedback': Object.freeze(['mcp:feedback', 'mcp:read']),
+  'mcp:read': Object.freeze(['mcp:read']),
+});
 
 // Upper bounds on the in-memory store. The registration and authorization
 // endpoints are reachable pre-auth, so without a cap a malicious caller could
@@ -97,7 +107,7 @@ function buildProtectedResourceMetadata(baseUrl) {
     resource: `${base}/mcp`,
     authorization_servers: [base],
     bearer_methods_supported: ['header'],
-    scopes_supported: ['mcp:read', 'mcp:write'],
+    scopes_supported: [...SUPPORTED_SCOPES],
     resource_documentation: `${base}/docs/connectors`,
   };
 }
@@ -109,7 +119,7 @@ function buildAuthServerMetadata(baseUrl) {
     authorization_endpoint: `${base}/oauth/authorize`,
     token_endpoint: `${base}/oauth/token`,
     registration_endpoint: `${base}/oauth/register`,
-    scopes_supported: ['mcp:read', 'mcp:write'],
+    scopes_supported: [...SUPPORTED_SCOPES],
     response_types_supported: ['code'],
     grant_types_supported: ['authorization_code'],
     code_challenge_methods_supported: ['S256'],
@@ -176,10 +186,36 @@ function normalizeScopes(scope = DEFAULT_SCOPE, allowedScopes = SUPPORTED_SCOPES
   };
 }
 
+/**
+ * True when the session's granted scopes cover `requiredScope`, including
+ * hierarchy (e.g. a token with only `mcp:write` may call read-only tools).
+ * Mirrors enterprise MCP Auth patterns (WorkOS AuthKit maps OAuth scopes to
+ * tool roles with least privilege + natural implication).
+ */
 function scopeAllows(session, requiredScope) {
   if (!session || !requiredScope) return false;
   const normalized = normalizeScopes(session.scope, SUPPORTED_SCOPES);
-  return normalized.valid && normalized.scopes.includes(requiredScope);
+  if (!normalized.valid) return false;
+  const required = String(requiredScope);
+  for (const granted of normalized.scopes) {
+    const implies = SCOPE_IMPLIES[granted] || [granted];
+    if (implies.includes(required)) return true;
+  }
+  return false;
+}
+
+/**
+ * Map an MCP tool annotation to the minimum OAuth scope required.
+ * - readOnlyHint → mcp:read
+ * - openWorld/side-effect tools → mcp:write
+ * - gate-eval tools can opt into mcp:gates via annotations.thumbgateScope
+ * - feedback tools can opt into mcp:feedback via annotations.thumbgateScope
+ */
+function requiredScopeForTool(tool = {}) {
+  const explicit = tool?.annotations?.thumbgateScope;
+  if (explicit && SUPPORTED_SCOPES.includes(explicit)) return explicit;
+  if (tool?.annotations?.readOnlyHint === true) return 'mcp:read';
+  return 'mcp:write';
 }
 
 // ---------------------------------------------------------------------------
@@ -320,8 +356,10 @@ module.exports = {
   ACCESS_TOKEN_TTL_MS,
   DEFAULT_SCOPE,
   SUPPORTED_SCOPES,
+  SCOPE_IMPLIES,
   normalizeScopes,
   scopeAllows,
+  requiredScopeForTool,
   MAX_CLIENTS,
   MAX_CODES,
   MAX_TOKENS,
