@@ -8,6 +8,13 @@
 
 ### Patch Changes
 
+- stealth-memory-injection: Block MemGhost-class stealth memory injection into durable
+  carriers (MEMORY.md / AGENTS.md / SOUL.md / …) from external/email provenance
+  (paper 2607.05189 WhisperBench). Structural gate
+  `block-stealth-memory-injection-from-external` in
+  `scripts/stealth-memory-injection-gate.js`, wired in `gates-engine.js`.
+  Public npm bundle ceiling 431 → 432 for the new script only.
+
 - founders-oceans: Ship Oceans-inspired `/founders` cash-path landing (plus diagnostic
   conversion blocks) for the $499 managed diagnostic. Public npm bundle ceiling
   423 → 424 for `public/founders.html` only.
