@@ -60,8 +60,13 @@ jobs:
             exit 0
           fi
 
-          git diff --name-only "$BASE_SHA" "$HEAD_SHA" | sed '/^$/d' > /tmp/ci-changed-files.txt
-          echo "Changed files:"
+          # Compare HEAD against the merge base, not the two branch tips.
+          # Two-tip diff includes commits already on main that the PR lacks,
+          # which wrongly forces full CI on stale Dependabot PRs.
+          MERGE_BASE=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
+          echo "merge_base=$MERGE_BASE"
+          git diff --name-only "${MERGE_BASE}...${HEAD_SHA}" | sed '/^$/d' > /tmp/ci-changed-files.txt
+          echo "Changed files (vs merge base):"
           sed 's/^/- /' /tmp/ci-changed-files.txt || true
 
           if [[ ! -s /tmp/ci-changed-files.txt ]]; then
@@ -184,10 +189,11 @@ jobs:
             tests/deployment.test.js \
             tests/sonarcloud-workflow.test.js \
             tests/ci-cd-hygiene-audit.test.js
-          if git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" | grep -qE '^workers/'; then
+          MERGE_BASE=$(git merge-base "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}")
+          if git diff --name-only "${MERGE_BASE}...${{ github.event.pull_request.head.sha }}" | grep -qE '^workers/'; then
             npm run test:workers
           fi
-          if git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" | grep -qE '^(package\.json|package-lock\.json)$'; then
+          if git diff --name-only "${MERGE_BASE}...${{ github.event.pull_request.head.sha }}" | grep -qE '^(package\.json|package-lock\.json)$'; then
             npm run test:public-package-parity
           fi
 

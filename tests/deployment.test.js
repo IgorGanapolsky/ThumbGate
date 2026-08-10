@@ -844,6 +844,9 @@ test('CI workflow routes pure-deps and workflow-only PRs through focused smoke t
   assert.match(workflow, /name:\s*Run focused deps\/workflow smoke tests[\s\S]*?if:\s*steps\.ci-scope\.outputs\.mode == 'deps'[\s\S]*?tests\/public-core-boundary\.test\.js[\s\S]*?tests\/deployment\.test\.js/);
   // Coverage re-runs the full suite; skip it on ordinary PRs to cut wall clock.
   assert.match(workflow, /name:\s*Run coverage[\s\S]*?if:\s*steps\.ci-scope\.outputs\.mode == 'full' && github\.event_name != 'pull_request'/);
+  assert.match(workflow, /git merge-base/);
+  assert.match(workflow, /merge_base=/);
+  assert.match(workflow, /Changed files \(vs merge base\)/);
 });
 
 test('CodeQL workflow supports merge queue and cancels stale non-main runs', () => {
