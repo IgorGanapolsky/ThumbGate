@@ -41,7 +41,13 @@ test('isDurableCarrier recognizes OpenClaw-style omnipresent files', () => {
 test('isWriteLikeTool covers Write/Edit and shell redirects', () => {
   assert.equal(isWriteLikeTool('Write', { file_path: 'MEMORY.md' }), true);
   assert.equal(isWriteLikeTool('Bash', { command: 'cat > MEMORY.md <<EOF\nx\nEOF' }), true);
+  assert.equal(isWriteLikeTool('Bash', { command: "printf '%s' payload > MEMORY.md" }), true);
   assert.equal(isWriteLikeTool('Read', { file_path: 'MEMORY.md' }), false);
+});
+
+test('isWriteLikeTool handles long printf input without a polynomial regex', () => {
+  const command = `printf '${'\t'.repeat(100_000)}payload' > MEMORY.md`;
+  assert.equal(isWriteLikeTool('Bash', { command }), true);
 });
 
 test('blocks durable carrier write with stealth language (MemGhost core)', () => {

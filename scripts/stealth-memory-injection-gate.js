@@ -176,7 +176,9 @@ function isWriteLikeTool(toolName, toolInput = {}) {
   if (toolName === 'Bash' || toolName === 'bash' || toolName === 'Shell') {
     const cmd = normalizeText(toolInput.command);
     // Note: do not anchor word-boundary after `>` — `cat > file` has no \b after `>`.
-    return /(?:\btee\b|\bcat\s*>|>>|\bprintf\s+.*>|\bcp\s+|\bmv\s+|\binstall\s+-m|\bsed\s+-i)/i.test(cmd)
+    const usesRedirectingPrintf = /\bprintf\b/i.test(cmd) && cmd.includes('>');
+    return usesRedirectingPrintf
+      || /(?:\btee\b|\bcat\s*>|>>|\bcp\s+|\bmv\s+|\binstall\s+-m|\bsed\s+-i)/i.test(cmd)
       || /\b(?:Write|write_file|create_file)\b/i.test(cmd);
   }
   return false;
