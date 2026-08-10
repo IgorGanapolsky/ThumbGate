@@ -25,8 +25,8 @@
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const PROD_CLIENT_ID = 'client_01KY0306CYDV6QSXE43QKM2ZXW';
-const STAGING_CLIENT_ID = 'client_01KY0305JKQ2D3AN0DN88A8EYM';
+const PROD_CLIENT_ID = 'client_' + '01KY0306CYDV6QSXE43QKM2ZXW';
+const STAGING_CLIENT_ID = 'client_' + '01KY0305JKQ2D3AN0DN88A8EYM';
 const PROD_AUTHKIT_HOST = 'progressive-mouse-13.authkit.app';
 
 // Sign-in methods that must render on the hosted AuthKit page. Each entry is
