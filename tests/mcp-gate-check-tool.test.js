@@ -24,8 +24,31 @@ function mcp(requests, env = {}) {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     let out = '';
+    let lineBuffer = '';
+    const expectedResponseIds = new Set([0, ...requests
+      .filter((request) => request.id !== undefined)
+      .map((request) => request.id)]);
+    const observedResponseIds = new Set();
+    let inputClosed = false;
     const timer = setTimeout(() => { child.kill(); reject(new Error('MCP server timeout')); }, 60000);
-    child.stdout.on('data', (c) => { out += c; });
+    child.stdout.on('data', (chunk) => {
+      const text = chunk.toString();
+      out += text;
+      lineBuffer += text;
+      const lines = lineBuffer.split('\n');
+      lineBuffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.trim().startsWith('{')) continue;
+        try {
+          const message = JSON.parse(line);
+          if (message.id !== undefined) observedResponseIds.add(message.id);
+        } catch { /* not a frame */ }
+      }
+      if (!inputClosed && [...expectedResponseIds].every((id) => observedResponseIds.has(id))) {
+        inputClosed = true;
+        child.stdin.end();
+      }
+    });
     child.on('error', reject);
     child.on('close', () => {
       clearTimeout(timer);
@@ -41,7 +64,6 @@ function mcp(requests, env = {}) {
     send({ jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 't', version: '1' } } });
     send({ jsonrpc: '2.0', method: 'notifications/initialized' });
     for (const r of requests) send(r);
-    child.stdin.end();
   });
 }
 
