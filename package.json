@@ -1014,7 +1014,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "0.115.0",
     "@google/genai": "2.15.0",
-    "@lancedb/lancedb": "^0.30.0",
+    "@lancedb/lancedb": "^0.33.0",
     "apache-arrow": "^18.1.0",
     "better-sqlite3": "^12.9.0",
     "dotenv": "^17.4.2",
@@ -1036,6 +1036,7 @@
       "path-to-regexp": "0.1.13"
     },
     "js-yaml": "5.2.3",
+    "sharp": "0.35.3",
     "undici": "8.10.0"
   },
   "mcpName": "io.github.IgorGanapolsky/thumbgate",

@@ -47,35 +47,46 @@ function gateCheck(toolName, toolInput, env = {}) {
     });
     let out = '';
     let lineBuffer = '';
-    let inputClosed = false;
-    const timer = setTimeout(() => { child.kill(); reject(new Error('timeout')); }, 60000);
-    child.stdout.on('data', (chunk) => {
-      const text = chunk.toString();
-      out += text;
-      lineBuffer += text;
-      const lines = lineBuffer.split('\n');
-      lineBuffer = lines.pop() || '';
+    let settled = false;
+    const finish = (fn) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try { child.kill(); } catch { /* already exited */ }
+      try { fs.rmSync(home, { recursive: true, force: true }); } catch { /* best effort */ }
+      fn();
+    };
+    const timer = setTimeout(() => finish(() => reject(new Error('timeout'))), 60000);
+    // Drain stderr so license/model noise cannot block the MCP child on a full pipe.
+    child.stderr.on('data', () => {});
+    child.stdout.on('data', (c) => {
+      const chunk = String(c);
+      out += chunk;
+      const lines = (lineBuffer + chunk).split('\n');
+      lineBuffer = lines.pop();
       for (const line of lines) {
         if (!line.trim().startsWith('{')) continue;
-        try {
-          const message = JSON.parse(line);
-          if (!inputClosed && message.id === 9) {
-            inputClosed = true;
-            child.stdin.end();
-          }
-        } catch { /* not a frame */ }
+        let m; try { m = JSON.parse(line); } catch { continue; }
+        if (m.id === 9 && m.result && m.result.content && m.result.content[0]) {
+          // Keep stdin open until the tools/call reply arrives; early EOF races
+          // server shutdown and drops gate_check responses under CI load.
+          try { child.stdin.end(); } catch { /* ignore */ }
+          return finish(() => resolve(JSON.parse(m.result.content[0].text)));
+        }
       }
     });
-    child.on('error', reject);
+    child.on('error', (err) => finish(() => reject(err)));
     child.on('close', () => {
-      clearTimeout(timer);
-      fs.rmSync(home, { recursive: true, force: true });
-      for (const line of out.split('\n')) {
-        if (!line.trim().startsWith('{')) continue;
-        let m; try { m = JSON.parse(line); } catch { continue; }
-        if (m.id === 9) return resolve(JSON.parse(m.result.content[0].text));
-      }
-      reject(new Error('no gate_check response'));
+      finish(() => {
+        for (const line of out.split('\n')) {
+          if (!line.trim().startsWith('{')) continue;
+          let m; try { m = JSON.parse(line); } catch { continue; }
+          if (m.id === 9 && m.result && m.result.content && m.result.content[0]) {
+            return resolve(JSON.parse(m.result.content[0].text));
+          }
+        }
+        reject(new Error('no gate_check response'));
+      });
     });
     const send = (o) => child.stdin.write(`${JSON.stringify(o)}\n`);
     send({ jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 't', version: '1' } } });
