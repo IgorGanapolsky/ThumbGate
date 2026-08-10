@@ -252,11 +252,14 @@ thumbgate-dashboard
 | Approach | Blocks actions before execution | Learns from feedback | Shared team enforcement | Audit trail |
 |---|---|---|---|---|
 | **ThumbGate** | Yes — PreToolUse hooks | Yes — auto-generates rules | Yes — shared lesson DB | Yes — full log |
+| Langfuse / LangSmith / Braintrust / Arize | No — observe/score after or during generation (LLM traces + evals) | Partial — human labels / automated judges on traces | Partial — shared projects | Yes — traces |
 | Fallow | No — analyzes JS/TS code health | No — reports dead code, duplication, complexity, and architecture drift | Partial — shared reports/config | Partial — analyzer output |
 | CLAUDE.md / .cursorrules | No — suggestions only | No — hand-written | No — per-developer files | No |
 | ESLint / linters | Partial — static analysis | No — hand-written rules | Partial — shared config | No |
 | Manual code review | Partial — after PR, not before | No — reviewer memory | Partial — PR comments | Partial — PR history |
 | Post-hoc git revert | No — damage already done | No | No | Partial — git log |
+
+**LLM observability platforms** (2026 market leaders often include Langfuse, LangSmith, Braintrust, Arize) treat the **trace** as the primary object. They are complementary: keep them for evals and production LLM monitoring; use ThumbGate when coding agents need **pre-action** blocks. Detail: https://thumbgate.ai/compare/langfuse-langsmith-observability
 
 **CLAUDE.md rules** are plain-text instructions read by the agent at session start. The agent can ignore them, forget them, or misinterpret them mid-session. CLAUDE.md is useful for project context but provides no enforcement guarantee.
 
