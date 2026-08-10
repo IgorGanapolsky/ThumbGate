@@ -200,3 +200,14 @@ test('tool names are unique', () => {
   const unique = new Set(names);
   assert.equal(names.length, unique.size, `duplicate tool names: ${names.filter((n, i) => names.indexOf(n) !== i)}`);
 });
+
+
+test('inferThumbgateScope maps feedback/gates/read/write classes', () => {
+  const { inferThumbgateScope, TOOLS } = require('../scripts/tool-registry');
+  assert.equal(inferThumbgateScope('capture_feedback', { destructiveHint: true }), 'mcp:feedback');
+  assert.equal(inferThumbgateScope('satisfy_gate', { destructiveHint: true }), 'mcp:gates');
+  assert.equal(inferThumbgateScope('search_lessons', { readOnlyHint: true }), 'mcp:read');
+  assert.equal(inferThumbgateScope('export_dpo_pairs', { destructiveHint: true }), 'mcp:write');
+  const capture = TOOLS.find((tool) => tool.name === 'capture_feedback');
+  assert.equal(capture.annotations.thumbgateScope, 'mcp:feedback');
+});
