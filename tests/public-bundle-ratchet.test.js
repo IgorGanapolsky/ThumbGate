@@ -172,7 +172,8 @@ const path = require('node:path');
 // for hosted-dashboard string-limit resilience and CLI progress UX. Public shell
 // only; keep lockstep with package-boundary + public-core-boundary.
 // Bumped 423 -> 424 (2026-08-09): public/founders.html Oceans-inspired $499 cash-path landing.
-const BASELINE_FILE_COUNT = 424;
+// Bumped 424 -> 431 (2026-08-10): WorkOS + Herdr + /peter partner landing + packaged prove scripts.
+const BASELINE_FILE_COUNT = 431;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

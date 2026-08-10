@@ -214,6 +214,32 @@ function syncVersion(opts) {
   }
 
   // 8. Codex plugin manifest + MCP config
+  // Herdr approvals plugin: top-level version field + thumbgate@ pin.
+  // tests/adapter-version-pins.test.js scans adapter TOML for package pins.
+  {
+    const herdrPluginPath = 'adapters/herdr/herdr-plugin.toml';
+    const herdrAbs = path.join(PROJECT_ROOT, herdrPluginPath);
+    if (fs.existsSync(herdrAbs)) {
+      let content = fs.readFileSync(herdrAbs, 'utf-8');
+      const versionLine = content.match(/^version\s*=\s*"([^"]+)"/m);
+      const currentVersion = versionLine ? versionLine[1] : null;
+      let next = content;
+      if (currentVersion && currentVersion !== version) {
+        drifted.push({ file: herdrPluginPath, field: 'version', current: currentVersion });
+        next = next.replace(/^version\s*=\s*"[^"]+"/m, `version = "${version}"`);
+      }
+      const pinMatches = content.match(/thumbgate@\d+\.\d+\.\d+/g) || [];
+      if (pinMatches.some((m) => m !== `thumbgate@${version}`)) {
+        drifted.push({ file: herdrPluginPath, field: 'package-version-string', current: pinMatches.join(', ') });
+        next = next.replace(/thumbgate@\d+\.\d+\.\d+/g, `thumbgate@${version}`);
+      }
+      if (!checkOnly && next !== content) {
+        fs.writeFileSync(herdrAbs, next, 'utf-8');
+      }
+      targets.push(herdrPluginPath);
+    }
+  }
+
   const codexAdapterConfigPath = 'adapters/codex/config.toml';
   if (fs.existsSync(path.join(PROJECT_ROOT, codexAdapterConfigPath))) {
     const content = fs.readFileSync(path.join(PROJECT_ROOT, codexAdapterConfigPath), 'utf8');
@@ -321,6 +347,7 @@ function syncVersion(opts) {
     // tests/adapter-version-pins.test.js fails the release if it recurs.
     'adapters/claw/.mcp.json',
     'adapters/forge/forge.yaml',
+    'adapters/herdr/herdr-plugin.toml',
     'adapters/hermes/config.toml',
     'adapters/hermes/opencode.json',
     'adapters/hermes/.mcp.json',

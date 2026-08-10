@@ -203,3 +203,27 @@ test('resolveModelRole maps provider to vertex when Vertex AI is active', () => 
   assert.equal(result.provider, 'vertex');
   assert.equal(result.model, MODEL_ROLES.normal);
 });
+
+test('resolveModelRole maps provider to local and uses VLLM_MODEL_ROLES when vllm model family is active', () => {
+  const { VLLM_MODEL_ROLES } = require('../scripts/local-model-profile');
+  const result = resolveModelRole('thinking', {
+    THUMBGATE_LOCAL_MODEL_FAMILY: 'vllm',
+  });
+
+  assert.equal(result.provider, 'local');
+  assert.equal(result.model, VLLM_MODEL_ROLES.thinking);
+  assert.equal(result.model, 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B');
+});
+
+
+test('resolveModelRole does not select VLLM_MODEL_ROLES from bare LOCAL_LLM_ENDPOINT', () => {
+  const { resolveModelRole, MODEL_ROLES } = require('../scripts/local-model-profile');
+  const result = resolveModelRole('normal', {
+    THUMBGATE_LOCAL_LLM_ENDPOINT: 'http://127.0.0.1:11434/v1',
+    THUMBGATE_LOCAL_LLM_MODEL: 'qwen2.5:3b',
+    THUMBGATE_MODEL_ROLE_NORMAL: 'qwen2.5:3b',
+  });
+  // Endpoint alone is not vLLM family — keep explicit/default non-vLLM model.
+  assert.notEqual(result.model, 'Qwen/Qwen2.5-Coder-32B-Instruct');
+  assert.equal(result.model, 'qwen2.5:3b');
+});
