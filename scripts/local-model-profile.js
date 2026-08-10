@@ -352,7 +352,10 @@ function resolveModelRole(role, env) {
   const envKey = `THUMBGATE_MODEL_ROLE_${normalized.toUpperCase()}`;
   const modelFamily = resolveModelFamily(e);
   const isLocalGlm = modelFamily.startsWith('glm');
-  const isLocalVllm = modelFamily.startsWith('vllm') || Boolean(e.THUMBGATE_LOCAL_LLM_ENDPOINT);
+  // Only explicit vLLM family/server selects VLLM_MODEL_ROLES. A generic
+  // THUMBGATE_LOCAL_LLM_ENDPOINT (Ollama, LM Studio, etc.) must keep its own model id.
+  const serverEngine = normalizeSlug(e.THUMBGATE_LOCAL_MODEL_SERVER || e.THUMBGATE_MODEL_SERVER || '');
+  const isLocalVllm = modelFamily.startsWith('vllm') || serverEngine === 'vllm';
   const providerMode = resolveProviderMode(e);
   const provider = (isLocalGlm || isLocalVllm) ? 'local' : (providerMode === 'vertex' ? 'vertex' : 'gemini');
   const defaultModel = isLocalVllm

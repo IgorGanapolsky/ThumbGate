@@ -19,17 +19,33 @@ function readOnlyTool(tool) {
     annotations: {
       title: tool.title || humanizeTitle(tool.name),
       readOnlyHint: true,
+      thumbgateScope: 'mcp:read',
     },
   };
 }
 
+function inferThumbgateScope(toolName, annotations = {}) {
+  if (annotations.thumbgateScope) return annotations.thumbgateScope;
+  if (annotations.readOnlyHint === true) return 'mcp:read';
+  const name = String(toolName || '');
+  if (/(^|_)feedback($|_)|capture_memory_feedback|capture_feedback/.test(name)) {
+    return 'mcp:feedback';
+  }
+  if (/(^|_)gate($|_)|prevention_rules|enforcement_matrix|satisfy_gate/.test(name)) {
+    return 'mcp:gates';
+  }
+  return 'mcp:write';
+}
+
 function destructiveTool(tool) {
+  const title = tool.title || humanizeTitle(tool.name);
   return {
     ...tool,
-    title: tool.title || humanizeTitle(tool.name),
+    title,
     annotations: {
-      title: tool.title || humanizeTitle(tool.name),
+      title,
       destructiveHint: true,
+      thumbgateScope: inferThumbgateScope(tool.name, { destructiveHint: true }),
     },
   };
 }
@@ -1841,10 +1857,14 @@ const NORMALIZED_TOOLS = TOOLS.map((tool) => {
     ...existing,
     ...(hasHint ? {} : { destructiveHint: true }),
   };
+  if (!annotations.thumbgateScope) {
+    annotations.thumbgateScope = inferThumbgateScope(tool.name, annotations);
+  }
   return { ...tool, title, annotations };
 });
 
 module.exports = {
   TOOLS: NORMALIZED_TOOLS,
   humanizeTitle,
+  inferThumbgateScope,
 };

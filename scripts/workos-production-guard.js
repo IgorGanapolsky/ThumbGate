@@ -7,13 +7,8 @@
  * max_age step-up. Enforces the $10/mo ops policy's "no public staging auth"
  * rule. Does not call WorkOS billing APIs (no secrets).
  *
- * Also asserts which sign-in METHODS actually render on the hosted AuthKit
- * page (EXPECTED_METHODS below). Root cause this closes (2026-07-22): the
- * redirect-chain check alone never noticed when available sign-in methods
- * changed — Igor had to notice by eye that Google SSO silently vanished after
- * a staging->production cutover. Update EXPECTED_METHODS whenever a method is
- * deliberately added/removed (same update-on-purpose contract as the client
- * ID / host constants below).
+ * Uses Node built-in fetch (no shell PATH curl) so Sonar reliability stays clean
+ * and unit tests can inject a fetch implementation.
  *
  * Usage:
  *   node scripts/workos-production-guard.js
@@ -23,17 +18,11 @@
  */
 
 const path = require('path');
-const { spawnSync } = require('child_process');
 
 const PROD_CLIENT_ID = 'client_' + '01KY0306CYDV6QSXE43QKM2ZXW';
 const STAGING_CLIENT_ID = 'client_' + '01KY0305JKQ2D3AN0DN88A8EYM';
 const PROD_AUTHKIT_HOST = 'progressive-mouse-13.authkit.app';
 
-// Sign-in methods that must render on the hosted AuthKit page. Each entry is
-// a case-insensitive substring to look for in the page body. Update this list
-// the same day a method is deliberately enabled/disabled in the WorkOS
-// Dashboard (Authentication -> Providers/Methods) — see
-// docs/WORKOS-PRODUCTION-SPEND-CAP.md.
 const EXPECTED_METHODS = [
   { name: 'email', marker: 'continue with email' },
   { name: 'google', marker: 'continue with google' },
@@ -49,45 +38,51 @@ function parseArgs(argv) {
   return args;
 }
 
-function curlHeaders(url) {
-  const res = spawnSync('curl', ['-sI', url], { encoding: 'utf8', timeout: 20000 });
-  if (res.status !== 0) {
-    throw new Error(`curl failed for ${url}: ${res.stderr || res.stdout || res.status}`);
+function defaultFetchImpl(url, options = {}) {
+  return fetch(url, {
+    method: options.method || 'GET',
+    redirect: options.redirect || 'manual',
+    headers: options.headers,
+    signal: options.signal,
+  });
+}
+
+async function fetchHeaders(url, fetchImpl, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetchImpl(url, { method: 'GET', redirect: 'manual', signal: controller.signal });
+    const location = res.headers.get('location') || res.headers.get('Location') || null;
+    return { status: res.status, location, headers: res.headers };
+  } finally {
+    clearTimeout(timer);
   }
-  return res.stdout || '';
 }
 
-function locationFromHeaders(headers) {
-  const m = headers.match(/^location:\s*(\S+)/im);
-  return m ? m[1].trim() : null;
-}
-
-function curlBody(url) {
-  const res = spawnSync('curl', ['-sL', url], { encoding: 'utf8', timeout: 20000 });
-  if (res.status !== 0) {
-    throw new Error(`curl failed for ${url}: ${res.stderr || res.stdout || res.status}`);
+async function fetchBody(url, fetchImpl, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetchImpl(url, { method: 'GET', redirect: 'follow', signal: controller.signal });
+    return await res.text();
+  } finally {
+    clearTimeout(timer);
   }
-  return res.stdout || '';
 }
 
-function checkSignInMethods(finalUrl) {
+async function checkSignInMethods(finalUrl, fetchImpl) {
   const failures = [];
   const warnings = [];
   let body = '';
   try {
-    body = curlBody(finalUrl).toLowerCase();
+    body = (await fetchBody(finalUrl, fetchImpl)).toLowerCase();
   } catch (error) {
-    // A fetch error here is a warning, not a failure — this check must not
-    // make unrelated CI runs flaky on a transient network blip. The
-    // redirect-chain checks above are the hard gate; this is a second,
-    // best-effort layer on top.
     warnings.push(`could not fetch AuthKit page body to verify sign-in methods: ${error.message}`);
     return { failures, warnings, methodsFound: [] };
   }
   const methodsFound = [];
   for (const method of EXPECTED_METHODS) {
-    const present = body.includes(method.marker);
-    if (present) {
+    if (body.includes(method.marker)) {
       methodsFound.push(method.name);
     } else {
       failures.push(
@@ -100,7 +95,7 @@ function checkSignInMethods(finalUrl) {
   return { failures, warnings, methodsFound };
 }
 
-function followHosts(startUrl, maxHops = 8) {
+async function followHosts(startUrl, fetchImpl, maxHops = 8) {
   const hosts = [];
   let url = startUrl;
   for (let i = 0; i < maxHops; i += 1) {
@@ -111,20 +106,37 @@ function followHosts(startUrl, maxHops = 8) {
       break;
     }
     hosts.push(host);
-    const headers = curlHeaders(url);
-    const next = locationFromHeaders(headers);
-    if (!next) break;
-    url = next;
+    let location = null;
+    try {
+      const headers = await fetchHeaders(url, fetchImpl);
+      location = headers.location;
+    } catch {
+      break;
+    }
+    if (!location) break;
+    try {
+      url = new URL(location, url).toString();
+    } catch {
+      url = location;
+    }
   }
   return { hosts, finalHost: hosts[hosts.length - 1] || null, finalUrl: url };
 }
 
-function check(base) {
+async function check(base, options = {}) {
+  const fetchImpl = options.fetchImpl || defaultFetchImpl;
   const loginUrl = `${base}/api/auth/login`;
-  const headers = curlHeaders(loginUrl);
-  const location = locationFromHeaders(headers);
   const failures = [];
   const warnings = [];
+
+  let location = null;
+  try {
+    const headers = await fetchHeaders(loginUrl, fetchImpl);
+    location = headers.location;
+  } catch (error) {
+    failures.push(`login request failed: ${error.message || error}`);
+    return { ok: false, failures, warnings, loginUrl };
+  }
 
   if (!location) {
     failures.push('login did not return a Location redirect');
@@ -135,12 +147,13 @@ function check(base) {
   let redirectUri = null;
   let hasMaxAge = false;
   try {
-    const u = new URL(location);
+    const u = new URL(location, loginUrl);
     clientId = u.searchParams.get('client_id');
     redirectUri = u.searchParams.get('redirect_uri');
     hasMaxAge = u.searchParams.has('max_age');
+    location = u.toString();
   } catch {
-    failures.push(`invalid login Location: ${location.slice(0, 120)}`);
+    failures.push(`invalid login Location: ${String(location).slice(0, 120)}`);
   }
 
   if (clientId !== PROD_CLIENT_ID) {
@@ -156,7 +169,7 @@ function check(base) {
     warnings.push(`redirect_uri is ${redirectUri} (expected ${base}/api/auth/callback)`);
   }
 
-  const chain = followHosts(location);
+  const chain = await followHosts(location, fetchImpl);
   const anyStaging = chain.hosts.some((h) => /staging/i.test(h));
   const anyAuthkit = chain.hosts.some((h) => /authkit\.app$/i.test(h));
   const anyError = chain.hosts.some((h) => /error\.workos\.com$/i.test(h));
@@ -165,7 +178,7 @@ function check(base) {
     failures.push(`redirect chain hits staging host(s): ${chain.hosts.filter((h) => /staging/i.test(h)).join(', ')}`);
   }
   if (anyError) {
-    failures.push(`redirect chain hits error.workos.com (often missing Production redirect URI)`);
+    failures.push('redirect chain hits error.workos.com (often missing Production redirect URI)');
   }
   if (!anyAuthkit) {
     failures.push(`redirect chain never reached authkit.app (hosts: ${chain.hosts.join(' -> ')})`);
@@ -178,7 +191,7 @@ function check(base) {
 
   let methodsFound = [];
   if (anyAuthkit && !anyStaging) {
-    const methodCheck = checkSignInMethods(chain.finalUrl);
+    const methodCheck = await checkSignInMethods(chain.finalUrl, fetchImpl);
     failures.push(...methodCheck.failures);
     warnings.push(...methodCheck.warnings);
     methodsFound = methodCheck.methodsFound;
@@ -202,7 +215,7 @@ function check(base) {
   };
 }
 
-function main() {
+async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
     console.log('Usage: node scripts/workos-production-guard.js [--json] [--base https://thumbgate.app]');
@@ -210,7 +223,7 @@ function main() {
   }
   let report;
   try {
-    report = check(args.base);
+    report = await check(args.base);
   } catch (error) {
     report = { ok: false, failures: [String(error.message || error)], warnings: [] };
   }
@@ -232,9 +245,16 @@ function main() {
   process.exit(report.ok ? 0 : 1);
 }
 
-module.exports = { check, PROD_CLIENT_ID, STAGING_CLIENT_ID, PROD_AUTHKIT_HOST, EXPECTED_METHODS };
+module.exports = {
+  check,
+  parseArgs,
+  PROD_CLIENT_ID,
+  STAGING_CLIENT_ID,
+  PROD_AUTHKIT_HOST,
+  EXPECTED_METHODS,
+  defaultFetchImpl,
+};
 
-// Path-based main check (portable under CommonJS strict equality / Sonar S3403).
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   main();
 }

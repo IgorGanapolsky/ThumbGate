@@ -269,3 +269,17 @@ test('authorize rejects unknown client + unregistered redirect_uri', () => {
   const client = registerTestClient(store);
   assert.equal(oauth.createAuthorizationCode(store, { clientId: client.client_id, redirectUri: 'https://evil.example', codeChallenge: 'y'.repeat(43), codeChallengeMethod: 'S256' }).error, 'invalid_request');
 });
+
+test('tool registry binds capture_feedback to mcp:feedback and read tools to mcp:read', () => {
+  const { TOOLS } = require('../scripts/tool-registry');
+  const capture = TOOLS.find((t) => t.name === 'capture_feedback');
+  assert.ok(capture, 'capture_feedback exists');
+  assert.equal(oauth.requiredScopeForTool(capture), 'mcp:feedback');
+  assert.equal(oauth.scopeAllows({ scope: 'mcp:feedback' }, 'mcp:feedback'), true);
+  assert.equal(oauth.scopeAllows({ scope: 'mcp:feedback' }, 'mcp:write'), false);
+
+  const search = TOOLS.find((t) => t.name === 'search_lessons');
+  assert.ok(search);
+  assert.equal(oauth.requiredScopeForTool(search), 'mcp:read');
+  assert.equal(oauth.scopeAllows({ scope: 'mcp:feedback' }, 'mcp:read'), true);
+});
