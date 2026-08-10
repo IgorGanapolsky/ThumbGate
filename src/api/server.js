@@ -5523,7 +5523,8 @@ function createApiServer() {
               if (oauthSession) {
                 const name = msg.params && msg.params.name;
                 const tool = MCP_TOOLS.find((candidate) => candidate.name === name);
-                const requiredScope = tool?.annotations?.readOnlyHint === true ? 'mcp:read' : 'mcp:write';
+                // Hierarchy: mcp:write implies read/gates/feedback (WorkOS MCP Auth style).
+                const requiredScope = mcpOauth.requiredScopeForTool(tool || {});
                 if (!mcpOauth.scopeAllows(oauthSession, requiredScope)) {
                   recordToolCall({
                     toolName: name || 'unknown',

@@ -578,6 +578,42 @@
       "rollout": "Block any claw or autonomous agent action that authenticates as a human user. Require dedicated agent service accounts / identities with scoped permissions."
     },
     {
+      "id": "block-workos-spend-cap-violations",
+      "name": "Block WorkOS spend-cap violations under $10/mo AuthKit policy",
+      "category": "Enterprise Identity & MCP Auth Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(workos|authkit).*(custom domain|enterprise sso|saml connection|directory sync|scim|radar|audit logs siem|\\$99|\\$125|staging\\.authkit)",
+      "problem": "ThumbGate public auth is WorkOS Production AuthKit under a hard ≤$10/mo spend cap. Enabling custom AuthKit domains (~$99/mo), enterprise SSO/SAML connections (~$125/conn), Directory Sync, or driving public traffic to staging AuthKit blows the cap or regresses login.",
+      "roi": "Protects conversion (thumbgate.app login) and prevents silent monthly burn. Complements WorkOS MCP Auth: identity stays cheap; runtime gates stay ThumbGate.",
+      "rollout": "Run npm run prove:workos. Keep Active SSO connections = 0. Prefer own Google OAuth app under AuthKit free tier. Never buy custom AuthKit domain without written budget rewrite."
+    },
+    {
+      "id": "require-mcp-oauth-scope-for-mutating-tools",
+      "name": "Require MCP OAuth scope for mutating remote tools",
+      "category": "Enterprise Identity & MCP Auth Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(mcp|oauth|bearer|access_token).*(missing scope|insufficient_scope|no auth|unauthenticated).*(write|mutate|capture|gate|tool)",
+      "problem": "Enterprise MCP Auth (WorkOS AuthKit MCP, RFC 8707 audience binding) maps OAuth scopes to tool privileges. Mutating tools without mcp:write (or equivalent) or with audience mismatch leak or mutate shared state.",
+      "roi": "Closes directory-reviewer and multi-tenant MCP holes. Aligns ThumbGate remote MCP with industry MCP OAuth 2.1 patterns while keeping pre-action gates as the enforcement layer after identity.",
+      "rollout": "Hosted MCP: OAuth PKCE required for remote connectors. Reviewer keys stay read-only. Operators use mcp:write (implies read/gates/feedback)."
+    },
+    {
+      "id": "review-workos-skill-and-auth-installer-actions",
+      "name": "Review WorkOS skill install and auth-route mutation by agents",
+      "category": "Enterprise Identity & MCP Auth Governance",
+      "signal": "👎",
+      "defaultAction": "require-approval",
+      "severity": "high",
+      "pattern": "(workos|authkit|npx workos|workos install|auth callback|sso connection|redirect_uri).*(install|scaffold|write|env|secret|client_id|api_key)",
+      "problem": "WorkOS AI CLI installers and agent skills mutate auth routes, env secrets, and SSO configuration. Unreviewed agent edits can reintroduce staging clients, wrong redirect URIs, or paid enterprise SSO connections.",
+      "roi": "Prevents auth regressions that drop Google login or point production at staging — a proven conversion killer. Gates dynamic skill installs (claw-style) on identity infrastructure.",
+      "rollout": "Require human review for WorkOS/AuthKit scaffolding. After changes run scripts/workos-production-guard.js and prove:workos."
+    },
+    {
       "id": "gate-claw-file-system-access",
       "name": "Gate claw-style agent file system access",
       "category": "Claw-Style Enterprise Agent Governance",

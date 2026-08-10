@@ -1,73 +1,14 @@
 # Changelog
 
-## 1.35.0
-
-### Minor Changes
-
-- fcfd20e: Add vlt registry governance and Hugging Face Context Course governance: 6 new gate templates (5 for JavaScript Package Registry Governance, 1 for AI Engineering Stack Safety), 3 model candidates (vlt/vlt-registry-hosted, vlt/vlt-vsr-self-hosted, huggingface/context-engineering-agent), 2 workloads (js-package-registry-governance, context-engineering), 8 adapter config files, 2 proof harnesses (33 + 29 assertions), and 42 new test cases. All configs pin thumbgate@1.34.3.
+## 1.34.4
 
 ### Patch Changes
 
-- founders-oceans: Ship Oceans-inspired `/founders` cash-path landing (plus diagnostic
-  conversion blocks) for the $499 managed diagnostic. Public npm bundle ceiling
-  423 → 424 for `public/founders.html` only.
-
-- 1514284: Bound dashboard JSONL reads, CLI progress for operator commands, and pack the
-  runtime helpers the published CLI/server actually need.
-
-  - Tail-cap feedback/memory JSONL so hosted `/v1/dashboard` survives large volumes
-  - Map size/heap failures to HTTP 503 instead of misleading 400 invalid-query
-  - Spinner/step progress for `thumbgate dashboard`, `cfo`, and `north-star`
-  - Ship `cli-progress` + `dashboard-limits` in the npm pack (ceiling 423)
-
-  Also publish a GEO learn page mapping the Hugging Face Context Course to
-  ThumbGate hooks (repo deploy surface; not npm-packed under public/learn/).
-
-- 9ffb9b9: Allow operator key to read hosted dashboard JSON used by CLI.
-
-  `thumbgate dashboard` and north-star call `GET /v1/dashboard` with the operator
-  key from `~/.config/thumbgate/operator.json`. The general API gate only allowed
-  operator GET on `/v1/billing/summary` (and a few other paths), so a valid
-  operator key still returned HTTP 401 with a misleading "key does not match"
-  message.
-
-  Expand the read-only operator allowlist for dashboard GET routes
-  (`/v1/dashboard`, render-spec, ai-inventory, review-state). Keep write/mutation
-  surfaces admin-only.
-
-- 064f8d5: Make gate-check actually fire on MCP tool calls and block outbound email send.
-
-  `matchGate` only inspected `toolInput.command`, so Gmail MCP tools
-  (`send_message`, `send_draft`) and any other non-Bash surface never matched a
-  pattern gate — auto-promoted rules sat at `lastFiredAt: null` forever. The same
-  failure class that filed on 2026-06-06 (agent cold-emailed without review)
-  recurred 2026-08-04 because a prose force-gate could not match any tool call.
-
-  - Multi-surface matching: tool name + command + light endpoint fields
-  - First-class `outbound-email-send` hard block in default policy (draft tools allowed)
-  - force-promote derives matchable surfaces for email/force-push; refuses inert prose
-  - Quarantine inert prose gates on promote; keep gate-stats totals numeric
-
-  Verified: Gmail `send_message` denies with `[GATE:outbound-email-send]`;
-  `create_draft` allows; force-push still denies; focused suites green.
-
-  Also blocks Python googleapiclient `messages().send()` — the shape used in the Resume/District Cyber incident.
-
-  Hard-floor: outbound-email-send never demotes via applyEnforcementPosture or free-tier daily cap.
-
-  Also: hard-floor outbound-email-send; narrow nodemailer/smtplib to import/require shapes
-  (no false deny on `rg nodemailer`); prove:vlt dogfood for agent install supply-chain client.
-
-- e6ca1e2: Add arXiv-ready evaluation preprint sources (LaTeX + PDF) and document HF paper artifact linking for Spaces/datasets.
-- 423bca7: Ship durable Hugging Face Space + sample dataset sources under deploy/ so ThumbGate appears in the Spaces directory (IgorGanapolsky/ThumbGate).
-- b910305: fix(hooks): PreToolUse hook processes now emit schema-valid stdout. Allows are silent (empty stdout); denies emit exactly one JSON object whose root key is `hookSpecificOutput` with `permissionDecision: "deny"`. The previous root-level `{"decision":"allow"}` / `{"decision":"deny"}` shapes are not in Claude Code's hook-output schema (root `decision` only accepts `approve|block`) and surfaced as "Hook JSON output validation failed — (root): Invalid input" on every tool call in every session where the hook was registered directly. Also removes a phantom `formatHookDeny` import — it was never exported by financial-control-plane, so ERP-plane denies crashed with exit 1 (non-blocking) instead of denying with exit 2. The hook-contract test now validates stdout against the actual hook-output schema (allowed root keys, decision enums, hookSpecificOutput key set) instead of merely requiring parseable JSON.
-- 7467ca4: Add a Claude Code hooks reference guide to the marketing site.
-
-  Search data shows the category we position against has almost no demand, while
-  the same product described in Claude Code terms has roughly fifty times the
-  monthly search volume at lower difficulty. The guide documents all nine hook
-  events with a can-it-block column, matcher semantics, exit-code behaviour, and
-  a working PreToolUse example, with FAQ schema for the question-intent queries.
+- WorkOS / MCP Auth high-ROI hardening (enterprise readiness under $10/mo AuthKit cap):
+  - MCP OAuth scope hierarchy: `mcp:write` implies `mcp:read`, `mcp:gates`, and `mcp:feedback` (`scripts/mcp-oauth.js`).
+  - Production AuthKit guard packaged: `scripts/workos-production-guard.js` + `npm run prove:workos`.
+  - Gate templates for spend-cap violations, MCP OAuth scope, and WorkOS skill-install review.
+  - Adapter note: `adapters/workos/WORKOS.md` (identity vs pre-action gates).
 
 ## 1.34.3
 
