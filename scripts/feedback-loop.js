@@ -569,6 +569,7 @@ function maybeBlockMemoryIngress({ feedbackEvent, memoryRecord = null, summary, 
       firewallResult: decision.firewallResult || null,
       blockedPatterns: Array.isArray(decision.blockedPatterns) ? decision.blockedPatterns : [],
       requestedProvider: decision.requestedProvider || null,
+      memoryInjectionTelemetry: decision.telemetry || null,
     },
     diagnosis: {
       diagnosed: true,
@@ -1441,6 +1442,13 @@ function captureFeedback(params) {
     gateAction: params.gateAction || null,
     reviewOrigin: normalizeReviewOrigin(params.reviewOrigin),
     sourceEvent: publicFeedbackSourceMetadata(params.sourceEvent),
+    memorySource: params.memorySource && typeof params.memorySource === 'object'
+      ? {
+        type: params.memorySource.type || null,
+        identifier: params.memorySource.identifier || null,
+        trust: params.memorySource.trust || null,
+      }
+      : null,
     timestamp: now,
   };
 
