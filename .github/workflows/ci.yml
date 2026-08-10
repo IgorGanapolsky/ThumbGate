@@ -48,19 +48,39 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Modes:
+          #   full — full suite + proofs (main, merge_group, runtime code PRs)
+          #   web  — marketing/public/dashboard-only PRs
+          #   deps — lockfiles, workflow pins, changesets only (biggest Dependabot win)
+          # Merge queue and main always run full CI so required gates stay honest.
+
           if [[ "$EVENT_NAME" != "pull_request" ]]; then
             echo "mode=full" >> "$GITHUB_OUTPUT"
             echo "reason=non-pr-event" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          git diff --name-only "$BASE_SHA" "$HEAD_SHA" | sed '/^$/d' > /tmp/ci-changed-files.txt
-          echo "Changed files:"
+          # Compare HEAD against the merge base, not the two branch tips.
+          # Two-tip diff includes commits already on main that the PR lacks,
+          # which wrongly forces full CI on stale Dependabot PRs.
+          MERGE_BASE=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
+          echo "merge_base=$MERGE_BASE"
+          git diff --name-only "${MERGE_BASE}...${HEAD_SHA}" | sed '/^$/d' > /tmp/ci-changed-files.txt
+          echo "Changed files (vs merge base):"
           sed 's/^/- /' /tmp/ci-changed-files.txt || true
 
           if [[ ! -s /tmp/ci-changed-files.txt ]]; then
             echo "mode=full" >> "$GITHUB_OUTPUT"
             echo "reason=no-changed-files" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Pure dependency / CI-config surface (Dependabot action pins, lockfiles).
+          # Does not include application source — those stay full.
+          if ! grep -Ev '^(\.changeset/.*\.md|package\.json|package-lock\.json|workers/package\.json|workers/package-lock\.json|\.github/workflows/.*|\.github/dependabot\.yml)$' /tmp/ci-changed-files.txt > /tmp/ci-non-deps-files.txt; then
+            echo "mode=deps" >> "$GITHUB_OUTPUT"
+            echo "reason=deps-or-workflow-surface-only" >> "$GITHUB_OUTPUT"
+            echo "Focused deps/workflow CI selected. Merge queue and main pushes still run full CI."
             exit 0
           fi
 
@@ -77,13 +97,13 @@ jobs:
           echo "Focused web/revenue CI selected. Merge queue and main pushes still run full CI."
 
       - name: Setup Python
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
       - name: Install Python deps
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         # scikit-learn + joblib are required by scripts/eval_gate_classifier.py
         # so tests/eval-gate-classifier.test.js can exercise the actual ML
         # pipeline (train_and_score, joblib.dump, ROC-AUC, classification_report)
@@ -122,7 +142,7 @@ jobs:
       - name: Run budget status gate
         run: npm run budget:status
       - name: Check operational integrity
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         env:
           GH_TOKEN: ${{ github.token }}
         run: npm run ops:integrity:ci
@@ -152,8 +172,33 @@ jobs:
             tests/verify-marketing-pages-deployed.test.js \
             tests/public-static-assets.test.js
 
+      - name: Run focused deps/workflow smoke tests
+        if: steps.ci-scope.outputs.mode == 'deps'
+        # Dependabot / workflow-pin PRs were waiting ~14m on the full suite.
+        # Keep a tight smoke that still exercises packaging + CI contracts.
+        # Full suite still runs on merge_group and main.
+        env:
+          THUMBGATE_PUBLISH_STATE: unpublished
+          THUMBGATE_PUBLISHED_CLI_STATE: unavailable
+        run: |
+          set -euo pipefail
+          node --test \
+            tests/public-core-boundary.test.js \
+            tests/public-bundle-ratchet.test.js \
+            tests/package-boundary.test.js \
+            tests/deployment.test.js \
+            tests/sonarcloud-workflow.test.js \
+            tests/ci-cd-hygiene-audit.test.js
+          MERGE_BASE=$(git merge-base "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}")
+          if git diff --name-only "${MERGE_BASE}...${{ github.event.pull_request.head.sha }}" | grep -qE '^workers/'; then
+            npm run test:workers
+          fi
+          if git diff --name-only "${MERGE_BASE}...${{ github.event.pull_request.head.sha }}" | grep -qE '^(package\.json|package-lock\.json)$'; then
+            npm run test:public-package-parity
+          fi
+
       - name: Run tests
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         # Hermetic suite: short-circuit the npm-registry publish probe in
         # scripts/mcp-config.js (isVersionPublished -> `npm view thumbgate@<v>`),
         # which several CLI/statusline tests exercise indirectly. Without this,
@@ -165,7 +210,7 @@ jobs:
         run: npm test
 
       - name: Run gate-eval regression suite
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         # Exits non-zero if any case in config/evals/*.json fails against
         # config/specs/*.json. Any constraint regex change that flips a
         # previously-blocking case to pass (or vice versa) blocks merge
@@ -173,7 +218,9 @@ jobs:
         run: npm run gate-eval:ci
 
       - name: Run coverage
-        if: steps.ci-scope.outputs.mode != 'web'
+        # Skip on ordinary PRs: coverage re-runs the full suite and doubles wall clock.
+        # Main + merge_group still re-run coverage so the merge gate keeps the signal.
+        if: steps.ci-scope.outputs.mode == 'full' && github.event_name != 'pull_request'
         # Same hermetic override as "Run tests" — coverage re-runs the suite.
         env:
           THUMBGATE_PUBLISH_STATE: unpublished
@@ -181,39 +228,39 @@ jobs:
         run: npm run test:coverage
 
       - name: Check congruence (branding, tech stack, version across all surfaces)
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         run: npm run test:congruence
 
       - name: Run adapter proof
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         run: npm run prove:adapters
 
       - name: Run automation proof
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         run: npm run prove:automation
 
       - name: Run runtime proof
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         run: npm run prove:runtime
 
       - name: Run evolution proof
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         run: npm run prove:evolution
 
       - name: Run workflow contract proof
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         run: npm run prove:workflow-contract
 
       - name: Run autoresearch proof
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         run: npm run prove:autoresearch
 
       - name: Run Tessl distribution proof
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         run: npm run prove:tessl
 
       - name: Run evaluation regression gates
-        if: always() && steps.ci-scope.outputs.mode != 'web'
+        if: always() && steps.ci-scope.outputs.mode == 'full'
         run: |
           mkdir -p proof
           node scripts/prompt-eval.js --min-score=100 --synthetic --synthetic-variants=1 --baseline=config/evals/prompt-eval-baseline.json --require-no-regressions --suite-output proof/prompt-eval-suite.generated.json --output proof/prompt-eval-report.json --json > /dev/null
