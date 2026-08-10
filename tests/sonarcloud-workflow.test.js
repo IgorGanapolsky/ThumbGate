@@ -85,7 +85,7 @@ test('SonarCloud workflow caches scanner packages for real scans', () => {
   const cacheSection = workflow.slice(cacheStart, installStart);
 
   assert.match(cacheSection, /if: steps\.sonar-scope\.outputs\.scan == 'true'/);
-  assert.match(cacheSection, /uses: actions\/cache@(?:v5|[0-9a-f]{40} # v5)/);
+  assert.match(cacheSection, /uses: actions\/cache@(?:v[56]|[0-9a-f]{40} # v[56])/);
   assert.match(cacheSection, /path: ~\/\.sonar\/cache/);
   assert.match(cacheSection, /key: \$\{\{\s*runner\.os\s*\}\}-sonar/);
   assert.match(cacheSection, /restore-keys: \$\{\{\s*runner\.os\s*\}\}-sonar/);
