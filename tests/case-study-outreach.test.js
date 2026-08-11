@@ -19,6 +19,12 @@ describe('case-study outreach generator', () => {
     assert.match(CASES['sudo-evasion'].metric, /62/);
   });
 
+  it('exposes the memory-compaction dogfood case with honest metrics', () => {
+    assert.ok(CASES['memory-compaction']);
+    assert.match(CASES['memory-compaction'].metric, /3 dupe records/);
+    assert.match(CASES['memory-compaction'].result, /opposite-signal lessons never merge/);
+  });
+
   it('attaches first-party UTMs without inventing customer logos', () => {
     const url = withUtm('https://thumbgate.ai', '/case-studies#sudo-evasion', 'case_sudo_evasion', 'linkedin');
     assert.match(url, /utm_source=case_study_outreach/);

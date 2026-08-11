@@ -53,6 +53,23 @@ const CASES = Object.freeze({
       proPath: '/checkout/pro',
     },
   },
+  'memory-compaction': {
+    id: 'memory-compaction',
+    title: 'Agent memory crowded by near-duplicate lessons',
+    anchor: 'memory-compaction',
+    problem: 'Promoted lessons accumulated paraphrases of the same failure, so one real lesson could occupy every retrieval slot and starve distinct ones.',
+    metric: '3 dupe records → 1 survivor per cluster; slot budget back to full',
+    result: 'Retrieval dedupes the candidate pool before ranking, and a compaction CLI merges near-duplicates with summed occurrence counts (opposite-signal lessons never merge); a July 2026 audit found ~86% of promoted lessons were near-duplicates.',
+    buyerPain: 'Your agent memory fills with the same lesson five times, so the distinct lesson never surfaces.',
+    ctaPrimary: 'diagnostic',
+    proofLinks: {
+      caseStudyPath: '/case-studies#memory-compaction',
+      scorecardPath: '/eval-scorecard',
+      whitepaperPath: '/whitepaper',
+      diagnosticPath: '/diagnostic',
+      proPath: '/checkout/pro',
+    },
+  },
 });
 
 function parseArgs(argv = process.argv.slice(2)) {
@@ -117,7 +134,7 @@ function buildPack(caseDef, options = {}) {
   ].join('\n');
 
   const email = [
-    `Subject: Your agent can walk past a regex denylist`,
+    `Subject: ${caseDef.title}`,
     '',
     `Hi —`,
     '',

@@ -1,6 +1,6 @@
 # ThumbGate case studies
 
-Five narratives from real work on this codebase. Every technical claim is verifiable against
+Six narratives from real work on this codebase. Every technical claim is verifiable against
 `origin/main` or the commands recorded inline. Written as
 Situation → Problem → Action → Technical decisions → Result → What we learned.
 
@@ -243,3 +243,49 @@ the instrument that made the fix checkable. Before it, "the bypass class is clos
 opinion, and it was wrong twice. After it, the same sentence is a measurement with a number
 attached. For any security control, build the adversarial measurement *before* claiming the
 control works; the measurement outlives the specific bug and catches the next one.
+
+---
+
+## 6. Retrieval quality — agent memory crowded by near-duplicate lessons
+
+**Situation.** ThumbGate's lesson store is the memory an agent retrieves before acting.
+Promoted lessons accumulate over sessions, and capture-time synthesis only merges
+near-duplicates over a recent window. Older paraphrases of the same failure survive as
+separate records.
+
+**Problem.** A July 2026 audit measured **~86% of promoted lessons as near-duplicates.**
+Split records fragment occurrence counts (distorting `shouldAutoPromote >= 3` and
+prevention-rule scoring) and crowd the retrieval candidate pool. In the backfill
+regression, three paraphrases of the same Railway deploy-verification lesson took all three
+result slots — the distinct lessons never surfaced.
+
+**Action.** Two layers:
+
+1. *Retrieval-time dedupe backfill.* `scripts/lesson-retrieval.js` dedupes the candidate
+   pool before ranking, so one lesson cluster occupies one slot and the slot budget stays
+   full (`tests/lesson-retrieval-dedupe-backfill.test.js`).
+2. *Store-time compaction.* `scripts/memory-near-dupe.js` clusters near-duplicates by
+   canonical hash + bigram similarity; `scripts/compact-memory-store.js` (CLI,
+   `npm run memory:compact`) merges each cluster into its newest record with **summed
+   occurrence counts**, unioned feedback ids/tags, and max importance — writing a
+   timestamped backup first. Opposite-signal lessons on the same topic never merge.
+
+**Technical decisions.**
+
+1. *Merge counts, don't discard.* Occurrences sum so recurrence stays honest across
+   formerly-split records; no new schema fields are invented.
+2. *Never merge opposite signals.* A "did this fail" and "this worked" on the same topic
+   are different lessons, even at high similarity.
+3. *Dry-run by default.* The CLI reports before/after/merged JSON and touches nothing
+   without `--apply`; a backup preserves the original log for recovery.
+4. *Pure policy module.* `memory-near-dupe.js` does no IO, so the clustering policy is
+   unit-testable (idempotency, threshold behavior, empty-record guards).
+
+**Result.** `3 dupe records → 1 survivor per cluster`; the retrieval slot budget is back
+to full, and compaction is a single command with a rollback path.
+
+**What we learned.** Retrieval quality is an enforcement problem, not just a ranking
+problem. A memory store that keeps five copies of one lesson actively hides the distinct
+lessons — the same failure mode as a firewall that warns instead of blocks. Dedupe before
+ranking, and make the merge policy deterministic and testable.
+
