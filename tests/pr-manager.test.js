@@ -695,14 +695,14 @@ test('a genuinely failing quality check STILL blocks', () => {
 });
 
 
-test('summarizeChecks ignores optional Vercel preview failures (rate-limit noise)', () => {
+test('summarizeChecks blocks on Vercel failures that leave GitHub mergeability blocked', () => {
   const { pending, failing } = summarizeChecks([
     { name: 'test', bucket: 'pass' },
     { name: 'CodeQL', bucket: 'pass' },
     { name: 'Vercel', bucket: 'fail' },
     { name: 'Vercel Preview Comments', bucket: 'fail' },
   ]);
-  assert.deepEqual(failing, [], 'optional Vercel must not block Trunk when required checks pass');
+  assert.deepEqual(failing, ['Vercel']);
   assert.deepEqual(pending, []);
 });
 

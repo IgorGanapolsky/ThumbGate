@@ -123,4 +123,18 @@ if has_staged '(scripts/gates-engine\.js|scripts/rate-limiter\.js|scripts/feedba
   echo -e "${GREEN}✓ gates${NC}"
 fi
 
+# 6. Checkout session lease — single-writer guard. Incident 2026-08-11: two
+# agents mutated the same checkout concurrently (one git clean wiped the other's
+# untracked work; a git add -A swept a foreign file into the wrong branch).
+# Refuse commits while a LIVE foreign agent holds the lease; stale leases are
+# auto-cleaned by the lease module.
+if [ -f scripts/session-lease.js ]; then
+  if ! node scripts/session-lease.js check >/dev/null 2>&1; then
+    echo -e "${RED}✗ Checkout session lease held by another live agent${NC}"
+    node scripts/session-lease.js check 2>&1 | head -3
+    echo -e "${YELLOW}  Reclaim or wait: the holder releases it, or if it is stale it is reclaimed automatically.${NC}"
+    exit 1
+  fi
+fi
+
 echo -e "${GREEN}ThumbGate pre-commit: all guards passed${NC}"
