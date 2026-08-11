@@ -294,6 +294,43 @@ test('alternate non-legacy server keys can explicitly invoke ThumbGate', () => {
   assert.equal(hasThumbgateServer(null), false);
 });
 
+test('server discovery accepts legacy config shape and ignores malformed values', () => {
+  assert.equal(hasThumbgateServer({ servers: { thumbgate: { command: 'node' } } }), true);
+  assert.equal(hasThumbgateServer({ servers: { governance: null } }), false);
+  assert.equal(hasThumbgateServer('not-an-object'), false);
+});
+
+test('wiringReport diagnoses a missing project MCP file', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-wiring-missing-'));
+  try {
+    const report = wiringReport(dir, { HOME: dir });
+    assert.equal(report.overall, 'error');
+    assert.equal(report.mcp.projectMcpPresent, false);
+    assert.ok(report.findings.some((finding) => /Missing project \.mcp\.json/.test(finding)));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('wiringReport recognizes hosted capture in a container', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-wiring-hosted-'));
+  try {
+    fs.writeFileSync(path.join(dir, '.mcp.json'), JSON.stringify({
+      mcpServers: { thumbgate: { command: 'npx', args: ['thumbgate', 'serve'] } },
+    }));
+    const report = wiringReport(dir, {
+      HOME: dir,
+      container: '1',
+      THUMBGATE_API_BASE_URL: 'https://example.test',
+      THUMBGATE_API_KEY: 'tg_key',
+    });
+    assert.equal(report.remote.configured, true);
+    assert.ok(report.findings.some((finding) => /Hosted capture env is set/.test(finding)));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('resolveLessonsStore honors an explicit existing feedback directory', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-explicit-store-'));
   try {
