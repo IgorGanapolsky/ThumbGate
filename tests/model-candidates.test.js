@@ -43,6 +43,11 @@ test('model candidate catalog includes Kimi K2.6 and Qwen3.6 variants', () => {
   // NVIDIA Nemotron 3.5 Lightning + NeMo Switchyard
   assert.ok(ids.has('nvidia/nemotron-3.5-lightning'));
   assert.ok(ids.has('nvidia/nemo-switchyard'));
+  // Alibaba Model Studio (Qwen role tiers + embeddings)
+  assert.ok(ids.has('alibaba/qwen3.8-max'));
+  assert.ok(ids.has('alibaba/qwen3.7-plus'));
+  assert.ok(ids.has('alibaba/qwen3.6-flash'));
+  assert.ok(ids.has('alibaba/text-embedding-v4'));
 });
 
 test('recommendCandidates prefers Nous Research Hermes for skill synthesis', () => {
