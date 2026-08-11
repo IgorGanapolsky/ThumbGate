@@ -85,7 +85,9 @@ function runStatusline({ home, projectDir, extraEnv = {} }) {
     env: {
       PATH: process.env.PATH || '',
       HOME: home,
+      TMPDIR: process.env.TMPDIR || os.tmpdir(),
       THUMBGATE_PROJECT_DIR: projectDir,
+      THUMBGATE_DISABLE_CLAUDE_HISTORY_SYNC: '1',
       // Keep everything offline/local: no network, no DB side effects.
       THUMBGATE_OFFLINE: '1',
       NODE_ENV: 'test',
