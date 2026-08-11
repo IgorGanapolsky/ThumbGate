@@ -369,12 +369,52 @@ test('CLI blocks a second session from claiming a live lease', () => {
   const sessionA = { THUMBGATE_SESSION_AGENT: 'test-session-A' };
   const sessionB = { THUMBGATE_SESSION_AGENT: 'test-session-B' };
   try {
+    // Explicit session tokens keep the lease live via TTL even after the
+    // short-lived claim process exits — that is the documented claim workflow.
     const claimRun = runScript(['claim'], dir, sessionA);
     assert.strictEqual(claimRun.status, 0, claimRun.stderr);
 
-    // Session B is a different agent; the lease is live because... the recorded
-    // pid is from session A's claim process which has exited. To simulate a live
-    // foreign holder, write a lease whose pid is a live detached child.
+    const claimB = runScript(['claim'], dir, sessionB);
+    assert.notStrictEqual(claimB.status, 0, 'session B must not claim a live foreign lease');
+    assert.match(claimB.stderr, /held by live agent/);
+
+    const checkB = runScript(['check'], dir, sessionB);
+    assert.notStrictEqual(checkB.status, 0, 'session B must fail check');
+
+    // Same session can re-claim / check after the claim subprocess exited.
+    const checkA = runScript(['check'], dir, sessionA);
+    assert.strictEqual(checkA.status, 0, checkA.stderr);
+    assert.match(checkA.stdout, /held by this session/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('session-token lease with expired TTL is reclaimable when pid is dead', () => {
+  const dir = makeSandbox();
+  try {
+    fs.writeFileSync(
+      lease.leasePath(dir),
+      JSON.stringify({
+        agent: 'expired-session',
+        pid: 99999999,
+        startedAt: new Date(Date.now() - 60_000).toISOString(),
+        expiresAt: new Date(Date.now() - 1000).toISOString(),
+      })
+    );
+    const claimResult = lease.claim(dir);
+    assert.strictEqual(claimResult.ok, true, 'expired TTL + dead pid must be reclaimable');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('claim uses exclusive create so concurrent free-checkout claimers cannot both succeed', () => {
+  const dir = makeSandbox();
+  try {
+    const file = lease.leasePath(dir);
+    // Pre-create the lease file so the exclusive write path hits EEXIST and
+    // re-evaluates the live foreign holder instead of overwriting.
     const child = require('node:child_process').spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
       cwd: dir,
       detached: true,
@@ -382,15 +422,14 @@ test('CLI blocks a second session from claiming a live lease', () => {
     });
     try {
       fs.writeFileSync(
-        lease.leasePath(dir),
-        JSON.stringify({ agent: 'foreign-holder', pid: child.pid, startedAt: new Date().toISOString() })
+        file,
+        JSON.stringify({ agent: `foreign:${child.pid}`, pid: child.pid, startedAt: new Date().toISOString() })
       );
-      const claimB = runScript(['claim'], dir, sessionB);
-      assert.notStrictEqual(claimB.status, 0, 'session B must not claim a live foreign lease');
-      assert.match(claimB.stderr, /held by live agent/);
-
-      const checkB = runScript(['check'], dir, sessionB);
-      assert.notStrictEqual(checkB.status, 0, 'session B must fail check');
+      const result = lease.claim(dir);
+      assert.strictEqual(result.ok, false);
+      assert.strictEqual(result.code, 'LEASED');
+      const onDisk = JSON.parse(fs.readFileSync(file, 'utf8'));
+      assert.strictEqual(onDisk.agent, `foreign:${child.pid}`);
     } finally {
       try {
         process.kill(child.pid);
@@ -399,6 +438,34 @@ test('CLI blocks a second session from claiming a live lease', () => {
       }
     }
   } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('THUMBGATE_SESSION_PID is recorded as the durable lease holder', () => {
+  const dir = makeSandbox();
+  const child = require('node:child_process').spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
+    cwd: dir,
+    detached: true,
+    stdio: 'ignore',
+  });
+  const prev = process.env.THUMBGATE_SESSION_PID;
+  try {
+    process.env.THUMBGATE_SESSION_PID = String(child.pid);
+    const result = lease.claim(dir);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.lease.pid, child.pid);
+  } finally {
+    if (prev === undefined) {
+      delete process.env.THUMBGATE_SESSION_PID;
+    } else {
+      process.env.THUMBGATE_SESSION_PID = prev;
+    }
+    try {
+      process.kill(child.pid);
+    } catch (error) {
+      // already dead
+    }
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });

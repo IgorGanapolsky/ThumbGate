@@ -12,15 +12,23 @@
 //
 // This module adds a checkout-level lease:
 //   - `claim`    — write .git/thumbgate-session-lease.json. Fails if a DIFFERENT
-//                  live PID already holds it (same-PID re-claim is idempotent).
-//   - `check`    — exit 0 if this PID holds the lease or no live lease exists;
+//                  live session already holds it (same-session re-claim is
+//                  idempotent). Uses exclusive-create so concurrent claimers
+//                  cannot both succeed.
+//   - `check`    — exit 0 if this session holds the lease or no live lease exists;
 //                  exit 1 if a different live agent holds it.
 //   - `release`  — remove the lease (only the holder may release; a stale holder
-//                  may force-release after the PID is provably dead).
+//                  may force-release after liveness is false).
 //   - `guard`    — run a shell command only while holding the lease.
 //
-// Stale detection: a lease whose PID is no longer alive (kill(pid, 0) throws
-// ESRCH/EPERM rules) is considered expired and may be re-claimed by anyone.
+// Liveness:
+//   - Prefer a durable PID: THUMBGATE_SESSION_PID (agent/shell parent), else the
+//     CLI's process.ppid when the claim command itself is short-lived, else
+//     process.pid for in-process API use.
+//   - Explicit session tokens (THUMBGATE_SESSION_AGENT) also get a TTL
+//     (default 8h, override THUMBGATE_SESSION_LEASE_TTL_MS) so short-lived claim
+//     subprocesses do not immediately look "stale" after exit.
+//
 // The lease file lives in .git/ so `git clean` cannot delete it.
 
 const fs = require('node:fs');
@@ -29,6 +37,8 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const LEASE_FILENAME = 'thumbgate-session-lease.json';
+const DEFAULT_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+const MAX_CLAIM_ATTEMPTS = 5;
 
 function findRepoRoot(start = process.cwd()) {
   let current = path.resolve(start);
@@ -83,11 +93,55 @@ function readLease(repoRoot) {
   }
 }
 
+function sessionTtlMs() {
+  const fromEnv = Number(process.env.THUMBGATE_SESSION_LEASE_TTL_MS);
+  if (Number.isFinite(fromEnv) && fromEnv > 0) {
+    return Math.floor(fromEnv);
+  }
+  return DEFAULT_SESSION_TTL_MS;
+}
+
+function hasExplicitSessionAgent() {
+  return Boolean(process.env.THUMBGATE_SESSION_AGENT && String(process.env.THUMBGATE_SESSION_AGENT).trim());
+}
+
+/**
+ * Resolve the PID that should represent lease liveness.
+ * Short-lived `node scripts/session-lease.js claim` must not record itself as
+ * the only liveness signal — prefer the durable agent/shell parent.
+ */
+function resolveLeasePid() {
+  const fromEnv = Number(process.env.THUMBGATE_SESSION_PID);
+  if (Number.isInteger(fromEnv) && fromEnv > 0 && pidAlive(fromEnv)) {
+    return fromEnv;
+  }
+
+  const invokedAsCli =
+    process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename);
+  if (invokedAsCli) {
+    const parent = Number(process.ppid);
+    if (Number.isInteger(parent) && parent > 1 && pidAlive(parent)) {
+      return parent;
+    }
+  }
+
+  return process.pid;
+}
+
 function isLeaseLive(lease) {
-  if (!lease || typeof lease !== 'object') {
+  if (!lease || typeof lease !== 'object' || lease.invalid) {
     return false;
   }
-  return Boolean(lease.pid) && pidAlive(Number(lease.pid));
+  if (Boolean(lease.pid) && pidAlive(Number(lease.pid))) {
+    return true;
+  }
+  if (lease.expiresAt) {
+    const expiresMs = Date.parse(lease.expiresAt);
+    if (Number.isFinite(expiresMs) && Date.now() < expiresMs) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function agentId() {
@@ -99,19 +153,36 @@ function agentId() {
   return process.env.THUMBGATE_SESSION_AGENT || `${os.hostname()}:${process.pid}`;
 }
 
-function writeLease(repoRoot, details) {
-  const file = leasePath(repoRoot);
+function buildLeaseRecord(details = {}) {
+  const explicitSession = hasExplicitSessionAgent();
+  const ttlMs = details.ttlMs != null ? Number(details.ttlMs) : sessionTtlMs();
   const lease = {
     agent: details.agent || agentId(),
-    pid: process.pid,
+    pid: details.pid != null ? Number(details.pid) : resolveLeasePid(),
     host: os.hostname(),
-    startedAt: new Date().toISOString(),
+    startedAt: details.startedAt || new Date().toISOString(),
     cwd: process.cwd(),
     user: process.env.USER || os.userInfo().username || null,
     command: (process.argv[1] || '').split(path.sep).pop() || null,
   };
+  // Explicit session tokens get a TTL so claim CLI exit does not free the lease.
+  if (explicitSession || details.expiresAt) {
+    lease.expiresAt =
+      details.expiresAt || new Date(Date.now() + (Number.isFinite(ttlMs) && ttlMs > 0 ? ttlMs : DEFAULT_SESSION_TTL_MS)).toISOString();
+  }
+  return lease;
+}
+
+function writeLease(repoRoot, details = {}, options = {}) {
+  const file = leasePath(repoRoot);
+  const lease = buildLeaseRecord(details);
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(lease, null, 2) + '\n');
+  const payload = JSON.stringify(lease, null, 2) + '\n';
+  if (options.exclusive) {
+    fs.writeFileSync(file, payload, { flag: 'wx' });
+  } else {
+    fs.writeFileSync(file, payload);
+  }
   return lease;
 }
 
@@ -123,15 +194,50 @@ function removeLease(repoRoot) {
 }
 
 function claim(repoRoot, options = {}) {
-  const existing = readLease(repoRoot);
-  const sameSession = existing && !existing.invalid && existing.agent === agentId();
-  if (sameSession) {
-    // Same session token — idempotent, and refresh the pid so the recorded
-    // holder is this current subprocess (survives the claiming process exiting).
-    const lease = writeLease(repoRoot, options);
-    return { ok: true, alreadyHeld: true, lease };
+  for (let attempt = 0; attempt < MAX_CLAIM_ATTEMPTS; attempt += 1) {
+    const existing = readLease(repoRoot);
+    const sameSession = existing && !existing.invalid && existing.agent === agentId();
+    if (sameSession) {
+      // Same session token — idempotent refresh (overwrite allowed).
+      const lease = writeLease(repoRoot, {
+        ...options,
+        agent: existing.agent,
+        startedAt: existing.startedAt,
+      });
+      return { ok: true, alreadyHeld: true, lease };
+    }
+    if (existing && !existing.invalid && isLeaseLive(existing)) {
+      return {
+        ok: false,
+        code: 'LEASED',
+        holder: existing,
+        message: `Checkout lease held by live agent ${existing.agent} (pid ${existing.pid}) since ${existing.startedAt}. Another session owns this checkout. Use a separate worktree instead of writing to a claimed checkout.`,
+      };
+    }
+
+    // Stale or missing: exclusive create so two concurrent claimers cannot both win.
+    if (existing && !existing.invalid) {
+      try {
+        removeLease(repoRoot);
+      } catch (error) {
+        // retry loop will re-read
+      }
+    }
+
+    try {
+      const lease = writeLease(repoRoot, options, { exclusive: true });
+      return { ok: true, alreadyHeld: false, lease };
+    } catch (error) {
+      if (error && error.code === 'EEXIST') {
+        // Lost the race — loop and re-evaluate the winner.
+        continue;
+      }
+      throw error;
+    }
   }
-  if (existing && !existing.invalid && isLeaseLive(existing)) {
+
+  const existing = readLease(repoRoot);
+  if (existing && !existing.invalid && isLeaseLive(existing) && existing.agent !== agentId()) {
     return {
       ok: false,
       code: 'LEASED',
@@ -139,8 +245,11 @@ function claim(repoRoot, options = {}) {
       message: `Checkout lease held by live agent ${existing.agent} (pid ${existing.pid}) since ${existing.startedAt}. Another session owns this checkout. Use a separate worktree instead of writing to a claimed checkout.`,
     };
   }
-  const lease = writeLease(repoRoot, options);
-  return { ok: true, alreadyHeld: false, lease };
+  return {
+    ok: false,
+    code: 'LEASE_RACE',
+    message: 'Failed to claim checkout lease after concurrent attempts. Retry in a moment or use a separate worktree.',
+  };
 }
 
 function check(repoRoot) {
@@ -174,7 +283,7 @@ function release(repoRoot, options = {}) {
     return { ok: true, released: true, force: Boolean(options.force) };
   }
   if (!isLeaseLive(existing)) {
-    // Stale holder is provably dead — cleaning up is safe and keeps the
+    // Stale holder is provably dead / expired — cleaning up is safe and keeps the
     // checkout usable after a crashed session.
     removeLease(repoRoot);
     return { ok: true, released: true, stale: true };
@@ -284,6 +393,7 @@ function main() {
 }
 
 module.exports = {
+  DEFAULT_SESSION_TTL_MS,
   LEASE_FILENAME,
   agentId,
   check,
@@ -296,6 +406,7 @@ module.exports = {
   readLease,
   release,
   removeLease,
+  resolveLeasePid,
   writeLease,
 };
 
