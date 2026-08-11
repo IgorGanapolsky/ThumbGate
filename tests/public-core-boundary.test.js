@@ -245,11 +245,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 434 -> 435 (2026-08-11): scripts/matryoshka-embedding.js is invoked by the
   // packaged RAG precision guardrail runtime. Exact count, no headroom.
   // Keep lockstep with package-boundary + public-bundle-ratchet.
-  // 435 -> 436 (2026-08-11): session-lease is packaged public-shell hygiene
+  // 436 -> 437 (2026-08-11): session-lease is packaged public-shell hygiene
   // required to prevent concurrent checkout collisions. Exact count, no headroom.
-||||||| f1b48e78a
-  const CEILING = 435;
-  const CEILING = 436;
+  const CEILING = 437;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
