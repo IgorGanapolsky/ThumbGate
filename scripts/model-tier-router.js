@@ -32,10 +32,17 @@ function loadConfig() {
 const TIERS = {
   nano: { label: 'nano', costMultiplier: 0.1, maxContext: 32000 },
   mini: { label: 'mini', costMultiplier: 0.4, maxContext: 200000 },
+  // Cheap OpenAI-compatible cloud flagship (Qwen3.8-Max class) for steady
+  // high-output workloads. Inert until its endpoint env vars are configured.
+  bulkCloud: { label: 'bulk-cloud', costMultiplier: 0.25, maxContext: 1000000 },
   frontier: { label: 'frontier', costMultiplier: 1.0, maxContext: 1000000 },
   // Self-hosted open-source frontier (e.g. GLM 5.1). Zero marginal cost.
   localFrontier: { label: 'local-frontier', costMultiplier: 0.0, maxContext: 1000000 },
 };
+
+// Routing priority for task-type matching. Config-declared tiers missing from
+// this list are appended after, before the frontier fallback semantics apply.
+const TIER_ROUTING_ORDER = ['nano', 'mini', 'bulkCloud', 'frontier'];
 
 // ---------------------------------------------------------------------------
 // Task classification → tier mapping
@@ -91,8 +98,10 @@ function classifyTask(task = {}) {
   // --- Normal tier routing by task type ---
 
   const tiers = config.tiers;
-  for (const tierName of ['nano', 'mini', 'frontier']) {
-    if (tiers[tierName].taskTypes.includes(type)) {
+  const declaredOrder = TIER_ROUTING_ORDER.filter((name) => tiers[name])
+    .concat(Object.keys(tiers).filter((name) => !TIER_ROUTING_ORDER.includes(name)));
+  for (const tierName of declaredOrder) {
+    if (Array.isArray(tiers[tierName].taskTypes) && tiers[tierName].taskTypes.includes(type)) {
       return {
         tier: tierName,
         reason: `task type "${type}" mapped to ${tierName}`,
@@ -430,23 +439,46 @@ function resolveGenerationTarget(plan, task, tierConfig, options, env) {
 
   const model = modelOverride || tierConfig.modelId;
   if (!model) throw new Error(`missing modelId for tier "${plan.tier}"`);
-  return {
+  const target = {
     model,
     provider: providerOverride || tierConfig.provider || inferProvider(model, plan.tier),
   };
+  if (tierConfig.endpoint && typeof tierConfig.endpoint === 'object') {
+    const { baseUrlEnv, apiKeyEnv } = tierConfig.endpoint;
+    const baseUrl = baseUrlEnv ? env[baseUrlEnv] : undefined;
+    const apiKey = apiKeyEnv ? env[apiKeyEnv] : undefined;
+    if (!baseUrl || !apiKey) {
+      const missing = [!baseUrl && baseUrlEnv, !apiKey && apiKeyEnv].filter(Boolean).join(', ');
+      throw new Error(`tier "${plan.tier}" requires endpoint configuration; set ${missing}`);
+    }
+    target.endpoint = { baseUrl, apiKey };
+  }
+  return target;
+}
+
+/**
+ * Estimate the USD cost of a generation for a tier that declares
+ * pricingUsdPerMTok in config. Returns null when pricing is not declared.
+ */
+function estimateTierCostUsd(tierName, inputTokens, outputTokens, config = loadConfig()) {
+  const pricing = config?.tiers?.[tierName]?.pricingUsdPerMTok;
+  if (!pricing || !Number.isFinite(pricing.input) || !Number.isFinite(pricing.output)) return null;
+  const inTok = Number.isFinite(inputTokens) ? Math.max(0, inputTokens) : 0;
+  const outTok = Number.isFinite(outputTokens) ? Math.max(0, outputTokens) : 0;
+  return (inTok * pricing.input + outTok * pricing.output) / 1_000_000;
 }
 
 function createOpenAiCompatibleAdapter(options = {}) {
   const env = options.env || process.env;
   const fetchImpl = options.fetchImpl || global.fetch;
 
-  return async function openAiCompatibleAdapter({ request, model, provider }) {
+  return async function openAiCompatibleAdapter({ request, model, provider, endpoint }) {
     if (typeof fetchImpl !== 'function') throw new Error('fetch is unavailable');
     const local = provider === 'openai-compatible';
-    const baseUrl = local
-      ? env.THUMBGATE_LOCAL_MODEL_BASE_URL
-      : (env.OPENAI_BASE_URL || 'https://api.openai.com/v1');
-    const apiKey = local ? env.THUMBGATE_LOCAL_MODEL_API_KEY : env.OPENAI_API_KEY;
+    const baseUrl = endpoint?.baseUrl
+      || (local ? env.THUMBGATE_LOCAL_MODEL_BASE_URL : (env.OPENAI_BASE_URL || 'https://api.openai.com/v1'));
+    const apiKey = endpoint?.apiKey
+      || (local ? env.THUMBGATE_LOCAL_MODEL_API_KEY : env.OPENAI_API_KEY);
     if (!baseUrl) throw new Error('THUMBGATE_LOCAL_MODEL_BASE_URL is required for local routing');
     if (!local && !apiKey) throw new Error('OPENAI_API_KEY is required for OpenAI routing');
 
@@ -502,38 +534,56 @@ async function executeRoutedGeneration(task = {}, request = {}, options = {}) {
   const plan = recommendExecutionPlan(task, env);
   const tierConfig = config.tiers[plan.tier];
   if (!tierConfig) throw new Error(`missing configuration for tier "${plan.tier}"`);
-  const { model, provider } = resolveGenerationTarget(plan, task, tierConfig, options, env);
-  const adapters = options.adapters || createDefaultGenerationAdapters({ env, fetchImpl: options.fetchImpl });
-  const adapter = adapters[plan.tier] || adapters[provider];
-  if (typeof adapter !== 'function') throw new Error(`no generation adapter registered for provider "${provider}"`);
-
   const now = options.now || (() => Date.now());
   const startedAt = now();
+  // Resolution can fail (e.g. an unconfigured tier endpoint), so the base event
+  // starts from tier config defaults and target resolution happens inside the
+  // telemetry try block — misconfiguration emits an error event, not silence.
   const baseEvent = {
     timestamp: new Date().toISOString(),
     architecture: plan.architecture,
     taskType: task.type || 'unknown',
     riskLevel: task.riskLevel || 'unspecified',
     tier: plan.tier,
-    provider,
-    model,
+    provider: tierConfig.provider || null,
+    model: tierConfig.modelId || null,
     escalated: plan.escalated,
     routeReason: plan.reason,
   };
 
   try {
-    const raw = await adapter({ task, request, plan, model, provider });
+    const { model, provider, endpoint } = resolveGenerationTarget(plan, task, tierConfig, options, env);
+    baseEvent.provider = provider;
+    baseEvent.model = model;
+    const adapters = options.adapters || createDefaultGenerationAdapters({ env, fetchImpl: options.fetchImpl });
+    const adapter = adapters[plan.tier] || adapters[provider];
+    if (typeof adapter !== 'function') throw new Error(`no generation adapter registered for provider "${provider}"`);
+    const raw = await adapter({ task, request, plan, model, provider, endpoint });
     const result = normalizeGenerationResult(raw, { model, provider });
+    const inputTokens = Number(result.usage?.input_tokens || result.usage?.prompt_tokens || 0) || null;
+    const outputTokens = Number(result.usage?.output_tokens || result.usage?.completion_tokens || 0) || null;
+    // When the adapter reports no cost but the tier declares per-token pricing,
+    // derive real cost from usage so telemetry and holdout cost math stay live.
+    // Never derive when usage is entirely unmeasured (an unmeasured request is
+    // unknown-cost, not free) or when execution actually ran on a local backend
+    // (tier pricing describes the cloud endpoint, not local inference).
+    let costCents = result.costCents;
+    const usageMeasured = inputTokens !== null || outputTokens !== null;
+    if ((costCents === null || costCents === undefined) && usageMeasured && plan.providerMode !== 'local') {
+      const estimatedUsd = estimateTierCostUsd(plan.tier, inputTokens || 0, outputTokens || 0, config);
+      costCents = estimatedUsd === null ? null : Number((estimatedUsd * 100).toFixed(4));
+    }
+    if (costCents === undefined) costCents = null;
     const event = {
       ...baseEvent,
       latencyMs: Math.max(0, now() - startedAt),
-      inputTokens: Number(result.usage?.input_tokens || result.usage?.prompt_tokens || 0) || null,
-      outputTokens: Number(result.usage?.output_tokens || result.usage?.completion_tokens || 0) || null,
-      costCents: result.costCents,
+      inputTokens,
+      outputTokens,
+      costCents,
       outcome: 'success',
     };
     if (options.telemetrySink) await options.telemetrySink(event);
-    return { ...result, route: plan, telemetry: event };
+    return { ...result, costCents, route: plan, telemetry: event };
   } catch (error) {
     const event = {
       ...baseEvent,
@@ -640,7 +690,9 @@ function isCostRouteQwenEnabled(task = {}, env = process.env) {
 module.exports = {
   isCostRouteQwenEnabled,
   TIERS,
+  TIER_ROUTING_ORDER,
   classifyTask,
+  estimateTierCostUsd,
   shouldEscalate,
   FrontierBudget,
   recommendExecutionPlan,
