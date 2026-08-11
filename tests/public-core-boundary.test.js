@@ -242,8 +242,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // packaged MemGhost structural enforcement runtime. Exact count, no headroom.
   // 432 -> 434 (2026-08-11): mcp-wiring-doctor + remote-feedback-capture for
   // unattended RAG loop (project .mcp.json dogfood + hosted capture fallback).
+  // 434 -> 435 (2026-08-11): qwen38-max-cost-optimizer is required by the
+  // packaged public model-tier-router. This adds no private Core surface.
   // Keep lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 434;
+  const CEILING = 435;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
