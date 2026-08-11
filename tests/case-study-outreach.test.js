@@ -41,6 +41,7 @@ describe('case-study outreach generator', () => {
     assert.match(pack.markdown, /Honesty/);
     assert.doesNotMatch(pack.markdown, /Fortune 500|customer logo wall/i);
     assert.match(pack.links.diagnostic, /utm_campaign=case_sudo_evasion/);
+    assert.match(pack.channels.email, /^Subject: A guardrail you could walk past with sudo/);
   });
 
   it('writes a markdown pack on --write', () => {

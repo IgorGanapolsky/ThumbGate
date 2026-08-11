@@ -113,3 +113,46 @@ test('hybrid-supervisor-agent enables efficient retrieval decomposition', () => 
   assert.equal(typeof hybrid.classifyHybridQuery, 'function');
   assert.equal(typeof hybrid.evaluateHybridSupervisorRun, 'function');
 });
+
+test('temporal decay halves score at one half-life and penalizes invalid dates', () => {
+  const decay = require('../scripts/temporal-decay-weighting');
+  const now = Date.now;
+  Date.now = () => Date.parse('2026-08-11T00:00:00Z');
+  try {
+    const timestamp = '2026-07-12T00:00:00Z';
+    assert.equal(decay.applyTemporalDecay(0.8, timestamp), 0.4);
+    assert.ok(Math.abs(decay.applyTemporalDecay(0.8, 'invalid') - 0.08) < Number.EPSILON);
+    assert.equal(decay.applyTemporalDecay(0, timestamp), 0);
+    assert.throws(() => decay.applyTemporalDecay(1, timestamp, 0), /positive finite/);
+  } finally {
+    Date.now = now;
+  }
+});
+
+test('temporal contextual scoring applies tag, active-mode, and reranker policy', () => {
+  const decay = require('../scripts/temporal-decay-weighting');
+  const now = Date.now;
+  Date.now = () => Date.parse('2026-08-11T00:00:00Z');
+  try {
+    const lesson = { timestamp: '2026-07-12T00:00:00Z', tags: ['rag', 'roi'] };
+    const decayed = decay.computeContextualScore(0.8, lesson);
+    const tagged = decay.computeContextualScore(0.8, lesson, {
+      metadataFilters: { tags: ['rag'] },
+      activeMode: true,
+    });
+    const reranked = decay.computeContextualScore(0.9, {
+      timestamp: '2026-08-11T00:00:00Z',
+    }, {
+      rerankThreshold: 0.5,
+      rrfBoost: 2,
+      rrfPenalty: 0.2,
+    });
+    assert.equal(decayed, 0.4);
+    assert.ok(tagged > decayed);
+    assert.equal(reranked, 0.8889);
+    assert.equal(decay.rrfDecay(0.8), 0.8);
+    assert.equal(decay.computeContextualScore(0.5, null), 0.05);
+  } finally {
+    Date.now = now;
+  }
+});

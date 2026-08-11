@@ -11,8 +11,7 @@
  * - Half-life-based score degradation
  */
 
-const fs = require('fs');
-const path = require('path');
+const DEFAULT_HALF_LIFE_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
  * Apply temporal decay to an embedding score based on lesson age.
@@ -23,26 +22,24 @@ const path = require('path');
  * @param {boolean} activeMode - Whether we're in active investigation mode (slower decay) vs maintenance
  * @returns {number} Decayed score
  */
-function applyTemporalDecay(rawScore, lessonTimestamp, halfLifeMs = 2592000000, activeMode = false) {
+function applyTemporalDecay(rawScore, lessonTimestamp, halfLifeMs = DEFAULT_HALF_LIFE_MS, activeMode = false) {
   if (!rawScore || rawScore <= 0) return rawScore;
-  
-  const now = Date.now();
+
+  if (!Number.isFinite(halfLifeMs) || halfLifeMs <= 0) {
+    throw new TypeError('halfLifeMs must be a positive finite number');
+  }
+
   const lessonDate = new Date(String(lessonTimestamp));
-  
+
   // Handle invalid timestamps (e.g., from git metadata like "2026-07-31T19:48:50+02:00")
   if (isNaN(lessonDate.getTime())) {
     return rawScore * 0.1; // Penalize stale/untraceable lessons heavily
   }
   
-  const ageMs = now - lessonDate.getTime();
-  const decayFactor = Math.exp(-Math.log(2) * ageMs / halfLifeMs);
-  
-  // Active mode: slower decay for active investigation contexts
-  // Maintenance mode: faster decay to avoid stale context bleeding
-  if (activeMode) {
-    return rawScore * decimal(decayFactor * 1.5, 4); // 50% slower decay
-  }
-  
+  const ageMs = Math.max(0, Date.now() - lessonDate.getTime());
+  const effectiveHalfLifeMs = activeMode ? halfLifeMs * 1.5 : halfLifeMs;
+  const decayFactor = Math.exp(-Math.log(2) * ageMs / effectiveHalfLifeMs);
+
   return rawScore * decimal(decayFactor, 4);
 }
 
@@ -51,26 +48,29 @@ function applyTemporalDecay(rawScore, lessonTimestamp, halfLifeMs = 2592000000, 
  */
 function computeContextualScore(rawScore, lesson, config = {}) {
   let totalScore = rawScore;
-  
+
+  const safeLesson = lesson || {};
+
   // Metadata filters from podcast: tag-based relevance boosting
   if (config.metadataFilters) {
     const requiredTags = Array.isArray(config.metadataFilters.tags) ? config.metadataFilters.tags : [];
-    const hasTags = lesson && Array.isArray(lesson.tags) && 
-      requiredTags.filter(t => lesson.tags.includes(String(t))).length === requiredTags.length;
-    
+    const hasTags = Array.isArray(safeLesson.tags) &&
+      requiredTags.every(tag => safeLesson.tags.includes(String(tag)));
+
     totalScore = hasTags ? totalScore * 1.2 : Math.max(totalScore, rawScore); // Bonus for tag match
   }
   
   // Temporal decay: older lessons naturally de-rank
-  const decayedScore = applyTemporalDecay(
+  totalScore = applyTemporalDecay(
     totalScore, 
-    lesson.timestamp || Date.parse(lesson.receivedAt) || Number(lesson.created_at),
-    config.halfLifeMs || 2592000000 // ~30 days for active sessions
+    safeLesson.timestamp || Date.parse(safeLesson.receivedAt) || Number(safeLesson.created_at),
+    config.halfLifeMs || DEFAULT_HALF_LIFE_MS,
+    Boolean(config.activeMode)
   );
-  
+
   // Reranker boost (cross-encoder or similar rerank module): if score > threshold, apply non-linear boost
-  if (decayedScore > config.rerankThreshold && config.rrfBoost) {
-    totalScore = rrfDecay(decayedScore * config.rrfBoost, config.rrfPenalty);
+  if (totalScore > config.rerankThreshold && config.rrfBoost) {
+    totalScore = rrfDecay(totalScore * config.rrfBoost, config.rrfPenalty);
   }
   
   return decimal(totalScore, 4);
@@ -94,4 +94,4 @@ function decimal(num, places) {
 }
 
 // Export for modular use in retrieval pipelines
-module.exports = { applyTemporalDecay, computeContextualScore, rrfDecay };
+module.exports = { DEFAULT_HALF_LIFE_MS, applyTemporalDecay, computeContextualScore, rrfDecay };
