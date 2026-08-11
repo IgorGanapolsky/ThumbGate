@@ -72,6 +72,7 @@ const {
   evaluateSecurityScan,
 } = require('./security-scanner');
 const { evaluatePlanGate } = require('./plan-gate');
+const { evaluateStealthMemoryInjection } = require('./stealth-memory-injection-gate');
 const { getTrajectoryScore } = require('./trajectory-scorer');
 const { evaluateSequenceState } = loadOptionalModule('./sequence-guard', () => ({
   evaluateSequenceState: () => null,
@@ -2846,6 +2847,10 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   if (statefulHelperBypassGate) {
     return recordStructuralGateBlock(toolName, toolInput, statefulHelperBypassGate);
   }
+  const stealthMemoryInjectionGate = evaluateStealthMemoryInjection(toolName, toolInput);
+  if (stealthMemoryInjectionGate) {
+    return recordStructuralGateBlock(toolName, toolInput, stealthMemoryInjectionGate);
+  }
   if (isBreakGlassSettingsRecoveryAction(toolName, toolInput)) {
     recordAuditEvent({
       toolName,
@@ -3101,6 +3106,10 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
   const statefulHelperBypassGate = evaluateStatefulHelperBypassGate(toolName, toolInput);
   if (statefulHelperBypassGate) {
     return recordStructuralGateBlock(toolName, toolInput, statefulHelperBypassGate);
+  }
+  const stealthMemoryInjectionGate = evaluateStealthMemoryInjection(toolName, toolInput);
+  if (stealthMemoryInjectionGate) {
+    return recordStructuralGateBlock(toolName, toolInput, stealthMemoryInjectionGate);
   }
   if (isBreakGlassSettingsRecoveryAction(toolName, toolInput)) {
     recordAuditEvent({
@@ -4387,6 +4396,7 @@ module.exports = {
   evaluateLocalOnlyRemoteSideEffectGate,
   recordHelperScriptWrite,
   evaluateStatefulHelperBypassGate,
+  evaluateStealthMemoryInjection,
   isAgentHookSettingsFile,
   isBreakGlassSettingsRecoveryAction,
   PR_THREAD_RESOLUTION_ACTION,

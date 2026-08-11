@@ -69,14 +69,31 @@ npx thumbgate capture --signal down --context "Claw agent created dynamic tool f
 
 Update your editor/agent MCP to include ThumbGate gates + claw-aware tools when available.
 
+## Stealth memory injection (WhisperBench / MemGhost, paper 2607.05189)
+
+**Paper:** [When Claws Remember but Do Not Tell](https://huggingface.co/papers/2607.05189) — stealth memory injection via email into durable carriers (MEMORY.md, AGENTS.md, SOUL.md, …) with conversational silence, then delayed behavioral influence. Reported up to **87.5% E2E** on OpenClaw + GPT-5.4; transfers to Hermes / NanoClaw / Mem0.
+
+**How this helps ThumbGate (cash + product):**
+1. **Exact buyer pain** for OpenClaw / Hermes / claw-style personal agents — ordinary hijack gates miss *silent durable writes*.
+2. **Pre-action enforcement** is our moat: block before `Write`/`Edit`/`tee MEMORY.md` lands.
+3. **GTM language**: Infrastructure Firewall against MemGhost-class attacks (fact + preference poisoning).
+
+**Implemented enforcement:**
+- Structural gate `block-stealth-memory-injection-from-external` in `scripts/stealth-memory-injection-gate.js`, wired in `scripts/gates-engine.js` (sync + async).
+- Template entry in `config/gate-templates.json` (same id).
+- Tests: `tests/stealth-memory-injection-gate.test.js`.
+
+**Override (operator only):** `stealthMemoryInjectionApproved: true` on tool input, or `THUMBGATE_ALLOW_STEALTH_MEMORY_INJECTION=1`.
+
 ## High-ROI Next Steps (Autonomous or Follow-up)
 
 - Extend `scripts/hybrid-feedback-context.js` and `gates-engine.js` with explicit `evaluateClawPretool` or context builders for agent_id, claw_action_type.
 - Add MCP tools for "query_claw_identity" or "audit_claw_action".
 - Update dashboard "chat with your data" to surface claw-specific lessons.
 - Create proof harness for claw agent scenarios (similar to existing proof/).
-- Outreach: Position ThumbGate as the governance for EnterpriseClaw / OpenShell / hybrid claw agents (the article's exact gap).
+- Outreach: Position ThumbGate as the governance for EnterpriseClaw / OpenShell / hybrid claw agents (the article's exact gap) **and** MemGhost/WhisperBench memory integrity.
 - Benchmark: Use new model-candidates workload for claw governance quality/cost.
+- Optional: WhisperBench-style golden cases as ThumbGate eval fixtures (injection / stealth / effectiveness triad).
 
 ## References
 
