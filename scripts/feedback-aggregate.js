@@ -189,7 +189,7 @@ function summarizeFeedbackEntries(entries) {
   for (const entry of entries) {
     if (entry.signal === 'positive') totalPositive += 1;
     if (entry.signal === 'negative') totalNegative += 1;
-    if (entry.rubric && entry.rubric.weightedScore != null) rubricSamples += 1;
+    if (entry.rubric?.weightedScore != null) rubricSamples += 1;
   }
 
   return { totalPositive, totalNegative, rubricSamples };
