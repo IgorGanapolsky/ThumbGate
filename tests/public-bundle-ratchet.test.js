@@ -177,7 +177,9 @@ const path = require('node:path');
 // durable-carrier pre-action defense — paper 2607.05189).
 // 2026-08-11: +scripts/remote-feedback-capture.js (+ mcp-wiring-doctor if newly packed)
 // for unattended RAG loop (hosted capture fallback + loud wiring doctor).
-const BASELINE_FILE_COUNT = 434;
+// 434 -> 435 (2026-08-11): temporal-decay-weighting is a required dependency
+// of packaged lesson retrieval. Exact measured artifact, no spare headroom.
+const BASELINE_FILE_COUNT = 435;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
