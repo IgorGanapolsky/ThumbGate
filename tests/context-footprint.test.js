@@ -141,7 +141,32 @@ describe('context-footprint', () => {
     assert.equal(report.tiers.length, 4);
     assert.equal(report.tiers[2].dimension, 256);
     assert.ok(report.tiers[2].reductionPercent > 80);
-    assert.match(report.qualityContract.accuracyLossEstimatePct, /<1\.5%/);
+    assert.equal(report.qualityContract.verified, false);
+    assert.equal(report.qualityContract.behaviorPreserved, false);
+    assert.equal(report.qualityContract.accuracyLossEstimatePct, 'unverified');
+  });
+
+  it('rejects invalid Matryoshka dimensions and item counts', () => {
+    assert.throws(() => buildMatryoshkaEmbeddingReport({ fullDimension: -3 }), /fullDimension/);
+    assert.throws(() => buildMatryoshkaEmbeddingReport({ itemCount: -2 }), /itemCount/);
+    assert.throws(
+      () => buildMatryoshkaEmbeddingReport({ fullDimension: 128, targetDimensions: [9999, 'x'] }),
+      /targetDimensions/,
+    );
+  });
+
+  it('only claims behavior preservation when quality evidence is supplied', () => {
+    const report = buildMatryoshkaEmbeddingReport({
+      fullDimension: 1536,
+      targetDimensions: [256],
+      itemCount: 10,
+      qualityVerified: true,
+      behaviorPreserved: true,
+      accuracyLossEstimatePct: 1.2,
+    });
+    assert.equal(report.qualityContract.verified, true);
+    assert.equal(report.qualityContract.behaviorPreserved, true);
+    assert.equal(report.qualityContract.accuracyLossEstimatePct, '1.2%');
   });
 });
 

@@ -216,14 +216,53 @@ function compactSymbolicTaskCanvas(entries = [], options = {}) {
   };
 }
 
+function isPositiveInt(value) {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0;
+}
+
 function buildMatryoshkaEmbeddingReport(options = {}) {
-  const fullDimension = Number(options.fullDimension) || 1536;
-  const targetDimensions = Array.isArray(options.targetDimensions) && options.targetDimensions.length > 0
-    ? options.targetDimensions.map(Number)
-    : [768, 512, 256, 128];
-  const items = Number(options.itemCount) || 1000;
+  const defaults = {
+    fullDimension: 1536,
+    targetDimensions: [768, 512, 256, 128],
+    itemCount: 1000,
+  };
+
+  const fullDimensionRaw = options.fullDimension == null ? defaults.fullDimension : options.fullDimension;
+  if (!isPositiveInt(fullDimensionRaw)) {
+    throw new Error('matryoshkaOptions.fullDimension must be a positive integer');
+  }
+  const fullDimension = Number(fullDimensionRaw);
+
+  const itemsRaw = options.itemCount == null ? defaults.itemCount : options.itemCount;
+  if (!isPositiveInt(itemsRaw)) {
+    throw new Error('matryoshkaOptions.itemCount must be a positive integer');
+  }
+  const items = Number(itemsRaw);
+
+  let targetDimensions;
+  if (Array.isArray(options.targetDimensions) && options.targetDimensions.length > 0) {
+    targetDimensions = options.targetDimensions.map(Number);
+    for (const dim of targetDimensions) {
+      if (!isPositiveInt(dim)) {
+        throw new Error('matryoshkaOptions.targetDimensions must be positive integers');
+      }
+      if (dim > fullDimension) {
+        throw new Error('matryoshkaOptions.targetDimensions must be <= fullDimension');
+      }
+    }
+  } else {
+    targetDimensions = defaults.targetDimensions.filter((dim) => dim <= fullDimension);
+  }
+
+  if (targetDimensions.length === 0) {
+    throw new Error('matryoshkaOptions.targetDimensions must include at least one valid dimension');
+  }
 
   const baselineBytes = items * fullDimension * 4;
+  const qualityVerified = options.qualityVerified === true
+    && options.behaviorPreserved === true
+    && Number.isFinite(Number(options.accuracyLossEstimatePct));
 
   const tiers = targetDimensions.map((dim) => {
     const dimBytes = items * dim * 4;
@@ -247,11 +286,19 @@ function buildMatryoshkaEmbeddingReport(options = {}) {
     fullDimension,
     itemCount: items,
     baselineTotalBytes: baselineBytes,
-    qualityContract: {
-      behaviorPreserved: true,
-      accuracyLossEstimatePct: '<1.5%',
-      reason: 'Matryoshka embeddings concentrate dominant semantic variance in leading dimensions for loss-resistant truncation.',
-    },
+    qualityContract: qualityVerified
+      ? {
+        behaviorPreserved: true,
+        accuracyLossEstimatePct: `${Number(options.accuracyLossEstimatePct)}%`,
+        verified: true,
+        reason: 'Provider-specific golden evaluation met required recall/precision thresholds.',
+      }
+      : {
+        behaviorPreserved: false,
+        accuracyLossEstimatePct: 'unverified',
+        verified: false,
+        reason: 'Quality unverified: no provider-specific Matryoshka golden evaluation evidence was supplied. Do not treat truncation as behavior-preserving until deterministic RAG eval meets required thresholds.',
+      },
     tiers,
   };
 }
