@@ -15,7 +15,7 @@ Case id: `memory-compaction`
 Your agent memory fills with the same lesson five times, so the distinct lesson never surfaces.
 
 We dogfooded this on ThumbGate itself: 3 dupe records → 1 survivor per cluster; slot budget back to full.
-Retrieval dedupes the candidate pool before ranking, and a compaction CLI merges near-duplicates with summed occurrence counts (opposite-signal lessons never merge); a July 2026 audit found ~86% of promoted lessons were near-duplicates.
+Retrieval dedupes the candidate pool before ranking, and a compaction CLI merges near-duplicates with summed occurrence counts (opposite-signal lessons never merge); dogfood compaction runs routinely collapse a large majority of near-duplicate promoted lessons.
 
 Full write-up (no fabricated logos): https://thumbgate.ai/case-studies?utm_source=case_study_outreach&utm_medium=case_study&utm_campaign=case_memory_compaction&cta_id=case_memory_compaction_case_study#memory-compaction
 Live bench scorecard: https://thumbgate.ai/eval-scorecard?utm_source=case_study_outreach&utm_medium=scorecard&utm_campaign=case_memory_compaction&cta_id=case_memory_compaction_scorecard
@@ -33,7 +33,7 @@ Your agent memory fills with the same lesson five times, so the distinct lesson 
 
 Concrete proof from our own product loop (not a customer logo page):
 - 3 dupe records → 1 survivor per cluster; slot budget back to full
-- Retrieval dedupes the candidate pool before ranking, and a compaction CLI merges near-duplicates with summed occurrence counts (opposite-signal lessons never merge); a July 2026 audit found ~86% of promoted lessons were near-duplicates.
+- Retrieval dedupes the candidate pool before ranking, and a compaction CLI merges near-duplicates with summed occurrence counts (opposite-signal lessons never merge); dogfood compaction runs routinely collapse a large majority of near-duplicate promoted lessons.
 
 Case study: https://thumbgate.ai/case-studies?utm_source=case_study_outreach&utm_medium=case_study&utm_campaign=case_memory_compaction&cta_id=case_memory_compaction_case_study#memory-compaction
 Scorecard: https://thumbgate.ai/eval-scorecard?utm_source=case_study_outreach&utm_medium=scorecard&utm_campaign=case_memory_compaction&cta_id=case_memory_compaction_scorecard
@@ -51,7 +51,7 @@ Self-serve Pro: https://thumbgate.ai/checkout/pro?utm_source=case_study_outreach
 
 **What we measured:** 3 dupe records → 1 survivor per cluster; slot budget back to full
 
-**What fixed it:** Retrieval dedupes the candidate pool before ranking, and a compaction CLI merges near-duplicates with summed occurrence counts (opposite-signal lessons never merge); a July 2026 audit found ~86% of promoted lessons were near-duplicates.
+**What fixed it:** Retrieval dedupes the candidate pool before ranking, and a compaction CLI merges near-duplicates with summed occurrence counts (opposite-signal lessons never merge); dogfood compaction runs routinely collapse a large majority of near-duplicate promoted lessons.
 
 Public case study (dogfood, not a fake logo wall): https://thumbgate.ai/case-studies?utm_source=case_study_outreach&utm_medium=case_study&utm_campaign=case_memory_compaction&cta_id=case_memory_compaction_case_study#memory-compaction
 Bench scorecard: https://thumbgate.ai/eval-scorecard?utm_source=case_study_outreach&utm_medium=scorecard&utm_campaign=case_memory_compaction&cta_id=case_memory_compaction_scorecard

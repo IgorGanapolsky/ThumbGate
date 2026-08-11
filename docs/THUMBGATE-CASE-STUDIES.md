@@ -253,11 +253,13 @@ Promoted lessons accumulate over sessions, and capture-time synthesis only merge
 near-duplicates over a recent window. Older paraphrases of the same failure survive as
 separate records.
 
-**Problem.** A July 2026 audit measured **~86% of promoted lessons as near-duplicates.**
-Split records fragment occurrence counts (distorting `shouldAutoPromote >= 3` and
-prevention-rule scoring) and crowd the retrieval candidate pool. In the backfill
-regression, three paraphrases of the same Railway deploy-verification lesson took all three
-result slots — the distinct lessons never surfaced.
+**Problem.** Local promotion corpora repeatedly show **near-duplicate dominance** in the
+lesson store (dogfood compaction runs routinely collapse a large majority of records into
+a few clusters; see `scripts/memory-near-dupe.js` and `npm run memory:compact` dry-run
+output under `.thumbgate/` backups). Split records fragment occurrence counts (distorting
+`shouldAutoPromote >= 3` and prevention-rule scoring) and crowd the retrieval candidate
+pool. In the backfill regression, three paraphrases of the same Railway deploy-verification
+lesson took all three result slots — the distinct lessons never surfaced.
 
 **Action.** Two layers:
 
