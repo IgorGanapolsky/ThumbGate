@@ -3012,6 +3012,24 @@ function sessionStart() {
     }
   } catch (_) { /* non-critical */ }
 
+  // MCP + lessons-store wiring — make unattended RAG-loop gaps loud at boot
+  try {
+    const { wiringReport } = require(path.join(PKG_ROOT, 'scripts', 'mcp-wiring-doctor'));
+    const wiring = wiringReport(CWD);
+    if (wiring && wiring.overall !== 'ok') {
+      if (reminderLines.length > 0) reminderLines.push('');
+      reminderLines.push(`ThumbGate RAG wiring: ${wiring.overall.toUpperCase()}`);
+      reminderLines.push(
+        wiring.unattendedCaptureReady
+          ? '  Capture path available (local and/or hosted).'
+          : '  Capture path BROKEN for unattended runs — wire .mcp.json thumbgate server and set THUMBGATE_FEEDBACK_DIR or THUMBGATE_API_BASE_URL+THUMBGATE_API_KEY.'
+      );
+      (wiring.findings || []).slice(0, 4).forEach((finding) => {
+        reminderLines.push(`  - ${finding}`);
+      });
+    }
+  } catch (_) { /* non-critical */ }
+
   // Top high-risk tags — force agent to see them at session start, not opt-in
   try {
     const { getRiskSummary } = require(path.join(PKG_ROOT, 'scripts', 'risk-scorer'));
@@ -3923,14 +3941,29 @@ switch (COMMAND) {
       generateAgentReadinessReport,
       reportToText,
     } = require(path.join(PKG_ROOT, 'scripts', 'agent-readiness'));
+    const { wiringReport, formatReport } = require(path.join(PKG_ROOT, 'scripts', 'mcp-wiring-doctor'));
     const args = parseArgs(process.argv.slice(3));
     const report = generateAgentReadinessReport({ projectRoot: CWD });
+    const wiring = wiringReport(CWD);
     if (args.json) {
-      console.log(JSON.stringify(report, null, 2));
+      console.log(JSON.stringify({ ...report, wiring }, null, 2));
     } else {
       process.stdout.write(reportToText(report));
+      process.stdout.write(`\n${formatReport(wiring)}\n`);
     }
-    process.exit(report.overallStatus === 'ready' ? 0 : 1);
+    const ready = report.overallStatus === 'ready' && wiring.overall !== 'error';
+    process.exit(ready ? 0 : 1);
+    break;
+  }
+  case 'wiring-doctor':
+  case 'mcp-wiring-doctor': {
+    const { wiringReport, formatReport, applyFix } = require(path.join(PKG_ROOT, 'scripts', 'mcp-wiring-doctor'));
+    const args = parseArgs(process.argv.slice(3));
+    if (args.fix) applyFix(CWD);
+    const wiring = wiringReport(CWD);
+    if (args.json) console.log(JSON.stringify(wiring, null, 2));
+    else console.log(formatReport(wiring));
+    process.exit(wiring.overall === 'error' ? 2 : wiring.overall === 'warning' ? 1 : 0);
     break;
   }
   case 'export-dpo':

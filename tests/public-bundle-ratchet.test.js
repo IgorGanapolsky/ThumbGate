@@ -175,7 +175,9 @@ const path = require('node:path');
 // Bumped 424 -> 431 (2026-08-10): WorkOS + Herdr + /peter partner landing + packaged prove scripts.
 // 2026-08-10: +1 scripts/stealth-memory-injection-gate.js (MemGhost/WhisperBench
 // durable-carrier pre-action defense — paper 2607.05189).
-const BASELINE_FILE_COUNT = 432;
+// 2026-08-11: +scripts/remote-feedback-capture.js (+ mcp-wiring-doctor if newly packed)
+// for unattended RAG loop (hosted capture fallback + loud wiring doctor).
+const BASELINE_FILE_COUNT = 434;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
