@@ -240,8 +240,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 424 -> 431 (2026-08-10): WorkOS + Herdr + /peter partner landing + packaged prove scripts.
   // 431 -> 432 (2026-08-10): scripts/stealth-memory-injection-gate.js is the
   // packaged MemGhost structural enforcement runtime. Exact count, no headroom.
+  // 432 -> 434 (2026-08-11): mcp-wiring-doctor + remote-feedback-capture for
+  // unattended RAG loop (project .mcp.json dogfood + hosted capture fallback).
   // Keep lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 432;
+  const CEILING = 434;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

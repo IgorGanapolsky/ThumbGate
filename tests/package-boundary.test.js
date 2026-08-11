@@ -431,8 +431,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 431 -> 432 (2026-08-10): scripts/stealth-memory-injection-gate.js is
     // required by gates-engine.js to enforce the MemGhost durable-memory boundary.
     // Exact measured artifact, with no additional package headroom.
-    manifest.fileCount <= 432,
-    `npm package should stay <= 432 files, got ${manifest.fileCount}`
+    // 432 -> 434 (2026-08-11): mcp-wiring-doctor + remote-feedback-capture are
+    // packaged unattended RAG reliability surfaces. Exact count, no headroom.
+    manifest.fileCount <= 434,
+    `npm package should stay <= 434 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

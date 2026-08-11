@@ -167,6 +167,8 @@
     "scripts/mailer/index.js",
     "scripts/mailer/resend-mailer.js",
     "scripts/mcp-config.js",
+    "scripts/mcp-wiring-doctor.js",
+    "scripts/remote-feedback-capture.js",
     "scripts/mcp-oauth.js",
     "scripts/mcp-policy.js",
     "scripts/mcp-transport-strategy.js",

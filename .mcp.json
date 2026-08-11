@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "thumbgate": {
+      "command": "node",
+      "args": [
+        "adapters/mcp/server-stdio.js"
+      ]
+    }
+  }
+}
