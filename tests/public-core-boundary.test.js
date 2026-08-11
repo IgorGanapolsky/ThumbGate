@@ -238,8 +238,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // hosted dashboard fail-soft path). Pure public-shell CLI/runtime; no Core.
   // 423 -> 424 (2026-08-09): public/founders.html Oceans-inspired $499 cash-path landing.
   // 424 -> 431 (2026-08-10): WorkOS + Herdr + /peter partner landing + packaged prove scripts.
+  // 431 -> 432 (2026-08-10): scripts/stealth-memory-injection-gate.js is the
+  // packaged MemGhost structural enforcement runtime. Exact count, no headroom.
   // Keep lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 431;
+  const CEILING = 432;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
