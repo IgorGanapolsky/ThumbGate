@@ -404,6 +404,39 @@
       "costClass": "low",
       "strengths": ["context-structuring", "skill-synthesis", "MCP-governance", "agentic-coding", "tool-use", "reliability"],
       "notes": "Model optimized for the Hugging Face Context Course curriculum — context engineering for AI code agents (Claude Code, Codex, OpenCode). Excels at structuring knowledge so agents find context efficiently. Evaluated on MCP tool governance, skill synthesis validation, and hook-based lifecycle automation. See docs/guides/huggingface-context-course-governance.md and adapters/huggingface-context-course/."
+    },
+    {
+      "id": "alibaba/qwen3.8-max",
+      "vendor": "Alibaba Cloud",
+      "family": "qwen",
+      "provider": "model-studio",
+      "model": "qwen3.8-max",
+      "contextWindow": 200000,
+      "costClass": "medium",
+      "strengths": ["agentic-coding", "tool-use", "long-horizon-coding", "multimodal", "cost-efficiency", "reliability"],
+      "notes": "Alibaba Cloud Model Studio 2.4T MoE flagship model. Excels at autonomous long-horizon coding projects spanning multi-day agent runs. Direct support for OpenAI-compatible API endpoints. Ideal for long-trace-review and claw-style-enterprise-agent workloads with ultra-low TCO ($6/mo token plan)."
+    },
+    {
+      "id": "alibaba/qwen3.7-plus",
+      "vendor": "Alibaba Cloud",
+      "family": "qwen",
+      "provider": "model-studio",
+      "model": "qwen3.7-plus",
+      "contextWindow": 128000,
+      "costClass": "low",
+      "strengths": ["agentic-coding", "tool-use", "fast-inference", "gui-interaction", "cost-efficiency"],
+      "notes": "Cost-effective vision-language model with full-stack agent intelligence for coding, tool use, and GUI computer-use interaction. Ideal candidate for cheap-fast-path and pretool-gating."
+    },
+    {
+      "id": "alibaba/qwen3.6-flash",
+      "vendor": "Alibaba Cloud",
+      "family": "qwen",
+      "provider": "model-studio",
+      "model": "qwen3.6-flash",
+      "contextWindow": 128000,
+      "costClass": "low",
+      "strengths": ["fast-inference", "cost-efficiency", "tool-use", "reliability"],
+      "notes": "High-speed vision-language flash model for rapid pre-action checks, gate evaluation, and lightweight agent trace review."
     }
   ]
 }
