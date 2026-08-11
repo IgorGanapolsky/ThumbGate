@@ -780,6 +780,54 @@
       "problem": "Agents frequently generate code without first ensuring AGENTS.md, CLAUDE.md, test infrastructure, and ownership context are fresh and relevant. Per the Hugging Face Context Course: 'an agent is only as good as the context it has.' Results in style violations, wrong test commands, and rework.",
       "roi": "Eliminates rework from stale or missing project context. Direct 1st-order improvement to context-engineering workflows (Hugging Face Context Course Units 1-3). Reduces PR churn and review cycles.",
       "rollout": "Before any Edit/Write/MultiEdit, verify AGENTS.md exists and is fresh (modified within last 7 days). Require explicit context-freshness check before code edits. Capture feedback with 'missing-context' and 'stale-context' tags."
+    },
+    {
+      "id": "require-matryoshka-embedding-dimension",
+      "name": "Require Matryoshka-aware embedding dimension selection",
+      "category": "Embedding Quality Gates",
+      "signal": "👎",
+      "defaultAction": "warn",
+      "severity": "medium",
+      "pattern": "(embedding\\s*dimension|output.*dimension|embed.*dim).*(not.*tier|not.*matryoshka|unsupported)",
+      "problem": "Embedding dimensions should align with Matryoshka tiers (256, 512, 768, 1024, 1536, 2048, 3072, 4096, 7680) for progressive disclosure retrieval. Non-tier dimensions waste compute or hurt recall.",
+      "roi": "Reduces token spend and improves retrieval quality by using optimal dimension tiers. Enables cost-effective progressive disclosure: query at 256 dims, refine at 768, full precision at 1536+.",
+      "rollout": "Warn when embedding dimension is not a Matryoshka tier. Recommend nearest tier. Track cost savings and recall metrics in feedback loop."
+    },
+    {
+      "id": "block-embedding-recall-below-threshold",
+      "name": "Block embedding pipeline changes with insufficient recall",
+      "category": "Embedding Quality Gates",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(embedding|retrieval).*(recall.*<.*0\\.95|precision.*<.*0\\.15)",
+      "problem": "RAG pipelines require minimum recall@k ≥ 0.95 and precision@k ≥ 0.15. Changes that degrade below these thresholds hide failures from agents. Based on podcast insights: embedding model choice is the #1 underrated RAG decision.",
+      "roi": "Prevents silent RAG pipeline degradation. Ensures every embedding change maintains measurable quality. Aligns with '4 out of 5 teams have metrics but 1 in 5 sees ROI' problem - we catch quality drops before they become failures.",
+      "rollout": "Block any embedding deployment without verified baseline recall ≥ 0.95. Require recall/precision report before threshold changes. Capture feedback with tags 'embedding-quality', 'recall-regression', 'precision-degradation'."
+    },
+    {
+      "id": "require-embedding-baseline-before-tuning",
+      "name": "Require embedding baseline before precision tuning",
+      "category": "RAG Pipeline Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(embedding|vector|retriever).*(tune|fine[- ]?tune|threshold|precision).*\\b(?!.*baseline)(?!.*recall[@\\s]*=?\\s*0\\.?9?5?)",
+      "problem": "Per the podcast 'RAG Mistake Almost Every Team Is Making': tuning embedding thresholds without documented baseline causes silent degradation. 80% of teams have metrics but only 20% see ROI - we prevent the 80% from making tuning mistakes.",
+      "roi": "Catches the #1 RAG pipeline mistake early. Ensures embedding improvements are measured against a preserved baseline recall. Directly addresses the 80/20 ROI gap discussed with Pete Johnson (MongoDB Field CTO).",
+      "rollout": "Block any embedding threshold/optimization without 'recall@baseline: X.XX' in context. Encourage hybrid retrieval patterns for efficient progressive disclosure."
+    },
+    {
+      "id": "enable-hybrid-retrieval-gate",
+      "name": "Enable hybrid retrieval for efficient agentic memory",
+      "category": "RAG Pipeline Optimization",
+      "signal": "👍",
+      "defaultAction": "allow",
+      "severity": "medium",
+      "pattern": "(hybrid.*retrieval|progressive.*disclosure|matryoshka.*embed|fast.*query.*rerank)",
+      "problem": "Agentic memory (ThumbGate's pre-action enforcement) benefits from hybrid retrieval: query at 256 dims for speed, refine at 768 dims, full precision at 1536+ only when needed. This is 'better agentic memory' per the podcast.",
+      "roi": "Reduces token burn by 40-60% while maintaining recall. Enables real-time prevention without full embedding cost. Aligns with Matryoshka insights for efficient RAG.",
+      "rollout": "Enable by default for memory retrieval. Log dimension-tier performance. Route based on query complexity and result certainty."
     }
   ]
 }
