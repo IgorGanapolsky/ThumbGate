@@ -221,6 +221,7 @@
     "scripts/rerank-quality-eval.js",
     "scripts/request-envelope.js",
     "scripts/retrieval-quality-tier.js",
+    "scripts/temporal-decay-weighting.js",
     "scripts/tier-budget-guard.js",
     "scripts/revenue-action-eligibility.js",
     "scripts/revenue-evidence-remediation.js",

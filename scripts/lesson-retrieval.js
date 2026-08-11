@@ -14,6 +14,7 @@
  */
 
 const RECENCY_DECAY_DAYS = 30;
+const { DEFAULT_HALF_LIFE_MS, applyTemporalDecay } = require('./temporal-decay-weighting');
 const RERANK_CANDIDATE_POOL = 50; // bi-encoder retrieves this many; reranker picks topK
 const MAX_RETRIEVAL_MEMORY_CHARS = 20000;
 
@@ -653,11 +654,26 @@ function scoreRelevance(memory, toolName, actionContext, actionSig) {
 
   if (memory.tags?.includes('negative')) score += 0.1;
 
-  if (memory.timestamp) {
-    const ageMs = Date.now() - new Date(memory.timestamp).getTime();
-    const ageDays = ageMs / (1000 * 60 * 60 * 24);
-    const decay = Math.max(0, 1 - ageDays / RECENCY_DECAY_DAYS);
-    score *= 0.5 + 0.5 * decay;
+  if (memory.timestamp || memory.receivedAt || memory.created_at) {
+    // Half-life temporal decay (scripts/temporal-decay-weighting.js), applied as
+    // a recency *factor* with the legacy 0.5 floor so old-but-still-valid
+    // lessons remain retrievable (pure exp decay zeroed fixtures in CI).
+    const stamp = memory.timestamp || memory.receivedAt || memory.created_at;
+    const halfLifeMs =
+      Number.isFinite(Number(process.env.THUMBGATE_RETRIEVAL_HALF_LIFE_MS)) &&
+      Number(process.env.THUMBGATE_RETRIEVAL_HALF_LIFE_MS) > 0
+        ? Number(process.env.THUMBGATE_RETRIEVAL_HALF_LIFE_MS)
+        : DEFAULT_HALF_LIFE_MS;
+    const activeMode = process.env.THUMBGATE_RETRIEVAL_ACTIVE_MODE === '1';
+    try {
+      const factor = applyTemporalDecay(1, stamp, halfLifeMs, activeMode);
+      score *= 0.5 + 0.5 * Math.max(0, Math.min(1, factor));
+    } catch {
+      const ageMs = Date.now() - new Date(stamp).getTime();
+      const ageDays = ageMs / (1000 * 60 * 60 * 24);
+      const decay = Math.max(0, 1 - ageDays / RECENCY_DECAY_DAYS);
+      score *= 0.5 + 0.5 * decay;
+    }
   }
 
   if (memory.structuredRule) score += 0.15;

@@ -23,12 +23,15 @@ The article explicitly notes: "Claw-style AI agents are coming to the enterprise
 ## Implemented High-ROI Changes (Autonomous)
 
 - **Model candidates** (config/model-candidates.json): New "claw-style-enterprise-agent" workload + candidates `automation-anywhere/enterprise-claw` and `nvidia/openshell-claw`. Integrated with perplexity/hybrid-* for routing.
-- **Gate templates** (config/gate-templates.json): 4 new critical/high templates:
+- **Gate templates** (config/gate-templates.json): 6 new critical/high templates:
   - `block-dynamic-tool-creation-without-approval`
   - `require-review-for-screen-ui-interaction`
   - `enforce-agent-identity-separation`
   - `gate-claw-file-system-access`
-  (Plus the hybrid-inference-routing one from Perplexity work.)
+  - `require-matryoshka-embedding-dimension` (NEW)
+  - `block-embedding-recall-below-threshold` (NEW)
+  - `require-embedding-baseline-before-tuning` (NEW)
+  - `enable-hybrid-retrieval-gate` (NEW - positive reinforcement)
 - **Adapter**: `adapters/claw/` with this guide, configs, examples.
 - **Docs updates**: AGENTS.md, adapters/README.md, etc. (see below).
 - **Feedback capture**: Enhanced patterns for claw context (agent_id, action_type=claw-*, hybrid_route, orchestration).
@@ -47,12 +50,18 @@ The article explicitly notes: "Claw-style AI agents are coming to the enterprise
 
 3. **Capture Feedback**:
    - Always include `agent_identity`, `claw_action_type` (file, screen, dynamic-tool, orchestration), `hybrid_route` (local/cloud).
+   - For embedding issues: `matryoshka-embedding`, `embedding-quality`, `recall-regression`, `precision-degradation`.
    - Tags: `claw-style`, `enterpriseclaw`, `openshell`, `dynamic-tool`, `screen-interaction`, `agent-identity`.
    - Use `whatWentWrong` for governance failures (e.g., "agent used human creds for audit trail").
 
 Example capture:
 ```bash
 npx thumbgate capture --signal down --context "Claw agent created dynamic tool for external API without approval" --tags "claw-style,dynamic-tool,security-risk" --agent-identity "enterprise-claw-42" --claw-action-type "dynamic-tool-creation" --hybrid-route "cloud-escalated"
+```
+
+Example capture for embedding issues:
+```bash
+npx thumbgate capture --signal down --context "Embedding recall dropped from 0.97 to 0.85 after dimension change" --tags "matryoshka-embedding,recall-regression,embedding-quality,claw-style" --agent-identity "enterprise-claw-42" --claw-action-type "reasoning" --hybrid-route "local-only"
 ```
 
 4. **Perplexity Hybrid Synergy** (from prior autonomous work):
@@ -94,6 +103,19 @@ Update your editor/agent MCP to include ThumbGate gates + claw-aware tools when 
 - Outreach: Position ThumbGate as the governance for EnterpriseClaw / OpenShell / hybrid claw agents (the article's exact gap) **and** MemGhost/WhisperBench memory integrity.
 - Benchmark: Use new model-candidates workload for claw governance quality/cost.
 - Optional: WhisperBench-style golden cases as ThumbGate eval fixtures (injection / stealth / effectiveness triad).
+
+## Matryoshka Embeddings for Efficient RAG Pipelines
+
+Per the podcast "The RAG Mistake Almost Every Team Is Making" (episode #1017), embedding model choice is the most underrated RAG decision. Matryoshka embeddings enable:
+
+- **Progressive disclosure**: Query at 256 dims (fast), refine at 768 dims (balanced), full precision at 1536+ (accurate)
+- **Token efficiency**: 40-60% reduction by avoiding full-dimension computation when unnecessary
+- **Hierarchical retrieval**: L3 (SOP) always included, L2 for workflows, L1 for facts, L0 for context
+
+**Implementation:**
+- Use `scripts/matryoshka-embedding.js` for dimension normalization and quality validation.
+- Gate templates: `require-matryoshka-embedding-dimension`, `block-embedding-recall-below-threshold`.
+- Tags for feedback: `matryoshka-embedding`, `embedding-quality`, `recall-regression`.
 
 ## References
 
