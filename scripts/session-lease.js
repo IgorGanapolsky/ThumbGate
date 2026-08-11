@@ -193,7 +193,10 @@ function guard(repoRoot, commandArgs, options = {}) {
   }
   if (!leaseCheck.held) {
     if (options.autoClaim) {
-      claim(repoRoot);
+      const claimResult = claim(repoRoot);
+      if (!claimResult.ok) {
+        return { ok: false, code: claimResult.code, message: claimResult.message };
+      }
     } else {
       return {
         ok: false,
@@ -296,6 +299,6 @@ module.exports = {
   writeLease,
 };
 
-if (require.main === module) {
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   main();
 }
