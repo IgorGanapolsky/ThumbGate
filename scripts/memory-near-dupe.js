@@ -14,7 +14,7 @@
  * it to the store.
  */
 
-const { lessonCanonicalSignature, canonicalHash } = require('./lesson-canonical');
+const { canonicalHash } = require('./lesson-canonical');
 const { textBigrams, bigramJaccard } = require('./lesson-retrieval');
 
 // Same "same topic" cutoff as dedupeSupersededLessons in lesson-retrieval.js.
@@ -32,7 +32,18 @@ function timeOf(record) {
   return Number.isFinite(t) ? t : 0;
 }
 
+// Mirror dedupeSupersededLessons' topicSignature: a structured rule's trigger
+// condition is the strong topic signal, so records carrying distinct
+// enforcement rules never merge even when their prose is near-identical.
+function ruleConditionOf(record) {
+  const rule = record.structuredRule;
+  const cond = rule && (rule.trigger?.condition || rule.if);
+  return cond && String(cond).trim().length >= 3 ? String(cond).trim().toLowerCase() : null;
+}
+
 function topicOf(record) {
+  const cond = ruleConditionOf(record);
+  if (cond) return cond;
   return `${record.title || ''} ${record.content || ''}`.trim().toLowerCase();
 }
 
@@ -102,12 +113,15 @@ function clusterNearDupeMemories(records, options = {}) {
     let hash = record.canonicalHash;
     if (!hash) {
       try {
-        hash = canonicalHash(lessonCanonicalSignature(record));
+        hash = canonicalHash(record);
       } catch {
         hash = null;
       }
     }
-    const hashKey = hash ? `${signal}:${hash}` : null;
+    // The canonical signature ignores structuredRule, so fold the rule
+    // condition into the hash key — otherwise the hash path would merge
+    // records whose prose matches but whose enforcement rules differ.
+    const hashKey = hash ? `${signal}:${hash}:${ruleConditionOf(record) || ''}` : null;
 
     let clusterIdx = hashKey != null && byHash.has(hashKey) ? byHash.get(hashKey) : -1;
     if (clusterIdx === -1) {
