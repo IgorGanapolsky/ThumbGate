@@ -206,6 +206,164 @@ test('CLI claim/check/release round-trip (same session token across subprocesses
   }
 });
 
+test('findRepoRoot walks up and returns null outside any git checkout', () => {
+  const dir = makeSandbox();
+  try {
+    const nested = path.join(dir, 'a', 'b');
+    fs.mkdirSync(nested, { recursive: true });
+    assert.strictEqual(lease.findRepoRoot(nested), dir);
+
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-no-git-'));
+    try {
+      assert.strictEqual(lease.findRepoRoot(outside), null);
+    } finally {
+      fs.rmSync(outside, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('leasePath resolves a .git file (worktree) to its git dir', () => {
+  const dir = makeSandbox();
+  try {
+    const realGit = path.join(dir, 'real-git');
+    fs.mkdirSync(realGit, { recursive: true });
+    // Replace the bare .git dir with a worktree pointer file.
+    fs.rmSync(path.join(dir, '.git'), { recursive: true, force: true });
+    fs.writeFileSync(path.join(dir, '.git'), `gitdir: ${path.join(realGit, 'commondir')}\n`);
+    const resolved = lease.leasePath(dir);
+    assert.strictEqual(resolved, path.join(realGit, 'commondir', lease.LEASE_FILENAME));
+    assert.strictEqual(lease.leasePath(dir), path.join(realGit, 'commondir', lease.LEASE_FILENAME));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('invalid lease JSON and non-object leases are treated as free', () => {
+  const dir = makeSandbox();
+  try {
+    fs.writeFileSync(lease.leasePath(dir), 'not json{{{');
+    const checkResult = lease.check(dir);
+    assert.strictEqual(checkResult.ok, true);
+    assert.strictEqual(checkResult.held, false);
+
+    fs.rmSync(lease.leasePath(dir));
+    assert.strictEqual(lease.isLeaseLive(null), false);
+    assert.strictEqual(lease.isLeaseLive({ pid: null }), false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('release with no lease and release of a stale lease', () => {
+  const dir = makeSandbox();
+  try {
+    const none = lease.release(dir);
+    assert.strictEqual(none.ok, true);
+    assert.strictEqual(none.released, false);
+    assert.strictEqual(none.reason, 'no-lease');
+
+    fs.writeFileSync(
+      lease.leasePath(dir),
+      JSON.stringify({ agent: 'dead-agent', pid: 99999999, startedAt: new Date().toISOString() })
+    );
+    const stale = lease.release(dir);
+    assert.strictEqual(stale.ok, true);
+    assert.strictEqual(stale.released, true);
+    assert.strictEqual(stale.stale, true);
+    assert.strictEqual(fs.existsSync(lease.leasePath(dir)), false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('guard requires a claim unless --auto-claim is used, then runs the command', () => {
+  const dir = makeSandbox();
+  try {
+    const noClaim = lease.guard(dir, [process.execPath, '-e', '']);
+    assert.strictEqual(noClaim.ok, false);
+    assert.strictEqual(noClaim.code, 'UNCLAIMED');
+
+    const auto = lease.guard(dir, [process.execPath, '-e', 'console.log("ran-under-lease")'], {
+      autoClaim: true,
+    });
+    assert.strictEqual(auto.ok, true);
+    assert.strictEqual(auto.status, 0);
+    const held = lease.check(dir);
+    assert.strictEqual(held.held, true);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('guard reports a failing command status', () => {
+  const dir = makeSandbox();
+  try {
+    const result = lease.guard(dir, [process.execPath, '-e', 'process.exit(3)'], { autoClaim: true });
+    assert.strictEqual(result.ok, false);
+    assert.strictEqual(result.status, 3);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('CLI outside a git checkout errors', () => {
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-no-git-cli-'));
+  try {
+    const run = runScript(['claim'], outside);
+    assert.notStrictEqual(run.status, 0);
+    assert.match(run.stderr, /not inside a git checkout/);
+  } finally {
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('CLI release --force overrides a live foreign holder', () => {
+  const dir = makeSandbox();
+  const child = require('node:child_process').spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
+    cwd: dir,
+    detached: true,
+    stdio: 'ignore',
+  });
+  try {
+    fs.writeFileSync(
+      lease.leasePath(dir),
+      JSON.stringify({ agent: 'foreign-holder', pid: child.pid, startedAt: new Date().toISOString() })
+    );
+    const releaseRun = runScript(['release', '--force'], dir, {});
+    assert.strictEqual(releaseRun.status, 0, releaseRun.stderr);
+    assert.strictEqual(fs.existsSync(lease.leasePath(dir)), false);
+  } finally {
+    try {
+      process.kill(child.pid);
+    } catch (error) {
+      // already dead
+    }
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('CLI guard runs a command and lease-path prints the lease file', () => {
+  const dir = makeSandbox();
+  const sessionEnv = { THUMBGATE_SESSION_AGENT: 'test-session-guard' };
+  try {
+    const guardRun = runScript(['guard', '--auto-claim', process.execPath, '-e', 'console.log("guarded")'], dir, sessionEnv);
+    assert.strictEqual(guardRun.status, 0, guardRun.stderr);
+    assert.match(guardRun.stdout, /guarded/);
+
+    const pathRun = runScript(['lease-path'], dir, sessionEnv);
+    assert.strictEqual(pathRun.status, 0, pathRun.stderr);
+    assert.strictEqual(pathRun.stdout.trim(), lease.leasePath(fs.realpathSync(dir)));
+
+    const usage = runScript(['bogus'], dir, sessionEnv);
+    assert.notStrictEqual(usage.status, 0);
+    assert.match(usage.stderr, /usage:/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('CLI blocks a second session from claiming a live lease', () => {
   const dir = makeSandbox();
   const sessionA = { THUMBGATE_SESSION_AGENT: 'test-session-A' };

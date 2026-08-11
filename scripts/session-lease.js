@@ -232,7 +232,6 @@ function main() {
             : `lease claimed: ${result.lease.agent} since ${result.lease.startedAt}`
         );
         process.exit(0);
-        break;
       }
       case 'check': {
         const result = check(repoRoot);
@@ -242,7 +241,6 @@ function main() {
         }
         console.log(result.held ? `lease held by this session (pid ${result.lease.pid})` : 'lease free');
         process.exit(0);
-        break;
       }
       case 'release': {
         const result = release(repoRoot, { force: args.includes('--force') });
@@ -256,21 +254,20 @@ function main() {
             : 'no lease to release'
         );
         process.exit(0);
-        break;
       }
       case 'guard': {
-        const result = guard(repoRoot, args.slice(1), { autoClaim: args.includes('--auto-claim') });
+        const autoClaim = args.includes('--auto-claim');
+        const commandArgs = args.slice(1).filter((arg) => arg !== '--auto-claim');
+        const result = guard(repoRoot, commandArgs, { autoClaim });
         if (!result.ok) {
           console.error(result.message || `command failed with status ${result.status}`);
           process.exit(result.code === 'LEASED' || result.code === 'UNCLAIMED' ? 1 : 2);
         }
         process.exit(0);
-        break;
       }
       case 'lease-path': {
         console.log(leasePath(repoRoot));
         process.exit(0);
-        break;
       }
       default: {
         console.error('usage: node scripts/session-lease.js <claim|check|release|guard|lease-path>');
