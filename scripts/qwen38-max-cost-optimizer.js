@@ -67,8 +67,104 @@ function calculateQwenSavingsVsClaude(options = {}) {
   };
 }
 
+function calculateCostPerSuccessfulOutcome(options = {}) {
+  const {
+    modelKey,
+    inputTokensM = 1,
+    outputTokensM = 1,
+    successRate,
+    sampleSize,
+    costMultiplier = 1,
+    minimumSampleSize = 20,
+  } = options;
+
+  if (!Number.isFinite(successRate) || successRate <= 0 || successRate > 1) {
+    throw new Error('successRate must be greater than 0 and less than or equal to 1');
+  }
+  if (!Number.isInteger(sampleSize) || sampleSize < 0) {
+    throw new Error('sampleSize must be a non-negative integer');
+  }
+  if (!Number.isFinite(costMultiplier) || costMultiplier <= 0 || costMultiplier > 1) {
+    throw new Error('costMultiplier must be greater than 0 and less than or equal to 1');
+  }
+
+  const tokenCost = calculateTokenCost(modelKey, inputTokensM, outputTokensM);
+  const effectiveCostUsd = tokenCost.totalCost * costMultiplier;
+
+  return {
+    modelKey,
+    sampleSize,
+    successRate,
+    telemetryQualified: sampleSize >= minimumSampleSize,
+    effectiveCostUsd: Number(effectiveCostUsd.toFixed(4)),
+    costPerSuccessfulOutcomeUsd: Number((effectiveCostUsd / successRate).toFixed(4)),
+  };
+}
+
+function recommendQwenByCostPerSuccess(options = {}) {
+  const {
+    inputTokensM = 1,
+    outputTokensM = 1,
+    incumbentModelKey = 'claude-sonnet-4.6',
+    incumbentSuccessRate,
+    incumbentSampleSize,
+    qwenSuccessRate,
+    qwenSampleSize,
+    minimumSampleSize = 20,
+    minimumSavingsPercent = 15,
+    verifiedTokenPlanMultiplier = 1,
+  } = options;
+
+  const incumbent = calculateCostPerSuccessfulOutcome({
+    modelKey: incumbentModelKey,
+    inputTokensM,
+    outputTokensM,
+    successRate: incumbentSuccessRate,
+    sampleSize: incumbentSampleSize,
+    minimumSampleSize,
+  });
+  const qwen = calculateCostPerSuccessfulOutcome({
+    modelKey: 'qwen3.8-max',
+    inputTokensM,
+    outputTokensM,
+    successRate: qwenSuccessRate,
+    sampleSize: qwenSampleSize,
+    costMultiplier: verifiedTokenPlanMultiplier,
+    minimumSampleSize,
+  });
+
+  if (!incumbent.telemetryQualified || !qwen.telemetryQualified) {
+    return {
+      recommendation: 'HOLD_INCUMBENT',
+      reason: 'INSUFFICIENT_OUTCOME_TELEMETRY',
+      incumbent,
+      qwen,
+    };
+  }
+
+  const savingsPercent = Number((
+    ((incumbent.costPerSuccessfulOutcomeUsd - qwen.costPerSuccessfulOutcomeUsd)
+      / incumbent.costPerSuccessfulOutcomeUsd) * 100
+  ).toFixed(1));
+
+  return {
+    recommendation: savingsPercent >= minimumSavingsPercent
+      ? 'ROUTE_HIGH_VOLUME_TO_QWEN38_MAX'
+      : 'HOLD_INCUMBENT',
+    reason: savingsPercent >= minimumSavingsPercent
+      ? 'LOWER_VERIFIED_COST_PER_SUCCESS'
+      : 'SAVINGS_BELOW_THRESHOLD',
+    savingsPercent,
+    minimumSavingsPercent,
+    incumbent,
+    qwen,
+  };
+}
+
 module.exports = {
   PRICING_TABLE,
   calculateTokenCost,
   calculateQwenSavingsVsClaude,
+  calculateCostPerSuccessfulOutcome,
+  recommendQwenByCostPerSuccess,
 };
