@@ -9,11 +9,16 @@ const path = require('node:path');
 const {
   wiringReport,
   applyFix,
+  formatReport,
   hasThumbgateServer,
+  remoteCaptureConfigured,
+  resolveLessonsStore,
 } = require('../scripts/mcp-wiring-doctor');
 const {
   captureFeedbackRemote,
   isRemoteCaptureConfigured,
+  resolveApiKey,
+  resolveBaseUrl,
 } = require('../scripts/remote-feedback-capture');
 
 test('hasThumbgateServer detects thumbgate and rejects legacy-only configs', () => {
@@ -151,6 +156,124 @@ test('captureFeedbackRemote posts JSON with bearer auth', async () => {
   const body = JSON.parse(calls[0].init.body);
   assert.equal(body.context, 'test remote capture');
   assert.equal(body.signal, 'down');
+});
+
+test('remote capture configuration normalizes URL and key aliases', () => {
+  const env = {
+    THUMBGATE_API_URL: 'https://example.test/',
+    THUMBGATE_API_KEY: '  tg_key  ',
+  };
+  assert.equal(resolveBaseUrl(env), 'https://example.test');
+  assert.equal(resolveApiKey(env), 'tg_key');
+  assert.deepEqual(remoteCaptureConfigured(env), {
+    configured: true,
+    baseUrl: 'https://example.test',
+    hasKey: true,
+  });
+});
+
+test('captureFeedbackRemote reports missing configuration without calling fetch', async () => {
+  let called = false;
+  const result = await captureFeedbackRemote({
+    env: {},
+    fetchImpl: async () => { called = true; },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.error, 'remote_capture_not_configured');
+  assert.equal(called, false);
+});
+
+test('captureFeedbackRemote accepts comma tags and preserves non-JSON error bodies', async () => {
+  const calls = [];
+  const result = await captureFeedbackRemote({
+    feedback: 'positive',
+    context: 'remote context',
+    whatWorked: 'hosted capture is reachable',
+    tags: 'cloud, unattended, ,rag',
+    source: 'acceptance-test',
+    env: {
+      THUMBGATE_API_BASE_URL: 'https://example.test/',
+      THUMBGATE_API_KEY: 'tg_key',
+    },
+    fetchImpl: async (url, init) => {
+      calls.push({ url, init });
+      return {
+        ok: false,
+        status: 503,
+        text: async () => 'temporarily unavailable',
+      };
+    },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.error, 'remote_capture_http_error');
+  assert.equal(result.status, 503);
+  assert.deepEqual(result.body, { raw: 'temporarily unavailable' });
+  const body = JSON.parse(calls[0].init.body);
+  assert.equal(body.signal, 'positive');
+  assert.equal(body.whatWorked, 'hosted capture is reachable');
+  assert.deepEqual(body.tags, ['cloud', 'unattended', 'rag']);
+  assert.equal(body.source, 'acceptance-test');
+});
+
+test('captureFeedbackRemote handles empty success and network failures', async () => {
+  const env = {
+    THUMBGATE_API_BASE_URL: 'https://example.test',
+    THUMBGATE_API_KEY: 'tg_key',
+  };
+  const empty = await captureFeedbackRemote({
+    env,
+    fetchImpl: async () => ({ ok: true, status: 204, text: async () => '' }),
+  });
+  assert.deepEqual(empty, { ok: true, status: 204, body: null });
+
+  const failed = await captureFeedbackRemote({
+    env,
+    fetchImpl: async () => { throw new Error('network down'); },
+  });
+  assert.equal(failed.ok, false);
+  assert.equal(failed.error, 'remote_capture_network_error');
+  assert.equal(failed.message, 'network down');
+});
+
+test('wiringReport surfaces invalid JSON and formats actionable findings', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-wiring-invalid-'));
+  try {
+    fs.writeFileSync(path.join(dir, '.mcp.json'), '{not-json');
+    const report = wiringReport(dir, { HOME: dir, container: '1' });
+    assert.equal(report.overall, 'error');
+    assert.equal(report.mcp.projectMcpPresent, true);
+    assert.equal(report.mcp.thumbgateInProjectMcp, false);
+    assert.ok(report.findings.some((finding) => /not valid JSON/.test(finding)));
+    const text = formatReport(report);
+    assert.match(text, /MCP wiring doctor: ERROR/);
+    assert.match(text, /Findings:/);
+    assert.match(text, /Unattended capture ready: yes/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('alternate non-legacy server keys can explicitly invoke ThumbGate', () => {
+  assert.equal(hasThumbgateServer({
+    servers: {
+      governance: { command: 'npx', args: ['thumbgate', 'serve'] },
+    },
+  }), true);
+  assert.equal(hasThumbgateServer({ __parseError: true }), false);
+  assert.equal(hasThumbgateServer(null), false);
+});
+
+test('resolveLessonsStore honors an explicit existing feedback directory', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-explicit-store-'));
+  try {
+    assert.deepEqual(resolveLessonsStore('/unused', { THUMBGATE_FEEDBACK_DIR: dir }), {
+      path: dir,
+      present: true,
+      writable: true,
+    });
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('repo root .mcp.json wires thumbgate (dogfood)', () => {
