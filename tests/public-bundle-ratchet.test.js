@@ -179,7 +179,9 @@ const path = require('node:path');
 // for unattended RAG loop (hosted capture fallback + loud wiring doctor).
 // 2026-08-11: +scripts/matryoshka-embedding.js hierarchical embedding tiers used by
 // packaged RAG precision guardrails. Keep lockstep with package-boundary (435).
-const BASELINE_FILE_COUNT = 435;
+// 435 -> 436 (2026-08-11): session-lease ships checkout collision protection
+// in the installed Reliability Gateway. Exact measured artifact, no headroom.
+const BASELINE_FILE_COUNT = 436;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
