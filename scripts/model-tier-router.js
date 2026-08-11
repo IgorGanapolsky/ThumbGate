@@ -475,37 +475,46 @@ async function executeRoutedGeneration(task = {}, request = {}, options = {}) {
   const plan = recommendExecutionPlan(task, env);
   const tierConfig = config.tiers[plan.tier];
   if (!tierConfig) throw new Error(`missing configuration for tier "${plan.tier}"`);
-  const { model, provider, endpoint } = resolveGenerationTarget(plan, task, tierConfig, options, env);
-  const adapters = options.adapters || createDefaultGenerationAdapters({ env, fetchImpl: options.fetchImpl });
-  const adapter = adapters[plan.tier] || adapters[provider];
-  if (typeof adapter !== 'function') throw new Error(`no generation adapter registered for provider "${provider}"`);
-
   const now = options.now || (() => Date.now());
   const startedAt = now();
+  // Resolution can fail (e.g. an unconfigured tier endpoint), so the base event
+  // starts from tier config defaults and target resolution happens inside the
+  // telemetry try block — misconfiguration emits an error event, not silence.
   const baseEvent = {
     timestamp: new Date().toISOString(),
     architecture: plan.architecture,
     taskType: task.type || 'unknown',
     riskLevel: task.riskLevel || 'unspecified',
     tier: plan.tier,
-    provider,
-    model,
+    provider: tierConfig.provider || null,
+    model: tierConfig.modelId || null,
     escalated: plan.escalated,
     routeReason: plan.reason,
   };
 
   try {
+    const { model, provider, endpoint } = resolveGenerationTarget(plan, task, tierConfig, options, env);
+    baseEvent.provider = provider;
+    baseEvent.model = model;
+    const adapters = options.adapters || createDefaultGenerationAdapters({ env, fetchImpl: options.fetchImpl });
+    const adapter = adapters[plan.tier] || adapters[provider];
+    if (typeof adapter !== 'function') throw new Error(`no generation adapter registered for provider "${provider}"`);
     const raw = await adapter({ task, request, plan, model, provider, endpoint });
     const result = normalizeGenerationResult(raw, { model, provider });
     const inputTokens = Number(result.usage?.input_tokens || result.usage?.prompt_tokens || 0) || null;
     const outputTokens = Number(result.usage?.output_tokens || result.usage?.completion_tokens || 0) || null;
     // When the adapter reports no cost but the tier declares per-token pricing,
     // derive real cost from usage so telemetry and holdout cost math stay live.
+    // Never derive when usage is entirely unmeasured (an unmeasured request is
+    // unknown-cost, not free) or when execution actually ran on a local backend
+    // (tier pricing describes the cloud endpoint, not local inference).
     let costCents = result.costCents;
-    if (costCents === null || costCents === undefined) {
+    const usageMeasured = inputTokens !== null || outputTokens !== null;
+    if ((costCents === null || costCents === undefined) && usageMeasured && plan.providerMode !== 'local') {
       const estimatedUsd = estimateTierCostUsd(plan.tier, inputTokens || 0, outputTokens || 0, config);
       costCents = estimatedUsd === null ? null : Number((estimatedUsd * 100).toFixed(4));
     }
+    if (costCents === undefined) costCents = null;
     const event = {
       ...baseEvent,
       latencyMs: Math.max(0, now() - startedAt),

@@ -111,6 +111,56 @@ describe('routed generation through the bulkCloud endpoint', () => {
     );
   });
 
+  test('absent usage keeps cost unknown instead of recording zero', async () => {
+    const adapters = {
+      'openai-compatible': async () => ({ text: 'ok' }),
+    };
+    const result = await executeRoutedGeneration(
+      { type: 'bulk-generation' },
+      { prompt: 'x' },
+      { env, adapters },
+    );
+    assert.equal(result.telemetry.costCents, null);
+  });
+
+  test('locally routed bulk tasks are not charged cloud tier pricing', async () => {
+    const localEnv = {
+      ...env,
+      THUMBGATE_PROVIDER_MODE: 'local',
+      THUMBGATE_LOCAL_MODEL: 'test-local-model',
+      THUMBGATE_LOCAL_MODEL_BASE_URL: 'http://127.0.0.1:9999/v1',
+    };
+    const adapters = {
+      'openai-compatible': async () => ({
+        text: 'ok',
+        usage: { prompt_tokens: 1000, completion_tokens: 2000 },
+      }),
+    };
+    const result = await executeRoutedGeneration(
+      { type: 'bulk-generation' },
+      { prompt: 'x' },
+      { env: localEnv, adapters },
+    );
+    assert.equal(result.route.providerMode, 'local');
+    assert.equal(result.telemetry.costCents, null);
+  });
+
+  test('missing endpoint configuration emits an error telemetry event', async () => {
+    const events = [];
+    await assert.rejects(
+      () => executeRoutedGeneration(
+        { type: 'bulk-generation' },
+        { prompt: 'x' },
+        { env: {}, telemetrySink: (event) => events.push(event) },
+      ),
+      /THUMBGATE_BULK_CLOUD_BASE_URL/,
+    );
+    assert.equal(events.length, 1);
+    assert.equal(events[0].outcome, 'error');
+    assert.equal(events[0].tier, 'bulkCloud');
+    assert.match(events[0].error, /THUMBGATE_BULK_CLOUD_BASE_URL/);
+  });
+
   test('adapter-reported cost is preserved over derived pricing', async () => {
     const adapters = {
       'openai-compatible': async () => ({
