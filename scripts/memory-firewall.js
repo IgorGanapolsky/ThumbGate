@@ -22,6 +22,7 @@ const UNTRUSTED_SOURCE_TYPES = new Set([
 ]);
 const MEMORY_WRITE_PATTERNS = [
   /\b(?:add|commit|persist|record|remember|save|store|write)\b.{0,60}\b(?:memory|memories|preference|profile|workspace)\b/i,
+  /\bremember\b.{0,40}\b(?:forever|permanently|across (?:future|subsequent) sessions?|for (?:future|subsequent) sessions?)\b/i,
   /\b(?:update|change|replace|set)\b.{0,50}\b(?:memory|preference|policy|rule|profile)\b/i,
   /\b(?:from now on|going forward|in future sessions?)\b/i,
   /\b(?:always|never)\b.{0,50}\b(?:use|allow|approve|block|prefer|trust|verify)\b/i,
