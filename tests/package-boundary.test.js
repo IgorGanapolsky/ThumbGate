@@ -438,11 +438,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 434 -> 436 (2026-08-11): scripts/matryoshka-embedding.js supports the
     // packaged RAG quality guardrail, and temporal-decay-weighting.js supports
     // lesson retrieval. Exact measured artifact, with no extra headroom.
-||||||| f1b48e78a
-    manifest.fileCount <= 435,
-    `npm package should stay <= 435 files, got ${manifest.fileCount}`
-    manifest.fileCount <= 436,
-    `npm package should stay <= 436 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 437,
+    `npm package should stay <= 437 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

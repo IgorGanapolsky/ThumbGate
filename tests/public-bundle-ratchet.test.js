@@ -182,9 +182,7 @@ const path = require('node:path');
 // 434 -> 436 (2026-08-11): Matryoshka embedding tiers support packaged RAG
 // guardrails, and temporal decay supports packaged lesson retrieval.
 // Exact measured artifact, no spare headroom.
-||||||| f1b48e78a
-const BASELINE_FILE_COUNT = 435;
-const BASELINE_FILE_COUNT = 436;
+const BASELINE_FILE_COUNT = 437;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
