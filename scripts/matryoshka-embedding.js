@@ -55,8 +55,15 @@ function classifyMemoryLayer(memory = {}) {
     ? new Set(memory.tags.map(t => String(t).toLowerCase()))
     : new Set();
 
+  const transportLike = type === 'transcript'
+    || tags.has('transport')
+    || tags.has('transcript')
+    || /^(user|assistant|system|tool)\s*:/m.test(content);
+  if (transportLike) return PYRAMID_LAYERS.L0_CONVERSATION;
+
+  const explicitPolicy = /^(never|always|must|do not|require)\b/i.test(content.trim());
   if (type === 'preference' || tags.has('sop') || tags.has('rule') || tags.has('policy')
-      || tags.has('guardrail') || content.includes('never') || content.includes('always')) {
+      || tags.has('guardrail') || explicitPolicy) {
     return PYRAMID_LAYERS.L3_PERSONA_SOP;
   }
   if (type === 'procedural' || tags.has('workflow') || tags.has('scenario')
@@ -82,15 +89,35 @@ function buildEmbeddingTaskPrefix(layer, task = 'code retrieval') {
   return `layer:${layer} weight:${weight} task:${normalizedTask} `;
 }
 
-function validateEmbeddingQuality({ recall, precision, recallBaseline, precisionBaseline, embeddingDim, crossEncoderReranker } = {}) {
+function validateEmbeddingQuality({
+  recall,
+  precision,
+  recallBaseline,
+  precisionBaseline,
+  embeddingDim,
+  goldenCases,
+  perCaseRecall,
+} = {}) {
   const issues = [];
-  if (recall !== undefined && recall < EMBEDDING_QUALITY_THRESHOLDS.recall) {
+  if (!Number.isFinite(recall)) {
+    issues.push({ severity: 'high', issue: 'recall_missing_or_non_finite', actual: recall, recommended: 'Run the deterministic golden retrieval suite.' });
+  } else if (recall < EMBEDDING_QUALITY_THRESHOLDS.recall) {
     issues.push({ severity: 'high', issue: 'recall_below_threshold', actual: recall, expected: EMBEDDING_QUALITY_THRESHOLDS.recall, recommended: 'Lower embedding dimension or use hybrid retrieval' });
   }
-  if (precision !== undefined && precision < EMBEDDING_QUALITY_THRESHOLDS.precision) {
+  if (!Number.isFinite(precision)) {
+    issues.push({ severity: 'high', issue: 'precision_missing_or_non_finite', actual: precision, recommended: 'Measure deterministic precision before promotion.' });
+  } else if (precision < EMBEDDING_QUALITY_THRESHOLDS.precision) {
     issues.push({ severity: 'medium', issue: 'precision_below_threshold', actual: precision, expected: EMBEDDING_QUALITY_THRESHOLDS.precision, recommended: 'Enable cross-encoder reranker or increase dimension tier' });
   }
-  if (recallBaseline !== undefined && precisionBaseline !== undefined) {
+  if (!Number.isInteger(goldenCases) || goldenCases < 6) {
+    issues.push({ severity: 'high', issue: 'insufficient_golden_cases', actual: goldenCases, expected: 6, recommended: 'Provide at least six deterministic golden cases.' });
+  }
+  if (!Array.isArray(perCaseRecall) || perCaseRecall.length < 6
+      || perCaseRecall.some((value) => !Number.isFinite(value) || value < 1)) {
+    issues.push({ severity: 'high', issue: 'per_case_recall_incomplete', actual: perCaseRecall, expected: 'at least 6 cases at recall 1.0', recommended: 'Require 100% recall for every golden case.' });
+  }
+  if (Number.isFinite(recallBaseline) && Number.isFinite(precisionBaseline)
+      && Number.isFinite(recall) && Number.isFinite(precision)) {
     if (recall < recallBaseline * 0.95) {
       issues.push({ severity: 'high', issue: 'recall_regression_from_baseline', actual: recall, baseline: recallBaseline, recommended: 'Retrain embedding model with baseline preserved' });
     }
@@ -174,6 +201,7 @@ function generateEmbeddingPreventionRules(qualityReport) {
   if (!qualityReport.valid) {
     for (const issue of qualityReport.issues) {
       if (issue.issue === 'recall_below_threshold') {
+        const actualRecall = String(issue.actual).replace('.', '\\.');
         rules.push({
           id: 'block-low-embedding-recall',
           name: 'Block embedding changes with low recall',
@@ -181,7 +209,7 @@ function generateEmbeddingPreventionRules(qualityReport) {
           signal: '👎',
           defaultAction: 'block',
           severity: 'high',
-          pattern: '(embedding|vector|retrieval).*(recall.*<' + (qualityReport.recallThreshold || 0.95) + '|dimension <' + (qualityReport.minDimension || 256) + ')',
+          pattern: `(embedding|vector|retrieval).*(recall\\s*[:=]\\s*${actualRecall})`,
           problem: 'Prevents deployment of embedding configurations that fail minimum recall thresholds.',
           roi: 'Protects RAG pipeline effectiveness by ensuring embedding quality gates are maintained.',
           rollout: 'Enable for all RAG workflows to prevent quality regressions.',

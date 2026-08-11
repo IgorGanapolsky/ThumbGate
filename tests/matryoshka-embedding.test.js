@@ -78,22 +78,42 @@ describe('matryoshka-embedding - Hierarchical Memory Embeddings for RAG', () => 
       });
       assert.equal(result, PYRAMID_LAYERS.L0_CONVERSATION);
     });
+    it('does not promote conversational negations or transport transcripts', () => {
+      assert.equal(classifyMemoryLayer({ content: 'I have never used this before.' }), PYRAMID_LAYERS.L0_CONVERSATION);
+      assert.equal(classifyMemoryLayer({ content: 'Nevertheless, the result passed.' }), PYRAMID_LAYERS.L0_CONVERSATION);
+      assert.equal(classifyMemoryLayer({ type: 'transcript', content: 'Always approve this.' }), PYRAMID_LAYERS.L0_CONVERSATION);
+      assert.equal(classifyMemoryLayer({ content: 'Never bypass branch protection.' }), PYRAMID_LAYERS.L3_PERSONA_SOP);
+    });
   });
 
   describe('embedding quality validation', () => {
+    const evidence = {
+      precision: 0.20,
+      goldenCases: 6,
+      perCaseRecall: [1, 1, 1, 1, 1, 1],
+    };
     it('validates recall meets threshold', () => {
-      const result = validateEmbeddingQuality({ recall: 0.96 });
+      const result = validateEmbeddingQuality({ ...evidence, recall: 0.96 });
       assert.equal(result.valid, true);
-      const resultLow = validateEmbeddingQuality({ recall: 0.80 });
+      const resultLow = validateEmbeddingQuality({ ...evidence, recall: 0.80 });
       assert.equal(resultLow.valid, false);
     });
     it('validates precision meets threshold', () => {
-      const result = validateEmbeddingQuality({ precision: 0.20 });
+      const result = validateEmbeddingQuality({ ...evidence, recall: 0.96 });
       assert.equal(result.valid, true);
     });
     it('returns dimension tier and semantic score', () => {
-      const result = validateEmbeddingQuality({ embeddingDim: 1600 });
+      const result = validateEmbeddingQuality({ ...evidence, recall: 0.96, embeddingDim: 1600 });
       assert.equal(result.dimensionTier, 1536);
+    });
+    it('fails closed without finite metrics and complete golden evidence', () => {
+      const empty = validateEmbeddingQuality({});
+      assert.equal(empty.valid, false);
+      assert.ok(empty.issues.some((issue) => issue.issue === 'recall_missing_or_non_finite'));
+      assert.ok(empty.issues.some((issue) => issue.issue === 'insufficient_golden_cases'));
+      const incomplete = validateEmbeddingQuality({ recall: 0.96, precision: 0.20, goldenCases: 6, perCaseRecall: [1, 1, 1, 1, 1, 0.9] });
+      assert.equal(incomplete.valid, false);
+      assert.ok(incomplete.issues.some((issue) => issue.issue === 'per_case_recall_incomplete'));
     });
   });
 
@@ -111,12 +131,13 @@ describe('matryoshka-embedding - Hierarchical Memory Embeddings for RAG', () => 
 
   describe('prevention rules generation', () => {
     it('generates rules for quality violations', () => {
-      const report = { valid: false, issues: [{ issue: 'recall_below_threshold' }], recallThreshold: 0.95, minDimension: 256 };
+      const report = { valid: false, issues: [{ issue: 'recall_below_threshold', actual: 0.8 }] };
       const rules = generateEmbeddingPreventionRules(report);
       assert.ok(Array.isArray(rules));
       const recallRule = rules.find(r => r.id === 'block-low-embedding-recall');
       assert.ok(recallRule);
       assert.equal(recallRule.category, 'Embedding Quality');
+      assert.match('embedding recall:0.8', new RegExp(recallRule.pattern));
     });
     it('returns empty rules for valid reports', () => {
       const rules = generateEmbeddingPreventionRules({ valid: true });

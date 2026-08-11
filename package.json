@@ -213,6 +213,7 @@
     "scripts/qa-scenario-planner.js",
     "scripts/published-cli.js",
     "scripts/rag-precision-guardrails.js",
+    "scripts/matryoshka-embedding.js",
     "scripts/rate-limiter.js",
     "scripts/reasoning-efficiency-guardrails.js",
     "scripts/repeat-metric.js",
