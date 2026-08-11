@@ -107,6 +107,32 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 4. Regenerate prevention rules (The Infrastructure Firewall) from accumulated mistakes.
 5. Dogfood: use the Reliability Gateway to optimize this repository's own agentic performance.
 
+## Single-Writer Checkout Lease (Mandatory)
+
+**Why (incident 2026-08-11):** two agents mutated the same checkout concurrently.
+Agent A force-checked-out `main` and ran `git clean`, wiping Agent B's untracked
+work; Agent B's `git add -A` then swept Agent A's untracked file into the wrong
+branch. The checkout had no ownership marker, so neither collision was prevented.
+
+**Rule: one live session owns a checkout at a time. Claim before mutating, hold
+while working, release before exit.**
+
+- Claim at session start: `npm run session:lease:claim` (or
+  `THUMBGATE_SESSION_AGENT=<session-id> node scripts/session-lease.js claim` so a
+  session identity survives across subprocesses).
+- Verify before destructive ops (`git checkout -f`, `git clean`, `git reset
+  --hard`): `npm run session:lease:check`. Exit 1 means another live agent owns
+  the checkout — use a separate worktree (`git worktree add`) instead.
+- Release on exit: `npm run session:lease:release`. Stale leases (dead PID) are
+  reclaimed automatically by claim.
+- Never `git add -A` in a shared checkout. Stage explicit paths
+  (`git add <files>`) so you never sweep another session's untracked files.
+- Prefer a dedicated worktree for every branch (per Operational Standards); the
+  lease is per-checkout (`.git/thumbgate-session-lease.json`), so separate
+  worktrees never contend.
+- The pre-commit hook refuses commits while a live foreign agent holds the
+  lease. Tests: `npm run test:session-lease`.
+
 ## PR and Branch Hygiene
 
 - Start PR work by checking open PRs, review state, branch status, and CI.
