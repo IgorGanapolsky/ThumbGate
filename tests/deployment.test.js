@@ -515,7 +515,11 @@ test('Deploy to Railway workflow skips non-runtime pushes and only deploys when 
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
   const scopeScript = fs.readFileSync(path.join(PROJECT_ROOT, 'scripts', 'deploy-scope.sh'), 'utf8');
 
-  assert.match(workflow, /fetch-depth:\s*2/);
+  assert.match(
+    workflow,
+    /fetch-depth:\s*0/,
+    'Railway ownership verification requires full history to prove the published npm gitHead is an ancestor',
+  );
   assert.match(workflow, /name: Detect deployable changes/);
   assert.match(workflow, /BEFORE_SHA='\$\{\{\s*github\.event\.before\s*\}\}'/);
   assert.match(workflow, /HEAD_SHA="\$GITHUB_SHA"/);

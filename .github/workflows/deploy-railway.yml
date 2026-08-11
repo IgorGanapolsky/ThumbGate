@@ -52,7 +52,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          fetch-depth: 2
+          # verify-npm-githead proves that the published npm gitHead is an
+          # ancestor of this deploy SHA. A shallow checkout makes older release
+          # commits unavailable and turns valid ancestry into fail-closed
+          # "unknown", blocking every main deployment between npm releases.
+          fetch-depth: 0
       - name: Detect deployable changes
         id: deploy-scope
         run: |
