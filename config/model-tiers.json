@@ -17,6 +17,24 @@
       "maxContextTokens": 200000,
       "costMultiplier": 0.4
     },
+    "bulkCloud": {
+      "label": "Bulk cloud cost saver (Qwen3.8-Max class)",
+      "modelId": "qwen3.8-max",
+      "provider": "openai-compatible",
+      "taskTypes": ["bulk-generation", "batch-processing", "high-output-coding", "content-generation", "bulk-automation"],
+      "maxContextTokens": 1000000,
+      "costMultiplier": 0.25,
+      "pricingUsdPerMTok": { "input": 2.0, "output": 6.0 },
+      "endpoint": {
+        "baseUrlEnv": "THUMBGATE_BULK_CLOUD_BASE_URL",
+        "apiKeyEnv": "THUMBGATE_BULK_CLOUD_API_KEY"
+      },
+      "budgetDefaults": {
+        "tokenCap": 2000000,
+        "requireReason": false
+      },
+      "notes": "Cost-saver cloud tier for steady high-output workloads, modeled on Alibaba Model Studio token-plan economics (Qwen3.8-Max ~$2/M input, ~$6/M output vs frontier ~$15/M output). Any OpenAI-compatible endpoint works: set THUMBGATE_BULK_CLOUD_BASE_URL and THUMBGATE_BULK_CLOUD_API_KEY. The tier is inert until both are configured; routing a bulk task without them raises a clear error naming the missing variables."
+    },
     "frontier": {
       "label": "GPT-5.5",
       "modelId": "gpt-5.5",
