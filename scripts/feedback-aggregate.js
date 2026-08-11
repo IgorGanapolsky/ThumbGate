@@ -71,11 +71,15 @@ function immediateChildDirs(parentDir) {
 function ancestorProjectFeedbackDirs(projectDir, options = {}) {
   const home = normalizePath(getHomeDir(options));
   const start = normalizePath(projectDir);
+  const tempRoot = normalizePath(os.tmpdir());
   if (!start) return [];
 
   const dirs = [];
   let cursor = start;
   while (cursor && cursor !== path.dirname(cursor)) {
+    // Temp projects share one OS-level parent. Reading that parent's store leaks
+    // feedback across unrelated test runs, npx sessions, and sandboxed agents.
+    if (tempRoot && cursor === tempRoot) break;
     dirs.push(
       path.join(cursor, '.thumbgate'),
       path.join(cursor, '.thumbgate-compat'),

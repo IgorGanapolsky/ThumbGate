@@ -14,6 +14,7 @@ const {
 const {
   collectAggregateLogEntries,
   computeAggregateFeedbackStats,
+  listFeedbackStoreDirs,
 } = require('../scripts/feedback-aggregate');
 
 function tmpDir(prefix) {
@@ -36,6 +37,21 @@ function feedback(id, signal, daysAgo = 0, extra = {}) {
     ...extra,
   };
 }
+
+test('temp projects never aggregate the shared OS temp-root store', () => {
+  const project = tmpDir('thumbgate-temp-boundary-');
+  const home = path.join(project, 'home');
+  try {
+    const stores = listFeedbackStoreDirs({
+      cwd: project,
+      projectDir: project,
+      env: { HOME: home, USERPROFILE: home },
+    });
+    assert.equal(stores.includes(path.join(os.tmpdir(), '.thumbgate')), false);
+  } finally {
+    fs.rmSync(project, { recursive: true, force: true });
+  }
+});
 
 test('statusline stats aggregate active project, parent workspace, and global stores', () => {
   const root = tmpDir('thumbgate-aggregate-');
