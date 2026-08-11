@@ -436,7 +436,18 @@
       "contextWindow": 128000,
       "costClass": "low",
       "strengths": ["fast-inference", "cost-efficiency", "tool-use", "reliability"],
-      "notes": "High-speed vision-language flash model for rapid pre-action checks, gate evaluation, and lightweight agent trace review."
+      "notes": "High-speed vision-language flash model for rapid pre-action checks, gate evaluation, and lightweight agent trace review. Default resolveQwenRoleRoute for pretool-gating and cheap-fast-path."
+    },
+    {
+      "id": "alibaba/text-embedding-v4",
+      "vendor": "Alibaba Cloud",
+      "family": "qwen-embedding",
+      "provider": "model-studio",
+      "model": "text-embedding-v4",
+      "contextWindow": 8192,
+      "costClass": "low",
+      "strengths": ["fast-inference", "cost-efficiency", "reliability"],
+      "notes": "OpenAI-compatible DashScope embedding model for RAG. Wire via THUMBGATE_EMBED_PROVIDER=dashscope + DASHSCOPE_API_KEY; Matryoshka dims via THUMBGATE_QWEN_EMBED_DIM / THUMBGATE_MATRYOSHKA_DIM. See adapters/qwen/QWEN.md."
     }
   ]
 }

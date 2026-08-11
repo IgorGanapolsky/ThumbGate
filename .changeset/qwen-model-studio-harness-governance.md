@@ -1,5 +1,5 @@
 ---
-'thumbgate': patch
+'thumbgate': minor
 ---
 
-feat(rag): register Alibaba Cloud Qwen Model Studio candidates and pre-action governance adapter (adapters/qwen/, Qwen3.8-Max, Qwen3.7-Plus, gate-qwen-model-studio-egress)
+Steal high-ROI Model Studio economics into the ThumbGate harness: Qwen Flash/Plus/Max role routing, Token Plan budget egress, hybrid local-first escalate, DashScope text-embedding-v4 OpenAI-compatible embeddings in vector-store, and cost-tier helpers — without adopting Alibaba agent product identity.

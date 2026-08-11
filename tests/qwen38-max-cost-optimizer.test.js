@@ -7,6 +7,7 @@ const {
   PRICING_TABLE,
   calculateTokenCost,
   calculateQwenSavingsVsClaude,
+  recommendQwenTier,
 } = require('../scripts/qwen38-max-cost-optimizer');
 
 test('pricing table contains exact Qwen3.8-Max and Claude Sonnet pricing', () => {
@@ -30,4 +31,11 @@ test('calculateQwenSavingsVsClaude proves >50% cost reduction vs Claude Sonnet',
 
   const savingsWithPromo = calculateQwenSavingsVsClaude({ inputTokensM: 10, outputTokensM: 10, useTokenPlanPromo: true });
   assert.equal(savingsWithPromo.savingsPercent > 70, true);
+});
+
+test('recommendQwenTier maps gate work to flash and long-trace to max', () => {
+  assert.equal(recommendQwenTier('pretool-gating').modelKey, 'qwen3.6-flash');
+  assert.equal(recommendQwenTier('long-trace-review').modelKey, 'qwen3.8-max');
+  assert.equal(recommendQwenTier('dashboard-analysis').modelKey, 'qwen3.7-plus');
+  assert.ok(PRICING_TABLE['qwen3.6-flash'].inputPerM < PRICING_TABLE['qwen3.8-max'].inputPerM);
 });

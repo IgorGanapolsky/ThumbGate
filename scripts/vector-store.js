@@ -159,8 +159,125 @@ function getOllamaEmbeddingConfig() {
  * Synchronous capability check used by hot-path routing. This reports only
  * semantic providers, never the deterministic feature-hash degradation.
  */
+function getOpenAICompatibleEmbeddingConfig(env = process.env) {
+  const providerHint = String(env.THUMBGATE_EMBED_PROVIDER || '').trim().toLowerCase();
+  const baseUrlRaw = String(
+    env.THUMBGATE_OPENAI_EMBED_BASE_URL
+    || env.DASHSCOPE_BASE_URL
+    || '',
+  ).trim();
+  const isDashscopeHint = ['dashscope', 'qwen', 'model-studio', 'openai-compatible'].includes(providerHint)
+    || /dashscope/i.test(baseUrlRaw);
+  const apiKey = String(
+    env.THUMBGATE_OPENAI_EMBED_API_KEY
+    || env.DASHSCOPE_API_KEY
+    || env.QWEN_API_KEY
+    || '',
+  ).trim();
+  let baseUrl = baseUrlRaw
+    || (isDashscopeHint ? 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1' : '');
+  if (baseUrl && !/^https?:\/\//i.test(baseUrl)) baseUrl = `https://${baseUrl}`;
+  while (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+
+  const model = String(
+    env.THUMBGATE_OPENAI_EMBED_MODEL
+    || env.THUMBGATE_QWEN_EMBED_MODEL
+    || (isDashscopeHint ? 'text-embedding-v4' : ''),
+  ).trim();
+  const dimRaw = Number(env.THUMBGATE_OPENAI_EMBED_DIM || env.THUMBGATE_QWEN_EMBED_DIM || 0);
+  const dimensions = Number.isFinite(dimRaw) && dimRaw > 0 ? Math.floor(dimRaw) : null;
+
+  return {
+    enabled: Boolean(apiKey && baseUrl && model && (isDashscopeHint || providerHint === 'openai-compatible' || baseUrlRaw)),
+    provider: /dashscope/i.test(baseUrl) || isDashscopeHint ? 'dashscope' : 'openai-compatible',
+    apiKey,
+    baseUrl,
+    model,
+    dimensions,
+    endpoint: baseUrl ? `${baseUrl}/embeddings` : null,
+    timeoutMs: Math.max(
+      250,
+      Math.min(30_000, Number(env.THUMBGATE_OPENAI_EMBED_TIMEOUT_MS) || 15_000),
+    ),
+  };
+}
+
+let _openaiEmbedderForTests = null;
+
+/**
+ * OpenAI-compatible embeddings (DashScope text-embedding-v4 / Model Studio).
+ * Supports Matryoshka dims when the provider accepts `dimensions`.
+ */
+async function embedWithOpenAICompatible(text, options = {}) {
+  const config = options.config || getOpenAICompatibleEmbeddingConfig(options.env || process.env);
+  if (!config.enabled && !_openaiEmbedderForTests) {
+    throw new Error('OpenAI-compatible embeddings requested but base URL, model, or API key is missing');
+  }
+
+  if (_openaiEmbedderForTests) {
+    return _openaiEmbedderForTests(text, config, options);
+  }
+
+  if (typeof fetch !== 'function') {
+    throw new TypeError('OpenAI-compatible embeddings require global fetch (Node 18.18+).');
+  }
+
+  const body = {
+    model: config.model,
+    input: String(text || ''),
+  };
+  const dim = resolveOutputDimensionality({
+    ...options,
+    provider: config.provider,
+    dimensions: options.dimensions || config.dimensions,
+  }) || config.dimensions;
+  if (dim) body.dimensions = dim;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), config.timeoutMs);
+  let response;
+  try {
+    response = await fetch(config.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    throw new Error(`OpenAI-compatible embedding service unavailable: ${error.message}`);
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!response.ok) {
+    const errBody = await response.text().catch(() => '');
+    throw new Error(
+      `OpenAI-compatible embedding request failed: ${response.status} ${response.statusText}`
+      + `${errBody ? ` — ${errBody.slice(0, 240)}` : ''}`,
+    );
+  }
+
+  const payload = await response.json();
+  const values = payload
+    && Array.isArray(payload.data)
+    && payload.data[0]
+    && Array.isArray(payload.data[0].embedding)
+    ? payload.data[0].embedding
+    : null;
+
+  if (!Array.isArray(values) || values.length === 0) {
+    throw new Error('OpenAI-compatible embedding response did not include vector values');
+  }
+
+  return values.map(Number);
+}
+
 function hasSemanticEmbeddingProvider() {
   if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') return true;
+  if (getOpenAICompatibleEmbeddingConfig().enabled) return true;
   if (getOllamaEmbeddingConfig().enabled) return true;
   if (hasLocalTransformerProvider()) return true;
   try {
@@ -449,6 +566,36 @@ async function embed(text, options = {}) {
       console.warn(`Core AI embedding failed, falling back to local: ${coreaiError.message}`);
     }
   }
+  const openaiEmbedConfig = getOpenAICompatibleEmbeddingConfig();
+  if (openaiEmbedConfig.enabled) {
+    try {
+      const vector = await embedWithOpenAICompatible(text, {
+        ...options,
+        config: openaiEmbedConfig,
+      });
+      _lastEmbeddingProfile = {
+        generatedAt: new Date().toISOString(),
+        source: openaiEmbedConfig.provider === 'dashscope' ? 'dashscope' : 'openai-compatible',
+        activeProfile: {
+          id: openaiEmbedConfig.provider,
+          model: openaiEmbedConfig.model,
+          outputDimensionality: vector.length,
+          task: options.task || 'code retrieval',
+          rationale: 'OpenAI-compatible embedding (DashScope text-embedding-v4 / Model Studio).',
+          qualityTier: 'production',
+        },
+        fallbackUsed: false,
+      };
+      return finalizeEmbedding(vector, {
+        ...options,
+        provider: openaiEmbedConfig.provider,
+        dimensions: openaiEmbedConfig.dimensions,
+      });
+    } catch (openaiEmbedError) {
+      const code = openaiEmbedError && (openaiEmbedError.code || openaiEmbedError.name || 'Error');
+      console.warn(`OpenAI-compatible embedding fallback: ${code}`);
+    }
+  }
   const ollamaConfig = getOllamaEmbeddingConfig();
   if (ollamaConfig.enabled) {
     try {
@@ -672,6 +819,11 @@ function setGeminiEmbedderForTests(loader) {
   _lastEmbeddingProfile = null;
 }
 
+function setOpenAICompatibleEmbedderForTests(loader) {
+  _openaiEmbedderForTests = loader;
+  _lastEmbeddingProfile = null;
+}
+
 module.exports = {
   upsertFeedback,
   searchSimilar,
@@ -683,10 +835,13 @@ module.exports = {
   setPipelineLoaderForTests,
   setLanceLoaderForTests,
   setGeminiEmbedderForTests,
+  setOpenAICompatibleEmbedderForTests,
   truncateForEmbedding,
   embedWithFeatureHash,
   embedWithOllama,
+  embedWithOpenAICompatible,
   getOllamaEmbeddingConfig,
+  getOpenAICompatibleEmbeddingConfig,
   hasSemanticEmbeddingProvider,
   l2NormalizeVector,
   resolveOutputDimensionality,

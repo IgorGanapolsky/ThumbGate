@@ -1,43 +1,75 @@
-# Qwen AI & Alibaba Cloud Model Studio Integration Adapter for ThumbGate
+# Qwen / Alibaba Cloud Model Studio — ThumbGate Adapter
 
-Alibaba Cloud Model Studio provides foundation models (**Qwen3.8-Max**, **Qwen3.7-Plus**, **Qwen3.6-Flash**, and **Wan 2.7**) with OpenAI-compatible REST API endpoints (`https://dashscope-intl.aliyuncs.com/compatible-mode/v1`).
+Steal the **economics and tiering** of Model Studio (Flash / Plus / Max, Token Plan,
+OpenAI-compatible API, text-embedding-v4). **Do not** adopt Alibaba’s agent platform
+as identity — ThumbGate remains the pre-action firewall, RAG quality gates, and proof layer.
 
-This is a **high-ROI integration point** for ThumbGate:
+Base URL (intl OpenAI-compatible):
 
-- **Vendor-Neutral Governance**: ThumbGate serves as the pre-action reliability firewall regardless of underlying LLM provider.
-- **Ultra-Low Cost Infrastructure**: Qwen's Token Plan ($6/mo for 70M+ tokens) lowers cost for heavy background evaluation, RAG distillation, and candidate benchmark loops.
-- **Visual & GUI Computer-Use Safety**: Qwen3.7-Plus and Qwen3-VL-Plus agents executing visual tool actions are governed by ThumbGate's `Claw-Style Enterprise Agent` and `Qwen Agent Governance` pre-action gates.
+```text
+https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+```
 
----
+## Role map (high-ROI default)
 
-## Capabilities & Workload Mapping
+| Workload | Model | Candidate id |
+|:---|:---|:---|
+| `pretool-gating`, `cheap-fast-path` | `qwen3.6-flash` | `alibaba/qwen3.6-flash` |
+| coding / `dashboard-analysis` / context engineering | `qwen3.7-plus` | `alibaba/qwen3.7-plus` |
+| `long-trace-review`, claw-style | `qwen3.8-max` | `alibaba/qwen3.8-max` |
+| RAG embeddings | `text-embedding-v4` | `alibaba/text-embedding-v4` |
 
-| Model | Primary Workload | Context | Cost Class | ThumbGate Gate Strategy |
-|:---|:---|:---:|:---:|:---|
-| `alibaba/qwen3.8-max` | Long-Trace Review / Autonomous Projects | 200k | Medium | `gate-qwen-model-studio-egress`, `evidence-before-done` |
-| `alibaba/qwen3.7-plus` | GUI Interaction / Tool-Use Coding | 128k | Low | `block-unverified-qwen-gui-actions`, `require-review-for-screen-interaction` |
-| `alibaba/qwen3.6-flash` | PreTool Gating / Cheap Fast Path | 128k | Low | `gate-qwen-model-studio-egress`, fast-path triage |
+```js
+const { resolveQwenRoleRoute, decideHybridQwenRoute } = require('./adapters/qwen');
+resolveQwenRoleRoute('pretool-gating');
+// → { model: 'qwen3.6-flash', ... }
 
----
+decideHybridQwenRoute({ sensitive: true, localAvailable: true });
+// → local-only (never ship secrets to DashScope without allowCloudOnSensitive)
+```
 
-## Configuration & Setup
+## Env
 
-1. Set environment variable:
-   ```bash
-   export DASHSCOPE_API_KEY="your-model-studio-api-key"
-   ```
+| Variable | Purpose |
+|:---|:---|
+| `DASHSCOPE_API_KEY` / `QWEN_API_KEY` | Model Studio key (Keychain / env only) |
+| `DASHSCOPE_BASE_URL` | Override base (default intl compatible-mode) |
+| `THUMBGATE_QWEN_MODEL` | Force chat model |
+| `THUMBGATE_QWEN_ROLE_GATE` etc. | Override per role |
+| `THUMBGATE_QWEN_MONTHLY_BUDGET_USD` | Token Plan budget (default 18 = Standard) |
+| `THUMBGATE_EMBED_PROVIDER=dashscope` | Enable OpenAI-compatible embeds in `vector-store` |
+| `THUMBGATE_QWEN_EMBED_MODEL` | Default `text-embedding-v4` |
+| `THUMBGATE_QWEN_EMBED_DIM` / `THUMBGATE_MATRYOSHKA_DIM` | Truncate / request dims |
 
-2. Base URL for OpenAI SDKs / HTTP clients:
-   ```
-   https://dashscope-intl.aliyuncs.com/compatible-mode/v1
-   ```
+## LiteLLM / Hermes
 
-3. Enable Qwen pre-action gate templates in `.thumbgate/config.json` or `.mcp.json`:
-   ```json
-   {
-     "gates": [
-       "gate-qwen-model-studio-egress",
-       "block-unverified-qwen-gui-actions"
-     ]
-   }
-   ```
+```js
+const { buildLiteLLMProviderEnv } = require('./adapters/qwen');
+buildLiteLLMProviderEnv({ workload: 'cheap-fast-path' });
+// OPENAI_BASE_URL + LITELLM_MODEL=openai/qwen3.6-flash (key via DASHSCOPE_API_KEY)
+```
+
+## Gates
+
+Enable in project gates:
+
+- `gate-qwen-model-studio-egress` — audit DashScope hosts
+- `block-unverified-qwen-gui-actions` — computer-use
+- `require-cost-evidence-before-model-upgrade` — no blind Max upgrades
+- `require-usage-quota-for-multimodal-operations` — block video/image bill shock
+
+`validateQwenEgressGate` **blocks** when projected spend exceeds monthly budget
+unless `hasBudgetApproval` is true.
+
+## Cost proof
+
+```bash
+node -e "console.log(require('./scripts/qwen38-max-cost-optimizer').calculateQwenSavingsVsClaude({inputTokensM:10,outputTokensM:2,useTokenPlanPromo:true}))"
+node -e "console.log(require('./scripts/qwen38-max-cost-optimizer').recommendQwenTier('pretool-gating'))"
+```
+
+## What we deliberately did **not** copy
+
+- HappyHorse / Wan video as default harness lanes
+- OpenClaw $0.99 “digital employee” as product identity
+- Role-play / moderation vertical SKUs

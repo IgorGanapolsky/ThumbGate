@@ -13,12 +13,41 @@
 
 const PRICING_TABLE = Object.freeze({
   'qwen3.8-max': { inputPerM: 2.00, outputPerM: 6.00, label: 'Qwen3.8-Max (OpenRouter / Model Studio)' },
+  // Token Plan list prices from Alibaba Model Studio (approx mid of published ranges).
+  'qwen3.7-plus': { inputPerM: 0.64, outputPerM: 2.56, label: 'Qwen3.7-Plus (Model Studio)' },
+  'qwen3.6-flash': { inputPerM: 0.50, outputPerM: 2.50, label: 'Qwen3.6-Flash (Model Studio)' },
   'claude-sonnet-5-intro': { inputPerM: 2.00, outputPerM: 10.00, label: 'Claude Sonnet 5 (Intro)' },
   'claude-sonnet-4.6': { inputPerM: 3.00, outputPerM: 15.00, label: 'Claude Sonnet 4.6' },
   'claude-sonnet-5-standard': { inputPerM: 3.00, outputPerM: 15.00, label: 'Claude Sonnet 5 (Post-Aug 31)' },
   'gemini-2.5-pro': { inputPerM: 2.50, outputPerM: 15.00, label: 'Gemini 2.5 Pro' },
   'gemini-2.5-flash': { inputPerM: 0.30, outputPerM: 2.50, label: 'Gemini 2.5 Flash' },
 });
+
+/**
+ * Recommend flash vs plus vs max for a workload (pairs with adapters/qwen resolveQwenRoleRoute).
+ */
+function recommendQwenTier(workload, options = {}) {
+  const id = String(workload || 'pretool-gating').toLowerCase();
+  if (id.includes('long') || id.includes('claw') || id.includes('autonomous')) {
+    return {
+      modelKey: 'qwen3.8-max',
+      reason: 'Long-horizon / claw-style work benefits from flagship reasoning.',
+      costSample: calculateTokenCost('qwen3.8-max', options.inputTokensM || 1, options.outputTokensM || 1),
+    };
+  }
+  if (id.includes('cheap') || id.includes('pretool') || id.includes('gate') || id.includes('flash')) {
+    return {
+      modelKey: 'qwen3.6-flash',
+      reason: 'Gate and triage paths should stay on Flash under Token Plan.',
+      costSample: calculateTokenCost('qwen3.6-flash', options.inputTokensM || 1, options.outputTokensM || 1),
+    };
+  }
+  return {
+    modelKey: 'qwen3.7-plus',
+    reason: 'Default balanced coding / vision path.',
+    costSample: calculateTokenCost('qwen3.7-plus', options.inputTokensM || 1, options.outputTokensM || 1),
+  };
+}
 
 function calculateTokenCost(modelKey, inputTokensM = 1, outputTokensM = 1) {
   const model = PRICING_TABLE[modelKey];
@@ -71,4 +100,5 @@ module.exports = {
   PRICING_TABLE,
   calculateTokenCost,
   calculateQwenSavingsVsClaude,
+  recommendQwenTier,
 };
