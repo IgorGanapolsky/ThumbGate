@@ -59,7 +59,6 @@ test('gate template library exposes curated templates with shared rollout metada
   assert.ok(templates.some((template) => template.category === 'Qwen Agent Governance'));
   assert.ok(templates.some((template) => template.id === 'gate-qwen-model-studio-egress'));
   assert.ok(templates.some((template) => template.id === 'block-unverified-qwen-gui-actions'));
-||||||| f1b48e78a
 
   assert.ok(templates.every((template) => template.category));
   assert.ok(templates.every((template) => template.problem));

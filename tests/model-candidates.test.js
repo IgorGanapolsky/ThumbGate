@@ -48,7 +48,6 @@ test('model candidate catalog includes Kimi K2.6 and Qwen3.6 variants', () => {
   assert.ok(ids.has('alibaba/qwen3.7-plus'));
   assert.ok(ids.has('alibaba/qwen3.6-flash'));
   assert.ok(ids.has('alibaba/text-embedding-v4'));
-||||||| f1b48e78a
 });
 
 test('recommendCandidates prefers Nous Research Hermes for skill synthesis', () => {

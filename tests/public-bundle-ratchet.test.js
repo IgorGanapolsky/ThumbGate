@@ -179,7 +179,7 @@ const path = require('node:path');
 // for unattended RAG loop (hosted capture fallback + loud wiring doctor).
 // 2026-08-11: +scripts/matryoshka-embedding.js hierarchical embedding tiers used by
 // packaged RAG precision guardrails. Keep lockstep with package-boundary (435).
-const BASELINE_FILE_COUNT = 436;
+const BASELINE_FILE_COUNT = 437;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
