@@ -119,31 +119,64 @@ jobs:
           # re-running the whole JS suite under V8 coverage. Fall back to local
           # generation when the artifact is missing (e.g. workflow_dispatch,
           # non-PR events where CI skipped coverage, or Dependabot).
+          #
+          # CI and SonarCloud start concurrently. `gh run download` only sees
+          # artifacts that already exist — it does not wait — so for PR / push /
+          # merge_group we poll the matching CI run until it finishes (or the
+          # budget is exhausted) before regenerating coverage locally.
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
           else
             HEAD_SHA="${{ github.sha }}"
           fi
-          ARTIFACT_URL=""
-          # download-artifact cannot fetch across workflow runs without a
-          # run-id, so resolve the CI run for this head SHA first. The query is
-          # intentionally event-agnostic: PR, push (main), and merge_group CI
-          # runs all upload the same `coverage-lcov` artifact in full mode.
-          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/runs?head_sha=${HEAD_SHA}&per_page=100" \
-            --jq '.workflow_runs[] | select(.name == "CI") | .id' 2>/dev/null | head -1 || true)
-          if [[ -n "$RUN_ID" ]]; then
+          EVENT_NAME="${{ github.event_name }}"
+          # Bounded wait: CI full suite is typically ~6-10m; keep under Sonar job
+          # timeout. workflow_dispatch falls through quickly (no peer CI expected).
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            MAX_ATTEMPTS=2
+            SLEEP_SECS=5
+          else
+            MAX_ATTEMPTS=36
+            SLEEP_SECS=20
+          fi
+
+          attempt=0
+          while (( attempt < MAX_ATTEMPTS )); do
+            attempt=$((attempt + 1))
+            RUN_JSON=$(gh api "repos/${{ github.repository }}/actions/runs?head_sha=${HEAD_SHA}&per_page=100" 2>/dev/null || true)
+            RUN_ID=$(printf '%s' "$RUN_JSON" | jq -r '[.workflow_runs[]? | select(.name == "CI")] | .[0].id // empty' 2>/dev/null || true)
+            RUN_STATUS=$(printf '%s' "$RUN_JSON" | jq -r '[.workflow_runs[]? | select(.name == "CI")] | .[0].status // empty' 2>/dev/null || true)
+            RUN_CONCLUSION=$(printf '%s' "$RUN_JSON" | jq -r '[.workflow_runs[]? | select(.name == "CI")] | .[0].conclusion // empty' 2>/dev/null || true)
+
+            if [[ -z "$RUN_ID" ]]; then
+              echo "Attempt ${attempt}/${MAX_ATTEMPTS}: no CI run for ${HEAD_SHA} yet."
+              sleep "$SLEEP_SECS"
+              continue
+            fi
+
+            echo "Attempt ${attempt}/${MAX_ATTEMPTS}: CI run ${RUN_ID} status=${RUN_STATUS} conclusion=${RUN_CONCLUSION:-none}"
+
+            # Prefer a completed successful run's artifact; also try download when
+            # the run is still in progress in case the artifact already uploaded.
             if gh run download "$RUN_ID" -n coverage-lcov -R "${{ github.repository }}" -D .ci-coverage 2>/dev/null; then
               if [[ -f .ci-coverage/lcov.info ]]; then
                 cp .ci-coverage/lcov.info coverage/lcov.info
                 echo "reused=true" >> "$GITHUB_OUTPUT"
                 echo "Reused CI LCOV coverage from run ${RUN_ID}."
+                exit 0
               fi
             fi
-          fi
-          if [[ ! -f coverage/lcov.info ]]; then
-            echo "reused=false" >> "$GITHUB_OUTPUT"
-            echo "No CI LCOV artifact; will generate coverage locally."
-          fi
+
+            if [[ "$RUN_STATUS" == "completed" ]]; then
+              echo "CI run ${RUN_ID} completed without a usable coverage-lcov artifact."
+              break
+            fi
+
+            sleep "$SLEEP_SECS"
+          done
+
+          echo "reused=false" >> "$GITHUB_OUTPUT"
+          echo "No CI LCOV artifact after wait; will generate coverage locally."
 
       - name: Generate LCOV coverage report
         if: steps.ci-coverage.outputs.reused != 'true' && steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]')
