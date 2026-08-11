@@ -28,6 +28,9 @@ const PENDING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.pendingBuckets || []).map(
 const FAILING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.failingBuckets || []).map((value) => String(value || '').toLowerCase()));
 
 const SELF_REFERENTIAL_CHECKS = new Set(MERGE_QUALITY_CHECKS.selfReferentialChecks || []);
+// Optional CI (preview deploys, etc.) must not block Trunk when required protection contexts are green.
+// Vercel rate-limit failures are a common false BLOCKED on free plans.
+const OPTIONAL_CHECKS = new Set(MERGE_QUALITY_CHECKS.optionalChecks || []);
 
 function assertSafeGhArgs(args) {
   if (!Array.isArray(args) || args.length === 0) {
@@ -176,6 +179,7 @@ function summarizeChecks(checks = []) {
     const name = check.name || 'unknown-check';
 
     if (SELF_REFERENTIAL_CHECKS.has(name)) continue;
+    if (OPTIONAL_CHECKS.has(name)) continue;
 
     const bucket = String(check.bucket || '').toLowerCase();
     if (bucket) {

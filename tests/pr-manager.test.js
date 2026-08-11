@@ -694,6 +694,18 @@ test('a genuinely failing quality check STILL blocks', () => {
   assert.deepEqual(failing, ['Dependency Review']);
 });
 
+
+test('summarizeChecks ignores optional Vercel preview failures (rate-limit noise)', () => {
+  const { pending, failing } = summarizeChecks([
+    { name: 'test', bucket: 'pass' },
+    { name: 'CodeQL', bucket: 'pass' },
+    { name: 'Vercel', bucket: 'fail' },
+    { name: 'Vercel Preview Comments', bucket: 'fail' },
+  ]);
+  assert.deepEqual(failing, [], 'optional Vercel must not block Trunk when required checks pass');
+  assert.deepEqual(pending, []);
+});
+
 test('a lookalike queue check remains a blocker', () => {
   const { pending, failing } = summarizeChecks([
     { name: 'Trunk Merge Queue (main) Security Scan', bucket: 'pending' },
