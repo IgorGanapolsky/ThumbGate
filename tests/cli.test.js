@@ -1517,7 +1517,9 @@ describe('bin/cli.js', () => {
     fs.writeFileSync(path.join(doctorDir, 'AGENTS.md'), '# Agents\n');
     fs.writeFileSync(path.join(doctorDir, 'CLAUDE.md'), '# Claude\n');
     fs.writeFileSync(path.join(doctorDir, 'GEMINI.md'), '# Gemini\n');
-    fs.writeFileSync(path.join(doctorDir, '.mcp.json'), JSON.stringify({ mcpServers: {} }, null, 2));
+    fs.writeFileSync(path.join(doctorDir, '.mcp.json'), JSON.stringify({
+      mcpServers: { thumbgate: { command: 'npx', args: ['-y', 'thumbgate', 'serve'] } },
+    }, null, 2));
     fs.mkdirSync(path.join(doctorDir, '.thumbgate'), { recursive: true });
     fs.writeFileSync(
       path.join(doctorDir, '.thumbgate', 'config.json'),
@@ -1545,6 +1547,7 @@ describe('bin/cli.js', () => {
     assert.equal(payload.articleAlignment.runtimeIsolation, true);
     assert.equal(payload.articleAlignment.contextConditioning, true);
     assert.equal(payload.articleAlignment.permissionEnvelope, true);
+    assert.equal(payload.wiring.mcp.thumbgateInProjectMcp, true);
 
     fs.rmSync(doctorDir, { recursive: true, force: true });
   });

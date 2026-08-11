@@ -53,7 +53,7 @@ test('wiringReport errors when project .mcp.json omits thumbgate (unattended gap
     });
     assert.equal(report.overall, 'error');
     assert.equal(report.mcp.thumbgateInProjectMcp, false);
-    assert.equal(report.unattendedCaptureReady, false);
+    assert.equal(report.unattendedCaptureReady, true);
     assert.ok(report.findings.some((f) => /no thumbgate server/i.test(f)));
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
@@ -80,6 +80,23 @@ test('wiringReport is ok when .mcp.json has thumbgate and writable store exists'
   }
 });
 
+test('wiringReport treats a creatable lessons store as writable in a fresh container', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-wiring-fresh-'));
+  try {
+    fs.writeFileSync(path.join(dir, '.mcp.json'), JSON.stringify({
+      mcpServers: { thumbgate: { command: 'npx', args: ['-y', 'thumbgate', 'serve'] } },
+    }));
+    const report = wiringReport(dir, { HOME: dir, container: '1' });
+    assert.equal(report.lessonsStore.present, false);
+    assert.equal(report.lessonsStore.writable, true);
+    assert.equal(report.lessonsStore.creatable, true);
+    assert.equal(report.unattendedCaptureReady, true);
+    assert.equal(report.overall, 'ok');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('applyFix writes thumbgate into .mcp.json without dropping other servers', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-wiring-fix-'));
   try {
@@ -91,6 +108,9 @@ test('applyFix writes thumbgate into .mcp.json without dropping other servers', 
     assert.ok(written.mcpServers.thumbgate);
     assert.ok(written.mcpServers.github);
     assert.equal(written.mcpServers['mcp-memory-gateway'], undefined);
+    assert.ok(['npx', 'sh'].includes(written.mcpServers.thumbgate.command));
+    assert.ok(written.mcpServers.thumbgate.args.some((arg) => arg.includes('thumbgate')));
+    assert.ok(!written.mcpServers.thumbgate.args.some((arg) => arg.includes('adapters/mcp/server-stdio.js')));
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

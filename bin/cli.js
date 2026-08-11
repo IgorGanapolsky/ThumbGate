@@ -3015,7 +3015,7 @@ function sessionStart() {
   // MCP + lessons-store wiring — make unattended RAG-loop gaps loud at boot
   try {
     const { wiringReport } = require(path.join(PKG_ROOT, 'scripts', 'mcp-wiring-doctor'));
-    const wiring = wiringReport(PKG_ROOT);
+    const wiring = wiringReport(CWD);
     if (wiring && wiring.overall !== 'ok') {
       if (reminderLines.length > 0) reminderLines.push('');
       reminderLines.push(`ThumbGate RAG wiring: ${wiring.overall.toUpperCase()}`);
@@ -3946,7 +3946,7 @@ switch (COMMAND) {
     const report = generateAgentReadinessReport({ projectRoot: CWD });
     const wiring = wiringReport(CWD);
     if (args.json) {
-      console.log(JSON.stringify({ readiness: report, wiring }, null, 2));
+      console.log(JSON.stringify({ ...report, wiring }, null, 2));
     } else {
       process.stdout.write(reportToText(report));
       process.stdout.write(`\n${formatReport(wiring)}\n`);

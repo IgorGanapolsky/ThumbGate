@@ -15,6 +15,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveMcpEntry } = require('./mcp-config');
+
+const PKG_ROOT = path.resolve(__dirname, '..');
+const PKG_VERSION = require('../package.json').version;
 
 const LEGACY_MCP_KEYS = new Set(['mcp-memory-gateway', 'rlhf']);
 
@@ -70,7 +74,20 @@ function resolveLessonsStore(projectRoot, env = process.env) {
       /* continue */
     }
   }
-  return { path: null, present: false, writable: false };
+
+  const preferred = candidates[0] || path.join(projectRoot, '.thumbgate');
+  let parent = preferred;
+  while (!fs.existsSync(parent)) {
+    const next = path.dirname(parent);
+    if (next === parent) break;
+    parent = next;
+  }
+  try {
+    fs.accessSync(parent, fs.constants.W_OK);
+    return { path: preferred, present: false, writable: true, creatable: true };
+  } catch {
+    return { path: preferred, present: false, writable: false, creatable: false };
+  }
 }
 
 function remoteCaptureConfigured(env = process.env) {
@@ -149,7 +166,7 @@ function wiringReport(projectRoot = process.cwd(), env = process.env) {
   const remote = remoteCaptureConfigured(env);
   const container = isContainerLike(env);
 
-  if (!lessonsStore.present) {
+  if (!lessonsStore.present && !lessonsStore.writable) {
     findings.push(
       'No lessons store found (.thumbgate/ or THUMBGATE_FEEDBACK_DIR). ' +
       'Local capture_feedback cannot persist. Unattended/cloud runs need THUMBGATE_FEEDBACK_DIR ' +
@@ -162,7 +179,7 @@ function wiringReport(projectRoot = process.cwd(), env = process.env) {
     if (overall === 'ok') overall = 'warning';
   }
 
-  if (container && !lessonsStore.present && !remote.configured) {
+  if (container && !lessonsStore.writable && !remote.configured) {
     findings.push(
       'Container/unattended runtime: neither local lessons store nor hosted capture env is configured. ' +
       'AGENTS.md RAG loop (recall → act → capture_feedback) is unenforceable in this environment.'
@@ -175,7 +192,7 @@ function wiringReport(projectRoot = process.cwd(), env = process.env) {
   }
 
   const unattendedCaptureReady = Boolean(
-    (lessonsStore.present && lessonsStore.writable) || remote.configured
+    lessonsStore.writable || remote.configured
   );
 
   if (!unattendedCaptureReady && overall === 'ok') {
@@ -225,10 +242,12 @@ function applyFix(projectRoot = process.cwd()) {
   const mcpPath = path.join(root, '.mcp.json');
   const desired = {
     mcpServers: {
-      thumbgate: {
-        command: 'node',
-        args: ['adapters/mcp/server-stdio.js'],
-      },
+      thumbgate: resolveMcpEntry({
+        pkgRoot: PKG_ROOT,
+        pkgVersion: PKG_VERSION,
+        scope: 'project',
+        targetDir: root,
+      }),
     },
   };
 
