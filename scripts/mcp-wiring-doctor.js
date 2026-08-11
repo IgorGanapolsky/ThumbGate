@@ -16,6 +16,11 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveMcpEntry } = require('./mcp-config');
+const {
+  isRemoteCaptureConfigured,
+  resolveApiKey,
+  resolveBaseUrl,
+} = require('./remote-feedback-capture');
 
 const PKG_ROOT = path.resolve(__dirname, '..');
 const PKG_VERSION = require('../package.json').version;
@@ -91,10 +96,10 @@ function resolveLessonsStore(projectRoot, env = process.env) {
 }
 
 function remoteCaptureConfigured(env = process.env) {
-  const base = String(env.THUMBGATE_API_BASE_URL || env.THUMBGATE_API_URL || '').trim();
-  const key = String(env.THUMBGATE_API_KEY || '').trim();
+  const base = resolveBaseUrl(env);
+  const key = resolveApiKey(env);
   return {
-    configured: Boolean(base && key),
+    configured: isRemoteCaptureConfigured(env),
     baseUrl: base || null,
     hasKey: Boolean(key),
   };
