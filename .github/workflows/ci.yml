@@ -200,14 +200,47 @@ jobs:
       - name: Run tests
         if: steps.ci-scope.outputs.mode == 'full'
         # Hermetic suite: short-circuit the npm-registry publish probe in
-        # scripts/mcp-config.js (isVersionPublished -> `npm view thumbgate@<v>`),
+        # scripts/mcp-config.js (isVersionPublished -> `npm view thumbgate@<v`),
         # which several CLI/statusline tests exercise indirectly. Without this,
         # the suite depends on npm-registry reachability and intermittently
         # stalls in CI. The probe and its 5s timeout stay intact for real users.
+        #
+        # NODE_V8_COVERAGE collects raw V8 coverage for every spawned node
+        # process during the suite. The "Generate LCOV coverage for SonarCloud"
+        # step below converts it, and SonarCloud downloads that artifact instead
+        # of re-running the entire suite (the old SonarCloud job duplicated this
+        # ~10 min run on every PR).
         env:
           THUMBGATE_PUBLISH_STATE: unpublished
           THUMBGATE_PUBLISHED_CLI_STATE: unavailable
+          NODE_V8_COVERAGE: .coverage/raw
         run: npm test
+
+      - name: Generate LCOV coverage for SonarCloud
+        if: steps.ci-scope.outputs.mode == 'full'
+        run: |
+          npx c8 report \
+            --temp-directory .coverage/raw \
+            --reports-dir coverage \
+            --reporter=lcov \
+            --reporter=text-summary \
+            --include='.claude/**/*.js' \
+            --include='adapters/**/*.js' \
+            --include='bin/**/*.js' \
+            --include='plugins/**/*.js' \
+            --include='scripts/**/*.js' \
+            --include='src/**/*.js' \
+            --exclude='tests/**/*.js' \
+            --exclude='scripts/social-reply-monitor.js'
+
+      - name: Upload LCOV coverage for SonarCloud
+        if: steps.ci-scope.outputs.mode == 'full'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Run gate-eval regression suite
         if: steps.ci-scope.outputs.mode == 'full'
