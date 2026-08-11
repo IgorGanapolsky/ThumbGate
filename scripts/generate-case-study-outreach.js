@@ -18,6 +18,16 @@ const path = require('node:path');
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_OUT_DIR = path.join(PROJECT_ROOT, 'docs', 'proof', 'outreach');
 
+function proofLinks(anchor) {
+  return {
+    caseStudyPath: `/case-studies#${anchor}`,
+    scorecardPath: '/eval-scorecard',
+    whitepaperPath: '/whitepaper',
+    diagnosticPath: '/diagnostic',
+    proPath: '/checkout/pro',
+  };
+}
+
 const CASES = Object.freeze({
   'sudo-evasion': {
     id: 'sudo-evasion',
@@ -28,13 +38,7 @@ const CASES = Object.freeze({
     result: 'Canonicalization + an adversarial grid (14 commands × 9 transforms) closed the class; CI + 6-hourly published-artifact jobs keep it closed.',
     buyerPain: 'Your coding agent can re-spell a blocked command and walk past a regex denylist.',
     ctaPrimary: 'diagnostic',
-    proofLinks: {
-      caseStudyPath: '/case-studies#sudo-evasion',
-      scorecardPath: '/eval-scorecard',
-      whitepaperPath: '/whitepaper',
-      diagnosticPath: '/diagnostic',
-      proPath: '/checkout/pro',
-    },
+    proofLinks: proofLinks('sudo-evasion'),
   },
   'fail-open': {
     id: 'fail-open',
@@ -45,13 +49,18 @@ const CASES = Object.freeze({
     result: 'Enforcement restored and verified with known-dangerous commands; silence is now treated as a P0 class.',
     buyerPain: 'Green uptime does not mean your agent firewall is still firing.',
     ctaPrimary: 'diagnostic',
-    proofLinks: {
-      caseStudyPath: '/case-studies#fail-open',
-      scorecardPath: '/eval-scorecard',
-      whitepaperPath: '/whitepaper',
-      diagnosticPath: '/diagnostic',
-      proPath: '/checkout/pro',
-    },
+    proofLinks: proofLinks('fail-open'),
+  },
+  'memory-compaction': {
+    id: 'memory-compaction',
+    title: 'Agent memory crowded by near-duplicate lessons',
+    anchor: 'memory-compaction',
+    problem: 'Promoted lessons accumulated paraphrases of the same failure, so one real lesson could occupy every retrieval slot and starve distinct ones.',
+    metric: '3 dupe records → 1 survivor per cluster; slot budget back to full',
+    result: 'Retrieval dedupes the candidate pool before ranking, and a compaction CLI merges near-duplicates with summed occurrence counts (opposite-signal lessons never merge); a July 2026 audit found ~86% of promoted lessons were near-duplicates.',
+    buyerPain: 'Your agent memory fills with the same lesson five times, so the distinct lesson never surfaces.',
+    ctaPrimary: 'diagnostic',
+    proofLinks: proofLinks('memory-compaction'),
   },
 });
 
@@ -117,7 +126,7 @@ function buildPack(caseDef, options = {}) {
   ].join('\n');
 
   const email = [
-    `Subject: Your agent can walk past a regex denylist`,
+    `Subject: ${caseDef.title}`,
     '',
     `Hi —`,
     '',

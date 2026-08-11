@@ -129,6 +129,21 @@ thumbgate@1.29.2 → 0 holes</pre>
     <p><strong>Result.</strong> “Is it fixed?” became a command with a number, including against the npm tarball users actually install.</p>
   </article>
 
+  <article id="memory-compaction">
+    <h2>6. Agent memory crowded by near-duplicate lessons</h2>
+    <p class="meta">Retrieval quality · memory dedupe/compaction</p>
+    <span class="metric">3 dupe records → 1 survivor</span>
+    <span class="metric">slot budget back to full</span>
+    <span class="metric">opposite signals never merge</span>
+    <p><strong>Problem.</strong> Promoted lessons accumulated paraphrases of the same failure. One real lesson could occupy every retrieval slot and starve distinct ones; a July 2026 audit found ~86% of promoted lessons were near-duplicates.</p>
+    <p><strong>Action.</strong> Dedupe the candidate pool before ranking, and add a compaction CLI that merges near-duplicates with summed occurrence counts — while never merging opposite-signal lessons on the same topic.</p>
+    <pre>dupe-1 "Railway deploy verification timed out…"  ← 1 slot
+dupe-2 same lesson, rephrased                   ← slot 2, useless
+dupe-3 same lesson, rephrased                   ← slot 3, useless
+→ after fix: one survivor + 2 distinct lessons  ← full slot budget</pre>
+    <p><strong>Artifact.</strong> <code>tests/lesson-retrieval-dedupe-backfill.test.js</code> + <code>tests/memory-near-dupe.test.js</code> in CI; <code>npm run memory:compact</code> applies with a timestamped backup.</p>
+  </article>
+
   <p>
     <a class="cta" href="/whitepaper">Evaluation white paper</a>
     <a class="cta" href="/eval-scorecard">Bench scorecard</a>

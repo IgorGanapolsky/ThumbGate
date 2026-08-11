@@ -435,10 +435,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // packaged unattended RAG reliability surfaces. Exact count, no headroom.
     // 434 -> 435 (2026-08-11): scripts/matryoshka-embedding.js is now shipped
     // and invoked by the packaged RAG quality guardrail path. Exact count, no headroom.
+// 434 -> 436 (2026-08-11): scripts/matryoshka-embedding.js supports the
+    // packaged RAG quality guardrail, and temporal-decay-weighting.js supports
+    // lesson retrieval. Exact measured artifact, with no extra headroom.
     // 436 -> 437 (2026-08-11): scripts/session-lease.js is shipped so checkout
     // collision prevention works from the installed Reliability Gateway.
     // Exact measured artifact, with no additional package headroom.
-    manifest.fileCount <= 437,
+    manifest.fileCount <= 438,
     `npm package should stay <= 437 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
