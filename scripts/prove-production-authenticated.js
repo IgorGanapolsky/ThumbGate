@@ -118,6 +118,24 @@ function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function sanitizeDiagnosticText(value, secrets = []) {
+  let text = String(value || '').trim().slice(0, 500);
+  for (const secret of secrets) {
+    const normalized = String(secret || '').trim();
+    if (normalized) text = text.split(normalized).join('[REDACTED]');
+  }
+  return text || null;
+}
+
+function buildProblemDiagnostics(body, apiKey) {
+  if (!isObject(body)) return {};
+  return {
+    problemType: sanitizeDiagnosticText(body.type || body.code, [apiKey]),
+    problemTitle: sanitizeDiagnosticText(body.title || body.error, [apiKey]),
+    problemDetail: sanitizeDiagnosticText(body.detail || body.message, [apiKey]),
+  };
+}
+
 function buildChecks({
   expectedSha = '',
   expectedVersion = '',
@@ -323,6 +341,7 @@ async function probeCheck(check, options) {
         attempts: attempt,
         durationMs: Date.now() - startedAt,
         schemaValid: Boolean(validation.valid),
+        ...buildProblemDiagnostics(body, apiKey),
         ...validation.metrics,
       };
       const retryableStatus = response.status >= 500 || [408, 425, 429].includes(response.status);

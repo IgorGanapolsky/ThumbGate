@@ -151,6 +151,33 @@ test('401 fails without leaking the credential into report output', async () => 
   assert.doesNotMatch(renderHuman(report), new RegExp(secret));
 });
 
+test('failed production checks expose credential-safe problem diagnostics', async () => {
+  const secret = 'must-never-appear';
+  const report = await runAuthenticatedProductionProof({
+    apiKey: secret,
+    baseUrl: DEFAULT_BASE_URL,
+    expectedSha: 'abc123',
+    expectedVersion: '1.32.0',
+    maxAttempts: 1,
+    fetchImpl: async (url, options) => {
+      if (url.endsWith('/v1/dashboard')) {
+        return response(503, {
+          type: 'urn:thumbgate:error:internal',
+          title: 'Dashboard data too large',
+          detail: `bounded assembly failed for ${secret}`,
+        });
+      }
+      return passingFetch(url, options);
+    },
+  });
+
+  const dashboard = report.checks.find((check) => check.name === 'dashboard_data');
+  assert.equal(dashboard.problemType, 'urn:thumbgate:error:internal');
+  assert.equal(dashboard.problemTitle, 'Dashboard data too large');
+  assert.equal(dashboard.problemDetail, 'bounded assembly failed for [REDACTED]');
+  assert.doesNotMatch(JSON.stringify(report), new RegExp(secret));
+});
+
 test('empty retrieval results fail even when transport returns 200', async () => {
   const report = await runAuthenticatedProductionProof({
     apiKey: 'secret-test-key',
