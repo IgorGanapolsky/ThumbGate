@@ -433,11 +433,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // Exact measured artifact, with no additional package headroom.
     // 432 -> 434 (2026-08-11): mcp-wiring-doctor + remote-feedback-capture are
     // packaged unattended RAG reliability surfaces. Exact count, no headroom.
-    // 434 -> 435 (2026-08-11): scripts/temporal-decay-weighting.js is
-    // shipped because lesson-retrieval uses it to de-rank stale evidence.
-    // Exact measured artifact, with no additional package headroom.
-    manifest.fileCount <= 435,
-    `npm package should stay <= 435 files, got ${manifest.fileCount}`
+    // 434 -> 436 (2026-08-11): scripts/matryoshka-embedding.js supports the
+    // packaged RAG quality guardrail, and temporal-decay-weighting.js supports
+    // lesson retrieval. Exact measured artifact, with no extra headroom.
+    manifest.fileCount <= 436,
+    `npm package should stay <= 436 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
