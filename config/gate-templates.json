@@ -828,6 +828,102 @@
       "problem": "Agentic memory (ThumbGate's pre-action enforcement) benefits from hybrid retrieval: query at 256 dims for speed, refine at 768 dims, full precision at 1536+ only when needed. This is 'better agentic memory' per the podcast.",
       "roi": "Reduces token burn by 40-60% while maintaining recall. Enables real-time prevention without full embedding cost. Aligns with Matryoshka insights for efficient RAG.",
       "rollout": "Enable by default for memory retrieval. Log dimension-tier performance. Route based on query complexity and result certainty."
+    },
+    {
+      "id": "require-multi-model-routing-for-complex-tasks",
+      "name": "Require multi-model routing for complex agentic tasks",
+      "category": "Hybrid Inference Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(complex_task|multi-step|agentic_run).*(single.*model|only.*one.*model).*processing",
+      "problem": "Per NVIDIA Nemotron/NeMo Switchyard: AI agents need more than one model. Complex tasks should route steps to specialized models for accuracy, efficiency, customization, and control - not use a single expensive model for everything.",
+      "roi": "Prevents 'expensive model for everything' anti-pattern. 30B MoE models like Nemotron 3.5 Lightning can evaluate routing algorithms across specialized tasks while keeping costs efficient.",
+      "rollout": "Implement model-step routing matrix. Use lightweight model for intent detection, Qwen/Claude for reasoning, specialized model for coding, etc."
+    },
+    {
+      "id": "checkpoint-model-step-routing-decision",
+      "name": "Checkpoint model step routing decision",
+      "category": "Hybrid Inference Governance",
+      "signal": "👎",
+      "defaultAction": "warn",
+      "severity": "high",
+      "pattern": "(model_routing|routing_algorithm|step_route).*(missing|no).*(evidence|evaluation|cost_quality_tradeoff)",
+      "problem": "Multi-model routing decisions must be evaluated against cost, quality, latency, and customization requirements before being used in production agents.",
+      "roi": "Ensures routing algorithms like NeMo Switchyard are measured and produce better outcomes than single-model approaches.",
+      "rollout": "Log routing decisions with metric outcomes. Evaluate routing quality via task success rate and cost savings."
+    },
+    {
+      "id": "recommend-specialized-models-by-task",
+      "name": "Recommend specialized models by task type",
+      "category": "Model Routing Optimization",
+      "signal": "👍",
+      "defaultAction": "allow",
+      "severity": "medium",
+      "pattern": "(task_type|coding|reasoning|math|code).*(model_recommendation.*missing|no.*specialized.*model)",
+      "problem": "Different tasks benefit from specialized models: coding (Qwen3.8-Max), math (DeepSeek R1), concise reasoning (Gemini Flash). Per Nemotron: route to the right model per step.",
+      "roi": "Maximizes capability-efficiency tradeoff. Uses cheapest capable model for each task instead of hammering expensive generalists.",
+      "rollout": "Maintain task-to-model routing table. Auto-suggest specialized model based on task characteristics and cost-capabilities matrix."
+    },
+    {
+      "id": "require-routing-evidence-for-cost-savings",
+      "name": "Require routing evidence for cost savings claims",
+      "category": "Cost Efficiency",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(cost_savings|multi-model).*(claim|route|switched).*(missing|no).*(evidence|baseline|delta_metrics)",
+      "problem": "Cost savings from multi-model routing must be measured against baseline single-model performance: output quality, latency, and actual USD saved.",
+      "roi": "Prevents routing optimization theater. Ensures multi-model routing delivers real cost savings, not just theory like '30B MoE sounds impressive'.",
+      "rollout": "Capture baseline metrics before enabling multi-model routing. Log actual vs expected savings. Feed to adaptive routing evaluation."
+    },
+    {
+      "id": "route-high-output-tasks-to-qwen-max",
+      "name": "Route high-output tasks to Qwen3.8-Max for cost optimization",
+      "category": "Cost Efficiency",
+      "signal": "👍",
+      "defaultAction": "allow",
+      "severity": "high",
+      "pattern": "(agentic_programming|coding_agent|bulk_content|long_reasoning|high_output).*(output_tokens.*>=\\s*100000|estimated_cost.*>=\\s*0.60|claude.*Sonnet)",
+      "problem": "Qwen3.8-Max output pricing ($6/M) is 50-75% cheaper than Claude Sonnet 4.6/5 ($15-$10/M) and Gemini Pro ($10-$15/M). High-output agentic tasks should route to Qwen by default for cost savings.",
+      "roi": "Realizes 50%+ output-token cost savings on bulk automation, long agentic coding runs, and repetitive high-volume tasks.",
+      "rollout": "Enable cost-routing for all agentic operations. Calculate: output_tokens * $0.000006 (Qwen) vs output_tokens * $0.000010-0.000015 (Claude/Gemini). Auto-route to Qwen when cost_delta > 15%."
+    },
+    {
+      "id": "require-cost-evidence-before-model-upgrade",
+      "name": "Require cost evidence before model upgrade",
+      "category": "Cost Efficiency",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(model_upgrade|model_migrate|switch_model).*(cost.*analysis.*missing|no.*cost.*baseline)",
+      "problem": "Model upgrades must demonstrate cost-benefit analysis with baseline metrics before being approved for production.",
+      "roi": "Prevents expensive model sprawl by requiring measured cost evidence before adopting new models like Qwen3.8-Max.",
+      "rollout": "Capture token usage, latency, and quality metrics before any model change. Feed to cost-optimization routing."
+    },
+    {
+      "id": "block-claude-sonnet-post-priceincrease",
+      "name": "Block or warn on Claude Sonnet post-August 2026 pricing",
+      "category": "Cost Efficiency",
+      "signal": "👎",
+      "defaultAction": "warn",
+      "severity": "high",
+      "pattern": "(claude_sonnet).*(September|Sept|9/1|2026).*(post.*price|after.*increase)",
+      "problem": "Claude Sonnet 5 output pricing increases to $15/M on Sept 1, 2026. Bulk tasks should NOT use Claude-only routing.",
+      "roi": "Prevents $9 savings per 1M output tokens by routing high-volume work to Qwen3.8-Max ($6/M) instead of Claude Sonnet ($15/M).",
+      "rollout": "Warn on any high-output task routed to Claude-only after Sept 1. Suggest Qwen3.8-Max for bulk automation."
+    },
+    {
+      "id": "log-token-plan-compliance",
+      "name": "Log token plan compliance for budget protection",
+      "category": "Cost Efficiency",
+      "signal": "👍",
+      "defaultAction": "allow",
+      "severity": "medium",
+      "pattern": "token_plan_usage.*>=\\s*(90|95)%",
+      "problem": "The $6/mo Token Plan model works best when we observe usage patterns and adjust quotas before hitting limits.",
+      "roi": "Enables proactive budget management and prevents surprise billing spikes for multimodal video generation.",
+      "rollout": "Log when >90% of token plan used. Trigger approval workflows for quota increases or local fallback mode."
     }
   ]
 }
