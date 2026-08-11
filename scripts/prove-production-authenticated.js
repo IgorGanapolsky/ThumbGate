@@ -119,12 +119,12 @@ function isObject(value) {
 }
 
 function sanitizeDiagnosticText(value, secrets = []) {
-  let text = String(value || '').trim().slice(0, 500);
+  let text = String(value || '').trim();
   for (const secret of secrets) {
     const normalized = String(secret || '').trim();
     if (normalized) text = text.split(normalized).join('[REDACTED]');
   }
-  return text || null;
+  return text.slice(0, 500) || null;
 }
 
 function buildProblemDiagnostics(body, apiKey) {
@@ -313,21 +313,14 @@ async function probeCheck(check, options) {
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     const startedAt = Date.now();
     try {
-      const headers = { accept: 'application/json' };
-      if (check.authenticated) headers.authorization = `Bearer ${apiKey}`;
-      if (check.body) headers['content-type'] = 'application/json';
+      const headers = buildRequestHeaders(check, apiKey);
       const response = await fetchImpl(`${baseUrl}${check.path}`, {
         method: check.method,
         headers,
         body: check.body ? JSON.stringify(check.body) : undefined,
         signal: controller.signal,
       });
-      let body = null;
-      try {
-        body = await response.json();
-      } catch {
-        body = null;
-      }
+      const body = await readJsonBody(response);
       const acceptedStatus = Array.isArray(check.expectedStatuses)
         ? check.expectedStatuses.includes(response.status)
         : response.ok;
@@ -355,7 +348,7 @@ async function probeCheck(check, options) {
         attempts: attempt,
         durationMs: Date.now() - startedAt,
         schemaValid: false,
-        error: error && error.name === 'AbortError' ? 'timeout' : 'request_failed',
+        error: error?.name === 'AbortError' ? 'timeout' : 'request_failed',
       };
     } finally {
       clearTimeout(timer);
@@ -364,6 +357,21 @@ async function probeCheck(check, options) {
     if (attempt < maxAttempts) await delay(retryDelayMs);
   }
   return lastResult;
+}
+
+function buildRequestHeaders(check, apiKey) {
+  const headers = { accept: 'application/json' };
+  if (check.authenticated) headers.authorization = `Bearer ${apiKey}`;
+  if (check.body) headers['content-type'] = 'application/json';
+  return headers;
+}
+
+async function readJsonBody(response) {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
 }
 
 async function runAuthenticatedProductionProof(options = {}) {
@@ -386,7 +394,7 @@ async function runAuthenticatedProductionProof(options = {}) {
       checks: [],
     };
   }
-  const apiKeyInput = Object.prototype.hasOwnProperty.call(options, 'apiKey')
+  const apiKeyInput = Object.hasOwn(options, 'apiKey')
     ? options.apiKey
     : process.env.THUMBGATE_API_KEY;
   const apiKey = String(apiKeyInput || '').trim();

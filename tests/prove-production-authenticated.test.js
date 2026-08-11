@@ -178,6 +178,27 @@ test('failed production checks expose credential-safe problem diagnostics', asyn
   assert.doesNotMatch(JSON.stringify(report), new RegExp(secret));
 });
 
+test('problem diagnostics redact credentials before applying the length bound', async () => {
+  const secret = 'credential-crossing-the-boundary';
+  const prefix = 'x'.repeat(480);
+  const report = await runAuthenticatedProductionProof({
+    apiKey: secret,
+    baseUrl: DEFAULT_BASE_URL,
+    expectedSha: 'abc123',
+    expectedVersion: '1.32.0',
+    maxAttempts: 1,
+    fetchImpl: async (url, options) => url.endsWith('/v1/dashboard')
+      ? response(503, { detail: `${prefix}${secret}` })
+      : passingFetch(url, options),
+  });
+
+  const dashboard = report.checks.find((check) => check.name === 'dashboard_data');
+  assert.equal(dashboard.problemDetail.length, 490);
+  assert.match(dashboard.problemDetail, /\[REDACTED\]$/);
+  assert.doesNotMatch(JSON.stringify(report), new RegExp(secret));
+  assert.doesNotMatch(dashboard.problemDetail, /credential-crossing/);
+});
+
 test('empty retrieval results fail even when transport returns 200', async () => {
   const report = await runAuthenticatedProductionProof({
     apiKey: 'secret-test-key',
