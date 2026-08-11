@@ -11,6 +11,8 @@ const {
   recommendQwenTier,
   compareStackPricing,
   recommendCostQualitySplit,
+  calculateCostPerSuccessfulOutcome,
+  recommendQwenByCostPerSuccess,
 } = require('../scripts/qwen38-max-cost-optimizer');
 
 test('pricing table contains exact Qwen3.8-Max and Claude Sonnet pricing', () => {
@@ -64,7 +66,15 @@ test('recommendCostQualitySplit routes volume to Qwen and quality to Claude', ()
   const volume = recommendCostQualitySplit({
     tags: ['high-volume', 'bulk'],
     costPriority: 'primary',
-  }, { useTokenPlanPromo: true });
+  }, {
+    useTokenPlanPromo: true,
+    outcomeTelemetry: {
+      incumbentSuccessRate: 0.95,
+      incumbentSampleSize: 100,
+      qwenSuccessRate: 0.8,
+      qwenSampleSize: 100,
+    },
+  });
   assert.equal(volume.lane, 'cost-volume');
   assert.equal(volume.primaryProvider, 'model-studio');
   assert.match(volume.primaryModel, /^qwen3\./);
@@ -78,4 +88,30 @@ test('recommendCostQualitySplit routes volume to Qwen and quality to Claude', ()
 
   const privateLane = recommendCostQualitySplit({ privacyRoute: 'local', sensitive: true });
   assert.equal(privateLane.lane, 'local-or-private');
+});
+
+test('cost-volume routing fails closed without qualified outcome telemetry', () => {
+  const plan = recommendCostQualitySplit({ highVolume: true, costPriority: 'primary' });
+  assert.equal(plan.lane, 'quality');
+  assert.equal(plan.primaryProvider, 'anthropic');
+  assert.equal(plan.routingEvidence.reason, 'INSUFFICIENT_OUTCOME_TELEMETRY');
+});
+
+test('cost per successful outcome accounts for quality and sample size', () => {
+  const qwen = calculateCostPerSuccessfulOutcome({
+    modelKey: 'qwen3.8-max',
+    successRate: 0.8,
+    sampleSize: 25,
+  });
+  assert.equal(qwen.telemetryQualified, true);
+  assert.equal(qwen.costPerSuccessfulOutcomeUsd, 10);
+
+  const decision = recommendQwenByCostPerSuccess({
+    incumbentSuccessRate: 0.95,
+    incumbentSampleSize: 100,
+    qwenSuccessRate: 0.8,
+    qwenSampleSize: 100,
+  });
+  assert.equal(decision.recommendation, 'ROUTE_HIGH_VOLUME_TO_QWEN38_MAX');
+  assert.equal(decision.savingsPercent, 47.2);
 });

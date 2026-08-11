@@ -120,6 +120,79 @@ function calculateQwenSavingsVsClaude(options = {}) {
   };
 }
 
+function calculateCostPerSuccessfulOutcome(options = {}) {
+  const {
+    modelKey,
+    inputTokensM = 1,
+    outputTokensM = 1,
+    successRate,
+    sampleSize,
+    costMultiplier = 1,
+    minimumSampleSize = 20,
+  } = options;
+
+  if (!Number.isFinite(successRate) || successRate <= 0 || successRate > 1) {
+    throw new Error('successRate must be greater than 0 and less than or equal to 1');
+  }
+  if (!Number.isInteger(sampleSize) || sampleSize < 0) {
+    throw new Error('sampleSize must be a non-negative integer');
+  }
+  if (!Number.isFinite(costMultiplier) || costMultiplier <= 0 || costMultiplier > 1) {
+    throw new Error('costMultiplier must be greater than 0 and less than or equal to 1');
+  }
+
+  const tokenCost = calculateTokenCost(modelKey, inputTokensM, outputTokensM);
+  const effectiveCostUsd = tokenCost.totalCost * costMultiplier;
+  return {
+    modelKey,
+    sampleSize,
+    successRate,
+    telemetryQualified: sampleSize >= minimumSampleSize,
+    effectiveCostUsd: Number(effectiveCostUsd.toFixed(4)),
+    costPerSuccessfulOutcomeUsd: Number((effectiveCostUsd / successRate).toFixed(4)),
+  };
+}
+
+function recommendQwenByCostPerSuccess(options = {}) {
+  const minimumSampleSize = options.minimumSampleSize ?? 20;
+  const minimumSavingsPercent = options.minimumSavingsPercent ?? 15;
+  const incumbent = calculateCostPerSuccessfulOutcome({
+    modelKey: options.incumbentModelKey || 'claude-sonnet-5-standard',
+    inputTokensM: options.inputTokensM,
+    outputTokensM: options.outputTokensM,
+    successRate: options.incumbentSuccessRate,
+    sampleSize: options.incumbentSampleSize,
+    minimumSampleSize,
+  });
+  const qwen = calculateCostPerSuccessfulOutcome({
+    modelKey: 'qwen3.8-max',
+    inputTokensM: options.inputTokensM,
+    outputTokensM: options.outputTokensM,
+    successRate: options.qwenSuccessRate,
+    sampleSize: options.qwenSampleSize,
+    costMultiplier: options.verifiedTokenPlanMultiplier ?? 1,
+    minimumSampleSize,
+  });
+
+  if (!incumbent.telemetryQualified || !qwen.telemetryQualified) {
+    return { recommendation: 'HOLD_INCUMBENT', reason: 'INSUFFICIENT_OUTCOME_TELEMETRY', incumbent, qwen };
+  }
+
+  const savingsPercent = Number((
+    ((incumbent.costPerSuccessfulOutcomeUsd - qwen.costPerSuccessfulOutcomeUsd)
+      / incumbent.costPerSuccessfulOutcomeUsd) * 100
+  ).toFixed(1));
+  const routeToQwen = savingsPercent >= minimumSavingsPercent;
+  return {
+    recommendation: routeToQwen ? 'ROUTE_HIGH_VOLUME_TO_QWEN38_MAX' : 'HOLD_INCUMBENT',
+    reason: routeToQwen ? 'LOWER_VERIFIED_COST_PER_SUCCESS' : 'SAVINGS_BELOW_THRESHOLD',
+    savingsPercent,
+    minimumSavingsPercent,
+    incumbent,
+    qwen,
+  };
+}
+
 /**
  * Full stack snapshot for the dual-lane policy (volume → Qwen, quality → Claude/Gemini).
  */
@@ -244,6 +317,38 @@ function recommendCostQualitySplit(task = {}, options = {}) {
   }
 
   if (costPrimary || longHorizon) {
+    const telemetry = options.outcomeTelemetry;
+    if (!telemetry) {
+      return {
+        lane: 'quality',
+        primaryProvider: options.qualityProvider || 'anthropic',
+        primaryModel: options.qualityModel || 'claude-sonnet-5-standard',
+        fallbackProvider: 'model-studio',
+        fallbackModel: 'qwen3.8-max',
+        reason: 'Hold incumbent until Qwen and incumbent have qualified task-outcome telemetry.',
+        savings: vsClaude,
+        requiresBudgetApproval: false,
+        routingEvidence: { recommendation: 'HOLD_INCUMBENT', reason: 'INSUFFICIENT_OUTCOME_TELEMETRY' },
+      };
+    }
+    const routingEvidence = recommendQwenByCostPerSuccess({
+      ...volume,
+      ...telemetry,
+      verifiedTokenPlanMultiplier: useTokenPlanPromo ? 0.5 : 1,
+    });
+    if (routingEvidence.recommendation !== 'ROUTE_HIGH_VOLUME_TO_QWEN38_MAX') {
+      return {
+        lane: 'quality',
+        primaryProvider: options.qualityProvider || 'anthropic',
+        primaryModel: options.qualityModel || 'claude-sonnet-5-standard',
+        fallbackProvider: 'model-studio',
+        fallbackModel: 'qwen3.8-max',
+        reason: 'Hold incumbent because Qwen has not proven lower cost per successful outcome.',
+        savings: vsClaude,
+        requiresBudgetApproval: false,
+        routingEvidence,
+      };
+    }
     const qwenTier = recommendQwenTier(
       longHorizon ? 'long-trace-review' : (type.includes('gate') || type.includes('pretool') ? 'pretool-gating' : 'cheap-fast-path'),
       volume,
@@ -265,6 +370,7 @@ function recommendCostQualitySplit(task = {}, options = {}) {
       savings: vsClaude,
       requiresBudgetApproval: true,
       qwenTier,
+      routingEvidence,
     };
   }
 
@@ -286,6 +392,8 @@ module.exports = {
   CLAUDE_SONNET_5_INTRO_ENDS,
   calculateTokenCost,
   calculateQwenSavingsVsClaude,
+  calculateCostPerSuccessfulOutcome,
+  recommendQwenByCostPerSuccess,
   recommendQwenTier,
   compareStackPricing,
   recommendCostQualitySplit,
