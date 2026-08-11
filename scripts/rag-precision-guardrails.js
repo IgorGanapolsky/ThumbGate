@@ -22,7 +22,42 @@ function toNumber(value) {
   return Number.isFinite(num) ? num : null;
 }
 
+function normalizeProvider(value) {
+  const text = String(value || '').trim().toLowerCase();
+  return text || null;
+}
+
 function normalizeOptions(options = {}) {
+  const baselineProvider = normalizeProvider(options['baseline-provider'] || options.baselineProvider);
+  const newProvider = normalizeProvider(options['new-provider'] || options.newProvider || options['embedding-provider']);
+  const baselineModel = normalizeProvider(options['baseline-model'] || options.baselineModel);
+  const newModel = normalizeProvider(options['new-model'] || options.newModel || options['embedding-model']);
+  const baselineDim = toNumber(options['baseline-dim'] || options['baseline-dimensions'] || options.baselineDim);
+  const newDim = toNumber(options['new-dim'] || options['new-dimensions'] || options['matryoshka-dim'] || options.newDim);
+  const providerChanged = Boolean(
+    baselineProvider && newProvider && baselineProvider !== newProvider
+  );
+  const modelChanged = Boolean(
+    baselineModel && newModel && baselineModel !== newModel
+  );
+  const dimReduced = (
+    baselineDim !== null
+    && newDim !== null
+    && newDim > 0
+    && baselineDim > 0
+    && newDim < baselineDim
+  );
+  const embeddingModelChange = normalizeBoolean(
+    options['embedding-model-change']
+    || options['provider-change']
+    || options['model-change']
+  ) || providerChanged || modelChanged;
+  const matryoshkaTruncation = normalizeBoolean(
+    options['matryoshka-truncation']
+    || options['matryoshka']
+    || options['dim-truncation']
+  ) || dimReduced;
+
   return {
     ragTool: String(options['rag-tool'] || options.tool || 'agentic-rag').trim() || 'agentic-rag',
     baselineRecall: toNumber(options['baseline-recall'] || options.recall),
@@ -32,6 +67,14 @@ function normalizeOptions(options = {}) {
     topK: toNumber(options['top-k'] || options.k),
     thresholdChanged: normalizeBoolean(options['threshold-change'] || options['threshold-changed']),
     embeddingFineTune: normalizeBoolean(options['embedding-finetune'] || options['embedding-fine-tune'] || options['fine-tune']),
+    embeddingModelChange,
+    matryoshkaTruncation,
+    baselineProvider,
+    newProvider,
+    baselineModel,
+    newModel,
+    baselineDim,
+    newDim,
     structuralNearMisses: normalizeBoolean(options['structural-near-misses'] || options['near-misses']),
     verifier: normalizeBoolean(options.verifier || options.reranker || options['second-stage']),
     hybridRetrieval: normalizeBoolean(options['hybrid-retrieval'] || options.hybrid),
@@ -57,6 +100,8 @@ function templateApplicability(template, options) {
   if (template.id === 'require-rag-baseline-before-precision-tuning') {
     return options.thresholdChanged ||
       options.embeddingFineTune ||
+      options.embeddingModelChange ||
+      options.matryoshkaTruncation ||
       options.baselineRecall === null ||
       options.newRecall === null ||
       (recallDropPercent(options) !== null && recallDropPercent(options) > 5);
@@ -75,6 +120,8 @@ function buildSignals(options) {
   const drop = recallDropPercent(options);
   return [
     precisionTuningSignal(options, drop),
+    embeddingModelSignal(options),
+    matryoshkaDimSignal(options),
     ragCascadeSignal(options),
     verifierLatencySignal(options),
     hybridScaleSignal(options),
@@ -83,16 +130,60 @@ function buildSignals(options) {
 }
 
 function precisionTuningSignal(options, drop) {
-  if (!(options.thresholdChanged || options.embeddingFineTune || drop !== null)) return null;
+  if (!(options.thresholdChanged || options.embeddingFineTune || options.embeddingModelChange
+    || options.matryoshkaTruncation || drop !== null)) return null;
   return {
     id: 'precision_tuning',
     label: 'Precision tuning change',
     values: [
       options.thresholdChanged ? 'threshold changed' : null,
       options.embeddingFineTune ? 'embedding fine-tune' : null,
+      options.embeddingModelChange ? 'embedding model/provider change' : null,
+      options.matryoshkaTruncation ? 'matryoshka dim truncation' : null,
       drop !== null ? `recall drop ${drop}%` : null,
     ].filter(Boolean),
     risk: 'precision wins can hide broad retrieval recall regressions',
+  };
+}
+
+function embeddingModelSignal(options) {
+  if (!options.embeddingModelChange) return null;
+  const values = [
+    options.baselineProvider && options.newProvider
+      ? `provider ${options.baselineProvider} -> ${options.newProvider}`
+      : null,
+    options.baselineModel && options.newModel
+      ? `model ${options.baselineModel} -> ${options.newModel}`
+      : 'embedding model/provider swap proposed',
+    options.baselineRecall === null ? 'missing baseline recall@k' : null,
+    options.newRecall === null ? 'missing post-change recall@k' : null,
+  ].filter(Boolean);
+  return {
+    id: 'embedding_model_choice',
+    label: 'Embedding model choice risk',
+    values,
+    risk: 'embedding model choice is the highest-leverage RAG decision; swaps without a recall baseline are the most common silent regression',
+  };
+}
+
+function matryoshkaDimSignal(options) {
+  if (!options.matryoshkaTruncation) return null;
+  const values = [
+    options.baselineDim !== null && options.newDim !== null
+      ? `dims ${options.baselineDim} -> ${options.newDim}`
+      : 'matryoshka truncation proposed',
+    options.baselineDim !== null && options.newDim !== null && options.newDim < options.baselineDim
+      ? `storage cut ${Math.round((1 - (options.newDim / options.baselineDim)) * 100)}%`
+      : null,
+    options.baselineRecall === null || options.newRecall === null
+      ? 'truncation must re-measure recall@k after L2 re-normalization'
+      : null,
+  ].filter(Boolean);
+  return {
+    id: 'matryoshka_dim_truncation',
+    label: 'Matryoshka dimension truncation',
+    values,
+    risk: 'leading-dim truncation only stays quality-safe after re-normalization and a measured recall baseline — never cut dims as a silent cost optimization',
   };
 }
 
@@ -187,6 +278,14 @@ function buildRagPrecisionGuardrailsPlan(rawOptions = {}, templatesPath) {
       recallDropPercent: recallDropPercent(options),
       baselinePrecision: options.baselinePrecision,
       newPrecision: options.newPrecision,
+      embeddingModelChange: options.embeddingModelChange,
+      matryoshkaTruncation: options.matryoshkaTruncation,
+      baselineProvider: options.baselineProvider,
+      newProvider: options.newProvider,
+      baselineModel: options.baselineModel,
+      newModel: options.newModel,
+      baselineDim: options.baselineDim,
+      newDim: options.newDim,
       hybridRetrieval: options.hybridRetrieval,
       denseRetrieval: options.denseRetrieval,
       sparseRetrieval: options.sparseRetrieval,
@@ -207,13 +306,16 @@ function buildRagPrecisionGuardrailsPlan(rawOptions = {}, templatesPath) {
     templates,
     nextActions: [
       'Save baseline recall@k, precision@k, answer-with-evidence, and latency before tuning retrieval.',
+      'Treat embedding model choice as a first-class change: re-index, re-measure, and keep a rollback provider fingerprint.',
+      'When using Matryoshka/MRL truncation, re-L2-normalize truncated vectors and re-run the golden recall suite before shipping the smaller dim.',
       'Block embedding or threshold changes when recall drops without an approved rollback plan.',
       'Use a second-stage verifier or reranker for structural near misses such as negation and role reversal.',
       'Attach verifier latency budgets before routing the retrieval output into autonomous agent actions.',
       'Measure dense recall, sparse recall, reranked relevance, source grounding, ACL filtering, and freshness as separate production gates.',
       'Treat the retrieval layer as the agent ground truth: every autonomous action should carry source evidence and access-control proof.',
+      'Promote only structured agentic memory (lessons, rules, outcomes) — never raw transport transcripts or oversized chat dumps.',
     ],
-    exampleCommand: 'npx thumbgate rag-precision-guardrails --hybrid-retrieval --dense --sparse --scale-corpus-documents=1000000 --agentic --json',
+    exampleCommand: 'npx thumbgate rag-precision-guardrails --embedding-model-change --baseline-provider=nomic --new-provider=gemini --baseline-dim=768 --new-dim=256 --baseline-recall=0.95 --new-recall=0.91 --agentic --json',
   };
 }
 

@@ -3,6 +3,29 @@
 
 const MEMORY_TYPES = new Set(['episodic', 'semantic', 'procedural', 'preference', 'working']);
 const MEMORY_SCOPES = new Set(['task', 'session', 'user', 'project', 'org']);
+const DEFAULT_MAX_PROMOTE_CHARS = 12_000;
+const TRANSPORT_TURN_RE = /^(user|assistant|system|human|tool|model)\s*:/gim;
+const TRANSPORT_META_RE = /\b(conversation[_-]?id|message[_-]?id|tool_call_id|chat_completion|role\s*:\s*["']?(user|assistant|system))\b/i;
+
+function isTransportTranscript(text, options = {}) {
+  const content = normalizeText(text);
+  if (!content) return false;
+  const minTurns = Number.isFinite(options.minTurns) ? options.minTurns : 3;
+  const turnMarkers = (content.match(TRANSPORT_TURN_RE) || []).length;
+  if (turnMarkers >= minTurns) return true;
+  const lineCount = content.split(/\n/).length;
+  if (lineCount >= 40 && turnMarkers >= 2) return true;
+  if (TRANSPORT_META_RE.test(content) && content.length >= 1500) return true;
+  if (/\b(raw transcript|conversation dump|full chat log)\b/i.test(content)) return true;
+  return false;
+}
+
+function isOversizedMemoryBlob(text, options = {}) {
+  const content = normalizeText(text);
+  const maxChars = Number.isFinite(options.maxChars) ? options.maxChars : DEFAULT_MAX_PROMOTE_CHARS;
+  return content.length > maxChars;
+}
+
 const HIGH_RISK_TERMS = new Set([
   'billing',
   'checkout',
@@ -260,6 +283,9 @@ function buildMemoryLifecyclePolicy(input = {}) {
       semanticWeight: 0.5,
       outcomeWeight: 0.25,
       requireSourceAnchors: true,
+      rejectTransportTranscripts: true,
+      rejectOversizedBlobs: true,
+      maxPromoteChars: DEFAULT_MAX_PROMOTE_CHARS,
     },
     privacy: {
       piiScanRequired: true,
@@ -269,12 +295,16 @@ function buildMemoryLifecyclePolicy(input = {}) {
   };
 }
 
+
 function evaluateMemoryPromotion(memory = {}, policy = buildMemoryLifecyclePolicy()) {
   const type = normalizeMemoryType(memory.type);
-  const content = normalizeText(memory.content);
+  const content = normalizeText(memory.content || collectMemoryText(memory));
   const source = normalizeText(memory.source);
   const outcome = normalizeText(memory.outcome);
   const issues = [];
+  const maxChars = Number.isFinite(memory.maxPromoteChars)
+    ? memory.maxPromoteChars
+    : DEFAULT_MAX_PROMOTE_CHARS;
 
   if (!content) issues.push('missing_content');
   if (!source) issues.push('missing_source_anchor');
@@ -285,12 +315,28 @@ function evaluateMemoryPromotion(memory = {}, policy = buildMemoryLifecyclePolic
   if (type === 'preference' && memory.explicitUserSignal !== true) {
     issues.push('preference_without_explicit_signal');
   }
+  if (type === 'working' && memory.allowWorkingPromotion !== true) {
+    issues.push('working_memory_not_promotable');
+  }
+  if (isTransportTranscript(content)) {
+    issues.push('transport_transcript');
+  }
+  if (isOversizedMemoryBlob(content, { maxChars })) {
+    issues.push('oversized_blob');
+  }
+
+  const hardRetrievalBlocks = new Set([
+    'secret_like_content',
+    'transport_transcript',
+    'oversized_blob',
+  ]);
+  const retrievalBlocked = issues.some((issue) => hardRetrievalBlocks.has(issue));
 
   return {
     type,
     decision: issues.length === 0 ? 'promote' : 'hold',
     issues,
-    retrievalEligible: issues.length === 0 || !issues.includes('secret_like_content'),
+    retrievalEligible: !retrievalBlocked && (issues.length === 0 || !issues.includes('missing_content')),
     policyVersion: policy.generatedAt,
   };
 }
@@ -381,6 +427,10 @@ function distillMemoryPyramid(memories = [], options = {}) {
 }
 
 module.exports = {
+  isTransportTranscript,
+  isOversizedMemoryBlob,
+  DEFAULT_MAX_PROMOTE_CHARS,
+
   PYRAMID_LAYERS,
   buildMemoryLifecyclePolicy,
   buildMemoryLifecycleView,

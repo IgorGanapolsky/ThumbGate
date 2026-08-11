@@ -31,6 +31,55 @@ let _geminiEmbedderForTests = null;
 const TABLE_NAME = 'thumbgate_memories';
 const FEATURE_HASH_DIMENSIONS = 384;
 
+
+/**
+ * Matryoshka / MRL-style dimensionality reduction: keep leading dims and
+ * re-L2-normalize so cosine similarity stays valid after truncation.
+ * Safe no-op when target is missing, non-positive, or >= full vector length.
+ */
+function l2NormalizeVector(vector) {
+  if (!Array.isArray(vector) || vector.length === 0) return vector;
+  const numbers = vector.map(Number);
+  const norm = Math.sqrt(numbers.reduce((sum, value) => sum + (value * value), 0));
+  if (!Number.isFinite(norm) || norm === 0) {
+    const zero = numbers.slice();
+    zero[0] = 1;
+    return zero;
+  }
+  return numbers.map((value) => value / norm);
+}
+
+function resolveOutputDimensionality(options = {}, env = process.env) {
+  const candidates = [
+    options.outputDimensionality,
+    options.dimensions,
+    options.matryoshkaDim,
+    env.THUMBGATE_MATRYOSHKA_DIM,
+    env.THUMBGATE_EMBED_DIM,
+    env.THUMBGATE_GEMINI_EMBED_DIM,
+  ];
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null || candidate === '') continue;
+    const parsed = Number(candidate);
+    if (Number.isFinite(parsed) && parsed > 0) return Math.floor(parsed);
+  }
+  return null;
+}
+
+function applyMatryoshkaDimensionality(vector, targetDim) {
+  if (!Array.isArray(vector) || vector.length === 0) return vector;
+  const dim = Number(targetDim);
+  if (!Number.isFinite(dim) || dim <= 0 || dim >= vector.length) {
+    return vector.map(Number);
+  }
+  return l2NormalizeVector(vector.slice(0, Math.floor(dim)));
+}
+
+function finalizeEmbedding(vector, options = {}) {
+  return applyMatryoshkaDimensionality(vector, resolveOutputDimensionality(options));
+}
+
+
 async function getLanceDB() {
   if (!_lancedb) {
     _lancedb = _lancedbLoader ? await _lancedbLoader() : await import('@lancedb/lancedb');
@@ -221,7 +270,7 @@ async function embedWithGemini(text, options = {}) {
     content: {
       parts: [{ text: preparedText }],
     },
-    outputDimensionality: config.outputDimensionality,
+    outputDimensionality: resolveOutputDimensionality(options) || config.outputDimensionality,
   };
   const taskType = resolveGeminiTaskType({
     kind: options.kind,
@@ -315,7 +364,7 @@ async function embedWithOllama(text, options = {}) {
         model: config.model,
         input: inputText,
         truncate: true,
-        dimensions: options.outputDimensionality || undefined,
+        dimensions: resolveOutputDimensionality(options) || undefined,
       }),
       signal: AbortSignal.timeout(config.timeoutMs),
     });
@@ -372,7 +421,7 @@ async function embed(text, options = {}) {
     // Deterministic 384-dim unit vector: first element = 1.0, rest = 0.0
     const stub = Array(384).fill(0);
     stub[0] = 1.0;
-    return stub;
+    return finalizeEmbedding(stub, options);
   }
   const geminiConfig = resolveGeminiEmbeddingConfig();
   if (geminiConfig.provider === 'coreai') {
@@ -390,7 +439,7 @@ async function embed(text, options = {}) {
         },
         fallbackUsed: false,
       };
-      return vector;
+      return finalizeEmbedding(vector, options);
     } catch (coreaiError) {
       console.warn(`Core AI embedding failed, falling back to local: ${coreaiError.message}`);
     }
@@ -412,14 +461,14 @@ async function embed(text, options = {}) {
         },
         fallbackUsed: false,
       };
-      return vector;
+      return finalizeEmbedding(vector, options);
     } catch (ollamaError) {
       console.warn(`Ollama embedding failed, falling back: ${ollamaError.message}`);
     }
   }
   if (geminiConfig.enabled) {
     const vector = await tryGeminiManagedEmbedding(text, options, geminiConfig);
-    if (vector) return vector;
+    if (vector) return finalizeEmbedding(vector, options);
   }
   if (hasLocalTransformerProvider()) {
     try {
@@ -428,7 +477,7 @@ async function embed(text, options = {}) {
         pooling: 'mean',
         normalize: true,
       });
-      return Array.from(output.data); // Float32Array -> plain number[] for LanceDB Arrow serialization
+      return finalizeEmbedding(Array.from(output.data), options); // Float32Array -> plain number[] for LanceDB Arrow serialization
     } catch (transformerError) {
       console.warn(`Transformers.js embedding fallback: ${transformerError.message}`);
     }
@@ -439,7 +488,7 @@ async function embed(text, options = {}) {
   // so that THUMBGATE_GEMINI_EMBED_FALLBACK_LOCAL=false makes Gemini mandatory.
   if (geminiConfig.apiKey && !geminiConfig.enabled) {
     const vector = await tryGeminiManagedEmbedding(text, options, geminiConfig);
-    if (vector) return vector;
+    if (vector) return finalizeEmbedding(vector, options);
   }
 
   const vector = embedWithFeatureHash(text);
@@ -459,7 +508,7 @@ async function embed(text, options = {}) {
     fallbackUsed: true,
     fallbackReason: 'no_managed_or_transformer_embedder',
   };
-  return vector;
+  return finalizeEmbedding(vector, options);
 }
 
 async function upsertFeedback(feedbackEvent) {
@@ -577,4 +626,8 @@ module.exports = {
   embedWithOllama,
   getOllamaEmbeddingConfig,
   hasSemanticEmbeddingProvider,
+  l2NormalizeVector,
+  resolveOutputDimensionality,
+  applyMatryoshkaDimensionality,
+  finalizeEmbedding,
 };

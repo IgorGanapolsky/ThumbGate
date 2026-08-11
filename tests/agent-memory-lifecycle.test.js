@@ -108,4 +108,50 @@ describe('agent-memory-lifecycle', () => {
     assert.ok(entities.some((e) => e.name === 'Railway'));
     assert.ok(scope === 'project' || scope === 'task');
   });
-});
+
+  it('holds transport transcripts and oversized blobs out of durable promotion', () => {
+    const transcript = evaluateMemoryPromotion({
+      type: 'semantic',
+      content: [
+        'user: please dump the chat',
+        'assistant: sure',
+        'user: continue',
+        'assistant: here is more context',
+      ].join('\n'),
+      source: 'session-log',
+      outcome: 'captured',
+    });
+    assert.equal(transcript.decision, 'hold');
+    assert.ok(transcript.issues.includes('transport_transcript'));
+    assert.equal(transcript.retrievalEligible, false);
+
+    const oversized = evaluateMemoryPromotion({
+      type: 'semantic',
+      content: 'x'.repeat(13_000),
+      source: 'blob',
+      outcome: 'captured',
+    });
+    assert.equal(oversized.decision, 'hold');
+    assert.ok(oversized.issues.includes('oversized_blob'));
+    assert.equal(oversized.retrievalEligible, false);
+  });
+
+  it('blocks working memory promotion unless explicitly allowed', () => {
+    const held = evaluateMemoryPromotion({
+      type: 'working',
+      content: 'temp scratch note',
+      source: 'session',
+      outcome: 'ok',
+    });
+    assert.equal(held.decision, 'hold');
+    assert.ok(held.issues.includes('working_memory_not_promotable'));
+
+    const promoted = evaluateMemoryPromotion({
+      type: 'working',
+      content: 'temp scratch note',
+      source: 'session',
+      outcome: 'ok',
+      allowWorkingPromotion: true,
+    });
+    assert.equal(promoted.decision, 'promote');
+  });

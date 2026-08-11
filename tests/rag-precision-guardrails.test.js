@@ -141,3 +141,37 @@ test('buildRagPrecisionGuardrailsPlan flags hybrid retrieval scale governance ga
   assert.ok(report.signals.some((signal) => signal.id === 'retrieval_governance_gap'));
   assert.ok(report.nextActions.some((action) => action.includes('dense recall')));
 });
+
+test('embedding model change without baseline recall recommends precision baseline gate', () => {
+  const report = buildRagPrecisionGuardrailsPlan({
+    'embedding-model-change': true,
+    'baseline-provider': 'ollama',
+    'new-provider': 'gemini',
+    'baseline-model': 'nomic-embed-text',
+    'new-model': 'gemini-embedding-2',
+    agentic: true,
+  });
+
+  assert.equal(report.metrics.embeddingModelChange, true);
+  assert.ok(report.signals.some((signal) => signal.id === 'embedding_model_choice'));
+  assert.ok(report.templates.some((template) => (
+    template.id === 'require-rag-baseline-before-precision-tuning' && template.recommended
+  )));
+});
+
+test('matryoshka dim truncation infers risk from baseline/new dimensions', () => {
+  const options = normalizeOptions({
+    'baseline-dim': '768',
+    'new-dim': '256',
+    'baseline-recall': '0.95',
+    'new-recall': '0.88',
+  });
+  assert.equal(options.matryoshkaTruncation, true);
+  assert.equal(options.baselineDim, 768);
+  assert.equal(options.newDim, 256);
+
+  const report = buildRagPrecisionGuardrailsPlan(options);
+  assert.equal(report.metrics.matryoshkaTruncation, true);
+  assert.ok(report.signals.some((signal) => signal.id === 'matryoshka_dim_truncation'));
+  assert.ok(report.nextActions.some((action) => /Matryoshka|MRL/i.test(action)));
+});
