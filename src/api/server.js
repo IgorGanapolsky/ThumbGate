@@ -140,6 +140,9 @@ const {
   getBillingSummariesLive,
 } = require('../../scripts/billing');
 const {
+  ensureProductionSearchCorpus,
+} = require('../../scripts/ensure-production-search-corpus');
+const {
   DEFAULT_PUBLIC_APP_ORIGIN,
   resolveHostedBillingConfig,
   createTraceId,
@@ -1866,11 +1869,28 @@ function resolveBillingSummaryOptionsOrRespondProblem(res, parsed, invalidTitle)
 
 async function buildLiveDashboardData(parsed, feedbackDir) {
   const summaryOptions = resolveBillingSummaryOptions(parsed);
-  const billingSummary = await getBillingSummaryLive(summaryOptions);
+  // Stripe/live billing can hang longer than the authenticated deploy proof
+  // timeout (12s). Prefer live, but fail closed to local summary so /v1/dashboard
+  // remains usable for operational proof.
+  const liveTimeoutMs = Number(process.env.THUMBGATE_DASHBOARD_BILLING_TIMEOUT_MS || 4000);
+  let billingSummary;
+  let billingSource = 'live';
+  try {
+    billingSummary = await Promise.race([
+      getBillingSummaryLive(summaryOptions),
+      new Promise((_, reject) => {
+        const timer = setTimeout(() => reject(new Error('billing_summary_timeout')), liveTimeoutMs);
+        if (typeof timer.unref === 'function') timer.unref();
+      }),
+    ]);
+  } catch {
+    billingSummary = getBillingSummary(summaryOptions);
+    billingSource = 'local';
+  }
   const data = generateDashboard(feedbackDir, {
     analyticsWindow: summaryOptions,
     billingSummary,
-    billingSource: 'live',
+    billingSource,
     authContext: { tier: 'pro' },
   });
   return { summaryOptions, data };
@@ -10857,7 +10877,18 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 function startServer({ port, host } = {}) {
   const listenPort = Number(port ?? process.env.PORT ?? 8787);
   const listenHost = String(host ?? process.env.HOST ?? '0.0.0.0').trim() || '0.0.0.0';
-  fs.mkdirSync(getFeedbackPaths().FEEDBACK_DIR, { recursive: true });
+  const feedbackPaths = getFeedbackPaths();
+  fs.mkdirSync(feedbackPaths.FEEDBACK_DIR, { recursive: true });
+  // Hosted volumes often start empty (Docker does not ship .claude/memory).
+  // Seed a durable "thumbgate" corpus so authenticated deploy proof can verify retrieval.
+  try {
+    const seedResult = ensureProductionSearchCorpus({ feedbackDir: feedbackPaths.FEEDBACK_DIR });
+    if (seedResult.wrote.memory || seedResult.wrote.feedback || seedResult.wrote.rules) {
+      console.log('[startup] ensured production search corpus seed', JSON.stringify(seedResult.wrote));
+    }
+  } catch (err) {
+    console.warn('[startup] ensure production search corpus failed:', err?.message || err);
+  }
   const server = createApiServer();
   registerGracefulShutdown(server);
   return new Promise((resolve) => {
