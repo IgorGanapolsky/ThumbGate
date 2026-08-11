@@ -173,7 +173,9 @@ const path = require('node:path');
 // only; keep lockstep with package-boundary + public-core-boundary.
 // Bumped 423 -> 424 (2026-08-09): public/founders.html Oceans-inspired $499 cash-path landing.
 // Bumped 424 -> 431 (2026-08-10): WorkOS + Herdr + /peter partner landing + packaged prove scripts.
-const BASELINE_FILE_COUNT = 431;
+// 2026-08-10: +1 scripts/stealth-memory-injection-gate.js (MemGhost/WhisperBench
+// durable-carrier pre-action defense — paper 2607.05189).
+const BASELINE_FILE_COUNT = 432;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
