@@ -82,6 +82,24 @@ test('decideHybridQwenRoute keeps sensitive work local and escalates complex wor
   assert.equal(escalate.requiresBudgetApproval, true);
 });
 
+test('decideHybridQwenRoute uses local-first and fail-closed fallback routes', () => {
+  const local = decideHybridQwenRoute({
+    localAvailable: true,
+    complexity: 'low',
+    localModel: 'qwen-local',
+  });
+  assert.equal(local.route, 'local-first');
+  assert.equal(local.model, 'qwen-local');
+
+  const blocked = decideHybridQwenRoute({
+    localAvailable: false,
+    complexity: 'low',
+    env: {},
+  });
+  assert.equal(blocked.route, 'blocked');
+  assert.match(blocked.reason, /not configured/i);
+});
+
 test('checkTokenPlanBudget blocks over-budget Model Studio spend', () => {
   const ok = checkTokenPlanBudget({ monthlyBudgetUsd: 18, spentUsd: 2, estimatedCostUsd: 1 });
   assert.equal(ok.action, 'allow');

@@ -115,3 +115,38 @@ test('cost per successful outcome accounts for quality and sample size', () => {
   assert.equal(decision.recommendation, 'ROUTE_HIGH_VOLUME_TO_QWEN38_MAX');
   assert.equal(decision.savingsPercent, 47.2);
 });
+
+test('cost-per-success validation rejects invalid telemetry and discounts', () => {
+  assert.throws(
+    () => calculateCostPerSuccessfulOutcome({ modelKey: 'qwen3.8-max', successRate: 0, sampleSize: 20 }),
+    /successRate/
+  );
+  assert.throws(
+    () => calculateCostPerSuccessfulOutcome({ modelKey: 'qwen3.8-max', successRate: 0.8, sampleSize: -1 }),
+    /sampleSize/
+  );
+  assert.throws(
+    () => calculateCostPerSuccessfulOutcome({
+      modelKey: 'qwen3.8-max', successRate: 0.8, sampleSize: 20, costMultiplier: 2,
+    }),
+    /costMultiplier/
+  );
+});
+
+test('cost-per-success holds incumbent for weak or insufficient Qwen evidence', () => {
+  const insufficient = recommendQwenByCostPerSuccess({
+    incumbentSuccessRate: 0.95,
+    incumbentSampleSize: 100,
+    qwenSuccessRate: 0.8,
+    qwenSampleSize: 5,
+  });
+  assert.equal(insufficient.reason, 'INSUFFICIENT_OUTCOME_TELEMETRY');
+
+  const weak = recommendQwenByCostPerSuccess({
+    incumbentSuccessRate: 0.95,
+    incumbentSampleSize: 100,
+    qwenSuccessRate: 0.3,
+    qwenSampleSize: 100,
+  });
+  assert.equal(weak.reason, 'SAVINGS_BELOW_THRESHOLD');
+});
