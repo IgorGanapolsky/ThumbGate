@@ -406,3 +406,68 @@ describe('vector-store — Core AI embedding provider', () => {
     }
   });
 });
+
+describe('vector-store — Matryoshka dimensionality', () => {
+  it('truncates leading dimensions and re-L2-normalizes', () => {
+    delete require.cache[require.resolve('../scripts/vector-store')];
+    const {
+      applyMatryoshkaDimensionality,
+      l2NormalizeVector,
+      resolveOutputDimensionality,
+    } = require('../scripts/vector-store');
+
+    const full = l2NormalizeVector([3, 4, 0, 0]);
+    const truncated = applyMatryoshkaDimensionality(full, 2);
+    assert.equal(truncated.length, 2);
+    const norm = Math.sqrt(truncated[0] ** 2 + truncated[1] ** 2);
+    assert.ok(Math.abs(norm - 1) < 1e-9, `expected unit vector, got ${norm}`);
+    assert.equal(resolveOutputDimensionality({ outputDimensionality: 256 }), 256);
+    assert.equal(applyMatryoshkaDimensionality(full, 4).length, 4);
+    assert.equal(applyMatryoshkaDimensionality(full, 99).length, 4);
+  });
+
+  it('applies env/option target dim on stub embeddings', async () => {
+    delete require.cache[require.resolve('../scripts/vector-store')];
+    process.env.THUMBGATE_VECTOR_STUB_EMBED = 'true';
+    delete process.env.THUMBGATE_EMBED_DIM;
+    delete process.env.THUMBGATE_MATRYOSHKA_DIM;
+    const { embed } = require('../scripts/vector-store');
+    const full = await embed('hello');
+    assert.equal(full.length, 384);
+    const short = await embed('hello', { outputDimensionality: 64 });
+    assert.equal(short.length, 64);
+    const norm = Math.sqrt(short.reduce((sum, v) => sum + v * v, 0));
+    assert.ok(Math.abs(norm - 1) < 1e-9);
+    delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
+    delete require.cache[require.resolve('../scripts/vector-store')];
+  });
+
+  it('passes resolved dimensions to Ollama embed requests', async () => {
+    const originalFetch = global.fetch;
+    try {
+      process.env.THUMBGATE_OLLAMA_EMBED_MODEL = 'nomic-embed-text';
+      process.env.THUMBGATE_OLLAMA_ENDPOINT = 'http://127.0.0.1:11434';
+      process.env.THUMBGATE_EMBED_DIM = '128';
+      delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      const vectorStore = require('../scripts/vector-store');
+      let body;
+      global.fetch = async (_url, request) => {
+        body = JSON.parse(request.body);
+        return {
+          ok: true,
+          json: async () => ({ embeddings: [Array.from({ length: 768 }, (_, i) => (i === 0 ? 1 : 0))] }),
+        };
+      };
+      const vector = await vectorStore.embed('query text', { kind: 'query' });
+      assert.equal(body.dimensions, 128);
+      assert.equal(vector.length, 128);
+    } finally {
+      global.fetch = originalFetch;
+      delete process.env.THUMBGATE_OLLAMA_EMBED_MODEL;
+      delete process.env.THUMBGATE_OLLAMA_ENDPOINT;
+      delete process.env.THUMBGATE_EMBED_DIM;
+      delete require.cache[require.resolve('../scripts/vector-store')];
+    }
+  });
+});

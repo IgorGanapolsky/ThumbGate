@@ -72,5 +72,5 @@ test('gate template library summary groups templates by category and action', ()
   assert.equal(summary.categories['JavaScript Package Registry Governance'], 5);
   assert.equal(summary.byAction.block, templates.filter((template) => template.defaultAction === 'block').length);
   assert.equal(summary.byAction.warn, templates.filter((template) => template.defaultAction === 'warn').length);
-  assert.equal(summary.byAction.allow, 1);
+  assert.equal(summary.byAction.allow, templates.filter((template) => template.defaultAction === 'allow').length);
 });

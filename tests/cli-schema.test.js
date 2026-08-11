@@ -161,6 +161,12 @@ test('rag-precision-guardrails exposes retrieval regression flags', () => {
   assert.ok(flagNames.includes('new-recall'));
   assert.ok(flagNames.includes('threshold-change'));
   assert.ok(flagNames.includes('embedding-finetune'));
+  assert.ok(flagNames.includes('embedding-model-change'));
+  assert.ok(flagNames.includes('baseline-provider'));
+  assert.ok(flagNames.includes('new-provider'));
+  assert.ok(flagNames.includes('baseline-dim'));
+  assert.ok(flagNames.includes('new-dim'));
+  assert.ok(flagNames.includes('matryoshka-truncation'));
   assert.ok(flagNames.includes('structural-near-misses'));
   assert.ok(flagNames.includes('verifier'));
   assert.ok(flagNames.includes('latency-budget-ms'));
