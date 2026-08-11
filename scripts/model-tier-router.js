@@ -269,17 +269,16 @@ class FrontierBudget {
   }
 }
 
-function isCostRouteQwenEnabled(task = {}, env = process.env) {
-  const flag = String(env.THUMBGATE_COST_ROUTE_QWEN || '').trim().toLowerCase();
+function isSwitchyardEnabled(task = {}, env = process.env) {
+  const flag = String(env.THUMBGATE_SWITCHYARD || '').trim().toLowerCase();
   if (flag === '1' || flag === 'true' || flag === 'yes' || flag === 'on') return true;
   const tags = Array.isArray(task.tags) ? task.tags.map((t) => String(t).toLowerCase()) : [];
   return Boolean(
-    task.costPriority === 'primary'
-    || task.highVolume
-    || tags.includes('cost-sensitive')
-    || tags.includes('high-volume')
-    || tags.includes('bulk')
-    || tags.includes('qwen-volume'),
+    Array.isArray(task.steps) && task.steps.length > 0
+    || tags.includes('switchyard')
+    || tags.includes('multi-model')
+    || tags.includes('nemotron')
+    || tags.includes('always-on'),
   );
 }
 
@@ -309,6 +308,30 @@ function recommendExecutionPlan(task = {}, env = process.env) {
     indexCacheEnabled: inference.backend.indexCacheEnabled,
     reason: `${classification.reason}; ${inference.reason}`,
   };
+
+  // Optional NeMo Switchyard–style multi-model step plan (opt-in).
+  if (isSwitchyardEnabled(task, env)) {
+    try {
+      const {
+        routeAgentSteps,
+        buildAlwaysOnAgentPlan,
+      } = require('./switchyard-router');
+      const steps = Array.isArray(task.steps) && task.steps.length
+        ? task.steps
+        : buildAlwaysOnAgentPlan({
+          sensitive: task.privacyRoute === 'local' || task.sensitive,
+          highVolume: task.highVolume || task.costPriority === 'primary',
+          riskLevel: task.riskLevel,
+          actType: task.type,
+        });
+      const switchyard = routeAgentSteps(steps);
+      plan.switchyard = switchyard;
+      plan.multiModel = switchyard.multiModel;
+      plan.reason = `${plan.reason}; switchyard models=${switchyard.distinctModels.join(',')}`;
+    } catch {
+      // Switchyard optional; never break baseline routing.
+    }
+  }
 
   // Optional dual-stack cost lane (Qwen volume / Claude quality). Opt-in via
   // THUMBGATE_COST_ROUTE_QWEN=1 or task tags cost-sensitive|high-volume|bulk.
@@ -600,13 +623,28 @@ async function evaluateRoutingHoldout(cases, options = {}) {
 // Exports
 // ---------------------------------------------------------------------------
 
+function isCostRouteQwenEnabled(task = {}, env = process.env) {
+  const flag = String(env.THUMBGATE_COST_ROUTE_QWEN || '').trim().toLowerCase();
+  if (flag === '1' || flag === 'true' || flag === 'yes' || flag === 'on') return true;
+  const tags = Array.isArray(task.tags) ? task.tags.map((t) => String(t).toLowerCase()) : [];
+  return Boolean(
+    task.costPriority === 'primary'
+    || task.highVolume
+    || tags.includes('cost-sensitive')
+    || tags.includes('high-volume')
+    || tags.includes('bulk')
+    || tags.includes('qwen-volume'),
+  );
+}
+
 module.exports = {
+  isCostRouteQwenEnabled,
   TIERS,
   classifyTask,
   shouldEscalate,
   FrontierBudget,
   recommendExecutionPlan,
-  isCostRouteQwenEnabled,
+  isSwitchyardEnabled,
   inferProvider,
   normalizeGenerationResult,
   resolveGenerationTarget,

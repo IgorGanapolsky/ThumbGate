@@ -5,7 +5,13 @@
     "pretool-gating": {
       "label": "PreTool gating",
       "summary": "Fast, reliable gate judgments for tool-use and agentic coding decisions before commands run. Hybrid local-cloud candidates (e.g. perplexity/hybrid-local) excel here for privacy + low latency on sensitive paths.",
-      "desiredStrengths": ["agentic-coding", "tool-use", "reliability", "privacy", "fast-inference"],
+      "desiredStrengths": [
+        "agentic-coding",
+        "tool-use",
+        "reliability",
+        "privacy",
+        "fast-inference"
+      ],
       "targetContextWindow": 64000,
       "benchmarkCommands": [
         "npx thumbgate eval --from-feedback --json --min-score=0",
@@ -23,7 +29,12 @@
     "long-trace-review": {
       "label": "Long trace review",
       "summary": "Review long agent traces, multi-step failures, and large-context coding sessions without dropping important detail.",
-      "desiredStrengths": ["long-horizon-coding", "multi-agent", "reliability", "long-context"],
+      "desiredStrengths": [
+        "long-horizon-coding",
+        "multi-agent",
+        "reliability",
+        "long-context"
+      ],
       "targetContextWindow": 128000,
       "benchmarkCommands": [
         "npx thumbgate eval --from-feedback --json --min-score=0",
@@ -44,7 +55,13 @@
     "cheap-fast-path": {
       "label": "Cheap fast path",
       "summary": "Low-cost first-pass model for cheap approval triage before escalating ambiguous work. Perplexity hybrid-local is ideal: on-device for speed/privacy, escalate only when needed via orchestrator.",
-      "desiredStrengths": ["agentic-coding", "tool-use", "fast-inference", "privacy", "cost-efficiency"],
+      "desiredStrengths": [
+        "agentic-coding",
+        "tool-use",
+        "fast-inference",
+        "privacy",
+        "cost-efficiency"
+      ],
       "targetContextWindow": 32000,
       "benchmarkCommands": [
         "npx thumbgate eval --from-feedback --json --min-score=0",
@@ -61,7 +78,14 @@
     "dashboard-analysis": {
       "label": "Dashboard and dataset analysis",
       "summary": "Evaluate frontier models for dataset analysis, chart generation, dashboard planning, and proof-backed insight quality before routing expensive analytical work. Perplexity hybrid excels for sensitive lessons/feedback data (local for privacy, cloud for depth).",
-      "desiredStrengths": ["data-analysis", "dashboard-creation", "charting", "long-context", "reliability", "privacy"],
+      "desiredStrengths": [
+        "data-analysis",
+        "dashboard-creation",
+        "charting",
+        "long-context",
+        "reliability",
+        "privacy"
+      ],
       "targetContextWindow": 200000,
       "benchmarkCommands": [
         "npx thumbgate eval --from-feedback --json --min-score=0",
@@ -80,7 +104,15 @@
     "claw-style-enterprise-agent": {
       "label": "Claw-style enterprise agent governance",
       "summary": "Governance, gating, and feedback for autonomous 'claw-style' agents (Automation Anywhere EnterpriseClaw, Nvidia OpenShell-inspired) that have device file system access, runtime dynamic tool creation, screen/UI interaction, and multi-platform orchestration. Especially relevant for on-prem/air-gapped/hybrid enterprise data realities.",
-      "desiredStrengths": ["agentic-coding", "tool-use", "reliability", "security", "orchestration", "audit-trail", "privacy"],
+      "desiredStrengths": [
+        "agentic-coding",
+        "tool-use",
+        "reliability",
+        "security",
+        "orchestration",
+        "audit-trail",
+        "privacy"
+      ],
       "targetContextWindow": 128000,
       "benchmarkCommands": [
         "npx thumbgate eval --from-feedback --json --min-score=0",
@@ -101,7 +133,14 @@
     "tokenizer-brittleness": {
       "label": "Tokenizer brittleness and byte-level robustness",
       "summary": "Evaluate models for malformed JSONL, Unicode confusables, stack traces, secrets, SQL snippets, file paths, and code-symbol-heavy inputs before routing log, code, or security workloads.",
-      "desiredStrengths": ["tokenizer-free", "byte-level", "log-robustness", "code-symbols", "security-scanning", "fast-inference"],
+      "desiredStrengths": [
+        "tokenizer-free",
+        "byte-level",
+        "log-robustness",
+        "code-symbols",
+        "security-scanning",
+        "fast-inference"
+      ],
       "targetContextWindow": 64000,
       "benchmarkCommands": [
         "npx thumbgate model-candidates --workload=tokenizer-brittleness --json",
@@ -120,7 +159,13 @@
     "self-improving-agent-skill-synthesis": {
       "label": "Self-improving agent skill synthesis",
       "summary": "Evaluate models on their ability to self-improve, generate safe Markdown skills, and correctly check synthesized skills against existing gate/prevention rules.",
-      "desiredStrengths": ["agentic-coding", "tool-use", "self-evolving", "skill-synthesis", "reliability"],
+      "desiredStrengths": [
+        "agentic-coding",
+        "tool-use",
+        "self-evolving",
+        "skill-synthesis",
+        "reliability"
+      ],
       "targetContextWindow": 128000,
       "benchmarkCommands": [
         "npx thumbgate eval --from-feedback --json --min-score=0",
@@ -137,7 +182,14 @@
     "js-package-registry-governance": {
       "label": "JavaScript package registry governance",
       "summary": "Governance, gating, and supply-chain enforcement for agents consuming and publishing JavaScript packages via npm, vlt registry, and self-hosted VSR (serverless registry). Pre-action checks for dependency installation, registry override, provenance attestation, and workspace dependency pinning.",
-      "desiredStrengths": ["agentic-coding", "tool-use", "supply-chain-security", "reliability", "security", "audit-trail"],
+      "desiredStrengths": [
+        "agentic-coding",
+        "tool-use",
+        "supply-chain-security",
+        "reliability",
+        "security",
+        "audit-trail"
+      ],
       "targetContextWindow": 64000,
       "benchmarkCommands": [
         "npx thumbgate eval --from-feedback --json --min-score=0",
@@ -158,7 +210,15 @@
     "context-engineering": {
       "label": "Context engineering for AI code agents",
       "summary": "Evaluating models on context structuring, skill synthesis, MCP tool governance, sub-agent coordination, and hook-based lifecycle automation for AI code agent workflows (Claude Code, Codex, OpenCode). Based on the Hugging Face Context Course curriculum.",
-      "desiredStrengths": ["agentic-coding", "tool-use", "context-structuring", "skill-synthesis", "MCP-governance", "reliability", "long-horizon-coding"],
+      "desiredStrengths": [
+        "agentic-coding",
+        "tool-use",
+        "context-structuring",
+        "skill-synthesis",
+        "MCP-governance",
+        "reliability",
+        "long-horizon-coding"
+      ],
       "targetContextWindow": 128000,
       "benchmarkCommands": [
         "npx thumbgate eval --from-feedback --json --min-score=0",
@@ -187,7 +247,14 @@
       "contextWindow": 64000,
       "costClass": "medium",
       "researchOnly": true,
-      "strengths": ["tokenizer-free", "byte-level", "log-robustness", "code-symbols", "security-scanning", "fast-inference"],
+      "strengths": [
+        "tokenizer-free",
+        "byte-level",
+        "log-robustness",
+        "code-symbols",
+        "security-scanning",
+        "fast-inference"
+      ],
       "notes": "Research-only candidate inspired by Fast BLT. Use as an evaluation target for tokenizer-free robustness and memory-bandwidth planning; do not route production traffic until a maintained runtime and model weights exist."
     },
     {
@@ -199,7 +266,12 @@
       "model": "deepseek-v4-flash",
       "contextWindow": 1000000,
       "costClass": "medium",
-      "strengths": ["long-context", "fast-inference", "reliability", "long-horizon-coding"],
+      "strengths": [
+        "long-context",
+        "fast-inference",
+        "reliability",
+        "long-horizon-coding"
+      ],
       "notes": "Self-hosted long-context candidate for teams that can operate SGLang-class sparse-attention serving. Requires ThumbGate runtime guardrails before routing production traces."
     },
     {
@@ -211,7 +283,12 @@
       "model": "deepseek-v4-pro",
       "contextWindow": 1000000,
       "costClass": "high",
-      "strengths": ["long-context", "reliability", "long-horizon-coding", "multi-agent"],
+      "strengths": [
+        "long-context",
+        "reliability",
+        "long-horizon-coding",
+        "multi-agent"
+      ],
       "notes": "High-capacity self-hosted candidate for long-trace review and verified-RL experiments. Benchmark cache coherence, speculative decoding, KV offload, and train-inference drift before use."
     },
     {
@@ -222,7 +299,15 @@
       "model": "gpt-5.5",
       "contextWindow": 1000000,
       "costClass": "high",
-      "strengths": ["agentic-coding", "tool-use", "reliability", "long-context", "data-analysis", "dashboard-creation", "charting"],
+      "strengths": [
+        "agentic-coding",
+        "tool-use",
+        "reliability",
+        "long-context",
+        "data-analysis",
+        "dashboard-creation",
+        "charting"
+      ],
       "notes": "Frontier candidate for complex reasoning, coding, dataset analysis, and dashboard workflows. Benchmark before routing high-volume or cost-sensitive work."
     },
     {
@@ -233,7 +318,11 @@
       "model": "claude-haiku-4-5-20251001",
       "contextWindow": 200000,
       "costClass": "low",
-      "strengths": ["tool-use", "reliability", "fast-inference"],
+      "strengths": [
+        "tool-use",
+        "reliability",
+        "fast-inference"
+      ],
       "notes": "Fast control candidate for cheap approval triage."
     },
     {
@@ -244,7 +333,12 @@
       "model": "claude-sonnet-4-6",
       "contextWindow": 200000,
       "costClass": "medium",
-      "strengths": ["agentic-coding", "tool-use", "reliability", "long-horizon-coding"],
+      "strengths": [
+        "agentic-coding",
+        "tool-use",
+        "reliability",
+        "long-horizon-coding"
+      ],
       "notes": "Current stronger managed control candidate."
     },
     {
@@ -256,7 +350,11 @@
       "model": "kimi-k2.6-32k",
       "contextWindow": 32000,
       "costClass": "medium",
-      "strengths": ["long-horizon-coding", "multi-agent", "reliability"],
+      "strengths": [
+        "long-horizon-coding",
+        "multi-agent",
+        "reliability"
+      ],
       "notes": "Tinker April 23, 2026 release. Good candidate when long-horizon coding matters more than ultra-low latency."
     },
     {
@@ -268,7 +366,12 @@
       "model": "kimi-k2.6-128k",
       "contextWindow": 128000,
       "costClass": "medium",
-      "strengths": ["long-horizon-coding", "multi-agent", "reliability", "long-context"],
+      "strengths": [
+        "long-horizon-coding",
+        "multi-agent",
+        "reliability",
+        "long-context"
+      ],
       "notes": "Highest-ROI Kimi candidate for long traces and multi-step review."
     },
     {
@@ -280,7 +383,12 @@
       "model": "qwen3.6-35b-a3b",
       "contextWindow": 64000,
       "costClass": "low",
-      "strengths": ["agentic-coding", "tool-use", "reliability", "fast-inference"],
+      "strengths": [
+        "agentic-coding",
+        "tool-use",
+        "reliability",
+        "fast-inference"
+      ],
       "notes": "Best first Tinker candidate for ThumbGate pre-action gating and tool-risk classification."
     },
     {
@@ -292,7 +400,11 @@
       "model": "qwen3.6-27b",
       "contextWindow": 64000,
       "costClass": "low",
-      "strengths": ["agentic-coding", "tool-use", "fast-inference"],
+      "strengths": [
+        "agentic-coding",
+        "tool-use",
+        "fast-inference"
+      ],
       "notes": "Cheapest Tinker candidate for the fast gate path; use when latency/cost matter most."
     },
     {
@@ -303,7 +415,15 @@
       "model": "hybrid-local-cloud-orchestrator",
       "contextWindow": 200000,
       "costClass": "variable",
-      "strengths": ["agentic-coding", "tool-use", "privacy", "cost-efficiency", "fast-inference", "long-context", "reliability"],
+      "strengths": [
+        "agentic-coding",
+        "tool-use",
+        "privacy",
+        "cost-efficiency",
+        "fast-inference",
+        "long-context",
+        "reliability"
+      ],
       "notes": "Perplexity hybrid local-cloud inference orchestrator (announced Computex 2026, part of Personal Computer). Autonomously routes: sensitive/privacy work to local on-device models, complex reasoning to frontier cloud. High-ROI for pretool-gating (local fast/privacy path), cheap-fast-path, and dashboard-analysis with sensitive data/lessons. Pair with ThumbGate hybrid-routing gates (see adapters/perplexity/HYBRID.md). Coming July 2026 for local inference."
     },
     {
@@ -314,7 +434,12 @@
       "model": "local-inference",
       "contextWindow": 128000,
       "costClass": "low",
-      "strengths": ["fast-inference", "privacy", "tool-use", "reliability"],
+      "strengths": [
+        "fast-inference",
+        "privacy",
+        "tool-use",
+        "reliability"
+      ],
       "notes": "Local-only mode of Perplexity hybrid for on-device pre-action gating, sensitivity classification, and low-latency checks on AI PCs (Intel, NVIDIA). Escalate via orchestrator for full capability. Use for cheap-fast-path and pretool-gating workloads."
     },
     {
@@ -325,7 +450,17 @@
       "model": "enterprise-claw",
       "contextWindow": 200000,
       "costClass": "variable",
-      "strengths": ["agentic-coding", "tool-use", "orchestration", "audit-trail", "security", "on-prem", "airgap", "dynamic-tool-creation", "screen-interaction"],
+      "strengths": [
+        "agentic-coding",
+        "tool-use",
+        "orchestration",
+        "audit-trail",
+        "security",
+        "on-prem",
+        "airgap",
+        "dynamic-tool-creation",
+        "screen-interaction"
+      ],
       "notes": "Claw-style autonomous enterprise agents (EnterpriseClaw, inspired by Nvidia OpenShell). Device-level access, runtime tool creation, screen/UI interaction, multi-platform orchestration. Governance infrastructure (ThumbGate) is explicitly called out as catching up. High-ROI for enterprise on-prem/hybrid use cases. Pair with perplexity/hybrid for inference routing. See adapters/claw/CLAW.md and new gate templates."
     },
     {
@@ -336,7 +471,14 @@
       "model": "openshell",
       "contextWindow": 128000,
       "costClass": "medium",
-      "strengths": ["agentic-coding", "tool-use", "dynamic-tool-creation", "screen-interaction", "on-prem", "self-evolving"],
+      "strengths": [
+        "agentic-coding",
+        "tool-use",
+        "dynamic-tool-creation",
+        "screen-interaction",
+        "on-prem",
+        "self-evolving"
+      ],
       "notes": "Nvidia OpenShell runtime for autonomous self-evolving claw-style agents (basis for Automation Anywhere EnterpriseClaw). Run locally/on-prem. ThumbGate provides the missing governance layer (gates, feedback, rules). Use with hybrid local-cloud for full enterprise deployment."
     },
     {
@@ -347,7 +489,14 @@
       "model": "hermes-3-llama-3.1-70b",
       "contextWindow": 128000,
       "costClass": "medium",
-      "strengths": ["agentic-coding", "tool-use", "self-evolving", "skill-synthesis", "multi-platform", "reasoning"],
+      "strengths": [
+        "agentic-coding",
+        "tool-use",
+        "self-evolving",
+        "skill-synthesis",
+        "multi-platform",
+        "reasoning"
+      ],
       "notes": "Nous Research's Hermes 3 model family, optimized for autonomous reasoning, tool-use, and self-improvement loops. Benchmark KV caching, trace-length constraints, and dynamic skill synthesis validation rules before deploying."
     },
     {
@@ -358,7 +507,14 @@
       "model": "claude-opus-4.8",
       "contextWindow": 200000,
       "costClass": "high",
-      "strengths": ["agentic-coding", "tool-use", "reliability", "long-context", "long-horizon-coding", "multi-agent"],
+      "strengths": [
+        "agentic-coding",
+        "tool-use",
+        "reliability",
+        "long-context",
+        "long-horizon-coding",
+        "multi-agent"
+      ],
       "notes": "Frontier coding model with 56.7 Coding Index. Grew 140% WoW on OpenRouter to 1.33T tokens. Ideal for long trace reviews and complex reasoning steps, despite higher latency and cost."
     },
     {
@@ -369,7 +525,14 @@
       "model": "gemini-3.1-pro-preview",
       "contextWindow": 2000000,
       "costClass": "medium",
-      "strengths": ["agentic-coding", "tool-use", "reliability", "long-context", "data-analysis", "cost-efficiency"],
+      "strengths": [
+        "agentic-coding",
+        "tool-use",
+        "reliability",
+        "long-context",
+        "data-analysis",
+        "cost-efficiency"
+      ],
       "notes": "Google's 3.1 Pro Preview model with 55.5 Coding Index and massive 2M token context window. Strong choice for complex RAG tasks, repository-scale auditing, and long-context trace analysis."
     },
     {
@@ -380,7 +543,13 @@
       "model": "hosted-registry",
       "contextWindow": 10000,
       "costClass": "low",
-      "strengths": ["supply-chain-security", "package-management", "audit-trail", "reliability", "security"],
+      "strengths": [
+        "supply-chain-security",
+        "package-management",
+        "audit-trail",
+        "reliability",
+        "security"
+      ],
       "notes": "vlt's hosted package registry service (launched Aug 2026) with secure npm mirror, private registries, and VSR (self-hosted serverless registry). ThumbGate gates integrate via preToolUse hooks on vlt install/add/publish and registry config overrides. Pair with require-local-dependency-vulnerability-scan and gate-vlt-package-publishing templates. See adapters/vlt/VLT.md and https://vlt.io/blog/1-0."
     },
     {
@@ -391,7 +560,14 @@
       "model": "self-hosted-vsr",
       "contextWindow": 10000,
       "costClass": "low",
-      "strengths": ["supply-chain-security", "package-management", "on-prem", "airgap", "audit-trail", "security"],
+      "strengths": [
+        "supply-chain-security",
+        "package-management",
+        "on-prem",
+        "airgap",
+        "audit-trail",
+        "security"
+      ],
       "notes": "vlt's self-hosted VSR (serverless registry) for enterprise on-prem and air-gapped environments. ThumbGate's block-vlt-private-registry-bypass and require-review-vlt-registry-override gate templates enforce approved registry hosts. Critical for enterprises where most data is not cloud-native."
     },
     {
@@ -402,8 +578,49 @@
       "model": "context-engineering-agent",
       "contextWindow": 200000,
       "costClass": "low",
-      "strengths": ["context-structuring", "skill-synthesis", "MCP-governance", "agentic-coding", "tool-use", "reliability"],
+      "strengths": [
+        "context-structuring",
+        "skill-synthesis",
+        "MCP-governance",
+        "agentic-coding",
+        "tool-use",
+        "reliability"
+      ],
       "notes": "Model optimized for the Hugging Face Context Course curriculum — context engineering for AI code agents (Claude Code, Codex, OpenCode). Excels at structuring knowledge so agents find context efficiently. Evaluated on MCP tool governance, skill synthesis validation, and hook-based lifecycle automation. See docs/guides/huggingface-context-course-governance.md and adapters/huggingface-context-course/."
+    },
+    {
+      "id": "nvidia/nemotron-3.5-lightning",
+      "vendor": "NVIDIA",
+      "family": "nemotron",
+      "provider": "nvidia",
+      "model": "nemotron-3.5-lightning",
+      "contextWindow": 128000,
+      "costClass": "low",
+      "strengths": [
+        "fast-inference",
+        "cost-efficiency",
+        "tool-use",
+        "reliability",
+        "agentic-coding"
+      ],
+      "notes": "Nemotron 3.5 Lightning: open 30B MoE with ~3B active params for specialized always-on agent steps (intent, gate, classify). Pair with NeMo Switchyard-style multi-model step routing in scripts/switchyard-router.js. Not a single-model solution for whole agent runs."
+    },
+    {
+      "id": "nvidia/nemo-switchyard",
+      "vendor": "NVIDIA",
+      "family": "routing",
+      "provider": "nvidia",
+      "model": "nemo-switchyard",
+      "contextWindow": 64000,
+      "costClass": "low",
+      "strengths": [
+        "tool-use",
+        "reliability",
+        "cost-efficiency",
+        "multi-agent",
+        "orchestration"
+      ],
+      "notes": "NeMo Switchyard: build and evaluate routing algorithms across a chosen model pool. ThumbGate implements the governance layer (routeAgentSteps + evaluateRoutingAlgorithm + multi-model gates). Use when complex agentic tasks would otherwise run on one expensive frontier model end-to-end."
     },
     {
       "id": "alibaba/qwen3.8-max",
@@ -413,7 +630,14 @@
       "model": "qwen3.8-max",
       "contextWindow": 200000,
       "costClass": "medium",
-      "strengths": ["agentic-coding", "tool-use", "long-horizon-coding", "multimodal", "cost-efficiency", "reliability"],
+      "strengths": [
+        "agentic-coding",
+        "tool-use",
+        "long-horizon-coding",
+        "multimodal",
+        "cost-efficiency",
+        "reliability"
+      ],
       "notes": "Alibaba Cloud Model Studio 2.4T MoE flagship model. Excels at autonomous long-horizon coding projects spanning multi-day agent runs. Direct support for OpenAI-compatible API endpoints. Ideal for long-trace-review and claw-style-enterprise-agent workloads with ultra-low TCO ($6/mo token plan)."
     },
     {
@@ -424,7 +648,13 @@
       "model": "qwen3.7-plus",
       "contextWindow": 128000,
       "costClass": "low",
-      "strengths": ["agentic-coding", "tool-use", "fast-inference", "gui-interaction", "cost-efficiency"],
+      "strengths": [
+        "agentic-coding",
+        "tool-use",
+        "fast-inference",
+        "gui-interaction",
+        "cost-efficiency"
+      ],
       "notes": "Cost-effective vision-language model with full-stack agent intelligence for coding, tool use, and GUI computer-use interaction. Ideal candidate for cheap-fast-path and pretool-gating."
     },
     {
@@ -435,7 +665,12 @@
       "model": "qwen3.6-flash",
       "contextWindow": 128000,
       "costClass": "low",
-      "strengths": ["fast-inference", "cost-efficiency", "tool-use", "reliability"],
+      "strengths": [
+        "fast-inference",
+        "cost-efficiency",
+        "tool-use",
+        "reliability"
+      ],
       "notes": "High-speed vision-language flash model for rapid pre-action checks, gate evaluation, and lightweight agent trace review. Default resolveQwenRoleRoute for pretool-gating and cheap-fast-path."
     },
     {
@@ -446,7 +681,11 @@
       "model": "text-embedding-v4",
       "contextWindow": 8192,
       "costClass": "low",
-      "strengths": ["fast-inference", "cost-efficiency", "reliability"],
+      "strengths": [
+        "fast-inference",
+        "cost-efficiency",
+        "reliability"
+      ],
       "notes": "OpenAI-compatible DashScope embedding model for RAG. Wire via THUMBGATE_EMBED_PROVIDER=dashscope + DASHSCOPE_API_KEY; Matryoshka dims via THUMBGATE_QWEN_EMBED_DIM / THUMBGATE_MATRYOSHKA_DIM. See adapters/qwen/QWEN.md."
     }
   ]
