@@ -153,6 +153,7 @@ function pathResolveMain() {
 module.exports = {
   captureFeedbackRemote,
   isRemoteCaptureConfigured,
+  parseArgs,
   resolveBaseUrl,
   resolveApiKey,
 };

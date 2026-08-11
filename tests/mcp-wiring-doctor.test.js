@@ -17,6 +17,7 @@ const {
 const {
   captureFeedbackRemote,
   isRemoteCaptureConfigured,
+  parseArgs,
   resolveApiKey,
   resolveBaseUrl,
 } = require('../scripts/remote-feedback-capture');
@@ -170,6 +171,36 @@ test('remote capture configuration normalizes URL and key aliases', () => {
     baseUrl: 'https://example.test',
     hasKey: true,
   });
+});
+
+test('remote capture CLI parser handles values, flags, and embedded equals signs', () => {
+  assert.deepEqual(parseArgs([
+    '--feedback=down',
+    '--context=a=b',
+    '--help',
+    'ignored',
+  ]), {
+    feedback: 'down',
+    context: 'a=b',
+    help: true,
+  });
+});
+
+test('captureFeedbackRemote reports when fetch is unavailable', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = undefined;
+    const result = await captureFeedbackRemote({
+      env: {
+        THUMBGATE_API_BASE_URL: 'https://example.test',
+        THUMBGATE_API_KEY: 'key',
+      },
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.error, 'fetch_unavailable');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('captureFeedbackRemote reports missing configuration without calling fetch', async () => {
