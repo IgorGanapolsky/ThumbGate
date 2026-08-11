@@ -24,5 +24,9 @@
     "SonarCloud Code Analysis",
     "SonarCloud",
     "Merge blob reports"
+  ],
+  "optionalChecks": [
+    "Vercel",
+    "Vercel Preview Comments"
   ]
 }
