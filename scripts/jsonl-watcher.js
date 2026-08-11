@@ -62,6 +62,9 @@ function shouldIngest(entry, sourceFilter) {
 
 function ingestEntry(entry) {
   const signal = entry.signal === 'positive' ? 'up' : entry.signal === 'negative' ? 'down' : entry.signal;
+  const suppliedSource = entry.memorySource && typeof entry.memorySource === 'object'
+    ? entry.memorySource
+    : {};
 
   const result = captureFeedback({
     signal,
@@ -72,6 +75,13 @@ function ingestEntry(entry) {
     tags: [...(entry.tags || []), WATCHER_SOURCE_TAG, `bridged-from:${entry.source}`],
     skill: entry.skill || undefined,
     reviewOrigin: entry.reviewOrigin || 'imported',
+    memorySource: {
+      type: suppliedSource.type || entry.source,
+      identifier: suppliedSource.identifier || entry.id || entry.source,
+      // JSONL watcher entries are externally authored. Never let the payload
+      // self-assert trusted provenance across this boundary.
+      trust: 'untrusted',
+    },
   });
 
   return result;
