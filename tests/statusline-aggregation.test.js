@@ -12,6 +12,7 @@ const {
   getStatuslineCacheCandidates,
 } = require('../scripts/statusline-cache-path');
 const {
+  ancestorProjectFeedbackDirs,
   collectAggregateLogEntries,
   computeAggregateFeedbackStats,
   listFeedbackStoreDirs,
@@ -42,11 +43,10 @@ test('temp projects never aggregate the shared OS temp-root store', () => {
   const project = tmpDir('thumbgate-temp-boundary-');
   const home = path.join(project, 'home');
   try {
-    const stores = listFeedbackStoreDirs({
-      cwd: project,
-      projectDir: project,
+    const stores = ancestorProjectFeedbackDirs(project, {
       env: { HOME: home, USERPROFILE: home },
     });
+    assert.equal(stores.includes(path.join(project, '.thumbgate')), true);
     assert.equal(stores.includes(path.join(os.tmpdir(), '.thumbgate')), false);
   } finally {
     fs.rmSync(project, { recursive: true, force: true });

@@ -279,6 +279,7 @@ function getAggregateStatuslineCachePath(options = {}) {
 }
 
 module.exports = {
+  ancestorProjectFeedbackDirs,
   collectAggregateLogEntries,
   computeAggregateFeedbackStats,
   getAggregateStatuslineCachePath,
