@@ -155,3 +155,5 @@ describe('agent-memory-lifecycle', () => {
     });
     assert.equal(promoted.decision, 'promote');
   });
+
+});
