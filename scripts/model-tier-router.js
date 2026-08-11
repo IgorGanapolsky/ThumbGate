@@ -269,6 +269,20 @@ class FrontierBudget {
   }
 }
 
+function isCostRouteQwenEnabled(task = {}, env = process.env) {
+  const flag = String(env.THUMBGATE_COST_ROUTE_QWEN || '').trim().toLowerCase();
+  if (flag === '1' || flag === 'true' || flag === 'yes' || flag === 'on') return true;
+  const tags = Array.isArray(task.tags) ? task.tags.map((t) => String(t).toLowerCase()) : [];
+  return Boolean(
+    task.costPriority === 'primary'
+    || task.highVolume
+    || tags.includes('cost-sensitive')
+    || tags.includes('high-volume')
+    || tags.includes('bulk')
+    || tags.includes('qwen-volume'),
+  );
+}
+
 function recommendExecutionPlan(task = {}, env = process.env) {
   const classification = classifyTask(task);
   const inference = recommendInferenceBackend(task, env);
@@ -280,7 +294,7 @@ function recommendExecutionPlan(task = {}, env = process.env) {
     ? 'localFrontier'
     : classification.tier;
 
-  return {
+  const plan = {
     architecture: 'risk-aware-model-routing',
     mixtureOfExperts: false,
     tier: effectiveTier,
@@ -295,6 +309,28 @@ function recommendExecutionPlan(task = {}, env = process.env) {
     indexCacheEnabled: inference.backend.indexCacheEnabled,
     reason: `${classification.reason}; ${inference.reason}`,
   };
+
+  // Optional dual-stack cost lane (Qwen volume / Claude quality). Opt-in via
+  // THUMBGATE_COST_ROUTE_QWEN=1 or task tags cost-sensitive|high-volume|bulk.
+  if (isCostRouteQwenEnabled(task, env)) {
+    try {
+      const { recommendCostQualitySplit } = require('./qwen38-max-cost-optimizer');
+      const split = recommendCostQualitySplit(task, {
+        useTokenPlanPromo: String(env.THUMBGATE_QWEN_TOKEN_PLAN_PROMO || '').toLowerCase() === '1'
+          || String(env.THUMBGATE_QWEN_TOKEN_PLAN_PROMO || '').toLowerCase() === 'true',
+        localModel: env.THUMBGATE_LOCAL_MODEL || null,
+      });
+      plan.costQualitySplit = split;
+      plan.costLane = split.lane;
+      plan.preferredProvider = split.primaryProvider;
+      plan.preferredModel = split.primaryModel;
+      plan.reason = `${plan.reason}; cost-lane=${split.lane}→${split.primaryProvider}/${split.primaryModel}`;
+    } catch {
+      // Cost module optional at runtime; never fail routing.
+    }
+  }
+
+  return plan;
 }
 
 // ---------------------------------------------------------------------------
@@ -570,6 +606,7 @@ module.exports = {
   shouldEscalate,
   FrontierBudget,
   recommendExecutionPlan,
+  isCostRouteQwenEnabled,
   inferProvider,
   normalizeGenerationResult,
   resolveGenerationTarget,

@@ -61,11 +61,28 @@ Enable in project gates:
 `validateQwenEgressGate` **blocks** when projected spend exceeds monthly budget
 unless `hasBudgetApproval` is true.
 
-## Cost proof
+## Cost proof & dual-stack policy
+
+Raw flagship economics (per $1M tokens): Qwen3.8-Max **$2 / $6** vs Claude Sonnet 5 standard **$3 / $15** (intro $2/$10 ends **2026-09-01**). Output-token spend is the main lever; Token Plan 2× promo stacks on top.
+
+| Lane | When | Model |
+|:---|:---|:---|
+| **cost-volume** | `cost-sensitive`, `high-volume`, `bulk`, long agentic | Qwen Flash → Plus → Max |
+| **quality** | high risk / architecture / reasoning-critical | Claude (Gemini fallback) |
+| **local-or-private** | `privacyRoute=local`, secrets/PII | local only |
 
 ```bash
-node -e "console.log(require('./scripts/qwen38-max-cost-optimizer').calculateQwenSavingsVsClaude({inputTokensM:10,outputTokensM:2,useTokenPlanPromo:true}))"
-node -e "console.log(require('./scripts/qwen38-max-cost-optimizer').recommendQwenTier('pretool-gating'))"
+# Savings vs Claude standard + Token Plan promo
+node -e "console.log(require('./scripts/qwen38-max-cost-optimizer').compareStackPricing({inputTokensM:10,outputTokensM:5,useTokenPlanPromo:true}))"
+node -e "console.log(require('./scripts/qwen38-max-cost-optimizer').recommendCostQualitySplit({tags:['high-volume'],costPriority:'primary'}))"
+```
+
+Enable on model-tier-router plans:
+
+```bash
+export THUMBGATE_COST_ROUTE_QWEN=1
+# or tag tasks: cost-sensitive | high-volume | bulk | qwen-volume
+export THUMBGATE_QWEN_TOKEN_PLAN_PROMO=1   # model 2x credits as 0.5× $
 ```
 
 ## What we deliberately did **not** copy
