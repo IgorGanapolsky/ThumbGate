@@ -626,6 +626,18 @@
       "rollout": "Use existing protected-paths + new claw-specific rules. Start with read-only for most, explicit approval for writes on sensitive dirs."
     },
     {
+      "id": "block-stealth-memory-injection-from-external",
+      "name": "Block stealth memory injection from external content",
+      "category": "Claw-Style Enterprise Agent Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(silently|do not tell|do not announce|stealth memory|memghost|imap|smtp|inbox).*(MEMORY\\.md|AGENTS\\.md|SOUL\\.md|USER\\.md|HEARTBEAT\\.md|long-term memory|preference|remember that)",
+      "problem": "Persistent personal agents (OpenClaw, Hermes, NanoClaw) can absorb untrusted email/tool content into durable memory carriers while staying silent in the user-visible reply. MemGhost (WhisperBench, paper 2607.05189) shows 87.5% end-to-end success for one-shot stealth memory injection — delayed sessions then treat poisoned facts/preferences as trusted state.",
+      "roi": "High: closes the durable-memory compromise path that ordinary PreToolUse hijack defenses miss. Direct product fit for OpenClaw/Hermes governance buyers and ThumbGate's Infrastructure Firewall narrative. Blocks fact + preference poisoning before it becomes trusted context.",
+      "rollout": "Enabled as structural gate in gates-engine (scripts/stealth-memory-injection-gate.js). Allow only with explicit operator override (THUMBGATE_ALLOW_STEALTH_MEMORY_INJECTION=1) or stealthMemoryInjectionApproved=true after human review. Capture blocked attempts with tags stealth-memory-injection,whisperbench,memghost."
+    },
+    {
       "id": "block-unauthorized-multi-channel-posts",
       "name": "Block unauthorized multi-channel posts by Hermes Agent",
       "category": "Nous Research Hermes Agent Governance",
