@@ -216,6 +216,93 @@ function compactSymbolicTaskCanvas(entries = [], options = {}) {
   };
 }
 
+function isPositiveInt(value) {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0;
+}
+
+function buildMatryoshkaEmbeddingReport(options = {}) {
+  const defaults = {
+    fullDimension: 1536,
+    targetDimensions: [768, 512, 256, 128],
+    itemCount: 1000,
+  };
+
+  const fullDimensionRaw = options.fullDimension == null ? defaults.fullDimension : options.fullDimension;
+  if (!isPositiveInt(fullDimensionRaw)) {
+    throw new Error('matryoshkaOptions.fullDimension must be a positive integer');
+  }
+  const fullDimension = Number(fullDimensionRaw);
+
+  const itemsRaw = options.itemCount == null ? defaults.itemCount : options.itemCount;
+  if (!isPositiveInt(itemsRaw)) {
+    throw new Error('matryoshkaOptions.itemCount must be a positive integer');
+  }
+  const items = Number(itemsRaw);
+
+  let targetDimensions;
+  if (Array.isArray(options.targetDimensions) && options.targetDimensions.length > 0) {
+    targetDimensions = options.targetDimensions.map(Number);
+    for (const dim of targetDimensions) {
+      if (!isPositiveInt(dim)) {
+        throw new Error('matryoshkaOptions.targetDimensions must be positive integers');
+      }
+      if (dim > fullDimension) {
+        throw new Error('matryoshkaOptions.targetDimensions must be <= fullDimension');
+      }
+    }
+  } else {
+    targetDimensions = defaults.targetDimensions.filter((dim) => dim <= fullDimension);
+  }
+
+  if (targetDimensions.length === 0) {
+    throw new Error('matryoshkaOptions.targetDimensions must include at least one valid dimension');
+  }
+
+  const baselineBytes = items * fullDimension * 4;
+  const qualityVerified = options.qualityVerified === true
+    && options.behaviorPreserved === true
+    && Number.isFinite(Number(options.accuracyLossEstimatePct));
+
+  const tiers = targetDimensions.map((dim) => {
+    const dimBytes = items * dim * 4;
+    const reductionRatio = baselineBytes > 0 ? (baselineBytes - dimBytes) / baselineBytes : 0;
+    return {
+      dimension: dim,
+      bytesPerItem: dim * 4,
+      totalBytes: dimBytes,
+      reductionPercent: Number((reductionRatio * 100).toFixed(1)),
+      estimatedMemorySavingsBytes: Math.max(0, baselineBytes - dimBytes),
+      recommendedUsage:
+        dim <= 256
+          ? 'Fast coarse vector filtering & initial top-K candidate pooling'
+          : 'High-precision re-ranking & final gate evaluation',
+    };
+  });
+
+  return {
+    kind: 'matryoshka-embedding-compaction',
+    strategy: 'matryoshka-representation-learning-mrl',
+    fullDimension,
+    itemCount: items,
+    baselineTotalBytes: baselineBytes,
+    qualityContract: qualityVerified
+      ? {
+        behaviorPreserved: true,
+        accuracyLossEstimatePct: `${Number(options.accuracyLossEstimatePct)}%`,
+        verified: true,
+        reason: 'Provider-specific golden evaluation met required recall/precision thresholds.',
+      }
+      : {
+        behaviorPreserved: false,
+        accuracyLossEstimatePct: 'unverified',
+        verified: false,
+        reason: 'Quality unverified: no provider-specific Matryoshka golden evaluation evidence was supplied. Do not treat truncation as behavior-preserving until deterministic RAG eval meets required thresholds.',
+      },
+    tiers,
+  };
+}
+
 function buildContextFootprintReport(options = {}) {
   const targetReduction = normalizeRatio(options.targetReduction);
   const report = {
@@ -228,6 +315,7 @@ function buildContextFootprintReport(options = {}) {
       'Keep gate ids, proof URLs, and anchor lessons stable so compaction does not hide evidence.',
       'Track estimated token savings beside every optimized context path.',
       'Offload verbose raw logs into a Symbolic Task Canvas (Mermaid state graph) to save ~60% tokens.',
+      'Truncate Matryoshka vector embeddings (1536d -> 256d) for fast coarse filtering, reserving full dimensions for final re-ranking.',
     ],
   };
 
@@ -264,6 +352,12 @@ function buildContextFootprintReport(options = {}) {
     );
   }
 
+  if (options.matryoshkaEmbedding || options.matryoshkaOptions) {
+    report.matryoshkaEmbedding = buildMatryoshkaEmbeddingReport(
+      typeof options.matryoshkaOptions === 'object' ? options.matryoshkaOptions : {},
+    );
+  }
+
   return report;
 }
 
@@ -276,6 +370,8 @@ module.exports = {
   buildFeedbackContextFootprintReport,
   renderSymbolicTaskCanvas,
   compactSymbolicTaskCanvas,
+  buildMatryoshkaEmbeddingReport,
   buildContextFootprintReport,
 };
+
 

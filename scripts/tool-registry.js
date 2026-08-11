@@ -385,6 +385,44 @@ const TOOLS = [
           type: 'number',
           description: 'Optional total character budget for compacted feedback entries.',
         },
+        matryoshkaEmbedding: {
+          type: 'boolean',
+          description: 'When true, include Matryoshka embedding compaction footprint tiers. Default: true for MCP plan_context_footprint.',
+        },
+        matryoshkaOptions: {
+          type: 'object',
+          description: 'Optional Matryoshka compaction knobs. Invalid dimensions/counts are rejected.',
+          properties: {
+            fullDimension: {
+              type: 'integer',
+              minimum: 1,
+              description: 'Full embedding dimension before truncation. Default: 1536.',
+            },
+            targetDimensions: {
+              type: 'array',
+              description: 'Truncation tiers to plan (each <= fullDimension). Default: [768,512,256,128].',
+              items: { type: 'integer', minimum: 1 },
+            },
+            itemCount: {
+              type: 'integer',
+              minimum: 1,
+              description: 'Number of vectors for memory estimates. Default: 1000.',
+            },
+            qualityVerified: {
+              type: 'boolean',
+              description: 'Set true only when provider-specific golden RAG eval evidence is available.',
+            },
+            behaviorPreserved: {
+              type: 'boolean',
+              description: 'Must be true with qualityVerified to claim behavior preservation.',
+            },
+            accuracyLossEstimatePct: {
+              type: 'number',
+              description: 'Measured accuracy loss percent from golden eval (only used when qualityVerified).',
+            },
+          },
+          additionalProperties: false,
+        },
       },
     },
   }),

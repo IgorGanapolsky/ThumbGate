@@ -1600,6 +1600,8 @@ async function callToolInner(name, args) {
         windowSize: args.windowSize,
         perEntryMaxChars: args.perEntryMaxChars,
         totalMaxChars: args.totalMaxChars,
+        matryoshkaEmbedding: args.matryoshkaEmbedding !== false,
+        matryoshkaOptions: args.matryoshkaOptions || undefined,
       }));
     case 'plan_agent_design_governance':
       return toTextResult(buildAgentDesignGovernancePlan(args));

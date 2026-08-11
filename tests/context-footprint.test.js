@@ -10,6 +10,7 @@ const {
   buildFeedbackContextFootprintReport,
   renderSymbolicTaskCanvas,
   compactSymbolicTaskCanvas,
+  buildMatryoshkaEmbeddingReport,
   buildContextFootprintReport,
 } = require('../scripts/context-footprint');
 
@@ -117,13 +118,56 @@ describe('context-footprint', () => {
       entries: [makeEntry('e1', 'short'), makeEntry('e2', 'x'.repeat(1000))],
       symbolicCanvas: true,
       perEntryMaxChars: 100,
+      matryoshkaEmbedding: true,
     });
 
     assert.equal(report.name, 'thumbgate-context-footprint');
     assert.ok(report.mcpToolDiscovery);
     assert.ok(report.feedbackContext);
     assert.ok(report.symbolicTaskCanvas);
-    assert.ok(report.recommendations.some((item) => item.includes('tool index')));
+    assert.ok(report.matryoshkaEmbedding);
+    assert.ok(report.recommendations.some((item) => item.includes('Matryoshka')));
+  });
+
+  it('builds Matryoshka embedding compaction report with tiered memory savings', () => {
+    const report = buildMatryoshkaEmbeddingReport({
+      fullDimension: 1536,
+      targetDimensions: [768, 512, 256, 128],
+      itemCount: 500,
+    });
+
+    assert.equal(report.kind, 'matryoshka-embedding-compaction');
+    assert.equal(report.fullDimension, 1536);
+    assert.equal(report.tiers.length, 4);
+    assert.equal(report.tiers[2].dimension, 256);
+    assert.ok(report.tiers[2].reductionPercent > 80);
+    assert.equal(report.qualityContract.verified, false);
+    assert.equal(report.qualityContract.behaviorPreserved, false);
+    assert.equal(report.qualityContract.accuracyLossEstimatePct, 'unverified');
+  });
+
+  it('rejects invalid Matryoshka dimensions and item counts', () => {
+    assert.throws(() => buildMatryoshkaEmbeddingReport({ fullDimension: -3 }), /fullDimension/);
+    assert.throws(() => buildMatryoshkaEmbeddingReport({ itemCount: -2 }), /itemCount/);
+    assert.throws(
+      () => buildMatryoshkaEmbeddingReport({ fullDimension: 128, targetDimensions: [9999, 'x'] }),
+      /targetDimensions/,
+    );
+  });
+
+  it('only claims behavior preservation when quality evidence is supplied', () => {
+    const report = buildMatryoshkaEmbeddingReport({
+      fullDimension: 1536,
+      targetDimensions: [256],
+      itemCount: 10,
+      qualityVerified: true,
+      behaviorPreserved: true,
+      accuracyLossEstimatePct: 1.2,
+    });
+    assert.equal(report.qualityContract.verified, true);
+    assert.equal(report.qualityContract.behaviorPreserved, true);
+    assert.equal(report.qualityContract.accuracyLossEstimatePct, '1.2%');
   });
 });
+
 
