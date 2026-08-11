@@ -655,8 +655,9 @@ function scoreRelevance(memory, toolName, actionContext, actionSig) {
   if (memory.tags?.includes('negative')) score += 0.1;
 
   if (memory.timestamp || memory.receivedAt || memory.created_at) {
-    // Half-life temporal decay (scripts/temporal-decay-weighting.js). Falls back
-    // to the legacy linear window only when the half-life path cannot run.
+    // Half-life temporal decay (scripts/temporal-decay-weighting.js), applied as
+    // a recency *factor* with the legacy 0.5 floor so old-but-still-valid
+    // lessons remain retrievable (pure exp decay zeroed fixtures in CI).
     const stamp = memory.timestamp || memory.receivedAt || memory.created_at;
     const halfLifeMs =
       Number.isFinite(Number(process.env.THUMBGATE_RETRIEVAL_HALF_LIFE_MS)) &&
@@ -665,7 +666,8 @@ function scoreRelevance(memory, toolName, actionContext, actionSig) {
         : DEFAULT_HALF_LIFE_MS;
     const activeMode = process.env.THUMBGATE_RETRIEVAL_ACTIVE_MODE === '1';
     try {
-      score = applyTemporalDecay(score, stamp, halfLifeMs, activeMode);
+      const factor = applyTemporalDecay(1, stamp, halfLifeMs, activeMode);
+      score *= 0.5 + 0.5 * Math.max(0, Math.min(1, factor));
     } catch {
       const ageMs = Date.now() - new Date(stamp).getTime();
       const ageDays = ageMs / (1000 * 60 * 60 * 24);
