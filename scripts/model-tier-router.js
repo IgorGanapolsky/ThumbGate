@@ -269,6 +269,19 @@ class FrontierBudget {
   }
 }
 
+function isSwitchyardEnabled(task = {}, env = process.env) {
+  const flag = String(env.THUMBGATE_SWITCHYARD || '').trim().toLowerCase();
+  if (flag === '1' || flag === 'true' || flag === 'yes' || flag === 'on') return true;
+  const tags = Array.isArray(task.tags) ? task.tags.map((t) => String(t).toLowerCase()) : [];
+  return Boolean(
+    Array.isArray(task.steps) && task.steps.length > 0
+    || tags.includes('switchyard')
+    || tags.includes('multi-model')
+    || tags.includes('nemotron')
+    || tags.includes('always-on'),
+  );
+}
+
 function recommendExecutionPlan(task = {}, env = process.env) {
   const classification = classifyTask(task);
   const inference = recommendInferenceBackend(task, env);
@@ -280,7 +293,7 @@ function recommendExecutionPlan(task = {}, env = process.env) {
     ? 'localFrontier'
     : classification.tier;
 
-  return {
+  const plan = {
     architecture: 'risk-aware-model-routing',
     mixtureOfExperts: false,
     tier: effectiveTier,
@@ -295,6 +308,32 @@ function recommendExecutionPlan(task = {}, env = process.env) {
     indexCacheEnabled: inference.backend.indexCacheEnabled,
     reason: `${classification.reason}; ${inference.reason}`,
   };
+
+  // Optional NeMo Switchyard–style multi-model step plan (opt-in).
+  if (isSwitchyardEnabled(task, env)) {
+    try {
+      const {
+        routeAgentSteps,
+        buildAlwaysOnAgentPlan,
+      } = require('./switchyard-router');
+      const steps = Array.isArray(task.steps) && task.steps.length
+        ? task.steps
+        : buildAlwaysOnAgentPlan({
+          sensitive: task.privacyRoute === 'local' || task.sensitive,
+          highVolume: task.highVolume || task.costPriority === 'primary',
+          riskLevel: task.riskLevel,
+          actType: task.type,
+        });
+      const switchyard = routeAgentSteps(steps);
+      plan.switchyard = switchyard;
+      plan.multiModel = switchyard.multiModel;
+      plan.reason = `${plan.reason}; switchyard models=${switchyard.distinctModels.join(',')}`;
+    } catch {
+      // Switchyard optional; never break baseline routing.
+    }
+  }
+
+  return plan;
 }
 
 // ---------------------------------------------------------------------------
@@ -570,6 +609,7 @@ module.exports = {
   shouldEscalate,
   FrontierBudget,
   recommendExecutionPlan,
+  isSwitchyardEnabled,
   inferProvider,
   normalizeGenerationResult,
   resolveGenerationTarget,

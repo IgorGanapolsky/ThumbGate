@@ -404,6 +404,28 @@
       "costClass": "low",
       "strengths": ["context-structuring", "skill-synthesis", "MCP-governance", "agentic-coding", "tool-use", "reliability"],
       "notes": "Model optimized for the Hugging Face Context Course curriculum — context engineering for AI code agents (Claude Code, Codex, OpenCode). Excels at structuring knowledge so agents find context efficiently. Evaluated on MCP tool governance, skill synthesis validation, and hook-based lifecycle automation. See docs/guides/huggingface-context-course-governance.md and adapters/huggingface-context-course/."
+    },
+    {
+      "id": "nvidia/nemotron-3.5-lightning",
+      "vendor": "NVIDIA",
+      "family": "nemotron",
+      "provider": "nvidia",
+      "model": "nemotron-3.5-lightning",
+      "contextWindow": 128000,
+      "costClass": "low",
+      "strengths": ["fast-inference", "cost-efficiency", "tool-use", "reliability", "agentic-coding"],
+      "notes": "Nemotron 3.5 Lightning: open 30B MoE with ~3B active params for specialized always-on agent steps (intent, gate, classify). Pair with NeMo Switchyard-style multi-model step routing in scripts/switchyard-router.js. Not a single-model solution for whole agent runs."
+    },
+    {
+      "id": "nvidia/nemo-switchyard",
+      "vendor": "NVIDIA",
+      "family": "routing",
+      "provider": "nvidia",
+      "model": "nemo-switchyard",
+      "contextWindow": 64000,
+      "costClass": "low",
+      "strengths": ["tool-use", "reliability", "cost-efficiency", "multi-agent", "orchestration"],
+      "notes": "NeMo Switchyard: build and evaluate routing algorithms across a chosen model pool. ThumbGate implements the governance layer (routeAgentSteps + evaluateRoutingAlgorithm + multi-model gates). Use when complex agentic tasks would otherwise run on one expensive frontier model end-to-end."
     }
   ]
 }
