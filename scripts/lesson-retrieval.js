@@ -228,21 +228,25 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
 
   const actionSig = buildActionSignature(toolName, actionContext);
 
-  // Stage 1 — local first-stage score, take top-50 candidates
-  const candidates = memories
+  // Stage 1 — local first-stage score, then a dedupe-aware pool cut. Collapsing
+  // near-duplicate clusters BEFORE the top-50 cut keeps a dense cluster from
+  // crowding genuinely distinct lessons out of the reranker's candidate pool.
+  const scored = memories
     .map((mem) => ({
       ...mem,
       relevanceScore: scoreRelevance(mem, toolName, actionContext, actionSig),
     }))
     .filter((m) => m.relevanceScore > 0.1)
-    .sort((a, b) => b.relevanceScore - a.relevanceScore)
-    .slice(0, RERANK_CANDIDATE_POOL);
+    .sort((a, b) => b.relevanceScore - a.relevanceScore);
+  const candidates = dedupeCandidatePool(scored);
 
   if (candidates.length === 0) return [];
 
-  // Stage 2 — field-aware BM25F reranker (not a neural cross-encoder)
+  // Stage 2 — field-aware BM25F reranker (not a neural cross-encoder). Over-fetch
+  // 2× so a post-rerank dedupe collapse backfills from ranked survivors instead of
+  // under-filling the caller's slot budget (mirrors the pragmatic path's topK).
   const reranked = rerankLessons(actionContext, candidates, {
-    topK: maxResults,
+    topK: Math.max(maxResults * 2, maxResults),
     toolName,
   });
 
@@ -251,7 +255,7 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
   const deduped = dedupeSupersededLessons(reranked);
   const selected = filterTopP(deduped, resolveTopP(options), { minKeep: options.minKeep });
 
-  const shaped = selected.map((m) => ({
+  const shaped = selected.slice(0, maxResults).map((m) => ({
     id: m.id,
     title: m.title,
     content: m.content,
@@ -434,8 +438,10 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
   if (conclusive) {
     // Short-circuit: skip embedding/dense search completely
     const { rerankLessons } = require('./lesson-reranker');
-    const reranked = rerankLessons(actionContext, lexicalScored.slice(0, RERANK_CANDIDATE_POOL), { topK: maxResults, toolName });
-    return filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep }).map(shapeLesson);
+    const reranked = rerankLessons(actionContext, dedupeCandidatePool(lexicalScored), { topK: Math.max(maxResults * 2, maxResults), toolName });
+    return filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep })
+      .slice(0, maxResults)
+      .map(shapeLesson);
   }
 
   const queryPlan = lexicalScored[0]?.relevanceScore >= (options.rewriteBelowScore ?? 0.6)
@@ -558,8 +564,8 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
   const lexById = new Map(lexicalScored.map((m) => [m.id, m.relevanceScore]));
   const topFusedScore = fused[0].score || 1;
 
-  const candidates = fused
-    .slice(0, RERANK_CANDIDATE_POOL)
+  const candidates = dedupeCandidatePool(fused
+    .slice(0, RERANK_CANDIDATE_POOL * 2)
     .map((entry) => {
       const mem = byId.get(entry.id);
       if (!mem) return null;
@@ -571,13 +577,15 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
         : entry.score / topFusedScore;
       return { ...mem, relevanceScore };
     })
-    .filter(Boolean);
+    .filter(Boolean));
 
   if (candidates.length === 0) return [];
 
   const { rerankLessons } = require('./lesson-reranker');
-  const reranked = rerankLessons(actionContext, candidates, { topK: maxResults, toolName });
-  const rows = filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep }).map(shapeLesson);
+  const reranked = rerankLessons(actionContext, candidates, { topK: Math.max(maxResults * 2, maxResults), toolName });
+  const rows = filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep })
+    .slice(0, maxResults)
+    .map(shapeLesson);
   return attachArrayRetrievalMeta(rows, {
     strategy: 'hybrid-rrf+bm25',
     indexUpdatedAtMs: options.indexUpdatedAtMs ?? null,
@@ -791,6 +799,24 @@ function dedupeSupersededLessons(lessons, options = {}) {
   return kept.map((idx) => lessons[idx]);
 }
 
+/**
+ * Dedupe-aware candidate-pool cut. dedupeSupersededLessons() historically ran only
+ * AFTER the RERANK_CANDIDATE_POOL cut, so a dense cluster of near-duplicate lessons
+ * could fill the pool and crowd genuinely distinct lessons out before dedupe ever
+ * saw them. Collapse duplicates over a bounded window (pool × 2, keeping the O(n²)
+ * bigram pass cheap in the hook's hot path) BEFORE cutting to pool size. Clusters
+ * larger than the window can still crowd; store compaction is the durable fix.
+ *
+ * @param {Array<object>} scored - candidates sorted best-first
+ * @param {number} [pool=RERANK_CANDIDATE_POOL] - final pool size
+ * @returns {Array<object>} deduped best-first list, at most `pool` long
+ */
+function dedupeCandidatePool(scored, pool = RERANK_CANDIDATE_POOL) {
+  if (!Array.isArray(scored) || scored.length === 0) return [];
+  const bound = Math.max(1, Math.floor(pool));
+  return dedupeSupersededLessons(scored.slice(0, bound * 2)).slice(0, bound);
+}
+
 function calculateRetrievalEntropy(lessons) {
   if (!Array.isArray(lessons) || lessons.length === 0) return 0;
   let pW = 0, nW = 0, tW = 0;
@@ -817,6 +843,7 @@ module.exports = {
   filterTopP,
   resolveTopP,
   dedupeSupersededLessons,
+  dedupeCandidatePool,
   isRetrievableMemory,
   selectRetrievalMemories,
   matchesMetadataFilters,
