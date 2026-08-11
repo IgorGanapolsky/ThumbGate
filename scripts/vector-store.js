@@ -50,14 +50,19 @@ function l2NormalizeVector(vector) {
 }
 
 function resolveOutputDimensionality(options = {}, env = process.env) {
+  const provider = String(options.provider || options.embeddingProvider || '').toLowerCase();
+  const geminiOnly = provider === 'gemini' || options.geminiManaged === true;
   const candidates = [
     options.outputDimensionality,
     options.dimensions,
     options.matryoshkaDim,
     env.THUMBGATE_MATRYOSHKA_DIM,
     env.THUMBGATE_EMBED_DIM,
-    env.THUMBGATE_GEMINI_EMBED_DIM,
   ];
+  // Gemini-only dim must not reshape Ollama / transformers / feature-hash vectors.
+  if (geminiOnly) {
+    candidates.push(env.THUMBGATE_GEMINI_EMBED_DIM);
+  }
   for (const candidate of candidates) {
     if (candidate === undefined || candidate === null || candidate === '') continue;
     const parsed = Number(candidate);
@@ -468,7 +473,7 @@ async function embed(text, options = {}) {
   }
   if (geminiConfig.enabled) {
     const vector = await tryGeminiManagedEmbedding(text, options, geminiConfig);
-    if (vector) return finalizeEmbedding(vector, options);
+    if (vector) return finalizeEmbedding(vector, { ...options, provider: 'gemini', geminiManaged: true });
   }
   if (hasLocalTransformerProvider()) {
     try {
@@ -488,7 +493,7 @@ async function embed(text, options = {}) {
   // so that THUMBGATE_GEMINI_EMBED_FALLBACK_LOCAL=false makes Gemini mandatory.
   if (geminiConfig.apiKey && !geminiConfig.enabled) {
     const vector = await tryGeminiManagedEmbedding(text, options, geminiConfig);
-    if (vector) return finalizeEmbedding(vector, options);
+    if (vector) return finalizeEmbedding(vector, { ...options, provider: 'gemini', geminiManaged: true });
   }
 
   const vector = embedWithFeatureHash(text);
@@ -509,6 +514,59 @@ async function embed(text, options = {}) {
     fallbackReason: 'no_managed_or_transformer_embedder',
   };
   return finalizeEmbedding(vector, options);
+}
+
+
+async function ensureTableCompatibleWithVector(db, vector) {
+  const dim = Array.isArray(vector) ? vector.length : 0;
+  if (!dim) return;
+  const tableNames = await db.tableNames();
+  if (!tableNames.includes(TABLE_NAME)) return;
+  try {
+    const table = await db.openTable(TABLE_NAME);
+    // Probe one row for stored vector length when available.
+    let storedDim = null;
+    if (typeof table.countRows === 'function') {
+      const count = await table.countRows();
+      if (count === 0) return;
+    }
+    if (typeof table.query === 'function') {
+      try {
+        const rows = await table.query().limit(1).toArray();
+        if (rows && rows[0] && Array.isArray(rows[0].vector)) {
+          storedDim = rows[0].vector.length;
+        }
+      } catch {
+        /* fall through to schema path */
+      }
+    }
+    if (storedDim == null && table.schema) {
+      try {
+        const schema = typeof table.schema === 'function' ? await table.schema() : table.schema;
+        const vectorField = schema && (schema.fields || schema).find
+          ? (schema.fields || schema).find((f) => f.name === 'vector' || f.name === 'embedding')
+          : null;
+        if (vectorField && vectorField.type && Number(vectorField.type.listSize || vectorField.type.length)) {
+          storedDim = Number(vectorField.type.listSize || vectorField.type.length);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    if (storedDim != null && storedDim !== dim) {
+      console.warn(
+        `[vector-store] Embedding dimension changed (${storedDim} -> ${dim}); dropping ${TABLE_NAME} for full reindex.`,
+      );
+      if (typeof db.dropTable === 'function') {
+        await db.dropTable(TABLE_NAME);
+      } else if (typeof table.delete === 'function') {
+        // Best-effort wipe when drop is unavailable.
+        await table.delete('true');
+      }
+    }
+  } catch (err) {
+    console.warn(`[vector-store] dimension compatibility check failed: ${err && err.message ? err.message : err}`);
+  }
 }
 
 async function upsertFeedback(feedbackEvent) {
@@ -554,6 +612,7 @@ async function upsertFeedback(feedbackEvent) {
     retries: 2,
     logger: (msg) => console.warn(msg),
   }, async () => {
+    await ensureTableCompatibleWithVector(db, vector);
     const tableNames = await db.tableNames();
     if (tableNames.includes(TABLE_NAME)) {
       const table = await db.openTable(TABLE_NAME);
@@ -578,6 +637,9 @@ async function searchSimilar(queryText, limit = 5) {
     kind: 'query',
     task: 'code retrieval',
   });
+  await ensureTableCompatibleWithVector(db, vector);
+  const tableNamesAfter = await db.tableNames();
+  if (!tableNamesAfter.includes(TABLE_NAME)) return [];
   const table = await db.openTable(TABLE_NAME);
   const results = await table.search(vector).limit(limit).toArray();
   return results;

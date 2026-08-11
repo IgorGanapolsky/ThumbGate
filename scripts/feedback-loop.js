@@ -1536,6 +1536,61 @@ function captureFeedback(params) {
     };
   }
 
+  // Lifecycle hard blocks (transport transcripts, oversized blobs, secret-like
+  // content) must reject promotion before memory-log writes. evaluateMemoryPromotion
+  // is the production gate for rejectTransportTranscripts / rejectOversizedBlobs.
+  try {
+    const { evaluateMemoryPromotion } = require('./agent-memory-lifecycle');
+    const lifecycle = evaluateMemoryPromotion({
+      type: action.memory && action.memory.type,
+      content: [
+        action.memory && action.memory.title,
+        action.memory && action.memory.content,
+        context,
+        whatWentWrong,
+        whatWorked,
+        whatToChange,
+      ].filter(Boolean).join('\n'),
+      source: feedbackEvent.sourceEvent || feedbackEvent.id || 'capture_feedback',
+      outcome: whatWorked || whatWentWrong || action.reason || null,
+      explicitUserSignal: signal === 'positive' || signal === 'negative',
+      allowWorkingPromotion: false,
+    });
+    if (lifecycle && lifecycle.decision !== 'promote') {
+      const hardIssues = (lifecycle.issues || []).filter((issue) =>
+        issue === 'transport_transcript'
+        || issue === 'oversized_blob'
+        || issue === 'secret_like_content'
+      );
+      if (hardIssues.length > 0) {
+        summary.rejected += 1;
+        summary.lastUpdated = now;
+        saveSummary(summary);
+        const blockedEvent = {
+          ...feedbackEvent,
+          lifecycleDecision: lifecycle.decision,
+          lifecycleIssues: lifecycle.issues,
+        };
+        appendJSONL(FEEDBACK_LOG_PATH, blockedEvent);
+        emitAnonymousFeedbackPing(signal);
+        return {
+          accepted: true,
+          captured: true,
+          promoted: false,
+          promotionAccepted: false,
+          signalLogged: true,
+          status: 'rejected',
+          reason: `Memory lifecycle blocked promotion: ${hardIssues.join(', ')}`,
+          message: 'Signal logged, but reusable memory was not created (lifecycle policy).',
+          feedbackEvent: blockedEvent,
+          lifecycle,
+        };
+      }
+    }
+  } catch (_lifecycleErr) {
+    /* lifecycle evaluation is fail-open for soft issues only; hard path above is explicit */
+  }
+
   const prepared = prepareForStorage(action.memory);
   if (!prepared.ok) {
     const firewallBlocked = maybeBlockMemoryIngress({ feedbackEvent, summary, now });
