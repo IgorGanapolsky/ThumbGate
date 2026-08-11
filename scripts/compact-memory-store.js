@@ -11,17 +11,19 @@
  *   node scripts/compact-memory-store.js --apply           # writes, after backup
  *   node scripts/compact-memory-store.js --dir=/some/dir   # override feedback dir
  *   node scripts/compact-memory-store.js --threshold=0.9
+ *
+ * Safe against concurrent writers: --apply commits via compare-and-swap and
+ * retries, so a record appended mid-compaction is never lost (worst case the
+ * run reports contended:true and changes nothing).
  */
 
 const fs = require('fs');
 const path = require('path');
 const { clusterNearDupeMemories } = require('./memory-near-dupe');
 
-function readJsonlRecords(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const lines = fs.readFileSync(filePath, 'utf8').split('\n');
+function parseJsonlRaw(raw) {
   const records = [];
-  for (const line of lines) {
+  for (const line of String(raw).split('\n')) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     try {
@@ -34,6 +36,29 @@ function readJsonlRecords(filePath) {
   return records;
 }
 
+function readJsonlRecords(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  return parseJsonlRaw(fs.readFileSync(filePath, 'utf8'));
+}
+
+/**
+ * Compare-and-swap replacement for the memory log. Commits only when the file
+ * still matches the raw content the clustering ran against, so a record
+ * appended by a concurrent writer between read and commit is never clobbered.
+ * The replacement itself is a tmp-write + atomic rename.
+ */
+function commitIfUnchanged(filePath, expectedRaw, newRaw, backupPath) {
+  const currentRaw = fs.readFileSync(filePath, 'utf8');
+  if (currentRaw !== expectedRaw) return false;
+  fs.copyFileSync(filePath, backupPath);
+  const tmpPath = `${filePath}.compact-tmp-${process.pid}`;
+  fs.writeFileSync(tmpPath, newRaw);
+  fs.renameSync(tmpPath, filePath);
+  return true;
+}
+
+const MAX_COMMIT_ATTEMPTS = 3;
+
 function resolveMemoryLogPath(dir) {
   if (dir) return path.join(dir, 'memory-log.jsonl');
   const { getFeedbackPaths } = require('./feedback-loop');
@@ -42,28 +67,39 @@ function resolveMemoryLogPath(dir) {
 
 function compactMemoryStore(options = {}) {
   const memoryLogPath = resolveMemoryLogPath(options.dir);
-  const before = readJsonlRecords(memoryLogPath);
-  const { records, stats } = clusterNearDupeMemories(before, {
-    similarityThreshold: options.similarityThreshold,
-  });
   const report = {
     memoryLogPath,
-    before: before.length,
-    after: records.length,
-    merged: stats.merged,
+    before: 0,
+    after: 0,
+    merged: 0,
     applied: false,
+    contended: false,
     backupPath: null,
   };
-  if (options.apply && records.length < before.length) {
+  if (!fs.existsSync(memoryLogPath)) return report;
+
+  for (let attempt = 0; attempt < MAX_COMMIT_ATTEMPTS; attempt++) {
+    const raw = fs.readFileSync(memoryLogPath, 'utf8');
+    const before = parseJsonlRaw(raw);
+    const { records } = clusterNearDupeMemories(before, {
+      similarityThreshold: options.similarityThreshold,
+    });
+    report.before = before.length;
+    report.after = records.length;
+    report.merged = before.length - records.length;
+    if (!options.apply || records.length >= before.length) return report;
+
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    report.backupPath = memoryLogPath.replace(/\.jsonl$/, `.pre-compact-${stamp}.jsonl`);
-    fs.copyFileSync(memoryLogPath, report.backupPath);
-    fs.writeFileSync(
-      memoryLogPath,
-      records.map((record) => JSON.stringify(record)).join('\n') + (records.length ? '\n' : ''),
-    );
-    report.applied = true;
+    const backupPath = memoryLogPath.replace(/\.jsonl$/, `.pre-compact-${stamp}.jsonl`);
+    const newRaw = records.map((record) => JSON.stringify(record)).join('\n') + (records.length ? '\n' : '');
+    if (commitIfUnchanged(memoryLogPath, raw, newRaw, backupPath)) {
+      report.applied = true;
+      report.backupPath = backupPath;
+      return report;
+    }
+    // A writer appended between read and commit — re-read and re-cluster.
   }
+  report.contended = true;
   return report;
 }
 
@@ -86,4 +122,4 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename
   }
 }
 
-module.exports = { compactMemoryStore, readJsonlRecords };
+module.exports = { compactMemoryStore, readJsonlRecords, commitIfUnchanged };

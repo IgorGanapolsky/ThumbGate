@@ -7,7 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const { clusterNearDupeMemories } = require('../scripts/memory-near-dupe');
-const { compactMemoryStore } = require('../scripts/compact-memory-store');
+const { compactMemoryStore, commitIfUnchanged } = require('../scripts/compact-memory-store');
 
 let counter = 0;
 function record(overrides = {}) {
@@ -159,4 +159,50 @@ test('compactMemoryStore handles a missing log gracefully', () => {
   assert.equal(report.before, 0);
   assert.equal(report.after, 0);
   assert.equal(report.applied, false);
+});
+
+test('distinct structured-rule conditions never merge even with identical prose', () => {
+  const mk = (id, cond) => record({ id, structuredRule: { trigger: { condition: cond } } });
+  const { records } = clusterNearDupeMemories([
+    mk('r1', 'renew lease before edits'),
+    mk('r2', 'archive branch before delete'),
+  ]);
+  assert.equal(records.length, 2);
+});
+
+test('records sharing a structured-rule condition still merge newest-first', () => {
+  const mk = (id, ts) => record({ id, timestamp: ts, structuredRule: { trigger: { condition: 'renew lease before edits' } } });
+  const { records } = clusterNearDupeMemories([
+    mk('r1', '2026-08-01T10:00:00.000Z'),
+    mk('r2', '2026-08-02T10:00:00.000Z'),
+  ]);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].id, 'r2');
+  assert.equal(records[0].occurrences, 2);
+});
+
+test('legacy records hash-merge via the record object', () => {
+  const mk = (id) => ({
+    id,
+    title: '',
+    content: '',
+    whatToChange: 'Renew the scope lease before continuing edits on shared repos.',
+    signal: 'negative',
+    timestamp: '2026-08-01T10:00:00.000Z',
+  });
+  const { records } = clusterNearDupeMemories([mk('h1'), mk('h2')]);
+  assert.equal(records.length, 1);
+});
+
+test('commitIfUnchanged refuses to clobber a concurrent append', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-compact-'));
+  const logPath = path.join(dir, 'memory-log.jsonl');
+  fs.writeFileSync(logPath, 'line-one\n');
+  const expectedRaw = fs.readFileSync(logPath, 'utf8');
+  fs.appendFileSync(logPath, 'line-two\n');
+  const backupPath = path.join(dir, 'backup.jsonl');
+  const committed = commitIfUnchanged(logPath, expectedRaw, 'compacted\n', backupPath);
+  assert.equal(committed, false);
+  assert.equal(fs.readFileSync(logPath, 'utf8'), 'line-one\nline-two\n');
+  assert.equal(fs.existsSync(backupPath), false);
 });
