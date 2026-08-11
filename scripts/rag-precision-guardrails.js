@@ -2,6 +2,7 @@
 'use strict';
 
 const { listGateTemplates } = require('./gate-templates');
+const { buildMatryoshkaConfig } = require('./matryoshka-embedding');
 
 const DOCUMENT_RAG_CATEGORY = 'Document RAG Safety';
 const PRECISION_TEMPLATE_IDS = new Set([
@@ -304,6 +305,13 @@ function buildRagPrecisionGuardrailsPlan(rawOptions = {}, templatesPath) {
     },
     signals,
     templates,
+    matryoshka: options.matryoshkaTruncation
+      ? buildMatryoshkaConfig({
+        embeddingDim: options.newDim || options.baselineDim || 768,
+        embeddingModel: options.newModel || options.baselineModel || undefined,
+        provider: options.newProvider || options.baselineProvider || undefined,
+      })
+      : null,
     nextActions: [
       'Save baseline recall@k, precision@k, answer-with-evidence, and latency before tuning retrieval.',
       'Treat embedding model choice as a first-class change: re-index, re-measure, and keep a rollback provider fingerprint.',
