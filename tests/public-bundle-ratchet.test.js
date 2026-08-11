@@ -181,6 +181,8 @@ const path = require('node:path');
 // packaged RAG precision guardrails. Keep lockstep with package-boundary (435).
 // 435 -> 436 (2026-08-11): session-lease ships checkout collision protection
 // in the installed Reliability Gateway. Exact measured artifact, no headroom.
+||||||| f1b48e78a
+const BASELINE_FILE_COUNT = 435;
 const BASELINE_FILE_COUNT = 436;
 
 function readBundleSnapshot() {

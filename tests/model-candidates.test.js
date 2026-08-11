@@ -40,6 +40,9 @@ test('model candidate catalog includes Kimi K2.6 and Qwen3.6 variants', () => {
   assert.ok(ids.has('vlt/vlt-vsr-self-hosted'));
   // Hugging Face Context Course model candidate
   assert.ok(ids.has('huggingface/context-engineering-agent'));
+  // NVIDIA Nemotron 3.5 Lightning + NeMo Switchyard
+  assert.ok(ids.has('nvidia/nemotron-3.5-lightning'));
+  assert.ok(ids.has('nvidia/nemo-switchyard'));
 });
 
 test('recommendCandidates prefers Nous Research Hermes for skill synthesis', () => {
