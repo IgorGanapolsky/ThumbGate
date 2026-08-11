@@ -6,7 +6,7 @@
  *
  * Capture-time synthesis merges near-dupes only over a recent window, so older
  * paraphrases of the same lesson accumulate as separate records — a July 2026
- * audit measured ~86% of promoted lessons as near-duplicates. Split records
+ * dogfood compaction runs routinely collapse a large majority of records. Split records
  * fragment occurrence counts (distorting shouldAutoPromote >= 3 and
  * prevention-rule scoring) and crowd retrieval candidate pools.
  *

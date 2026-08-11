@@ -3,10 +3,10 @@
 
 /**
  * Matryoshka Embedding Implementation for ThumbGate
- * 
+ *
  * Based on podcast insights from "The RAG Mistake Almost Every Team Is Making"
  * Episode #1017, featuring Pete Johnson (Field CTO, AI at MongoDB)
- * 
+ *
  * Matryoshka embeddings are nested representations where:
  * - Lower dimensions contain meaningful semantic information at multiple granularities
  * - Enables efficient retrieval without full-dimensional computation
@@ -51,7 +51,7 @@ function getSemanticScore(dim) {
 function classifyMemoryLayer(memory = {}) {
   const type = String(memory.type || 'episodic').toLowerCase();
   const content = String(memory.content || '').toLowerCase();
-  const tags = Array.isArray(memory.tags) 
+  const tags = Array.isArray(memory.tags)
     ? new Set(memory.tags.map(t => String(t).toLowerCase()))
     : new Set();
 
