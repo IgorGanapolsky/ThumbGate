@@ -1536,9 +1536,10 @@ function captureFeedback(params) {
     };
   }
 
-  // Lifecycle hard blocks (transport transcripts, oversized blobs, secret-like
-  // content) must reject promotion before memory-log writes. evaluateMemoryPromotion
-  // is the production gate for rejectTransportTranscripts / rejectOversizedBlobs.
+  // Lifecycle hard blocks for transport transcripts and oversized blobs must
+  // reject promotion before memory-log writes. Secret-like content intentionally
+  // continues to the ingress firewall below, which blocks all raw writes and
+  // emits only redacted diagnostics.
   try {
     const { evaluateMemoryPromotion } = require('./agent-memory-lifecycle');
     const lifecycle = evaluateMemoryPromotion({
@@ -1560,7 +1561,6 @@ function captureFeedback(params) {
       const hardIssues = (lifecycle.issues || []).filter((issue) =>
         issue === 'transport_transcript'
         || issue === 'oversized_blob'
-        || issue === 'secret_like_content'
       );
       if (hardIssues.length > 0) {
         summary.rejected += 1;
