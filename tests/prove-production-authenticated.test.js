@@ -274,6 +274,30 @@ test('proof accepts the public thumbgate.ai origin used by deploy workflows', as
   assert.equal(report.baseUrl, 'https://thumbgate.ai');
 });
 
+test('proof enforces the configured dashboard source', async () => {
+  const report = await runAuthenticatedProductionProof({
+    apiKey: 'secret-test-key',
+    baseUrl: DEFAULT_BASE_URL,
+    expectedSha: 'abc123',
+    expectedVersion: '1.32.0',
+    expectedDashboardSource: 'live',
+    maxAttempts: 1,
+    fetchImpl: async (url, options) => {
+      if (url.endsWith('/v1/dashboard')) {
+        const body = passingBody(url);
+        body.operational.source = 'local';
+        return response(200, body);
+      }
+      return passingFetch(url, options);
+    },
+  });
+
+  assert.equal(report.verdict, 'fail');
+  const dashboard = report.checks.find((check) => check.name === 'dashboard_data');
+  assert.equal(dashboard.ok, false);
+  assert.equal(dashboard.source, 'local');
+});
+
 test('buildProductionHostAllowlist includes Railway and public buyer hosts', () => {
   const hosts = buildProductionHostAllowlist();
   for (const host of DEFAULT_PRODUCTION_PROOF_HOSTS) {

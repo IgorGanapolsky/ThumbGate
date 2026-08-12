@@ -246,11 +246,7 @@ function buildChecks({
         const source = isObject(body.operational) ? body.operational.source : null;
         const approvalTotal = isObject(body.approval) ? body.approval.total : null;
         const totalGates = isObject(body.gateStats) ? body.gateStats.totalGates : null;
-        // Accept live or local: live Stripe can hang; local fail-fast still proves
-        // the dashboard assembly path is healthy on the deployed build.
-        const sourceOk = source === expectedDashboardSource
-          || source === 'local'
-          || source === 'live';
+        const sourceOk = source === expectedDashboardSource;
         return {
           valid: sourceOk
             && Number.isFinite(approvalTotal)
