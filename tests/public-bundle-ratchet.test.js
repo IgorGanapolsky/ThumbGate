@@ -184,7 +184,9 @@ const path = require('node:path');
 // Exact measured artifact, no spare headroom.
 // 436 -> 437 (2026-08-11): session-lease ships checkout collision protection
 // in the installed Reliability Gateway. Exact measured artifact, no headroom.
-const BASELINE_FILE_COUNT = 442;
+// 442 -> 449 (2026-08-12): commercial legal hygiene public pages + notices
+// (terms/privacy/support/third-party-notices + CONTRIBUTING/THIRD_PARTY_NOTICES).
+const BASELINE_FILE_COUNT = 449;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
