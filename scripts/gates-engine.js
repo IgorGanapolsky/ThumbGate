@@ -79,6 +79,7 @@ const { evaluateSequenceState } = loadOptionalModule('./sequence-guard', () => (
 }));
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
+const { consumeVerifiedApproval, listEscalations, requestEscalation } = require('./human-escalation');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'default.json');
 const DEFAULT_CLAIM_GATES_PATH = path.join(__dirname, '..', 'config', 'gates', 'claim-verification.json');
@@ -107,6 +108,7 @@ const GOVERNANCE_STATE_PATH = path.join(STATE_DIR, 'governance-state.json');
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
 const SESSION_ACTION_TTL_MS = 60 * 60 * 1000; // 1 hour
 const PROTECTED_APPROVAL_TTL_MS = 60 * 60 * 1000; // 1 hour
+const DEFAULT_ADMIN_OVERRIDE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const DEFAULT_PROTECTED_FILE_GLOBS = [
   'AGENTS.md',
   'CLAUDE.md',
@@ -169,9 +171,9 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   // applyEnforcementPosture, never demote spend blocks to warn-by-default.
   // Apollo $588 incident class (2026-08).
   'financial-control',
-  // Outbound email: irreversible delivery. Keep the human-approval checkpoint intact
-  // instead of demoting it to warn-by-default. Interactive runs may satisfy that
-  // checkpoint; autonomous runs still fail closed (AGENT-259 / District Cyber 2026-08-04).
+  // Outbound email: irreversible delivery. Keep the hard gate intact until a
+  // separately authenticated admin override bound to the exact action digest
+  // authorizes one retry (AGENT-259 / District Cyber 2026-08-04).
   'outbound-email-send',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
@@ -513,6 +515,115 @@ function saveGovernanceState(state) {
     workflowContract: state && state.workflowContract ? state.workflowContract : null,
   };
   saveJSON(module.exports.GOVERNANCE_STATE_PATH, next);
+}
+
+function stableCanonicalStringify(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableCanonicalStringify).join(',')}]`;
+  return `{${Object.keys(value).sort().map((key) => (
+    `${JSON.stringify(key)}:${stableCanonicalStringify(value[key])}`
+  )).join(',')}}`;
+}
+
+function actionApprovalDigest(toolName, toolInput) {
+  return crypto.createHash('sha256').update(stableCanonicalStringify({
+    toolInput: toolInput && typeof toolInput === 'object' ? toolInput : {},
+    toolName: String(toolName || ''),
+  })).digest('hex');
+}
+
+function adminOverrideTaskId(gateId, digest) {
+  return `admin-override:${gateId}:${digest}`;
+}
+
+function selectAdminOverrideAttempt(baseTaskId) {
+  const attempts = listEscalations().filter((entry) => (
+    entry.taskId === baseTaskId || String(entry.taskId || '').startsWith(`${baseTaskId}:attempt:`)
+  ));
+  const latest = attempts[0] || null;
+  if (!latest) return baseTaskId;
+  const terminal = ['rejected', 'cancelled', 'expired'].includes(latest.status)
+    || latest.eventType === 'consumed'
+    || Date.parse(latest.expiresAt) <= Date.now();
+  if (!terminal) return latest.taskId;
+  const highestAttempt = attempts.reduce((highest, entry) => {
+    const match = String(entry.taskId || '').match(/:attempt:(\d+)$/);
+    return Math.max(highest, match ? Number(match[1]) : 1);
+  }, 1);
+  return `${baseTaskId}:attempt:${highestAttempt + 1}`;
+}
+
+function evaluateAdminOverride(gate, toolName, toolInput) {
+  const policy = gate && gate.adminOverride;
+  if (!policy || policy.required !== true) return null;
+
+  const approvalContextDigest = actionApprovalDigest(toolName, toolInput);
+  const baseTaskId = adminOverrideTaskId(gate.id, approvalContextDigest);
+  let taskId;
+  try {
+    taskId = selectAdminOverrideAttempt(baseTaskId);
+  } catch {
+    return {
+      authorized: false,
+      approvalContextDigest,
+      escalationId: null,
+      taskId: baseTaskId,
+      approvalUnavailable: true,
+    };
+  }
+  const ttlMs = Math.min(
+    60 * 60 * 1000,
+    Math.max(60 * 1000, Number(policy.ttlMs) || DEFAULT_ADMIN_OVERRIDE_TTL_MS),
+  );
+  let escalation;
+  try {
+    escalation = requestEscalation({
+      taskId,
+      reason: `Admin override required for hard gate '${gate.id}'.`,
+      severity: gate.severity || 'critical',
+      requester: { id: 'thumbgate-gates-engine', kind: 'service' },
+      evidence: [`sha256:${approvalContextDigest}`],
+      ttlMs,
+      idempotencyKey: taskId,
+      approvalContextDigest,
+      requiredReviewerRole: 'admin',
+    });
+  } catch {
+    return {
+      authorized: false,
+      approvalContextDigest,
+      escalationId: null,
+      taskId,
+      approvalUnavailable: true,
+    };
+  }
+  const escalationId = escalation.escalation.escalationId;
+  let consumption = null;
+  try {
+    consumption = consumeVerifiedApproval(escalationId, {
+      consumer: { id: 'thumbgate-gates-engine', kind: 'service' },
+    });
+  } catch {
+    consumption = null;
+  }
+
+  if (!consumption || !consumption.consumed) {
+    return {
+      authorized: false,
+      approvalContextDigest,
+      escalationId,
+      taskId,
+      replayed: consumption?.replayed === true,
+    };
+  }
+  return {
+    authorized: true,
+    approvalContextDigest,
+    escalationId,
+    taskId,
+    approver: consumption.approval.actor,
+    consumptionReceipt: consumption.consumption.eventHash,
+  };
 }
 
 function setTaskScope(scopeInput = {}) {
@@ -1987,6 +2098,10 @@ function evaluateCatastrophicDeclarativeGate(config, constraints, toolName, tool
   for (const gate of config.gates) {
     if (!CATASTROPHIC_DECLARATIVE_GATE_IDS.has(gate.id)) continue;
     if (gate.action !== 'block' || gate.metrics) continue;
+    // Override-capable hard gates must reach the ordinary loop so it can
+    // authenticate and consume the exact-action admin authorization. They are
+    // still unconditional hard floors and cannot be posture/cap downgraded.
+    if (gate.adminOverride && gate.adminOverride.required === true) continue;
 
     const matchDetails = matchGate(gate, toolName, toolInput);
     if (!matchDetails.matched) continue;
@@ -2969,13 +3084,45 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     });
 
     if (gate.action === 'block') {
+      const adminOverride = evaluateAdminOverride(gate, toolName, toolInput);
+      if (adminOverride && adminOverride.authorized) {
+        recordStat(gate.id, 'approve', gate, { toolName, toolInput });
+        const auditRecord = recordAuditEvent({
+          toolName,
+          toolInput,
+          decision: 'allow',
+          gateId: gate.id,
+          message: `Single-use admin override consumed for sha256:${adminOverride.approvalContextDigest}.`,
+          severity: gate.severity,
+          source: 'gates-engine-admin-override',
+        });
+        auditToFeedback(auditRecord);
+        return {
+          decision: 'allow',
+          gate: gate.id,
+          message: `Single-use admin override consumed for sha256:${adminOverride.approvalContextDigest}.`,
+          severity: gate.severity,
+          reasoning,
+          adminOverride,
+        };
+      }
       // Expired leases report under their own gate id so neither the enforcement posture nor
       // the daily block cap can quietly turn this denial into a warning.
       const gateId = matchDetails && matchDetails.taskScopeViolation
         && matchDetails.taskScopeViolation.reasonCode === 'expired_task_scope'
         ? TASK_SCOPE_LEASE_EXPIRED_GATE_ID
         : gate.id;
-      const denyResult = { decision: 'deny', gate: gateId, message, severity: gate.severity, reasoning };
+      const overrideMessage = adminOverride
+        ? `${message} Approval request: ${adminOverride.escalationId}. Action digest: sha256:${adminOverride.approvalContextDigest}.${adminOverride.replayed ? ' The approved override was already consumed.' : ''}`
+        : message;
+      const denyResult = {
+        decision: 'deny',
+        gate: gateId,
+        message: overrideMessage,
+        severity: gate.severity,
+        reasoning,
+        ...(adminOverride ? { requiresAdminOverride: true, adminOverride } : {}),
+      };
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
@@ -2985,7 +3132,7 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
         return cappedResult;
       }
       recordStat(gate.id, 'block', gate, { toolName, toolInput });
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: overrideMessage, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return denyResult;
     }
@@ -3202,13 +3349,45 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     const reasoning = buildReasoning(gate, toolName, toolInput, matchDetails);
 
     if (gate.action === 'block') {
+      const adminOverride = evaluateAdminOverride(gate, toolName, toolInput);
+      if (adminOverride && adminOverride.authorized) {
+        recordStat(gate.id, 'approve', gate, { toolName, toolInput });
+        const auditRecord = recordAuditEvent({
+          toolName,
+          toolInput,
+          decision: 'allow',
+          gateId: gate.id,
+          message: `Single-use admin override consumed for sha256:${adminOverride.approvalContextDigest}.`,
+          severity: gate.severity,
+          source: 'gates-engine-admin-override',
+        });
+        auditToFeedback(auditRecord);
+        return {
+          decision: 'allow',
+          gate: gate.id,
+          message: `Single-use admin override consumed for sha256:${adminOverride.approvalContextDigest}.`,
+          severity: gate.severity,
+          reasoning,
+          adminOverride,
+        };
+      }
       // Expired leases report under their own gate id so neither the enforcement posture nor
       // the daily block cap can quietly turn this denial into a warning.
       const gateId = matchDetails && matchDetails.taskScopeViolation
         && matchDetails.taskScopeViolation.reasonCode === 'expired_task_scope'
         ? TASK_SCOPE_LEASE_EXPIRED_GATE_ID
         : gate.id;
-      const denyResult = { decision: 'deny', gate: gateId, message, severity: gate.severity, reasoning };
+      const overrideMessage = adminOverride
+        ? `${message} Approval request: ${adminOverride.escalationId}. Action digest: sha256:${adminOverride.approvalContextDigest}.${adminOverride.replayed ? ' The approved override was already consumed.' : ''}`
+        : message;
+      const denyResult = {
+        decision: 'deny',
+        gate: gateId,
+        message: overrideMessage,
+        severity: gate.severity,
+        reasoning,
+        ...(adminOverride ? { requiresAdminOverride: true, adminOverride } : {}),
+      };
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
@@ -3218,7 +3397,7 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
         return cappedResult;
       }
       recordStat(gate.id, 'block', gate, { toolName, toolInput });
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: overrideMessage, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return denyResult;
     }
@@ -4338,6 +4517,7 @@ module.exports = {
   matchesGate,
   evaluateGates,
   evaluateGatesAsync,
+  actionApprovalDigest,
   buildMatchSurfaces,
   extractAffectedFiles,
   parseGitPathspec,

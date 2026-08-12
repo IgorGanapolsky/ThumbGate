@@ -2,4 +2,4 @@
 'thumbgate': patch
 ---
 
-Require explicit human approval for outbound email sends instead of denying every send unconditionally. Unattended runs still fail closed, while draft creation and updates remain available without send approval.
+Keep outbound email sends hard-blocked unless a separately authenticated admin grants a short-lived, exact-action-digest, single-use override.

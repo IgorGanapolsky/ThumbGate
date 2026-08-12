@@ -185,8 +185,14 @@
       "layer": "Execution",
       "trigger": "any:outbound_email_send",
       "pattern": "(?:(?:^|[_.])send[_-]?(?:message|mail|email|now|draft)s?\\b|emailer[_-]?messages?[_-]?send|(?:^|[_.])send_draft\\b|users\\/[^/\\s\"\\']+\\/messages\\/send|\\bmessages\\/send\\b|messages\\s*\\(\\s*\\)\\s*\\.\\s*send\\s*\\(|users\\s*\\(\\s*\\)\\s*\\.\\s*messages\\s*\\(\\s*\\)\\s*\\.\\s*send\\b|(?:^|[\\s;/])sendmail\\b|\\bmsmtp\\b|\\bmailx?\\s+-s\\b|(?:import\\s+smtplib|from\\s+smtplib\\b|\\bsmtplib\\.SMTP\\b)|(?:require\\s*\\(\\s*[\\'\"]nodemailer[\\'\"]\\s*\\)|from\\s+[\\'\"]nodemailer[\\'\"]|nodemailer\\.createTransport)|createTransport\\s*\\()",
-      "action": "approve",
-      "message": "Outbound email SEND requires explicit named-human approval for the exact reviewed payload. Autonomous runs fail closed. create_draft / update_draft / list_drafts remain allowed without send approval.",
+      "action": "block",
+      "adminOverride": {
+        "required": true,
+        "digestBound": true,
+        "singleUse": true,
+        "ttlMs": 900000
+      },
+      "message": "Outbound email SEND is hard-blocked unless a separately authenticated admin approves this exact action digest. The approval expires after 15 minutes and is consumed once. create_draft / update_draft / list_drafts remain allowed without send approval.",
       "severity": "critical",
       "compliance": [
         "SOC2-CC6.1",
