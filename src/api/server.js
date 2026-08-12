@@ -10916,6 +10916,22 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         return;
       }
 
+      // GET /api/hermes-mobile/launch-metrics — FUTRFND demand validation + signal metrics
+      if (req.method === 'GET' && pathname === '/api/hermes-mobile/launch-metrics') {
+        try {
+          const strategy = require(path.join(__dirname, '../../scripts/hermes-mobile-launch-strategy'));
+          sendJson(res, 200, strategy.getLaunchDashboard());
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INTERNAL,
+            title: 'Internal Server Error',
+            status: 500,
+            detail: err.message,
+          });
+        }
+        return;
+      }
+
       sendProblem(res, {
         type: PROBLEM_TYPES.NOT_FOUND,
         title: 'Not Found',

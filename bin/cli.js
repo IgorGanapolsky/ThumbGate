@@ -4355,6 +4355,108 @@ switch (COMMAND) {
   case 'artifacts':
     artifacts();
     break;
+  case 'hermes-launch':
+  case 'hermes-mobile-launch': {
+    const strategy = require(path.join(PKG_ROOT, 'scripts', 'hermes-mobile-launch-strategy'));
+    const sub = process.argv[3] || 'status';
+
+    if (sub === 'status') {
+      const dash = strategy.getLaunchDashboard();
+      console.log('\n🚀 Hermes Mobile FUTRFND Launch Strategy & 90-Day Execution Status\n');
+      console.log(`📌 Current Phase: ${dash.executionPhase.title} (Day ${dash.executionPhase.dayNumber})`);
+      console.log('🎯 Objectives:');
+      dash.executionPhase.objectives.forEach((obj) => console.log(`   - ${obj}`));
+
+      console.log('\n📊 Signal Metrics:');
+      const m = dash.signalMetrics;
+      console.log(`   • User Feedback Rating: ${m.userFeedbackRating.bayesianSmoothed} / 5.0 (Bayesian) | ${m.userFeedbackRating.rawAverage} / 5.0 (Raw, N=${m.userFeedbackRating.totalScores})`);
+      console.log(`   • Free-Trial -> Paid Conversion: ${m.freeTrialToPaidConversion.bayesianMeanPct}% (95% CI: [${m.freeTrialToPaidConversion.credibleInterval95Pct.join('%, ')}%], Converted: ${m.freeTrialToPaidConversion.convertedCount}/${m.freeTrialToPaidConversion.totalTrials})`);
+      console.log(`   • Targeted Interviews Progress: ${m.interviewTargetProgress.progressPct}% (${m.interviewTargetProgress.interviewedCount}/${m.interviewTargetProgress.targetInterviews})`);
+
+      console.log('\n🧭 Demand Validation:');
+      console.log(`   ${dash.demandValidation.readyToScaleMonetization ? '✅' : '⏳'} ${dash.demandValidation.headline}`);
+      dash.demandValidation.checks.forEach((c) => {
+        console.log(`   ${c.passed ? '✓' : '·'} ${c.id}: ${c.detail}`);
+      });
+
+      console.log('\n⚠️ Risk Audit:');
+      if (dash.riskAudit.auditPassed) {
+        console.log('   ✅ No critical launch risks detected. Demand validation & feedback loop healthy.');
+      } else {
+        dash.riskAudit.risks.forEach((r) => {
+          console.log(`   🚨 [${r.severity}] ${r.riskId}: ${r.message}`);
+          console.log(`      -> Rec: ${r.recommendation}`);
+        });
+      }
+      console.log('');
+    } else if (sub === 'outreach') {
+      const args = process.argv.slice(4);
+      let name = 'Hermes Operator';
+      let score = 4.0;
+      let notes = 'Remote control feedback';
+      let channel = 'Direct Outreach';
+      for (const arg of args) {
+        if (arg.startsWith('--name=')) name = arg.slice(7);
+        if (arg.startsWith('--score=')) score = parseFloat(arg.slice(8));
+        if (arg.startsWith('--notes=')) notes = arg.slice(8);
+        if (arg.startsWith('--channel=')) channel = arg.slice(10);
+      }
+      const entry = strategy.recordOutreach({
+        contactName: name,
+        featureAlignmentScore: score,
+        notes,
+        channel,
+        remoteControlPainPoints: [notes],
+      });
+      console.log(`\n✓ Recorded Hermes Mobile outreach interview for ${entry.contactName} (Score: ${entry.featureAlignmentScore}/5.0).`);
+    } else if (sub === 'trial') {
+      const args = process.argv.slice(4);
+      let user = 'anonymous';
+      let converted = false;
+      for (const arg of args) {
+        if (arg.startsWith('--user=')) user = arg.slice(7);
+        if (arg.startsWith('--converted=')) converted = arg.slice(12) === 'true';
+      }
+      const trial = strategy.recordTrial({ user, convertedToPaid: converted });
+      console.log(`\n✓ Recorded free trial for ${trial.user} (id=${trial.id}, converted=${trial.convertedToPaid}).`);
+    } else if (sub === 'rating') {
+      const args = process.argv.slice(4);
+      let signal = 'up';
+      let score;
+      for (const arg of args) {
+        if (arg.startsWith('--signal=')) signal = arg.slice(9);
+        if (arg.startsWith('--score=')) score = parseFloat(arg.slice(8));
+      }
+      const rating = strategy.recordInAppFeedback({ signal, score });
+      console.log(`\n✓ Recorded in-app feedback rating ${rating.score}/5 (signal=${rating.signal || 'n/a'}).`);
+    } else if (sub === 'draft') {
+      const args = process.argv.slice(4);
+      let name = 'there';
+      let channel = 'email';
+      for (const arg of args) {
+        if (arg.startsWith('--name=')) name = arg.slice(7);
+        if (arg.startsWith('--channel=')) channel = arg.slice(10);
+      }
+      const draft = strategy.buildOutreachDraft({ contactName: name, channel });
+      console.log(`\nSubject: ${draft.subject}\n`);
+      console.log(draft.body);
+      console.log(`\nTrial URL: ${draft.trialUrl}`);
+      console.log(`\n(${draft.disclaimer})`);
+    } else if (sub === 'interviews') {
+      const targets = strategy.listInterviewTargets(strategy.loadLaunchState());
+      console.log(`\nInterview targets: ${targets.completedCount}/${targets.targetCount} complete (${targets.remaining} remaining)`);
+      console.log('Channels:');
+      targets.channels.forEach((c) => console.log(`  • ${c.name} — ${c.purpose}`));
+      console.log('\n15-min script questions:');
+      targets.script.questions.forEach((q, i) => console.log(`  ${i + 1}. ${q}`));
+    } else if (sub === 'promote-feedback') {
+      const res = strategy.autoPromoteHermesFeedback();
+      console.log(`\n✓ Auto-promoted ${res.promotedCount} interview feedback pain points into ThumbGate prevention rules.`);
+    } else {
+      console.log('Usage: npx thumbgate hermes-launch [status|outreach|trial|rating|draft|interviews|promote-feedback]');
+    }
+    break;
+  }
   case 'analytics': {
     const { run: runAnalytics } = require(path.join(PKG_ROOT, 'scripts', 'analytics-report'));
     runAnalytics();
