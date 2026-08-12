@@ -115,6 +115,8 @@ Everything merges through PRs under the configured branch protection. When human
 
 Diagnosing *why* a PR is blocked is correct and useful: read `branches/main/protection`, `rulesets`, `CODEOWNERS`, `mergeable_state`, and review threads. **The diagnosis is the deliverable.** Changing review or protection state is not.
 
+**Repository rulesets:** `main` is layered under classic branch protection **and** the `main governance` ruleset (`config/main-branch-ruleset.json`). Sync/check with `npm run rulesets:sync` / `npm run rulesets:check`. Zero `bypass_actors` is required — never add human/admin/owner-token bypass to unblock merges.
+
 ### Why
 
 On 2026-07-10, during diagnosis of blocked Dependabot PRs, an agent approved #2768 with the owner's `gh` credentials "to test the hypothesis" and observed `mergeStateStatus` change from `BLOCKED` to `CLEAN`. Regardless of the PRs' other blockers, that action satisfied a control reserved for human review and was a bypass. The review was dismissed; #2768 returned to `BLOCKED`, unmerged.
