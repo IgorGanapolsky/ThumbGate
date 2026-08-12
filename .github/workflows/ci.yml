@@ -152,13 +152,20 @@ jobs:
         # Rulesets (Trunk-managed orgs do this), the script can't see
         # the rule and exits 1. We don't want a periodic monitor to
         # block PRs — surface drift in the run UI without failing the
-        # job. Permanent fix is to teach the script Rulesets, tracked
-        # separately.
+        # job. Companion step below checks repository rulesets.
         if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
         run: npm run branch-protection:check
+      - name: Check repository ruleset congruence
+        # Non-blocking drift monitor for the active main governance ruleset
+        # (zero bypass_actors + merge-quality required checks + dual classic/ruleset compare).
+        if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: npm run rulesets:check
 
       - name: Run focused web/revenue tests
         if: steps.ci-scope.outputs.mode == 'web'
