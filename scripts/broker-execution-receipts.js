@@ -156,6 +156,11 @@ function buildSignableBody(input = {}) {
     delete body.target.resource;
   }
 
+  // Metadata is signed when present so agents cannot attach extra claims post-hoc.
+  if (input.metadata && typeof input.metadata === 'object' && !Array.isArray(input.metadata)) {
+    body.metadata = input.metadata;
+  }
+
   return body;
 }
 
@@ -220,10 +225,6 @@ function issueBrokerReceipt(input = {}, options = {}) {
       value: signatureValue,
     },
   };
-
-  if (input.metadata && typeof input.metadata === 'object') {
-    receipt.metadata = input.metadata;
-  }
 
   receipt.receiptHash = sha256Hex(stableStringify({
     ...receipt,
@@ -332,6 +333,11 @@ function verifyBrokerReceipt(receipt, options = {}) {
   } else {
     delete signable.target.resource;
   }
+  if (receipt.metadata && typeof receipt.metadata === 'object') {
+    signable.metadata = receipt.metadata;
+  } else {
+    delete signable.metadata;
+  }
 
   const expectedPayloadHash = computePayloadHash(signable);
   if (expectedPayloadHash !== receipt.payloadHash) {
@@ -408,11 +414,21 @@ function appendReceiptToLedger(receipt, options = {}) {
   const existing = readReceiptLedger(options);
   if (existing.length > 0) {
     const head = existing[existing.length - 1];
-    if (receipt.previousReceiptHash && receipt.previousReceiptHash !== head.receiptHash) {
+    // Non-genesis receipts must chain to the current head (no open forks).
+    if (!receipt.previousReceiptHash) {
+      const error = new Error('previousReceiptHash is required when the ledger is non-empty');
+      error.code = 'THUMBGATE_BROKER_CHAIN_REQUIRED';
+      throw error;
+    }
+    if (receipt.previousReceiptHash !== head.receiptHash) {
       const error = new Error('previousReceiptHash does not match ledger head');
       error.code = 'THUMBGATE_BROKER_CHAIN_BREAK';
       throw error;
     }
+  } else if (receipt.previousReceiptHash) {
+    const error = new Error('genesis receipt must not set previousReceiptHash');
+    error.code = 'THUMBGATE_BROKER_CHAIN_BREAK';
+    throw error;
   }
 
   fs.appendFileSync(ledgerPath, `${JSON.stringify(receipt)}\n`, 'utf8');
@@ -512,6 +528,64 @@ function isHighRiskProviderAction(toolName = '', toolInput = {}) {
 }
 
 /**
+ * Bind a receipt's target to the tool call being gated so a valid signature for
+ * an unrelated action cannot unlock a different side effect.
+ */
+function receiptBindsToAction(receipt, toolName, toolInput = {}) {
+  const reasons = [];
+  if (!receipt || typeof receipt !== 'object') {
+    return { bound: false, reasons: ['receipt_missing'] };
+  }
+
+  const target = receipt.target || {};
+  const provider = cleanString(target.provider).toLowerCase();
+  const action = cleanString(target.action).toLowerCase();
+  // Exclude the receipt itself from the surface so a forged target cannot
+  // self-match by being embedded in tool_input.brokerReceipt.
+  const surfaceInput = (toolInput && typeof toolInput === 'object')
+    ? { ...toolInput }
+    : toolInput;
+  if (surfaceInput && typeof surfaceInput === 'object') {
+    delete surfaceInput.brokerReceipt;
+    delete surfaceInput.broker_execution_receipt;
+    if (surfaceInput.receipt && surfaceInput.receipt.schemaVersion === SCHEMA_VERSION) {
+      delete surfaceInput.receipt;
+    }
+  }
+  const surface = serializeToolSurface(toolName, surfaceInput).toLowerCase();
+  const tool = String(toolName || '').toLowerCase();
+
+  if (provider && !surface.includes(provider) && !tool.includes(provider)) {
+    reasons.push('target_provider_mismatch');
+  }
+  if (action) {
+    // Prefer whole action phrase; fall back to distinctive tokens (len>=4) so
+    // short verbs like "create" alone cannot bind a receipt to unrelated tools.
+    const phraseMatched = surface.includes(action) || tool.includes(action);
+    const actionTokens = action.split(/[^a-z0-9]+/).filter((token) => token.length >= 4);
+    const tokenMatched = actionTokens.length > 0
+      && actionTokens.every((token) => surface.includes(token) || tool.includes(token));
+    if (!phraseMatched && !tokenMatched) {
+      reasons.push('target_action_mismatch');
+    }
+  }
+
+  // Optional explicit binding fields from the broker.
+  const expectedTool = cleanString(receipt.metadata?.toolName || receipt.metadata?.tool_name);
+  if (expectedTool && expectedTool.toLowerCase() !== tool) {
+    reasons.push('metadata_tool_mismatch');
+  }
+  const expectedIdempotency = cleanString(
+    toolInput.idempotencyKey || toolInput.idempotency_key || '',
+  );
+  if (expectedIdempotency && expectedIdempotency !== cleanString(receipt.idempotencyKey)) {
+    reasons.push('idempotency_key_mismatch');
+  }
+
+  return { bound: reasons.length === 0, reasons };
+}
+
+/**
  * Pre-tool gate evaluation for broker receipts.
  * Returns null when the gate does not apply or allows; otherwise a deny/warn result.
  */
@@ -533,6 +607,18 @@ function evaluateBrokerReceiptGate(toolName, toolInput = {}, options = {}) {
           + 'A receipt an agent can rewrite is not evidence; only a credential-holding broker may sign.',
         severity: 'critical',
         reasons: verification.reasons,
+        source: 'broker-execution-receipts',
+      };
+    }
+    const binding = receiptBindsToAction(receipt, toolName, toolInput);
+    if (!binding.bound) {
+      return {
+        decision: 'deny',
+        gate: 'broker-execution-receipt',
+        message: `Broker execution receipt does not bind to this action (${binding.reasons.join(', ')}). `
+          + 'A signature for a different target cannot unlock this tool call.',
+        severity: 'critical',
+        reasons: binding.reasons,
         source: 'broker-execution-receipts',
       };
     }
@@ -603,6 +689,7 @@ module.exports = {
   evaluateBrokerReceiptGate,
   extractReceiptFromToolInput,
   generateBrokerKeyPair,
+  receiptBindsToAction,
   getLedgerPath,
   getReceiptMode,
   isHighRiskProviderAction,

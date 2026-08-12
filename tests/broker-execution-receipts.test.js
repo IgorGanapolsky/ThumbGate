@@ -26,7 +26,7 @@ function tempDir() {
 function issueValid(keys, overrides = {}, options = {}) {
   return issueBrokerReceipt({
     principal: { id: 'agent-42', kind: 'agent' },
-    target: { provider: 'stripe', action: 'create_payment', resource: 'pi_test' },
+    target: { provider: 'stripe', action: 'charges create', resource: 'pi_test' },
     decision: 'execute',
     idempotencyKey: `idem-${Math.random().toString(16).slice(2)}`,
     providerEventId: 'evt_123',
@@ -230,6 +230,60 @@ test('evaluateBrokerReceiptGate is off when mode=off', () => {
     command: 'stripe charges create',
   }, { mode: 'off' });
   assert.equal(result, null);
+});
+
+test('evaluateBrokerReceiptGate rejects receipt that does not bind to the action', () => {
+  const keys = generateBrokerKeyPair();
+  const receipt = issueValid(keys, {
+    target: { provider: 'stripe', action: 'charges create' },
+  });
+  const result = evaluateBrokerReceiptGate('Bash', {
+    command: 'twilio messages create',
+    brokerReceipt: receipt,
+  }, {
+    mode: 'verify',
+    trustedPublicKeys: [{ publicKeyPem: keys.publicKeyPem, publicKeyId: keys.publicKeyId }],
+  });
+  assert.equal(result.decision, 'deny');
+  assert.ok(
+    result.reasons.includes('target_provider_mismatch')
+    || result.reasons.includes('target_action_mismatch'),
+  );
+});
+
+test('ledger requires previousReceiptHash once non-empty', () => {
+  const keys = generateBrokerKeyPair();
+  const dir = tempDir();
+  const ledgerPath = path.join(dir, 'ledger.jsonl');
+  const opts = {
+    ledgerPath,
+    trustedPublicKeys: [{ publicKeyPem: keys.publicKeyPem, publicKeyId: keys.publicKeyId }],
+  };
+  appendReceiptToLedger(issueValid(keys, { idempotencyKey: 'genesis' }), opts);
+  assert.throws(
+    () => appendReceiptToLedger(issueValid(keys, { idempotencyKey: 'second', previousReceiptHash: null }), opts),
+    /previousReceiptHash is required/i,
+  );
+});
+
+test('metadata is cryptographically bound into the signed payload', () => {
+  const keys = generateBrokerKeyPair();
+  const receipt = issueValid(keys, {
+    metadata: { toolName: 'Bash', note: 'bound' },
+  });
+  const ok = verifyBrokerReceipt(receipt, {
+    trustedPublicKeys: [{ publicKeyPem: keys.publicKeyPem, publicKeyId: keys.publicKeyId }],
+  });
+  assert.equal(ok.valid, true);
+
+  const tampered = {
+    ...receipt,
+    metadata: { toolName: 'Bash', note: 'mutated-after-sign' },
+  };
+  const bad = verifyBrokerReceipt(tampered, {
+    trustedPublicKeys: [{ publicKeyPem: keys.publicKeyPem, publicKeyId: keys.publicKeyId }],
+  });
+  assert.equal(bad.valid, false);
 });
 
 test('gates-engine blocks invalid broker receipt when evaluateGates runs', () => {

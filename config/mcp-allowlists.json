@@ -66,7 +66,6 @@
       "record_task_outcome",
       "reconcile_broker_receipt_chain",
       "reconcile_purchase_ledger",
-      "issue_broker_execution_receipt",
       "get_broker_execution_receipts",
       "verify_broker_execution_receipt",
       "reflect_on_feedback",

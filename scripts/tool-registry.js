@@ -1164,10 +1164,12 @@ const TOOLS = [
       },
     },
   }),
+  // Registered for discovery/docs only. Default MCP allowlist excludes this tool,
+  // and the server refuses agent-surface issuance even if a host key is present.
   destructiveTool({
     name: 'issue_broker_execution_receipt',
-    title: 'Issue Broker Execution Receipt',
-    description: 'Issue a broker-signed execution receipt using the host THUMBGATE_BROKER_SIGNING_KEY. Fails without the broker key so agents cannot self-sign.',
+    title: 'Issue Broker Execution Receipt (broker host only)',
+    description: 'Not available on the agent MCP surface. Brokers issue receipts out-of-band via scripts/broker-execution-receipts.js with THUMBGATE_BROKER_SIGNING_KEY.',
     inputSchema: {
       type: 'object',
       required: ['principal', 'target', 'idempotencyKey'],

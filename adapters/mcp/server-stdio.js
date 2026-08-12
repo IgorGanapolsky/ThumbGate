@@ -93,7 +93,6 @@ const {
 } = require('../../scripts/task-outcomes');
 const {
   appendReceiptToLedger,
-  issueBrokerReceipt,
   readReceiptLedger,
   reconcileReceiptChain,
   verifyBrokerReceipt,
@@ -1380,14 +1379,17 @@ async function callToolInner(name, args) {
       );
     case 'verify_broker_execution_receipt':
       return toTextResult(verifyBrokerReceipt(args.receipt || args));
-    case 'issue_broker_execution_receipt':
-      // Only succeeds when THUMBGATE_BROKER_SIGNING_KEY is set on the host
-      // (credential-holding broker). Agents without the key cannot mint proof.
-      return toTextResult(issueBrokerReceipt(args, {
-        privateKeyPem: process.env.THUMBGATE_BROKER_SIGNING_KEY,
-        publicKeyPem: process.env.THUMBGATE_BROKER_PUBLIC_KEY,
-        brokerId: args.brokerId,
-      }));
+    case 'issue_broker_execution_receipt': {
+      // Intentionally NOT on the default MCP allowlist. Even with a host key,
+      // agent-facing sessions must not mint broker signatures. Brokers call the
+      // library/CLI outside the agent tool surface.
+      const error = new Error(
+        'issue_broker_execution_receipt is not available on the agent MCP surface. '
+        + 'Credential-holding brokers must sign out-of-band via scripts/broker-execution-receipts.js.',
+      );
+      error.code = 'THUMBGATE_BROKER_ISSUE_NOT_ON_AGENT_SURFACE';
+      throw error;
+    }
     case 'record_broker_execution_receipt': {
       const receipt = args.receipt || args;
       return toTextResult(appendReceiptToLedger(receipt));
