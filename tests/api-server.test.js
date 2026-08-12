@@ -1101,7 +1101,7 @@ test('privacy policy route covers collection, sharing, retention, and contact de
   assert.match(body, /Data Sharing/i);
   assert.match(body, /Data Retention/i);
   assert.match(body, /optional CLI telemetry/i);
-  assert.match(body, /igor\.ganapolsky@gmail\.com/i);
+  assert.match(body, /privacy@thumbgate\.ai|legal@thumbgate\.ai|igor@thumbgate\.ai|security@thumbgate\.ai/i);
   // Local-first is narrower than full privacy: hosted account/device/runner data is disclosed.
   assert.match(body, /Local-first is not/i);
   assert.match(body, /Subprocessors/i);
@@ -1119,7 +1119,7 @@ test('terms of service route covers payment, refunds, acceptable use, and limita
   assert.match(body, /Refunds/i);
   assert.match(body, /Acceptable Use/i);
   assert.match(body, /Limitation of Liability/i);
-  assert.match(body, /igor\.ganapolsky@gmail\.com/i);
+  assert.match(body, /privacy@thumbgate\.ai|legal@thumbgate\.ai|igor@thumbgate\.ai|security@thumbgate\.ai/i);
   // Cross-links to /privacy and /support keep the legal triangle navigable.
   assert.match(body, /href="\/privacy"/);
   assert.match(body, /href="\/support"/);

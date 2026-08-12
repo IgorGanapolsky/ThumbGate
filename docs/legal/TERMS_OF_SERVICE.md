@@ -280,3 +280,9 @@ Billing, refunds, and legal notices: **igor.ganapolsky@gmail.com**
 Support: `https://thumbgate.ai/support`  
 Privacy: `https://thumbgate.ai/privacy`  
 Security overview: `https://thumbgate.ai/security`
+
+---
+
+## Appendix: MIT vs paid (summary)
+
+See `COMMERCIAL_LICENSING_BOUNDARY.md` and public `/legal/licensing`. MIT covers the public package/repo; Pro licenses commercial features; customer-specific rules remain customer-owned; customers remain responsible for production approvals.

@@ -64,3 +64,20 @@ Give counsel this folder plus:
 ## Employment IP hygiene
 
 See `EMPLOYMENT_IP_HYGIENE.md` for generic (employer-agnostic) rules: no confidential employer inputs, and invention-assignment risk is not cured by nights-and-weekends alone.
+
+
+## Commercial site legal hygiene (apart from employment IP)
+
+| Public route | Purpose |
+| --- | --- |
+| `/legal` | Index of legal surfaces (sitemap + footer) |
+| `/terms` | Terms / EULA, refunds, AUP, liability |
+| `/privacy` | Privacy Policy |
+| `/support` | Support + refunds + cancellation contact |
+| `/security` | Security overview |
+| `/legal/licensing` | MIT vs paid boundary, customer rules ownership |
+| `/legal/msa-sow` | Managed services MSA/SOW template summary |
+
+Domain commercial contacts: `legal@`, `privacy@`, `security@`, `igor@` on `thumbgate.ai` (not personal Gmail on commercial/legal pages).
+
+Markdown sources: `COMMERCIAL_LICENSING_BOUNDARY.md`, `MSA_SOW_TEMPLATE.md`, `TERMS_OF_SERVICE.md`, `PRIVACY_POLICY.md`.
