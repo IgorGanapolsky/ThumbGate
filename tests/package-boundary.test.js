@@ -443,12 +443,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // Exact measured artifact, with no additional package headroom.
     // 440 -> 442 (2026-08-12): scripts/broker-execution-receipts.js — broker-signed
     // execution receipt verify/issue/ledger/gate for provider side-effect proof.
-    // 442 -> 449 (2026-08-12): commercial legal hygiene — public/terms.html,
+    // 442 -> 449
+    // 449 -> 450 (2026-08-12): scripts/rag-embedding-identity.js — embedding identity ROI gate (Pete Johnson / SDS #1017)
+    // prior 442->449 was commercial legal public pages;
     // privacy.html, support.html, third-party-notices.html, CONTRIBUTING.md,
     // THIRD_PARTY_NOTICES.md (+ package files list). Buyer-facing legal pages
     // must ship with the hosted/static package surfaces.
-    manifest.fileCount <= 449,
-    `npm package should stay <= 449 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 450,
+    `npm package should stay <= 450 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
