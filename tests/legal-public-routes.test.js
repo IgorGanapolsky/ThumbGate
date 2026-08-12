@@ -56,7 +56,7 @@ test('privacy policy route covers collection, sharing, retention, and contact de
   assert.match(body, /Data Sharing/i);
   assert.match(body, /Data Retention/i);
   assert.match(body, /optional CLI telemetry/i);
-  assert.match(body, /privacy@thumbgate\.ai|legal@thumbgate\.ai|igor@thumbgate\.ai/i);
+  assert.match(body, /privacy@thumbgate\.ai|legal@thumbgate\.ai|support@thumbgate\.ai/i);
   assert.match(body, /Local-first is not/i);
   assert.match(body, /Subprocessors/i);
   assert.match(body, /Stripe/i);
@@ -73,7 +73,7 @@ test('terms of service route covers payment, refunds, control layer, and workflo
   assert.match(body, /Refunds/i);
   assert.match(body, /Acceptable Use/i);
   assert.match(body, /Limitation of Liability/i);
-  assert.match(body, /privacy@thumbgate\.ai|legal@thumbgate\.ai|igor@thumbgate\.ai/i);
+  assert.match(body, /privacy@thumbgate\.ai|legal@thumbgate\.ai|support@thumbgate\.ai/i);
   assert.match(body, /href="\/privacy"/);
   assert.match(body, /href="\/support"/);
   assert.match(body, /Control layer, not a guarantee/i);
@@ -105,7 +105,9 @@ test('security and legal index routes publish buyer-facing counsel summaries', a
   assert.match(legalBody, /href="\/legal\/licensing"/);
   assert.match(legalBody, /href="\/legal\/msa-sow"/);
   assert.match(legalBody, /docs\/legal/i);
-  assert.match(legalBody, /legal@thumbgate\.ai/);
+  assert.match(legalBody, /support@thumbgate\.ai/);
+  assert.match(legalBody, /data-flow/i);
+  assert.match(legalBody, /first pass|Highest-value first pass/i);
 });
 
 test('licensing boundary route separates MIT from paid and customer rule ownership', async () => {
@@ -117,6 +119,16 @@ test('licensing boundary route separates MIT from paid and customer rule ownersh
   assert.match(body, /customer-specific rules/i);
   assert.match(body, /Production approvals/i);
   assert.match(body, /legal@thumbgate\.ai/);
+});
+
+test('data-flow map route is first-pass counsel input', async () => {
+  const res = await fetch(apiUrl('/legal/data-flow'));
+  assert.equal(res.status, 200);
+  const body = await res.text();
+  assert.match(body, /data-flow/i);
+  assert.match(body, /Stripe/i);
+  assert.match(body, /Local MIT CLI/i);
+  assert.match(body, /leave the machine|leaves the machine/i);
 });
 
 test('msa-sow template route is publicly reachable', async () => {
@@ -138,7 +150,7 @@ test('support route still documents refunds and legal cross-links', async () => 
   assert.match(body, /7-day/i);
   assert.match(body, /href="\/terms"/);
   assert.match(body, /href="\/privacy"/);
-  assert.match(body, /privacy@thumbgate\.ai|legal@thumbgate\.ai|igor@thumbgate\.ai/i);
+  assert.match(body, /privacy@thumbgate\.ai|legal@thumbgate\.ai|support@thumbgate\.ai/i);
 });
 
 }

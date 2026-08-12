@@ -1,5 +1,22 @@
 # ThumbGate legal package (product counsel drafts)
 
+> **Notice:** Drafts for counsel review — not a substitute for a lawyer.
+
+## Commercial first pass (scale-ready order)
+
+See `COMMERCIAL_LEGAL_FIRST_PASS.md`. Highest value:
+
+1. **Data-flow map** — public `/legal/data-flow` + `PRODUCT_AND_DATA_FLOW.md`
+2. **Subscription / product terms** — `/terms`
+3. **Privacy** — `/privacy`
+4. **Open-source boundary** — `/legal/licensing`
+
+Then decide if MSA/SOW (`/legal/msa-sow`), DPA (`DPA_POSTURE.md`), or enterprise addendum is needed.
+
+Primary mailbox: **support@thumbgate.ai** (provision before use). Legal notices: **legal@thumbgate.ai**.
+
+# ThumbGate legal package (product counsel drafts)
+
 > **Status:** Product-counsel checklist drafts for engineer/product use.
 > **Not legal advice.** A qualified startup/product lawyer must review and
 > finalize these documents before enterprise outreach or broad paid adoption.
