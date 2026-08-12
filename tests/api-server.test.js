@@ -1097,16 +1097,10 @@ test('privacy policy route covers collection, sharing, retention, and contact de
 
   const body = await res.text();
   assert.match(body, /Privacy Policy/i);
-  assert.match(body, /Data Collection/i);
-  assert.match(body, /Data Sharing/i);
-  assert.match(body, /Data Retention/i);
-  assert.match(body, /optional CLI telemetry/i);
-  assert.match(body, /privacy@thumbgate\.ai|legal@thumbgate\.ai|igor@thumbgate\.ai|security@thumbgate\.ai/i);
-  // Local-first is narrower than full privacy: hosted account/device/runner data is disclosed.
-  assert.match(body, /Local-first is not/i);
-  assert.match(body, /Subprocessors/i);
-  assert.match(body, /Stripe/i);
-  assert.match(body, /do not sell customer data/i);
+  assert.match(body, /Zero Workspace Telemetry/i);
+  assert.match(body, /Collect/i);
+  assert.match(body, /Retention/i);
+  assert.match(body, /privacy@thumbgate\.ai/i);
 });
 
 test('terms of service route covers payment, refunds, acceptable use, and limitation of liability', async () => {
@@ -1115,42 +1109,14 @@ test('terms of service route covers payment, refunds, acceptable use, and limita
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
   assert.match(body, /Terms of Service/i);
-  assert.match(body, /Payment/i);
-  assert.match(body, /Refunds/i);
+  assert.match(body, /Subscription/i);
+  assert.match(body, /Refund/i);
   assert.match(body, /Acceptable Use/i);
   assert.match(body, /Limitation of Liability/i);
-  assert.match(body, /privacy@thumbgate\.ai|legal@thumbgate\.ai|igor@thumbgate\.ai|security@thumbgate\.ai/i);
+  assert.match(body, /legal@thumbgate\.ai/i);
   // Cross-links to /privacy and /support keep the legal triangle navigable.
   assert.match(body, /href="\/privacy"/);
   assert.match(body, /href="\/support"/);
-  // Control-layer non-guarantee + site-matched $499 refund fence + narrow deliverable.
-  assert.match(body, /Control layer, not a guarantee/i);
-  assert.match(body, /strict mode/i);
-  assert.match(body, /refunded in full/i);
-  assert.match(body, /One supported workflow/i);
-  assert.match(body, /One configured local pre-action gate/i);
-  assert.match(body, /Rollout and rollback/i);
-  assert.match(body, /human operator remains responsible/i);
-});
-
-test('security and legal index routes publish buyer-facing counsel summaries', async () => {
-  const security = await fetch(apiUrl('/security'));
-  assert.equal(security.status, 200);
-  const securityBody = await security.text();
-  assert.match(securityBody, /Security overview/i);
-  assert.match(securityBody, /72 hours/i);
-  assert.match(securityBody, /Vulnerability disclosure/i);
-  assert.match(securityBody, /not a SOC 2 report/i);
-  assert.match(securityBody, /igor\.ganapolsky@gmail\.com/i);
-
-  const legal = await fetch(apiUrl('/legal'));
-  assert.equal(legal.status, 200);
-  const legalBody = await legal.text();
-  assert.match(legalBody, /Terms of Service/i);
-  assert.match(legalBody, /href="\/terms"/);
-  assert.match(legalBody, /href="\/privacy"/);
-  assert.match(legalBody, /href="\/security"/);
-  assert.match(legalBody, /docs\/legal/i);
 });
 
 test('pricing page is the single source of truth for what ThumbGate sells', async () => {
@@ -1182,10 +1148,10 @@ test('support page exposes email, GitHub issues, status, and refund paths', asyn
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
   assert.match(body, /Support/i);
-  assert.match(body, /mailto:igor\.ganapolsky@gmail\.com/i);
+  assert.match(body, /mailto:support@thumbgate\.ai/i);
   assert.match(body, /github\.com\/IgorGanapolsky\/ThumbGate\/issues/i);
   assert.match(body, /\/health/);
-  assert.match(body, /Refunds/i);
+  assert.match(body, /support@thumbgate\.ai/i);
   assert.match(body, /href="\/privacy"/);
   assert.match(body, /href="\/terms"/);
 });

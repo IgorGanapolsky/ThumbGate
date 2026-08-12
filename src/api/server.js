@@ -4020,14 +4020,6 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/peter', changefreq: 'weekly', priority: '0.9' },
     { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
-    { path: '/terms', changefreq: 'monthly', priority: '0.7' },
-    { path: '/privacy', changefreq: 'monthly', priority: '0.7' },
-    { path: '/support', changefreq: 'monthly', priority: '0.7' },
-    { path: '/legal', changefreq: 'monthly', priority: '0.7' },
-    { path: '/security', changefreq: 'monthly', priority: '0.65' },
-    { path: '/legal/data-flow', changefreq: 'monthly', priority: '0.7' },
-    { path: '/legal/licensing', changefreq: 'monthly', priority: '0.65' },
-    { path: '/legal/msa-sow', changefreq: 'monthly', priority: '0.6' },
     { path: '/agent-manager', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/chatgpt-app', changefreq: 'weekly', priority: '0.85' },
@@ -8457,109 +8449,43 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     // Public terms of service — required by Stripe / Stripe Checkout for the
     // "Terms of service URL" field in Business → Public details. Mirrors the
     // /privacy + /support pages: thin HTML, no external deps, no DB hit.
-    // Congruent with docs/legal/TERMS_OF_SERVICE.md (refund fence + control layer).
-    if (isGetLikeRequest && pathname === '/terms') {
-      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Terms of Service — ThumbGate</title>
-<meta name="description" content="ThumbGate Terms of Service for the local engine, Pro subscription, $499 Enterprise Workflow Gate, and hosted thumbgate.app surfaces.">
-<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}
-h1{font-size:28px;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}h3{font-size:16px;margin:18px 0 6px}
-p,li{font-size:15px}.meta{color:#6b7280;font-size:14px;margin:0 0 24px}
-.note{border-left:3px solid #0ea5e9;background:#f0f9ff;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
-.draft{border-left:3px solid #f59e0b;background:#fffbeb;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
-ul{padding-left:22px}li{margin:6px 0}a{color:#0066cc}
-footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}
-table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}
-th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:top}th{background:#f9fafb}</style></head><body>
-<h1>Terms of Service</h1>
-<p class="meta"><strong>ThumbGate</strong> (npm: thumbgate) · Last updated: 2026-08-12</p>
-<div class="draft"><strong>Product counsel draft on public routes.</strong> These terms are a commercial summary for buyers and Stripe. They are not a substitute for a lawyer reviewing the full package in <code>docs/legal/</code> before enterprise procurement.</div>
+    if (isGetLikeRequest && (pathname === '/terms' || pathname === '/terms.html' || pathname === '/eula' || pathname === '/eula.html')) {
+      try {
+        const termsHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'terms.html'), 'utf-8');
+        sendHtml(res, 200, termsHtml, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Terms of Service — ThumbGate</title></head><body><h1>Terms of Service</h1><p>Contact: <a href="mailto:legal@thumbgate.ai">legal@thumbgate.ai</a></p></body></html>`, {}, { headOnly: isHeadRequest });
+      }
+      return;
+    }
 
-<h2>The Service</h2>
-<p>ThumbGate provides pre-action gates for AI coding agents: a local CLI (MIT-licensed), optional paid Pro features, professional services (including the $499 Enterprise Workflow Gate), and optional hosted surfaces at thumbgate.app / the production API host. By installing the CLI, creating an account, or paying for a product or service, you agree to these terms.</p>
+    if (isGetLikeRequest && (pathname === '/privacy' || pathname === '/privacy.html')) {
+      try {
+        const privacyHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'privacy.html'), 'utf-8');
+        sendHtml(res, 200, privacyHtml, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Privacy Policy — ThumbGate</title></head><body><h1>Privacy Policy</h1><p>Contact: <a href="mailto:privacy@thumbgate.ai">privacy@thumbgate.ai</a></p></body></html>`, {}, { headOnly: isHeadRequest });
+      }
+      return;
+    }
 
-<div class="note"><strong>Control layer, not a guarantee.</strong> ThumbGate is a control layer and workflow policy engine. It does <em>not</em> guarantee that every unsafe, incorrect, or malicious agent action will be detected or blocked. Hard denies and warnings depend on your configuration, strict mode, supported integrations, and your own testing.</div>
+    if (isGetLikeRequest && (pathname === '/support' || pathname === '/support.html')) {
+      try {
+        const supportHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'support.html'), 'utf-8');
+        sendHtml(res, 200, supportHtml, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Support — ThumbGate</title></head><body><h1>Support</h1><p>Contact: <a href="mailto:support@thumbgate.ai">support@thumbgate.ai</a></p></body></html>`, {}, { headOnly: isHeadRequest });
+      }
+      return;
+    }
 
-<h2>Accounts</h2>
-<p>Paid tiers, hosted pairing, and professional services may require accurate account or email information. You are responsible for credential security and activity under your account.</p>
-
-<h2>Payment</h2>
-<p>Paid tiers are billed through Stripe (and any other documented payment rail). Subscriptions auto-renew until cancelled. One-off purchases (including the Enterprise Workflow Gate) are charged once. Taxes may apply as shown at checkout.</p>
-
-<h2>Trials &amp; free use</h2>
-<p>Free CLI use and trials are provided as-is, without SLA or indemnification.</p>
-
-<h2>Refunds</h2>
-<ul>
-<li><strong>Pro and Team subscriptions:</strong> cancel anytime; full refund within 7 days of the first charge on request; thereafter access continues through the paid period unless law requires otherwise.</li>
-<li><strong>$499 Enterprise Workflow Gate:</strong> if the repeated failure cannot be reduced to one supported ThumbGate gate, the order is <strong>refunded in full</strong> instead of being converted into open-ended consulting. After delivery and acceptance of the regression evidence package, the fee is non-refundable except as required by law.</li>
-<li><strong>Other one-off purchases:</strong> refund on request if we cannot deliver the scoped artifact.</li>
-</ul>
-
-<h2>$499 Enterprise Workflow Gate (narrow deliverable)</h2>
-<p>For the one-time fee published on the diagnostic and pricing pages, the deliverable is limited to:</p>
-<ol>
-<li>One supported workflow</li>
-<li>One configured local pre-action gate</li>
-<li>Regression evidence for that gate</li>
-<li>Written rollout and rollback proof</li>
-<li>Target delivery within two business days after required access and materials</li>
-</ol>
-<p>You must provide an accountable owner, non-secret examples or logs, integration access, and acceptance cases. Multi-workflow rollout, hosted team SSO/sync, compliance certification, 24/7 monitoring, and guaranteed incident prevention are out of scope unless separately contracted.</p>
-
-<h2>Hosted platform &amp; thumbgate.app</h2>
-<p>Hosted features may include device pairing, mobile approval, leases, and cloud runners. Offline defaults prefer fail-closed or paused gated actions. Lease locks reduce double-execution risk but cannot eliminate delays or duplicate notifications after network partitions. Where human approval is requested, the human operator remains responsible for approve/reject decisions.</p>
-
-<h2>Acceptable Use</h2>
-<p>You may not use ThumbGate to (a) violate law or third-party rights, (b) primarily circumvent another provider’s safety controls for abuse, (c) generate malware or run unauthorized attacks, (d) spam or scrape without authorization via runners, or (e) resell the hosted tier without written permission.</p>
-
-<h2>Support boundaries</h2>
-<p>Email support covers billing, Pro, Workflow Gate delivery, and hosted access. GitHub Issues cover open-source CLI bugs. Support does not include unlimited debugging of custom agent code outside the configured gate scope.</p>
-
-<h2>Beta features</h2>
-<p>Beta or experimental features may change without notice and carry no warranty or SLA.</p>
-
-<h2>Third-party models &amp; cloud dependencies</h2>
-<p>ThumbGate interoperates with third-party models, IDEs, MCP hosts, and clouds. We are not responsible for their outages, rate limits, model behavior, or policy changes. Third-party names are trademarks of their owners; use is for compatibility identification only and does not imply endorsement.</p>
-
-<h2>Customer responsibilities</h2>
-<p>You configure and test gates, secure devices and keys, provide accurate service materials, and remain responsible for work your agents perform.</p>
-<p><strong>Production approvals:</strong> you remain solely responsible for approving production changes and high-impact agent actions. ThumbGate does not replace your change-management or production ownership.</p>
-
-<h2>MIT open source vs paid offerings</h2>
-<p>The public <code>thumbgate</code> npm package and open repository are offered under the <strong>MIT License</strong> unless a file says otherwise. Paid Pro subscriptions license commercial features (for example dashboard, exports, adapter coverage as listed at purchase). Hosted services and brand marks are not MIT. Customer-specific rules and configs you create remain yours; ThumbGate may reuse only generalized, non-confidential product improvements. Details: <a href="/legal/licensing">/legal/licensing</a>.</p>
-
-<h2>Subscriptions, cancellation &amp; refunds (detail)</h2>
-<p>Pro subscriptions auto-renew until cancelled via the documented cancellation path or by emailing <a href="mailto:support@thumbgate.ai">support@thumbgate.ai</a>. Cancel anytime. Full refund within 7 days of the first charge on request; after that, access continues through the paid period unless law requires otherwise. Managed one-off services follow the refund fence stated for that offer (if offered) and any SOW.</p>
-
-
-<h2>Disclaimer of Warranty</h2>
-<p>The service is provided "as is", without warranty of any kind. ThumbGate is a guard rail, not a guarantee. We do not warrant that every AI-agent mistake will be prevented.</p>
-
-<h2>Limitation of Liability</h2>
-<p>To the maximum extent permitted by law, ThumbGate is not liable for indirect, incidental, special, consequential, or punitive damages. Total liability for any claim is limited to the amount you paid in the 12 months preceding the claim (or $100 if you paid nothing).</p>
-
-<h2>Suspension &amp; termination</h2>
-<p>We may suspend or terminate access for material breach, non-payment, acceptable-use violations, or security risk. Hosted access ends on termination; MIT-licensed local code remains under its license.</p>
-
-<h2>Governing Law</h2>
-<p>These terms are governed by the laws of the State of New York, United States.</p>
-
-<h2>Changes</h2>
-<p>We may update these terms; material changes will be posted on this page and, for paid accounts with email on file, announced with reasonable notice when practical.</p>
-
-<h2>Contact</h2>
-<p>Legal notices: <a href="mailto:legal@thumbgate.ai">legal@thumbgate.ai</a>. Billing and product support: <a href="mailto:support@thumbgate.ai">support@thumbgate.ai</a>.</p>
-<footer>
-<a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> ·
-<a href="/privacy">Privacy</a> ·
-<a href="/support">Support</a> ·
-<a href="/security">Security</a> ·
-<a href="/legal">Legal index</a>
-</footer>
-</body></html>`, {}, {
-        headOnly: isHeadRequest,
-      });
+    if (isGetLikeRequest && (pathname === '/third-party-notices' || pathname === '/third-party-notices.html' || pathname === '/third-party-notices.md')) {
+      try {
+        const noticesHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'third-party-notices.html'), 'utf-8');
+        sendHtml(res, 200, noticesHtml, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Third-Party Notices — ThumbGate</title></head><body><h1>Third-Party Notices</h1><p>See <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/THIRD_PARTY_NOTICES.md">THIRD_PARTY_NOTICES.md</a>.</p></body></html>`, {}, { headOnly: isHeadRequest });
+      }
       return;
     }
 
@@ -8581,14 +8507,7 @@ th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:t
       return;
     }
 
-
-        // Public canonical pricing page. The audit flagged "pricing schizophrenia":
-    // sales/pricing.json said $49 / $299, COMMERCIAL_TRUTH.md said $19 / $149,
-    // and there was no buyer-facing surface to reconcile the two. This is now
-    // the single source of truth for what ThumbGate sells, in priority order:
-    // Sprint (proof-pack, sales-led) → Pro (self-serve recurring) → Team
-    // (after qualification). Every paid CTA across the site should funnel
-    // here OR directly into Stripe checkout — never a different price.
+    // Public canonical pricing page.
     if (isGetLikeRequest && (pathname === '/pricing' || pathname === '/pricing.html')) {
       try {
         servePublicMarketingPage({
@@ -8608,396 +8527,14 @@ th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:t
       return;
     }
 
-
-    // Remote MCP connector documentation — the `resource_documentation` target
-    // advertised by /.well-known/oauth-protected-resource. The Claude Connectors
-    // Directory requires this URL to resolve (200) for submission review.
-    if (isGetLikeRequest && (pathname === '/docs/connectors' || pathname === '/docs/connectors/')) {
-      const mcpUrl = buildPublicUrl(hostedConfig, '/mcp');
-      const cardUrl = buildPublicUrl(hostedConfig, '/.well-known/mcp/server-card.json');
-      const prmUrl = buildPublicUrl(hostedConfig, '/.well-known/oauth-protected-resource');
-      sendHtml(res, 200, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Remote MCP Connector — ThumbGate</title><meta name="description" content="Connect ThumbGate to Claude as a remote MCP server: OAuth 2.1 (PKCE) authorization, available tools, and the read-only reviewer credential."><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:780px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}h1{font-size:30px;margin:0 0 8px}.lede{color:#6b7280;font-size:18px;margin:0 0 28px}h2{font-size:20px;margin:28px 0 8px}code{background:#f3f4f6;padding:1px 6px;border-radius:4px;font-size:13.5px}pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow:auto;font-size:13px}a{color:#0066cc}ol,ul{padding-left:22px}li{margin:6px 0}.note{border-left:3px solid #22d3ee;background:#ecfeff;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}</style></head><body>
-<h1>ThumbGate — Remote MCP Connector</h1>
-<p class="lede">ThumbGate is a remote Model Context Protocol (MCP) server. Add it as a connector in Claude to give an agent governed access to ThumbGate's feedback capture, lesson retrieval, context assembly, and pre-action gate tools — over HTTP, authenticated with OAuth 2.1.</p>
-
-<h2>Connect URL</h2>
-<pre>${esc(mcpUrl)}</pre>
-<p>In Claude, add a custom connector and paste the URL above. Claude discovers the authorization server automatically via the protected-resource metadata at <a href="${esc(prmUrl)}">${esc(prmUrl)}</a>.</p>
-
-<h2>Authorization (OAuth 2.1 + PKCE)</h2>
-<ol>
-  <li>Claude reads the <code>resource</code> and <code>authorization_servers</code> from the protected-resource metadata.</li>
-  <li>It runs the standard OAuth 2.1 authorization-code flow with PKCE (<code>S256</code> only — <code>plain</code> is rejected).</li>
-  <li>The issued access token is audience-bound to the <code>${esc(mcpUrl)}</code> resource (RFC 8707); a token for any other audience is rejected.</li>
-  <li>The bearer token is then sent on the <code>Authorization</code> header for every <code>tools/call</code>.</li>
-</ol>
-
-<h2>Available tools</h2>
-<p>The full, machine-readable tool registry — names, input schemas, and the <code>readOnlyHint</code> / <code>destructiveHint</code> annotations — is published at <a href="${esc(cardUrl)}">${esc(cardUrl)}</a>. Tools fall into these groups:</p>
-<ul>
-  <li><strong>Feedback &amp; lessons</strong> — <code>capture_feedback</code>, <code>feedback_summary</code>, <code>search_lessons</code>, <code>retrieve_lessons</code>, <code>prevention_rules</code>.</li>
-  <li><strong>Context engineering</strong> — <code>construct_context_pack</code>, <code>evaluate_context_pack</code>, <code>unified_context</code>, <code>recall</code>.</li>
-  <li><strong>Pre-action gates &amp; governance</strong> — <code>satisfy_gate</code>, <code>track_action</code>, <code>approve_protected_action</code>, <code>verify_claim</code>, <code>enforcement_matrix</code>.</li>
-  <li><strong>Diagnostics &amp; planning</strong> — <code>diagnose_failure</code>, <code>suggest_fix</code>, <code>security_scan</code>, and the <code>plan_*</code> advisory tools.</li>
-</ul>
-
-<h2>Reviewer credential (read-only)</h2>
-<div class="note">For directory reviewers: ThumbGate issues a dedicated <strong>read-only</strong> reviewer credential. A token bound to that credential may invoke only tools annotated <code>readOnlyHint: true</code>; any write or mutating tool call is rejected. This makes the credential safe to share for review without granting the ability to mutate shared server state. Request it from the contact below.</div>
-
-<h2>Source &amp; contact</h2>
-<p>Open-source CLI and server: <a href="https://github.com/IgorGanapolsky/ThumbGate">github.com/IgorGanapolsky/ThumbGate</a>. Questions or reviewer-credential requests: <a href="mailto:support@thumbgate.ai">support@thumbgate.ai</a>.</p>
-
-<footer><a href="/">ThumbGate</a> · <a href="/support">Support</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
-</body></html>`, {}, { headOnly: isHeadRequest });
-      return;
-    }
-
-    // Public support / contact page — required for Stripe Business → Public
-    // details "Customer support URL" field. Single source of truth for how
-    // customers reach us (email, GitHub issues, status page).
-    if (isGetLikeRequest && pathname === '/support') {
-      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Support — ThumbGate</title>
-<meta name="description" content="ThumbGate support, billing, refunds, and security contact paths.">
-<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}
-h1{font-size:28px;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}h3{font-size:16px;margin:18px 0 6px}
-p,li{font-size:15px}.meta{color:#6b7280;font-size:14px;margin:0 0 24px}
-.note{border-left:3px solid #0ea5e9;background:#f0f9ff;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
-.draft{border-left:3px solid #f59e0b;background:#fffbeb;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
-ul{padding-left:22px}li{margin:6px 0}a{color:#0066cc}
-footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}
-table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}
-th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:top}th{background:#f9fafb}</style></head><body>
-<h1>Support</h1>
-<p class="meta"><strong>ThumbGate</strong> support, billing, and contact paths.</p>
-
-<h2>Email</h2>
-<p>For billing, refunds, cancellation, and product support: <a href="mailto:support@thumbgate.ai">support@thumbgate.ai</a>. We reply within one business day when practical. Privacy deletion requests: <a href="mailto:privacy@thumbgate.ai">privacy@thumbgate.ai</a>.</p>
-
-<h2>GitHub Issues</h2>
-<p>For bugs, CLI questions, and feature requests in the open-source CLI: <a href="https://github.com/IgorGanapolsky/ThumbGate/issues">github.com/IgorGanapolsky/ThumbGate/issues</a>.</p>
-
-<h2>Status</h2>
-<p>Hosted-tier status: check <a href="https://thumbgate-production.up.railway.app/health">/health</a> for current health. Railway-hosted; rebuilds take 2-5 minutes.</p>
-
-<h2>Refunds</h2>
-<p>Pro / Team subscriptions: 7-day full refund window from first charge. $499 Enterprise Workflow Gate: full refund if the workflow is not a supported fit (see <a href="/terms">Terms</a>). Other one-off purchases: refund on request if we cannot deliver. Email the address above.</p>
-
-<h2>Support boundaries</h2>
-<p>Support covers product billing, Pro access, scoped Workflow Gate delivery, and hosted access. It does not include unlimited custom agent development, unrelated infrastructure debugging, or compliance certification work unless purchased separately.</p>
-
-<h2>Security</h2>
-<p>Disclose vulnerabilities by email with “Security” in the subject; please do not post to public GitHub issues. We acknowledge within 48 hours when practical. Overview: <a href="/security">/security</a>.</p>
-
-<footer>
-<a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> ·
-<a href="/privacy">Privacy</a> ·
-<a href="/terms">Terms</a> ·
-<a href="/security">Security</a> ·
-<a href="/legal">Legal index</a>
-</footer>
-</body></html>`, {}, {
-        headOnly: isHeadRequest,
-      });
-      return;
-    }
-
-    // Public security overview for buyer questionnaires (not a certification).
-    if (isGetLikeRequest && pathname === '/security') {
-      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Security — ThumbGate</title>
-<meta name="description" content="ThumbGate security overview: local-first control layer, hosted trust boundary, incident posture, and vulnerability disclosure.">
-<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}
-h1{font-size:28px;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}h3{font-size:16px;margin:18px 0 6px}
-p,li{font-size:15px}.meta{color:#6b7280;font-size:14px;margin:0 0 24px}
-.note{border-left:3px solid #0ea5e9;background:#f0f9ff;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
-.draft{border-left:3px solid #f59e0b;background:#fffbeb;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
-ul{padding-left:22px}li{margin:6px 0}a{color:#0066cc}
-footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}
-table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}
-th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:top}th{background:#f9fafb}</style></head><body>
-<h1>Security overview</h1>
-<p class="meta"><strong>ThumbGate</strong> · Last updated: 2026-08-12</p>
-<div class="draft">This page is a product security summary for buyers. It is not a SOC 2 report, pen-test certificate, or compliance certification.</div>
-
-<h2>Control layer model</h2>
-<p>ThumbGate’s product security value is pre-action control for AI agents: allow, warn, require approval, or hard-deny tool calls based on configured rules. It is not a guarantee that every unsafe action is detected.</p>
-
-<h2>Local-first boundary</h2>
-<p>The default local engine keeps workspace source and local lessons on your machine. Hosted surfaces process account, billing references, device pairing metadata, and runner operational logs as described in the <a href="/privacy">Privacy Policy</a>.</p>
-
-<h2>Engineering practices</h2>
-<ul>
-<li>TLS for hosted endpoints</li>
-<li>Secrets via host environment / secret store (not committed to git)</li>
-<li>Authenticated sensitive routes and HMAC-verified payment webhooks</li>
-<li>Least-privilege operator access to production</li>
-<li>Session / checkout lease controls to reduce concurrent destructive writes when agents honor the protocol</li>
-</ul>
-
-<h2>Incident notification posture</h2>
-<p>For enterprise customers under a signed agreement that includes incident terms, ThumbGate’s draft contractual target is notification within <strong>72 hours</strong> after confirming a personal-data or confidential hosted-content breach affecting that customer. Self-serve users without a signed schedule receive commercially reasonable notice, not a contractual SLA, unless added.</p>
-
-<h2>What we do not claim (yet)</h2>
-<ul>
-<li>ThumbGate SOC 2 / ISO 27001 certification</li>
-<li>HIPAA eligibility or default BAA</li>
-<li>Automatic GDPR DPA / SCCs for every customer</li>
-<li>100% uptime or 100% unsafe-action capture</li>
-</ul>
-
-<h2>Vulnerability disclosure</h2>
-<p>Email <a href="mailto:security@thumbgate.ai">security@thumbgate.ai</a> with “Security” in the subject. Do not file public issues for active vulnerabilities. Acknowledgement target: 48 hours.</p>
-
-<footer>
-<a href="/terms">Terms</a> ·
-<a href="/privacy">Privacy</a> ·
-<a href="/support">Support</a> ·
-<a href="/legal">Legal index</a>
-</footer>
-</body></html>`, {}, {
-        headOnly: isHeadRequest,
-      });
-      return;
-    }
-
-    // Legal index — entry point for counsel package + public legal URLs.
-    if (isGetLikeRequest && (pathname === '/legal' || pathname === '/legal/')) {
-      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Legal — ThumbGate</title>
-<meta name="description" content="ThumbGate legal index: Terms, Privacy, Support, Security, and product-counsel package.">
-<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}
-h1{font-size:28px;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}h3{font-size:16px;margin:18px 0 6px}
-p,li{font-size:15px}.meta{color:#6b7280;font-size:14px;margin:0 0 24px}
-.note{border-left:3px solid #0ea5e9;background:#f0f9ff;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
-.draft{border-left:3px solid #f59e0b;background:#fffbeb;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
-ul{padding-left:22px}li{margin:6px 0}a{color:#0066cc}
-footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}
-table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}
-th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:top}th{background:#f9fafb}</style></head><body>
-<h1>Legal</h1>
-<p class="meta">Public legal surfaces for ThumbGate paid and hosted paths.</p>
-<div class="draft">Markdown counsel package (data-flow map, full ToS modules, DPA posture, trademark checklist, claim matrix) lives in the repository under <code>docs/legal/</code>. Public routes below are the buyer-facing summaries.</div>
-<ul>
-<li><a href="/legal/data-flow"><strong>Product &amp; data-flow map</strong></a> — first-pass privacy/subscription counsel input</li>
-<li><a href="/terms">Terms of Service / EULA</a> — subscriptions, refunds, AUP, liability, control-layer disclaimer</li>
-<li><a href="/privacy">Privacy Policy</a> — local-first boundary, hosted processing, retention, deletion</li>
-<li><a href="/support">Support &amp; refunds</a> — billing, cancellation, status</li>
-<li><a href="/security">Security</a> — overview and vulnerability disclosure</li>
-<li><a href="/legal/licensing">MIT vs paid licensing boundary</a> — open source, Pro, customer rules ownership</li>
-<li><a href="/legal/msa-sow">MSA / SOW template</a> — managed services (if offered)</li>
-<li><a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/docs/legal">docs/legal on GitHub</a> — counsel package markdown</li>
-<li><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/THIRD_PARTY_NOTICES.md">Third-party notices</a></li>
-<li><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/LICENSE">MIT License</a></li>
-</ul>
-
-<div class="note"><strong>Highest-value first pass (before scaling paid usage):</strong>
-<ol>
-<li><a href="/legal/data-flow">Product &amp; data-flow map</a></li>
-<li><a href="/terms">Subscription / product terms</a></li>
-<li><a href="/privacy">Privacy policy</a></li>
-<li><a href="/legal/licensing">Open-source vs paid boundary</a></li>
-</ol>
-That package exposes whether a full MSA, DPA, or enterprise addendum is actually needed. Managed SOW remains at <a href="/legal/msa-sow">/legal/msa-sow</a> if implementation services are offered.
-</div>
-<p>Primary contact: <a href="mailto:support@thumbgate.ai">support@thumbgate.ai</a>. Formal legal notices: <a href="mailto:legal@thumbgate.ai">legal@thumbgate.ai</a>. Provision and secure these mailboxes before receiving customer data.</p>
-
-<footer>
-<a href="/">Home</a> ·
-<a href="/pricing">Pricing</a> ·
-<a href="/diagnostic">Diagnostic</a>
-</footer>
-</body></html>`, {}, {
-        headOnly: isHeadRequest,
-      });
-      return;
-    }
-
-
-
-    if (isGetLikeRequest && (pathname === '/legal/data-flow' || pathname === '/legal/data-flow/')) {
-      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Product &amp; data-flow map — ThumbGate</title>
-<meta name="description" content="What ThumbGate processes for local install, Pro, Stripe checkout, hosted features, and managed services — and what leaves the customer machine.">
-<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}h1{font-size:28px}h2{font-size:18px;margin-top:28px}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #e5e7eb;padding:8px;text-align:left;vertical-align:top}th{background:#f9fafb}a{color:#0066cc}.note{border-left:3px solid #0ea5e9;background:#f0f9ff;padding:10px 14px;margin:16px 0}footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}</style></head><body>
-<h1>Product &amp; data-flow map</h1>
-<p class="meta">Highest-value first pass for privacy and subscription counsel · Last updated: 2026-08-12</p>
-<div class="note">Short map of commercial flows. Full markdown: <code>docs/legal/PRODUCT_AND_DATA_FLOW.md</code>. This page is for buyers and counsel, not a DPA.</div>
-
-<h2>Surfaces</h2>
-<table>
-<tr><th>Surface</th><th>What it is</th><th>What may leave the machine</th></tr>
-<tr><td><strong>Local MIT CLI / hooks</strong></td><td>Pre-action gates, local lessons, rules</td><td>Workspace code stays local. Optional CLI telemetry (install/usage metadata) if not disabled (<code>THUMBGATE_NO_TELEMETRY=1</code> / <code>DO_NOT_TRACK=1</code>)</td></tr>
-<tr><td><strong>Website / marketing</strong></td><td>Pages, CTAs, first-party + Plausible/PostHog analytics where configured</td><td>Page views, CTA events, coarse browser data — not workspace source</td></tr>
-<tr><td><strong>Stripe checkout</strong></td><td>Pro (and any one-off offers)</td><td>Email, name, payment method handled by Stripe; ThumbGate receives payment status / customer id</td></tr>
-<tr><td><strong>Work-email collection</strong></td><td>Checkout forms, intake, newsletter/install email if used</td><td>Email + attribution fields stored/processed for billing, delivery, support</td></tr>
-<tr><td><strong>Pro / hosted account</strong></td><td>License entitlement, optional hosted features</td><td>Account identity, license state; only content customer routes to hosted endpoints</td></tr>
-<tr><td><strong>Dashboard</strong></td><td>Local or hosted operator UI</td><td>Local dashboard: stays on machine. Hosted UI: session/auth and displayed operational data</td></tr>
-<tr><td><strong>Hosted sync / app / runners</strong> (if used)</td><td>Pairing, leases, cloud execution</td><td>Device/pairing metadata, task success/fail logs; not full workspace by default</td></tr>
-<tr><td><strong>Support</strong></td><td>Email to support@</td><td>Whatever the customer pastes (prefer redacted, non-secret)</td></tr>
-<tr><td><strong>Managed SOW</strong> (if offered)</td><td>Human implementation</td><td>Only materials customer voluntarily shares under SOW</td></tr>
-</table>
-
-<h2>Subprocessors (operational)</h2>
-<p>Stripe (payments); Railway (hosting); Plausible / PostHog (web analytics where configured); Resend (email where configured); PayPal (if used). Listing is not a claim of signed customer DPAs or ThumbGate SOC 2. Enterprise DPA: negotiate when hosted processing of personal data requires it — see <code>docs/legal/DPA_POSTURE.md</code>.</p>
-
-<h2>Retention &amp; deletion (summary)</h2>
-<ul>
-<li>Local files: until customer deletes them</li>
-<li>Billing records: longer as required by tax/law</li>
-<li>Hosted operational logs: limited rolling retention (target ~30 days)</li>
-<li>Deletion requests: <a href="mailto:privacy@thumbgate.ai">privacy@thumbgate.ai</a> (or support@ if privacy mailbox not yet live)</li>
-</ul>
-
-<h2>Security responsibilities</h2>
-<p>Customer: production approvals, secrets, environment security, gate testing. ThumbGate: protect hosted account/billing data; customer-configured gates are not a guarantee of full interception. See <a href="/security">/security</a>.</p>
-
-<footer><a href="/legal">Legal index</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/legal/licensing">Licensing boundary</a></footer>
-</body></html>`, {}, { headOnly: isHeadRequest });
-      return;
-    }
-
-
-    // Public MIT vs paid licensing boundary (commercial clarity).
-    if (isGetLikeRequest && (pathname === '/legal/licensing' || pathname === '/legal/licensing/')) {
-      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MIT vs paid licensing — ThumbGate</title>
-<meta name="description" content="What ThumbGate licenses under MIT, what Pro and hosted services cover, who owns customer-specific rules, and what data leaves the machine.">
-<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}h1{font-size:28px}h2{font-size:18px;margin-top:28px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #e5e7eb;padding:8px;text-align:left}th{background:#f9fafb}a{color:#0066cc}footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}</style></head><body>
-<h1>MIT open source vs paid offerings</h1>
-<p class="meta">Last updated: 2026-08-12 · Counsel draft summary</p>
-<h2>What is MIT-licensed</h2>
-<p>The public repository and npm package <code>thumbgate</code> are MIT-licensed unless a file says otherwise: local CLI, hooks, public MCP tooling, docs and adapters published in that package.</p>
-<h2>What is proprietary / commercial</h2>
-<table><tr><th>Surface</th><th>Posture</th></tr>
-<tr><td>Hosted API / cloud service</td><td>Proprietary hosted service</td></tr>
-<tr><td>thumbgate.app pairing / runners (as offered)</td><td>Proprietary product</td></tr>
-<tr><td>Pro subscription features</td><td>Subscription license for commercial features listed at purchase</td></tr>
-<tr><td>Brand / logos / domains</td><td>Trademark — not MIT endorsement rights</td></tr>
-<tr><td>Managed SOW deliverables</td><td>Governed by MSA/SOW</td></tr>
-</table>
-<h2>What Pro licenses</h2>
-<p>Access to commercial features for the subscription term (e.g. personal dashboard, exports, adapter coverage as listed). Not a transfer of ThumbGate IP. Not an org-wide hosted team platform unless separately sold as GA.</p>
-<h2>Who owns customer-specific rules</h2>
-<p><strong>You own</strong> rules, configs, and golden tests you create. ThumbGate may reuse only <strong>generalized, non-confidential</strong> product improvements. Open-source contributions you submit are under MIT.</p>
-<h2>Support</h2>
-<p>Free MIT: GitHub Issues. Pro: product/billing support. Managed SOW: only what the SOW includes.</p>
-<h2>What data leaves the machine</h2>
-<p>Local CLI keeps workspace code local by default. Optional CLI telemetry is opt-out. Hosted/Pro processes account, billing, and only data you send to hosted endpoints. See <a href="/privacy">Privacy</a>.</p>
-<h2>Production approvals</h2>
-<p>Customers remain responsible for production approvals and outcomes of agent work. ThumbGate is a control layer, not a guarantee.</p>
-<footer><a href="/legal">Legal index</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="mailto:legal@thumbgate.ai">legal@thumbgate.ai</a></footer>
-</body></html>`, {}, { headOnly: isHeadRequest });
-      return;
-    }
-
-    if (isGetLikeRequest && (pathname === '/legal/msa-sow' || pathname === '/legal/msa-sow/')) {
-      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MSA &amp; SOW template — ThumbGate managed services</title>
-<meta name="description" content="Template master services and statement-of-work terms for ThumbGate managed implementations, when offered.">
-<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}h1{font-size:28px}h2{font-size:18px;margin-top:28px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #e5e7eb;padding:8px;text-align:left;vertical-align:top}th{background:#f9fafb}a{color:#0066cc}.note{border-left:3px solid #f59e0b;background:#fffbeb;padding:10px 14px;margin:16px 0}footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}</style></head><body>
-<h1>MSA &amp; SOW (managed services template)</h1>
-<div class="note">Template for buyers and counsel when managed services are offered. Self-serve Pro is governed by <a href="/terms">Terms</a> + checkout, not this SOW. Public managed offers may be retired; this page remains for contractual hygiene.</div>
-<h2>Master Services Agreement (summary)</h2>
-<ul>
-<li>Services only as defined in an executed SOW</li>
-<li>Fees, taxes, and payment as stated in the SOW / Stripe</li>
-<li>Customer provides owner, access, non-secret samples; delays pause timelines</li>
-<li>Pre-existing ThumbGate IP remains ThumbGate’s; customer owns customer-specific configs delivered under the SOW</li>
-<li>Mutual confidentiality; no marketing use of customer secrets</li>
-<li>No warranty that every unsafe agent action will be blocked</li>
-<li>Liability capped at fees paid under the SOW in the prior 12 months (to the extent permitted by law)</li>
-</ul>
-<h2>Statement of Work fields</h2>
-<table>
-<tr><th>In scope (example)</th><td>One supported workflow; one configured gate; regression evidence; rollout/rollback writeup</td></tr>
-<tr><th>Out of scope (example)</th><td>Multi-workflow, SSO, compliance certification, 24/7 monitoring, guaranteed savings</td></tr>
-<tr><th>Acceptance</th><td>Written confirmation or N business days without material objection</td></tr>
-<tr><th>Customer confidentiality</th><td>Materials used only to perform the SOW</td></tr>
-<tr><th>Security</th><td>Customer owns production approvals and secrets; provider protects materials received</td></tr>
-</table>
-<p>Full template markdown: <code>docs/legal/MSA_SOW_TEMPLATE.md</code> in the repository.</p>
-<footer><a href="/legal">Legal index</a> · <a href="/terms">Terms</a> · <a href="mailto:legal@thumbgate.ai">legal@thumbgate.ai</a></footer>
-</body></html>`, {}, { headOnly: isHeadRequest });
-      return;
-    }
-
-
-    // Public privacy policy — required for GPT Store and marketplace listings.
-    // Congruent with docs/legal/PRIVACY_POLICY.md (local-first vs hosted data).
-    if (isGetLikeRequest && pathname === '/privacy') {
-      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Privacy Policy — ThumbGate</title>
-<meta name="description" content="ThumbGate Privacy Policy: local-first workspace boundary, account and billing data, hosted runner metadata, retention, and deletion.">
-<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}
-h1{font-size:28px;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}h3{font-size:16px;margin:18px 0 6px}
-p,li{font-size:15px}.meta{color:#6b7280;font-size:14px;margin:0 0 24px}
-.note{border-left:3px solid #0ea5e9;background:#f0f9ff;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
-.draft{border-left:3px solid #f59e0b;background:#fffbeb;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
-ul{padding-left:22px}li{margin:6px 0}a{color:#0066cc}
-footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}
-table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}
-th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:top}th{background:#f9fafb}</style></head><body>
-<h1>Privacy Policy</h1>
-<p class="meta"><strong>ThumbGate</strong> (npm: thumbgate) · Last updated: 2026-08-12</p>
-<div class="draft"><strong>Product counsel draft on public routes.</strong> Full data-flow and DPA posture live in <code>docs/legal/</code>. This page is the marketplace-facing summary.</div>
-
-<h2>Data Collection</h2>
-<p>The self-hosted version stores workflow data locally on your machine. Local feedback, memory entries, proof artifacts, and context packs stay in your project files unless you explicitly point the system at a hosted endpoint.</p>
-<p>The hosted tier (production API / thumbgate.app features) may store feedback signals, memory entries, pairing metadata, and related workflow metadata associated with your account or API key.</p>
-<p>Optional CLI telemetry is best-effort and covers install or usage metadata needed to understand adoption and failures. You can disable it with <code>THUMBGATE_NO_TELEMETRY=1</code> or <code>DO_NOT_TRACK=1</code>.</p>
-
-<div class="note"><strong>Local-first is not “zero personal data.”</strong> “No workspace telemetry is fetched or rendered publicly” means we do not publish your workspace source code on public dashboards. Account, billing, device, support, and cloud-runner metadata may still be processed when you use those surfaces.</div>
-
-<h2>Data Stored</h2>
-<ul>
-<li>Feedback signals (thumbs up/down) with context you provide</li>
-<li>Promoted memory entries and prevention rules (local by default; hosted only if you use hosted features)</li>
-<li>Account and billing identifiers for paid products (via Stripe and related processors)</li>
-<li>Device / pairing identifiers and lease metadata for hosted app features</li>
-<li>Cloud-runner operational logs (timestamps, success/fail, error summaries)</li>
-<li>Web analytics events on marketing and checkout pages (Plausible / PostHog / first-party funnel events where configured)</li>
-</ul>
-
-<h2>Data Sharing</h2>
-<p>We do not sell customer data. Hosted data is used to operate the service and is not shared with third parties except for infrastructure and payment providers needed to run the product, or when required by law.</p>
-
-<h2>Subprocessors (operational)</h2>
-<table>
-<thead><tr><th>Vendor</th><th>Role</th></tr></thead>
-<tbody>
-<tr><td>Stripe</td><td>Payment processing</td></tr>
-<tr><td>Railway</td><td>Application hosting</td></tr>
-<tr><td>Plausible</td><td>Web analytics</td></tr>
-<tr><td>PostHog</td><td>Product analytics (where configured)</td></tr>
-<tr><td>Resend</td><td>Transactional email (where configured)</td></tr>
-<tr><td>PayPal</td><td>Alternate payment rail (where used)</td></tr>
-<tr><td>GitHub</td><td>Source hosting and marketplace surfaces</td></tr>
-</tbody>
-</table>
-<p>Listing a vendor is not a claim that ThumbGate is SOC 2 or HIPAA certified, or that a signed GDPR DPA is automatically in place for every customer.</p>
-
-<h2>Data Retention</h2>
-<p>Local data is retained until you delete the files. Hosted account data is retained while your account or API key remains active, or until you request deletion, subject to operational or legal retention requirements. Cloud-runner operational logs are retained on a limited basis (target: 30 days). Billing records may be retained longer for tax and fraud prevention.</p>
-
-<h2>Data Deletion</h2>
-<p>Contact <a href="mailto:privacy@thumbgate.ai">privacy@thumbgate.ai</a> to request deletion of hosted data. Verified requests are processed within 30 days except for legal holds.</p>
-
-<h2>Security &amp; incidents</h2>
-<p>See <a href="/security">/security</a> for security overview language. Enterprise incident-notification and DPA terms are negotiated separately when those artifacts are executed.</p>
-
-<h2>Contact</h2>
-<p>Privacy and deletion requests: <a href="mailto:privacy@thumbgate.ai">privacy@thumbgate.ai</a></p>
-<footer>
-<a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> ·
-<a href="/terms">Terms</a> ·
-<a href="/support">Support</a> ·
-<a href="/security">Security</a> ·
-<a href="/legal">Legal index</a>
-</footer>
-</body></html>`, {}, {
-        headOnly: isHeadRequest,
-      });
+    // Public Remote MCP Connector Documentation.
+    if (isGetLikeRequest && (pathname === '/docs/connectors' || pathname === '/docs/connectors/' || pathname === '/docs/connectors.html')) {
+      try {
+        const connectorsHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'docs', 'connectors.html'), 'utf-8');
+        sendHtml(res, 200, connectorsHtml, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'Connectors documentation not found' });
+      }
       return;
     }
 

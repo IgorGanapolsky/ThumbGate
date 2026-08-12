@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — ThumbGate</title>
+  <meta name="description" content="ThumbGate Privacy Policy, Zero Workspace Telemetry Guarantee, DPA framework, subprocessors list, data retention rules, and security overview.">
+  <link rel="canonical" href="https://thumbgate.ai/privacy">
+  <style>
+    :root { --ink:#171d1a; --muted:#5b6761; --paper:#f5f2e9; --card:#fffdf8; --line:#d8d4c8; --green:#006e52; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.6; }
+    a { color:var(--green); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .shell { width:min(860px,calc(100% - 40px)); margin:0 auto; padding:48px 0 80px; }
+    nav { border-bottom:1px solid var(--line); background:rgba(245,242,233,.95); padding:16px 0; }
+    .nav-inner { width:min(860px,calc(100% - 40px)); margin:0 auto; display:flex; justify-content:space-between; align-items:center; }
+    .brand { font-weight:900; font-size:1.2rem; text-decoration:none; color:var(--ink); }
+    h1 { font-size:2.2rem; margin:24px 0 8px; letter-spacing:-.03em; }
+    h2 { font-size:1.35rem; margin:32px 0 12px; border-bottom:1px solid var(--line); padding-bottom:6px; letter-spacing:-.02em; }
+    h3 { font-size:1.1rem; margin:24px 0 8px; }
+    .meta { color:var(--muted); font-size:.9rem; margin-bottom:28px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px; margin:20px 0; }
+    code { background:#eae6d8; padding:2px 6px; border-radius:4px; font-size:.9em; }
+    table { width:100%; border-collapse:collapse; margin:18px 0; }
+    th, td { border:1px solid var(--line); padding:10px 12px; text-align:left; font-size:.92rem; }
+    th { background:#eae6d8; }
+    ul { padding-left:22px; }
+    li { margin:6px 0; }
+    footer { margin-top:60px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:.88rem; }
+    .trademark { font-size:.8rem; color:var(--muted); margin-top:18px; line-height:1.5; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a class="brand" href="/">ThumbGate</a>
+      <div>
+        <a href="/pricing">Pricing</a> ·
+        <a href="/terms">Terms</a> ·
+        <a href="/support">Support</a> ·
+        <a href="/third-party-notices">Third-Party Notices</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="shell">
+    <h1>Privacy Policy &amp; Data Protection Disclosure</h1>
+    <div class="meta">Last Updated: August 12, 2026 · Version 1.3.0</div>
+
+    <div class="card">
+      <strong>Zero Workspace Telemetry Guarantee.</strong> The local <code>thumbgate</code> CLI and open-source engine operate on your host disk (<code>~/.thumbgate/</code>, <code>.claude/</code>). Zero workspace source code, repository contents, or project file data is fetched, transmitted, or publicly rendered by ThumbGate.
+    </div>
+
+    <h2>1. What Stays Local</h2>
+    <ul>
+      <li>Your source code, local repositories, and workspace files.</li>
+      <li>Local prevention rules, context packs, and lesson store.</li>
+      <li>Local MCP execution traces and shell command history.</li>
+    </ul>
+
+    <h2>2. Information We Process</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Data Category</th>
+          <th>Purpose</th>
+          <th>Retention</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Account &amp; Identity</td>
+          <td>Authentication, billing, and administration</td>
+          <td>Life of account</td>
+        </tr>
+        <tr>
+          <td>Billing &amp; Transactions</td>
+          <td>Payments, tax, and fraud prevention</td>
+          <td>7 years (tax records)</td>
+        </tr>
+        <tr>
+          <td>Device &amp; Pairing Data</td>
+          <td>Cryptographic pairing between devices and cloud runners</td>
+          <td>While device is paired</td>
+        </tr>
+        <tr>
+          <td>Cloud Runner Metadata</td>
+          <td>Operate runners and prevent double-execution</td>
+          <td>30-day rolling purge</td>
+        </tr>
+        <tr>
+          <td>Support &amp; Diagnostic Data</td>
+          <td>Technical support and troubleshooting</td>
+          <td>2 years after resolution</td>
+        </tr>
+        <tr>
+          <td>Aggregate Web Telemetry</td>
+          <td>Landing page performance (anonymous)</td>
+          <td>Privacy-first analytics</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. Subprocessors</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Subprocessor</th>
+          <th>Function</th>
+          <th>Safeguards</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Stripe, Inc.</strong></td>
+          <td>Payment processing and subscription management</td>
+          <td>PCI-DSS Level 1, DPA with SCCs</td>
+        </tr>
+        <tr>
+          <td><strong>Railway / AWS / GCP</strong></td>
+          <td>Cloud runner and API hosting</td>
+          <td>SOC 2 Type II, AES-256 encryption</td>
+        </tr>
+        <tr>
+          <td><strong>Supabase Inc.</strong></td>
+          <td>Managed PostgreSQL for account metadata</td>
+          <td>SOC 2 Type II, encrypted storage</td>
+        </tr>
+        <tr>
+          <td><strong>PostHog / Plausible</strong></td>
+          <td>Anonymous marketing analytics</td>
+          <td>Privacy-first, zero-workspace tracking</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>4. Data Retention &amp; Deletion</h2>
+    <p>Account data is retained while the account remains active. You may request deletion or export by emailing <a href="mailto:privacy@thumbgate.ai">privacy@thumbgate.ai</a>. Cloud runner logs are purged automatically after 30 days. Local data is controlled by you; deleting local directories removes it permanently.</p>
+
+    <h2>5. Enterprise Data Processing Addendum</h2>
+    <p>Enterprise customers may request a DPA covering GDPR, UK GDPR, and CCPA/CPRA. ThumbGate acts as a processor, processing data only on your documented instructions. Security measures include TLS 1.3 in transit, AES-256 at rest, RBAC, MFA, and zero-trust administrative access.</p>
+
+    <h2>6. Security Incident Notification</h2>
+    <p>We will notify your designated security contact without undue delay and no later than 72 hours after confirming a security incident affecting your personal or operational metadata.</p>
+
+    <h2>7. International Data Transfers</h2>
+    <p>Data may be transferred to and processed in the United States. We implement Standard Contractual Clauses approved by the European Commission for cross-border transfers.</p>
+
+    <h2>8. Data Portability</h2>
+    <p>Upon termination, enterprise customers may request a machine-readable export of account metadata, cloud logs within the retention window, and configured rule schemas. ThumbGate will provide the export within 30 days and delete remaining cloud-hosted data within 90 days, except where longer retention is required by law.</p>
+
+    <h2>9. Contact</h2>
+    <p>For privacy inquiries, DPA requests, or data subject access requests: <a href="mailto:privacy@thumbgate.ai">privacy@thumbgate.ai</a> · <a href="mailto:security@thumbgate.ai">security@thumbgate.ai</a></p>
+
+    <footer>
+      <p><a href="/">ThumbGate</a> · <a href="/terms">Terms of Service</a> · <a href="/support">Support</a> · <a href="/third-party-notices">Third-Party Notices</a></p>
+      <p class="trademark">Third-party trademarks are the property of their respective owners. ThumbGate is an independent product and is not affiliated with, endorsed by, or sponsored by any third-party entity referenced herein.</p>
+    </footer>
+  </main>
+</body>
+</html>
