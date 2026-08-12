@@ -141,6 +141,7 @@ const {
 } = require('../../scripts/billing');
 const {
   ensureProductionSearchCorpus,
+  shouldEnsureProductionSearchCorpus,
 } = require('../../scripts/ensure-production-search-corpus');
 const {
   DEFAULT_PUBLIC_APP_ORIGIN,
@@ -10881,13 +10882,15 @@ function startServer({ port, host } = {}) {
   fs.mkdirSync(feedbackPaths.FEEDBACK_DIR, { recursive: true });
   // Hosted volumes often start empty (Docker does not ship .claude/memory).
   // Seed a durable "thumbgate" corpus so authenticated deploy proof can verify retrieval.
-  try {
-    const seedResult = ensureProductionSearchCorpus({ feedbackDir: feedbackPaths.FEEDBACK_DIR });
-    if (seedResult.wrote.memory || seedResult.wrote.feedback || seedResult.wrote.rules) {
-      console.log('[startup] ensured production search corpus seed', JSON.stringify(seedResult.wrote));
+  if (shouldEnsureProductionSearchCorpus(process.env)) {
+    try {
+      const seedResult = ensureProductionSearchCorpus({ feedbackDir: feedbackPaths.FEEDBACK_DIR });
+      if (seedResult.wrote.memory || seedResult.wrote.feedback || seedResult.wrote.rules) {
+        console.log('[startup] ensured production search corpus seed', JSON.stringify(seedResult.wrote));
+      }
+    } catch (err) {
+      console.warn('[startup] ensure production search corpus failed:', err?.message || err);
     }
-  } catch (err) {
-    console.warn('[startup] ensure production search corpus failed:', err?.message || err);
   }
   const server = createApiServer();
   registerGracefulShutdown(server);

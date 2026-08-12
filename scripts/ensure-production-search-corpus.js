@@ -20,6 +20,19 @@ const SEED_ID = 'seed_deploy_proof_thumbgate_v1';
 const SEED_FEEDBACK_ID = 'fb_seed_deploy_proof_thumbgate_v1';
 const SEED_RULE_HEADING = '## ThumbGate deploy-proof prevention seed';
 
+
+function shouldEnsureProductionSearchCorpus(env = process.env) {
+  if (String(env.THUMBGATE_SKIP_SEARCH_CORPUS_SEED || '').trim() === '1') return false;
+  if (String(env.THUMBGATE_ENSURE_SEARCH_CORPUS || '').trim() === '1') return true;
+  // Hosted deploy surfaces only — never seed local/temp/E2E feedback dirs.
+  return Boolean(
+    env.RAILWAY_ENVIRONMENT
+    || env.RAILWAY_VOLUME_MOUNT_PATH
+    || env.K_SERVICE
+    || env.CLOUD_RUN_JOB
+  );
+}
+
 function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
 }
@@ -134,6 +147,7 @@ module.exports = {
   SEED_ID,
   SEED_FEEDBACK_ID,
   SEED_RULE_HEADING,
+  shouldEnsureProductionSearchCorpus,
   ensureProductionSearchCorpus,
 };
 

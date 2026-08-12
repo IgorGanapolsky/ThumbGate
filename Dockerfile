@@ -54,6 +54,7 @@ USER thumbgate
 # Railway / Cloud Run sets PORT dynamically; default to 8787
 ENV PORT=8787
 ENV NODE_ENV=production
+ENV THUMBGATE_ENSURE_SEARCH_CORPUS=1
 
 EXPOSE ${PORT}
 

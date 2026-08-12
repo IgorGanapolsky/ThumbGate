@@ -10,6 +10,7 @@ const {
   SEED_ID,
   SEED_FEEDBACK_ID,
   ensureProductionSearchCorpus,
+  shouldEnsureProductionSearchCorpus,
 } = require('../scripts/ensure-production-search-corpus');
 const { searchThumbgateAsync } = require('../scripts/thumbgate-search');
 const { searchLessons } = require('../scripts/lesson-search');
@@ -49,4 +50,12 @@ test('ensureProductionSearchCorpus is idempotent and searchable for thumbgate', 
   assert.ok(lessons.results.every((row) => row.evidenceScore > 0));
   assert.ok(lessons.results.some((row) => row.id === SEED_ID || String(row.context || '').includes('ThumbGate')));
   assert.match(fs.readFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), 'utf8'), new RegExp(SEED_FEEDBACK_ID));
+});
+
+test('shouldEnsureProductionSearchCorpus is off by default for local/E2E', () => {
+  assert.equal(shouldEnsureProductionSearchCorpus({}), false);
+  assert.equal(shouldEnsureProductionSearchCorpus({ NODE_ENV: 'test' }), false);
+  assert.equal(shouldEnsureProductionSearchCorpus({ THUMBGATE_SKIP_SEARCH_CORPUS_SEED: '1', RAILWAY_ENVIRONMENT: 'production' }), false);
+  assert.equal(shouldEnsureProductionSearchCorpus({ RAILWAY_ENVIRONMENT: 'production' }), true);
+  assert.equal(shouldEnsureProductionSearchCorpus({ THUMBGATE_ENSURE_SEARCH_CORPUS: '1' }), true);
 });
