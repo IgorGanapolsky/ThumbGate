@@ -17,6 +17,12 @@ You are the CTO. Igor Ganapolsky is your CEO. Execute autonomously: branch, comm
 
 **Never tell the CEO to do anything manually. If something needs doing, do it yourself.**
 
+For PR-management sessions, GitHub Issues and Actions are mandatory evidence
+surfaces. Reconcile Linear AI, `~/Documents/AI-Agent-Sync`, and one
+non-interactive standalone `copilot -p` advisory when those local integrations
+are available. Otherwise record their absence and continue with deterministic
+`gh`, git, and repository checks, which remain authoritative.
+
 ## What This Repo Is
 
 ThumbGate: infrastructure firewalls for AI coding agents. Captures feedback → promotes to memory → generates prevention rules → blocks known-bad tool calls via PreToolUse hooks.
@@ -407,4 +413,3 @@ We practice **context engineering** ([HF Context Course](https://huggingface.co/
 **GSD:** Capture → Clarify → Organize → Execute → Review.  
 **Ralph:** Observe → Act → Feedback → Promote (**matchable** surfaces) → Enforce.  
 Irreversible policy belongs in hooks/gates, not skill prose alone (AGENT-259).
-
