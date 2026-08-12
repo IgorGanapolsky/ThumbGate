@@ -10,6 +10,10 @@ Key: Always dogfood the latest local changes before publishing.
 
 - Start by reading all three repo directives, querying local ThumbGate memory,
   and inspecting open PRs, remote branches, worktrees, and current `main` CI.
+- Reconcile GitHub Issues and Actions plus available Linear AI, Obsidian vault,
+  and standalone GitHub Copilot CLI surfaces. Record unavailable local
+  integrations and continue with deterministic `gh`, git, and repository
+  checks, which remain authoritative.
 - Merge only review-complete PRs with terminal-green required checks, using
   `npm run pr:manage` and Trunk. Never approve, dismiss, bypass, or weaken a
   human-review or branch-protection requirement.
