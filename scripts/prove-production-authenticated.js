@@ -11,7 +11,7 @@ const DEFAULT_PRODUCTION_PROOF_HOSTS = Object.freeze([
   'thumbgate.ai',
   'www.thumbgate.ai',
 ]);
-const DEFAULT_TIMEOUT_MS = 12_000;
+const DEFAULT_TIMEOUT_MS = 15_000;
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 2_000;
 
@@ -246,8 +246,9 @@ function buildChecks({
         const source = isObject(body.operational) ? body.operational.source : null;
         const approvalTotal = isObject(body.approval) ? body.approval.total : null;
         const totalGates = isObject(body.gateStats) ? body.gateStats.totalGates : null;
+        const sourceOk = source === expectedDashboardSource;
         return {
-          valid: source === expectedDashboardSource
+          valid: sourceOk
             && Number.isFinite(approvalTotal)
             && Number.isFinite(totalGates)
             && isObject(body.health)
