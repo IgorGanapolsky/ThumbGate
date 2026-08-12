@@ -86,7 +86,7 @@ function stableStringify(value) {
   if (Array.isArray(value)) {
     return `[${value.map((entry) => stableStringify(entry)).join(',')}]`;
   }
-  const keys = Object.keys(value).sort();
+  const keys = Object.keys(value).sort((left, right) => left.localeCompare(right));
   const parts = keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`);
   return `{${parts.join(',')}}`;
 }
