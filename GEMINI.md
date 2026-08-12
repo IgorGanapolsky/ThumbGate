@@ -10,6 +10,10 @@ Key: Always dogfood the latest local changes before publishing.
 
 - Start by reading all three repo directives, querying local ThumbGate memory,
   and inspecting open PRs, remote branches, worktrees, and current `main` CI.
+- Reconcile GitHub Issues and Actions, Linear AI ownership, and the local
+  Obsidian vault at `~/Documents/AI-Agent-Sync`; obtain one non-interactive
+  standalone GitHub Copilot CLI advisory while keeping deterministic checks
+  authoritative.
 - Merge only review-complete PRs with terminal-green required checks, using
   `npm run pr:manage` and Trunk. Never approve, dismiss, bypass, or weaken a
   human-review or branch-protection requirement.
