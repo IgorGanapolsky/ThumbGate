@@ -8449,29 +8449,98 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     // Public terms of service — required by Stripe / Stripe Checkout for the
     // "Terms of service URL" field in Business → Public details. Mirrors the
     // /privacy + /support pages: thin HTML, no external deps, no DB hit.
+    // Congruent with docs/legal/TERMS_OF_SERVICE.md (refund fence + control layer).
     if (isGetLikeRequest && pathname === '/terms') {
-      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Terms of Service — ThumbGate</title></head><body>
+      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Terms of Service — ThumbGate</title>
+<meta name="description" content="ThumbGate Terms of Service for the local engine, Pro subscription, $499 Enterprise Workflow Gate, and hosted thumbgate.app surfaces.">
+<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}
+h1{font-size:28px;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}h3{font-size:16px;margin:18px 0 6px}
+p,li{font-size:15px}.meta{color:#6b7280;font-size:14px;margin:0 0 24px}
+.note{border-left:3px solid #0ea5e9;background:#f0f9ff;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
+.draft{border-left:3px solid #f59e0b;background:#fffbeb;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
+ul{padding-left:22px}li{margin:6px 0}a{color:#0066cc}
+footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}
+th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:top}th{background:#f9fafb}</style></head><body>
 <h1>Terms of Service</h1>
-<p><strong>ThumbGate</strong> (npm: thumbgate)</p>
-<p>Last updated: 2026-05-12</p>
+<p class="meta"><strong>ThumbGate</strong> (npm: thumbgate) · Last updated: 2026-08-12</p>
+<div class="draft"><strong>Product counsel draft on public routes.</strong> These terms are a commercial summary for buyers and Stripe. They are not a substitute for a lawyer reviewing the full package in <code>docs/legal/</code> before enterprise procurement.</div>
+
 <h2>The Service</h2>
-<p>ThumbGate provides pre-action gates for AI coding agents: a local CLI (MIT-licensed) and an optional hosted tier at thumbgate-production.up.railway.app. By installing the CLI or paying for a subscription, you agree to these terms.</p>
+<p>ThumbGate provides pre-action gates for AI coding agents: a local CLI (MIT-licensed), optional paid Pro features, professional services (including the $499 Enterprise Workflow Gate), and optional hosted surfaces at thumbgate.app / the production API host. By installing the CLI, creating an account, or paying for a product or service, you agree to these terms.</p>
+
+<div class="note"><strong>Control layer, not a guarantee.</strong> ThumbGate is a control layer and workflow policy engine. It does <em>not</em> guarantee that every unsafe, incorrect, or malicious agent action will be detected or blocked. Hard denies and warnings depend on your configuration, strict mode, supported integrations, and your own testing.</div>
+
+<h2>Accounts</h2>
+<p>Paid tiers, hosted pairing, and professional services may require accurate account or email information. You are responsible for credential security and activity under your account.</p>
+
 <h2>Payment</h2>
-<p>Paid tiers are billed through Stripe. Subscriptions auto-renew until cancelled. One-off purchases (Sprint Diagnostic, Workflow Sprint, Quick Read, Workflow Teardown, First Failure Rule) are charged once.</p>
+<p>Paid tiers are billed through Stripe (and any other documented payment rail). Subscriptions auto-renew until cancelled. One-off purchases (including the Enterprise Workflow Gate) are charged once. Taxes may apply as shown at checkout.</p>
+
+<h2>Trials &amp; free use</h2>
+<p>Free CLI use and trials are provided as-is, without SLA or indemnification.</p>
+
 <h2>Refunds</h2>
-<p>Pro and Team subscriptions: cancel anytime; we issue a full refund within 7 days of the first charge, prorated thereafter. One-off purchases: refund on request if we cannot deliver the scoped artifact.</p>
+<ul>
+<li><strong>Pro and Team subscriptions:</strong> cancel anytime; full refund within 7 days of the first charge on request; thereafter access continues through the paid period unless law requires otherwise.</li>
+<li><strong>$499 Enterprise Workflow Gate:</strong> if the repeated failure cannot be reduced to one supported ThumbGate gate, the order is <strong>refunded in full</strong> instead of being converted into open-ended consulting. After delivery and acceptance of the regression evidence package, the fee is non-refundable except as required by law.</li>
+<li><strong>Other one-off purchases:</strong> refund on request if we cannot deliver the scoped artifact.</li>
+</ul>
+
+<h2>$499 Enterprise Workflow Gate (narrow deliverable)</h2>
+<p>For the one-time fee published on the diagnostic and pricing pages, the deliverable is limited to:</p>
+<ol>
+<li>One supported workflow</li>
+<li>One configured local pre-action gate</li>
+<li>Regression evidence for that gate</li>
+<li>Written rollout and rollback proof</li>
+<li>Target delivery within two business days after required access and materials</li>
+</ol>
+<p>You must provide an accountable owner, non-secret examples or logs, integration access, and acceptance cases. Multi-workflow rollout, hosted team SSO/sync, compliance certification, 24/7 monitoring, and guaranteed incident prevention are out of scope unless separately contracted.</p>
+
+<h2>Hosted platform &amp; thumbgate.app</h2>
+<p>Hosted features may include device pairing, mobile approval, leases, and cloud runners. Offline defaults prefer fail-closed or paused gated actions. Lease locks reduce double-execution risk but cannot eliminate delays or duplicate notifications after network partitions. Where human approval is requested, the human operator remains responsible for approve/reject decisions.</p>
+
 <h2>Acceptable Use</h2>
-<p>You may not use ThumbGate to (a) circumvent the safety controls of other AI providers, (b) generate malware or content that violates third-party terms, or (c) resell the hosted tier without written permission.</p>
+<p>You may not use ThumbGate to (a) violate law or third-party rights, (b) primarily circumvent another provider’s safety controls for abuse, (c) generate malware or run unauthorized attacks, (d) spam or scrape without authorization via runners, or (e) resell the hosted tier without written permission.</p>
+
+<h2>Support boundaries</h2>
+<p>Email support covers billing, Pro, Workflow Gate delivery, and hosted access. GitHub Issues cover open-source CLI bugs. Support does not include unlimited debugging of custom agent code outside the configured gate scope.</p>
+
+<h2>Beta features</h2>
+<p>Beta or experimental features may change without notice and carry no warranty or SLA.</p>
+
+<h2>Third-party models &amp; cloud dependencies</h2>
+<p>ThumbGate interoperates with third-party models, IDEs, MCP hosts, and clouds. We are not responsible for their outages, rate limits, model behavior, or policy changes. Third-party names are trademarks of their owners; use is for compatibility identification only and does not imply endorsement.</p>
+
+<h2>Customer responsibilities</h2>
+<p>You configure and test gates, secure devices and keys, provide accurate service materials, and remain responsible for work your agents perform.</p>
+
 <h2>Disclaimer of Warranty</h2>
 <p>The service is provided "as is", without warranty of any kind. ThumbGate is a guard rail, not a guarantee. We do not warrant that every AI-agent mistake will be prevented.</p>
+
 <h2>Limitation of Liability</h2>
-<p>Total liability for any claim is limited to the amount you paid in the 12 months preceding the claim.</p>
+<p>To the maximum extent permitted by law, ThumbGate is not liable for indirect, incidental, special, consequential, or punitive damages. Total liability for any claim is limited to the amount you paid in the 12 months preceding the claim (or $100 if you paid nothing).</p>
+
+<h2>Suspension &amp; termination</h2>
+<p>We may suspend or terminate access for material breach, non-payment, acceptable-use violations, or security risk. Hosted access ends on termination; MIT-licensed local code remains under its license.</p>
+
 <h2>Governing Law</h2>
 <p>These terms are governed by the laws of the State of New York, United States.</p>
+
 <h2>Changes</h2>
-<p>We may update these terms; material changes will be announced via the email on file at least 14 days before they take effect.</p>
-<h2>Contact</h2><p>igor.ganapolsky@gmail.com</p>
-<p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/privacy">Privacy</a> · <a href="/support">Support</a></p>
+<p>We may update these terms; material changes will be posted on this page and, for paid accounts with email on file, announced with reasonable notice when practical.</p>
+
+<h2>Contact</h2>
+<p><a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a></p>
+<footer>
+<a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> ·
+<a href="/privacy">Privacy</a> ·
+<a href="/support">Support</a> ·
+<a href="/security">Security</a> ·
+<a href="/legal">Legal index</a>
+</footer>
 </body></html>`, {}, {
         headOnly: isHeadRequest,
       });
@@ -8571,49 +8640,219 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     // details "Customer support URL" field. Single source of truth for how
     // customers reach us (email, GitHub issues, status page).
     if (isGetLikeRequest && pathname === '/support') {
-      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Support — ThumbGate</title></head><body>
+      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Support — ThumbGate</title>
+<meta name="description" content="ThumbGate support, billing, refunds, and security contact paths.">
+<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}
+h1{font-size:28px;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}h3{font-size:16px;margin:18px 0 6px}
+p,li{font-size:15px}.meta{color:#6b7280;font-size:14px;margin:0 0 24px}
+.note{border-left:3px solid #0ea5e9;background:#f0f9ff;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
+.draft{border-left:3px solid #f59e0b;background:#fffbeb;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
+ul{padding-left:22px}li{margin:6px 0}a{color:#0066cc}
+footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}
+th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:top}th{background:#f9fafb}</style></head><body>
 <h1>Support</h1>
-<p><strong>ThumbGate</strong> support, billing, and contact paths.</p>
+<p class="meta"><strong>ThumbGate</strong> support, billing, and contact paths.</p>
+
 <h2>Email</h2>
-<p>For billing questions, refunds, subscription changes, or technical issues with the hosted tier: <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>. We reply within one business day.</p>
+<p>For billing questions, refunds, subscription changes, Workflow Gate delivery, or technical issues with the hosted tier: <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>. We reply within one business day when practical.</p>
+
 <h2>GitHub Issues</h2>
 <p>For bugs, CLI questions, and feature requests in the open-source CLI: <a href="https://github.com/IgorGanapolsky/ThumbGate/issues">github.com/IgorGanapolsky/ThumbGate/issues</a>.</p>
+
 <h2>Status</h2>
 <p>Hosted-tier status: check <a href="https://thumbgate-production.up.railway.app/health">/health</a> for current health. Railway-hosted; rebuilds take 2-5 minutes.</p>
+
 <h2>Refunds</h2>
-<p>Pro / Team subscriptions: 7-day full refund window from first charge. One-off purchases: refund on request if we cannot deliver. Email the address above.</p>
+<p>Pro / Team subscriptions: 7-day full refund window from first charge. $499 Enterprise Workflow Gate: full refund if the workflow is not a supported fit (see <a href="/terms">Terms</a>). Other one-off purchases: refund on request if we cannot deliver. Email the address above.</p>
+
+<h2>Support boundaries</h2>
+<p>Support covers product billing, Pro access, scoped Workflow Gate delivery, and hosted access. It does not include unlimited custom agent development, unrelated infrastructure debugging, or compliance certification work unless purchased separately.</p>
+
 <h2>Security</h2>
-<p>Disclose vulnerabilities by email; please do not post to public GitHub issues. We acknowledge within 48 hours.</p>
-<p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+<p>Disclose vulnerabilities by email with “Security” in the subject; please do not post to public GitHub issues. We acknowledge within 48 hours when practical. Overview: <a href="/security">/security</a>.</p>
+
+<footer>
+<a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> ·
+<a href="/privacy">Privacy</a> ·
+<a href="/terms">Terms</a> ·
+<a href="/security">Security</a> ·
+<a href="/legal">Legal index</a>
+</footer>
 </body></html>`, {}, {
         headOnly: isHeadRequest,
       });
       return;
     }
 
-    // Public privacy policy — required for GPT Store and marketplace listings
+    // Public security overview for buyer questionnaires (not a certification).
+    if (isGetLikeRequest && pathname === '/security') {
+      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Security — ThumbGate</title>
+<meta name="description" content="ThumbGate security overview: local-first control layer, hosted trust boundary, incident posture, and vulnerability disclosure.">
+<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}
+h1{font-size:28px;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}h3{font-size:16px;margin:18px 0 6px}
+p,li{font-size:15px}.meta{color:#6b7280;font-size:14px;margin:0 0 24px}
+.note{border-left:3px solid #0ea5e9;background:#f0f9ff;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
+.draft{border-left:3px solid #f59e0b;background:#fffbeb;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
+ul{padding-left:22px}li{margin:6px 0}a{color:#0066cc}
+footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}
+th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:top}th{background:#f9fafb}</style></head><body>
+<h1>Security overview</h1>
+<p class="meta"><strong>ThumbGate</strong> · Last updated: 2026-08-12</p>
+<div class="draft">This page is a product security summary for buyers. It is not a SOC 2 report, pen-test certificate, or compliance certification.</div>
+
+<h2>Control layer model</h2>
+<p>ThumbGate’s product security value is pre-action control for AI agents: allow, warn, require approval, or hard-deny tool calls based on configured rules. It is not a guarantee that every unsafe action is detected.</p>
+
+<h2>Local-first boundary</h2>
+<p>The default local engine keeps workspace source and local lessons on your machine. Hosted surfaces process account, billing references, device pairing metadata, and runner operational logs as described in the <a href="/privacy">Privacy Policy</a>.</p>
+
+<h2>Engineering practices</h2>
+<ul>
+<li>TLS for hosted endpoints</li>
+<li>Secrets via host environment / secret store (not committed to git)</li>
+<li>Authenticated sensitive routes and HMAC-verified payment webhooks</li>
+<li>Least-privilege operator access to production</li>
+<li>Session / checkout lease controls to reduce concurrent destructive writes when agents honor the protocol</li>
+</ul>
+
+<h2>Incident notification posture</h2>
+<p>For enterprise customers under a signed agreement that includes incident terms, ThumbGate’s draft contractual target is notification within <strong>72 hours</strong> after confirming a personal-data or confidential hosted-content breach affecting that customer. Self-serve users without a signed schedule receive commercially reasonable notice, not a contractual SLA, unless added.</p>
+
+<h2>What we do not claim (yet)</h2>
+<ul>
+<li>ThumbGate SOC 2 / ISO 27001 certification</li>
+<li>HIPAA eligibility or default BAA</li>
+<li>Automatic GDPR DPA / SCCs for every customer</li>
+<li>100% uptime or 100% unsafe-action capture</li>
+</ul>
+
+<h2>Vulnerability disclosure</h2>
+<p>Email <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a> with “Security” in the subject. Do not file public issues for active vulnerabilities. Acknowledgement target: 48 hours.</p>
+
+<footer>
+<a href="/terms">Terms</a> ·
+<a href="/privacy">Privacy</a> ·
+<a href="/support">Support</a> ·
+<a href="/legal">Legal index</a>
+</footer>
+</body></html>`, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+    // Legal index — entry point for counsel package + public legal URLs.
+    if (isGetLikeRequest && (pathname === '/legal' || pathname === '/legal/')) {
+      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Legal — ThumbGate</title>
+<meta name="description" content="ThumbGate legal index: Terms, Privacy, Support, Security, and product-counsel package.">
+<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}
+h1{font-size:28px;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}h3{font-size:16px;margin:18px 0 6px}
+p,li{font-size:15px}.meta{color:#6b7280;font-size:14px;margin:0 0 24px}
+.note{border-left:3px solid #0ea5e9;background:#f0f9ff;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
+.draft{border-left:3px solid #f59e0b;background:#fffbeb;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
+ul{padding-left:22px}li{margin:6px 0}a{color:#0066cc}
+footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}
+th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:top}th{background:#f9fafb}</style></head><body>
+<h1>Legal</h1>
+<p class="meta">Public legal surfaces for ThumbGate paid and hosted paths.</p>
+<div class="draft">Markdown counsel package (data-flow map, full ToS modules, DPA posture, trademark checklist, claim matrix) lives in the repository under <code>docs/legal/</code>. Public routes below are the buyer-facing summaries.</div>
+<ul>
+<li><a href="/terms">Terms of Service</a> — local engine, Pro, $499 Workflow Gate, hosted app</li>
+<li><a href="/privacy">Privacy Policy</a> — local-first boundary, hosted processing, retention</li>
+<li><a href="/support">Support</a> — contact, refunds, status</li>
+<li><a href="/security">Security</a> — overview and vulnerability disclosure</li>
+<li><a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/docs/legal">docs/legal on GitHub</a> — full counsel package</li>
+<li><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/THIRD_PARTY_NOTICES.md">Third-party notices</a></li>
+</ul>
+<footer>
+<a href="/">Home</a> ·
+<a href="/pricing">Pricing</a> ·
+<a href="/diagnostic">Diagnostic</a>
+</footer>
+</body></html>`, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+    // Public privacy policy — required for GPT Store and marketplace listings.
+    // Congruent with docs/legal/PRIVACY_POLICY.md (local-first vs hosted data).
     if (isGetLikeRequest && pathname === '/privacy') {
-      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Privacy Policy — ThumbGate</title></head><body>
+      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy Policy — ThumbGate</title>
+<meta name="description" content="ThumbGate Privacy Policy: local-first workspace boundary, account and billing data, hosted runner metadata, retention, and deletion.">
+<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}
+h1{font-size:28px;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}h3{font-size:16px;margin:18px 0 6px}
+p,li{font-size:15px}.meta{color:#6b7280;font-size:14px;margin:0 0 24px}
+.note{border-left:3px solid #0ea5e9;background:#f0f9ff;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
+.draft{border-left:3px solid #f59e0b;background:#fffbeb;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
+ul{padding-left:22px}li{margin:6px 0}a{color:#0066cc}
+footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}
+th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:top}th{background:#f9fafb}</style></head><body>
 <h1>Privacy Policy</h1>
-<p><strong>ThumbGate</strong> (npm: thumbgate)</p>
-<p>Last updated: 2026-03-11</p>
+<p class="meta"><strong>ThumbGate</strong> (npm: thumbgate) · Last updated: 2026-08-12</p>
+<div class="draft"><strong>Product counsel draft on public routes.</strong> Full data-flow and DPA posture live in <code>docs/legal/</code>. This page is the marketplace-facing summary.</div>
+
 <h2>Data Collection</h2>
 <p>The self-hosted version stores workflow data locally on your machine. Local feedback, memory entries, proof artifacts, and context packs stay in your project files unless you explicitly point the system at a hosted endpoint.</p>
-<p>The hosted tier (thumbgate-production.up.railway.app) stores feedback signals, memory entries, and related workflow metadata associated with your API key.</p>
-<p>Optional CLI telemetry is best-effort and covers install or usage metadata needed to understand adoption and failures. You can disable it with <code>THUMBGATE_NO_TELEMETRY=1</code>.</p>
-<h2>Data Stored</h2><ul>
+<p>The hosted tier (production API / thumbgate.app features) may store feedback signals, memory entries, pairing metadata, and related workflow metadata associated with your account or API key.</p>
+<p>Optional CLI telemetry is best-effort and covers install or usage metadata needed to understand adoption and failures. You can disable it with <code>THUMBGATE_NO_TELEMETRY=1</code> or <code>DO_NOT_TRACK=1</code>.</p>
+
+<div class="note"><strong>Local-first is not “zero personal data.”</strong> “No workspace telemetry is fetched or rendered publicly” means we do not publish your workspace source code on public dashboards. Account, billing, device, support, and cloud-runner metadata may still be processed when you use those surfaces.</div>
+
+<h2>Data Stored</h2>
+<ul>
 <li>Feedback signals (thumbs up/down) with context you provide</li>
-<li>Promoted memory entries</li>
-<li>Prevention rules generated from your feedback</li>
+<li>Promoted memory entries and prevention rules (local by default; hosted only if you use hosted features)</li>
+<li>Account and billing identifiers for paid products (via Stripe and related processors)</li>
+<li>Device / pairing identifiers and lease metadata for hosted app features</li>
+<li>Cloud-runner operational logs (timestamps, success/fail, error summaries)</li>
+<li>Web analytics events on marketing and checkout pages (Plausible / PostHog / first-party funnel events where configured)</li>
 </ul>
+
 <h2>Data Sharing</h2>
-<p>We do not sell customer data. Hosted data is used to operate the service and is not shared with third parties except for infrastructure providers needed to run the product.</p>
+<p>We do not sell customer data. Hosted data is used to operate the service and is not shared with third parties except for infrastructure and payment providers needed to run the product, or when required by law.</p>
+
+<h2>Subprocessors (operational)</h2>
+<table>
+<thead><tr><th>Vendor</th><th>Role</th></tr></thead>
+<tbody>
+<tr><td>Stripe</td><td>Payment processing</td></tr>
+<tr><td>Railway</td><td>Application hosting</td></tr>
+<tr><td>Plausible</td><td>Web analytics</td></tr>
+<tr><td>PostHog</td><td>Product analytics (where configured)</td></tr>
+<tr><td>Resend</td><td>Transactional email (where configured)</td></tr>
+<tr><td>PayPal</td><td>Alternate payment rail (where used)</td></tr>
+<tr><td>GitHub</td><td>Source hosting and marketplace surfaces</td></tr>
+</tbody>
+</table>
+<p>Listing a vendor is not a claim that ThumbGate is SOC 2 or HIPAA certified, or that a signed GDPR DPA is automatically in place for every customer.</p>
+
 <h2>Data Retention</h2>
-<p>Local data is retained until you delete the files. Hosted data is retained while your account or API key remains active, or until you request deletion, subject to operational or legal retention requirements.</p>
+<p>Local data is retained until you delete the files. Hosted account data is retained while your account or API key remains active, or until you request deletion, subject to operational or legal retention requirements. Cloud-runner operational logs are retained on a limited basis (target: 30 days). Billing records may be retained longer for tax and fraud prevention.</p>
+
 <h2>Data Deletion</h2>
-<p>Contact igor.ganapolsky@gmail.com to request deletion of hosted data.</p>
-<h2>Contact</h2><p>igor.ganapolsky@gmail.com</p>
-<p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a></p>
+<p>Contact <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a> to request deletion of hosted data. Verified requests are processed within 30 days except for legal holds.</p>
+
+<h2>Security &amp; incidents</h2>
+<p>See <a href="/security">/security</a> for security overview language. Enterprise incident-notification and DPA terms are negotiated separately when those artifacts are executed.</p>
+
+<h2>Contact</h2>
+<p><a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a></p>
+<footer>
+<a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> ·
+<a href="/terms">Terms</a> ·
+<a href="/support">Support</a> ·
+<a href="/security">Security</a> ·
+<a href="/legal">Legal index</a>
+</footer>
 </body></html>`, {}, {
         headOnly: isHeadRequest,
       });

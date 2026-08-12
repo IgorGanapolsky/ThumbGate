@@ -1102,6 +1102,11 @@ test('privacy policy route covers collection, sharing, retention, and contact de
   assert.match(body, /Data Retention/i);
   assert.match(body, /optional CLI telemetry/i);
   assert.match(body, /igor\.ganapolsky@gmail\.com/i);
+  // Local-first is narrower than full privacy: hosted account/device/runner data is disclosed.
+  assert.match(body, /Local-first is not/i);
+  assert.match(body, /Subprocessors/i);
+  assert.match(body, /Stripe/i);
+  assert.match(body, /does not sell customer data/i);
 });
 
 test('terms of service route covers payment, refunds, acceptable use, and limitation of liability', async () => {
@@ -1118,6 +1123,34 @@ test('terms of service route covers payment, refunds, acceptable use, and limita
   // Cross-links to /privacy and /support keep the legal triangle navigable.
   assert.match(body, /href="\/privacy"/);
   assert.match(body, /href="\/support"/);
+  // Control-layer non-guarantee + site-matched $499 refund fence + narrow deliverable.
+  assert.match(body, /Control layer, not a guarantee/i);
+  assert.match(body, /strict mode/i);
+  assert.match(body, /refunded in full/i);
+  assert.match(body, /One supported workflow/i);
+  assert.match(body, /One configured local pre-action gate/i);
+  assert.match(body, /Rollout and rollback/i);
+  assert.match(body, /human operator remains responsible/i);
+});
+
+test('security and legal index routes publish buyer-facing counsel summaries', async () => {
+  const security = await fetch(apiUrl('/security'));
+  assert.equal(security.status, 200);
+  const securityBody = await security.text();
+  assert.match(securityBody, /Security overview/i);
+  assert.match(securityBody, /72 hours/i);
+  assert.match(securityBody, /Vulnerability disclosure/i);
+  assert.match(securityBody, /not a SOC 2 report/i);
+  assert.match(securityBody, /igor\.ganapolsky@gmail\.com/i);
+
+  const legal = await fetch(apiUrl('/legal'));
+  assert.equal(legal.status, 200);
+  const legalBody = await legal.text();
+  assert.match(legalBody, /Terms of Service/i);
+  assert.match(legalBody, /href="\/terms"/);
+  assert.match(legalBody, /href="\/privacy"/);
+  assert.match(legalBody, /href="\/security"/);
+  assert.match(legalBody, /docs\/legal/i);
 });
 
 test('pricing page is the single source of truth for what ThumbGate sells', async () => {
