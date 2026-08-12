@@ -57,3 +57,31 @@ test('AGENTS.md bounds the autonomy directive with the branch-protection limit',
     'the autonomy directive must be explicitly bounded by branch protection',
   );
 });
+
+test('directive files pin zero-bypass repository rulesets policy', () => {
+  for (const file of DIRECTIVE_FILES) {
+    const text = fs.readFileSync(path.join(ROOT, file), 'utf8');
+    assert.match(
+      text,
+      /main governance|repository ruleset/i,
+      `${file} must mention the main governance repository ruleset`,
+    );
+    assert.match(
+      text,
+      /bypass_actors|zero `bypass_actors`|bypass_actors` empty|Keep `bypass_actors` empty/i,
+      `${file} must forbid ruleset bypass actors`,
+    );
+  }
+});
+
+test('main-branch ruleset policy config forbids bypass actors', () => {
+  const policy = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'config/main-branch-ruleset.json'), 'utf8'),
+  );
+  assert.equal(policy.name, 'main governance');
+  assert.equal(policy.enforcement, 'active');
+  assert.deepEqual(policy.bypass_actors, []);
+  assert.equal(policy.rules.non_fast_forward, true);
+  assert.equal(policy.rules.required_linear_history, true);
+  assert.equal(policy.rules.pull_request.required_review_thread_resolution, true);
+});
