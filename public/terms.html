@@ -63,13 +63,13 @@
     <h3>2.1 Account Creation</h3>
     <p>You must register an account to access paid tiers, cloud runners, or professional services. You agree to provide accurate information and maintain the security of your credentials. You are responsible for all activities occurring under your account.</p>
 
-    <h3>2.2 Billing, Subscriptions &amp; Renewals</h3>
+    <h3>2.2 Payment, Billing, Subscriptions &amp; Renewals</h3>
     <p>Recurring subscriptions automatically renew unless canceled prior to the renewal date via your account dashboard. All fees exclude applicable taxes. Full details are on the <a href="/pricing">pricing page</a>.</p>
 
     <h3>2.3 Trials &amp; Free Tiers</h3>
     <p>Free tiers, open-source local binaries, and promotional trials are provided strictly "AS-IS" without SLA, indemnification, or support obligations.</p>
 
-    <h3>2.4 Refund Policy</h3>
+    <h3>2.4 Refunds</h3>
     <p>Recurring subscription fees are non-refundable except as required by law. The <strong>$499 Workflow Gate</strong> is refundable only if technical discovery determines that your workflow cannot be reduced to a supported ThumbGate gate, subject to a non-refundable diagnostic fee as described in Section 3.</p>
 
     <h3>2.5 Acceptable Use Policy (AUP)</h3>
@@ -102,15 +102,15 @@
     <h2>3. $499 Hardened Workflow Gate (Professional Services)</h2>
     <p>For a one-time fee of $499, ThumbGate will deliver:</p>
     <ol>
-      <li>One (1) supported workflow integration.</li>
-      <li>One (1) configured production gate specification.</li>
+      <li><strong>One supported workflow</strong> integration.</li>
+      <li><strong>One configured local pre-action gate</strong> (production gate specification).</li>
       <li>A regression evidence package based on your golden test cases.</li>
-      <li>Rollout and rollback documentation.</li>
+      <li><strong>Rollout and rollback</strong> documentation.</li>
     </ol>
-    <p>You must provide workflow specifications, sample logs, at least six (6) golden test cases, and a technical contact within five (5) business days. If the workflow cannot be reduced to a supported gate, we will refund the $499 minus a $99 non-refundable diagnostic fee, or convert the fee into service credit.</p>
+    <p>You must provide workflow specifications, sample logs, at least six (6) golden test cases, and a technical contact within five (5) business days. If technical discovery determines the workflow cannot be reduced to a supported ThumbGate gate before implementation begins, the $499 is <strong>refunded in full</strong> (minus any separately disclosed non-refundable diagnostic fee when that fee was disclosed and agreed in advance), or converted to service credit at your option.</p>
 
     <h2>4. Control Layer Disclaimer</h2>
-    <p>ThumbGate is an <strong>action interdiction control layer and workflow policy engine</strong>. It is NOT a guarantee that every unsafe action, prompt injection, or operational error will be detected or blocked. Enforcement outcomes depend on your rule configuration, strict mode, supported integrations, and testing.</p>
+    <p><strong>Control layer, not a guarantee.</strong> ThumbGate is an action interdiction control layer and workflow policy engine. It does not guarantee that every unsafe action, prompt injection, or operational error will be detected or blocked. Enforcement outcomes depend on your rule configuration, <strong>strict mode</strong>, supported integrations, and testing. The <strong>human operator remains responsible</strong> for production approvals and for actions that bypass, misconfigure, or exceed the gate fence.</p>
 
     <h2>5. Hosted Platform &amp; Cloud Runners</h2>
     <p><code>thumbgate.app</code> allows device pairing, mobile approvals, and cloud-runner execution. Cloud runners are isolated but bounded by container-virtualisation security. You remain solely responsible for reviewing and approving actions routed to your mobile or web approval interface. Offline devices default to fail-closed or paused execution.</p>
