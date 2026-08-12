@@ -441,8 +441,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 436 -> 437 (2026-08-11): scripts/session-lease.js is shipped so checkout
     // collision prevention works from the installed Reliability Gateway.
     // Exact measured artifact, with no additional package headroom.
-    manifest.fileCount <= 440,
-    `npm package should stay <= 440 files, got ${manifest.fileCount}`
+    // 440 -> 442 (2026-08-12): scripts/broker-execution-receipts.js — broker-signed
+    // execution receipt verify/issue/ledger/gate for provider side-effect proof.
+    // 442 -> 449 (2026-08-12): commercial legal hygiene — public/terms.html,
+    // privacy.html, support.html, third-party-notices.html, CONTRIBUTING.md,
+    // THIRD_PARTY_NOTICES.md (+ package files list). Buyer-facing legal pages
+    // must ship with the hosted/static package surfaces.
+    manifest.fileCount <= 449,
+    `npm package should stay <= 449 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -499,7 +505,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // high-ROI runtime planners: DeepSeek sparse-attention guardrails, upstream
   // contribution planning, reward-hacking checks, and ChatGPT ads readiness.
   // Bumped 3.44 MB → 3.45 MB (2026-05-05) for the live $19 quick-read
-  // checkout CTA on public buyer paths. The observed package is ~3.440 MB.
+  // checkout CTA on public buyer paths. The observed package is ~3.442 MB.
   // Bumped 3.45 MB → 3.50 MB (2026-05-06) for the packaged bench runner,
   // default ThumbGate Bench fixture, ProgramBench-style smoke fixture, and
   // landing-page governance setup intake copy. Observed package is ~3.479 MB.

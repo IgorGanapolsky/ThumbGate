@@ -120,7 +120,7 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers, reply_to, and 
   // Subject is personalized with the first name when available.
   assert.equal(body.subject, 'Igor, your ThumbGate Pro key is inside');
   // reply_to defaults to a deliverable operator inbox until thumbgate.app is registered.
-  assert.equal(body.reply_to, 'igor.ganapolsky@gmail.com');
+  assert.equal(body.reply_to, 'support@thumbgate.ai');
 
   // License key + activation command present in both bodies.
   assert.ok(body.html && body.html.includes('tg_09239a0a433649ba442467567af1825b'));
@@ -143,7 +143,7 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers, reply_to, and 
   // CAN-SPAM compliance: business name + physical address + unsubscribe.
   assert.ok(body.html.includes('Max Smith KDP LLC'), 'html footer must carry business name');
   assert.ok(body.html.includes('2261 Market Street #4242, San Francisco, CA 94114'), 'html footer must carry business address');
-  assert.ok(body.html.includes('igor.ganapolsky@gmail.com'), 'html footer must expose a deliverable unsubscribe mailto');
+  assert.ok(body.html.includes('support@thumbgate.ai'), 'html footer must expose a deliverable unsubscribe mailto');
   assert.ok(body.text.includes('Max Smith KDP LLC'), 'text footer must carry business name');
   assert.ok(body.text.includes('Unsubscribe:'), 'text footer must carry unsubscribe instruction');
 
@@ -382,7 +382,7 @@ test('renderTrialWelcomeBodies embeds license key, activation command, dashboard
   assert.equal(activationCommand, 'npx thumbgate pro --activate --key=tg_abc');
   assert.equal(trialEndLabel, 'Apr 24, 2026');
   assert.equal(greeting, 'Hi Ada,');
-  assert.equal(unsubscribeEmail, 'igor.ganapolsky@gmail.com');
+  assert.equal(unsubscribeEmail, 'support@thumbgate.ai');
   assert.equal(businessName, 'Max Smith KDP LLC');
   assert.ok(businessAddress.length > 0);
   for (const fragment of [
@@ -397,8 +397,8 @@ test('renderTrialWelcomeBodies embeds license key, activation command, dashboard
     assert.ok(html.includes(fragment), `html missing: ${fragment}`);
     assert.ok(text.includes(fragment), `text missing: ${fragment}`);
   }
-  assert.ok(html.includes('igor.ganapolsky@gmail.com'));
-  assert.ok(text.includes('igor.ganapolsky@gmail.com'));
+  assert.ok(html.includes('support@thumbgate.ai'));
+  assert.ok(text.includes('support@thumbgate.ai'));
   // Customer ID shows in the html footer only — not in the customer-visible body prose.
   assert.ok(html.includes('cus_42'));
   // Customer ID must NOT appear in the text body — we want to stop leaking debug IDs in

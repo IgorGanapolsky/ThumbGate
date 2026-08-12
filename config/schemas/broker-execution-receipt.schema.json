@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thumbgate.ai/schemas/broker-execution-receipt.schema.json",
+  "title": "ThumbGate Broker-Signed Execution Receipt",
+  "description": "Proof that a credential-holding broker (outside the agent trust boundary) authorized a side-effecting action. Agents cannot mint valid signatures.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "receiptId",
+    "principal",
+    "target",
+    "decision",
+    "idempotencyKey",
+    "issuedAt",
+    "broker",
+    "payloadHash",
+    "signature",
+    "receiptHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "broker-execution-receipt-v1"
+    },
+    "receiptId": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 120
+    },
+    "principal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["agent", "user", "service", "system"]
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "action"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "resource": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      }
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["allow", "execute", "deny"]
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "providerEventId": {
+      "type": ["string", "null"],
+      "maxLength": 300
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "broker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "kind": {
+          "type": "string",
+          "const": "broker"
+        }
+      }
+    },
+    "payloadHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "previousReceiptHash": {
+      "type": ["string", "null"],
+      "pattern": "^([a-f0-9]{64})?$"
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alg", "publicKeyId", "value"],
+      "properties": {
+        "alg": {
+          "type": "string",
+          "const": "ed25519"
+        },
+        "publicKeyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "value": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 500
+        }
+      }
+    },
+    "receiptHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

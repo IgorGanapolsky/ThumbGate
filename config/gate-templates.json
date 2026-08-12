@@ -38,6 +38,19 @@
       "rollout": "Use for every workflow where proof matters more than speed."
     },
     {
+      "id": "require-broker-signed-execution-receipt",
+      "name": "Require broker-signed execution receipts",
+      "category": "Provider Side-Effect Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "broker[_ -]?signed|provider[_ -]?credential|providerEventId",
+      "problem": "Stops agents from treating self-written receipts as proof of provider side effects. Only a credential-holding broker outside the agent trust boundary may sign.",
+      "roi": "Closes the 'agent rehashed a receipt' integrity hole on payments, messaging, and credentialed APIs.",
+      "rollout": "Set THUMBGATE_BROKER_RECEIPT_MODE=enforce and install broker public keys on the host. Pair with aigate or any external credential broker."
+    },
+
+    {
       "id": "protect-production-sql",
       "name": "Protect production SQL",
       "category": "Database Safety",
@@ -1032,6 +1045,30 @@
       "problem": "For bulk, repetitive, or long-running agent workflows, Qwen3.8-Max is the optimal default: 30-60% cheaper output than Claude/Sonnet, with 1M context window for complex reasoning.",
       "roi": "Directs high-volume workloads to the most cost-effective model. Saves $9 per 1M output tokens vs Claude Sonnet 4.6 ($15/M).",
       "rollout": "Set Qwen3.8-Max as default for bulk operations. Allow explicit override with cost-delta documentation."
+    },
+    {
+      "id": "github-ruleset-migration-audit",
+      "name": "Audit GitHub Ruleset Migration & Bypass Permissions",
+      "category": "GitHub Ruleset Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(ruleset|branch_protection|bypass_actors)\\s+(delete|bypass|disable|override|admin_force)",
+      "problem": "Prevents agents or un-audited processes from disabling GitHub Rulesets or modifying bypass actors on protected repositories during migration.",
+      "roi": "Protects repository rulesets during branch-protection to rulesets migration; keeps zero-bypass policy enforceable.",
+      "rollout": "Enable on all production repos with layered classic protection + repository rulesets."
+    },
+    {
+      "id": "enforce-ruleset-bypass-actor-scoping",
+      "name": "Enforce strict scoping on Ruleset bypass actors",
+      "category": "GitHub Ruleset Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(ruleset_bypass|bypass_actor)\\s+(add_user|all_admins|wildcard_actor)",
+      "problem": "Requires fine-grained app/bot scoping on Ruleset bypass permissions instead of granting broad user or admin bypass rights.",
+      "roi": "Blocks owner-token / admin soft-bypass of merge governance; keeps agent autonomy inside protection bounds.",
+      "rollout": "Pair with config/main-branch-ruleset.json zero bypass_actors and npm run rulesets:check."
     }
   ]
 }
