@@ -32,6 +32,12 @@ const SELF_REFERENTIAL_CHECKS = new Set(MERGE_QUALITY_CHECKS.selfReferentialChec
 // unaffected. Vercel itself is intentionally not optional because a failed
 // deployment status leaves mergeStateStatus BLOCKED and Trunk refuses the PR.
 const OPTIONAL_CHECKS = new Set(MERGE_QUALITY_CHECKS.optionalChecks || []);
+const DEGENERATE_MERGE_STATES = new Set([
+  'UNKNOWN',
+  'PENDING',
+  'PENDING_RECOMPUTE',
+  'PENDING_RECOMPUTE_FAILED',
+]);
 
 function assertSafeGhArgs(args) {
   if (!Array.isArray(args) || args.length === 0) {
@@ -156,6 +162,119 @@ function listOpenPrs(runner = runGh) {
 
 function isOpenPr(pr) {
   return Boolean(pr) && String(pr.state || 'OPEN').toUpperCase() === 'OPEN';
+}
+
+function extractRepoSlugFromUrl(pr) {
+  const url = String(pr?.url || '');
+  const match = /github\.com\/([^/]+)\/([^/]+)\/pull\/\d+/.exec(url);
+  if (!match) {
+    return null;
+  }
+  return `${match[1]}/${match[2]}`;
+}
+
+function getRequiredCheckContexts() {
+  return (MERGE_QUALITY_CHECKS.requiredStatusCheckContexts || []).map(String);
+}
+
+function parseCheckRunsTsv(stdout) {
+  const conclusions = {};
+  for (const line of String(stdout || '').trim().split('\n')) {
+    if (!line.trim()) continue;
+    const [name, status, conclusion] = line.split('\t');
+    if (!name) continue;
+    if (!(name in conclusions)) {
+      conclusions[name] = { status: status || '', conclusion: conclusion || '' };
+    }
+  }
+  return conclusions;
+}
+
+// Required-checks evidence pinned to the PR's exact head SHA. GitHub's own
+// mergeability (mergeStateStatus/mergeable) is often stale for UNKNOWN and
+// PENDING_RECOMPUTE* states; this REST query re-derives check conclusions on
+// the head commit so we never trust a historical or cached rollup. Throws when
+// the evidence cannot be fetched — callers must fail closed, not fall through.
+function getHeadCheckEvidence(pr, runner = runGh) {
+  const headSha = pr?.headRefOid;
+  const repo = extractRepoSlugFromUrl(pr);
+  if (!headSha || !repo) {
+    throw new Error('PR head SHA or repository slug is unavailable');
+  }
+
+  const result = runner([
+    'api',
+    `repos/${repo}/commits/${headSha}/check-runs`,
+    '--paginate',
+    '--jq',
+    '.check_runs[] | [.name, .status, .conclusion] | @tsv',
+  ]);
+  if (result.status !== 0) {
+    throw new Error(`Failed to fetch head check-runs: ${formatGhError(result)}`);
+  }
+
+  const conclusions = parseCheckRunsTsv(result.stdout);
+  const required = getRequiredCheckContexts();
+  const missing = [];
+  const failed = [];
+  const pending = [];
+  for (const name of required) {
+    const check = conclusions[name];
+    if (!check) {
+      missing.push(name);
+      continue;
+    }
+    if (check.status !== 'COMPLETED') {
+      pending.push(name);
+      continue;
+    }
+    if (check.conclusion && FAILING_CHECK_CONCLUSIONS.has(check.conclusion)) {
+      failed.push(name);
+      continue;
+    }
+    if (check.conclusion && !SUCCESSFUL_CHECK_CONCLUSIONS.has(check.conclusion)) {
+      pending.push(name);
+    }
+  }
+
+  return { headSha, repo, required, missing, failed, pending, conclusions };
+}
+
+function parseUnresolvedThreadCount(stdout) {
+  try {
+    const data = JSON.parse(stdout || '{}');
+    const nodes = data?.data?.repository?.pullRequest?.reviewThreads?.nodes || [];
+    return nodes.filter((node) => !node.isResolved && !node.isOutdated).length;
+  } catch {
+    return null;
+  }
+}
+
+// Unresolved review-thread count via GraphQL. Returns null when the query
+// cannot be satisfied, so callers can block rather than assume zero threads.
+function getUnresolvedReviewThreadCount(pr, runner = runGh) {
+  const repo = extractRepoSlugFromUrl(pr);
+  if (!repo || !pr?.number) {
+    return null;
+  }
+  const [owner, name] = repo.split('/');
+  const query = 'query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { reviewThreads(first: 100) { nodes { isResolved isOutdated } } } } }';
+  const result = runner([
+    'api',
+    'graphql',
+    '-f',
+    `query=${query}`,
+    '-F',
+    `owner=${owner}`,
+    '-F',
+    `name=${name}`,
+    '-F',
+    `number=${Number(pr.number)}`,
+  ]);
+  if (result.status !== 0) {
+    return null;
+  }
+  return parseUnresolvedThreadCount(result.stdout);
 }
 
 function loadManagedPrs(prNumber = '', runner = runGh) {
@@ -292,6 +411,63 @@ async function resolveBlockers(pr, runner = runGh) {
   ) {
     console.log('[PR Manager] SUCCESS: PR is ready for protected autonomous merge.');
     return { status: 'ready' };
+  }
+
+  if (DEGENERATE_MERGE_STATES.has(pr.mergeStateStatus)) {
+    console.log(`[PR Manager] Mergeability is degenerate (${pr.mergeStateStatus}). Verifying required checks on the exact head SHA...`);
+
+    let headEvidence = null;
+    try {
+      headEvidence = getHeadCheckEvidence(pr, runner);
+    } catch (error) {
+      console.warn(`[PR Manager] Head check evidence unavailable: ${error.message}`);
+    }
+
+    if (!headEvidence) {
+      console.log('[PR Manager] BLOCKED: head check evidence unavailable; refusing to trust stale mergeability.');
+      return { status: 'blocked', reason: 'head_evidence_unavailable', mergeState: pr.mergeStateStatus };
+    }
+
+    if (headEvidence.failed.length > 0) {
+      console.log(`[PR Manager] BLOCKED: ${headEvidence.failed.length} failing required checks on head ${headEvidence.headSha}.`);
+      return {
+        status: 'blocked',
+        reason: 'ci_failure',
+        checks: headEvidence.failed,
+        checkSource: 'head-check-runs',
+        headSha: headEvidence.headSha,
+      };
+    }
+
+    if (headEvidence.pending.length > 0 || headEvidence.missing.length > 0) {
+      const incomplete = [...headEvidence.pending, ...headEvidence.missing.map((name) => `${name} (missing)`)];
+      console.log(`[PR Manager] BLOCKED: ${incomplete.length} required checks incomplete on head ${headEvidence.headSha}.`);
+      return {
+        status: 'blocked',
+        reason: 'ci_pending',
+        checks: incomplete,
+        checkSource: 'head-check-runs',
+        headSha: headEvidence.headSha,
+      };
+    }
+
+    const unresolvedThreads = getUnresolvedReviewThreadCount(pr, runner);
+    if (unresolvedThreads === null) {
+      console.log('[PR Manager] BLOCKED: unable to verify unresolved review threads; refusing to trust stale mergeability.');
+      return { status: 'blocked', reason: 'thread_check_unavailable', mergeState: pr.mergeStateStatus };
+    }
+    if (unresolvedThreads > 0) {
+      console.log(`[PR Manager] BLOCKED: ${unresolvedThreads} unresolved review thread(s).`);
+      return { status: 'blocked', reason: 'unresolved_threads', threads: unresolvedThreads };
+    }
+
+    console.log('[PR Manager] SUCCESS: required checks green on exact head SHA and no unresolved review threads. The GitHub merge endpoint still enforces branch protection server-side.');
+    return {
+      status: 'ready',
+      checkSource: 'head-check-runs',
+      headSha: headEvidence.headSha,
+      mergeState: pr.mergeStateStatus,
+    };
   }
 
   return { status: 'pending', reason: 'unknown_state' };
@@ -439,8 +615,12 @@ if (require.main === module) {
 module.exports = {
   assertSafeGhArgs,
   buildGhEnv,
+  extractRepoSlugFromUrl,
+  getHeadCheckEvidence,
   getPrStatus,
   getPrChecks,
+  getRequiredCheckContexts,
+  getUnresolvedReviewThreadCount,
   listOpenPrs,
   isOpenPr,
   loadManagedPrs,

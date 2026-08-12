@@ -6,8 +6,12 @@ const assert = require('node:assert/strict');
 const {
   assertSafeGhArgs,
   buildGhEnv,
+  extractRepoSlugFromUrl,
+  getHeadCheckEvidence,
   getPrChecks,
   getPrStatus,
+  getRequiredCheckContexts,
+  getUnresolvedReviewThreadCount,
   isOpenPr,
   loadManagedPrs,
   managePrs,
@@ -748,4 +752,198 @@ test('resolveBlockers still refuses UNSTABLE when a real check is failing', asyn
   const outcome = await resolveBlockers(pr, runner);
   assert.equal(outcome.status, 'blocked');
   assert.equal(outcome.reason, 'ci_failure');
+});
+
+// ---------------------------------------------------------------------------
+// Head-SHA-aware merge gate (cycle-time prevention, #3388 ghost-block lesson)
+// ---------------------------------------------------------------------------
+
+test('extractRepoSlugFromUrl parses owner/repo from a PR URL', () => {
+  assert.equal(extractRepoSlugFromUrl({ url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/3388' }), 'IgorGanapolsky/ThumbGate');
+  assert.equal(extractRepoSlugFromUrl({}), null);
+});
+
+test('getRequiredCheckContexts returns non-empty required contexts from config', () => {
+  const required = getRequiredCheckContexts();
+  assert.ok(Array.isArray(required) && required.length > 0, 'required contexts must be configured');
+});
+
+test('getHeadCheckEvidence parses head check-runs and reports all required green', () => {
+  const headSha = 'f'.repeat(40);
+  const required = getRequiredCheckContexts();
+  const tsv = required.map((name) => `${name}\tCOMPLETED\tSUCCESS`).join('\n');
+  const pr = { url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/3388', headRefOid: headSha };
+  const runner = createRunner([{ status: 0, stdout: tsv, stderr: '' }]);
+  const evidence = getHeadCheckEvidence(pr, runner);
+  assert.equal(evidence.headSha, headSha);
+  assert.deepEqual(evidence.failed, []);
+  assert.deepEqual(evidence.pending, []);
+  assert.deepEqual(evidence.missing, []);
+});
+
+test('getHeadCheckEvidence flags required contexts missing from the head run', () => {
+  const headSha = 'e'.repeat(40);
+  const required = getRequiredCheckContexts();
+  const omitted = required[0];
+  const tsv = required.filter((name) => name !== omitted).map((name) => `${name}\tCOMPLETED\tSUCCESS`).join('\n');
+  const pr = { url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/3388', headRefOid: headSha };
+  const runner = createRunner([{ status: 0, stdout: tsv, stderr: '' }]);
+  const evidence = getHeadCheckEvidence(pr, runner);
+  assert.deepEqual(evidence.missing, [omitted]);
+});
+
+test('getHeadCheckEvidence flags a failing required check on the exact head', () => {
+  const headSha = 'd'.repeat(40);
+  const required = getRequiredCheckContexts();
+  const tsv = required.map((name, index) => {
+    if (index === 0) return `${name}\tCOMPLETED\tFAILURE`;
+    return `${name}\tCOMPLETED\tSUCCESS`;
+  }).join('\n');
+  const pr = { url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/3388', headRefOid: headSha };
+  const runner = createRunner([{ status: 0, stdout: tsv, stderr: '' }]);
+  const evidence = getHeadCheckEvidence(pr, runner);
+  assert.deepEqual(evidence.failed, [required[0]]);
+});
+
+test('getHeadCheckEvidence throws when the PR URL or head SHA is unavailable', () => {
+  assert.throws(() => getHeadCheckEvidence({ headRefOid: 'a'.repeat(40) }), /unavailable/);
+  assert.throws(() => getHeadCheckEvidence({ url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/1' }), /unavailable/);
+});
+
+test('getUnresolvedReviewThreadCount counts only unresolved non-outdated threads', () => {
+  const pr = { number: 3388, url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/3388' };
+  const nodes = [
+    { isResolved: false, isOutdated: false },
+    { isResolved: false, isOutdated: true },
+    { isResolved: true, isOutdated: false },
+    { isResolved: false, isOutdated: false },
+  ];
+  const stdout = JSON.stringify({ data: { repository: { pullRequest: { reviewThreads: { nodes } } } } });
+  const runner = createRunner([{ status: 0, stdout, stderr: '' }]);
+  assert.equal(getUnresolvedReviewThreadCount(pr, runner), 2);
+});
+
+test('getUnresolvedReviewThreadCount returns null when the GraphQL query fails', () => {
+  const pr = { number: 3388, url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/3388' };
+  const runner = createRunner([{ status: 1, stdout: '', stderr: 'rate limited' }]);
+  assert.equal(getUnresolvedReviewThreadCount(pr, runner), null);
+});
+
+test('resolveBlockers admits an UNKNOWN-mergeability PR with green head checks and zero threads (#3388 regression)', async () => {
+  const required = getRequiredCheckContexts();
+  const tsv = required.map((name) => `${name}\tCOMPLETED\tSUCCESS`).join('\n');
+  const pr = {
+    number: 3388,
+    title: 'Regression guard: head-SHA-aware merge gate',
+    url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/3388',
+    headRefOid: 'c'.repeat(40),
+    mergeable: 'UNKNOWN',
+    mergeStateStatus: 'UNKNOWN',
+    reviewDecision: 'APPROVED',
+    isDraft: false,
+    statusCheckRollup: [{ name: 'test', status: 'COMPLETED', conclusion: 'SUCCESS' }],
+  };
+  const runner = createRunner([
+    { status: 0, stdout: JSON.stringify([{ bucket: 'pass', name: 'test', state: 'SUCCESS' }]), stderr: '' },
+    { status: 0, stdout: tsv, stderr: '' },
+    { status: 0, stdout: JSON.stringify({ data: { repository: { pullRequest: { reviewThreads: { nodes: [] } } } } }), stderr: '' },
+  ]);
+  const outcome = await resolveBlockers(pr, runner);
+  assert.equal(outcome.status, 'ready', 'green head-pinned evidence must unblock a stale UNKNOWN state');
+  assert.equal(outcome.checkSource, 'head-check-runs');
+  assert.equal(outcome.headSha, pr.headRefOid);
+});
+
+test('resolveBlockers rejects UNKNOWN mergeability when the head shows a real failure', async () => {
+  const required = getRequiredCheckContexts();
+  const tsv = required.map((name, index) => {
+    if (index === 0) return `${name}\tCOMPLETED\tFAILURE`;
+    return `${name}\tCOMPLETED\tSUCCESS`;
+  }).join('\n');
+  const pr = {
+    number: 3389,
+    title: 'Stale rollup must not override head truth',
+    url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/3389',
+    headRefOid: 'b'.repeat(40),
+    mergeable: 'UNKNOWN',
+    mergeStateStatus: 'PENDING_RECOMPUTE',
+    isDraft: false,
+    statusCheckRollup: [{ name: 'test', status: 'COMPLETED', conclusion: 'SUCCESS' }],
+  };
+  const runner = createRunner([
+    { status: 0, stdout: JSON.stringify([{ bucket: 'pass', name: 'test', state: 'SUCCESS' }]), stderr: '' },
+    { status: 0, stdout: tsv, stderr: '' },
+  ]);
+  const outcome = await resolveBlockers(pr, runner);
+  assert.equal(outcome.status, 'blocked');
+  assert.equal(outcome.reason, 'ci_failure');
+  assert.equal(outcome.checkSource, 'head-check-runs');
+  assert.deepEqual(outcome.checks, [required[0]]);
+});
+
+test('resolveBlockers blocks UNKNOWN mergeability on unresolved review threads', async () => {
+  const required = getRequiredCheckContexts();
+  const tsv = required.map((name) => `${name}\tCOMPLETED\tSUCCESS`).join('\n');
+  const pr = {
+    number: 3390,
+    title: 'Thread gate',
+    url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/3390',
+    headRefOid: 'a'.repeat(40),
+    mergeable: 'UNKNOWN',
+    mergeStateStatus: 'UNKNOWN',
+    isDraft: false,
+    statusCheckRollup: [],
+  };
+  const runner = createRunner([
+    { status: 0, stdout: JSON.stringify([{ bucket: 'pass', name: 'test', state: 'SUCCESS' }]), stderr: '' },
+    { status: 0, stdout: tsv, stderr: '' },
+    { status: 0, stdout: JSON.stringify({ data: { repository: { pullRequest: { reviewThreads: { nodes: [{ isResolved: false, isOutdated: false }] } } } } }), stderr: '' },
+  ]);
+  const outcome = await resolveBlockers(pr, runner);
+  assert.equal(outcome.status, 'blocked');
+  assert.equal(outcome.reason, 'unresolved_threads');
+  assert.equal(outcome.threads, 1);
+});
+
+test('resolveBlockers fails closed when head evidence is unavailable for UNKNOWN mergeability', async () => {
+  const pr = {
+    number: 3391,
+    title: 'No evidence, no queue',
+    url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/3391',
+    headRefOid: '9'.repeat(40),
+    mergeable: 'UNKNOWN',
+    mergeStateStatus: 'UNKNOWN',
+    isDraft: false,
+    statusCheckRollup: [],
+  };
+  const runner = createRunner([
+    { status: 0, stdout: JSON.stringify([{ bucket: 'pass', name: 'test', state: 'SUCCESS' }]), stderr: '' },
+    { status: 1, stdout: '', stderr: 'check-runs fetch failed' },
+  ]);
+  const outcome = await resolveBlockers(pr, runner);
+  assert.equal(outcome.status, 'blocked');
+  assert.equal(outcome.reason, 'head_evidence_unavailable');
+});
+
+test('resolveBlockers fails closed when the thread query cannot be satisfied for UNKNOWN mergeability', async () => {
+  const required = getRequiredCheckContexts();
+  const tsv = required.map((name) => `${name}\tCOMPLETED\tSUCCESS`).join('\n');
+  const pr = {
+    number: 3392,
+    title: 'No thread evidence, no queue',
+    url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/3392',
+    headRefOid: '8'.repeat(40),
+    mergeable: 'UNKNOWN',
+    mergeStateStatus: 'PENDING_RECOMPUTE',
+    isDraft: false,
+    statusCheckRollup: [],
+  };
+  const runner = createRunner([
+    { status: 0, stdout: JSON.stringify([{ bucket: 'pass', name: 'test', state: 'SUCCESS' }]), stderr: '' },
+    { status: 0, stdout: tsv, stderr: '' },
+    { status: 1, stdout: '', stderr: 'graphql failed' },
+  ]);
+  const outcome = await resolveBlockers(pr, runner);
+  assert.equal(outcome.status, 'blocked');
+  assert.equal(outcome.reason, 'thread_check_unavailable');
 });
