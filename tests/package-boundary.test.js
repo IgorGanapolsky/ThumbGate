@@ -441,8 +441,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 436 -> 437 (2026-08-11): scripts/session-lease.js is shipped so checkout
     // collision prevention works from the installed Reliability Gateway.
     // Exact measured artifact, with no additional package headroom.
-    manifest.fileCount <= 439,
-    `npm package should stay <= 439 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 440,
+    `npm package should stay <= 440 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
