@@ -49,6 +49,7 @@ function requestEscalation(input = {}, options = {}) {
   const ttlMs = Math.min(MAX_TTL_MS, Math.max(1, finiteNumber(input.ttlMs, DEFAULT_TTL_MS)));
   const idempotencyKey = requiredString(input.idempotencyKey || taskId, 'idempotencyKey');
   const approvalContextDigest = optionalDigest(input.approvalContextDigest, 'approvalContextDigest');
+  const requiredReviewerRole = optionalString(input.requiredReviewerRole);
   const request = {
     escalationId: input.escalationId || `esc_${crypto.randomUUID()}`,
     idempotencyKey,
@@ -63,6 +64,7 @@ function requestEscalation(input = {}, options = {}) {
     eventType: 'requested',
   };
   if (approvalContextDigest) request.approvalContextDigest = approvalContextDigest;
+  if (requiredReviewerRole) request.requiredReviewerRole = requiredReviewerRole;
   return withEscalationLock(options, () => {
     const ledger = readLedger(options);
     assertLedgerHealthy(ledger);
@@ -107,6 +109,9 @@ function decideEscalation(input = {}, options = {}) {
     if (!current) throw escalationError(`unknown escalation '${escalationId}'`);
     if (current.status !== 'pending') throw escalationError(`escalation '${escalationId}' is already ${current.status}`);
     if (sameIdentity(current.requester, actor)) throw escalationError('requester cannot decide their own escalation');
+    if (current.requiredReviewerRole && actor.role !== current.requiredReviewerRole) {
+      throw escalationError(`authenticated reviewer must have role '${current.requiredReviewerRole}'`);
+    }
 
     const now = options.now || new Date();
     const event = {
@@ -145,6 +150,8 @@ function getVerifiedApprovalUnlocked(escalationId, options = {}) {
   const events = ledger.events.filter((event) => event.escalationId === escalationId);
   const requested = events.find((event) => event.eventType === 'requested');
   const decided = events.findLast((event) => event.eventType === 'decided');
+  const consumed = events.findLast((event) => event.eventType === 'consumed');
+  if (consumed && options.allowConsumed !== true) return null;
   if (!requested || !decided || decided.status !== 'approved') return null;
   if (decided.taskId !== requested.taskId) throw escalationError('approval task does not match its request');
   if ((requested.approvalContextDigest || null) !== (decided.approvalContextDigest || null)) {
@@ -153,6 +160,9 @@ function getVerifiedApprovalUnlocked(escalationId, options = {}) {
   if (decided.actor?.kind !== 'human' || sameIdentity(requested.requester, decided.actor)) {
     throw escalationError('approval is not from an independent human actor');
   }
+  if (requested.requiredReviewerRole && decided.actor.role !== requested.requiredReviewerRole) {
+    throw escalationError('approval is not from the required reviewer role');
+  }
   const verificationKey = optionalString(
     options.approvalVerificationKey || process.env.THUMBGATE_HUMAN_REVIEWER_KEY
   );
@@ -160,6 +170,33 @@ function getVerifiedApprovalUnlocked(escalationId, options = {}) {
     throw escalationError('approval receipt is missing or unauthenticated');
   }
   return { ...requested, ...decided };
+}
+
+function consumeVerifiedApproval(escalationId, input = {}, options = {}) {
+  const consumer = requiredIdentity(input.consumer, 'consumer');
+  return withEscalationLock(options, () => {
+    const ledger = readLedger(options);
+    assertLedgerHealthy(ledger);
+    const events = ledger.events.filter((event) => event.escalationId === escalationId);
+    const existingConsumption = events.findLast((event) => event.eventType === 'consumed');
+    if (existingConsumption) {
+      return { consumed: false, replayed: true, consumption: existingConsumption };
+    }
+    const approval = getVerifiedApprovalUnlocked(escalationId, { ...options, allowConsumed: true });
+    if (!approval || Date.parse(approval.expiresAt) <= (options.now || new Date()).getTime()) {
+      return { consumed: false, replayed: false, consumption: null };
+    }
+    const consumedAt = (options.now || new Date()).toISOString();
+    const consumption = appendEventUnlocked({
+      escalationId,
+      taskId: approval.taskId,
+      eventType: 'consumed',
+      consumer,
+      consumedAt,
+      approvalContextDigest: approval.approvalContextDigest || null,
+    }, options, ledger.events);
+    return { consumed: true, replayed: false, approval, consumption };
+  });
 }
 
 function listEscalations(options = {}) {
@@ -454,7 +491,7 @@ function approvalPayload(event) {
     taskId: event.taskId,
     status: event.status,
     decision: event.decision,
-    actor: event.actor,
+    actor: event.actor ? { ...event.actor } : event.actor,
     reason: event.reason,
     decidedAt: event.decidedAt,
   };
@@ -470,6 +507,8 @@ function requiredIdentity(value, field) {
   };
   const displayName = optionalString(value.displayName);
   if (displayName) identity.displayName = displayName;
+  const role = optionalString(value.role);
+  if (role) identity.role = role;
   return identity;
 }
 
@@ -521,6 +560,7 @@ function eventComparableHash(event) {
     evidence: event.evidence,
   };
   if (event.approvalContextDigest) comparable.approvalContextDigest = event.approvalContextDigest;
+  if (event.requiredReviewerRole) comparable.requiredReviewerRole = event.requiredReviewerRole;
   return crypto.createHash('sha256').update(stableStringify(comparable)).digest('hex');
 }
 
@@ -565,6 +605,7 @@ if (isCliInvocation()) {
 
 module.exports = {
   calculateEscalationMetrics,
+  consumeVerifiedApproval,
   decideEscalation,
   getEscalation,
   getEscalationsHeadPath,
