@@ -994,7 +994,8 @@
     "session:lease:release": "node scripts/session-lease.js release",
     "test:qwen-adapter": "node --test tests/qwen-adapter.test.js",
     "test:qwen38-max-cost-optimizer": "node --test tests/qwen38-max-cost-optimizer.test.js",
-    "test:openai-compatible-embed": "node --test tests/openai-compatible-embed.test.js"
+    "test:openai-compatible-embed": "node --test tests/openai-compatible-embed.test.js",
+    "archive:pre-eci": "node scripts/create-pre-eci-archive.js"
   },
   "keywords": [
     "mcp",
