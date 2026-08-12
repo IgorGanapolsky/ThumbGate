@@ -18,6 +18,9 @@ const {
   pairFeedbackWithReceipt,
   buildReceiptContextEntries,
   getReceiptsPath,
+  computeCanonicalRequestDigest,
+  signReceiptDigest,
+  verifyReceiptSignature,
 } = require('../scripts/action-receipts');
 
 test.after(() => {
@@ -112,4 +115,26 @@ test('buildReceiptContextEntries with empty query surfaces recent receipts witho
   for (const entry of entries) {
     assert.equal(entry.namespace, 'action-receipts');
   }
+});
+
+test('recordReceipt generates canonical requestDigest and verifiable HMAC signature', () => {
+  const receipt = recordReceipt({
+    actionId: 'act-crypto-1',
+    toolName: 'deploy',
+    toolInput: { environment: 'production' },
+    principal: 'agent-cto',
+    target: 'thumbgate-production.up.railway.app',
+    decision: 'allow',
+    idempotencyKey: 'idem-key-100',
+    providerEventId: 'aigate-evt-555',
+  });
+
+  assert.ok(receipt.requestDigest, 'requestDigest should be generated');
+  assert.ok(receipt.signature, 'signature should be generated');
+  assert.equal(receipt.principal, 'agent-cto');
+  assert.equal(receipt.decision, 'allow');
+  assert.equal(receipt.providerEventId, 'aigate-evt-555');
+
+  const isValid = verifyReceiptSignature(receipt);
+  assert.equal(isValid, true, 'HMAC signature should be verified');
 });

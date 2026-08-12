@@ -20,9 +20,35 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('node:crypto');
 const { getFeedbackPaths } = require('./feedback-paths');
 
 const RECEIPTS_FILE = 'action-receipts.jsonl';
+
+function computeCanonicalRequestDigest({ toolName, toolInput, target, idempotencyKey, recordedAt }) {
+  const parts = [
+    safeString(toolName),
+    typeof toolInput === 'object' ? JSON.stringify(toolInput || {}) : safeString(toolInput),
+    safeString(target),
+    safeString(idempotencyKey),
+    safeString(recordedAt),
+  ];
+  return crypto.createHash('sha256').update(parts.join('|')).digest('hex');
+}
+
+function signReceiptDigest(requestDigest, signingKey = process.env.THUMBGATE_RECEIPT_SIGNING_KEY || 'thumbgate-local-secret') {
+  return crypto.createHmac('sha256', signingKey).update(safeString(requestDigest)).digest('hex');
+}
+
+function verifyReceiptSignature(receipt, signingKey = process.env.THUMBGATE_RECEIPT_SIGNING_KEY || 'thumbgate-local-secret') {
+  if (!receipt || !receipt.requestDigest || !receipt.signature) return false;
+  const expected = signReceiptDigest(receipt.requestDigest, signingKey);
+  try {
+    return crypto.timingSafeEqual(Buffer.from(receipt.signature, 'hex'), Buffer.from(expected, 'hex'));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Resolve the absolute path to the receipts JSONL for the active project.
@@ -127,12 +153,38 @@ function normalizeReceipt(params = {}) {
     stateHash: outcomeSource.stateHash !== undefined ? outcomeSource.stateHash : null,
   };
 
+  const recordedAt = params.recordedAt ? safeString(params.recordedAt) : new Date().toISOString();
+  const toolName = params.toolName !== undefined ? safeString(params.toolName) : null;
+  const toolInput = params.toolInput !== undefined ? params.toolInput : null;
+  const target = safeString(params.target || params.file || params.filePath || '');
+  const principal = safeString(params.principal || params.agentId || 'agent');
+  const decision = safeString(params.decision || 'allow');
+  const idempotencyKey = safeString(params.idempotencyKey || params.actionId || '');
+  const providerEventId = safeString(params.providerEventId || '');
+
+  const requestDigest = params.requestDigest || computeCanonicalRequestDigest({
+    toolName,
+    toolInput,
+    target,
+    idempotencyKey,
+    recordedAt,
+  });
+
+  const signature = params.signature || signReceiptDigest(requestDigest);
+
   return {
     actionId: safeString(params.actionId) || null,
-    toolName: params.toolName !== undefined ? safeString(params.toolName) : null,
-    toolInput: params.toolInput !== undefined ? params.toolInput : null,
+    toolName,
+    toolInput,
+    principal,
+    target,
+    decision,
+    idempotencyKey,
+    providerEventId,
+    requestDigest,
+    signature,
     outcome,
-    recordedAt: new Date().toISOString(),
+    recordedAt,
   };
 }
 
@@ -317,6 +369,9 @@ module.exports = {
   buildOutcomePairedLesson,
   pairFeedbackWithReceipt,
   buildReceiptContextEntries,
+  computeCanonicalRequestDigest,
+  signReceiptDigest,
+  verifyReceiptSignature,
   // exposed for testing / reuse
   summarizeInput,
   summarizeOutcome,
