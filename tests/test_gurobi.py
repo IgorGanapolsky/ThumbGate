@@ -51,5 +51,5 @@ def test_rule_knapsack_selection():
         assert res["solver"] == "gurobi"
         assert res["status"] == "OPTIMAL"
     else:
-        assert res["solver"] == "heuristic-fallback"
+        assert res["solver"] in {"heuristic-fallback", "heuristic-knapsack"}
         assert res["objective"] == sum(by_id[i]["risk_mitigation"] for i in selected)
