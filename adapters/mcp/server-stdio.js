@@ -92,6 +92,12 @@ const {
   recordTaskOutcome,
 } = require('../../scripts/task-outcomes');
 const {
+  appendReceiptToLedger,
+  readReceiptLedger,
+  reconcileReceiptChain,
+  verifyBrokerReceipt,
+} = require('../../scripts/broker-execution-receipts');
+const {
   listEscalations,
   requestEscalation,
 } = require('../../scripts/human-escalation');
@@ -1371,6 +1377,27 @@ async function callToolInner(name, args) {
           ? getReceiptForAction(args.actionId)
           : getRecentReceipts(Number(args.limit || 20)),
       );
+    case 'verify_broker_execution_receipt':
+      return toTextResult(verifyBrokerReceipt(args.receipt || args));
+    case 'issue_broker_execution_receipt': {
+      // Intentionally NOT on the default MCP allowlist. Even with a host key,
+      // agent-facing sessions must not mint broker signatures. Brokers call the
+      // library/CLI outside the agent tool surface.
+      const error = new Error(
+        'issue_broker_execution_receipt is not available on the agent MCP surface. '
+        + 'Credential-holding brokers must sign out-of-band via scripts/broker-execution-receipts.js.',
+      );
+      error.code = 'THUMBGATE_BROKER_ISSUE_NOT_ON_AGENT_SURFACE';
+      throw error;
+    }
+    case 'record_broker_execution_receipt': {
+      const receipt = args.receipt || args;
+      return toTextResult(appendReceiptToLedger(receipt));
+    }
+    case 'get_broker_execution_receipts':
+      return toTextResult(readReceiptLedger().slice(-Number(args.limit || 20)));
+    case 'reconcile_broker_receipt_chain':
+      return toTextResult(reconcileReceiptChain());
     case 'record_task_outcome':
       return toTextResult(recordTaskOutcome(args));
     case 'get_task_outcomes': {
