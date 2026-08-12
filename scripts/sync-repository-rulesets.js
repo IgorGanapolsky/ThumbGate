@@ -477,6 +477,97 @@ function upsertRuleset(repo, body, existingId, runnerWithInput = runGhWithInput)
   return JSON.parse(result.stdout || '{}');
 }
 
+
+function loadClassicBranchProtectionContexts(repo, branch = 'main', runner = runGh) {
+  const { owner, name } = splitRepo(repo);
+  const safeBranch = String(branch || 'main').trim();
+  if (!/^[A-Za-z0-9._/-]+$/.test(safeBranch)) {
+    throw new Error(`Unsafe branch pattern: ${branch}`);
+  }
+
+  const result = runner([
+    'api',
+    `repos/${owner}/${name}/branches/${safeBranch}/protection`,
+    '-H',
+    'Accept: application/vnd.github+json',
+  ]);
+
+  if (result.status !== 0) {
+    return {
+      ok: false,
+      present: false,
+      contexts: [],
+      error: formatGhError(result),
+    };
+  }
+
+  try {
+    const payload = JSON.parse(result.stdout || '{}');
+    const contexts = normalizeContexts(payload.required_status_checks?.contexts || []);
+    return {
+      ok: true,
+      present: true,
+      contexts,
+      enforceAdmins: Boolean(payload.enforce_admins?.enabled),
+      requiredConversationResolution: Boolean(payload.required_conversation_resolution?.enabled),
+      requiredLinearHistory: Boolean(payload.required_linear_history?.enabled),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      present: false,
+      contexts: [],
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * High-ROI dual-surface drift: classic branch protection vs repository ruleset.
+ * Both may legitimately layer; required status checks must stay congruent.
+ */
+function compareClassicAndRulesetContexts(classic, rulesetContexts, expectedContexts) {
+  const classicContexts = normalizeContexts(classic?.contexts || []);
+  const ruleset = normalizeContexts(rulesetContexts || []);
+  const expected = normalizeContexts(expectedContexts || []);
+
+  const classicVsRuleset = diffContexts(classicContexts, ruleset);
+  const classicVsExpected = diffContexts(classicContexts, expected);
+  const rulesetVsExpected = diffContexts(ruleset, expected);
+
+  const issues = [];
+  if (classic?.present && classicVsRuleset.missing.length > 0) {
+    issues.push(
+      `classic missing checks present on ruleset: ${classicVsRuleset.missing.join(', ')}`,
+    );
+  }
+  if (classic?.present && classicVsRuleset.unexpected.length > 0) {
+    issues.push(
+      `classic has checks absent from ruleset: ${classicVsRuleset.unexpected.join(', ')}`,
+    );
+  }
+  if (classic?.present && classicVsExpected.missing.length > 0) {
+    issues.push(
+      `classic missing merge-quality checks: ${classicVsExpected.missing.join(', ')}`,
+    );
+  }
+  if (rulesetVsExpected.missing.length > 0) {
+    issues.push(
+      `ruleset missing merge-quality checks: ${rulesetVsExpected.missing.join(', ')}`,
+    );
+  }
+
+  return {
+    ok: issues.length === 0,
+    issues,
+    classicContexts,
+    rulesetContexts: ruleset,
+    expectedContexts: expected,
+    classicVsRuleset,
+    classicPresent: Boolean(classic?.present),
+  };
+}
+
 function syncRepositoryRulesets(options = {}, deps = {}) {
   const runner = deps.runner || runGh;
   const runnerWithInput = deps.runnerWithInput || runGhWithInput;
@@ -493,21 +584,40 @@ function syncRepositoryRulesets(options = {}, deps = {}) {
   }
 
   if (options.check) {
+    const classic = typeof deps.loadClassic === 'function'
+      ? deps.loadClassic(repo, 'main', runner)
+      : loadClassicBranchProtectionContexts(repo, 'main', runner);
+
     if (!detail) {
+      const expected = expectedStatusContexts(policy, mergeQuality);
+      const dual = compareClassicAndRulesetContexts(classic, [], expected);
       return {
         ok: false,
         repo,
         missing: true,
-        issues: ['main governance ruleset is not present'],
-        expectedContexts: expectedStatusContexts(policy, mergeQuality),
+        issues: ['main governance ruleset is not present', ...dual.issues],
+        expectedContexts: expected,
         actualContexts: [],
         bypass: analyzeBypassActors([], policy),
+        classic,
+        dual,
       };
     }
+    const analysis = analyzeRuleset(detail, policy, mergeQuality);
+    const dual = compareClassicAndRulesetContexts(
+      classic,
+      analysis.actualContexts,
+      analysis.expectedContexts,
+    );
+    const issues = [...analysis.issues, ...dual.issues];
     return {
       repo,
       missing: false,
-      ...analyzeRuleset(detail, policy, mergeQuality),
+      ...analysis,
+      ok: issues.length === 0,
+      issues,
+      classic,
+      dual,
     };
   }
 
@@ -566,11 +676,13 @@ module.exports = {
   assertSafeGhArgs,
   buildExpectedRulesetBody,
   buildExpectedRulesPayload,
+  compareClassicAndRulesetContexts,
   diffContexts,
   expectedStatusContexts,
   extractStatusCheckParams,
   extractStatusContexts,
   findMainGovernanceRuleset,
+  loadClassicBranchProtectionContexts,
   loadRulesetDetail,
   loadRulesets,
   normalizeContexts,

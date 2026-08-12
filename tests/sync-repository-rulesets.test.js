@@ -194,7 +194,12 @@ test('syncRepositoryRulesets --check reports missing main ruleset', () => {
 
   const result = syncRepositoryRulesets(
     { check: true, repo: 'IgorGanapolsky/ThumbGate' },
-    { runner, policy: POLICY, mergeQuality: MERGE_QUALITY },
+    {
+      runner,
+      policy: POLICY,
+      mergeQuality: MERGE_QUALITY,
+      loadClassic: () => ({ present: false, contexts: [] }),
+    },
   );
 
   assert.equal(result.ok, false);
@@ -223,7 +228,15 @@ test('syncRepositoryRulesets --check is ok when live ruleset matches policy', ()
 
   const result = syncRepositoryRulesets(
     { check: true, repo: 'IgorGanapolsky/ThumbGate' },
-    { runner, policy: POLICY, mergeQuality: MERGE_QUALITY },
+    {
+      runner,
+      policy: POLICY,
+      mergeQuality: MERGE_QUALITY,
+      loadClassic: () => ({
+        present: true,
+        contexts: MERGE_QUALITY.requiredStatusCheckContexts,
+      }),
+    },
   );
 
   assert.equal(result.ok, true);
@@ -313,7 +326,12 @@ test('runCli exits nonzero on ruleset drift', () => {
     ]);
     const exitCode = runCli(
       ['--check', '--repo', 'IgorGanapolsky/ThumbGate'],
-      { runner, policy: POLICY, mergeQuality: MERGE_QUALITY },
+      {
+        runner,
+        policy: POLICY,
+        mergeQuality: MERGE_QUALITY,
+        loadClassic: () => ({ present: false, contexts: [] }),
+      },
     );
     assert.equal(exitCode, 1);
   } finally {
@@ -551,16 +569,31 @@ test('runCli prints ok and json outputs', () => {
       },
     ]);
 
+    const matchingClassic = () => ({
+      present: true,
+      contexts: MERGE_QUALITY.requiredStatusCheckContexts,
+    });
+
     const checkCode = runCli(
       ['--check', '--json', '--repo', 'IgorGanapolsky/ThumbGate'],
-      { runner, policy: POLICY, mergeQuality: MERGE_QUALITY },
+      {
+        runner,
+        policy: POLICY,
+        mergeQuality: MERGE_QUALITY,
+        loadClassic: matchingClassic,
+      },
     );
     assert.equal(checkCode, 0);
     assert.match(output.join('\n'), /"ok": true/);
 
     const textCode = runCli(
       ['--check', '--repo', 'IgorGanapolsky/ThumbGate'],
-      { runner, policy: POLICY, mergeQuality: MERGE_QUALITY },
+      {
+        runner,
+        policy: POLICY,
+        mergeQuality: MERGE_QUALITY,
+        loadClassic: matchingClassic,
+      },
     );
     assert.equal(textCode, 0);
     assert.match(output.join('\n'), /Repository ruleset ok/);
@@ -589,4 +622,86 @@ test('syncRepositoryRulesets reloads detail when upsert omits rules array', () =
   assert.equal(result.ok, true);
   assert.equal(result.rulesetId, 88);
   assert.equal(result.created, true);
+});
+
+test('compareClassicAndRulesetContexts detects dual-surface status check drift', () => {
+  const { compareClassicAndRulesetContexts } = require('../scripts/sync-repository-rulesets');
+  const classic = {
+    present: true,
+    contexts: ['test', 'CodeQL'],
+  };
+  const ruleset = ['test', 'CodeQL', 'Verify changeset'];
+  const expected = ['test', 'CodeQL', 'Verify changeset', 'GitGuardian Security Checks'];
+  const result = compareClassicAndRulesetContexts(classic, ruleset, expected);
+  assert.equal(result.ok, false);
+  assert.ok(result.issues.some((issue) => issue.includes('classic missing checks present on ruleset')));
+  assert.ok(result.issues.some((issue) => issue.includes('merge-quality')));
+});
+
+test('compareClassicAndRulesetContexts is ok when classic and ruleset match merge-quality', () => {
+  const { compareClassicAndRulesetContexts } = require('../scripts/sync-repository-rulesets');
+  const contexts = [
+    'Analyze JavaScript (javascript-typescript)',
+    'CodeQL',
+    'GitGuardian Security Checks',
+    'Socket Security: Project Report',
+    'Socket Security: Pull Request Alerts',
+    'Verify changeset',
+    'test',
+  ];
+  const result = compareClassicAndRulesetContexts(
+    { present: true, contexts },
+    contexts,
+    contexts,
+  );
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.issues, []);
+});
+
+test('syncRepositoryRulesets --check folds classic/ruleset dual drift into issues', () => {
+  const detail = {
+    id: 42,
+    name: 'main governance',
+    target: 'branch',
+    enforcement: 'active',
+    bypass_actors: [],
+    conditions: { ref_name: { include: ['refs/heads/main'] } },
+    rules: [
+      { type: 'required_linear_history' },
+      { type: 'deletion' },
+      { type: 'non_fast_forward' },
+      {
+        type: 'pull_request',
+        parameters: {
+          required_approving_review_count: 0,
+          required_review_thread_resolution: true,
+        },
+      },
+      {
+        type: 'required_status_checks',
+        parameters: {
+          required_status_checks: MERGE_QUALITY.requiredStatusCheckContexts.map((context) => ({ context })),
+        },
+      },
+    ],
+  };
+
+  const runner = createRunner([
+    { status: 0, stdout: JSON.stringify([{ id: 42, name: 'main governance', target: 'branch' }]), stderr: '' },
+    { status: 0, stdout: JSON.stringify(detail), stderr: '' },
+  ]);
+
+  const loadClassic = () => ({
+    present: true,
+    contexts: ['test', 'CodeQL'],
+  });
+
+  const result = syncRepositoryRulesets(
+    { check: true, repo: 'IgorGanapolsky/ThumbGate' },
+    { runner, policy: POLICY, mergeQuality: MERGE_QUALITY, loadClassic },
+  );
+  assert.equal(result.ok, false);
+  assert.ok(result.dual);
+  assert.equal(result.dual.classicPresent, true);
+  assert.ok(result.issues.some((issue) => /classic/i.test(issue)));
 });

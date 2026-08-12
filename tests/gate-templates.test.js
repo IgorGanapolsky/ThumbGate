@@ -60,6 +60,11 @@ test('gate template library exposes curated templates with shared rollout metada
   assert.ok(templates.some((template) => template.id === 'gate-qwen-model-studio-egress'));
   assert.ok(templates.some((template) => template.id === 'block-unverified-qwen-gui-actions'));
 
+  // GitHub Ruleset Governance templates
+  assert.ok(templates.some((template) => template.category === 'GitHub Ruleset Governance'));
+  assert.ok(templates.some((template) => template.id === 'github-ruleset-migration-audit'));
+  assert.ok(templates.some((template) => template.id === 'enforce-ruleset-bypass-actor-scoping'));
+
   assert.ok(templates.every((template) => template.category));
   assert.ok(templates.every((template) => template.problem));
   assert.ok(templates.every((template) => template.roi));
