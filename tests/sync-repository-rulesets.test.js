@@ -4,17 +4,27 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  FORBIDDEN_BYPASS_ACTOR_TYPES,
   analyzeBypassActors,
   analyzeRuleset,
+  assertSafeGhArgs,
+  buildExpectedRulesPayload,
   buildExpectedRulesetBody,
+  diffContexts,
   expectedStatusContexts,
+  extractStatusCheckParams,
   extractStatusContexts,
   findMainGovernanceRuleset,
+  loadRulesetDetail,
+  loadRulesets,
   normalizeContexts,
   parseArgs,
   prepareGhEnv,
+  resolveGhBinary,
   runCli,
+  splitRepo,
   syncRepositoryRulesets,
+  upsertRuleset,
 } = require('../scripts/sync-repository-rulesets');
 
 const MERGE_QUALITY = {
@@ -311,4 +321,272 @@ test('runCli exits nonzero on ruleset drift', () => {
   }
 
   assert.match(output.join('\n'), /Repository ruleset drift/);
+});
+
+test('assertSafeGhArgs and splitRepo reject unsafe input', () => {
+  assert.deepEqual(assertSafeGhArgs(['api', 'graphql']), ['api', 'graphql']);
+  assert.throws(() => assertSafeGhArgs([`api${String.fromCharCode(0)}x`]), /Unsafe GH CLI arg/);
+  assert.deepEqual(splitRepo('IgorGanapolsky/ThumbGate'), {
+    owner: 'IgorGanapolsky',
+    name: 'ThumbGate',
+  });
+  assert.throws(() => splitRepo('not-a-repo'), /Invalid repository/);
+  assert.throws(() => splitRepo('bad/name;rm'), /Unsafe repository name/);
+});
+
+test('diffContexts and normalizeContexts behave like branch-protection helpers', () => {
+  assert.deepEqual(
+    normalizeContexts(['test', 'CodeQL', 'test', ' CodeQL ']),
+    ['CodeQL', 'test'],
+  );
+  assert.deepEqual(diffContexts(['test'], ['test', 'CodeQL']), {
+    missing: ['CodeQL'],
+    unexpected: [],
+  });
+});
+
+test('resolveGhBinary uses fixed executable paths', () => {
+  const accessSync = (candidate) => {
+    if (candidate !== '/usr/bin/gh') {
+      throw new Error('missing');
+    }
+  };
+  assert.equal(resolveGhBinary({ accessSync }), '/usr/bin/gh');
+});
+
+test('prepareGhEnv keeps GH_TOKEN and strips ambient GITHUB_TOKEN outside Actions', () => {
+  const withToken = prepareGhEnv({ GH_TOKEN: 'tok', GITHUB_TOKEN: 'ambient', PATH: '/bin' });
+  assert.equal(withToken.GH_TOKEN, 'tok');
+  assert.equal(withToken.GITHUB_TOKEN, 'ambient');
+
+  const ambientOnly = prepareGhEnv({ GITHUB_TOKEN: 'ambient', PATH: '/bin' });
+  assert.equal(ambientOnly.GITHUB_TOKEN, undefined);
+});
+
+test('buildExpectedRulesPayload omits optional rule types when disabled', () => {
+  const policy = {
+    ...POLICY,
+    rules: {
+      ...POLICY.rules,
+      required_linear_history: false,
+      deletion: false,
+      non_fast_forward: false,
+    },
+  };
+  const rules = buildExpectedRulesPayload(policy, MERGE_QUALITY);
+  assert.equal(rules.some((rule) => rule.type === 'required_linear_history'), false);
+  assert.equal(rules.some((rule) => rule.type === 'deletion'), false);
+  assert.equal(rules.some((rule) => rule.type === 'non_fast_forward'), false);
+  assert.ok(rules.some((rule) => rule.type === 'pull_request'));
+  assert.ok(rules.some((rule) => rule.type === 'required_status_checks'));
+});
+
+test('expectedStatusContexts can use inline contexts when not merge-quality', () => {
+  const policy = {
+    ...POLICY,
+    rules: {
+      ...POLICY.rules,
+      required_status_checks: {
+        contexts: ['only-a', 'only-b'],
+      },
+    },
+  };
+  assert.deepEqual(expectedStatusContexts(policy, MERGE_QUALITY), ['only-a', 'only-b']);
+});
+
+test('extractStatusCheckParams returns required_status_checks parameters', () => {
+  const params = extractStatusCheckParams({
+    rules: [{
+      type: 'required_status_checks',
+      parameters: {
+        strict_required_status_checks_policy: true,
+        do_not_enforce_on_create: false,
+      },
+    }],
+  });
+  assert.equal(params.strict_required_status_checks_policy, true);
+  assert.equal(extractStatusCheckParams({ rules: [] }), null);
+});
+
+test('analyzeRuleset flags do_not_enforce_on_create drift and forbidden bypass', () => {
+  const body = buildExpectedRulesetBody(POLICY, MERGE_QUALITY);
+  const statusRule = body.rules.find((rule) => rule.type === 'required_status_checks');
+  statusRule.parameters.do_not_enforce_on_create = true;
+
+  const analysis = analyzeRuleset({
+    id: 12,
+    ...body,
+    bypass_actors: [{ actor_id: 9, actor_type: 'OrganizationAdmin', bypass_mode: 'always' }],
+  }, POLICY, MERGE_QUALITY);
+
+  assert.equal(analysis.ok, false);
+  assert.ok(analysis.issues.some((issue) => /do_not_enforce_on_create/i.test(issue)));
+  assert.ok(analysis.issues.some((issue) => /forbidden bypass/i.test(issue)));
+  assert.ok(FORBIDDEN_BYPASS_ACTOR_TYPES.has('OrganizationAdmin'));
+});
+
+test('analyzeRuleset flags pull_request and ref include drift', () => {
+  const body = buildExpectedRulesetBody(POLICY, MERGE_QUALITY);
+  const prRule = body.rules.find((rule) => rule.type === 'pull_request');
+  prRule.parameters.required_review_thread_resolution = false;
+  prRule.parameters.required_approving_review_count = 2;
+
+  const analysis = analyzeRuleset({
+    id: 13,
+    ...body,
+    conditions: { ref_name: { include: ['refs/heads/develop'] } },
+    enforcement: 'disabled',
+    target: 'tag',
+  }, POLICY, MERGE_QUALITY);
+
+  assert.equal(analysis.ok, false);
+  assert.ok(analysis.issues.some((issue) => /required_review_thread_resolution/i.test(issue)));
+  assert.ok(analysis.issues.some((issue) => /required_approving_review_count/i.test(issue)));
+  assert.ok(analysis.issues.some((issue) => /refs\/heads\/main/i.test(issue)));
+  assert.ok(analysis.issues.some((issue) => /enforcement/i.test(issue)));
+  assert.ok(analysis.issues.some((issue) => /target/i.test(issue)));
+});
+
+test('loadRulesets and loadRulesetDetail parse successful responses and throw on failure', () => {
+  const okRunner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify([{ id: 1, name: 'main governance' }]),
+      stderr: '',
+    },
+  ]);
+  assert.equal(loadRulesets('IgorGanapolsky/ThumbGate', okRunner)[0].id, 1);
+
+  const failRunner = createRunner([
+    { status: 1, stdout: '', stderr: 'boom' },
+  ]);
+  assert.throws(
+    () => loadRulesets('IgorGanapolsky/ThumbGate', failRunner),
+    /Failed to load rulesets/,
+  );
+
+  const detailRunner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify({ id: 5, name: 'main governance' }),
+      stderr: '',
+    },
+  ]);
+  assert.equal(loadRulesetDetail('IgorGanapolsky/ThumbGate', 5, detailRunner).id, 5);
+  assert.throws(
+    () => loadRulesetDetail('IgorGanapolsky/ThumbGate', 'not-a-number', createRunner([])),
+    /Unsafe ruleset id/,
+  );
+});
+
+test('upsertRuleset posts create and puts update payloads', () => {
+  const body = buildExpectedRulesetBody(POLICY, MERGE_QUALITY);
+  const createCalls = [];
+  const createRunner = (args, input) => {
+    createCalls.push({ args, input });
+    return { status: 0, stdout: JSON.stringify({ id: 9, ...JSON.parse(input) }), stderr: '' };
+  };
+  const created = upsertRuleset('IgorGanapolsky/ThumbGate', body, null, createRunner);
+  assert.equal(created.id, 9);
+  assert.ok(createCalls[0].args.includes('POST'));
+
+  const updateCalls = [];
+  const updateRunner = (args, input) => {
+    updateCalls.push({ args, input });
+    return { status: 0, stdout: JSON.stringify({ id: 9, ...JSON.parse(input) }), stderr: '' };
+  };
+  const updated = upsertRuleset('IgorGanapolsky/ThumbGate', body, 9, updateRunner);
+  assert.equal(updated.id, 9);
+  assert.ok(updateCalls[0].args.includes('PUT'));
+  assert.ok(updateCalls[0].args.some((arg) => String(arg).endsWith('/rulesets/9')));
+
+  assert.throws(
+    () => upsertRuleset(
+      'IgorGanapolsky/ThumbGate',
+      body,
+      null,
+      () => ({ status: 1, stdout: '', stderr: 'create failed' }),
+    ),
+    /Failed to create ruleset/,
+  );
+  assert.throws(
+    () => upsertRuleset(
+      'IgorGanapolsky/ThumbGate',
+      body,
+      9,
+      () => ({ status: 1, stdout: '', stderr: 'update failed' }),
+    ),
+    /Failed to update ruleset/,
+  );
+});
+
+test('runCli prints ok and json outputs', () => {
+  const body = buildExpectedRulesetBody(POLICY, MERGE_QUALITY);
+  const detail = { id: 42, ...body };
+  const output = [];
+  const originalLog = console.log;
+  console.log = (value) => output.push(String(value));
+
+  try {
+    const runner = createRunner([
+      {
+        status: 0,
+        stdout: JSON.stringify([{ id: 42, name: 'main governance', target: 'branch' }]),
+        stderr: '',
+      },
+      {
+        status: 0,
+        stdout: JSON.stringify(detail),
+        stderr: '',
+      },
+      {
+        status: 0,
+        stdout: JSON.stringify([{ id: 42, name: 'main governance', target: 'branch' }]),
+        stderr: '',
+      },
+      {
+        status: 0,
+        stdout: JSON.stringify(detail),
+        stderr: '',
+      },
+    ]);
+
+    const checkCode = runCli(
+      ['--check', '--json', '--repo', 'IgorGanapolsky/ThumbGate'],
+      { runner, policy: POLICY, mergeQuality: MERGE_QUALITY },
+    );
+    assert.equal(checkCode, 0);
+    assert.match(output.join('\n'), /"ok": true/);
+
+    const textCode = runCli(
+      ['--check', '--repo', 'IgorGanapolsky/ThumbGate'],
+      { runner, policy: POLICY, mergeQuality: MERGE_QUALITY },
+    );
+    assert.equal(textCode, 0);
+    assert.match(output.join('\n'), /Repository ruleset ok/);
+  } finally {
+    console.log = originalLog;
+  }
+});
+
+test('syncRepositoryRulesets reloads detail when upsert omits rules array', () => {
+  const body = buildExpectedRulesetBody(POLICY, MERGE_QUALITY);
+  const detail = { id: 88, ...body };
+  const runner = createRunner([
+    { status: 0, stdout: '[]', stderr: '' },
+    { status: 0, stdout: JSON.stringify(detail), stderr: '' },
+  ]);
+  const runnerWithInput = () => ({
+    status: 0,
+    stdout: JSON.stringify({ id: 88, name: 'main governance' }),
+    stderr: '',
+  });
+
+  const result = syncRepositoryRulesets(
+    { repo: 'IgorGanapolsky/ThumbGate' },
+    { runner, runnerWithInput, policy: POLICY, mergeQuality: MERGE_QUALITY },
+  );
+  assert.equal(result.ok, true);
+  assert.equal(result.rulesetId, 88);
+  assert.equal(result.created, true);
 });
