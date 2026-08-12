@@ -1032,6 +1032,30 @@
       "problem": "For bulk, repetitive, or long-running agent workflows, Qwen3.8-Max is the optimal default: 30-60% cheaper output than Claude/Sonnet, with 1M context window for complex reasoning.",
       "roi": "Directs high-volume workloads to the most cost-effective model. Saves $9 per 1M output tokens vs Claude Sonnet 4.6 ($15/M).",
       "rollout": "Set Qwen3.8-Max as default for bulk operations. Allow explicit override with cost-delta documentation."
+    },
+    {
+      "id": "github-ruleset-migration-audit",
+      "name": "Audit GitHub Ruleset Migration & Bypass Permissions",
+      "category": "GitHub Ruleset Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(ruleset|branch_protection|bypass_actors)\\s+(delete|bypass|disable|override|admin_force)",
+      "problem": "Prevents agents or un-audited processes from disabling GitHub Rulesets or modifying bypass actors on protected repositories during migration.",
+      "roi": "Protects enterprise repository rulesets during GitHub's automatic branch protection to rulesets migration, enforcing strict branch protection bounds.",
+      "rollout": "Enable on all enterprise repos migrating from branch protection rules to GitHub Rulesets."
+    },
+    {
+      "id": "enforce-ruleset-bypass-actor-scoping",
+      "name": "Enforce strict scoping on Ruleset bypass actors",
+      "category": "GitHub Ruleset Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(ruleset_bypass|bypass_actor)\\s+(add_user|all_admins|wildcard_actor)",
+      "problem": "Requires fine-grained app/bot scoping on Ruleset bypass permissions instead of granting broad user or admin bypass rights.",
+      "roi": "Limits bypass capabilities strictly to designated automation bots (e.g. Trunk Merge Queue) and blocks rogue admin bypasses.",
+      "rollout": "Pair with GitHub Repository Rulesets across all production repositories."
     }
   ]
 }

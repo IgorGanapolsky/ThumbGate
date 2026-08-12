@@ -426,6 +426,36 @@ async function managePrs(prNumber = '', runner = runGh, options = {}) {
   return { status: 'ok', prs: results };
 }
 
+function inspectRepositoryRulesets(repo = '', runner = runGh) {
+  const normalizedRepo = String(repo || '').trim();
+  const args = normalizedRepo
+    ? ['api', `repos/${normalizedRepo}/rulesets`]
+    : ['api', 'repos/{owner}/{repo}/rulesets'];
+
+  try {
+    const result = runner(args);
+    if (result && result.status === 0 && result.stdout) {
+      const rulesets = JSON.parse(result.stdout);
+      if (Array.isArray(rulesets)) {
+        return {
+          ok: true,
+          count: rulesets.length,
+          activeRulesets: rulesets.map((rs) => ({
+            id: rs.id,
+            name: rs.name,
+            target: rs.target || 'branch',
+            enforcement: rs.enforcement,
+          })),
+        };
+      }
+    }
+  } catch {
+    // API failure fallback
+  }
+
+  return { ok: false, count: 0, activeRulesets: [] };
+}
+
 if (require.main === module) {
   const prNum = process.argv[2];
   managePrs(prNum).then(() => {
@@ -451,4 +481,6 @@ module.exports = {
   performMerge,
   managePrs,
   summarizeChecks,
+  inspectRepositoryRulesets,
 };
+

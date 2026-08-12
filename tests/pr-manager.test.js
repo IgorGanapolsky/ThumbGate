@@ -17,6 +17,7 @@ const {
   performMerge,
   summarizeChecks,
   waitForMergeCommit,
+  inspectRepositoryRulesets,
 } = require('../scripts/pr-manager');
 
 function createRunner(results) {
@@ -748,4 +749,36 @@ test('resolveBlockers still refuses UNSTABLE when a real check is failing', asyn
   const outcome = await resolveBlockers(pr, runner);
   assert.equal(outcome.status, 'blocked');
   assert.equal(outcome.reason, 'ci_failure');
+});
+
+test('inspectRepositoryRulesets returns active rulesets from gh api', () => {
+  const mockRunner = createRunner([
+    {
+      status: 0,
+      stdout: JSON.stringify([
+        { id: 101, name: 'Default Protection', target: 'branch', enforcement: 'active' },
+        { id: 102, name: 'Tag Protection', target: 'tag', enforcement: 'active' }
+      ]),
+      stderr: ''
+    }
+  ]);
+  const result = inspectRepositoryRulesets('IgorGanapolsky/ThumbGate', mockRunner);
+  assert.equal(result.ok, true);
+  assert.equal(result.count, 2);
+  assert.equal(result.activeRulesets[0].id, 101);
+  assert.equal(result.activeRulesets[0].name, 'Default Protection');
+});
+
+test('inspectRepositoryRulesets handles API failure gracefully', () => {
+  const mockRunner = createRunner([
+    {
+      status: 1,
+      stdout: '',
+      stderr: '404 Not Found'
+    }
+  ]);
+  const result = inspectRepositoryRulesets('IgorGanapolsky/ThumbGate', mockRunner);
+  assert.equal(result.ok, false);
+  assert.equal(result.count, 0);
+  assert.equal(result.activeRulesets.length, 0);
 });
