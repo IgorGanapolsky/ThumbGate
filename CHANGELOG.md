@@ -1,5 +1,108 @@
 # Changelog
 
+## 1.36.1
+
+### Patch Changes
+
+- 31d4981: feat(marketplace): add action.yml so ThumbGate can be listed on GitHub Marketplace
+
+## 1.36.0
+
+### Minor Changes
+
+- 6a69c8e: feat(marketplace): add action.yml for GitHub Marketplace listing
+
+### Patch Changes
+
+- 900adb5: Block stealth memory injection from untrusted external content before it can be promoted into durable agent memory.
+
+  Memory ingress now preserves source type, identifier, and trust metadata; detects memory-write instructions, conversational concealment, instruction overrides, and delayed behavioral influence; and applies strict, balanced, or permissive enforcement. Decisions emit vendor-neutral `gen_ai.security.*` telemetry so Langfuse, LangSmith, Braintrust, Arize, OpenTelemetry, and other observability backends can record the security verdict without owning the enforcement boundary.
+
+  WhisperBench-inspired tests cover fact poisoning, preference poisoning, stealth, delayed influence, trusted-user false positives, and end-to-end blocking before the memory log is written.
+
+- 3a3bec4: feat(governance): broker-signed execution receipts — Ed25519 verify/issue, hash-chain ledger, PreToolUse gate, and MCP tools. ThumbGate verifies; credential-holding brokers sign. Agents cannot self-sign proof.
+- a93b0a3: feat(mcp): optimize RAG footprint with Matryoshka representation learning embedding compaction
+- f1b48e7: Add hierarchical Matryoshka embedding tiers, memory-layer classification, deterministic retrieval-quality gates, and canonical test coverage for the Infrastructure Firewall Reliability Gateway.
+- 8ee0e60: Steal high-ROI Nemotron 3.5 Lightning + NeMo Switchyard ideas: multi-model step routing (always-on 3B-active specialist for intent/gate), routing-algorithm evaluation fail-closed without cost/quality evidence, catalog candidates, and governance gates — without NVIDIA product identity.
+- dc163b2: Add a bulkCloud cost-saver tier to the risk-aware model router: steady high-output task types (bulk-generation, batch-processing, high-output-coding, content-generation, bulk-automation) route to a cheap OpenAI-compatible cloud flagship (Qwen3.8-Max class, ~$2/M input and ~$6/M output vs frontier ~$15/M output) configured via THUMBGATE_BULK_CLOUD_BASE_URL / THUMBGATE_BULK_CLOUD_API_KEY. Tiers may now declare pricingUsdPerMTok, and executeRoutedGeneration derives real costCents telemetry from usage tokens when the adapter reports none, so routing-holdout cost-savings metrics work out of the box. New estimateTierCostUsd export; existing tier mappings and escalation rules unchanged.
+- f28e569: Steal high-ROI Model Studio economics into the ThumbGate harness: Qwen Flash/Plus/Max role routing, Token Plan budget egress, hybrid local-first escalate, DashScope text-embedding-v4 OpenAI-compatible embeddings in vector-store, and cost-tier helpers — without adopting Alibaba agent product identity.
+
+### Patch Changes
+
+- 944dca8: feat(skills): add autonomous execution mandate skill for zero-nudging workflow governance
+- 168dd09: fix(hygiene): single-writer checkout session lease prevents concurrent-agent collisions (git clean / git add -A sweeps); pre-commit refuses commits under live foreign lease
+- d64016b: Speed PR CI: pure-deps/workflow PRs use a focused smoke path; skip coverage re-run on ordinary PRs (main + merge queue stay full).
+- 0ce1d36: Add GEO compare page: ThumbGate vs Langfuse / LangSmith / Braintrust / Arize — pre-action enforcement vs LLM observability (2026 market map).
+- 1c8a652: Stop the release-identity guard from reporting normal progress as deploy drift.
+
+  The guard required the published npm version's gitHead to equal the commit
+  under verification. Between releases that is never true: main is simply ahead
+  of the last published version, so every content-only merge turned the check red
+  until someone cut a release. It now passes when the published release commit is
+  an ancestor of HEAD, and still fails when the published version came from a
+  commit that is not in this history. Ancestry is resolved with local git, so the
+  guard needs no network and no credentials; an ancestry it cannot prove is
+  treated as drift, so the check fails closed on a shallow clone.
+
+- f6df393: chore(deps): bump @google/genai from 2.13.0 to 2.15.0
+- cdc10a8: chore(deps): bump js-yaml from 5.2.2 to 5.2.3
+- b8fae7f: chore(deps): bump playwright-core from 1.62.0 to 1.62.1
+- 8510499: chore(deps): bump stripe from 22.2.0 to 22.4.0
+- 9d30d81: chore(deps-dev): bump tsx from 4.22.4 to 4.23.5 in /workers
+- a605a22: Bump @google/genai from 2.7.0 to 2.13.0 for Dependabot dependency maintenance.
+- 4f834b5: chore(deps-dev): bump @playwright/test from 1.62.0 to 1.62.1
+- 01ca5f2: chore(deps): bump stripe from 20.4.1 to 22.4.0 in /workers
+- ee94d2c: Bump `@cloudflare/workers-types` in `/workers` to 5.20260801.1 (Dependabot).
+- f6866b4: chore(deps-dev): bump @types/node from 26.1.1 to 26.1.2 in /workers
+- 8da08d3: docs(memes): add engaging tech memes and align commercial README copy
+- fe5b187: Add Oceans-inspired /founders cash-path landing and upgrade /diagnostic with pain triad, timed process, comparison table, and refund FAQ — sticky $499 diagnostic checkout with intent-gated POST, no raw Stripe URLs.
+- c08f0fd: High-ROI steal: WorkOS MCP Auth scope hierarchy + production AuthKit guard, Herdr approvals adapter, Semantic Memory Pyramid + Symbolic Task Canvas, honest partner landing at /peter, vLLM local model roles.
+- 764cee5: Upgrade LanceDB to 0.33.0 and pin Sharp 0.35.3 to preserve a clean dependency audit.
+- ec4d57d: feat(ops): sync active zero-bypass `main governance` repository ruleset (layered with classic branch protection) and restore required merge-quality checks including GitGuardian
+- 4efc03b: Stop a corrupt feedback entry from hard-blocking every action in a repository.
+
+  A truncated hook payload leaked into the feedback store and was admitted as a
+  recurring negative pattern. Its keywords were the payload's own field names —
+  `workspaceroot`, `workspace`, `thumbgate` — which appear in every payload the
+  agent sends. `workspaceroot` is long enough that `isSpecificKeyword()` treats it
+  as decisive on its own, so a single hit produced a hard deny on every `Bash`
+  call in the repository, including the commands needed to diagnose it. The gate
+  blocked 20 times and warned zero times.
+
+  Two changes:
+
+  - `keywords()` now excludes envelope tokens (hook-payload field names and the
+    workspace identity). These describe the transport, never the mistake, so they
+    can never be evidence of a recurring failure.
+  - Pattern building now rejects text that is a serialized payload fragment rather
+    than a description of a mistake.
+
+  `tests/memory-guard-envelope-tokens.test.js` reproduces the exact fragment from
+  the incident and asserts an unrelated command is no longer denied, while a
+  genuine recurring pattern still blocks the action it describes.
+
+  Known follow-up: patterns built from generic prose can still over-match. A
+  lesson reading "test feedback on chatbot output manufacturing-copilot
+  test-suite" (count 10) blocks any command containing two of those common words.
+  That needs a discriminativeness threshold and is not addressed here.
+
+- 2ddc94b: Keep outbound email sends hard-blocked unless a separately authenticated admin grants a short-lived, exact-action-digest, single-use override.
+- 82fd1d5: Ignore optional Vercel preview failures in pr:manage so free-plan rate limits do not block Trunk when required status checks are green.
+- 5d40f45: fix(gates): unblock the pr-thread-resolution deadlock — both layers. (1) Param mismatch: the gate's block message told agents to call satisfy_gate with `gateId=` while the MCP schema only accepts `gate`; satisfy_gate now accepts `gateId`/`gate_id` aliases and the message matches the schema (cherry-pick of e0de0ad0, stranded on an unmerged branch). (2) The deeper deadlock: hook payloads name MCP tools `mcp__<server>__<tool>`, but the pending gate's evidence-action and read-only-observability exemptions compared bare names only — so `mcp__thumbgate__satisfy_gate` itself was blocked at the hook layer and the documented escape hatch was unreachable regardless of param name (live incident 2026-08-05). Exemption checks now also match the stripped tool name, with regression tests proving the prefixed satisfy path clears the gate and that prefixed mutating tools stay gated.
+- 59ff8bd: Fix authenticated production deploy proof: seed a searchable thumbgate corpus at API startup and fail-fast dashboard billing so GHA Deploy no longer fails while /health is green.
+- 7bc3a91: Include credential-safe RFC 9457 problem diagnostics in authenticated production proof reports so Railway failures identify the failing dashboard or retrieval boundary without exposing API keys.
+- f31dcdb: Promote honesty/overclaim `How to avoid` lines into prevention rules (High-Priority Contracts) so CEO completion-claim contracts survive rule regen.
+- e244fbc: feat(content): add memory-compaction dogfood case study with dynamic email subject; GEO article on RAG ROI gap; RAG improvements report
+- 2a5ba52: feat(rag): gate embedding model choice and Matryoshka dims
+- 2a63bd4: Check out full git history in the Railway deployment workflow so npm release ancestry verification can distinguish valid mainline commits from divergent package ownership.
+- 50707ff: Lean reorganize the root GitHub README into a scannable activation page (~250 lines) with docs index, honest Free/Pro limits, and security/threat-model footer links.
+- dc8a739: fix(retrieval): dedupe-aware candidate pool and slot backfill in lesson retrieval; add memory-log near-duplicate compaction CLI (scripts/compact-memory-store.js, npm run memory:compact)
+- 3f47203: feat(ops): dual classic/ruleset congruence, CI rulesets:check, PR-manager ruleset diagnosis, and zero-bypass gate templates
+- d13f059: Prevent statusline feedback aggregation from reading a shared operating-system temporary-directory store across unrelated tests, npx sessions, and sandboxed agents.
+- 1128cb1: Add a deterministic gate that blocks stealth memory-injection payloads from untrusted agent context.
+- 1128cb1: Block MemGhost-class stealth memory injection into durable agent carriers (MEMORY.md / AGENTS.md / SOUL.md / …) from untrusted external or email provenance (paper 2607.05189 WhisperBench). Structural PreToolUse gate `block-stealth-memory-injection-from-external`.
+- 3e69bd2: Close the unattended RAG loop gap: commit project `.mcp.json` with the thumbgate MCP server, expand the MCP wiring doctor to fail loud when capture/recall is uncallable, and add hosted remote feedback capture (`THUMBGATE_API_BASE_URL` + `THUMBGATE_API_KEY`) for container agents without a Mac-local lessons store.
+
 ## 1.35.0
 
 ### Minor Changes
