@@ -78,15 +78,22 @@ function resolveGhBinary(options = {}) {
   throw new Error(`Unable to locate GH CLI in fixed paths: ${candidates.join(', ')}`);
 }
 
-function runGh(args, options = {}) {
-  const env = { ...process.env };
+function prepareGhEnv(baseEnv = process.env) {
+  const env = { ...baseEnv };
+  // Prefer explicit GH_TOKEN; promote documented GH_PAT fallback when needed.
+  if (!env.GH_TOKEN && env.GH_PAT) {
+    env.GH_TOKEN = env.GH_PAT;
+  }
   if (!env.GITHUB_ACTIONS && env.GITHUB_TOKEN && !env.GH_TOKEN) {
     delete env.GITHUB_TOKEN;
   }
+  return env;
+}
 
+function runGh(args, options = {}) {
   return spawnSync(resolveGhBinary(options), assertSafeGhArgs(args), {
     encoding: 'utf8',
-    env,
+    env: prepareGhEnv(process.env),
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 }
@@ -267,19 +274,15 @@ function loadRulesetDetail(repo, rulesetId, runner = runGh) {
 }
 
 function findMainGovernanceRuleset(rulesets, policy = RULESET_POLICY) {
+  // Only match the named governance ruleset. Never treat an arbitrary
+  // main-targeting ruleset as ours — a full PUT would rename/overwrite it.
   const expectedName = String(policy.name || 'main governance');
   const list = Array.isArray(rulesets) ? rulesets : [];
   return list.find((ruleset) => {
     if (!ruleset || typeof ruleset !== 'object') {
       return false;
     }
-    if (ruleset.name === expectedName) {
-      return true;
-    }
-    const includes = ruleset.conditions?.ref_name?.include || [];
-    return ruleset.target === 'branch'
-      && Array.isArray(includes)
-      && includes.includes('refs/heads/main');
+    return ruleset.name === expectedName;
   }) || null;
 }
 
@@ -297,6 +300,12 @@ function hasRuleType(ruleset, type) {
 function extractPullRequestParams(ruleset) {
   const rule = (Array.isArray(ruleset?.rules) ? ruleset.rules : [])
     .find((entry) => entry?.type === 'pull_request');
+  return rule?.parameters || null;
+}
+
+function extractStatusCheckParams(ruleset) {
+  const rule = (Array.isArray(ruleset?.rules) ? ruleset.rules : [])
+    .find((entry) => entry?.type === 'required_status_checks');
   return rule?.parameters || null;
 }
 
@@ -367,6 +376,21 @@ function analyzeRuleset(detail, policy = RULESET_POLICY, mergeQuality = MERGE_QU
       issues.push('required_approving_review_count drift');
     }
   }
+
+  const expectedStatus = policy.rules.required_status_checks || {};
+  const statusParams = extractStatusCheckParams(detail);
+  if (!statusParams) {
+    issues.push('missing required_status_checks rule parameters');
+  } else {
+    if (Boolean(statusParams.strict_required_status_checks_policy)
+      !== Boolean(expectedStatus.strict_required_status_checks_policy ?? true)) {
+      issues.push('strict_required_status_checks_policy drift');
+    }
+    if (Boolean(statusParams.do_not_enforce_on_create)
+      !== Boolean(expectedStatus.do_not_enforce_on_create ?? false)) {
+      issues.push('do_not_enforce_on_create drift');
+    }
+  }
   if (!bypass.ok) {
     if (bypass.unexpectedHumanBypass) {
       issues.push(
@@ -398,14 +422,9 @@ function analyzeRuleset(detail, policy = RULESET_POLICY, mergeQuality = MERGE_QU
 }
 
 function runGhWithInput(args, input, options = {}) {
-  const env = { ...process.env };
-  if (!env.GITHUB_ACTIONS && env.GITHUB_TOKEN && !env.GH_TOKEN) {
-    delete env.GITHUB_TOKEN;
-  }
-
   return spawnSync(resolveGhBinary(options), assertSafeGhArgs(args), {
     encoding: 'utf8',
-    env,
+    env: prepareGhEnv(process.env),
     input: String(input || ''),
     stdio: ['pipe', 'pipe', 'pipe'],
   });
@@ -549,12 +568,14 @@ module.exports = {
   buildExpectedRulesPayload,
   diffContexts,
   expectedStatusContexts,
+  extractStatusCheckParams,
   extractStatusContexts,
   findMainGovernanceRuleset,
   loadRulesetDetail,
   loadRulesets,
   normalizeContexts,
   parseArgs,
+  prepareGhEnv,
   resolveGhBinary,
   runCli,
   splitRepo,

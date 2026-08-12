@@ -12,6 +12,7 @@ const {
   findMainGovernanceRuleset,
   normalizeContexts,
   parseArgs,
+  prepareGhEnv,
   runCli,
   syncRepositoryRulesets,
 } = require('../scripts/sync-repository-rulesets');
@@ -112,13 +113,13 @@ test('analyzeBypassActors accepts empty bypass list', () => {
   assert.equal(result.ok, true);
 });
 
-test('findMainGovernanceRuleset matches by name or main include', () => {
+test('findMainGovernanceRuleset matches only the named governance ruleset', () => {
   const byName = findMainGovernanceRuleset([
     { id: 1, name: 'main governance', target: 'branch' },
   ], POLICY);
   assert.equal(byName.id, 1);
 
-  const byInclude = findMainGovernanceRuleset([
+  const otherMain = findMainGovernanceRuleset([
     {
       id: 2,
       name: 'legacy',
@@ -126,7 +127,7 @@ test('findMainGovernanceRuleset matches by name or main include', () => {
       conditions: { ref_name: { include: ['refs/heads/main'] } },
     },
   ], POLICY);
-  assert.equal(byInclude.id, 2);
+  assert.equal(otherMain, null);
 });
 
 test('extractStatusContexts reads required_status_checks rule', () => {
@@ -155,6 +156,25 @@ test('analyzeRuleset reports missing ruleset pieces as drift', () => {
   assert.equal(analysis.ok, false);
   assert.ok(analysis.issues.some((issue) => /missing status checks/i.test(issue)));
   assert.ok(analysis.issues.some((issue) => /non_fast_forward/i.test(issue)));
+});
+
+test('analyzeRuleset flags strict status-check policy drift', () => {
+  const body = buildExpectedRulesetBody(POLICY, MERGE_QUALITY);
+  const statusRule = body.rules.find((rule) => rule.type === 'required_status_checks');
+  statusRule.parameters.strict_required_status_checks_policy = false;
+
+  const analysis = analyzeRuleset({
+    id: 11,
+    ...body,
+  }, POLICY, MERGE_QUALITY);
+
+  assert.equal(analysis.ok, false);
+  assert.ok(analysis.issues.some((issue) => /strict_required_status_checks_policy/i.test(issue)));
+});
+
+test('prepareGhEnv promotes GH_PAT to GH_TOKEN', () => {
+  const env = prepareGhEnv({ GH_PAT: 'pat-value', PATH: '/usr/bin' });
+  assert.equal(env.GH_TOKEN, 'pat-value');
 });
 
 test('syncRepositoryRulesets --check reports missing main ruleset', () => {
