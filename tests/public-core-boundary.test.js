@@ -249,7 +249,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
 // 436 -> 437 (2026-08-11): session-lease is packaged public-shell hygiene
   // required to prevent concurrent checkout collisions. Exact count, no headroom.
   // The authenticated production proof seed is required by the packaged API server.
-  const CEILING = 442;
+  // 442 -> 449 (2026-08-12): commercial legal hygiene public pages + notices
+  // (terms/privacy/support/third-party-notices + CONTRIBUTING/THIRD_PARTY_NOTICES).
+  // Keep lockstep with package-boundary + public-bundle-ratchet.
+  const CEILING = 449;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

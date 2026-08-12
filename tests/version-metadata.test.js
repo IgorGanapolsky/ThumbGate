@@ -251,7 +251,7 @@ test('landing page keeps GTM and schema assets wired', () => {
   assert.match(landingPage, /"@type": "SoftwareApplication"/);
   assert.match(landingPage, /"@type": "FAQPage"/);
   assert.match(landingPage, /<section id='faq'>/);
-  assert.match(landingPage, /__GTM_PLAN_URL__/);
+  assert.match(landingPage, /\/terms/);
   assert.match(landingPage, /__COMPATIBILITY_REPORT_URL__/);
   assert.match(landingPage, /__AUTOMATION_REPORT_URL__/);
 });

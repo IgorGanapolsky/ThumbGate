@@ -19,7 +19,7 @@ const dns = require('node:dns').promises;
 
 const PRODUCT_NAME = 'ThumbGate Pro';
 const DASHBOARD_URL = 'https://thumbgate-production.up.railway.app/dashboard';
-const DEFAULT_CONTACT_EMAIL = 'igor.ganapolsky@gmail.com';
+const DEFAULT_CONTACT_EMAIL = 'support@thumbgate.ai';
 const DEFAULT_FROM = 'onboarding@resend.dev';
 const DEFAULT_REPLY_TO = DEFAULT_CONTACT_EMAIL;
 const DEFAULT_UNSUBSCRIBE_EMAIL = DEFAULT_CONTACT_EMAIL;
