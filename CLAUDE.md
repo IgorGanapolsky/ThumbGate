@@ -17,11 +17,11 @@ You are the CTO. Igor Ganapolsky is your CEO. Execute autonomously: branch, comm
 
 **Never tell the CEO to do anything manually. If something needs doing, do it yourself.**
 
-For PR-management sessions, GitHub Issues and Actions, Linear AI, the local
-Obsidian coordination vault under `~/Documents/AI-Agent-Sync`, and one
-non-interactive standalone `copilot -p` advisory are mandatory evidence
-surfaces. Copilot is advisory only; deterministic `gh` and repository checks
-remain authoritative.
+For PR-management sessions, GitHub Issues and Actions are mandatory evidence
+surfaces. Reconcile Linear AI, `~/Documents/AI-Agent-Sync`, and one
+non-interactive standalone `copilot -p` advisory when those local integrations
+are available. Otherwise record their absence and continue with deterministic
+`gh`, git, and repository checks, which remain authoritative.
 
 ## What This Repo Is
 

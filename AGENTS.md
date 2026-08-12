@@ -8,10 +8,11 @@ At session start, read `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`; query the
 local ThumbGate memory; inspect every open PR, remote branch, worktree, and
 current `main` CI run before changing repository state.
 
-Also reconcile GitHub Issues and Actions, Linear AI ownership, and the local
-Obsidian coordination vault under `~/Documents/AI-Agent-Sync`. Use the
-standalone non-interactive GitHub Copilot CLI once for an independent advisory
-review, but use deterministic `gh` and repository tools for GitHub state.
+In PR-management sessions, reconcile GitHub Issues and Actions plus any
+available Linear AI and local Obsidian coordination surfaces. If Linear,
+`~/Documents/AI-Agent-Sync`, or the standalone `copilot` CLI is unavailable,
+record that fact and continue with deterministic `gh`, git, and repository
+checks. Copilot advice is never authoritative.
 
 For session closure:
 
