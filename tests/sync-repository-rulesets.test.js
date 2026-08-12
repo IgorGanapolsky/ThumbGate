@@ -624,6 +624,18 @@ test('syncRepositoryRulesets reloads detail when upsert omits rules array', () =
   assert.equal(result.created, true);
 });
 
+test('compareClassicAndRulesetContexts fails closed when classic cannot be inspected', () => {
+  const { compareClassicAndRulesetContexts } = require('../scripts/sync-repository-rulesets');
+  const result = compareClassicAndRulesetContexts(
+    { ok: false, present: false, contexts: [], error: 'HTTP 403' },
+    ['test', 'CodeQL'],
+    ['test', 'CodeQL'],
+  );
+  assert.equal(result.ok, false);
+  assert.ok(result.issues.some((issue) => /could not be inspected/i.test(issue)));
+  assert.equal(result.classicInspectOk, false);
+});
+
 test('compareClassicAndRulesetContexts detects dual-surface status check drift', () => {
   const { compareClassicAndRulesetContexts } = require('../scripts/sync-repository-rulesets');
   const classic = {

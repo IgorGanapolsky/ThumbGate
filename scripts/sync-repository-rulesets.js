@@ -536,6 +536,16 @@ function compareClassicAndRulesetContexts(classic, rulesetContexts, expectedCont
   const rulesetVsExpected = diffContexts(ruleset, expected);
 
   const issues = [];
+  // Classic branch protection is a required layered surface for ThumbGate.
+  // Fail closed when it cannot be inspected (403/404/malformed), rather than
+  // treating absence as optional success.
+  if (classic && classic.ok === false) {
+    issues.push(
+      `classic branch protection could not be inspected${
+        classic.error ? `: ${classic.error}` : ''
+      }`,
+    );
+  }
   if (classic?.present && classicVsRuleset.missing.length > 0) {
     issues.push(
       `classic missing checks present on ruleset: ${classicVsRuleset.missing.join(', ')}`,
@@ -565,6 +575,7 @@ function compareClassicAndRulesetContexts(classic, rulesetContexts, expectedCont
     expectedContexts: expected,
     classicVsRuleset,
     classicPresent: Boolean(classic?.present),
+    classicInspectOk: classic ? classic.ok !== false : null,
   };
 }
 
