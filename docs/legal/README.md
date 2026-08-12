@@ -60,3 +60,7 @@ Give counsel this folder plus:
 - `THIRD_PARTY_NOTICES.md` and `LICENSE`
 - Current production hosts: `thumbgate.ai`, `thumbgate.app`,
   `thumbgate-production.up.railway.app`
+
+## Employment IP hygiene
+
+See `EMPLOYMENT_IP_HYGIENE.md` for generic (employer-agnostic) rules: no confidential employer inputs, and invention-assignment risk is not cured by nights-and-weekends alone.
