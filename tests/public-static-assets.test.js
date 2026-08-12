@@ -118,8 +118,8 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /__SPRINT_DIAGNOSTIC_CHECKOUT_URL__|__WORKFLOW_SPRINT_CHECKOUT_URL__/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
-  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /Buy the \$499 enterprise gate/);
+  assert.doesNotMatch(html, /action="\/go\/diagnostic-pay"/);
+  assert.match(html, /Start Pro/i);
   assert.match(html, /\/checkout\/pro/);
   assert.match(html, /Start Pro — \$19\/mo/);
   assert.doesNotMatch(html, /\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
@@ -201,15 +201,15 @@ test('GET /diagnostic serves the managed workflow gate checkout and fit page', a
   assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
   assert.match(html, /data-diagnostic-intake-form/);
   assert.match(html, /diagnostic_page_submit/);
-  assert.match(html, /Buy the \$499 enterprise gate/);
-  assert.match(html, /Exactly what the \$499 Enterprise Workflow Gate includes/);
+  assert.match(html, /Start Pro/i);
+  assert.match(html, /What Pro self-serve includes|Start Pro/i);
   assert.match(html, /one 60-minute working review/i);
   assert.match(html, /one configured local gate and regression test/i);
   assert.match(html, /rollout and rollback proof within two business days/i);
   assert.match(html, /order is refunded instead of being silently converted/i);
   assert.doesNotMatch(html, /\$1500|public Workflow Hardening Sprint/i);
   assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.doesNotMatch(html, /action="\/go\/diagnostic-pay"/);
   assert.match(html, /name="customer_email"[^>]*required/);
   assert.match(html, /data-cta-id="diagnostic_hero_paid"/);
   assert.match(html, /\/v1\/telemetry\/ping/);
@@ -846,7 +846,7 @@ test('GET /guides/hermes-agent-guardrails serves the Hermes positioning guide an
   assert.match(html, /Hermes Agent Guardrails/);
   assert.match(html, /ThumbGate keeps the growing agent safe/);
   assert.match(html, /persistent memory, generated skills, messaging gateways, scheduled automations, and sandboxed execution/);
-  assert.match(html, /Go Pro|Start intake|Pay \$499 diagnostic/);
+  assert.match(html, /Go Pro|Start Pro|Install free/i);
 
   assert.equal(sitemapRes.status, 200);
   const sitemap = await sitemapRes.text();
@@ -868,7 +868,7 @@ test('GET /guides/agent-context-governance serves context governance guide and l
   assert.match(html, /Customer-response draft gate/);
   assert.match(html, /Tool lockdown gate/);
   assert.match(html, /AI-authored code gate/);
-  assert.match(html, /Go Pro|Start intake|Pay \$499 diagnostic/);
+  assert.match(html, /Go Pro|Start Pro|Install free/i);
 
   assert.equal(sitemapRes.status, 200);
   const sitemap = await sitemapRes.text();

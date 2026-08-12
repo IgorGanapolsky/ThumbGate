@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ThumbGate for Founders — Stop Agent Mistakes Before They Cost | $499 Diagnostic</title>
-<meta name="description" content="You didn't hire AI agents to babysit them. Turn one repeated agent failure into a proved gate in two business days. $499 managed diagnostic. Refund if not a fit.">
+<title>ThumbGate for Founders — Stop Agent Mistakes Before They Cost | $19/mo Pro Diagnostic</title>
+<meta name="description" content="You didn't hire AI agents to babysit them. Turn one repeated agent failure into a proved gate in two business days. $19/mo Pro managed diagnostic. Refund if not a fit.">
 <link rel="canonical" href="__APP_ORIGIN__/founders">
 <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
-<meta property="og:title" content="ThumbGate for Founders — $499 Diagnostic Gate">
+<meta property="og:title" content="ThumbGate for Founders — $19/mo Pro Diagnostic Gate">
 <meta property="og:description" content="Scale agent impact without the babysitting. One workflow, one gate, proof in two business days.">
 <meta property="og:url" content="__APP_ORIGIN__/founders">
 <meta property="og:type" content="website">
@@ -330,10 +330,10 @@ footer {
       <div class="eyebrow">Cash path · recommended</div>
       <div class="price">$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</div>
       <p class="price-note">One-time managed diagnostic. One supported local workflow. No subscription required.</p>
-      <form action="/go/diagnostic-pay" method="POST" data-founders-pay-form>
+      <form action="/checkout/pro" method="GET" data-founders-pay-form>
         <label for="founders-email">Work email for the receipt</label>
         <input id="founders-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
-        <input type="hidden" name="plan_id" value="sprint_diagnostic">
+        <input type="hidden" name="plan_id" value="pro">
         <input type="hidden" name="utm_source" value="founders">
         <input type="hidden" name="utm_medium" value="direct_checkout">
         <input type="hidden" name="utm_campaign" value="oceans_inspired_conversion">
@@ -350,7 +350,7 @@ footer {
         <li>If it is not a supported fit, we refund</li>
       </ul>
       <p class="fine" data-founders-payment-hint>No Stripe session until you submit. Secure checkout. Fit boundary is explicit.</p>
-      <a class="btn block" style="margin-top:12px;" href="/diagnostic#intake" data-revenue-cta data-cta-id="founders_hero_fit" data-cta-placement="hero">Check workflow fit first</a>
+      <a class="btn block" style="margin-top:12px;" href="/checkout/pro?utm_source=site&amp;utm_medium=legacy_diagnostic_cta&amp;utm_campaign=pro_only_v1" data-revenue-cta data-cta-id="founders_hero_fit" data-cta-placement="hero">Check workflow fit first</a>
     </aside>
   </div>
 
@@ -507,7 +507,7 @@ footer {
   <div class="shell footer-inner">
     <span>ThumbGate · Local-first agent governance. Inspired by high-converting operator landings; no affiliation with Oceans Talent.</span>
     <div>
-      <a href="/diagnostic">Diagnostic</a> ·
+      <a href="/checkout/pro?utm_source=site&amp;utm_medium=legacy_diagnostic_cta&amp;utm_campaign=pro_only_v1">Diagnostic</a> ·
       <a href="/pricing">Pricing</a> ·
       <a href="__VERIFICATION_URL__">Proof</a> ·
       <a href="/llm-context.md">LLM context</a>
@@ -572,7 +572,7 @@ document.querySelectorAll('.faq-q').forEach((button) => {
     telemetry('founders_cta_click', {
       ctaId: cta.getAttribute('data-cta-id') || '',
       ctaPlacement: cta.getAttribute('data-cta-placement') || '',
-      planId: cta.getAttribute('data-plan-id') || 'sprint_diagnostic'
+      planId: cta.getAttribute('data-plan-id') || 'pro'
     });
   });
 
@@ -581,7 +581,7 @@ document.querySelectorAll('.faq-q').forEach((button) => {
       telemetry('founders_checkout_submit', {
         ctaId: 'founders_hero_paid',
         ctaPlacement: 'hero',
-        planId: 'sprint_diagnostic'
+        planId: 'pro'
       });
     });
   }

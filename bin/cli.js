@@ -130,7 +130,7 @@ function upgradeNudge() {
   const pricingUrl = pricingUrlFor('cli_upgrade_nudge', COMMAND || 'general');
   const diagnosticUrl = diagnosticUrlFor('cli_upgrade_nudge', COMMAND || 'general');
   process.stderr.write(
-    '\n  Enterprise entry: $499 Enterprise Workflow Gate for one workflow\n' +
+    '\n  Paid path: Pro $19/mo self-serve (public managed diagnostic retired)\n' +
     `  ${diagnosticUrl}\n` +
     `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
     '  Removes solo caps; adds personal recall, dashboard proof, exports, and managed adapters.\n' +
@@ -142,7 +142,7 @@ function diagnostic() {
   const intakeUrl = diagnosticUrlFor('cli_diagnostic', COMMAND || 'diagnostic');
   const checkoutUrl = diagnosticCheckoutUrlFor('cli_diagnostic', COMMAND || 'diagnostic');
   console.log('');
-  console.log('  ThumbGate Enterprise Workflow Gate — $499');
+  console.log('  ThumbGate Pro — $19/mo (managed diagnostic not offered on site)');
   console.log('  ------------------------------------------');
   console.log('  Use this when one repeated AI-agent workflow failure is already costing');
   console.log('  review time, release confidence, customer trust, or money.');
@@ -1759,7 +1759,7 @@ function pro() {
     console.log('  - Personal recall: search lessons, rules, and proof');
     console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
     console.log('  - Managed adapters: Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode');
-    console.log('  - Enterprise Workflow Gate: $499 for one supported workflow; hosted team sync and org dashboard are not GA');
+    console.log('  - Pro: $19/mo self-serve; hosted team sync and org dashboard are not GA; public managed diagnostic retired');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');
     console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
@@ -3326,7 +3326,7 @@ function help() {
     console.log('  break-glass --reason="..."                       Short TTL recovery if gates over-fire');
     console.log('  brain [--write]                                   Build the agent-readable context brain (lessons + rules + gates)');
     console.log('  pro                                               ThumbGate Pro (dashboard, exports, sync)');
-    console.log('  diagnostic                                        $499 Enterprise Workflow Gate for one repeated team failure');
+    console.log('  diagnostic                                        retired public offer — redirects to Pro self-serve');
     console.log('  subscribe <email>                                 Get the 5-min setup guide + weekly tips by email');
     console.log('');
     console.log('More:');

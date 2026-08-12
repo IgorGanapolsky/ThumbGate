@@ -38,14 +38,16 @@ test('public diagnostic and pricing paths require explicit intent surfaces', () 
   const founders = fs.readFileSync(path.join(PUBLIC_DIR, 'founders.html'), 'utf8');
   const buyerIntent = fs.readFileSync(path.join(PUBLIC_DIR, 'js', 'buyer-intent.js'), 'utf8');
 
-  assert.match(diagnostic, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.doesNotMatch(diagnostic, /action="\/go\/diagnostic-pay"/);
+  assert.match(diagnostic, /Start Pro|checkout\/pro/i);
   assert.match(diagnostic, /name="customer_email"[^>]*required/);
-  assert.match(pricing, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.doesNotMatch(pricing, /action="\/go\/diagnostic-pay"/);
+  assert.match(pricing, /\/checkout\/pro/);
   assert.match(pricing, /name="customer_email"[^>]*required/);
-  assert.match(pricing, /name="plan_id" value="sprint_diagnostic"/);
-  assert.match(founders, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.doesNotMatch(pricing, /sprint_diagnostic/);
+  assert.doesNotMatch(founders, /action="\/go\/diagnostic-pay"/);
   assert.match(founders, /name="customer_email"[^>]*required/);
-  assert.match(founders, /name="plan_id" value="sprint_diagnostic"/);
+  assert.doesNotMatch(founders, /sprint_diagnostic/);
   assert.doesNotMatch(pricing, /\/checkout\/pro\?confirm=1/);
   assert.doesNotMatch(buyerIntent, /proHref[^;]+confirm\s*:\s*['"]1['"]/s);
 });

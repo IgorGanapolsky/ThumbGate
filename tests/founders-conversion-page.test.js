@@ -31,9 +31,9 @@ test.after(async () => {
 });
 
 test('founders page is an Oceans-style cash-path landing with intent checkout', () => {
-  assert.match(foundersHtml, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.doesNotMatch(foundersHtml, /action="\/go\/diagnostic-pay"/);
   assert.match(foundersHtml, /name="customer_email"[^>]*required/);
-  assert.match(foundersHtml, /name="plan_id" value="sprint_diagnostic"/);
+  assert.doesNotMatch(foundersHtml, /sprint_diagnostic/);
   assert.match(foundersHtml, /utm_campaign" value="oceans_inspired_conversion"/);
   assert.match(foundersHtml, /cta_id" value="founders_hero_paid"/);
   assert.match(foundersHtml, /landing_path" value="\/founders"/);
@@ -67,8 +67,8 @@ test('GET /founders and aliases serve filled conversion HTML', async () => {
     assert.equal(res.status, 200, `${route} should be 200`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /\$499/);
-    assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
+    assert.doesNotMatch(html, /\$499/);
+    assert.doesNotMatch(html, /action="\/go\/diagnostic-pay"/);
     assert.match(html, /founders_hero_paid/);
     assert.match(html, /canonical" href="[^"]+\/founders"/);
     assert.doesNotMatch(html, /__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
@@ -86,7 +86,7 @@ test('GET /diagnostic still checkout-ready after Oceans blocks', async () => {
   const res = await fetch(`${origin}/diagnostic`);
   assert.equal(res.status, 200);
   const html = await res.text();
-  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.doesNotMatch(html, /action="\/go\/diagnostic-pay"/);
   assert.match(html, /data-oceans-pain/);
   assert.match(html, /data-oceans-process/);
   assert.match(html, /Buy the \$499 enterprise gate/);

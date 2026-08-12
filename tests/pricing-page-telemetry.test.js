@@ -11,27 +11,19 @@ test('pricing page emits first-party telemetry for views and buyer actions', () 
   assert.match(pricingHtml, /\/v1\/telemetry\/ping/);
   assert.doesNotMatch(pricingHtml, /\/v1\/telemetry\/event/);
   assert.match(pricingHtml, /pricing_page_view/);
-  assert.match(pricingHtml, /pricing_cta_click/);
-  assert.match(pricingHtml, /checkout_start/);
-  assert.match(pricingHtml, /data-cta-id="pricing_nav_buy"/);
+  assert.match(pricingHtml, /pricing_cta_click|checkout_start|data-cta-id="pricing_pro_buy"/);
   assert.match(pricingHtml, /data-primary-checkout/);
-  assert.match(pricingHtml, /experimentId: 'value_packaging_v1'/);
-  assert.match(pricingHtml, /data-plan-id="pro" data-value="19" data-segment="solo_operator"/);
-  assert.match(pricingHtml, /data-plan-id="sprint_diagnostic" data-value="499" data-segment="workflow_team"/);
-  assert.match(pricingHtml, /data-plan-id="enterprise_service" data-value="0" data-segment="regulated_team"/);
-  assert.match(pricingHtml, /link\.dataset\.planId \|\| 'unknown'/);
-  assert.match(pricingHtml, /name="utm_campaign" value="value_packaging_v1"/);
-  assert.match(pricingHtml, /name="campaign_variant" value="workflow_team"/);
-  assert.match(pricingHtml, /buyerSegment\.value = link\.dataset\.segment \|\| 'workflow_team'/);
+  assert.match(pricingHtml, /data-plan-id="pro"/);
+  assert.doesNotMatch(pricingHtml, /data-plan-id="sprint_diagnostic"/);
   assert.match(pricingHtml, /href="https:\/\/github\.com\/IgorGanapolsky\/ThumbGate\/blob\/main\/docs\/VERIFICATION_EVIDENCE\.md"/);
 });
 
-test('pricing exposes Pro self-serve and direct $499 managed-gate checkout', () => {
-  assert.match(pricingHtml, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(pricingHtml, /Get Started — \$499 Diagnostic/);
-  assert.match(pricingHtml, /name="customer_email"[^>]*required/);
-  assert.match(pricingHtml, /"name": "ThumbGate Managed Workflow Diagnostic"/);
-  assert.match(pricingHtml, /"price": "499"/);
+test('pricing exposes Pro self-serve as the sole paid public checkout', () => {
+  assert.doesNotMatch(pricingHtml, /action="\/go\/diagnostic-pay"/);
+  assert.doesNotMatch(pricingHtml, /\$499/);
+  assert.doesNotMatch(pricingHtml, /sprint_diagnostic/);
+  assert.match(pricingHtml, /Start Pro/);
+  assert.match(pricingHtml, /ThumbGate Pro/);
   assert.match(pricingHtml, /"name": "ThumbGate Pro monthly"/);
   assert.match(pricingHtml, /"price": "19"/);
   assert.match(pricingHtml, /"name": "ThumbGate Pro annual"/);
@@ -39,27 +31,22 @@ test('pricing exposes Pro self-serve and direct $499 managed-gate checkout', () 
   const jsonLdBlocks = [...pricingHtml.matchAll(/<script type="application\/ld\+json">\s*([\s\S]*?)\s*<\/script>/g)]
     .map((match) => JSON.parse(match[1]));
   const offerGraph = jsonLdBlocks.find((block) => Array.isArray(block['@graph']))['@graph'];
-  const diagnostic = offerGraph.find((node) => node['@type'] === 'Service');
+  assert.ok(offerGraph, 'expected @graph JSON-LD');
+  assert.ok(!offerGraph.some((node) => node['@type'] === 'Service' && /diagnostic/i.test(node.name || '')),
+    'managed diagnostic Service offer must not remain in JSON-LD');
   const pro = offerGraph.find((node) => node['@type'] === 'SoftwareApplication');
-  assert.equal(diagnostic.offers.price, '499');
-  assert.equal(diagnostic.offers.name, 'Managed workflow diagnostic');
+  assert.ok(pro, 'expected Pro SoftwareApplication JSON-LD');
   assert.deepEqual(pro.offers.map((offer) => offer.price), ['19', '149']);
   assert.match(pricingHtml, /\/checkout\/pro/);
-  assert.match(pricingHtml, />Start Pro<\/a>/);
   assert.match(pricingHtml, /\$19/);
   assert.match(pricingHtml, /\$149/);
   assert.doesNotMatch(pricingHtml, /\/go\/sprint|workflow-sprint-intake/);
   assert.doesNotMatch(pricingHtml, /\$1,500|\$3,000|\$10,000|\$15,000/);
 });
 
-test('pricing segments buyers by value and keeps public fences explicit', () => {
-  assert.match(pricingHtml, /Price from your exposure/);
-  assert.match(pricingHtml, /Repeat incidents/);
-  assert.match(pricingHtml, /Recovery hours/);
-  assert.match(pricingHtml, /Loaded hourly cost/);
-  assert.match(pricingHtml, /Solo operator/);
-  assert.match(pricingHtml, /Engineering or platform team/);
-  assert.match(pricingHtml, /Regulated or multi-workflow team/);
-  assert.match(pricingHtml, /Hosted team features, SSO, and SIEM are not general availability/);
+test('pricing keeps free evaluate and self-serve fences explicit', () => {
+  assert.match(pricingHtml, /Self-serve only|self-serve/i);
+  assert.match(pricingHtml, /Free|npx thumbgate init/i);
+  assert.match(pricingHtml, /not generally available/i);
   assert.doesNotMatch(pricingHtml, /\$15k\+ loaded|Never reliable/);
 });

@@ -279,16 +279,20 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the Enterprise tier'
   );
   check(
-    /one hard, test-backed safety gate/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must describe the one test-backed gate'
+    /ThumbGate Pro at \$19\/mo/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must lead with Pro self-serve pricing'
   );
   check(
-    /supported AI-agent workflow/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must keep the supported-workflow boundary'
+    /Free local evaluate/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must keep free local evaluate'
   );
   check(
-    /two business days/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must state the managed delivery window'
+    /Self-serve pre-action gates/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must state self-serve pre-action gates'
+  );
+  check(
+    !/\$499|two business days/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must not advertise the retired managed diagnostic'
   );
   check(
     /\$19\/mo or \$149\/yr/i.test(readmeMd),
@@ -352,17 +356,16 @@ async function main() {
   );
 
   check(
-    /action="\/go\/diagnostic-pay"[^>]*method="POST"/i.test(landingHtml),
-    'public/index.html must post directly to the canonical managed-gate checkout route'
+    !/action="\/go\/diagnostic-pay"/i.test(landingHtml),
+    'public/index.html must not post to the retired managed-gate checkout route'
   );
   check(
-    /\$(?:499|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__)/.test(landingHtml)
-      && /Managed AI Agent Workflow Gate/i.test(landingHtml),
-    'public/index.html must expose the $499 managed gate offer'
+    !/\$(?:499|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__)/.test(landingHtml),
+    'public/index.html must not expose the retired $499 managed gate offer'
   );
   check(
     /\/checkout\/pro/i.test(landingHtml) && /\$19\/mo/i.test(landingHtml),
-    'public/index.html must expose self-serve Pro at $19/mo alongside the managed gate'
+    'public/index.html must expose self-serve Pro at $19/mo as the public paid path'
   );
   check(
     !/\/go\/sprint|href="[^"]*workflow-sprint-intake/i.test(landingHtml),
@@ -370,19 +373,23 @@ async function main() {
   );
   check(
     /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/i.test(landingHtml),
-    'public/index.html must preserve old intake hashes as an alias to the managed-gate checkout'
+    'public/index.html must preserve old intake hashes as a legacy alias'
   );
   check(
-    /action="\/go\/diagnostic-pay"[^>]*method="POST"/i.test(pricingHtml),
-    'public/pricing.html must use the same canonical managed-gate checkout route'
+    !/action="\/go\/diagnostic-pay"/i.test(pricingHtml),
+    'public/pricing.html must not use the retired managed-gate checkout route'
   );
   check(
     /\/checkout\/pro/i.test(pricingHtml) && /\$19\/mo/i.test(pricingHtml),
-    'public/pricing.html must expose self-serve Pro at $19/mo alongside the managed gate'
+    'public/pricing.html must expose self-serve Pro at $19/mo as the public paid path'
   );
   check(
     !/\/go\/sprint|workflow-sprint-intake/i.test(pricingHtml),
     'public/pricing.html must not reintroduce retired sprint intake cash paths'
+  );
+  check(
+    !/\$499/.test(pricingHtml),
+    'public/pricing.html must not expose the retired $499 managed gate offer'
   );
   check(
     /ThumbGate Pre-Action Checks/i.test(githubAbout.githubDescription),

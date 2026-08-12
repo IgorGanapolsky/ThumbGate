@@ -14,7 +14,7 @@
 > Pre-action checks that flag repeated risky actions before execution and block matching actions when strict policy is enabled. Accepted feedback becomes local lessons; repeated failures can become prevention rules.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> Stop AI agent mistakes before they cost you. Self-serve is $19/mo; the $499 Diagnostic installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.
+> Stop AI agent mistakes before they cost you. Free local evaluate, then ThumbGate Pro at $19/mo or $149/yr. Self-serve pre-action gates for AI coding agents.
 
 ### NPM package.json
 > ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.

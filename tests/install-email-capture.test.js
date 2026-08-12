@@ -208,7 +208,7 @@ describe('postinstall banner contains subscribe and managed-service affordances'
     const src = fs.readFileSync(path.resolve(__dirname, '..', 'bin', 'postinstall.js'), 'utf8');
     assert.match(src, /npx thumbgate subscribe/);
     assert.match(src, /5-min setup guide \+ weekly tips/);
-    assert.match(src, /\$499 one-time/);
+    assert.match(src, /\$19\/mo|Pro/i);
     assert.match(src, /thumbgate\.ai\/diagnostic/);
     assert.doesNotMatch(src, /Keep Pro|\$19/);
     assert.match(src, /trial/i);

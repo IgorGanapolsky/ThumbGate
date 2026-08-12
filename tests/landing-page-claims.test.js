@@ -10,11 +10,10 @@ const HOME_HTML = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8
 const PRICING_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pricing.html'), 'utf8');
 const PRO_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pro.html'), 'utf8');
 
-test('homepage commercial contract offers Pro $19/mo and Diagnostic $499', () => {
-  assert.match(HOME_HTML, /Diagnostic Gate/);
-  assert.match(HOME_HTML, /\$499 Diagnostic/i);
-  assert.match(HOME_HTML, /action="\/go\/diagnostic-pay"/);
-  assert.match(HOME_HTML, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
+test('homepage commercial contract offers Pro $19/mo as the sole paid path', () => {
+  assert.doesNotMatch(HOME_HTML, /action="\/go\/diagnostic-pay"/);
+  assert.doesNotMatch(HOME_HTML, /\$499/);
+  assert.doesNotMatch(HOME_HTML, /sprint_diagnostic/);
   assert.match(HOME_HTML, /\/checkout\/pro/);
   assert.match(HOME_HTML, /Start Pro — \$19\/mo/);
   assert.match(HOME_HTML, /Pro · \$19\/mo/);
@@ -22,13 +21,12 @@ test('homepage commercial contract offers Pro $19/mo and Diagnostic $499', () =>
   assert.match(HOME_HTML, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
 });
 
-test('pricing surfaces Pro self-serve and Diagnostic managed gate together', () => {
-  assert.match(PRICING_HTML, /Diagnostic gate|Get Started — \$499 Diagnostic|Cash path/i);
-  assert.match(PRICING_HTML, /Diagnostic gate|Get Started — \$499 Diagnostic/i);
-  assert.match(PRICING_HTML, /action="\/go\/diagnostic-pay"/);
-  assert.match(PRICING_HTML, /\$499/);
+test('pricing surfaces Pro self-serve as the sole paid public checkout', () => {
+  assert.doesNotMatch(PRICING_HTML, /action="\/go\/diagnostic-pay"/);
+  assert.doesNotMatch(PRICING_HTML, /\$499/);
+  assert.doesNotMatch(PRICING_HTML, /sprint_diagnostic/);
   assert.match(PRICING_HTML, /\/checkout\/pro/);
-  assert.match(PRICING_HTML, />Start Pro<\/a>/);
+  assert.match(PRICING_HTML, /Start Pro/i);
   assert.match(PRICING_HTML, /\$19/);
   assert.match(PRICING_HTML, /\$149/);
   assert.doesNotMatch(PRICING_HTML, /workflow-sprint-intake|\/go\/sprint/i);
@@ -58,22 +56,21 @@ test('Pro detail stays code-backed and is linked from primary cash paths', () =>
 });
 
 test('pricing hides hosted team offers and states the availability boundary', () => {
-  assert.match(PRICING_HTML, /Hosted Enterprise capabilities are not generally available/i);
+  assert.match(PRICING_HTML, /not generally available/i);
   assert.doesNotMatch(PRICING_HTML, /Hosted team lesson sync|Hosted org dashboard/i);
   assert.doesNotMatch(PRICING_HTML, /\$49\s*(?:<[^>]+>\s*)*\/seat\/mo/i);
   assert.doesNotMatch(PRICING_HTML, /shared team DB/i);
 });
 
-test('managed gate promise is bounded and backed by the canonical checkout rail', () => {
+test('retired managed diagnostic routes alias to Pro self-serve', () => {
   const server = fs.readFileSync(path.join(ROOT, 'src', 'api', 'server.js'), 'utf8');
+  const diagnosticHtml = fs.readFileSync(path.join(ROOT, 'public', 'diagnostic.html'), 'utf8');
 
-  assert.match(HOME_HTML, /One configured local gate and its regression test/);
-  assert.match(HOME_HTML, /one supported local workflow/i);
-  assert.match(HOME_HTML, /order is refunded instead of silently upsold/i);
+  assert.match(diagnosticHtml, /not offered|retired|Pro/i);
+  assert.doesNotMatch(diagnosticHtml, /action="\/go\/diagnostic-pay"/);
   assert.match(server, /'diagnostic-pay':/);
-  assert.match(server, /requiresPost: true/);
-  assert.match(server, /requiresBuyerEmail: true/);
-  assert.match(server, /SPRINT_DIAGNOSTIC_CHECKOUT_URL/);
+  assert.match(server, /path: '\/checkout\/pro'/);
+  assert.doesNotMatch(server, /'diagnostic-pay':[\s\S]{0,400}requiresPost: true/);
 });
 
 test('public enforcement claims match the implemented default and strict boundaries', () => {

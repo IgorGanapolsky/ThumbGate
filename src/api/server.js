@@ -536,6 +536,8 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     },
     allowCustomerEmail: true,
   },
+  // Public commercial surface is Pro-only. Former $499 managed diagnostic routes
+  // stay as compatibility aliases that land on self-serve Pro checkout.
   diagnostic: {
     path: '/diagnostic',
     ctaId: 'go_diagnostic',
@@ -544,25 +546,22 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     defaults: {
       utm_source: 'website',
       utm_medium: 'link_router',
-      utm_campaign: 'sprint_diagnostic',
-      plan_id: 'sprint_diagnostic',
+      utm_campaign: 'pro_only_v1',
+      plan_id: 'pro',
     },
   },
   'diagnostic-pay': {
-    configUrlKey: 'sprintDiagnosticCheckoutUrl',
-    fallbackHref: SPRINT_DIAGNOSTIC_CHECKOUT_URL,
-    external: true,
+    path: '/checkout/pro',
     ctaId: 'go_diagnostic_pay',
-    ctaPlacement: 'diagnostic_confirmation',
-    eventType: 'diagnostic_checkout_confirmed',
-    requiresPost: true,
-    requiresBuyerEmail: true,
-    prefillStripeEmail: true,
+    ctaPlacement: 'diagnostic_retired',
+    eventType: 'cta_click',
+    // Accept GET or POST from legacy forms; no Stripe Payment Link for diagnostic.
     defaults: {
-      utm_source: 'diagnostic_page',
-      utm_medium: 'diagnostic_confirmation',
-      utm_campaign: 'sprint_diagnostic',
-      plan_id: 'sprint_diagnostic',
+      utm_source: 'diagnostic_retired',
+      utm_medium: 'legacy_checkout',
+      utm_campaign: 'pro_only_v1',
+      plan_id: 'pro',
+      cta_id: 'diagnostic_retired_pro',
     },
     allowCustomerEmail: true,
   },
@@ -574,8 +573,8 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     defaults: {
       utm_source: 'website',
       utm_medium: 'link_router',
-      utm_campaign: 'workflow_sprint',
-      plan_id: 'workflow_sprint',
+      utm_campaign: 'pro_only_v1',
+      plan_id: 'pro',
     },
   },
   trial: {

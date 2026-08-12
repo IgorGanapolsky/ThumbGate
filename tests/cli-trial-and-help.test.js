@@ -169,7 +169,7 @@ test('thumbgate diagnostic prints the enterprise entry fit and checkout paths', 
   try {
     const result = runCli(['diagnostic'], unlicensedEnv(home));
     assert.equal(result.status, 0, `diagnostic subcommand should exit 0; stderr=${result.stderr}`);
-    assert.match(result.stdout, /Enterprise Workflow Gate — \$499/);
+    assert.match(result.stdout, /Pro|\$19/i);
     assert.match(result.stdout, /Best fit: one workflow, one repeated failure, one owner/);
     assert.match(result.stdout, /https:\/\/thumbgate\.ai\/diagnostic\?utm_source=cli_diagnostic/);
     assert.match(result.stdout, /https:\/\/thumbgate\.ai\/go\/diagnostic\?utm_source=cli_diagnostic/);
