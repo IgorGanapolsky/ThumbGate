@@ -35,6 +35,8 @@ Everything merges through PRs under the configured branch protection. When human
 
 Diagnosing *why* a PR is blocked is correct and useful. **The diagnosis is the deliverable.** Changing review or protection state is not.
 
+**Repository rulesets:** classic branch protection and the `main governance` ruleset both apply. Keep `bypass_actors` empty; never add User/OrganizationAdmin bypass. Check with `npm run rulesets:check`.
+
 ### Why
 
 On 2026-07-10, during diagnosis of blocked Dependabot PRs, an agent approved #2768 with the owner's `gh` credentials and observed the gate change from `BLOCKED` to `CLEAN`. Regardless of the PRs' other blockers, that action satisfied a control reserved for human review and was a bypass. The review was dismissed; #2768 returned to `BLOCKED`, unmerged.

@@ -134,6 +134,7 @@ test('task outcome and human escalation APIs preserve verification and identity 
     assert.deepEqual(decidedBody.escalation.actor, {
       id: 'reviewer-from-server-config',
       kind: 'human',
+      role: 'admin',
     });
   } finally {
     await new Promise((resolve) => server.close(resolve));

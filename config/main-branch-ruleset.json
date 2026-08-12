@@ -1,0 +1,41 @@
+{
+  "name": "main governance",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": [
+        "refs/heads/main"
+      ],
+      "exclude": []
+    }
+  },
+  "bypass_actors": [],
+  "rules": {
+    "required_linear_history": true,
+    "deletion": true,
+    "non_fast_forward": true,
+    "pull_request": {
+      "required_approving_review_count": 0,
+      "dismiss_stale_reviews_on_push": true,
+      "require_code_owner_review": false,
+      "require_last_push_approval": false,
+      "required_review_thread_resolution": true,
+      "allowed_merge_methods": [
+        "squash",
+        "rebase"
+      ]
+    },
+    "required_status_checks": {
+      "strict_required_status_checks_policy": true,
+      "do_not_enforce_on_create": false,
+      "contexts_from": "merge-quality-checks"
+    }
+  },
+  "notes": [
+    "Zero bypass_actors: no human, admin, or owner-token agent may skip rules via ruleset bypass.",
+    "Classic branch protection remains layered; this ruleset is the GitHub-preferred durable floor.",
+    "Status check contexts are sourced from config/merge-quality-checks.json requiredStatusCheckContexts.",
+    "Do not add User or OrganizationAdmin bypass actors without CEO-approved policy change + tests."
+  ]
+}
