@@ -225,6 +225,43 @@ function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
+
+/**
+ * Read-only repository ruleset inventory for diagnosis.
+ * Never mutates rulesets or bypass actors.
+ */
+function inspectRepositoryRulesets(repo = '', runner = runGh) {
+  const normalizedRepo = String(repo || '').trim();
+  const args = normalizedRepo
+    ? ['api', `repos/${normalizedRepo}/rulesets`, '-H', 'Accept: application/vnd.github+json']
+    : ['api', 'repos/{owner}/{repo}/rulesets', '-H', 'Accept: application/vnd.github+json'];
+
+  try {
+    const result = runner(args);
+    if (result && result.status === 0 && result.stdout) {
+      const rulesets = JSON.parse(result.stdout);
+      if (Array.isArray(rulesets)) {
+        return {
+          ok: true,
+          count: rulesets.length,
+          activeRulesets: rulesets
+            .filter((rs) => String(rs?.enforcement || '').toLowerCase() === 'active')
+            .map((rs) => ({
+              id: rs.id,
+              name: rs.name,
+              target: rs.target || 'branch',
+              enforcement: rs.enforcement,
+            })),
+        };
+      }
+    }
+  } catch {
+    // Diagnostic only — never block merges on inventory failure.
+  }
+
+  return { ok: false, count: 0, activeRulesets: [] };
+}
+
 async function resolveBlockers(pr, runner = runGh) {
   const title = pr.title || 'Untitled PR';
   const mergeState = pr.mergeStateStatus || 'UNKNOWN';
@@ -232,6 +269,25 @@ async function resolveBlockers(pr, runner = runGh) {
 
   console.log(`[PR Manager] Diagnosing PR #${pr.number}: "${title}"`);
   console.log(`[PR Manager] Merge State: ${mergeState} | Mergeable: ${mergeable}`);
+
+  // Live-default runner only: injected test runners must not have their mock
+  // queues consumed by optional ruleset inventory.
+  if (runner === runGh) {
+    try {
+      const rulesetInventory = inspectRepositoryRulesets('', runner);
+      if (rulesetInventory.ok) {
+        const names = rulesetInventory.activeRulesets.map((rs) => rs.name).join(', ') || '(none)';
+        console.log(
+          `[PR Manager] Repository rulesets: ${rulesetInventory.count} total, `
+          + `${rulesetInventory.activeRulesets.length} active [${names}]`,
+        );
+      } else {
+        console.log('[PR Manager] Repository rulesets: unavailable (diagnostic only)');
+      }
+    } catch {
+      console.log('[PR Manager] Repository rulesets: unavailable (diagnostic only)');
+    }
+  }
 
   if (pr.isDraft) {
     console.log('[PR Manager] PR is a draft. Skipping.');
@@ -451,4 +507,5 @@ module.exports = {
   performMerge,
   managePrs,
   summarizeChecks,
+  inspectRepositoryRulesets,
 };
