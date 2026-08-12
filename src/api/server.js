@@ -5204,6 +5204,7 @@ function authenticateHumanReviewer(req, reviewerConfig) {
   return {
     id: reviewerConfig.id,
     kind: 'human',
+    role: 'admin',
   };
 }
 

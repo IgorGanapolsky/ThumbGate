@@ -173,6 +173,9 @@ components:
           enum: [agent, service, human]
         displayName:
           type: string
+        role:
+          type: string
+          enum: [admin, reviewer]
     HumanEscalationRequest:
       type: object
       additionalProperties: false
@@ -200,6 +203,12 @@ components:
           minimum: 1
         idempotencyKey:
           type: string
+        approvalContextDigest:
+          type: string
+          pattern: '^[a-fA-F0-9]{64}$'
+        requiredReviewerRole:
+          type: string
+          enum: [admin]
     HumanEscalationDecision:
       type: object
       additionalProperties: false
