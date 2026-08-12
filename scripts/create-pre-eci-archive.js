@@ -1,52 +1,61 @@
 #!/usr/bin/env node
 /**
- * Offline Pre-ECI Asset & Provenance Archive Generator
- * 
- * Generates an immutable, cryptographic snapshot of all ThumbGate source code,
- * git commit logs, npm manifests, and legal disclosures prior to employment start date.
+ * Offline pre-employment provenance archive generator.
+ *
+ * Snapshots public ThumbGate source via git bundle + commit log + SHA-256 of
+ * selected public legal/disclosure files. Operator utility (npm run archive:pre-eci).
  */
+
+'use strict';
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const crypto = require('crypto');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const ARCHIVE_DIR = path.join(ROOT_DIR, 'archive', 'pre-eci-20260831');
+// Fixed absolute path — do not resolve `git` via PATH (Sonar S4036).
+const GIT_BIN = process.env.GIT_BIN || '/usr/bin/git';
 
-console.log('📦 Starting ThumbGate Pre-ECI Provenance Archive Generation...');
+function git(args, encoding) {
+  return execFileSync(GIT_BIN, args, {
+    cwd: ROOT_DIR,
+    encoding: encoding || undefined,
+    stdio: encoding ? ['ignore', 'pipe', 'pipe'] : undefined,
+  });
+}
 
-// 1. Ensure target directory exists
+console.log('Starting ThumbGate provenance archive generation...');
+
 if (!fs.existsSync(ARCHIVE_DIR)) {
   fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
 }
 
-// 2. Capture Git Bundle
 const bundlePath = path.join(ARCHIVE_DIR, 'thumbgate-pre-eci.bundle');
 try {
-  execSync(`git bundle create "${bundlePath}" --all`, { cwd: ROOT_DIR });
-  console.log(`  ✓ Git bundle created: ${path.relative(ROOT_DIR, bundlePath)}`);
+  git(['bundle', 'create', bundlePath, '--all']);
+  console.log(`  OK git bundle: ${path.relative(ROOT_DIR, bundlePath)}`);
 } catch (err) {
-  console.error(`  ✗ Git bundle failed: ${err.message}`);
+  console.error(`  FAIL git bundle: ${err.message}`);
 }
 
-// 3. Capture Git Commit History Log
 const gitLogPath = path.join(ARCHIVE_DIR, 'git-commit-history.log');
 try {
-  const logOutput = execSync('git log --format="%H | %an | %ad | %s"', { cwd: ROOT_DIR, encoding: 'utf-8' });
+  const logOutput = git(['log', '--format=%H | %an | %ad | %s'], 'utf8');
   fs.writeFileSync(gitLogPath, logOutput);
-  console.log(`  ✓ Git commit log saved: ${path.relative(ROOT_DIR, gitLogPath)}`);
+  console.log(`  OK git log: ${path.relative(ROOT_DIR, gitLogPath)}`);
 } catch (err) {
-  console.error(`  ✗ Git log failed: ${err.message}`);
+  console.error(`  FAIL git log: ${err.message}`);
 }
 
-// 4. Capture Head SHA and Tag Metadata
 let headSha = 'UNKNOWN';
 try {
-  headSha = execSync('git rev-parse HEAD', { cwd: ROOT_DIR, encoding: 'utf-8' }).trim();
-} catch {}
+  headSha = String(git(['rev-parse', 'HEAD'], 'utf8')).trim();
+} catch {
+  // keep UNKNOWN
+}
 
-// 5. Generate Manifest & SHA-256 Checksums
 const manifest = {
   projectName: 'ThumbGate',
   owner: 'Igor Ganapolsky',
@@ -55,29 +64,22 @@ const manifest = {
   npmPackage: 'thumbgate',
   domains: ['thumbgate.ai', 'thumbgate.app'],
   legalDocuments: [
-    'docs/legal/EXHIBIT_A_PRIOR_INVENTIONS_DISCLOSURE.md',
-    'docs/legal/ECI_CARVEOUT_AND_WRITTEN_PERMISSION_REQUEST.md',
-    'docs/legal/ECI_IP_CLEANROOM_AND_SEPARATION_POLICY.md',
     'docs/legal/PRODUCT_COUNSEL_CHECKLIST.md',
-    'THIRD_PARTY_NOTICES.md'
+    'docs/legal/COMMERCIAL_LEGAL_FIRST_PASS.md',
+    'docs/legal/COMMERCIAL_LICENSING_BOUNDARY.md',
+    'THIRD_PARTY_NOTICES.md',
   ],
-  sha256Checksums: {}
+  sha256Checksums: {},
 };
 
-// Compute hashes for legal docs
-manifest.legalDocuments.forEach(docRelPath => {
+for (const docRelPath of manifest.legalDocuments) {
   const fullPath = path.join(ROOT_DIR, docRelPath);
-  if (fs.existsSync(fullPath)) {
-    const content = fs.readFileSync(fullPath);
-    const hash = crypto.createHash('sha256').update(content).digest('hex');
-    manifest.sha256Checksums[docRelPath] = hash;
-  }
-});
+  if (!fs.existsSync(fullPath)) continue;
+  const content = fs.readFileSync(fullPath);
+  manifest.sha256Checksums[docRelPath] = crypto.createHash('sha256').update(content).digest('hex');
+}
 
 const manifestPath = path.join(ARCHIVE_DIR, 'PROVENANCE_MANIFEST.json');
 fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-console.log(`  ✓ Provenance manifest written: ${path.relative(ROOT_DIR, manifestPath)}`);
-
-console.log('\n🔒 Archive Generation Complete!');
-console.log(`  Root Archive Path: ${ARCHIVE_DIR}`);
-console.log(`  Git HEAD SHA: ${headSha}`);
+console.log(`  OK manifest: ${path.relative(ROOT_DIR, manifestPath)}`);
+console.log(`Archive complete at ${ARCHIVE_DIR} (HEAD ${headSha})`);
