@@ -153,6 +153,10 @@ function resolveProviderFingerprint(options, vector) {
  * Returns [{ id, score }] sorted descending. Embeds the query once; reuses cached
  * document vectors and only embeds new/changed lessons.
  *
+ * Fail-closed on embedding identity (Pete Johnson / SDS #1017): never cosine
+ * vectors from different providers or base dimensions. Optional progressive
+ * Matryoshka: coarse truncate filter, then fine re-rank survivors.
+ *
  * @returns {Promise<Array<{id:string, score:number}>>}
  */
 async function semanticRank(queryText, lessons = [], options = {}) {
@@ -162,6 +166,8 @@ async function semanticRank(queryText, lessons = [], options = {}) {
     persist = true,
     pruneCache = true,
     truncateDimension = null,
+    progressiveMatryoshka = false,
+    progressiveTopK = null,
     cacheFile = CACHE_FILE,
   } = options;
   if (!queryText || !Array.isArray(lessons) || lessons.length === 0) return [];
@@ -170,16 +176,20 @@ async function semanticRank(queryText, lessons = [], options = {}) {
   const cache = readCache(cachePath);
   let cacheDirty = false;
 
-  let queryVector = await embedder(queryText, { kind: 'query', task: 'code retrieval' });
-  if (!Array.isArray(queryVector) || queryVector.length === 0) return [];
-  
-  if (truncateDimension) {
-    queryVector = truncateVector(queryVector, truncateDimension);
-  }
-  const provider = resolveProviderFingerprint(options, queryVector);
-  const dimension = queryVector.length;
+  const fullQueryVector = await embedder(queryText, { kind: 'query', task: 'code retrieval' });
+  if (!Array.isArray(fullQueryVector) || fullQueryVector.length === 0) return [];
+
+  const provider = resolveProviderFingerprint(options, fullQueryVector);
+  const dimension = fullQueryVector.length;
   if (!options.embedder && /(?:built-in|feature-hash)/i.test(provider)) {
     throw new Error('Semantic embedding provider degraded to feature hashing');
+  }
+
+  const { assertCompatibleEmbeddings, buildProgressiveRetrievalPlan } = require('./rag-embedding-identity');
+
+  let compareQueryVector = fullQueryVector;
+  if (truncateDimension) {
+    compareQueryVector = truncateVector(fullQueryVector, truncateDimension);
   }
 
   const scored = [];
@@ -198,6 +208,7 @@ async function semanticRank(queryText, lessons = [], options = {}) {
       || !Array.isArray(entry.vector)
       || entry.vector.length !== dimension
     ) {
+      // Provider/dim drift → re-embed. Never cosine across mismatched identities.
       const vector = await embedder(text, {
         kind: 'document',
         task: 'code retrieval',
@@ -205,13 +216,27 @@ async function semanticRank(queryText, lessons = [], options = {}) {
       });
       if (!Array.isArray(vector) || vector.length === 0) continue;
       if (vector.length !== dimension) continue;
+      const identity = assertCompatibleEmbeddings({
+        queryProvider: provider,
+        queryDimension: dimension,
+        documentProvider: provider,
+        documentDimension: vector.length,
+      });
+      if (!identity.ok) continue;
       entry = { hash, provider, dimension, vector };
       cache[lesson.id] = entry;
       cacheDirty = true;
     }
 
-    const docVector = truncateDimension ? truncateVector(entry.vector, truncateDimension) : entry.vector;
-    scored.push({ id: lesson.id, score: cosineSimilarity(queryVector, docVector) });
+    const docVector = truncateDimension
+      ? truncateVector(entry.vector, truncateDimension)
+      : entry.vector;
+    if (docVector.length !== compareQueryVector.length) continue;
+    scored.push({
+      id: lesson.id,
+      score: cosineSimilarity(compareQueryVector, docVector),
+      _full: entry.vector,
+    });
   }
 
   // Prune only when the caller supplied the complete corpus. Metadata-filtered
@@ -229,7 +254,34 @@ async function semanticRank(queryText, lessons = [], options = {}) {
 
   if (persist && cacheDirty) writeCache(cachePath, cache);
 
-  return scored.sort((a, b) => b.score - a.score);
+  let ranked = scored.sort((a, b) => b.score - a.score);
+
+  if (progressiveMatryoshka && ranked.length > 1 && !truncateDimension) {
+    const plan = buildProgressiveRetrievalPlan({ embeddingDim: dimension });
+    const coarseDim = plan.stages[0].dimension;
+    if (coarseDim < dimension) {
+      const coarseQuery = truncateVector(fullQueryVector, coarseDim);
+      const coarse = ranked.map((row) => ({
+        id: row.id,
+        score: cosineSimilarity(coarseQuery, truncateVector(row._full, coarseDim)),
+        _full: row._full,
+      })).sort((a, b) => b.score - a.score);
+      const keep = Math.max(
+        1,
+        Number(progressiveTopK) || Math.min(ranked.length, Math.ceil(ranked.length / 2) || 8)
+      );
+      const survivors = new Set(coarse.slice(0, Math.min(keep * plan.stages[0].topKMultiplier, coarse.length)).map((r) => r.id));
+      ranked = ranked
+        .filter((row) => survivors.has(row.id))
+        .map((row) => ({
+          id: row.id,
+          score: cosineSimilarity(fullQueryVector, row._full),
+        }))
+        .sort((a, b) => b.score - a.score);
+    }
+  }
+
+  return ranked.map(({ id, score }) => ({ id, score }));
 }
 
 module.exports = {

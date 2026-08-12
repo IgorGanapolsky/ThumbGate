@@ -184,9 +184,10 @@ const path = require('node:path');
 // Exact measured artifact, no spare headroom.
 // 436 -> 437 (2026-08-11): session-lease ships checkout collision protection
 // in the installed Reliability Gateway. Exact measured artifact, no headroom.
-// 442 -> 449 (2026-08-12): commercial legal hygiene public pages + notices
+// 442 -> 449
+    // 449 -> 450 (2026-08-12): scripts/rag-embedding-identity.js — embedding identity ROI gate (Pete Johnson / SDS #1017)
 // (terms/privacy/support/third-party-notices + CONTRIBUTING/THIRD_PARTY_NOTICES).
-const BASELINE_FILE_COUNT = 449;
+const BASELINE_FILE_COUNT = 450;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
