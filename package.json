@@ -48,6 +48,7 @@
     "bin/postinstall.js",
     "commands/",
     "config/",
+    "!config/main-branch-ruleset.json",
     "config/entitlement-public-keys.json",
     "docs/integrations/grafana/README.md",
     "docs/integrations/grafana/thumbgate-revenue-evidence-dashboard.json",
