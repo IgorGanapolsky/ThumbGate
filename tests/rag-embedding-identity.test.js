@@ -59,6 +59,8 @@ describe('rag-embedding-identity (Pete Johnson / SDS #1017)', () => {
       hybridEnabled: true,
       goldenRecall: 1,
       goldenPrecision: 0.2,
+      goldenCaseCount: 6,
+      perCaseRecalls: [1, 1, 1, 1, 1, 1],
     });
     assert.equal(score.ready, false);
     assert.ok(score.issues.includes('model_unpinned'));
@@ -73,27 +75,67 @@ describe('rag-embedding-identity (Pete Johnson / SDS #1017)', () => {
       hybridEnabled: true,
       goldenRecall: 1,
       goldenPrecision: 0.5,
+      goldenCaseCount: 6,
+      perCaseRecalls: [1, 1, 1, 1, 1, 1],
       mixedProviderCorpus: true,
     });
     assert.equal(score.ready, false);
     assert.ok(score.issues.includes('mixed_provider_corpus'));
+  });
+
+  it('refuses ready when only aggregate metrics are supplied (no per-case proof)', () => {
+    const score = scoreEmbeddingRoiReadiness({
+      providerPinned: true,
+      modelPinned: true,
+      dimensionPinned: true,
+      hybridEnabled: true,
+      goldenRecall: 0.95,
+      goldenPrecision: 0.15,
+    });
+    assert.equal(score.ready, false);
+    assert.ok(score.issues.includes('golden_case_count_below_bar'));
+    assert.ok(score.issues.includes('per_case_recall_missing'));
+  });
+
+  it('marks ready only with pins + aggregate bar + ≥6 cases at 100% per-case recall', () => {
+    const score = scoreEmbeddingRoiReadiness({
+      providerPinned: true,
+      modelPinned: true,
+      dimensionPinned: true,
+      hybridEnabled: true,
+      goldenRecall: 1,
+      goldenPrecision: 0.2,
+      goldenCaseCount: 6,
+      perCaseRecalls: [1, 1, 1, 1, 1, 1],
+    });
+    assert.equal(score.ready, true);
+    assert.equal(score.issues.length, 0);
   });
 });
 
 describe('lesson-embedding-index progressive Matryoshka', () => {
   it('progressive mode re-ranks survivors without mixing dimensions incorrectly', async () => {
     // Deterministic unit vectors in 4-d space (simulating MRL-compatible base).
+    // Use 1024-d so progressive coarse (256) is strictly smaller than base.
+    const dim = 1024;
+    const mk = (onesAt) => {
+      const v = new Array(dim).fill(0);
+      for (const i of onesAt) v[i] = 1;
+      // normalize-ish for cosine
+      const n = Math.sqrt(onesAt.length) || 1;
+      return v.map((x) => x / n);
+    };
     const base = {
-      a: [1, 0, 0, 0],
-      b: [0.9, 0.1, 0, 0],
-      c: [0, 1, 0, 0],
+      a: mk([0]),
+      b: mk([0, 1]),
+      c: mk([50]),
     };
     const embedder = async (text) => {
       if (String(text).includes('query-about-a')) return base.a.slice();
       if (String(text).includes('lesson-a')) return base.a.slice();
       if (String(text).includes('lesson-b')) return base.b.slice();
       if (String(text).includes('lesson-c')) return base.c.slice();
-      return [0, 0, 0, 1];
+      return mk([999]);
     };
 
     const lessons = [
@@ -104,7 +146,7 @@ describe('lesson-embedding-index progressive Matryoshka', () => {
 
     const ranked = await semanticRank('query-about-a', lessons, {
       embedder,
-      embedderId: 'test-embedder:4',
+      embedderId: 'test-embedder:1024',
       persist: false,
       progressiveMatryoshka: true,
       progressiveTopK: 2,
@@ -115,5 +157,31 @@ describe('lesson-embedding-index progressive Matryoshka', () => {
     // Cosine of identical vectors is 1
     assert.ok(ranked[0].score > 0.99);
     assert.ok(cosineSimilarity(base.a, base.b) > cosineSimilarity(base.a, base.c));
+  });
+
+  it('rejects same-dimension vectors when provider fingerprints diverge', () => {
+    // semanticRank re-resolves the document fingerprint after each embed and
+    // feeds it here; same-dim fallback providers must fail closed.
+    const mixed = assertCompatibleEmbeddings({
+      queryProvider: 'gemini:models/gemini-embedding-2:4',
+      queryDimension: 4,
+      documentProvider: 'openai:text-embedding-3-small:4',
+      documentDimension: 4,
+    });
+    assert.equal(mixed.ok, false);
+    assert.ok(mixed.issues.some((i) => i.code === 'embedding_provider_mismatch'));
+  });
+
+  it('ranks with a stable injected embedder identity', async () => {
+    const ranked = await semanticRank('query', [
+      { id: 'x', title: 'doc', content: 'doc body' },
+    ], {
+      embedder: async () => [1, 0, 0, 0],
+      embedderId: 'stable-test:4',
+      persist: false,
+    });
+    assert.equal(ranked.length, 1);
+    assert.equal(ranked[0].id, 'x');
+    assert.ok(ranked[0].score > 0.99);
   });
 });

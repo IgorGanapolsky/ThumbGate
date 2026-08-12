@@ -150,6 +150,8 @@ function buildProgressiveRetrievalPlan(options = {}) {
   };
 }
 
+const MIN_GOLDEN_CASES = 6;
+
 function scoreEmbeddingRoiReadiness({
   providerPinned = false,
   modelPinned = false,
@@ -157,6 +159,8 @@ function scoreEmbeddingRoiReadiness({
   hybridEnabled = false,
   goldenRecall = null,
   goldenPrecision = null,
+  goldenCaseCount = null,
+  perCaseRecalls = null,
   mixedProviderCorpus = false,
 } = {}) {
   const issues = [];
@@ -174,16 +178,35 @@ function scoreEmbeddingRoiReadiness({
     issues.push('golden_precision_below_bar');
   }
 
+  // AGENTS.md production RAG gate: ≥6 golden cases and 100% per-case recall.
+  // Aggregate recall/precision alone must not mark ready (Codex P2).
+  const caseCount = Number.isFinite(Number(goldenCaseCount))
+    ? Number(goldenCaseCount)
+    : (Array.isArray(perCaseRecalls) ? perCaseRecalls.length : null);
+  if (!Number.isFinite(caseCount) || caseCount < MIN_GOLDEN_CASES) {
+    issues.push('golden_case_count_below_bar');
+  }
+  if (!Array.isArray(perCaseRecalls) || perCaseRecalls.length < MIN_GOLDEN_CASES) {
+    issues.push('per_case_recall_missing');
+  } else if (perCaseRecalls.some((r) => !Number.isFinite(Number(r)) || Number(r) < 1)) {
+    issues.push('per_case_recall_below_bar');
+  }
+
   // ROI framing from episode: committees+metrics without embedding discipline = no ROI.
   const score = Math.max(0, 100 - issues.length * 12);
   return {
     score,
     ready: issues.length === 0,
     issues,
+    minGoldenCases: MIN_GOLDEN_CASES,
     recommendation: issues.includes('mixed_provider_corpus')
       ? 'Rebuild the embedding cache under one provider+model+dim before trusting dense recall.'
       : issues.includes('model_unpinned')
         ? 'Pin THUMBGATE_EMBED_PROVIDER / model explicitly — embedding choice is the underrated ROI lever.'
+      : (issues.includes('golden_case_count_below_bar')
+          || issues.includes('per_case_recall_missing')
+          || issues.includes('per_case_recall_below_bar'))
+        ? 'Provide ≥6 golden cases with 100% per-case recall before marking embedding ROI ready.'
         : issues.length
           ? 'Close embedding identity gaps, then re-run eval:rag golden suite.'
           : 'Embedding identity is pinned; keep progressive Matryoshka + hybrid eval green.',
