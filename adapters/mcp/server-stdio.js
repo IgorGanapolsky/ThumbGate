@@ -92,6 +92,13 @@ const {
   recordTaskOutcome,
 } = require('../../scripts/task-outcomes');
 const {
+  appendReceiptToLedger,
+  issueBrokerReceipt,
+  readReceiptLedger,
+  reconcileReceiptChain,
+  verifyBrokerReceipt,
+} = require('../../scripts/broker-execution-receipts');
+const {
   listEscalations,
   requestEscalation,
 } = require('../../scripts/human-escalation');
@@ -1371,6 +1378,24 @@ async function callToolInner(name, args) {
           ? getReceiptForAction(args.actionId)
           : getRecentReceipts(Number(args.limit || 20)),
       );
+    case 'verify_broker_execution_receipt':
+      return toTextResult(verifyBrokerReceipt(args.receipt || args));
+    case 'issue_broker_execution_receipt':
+      // Only succeeds when THUMBGATE_BROKER_SIGNING_KEY is set on the host
+      // (credential-holding broker). Agents without the key cannot mint proof.
+      return toTextResult(issueBrokerReceipt(args, {
+        privateKeyPem: process.env.THUMBGATE_BROKER_SIGNING_KEY,
+        publicKeyPem: process.env.THUMBGATE_BROKER_PUBLIC_KEY,
+        brokerId: args.brokerId,
+      }));
+    case 'record_broker_execution_receipt': {
+      const receipt = args.receipt || args;
+      return toTextResult(appendReceiptToLedger(receipt));
+    }
+    case 'get_broker_execution_receipts':
+      return toTextResult(readReceiptLedger().slice(-Number(args.limit || 20)));
+    case 'reconcile_broker_receipt_chain':
+      return toTextResult(reconcileReceiptChain());
     case 'record_task_outcome':
       return toTextResult(recordTaskOutcome(args));
     case 'get_task_outcomes': {

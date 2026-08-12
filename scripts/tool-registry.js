@@ -1153,6 +1153,67 @@ const TOOLS = [
       },
     },
   }),
+  readOnlyTool({
+    name: 'verify_broker_execution_receipt',
+    title: 'Verify Broker Execution Receipt',
+    description: 'Verify a broker-signed execution receipt (Ed25519). Rejects agent-minted or rewritten "proof". ThumbGate verifies; the broker holds provider credentials and signs.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        receipt: { type: 'object', description: 'Broker execution receipt object (schema broker-execution-receipt-v1)' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'issue_broker_execution_receipt',
+    title: 'Issue Broker Execution Receipt',
+    description: 'Issue a broker-signed execution receipt using the host THUMBGATE_BROKER_SIGNING_KEY. Fails without the broker key so agents cannot self-sign.',
+    inputSchema: {
+      type: 'object',
+      required: ['principal', 'target', 'idempotencyKey'],
+      properties: {
+        principal: { type: 'object', description: '{ id, kind } of the acting agent/user' },
+        target: { type: 'object', description: '{ provider, action, resource? }' },
+        decision: { type: 'string', description: 'allow | execute | deny' },
+        idempotencyKey: { type: 'string' },
+        providerEventId: { type: 'string' },
+        brokerId: { type: 'string' },
+        previousReceiptHash: { type: 'string' },
+        metadata: { type: 'object' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'record_broker_execution_receipt',
+    title: 'Record Broker Execution Receipt',
+    description: 'Append a verified broker-signed execution receipt to the local hash-chained ledger.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        receipt: { type: 'object', description: 'Verified broker execution receipt' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'get_broker_execution_receipts',
+    title: 'Get Broker Execution Receipts',
+    description: 'Read recent broker-signed execution receipts from the local ledger.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Max receipts to return (default 20)' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'reconcile_broker_receipt_chain',
+    title: 'Reconcile Broker Receipt Chain',
+    description: 'Verify signatures and hash-chain continuity for all broker execution receipts on the ledger.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  }),
   destructiveTool({
     name: 'record_task_outcome',
     title: 'Record Verified Task Outcome',

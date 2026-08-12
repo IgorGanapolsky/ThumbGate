@@ -38,6 +38,19 @@
       "rollout": "Use for every workflow where proof matters more than speed."
     },
     {
+      "id": "require-broker-signed-execution-receipt",
+      "name": "Require broker-signed execution receipts",
+      "category": "Provider Side-Effect Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "broker[_ -]?signed|provider[_ -]?credential|providerEventId",
+      "problem": "Stops agents from treating self-written receipts as proof of provider side effects. Only a credential-holding broker outside the agent trust boundary may sign.",
+      "roi": "Closes the 'agent rehashed a receipt' integrity hole on payments, messaging, and credentialed APIs.",
+      "rollout": "Set THUMBGATE_BROKER_RECEIPT_MODE=enforce and install broker public keys on the host. Pair with aigate or any external credential broker."
+    },
+
+    {
       "id": "protect-production-sql",
       "name": "Protect production SQL",
       "category": "Database Safety",

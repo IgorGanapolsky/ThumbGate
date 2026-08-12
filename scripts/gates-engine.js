@@ -20,6 +20,9 @@ const {
   evaluateFinancialControl,
 } = require('./financial-control-plane');
 const {
+  evaluateBrokerReceiptGate,
+} = require('./broker-execution-receipts');
+const {
   buildCostControl,
   normalizeProviderAction,
 } = require('./provider-action-normalizer');
@@ -3220,6 +3223,22 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     return sentinelResult;
   }
 
+  const brokerReceiptResultAsync = evaluateBrokerReceiptGate(toolName, toolInput);
+  if (brokerReceiptResultAsync && brokerReceiptResultAsync.decision === 'deny') {
+    recordStat(brokerReceiptResultAsync.gate, 'block', null, { toolName, toolInput });
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: brokerReceiptResultAsync.gate,
+      message: brokerReceiptResultAsync.message,
+      severity: brokerReceiptResultAsync.severity,
+      source: 'broker-execution-receipts',
+    });
+    auditToFeedback(auditRecord);
+    return brokerReceiptResultAsync;
+  }
+
   // Audit trail: record allow (no gate matched)
   recordAuditEvent({ toolName, toolInput, decision: 'allow', source: 'gates-engine' });
   return null;
@@ -3482,6 +3501,24 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     });
     auditToFeedback(auditRecord);
     return sentinelResult;
+  }
+
+  // Broker-signed execution receipts: verify attached proof; optionally require
+  // for high-risk provider side effects (THUMBGATE_BROKER_RECEIPT_MODE=enforce).
+  const brokerReceiptResult = evaluateBrokerReceiptGate(toolName, toolInput);
+  if (brokerReceiptResult && brokerReceiptResult.decision === 'deny') {
+    recordStat(brokerReceiptResult.gate, 'block', null, { toolName, toolInput });
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: brokerReceiptResult.gate,
+      message: brokerReceiptResult.message,
+      severity: brokerReceiptResult.severity,
+      source: 'broker-execution-receipts',
+    });
+    auditToFeedback(auditRecord);
+    return brokerReceiptResult;
   }
 
   // Audit trail: record allow
