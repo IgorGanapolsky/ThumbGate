@@ -1106,7 +1106,7 @@ test('privacy policy route covers collection, sharing, retention, and contact de
   assert.match(body, /Local-first is not/i);
   assert.match(body, /Subprocessors/i);
   assert.match(body, /Stripe/i);
-  assert.match(body, /does not sell customer data/i);
+  assert.match(body, /do not sell customer data/i);
 });
 
 test('terms of service route covers payment, refunds, acceptable use, and limitation of liability', async () => {
