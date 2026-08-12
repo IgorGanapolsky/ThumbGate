@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — ThumbGate</title>
+  <meta name="description" content="ThumbGate Privacy Policy, Zero Workspace Telemetry Guarantee, data collection, sharing, retention, subprocessors, and contact.">
+  <link rel="canonical" href="https://thumbgate.ai/privacy">
+  <style>
+    :root { --ink:#171d1a; --muted:#5b6761; --paper:#f5f2e9; --card:#fffdf8; --line:#d8d4c8; --green:#006e52; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.6; }
+    a { color:var(--green); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .shell { width:min(860px,calc(100% - 40px)); margin:0 auto; padding:48px 0 80px; }
+    nav { border-bottom:1px solid var(--line); background:rgba(245,242,233,.95); padding:16px 0; }
+    .nav-inner { width:min(860px,calc(100% - 40px)); margin:0 auto; display:flex; justify-content:space-between; align-items:center; }
+    .brand { font-weight:900; font-size:1.2rem; text-decoration:none; color:var(--ink); }
+    h1 { font-size:2.2rem; margin:24px 0 8px; letter-spacing:-.03em; }
+    h2 { font-size:1.35rem; margin:32px 0 12px; border-bottom:1px solid var(--line); padding-bottom:6px; letter-spacing:-.02em; }
+    .meta { color:var(--muted); font-size:.9rem; margin-bottom:28px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px; margin:20px 0; }
+    code { background:#eae6d8; padding:2px 6px; border-radius:4px; font-size:.9em; }
+    table { width:100%; border-collapse:collapse; margin:18px 0; }
+    th, td { border:1px solid var(--line); padding:10px 12px; text-align:left; font-size:.92rem; }
+    th { background:#eae6d8; }
+    ul { padding-left:22px; }
+    li { margin:6px 0; }
+    footer { margin-top:60px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:.88rem; }
+    .trademark { font-size:.8rem; color:var(--muted); margin-top:18px; line-height:1.5; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a class="brand" href="/">ThumbGate</a>
+      <div>
+        <a href="/pricing">Pricing</a> ·
+        <a href="/terms">Terms</a> ·
+        <a href="/support">Support</a> ·
+        <a href="/legal">Legal</a> ·
+        <a href="/third-party-notices">Third-Party Notices</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="shell">
+    <h1>Privacy Policy</h1>
+    <div class="meta">Last Updated: August 12, 2026 · Version 1.3.0</div>
+
+    <div class="card">
+      <strong>Zero Workspace Telemetry Guarantee.</strong> The local <code>thumbgate</code> CLI and open-source engine operate on your host disk (<code>~/.thumbgate/</code>, <code>.claude/</code>). Zero workspace source code, repository contents, or project file data is fetched, transmitted, or publicly rendered by ThumbGate.
+    </div>
+
+    <div class="card">
+      <strong>Local-first is not “zero personal data.”</strong> Account, billing, device pairing, support, and cloud-runner metadata may still be processed when you use hosted or paid surfaces. Local-first means workspace source stays on your machine by default.
+    </div>
+
+    <h2>Data Collection</h2>
+    <p>We collect information only as needed to operate the product you use:</p>
+    <ul>
+      <li>Local installs: feedback, lessons, and prevention rules stay on your machine unless you point the system at a hosted endpoint.</li>
+      <li>Hosted / Pro features: account identity, API keys, pairing metadata, and workflow operational metadata associated with your account.</li>
+      <li>Billing: payment identifiers via Stripe and related processors.</li>
+      <li>Optional CLI telemetry is best-effort install/usage metadata. Disable with <code>THUMBGATE_NO_TELEMETRY=1</code> or <code>DO_NOT_TRACK=1</code>.</li>
+      <li>Marketing pages may record anonymous analytics (Plausible / PostHog / first-party funnel events where configured).</li>
+    </ul>
+
+    <h2>Data Sharing</h2>
+    <p>We do not sell customer data. Hosted data is used to operate the service and is shared with subprocessors only as needed for infrastructure, payments, email, analytics, or when required by law.</p>
+
+    <h2>Subprocessors</h2>
+    <table>
+      <thead><tr><th>Subprocessor</th><th>Function</th></tr></thead>
+      <tbody>
+        <tr><td>Stripe</td><td>Payment processing</td></tr>
+        <tr><td>Railway / cloud hosts</td><td>Application hosting and runners</td></tr>
+        <tr><td>Plausible / PostHog</td><td>Privacy-oriented web analytics (where configured)</td></tr>
+        <tr><td>Resend</td><td>Transactional email (where configured)</td></tr>
+        <tr><td>GitHub</td><td>Source hosting and marketplace surfaces</td></tr>
+      </tbody>
+    </table>
+    <p>Listing a vendor is not a claim that ThumbGate is SOC 2 or HIPAA certified, or that a signed GDPR DPA is automatic for every customer.</p>
+
+    <h2>Data Retention</h2>
+    <p>Local data is retained until you delete the files. Hosted account data is retained while the account or API key remains active, or until you request deletion, subject to operational or legal retention. Cloud-runner logs target a 30-day purge. Billing records may be retained longer for tax and fraud prevention.</p>
+
+    <h2>Deletion &amp; DPA</h2>
+    <p>Request deletion or export at <a href="mailto:privacy@thumbgate.ai">privacy@thumbgate.ai</a>. Enterprise customers may request a DPA covering GDPR / UK GDPR / CCPA where applicable. Security incidents affecting customer personal data target notice within 72 hours under signed enterprise terms when those terms apply.</p>
+
+    <h2>Contact</h2>
+    <p><a href="mailto:privacy@thumbgate.ai">privacy@thumbgate.ai</a> · <a href="mailto:security@thumbgate.ai">security@thumbgate.ai</a> · <a href="mailto:support@thumbgate.ai">support@thumbgate.ai</a></p>
+
+    <footer>
+      <p><a href="/">ThumbGate</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a> · <a href="/legal">Legal</a> · <a href="/security">Security</a> · <a href="/legal/data-flow">Data-flow map</a></p>
+      <p class="trademark">Third-party trademarks are the property of their respective owners. ThumbGate is independent and not affiliated with or endorsed by third parties named herein.</p>
+    </footer>
+  </main>
+</body>
+</html>
