@@ -257,7 +257,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // ship as public-shell marketing surfaces for the MakersClaw platform-partner
   // resale package. No private Core dependency, no buyer state, no runtime cost.
   // Keep lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 453;
+  // 453 -> 455 (2026-08-13): dedicated Hermes Mobile privacy and deletion
+  // pages used by Google Play's Privacy policy and Data safety declarations.
+  const CEILING = 455;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

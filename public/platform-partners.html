@@ -33,16 +33,35 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "ThumbGate.ai",
-    "applicationCategory": "DeveloperApplication,BusinessApplication",
-    "offers": {
-      "@type": "AggregateOffer",
-      "lowPrice": "25",
-      "highPrice": "499",
-      "priceCurrency": "USD",
-      "availability": "https://schema.org/InStock"
-    }
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "ThumbGate.ai",
+        "applicationCategory": "DeveloperApplication,BusinessApplication",
+        "offers": {
+          "@type": "AggregateOffer",
+          "lowPrice": "25",
+          "highPrice": "499",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Does ThumbGate issue HMAC-signed receipts?",
+            "acceptedAnswer": { "@type": "Answer", "text": "ThumbGate records deterministic task-outcome receipts with verification evidence. The public task-outcome endpoint is not described as an HMAC signature." }
+          },
+          {
+            "@type": "Question",
+            "name": "Where is ThumbGate verification evidence?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Repository verification evidence and machine-readable proof reports are linked from this page." }
+          }
+        ]
+      }
+    ]
   }
   </script>
 </head>
@@ -59,7 +78,7 @@
     <h1>ThumbGate for Platforms</h1>
     <p class="lead">Resell the AI-native infrastructure firewall to enterprise customers. Fully automated governance, feedback loops, and execution receipts through a single API.</p>
 
-    <p><span class="status">● Live</span> API — verified at <a href="https://thumbgate.ai/health">thumbgate.ai/health</a>. OpenAPI at <a href="https://thumbgate.ai/openapi.json">/openapi.json</a>.</p>
+    <p><span class="status">● Live</span> API — verified at <a href="https://thumbgate.ai/health">thumbgate.ai/health</a>. OpenAPI at <a href="https://thumbgate.ai/openapi.json">/openapi.json</a>. See <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/VERIFICATION_EVIDENCE.md">VERIFICATION_EVIDENCE.md</a> and <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/proof">machine-readable proof reports</a>.</p>
 
     <h2>Why list ThumbGate?</h2>
     <div class="grid">
@@ -73,7 +92,7 @@
       </div>
       <div class="card">
         <h3>Compliance receipts</h3>
-        <p>Every action produces an HMAC-signed task outcome through <code>/v1/task-outcomes</code>.</p>
+        <p>Task completion can emit a deterministic, idempotent outcome receipt with verification evidence through <code>/v1/task-outcomes</code>.</p>
       </div>
       <div class="card">
         <h3>No human bottleneck</h3>
@@ -97,6 +116,12 @@
       <tr><td><code>GET /v1/billing/usage</code></td><td>Usage counter</td></tr>
       <tr><td><code>POST /v1/billing/provision</code></td><td>Automated API-key provisioning</td></tr>
     </table>
+
+    <h2>Frequently asked questions</h2>
+    <h3>Does ThumbGate issue HMAC-signed receipts?</h3>
+    <p>ThumbGate records deterministic task-outcome receipts with verification evidence. The public task-outcome endpoint is not described as an HMAC signature.</p>
+    <h3>Where is ThumbGate verification evidence?</h3>
+    <p>Review <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/VERIFICATION_EVIDENCE.md">VERIFICATION_EVIDENCE.md</a> and the linked <a href="https://github.com/IgorGanapolsky/ThumbGate/tree/main/proof">machine-readable proof reports</a>.</p>
 
     <h2>Pay-per-usage platform tiers</h2>
     <table>

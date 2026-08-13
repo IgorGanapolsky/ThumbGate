@@ -832,6 +832,34 @@ async function callTool(name, args = {}) {
     }
   }
 
+  // Model-carried MCP session handles (InfoWorld correlation controls).
+  // Authorize whenever the model re-emits a handle, or when
+  // THUMBGATE_MCP_HANDLE_REQUIRED=1 forces handles on every tools/call.
+  if (process.env.THUMBGATE_DISABLE_MCP_SESSION_HANDLES !== '1') {
+    const {
+      authorizeMcpToolCall,
+    } = require('../../scripts/mcp-session-handles');
+    const handleAuth = authorizeMcpToolCall(name, args || {}, {
+      principalId: process.env.THUMBGATE_PRINCIPAL_ID || process.env.THUMBGATE_AGENT_ID || null,
+      tenantId: process.env.THUMBGATE_TENANT_ID || 'default',
+    });
+    if (handleAuth && handleAuth.allowed === false) {
+      const err = new Error(
+        `Action blocked by MCP session handle gate [${handleAuth.code}]: ${handleAuth.reason}`
+      );
+      err.errorCategory = 'permission';
+      err.code = handleAuth.code || 'SESSION_HANDLE_DENIED';
+      err.isRetryable = false;
+      recordMcpToolTrace(name, args, {
+        success: false,
+        category: 'session_handle',
+        evidence: [handleAuth.code, handleAuth.reason],
+        latencyMs: Date.now() - attemptStartMs,
+      });
+      throw err;
+    }
+  }
+
   if (name !== 'workflow_sentinel' && process.env.THUMBGATE_DISABLE_MCP_FIREWALL !== '1') {
     const firewallResult = (await evaluateGatesAsync(name, args)) || evaluateSecretGuard({ tool_name: name, tool_input: args });
     if (firewallResult && firewallResult.decision === 'deny') {
