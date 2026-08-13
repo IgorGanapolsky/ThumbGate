@@ -24,7 +24,7 @@ const RECEIPT_SCHEMA_VERSION = '1.0';
 function canonicalStringify(value) {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonicalStringify).join(',')}]`;
-  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalStringify(value[key])}`).join(',')}}`;
+  return `{${Object.keys(value).sort((left, right) => left.localeCompare(right, 'en')).map((key) => `${JSON.stringify(key)}:${canonicalStringify(value[key])}`).join(',')}}`;
 }
 
 function computeCanonicalRequestDigest({ toolName, toolInput, target, idempotencyKey, recordedAt }) {
