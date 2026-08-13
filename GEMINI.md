@@ -65,3 +65,16 @@ An agent holding an owner's credential can do anything the owner can. That is pr
 - Completion requires an idempotent task-outcome receipt with verification evidence.
 - Public multi-agent workflows must persist state, preserve failures, and work without hosted-only modules.
 - Production monitoring requires at least 20 measured task outcomes and 20 observed tool calls before a healthy claim.
+## CEO PR Session Persistence Contract
+
+For every explicit PR-management and system-hygiene session:
+
+1. Read `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`; query local ThumbGate memory.
+2. Reconcile GitHub Issues and Actions, standalone Copilot CLI advice, Linear AI when authenticated, and `~/Documents/AI-Agent-Sync`. Deterministic git and GitHub evidence remain authoritative.
+3. Classify every open PR and every remote branch without an open PR. Never approve a PR or bypass branch protection.
+4. Submit only terminal-green, review-complete PRs through `npm run pr:manage` and Trunk.
+5. Remove only verified-disposable branches, clean worktrees, dormant files, and logs, with before/after counts.
+6. Verify required CI on the exact resulting `main` SHA and run the standard clean-worktree verification suite.
+7. Record lessons in local memory and report whether memory helped or hindered.
+
+Use **“Done merging PRs. CI passing. System hygiene complete. Ready for next session.”** only when every condition above is verified. Otherwise report exact blockers and do not use that sentence.
