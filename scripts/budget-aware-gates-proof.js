@@ -61,10 +61,21 @@ const DEFAULT_BUDGETS = {
 };
 
 function greedyHeuristicRouting(candidates, { maxBudgetUsd, maxLatencyMs }) {
-  const valid = candidates.filter(
+  const list = Array.isArray(candidates) ? candidates : [];
+  if (list.length === 0) {
+    return {
+      success: false,
+      selected: null,
+      solver: 'pure-greedy-heuristic',
+      objective: 0,
+      candidate: null,
+      reason: 'no_candidates',
+    };
+  }
+  const valid = list.filter(
     (c) => (c.cost || 0) <= maxBudgetUsd && (c.latency_ms || 0) <= maxLatencyMs
   );
-  const pool = valid.length > 0 ? valid : candidates;
+  const pool = valid.length > 0 ? valid : list;
   const best = pool.reduce(
     (prev, curr) => ((curr.score || 0) > (prev.score || 0) ? curr : prev),
     pool[0]
@@ -79,7 +90,19 @@ function greedyHeuristicRouting(candidates, { maxBudgetUsd, maxLatencyMs }) {
 }
 
 function greedyHeuristicRules(rules, { maxEvalTimeMs, maxTokenFootprint }) {
-  const sorted = [...rules].sort(
+  const list = Array.isArray(rules) ? rules : [];
+  if (list.length === 0) {
+    return {
+      success: false,
+      selected_rules: [],
+      solver: 'pure-greedy-knapsack',
+      used_time_ms: 0,
+      used_tokens: 0,
+      total_mitigation: 0,
+      reason: 'no_rules',
+    };
+  }
+  const sorted = [...list].sort(
     (a, b) =>
       (b.risk_mitigation || 0) / Math.max(b.eval_time_ms || 0.1, 0.1)
       - (a.risk_mitigation || 0) / Math.max(a.eval_time_ms || 0.1, 0.1)
@@ -377,10 +400,11 @@ function mainCli(argv = process.argv.slice(2)) {
   return report;
 }
 
-if (require.main === module || (
+// Path-based main check (Sonar S3403: require.main === module is unreliable under CJS).
+if (
   process.argv[1]
   && path.resolve(process.argv[1]) === path.resolve(__filename)
-)) {
+) {
   mainCli();
 }
 
