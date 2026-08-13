@@ -19,12 +19,12 @@ const { execFileSync } = require('node:child_process');
 
 const SCRIPT_PATH = path.join(__dirname, 'gurobi_optimizer.py');
 
-function resolvePythonBin() {
+function resolvePythonBin(env = process.env, homeDir = os.homedir()) {
   const candidates = [
-    process.env.GUROBI_PYTHON,
-    process.env.PYTHON_BIN,
-    path.join(os.homedir(), '.hermes', 'gurobi-venv', 'bin', 'python'),
-    path.join(os.homedir(), '.hermes', 'gurobi-venv', 'bin', 'python3'),
+    env.GUROBI_PYTHON,
+    env.PYTHON_BIN,
+    path.join(homeDir, '.hermes', 'gurobi-venv', 'bin', 'python'),
+    path.join(homeDir, '.hermes', 'gurobi-venv', 'bin', 'python3'),
     'python3',
   ].filter(Boolean);
 
@@ -39,18 +39,15 @@ function resolvePythonBin() {
   return 'python3';
 }
 
-const PYTHON_BIN = resolvePythonBin();
-
-function runPythonMode(mode, payload, timeoutMs = 10000) {
+function runPythonMode(mode, payload, timeoutMs = 10000, pythonBin = resolvePythonBin()) {
   const stdout = execFileSync(
-    PYTHON_BIN,
+    pythonBin,
     [SCRIPT_PATH, '--mode', mode, '--input', JSON.stringify(payload)],
     {
       encoding: 'utf8',
       timeout: timeoutMs,
       env: {
         ...process.env,
-        // Prefer the resolved interpreter's site-packages (gurobipy).
         PYTHONPATH: [
           path.join(os.homedir(), '.hermes', 'gurobi'),
           process.env.PYTHONPATH || '',
@@ -65,17 +62,18 @@ function runPythonMode(mode, payload, timeoutMs = 10000) {
  * Optimizes model candidate routing via Gurobi MILP solver.
  * Falls back to deterministic heuristic if Gurobi is unavailable.
  */
-function optimizeModelRouting(candidates, { maxBudgetUsd = 1.0, maxLatencyMs = 5000.0 } = {}) {
+function optimizeModelRouting(candidates, { maxBudgetUsd = 1.0, maxLatencyMs = 5000.0 } = {}, opts = {}) {
   if (!Array.isArray(candidates) || candidates.length === 0) {
     return { success: false, selected: null, error: 'Candidates must be a non-empty array' };
   }
 
+  const pythonBin = opts.pythonBin || resolvePythonBin();
   try {
     return runPythonMode('routing', {
       candidates,
       max_budget_usd: maxBudgetUsd,
       max_latency_ms: maxLatencyMs,
-    });
+    }, opts.timeoutMs || 10000, pythonBin);
   } catch (err) {
     const valid = candidates.filter(
       (c) => (c.cost || 0) <= maxBudgetUsd && (c.latency_ms || 0) <= maxLatencyMs
@@ -91,7 +89,7 @@ function optimizeModelRouting(candidates, { maxBudgetUsd = 1.0, maxLatencyMs = 5
       solver: 'node-fallback-heuristic',
       objective: best.score || 0,
       error: err.message,
-      python: PYTHON_BIN,
+      python: pythonBin,
     };
   }
 }
@@ -99,17 +97,18 @@ function optimizeModelRouting(candidates, { maxBudgetUsd = 1.0, maxLatencyMs = 5
 /**
  * Optimizes active prevention rule selection via Gurobi 0-1 Knapsack solver.
  */
-function optimizeRuleSelection(rules, { maxEvalTimeMs = 50.0, maxTokenFootprint = 1000 } = {}) {
+function optimizeRuleSelection(rules, { maxEvalTimeMs = 50.0, maxTokenFootprint = 1000 } = {}, opts = {}) {
   if (!Array.isArray(rules) || rules.length === 0) {
     return { success: false, selected_rules: [], error: 'Rules must be a non-empty array' };
   }
 
+  const pythonBin = opts.pythonBin || resolvePythonBin();
   try {
     return runPythonMode('rules', {
       rules,
       max_eval_time_ms: maxEvalTimeMs,
       max_token_footprint: maxTokenFootprint,
-    });
+    }, opts.timeoutMs || 10000, pythonBin);
   } catch (err) {
     const sorted = [...rules].sort(
       (a, b) =>
@@ -135,26 +134,40 @@ function optimizeRuleSelection(rules, { maxEvalTimeMs = 50.0, maxTokenFootprint 
       used_time_ms: curTime,
       used_tokens: curTokens,
       error: err.message,
-      python: PYTHON_BIN,
+      python: pythonBin,
     };
   }
 }
 
-function probeGurobi() {
+function probeGurobi(opts = {}) {
   try {
     const res = optimizeModelRouting(
       [{ id: 'probe', score: 1, cost: 0, latency_ms: 1 }],
-      { maxBudgetUsd: 1, maxLatencyMs: 10 }
+      { maxBudgetUsd: 1, maxLatencyMs: 10 },
+      opts
     );
     return {
       ok: Boolean(res && res.success),
       solver: res.solver || null,
-      python: PYTHON_BIN,
+      python: res.python || resolvePythonBin(),
       gurobi: String(res.solver || '').startsWith('gurobi'),
     };
   } catch (err) {
-    return { ok: false, error: err.message, python: PYTHON_BIN, gurobi: false };
+    return { ok: false, error: err.message, python: resolvePythonBin(), gurobi: false };
   }
+}
+
+function mainCli() {
+  const sampleCandidates = [
+    { id: 'qwen-3b', score: 8.2, cost: 0.001, latency_ms: 120 },
+    { id: 'claude-3-5', score: 9.8, cost: 0.015, latency_ms: 1200 },
+    { id: 'local-vllm', score: 8.9, cost: 0.0, latency_ms: 250 },
+  ];
+  const routingRes = optimizeModelRouting(sampleCandidates, {
+    maxBudgetUsd: 0.01,
+    maxLatencyMs: 500,
+  });
+  return { probe: probeGurobi(), routing: routingRes };
 }
 
 module.exports = {
@@ -162,19 +175,13 @@ module.exports = {
   optimizeRuleSelection,
   resolvePythonBin,
   probeGurobi,
-  PYTHON_BIN,
+  runPythonMode,
+  mainCli,
+  get PYTHON_BIN() {
+    return resolvePythonBin();
+  },
 };
 
 if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
-  const sampleCandidates = [
-    { id: 'qwen-3b', score: 8.2, cost: 0.001, latency_ms: 120 },
-    { id: 'claude-3-5', score: 9.8, cost: 0.015, latency_ms: 1200 },
-    { id: 'local-vllm', score: 8.9, cost: 0.0, latency_ms: 250 },
-  ];
-
-  const routingRes = optimizeModelRouting(sampleCandidates, {
-    maxBudgetUsd: 0.01,
-    maxLatencyMs: 500,
-  });
-  console.log(JSON.stringify({ probe: probeGurobi(), routing: routingRes }, null, 2));
+  console.log(JSON.stringify(mainCli(), null, 2));
 }

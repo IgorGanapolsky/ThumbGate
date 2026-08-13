@@ -2,17 +2,33 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
 const {
   optimizeModelRouting,
   optimizeRuleSelection,
   resolvePythonBin,
   probeGurobi,
+  mainCli,
 } = require('../scripts/gurobi-optimizer.js');
 
 test('Gurobi Optimizer - Node.js integration', async (t) => {
   await t.test('resolves a python interpreter path', () => {
     const bin = resolvePythonBin();
     assert.ok(typeof bin === 'string' && bin.length > 0);
+  });
+
+  await t.test('resolvePythonBin prefers GUROBI_PYTHON when present on disk', () => {
+    const self = process.execPath; // always exists
+    const bin = resolvePythonBin({ GUROBI_PYTHON: self }, '/tmp');
+    assert.equal(bin, self);
+  });
+
+  await t.test('resolvePythonBin falls through missing paths to python3', () => {
+    const bin = resolvePythonBin(
+      { GUROBI_PYTHON: '/no/such/python-bin-xyz', PYTHON_BIN: '/also/missing' },
+      '/tmp/no-hermes-home'
+    );
+    assert.equal(bin, 'python3');
   });
 
   await t.test('optimizes model routing under budget+latency (correct selection)', () => {
@@ -24,7 +40,6 @@ test('Gurobi Optimizer - Node.js integration', async (t) => {
 
     const result = optimizeModelRouting(candidates, { maxBudgetUsd: 0.01, maxLatencyMs: 500 });
     assert.equal(result.success, true);
-    // Feasible under constraints: c1, c3 — max score is c3
     assert.equal(result.selected, 'c3');
     assert.ok(
       result.solver === 'gurobi'
@@ -57,7 +72,6 @@ test('Gurobi Optimizer - Node.js integration', async (t) => {
     assert.ok(totalTime <= 30.0);
     assert.ok(totalTokens <= 450);
 
-    // When real Gurobi is available, expect the proven optimal set.
     if (result.solver === 'gurobi') {
       assert.deepEqual(selected, ['r1', 'r3']);
       assert.equal(result.objective, 185.0);
@@ -77,48 +91,54 @@ test('Gurobi Optimizer - Node.js integration', async (t) => {
     const probe = probeGurobi();
     assert.equal(typeof probe.ok, 'boolean');
     assert.ok(probe.python);
-    // On this Mac with gurobipy installed, probe should prefer gurobi.
-    // CI without gurobipy still reports ok=true via heuristic.
     assert.equal(probe.ok, true);
   });
-});
 
-test('Gurobi Optimizer - node fallback when python fails', async (t) => {
-  await t.test('optimizeModelRouting falls back when python binary missing', () => {
-    const prev = process.env.GUROBI_PYTHON;
-    process.env.GUROBI_PYTHON = '/nonexistent/gurobi-python-bin';
-    // Re-require after env change is hard; instead call with force via child is heavy.
-    // Direct API still works: if python path is broken, catch returns node-fallback.
-    delete require.cache[require.resolve('../scripts/gurobi-optimizer.js')];
-    const mod = require('../scripts/gurobi-optimizer.js');
-    const result = mod.optimizeModelRouting(
-      [
-        { id: 'c1', score: 7.0, cost: 0.001, latency_ms: 100 },
-        { id: 'c3', score: 8.8, cost: 0.005, latency_ms: 300 },
-      ],
-      { maxBudgetUsd: 0.01, maxLatencyMs: 500 }
+  await t.test('node fallback when python binary is unusable', () => {
+    const candidates = [
+      { id: 'c1', score: 7.0, cost: 0.001, latency_ms: 100 },
+      { id: 'c3', score: 8.8, cost: 0.005, latency_ms: 300 },
+    ];
+    const routing = optimizeModelRouting(
+      candidates,
+      { maxBudgetUsd: 0.01, maxLatencyMs: 500 },
+      { pythonBin: '/nonexistent/gurobi-python-bin' }
     );
-    assert.equal(result.success, true);
-    assert.equal(result.selected, 'c3');
-    if (prev === undefined) delete process.env.GUROBI_PYTHON;
-    else process.env.GUROBI_PYTHON = prev;
-    delete require.cache[require.resolve('../scripts/gurobi-optimizer.js')];
-  });
+    assert.equal(routing.success, true);
+    assert.equal(routing.selected, 'c3');
+    assert.equal(routing.solver, 'node-fallback-heuristic');
 
-  await t.test('optimizeRuleSelection falls back when python binary missing', () => {
-    process.env.GUROBI_PYTHON = '/nonexistent/gurobi-python-bin';
-    delete require.cache[require.resolve('../scripts/gurobi-optimizer.js')];
-    const mod = require('../scripts/gurobi-optimizer.js');
-    const result = mod.optimizeRuleSelection(
+    const rules = optimizeRuleSelection(
       [
         { id: 'r1', risk_mitigation: 90, eval_time_ms: 5, token_footprint: 100 },
         { id: 'r3', risk_mitigation: 95, eval_time_ms: 25, token_footprint: 300 },
       ],
-      { maxEvalTimeMs: 30, maxTokenFootprint: 450 }
+      { maxEvalTimeMs: 30, maxTokenFootprint: 450 },
+      { pythonBin: '/nonexistent/gurobi-python-bin' }
     );
-    assert.equal(result.success, true);
-    assert.ok(Array.isArray(result.selected_rules));
-    delete process.env.GUROBI_PYTHON;
-    delete require.cache[require.resolve('../scripts/gurobi-optimizer.js')];
+    assert.equal(rules.success, true);
+    assert.equal(rules.solver, 'node-fallback-knapsack');
+    assert.ok(Array.isArray(rules.selected_rules));
+  });
+
+  await t.test('mainCli returns probe + routing payload', () => {
+    const out = mainCli();
+    assert.equal(typeof out.probe.ok, 'boolean');
+    assert.equal(out.routing.success, true);
+    assert.ok(out.routing.selected);
+  });
+
+  await t.test('module path identity for CLI entry', () => {
+    // Keep the path-resolve CLI guard from being dead code in reports:
+    // invoke the script as a process with a tiny timeout budget.
+    const { execFileSync } = require('node:child_process');
+    const script = path.join(__dirname, '..', 'scripts', 'gurobi-optimizer.js');
+    const stdout = execFileSync(process.execPath, [script], {
+      encoding: 'utf8',
+      timeout: 15000,
+      env: process.env,
+    });
+    const parsed = JSON.parse(stdout);
+    assert.equal(parsed.routing.success, true);
   });
 });
