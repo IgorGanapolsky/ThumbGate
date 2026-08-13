@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ThumbGate for Platforms — Enterprise API & Usage Pricing</title>
+  <meta name="description" content="List ThumbGate on your platform: usage-based agent governance from $99/mo, REST + OpenAPI, live at thumbgate.ai.">
+  <link rel="canonical" href="__APP_ORIGIN__/platform-partners">
+  <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
+  <meta property="og:title" content="ThumbGate for Platforms — Enterprise API & Usage Pricing">
+  <meta property="og:description" content="Usage-based agent governance: $99/mo Starter, $499/mo Team, $2,499/mo Enterprise. REST + OpenAPI.">
+  <meta property="og:url" content="__APP_ORIGIN__/platform-partners">
+  <meta property="og:type" content="product">
+  <style>
+    :root { --ink:#171d1a; --muted:#5b6761; --paper:#f5f2e9; --card:#fffdf8; --line:#d8d4c8; --green:#006e52; --green2:#004c3a; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.55; }
+    a { color:inherit; }
+    .shell { width:min(1040px,calc(100% - 40px)); margin:0 auto; }
+    nav { border-bottom:1px solid var(--line); background:rgba(245,242,233,.95); }
+    .nav-inner { min-height:70px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
+    .brand { text-decoration:none; font-weight:850; letter-spacing:-.03em; font-size:1.25rem; }
+    .nav-links { display:flex; align-items:center; gap:18px; color:var(--muted); font-size:.92rem; }
+    .button { display:inline-flex; justify-content:center; align-items:center; border:0; border-radius:10px; background:var(--green); color:#fff; padding:12px 18px; font:inherit; font-weight:800; text-decoration:none; cursor:pointer; }
+    .button:hover { background:var(--green2); }
+    main { padding:64px 0 84px; }
+    .eyebrow { color:var(--green); font-size:.76rem; font-weight:850; letter-spacing:.14em; text-transform:uppercase; }
+    h1 { max-width:760px; margin:14px 0 18px; font-size:clamp(2.4rem,5.5vw,4.2rem); line-height:.98; letter-spacing:-.045em; }
+    .lede { max-width:680px; margin:0 0 28px; color:var(--muted); font-size:1.13rem; }
+    section { padding-top:64px; }
+    h2 { margin:0 0 14px; font-size:clamp(1.7rem,3.2vw,2.4rem); letter-spacing:-.035em; }
+    .section-lede { max-width:680px; color:var(--muted); }
+    .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:28px; }
+    .card { border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:0 18px 50px rgba(38,45,41,.09); padding:26px; }
+    .card h3 { margin:8px 0 6px; font-size:1.25rem; }
+    .card .price { margin:8px 0 4px; font-size:2.6rem; line-height:1; font-weight:900; letter-spacing:-.04em; color:var(--green); }
+    .card .price-note { margin:0 0 16px; color:var(--muted); font-size:.92rem; }
+    .card ul { margin:0; padding-left:18px; color:var(--muted); font-size:.92rem; }
+    .card li { margin-bottom:6px; }
+    .card.recommended { border:2px solid var(--green); }
+    table { width:100%; border-collapse:collapse; margin-top:18px; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+    th, td { padding:12px 14px; text-align:left; border-bottom:1px solid var(--line); font-size:.92rem; }
+    th { background:#e9f3ee; color:var(--green2); font-weight:800; }
+    td { color:var(--ink); }
+    code { background:#e9e6dd; padding:2px 5px; border-radius:4px; font-size:.88em; }
+    .integration { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; margin-top:22px; }
+    pre { background:#0f1512; color:#e6f0e9; padding:18px; border-radius:12px; overflow:auto; font-size:.86rem; }
+    .cta-row { display:flex; gap:14px; flex-wrap:wrap; margin-top:28px; }
+    .secondary { background:transparent; color:var(--green); border:1px solid var(--green); }
+    .secondary:hover { background:#e9f3ee; }
+    footer { border-top:1px solid var(--line); padding:28px 0; color:var(--muted); font-size:.85rem; margin-top:64px; }
+    @media (max-width:860px) { .cards { grid-template-columns:1fr; } }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "ThumbGate Platform API",
+        "applicationCategory": "DeveloperApplication",
+        "description": "Pre-action governance layer for AI coding agents: policy evaluation, human escalation, feedback loops, and audit receipts.",
+        "offers": [
+          { "@type": "Offer", "name": "Starter", "price": "99", "priceCurrency": "USD", "billingIncrement": "month", "url": "__APP_ORIGIN__/platform-partners" },
+          { "@type": "Offer", "name": "Team", "price": "499", "priceCurrency": "USD", "billingIncrement": "month", "url": "__APP_ORIGIN__/platform-partners" },
+          { "@type": "Offer", "name": "Enterprise", "price": "2499", "priceCurrency": "USD", "billingIncrement": "month", "url": "__APP_ORIGIN__/platform-partners" }
+        ],
+        "provider": { "@type": "Organization", "name": "ThumbGate", "url": "__APP_ORIGIN__/" }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "What is the billable unit?", "acceptedAnswer": { "@type": "Answer", "text": "One policy evaluation (POST /v1/decisions/evaluate). Human escalations, rule promotions, and execution receipts are separately metered premium units." } },
+          { "@type": "Question", "name": "Can the platform resell ThumbGate?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. ThumbGate can invoice the end-customer, the platform can collect and remit, or the platform can buy wholesale. Revenue share is open to match the platform's standard." } },
+          { "@type": "Question", "name": "Is the API already deployed?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Core evaluate, feedback, escalation, and task-outcome APIs are live at https://thumbgate.ai with public OpenAPI at /openapi.json." } }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <nav>
+    <div class="shell nav-inner">
+      <a class="brand" href="/">ThumbGate</a>
+      <div class="nav-links">
+        <a href="/pricing">Pricing</a>
+        <a href="/partner-intake">Partner intake</a>
+        <a class="button" href="mailto:igor@igorganapolsky.com?subject=ThumbGate platform listing">List ThumbGate</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="shell">
+    <div class="eyebrow">For platforms, agencies, and marketplaces</div>
+    <h1>List ThumbGate where your enterprise clients buy AI infrastructure.</h1>
+    <p class="lede">Usage-based agent governance with a live REST + OpenAPI surface. Billable unit is one policy evaluation. Manual onboarding for the first enterprise pilots; self-serve portal follows.</p>
+
+    <section>
+      <div class="eyebrow">Live API status</div>
+      <h2>Production endpoints are deployed now.</h2>
+      <p class="section-lede">Verified 2026-08-13: <code>GET /health</code> returns <code>status: "ok"</code>, version <code>1.35.0</code>, build <code>40b1e184</code>. Public OpenAPI has 50 paths at <code>/openapi.json</code>.</p>
+      <table>
+        <tr><th>Surface</th><th>Status</th><th>Proof</th></tr>
+        <tr><td>Production API host</td><td><strong>LIVE</strong></td><td><code>GET /health</code> → 200 OK</td></tr>
+        <tr><td>Public OpenAPI</td><td><strong>LIVE</strong></td><td><code>GET /openapi.json</code> → 50 paths</td></tr>
+        <tr><td>Auth'd <code>/v1/*</code></td><td><strong>LIVE</strong></td><td>401 without key (gate present)</td></tr>
+        <tr><td>Synchronous evaluate</td><td><strong>LIVE + OPENAPI</strong></td><td><code>POST /v1/decisions/evaluate</code></td></tr>
+        <tr><td>Feedback / lessons / DPO</td><td><strong>LIVE + OPENAPI</strong></td><td>capture, stats, rules, search, dpo/export</td></tr>
+        <tr><td>Escalations + receipts</td><td><strong>LIVE + OPENAPI</strong></td><td><code>/v1/escalations</code>, <code>/v1/task-outcomes</code></td></tr>
+        <tr><td>Gate configuration</td><td><strong>LIVE (source)</strong></td><td><code>/v1/gates/*</code>; not yet in OpenAPI</td></tr>
+        <tr><td>Partner usage statement by unit</td><td><strong>PARTIAL</strong></td><td>~2 weeks to productize cleanly</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <div class="eyebrow">Pricing</div>
+      <h2>Monthly minimum + included volume. Overage is creditable.</h2>
+      <div class="cards">
+        <article class="card">
+          <div class="eyebrow">Pilot</div>
+          <h3>Starter</h3>
+          <div class="price">$99<span style="font-size:1rem;font-weight:700">/mo</span></div>
+          <p class="price-note">100,000 evals included · $0.001 overage</p>
+          <ul>
+            <li>LIVE API access</li>
+            <li>1 workspace</li>
+            <li>Community / email support</li>
+          </ul>
+        </article>
+        <article class="card recommended">
+          <div class="eyebrow">Multi-agent teams</div>
+          <h3>Team</h3>
+          <div class="price">$499<span style="font-size:1rem;font-weight:700">/mo</span></div>
+          <p class="price-note">500,000 evals included · $0.001 overage</p>
+          <ul>
+            <li>Dedicated key</li>
+            <li>Hosted state + dashboard</li>
+            <li>Email support</li>
+            <li>99.5% availability target</li>
+          </ul>
+        </article>
+        <article class="card">
+          <div class="eyebrow">Fleet / compliance</div>
+          <h3>Enterprise</h3>
+          <div class="price">$2,499<span style="font-size:1rem;font-weight:700">/mo</span></div>
+          <p class="price-note">3,000,000 evals included · $0.0008 overage</p>
+          <ul>
+            <li>Custom policy authoring support</li>
+            <li>Priority support</li>
+            <li>DPO export</li>
+            <li>Optional self-hosting discussion</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="eyebrow">Billable units</div>
+      <h2>Countable units, not vibes.</h2>
+      <table>
+        <tr><th>Unit code</th><th>What counts</th><th>List rate</th></tr>
+        <tr><td><code>eval</code></td><td>One policy evaluation decision</td><td><strong>$0.001</strong></td></tr>
+        <tr><td><code>escalation</code></td><td>Human escalation created</td><td><strong>$0.010</strong></td></tr>
+        <tr><td><code>rule_promotion</code></td><td>Failure promoted into durable rule</td><td><strong>$0.005</strong></td></tr>
+        <tr><td><code>receipt</code></td><td>Idempotent execution receipt written</td><td><strong>$0.001</strong></td></tr>
+      </table>
+    </section>
+
+    <section>
+      <div class="eyebrow">Integration</div>
+      <h2>Primary call: evaluate before the agent acts.</h2>
+      <div class="integration">
+        <pre><code>POST /v1/decisions/evaluate
+Authorization: Bearer &lt;thumbgate-api-key&gt;
+Content-Type: application/json
+
+{
+  "toolName": "Bash",
+  "source": "partner_platform",
+  "toolCall": { "command": "rm -rf ./dist" }
+}</code></pre>
+        <p class="section-lede">Then escalate, capture feedback, and write idempotent task receipts. Full catalog at <a href="__APP_ORIGIN__/openapi.json">__APP_ORIGIN__/openapi.json</a>.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="eyebrow">Next step</div>
+      <h2>Send the listing details and I will provision a sandbox key.</h2>
+      <p class="section-lede">What I need: preferred settlement model (platform collects / ThumbGate collects / wholesale), your standard platform share, required listing fields, and whether first clients are pilot or self-serve.</p>
+      <div class="cta-row">
+        <a class="button" href="mailto:igor@igorganapolsky.com?subject=ThumbGate platform listing">Email Igor</a>
+        <a class="button secondary" href="/partner-intake">Submit workflow intake</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      ThumbGate — infrastructure firewall for AI coding agents. Spec and cost sheet live in the repo at <code>docs/sales/</code>.
+    </div>
+  </footer>
+</body>
+</html>
