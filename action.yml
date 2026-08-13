@@ -1,0 +1,125 @@
+name: 'ThumbGate Agent Governance'
+description: 'Pre-action governance for AI coding agents: audit agent readiness and export an AI/ML bill of materials in CI.'
+author: 'Igor Ganapolsky'
+
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  command:
+    description: 'Which check to run: "doctor" (agent readiness audit) or "ai-inventory" (AI/ML BOM export).'
+    required: false
+    default: 'doctor'
+  version:
+    description: 'npm version of the thumbgate package to run, e.g. "1.35.0". Defaults to the latest published release.'
+    required: false
+    default: 'latest'
+  fail-on:
+    description: >-
+      When the run should fail the job: "never" (report only), "attention"
+      (fail if status is NEEDS_ATTENTION or worse), or "error" (fail only on a
+      crash). Defaults to "never" so adopting this action cannot break an
+      existing pipeline on day one.
+    required: false
+    default: 'never'
+  working-directory:
+    description: 'Directory to run the check in.'
+    required: false
+    default: '.'
+
+outputs:
+  status:
+    description: 'Overall status reported by the check (e.g. HEALTHY, NEEDS_ATTENTION), or UNKNOWN if it could not be parsed.'
+    value: ${{ steps.thumbgate.outputs.status }}
+  report:
+    description: 'Path to the captured report file.'
+    value: ${{ steps.thumbgate.outputs.report }}
+  exit-code:
+    description: 'Raw exit code from the ThumbGate CLI.'
+    value: ${{ steps.thumbgate.outputs.exit-code }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run ThumbGate check
+      id: thumbgate
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        TG_COMMAND: ${{ inputs.command }}
+        TG_VERSION: ${{ inputs.version }}
+        TG_FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        set -uo pipefail
+
+        case "$TG_COMMAND" in
+          doctor|ai-inventory) ;;
+          *)
+            echo "::error::Unsupported command '$TG_COMMAND'. Use 'doctor' or 'ai-inventory'."
+            exit 1
+            ;;
+        esac
+
+        case "$TG_FAIL_ON" in
+          never|attention|error) ;;
+          *)
+            echo "::error::Unsupported fail-on '$TG_FAIL_ON'. Use 'never', 'attention' or 'error'."
+            exit 1
+            ;;
+        esac
+
+        report="$(mktemp -t thumbgate-report.XXXXXX)"
+
+        npx --yes "thumbgate@${TG_VERSION}" "$TG_COMMAND" 2>&1 | tee "$report"
+        code="${PIPESTATUS[0]}"
+
+        status="$(grep -m1 -oE '^Overall:[[:space:]]*[A-Z_]+' "$report" | awk '{print $2}')"
+        [ -n "$status" ] || status="UNKNOWN"
+
+        {
+          echo "status=$status"
+          echo "report=$report"
+          echo "exit-code=$code"
+        } >> "$GITHUB_OUTPUT"
+
+        {
+          echo "### ThumbGate — \`$TG_COMMAND\`"
+          echo ""
+          echo "**Status:** \`$status\` (exit \`$code\`)"
+          echo ""
+          echo '```'
+          head -c 60000 "$report"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+
+        # Exit code 127 means npx could not resolve the package at all.
+        if [ "$code" -eq 127 ]; then
+          echo "::error::Could not resolve thumbgate@${TG_VERSION} from npm."
+          exit 1
+        fi
+
+        case "$TG_FAIL_ON" in
+          never)
+            echo "::notice::ThumbGate $TG_COMMAND reported $status (fail-on=never, not failing the job)."
+            exit 0
+            ;;
+          error)
+            if [ "$code" -ne 0 ]; then
+              echo "::error::ThumbGate $TG_COMMAND crashed with exit code $code."
+              exit "$code"
+            fi
+            exit 0
+            ;;
+          attention)
+            if [ "$code" -ne 0 ]; then
+              echo "::error::ThumbGate $TG_COMMAND exited with code $code."
+              exit "$code"
+            fi
+            if [ "$status" = "HEALTHY" ] || [ "$status" = "READY" ]; then
+              exit 0
+            fi
+            echo "::error::ThumbGate $TG_COMMAND reported $status."
+            exit 1
+            ;;
+        esac
