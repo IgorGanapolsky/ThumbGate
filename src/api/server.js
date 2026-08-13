@@ -4022,6 +4022,8 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
     { path: '/terms', changefreq: 'monthly', priority: '0.7' },
     { path: '/privacy', changefreq: 'monthly', priority: '0.7' },
+    { path: '/hermes-mobile-privacy', changefreq: 'monthly', priority: '0.6' },
+    { path: '/hermes-mobile-delete', changefreq: 'monthly', priority: '0.6' },
     { path: '/support', changefreq: 'monthly', priority: '0.7' },
     { path: '/legal', changefreq: 'monthly', priority: '0.7' },
     { path: '/security', changefreq: 'monthly', priority: '0.65' },
@@ -8473,6 +8475,26 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         sendHtml(res, 200, privacyHtml, {}, { headOnly: isHeadRequest });
       } catch {
         sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Privacy Policy — ThumbGate</title></head><body><h1>Privacy Policy</h1><p>Contact: <a href="mailto:privacy@thumbgate.ai">privacy@thumbgate.ai</a></p></body></html>`, {}, { headOnly: isHeadRequest });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/hermes-mobile-privacy' || pathname === '/hermes-mobile-privacy.html')) {
+      try {
+        const hermesPrivacyHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'hermes-mobile-privacy.html'), 'utf-8');
+        sendHtml(res, 200, hermesPrivacyHtml, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendHtml(res, 404, `<!DOCTYPE html><html><head><title>Not found</title></head><body><p>Hermes Mobile privacy page missing.</p></body></html>`, {}, { headOnly: isHeadRequest });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/hermes-mobile-delete' || pathname === '/hermes-mobile-delete.html')) {
+      try {
+        const hermesDeleteHtml = fs.readFileSync(path.join(PUBLIC_DIR, 'hermes-mobile-delete.html'), 'utf-8');
+        sendHtml(res, 200, hermesDeleteHtml, {}, { headOnly: isHeadRequest });
+      } catch {
+        sendHtml(res, 404, `<!DOCTYPE html><html><head><title>Not found</title></head><body><p>Hermes Mobile deletion page missing.</p></body></html>`, {}, { headOnly: isHeadRequest });
       }
       return;
     }

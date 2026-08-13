@@ -1101,6 +1101,28 @@ test('privacy policy route covers collection, sharing, retention, and contact de
   assert.match(body, /Collect/i);
   assert.match(body, /Retention/i);
   assert.match(body, /privacy@thumbgate\.ai/i);
+  assert.match(body, /Hermes Agent Remote/);
+  assert.match(body, /IgorGanapolsky/);
+  assert.match(body, /com\.iganapolsky\.hermesmobile\.paid/);
+});
+
+test('Hermes Mobile Play privacy and deletion pages name the listed app and developer', async () => {
+  const privacy = await fetch(apiUrl('/hermes-mobile-privacy'));
+  assert.equal(privacy.status, 200);
+  const privacyBody = await privacy.text();
+  assert.match(privacyBody, /Hermes Agent Remote &amp; Leash/);
+  assert.match(privacyBody, /IgorGanapolsky/);
+  assert.match(privacyBody, /Max Smith KDP LLC/);
+  assert.match(privacyBody, /com\.iganapolsky\.hermesmobile\.paid/);
+  assert.match(privacyBody, /iganapolsky@gmail\.com/);
+
+  const deletion = await fetch(apiUrl('/hermes-mobile-delete'));
+  assert.equal(deletion.status, 200);
+  const deletionBody = await deletion.text();
+  assert.match(deletionBody, /Hermes Agent Remote &amp; Leash/);
+  assert.match(deletionBody, /IgorGanapolsky/);
+  assert.match(deletionBody, /data deletion/i);
+  assert.match(deletionBody, /iganapolsky@gmail\.com/);
 });
 
 test('terms of service route covers payment, refunds, acceptable use, and limitation of liability', async () => {
