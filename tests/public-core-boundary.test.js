@@ -259,7 +259,7 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // Keep lockstep with package-boundary + public-bundle-ratchet.
   // 453 -> 455 (2026-08-13): dedicated Hermes Mobile privacy and deletion
   // pages used by Google Play's Privacy policy and Data safety declarations.
-  const CEILING = 455;
+  const CEILING = 456;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

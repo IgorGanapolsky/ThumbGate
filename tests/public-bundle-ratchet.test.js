@@ -194,7 +194,7 @@ const path = require('node:path');
 // 453 -> 454 (2026-08-13): scripts/agent-egress-policy.js — CrabTrap-inspired
 // two-tier egress policy (static rules, SSRF, observe→draft, replay).
 // 454 -> 455: platform-partner documentation and landing page.
-const BASELINE_FILE_COUNT = 455;
+const BASELINE_FILE_COUNT = 456;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

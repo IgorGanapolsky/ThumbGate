@@ -37,3 +37,20 @@ python3 -m pytest tests/test_gurobi.py -q
 ## When size-limited fails
 
 Escalate to Fabrizio/Jue for a full evaluation license — do not invent larger solves.
+
+## How this improves and sells ThumbGate (not Gurobi)
+
+**Improve:** MILP model routing + prevention-rule knapsack under real cost/latency/token budgets
+(`scripts/gurobi-optimizer.js`). Fail-open heuristics keep CI and free installs working.
+
+**Sell:** run the sales-safe proof, not a partnership claim:
+
+```bash
+node scripts/budget-aware-gates-proof.js
+npm run test:budget-aware-gates-proof
+```
+
+Buyer narrative: *budget-aware enforcement* — we do not load every prevention rule always;
+we select high-mitigation rules and affordable models under budgets. Solver is an
+implementation detail. **No Gurobi partnership / co-sell / logo claim.**
+`capturedRevenueUsd` is never invented from a solve.
