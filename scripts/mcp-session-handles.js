@@ -54,6 +54,7 @@ let idempotencyIndex = new Map();
 let nowFn = () => Date.now();
 let secretOverride = null;
 let storePathOverride = null;
+let diskLoaded = false;
 
 function getSecret() {
   if (secretOverride) return secretOverride;
@@ -167,9 +168,15 @@ function persist() {
 function loadFromDisk() {
   try {
     const storePath = defaultStorePath();
-    if (!fs.existsSync(storePath)) return;
+    if (!fs.existsSync(storePath)) {
+      diskLoaded = true;
+      return;
+    }
     const raw = JSON.parse(fs.readFileSync(storePath, 'utf8'));
-    if (!raw || typeof raw !== 'object') return;
+    if (!raw || typeof raw !== 'object') {
+      diskLoaded = true;
+      return;
+    }
     registry = new Map();
     for (const rec of raw.handles || []) {
       if (rec && rec.handleId) registry.set(rec.handleId, rec);
@@ -184,6 +191,11 @@ function loadFromDisk() {
   } catch {
     // ignore corrupt store
   }
+  diskLoaded = true;
+}
+
+function ensureDiskLoaded() {
+  if (!diskLoaded) loadFromDisk();
 }
 
 function purgeExpired(now = nowFn()) {
@@ -214,6 +226,7 @@ function purgeExpired(now = nowFn()) {
  * @param {string} [input.idempotencyKey] - if re-minted with same key, return existing
  */
 function mintHandle(input = {}) {
+  ensureDiskLoaded();
   const principalId = normalizePrincipal(input.principalId);
   const tenantId = normalizeTenant(input.tenantId);
   const scope = normalizeScope(input.scope);
@@ -365,6 +378,7 @@ function extractHandleFromArgs(args = {}) {
  * @param {string} [input.expectedKind]
  */
 function authorizeHandle(input = {}) {
+  ensureDiskLoaded();
   const now = nowFn();
 
   let principalId;
@@ -374,7 +388,9 @@ function authorizeHandle(input = {}) {
     return deny('MISSING_PRINCIPAL', err.message, input.toolName);
   }
 
-  const tenantId = input.tenantId != null ? normalizeTenant(input.tenantId) : null;
+  // Always bind tenant (defaults to 'default'). Omitting tenant no longer
+  // skips the cross-tenant check — fail closed for multi-tenant hosts.
+  const tenantId = normalizeTenant(input.tenantId);
   const required = input.required !== false;
 
   const extracted = input.handle != null
@@ -447,7 +463,7 @@ function authorizeHandle(input = {}) {
     );
   }
 
-  if (tenantId && rec.tenantId !== tenantId) {
+  if (rec.tenantId !== tenantId) {
     return deny(
       'CROSS_TENANT_SESSION_FORGERY',
       `Session handle tenant '${rec.tenantId}' does not match active context tenant '${tenantId}'.`,
@@ -502,6 +518,7 @@ function authorizeHandle(input = {}) {
  * @param {object|null} activeSessionContext - { required, tenantId, principalId, expectedScope, expectedKind }
  */
 function verifySessionHandle(toolName = '', args = {}, activeSessionContext = null) {
+  ensureDiskLoaded();
   if (!args || typeof args !== 'object') {
     return { allowed: true, reason: 'No arguments provided', code: 'NO_ARGS' };
   }
@@ -513,20 +530,14 @@ function verifySessionHandle(toolName = '', args = {}, activeSessionContext = nu
     return { allowed: true, reason: 'Stateless un-scoped tool call', code: 'STATELESS_UNSCOPED' };
   }
 
+  // Carried handle without principal context = fail closed (no replay path).
   if (!activeSessionContext && handleCandidate) {
-    // Handle present without context: still verify crypto + registry if we can
-    // but principal is unknown — require context for full authorize.
-    const parsed = parseHandleToken(handleCandidate.value);
-    if (!parsed.ok) {
-      return { allowed: false, code: parsed.code, reason: parsed.reason };
-    }
-    if (!registry.has(parsed.handleId)) {
-      return {
-        allowed: false,
-        code: 'UNKNOWN_SESSION_HANDLE',
-        reason: 'Handle not registered; provide activeSessionContext with principalId to authorize.',
-      };
-    }
+    return {
+      allowed: false,
+      code: 'MISSING_SESSION_CONTEXT',
+      reason: 'Session handle present but activeSessionContext with principalId is required to authorize.',
+      argKey: handleCandidate.key,
+    };
   }
 
   if (!activeSessionContext) {
@@ -538,7 +549,7 @@ function verifySessionHandle(toolName = '', args = {}, activeSessionContext = nu
     || process.env.THUMBGATE_AGENT_ID
     || null;
 
-  if (!principalId && required) {
+  if (!principalId) {
     return {
       allowed: false,
       code: 'MISSING_PRINCIPAL',
@@ -548,7 +559,7 @@ function verifySessionHandle(toolName = '', args = {}, activeSessionContext = nu
 
   return authorizeHandle({
     args,
-    principalId: principalId || 'anonymous-dev',
+    principalId,
     tenantId: activeSessionContext.tenantId,
     toolName,
     required,
@@ -558,10 +569,15 @@ function verifySessionHandle(toolName = '', args = {}, activeSessionContext = nu
 }
 
 /**
- * Bind an idempotency key to a handle + operation so retries do not create twins.
- * @returns {{ status: 'stored'|'replay', result?: any, record?: object }}
+ * Atomic claim for an idempotency key BEFORE side effects.
+ * Returns:
+ *   - execute: first caller may run the side effect
+ *   - replay: prior completed result (do not re-run)
+ *   - in_flight: another caller holds a pending claim
+ *   - denied: authorization failed
  */
-function bindIdempotency(input = {}) {
+function claimIdempotency(input = {}) {
+  ensureDiskLoaded();
   const principalId = normalizePrincipal(input.principalId);
   const tenantId = normalizeTenant(input.tenantId);
   const key = String(input.key || '').trim();
@@ -591,17 +607,26 @@ function bindIdempotency(input = {}) {
     purpose: 'op',
   });
   const existing = idempotencyIndex.get(idxKey);
-  if (existing && existing.result !== undefined) {
+  if (existing && existing.status === 'completed' && existing.result !== undefined) {
     return {
       status: 'replay',
       result: existing.result,
       handleId: existing.handleId,
       authorization: auth,
       createdAtMs: existing.createdAtMs,
+      claimKey: idxKey,
+    };
+  }
+  if (existing && existing.status === 'pending') {
+    return {
+      status: 'in_flight',
+      handleId: existing.handleId,
+      authorization: auth,
+      claimKey: idxKey,
+      createdAtMs: existing.createdAtMs,
     };
   }
 
-  const result = input.result !== undefined ? input.result : { ok: true };
   const now = nowFn();
   const rec = registry.get(auth.handleId);
   idempotencyIndex.set(idxKey, {
@@ -610,24 +635,130 @@ function bindIdempotency(input = {}) {
     tenantId,
     operation,
     key,
-    result,
+    status: 'pending',
+    result: undefined,
     createdAtMs: now,
     expiresAtMs: rec ? rec.expiresAtMs : now + DEFAULT_TTL_MS,
   });
   persist();
   return {
-    status: 'stored',
-    result,
+    status: 'execute',
     handleId: auth.handleId,
     authorization: auth,
+    claimKey: idxKey,
     createdAtMs: now,
   };
+}
+
+/**
+ * Complete a prior claimIdempotency with the side-effect result.
+ * Call only after the effect succeeds (or failClosed with error).
+ */
+function completeIdempotency(input = {}) {
+  ensureDiskLoaded();
+  const principalId = normalizePrincipal(input.principalId);
+  const tenantId = normalizeTenant(input.tenantId);
+  const key = String(input.key || '').trim();
+  const operation = String(input.operation || 'default').trim() || 'default';
+  const idxKey = input.claimKey || idemIndexKey({
+    principalId,
+    tenantId,
+    key: `${operation}::${key}`,
+    purpose: 'op',
+  });
+  const existing = idempotencyIndex.get(idxKey);
+  if (!existing) {
+    return { status: 'missing_claim' };
+  }
+  if (existing.status === 'completed' && existing.result !== undefined) {
+    return { status: 'replay', result: existing.result, handleId: existing.handleId };
+  }
+  existing.status = 'completed';
+  existing.result = input.result !== undefined ? input.result : { ok: true };
+  existing.completedAtMs = nowFn();
+  idempotencyIndex.set(idxKey, existing);
+  persist();
+  return {
+    status: 'stored',
+    result: existing.result,
+    handleId: existing.handleId,
+    createdAtMs: existing.createdAtMs,
+  };
+}
+
+/**
+ * Bind an idempotency key: claim → optional result store.
+ * Preferred production flow: claimIdempotency → side effect → completeIdempotency.
+ * This helper stores a completed result when `result` is provided (single-call path).
+ * @returns {{ status: 'stored'|'replay'|'execute'|'in_flight'|'denied', result?: any }}
+ */
+function bindIdempotency(input = {}) {
+  if (input.result !== undefined && input.complete !== false) {
+    const claim = claimIdempotency(input);
+    if (claim.status === 'replay' || claim.status === 'denied' || claim.status === 'in_flight') {
+      return claim;
+    }
+    return completeIdempotency({
+      ...input,
+      claimKey: claim.claimKey,
+      result: input.result,
+    });
+  }
+  return claimIdempotency(input);
+}
+
+/**
+ * Gate MCP tool dispatch: when model carries a handle (or env requires one),
+ * authorize against principal/tenant from env or args metadata.
+ */
+function authorizeMcpToolCall(toolName, args = {}, context = {}) {
+  ensureDiskLoaded();
+  const principalId = context.principalId
+    || args.principalId
+    || (args.metadata && args.metadata.principalId)
+    || process.env.THUMBGATE_PRINCIPAL_ID
+    || process.env.THUMBGATE_AGENT_ID
+    || null;
+  const tenantId = context.tenantId
+    || args.tenantId
+    || (args.metadata && args.metadata.tenantId)
+    || process.env.THUMBGATE_TENANT_ID
+    || 'default';
+  const handleCandidate = extractHandleFromArgs(args);
+  const forceRequired = context.required === true
+    || process.env.THUMBGATE_MCP_HANDLE_REQUIRED === '1';
+
+  if (!handleCandidate && !forceRequired) {
+    return {
+      allowed: true,
+      code: 'STATELESS_UNSCOPED',
+      reason: 'No model-carried handle on this tool call',
+      toolName,
+    };
+  }
+
+  if (!principalId) {
+    return deny(
+      'MISSING_PRINCIPAL',
+      'THUMBGATE_PRINCIPAL_ID (or args.principalId) is required when a session handle is present or required',
+      toolName
+    );
+  }
+
+  return authorizeHandle({
+    args,
+    principalId,
+    tenantId,
+    toolName,
+    required: true,
+  });
 }
 
 /**
  * Resolve a previously bound idempotency result without re-executing side effects.
  */
 function resolveIdempotency(input = {}) {
+  ensureDiskLoaded();
   const principalId = normalizePrincipal(input.principalId);
   const tenantId = normalizeTenant(input.tenantId);
   const key = String(input.key || '').trim();
@@ -646,6 +777,10 @@ function resolveIdempotency(input = {}) {
     idempotencyIndex.delete(idxKey);
     return { status: 'expired' };
   }
+  if (existing.status === 'pending') {
+    return { status: 'in_flight', handleId: existing.handleId, createdAtMs: existing.createdAtMs };
+  }
+  if (existing.result === undefined) return { status: 'miss' };
   return {
     status: 'hit',
     result: existing.result,
@@ -795,6 +930,7 @@ function deny(code, reason, toolName, extra = {}) {
 function _resetForTests(options = {}) {
   registry = new Map();
   idempotencyIndex = new Map();
+  diskLoaded = false;
   if (options.now != null) {
     nowFn = typeof options.now === 'function' ? options.now : () => options.now;
   } else {
@@ -803,6 +939,7 @@ function _resetForTests(options = {}) {
   secretOverride = options.secret || null;
   storePathOverride = options.storePath || null;
   if (options.loadDisk) loadFromDisk();
+  else diskLoaded = true; // empty in-memory registry for isolated unit tests
 }
 
 function _setNow(msOrFn) {
@@ -817,6 +954,9 @@ function _stats() {
   };
 }
 
+// Load durable spill once at require-time for multi-worker hosts.
+loadFromDisk();
+
 module.exports = {
   HANDLE_PREFIX,
   HANDLE_ARG_KEYS,
@@ -826,8 +966,11 @@ module.exports = {
   mintHandle,
   mintSessionHandle,
   authorizeHandle,
+  authorizeMcpToolCall,
   verifySessionHandle,
   extractHandleFromArgs,
+  claimIdempotency,
+  completeIdempotency,
   bindIdempotency,
   resolveIdempotency,
   revokeHandle,
@@ -836,6 +979,8 @@ module.exports = {
   simulateMultiTurnFidelity,
   parseHandleToken,
   purgeExpired,
+  loadFromDisk,
+  ensureDiskLoaded,
   _resetForTests,
   _setNow,
   _stats,

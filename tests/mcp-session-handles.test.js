@@ -105,6 +105,46 @@ test('authorize blocks cross-tenant handle use', () => {
   assert.equal(auth.code, 'CROSS_TENANT_SESSION_FORGERY');
 });
 
+test('authorize without tenantId defaults to default and still binds', () => {
+  fresh();
+  const minted = handles.mintHandle({ principalId: 'agent-a', tenantId: 'acme' });
+  // Omitting tenant must NOT authorize a non-default-tenant handle
+  const auth = handles.authorizeHandle({
+    handle: minted.token,
+    principalId: 'agent-a',
+    toolName: 'docs.read',
+  });
+  assert.equal(auth.allowed, false);
+  assert.equal(auth.code, 'CROSS_TENANT_SESSION_FORGERY');
+});
+
+test('verifySessionHandle denies carried handle without principal context', () => {
+  fresh();
+  const minted = handles.mintSessionHandle('acme', 'production', { principalId: 'agent-a' });
+  const result = handles.verifySessionHandle('exec', { sessionId: minted.token }, null);
+  assert.equal(result.allowed, false);
+  assert.equal(result.code, 'MISSING_SESSION_CONTEXT');
+});
+
+test('authorizeMcpToolCall gates production dispatch', () => {
+  fresh();
+  const minted = handles.mintHandle({ principalId: 'agent-a', tenantId: 'acme' });
+  const denied = handles.authorizeMcpToolCall(
+    'billing.charge',
+    { sessionId: minted.token },
+    { principalId: 'agent-b', tenantId: 'acme' }
+  );
+  assert.equal(denied.allowed, false);
+  assert.equal(denied.code, 'PRINCIPAL_MISMATCH');
+
+  const ok = handles.authorizeMcpToolCall(
+    'billing.charge',
+    { sessionId: minted.token },
+    { principalId: 'agent-a', tenantId: 'acme' }
+  );
+  assert.equal(ok.allowed, true);
+});
+
 test('authorize rejects forged signature and unknown handles', () => {
   fresh();
   const forged = handles.authorizeHandle({
@@ -175,11 +215,29 @@ test('mint idempotency returns same handle (no twin objects)', () => {
   assert.equal(handles._stats().handleCount, 1);
 });
 
-test('operation idempotency prevents duplicate side effects on retry', () => {
+test('operation idempotency claim-then-complete prevents twin side effects', () => {
   fresh();
   const minted = handles.mintHandle({ principalId: 'agent-a', tenantId: 'acme', kind: 'basket' });
-  const first = handles.bindIdempotency({
+  const claim = handles.claimIdempotency({
     handle: minted.token,
+    principalId: 'agent-a',
+    tenantId: 'acme',
+    key: 'charge-order-42',
+    operation: 'billing.charge',
+  });
+  assert.equal(claim.status, 'execute');
+
+  const concurrent = handles.claimIdempotency({
+    handle: minted.token,
+    principalId: 'agent-a',
+    tenantId: 'acme',
+    key: 'charge-order-42',
+    operation: 'billing.charge',
+  });
+  assert.equal(concurrent.status, 'in_flight');
+
+  const first = handles.completeIdempotency({
+    claimKey: claim.claimKey,
     principalId: 'agent-a',
     tenantId: 'acme',
     key: 'charge-order-42',
