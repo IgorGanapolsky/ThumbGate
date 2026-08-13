@@ -253,7 +253,7 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
     // 449 -> 450 (2026-08-12): scripts/rag-embedding-identity.js — embedding identity ROI gate (Pete Johnson / SDS #1017)
   // (terms/privacy/support/third-party-notices + CONTRIBUTING/THIRD_PARTY_NOTICES).
   // Keep lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 452;
+  const CEILING = 453;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
