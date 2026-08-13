@@ -1097,6 +1097,11 @@ test('privacy policy route covers collection, sharing, retention, and contact de
 
   const body = await res.text();
   assert.match(body, /Privacy Policy/i);
+  assert.match(body, /Hermes Agent Remote &amp; Leash/);
+  assert.match(body, /IgorGanapolsky/);
+  assert.match(body, /com\.iganapolsky\.hermesmobile\.paid/);
+  assert.match(body, /Hermes account and data deletion request/);
+  assert.match(body, /within 30 days/);
   assert.match(body, /Zero Workspace Telemetry/i);
   assert.match(body, /Collect/i);
   assert.match(body, /Retention/i);
