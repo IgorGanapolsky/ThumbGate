@@ -33,10 +33,18 @@ const MIN_TTL_MS = 5 * 1000;
 const MAX_TTL_MS = 60 * 60 * 1000; // 1 hour hard cap
 const ENTROPY_BYTES = 18; // 144 bits
 const SIG_HEX_LEN = 16;
-const HANDLE_ARG_KEYS = [
+// Explicit keys always win when present. Ambiguous keys (sessionId, etc.)
+// are only treated as MCP handles when the value matches the mcp_h_ token
+// shape — otherwise domain IDs (feedback sessions, Stripe, telemetry) would
+// trip the gate with MISSING_PRINCIPAL / INVALID_SESSION_HANDLE_FORMAT.
+const EXPLICIT_HANDLE_ARG_KEYS = [
   'sessionHandle',
   'session_handle',
+  'mcpSessionHandle',
+  'mcp_session_handle',
   'handleId',
+];
+const AMBIGUOUS_HANDLE_ARG_KEYS = [
   'handle',
   'sessionId',
   'session_id',
@@ -45,6 +53,7 @@ const HANDLE_ARG_KEYS = [
   'browserId',
   'correlationId',
 ];
+const HANDLE_ARG_KEYS = [...EXPLICIT_HANDLE_ARG_KEYS, ...AMBIGUOUS_HANDLE_ARG_KEYS];
 
 /** @type {Map<string, object>} */
 let registry = new Map();
@@ -343,20 +352,40 @@ function idemIndexKey({ principalId, tenantId, key, purpose }) {
 }
 
 /**
+ * True when value looks like a minted MCP handle token (prefix + signature).
+ * Domain session IDs (feedback, checkout, telemetry) must not match.
+ */
+function looksLikeHandleToken(value) {
+  const v = String(value || '').trim();
+  if (!v.startsWith(HANDLE_PREFIX)) return false;
+  const dot = v.indexOf('.');
+  // mcp_h_<id>.<hmac hex>
+  return dot > HANDLE_PREFIX.length && /^[a-f0-9]+$/i.test(v.slice(dot + 1));
+}
+
+function candidateFromKey(args, key, prefix = '') {
+  if (args[key] == null) return null;
+  const value = String(args[key]).trim();
+  if (!value) return null;
+  const explicit = EXPLICIT_HANDLE_ARG_KEYS.includes(key);
+  if (!explicit && !looksLikeHandleToken(value)) return null;
+  return { key: prefix ? `${prefix}${key}` : key, value };
+}
+
+/**
  * Extract a model-carried handle candidate from tool arguments.
+ * Ambiguous keys only match mcp_h_*.* tokens to avoid domain ID collisions.
  */
 function extractHandleFromArgs(args = {}) {
   if (!args || typeof args !== 'object') return null;
   for (const key of HANDLE_ARG_KEYS) {
-    if (args[key] != null && String(args[key]).trim()) {
-      return { key, value: String(args[key]).trim() };
-    }
+    const hit = candidateFromKey(args, key);
+    if (hit) return hit;
   }
   if (args.metadata && typeof args.metadata === 'object') {
     for (const key of HANDLE_ARG_KEYS) {
-      if (args.metadata[key] != null && String(args.metadata[key]).trim()) {
-        return { key: `metadata.${key}`, value: String(args.metadata[key]).trim() };
-      }
+      const hit = candidateFromKey(args.metadata, key, 'metadata.');
+      if (hit) return hit;
     }
   }
   return null;

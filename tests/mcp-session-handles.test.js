@@ -412,6 +412,28 @@ test('extractHandleFromArgs prefers explicit sessionHandle keys', () => {
   assert.equal(handles.extractHandleFromArgs(null), null);
 });
 
+test('extractHandleFromArgs ignores domain sessionId that is not an mcp_h_ token', () => {
+  fresh();
+  // Feedback / checkout / telemetry session IDs must not trip the MCP handle gate.
+  assert.equal(handles.extractHandleFromArgs({ sessionId: 'fb_session_test' }), null);
+  assert.equal(handles.extractHandleFromArgs({ sessionId: 'cs_live_abc' }), null);
+  assert.equal(handles.extractHandleFromArgs({ session_id: 'sess_plain' }), null);
+  assert.equal(handles.extractHandleFromArgs({ handle: 'not-a-handle' }), null);
+
+  const minted = handles.mintHandle({ principalId: 'agent-a', tenantId: 'acme' });
+  const fromSessionId = handles.extractHandleFromArgs({ sessionId: minted.token });
+  assert.equal(fromSessionId.key, 'sessionId');
+  assert.equal(fromSessionId.value, minted.token);
+
+  const auth = handles.authorizeMcpToolCall(
+    'append_feedback_context',
+    { sessionId: 'fb_session_test', message: 'x' },
+    {}
+  );
+  assert.equal(auth.allowed, true);
+  assert.equal(auth.code, 'STATELESS_UNSCOPED');
+});
+
 test('handles from different secrets do not authorize', () => {
   fresh({ secret: 'secret-aaaaaaaaaaaa' });
   const minted = handles.mintHandle({ principalId: 'agent-a', tenantId: 'acme' });
