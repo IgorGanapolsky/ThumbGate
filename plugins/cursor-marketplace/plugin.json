@@ -1,0 +1,43 @@
+{
+  "name": "thumbgate",
+  "version": "1.35.0",
+  "description": "Infrastructure firewall for AI coding agents. Pre-action gates, thumbs feedback \u2192 prevention rules, audit receipts. API at thumbgate.ai.",
+  "author": {
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "homepage": "https://thumbgate.ai",
+  "repository": "https://github.com/IgorGanapolsky/ThumbGate",
+  "license": "MIT",
+  "keywords": [
+    "agent-firewall",
+    "ai-agent-memory",
+    "coding-agent",
+    "cursor",
+    "cursor-plugin",
+    "enterprise",
+    "feedback",
+    "governance",
+    "grok-bot",
+    "infrastructure-firewall",
+    "mcp",
+    "mistake-prevention",
+    "pre-action",
+    "pre-action-gates",
+    "thumbgate",
+    "thumbgate.ai",
+    "thumbs-up-down"
+  ],
+  "mcpServers": {
+    "thumbgate": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "--package",
+        "thumbgate@latest",
+        "thumbgate",
+        "serve"
+      ]
+    }
+  }
+}
