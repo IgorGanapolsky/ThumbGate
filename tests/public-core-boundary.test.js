@@ -252,8 +252,12 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 442 -> 449
     // 449 -> 450 (2026-08-12): scripts/rag-embedding-identity.js — embedding identity ROI gate (Pete Johnson / SDS #1017)
   // (terms/privacy/support/third-party-notices + CONTRIBUTING/THIRD_PARTY_NOTICES).
+  // 452 -> 453 (2026-08-13): docs/sales/thumbgate-platform-spec.md,
+  // docs/sales/thumbgate-platform-cost-sheet.md, and public/platform-partners.html
+  // ship as public-shell marketing surfaces for the MakersClaw platform-partner
+  // resale package. No private Core dependency, no buyer state, no runtime cost.
   // Keep lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 452;
+  const CEILING = 453;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
