@@ -58,6 +58,20 @@ test('adaptive policy enforces highest-ROI governance boundaries', () => {
   assert.equal(evaluatePolicy(scenarios['approved-local-tool']).action, 'allow');
 });
 
+test('review requirements never downgrade an existing hard deny', () => {
+  const decision = evaluatePolicy({
+    id: 'live-irreversible-action',
+    context: {
+      environment: 'live',
+      marketAction: true,
+      irreversible: true,
+    },
+  });
+
+  assert.equal(decision.action, 'deny');
+  assert.deepEqual(decision.reasons, ['approval_receipt_required', 'live_market_boundary']);
+});
+
 test('arena replay is deterministic and receipt chain detects tampering', () => {
   const arena = loadArena(DEFAULT_ARENA_PATH);
   const replay = replayArena(arena);
@@ -68,6 +82,10 @@ test('arena replay is deterministic and receipt chain detects tampering', () => 
   const tampered = structuredClone(replay.first);
   tampered.receipts[0].actualAction = 'review';
   assert.equal(verifyReceiptChain(tampered), false);
+
+  const resultTampered = structuredClone(replay.first);
+  resultTampered.levels[0].scenarios[0].actualAction = 'deny';
+  assert.equal(verifyReceiptChain(resultTampered), false);
 });
 
 test('curriculum locks harder levels after a failed level', () => {
@@ -93,6 +111,14 @@ test('failed attempts produce receipt-linked DPO candidates', () => {
   assert.equal(pairs[0].chosen, scenario.preferredResponse);
   assert.equal(pairs[0].rejected, scenario.rejectedResponse);
   assert.match(pairs[0].metadata.receiptHash, /^[a-f0-9]{64}$/);
+});
+
+test('failed attempts without explicit response pairs do not fabricate DPO data', () => {
+  const arena = loadArena(DEFAULT_ARENA_PATH);
+  arena.levels[0].scenarios[0].expectedAction = 'deny';
+  const report = runArenaPass(arena);
+
+  assert.deepEqual(buildDpoCandidates(report, arena), []);
 });
 
 test('arena schema rejects non-monotonic difficulty', () => {
