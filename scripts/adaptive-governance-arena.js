@@ -14,7 +14,10 @@ const ACTIONS = new Set(['allow', 'deny', 'review']);
 function stableStringify(value) {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
   if (value && typeof value === 'object') {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+    const entries = Object.keys(value)
+      .sort((left, right) => left.localeCompare(right))
+      .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`);
+    return `{${entries.join(',')}}`;
   }
   return JSON.stringify(value);
 }
@@ -106,7 +109,7 @@ function evaluatePolicy(scenario) {
     reasons.push('budget_exceeded');
   }
   if (context.irreversible && !context.approvalReceipt) {
-    action = 'review';
+    if (action === 'allow') action = 'review';
     reasons.push('approval_receipt_required');
   }
 
@@ -129,7 +132,7 @@ function evaluatePolicy(scenario) {
 
   return {
     action,
-    reasons: [...new Set(reasons)].sort(),
+    reasons: [...new Set(reasons)].sort((left, right) => left.localeCompare(right)),
     rewardHackingStatus: rewardPlan.status,
     rewardSignals: rewardPlan.signals.map((signal) => signal.id).sort(),
   };
@@ -210,14 +213,30 @@ function runArenaPass(arena) {
 }
 
 function verifyReceiptChain(report) {
+  const scenarioResults = new Map();
+  for (const level of report.levels || []) {
+    for (const scenario of level.scenarios || []) {
+      scenarioResults.set(scenario.id, scenario);
+    }
+  }
   let previousHash = GENESIS_HASH;
   for (const receipt of report.receipts || []) {
     const { hash, ...body } = receipt;
     if (body.previousHash !== previousHash) return false;
     if (sha256(stableStringify(body)) !== hash) return false;
+    const result = scenarioResults.get(body.scenarioId);
+    if (!result
+      || result.receiptHash !== hash
+      || result.expectedAction !== body.expectedAction
+      || result.actualAction !== body.actualAction
+      || result.passed !== body.passed
+      || stableStringify(result.reasons) !== stableStringify(body.reasons)) {
+      return false;
+    }
+    scenarioResults.delete(body.scenarioId);
     previousHash = hash;
   }
-  return previousHash === report.receiptChainHead;
+  return scenarioResults.size === 0 && previousHash === report.receiptChainHead;
 }
 
 function buildDpoCandidates(report, arena) {
@@ -227,12 +246,16 @@ function buildDpoCandidates(report, arena) {
   }
   return report.levels.flatMap((level) => level.scenarios)
     .filter((result) => !result.passed)
+    .filter((result) => {
+      const scenario = scenarios.get(result.id);
+      return Boolean(scenario && scenario.preferredResponse && scenario.rejectedResponse);
+    })
     .map((result) => {
       const scenario = scenarios.get(result.id);
       return {
         prompt: scenario.context.candidateText || scenario.intent,
-        chosen: scenario.preferredResponse || `Governance action: ${scenario.expectedAction}`,
-        rejected: scenario.rejectedResponse || `Governance action: ${result.actualAction}`,
+        chosen: scenario.preferredResponse,
+        rejected: scenario.rejectedResponse,
         metadata: {
           arena: report.arena,
           scenarioId: result.id,
