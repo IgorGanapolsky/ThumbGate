@@ -170,9 +170,10 @@ test('observe ledger + draftPolicyFromObservations promotes frequent hosts', () 
     agentId: 'coder',
     minCount: 2,
   });
-  assert.ok(draft.allowHosts.includes('api.github.com'));
-  assert.ok(!draft.allowHosts.includes('once.example')); // below minCount
-  assert.ok(draft.staticRules.some((r) => r.action === 'deny' && String(r.url).includes('10.0.0.9')));
+  // Exact host equality only (CodeQL: no substring host checks).
+  assert.ok(draft.allowHosts.some((h) => h === 'api.github.com'));
+  assert.ok(!draft.allowHosts.some((h) => h === 'once.example')); // below minCount
+  assert.ok(draft.staticRules.some((r) => r.action === 'deny' && r.url === '10.0.0.9'));
   assert.match(draft.naturalLanguagePolicy, /api\.github\.com/);
   assert.equal(draft.source, 'observe_then_infer');
 });
