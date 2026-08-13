@@ -105,10 +105,18 @@ runs:
             exit 0
             ;;
           error)
+            if [ "$code" -ne 0 ]; then
+              echo "::error::ThumbGate $TG_COMMAND crashed with exit code $code."
+              exit "$code"
+            fi
             exit 0
             ;;
           attention)
-            if [ "$status" = "HEALTHY" ] || [ "$status" = "UNKNOWN" ]; then
+            if [ "$code" -ne 0 ]; then
+              echo "::error::ThumbGate $TG_COMMAND exited with code $code."
+              exit "$code"
+            fi
+            if [ "$status" = "HEALTHY" ] || [ "$status" = "READY" ]; then
               exit 0
             fi
             echo "::error::ThumbGate $TG_COMMAND reported $status."
