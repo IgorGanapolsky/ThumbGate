@@ -449,9 +449,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // privacy.html, support.html, third-party-notices.html, CONTRIBUTING.md,
     // THIRD_PARTY_NOTICES.md (+ package files list). Buyer-facing legal pages
     // must ship with the hosted/static package surfaces.
-    // 452 -> 453 (2026-08-13): deliberate +1 for high-ROI runtime module on this branch
-    manifest.fileCount <= 453,
-    `npm package should stay <= 453 files, got ${manifest.fileCount}`
+    // 452 -> 453 (2026-08-13): mcp-session-handles on main; 453->454 agent-egress-policy on this branch
+    manifest.fileCount <= 454,
+    `npm package should stay <= 454 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
