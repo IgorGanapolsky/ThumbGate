@@ -36,6 +36,8 @@ const DEFAULT_JUDGE_TIMEOUT_MS = 30_000;
 const PRIVATE_CIDR_CHECKS = [
   { test: (h) => h === 'localhost' || h === '0.0.0.0' },
   { test: (h) => h === '::1' || h === '[::1]' },
+  // IPv6 link-local fe80::/10 (with or without zone id / brackets stripped)
+  { test: (h) => /^fe[89ab][0-9a-f]*:/i.test(h) || /^fe[89ab][0-9a-f]{0,2}$/i.test(h) },
   { test: (h) => /^127\./.test(h) },
   { test: (h) => /^10\./.test(h) },
   { test: (h) => /^192\.168\./.test(h) },
@@ -43,6 +45,8 @@ const PRIVATE_CIDR_CHECKS = [
   { test: (h) => /^169\.254\./.test(h) }, // link-local / AWS metadata 169.254.169.254
   { test: (h) => /^100\.(6[4-9]|[7-9]\d|1[0-2]\d)\./.test(h) }, // CGNAT 100.64/10 approx
   { test: (h) => /^fc[0-9a-f]{2}:/i.test(h) || /^fd[0-9a-f]{2}:/i.test(h) }, // ULA
+  // Reserved .localhost TLD (RFC 6761) and local/internal names
+  { test: (h) => h === 'localhost' || h.endsWith('.localhost') },
   { test: (h) => h.endsWith('.local') || h.endsWith('.internal') },
 ];
 
@@ -149,6 +153,59 @@ function compileRule(rule) {
   return { ...rule, match, pattern, methods, action, re, id: rule.id || `rule_${action}_${match}` };
 }
 
+/**
+ * Origin-boundary prefix match: scheme+host must equal the rule origin exactly
+ * (or be an exact host when the pattern is host-only). Pathname may then extend
+ * the prefix. Prevents `https://api.example.com.evil.test` matching
+ * `https://api.example.com`.
+ */
+function prefixMatchesAtOriginBoundary(target, pattern) {
+  const raw = String(pattern || '').trim();
+  if (!raw) return false;
+  const hay = target.url || '';
+  const host = String(target.host || '').toLowerCase();
+  const pathname = target.pathname || '/';
+
+  // Host-only pattern (no scheme): require exact host equality, then optional path prefix.
+  if (!/^https?:\/\//i.test(raw)) {
+    const hostPart = raw.split('/')[0].toLowerCase();
+    const pathPart = raw.includes('/') ? raw.slice(raw.indexOf('/')) : '';
+    if (host !== hostPart) return false;
+    if (!pathPart) return true;
+    return pathname === pathPart || pathname.startsWith(pathPart.endsWith('/') ? pathPart : `${pathPart}`);
+  }
+
+  let ruleUrl;
+  try {
+    ruleUrl = new URL(raw);
+  } catch {
+    return hay.startsWith(raw); // non-URL literal: strict string prefix only on full URL
+  }
+
+  let targetUrl;
+  try {
+    targetUrl = hay ? new URL(hay) : new URL(`https://${host}${pathname}`);
+  } catch {
+    return false;
+  }
+
+  if (targetUrl.protocol.toLowerCase() !== ruleUrl.protocol.toLowerCase()) return false;
+  if (targetUrl.hostname.toLowerCase() !== ruleUrl.hostname.toLowerCase()) return false;
+  // Port: if rule specifies a port, require match; else ignore target port variance for defaults.
+  if (ruleUrl.port && ruleUrl.port !== targetUrl.port) return false;
+
+  const rulePath = ruleUrl.pathname || '/';
+  const targetPath = targetUrl.pathname || '/';
+  // Path prefix at a segment-friendly boundary: exact path or path + more.
+  if (rulePath === '/') {
+    // Origin-only rule (https://api.example.com or https://api.example.com/)
+    return true;
+  }
+  return targetPath === rulePath
+    || targetPath.startsWith(rulePath.endsWith('/') ? rulePath : `${rulePath}/`)
+    || targetPath.startsWith(rulePath);
+}
+
 function ruleMatches(compiled, target) {
   if (compiled.methods && !compiled.methods.includes(target.method)) return false;
   const hay = target.url || `https://${target.host}${target.pathname || '/'}`;
@@ -165,7 +222,7 @@ function ruleMatches(compiled, target) {
       return compiled.re ? compiled.re.test(hay) || compiled.re.test(host) : false;
     case 'prefix':
     default:
-      return hay.startsWith(compiled.pattern) || host.startsWith(compiled.pattern.replace(/^https?:\/\//i, ''));
+      return prefixMatchesAtOriginBoundary(target, compiled.pattern);
   }
 }
 
@@ -343,13 +400,18 @@ async function evaluateEgress(request = {}, policy = {}, options = {}) {
   const judge = options.judge || pol.judge || null;
   if (typeof judge === 'function') {
     const view = buildJudgeSafeRequestView(target, options);
+    let timeoutHandle = null;
     try {
+      const timeoutMs = options.judgeTimeoutMs || DEFAULT_JUDGE_TIMEOUT_MS;
       const verdict = await Promise.race([
         Promise.resolve(judge(view, pol)),
         new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('judge_timeout')), options.judgeTimeoutMs || DEFAULT_JUDGE_TIMEOUT_MS);
+          timeoutHandle = setTimeout(() => reject(new Error('judge_timeout')), timeoutMs);
+          // Do not keep the event loop alive solely for the timeout when judge wins.
+          if (typeof timeoutHandle.unref === 'function') timeoutHandle.unref();
         }),
       ]);
+      if (timeoutHandle) clearTimeout(timeoutHandle);
       const allow = verdict && (verdict.allow === true || verdict.action === 'allow' || verdict.decision === 'allow');
       return decision({
         action: mode === 'observe'
@@ -364,6 +426,7 @@ async function evaluateEgress(request = {}, policy = {}, options = {}) {
         judgeView: options.includeJudgeView ? view : undefined,
       });
     } catch (err) {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
       const fallback = String(options.fallback || pol.fallback || 'deny').toLowerCase();
       const allow = fallback === 'allow' || fallback === 'passthrough';
       return decision({
@@ -600,8 +663,17 @@ function draftPolicyFromObservations(observations = [], options = {}) {
   const minCount = Math.max(1, Number(options.minCount) || 2);
   const agentId = options.agentId || 'default';
   const counts = new Map();
+  // Agent identity separation: only count observations for the requested agent
+  // (unless agentId is explicitly '*' or filterAgent is false).
+  const filterAgent = options.filterAgent !== false && agentId !== '*';
+  let scopedObservationCount = 0;
 
   for (const obs of observations) {
+    if (filterAgent) {
+      const obsAgent = String(obs.agentId || options.defaultAgentId || 'default');
+      if (obsAgent !== agentId) continue;
+    }
+    scopedObservationCount += 1;
     const host = String(obs.host || parseTarget(obs).host || '').toLowerCase();
     if (!host) continue;
     counts.set(host, (counts.get(host) || 0) + 1);
@@ -652,11 +724,13 @@ function draftPolicyFromObservations(observations = [], options = {}) {
     allowHosts,
     staticRules,
     stats: {
-      observationCount: observations.length,
+      observationCount: scopedObservationCount,
+      totalObservations: observations.length,
       uniqueHosts: counts.size,
       allowHostCount: allowHosts.length,
       denyHostCount: denyHosts.length,
       minCount,
+      agentScoped: filterAgent,
     },
     draftedAt: nowIso(),
     source: 'observe_then_infer',
@@ -712,31 +786,57 @@ function replayPolicy(entries = [], policy = {}, options = {}) {
   };
 }
 
+/** Network-capable CLIs that must not pass when destination cannot be resolved. */
+const NETWORK_CLI_RE = /\b(curl|wget|fetch|httpie|http\b|scp|sftp|nc|ncat|netcat|ssh|telnet|ftp|aria2c|axel)\b/i;
+
 /**
  * Extract egress targets from a Bash command string (curl/wget/fetch/scp).
+ * Also captures scheme-less hosts commonly used with curl (metadata IP paths).
  */
 function extractEgressFromCommand(command = '') {
   const cmd = String(command || '');
   const found = [];
+  const method = /\b-X\s+([A-Z]+)/i.test(cmd) ? cmd.match(/\b-X\s+([A-Z]+)/i)[1] : 'GET';
   const urlRe = /https?:\/\/[^\s"'\\]+/gi;
   let m;
   while ((m = urlRe.exec(cmd)) !== null) {
-    found.push(parseTarget({ url: m[0], method: /\b-X\s+([A-Z]+)/i.test(cmd) ? cmd.match(/\b-X\s+([A-Z]+)/i)[1] : 'GET' }));
+    found.push(parseTarget({ url: m[0], method }));
   }
   // scp host:path
-  const scp = cmd.match(/\bscp\b[^\\n]*\s+(\w[\w.-]*@)?([\w.-]+):/i);
+  const scp = cmd.match(/\bscp\b[^\n]*\s+(\w[\w.-]*@)?([\w.-]+):/i);
   if (scp) {
     found.push(parseTarget({ host: scp[2], method: 'SCP' }));
+  }
+  // Scheme-less host/path after network CLI: curl 169.254.169.254/latest/...
+  if (found.length === 0 && NETWORK_CLI_RE.test(cmd)) {
+    const bare = cmd.match(
+      /\b(?:curl|wget|fetch|httpie|http|aria2c|axel)\b(?:\s+-[^\s]+|\s+--[^\s]+)*\s+['"]?((?:\d{1,3}\.){3}\d{1,3}|\[?[0-9a-f:]+\]?|[a-z0-9.-]+\.[a-z]{2,})(?::\d+)?(?:\/[^\s'"]*)?/i
+    );
+    if (bare) {
+      const hostish = bare[1];
+      const asUrl = /^https?:\/\//i.test(hostish) ? hostish : `http://${hostish}`;
+      found.push(parseTarget({ url: asUrl, method }));
+    }
   }
   return found;
 }
 
 /**
  * Evaluate Bash tool input against egress policy (PreToolUse helper).
+ * Fail-closed when a network CLI is present but destination cannot be resolved.
  */
 function evaluateBashEgress(command, policy = {}, options = {}) {
   const targets = extractEgressFromCommand(command);
   if (targets.length === 0) {
+    if (NETWORK_CLI_RE.test(String(command || ''))) {
+      return {
+        allowed: false,
+        action: 'deny',
+        judgmentType: 'UNRESOLVED_BASH_EGRESS',
+        reason: 'Network-capable command with unresolved destination — fail closed (no NO_EGRESS allow)',
+        targets: [],
+      };
+    }
     return {
       allowed: true,
       action: 'allow',

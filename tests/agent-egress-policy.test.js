@@ -253,3 +253,68 @@ test('method-scoped static rules', () => {
     'deny'
   );
 });
+
+test('prefix allow rules match at origin boundary only', () => {
+  const policy = {
+    staticRules: [
+      { id: 'allow-api', action: 'allow', match: 'prefix', url: 'https://api.example.com' },
+    ],
+  };
+  assert.equal(
+    egress.evaluateEgressStaticOnly({ url: 'https://api.example.com/v1/ok' }, policy).action,
+    'allow'
+  );
+  // Attacker-controlled sibling domain must NOT match the origin prefix
+  const evil = egress.evaluateEgressStaticOnly(
+    { url: 'https://api.example.com.evil.test/steal' },
+    policy
+  );
+  assert.equal(evil.action, 'deny');
+  assert.notEqual(evil.ruleId, 'allow-api');
+});
+
+test('SSRF rejects IPv6 link-local and .localhost hosts', () => {
+  for (const host of ['fe80::1', 'foo.localhost', 'app.localhost']) {
+    const r = egress.evaluateEgressStaticOnly({ url: `http://${host}/admin` });
+    assert.equal(r.action, 'deny', host);
+    assert.equal(r.judgmentType, 'SSRF_PRIVATE_NETWORK', host);
+  }
+});
+
+test('draftPolicyFromObservations scopes by agentId', () => {
+  const observations = [
+    { host: 'api.github.com', agentId: 'coder' },
+    { host: 'api.github.com', agentId: 'coder' },
+    { host: 'api.github.com', agentId: 'coder' },
+    { host: 'evil.exfil.test', agentId: 'other-agent' },
+    { host: 'evil.exfil.test', agentId: 'other-agent' },
+    { host: 'evil.exfil.test', agentId: 'other-agent' },
+  ];
+  const draft = egress.draftPolicyFromObservations(observations, {
+    agentId: 'coder',
+    minCount: 2,
+  });
+  assert.ok(draft.allowHosts.includes('api.github.com'));
+  assert.ok(!draft.allowHosts.includes('evil.exfil.test'));
+  assert.equal(draft.stats.agentScoped, true);
+  assert.equal(draft.stats.observationCount, 3);
+});
+
+test('Bash unresolved network commands fail closed', () => {
+  const bareMeta = egress.evaluateBashEgress(
+    'curl 169.254.169.254/latest/meta-data/',
+    { allowHosts: ['api.github.com'] }
+  );
+  assert.equal(bareMeta.allowed, false);
+  assert.ok(
+    bareMeta.judgmentType === 'SSRF_PRIVATE_NETWORK'
+    || bareMeta.judgmentType === 'UNRESOLVED_BASH_EGRESS'
+  );
+
+  const varUrl = egress.evaluateBashEgress(
+    'curl -s "$EXFIL_URL"',
+    { allowHosts: ['api.github.com'] }
+  );
+  assert.equal(varUrl.allowed, false);
+  assert.equal(varUrl.judgmentType, 'UNRESOLVED_BASH_EGRESS');
+});
