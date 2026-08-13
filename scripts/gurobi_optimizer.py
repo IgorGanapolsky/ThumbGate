@@ -110,6 +110,31 @@ def solve_model_routing(candidates: List[Dict[str, Any]], max_budget_usd: float,
         }
 
 
+def fallback_rule_selection(rules: List[Dict[str, Any]], max_eval_time_ms: float, max_token_footprint: int) -> Dict[str, Any]:
+    sorted_rules = sorted(rules, key=lambda r: float(r.get("risk_mitigation", 0)) / max(float(r.get("eval_time_ms", 0.1)), 0.1), reverse=True)
+    selected = []
+    total_time = 0.0
+    total_tokens = 0
+    total_risk = 0.0
+    for r in sorted_rules:
+        r_time = float(r.get("eval_time_ms", 0.0))
+        r_tokens = int(r.get("token_footprint", 0))
+        if total_time + r_time <= max_eval_time_ms and total_tokens + r_tokens <= max_token_footprint:
+            selected.append(r.get("id"))
+            total_time += r_time
+            total_tokens += r_tokens
+            total_risk += float(r.get("risk_mitigation", 0.0))
+    return {
+        "success": True,
+        "selected_rules": selected,
+        "solver": "heuristic-knapsack",
+        "objective": total_risk,
+        "used_time_ms": total_time,
+        "used_tokens": total_tokens,
+        "status": "HEURISTIC"
+    }
+
+
 def solve_rule_selection(rules: List[Dict[str, Any]], max_eval_time_ms: float, max_token_footprint: int) -> Dict[str, Any]:
     """
     Formulates a 0-1 Knapsack MILP to select the subset of prevention rules
@@ -119,33 +144,17 @@ def solve_rule_selection(rules: List[Dict[str, Any]], max_eval_time_ms: float, m
         return {"success": False, "selected_rules": [], "reason": "No rules provided"}
 
     if not GUROBI_AVAILABLE:
-        # Greedily pick rules by risk_mitigation / eval_time_ms
-        sorted_rules = sorted(rules, key=lambda r: r.get("risk_mitigation", 0) / max(r.get("eval_time_ms", 0.1), 0.1), reverse=True)
-        selected = []
-        cur_time = 0.0
-        cur_tokens = 0
-        for r in sorted_rules:
-            t = r.get("eval_time_ms", 0.0)
-            tok = r.get("token_footprint", 0)
-            if cur_time + t <= max_eval_time_ms and cur_tokens + tok <= max_token_footprint:
-                selected.append(r.get("id"))
-                cur_time += t
-                cur_tokens += tok
-        return {"success": True, "selected_rules": selected, "solver": "heuristic-knapsack", "used_time_ms": cur_time, "used_tokens": cur_tokens}
+        return fallback_rule_selection(rules, max_eval_time_ms, max_token_footprint)
 
     try:
-        env = gp.Env(empty=True)
-        env.setParam("OutputFlag", 0)
-        env.start()
+        model = gp.Model("RuleKnapsackSelection")
+        model.setParam("OutputFlag", 0)
 
-        model = gp.Model("RuleKnapsack", env=env)
+        # Decision variables: y_j = 1 if rule j is selected, 0 otherwise
         y = {}
-
         for i, r in enumerate(rules):
             rid = r.get("id", f"r_{i}")
-            y[rid] = model.addVar(vtype=GRB.BINARY, name=f"y_{rid}")
-
-        model.update()
+            y[rid] = model.addVar(vtype=GRB.BINARY, name=f"rule_{rid}")
 
         # Objective: Maximize total risk mitigation score
         model.setObjective(
@@ -181,10 +190,14 @@ def solve_rule_selection(rules: List[Dict[str, Any]], max_eval_time_ms: float, m
                 "status": "OPTIMAL"
             }
         else:
-            return {"success": False, "selected_rules": [], "status": f"INFEASIBLE_{model.status}"}
+            res = fallback_rule_selection(rules, max_eval_time_ms, max_token_footprint)
+            res["status"] = f"INFEASIBLE_{model.status}"
+            return res
 
     except Exception as e:
-        return {"success": False, "selected_rules": [], "error": str(e)}
+        res = fallback_rule_selection(rules, max_eval_time_ms, max_token_footprint)
+        res["solver"] = f"gurobi-error-fallback: {str(e)}"
+        return res
 
 
 def main():
