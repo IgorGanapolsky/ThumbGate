@@ -189,18 +189,12 @@ const path = require('node:path');
 // (terms/privacy/support/third-party-notices + CONTRIBUTING/THIRD_PARTY_NOTICES).
 // 450 -> 452 (2026-08-12): Gurobi Optimization Engine (gurobi-optimizer.js +
 // gurobi_optimizer.py) for MILP model routing and rule knapsack.
-<<<<<<< Updated upstream
 // 452 -> 453 (2026-08-13): scripts/mcp-session-handles.js — model-carried MCP
 // session handle registry (principal bind, TTL, HMAC, idempotency).
-const BASELINE_FILE_COUNT = 453;
-||||||| Stash base
-const BASELINE_FILE_COUNT = 452;
-=======
-// 452 -> 454 (2026-08-13): public/hermes-mobile-privacy.html +
+// 453 -> 455 (2026-08-13): public/hermes-mobile-privacy.html +
 // public/hermes-mobile-delete.html so Play Data Safety URLs name
 // Hermes Agent Remote & Leash / IgorGanapolsky.
-const BASELINE_FILE_COUNT = 454;
->>>>>>> Stashed changes
+const BASELINE_FILE_COUNT = 455;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
