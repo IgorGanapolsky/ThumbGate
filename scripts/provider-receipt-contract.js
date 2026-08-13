@@ -21,10 +21,16 @@ const crypto = require('node:crypto');
 
 const RECEIPT_SCHEMA_VERSION = '1.0';
 
+function canonicalStringify(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalStringify).join(',')}]`;
+  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalStringify(value[key])}`).join(',')}}`;
+}
+
 function computeCanonicalRequestDigest({ toolName, toolInput, target, idempotencyKey, recordedAt }) {
   const parts = [
     String(toolName || ''),
-    typeof toolInput === 'object' ? JSON.stringify(toolInput || {}) : String(toolInput || ''),
+    typeof toolInput === 'object' ? canonicalStringify(toolInput || {}) : String(toolInput || ''),
     String(target || ''),
     String(idempotencyKey || ''),
     String(recordedAt || ''),
@@ -38,6 +44,11 @@ function validateProviderReceiptSchema(receipt) {
   }
 
   const errors = [];
+  for (const field of ['schemaVersion', 'receiptId', 'toolName', 'providerEventId']) {
+    if (!receipt[field] || typeof receipt[field] !== 'string') {
+      errors.push(`Missing or invalid ${field}.`);
+    }
+  }
   if (!receipt.canonicalDigest || typeof receipt.canonicalDigest !== 'string') {
     errors.push('Missing or invalid canonicalDigest.');
   }
@@ -73,9 +84,12 @@ function verifyBrokerSignature(receipt, brokerSecretKey) {
     return { verified: false, reason: 'missing_broker_key' };
   }
 
+  const signedClaims = { ...receipt };
+  delete signedClaims.signature;
+  delete signedClaims.reconciliation;
   const expectedSignature = crypto
     .createHmac('sha256', brokerSecretKey)
-    .update(receipt.canonicalDigest)
+    .update(canonicalStringify(signedClaims))
     .digest('hex');
 
   try {
@@ -95,6 +109,10 @@ function reconcileProviderEvent(receipt, providerEventResponse = {}) {
     return { reconciled: false, reason: 'invalid_receipt_schema' };
   }
 
+  if (!providerEventResponse.eventId || typeof providerEventResponse.eventId !== 'string') {
+    return { reconciled: false, reason: 'missing_provider_event_id' };
+  }
+
   const matchesEventId = providerEventResponse.eventId === receipt.providerEventId;
   const matchesTarget = !providerEventResponse.target || providerEventResponse.target === receipt.target;
 
@@ -110,6 +128,7 @@ function reconcileProviderEvent(receipt, providerEventResponse = {}) {
 
 module.exports = {
   RECEIPT_SCHEMA_VERSION,
+  canonicalStringify,
   computeCanonicalRequestDigest,
   validateProviderReceiptSchema,
   verifyBrokerSignature,
