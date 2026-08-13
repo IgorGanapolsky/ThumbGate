@@ -787,7 +787,53 @@ function replayPolicy(entries = [], policy = {}, options = {}) {
 }
 
 /** Network-capable CLIs that must not pass when destination cannot be resolved. */
-const NETWORK_CLI_RE = /\b(curl|wget|fetch|httpie|http\b|scp|sftp|nc|ncat|netcat|ssh|telnet|ftp|aria2c|axel)\b/i;
+const NETWORK_CLI_NAMES = new Set([
+  'curl', 'wget', 'fetch', 'httpie', 'http', 'scp', 'sftp',
+  'nc', 'ncat', 'netcat', 'ssh', 'telnet', 'ftp', 'aria2c', 'axel',
+]);
+const BARE_DEST_CLI_NAMES = new Set([
+  'curl', 'wget', 'fetch', 'httpie', 'http', 'aria2c', 'axel',
+]);
+
+function commandHasNetworkCli(command) {
+  const tokens = String(command || '').split(/\s+/);
+  for (const tok of tokens) {
+    const base = tok.replace(/^['"]|['"]$/g, '').split('/').pop().toLowerCase();
+    if (NETWORK_CLI_NAMES.has(base)) return true;
+  }
+  return false;
+}
+
+/**
+ * Token-scan for scheme-less destinations after curl/wget (no nested regex quantifiers).
+ * Example: `curl -s 169.254.169.254/latest/meta-data/`
+ */
+function extractBareDestinationAfterCli(command = '') {
+  const tokens = String(command || '').split(/\s+/);
+  let seenCli = false;
+  for (const raw of tokens) {
+    const tok = raw.replace(/^['"]|['"]$/g, '');
+    if (!tok) continue;
+    if (!seenCli) {
+      const base = tok.split('/').pop().toLowerCase();
+      if (BARE_DEST_CLI_NAMES.has(base)) seenCli = true;
+      continue;
+    }
+    if (tok.startsWith('-')) continue; // flags / long options
+    // First non-flag token is the destination candidate
+    if (
+      /^https?:\/\//i.test(tok)
+      || /^(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?(?:\/|$)/.test(tok)
+      || /^\[?[0-9a-f:]+\]?(?::\d+)?(?:\/|$)/i.test(tok)
+      || /^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?::\d+)?(?:\/|$)/i.test(tok)
+    ) {
+      return tok;
+    }
+    // Variable / unresolved token still counts as "seen" network intent
+    return null;
+  }
+  return null;
+}
 
 /**
  * Extract egress targets from a Bash command string (curl/wget/fetch/scp).
@@ -796,24 +842,33 @@ const NETWORK_CLI_RE = /\b(curl|wget|fetch|httpie|http\b|scp|sftp|nc|ncat|netcat
 function extractEgressFromCommand(command = '') {
   const cmd = String(command || '');
   const found = [];
-  const method = /\b-X\s+([A-Z]+)/i.test(cmd) ? cmd.match(/\b-X\s+([A-Z]+)/i)[1] : 'GET';
+  const methodMatch = cmd.match(/(?:^|\s)-X\s+([A-Z]+)/i);
+  const method = methodMatch ? methodMatch[1] : 'GET';
   const urlRe = /https?:\/\/[^\s"'\\]+/gi;
   let m;
   while ((m = urlRe.exec(cmd)) !== null) {
     found.push(parseTarget({ url: m[0], method }));
   }
-  // scp host:path
-  const scp = cmd.match(/\bscp\b[^\n]*\s+(\w[\w.-]*@)?([\w.-]+):/i);
-  if (scp) {
-    found.push(parseTarget({ host: scp[2], method: 'SCP' }));
+  // scp user@host:path — linear scan tokens after scp
+  const tokens = cmd.split(/\s+/);
+  for (let i = 0; i < tokens.length; i += 1) {
+    const base = tokens[i].replace(/^['"]|['"]$/g, '').split('/').pop().toLowerCase();
+    if (base !== 'scp') continue;
+    for (let j = i + 1; j < tokens.length; j += 1) {
+      const t = tokens[j].replace(/^['"]|['"]$/g, '');
+      if (t.startsWith('-')) continue;
+      const hostPart = t.includes('@') ? t.split('@').pop() : t;
+      if (hostPart.includes(':')) {
+        const host = hostPart.split(':')[0];
+        if (host) found.push(parseTarget({ host, method: 'SCP' }));
+      }
+      break;
+    }
   }
   // Scheme-less host/path after network CLI: curl 169.254.169.254/latest/...
-  if (found.length === 0 && NETWORK_CLI_RE.test(cmd)) {
-    const bare = cmd.match(
-      /\b(?:curl|wget|fetch|httpie|http|aria2c|axel)\b(?:\s+-[^\s]+|\s+--[^\s]+)*\s+['"]?((?:\d{1,3}\.){3}\d{1,3}|\[?[0-9a-f:]+\]?|[a-z0-9.-]+\.[a-z]{2,})(?::\d+)?(?:\/[^\s'"]*)?/i
-    );
-    if (bare) {
-      const hostish = bare[1];
+  if (found.length === 0 && commandHasNetworkCli(cmd)) {
+    const hostish = extractBareDestinationAfterCli(cmd);
+    if (hostish) {
       const asUrl = /^https?:\/\//i.test(hostish) ? hostish : `http://${hostish}`;
       found.push(parseTarget({ url: asUrl, method }));
     }
@@ -828,7 +883,7 @@ function extractEgressFromCommand(command = '') {
 function evaluateBashEgress(command, policy = {}, options = {}) {
   const targets = extractEgressFromCommand(command);
   if (targets.length === 0) {
-    if (NETWORK_CLI_RE.test(String(command || ''))) {
+    if (commandHasNetworkCli(String(command || ''))) {
       return {
         allowed: false,
         action: 'deny',

@@ -294,8 +294,9 @@ test('draftPolicyFromObservations scopes by agentId', () => {
     agentId: 'coder',
     minCount: 2,
   });
-  assert.ok(draft.allowHosts.includes('api.github.com'));
-  assert.ok(!draft.allowHosts.includes('evil.exfil.test'));
+  // Exact host equality only (CodeQL: no substring host checks).
+  assert.ok(draft.allowHosts.some((h) => h === 'api.github.com'));
+  assert.ok(!draft.allowHosts.some((h) => h === 'evil.exfil.test'));
   assert.equal(draft.stats.agentScoped, true);
   assert.equal(draft.stats.observationCount, 3);
 });
