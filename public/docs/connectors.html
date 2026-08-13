@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remote MCP Connector Documentation — ThumbGate</title>
+  <meta name="description" content="Remote MCP Connector documentation for ThumbGate, OAuth 2.1 PKCE flow, and read-only reviewer credentials.">
+  <link rel="canonical" href="https://thumbgate.ai/docs/connectors">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #111; }
+    h1 { color: #000; font-size: 2rem; border-bottom: 2px solid #eaeaea; padding-bottom: 12px; }
+    code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    pre { background: #f4f4f4; padding: 16px; border-radius: 6px; overflow-x: auto; }
+    footer { margin-top: 40px; border-top: 1px solid #eaeaea; padding-top: 20px; font-size: 0.9em; color: #666; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/">ThumbGate Home</a> · <a href="/pricing">Pricing</a> · <a href="/support">Support</a>
+  </header>
+  <main>
+    <h1>Remote MCP Connector Documentation</h1>
+    <p>ThumbGate provides secure, direct remote Model Context Protocol (MCP) connectivity for autonomous AI agents, enterprise IDEs, and agentic workflows.</p>
+    
+    <h2>Connector Endpoint & Connection URL</h2>
+    <p>Connect your MCP-compliant client or agent harness to the canonical endpoint at <code>/mcp</code>:</p>
+    <pre><code>https://thumbgate-production.up.railway.app/mcp</code></pre>
+
+    <h2>Authentication & OAuth 2.1 PKCE Flow</h2>
+    <p>Remote connections require authentication via <strong>OAuth 2.1 PKCE</strong> (Proof Key for Code Exchange) to ensure state-integrity and prevent authorization-code interception attacks. Interactive sessions redirect to authorize scopes before materializing transient bearer tokens.</p>
+
+    <h2>Reviewer Credential Policy</h2>
+    <p>For automated evaluation, security audits, and zero-trust verification loops, ThumbGate provides a read-only <strong>reviewer credential</strong>. The reviewer credential permits diagnostic evaluation (<code>SELECT</code>, <code>DESCRIBE</code>, gate telemetry readout) without granting mutation or admin access.</p>
+  </main>
+  <footer>
+    <p><a href="/">ThumbGate</a> · <a href="/terms">Terms of Service</a> · <a href="/privacy">Privacy Policy</a> · <a href="/support">Support</a> · Contact: <a href="mailto:support@thumbgate.ai">support@thumbgate.ai</a></p>
+  </footer>
+</body>
+</html>

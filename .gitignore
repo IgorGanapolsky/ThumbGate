@@ -127,3 +127,12 @@ shawn-*.png
 
 # npm pack artifacts from local packaging verification
 *.tgz
+
+# Pre-employment provenance archives (local only; may include large git bundles)
+archive/pre-eci*/
+archive/pre-employment*/
+
+# Never commit private employment counsel packages if dropped in-tree by mistake
+docs/legal/ECI_*.md
+docs/legal/EXHIBIT_A_*.md
+docs/legal/*EMPLOYER*

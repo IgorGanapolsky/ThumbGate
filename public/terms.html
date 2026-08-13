@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terms of Service — ThumbGate</title>
+  <meta name="description" content="ThumbGate Terms of Service, EULA, Acceptable Use Policy, support boundaries, warranty disclaimer, limitation of liability, and third-party trademark notices.">
+  <link rel="canonical" href="https://thumbgate.ai/terms">
+  <style>
+    :root { --ink:#171d1a; --muted:#5b6761; --paper:#f5f2e9; --card:#fffdf8; --line:#d8d4c8; --green:#006e52; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif; line-height:1.6; }
+    a { color:var(--green); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .shell { width:min(860px,calc(100% - 40px)); margin:0 auto; padding:48px 0 80px; }
+    nav { border-bottom:1px solid var(--line); background:rgba(245,242,233,.95); padding:16px 0; }
+    .nav-inner { width:min(860px,calc(100% - 40px)); margin:0 auto; display:flex; justify-content:space-between; align-items:center; }
+    .brand { font-weight:900; font-size:1.2rem; text-decoration:none; color:var(--ink); }
+    h1 { font-size:2.2rem; margin:24px 0 8px; letter-spacing:-.03em; }
+    h2 { font-size:1.35rem; margin:32px 0 12px; border-bottom:1px solid var(--line); padding-bottom:6px; letter-spacing:-.02em; }
+    h3 { font-size:1.1rem; margin:24px 0 8px; }
+    .meta { color:var(--muted); font-size:.9rem; margin-bottom:28px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px; margin:20px 0; }
+    code { background:#eae6d8; padding:2px 6px; border-radius:4px; font-size:.9em; }
+    ul, ol { padding-left:22px; }
+    li { margin:6px 0; }
+    footer { margin-top:60px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:.88rem; }
+    .trademark { font-size:.8rem; color:var(--muted); margin-top:18px; line-height:1.5; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a class="brand" href="/">ThumbGate</a>
+      <div>
+        <a href="/pricing">Pricing</a> ·
+        <a href="/support">Support</a> ·
+        <a href="/privacy">Privacy</a> ·
+        <a href="/third-party-notices">Third-Party Notices</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="shell">
+    <h1>Terms of Service</h1>
+    <div class="meta">Last Updated: August 12, 2026 · Version 1.3.0</div>
+
+    <div class="card">
+      <strong>Product Counsel Draft Notice.</strong> These terms are a living draft intended for final review by qualified legal counsel before enterprise outreach. The full legal-architecture package is maintained at <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/legal/PRODUCT_COUNSEL_CHECKLIST.md">docs/legal/PRODUCT_COUNSEL_CHECKLIST.md</a>.
+    </div>
+
+    <p>These Terms of Service ("Terms") govern access to and use of the software, services, cloud runners, APIs, web applications, and professional services provided by ThumbGate ("ThumbGate", "we", "us", or "our"), including the local engine (<code>thumbgate</code> npm package), the hosted platform (<code>thumbgate.app</code>), and custom workflow implementation services.</p>
+
+    <h2>1. Product Modules</h2>
+    <p>This Agreement consists of these Core Terms and the following Product-Specific Modules:</p>
+    <ul>
+      <li><strong>Module 1</strong>: Local Software Engine &amp; Pro License Terms</li>
+      <li><strong>Module 2</strong>: Professional Services Statement of Work ($499 Hardened Workflow Gate)</li>
+      <li><strong>Module 3</strong>: Hosted Cloud Runners &amp; Mobile Pairing (<code>thumbgate.app</code>)</li>
+    </ul>
+
+    <h2>2. Core Commercial Terms</h2>
+    <h3>2.1 Account Creation</h3>
+    <p>You must register an account to access paid tiers, cloud runners, or professional services. You agree to provide accurate information and maintain the security of your credentials. You are responsible for all activities occurring under your account.</p>
+
+    <h3>2.2 Payment, Billing, Subscriptions &amp; Renewals</h3>
+    <p>Recurring subscriptions automatically renew unless canceled prior to the renewal date via your account dashboard. All fees exclude applicable taxes. Full details are on the <a href="/pricing">pricing page</a>.</p>
+
+    <h3>2.3 Trials &amp; Free Tiers</h3>
+    <p>Free tiers, open-source local binaries, and promotional trials are provided strictly "AS-IS" without SLA, indemnification, or support obligations.</p>
+
+    <h3>2.4 Refunds</h3>
+    <p>Recurring subscription fees are non-refundable except as required by law. The <strong>$499 Workflow Gate</strong> is refundable only if technical discovery determines that your workflow cannot be reduced to a supported ThumbGate gate, subject to a non-refundable diagnostic fee as described in Section 3.</p>
+
+    <h3>2.5 Acceptable Use Policy (AUP)</h3>
+    <p>You shall NOT use the Services to violate law, tamper with third-party security, reverse-engineer proprietary cloud components, submit malicious payloads, or conduct unauthorized scraping or spam.</p>
+
+    <h3>2.6 Beta &amp; Experimental Features</h3>
+    <p>Preview, alpha, beta, or experimental features are provided for evaluation only, may change or be removed at any time, and are provided without warranty, SLA, or support commitments.</p>
+
+    <h3>2.7 Support Boundaries</h3>
+    <p>Standard support covers ThumbGate configuration, documented APIs, and known issues with the open-source engine and hosted platform. We do not debug custom LLM prompts, third-party agent configurations, model-provider API errors, or customer-specific CI/CD logic outside configured gate parameters. Premium/enterprise support is available under a separate addendum.</p>
+
+    <h3>2.8 Customer Responsibilities</h3>
+    <p>You are responsible for configuring rule thresholds and strict mode, testing gates in non-production environments, reviewing and approving actions routed to you, securing credentials and devices, and ensuring compliance with law and the AUP.</p>
+
+    <h3>2.9 Suspension &amp; Termination</h3>
+    <p>We may suspend or terminate access for material breach, overdue payment, or security risk. The Limitation of Liability, Warranty Disclaimer, Governing Law, and General sections survive termination.</p>
+
+    <h3>2.10 Third-Party Dependencies</h3>
+    <p>The Services interoperate with third-party LLMs, IDEs, APIs, and cloud providers. ThumbGate is not responsible for their interruptions, rate limits, outages, model hallucinations, or behavior changes.</p>
+
+    <h3>2.11 Limitation of Liability</h3>
+    <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, THUMBGATE SHALL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES. TOTAL LIABILITY IS CAPPED AT THE AMOUNT PAID BY YOU IN THE TWELVE (12) MONTHS PRECEDING THE CLAIM (OR $100 IF NO FEES WERE PAID).</p>
+
+    <h3>2.12 Warranty Disclaimer</h3>
+    <p>THE SERVICES ARE PROVIDED "AS IS" AND "AS AVAILABLE". THUMBGATE DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.</p>
+
+    <h3>2.13 Governing Law</h3>
+    <p>This Agreement is governed by the laws of the State of Delaware, USA, without regard to conflict of law principles. Disputes shall be resolved through binding individual arbitration under the AAA rules.</p>
+
+    <h2>3. $499 Hardened Workflow Gate (Professional Services)</h2>
+    <p>For a one-time fee of $499, ThumbGate will deliver:</p>
+    <ol>
+      <li><strong>One supported workflow</strong> integration.</li>
+      <li><strong>One configured local pre-action gate</strong> (production gate specification).</li>
+      <li>A regression evidence package based on your golden test cases.</li>
+      <li><strong>Rollout and rollback</strong> documentation.</li>
+    </ol>
+    <p>You must provide workflow specifications, sample logs, at least six (6) golden test cases, and a technical contact within five (5) business days. If technical discovery determines the workflow cannot be reduced to a supported ThumbGate gate before implementation begins, the $499 is <strong>refunded in full</strong> (minus any separately disclosed non-refundable diagnostic fee when that fee was disclosed and agreed in advance), or converted to service credit at your option.</p>
+
+    <h2>4. Control Layer Disclaimer</h2>
+    <p><strong>Control layer, not a guarantee.</strong> ThumbGate is an action interdiction control layer and workflow policy engine. It does not guarantee that every unsafe action, prompt injection, or operational error will be detected or blocked. Enforcement outcomes depend on your rule configuration, <strong>strict mode</strong>, supported integrations, and testing. The <strong>human operator remains responsible</strong> for production approvals and for actions that bypass, misconfigure, or exceed the gate fence.</p>
+
+    <h2>5. Hosted Platform &amp; Cloud Runners</h2>
+    <p><code>thumbgate.app</code> allows device pairing, mobile approvals, and cloud-runner execution. Cloud runners are isolated but bounded by container-virtualisation security. You remain solely responsible for reviewing and approving actions routed to your mobile or web approval interface. Offline devices default to fail-closed or paused execution.</p>
+
+    <h2>6. Third-Party Trademarks</h2>
+    <p>Anthropic, Claude, OpenAI, ChatGPT, Cursor, Codex, Perplexity, Hermes, Model Context Protocol (MCP), GitHub, Google, Nvidia, Railway, Stripe, Supabase, PostHog, and Plausible are trademarks of their respective owners. ThumbGate is an independent product and is not affiliated with, endorsed by, or sponsored by any of them.</p>
+
+    <h2>7. Legal Contact</h2>
+    <p>For legal questions: <a href="mailto:legal@thumbgate.ai">legal@thumbgate.ai</a>.</p>
+
+    <footer>
+      <p><a href="/">ThumbGate</a> · <a href="/privacy">Privacy Policy</a> · <a href="/support">Support</a> · <a href="/third-party-notices">Third-Party Notices</a> · <a href="mailto:legal@thumbgate.ai">legal@thumbgate.ai</a></p>
+      <p class="trademark">Third-party trademarks are the property of their respective owners. ThumbGate is an independent product and is not affiliated with, endorsed by, or sponsored by any third-party entity referenced herein.</p>
+    </footer>
+  </main>
+</body>
+</html>
