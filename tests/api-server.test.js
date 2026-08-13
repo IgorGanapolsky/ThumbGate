@@ -579,6 +579,18 @@ test('/partner-intake escapes server-rendered attribution values', async () => {
   assert.match(html, /value="aiventyx&quot;&gt;&lt;script&gt;window\.partnerPwned=true&lt;\/script&gt;"/);
 });
 
+test('/platform-partners serves the partner landing page with proof and FAQ schema', async () => {
+  const res = await fetch(apiUrl('/platform-partners?utm_source=partner'));
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const html = await res.text();
+  assert.match(html, /ThumbGate for Platforms/);
+  assert.match(html, /FAQPage/);
+  assert.match(html, /VERIFICATION_EVIDENCE\.md/);
+  assert.match(html, /machine-readable proof reports/);
+  assert.doesNotMatch(html, /HMAC-signed task outcome/);
+});
+
 test('/diagnostic serves the managed workflow gate checkout and fit page', async () => {
   const res = await fetch(apiUrl('/diagnostic?utm_source=reddit&utm_campaign=workflow_diagnostic'), { redirect: 'manual' });
   assert.equal(res.status, 200);
