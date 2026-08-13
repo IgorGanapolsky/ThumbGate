@@ -213,6 +213,22 @@ function syncVersion(opts) {
     targets.push(cursorPluginManifestPath);
   }
 
+  const portableCursorPluginManifestPath = 'plugins/cursor-marketplace/plugin.json';
+  if (fs.existsSync(path.join(PROJECT_ROOT, portableCursorPluginManifestPath))) {
+    const portableCursorPlugin = readJson(portableCursorPluginManifestPath);
+    portableCursorPlugin.__file = portableCursorPluginManifestPath;
+    const changed = [
+      syncJsonField(portableCursorPlugin, 'version', version, drifted, checkOnly),
+      syncJsonField(portableCursorPlugin, 'homepage', homepageUrl, drifted, checkOnly),
+      syncJsonField(portableCursorPlugin, 'repository', repositoryUrl, drifted, checkOnly),
+    ].some(Boolean);
+    delete portableCursorPlugin.__file;
+    if (!checkOnly && changed) {
+      writeJson(portableCursorPluginManifestPath, portableCursorPlugin);
+    }
+    targets.push(portableCursorPluginManifestPath);
+  }
+
   // 8. Codex plugin manifest + MCP config
   // Herdr approvals plugin: top-level version field + thumbgate@ pin.
   // tests/adapter-version-pins.test.js scans adapter TOML for package pins.
