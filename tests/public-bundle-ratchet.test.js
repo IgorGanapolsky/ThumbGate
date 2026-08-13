@@ -192,7 +192,8 @@ const path = require('node:path');
 // 452 -> 453: mcp-session-handles
 // 453 -> 454: agent-egress-policy
 // 454 -> 455 (2026-08-13): scripts/budget-aware-gates-proof.js sales-safe Gurobi knapsack demo
-const BASELINE_FILE_COUNT = 455;
+// 455 -> 458: edotenv-rl-gateway + rsi-safety-hillclimb + research-agent-harness
+const BASELINE_FILE_COUNT = 458;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
