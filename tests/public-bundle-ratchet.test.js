@@ -191,10 +191,12 @@ const path = require('node:path');
 // gurobi_optimizer.py) for MILP model routing and rule knapsack.
 // 452 -> 453 (2026-08-13): scripts/mcp-session-handles.js — model-carried MCP
 // session handle registry (principal bind, TTL, HMAC, idempotency).
-// 453 -> 455 (2026-08-13): public/hermes-mobile-privacy.html +
+// 453 -> 454 (2026-08-13): scripts/agent-egress-policy.js — CrabTrap-inspired
+// two-tier egress policy (static rules, SSRF, observe→draft, replay).
+// 454 -> 456 (2026-08-13): public/hermes-mobile-privacy.html +
 // public/hermes-mobile-delete.html so Play Data Safety URLs name
 // Hermes Agent Remote & Leash / IgorGanapolsky.
-const BASELINE_FILE_COUNT = 455;
+const BASELINE_FILE_COUNT = 456;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

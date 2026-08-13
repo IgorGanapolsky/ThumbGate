@@ -253,9 +253,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
     // 449 -> 450 (2026-08-12): scripts/rag-embedding-identity.js — embedding identity ROI gate (Pete Johnson / SDS #1017)
   // (terms/privacy/support/third-party-notices + CONTRIBUTING/THIRD_PARTY_NOTICES).
   // Keep lockstep with package-boundary + public-bundle-ratchet.
-  // 453 -> 455 (2026-08-13): dedicated Hermes Mobile privacy and deletion
+  // 453 -> 454 (2026-08-13): agent-egress-policy runtime on main.
+  // 454 -> 456 (2026-08-13): dedicated Hermes Mobile privacy and deletion
   // pages used by Google Play's Privacy policy and Data safety declarations.
-  const CEILING = 455;
+  const CEILING = 456;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
