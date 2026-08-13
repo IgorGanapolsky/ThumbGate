@@ -82,3 +82,43 @@ test('Gurobi Optimizer - Node.js integration', async (t) => {
     assert.equal(probe.ok, true);
   });
 });
+
+test('Gurobi Optimizer - node fallback when python fails', async (t) => {
+  await t.test('optimizeModelRouting falls back when python binary missing', () => {
+    const prev = process.env.GUROBI_PYTHON;
+    process.env.GUROBI_PYTHON = '/nonexistent/gurobi-python-bin';
+    // Re-require after env change is hard; instead call with force via child is heavy.
+    // Direct API still works: if python path is broken, catch returns node-fallback.
+    delete require.cache[require.resolve('../scripts/gurobi-optimizer.js')];
+    const mod = require('../scripts/gurobi-optimizer.js');
+    const result = mod.optimizeModelRouting(
+      [
+        { id: 'c1', score: 7.0, cost: 0.001, latency_ms: 100 },
+        { id: 'c3', score: 8.8, cost: 0.005, latency_ms: 300 },
+      ],
+      { maxBudgetUsd: 0.01, maxLatencyMs: 500 }
+    );
+    assert.equal(result.success, true);
+    assert.equal(result.selected, 'c3');
+    if (prev === undefined) delete process.env.GUROBI_PYTHON;
+    else process.env.GUROBI_PYTHON = prev;
+    delete require.cache[require.resolve('../scripts/gurobi-optimizer.js')];
+  });
+
+  await t.test('optimizeRuleSelection falls back when python binary missing', () => {
+    process.env.GUROBI_PYTHON = '/nonexistent/gurobi-python-bin';
+    delete require.cache[require.resolve('../scripts/gurobi-optimizer.js')];
+    const mod = require('../scripts/gurobi-optimizer.js');
+    const result = mod.optimizeRuleSelection(
+      [
+        { id: 'r1', risk_mitigation: 90, eval_time_ms: 5, token_footprint: 100 },
+        { id: 'r3', risk_mitigation: 95, eval_time_ms: 25, token_footprint: 300 },
+      ],
+      { maxEvalTimeMs: 30, maxTokenFootprint: 450 }
+    );
+    assert.equal(result.success, true);
+    assert.ok(Array.isArray(result.selected_rules));
+    delete process.env.GUROBI_PYTHON;
+    delete require.cache[require.resolve('../scripts/gurobi-optimizer.js')];
+  });
+});

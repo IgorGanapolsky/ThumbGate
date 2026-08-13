@@ -5,16 +5,17 @@ Gurobi Optimization Engine for ThumbGate
 Formulates and solves MILP (Mixed-Integer Linear Programming) problems for:
 1. Model Tier & Provider Routing under Cost & Latency Constraints
 2. Active Prevention Rule Knapsack Selection under Latency & Token Budgets
-3. RAG Context Window Knapsack Packing
 
 Uses gurobipy (v13+) with deterministic fallback logic.
+
+Security: --input accepts only inline JSON (no filesystem open). The Node bridge
+always passes JSON.stringify(payload); agentic path injection is impossible.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from typing import Any, Dict, List
 
@@ -28,43 +29,18 @@ except ImportError:
     GUROBI_AVAILABLE = False
 
 
-def safe_resolve_input_path(path: str, base_dir: str | None = None) -> str:
-    """
-    Canonicalize a CLI file path and refuse anything outside the allowed base.
-
-    Mitigates agentic path-injection (Sonar pythonsecurity:S8707): LLMs must not
-    open arbitrary filesystem paths via this CLI.
-    """
-    if not path or not isinstance(path, str):
-        raise ValueError("input path must be a non-empty string")
-    if path.startswith("{") or path.startswith("["):
-        raise ValueError("inline JSON is not a filesystem path")
-
-    root = os.path.realpath(base_dir or os.getcwd())
-    resolved = os.path.realpath(os.path.join(root, path) if not os.path.isabs(path) else path)
-    if resolved != root and not resolved.startswith(root + os.sep):
-        raise ValueError(f"path {path!r} is outside the allowed directory {root!r}")
-    if not os.path.isfile(resolved):
-        raise ValueError(f"path {path!r} is not an existing file under {root!r}")
-    return resolved
-
-
-def load_input_payload(raw: str, base_dir: str | None = None) -> Dict[str, Any]:
-    """Parse --input as inline JSON or a path confined to base_dir (cwd)."""
+def load_input_payload(raw: str) -> Dict[str, Any]:
+    """Parse --input as inline JSON only (no filesystem access)."""
     text = (raw or "").strip()
     if not text:
         raise ValueError("empty input")
-    if text.startswith("{") or text.startswith("["):
-        parsed = json.loads(text)
-        if not isinstance(parsed, dict):
-            raise ValueError("inline JSON input must be an object")
-        return parsed
-
-    safe_path = safe_resolve_input_path(text, base_dir=base_dir)
-    with open(safe_path, "r", encoding="utf-8") as handle:
-        parsed = json.load(handle)
+    if not (text.startswith("{") or text.startswith("[")):
+        raise ValueError(
+            "input must be an inline JSON object (filesystem paths are not accepted)"
+        )
+    parsed = json.loads(text)
     if not isinstance(parsed, dict):
-        raise ValueError("file JSON input must be an object")
+        raise ValueError("inline JSON input must be an object")
     return parsed
 
 
@@ -73,10 +49,7 @@ def solve_model_routing(
     max_budget_usd: float,
     max_latency_ms: float,
 ) -> Dict[str, Any]:
-    """
-    Formulates a 0-1 Integer Programming problem to select the optimal model candidate
-    that maximizes capability score subject to budget and latency bounds.
-    """
+    """Select one model candidate maximizing score under budget and latency."""
     if not candidates:
         return {"success": False, "selected": None, "reason": "No candidates provided"}
 
@@ -100,16 +73,12 @@ def solve_model_routing(
         env = gp.Env(empty=True)
         env.setParam("OutputFlag", 0)
         env.start()
-
         model = gp.Model("ModelRouting", env=env)
         x = {}
-
         for i, cand in enumerate(candidates):
             cid = cand.get("id", f"c_{i}")
             x[cid] = model.addVar(vtype=GRB.BINARY, name=f"x_{cid}")
-
         model.update()
-
         model.setObjective(
             gp.quicksum(
                 x[cand.get("id", f"c_{i}")] * cand.get("score", 0.0)
@@ -117,7 +86,6 @@ def solve_model_routing(
             ),
             GRB.MAXIMIZE,
         )
-
         model.addConstr(
             gp.quicksum(x[cand.get("id", f"c_{i}")] for i, cand in enumerate(candidates)) == 1,
             "SelectOne",
@@ -138,15 +106,9 @@ def solve_model_routing(
             <= max_latency_ms,
             "LatencyLimit",
         )
-
         model.optimize()
-
         if model.status == GRB.OPTIMAL:
-            selected_id = None
-            for cid, var in x.items():
-                if var.X > 0.5:
-                    selected_id = cid
-                    break
+            selected_id = next((cid for cid, var in x.items() if var.X > 0.5), None)
             return {
                 "success": True,
                 "selected": selected_id,
@@ -154,7 +116,6 @@ def solve_model_routing(
                 "objective": float(model.ObjVal),
                 "status": "OPTIMAL",
             }
-
         best = max(candidates, key=lambda c: c.get("score", 0))
         return {
             "success": True,
@@ -163,7 +124,6 @@ def solve_model_routing(
             "objective": float(best.get("score", 0)),
             "status": f"INFEASIBLE_{model.status}",
         }
-
     except Exception as exc:  # noqa: BLE001 — fail-open to heuristic for CI
         best = max(candidates, key=lambda c: c.get("score", 0))
         return {
@@ -213,10 +173,7 @@ def solve_rule_selection(
     max_eval_time_ms: float,
     max_token_footprint: int,
 ) -> Dict[str, Any]:
-    """
-    Formulates a 0-1 Knapsack MILP to select the subset of prevention rules
-    maximizing risk-mitigation score under time and token budgets.
-    """
+    """0-1 knapsack over prevention rules under time and token budgets."""
     if not rules:
         return {"success": False, "selected_rules": [], "reason": "No rules provided"}
 
@@ -226,12 +183,10 @@ def solve_rule_selection(
     try:
         model = gp.Model("RuleKnapsackSelection")
         model.setParam("OutputFlag", 0)
-
         y = {}
         for i, rule in enumerate(rules):
             rid = rule.get("id", f"r_{i}")
             y[rid] = model.addVar(vtype=GRB.BINARY, name=f"rule_{rid}")
-
         model.setObjective(
             gp.quicksum(
                 y[rule.get("id", f"r_{i}")] * rule.get("risk_mitigation", 0.0)
@@ -255,9 +210,7 @@ def solve_rule_selection(
             <= max_token_footprint,
             "TokenFootprintLimit",
         )
-
         model.optimize()
-
         if model.status == GRB.OPTIMAL:
             selected_ids = [rid for rid, var in y.items() if var.X > 0.5]
             used_time = sum(
@@ -275,11 +228,9 @@ def solve_rule_selection(
                 "used_tokens": used_tokens,
                 "status": "OPTIMAL",
             }
-
         res = fallback_rule_selection(rules, max_eval_time_ms, max_token_footprint)
         res["status"] = f"INFEASIBLE_{model.status}"
         return res
-
     except Exception as exc:  # noqa: BLE001 — fail-open to heuristic for CI
         res = fallback_rule_selection(rules, max_eval_time_ms, max_token_footprint)
         res["solver"] = f"gurobi-error-fallback: {exc}"
@@ -304,11 +255,11 @@ def run_mode(mode: str, payload: Dict[str, Any]) -> Dict[str, Any]:
 
 def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Gurobi Optimization Engine for ThumbGate")
-    parser.add_argument("--mode", choices=["routing", "rules"], required=True, help="Optimization mode")
+    parser.add_argument("--mode", choices=["routing", "rules"], required=True)
     parser.add_argument(
         "--input",
         required=True,
-        help="Inline JSON object or a path confined to the process working directory",
+        help="Inline JSON object only (no filesystem paths; agent-safe)",
     )
     args = parser.parse_args(argv)
 
