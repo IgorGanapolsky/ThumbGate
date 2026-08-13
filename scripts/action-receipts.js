@@ -25,26 +25,65 @@ const { getFeedbackPaths } = require('./feedback-paths');
 
 const RECEIPTS_FILE = 'action-receipts.jsonl';
 
+function resolveReceiptSigningKey(signingKey) {
+  const key = signingKey || process.env.THUMBGATE_RECEIPT_SIGNING_KEY || '';
+  return typeof key === 'string' ? key.trim() : '';
+}
+
+/**
+ * Length-prefixed field encoding avoids delimiter ambiguity between fields.
+ * Example collision avoided: target "a|b" + id "c" vs target "a" + id "b|c".
+ */
+function encodeCanonicalField(value) {
+  const str = safeString(value);
+  return `${Buffer.byteLength(str, 'utf8')}:${str}`;
+}
+
 function computeCanonicalRequestDigest({ toolName, toolInput, target, idempotencyKey, recordedAt }) {
-  const parts = [
-    safeString(toolName),
-    typeof toolInput === 'object' ? JSON.stringify(toolInput || {}) : safeString(toolInput),
-    safeString(target),
-    safeString(idempotencyKey),
-    safeString(recordedAt),
-  ];
-  return crypto.createHash('sha256').update(parts.join('|')).digest('hex');
+  const toolInputCanonical = typeof toolInput === 'object' && toolInput !== null
+    ? JSON.stringify(toolInput)
+    : safeString(toolInput);
+  const payload = [
+    encodeCanonicalField(toolName),
+    encodeCanonicalField(toolInputCanonical),
+    encodeCanonicalField(target),
+    encodeCanonicalField(idempotencyKey),
+    encodeCanonicalField(recordedAt),
+  ].join('|');
+  return crypto.createHash('sha256').update(payload).digest('hex');
 }
 
-function signReceiptDigest(requestDigest, signingKey = process.env.THUMBGATE_RECEIPT_SIGNING_KEY || 'thumbgate-local-secret') {
-  return crypto.createHmac('sha256', signingKey).update(safeString(requestDigest)).digest('hex');
+function signReceiptDigest(requestDigest, signingKey) {
+  const key = resolveReceiptSigningKey(signingKey);
+  if (!key) {
+    throw new Error('THUMBGATE_RECEIPT_SIGNING_KEY is required to sign action receipts');
+  }
+  return crypto.createHmac('sha256', key).update(safeString(requestDigest)).digest('hex');
 }
 
-function verifyReceiptSignature(receipt, signingKey = process.env.THUMBGATE_RECEIPT_SIGNING_KEY || 'thumbgate-local-secret') {
-  if (!receipt || !receipt.requestDigest || !receipt.signature) return false;
-  const expected = signReceiptDigest(receipt.requestDigest, signingKey);
+function verifyReceiptSignature(receipt, signingKey) {
+  if (!receipt || !receipt.signature) return false;
+  const key = resolveReceiptSigningKey(signingKey);
+  if (!key) return false;
+
+  // Recompute digest from stored fields so tampered body fields cannot pass.
+  const recomputed = computeCanonicalRequestDigest({
+    toolName: receipt.toolName,
+    toolInput: receipt.toolInput,
+    target: receipt.target,
+    idempotencyKey: receipt.idempotencyKey,
+    recordedAt: receipt.recordedAt,
+  });
+  if (receipt.requestDigest && receipt.requestDigest !== recomputed) {
+    return false;
+  }
+
+  const expected = signReceiptDigest(recomputed, key);
   try {
-    return crypto.timingSafeEqual(Buffer.from(receipt.signature, 'hex'), Buffer.from(expected, 'hex'));
+    const sigBuf = Buffer.from(String(receipt.signature), 'hex');
+    const expBuf = Buffer.from(expected, 'hex');
+    if (sigBuf.length !== expBuf.length) return false;
+    return crypto.timingSafeEqual(sigBuf, expBuf);
   } catch {
     return false;
   }
@@ -170,7 +209,14 @@ function normalizeReceipt(params = {}) {
     recordedAt,
   });
 
-  const signature = params.signature || signReceiptDigest(requestDigest);
+  let signature = params.signature || null;
+  if (!signature) {
+    try {
+      signature = signReceiptDigest(requestDigest, params.signingKey);
+    } catch {
+      signature = null; // unsigned when no key configured
+    }
+  }
 
   return {
     actionId: safeString(params.actionId) || null,
@@ -370,6 +416,7 @@ module.exports = {
   pairFeedbackWithReceipt,
   buildReceiptContextEntries,
   computeCanonicalRequestDigest,
+  resolveReceiptSigningKey,
   signReceiptDigest,
   verifyReceiptSignature,
   // exposed for testing / reuse

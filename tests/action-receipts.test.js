@@ -1,5 +1,8 @@
 'use strict';
 
+// Explicit signing key required (no default public secret).
+process.env.THUMBGATE_RECEIPT_SIGNING_KEY = process.env.THUMBGATE_RECEIPT_SIGNING_KEY || 'test-receipt-signing-key';
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -13,13 +16,13 @@ process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const {
   recordReceipt,
+  computeCanonicalRequestDigest,
+  signReceiptDigest,
   getReceiptForAction,
   getRecentReceipts,
   pairFeedbackWithReceipt,
   buildReceiptContextEntries,
   getReceiptsPath,
-  computeCanonicalRequestDigest,
-  signReceiptDigest,
   verifyReceiptSignature,
 } = require('../scripts/action-receipts');
 
@@ -137,4 +140,43 @@ test('recordReceipt generates canonical requestDigest and verifiable HMAC signat
 
   const isValid = verifyReceiptSignature(receipt);
   assert.equal(isValid, true, 'HMAC signature should be verified');
+});
+
+test('verifyReceiptSignature recomputes digest and rejects field tampering', () => {
+  const receipt = recordReceipt({
+    actionId: 'act-tamper-1',
+    toolName: 'deploy',
+    toolInput: { environment: 'production' },
+    target: 'prod',
+    decision: 'allow',
+    idempotencyKey: 'idem-tamper',
+  });
+  assert.equal(verifyReceiptSignature(receipt), true);
+  const tampered = { ...receipt, toolName: 'rm' };
+  assert.equal(verifyReceiptSignature(tampered), false);
+});
+
+test('canonical digest avoids pipe-delimiter collisions', () => {
+  const a = computeCanonicalRequestDigest({
+    toolName: 't',
+    toolInput: 'x',
+    target: 'a|b',
+    idempotencyKey: 'c',
+    recordedAt: 'ts',
+  });
+  const b = computeCanonicalRequestDigest({
+    toolName: 't',
+    toolInput: 'x',
+    target: 'a',
+    idempotencyKey: 'b|c',
+    recordedAt: 'ts',
+  });
+  assert.notEqual(a, b);
+});
+
+test('signReceiptDigest fails closed without signing key', () => {
+  const prev = process.env.THUMBGATE_RECEIPT_SIGNING_KEY;
+  delete process.env.THUMBGATE_RECEIPT_SIGNING_KEY;
+  assert.throws(() => signReceiptDigest('abc'), /THUMBGATE_RECEIPT_SIGNING_KEY/);
+  process.env.THUMBGATE_RECEIPT_SIGNING_KEY = prev;
 });
