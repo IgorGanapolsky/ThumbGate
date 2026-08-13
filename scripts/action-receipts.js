@@ -20,9 +20,74 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('node:crypto');
 const { getFeedbackPaths } = require('./feedback-paths');
 
 const RECEIPTS_FILE = 'action-receipts.jsonl';
+
+function resolveReceiptSigningKey(signingKey) {
+  const key = signingKey || process.env.THUMBGATE_RECEIPT_SIGNING_KEY || '';
+  return typeof key === 'string' ? key.trim() : '';
+}
+
+/**
+ * Length-prefixed field encoding avoids delimiter ambiguity between fields.
+ * Example collision avoided: target "a|b" + id "c" vs target "a" + id "b|c".
+ */
+function encodeCanonicalField(value) {
+  const str = safeString(value);
+  return `${Buffer.byteLength(str, 'utf8')}:${str}`;
+}
+
+function computeCanonicalRequestDigest({ toolName, toolInput, target, idempotencyKey, recordedAt }) {
+  const toolInputCanonical = typeof toolInput === 'object' && toolInput !== null
+    ? JSON.stringify(toolInput)
+    : safeString(toolInput);
+  const payload = [
+    encodeCanonicalField(toolName),
+    encodeCanonicalField(toolInputCanonical),
+    encodeCanonicalField(target),
+    encodeCanonicalField(idempotencyKey),
+    encodeCanonicalField(recordedAt),
+  ].join('|');
+  return crypto.createHash('sha256').update(payload).digest('hex');
+}
+
+function signReceiptDigest(requestDigest, signingKey) {
+  const key = resolveReceiptSigningKey(signingKey);
+  if (!key) {
+    throw new Error('THUMBGATE_RECEIPT_SIGNING_KEY is required to sign action receipts');
+  }
+  return crypto.createHmac('sha256', key).update(safeString(requestDigest)).digest('hex');
+}
+
+function verifyReceiptSignature(receipt, signingKey) {
+  if (!receipt || !receipt.signature) return false;
+  const key = resolveReceiptSigningKey(signingKey);
+  if (!key) return false;
+
+  // Recompute digest from stored fields so tampered body fields cannot pass.
+  const recomputed = computeCanonicalRequestDigest({
+    toolName: receipt.toolName,
+    toolInput: receipt.toolInput,
+    target: receipt.target,
+    idempotencyKey: receipt.idempotencyKey,
+    recordedAt: receipt.recordedAt,
+  });
+  if (receipt.requestDigest && receipt.requestDigest !== recomputed) {
+    return false;
+  }
+
+  const expected = signReceiptDigest(recomputed, key);
+  try {
+    const sigBuf = Buffer.from(String(receipt.signature), 'hex');
+    const expBuf = Buffer.from(expected, 'hex');
+    if (sigBuf.length !== expBuf.length) return false;
+    return crypto.timingSafeEqual(sigBuf, expBuf);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Resolve the absolute path to the receipts JSONL for the active project.
@@ -127,12 +192,45 @@ function normalizeReceipt(params = {}) {
     stateHash: outcomeSource.stateHash !== undefined ? outcomeSource.stateHash : null,
   };
 
+  const recordedAt = params.recordedAt ? safeString(params.recordedAt) : new Date().toISOString();
+  const toolName = params.toolName !== undefined ? safeString(params.toolName) : null;
+  const toolInput = params.toolInput !== undefined ? params.toolInput : null;
+  const target = safeString(params.target || params.file || params.filePath || '');
+  const principal = safeString(params.principal || params.agentId || 'agent');
+  const decision = safeString(params.decision || 'allow');
+  const idempotencyKey = safeString(params.idempotencyKey || params.actionId || '');
+  const providerEventId = safeString(params.providerEventId || '');
+
+  const requestDigest = params.requestDigest || computeCanonicalRequestDigest({
+    toolName,
+    toolInput,
+    target,
+    idempotencyKey,
+    recordedAt,
+  });
+
+  let signature = params.signature || null;
+  if (!signature) {
+    try {
+      signature = signReceiptDigest(requestDigest, params.signingKey);
+    } catch {
+      signature = null; // unsigned when no key configured
+    }
+  }
+
   return {
     actionId: safeString(params.actionId) || null,
-    toolName: params.toolName !== undefined ? safeString(params.toolName) : null,
-    toolInput: params.toolInput !== undefined ? params.toolInput : null,
+    toolName,
+    toolInput,
+    principal,
+    target,
+    decision,
+    idempotencyKey,
+    providerEventId,
+    requestDigest,
+    signature,
     outcome,
-    recordedAt: new Date().toISOString(),
+    recordedAt,
   };
 }
 
@@ -317,6 +415,10 @@ module.exports = {
   buildOutcomePairedLesson,
   pairFeedbackWithReceipt,
   buildReceiptContextEntries,
+  computeCanonicalRequestDigest,
+  resolveReceiptSigningKey,
+  signReceiptDigest,
+  verifyReceiptSignature,
   // exposed for testing / reuse
   summarizeInput,
   summarizeOutcome,

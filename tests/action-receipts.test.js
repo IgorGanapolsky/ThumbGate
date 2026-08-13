@@ -1,5 +1,8 @@
 'use strict';
 
+// Explicit signing key required (no default public secret).
+process.env.THUMBGATE_RECEIPT_SIGNING_KEY = process.env.THUMBGATE_RECEIPT_SIGNING_KEY || 'test-receipt-signing-key';
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -13,11 +16,14 @@ process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
 const {
   recordReceipt,
+  computeCanonicalRequestDigest,
+  signReceiptDigest,
   getReceiptForAction,
   getRecentReceipts,
   pairFeedbackWithReceipt,
   buildReceiptContextEntries,
   getReceiptsPath,
+  verifyReceiptSignature,
 } = require('../scripts/action-receipts');
 
 test.after(() => {
@@ -112,4 +118,65 @@ test('buildReceiptContextEntries with empty query surfaces recent receipts witho
   for (const entry of entries) {
     assert.equal(entry.namespace, 'action-receipts');
   }
+});
+
+test('recordReceipt generates canonical requestDigest and verifiable HMAC signature', () => {
+  const receipt = recordReceipt({
+    actionId: 'act-crypto-1',
+    toolName: 'deploy',
+    toolInput: { environment: 'production' },
+    principal: 'agent-cto',
+    target: 'thumbgate-production.up.railway.app',
+    decision: 'allow',
+    idempotencyKey: 'idem-key-100',
+    providerEventId: 'aigate-evt-555',
+  });
+
+  assert.ok(receipt.requestDigest, 'requestDigest should be generated');
+  assert.ok(receipt.signature, 'signature should be generated');
+  assert.equal(receipt.principal, 'agent-cto');
+  assert.equal(receipt.decision, 'allow');
+  assert.equal(receipt.providerEventId, 'aigate-evt-555');
+
+  const isValid = verifyReceiptSignature(receipt);
+  assert.equal(isValid, true, 'HMAC signature should be verified');
+});
+
+test('verifyReceiptSignature recomputes digest and rejects field tampering', () => {
+  const receipt = recordReceipt({
+    actionId: 'act-tamper-1',
+    toolName: 'deploy',
+    toolInput: { environment: 'production' },
+    target: 'prod',
+    decision: 'allow',
+    idempotencyKey: 'idem-tamper',
+  });
+  assert.equal(verifyReceiptSignature(receipt), true);
+  const tampered = { ...receipt, toolName: 'rm' };
+  assert.equal(verifyReceiptSignature(tampered), false);
+});
+
+test('canonical digest avoids pipe-delimiter collisions', () => {
+  const a = computeCanonicalRequestDigest({
+    toolName: 't',
+    toolInput: 'x',
+    target: 'a|b',
+    idempotencyKey: 'c',
+    recordedAt: 'ts',
+  });
+  const b = computeCanonicalRequestDigest({
+    toolName: 't',
+    toolInput: 'x',
+    target: 'a',
+    idempotencyKey: 'b|c',
+    recordedAt: 'ts',
+  });
+  assert.notEqual(a, b);
+});
+
+test('signReceiptDigest fails closed without signing key', () => {
+  const prev = process.env.THUMBGATE_RECEIPT_SIGNING_KEY;
+  delete process.env.THUMBGATE_RECEIPT_SIGNING_KEY;
+  assert.throws(() => signReceiptDigest('abc'), /THUMBGATE_RECEIPT_SIGNING_KEY/);
+  process.env.THUMBGATE_RECEIPT_SIGNING_KEY = prev;
 });
