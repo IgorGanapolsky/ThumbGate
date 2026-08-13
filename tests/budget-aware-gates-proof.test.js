@@ -37,7 +37,34 @@ test('buyer narrative includes disclaimers (no false Gurobi partnership)', () =>
   const text = JSON.stringify(report.buyerNarrative);
   assert.match(text, /No Gurobi partnership/);
   assert.match(text, /Budget-aware enforcement/);
+  assert.match(text, /SIMULATION/);
+  assert.equal(report.mode, 'simulation');
   assert.ok(!/partner logo|official partner|powered exclusively by Gurobi/i.test(text));
+});
+
+test('optimized routing stays budget-compliant and error labels are not success', () => {
+  const report = proof.runBudgetAwareGatesProof({ skipProbe: true });
+  assert.ok(report.modelRouting.optimized.budgetCompliant);
+  assert.notEqual(report.modelRouting.optimized.selected, 'claude-opus');
+  const label = String(report.probe.solverLabel || '');
+  // Error-fallback labels must never flip gurobiAvailable true via prefix match alone.
+  if (/gurobi-error|error-fallback/i.test(label)) {
+    assert.equal(report.probe.gurobiAvailable, false);
+  }
+  // When a raw solver error label was coerced away, report stays honest.
+  if (/gurobi-error|error-fallback/i.test(String(report.probe.rawSolverLabel || ''))) {
+    assert.equal(report.probe.gurobiAvailable, false);
+  }
+});
+
+test('mainCli --write without .json suffix still preserves distinct json+md', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-budget-proof-'));
+  const out = path.join(dir, 'report');
+  proof.mainCli(['--write', out, '--json']);
+  assert.ok(fs.existsSync(`${out}.json`));
+  assert.ok(fs.existsSync(`${out}.md`));
+  const parsed = JSON.parse(fs.readFileSync(`${out}.json`, 'utf8'));
+  assert.equal(parsed.schema, 'thumbgate.budget_aware_gates_proof.v1');
 });
 
 test('formatMarkdown is non-empty and includes tables', () => {

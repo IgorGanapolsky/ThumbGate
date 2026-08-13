@@ -142,28 +142,43 @@ function runBudgetAwareGatesProof(options = {}) {
 
   const probe = options.skipProbe ? { ok: null, gurobi: false } : probeGurobi(options.solverOpts || {});
 
+  // When Gurobi error-falls-back to unconstrained top score, replace with
+  // budget-valid heuristic so buyer narrative never claims compliance for
+  // over-budget selections (e.g. claude-opus at $0.06 under a $0.01 cap).
+  const routingPick = coerceBudgetCompliantRouting(solverRouting, heuristicRouting, budgets);
+  const rulesPick = coerceBudgetCompliantRules(solverRules, heuristicRules, budgets);
+
   const routingHeuristicScore = heuristicRouting.objective || 0;
-  const routingSolverScore = solverRouting.objective || 0;
+  const routingSolverScore = routingPick.objective != null
+    ? routingPick.objective
+    : (findCandidate(routingPick.selected)?.score || 0);
   const rulesHeuristicMitigation = heuristicRules.total_mitigation
     || sumMitigation(DEMO_RULES, heuristicRules.selected_rules);
-  const rulesSolverMitigation = sumMitigation(
-    DEMO_RULES,
-    solverRules.selected_rules || []
-  );
+  const rulesSolverMitigation = rulesPick.total_mitigation != null
+    ? rulesPick.total_mitigation
+    : sumMitigation(DEMO_RULES, rulesPick.selected_rules || []);
 
-  const solverIsGurobi = String(solverRouting.solver || '').startsWith('gurobi')
-    || String(solverRules.solver || '').startsWith('gurobi')
-    || probe.gurobi === true;
+  const solverIsGurobi = isSuccessfulGurobiLabel(routingPick.solver)
+    || isSuccessfulGurobiLabel(rulesPick.solver)
+    || (probe.gurobi === true && !isGurobiErrorFallback(solverRouting.solver)
+      && !isGurobiErrorFallback(solverRules.solver));
 
   const report = {
     schema: 'thumbgate.budget_aware_gates_proof.v1',
+    mode: 'simulation',
     generatedAt: new Date().toISOString(),
     latencyMs: Date.now() - started,
     budgets,
     probe: {
       ok: probe.ok,
-      gurobiAvailable: Boolean(probe.gurobi || solverIsGurobi),
-      solverLabel: solverRouting.solver || null,
+      gurobiAvailable: Boolean(
+        (probe.gurobi === true && !isGurobiErrorFallback(solverRouting.solver)
+          && !isGurobiErrorFallback(solverRules.solver))
+        || isSuccessfulGurobiLabel(routingPick.solver)
+        || isSuccessfulGurobiLabel(rulesPick.solver)
+      ),
+      solverLabel: routingPick.solver || null,
+      rawSolverLabel: solverRouting.solver || null,
       python: probe.python || null,
     },
     modelRouting: {
@@ -176,13 +191,14 @@ function runBudgetAwareGatesProof(options = {}) {
         candidate: findCandidate(heuristicRouting.selected),
       },
       optimized: {
-        selected: solverRouting.selected,
+        selected: routingPick.selected,
         score: routingSolverScore,
-        solver: solverRouting.solver,
-        candidate: findCandidate(solverRouting.selected),
+        solver: routingPick.solver,
+        candidate: findCandidate(routingPick.selected),
+        budgetCompliant: isRoutingWithinBudget(findCandidate(routingPick.selected), budgets),
       },
       scoreDelta: routingSolverScore - routingHeuristicScore,
-      sameSelection: heuristicRouting.selected === solverRouting.selected,
+      sameSelection: heuristicRouting.selected === routingPick.selected,
     },
     ruleKnapsack: {
       maxEvalTimeMs: budgets.maxEvalTimeMs,
@@ -197,30 +213,31 @@ function runBudgetAwareGatesProof(options = {}) {
         solver: heuristicRules.solver,
       },
       optimized: {
-        selected: solverRules.selected_rules || [],
-        count: (solverRules.selected_rules || []).length,
+        selected: rulesPick.selected_rules || [],
+        count: (rulesPick.selected_rules || []).length,
         mitigation: rulesSolverMitigation,
-        usedTimeMs: solverRules.used_time_ms,
-        usedTokens: solverRules.used_tokens,
-        solver: solverRules.solver,
+        usedTimeMs: rulesPick.used_time_ms,
+        usedTokens: rulesPick.used_tokens,
+        solver: rulesPick.solver,
       },
       mitigationDelta: rulesSolverMitigation - rulesHeuristicMitigation,
       droppedLowValue: DEMO_RULES
         .map((r) => r.id)
-        .filter((id) => !(solverRules.selected_rules || []).includes(id)),
+        .filter((id) => !(rulesPick.selected_rules || []).includes(id)),
     },
     buyerNarrative: {
-      headline: 'Budget-aware enforcement — not “load every rule always”',
+      headline: 'Budget-aware enforcement simulation — fixture knapsack, not live rule loader',
       bullets: [
-        `Model routing under $${budgets.maxBudgetUsd} / ${budgets.maxLatencyMs}ms budget selects ${solverRouting.selected} (solver=${solverRouting.solver}).`,
-        `Prevention-rule knapsack keeps ${ (solverRules.selected_rules || []).length } of ${DEMO_RULES.length} rules under ${budgets.maxEvalTimeMs}ms / ${budgets.maxTokenFootprint} tokens.`,
-        `Risk-mitigation score: heuristic ${rulesHeuristicMitigation.toFixed(1)} → optimized ${rulesSolverMitigation.toFixed(1)} (Δ ${ (rulesSolverMitigation - rulesHeuristicMitigation).toFixed(1) }).`,
+        `SIMULATION: model routing under $${budgets.maxBudgetUsd} / ${budgets.maxLatencyMs}ms budget selects ${routingPick.selected} (solver=${routingPick.solver}).`,
+        `SIMULATION: prevention-rule knapsack keeps ${ (rulesPick.selected_rules || []).length } of ${DEMO_RULES.length} fixture rules under ${budgets.maxEvalTimeMs}ms / ${budgets.maxTokenFootprint} tokens.`,
+        `Risk-mitigation score (fixtures): heuristic ${rulesHeuristicMitigation.toFixed(1)} → optimized ${rulesSolverMitigation.toFixed(1)} (Δ ${ (rulesSolverMitigation - rulesHeuristicMitigation).toFixed(1) }).`,
         solverIsGurobi
-          ? 'MILP solver available (free-pip Gurobi path or compatible). Heuristics remain the CI/fallback path.'
+          ? 'MILP solver path succeeded on this host (free-pip Gurobi or compatible). Heuristics remain the CI/fallback path.'
           : 'Running on deterministic heuristic fallback — same API, fail-open when solver unavailable.',
       ],
       disclaimers: [
-        'ThumbGate product claim is budget-aware gates; solver is an implementation detail.',
+        'This proof is a sales-safe SIMULATION on fixed demo fixtures. Production PreToolUse does not yet load selections from optimizeRuleSelection/optimizeModelRouting.',
+        'ThumbGate product claim is budget-aware gates as an architecture; this script proves the selection math, not live enforcement wiring.',
         'No Gurobi partnership, co-sell, or affiliation is claimed.',
         'capturedRevenueUsd is not computed here — optimization ≠ cash collected.',
       ],
@@ -232,6 +249,71 @@ function runBudgetAwareGatesProof(options = {}) {
   };
 
   return report;
+}
+
+function isGurobiErrorFallback(label) {
+  const s = String(label || '').toLowerCase();
+  return s.includes('gurobi-error')
+    || s.includes('error-fallback')
+    || /gurobi.*(?:error|unavailable|license)/.test(s);
+}
+
+function isSuccessfulGurobiLabel(label) {
+  const s = String(label || '').toLowerCase();
+  if (!s) return false;
+  if (isGurobiErrorFallback(s)) return false;
+  // Accept exact successful labels only (not every gurobi* string).
+  return s === 'gurobi' || s === 'gurobipy' || s === 'gurobi-milp' || s.startsWith('gurobi-ok');
+}
+
+function isRoutingWithinBudget(candidate, budgets) {
+  if (!candidate) return false;
+  return (candidate.cost || 0) <= budgets.maxBudgetUsd
+    && (candidate.latency_ms || 0) <= budgets.maxLatencyMs;
+}
+
+function coerceBudgetCompliantRouting(solverRouting, heuristicRouting, budgets) {
+  const cand = findCandidate(solverRouting && solverRouting.selected);
+  if (
+    cand
+    && isRoutingWithinBudget(cand, budgets)
+    && !isGurobiErrorFallback(solverRouting && solverRouting.solver)
+  ) {
+    return solverRouting;
+  }
+  return {
+    ...heuristicRouting,
+    solver: heuristicRouting.solver
+      || (isGurobiErrorFallback(solverRouting && solverRouting.solver)
+        ? 'heuristic-after-gurobi-error'
+        : 'heuristic-budget-coerce'),
+    coercedFrom: solverRouting && solverRouting.selected,
+  };
+}
+
+function coerceBudgetCompliantRules(solverRules, heuristicRules, budgets) {
+  const selected = (solverRules && solverRules.selected_rules) || [];
+  if (!selected.length || isGurobiErrorFallback(solverRules && solverRules.solver)) {
+    return {
+      ...heuristicRules,
+      solver: heuristicRules.solver || 'heuristic-after-gurobi-error',
+      coercedFrom: selected,
+    };
+  }
+  // Soft check: if used budgets exceed caps, fall back to heuristic.
+  const usedTime = solverRules.used_time_ms;
+  const usedTokens = solverRules.used_tokens;
+  if (
+    (usedTime != null && usedTime > budgets.maxEvalTimeMs)
+    || (usedTokens != null && usedTokens > budgets.maxTokenFootprint)
+  ) {
+    return {
+      ...heuristicRules,
+      solver: heuristicRules.solver || 'heuristic-budget-coerce',
+      coercedFrom: selected,
+    };
+  }
+  return solverRules;
 }
 
 function formatMarkdown(report) {
@@ -278,9 +360,12 @@ function mainCli(argv = process.argv.slice(2)) {
   if (writePath) {
     const abs = path.resolve(writePath);
     fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-    const mdPath = abs.replace(/\.json$/i, '.md');
-    fs.writeFileSync(mdPath, formatMarkdown(report), 'utf8');
+    const jsonPath = /\.json$/i.test(abs) ? abs : `${abs}.json`;
+    const mdPath = jsonPath.replace(/\.json$/i, '.md');
+    fs.writeFileSync(jsonPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    if (mdPath !== jsonPath) {
+      fs.writeFileSync(mdPath, formatMarkdown(report), 'utf8');
+    }
   }
 
   if (json) {
