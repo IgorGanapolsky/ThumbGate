@@ -6,6 +6,7 @@ const crypto = require('node:crypto');
 
 const {
   RECEIPT_SCHEMA_VERSION,
+  canonicalStringify,
   computeCanonicalRequestDigest,
   validateProviderReceiptSchema,
   verifyBrokerSignature,
@@ -35,11 +36,6 @@ test('broker signature verification passes for valid broker-emitted receipt', ()
     recordedAt,
   });
 
-  const brokerSignature = crypto
-    .createHmac('sha256', brokerSecretKey)
-    .update(canonicalDigest)
-    .digest('hex');
-
   const validReceipt = {
     schemaVersion: RECEIPT_SCHEMA_VERSION,
     receiptId: 'rcpt-uuid-888',
@@ -51,9 +47,12 @@ test('broker signature verification passes for valid broker-emitted receipt', ()
     canonicalDigest,
     providerEventId: 'evt-gh-event-777',
     brokerId: 'aigate-credential-broker',
-    signature: brokerSignature,
     recordedAt,
   };
+  validReceipt.signature = crypto
+    .createHmac('sha256', brokerSecretKey)
+    .update(canonicalStringify(validReceipt))
+    .digest('hex');
 
   const verification = verifyBrokerSignature(validReceipt, brokerSecretKey);
   assert.equal(verification.verified, true);
@@ -71,11 +70,6 @@ test('broker signature verification rejects tampered canonicalDigest or invalid 
     recordedAt: '2026-08-12T00:00:00Z',
   });
 
-  const brokerSignature = crypto
-    .createHmac('sha256', brokerSecretKey)
-    .update(canonicalDigest)
-    .digest('hex');
-
   const receipt = {
     schemaVersion: RECEIPT_SCHEMA_VERSION,
     receiptId: 'rcpt-1',
@@ -87,8 +81,12 @@ test('broker signature verification rejects tampered canonicalDigest or invalid 
     canonicalDigest,
     providerEventId: 'stripe-evt-999',
     brokerId: 'aigate',
-    signature: brokerSignature,
+    recordedAt: '2026-08-12T00:00:00Z',
   };
+  receipt.signature = crypto
+    .createHmac('sha256', brokerSecretKey)
+    .update(canonicalStringify(receipt))
+    .digest('hex');
 
   const verification = verifyBrokerSignature(receipt, wrongKey);
   assert.equal(verification.verified, false);
@@ -119,4 +117,47 @@ test('reconcileProviderEvent matches provider event surface response against bro
   const reconciliation = reconcileProviderEvent(receipt, providerResponse);
   assert.equal(reconciliation.reconciled, true);
   assert.equal(reconciliation.reason, 'event_reconciled');
+});
+
+test('canonical request digest ignores object insertion order', () => {
+  const common = { toolName: 'tool', target: 'target', idempotencyKey: 'idem', recordedAt: 'time' };
+  assert.equal(
+    computeCanonicalRequestDigest({ ...common, toolInput: { a: 1, nested: { b: 2, a: 1 } } }),
+    computeCanonicalRequestDigest({ ...common, toolInput: { nested: { a: 1, b: 2 }, a: 1 } })
+  );
+});
+
+test('broker signature verification rejects tampered signed claims', () => {
+  const secret = 'secret';
+  const receipt = {
+    schemaVersion: RECEIPT_SCHEMA_VERSION,
+    receiptId: 'receipt',
+    idempotencyKey: 'idem',
+    principal: 'agent',
+    target: 'target',
+    decision: 'block',
+    toolName: 'tool',
+    canonicalDigest: 'digest',
+    providerEventId: 'event',
+    brokerId: 'broker',
+  };
+  receipt.signature = crypto.createHmac('sha256', secret).update(canonicalStringify(receipt)).digest('hex');
+  assert.equal(verifyBrokerSignature({ ...receipt, decision: 'allow' }, secret).verified, false);
+});
+
+test('receipt validation and reconciliation require provider event IDs', () => {
+  const receipt = {
+    schemaVersion: RECEIPT_SCHEMA_VERSION,
+    receiptId: 'receipt',
+    idempotencyKey: 'idem',
+    principal: 'agent',
+    target: 'target',
+    decision: 'allow',
+    toolName: 'tool',
+    canonicalDigest: 'digest',
+    brokerId: 'broker',
+    signature: 'aa',
+  };
+  assert.equal(validateProviderReceiptSchema(receipt).ok, false);
+  assert.equal(reconcileProviderEvent({ ...receipt, providerEventId: 'event' }, {}).reason, 'missing_provider_event_id');
 });
