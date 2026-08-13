@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ThumbGate for Platforms — AI-Native Governance API</title>
+  <meta name="description" content="List ThumbGate.ai on your platform. AI-native infrastructure firewall, feedback loops, and execution receipts for enterprise AI agents.">
+  <link rel="canonical" href="__APP_ORIGIN__/platform-partners.html">
+  <link rel="icon" type="image/svg+xml" href="__APP_ORIGIN__/favicon.svg">
+  <style>
+    :root { --bg:#0b0c0f; --panel:#12141a; --text:#e8eaed; --muted:#9aa0a6; --accent:#34d399; --accent-dim:#10b981; --border:#1f2937; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); line-height:1.55; }
+    a { color:var(--accent); text-decoration:none; }
+    header { padding:1.5rem 4vw; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .brand { font-weight:700; font-size:1.25rem; letter-spacing:-0.02em; }
+    main { max-width:980px; margin:0 auto; padding:3rem 4vw 5rem; }
+    h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 1rem; line-height:1.1; }
+    .lead { font-size:1.2rem; color:var(--muted); margin-bottom:2rem; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem; margin:2rem 0; }
+    .card { background:var(--panel); border:1px solid var(--border); border-radius:0.75rem; padding:1.25rem; }
+    .card h3 { margin-top:0; color:var(--accent); }
+    table { width:100%; border-collapse:collapse; margin:1.25rem 0; font-size:0.95rem; }
+    th,td { padding:0.6rem 0.5rem; border-bottom:1px solid var(--border); text-align:left; }
+    th { color:var(--muted); font-weight:600; }
+    td:last-child, th:last-child { text-align:right; }
+    code { background:#1f2937; padding:0.15rem 0.35rem; border-radius:0.35rem; font-size:0.9em; }
+    .cta { margin-top:2rem; }
+    .button { display:inline-block; background:var(--accent); color:#000; font-weight:600; padding:0.8rem 1.4rem; border-radius:0.5rem; }
+    footer { border-top:1px solid var(--border); padding:2rem 4vw; color:var(--muted); font-size:0.9rem; text-align:center; }
+    .status { color:var(--accent); font-weight:600; }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ThumbGate.ai",
+    "applicationCategory": "DeveloperApplication,BusinessApplication",
+    "offers": {
+      "@type": "AggregateOffer",
+      "lowPrice": "25",
+      "highPrice": "499",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock"
+    }
+  }
+  </script>
+</head>
+<body>
+  <header>
+    <div class="brand">ThumbGate.ai</div>
+    <nav>
+      <a href="__APP_ORIGIN__/pricing.html">Pricing</a>
+      <a href="__APP_ORIGIN__/partner-intake.html">Partner Intake</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>ThumbGate for Platforms</h1>
+    <p class="lead">Resell the AI-native infrastructure firewall to enterprise customers. Fully automated governance, feedback loops, and execution receipts through a single API.</p>
+
+    <p><span class="status">● Live</span> API — verified at <a href="https://thumbgate.ai/health">thumbgate.ai/health</a>. OpenAPI at <a href="https://thumbgate.ai/openapi.json">/openapi.json</a>.</p>
+
+    <h2>Why list ThumbGate?</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Pre-action enforcement</h3>
+        <p>Block dangerous tool calls before execution with <code>POST /v1/decisions/evaluate</code>.</p>
+      </div>
+      <div class="card">
+        <h3>Self-improving rules</h3>
+        <p>Capture feedback and auto-promote prevention rules via <code>/v1/feedback/*</code>.</p>
+      </div>
+      <div class="card">
+        <h3>Compliance receipts</h3>
+        <p>Every action produces an HMAC-signed task outcome through <code>/v1/task-outcomes</code>.</p>
+      </div>
+      <div class="card">
+        <h3>No human bottleneck</h3>
+        <p>Policy-driven approval gates, automated provisioning, and usage reporting.</p>
+      </div>
+    </div>
+
+    <h2>Core enterprise endpoints</h2>
+    <table>
+      <tr><th>Endpoint</th><th>Purpose</th></tr>
+      <tr><td><code>POST /v1/decisions/evaluate</code></td><td>Policy decision on any agent action</td></tr>
+      <tr><td><code>POST /v1/gates/constraint</code></td><td>Register a policy constraint</td></tr>
+      <tr><td><code>POST /v1/gates/task-scope</code></td><td>Scope a task to allowed actions</td></tr>
+      <tr><td><code>POST /v1/gates/branch-governance</code></td><td>Enforce branch-level governance</td></tr>
+      <tr><td><code>POST /v1/gates/protected-approval</code></td><td>Protected-action approval gate</td></tr>
+      <tr><td><code>POST /v1/gates/satisfy</code></td><td>Mark gate condition satisfied</td></tr>
+      <tr><td><code>POST /v1/feedback/capture</code></td><td>Capture up/down/lesson signal</td></tr>
+      <tr><td><code>POST /v1/feedback/rules</code></td><td>Auto-promote prevention rules</td></tr>
+      <tr><td><code>POST /v1/task-outcomes</code></td><td>Idempotent execution receipt</td></tr>
+      <tr><td><code>POST /v1/escalations</code></td><td>Escalation log and routing</td></tr>
+      <tr><td><code>GET /v1/billing/usage</code></td><td>Usage counter</td></tr>
+      <tr><td><code>POST /v1/billing/provision</code></td><td>Automated API-key provisioning</td></tr>
+    </table>
+
+    <h2>Pay-per-usage platform tiers</h2>
+    <table>
+      <tr><th>Tier</th><th>Monthly minimum</th><th>Includes</th><th>Reseller margin</th></tr>
+      <tr><td>Starter</td><td>$25</td><td>12,500 evaluations</td><td>20%</td></tr>
+      <tr><td>Pro</td><td>$499</td><td>500,000 evaluations + DPO export</td><td>30%</td></tr>
+      <tr><td>Enterprise</td><td>Custom</td><td>Custom commit</td><td>30%</td></tr>
+    </table>
+
+    <div class="cta">
+      <a class="button" href="__APP_ORIGIN__/partner-intake.html">Apply to list ThumbGate</a>
+      <span style="margin-left:1rem; color:var(--muted);">or email <a href="mailto:igor@igorganapolsky.com">igor@igorganapolsky.com</a></span>
+    </div>
+  </main>
+
+  <footer>
+    © 2026 ThumbGate.ai — Self-Improving Infrastructure Firewall for AI Agents
+  </footer>
+</body>
+</html>
