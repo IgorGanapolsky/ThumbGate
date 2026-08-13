@@ -4,14 +4,14 @@
     "name": "Igor Ganapolsky"
   },
   "metadata": {
-    "description": "Infrastructure firewall for AI coding agents. Pre-action gates, thumbs feedback \u2192 prevention rules, audit receipts. API at thumbgate.ai.",
+    "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
     "version": "1.35.0"
   },
   "plugins": [
     {
       "name": "thumbgate",
       "source": "plugins/cursor-marketplace",
-      "description": "Infrastructure firewall for AI coding agents. Pre-action gates, thumbs feedback \u2192 prevention rules, audit receipts. API at thumbgate.ai.",
+      "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
       "category": "agent-orchestration",
       "tags": [
         "agent-firewall",
