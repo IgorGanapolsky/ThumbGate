@@ -193,7 +193,8 @@ const path = require('node:path');
 // 453 -> 454: agent-egress-policy
 // 454 -> 455 (2026-08-13): scripts/budget-aware-gates-proof.js sales-safe Gurobi knapsack demo
 // 455 -> 458: edotenv-rl-gateway + rsi-safety-hillclimb + research-agent-harness
-const BASELINE_FILE_COUNT = 458;
+// 458 -> 459: governance-difficulty-curriculum (EdotEnv harder-next-round transfer)
+const BASELINE_FILE_COUNT = 459;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

@@ -398,7 +398,8 @@
     "scripts/gurobi_optimizer.py",
     "scripts/edotenv-rl-gateway.js",
     "scripts/research-agent-harness.js",
-    "scripts/rsi-safety-hillclimb.js"
+    "scripts/rsi-safety-hillclimb.js",
+    "scripts/governance-difficulty-curriculum.js"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
@@ -1015,7 +1016,8 @@
     "test:github-marketplace-action": "node --test tests/github-marketplace-action.test.js",
     "test:edotenv-rl-gateway": "node --test tests/edotenv-rl-gateway.test.js",
     "test:rsi-safety-hillclimb": "node --test tests/rsi-safety-hillclimb.test.js",
-    "test:research-agent-harness": "node --test tests/research-agent-harness.test.js"
+    "test:research-agent-harness": "node --test tests/research-agent-harness.test.js",
+    "test:governance-curriculum": "node --test tests/governance-difficulty-curriculum.test.js"
   },
   "keywords": [
     "mcp",

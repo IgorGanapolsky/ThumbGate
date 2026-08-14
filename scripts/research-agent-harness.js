@@ -232,9 +232,25 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+/**
+ * Optional curriculum glue: after a successful claim, suggest next difficulty
+ * using the EdotEnv-style harder-next-round frontier.
+ */
+function nextDifficultyAfterClaim(state = {}) {
+  const difficulty = Math.max(1, Number(state.difficulty) || 1);
+  // advanceResearchStep already ratchets on claim; this helper is for callers
+  // that only hold the post-claim state.
+  return {
+    difficulty,
+    harderNextRound: difficulty > 1,
+    maxDifficulty: 5,
+  };
+}
+
 module.exports = {
   STEPS,
   advanceResearchStep,
   runResearchCycle,
   DEFAULT_STATE,
+  nextDifficultyAfterClaim,
 };
