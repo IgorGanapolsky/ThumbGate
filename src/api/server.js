@@ -1897,9 +1897,58 @@ async function buildLiveDashboardData(parsed, feedbackDir) {
   return { summaryOptions, data };
 }
 
+const DEFAULT_DASHBOARD_CACHE_TTL_MS = 30_000;
+const DEFAULT_DASHBOARD_CACHE_MAX_ENTRIES = 32;
+const liveDashboardCache = new Map();
+
+function parseNonNegativeInteger(value, fallback) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+function buildLiveDashboardCacheKey(parsed, feedbackDir) {
+  const query = new URLSearchParams(parsed.searchParams);
+  query.sort();
+  return `${path.resolve(feedbackDir)}?${query.toString()}`;
+}
+
+async function loadCachedLiveDashboardData(parsed, feedbackDir, options = {}) {
+  const now = options.now || Date.now;
+  const build = options.build || buildLiveDashboardData;
+  const cache = options.cache || liveDashboardCache;
+  const ttlMs = parseNonNegativeInteger(
+    options.ttlMs ?? process.env.THUMBGATE_DASHBOARD_CACHE_TTL_MS,
+    DEFAULT_DASHBOARD_CACHE_TTL_MS,
+  );
+  const maxEntries = parseNonNegativeInteger(
+    options.maxEntries ?? process.env.THUMBGATE_DASHBOARD_CACHE_MAX_ENTRIES,
+    DEFAULT_DASHBOARD_CACHE_MAX_ENTRIES,
+  );
+  const key = buildLiveDashboardCacheKey(parsed, feedbackDir);
+  const currentTime = now();
+  const cached = cache.get(key);
+  if (cached && (cached.promise || cached.expiresAt > currentTime)) {
+    return cached.promise || cached.value;
+  }
+
+  const promise = Promise.resolve().then(() => build(parsed, feedbackDir));
+  cache.set(key, { promise, expiresAt: 0, value: null });
+  try {
+    const value = await promise;
+    cache.set(key, { promise: null, expiresAt: now() + ttlMs, value });
+    while (cache.size > maxEntries && cache.size > 0) {
+      cache.delete(cache.keys().next().value);
+    }
+    return value;
+  } catch (error) {
+    cache.delete(key);
+    throw error;
+  }
+}
+
 async function loadLiveDashboardDataOrRespondProblem(res, parsed, feedbackDir, invalidTitle) {
   try {
-    return await buildLiveDashboardData(parsed, feedbackDir);
+    return await loadCachedLiveDashboardData(parsed, feedbackDir);
   } catch (err) {
     sendInvalidAnalyticsWindowProblem(res, invalidTitle, err);
     return null;
@@ -11032,6 +11081,8 @@ module.exports = {
     sanitizeHtmlUnsafeJsonValue,
     buildHostedTenantIdentity,
     partitionFeedbackPaths,
+    buildLiveDashboardCacheKey,
+    loadCachedLiveDashboardData,
   },
 };
 
