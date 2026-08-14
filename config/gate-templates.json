@@ -1069,6 +1069,42 @@
       "problem": "Requires fine-grained app/bot scoping on Ruleset bypass permissions instead of granting broad user or admin bypass rights.",
       "roi": "Blocks owner-token / admin soft-bypass of merge governance; keeps agent autonomy inside protection bounds.",
       "rollout": "Pair with config/main-branch-ruleset.json zero bypass_actors and npm run rulesets:check."
+    },
+    {
+      "id": "require-hypothesis-verify-before-claim",
+      "name": "Require hypothesis → verify before research claims",
+      "category": "Research Agent Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(claim|progress_claim|research_done).*(without[_ -]?verify|no[_ -]?evidence|skip[_ -]?verify)|CLAIM_WITHOUT_VERIFY",
+      "problem": "Stops research/RSI agents from claiming progress without a completed hypothesis→experiment→verify cycle (EdotEnv operating pattern, ThumbGate enforcement).",
+      "roi": "Prevents false research progress, bad post-training labels, and 'we improved' theater in multi-step agent loops.",
+      "rollout": "Enable on research harnesses, autoresearch, and any agent that writes experiment claims. Wire scripts/research-agent-harness.js."
+    },
+    {
+      "id": "ratchet-difficulty-after-verified-pass",
+      "name": "Ratchet difficulty after verified pass",
+      "category": "Research Agent Governance",
+      "signal": "👍",
+      "defaultAction": "allow",
+      "severity": "medium",
+      "pattern": "(harder[_ -]?next[_ -]?round|difficulty[_ -]?ratchet|curriculum[_ -]?promote)",
+      "problem": "After a full verified research cycle, the next round must get harder so agents cannot farm easy tasks forever (EdotEnv frontier transfer).",
+      "roi": "Keeps evaluation pressure real; surfaces weak gate configs before production RSI-style loops overfit easy cases.",
+      "rollout": "Use scripts/governance-difficulty-curriculum.js and research-agent-harness harderNextRound after CLAIM_ACCEPTED."
+    },
+    {
+      "id": "require-safety-hillclimb-before-rl-post-train",
+      "name": "Require safety hillclimb before RL post-training",
+      "category": "Research Agent Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(post[_ -]?train|grpo|gspo|rlhf|rl_post).*(without[_ -]?hillclimb|skip[_ -]?safety|no[_ -]?eval)",
+      "problem": "Blocks RL / GRPO / GSPO post-training launches that lack a safety hillclimb pass and verified research-cycle evidence.",
+      "roi": "Stops reward-hacking agents from being promoted into production after only train-set wins.",
+      "rollout": "Pair with scripts/post-training-governance.js and scripts/rsi-safety-hillclimb.js on any RL training kickoff."
     }
   ]
 }

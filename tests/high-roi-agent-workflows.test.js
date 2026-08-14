@@ -855,6 +855,10 @@ test('post-training governance requires dataset, checkpoint, redaction, evals, r
   assert.equal(weak.decision, 'warn');
   assert.ok(weak.issues.includes('missing_reward_spec'));
   assert.ok(weak.issues.includes('holdout_eval_required'));
+  // EdotEnv transfer: RL modes also need research-cycle + hillclimb + frontier
+  assert.ok(weak.issues.includes('research_cycle_verify_required'));
+  assert.ok(weak.issues.includes('safety_hillclimb_required'));
+  assert.ok(weak.issues.includes('harder_next_round_frontier_required'));
 
   const strong = evaluatePostTrainingPlan({
     mode: 'sft',
@@ -865,6 +869,21 @@ test('post-training governance requires dataset, checkpoint, redaction, evals, r
     maxSpendCents: 1000,
   });
   assert.equal(strong.decision, 'allow');
+
+  const strongRl = evaluatePostTrainingPlan({
+    mode: 'grpo',
+    dataset: 'feedback.jsonl',
+    baseCheckpoint: 'gemma-checkpoint',
+    piiRedacted: true,
+    holdoutEval: true,
+    rewardSpec: 'safety-first-reward-v1',
+    maxSpendCents: 1000,
+    researchCycleEvidence: { verified: true, steps: ['hypothesis', 'experiment', 'verify', 'claim'] },
+    safetyHillclimb: { passed: true, score: 92 },
+    difficultyFrontier: { enabled: true, nextLevel: 3 },
+  });
+  assert.equal(strongRl.decision, 'allow');
+  assert.ok(strongRl.requiredArtifacts.includes('verified research cycle evidence'));
 });
 
 test('experience replay governance reuses feedback trajectories only when fresh enough and evidenced', () => {
