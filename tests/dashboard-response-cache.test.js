@@ -69,4 +69,59 @@ describe('live dashboard response cache', () => {
     assert.equal(refreshed.data.generation, 3);
     assert.equal(builds, 3);
   });
+
+  it('caps admission before starting concurrent builds', async () => {
+    const cache = new Map();
+    let builds = 0;
+    let release;
+    const pending = new Promise((resolve) => { release = resolve; });
+    const build = async () => {
+      builds += 1;
+      await pending;
+      return { data: { builds } };
+    };
+    const options = { build, cache, maxEntries: 2, now: () => 1_000 };
+
+    const first = loadCachedLiveDashboardData(
+      new URL('https://thumbgate.ai/v1/dashboard?window=today'),
+      '/feedback',
+      options,
+    );
+    const second = loadCachedLiveDashboardData(
+      new URL('https://thumbgate.ai/v1/dashboard?window=week'),
+      '/feedback',
+      options,
+    );
+
+    await assert.rejects(
+      loadCachedLiveDashboardData(
+        new URL('https://thumbgate.ai/v1/dashboard?window=month'),
+        '/feedback',
+        options,
+      ),
+      (error) => error.code === 'DASHBOARD_BUILD_CAPACITY',
+    );
+    assert.equal(cache.size, 2);
+    assert.equal(builds, 2);
+
+    release();
+    await Promise.all([first, second]);
+  });
+
+  it('bypasses caching when the entry cap is zero', async () => {
+    const cache = new Map();
+    let builds = 0;
+    const options = {
+      cache,
+      maxEntries: 0,
+      build: async () => ({ data: { builds: ++builds } }),
+    };
+    const parsed = new URL('https://thumbgate.ai/v1/dashboard');
+
+    await loadCachedLiveDashboardData(parsed, '/feedback', options);
+    await loadCachedLiveDashboardData(parsed, '/feedback', options);
+
+    assert.equal(builds, 2);
+    assert.equal(cache.size, 0);
+  });
 });

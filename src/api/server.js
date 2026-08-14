@@ -1931,6 +1931,24 @@ async function loadCachedLiveDashboardData(parsed, feedbackDir, options = {}) {
     return cached.promise || cached.value;
   }
 
+  if (maxEntries === 0) {
+    return build(parsed, feedbackDir);
+  }
+
+  if (cached) cache.delete(key);
+  for (const [cacheKey, entry] of cache) {
+    if (!entry.promise && entry.expiresAt <= currentTime) cache.delete(cacheKey);
+  }
+  while (cache.size >= maxEntries) {
+    const evictableKey = [...cache].find(([, entry]) => !entry.promise)?.[0];
+    if (!evictableKey) {
+      const error = new Error('Live dashboard cache is at concurrent build capacity.');
+      error.code = 'DASHBOARD_BUILD_CAPACITY';
+      throw error;
+    }
+    cache.delete(evictableKey);
+  }
+
   const promise = Promise.resolve().then(() => build(parsed, feedbackDir));
   cache.set(key, { promise, expiresAt: 0, value: null });
   try {
