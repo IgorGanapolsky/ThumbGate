@@ -287,6 +287,7 @@ const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const DIAGNOSTIC_PAGE_PATH = path.resolve(__dirname, '../../public/diagnostic.html');
 const FOUNDERS_PAGE_PATH = path.resolve(__dirname, '../../public/founders.html');
 const PARTNER_INTAKE_PAGE_PATH = path.resolve(__dirname, '../../public/partner-intake.html');
+const PLATFORM_PARTNERS_PAGE_PATH = path.resolve(__dirname, '../../public/platform-partners.html');
 const PETER_PAGE_PATH = path.resolve(__dirname, '../../public/peter.html');
 const INSTALL_PAGE_PATH = path.resolve(__dirname, '../../public/install.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
@@ -3441,6 +3442,10 @@ function loadPartnerIntakePageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PARTNER_INTAKE_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadPlatformPartnersPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(PLATFORM_PARTNERS_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function loadPeterPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PETER_PAGE_PATH, runtimeConfig, pageContext);
 }
@@ -6499,6 +6504,25 @@ async function addContext(){
         });
       } catch (err) {
         sendText(res, 500, err.message || 'Partner intake page unavailable');
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/platform-partners' || pathname === '/platform-partners.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadPlatformPartnersPageHtml,
+          extraTelemetry: {
+            pageType: 'platform_partners',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Platform partners page unavailable');
       }
       return;
     }
