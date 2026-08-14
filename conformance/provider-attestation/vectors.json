@@ -1,0 +1,320 @@
+{
+  "specVersion": "1.0.0",
+  "canonicalization": "RFC 8785 JCS",
+  "signatureInput": "lowercase hex SHA-256 of JCS payload, encoded as UTF-8",
+  "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAs837FHU3G9hjEQkcBguaGpWKQYBK+hrd3zrqylXGyHE=\n-----END PUBLIC KEY-----\n",
+  "vectors": [
+    {
+      "id": "matched-valid-jcs",
+      "expectedValid": true,
+      "attestation": {
+        "schemaVersion": "thumbgate-provider-execution-attestation-v1",
+        "attestationId": "att-vector-001",
+        "provider": {
+          "id": "example-cloud",
+          "accountId": "acct-test-001"
+        },
+        "credentialHolder": {
+          "id": "example-vault",
+          "kind": "vault"
+        },
+        "thumbgate": {
+          "receiptId": "receipt-test-001",
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "providerEvidence": {
+          "eventId": "evt-test-001",
+          "auditSource": "example-cloud-audit",
+          "observedAt": "2026-08-14T12:00:30.000Z",
+          "windowStartedAt": "2026-08-14T12:00:00.000Z",
+          "windowClosesAt": "2026-08-14T12:05:00.000Z",
+          "observedLagMs": 30000,
+          "rawDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "locator": "audit://example-cloud/evt-test-001"
+        },
+        "reconciliationPolicy": {
+          "provider": "example-cloud",
+          "maxWindowMs": 600000,
+          "declaredWindowMs": 300000
+        },
+        "outcome": "matched",
+        "issuedAt": "2026-08-14T12:00:31.000Z",
+        "nonce": "0000000000000001",
+        "signature": {
+          "alg": "Ed25519",
+          "keyId": "test-key-rfc8785-v1",
+          "payloadHash": "f9fc1a6d56d73dad634082b2617c9f9aac0e74101e5af11edc0e05e3668635c5",
+          "value": "946QZB9xWxZVaFezqXDLLsYVzUjrmrbBDSvKhWbOhZ/7dmTe7StDvqODDIf6YFrIdDtTN4n09HeKm432Mti4AQ=="
+        }
+      },
+      "expectedCanonicalPayload": "{\"attestationId\":\"att-vector-001\",\"credentialHolder\":{\"id\":\"example-vault\",\"kind\":\"vault\"},\"issuedAt\":\"2026-08-14T12:00:31.000Z\",\"nonce\":\"0000000000000001\",\"outcome\":\"matched\",\"provider\":{\"accountId\":\"acct-test-001\",\"id\":\"example-cloud\"},\"providerEvidence\":{\"auditSource\":\"example-cloud-audit\",\"eventId\":\"evt-test-001\",\"locator\":\"audit://example-cloud/evt-test-001\",\"observedAt\":\"2026-08-14T12:00:30.000Z\",\"observedLagMs\":30000,\"rawDigest\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"windowClosesAt\":\"2026-08-14T12:05:00.000Z\",\"windowStartedAt\":\"2026-08-14T12:00:00.000Z\"},\"reconciliationPolicy\":{\"declaredWindowMs\":300000,\"maxWindowMs\":600000,\"provider\":\"example-cloud\"},\"schemaVersion\":\"thumbgate-provider-execution-attestation-v1\",\"thumbgate\":{\"actionHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"receiptId\":\"receipt-test-001\"}}"
+    },
+    {
+      "id": "mismatched-valid",
+      "expectedValid": true,
+      "attestation": {
+        "schemaVersion": "thumbgate-provider-execution-attestation-v1",
+        "attestationId": "att-vector-002",
+        "provider": {
+          "id": "example-cloud",
+          "accountId": "acct-test-001"
+        },
+        "credentialHolder": {
+          "id": "example-vault",
+          "kind": "vault"
+        },
+        "thumbgate": {
+          "receiptId": "receipt-test-001",
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "providerEvidence": {
+          "eventId": "evt-test-001",
+          "auditSource": "example-cloud-audit",
+          "observedAt": "2026-08-14T12:00:30.000Z",
+          "windowStartedAt": "2026-08-14T12:00:00.000Z",
+          "windowClosesAt": "2026-08-14T12:05:00.000Z",
+          "observedLagMs": 30000,
+          "rawDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "locator": "audit://example-cloud/evt-test-001"
+        },
+        "reconciliationPolicy": {
+          "provider": "example-cloud",
+          "maxWindowMs": 600000,
+          "declaredWindowMs": 300000
+        },
+        "outcome": "mismatched",
+        "issuedAt": "2026-08-14T12:00:31.000Z",
+        "nonce": "0000000000000001",
+        "signature": {
+          "alg": "Ed25519",
+          "keyId": "test-key-rfc8785-v1",
+          "payloadHash": "0ba89f00278add0b907f7f7696342d5fda4a081cefe81c00cb6a9de43e04f3ae",
+          "value": "Jv52aWKWrXBquOhRpo2Qo0NkAveaT5HUHscc6UheMB59OaG7uqUun6KwTTpF3NY8+MCP5WCC4MTjPzCKF7LxDw=="
+        }
+      }
+    },
+    {
+      "id": "not-yet-visible-valid",
+      "expectedValid": true,
+      "attestation": {
+        "schemaVersion": "thumbgate-provider-execution-attestation-v1",
+        "attestationId": "att-vector-003",
+        "provider": {
+          "id": "example-cloud",
+          "accountId": "acct-test-001"
+        },
+        "credentialHolder": {
+          "id": "example-vault",
+          "kind": "vault"
+        },
+        "thumbgate": {
+          "receiptId": "receipt-test-001",
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "providerEvidence": {
+          "eventId": null,
+          "auditSource": "example-cloud-audit",
+          "observedAt": "2026-08-14T12:00:30.000Z",
+          "windowStartedAt": "2026-08-14T12:00:00.000Z",
+          "windowClosesAt": "2026-08-14T12:05:00.000Z",
+          "observedLagMs": 30000,
+          "rawDigest": null,
+          "locator": null
+        },
+        "reconciliationPolicy": {
+          "provider": "example-cloud",
+          "maxWindowMs": 600000,
+          "declaredWindowMs": 300000
+        },
+        "outcome": "not-yet-visible",
+        "issuedAt": "2026-08-14T12:00:31.000Z",
+        "nonce": "0000000000000001",
+        "signature": {
+          "alg": "Ed25519",
+          "keyId": "test-key-rfc8785-v1",
+          "payloadHash": "a14b992953fcdbb7daf30bc71e8e1cc206d49194509fb697af82819b27deb765",
+          "value": "RpPkTXdpYl3XmQUJiXcYD8xJEwZePx6Hm/5tE87xqszytJUWR9IJCwBcPv8/PWFGgkYL7nxgGDxOMCJv1PRpDQ=="
+        }
+      }
+    },
+    {
+      "id": "absent-after-window-valid",
+      "expectedValid": true,
+      "attestation": {
+        "schemaVersion": "thumbgate-provider-execution-attestation-v1",
+        "attestationId": "att-vector-004",
+        "provider": {
+          "id": "example-cloud",
+          "accountId": "acct-test-001"
+        },
+        "credentialHolder": {
+          "id": "example-vault",
+          "kind": "vault"
+        },
+        "thumbgate": {
+          "receiptId": "receipt-test-001",
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "providerEvidence": {
+          "eventId": null,
+          "auditSource": "example-cloud-audit",
+          "observedAt": "2026-08-14T12:05:00.000Z",
+          "windowStartedAt": "2026-08-14T12:00:00.000Z",
+          "windowClosesAt": "2026-08-14T12:05:00.000Z",
+          "observedLagMs": 300000,
+          "rawDigest": null,
+          "locator": null
+        },
+        "reconciliationPolicy": {
+          "provider": "example-cloud",
+          "maxWindowMs": 600000,
+          "declaredWindowMs": 300000
+        },
+        "outcome": "absent-after-window",
+        "issuedAt": "2026-08-14T12:05:01.000Z",
+        "nonce": "0000000000000001",
+        "signature": {
+          "alg": "Ed25519",
+          "keyId": "test-key-rfc8785-v1",
+          "payloadHash": "736085db205e7eb81e27688d80ceeece194fae9c6ff5f6bf0ed52a3d8f225b83",
+          "value": "s3Cd1lAFaMHi2UM6kqkjx0VbgyZOCKg8k4NwG8UEVrGk+5yoChnYrkbJ/bsKsVlp4NvuF3Pv8d0WzVN13RuQAw=="
+        }
+      }
+    },
+    {
+      "id": "absence-before-window-invalid",
+      "expectedValid": false,
+      "attestation": {
+        "schemaVersion": "thumbgate-provider-execution-attestation-v1",
+        "attestationId": "att-vector-005",
+        "provider": {
+          "id": "example-cloud",
+          "accountId": "acct-test-001"
+        },
+        "credentialHolder": {
+          "id": "example-vault",
+          "kind": "vault"
+        },
+        "thumbgate": {
+          "receiptId": "receipt-test-001",
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "providerEvidence": {
+          "eventId": null,
+          "auditSource": "example-cloud-audit",
+          "observedAt": "2026-08-14T12:00:30.000Z",
+          "windowStartedAt": "2026-08-14T12:00:00.000Z",
+          "windowClosesAt": "2026-08-14T12:05:00.000Z",
+          "observedLagMs": 30000,
+          "rawDigest": null,
+          "locator": null
+        },
+        "reconciliationPolicy": {
+          "provider": "example-cloud",
+          "maxWindowMs": 600000,
+          "declaredWindowMs": 300000
+        },
+        "outcome": "absent-after-window",
+        "issuedAt": "2026-08-14T12:00:31.000Z",
+        "nonce": "0000000000000001",
+        "signature": {
+          "alg": "Ed25519",
+          "keyId": "test-key-rfc8785-v1",
+          "payloadHash": "ac34469e12a33c57e7cd66b91f324b64cd88475214da4efffb6ee107ad52b50f",
+          "value": "tGbY53yETzbFO/bpihhDSJxBNVHzSfSKuUvtwm2SiYa1a1AlepM/8Csq8dEbJA+UXiMbwWTguj4zRLxHzqrsBQ=="
+        }
+      },
+      "expectedError": "absence_claimed_before_window_closed"
+    },
+    {
+      "id": "not-yet-visible-after-window-invalid",
+      "expectedValid": false,
+      "attestation": {
+        "schemaVersion": "thumbgate-provider-execution-attestation-v1",
+        "attestationId": "att-vector-006",
+        "provider": {
+          "id": "example-cloud",
+          "accountId": "acct-test-001"
+        },
+        "credentialHolder": {
+          "id": "example-vault",
+          "kind": "vault"
+        },
+        "thumbgate": {
+          "receiptId": "receipt-test-001",
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "providerEvidence": {
+          "eventId": null,
+          "auditSource": "example-cloud-audit",
+          "observedAt": "2026-08-14T12:05:00.000Z",
+          "windowStartedAt": "2026-08-14T12:00:00.000Z",
+          "windowClosesAt": "2026-08-14T12:05:00.000Z",
+          "observedLagMs": 30000,
+          "rawDigest": null,
+          "locator": null
+        },
+        "reconciliationPolicy": {
+          "provider": "example-cloud",
+          "maxWindowMs": 600000,
+          "declaredWindowMs": 300000
+        },
+        "outcome": "not-yet-visible",
+        "issuedAt": "2026-08-14T12:00:31.000Z",
+        "nonce": "0000000000000001",
+        "signature": {
+          "alg": "Ed25519",
+          "keyId": "test-key-rfc8785-v1",
+          "payloadHash": "d2b8324ac3f43d82e1814ce70955d18d972c40eb1c64e6dbce0226be0dce03c0",
+          "value": "C0jnPNMZgjh9AW7LzR+VsfGSapj+OHp5n39JkX7+z0yThyo2S2Qlq2S/mHq2MFQZ/e4hW5NewYdONR5Hto5FDw=="
+        }
+      },
+      "expectedError": "not_yet_visible_after_window"
+    },
+    {
+      "id": "holder-window-widening-invalid",
+      "expectedValid": false,
+      "attestation": {
+        "schemaVersion": "thumbgate-provider-execution-attestation-v1",
+        "attestationId": "att-vector-007",
+        "provider": {
+          "id": "example-cloud",
+          "accountId": "acct-test-001"
+        },
+        "credentialHolder": {
+          "id": "example-vault",
+          "kind": "vault"
+        },
+        "thumbgate": {
+          "receiptId": "receipt-test-001",
+          "actionHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "providerEvidence": {
+          "eventId": "evt-test-001",
+          "auditSource": "example-cloud-audit",
+          "observedAt": "2026-08-14T12:00:30.000Z",
+          "windowStartedAt": "2026-08-14T12:00:00.000Z",
+          "windowClosesAt": "2026-08-14T12:15:00.000Z",
+          "observedLagMs": 30000,
+          "rawDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "locator": "audit://example-cloud/evt-test-001"
+        },
+        "reconciliationPolicy": {
+          "provider": "example-cloud",
+          "maxWindowMs": 600000,
+          "declaredWindowMs": 900000
+        },
+        "outcome": "matched",
+        "issuedAt": "2026-08-14T12:00:31.000Z",
+        "nonce": "0000000000000001",
+        "signature": {
+          "alg": "Ed25519",
+          "keyId": "test-key-rfc8785-v1",
+          "payloadHash": "20286e82435d12e3aa7905c2e051eb37bfef92a2c485161e6d82560260063e12",
+          "value": "18zFQgQG8gUZdN+6M7ciAs/6iHZyuG0gO/H8tjbJK6q5aT1EEMNzVK3WUOIfempgPDbJq5TdOuDegP0J3gTSBg=="
+        }
+      },
+      "expectedError": "holder_window_exceeds_gate_maximum"
+    }
+  ]
+}
