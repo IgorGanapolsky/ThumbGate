@@ -13,6 +13,7 @@ const compareHtml = read('public', 'compare.html');
 const orchestrationHtml = read('public', 'compare', 'ai-experience-orchestration.html');
 const agentixHtml = read('public', 'compare', 'agentix-labs.html');
 const farAiHtml = read('public', 'compare', 'far-ai.html');
+const edotenvHtml = read('public', 'compare', 'edotenv.html');
 const platformTeamsHtml = read('public', 'use-cases', 'platform-teams.html');
 const regulatedHtml = read('public', 'use-cases', 'regulated-workflows.html');
 const deploymentReadinessHtml = read('public', 'guides', 'ai-deployment-readiness.html');
@@ -73,6 +74,21 @@ test('FAR.AI comparison keeps research, evaluation, and runtime enforcement sepa
   assert.match(farAiHtml, /\$499 Managed AI Agent Workflow Gate/);
   assert.doesNotMatch(farAiHtml, /managed workflow hardening sprint/i);
   assert.match(compareHtml, /href="\/compare\/far-ai"/);
+});
+
+test('EdotEnv comparison keeps RSI train/eval and runtime enforcement separate', () => {
+  assert.match(edotenvHtml, /"@type": "TechArticle"/);
+  assert.match(edotenvHtml, /"@type": "FAQPage"/);
+  assert.match(edotenvHtml, /Complementary — train\/eval vs pre-action enforcement/i);
+  assert.match(edotenvHtml, /They build RL environments that get harder/i);
+  assert.match(edotenvHtml, /harder-next-round/i);
+  assert.match(edotenvHtml, /hypothesis → experiment → verify → claim/i);
+  assert.match(edotenvHtml, /No affiliation with EdotEnv/i);
+  assert.match(edotenvHtml, /https:\/\/edotenv\.com\//);
+  assert.match(edotenvHtml, /utm_source=edotenv_comparison/);
+  assert.match(edotenvHtml, /\$499 Managed AI Agent Workflow Gate/);
+  assert.doesNotMatch(edotenvHtml, /we are affiliated|official EdotEnv/i);
+  assert.match(compareHtml, /href="\/compare\/edotenv"/);
 });
 
 test('platform-team use case page exists with rollout language', () => {

@@ -65,6 +65,12 @@ test('gate template library exposes curated templates with shared rollout metada
   assert.ok(templates.some((template) => template.id === 'github-ruleset-migration-audit'));
   assert.ok(templates.some((template) => template.id === 'enforce-ruleset-bypass-actor-scoping'));
 
+  // Research Agent Governance (EdotEnv operating-pattern transfer)
+  assert.ok(templates.some((template) => template.category === 'Research Agent Governance'));
+  assert.ok(templates.some((template) => template.id === 'require-hypothesis-verify-before-claim'));
+  assert.ok(templates.some((template) => template.id === 'ratchet-difficulty-after-verified-pass'));
+  assert.ok(templates.some((template) => template.id === 'require-safety-hillclimb-before-rl-post-train'));
+
   assert.ok(templates.every((template) => template.category));
   assert.ok(templates.every((template) => template.problem));
   assert.ok(templates.every((template) => template.roi));
