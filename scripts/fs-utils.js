@@ -40,6 +40,33 @@ function ensureParentDir(filePath) {
  * @param {boolean} [options.tail] - Read from the end while preserving chronological order
  * @returns {object[]}
  */
+
+/**
+ * Read the last maxBytes of a text file (UTF-8), aligned to the next newline.
+ * @param {string} filePath
+ * @param {number} maxBytes
+ * @returns {{ text: string, truncated: boolean, size: number }}
+ */
+function readTextTail(filePath, maxBytes) {
+  const stats = fs.statSync(filePath);
+  const size = stats.size || 0;
+  if (size <= 0) return { text: '', truncated: false, size: 0 };
+  if (!maxBytes || size <= maxBytes) {
+    return { text: fs.readFileSync(filePath, 'utf-8'), truncated: false, size };
+  }
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(maxBytes);
+    fs.readSync(fd, buffer, 0, maxBytes, size - maxBytes);
+    let text = buffer.toString('utf-8');
+    const firstNewline = text.indexOf('\n');
+    if (firstNewline >= 0) text = text.slice(firstNewline + 1);
+    return { text, truncated: true, size };
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
 function readJsonl(filePath, options = {}) {
   if (!filePath || !fs.existsSync(filePath)) return [];
   const normalizedOptions = typeof options === 'number'
@@ -52,22 +79,9 @@ function readJsonl(filePath, options = {}) {
 
   let raw = '';
   try {
-    const stats = fs.statSync(filePath);
-    const size = stats.size || 0;
-    if (maxBytes > 0 && size > maxBytes) {
-      const fd = fs.openSync(filePath, 'r');
-      try {
-        const buffer = Buffer.alloc(maxBytes);
-        fs.readSync(fd, buffer, 0, maxBytes, size - maxBytes);
-        raw = buffer.toString('utf-8');
-        const firstNewline = raw.indexOf('\n');
-        if (firstNewline >= 0) raw = raw.slice(firstNewline + 1);
-      } finally {
-        fs.closeSync(fd);
-      }
-    } else {
-      raw = fs.readFileSync(filePath, 'utf-8');
-    }
+    raw = maxBytes > 0
+      ? readTextTail(filePath, maxBytes).text
+      : fs.readFileSync(filePath, 'utf-8');
   } catch {
     return [];
   }
@@ -127,4 +141,4 @@ function readJsonlTail(filePath, limit) {
   return readJsonl(filePath, { maxLines: limit, tail: true });
 }
 
-module.exports = { ensureDir, ensureParentDir, readJsonl, readJsonlTail, appendJsonl, writeJson };
+module.exports = { ensureDir, ensureParentDir, readTextTail, readJsonl, readJsonlTail, appendJsonl, writeJson };

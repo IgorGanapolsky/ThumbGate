@@ -48,6 +48,7 @@ const {
   computeDecisionMetrics,
   readDecisionLog,
 } = require('./decision-journal');
+const { readTextTail } = require('./fs-utils');
 const { analyzeFeedback } = require('./feedback-loop');
 const {
   collectAggregateLogEntries,
@@ -107,26 +108,6 @@ function buildUnavailableOrgDashboard(windowHours) {
 // evidence while bounding cold-start CPU and heap pressure.
 const DEFAULT_JSONL_MAX_BYTES = 4 * 1024 * 1024; // 4 MiB tail
 const DEFAULT_JSONL_MAX_ENTRIES = 20_000;
-
-function readTextTail(filePath, maxBytes) {
-  const stats = fs.statSync(filePath);
-  const size = stats.size || 0;
-  if (size <= 0) return { text: '', truncated: false, size: 0 };
-  if (!maxBytes || size <= maxBytes) {
-    return { text: fs.readFileSync(filePath, 'utf-8'), truncated: false, size };
-  }
-  const fd = fs.openSync(filePath, 'r');
-  try {
-    const buffer = Buffer.alloc(maxBytes);
-    fs.readSync(fd, buffer, 0, maxBytes, size - maxBytes);
-    let text = buffer.toString('utf-8');
-    const firstNewline = text.indexOf('\n');
-    if (firstNewline >= 0) text = text.slice(firstNewline + 1);
-    return { text, truncated: true, size };
-  } finally {
-    fs.closeSync(fd);
-  }
-}
 
 function readJSONL(filePath, options = {}) {
   if (!fs.existsSync(filePath)) return [];

@@ -46,7 +46,7 @@ const {
   aggregateFailureDiagnostics,
 } = require('./failure-diagnostics');
 const { getEffectiveSetting } = require('./evolution-state');
-const { ensureDir } = require('./fs-utils');
+const { ensureDir, readTextTail } = require('./fs-utils');
 const {
   buildFeedbackPathsFromDir,
   getFeedbackPaths: resolveFeedbackPaths,
@@ -641,22 +641,9 @@ function readJSONL(filePath, { maxLines = 500, maxBytes = 4 * 1024 * 1024 } = {}
   if (!fs.existsSync(filePath)) return [];
   let content = '';
   try {
-    const stats = fs.statSync(filePath);
-    const size = stats.size || 0;
-    if (maxBytes > 0 && size > maxBytes) {
-      const fd = fs.openSync(filePath, 'r');
-      try {
-        const buffer = Buffer.alloc(maxBytes);
-        fs.readSync(fd, buffer, 0, maxBytes, size - maxBytes);
-        content = buffer.toString('utf8');
-        const firstNewline = content.indexOf('\n');
-        if (firstNewline >= 0) content = content.slice(firstNewline + 1);
-      } finally {
-        fs.closeSync(fd);
-      }
-    } else {
-      content = fs.readFileSync(filePath, 'utf8');
-    }
+    content = maxBytes > 0
+      ? readTextTail(filePath, maxBytes).text
+      : fs.readFileSync(filePath, 'utf8');
   } catch {
     return [];
   }
