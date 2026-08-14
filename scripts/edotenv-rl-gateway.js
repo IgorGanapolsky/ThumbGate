@@ -17,6 +17,11 @@
  */
 
 const crypto = require('crypto');
+const {
+  containsSecret,
+  redactSecrets,
+  redactSecretsDeep,
+} = require('./secret-redaction');
 
 const GOVERNANCE_SOURCE = 'ThumbGate-EdotEnv-Gate';
 
@@ -114,7 +119,13 @@ function evaluateEdotEnvStep(stepPayload = {}) {
   const destructive = matchFirst(DESTRUCTIVE_PATTERNS, text);
   if (destructive) hits.push({ class: 'destructive', pattern: destructive, reward: -1.0 });
   const secret = matchFirst(SECRET_EGRESS_PATTERNS, text);
-  if (secret) hits.push({ class: 'secret_egress', pattern: secret, reward: -0.9 });
+  if (secret || containsSecret(text)) {
+    hits.push({
+      class: 'secret_egress',
+      pattern: secret || 'canonical_secret_detector',
+      reward: -0.9,
+    });
+  }
   const finance = matchFirst(FINANCE_RISK_PATTERNS, text);
   if (finance) hits.push({ class: 'finance_risk', pattern: finance, reward: -0.85 });
   const forgery = matchFirst(TENANT_FORGERY_PATTERNS, text);
@@ -138,7 +149,11 @@ function evaluateEdotEnvStep(stepPayload = {}) {
       latencyMs,
       governanceSource: GOVERNANCE_SOURCE,
       dpoPair: {
-        rejected: { toolName, params, text: text.slice(0, 500) },
+        rejected: {
+          toolName,
+          params: redactSecretsDeep(params),
+          text: redactSecrets(text.slice(0, 500)),
+        },
         preferred: preferredSafe,
         label: hits[0].class,
       },
