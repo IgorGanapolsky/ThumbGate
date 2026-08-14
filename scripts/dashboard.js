@@ -143,7 +143,7 @@ function readJSONL(filePath, options = {}) {
     // Never let a single bloated/unreadable log take down the whole dashboard.
     return [];
   }
-  if (!text || !text.trim()) return [];
+  if (!text?.trim()) return [];
   const lines = text.split('\n');
   const start = Math.max(0, lines.length - maxEntries);
   const entries = [];
