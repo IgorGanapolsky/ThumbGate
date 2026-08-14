@@ -88,6 +88,33 @@ npm run test:thumbgate-bench
 
 The top-level `npm test` includes `test:thumbgate-bench`, so benchmark regressions are caught before merge.
 
+## Adaptive Governance Arena
+
+The committed arena at `bench/adaptive-governance-arena.json` extends the fixed benchmark with progressively harder governance levels. A harder level unlocks only when every scenario in the current level passes.
+
+```bash
+npm run thumbgate:arena
+npm run thumbgate:arena -- --json
+npm run test:adaptive-governance-arena
+```
+
+The default arena remains entirely simulated and covers:
+
+- experiment budget ceilings
+- approved versus unapproved dynamic tool creation
+- sensitive local-versus-cloud routing
+- unsupported completion claims and benchmark overfitting
+- holdout evidence tied to a human objective
+- simulation-to-live market boundaries
+- agent and credential-owner identity separation
+- approval receipts for irreversible actions
+
+Every evaluated scenario emits a deterministic SHA-256 chained arena receipt. These local evaluation receipts detect report tampering, but they are not broker-signed execution receipts. Re-running the same arena must reproduce the same decisions and chain head.
+
+Failed attempts can be converted into receipt-linked DPO candidates when the fixture supplies explicit preferred and rejected responses. Advancement and export both fail closed: later levels stay locked after a failure, and passing attempts are not mislabeled as preference corrections.
+
+This provides a customer-specific evaluation path for Workflow Hardening Sprints: start with safe simulated workflows, increase difficulty, prove that useful work still proceeds, and preserve machine-readable governance evidence before any consequential integration is considered.
+
 ## ProgramBench-Style Smoke Lane
 
 The committed smoke suite lives at:
