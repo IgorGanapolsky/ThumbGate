@@ -101,8 +101,12 @@ function buildUnavailableOrgDashboard(windowHours) {
 // Full-file readFileSync/stringify then throws:
 //   "Cannot create a string longer than 0x1fffffe8 characters"
 // Cap dashboard JSONL ingestion to a recent tail so /v1/dashboard stays live.
-const DEFAULT_JSONL_MAX_BYTES = 32 * 1024 * 1024; // 32 MiB tail
-const DEFAULT_JSONL_MAX_ENTRIES = 100_000;
+// The dashboard reads several logs more than once while composing its nested
+// summaries. A 32 MiB default multiplied those synchronous parses enough to
+// starve production HTTP for minutes. Four MiB keeps recent operational
+// evidence while bounding cold-start CPU and heap pressure.
+const DEFAULT_JSONL_MAX_BYTES = 4 * 1024 * 1024; // 4 MiB tail
+const DEFAULT_JSONL_MAX_ENTRIES = 20_000;
 
 function readTextTail(filePath, maxBytes) {
   const stats = fs.statSync(filePath);

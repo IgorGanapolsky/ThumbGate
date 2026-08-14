@@ -28,6 +28,25 @@ test('readJSONL tails oversized files instead of loading the whole file', () => 
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('readJSONL default budget keeps recent evidence without parsing an oversized history', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-jsonl-default-bound-'));
+  const file = path.join(dir, 'feedback-log.jsonl');
+  const payload = 'x'.repeat(1024);
+  const lines = [];
+  for (let i = 0; i < 5_000; i += 1) {
+    lines.push(JSON.stringify({ id: `e${i}`, payload }));
+  }
+  fs.writeFileSync(file, `${lines.join('\n')}\n`);
+
+  const entries = readJSONL(file);
+
+  assert.ok(entries.length > 0);
+  assert.ok(entries.length < lines.length);
+  assert.equal(entries.at(-1).id, 'e4999');
+  assert.notEqual(entries[0].id, 'e0');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('generateDashboard remains callable with oversized log paths (bounded read)', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-dash-bound-'));
   const lines = [];
