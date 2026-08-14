@@ -163,7 +163,12 @@ function collectAggregateLogEntries(fileName, options = {}) {
   for (const dir of stores) {
     const logPath = path.join(dir, fileName);
     if (!safeExists(logPath)) continue;
-    const rows = readJsonl(logPath, { maxLines: 0 }) || [];
+    // Dashboard/production: never full-scan multi-hundred-MB feedback logs.
+    // maxLines 0 previously meant "all lines" and forced a full-file read.
+    const maxLines = Number(options.maxLines) > 0
+      ? Number(options.maxLines)
+      : 20_000;
+    const rows = readJsonl(logPath, { maxLines, tail: true }) || [];
     for (let index = 0; index < rows.length; index += 1) {
       const rawEntry = rows[index];
       const entry = { ...rawEntry };

@@ -1602,7 +1602,10 @@ function resolveTeamWindowHours(analyticsWindow) {
 
 function collectAllFeedbackEntries(feedbackDir) {
   if (shouldAggregateFeedback()) {
-    return collectAggregateLogEntries('feedback-log.jsonl', { feedbackDir }).entries;
+    return collectAggregateLogEntries('feedback-log.jsonl', {
+      feedbackDir,
+      maxLines: DEFAULT_JSONL_MAX_ENTRIES,
+    }).entries;
   }
 
   const entries = [];
@@ -1704,7 +1707,12 @@ function generateDashboard(feedbackDir, options = {}) {
       availability: 'private_core',
     };
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
-  const feedbackAnalysis = analyzeFeedback(path.join(feedbackDir, 'feedback-log.jsonl'));
+  // Reuse already-bounded entries; do not full-scan feedback-log.jsonl again.
+  const feedbackAnalysis = analyzeFeedback(path.join(feedbackDir, 'feedback-log.jsonl'), {
+    entries,
+    maxLines: DEFAULT_JSONL_MAX_ENTRIES,
+    maxBytes: DEFAULT_JSONL_MAX_BYTES,
+  });
   const harness = computeHarnessOverview(feedbackDir, entries);
   const interventionPolicy = getInterventionPolicySummary(feedbackDir);
   const decisionRecords = readDecisionLog(path.join(feedbackDir, DECISION_LOG_FILENAME));

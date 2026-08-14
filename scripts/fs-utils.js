@@ -42,24 +42,50 @@ function ensureParentDir(filePath) {
  */
 function readJsonl(filePath, options = {}) {
   if (!filePath || !fs.existsSync(filePath)) return [];
-  const raw = fs.readFileSync(filePath, 'utf-8').trim();
-  if (!raw) return [];
-
   const normalizedOptions = typeof options === 'number'
     ? { maxLines: options, tail: true }
     : (options || {});
+  const maxLines = Number(normalizedOptions.maxLines) || 0;
+  const maxBytes = Number(normalizedOptions.maxBytes) > 0
+    ? Number(normalizedOptions.maxBytes)
+    : (maxLines > 0 || normalizedOptions.tail ? 4 * 1024 * 1024 : 0);
+
+  let raw = '';
+  try {
+    const stats = fs.statSync(filePath);
+    const size = stats.size || 0;
+    if (maxBytes > 0 && size > maxBytes) {
+      const fd = fs.openSync(filePath, 'r');
+      try {
+        const buffer = Buffer.alloc(maxBytes);
+        fs.readSync(fd, buffer, 0, maxBytes, size - maxBytes);
+        raw = buffer.toString('utf-8');
+        const firstNewline = raw.indexOf('\n');
+        if (firstNewline >= 0) raw = raw.slice(firstNewline + 1);
+      } finally {
+        fs.closeSync(fd);
+      }
+    } else {
+      raw = fs.readFileSync(filePath, 'utf-8');
+    }
+  } catch {
+    return [];
+  }
+  raw = raw.trim();
+  if (!raw) return [];
+
   let lines = raw.split('\n');
 
-  if (normalizedOptions.tail && normalizedOptions.maxLines > 0) {
-    lines = lines.slice(-normalizedOptions.maxLines);
+  if (normalizedOptions.tail && maxLines > 0) {
+    lines = lines.slice(-maxLines);
   }
 
   if (normalizedOptions.reverse) {
     lines = lines.reverse();
   }
 
-  if (!normalizedOptions.tail && normalizedOptions.maxLines && normalizedOptions.maxLines > 0) {
-    lines = lines.slice(0, normalizedOptions.maxLines);
+  if (!normalizedOptions.tail && maxLines > 0) {
+    lines = lines.slice(0, maxLines);
   }
 
   return lines

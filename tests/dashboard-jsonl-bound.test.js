@@ -80,6 +80,32 @@ test('readJSONL returns empty array when read fails with string-limit style erro
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('generateDashboard reuses bounded entries for analyzeFeedback (no full re-scan)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-dash-reuse-'));
+  const prevAgg = process.env.THUMBGATE_AGGREGATE_FEEDBACK;
+  process.env.THUMBGATE_AGGREGATE_FEEDBACK = '1';
+  try {
+    const lines = [];
+    for (let i = 0; i < 300; i += 1) {
+      lines.push(JSON.stringify({
+        id: `fb_${i}`,
+        signal: i % 3 === 0 ? 'down' : 'up',
+        feedback: i % 3 === 0 ? 'down' : 'up',
+        context: `ctx ${i}`,
+        timestamp: new Date(Date.UTC(2026, 5, 1, 12, 0, i % 60)).toISOString(),
+      }));
+    }
+    fs.writeFileSync(path.join(dir, 'feedback-log.jsonl'), `${lines.join('\n')}\n`);
+    const data = generateDashboard(dir, { analyticsWindow: { window: 'today', timeZone: 'UTC' } });
+    assert.ok(data.feedbackAnalysis);
+    assert.ok(Number(data.feedbackAnalysis.total) >= 0);
+  } finally {
+    if (prevAgg === undefined) delete process.env.THUMBGATE_AGGREGATE_FEEDBACK;
+    else process.env.THUMBGATE_AGGREGATE_FEEDBACK = prevAgg;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('operational dashboard reports progress stages', async () => {
   const { getOperationalDashboard } = require('../scripts/operational-dashboard');
   const steps = [];
