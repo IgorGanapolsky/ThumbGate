@@ -6,6 +6,24 @@
 **Verifier:** [`scripts/provider-attestation-conformance.js`](../../scripts/provider-attestation-conformance.js)  
 **Quality evidence:** [`VERIFICATION_EVIDENCE.md`](../../VERIFICATION_EVIDENCE.md)
 
+
+## Permanent public links
+
+| Artifact | URL |
+|---|---|
+| Spec (this document) | https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/specs/provider-execution-attestation-v1.md |
+| JSON Schema | https://raw.githubusercontent.com/IgorGanapolsky/ThumbGate/main/config/schemas/provider-execution-attestation-v1.schema.json |
+| Normative vectors | https://raw.githubusercontent.com/IgorGanapolsky/ThumbGate/main/conformance/provider-attestation/vectors.json |
+| Verifier | https://github.com/IgorGanapolsky/ThumbGate/blob/main/scripts/provider-attestation-conformance.js |
+
+Evaluate locally after cloning:
+
+```bash
+npm run prove:provider-attestation
+# or
+node scripts/provider-attestation-conformance.js
+```
+
 ## Purpose
 
 This contract lets a credential-holding broker, vault, or gateway attest to the result of a provider-side action without giving the AI agent provider credentials. ThumbGate binds the attestation to its pre-action execution receipt and independently verifies the holder's evidence.
