@@ -14,14 +14,18 @@
       "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
       "category": "agent-orchestration",
       "tags": [
+        "agent-firewall",
+        "ai-agent-memory",
+        "coding-agent",
         "cursor",
         "cursor-plugin",
-        "thumbgate",
-        "thumbs-up-down",
+        "enterprise",
         "feedback",
-        "ai-agent-memory",
+        "grok-bot",
+        "mcp",
         "mistake-prevention",
-        "coding-agent"
+        "thumbgate",
+        "thumbs-up-down"
       ]
     }
   ]
