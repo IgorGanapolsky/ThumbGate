@@ -69,6 +69,15 @@ test('blocks literal credentials and redacts rejected DPO output', () => {
   assert.match(JSON.stringify(result.dpoPair.rejected), /\[REDACTED:/);
 });
 
+test('public WebFetch URLs are not false-positive secret egress', () => {
+  const res = evaluateEdotEnvStep({
+    toolName: 'WebFetch',
+    params: { url: 'https://api.github.com/zen' },
+  });
+  assert.equal(res.allowed, true);
+  assert.equal(res.status, 'ALLOWED');
+});
+
 test('trajectory accumulates reward and records first block', () => {
   const traj = evaluateEdotEnvTrajectory([
     { toolName: 'query_orderbook', params: { symbol: 'AAPL' } },
