@@ -11,22 +11,29 @@
   "repository": "https://github.com/IgorGanapolsky/ThumbGate",
   "license": "MIT",
   "keywords": [
+    "agent-firewall",
+    "ai-agent-memory",
+    "coding-agent",
     "cursor",
     "cursor-plugin",
+    "enterprise",
     "feedback",
-    "thumbs-up-down",
-    "thumbgate",
-    "ai-agent-memory",
+    "governance",
+    "grok-bot",
+    "infrastructure-firewall",
+    "mcp",
     "mistake-prevention",
-    "coding-agent",
+    "pre-action",
     "pre-action-gates",
-    "mcp"
+    "thumbgate",
+    "thumbgate.ai",
+    "thumbs-up-down"
   ],
   "logo": "assets/logo-400x400.png",
   "interface": {
     "displayName": "ThumbGate for Cursor",
-    "shortDescription": "Pre-action gates + mistake prevention + reliability memory for Cursor.",
-    "longDescription": "Adds ThumbGate's pre-action gates, domain skill packs (Stripe, Railway, DB), hallucination detection, PII scanning, progressive disclosure (82% token savings), and MCP reliability memory to Cursor workflows.",
+    "shortDescription": "Pre-action agent firewall + reliability memory + hosted API (thumbgate.ai).",
+    "longDescription": "ThumbGate is the infrastructure firewall for AI coding agents. Capture thumbs-up/down feedback, promote repeated failures into prevention rules, evaluate tool-calls before they run (local MCP + hosted API at https://thumbgate.ai), and write idempotent execution receipts for enterprise audit. Works in Cursor, Grok Bot, Claude Code, and other agent runtimes.",
     "developerName": "Igor Ganapolsky",
     "category": "Developer Tools",
     "capabilities": [
@@ -37,10 +44,10 @@
     "privacyPolicyURL": "https://thumbgate.ai/privacy",
     "termsOfServiceURL": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/LICENSE",
     "defaultPrompt": [
-      "Capture a thumbs down with context after a mistake.",
-      "Check prevention gates before a deploy or publish.",
-      "Load ThumbGate skill packs before a risky task.",
-      "Run the eval harness to measure before/after impact."
+      "Check prevention gates before a deploy, publish, or destructive shell command.",
+      "Capture a thumbs-down with context after a mistake so it cannot recur.",
+      "Evaluate a proposed agent tool-call via ThumbGate decisions API.",
+      "Search lessons for how we fixed a similar failure before."
     ],
     "brandColor": "#0ea5e9"
   }
