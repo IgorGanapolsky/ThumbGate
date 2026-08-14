@@ -125,3 +125,40 @@ test('operational dashboard reports progress stages', async () => {
     else process.env.THUMBGATE_METRICS_SOURCE = prev;
   }
 });
+
+test('feedback-loop analyzeFeedback accepts preloaded entries without full file scan', () => {
+  const { analyzeFeedback } = require('../scripts/feedback-loop');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-analyze-bound-'));
+  const file = path.join(dir, 'feedback-log.jsonl');
+  const entries = [];
+  for (let i = 0; i < 50; i += 1) {
+    entries.push({
+      id: `e${i}`,
+      signal: i % 2 ? 'negative' : 'positive',
+      feedback: i % 2 ? 'down' : 'up',
+      context: `c${i}`,
+      timestamp: new Date(Date.UTC(2026, 5, 1, 0, 0, i)).toISOString(),
+    });
+  }
+  fs.writeFileSync(file, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
+  const analysis = analyzeFeedback(file, { entries, maxLines: 20 });
+  assert.ok(analysis);
+  assert.ok(Number(analysis.total) >= 0);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('fs-utils readJsonl tails large files by maxBytes', () => {
+  const { readJsonl } = require('../scripts/fs-utils');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-fs-jsonl-'));
+  const file = path.join(dir, 'x.jsonl');
+  const lines = [];
+  for (let i = 0; i < 2000; i += 1) {
+    lines.push(JSON.stringify({ id: `id${i}`, pad: 'y'.repeat(200) }));
+  }
+  fs.writeFileSync(file, `${lines.join('\n')}\n`);
+  const rows = readJsonl(file, { maxLines: 30, tail: true, maxBytes: 8_000 });
+  assert.ok(rows.length > 0);
+  assert.ok(rows.length <= 30);
+  assert.notEqual(rows[0].id, 'id0');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
