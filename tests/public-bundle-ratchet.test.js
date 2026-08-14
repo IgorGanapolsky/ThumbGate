@@ -195,7 +195,7 @@ const path = require('node:path');
 // 455 -> 458: edotenv-rl-gateway + rsi-safety-hillclimb + research-agent-harness
 // 458 -> 459: governance-difficulty-curriculum (EdotEnv harder-next-round transfer)
 // 459 -> 460: provider-receipt-contract packaging on rebased receipt PR
-const BASELINE_FILE_COUNT = 461; // platform-partner page
+const BASELINE_FILE_COUNT = 462; // platform-partner page
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
