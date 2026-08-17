@@ -12,6 +12,7 @@ const {
   assessHookDrift,
   assessPrivilegedCoverage,
   assessPolicyVariance,
+  assessSensitiveAudit,
   assessMcpThumbgate,
   scorePosture,
   PRIVILEGED_COVERAGE,
@@ -204,6 +205,144 @@ test('buildSecurityCentralReport surfaces drift + empty policy as findings', () 
     assert.ok(report.findings.length >= 2);
     assert.ok(report.posture.score < 100);
     assert.ok(report.remediation.length >= 1);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Regression tests for the five P1 review findings on PR #3491.
+// Each asserts the CONTROL behaves correctly against known-bad input, rather
+// than asserting the happy path. All five failed against the pre-fix code.
+// ---------------------------------------------------------------------------
+
+test('assessPrivilegedCoverage: advisory-only gates do NOT count as coverage', () => {
+  // A warn-action gate matches the secret-exfil category. The operation still
+  // executes, so certifying it as coverage would report phantom enforcement.
+  const warnOnly = [
+    { id: 'secret-warn', action: 'warn', category: 'secret', description: 'credential exfil' },
+  ];
+  const r = assessPrivilegedCoverage(warnOnly);
+  const gap = r.findings.find((f) => f.id === 'privileged-gap-secret-exfil');
+  assert.ok(gap, 'warn-only gate must still raise a privileged-gap finding');
+  assert.match(gap.message, /No block-action gate/);
+  assert.match(gap.message, /secret-warn/);
+  assert.ok(!r.covered.some((c) => c.id === 'secret-exfil'));
+
+  // Same category with action=block IS coverage.
+  const blocking = [
+    { id: 'secret-block', action: 'block', category: 'secret', description: 'credential exfil' },
+  ];
+  const r2 = assessPrivilegedCoverage(blocking);
+  assert.ok(!r2.findings.some((f) => f.id === 'privileged-gap-secret-exfil'));
+  assert.equal(r2.covered.find((c) => c.id === 'secret-exfil').action, 'block');
+});
+
+test('assessHookDrift: a PostToolUse gate-check does NOT satisfy PreToolUse wiring', () => {
+  const dir = tmpDir('tg-sec-post-');
+  const home = tmpDir('tg-sec-home-post-');
+  try {
+    fs.mkdirSync(path.join(dir, '.claude'), { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PreToolUse: [],
+          PostToolUse: [{ hooks: [{ command: 'thumbgate gate-check' }] }],
+        },
+      }),
+    );
+    const r = assessHookDrift(dir, home);
+    assert.equal(r.anyThumbgateHook, false, 'PostToolUse must not register as PreToolUse wiring');
+    assert.equal(r.drifted, true);
+    assert.ok(r.findings.some((f) => f.id === 'hook-drift-missing-thumbgate'));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('assessSensitiveAudit: empty or malformed audit files are not evidence', () => {
+  const dir = tmpDir('tg-sec-audit-');
+  const home = tmpDir('tg-sec-home-audit-');
+  try {
+    fs.mkdirSync(path.join(dir, '.thumbgate'), { recursive: true });
+    // Empty JSONL + malformed JSON: both exist, neither is usable evidence.
+    fs.writeFileSync(path.join(dir, '.thumbgate', 'audit-trail.jsonl'), '');
+    fs.writeFileSync(path.join(dir, '.thumbgate', 'gate-stats.json'), '{ not json');
+    const r = assessSensitiveAudit(dir, home, {});
+    assert.equal(r.hasEvidence, false, 'unusable files must not set hasEvidence');
+    assert.equal(r.auditEvents, 0);
+    assert.ok(
+      r.findings.some((f) => f.id === 'audit-missing'),
+      'audit-missing remediation must survive unusable files',
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('assessSensitiveAudit: large JSONL is tail-scanned, not fully materialized', () => {
+  const dir = tmpDir('tg-sec-big-');
+  const home = tmpDir('tg-sec-home-big-');
+  try {
+    fs.mkdirSync(path.join(dir, '.thumbgate'), { recursive: true });
+    const logPath = path.join(dir, '.thumbgate', 'audit-trail.jsonl');
+    // ~60k records; only the tail window should be inspected.
+    const line = JSON.stringify({ event: 'allow', tool: 'Bash' });
+    fs.writeFileSync(logPath, `${line}\n`.repeat(60000));
+    fs.appendFileSync(logPath, `${JSON.stringify({ event: 'blocked', reason: 'secret' })}\n`);
+
+    const before = process.memoryUsage().heapUsed;
+    const r = assessSensitiveAudit(dir, home, {});
+    const grewMb = (process.memoryUsage().heapUsed - before) / (1024 * 1024);
+
+    assert.equal(r.hasEvidence, true);
+    assert.ok(r.secretDenialSignals >= 1, 'must still detect the trailing secret denial');
+    assert.ok(grewMb < 64, `tail scan should stay bounded, heap grew ${grewMb.toFixed(1)} MB`);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('buildSecurityCentralReport: project auto-gates load when HOME store is absent', () => {
+  const dir = tmpDir('tg-sec-autogates-');
+  const home = tmpDir('tg-sec-home-autogates-');
+  try {
+    fs.writeFileSync(path.join(dir, '.mcp.json'), JSON.stringify({ mcpServers: {} }));
+    fs.mkdirSync(path.join(dir, '.thumbgate'), { recursive: true });
+    // Project has a real block gate; HOME has NO auto-promoted-gates.json.
+    fs.writeFileSync(
+      path.join(dir, '.thumbgate', 'auto-promoted-gates.json'),
+      JSON.stringify({
+        gates: [
+          { id: 'auto-secret-block', action: 'block', category: 'secret', description: 'credential exfil' },
+        ],
+      }),
+    );
+    const emptyManual = path.join(dir, 'manual.json');
+    fs.writeFileSync(emptyManual, JSON.stringify({ gates: [] }));
+
+    const report = buildSecurityCentralReport({
+      projectRoot: dir,
+      homeDir: home,
+      env: {},
+      manualGatesPath: emptyManual,
+    });
+
+    assert.equal(
+      report.dimensions.policyVariance.autoCount,
+      1,
+      'project auto-promoted gate must be counted',
+    );
+    assert.equal(report.dimensions.policyVariance.blockCount, 1);
+    assert.ok(
+      !report.findings.some((f) => f.id === 'policy-no-blocks'),
+      'a real project block gate must not be reported as allow-by-default',
+    );
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(home, { recursive: true, force: true });

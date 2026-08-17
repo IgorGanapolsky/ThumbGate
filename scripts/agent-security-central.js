@@ -86,6 +86,57 @@ function readTextIfExists(filePath) {
   }
 }
 
+/** How many trailing audit records the posture scan inspects. */
+const AUDIT_TAIL_LINES = 500;
+/** Read window for the tail scan: enough for AUDIT_TAIL_LINES typical records. */
+const AUDIT_TAIL_BYTES = 1024 * 1024;
+
+/**
+ * Read the last `maxLines` non-empty lines of a JSONL file without
+ * materializing the whole file. Audit logs grow without bound (a 101 MB /
+ * 200k-line log previously allocated 200k split entries plus a 200k filtered
+ * array just to inspect the final 500 records), so the scan reads at most
+ * AUDIT_TAIL_BYTES from the end of the file.
+ *
+ * @returns {{lines: string[], totalLines: number, truncated: boolean}}
+ *   `totalLines` is exact when the file fits in the window, otherwise it is a
+ *   lower bound and `truncated` is true.
+ */
+function readTailLines(filePath, maxLines) {
+  let fd;
+  try {
+    const { size } = fs.statSync(filePath);
+    if (size === 0) return { lines: [], totalLines: 0, truncated: false };
+    const readBytes = Math.min(size, AUDIT_TAIL_BYTES);
+    const buf = Buffer.alloc(readBytes);
+    fd = fs.openSync(filePath, 'r');
+    fs.readSync(fd, buf, 0, readBytes, size - readBytes);
+    const truncated = readBytes < size;
+    let chunk = buf.toString('utf8');
+    // A partial leading record would be misparsed; drop it when truncated.
+    if (truncated) {
+      const nl = chunk.indexOf('\n');
+      chunk = nl === -1 ? '' : chunk.slice(nl + 1);
+    }
+    const all = chunk.split('\n').filter(Boolean);
+    return {
+      lines: all.slice(-maxLines),
+      totalLines: all.length,
+      truncated,
+    };
+  } catch {
+    return { lines: [], totalLines: 0, truncated: false };
+  } finally {
+    if (fd !== undefined) {
+      try {
+        fs.closeSync(fd);
+      } catch {
+        /* already closed */
+      }
+    }
+  }
+}
+
 function loadGatesFromFile(filePath) {
   const data = readJsonIfExists(filePath);
   if (!data || data.__parseError) return [];
@@ -123,8 +174,11 @@ function collectHooksFromSettings(settings) {
     }
     if (typeof entry.command === 'string') commands.push(entry.command);
   }
-  // Also scan whole hooks JSON for command strings (Claude Code formats vary)
-  const raw = JSON.stringify(hooks);
+  // Scan only the selected PreToolUse surface for command strings (Claude Code
+  // formats vary). Serializing the whole `hooks` object would let a PostToolUse
+  // `thumbgate gate-check` entry masquerade as PreToolUse wiring, hiding real
+  // hook drift while tools still execute before the gate runs.
+  const raw = JSON.stringify(pre);
   return { commands, raw };
 }
 
@@ -195,22 +249,33 @@ function assessPrivilegedCoverage(gates) {
   const covered = [];
   const missing = [];
   for (const need of PRIVILEGED_COVERAGE) {
-    const hit = gates.find((g) => need.match.test(gateBlob(g)));
+    const matching = gates.filter((g) => need.match.test(gateBlob(g)));
+    // Only a block-action gate counts as coverage. A warn/log/approve gate is
+    // advisory: the privileged operation still executes, so certifying it as
+    // coverage would report enforcement that does not exist.
+    const hit = matching.find((g) => g.action === 'block');
     if (hit) {
       covered.push({
         id: need.id,
         label: need.label,
         gateId: hit.id || hit.name || null,
-        action: hit.action || null,
+        action: hit.action,
       });
     } else {
-      missing.push({ id: need.id, label: need.label });
+      missing.push({
+        id: need.id,
+        label: need.label,
+        advisoryOnly: matching.length > 0,
+        advisoryGates: matching.map((g) => g.id || g.name || null).filter(Boolean),
+      });
     }
   }
   const findings = missing.map((m) => ({
     severity: 'medium',
     id: `privileged-gap-${m.id}`,
-    message: `No active gate covers privileged risk: ${m.label}`,
+    message: m.advisoryOnly
+      ? `No block-action gate covers privileged risk: ${m.label} — only advisory (warn/log/approve) gates matched: ${m.advisoryGates.join(', ') || 'unnamed'}. The operation is not prevented.`
+      : `No active gate covers privileged risk: ${m.label}`,
   }));
   return { covered, missing, findings };
 }
@@ -261,25 +326,32 @@ function assessSensitiveAudit(projectRoot, homeDir, env = {}) {
 
   for (const filePath of candidates) {
     if (!fs.existsSync(filePath)) continue;
-    present.push(filePath);
-    const text = readTextIfExists(filePath);
-    if (!text) continue;
+    // A path is only counted as evidence once usable content is established.
+    // An empty JSONL file or malformed JSON is not evidence, and counting it
+    // would suppress the `audit-missing` remediation with zero usable events.
     if (filePath.endsWith('.jsonl')) {
-      const lines = text.split('\n').filter(Boolean);
-      auditEvents += lines.length;
-      for (const line of lines.slice(-500)) {
+      const { lines, totalLines } = readTailLines(filePath, AUDIT_TAIL_LINES);
+      if (totalLines === 0) continue;
+      present.push(filePath);
+      auditEvents += totalLines;
+      for (const line of lines) {
         if (/secret|exfil|credential|deny|blocked|hard.?block/i.test(line)) {
           secretDenialSignals += 1;
         }
       }
     } else if (filePath.endsWith('.json')) {
+      const text = readTextIfExists(filePath);
+      if (!text) continue;
+      let data;
       try {
-        const data = JSON.parse(text);
-        auditEvents += Number(data.totalBlocked || data.blocked || 0);
-        if (/secret|exfil/i.test(text)) secretDenialSignals += 1;
+        data = JSON.parse(text);
       } catch {
-        /* ignore */
+        continue; // malformed JSON is not usable evidence
       }
+      if (!data || typeof data !== 'object') continue;
+      present.push(filePath);
+      auditEvents += Number(data.totalBlocked || data.blocked || 0);
+      if (/secret|exfil/i.test(text)) secretDenialSignals += 1;
     }
   }
 
@@ -378,11 +450,19 @@ function buildSecurityCentralReport(options = {}) {
 
   const manualGatesPath =
     options.manualGatesPath || path.join(PKG_ROOT, 'config', 'gates', 'default.json');
+  // Pick the first store that actually EXISTS, not the first non-empty string.
+  // A plain `||` chain always selects the HOME filename when homeDir is set,
+  // so an absent ~/.thumbgate/auto-promoted-gates.json would silently hide the
+  // project's real auto-promoted gates from every policy count.
+  const projectAutoGatesPath = path.join(projectRoot, '.thumbgate', 'auto-promoted-gates.json');
+  const homeAutoGatesPath = homeDir
+    ? path.join(homeDir, '.thumbgate', 'auto-promoted-gates.json')
+    : null;
   const autoGatesPath =
     options.autoGatesPath ||
     env.THUMBGATE_AUTO_GATES ||
-    (homeDir ? path.join(homeDir, '.thumbgate', 'auto-promoted-gates.json') : null) ||
-    path.join(projectRoot, '.thumbgate', 'auto-promoted-gates.json');
+    [homeAutoGatesPath, projectAutoGatesPath].find((p) => p && fs.existsSync(p)) ||
+    projectAutoGatesPath;
 
   const manualGates = loadGatesFromFile(manualGatesPath);
   const autoGates = loadGatesFromFile(autoGatesPath);
