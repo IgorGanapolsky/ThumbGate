@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/config/schemas/provider-execution-attestation-v1.schema.json",
+  "title": "ThumbGate Provider Execution Attestation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "attestationId", "provider", "credentialHolder", "thumbgate", "providerEvidence", "reconciliationPolicy", "outcome", "issuedAt", "nonce", "signature"],
+  "properties": {
+    "schemaVersion": { "const": "thumbgate-provider-execution-attestation-v1" },
+    "attestationId": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "provider": {
+      "type": "object", "additionalProperties": false, "required": ["id", "accountId"],
+      "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 120 }, "accountId": { "type": "string", "minLength": 1, "maxLength": 200 } }
+    },
+    "credentialHolder": {
+      "type": "object", "additionalProperties": false, "required": ["id", "kind"],
+      "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 200 }, "kind": { "enum": ["broker", "vault", "gateway"] } }
+    },
+    "thumbgate": {
+      "type": "object", "additionalProperties": false, "required": ["receiptId", "actionHash"],
+      "properties": { "receiptId": { "type": "string", "minLength": 1, "maxLength": 200 }, "actionHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }
+    },
+    "providerEvidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["auditSource", "observedAt", "windowStartedAt", "windowClosesAt", "observedLagMs"],
+      "properties": {
+        "eventId": { "type": ["string", "null"], "maxLength": 300 },
+        "auditSource": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "windowStartedAt": { "type": "string", "format": "date-time" },
+        "windowClosesAt": { "type": "string", "format": "date-time" },
+        "observedLagMs": { "type": "integer", "minimum": 0 },
+        "rawDigest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "locator": { "type": ["string", "null"], "maxLength": 500 }
+      }
+    },
+    "reconciliationPolicy": {
+      "type": "object", "additionalProperties": false, "required": ["provider", "maxWindowMs", "declaredWindowMs"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "maxWindowMs": { "type": "integer", "minimum": 1 },
+        "declaredWindowMs": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "outcome": { "enum": ["matched", "mismatched", "not-yet-visible", "absent-after-window"] },
+    "issuedAt": { "type": "string", "format": "date-time" },
+    "nonce": { "type": "string", "minLength": 16, "maxLength": 200 },
+    "signature": {
+      "type": "object", "additionalProperties": false, "required": ["alg", "keyId", "payloadHash", "value"],
+      "properties": {
+        "alg": { "const": "Ed25519" },
+        "keyId": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "payloadHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
