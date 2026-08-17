@@ -10,7 +10,11 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "rootDir": "./src",
+    "esModuleInterop": true,
+    "alwaysStrict": true,
+    "noUncheckedSideEffectImports": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
