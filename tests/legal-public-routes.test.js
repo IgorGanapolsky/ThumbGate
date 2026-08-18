@@ -94,6 +94,16 @@ test('security and legal index routes publish buyer-facing counsel summaries', a
   assert.match(securityBody, /Vulnerability disclosure/i);
   assert.match(securityBody, /not a SOC 2 report/i);
   assert.match(securityBody, /security@thumbgate\.ai/i);
+  assert.match(securityBody, /Vendor questionnaire/i);
+  assert.match(securityBody, /\/security\.json/);
+  assert.match(securityBody, /Sec-GPC/);
+
+  const securityJson = await fetch(apiUrl('/security.json'));
+  assert.equal(securityJson.status, 200);
+  const questionnaire = await securityJson.json();
+  assert.equal(questionnaire.certification, false);
+  assert.ok(Array.isArray(questionnaire.items));
+  assert.ok(questionnaire.items.some((item) => item.id === 'soc2' && /No\./.test(item.answer)));
 
   const legal = await fetch(apiUrl('/legal'));
   assert.equal(legal.status, 200);

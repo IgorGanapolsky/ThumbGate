@@ -60,7 +60,7 @@ commercially reasonable notice but not a contractual 72-hour SLA unless added.
 
 ## 6. Vulnerability disclosure
 
-Email **igor.ganapolsky@gmail.com** with “Security” in the subject.  
+Email **security@thumbgate.ai** with “Security” in the subject.  
 Do not open public GitHub issues for active vulnerabilities.  
 We aim to acknowledge within **48 hours**.
 

@@ -16,6 +16,10 @@ const {
   buildIntakeDiscoveryPacket,
   buildIntakeQualificationCard,
 } = require('../../scripts/revenue-offer-system');
+const {
+  getSecurityQuestionnaire,
+  renderSecurityOverviewHtml,
+} = require('../security-questionnaire');
 
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
 const POSTHOG_INGEST_HOST = 'us.i.posthog.com';
@@ -4121,6 +4125,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/support', changefreq: 'monthly', priority: '0.7' },
     { path: '/legal', changefreq: 'monthly', priority: '0.7' },
     { path: '/security', changefreq: 'monthly', priority: '0.65' },
+    { path: '/security.json', changefreq: 'monthly', priority: '0.55' },
     { path: '/legal/data-flow', changefreq: 'monthly', priority: '0.7' },
     { path: '/legal/licensing', changefreq: 'monthly', priority: '0.65' },
     { path: '/legal/msa-sow', changefreq: 'monthly', priority: '0.6' },
@@ -8594,29 +8599,15 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       return;
     }
 
-    // Public security overview for buyer questionnaires (not a certification).
+    // Public security overview + copy-paste questionnaire (not a certification).
+    if (isGetLikeRequest && (pathname === '/security.json' || pathname === '/v1/security-questionnaire')) {
+      sendJson(res, 200, getSecurityQuestionnaire(), {
+        'Cache-Control': 'public, max-age=300',
+      }, { headOnly: isHeadRequest });
+      return;
+    }
     if (isGetLikeRequest && (pathname === '/security' || pathname === '/security.html')) {
-      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Security — ThumbGate</title>
-<meta name="description" content="ThumbGate security overview: local-first control layer, hosted trust boundary, incident posture, and vulnerability disclosure.">
-<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}
-h1{font-size:28px;margin:0 0 8px}h2{font-size:18px;margin:28px 0 8px}p,li{font-size:15px}.meta{color:#6b7280;font-size:14px;margin:0 0 24px}
-.draft{border-left:3px solid #f59e0b;background:#fffbeb;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}
-ul{padding-left:22px}li{margin:6px 0}a{color:#0066cc}
-footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}</style></head><body>
-<h1>Security overview</h1>
-<p class="meta"><strong>ThumbGate</strong> · Last updated: 2026-08-12</p>
-<div class="draft">This page is a product security summary for buyers. It is not a SOC 2 report, pen-test certificate, or compliance certification.</div>
-<h2>Control layer model</h2>
-<p>ThumbGate provides pre-action control for AI agents: allow, warn, require approval, or hard-deny tool calls based on configured rules. It is not a guarantee that every unsafe action is detected.</p>
-<h2>Local-first boundary</h2>
-<p>The default local engine keeps workspace source and local lessons on your machine. Hosted surfaces process account, billing, device pairing, and runner operational logs as described in the <a href="/privacy">Privacy Policy</a>.</p>
-<h2>Incident notification posture</h2>
-<p>For enterprise customers under a signed agreement that includes incident terms, the draft contractual target is notification within <strong>72 hours</strong> after confirming a personal-data or confidential hosted-content breach affecting that customer.</p>
-<h2>Vulnerability disclosure</h2>
-<p>Email <a href="mailto:security@thumbgate.ai">security@thumbgate.ai</a> with “Security” in the subject. Do not file public issues for active vulnerabilities. Acknowledgement target: 48 hours.</p>
-<footer><a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/support">Support</a> · <a href="/legal">Legal index</a></footer>
-</body></html>`, {}, { headOnly: isHeadRequest });
+      sendHtml(res, 200, renderSecurityOverviewHtml(), {}, { headOnly: isHeadRequest });
       return;
     }
 
@@ -8637,7 +8628,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 <li><a href="/terms">Terms of Service</a></li>
 <li><a href="/privacy">Privacy Policy</a></li>
 <li><a href="/support">Support</a> — <a href="mailto:support@thumbgate.ai">support@thumbgate.ai</a></li>
-<li><a href="/security">Security</a></li>
+<li><a href="/security">Security questionnaire</a> — <a href="/security.json">JSON</a></li>
 <li><a href="/legal/licensing">MIT vs paid licensing boundary</a></li>
 <li><a href="/legal/data-flow">Data-flow map</a></li>
 <li><a href="/legal/msa-sow">MSA / SOW template</a></li>
