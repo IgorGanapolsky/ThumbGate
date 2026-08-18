@@ -28,9 +28,9 @@ const PENDING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.pendingBuckets || []).map(
 const FAILING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.failingBuckets || []).map((value) => String(value || '').toLowerCase()));
 
 const SELF_REFERENTIAL_CHECKS = new Set(MERGE_QUALITY_CHECKS.selfReferentialChecks || []);
-// Optional informational checks may be ignored only when GitHub mergeability is
-// unaffected. Vercel itself is intentionally not optional because a failed
-// deployment status leaves mergeStateStatus BLOCKED and Trunk refuses the PR.
+// Optional checks are ignored by summarizeChecks. Vercel is optional because it
+// is not in requiredStatusCheckContexts / classic branch protection; free-tier
+// deploy rate-limits must not stall Trunk when required checks are green.
 const OPTIONAL_CHECKS = new Set(MERGE_QUALITY_CHECKS.optionalChecks || []);
 
 function assertSafeGhArgs(args) {
