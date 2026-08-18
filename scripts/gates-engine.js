@@ -825,7 +825,7 @@ function isConditionSatisfied(conditionId) {
   return age < TTL_MS;
 }
 
-function satisfyCondition(conditionId, evidence, structuredReasoning) {
+function satisfyCondition(conditionId, evidence, structuredReasoning, options = {}) {
   const state = loadState();
   const entry = {
     timestamp: Date.now(),
@@ -841,6 +841,28 @@ function satisfyCondition(conditionId, evidence, structuredReasoning) {
   }
   state[conditionId] = entry;
   saveState(state);
+
+  // Satisfying a gate condition IS an override: it unlocks an action the gate
+  // had blocked. Previously this wrote only to the state store, so an override
+  // performed through the CLI left no trace in the audit trail at all — the
+  // least-supervised path was also the least-recorded. Record it explicitly.
+  // Never let an audit failure break the unlock the caller is relying on.
+  try {
+    // Lazy require: override-audit depends on audit-trail, which this module
+    // already loads; requiring at call time avoids any circular-init surprise.
+    const { recordOverride } = require('./override-audit');
+    recordOverride({
+      gateId: conditionId,
+      source: options.source || 'cli',
+      actor: options.actor,
+      reason: options.reason,
+      evidence: entry.evidence,
+      structuredReasoning: entry.structuredReasoning,
+    });
+  } catch {
+    /* audit is best-effort; the gate state is authoritative */
+  }
+
   return entry;
 }
 

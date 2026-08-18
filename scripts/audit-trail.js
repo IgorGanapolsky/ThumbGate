@@ -61,6 +61,13 @@ function recordAuditEvent(params = {}) {
     source: params.source || 'gates-engine',
   };
 
+  // Typed override payload (see scripts/override-audit.js). Carried verbatim so
+  // an override is filterable by decision === 'override' rather than having to
+  // be inferred from toolName, which cannot distinguish it from a normal call.
+  if (params.override && typeof params.override === 'object') {
+    record.override = params.override;
+  }
+
   // Safe stringify: never let circular/toxic tool inputs crash the gate path
   // (Antithesis-style invariant: evaluation + audit must not throw).
   let line;
