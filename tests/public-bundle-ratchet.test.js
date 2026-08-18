@@ -195,8 +195,8 @@ const path = require('node:path');
 // 455 -> 458: edotenv-rl-gateway + rsi-safety-hillclimb + research-agent-harness
 // 458 -> 459: governance-difficulty-curriculum (EdotEnv harder-next-round transfer)
 // 459 -> 460: provider-receipt-contract packaging on rebased receipt PR
-// 467 -> 468 (2026-08-18): src/pipeline-compass.js TradeMaster-style CLI compass.
-const BASELINE_FILE_COUNT = 468;
+// 467 -> 470: three concurrent PRs (override-audit, security-questionnaire, pipeline-compass)
+const BASELINE_FILE_COUNT = 470;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
