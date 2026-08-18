@@ -1050,6 +1050,17 @@ test('Agent auto-merge workflow submits queue requests instead of polling its ow
   assert.doesNotMatch(workflow, /timeout_seconds=1800/);
 });
 
+test('Agent auto-merge queues fix/feat/chore branches and never auto-approves', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'agent-automerge.yml'), 'utf8');
+
+  assert.match(workflow, /startsWith\(github\.event\.pull_request\.head\.ref, 'fix\/'\)/);
+  assert.match(workflow, /startsWith\(github\.event\.pull_request\.head\.ref, 'feat\/'\)/);
+  assert.match(workflow, /startsWith\(github\.event\.pull_request\.head\.ref, 'chore\/'\)/);
+  assert.doesNotMatch(workflow, /event:\s*"APPROVE"/);
+  assert.doesNotMatch(workflow, /Auto-approved by agent automerge policy/);
+  assert.doesNotMatch(workflow, /pulls\.createReview/);
+});
+
 test('merge workflows never arm raw GitHub auto-merge before terminal quality checks', () => {
   const workflowsDir = path.join(PROJECT_ROOT, '.github', 'workflows');
   const workflowFiles = [

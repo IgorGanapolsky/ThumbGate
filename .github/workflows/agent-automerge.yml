@@ -34,25 +34,14 @@ jobs:
         startsWith(github.event.pull_request.head.ref, 'codex/') ||
         startsWith(github.event.pull_request.head.ref, 'auto/') ||
         startsWith(github.event.pull_request.head.ref, 'agent/') ||
+        startsWith(github.event.pull_request.head.ref, 'fix/') ||
+        startsWith(github.event.pull_request.head.ref, 'feat/') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/') ||
         contains(join(github.event.pull_request.labels.*.name, ','), 'automerge')
       )
     runs-on: ubuntu-latest
 
     steps:
-      - name: Auto-approve PR
-        continue-on-error: true
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            await github.rest.pulls.createReview({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-              event: "APPROVE",
-              body: "Auto-approved by agent automerge policy.",
-            });
-
       - name: Request merge automation
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
