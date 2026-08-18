@@ -2,4 +2,4 @@
 'thumbgate': patch
 ---
 
-Queue fix/feat/chore pull requests through Trunk merge automation without auto-approving reviews, so Reliability Gateway PRs no longer sit skipped by the agent automerge workflow.
+Queue fix/feat/chore pull requests through Trunk after required checks succeed, retrying via pr-manager instead of a one-shot /trunk merge comment, and never auto-approving reviews.

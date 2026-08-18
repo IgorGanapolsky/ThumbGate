@@ -8,7 +8,20 @@ on:
       - synchronize
       - ready_for_review
       - labeled
+  workflow_run:
+    workflows:
+      - CI
+      - CodeQL
+      - Changeset Check
+      - SonarCloud
+      - Branch Contamination Guard
+    types:
+      - completed
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to evaluate with pr-manager
+        required: false
 
 permissions:
   contents: write
@@ -17,7 +30,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: agent-automerge-${{ github.event.pull_request.number || github.run_id }}
+  group: agent-automerge-${{ github.event.pull_request.number || github.event.workflow_run.head_sha || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -27,76 +40,84 @@ jobs:
   agent-automerge:
     name: agent-automerge
     if: >-
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.draft != true &&
       (
-        startsWith(github.event.pull_request.head.ref, 'claude/') ||
-        startsWith(github.event.pull_request.head.ref, 'codex/') ||
-        startsWith(github.event.pull_request.head.ref, 'auto/') ||
-        startsWith(github.event.pull_request.head.ref, 'agent/') ||
-        startsWith(github.event.pull_request.head.ref, 'fix/') ||
-        startsWith(github.event.pull_request.head.ref, 'feat/') ||
-        startsWith(github.event.pull_request.head.ref, 'chore/') ||
-        contains(join(github.event.pull_request.labels.*.name, ','), 'automerge')
+        github.event_name != 'workflow_run' ||
+        github.event.workflow_run.conclusion == 'success'
       )
     runs-on: ubuntu-latest
 
     steps:
-      - name: Request merge automation
+      - name: Resolve PR number
+        id: pr
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_FROM_EVENT: ${{ github.event.pull_request.number }}
+          WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
+          DISPATCH_PR: ${{ inputs.pr_number }}
+        run: |
+          set -euo pipefail
+          number=""
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "${DISPATCH_PR:-}" ]; then
+            number="$DISPATCH_PR"
+          elif [ -n "${PR_FROM_EVENT:-}" ]; then
+            number="$PR_FROM_EVENT"
+          elif [ -n "${WORKFLOW_SHA:-}" ]; then
+            number="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${WORKFLOW_SHA}/pulls" \
+              --jq '.[0].number // empty')"
+          fi
+          echo "number=${number}" >> "$GITHUB_OUTPUT"
+          if [ -z "${number}" ]; then
+            echo "No pull request bound to this event."
+          fi
+
+      - name: Checkout trusted default branch
+        if: steps.pr.outputs.number != ''
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Request merge automation
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
           set -euo pipefail
 
-          if [ "$BASE_REF" = "main" ] && [ "${THUMBGATE_MAIN_MERGE_PROVIDER}" = "trunk" ]; then
-            if ! existing_comment_id="$(
-              gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-                --jq '.[] | select(.user.login == "github-actions[bot]" and .body == "/trunk merge") | .id' \
-                | head -n 1
-            )"; then
-              {
-                echo "### Merge automation"
-                echo "- Provider: trunk"
-                echo "- PR: $PR_URL"
-                echo "- Queue request: deferred because GitHub API was rate-limited or unavailable"
-              } >> "$GITHUB_STEP_SUMMARY"
-              exit 0
-            fi
+          ref="$(gh pr view "$PR_NUMBER" --json headRefName --jq .headRefName)"
+          draft="$(gh pr view "$PR_NUMBER" --json isDraft --jq .isDraft)"
+          repo="$(gh pr view "$PR_NUMBER" --json headRepository --jq .headRepository.nameWithOwner)"
 
-            if [ -n "${existing_comment_id:-}" ]; then
-              echo "Trunk merge request already exists for $PR_URL"
-            else
-              if ! gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-                --method POST \
-                -f body='/trunk merge' >/dev/null; then
-                {
-                  echo "### Merge automation"
-                  echo "- Provider: trunk"
-                  echo "- PR: $PR_URL"
-                  echo "- Queue request: deferred because GitHub API was rate-limited or unavailable"
-                } >> "$GITHUB_STEP_SUMMARY"
-                exit 0
-              fi
-              echo "Requested Trunk merge for $PR_URL"
-            fi
-
-            {
-              echo "### Merge automation"
-              echo "- Provider: trunk"
-              echo "- PR: $PR_URL"
-              echo "- Queue request: \`/trunk merge\`"
-            } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$draft" = "true" ]; then
+            echo "Skipping draft PR #$PR_NUMBER"
+            exit 0
+          fi
+          if [ "$repo" != "$GITHUB_REPOSITORY" ]; then
+            echo "Skipping fork PR #$PR_NUMBER from $repo"
             exit 0
           fi
 
-          gh pr merge --squash --delete-branch "$PR_URL"
+          case "$ref" in
+            claude/*|codex/*|auto/*|agent/*|fix/*|feat/*|chore/*) ;;
+            *)
+              labels="$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name]|join(",")')"
+              case ",$labels," in
+                *,automerge,*) ;;
+                *)
+                  echo "Skipping #$PR_NUMBER on $ref (no automerge prefix or label)"
+                  exit 0
+                  ;;
+              esac
+              ;;
+          esac
+
+          echo "Evaluating PR #$PR_NUMBER ($ref) with pr-manager"
+          node scripts/pr-manager.js "$PR_NUMBER"
 
           {
             echo "### Merge automation"
-            echo "- Provider: github"
-            echo "- PR: $PR_URL"
-            echo "- Mode: direct squash after terminal checks"
+            echo "- Provider: ${THUMBGATE_MAIN_MERGE_PROVIDER}"
+            echo "- PR: #$PR_NUMBER"
+            echo "- Head: \`$ref\`"
+            echo "- Evaluator: \`node scripts/pr-manager.js\`"
           } >> "$GITHUB_STEP_SUMMARY"

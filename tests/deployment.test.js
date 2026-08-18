@@ -1041,11 +1041,11 @@ test('Agent auto-merge workflow submits queue requests instead of polling its ow
 
   assert.match(workflow, /issues:\s+write/s);
   assert.match(workflow, /GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT \|\| github\.token\s*\}\}/);
-  assert.match(workflow, /group:\s*agent-automerge-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.run_id\s*\}\}/);
+  assert.match(workflow, /group:\s*agent-automerge-/);
   assert.match(workflow, /jobs:\s+agent-automerge:\s+name:\s*agent-automerge/s);
   assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
-  assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
-  assert.match(workflow, /-f body='\/trunk merge'/);
+  assert.match(workflow, /node scripts\/pr-manager\.js "\$PR_NUMBER"/);
+  assert.match(workflow, /workflow_run:/);
   assert.doesNotMatch(workflow, /gh pr checks "\$PR_URL"/);
   assert.doesNotMatch(workflow, /timeout_seconds=1800/);
 });
@@ -1053,9 +1053,9 @@ test('Agent auto-merge workflow submits queue requests instead of polling its ow
 test('Agent auto-merge queues fix/feat/chore branches and never auto-approves', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'agent-automerge.yml'), 'utf8');
 
-  assert.match(workflow, /startsWith\(github\.event\.pull_request\.head\.ref, 'fix\/'\)/);
-  assert.match(workflow, /startsWith\(github\.event\.pull_request\.head\.ref, 'feat\/'\)/);
-  assert.match(workflow, /startsWith\(github\.event\.pull_request\.head\.ref, 'chore\/'\)/);
+  assert.match(workflow, /fix\/\*/);
+  assert.match(workflow, /feat\/\*/);
+  assert.match(workflow, /chore\/\*/);
   assert.doesNotMatch(workflow, /event:\s*"APPROVE"/);
   assert.doesNotMatch(workflow, /Auto-approved by agent automerge policy/);
   assert.doesNotMatch(workflow, /pulls\.createReview/);
@@ -1076,7 +1076,7 @@ test('merge workflows never arm raw GitHub auto-merge before terminal quality ch
 
   const agentWorkflow = fs.readFileSync(path.join(workflowsDir, 'agent-automerge.yml'), 'utf8');
   assert.match(agentWorkflow, /name: Request merge automation/);
-  assert.match(agentWorkflow, /gh pr merge --squash --delete-branch "\$PR_URL"/);
+  assert.match(agentWorkflow, /node scripts\/pr-manager\.js "\$PR_NUMBER"/);
 
   const dependabotWorkflow = fs.readFileSync(path.join(workflowsDir, 'dependabot-automerge.yml'), 'utf8');
   assert.match(dependabotWorkflow, /name: Request merge automation/);
@@ -1092,7 +1092,7 @@ test('Agent auto-merge workflow records merge submission without waiting for the
 
   assert.match(workflow, /name: Request merge automation/);
   assert.match(workflow, /### Merge automation/);
-  assert.match(workflow, /Queue request: \\`\/trunk merge\\`/);
+  assert.match(workflow, /Evaluator: \\`node scripts\/pr-manager\.js\\`/);
   assert.doesNotMatch(workflow, /gh pr view "\$PR_URL" --json state,mergeCommit,url,title/);
   assert.doesNotMatch(workflow, /Final merge commit:/);
 });
