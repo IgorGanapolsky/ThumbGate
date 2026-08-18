@@ -222,6 +222,7 @@ const {
 } = require('../../scripts/thumbgate-search');
 const {
   appendTelemetryPing,
+  headerHasPrivacyOptOut,
 } = require('../../scripts/telemetry-analytics');
 const {
   buildProductIssueTitle,
@@ -3190,8 +3191,8 @@ function sendPublicBillingPreflight(res) {
 
 function appendBestEffortTelemetry(feedbackDir, payload, headers, context) {
   try {
-    appendTelemetryPing(feedbackDir, payload, headers);
-    return true;
+    const written = appendTelemetryPing(feedbackDir, payload, headers);
+    return Boolean(written);
   } catch (err) {
     try {
       appendDiagnosticRecord({
@@ -3378,7 +3379,8 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
   const googleSiteVerificationMeta = runtimeConfig.googleSiteVerification
     ? `  <meta name="google-site-verification" content="${escapeHtmlAttribute(runtimeConfig.googleSiteVerification)}" />`
     : '';
-  const gaBootstrap = runtimeConfig.gaMeasurementId
+  const privacyOptOut = Boolean(pageContext.privacyOptOut);
+  const gaBootstrap = (!privacyOptOut && runtimeConfig.gaMeasurementId)
     ? [
       `  <script async src="https://www.googletagmanager.com/gtag/js?id=${runtimeConfig.gaMeasurementId}"></script>`,
       '  <script>',
@@ -3389,7 +3391,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
       '  </script>',
     ].join('\n')
     : '';
-  return normalizePublicMarketingHtml(fillTemplate(template, {
+  let rendered = fillTemplate(template, {
     '__PACKAGE_VERSION__': pkg.version,
     '__APP_ORIGIN__': runtimeConfig.appOrigin,
     '__CHECKOUT_ENDPOINT__': runtimeConfig.checkoutEndpoint,
@@ -3418,7 +3420,11 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
     '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
-  }), runtimeConfig, pageContext.requestHost);
+  });
+  if (privacyOptOut) {
+    rendered = rendered.replace(/<script[^>]*plausible\.io\/js[^>]*><\/script>\s*/gi, '');
+  }
+  return normalizePublicMarketingHtml(rendered, runtimeConfig, pageContext.requestHost);
 }
 
 function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
@@ -4289,6 +4295,7 @@ function servePublicMarketingPage({
     serverUtmCampaign: landingAttribution.utmCampaign,
     serverUtmContent: landingAttribution.utmContent,
     requestHost,
+    privacyOptOut: headerHasPrivacyOptOut(req.headers),
   });
 
   sendHtml(

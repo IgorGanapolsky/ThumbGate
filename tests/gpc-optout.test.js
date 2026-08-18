@@ -93,9 +93,51 @@ test('privacy notice does not claim anonymity it cannot deliver', () => {
   const privacy = fs.readFileSync(path.join(__dirname, '..', 'public', 'privacy.html'), 'utf8');
   // The page DOES attach visitorId/sessionId, so "anonymous" would be false.
   assert.match(privacy, /pseudonymous/i, 'analytics must be described as pseudonymous');
+  assert.match(privacy, /visitor identifier/i);
+  assert.match(privacy, /session identifier/i);
+  assert.ok(
+    !/anonymous analytics/i.test(privacy),
+    'must not call marketing analytics anonymous while identifiers are attached',
+  );
   assert.ok(
     !/analytics[^.]{0,80}are anonymous/i.test(privacy),
     'must not assert marketing analytics are anonymous while identifiers are attached',
   );
   assert.match(privacy, /Global Privacy Control/i);
+});
+
+test('appendTelemetryEvent: GPC header discards, no header still writes', () => {
+  const {
+    appendTelemetryEvent,
+    TELEMETRY_FILE_NAME,
+  } = require('../scripts/telemetry-analytics');
+  const os = require('node:os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-gpc-persist-'));
+  const file = path.join(dir, TELEMETRY_FILE_NAME);
+
+  const discarded = appendTelemetryEvent(dir, {
+    eventType: 'page_view',
+    clientType: 'web',
+    visitorId: 'gpc-blocked',
+  }, { 'Sec-GPC': '1' });
+  assert.equal(discarded, null);
+  assert.equal(fs.existsSync(file), false, 'opt-out must not create the log');
+
+  const written = appendTelemetryEvent(dir, {
+    eventType: 'page_view',
+    clientType: 'web',
+    visitorId: 'gpc-allowed',
+  }, {});
+  assert.ok(written);
+  assert.equal(written.visitorId, 'gpc-allowed');
+  const lines = fs.readFileSync(file, 'utf8').trim().split('\n');
+  assert.equal(lines.length, 1, 'only the no-signal event may persist');
+});
+
+test('appendTelemetryEvent: DNT: 1 also discards', () => {
+  const { appendTelemetryEvent, TELEMETRY_FILE_NAME } = require('../scripts/telemetry-analytics');
+  const os = require('node:os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-dnt-persist-'));
+  assert.equal(appendTelemetryEvent(dir, { visitorId: 'dnt-blocked' }, { dnt: '1' }), null);
+  assert.equal(fs.existsSync(path.join(dir, TELEMETRY_FILE_NAME)), false);
 });

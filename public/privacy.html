@@ -63,7 +63,7 @@
       <li>Hosted / Pro features: account identity, API keys, pairing metadata, and workflow operational metadata associated with your account.</li>
       <li>Billing: payment identifiers via Stripe and related processors.</li>
       <li>Optional CLI telemetry is best-effort install/usage metadata. Disable with <code>THUMBGATE_NO_TELEMETRY=1</code> or <code>DO_NOT_TRACK=1</code>.</li>
-      <li>Marketing pages may record anonymous analytics (Plausible / PostHog / first-party funnel events where configured).</li>
+      <li>Marketing pages may record first-party funnel events and, when no GPC/DNT signal is present, Plausible / PostHog page analytics. First-party events carry visitor and session identifiers (pseudonymous, not anonymous). See <a href="#your-privacy-choices">Your Privacy Choices</a>.</li>
     </ul>
 
     <h2>Data Sharing</h2>
