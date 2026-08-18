@@ -98,6 +98,10 @@ test('security and legal index routes publish buyer-facing counsel summaries', a
   assert.match(securityBody, /\/security\.json/);
   assert.match(securityBody, /Sec-GPC/);
 
+  const trust = await fetch(apiUrl('/trust'));
+  assert.equal(trust.status, 200);
+  assert.match(await trust.text(), /Security overview/i);
+
   const securityJson = await fetch(apiUrl('/security.json'));
   assert.equal(securityJson.status, 200);
   const questionnaire = await securityJson.json();

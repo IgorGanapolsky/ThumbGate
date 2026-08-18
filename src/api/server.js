@@ -4125,6 +4125,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/support', changefreq: 'monthly', priority: '0.7' },
     { path: '/legal', changefreq: 'monthly', priority: '0.7' },
     { path: '/security', changefreq: 'monthly', priority: '0.65' },
+    { path: '/trust', changefreq: 'monthly', priority: '0.65' },
     { path: '/security.json', changefreq: 'monthly', priority: '0.55' },
     { path: '/legal/data-flow', changefreq: 'monthly', priority: '0.7' },
     { path: '/legal/licensing', changefreq: 'monthly', priority: '0.65' },
@@ -8606,7 +8607,12 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       }, { headOnly: isHeadRequest });
       return;
     }
-    if (isGetLikeRequest && (pathname === '/security' || pathname === '/security.html')) {
+    if (isGetLikeRequest && (
+      pathname === '/security'
+      || pathname === '/security.html'
+      || pathname === '/trust'
+      || pathname === '/trust.html'
+    )) {
       sendHtml(res, 200, renderSecurityOverviewHtml(), {}, { headOnly: isHeadRequest });
       return;
     }
