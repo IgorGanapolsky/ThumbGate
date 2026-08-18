@@ -105,7 +105,7 @@ test('operational dashboard reports progress stages', async () => {
   }
 });
 
-test('collectAggregateLogEntries without limits keeps lifetime history', () => {
+test('collectAggregateLogEntries full:true keeps lifetime history', () => {
   const { collectAggregateLogEntries } = require('../scripts/feedback-aggregate');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-agg-lifetime-'));
   const lines = [];
@@ -120,8 +120,10 @@ test('collectAggregateLogEntries without limits keeps lifetime history', () => {
   const prevAgg = process.env.THUMBGATE_AGGREGATE_FEEDBACK;
   process.env.THUMBGATE_AGGREGATE_FEEDBACK = '1';
   try {
-    const all = collectAggregateLogEntries('feedback-log.jsonl', { feedbackDir: dir });
+    const all = collectAggregateLogEntries('feedback-log.jsonl', { feedbackDir: dir, full: true });
     assert.equal(all.entries.length, 40);
+    const boundedDefault = collectAggregateLogEntries('feedback-log.jsonl', { feedbackDir: dir });
+    assert.equal(boundedDefault.entries.length, 40); // 40 < default 20k ceiling
     const bounded = collectAggregateLogEntries('feedback-log.jsonl', {
       feedbackDir: dir,
       maxLines: 8,
@@ -179,5 +181,45 @@ test('feedback-loop analyzeFeedback accepts preloaded entries without a full fil
   const analysis = analyzeFeedback(file, { entries, maxLines: 8 });
   assert.ok(analysis);
   assert.ok(Number(analysis.total) >= 0);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('fs-utils readJsonl defaults to a recent tail (no full:true)', () => {
+  const { readJsonl, DEFAULT_JSONL_TAIL_BYTES } = require('../scripts/fs-utils');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-fs-jsonl-default-'));
+  const file = path.join(dir, 'feedback-log.jsonl');
+  const payload = 'y'.repeat(2048);
+  const lines = [];
+  for (let i = 0; i < 3000; i += 1) {
+    lines.push(JSON.stringify({ id: `r${i}`, payload }));
+  }
+  fs.writeFileSync(file, `${lines.join('\n')}\n`);
+  assert.ok(fs.statSync(file).size > DEFAULT_JSONL_TAIL_BYTES / 4);
+  const rows = readJsonl(file);
+  assert.ok(rows.length > 0);
+  assert.ok(rows.length < lines.length);
+  assert.equal(rows.at(-1).id, 'r2999');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('collectAggregateLogEntries defaults stay bounded without explicit limits', () => {
+  const { collectAggregateLogEntries } = require('../scripts/feedback-aggregate');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-agg-bound-'));
+  const payload = 'z'.repeat(1024);
+  const lines = [];
+  for (let i = 0; i < 2500; i += 1) {
+    lines.push(JSON.stringify({
+      id: `a${i}`,
+      signal: 'down',
+      feedback: 'down',
+      context: payload,
+      timestamp: new Date(Date.UTC(2026, 7, 1, 0, 0, i % 60)).toISOString(),
+    }));
+  }
+  fs.writeFileSync(path.join(dir, 'feedback-log.jsonl'), `${lines.join('\n')}\n`);
+  const { entries } = collectAggregateLogEntries('feedback-log.jsonl', { feedbackDir: dir });
+  assert.ok(entries.length > 0);
+  assert.ok(entries.length <= 20_000);
+  assert.ok(entries.length < lines.length || lines.length <= 20_000);
   fs.rmSync(dir, { recursive: true, force: true });
 });
