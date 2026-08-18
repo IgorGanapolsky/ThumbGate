@@ -26,6 +26,7 @@
     "Merge blob reports"
   ],
   "optionalChecks": [
+    "Vercel",
     "Vercel Preview Comments"
   ]
 }
