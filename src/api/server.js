@@ -3421,10 +3421,33 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
     '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
   });
-  if (privacyOptOut) {
-    rendered = rendered.replace(/<script[^>]*plausible\.io\/js[^>]*><\/script>\s*/gi, '');
+  const normalized = normalizePublicMarketingHtml(rendered, runtimeConfig, pageContext.requestHost);
+  if (!privacyOptOut) return normalized;
+  let rewrittenDomain = '';
+  try {
+    rewrittenDomain = normalizePublicRequestHost(pageContext.requestHost)
+      || new URL(runtimeConfig.appOrigin).host;
+  } catch {
+    rewrittenDomain = '';
   }
-  return normalizePublicMarketingHtml(rendered, runtimeConfig, pageContext.requestHost);
+  return removeKnownPlausibleScriptTags(normalized, rewrittenDomain);
+}
+
+function removeKnownPlausibleScriptTags(html, extraDomain) {
+  const domains = ['thumbgate.ai', 'thumbgate-production.up.railway.app'];
+  if (extraDomain) domains.push(extraDomain);
+  const sources = [
+    'https://plausible.io/js/script.tagged-events.js',
+    'https://plausible.io/js/script.js',
+  ];
+  let out = html;
+  for (const domain of domains) {
+    for (const src of sources) {
+      const tag = `<script defer data-domain="${domain}" src="${src}"></script>`;
+      if (out.includes(tag)) out = out.split(tag).join('');
+    }
+  }
+  return out;
 }
 
 function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
