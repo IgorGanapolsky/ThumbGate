@@ -2244,7 +2244,7 @@ function analyzeFeedback(logPath, options = {}) {
   let entries = Array.isArray(options.entries)
     ? options.entries.slice()
     : readJSONL(resolvedPath, {
-      maxLines: Number(options.maxLines) > 0 ? Number(options.maxLines) : 0,
+      maxLines: Math.max(0, Number(options.maxLines) || 0),
     });
   const rawTotal = entries.length;
   if (options.humanOnly) {

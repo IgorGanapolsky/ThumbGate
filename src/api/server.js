@@ -2082,27 +2082,15 @@ function bestFeedbackDescription(row) {
 function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opts = {}) {
   try {
     if (!feedbackDir) return [];
-    const {
-      DEFAULT_JSONL_TAIL_BYTES,
-      DEFAULT_JSONL_TAIL_ENTRIES,
-      readJsonl,
-    } = require('../../scripts/fs-utils');
     const rows = shouldAggregateFeedback()
-      ? collectAggregateLogEntries('feedback-log.jsonl', {
-        feedbackDir,
-        maxLines: DEFAULT_JSONL_TAIL_ENTRIES,
-        maxBytes: DEFAULT_JSONL_TAIL_BYTES,
-      }).entries
+      ? collectAggregateLogEntries('feedback-log.jsonl', { feedbackDir }).entries
       : (() => {
           const fsLocal = require('node:fs');
           const pathLocal = require('node:path');
           const logPath = pathLocal.join(feedbackDir, 'feedback-log.jsonl');
           if (!fsLocal.existsSync(logPath)) return [];
-          return readJsonl(logPath, {
-            maxLines: DEFAULT_JSONL_TAIL_ENTRIES,
-            tail: true,
-            maxBytes: DEFAULT_JSONL_TAIL_BYTES,
-          }) || [];
+          const { readJsonl } = require('../../scripts/fs-utils');
+          return readJsonl(logPath) || [];
         })();
     const cutoff = windowMs ? Date.now() - windowMs : 0;
     const filtered = rows

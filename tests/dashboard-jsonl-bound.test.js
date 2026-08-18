@@ -105,6 +105,36 @@ test('operational dashboard reports progress stages', async () => {
   }
 });
 
+test('collectAggregateLogEntries without limits keeps lifetime history', () => {
+  const { collectAggregateLogEntries } = require('../scripts/feedback-aggregate');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-agg-lifetime-'));
+  const lines = [];
+  for (let i = 0; i < 40; i += 1) {
+    lines.push(JSON.stringify({
+      id: `life_${i}`,
+      signal: i < 10 ? 'up' : 'down',
+      timestamp: new Date(Date.UTC(2026, 5, 1, 0, 0, i)).toISOString(),
+    }));
+  }
+  fs.writeFileSync(path.join(dir, 'feedback-log.jsonl'), `${lines.join('\n')}\n`);
+  const prevAgg = process.env.THUMBGATE_AGGREGATE_FEEDBACK;
+  process.env.THUMBGATE_AGGREGATE_FEEDBACK = '1';
+  try {
+    const all = collectAggregateLogEntries('feedback-log.jsonl', { feedbackDir: dir });
+    assert.equal(all.entries.length, 40);
+    const bounded = collectAggregateLogEntries('feedback-log.jsonl', {
+      feedbackDir: dir,
+      maxLines: 8,
+      maxBytes: 4096,
+    });
+    assert.ok(bounded.entries.length <= 8);
+  } finally {
+    if (prevAgg === undefined) delete process.env.THUMBGATE_AGGREGATE_FEEDBACK;
+    else process.env.THUMBGATE_AGGREGATE_FEEDBACK = prevAgg;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('generateDashboard reuses bounded entries for analyzeFeedback', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-dash-reuse-'));
   const prevAgg = process.env.THUMBGATE_AGGREGATE_FEEDBACK;

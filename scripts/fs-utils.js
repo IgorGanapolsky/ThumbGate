@@ -73,14 +73,16 @@ function ensureParentDir(filePath) {
  * @param {boolean} [options.tail] - Read from the end while preserving chronological order
  * @returns {object[]}
  */
+function positiveNumber(value) {
+  return Math.max(0, Number(value) || 0);
+}
+
 function readJsonl(filePath, options = {}) {
   if (!filePath || !fs.existsSync(filePath)) return [];
   const normalizedOptions = typeof options === 'number'
     ? { maxLines: options, tail: true }
     : (options || {});
-  const maxBytes = Number(normalizedOptions.maxBytes) > 0
-    ? Number(normalizedOptions.maxBytes)
-    : 0;
+  const maxBytes = positiveNumber(normalizedOptions.maxBytes);
   let raw = '';
   try {
     raw = readTextTail(filePath, maxBytes).text.trim();

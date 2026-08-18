@@ -113,12 +113,10 @@ const DEFAULT_JSONL_MAX_ENTRIES = DEFAULT_JSONL_TAIL_ENTRIES;
 
 function readJSONL(filePath, options = {}) {
   if (!fs.existsSync(filePath)) return [];
-  const maxBytes = Number(options.maxBytes) > 0
-    ? Number(options.maxBytes)
-    : DEFAULT_JSONL_MAX_BYTES;
-  const maxEntries = Number(options.maxEntries) > 0
-    ? Number(options.maxEntries)
-    : DEFAULT_JSONL_MAX_ENTRIES;
+  const requestedBytes = Number(options.maxBytes);
+  const requestedEntries = Number(options.maxEntries);
+  const maxBytes = requestedBytes > 0 ? requestedBytes : DEFAULT_JSONL_MAX_BYTES;
+  const maxEntries = requestedEntries > 0 ? requestedEntries : DEFAULT_JSONL_MAX_ENTRIES;
   let text;
   try {
     text = readTextTail(filePath, maxBytes).text;
@@ -126,7 +124,7 @@ function readJSONL(filePath, options = {}) {
     // Never let a single bloated/unreadable log take down the whole dashboard.
     return [];
   }
-  if (!text || !text.trim()) return [];
+  if (!text?.trim()) return [];
   const lines = text.split('\n');
   const start = Math.max(0, lines.length - maxEntries);
   const entries = [];
