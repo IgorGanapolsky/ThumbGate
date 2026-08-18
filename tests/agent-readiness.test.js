@@ -62,6 +62,12 @@ test('generateAgentReadinessReport aligns bootstrap and permission findings', ()
   fs.writeFileSync(path.join(projectRoot, '.mcp.json'), JSON.stringify({ mcpServers: {} }, null, 2));
   fs.mkdirSync(path.join(projectRoot, '.thumbgate'), { recursive: true });
   fs.writeFileSync(path.join(projectRoot, '.thumbgate', 'config.json'), JSON.stringify({ version: 1 }, null, 2));
+  fs.mkdirSync(path.join(projectRoot, '.claude'), { recursive: true });
+  fs.writeFileSync(path.join(projectRoot, '.claude', 'settings.json'), JSON.stringify({
+    hooks: {
+      PreToolUse: [{ hooks: [{ type: 'command', command: 'npx thumbgate gate-check' }] }],
+    },
+  }, null, 2));
 
   const previousContainer = process.env.container;
   process.env.container = '1';
@@ -77,9 +83,39 @@ test('generateAgentReadinessReport aligns bootstrap and permission findings', ()
   assert.equal(report.articleAlignment.contextConditioning, true);
   assert.equal(report.articleAlignment.permissionEnvelope, true);
   assert.equal(report.articleAlignment.runtimeIsolation, true);
+  assert.equal(report.articleAlignment.preToolUseHook, true);
   assert.equal(report.claimVerification.evaluatorReady, true);
+  assert.equal(report.preToolUseHookRegistered, true);
   assert.equal(report.overallStatus, 'ready');
 
+  fs.rmSync(projectRoot, { recursive: true, force: true });
+});
+
+test('generateAgentReadinessReport needs attention without PreToolUse hook', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-no-pretool-'));
+  for (const fileName of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
+    fs.writeFileSync(path.join(projectRoot, fileName), `# ${fileName}\n`);
+  }
+  fs.writeFileSync(path.join(projectRoot, '.mcp.json'), JSON.stringify({ mcpServers: {} }, null, 2));
+  fs.mkdirSync(path.join(projectRoot, '.thumbgate'), { recursive: true });
+  fs.writeFileSync(path.join(projectRoot, '.thumbgate', 'config.json'), JSON.stringify({ version: 1 }, null, 2));
+  fs.mkdirSync(path.join(projectRoot, '.claude'), { recursive: true });
+  fs.writeFileSync(path.join(projectRoot, '.claude', 'settings.json'), JSON.stringify({
+    hooks: { Stop: [{ hooks: [{ type: 'command', command: 'npx thumbgate hook-stop-anti-claim' }] }] },
+  }, null, 2));
+
+  const previousContainer = process.env.container;
+  process.env.container = '1';
+  const report = generateAgentReadinessReport({
+    projectRoot,
+    mcpProfile: 'default',
+  });
+  if (previousContainer === undefined) delete process.env.container;
+  else process.env.container = previousContainer;
+
+  assert.equal(report.preToolUseHookRegistered, false);
+  assert.equal(report.overallStatus, 'needs_attention');
+  assert.ok(report.warnings.some((w) => /PreToolUse/i.test(w)));
   fs.rmSync(projectRoot, { recursive: true, force: true });
 });
 
