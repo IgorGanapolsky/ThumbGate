@@ -109,7 +109,7 @@ then-current list and negotiate a DPA when available (see `DPA_POSTURE.md`).
 
 ## 6. Data deletion
 
-Email **igor.ganapolsky@gmail.com** to request deletion of hosted account
+Email **privacy@thumbgate.ai** to request deletion of hosted account
 data. We will process verified requests within **30 days**, except where we
 must retain records for law, fraud prevention, or dispute resolution. Local
 data is deleted by removing the local directories.
@@ -153,5 +153,5 @@ communicated when practical.
 
 ## 11. Contact
 
-Privacy and deletion requests: **igor.ganapolsky@gmail.com**  
+Privacy and deletion requests: **privacy@thumbgate.ai**  
 Terms: `/terms` · Support: `/support` · Security: `/security`
