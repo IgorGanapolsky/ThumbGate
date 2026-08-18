@@ -181,6 +181,24 @@ function detectStopHookRegistered(projectRoot, existsSync, readFileSync) {
   }
 }
 
+function detectPreToolUseHookRegistered(projectRoot, existsSync = fs.existsSync, readFileSync = fs.readFileSync) {
+  try {
+    const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
+    if (!existsSync(settingsPath)) return false;
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+    const preToolUse = settings?.hooks?.PreToolUse || [];
+    const flat = Array.isArray(preToolUse)
+      ? preToolUse.flatMap((entry) => entry?.hooks || [entry])
+      : [];
+    return flat.some((hook) => {
+      const command = String(hook?.command || '');
+      return command.includes('thumbgate') || command.includes('gate-check') || command.includes('hook-runtime');
+    });
+  } catch {
+    return false;
+  }
+}
+
 function recommendationForClaimState({
   evaluatorReady,
   configLoadFailed,
@@ -263,6 +281,8 @@ function generateAgentReadinessReport({
   const permissions = summarizePermissionTier(mcpProfile || getActiveMcpProfile());
   const claimVerification = summarizeClaimVerification(projectRoot);
 
+  const preToolUseHookRegistered = detectPreToolUseHookRegistered(projectRoot);
+
   const warnings = [];
   if (!runtime.isolated) warnings.push(runtime.recommendation);
   if (!bootstrap.ready) warnings.push(bootstrap.recommendation);
@@ -273,6 +293,11 @@ function generateAgentReadinessReport({
   if (!claimVerification.evaluatorReady || claimVerification.configLoadFailed) {
     warnings.push(claimVerification.recommendation);
   }
+  if (!preToolUseHookRegistered) {
+    warnings.push(
+      'No ThumbGate PreToolUse hook found in .claude/settings.json. Run `npx thumbgate init --wire-hooks` before expecting gates to fire.'
+    );
+  }
 
   return {
     generatedAt: new Date().toISOString(),
@@ -282,11 +307,13 @@ function generateAgentReadinessReport({
     bootstrap,
     permissions,
     claimVerification,
+    preToolUseHookRegistered,
     articleAlignment: {
       runtimeIsolation: runtime.isolated,
       contextConditioning: bootstrap.ready,
       permissionEnvelope: permissions.ready,
       factualClaimRecheck: claimVerification.ready,
+      preToolUseHook: preToolUseHookRegistered,
     },
     warnings,
   };
@@ -336,6 +363,7 @@ module.exports = {
   summarizeClaimVerification,
   recommendationForClaimState,
   detectStopHookRegistered,
+  detectPreToolUseHookRegistered,
   generateAgentReadinessReport,
   reportToText,
 };

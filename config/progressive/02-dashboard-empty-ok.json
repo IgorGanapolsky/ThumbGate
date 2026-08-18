@@ -3,8 +3,8 @@
   "name": "dashboard-empty-ok",
   "detectEnabled": false,
   "commands": [
-    "npx thumbgate dashboard"
+    "npx thumbgate dashboard --open"
   ],
-  "verify": "Local dashboard HTML loads. Empty stats are success.",
+  "verify": "Local dashboard HTML loads (via --open/--web). Empty stats are success.",
   "hiddenMetric": "Page load, not interdiction count."
 }

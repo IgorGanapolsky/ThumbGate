@@ -78,8 +78,8 @@ Progressive wiring — prove the pipe before you turn matching on. Empty dashboa
 
 ```bash
 npx thumbgate init          # Phase 1: hooks only
-npx thumbgate doctor        # verify: exits 0 (hidden metric = hook install, not gate count)
-npx thumbgate dashboard     # Phase 2: empty stats are OK
+npx thumbgate doctor        # verify: exits 0 only when PreToolUse hook is wired (hidden metric = hook install, not gate count)
+npx thumbgate dashboard --open  # Phase 2: open local HTML; empty stats are OK
 npx thumbgate capture --feedback=down --context="Never run DROP on production tables" --what-went-wrong="agent proposed DROP" --what-to-change="require review for DROP"
 ```
 
