@@ -73,3 +73,23 @@ test('README links to the progressive guide', () => {
     'README.md must link to GUIDE.md so the guide is discoverable'
   );
 });
+
+test('Phase 5 uses Claude PreToolUse + dashboard --open (not silent keys)', () => {
+  const body = fs.readFileSync(guidePath, 'utf8');
+  assert.match(body, /"PreToolUse"/, 'Claude hook key must be PascalCase PreToolUse');
+  assert.doesNotMatch(
+    body,
+    /"preToolUse"/,
+    'lowercase preToolUse is ignored by Claude Code and must not appear'
+  );
+  assert.match(
+    body,
+    /npx thumbgate dashboard --open/,
+    'browser open path requires dashboard --open'
+  );
+  assert.match(
+    body,
+    /npx thumbgate start-api/,
+    'HTTP dashboard host is start-api, not serve'
+  );
+});

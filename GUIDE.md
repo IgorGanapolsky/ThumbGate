@@ -118,20 +118,22 @@ against recorded feedback with `npx thumbgate eval`.
 
 ## Phase 5 — Dashboard and MCP for your whole fleet
 
-Start the local server to get the dashboard and the MCP surface:
+Start the local HTTP API (this is the browser dashboard host — not MCP stdio):
 
 ```bash
-npx thumbgate serve
+npx thumbgate start-api
 ```
 
-Then open the dashboard:
+Then open the browser dashboard (plain `dashboard` prints a text summary only):
 
 ```bash
-npx thumbgate dashboard
+npx thumbgate dashboard --open
 ```
 
-For MCP-capable agents, register ThumbGate as an MCP server. This is the tracked
-adapter config shipped in the repo (`adapters/claude/.mcp.json`):
+For MCP-capable agents, register ThumbGate as an MCP **stdio** server with a
+Claude Code `PreToolUse` hook (PascalCase — lowercase `preToolUse` is ignored).
+Prefer `npx thumbgate init` / `npx thumbgate install-mcp`, which write the live
+keys. Manual shape:
 
 ```json
 {
@@ -142,17 +144,28 @@ adapter config shipped in the repo (`adapters/claude/.mcp.json`):
     }
   },
   "hooks": {
-    "preToolUse": {
-      "command": "npx",
-      "args": ["--yes", "--package", "thumbgate@1.35.0", "thumbgate", "gate-check"]
-    }
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx --yes --package thumbgate@1.35.0 thumbgate gate-check"
+          }
+        ]
+      }
+    ]
   }
 }
 ```
 
-**Verify it:** the dashboard shows your lessons, gate firings, and stats from the
-live store. If the numbers are zero but Phase 2 showed captured feedback, the
-server is reading a different feedback directory — see Troubleshooting.
+`serve` is the MCP stdio transport for agents. `start-api` is the HTTP dashboard.
+Do not treat them as interchangeable.
+
+**Verify it:** the browser dashboard shows your lessons, gate firings, and stats
+from the live store. If the numbers are zero but Phase 2 showed captured
+feedback, the API is reading a different feedback directory — see
+Troubleshooting.
 
 ---
 
@@ -178,25 +191,26 @@ over disabling the gate — and never wire a bypass environment variable into
 automation. Review `npx thumbgate rules` to find and tune the offending pattern.
 
 **The dashboard shows zeros but you captured feedback.**
-The server process must point at the same feedback directory the CLI wrote to.
-Restart `npx thumbgate serve` from the same working directory you ran
-`npx thumbgate capture` in.
+The HTTP API must point at the same feedback directory the CLI wrote to.
+Restart `npx thumbgate start-api` from the same working directory you ran
+`npx thumbgate capture` in, then reopen with `npx thumbgate dashboard --open`.
 
 ---
 
 ## Quick reference
 
 ```bash
-npx thumbgate init        # wire hooks for your detected agent
-npx thumbgate doctor      # health check — run after any change
+npx thumbgate init              # wire hooks for your detected agent
+npx thumbgate doctor            # health check — run after any change
 npx thumbgate capture down "what went wrong"
 npx thumbgate capture up  "what worked"
-npx thumbgate stats       # feedback counts
-npx thumbgate rules       # show generated prevention rules
-npx thumbgate gate-check  # exercise the gate engine
-npx thumbgate eval        # evaluate rules against recorded feedback
-npx thumbgate serve       # local server (dashboard + MCP)
-npx thumbgate dashboard   # open the dashboard
+npx thumbgate stats             # feedback counts
+npx thumbgate rules             # show generated prevention rules
+npx thumbgate gate-check        # exercise the gate engine
+npx thumbgate eval              # evaluate rules against recorded feedback
+npx thumbgate serve             # MCP stdio server for agents
+npx thumbgate start-api         # local HTTP API / dashboard host
+npx thumbgate dashboard --open  # open the browser dashboard
 ```
 
 ---
