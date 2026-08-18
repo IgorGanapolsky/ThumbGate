@@ -8,6 +8,13 @@
 
 ### Patch Changes
 
+- agent-security-central: Free local **Agent Security Central** posture report
+  (`npx thumbgate security-central`) — Oracle Database Security Central GTM
+  mapped to agent control planes: config drift, privileged-tool coverage,
+  policy variance, sensitive-access audit evidence, MCP wiring. Local report is
+  free forever; soft self-serve CTA only (no pilot SOW). Public npm bundle
+  ceiling 466 → 467 for `scripts/agent-security-central.js` only.
+
 - stealth-memory-injection: Block MemGhost-class stealth memory injection into durable
   carriers (MEMORY.md / AGENTS.md / SOUL.md / …) from external/email provenance
   (paper 2607.05189 WhisperBench). Structural gate
