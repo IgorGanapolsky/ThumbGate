@@ -51,6 +51,7 @@
     "commands/",
     "config/",
     "!config/main-branch-ruleset.json",
+    "!config/progressive/**",
     "config/entitlement-public-keys.json",
     "docs/integrations/grafana/README.md",
     "docs/integrations/grafana/thumbgate-revenue-evidence-dashboard.json",
