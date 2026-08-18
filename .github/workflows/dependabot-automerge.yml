@@ -95,7 +95,7 @@ jobs:
 
           for file in "${changed_files[@]}"; do
             case "$file" in
-              package.json|package-lock.json) ;;
+              package.json|package-lock.json|workers/package.json|workers/package-lock.json) ;;
               *)
                 echo "Skipping generated changeset because $file is outside manifest-only dependency bumps."
                 exit 0
@@ -103,17 +103,22 @@ jobs:
             esac
           done
 
-          output_path=".dependabot-head/.changeset/dependabot-pr-${PR_NUMBER}.md"
-          node scripts/dependabot-changeset.js --title "$PR_TITLE" --output "$output_path" >/tmp/dependabot-changeset-path.txt
+          # Paths must be relative to the Dependabot head checkout. `git -C`
+          # plus a `.dependabot-head/` prefix looks for a nested directory that
+          # does not exist. `git diff --quiet` also ignores untracked files, so
+          # a newly written changeset looked "already committed" and Trunk test
+          # PRs later failed Verify changeset (observed on #3478/#3468/#3467).
+          rel_path=".changeset/dependabot-pr-${PR_NUMBER}.md"
+          node scripts/dependabot-changeset.js --title "$PR_TITLE" --output ".dependabot-head/${rel_path}" >/tmp/dependabot-changeset-path.txt
 
-          if git -C .dependabot-head diff --quiet -- "$output_path"; then
-            echo "Generated changeset already matches $output_path"
+          if [ -z "$(git -C .dependabot-head status --porcelain -- "$rel_path")" ]; then
+            echo "Generated changeset already matches $rel_path"
             exit 0
           fi
 
           git -C .dependabot-head config user.name 'github-actions[bot]'
           git -C .dependabot-head config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git -C .dependabot-head add "$output_path"
+          git -C .dependabot-head add "$rel_path"
           git -C .dependabot-head commit -m "chore: add changeset for dependabot PR #${PR_NUMBER}"
           git -C .dependabot-head push origin "HEAD:${HEAD_REF}"
 
