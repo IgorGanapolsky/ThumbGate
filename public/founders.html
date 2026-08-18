@@ -555,7 +555,18 @@ document.querySelectorAll('.faq-q').forEach((button) => {
     }
   }
 
+  function privacySignalOptOut() {
+    try {
+      return navigator.globalPrivacyControl === true
+        || navigator.doNotTrack === '1'
+        || window.doNotTrack === '1';
+    } catch (_) {
+      return false;
+    }
+  }
+
   function telemetry(eventName, props) {
+    if (privacySignalOptOut()) return;
     try {
       navigator.sendBeacon && navigator.sendBeacon('/v1/telemetry/ping', JSON.stringify({
         event: eventName,

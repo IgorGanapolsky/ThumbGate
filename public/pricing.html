@@ -335,7 +335,18 @@
       (window.plausible.q = window.plausible.q || []).push(arguments);
     };
 
+    function privacySignalOptOut() {
+      try {
+        return navigator.globalPrivacyControl === true
+          || navigator.doNotTrack === '1'
+          || window.doNotTrack === '1';
+      } catch (_) {
+        return false;
+      }
+    }
+
     function sendFirstPartyTelemetry(eventName, props) {
+      if (privacySignalOptOut()) return;
       const payload = JSON.stringify({ event: eventName, page: '/pricing', source: 'pricing', props: props || {} });
       try {
         if (navigator.sendBeacon) {

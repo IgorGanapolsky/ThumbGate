@@ -1004,7 +1004,18 @@ function readMarketingParam(name) {
   return params.get(name);
 }
 
+function privacySignalOptOut() {
+  try {
+    return navigator.globalPrivacyControl === true
+      || navigator.doNotTrack === '1'
+      || window.doNotTrack === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
 function sendFirstPartyTelemetry(eventType, props) {
+  if (privacySignalOptOut()) return;
   var payload = Object.assign({
     eventType: eventType,
     clientType: 'web',

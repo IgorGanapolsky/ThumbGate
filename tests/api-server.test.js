@@ -928,6 +928,21 @@ test('root serves the landing page by default', async () => {
   assert.doesNotMatch(body, /mailto:/i);
 });
 
+test('root with Sec-GPC: 1 omits Plausible and GA tags', async () => {
+  const res = await fetch(apiUrl('/'), {
+    headers: {
+      'x-forwarded-host': 'app.example.com',
+      'Sec-GPC': '1',
+    },
+  });
+  assert.equal(res.status, 200);
+  const body = await res.text();
+  assert.match(body, /ThumbGate/);
+  assert.doesNotMatch(body, /plausible\.io\/js/);
+  assert.doesNotMatch(body, /googletagmanager\.com\/gtag\/js/);
+  assert.doesNotMatch(body, /gtag\('config'/);
+});
+
 test('/go/pro 302 redirects to /checkout/pro with caller-provided UTM params preserved', async () => {
   const res = await fetch(apiUrl('/go/pro?utm_source=reddit&utm_campaign=autopilot&utm_content=zero_tokens'), { redirect: 'manual' });
   assert.equal(res.status, 302);
