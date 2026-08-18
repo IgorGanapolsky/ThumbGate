@@ -989,7 +989,21 @@ next      decision recorded before execution</pre>
       (window.plausible.q = window.plausible.q || []).push(arguments);
     };
 
+    // Global Privacy Control / Do Not Track. CCPA-CPRA treats GPC as a valid
+    // opt-out preference signal, so it must actually suppress the emit rather
+    // than merely be described in the privacy notice.
+    function privacySignalOptOut() {
+      try {
+        return navigator.globalPrivacyControl === true
+          || navigator.doNotTrack === '1'
+          || window.doNotTrack === '1';
+      } catch (_) {
+        return false;
+      }
+    }
+
     function sendFirstPartyTelemetry(eventName, props) {
+      if (privacySignalOptOut()) return;
       const payload = JSON.stringify({
         event: eventName,
         page: '/',
