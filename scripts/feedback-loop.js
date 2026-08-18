@@ -2241,7 +2241,11 @@ function analyzeFeedback(logPath, options = {}) {
   const feedbackDir = path.dirname(resolvedPath);
   const paths = buildFeedbackPathsFromDir(feedbackDir);
   const useSQLite = !options.humanOnly && (!logPath || path.resolve(resolvedPath) === path.resolve(FEEDBACK_LOG_PATH));
-  let entries = readJSONL(resolvedPath, { maxLines: 0 });
+  let entries = Array.isArray(options.entries)
+    ? options.entries.slice()
+    : readJSONL(resolvedPath, {
+      maxLines: Math.max(0, Number(options.maxLines) || 0),
+    });
   const rawTotal = entries.length;
   if (options.humanOnly) {
     entries = entries.filter((entry) => normalizeReviewOrigin(entry.reviewOrigin) === 'human');

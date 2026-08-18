@@ -10,6 +10,7 @@ const {
   ensureParentDir,
   readJsonl,
   readJsonlTail,
+  readTextTail,
   appendJsonl,
   writeJson,
 } = require('../scripts/fs-utils');
@@ -96,6 +97,40 @@ describe('fs-utils', () => {
       fs.writeFileSync(tmp, '{"a":1}\n{"b":2}\n{"c":3}\n');
       const result = readJsonlTail(tmp, 2);
       assert.deepStrictEqual(result.map((row) => Object.keys(row)[0]), ['b', 'c']);
+      fs.unlinkSync(tmp);
+    });
+
+    it('tails large files by maxBytes', () => {
+      const tmp = path.join(os.tmpdir(), 'fsutils-maxbytes.jsonl');
+      const lines = [];
+      for (let i = 0; i < 400; i += 1) {
+        lines.push(JSON.stringify({ id: `id${i}`, pad: 'y'.repeat(80) }));
+      }
+      fs.writeFileSync(tmp, `${lines.join('\n')}\n`);
+      const rows = readJsonl(tmp, { maxLines: 20, tail: true, maxBytes: 4_000 });
+      assert.ok(rows.length > 0);
+      assert.ok(rows.length <= 20);
+      assert.notEqual(rows[0].id, 'id0');
+      fs.unlinkSync(tmp);
+    });
+  });
+
+  describe('readTextTail', () => {
+    it('returns the full file when it fits the budget', () => {
+      const tmp = path.join(os.tmpdir(), 'fsutils-text-full.txt');
+      fs.writeFileSync(tmp, 'alpha\nbeta\n');
+      const result = readTextTail(tmp, 1024);
+      assert.equal(result.truncated, false);
+      assert.match(result.text, /alpha/);
+      fs.unlinkSync(tmp);
+    });
+
+    it('drops the incomplete first line after a mid-file seek', () => {
+      const tmp = path.join(os.tmpdir(), 'fsutils-text-tail.txt');
+      fs.writeFileSync(tmp, `${'a'.repeat(80)}\nnewest\n`);
+      const result = readTextTail(tmp, 20);
+      assert.equal(result.truncated, true);
+      assert.match(result.text, /newest/);
       fs.unlinkSync(tmp);
     });
   });

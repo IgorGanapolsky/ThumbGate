@@ -163,7 +163,16 @@ function collectAggregateLogEntries(fileName, options = {}) {
   for (const dir of stores) {
     const logPath = path.join(dir, fileName);
     if (!safeExists(logPath)) continue;
-    const rows = readJsonl(logPath, { maxLines: 0 }) || [];
+    // Lifetime/statusline callers omit limits and still read the full file.
+    // Dashboard/production proof pass maxLines + maxBytes to keep /v1/dashboard
+    // inside the authenticated verifier budget.
+    const maxLines = Math.max(0, Number(options.maxLines) || 0);
+    const maxBytes = Math.max(0, Number(options.maxBytes) || 0);
+    const rows = readJsonl(logPath, {
+      maxLines,
+      tail: maxLines > 0 || maxBytes > 0,
+      maxBytes,
+    }) || [];
     for (let index = 0; index < rows.length; index += 1) {
       const rawEntry = rows[index];
       const entry = { ...rawEntry };
