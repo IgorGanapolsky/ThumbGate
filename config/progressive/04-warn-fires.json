@@ -1,0 +1,11 @@
+{
+  "phase": 4,
+  "name": "warn-fires",
+  "detectEnabled": true,
+  "strict": false,
+  "commands": [
+    "npx thumbgate gate-stats"
+  ],
+  "verify": "A matching tool call is flagged and logged. Default is warn, not deny.",
+  "hiddenMetric": "A matching attempt in the hook log — not a hard block."
+}

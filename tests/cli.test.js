@@ -1525,6 +1525,15 @@ describe('bin/cli.js', () => {
       path.join(doctorDir, '.thumbgate', 'config.json'),
       JSON.stringify({ version: 1 }, null, 2)
     );
+    fs.mkdirSync(path.join(doctorDir, '.claude'), { recursive: true });
+    fs.writeFileSync(
+      path.join(doctorDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PreToolUse: [{ hooks: [{ type: 'command', command: 'node scripts/hook-pre-tool-use.js' }] }],
+        },
+      }, null, 2)
+    );
 
     const result = runCliSync(['doctor', '--json'], {
       cwd: doctorDir,
