@@ -195,7 +195,12 @@ const path = require('node:path');
 // 455 -> 458: edotenv-rl-gateway + rsi-safety-hillclimb + research-agent-harness
 // 458 -> 459: governance-difficulty-curriculum (EdotEnv harder-next-round transfer)
 // 459 -> 460: provider-receipt-contract packaging on rebased receipt PR
-const BASELINE_FILE_COUNT = 467; // +scripts/agent-security-central.js (Oracle free-posture wedge)
+// 467 -> 469 (2026-08-18): feat(cli) + feat(docs) pipeline compass + setup guide.
+// Two new runtime files: src/pipeline-compass.js (CLI compass command) and
+// public/guides/progressive-setup.html.
+const BASELINE_FILE_COUNT = 469; // +scripts/agent-security-central.js (Oracle free-posture wedge)
+// + src/pipeline-compass.js (TradeMaster-style CLI compass) +
+// public/guides/progressive-setup.html (progressive setup guide)
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
