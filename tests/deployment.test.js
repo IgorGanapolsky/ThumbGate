@@ -906,7 +906,11 @@ test('SonarCloud workflow polls quality gates only for PR and merge-queue scans'
   assert.doesNotMatch(pullRequestScanStep[0], /qualitygate\.wait=true/);
   assert.match(qualityGateStep[0], /github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'/);
   assert.match(qualityGateStep[0], /!\(github\.event_name == 'pull_request' && github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'\)/);
-  assert.match(qualityGateStep[0], /uses:\s*SonarSource\/sonarqube-quality-gate-action@(?:v1\.2\.0|[0-9a-f]{40} # v1\.2\.0)/);
+  assert.match(
+    qualityGateStep[0],
+    /uses:\s*SonarSource\/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa # v1\.2\.1/,
+  );
+
   assert.match(qualityGateStep[0], /pollingTimeoutSec:\s*600/);
   assert.doesNotMatch(defaultBranchStep[0], /qualitygate\.wait=true/);
 });
@@ -967,7 +971,13 @@ test('Dependabot auto-merge trusts the pull request author instead of the trigge
   assert.match(workflow, /name:\s*Checkout trusted base workflow tools/);
   assert.match(workflow, /name:\s*Checkout Dependabot head/);
   assert.match(workflow, /name:\s*Add generated changeset for manifest-only dependency bumps/);
-  assert.match(workflow, /node scripts\/dependabot-changeset\.js --title "\$PR_TITLE" --output "\$output_path"/);
+  assert.match(workflow, /package\.json\|package-lock\.json\|workers\/package\.json\|workers\/package-lock\.json/);
+  assert.match(workflow, /rel_path="\.changeset\/dependabot-pr-\$\{PR_NUMBER\}\.md"/);
+  assert.match(workflow, /node scripts\/dependabot-changeset\.js --title "\$PR_TITLE" --output "\.dependabot-head\/\$\{rel_path\}"/);
+  assert.match(workflow, /git -C \.dependabot-head status --porcelain -- "\$rel_path"/);
+  assert.match(workflow, /git -C \.dependabot-head add "\$rel_path"/);
+  assert.doesNotMatch(workflow, /output_path="\.dependabot-head\/\.changeset\//);
+  assert.doesNotMatch(workflow, /git -C \.dependabot-head diff --quiet -- "\$output_path"/);
   assert.match(workflow, /git -C \.dependabot-head push origin "HEAD:\$\{HEAD_REF\}"/);
   assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
   assert.match(workflow, /-f body='\/trunk merge'/);
