@@ -1,0 +1,11 @@
+{
+  "phase": 5,
+  "name": "strict-optional",
+  "detectEnabled": true,
+  "strict": true,
+  "commands": [
+    "THUMBGATE_STRICT_ENFORCEMENT=1"
+  ],
+  "verify": "Only after phases 1–4. Matching learned rules can hard-deny.",
+  "hiddenMetric": "Strict is opt-in. Secret-exfil floors already deny without it."
+}
