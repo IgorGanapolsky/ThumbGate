@@ -1,0 +1,45 @@
+{
+  "adapter": "openmono",
+  "displayName": "OpenMono",
+  "homepage": "https://github.com/StartupHakk/OpenMonoAgent.ai",
+  "license": "AGPL-3.0",
+  "notes": [
+    "OpenMono already ships a Docker sandbox, a 'nothing bypasses the pipeline' chokepoint,",
+    "fixed doom-loop detection (3x repeated tool sequence) and per-sub-agent turn budgets.",
+    "This adapter does NOT replace any of that. It adds the one thing those controls lack:",
+    "persistence across sessions. OpenMono enforces; ThumbGate remembers and tightens."
+  ],
+  "hook": {
+    "surface": "PreToolUse",
+    "command": "npx thumbgate gate-check --adapter=openmono",
+    "timeoutMs": 5000,
+    "failClosed": false
+  },
+  "subAgents": [
+    { "name": "Explore", "defaultTurnBudget": 15, "writeAllowed": false },
+    { "name": "Plan", "defaultTurnBudget": 10, "writeAllowed": false },
+    { "name": "Coder", "defaultTurnBudget": 30, "writeAllowed": true },
+    { "name": "Verify", "defaultTurnBudget": 20, "writeAllowed": false },
+    { "name": "general-purpose", "defaultTurnBudget": 20, "writeAllowed": true }
+  ],
+  "loopDetection": {
+    "upstreamFixedThreshold": 3,
+    "adaptive": true,
+    "note": "Upstream aborts on any 3x repeat. Adaptive mode learns which sequences preceded wasted runs in THIS repo and denies those earlier, while leaving legitimate retry loops alone."
+  },
+  "blastRadius": {
+    "workspaceMount": "/workspace",
+    "note": "Paths outside the container workspace mount are treated as escape attempts."
+  },
+  "gates": [
+    "secret-exfil",
+    "destructive-shell",
+    "branch-protection",
+    "spend-commerce",
+    "production-deploy"
+  ],
+  "receipts": {
+    "enabled": true,
+    "note": "One signed receipt per tool attempt (allow and deny), for teams that must evidence what an agent touched."
+  }
+}

@@ -222,6 +222,7 @@ const {
 } = require('../../scripts/thumbgate-search');
 const {
   appendTelemetryPing,
+  headerHasPrivacyOptOut,
 } = require('../../scripts/telemetry-analytics');
 const {
   buildProductIssueTitle,
@@ -3190,8 +3191,8 @@ function sendPublicBillingPreflight(res) {
 
 function appendBestEffortTelemetry(feedbackDir, payload, headers, context) {
   try {
-    appendTelemetryPing(feedbackDir, payload, headers);
-    return true;
+    const written = appendTelemetryPing(feedbackDir, payload, headers);
+    return Boolean(written);
   } catch (err) {
     try {
       appendDiagnosticRecord({
@@ -3378,7 +3379,8 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
   const googleSiteVerificationMeta = runtimeConfig.googleSiteVerification
     ? `  <meta name="google-site-verification" content="${escapeHtmlAttribute(runtimeConfig.googleSiteVerification)}" />`
     : '';
-  const gaBootstrap = runtimeConfig.gaMeasurementId
+  const privacyOptOut = Boolean(pageContext.privacyOptOut);
+  const gaBootstrap = (!privacyOptOut && runtimeConfig.gaMeasurementId)
     ? [
       `  <script async src="https://www.googletagmanager.com/gtag/js?id=${runtimeConfig.gaMeasurementId}"></script>`,
       '  <script>',
@@ -3389,7 +3391,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
       '  </script>',
     ].join('\n')
     : '';
-  return normalizePublicMarketingHtml(fillTemplate(template, {
+  let rendered = fillTemplate(template, {
     '__PACKAGE_VERSION__': pkg.version,
     '__APP_ORIGIN__': runtimeConfig.appOrigin,
     '__CHECKOUT_ENDPOINT__': runtimeConfig.checkoutEndpoint,
@@ -3418,7 +3420,34 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
     '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
-  }), runtimeConfig, pageContext.requestHost);
+  });
+  const normalized = normalizePublicMarketingHtml(rendered, runtimeConfig, pageContext.requestHost);
+  if (!privacyOptOut) return normalized;
+  let rewrittenDomain = '';
+  try {
+    rewrittenDomain = normalizePublicRequestHost(pageContext.requestHost)
+      || new URL(runtimeConfig.appOrigin).host;
+  } catch {
+    rewrittenDomain = '';
+  }
+  return removeKnownPlausibleScriptTags(normalized, rewrittenDomain);
+}
+
+function removeKnownPlausibleScriptTags(html, extraDomain) {
+  const domains = ['thumbgate.ai', 'thumbgate-production.up.railway.app'];
+  if (extraDomain) domains.push(extraDomain);
+  const sources = [
+    'https://plausible.io/js/script.tagged-events.js',
+    'https://plausible.io/js/script.js',
+  ];
+  let out = html;
+  for (const domain of domains) {
+    for (const src of sources) {
+      const tag = `<script defer data-domain="${domain}" src="${src}"></script>`;
+      if (out.includes(tag)) out = out.split(tag).join('');
+    }
+  }
+  return out;
 }
 
 function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
@@ -4289,6 +4318,7 @@ function servePublicMarketingPage({
     serverUtmCampaign: landingAttribution.utmCampaign,
     serverUtmContent: landingAttribution.utmContent,
     requestHost,
+    privacyOptOut: headerHasPrivacyOptOut(req.headers),
   });
 
   sendHtml(

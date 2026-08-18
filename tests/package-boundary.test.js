@@ -453,8 +453,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 466 -> 467 (2026-08-17): scripts/agent-security-central.js — free Agent
     // Security Central posture report. Lockstep with public-bundle-ratchet +
     // public-core-boundary.
-    manifest.fileCount <= 467,
-    `npm package should stay <= 467 files, got ${manifest.fileCount}`
+    // 467 -> 468 (2026-08-18): scripts/override-audit.js required by packaged
+    // gates-engine / unlock-path audit attribution.
+    manifest.fileCount <= 468,
+    `npm package should stay <= 468 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

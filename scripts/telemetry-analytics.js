@@ -531,7 +531,18 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
   return entry;
 }
 
+function headerHasPrivacyOptOut(headers = {}) {
+  const normalized = {};
+  for (const [key, value] of Object.entries(headers || {})) {
+    normalized[String(key).toLowerCase()] = String(value == null ? '' : value).trim();
+  }
+  return normalized['sec-gpc'] === '1' || normalized.dnt === '1';
+}
+
 function appendTelemetryEvent(feedbackDir, payload = {}, headers = {}) {
+  if (headerHasPrivacyOptOut(headers)) {
+    return null;
+  }
   const entry = sanitizeTelemetryPayload(payload, headers);
   const telemetryPath = getTelemetryPath(feedbackDir);
   fs.mkdirSync(path.dirname(telemetryPath), { recursive: true });
@@ -1493,6 +1504,7 @@ module.exports = {
   TELEMETRY_FILE_NAME,
   sanitizeTelemetryPayload,
   classifyTelemetryAudience,
+  headerHasPrivacyOptOut,
   appendTelemetryPing,
   appendTelemetryEvent,
   getTelemetrySourceDiagnostics,
