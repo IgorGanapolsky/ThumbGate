@@ -163,15 +163,20 @@ function collectAggregateLogEntries(fileName, options = {}) {
   for (const dir of stores) {
     const logPath = path.join(dir, fileName);
     if (!safeExists(logPath)) continue;
-    // Lifetime/statusline callers omit limits and still read the full file.
-    // Dashboard/production proof pass maxLines + maxBytes to keep /v1/dashboard
-    // inside the authenticated verifier budget.
-    const maxLines = Math.max(0, Number(options.maxLines) || 0);
-    const maxBytes = Math.max(0, Number(options.maxBytes) || 0);
+    // Never full-scan multi-hundred-MB feedback logs (prod dashboard_data 503).
+    // Callers that truly need lifetime history must pass { full: true }.
+    const wantFull = options.full === true;
+    const maxLines = wantFull
+      ? Math.max(0, Number(options.maxLines) || 0)
+      : (Number(options.maxLines) > 0 ? Number(options.maxLines) : 20_000);
+    const maxBytes = wantFull
+      ? Math.max(0, Number(options.maxBytes) || 0)
+      : (Number(options.maxBytes) > 0 ? Number(options.maxBytes) : 4 * 1024 * 1024);
     const rows = readJsonl(logPath, {
       maxLines,
-      tail: maxLines > 0 || maxBytes > 0,
       maxBytes,
+      tail: !wantFull,
+      full: wantFull,
     }) || [];
     for (let index = 0; index < rows.length; index += 1) {
       const rawEntry = rows[index];

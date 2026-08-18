@@ -23,11 +23,18 @@ const DEFAULT_JSONL_TAIL_ENTRIES = 20_000;
  * @param {number} [maxBytes]
  * @returns {{ text: string, truncated: boolean, size: number }}
  */
+const HARD_FULL_READ_BYTES = 64 * 1024 * 1024;
+
 function readTextTail(filePath, maxBytes) {
   const stats = fs.statSync(filePath);
   const size = stats.size || 0;
   if (size <= 0) return { text: '', truncated: false, size: 0 };
-  const budget = Number(maxBytes);
+  let budget = Number(maxBytes);
+  // budget<=0 historically meant "read entire file". On oversized prod logs that
+  // throws "Cannot create a string longer than 0x1fffffe8 characters".
+  if (!budget && size > HARD_FULL_READ_BYTES) {
+    budget = DEFAULT_JSONL_TAIL_BYTES;
+  }
   if (!budget || size <= budget) {
     return { text: fs.readFileSync(filePath, 'utf-8'), truncated: false, size };
   }
@@ -82,7 +89,19 @@ function readJsonl(filePath, options = {}) {
   const normalizedOptions = typeof options === 'number'
     ? { maxLines: options, tail: true }
     : (options || {});
-  const maxBytes = positiveNumber(normalizedOptions.maxBytes);
+  const maxLines = positiveNumber(normalizedOptions.maxLines);
+  // Opt-in full reads only. Unbounded readFileSync blows past V8 string limits
+  // on production feedback/memory JSONL (dashboard_data 503 / 0x1fffffe8).
+  const wantFull = normalizedOptions.full === true;
+  let maxBytes = positiveNumber(normalizedOptions.maxBytes);
+  if (!wantFull && maxBytes <= 0) {
+    maxBytes = (maxLines > 0 || normalizedOptions.tail)
+      ? DEFAULT_JSONL_TAIL_BYTES
+      : DEFAULT_JSONL_TAIL_BYTES;
+  }
+  if (wantFull) {
+    maxBytes = 0; // readTextTail(0) => full file
+  }
   let raw = '';
   try {
     raw = readTextTail(filePath, maxBytes).text.trim();
@@ -92,16 +111,19 @@ function readJsonl(filePath, options = {}) {
   if (!raw) return [];
   let lines = raw.split('\n');
 
-  if (normalizedOptions.tail && normalizedOptions.maxLines > 0) {
-    lines = lines.slice(-normalizedOptions.maxLines);
+  const effectiveMaxLines = maxLines > 0 ? maxLines : DEFAULT_JSONL_TAIL_ENTRIES;
+  if (!wantFull) {
+    lines = lines.slice(-effectiveMaxLines);
+  } else if (normalizedOptions.tail && maxLines > 0) {
+    lines = lines.slice(-maxLines);
   }
 
   if (normalizedOptions.reverse) {
     lines = lines.reverse();
   }
 
-  if (!normalizedOptions.tail && normalizedOptions.maxLines && normalizedOptions.maxLines > 0) {
-    lines = lines.slice(0, normalizedOptions.maxLines);
+  if (wantFull && !normalizedOptions.tail && maxLines > 0) {
+    lines = lines.slice(0, maxLines);
   }
 
   return lines

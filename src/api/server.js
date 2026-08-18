@@ -2088,14 +2088,22 @@ function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opt
   try {
     if (!feedbackDir) return [];
     const rows = shouldAggregateFeedback()
-      ? collectAggregateLogEntries('feedback-log.jsonl', { feedbackDir }).entries
+      ? collectAggregateLogEntries('feedback-log.jsonl', {
+          feedbackDir,
+          maxLines: 20_000,
+          maxBytes: 4 * 1024 * 1024,
+        }).entries
       : (() => {
           const fsLocal = require('node:fs');
           const pathLocal = require('node:path');
           const logPath = pathLocal.join(feedbackDir, 'feedback-log.jsonl');
           if (!fsLocal.existsSync(logPath)) return [];
           const { readJsonl } = require('../../scripts/fs-utils');
-          return readJsonl(logPath) || [];
+          return readJsonl(logPath, {
+            maxLines: 20_000,
+            maxBytes: 4 * 1024 * 1024,
+            tail: true,
+          }) || [];
         })();
     const cutoff = windowMs ? Date.now() - windowMs : 0;
     const filtered = rows
