@@ -3323,6 +3323,7 @@ function help() {
     console.log('  ai-inventory                                      Scan AI/ML components and export ML-BOM evidence');
     console.log('  verify-claims --claim="..."                     Recheck factual claims against configured sources');
     console.log('  doctor                                            Audit runtime isolation + bootstrap context');
+    console.log('  compass                                           6-axis pipeline: wire, lessons, rules, eval');
     console.log('  security-central                                  Free Agent Security Central posture report');
     console.log('  break-glass --reason="..."                       Short TTL recovery if gates over-fire');
     console.log('  brain [--write]                                   Build the agent-readable context brain (lessons + rules + gates)');
@@ -3391,6 +3392,7 @@ function help() {
   console.log('  eval                  Turn feedback into reusable prompt/workflow eval proof');
   console.log('  optimize              [PRO] Prune CLAUDE.md and migrate rules to Pre-Action Checks');
   console.log('  prove [--target=X]    Run proof harness (adapters|automation|...)');
+  console.log('  compass               6-axis pipeline check (wire → lessons → rules → eval)');
   console.log('  watch                 Watch .thumbgate/ for external signals');
   console.log('  status                Approval trend + failure domain dashboard');
   console.log('  funnel                Marketing and revenue conversion funnel analytics');
@@ -3954,6 +3956,17 @@ switch (COMMAND) {
     }
     const ready = report.overallStatus === 'ready' && wiring.overall !== 'error';
     process.exit(ready ? 0 : 1);
+    break;
+  }
+  case 'compass':
+  case 'pipeline':
+  case 'pipeline-compass': {
+    const { getPipelineCompass, formatPipelineCompass } = require(path.join(PKG_ROOT, 'src', 'pipeline-compass'));
+    const args = parseArgs(process.argv.slice(3));
+    const report = getPipelineCompass({ projectRoot: CWD });
+    if (args.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(formatPipelineCompass(report));
+    process.exit(report.ready ? 0 : 1);
     break;
   }
   case 'wiring-doctor':

@@ -453,11 +453,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 466 -> 467 (2026-08-17): scripts/agent-security-central.js — free Agent
     // Security Central posture report. Lockstep with public-bundle-ratchet +
     // public-core-boundary.
-    // 467 -> 470 (2026-08-18): three concurrent PRs each add one runtime
+    // 470 -> 471 (2026-08-18): pipeline-compass runtime module (+1)
     // file that packaged entrypoints require: scripts/override-audit.js (#3515),
     // src/security-questionnaire.js (#3519), src/pipeline-compass.js (#3521).
-    manifest.fileCount <= 470,
-    `npm package should stay <= 470 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 471,
+    `npm package should stay <= 471 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
