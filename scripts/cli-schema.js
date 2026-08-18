@@ -159,6 +159,13 @@ const CLI_COMMANDS = [
     flags: [jsonFlag()],
   }),
   discoveryCommand({
+    name: 'security-central',
+    aliases: ['security:central', 'agent-security-central'],
+    description:
+      'Free local Agent Security Central posture report (config drift, privileged coverage, policy variance, audit evidence)',
+    flags: [jsonFlag()],
+  }),
+  discoveryCommand({
     name: 'harness-audit',
     aliases: ['harness'],
     description: 'Score global docs, MCP discovery, and specialized check harnesses',

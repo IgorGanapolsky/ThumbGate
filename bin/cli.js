@@ -3323,6 +3323,7 @@ function help() {
     console.log('  ai-inventory                                      Scan AI/ML components and export ML-BOM evidence');
     console.log('  verify-claims --claim="..."                     Recheck factual claims against configured sources');
     console.log('  doctor                                            Audit runtime isolation + bootstrap context');
+    console.log('  security-central                                  Free Agent Security Central posture report');
     console.log('  break-glass --reason="..."                       Short TTL recovery if gates over-fire');
     console.log('  brain [--write]                                   Build the agent-readable context brain (lessons + rules + gates)');
     console.log('  pro                                               ThumbGate Pro (dashboard, exports, sync)');
@@ -3964,6 +3965,20 @@ switch (COMMAND) {
     if (args.json) console.log(JSON.stringify(wiring, null, 2));
     else console.log(formatReport(wiring));
     process.exit(wiring.overall === 'error' ? 2 : wiring.overall === 'warning' ? 1 : 0);
+    break;
+  }
+  case 'security-central':
+  case 'security:central':
+  case 'agent-security-central': {
+    const {
+      buildSecurityCentralReport,
+      formatSecurityCentralReport,
+    } = require(path.join(PKG_ROOT, 'scripts', 'agent-security-central'));
+    const args = parseArgs(process.argv.slice(3));
+    const report = buildSecurityCentralReport({ projectRoot: CWD });
+    if (args.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(formatSecurityCentralReport(report));
+    process.exit(report.posture.band === 'critical' ? 2 : report.posture.band === 'at_risk' ? 1 : 0);
     break;
   }
   case 'export-dpo':
