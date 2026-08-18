@@ -51,9 +51,9 @@ function getPipelineCompass(options = {}) {
 
   const axes = {
     design: wiring.overall !== 'error',
-    implement: Boolean(wiring.lessonsStore && wiring.lessonsStore.writable)
-      || fileNonEmpty(paths.FEEDBACK_DIR && path.join(paths.FEEDBACK_DIR, '.keep'))
-      || fs.existsSync(paths.FEEDBACK_DIR),
+    // Require a real writable lessons store — existence alone is not enough
+    // (mode-0555 dirs exist but reject feedback appends with EACCES).
+    implement: Boolean(wiring.lessonsStore && wiring.lessonsStore.writable),
     data: feedbackRows > 0,
     promote: hasRules || memoryRows > 0,
     evaluate: hasSummary || feedbackRows > 0,

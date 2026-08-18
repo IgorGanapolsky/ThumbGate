@@ -43,3 +43,18 @@ test('feedback rows light the data axis', () => {
   assert.equal(report.axes.find((axis) => axis.id === 'data').pass, true);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test('implement axis fails when feedback directory exists but is not writable', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-compass-ro-'));
+  const feedbackDir = path.join(dir, 'feedback');
+  fs.mkdirSync(feedbackDir, { recursive: true });
+  fs.chmodSync(feedbackDir, 0o555);
+  const report = getPipelineCompass({
+    projectRoot: dir,
+    feedbackDir,
+    env: { ...process.env, THUMBGATE_FEEDBACK_DIR: feedbackDir },
+  });
+  assert.equal(report.axes.find((axis) => axis.id === 'implement').pass, false);
+  fs.chmodSync(feedbackDir, 0o755);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
