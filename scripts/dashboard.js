@@ -53,6 +53,11 @@ const {
   collectAggregateLogEntries,
   shouldAggregateFeedback,
 } = require('./feedback-aggregate');
+const {
+  DEFAULT_JSONL_TAIL_BYTES,
+  DEFAULT_JSONL_TAIL_ENTRIES,
+  readTextTail,
+} = require('./fs-utils');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -101,28 +106,10 @@ function buildUnavailableOrgDashboard(windowHours) {
 // Full-file readFileSync/stringify then throws:
 //   "Cannot create a string longer than 0x1fffffe8 characters"
 // Cap dashboard JSONL ingestion to a recent tail so /v1/dashboard stays live.
-const DEFAULT_JSONL_MAX_BYTES = 32 * 1024 * 1024; // 32 MiB tail
-const DEFAULT_JSONL_MAX_ENTRIES = 100_000;
-
-function readTextTail(filePath, maxBytes) {
-  const stats = fs.statSync(filePath);
-  const size = stats.size || 0;
-  if (size <= 0) return { text: '', truncated: false, size: 0 };
-  if (!maxBytes || size <= maxBytes) {
-    return { text: fs.readFileSync(filePath, 'utf-8'), truncated: false, size };
-  }
-  const fd = fs.openSync(filePath, 'r');
-  try {
-    const buffer = Buffer.alloc(maxBytes);
-    fs.readSync(fd, buffer, 0, maxBytes, size - maxBytes);
-    let text = buffer.toString('utf-8');
-    const firstNewline = text.indexOf('\n');
-    if (firstNewline >= 0) text = text.slice(firstNewline + 1);
-    return { text, truncated: true, size };
-  } finally {
-    fs.closeSync(fd);
-  }
-}
+// A 32 MiB default is still too large: generateDashboard reads several logs
+// and aggregation/analyze used to full-scan the same files again.
+const DEFAULT_JSONL_MAX_BYTES = DEFAULT_JSONL_TAIL_BYTES;
+const DEFAULT_JSONL_MAX_ENTRIES = DEFAULT_JSONL_TAIL_ENTRIES;
 
 function readJSONL(filePath, options = {}) {
   if (!fs.existsSync(filePath)) return [];
@@ -1598,7 +1585,11 @@ function resolveTeamWindowHours(analyticsWindow) {
 
 function collectAllFeedbackEntries(feedbackDir) {
   if (shouldAggregateFeedback()) {
-    return collectAggregateLogEntries('feedback-log.jsonl', { feedbackDir }).entries;
+    return collectAggregateLogEntries('feedback-log.jsonl', {
+      feedbackDir,
+      maxLines: DEFAULT_JSONL_MAX_ENTRIES,
+      maxBytes: DEFAULT_JSONL_MAX_BYTES,
+    }).entries;
   }
 
   const entries = [];
@@ -1700,7 +1691,11 @@ function generateDashboard(feedbackDir, options = {}) {
       availability: 'private_core',
     };
   const readiness = generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
-  const feedbackAnalysis = analyzeFeedback(path.join(feedbackDir, 'feedback-log.jsonl'));
+  const feedbackAnalysis = analyzeFeedback(path.join(feedbackDir, 'feedback-log.jsonl'), {
+    entries,
+    maxLines: DEFAULT_JSONL_MAX_ENTRIES,
+    maxBytes: DEFAULT_JSONL_MAX_BYTES,
+  });
   const harness = computeHarnessOverview(feedbackDir, entries);
   const interventionPolicy = getInterventionPolicySummary(feedbackDir);
   const decisionRecords = readDecisionLog(path.join(feedbackDir, DECISION_LOG_FILENAME));
