@@ -103,6 +103,7 @@
     "scripts/a-plus-evidence-scorecard.js",
     "scripts/access-anomaly-detector.js",
     "scripts/action-receipts.js",
+    "scripts/override-audit.js",
     "scripts/broker-execution-receipts.js",
     "scripts/provider-receipt-contract.js",
     "scripts/provider-attestation-conformance.js",
