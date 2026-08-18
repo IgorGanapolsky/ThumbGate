@@ -950,6 +950,9 @@ next      decision recorded before execution</pre>
         <a href="#thumbgate-dashboard-command"><code>thumbgate-dashboard</code> command</a>
         <a href="/terms">Terms</a>
         <a href="/privacy">Privacy</a>
+        <!-- CCPA/CPRA Civil Code 1798.135(a): the opt-out link must be reachable
+             from the homepage, not only from the privacy notice. -->
+        <a href="/privacy#your-privacy-choices">Your Privacy Choices</a>
         <a href="/legal">Legal</a>
         <a href="/support">Support</a>
         <a href="/learn">Browse the guide library</a>
@@ -986,7 +989,21 @@ next      decision recorded before execution</pre>
       (window.plausible.q = window.plausible.q || []).push(arguments);
     };
 
+    // Global Privacy Control / Do Not Track. CCPA-CPRA treats GPC as a valid
+    // opt-out preference signal, so it must actually suppress the emit rather
+    // than merely be described in the privacy notice.
+    function privacySignalOptOut() {
+      try {
+        return navigator.globalPrivacyControl === true
+          || navigator.doNotTrack === '1'
+          || window.doNotTrack === '1';
+      } catch (_) {
+        return false;
+      }
+    }
+
     function sendFirstPartyTelemetry(eventName, props) {
+      if (privacySignalOptOut()) return;
       const payload = JSON.stringify({
         event: eventName,
         page: '/',
@@ -1011,11 +1028,13 @@ next      decision recorded before execution</pre>
     }
 
     function sendGa4Event(eventName, params) {
+      if (privacySignalOptOut()) return;
       if (!gaMeasurementId || typeof window.gtag !== 'function') return;
       window.gtag('event', eventName, params || {});
     }
 
     function captureOfferInterest(ctaId, placement) {
+      if (privacySignalOptOut()) return;
       const props = {
         ctaId: ctaId || 'homepage_diagnostic_buy',
         ctaPlacement: placement || 'homepage',
@@ -1041,6 +1060,7 @@ next      decision recorded before execution</pre>
     const checkoutForm = document.querySelector('[data-primary-checkout]');
     if (checkoutForm) {
       checkoutForm.addEventListener('submit', function () {
+        if (privacySignalOptOut()) return;
         const props = {
           ctaId: 'homepage_diagnostic_buy',
           ctaPlacement: 'hero',
@@ -1222,7 +1242,9 @@ next      decision recorded before execution</pre>
         panel.classList.add('is-open');
         try {
           sendFirstPartyTelemetry('loop_demo_open', { step: String(step), landingPath: '/' });
-          window.plausible && window.plausible('loop_demo_open', { props: { step: String(step) } });
+          if (!privacySignalOptOut() && window.plausible) {
+            window.plausible('loop_demo_open', { props: { step: String(step) } });
+          }
         } catch (_) {}
       }
 
