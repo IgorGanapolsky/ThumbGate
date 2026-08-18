@@ -20,7 +20,7 @@
     "description": "Prove hooks and dashboard before enabling matching or strict mode.",
     "step": [
       {"@type": "HowToStep", "name": "Wire only", "text": "npx thumbgate init then npx thumbgate doctor"},
-      {"@type": "HowToStep", "name": "Empty dashboard is OK", "text": "npx thumbgate dashboard — empty stats are success"},
+      {"@type": "HowToStep", "name": "Empty dashboard is OK", "text": "npx thumbgate dashboard --open — empty stats are success"},
       {"@type": "HowToStep", "name": "One lesson", "text": "Capture one thumbs-down before expecting a gate"},
       {"@type": "HowToStep", "name": "Warn fires", "text": "Confirm a matching tool call is flagged and logged"},
       {"@type": "HowToStep", "name": "Strict optional", "text": "THUMBGATE_STRICT_ENFORCEMENT=1 only after phases 1-4"}
@@ -68,7 +68,7 @@ npx thumbgate doctor</pre>
     </article>
     <article class="phase" id="phase-2">
       <h2>Phase 2 — Empty dashboard is OK</h2>
-      <pre>npx thumbgate dashboard</pre>
+      <pre>npx thumbgate dashboard --open</pre>
       <p class="muted">Verify: HTML loads. Zero interdictions is not a failed install.</p>
     </article>
     <article class="phase" id="phase-3">
