@@ -10961,7 +10961,13 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           });
           return;
         }
-        const entry = satisfyCondition(body.gateId, body.evidence);
+        // Attribute the override to the API surface. Without an explicit
+        // source the record defaults to 'cli' and the audit summary cannot
+        // tell an HTTP unlock from a local one.
+        const entry = satisfyCondition(body.gateId, body.evidence, null, {
+          source: 'api',
+          actor: body.actor || 'api-client',
+        });
         sendJson(res, 200, { satisfied: true, gateId: body.gateId, ...entry });
         return;
       }
