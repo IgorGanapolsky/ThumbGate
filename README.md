@@ -74,10 +74,13 @@ Agentic development is becoming a loop: **Guide → Generate → Verify → Solv
 
 ## Quick Start
 
+Progressive wiring — prove the pipe before you turn matching on. Empty dashboard is success.
+
 ```bash
-npx thumbgate init                                              # wire PreToolUse hooks
-npx thumbgate capture down "Never run DROP on production tables"  # 👎 lesson
-npx thumbgate doctor                                            # health check
+npx thumbgate init          # Phase 1: hooks only
+npx thumbgate doctor        # verify: exits 0 (hidden metric = hook install, not gate count)
+npx thumbgate dashboard     # Phase 2: empty stats are OK
+npx thumbgate capture --feedback=down --context="Never run DROP on production tables" --what-went-wrong="agent proposed DROP" --what-to-change="require review for DROP"
 ```
 
 Later `DROP` attempts in the same scope surface the check:
@@ -87,6 +90,8 @@ Later `DROP` attempts in the same scope surface the check:
    Pattern: DROP.*production
    Verdict: 👎 WARN + LOG   (⛔ BLOCK when THUMBGATE_STRICT_ENFORCEMENT=1)
 ```
+
+Numbered configs: [`config/progressive/`](config/progressive/). Guide: [progressive wiring](https://thumbgate.ai/guides/progressive-wiring).
 
 ### MCP / Glama / registry install (stdio)
 
