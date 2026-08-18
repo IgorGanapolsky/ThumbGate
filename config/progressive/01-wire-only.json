@@ -1,0 +1,11 @@
+{
+  "phase": 1,
+  "name": "wire-only",
+  "detectEnabled": false,
+  "commands": [
+    "npx thumbgate init",
+    "npx thumbgate doctor"
+  ],
+  "verify": "doctor exits 0. Hooks exist. Dashboard may be empty.",
+  "hiddenMetric": "PreToolUse hook installed — not number of gates."
+}
