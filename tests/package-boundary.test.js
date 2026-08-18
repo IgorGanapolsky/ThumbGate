@@ -450,8 +450,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // THIRD_PARTY_NOTICES.md (+ package files list). Buyer-facing legal pages
     // must ship with the hosted/static package surfaces.
     // 452->453 mcp-session-handles; 453->454 agent-egress; 454->455 budget-aware-gates-proof
-    manifest.fileCount <= 466,
-    `npm package should stay <= 466 files, got ${manifest.fileCount}`
+    // 466 -> 467 (2026-08-17): scripts/agent-security-central.js — free Agent
+    // Security Central posture report. Lockstep with public-bundle-ratchet +
+    // public-core-boundary.
+    manifest.fileCount <= 467,
+    `npm package should stay <= 467 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
