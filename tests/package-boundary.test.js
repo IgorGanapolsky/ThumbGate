@@ -453,8 +453,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 466 -> 467 (2026-08-17): scripts/agent-security-central.js — free Agent
     // Security Central posture report. Lockstep with public-bundle-ratchet +
     // public-core-boundary.
-    manifest.fileCount <= 467,
-    `npm package should stay <= 467 files, got ${manifest.fileCount}`
+    // 467 -> 473 (2026-08-18): config/progressive/* + public/guides/progressive-wiring.html
+    // Frigate-inspired progressive setup presets and guide.
+    manifest.fileCount <= 473,
+    `npm package should stay <= 473 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
