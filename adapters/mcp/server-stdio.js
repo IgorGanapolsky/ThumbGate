@@ -1300,7 +1300,14 @@ async function callToolInner(name, args) {
       if (!gateName) {
         throw new Error('gate is required (aliases: gateId, gate_id)');
       }
-      const entry = satisfyCondition(gateName, args.evidence || '', args.structuredReasoning || null);
+      // Attribute the override to the MCP surface. Omitting this defaults the
+      // audit record to 'cli', which would misreport every agent-driven unlock.
+      const entry = satisfyCondition(
+        gateName,
+        args.evidence || '',
+        args.structuredReasoning || null,
+        { source: 'mcp', actor: args.actor || 'agent' },
+      );
       const result = { satisfied: true, gate: gateName, ...entry };
       // Log structured reasoning to audit trail for learning
       if (args.structuredReasoning) {

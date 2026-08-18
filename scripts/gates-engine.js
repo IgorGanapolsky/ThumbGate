@@ -722,7 +722,14 @@ function breakGlassEmergency(input = {}) {
   const gates = ['pr_create_allowed', 'pr_threads_checked', BREAK_GLASS_CONDITION];
   const satisfied = {};
   for (const gateId of gates) {
-    satisfied[gateId] = satisfyCondition(gateId, evidence);
+    // Break glass is the highest-scrutiny unlock there is. Without an explicit
+    // source these records defaulted to 'cli', hiding emergency overrides among
+    // ordinary ones — the exact case an auditor looks for first.
+    satisfied[gateId] = satisfyCondition(gateId, evidence, null, {
+      source: 'break-glass',
+      actor: input.actor || 'operator',
+      reason,
+    });
   }
 
   const approval = approveProtectedAction({
