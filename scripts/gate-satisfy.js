@@ -23,15 +23,21 @@ function run() {
     process.exit(1);
   }
 
-  const entry = satisfyCondition(gateId, evidence);
+  // Invoked as a CLI, so attribute it as such. The default would be 'cli'
+  // anyway, but stating it keeps attribution explicit at every call site
+  // rather than dependent on a default that could later change.
+  const entry = satisfyCondition(gateId, evidence, null, { source: 'cli' });
   const output = { gate: gateId, satisfied: true, timestamp: entry.timestamp, evidence: entry.evidence };
   process.stdout.write(JSON.stringify(output, null, 2) + '\n');
 }
 
 // Export for MCP tool usage
-function satisfyGate(gateId, evidence) {
+function satisfyGate(gateId, evidence, options = {}) {
   if (!gateId) throw new Error('gate ID is required');
-  const entry = satisfyCondition(gateId, evidence || '');
+  const entry = satisfyCondition(gateId, evidence || '', null, {
+    source: options.source || 'mcp',
+    actor: options.actor,
+  });
   return { gate: gateId, satisfied: true, timestamp: entry.timestamp, evidence: entry.evidence };
 }
 
