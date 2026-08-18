@@ -39,19 +39,24 @@ Two integrations specific to OpenMono's design:
 
 ## Install
 
-```bash
-npm install -g thumbgate
-npx thumbgate init --adapter=openmono
-```
+**Not installable yet.** `thumbgate init` dispatches on `--agent`, and `openmono` is not
+a supported agent or auto-hook target, so `npx thumbgate init --adapter=openmono` would
+exit 0 **without creating any hook configuration** — a success message for work that did
+not happen. This file previously documented that command; it was wrong and is removed
+rather than left to mislead.
 
-This registers the PreToolUse hook from `openmono.json` against OpenMono's existing
-permissions pipeline. No change to the 12-step execution flow is required.
+What exists today is the contract in `openmono.json`: the hook surface, sub-agent budgets,
+loop-detection mode and gate list that the runtime binding will implement.
 
-Verify the wiring:
+Wiring lands together with:
 
-```bash
-npx thumbgate doctor
-```
+1. upstream confirmation of the PreToolUse hook surface
+   ([StartupHakk/OpenMonoAgent.ai#129](https://github.com/StartupHakk/OpenMonoAgent.ai/issues/129)),
+2. `openmono` added to the `init` agent dispatch table, and
+3. the adapter files added to `package.json` `files`, with the bundle ratchet bumped once,
+   deliberately.
+
+Until all three are true, treat this directory as a design contract, not an install path.
 
 ## Enforcement posture
 
