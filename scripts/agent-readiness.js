@@ -192,7 +192,12 @@ function detectPreToolUseHookRegistered(projectRoot, existsSync = fs.existsSync,
       : [];
     return flat.some((hook) => {
       const command = String(hook?.command || '');
-      return command.includes('thumbgate') || command.includes('gate-check') || command.includes('hook-runtime');
+      return (
+        command.includes('thumbgate') ||
+        command.includes('gate-check') ||
+        command.includes('hook-runtime') ||
+        command.includes('hook-pre-tool-use')
+      );
     });
   } catch {
     return false;
