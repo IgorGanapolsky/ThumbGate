@@ -76,6 +76,23 @@ test('FAR.AI comparison keeps research, evaluation, and runtime enforcement sepa
   assert.match(compareHtml, /href="\/compare\/far-ai"/);
 });
 
+test('OpenMono comparison frames the runtime as complementary, not a substitute', () => {
+  const openmonoHtml = read('public', 'compare', 'openmono.html');
+  assert.match(openmonoHtml, /"@type": "TechArticle"/);
+  assert.match(openmonoHtml, /"@type": "FAQPage"/);
+  assert.match(openmonoHtml, /ThumbGate vs OpenMono/i);
+  assert.match(openmonoHtml, /static per-run/i);
+  assert.match(openmonoHtml, /12-step/i);
+  assert.match(openmonoHtml, /fixed 3/i);
+  assert.match(openmonoHtml, /https:\/\/github.com\/StartupHakk\/OpenMonoAgent.ai\/issues\/129/);
+  assert.match(openmonoHtml, /utm_source=openmono_comparison/);
+  assert.match(openmonoHtml, /hosted Enterprise capabilities are not generally available/i);
+  assert.doesNotMatch(openmonoHtml, /npx thumbgate init --agent openmono/);
+  assert.doesNotMatch(openmonoHtml, /\$499/);
+  assert.match(compareHtml, /href="\/compare\/openmono"/);
+  assert.match(compareHtml, /Running OpenMono/i);
+});
+
 test('EdotEnv comparison keeps RSI train/eval and runtime enforcement separate', () => {
   assert.match(edotenvHtml, /"@type": "TechArticle"/);
   assert.match(edotenvHtml, /"@type": "FAQPage"/);
