@@ -601,7 +601,7 @@ describe('bin/cli.js', () => {
       'model-candidates', 'upstream-contributions',
       'deepseek-v4-runtime-guardrails', 'risk', 'export-dpo',
       'export-databricks', 'lessons', 'stats', 'north-star', 'eval',
-      'rules', 'self-heal', 'prove', 'doctor', 'dispatch',
+      'rules', 'self-heal', 'prove', 'doctor', 'compass', 'dispatch',
       'background-governance', 'analytics', 'gate-check', 'statusline-render',
       'feedback-self-test', 'diagnostic',
     ];

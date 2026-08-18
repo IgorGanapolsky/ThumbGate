@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate pipeline compass | Design → implement → evaluate → deploy</title>
+  <meta name="description" content="TradeMaster-style 6-module loop mapped onto ThumbGate: wire, lessons, promote, evaluate, deploy. Pipeline first, algorithms second. Not an RL trading platform." />
+  <link rel="canonical" href="https://thumbgate.ai/guides/pipeline-compass" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <style>
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#0a0a0b; color:#e8e8ec; line-height:1.65; }
+    .wrap { max-width:780px; margin:0 auto; padding:28px 20px 72px; }
+    a { color:#22d3ee; }
+    .muted { color:#8b8b96; }
+    pre { background:#111113; padding:14px; border-radius:8px; overflow:auto; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { border:1px solid #222225; padding:8px 10px; text-align:left; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="muted">Guide · Evaluation</p>
+    <h1>Pipeline first. Algorithms second.</h1>
+    <p>Tom Dörr pointed at <a href="https://github.com/TradeMaster-NTU/TradeMaster">TradeMaster</a>: a full design → implement → evaluate → deploy loop for RL trading. ThumbGate is not a trading gym. The transferable piece is the <strong>named 6-module compass</strong> over the surfaces we already have.</p>
+    <pre>npx thumbgate compass
+npx thumbgate compass --json</pre>
+    <table>
+      <tr><th>TradeMaster module</th><th>ThumbGate axis</th><th>What we measure</th></tr>
+      <tr><td>Data</td><td>Data</td><td>feedback-log.jsonl rows</td></tr>
+      <tr><td>Preprocess</td><td>Promote</td><td>prevention-rules.md or memory rows</td></tr>
+      <tr><td>Simulator</td><td>Evaluate</td><td>local summary / captured lessons</td></tr>
+      <tr><td>Algorithms</td><td>Implement</td><td>writable lesson store</td></tr>
+      <tr><td>Eval toolkit</td><td>Design</td><td>MCP/hook wiring (doctor)</td></tr>
+      <tr><td>Interfaces</td><td>Deploy</td><td>dashboard or green wiring</td></tr>
+    </table>
+    <p class="muted">We do not ship a Sharpe-ratio star plot or 13 trading algos. If design/wire is red, stop adding gates.</p>
+    <p><a href="/evaluations">How we evaluate</a> · <a href="/eval-scorecard">Bench scorecard</a> · <a href="/security">Security questionnaire</a></p>
+  </div>
+</body>
+</html>

@@ -80,6 +80,7 @@ Agentic development is becoming a loop: **Guide → Generate → Verify → Solv
 npx thumbgate init                                              # wire PreToolUse hooks
 npx thumbgate capture down "Never run DROP on production tables"  # 👎 lesson
 npx thumbgate doctor                                            # health check
+npx thumbgate compass                                           # 6-axis pipeline: wire → lessons → rules
 ```
 
 Later `DROP` attempts in the same scope surface the check:
