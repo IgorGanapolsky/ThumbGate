@@ -159,6 +159,45 @@ test('GET /health content-type is application/json', async () => {
   assert.ok(ct.includes('application/json'), `expected application/json, got: ${ct}`);
 });
 
+test('POST /v1/telemetry/ping with Sec-GPC: 1 does not persist (two-sided with no-signal write)', async () => {
+  const telemetryPath = path.join(tmpFeedbackDir, 'telemetry-pings.jsonl');
+  const before = fs.existsSync(telemetryPath)
+    ? fs.readFileSync(telemetryPath, 'utf8').trim().split('\n').filter(Boolean).length
+    : 0;
+
+  const blocked = await fetch(deployUrl('/v1/telemetry/ping'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Sec-GPC': '1' },
+    body: JSON.stringify({
+      eventType: 'page_view',
+      clientType: 'web',
+      visitorId: 'gpc-http-blocked',
+      source: 'homepage',
+    }),
+  });
+  assert.equal(blocked.status, 204, 'opt-out still returns 204 so the client cannot fingerprint the discard');
+
+  const afterBlock = fs.existsSync(telemetryPath)
+    ? fs.readFileSync(telemetryPath, 'utf8').trim().split('\n').filter(Boolean).length
+    : 0;
+  assert.equal(afterBlock, before, 'Sec-GPC must not append a row');
+
+  const allowed = await fetch(deployUrl('/v1/telemetry/ping'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      eventType: 'page_view',
+      clientType: 'web',
+      visitorId: 'gpc-http-allowed',
+      source: 'homepage',
+    }),
+  });
+  assert.equal(allowed.status, 204);
+  const afterAllow = fs.readFileSync(telemetryPath, 'utf8').trim().split('\n').filter(Boolean);
+  assert.equal(afterAllow.length, before + 1, 'absent GPC the same endpoint must still persist');
+  assert.match(afterAllow[afterAllow.length - 1], /gpc-http-allowed/);
+});
+
 test('POST /v1/telemetry/ping returns 204 without auth', async () => {
   const payload = JSON.stringify({ installId: 'test-install-123', version: '0.7.0', platform: 'darwin', nodeVersion: 'v20.0.0' });
   const res = await fetch(deployUrl('/v1/telemetry/ping'), {
