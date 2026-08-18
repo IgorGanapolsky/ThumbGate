@@ -74,6 +74,8 @@ Agentic development is becoming a loop: **Guide → Generate → Verify → Solv
 
 ## Quick Start
 
+> Want a phased walkthrough with a verify step at every stage? Follow the [Progressive Setup Guide](GUIDE.md).
+
 ```bash
 npx thumbgate init                                              # wire PreToolUse hooks
 npx thumbgate capture down "Never run DROP on production tables"  # 👎 lesson
