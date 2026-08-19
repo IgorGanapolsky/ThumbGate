@@ -63,6 +63,16 @@ const VENDOR_UPSELL =
 const PROTECTED_GUARD_PATH =
   /(?:^|[\s"'])(?:~\/|\$(?:HOME|\{HOME\})["']?\/|\/Users\/[^/\s"']+\/)?\.(?:thumbgate\/(?:bin\/thumbgate-spend-guard(?:\.HARDENED)?\.js|financial\/)|claude\/settings\.json)(?:$|[\s"'])/i;
 
+const REMEDY_TOOL_RE =
+  /(?:^|__)(?:satisfy_gate|capture_feedback|capture_memory_feedback|record_task_outcome|diagnose_failure|set_task_scope|approve_protected_action|track_action|verify_claim|break_glass_emergency)$/i;
+
+const PROSE_KEYS = new Set([
+  'description', 'evidence', 'body', 'title', 'message', 'content', 'prompt',
+  'summary', 'structuredReasoning', 'old_string', 'new_string', 'oldString',
+  'newString', 'context', 'whatWentWrong', 'whatToChange', 'whatWorked',
+  'what_went_wrong', 'what_to_change', 'what_worked',
+]);
+
 function flatten(value, depth = 0) {
   if (typeof erpFlatten === 'function') return erpFlatten(value, depth);
   if (depth > 5 || value == null) return '';
@@ -78,9 +88,51 @@ function flatten(value, depth = 0) {
   return '';
 }
 
+function flattenSkippingProse(value, depth = 0) {
+  if (depth > 5 || value == null) return '';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) return value.map((item) => flattenSkippingProse(item, depth + 1)).join(' ');
+  if (typeof value === 'object') {
+    return Object.entries(value)
+      .filter(([key]) => !PROSE_KEYS.has(key))
+      .map(([key, item]) => `${key} ${flattenSkippingProse(item, depth + 1)}`)
+      .join(' ');
+  }
+  return '';
+}
+
+// Drop --body/--message/-m payloads so filing an issue that QUOTES a trigger
+// word is not itself a commerce action (#3523).
+function stripFlaggedProse(command) {
+  return String(command || '').replace(
+    /\s(?:--(?:body|message|title|notes|field|reason|comment)|-[mF])(?:=|\s+)(?:"[^"]*"|'[^']*'|\S+)/g,
+    ' ',
+  );
+}
+
+function flattenSideEffect(toolName, toolInput) {
+  const name = String(toolName || '');
+  const input = toolInput && typeof toolInput === 'object' ? toolInput : {};
+  if (REMEDY_TOOL_RE.test(name)) {
+    return [input.url, input.uri, input.href, input.endpoint, input.command, input.cmd]
+      .filter(Boolean)
+      .map(String)
+      .join(' ');
+  }
+  if (/^bash$/i.test(name.trim())) {
+    return stripFlaggedProse(input.command || input.cmd || '');
+  }
+  if (/^(?:edit|write|multiedit)$/i.test(name.trim())) {
+    return [input.file_path, input.path, input.filePath].filter(Boolean).join(' ');
+  }
+  return flattenSkippingProse(input);
+}
+
 function evaluateSpend(toolName, toolInput) {
   const name = String(toolName || '');
-  const text = flatten(toolInput);
+  const text = flattenSideEffect(name, toolInput);
   const combined = `${name} ${text}`;
 
   // ERP plane first (journal + classification + auth + envelope)
@@ -226,6 +278,8 @@ module.exports = {
   DIRECT_TOOL_RULES,
   evaluateSpend,
   flatten,
+  flattenSideEffect,
+  stripFlaggedProse,
   safeToolName,
   toHookOutput,
 };

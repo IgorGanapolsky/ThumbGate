@@ -152,3 +152,34 @@ test('the hook honours its stdout transport contract on every path', () => {
     assertTransportContract(runGuard(payload), `transport/${payload.tool_name}`);
   }
 });
+
+test('remedy-tool prose and quoted issue bodies are not commerce actions (#3523)', () => {
+  const payloads = [
+    {
+      tool_name: 'mcp__thumbgate__satisfy_gate',
+      tool_input: {
+        gate: 'pr_threads_checked',
+        evidence: 'blocked because evidence mentioned checkout of the working copy',
+      },
+    },
+    {
+      tool_name: 'capture_feedback',
+      tool_input: {
+        signal: 'down',
+        context: 'commerce matcher fired on checkout in a git sense',
+        whatWentWrong: 'create of a GitHub issue quoting checkout',
+      },
+    },
+    {
+      tool_name: 'Bash',
+      tool_input: {
+        command: 'gh issue create --title bug --body "matcher fired on checkout and chmod 755"',
+      },
+    },
+  ];
+  for (const payload of payloads) {
+    const out = runGuard(payload);
+    assert.equal(out.stdout, '', `allow/${payload.tool_name}: prose must be silent`);
+    assert.equal(out.code, 0, `${payload.tool_name} prose must not be a HARD BLOCK (stderr: ${out.stderr.slice(0, 160)})`);
+  }
+});

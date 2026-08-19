@@ -1034,7 +1034,7 @@
     "test:openai-compatible-embed": "node --test tests/openai-compatible-embed.test.js",
     "archive:pre-eci": "node scripts/create-pre-eci-archive.js",
     "test:rag-embedding-identity": "node --test tests/rag-embedding-identity.test.js",
-    "test:gurobi": "node --test tests/gurobi-optimizer.test.js",
+    "test:gurobi": "node --test tests/gurobi-optimizer.test.js tests/solver-no-auto-apply.test.js",
     "gurobi:install": "bash scripts/gurobi-systemwide-install.sh",
     "gurobi:evaluate": "node scripts/gurobi-optimizer.js",
     "test:github-marketplace-action": "node --test tests/github-marketplace-action.test.js",
