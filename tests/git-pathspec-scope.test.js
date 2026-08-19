@@ -297,3 +297,28 @@ test('cd parsing still handles its real forms', () => {
     ['src/a.js'],
   );
 });
+
+test('git -C a foreign worktree does not count the hook cwd dirty tree (#3522)', () => {
+  const hookCwd = makeDirtyRepo(40);
+  const target = makeDirtyRepo(0);
+  fs.mkdirSync(path.join(target, 'Handoffs'), { recursive: true });
+  fs.writeFileSync(path.join(target, 'Handoffs', 'note.md'), 'one file\n');
+  git(target, ['add', 'Handoffs/note.md']);
+
+  const previous = process.cwd();
+  process.chdir(hookCwd);
+  try {
+    const commit = extractAffectedFiles('Bash', {
+      command: `git -C ${target} commit -m vault-handoff`,
+    });
+    assert.deepEqual(commit.files, ['Handoffs/note.md']);
+    assert.equal(fs.realpathSync(commit.repoRoot), fs.realpathSync(target));
+
+    const viaCd = extractAffectedFiles('Bash', {
+      command: `cd ${target} && git commit -m vault-handoff`,
+    });
+    assert.deepEqual(viaCd.files, ['Handoffs/note.md']);
+  } finally {
+    process.chdir(previous);
+  }
+});
