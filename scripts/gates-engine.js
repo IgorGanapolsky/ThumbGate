@@ -502,7 +502,10 @@ function currentScopeSessionId() {
 }
 
 function sanitizeScopeSessionId(sessionId) {
-  return String(sessionId || '').replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 80);
+  if (!sessionId) return '';
+  const hash = crypto.createHash('sha256').update(String(sessionId)).digest('hex').slice(0, 16);
+  const prefix = String(sessionId).replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 32);
+  return prefix ? `${prefix}-${hash}` : hash;
 }
 
 // Sibling agents share ~/.thumbgate/governance-state.json today, so one
@@ -1119,9 +1122,65 @@ function extractGitMinusCPaths(command) {
   return found;
 }
 
+function extractGitContextPair(command) {
+  const segments = String(command || '').split(/\r?\n|&&|\|\||[;|&]/);
+  for (const segment of segments) {
+    const tokens = tokenizeShellWords(segment);
+    const gitIdx = tokens.findIndex((token) => token === 'git' || /(?:^|\/)git$/.test(token));
+    if (gitIdx === -1) continue;
+    let gitDir = null;
+    let workTree = null;
+    for (let i = gitIdx + 1; i < tokens.length; i += 1) {
+      const token = tokens[i];
+      if (token === '--git-dir' && tokens[i + 1]) {
+        gitDir = tokens[i + 1];
+        i += 1;
+        continue;
+      }
+      if (token.startsWith('--git-dir=')) {
+        gitDir = token.slice('--git-dir='.length);
+        continue;
+      }
+      if (token === '--work-tree' && tokens[i + 1]) {
+        workTree = tokens[i + 1];
+        i += 1;
+        continue;
+      }
+      if (token.startsWith('--work-tree=')) {
+        workTree = token.slice('--work-tree='.length);
+        continue;
+      }
+      if (token === '-C' && tokens[i + 1]) {
+        workTree = tokens[i + 1];
+        i += 1;
+        continue;
+      }
+      if (!token.startsWith('-')) break;
+    }
+    if (gitDir || workTree) return { gitDir, workTree };
+  }
+  return null;
+}
+
 function resolveRepoRoot(toolInput = {}) {
   const command = String(toolInput.command || '');
   const baseCwd = toolInput.cwd ? path.resolve(String(toolInput.cwd)) : process.cwd();
+  const paired = extractGitContextPair(command);
+  if (paired && paired.gitDir && paired.workTree) {
+    try {
+      const resolvedGitDir = path.resolve(baseCwd, paired.gitDir);
+      const resolvedWorkTree = path.resolve(baseCwd, paired.workTree);
+      const root = execFileSync('git', ['--git-dir', resolvedGitDir, '--work-tree', resolvedWorkTree, 'rev-parse', '--show-toplevel'], {
+        cwd: resolvedWorkTree,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+      if (root) return root;
+    } catch {
+      // Fall through to standard candidate probing
+    }
+  }
+
   const minusC = extractGitMinusCPaths(command).map((entry) => path.resolve(baseCwd, entry));
   const commandCwd = effectiveCommandCwd(command, toolInput);
   const candidates = [];
@@ -1944,6 +2003,9 @@ function isCommandPositionPermissionChange(toolName, toolInput = {}) {
     if (tokens.length === 0) continue;
     const bin = tokens[0].toLowerCase();
     if (bin === 'chmod' || bin === 'chown' || bin === 'setfacl') return tokens.length >= 2;
+    if (bin === 'busybox' && tokens[1] && ['chmod', 'chown', 'setfacl'].includes(tokens[1].toLowerCase())) {
+      return tokens.length >= 3;
+    }
     if (bin === 'grant' || bin === 'revoke') return tokens.length >= 2;
     const nextFew = tokens.slice(1, 6).map((token) => token.toLowerCase());
     if ((bin === 'pm' || bin === 'adb') && nextFew.includes('grant')) return true;

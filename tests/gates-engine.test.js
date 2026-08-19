@@ -3725,6 +3725,47 @@ test('evaluateGates matches on-demand-freeze-mode when freeze_mode or env is set
   }
 });
 
+test('isCommandPositionPermissionChange recognizes busybox chmod/chown/setfacl', () => {
+  const { run } = require('../scripts/gates-engine');
+  withTempFeedbackDir(() => {
+    setTaskScope({ clear: true });
+    const output = JSON.parse(run({
+      tool_name: 'Bash',
+      tool_input: { command: 'busybox chmod 777 /tmp/target' },
+    }));
+    assert.ok(output.hookSpecificOutput);
+    assert.match(output.hookSpecificOutput.additionalContext, /permission/i);
+  });
+});
+
+test('governance state session IDs are collision-resistant via sha256', () => {
+  const { sanitizeScopeSessionId } = require('../scripts/gates-engine');
+  if (typeof sanitizeScopeSessionId === 'function') {
+    const id1 = sanitizeScopeSessionId('live:agent');
+    const id2 = sanitizeScopeSessionId('live?agent');
+    assert.notEqual(id1, id2);
+  }
+});
+
+test('resolveRepoRoot handles paired --git-dir and --work-tree options', () => {
+  const { resolveRepoRoot } = require('../scripts/gates-engine');
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-split-git-'));
+  try {
+    const gitDir = path.join(tempDir, 'custom.git');
+    const workTree = path.join(tempDir, 'tree');
+    fs.mkdirSync(workTree, { recursive: true });
+    execFileSync('git', ['init', '--bare', gitDir], { stdio: 'ignore' });
+    const resolved = resolveRepoRoot({
+      command: `git --git-dir=${gitDir} --work-tree=${workTree} commit -m "test"`,
+      cwd: tempDir,
+    });
+    assert.equal(fs.realpathSync(resolved), fs.realpathSync(workTree));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+
 test('permission-change does not fire on quoted chmod in issue-body prose (#3523)', () => {
   cleanupStateFiles();
   const quoted = evaluateGates('Bash', {
