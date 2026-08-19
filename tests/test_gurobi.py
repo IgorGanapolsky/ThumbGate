@@ -9,6 +9,7 @@ from scripts.gurobi_optimizer import (
     run_mode,
     solve_model_routing,
     solve_rule_selection,
+    stamp_decision_governance,
 )
 
 
@@ -137,3 +138,36 @@ def test_main_cli_rejects_path(capsys):
     assert code == 1
     assert body["success"] is False
     assert "filesystem paths are not accepted" in body["error"]
+    assert body["autoApply"] is False
+    assert body["humanOversightRequired"] is True
+    assert body["capturedRevenueUsd"] == 0
+
+
+def test_run_mode_stamps_decision_governance():
+    res = run_mode(
+        "routing",
+        {
+            "candidates": [{"id": "a", "score": 3, "cost": 0.0, "latency_ms": 1}],
+            "max_budget_usd": 1,
+            "max_latency_ms": 10,
+        },
+    )
+    assert res["autoApply"] is False
+    assert res["humanOversightRequired"] is True
+    assert res["capturedRevenueUsd"] == 0
+    if res.get("solver") == "gurobi" and res.get("status") == "OPTIMAL":
+        assert res["repeatable"] is True
+        assert res["plausibleOnly"] is False
+    else:
+        assert res["repeatable"] is False
+        assert res["plausibleOnly"] is True
+
+
+def test_stamp_decision_governance_heuristic_is_plausible_only():
+    stamped = stamp_decision_governance(
+        {"success": True, "selected": "x", "solver": "heuristic-fallback"}
+    )
+    assert stamped["autoApply"] is False
+    assert stamped["repeatable"] is False
+    assert stamped["plausibleOnly"] is True
+    assert stamped["capturedRevenueUsd"] == 0
