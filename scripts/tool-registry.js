@@ -12,14 +12,38 @@ function humanizeTitle(name) {
     .join(' ');
 }
 
+// WriteGuard-style write risk tiers mapped onto existing MCP annotations.
+// Explicit annotations.writeRiskTier always wins; otherwise derive from hints + name.
+const WRITE_RISK_TIERS = Object.freeze({
+  READ_ONLY: 'read-only',
+  MINIMAL_IMPACT: 'minimal-impact',
+  CONTAINED_WRITE: 'contained-write',
+  CRITICAL: 'critical',
+});
+
+const CRITICAL_WRITE_NAME_RE = /(approve_protected|satisfy_gate|break[_-]?glass|create_purchase|reserve_purchase|reconcile_purchase|record_broker|verify_broker|reconcile_broker|parallel_workflow|bootstrap_internal_agent|run_managed_lesson_agent|run_harness|run_autoresearch)/i;
+const MINIMAL_WRITE_NAME_RE = /(append_feedback_context|open_feedback_session|request_human_escalation|report_product_issue|native_messaging_audit|detect_noop)/i;
+
+function inferWriteRiskTier(toolName, annotations = {}) {
+  if (annotations.writeRiskTier) return annotations.writeRiskTier;
+  if (annotations.readOnlyHint === true) return WRITE_RISK_TIERS.READ_ONLY;
+  const name = String(toolName || '');
+  if (CRITICAL_WRITE_NAME_RE.test(name)) return WRITE_RISK_TIERS.CRITICAL;
+  if (MINIMAL_WRITE_NAME_RE.test(name)) return WRITE_RISK_TIERS.MINIMAL_IMPACT;
+  // Destructive or unhinted tools default to contained write (conservative).
+  return WRITE_RISK_TIERS.CONTAINED_WRITE;
+}
+
 function readOnlyTool(tool) {
+  const title = tool.title || humanizeTitle(tool.name);
   return {
     ...tool,
-    title: tool.title || humanizeTitle(tool.name),
+    title,
     annotations: {
-      title: tool.title || humanizeTitle(tool.name),
+      title,
       readOnlyHint: true,
       thumbgateScope: 'mcp:read',
+      writeRiskTier: WRITE_RISK_TIERS.READ_ONLY,
     },
   };
 }
@@ -39,13 +63,17 @@ function inferThumbgateScope(toolName, annotations = {}) {
 
 function destructiveTool(tool) {
   const title = tool.title || humanizeTitle(tool.name);
+  const baseAnnotations = {
+    title,
+    destructiveHint: true,
+    thumbgateScope: inferThumbgateScope(tool.name, { destructiveHint: true }),
+  };
   return {
     ...tool,
     title,
     annotations: {
-      title,
-      destructiveHint: true,
-      thumbgateScope: inferThumbgateScope(tool.name, { destructiveHint: true }),
+      ...baseAnnotations,
+      writeRiskTier: inferWriteRiskTier(tool.name, baseAnnotations),
     },
   };
 }
@@ -1979,11 +2007,16 @@ const NORMALIZED_TOOLS = TOOLS.map((tool) => {
   if (!annotations.thumbgateScope) {
     annotations.thumbgateScope = inferThumbgateScope(tool.name, annotations);
   }
+  if (!annotations.writeRiskTier) {
+    annotations.writeRiskTier = inferWriteRiskTier(tool.name, annotations);
+  }
   return { ...tool, title, annotations };
 });
 
 module.exports = {
   TOOLS: NORMALIZED_TOOLS,
+  WRITE_RISK_TIERS,
   humanizeTitle,
   inferThumbgateScope,
+  inferWriteRiskTier,
 };

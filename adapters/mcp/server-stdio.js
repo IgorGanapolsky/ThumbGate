@@ -778,13 +778,23 @@ function buildEstimateUncertaintyResponse(args = {}) {
   });
 }
 
-async function callTool(name, args = {}) {
+async function callTool(name, args = {}, options = {}) {
   const attemptStartMs = Date.now();
   const activeProfile = getActiveMcpProfile();
+  const attribution = {
+    clientId: options.clientId || null,
+    sessionId: options.sessionId || null,
+    agentId: options.agentId || null,
+    serverName: options.serverName || 'mcp',
+  };
+  const trace = (outcome = {}) => recordMcpToolTrace(name, args, {
+    ...outcome,
+    ...attribution,
+  });
   try {
     assertToolAllowed(name, activeProfile);
   } catch (error) {
-    recordMcpToolTrace(name, args, {
+    trace({
       success: false,
       category: 'profile_denied',
       evidence: [error.message],
@@ -794,7 +804,7 @@ async function callTool(name, args = {}) {
   }
   const capability = getToolCapability(name);
   if (!capability.available) {
-    recordMcpToolTrace(name, args, {
+    trace({
       success: false,
       category: 'capability',
       evidence: capability.missingModules,
@@ -822,7 +832,7 @@ async function callTool(name, args = {}) {
       const err = new Error(`Tool contract violation on '${name}': ${validation.errors.join('; ')}`);
       err.errorCategory = 'contract';
       err.isRetryable = false;
-      recordMcpToolTrace(name, args, {
+      trace({
         success: false,
         category: 'contract',
         evidence: validation.errors,
@@ -850,7 +860,7 @@ async function callTool(name, args = {}) {
       err.errorCategory = 'permission';
       err.code = handleAuth.code || 'SESSION_HANDLE_DENIED';
       err.isRetryable = false;
-      recordMcpToolTrace(name, args, {
+      trace({
         success: false,
         category: 'session_handle',
         evidence: [handleAuth.code, handleAuth.reason],
@@ -866,7 +876,7 @@ async function callTool(name, args = {}) {
       const err = new Error(`Action blocked by Semantic Firewall: ${firewallResult.message}`);
       err.errorCategory = 'permission';
       err.isRetryable = false;
-      recordMcpToolTrace(name, args, {
+      trace({
         success: false,
         category: 'permission',
         evidence: [firewallResult.message],
@@ -880,7 +890,7 @@ async function callTool(name, args = {}) {
   try {
     result = await callToolInner(name, args);
   } catch (err) {
-    recordMcpToolTrace(name, args, {
+    trace({
       success: false,
       category: err.errorCategory || 'execution',
       evidence: [err.code || err.message || 'tool execution failed'],
@@ -894,7 +904,7 @@ async function callTool(name, args = {}) {
     const err = new Error(`Structured output contract violation on '${name}': ${outputValidation.errors.join('; ')}`);
     err.errorCategory = 'output_contract';
     err.isRetryable = false;
-    recordMcpToolTrace(name, args, {
+    trace({
       success: false,
       category: 'output_contract',
       evidence: outputValidation.errors,
@@ -902,7 +912,7 @@ async function callTool(name, args = {}) {
     });
     throw err;
   }
-  recordMcpToolTrace(name, args, {
+  trace({
     success: true,
     category: 'success',
     evidence: [`tool completed in ${latencyMs}ms`],
@@ -930,17 +940,51 @@ function validateMcpToolOutput(toolDef, result) {
   return validateStructuredOutput(result.structuredContent, toolDef.outputSchema);
 }
 
+function resolveWriteRiskTierForTool(name) {
+  try {
+    const { TOOLS, inferWriteRiskTier } = require('../../scripts/tool-registry');
+    const tool = TOOLS.find((candidate) => candidate.name === name);
+    return inferWriteRiskTier(name, tool?.annotations || {});
+  } catch {
+    return null;
+  }
+}
+
 function recordMcpToolTrace(name, args, outcome = {}) {
   try {
+    const category = outcome.category || 'unknown';
+    // Policy / profile / session denials are WriteGuard "blocked"; execution
+    // and contract failures stay "failed".
+    const blockedCategories = new Set([
+      'blocked',
+      'denied',
+      'permission',
+      'session_handle',
+      'profile_denied',
+    ]);
+    const blocked = blockedCategories.has(category) || outcome.blocked === true;
+    const kpiOutcome = blocked
+      ? 'blocked'
+      : (outcome.success === true ? 'successful' : 'failed');
+    const writeRiskTier = outcome.writeRiskTier || resolveWriteRiskTierForTool(name);
+    // KPI identity must come only from trusted transport/options metadata
+    // (HTTP OAuth session, explicit callTool options). Never trust tool args —
+    // callers can poison clientId/sessionId via schemas that allow extras.
     recordToolCall({
       toolName: name,
-      serverName: 'mcp',
+      serverName: outcome.serverName || 'mcp',
       latencyMs: Number(outcome.latencyMs || 0),
       success: outcome.success === true,
-      agentId: args.agentId || args.processId || args.taskId || 'unknown',
+      outcome: kpiOutcome,
+      blocked,
+      agentId: outcome.agentId || process.env.THUMBGATE_AGENT_ID || 'unknown',
+      clientId: outcome.clientId || null,
+      sessionId: outcome.sessionId || null,
+      writeRiskTier,
       metadata: {
-        category: outcome.category || 'unknown',
+        category,
         traceId: args.traceId || args.taskId || null,
+        writeRiskTier,
       },
     });
   } catch {
