@@ -25,13 +25,18 @@ const DEFAULT_MAX_AGE_DAYS = 5;
 const PACK_UNHEALTHY = 40;
 const LOOSE_UNHEALTHY = 500;
 const WORKTREE_UNHEALTHY = 25;
+const SAFE_GIT_PATH = '/usr/bin:/bin';
+const GIT_BIN = ['/usr/bin/git', '/usr/local/bin/git', '/opt/homebrew/bin/git'].find((candidate) => {
+  try { return fs.existsSync(candidate); } catch { return false; }
+}) || 'git';
 
 function runGit(args, cwd = process.cwd(), opts = {}) {
-  const res = spawnSync('git', args, {
+  const res = spawnSync(GIT_BIN, args, {
     cwd,
     encoding: 'utf8',
     maxBuffer: 32 * 1024 * 1024,
     timeout: opts.timeoutMs || 0,
+    env: { ...process.env, PATH: SAFE_GIT_PATH },
   });
   return {
     status: res.status === null ? 1 : res.status,
@@ -117,6 +122,12 @@ function requireLiveLease(repoRoot) {
   return { ok: true, lease: result.lease };
 }
 
+function recordGitError(results, label, res) {
+  if (res.status === 0) return;
+  const detail = res.stderr || res.signal || 'failed';
+  if (detail) results.errors.push(`${label}: ${detail}`);
+}
+
 function runMaintenance(repoRoot = getRepoRoot(), options = {}) {
   // Cheap indexes do not mutate the working tree. Geometric repack is CPU-heavy
   // and must not race a foreign writer — require the checkout lease.
@@ -137,34 +148,31 @@ function runMaintenance(repoRoot = getRepoRoot(), options = {}) {
 
   const auto = runGit(['maintenance', 'run', '--auto'], repoRoot);
   results.maintenanceAuto = auto.status === 0;
-  if (auto.status !== 0 && auto.stderr) results.errors.push(`maintenance: ${auto.stderr}`);
+  recordGitError(results, 'maintenance', auto);
 
   const graph = runGit(
     ['commit-graph', 'write', '--reachable', '--changed-paths'],
     repoRoot,
   );
   results.commitGraphUpdated = graph.status === 0;
-  if (graph.status !== 0 && graph.stderr) results.errors.push(`commit-graph: ${graph.stderr}`);
+  recordGitError(results, 'commit-graph', graph);
 
   let midx = runGit(['multi-pack-index', 'write', '--bitmap'], repoRoot);
   if (midx.status !== 0) {
     midx = runGit(['multi-pack-index', 'write'], repoRoot);
   }
   results.multiPackIndexUpdated = midx.status === 0;
-  if (midx.status !== 0 && midx.stderr) results.errors.push(`multi-pack-index: ${midx.stderr}`);
+  recordGitError(results, 'multi-pack-index', midx);
 
   if (options.geometric) {
     const repack = runGit(['repack', '-d', '-l', '--geometric=2'], repoRoot, {
       timeoutMs: options.timeoutMs || 600000,
     });
     results.geometricRepackDone = repack.status === 0;
-    if (repack.status !== 0) {
-      results.errors.push(`geometric repack: ${repack.stderr || repack.signal || 'failed'}`);
-    } else {
+    recordGitError(results, 'geometric repack', repack);
+    if (repack.status === 0) {
       const midx2 = runGit(['multi-pack-index', 'write'], repoRoot);
-      if (midx2.status !== 0 && midx2.stderr) {
-        results.errors.push(`multi-pack-index(after-repack): ${midx2.stderr}`);
-      }
+      recordGitError(results, 'multi-pack-index(after-repack)', midx2);
     }
   }
 
@@ -223,6 +231,33 @@ function isLiveLeaseOnPath(wtPath) {
   }
 }
 
+function resolveWorktreePath(wtPath) {
+  try {
+    return fs.existsSync(wtPath) ? fs.realpathSync(wtPath) : path.resolve(wtPath);
+  } catch {
+    return null;
+  }
+}
+
+function classifyPruneSkip(wt, ctx) {
+  const realWt = resolveWorktreePath(wt.worktree);
+  if (!realWt) return 'unreadable';
+  if (realWt === ctx.primary || realWt === ctx.current) return 'primary';
+  if (wt.locked) return 'locked';
+  if (!isUnderBase(wt.worktree, ctx.worktreeBase)) return 'outside-agent-base';
+  if (wt.branch && PROTECTED_BRANCHES.has(wt.branch)) return 'protected-branch';
+  if (isLiveLeaseOnPath(wt.worktree)) return 'live-lease';
+  if (!isPorcelainClean(wt.worktree)) return 'dirty';
+  if (ctx.maxAgeMs == null) return null;
+  try {
+    const mtime = fs.statSync(wt.worktree).mtimeMs;
+    if ((ctx.now - mtime) < ctx.maxAgeMs) return `younger-than-${ctx.maxAgeDays}d`;
+  } catch {
+    return 'mtime-unavailable';
+  }
+  return null;
+}
+
 function pruneWorktrees(options = {}) {
   const repoRoot = options.repoRoot || getRepoRoot();
   const worktreeBase = resolveAgentBase(repoRoot, options.worktreeBase);
@@ -249,53 +284,15 @@ function pruneWorktrees(options = {}) {
   try { current = fs.realpathSync(repoRoot); } catch { /* keep repoRoot */ }
   const now = Date.now();
   const maxAgeMs = Number.isFinite(maxAgeDays) ? maxAgeDays * 24 * 3600000 : null;
+  const ctx = { primary, current, worktreeBase, now, maxAgeMs, maxAgeDays };
 
   for (const wt of listWorktrees(repoRoot)) {
     if (!wt.worktree) continue;
-    let realWt;
-    try {
-      realWt = fs.existsSync(wt.worktree) ? fs.realpathSync(wt.worktree) : path.resolve(wt.worktree);
-    } catch {
-      skipped.push({ path: wt.worktree, reason: 'unreadable' });
+    const reason = classifyPruneSkip(wt, ctx);
+    if (reason) {
+      skipped.push({ path: wt.worktree, reason });
       continue;
     }
-    if (realWt === primary || realWt === current) {
-      skipped.push({ path: wt.worktree, reason: 'primary' });
-      continue;
-    }
-    if (wt.locked) {
-      skipped.push({ path: wt.worktree, reason: 'locked' });
-      continue;
-    }
-    if (!isUnderBase(wt.worktree, worktreeBase)) {
-      skipped.push({ path: wt.worktree, reason: 'outside-agent-base' });
-      continue;
-    }
-    if (wt.branch && PROTECTED_BRANCHES.has(wt.branch)) {
-      skipped.push({ path: wt.worktree, reason: 'protected-branch' });
-      continue;
-    }
-    if (isLiveLeaseOnPath(wt.worktree)) {
-      skipped.push({ path: wt.worktree, reason: 'live-lease' });
-      continue;
-    }
-    if (!isPorcelainClean(wt.worktree)) {
-      skipped.push({ path: wt.worktree, reason: 'dirty' });
-      continue;
-    }
-    if (maxAgeMs != null) {
-      try {
-        const mtime = fs.statSync(wt.worktree).mtimeMs;
-        if ((now - mtime) < maxAgeMs) {
-          skipped.push({ path: wt.worktree, reason: `younger-than-${maxAgeDays}d` });
-          continue;
-        }
-      } catch {
-        skipped.push({ path: wt.worktree, reason: 'mtime-unavailable' });
-        continue;
-      }
-    }
-
     if (dryRun) {
       pruned.push(wt.worktree);
       continue;
@@ -443,7 +440,9 @@ function main(argv = process.argv.slice(2)) {
 module.exports = {
   DEFAULT_AGENT_WORKTREE_BASE,
   DEFAULT_MAX_AGE_DAYS,
+  GIT_BIN,
   PACK_UNHEALTHY,
+  SAFE_GIT_PATH,
   checkTipConsistency,
   getRepoRoot,
   getScaleScorecard,

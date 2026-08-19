@@ -225,6 +225,69 @@ test('agent worktree base is the primary checkout even when invoked from a linke
   }
 });
 
+test('git spawn uses a fixed PATH and a resolved git binary', () => {
+  assert.equal(gitAtScale.SAFE_GIT_PATH, '/usr/bin:/bin');
+  assert.match(gitAtScale.GIT_BIN, /git$/);
+});
+
+test('prune --apply without a lease is blocked; missing base is a no-op', () => {
+  const repo = makeRepo();
+  try {
+    const blocked = gitAtScale.pruneWorktrees({ repoRoot: repo, dryRun: false, maxAgeDays: 0 });
+    assert.equal(blocked.blocked, true);
+    assert.equal(blocked.code, 'UNCLAIMED');
+
+    const missing = gitAtScale.pruneWorktrees({
+      repoRoot: repo,
+      worktreeBase: path.join(repo, '.claude', 'missing-base'),
+      dryRun: true,
+    });
+    assert.equal(missing.prunedCount, 0);
+    assert.equal(missing.dryRun, true);
+  } finally {
+    try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp hook noise */ }
+  }
+});
+
+test('prune skips protected-branch and younger worktrees', () => {
+  const repo = makeRepo();
+  try {
+    const protectedWt = addWorktree(repo, 'prod', { branch: 'production' });
+    const young = addWorktree(repo, 'young');
+    const result = gitAtScale.pruneWorktrees({
+      repoRoot: repo,
+      maxAgeDays: 5,
+      dryRun: true,
+    });
+    const reasons = result.skipped.map((s) => s.reason);
+    assert.ok(reasons.includes('protected-branch'), JSON.stringify(result.skipped));
+    assert.ok(reasons.includes('younger-than-5d'), JSON.stringify(result.skipped));
+    assert.ok(fs.existsSync(protectedWt));
+    assert.ok(fs.existsSync(young));
+  } finally {
+    try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp hook noise */ }
+  }
+});
+
+test('CLI unknown command exits 2; maintenance --geometric without lease exits 1', () => {
+  const repo = makeRepo();
+  const script = path.join(__dirname, '..', 'scripts', 'git-at-scale.js');
+  try {
+    const usage = spawnSync(process.execPath, [script, 'nope', '--cwd', repo], { encoding: 'utf8' });
+    assert.equal(usage.status, 2);
+    assert.match(usage.stderr, /usage:/);
+
+    const blocked = spawnSync(process.execPath, [script, 'maintenance', '--geometric', '--cwd', repo], {
+      encoding: 'utf8',
+    });
+    assert.equal(blocked.status, 1);
+    const body = JSON.parse(blocked.stdout);
+    assert.equal(body.status, 'blocked');
+  } finally {
+    try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp hook noise */ }
+  }
+});
+
 test('CLI scorecard exits 0 and prints JSON', () => {
   const repo = makeRepo();
   try {
