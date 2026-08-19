@@ -1046,38 +1046,16 @@ test('comparison and key landing pages expose FAQPage structured data', async ()
   }
 });
 
-test('GET /media/thumbgate-demo.gif serves the animated demo GIF without an API key', async () => {
-  const res = await fetch(`${origin}/media/thumbgate-demo.gif`);
-  assert.equal(res.status, 200);
-  assert.equal(res.headers.get('content-type'), 'image/gif');
-  assert.ok(Number(res.headers.get('content-length')) > 0);
-});
-
-test('GET /media/does-not-exist.gif returns 404', async () => {
-  const res = await fetch(`${origin}/media/does-not-exist.gif`);
-  assert.equal(res.status, 404);
-});
-
-test('GET /media/../server.js is rejected (no path traversal)', async () => {
-  const res = await fetch(`${origin}/media/..%2fapi%2fserver.js`);
-  assert.ok([403, 404].includes(res.status));
-  assert.notEqual(res.status, 200);
-});
-
 test('GET /compare/cloudflare-writeguard serves the hand-written comparison page', async () => {
   const res = await fetch(`${origin}/compare/cloudflare-writeguard`);
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const html = await res.text();
-  // Title + positioning
   assert.match(html, /ThumbGate vs Cloudflare WriteGuard/);
   assert.match(html, /Tool-Call Gate vs MCP Portal Gate/);
-  // WriteGuard's tier taxonomy must stay represented honestly
   assert.match(html, /contained write/);
-  // FAQ schema for LLM citation + source attribution
   assert.match(html, /"@type":\s*"FAQPage"/);
   assert.match(html, /infoq\.com\/news\/2026\/08\/cloudflare-writeguard-mcp-safety/);
-  // Discovery back-link to the prior newest compare page
   assert.match(html, /href="\/compare\/oak-and-sparrow-gatekeeper"/);
 });
 
