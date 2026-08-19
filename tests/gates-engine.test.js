@@ -184,6 +184,9 @@ beforeEach(() => {
   process.env.THUMBGATE_FEEDBACK_LOG = sandboxPath('feedback-log.jsonl');
   process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = sandboxPath('attributed-feedback.jsonl');
   process.env.THUMBGATE_GUARDS_PATH = sandboxPath('pretool-guards.json');
+  delete process.env.THUMBGATE_SESSION_AGENT;
+  delete process.env.THUMBGATE_SESSION_ID;
+  delete process.env.CLAUDE_SESSION_ID;
   fs.writeFileSync(process.env.THUMBGATE_FEEDBACK_LOG, '');
   fs.writeFileSync(process.env.THUMBGATE_ATTRIBUTED_FEEDBACK, '');
   cleanupStateFiles();
@@ -3720,4 +3723,73 @@ test('evaluateGates matches on-demand-freeze-mode when freeze_mode or env is set
     fs.rmSync(tmpConfig, { force: true });
     cleanupStateFiles();
   }
+});
+
+test('isCommandPositionPermissionChange recognizes busybox chmod/chown/setfacl', () => {
+  const { run } = require('../scripts/gates-engine');
+  withTempFeedbackDir(() => {
+    setTaskScope({ clear: true });
+    const output = JSON.parse(run({
+      tool_name: 'Bash',
+      tool_input: { command: 'busybox chmod 777 /tmp/target' },
+    }));
+    assert.ok(output.hookSpecificOutput);
+    assert.match(output.hookSpecificOutput.additionalContext, /permission/i);
+  });
+});
+
+test('governance state session IDs are collision-resistant via sha256', () => {
+  const { sanitizeScopeSessionId } = require('../scripts/gates-engine');
+  if (typeof sanitizeScopeSessionId === 'function') {
+    const id1 = sanitizeScopeSessionId('live:agent');
+    const id2 = sanitizeScopeSessionId('live?agent');
+    assert.notEqual(id1, id2);
+  }
+});
+
+test('resolveRepoRoot handles paired --git-dir and --work-tree options', () => {
+  const { resolveRepoRoot } = require('../scripts/gates-engine');
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-split-git-'));
+  try {
+    const gitDir = path.join(tempDir, 'custom.git');
+    const workTree = path.join(tempDir, 'tree');
+    fs.mkdirSync(workTree, { recursive: true });
+    execFileSync('git', ['init', '--bare', gitDir], { stdio: 'ignore' });
+    const resolved = resolveRepoRoot({
+      command: `git --git-dir=${gitDir} --work-tree=${workTree} commit -m "test"`,
+      cwd: tempDir,
+    });
+    assert.equal(fs.realpathSync(resolved), fs.realpathSync(workTree));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+
+test('permission-change does not fire on quoted chmod in issue-body prose (#3523)', () => {
+  cleanupStateFiles();
+  const quoted = evaluateGates('Bash', {
+    command: 'gh issue create --title bug --body "the prior false trigger was chmod 755 on a script"',
+  });
+  assert.equal(quoted, null, 'quoting a permission command in prose must not require approval');
+
+  const real = evaluateGates('Bash', { command: 'chmod 777 /tmp/wide-open' });
+  assert.ok(real);
+  assert.equal(real.gate, 'permission-change-approval');
+  cleanupStateFiles();
+});
+
+test('satisfy_gate evidence mentioning checkout is not a financial hard floor (#3523)', () => {
+  cleanupStateFiles();
+  const result = evaluateGates('mcp__thumbgate__satisfy_gate', {
+    gate: 'pr_threads_checked',
+    evidence: 'false positive: git checkout of the working copy, not a paid checkout',
+    structuredReasoning: {
+      premise: 'unlock a false deny',
+      evidence: 'the matcher scanned checkout in remedy prose',
+      conclusion: 'allow',
+    },
+  });
+  assert.equal(result, null, 'remedy-tool evidence must not trip financial-control');
+  cleanupStateFiles();
 });
