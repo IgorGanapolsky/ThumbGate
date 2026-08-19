@@ -41,6 +41,24 @@ const CONTROL_PLANE_TOOLS = new Set([
   'settle_purchase_requisition',
   'reconcile_purchase_ledger',
 ]);
+const REMEDY_TOOLS = new Set([
+  'satisfy_gate',
+  'capture_feedback',
+  'capture_memory_feedback',
+  'record_task_outcome',
+  'diagnose_failure',
+  'set_task_scope',
+  'approve_protected_action',
+  'track_action',
+  'verify_claim',
+  'break_glass_emergency',
+]);
+
+function isRemedyControlTool(toolName) {
+  const normalized = String(toolName || '').trim();
+  const bare = normalized.replace(/^mcp__.+?__/, '');
+  return REMEDY_TOOLS.has(bare) || CONTROL_PLANE_TOOLS.has(bare);
+}
 
 // Keep these expressions deliberately small and auditable. The second group
 // covers provider-native noun-first CLI forms such as `subscriptions create`.
@@ -339,6 +357,7 @@ function advanceFinancialLedgerAnchor(previousHead, event, options = {}) {
 
 function detectEconomicAction(toolName, toolInput = {}) {
   const normalizedToolName = String(toolName || '').trim();
+  if (isRemedyControlTool(normalizedToolName)) return false;
   if ([...CONTROL_PLANE_TOOLS].some((name) => (
     normalizedToolName === name || normalizedToolName.endsWith(`__${name}`)
   ))) return false;
@@ -1607,6 +1626,7 @@ module.exports = {
   createPurchaseRequisition,
   buildActionAuthorization,
   detectEconomicAction,
+  isRemedyControlTool,
   detectOpaqueScreenMutation,
   evaluateFinancialControl,
   getLedgerHeadPath,
