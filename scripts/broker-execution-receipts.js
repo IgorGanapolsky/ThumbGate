@@ -36,6 +36,7 @@ const RECEIPT_PROOF_BOUNDARY = Object.freeze({
     'Independent world-state outcome outside the broker',
     'That a public listing or health page is invocable',
     'That a denied or unexecuted action ran',
+    'That a signed deny decision is an execution receipt',
   ],
 });
 const LEDGER_FILE = 'broker-execution-receipts.jsonl';

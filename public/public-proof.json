@@ -7,9 +7,11 @@
     "reason": "Visitor, order, and revenue numbers must come from live endpoints or dated evidence files.",
     "fetch_order": [
       "/health",
-      "/v1/billing/summary",
       "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
-    ]
+    ],
+    "authenticated_sources": {
+      "/v1/billing/summary": "Operator/admin only. Anonymous requests return 401. Not a crawler source."
+    }
   },
   "canonical_sources": {
     "runtime_health": {

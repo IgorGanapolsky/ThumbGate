@@ -9,7 +9,7 @@
 
 A receipt an agent can rewrite is **not** evidence. Only signatures from a trusted broker public key count.
 
-A verified receipt proves the broker signed the bound decision. It does **not** prove an independent world-state outcome, and it does not mean a public page or listing is invocable. A deny/unexecuted action has no execution receipt.
+A verified receipt proves the broker signed the bound decision. It does **not** prove an independent world-state outcome, and it does not mean a public page or listing is invocable. A `decision: "deny"` receipt is a signed policy decision; it is not proof that the action executed or changed the external world. An unexecuted action has no execution receipt.
 
 ## Schema
 

@@ -48,6 +48,8 @@ test('public-proof.json does not hardcode live counts and names the receipt boun
   assert.equal(PROOF.schema, 'thumbgate.public-proof.v1');
   assert.equal(PROOF.live_values_policy.counts_are_not_duplicated_here, true);
   assert.ok(PROOF.live_values_policy.fetch_order.includes('/health'));
+  assert.equal(PROOF.live_values_policy.fetch_order.includes('/v1/billing/summary'), false);
+  assert.match(PROOF.live_values_policy.authenticated_sources['/v1/billing/summary'], /401/i);
   assert.match(JSON.stringify(PROOF), /not independent world-state proof/i);
   assert.doesNotMatch(JSON.stringify(PROOF), /"visitors":\s*[1-9]/);
   assert.doesNotMatch(JSON.stringify(PROOF), /"paidOrders":\s*[1-9]/);
@@ -56,5 +58,6 @@ test('public-proof.json does not hardcode live counts and names the receipt boun
 test('receipt proof boundary refuses world-state and invocable-listing claims', () => {
   assert.ok(RECEIPT_PROOF_BOUNDARY.doesNotProve.some((line) => /world-state/i.test(line)));
   assert.ok(RECEIPT_PROOF_BOUNDARY.doesNotProve.some((line) => /invocable/i.test(line)));
+  assert.ok(RECEIPT_PROOF_BOUNDARY.doesNotProve.some((line) => /deny decision is an execution receipt/i.test(line)));
   assert.match(SCHEMA, /not independent world-state proof/i);
 });
