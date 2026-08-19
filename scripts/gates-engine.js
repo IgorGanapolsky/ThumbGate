@@ -108,6 +108,18 @@ const STATS_PATH = path.join(STATE_DIR, 'gate-stats.json');
 const SESSION_ACTIONS_PATH = path.join(STATE_DIR, 'session-actions.json');
 const CUSTOM_CLAIM_GATES_PATH = path.join(STATE_DIR, 'claim-verification.json');
 const GOVERNANCE_STATE_PATH = path.join(STATE_DIR, 'governance-state.json');
+const REMEDY_TOOL_NAMES = new Set([
+  'satisfy_gate',
+  'capture_feedback',
+  'capture_memory_feedback',
+  'record_task_outcome',
+  'diagnose_failure',
+  'set_task_scope',
+  'approve_protected_action',
+  'track_action',
+  'verify_claim',
+  'break_glass_emergency',
+]);
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
 const SESSION_ACTION_TTL_MS = 60 * 60 * 1000; // 1 hour
 const PROTECTED_APPROVAL_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -479,8 +491,35 @@ function isTaskScopeExpired(taskScope, nowMs = Date.now()) {
   return nowMs >= deadline;
 }
 
+function currentScopeSessionId() {
+  const raw = String(
+    process.env.THUMBGATE_SESSION_AGENT
+    || process.env.THUMBGATE_SESSION_ID
+    || process.env.CLAUDE_SESSION_ID
+    || ''
+  ).trim();
+  return raw || null;
+}
+
+function sanitizeScopeSessionId(sessionId) {
+  return String(sessionId || '').replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 80);
+}
+
+// Sibling agents share ~/.thumbgate/governance-state.json today, so one
+// set_task_scope rebinds every other live session (#3522). When a session id
+// is present, persist a per-session file next to the legacy slot.
+function governanceStatePath() {
+  const base = module.exports.GOVERNANCE_STATE_PATH;
+  const sessionId = currentScopeSessionId();
+  if (!sessionId) return base;
+  const safe = sanitizeScopeSessionId(sessionId);
+  if (!safe) return base;
+  const parsed = path.parse(base);
+  return path.join(parsed.dir, `${parsed.name}.${safe}${parsed.ext}`);
+}
+
 function loadGovernanceState() {
-  const raw = loadJSON(module.exports.GOVERNANCE_STATE_PATH);
+  const raw = loadJSON(governanceStatePath());
   const state = {
     taskScope: raw && raw.taskScope && typeof raw.taskScope === 'object' ? raw.taskScope : null,
     protectedApprovals: Array.isArray(raw && raw.protectedApprovals) ? raw.protectedApprovals : [],
@@ -517,7 +556,7 @@ function saveGovernanceState(state) {
     branchGovernance: state && state.branchGovernance ? state.branchGovernance : null,
     workflowContract: state && state.workflowContract ? state.workflowContract : null,
   };
-  saveJSON(module.exports.GOVERNANCE_STATE_PATH, next);
+  saveJSON(governanceStatePath(), next);
 }
 
 function stableCanonicalStringify(value) {
@@ -661,6 +700,7 @@ function setTaskScope(scopeInput = {}) {
   const leaseMs = scopeInput.ttlMs == null ? null : clampTtlMs(scopeInput.ttlMs, TASK_SCOPE_LEASE_MS);
   const taskScope = {
     taskId: String(scopeInput.taskId || '').trim() || null,
+    sessionId: currentScopeSessionId(),
     summary: String(scopeInput.summary || '').trim() || null,
     allowedPaths,
     protectedPaths,
@@ -1050,14 +1090,55 @@ function safeExecFileLines(binary, args, cwd) {
   }
 }
 
+function extractGitMinusCPaths(command) {
+  const found = [];
+  const segments = String(command || '').split(/\r?\n|&&|\|\||[;|&]/);
+  for (const segment of segments) {
+    const tokens = tokenizeShellWords(segment);
+    const gitIdx = tokens.findIndex((token) => token === 'git' || /(?:^|\/)git$/.test(token));
+    if (gitIdx === -1) continue;
+    for (let i = gitIdx + 1; i < tokens.length; i += 1) {
+      const token = tokens[i];
+      if (token === '-C' && tokens[i + 1]) {
+        found.push(tokens[i + 1]);
+        i += 1;
+        continue;
+      }
+      if (token === '--work-tree' && tokens[i + 1]) {
+        found.push(tokens[i + 1]);
+        i += 1;
+        continue;
+      }
+      if (token.startsWith('--work-tree=')) {
+        found.push(token.slice('--work-tree='.length));
+        continue;
+      }
+      if (!token.startsWith('-')) break;
+    }
+  }
+  return found;
+}
+
 function resolveRepoRoot(toolInput = {}) {
-  const candidates = [
+  const command = String(toolInput.command || '');
+  const baseCwd = toolInput.cwd ? path.resolve(String(toolInput.cwd)) : process.cwd();
+  const minusC = extractGitMinusCPaths(command).map((entry) => path.resolve(baseCwd, entry));
+  const commandCwd = effectiveCommandCwd(command, toolInput);
+  const candidates = [];
+  const seen = new Set();
+  for (const value of [
+    ...minusC,
+    commandCwd,
     toolInput.repoPath,
     toolInput.cwd,
     process.cwd(),
-  ]
-    .filter(Boolean)
-    .map((value) => path.resolve(String(value)));
+  ]) {
+    if (!value) continue;
+    const resolved = path.resolve(String(value));
+    if (seen.has(resolved)) continue;
+    seen.add(resolved);
+    candidates.push(resolved);
+  }
 
   for (const cwd of candidates) {
     try {
@@ -1845,6 +1926,36 @@ function bareToolName(toolName) {
   return String(toolName || '').replace(/^mcp__.+?__/, '');
 }
 
+function isRemedyToolName(toolName) {
+  return REMEDY_TOOL_NAMES.has(bareToolName(toolName));
+}
+
+// permission-change-approval used to regex the entire command string, so
+// quoting `chmod 755` inside `gh issue create --body` was itself a deny (#3523).
+function isCommandPositionPermissionChange(toolName, toolInput = {}) {
+  if (toolName !== 'Bash') return false;
+  const command = String(toolInput.command || '');
+  if (!command) return false;
+  const segments = canonicalizeCommandForGates(command).split('; ');
+  for (const segment of segments) {
+    const tokens = tokenizeShellWords(segment);
+    if (tokens.length === 0) continue;
+    const bin = tokens[0].toLowerCase();
+    if (bin === 'chmod' || bin === 'chown' || bin === 'setfacl') return tokens.length >= 2;
+    if (bin === 'grant' || bin === 'revoke') return tokens.length >= 2;
+    const nextFew = tokens.slice(1, 6).map((token) => token.toLowerCase());
+    if ((bin === 'pm' || bin === 'adb') && nextFew.includes('grant')) return true;
+    if (
+      (bin === 'aws' || bin === 'gcloud' || bin === 'az')
+      && nextFew.some((token) => token === 'iam' || token === 'policy' || token === 'role'
+        || token === 'grant' || token === 'revoke')
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function isThreadResolutionEvidenceAction(toolName, toolInput = {}) {
   if (isGitCommitCommand(toolName, toolInput)) return true;
   if (['recall', 'search_lessons', 'verify_claim', 'satisfy_gate', 'track_action'].includes(bareToolName(toolName))) return true;
@@ -2559,17 +2670,23 @@ function matchGate(gate, toolName, toolInput = {}) {
 
   if (gate.pattern) {
     try {
-      const regex = new RegExp(gate.pattern);
-      // Match command text, tool name, and light payload surfaces. MCP tools
-      // (e.g. Gmail send_message) have no `command` field — without multi-surface
-      // matching, every pattern gate against them is permanently inert.
-      const surfaces = matchSurfaces.length > 0 ? matchSurfaces : [matchText];
-      const anySurfaceMatch = surfaces.some((surface) => patternMatchesCommand(regex, surface));
-      if (!anySurfaceMatch) {
-        return { matched: false, matchText, affectedFiles };
-      }
-      if (gate.id === 'permission-change-approval' && isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
-        return { matched: false, matchText, affectedFiles };
+      if (gate.id === 'permission-change-approval') {
+        if (isRemedyToolName(toolName) || !isCommandPositionPermissionChange(toolName, toolInput)) {
+          return { matched: false, matchText, affectedFiles };
+        }
+        if (isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
+          return { matched: false, matchText, affectedFiles };
+        }
+      } else {
+        const regex = new RegExp(gate.pattern);
+        // Match command text, tool name, and light payload surfaces. MCP tools
+        // (e.g. Gmail send_message) have no `command` field — without multi-surface
+        // matching, every pattern gate against them is permanently inert.
+        const surfaces = matchSurfaces.length > 0 ? matchSurfaces : [matchText];
+        const anySurfaceMatch = surfaces.some((surface) => patternMatchesCommand(regex, surface));
+        if (!anySurfaceMatch) {
+          return { matched: false, matchText, affectedFiles };
+        }
       }
       if (isBreakGlassSettingsBypass(gate, affectedFiles)) {
         return { matched: false, matchText, affectedFiles };
@@ -3713,6 +3830,7 @@ function evaluateUnconditionalHardFloor(input = {}, options = {}) {
 
 function evaluateFinancialHardFloor(input = {}, consumeReservation = false, options = {}) {
   const toolName = input.tool_name || input.toolName || 'unknown';
+  if (isRemedyToolName(toolName)) return null;
   const rawToolInput = input.tool_input ?? input.toolInput;
   const toolInput = rawToolInput && typeof rawToolInput === 'object'
     ? rawToolInput
@@ -4586,6 +4704,12 @@ module.exports = {
   actionApprovalDigest,
   buildMatchSurfaces,
   extractAffectedFiles,
+  extractGitMinusCPaths,
+  resolveRepoRoot,
+  governanceStatePath,
+  currentScopeSessionId,
+  isRemedyToolName,
+  isCommandPositionPermissionChange,
   parseGitPathspec,
   canonicalizeGitCommand,
   canonicalizeCommandForGates,
