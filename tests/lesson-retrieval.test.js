@@ -464,3 +464,56 @@ test('retrieveRelevantLessons enforces complete four-field memory scope', () => 
   );
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
+
+test('retrieveWithLatencyBudget caps results and reports wall time under load', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-load-'));
+  const now = new Date().toISOString();
+  const rows = [];
+  for (let i = 0; i < 80; i += 1) {
+    rows.push({
+      id: `m${i}`,
+      title: i % 3 === 0 ? 'bash git push lesson' : `other ${i}`,
+      content: i % 3 === 0
+        ? 'never force push to main; verify before push'
+        : `unrelated memory ${i}`,
+      tags: ['negative'],
+      timestamp: now,
+    });
+  }
+  rows.push({
+    id: 'blob',
+    title: 'huge',
+    content: 'x'.repeat(25000),
+    tags: ['negative'],
+    timestamp: now,
+  });
+  writeJsonl(path.join(tmpDir, 'memory-log.jsonl'), rows);
+
+  const {
+    retrieveWithLatencyBudget,
+    isRetrievableMemory,
+  } = require('../scripts/lesson-retrieval');
+
+  assert.equal(
+    isRetrievableMemory({ title: 'huge', content: 'x'.repeat(25000) }),
+    false,
+  );
+
+  const samples = [];
+  for (let n = 0; n < 6; n += 1) {
+    samples.push(retrieveWithLatencyBudget('Bash', 'git push to remote', {
+      feedbackDir: tmpDir,
+      maxResults: 3,
+      latencyBudgetMs: 2000,
+      pragmatic: false,
+    }));
+  }
+  for (const sample of samples) {
+    assert.ok(sample.count <= 3);
+    assert.equal(sample.maxResults, 3);
+    assert.equal(sample.overBudget, false, `latency ${sample.latencyMs}ms`);
+    assert.ok(sample.latencyMs < 2000);
+    assert.ok(!sample.lessons.some((l) => l.id === 'blob'));
+  }
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
