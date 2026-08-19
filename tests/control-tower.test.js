@@ -11,9 +11,39 @@ const anomaly = require('../scripts/access-anomaly-detector');
 const tower = require('../scripts/statusline-tower');
 test.after(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 // Tool KPI
-test('recordToolCall writes entry', () => { const e = kpi.recordToolCall({ toolName: 'recall', latencyMs: 42, success: true }); assert.ok(e.id.startsWith('kpi_')); });
+test('recordToolCall writes entry', () => { const e = kpi.recordToolCall({ toolName: 'recall', latencyMs: 42, success: true }); assert.ok(e.id.startsWith('kpi_')); assert.equal(e.outcome, 'successful'); });
 test('recordToolCall defaults', () => { assert.equal(kpi.recordToolCall({}).toolName, 'unknown'); });
 test('recordToolCall tracks failures', () => { kpi.recordToolCall({ toolName: 'cf', latencyMs: 200, success: false }); kpi.recordToolCall({ toolName: 'cf', latencyMs: 150, success: true }); kpi.recordToolCall({ toolName: 'cf', latencyMs: 800, success: false }); });
+test('recordToolCall normalizes blocked outcome from denied metadata', () => {
+  const entry = kpi.recordToolCall({
+    toolName: 'approve_protected_action',
+    success: false,
+    metadata: { denied: true, deniedReason: 'insufficient_scope' },
+    writeRiskTier: 'critical',
+    clientId: 'oauth-client-1',
+    sessionId: 'sess-1',
+  });
+  assert.equal(entry.outcome, 'blocked');
+  assert.equal(entry.success, false);
+  assert.equal(entry.writeRiskTier, 'critical');
+  assert.equal(entry.clientId, 'oauth-client-1');
+  assert.equal(entry.sessionId, 'sess-1');
+});
+test('computeToolKpis rolls up WriteGuard-style outcomes', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-kpi-outcomes-'));
+  try {
+    kpi.recordToolCall({ toolName: 'recall', success: true, outcome: 'successful', feedbackDir });
+    kpi.recordToolCall({ toolName: 'capture_feedback', success: false, outcome: 'failed', feedbackDir });
+    kpi.recordToolCall({ toolName: 'satisfy_gate', success: false, outcome: 'blocked', blocked: true, feedbackDir });
+    const rollup = kpi.computeToolKpis({ periodHours: 1, feedbackDir });
+    assert.deepEqual(rollup.outcomes, { successful: 1, failed: 1, blocked: 1 });
+    const blockedTool = rollup.tools.find((t) => t.toolName === 'satisfy_gate');
+    assert.equal(blockedTool.blocked, 1);
+    assert.equal(blockedTool.outcomes.blocked, 1);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
 test('computeToolKpis per-tool metrics', () => { const r = kpi.computeToolKpis({ periodHours: 1 }); assert.ok(r.totalCalls >= 3); const cf = r.tools.find((t) => t.toolName === 'cf'); if (cf) { assert.ok(cf.successRate < 100); assert.ok(cf.p95 >= cf.p50); } });
 test('computeToolKpis server rollup', () => { assert.ok(kpi.computeToolKpis({ periodHours: 1 }).servers.length >= 1); });
 test('computeToolKpis reports whether traffic evidence exists', () => { assert.equal(kpi.computeToolKpis({ periodHours: 1 }).evidenceStatus, 'measured'); });
@@ -25,6 +55,7 @@ test('computeToolKpis fails closed when no traffic evidence exists', () => {
       periodHours: 24,
       totalCalls: 0,
       evidenceStatus: 'insufficient_evidence',
+      outcomes: { successful: 0, failed: 0, blocked: 0 },
       tools: [],
       servers: [],
     });
@@ -78,8 +109,52 @@ test('getAtRiskTools detects latency-only risk and ignores low-volume noise', ()
 });
 test('percentile', () => { assert.equal(kpi.percentile([10, 20, 30, 40, 50], 50), 30); assert.equal(kpi.percentile([], 50), 0); });
 test('getKpiLogPath', () => { assert.ok(kpi.getKpiLogPath().endsWith('tool-kpi.jsonl')); });
+test('computeToolKpis surfaces dominant writeRiskTier', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-kpi-tier-'));
+  try {
+    for (let i = 0; i < 3; i++) {
+      kpi.recordToolCall({
+        toolName: 'recall',
+        latencyMs: 40,
+        success: true,
+        writeRiskTier: 'read-only',
+        feedbackDir,
+      });
+    }
+    const rollup = kpi.computeToolKpis({ periodHours: 1, feedbackDir });
+    const recall = rollup.tools.find((t) => t.toolName === 'recall');
+    assert.equal(recall.writeRiskTier, 'read-only');
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
 // SLO
-test('DEFAULT_SLOS', () => { assert.equal(slo.DEFAULT_SLOS.successRate, 90); });
+test('DEFAULT_SLOS pins Akamai 500ms agentic hop wall', () => {
+  assert.equal(slo.DEFAULT_SLOS.successRate, 90);
+  assert.equal(slo.DEFAULT_SLOS.p95LatencyMs, 500);
+  assert.equal(slo.AGENTIC_HOP_LATENCY_BUDGETS_MS.default, 500);
+  assert.equal(slo.AGENTIC_HOP_LATENCY_BUDGETS_MS['read-only'], 250);
+  assert.equal(slo.hopLatencyBudgetMs('critical'), 1000);
+});
+test('checkHopLatencyBudgets flags read-only hops over 250ms', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-hop-budget-'));
+  try {
+    for (let i = 0; i < 3; i++) {
+      kpi.recordToolCall({
+        toolName: 'recall',
+        latencyMs: 400,
+        success: true,
+        writeRiskTier: 'read-only',
+        feedbackDir,
+      });
+    }
+    const report = slo.checkHopLatencyBudgets({ periodHours: 1, feedbackDir });
+    assert.equal(report.wallMs, 500);
+    assert.ok(report.violations.some((v) => v.toolName === 'recall' && v.budgetMs === 250));
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
 test('checkSloViolations detects', () => { const r = slo.checkSloViolations({ periodHours: 1 }); assert.ok(r.violations.find((v) => v.toolName === 'bad')); });
 test('checkSloViolations custom thresholds', () => { assert.ok(slo.checkSloViolations({ slos: { successRate: 99 }, periodHours: 1 }).violationCount >= slo.checkSloViolations({ slos: { successRate: 1 }, periodHours: 1 }).violationCount); });
 test('runSloCheck logs', async () => { await slo.runSloCheck({ periodHours: 1 }); assert.ok(fs.existsSync(slo.getAlertLogPath())); });
