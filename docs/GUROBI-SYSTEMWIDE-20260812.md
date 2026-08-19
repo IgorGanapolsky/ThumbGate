@@ -16,6 +16,8 @@ Source: Fabrizio Ellis (Gurobi AE) email — free **pip gurobipy** first; full t
 
 **License honesty:** size-limited free pip, **non-production only** (≤2000 vars / ≤2000 linear constraints / ≤200 quadratic vars). Do not mock “optimal” results.
 
+**Pulse steal (2026-08-19):** real decisions need proof, not plausible answers. A Gurobi solve is certified only when `solver=gurobi` and `status=OPTIMAL`. Infeasible models fail closed and emit IIS constraint names. Heuristic fallbacks stay `certified=false`. `capturedRevenueUsd` is always 0. Not affiliated with Gurobi. No enterprise “certified optimization” claim expansion.
+
 ## ThumbGate product bridge
 
 | File | Role |

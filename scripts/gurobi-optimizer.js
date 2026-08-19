@@ -69,28 +69,40 @@ function optimizeModelRouting(candidates, { maxBudgetUsd = 1.0, maxLatencyMs = 5
 
   const pythonBin = opts.pythonBin || resolvePythonBin();
   try {
-    return runPythonMode('routing', {
+    return stampReceipt(runPythonMode('routing', {
       candidates,
       max_budget_usd: maxBudgetUsd,
       max_latency_ms: maxLatencyMs,
-    }, opts.timeoutMs || 10000, pythonBin);
+    }, opts.timeoutMs || 10000, pythonBin));
   } catch (err) {
     const valid = candidates.filter(
       (c) => (c.cost || 0) <= maxBudgetUsd && (c.latency_ms || 0) <= maxLatencyMs
     );
-    const pool = valid.length > 0 ? valid : candidates;
-    const best = pool.reduce(
+    if (valid.length === 0) {
+      return stampReceipt({
+        success: false,
+        selected: null,
+        solver: 'node-fallback-heuristic',
+        status: 'INFEASIBLE',
+        iis: ['BudgetLimit', 'LatencyLimit'],
+        reason: 'no candidate satisfies budget and latency',
+        error: err.message,
+        python: pythonBin,
+      });
+    }
+    const best = valid.reduce(
       (prev, curr) => ((curr.score || 0) > (prev.score || 0) ? curr : prev),
-      pool[0]
+      valid[0]
     );
-    return {
+    return stampReceipt({
       success: true,
       selected: best.id,
       solver: 'node-fallback-heuristic',
+      status: 'HEURISTIC',
       objective: best.score || 0,
       error: err.message,
       python: pythonBin,
-    };
+    });
   }
 }
 
@@ -104,11 +116,11 @@ function optimizeRuleSelection(rules, { maxEvalTimeMs = 50.0, maxTokenFootprint 
 
   const pythonBin = opts.pythonBin || resolvePythonBin();
   try {
-    return runPythonMode('rules', {
+    return stampReceipt(runPythonMode('rules', {
       rules,
       max_eval_time_ms: maxEvalTimeMs,
       max_token_footprint: maxTokenFootprint,
-    }, opts.timeoutMs || 10000, pythonBin);
+    }, opts.timeoutMs || 10000, pythonBin));
   } catch (err) {
     const sorted = [...rules].sort(
       (a, b) =>
@@ -127,16 +139,40 @@ function optimizeRuleSelection(rules, { maxEvalTimeMs = 50.0, maxTokenFootprint 
         curTokens += tok;
       }
     }
-    return {
+    return stampReceipt({
       success: true,
       selected_rules: selected,
       solver: 'node-fallback-knapsack',
+      status: 'HEURISTIC',
       used_time_ms: curTime,
       used_tokens: curTokens,
       error: err.message,
       python: pythonBin,
-    };
+    });
   }
+}
+
+function stampReceipt(result) {
+  const out = result && typeof result === 'object' ? { ...result } : {};
+  const solver = String(out.solver || '');
+  const status = String(out.status || '');
+  const certified = solver === 'gurobi' && status === 'OPTIMAL' && out.success === true;
+  out.certified = certified;
+  out.capturedRevenueUsd = 0;
+  if (certified) {
+    out.proof = out.proof || 'gurobi-optimal';
+  } else if (status.startsWith('INFEASIBLE')) {
+    out.proof = out.proof || 'infeasible-iis';
+  } else if (/heuristic|fallback/i.test(solver)) {
+    out.proof = out.proof || 'heuristic';
+  } else {
+    out.proof = out.proof || 'unproven';
+  }
+  return out;
+}
+
+function isCertifiedSolve(result) {
+  return Boolean(result && result.certified === true && result.status === 'OPTIMAL' && result.solver === 'gurobi');
 }
 
 function probeGurobi(opts = {}) {
@@ -176,6 +212,8 @@ module.exports = {
   resolvePythonBin,
   probeGurobi,
   runPythonMode,
+  stampReceipt,
+  isCertifiedSolve,
   mainCli,
   get PYTHON_BIN() {
     return resolvePythonBin();

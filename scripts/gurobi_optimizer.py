@@ -29,6 +29,47 @@ except ImportError:
     GUROBI_AVAILABLE = False
 
 
+def extract_iis(model: Any) -> List[str]:
+    """Return IIS constraint names. Empty when computeIIS is unavailable."""
+    if not GUROBI_AVAILABLE or model is None:
+        return []
+    try:
+        model.computeIIS()
+        return [c.ConstrName for c in model.getConstrs() if bool(getattr(c, "IISConstr", 0))]
+    except Exception:  # noqa: BLE001 — IIS is diagnostic, never crash the CLI
+        return []
+
+
+def stamp_receipt(result: Dict[str, Any], *, model: Any = None) -> Dict[str, Any]:
+    """Pulse steal: proof, not plausible. Never mark a heuristic as certified."""
+    out = dict(result)
+    solver = str(out.get("solver") or "")
+    status = str(out.get("status") or "")
+    certified = solver == "gurobi" and status == "OPTIMAL" and out.get("success") is True
+    out["certified"] = certified
+    out["capturedRevenueUsd"] = 0
+    if certified:
+        out.setdefault("proof", "gurobi-optimal")
+        if model is not None:
+            try:
+                out["objBound"] = float(model.ObjBound)
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                out["mipGap"] = float(model.MIPGap)
+            except Exception:  # noqa: BLE001
+                pass
+    elif status.startswith("INFEASIBLE"):
+        out.setdefault("proof", "infeasible-iis")
+        if "iis" not in out and model is not None:
+            out["iis"] = extract_iis(model)
+    elif "heuristic" in solver or solver.endswith("-fallback") or "fallback" in solver:
+        out.setdefault("proof", "heuristic")
+    else:
+        out.setdefault("proof", "unproven")
+    return out
+
+
 def load_input_payload(raw: str) -> Dict[str, Any]:
     """Parse --input as inline JSON only (no filesystem access)."""
     text = (raw or "").strip()
@@ -61,13 +102,28 @@ def solve_model_routing(
         ]
         if not valid:
             valid = candidates
+        if not valid:
+            return stamp_receipt(
+                {
+                    "success": False,
+                    "selected": None,
+                    "solver": "heuristic-fallback",
+                    "objective": None,
+                    "status": "INFEASIBLE",
+                    "iis": ["BudgetLimit", "LatencyLimit"],
+                    "reason": "no candidate satisfies budget and latency",
+                }
+            )
         best = max(valid, key=lambda c: c.get("score", 0))
-        return {
-            "success": True,
-            "selected": best["id"],
-            "solver": "heuristic-fallback",
-            "objective": float(best.get("score", 0)),
-        }
+        return stamp_receipt(
+            {
+                "success": True,
+                "selected": best["id"],
+                "solver": "heuristic-fallback",
+                "objective": float(best.get("score", 0)),
+                "status": "HEURISTIC",
+            }
+        )
 
     try:
         env = gp.Env(empty=True)
@@ -109,29 +165,56 @@ def solve_model_routing(
         model.optimize()
         if model.status == GRB.OPTIMAL:
             selected_id = next((cid for cid, var in x.items() if var.X > 0.5), None)
-            return {
-                "success": True,
-                "selected": selected_id,
+            return stamp_receipt(
+                {
+                    "success": True,
+                    "selected": selected_id,
+                    "solver": "gurobi",
+                    "objective": float(model.ObjVal),
+                    "status": "OPTIMAL",
+                },
+                model=model,
+            )
+        iis = extract_iis(model)
+        return stamp_receipt(
+            {
+                "success": False,
+                "selected": None,
                 "solver": "gurobi",
-                "objective": float(model.ObjVal),
-                "status": "OPTIMAL",
-            }
-        best = max(candidates, key=lambda c: c.get("score", 0))
-        return {
-            "success": True,
-            "selected": best["id"],
-            "solver": "gurobi-infeasible-fallback",
-            "objective": float(best.get("score", 0)),
-            "status": f"INFEASIBLE_{model.status}",
-        }
+                "objective": None,
+                "status": "INFEASIBLE",
+                "iis": iis,
+                "reason": "no feasible candidate under budget and latency",
+            },
+            model=model,
+        )
     except Exception as exc:  # noqa: BLE001 — fail-open to heuristic for CI
-        best = max(candidates, key=lambda c: c.get("score", 0))
-        return {
-            "success": True,
-            "selected": best["id"],
-            "solver": f"gurobi-error-fallback: {exc}",
-            "objective": float(best.get("score", 0)),
-        }
+        valid = [
+            c
+            for c in candidates
+            if c.get("cost", 0) <= max_budget_usd and c.get("latency_ms", 0) <= max_latency_ms
+        ]
+        if not valid:
+            return stamp_receipt(
+                {
+                    "success": False,
+                    "selected": None,
+                    "solver": f"gurobi-error-fallback: {exc}",
+                    "objective": None,
+                    "status": "INFEASIBLE",
+                    "reason": str(exc),
+                }
+            )
+        best = max(valid, key=lambda c: c.get("score", 0))
+        return stamp_receipt(
+            {
+                "success": True,
+                "selected": best["id"],
+                "solver": f"gurobi-error-fallback: {exc}",
+                "objective": float(best.get("score", 0)),
+                "status": "HEURISTIC",
+            }
+        )
 
 
 def fallback_rule_selection(
@@ -157,15 +240,17 @@ def fallback_rule_selection(
             total_time += r_time
             total_tokens += r_tokens
             total_risk += float(rule.get("risk_mitigation", 0.0))
-    return {
-        "success": True,
-        "selected_rules": selected,
-        "solver": "heuristic-knapsack",
-        "objective": total_risk,
-        "used_time_ms": total_time,
-        "used_tokens": total_tokens,
-        "status": "HEURISTIC",
-    }
+    return stamp_receipt(
+        {
+            "success": True,
+            "selected_rules": selected,
+            "solver": "heuristic-knapsack",
+            "objective": total_risk,
+            "used_time_ms": total_time,
+            "used_tokens": total_tokens,
+            "status": "HEURISTIC",
+        }
+    )
 
 
 def solve_rule_selection(
@@ -219,22 +304,34 @@ def solve_rule_selection(
             used_tokens = sum(
                 r.get("token_footprint", 0) for r in rules if r.get("id") in selected_ids
             )
-            return {
-                "success": True,
-                "selected_rules": selected_ids,
+            return stamp_receipt(
+                {
+                    "success": True,
+                    "selected_rules": selected_ids,
+                    "solver": "gurobi",
+                    "objective": float(model.ObjVal),
+                    "used_time_ms": used_time,
+                    "used_tokens": used_tokens,
+                    "status": "OPTIMAL",
+                },
+                model=model,
+            )
+        return stamp_receipt(
+            {
+                "success": False,
+                "selected_rules": [],
                 "solver": "gurobi",
-                "objective": float(model.ObjVal),
-                "used_time_ms": used_time,
-                "used_tokens": used_tokens,
-                "status": "OPTIMAL",
-            }
-        res = fallback_rule_selection(rules, max_eval_time_ms, max_token_footprint)
-        res["status"] = f"INFEASIBLE_{model.status}"
-        return res
+                "objective": None,
+                "status": "INFEASIBLE",
+                "iis": extract_iis(model),
+                "reason": "rule knapsack infeasible",
+            },
+            model=model,
+        )
     except Exception as exc:  # noqa: BLE001 — fail-open to heuristic for CI
         res = fallback_rule_selection(rules, max_eval_time_ms, max_token_footprint)
         res["solver"] = f"gurobi-error-fallback: {exc}"
-        return res
+        return stamp_receipt(res)
 
 
 def run_mode(mode: str, payload: Dict[str, Any]) -> Dict[str, Any]:
