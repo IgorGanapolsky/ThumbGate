@@ -1602,8 +1602,10 @@ function extractAffectedFiles(toolName, toolInput = {}) {
     }
 
     if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command) || isGhApiPrCreateCommand(command)) {
-      for (const filePath of getBranchDiffFiles(repoRoot)) {
-        files.add(normalizePosix(filePath));
+      if (files.size === 0) {
+        for (const filePath of getBranchDiffFiles(repoRoot)) {
+          files.add(normalizePosix(filePath));
+        }
       }
     }
   }
