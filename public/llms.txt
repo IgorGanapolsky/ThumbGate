@@ -84,6 +84,7 @@ Proof sequence: remember → re-rank lessons → promote repeated failures → e
 ## Blog (Poolside-style engineering notes)
 
 - [Blog index](https://thumbgate.ai/blog): Self-improving firewall engineering notes — process-over-outcome gates, boundary-local governance, runtime enforcement.
+- [A receipt is not world-state](https://thumbgate.ai/blog/a-receipt-is-not-world-state): Evaluate, then block, then leave evidence. A gate receipt is not production, CI, or a completed task.
 - [Process over outcome](https://thumbgate.ai/blog/process-over-outcome-gates): Gate the process when self-improving coding loops optimize for "done."
 - [Inside your boundary](https://thumbgate.ai/blog/inside-your-boundary): Local pre-action governance without permanent security exceptions; $499 one-workflow entry.
 

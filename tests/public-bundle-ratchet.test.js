@@ -196,7 +196,9 @@ const path = require('node:path');
 // 458 -> 459: governance-difficulty-curriculum (EdotEnv harder-next-round transfer)
 // 459 -> 460: provider-receipt-contract packaging on rebased receipt PR
 // 467 -> 470: three concurrent PRs (override-audit, security-questionnaire, pipeline-compass)
-const BASELINE_FILE_COUNT = 471;
+// 471 -> 472 (2026-08-19): public/blog/a-receipt-is-not-world-state.html
+// Cursor-format first-party research post (TOC, author, related posts). Static HTML only.
+const BASELINE_FILE_COUNT = 472;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
