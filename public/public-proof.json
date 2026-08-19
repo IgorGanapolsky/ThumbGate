@@ -1,0 +1,42 @@
+{
+  "schema": "thumbgate.public-proof.v1",
+  "version": "1.0.0",
+  "purpose": "Canonical public proof contract. Live counts are not duplicated here so crawlers do not index stale numbers.",
+  "live_values_policy": {
+    "counts_are_not_duplicated_here": true,
+    "reason": "Visitor, order, and revenue numbers must come from live endpoints or dated evidence files.",
+    "fetch_order": [
+      "/health",
+      "/v1/billing/summary",
+      "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+    ]
+  },
+  "canonical_sources": {
+    "runtime_health": {
+      "path": "/health",
+      "kind": "runtime_json",
+      "owns": ["version", "buildSha", "status"]
+    },
+    "verification_evidence": {
+      "path": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "kind": "dated_markdown",
+      "owns": ["dated CI and production snapshots"]
+    },
+    "broker_receipt_schema": {
+      "path": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/config/schemas/broker-execution-receipt.schema.json",
+      "kind": "json_schema",
+      "owns": ["what a receipt may claim"]
+    }
+  },
+  "drift_policy": [
+    "Do not hardcode live visitor, order, or booked-revenue counts in static pages or this file.",
+    "A gate verdict is a policy decision, not an external-world outcome.",
+    "A broker receipt is not independent world-state proof.",
+    "A public compare page is not an invocable capability."
+  ],
+  "public_claim_boundaries": {
+    "receipt": "Records a broker-signed allow/execute/deny plus hashes. Not world-state proof.",
+    "health": "GET /health version and buildSha. Not revenue.",
+    "compare_agoragentic": "Agoragentic is an agent OS plus marketplace. ThumbGate is a coding-agent PreToolUse firewall. Adjacent, not a substitute."
+  }
+}
