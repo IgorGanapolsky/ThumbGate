@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>No LLM in the gate: blocking AI-agent mistakes before they execute | ThumbGate</title>
+  <meta name="description" content="A prompt is advice; a PreToolUse hook is enforcement. How ThumbGate evaluates an AI coding agent's proposed tool call deterministically — before the side effect — and how a thumbs-down becomes a blocking rule. Includes the failure modes we hit in production." />
+  <meta property="og:title" content="No LLM in the gate: blocking AI-agent mistakes before they execute" />
+  <meta property="og:description" content="Deterministic pre-action enforcement for AI coding agents — the architecture, the feedback-to-rule loop, and the false positives we had to fix." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/blog/no-llm-in-the-gate" />
+  <link rel="canonical" href="https://thumbgate.ai/blog/no-llm-in-the-gate" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <meta property="og:image" content="https://thumbgate.ai/og.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "No LLM in the gate: blocking AI-agent mistakes before they execute",
+    "datePublished": "2026-08-19",
+    "dateModified": "2026-08-19",
+    "author": { "@type": "Organization", "name": "ThumbGate" },
+    "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+    "description": "The architecture of a deterministic pre-action gate for AI coding agents: PreToolUse interception, no LLM on the enforcement path, and a feedback loop that promotes a thumbs-down into a blocking rule.",
+    "mainEntityOfPage": "https://thumbgate.ai/blog/no-llm-in-the-gate"
+  }
+  </script>
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; --red: #ff647c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10,10,11,0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; max-width: 980px; }
+    .brand { font-weight: 700; color: var(--text); }
+    article { padding: 56px 0 72px; }
+    .eyebrow { color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(30px, 4.6vw, 46px); line-height: 1.1; letter-spacing: -0.03em; margin: 14px 0 10px; }
+    .meta { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+    h2 { font-size: 26px; letter-spacing: -0.02em; margin: 40px 0 12px; }
+    h3 { font-size: 19px; margin: 28px 0 8px; }
+    p, li { color: #d4d4dc; }
+    .lede { font-size: 20px; color: var(--text); }
+    code { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-size: 0.92em; }
+    pre { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+    pre code { background: none; border: none; padding: 0; }
+    blockquote { border-left: 3px solid var(--cyan); margin: 18px 0; padding: 4px 18px; color: var(--text); background: rgba(34,211,238,0.05); }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { background: var(--bg-raised); color: var(--cyan); }
+    .callout { background: var(--bg-card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 24px 0; }
+    .callout.warn { border-color: rgba(251,191,36,0.3); }
+    .footer-cta { margin: 48px 0 0; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-card); }
+    .footer-cta pre { margin: 10px 0 0; }
+    hr { border: none; border-top: 1px solid var(--line); margin: 40px 0; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container"><a class="brand" href="/">ThumbGate</a><a href="/blog">← All posts</a></div>
+  </div>
+
+  <article class="container">
+    <span class="eyebrow">Self-Improving Firewall Engineering</span>
+    <h1>No LLM in the gate: blocking AI-agent mistakes before they execute</h1>
+    <p class="meta">2026-08-19 · engineering</p>
+
+    <p class="lede">A prompt is advice. A PreToolUse hook is enforcement. This post is about why we put the gate at the tool-call boundary instead of anywhere else, why there is no language model on the enforcement path, and how a thumbs-down becomes a rule that blocks the next agent — including the failure modes we hit shipping it.</p>
+
+    <h2>The problem: one wrong tool call is enough</h2>
+    <p>An AI coding agent does not fail the way a human does. It fails <em>fast</em>, and it repeats. The same agent that shipped a good PR at 2pm will, at 4pm, run <code>rm -rf</code> on the wrong directory, force-push over <code>main</code>, echo an API key into an outbound request, or drop a production table — because the token stream that produced the good action and the catastrophic one look identical until the side effect lands.</p>
+    <p>Three defenses are commonly proposed. Each fails for a structural reason:</p>
+    <ul>
+      <li><strong>Better prompts / rules files.</strong> Advisory. The model can read "never force-push to main" and force-push to main in the same session. A rule the agent can ignore is not a control.</li>
+      <li><strong>Post-hoc review.</strong> Too late. By the time a human reads the diff, the table is dropped and the key is in someone's logs. Review governs what merges, not what executes.</li>
+      <li><strong>An LLM judge in the loop.</strong> Reintroduces the exact non-determinism you are trying to remove. A gate that occasionally hallucinates "allow" on a destructive command is not a gate — it is a suggestion with latency.</li>
+    </ul>
+
+    <h2>The insight: gate the tool call, deterministically, before it runs</h2>
+    <p>Every capable agent harness — Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode — exposes a <strong>PreToolUse</strong> boundary: the moment after the model has decided to run a tool and before the tool runs. That is the only place that sees the concrete, fully-resolved action (<code>bash</code>, SQL, file write, HTTP fetch, MCP call) with time left to stop it.</p>
+    <p>ThumbGate lives in that hook. When the agent proposes a tool call, the hook receives it, evaluates it against a rule set, and returns one of three verdicts <em>before</em> the harness executes anything:</p>
+    <table>
+      <thead><tr><th>Verdict</th><th>Default behavior</th></tr></thead>
+      <tbody>
+        <tr><td>⛔ Hard-block</td><td>Detected secret exfiltration; attempts to disable the gate itself</td></tr>
+        <tr><td>👎 Warn + log</td><td><code>rm -rf</code>, forced pushes, fetch-and-run, direct guardrail edits</td></tr>
+        <tr><td>👍 Allow</td><td>Everything else</td></tr>
+      </tbody>
+    </table>
+    <p>The evaluation is <strong>pure pattern matching against a deterministic rule set</strong>. No model call. The same input always produces the same verdict, in single-digit milliseconds, with an audit line written either way. That property — determinism — is the whole point. An enforcement layer you cannot predict is one you cannot trust with the destructive cases.</p>
+
+    <blockquote>The gate is not smarter than the agent. It does not need to be. It needs to be <em>certain</em>, <em>fast</em>, and <em>always there</em>.</blockquote>
+
+    <h2>Where the rules come from: a thumbs-down becomes a rule</h2>
+    <p>Determinism forces the real question: where does the rule corpus come from? Hand-writing every bad pattern does not scale, and it does not learn from your codebase. Our answer is a feedback loop that turns operator judgment into enforcement:</p>
+    <pre><code>observe → capture (👎 + context) → distill to a lesson
+        → candidate rule → promote (precision/recall gate) → enforce</code></pre>
+    <p>When an agent does something wrong, the operator captures a thumbs-down with one line of context. That becomes a history-aware <em>lesson</em>. Repeated, concrete lessons produce a <em>candidate</em> prevention rule. A candidate does not go live on sight — it is promoted through a Thompson-sampling gate that requires it to clear precision and recall thresholds against recorded feedback first. Only then does it become an enforced Pre-Action Check. Every live rule is traceable back to the lesson that produced it.</p>
+    <p>The firewall improves from operating, not from retraining. To be explicit, because it is the most common misunderstanding: <strong>ThumbGate does not update model weights.</strong> It intercepts tool calls at runtime. The learning happens in the rule corpus, not the model.</p>
+
+    <h2>What we got wrong: the false-positive tax</h2>
+    <div class="callout warn">
+      <p style="margin-top:0"><strong>Honesty section.</strong> Deterministic lexical matching has a failure mode, and pretending otherwise would make this a worse post than the ones we admire — so here it is.</p>
+    </div>
+    <p>A matcher that scans command text for <code>rm -rf</code> or a secret pattern is fast and predictable. It is also <em>lexical</em>, which means it fires on text that merely <em>mentions</em> the dangerous thing. In production we hit exactly this, and we filed the bugs against ourselves:</p>
+    <ul>
+      <li>A guard scoped to financial actions fired on ordinary prose, because an everyday English word carries both a git meaning and a commercial one and appeared here in its git sense.</li>
+      <li>A permission guard blocked a documentation write that <em>quoted</em> a shell command as an example.</li>
+      <li>A blast-radius evaluator counted a shared working tree's dirty files instead of the single staged file, and false-blocked a clean commit.</li>
+    </ul>
+    <p>The lesson is not "lexical matching is wrong." It is that a gate must scan the <em>action</em>, not the <em>narration of the action</em> — the tool plus its resolved arguments, never surrounding prose or an evidence field. Scoping matchers to real side effects is ongoing work, tracked in the open, and it is the honest cost of choosing determinism over an LLM judge. We would make the same trade again: a gate that occasionally over-blocks and tells you exactly why beats a gate that silently, unpredictably lets the destructive case through.</p>
+
+    <h2>What this buys you</h2>
+    <ul>
+      <li><strong>The catastrophic classes are stopped before execution</strong>, not flagged after.</li>
+      <li><strong>Every decision is reproducible and logged</strong> — a record you could hand an auditor, not a vibe.</li>
+      <li><strong>The rule set is yours</strong> — grown from your agents' actual mistakes, portable across every MCP-capable harness you run.</li>
+      <li><strong>No cloud on the enforcement path.</strong> The gate runs locally; the block does not depend on a network round-trip.</li>
+    </ul>
+
+    <hr />
+    <p>The pattern generalizes beyond coding agents, but coding agents are where the blast radius is highest and the tool-call boundary is cleanest, so that is where we started. If you run agents against anything you would be unhappy to lose, the gate belongs before the tool call.</p>
+
+    <div class="footer-cta">
+      <p style="margin-top:0"><strong>Try the local gate.</strong> MIT-licensed, no telemetry without opt-in.</p>
+      <pre><code>npx thumbgate init</code></pre>
+      <p style="margin-bottom:0;font-size:14px;color:var(--muted)">Read next: <a href="/blog/process-over-outcome-gates">Process over outcome</a> · <a href="/blog/inside-your-boundary">Inside your boundary</a></p>
+    </div>
+  </article>
+</body>
+</html>
