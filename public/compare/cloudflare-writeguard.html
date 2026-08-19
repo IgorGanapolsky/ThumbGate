@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>ThumbGate vs Cloudflare WriteGuard | Tool-Call Gate vs MCP Portal Gate</title>
-<meta name="description" content="Cloudflare WriteGuard intercepts MCP write requests at Cloudflare's portal and enforces tool-specific policies centrally. ThumbGate intercepts every tool call an AI coding agent attempts — bash, SQL, file writes, MCP — at the PreToolUse boundary, locally, and learns new rules from operator feedback. Same pre-action philosophy, different layer and different reach." />
+<meta name="description" content="Cloudflare WriteGuard intercepts MCP write requests at Cloudflare's portal and enforces tool-specific policies centrally. ThumbGate gates agent tool calls locally — mandatory PreToolUse hooks where the harness supports them (e.g. Claude Code, Gemini CLI), plus MCP gate_check / advisory rules on Cursor, Amp, Cline, and OpenCode — and learns new rules from operator feedback. Same pre-action philosophy, different layer and different reach." />
 <meta property="og:title" content="ThumbGate vs Cloudflare WriteGuard | Tool-Call Gate vs MCP Portal Gate" />
 <meta property="og:description" content="WriteGuard gates MCP writes at the network portal. ThumbGate gates every agent tool call at the runtime boundary and learns from your feedback. Complementary layers; a hyperscaler just validated the category." />
 <meta property="og:type" content="article" />
@@ -59,7 +59,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "ThumbGate vs Cloudflare WriteGuard",
-  "description": "Cloudflare WriteGuard intercepts MCP requests at Cloudflare's portal, classifies operations from read-only to critical, and enforces tool-specific write policies centrally with agent-labeled audit logs. ThumbGate intercepts every tool call an AI coding agent attempts — bash, SQL, file writes, HTTP, MCP — at the PreToolUse boundary inside Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode, locally, and promotes new prevention rules from operator feedback. Same pre-action enforcement philosophy at two different layers.",
+  "description": "Cloudflare WriteGuard intercepts MCP requests at Cloudflare's portal, classifies operations from read-only to critical, and enforces tool-specific write policies centrally with agent-labeled audit logs. ThumbGate gates agent tool calls locally: mandatory PreToolUse hooks on hook-capable runtimes (Claude Code, Gemini CLI, and similar), and MCP gate_check plus advisory rules/skills on Cursor, Amp, Cline, and OpenCode. Same pre-action enforcement philosophy at two different layers.",
   "about": ["thumbgate vs writeguard", "MCP write safety", "pre-action gates for AI agents", "PreToolUse hooks vs network portal enforcement"],
   "url": "https://thumbgate.ai/compare/cloudflare-writeguard",
   "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
@@ -127,7 +127,7 @@
   <div class="container">
     <span class="eyebrow">ThumbGate vs Cloudflare WriteGuard</span>
     <h1>WriteGuard gates MCP writes at the portal. ThumbGate gates every tool call at the runtime. A hyperscaler just validated the category.</h1>
-    <p><strong>WriteGuard</strong> (by <a href="https://www.cloudflare.com/" target="_blank" rel="noopener">Cloudflare</a>, private beta) intercepts MCP requests at Cloudflare's portal, classifies operations from <em>read-only</em> through <em>contained write</em> to <em>critical</em>, and enforces tool-specific policies centrally — reusing existing OAuth identity and labeling agents in the audit trail. <strong>ThumbGate</strong> intercepts the tool call an AI coding agent is about to execute — bash, SQL, file write, HTTP fetch, MCP tool — at the PreToolUse boundary inside Claude Code, Cursor, OpenAI Codex CLI, Google Gemini CLI, Sourcegraph Amp, Cline, and OpenCode, before the side effect happens, with rules that grow from your own operator feedback.</p>
+    <p><strong>WriteGuard</strong> (by <a href="https://www.cloudflare.com/" target="_blank" rel="noopener">Cloudflare</a>, private beta) intercepts MCP requests at Cloudflare's portal, classifies operations from <em>read-only</em> through <em>contained write</em> to <em>critical</em>, and enforces tool-specific policies centrally — reusing existing OAuth identity and labeling agents in the audit trail. <strong>ThumbGate</strong> gates the tool call an AI coding agent is about to execute — bash, SQL, file write, HTTP fetch, MCP tool — <em>locally</em>, before the side effect happens when the harness supports it: mandatory PreToolUse hooks on Claude Code, Google Gemini CLI, and other hook-capable runtimes; MCP <code>gate_check</code> plus advisory rules/skills on Cursor, Sourcegraph Amp, Cline, and OpenCode (enforcement there depends on the agent calling the gate). Rules grow from your own operator feedback.</p>
     <div class="pill-row">
       <span class="pill">Both pre-action</span>
       <span class="pill">Both agent-labeled audit</span>
@@ -153,7 +153,7 @@
           <tr>
             <td>What it intercepts</td>
             <td>MCP requests flowing through Cloudflare's portal, evaluated against tool-specific policies before passing or blocking</td>
-            <td>Every tool call an agent attempts (bash, SQL, file write, HTTP fetch, MCP tool) at the PreToolUse boundary inside the agent runtime, before execution</td>
+            <td>Tool calls the agent harness exposes (bash, SQL, file write, HTTP fetch, MCP tool): mandatory PreToolUse hooks where supported; MCP <code>gate_check</code> / advisory rules on MCP-only adapters</td>
           </tr>
           <tr>
             <td>Where the gate runs</td>
@@ -209,7 +209,7 @@
     <article class="detail-section">
       <h2>The dual-deploy story for larger teams</h2>
       <p>An engineering organization routes its shared MCP servers (issue trackers, deployment tooling, data warehouse connectors) through Cloudflare. <strong>WriteGuard</strong> enforces the central policy: agents may file merge requests (<em>contained write</em>) but production deployments and bulk deletions (<em>critical</em>) require explicit approval, all under existing OAuth identity.</p>
-      <p>The same organization's developers run Claude Code and Cursor locally. <strong>ThumbGate</strong> sits in each agent's PreToolUse hook and blocks the classes the portal never sees: destructive shell commands, force-pushes to protected branches, secret-leaking file reads, direct database writes — and it keeps learning, because every operator thumbs-down becomes a candidate rule for the whole team.</p>
+      <p>The same organization's developers run Claude Code and Cursor locally. <strong>ThumbGate</strong> blocks the classes the portal never sees — destructive shell commands, force-pushes to protected branches, secret-leaking file reads, direct database writes — via PreToolUse hooks on Claude Code (and other hook-capable agents) and via MCP <code>gate_check</code> / advisory wiring on Cursor. It keeps learning, because every operator thumbs-down becomes a candidate rule for the whole team.</p>
       <p>Portal gate for shared infrastructure. Runtime gate for every keystroke-adjacent action. Full perimeter.</p>
     </article>
 
@@ -241,7 +241,7 @@
   <aside class="sidebar">
     <div class="sidebar-card">
       <h3 style="margin: 0 0 8px;">Install ThumbGate free</h3>
-      <p>PreToolUse blocking across Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode — local-first, one command.</p>
+      <p>Local-first install: PreToolUse hooks where the runtime supports them; MCP gate + advisory rules elsewhere — one command.</p>
       <pre style="background: var(--bg-raised); border: 1px solid var(--line); border-radius: 8px; padding: 12px; font-size: 13px; overflow: auto;">npx thumbgate init</pre>
       <a class="cta-button" href="/pricing">See plans →</a>
       <p style="font-size: 12px; margin-top: 16px;">MIT licensed. No telemetry without opt-in. <code>THUMBGATE_NO_TELEMETRY=1</code> disables.</p>
