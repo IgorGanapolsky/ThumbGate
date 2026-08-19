@@ -1583,6 +1583,8 @@ test('MCP tool calls emit structured output and KPI telemetry', async () => {
   assert.equal(entries.length, before + 1);
   assert.equal(entries.at(-1).toolName, 'get_agent_outcome_metrics');
   assert.equal(entries.at(-1).success, true);
+  assert.equal(entries.at(-1).outcome, 'successful');
+  assert.equal(entries.at(-1).writeRiskTier, 'read-only');
   assert.equal(entries.at(-1).metadata.category, 'success');
 });
 
