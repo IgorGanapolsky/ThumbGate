@@ -967,6 +967,9 @@ function recordMcpToolTrace(name, args, outcome = {}) {
       ? 'blocked'
       : (outcome.success === true ? 'successful' : 'failed');
     const writeRiskTier = outcome.writeRiskTier || resolveWriteRiskTierForTool(name);
+    // KPI identity must come only from trusted transport/options metadata
+    // (HTTP OAuth session, explicit callTool options). Never trust tool args —
+    // callers can poison clientId/sessionId via schemas that allow extras.
     recordToolCall({
       toolName: name,
       serverName: outcome.serverName || 'mcp',
@@ -974,9 +977,9 @@ function recordMcpToolTrace(name, args, outcome = {}) {
       success: outcome.success === true,
       outcome: kpiOutcome,
       blocked,
-      agentId: outcome.agentId || args.agentId || args.processId || args.taskId || 'unknown',
-      clientId: outcome.clientId || args.clientId || args.mcpClient || null,
-      sessionId: outcome.sessionId || args.sessionId || args.mcpSessionId || null,
+      agentId: outcome.agentId || process.env.THUMBGATE_AGENT_ID || 'unknown',
+      clientId: outcome.clientId || null,
+      sessionId: outcome.sessionId || null,
       writeRiskTier,
       metadata: {
         category,

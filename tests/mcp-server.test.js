@@ -1588,6 +1588,47 @@ test('MCP tool calls emit structured output and KPI telemetry', async () => {
   assert.equal(entries.at(-1).metadata.category, 'success');
 });
 
+test('MCP KPI identity ignores caller-controlled tool args', async () => {
+  const before = fs.existsSync(path.join(tmpFeedbackDir, 'tool-kpi.jsonl'))
+    ? fs.readFileSync(path.join(tmpFeedbackDir, 'tool-kpi.jsonl'), 'utf8').trim().split('\n').filter(Boolean).length
+    : 0;
+
+  await callTool('detect_noop', {
+    actionId: 'kpi-identity-poison-1',
+    clientId: 'attacker-client',
+    sessionId: 'attacker-session',
+    mcpClient: 'attacker-mcp',
+    mcpSessionId: 'attacker-mcp-session',
+  });
+
+  await callTool(
+    'detect_noop',
+    {
+      actionId: 'kpi-identity-poison-2',
+      clientId: 'attacker-client',
+      sessionId: 'attacker-session',
+    },
+    { clientId: 'trusted-oauth-client', sessionId: 'trusted-oauth-session', agentId: 'http-agent' },
+  );
+
+  const entries = fs.readFileSync(path.join(tmpFeedbackDir, 'tool-kpi.jsonl'), 'utf8')
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map(JSON.parse);
+  assert.equal(entries.length, before + 2);
+
+  const poisoned = entries[before];
+  assert.equal(poisoned.toolName, 'detect_noop');
+  assert.equal(poisoned.clientId, null);
+  assert.equal(poisoned.sessionId, null);
+
+  const trusted = entries[before + 1];
+  assert.equal(trusted.clientId, 'trusted-oauth-client');
+  assert.equal(trusted.sessionId, 'trusted-oauth-session');
+  assert.equal(trusted.agentId, 'http-agent');
+});
+
 test('MCP structured output validation fails closed', () => {
   const tool = TOOLS.find((candidate) => candidate.name === 'record_task_outcome');
   const validation = __test__.validateMcpToolOutput(tool, {
