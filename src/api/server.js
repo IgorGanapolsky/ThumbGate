@@ -4164,6 +4164,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/oak-and-sparrow-gatekeeper', changefreq: 'weekly', priority: '0.85' },
+    { path: '/compare/cloudflare-writeguard', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/arcjet', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-claude-for-legal', changefreq: 'weekly', priority: '0.9' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
