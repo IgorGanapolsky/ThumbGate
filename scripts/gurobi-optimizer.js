@@ -39,6 +39,15 @@ function resolvePythonBin(env = process.env, homeDir = os.homedir()) {
   return 'python3';
 }
 
+function parseSolverStdout(stdout) {
+  const text = String(stdout || '');
+  const start = text.indexOf('{');
+  if (start < 0) {
+    throw new SyntaxError('solver stdout contained no JSON object');
+  }
+  return JSON.parse(text.slice(start));
+}
+
 function runPythonMode(mode, payload, timeoutMs = 10000, pythonBin = resolvePythonBin()) {
   const stdout = execFileSync(
     pythonBin,
@@ -55,7 +64,7 @@ function runPythonMode(mode, payload, timeoutMs = 10000, pythonBin = resolvePyth
       },
     }
   );
-  return JSON.parse(stdout);
+  return parseSolverStdout(stdout);
 }
 
 /**
@@ -231,6 +240,7 @@ module.exports = {
   resolvePythonBin,
   probeGurobi,
   runPythonMode,
+  parseSolverStdout,
   isRepeatableSolve,
   isCertifiedSolve,
   stampDecisionGovernance,
