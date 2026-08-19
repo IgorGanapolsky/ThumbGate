@@ -109,8 +109,52 @@ test('getAtRiskTools detects latency-only risk and ignores low-volume noise', ()
 });
 test('percentile', () => { assert.equal(kpi.percentile([10, 20, 30, 40, 50], 50), 30); assert.equal(kpi.percentile([], 50), 0); });
 test('getKpiLogPath', () => { assert.ok(kpi.getKpiLogPath().endsWith('tool-kpi.jsonl')); });
+test('computeToolKpis surfaces dominant writeRiskTier', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-kpi-tier-'));
+  try {
+    for (let i = 0; i < 3; i++) {
+      kpi.recordToolCall({
+        toolName: 'recall',
+        latencyMs: 40,
+        success: true,
+        writeRiskTier: 'read-only',
+        feedbackDir,
+      });
+    }
+    const rollup = kpi.computeToolKpis({ periodHours: 1, feedbackDir });
+    const recall = rollup.tools.find((t) => t.toolName === 'recall');
+    assert.equal(recall.writeRiskTier, 'read-only');
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
 // SLO
-test('DEFAULT_SLOS', () => { assert.equal(slo.DEFAULT_SLOS.successRate, 90); });
+test('DEFAULT_SLOS pins Akamai 500ms agentic hop wall', () => {
+  assert.equal(slo.DEFAULT_SLOS.successRate, 90);
+  assert.equal(slo.DEFAULT_SLOS.p95LatencyMs, 500);
+  assert.equal(slo.AGENTIC_HOP_LATENCY_BUDGETS_MS.default, 500);
+  assert.equal(slo.AGENTIC_HOP_LATENCY_BUDGETS_MS['read-only'], 250);
+  assert.equal(slo.hopLatencyBudgetMs('critical'), 1000);
+});
+test('checkHopLatencyBudgets flags read-only hops over 250ms', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-hop-budget-'));
+  try {
+    for (let i = 0; i < 3; i++) {
+      kpi.recordToolCall({
+        toolName: 'recall',
+        latencyMs: 400,
+        success: true,
+        writeRiskTier: 'read-only',
+        feedbackDir,
+      });
+    }
+    const report = slo.checkHopLatencyBudgets({ periodHours: 1, feedbackDir });
+    assert.equal(report.wallMs, 500);
+    assert.ok(report.violations.some((v) => v.toolName === 'recall' && v.budgetMs === 250));
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
 test('checkSloViolations detects', () => { const r = slo.checkSloViolations({ periodHours: 1 }); assert.ok(r.violations.find((v) => v.toolName === 'bad')); });
 test('checkSloViolations custom thresholds', () => { assert.ok(slo.checkSloViolations({ slos: { successRate: 99 }, periodHours: 1 }).violationCount >= slo.checkSloViolations({ slos: { successRate: 1 }, periodHours: 1 }).violationCount); });
 test('runSloCheck logs', async () => { await slo.runSloCheck({ periodHours: 1 }); assert.ok(fs.existsSync(slo.getAlertLogPath())); });

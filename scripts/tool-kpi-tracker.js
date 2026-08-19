@@ -103,6 +103,18 @@ function emptyOutcomeCounts() {
   };
 }
 
+function pickDominantTier(tierCounts = {}) {
+  let best = null;
+  let bestCount = 0;
+  for (const [tier, count] of Object.entries(tierCounts)) {
+    if (count > bestCount) {
+      best = tier;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
 function computeToolKpis({ periodHours = 24, feedbackDir } = {}) {
   const entries = readJsonl(getKpiLogPath({ feedbackDir }));
   const cutoff = Date.now() - periodHours * 60 * 60 * 1000;
@@ -119,9 +131,14 @@ function computeToolKpis({ periodHours = 24, feedbackDir } = {}) {
         failures: 0,
         blocked: 0,
         outcomes: emptyOutcomeCounts(),
+        tierCounts: {},
       };
     }
     byTool[key].calls.push(entry.latencyMs);
+    const tier = entry.writeRiskTier || entry.metadata?.writeRiskTier || null;
+    if (tier) {
+      byTool[key].tierCounts[tier] = (byTool[key].tierCounts[tier] || 0) + 1;
+    }
     const normalized = normalizeToolCallOutcome(entry);
     byTool[key].outcomes[normalized] += 1;
     outcomes[normalized] += 1;
@@ -149,6 +166,7 @@ function computeToolKpis({ periodHours = 24, feedbackDir } = {}) {
         failures: tool.failures,
         blocked: tool.blocked,
         outcomes: tool.outcomes,
+        writeRiskTier: pickDominantTier(tool.tierCounts),
       };
     })
     .sort((left, right) => right.requestCount - left.requestCount);
