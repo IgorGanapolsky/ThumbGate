@@ -90,7 +90,7 @@
       "name": "When should I use ThumbGate instead of Dirac?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "When a coding agent is about to run a tool (curl a secret, force-push, send mail) and you need a local PreToolUse block plus a reviewable log. Use Dirac when you want a cheaper, AST-native coding agent. You can run both."
+        "text": "When Claude Code, Cursor, or Codex is about to run a tool and you need a local PreToolUse block. Dirac is a cheaper coding agent with its own approval and yolo modes. thumbgate init has no --agent dirac path; Dirac's native tools do not go through ThumbGate hooks."
       }
     }
   ]
@@ -159,9 +159,14 @@
               <td>Secret exfiltration and self-protect; destructive git/fs warn unless STRICT</td>
             </tr>
             <tr>
-              <td>MCP</td>
-              <td>Native tools only (they advertise no MCP)</td>
-              <td>MCP + hooks. We govern tool calls; we do not ban MCP.</td>
+              <td>Approvals</td>
+              <td>Default act asks for approval. <code>dirac -y</code> yolo auto-approves every tool.</td>
+              <td>Hook verdict: allow, warn, or deny. Secret-exfil is a hard floor even when an agent is in yolo.</td>
+            </tr>
+            <tr>
+              <td>MCP / intercept</td>
+              <td>Native tools only. They advertise no MCP.</td>
+              <td>MCP + PreToolUse on Claude Code, Cursor, Codex. No <code>--agent dirac</code>. Dirac calls are not intercepted today.</td>
             </tr>
             <tr>
               <td>Cost claim</td>
@@ -188,9 +193,9 @@
         <div class="detail-section">
           <h2>When to use ThumbGate</h2>
           <ul>
-            <li>Claude Code, Cursor, Codex, or Dirac is about to run Bash, Write, or git on a sensitive repo.</li>
-            <li>You need the same secret-exfil deny to fire locally, with a log you can show a security owner.</li>
-            <li>Cheaper diffs still need a hook: token efficiency is not an allow verdict.</li>
+            <li>Claude Code, Cursor, or Codex is about to run Bash, Write, or git on a sensitive repo.</li>
+            <li>You need secret-exfil deny locally, with a log you can show a security owner.</li>
+            <li>An agent’s yolo / auto-approve mode is not a substitute for a hook. Token efficiency is not an allow verdict.</li>
           </ul>
         </div>
 
@@ -205,8 +210,8 @@
             <p>No. That is Dirac’s public eval. Cite <a href="https://dirac.run/">dirac.run</a> if you quote it. We do not copy their AST engine.</p>
           </details>
           <details class="faq-item">
-            <summary>Can I run both?</summary>
-            <p>Yes. Dirac (or any agent) writes the code. ThumbGate sits on the tool-call boundary before execute.</p>
+            <summary>Can ThumbGate block Dirac tool calls today?</summary>
+            <p>No. <code>npx thumbgate init --agent dirac</code> is not a supported path. Dirac uses native tools and no MCP, so our PreToolUse hooks do not see those calls. Use ThumbGate on Claude Code, Cursor, or Codex. A Dirac adapter is not shipped.</p>
           </details>
         </div>
       </div>

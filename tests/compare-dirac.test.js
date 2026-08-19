@@ -48,6 +48,12 @@ test('filesystem catalog includes dirac.html so sitemap auto-include cannot miss
 
 test('llm-context names the Dirac boundary without inheriting their cost %', () => {
   assert.match(LLM, /\/compare\/dirac/);
-  assert.match(LLM, /token-efficient coding agent/i);
+  assert.match(LLM, /token-efficient/);
   assert.doesNotMatch(LLM, /ThumbGate is 64\.8% cheaper/i);
+});
+
+test('compare page does not claim an installable Dirac adapter', () => {
+  assert.match(PAGE, /No <code>--agent dirac<\/code>|no --agent dirac|not a supported path/i);
+  assert.match(PAGE, /not intercepted|do not see those calls|adapter is not shipped/i);
+  assert.doesNotMatch(PAGE, /Codex, or Dirac is about to run/);
 });
