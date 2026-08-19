@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate vs Dirac | Coding-Agent Firewall vs Token-Efficient Agent</title>
+  <meta name="description" content="Dirac is a token-efficient open-source coding agent. ThumbGate is the PreToolUse firewall for Claude Code, Cursor, and Codex. Adjacent layers, not substitutes." />
+  <meta property="og:title" content="ThumbGate vs Dirac | Tool-call gate vs cheaper coding agent" />
+  <meta property="og:description" content="They cut token cost with hash-anchored edits and AST batching. We evaluate the tool call before it runs. Their 64.8% cheaper figure is their eval table, not ours." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/compare/dirac" />
+  <link rel="canonical" href="https://thumbgate.ai/compare/dirac" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow { display: inline-flex; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 820px; }
+    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+    .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
+    .detail-section ol, .detail-section ul { padding-left: 18px; color: var(--muted); }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+    .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+    .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
+    .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
+    .pill.warn { color: #ffe2a4; border-color: rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.1); }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .sidebar-card { padding: 20px; }
+    .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
+    .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
+    .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+    .faq-item summary { cursor: pointer; font-weight: 600; }
+    .trace { display: grid; gap: 10px; }
+    .trace div { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--bg-raised); }
+    .trace strong { display: block; color: var(--text); }
+    @media (max-width: 860px) { .grid { grid-columns: 1fr; } .grid { grid-template-columns: 1fr; } }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Dirac",
+  "description": "Dirac is a token-efficient open-source coding agent. ThumbGate is the PreToolUse firewall for coding agents.",
+  "url": "https://thumbgate.ai/compare/dirac",
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "mainEntityOfPage": "https://thumbgate.ai/compare/dirac"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Dirac a ThumbGate competitor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Adjacent, not a substitute. Dirac is a coding agent (hash-anchored edits, AST batching, no MCP). ThumbGate intercepts coding-agent tool calls (Claude Code, Cursor, Codex) with allow, warn, or deny before execute."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate claim Dirac's 64.8% cheaper figure?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. That number is Dirac's public 8-task eval on gemini-3-flash-preview, fetched 2026-08-19 from dirac.run. It is not a ThumbGate measurement."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When should I use ThumbGate instead of Dirac?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "When a coding agent is about to run a tool (curl a secret, force-push, send mail) and you need a local PreToolUse block plus a reviewable log. Use Dirac when you want a cheaper, AST-native coding agent. You can run both."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span>ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">comparison | thumbgate vs dirac</div>
+      <h1>ThumbGate vs Dirac</h1>
+      <p><a href="https://dirac.run/">Dirac</a> is an Apache-2.0 coding agent focused on token cost: hash-anchored edits, AST-native refactoring, multi-file batching, native tools and no MCP. ThumbGate is not a coding agent. It evaluates a tool call before it runs, blocks the unsafe ones, and leaves a reviewable record.</p>
+      <div class="pill-row">
+        <div class="pill good">ThumbGate: PreToolUse allow / warn / deny on Claude Code, Cursor, Codex</div>
+        <div class="pill warn">Dirac: cheaper coding agent (their eval, not ours)</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="detail-section">
+          <h2>The short answer</h2>
+          <p>Not a clone. Same buyer (people running coding agents). Different job. They answer “make the agent cheaper and more precise.” We answer “before this agent curls a secret or force-pushes, stop it.” Dirac’s public table (fetched 2026-08-19) reports 8/8 tasks at $0.18 average versus $0.53 for other agents and a 64.8% cheaper headline. That is <em>their</em> methodology on gemini-3-flash-preview. ThumbGate does not inherit those numbers.</p>
+        </div>
+
+        <div class="detail-section">
+          <h2>Token waste is not a substitute for a gate</h2>
+          <p>Sample — not a live buyer run. Mandate: apply a cheap multi-file edit. Do not exfiltrate secrets.</p>
+          <div class="trace">
+            <div><strong>01 Agent proposes an edit</strong>Hash-anchored or AST batching may keep the prompt small.</div>
+            <div><strong>02 Rule checked</strong>Secret-exfil is a hard floor. Cheap diffs still get evaluated.</div>
+            <div><strong>03 Human / hook checkpoint</strong>A PAT in the command is denied before execute.</div>
+            <div><strong>04 Recorded result</strong>Deny is logged. Token savings do not prove the action was safe.</div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h2>Comparison table</h2>
+          <table class="comparison-table">
+            <tr><th>Dimension</th><th>Dirac</th><th>ThumbGate</th></tr>
+            <tr>
+              <td>What it is</td>
+              <td>Open-source coding agent (Cline-family, Apache 2.0)</td>
+              <td>Local PreToolUse firewall for coding agents</td>
+            </tr>
+            <tr>
+              <td>Question it answers</td>
+              <td>Can this refactor land cheaper and still compile?</td>
+              <td>Should this tool call run at all?</td>
+            </tr>
+            <tr>
+              <td>Edit mechanic</td>
+              <td>Hash-anchored lines + AST-native batching</td>
+              <td>Does not edit code. Evaluates the proposed tool call.</td>
+            </tr>
+            <tr>
+              <td>Default hard blocks</td>
+              <td>Agent policy / user confirmation inside Dirac</td>
+              <td>Secret exfiltration and self-protect; destructive git/fs warn unless STRICT</td>
+            </tr>
+            <tr>
+              <td>MCP</td>
+              <td>Native tools only (they advertise no MCP)</td>
+              <td>MCP + hooks. We govern tool calls; we do not ban MCP.</td>
+            </tr>
+            <tr>
+              <td>Cost claim</td>
+              <td>64.8% cheaper on their 8-task public table (2026-08-19 fetch)</td>
+              <td>We do not republish that figure as ours. Context-footprint and reasoning-efficiency guardrails exist for token waste inside our loop.</td>
+            </tr>
+            <tr>
+              <td>Commerce</td>
+              <td>Free OSS agent + VS Code / CLI</td>
+              <td>Local evaluate is free. Hosted Enterprise is not generally available.</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="detail-section">
+          <h2>When to use Dirac</h2>
+          <ul>
+            <li>You want the coding agent itself to be cheaper (hash-anchored edits, AST batching, lean context).</li>
+            <li>You prefer native tool calling and no MCP in that agent.</li>
+            <li>You are comparing open-source agents on Terminal-Bench-2-style evals.</li>
+          </ul>
+        </div>
+
+        <div class="detail-section">
+          <h2>When to use ThumbGate</h2>
+          <ul>
+            <li>Claude Code, Cursor, Codex, or Dirac is about to run Bash, Write, or git on a sensitive repo.</li>
+            <li>You need the same secret-exfil deny to fire locally, with a log you can show a security owner.</li>
+            <li>Cheaper diffs still need a hook: token efficiency is not an allow verdict.</li>
+          </ul>
+        </div>
+
+        <div class="detail-section">
+          <h2>FAQ</h2>
+          <details class="faq-item">
+            <summary>Is Dirac a ThumbGate competitor?</summary>
+            <p>Adjacent. They are a coding agent. We are a coding-agent tool-call gate. Do not pitch us as their editor.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Do we claim 64.8% cheaper?</summary>
+            <p>No. That is Dirac’s public eval. Cite <a href="https://dirac.run/">dirac.run</a> if you quote it. We do not copy their AST engine.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Can I run both?</summary>
+            <p>Yes. Dirac (or any agent) writes the code. ThumbGate sits on the tool-call boundary before execute.</p>
+          </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h3 style="margin-top:0;">Install ThumbGate</h3>
+          <p>One command. Local evaluate is free.</p>
+          <pre><code>npx thumbgate init</code></pre>
+          <a class="cta-button" href="https://thumbgate.ai/?utm_source=dirac_comparison&amp;utm_medium=compare&amp;utm_campaign=dirac">See the product</a>
+        </div>
+        <div class="sidebar-card">
+          <span class="related-label">Related</span>
+          <a class="related-card" href="/compare/openmono"><strong>vs OpenMono</strong><br><span class="related-label">learning firewall vs local agent sandbox</span></a>
+          <a class="related-card" href="/compare/rein"><strong>vs Rein</strong><br><span class="related-label">coding-agent vs decorator governance</span></a>
+          <a class="related-card" href="https://dirac.run/">Dirac site</a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
