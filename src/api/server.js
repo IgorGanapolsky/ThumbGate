@@ -5622,13 +5622,22 @@ function createApiServer() {
                 ? mcpOauth.tokenAudienceValid(oauthSession, resourceUrl)
                 : rawKeyValid;
               if (!authed) {
+                const deniedName = msg.params?.name || 'unknown';
+                const deniedTool = MCP_TOOLS.find((t) => t.name === deniedName);
                 recordToolCall({
-                  toolName: msg.params?.name || 'unknown',
+                  toolName: deniedName,
                   serverName: 'mcp-http',
                   latencyMs: 0,
                   success: false,
+                  outcome: 'blocked',
+                  blocked: true,
                   agentId: 'unauthenticated',
-                  metadata: { denied: true, deniedReason: 'authentication_required' },
+                  writeRiskTier: deniedTool?.annotations?.writeRiskTier || null,
+                  metadata: {
+                    denied: true,
+                    deniedReason: 'authentication_required',
+                    writeRiskTier: deniedTool?.annotations?.writeRiskTier || null,
+                  },
                 });
                 res.writeHead(401, {
                   'Content-Type': 'application/json',
@@ -5657,8 +5666,15 @@ function createApiServer() {
                     serverName: 'mcp-http',
                     latencyMs: 0,
                     success: false,
+                    outcome: 'blocked',
+                    blocked: true,
                     agentId: 'reviewer',
-                    metadata: { denied: true, deniedReason: 'reviewer_read_only' },
+                    writeRiskTier: tool?.annotations?.writeRiskTier || null,
+                    metadata: {
+                      denied: true,
+                      deniedReason: 'reviewer_read_only',
+                      writeRiskTier: tool?.annotations?.writeRiskTier || null,
+                    },
                   });
                   sendJson(res, 200, {
                     jsonrpc: '2.0', id: msg.id,
@@ -5678,11 +5694,17 @@ function createApiServer() {
                     serverName: 'mcp-http',
                     latencyMs: 0,
                     success: false,
+                    outcome: 'blocked',
+                    blocked: true,
                     agentId: oauthSession.clientId || 'oauth-client',
+                    clientId: oauthSession.clientId || null,
+                    sessionId: oauthSession.sessionId || oauthSession.id || null,
+                    writeRiskTier: tool?.annotations?.writeRiskTier || null,
                     metadata: {
                       denied: true,
                       deniedReason: 'insufficient_scope',
                       requiredScope,
+                      writeRiskTier: tool?.annotations?.writeRiskTier || null,
                     },
                   });
                   sendJson(res, 200, {
@@ -5697,7 +5719,14 @@ function createApiServer() {
                   const { callTool } = require('../../adapters/mcp/server-stdio');
                   const name = msg.params?.name;
                   const args = (msg.params && msg.params.arguments) || {};
-                  const result = await callTool(name, args);
+                  // Attribution rides as callTool options (not tool args) so KPI
+                  // can bind human OAuth client/session without polluting schemas.
+                  const result = await callTool(name, args, {
+                    clientId: oauthSession?.clientId || null,
+                    sessionId: oauthSession?.sessionId || oauthSession?.id || null,
+                    agentId: oauthSession?.clientId || (isReviewer ? 'reviewer' : 'mcp-http'),
+                    serverName: 'mcp-http',
+                  });
                   sendJson(res, 200, {
                     jsonrpc: '2.0', id: msg.id,
                     result,

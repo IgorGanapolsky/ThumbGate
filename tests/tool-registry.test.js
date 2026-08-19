@@ -211,3 +211,39 @@ test('inferThumbgateScope maps feedback/gates/read/write classes', () => {
   const capture = TOOLS.find((tool) => tool.name === 'capture_feedback');
   assert.equal(capture.annotations.thumbgateScope, 'mcp:feedback');
 });
+
+test('inferWriteRiskTier maps annotations to WriteGuard-style tiers', () => {
+  const {
+    WRITE_RISK_TIERS,
+    inferWriteRiskTier,
+    TOOLS,
+  } = require('../scripts/tool-registry');
+
+  assert.equal(
+    inferWriteRiskTier('recall', { readOnlyHint: true }),
+    WRITE_RISK_TIERS.READ_ONLY,
+  );
+  assert.equal(
+    inferWriteRiskTier('capture_feedback', { destructiveHint: true }),
+    WRITE_RISK_TIERS.CONTAINED_WRITE,
+  );
+  assert.equal(
+    inferWriteRiskTier('approve_protected_action', { destructiveHint: true }),
+    WRITE_RISK_TIERS.CRITICAL,
+  );
+  assert.equal(
+    inferWriteRiskTier('append_feedback_context', { destructiveHint: true }),
+    WRITE_RISK_TIERS.MINIMAL_IMPACT,
+  );
+  assert.equal(
+    inferWriteRiskTier('custom', { writeRiskTier: 'critical' }),
+    WRITE_RISK_TIERS.CRITICAL,
+  );
+
+  for (const tool of TOOLS) {
+    assert.ok(
+      Object.values(WRITE_RISK_TIERS).includes(tool.annotations.writeRiskTier),
+      `${tool.name} missing valid writeRiskTier`,
+    );
+  }
+});
