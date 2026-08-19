@@ -313,6 +313,13 @@ function pruneWorktrees(options = {}) {
   };
 }
 
+function countRevs(fromSha, toSha, repoRoot) {
+  const res = runGit(['rev-list', '--count', `${fromSha}..${toSha}`], repoRoot);
+  if (res.status !== 0) return null;
+  const n = Number(res.stdout);
+  return Number.isFinite(n) ? n : null;
+}
+
 function checkTipConsistency(options = {}) {
   const repoRoot = options.repoRoot || getRepoRoot();
   const branch =
@@ -328,21 +335,55 @@ function checkTipConsistency(options = {}) {
     fetch = runGit(['fetch', remote, branch, '--quiet'], repoRoot, {
       timeoutMs: options.timeoutMs || 120000,
     });
+    if (fetch.status !== 0) {
+      return {
+        branch,
+        remote,
+        localTip: before || null,
+        remoteTip: null,
+        fetched: false,
+        fetchError: fetch.stderr || 'fetch failed',
+        consistent: null,
+        behind: null,
+        ahead: null,
+        indeterminate: true,
+      };
+    }
   }
   const remoteTip = runGit(['rev-parse', `${remote}/${branch}`], repoRoot);
   const after = runGit(['rev-parse', 'HEAD'], repoRoot).stdout;
-  const consistent =
-    remoteTip.status === 0 && after && remoteTip.stdout && after === remoteTip.stdout;
+  const localTip = after || before;
+  if (remoteTip.status !== 0 || !remoteTip.stdout || !localTip) {
+    return {
+      branch,
+      remote,
+      localTip: localTip || null,
+      remoteTip: null,
+      fetched: doFetch && fetch.status === 0,
+      fetchError: remoteTip.stderr || 'missing remote tip',
+      consistent: null,
+      behind: null,
+      ahead: null,
+      indeterminate: true,
+    };
+  }
+  const behindCount = countRevs(localTip, remoteTip.stdout, repoRoot);
+  const aheadCount = countRevs(remoteTip.stdout, localTip, repoRoot);
+  const behind = behindCount != null ? behindCount > 0 : null;
+  const ahead = aheadCount != null ? aheadCount > 0 : null;
+  const consistent = behind === false && ahead === false;
 
   return {
     branch,
     remote,
-    localTip: after || before,
-    remoteTip: remoteTip.status === 0 ? remoteTip.stdout : null,
+    localTip,
+    remoteTip: remoteTip.stdout,
     fetched: doFetch && fetch.status === 0,
-    fetchError: fetch.status === 0 ? null : fetch.stderr || 'fetch failed',
-    consistent: Boolean(consistent),
-    behind: Boolean(remoteTip.status === 0 && after && remoteTip.stdout && after !== remoteTip.stdout),
+    fetchError: null,
+    consistent,
+    behind,
+    ahead,
+    indeterminate: false,
   };
 }
 

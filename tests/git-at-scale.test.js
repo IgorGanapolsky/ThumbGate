@@ -186,12 +186,50 @@ test('tip consistency without fetch reports local vs origin when origin exists',
     });
     assert.equal(tip.consistent, true);
     assert.equal(tip.behind, false);
+    assert.equal(tip.ahead, false);
+    assert.equal(tip.indeterminate, false);
     assert.equal(tip.fetched, false);
     assert.match(tip.localTip, /^[0-9a-f]{40}$/);
     assert.equal(tip.localTip, tip.remoteTip);
   } finally {
     fs.rmSync(repo, { recursive: true, force: true });
     fs.rmSync(remote, { recursive: true, force: true });
+  }
+});
+
+test('tip consistency reports ahead separately from behind', () => {
+  const repo = makeRepo();
+  const remote = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-git-scale-remote-'));
+  try {
+    git(['init', '--bare', '-b', 'main'], remote);
+    git(['remote', 'add', 'origin', remote], repo);
+    git(['push', '-u', 'origin', 'main'], repo);
+    fs.writeFileSync(path.join(repo, 'README.md'), 'ahead\n');
+    git(['add', 'README.md'], repo);
+    git(['commit', '-m', 'ahead'], repo);
+    const tip = gitAtScale.checkTipConsistency({ repoRoot: repo, branch: 'main', fetch: false });
+    assert.equal(tip.ahead, true);
+    assert.equal(tip.behind, false);
+    assert.equal(tip.consistent, false);
+  } finally {
+    try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp */ }
+    try { fs.rmSync(remote, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp */ }
+  }
+});
+
+test('failed fetch does not evaluate a stale tracking ref', () => {
+  const repo = makeRepo();
+  try {
+    git(['remote', 'add', 'origin', path.join(repo, 'does-not-exist.git')], repo);
+    git(['update-ref', 'refs/remotes/origin/main', 'HEAD'], repo);
+    const tip = gitAtScale.checkTipConsistency({ repoRoot: repo, branch: 'main', fetch: true });
+    assert.equal(tip.indeterminate, true);
+    assert.equal(tip.consistent, null);
+    assert.equal(tip.behind, null);
+    assert.equal(tip.remoteTip, null);
+    assert.ok(tip.fetchError);
+  } finally {
+    try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp */ }
   }
 });
 
