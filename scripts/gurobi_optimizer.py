@@ -101,8 +101,6 @@ def solve_model_routing(
             if c.get("cost", 0) <= max_budget_usd and c.get("latency_ms", 0) <= max_latency_ms
         ]
         if not valid:
-            valid = candidates
-        if not valid:
             return stamp_receipt(
                 {
                     "success": False,
