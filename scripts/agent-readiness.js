@@ -277,6 +277,29 @@ function summarizeClaimVerification(projectRoot = PROJECT_ROOT, deps = {}) {
   };
 }
 
+function summarizeGitScale(projectRoot) {
+  try {
+    const { getRepoRoot, getScaleScorecard } = require('./git-at-scale');
+    getRepoRoot(projectRoot);
+    const card = getScaleScorecard(projectRoot);
+    return {
+      ready: card.healthy === true,
+      skipped: false,
+      scorecard: card,
+      recommendation: card.healthy
+        ? 'Git scale indexes are present; origin is the source of truth and the local tree is a warm cache.'
+        : `Git scale hygiene: ${card.unhealthyReasons.join(', ')}. Run npm run git:scale:tune && npm run git:scale:maintenance.`,
+    };
+  } catch {
+    return {
+      ready: true,
+      skipped: true,
+      scorecard: null,
+      recommendation: 'Not a git repository; Git scale scorecard skipped.',
+    };
+  }
+}
+
 function generateAgentReadinessReport({
   projectRoot = PROJECT_ROOT,
   mcpProfile = null,
@@ -287,6 +310,7 @@ function generateAgentReadinessReport({
   const claimVerification = summarizeClaimVerification(projectRoot);
 
   const preToolUseHookRegistered = detectPreToolUseHookRegistered(projectRoot);
+  const gitScale = summarizeGitScale(projectRoot);
 
   const warnings = [];
   if (!runtime.isolated) warnings.push(runtime.recommendation);
@@ -303,6 +327,9 @@ function generateAgentReadinessReport({
       'No ThumbGate PreToolUse hook found in .claude/settings.json. Run `npx thumbgate init --wire-hooks` before expecting gates to fire.'
     );
   }
+  if (!gitScale.skipped && !gitScale.ready) {
+    warnings.push(gitScale.recommendation);
+  }
 
   return {
     generatedAt: new Date().toISOString(),
@@ -313,6 +340,7 @@ function generateAgentReadinessReport({
     permissions,
     claimVerification,
     preToolUseHookRegistered,
+    gitScale,
     articleAlignment: {
       runtimeIsolation: runtime.isolated,
       contextConditioning: bootstrap.ready,
@@ -334,6 +362,10 @@ function reportToText(report) {
   lines.push(`Bootstrap: ${report.bootstrap.requiredPresent}/${report.bootstrap.requiredCount} required files present`);
   if (report.bootstrap.missingRequired.length > 0) {
     lines.push(`  Missing: ${report.bootstrap.missingRequired.join(', ')}`);
+  }
+  if (report.gitScale && !report.gitScale.skipped) {
+    lines.push(`Git scale: ${report.gitScale.ready ? 'healthy' : 'needs_attention'}`);
+    lines.push(`  Recommendation: ${report.gitScale.recommendation}`);
   }
   lines.push(`Permissions: ${report.permissions.profile} (${report.permissions.tier})`);
   lines.push(`  Write-capable tools: ${report.permissions.writeCapableTools.length}`);
@@ -370,6 +402,7 @@ module.exports = {
   detectStopHookRegistered,
   detectPreToolUseHookRegistered,
   generateAgentReadinessReport,
+  summarizeGitScale,
   reportToText,
 };
 

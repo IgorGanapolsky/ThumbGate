@@ -25,18 +25,27 @@ const DEFAULT_MAX_AGE_DAYS = 5;
 const PACK_UNHEALTHY = 40;
 const LOOSE_UNHEALTHY = 500;
 const WORKTREE_UNHEALTHY = 25;
+const SCALE_TUNE = Object.freeze([
+  ['fetch.writeCommitGraph', 'true'],
+  ['gc.writeCommitGraph', 'true'],
+  ['pack.writeReverseIndex', 'true'],
+]);
 const SAFE_GIT_PATH = '/usr/bin:/bin';
 const GIT_BIN = ['/usr/bin/git', '/usr/local/bin/git', '/opt/homebrew/bin/git'].find((candidate) => {
   try { return fs.existsSync(candidate); } catch { return false; }
 }) || 'git';
 
 function runGit(args, cwd = process.cwd(), opts = {}) {
+  const env = { ...process.env, PATH: SAFE_GIT_PATH };
+  delete env.GIT_DIR;
+  delete env.GIT_WORK_TREE;
+  delete env.GIT_COMMON_DIR;
   const res = spawnSync(GIT_BIN, args, {
     cwd,
     encoding: 'utf8',
     maxBuffer: 32 * 1024 * 1024,
     timeout: opts.timeoutMs || 0,
-    env: { ...process.env, PATH: SAFE_GIT_PATH },
+    env,
   });
   return {
     status: res.status === null ? 1 : res.status,
@@ -92,6 +101,46 @@ function hasMultiPackIndex(repoRoot) {
   );
 }
 
+function hasPackBitmap(repoRoot) {
+  const packDir = path.join(gitCommonDirAbs(repoRoot), 'objects', 'pack');
+  try {
+    if (fs.existsSync(path.join(packDir, 'multi-pack-index.bitmap'))) return true;
+    return fs.readdirSync(packDir).some((name) => name.endsWith('.bitmap'));
+  } catch {
+    return false;
+  }
+}
+
+function readLocalConfig(repoRoot, key) {
+  const res = runGit(['config', '--local', '--get', key], repoRoot);
+  return res.status === 0 ? res.stdout : '';
+}
+
+function hasScaleTune(repoRoot) {
+  return SCALE_TUNE.every(([key, value]) => readLocalConfig(repoRoot, key) === value);
+}
+
+function applyScaleTune(repoRoot = getRepoRoot()) {
+  const applied = [];
+  const errors = [];
+  for (const [key, value] of SCALE_TUNE) {
+    const res = runGit(['config', '--local', key, value], repoRoot);
+    if (res.status === 0) applied.push(key);
+    else errors.push(`${key}: ${res.stderr || 'failed'}`);
+  }
+  return { ok: errors.length === 0, applied, errors };
+}
+
+function writeMultiPackIndex(repoRoot, results) {
+  let midx = runGit(['multi-pack-index', 'write', '--bitmap'], repoRoot);
+  if (midx.status !== 0) {
+    midx = runGit(['multi-pack-index', 'write'], repoRoot);
+  }
+  results.multiPackIndexUpdated = midx.status === 0;
+  results.packBitmapUpdated = hasPackBitmap(repoRoot);
+  recordGitError(results, 'multi-pack-index', midx);
+}
+
 function primaryCheckout(repoRoot) {
   const common = gitCommonDirAbs(repoRoot);
   const candidate = path.basename(common) === '.git' ? path.dirname(common) : repoRoot;
@@ -141,6 +190,7 @@ function runMaintenance(repoRoot = getRepoRoot(), options = {}) {
   const results = {
     commitGraphUpdated: false,
     multiPackIndexUpdated: false,
+    packBitmapUpdated: false,
     geometricRepackDone: false,
     maintenanceAuto: false,
     errors: [],
@@ -157,12 +207,7 @@ function runMaintenance(repoRoot = getRepoRoot(), options = {}) {
   results.commitGraphUpdated = graph.status === 0;
   recordGitError(results, 'commit-graph', graph);
 
-  let midx = runGit(['multi-pack-index', 'write', '--bitmap'], repoRoot);
-  if (midx.status !== 0) {
-    midx = runGit(['multi-pack-index', 'write'], repoRoot);
-  }
-  results.multiPackIndexUpdated = midx.status === 0;
-  recordGitError(results, 'multi-pack-index', midx);
+  writeMultiPackIndex(repoRoot, results);
 
   if (options.geometric) {
     const repack = runGit(['repack', '-d', '-l', '--geometric=2'], repoRoot, {
@@ -170,10 +215,7 @@ function runMaintenance(repoRoot = getRepoRoot(), options = {}) {
     });
     results.geometricRepackDone = repack.status === 0;
     recordGitError(results, 'geometric repack', repack);
-    if (repack.status === 0) {
-      const midx2 = runGit(['multi-pack-index', 'write'], repoRoot);
-      recordGitError(results, 'multi-pack-index(after-repack)', midx2);
-    }
+    if (repack.status === 0) writeMultiPackIndex(repoRoot, results);
   }
 
   return results;
@@ -394,13 +436,20 @@ function getScaleScorecard(repoRoot = getRepoRoot()) {
   const loose = Number(objects.count) || 0;
   const commitGraph = hasCommitGraph(repoRoot);
   const midx = hasMultiPackIndex(repoRoot);
+  const packBitmap = hasPackBitmap(repoRoot);
+  const scaleTune = hasScaleTune(repoRoot);
 
   const unhealthyReasons = [];
   if (loose >= LOOSE_UNHEALTHY) unhealthyReasons.push('loose-objects>=500');
   if (packs >= PACK_UNHEALTHY) unhealthyReasons.push('packs>=40');
   if (!commitGraph) unhealthyReasons.push('missing-commit-graph');
   if (packs >= 2 && !midx) unhealthyReasons.push('missing-multi-pack-index');
+  if (packs >= 2 && !packBitmap) unhealthyReasons.push('missing-pack-bitmap');
+  if (!scaleTune) unhealthyReasons.push('missing-scale-tune');
   if (worktrees.length >= WORKTREE_UNHEALTHY) unhealthyReasons.push('worktrees>=25');
+  const blockingReasons = unhealthyReasons.filter((reason) => (
+    reason.startsWith('loose-objects') || reason.startsWith('packs>=')
+  ));
 
   return {
     timestamp: new Date().toISOString(),
@@ -411,11 +460,35 @@ function getScaleScorecard(repoRoot = getRepoRoot()) {
     packedSizeKb: Number(objects['size-pack']) || 0,
     commitGraph,
     multiPackIndex: midx,
+    packBitmap,
+    scaleTune,
     activeWorktrees: worktrees.length,
     healthy: unhealthyReasons.length === 0,
     unhealthyReasons,
+    blockingReasons,
     sourceOfTruth: 'origin',
     localRole: 'warm-cache',
+  };
+}
+
+function evaluateGitScaleHealth(repoRoot = getRepoRoot()) {
+  const card = getScaleScorecard(repoRoot);
+  return {
+    ...card,
+    blocking: Array.isArray(card.blockingReasons) && card.blockingReasons.length > 0,
+  };
+}
+
+function applyScaleHeal(repoRoot = getRepoRoot()) {
+  const before = getScaleScorecard(repoRoot);
+  const tune = applyScaleTune(repoRoot);
+  const maintenance = runMaintenance(repoRoot, { geometric: false });
+  return {
+    applied: true,
+    tune,
+    maintenance,
+    before,
+    scorecard: getScaleScorecard(repoRoot),
   };
 }
 
@@ -469,11 +542,31 @@ function main(argv = process.argv.slice(2)) {
     }));
   }
 
+  if (command === 'tune' || command === '--tune') {
+    return emit({
+      status: 'ok',
+      tune: applyScaleTune(repoRoot),
+      scorecard: getScaleScorecard(repoRoot),
+    });
+  }
+
+  if (command === 'check' || command === '--check') {
+    const health = evaluateGitScaleHealth(repoRoot);
+    return emit(health, health.blocking ? 1 : 0);
+  }
+
+  if (command === 'heal' || command === '--heal') {
+    return emit({ status: 'ok', ...applyScaleHeal(repoRoot) });
+  }
+
   process.stderr.write(
-    'usage: node scripts/git-at-scale.js <scorecard|maintenance|prune-worktrees|tip> [flags]\n'
+    'usage: node scripts/git-at-scale.js <scorecard|maintenance|prune-worktrees|tip|tune|check|heal> [flags]\n'
     + '  maintenance [--geometric]\n'
     + '  prune-worktrees [--base DIR] [--max-age-days N] [--apply]\n'
     + '  tip [--branch main] [--fetch]\n'
+    + '  tune\n'
+    + '  check\n'
+    + '  heal\n'
   );
   return 2;
 }
@@ -484,11 +577,17 @@ module.exports = {
   GIT_BIN,
   PACK_UNHEALTHY,
   SAFE_GIT_PATH,
+  SCALE_TUNE,
+  applyScaleHeal,
+  applyScaleTune,
   checkTipConsistency,
+  evaluateGitScaleHealth,
   getRepoRoot,
   getScaleScorecard,
   gitCommonDirAbs,
   hasCommitGraph,
+  hasPackBitmap,
+  hasScaleTune,
   primaryCheckout,
   hasMultiPackIndex,
   listWorktrees,

@@ -263,6 +263,24 @@ test('agent worktree base is the primary checkout even when invoked from a linke
   }
 });
 
+test('scorecard --cwd ignores inherited GIT_DIR', () => {
+  const repo = makeRepo();
+  const orphan = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-git-scale-orphan-'));
+  try {
+    const previous = process.env.GIT_DIR;
+    process.env.GIT_DIR = path.join(repo, '.git');
+    try {
+      assert.throws(() => gitAtScale.getRepoRoot(orphan), /Not a git repository/);
+    } finally {
+      if (previous === undefined) delete process.env.GIT_DIR;
+      else process.env.GIT_DIR = previous;
+    }
+  } finally {
+    try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp */ }
+    try { fs.rmSync(orphan, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp */ }
+  }
+});
+
 test('git spawn uses a fixed PATH and a resolved git binary', () => {
   assert.equal(gitAtScale.SAFE_GIT_PATH, '/usr/bin:/bin');
   assert.match(gitAtScale.GIT_BIN, /git$/);
@@ -335,6 +353,54 @@ test('CLI scorecard exits 0 and prints JSON', () => {
     assert.equal(res.status, 0, res.stderr);
     const card = JSON.parse(res.stdout);
     assert.equal(card.sourceOfTruth, 'origin');
+  } finally {
+    try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp hook noise */ }
+  }
+});
+
+test('tune writes commit-graph-on-fetch local config', () => {
+  const repo = makeRepo();
+  try {
+    assert.equal(gitAtScale.hasScaleTune(repo), false);
+    const tune = gitAtScale.applyScaleTune(repo);
+    assert.equal(tune.ok, true);
+    assert.ok(tune.applied.includes('fetch.writeCommitGraph'));
+    assert.equal(gitAtScale.hasScaleTune(repo), true);
+    const card = gitAtScale.getScaleScorecard(repo);
+    assert.equal(card.scaleTune, true);
+    assert.equal(card.unhealthyReasons.includes('missing-scale-tune'), false);
+  } finally {
+    try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp hook noise */ }
+  }
+});
+
+test('heal applies tune plus cheap indexes; check is not fail-closed on missing tune', () => {
+  const repo = makeRepo();
+  const script = path.join(__dirname, '..', 'scripts', 'git-at-scale.js');
+  try {
+    const checkBefore = spawnSync(process.execPath, [script, 'check', '--cwd', repo], { encoding: 'utf8' });
+    assert.equal(checkBefore.status, 0, checkBefore.stderr);
+    const before = JSON.parse(checkBefore.stdout);
+    assert.equal(before.blocking, false);
+    assert.ok(before.unhealthyReasons.includes('missing-scale-tune'));
+
+    const heal = gitAtScale.applyScaleHeal(repo);
+    assert.equal(heal.tune.ok, true);
+    assert.equal(heal.maintenance.commitGraphUpdated, true);
+    assert.equal(heal.scorecard.scaleTune, true);
+    assert.equal(heal.scorecard.commitGraph, true);
+  } finally {
+    try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp hook noise */ }
+  }
+});
+
+test('evaluateGitScaleHealth treats pack sprawl as blocking and missing tune as advisory', () => {
+  const repo = makeRepo();
+  try {
+    const health = gitAtScale.evaluateGitScaleHealth(repo);
+    assert.equal(health.blocking, false);
+    assert.deepEqual(health.blockingReasons, []);
+    assert.ok(health.unhealthyReasons.includes('missing-scale-tune'));
   } finally {
     try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp hook noise */ }
   }
