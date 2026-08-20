@@ -111,24 +111,30 @@ function rankDigest(entries, options = {}) {
 }
 
 function applyLiveHookDrift(entries, projectRoot, homeDir) {
-  if (!projectRoot) return entries;
-  let drifted = true;
+  if (!projectRoot) return { entries, error: null };
   try {
     const { assessHookDrift } = require('./agent-security-central');
-    drifted = Boolean(assessHookDrift(projectRoot, homeDir).drifted);
-  } catch {
-    return entries;
+    const assessment = assessHookDrift(projectRoot, homeDir);
+    const drifted = Boolean(assessment && assessment.drifted);
+    return {
+      entries: entries.map((e) => (
+        e.id === 'pretooluse-unwired' ? { ...e, open: drifted } : e
+      )),
+      error: null,
+    };
+  } catch (err) {
+    return {
+      entries,
+      error: `Live hook drift assessment failed: ${err.message}`,
+    };
   }
-  return entries.map((e) => (
-    e.id === 'pretooluse-unwired' ? { ...e, open: drifted } : e
-  ));
 }
 
 function runHiddenEntryScorecard(options = {}) {
   const base = Array.isArray(options.entries) && options.entries.length
     ? options.entries
     : ENTRY_POINTS;
-  const entries = applyLiveHookDrift(base, options.projectRoot, options.homeDir);
+  const { entries, error: liveError } = applyLiveHookDrift(base, options.projectRoot, options.homeDir);
   const loadAll = entries.map((e) => e.id);
   const digest = rankDigest(entries, options);
   const openAttacker = entries.filter((e) => e.attackerReliesOn && e.open);
@@ -138,6 +144,9 @@ function runHiddenEntryScorecard(options = {}) {
   const digestHasClosedTheater = digest.some((e) => !e.attackerReliesOn);
 
   const failures = [];
+  if (liveError) {
+    failures.push(liveError);
+  }
   if (openAttacker.length === 0) {
     failures.push('no open hidden entry — fixture is not a misconfig case');
   }
@@ -211,9 +220,25 @@ function formatReport(report) {
 function mainCli(argv = process.argv.slice(2)) {
   const json = argv.includes('--json');
   const writeIdx = argv.indexOf('--write');
-  const writePath = writeIdx >= 0 ? argv[writeIdx + 1] : null;
+  let writePath = null;
+  if (writeIdx >= 0) {
+    const candidate = argv[writeIdx + 1];
+    if (!candidate || candidate.startsWith('-')) {
+      process.stderr.write('Error: --write requires a valid file path\n');
+      return 1;
+    }
+    writePath = candidate;
+  }
   const projectIdx = argv.indexOf('--project');
-  const projectRoot = projectIdx >= 0 ? argv[projectIdx + 1] : null;
+  let projectRoot = null;
+  if (projectIdx >= 0) {
+    const candidate = argv[projectIdx + 1];
+    if (!candidate || candidate.startsWith('-')) {
+      process.stderr.write('Error: --project requires a valid directory path\n');
+      return 1;
+    }
+    projectRoot = candidate;
+  }
   const report = runHiddenEntryScorecard(projectRoot ? { projectRoot } : {});
 
   if (writePath) {

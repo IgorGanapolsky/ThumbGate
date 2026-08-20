@@ -92,3 +92,11 @@ test('live overlay maps assessHookDrift onto pretooluse-unwired', () => {
   assert.ok(report.openAttacker.includes('pretooluse-unwired'));
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test('mainCli rejects missing or flag-like values for --write and --project', () => {
+  assert.equal(hidden.mainCli(['--write', '--json']), 1);
+  assert.equal(hidden.mainCli(['--project', '--json']), 1);
+  assert.equal(hidden.mainCli(['--write']), 1);
+  assert.equal(hidden.mainCli(['--project']), 1);
+});
+
