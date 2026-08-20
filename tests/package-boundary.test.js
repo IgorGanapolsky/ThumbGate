@@ -462,9 +462,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 480 -> 482 (2026-08-19): iso42001-compliance-guard and agent-identity-boundary (+2)
     // 482 -> 483 (2026-08-19): miminions-adapter (+1)
     // file that packaged entrypoints require: scripts/override-audit.js (#3515),
-    // 475 -> 493 (2026-08-19): mcp-writeguard, latency-budget, git-fast-cache, git-wal-sync, ppl-alert-pipeline, miminions-adapter, iso42001-compliance-guard, agent-identity-boundary, agent-retrieval-cache, and blog posts (+18)
-    manifest.fileCount <= 493,
-    `npm package should stay <= 493 files, got ${manifest.fileCount}`
+    // 493 -> 494 (2026-08-20): scripts/rule-sprawl.js from main (+1); keep mcp-writeguard/latency/git-fast-cache lockstep
+    manifest.fileCount <= 494,
+    `npm package should stay <= 494 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

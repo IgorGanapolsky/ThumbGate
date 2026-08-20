@@ -174,6 +174,48 @@ async function buildQueryPlan(query, options = {}) {
   }
 }
 
+/**
+ * Measure retrieveRelevantLessons against a wall-clock budget.
+ * Concurrent agent load (New Stack retrieval-failure process, not a product):
+ * latency stacking is a budget, not "return everything". Over-budget is
+ * reported; the caller decides. Does not raise maxResults.
+ */
+function retrieveWithLatencyBudget(toolName, actionContext, options = {}) {
+  const started = Date.now();
+  const lessons = retrieveRelevantLessons(toolName, actionContext, options);
+  const latencyMs = Date.now() - started;
+  const budget = Number(options.latencyBudgetMs);
+  const hasBudget = Number.isFinite(budget) && budget > 0;
+  let oversizedRejected = false;
+  try {
+    const { getFeedbackPaths, readJSONL } = require('./feedback-loop');
+    const pathMod = require('path');
+    const paths = options.feedbackDir
+      ? { MEMORY_LOG_PATH: pathMod.join(options.feedbackDir, 'memory-log.jsonl') }
+      : getFeedbackPaths();
+    const raw = readJSONL(paths.MEMORY_LOG_PATH, { maxLines: MAX_RETRIEVAL_MEMORY_LINES });
+    const maxChars = Number.isFinite(options.maxMemoryChars)
+      ? Math.max(1, options.maxMemoryChars)
+      : MAX_RETRIEVAL_MEMORY_CHARS;
+    oversizedRejected = raw.some((m) => {
+      if (!m || typeof m !== 'object') return false;
+      const combined = `${String(m.title || '')}\n${String(m.content || '')}`.trim();
+      return combined.length > maxChars;
+    });
+  } catch {
+    oversizedRejected = false;
+  }
+  return {
+    lessons,
+    count: Array.isArray(lessons) ? lessons.length : 0,
+    maxResults: options.maxResults == null ? 5 : options.maxResults,
+    latencyMs,
+    latencyBudgetMs: hasBudget ? budget : null,
+    overBudget: hasBudget ? latencyMs > budget : false,
+    oversizedRejected,
+  };
+}
+
 function retrieveRelevantLessons(toolName, actionContext, options = {}) {
   const { maxResults = 5, feedbackDir } = options;
 
@@ -849,6 +891,7 @@ function calculateRetrievalEntropy(lessons) {
 
 module.exports = {
   retrieveRelevantLessons,
+  retrieveWithLatencyBudget,
   retrieveRelevantLessonsAsync,
   reciprocalRankFusion,
   scoreRelevance,
