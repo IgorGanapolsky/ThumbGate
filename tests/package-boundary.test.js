@@ -455,9 +455,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // public-core-boundary.
     // 470 -> 471 (2026-08-18): pipeline-compass runtime module (+1)
     // file that packaged entrypoints require: scripts/override-audit.js (#3515),
-    // 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts
-    manifest.fileCount <= 474,
-    `npm package should stay <= 474 files, got ${manifest.fileCount}`
+// src/security-questionnaire.js (#3519), src/pipeline-compass.js (#3521).
+// 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
+// 474 -> 475 (2026-08-19): public/blog/no-llm-in-the-gate.html (+1 measured npm pack)
+    manifest.fileCount <= 475,
+    `npm package should stay <= 475 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
