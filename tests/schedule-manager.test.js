@@ -6,7 +6,9 @@ const assert = require('node:assert/strict');
 const {
   buildAgenticDataPipelineSchedule,
   buildManagedScheduleCommand,
+  createSchedule,
   escapePlistString,
+  evaluateAlwaysOnSchedule,
   generatePlist,
   parseCronSpec,
 } = require('../scripts/schedule-manager');
@@ -71,4 +73,75 @@ test('buildAgenticDataPipelineSchedule emits a managed job file contract for aut
   assert.equal(schedule.jobSpec.stages[0].name, 'materialize_pipeline');
   assert.match(schedule.jobSpec.stages[0].command, /agentic-data-pipeline\.js/);
   assert.match(schedule.command, /async-job-runner\.js/);
+});
+
+test('evaluateAlwaysOnSchedule fails closed for laptop-bound 24/7 work and refuses live claim', () => {
+  const denied = evaluateAlwaysOnSchedule({
+    runtime: 'laptop',
+    schedule: 'hourly',
+    alwaysOn: true,
+    claimLive: true,
+  });
+  assert.equal(denied.allowed, false);
+  assert.equal(denied.failClosed, true);
+  assert.equal(denied.claimLive, false);
+  assert.equal(denied.reason, 'laptop_bound_schedule');
+
+  const launchd = evaluateAlwaysOnSchedule({
+    runtime: 'launchd',
+    schedule: 'every 6h',
+  });
+  assert.equal(launchd.allowed, false);
+  assert.equal(launchd.claimLive, false);
+  assert.equal(launchd.reason, 'laptop_bound_schedule');
+});
+
+test('evaluateAlwaysOnSchedule binds 24/7 work to an always-on VPS', () => {
+  const allowed = evaluateAlwaysOnSchedule({
+    runtime: 'vps',
+    schedule: 'hourly',
+    alwaysOn: true,
+  });
+  assert.equal(allowed.allowed, true);
+  assert.equal(allowed.claimLive, true);
+  assert.equal(allowed.boundTo, 'always-on-vps');
+});
+
+test('evaluateAlwaysOnSchedule requires a consumed human approval for send/spend and rejects auto-book', () => {
+  const spend = evaluateAlwaysOnSchedule({
+    runtime: 'vps',
+    schedule: 'daily 9:00',
+    action: 'send invoice to vendor',
+  });
+  assert.equal(spend.allowed, false);
+  assert.equal(spend.reason, 'human_gate_required');
+
+  const approved = evaluateAlwaysOnSchedule({
+    runtime: 'vps',
+    schedule: 'daily 9:00',
+    action: 'send invoice to vendor',
+    humanApproval: { consumed: true, actor: { kind: 'human', id: 'igor' } },
+  });
+  assert.equal(approved.allowed, true);
+
+  const autoBook = evaluateAlwaysOnSchedule({
+    runtime: 'vps',
+    autoBook: true,
+    action: 'auto-book clinic slot',
+  });
+  assert.equal(autoBook.allowed, false);
+  assert.equal(autoBook.reason, 'auto_book_forbidden');
+  assert.equal(autoBook.claimLive, false);
+});
+
+test('createSchedule fails closed for hourly laptop work', () => {
+  const result = createSchedule({
+    id: 'should-not-persist-hourly-laptop',
+    schedule: 'hourly',
+    command: 'console.log("no")',
+    runtime: 'laptop',
+  });
+  assert.equal(result.success, false);
+  assert.equal(result.gate.reason, 'laptop_bound_schedule');
+  assert.equal(result.gate.claimLive, false);
 });

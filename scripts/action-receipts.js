@@ -405,6 +405,30 @@ function buildReceiptContextEntries(query, limit = 5, options = {}) {
   return ranked;
 }
 
+/**
+ * Reconstruct model-visible facts from the session/receipt log.
+ * A missing receipt fails closed so the model cannot invent world-state.
+ */
+function reconstructModelVisibleFacts(actionId, options = {}) {
+  const receipt = getReceiptForAction(actionId, options);
+  if (!receipt) {
+    return { ok: false, failClosed: true, reason: 'missing_receipt' };
+  }
+  return {
+    ok: true,
+    facts: {
+      actionId: receipt.actionId,
+      toolName: receipt.toolName,
+      toolInput: receipt.toolInput,
+      decision: receipt.decision,
+      principal: receipt.principal,
+      requestDigest: receipt.requestDigest,
+      recordedAt: receipt.recordedAt,
+      outcome: receipt.outcome,
+    },
+  };
+}
+
 module.exports = {
   RECEIPTS_FILE,
   getReceiptsPath,
@@ -414,6 +438,7 @@ module.exports = {
   getRecentReceipts,
   buildOutcomePairedLesson,
   pairFeedbackWithReceipt,
+  reconstructModelVisibleFacts,
   buildReceiptContextEntries,
   computeCanonicalRequestDigest,
   resolveReceiptSigningKey,

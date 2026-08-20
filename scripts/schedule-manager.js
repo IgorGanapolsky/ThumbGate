@@ -61,6 +61,101 @@ function parseCronSpec(spec) {
   return null;
 }
 
+const LAPTOP_BOUND_RUNTIMES = new Set([
+  'laptop', 'macos', 'darwin', 'launchd', 'launchagent',
+  'lid-close', 'lid_close', 'continuity', 'mac-pair', 'phone-leash', 'local',
+]);
+const ALWAYS_ON_RUNTIMES = new Set([
+  'vps', 'hosted', 'always-on', 'always_on', 'railway', 'fenced-vps',
+]);
+
+function inferScheduleRuntime(params = {}) {
+  const explicit = String(params.runtime || '').trim().toLowerCase();
+  if (explicit) return explicit;
+  if (process.env.THUMBGATE_ALWAYS_ON_VPS === '1') return 'vps';
+  if (process.env.THUMBGATE_HOSTED === '1') return 'hosted';
+  if (process.platform === 'darwin') return 'launchd';
+  return 'laptop';
+}
+
+function isTwentyFourSevenSchedule(params = {}) {
+  if (params.alwaysOn === true || params.twentyFourSeven === true || params.claimLive === true) {
+    return true;
+  }
+  const spec = String(params.schedule || '').toLowerCase().trim();
+  return spec === 'hourly' || /^every\s+\d+\s*h/.test(spec);
+}
+
+function isSendSpendAction(params = {}) {
+  const text = [params.action, params.command, params.toolName, params.purpose]
+    .map((value) => String(value || ''))
+    .join(' ');
+  if (params.economicAction === true || params.autoBook === true) return true;
+  return /\b(?:send|spend|pay|purchase|transfer|wire|invoice|payout|book|auto-?book)\b/i.test(text);
+}
+
+function isConsumedHumanApproval(approval) {
+  return Boolean(
+    approval
+    && approval.consumed === true
+    && approval.actor
+    && approval.actor.kind === 'human'
+  );
+}
+
+function evaluateAlwaysOnSchedule(input = {}) {
+  const runtime = inferScheduleRuntime(input);
+  const alwaysOn = ALWAYS_ON_RUNTIMES.has(runtime);
+  const actionText = [input.action, input.command, input.toolName]
+    .map((value) => String(value || ''))
+    .join(' ');
+
+  if (input.autoBook === true || /\bauto-?book\b/i.test(actionText)) {
+    return {
+      allowed: false,
+      failClosed: true,
+      claimLive: false,
+      reason: 'auto_book_forbidden',
+      message: 'Auto-book is not stolen. Send/spend stays behind a human gate.',
+      runtime,
+    };
+  }
+
+  if (isTwentyFourSevenSchedule(input) && (LAPTOP_BOUND_RUNTIMES.has(runtime) || !alwaysOn)) {
+    return {
+      allowed: false,
+      failClosed: true,
+      claimLive: false,
+      reason: 'laptop_bound_schedule',
+      message: 'Scheduled/24-7 work must run on an always-on VPS. Laptop, launchd, and lid-close paths fail closed and must not claim live.',
+      runtime,
+    };
+  }
+
+  if (isSendSpendAction(input) && !isConsumedHumanApproval(input.humanApproval)) {
+    return {
+      allowed: false,
+      failClosed: true,
+      claimLive: alwaysOn,
+      reason: 'human_gate_required',
+      message: 'Send/spend requires a consumed human approval.',
+      runtime,
+    };
+  }
+
+  return {
+    allowed: true,
+    failClosed: true,
+    claimLive: alwaysOn,
+    runtime,
+    boundTo: alwaysOn ? 'always-on-vps' : null,
+  };
+}
+
+function shouldEnforceAlwaysOnGate(params = {}) {
+  return isTwentyFourSevenSchedule(params) || isSendSpendAction(params) || params.autoBook === true;
+}
+
 function generatePlist(schedule) {
   const label = escapePlistString(`${PLIST_PREFIX}.${schedule.id}`);
   const interval = schedule.calendarInterval;
@@ -151,6 +246,11 @@ function buildAgenticDataPipelineSchedule(params = {}) {
 }
 
 function createSchedule(params) {
+  const runtimeGate = evaluateAlwaysOnSchedule(params);
+  if (shouldEnforceAlwaysOnGate(params) && !runtimeGate.allowed) {
+    return { success: false, error: runtimeGate.message || runtimeGate.reason, gate: runtimeGate };
+  }
+
   ensureDir(SCHEDULES_DIR);
 
   const id = params.id || params.name || `sched_${Date.now()}`;
@@ -180,6 +280,8 @@ function createSchedule(params) {
     workingDirectory: params.workingDirectory || (jobFile ? path.dirname(jobFile) : process.cwd()),
     calendarInterval,
     createdAt: new Date().toISOString(),
+    runtimeGate,
+    claimLive: runtimeGate.claimLive === true,
   };
 
   // Save schedule metadata
@@ -246,4 +348,6 @@ module.exports = {
   parseCronSpec,
   buildManagedScheduleCommand,
   buildAgenticDataPipelineSchedule,
+  evaluateAlwaysOnSchedule,
+  inferScheduleRuntime,
 };
