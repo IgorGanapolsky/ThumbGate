@@ -95,3 +95,24 @@ test('Latency Budget CLI: parseArgs parses options correctly', () => {
   assert.equal(parsed.json, true);
   assert.deepEqual(parsed.sample, [{ phase: 'reasoning_inference', durationMs: 50 }]);
 });
+
+test('Latency Budget CLI: validateSampleHops rejects non-array and nonnumeric duration', () => {
+  const { validateSampleHops } = require('../scripts/latency-budget.js');
+
+  assert.throws(
+    () => validateSampleHops({ phase: 'reasoning_inference', durationMs: 7 }),
+    /must be a JSON array/,
+  );
+  assert.throws(
+    () => validateSampleHops([{ phase: 'reasoning_inference', durationMs: '7' }]),
+    /durationMs must be a finite number/,
+  );
+  assert.throws(
+    () => validateSampleHops([{ phase: 'not_a_phase', durationMs: 7 }]),
+    /phase must be one of/,
+  );
+
+  const ok = validateSampleHops([{ phase: 'reasoning_inference', durationMs: 7, label: 'ok' }]);
+  assert.equal(ok.length, 1);
+  assert.equal(ok[0].durationMs, 7);
+});

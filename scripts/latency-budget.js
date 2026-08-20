@@ -40,6 +40,14 @@ function parseArgs(args) {
   return options;
 }
 
+const VALID_SAMPLE_PHASES = new Set([
+  'reasoning_inference',
+  'governance_gate',
+  'tool_dispatch_transport',
+  'cpu_data_processing',
+  'memory_recall',
+]);
+
 function runBenchmark(tracker) {
   // Simulate standard 500ms enterprise agent cycle
   tracker.recordHop('reasoning_inference', 180, 'LLM initial step');
@@ -47,6 +55,39 @@ function runBenchmark(tracker) {
   tracker.recordHop('tool_dispatch_transport', 65, 'MCP tool dispatch');
   tracker.recordHop('cpu_data_processing', 40, 'JSON filtering & transformation');
   tracker.recordHop('memory_recall', 15, 'LanceDB vector similarity');
+}
+
+/**
+ * Validate --sample payload. Rejects non-arrays and malformed hops.
+ * @param {*} sample
+ * @returns {Array<{phase: string, durationMs: number, label?: string, metadata?: Object}>}
+ */
+function validateSampleHops(sample) {
+  if (!Array.isArray(sample)) {
+    throw new Error('--sample must be a JSON array of hop objects [{ phase, durationMs, label }]');
+  }
+  if (sample.length === 0) {
+    throw new Error('--sample array must contain at least one hop object');
+  }
+
+  return sample.map((hop, index) => {
+    if (!hop || typeof hop !== 'object' || Array.isArray(hop)) {
+      throw new Error(`--sample[${index}] must be an object with phase and durationMs`);
+    }
+    const phase = hop.phase;
+    if (typeof phase !== 'string' || !phase.trim()) {
+      throw new Error(`--sample[${index}].phase must be a non-empty string`);
+    }
+    if (!VALID_SAMPLE_PHASES.has(phase)) {
+      throw new Error(
+        `--sample[${index}].phase must be one of: ${[...VALID_SAMPLE_PHASES].join(', ')}`,
+      );
+    }
+    if (typeof hop.durationMs !== 'number' || !Number.isFinite(hop.durationMs)) {
+      throw new Error(`--sample[${index}].durationMs must be a finite number`);
+    }
+    return hop;
+  });
 }
 
 function main() {
@@ -73,8 +114,15 @@ Options:
 
   const tracker = new LatencyTracker(opts.profile);
 
-  if (opts.sample && Array.isArray(opts.sample)) {
-    for (const h of opts.sample) {
+  if (opts.sample !== null) {
+    let hops;
+    try {
+      hops = validateSampleHops(opts.sample);
+    } catch (err) {
+      console.error(err.message);
+      process.exit(1);
+    }
+    for (const h of hops) {
       tracker.recordHop(h.phase, h.durationMs, h.label || h.phase, h.metadata || {});
     }
   } else {
@@ -113,4 +161,4 @@ if (isMain) {
   main();
 }
 
-module.exports = { parseArgs, main };
+module.exports = { parseArgs, main, validateSampleHops, VALID_SAMPLE_PHASES };

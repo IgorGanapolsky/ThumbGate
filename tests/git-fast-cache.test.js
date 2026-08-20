@@ -6,15 +6,29 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { GitFastCache, defaultCache } = require('../src/git-fast-cache.js');
+const {
+  GitFastCache,
+  defaultCache,
+  resolveGitBinary,
+  FIXED_GIT_BIN_CANDIDATES,
+} = require('../src/git-fast-cache.js');
+
+const GIT_BIN = resolveGitBinary() || 'git';
 
 function createTempGitRepo(prefix) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
-  execFileSync('git', ['init'], { cwd: dir, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.name', 'Test Agent'], { cwd: dir, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.email', 'test@thumbgate.test'], { cwd: dir, stdio: 'ignore' });
+  execFileSync(GIT_BIN, ['init'], { cwd: dir, stdio: 'ignore' });
+  execFileSync(GIT_BIN, ['config', 'user.name', 'Test Agent'], { cwd: dir, stdio: 'ignore' });
+  execFileSync(GIT_BIN, ['config', 'user.email', 'test@thumbgate.test'], { cwd: dir, stdio: 'ignore' });
   return dir;
 }
+
+test('GitFastCache: resolveGitBinary returns an absolute executable path', () => {
+  const bin = resolveGitBinary();
+  assert.ok(bin, 'expected a resolved git binary on this host');
+  assert.ok(bin.includes(path.sep), `expected absolute path, got ${bin}`);
+  assert.ok(FIXED_GIT_BIN_CANDIDATES.some((c) => c === bin) || bin.startsWith('/'));
+});
 
 test('GitFastCache: resolves repository root accurately', () => {
   const repo = createTempGitRepo('fast-cache-repo-');
@@ -32,8 +46,8 @@ test('GitFastCache: resolves repository root accurately', () => {
 test('GitFastCache: retrieves repo state with sub-millisecond cached lookups', () => {
   const repo = createTempGitRepo('fast-cache-state-');
   fs.writeFileSync(path.join(repo, 'file.txt'), 'hello');
-  execFileSync('git', ['add', 'file.txt'], { cwd: repo, stdio: 'ignore' });
-  execFileSync('git', ['commit', '-m', 'initial'], { cwd: repo, stdio: 'ignore' });
+  execFileSync(GIT_BIN, ['add', 'file.txt'], { cwd: repo, stdio: 'ignore' });
+  execFileSync(GIT_BIN, ['commit', '-m', 'initial'], { cwd: repo, stdio: 'ignore' });
 
   const cache = new GitFastCache();
 
@@ -54,14 +68,14 @@ test('GitFastCache: retrieves repo state with sub-millisecond cached lookups', (
 test('GitFastCache: detects dirty working tree changes and staged files', () => {
   const repo = createTempGitRepo('fast-cache-dirty-');
   fs.writeFileSync(path.join(repo, 'initial.txt'), 'init');
-  execFileSync('git', ['add', 'initial.txt'], { cwd: repo, stdio: 'ignore' });
-  execFileSync('git', ['commit', '-m', 'init'], { cwd: repo, stdio: 'ignore' });
+  execFileSync(GIT_BIN, ['add', 'initial.txt'], { cwd: repo, stdio: 'ignore' });
+  execFileSync(GIT_BIN, ['commit', '-m', 'init'], { cwd: repo, stdio: 'ignore' });
 
   const cache = new GitFastCache();
 
   // Create new staged file
   fs.writeFileSync(path.join(repo, 'staged.txt'), 'staged content');
-  execFileSync('git', ['add', 'staged.txt'], { cwd: repo, stdio: 'ignore' });
+  execFileSync(GIT_BIN, ['add', 'staged.txt'], { cwd: repo, stdio: 'ignore' });
 
   const state = cache.getRepoState(repo);
   assert.equal(state.isDirty, true);

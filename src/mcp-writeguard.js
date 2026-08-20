@@ -101,7 +101,11 @@ const SENSITIVE_KEY_PATTERNS = [
   /credentials/i,
   /stripe[_-]?key/i,
   /github[_-]?pat/i,
+  /^(authorization|proxy[_-]?authorization|cookie|set[_-]?cookie)$/i,
+  /x[_-]?relay/i,
 ];
+
+const CREDENTIAL_HEADER_KEYS = /^(authorization|proxy-authorization|cookie|set-cookie)$/i;
 
 /**
  * Classifies an MCP tool into a risk tier.
@@ -134,6 +138,33 @@ function classifyMcpTool(toolName, customPolicies = {}) {
 }
 
 /**
+ * Scrub credential-bearing string values (headers and inline tokens).
+ * @param {string} value
+ * @returns {string}
+ */
+function scrubSensitiveString(value) {
+  let out = value;
+  if (/-----BEGIN\s+(RSA|OPENSSH|PRIVATE)\s+KEY-----/i.test(out)) {
+    return '[REDACTED_PRIVATE_KEY]';
+  }
+  if (/\bbearer\s+[a-zA-Z0-9_\-.]{20,}/i.test(out)) {
+    out = out.replace(/\bbearer\s+[a-zA-Z0-9_\-.]{20,}/gi, 'Bearer [REDACTED]');
+  }
+  if (/\bbasic\s+[a-zA-Z0-9+/=_-]{8,}/i.test(out)) {
+    out = out.replace(/\bbasic\s+[a-zA-Z0-9+/=_-]{8,}/gi, 'Basic [REDACTED]');
+  }
+  // Cookie / Set-Cookie style values (name=value pairs with auth-ish names)
+  if (
+    /(?:^|;\s*)(?:session|sid|token|auth|jwt|refresh)[^=]*=[^;]+/i.test(out)
+    || (/^[^=;\s]+=[^;]+(?:;\s*[^=;\s]+=[^;]+)*$/.test(out.trim())
+      && /(session|token|sid|auth|jwt|secret)/i.test(out))
+  ) {
+    return '[REDACTED_COOKIE]';
+  }
+  return out;
+}
+
+/**
  * Recursively scrubs secret keys and values from parameter objects.
  * @param {*} value
  * @returns {*}
@@ -141,14 +172,7 @@ function classifyMcpTool(toolName, customPolicies = {}) {
 function scrubSensitiveData(value) {
   if (value === null || value === undefined) return value;
   if (typeof value === 'string') {
-    // Check for inline bearer tokens or private key markers
-    if (/bearer\s+[a-zA-Z0-9_\-\.]{20,}/i.test(value)) {
-      return value.replace(/bearer\s+[a-zA-Z0-9_\-\.]{20,}/gi, 'Bearer [REDACTED]');
-    }
-    if (/-----BEGIN\s+(RSA|OPENSSH|PRIVATE)\s+KEY-----/i.test(value)) {
-      return '[REDACTED_PRIVATE_KEY]';
-    }
-    return value;
+    return scrubSensitiveString(value);
   }
 
   if (Array.isArray(value)) {
@@ -158,8 +182,9 @@ function scrubSensitiveData(value) {
   if (typeof value === 'object') {
     const scrubbed = {};
     for (const [k, v] of Object.entries(value)) {
-      const isSensitive = SENSITIVE_KEY_PATTERNS.some((pattern) => pattern.test(k));
-      if (isSensitive) {
+      const isSensitiveKey = SENSITIVE_KEY_PATTERNS.some((pattern) => pattern.test(k))
+        || CREDENTIAL_HEADER_KEYS.test(String(k).trim());
+      if (isSensitiveKey) {
         scrubbed[k] = '[REDACTED]';
       } else {
         scrubbed[k] = scrubSensitiveData(v);

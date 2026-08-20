@@ -12,10 +12,61 @@ const { execFileSync } = require('node:child_process');
  * during PreToolUse evaluation with mtime-invalidated in-memory cache lookups (<0.2ms).
  */
 
+const FIXED_GIT_BIN_CANDIDATES = [
+  '/usr/bin/git',
+  '/opt/homebrew/bin/git',
+  '/usr/local/bin/git',
+];
+
+function canExecuteAbsoluteBinary(candidate) {
+  const normalized = String(candidate || '').trim();
+  if (!normalized || !normalized.includes(path.sep)) return false;
+  try {
+    fs.accessSync(normalized, fs.constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolve an absolute git binary path (no PATH-only spawn).
+ * Mirrors scripts/operational-integrity.js resolveGitBinary fixed-candidate pattern.
+ * @param {Object} [options]
+ * @returns {string|null}
+ */
+function resolveGitBinary(options = {}) {
+  const env = options.env || process.env;
+  const candidates = Array.isArray(options.candidates) && options.candidates.length > 0
+    ? options.candidates
+    : [env.THUMBGATE_GIT_BIN, ...FIXED_GIT_BIN_CANDIDATES];
+
+  for (const candidate of candidates) {
+    if (!canExecuteAbsoluteBinary(candidate)) continue;
+    return String(candidate).trim();
+  }
+
+  return null;
+}
+
+const GIT_BIN = resolveGitBinary();
+
 class GitFastCache {
   constructor(options = {}) {
     this.ttlMs = options.ttlMs || 3000;
     this.cache = new Map(); // repoRoot -> CachedRepoState
+    this.gitBin = options.gitBin || GIT_BIN;
+  }
+
+  execGit(args, cwd) {
+    if (!this.gitBin) {
+      throw new Error('Git executable is unavailable in this runtime');
+    }
+    return execFileSync(this.gitBin, args, {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
   }
 
   findRepoRoot(startDir = process.cwd()) {
@@ -117,7 +168,7 @@ class GitFastCache {
 
     if (!headSha) {
       try {
-        headSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+        headSha = this.execGit(['rev-parse', 'HEAD'], repoRoot).trim();
       } catch {
         headSha = null;
       }
@@ -126,9 +177,9 @@ class GitFastCache {
     let stagedFiles = [];
     let isDirty = false;
     try {
-      const stagedOut = execFileSync('git', ['diff', '--cached', '--name-only'], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const stagedOut = this.execGit(['diff', '--cached', '--name-only'], repoRoot);
       stagedFiles = stagedOut.split('\n').map((s) => s.trim()).filter(Boolean);
-      const statusOut = execFileSync('git', ['status', '--porcelain'], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      const statusOut = this.execGit(['status', '--porcelain'], repoRoot);
       isDirty = statusOut.trim().length > 0;
     } catch {
       // fallback
@@ -164,4 +215,6 @@ const defaultCache = new GitFastCache();
 module.exports = {
   GitFastCache,
   defaultCache,
+  resolveGitBinary,
+  FIXED_GIT_BIN_CANDIDATES,
 };

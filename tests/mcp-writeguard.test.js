@@ -60,6 +60,39 @@ test('MCP WriteGuard: scrubs sensitive keys and inline auth tokens from paramete
   assert.match(scrubbed.nested.authorizationHeader, /Bearer \[REDACTED\]/);
 });
 
+test('MCP WriteGuard: redacts credential-bearing headers and Basic/cookie values', () => {
+  const dirtyParams = {
+    headers: {
+      Authorization: 'Basic dXNlcjpwYXNz',
+      'Proxy-Authorization': 'Basic YWRtaW46c2VjcmV0',
+      Cookie: 'session=abc123; token=xyz',
+      'Set-Cookie': 'sid=deadbeef; Path=/',
+      'X-Relay': 'relay-secret-value-should-go',
+      'Content-Type': 'application/json',
+    },
+    note: 'Authorization: Basic dXNlcjpwYXNz leaked inline',
+    path: 'README.md',
+  };
+
+  const scrubbed = scrubSensitiveData(dirtyParams);
+  assert.equal(scrubbed.headers.Authorization, '[REDACTED]');
+  assert.equal(scrubbed.headers['Proxy-Authorization'], '[REDACTED]');
+  assert.equal(scrubbed.headers.Cookie, '[REDACTED]');
+  assert.equal(scrubbed.headers['Set-Cookie'], '[REDACTED]');
+  assert.equal(scrubbed.headers['X-Relay'], '[REDACTED]');
+  assert.equal(scrubbed.headers['Content-Type'], 'application/json');
+  assert.match(scrubbed.note, /Basic \[REDACTED\]/);
+  assert.equal(scrubbed.path, 'README.md');
+
+  const receipt = evaluateMcpCall({
+    tool: 'view_file',
+    parameters: dirtyParams,
+  });
+  assert.equal(receipt.parameters.headers.Authorization, '[REDACTED]');
+  assert.equal(receipt.parameters.headers.Cookie, '[REDACTED]');
+  assert.equal(receipt.parameters.headers['X-Relay'], '[REDACTED]');
+});
+
 test('MCP WriteGuard: detects dangerous destructive command patterns', () => {
   const safe = scanForDestructivePatterns('run_command', { CommandLine: 'npm test' });
   assert.equal(safe.length, 0);
@@ -142,4 +175,33 @@ test('MCP WriteGuard CLI: parseArgs parses options correctly', () => {
   assert.deepEqual(parsed.params, { path: '/tmp/test' });
   assert.equal(parsed.json, true);
   assert.equal(parsed.auditLog, '/tmp/audit.log');
+});
+
+test('MCP WriteGuard: callTool enforces blocked decisions before tool execution', async () => {
+  process.env.THUMBGATE_DISABLE_MCP_FIREWALL = '1';
+  process.env.THUMBGATE_DISABLE_MCP_SESSION_HANDLES = '1';
+  delete process.env.THUMBGATE_DISABLE_MCP_WRITEGUARD;
+
+  const { callTool } = require('../adapters/mcp/server-stdio');
+  const destructivePayload = {
+    feedback: 'down',
+    context: 'operator asked to run rm -rf / on production host',
+    whatWentWrong: 'destructive shell pattern present',
+    whatToChange: 'block it',
+  };
+
+  const guard = evaluateMcpCall({
+    tool: 'capture_feedback',
+    parameters: destructivePayload,
+  });
+  assert.equal(guard.decision, 'blocked');
+
+  await assert.rejects(
+    () => callTool('capture_feedback', destructivePayload),
+    (err) => {
+      assert.match(String(err && err.message), /WriteGuard/);
+      assert.equal(err.code, 'WRITEGUARD_BLOCKED');
+      return true;
+    },
+  );
 });
