@@ -86,6 +86,9 @@ function runRuleSprawl(options = {}) {
       `knapsack exceeds budget time=${selected.timeMs} tokens=${selected.tokens}`
     );
   }
+  if (selected.count === 0 && rules.length > 0) {
+    failures.push('knapsack selected zero rules — budget is infeasible for corpus');
+  }
   if (selected.count >= loadAll.count) {
     failures.push('knapsack did not drop any rules');
   }

@@ -514,6 +514,23 @@ test('retrieveWithLatencyBudget caps results and reports wall time under load', 
     assert.equal(sample.overBudget, false, `latency ${sample.latencyMs}ms`);
     assert.ok(sample.latencyMs < 2000);
     assert.ok(!sample.lessons.some((l) => l.id === 'blob'));
+    assert.equal(sample.oversizedRejected, true);
   }
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('retrieveWithLatencyBudget reports oversizedRejected false when corpus has no oversized memories', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-clean-'));
+  const now = new Date().toISOString();
+  writeJsonl(path.join(tmpDir, 'memory-log.jsonl'), [
+    { id: 'm1', title: 'clean title', content: 'clean content', tags: ['negative'], timestamp: now },
+    { id: 'm2', title: 'another title', content: 'more content', tags: ['positive'], timestamp: now },
+  ]);
+  const { retrieveWithLatencyBudget } = require('../scripts/lesson-retrieval');
+  const res = retrieveWithLatencyBudget('Bash', 'test query', {
+    feedbackDir: tmpDir,
+    maxMemoryChars: 200,
+  });
+  assert.equal(res.oversizedRejected, false);
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
