@@ -36,12 +36,15 @@ function acquireLock(lockPath, options) {
     nonce: crypto.randomUUID(),
     acquiredAt: now.toISOString(),
   };
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
       fs.mkdirSync(lockPath);
       writeOwner(lockPath, owner);
       return owner;
     } catch (error) {
+      // ENOENT: another recoverStaleLock removed the lock dir between mkdir and
+      // writeOwner — treat as a lost race and retry acquisition.
+      if (error.code === 'ENOENT') continue;
       if (error.code !== 'EEXIST') throw error;
       if (!recoverStaleLock(lockPath, now, staleMs)) {
         throw lockError(options, 'ledger is busy; deny and retry only after the active writer finishes');
