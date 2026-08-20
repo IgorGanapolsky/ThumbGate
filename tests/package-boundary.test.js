@@ -458,8 +458,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // src/security-questionnaire.js (#3519), src/pipeline-compass.js (#3521).
     // 471 -> 472 (2026-08-19): public/blog/a-receipt-is-not-world-state.html
     // Cursor-format first-party research post. Static HTML only.
-    manifest.fileCount <= 472,
-    `npm package should stay <= 472 files, got ${manifest.fileCount}`
+    // 472 -> 473 (2026-08-20): scripts/git-at-scale.js packaged for agent-readiness/self-heal
+    manifest.fileCount <= 473,
+    `npm package should stay <= 473 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

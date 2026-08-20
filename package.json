@@ -409,7 +409,8 @@
     "skills/thumbgate/SKILL.md",
     "smithery.yaml",
     "src/",
-    "!config/progressive/**"
+    "!config/progressive/**",
+    "scripts/git-at-scale.js"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
