@@ -146,6 +146,29 @@ test('MCP WriteGuard: evaluates calls and emits structured attribution receipts'
   assert.equal(escalated.riskTier, 'admin');
 });
 
+test('MCP WriteGuard: read-tier tools may quote destructive text without blocking', () => {
+  const retrieve = evaluateMcpCall({
+    server: 'thumbgate',
+    tool: 'retrieve_lessons',
+    parameters: {
+      toolName: 'Bash',
+      actionContext: 'git push --force to main',
+      maxResults: 2,
+    },
+  });
+  assert.equal(retrieve.riskTier, 'read');
+  assert.equal(retrieve.decision, 'allowed');
+  assert.equal(retrieve.reasons.length, 0);
+
+  // Same payload on an executable tool must still block.
+  const bash = evaluateMcpCall({
+    server: 'terminal',
+    tool: 'bash',
+    parameters: { command: 'git push --force to main' },
+  });
+  assert.equal(bash.decision, 'blocked');
+});
+
 test('MCP WriteGuard: exports valid Cloudflare WriteGuard policy JSON', () => {
   const tools = ['view_file', 'write_to_file', 'run_command', 'set_branch_governance'];
   const policy = exportCloudflareWriteGuardPolicy(tools);

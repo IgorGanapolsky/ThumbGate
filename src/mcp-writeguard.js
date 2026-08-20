@@ -235,7 +235,12 @@ function evaluateMcpCall(callRequest, options = {}) {
   const customPolicies = options.customPolicies || {};
 
   const riskTier = classifyMcpTool(tool, customPolicies);
-  const violations = scanForDestructivePatterns(tool, parameters);
+  // Destructive command patterns apply to executable/write tiers only.
+  // Read tools (retrieve_lessons, recall, search) legitimately quote
+  // force-push / rm -rf text as lesson queries — scanning those is a false deny.
+  const violations = riskTier === RISK_TIERS.READ
+    ? []
+    : scanForDestructivePatterns(tool, parameters);
 
   let decision = 'allowed';
   const reasons = [...violations];
