@@ -79,11 +79,10 @@ function inferScheduleRuntime(params = {}) {
 }
 
 function isTwentyFourSevenSchedule(params = {}) {
-  if (params.alwaysOn === true || params.twentyFourSeven === true || params.claimLive === true) {
-    return true;
-  }
-  const spec = String(params.schedule || '').toLowerCase().trim();
-  return spec === 'hourly' || /^every\s+\d+\s*h/.test(spec);
+  // Interval alone is not a live claim. Existing hourly LaunchAgent/cron jobs
+  // (slow-loop, revenue-truth) stay installable; only explicit always-on/live
+  // claims fail closed when the path is laptop-bound.
+  return params.alwaysOn === true || params.twentyFourSeven === true || params.claimLive === true;
 }
 
 function isSendSpendAction(params = {}) {

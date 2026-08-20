@@ -122,10 +122,18 @@ test('evaluateAlwaysOnSchedule fails closed for laptop-bound 24/7 work and refus
   const launchd = evaluateAlwaysOnSchedule({
     runtime: 'launchd',
     schedule: 'every 6h',
+    claimLive: true,
   });
   assert.equal(launchd.allowed, false);
   assert.equal(launchd.claimLive, false);
   assert.equal(launchd.reason, 'laptop_bound_schedule');
+
+  const hourlyNoClaim = evaluateAlwaysOnSchedule({
+    runtime: 'laptop',
+    schedule: 'hourly',
+  });
+  assert.equal(hourlyNoClaim.allowed, true);
+  assert.equal(hourlyNoClaim.claimLive, false);
 });
 
 test('evaluateAlwaysOnSchedule binds 24/7 work to an always-on VPS', () => {
@@ -196,12 +204,13 @@ test('resolveScheduleClaimLive stays false until a scheduler is installed', () =
   assert.equal(darwin.schedulerInstallation, 'launchd');
 });
 
-test('createSchedule fails closed for hourly laptop work', () => {
+test('createSchedule fails closed when laptop work claims live', () => {
   const result = createSchedule({
     id: 'should-not-persist-hourly-laptop',
     schedule: 'hourly',
     command: 'console.log("no")',
     runtime: 'laptop',
+    claimLive: true,
   });
   assert.equal(result.success, false);
   assert.equal(result.gate.reason, 'laptop_bound_schedule');
