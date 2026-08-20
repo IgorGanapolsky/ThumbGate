@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A $10 VPS is not a Computer | ThumbGate</title>
+  <meta name="description" content="Cursor publishes engineering notes with a date, a topic, a named author, and a read time. We stole that format. The substance: thumbgate.ai is a pre-action gate; thumbgate.app is $10 hosted Hermes chat. Neither is Perplexity Computer." />
+  <meta property="og:title" content="A $10 VPS is not a Computer" />
+  <meta property="og:description" content="File names are not Hands. Hosted Hermes POSTs chat completions. thumbgate.ai evaluates the tool call before it runs." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/blog/a-10-dollar-vps-is-not-a-computer" />
+  <link rel="canonical" href="https://thumbgate.ai/blog/a-10-dollar-vps-is-not-a-computer" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <meta property="og:image" content="https://thumbgate.ai/og.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "A $10 VPS is not a Computer",
+    "datePublished": "2026-08-19",
+    "author": { "@type": "Person", "name": "Igor Ganapolsky" },
+    "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+    "mainEntityOfPage": "https://thumbgate.ai/blog/a-10-dollar-vps-is-not-a-computer",
+    "description": "thumbgate.ai is a pre-action gate. thumbgate.app is $10 hosted Hermes chat on a fenced VPS. Mapping OpenClaw or Cua onto that stack fails a falsifier."
+  }
+  </script>
+  <style>
+    :root { color-scheme: dark; --bg:#080b10; --panel:#111722; --text:#f5f7fb; --muted:#9ca8ba; --line:#273246; --cyan:#38d7ff; --green:#56e39f; --max:760px; }
+    * { box-sizing: border-box; }
+    body { margin:0; color:var(--text); background:var(--bg); font:16px/1.7 Inter,ui-sans-serif,system-ui,-apple-system,sans-serif; }
+    a { color:var(--cyan); }
+    .shell { width:min(calc(100% - 40px),var(--max)); margin:0 auto; }
+    header { padding:22px 0; border-bottom:1px solid var(--line); }
+    header a { color:var(--muted); text-decoration:none; font-weight:700; }
+    header a:hover { color:var(--text); }
+    .brand { color:var(--text); font-weight:850; text-decoration:none; }
+    .crumb { color:var(--muted); font-size:13px; }
+    .crumb a { color:var(--muted); }
+    article { padding:48px 0 80px; }
+    .meta { color:var(--muted); font:700 12px/1.2 ui-monospace,Menlo,monospace; letter-spacing:.08em; text-transform:uppercase; }
+    .byline { margin:0 0 28px; color:var(--muted); font-size:14px; }
+    h1 { margin:14px 0 18px; font-size:clamp(32px,5vw,46px); line-height:1.08; letter-spacing:-.04em; }
+    h2 { margin:36px 0 12px; font-size:24px; letter-spacing:-.03em; }
+    p, li { color:var(--muted); }
+    p { margin:0 0 16px; }
+    ul { margin:0 0 18px; padding-left:1.2em; }
+    li { margin-bottom:8px; }
+    strong { color:var(--text); }
+    .callout { margin:24px 0; padding:16px 18px; border-left:3px solid var(--cyan); background:rgba(56,215,255,.06); color:var(--muted); }
+    .cta { display:inline-flex; margin-top:8px; margin-right:10px; padding:12px 18px; border-radius:10px; background:var(--green); color:#06130d; font-weight:850; text-decoration:none; }
+    code { color:var(--cyan); font-family:ui-monospace,Menlo,monospace; font-size:0.95em; }
+    pre { overflow:auto; padding:14px 16px; border:1px solid var(--line); border-radius:10px; background:#0c1118; color:var(--text); font:13px/1.5 ui-monospace,Menlo,monospace; }
+    .related { margin-top:48px; padding-top:28px; border-top:1px solid var(--line); }
+    .related h2 { margin-top:0; font-size:18px; }
+    .related a { display:block; margin:8px 0; }
+    footer { padding:28px 0 48px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell" style="display:flex;justify-content:space-between;gap:16px;align-items:center;">
+      <a class="brand" href="/blog">ThumbGate / Blog</a>
+      <span class="crumb"><a href="/blog">Blog</a> / <a href="/blog">research</a></span>
+    </div>
+  </header>
+  <article class="shell">
+    <div class="meta">2026-08-19 · research</div>
+    <h1>A $10 VPS is not a Computer</h1>
+    <p class="byline">Igor Ganapolsky · 7 min read</p>
+    <p>
+      <a href="https://cursor.com/blog">Cursor’s blog</a> is nice because it is first-party, dated, tagged, and signed. A research post names the author and how long it takes to read. Related posts sit at the bottom. There is no clapbait. We are not affiliated with Cursor. We stole that <strong>format</strong> for <a href="https://thumbgate.ai/blog">thumbgate.ai/blog</a>.
+    </p>
+    <p>
+      The substance is a falsifier we almost failed. Someone pasted an OpenClaw / E2B / Cua blueprint and asked us to assemble Manager / Factory / Hands on hosted Hermes. The mapping looked tidy: an economic router, a cloud runner, a “browser sidecar.” File names are not a product.
+    </p>
+
+    <h2>What the runner actually does</h2>
+    <p>
+      The hosted worker is <code>hermes-cloud-runner</code>. Its <code>execute()</code> function POSTs one prompt to <code>/chat/completions</code> and returns the assistant text. A grep of that service for <code>playwright</code>, <code>cua</code>, <code>e2b</code>, or <code>openclaw</code> is empty. That is Factory as chat, not a GUI sandbox.
+    </p>
+    <pre>async function execute(config, task) {
+  const response = await fetch(`${config.openaiBaseUrl}/chat/completions`, {
+    method: 'POST',
+    body: JSON.stringify({
+      model: config.model,
+      messages: [...context, { role: 'user', content: task.prompt }],
+    }),
+  });
+  return payload.choices?.[0]?.message?.content;
+}</pre>
+    <p>
+      The control plane can <em>require</em> a hosted browser sidecar when a prompt matches <code>HOSTED_BROWSER_CUE_RES</code> (playwright, computer-use, screenshot-and-click). <code>browserHealthUrl()</code> is a health probe. Requiring a name in policy is not driving Gmail. Hands, if we are honest, is <code>POLICY_CUE_NOT_DRIVER</code>.
+    </p>
+    <div class="callout">
+      Presence of a similarly named file is not causation. If you cannot name the falsifier, you have a story.
+    </div>
+
+    <h2>Two URLs, two jobs</h2>
+    <p>
+      <strong>thumbgate.ai</strong> is the pre-action gate: evaluate the proposed tool call, block unsafe ones, leave a receipt. Local <code>npx thumbgate init</code>. Public MIT. It is not a general-purpose digital worker.
+    </p>
+    <p>
+      <strong>thumbgate.app</strong> is hosted Hermes on a fenced VPS: $10/month, 14-day trial, approvals in the browser. Give it a job. It answers in chat. It does not become Perplexity Computer because we added a Give → Works → Approve strip on the landing page.
+    </p>
+    <p>
+      We run a doctor that inspects those files instead of relabeling them:
+    </p>
+    <pre>hosted-computer doctor --json
+# weAreOpenClaw: false
+# factory.kind: CHAT_COMPLETIONS_ONLY
+# hands.kind: POLICY_CUE_NOT_DRIVER</pre>
+    <p>
+      <code>hosted-computer route "install openclaw"</code> exits 2 (<code>CLONE_FORBIDDEN</code>). That is cheaper than vendoring a second product we do not operate.
+    </p>
+
+    <h2>What we did not steal</h2>
+    <ul>
+      <li>Cursor Origin / WAL-as-truth Git hosting. Client-side pack hygiene is a different steal.</li>
+      <li>Perplexity Computer connectors, Pro/Max, or months-long Gmail workflows.</li>
+      <li>OpenClaw, Eigent, E2B, trycua/Cua, or Agent S on the daily Mac or the VPS.</li>
+      <li>Invented traction. Cash is $0 until a stranger pays Stripe.</li>
+    </ul>
+    <p>
+      <a href="https://nousresearch.com/">Nous Hermes</a> is the agent runtime we host; we are not affiliated with Nous Research. The $10 offer is the fenced VPS, not a Computer clone.
+    </p>
+    <p>
+      <a class="cta" href="https://thumbgate.app/?utm_source=blog&amp;utm_medium=article&amp;utm_campaign=cursor-blog-format-20260819&amp;cta_id=cursor-blog-format-20260819_blog_home">Give hosted Hermes a job →</a>
+      <a class="cta" href="https://www.npmjs.com/package/thumbgate">npx thumbgate init</a>
+    </p>
+
+    <div class="related">
+      <h2>Related posts</h2>
+      <a href="/blog/process-over-outcome-gates">Process over outcome: gates for self-improving coding loops</a>
+      <a href="/blog/inside-your-boundary">AI inside your boundary: governance without relaxing controls</a>
+    </div>
+  </article>
+  <footer>
+    <div class="shell">
+      Format stolen from <a href="https://cursor.com/blog">cursor.com/blog</a>. Not affiliated. Not a Computer.
+    </div>
+  </footer>
+</body>
+</html>
