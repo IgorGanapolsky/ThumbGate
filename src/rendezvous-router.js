@@ -8,7 +8,7 @@
  * @module rendezvous-router
  */
 
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 
 /**
  * Computes a 64-bit deterministic hash weight for a (key, node) pair.

@@ -11,7 +11,8 @@ test('computeRendezvousWeight produces deterministic float in [0, 1)', () => {
   const w1 = computeRendezvousWeight('repo1', 'node-a');
   const w2 = computeRendezvousWeight('repo1', 'node-a');
   assert.strictEqual(w1, w2);
-  assert.ok(w1 >= 0 && w1 < 1);
+  assert.ok(w1 >= 0);
+  assert.ok(w1 < 1);
 
   const w3 = computeRendezvousWeight('repo1', 'node-b');
   assert.notStrictEqual(w1, w3);

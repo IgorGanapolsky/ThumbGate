@@ -11,8 +11,8 @@
  * 5. Stateful helper-script evasion & stealth prompt memory injection
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const { evaluateGates } = require('./gates-engine.js');
 const { evaluateFinancialControl, detectEconomicAction } = require('./financial-control-plane.js');
 const { evaluateMcpCall } = require('../src/mcp-writeguard.js');
@@ -159,7 +159,8 @@ function runRedTeamSuite() {
   };
 }
 
-if (require.main === module) {
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === __filename;
+if (isMain) {
   const report = runRedTeamSuite();
   console.log(`\n🛡️  ThumbGate 5-Attack Red-Team Verification Report`);
   console.log(`────────────────────────────────────────────────────────────────────────`);

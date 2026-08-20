@@ -36,7 +36,7 @@ def extract_iis(model: Any) -> List[str]:
     try:
         model.computeIIS()
         return [c.ConstrName for c in model.getConstrs() if bool(getattr(c, "IISConstr", 0))]
-    except Exception:  # noqa: BLE001 — IIS is diagnostic, never crash the CLI
+    except Exception:  # noqa: BLE001
         return []
 
 
@@ -330,7 +330,7 @@ def solve_rule_selection(
             },
             model=model,
         )
-    except Exception as exc:  # noqa: BLE001 — fail-open to heuristic for CI
+    except Exception as exc:  # noqa: BLE001
         res = fallback_rule_selection(rules, max_eval_time_ms, max_token_footprint)
         res["solver"] = f"gurobi-error-fallback: {exc}"
         return stamp_receipt(res)

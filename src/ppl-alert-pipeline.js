@@ -40,7 +40,7 @@ class PPLPipeline {
       } else if (op === 'dedup') {
         stages.push({ type: 'dedup', field: rest.trim() });
       } else if (op === 'head' || op === 'limit') {
-        stages.push({ type: 'limit', count: parseInt(rest, 10) || 10 });
+        stages.push({ type: 'limit', count: Number.parseInt(rest, 10) || 10 });
       } else {
         throw new Error(`Unsupported PPL operator: ${op}`);
       }
@@ -50,20 +50,20 @@ class PPLPipeline {
   }
 
   static _parseStats(rest) {
-    const byMatch = rest.match(/^(.*?)\s+by\s+(.*)$/i);
+    const byIndex = rest.toLowerCase().indexOf(' by ');
     let aggStr = rest;
     let byField = null;
 
-    if (byMatch) {
-      aggStr = byMatch[1].trim();
-      byField = byMatch[2].trim();
+    if (byIndex !== -1) {
+      aggStr = rest.slice(0, byIndex).trim();
+      byField = rest.slice(byIndex + 4).trim();
     }
 
     const aggs = [];
     const aggTokens = aggStr.split(',').map((s) => s.trim());
 
     for (const token of aggTokens) {
-      const funcMatch = token.match(/^([a-z0-9_]+)\((.*?)\)(?:\s+as\s+([a-z0-9_]+))?$/i);
+      const funcMatch = /^([a-z0-9_]+)\((.*?)\)(?:\s+as\s+([a-z0-9_]+))?$/i.exec(token);
       if (funcMatch) {
         aggs.push({
           func: funcMatch[1].toLowerCase(),
@@ -77,11 +77,11 @@ class PPLPipeline {
   }
 
   static _parseEval(rest) {
-    const m = rest.match(/^([a-z0-9_]+)\s*=\s*(.*)$/i);
-    if (!m) {
+    const eqIndex = rest.indexOf('=');
+    if (eqIndex === -1) {
       throw new Error(`Invalid eval syntax: ${rest}`);
     }
-    return { type: 'eval', target: m[1].trim(), expr: m[2].trim() };
+    return { type: 'eval', target: rest.slice(0, eqIndex).trim(), expr: rest.slice(eqIndex + 1).trim() };
   }
 
   execute(records = []) {
@@ -113,7 +113,7 @@ class PPLPipeline {
   }
 
   static _evalPredicate(record, expr) {
-    const tokens = expr.match(/^([a-z0-9_.]+)\s*(==|!=|>=|<=|>|<|contains)\s*(.*)$/i);
+    const tokens = /^([a-z0-9_.]+)\s*(==|!=|>=|<=|>|<|contains)\s*([\s\S]+)$/i.exec(expr);
     if (!tokens) return true;
 
     const [, field, op, rawVal] = tokens;
@@ -146,7 +146,7 @@ class PPLPipeline {
 
   static _execEval(record, stage) {
     const res = { ...record };
-    const exprTokens = stage.expr.match(/^([a-z0-9_.]+)\s*([+\-*/><=!]+)\s*(.*)$/i);
+    const exprTokens = /^([a-z0-9_.]+)\s*([+\-*/><=!]+)\s*([\s\S]+)$/i.exec(stage.expr);
     if (exprTokens) {
       const [, left, op, right] = exprTokens;
       const leftVal = PPLPipeline._getProp(record, left);

@@ -5,8 +5,8 @@
  * ThumbGate WriteGuard CLI & Gateway Runner
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const {
   evaluateMcpCall,
   exportCloudflareWriteGuardPolicy,
@@ -150,7 +150,8 @@ Options:
   }
 }
 
-if (require.main === module) {
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === __filename;
+if (isMain) {
   main();
 }
 

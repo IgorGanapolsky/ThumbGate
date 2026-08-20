@@ -1,8 +1,8 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const { execFileSync } = require('child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 
 /**
  * GitFastCache — High-performance shadow git metadata cache.
@@ -45,8 +45,8 @@ class GitFastCache {
       if (stat.isFile()) {
         // Handle git worktree pointer file: "gitdir: /path/to/worktree"
         const content = fs.readFileSync(gitPath, 'utf8').trim();
-        const match = content.match(/^gitdir:\s*(.+)$/i);
-        if (match && match[1]) {
+        const match = /^gitdir:\s*(.+)$/i.exec(content);
+        if (match?.[1]) {
           return fs.realpathSync(path.resolve(repoRoot, match[1].trim()));
         }
       }

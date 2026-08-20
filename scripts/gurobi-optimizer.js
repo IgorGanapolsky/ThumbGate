@@ -73,8 +73,8 @@ function runPythonMode(mode, payload, timeoutMs = 10000, pythonBin = resolvePyth
  * Action stays human-oversight — solver picks never auto-apply to PreToolUse.
  */
 function isRepeatableSolve(result) {
-  const solver = String((result && result.solver) || '').toLowerCase();
-  return solver === 'gurobi' && String((result && result.status) || '') === 'OPTIMAL';
+  const solver = String(result?.solver || '').toLowerCase();
+  return solver === 'gurobi' && String(result?.status || '') === 'OPTIMAL';
 }
 
 function stampDecisionGovernance(result) {
@@ -249,7 +249,7 @@ function optimizeFleetDispatch(jobs, { maxRamMb = 32768, maxCpuCores = 10, maxCo
  * Emits a cryptographic Certified Optimization Receipt proving dual bounds and mathematical optimality.
  */
 function createCertifiedReceipt(optimizationResult, problemType = 'allocation') {
-  const crypto = require('crypto');
+  const crypto = require('node:crypto');
   const payload = {
     problemType,
     solver: optimizationResult.solver || 'unknown',
@@ -274,10 +274,10 @@ function probeGurobi(opts = {}) {
       { maxBudgetUsd: 1, maxLatencyMs: 10 },
       opts
     );
-    const solver = String((res && res.solver) || '');
+    const solver = String(res?.solver || '');
     const isErrorFallback = /error|fallback|heuristic/i.test(solver);
     return {
-      ok: Boolean(res && res.success && !isErrorFallback),
+      ok: Boolean(res?.success && !isErrorFallback),
       solver: res.solver || null,
       python: res.python || resolvePythonBin(),
       gurobi: solver === 'gurobi' || (solver.startsWith('gurobi') && !isErrorFallback),

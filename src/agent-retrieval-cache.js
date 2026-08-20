@@ -41,11 +41,13 @@ class AgentRetrievalCache {
 
   static isPollutionPath(filepath) {
     if (!filepath || typeof filepath !== 'string') return false;
-    const normalized = filepath.replace(/\\/g, '/');
+    const normalized = filepath.replaceAll('\\', '/');
     return POLLUTION_PATTERNS.some((pattern) => pattern.test(normalized));
   }
 
-  async getOrFetch(key, watchedFiles = [], fetchFn) {
+  async getOrFetch(key, watchedFiles, fetchFn) {
+    const files = Array.isArray(watchedFiles) ? watchedFiles : [];
+    const fn = typeof watchedFiles === 'function' ? watchedFiles : fetchFn;
     // 1. Check cache freshness & mtimes
     const entry = this.cache.get(key);
     const now = Date.now();
@@ -83,11 +85,11 @@ class AgentRetrievalCache {
 
     const fetchPromise = (async () => {
       try {
-        const result = await fetchFn();
+        const result = await fn();
 
         // 3. Record mtimes for watched files
         const mtimes = new Map();
-        for (const file of watchedFiles) {
+        for (const file of files) {
           if (!AgentRetrievalCache.isPollutionPath(file)) {
             try {
               const stat = fs.statSync(file);

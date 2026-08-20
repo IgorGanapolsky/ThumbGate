@@ -8,9 +8,9 @@
  * @module git-wal-sync
  */
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
 
 /**
  * Computes a SHA-256 digest of mutation payload.
@@ -133,7 +133,7 @@ function readWalEntries(walSession) {
 
   const files = fs.readdirSync(walSession.walDir)
     .filter((f) => f.startsWith('entry-') && f.endsWith('.wal.json'))
-    .sort();
+    .sort((a, b) => a.localeCompare(b));
 
   const entries = [];
   for (const f of files) {

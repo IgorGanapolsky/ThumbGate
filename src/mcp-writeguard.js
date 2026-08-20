@@ -11,7 +11,7 @@
  * - Emits structured attribution receipts with user, client, session, and duration metadata
  */
 
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 
 const RISK_TIERS = {
   READ: 'read',
@@ -77,11 +77,11 @@ const DEFAULT_ADMIN_TOOLS = new Set([
 ]);
 
 const DANGEROUS_COMMAND_PATTERNS = [
-  /rm\s+-rf\s+[\/~]/i,
+  /rm\s+-rf\s+[/~]/i,
   /drop\s+table/i,
   /drop\s+database/i,
   /truncate\s+table/i,
-  /git\s+push\s+.*--force/i,
+  /git\s+push\s+[\s\S]*?--force/i,
   /git\s+reset\s+--hard/i,
   /chmod\s+777/i,
   /mkfs/i,

@@ -5,6 +5,7 @@
  * ThumbGate Latency Budget CLI & Hop-Level SLA Auditor
  */
 
+const path = require('node:path');
 const { LatencyTracker, PROFILES } = require('../src/latency-budget.js');
 
 function parseArgs(args) {
@@ -107,7 +108,8 @@ Options:
   process.exit(report.meetsSla ? 0 : 1);
 }
 
-if (require.main === module) {
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === __filename;
+if (isMain) {
   main();
 }
 
