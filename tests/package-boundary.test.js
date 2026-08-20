@@ -457,8 +457,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // file that packaged entrypoints require: scripts/override-audit.js (#3515),
     // src/security-questionnaire.js (#3519), src/pipeline-compass.js (#3521).
     // 471 -> 472 (2026-08-19): scripts/rule-sprawl.js rule-vs-budget scorecard
-    manifest.fileCount <= 472,
-    `npm package should stay <= 472 files, got ${manifest.fileCount}`
+    // 471 -> 472 (2026-08-19): public/blog/a-receipt-is-not-world-state.html
+    // Cursor-format first-party research post. Static HTML only.
+// conflict-merge: concurrent +1 bumps → ceiling 473 (rule-sprawl + blog)
+    manifest.fileCount <= 473,
+    `npm package should stay <= 473 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

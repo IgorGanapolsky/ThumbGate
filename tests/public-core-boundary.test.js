@@ -260,7 +260,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // public-bundle-ratchet.
   // 470 -> 471 (2026-08-18): lockstep with pipeline-compass (+1)
   // 471 -> 472 (2026-08-19): scripts/rule-sprawl.js rule-vs-budget scorecard
-  const CEILING = 472;
+  // 471 -> 472 (2026-08-19): public/blog/a-receipt-is-not-world-state.html
+  const CEILING = 473;
+// conflict-merge: concurrent +1 bumps → ceiling 473 (rule-sprawl + blog)
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

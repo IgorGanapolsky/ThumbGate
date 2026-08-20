@@ -25,6 +25,20 @@ const { validateToolContract } = require('./tool-contract-validator');
 
 const SCHEMA_VERSION = 'broker-execution-receipt-v1';
 const SCHEMA_PATH = path.join(__dirname, '..', 'config', 'schemas', 'broker-execution-receipt.schema.json');
+// Agora-style honesty: a receipt records what the path produced, not the world.
+const RECEIPT_PROOF_BOUNDARY = Object.freeze({
+  proves: [
+    'A credential-holding broker signed this decision',
+    'The bound principal, target, decision, and idempotency key',
+    'Hash-chain linkage when previousReceiptHash is present',
+  ],
+  doesNotProve: [
+    'Independent world-state outcome outside the broker',
+    'That a public listing or health page is invocable',
+    'That a denied or unexecuted action ran',
+    'That a signed deny decision is an execution receipt',
+  ],
+});
 const LEDGER_FILE = 'broker-execution-receipts.jsonl';
 const PUBLIC_KEYS_FILE = 'broker-public-keys.json';
 
@@ -681,6 +695,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename
 
 module.exports = {
   SCHEMA_VERSION,
+  RECEIPT_PROOF_BOUNDARY,
   BROKER_RECEIPT_SCHEMA,
   HIGH_RISK_PROVIDER_PATTERNS,
   appendReceiptToLedger,
