@@ -10,6 +10,7 @@ from scripts.gurobi_optimizer import (
     solve_model_routing,
     solve_rule_selection,
     stamp_decision_governance,
+    stamp_receipt,
 )
 
 
@@ -130,6 +131,41 @@ def test_main_cli_inline_json(capsys):
     assert code == 0
     assert body["success"] is True
     assert body["selected"] == "a"
+
+
+def test_infeasible_routing_fail_closed_with_iis():
+    res = solve_model_routing(
+        [
+            {"id": "expensive", "score": 99, "cost": 10.0, "latency_ms": 10},
+            {"id": "slow", "score": 80, "cost": 0.0, "latency_ms": 50_000},
+        ],
+        max_budget_usd=0.01,
+        max_latency_ms=5,
+    )
+    assert res["success"] is False
+    assert res["selected"] is None
+    assert res["certified"] is False
+    assert res["capturedRevenueUsd"] == 0
+    assert res["status"] == "INFEASIBLE"
+    assert isinstance(res.get("iis"), list)
+    if GUROBI_AVAILABLE:
+        assert res["solver"] == "gurobi"
+        assert set(res["iis"]) & {"BudgetLimit", "LatencyLimit", "SelectOne"}
+
+
+def test_stamp_receipt_never_certifies_heuristic():
+    stamped = stamp_receipt(
+        {
+            "success": True,
+            "selected": "x",
+            "solver": "heuristic-fallback",
+            "status": "HEURISTIC",
+            "objective": 1,
+        }
+    )
+    assert stamped["certified"] is False
+    assert stamped["capturedRevenueUsd"] == 0
+    assert stamped["proof"] == "heuristic"
 
 
 def test_main_cli_rejects_path(capsys):
