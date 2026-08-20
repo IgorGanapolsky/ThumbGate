@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agentic AI Latency Infrastructure & Hop-Level Budgets | ThumbGate</title>
+  <meta name="description" content="Overcoming the 90.6% CPU-side latency wall in agentic workflows with local-first pre-action checks, hop budgets, and fast-path short circuiting.">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans antialiased">
+  <main class="max-w-4xl mx-auto px-6 py-12">
+    <a href="/" class="text-emerald-400 hover:underline text-sm mb-6 inline-block">&larr; Back to ThumbGate Home</a>
+    <h1 class="text-3xl font-bold tracking-tight text-white mb-4">Agentic AI Latency Infrastructure</h1>
+    <p class="text-gray-400 text-lg mb-8 leading-relaxed">
+      Managing multi-hop execution budgets to hit the enterprise &lt;500ms and voice &lt;250ms latency SLAs.
+    </p>
+
+    <section class="space-y-6">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold text-emerald-400 mb-3">1. The 90.6% CPU Latency Wall</h2>
+        <p class="text-gray-300 leading-relaxed mb-4">
+          According to 2026 enterprise AI benchmarking (Akamai & The New Stack), 82% of organizations require agent response times under 500ms, yet 50% miss this target at peak load.
+        </p>
+        <p class="text-gray-300 leading-relaxed">
+          The bottleneck is not GPU token generation, but CPU-side processing, tool dispatch roundtrips, and WAN network hops which account for up to <strong>90.6%</strong> of total agent loop latency.
+        </p>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold text-emerald-400 mb-3">2. ThumbGate Local-First Fast Path</h2>
+        <p class="text-gray-300 leading-relaxed mb-4">
+          ThumbGate solves the agent latency wall by running governance gates, deterministic heuristics, and vector memory recall locally on Apple Silicon and edge nodes with <strong>0ms network roundtrip overhead</strong>:
+        </p>
+        <ul class="list-disc list-inside text-gray-300 space-y-2 font-mono text-xs">
+          <li><strong>Pre-Action Governance Check:</strong> &lt;2ms deterministic local evaluation</li>
+          <li><strong>LanceDB Vector Recall:</strong> &lt;15ms on-device embedding retrieval</li>
+          <li><strong>Asynchronous Audit Telemetry:</strong> Non-blocking background log emission</li>
+        </ul>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold text-emerald-400 mb-3">3. Hop-Level Budget Auditor CLI</h2>
+        <pre class="bg-gray-950 p-4 rounded-lg text-emerald-300 font-mono text-xs overflow-x-auto">
+# Run standard agent SLA benchmark (500ms target)
+npx thumbgate latency-budget --benchmark
+
+# Evaluate interactive voice SLA (250ms target)
+npx thumbgate latency-budget --benchmark --profile interactive_voice --json
+        </pre>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
