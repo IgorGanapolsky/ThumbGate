@@ -94,16 +94,58 @@ function isSendSpendAction(params = {}) {
   return /\b(?:send|spend|pay|purchase|transfer|wire|invoice|payout|book|auto-?book)\b/i.test(text);
 }
 
-function isConsumedHumanApproval(approval) {
-  return Boolean(
-    approval
-    && approval.consumed === true
-    && approval.actor
-    && approval.actor.kind === 'human'
-  );
+function resolveEscalationOptions(input = {}, options = {}) {
+  const approval = input.humanApproval || {};
+  return {
+    feedbackDir: options.feedbackDir || input.feedbackDir || approval.feedbackDir,
+    inputPath: options.inputPath || input.escalationPath || approval.escalationPath,
+    approvalVerificationKey: options.approvalVerificationKey || input.approvalVerificationKey,
+    approvalSigningKey: options.approvalSigningKey || input.approvalSigningKey,
+    now: options.now || input.now,
+  };
 }
 
-function evaluateAlwaysOnSchedule(input = {}) {
+function hasVerifiedHumanSendSpendApproval(input = {}, options = {}) {
+  const approval = input.humanApproval;
+  if (!approval || typeof approval !== 'object') return false;
+  const escalationId = String(approval.escalationId || approval.approval?.escalationId || '').trim();
+  if (!escalationId) return false;
+  try {
+    const { consumeVerifiedApproval, getVerifiedApproval } = require('./human-escalation');
+    const consumer = approval.consumer && typeof approval.consumer === 'object'
+      ? approval.consumer
+      : { id: 'schedule-manager', kind: 'system' };
+    const consumed = consumeVerifiedApproval(escalationId, { consumer }, resolveEscalationOptions(input, options));
+    if (consumed.consumed === true && consumed.approval?.actor?.kind === 'human') {
+      return true;
+    }
+    if (consumed.replayed === true) {
+      const verified = getVerifiedApproval(escalationId, {
+        ...resolveEscalationOptions(input, options),
+        allowConsumed: true,
+      });
+      return Boolean(verified && verified.actor?.kind === 'human');
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function resolveScheduleClaimLive(runtimeGate, platform = process.platform) {
+  if (!runtimeGate || runtimeGate.allowed !== true) {
+    return { claimLive: false, schedulerInstallation: 'blocked' };
+  }
+  if (platform === 'darwin') {
+    return { claimLive: false, schedulerInstallation: 'launchd' };
+  }
+  if (platform === 'linux') {
+    return { claimLive: false, schedulerInstallation: 'pending-crontab' };
+  }
+  return { claimLive: false, schedulerInstallation: 'unsupported' };
+}
+
+function evaluateAlwaysOnSchedule(input = {}, options = {}) {
   const runtime = inferScheduleRuntime(input);
   const alwaysOn = ALWAYS_ON_RUNTIMES.has(runtime);
   const actionText = [input.action, input.command, input.toolName]
@@ -132,13 +174,13 @@ function evaluateAlwaysOnSchedule(input = {}) {
     };
   }
 
-  if (isSendSpendAction(input) && !isConsumedHumanApproval(input.humanApproval)) {
+  if (isSendSpendAction(input) && !hasVerifiedHumanSendSpendApproval(input, options)) {
     return {
       allowed: false,
       failClosed: true,
-      claimLive: alwaysOn,
+      claimLive: false,
       reason: 'human_gate_required',
-      message: 'Send/spend requires a consumed human approval.',
+      message: 'Send/spend requires a consumed human approval from the escalation ledger.',
       runtime,
     };
   }
@@ -281,7 +323,7 @@ function createSchedule(params) {
     calendarInterval,
     createdAt: new Date().toISOString(),
     runtimeGate,
-    claimLive: runtimeGate.claimLive === true,
+    ...resolveScheduleClaimLive(runtimeGate),
   };
 
   // Save schedule metadata
@@ -350,4 +392,6 @@ module.exports = {
   buildAgenticDataPipelineSchedule,
   evaluateAlwaysOnSchedule,
   inferScheduleRuntime,
+  hasVerifiedHumanSendSpendApproval,
+  resolveScheduleClaimLive,
 };

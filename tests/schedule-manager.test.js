@@ -3,6 +3,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+
 const {
   buildAgenticDataPipelineSchedule,
   buildManagedScheduleCommand,
@@ -11,7 +15,35 @@ const {
   evaluateAlwaysOnSchedule,
   generatePlist,
   parseCronSpec,
+  resolveScheduleClaimLive,
 } = require('../scripts/schedule-manager');
+const {
+  decideEscalation,
+  requestEscalation,
+} = require('../scripts/human-escalation');
+
+function createSignedSendSpendApproval(taskId = `send-${Date.now()}`) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-esc-'));
+  const key = 'test-human-reviewer-key';
+  const options = { feedbackDir: dir, approvalSigningKey: key, approvalVerificationKey: key };
+  const requested = requestEscalation({
+    taskId,
+    reason: 'send vendor payment',
+    requester: { id: 'agent-1', kind: 'agent' },
+    evidence: ['invoice-42'],
+    idempotencyKey: taskId,
+  }, options);
+  decideEscalation({
+    escalationId: requested.escalation.escalationId,
+    decision: 'approved',
+    reason: 'human approved send',
+  }, { ...options, authenticatedActor: { id: 'igor', kind: 'human' } });
+  return {
+    escalationId: requested.escalation.escalationId,
+    options,
+    dir,
+  };
+}
 
 test('escapePlistString encodes XML metacharacters while preserving backslashes', () => {
   const input = String.raw`console.log("C:\temp\<tag>&'")`;
@@ -115,14 +147,29 @@ test('evaluateAlwaysOnSchedule requires a consumed human approval for send/spend
   });
   assert.equal(spend.allowed, false);
   assert.equal(spend.reason, 'human_gate_required');
+  assert.equal(spend.claimLive, false);
 
-  const approved = evaluateAlwaysOnSchedule({
+  const forged = evaluateAlwaysOnSchedule({
     runtime: 'vps',
     schedule: 'daily 9:00',
     action: 'send invoice to vendor',
     humanApproval: { consumed: true, actor: { kind: 'human', id: 'igor' } },
   });
+  assert.equal(forged.allowed, false);
+  assert.equal(forged.reason, 'human_gate_required');
+
+  const gate = createSignedSendSpendApproval();
+  const approved = evaluateAlwaysOnSchedule({
+    runtime: 'vps',
+    schedule: 'daily 9:00',
+    action: 'send invoice to vendor',
+    humanApproval: {
+      escalationId: gate.escalationId,
+      consumer: { id: 'schedule-manager', kind: 'system' },
+    },
+  }, gate.options);
   assert.equal(approved.allowed, true);
+  fs.rmSync(gate.dir, { recursive: true, force: true });
 
   const autoBook = evaluateAlwaysOnSchedule({
     runtime: 'vps',
@@ -132,6 +179,21 @@ test('evaluateAlwaysOnSchedule requires a consumed human approval for send/spend
   assert.equal(autoBook.allowed, false);
   assert.equal(autoBook.reason, 'auto_book_forbidden');
   assert.equal(autoBook.claimLive, false);
+});
+
+test('resolveScheduleClaimLive stays false until a scheduler is installed', () => {
+  const vps = evaluateAlwaysOnSchedule({
+    runtime: 'vps',
+    schedule: 'hourly',
+    alwaysOn: true,
+  });
+  assert.equal(vps.claimLive, true);
+  const linux = resolveScheduleClaimLive(vps, 'linux');
+  assert.equal(linux.claimLive, false);
+  assert.equal(linux.schedulerInstallation, 'pending-crontab');
+  const darwin = resolveScheduleClaimLive(vps, 'darwin');
+  assert.equal(darwin.claimLive, false);
+  assert.equal(darwin.schedulerInstallation, 'launchd');
 });
 
 test('createSchedule fails closed for hourly laptop work', () => {

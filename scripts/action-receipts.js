@@ -414,6 +414,9 @@ function reconstructModelVisibleFacts(actionId, options = {}) {
   if (!receipt) {
     return { ok: false, failClosed: true, reason: 'missing_receipt' };
   }
+  if (!verifyReceiptSignature(receipt, options.signingKey)) {
+    return { ok: false, failClosed: true, reason: 'unauthenticated_receipt' };
+  }
   return {
     ok: true,
     facts: {

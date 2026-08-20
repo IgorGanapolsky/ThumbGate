@@ -601,7 +601,46 @@ function createMemoryGrantStore() {
   };
 }
 
-const defaultHarnessGrantStore = createMemoryGrantStore();
+function createDurableGrantStore(options = {}) {
+  const storePath = options.grantStorePath || path.join(
+    getFeedbackPaths(options).FEEDBACK_DIR,
+    'harness-grants.jsonl'
+  );
+  return {
+    consume(grantId) {
+      const id = String(grantId || '').trim();
+      if (!id) return { ok: false, reason: 'missing_grant_id' };
+      return withFileLedgerLock(`${storePath}.lock`, () => {
+        let raw = '';
+        try {
+          raw = fs.readFileSync(storePath, 'utf8');
+        } catch (error) {
+          if (error.code !== 'ENOENT') throw error;
+        }
+        for (const line of raw.split('\n')) {
+          if (!line.trim()) continue;
+          try {
+            if (JSON.parse(line).grantId === id) {
+              return { ok: false, reason: 'grant_already_consumed' };
+            }
+          } catch {
+            return { ok: false, reason: 'grant_store_corrupt' };
+          }
+        }
+        fs.mkdirSync(path.dirname(storePath), { recursive: true });
+        fs.appendFileSync(storePath, `${JSON.stringify({
+          grantId: id,
+          consumedAt: (options.now || new Date()).toISOString(),
+        })}\n`);
+        return { ok: true };
+      }, {
+        now: options.now,
+        lockStaleMs: options.lockStaleMs,
+        errorFactory: (message) => escalationError(message),
+      });
+    },
+  };
+}
 const ALLOW_ONCE_GRANT_MODES = new Set(['once', 'allow-once', 'allowed-once', 'allow_once']);
 const ALLOW_ALWAYS_GRANT_MODES = new Set(['always', 'allow-always', 'allow_always']);
 
@@ -649,14 +688,24 @@ function evaluateHarnessGrant(input = {}, options = {}) {
     };
   }
 
-  const grantStore = options.grantStore || defaultHarnessGrantStore;
+  const grantStore = options.grantStore || createDurableGrantStore(options);
   const grantId = String(input.grantId || input.actionId || '').trim();
   if (!grantId) {
     return { allowed: false, failClosed: true, reason: 'missing_grant_id' };
   }
-  const consumed = grantStore.consume(grantId);
-  if (!consumed.ok) {
-    return { allowed: false, failClosed: true, reason: consumed.reason || 'grant_already_consumed' };
+  let consumed;
+  try {
+    consumed = grantStore.consume(grantId);
+  } catch (error) {
+    return {
+      allowed: false,
+      failClosed: true,
+      reason: 'grant_store_failed',
+      detail: String(error && error.message ? error.message : error),
+    };
+  }
+  if (!consumed || !consumed.ok) {
+    return { allowed: false, failClosed: true, reason: (consumed && consumed.reason) || 'grant_already_consumed' };
   }
 
   const facts = {
@@ -711,6 +760,7 @@ if (isCliInvocation()) {
 module.exports = {
   calculateEscalationMetrics,
   consumeVerifiedApproval,
+  createDurableGrantStore,
   createMemoryGrantStore,
   decideEscalation,
   evaluateHarnessGrant,

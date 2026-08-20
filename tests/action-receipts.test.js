@@ -26,7 +26,7 @@ const {
   getReceiptsPath,
   verifyReceiptSignature,
 } = require('../scripts/action-receipts');
-const { createMemoryGrantStore, evaluateHarnessGrant } = require('../scripts/human-escalation');
+const { createDurableGrantStore, createMemoryGrantStore, evaluateHarnessGrant } = require('../scripts/human-escalation');
 
 test.after(() => {
   try {
@@ -255,4 +255,49 @@ test('grants are allow-once only and model-visible facts reconstruct from the re
   assert.equal(missing.ok, false);
   assert.equal(missing.failClosed, true);
   assert.equal(missing.reason, 'missing_receipt');
+});
+
+test('durable allow-once grants survive a new store instance', () => {
+  const firstStore = createDurableGrantStore();
+  const first = evaluateHarnessGrant({
+    grantId: 'g-durable-once',
+    grantMode: 'once',
+    approver: () => ({ allow: true }),
+  }, { grantStore: firstStore, recordReceipt: false });
+  assert.equal(first.allowed, true);
+
+  const restarted = createDurableGrantStore();
+  const second = evaluateHarnessGrant({
+    grantId: 'g-durable-once',
+    grantMode: 'once',
+    approver: () => ({ allow: true }),
+  }, { grantStore: restarted, recordReceipt: false });
+  assert.equal(second.allowed, false);
+  assert.equal(second.reason, 'grant_already_consumed');
+});
+
+test('reconstructModelVisibleFacts fails closed on tampered receipts', () => {
+  const receipt = recordReceipt({
+    actionId: 'act-reconstruct-tamper',
+    toolName: 'Bash',
+    toolInput: { command: 'echo ok' },
+    decision: 'allow',
+    principal: 'harness',
+  });
+  const receiptsPath = getReceiptsPath();
+  const lines = fs.readFileSync(receiptsPath, 'utf8').split('\n');
+  let rewritten = false;
+  const tampered = lines.map((line) => {
+    if (!line.includes('"act-reconstruct-tamper"')) return line;
+    const row = JSON.parse(line);
+    row.toolName = 'rm';
+    rewritten = true;
+    return JSON.stringify(row);
+  }).join('\n');
+  assert.equal(rewritten, true);
+  fs.writeFileSync(receiptsPath, tampered);
+  const reconstructed = reconstructModelVisibleFacts('act-reconstruct-tamper');
+  assert.equal(reconstructed.ok, false);
+  assert.equal(reconstructed.failClosed, true);
+  assert.equal(reconstructed.reason, 'unauthenticated_receipt');
 });
