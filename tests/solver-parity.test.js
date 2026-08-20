@@ -152,3 +152,10 @@ test('forcing a missing python still satisfies frozen heuristic pins', () => {
   assert.equal(gap.homeworkGrade, 'solver-fell-back-to-heuristic');
   assert.deepEqual(gap.solver.selected_rules, ['dense-small']);
 });
+
+test('probeGurobi returns gurobi false when solver is an error fallback', () => {
+  const { probeGurobi } = require('../scripts/gurobi-optimizer');
+  const probe = probeGurobi({ pythonBin: '/no/such/python' });
+  assert.equal(probe.gurobi, false);
+});
+

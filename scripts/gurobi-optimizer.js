@@ -210,11 +210,13 @@ function probeGurobi(opts = {}) {
       { maxBudgetUsd: 1, maxLatencyMs: 10 },
       opts
     );
+    const solver = String((res && res.solver) || '');
+    const isErrorFallback = /error|fallback|heuristic/i.test(solver);
     return {
-      ok: Boolean(res && res.success),
+      ok: Boolean(res && res.success && !isErrorFallback),
       solver: res.solver || null,
       python: res.python || resolvePythonBin(),
-      gurobi: String(res.solver || '').startsWith('gurobi'),
+      gurobi: solver === 'gurobi' || (solver.startsWith('gurobi') && !isErrorFallback),
     };
   } catch (err) {
     return { ok: false, error: err.message, python: resolvePythonBin(), gurobi: false };
