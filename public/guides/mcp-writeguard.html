@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloudflare-Style MCP WriteGuard — Fine-Grained Pre-Action Security | ThumbGate</title>
+  <meta name="description" content="ThumbGate WriteGuard intercepts MCP tool calls, enforces risk-tier safety policies, and scrubs sensitive secrets before execution with zero changes to upstream MCP servers.">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans antialiased">
+  <main class="max-w-4xl mx-auto px-6 py-12">
+    <a href="/" class="text-emerald-400 hover:underline text-sm mb-6 inline-block">&larr; Back to ThumbGate Home</a>
+    <h1 class="text-3xl font-bold tracking-tight text-white mb-4">MCP WriteGuard — Fine-Grained Pre-Action Security</h1>
+    <p class="text-gray-400 text-lg mb-8 leading-relaxed">
+      Governing write privileges for AI agent tools across databases, GitHub, APIs, and cloud infrastructure without modifying upstream MCP servers.
+    </p>
+
+    <section class="space-y-6">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold text-emerald-400 mb-3">1. Why MCP Write Controls Matter</h2>
+        <p class="text-gray-300 leading-relaxed mb-4">
+          When AI coding agents use Model Context Protocol (MCP) servers to interact with live systems, read operations are generally low-risk. However, write operations (deletions, schema alterations, branch mutations, payments) present catastrophic failure modes if unmonitored or compromised by prompt injection.
+        </p>
+        <p class="text-gray-300 leading-relaxed">
+          ThumbGate WriteGuard operates as a pre-action interdiction layer that classifies every MCP tool into deterministic risk tiers (<code>read</code>, <code>write</code>, <code>privileged_write</code>, <code>admin</code>), inspects arguments for destructive payloads, and scrubs sensitive tokens from telemetry.
+        </p>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold text-emerald-400 mb-3">2. Risk Tier Classification Matrix</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-gray-300">
+            <thead class="bg-gray-800 text-gray-200 uppercase font-mono text-xs">
+              <tr>
+                <th class="p-3">Tier</th>
+                <th class="p-3">Typical Tools</th>
+                <th class="p-3">Default Policy</th>
+                <th class="p-3">Audit Behavior</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800 font-mono text-xs">
+              <tr>
+                <td class="p-3 text-blue-400 font-bold">read</td>
+                <td class="p-3">view_file, grep_search, list_dir</td>
+                <td class="p-3 text-emerald-400">Allow</td>
+                <td class="p-3">Scrubbed parameter log</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-yellow-400 font-bold">write</td>
+                <td class="p-3">write_to_file, replace_file_content</td>
+                <td class="p-3 text-emerald-400">Allow with verification</td>
+                <td class="p-3">Attribution receipt emitted</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-orange-400 font-bold">privileged_write</td>
+                <td class="p-3">run_command, manage_task, kill</td>
+                <td class="p-3 text-amber-400">Scan dangerous patterns</td>
+                <td class="p-3">Full trace + escalation guard</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-rose-400 font-bold">admin</td>
+                <td class="p-3">set_branch_governance, approve_protected_action</td>
+                <td class="p-3 text-rose-400">Require operator approval</td>
+                <td class="p-3">Immutable audit ledger</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold text-emerald-400 mb-3">3. CLI Usage & Policy Export</h2>
+        <pre class="bg-gray-950 p-4 rounded-lg text-emerald-300 font-mono text-xs overflow-x-auto">
+# Test a tool against WriteGuard policy
+npx thumbgate writeguard --tool run_command --params '{"CommandLine":"rm -rf /"}'
+
+# Export Cloudflare WriteGuard compatible JSON policy schema
+npx thumbgate writeguard --export-policy --json
+        </pre>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -228,21 +228,23 @@ function collectAffectedFiles(toolName, toolInput = {}, repoRoot) {
     // Keep the local collector if the engine cannot load.
   }
   const files = new Set(collectInlineAffectedFiles(toolInput, repoRoot));
-  const command = String(toolInput.command || '');
+  const rawCommand = String(toolInput.command || '');
+  const command = rawCommand ? rawCommand.replace(/(?:^|\s)git(?:\s+-[^\s]+)*\s+-C(?:\s+|=)(?:'[^']+'|"[^"]+"|([^\s'"]+))/i, 'git ') : '';
   const hasExplicitAffectedFiles = files.size > 0;
 
-  if (toolName === 'Bash' && repoRoot && command) {
+  if (toolName === 'Bash' && repoRoot && (command || rawCommand)) {
+    const cmdToTest = command || rawCommand;
     if (hasExplicitAffectedFiles) {
       return [...files].filter(Boolean);
     }
 
-    if (/\bgit\s+commit\b/i.test(command)) {
+    if (/\bgit\s+commit\b/i.test(cmdToTest)) {
       for (const filePath of safeExecFileLines('git', ['diff', '--cached', '--name-only'], repoRoot)) {
         files.add(normalizePosix(filePath));
       }
     }
 
-    if (/\bgit\s+add\b/i.test(command)) {
+    if (/\bgit\s+add\b/i.test(cmdToTest)) {
       for (const filePath of safeExecFileLines('git', ['diff', '--name-only'], repoRoot)) {
         files.add(normalizePosix(filePath));
       }
@@ -251,7 +253,7 @@ function collectAffectedFiles(toolName, toolInput = {}, repoRoot) {
       }
     }
 
-    if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command)) {
+    if (/\bgit\s+push\b/i.test(cmdToTest) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(cmdToTest)) {
       for (const filePath of getBranchDiffFiles(repoRoot)) {
         files.add(normalizePosix(filePath));
       }
@@ -1548,8 +1550,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
   const highRiskAction = isHighRiskAction(normalizedToolName, normalizedToolInput, affectedFiles);
   const baseBranch = options.baseBranch
     || (governanceState.branchGovernance && governanceState.branchGovernance.baseBranch)
-    || normalizedToolInput.baseBranch
-    || DEFAULT_BASE_BRANCH;
+    || normalizedToolInput.baseBranch;
   const integrity = evaluateOperationalIntegrity({
     repoPath,
     baseBranch,

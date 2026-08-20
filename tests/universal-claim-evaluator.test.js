@@ -160,6 +160,7 @@ describe('evaluateUniversalClaims', () => {
   let tmpDir;
   let dbPath;
   let readmePath;
+  let Database = null;
 
   before(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-universal-claim-'));
@@ -171,11 +172,17 @@ describe('evaluateUniversalClaims', () => {
     fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ version: '9.9.9' }));
     fs.writeFileSync(path.join(tmpDir, 'metrics.json'), JSON.stringify({ nightly: { invoices: 12 } }));
 
-    const Database = require('better-sqlite3');
-    dbPath = path.join(tmpDir, 'data', 'app.sqlite');
-    const db = new Database(dbPath);
-    db.exec('CREATE TABLE orders (id INTEGER PRIMARY KEY); INSERT INTO orders (id) VALUES (1),(2),(3);');
-    db.close();
+    try {
+      Database = require('better-sqlite3');
+    } catch {
+      Database = null;
+    }
+    if (Database) {
+      dbPath = path.join(tmpDir, 'data', 'app.sqlite');
+      const db = new Database(dbPath);
+      db.exec('CREATE TABLE orders (id INTEGER PRIMARY KEY); INSERT INTO orders (id) VALUES (1),(2),(3);');
+      db.close();
+    }
   });
 
   after(() => {
@@ -212,7 +219,11 @@ describe('evaluateUniversalClaims', () => {
     },
   ]);
 
-  it('passes when row count matches the database', () => {
+  it('passes when row count matches the database', function (t) {
+    if (!Database) {
+      if (t && typeof t.skip === 'function') t.skip('better-sqlite3 is not available');
+      return;
+    }
     const result = evaluateUniversalClaims('the row count is 3', {
       cwd: tmpDir,
       verifiers: verifiers(),
@@ -222,7 +233,11 @@ describe('evaluateUniversalClaims', () => {
     assert.equal(result.checks[0].actual, 3);
   });
 
-  it('fails closed on row-count mismatch', () => {
+  it('fails closed on row-count mismatch', function (t) {
+    if (!Database) {
+      if (t && typeof t.skip === 'function') t.skip('better-sqlite3 is not available');
+      return;
+    }
     const result = evaluateUniversalClaims('the row count is 1,284', {
       cwd: tmpDir,
       verifiers: verifiers(),
@@ -372,7 +387,11 @@ describe('evaluateUniversalClaims', () => {
     assert.equal(JSON.parse(stdout).verified, false);
   });
 
-  it('dispatches verify-claims through the published CLI entrypoint', () => {
+  it('dispatches verify-claims through the published CLI entrypoint', function (t) {
+    if (!Database) {
+      if (t && typeof t.skip === 'function') t.skip('better-sqlite3 is not available');
+      return;
+    }
     const configPath = path.join(tmpDir, 'claim-verifiers.json');
     fs.writeFileSync(configPath, JSON.stringify({ verifiers: verifiers() }));
     const result = spawnSync(process.execPath, [
