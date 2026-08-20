@@ -200,7 +200,15 @@ test('searchLessons filters polluted memories and isolates explicit scope', () =
   }
 });
 
-test('searchLessons applies transport and size filters to SQLite FTS5 results', () => {
+test('searchLessons applies transport and size filters to SQLite FTS5 results', (t) => {
+  try {
+    require('better-sqlite3');
+  } catch {
+    if (t && typeof t.skip === 'function') {
+      t.skip('better-sqlite3 is not available in current environment');
+    }
+    return;
+  }
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-search-fts-filter-'));
   const dbPath = path.join(tmpDir, 'lessons.sqlite');
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;

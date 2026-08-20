@@ -40,6 +40,21 @@ const CONTROL_PLANE_TOOLS = new Set([
   'reserve_purchase_requisition',
   'settle_purchase_requisition',
   'reconcile_purchase_ledger',
+  'satisfy_gate',
+  'capture_feedback',
+  'capture_memory_feedback',
+  'record_task_outcome',
+  'record_action_receipt',
+  'get_scope_state',
+  'set_task_scope',
+  'report_product_issue',
+  'open_feedback_session',
+  'append_feedback_context',
+  'finalize_feedback_session',
+  'search_lessons',
+  'retrieve_lessons',
+  'verify_claim',
+  'track_action',
 ]);
 const REMEDY_TOOLS = new Set([
   'satisfy_gate',
@@ -442,7 +457,12 @@ function shellEconomicText(toolName, rawCommand) {
     .map((segment) => {
       const clean = segment.trim().replace(/^(?:sudo\s+)?(?:env\s+)?(?:[A-Za-z_]\w*=[^\s]+\s+)*/, '');
       const executable = /^([\w./-]+)/.exec(clean)?.[1]?.split('/').at(-1)?.toLowerCase();
-      if (['rg', 'grep', 'git', 'cat', 'head', 'tail', 'less', 'more', 'echo', 'printf'].includes(executable)) return '';
+      if (['rg', 'grep', 'git', 'cat', 'head', 'tail', 'less', 'more', 'echo', 'printf'].includes(executable)) {
+        return '';
+      }
+      if (executable === 'gh' && /\b(?:issue|pr)\s+(?:create|view|list|status|edit|comment)\b/i.test(clean)) {
+        return '';
+      }
       return clean;
     })
     .join(' ');

@@ -36,7 +36,7 @@ def extract_iis(model: Any) -> List[str]:
     try:
         model.computeIIS()
         return [c.ConstrName for c in model.getConstrs() if bool(getattr(c, "IISConstr", 0))]
-    except Exception:  # noqa: BLE001 — IIS is diagnostic, never crash the CLI
+    except Exception:  # noqa: BLE001
         return []
 
 
@@ -85,6 +85,14 @@ def load_input_payload(raw: str) -> Dict[str, Any]:
     return parsed
 
 
+def create_gurobi_model(name: str):
+    """Creates a Gurobi model with OutputFlag=0 to prevent stdout license spam."""
+    env = gp.Env(empty=True)
+    env.setParam("OutputFlag", 0)
+    env.start()
+    return gp.Model(name, env=env)
+
+
 def solve_model_routing(
     candidates: List[Dict[str, Any]],
     max_budget_usd: float,
@@ -124,10 +132,7 @@ def solve_model_routing(
         )
 
     try:
-        env = gp.Env(empty=True)
-        env.setParam("OutputFlag", 0)
-        env.start()
-        model = gp.Model("ModelRouting", env=env)
+        model = create_gurobi_model("ModelRouting")
         x = {}
         for i, cand in enumerate(candidates):
             cid = cand.get("id", f"c_{i}")
@@ -264,10 +269,7 @@ def solve_rule_selection(
         return fallback_rule_selection(rules, max_eval_time_ms, max_token_footprint)
 
     try:
-        env = gp.Env(empty=True)
-        env.setParam("OutputFlag", 0)
-        env.start()
-        model = gp.Model("RuleKnapsackSelection", env=env)
+        model = create_gurobi_model("RuleKnapsackSelection")
         y = {}
         for i, rule in enumerate(rules):
             rid = rule.get("id", f"r_{i}")
@@ -328,11 +330,92 @@ def solve_rule_selection(
             },
             model=model,
         )
-    except Exception as exc:  # noqa: BLE001 — fail-open to heuristic for CI
+    except Exception as exc:  # noqa: BLE001
         res = fallback_rule_selection(rules, max_eval_time_ms, max_token_footprint)
         res["solver"] = f"gurobi-error-fallback: {exc}"
         return stamp_receipt(res)
 
+
+def solve_fleet_dispatch(
+    jobs: List[Dict[str, Any]],
+    max_ram_mb: int = 32768,
+    max_cpu_cores: int = 10,
+    max_concurrency: int = 4,
+) -> Dict[str, Any]:
+    """MILP Job-Shop / Machine-Scheduling to maximize dispatched priority while preventing starvation."""
+    if not jobs:
+        return {"success": False, "selected_jobs": [], "reason": "No jobs provided"}
+
+    if not GUROBI_AVAILABLE:
+        valid_jobs = []
+        cur_ram, cur_cpu = 0, 0
+        for j in sorted(jobs, key=lambda x: x.get("priority", 1), reverse=True):
+            r = j.get("ram_mb", 1024)
+            c = j.get("cpu_cores", 1)
+            if len(valid_jobs) < max_concurrency and cur_ram + r <= max_ram_mb and cur_cpu + c <= max_cpu_cores:
+                valid_jobs.append(j.get("id"))
+                cur_ram += r
+                cur_cpu += c
+        return {
+            "success": True,
+            "selected_jobs": valid_jobs,
+            "solver": "heuristic-fallback",
+            "allocated_ram_mb": cur_ram,
+            "allocated_cpu_cores": cur_cpu,
+            "status": "HEURISTIC",
+        }
+
+    try:
+        model = create_gurobi_model("FleetDispatch")
+        z = {}
+        for i, j in enumerate(jobs):
+            jid = j.get("id", f"j_{i}")
+            z[jid] = model.addVar(vtype=GRB.BINARY, name=f"job_{jid}")
+        model.setObjective(
+            gp.quicksum(
+                z[j.get("id", f"j_{i}")] * j.get("priority", 1.0)
+                for i, j in enumerate(jobs)
+            ),
+            GRB.MAXIMIZE,
+        )
+        model.addConstr(
+            gp.quicksum(z[j.get("id", f"j_{i}")] for i, j in enumerate(jobs)) <= max_concurrency,
+            "MaxConcurrency",
+        )
+        model.addConstr(
+            gp.quicksum(
+                z[j.get("id", f"j_{i}")] * j.get("ram_mb", 1024)
+                for i, j in enumerate(jobs)
+            )
+            <= max_ram_mb,
+            "MaxRAM",
+        )
+        model.addConstr(
+            gp.quicksum(
+                z[j.get("id", f"j_{i}")] * j.get("cpu_cores", 1)
+                for i, j in enumerate(jobs)
+            )
+            <= max_cpu_cores,
+            "MaxCPU",
+        )
+        model.optimize()
+        if model.status == GRB.OPTIMAL:
+            selected = [jid for jid, var in z.items() if var.X > 0.5]
+            used_ram = sum(j.get("ram_mb", 1024) for j in jobs if j.get("id") in selected)
+            used_cpu = sum(j.get("cpu_cores", 1) for j in jobs if j.get("id") in selected)
+            return {
+                "success": True,
+                "selected_jobs": selected,
+                "solver": "gurobi",
+                "objective": float(model.ObjVal),
+                "allocated_ram_mb": used_ram,
+                "allocated_cpu_cores": used_cpu,
+                "status": "OPTIMAL",
+                "optimality_gap": 0.0,
+            }
+        return {"success": False, "selected_jobs": [], "status": f"INFEASIBLE_{model.status}"}
+    except Exception as exc:  # noqa: BLE001
+        return {"success": False, "selected_jobs": [], "error": str(exc)}
 
 def stamp_decision_governance(result: Dict[str, Any]) -> Dict[str, Any]:
     """Action layer stays human-oversight. A solve is not a PreToolUse apply."""
@@ -365,12 +448,21 @@ def run_mode(mode: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                 max_token_footprint=int(payload.get("max_token_footprint", 1000)),
             )
         )
+    if mode == "dispatch":
+        return stamp_decision_governance(
+            solve_fleet_dispatch(
+                jobs=payload.get("jobs", []),
+                max_ram_mb=int(payload.get("max_ram_mb", 32768)),
+                max_cpu_cores=int(payload.get("max_cpu_cores", 10)),
+                max_concurrency=int(payload.get("max_concurrency", 4)),
+            )
+        )
     return stamp_decision_governance({"success": False, "error": f"Unknown mode: {mode}"})
 
 
 def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Gurobi Optimization Engine for ThumbGate")
-    parser.add_argument("--mode", choices=["routing", "rules"], required=True)
+    parser.add_argument("--mode", choices=["routing", "rules", "dispatch"], required=True)
     parser.add_argument(
         "--input",
         required=True,
