@@ -26,11 +26,17 @@ const HARNESSES = Object.freeze({
   'code-edit': path.join(HARNESS_DIR, 'code-edit.json'),
   'db-write': path.join(HARNESS_DIR, 'db-write.json'),
   routine: path.join(HARNESS_DIR, 'routine.json'),
+  'actor-critic-audit': path.join(HARNESS_DIR, 'actor-critic-audit.json'),
 });
 
 // ---------------------------------------------------------------------------
 // Detection patterns
 // ---------------------------------------------------------------------------
+
+const ACTOR_CRITIC_PATTERNS = [
+  /\b(publish_causal_report|causal_inference|target_trial|target-trial|actor-critic|actor_critic|process_audit)\b/i,
+  /\b(placebo_test|counterfactual|propensity_score|double_ml)\b/i,
+];
 
 const DEPLOY_PATTERNS = [
   /\brailway\s+(deploy|up|run)\b/i,
@@ -92,6 +98,9 @@ function selectHarness(toolName, toolInput) {
   if (commandText) {
     if (DB_WRITE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['db-write'];
+    }
+    if (ACTOR_CRITIC_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['actor-critic-audit'];
     }
     if (ROUTINE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES.routine;

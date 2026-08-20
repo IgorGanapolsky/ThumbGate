@@ -54,6 +54,7 @@ undefined/
 .agent/
 .planning/
 scratch/
+coordination/ready-to-post/
 tests/proof-test-sandbox/
 cfo_report.json
 docs/marketing/codex-marketplace-revenue-pack.json
