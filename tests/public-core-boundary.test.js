@@ -260,8 +260,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // public-bundle-ratchet.
   // 470 -> 471 (2026-08-18): lockstep with pipeline-compass (+1)
   // 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
-  // 474 -> 475 (2026-08-19): each of hidden-entry-points and no-llm-in-the-gate alone
-  // 475 -> 476 (2026-08-20): merge both onto main (measured npm pack 476); keep CEILING const
+  // 474 -> 475 (2026-08-19): public/blog/no-llm-in-the-gate.html (+1 measured npm pack)
+  // 475 -> 476 (2026-08-19): scripts/rule-sprawl.js (+1 measured npm pack)
   const CEILING = 476;
   assert.ok(
     files.length <= CEILING,

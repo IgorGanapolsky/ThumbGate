@@ -455,10 +455,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // public-core-boundary.
     // 470 -> 471 (2026-08-18): pipeline-compass runtime module (+1)
     // file that packaged entrypoints require: scripts/override-audit.js (#3515),
-    // src/security-questionnaire.js (#3519), src/pipeline-compass.js (#3521).
     // 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
-    // 474 -> 475 (2026-08-19): each of hidden-entry-points and no-llm-in-the-gate alone
-    // 475 -> 476 (2026-08-20): merge both onto main (measured npm pack 476); keep CEILING const
+    // 474 -> 475 (2026-08-19): public/blog/no-llm-in-the-gate.html (+1 measured npm pack)
+    // 475 -> 476 (2026-08-19): scripts/rule-sprawl.js (+1 measured npm pack)
     manifest.fileCount <= 476,
     `npm package should stay <= 476 files, got ${manifest.fileCount}`
   );

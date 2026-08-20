@@ -196,8 +196,8 @@ const path = require('node:path');
 // 458 -> 459: governance-difficulty-curriculum (EdotEnv harder-next-round transfer)
 // 459 -> 460: provider-receipt-contract packaging on rebased receipt PR
 // 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
-// 474 -> 475 (2026-08-19): each of hidden-entry-points and no-llm-in-the-gate alone
-// 475 -> 476 (2026-08-20): merge both onto main (measured npm pack 476); keep CEILING const
+// 474 -> 475 (2026-08-19): public/blog/no-llm-in-the-gate.html (+1 measured npm pack)
+// 475 -> 476 (2026-08-19): scripts/rule-sprawl.js (+1 measured npm pack)
 const BASELINE_FILE_COUNT = 476;
 
 function readBundleSnapshot() {
