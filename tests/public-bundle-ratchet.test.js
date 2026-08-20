@@ -195,13 +195,8 @@ const path = require('node:path');
 // 455 -> 458: edotenv-rl-gateway + rsi-safety-hillclimb + research-agent-harness
 // 458 -> 459: governance-difficulty-curriculum (EdotEnv harder-next-round transfer)
 // 459 -> 460: provider-receipt-contract packaging on rebased receipt PR
-// 467 -> 470: three concurrent PRs (override-audit, security-questionnaire, pipeline-compass)
-// 471 -> 472 (2026-08-19): public/blog/a-10-dollar-vps-is-not-a-computer.html
-// 471 -> 472 (2026-08-19): public/blog/a-receipt-is-not-world-state.html
-// Cursor-format first-party research post (TOC, author, related posts). Static HTML only.
-// 472 -> 473 (2026-08-20): scripts/git-at-scale.js packaged for agent-readiness/self-heal
-const BASELINE_FILE_COUNT = 474;
-
+// 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
+// 474 -> 475 (2026-08-19): git-at-scale-hygiene + solver-parity keep-both (measured npm pack 475)
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

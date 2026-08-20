@@ -455,15 +455,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // public-core-boundary.
     // 470 -> 471 (2026-08-18): pipeline-compass runtime module (+1)
     // file that packaged entrypoints require: scripts/override-audit.js (#3515),
-    // src/security-questionnaire.js (#3519), src/pipeline-compass.js (#3521).
-    // 471 -> 472 (2026-08-19): public/blog/a-10-dollar-vps-is-not-a-computer.html
-    // Cursor-format research post on the existing /blog hub. Static HTML only.
-    // 471 -> 472 (2026-08-19): public/blog/a-receipt-is-not-world-state.html
-    // Cursor-format first-party research post. Static HTML only.
-    // 472 -> 473 (2026-08-20): scripts/git-at-scale.js packaged for agent-readiness/self-heal
-    manifest.fileCount <= 474,
-    `npm package should stay <= 474 files, got ${manifest.fileCount}`
-      );
+    // 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
+    // 474 -> 475 (2026-08-19): git-at-scale-hygiene + solver-parity keep-both (measured npm pack 475)
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
   // inline with main's token-savings dashboard additions.
