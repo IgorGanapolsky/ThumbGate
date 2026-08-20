@@ -63,6 +63,14 @@ test('summarizeGitScale skips a non-git project root', () => {
   fs.rmSync(projectRoot, { recursive: true, force: true });
 });
 
+test('summarizeGitScale evaluates a real git repo root', () => {
+  const { summarizeGitScale } = require('../scripts/agent-readiness');
+  const summary = summarizeGitScale(path.join(__dirname, '..'));
+  assert.equal(summary.skipped, false);
+  assert.ok(typeof summary.ready === 'boolean');
+  assert.ok(summary.scorecard);
+});
+
 test('generateAgentReadinessReport includes a gitScale section', () => {
   const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-git-scale-ready-'));
   for (const fileName of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
