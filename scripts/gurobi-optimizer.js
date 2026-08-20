@@ -76,8 +76,21 @@ function stampDecisionGovernance(result) {
   body.capturedRevenueUsd = 0;
   body.repeatable = repeatable;
   body.plausibleOnly = !repeatable;
+  body.certified = repeatable && body.success === true;
+  if (body.certified) {
+    body.proof = body.proof || 'gurobi-optimal';
+  } else if (String(body.status || '').startsWith('INFEASIBLE')) {
+    body.proof = body.proof || 'infeasible-iis';
+  } else if (/heuristic|fallback/i.test(String(body.solver || ''))) {
+    body.proof = body.proof || 'heuristic';
+  } else {
+    body.proof = body.proof || 'unproven';
+  }
   return body;
 }
+
+const stampReceipt = stampDecisionGovernance;
+const isCertifiedSolve = isRepeatableSolve;
 
 /**
  * Optimizes model candidate routing via Gurobi MILP solver.
@@ -103,15 +116,27 @@ function optimizeModelRouting(candidates, { maxBudgetUsd = 1.0, maxLatencyMs = 5
     const valid = candidates.filter(
       (c) => (c.cost || 0) <= maxBudgetUsd && (c.latency_ms || 0) <= maxLatencyMs
     );
-    const pool = valid.length > 0 ? valid : candidates;
-    const best = pool.reduce(
+    if (valid.length === 0) {
+      return stampDecisionGovernance({
+        success: false,
+        selected: null,
+        solver: 'node-fallback-heuristic',
+        status: 'INFEASIBLE',
+        iis: ['BudgetLimit', 'LatencyLimit'],
+        reason: 'no candidate satisfies budget and latency',
+        error: err.message,
+        python: pythonBin,
+      });
+    }
+    const best = valid.reduce(
       (prev, curr) => ((curr.score || 0) > (prev.score || 0) ? curr : prev),
-      pool[0]
+      valid[0]
     );
     return stampDecisionGovernance({
       success: true,
       selected: best.id,
       solver: 'node-fallback-heuristic',
+      status: 'HEURISTIC',
       objective: best.score || 0,
       error: err.message,
       python: pythonBin,
@@ -160,6 +185,7 @@ function optimizeRuleSelection(rules, { maxEvalTimeMs = 50.0, maxTokenFootprint 
       success: true,
       selected_rules: selected,
       solver: 'node-fallback-knapsack',
+      status: 'HEURISTIC',
       used_time_ms: curTime,
       used_tokens: curTokens,
       error: err.message,
@@ -206,7 +232,9 @@ module.exports = {
   probeGurobi,
   runPythonMode,
   isRepeatableSolve,
+  isCertifiedSolve,
   stampDecisionGovernance,
+  stampReceipt,
   mainCli,
   get PYTHON_BIN() {
     return resolvePythonBin();
