@@ -463,8 +463,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 482 -> 483 (2026-08-19): miminions-adapter (+1)
     // file that packaged entrypoints require: scripts/override-audit.js (#3515),
     // 494 -> 495 (2026-08-20): scripts/hidden-entry-points.js (+1 measured npm pack)
-    manifest.fileCount <= 495,
-    `npm package should stay <= 495 files, got ${manifest.fileCount}`
+    // 495 -> 496 (2026-08-20): scripts/git-at-scale.js (+1 measured npm pack)
+    manifest.fileCount <= 496,
+    `npm package should stay <= 496 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

@@ -54,6 +54,27 @@ test('summarizePermissionTier exposes dispatch as a safe remote ops tier', () =>
   assert.ok(!summary.allowedTools.includes('start_handoff'));
 });
 
+test('summarizeGitScale skips a non-git project root', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-nongit-'));
+  const { summarizeGitScale } = require('../scripts/agent-readiness');
+  const summary = summarizeGitScale(projectRoot);
+  assert.equal(summary.skipped, true);
+  assert.equal(summary.ready, true);
+  fs.rmSync(projectRoot, { recursive: true, force: true });
+});
+
+test('generateAgentReadinessReport includes a gitScale section', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-git-scale-ready-'));
+  for (const fileName of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
+    fs.writeFileSync(path.join(projectRoot, fileName), `# ${fileName}\n`);
+  }
+  fs.writeFileSync(path.join(projectRoot, '.mcp.json'), JSON.stringify({ mcpServers: {} }, null, 2));
+  const report = generateAgentReadinessReport({ projectRoot, mcpProfile: 'default' });
+  assert.ok(report.gitScale);
+  assert.equal(report.gitScale.skipped, true);
+  fs.rmSync(projectRoot, { recursive: true, force: true });
+});
+
 test('generateAgentReadinessReport aligns bootstrap and permission findings', () => {
   const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bootstrap-ready-'));
   for (const fileName of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {

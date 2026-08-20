@@ -108,6 +108,13 @@ function runSelfHeal({ reason = 'unknown', cwd = PROJECT_ROOT } = {}) {
   });
   const reasoning = aggregateTraces(traces);
 
+  let gitScale = null;
+  try {
+    gitScale = require('./git-at-scale').applyScaleHeal(cwd);
+  } catch (error) {
+    gitScale = { applied: false, error: error.message };
+  }
+
   return {
     timestamp: new Date().toISOString(),
     reason,
@@ -119,6 +126,7 @@ function runSelfHeal({ reason = 'unknown', cwd = PROJECT_ROOT } = {}) {
     healthy: execution.failed === 0,
     reasoning,
     traces,
+    gitScale,
   };
 }
 

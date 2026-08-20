@@ -141,6 +141,8 @@ test('runSelfHeal returns complete report structure', () => {
   assert.ok(Array.isArray(report.changedFiles));
   assert.equal(typeof report.changed, 'boolean');
   assert.equal(typeof report.healthy, 'boolean');
+  assert.ok(report.gitScale);
+  assert.equal(report.gitScale.applied, true);
 });
 
 test('runSelfHeal includes reasoning traces', () => {
