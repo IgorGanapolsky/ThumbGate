@@ -588,6 +588,160 @@ function escalationError(message) {
   return error;
 }
 
+function createMemoryGrantStore() {
+  const consumed = new Set();
+  return {
+    consume(grantId) {
+      const id = String(grantId || '').trim();
+      if (!id) return { ok: false, reason: 'missing_grant_id' };
+      if (consumed.has(id)) return { ok: false, reason: 'grant_already_consumed' };
+      consumed.add(id);
+      return { ok: true };
+    },
+  };
+}
+
+function createDurableGrantStore(options = {}) {
+  const storePath = options.grantStorePath || path.join(
+    getFeedbackPaths(options).FEEDBACK_DIR,
+    'harness-grants.jsonl'
+  );
+  return {
+    consume(grantId) {
+      const id = String(grantId || '').trim();
+      if (!id) return { ok: false, reason: 'missing_grant_id' };
+      return withFileLedgerLock(`${storePath}.lock`, () => {
+        let raw = '';
+        try {
+          raw = fs.readFileSync(storePath, 'utf8');
+        } catch (error) {
+          if (error.code !== 'ENOENT') throw error;
+        }
+        for (const line of raw.split('\n')) {
+          if (!line.trim()) continue;
+          try {
+            if (JSON.parse(line).grantId === id) {
+              return { ok: false, reason: 'grant_already_consumed' };
+            }
+          } catch {
+            return { ok: false, reason: 'grant_store_corrupt' };
+          }
+        }
+        fs.mkdirSync(path.dirname(storePath), { recursive: true });
+        fs.appendFileSync(storePath, `${JSON.stringify({
+          grantId: id,
+          consumedAt: (options.now || new Date()).toISOString(),
+        })}\n`);
+        return { ok: true };
+      }, {
+        now: options.now,
+        lockStaleMs: options.lockStaleMs,
+        errorFactory: (message) => escalationError(message),
+      });
+    },
+  };
+}
+const ALLOW_ONCE_GRANT_MODES = new Set(['once', 'allow-once', 'allowed-once', 'allow_once']);
+const ALLOW_ALWAYS_GRANT_MODES = new Set(['always', 'allow-always', 'allow_always']);
+
+/**
+ * DeepSeek-style harness grant.
+ * Missing or throwing/failing approver fails closed (never silent-allow).
+ * Grants are allow-once only; allow-always is rejected.
+ */
+function evaluateHarnessGrant(input = {}, options = {}) {
+  const grantMode = String(input.grantMode || input.mode || 'once').trim().toLowerCase();
+  if (ALLOW_ALWAYS_GRANT_MODES.has(grantMode)) {
+    return { allowed: false, failClosed: true, reason: 'allow_always_forbidden' };
+  }
+  if (!ALLOW_ONCE_GRANT_MODES.has(grantMode)) {
+    return { allowed: false, failClosed: true, reason: 'unsupported_grant_mode' };
+  }
+  if (input.approver == null) {
+    return { allowed: false, failClosed: true, reason: 'missing_approver' };
+  }
+
+  let verdict;
+  try {
+    verdict = typeof input.approver === 'function' ? input.approver(input.action) : input.approver;
+  } catch (error) {
+    return {
+      allowed: false,
+      failClosed: true,
+      reason: 'approver_failed',
+      detail: String(error && error.message ? error.message : error),
+    };
+  }
+  if (verdict && typeof verdict.then === 'function') {
+    return {
+      allowed: false,
+      failClosed: true,
+      reason: 'approver_failed',
+      detail: 'async approver must be resolved by caller',
+    };
+  }
+  if (!verdict || verdict.allow !== true) {
+    return {
+      allowed: false,
+      failClosed: true,
+      reason: (verdict && verdict.reason) || 'approver_denied',
+    };
+  }
+
+  const grantStore = options.grantStore || createDurableGrantStore(options);
+  const grantId = String(input.grantId || input.actionId || '').trim();
+  if (!grantId) {
+    return { allowed: false, failClosed: true, reason: 'missing_grant_id' };
+  }
+  let consumed;
+  try {
+    consumed = grantStore.consume(grantId);
+  } catch (error) {
+    return {
+      allowed: false,
+      failClosed: true,
+      reason: 'grant_store_failed',
+      detail: String(error && error.message ? error.message : error),
+    };
+  }
+  if (!consumed || !consumed.ok) {
+    return { allowed: false, failClosed: true, reason: (consumed && consumed.reason) || 'grant_already_consumed' };
+  }
+
+  const facts = {
+    actionId: grantId,
+    toolName: input.toolName || (input.action && input.action.toolName) || 'harness_action',
+    toolInput: (input.action && input.action.toolInput) || input.toolInput || {},
+    decision: 'allow',
+    grantMode: 'allow-once',
+    principal: input.principal || 'harness',
+  };
+
+  if (options.recordReceipt === false) {
+    return { allowed: true, failClosed: true, grantMode: 'allow-once', grantId, facts };
+  }
+
+  try {
+    const { recordReceipt } = require('./action-receipts');
+    const receipt = recordReceipt({
+      actionId: facts.actionId,
+      toolName: facts.toolName,
+      toolInput: facts.toolInput,
+      decision: facts.decision,
+      principal: facts.principal,
+      outcome: { testOutcome: 'approved-once' },
+    }, options);
+    return { allowed: true, failClosed: true, grantMode: 'allow-once', grantId, facts, receipt };
+  } catch (error) {
+    return {
+      allowed: false,
+      failClosed: true,
+      reason: 'receipt_record_failed',
+      detail: String(error && error.message ? error.message : error),
+    };
+  }
+}
+
 function isCliInvocation() {
   return Boolean(process.argv[1]) && path.resolve(process.argv[1]) === __filename;
 }
@@ -606,7 +760,10 @@ if (isCliInvocation()) {
 module.exports = {
   calculateEscalationMetrics,
   consumeVerifiedApproval,
+  createDurableGrantStore,
+  createMemoryGrantStore,
   decideEscalation,
+  evaluateHarnessGrant,
   getEscalation,
   getEscalationsHeadPath,
   getEscalationsJournalPath,
