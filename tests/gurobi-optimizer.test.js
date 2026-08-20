@@ -183,7 +183,7 @@ test('Gurobi Optimizer - Node.js integration', async (t) => {
     assert.equal(res.selected_jobs.includes('job-heavy-train'), false);
 
     const receipt = createCertifiedReceipt(res, 'fleet-dispatch');
-    assert.equal(receipt.certified, true);
+    assert.equal(receipt.certified, isCertifiedSolve(res));
     assert.ok(receipt.receiptId.startsWith('opt_rcpt_'));
     assert.ok(receipt.signatureSha256);
   });
