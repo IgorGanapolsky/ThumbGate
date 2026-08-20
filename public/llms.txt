@@ -55,6 +55,7 @@ Proof sequence: remember → re-rank lessons → promote repeated failures → e
 - [Feedback loop vs decision layer](https://thumbgate.ai/learn/feedback-loop-vs-decision-layer)
 - [From prototype to production](https://thumbgate.ai/learn/from-prototype-to-production)
 - [MCP pre-action checks explained](https://thumbgate.ai/learn/mcp-pre-action-checks-explained)
+- [Protocol governance meets PreToolUse](https://thumbgate.ai/learn/protocol-governance-pretooluse)
 - [Regulated agent execution boundary](https://thumbgate.ai/learn/regulated-agent-execution-boundary)
 - [Spec-driven development](https://thumbgate.ai/learn/spec-driven-development)
 - [Stop AI agent force-push](https://thumbgate.ai/learn/stop-ai-agent-force-push)
