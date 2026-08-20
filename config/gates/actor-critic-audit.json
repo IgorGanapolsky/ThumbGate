@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "harness": "actor-critic-audit",
+  "description": "Enforces Actor-Critic process audits (inspired by Netflix oci-agent). Gating high-consequence data mutations, causal reports, or deployment triggers without an approved critic review receipt.",
+  "gates": [
+    {
+      "id": "actor-critic-missing-process-audit",
+      "layer": "PreAction",
+      "pattern": "^(?!.*(?:critic_rating=(?:fully_satisfactory|satisfactory_with_caveats)|criticReceipt=(?:fully_satisfactory|satisfactory_with_caveats))).*(?:publish_causal_report|deploy_treatment_policy|mutate_production_dataset|dispatch_automated_decision)",
+      "toolNames": ["Bash", "Edit", "Write"],
+      "action": "block",
+      "severity": "critical",
+      "message": "Actor-Critic process audit required before high-consequence action. Verify that an approved critic audit receipt (fully_satisfactory or satisfactory_with_caveats) is attached."
+    },
+    {
+      "id": "actor-critic-placebo-test-failure",
+      "layer": "PreAction",
+      "pattern": "(?:placebo_test_failed|failed_counterfactual_balance|unmeasured_confounder_risk)",
+      "toolNames": ["Bash", "Edit", "Write"],
+      "action": "block",
+      "severity": "high",
+      "message": "Critic flagged failed placebo test or counterfactual imbalance. Downstream policy mutation blocked until spec tweaks are applied."
+    },
+    {
+      "id": "actor-critic-early-adopter-bias-warning",
+      "layer": "PreAction",
+      "pattern": "(?:early_adopter_bias|selection_hazard|imbalanced_propensity)",
+      "toolNames": ["Bash", "Edit", "Write"],
+      "action": "warn",
+      "severity": "medium",
+      "message": "Potential selection bias or early-adopter skew detected by critic. Review sensitivity analysis before finalizing recommendations."
+    }
+  ]
+}

@@ -200,7 +200,8 @@ const path = require('node:path');
 // 475 -> 476 (2026-08-19): scripts/rule-sprawl.js (+1 measured npm pack)
 // 494 -> 495 (2026-08-20): scripts/hidden-entry-points.js (+1 measured npm pack)
 // 495 -> 496 (2026-08-20): scripts/git-at-scale.js (+1 measured npm pack)
-const BASELINE_FILE_COUNT = 496;
+// 496 -> 497 (2026-08-20): config/gates/actor-critic-audit.json (+1 measured npm pack)
+const BASELINE_FILE_COUNT = 497;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

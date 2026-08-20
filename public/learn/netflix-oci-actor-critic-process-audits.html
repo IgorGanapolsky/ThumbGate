@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Actor-Critic Process Audits: Netflix OCI Agent vs. Pre-Action Reliability Gateways — ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Netflix open-sourced oci-agent for causal inference using Actor-Critic loops and process audits. Here is how process audits pair with ThumbGate pre-action interdiction to stop agent mistakes before execution.">
+<meta name="keywords" content="Netflix oci-agent, actor-critic agent, process audits, causal inference, target trial emulation, ThumbGate, pre-action firewall, agentic evaluation, runtime governance">
+<meta property="og:title" content="Actor-Critic Process Audits: Netflix OCI Agent vs. Pre-Action Reliability Gateways">
+<meta property="og:description" content="When unconstrained LLMs tackle high-consequence analysis, they hallucinate naive regressions. Netflix solved this with Actor-Critic process audits; ThumbGate turns those audits into deterministic pre-action gates.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/netflix-oci-actor-critic-process-audits">
+<link rel="canonical" href="https://thumbgate.ai/learn/netflix-oci-actor-critic-process-audits">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Actor-Critic Process Audits: Netflix OCI Agent vs. Pre-Action Reliability Gateways",
+  "description": "How Netflix's open-source OCI agent uses Actor-Critic loops and process audits, and how ThumbGate enforces these audit receipts at the pre-action tool boundary.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-08-20",
+  "dateModified": "2026-08-20",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/netflix-oci-actor-critic-process-audits",
+  "citation": [
+    {
+      "@type": "Article",
+      "headline": "Netflix Open-Sources Agentic Workflow for Causal Inference",
+      "author": "Anthony Alford",
+      "publisher": "InfoQ",
+      "url": "https://www.infoq.com/news/2026/08/netflix-oci-agent/",
+      "datePublished": "2026-08-20"
+    },
+    {
+      "@type": "Article",
+      "headline": "A Human-Augmenting Agentic Workflow for Observational Causal Inference",
+      "publisher": "Netflix Technology Blog",
+      "url": "https://netflixtechblog.com/a-human-augmenting-agentic-workflow-for-causal-inference-4623f0a9c5af",
+      "datePublished": "2026-08-19"
+    }
+  ],
+  "about": [
+    {"@type": "Thing", "name": "Actor-Critic Architecture"},
+    {"@type": "Thing", "name": "Process Audits"},
+    {"@type": "Thing", "name": "Causal Inference"},
+    {"@type": "Thing", "name": "Pre-Action Enforcement"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Why did Netflix build the oci-agent workflow?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Unconstrained LLMs given causal questions routinely hallucinate naive linear regressions, producing wild discrepancies (e.g. 25% of baseline) due to missing placebo tests, unmeasured confounders, and early-adopter bias. Netflix's oci-agent enforces target trial emulation via a two-agent Actor-Critic loop with inspectable process audits."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the difference between a process audit and an outcome check?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "An outcome check only evaluates the final string response. A process audit verifies every intermediate artifact — the formal analysis plan, spec, parameterizations, placebo validation checks, and executable notebooks — before downstream actions are authorized."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does ThumbGate integrate with Actor-Critic architectures?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate acts as the pre-action firewall at the tool-call boundary. It requires a valid, verified Critic audit receipt (satisfactory or satisfactory_with_caveats) before allowing the Actor agent to execute file writes, database mutations, API requests, or deployment commands."
+      }
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ThumbGate",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "All",
+  "offers": {
+    "@type": "Offer",
+    "price": "0.00",
+    "priceCurrency": "USD"
+  },
+  "description": "Deterministic pre-action firewall and process audit gateway for AI coding and autonomous agents."
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .cite-box {
+    background: var(--bg-card);
+    border-left: 3px solid var(--cyan);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0;
+    font-size: 0.95rem;
+    color: var(--text-dim);
+  }
+  .cite-box a { color: var(--cyan); text-decoration: none; }
+  .cite-box a:hover { text-decoration: underline; }
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.95rem;
+  }
+  .compare-table th, .compare-table td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .compare-table th {
+    background: var(--bg-card);
+    color: var(--text);
+    font-weight: 700;
+  }
+  .quote-box {
+    border-left: 4px solid var(--cyan);
+    background: var(--bg-card);
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0;
+    font-style: italic;
+  }
+  .sticky-cta {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin: 2rem 0;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/pricing">Pricing</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Actor-Critic Process Audits × Pre-Action Gates</div>
+  <h1>Actor-Critic Process Audits: Netflix OCI Agent vs. Pre-Action Reliability Gateways</h1>
+  <p style="color:var(--muted);">6 min read · Runtime governance & process audits for AI agents</p>
+
+  <div class="tldr">
+    <strong>TL;DR:</strong> When unconstrained LLMs tackle high-consequence analysis, they hallucinate naive linear regressions. Netflix's open-source <code>oci-agent</code> solves this with an <strong>Actor-Critic separation</strong> and inspectable <strong>process audits</strong>. ThumbGate turns these process audits into <strong>deterministic pre-action gates</strong>, blocking unsafe tool dispatch until the critic emits an approved audit receipt.
+  </div>
+
+  <div class="cite-box">
+    <strong>Cited:</strong> Anthony Alford,
+    <a href="https://www.infoq.com/news/2026/08/netflix-oci-agent/" target="_blank" rel="noopener">Netflix Open-Sources Agentic Workflow for Causal Inference</a>, InfoQ, Aug 20, 2026 — plus Netflix Technology Blog,
+    <a href="https://netflixtechblog.com/a-human-augmenting-agentic-workflow-for-causal-inference-4623f0a9c5af" target="_blank" rel="noopener">A Human-Augmenting Agentic Workflow for Observational Causal Inference</a>.
+  </div>
+
+  <h2>1. Why "Process Over Outcome" is Mandatory for Agent Safety</h2>
+  <p>In classical LLM benchmarks, evaluation is performed solely on the final output string. In production environments without objective ground truth (such as econometric causal inference, regulated medical intake, or complex platform deployments), output-only evaluations fail silently.</p>
+
+  <div class="quote-box">
+    "Rather than only checking the agent's output, they make every step transparent. Agents publish plans, specs, plots, and notebooks that humans can inspect and re-execute. They pair these 'process audits' with human oversight... The frontier isn't just better models, it's better workflows around them."
+    <br><span style="font-size: 0.85rem; color: var(--muted); font-style: normal;">— Fabio Piazza, Senior Product Manager at Owkin</span>
+  </div>
+
+  <h2>2. Architecture Comparison: Netflix OCI Agent vs. ThumbGate Firewall</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Dimension</th>
+        <th>Netflix OCI Agent Workflow</th>
+        <th>ThumbGate Reliability Gateway</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Primary Domain</strong></td>
+        <td>Observational Causal Inference (Target Trial Emulation)</td>
+        <td>Universal Pre-Action Tool Interdiction & Agent Firewall</td>
+      </tr>
+      <tr>
+        <td><strong>Agent Roles</strong></td>
+        <td>Actor (Spec/Notebook Runner) + Critic (Bias Reviewer)</td>
+        <td>Proposer Agent + PreToolUse Verifier + Deterministic Policy Gate</td>
+      </tr>
+      <tr>
+        <td><strong>Audit Mechanism</strong></td>
+        <td>Process Audits (Notebooks, plots, placebo tests)</td>
+        <td>Attribution Receipts, Scoped State Verification, DPO Promotion</td>
+      </tr>
+      <tr>
+        <td><strong>Enforcement Point</strong></td>
+        <td>Post-execution critique & iteration loop</td>
+        <td>Pre-execution tool-call boundary (Allow / Warn / Deny)</td>
+      </tr>
+      <tr>
+        <td><strong>Failure Recovery</strong></td>
+        <td>Critic suggests spec tweaks; human oversight</td>
+        <td>Self-improving feedback loop promotes repeated mistakes to hard gates</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3. Enforcing Process Audits with Deterministic PreToolUse Gates</h2>
+  <p>To prevent unvetted causal analysis or agent outputs from triggering downstream mutations, ThumbGate implements the <code>actor-critic-process-audit</code> gate template:</p>
+
+  <pre><code>{
+  "gateId": "actor_critic_process_audit",
+  "category": "agent_governance",
+  "name": "Actor-Critic Process Audit Gate",
+  "description": "Requires an authenticated critic audit receipt before downstream mutation tools execute.",
+  "rules": [
+    {
+      "condition": "action.tier === 'write' || action.isDestructive",
+      "requirement": "action.receipt.criticRating === 'fully_satisfactory' || action.receipt.criticRating === 'satisfactory_with_caveats'",
+      "onFailure": "DENY",
+      "reason": "Process audit missing or critic rating not satisfactory."
+    }
+  ]
+}</code></pre>
+
+  <h2>4. Key Takeaways for Engineering Leaders</h2>
+  <ol>
+    <li><strong>Never trust single-shot LLM analysis:</strong> Unconstrained models lack counterfactual discipline. Split execution into an Actor-Critic pair.</li>
+    <li><strong>Make intermediate artifacts inspectable:</strong> Log reproducible analysis specs and notebooks rather than conversational summaries.</li>
+    <li><strong>Enforce gates at the commit boundary:</strong> Pair process audits with deterministic pre-action firewalls so unapproved actions cannot execute.</li>
+  </ol>
+
+  <div class="sticky-cta">
+    <strong>Enforce Process Audits at Action Time:</strong> Install ThumbGate pre-action hooks in your agent workspace:
+    <br><br>
+    <code>npx thumbgate init</code>
+    <p style="margin-top:0.75rem;font-size:0.85rem;color:var(--text-dim);">All pre-action gate safety guarantees are empirically validated: see <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">VERIFICATION_EVIDENCE.md</a> for machine-readable benchmark reports.</p>
+  </div>
+</div>
+</body>
+</html>
