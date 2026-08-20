@@ -9,12 +9,8 @@ from scripts.gurobi_optimizer import (
     run_mode,
     solve_model_routing,
     solve_rule_selection,
-<<<<<<< HEAD
-    stamp_receipt,
-||||||| 024c28212
-=======
     stamp_decision_governance,
->>>>>>> origin/main
+    stamp_receipt,
 )
 
 
