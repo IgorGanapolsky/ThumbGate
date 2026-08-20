@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protocol Governance Meets PreToolUse — Commit Boundary for Coding Agents — ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Dr. Travis Lee's Protocol Governance asks whether an AI action remains legitimate at the moment of commitment. ThumbGate's PreToolUse hooks are that commit boundary for coding agents — allow, warn, or deny before the tool runs.">
+<meta name="keywords" content="protocol governance, PreToolUse, commit boundary, continuous legitimacy, AI agent governance, runtime governance, MCP hooks, ThumbGate, permit hold reject">
+<meta property="og:title" content="Protocol Governance Meets PreToolUse — The Commit Boundary for Coding Agents">
+<meta property="og:description" content="Permission is not legitimacy. Map Continuous Legitimacy, the Constitutional Commit Boundary, and Protocol Governance onto PreToolUse allow/warn/deny.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/protocol-governance-pretooluse">
+<link rel="canonical" href="https://thumbgate.ai/learn/protocol-governance-pretooluse">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Protocol Governance Meets PreToolUse — The Commit Boundary for Coding Agents",
+  "description": "Map Protocol Governance, Continuous Legitimacy, and the Constitutional Commit Boundary onto ThumbGate PreToolUse allow/warn/deny for coding agents.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-08-20",
+  "dateModified": "2026-08-20",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/protocol-governance-pretooluse",
+  "citation": [
+    {
+      "@type": "Article",
+      "headline": "AI Governance 2.0: Protocol Governance",
+      "author": "Dr. Travis Lee",
+      "publisher": "HumanSovereigntyAI",
+      "url": "https://humansovereigntyai.substack.com/p/ai-governance-20-protocol-governance",
+      "datePublished": "2026-08-19"
+    },
+    {
+      "@type": "Article",
+      "headline": "AI Governance 2.0: Continuous Legitimacy",
+      "author": "Dr. Travis Lee",
+      "url": "https://humansovereigntyai.substack.com/p/ai-governance-20-continuous-legitimacy"
+    },
+    {
+      "@type": "Article",
+      "headline": "AI Governance 2.0: The Constitutional Commit Boundary",
+      "author": "Dr. Travis Lee",
+      "url": "https://humansovereigntyai.substack.com/p/ai-governance-20-the-constitutional"
+    }
+  ],
+  "about": [
+    {"@type": "Thing", "name": "Protocol Governance"},
+    {"@type": "Thing", "name": "PreToolUse"},
+    {"@type": "Thing", "name": "Runtime governance"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is Protocol Governance for AI agents?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Protocol Governance evaluates whether a proposed consequential transition remains legitimately authorised under the conditions that exist when the action is about to occur — not only whether a policy exists or an IAM role permits the call."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does ThumbGate implement a commit boundary?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate PreToolUse hooks intercept coding-agent tool calls before execution and return allow, warn, or deny based on learned prevention rules, scope, and risk tiers. That is the runtime commit boundary for Bash, file writes, MCP tools, and similar actions."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is permission the same as legitimacy?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. An agent can still have valid credentials and a permitted API while the governing conditions have changed (expired approval, withdrawn scope, conflicting rule). Protocol Governance and PreToolUse both re-check admissibility at action time."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .cite-box {
+    background: var(--bg-card);
+    border-left: 3px solid var(--cyan);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0;
+    font-size: 0.95rem;
+    color: var(--text-dim);
+  }
+  .cite-box a { color: var(--cyan); text-decoration: none; }
+  .cite-box a:hover { text-decoration: underline; }
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.95rem;
+  }
+  .compare-table th, .compare-table td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .compare-table th {
+    background: var(--bg-card);
+    color: var(--text);
+    font-weight: 700;
+  }
+  .flow-diagram {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    font-family: 'SF Mono', Consolas, monospace;
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 2;
+    text-align: center;
+  }
+  .flow-diagram .arrow { color: var(--cyan); }
+  .flow-diagram .block { color: var(--green); }
+  .flow-diagram .deny { color: var(--red); }
+  .disclaimer {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/pricing">Pricing</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Protocol Governance × PreToolUse</div>
+  <h1>Protocol Governance Meets PreToolUse</h1>
+  <p style="color:var(--muted);">6 min read · Runtime governance for coding agents</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Policy, IAM, and post-hoc audit do not answer whether <em>this</em> tool call is still legitimate <em>now</em>. That is the commit boundary. ThumbGate PreToolUse hooks are the operational protocol for coding agents: evaluate the transition, then allow, warn, or deny before Bash, writes, or MCP tools commit.</div>
+
+  <div class="cite-box">
+    <strong>Cited:</strong> Dr. Travis Lee,
+    <a href="https://humansovereigntyai.substack.com/p/ai-governance-20-protocol-governance" target="_blank" rel="noopener">AI Governance 2.0: Protocol Governance (Paper 7)</a>,
+    HumanSovereigntyAI, Aug 19, 2026 — plus
+    <a href="https://humansovereigntyai.substack.com/p/ai-governance-20-continuous-legitimacy" target="_blank" rel="noopener">Continuous Legitimacy</a>
+    and
+    <a href="https://humansovereigntyai.substack.com/p/ai-governance-20-the-constitutional" target="_blank" rel="noopener">The Constitutional Commit Boundary</a>.
+    We are not affiliated with HumanSovereigntyAI. Framework names and architecture concepts remain theirs; this page maps the <em>questions</em> onto an existing coding-agent enforcement surface.
+  </div>
+
+  <h2>The question that arrives when AI can act</h2>
+  <p>Travis’s LinkedIn framing is exact: a policy can say what an AI system is allowed to do; a permission system can say what it can access; an audit can record what happened afterward. The missing question is:</p>
+  <p><strong>Does the system still have legitimate authority to perform this particular action when the action is about to occur?</strong></p>
+  <p>That is the gap ThumbGate was built for in the coding-agent lane. Claude Code, Cursor, Codex, and MCP clients do not fail because teams lack a PDF policy. They fail because <code>git push --force</code>, a destructive <code>rm</code>, or a write to the wrong path still executes after the model “decided.”</p>
+
+  <h2>Vocabulary map (steal the questions, keep the runtime)</h2>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Protocol Governance concept</th>
+        <th>Coding-agent equivalent already shipping in ThumbGate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Constitutional Commit Boundary</strong> — resolve admissibility before consequential commitment</td>
+        <td><strong>PreToolUse / pre-action hooks</strong> — intercept the tool call before the OS or API runs it</td>
+      </tr>
+      <tr>
+        <td><strong>Continuous Legitimacy</strong> — authority can expire or be withdrawn mid-task</td>
+        <td><strong>Scoped approvals, session leases, TTL’d protected-action grants</strong> — mid-session revocation beats a stale “allowed at task start”</td>
+      </tr>
+      <tr>
+        <td><strong>Protocol Governance</strong> — evaluate the <em>transition</em>, not only the actor</td>
+        <td><strong>Per-call gate evaluation</strong> — same agent, different command → different verdict</td>
+      </tr>
+      <tr>
+        <td><strong>Permission ≠ legitimacy</strong></td>
+        <td><strong>IAM / shell access ≠ gate allow</strong> — WriteGuard and prevention rules can deny a permitted shell</td>
+      </tr>
+      <tr>
+        <td><strong>Permit / Hold / Reject</strong></td>
+        <td><strong>Allow / Warn (flag+log) / Deny</strong> — plus escalate for admin-tier tools</td>
+      </tr>
+      <tr>
+        <td><strong>Governance traceability</strong> (why was this entitled?)</td>
+        <td><strong>Action receipts, gate firings, feedback→rule promotion</strong> — reconstruct why a call was blocked</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>The unit of governance is the transition</h2>
+  <p>Paper 7’s sharpest operational move is treating the <em>transition</em> (pending → committed) as the governance object. For coding agents that transition is concrete:</p>
+  <ul>
+    <li>Working tree → force-pushed <code>main</code></li>
+    <li>Local file → overwritten production config</li>
+    <li>Draft MCP write → live customer mutation</li>
+  </ul>
+  <p>Static role checks answer “who is this agent?” Pre-action checks answer “may <em>this</em> transition proceed under conditions that hold <em>now</em>?”</p>
+
+  <div class="flow-diagram">
+    <span class="block">Agent proposes tool call</span><br>
+    <span class="arrow">&darr;</span><br>
+    <span class="block">PreToolUse / Protocol check (admissibility now)</span><br>
+    <span class="arrow">&darr;</span><br>
+    <span class="block">Allow</span> · <span class="block">Warn</span> · <span class="deny">Deny / Hold</span><br>
+    <span class="arrow">&darr;</span><br>
+    <span class="block">Commit (shell / write / MCP) or stop</span>
+  </div>
+
+  <h2>Why this helps monetisation (without cloning a research stack)</h2>
+  <p>Enterprise buyers already hear “AI governance.” Travis’s series makes the <em>temporal</em> gap legible: policy and audit are necessary but late. ThumbGate’s cash path is not a new Constitutional Stack product. It is the shippable commit-boundary for the agents teams already run:</p>
+  <ul>
+    <li><a href="/learn/mcp-pre-action-checks-explained">MCP pre-action checks</a> — how hooks differ from prompt rules</li>
+    <li><a href="/learn/stop-ai-agent-force-push">Force-push prevention</a> — one irreversible transition, blocked before exec</li>
+    <li><a href="/guide">Setup guide</a> — wire PreToolUse in minutes</li>
+    <li><a href="/pricing">Pricing</a> — hosted state, adapter coverage, support (not “private intelligence theater”)</li>
+  </ul>
+  <p>GEO win: people searching <em>protocol governance</em>, <em>commit boundary</em>, or <em>runtime legitimacy for agents</em> should land on a page that names those terms honestly and routes to the existing Reliability Gateway — not a pretend new protocol product.</p>
+
+  <h2>What we are not stealing</h2>
+  <p>We are not re-implementing the Constitutional Stack, HumanSovereigntyAI trademarks, or Paper 8’s full architecture. Those are Travis’s research frames. The high-ROI transfer is the <strong>operational questions</strong> and the <strong>Permit/Hold/Reject</strong> timing — already answered in ThumbGate as allow/warn/deny at PreToolUse.</p>
+
+  <h2>Ship today</h2>
+  <ol>
+    <li>Install ThumbGate hooks for your agent (<a href="/guide">guide</a>).</li>
+    <li>Capture one thumbs-down on a real near-miss; promote it to a prevention rule.</li>
+    <li>Re-run the same tool call and confirm warn/deny before commit.</li>
+    <li>Read the receipts: that is governance traceability for the transition you almost shipped.</li>
+  </ol>
+
+  <p class="disclaimer">
+    HumanSovereigntyAI™, Constitutional Stack™, and related framework names are used for citation and vocabulary mapping only.
+    No affiliation. CC BY-NC-SA covers Travis’s article prose; framework IP remains protected per his licence terms.
+    This page describes existing ThumbGate pre-action enforcement — not a new governance protocol product.
+  </p>
+</div>
+
+</body>
+</html>

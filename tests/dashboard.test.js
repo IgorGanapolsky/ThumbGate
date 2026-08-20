@@ -248,7 +248,17 @@ test('generateDashboard surfaces tracking readiness and instrumentation truth', 
     assert.equal(data.instrumentation.paidOrderTrackingEnabled, true);
     assert.equal(data.instrumentation.invoiceTrackingEnabled, false);
     assert.equal(data.instrumentation.attributionTrackingEnabled, true);
-    assert.equal(data.readiness.overallStatus, repoHasMcpConfig ? 'ready' : 'needs_attention');
+    // After git-at-scale readiness (#3541), shallow/CI checkouts can surface a
+    // non-blocking scorecard warning that correctly flips overallStatus.
+    const gitScaleBlocking = Boolean(
+      data.readiness.gitScale
+      && data.readiness.gitScale.skipped === false
+      && data.readiness.gitScale.ready === false
+    );
+    assert.equal(
+      data.readiness.overallStatus,
+      (repoHasMcpConfig && !gitScaleBlocking) ? 'ready' : 'needs_attention'
+    );
     assert.equal(data.readiness.runtime.mode, 'container');
     assert.equal(data.readiness.bootstrap.ready, repoHasMcpConfig);
     assert.equal(data.readiness.permissions.tier, 'builder');

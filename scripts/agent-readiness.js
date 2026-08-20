@@ -279,11 +279,13 @@ function summarizeClaimVerification(projectRoot = PROJECT_ROOT, deps = {}) {
 
 function summarizeGitScale(projectRoot) {
   try {
-    const { getRepoRoot, getScaleScorecard } = require('./git-at-scale');
+    const { getRepoRoot, evaluateGitScaleHealth } = require('./git-at-scale');
     getRepoRoot(projectRoot);
-    const card = getScaleScorecard(projectRoot);
+    const health = evaluateGitScaleHealth(projectRoot);
+    const card = health;
+    const isBlocking = health.blocking === true;
     return {
-      ready: card.healthy === true,
+      ready: !isBlocking,
       skipped: false,
       scorecard: card,
       recommendation: card.healthy
