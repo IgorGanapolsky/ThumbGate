@@ -200,9 +200,8 @@ const path = require('node:path');
 // 471 -> 472 (2026-08-19): public/blog/a-receipt-is-not-world-state.html
 // Cursor-format first-party research post (TOC, author, related posts). Static HTML only.
 // 472 -> 473 (2026-08-20): scripts/git-at-scale.js packaged for agent-readiness/self-heal
-||||||| 91f3ebcd
 const BASELINE_FILE_COUNT = 474;
-const BASELINE_FILE_COUNT = 473;
+
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

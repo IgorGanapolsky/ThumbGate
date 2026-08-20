@@ -262,8 +262,7 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 471 -> 472 (2026-08-19): public/blog/a-receipt-is-not-world-state.html
   // 472 -> 473 (2026-08-20): scripts/git-at-scale.js packaged for agent-readiness/self-heal
   const CEILING = 474
-||||||| 91f3ebcd
-  const CEILING = 472;
+  
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
