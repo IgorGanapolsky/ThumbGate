@@ -46,7 +46,7 @@ const {
   aggregateFailureDiagnostics,
 } = require('./failure-diagnostics');
 const { getEffectiveSetting } = require('./evolution-state');
-const { ensureDir } = require('./fs-utils');
+const { ensureDir, readTextTail } = require('./fs-utils');
 const {
   buildFeedbackPathsFromDir,
   getFeedbackPaths: resolveFeedbackPaths,
@@ -637,11 +637,22 @@ function getPendingBackgroundSideEffectCount() {
   return pendingBackgroundSideEffects.size;
 }
 
-function readJSONL(filePath, { maxLines = 500 } = {}) {
+function readJSONL(filePath, { maxLines = 500, maxBytes = 4 * 1024 * 1024 } = {}) {
   if (!fs.existsSync(filePath)) return [];
-  const content = fs.readFileSync(filePath, 'utf8');
+  // Always go through readTextTail. A maxLines slice after readFileSync still
+  // materializes the whole file and throws on prod-sized JSONL (0x1fffffe8).
+  let content = '';
+  try {
+    content = maxBytes > 0
+      ? readTextTail(filePath, maxBytes).text
+      : readTextTail(filePath, 0).text;
+  } catch {
+    return [];
+  }
   const lines = content.split('\n').filter(Boolean);
-  const tail = maxLines > 0 ? lines.slice(-maxLines) : lines;
+  // maxLines <= 0 used to mean "all lines"; keep a hard safety cap for callers.
+  const effectiveMax = maxLines > 0 ? maxLines : 20_000;
+  const tail = lines.slice(-effectiveMax);
   const results = [];
   for (const line of tail) {
     try { results.push(JSON.parse(line)); } catch { /* skip malformed */ }
@@ -2241,10 +2252,12 @@ function analyzeFeedback(logPath, options = {}) {
   const feedbackDir = path.dirname(resolvedPath);
   const paths = buildFeedbackPathsFromDir(feedbackDir);
   const useSQLite = !options.humanOnly && (!logPath || path.resolve(resolvedPath) === path.resolve(FEEDBACK_LOG_PATH));
+  // Prefer caller-supplied entries (dashboard already bounded the read).
   let entries = Array.isArray(options.entries)
     ? options.entries.slice()
     : readJSONL(resolvedPath, {
-      maxLines: Math.max(0, Number(options.maxLines) || 0),
+      maxLines: Number(options.maxLines) > 0 ? Number(options.maxLines) : 20_000,
+      maxBytes: Number(options.maxBytes) > 0 ? Number(options.maxBytes) : 4 * 1024 * 1024,
     });
   const rawTotal = entries.length;
   if (options.humanOnly) {

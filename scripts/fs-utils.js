@@ -32,7 +32,9 @@ function readTextTail(filePath, maxBytes) {
   let budget = Number(maxBytes);
   // budget<=0 historically meant "read entire file". On oversized prod logs that
   // throws "Cannot create a string longer than 0x1fffffe8 characters".
-  if (!budget && size > HARD_FULL_READ_BYTES) {
+  // Also refuse full reads when size exceeds the hard ceiling even if the caller
+  // passed an oversized maxBytes (dashboard_data 503 / V8 string limit).
+  if (size > HARD_FULL_READ_BYTES && (!budget || budget >= size || budget > HARD_FULL_READ_BYTES)) {
     budget = DEFAULT_JSONL_TAIL_BYTES;
   }
   if (!budget || size <= budget) {

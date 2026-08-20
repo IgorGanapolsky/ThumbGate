@@ -223,3 +223,53 @@ test('collectAggregateLogEntries defaults stay bounded without explicit limits',
   assert.ok(entries.length < lines.length || lines.length <= 20_000);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test('feedback-loop readJSONL tails by maxBytes before slicing maxLines', () => {
+  const { readJSONL } = require('../scripts/feedback-loop');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-loop-jsonl-'));
+  const file = path.join(dir, 'diagnostic-log.jsonl');
+  const lines = [];
+  for (let i = 0; i < 2000; i += 1) {
+    lines.push(JSON.stringify({ id: `d${i}`, pad: 'q'.repeat(256) }));
+  }
+  fs.writeFileSync(file, `${lines.join('\n')}\n`);
+  const rows = readJSONL(file, { maxLines: 50, maxBytes: 8_000 });
+  assert.ok(rows.length > 0);
+  assert.ok(rows.length <= 50);
+  assert.notEqual(rows[0].id, 'd0');
+  assert.equal(rows.at(-1).id, 'd1999');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('feedback-loop analyzeFeedback defaults stay bounded without preloaded entries', () => {
+  const { analyzeFeedback, readJSONL } = require('../scripts/feedback-loop');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-analyze-default-'));
+  const file = path.join(dir, 'feedback-log.jsonl');
+  const payload = 'p'.repeat(2048);
+  const lines = [];
+  for (let i = 0; i < 5_000; i += 1) {
+    lines.push(JSON.stringify({
+      id: `e${i}`,
+      signal: i % 2 ? 'negative' : 'positive',
+      feedback: i % 2 ? 'down' : 'up',
+      context: payload,
+      timestamp: new Date(Date.UTC(2026, 5, 1, 0, 0, i % 60)).toISOString(),
+    }));
+  }
+  fs.writeFileSync(file, `${lines.join('\n')}\n`);
+  assert.ok(fs.statSync(file).size > 4 * 1024 * 1024);
+  // Oversized diagnostic log used to full-read inside analyzeFeedback even when
+  // feedback entries were preloaded; keep both paths under the byte budget.
+  fs.writeFileSync(
+    path.join(dir, 'diagnostic-log.jsonl'),
+    `${lines.map((_, i) => JSON.stringify({ id: `diag_${i}`, pad: payload })).join('\n')}\n`,
+  );
+  const boundedRows = readJSONL(file, { maxLines: 20_000, maxBytes: 4 * 1024 * 1024 });
+  assert.ok(boundedRows.length > 0);
+  assert.ok(boundedRows.length < lines.length);
+  const analysis = analyzeFeedback(file);
+  assert.ok(analysis);
+  assert.ok(Number(analysis.total) >= 0);
+  assert.ok(Number(analysis.total) <= boundedRows.length);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
