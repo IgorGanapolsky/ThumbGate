@@ -130,7 +130,12 @@ test('Gurobi Optimizer - Node.js integration', async (t) => {
     const probe = probeGurobi();
     assert.equal(typeof probe.ok, 'boolean');
     assert.ok(probe.python);
-    assert.equal(probe.ok, true);
+    assert.equal(typeof probe.gurobi, 'boolean');
+    // ok means a real Gurobi solve; heuristic/error fallbacks are unavailable
+    assert.equal(probe.ok, Boolean(probe.gurobi));
+    if (probe.ok) {
+      assert.match(String(probe.solver || ''), /^gurobi/);
+    }
   });
 
   await t.test('node fallback when python binary is unusable', () => {
