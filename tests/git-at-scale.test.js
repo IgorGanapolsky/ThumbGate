@@ -210,15 +210,60 @@ test('tip consistency reports ahead separately from behind', () => {
     const tip = gitAtScale.checkTipConsistency({ repoRoot: repo, branch: 'main', fetch: false });
     assert.equal(tip.ahead, true);
     assert.equal(tip.behind, false);
+    assert.equal(tip.aheadCount, 1);
+    assert.equal(tip.behindCount, 0);
     assert.equal(tip.consistent, false);
+    assert.equal(tip.indeterminate, false);
   } finally {
     try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp */ }
     try { fs.rmSync(remote, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp */ }
   }
 });
 
+test('tip consistency reports behind-only and diverged from ancestry', () => {
+  const repo = makeRepo();
+  const remote = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-git-scale-remote-'));
+  const publisher = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-git-scale-pub-'));
+  try {
+    git(['init', '--bare', '-b', 'main'], remote);
+    git(['remote', 'add', 'origin', remote], repo);
+    git(['push', '-u', 'origin', 'main'], repo);
+
+    git(['clone', remote, publisher]);
+    git(['config', 'user.email', 'pub@example.com'], publisher);
+    git(['config', 'user.name', 'Pub'], publisher);
+    fs.writeFileSync(path.join(publisher, 'README.md'), 'remote-ahead\n');
+    git(['add', 'README.md'], publisher);
+    git(['commit', '-m', 'remote ahead'], publisher);
+    git(['push', 'origin', 'main'], publisher);
+    git(['fetch', 'origin'], repo);
+
+    const behindOnly = gitAtScale.checkTipConsistency({ repoRoot: repo, branch: 'main', fetch: false });
+    assert.equal(behindOnly.behind, true);
+    assert.equal(behindOnly.ahead, false);
+    assert.equal(behindOnly.behindCount, 1);
+    assert.equal(behindOnly.aheadCount, 0);
+    assert.equal(behindOnly.consistent, false);
+
+    fs.writeFileSync(path.join(repo, 'local.txt'), 'local\n');
+    git(['add', 'local.txt'], repo);
+    git(['commit', '-m', 'local diverge'], repo);
+    const diverged = gitAtScale.checkTipConsistency({ repoRoot: repo, branch: 'main', fetch: false });
+    assert.equal(diverged.behind, true);
+    assert.equal(diverged.ahead, true);
+    assert.equal(diverged.behindCount >= 1, true);
+    assert.equal(diverged.aheadCount >= 1, true);
+    assert.equal(diverged.consistent, false);
+  } finally {
+    try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp */ }
+    try { fs.rmSync(remote, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp */ }
+    try { fs.rmSync(publisher, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp */ }
+  }
+});
+
 test('failed fetch does not evaluate a stale tracking ref', () => {
   const repo = makeRepo();
+  const script = path.join(__dirname, '..', 'scripts', 'git-at-scale.js');
   try {
     git(['remote', 'add', 'origin', path.join(repo, 'does-not-exist.git')], repo);
     git(['update-ref', 'refs/remotes/origin/main', 'HEAD'], repo);
@@ -226,8 +271,18 @@ test('failed fetch does not evaluate a stale tracking ref', () => {
     assert.equal(tip.indeterminate, true);
     assert.equal(tip.consistent, null);
     assert.equal(tip.behind, null);
+    assert.equal(tip.ahead, null);
     assert.equal(tip.remoteTip, null);
     assert.ok(tip.fetchError);
+
+    const cli = spawnSync(process.execPath, [script, 'tip', '--fetch', '--cwd', repo], {
+      encoding: 'utf8',
+    });
+    assert.equal(cli.status, 1, cli.stderr);
+    const body = JSON.parse(cli.stdout);
+    assert.equal(body.indeterminate, true);
+    assert.equal(body.remoteTip, null);
+    assert.equal(body.behind, null);
   } finally {
     try { fs.rmSync(repo, { recursive: true, force: true, maxRetries: 3 }); } catch { /* temp */ }
   }

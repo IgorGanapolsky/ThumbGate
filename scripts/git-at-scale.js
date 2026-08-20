@@ -362,6 +362,18 @@ function countRevs(fromSha, toSha, repoRoot) {
   return Number.isFinite(n) ? n : null;
 }
 
+function indeterminateTip(partial) {
+  return {
+    consistent: null,
+    behind: null,
+    ahead: null,
+    behindCount: null,
+    aheadCount: null,
+    indeterminate: true,
+    ...partial,
+  };
+}
+
 function checkTipConsistency(options = {}) {
   const repoRoot = options.repoRoot || getRepoRoot();
   const branch =
@@ -377,44 +389,49 @@ function checkTipConsistency(options = {}) {
     fetch = runGit(['fetch', remote, branch, '--quiet'], repoRoot, {
       timeoutMs: options.timeoutMs || 120000,
     });
+    // Opted-in fetch failed: never grade a cached origin/<branch> tip.
     if (fetch.status !== 0) {
-      return {
+      return indeterminateTip({
         branch,
         remote,
         localTip: before || null,
         remoteTip: null,
         fetched: false,
         fetchError: fetch.stderr || 'fetch failed',
-        consistent: null,
-        behind: null,
-        ahead: null,
-        indeterminate: true,
-      };
+      });
     }
   }
-  const remoteTip = runGit(['rev-parse', `${remote}/${branch}`], repoRoot);
+
   const after = runGit(['rev-parse', 'HEAD'], repoRoot).stdout;
   const localTip = after || before;
+  const remoteTip = runGit(['rev-parse', `${remote}/${branch}`], repoRoot);
   if (remoteTip.status !== 0 || !remoteTip.stdout || !localTip) {
-    return {
+    return indeterminateTip({
       branch,
       remote,
       localTip: localTip || null,
       remoteTip: null,
       fetched: doFetch && fetch.status === 0,
       fetchError: remoteTip.stderr || 'missing remote tip',
-      consistent: null,
-      behind: null,
-      ahead: null,
-      indeterminate: true,
-    };
+    });
   }
+
+  // Ancestry, not SHA inequality: ahead-only must not report behind.
   const behindCount = countRevs(localTip, remoteTip.stdout, repoRoot);
   const aheadCount = countRevs(remoteTip.stdout, localTip, repoRoot);
-  const behind = behindCount != null ? behindCount > 0 : null;
-  const ahead = aheadCount != null ? aheadCount > 0 : null;
-  const consistent = behind === false && ahead === false;
+  if (behindCount == null || aheadCount == null) {
+    return indeterminateTip({
+      branch,
+      remote,
+      localTip,
+      remoteTip: remoteTip.stdout,
+      fetched: doFetch && fetch.status === 0,
+      fetchError: 'rev-list ancestry unavailable',
+    });
+  }
 
+  const behind = behindCount > 0;
+  const ahead = aheadCount > 0;
   return {
     branch,
     remote,
@@ -422,9 +439,11 @@ function checkTipConsistency(options = {}) {
     remoteTip: remoteTip.stdout,
     fetched: doFetch && fetch.status === 0,
     fetchError: null,
-    consistent,
+    consistent: !behind && !ahead,
     behind,
     ahead,
+    behindCount,
+    aheadCount,
     indeterminate: false,
   };
 }
@@ -535,11 +554,15 @@ function main(argv = process.argv.slice(2)) {
   }
 
   if (command === 'tip' || command === '--tip-consistency') {
-    return emit(checkTipConsistency({
+    const wantFetch = argv.includes('--fetch');
+    const tip = checkTipConsistency({
       repoRoot,
       branch: flagValue(argv, '--branch'),
-      fetch: argv.includes('--fetch'),
-    }));
+      fetch: wantFetch,
+    });
+    // --fetch asked for a current remote view; indeterminate is not success.
+    const code = tip.indeterminate && wantFetch ? 1 : 0;
+    return emit(tip, code);
   }
 
   if (command === 'tune' || command === '--tune') {
