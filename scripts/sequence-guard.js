@@ -156,13 +156,23 @@ function evaluateSequenceState(toolName, toolInput) {
   // 1. Task Scope Verification
   let taskScope = null;
   try {
-    if (fs.existsSync(GOVERNANCE_STATE_PATH)) {
-      const gov = JSON.parse(fs.readFileSync(GOVERNANCE_STATE_PATH, 'utf8'));
+    const engine = require('./gates-engine');
+    if (typeof engine.loadGovernanceState === 'function') {
+      const gov = engine.loadGovernanceState();
       if (gov && gov.taskScope && typeof gov.taskScope === 'object') {
         taskScope = gov.taskScope;
       }
     }
-  } catch {}
+  } catch {
+    try {
+      if (fs.existsSync(GOVERNANCE_STATE_PATH)) {
+        const gov = JSON.parse(fs.readFileSync(GOVERNANCE_STATE_PATH, 'utf8'));
+        if (gov && gov.taskScope && typeof gov.taskScope === 'object') {
+          taskScope = gov.taskScope;
+        }
+      }
+    } catch { /* ignore unreadable governance state */ }
+  }
 
   if (taskScope && Array.isArray(taskScope.allowedPaths) && taskScope.allowedPaths.length > 0) {
     // Block file edits immediately if they touch files outside allowed paths

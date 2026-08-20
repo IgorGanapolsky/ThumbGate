@@ -34,6 +34,9 @@ test.beforeEach(() => {
   gatesEngine.GOVERNANCE_STATE_PATH = path.join(sandbox, 'governance-state.json');
   gatesEngine.STATE_PATH = path.join(sandbox, 'gate-state.json');
   gatesEngine.CONSTRAINTS_PATH = path.join(sandbox, 'session-constraints.json');
+  delete process.env.THUMBGATE_SESSION_AGENT;
+  delete process.env.THUMBGATE_SESSION_ID;
+  delete process.env.CLAUDE_SESSION_ID;
 });
 
 test.afterEach(() => {
@@ -318,4 +321,22 @@ test('e2e: a permanent scope still permits its own paths (no lease, no regressio
     const verdict = await editInScope(repo);
     assert.strictEqual(verdict, null, 'a permanent scope stopped permitting its own paths');
   });
+});
+
+test('sibling session ids keep separate task-scope slots (#3522)', () => {
+  process.env.THUMBGATE_SESSION_AGENT = 'agent-a';
+  setTaskScope({ allowedPaths: ['vault/**'], summary: 'vault handoff' });
+  assert.deepEqual(getScopeState().taskScope.allowedPaths, ['vault/**']);
+
+  process.env.THUMBGATE_SESSION_AGENT = 'agent-b';
+  setTaskScope({ allowedPaths: ['bin/**', 'package.json'], summary: 'thumbgate' });
+  assert.deepEqual(getScopeState().taskScope.allowedPaths, ['bin/**', 'package.json']);
+
+  process.env.THUMBGATE_SESSION_AGENT = 'agent-a';
+  assert.deepEqual(
+    getScopeState().taskScope.allowedPaths,
+    ['vault/**'],
+    'sibling set_task_scope must not rebind another session',
+  );
+  delete process.env.THUMBGATE_SESSION_AGENT;
 });

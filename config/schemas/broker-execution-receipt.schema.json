@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://thumbgate.ai/schemas/broker-execution-receipt.schema.json",
   "title": "ThumbGate Broker-Signed Execution Receipt",
-  "description": "Proof that a credential-holding broker (outside the agent trust boundary) authorized a side-effecting action. Agents cannot mint valid signatures.",
+  "description": "Broker-signed record that a credential-holding broker (outside the agent trust boundary) authorized or denied a side-effecting action. Agents cannot mint valid signatures. A receipt is not independent world-state proof and does not mean a public listing is invocable.",
   "type": "object",
   "additionalProperties": false,
   "required": [

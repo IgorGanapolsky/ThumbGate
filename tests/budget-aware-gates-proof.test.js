@@ -39,6 +39,9 @@ test('buyer narrative includes disclaimers (no false Gurobi partnership)', () =>
   assert.match(text, /Budget-aware enforcement/);
   assert.match(text, /SIMULATION/);
   assert.equal(report.mode, 'simulation');
+  assert.equal(report.autoApply, false);
+  assert.equal(report.humanOversightRequired, true);
+  assert.equal(report.capturedRevenueUsd, 0);
   assert.ok(!/partner logo|official partner|powered exclusively by Gurobi/i.test(text));
 });
 
