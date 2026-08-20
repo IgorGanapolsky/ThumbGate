@@ -96,8 +96,8 @@
     <h2>Where the rules come from: a thumbs-down becomes a rule</h2>
     <p>Determinism forces the real question: where does the rule corpus come from? Hand-writing every bad pattern does not scale, and it does not learn from your codebase. Our answer is a feedback loop that turns operator judgment into enforcement:</p>
     <pre><code>observe → capture (👎 + context) → distill to a lesson
-        → candidate rule → promote (precision/recall gate) → enforce</code></pre>
-    <p>When an agent does something wrong, the operator captures a thumbs-down with one line of context. That becomes a history-aware <em>lesson</em>. Repeated, concrete lessons produce a <em>candidate</em> prevention rule. A candidate does not go live on sight — it is promoted through a Thompson-sampling gate that requires it to clear precision and recall thresholds against recorded feedback first. Only then does it become an enforced Pre-Action Check. Every live rule is traceable back to the lesson that produced it.</p>
+        → candidate rule → promote (count thresholds) → enforce</code></pre>
+    <p>When an agent does something wrong, the operator captures a thumbs-down with one line of context. That becomes a history-aware <em>lesson</em>. Matching negative occurrences promote into the Infrastructure Firewall as PreToolUse gates on a simple count path: after one negative occurrence the pattern becomes a <em>warn</em> gate; after three it upgrades to <em>block</em>. That is intentional and deterministic — not a Thompson-sampling precision/recall gate. Live gates also do not guarantee lesson provenance (<code>sourceLessonId</code> / equivalent IDs are not required on the persisted gate), so operators should treat the rule text and occurrence count as the source of truth, not a guaranteed back-link to the originating lesson.</p>
     <p>The firewall improves from operating, not from retraining. To be explicit, because it is the most common misunderstanding: <strong>ThumbGate does not update model weights.</strong> It intercepts tool calls at runtime. The learning happens in the rule corpus, not the model.</p>
 
     <h2>What we got wrong: the false-positive tax</h2>
