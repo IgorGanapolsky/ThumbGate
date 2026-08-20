@@ -197,6 +197,7 @@ const path = require('node:path');
 // 459 -> 460: provider-receipt-contract packaging on rebased receipt PR
 // 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
 // 474 -> 475 (2026-08-19): git-at-scale-hygiene + solver-parity keep-both (measured npm pack 475)
+const BASELINE_FILE_COUNT = 475;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

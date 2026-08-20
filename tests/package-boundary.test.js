@@ -457,6 +457,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // file that packaged entrypoints require: scripts/override-audit.js (#3515),
     // 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
     // 474 -> 475 (2026-08-19): git-at-scale-hygiene + solver-parity keep-both (measured npm pack 475)
+    manifest.fileCount <= 475,
+    `npm package should stay <= 475 files, got ${manifest.fileCount}`
+  );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
   // inline with main's token-savings dashboard additions.

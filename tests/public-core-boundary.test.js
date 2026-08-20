@@ -261,6 +261,7 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 470 -> 471 (2026-08-18): lockstep with pipeline-compass (+1)
   // 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
   // 474 -> 475 (2026-08-19): git-at-scale-hygiene + solver-parity keep-both (measured npm pack 475)
+  const CEILING = 475;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
