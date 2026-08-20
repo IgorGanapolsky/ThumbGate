@@ -21,10 +21,12 @@ const {
   getReceiptForAction,
   getRecentReceipts,
   pairFeedbackWithReceipt,
+  reconstructModelVisibleFacts,
   buildReceiptContextEntries,
   getReceiptsPath,
   verifyReceiptSignature,
 } = require('../scripts/action-receipts');
+const { createDurableGrantStore, createMemoryGrantStore, evaluateHarnessGrant } = require('../scripts/human-escalation');
 
 test.after(() => {
   try {
@@ -179,4 +181,123 @@ test('signReceiptDigest fails closed without signing key', () => {
   delete process.env.THUMBGATE_RECEIPT_SIGNING_KEY;
   assert.throws(() => signReceiptDigest('abc'), /THUMBGATE_RECEIPT_SIGNING_KEY/);
   process.env.THUMBGATE_RECEIPT_SIGNING_KEY = prev;
+});
+
+test('missing or failing approver fails closed and never silent-allows', () => {
+  const store = createMemoryGrantStore();
+  const missing = evaluateHarnessGrant(
+    { grantId: 'g-missing', grantMode: 'once' },
+    { grantStore: store, recordReceipt: false }
+  );
+  assert.equal(missing.allowed, false);
+  assert.equal(missing.failClosed, true);
+  assert.equal(missing.reason, 'missing_approver');
+
+  const failing = evaluateHarnessGrant({
+    grantId: 'g-fail',
+    grantMode: 'once',
+    approver: () => { throw new Error('approver down'); },
+  }, { grantStore: store, recordReceipt: false });
+  assert.equal(failing.allowed, false);
+  assert.equal(failing.failClosed, true);
+  assert.equal(failing.reason, 'approver_failed');
+
+  const denied = evaluateHarnessGrant({
+    grantId: 'g-deny',
+    grantMode: 'once',
+    approver: () => ({ allow: false, reason: 'no' }),
+  }, { grantStore: store, recordReceipt: false });
+  assert.equal(denied.allowed, false);
+  assert.equal(denied.failClosed, true);
+  assert.equal(denied.reason, 'no');
+});
+
+test('grants are allow-once only and model-visible facts reconstruct from the receipt log', () => {
+  const store = createMemoryGrantStore();
+  const always = evaluateHarnessGrant({
+    grantId: 'g-always',
+    grantMode: 'allow-always',
+    approver: () => ({ allow: true }),
+  }, { grantStore: store, recordReceipt: false });
+  assert.equal(always.allowed, false);
+  assert.equal(always.reason, 'allow_always_forbidden');
+
+  const first = evaluateHarnessGrant({
+    grantId: 'g-once-receipt',
+    grantMode: 'allow-once',
+    toolName: 'Bash',
+    toolInput: { command: 'echo hi' },
+    approver: () => ({ allow: true }),
+    principal: 'harness',
+  }, { grantStore: store });
+  assert.equal(first.allowed, true);
+  assert.equal(first.grantMode, 'allow-once');
+  assert.equal(first.facts.toolName, 'Bash');
+
+  const second = evaluateHarnessGrant({
+    grantId: 'g-once-receipt',
+    grantMode: 'allow-once',
+    approver: () => ({ allow: true }),
+  }, { grantStore: store, recordReceipt: false });
+  assert.equal(second.allowed, false);
+  assert.equal(second.reason, 'grant_already_consumed');
+
+  const reconstructed = reconstructModelVisibleFacts('g-once-receipt');
+  assert.equal(reconstructed.ok, true);
+  assert.equal(reconstructed.facts.toolName, 'Bash');
+  assert.deepEqual(reconstructed.facts.toolInput, { command: 'echo hi' });
+  assert.equal(reconstructed.facts.decision, 'allow');
+  assert.equal(reconstructed.facts.principal, 'harness');
+  assert.ok(reconstructed.facts.requestDigest);
+  assert.ok(reconstructed.facts.recordedAt);
+
+  const missing = reconstructModelVisibleFacts('does-not-exist');
+  assert.equal(missing.ok, false);
+  assert.equal(missing.failClosed, true);
+  assert.equal(missing.reason, 'missing_receipt');
+});
+
+test('durable allow-once grants survive a new store instance', () => {
+  const firstStore = createDurableGrantStore();
+  const first = evaluateHarnessGrant({
+    grantId: 'g-durable-once',
+    grantMode: 'once',
+    approver: () => ({ allow: true }),
+  }, { grantStore: firstStore, recordReceipt: false });
+  assert.equal(first.allowed, true);
+
+  const restarted = createDurableGrantStore();
+  const second = evaluateHarnessGrant({
+    grantId: 'g-durable-once',
+    grantMode: 'once',
+    approver: () => ({ allow: true }),
+  }, { grantStore: restarted, recordReceipt: false });
+  assert.equal(second.allowed, false);
+  assert.equal(second.reason, 'grant_already_consumed');
+});
+
+test('reconstructModelVisibleFacts fails closed on tampered receipts', () => {
+  const receipt = recordReceipt({
+    actionId: 'act-reconstruct-tamper',
+    toolName: 'Bash',
+    toolInput: { command: 'echo ok' },
+    decision: 'allow',
+    principal: 'harness',
+  });
+  const receiptsPath = getReceiptsPath();
+  const lines = fs.readFileSync(receiptsPath, 'utf8').split('\n');
+  let rewritten = false;
+  const tampered = lines.map((line) => {
+    if (!line.includes('"act-reconstruct-tamper"')) return line;
+    const row = JSON.parse(line);
+    row.toolName = 'rm';
+    rewritten = true;
+    return JSON.stringify(row);
+  }).join('\n');
+  assert.equal(rewritten, true);
+  fs.writeFileSync(receiptsPath, tampered);
+  const reconstructed = reconstructModelVisibleFacts('act-reconstruct-tamper');
+  assert.equal(reconstructed.ok, false);
+  assert.equal(reconstructed.failClosed, true);
+  assert.equal(reconstructed.reason, 'unauthenticated_receipt');
 });

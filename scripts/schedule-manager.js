@@ -61,6 +61,142 @@ function parseCronSpec(spec) {
   return null;
 }
 
+const LAPTOP_BOUND_RUNTIMES = new Set([
+  'laptop', 'macos', 'darwin', 'launchd', 'launchagent',
+  'lid-close', 'lid_close', 'continuity', 'mac-pair', 'phone-leash', 'local',
+]);
+const ALWAYS_ON_RUNTIMES = new Set([
+  'vps', 'hosted', 'always-on', 'always_on', 'railway', 'fenced-vps',
+]);
+
+function inferScheduleRuntime(params = {}) {
+  const explicit = String(params.runtime || '').trim().toLowerCase();
+  if (explicit) return explicit;
+  if (process.env.THUMBGATE_ALWAYS_ON_VPS === '1') return 'vps';
+  if (process.env.THUMBGATE_HOSTED === '1') return 'hosted';
+  if (process.platform === 'darwin') return 'launchd';
+  return 'laptop';
+}
+
+function isTwentyFourSevenSchedule(params = {}) {
+  // Interval alone is not a live claim. Existing hourly LaunchAgent/cron jobs
+  // (slow-loop, revenue-truth) stay installable; only explicit always-on/live
+  // claims fail closed when the path is laptop-bound.
+  return params.alwaysOn === true || params.twentyFourSeven === true || params.claimLive === true;
+}
+
+function isSendSpendAction(params = {}) {
+  const text = [params.action, params.command, params.toolName, params.purpose]
+    .map((value) => String(value || ''))
+    .join(' ');
+  if (params.economicAction === true || params.autoBook === true) return true;
+  return /\b(?:send|spend|pay|purchase|transfer|wire|invoice|payout|book|auto-?book)\b/i.test(text);
+}
+
+function resolveEscalationOptions(input = {}, options = {}) {
+  const approval = input.humanApproval || {};
+  return {
+    feedbackDir: options.feedbackDir || input.feedbackDir || approval.feedbackDir,
+    inputPath: options.inputPath || input.escalationPath || approval.escalationPath,
+    approvalVerificationKey: options.approvalVerificationKey || input.approvalVerificationKey,
+    approvalSigningKey: options.approvalSigningKey || input.approvalSigningKey,
+    now: options.now || input.now,
+  };
+}
+
+function hasVerifiedHumanSendSpendApproval(input = {}, options = {}) {
+  const approval = input.humanApproval;
+  if (!approval || typeof approval !== 'object') return false;
+  const escalationId = String(approval.escalationId || approval.approval?.escalationId || '').trim();
+  if (!escalationId) return false;
+  try {
+    const { consumeVerifiedApproval, getVerifiedApproval } = require('./human-escalation');
+    const consumer = approval.consumer && typeof approval.consumer === 'object'
+      ? approval.consumer
+      : { id: 'schedule-manager', kind: 'system' };
+    const consumed = consumeVerifiedApproval(escalationId, { consumer }, resolveEscalationOptions(input, options));
+    if (consumed.consumed === true && consumed.approval?.actor?.kind === 'human') {
+      return true;
+    }
+    if (consumed.replayed === true) {
+      const verified = getVerifiedApproval(escalationId, {
+        ...resolveEscalationOptions(input, options),
+        allowConsumed: true,
+      });
+      return Boolean(verified && verified.actor?.kind === 'human');
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function resolveScheduleClaimLive(runtimeGate, platform = process.platform) {
+  if (!runtimeGate || runtimeGate.allowed !== true) {
+    return { claimLive: false, schedulerInstallation: 'blocked' };
+  }
+  if (platform === 'darwin') {
+    return { claimLive: false, schedulerInstallation: 'launchd' };
+  }
+  if (platform === 'linux') {
+    return { claimLive: false, schedulerInstallation: 'pending-crontab' };
+  }
+  return { claimLive: false, schedulerInstallation: 'unsupported' };
+}
+
+function evaluateAlwaysOnSchedule(input = {}, options = {}) {
+  const runtime = inferScheduleRuntime(input);
+  const alwaysOn = ALWAYS_ON_RUNTIMES.has(runtime);
+  const actionText = [input.action, input.command, input.toolName]
+    .map((value) => String(value || ''))
+    .join(' ');
+
+  if (input.autoBook === true || /\bauto-?book\b/i.test(actionText)) {
+    return {
+      allowed: false,
+      failClosed: true,
+      claimLive: false,
+      reason: 'auto_book_forbidden',
+      message: 'Auto-book is not stolen. Send/spend stays behind a human gate.',
+      runtime,
+    };
+  }
+
+  if (isTwentyFourSevenSchedule(input) && (LAPTOP_BOUND_RUNTIMES.has(runtime) || !alwaysOn)) {
+    return {
+      allowed: false,
+      failClosed: true,
+      claimLive: false,
+      reason: 'laptop_bound_schedule',
+      message: 'Scheduled/24-7 work must run on an always-on VPS. Laptop, launchd, and lid-close paths fail closed and must not claim live.',
+      runtime,
+    };
+  }
+
+  if (isSendSpendAction(input) && !hasVerifiedHumanSendSpendApproval(input, options)) {
+    return {
+      allowed: false,
+      failClosed: true,
+      claimLive: false,
+      reason: 'human_gate_required',
+      message: 'Send/spend requires a consumed human approval from the escalation ledger.',
+      runtime,
+    };
+  }
+
+  return {
+    allowed: true,
+    failClosed: true,
+    claimLive: alwaysOn,
+    runtime,
+    boundTo: alwaysOn ? 'always-on-vps' : null,
+  };
+}
+
+function shouldEnforceAlwaysOnGate(params = {}) {
+  return isTwentyFourSevenSchedule(params) || isSendSpendAction(params) || params.autoBook === true;
+}
+
 function generatePlist(schedule) {
   const label = escapePlistString(`${PLIST_PREFIX}.${schedule.id}`);
   const interval = schedule.calendarInterval;
@@ -151,6 +287,11 @@ function buildAgenticDataPipelineSchedule(params = {}) {
 }
 
 function createSchedule(params) {
+  const runtimeGate = evaluateAlwaysOnSchedule(params);
+  if (shouldEnforceAlwaysOnGate(params) && !runtimeGate.allowed) {
+    return { success: false, error: runtimeGate.message || runtimeGate.reason, gate: runtimeGate };
+  }
+
   ensureDir(SCHEDULES_DIR);
 
   const id = params.id || params.name || `sched_${Date.now()}`;
@@ -180,6 +321,8 @@ function createSchedule(params) {
     workingDirectory: params.workingDirectory || (jobFile ? path.dirname(jobFile) : process.cwd()),
     calendarInterval,
     createdAt: new Date().toISOString(),
+    runtimeGate,
+    ...resolveScheduleClaimLive(runtimeGate),
   };
 
   // Save schedule metadata
@@ -246,4 +389,8 @@ module.exports = {
   parseCronSpec,
   buildManagedScheduleCommand,
   buildAgenticDataPipelineSchedule,
+  evaluateAlwaysOnSchedule,
+  inferScheduleRuntime,
+  hasVerifiedHumanSendSpendApproval,
+  resolveScheduleClaimLive,
 };
