@@ -491,7 +491,8 @@ function isTaskScopeExpired(taskScope, nowMs = Date.now()) {
   return nowMs >= deadline;
 }
 
-function currentScopeSessionId() {
+function currentScopeSessionId(explicitSessionId = null) {
+  if (explicitSessionId) return String(explicitSessionId).trim();
   const raw = String(
     process.env.THUMBGATE_SESSION_AGENT
     || process.env.THUMBGATE_SESSION_ID
@@ -511,9 +512,9 @@ function sanitizeScopeSessionId(sessionId) {
 // Sibling agents share ~/.thumbgate/governance-state.json today, so one
 // set_task_scope rebinds every other live session (#3522). When a session id
 // is present, persist a per-session file next to the legacy slot.
-function governanceStatePath() {
+function governanceStatePath(explicitSessionId = null) {
   const base = module.exports.GOVERNANCE_STATE_PATH;
-  const sessionId = currentScopeSessionId();
+  const sessionId = currentScopeSessionId(explicitSessionId);
   if (!sessionId) return base;
   const safe = sanitizeScopeSessionId(sessionId);
   if (!safe) return base;
@@ -521,8 +522,8 @@ function governanceStatePath() {
   return path.join(parsed.dir, `${parsed.name}.${safe}${parsed.ext}`);
 }
 
-function loadGovernanceState() {
-  const raw = loadJSON(governanceStatePath());
+function loadGovernanceState(explicitSessionId = null) {
+  const raw = loadJSON(governanceStatePath(explicitSessionId));
   const state = {
     taskScope: raw && raw.taskScope && typeof raw.taskScope === 'object' ? raw.taskScope : null,
     protectedApprovals: Array.isArray(raw && raw.protectedApprovals) ? raw.protectedApprovals : [],
@@ -543,23 +544,20 @@ function loadGovernanceState() {
   const activeApprovals = state.protectedApprovals.filter((entry) => {
     if (!entry || typeof entry !== 'object') return false;
     if (!entry.timestamp || !entry.expiresAt) return false;
-    return now < entry.expiresAt;
+    return entry.expiresAt > now;
   });
-  if (activeApprovals.length !== state.protectedApprovals.length) {
-    state.protectedApprovals = activeApprovals;
-    saveGovernanceState(state);
-  }
+  state.protectedApprovals = activeApprovals;
   return state;
 }
 
-function saveGovernanceState(state) {
+function saveGovernanceState(state, explicitSessionId = null) {
   const next = {
     taskScope: state && state.taskScope ? state.taskScope : null,
     protectedApprovals: Array.isArray(state && state.protectedApprovals) ? state.protectedApprovals : [],
     branchGovernance: state && state.branchGovernance ? state.branchGovernance : null,
     workflowContract: state && state.workflowContract ? state.workflowContract : null,
   };
-  saveJSON(governanceStatePath(), next);
+  saveJSON(governanceStatePath(explicitSessionId), next);
 }
 
 function stableCanonicalStringify(value) {
@@ -672,15 +670,16 @@ function evaluateAdminOverride(gate, toolName, toolInput) {
 }
 
 function setTaskScope(scopeInput = {}) {
+  const explicitSessionId = scopeInput && scopeInput.sessionId ? String(scopeInput.sessionId).trim() : null;
   if (scopeInput && scopeInput.clear === true) {
-    const currentState = loadGovernanceState();
+    const currentState = loadGovernanceState(explicitSessionId);
     const cleared = {
       taskScope: null,
       protectedApprovals: currentState.protectedApprovals,
       branchGovernance: currentState.branchGovernance,
       workflowContract: null,
     };
-    saveGovernanceState(cleared);
+    saveGovernanceState(cleared, explicitSessionId);
     refreshLocalOnlyConstraint(cleared);
     return null;
   }
@@ -703,7 +702,7 @@ function setTaskScope(scopeInput = {}) {
   const leaseMs = scopeInput.ttlMs == null ? null : clampTtlMs(scopeInput.ttlMs, TASK_SCOPE_LEASE_MS);
   const taskScope = {
     taskId: String(scopeInput.taskId || '').trim() || null,
-    sessionId: currentScopeSessionId(),
+    sessionId: currentScopeSessionId(explicitSessionId),
     summary: String(scopeInput.summary || '').trim() || null,
     allowedPaths,
     protectedPaths,
@@ -714,12 +713,12 @@ function setTaskScope(scopeInput = {}) {
     leaseMs,
     expiresAt: leaseMs == null ? null : scopeNow + leaseMs,
   };
-  const state = loadGovernanceState();
+  const state = loadGovernanceState(explicitSessionId);
   state.taskScope = taskScope;
   state.workflowContract = scopeInput.workflowContract && typeof scopeInput.workflowContract === 'object'
     ? scopeInput.workflowContract
     : null;
-  saveGovernanceState(state);
+  saveGovernanceState(state, explicitSessionId);
   if (taskScope.localOnly) {
     setConstraint('local_only', true);
   }
@@ -831,8 +830,9 @@ function setBranchGovernance(input = {}) {
   return governance;
 }
 
-function getScopeState() {
-  return loadGovernanceState();
+function getScopeState(options = {}) {
+  const sessionId = typeof options === 'string' ? options : (options?.sessionId || process.env.THUMBGATE_SESSION_AGENT || null);
+  return loadGovernanceState(sessionId);
 }
 
 function getBranchGovernanceState() {
@@ -1420,7 +1420,17 @@ function parseGitPathspec(command, subcommand, options = {}) {
 // null as "unknown" and fall back to broad.
 function effectiveCommandCwd(command, toolInput) {
   let cwd = String(toolInput?.cwd || toolInput?.repoPath || process.cwd());
-  const segments = String(command || '').split(/\r?\n|&&|\|\||[;|&]/);
+  const commandStr = String(command || '');
+  const gitCMatch = commandStr.match(/(?:^|\s)git(?:\s+-[^\s]+)*\s+-C(?:\s+|=)(?:'([^']+)'|"([^"]+)"|([^\s'"]+))/i);
+  const gitCDir = gitCMatch ? (gitCMatch[1] || gitCMatch[2] || gitCMatch[3] || '').trim() : '';
+  if (gitCDir) {
+    let target = gitCDir;
+    if (target.startsWith('~/')) {
+      target = path.join(os.homedir(), target.slice(2));
+    }
+    return path.resolve(cwd, target);
+  }
+  const segments = commandStr.split(/\r?\n|&&|\|\||[;|&]/);
   for (const segment of segments) {
     // Parsed without a regex: /^cd\s+(?:--\s+)?(.+)$/ has adjacent \s+ groups that backtrack
     // polynomially on input like `cd\t\t\t…` (js/polynomial-redos). The command comes
@@ -1434,8 +1444,12 @@ function effectiveCommandCwd(command, toolInput) {
     else if (argText.startsWith('--') && /^[ \t]/.test(argText.slice(2))) argText = argText.slice(2).trim();
     const target = tokenizeShellWords(argText)[0];
     if (!target) break;                      // bare `cd` -> home; leave scope resolution alone
-    if (/[*?$`]|^~/.test(target)) return null;
-    cwd = path.resolve(cwd, target);
+    if (/[*?$`]/.test(target)) return null;
+    let targetResolved = target;
+    if (targetResolved.startsWith('~/')) {
+      targetResolved = path.join(os.homedir(), targetResolved.slice(2));
+    }
+    cwd = path.resolve(cwd, targetResolved);
   }
   return cwd;
 }
@@ -4840,6 +4854,8 @@ module.exports = {
   applyDailyBlockCap,
   getTodayBlockCount,
   incrementTodayBlockCount,
+  effectiveCommandCwd,
+  resolveRepoRoot,
 };
 
 // ---------------------------------------------------------------------------

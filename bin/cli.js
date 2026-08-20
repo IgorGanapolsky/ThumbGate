@@ -3969,6 +3969,18 @@ switch (COMMAND) {
     process.exit(report.ready ? 0 : 1);
     break;
   }
+  case 'writeguard':
+  case 'mcp-writeguard': {
+    const { main } = require(path.join(PKG_ROOT, 'scripts', 'mcp-writeguard'));
+    main();
+    break;
+  }
+  case 'latency':
+  case 'latency-budget': {
+    const { main } = require(path.join(PKG_ROOT, 'scripts', 'latency-budget'));
+    main();
+    break;
+  }
   case 'wiring-doctor':
   case 'mcp-wiring-doctor': {
     const { wiringReport, formatReport, applyFix } = require(path.join(PKG_ROOT, 'scripts', 'mcp-wiring-doctor'));

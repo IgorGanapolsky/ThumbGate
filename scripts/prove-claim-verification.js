@@ -216,9 +216,15 @@ async function run() {
           const root = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-claim-universal-'));
           try {
             fs.mkdirSync(path.join(root, 'data'), { recursive: true });
-            const Database = require('better-sqlite3');
             const dbPath = path.join(root, 'data', 'app.sqlite');
-            const db = new Database(dbPath);
+            let db = null;
+            try {
+              const BetterDatabase = require('better-sqlite3');
+              db = new BetterDatabase(dbPath);
+            } catch {
+              const sqlite = require('node:sqlite');
+              db = new sqlite.DatabaseSync(dbPath);
+            }
             db.exec('CREATE TABLE orders (id INTEGER PRIMARY KEY); INSERT INTO orders (id) VALUES (1),(2);');
             db.close();
 

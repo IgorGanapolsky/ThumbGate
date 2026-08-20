@@ -822,6 +822,55 @@ async function callTool(name, args = {}, options = {}) {
     throw error;
   }
 
+  // WriteGuard: pre-action MCP governance (destructive pattern + tier policy).
+  // Runs before contract validation so schema gaps cannot bypass interdiction.
+  // Covers stdio tools/call and HTTP transport (both route through callTool).
+  if (process.env.THUMBGATE_DISABLE_MCP_WRITEGUARD !== '1') {
+    const { evaluateMcpCall } = require('../../src/mcp-writeguard');
+    const writeGuardReceipt = evaluateMcpCall(
+      {
+        server: attribution.serverName || 'mcp',
+        tool: name,
+        parameters: args || {},
+        context: {
+          user: attribution.agentId || process.env.THUMBGATE_AGENT_ID || process.env.USER || 'operator',
+          client: attribution.clientId || 'mcp-client',
+          sessionId: attribution.sessionId || process.env.THUMBGATE_SESSION_AGENT || 'default-session',
+        },
+      },
+      {
+        // Existing Semantic Firewall / gates own admin escalation UX.
+        // Destructive patterns still return decision=blocked.
+        allowAdmin: options.allowAdmin !== false
+          && process.env.THUMBGATE_WRITEGUARD_STRICT_ADMIN !== '1',
+        requireReviewForPrivileged: options.requireReviewForPrivileged === true
+          || process.env.THUMBGATE_WRITEGUARD_REQUIRE_REVIEW === '1',
+      },
+    );
+    if (writeGuardReceipt.decision === 'blocked' || writeGuardReceipt.decision === 'escalated') {
+      const err = new Error(
+        `Action blocked by WriteGuard [${writeGuardReceipt.decision}]: ${
+          writeGuardReceipt.reasons.join('; ') || writeGuardReceipt.decision
+        }`,
+      );
+      err.errorCategory = 'permission';
+      err.code = writeGuardReceipt.decision === 'blocked'
+        ? 'WRITEGUARD_BLOCKED'
+        : 'WRITEGUARD_ESCALATED';
+      err.isRetryable = false;
+      err.writeGuardReceipt = writeGuardReceipt;
+      trace({
+        success: false,
+        category: 'blocked',
+        evidence: writeGuardReceipt.reasons.length > 0
+          ? writeGuardReceipt.reasons
+          : [writeGuardReceipt.decision],
+        latencyMs: Date.now() - attemptStartMs,
+      });
+      throw err;
+    }
+  }
+
   // Validate tool input contract against schema
   const { TOOLS } = require('../../scripts/tool-registry');
   const toolDef = TOOLS.find(t => t.name === name);

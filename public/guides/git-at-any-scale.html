@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Git at Any Scale — Sub-Millisecond Pre-Action Gate Architecture | ThumbGate</title>
+  <meta name="description" content="How ThumbGate leverages Cursor-inspired shadow git index caching to achieve sub-millisecond pre-action gate evaluation on large monorepos without subprocess disk thrashing.">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans antialiased">
+  <main class="max-w-4xl mx-auto px-6 py-12">
+    <a href="/" class="text-emerald-400 hover:underline text-sm mb-6 inline-block">&larr; Back to ThumbGate Home</a>
+    <h1 class="text-3xl font-bold tracking-tight text-white mb-4">Git at Any Scale — Shadow Index Architecture</h1>
+    <p class="text-gray-400 text-lg mb-8 leading-relaxed">
+      Eliminating subprocess spawn latency and disk packfile walks for sub-millisecond pre-action safety interdiction in massive enterprise monorepos.
+    </p>
+
+    <section class="space-y-6">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold text-emerald-400 mb-3">1. The Monorepo Bottleneck in Agentic AI</h2>
+        <p class="text-gray-300 leading-relaxed mb-4">
+          As documented in Cursor's engineering post <em>"Git at any scale"</em> (Aug 2026), standard Git operations traverse the commit and object DAG. In large monorepos or multi-agent worktrees, running recurring synchronous git subprocesses (<code>git rev-parse</code>, <code>git diff</code>, <code>git status</code>) on every tool call adds 50ms to 500ms of latency per turn and causes disk I/O thrashing.
+        </p>
+        <p class="text-gray-300 leading-relaxed">
+          When AI coding agents make dozens of tool calls per minute, pre-action governance cannot afford 500ms overhead. Safety gates must evaluate in sub-millisecond time.
+        </p>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold text-emerald-400 mb-3">2. ThumbGate's Shadow Git Fast-Cache</h2>
+        <p class="text-gray-300 leading-relaxed mb-4">
+          ThumbGate's <code>GitFastCache</code> inspects filesystem mtimes on <code>.git/HEAD</code>, <code>.git/refs/heads/</code>, and <code>.git/index</code>. Instead of spawning shell subprocesses, it serves cached repository metadata directly from memory in <strong>&lt;0.2ms</strong> when the working tree has not changed.
+        </p>
+        <div class="bg-gray-950 p-4 rounded-lg font-mono text-xs text-gray-300">
+          <code>const { GitFastCache } = require('thumbgate/src/git-fast-cache');<br>const state = GitFastCache.getRepoState(); // &lt;0.2ms in-memory lookup</code>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold text-emerald-400 mb-3">3. Dirac-Inspired Hash-Anchored Concurrency</h2>
+        <p class="text-gray-300 leading-relaxed">
+          To protect against multi-agent edit clobbering, ThumbGate pairs <code>GitFastCache</code> with <code>HashAnchoredEditGuard</code>. Before a file replacement or patch lands, cryptographic chunk hashes verify that target code has not drifted due to concurrent background edits from other agents or human pair programmers.
+        </p>
+      </div>
+    </section>
+
+    <div class="mt-12 text-center">
+      <a href="https://thumbgate.app/" class="inline-block bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold px-6 py-3 rounded-lg text-sm transition-colors">
+        Explore ThumbGate Infrastructure Firewall
+      </a>
+    </div>
+  </main>
+</body>
+</html>

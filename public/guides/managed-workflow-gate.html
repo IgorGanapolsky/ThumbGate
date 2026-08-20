@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Managed Workflow Gate ($499 Setup) — Enterprise Pre-Action Security | ThumbGate</title>
+  <meta name="description" content="Deploy a deterministic pre-action security gateway for AI coding agents. Block secret exfiltration, destructive commands, and out-of-scope mutations with immutable audit receipts.">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans antialiased">
+  <main class="max-w-4xl mx-auto px-6 py-12">
+    <a href="/" class="text-emerald-400 hover:underline text-sm mb-6 inline-block">&larr; Back to ThumbGate Home</a>
+    <h1 class="text-3xl font-bold tracking-tight text-white mb-4">Managed Workflow Gate — Enterprise Pre-Action Security</h1>
+    <p class="text-gray-400 text-lg mb-8 leading-relaxed">
+      Turnkey installation of ThumbGate's pre-action firewall for 1 critical enterprise workflow. Prevent secrets exfiltration, destructive production commands, and blast-radius breaches with tamper-evident audit receipts.
+    </p>
+
+    <section class="space-y-6">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold text-emerald-400 mb-3">1. The Managed Workflow Gate Offering ($499 Setup)</h2>
+        <p class="text-gray-300 leading-relaxed mb-4">
+          For small engineering and security teams deploying autonomous coding agents (Claude Code, Cursor, Codex, Cline), abstract "AI safety" is unhelpful. Engineering managers need deterministic controls that protect sensitive repositories, staging environments, and external cloud services before execution occurs.
+        </p>
+        <p class="text-gray-300 leading-relaxed">
+          The $499 Managed Gate includes direct setup, policy tuning for your risk surface, a 14-day evaluation period, and automated executive proof report generation.
+        </p>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold text-emerald-400 mb-3">2. The 5 Canonical Attack Scenarios Prevented</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-gray-300">
+            <thead class="bg-gray-800 text-gray-200 uppercase font-mono text-xs">
+              <tr>
+                <th class="p-3">Attack Vector</th>
+                <th class="p-3">Agent Behavior</th>
+                <th class="p-3">ThumbGate Interception</th>
+                <th class="p-3">Outcome</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800 font-mono text-xs">
+              <tr>
+                <td class="p-3 text-red-400 font-bold">1. Secret Exfiltration</td>
+                <td class="p-3">Agent curls private webhook with bearer token</td>
+                <td class="p-3">Secret-Scanner & Network-Egress Gate</td>
+                <td class="p-3 text-emerald-400">Blocked & Token Masked</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-orange-400 font-bold">2. Destructive Commands</td>
+                <td class="p-3"><code>rm -rf /</code>, <code>DROP TABLE</code>, force push</td>
+                <td class="p-3">MCP WriteGuard & Blast-Radius Gate</td>
+                <td class="p-3 text-emerald-400">Blocked & Escalation Emitted</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-yellow-400 font-bold">3. Scope & Blast Radius Breach</td>
+                <td class="p-3">Subagent edits security rules outside assigned scope</td>
+                <td class="p-3">Task-Scope Lease & Path Gate</td>
+                <td class="p-3 text-emerald-400">Halted with Scope Receipt</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-purple-400 font-bold">4. Unauthorized Financial Action</td>
+                <td class="p-3">Agent cancels retainer or provisions billable resources</td>
+                <td class="p-3">Financial Control Plane</td>
+                <td class="p-3 text-emerald-400">Requisition Check Intercepted</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-blue-400 font-bold">5. Helper Script Evasion</td>
+                <td class="p-3">Agent executes hidden wrapper script in /tmp</td>
+                <td class="p-3">Stealth Memory & Stateful Helper Gate</td>
+                <td class="p-3 text-emerald-400">Quarantined</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-semibold text-emerald-400 mb-3">3. Tamper-Evident Audit Proof</h2>
+        <p class="text-gray-300 leading-relaxed mb-4">
+          Every evaluation creates a machine-readable, cryptographic receipt (<code>proof/redteam-evidence-report.json</code>) with SHA-256 event fingerprints that can be ingested into your SIEM, Datadog, or OpenTelemetry logging pipeline.
+        </p>
+        <div class="bg-gray-950 p-4 rounded-lg font-mono text-xs text-gray-300">
+          <code>node scripts/redteam-5-attacks.js</code>
+        </div>
+      </div>
+    </section>
+
+    <div class="mt-12 text-center">
+      <a href="https://thumbgate.app/#pricing" class="inline-block bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold px-6 py-3 rounded-lg text-sm transition-colors">
+        Deploy Managed Workflow Gate ($499)
+      </a>
+    </div>
+  </main>
+</body>
+</html>
