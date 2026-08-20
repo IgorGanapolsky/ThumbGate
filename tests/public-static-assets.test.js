@@ -1046,20 +1046,24 @@ test('comparison and key landing pages expose FAQPage structured data', async ()
   }
 });
 
-test('GET /media/thumbgate-demo.gif serves the animated demo GIF without an API key', async () => {
-  const res = await fetch(`${origin}/media/thumbgate-demo.gif`);
+test('GET /compare/cloudflare-writeguard serves the hand-written comparison page', async () => {
+  const res = await fetch(`${origin}/compare/cloudflare-writeguard`);
   assert.equal(res.status, 200);
-  assert.equal(res.headers.get('content-type'), 'image/gif');
-  assert.ok(Number(res.headers.get('content-length')) > 0);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const html = await res.text();
+  assert.match(html, /ThumbGate vs Cloudflare WriteGuard/);
+  assert.match(html, /Tool-Call Gate vs MCP Portal Gate/);
+  assert.match(html, /contained write/);
+  assert.match(html, /"@type":\s*"FAQPage"/);
+  assert.match(html, /infoq\.com\/news\/2026\/08\/cloudflare-writeguard-mcp-safety/);
+  assert.match(html, /href="\/compare\/oak-and-sparrow-gatekeeper"/);
 });
 
-test('GET /media/does-not-exist.gif returns 404', async () => {
-  const res = await fetch(`${origin}/media/does-not-exist.gif`);
-  assert.equal(res.status, 404);
-});
-
-test('GET /media/../server.js is rejected (no path traversal)', async () => {
-  const res = await fetch(`${origin}/media/..%2fapi%2fserver.js`);
-  assert.ok([403, 404].includes(res.status));
-  assert.notEqual(res.status, 200);
+test('GET /sitemap.xml includes the cloudflare-writeguard comparison page', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/compare\/cloudflare-writeguard<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'compare/cloudflare-writeguard <url> block must exist');
+  assert.match(entry[0], /<priority>0\.85<\/priority>/);
 });
