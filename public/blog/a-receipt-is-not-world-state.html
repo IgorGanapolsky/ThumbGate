@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A receipt is not world-state | ThumbGate</title>
+  <meta
+    name="description"
+    content="thumbgate.ai evaluates the tool call, blocks the unsafe ones, and leaves a receipt. A receipt is not proof of production, CI, or a completed task. First-party research note with TOC, author, and related posts."
+  />
+  <meta property="og:title" content="A receipt is not world-state" />
+  <meta
+    property="og:description"
+    content="Evaluate, then block, then leave evidence. A gate log line is not world-state. thumbgate.ai publishes that research on first-party HTML."
+  />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/blog/a-receipt-is-not-world-state" />
+  <link rel="canonical" href="https://thumbgate.ai/blog/a-receipt-is-not-world-state" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <meta property="og:image" content="https://thumbgate.ai/og.png" />
+  <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "A receipt is not world-state",
+    "datePublished": "2026-08-19",
+    "dateModified": "2026-08-19",
+    "author": { "@type": "Person", "name": "Igor Ganapolsky" },
+    "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+    "mainEntityOfPage": "https://thumbgate.ai/blog/a-receipt-is-not-world-state",
+    "image": "https://thumbgate.ai/og.png",
+    "keywords": "Infrastructure Firewall, Reliability Gateway, PreToolUse, Thompson Sampling, DPO, completion claim, ThumbGate",
+    "description": "thumbgate.ai is a pre-action control: evaluate the proposed tool call, block unsafe actions, leave evidence. A receipt is not proof of production or task completion.",
+    "wordCount": 1680,
+    "timeRequired": "PT11M",
+    "articleSection": "research"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What does thumbgate.ai actually do?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It evaluates a proposed AI coding-agent tool call before the harness runs it, can block unsafe actions, and writes a receipt for the decision. Local install is npx thumbgate init. It does not retrain a model."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does a ThumbGate receipt prove production is live?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. A receipt proves the gate ran on that tool call. Production live requires GET /health buildSha equal to the claimed main SHA. CI green requires terminal required checks on that exact SHA."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is a listed MCP tool the same as an invocable tool?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Discovery must equal the tools the active profile and packaged runtime can actually call. A catalog row is not a side effect."
+        }
+      }
+    ]
+  }
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b10;
+      --panel: #111722;
+      --text: #f5f7fb;
+      --muted: #9ca8ba;
+      --line: #273246;
+      --cyan: #38d7ff;
+      --green: #56e39f;
+      --max: 1120px;
+      --article: 760px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      font: 16px/1.7 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+    }
+    a { color: var(--cyan); }
+    .shell { width: min(calc(100% - 40px), var(--max)); margin: 0 auto; }
+    header { padding: 22px 0; border-bottom: 1px solid var(--line); }
+    header a { color: var(--muted); text-decoration: none; font-weight: 700; }
+    header a:hover { color: var(--text); }
+    .brand { color: var(--text); font-weight: 850; text-decoration: none; }
+    .crumb { color: var(--muted); font-size: 13px; }
+    .crumb a { color: var(--muted); }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, var(--article)) 220px;
+      gap: 48px;
+      align-items: start;
+      padding: 48px 0 80px;
+    }
+    article { min-width: 0; }
+    .meta {
+      color: var(--muted);
+      font: 700 12px/1.2 ui-monospace, Menlo, monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .byline { margin: 0 0 28px; color: var(--muted); font-size: 14px; }
+    h1 {
+      margin: 14px 0 18px;
+      font-size: clamp(32px, 5vw, 46px);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+    h2 { margin: 36px 0 12px; font-size: 24px; letter-spacing: -.03em; }
+    h2 a { color: inherit; text-decoration: none; }
+    h2 a:hover { color: var(--cyan); }
+    h3 { margin: 24px 0 8px; font-size: 18px; }
+    p, li { color: var(--muted); }
+    p { margin: 0 0 16px; }
+    ul, ol { margin: 0 0 18px; padding-left: 1.2em; }
+    li { margin-bottom: 8px; }
+    strong { color: var(--text); }
+    .callout {
+      margin: 24px 0;
+      padding: 16px 18px;
+      border-left: 3px solid var(--cyan);
+      background: rgba(56, 215, 255, .06);
+      color: var(--muted);
+    }
+    .cta {
+      display: inline-flex;
+      margin-top: 8px;
+      margin-right: 10px;
+      padding: 12px 18px;
+      border-radius: 10px;
+      background: var(--green);
+      color: #06130d;
+      font-weight: 850;
+      text-decoration: none;
+    }
+    .cta.ghost {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+    code { color: var(--cyan); font-family: ui-monospace, Menlo, monospace; font-size: 0.95em; }
+    pre {
+      overflow: auto;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #0c1118;
+      color: var(--text);
+      font: 13px/1.5 ui-monospace, Menlo, monospace;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+    th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { background: var(--panel); color: var(--text); }
+    .toc {
+      position: sticky;
+      top: 24px;
+      padding: 16px 0 0;
+    }
+    .toc h2 {
+      margin: 0 0 12px;
+      font: 800 11px/1.2 ui-monospace, Menlo, monospace;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .toc a {
+      display: block;
+      margin: 0 0 10px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .toc a:hover { color: var(--text); }
+    .related { margin-top: 48px; padding-top: 28px; border-top: 1px solid var(--line); }
+    .related h2 { margin-top: 0; font-size: 18px; }
+    .related a { display: block; margin: 8px 0; }
+    footer { padding: 28px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; gap: 28px; }
+      .toc { position: static; padding: 0 0 8px; border-bottom: 1px solid var(--line); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell" style="display:flex;justify-content:space-between;gap:16px;align-items:center;">
+      <a class="brand" href="/blog">ThumbGate / Blog</a>
+      <span class="crumb"><a href="/blog">Blog</a> / <a href="/blog">research</a></span>
+    </div>
+  </header>
+  <div class="shell layout">
+    <article>
+      <div class="meta">2026-08-19 · research</div>
+      <h1>A receipt is not world-state</h1>
+      <p class="byline">Igor Ganapolsky · 11 min read</p>
+      <p>
+        <a href="https://cursor.com/blog">Cursor’s blog</a> is the publishing surface we wanted: first-party HTML, a research tag, a named author, a read time, a table of contents, and related posts at the bottom. No clapbait. No third-party writing platform as the canonical URL. We are not affiliated with Cursor. We stole that <strong>format</strong> for <a href="https://thumbgate.ai/blog">thumbgate.ai/blog</a>.
+      </p>
+      <p>
+        The substance is the product at that same domain. <strong>thumbgate.ai</strong> is an Infrastructure Firewall for AI coding agents: evaluate the proposed tool call, block the unsafe ones, leave evidence. Agents keep treating the evidence artifact as the world. That is the failure this post names.
+      </p>
+
+      <h2 id="the-three-word-product"><a href="#the-three-word-product">#</a> The three-word product</h2>
+      <p>
+        ThumbGate is not a training stack and it is not a hosted digital worker. It sits on the PreToolUse boundary every capable harness already exposes — Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode — after the model has chosen a tool and before the tool runs.
+      </p>
+      <p>Three verbs, in order:</p>
+      <ol>
+        <li><strong>Evaluate</strong> the fully resolved action (command, path, URL, MCP call) against a deterministic rule set.</li>
+        <li><strong>Block</strong> (or warn, or allow) before the side effect. Secret-exfiltration is a hard floor. Destructive git and filesystem classes escalate under STRICT.</li>
+        <li><strong>Leave evidence</strong> — a receipt with verdict, gate identity, and the action that was judged.</li>
+      </ol>
+      <div class="callout">
+        The Reliability Gateway is capture → remember → re-rank → gate. Memory without the last step is a diary. Thompson Sampling ranks candidate prevention rules; DPO export is a downstream artifact, not the enforcement path.
+      </div>
+      <p>
+        Local start is <code>npx thumbgate init</code>. The npm package is <code>thumbgate</code>. Public code is MIT on purpose. Hosted operation, adapter coverage, and the dashboard are the paid surfaces; they are not a second intelligence repo pretending the public shell is empty. See <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/VERIFICATION_EVIDENCE.md">VERIFICATION_EVIDENCE.md</a>.
+      </p>
+
+      <h2 id="what-a-receipt-is"><a href="#what-a-receipt-is">#</a> What a receipt is</h2>
+      <p>
+        A receipt is the durable record of <em>one decision at the tool-call boundary</em>. It is useful because it is small, local, and inspectable:
+      </p>
+      <ul>
+        <li>verdict: allow, warn, or deny</li>
+        <li>which gate fired, and whether the source was committed policy or a promoted lesson</li>
+        <li>the tool name plus resolved arguments — the action, not the agent’s narration of the action</li>
+        <li>a timestamp you can put next to a session, a worktree, and a git SHA</li>
+      </ul>
+      <p>
+        MCP attempts, including denied and failed calls, must emit tool KPI telemetry. Task completion claims require an idempotent task-outcome receipt <em>and</em> verification evidence. Those are two different objects. Mixing them is how “we gated it” becomes “it shipped.”
+      </p>
+      <pre>allow | warn | deny
+gateId, source, toolName
+resolvedArgs (command | path | url)
+ts, sessionId, worktree</pre>
+
+      <h2 id="what-a-receipt-is-not"><a href="#what-a-receipt-is-not">#</a> What a receipt is not</h2>
+      <p>
+        Adjacent agent OS and marketplace products learned this the expensive way: a signed receipt is not proof the world moved. We apply the same honesty to our own control plane.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Artifact</th><th>Proves</th><th>Does not prove</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Gate receipt</td>
+            <td>This tool call was evaluated and this verdict returned</td>
+            <td>The command ran, the file landed, production rebuilt</td>
+          </tr>
+          <tr>
+            <td>MCP listing</td>
+            <td>A catalog row exists for a name</td>
+            <td>The active profile can invoke it</td>
+          </tr>
+          <tr>
+            <td>public-proof.json</td>
+            <td>The fields the contract actually emits</td>
+            <td>A count you inferred because the filename sounded quantitative</td>
+          </tr>
+          <tr>
+            <td>“CI green”</td>
+            <td>Required checks on <em>some</em> SHA</td>
+            <td>Required checks on <strong>the SHA you are claiming</strong></td>
+          </tr>
+          <tr>
+            <td>Agent “done”</td>
+            <td>The model emitted a completion sentence</td>
+            <td>Tests, merge, or <code>/health</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        This is not pedantry. On 2026-07-30 a completion claim without the matching evidence class was a thumbs-down. The contract stayed: never say done, shipped, live, or fixed without the artifact that is authoritative for that claim.
+      </p>
+
+      <h2 id="the-completion-claim-contract"><a href="#the-completion-claim-contract">#</a> The completion claim contract</h2>
+      <p>When the claim is about ThumbGate itself, the evidence class is closed:</p>
+      <table>
+        <thead>
+          <tr><th>Claim</th><th>Required evidence before the word</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Code on <code>main</code></td>
+            <td>Merge commit SHA is tip (or ancestor) of <code>origin/main</code></td>
+          </tr>
+          <tr>
+            <td>Production live</td>
+            <td><code>GET /health</code> <code>buildSha</code> equals that SHA (and version when versioned)</td>
+          </tr>
+          <tr>
+            <td>CI green</td>
+            <td>Terminal required checks on <strong>that exact SHA</strong>, not an older branch run</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Partial stays partial. A mid-flight Railway rebuild is not “deployed.” A dashboard screenshot is not <code>/health</code>. An empty grep is not “no matches” unless you named the surface you searched.
+      </p>
+      <div class="callout">
+        Absence is not evidence. Zero rows from the wrong index is a measurement error, not a clean bill of health. Production monitoring is not healthy until at least 20 measured task outcomes and 20 observed tool calls pass the configured threshold set — not because twenty is magic, because we refuse to call a silent pipeline healthy.
+      </div>
+
+      <h2 id="listing-is-not-invocable"><a href="#listing-is-not-invocable">#</a> Listing is not invocable</h2>
+      <p>
+        MCP discovery must equal the tools callable by the active profile and the packaged runtime. Side-effect annotations must be truthful. Declared structured outputs must validate. A compare page that ranks a vendor is not an adapter. An adapter file that is not in <code>SUPPORTED_AGENTS</code> is not support.
+      </p>
+      <p>
+        The same rule applies to this blog. A hub card is not a live URL until <code>public/blog/&lt;slug&gt;.html</code> exists, the server maps <code>/blog/*</code> from that directory, and <code>/sitemap.xml</code> auto-includes the file. Tests in <code>tests/blog-hub.test.js</code> pin the contract so a future agent cannot add JSON-LD for a post that is not on disk.
+      </p>
+
+      <h2 id="why-first-party"><a href="#why-first-party">#</a> Why first-party HTML</h2>
+      <p>
+        Cursor’s research posts are crawlable, canonical, and owned. That is the GEO surface that actually compounds: JSON-LD <code>BlogPosting</code> plus <code>FAQPage</code>, a stable slug, related posts that keep the reader on <code>thumbgate.ai</code>, linguistic struts an LLM parser can quote (Infrastructure Firewall, Reliability Gateway, Thompson Sampling, DPO, PreToolUse).
+      </p>
+      <p>What we did not steal:</p>
+      <ul>
+        <li>Cursor Origin / Continuity Git hosting. Client-side pack hygiene is a different lane.</li>
+        <li>A writing-platform canonical URL. This page is the canonical URL.</li>
+        <li>Invented traction. A research post is not a paid-pilot announcement.</li>
+      </ul>
+      <p>
+        If you want the gate on a repo you actually run agents against:
+      </p>
+      <p>
+        <a class="cta" href="https://thumbgate.ai/guide?utm_source=blog&amp;utm_medium=article&amp;utm_campaign=receipt-not-world-state-20260819&amp;cta_id=receipt-not-world-state-20260819_blog_guide">Read the setup guide →</a>
+        <a class="cta ghost" href="https://www.npmjs.com/package/thumbgate">npx thumbgate init</a>
+      </p>
+      <p>
+        Source: <a href="https://github.com/IgorGanapolsky/ThumbGate">github.com/IgorGanapolsky/ThumbGate</a>.
+        Evidence index: <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/VERIFICATION_EVIDENCE.md">VERIFICATION_EVIDENCE.md</a>.
+      </p>
+
+      <h2 id="faq"><a href="#faq">#</a> FAQ</h2>
+      <h3>What does thumbgate.ai actually do?</h3>
+      <p>
+        It evaluates a proposed AI coding-agent tool call before the harness runs it, can block unsafe actions, and writes a receipt for the decision. It does not retrain a model.
+      </p>
+      <h3>Does a ThumbGate receipt prove production is live?</h3>
+      <p>
+        No. A receipt proves the gate ran on that tool call. Production live requires <code>GET /health</code> <code>buildSha</code> equal to the claimed main SHA.
+      </p>
+      <h3>Is a listed MCP tool the same as an invocable tool?</h3>
+      <p>
+        No. Discovery must equal the tools the active profile and packaged runtime can actually call.
+      </p>
+
+      <div class="related">
+        <h2>Related posts</h2>
+        <a href="/blog/process-over-outcome-gates">Process over outcome: gates for self-improving coding loops</a>
+        <a href="/blog/inside-your-boundary">AI inside your boundary: governance without relaxing controls</a>
+        <a href="/learn/feedback-loop-vs-decision-layer">Feedback loop vs decision layer</a>
+      </div>
+    </article>
+    <nav class="toc" aria-label="Table of contents">
+      <h2>Table of Contents</h2>
+      <a href="#the-three-word-product">The three-word product</a>
+      <a href="#what-a-receipt-is">What a receipt is</a>
+      <a href="#what-a-receipt-is-not">What a receipt is not</a>
+      <a href="#the-completion-claim-contract">The completion claim contract</a>
+      <a href="#listing-is-not-invocable">Listing is not invocable</a>
+      <a href="#why-first-party">Why first-party HTML</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+  </div>
+  <footer>
+    <div class="shell">
+      Format stolen from <a href="https://cursor.com/blog">cursor.com/blog</a>. Not affiliated.
+      Canonical: <a href="https://thumbgate.ai/blog/a-receipt-is-not-world-state">thumbgate.ai/blog/a-receipt-is-not-world-state</a>.
+    </div>
+  </footer>
+</body>
+</html>

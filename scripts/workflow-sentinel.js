@@ -66,6 +66,14 @@ function loadJson(filePath) {
 }
 
 function loadGovernanceState() {
+  try {
+    const engine = require('./gates-engine');
+    if (typeof engine.loadGovernanceState === 'function') {
+      return engine.loadGovernanceState();
+    }
+  } catch {
+    // Fall through to the local file if the engine cannot load.
+  }
   const raw = loadJson(GOVERNANCE_STATE_PATH);
   return {
     taskScope: raw?.taskScope && typeof raw.taskScope === 'object' ? raw.taskScope : null,
@@ -206,6 +214,19 @@ function getBranchDiffFiles(repoRoot) {
 }
 
 function collectAffectedFiles(toolName, toolInput = {}, repoRoot) {
+  try {
+    const { extractAffectedFiles } = require('./gates-engine');
+    if (typeof extractAffectedFiles === 'function') {
+      const extracted = extractAffectedFiles(toolName, {
+        ...toolInput,
+        cwd: toolInput.cwd || repoRoot,
+        repoPath: toolInput.repoPath || repoRoot,
+      });
+      if (extracted && Array.isArray(extracted.files)) return extracted.files;
+    }
+  } catch {
+    // Keep the local collector if the engine cannot load.
+  }
   const files = new Set(collectInlineAffectedFiles(toolInput, repoRoot));
   const command = String(toolInput.command || '');
   const hasExplicitAffectedFiles = files.size > 0;
@@ -1485,7 +1506,22 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
   const workflowControl = buildWorkflowControl(normalizedAction, options.workflowPolicy || toolInput.workflowPolicy || options.budget || toolInput.budget || {});
   const governanceState = options.governanceState || loadGovernanceState();
   const repoPath = options.repoPath || normalizedToolInput.repoPath || normalizedToolInput.cwd || process.cwd();
-  const repoRoot = resolveRepoRoot(repoPath) || null;
+  let repoRoot = null;
+  try {
+    const engine = require('./gates-engine');
+    if (typeof engine.resolveRepoRoot === 'function') {
+      repoRoot = engine.resolveRepoRoot({
+        ...normalizedToolInput,
+        cwd: normalizedToolInput.cwd || repoPath,
+        repoPath: normalizedToolInput.repoPath || repoPath,
+      });
+    }
+  } catch {
+    repoRoot = null;
+  }
+  if (!repoRoot) {
+    repoRoot = resolveRepoRoot(repoPath) || null;
+  }
   const affectedFiles = Array.isArray(options.affectedFiles)
     ? options.affectedFiles.map((filePath) => normalizePosix(filePath)).filter(Boolean)
     : collectAffectedFiles(normalizedToolName, normalizedToolInput, repoRoot);

@@ -189,6 +189,9 @@ function runBudgetAwareGatesProof(options = {}) {
   const report = {
     schema: 'thumbgate.budget_aware_gates_proof.v1',
     mode: 'simulation',
+    autoApply: false,
+    humanOversightRequired: true,
+    capturedRevenueUsd: 0,
     generatedAt: new Date().toISOString(),
     latencyMs: Date.now() - started,
     budgets,
