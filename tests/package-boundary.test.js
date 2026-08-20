@@ -458,8 +458,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
     // 474 -> 475 (2026-08-19): public/blog/no-llm-in-the-gate.html (+1 measured npm pack)
     // 475 -> 476 (2026-08-19): scripts/rule-sprawl.js (+1 measured npm pack)
-    manifest.fileCount <= 476,
-    `npm package should stay <= 476 files, got ${manifest.fileCount}`
+    // 476 -> 477 (2026-08-20): scripts/hidden-entry-points.js (+1 measured npm pack); keep CEILING const
+    manifest.fileCount <= 477,
+    `npm package should stay <= 477 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
