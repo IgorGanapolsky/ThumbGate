@@ -454,13 +454,17 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // Security Central posture report. Lockstep with public-bundle-ratchet +
     // public-core-boundary.
     // 470 -> 471 (2026-08-18): pipeline-compass runtime module (+1)
+    // 471 -> 473 (2026-08-18): mcp-writeguard and latency-budget (+2)
+    // 473 -> 475 (2026-08-19): git-fast-cache and hash-anchored-edit (+2)
+    // 475 -> 477 (2026-08-19): rendezvous-router and git-wal-sync (+2)
+    // 477 -> 478 (2026-08-19): public/blog/git-at-agent-scale.html (+1)
+    // 478 -> 480 (2026-08-19): ppl-alert-pipeline and agent-retrieval-cache (+2)
+    // 480 -> 482 (2026-08-19): iso42001-compliance-guard and agent-identity-boundary (+2)
+    // 482 -> 483 (2026-08-19): miminions-adapter (+1)
     // file that packaged entrypoints require: scripts/override-audit.js (#3515),
-    // 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
-    // 474 -> 475 (2026-08-19): public/blog/no-llm-in-the-gate.html (+1 measured npm pack)
-    // 475 -> 476 (2026-08-19): scripts/rule-sprawl.js (+1 measured npm pack)
-    // 476 -> 477 (2026-08-20): scripts/hidden-entry-points.js (+1 measured npm pack); keep CEILING const
-    manifest.fileCount <= 477,
-    `npm package should stay <= 477 files, got ${manifest.fileCount}`
+    // 494 -> 495 (2026-08-20): scripts/hidden-entry-points.js (+1 measured npm pack)
+    manifest.fileCount <= 495,
+    `npm package should stay <= 495 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

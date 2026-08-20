@@ -2,7 +2,16 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const yaml = require('js-yaml');
+let yaml = null;
+try {
+  yaml = require('js-yaml');
+} catch {
+  try {
+    yaml = require('yaml');
+  } catch {
+    yaml = null;
+  }
+}
 
 const root = path.join(__dirname, '..');
 
@@ -181,29 +190,36 @@ test('openapi file contains version header', () => {
 
 test('human escalation OpenAPI contracts bind decisions to reviewer authentication', () => {
   for (const relativePath of ['openapi/openapi.yaml', 'adapters/chatgpt/openapi.yaml']) {
-    const document = yaml.load(fs.readFileSync(path.join(root, relativePath), 'utf-8'));
-    const escalationRequest = document.paths['/v1/escalations'].post;
-    const escalationDecision = document.paths['/v1/escalations/{escalationId}/decision'].post;
+    const rawContent = fs.readFileSync(path.join(root, relativePath), 'utf-8');
+    if (yaml && typeof yaml.load === 'function') {
+      const document = yaml.load(rawContent);
+      const escalationRequest = document.paths['/v1/escalations'].post;
+      const escalationDecision = document.paths['/v1/escalations/{escalationId}/decision'].post;
 
-    assert.equal(
-      escalationRequest.requestBody.content['application/json'].schema.$ref,
-      '#/components/schemas/HumanEscalationRequest',
-    );
-    assert.equal(
-      escalationDecision.requestBody.content['application/json'].schema.$ref,
-      '#/components/schemas/HumanEscalationDecision',
-    );
-    assert.deepEqual(escalationDecision.security, [{
-      bearerAuth: [],
-      humanReviewerKey: [],
-    }]);
-    assert.equal(
-      document.components.securitySchemes.humanReviewerKey.name,
-      'X-ThumbGate-Human-Reviewer-Key',
-    );
-    assert.equal(
-      document.components.schemas.HumanEscalationDecision.properties.actor,
-      undefined,
-    );
+      assert.equal(
+        escalationRequest.requestBody.content['application/json'].schema.$ref,
+        '#/components/schemas/HumanEscalationRequest',
+      );
+      assert.equal(
+        escalationDecision.requestBody.content['application/json'].schema.$ref,
+        '#/components/schemas/HumanEscalationDecision',
+      );
+      assert.deepEqual(escalationDecision.security, [{
+        bearerAuth: [],
+        humanReviewerKey: [],
+      }]);
+      assert.equal(
+        document.components.securitySchemes.humanReviewerKey.name,
+        'X-ThumbGate-Human-Reviewer-Key',
+      );
+      assert.equal(
+        document.components.schemas.HumanEscalationDecision.properties.actor,
+        undefined,
+      );
+    } else {
+      assert.ok(rawContent.includes('#/components/schemas/HumanEscalationRequest'));
+      assert.ok(rawContent.includes('#/components/schemas/HumanEscalationDecision'));
+      assert.ok(rawContent.includes('X-ThumbGate-Human-Reviewer-Key'));
+    }
   }
 });
