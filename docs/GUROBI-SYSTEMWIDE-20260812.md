@@ -56,3 +56,18 @@ Buyer narrative: *budget-aware enforcement* — we do not load every prevention 
 we select high-mitigation rules and affordable models under budgets. Solver is an
 implementation detail. **No Gurobi partnership / co-sell / logo claim.**
 `capturedRevenueUsd` is never invented from a solve.
+
+## Beyond LLMs process (not product)
+
+Podcast process steal — *provable/repeatable vs plausible*, plus **human oversight
+before action**. Gurobi-as-enterprise-AI-infrastructure does **not** transfer (ECI).
+
+| Layer | ThumbGate meaning |
+|-------|-------------------|
+| Understanding | Heuristic formulate (`plausibleOnly: true`) |
+| Computation | MILP OPTIMAL (`repeatable: true`) |
+| Action | `autoApply: false` — PreToolUse does not load solver picks |
+
+```bash
+npm run test:gurobi
+```

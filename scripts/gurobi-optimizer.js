@@ -59,17 +59,55 @@ function runPythonMode(mode, payload, timeoutMs = 10000, pythonBin = resolvePyth
 }
 
 /**
+ * Decision-intelligence governance stamp (Beyond LLMs process, not Gurobi product).
+ * Understanding = heuristic (plausible). Computation = OPTIMAL MILP (repeatable).
+ * Action stays human-oversight — solver picks never auto-apply to PreToolUse.
+ */
+function isRepeatableSolve(result) {
+  const solver = String((result && result.solver) || '').toLowerCase();
+  return solver === 'gurobi' && String((result && result.status) || '') === 'OPTIMAL';
+}
+
+function stampDecisionGovernance(result) {
+  const body = result && typeof result === 'object' ? { ...result } : {};
+  const repeatable = isRepeatableSolve(body);
+  body.autoApply = false;
+  body.humanOversightRequired = true;
+  body.capturedRevenueUsd = 0;
+  body.repeatable = repeatable;
+  body.plausibleOnly = !repeatable;
+  body.certified = repeatable && body.success === true;
+  if (body.certified) {
+    body.proof = body.proof || 'gurobi-optimal';
+  } else if (String(body.status || '').startsWith('INFEASIBLE')) {
+    body.proof = body.proof || 'infeasible-iis';
+  } else if (/heuristic|fallback/i.test(String(body.solver || ''))) {
+    body.proof = body.proof || 'heuristic';
+  } else {
+    body.proof = body.proof || 'unproven';
+  }
+  return body;
+}
+
+const stampReceipt = stampDecisionGovernance;
+const isCertifiedSolve = isRepeatableSolve;
+
+/**
  * Optimizes model candidate routing via Gurobi MILP solver.
  * Falls back to deterministic heuristic if Gurobi is unavailable.
  */
 function optimizeModelRouting(candidates, { maxBudgetUsd = 1.0, maxLatencyMs = 5000.0 } = {}, opts = {}) {
   if (!Array.isArray(candidates) || candidates.length === 0) {
-    return { success: false, selected: null, error: 'Candidates must be a non-empty array' };
+    return stampDecisionGovernance({
+      success: false,
+      selected: null,
+      error: 'Candidates must be a non-empty array',
+    });
   }
 
   const pythonBin = opts.pythonBin || resolvePythonBin();
   try {
-    return stampReceipt(runPythonMode('routing', {
+    return stampDecisionGovernance(runPythonMode('routing', {
       candidates,
       max_budget_usd: maxBudgetUsd,
       max_latency_ms: maxLatencyMs,
@@ -79,7 +117,7 @@ function optimizeModelRouting(candidates, { maxBudgetUsd = 1.0, maxLatencyMs = 5
       (c) => (c.cost || 0) <= maxBudgetUsd && (c.latency_ms || 0) <= maxLatencyMs
     );
     if (valid.length === 0) {
-      return stampReceipt({
+      return stampDecisionGovernance({
         success: false,
         selected: null,
         solver: 'node-fallback-heuristic',
@@ -94,7 +132,7 @@ function optimizeModelRouting(candidates, { maxBudgetUsd = 1.0, maxLatencyMs = 5
       (prev, curr) => ((curr.score || 0) > (prev.score || 0) ? curr : prev),
       valid[0]
     );
-    return stampReceipt({
+    return stampDecisionGovernance({
       success: true,
       selected: best.id,
       solver: 'node-fallback-heuristic',
@@ -111,12 +149,16 @@ function optimizeModelRouting(candidates, { maxBudgetUsd = 1.0, maxLatencyMs = 5
  */
 function optimizeRuleSelection(rules, { maxEvalTimeMs = 50.0, maxTokenFootprint = 1000 } = {}, opts = {}) {
   if (!Array.isArray(rules) || rules.length === 0) {
-    return { success: false, selected_rules: [], error: 'Rules must be a non-empty array' };
+    return stampDecisionGovernance({
+      success: false,
+      selected_rules: [],
+      error: 'Rules must be a non-empty array',
+    });
   }
 
   const pythonBin = opts.pythonBin || resolvePythonBin();
   try {
-    return stampReceipt(runPythonMode('rules', {
+    return stampDecisionGovernance(runPythonMode('rules', {
       rules,
       max_eval_time_ms: maxEvalTimeMs,
       max_token_footprint: maxTokenFootprint,
@@ -139,7 +181,7 @@ function optimizeRuleSelection(rules, { maxEvalTimeMs = 50.0, maxTokenFootprint 
         curTokens += tok;
       }
     }
-    return stampReceipt({
+    return stampDecisionGovernance({
       success: true,
       selected_rules: selected,
       solver: 'node-fallback-knapsack',
@@ -150,29 +192,6 @@ function optimizeRuleSelection(rules, { maxEvalTimeMs = 50.0, maxTokenFootprint 
       python: pythonBin,
     });
   }
-}
-
-function stampReceipt(result) {
-  const out = result && typeof result === 'object' ? { ...result } : {};
-  const solver = String(out.solver || '');
-  const status = String(out.status || '');
-  const certified = solver === 'gurobi' && status === 'OPTIMAL' && out.success === true;
-  out.certified = certified;
-  out.capturedRevenueUsd = 0;
-  if (certified) {
-    out.proof = out.proof || 'gurobi-optimal';
-  } else if (status.startsWith('INFEASIBLE')) {
-    out.proof = out.proof || 'infeasible-iis';
-  } else if (/heuristic|fallback/i.test(solver)) {
-    out.proof = out.proof || 'heuristic';
-  } else {
-    out.proof = out.proof || 'unproven';
-  }
-  return out;
-}
-
-function isCertifiedSolve(result) {
-  return Boolean(result && result.certified === true && result.status === 'OPTIMAL' && result.solver === 'gurobi');
 }
 
 function probeGurobi(opts = {}) {
@@ -212,8 +231,10 @@ module.exports = {
   resolvePythonBin,
   probeGurobi,
   runPythonMode,
-  stampReceipt,
+  isRepeatableSolve,
   isCertifiedSolve,
+  stampDecisionGovernance,
+  stampReceipt,
   mainCli,
   get PYTHON_BIN() {
     return resolvePythonBin();

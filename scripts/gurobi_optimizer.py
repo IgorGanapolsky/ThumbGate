@@ -332,20 +332,38 @@ def solve_rule_selection(
         return stamp_receipt(res)
 
 
+def stamp_decision_governance(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Action layer stays human-oversight. A solve is not a PreToolUse apply."""
+    body = dict(result or {})
+    solver = str(body.get("solver") or "")
+    status = str(body.get("status") or "")
+    repeatable = solver == "gurobi" and status == "OPTIMAL"
+    body["autoApply"] = False
+    body["humanOversightRequired"] = True
+    body["capturedRevenueUsd"] = 0
+    body["repeatable"] = repeatable
+    body["plausibleOnly"] = not repeatable
+    return body
+
+
 def run_mode(mode: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     if mode == "routing":
-        return solve_model_routing(
-            candidates=payload.get("candidates", []),
-            max_budget_usd=float(payload.get("max_budget_usd", 1.0)),
-            max_latency_ms=float(payload.get("max_latency_ms", 5000.0)),
+        return stamp_decision_governance(
+            solve_model_routing(
+                candidates=payload.get("candidates", []),
+                max_budget_usd=float(payload.get("max_budget_usd", 1.0)),
+                max_latency_ms=float(payload.get("max_latency_ms", 5000.0)),
+            )
         )
     if mode == "rules":
-        return solve_rule_selection(
-            rules=payload.get("rules", []),
-            max_eval_time_ms=float(payload.get("max_eval_time_ms", 50.0)),
-            max_token_footprint=int(payload.get("max_token_footprint", 1000)),
+        return stamp_decision_governance(
+            solve_rule_selection(
+                rules=payload.get("rules", []),
+                max_eval_time_ms=float(payload.get("max_eval_time_ms", 50.0)),
+                max_token_footprint=int(payload.get("max_token_footprint", 1000)),
+            )
         )
-    return {"success": False, "error": f"Unknown mode: {mode}"}
+    return stamp_decision_governance({"success": False, "error": f"Unknown mode: {mode}"})
 
 
 def main(argv: List[str] | None = None) -> int:
@@ -362,7 +380,7 @@ def main(argv: List[str] | None = None) -> int:
         payload = load_input_payload(args.input)
         result = run_mode(args.mode, payload)
     except Exception as err:  # noqa: BLE001 — CLI always emits JSON
-        print(json.dumps({"success": False, "error": f"Failed to parse input: {err}"}))
+        print(json.dumps(stamp_decision_governance({"success": False, "error": f"Failed to parse input: {err}"})))
         return 1
 
     print(json.dumps(result, indent=2))
