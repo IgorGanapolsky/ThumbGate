@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ThumbGate vs Cloudflare WriteGuard | Tool-Call Gate vs MCP Portal Gate</title>
+<meta name="description" content="Cloudflare WriteGuard intercepts MCP write requests at Cloudflare's portal and enforces tool-specific policies centrally. ThumbGate gates agent tool calls locally — mandatory PreToolUse hooks where the harness supports them (e.g. Claude Code, Gemini CLI), plus MCP gate_check / advisory rules on Cursor, Amp, Cline, and OpenCode — and learns new rules from operator feedback. Same pre-action philosophy, different layer and different reach." />
+<meta property="og:title" content="ThumbGate vs Cloudflare WriteGuard | Tool-Call Gate vs MCP Portal Gate" />
+<meta property="og:description" content="WriteGuard gates MCP writes at the network portal. ThumbGate gates every agent tool call at the runtime boundary and learns from your feedback. Complementary layers; a hyperscaler just validated the category." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://thumbgate.ai/compare/cloudflare-writeguard" />
+<link rel="canonical" href="https://thumbgate.ai/compare/cloudflare-writeguard" />
+<link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+<link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+<meta property="og:image" content="/og.png" />
+<style>
+  :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+  .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
+  .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+  .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+  .brand .logo-mark { width: 28px; height: 28px; display: block; }
+  .hero { padding: 72px 0 32px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+  h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 860px; }
+  .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+  .card, .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
+  .card { padding: 24px; }
+  .detail-section { padding: 24px; margin-bottom: 18px; }
+  .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+  .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
+  .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+  .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+  .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+  .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
+  .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
+  .sidebar { display: flex; flex-direction: column; gap: 18px; }
+  .sidebar-card { padding: 20px; }
+  .sidebar-card:first-child { position: sticky; top: 84px; max-height: calc(100vh - 104px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
+  .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
+  .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+  .faq-item summary { cursor: pointer; font-weight: 600; }
+  .faq-item p { color: var(--muted); }
+  blockquote { border-left: 3px solid var(--cyan); margin: 14px 0; padding: 6px 16px; color: var(--text); font-style: italic; background: rgba(34, 211, 238, 0.05); }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .sidebar-card:first-child { position: static; max-height: none; overflow: visible; } }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Cloudflare WriteGuard",
+  "description": "Cloudflare WriteGuard intercepts MCP requests at Cloudflare's portal, classifies operations from read-only to critical, and enforces tool-specific write policies centrally with agent-labeled audit logs. ThumbGate gates agent tool calls locally: mandatory PreToolUse hooks on hook-capable runtimes (Claude Code, Gemini CLI, and similar), and MCP gate_check plus advisory rules/skills on Cursor, Amp, Cline, and OpenCode. Same pre-action enforcement philosophy at two different layers.",
+  "about": ["thumbgate vs writeguard", "MCP write safety", "pre-action gates for AI agents", "PreToolUse hooks vs network portal enforcement"],
+  "url": "https://thumbgate.ai/compare/cloudflare-writeguard",
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "mainEntityOfPage": "https://thumbgate.ai/compare/cloudflare-writeguard"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Cloudflare WriteGuard a competitor to ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Adjacent, and mostly complementary. WriteGuard gates MCP write requests that flow through Cloudflare's portal — a network-layer control an organization applies to MCP traffic centrally. ThumbGate gates every tool call inside the agent runtime itself — shell commands, SQL, file writes, HTTP fetches, and MCP calls — including everything that never touches a network portal. An agent running rm -rf never issues an MCP request; only a runtime-boundary gate sees it."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does WriteGuard's launch mean for the category?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It is hyperscaler validation that pre-action enforcement for AI agents is real infrastructure, not a niche. Cloudflare's engineers state the motivation exactly the way we do: centralized control over write actions, agent labels in downstream applications, and an audit trail. The disagreement is only about where the gate belongs — their answer is the network portal; ours is the tool-call boundary, because that is the only place that sees every action class."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do WriteGuard's risk tiers map to ThumbGate's verdicts?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "WriteGuard tiers operations from read-only through contained write up to critical (production deployments, bulk deletions). ThumbGate's verdicts map cleanly: allow corresponds to read-only, warn-and-log corresponds to contained write, and hard-block corresponds to critical — with the difference that ThumbGate's rule set also grows from operator feedback, so the tier assignments adapt to the mistakes your agents actually make."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I use both?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, and larger organizations probably should. Route organizational MCP traffic through Cloudflare and let WriteGuard enforce central tool policies with existing OAuth identity. Run ThumbGate inside every developer's coding agent for the action classes a portal cannot see: local shell, file system, git, database clients, and MCP servers that run on the developer's own machine."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate available now?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. WriteGuard is in private beta behind Cloudflare's portal. ThumbGate is an MIT-licensed npm package you can install in one command today: npx thumbgate init. No cloud dependency on the enforcement path."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="topbar">
+  <div class="container">
+    <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="container">
+    <span class="eyebrow">ThumbGate vs Cloudflare WriteGuard</span>
+    <h1>WriteGuard gates MCP writes at the portal. ThumbGate gates every tool call at the runtime. A hyperscaler just validated the category.</h1>
+    <p><strong>WriteGuard</strong> (by <a href="https://www.cloudflare.com/" target="_blank" rel="noopener">Cloudflare</a>, private beta) intercepts MCP requests at Cloudflare's portal, classifies operations from <em>read-only</em> through <em>contained write</em> to <em>critical</em>, and enforces tool-specific policies centrally — reusing existing OAuth identity and labeling agents in the audit trail. <strong>ThumbGate</strong> gates the tool call an AI coding agent is about to execute — bash, SQL, file write, HTTP fetch, MCP tool — <em>locally</em>, before the side effect happens when the harness supports it: mandatory PreToolUse hooks on Claude Code, Google Gemini CLI, and other hook-capable runtimes; MCP <code>gate_check</code> plus advisory rules/skills on Cursor, Sourcegraph Amp, Cline, and OpenCode (enforcement there depends on the agent calling the gate). Rules grow from your own operator feedback.</p>
+    <div class="pill-row">
+      <span class="pill">Both pre-action</span>
+      <span class="pill">Both agent-labeled audit</span>
+      <span class="pill">Different layers</span>
+      <span class="pill good">Portal gate + runtime gate = full coverage</span>
+    </div>
+  </div>
+</section>
+
+<div class="container grid">
+  <main>
+    <article class="detail-section">
+      <h2>Side-by-side scope comparison</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th>Cloudflare WriteGuard</th>
+            <th>ThumbGate</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>What it intercepts</td>
+            <td>MCP requests flowing through Cloudflare's portal, evaluated against tool-specific policies before passing or blocking</td>
+            <td>Tool calls the agent harness exposes (bash, SQL, file write, HTTP fetch, MCP tool): mandatory PreToolUse hooks where supported; MCP <code>gate_check</code> / advisory rules on MCP-only adapters</td>
+          </tr>
+          <tr>
+            <td>Where the gate runs</td>
+            <td>Cloudflare's network — a centralized portal layer in front of MCP servers</td>
+            <td>Locally, inside the developer's agent session; no cloud dependency on the enforcement path</td>
+          </tr>
+          <tr>
+            <td>Action classes covered</td>
+            <td>MCP operations only — anything that does not flow through the portal is out of scope (local shell, file system, git, direct database clients)</td>
+            <td>All tool-call classes the agent harness exposes, MCP included</td>
+          </tr>
+          <tr>
+            <td>Risk taxonomy</td>
+            <td><em>read-only</em> (no risk) → <em>contained write</em> (e.g. creating merge requests) → <em>critical</em> (production deployments, bulk deletions)</td>
+            <td>👍 allow → 👎 warn + log → ⛔ hard-block; strict mode turns warns into denies. Maps 1:1 onto WriteGuard's tiers</td>
+          </tr>
+          <tr>
+            <td>Rule source</td>
+            <td>Tool-specific policies authored centrally — the stated goal is implementing them once at the portal instead of re-implementing per MCP server</td>
+            <td>Operator feedback (👍/👎) distilled into lessons and auto-promoted to prevention rules only after passing precision/recall gates; each rule traceable to the lesson that produced it</td>
+          </tr>
+          <tr>
+            <td>Identity model</td>
+            <td>Existing OAuth credentials, with agent context added to downstream audit logs — no standalone agent accounts</td>
+            <td>Per-agent inventory and per-gate hit rates on <a href="/dashboard">/dashboard</a>; agent id and metadata captured on every gate decision</td>
+          </tr>
+          <tr>
+            <td>Audit output</td>
+            <td>Portal audit trail with agent labels, omitting values for keys considered secret or sensitive</td>
+            <td>Local audit log with rule version, source lesson, decision, and timestamp; signed execution receipts per attempt (see the <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/config/schemas/broker-execution-receipt.schema.json" target="_blank" rel="noopener">receipt schema</a>)</td>
+          </tr>
+          <tr>
+            <td>Availability</td>
+            <td>Private beta; no public cost information disclosed</td>
+            <td>MIT-licensed npm package, installable today: <code>npx thumbgate init</code>; hosted plans on <a href="/pricing">/pricing</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="detail-section">
+      <h2>The shared architectural insight</h2>
+      <p>Cloudflare's engineers describe their motivation in language any ThumbGate operator will recognize:</p>
+      <blockquote>"We wanted centralized control over the write actions agents could perform, agent labels to appear in downstream applications, and an audit trail."</blockquote>
+      <p>That is the pre-action thesis: evaluate the action <em>before</em> it executes, attribute it to an agent, and keep evidence. The two products disagree only about where that evaluation belongs.</p>
+      <ul>
+        <li><strong>WriteGuard's answer:</strong> at the network portal. Centralization means one policy set governs every MCP server without modifying any of them — Cloudflare notes that re-implementing policies in each server "would take more work and produce inconsistent behavior."</li>
+        <li><strong>ThumbGate's answer:</strong> at the tool-call boundary inside the runtime. That is the only vantage point that sees <em>every</em> action class — an agent about to run a destructive shell command or overwrite a local file never issues an MCP request, so a portal never sees it.</li>
+      </ul>
+      <p>The layers compose. A portal gate governs what crosses the network; a runtime gate governs what the agent does, full stop.</p>
+    </article>
+
+    <article class="detail-section">
+      <h2>The dual-deploy story for larger teams</h2>
+      <p>An engineering organization routes its shared MCP servers (issue trackers, deployment tooling, data warehouse connectors) through Cloudflare. <strong>WriteGuard</strong> enforces the central policy: agents may file merge requests (<em>contained write</em>) but production deployments and bulk deletions (<em>critical</em>) require explicit approval, all under existing OAuth identity.</p>
+      <p>The same organization's developers run Claude Code and Cursor locally. <strong>ThumbGate</strong> blocks the classes the portal never sees — destructive shell commands, force-pushes to protected branches, secret-leaking file reads, direct database writes — via PreToolUse hooks on Claude Code (and other hook-capable agents) and via MCP <code>gate_check</code> / advisory wiring on Cursor. It keeps learning, because every operator thumbs-down becomes a candidate rule for the whole team.</p>
+      <p>Portal gate for shared infrastructure. Runtime gate for every keystroke-adjacent action. Full perimeter.</p>
+    </article>
+
+    <article class="detail-section">
+      <h2>FAQ</h2>
+      <details class="faq-item" open>
+        <summary>Is WriteGuard a competitor to ThumbGate?</summary>
+        <p>Adjacent, mostly complementary. WriteGuard governs MCP traffic at Cloudflare's portal; ThumbGate governs every tool call inside the agent runtime, including everything that never crosses a network portal.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What does WriteGuard's launch mean for this category?</summary>
+        <p>Hyperscaler validation. Cloudflare building centralized write-gating for agents confirms that pre-action enforcement is infrastructure, not a novelty. The remaining question is placement — portal vs runtime — and the honest answer is that complete coverage needs both.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How do the risk tiers map?</summary>
+        <p>read-only → allow. contained write → warn + log. critical → hard-block. ThumbGate additionally promotes new rules from operator feedback, so tier assignments adapt to observed agent behavior rather than staying fixed.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Where do I start?</summary>
+        <p>If your MCP servers already sit behind Cloudflare, watch for WriteGuard's beta. For the agents on your developers' machines, <code>npx thumbgate init</code> wires the runtime gate today.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Related reading</summary>
+        <p>See also <a href="/compare/oak-and-sparrow-gatekeeper">ThumbGate vs Gatekeeper</a> (workforce-input gate at the browser boundary), <a href="/compare/arcjet">ThumbGate vs Arcjet</a> (app-inbound firewall), and <a href="/compare/databricks-unity-ai-gateway">ThumbGate vs Unity AI Gateway</a>.</p>
+      </details>
+    </article>
+  </main>
+
+  <aside class="sidebar">
+    <div class="sidebar-card">
+      <h3 style="margin: 0 0 8px;">Install ThumbGate free</h3>
+      <p>Local-first install: PreToolUse hooks where the runtime supports them; MCP gate + advisory rules elsewhere — one command.</p>
+      <pre style="background: var(--bg-raised); border: 1px solid var(--line); border-radius: 8px; padding: 12px; font-size: 13px; overflow: auto;">npx thumbgate init</pre>
+      <a class="cta-button" href="/pricing">See plans →</a>
+      <p style="font-size: 12px; margin-top: 16px;">MIT licensed. No telemetry without opt-in. <code>THUMBGATE_NO_TELEMETRY=1</code> disables.</p>
+    </div>
+
+    <div class="sidebar-card">
+      <span class="related-label">Related comparisons</span>
+      <a class="related-card" href="/compare/oak-and-sparrow-gatekeeper">
+        <strong>ThumbGate vs Gatekeeper (Oak &amp; Sparrow)</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">Agent-action gate pairs with workforce-input gate</span>
+      </a>
+      <a class="related-card" href="/compare/arcjet">
+        <strong>ThumbGate vs Arcjet</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">Agent-outbound gate vs app-inbound firewall</span>
+      </a>
+      <a class="related-card" href="/compare/databricks-unity-ai-gateway">
+        <strong>ThumbGate vs Unity AI Gateway</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">Runtime tool-call gate vs platform model gateway</span>
+      </a>
+      <a class="related-card" href="/compare/anthropic-containment">
+        <strong>ThumbGate vs Anthropic's Claude Containment</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">IDE-agent extension of Anthropic's published architecture</span>
+      </a>
+    </div>
+
+    <div class="sidebar-card">
+      <span class="related-label">Sources</span>
+      <p style="font-size: 13px;">WriteGuard mechanism, tier taxonomy, and verbatim engineer quotes from <a href="https://www.infoq.com/news/2026/08/cloudflare-writeguard-mcp-safety/" target="_blank" rel="noopener">InfoQ's coverage</a> of the private beta (2026-08). If anything here misrepresents WriteGuard, open an issue at <a href="https://github.com/IgorGanapolsky/ThumbGate/issues" target="_blank" rel="noopener">our repo</a> and we'll correct it.</p>
+    </div>
+  </aside>
+</div>
+</body>
+</html>
