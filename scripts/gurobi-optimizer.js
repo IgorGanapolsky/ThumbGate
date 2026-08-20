@@ -39,6 +39,15 @@ function resolvePythonBin(env = process.env, homeDir = os.homedir()) {
   return 'python3';
 }
 
+function parseSolverStdout(stdout) {
+  const text = String(stdout || '');
+  const start = text.indexOf('{');
+  if (start < 0) {
+    throw new SyntaxError('solver stdout contained no JSON object');
+  }
+  return JSON.parse(text.slice(start));
+}
+
 function runPythonMode(mode, payload, timeoutMs = 10000, pythonBin = resolvePythonBin()) {
   const stdout = execFileSync(
     pythonBin,
@@ -55,7 +64,7 @@ function runPythonMode(mode, payload, timeoutMs = 10000, pythonBin = resolvePyth
       },
     }
   );
-  return JSON.parse(stdout);
+  return parseSolverStdout(stdout);
 }
 
 /**
@@ -265,11 +274,13 @@ function probeGurobi(opts = {}) {
       { maxBudgetUsd: 1, maxLatencyMs: 10 },
       opts
     );
+    const solver = String((res && res.solver) || '');
+    const isErrorFallback = /error|fallback|heuristic/i.test(solver);
     return {
-      ok: Boolean(res && res.success),
+      ok: Boolean(res && res.success && !isErrorFallback),
       solver: res.solver || null,
       python: res.python || resolvePythonBin(),
-      gurobi: String(res.solver || '').startsWith('gurobi'),
+      gurobi: solver === 'gurobi' || (solver.startsWith('gurobi') && !isErrorFallback),
     };
   } catch (err) {
     return { ok: false, error: err.message, python: resolvePythonBin(), gurobi: false };
@@ -297,6 +308,7 @@ module.exports = {
   resolvePythonBin,
   probeGurobi,
   runPythonMode,
+  parseSolverStdout,
   isRepeatableSolve,
   isCertifiedSolve,
   stampDecisionGovernance,
