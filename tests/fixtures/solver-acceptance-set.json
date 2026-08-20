@@ -1,0 +1,90 @@
+{
+  "schema": "thumbgate.solver_acceptance_set.v1",
+  "frozenAt": "2026-08-19",
+  "note": "Process steal from Phase One evaluation playbooks: freeze the acceptance set before engines run, compare like-for-like, do not grade your own homework. Not Gurobi PDFs, branding, or affiliation.",
+  "capturedRevenueUsd": 0,
+  "cases": [
+    {
+      "id": "routing_empty",
+      "stage": "discovery",
+      "kind": "routing",
+      "candidates": [],
+      "budgets": { "maxBudgetUsd": 0.01, "maxLatencyMs": 500 },
+      "expect": {
+        "success": false,
+        "selected": null
+      }
+    },
+    {
+      "id": "routing_single_feasible",
+      "stage": "benchmarking",
+      "kind": "routing",
+      "candidates": [
+        { "id": "only-local", "score": 7.1, "cost": 0, "latency_ms": 90 }
+      ],
+      "budgets": { "maxBudgetUsd": 0.01, "maxLatencyMs": 500 },
+      "expect": {
+        "success": true,
+        "selected": "only-local",
+        "feasibleMustHold": true
+      }
+    },
+    {
+      "id": "routing_budget_filter",
+      "stage": "benchmarking",
+      "kind": "routing",
+      "candidates": [
+        { "id": "local-vllm-8b", "score": 7.8, "cost": 0.0, "latency_ms": 180 },
+        { "id": "qwen-flash", "score": 8.4, "cost": 0.002, "latency_ms": 220 },
+        { "id": "claude-sonnet", "score": 9.6, "cost": 0.018, "latency_ms": 900 },
+        { "id": "claude-opus", "score": 9.9, "cost": 0.06, "latency_ms": 1400 },
+        { "id": "gpt-mini", "score": 8.1, "cost": 0.004, "latency_ms": 350 }
+      ],
+      "budgets": { "maxBudgetUsd": 0.01, "maxLatencyMs": 500 },
+      "expect": {
+        "success": true,
+        "selected": "qwen-flash",
+        "heuristicSelected": "qwen-flash",
+        "neverSelected": ["claude-opus", "claude-sonnet"],
+        "feasibleMustHold": true
+      }
+    },
+    {
+      "id": "rules_greedy_density",
+      "stage": "benchmarking",
+      "kind": "rules",
+      "rules": [
+        { "id": "secret-egress", "risk_mitigation": 9.5, "eval_time_ms": 4, "token_footprint": 80 },
+        { "id": "spend-guard", "risk_mitigation": 6.5, "eval_time_ms": 2, "token_footprint": 40 },
+        { "id": "low-value-noise-rule", "risk_mitigation": 1.0, "eval_time_ms": 20, "token_footprint": 300 },
+        { "id": "claim-verification", "risk_mitigation": 5.5, "eval_time_ms": 15, "token_footprint": 250 }
+      ],
+      "budgets": { "maxEvalTimeMs": 10, "maxTokenFootprint": 200 },
+      "expect": {
+        "success": true,
+        "withinBudget": true,
+        "heuristicSelected": ["spend-guard", "secret-egress"],
+        "neverSelected": ["low-value-noise-rule"]
+      }
+    },
+    {
+      "id": "rules_knapsack_gap",
+      "stage": "decision",
+      "kind": "rules",
+      "note": "Classic density trap: greedy takes dense-small (10); MILP takes pair-a+pair-b (16) under the same 10/10 budget.",
+      "rules": [
+        { "id": "dense-small", "risk_mitigation": 10, "eval_time_ms": 6, "token_footprint": 6 },
+        { "id": "pair-a", "risk_mitigation": 8, "eval_time_ms": 5, "token_footprint": 5 },
+        { "id": "pair-b", "risk_mitigation": 8, "eval_time_ms": 5, "token_footprint": 5 }
+      ],
+      "budgets": { "maxEvalTimeMs": 10, "maxTokenFootprint": 10 },
+      "expect": {
+        "success": true,
+        "withinBudget": true,
+        "heuristicSelected": ["dense-small"],
+        "solverWhenGurobi": ["pair-a", "pair-b"],
+        "solverWhenHeuristic": ["dense-small"]
+      }
+    }
+  ]
+}
