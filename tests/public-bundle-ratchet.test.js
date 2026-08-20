@@ -195,8 +195,9 @@ const path = require('node:path');
 // 455 -> 458: edotenv-rl-gateway + rsi-safety-hillclimb + research-agent-harness
 // 458 -> 459: governance-difficulty-curriculum (EdotEnv harder-next-round transfer)
 // 459 -> 460: provider-receipt-contract packaging on rebased receipt PR
-// 471 -> 474 (2026-08-19): scripts/rule-sprawl.js + blog posts
-const BASELINE_FILE_COUNT = 474;
+// 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
+// 474 -> 475 (2026-08-19): rule-sprawl-budget + solver-parity keep-both (measured npm pack 475)
+const BASELINE_FILE_COUNT = 475;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

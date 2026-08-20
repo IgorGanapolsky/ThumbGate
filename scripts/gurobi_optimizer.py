@@ -264,8 +264,10 @@ def solve_rule_selection(
         return fallback_rule_selection(rules, max_eval_time_ms, max_token_footprint)
 
     try:
-        model = gp.Model("RuleKnapsackSelection")
-        model.setParam("OutputFlag", 0)
+        env = gp.Env(empty=True)
+        env.setParam("OutputFlag", 0)
+        env.start()
+        model = gp.Model("RuleKnapsackSelection", env=env)
         y = {}
         for i, rule in enumerate(rules):
             rid = rule.get("id", f"r_{i}")
