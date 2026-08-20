@@ -25,6 +25,7 @@ Source: Fabrizio Ellis (Gurobi AE) email — free **pip gurobipy** first; full t
 | `scripts/gurobi_optimizer.py` | MILP: model routing + prevention-rule knapsack |
 | `scripts/gurobi-optimizer.js` | Node bridge; prefers `GUROBI_PYTHON` / hermes venv |
 | `npm run test:gurobi` | Node unit tests (accepts heuristic fallback in CI) |
+| `npm run solver:parity` | Frozen acceptance-set + independent-engine parity |
 | `python3 -m pytest tests/test_gurobi.py` | Python tests |
 
 ## Evaluation (must be green before “Gurobi is set up”)
@@ -56,6 +57,20 @@ Buyer narrative: *budget-aware enforcement* — we do not load every prevention 
 we select high-mitigation rules and affordable models under budgets. Solver is an
 implementation detail. **No Gurobi partnership / co-sell / logo claim.**
 `capturedRevenueUsd` is never invented from a solve.
+
+## Solver parity (Phase One process, not product)
+
+Freeze the acceptance set, then compare the independent status-quo heuristic
+against the solver on the same fixtures and budgets. Do not grade your own
+homework: a heuristic fallback is not an independent check.
+
+```bash
+npm run solver:parity
+npm run test:solver-parity
+```
+
+Frozen cases live in `tests/fixtures/solver-acceptance-set.json`.
+This is existing-surface maintenance of routing + knapsack. Not an enterprise SKU.
 
 ## Beyond LLMs process (not product)
 

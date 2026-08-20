@@ -10,6 +10,7 @@ const {
   probeGurobi,
   isCertifiedSolve,
   stampReceipt,
+  parseSolverStdout,
   mainCli,
 } = require('../scripts/gurobi-optimizer.js');
 
@@ -129,7 +130,12 @@ test('Gurobi Optimizer - Node.js integration', async (t) => {
     const probe = probeGurobi();
     assert.equal(typeof probe.ok, 'boolean');
     assert.ok(probe.python);
-    assert.equal(probe.ok, true);
+    assert.equal(typeof probe.gurobi, 'boolean');
+    // ok means a real Gurobi solve; heuristic/error fallbacks are unavailable
+    assert.equal(probe.ok, Boolean(probe.gurobi));
+    if (probe.ok) {
+      assert.match(String(probe.solver || ''), /^gurobi/);
+    }
   });
 
   await t.test('node fallback when python binary is unusable', () => {
@@ -157,6 +163,35 @@ test('Gurobi Optimizer - Node.js integration', async (t) => {
     assert.equal(rules.success, true);
     assert.equal(rules.solver, 'node-fallback-knapsack');
     assert.ok(Array.isArray(rules.selected_rules));
+  });
+
+  await t.test('parseSolverStdout ignores Gurobi license banner prefix', () => {
+    const parsed = parseSolverStdout(
+      'Restricted license - for non-production use only - expires 2027-11-29\n{"success":true,"selected":"x"}\n'
+    );
+    assert.equal(parsed.success, true);
+    assert.equal(parsed.selected, 'x');
+    assert.throws(() => parseSolverStdout('Restricted license only'), /no JSON object/);
+  });
+
+  await t.test('rule knapsack uses Gurobi when available (density trap)', () => {
+    const rules = [
+      { id: 'dense-small', risk_mitigation: 10, eval_time_ms: 6, token_footprint: 6 },
+      { id: 'pair-a', risk_mitigation: 8, eval_time_ms: 5, token_footprint: 5 },
+      { id: 'pair-b', risk_mitigation: 8, eval_time_ms: 5, token_footprint: 5 },
+    ];
+    const result = optimizeRuleSelection(rules, { maxEvalTimeMs: 10, maxTokenFootprint: 10 });
+    assert.equal(result.success, true);
+    if (result.solver === 'gurobi') {
+      assert.deepEqual([...(result.selected_rules || [])].sort(), ['pair-a', 'pair-b']);
+      assert.equal(result.objective, 16);
+      assert.equal(result.status, 'OPTIMAL');
+    } else {
+      assert.ok(
+        String(result.solver || '').includes('heuristic') || String(result.solver || '').includes('fallback'),
+        `unexpected solver: ${result.solver}`
+      );
+    }
   });
 
   await t.test('mainCli returns probe + routing payload', () => {
