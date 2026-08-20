@@ -87,3 +87,20 @@ test('fixture that already fits the budget is not a sprawl pass', () => {
   assert.equal(report.summary.ok, false);
   assert.ok(report.summary.failures.some((f) => /not a sprawl case/.test(f)));
 });
+
+test('fixture with zero selected rules fails summary as infeasible', () => {
+  const hugeRules = [
+    { id: 'expensive-rule-1', risk_mitigation: 5, eval_time_ms: 100, token_footprint: 500 },
+    { id: 'expensive-rule-2', risk_mitigation: 8, eval_time_ms: 200, token_footprint: 800 },
+  ];
+  const report = sprawl.runRuleSprawl({
+    rules: hugeRules,
+    maxEvalTimeMs: 10,
+    maxTokenFootprint: 50,
+    solverOpts: { pythonBin: '/no/such/python' },
+  });
+  assert.equal(report.summary.ok, false);
+  assert.equal(report.knapsack.count, 0);
+  assert.ok(report.summary.failures.some((f) => /zero rules/.test(f)));
+});
+
