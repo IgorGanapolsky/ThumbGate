@@ -195,8 +195,8 @@ const path = require('node:path');
 // 455 -> 458: edotenv-rl-gateway + rsi-safety-hillclimb + research-agent-harness
 // 458 -> 459: governance-difficulty-curriculum (EdotEnv harder-next-round transfer)
 // 459 -> 460: provider-receipt-contract packaging on rebased receipt PR
-// 474 -> 492 (2026-08-19): mcp-writeguard, latency-budget, git-fast-cache, git-wal-sync, ppl-alert-pipeline, miminions-adapter, iso42001-compliance-guard, agent-identity-boundary, agent-retrieval-cache, and blog posts (+18)
-const BASELINE_FILE_COUNT = 492;
+// 475 -> 493 (2026-08-19): mcp-writeguard, latency-budget, git-fast-cache, git-wal-sync, ppl-alert-pipeline, miminions-adapter, iso42001-compliance-guard, agent-identity-boundary, agent-retrieval-cache, and blog posts (+18)
+const BASELINE_FILE_COUNT = 493;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

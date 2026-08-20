@@ -259,8 +259,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // Security Central posture report. Lockstep with package-boundary +
   // public-bundle-ratchet.
   // 470 -> 471 (2026-08-18): lockstep with pipeline-compass (+1)
-  // 474 -> 492 (2026-08-19): lockstep with mcp-writeguard, latency-budget, git-fast-cache, git-wal-sync, ppl-alert-pipeline, miminions-adapter, iso42001-compliance-guard, agent-identity-boundary, agent-retrieval-cache, and blog posts (+18)
-  const CEILING = 492;
+  // 475 -> 493 (2026-08-19): lockstep with mcp-writeguard, latency-budget, git-fast-cache, git-wal-sync, ppl-alert-pipeline, miminions-adapter, iso42001-compliance-guard, agent-identity-boundary, agent-retrieval-cache, and blog posts (+18)
+  const CEILING = 493;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
