@@ -195,8 +195,12 @@ const path = require('node:path');
 // 455 -> 458: edotenv-rl-gateway + rsi-safety-hillclimb + research-agent-harness
 // 458 -> 459: governance-difficulty-curriculum (EdotEnv harder-next-round transfer)
 // 459 -> 460: provider-receipt-contract packaging on rebased receipt PR
-// 494 -> 495 (2026-08-20): scripts/git-at-scale.js (+1 measured npm pack)
-const BASELINE_FILE_COUNT = 495;
+// 471 -> 474 (2026-08-19): scripts/solver-parity.js + blog posts (keep-both)
+// 474 -> 475 (2026-08-19): public/blog/no-llm-in-the-gate.html (+1 measured npm pack)
+// 475 -> 476 (2026-08-19): scripts/rule-sprawl.js (+1 measured npm pack)
+// 494 -> 495 (2026-08-20): scripts/hidden-entry-points.js (+1 measured npm pack)
+// 495 -> 496 (2026-08-20): scripts/git-at-scale.js (+1 measured npm pack)
+const BASELINE_FILE_COUNT = 496;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
