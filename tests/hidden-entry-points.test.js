@@ -100,3 +100,16 @@ test('mainCli rejects missing or flag-like values for --write and --project', ()
   assert.equal(hidden.mainCli(['--project']), 1);
 });
 
+test('live assessment failure is not labeled live-overlay/PASS', () => {
+  const report = hidden.runHiddenEntryScorecard({
+    projectRoot: '/tmp/tg-hidden-live-fail',
+    assessHookDrift: () => {
+      throw new Error('injected assessHookDrift failure');
+    },
+  });
+  assert.equal(report.mode, 'live-assessment-failed');
+  assert.equal(report.summary.ok, false);
+  assert.ok(report.summary.failures.some((f) => /Live hook drift assessment failed/.test(f)));
+  assert.notEqual(report.mode, 'live-overlay');
+});
+

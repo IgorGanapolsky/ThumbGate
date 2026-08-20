@@ -110,10 +110,12 @@ function rankDigest(entries, options = {}) {
     .slice(0, maxDigest);
 }
 
-function applyLiveHookDrift(entries, projectRoot, homeDir) {
+function applyLiveHookDrift(entries, projectRoot, homeDir, assessHookDriftFn) {
   if (!projectRoot) return { entries, error: null };
   try {
-    const { assessHookDrift } = require('./agent-security-central');
+    const assessHookDrift = typeof assessHookDriftFn === 'function'
+      ? assessHookDriftFn
+      : require('./agent-security-central').assessHookDrift;
     const assessment = assessHookDrift(projectRoot, homeDir);
     const drifted = Boolean(assessment && assessment.drifted);
     return {
@@ -134,7 +136,12 @@ function runHiddenEntryScorecard(options = {}) {
   const base = Array.isArray(options.entries) && options.entries.length
     ? options.entries
     : ENTRY_POINTS;
-  const { entries, error: liveError } = applyLiveHookDrift(base, options.projectRoot, options.homeDir);
+  const { entries, error: liveError } = applyLiveHookDrift(
+    base,
+    options.projectRoot,
+    options.homeDir,
+    options.assessHookDrift
+  );
   const loadAll = entries.map((e) => e.id);
   const digest = rankDigest(entries, options);
   const openAttacker = entries.filter((e) => e.attackerReliesOn && e.open);
@@ -163,9 +170,14 @@ function runHiddenEntryScorecard(options = {}) {
     failures.push('open PreToolUse miss not in digest');
   }
 
+  let mode = 'simulation';
+  if (options.projectRoot) {
+    mode = liveError ? 'live-assessment-failed' : 'live-overlay';
+  }
+
   return {
     schema: SCHEMA,
-    mode: options.projectRoot ? 'live-overlay' : 'simulation',
+    mode,
     generatedAt: new Date().toISOString(),
     autoApply: false,
     humanOversightRequired: true,
@@ -261,6 +273,7 @@ module.exports = {
   DEFAULT_INTERESTS,
   ENTRY_POINTS,
   rankDigest,
+  applyLiveHookDrift,
   runHiddenEntryScorecard,
   formatReport,
   mainCli,
