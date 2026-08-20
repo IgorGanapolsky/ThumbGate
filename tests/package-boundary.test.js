@@ -456,10 +456,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 470 -> 471 (2026-08-18): pipeline-compass runtime module (+1)
     // file that packaged entrypoints require: scripts/override-audit.js (#3515),
     // src/security-questionnaire.js (#3519), src/pipeline-compass.js (#3521).
+    // 471 -> 472 (2026-08-19): public/blog/a-10-dollar-vps-is-not-a-computer.html
+    // Cursor-format research post on the existing /blog hub. Static HTML only.
     // 471 -> 472 (2026-08-19): public/blog/a-receipt-is-not-world-state.html
     // Cursor-format first-party research post. Static HTML only.
-    manifest.fileCount <= 472,
-    `npm package should stay <= 472 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 473,
+    `npm package should stay <= 473 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
