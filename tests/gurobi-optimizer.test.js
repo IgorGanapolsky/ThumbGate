@@ -8,6 +8,8 @@ const {
   optimizeRuleSelection,
   resolvePythonBin,
   probeGurobi,
+  isCertifiedSolve,
+  stampReceipt,
   mainCli,
 } = require('../scripts/gurobi-optimizer.js');
 
@@ -51,7 +53,43 @@ test('Gurobi Optimizer - Node.js integration', async (t) => {
     if (result.solver === 'gurobi') {
       assert.equal(result.status, 'OPTIMAL');
       assert.equal(result.objective, 8.8);
+      assert.equal(result.certified, true);
+      assert.equal(isCertifiedSolve(result), true);
+    } else {
+      assert.equal(result.certified, false);
+      assert.equal(isCertifiedSolve(result), false);
     }
+    assert.equal(result.capturedRevenueUsd, 0);
+  });
+
+  await t.test('infeasible routing is fail-closed and returns IIS, not a high-score violator', () => {
+    const result = optimizeModelRouting(
+      [
+        { id: 'expensive', score: 99, cost: 10, latency_ms: 10 },
+        { id: 'slow', score: 80, cost: 0, latency_ms: 50000 },
+      ],
+      { maxBudgetUsd: 0.01, maxLatencyMs: 5 }
+    );
+    assert.equal(result.success, false);
+    assert.equal(result.selected, null);
+    assert.equal(result.certified, false);
+    assert.equal(isCertifiedSolve(result), false);
+    assert.equal(result.capturedRevenueUsd, 0);
+    assert.equal(result.status, 'INFEASIBLE');
+    assert.ok(Array.isArray(result.iis));
+    assert.ok(result.iis.some((name) => /Budget|Latency|SelectOne/i.test(String(name))));
+  });
+
+  await t.test('stampReceipt refuses to certify heuristics', () => {
+    const stamped = stampReceipt({
+      success: true,
+      selected: 'x',
+      solver: 'heuristic-fallback',
+      status: 'HEURISTIC',
+    });
+    assert.equal(stamped.certified, false);
+    assert.equal(stamped.capturedRevenueUsd, 0);
+    assert.equal(stamped.proof, 'heuristic');
   });
 
   await t.test('optimizes prevention rule selection via 0-1 knapsack', () => {
