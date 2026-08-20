@@ -1298,6 +1298,7 @@ test('run keeps benign outbound file references advisory', () => {
 
 test('run allows writes into private resume secrets vault', () => {
   withTempFeedbackDir(() => {
+    setTaskScope({ clear: true });
     const stripeKey = buildStripeKey();
     const output = JSON.parse(run({
       tool_name: 'Write',

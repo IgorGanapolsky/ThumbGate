@@ -6,6 +6,8 @@ const path = require('node:path');
 const {
   optimizeModelRouting,
   optimizeRuleSelection,
+  optimizeFleetDispatch,
+  createCertifiedReceipt,
   resolvePythonBin,
   probeGurobi,
   isCertifiedSolve,
@@ -157,6 +159,27 @@ test('Gurobi Optimizer - Node.js integration', async (t) => {
     assert.equal(rules.success, true);
     assert.equal(rules.solver, 'node-fallback-knapsack');
     assert.ok(Array.isArray(rules.selected_rules));
+  });
+
+  await t.test('optimizes fleet dispatch under concurrency, RAM, and CPU constraints', () => {
+    const jobs = [
+      { id: 'job-e2e', priority: 10, ram_mb: 8192, cpu_cores: 4 },
+      { id: 'job-lint', priority: 5, ram_mb: 2048, cpu_cores: 2 },
+      { id: 'job-audit', priority: 8, ram_mb: 4096, cpu_cores: 2 },
+      { id: 'job-heavy-train', priority: 6, ram_mb: 32768, cpu_cores: 8 },
+    ];
+    const res = optimizeFleetDispatch(jobs, { maxRamMb: 16384, maxCpuCores: 8, maxConcurrency: 3 });
+    assert.equal(res.success, true);
+    assert.ok(Array.isArray(res.selected_jobs));
+    assert.ok(res.selected_jobs.includes('job-e2e'));
+    assert.ok(res.selected_jobs.includes('job-audit'));
+    // Heavy train requires 32GB RAM so it must NOT be selected under 16GB cap
+    assert.equal(res.selected_jobs.includes('job-heavy-train'), false);
+
+    const receipt = createCertifiedReceipt(res, 'fleet-dispatch');
+    assert.equal(receipt.certified, true);
+    assert.ok(receipt.receiptId.startsWith('opt_rcpt_'));
+    assert.ok(receipt.signatureSha256);
   });
 
   await t.test('mainCli returns probe + routing payload', () => {

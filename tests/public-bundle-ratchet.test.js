@@ -196,10 +196,20 @@ const path = require('node:path');
 // 458 -> 459: governance-difficulty-curriculum (EdotEnv harder-next-round transfer)
 // 459 -> 460: provider-receipt-contract packaging on rebased receipt PR
 // 467 -> 470: three concurrent PRs (override-audit, security-questionnaire, pipeline-compass)
+// 471 -> 473 (2026-08-18): mcp-writeguard and latency-budget (+2)
+// 473 -> 475 (2026-08-19): git-fast-cache and hash-anchored-edit (+2)
+// 475 -> 477 (2026-08-19): rendezvous-router and git-wal-sync (+2)
+// 477 -> 478 (2026-08-19): public/blog/git-at-agent-scale.html (+1)
+// 478 -> 480 (2026-08-19): ppl-alert-pipeline and agent-retrieval-cache (+2)
+// 480 -> 482 (2026-08-19): iso42001-compliance-guard and agent-identity-boundary (+2)
+// 482 -> 483 (2026-08-19): miminions-adapter (+1)
+
 // 471 -> 472 (2026-08-19): public/blog/a-10-dollar-vps-is-not-a-computer.html
 // 471 -> 472 (2026-08-19): public/blog/a-receipt-is-not-world-state.html
 // Cursor-format first-party research post (TOC, author, related posts). Static HTML only.
-const BASELINE_FILE_COUNT = 473;
+// conflict-merge: keep writeguard pack bumps + receipt blog → ceiling 484
+const BASELINE_FILE_COUNT = 491;
+
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

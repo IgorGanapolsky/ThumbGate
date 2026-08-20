@@ -456,13 +456,25 @@ function assertSelectOnly(query) {
 }
 
 function readSqliteCount(repoRoot, verifier) {
-  const Database = require('better-sqlite3');
   const dbPath = resolveSafePath(repoRoot, verifier.dbPath || verifier.path);
   if (!fs.existsSync(dbPath)) {
     throw new Error(`sqlite database not found: ${verifier.dbPath || verifier.path}`);
   }
   const query = assertSelectOnly(verifier.query);
-  const db = new Database(dbPath, { readonly: true, fileMustExist: true });
+  let db = null;
+  let isBuiltin = false;
+  try {
+    const BetterDatabase = require('better-sqlite3');
+    db = new BetterDatabase(dbPath, { readonly: true, fileMustExist: true });
+  } catch {
+    try {
+      const sqlite = require('node:sqlite');
+      db = new sqlite.DatabaseSync(dbPath, { readOnly: true, open: true });
+      isBuiltin = true;
+    } catch {
+      throw new Error('SQLite driver not available (install better-sqlite3 or use Node 22.5+ node:sqlite)');
+    }
+  }
   try {
     const row = db.prepare(query).get();
     if (!row || typeof row !== 'object') {

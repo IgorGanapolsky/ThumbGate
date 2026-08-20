@@ -393,8 +393,26 @@ function gitMergeBaseIsAncestor(repoPath, commit, ref) {
 }
 
 function resolveRepoRoot(repoPath = process.cwd()) {
+  let target = process.cwd();
+  if (typeof repoPath === 'string') {
+    target = repoPath;
+  } else if (repoPath && typeof repoPath === 'object') {
+    const cmd = String(repoPath.command || '');
+    const gitCMatch = cmd.match(/(?:^|\s)git(?:\s+-[^\s]+)*\s+-C(?:\s+|=)(?:'([^']+)'|"([^"]+)"|([^\s'"]+))/i);
+    const gitCDir = gitCMatch ? (gitCMatch[1] || gitCMatch[2] || gitCMatch[3] || '').trim() : '';
+    if (gitCDir) {
+      let cPath = gitCDir;
+      if (cPath.startsWith('~/')) {
+        const homedir = process.env.HOME || '/tmp';
+        cPath = path.join(homedir, cPath.slice(2));
+      }
+      target = path.resolve(repoPath.cwd || process.cwd(), cPath);
+    } else {
+      target = repoPath.repoPath || repoPath.cwd || process.cwd();
+    }
+  }
   try {
-    return gitShowTopLevel(repoPath);
+    return gitShowTopLevel(target);
   } catch {
     return null;
   }
