@@ -11,7 +11,6 @@
  * never preload full warehouse schemas or sprawling code trees into prompt context.
  */
 
-const fs = require('node:fs');
 const path = require('node:path');
 
 /**

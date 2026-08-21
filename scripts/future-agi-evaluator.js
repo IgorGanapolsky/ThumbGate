@@ -8,7 +8,6 @@
  * into ThumbGate's deterministic PreToolUse firewall and self-improving memory loop.
  */
 
-const fs = require('node:fs');
 const path = require('node:path');
 const { createIndexAndLeafEngine } = require('./index-leaf-context.js');
 const { generateAttributionSummary } = require('./session-attribution-summary.js');
@@ -17,12 +16,14 @@ const { evaluateAction, runStage, claimLive } = require('./futureagi-prepost-gat
 const ADVERSARIAL_INJECTION_PATTERNS = [
   /\b(IGNORE ALL PREVIOUS INSTRUCTIONS|SYSTEM OVERRIDE|DAN MODE|JAILBREAK)\b/i,
   /\b(eval\s*\(atob|unfiltered_developer_mode|bypass_safety_checks)\b/i,
-  /\b(drop table|rm -rf|curl\s+[^|\r\n]+\|\s*sh)\b/i,
+  /\b(drop table|rm -rf|curl\s{1,8}[^|\r\n]{1,400}\|\s{0,8}sh)\b/i,
 ];
 
 const PII_PATTERNS = [
   /\b\d{3}-\d{2}-\d{4}\b/, // SSN
-  /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b/, // Email
+  // Bounded quantifiers: these patterns run against attacker-controlled tool
+  // payloads, so every repetition is capped to keep matching linear.
+  /\b[A-Za-z0-9._%+-]{1,64}@(?:[A-Za-z0-9-]{1,63}\.){1,4}[A-Za-z]{2,24}\b/, // Email
   /\b(?:\d{4}[-\s]?){3}\d{4}\b/, // Credit Card
 ];
 
@@ -210,5 +211,9 @@ module.exports = {
   evaluateAction,
   runStage,
   claimLive,
+  // Re-exported so the Future AGI bridge is the single entry point for the
+  // index-and-leaf discovery engine and the session attribution receipt.
+  createIndexAndLeafEngine,
+  generateAttributionSummary,
   mainCli,
 };
