@@ -212,3 +212,71 @@ test('overnight loop stays on VPS + thumbgate.app when the laptop sleeps', () =>
   assert.equal(night.writer, 'vps');
   assert.equal(night.sync, 'thumbgate.app');
 });
+
+test('a product read cannot widen past the record the shape authorized', () => {
+  const plane = authorizedPlane();
+  plane.appendEvent({ threadId: 'thr_1', recordId: 'rec-1', type: 'run' });
+  plane.appendEvent({ threadId: 'thr_1', recordId: 'secret', type: 'run' });
+
+  // Asking for a record the shape did not authorize is refused outright.
+  const crossed = plane.readStatus({
+    offset: 0,
+    cursor: 'c1',
+    auth: { userId: 'igor' },
+    threadId: 'thr_1',
+    recordId: 'secret',
+    mode: 'product',
+  });
+  assert.equal(crossed.ok, false);
+  assert.equal(crossed.reason, 'record_unauthorized');
+
+  // Omitting the record does not sweep the whole thread — the shape binds it.
+  const swept = plane.readStatus({
+    offset: 0,
+    cursor: 'c1',
+    auth: { userId: 'igor' },
+    threadId: 'thr_1',
+    mode: 'product',
+  });
+  assert.equal(swept.ok, true);
+  assert.equal(swept.recordId, 'rec-1');
+  assert.deepEqual(swept.events.map((ev) => ev.recordId), ['rec-1']);
+});
+
+test('nextOffset is an exclusive cursor and never replays the last event', () => {
+  const plane = authorizedPlane();
+  plane.appendEvent({ threadId: 'thr_1', recordId: 'rec-1', type: 'run' });
+
+  const first = plane.readStatus({
+    offset: 0,
+    cursor: 'c1',
+    auth: { userId: 'igor' },
+    threadId: 'thr_1',
+    recordId: 'rec-1',
+  });
+  assert.equal(first.ok, true);
+  assert.equal(first.events.length, 1);
+
+  // Following the documented contract must not re-deliver the same event.
+  const second = plane.readStatus({
+    offset: first.nextOffset,
+    cursor: first.cursor,
+    auth: { userId: 'igor' },
+    threadId: 'thr_1',
+    recordId: 'rec-1',
+  });
+  assert.equal(second.ok, true);
+  assert.deepEqual(second.events, []);
+
+  // A genuinely new event still arrives at that cursor.
+  plane.appendEvent({ threadId: 'thr_1', recordId: 'rec-1', type: 'run' });
+  const third = plane.readStatus({
+    offset: second.nextOffset,
+    cursor: second.cursor,
+    auth: { userId: 'igor' },
+    threadId: 'thr_1',
+    recordId: 'rec-1',
+  });
+  assert.equal(third.ok, true);
+  assert.equal(third.events.length, 1);
+});

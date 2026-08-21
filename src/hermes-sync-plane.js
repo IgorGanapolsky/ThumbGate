@@ -96,6 +96,12 @@ class HermesSyncPlane {
     if (mode === 'product' && !recordId && !shape.recordId) {
       return fail('subset_required');
     }
+    // The shape is the authority. A caller may not widen past the record it
+    // was authorized for, nor omit the record to sweep the whole thread.
+    if (shape.recordId && recordId && recordId !== shape.recordId) {
+      return fail('record_unauthorized', { recordId, authorizedRecordId: shape.recordId });
+    }
+    const authorizedRecordId = shape.recordId || recordId || null;
     if (status === 'live' || verdict === 'fully_satisfactory') {
       if (turnOpen === true || trustedPathTurningOn === true) {
         return fail('claim_blocked', { turnOpen: Boolean(turnOpen), trustedPathTurningOn: Boolean(trustedPathTurningOn) });
@@ -105,14 +111,17 @@ class HermesSyncPlane {
     const events = this.events.filter((ev) => {
       if (ev.offset < from) return false;
       if (threadId && ev.threadId !== threadId) return false;
-      if (recordId && ev.recordId && ev.recordId !== recordId) return false;
+      if (authorizedRecordId && ev.recordId && ev.recordId !== authorizedRecordId) return false;
       return true;
     });
     return ok({
       offset: from,
       cursor,
+      recordId: authorizedRecordId,
       events,
-      nextOffset: this._offset,
+      // Exclusive cursor: a client that polls again with this value must not
+      // re-receive the last event it already consumed.
+      nextOffset: this._offset + 1,
     });
   }
 

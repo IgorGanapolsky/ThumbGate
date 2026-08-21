@@ -279,11 +279,16 @@ test('skip-refresh after approved write fails refresh_required', () => {
   const skipped = proto.applyApprovedWrite({
     threadId: thread.threadId,
     recordId: 'rec-9',
+    approvalId: req.approvalId,
     skipRefresh: true,
   });
   assert.equal(skipped.ok, false);
   assert.equal(skipped.reason, 'refresh_required');
-  proto.applyApprovedWrite({ threadId: thread.threadId, recordId: 'rec-9' });
+  proto.applyApprovedWrite({
+    threadId: thread.threadId,
+    recordId: 'rec-9',
+    approvalId: req.approvalId,
+  });
   const unread = proto.readBusinessView({ threadId: thread.threadId, recordId: 'rec-9' });
   assert.equal(unread.ok, false);
   assert.equal(unread.reason, 'refresh_required');
@@ -302,4 +307,103 @@ test('ingestInbound mention/chat never grants send or spend', () => {
     assert.equal(inbound.spend, false);
     assert.deepEqual([...inbound.grants], []);
   }
+});
+
+test('applyApprovedWrite without a matching approval cannot bypass the gate', () => {
+  const { proto, thread } = readyProtocol('product', 'rec-9');
+
+  // A caller holding only a thread id must not be able to write.
+  const bare = proto.applyApprovedWrite({ threadId: thread.threadId, recordId: 'rec-9' });
+  assert.equal(bare.ok, false);
+  assert.equal(bare.reason, 'approval_required');
+
+  // A requested-but-not-yet-approved approval must not be enough either.
+  const req = proto.requestApproval({
+    connectionId: 'conn-1',
+    threadId: thread.threadId,
+    action: 'prod',
+    surface: 'thumbgate.app',
+    actorId: 'agent-1',
+  });
+  const pending = proto.applyApprovedWrite({
+    threadId: thread.threadId,
+    recordId: 'rec-9',
+    approvalId: req.approvalId,
+  });
+  assert.equal(pending.ok, false);
+  assert.equal(pending.reason, 'approval_not_granted');
+
+  proto.approve({ approvalId: req.approvalId, approverId: 'human-ops' });
+  const applied = proto.applyApprovedWrite({
+    threadId: thread.threadId,
+    recordId: 'rec-9',
+    approvalId: req.approvalId,
+  });
+  assert.equal(applied.ok, true);
+  assert.equal(applied.approvalId, req.approvalId);
+
+  // One approval authorizes exactly one write — no replay.
+  const replay = proto.applyApprovedWrite({
+    threadId: thread.threadId,
+    recordId: 'rec-9',
+    approvalId: req.approvalId,
+  });
+  assert.equal(replay.ok, false);
+  assert.equal(replay.reason, 'approval_already_consumed');
+});
+
+test('an approval from another thread cannot authorize this thread\'s write', () => {
+  const { proto, thread } = readyProtocol('product', 'rec-9');
+  const other = proto.createThread({ connectionId: 'conn-1', mode: 'product', recordId: 'rec-8' });
+  const req = proto.requestApproval({
+    connectionId: 'conn-1',
+    threadId: other.threadId,
+    action: 'prod',
+    surface: 'thumbgate.app',
+    actorId: 'agent-1',
+  });
+  proto.approve({ approvalId: req.approvalId, approverId: 'human-ops' });
+  const crossed = proto.applyApprovedWrite({
+    threadId: thread.threadId,
+    recordId: 'rec-9',
+    approvalId: req.approvalId,
+  });
+  assert.equal(crossed.ok, false);
+  assert.equal(crossed.reason, 'approval_thread_mismatch');
+});
+
+test('a second startTurn is rejected while the first turn is still open', () => {
+  const { proto, thread } = readyProtocol('product', 'rec-9');
+  const first = proto.startTurn({
+    connectionId: 'conn-1',
+    threadId: thread.threadId,
+    input: 'one',
+  });
+  assert.equal(first.ok, true);
+
+  const second = proto.startTurn({
+    connectionId: 'conn-1',
+    threadId: thread.threadId,
+    input: 'two',
+  });
+  assert.equal(second.ok, false);
+  assert.equal(second.reason, 'turn_already_open');
+  assert.equal(second.turnId, first.turnId);
+
+  // The original turn is still reachable, so the open-turn guard still bites.
+  const blocked = proto.claimOutcome({ threadId: thread.threadId, status: 'live' });
+  assert.equal(blocked.ok, false);
+  assert.equal(blocked.reason, 'claim_blocked');
+  assert.equal(blocked.turnOpen, true);
+
+  assert.equal(proto.endTurn({ threadId: thread.threadId }).ok, true);
+  assert.equal(proto.claimOutcome({ threadId: thread.threadId, status: 'live' }).ok, true);
+});
+
+test('package entry point exposes the hosted Hermes gates', () => {
+  const entry = require('../src/index.js');
+  assert.equal(typeof entry.HermesPlatformProtocol, 'function');
+  assert.equal(typeof entry.HermesSyncPlane, 'function');
+  const proto = new entry.HermesPlatformProtocol();
+  assert.equal(proto.initialize({ connectionId: 'conn-entry' }).ok, true);
 });

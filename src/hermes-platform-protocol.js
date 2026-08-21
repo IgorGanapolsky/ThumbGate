@@ -169,6 +169,13 @@ class HermesPlatformProtocol {
     if (thread.archived) {
       return fail('thread_archived', { threadId });
     }
+    const openTurn = thread.openTurnId ? this.turns.get(thread.openTurnId) : null;
+    if (openTurn && openTurn.open) {
+      // Never orphan an open turn behind a new pointer — the open-turn
+      // completion guard reads the pointer, so a replaced turn would be
+      // unreachable and silently defeat it under retries.
+      return fail('turn_already_open', { threadId, turnId: openTurn.turnId });
+    }
     const effectiveRecord = recordId || thread.recordId;
     if (thread.mode === 'product' && !effectiveRecord) {
       return fail('record_required');
@@ -387,20 +394,33 @@ class HermesPlatformProtocol {
     return ok({ approvalId, status: 'approved', action: record.action });
   }
 
-  applyApprovedWrite({ threadId, recordId, skipRefresh, txnId } = {}) {
+  applyApprovedWrite({ threadId, recordId, approvalId, skipRefresh, txnId } = {}) {
     const thread = this._getThread(threadId);
     if (!thread) return fail('thread_missing', { threadId });
-    if (skipRefresh === true || thread.pendingRefresh) {
-      if (skipRefresh === true) {
-        return fail('refresh_required');
-      }
+    // A write is only ever the tail of an approval. Without this the whole
+    // consequential-action gate is bypassable by anyone holding a thread id.
+    const approval = approvalId ? this.approvals.get(approvalId) : null;
+    if (!approval) return fail('approval_required', { approvalId: approvalId || null });
+    if (approval.status !== 'approved') {
+      return fail('approval_not_granted', { approvalId, status: approval.status });
     }
+    if (approval.threadId && approval.threadId !== threadId) {
+      return fail('approval_thread_mismatch', { approvalId, threadId });
+    }
+    if (approval.consumed === true) {
+      return fail('approval_already_consumed', { approvalId });
+    }
+    if (skipRefresh === true) {
+      return fail('refresh_required');
+    }
+    approval.consumed = true;
     thread.lastWriteTxnId = txnId || `txn_${Date.now()}`;
     thread.pendingRefresh = true;
     thread.recordId = recordId || thread.recordId;
     return ok({
       threadId,
       recordId: thread.recordId,
+      approvalId,
       txnId: thread.lastWriteTxnId,
       refreshRequired: true,
     });
