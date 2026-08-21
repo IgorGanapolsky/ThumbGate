@@ -22,7 +22,7 @@ const ADVERSARIAL_INJECTION_PATTERNS = [
 
 const PII_PATTERNS = [
   /\b\d{3}-\d{2}-\d{4}\b/, // SSN
-  /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/, // Email
+  /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b/, // Email
   /\b(?:\d{4}[-\s]?){3}\d{4}\b/, // Credit Card
 ];
 

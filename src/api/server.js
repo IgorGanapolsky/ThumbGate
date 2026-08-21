@@ -1848,7 +1848,7 @@ function sendInvalidAnalyticsWindowProblem(res, title, err) {
     type: PROBLEM_TYPES.INVALID_REQUEST,
     title,
     status: 400,
-    detail: err && err.message ? err.message : 'Invalid analytics window request.',
+    detail: err?.message || 'Invalid analytics window request.',
   });
 }
 
@@ -2902,7 +2902,7 @@ function applyTrackedLinkDefaults(destinationUrl, target) {
 function applyTrackedLinkQueryKeys(destinationUrl, params) {
   for (const key of TRACKED_LINK_QUERY_KEYS) {
     const value = params.get(key);
-    if (!value || !value.trim()) continue;
+    if (!value?.trim()) continue;
     const normalizedValue = key === 'utm_campaign'
       ? normalizeCampaignId(value)
       : value.trim();
