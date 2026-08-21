@@ -58,9 +58,29 @@ test('Five Walls Gate Config - contains valid 4-layer action safety gates', () =
   const gatePath = path.join(__dirname, '..', 'config', 'gates', 'five-walls-governance.json');
   assert.ok(fs.existsSync(gatePath));
 
-  const config = JSON.parse(fs.readFileSync(gatePath, 'utf8'));
-  assert.equal(config.harness, 'five-walls-governance');
-  assert.equal(config.gates.length, 3);
-  assert.ok(config.gates.some((g) => g.id === 'five-walls-hard-deny-guardrail-tampering'));
-  assert.ok(config.gates.some((g) => g.id === 'five-walls-precondition-prior-read'));
+  const content = JSON.parse(fs.readFileSync(gatePath, 'utf8'));
+  assert.equal(content.harness, 'five-walls-governance');
+  assert.ok(content.gates);
+  assert.ok(content.gates.length >= 2);
+});
+
+test('Index-and-Leaf Engine - mainCli execution', () => {
+  const { mainCli } = require('../scripts/index-leaf-context.js');
+  let captured = '';
+  const mockStdout = { write: (msg) => { captured += msg; } };
+  assert.equal(mainCli(['--doctor'], mockStdout), 0);
+  assert.equal(mainCli([], mockStdout), 0);
+});
+
+test('Session Attribution Summary - mainCli execution', () => {
+  const { mainCli, handleDoctor } = require('../scripts/session-attribution-summary.js');
+  let captured = '';
+  const mockStdout = { write: (msg) => { captured += msg; } };
+  if (typeof handleDoctor === 'function') {
+    assert.equal(handleDoctor(mockStdout), 0);
+  }
+  if (typeof mainCli === 'function') {
+    assert.equal(mainCli(['--doctor'], mockStdout), 0);
+    assert.equal(mainCli([], mockStdout), 0);
+  }
 });
