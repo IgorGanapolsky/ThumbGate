@@ -157,16 +157,24 @@ test('simatree-data-governance: checkDoctor returns healthy state', () => {
   assert.equal(doctor.pmoGate, 'ONLINE');
 });
 
-test('simatree-data-governance: gate JSON configuration is valid and matches schema', () => {
+// This test previously asserted a `patterns`/`regex`/`id` shape. It passed
+// while the gate contributed zero rules to the engine, because it validated a
+// schema the runtime never reads. It now asserts the schema loadGatesConfig
+// actually consumes; "the rules also fire" is covered further down.
+test('simatree-data-governance: gate JSON matches the schema the runtime loader reads', () => {
   const gatePath = path.join(__dirname, '..', 'config', 'gates', 'simatree-data-governance.json');
   assert.ok(fs.existsSync(gatePath));
 
   const parsed = JSON.parse(fs.readFileSync(gatePath, 'utf8'));
-  assert.equal(parsed.id, 'simatree-data-governance');
-  assert.equal(parsed.category, 'Enterprise Data & Analytics Governance');
-  assert.equal(parsed.enforcementMode, 'ENFORCE');
-  assert.ok(Array.isArray(parsed.patterns));
-  assert.ok(parsed.patterns.length >= 2);
+  assert.equal(parsed.harness, 'simatree-data-governance');
+  assert.equal(parsed.metadata.category, 'Enterprise Data & Analytics Governance');
+  assert.equal(parsed.metadata.enforcementMode, 'ENFORCE');
+  assert.ok(Array.isArray(parsed.gates), 'must be a `gates` array, not `patterns`');
+  assert.ok(parsed.gates.length >= 2);
+  assert.ok(
+    !Object.prototype.hasOwnProperty.call(parsed, 'patterns'),
+    'a leftover `patterns` key is dead config and invites the same silent-inert regression'
+  );
 });
 
 test('simatree-data-governance: CLI execution handles --doctor and --sql flags', () => {
@@ -183,4 +191,179 @@ test('simatree-data-governance: CLI execution handles --doctor and --sql flags',
   const sqlJson = JSON.parse(sqlOut);
   assert.equal(sqlJson.allowed, true);
   assert.equal(sqlJson.isDestructive, false);
+});
+
+// ---------------------------------------------------------------------------
+// Regression: qualified and quoted table names
+//
+// The matcher used to be `DELETE\s+FROM\s+\w+...`. `\w+` matches only the
+// single-part form, so `DELETE FROM analytics.customers;` was classified
+// non-destructive and received an AUTHORIZED receipt with no rollback plan, no
+// HIGH/CRITICAL risk tier and no declared targetEntities — precisely the
+// full-table deletion this gate exists to interdict. Every schema-, project-
+// and quote-qualified form the advertised warehouses emit was equally
+// invisible.
+// ---------------------------------------------------------------------------
+
+const QUALIFIED_DELETES = [
+  ['bare', 'DELETE FROM customers;'],
+  ['schema-qualified (Postgres/Snowflake)', 'DELETE FROM analytics.customers;'],
+  ['project-qualified (BigQuery)', 'DELETE FROM prod_project.analytics.customers;'],
+  ['double-quoted parts', 'DELETE FROM "analytics"."customers";'],
+  ['backtick-quoted, dots and hyphens inside', 'DELETE FROM `prod-project.analytics.customers`;'],
+  ['bracket-quoted (SQL Server)', 'DELETE FROM [dbo].[Customers];'],
+  ['whitespace around the dot', 'DELETE FROM analytics . customers;'],
+];
+
+for (const [label, sql] of QUALIFIED_DELETES) {
+  test(`simatree-data-governance: full-table DELETE is destructive — ${label}`, () => {
+    const result = evaluateDataLifecycleIntent({
+      sql,
+      businessIntent: 'Quarterly GDPR erasure run for opted-out EU customer records.',
+      riskTier: 'MEDIUM',
+      targetEntities: [],
+    });
+
+    assert.equal(result.isDestructive, true, `${sql} must be classified destructive`);
+    assert.equal(result.allowed, false, `${sql} must not receive an authorized receipt`);
+    assert.ok(
+      result.violations.some((v) => v.startsWith('DESTRUCTIVE_MUTATION_WITHOUT_ROLLBACK')),
+      'missing rollback plan must be reported'
+    );
+    assert.ok(
+      result.violations.some((v) => v.startsWith('UNSPECIFIED_TARGET_ENTITIES')),
+      'missing targetEntities must be reported'
+    );
+  });
+}
+
+test('simatree-data-governance: reads and WHERE-scoped updates stay non-destructive', () => {
+  for (const sql of [
+    'SELECT * FROM analytics.customers;',
+    'SELECT count(1) FROM `proj.ds.customers`;',
+    'UPDATE analytics.customers SET tier = 1 WHERE customer_id = 7;',
+  ]) {
+    const result = evaluateDataLifecycleIntent({
+      sql,
+      businessIntent: 'Executive dashboard quarterly revenue cohort calculation.',
+      riskTier: 'LOW',
+      targetEntities: ['analytics.customers'],
+    });
+    assert.equal(result.isDestructive, false, `${sql} must not be flagged destructive`);
+    assert.equal(result.allowed, true, `${sql} must be allowed`);
+  }
+});
+
+test('simatree-data-governance: an UPDATE with no WHERE clause is destructive', () => {
+  const result = evaluateDataLifecycleIntent({
+    sql: 'UPDATE analytics.customers SET tier = 1;',
+    businessIntent: 'Reset every customer to the base tier ahead of the pricing migration.',
+    riskTier: 'MEDIUM',
+    targetEntities: [],
+  });
+  assert.equal(result.isDestructive, true);
+  assert.equal(result.allowed, false);
+});
+
+// ---------------------------------------------------------------------------
+// Regression: the harness config must load into the engine that consumes it
+//
+// scripts/gates-engine.js loadGatesConfig() reads ONLY a top-level `gates`
+// array of rules carrying a `pattern` string, and compiles each with
+// new RegExp(pattern) — no flags. The config previously shipped a
+// `patterns`/`regex` shape, so loadOne() returned nothing and the harness
+// contributed ZERO rules: the advertised pre-action enforcement was entirely
+// inactive while looking configured.
+//
+// Note both halves are load-bearing. matchGate() wraps compilation in a
+// try/catch that swallows a bad pattern into "no match", so an inline (?i)
+// flag — invalid in JS RegExp — would also leave a correctly-shaped gate
+// permanently inert. These tests therefore assert the rules FIRE, not merely
+// that they load.
+// ---------------------------------------------------------------------------
+
+const { loadGatesConfig, matchesGate } = require('../scripts/gates-engine');
+
+function loadSimatreeGates() {
+  const configDir = path.join(__dirname, '..', 'config', 'gates');
+  const cfg = loadGatesConfig(
+    path.join(configDir, 'default.json'),
+    path.join(configDir, 'simatree-data-governance.json')
+  );
+  return Object.fromEntries(
+    cfg.gates.filter((g) => String(g.id || '').startsWith('simatree-')).map((g) => [g.id, g])
+  );
+}
+
+test('simatree gate config: the runtime loader actually picks up the rules', () => {
+  const raw = JSON.parse(
+    fs.readFileSync(
+      path.join(__dirname, '..', 'config', 'gates', 'simatree-data-governance.json'),
+      'utf8'
+    )
+  );
+  assert.ok(
+    Array.isArray(raw.gates),
+    'config must expose a top-level `gates` array — loadGatesConfig reads nothing else'
+  );
+  assert.ok(
+    raw.gates.every((g) => typeof g.pattern === 'string' && g.pattern.length > 0),
+    'each rule must carry a `pattern` string; a `regex` key is invisible to the loader'
+  );
+  for (const g of raw.gates) {
+    assert.doesNotThrow(
+      () => new RegExp(g.pattern),
+      `pattern for ${g.id} must compile with new RegExp and no flags — matchGate swallows a throw into "no match"`
+    );
+    assert.ok(
+      !g.pattern.includes('(?i)'),
+      `${g.id}: inline (?i) is invalid in JS RegExp; spell case-insensitivity out as character classes`
+    );
+  }
+
+  const loaded = loadSimatreeGates();
+  assert.deepEqual(
+    Object.keys(loaded).sort(),
+    ['simatree-destructive-sql', 'simatree-missing-intent'],
+    'both Simatree rules must reach the engine'
+  );
+});
+
+test('simatree gate config: destructive-SQL rule fires on qualified names, not on reads', () => {
+  const gate = loadSimatreeGates()['simatree-destructive-sql'];
+  assert.ok(gate, 'destructive-sql gate must load');
+  assert.equal(gate.action, 'block');
+
+  for (const command of [
+    'DELETE FROM analytics.customers;',
+    'DELETE FROM `proj.ds.customers`;',
+    'DELETE FROM "analytics"."customers";',
+    'DELETE FROM [dbo].[Customers];',
+    'DROP TABLE analytics.customers',
+    'drop table analytics.customers',
+    'TRUNCATE TABLE staging.logs',
+  ]) {
+    assert.equal(matchesGate(gate, 'Bash', { command }), true, `must fire on: ${command}`);
+  }
+
+  for (const command of [
+    'SELECT * FROM analytics.customers',
+    'npm test',
+  ]) {
+    assert.equal(matchesGate(gate, 'Bash', { command }), false, `must stay quiet on: ${command}`);
+  }
+});
+
+test('simatree gate config: missing-intent rule fires on placeholder intents only', () => {
+  const gate = loadSimatreeGates()['simatree-missing-intent'];
+  assert.ok(gate, 'missing-intent gate must load');
+
+  assert.equal(matchesGate(gate, 'Bash', { command: 'psql -f m.sql # intent: test' }), true);
+  assert.equal(matchesGate(gate, 'Bash', { command: 'psql -f m.sql # INTENT: ASAP' }), true);
+  assert.equal(
+    matchesGate(gate, 'Bash', {
+      command: 'psql -f m.sql # intent: quarterly GDPR erasure of opted-out EU rows',
+    }),
+    false
+  );
 });

@@ -6,6 +6,11 @@ const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { getDecisionLogPath, readDecisionLog, collapseDecisionTimeline } = require('./decision-journal');
 const { requireLearnedModelsEntitlement } = require('./entitlement');
+const {
+  readTextTail,
+  DEFAULT_JSONL_TAIL_BYTES,
+  DEFAULT_JSONL_TAIL_ENTRIES,
+} = require('./fs-utils');
 
 const LABELS = ['allow', 'recall', 'verify', 'warn', 'deny'];
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -14,6 +19,17 @@ const MIN_HOLDOUT_EXAMPLES = 5;
 const MIN_TRAINING_EXAMPLES = 8;
 const MAX_TEXT_TOKENS = 24;
 const MODEL_FILENAME = 'intervention-policy.json';
+
+// Training reads a much larger window than the dashboard.
+//
+// WHY: the dashboard default is a 4 MiB tail (DEFAULT_JSONL_TAIL_BYTES) so
+// generateDashboard() stays inside its assembly budget. Reusing that tail for
+// trainAndPersistInterventionPolicy() would silently retrain — and overwrite
+// the persisted model — on only the newest 4 MiB of history. Training gets its
+// own, far larger, still-bounded budget, and records what it actually saw so a
+// bounded retrain is visible in the model instead of silent.
+const TRAINING_TAIL_BYTES = 64 * 1024 * 1024;
+const TRAINING_TAIL_ENTRIES = 500_000;
 
 const SURFACE_RULES = [
   { key: 'policy', pattern: /^(?:AGENTS\.md|CLAUDE(?:\.local)?\.md|GEMINI\.md|config\/gates\/|config\/mcp-allowlists\.json|scripts\/tool-registry\.js)/i },
@@ -36,20 +52,50 @@ function modelPathFor(feedbackDir) {
   return path.join(resolveFeedbackDir({ feedbackDir }), MODEL_FILENAME);
 }
 
-function readJSONL(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const raw = fs.readFileSync(filePath, 'utf8').trim();
-  if (!raw) return [];
-  return raw
-    .split('\n')
-    .map((line) => {
-      try {
-        return JSON.parse(line);
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean);
+// Bounded JSONL read.
+//
+// WHY: this used to be an unbounded fs.readFileSync(). getInterventionPolicySummary()
+// is called from generateDashboard(), so once production feedback-log.jsonl passed
+// V8's max string length the read threw
+//   "Cannot create a string longer than 0x1fffffe8 characters"
+// which escaped assembly and 503'd /v1/dashboard ("Dashboard data too large").
+// scripts/dashboard.js already tail-capped its own readers; this sibling reader on
+// the same call path was missed. Bound it AND never let one bad log throw.
+function readJSONLBounded(filePath, options = {}) {
+  const empty = { entries: [], truncated: false, size: 0 };
+  if (!fs.existsSync(filePath)) return empty;
+  const requestedBytes = Number(options.maxBytes);
+  const requestedEntries = Number(options.maxEntries);
+  const maxBytes = requestedBytes > 0 ? requestedBytes : DEFAULT_JSONL_TAIL_BYTES;
+  const maxEntries = requestedEntries > 0 ? requestedEntries : DEFAULT_JSONL_TAIL_ENTRIES;
+  let tail;
+  try {
+    tail = readTextTail(filePath, maxBytes);
+  } catch {
+    return empty;
+  }
+  const raw = tail.text;
+  if (!raw?.trim()) return { entries: [], truncated: Boolean(tail.truncated), size: tail.size || 0 };
+  const lines = raw.trim().split('\n');
+  const start = Math.max(0, lines.length - maxEntries);
+  const entries = [];
+  for (let i = start; i < lines.length; i += 1) {
+    if (!lines[i]) continue;
+    try {
+      const parsed = JSON.parse(lines[i]);
+      if (parsed) entries.push(parsed);
+    } catch { /* skip malformed line */ }
+  }
+  return {
+    entries,
+    // Truncated by the byte tail, or by the per-file entry cap.
+    truncated: Boolean(tail.truncated) || start > 0,
+    size: tail.size || 0,
+  };
+}
+
+function readJSONL(filePath, options = {}) {
+  return readJSONLBounded(filePath, options).entries;
 }
 
 function safeRate(numerator, denominator) {
@@ -373,11 +419,33 @@ function buildDecisionExample(action) {
   };
 }
 
-function buildExamplesFromFeedbackDir(feedbackDir) {
+function buildExamplesFromFeedbackDir(feedbackDir, options = {}) {
   const resolvedDir = resolveFeedbackDir({ feedbackDir });
-  const feedbackEntries = readJSONL(path.join(resolvedDir, 'feedback-log.jsonl'));
-  const auditEntries = readJSONL(path.join(resolvedDir, 'audit-trail.jsonl'));
-  const diagnosticEntries = readJSONL(path.join(resolvedDir, 'diagnostic-log.jsonl'));
+  // Callers pick their budget explicitly. The dashboard keeps the cheap default
+  // tail; training passes TRAINING_TAIL_* so a retrain is not restricted to the
+  // dashboard's 4 MiB view of history.
+  const readOptions = {
+    maxBytes: Number(options.maxBytes) > 0 ? Number(options.maxBytes) : DEFAULT_JSONL_TAIL_BYTES,
+    maxEntries: Number(options.maxEntries) > 0 ? Number(options.maxEntries) : DEFAULT_JSONL_TAIL_ENTRIES,
+  };
+  const feedbackRead = readJSONLBounded(path.join(resolvedDir, 'feedback-log.jsonl'), readOptions);
+  const auditRead = readJSONLBounded(path.join(resolvedDir, 'audit-trail.jsonl'), readOptions);
+  const diagnosticRead = readJSONLBounded(path.join(resolvedDir, 'diagnostic-log.jsonl'), readOptions);
+  const feedbackEntries = feedbackRead.entries;
+  const auditEntries = auditRead.entries;
+  const diagnosticEntries = diagnosticRead.entries;
+  const truncatedSources = [
+    feedbackRead.truncated ? 'feedback' : null,
+    auditRead.truncated ? 'audit' : null,
+    diagnosticRead.truncated ? 'diagnostic' : null,
+  ].filter(Boolean);
+  const readWindow = {
+    bounded: true,
+    maxBytes: readOptions.maxBytes,
+    maxEntries: readOptions.maxEntries,
+    truncatedSources,
+    complete: truncatedSources.length === 0,
+  };
   const decisionEntries = readDecisionLog(getDecisionLogPath(resolvedDir));
   const decisions = collapseDecisionTimeline(decisionEntries);
 
@@ -416,6 +484,7 @@ function buildExamplesFromFeedbackDir(feedbackDir) {
   return {
     examples,
     sourceCounts,
+    readWindow,
   };
 }
 
@@ -590,15 +659,23 @@ function loadInterventionPolicy(feedbackDir) {
 
 function trainAndPersistInterventionPolicy(feedbackDir, options = {}) {
   const resolvedDir = resolveFeedbackDir({ feedbackDir });
-  const { examples, sourceCounts } = buildExamplesFromFeedbackDir(resolvedDir);
+  // Retraining overwrites the persisted model, so it must not inherit the
+  // dashboard's 4 MiB tail. Read the far larger (still bounded) training window
+  // and persist what was actually observed.
+  const { examples, sourceCounts, readWindow } = buildExamplesFromFeedbackDir(resolvedDir, {
+    maxBytes: Number(options.maxBytes) > 0 ? Number(options.maxBytes) : TRAINING_TAIL_BYTES,
+    maxEntries: Number(options.maxEntries) > 0 ? Number(options.maxEntries) : TRAINING_TAIL_ENTRIES,
+  });
   const model = trainInterventionPolicy(examples, options);
   model.sourceCounts = sourceCounts;
+  model.trainingWindow = readWindow;
   const modelPath = saveInterventionPolicy(model, resolvedDir);
   return {
     model,
     modelPath,
     examples,
     sourceCounts,
+    readWindow,
   };
 }
 
@@ -707,7 +784,9 @@ function getInterventionPolicySummary(feedbackDir, options = {}) {
     label: 'intervention-policy summary',
   });
   const resolvedDir = resolveFeedbackDir({ feedbackDir });
-  const { examples, sourceCounts } = buildExamplesFromFeedbackDir(resolvedDir);
+  // Dashboard path: keep the cheap default tail so generateDashboard() stays
+  // inside its assembly budget.
+  const { examples, sourceCounts, readWindow } = buildExamplesFromFeedbackDir(resolvedDir);
   const model = loadInterventionPolicy(resolvedDir) || trainInterventionPolicy(examples);
   const labelCounts = Object.assign({}, model.labelCounts || {});
   const daily = computeDailySeries(examples, options.dayCount || 14);
@@ -727,6 +806,11 @@ function getInterventionPolicySummary(feedbackDir, options = {}) {
     labelCounts,
     metrics: model.metrics || {},
     sourceCounts,
+    // Bounded-read provenance. `readWindow` describes what THIS summary read
+    // (dashboard tail); `trainingWindow` describes what the persisted model was
+    // actually trained on. Neither is a lifetime read.
+    readWindow,
+    trainingWindow: model.trainingWindow || null,
     topTokens: model.topTokens || {},
     daily,
     recent,
@@ -740,6 +824,8 @@ function getInterventionPolicySummary(feedbackDir, options = {}) {
 module.exports = {
   LABELS,
   MIN_TRAINING_EXAMPLES,
+  TRAINING_TAIL_BYTES,
+  TRAINING_TAIL_ENTRIES,
   buildExamplesFromFeedbackDir,
   buildRuntimeCandidate,
   createEmptyModel,
@@ -749,6 +835,7 @@ module.exports = {
   modelPathFor,
   predictIntervention: scoreExample,
   readJSONL,
+  readJSONLBounded,
   saveInterventionPolicy,
   trainAndPersistInterventionPolicy,
   trainInterventionPolicy,

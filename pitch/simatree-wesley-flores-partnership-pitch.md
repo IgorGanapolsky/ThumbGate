@@ -15,7 +15,7 @@ Your leadership philosophy at Simatree—*“Building effective data and analyti
 
 As Fortune 500 enterprises deploy autonomous AI agents (Claude Code, Cursor, Codex, Gemini) and LLM-powered data pipelines across Snowflake, Databricks, BigQuery, and Postgres, they encounter a critical vulnerability: **agents execute irreversible schema alterations (`DROP`, `ALTER`, `TRUNCATE`, silent view invalidations) without validating the business "why" or verifying rollback safety.**
 
-We built **ThumbGate** to solve this. ThumbGate is the **Pre-Action Infrastructure Firewall** that physically gates AI agents and automated data pipelines at the sub-millisecond execution boundary (`PreToolUse`).
+We built **ThumbGate** to solve this. ThumbGate is the **Pre-Action Infrastructure Firewall** that physically gates AI agents and automated data pipelines at the pre-execution boundary (`PreToolUse`), before the call reaches the warehouse.
 
 We would like to propose a strategic partnership: **deploying ThumbGate as the certified runtime governance layer for Simatree’s enterprise data and digital transformation advisory clients.**
 
@@ -33,14 +33,14 @@ When Simatree leads multi-million-dollar digital transformations and PMO moderni
 
 ### The Solution: ThumbGate + Simatree Architecture
 
-We codified your core principles into deterministic, sub-millisecond pre-action evaluators:
+We codified your core principles into deterministic, no-inference pre-action evaluators:
 
 | Enterprise Capability | Simatree Principle | ThumbGate Enforcement Mechanism |
 |---|---|---|
 | **Why-Before-How Intent Gate** | *"Understand the 'why' before the 'how'"* | Blocks destructive SQL (`DROP`, `TRUNCATE`, `ALTER COLUMN`) unless context-grounded intent (>=15 chars) and verified snapshot rollback IDs are present. |
 | **Bayesian Uncertainty Estimator** | *Advanced Analytics & ML Discipline* | Computes statistical posterior confidence bounds; interdicts AI data agents when schema drift score exceeds safety thresholds. |
 | **PMO Transformation Gate** | *Structured Program Delivery* | Validates multi-stage migration milestones and emits immutable audit receipts for compliance review. |
-| **Fail-Closed Sub-ms Gate** | *Zero-Latency Governance* | <1ms evaluation time; zero marginal LLM token spend; runs locally or in hybrid cloud. |
+| **Fail-Closed Deterministic Gate** | *No-Inference Governance* | Regex/receipt evaluation with no model call in the decision path, so it adds zero marginal LLM token spend; runs locally or in hybrid cloud. No latency figure is published here — the repository forbids unverified metrics, and this asset ships no reproducible timing benchmark. |
 
 ---
 

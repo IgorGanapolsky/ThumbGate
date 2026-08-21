@@ -20,12 +20,36 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+/**
+ * One part of a SQL object name, in every form the advertised warehouses emit:
+ * a bare identifier (`customers`), a double-quoted one (Postgres/Snowflake),
+ * a backtick-quoted one (BigQuery/Databricks — note it may contain dots and
+ * hyphens, as in `prod-project.analytics.customers`), or a bracketed one
+ * (SQL Server, `[dbo]`).
+ */
+const SQL_IDENT_PART = '(?:[\\w$]+|"[^"]+"|`[^`]+`|\\[[^\\]]+\\])';
+
+/**
+ * A possibly schema- or project-qualified table reference: one or more parts
+ * joined by dots.
+ *
+ * WHY THIS IS NOT `\w+`: `\w+` matches only the single-part form. With it,
+ * `DELETE FROM analytics.customers;` failed the destructive test entirely and
+ * received an authorized receipt with no rollback plan, no risk tier and no
+ * declared targetEntities — the exact full-table deletion this gate exists to
+ * stop. Every qualified and quoted form was equally invisible.
+ */
+const QUALIFIED_TABLE = `${SQL_IDENT_PART}(?:\\s*\\.\\s*${SQL_IDENT_PART})*`;
+
 const DESTRUCTIVE_SQL_PATTERNS = [
   /\bDROP\s+(TABLE|DATABASE|SCHEMA|VIEW|INDEX)\b/i,
   /\bTRUNCATE\s+(TABLE)?\b/i,
   /\bALTER\s+TABLE\s+.*\b(DROP\s+COLUMN|RENAME\s+TO)\b/i,
-  /\bDELETE\s+FROM\s+\w+(\s+WHERE\s+(1=1|TRUE))?\s*;?$/i,
-  /\bUPDATE\s+\w+\s+SET\s+.*(?!\bWHERE\b)/i,
+  new RegExp(`\\bDELETE\\s+FROM\\s+${QUALIFIED_TABLE}(\\s+WHERE\\s+(1=1|TRUE))?\\s*;?$`, 'i'),
+  // An UPDATE with no WHERE clause rewrites every row. The previous form put the
+  // negative lookahead after `.*`, where backtracking always satisfies it, so the
+  // clause was inert and the pattern reduced to "any UPDATE ... SET".
+  new RegExp(`\\bUPDATE\\s+${QUALIFIED_TABLE}\\s+SET\\b(?![\\s\\S]*\\bWHERE\\b)`, 'i'),
 ];
 
 const LOW_SIGNAL_INTENT_PATTERNS = [
