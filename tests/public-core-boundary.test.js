@@ -265,7 +265,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 497 -> 499 (2026-08-20): config/gates/hermes-platform.json + config/gates/hermes-sync.json
   // 499 -> 506 (2026-08-21): Future AGI adapter, evaluator, CLI bridge, guardrails gate, and learn article (+7)
   // 506 -> 507 (2026-08-21): Five Walls governance gate, index-and-leaf engine, attribution summary, and learn article (+1)
-  const CEILING = 507;
+  // 507 -> 509 (2026-08-21): Simatree data lifecycle & BI governance engine + gate config (+2)
+  const CEILING = 509;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

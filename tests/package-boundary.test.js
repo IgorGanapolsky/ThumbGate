@@ -468,8 +468,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 497 -> 499 (2026-08-20): config/gates/hermes-platform.json + config/gates/hermes-sync.json
     // 499 -> 506 (2026-08-21): Future AGI adapter, evaluator, CLI bridge, guardrails gate, and learn article (+7)
     // 506 -> 507 (2026-08-21): Five Walls governance gate, index-and-leaf engine, attribution summary, and learn article (+1)
-    manifest.fileCount <= 507,
-    `npm package should stay <= 507 files, got ${manifest.fileCount}`
+    // 507 -> 509 (2026-08-21): Simatree data lifecycle & BI governance engine + gate config (+2)
+    manifest.fileCount <= 509,
+    `npm package should stay <= 509 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

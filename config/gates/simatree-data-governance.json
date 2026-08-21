@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "id": "simatree-data-governance",
+  "name": "Simatree Enterprise Data Lifecycle & BI Governance",
+  "description": "Enforces 'Why Before How' intent validation, destructive SQL interdiction, Bayesian confidence thresholds, and PMO transformation stage audit receipts for enterprise data workflows.",
+  "version": "1.0.0",
+  "category": "Enterprise Data & Analytics Governance",
+  "severity": "CRITICAL",
+  "enforcementMode": "ENFORCE",
+  "patterns": [
+    {
+      "id": "simatree-destructive-sql",
+      "regex": "\\b(DROP\\s+(TABLE|DATABASE|SCHEMA)|TRUNCATE\\s+TABLE|ALTER\\s+TABLE.*DROP\\s+COLUMN|DELETE\\s+FROM\\s+\\w+\\s*;)\\b",
+      "action": "BLOCK",
+      "rationale": "Destructive data operations require validated business intent and an explicit snapshotId rollback plan."
+    },
+    {
+      "id": "simatree-missing-intent",
+      "regex": "(?i)intent\\s*:\\s*[\"']?(test|temp|fix|asap|update|misc|todo)[\"']?",
+      "action": "BLOCK",
+      "rationale": "Data modifications require context-grounded business intent with >=15 characters."
+    }
+  ],
+  "author": "ThumbGate Security & Simatree Enterprise Systems",
+  "metadata": {
+    "framework": "Simatree Data Lifecycle Architecture",
+    "advisor": "Wesley Flores (Managing Partner, Simatree)"
+  }
+}
