@@ -29,11 +29,16 @@ const HARNESSES = Object.freeze({
   'actor-critic-audit': path.join(HARNESS_DIR, 'actor-critic-audit.json'),
   'future-agi-guardrails': path.join(HARNESS_DIR, 'future-agi-guardrails.json'),
   'five-walls-governance': path.join(HARNESS_DIR, 'five-walls-governance.json'),
+  'simatree-data-governance': path.join(HARNESS_DIR, 'simatree-data-governance.json'),
 });
 
 // ---------------------------------------------------------------------------
 // Detection patterns
 // ---------------------------------------------------------------------------
+
+const SIMATREE_PATTERNS = [
+  /\b(simatree|data_lifecycle|why_before_how|pmo_transformation|bayesian_uncertainty|lakehouse_governance)\b/i,
+];
 
 const FIVE_WALLS_PATTERNS = [
   /\b(five_walls|five-walls|action_safety|hard_deny|preconditions|index_and_leaf|identity_propagation)\b/i,
@@ -143,6 +148,9 @@ function selectHarness(toolName, toolInput) {
     }
     if (FIVE_WALLS_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['five-walls-governance'];
+    }
+    if (SIMATREE_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['simatree-data-governance'];
     }
     if (ROUTINE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES.routine;

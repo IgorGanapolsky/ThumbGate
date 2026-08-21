@@ -470,8 +470,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 506 -> 507 (2026-08-21): Five Walls governance gate, index-and-leaf engine, attribution summary, and learn article (+1)
     // 507 -> 508 (2026-08-21): scripts/agent-action-inventory.js, the `thumbgate inventory` module (+1 measured npm pack).
     //   Lockstep with public-bundle-ratchet + public-core-boundary.
-    manifest.fileCount <= 508,
-    `npm package should stay <= 508 files, got ${manifest.fileCount}`
+    // 508 -> 510 (2026-08-21): scripts/simatree-data-governance.js + the
+    //   simatree-data-governance.json gate manifest (+2 measured npm pack).
+    //   Lockstep with public-bundle-ratchet + public-core-boundary.
+    manifest.fileCount <= 510,
+    `npm package should stay <= 510 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

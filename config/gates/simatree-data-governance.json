@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "harness": "simatree-data-governance",
+  "name": "Simatree Enterprise Data Lifecycle & BI Governance",
+  "description": "Enforces 'Why Before How' intent validation, destructive SQL interdiction, Bayesian confidence thresholds, and PMO transformation stage audit receipts for enterprise data workflows. Schema note: scripts/gates-engine.js loadGatesConfig() reads ONLY a top-level `gates` array whose rules carry a `pattern` string, and compiles it with new RegExp(pattern) with no flags. A `patterns`/`regex` shape loads zero rules, and an inline (?i) flag throws and is swallowed by the matcher's catch, leaving the gate silently inert. Case-insensitivity is therefore written out as character classes.",
+  "gates": [
+    {
+      "id": "simatree-destructive-sql",
+      "layer": "PreAction",
+      "pattern": "(?:[Dd][Rr][Oo][Pp]\\s+(?:[Tt][Aa][Bb][Ll][Ee]|[Dd][Aa][Tt][Aa][Bb][Aa][Ss][Ee]|[Ss][Cc][Hh][Ee][Mm][Aa])|[Tt][Rr][Uu][Nn][Cc][Aa][Tt][Ee]\\s+[Tt][Aa][Bb][Ll][Ee]|[Aa][Ll][Tt][Ee][Rr]\\s+[Tt][Aa][Bb][Ll][Ee]\\s+.*[Dd][Rr][Oo][Pp]\\s+[Cc][Oo][Ll][Uu][Mm][Nn]|[Dd][Ee][Ll][Ee][Tt][Ee]\\s+[Ff][Rr][Oo][Mm]\\s+(?:[\\w$]+|\"[^\"]+\"|`[^`]+`|\\[[^\\]]+\\])(?:\\s*\\.\\s*(?:[\\w$]+|\"[^\"]+\"|`[^`]+`|\\[[^\\]]+\\]))*\\s*;)",
+      "toolNames": ["Bash", "Edit", "Write"],
+      "action": "block",
+      "severity": "critical",
+      "message": "Destructive data operations require validated business intent and an explicit snapshotId rollback plan. The table matcher accepts schema-, project- and quote-qualified names (analytics.customers, `proj.ds.tbl`, \"s\".\"t\", [dbo].[T]) because those are the forms Snowflake, BigQuery, Databricks and Postgres actually emit; a bare \\w+ matcher let every one of them through."
+    },
+    {
+      "id": "simatree-missing-intent",
+      "layer": "PreAction",
+      "pattern": "[Ii][Nn][Tt][Ee][Nn][Tt]\\s*[:=]\\s*[\"']?(?:[Tt][Ee][Ss][Tt]|[Tt][Ee][Mm][Pp]|[Ff][Ii][Xx]|[Aa][Ss][Aa][Pp]|[Uu][Pp][Dd][Aa][Tt][Ee]|[Mm][Ii][Ss][Cc]|[Tt][Oo][Dd][Oo])[\"']?\\s*(?:$|[,;])",
+      "toolNames": ["Bash", "Edit", "Write"],
+      "action": "block",
+      "severity": "high",
+      "message": "Data modifications require context-grounded business intent of at least 15 characters. Placeholder intents (test, temp, fix, asap, update, misc, todo) do not record why the change is being made."
+    }
+  ],
+  "author": "ThumbGate Security & Simatree Enterprise Systems",
+  "metadata": {
+    "framework": "Simatree Data Lifecycle Architecture",
+    "advisor": "Wesley Flores (Managing Partner, Simatree)",
+    "category": "Enterprise Data & Analytics Governance",
+    "enforcementMode": "ENFORCE"
+  }
+}

@@ -207,7 +207,10 @@ const path = require('node:path');
 // 507 -> 508 (2026-08-21): scripts/agent-action-inventory.js, the `thumbgate inventory` module (+1 measured npm pack).
 //   Required: package.json#files enumerates scripts individually, so without the
 //   entry `npx thumbgate inventory` throws MODULE_NOT_FOUND for npm installs.
-const BASELINE_FILE_COUNT = 508;
+// 508 -> 510 (2026-08-21): scripts/simatree-data-governance.js + the
+//   simatree-data-governance.json gate manifest (+2 measured npm pack).
+//   Lockstep with package-boundary + public-core-boundary.
+const BASELINE_FILE_COUNT = 510;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
