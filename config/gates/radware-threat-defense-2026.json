@@ -26,8 +26,8 @@
       "description": "Interdicts Indirect Prompt Injection (IPI) vectors embedded in external web/email/ticket payloads attempting to hijack agent control loops.",
       "toolNames": ["Bash", "Edit", "Write", "Eval", "Dispatch"],
       "patterns": [
-        "(?i)\\b(?:system\\s*override|act\\s*as\\s*zombie|unrestricted\\s*agent|drop\\s*prior\\s*instructions|ignore\\s*all\\s*guardrails)\\b",
-        "(?i)\\b(?:execute\\s*without\\s*approval|silently\\s*forward\\s*to|covert\\s*execution)\\b"
+        "\\b(?:system\\s*override|act\\s*as\\s*zombie|unrestricted\\s*agent|drop\\s*prior\\s*instructions|ignore\\s*all\\s*guardrails)\\b",
+        "\\b(?:execute\\s*without\\s*approval|silently\\s*forward\\s*to|covert\\s*execution)\\b"
       ],
       "message": "Action blocked: ZombieAgent indirect prompt injection hijacking attempt detected. Execution loop halted."
     },
