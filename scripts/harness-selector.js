@@ -27,11 +27,17 @@ const HARNESSES = Object.freeze({
   'db-write': path.join(HARNESS_DIR, 'db-write.json'),
   routine: path.join(HARNESS_DIR, 'routine.json'),
   'actor-critic-audit': path.join(HARNESS_DIR, 'actor-critic-audit.json'),
+  'future-agi-guardrails': path.join(HARNESS_DIR, 'future-agi-guardrails.json'),
 });
 
 // ---------------------------------------------------------------------------
 // Detection patterns
 // ---------------------------------------------------------------------------
+
+const FUTURE_AGI_PATTERNS = [
+  /\b(future-agi|futureagi|agentcc|traceai|self_healing|adversarial_simulation|simulate_agent)\b/i,
+  /\b(prompt_injection|jailbreak|eval_rubric|guardrail_scanner)\b/i,
+];
 
 const ACTOR_CRITIC_PATTERNS = [
   /\b(publish_causal_report|causal_inference|target_trial|target-trial|actor-critic|actor_critic|process_audit)\b/i,
@@ -101,6 +107,9 @@ function selectHarness(toolName, toolInput) {
     }
     if (ACTOR_CRITIC_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['actor-critic-audit'];
+    }
+    if (FUTURE_AGI_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['future-agi-guardrails'];
     }
     if (ROUTINE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES.routine;

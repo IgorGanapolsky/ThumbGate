@@ -22,3 +22,5 @@
 - `vlt/config.toml`, `vlt/opencode.json`, `vlt/.mcp.json`: Adapter configurations for vlt registry governance + ThumbGate gates.
 - `huggingface-context-course/HF_CONTEXT.md`: High-ROI integration guide for the Hugging Face Context Course (context engineering for AI code agents — Claude Code, Codex, OpenCode). Maps each course unit to ThumbGate gates, model candidates, and feedback capture patterns.
 - `huggingface-context-course/config.toml`, `huggingface-context-course/opencode.json`, `huggingface-context-course/.mcp.json`: Adapter configurations for HF Context Course exercises + ThumbGate gates.
+- `future-agi/FUTURE_AGI.md`: High-ROI integration guide for Future AGI's open-source 6-pillar agent stack (evaluations, simulations, guardrails, tracing, gateway, optimization). Connects simulation test failures to deterministic ThumbGate pre-action gates and feeds action receipts into Future AGI optimization loops.
+- `future-agi/config.toml`, `future-agi/opencode.json`, `future-agi/.mcp.json`: Adapter configurations for Future AGI + ThumbGate gates.
