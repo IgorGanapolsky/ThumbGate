@@ -262,7 +262,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 494 -> 495 (2026-08-20): scripts/hidden-entry-points.js (+1 measured npm pack)
   // 495 -> 496 (2026-08-20): scripts/git-at-scale.js (+1 measured npm pack)
   // 496 -> 497 (2026-08-20): config/gates/actor-critic-audit.json (+1 measured npm pack)
-  const CEILING = 497;
+  // 497 -> 499 (2026-08-20): config/gates/hermes-platform.json + config/gates/hermes-sync.json
+  const CEILING = 499;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
