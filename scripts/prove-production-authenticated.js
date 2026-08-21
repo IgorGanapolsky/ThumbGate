@@ -448,6 +448,46 @@ function renderHuman(report) {
   return `${lines.join('\n')}\n`;
 }
 
+/**
+ * One-glance failure summary, printed to stderr on any non-pass verdict.
+ *
+ * WHY: with --json the only failure signal was `"verdict": "fail"` buried near the
+ * top of a ~120-line dump, with the actual cause (a `problemTitle` on one check)
+ * another 100 lines below. Both post-deploy workflows were red on 10 consecutive
+ * main commits without anyone identifying which check broke. Name the failing
+ * check, its status, and the server's own problem title/detail up front.
+ */
+function renderFailureSummary(report) {
+  if (!report || report.verdict === 'pass') return '';
+  const failed = (report.checks || []).filter((check) => !check.ok);
+  const lines = ['', '=========== AUTHENTICATED PRODUCTION PROOF FAILED ==========='];
+  lines.push(`base-url: ${report.baseUrl || '<unknown>'}`);
+  if (report.expectedVersion) lines.push(`expected: v${report.expectedVersion} @ ${report.expectedSha}`);
+  if (report.reason) {
+    // Harness-level failure (bad URL, absent credential, no fetch).
+    lines.push(`HARNESS FAILURE: ${report.reason}`);
+    if (/API_KEY/.test(report.reason)) {
+      lines.push('  -> The named repository secret is absent or empty. That is a');
+      lines.push('     rotation task for a repo admin; this harness cannot mint one.');
+    }
+  }
+  if (failed.length === 0 && !report.reason) {
+    lines.push('No individual check failed, but the verdict was not "pass".');
+  }
+  for (const check of failed) {
+    lines.push(`FAILED CHECK: ${check.name}`);
+    lines.push(`  status=${check.status ?? 'none'} attempts=${check.attempts} durationMs=${check.durationMs}`);
+    if (check.error) lines.push(`  transport error: ${check.error}`);
+    if (check.problemTitle) lines.push(`  problem: ${check.problemTitle}`);
+    if (check.problemDetail) lines.push(`  detail: ${check.problemDetail}`);
+    if (!check.error && !check.problemTitle && check.schemaValid === false) {
+      lines.push('  response received but failed schema validation (see JSON report above)');
+    }
+  }
+  lines.push('============================================================', '');
+  return `${lines.join('\n')}\n`;
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const report = await runAuthenticatedProductionProof({
@@ -455,7 +495,10 @@ async function main() {
     apiKey: process.env.THUMBGATE_API_KEY,
   });
   process.stdout.write(args.json ? `${JSON.stringify(report, null, 2)}\n` : renderHuman(report));
-  if (report.verdict !== 'pass') process.exitCode = 1;
+  if (report.verdict !== 'pass') {
+    process.stderr.write(renderFailureSummary(report));
+    process.exitCode = 1;
+  }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
@@ -479,4 +522,5 @@ module.exports = {
   probeCheck,
   runAuthenticatedProductionProof,
   renderHuman,
+  renderFailureSummary,
 };

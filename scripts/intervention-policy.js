@@ -6,6 +6,11 @@ const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { getDecisionLogPath, readDecisionLog, collapseDecisionTimeline } = require('./decision-journal');
 const { requireLearnedModelsEntitlement } = require('./entitlement');
+const {
+  readTextTail,
+  DEFAULT_JSONL_TAIL_BYTES,
+  DEFAULT_JSONL_TAIL_ENTRIES,
+} = require('./fs-utils');
 
 const LABELS = ['allow', 'recall', 'verify', 'warn', 'deny'];
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -36,20 +41,39 @@ function modelPathFor(feedbackDir) {
   return path.join(resolveFeedbackDir({ feedbackDir }), MODEL_FILENAME);
 }
 
-function readJSONL(filePath) {
+// Bounded JSONL read.
+//
+// WHY: this used to be an unbounded fs.readFileSync(). getInterventionPolicySummary()
+// is called from generateDashboard(), so once production feedback-log.jsonl passed
+// V8's max string length the read threw
+//   "Cannot create a string longer than 0x1fffffe8 characters"
+// which escaped assembly and 503'd /v1/dashboard ("Dashboard data too large").
+// scripts/dashboard.js already tail-capped its own readers; this sibling reader on
+// the same call path was missed. Bound it AND never let one bad log throw.
+function readJSONL(filePath, options = {}) {
   if (!fs.existsSync(filePath)) return [];
-  const raw = fs.readFileSync(filePath, 'utf8').trim();
-  if (!raw) return [];
-  return raw
-    .split('\n')
-    .map((line) => {
-      try {
-        return JSON.parse(line);
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean);
+  const requestedBytes = Number(options.maxBytes);
+  const requestedEntries = Number(options.maxEntries);
+  const maxBytes = requestedBytes > 0 ? requestedBytes : DEFAULT_JSONL_TAIL_BYTES;
+  const maxEntries = requestedEntries > 0 ? requestedEntries : DEFAULT_JSONL_TAIL_ENTRIES;
+  let raw;
+  try {
+    raw = readTextTail(filePath, maxBytes).text;
+  } catch {
+    return [];
+  }
+  if (!raw?.trim()) return [];
+  const lines = raw.trim().split('\n');
+  const start = Math.max(0, lines.length - maxEntries);
+  const entries = [];
+  for (let i = start; i < lines.length; i += 1) {
+    if (!lines[i]) continue;
+    try {
+      const parsed = JSON.parse(lines[i]);
+      if (parsed) entries.push(parsed);
+    } catch { /* skip malformed line */ }
+  }
+  return entries;
 }
 
 function safeRate(numerator, denominator) {

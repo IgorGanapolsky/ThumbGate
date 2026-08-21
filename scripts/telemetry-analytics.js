@@ -13,6 +13,7 @@ const {
   getFallbackFeedbackDir,
   resolveFallbackArtifactPath,
 } = require('./feedback-paths');
+const { readTextTail } = require('./fs-utils');
 
 const TELEMETRY_FILE_NAME = 'telemetry-pings.jsonl';
 const MARKETING_CLICK_EVENT_TYPES = new Set([
@@ -552,25 +553,26 @@ function appendTelemetryEvent(feedbackDir, payload = {}, headers = {}) {
 
 const DEFAULT_BOUNDED_TELEMETRY_TAIL_BYTES = 8 * 1024 * 1024;
 
+// Delegates to readTextTail(), which applies an UNCONDITIONAL full-read ceiling
+// and drops the partial first line after a mid-file seek.
+//
+// WHY: this function used to fall through to a full fs.readFileSync() whenever
+// the caller passed no maxBytes. getTelemetrySummary() only supplies maxBytes for
+// a `bounded` analytics window, so the default /v1/dashboard request read the
+// whole telemetry log. Once production telemetry passed V8's max string length
+// that threw
+//   "Cannot create a string longer than 0x1fffffe8 characters"
+// which escaped generateDashboard() and 503'd /v1/dashboard ("Dashboard data too
+// large") on every deploy-verification run. A size ceiling must not be opt-in.
 function readTelemetryText(filePath, options = {}) {
   if (!fs.existsSync(filePath)) return '';
-  const maxBytes = Number(options.maxBytes || 0);
-  if (maxBytes > 0) {
-    const stats = fs.statSync(filePath);
-    if (stats.size > maxBytes) {
-      const fd = fs.openSync(filePath, 'r');
-      try {
-        const buffer = Buffer.alloc(maxBytes);
-        fs.readSync(fd, buffer, 0, maxBytes, stats.size - maxBytes);
-        const text = buffer.toString('utf-8');
-        const firstNewline = text.indexOf('\n');
-        return firstNewline >= 0 ? text.slice(firstNewline + 1) : text;
-      } finally {
-        fs.closeSync(fd);
-      }
-    }
+  try {
+    return readTextTail(filePath, Number(options.maxBytes || 0)).text;
+  } catch {
+    // A single unreadable/oversized telemetry log must never take down the
+    // whole dashboard. Degrade to "no telemetry", not to a 503.
+    return '';
   }
-  return fs.readFileSync(filePath, 'utf-8');
 }
 
 function loadTelemetryEventsFromPath(filePath, options = {}) {
