@@ -15,9 +15,9 @@ Future AGI (`future-agi/future-agi`) provides an open-source platform collapsing
 
 ## Quickstart
 ```bash
-# Evaluate a tool call payload with Future AGI simulation rubric:
-npx thumbgate eval --payload '{"tool": "Bash", "command": "publish_release"}'
+# Evaluate a tool call payload with the Future AGI simulation rubric:
+npx --package=thumbgate futureagi-bridge --simulate '{"tool": "Bash", "command": "publish_release"}'
 
-# Run Doctor check on Future AGI bridge:
-node scripts/future-agi-evaluator.js --doctor
+# Run the Doctor check on the Future AGI bridge:
+npx --package=thumbgate futureagi-bridge --doctor
 ```

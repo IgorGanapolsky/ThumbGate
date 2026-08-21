@@ -90,6 +90,24 @@ const CODE_EDIT_TOOL_NAMES = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdi
  * @param {object|string} toolInput - raw tool input object or string
  * @returns {string|null} absolute path to harness JSON, or null
  */
+/**
+ * Full-payload text for pattern scanning. extractCommandText short-circuits on
+ * file_path for Edit/Write, which never carries an injection string — the
+ * content/new_string fields do.
+ *
+ * @param {object|string} toolInput
+ * @returns {string}
+ */
+function extractPayloadText(toolInput) {
+  if (!toolInput) return '';
+  if (typeof toolInput === 'string') return toolInput;
+  try {
+    return JSON.stringify(toolInput);
+  } catch {
+    return extractCommandText(toolInput);
+  }
+}
+
 function selectHarness(toolName, toolInput) {
   // 1. Explicit override
   if (process.env.THUMBGATE_HARNESS) {
@@ -99,8 +117,15 @@ function selectHarness(toolName, toolInput) {
     if (path.isAbsolute(override)) return override;
   }
 
-  // 2. Edit/Write tools always get code-edit harness
+  // 2. Edit/Write tools get the code-edit harness, UNLESS the payload itself
+  //    trips a Future AGI pattern. Returning code-edit unconditionally meant
+  //    the prompt-injection gates declared for Edit/Write were never active
+  //    under automatic selection, since only the selected harness is loaded.
   if (CODE_EDIT_TOOL_NAMES.has(toolName)) {
+    const payloadText = extractPayloadText(toolInput);
+    if (payloadText && FUTURE_AGI_PATTERNS.some((p) => p.test(payloadText))) {
+      return HARNESSES['future-agi-guardrails'];
+    }
     return HARNESSES['code-edit'];
   }
 

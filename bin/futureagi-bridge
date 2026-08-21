@@ -1,3 +1,9 @@
 #!/usr/bin/env node
 'use strict';
-require('../scripts/future-agi-evaluator.js');
+
+// Requiring the module is not enough: its CLI only self-executes when the
+// module itself is the entry point, so `futureagi-bridge --doctor` used to
+// exit 0 having evaluated nothing.
+const { mainCli } = require('../scripts/future-agi-evaluator.js');
+
+process.exit(mainCli());
