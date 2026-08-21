@@ -141,7 +141,7 @@ function claimLive(input = {}) {
   if (post?.blocked) {
     reasons.push('post_blocked');
   }
-  if (post && post.live === false) {
+  if (post?.live === false) {
     reasons.push('post_not_live');
   }
 
