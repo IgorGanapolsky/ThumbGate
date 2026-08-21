@@ -204,8 +204,13 @@ const path = require('node:path');
 // 497 -> 499 (2026-08-20): config/gates/hermes-platform.json + config/gates/hermes-sync.json
 // 499 -> 506 (2026-08-21): Future AGI adapter, evaluator, CLI bridge, guardrails gate, and learn article (+7)
 // 506 -> 507 (2026-08-21): Five Walls governance gate, index-and-leaf engine, attribution summary, and learn article (+1)
-// 507 -> 509 (2026-08-21): Simatree data lifecycle & BI governance engine + gate config (+2)
-const BASELINE_FILE_COUNT = 509;
+// 507 -> 508 (2026-08-21): scripts/agent-action-inventory.js, the `thumbgate inventory` module (+1 measured npm pack).
+//   Required: package.json#files enumerates scripts individually, so without the
+//   entry `npx thumbgate inventory` throws MODULE_NOT_FOUND for npm installs.
+// 508 -> 510 (2026-08-21): scripts/simatree-data-governance.js + the
+//   simatree-data-governance.json gate manifest (+2 measured npm pack).
+//   Lockstep with package-boundary + public-core-boundary.
+const BASELINE_FILE_COUNT = 510;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
