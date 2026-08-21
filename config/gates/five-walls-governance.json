@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "harness": "five-walls-governance",
+  "description": "Enforces the 4-layer action safety cascade from InfoWorld: Visibility, Hard Deny, Policy Cascade, and Preconditions.",
+  "gates": [
+    {
+      "id": "five-walls-hard-deny-guardrail-tampering",
+      "layer": "PreAction",
+      "pattern": "(?:config/gates/|\\.thumbgate/rules|\\.github/workflows/main-branch-ruleset)",
+      "toolNames": ["Edit", "Write", "Bash"],
+      "action": "block",
+      "severity": "critical",
+      "message": "Direct tampering with guardrail policies or branch protection configuration is blocked by hard deny-list."
+    },
+    {
+      "id": "five-walls-precondition-prior-read",
+      "layer": "PreAction",
+      "pattern": "^(?!.*(?:read_receipt=verified|schema_introspected=true)).*(?:mutate_database_schema|drop_table|truncate_table)",
+      "toolNames": ["Bash", "Edit", "Write"],
+      "action": "block",
+      "severity": "high",
+      "message": "Destructive database mutations require verified prior schema introspection receipt (schema_introspected=true)."
+    },
+    {
+      "id": "five-walls-unverified-credentials-egress",
+      "layer": "PreAction",
+      "pattern": "(?:cat\\s+.*\\.env|printenv|security\\s+find-generic-password.*-w)",
+      "toolNames": ["Bash"],
+      "action": "block",
+      "severity": "critical",
+      "message": "Raw credential extraction is prohibited by the authentication boundary."
+    }
+  ]
+}

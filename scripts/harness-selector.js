@@ -28,11 +28,16 @@ const HARNESSES = Object.freeze({
   routine: path.join(HARNESS_DIR, 'routine.json'),
   'actor-critic-audit': path.join(HARNESS_DIR, 'actor-critic-audit.json'),
   'future-agi-guardrails': path.join(HARNESS_DIR, 'future-agi-guardrails.json'),
+  'five-walls-governance': path.join(HARNESS_DIR, 'five-walls-governance.json'),
 });
 
 // ---------------------------------------------------------------------------
 // Detection patterns
 // ---------------------------------------------------------------------------
+
+const FIVE_WALLS_PATTERNS = [
+  /\b(five_walls|five-walls|action_safety|hard_deny|preconditions|index_and_leaf|identity_propagation)\b/i,
+];
 
 const FUTURE_AGI_PATTERNS = [
   /\b(future-agi|futureagi|agentcc|traceai|self_healing|adversarial_simulation|simulate_agent)\b/i,
@@ -110,6 +115,9 @@ function selectHarness(toolName, toolInput) {
     }
     if (FUTURE_AGI_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['future-agi-guardrails'];
+    }
+    if (FIVE_WALLS_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['five-walls-governance'];
     }
     if (ROUTINE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES.routine;

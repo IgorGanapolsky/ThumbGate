@@ -466,8 +466,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 495 -> 496 (2026-08-20): scripts/git-at-scale.js (+1 measured npm pack)
     // 496 -> 497 (2026-08-20): config/gates/actor-critic-audit.json (+1 measured npm pack)
     // 497 -> 499 (2026-08-20): config/gates/hermes-platform.json + config/gates/hermes-sync.json
-    manifest.fileCount <= 499,
-    `npm package should stay <= 499 files, got ${manifest.fileCount}`
+    // 499 -> 506 (2026-08-21): Future AGI adapter, evaluator, CLI bridge, guardrails gate, and learn article (+7)
+    // 506 -> 507 (2026-08-21): Five Walls governance gate, index-and-leaf engine, attribution summary, and learn article (+1)
+    manifest.fileCount <= 507,
+    `npm package should stay <= 507 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

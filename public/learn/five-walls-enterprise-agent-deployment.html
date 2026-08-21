@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The 5 Walls Between Demo Agents and Deployed Ones: The Infrastructure Blueprint — ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="InfoWorld's breakdown of the 5 walls stalling enterprise AI agents: authentication, data scale, action safety, orchestration state, and trust. Here is how ThumbGate solves them.">
+<meta name="keywords" content="Enterprise AI agents, InfoWorld 5 walls, action safety, Model Context Protocol, pre-action firewall, agent governance, ThumbGate">
+<meta property="og:title" content="The 5 Walls Between Demo Agents and Deployed Ones: The Infrastructure Blueprint">
+<meta property="og:description" content="Shipping enterprise AI agents is an infrastructure problem, not a prompting problem. Discover the 5-wall architecture to go from demo to production.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/five-walls-enterprise-agent-deployment">
+<link rel="canonical" href="https://thumbgate.ai/learn/five-walls-enterprise-agent-deployment">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "The 5 Walls Between Demo Agents and Deployed Ones: The Infrastructure Blueprint",
+  "description": "A comprehensive infrastructure blueprint addressing authentication, context scaling, action safety, orchestration state, and organizational trust for autonomous AI agents.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-08-21",
+  "dateModified": "2026-08-21",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/five-walls-enterprise-agent-deployment",
+  "citation": [
+    {
+      "@type": "Article",
+      "headline": "The five walls standing between a demo agent and a deployed one",
+      "author": "Jocelyn Arcega",
+      "publisher": "InfoWorld",
+      "url": "https://www.infoworld.com/article/4209927/the-five-walls-standing-between-a-demo-agent-and-a-deployed-one.html",
+      "datePublished": "2026-08-20"
+    }
+  ],
+  "about": [
+    {"@type": "Thing", "name": "Action Safety"},
+    {"@type": "Thing", "name": "Model Context Protocol"},
+    {"@type": "Thing", "name": "Pre-Action Execution Firewall"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Why do prompt-based safety instructions fail in production agents?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Prompt-based instructions like 'Please ask before deleting anything' are mere suggestions that confused or adversarial models can be reasoned out of. Safety must live in deterministic pre-action infrastructure (PreToolUse gates) that intercepts the execution loop physically."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the 4-layer action safety cascade?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The 4-layer cascade consists of: 1) Visibility filtering (cannot invoke ungranted tools), 2) Hard Deny-list (embedded runtime blacklist for secrets, self-tampering, and destructive commands), 3) Policy Cascade (scope and specificity checks), and 4) Preconditions (requiring prior verified read receipts before mutation)."
+      }
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ThumbGate",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "All",
+  "offers": {
+    "@type": "Offer",
+    "price": "0.00",
+    "priceCurrency": "USD"
+  },
+  "description": "Deterministic pre-action firewall and 4-layer action safety gateway for enterprise AI agents."
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo">ThumbGate</a>
+    <div class="nav-links">
+      <a href="/learn">Learn</a>
+      <a href="/pricing">Pricing</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<article class="article">
+  <header class="article-header">
+    <div class="tag-row">
+      <span class="tag">Enterprise Architecture</span>
+      <span class="tag">Action Safety</span>
+      <span class="tag">InfoWorld</span>
+    </div>
+    <h1>The 5 Walls Between Demo Agents and Deployed Ones</h1>
+    <p class="subtitle">Why building a demo agent is a weekend project, while deploying one to production requires a deterministic infrastructure firewall.</p>
+    <div class="author-row">
+      <span>By <strong>Igor Ganapolsky</strong> · August 21, 2026</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>The 5 Architectural Walls</h2>
+    <ol>
+      <li><strong>The Authentication Wall:</strong> Moving from god-mode API keys to group-based role filtering and canonical human ID propagation headers.</li>
+      <li><strong>Data Scale & Context Limits:</strong> Index-and-Leaf metadata discovery rather than context dumping.</li>
+      <li><strong>Action Safety & The 4-Layer Cascade:</strong> Visibility → Hard Deny-List → Invocation Cascade → Precondition Receipts.</li>
+      <li><strong>Multi-Step Orchestration & State:</strong> Fast routing dispatchers, single-writer checkout leases, and progressive skill lifecycles.</li>
+      <li><strong>Organizational Trust & Attribution:</strong> Automatic session closure attribution summaries with verified proofs in <a href="/VERIFICATION_EVIDENCE.md">VERIFICATION_EVIDENCE.md</a>.</li>
+    </ol>
+  </section>
+</article>
+</body>
+</html>
