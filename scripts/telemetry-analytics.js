@@ -564,21 +564,25 @@ const DEFAULT_BOUNDED_TELEMETRY_TAIL_BYTES = 8 * 1024 * 1024;
 //   "Cannot create a string longer than 0x1fffffe8 characters"
 // which escaped generateDashboard() and 503'd /v1/dashboard ("Dashboard data too
 // large") on every deploy-verification run. A size ceiling must not be opt-in.
-function readTelemetryText(filePath, options = {}) {
-  if (!fs.existsSync(filePath)) return '';
+function readTelemetryTextWithMeta(filePath, options = {}) {
+  if (!fs.existsSync(filePath)) return { text: '', truncated: false, size: 0 };
   try {
-    return readTextTail(filePath, Number(options.maxBytes || 0)).text;
+    const tail = readTextTail(filePath, Number(options.maxBytes || 0));
+    return { text: tail.text, truncated: Boolean(tail.truncated), size: tail.size || 0 };
   } catch {
     // A single unreadable/oversized telemetry log must never take down the
-    // whole dashboard. Degrade to "no telemetry", not to a 503.
-    return '';
+    // whole dashboard. Degrade to "no telemetry", not to a 503 — but say so:
+    // an unreadable source is a hole in the data, not an empty data set.
+    return { text: '', truncated: true, size: 0, unreadable: true };
   }
 }
 
-function loadTelemetryEventsFromPath(filePath, options = {}) {
-  const raw = readTelemetryText(filePath, options).trim();
-  if (!raw) return [];
-  return raw
+function readTelemetryText(filePath, options = {}) {
+  return readTelemetryTextWithMeta(filePath, options).text;
+}
+
+function parseTelemetryLines(raw) {
+  return String(raw || '')
     .split('\n')
     .map((line) => {
       try {
@@ -595,13 +599,26 @@ function loadTelemetryEventsFromPath(filePath, options = {}) {
     .filter(Boolean);
 }
 
-function loadTelemetryEvents(feedbackDir, options = {}) {
+function loadTelemetryEventsFromPath(filePath, options = {}) {
+  const raw = readTelemetryText(filePath, options).trim();
+  if (!raw) return [];
+  return parseTelemetryLines(raw);
+}
+
+// Same merge as loadTelemetryEvents(), but reports whether any source was read
+// only as a tail. Callers that label a result "lifetime" MUST consult this:
+// a tail-read source means the counts below it are partial, not lifetime.
+function loadTelemetryEventsWithMeta(feedbackDir, options = {}) {
   const diagnostics = getTelemetrySourceDiagnostics(feedbackDir);
   const merged = [];
   const seen = new Set();
+  const truncatedPaths = [];
 
   for (const filePath of diagnostics.activePaths) {
-    const rows = loadTelemetryEventsFromPath(filePath, options);
+    const read = readTelemetryTextWithMeta(filePath, options);
+    if (read.truncated) truncatedPaths.push(filePath);
+    const raw = read.text.trim();
+    const rows = raw ? parseTelemetryLines(raw) : [];
     for (const row of rows) {
       const key = JSON.stringify(row);
       if (seen.has(key)) continue;
@@ -610,7 +627,15 @@ function loadTelemetryEvents(feedbackDir, options = {}) {
     }
   }
 
-  return merged;
+  return {
+    events: merged,
+    truncated: truncatedPaths.length > 0,
+    truncatedPaths,
+  };
+}
+
+function loadTelemetryEvents(feedbackDir, options = {}) {
+  return loadTelemetryEventsWithMeta(feedbackDir, options).events;
 }
 
 function summarizeRecentEvents(events) {
@@ -792,8 +817,12 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   const telemetryLoadOptions = analyticsWindow.bounded
     ? { maxBytes: Number(options.telemetryTailBytes || DEFAULT_BOUNDED_TELEMETRY_TAIL_BYTES) }
     : {};
+  // readTextTail() applies an unconditional ceiling even for the unbounded
+  // ("lifetime") window, so a large enough telemetry log is read as a tail.
+  // Carry that fact through instead of presenting a tail as complete history.
+  const telemetryRead = loadTelemetryEventsWithMeta(feedbackDir, telemetryLoadOptions);
   const events = filterEntriesForWindow(
-    loadTelemetryEvents(feedbackDir, telemetryLoadOptions),
+    telemetryRead.events,
     analyticsWindow,
     (entry) => entry && (entry.receivedAt || entry.timestamp)
   );
@@ -1142,7 +1171,19 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   const proConversions = checkoutPaidConfirmations;
 
   return {
-    window: serializeAnalyticsWindow(analyticsWindow),
+    window: {
+      ...serializeAnalyticsWindow(analyticsWindow),
+      // A truncated source means these counts cover only the newest slice of
+      // the log, so `lifetime` would be a lie. Consumers that present
+      // acquisition/conversion rates must check `complete`.
+      truncated: telemetryRead.truncated,
+      complete: !telemetryRead.truncated,
+    },
+    telemetrySource: {
+      truncated: telemetryRead.truncated,
+      truncatedPaths: telemetryRead.truncatedPaths,
+      tailBytes: Number(telemetryLoadOptions.maxBytes) || null,
+    },
     totalEvents: events.length,
     latestSeenAt,
     trafficQuality,
@@ -1511,6 +1552,8 @@ module.exports = {
   appendTelemetryEvent,
   getTelemetrySourceDiagnostics,
   loadTelemetryEvents,
+  loadTelemetryEventsWithMeta,
   getTelemetryAnalytics,
+  getTelemetrySummary,
   inferTrafficChannel,
 };

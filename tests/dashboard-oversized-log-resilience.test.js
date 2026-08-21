@@ -156,3 +156,118 @@ test('prove-production-authenticated flags an absent credential as an admin task
   assert.match(summary, /HARNESS FAILURE/);
   assert.match(summary, /rotation task for a repo admin/);
 });
+
+/**
+ * Follow-ups from the PR #3602 review (chatgpt-codex-connector, two P1 threads).
+ *
+ * Bounding the readers fixed the 503, but it introduced two honesty problems:
+ *   1. Retraining the intervention model inherited the dashboard's 4 MiB tail
+ *      and then OVERWROTE the persisted model, silently discarding history.
+ *   2. getTelemetrySummary() still labelled its window `lifetime` even when the
+ *      underlying telemetry log had been read as a tail, so partial acquisition
+ *      and conversion counts were presented as complete.
+ *
+ * These tests pin both fixes.
+ */
+
+test('retraining reads a larger window than the dashboard tail', (t) => {
+  const dir = makeTempDir();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  const learner = require('../scripts/intervention-policy');
+  assert.ok(
+    learner.TRAINING_TAIL_BYTES > DEFAULT_JSONL_TAIL_BYTES,
+    'training must not be capped at the dashboard tail budget'
+  );
+
+  const now = new Date().toISOString();
+  const lines = [];
+  for (let i = 0; i < 40; i += 1) {
+    lines.push(JSON.stringify({
+      timestamp: now,
+      signal: i % 2 === 0 ? 'down' : 'up',
+      context: `training example ${i}`,
+    }));
+  }
+  fs.writeFileSync(path.join(dir, 'feedback-log.jsonl'), `${lines.join('\n')}\n`);
+
+  const { model } = learner.trainAndPersistInterventionPolicy(dir);
+  assert.ok(model.trainingWindow, 'the persisted model must record its training window');
+  assert.equal(model.trainingWindow.maxBytes, learner.TRAINING_TAIL_BYTES);
+  assert.equal(model.trainingWindow.complete, true, 'a small log must train on complete history');
+  assert.deepEqual(model.trainingWindow.truncatedSources, []);
+});
+
+test('a truncated training read is reported, not silently dropped', (t) => {
+  const dir = makeTempDir();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  const now = new Date().toISOString();
+  const lines = [];
+  for (let i = 0; i < 50; i += 1) {
+    lines.push(JSON.stringify({ timestamp: now, signal: 'down', context: `entry ${i}` }));
+  }
+  fs.writeFileSync(path.join(dir, 'feedback-log.jsonl'), `${lines.join('\n')}\n`);
+
+  const learner = require('../scripts/intervention-policy');
+  const bounded = learner.buildExamplesFromFeedbackDir(dir, { maxEntries: 5 });
+  assert.equal(bounded.readWindow.complete, false, 'a capped read must not claim completeness');
+  assert.ok(
+    bounded.readWindow.truncatedSources.includes('feedback'),
+    'the truncated source must be named'
+  );
+});
+
+test('telemetry summary does not present a tail read as complete', (t) => {
+  const dir = makeTempDir();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  const now = new Date().toISOString();
+  const lines = [];
+  for (let i = 0; i < 500; i += 1) {
+    lines.push(JSON.stringify({
+      receivedAt: now,
+      eventType: 'cta_click',
+      clientType: 'web',
+      page: `/p/${i}`,
+    }));
+  }
+  fs.writeFileSync(path.join(dir, 'telemetry-pings.jsonl'), `${lines.join('\n')}\n`);
+
+  const telemetry = require('../scripts/telemetry-analytics');
+
+  // Tiny tail budget forces truncation without a multi-megabyte fixture.
+  const truncated = telemetry.getTelemetrySummary(dir, { window: '7d', telemetryTailBytes: 512 });
+  assert.equal(truncated.window.truncated, true, 'truncation must be surfaced on the window');
+  assert.equal(truncated.window.complete, false);
+  assert.equal(truncated.telemetrySource.truncated, true);
+  assert.ok(truncated.telemetrySource.truncatedPaths.length > 0, 'the truncated file must be named');
+
+  // The same log read whole must report completeness honestly.
+  const whole = telemetry.getTelemetrySummary(dir, { window: 'lifetime' });
+  assert.equal(whole.window.window, 'lifetime');
+  assert.equal(whole.window.complete, true);
+  assert.equal(whole.window.truncated, false);
+});
+
+test('an oversized telemetry log is never labelled complete lifetime', (t) => {
+  const dir = makeTempDir();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  writeOversizedJsonl(path.join(dir, 'telemetry-pings.jsonl'), {
+    receivedAt: new Date().toISOString(),
+    eventType: 'cta_click',
+    clientType: 'web',
+  });
+
+  const telemetry = require('../scripts/telemetry-analytics');
+  // Unbounded window: readTextTail()'s hard ceiling still tail-caps this read.
+  const summary = telemetry.getTelemetrySummary(dir, { window: 'lifetime' });
+  assert.equal(summary.window.window, 'lifetime');
+  assert.equal(
+    summary.window.complete,
+    false,
+    'a >64 MiB log is read as a tail, so lifetime counts are partial'
+  );
+  assert.equal(summary.window.truncated, true);
+});
