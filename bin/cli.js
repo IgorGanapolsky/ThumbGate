@@ -3495,7 +3495,7 @@ const SUBCOMMAND_HELP = {
   compact:       'Usage: npx thumbgate compact\n\nCompact the lesson database and reclaim disk space.',
   'context-packs': 'Usage: npx thumbgate context-packs\n\nGenerate context packs from top failure patterns.',
   suggest:       'Usage: npx thumbgate suggest <gate-id>\n\nSuggest fixes for a specific gate based on lesson history.',
-  inventory:     'Usage: npx thumbgate inventory [--json] [--days=N] [--data-dir=path]\n\nRead-only inventory of agent activity in this repo\'s ThumbGate store: agents seen, tool calls by tool, allow/deny counts, deny reasons per gate, top gates, per-day activity, and the false-deny rate.\n\nEvery source reports its own status (ok / empty / missing) so an uninstrumented store never looks like a quiet one. falseDenyRate is null with a stated reason whenever a real denominator was not observed; falseDenyNumerator and falseDenyDenominator are always emitted raw.',
+  inventory:     'Usage: npx thumbgate inventory [--json] [--days=N] [--data-dir=path] [--max-bytes=N]\n\nRead-only inventory of agent activity in this repo\'s ThumbGate store: agents seen, tool calls by tool, allow/deny counts, deny reasons per gate, top gates, per-day activity, and the false-deny rate.\n\nEvery source reports its own status (ok / empty / missing) so an uninstrumented store never looks like a quiet one. falseDenyRate is null with a stated reason whenever a real denominator was not observed; falseDenyNumerator and falseDenyDenominator are always emitted raw.\n\nEach source is read as a bounded tail (default 8 MiB, --max-bytes to change) so a multi-hundred-MB audit log is never loaded whole. If the tail did not reach back to the start of the window, windowFullyCovered is false and the text output says so.',
   cost:          'Usage: npx thumbgate cost [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nShow cumulative $ and tokens saved by PreToolUse gate blocks. Reads ~/.thumbgate/gate-stats.json.',
   savings:       'Usage: npx thumbgate savings [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nAlias for `thumbgate cost`.',
   'setup-vertex': 'Usage: npx thumbgate setup-vertex [--dry-run]\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. With --dry-run, only detect the active account/project and print the planned changes. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
@@ -4415,6 +4415,7 @@ switch (COMMAND) {
     const inventory = buildInventory({
       dataDir: inventoryArgs['data-dir'] || resolveFeedbackDir(),
       windowDays: inventoryArgs.days,
+      maxBytes: inventoryArgs['max-bytes'] ? Number(inventoryArgs['max-bytes']) : undefined,
     });
     if (inventoryArgs.json) {
       console.log(JSON.stringify(inventory, null, 2));

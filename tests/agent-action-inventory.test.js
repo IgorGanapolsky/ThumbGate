@@ -292,16 +292,16 @@ test('a source of only malformed lines reads as empty-of-data, not missing', (t)
 // falseDenyRate — computed
 // ---------------------------------------------------------------------------
 
-test('falseDenyRate is computed when denies and later clears both exist', (t) => {
+test('falseDenyRate is computed when denies and later reversals both exist', (t) => {
   const dir = makeDataDir(t);
 
   writeJsonl(dir, AUDIT, [
-    // Four denies across two gates...
+    // Four denies across three gates...
     auditRecord({ timestamp: hoursAgo(10), decision: 'deny', gateId: 'pr_threads_checked', message: 'PR threads unchecked' }),
     auditRecord({ timestamp: hoursAgo(9), decision: 'deny', gateId: 'pr_threads_checked', message: 'PR threads unchecked' }),
     auditRecord({ timestamp: hoursAgo(8), decision: 'deny', gateId: 'force-push', message: 'Force push blocked' }),
     auditRecord({ timestamp: hoursAgo(7), decision: 'deny', gateId: 'workflow-sentinel', message: 'learned policy deny' }),
-    // ...two of which are later cleared.
+    // ...two of which are genuinely reversed, by the two distinct receipt shapes.
     auditRecord({
       timestamp: hoursAgo(6),
       toolName: 'gate-override',
@@ -311,10 +311,11 @@ test('falseDenyRate is computed when denies and later clears both exist', (t) =>
       source: 'override-audit',
     }),
     auditRecord({
-      timestamp: hoursAgo(2),
-      decision: 'approve',
-      gateId: 'workflow-sentinel',
-      message: 'approved after review',
+      timestamp: hoursAgo(5),
+      decision: 'allow',
+      gateId: 'force-push',
+      message: 'Single-use admin override consumed for sha256:abc.',
+      source: 'gates-engine-admin-override',
     }),
   ]);
 
@@ -327,6 +328,59 @@ test('falseDenyRate is computed when denies and later clears both exist', (t) =>
   assert.equal(inv.falseDenyRate, 0.5);
   assert.equal(inv.falseDenyReason, null);
   assert.match(inv.falseDenyMethod, /1:1 pairing/);
+  assert.equal(inv.overrideCount, 2);
+});
+
+test("decision 'approve' is a block, never a reversal", (t) => {
+  const dir = makeDataDir(t);
+
+  writeJsonl(dir, AUDIT, [
+    auditRecord({ timestamp: hoursAgo(9), decision: 'deny', gateId: 'workflow-sentinel', message: 'learned policy deny' }),
+    auditRecord({ timestamp: hoursAgo(8), decision: 'deny', gateId: 'workflow-sentinel', message: 'learned policy deny' }),
+    // gates-engine writes this with requiresApproval:true and formatOutput renders
+    // it to the harness as permissionDecision 'deny'. It is a HELD action.
+    auditRecord({
+      timestamp: hoursAgo(2),
+      decision: 'approve',
+      gateId: 'workflow-sentinel',
+      message: 'APPROVAL REQUIRED',
+      severity: 'critical',
+    }),
+  ]);
+
+  const inv = buildInventory({ dataDir: dir, windowDays: 7 });
+
+  // The approval hold must not reverse either deny.
+  assert.equal(inv.falseDenyNumerator, 0);
+  assert.equal(inv.falseDenyClearEvents, 0);
+  assert.equal(inv.falseDenyDenominator, 2);
+  assert.equal(inv.falseDenyRate, 0);
+  assert.equal(inv.overrideCount, 0);
+
+  // It is surfaced on its own, and never silently folded into allow or deny.
+  assert.equal(inv.approvalRequiredCount, 1);
+  assert.equal(inv.allowCount, 0);
+  assert.equal(inv.denyCount, 2);
+  assert.equal(inv.toolCalls.Bash.approvalRequired, 1);
+
+  const sentinel = inv.topGates.find((g) => g.gate === 'workflow-sentinel');
+  assert.equal(sentinel.approvalRequired, 1);
+  assert.equal(sentinel.overrides, 0);
+
+  // And the method string states the exclusion, so the choice is auditable.
+  assert.match(inv.falseDenyMethod, /"approve" is deliberately NOT counted/);
+});
+
+test("a plain 'allow' without the admin-override source is not a reversal", () => {
+  const records = [
+    { timestamp: hoursAgo(5), decision: 'deny', gateId: 'force-push' },
+    // Ordinary allow — same gateId, but no admin-override source.
+    { timestamp: hoursAgo(4), decision: 'allow', gateId: 'force-push', source: 'gates-engine' },
+  ];
+  const { numerator, denominator, clearEvents } = pairDeniesWithClears(records);
+  assert.equal(denominator, 1);
+  assert.equal(clearEvents, 0);
+  assert.equal(numerator, 0);
 });
 
 test('one clear never reverses more than one deny of the same gate', () => {
@@ -423,6 +477,75 @@ test('null-rate text output says NOT MEASURED rather than printing 0%', (t) => {
   assert.match(text, /null — NOT MEASURED/);
   assert.doesNotMatch(text, /^\s+0\.00%$/m);
   assert.match(text, /MISSING \(file not found\)/);
+});
+
+// ---------------------------------------------------------------------------
+// Bounded tail reads
+// ---------------------------------------------------------------------------
+
+test('a source larger than maxBytes is read as a tail and reports truncated', (t) => {
+  const dir = makeDataDir(t);
+  // ~200 records; each is well over 100 bytes, so a 4 KiB window keeps only a few.
+  const many = [];
+  for (let i = 0; i < 200; i++) {
+    many.push(auditRecord({ timestamp: hoursAgo(3), decision: 'allow', message: `filler-${i}` }));
+  }
+  writeJsonl(dir, AUDIT, many);
+
+  const source = readJsonlSource(path.join(dir, AUDIT), { maxBytes: 4096 });
+  assert.equal(source.status, SOURCE_STATUS.OK);
+  assert.equal(source.truncated, true);
+  assert.ok(source.bytesRead <= 4096, `bytesRead ${source.bytesRead} should be <= 4096`);
+  assert.ok(source.fileBytes > source.bytesRead);
+  assert.ok(source.records.length > 0 && source.records.length < 200);
+  // The partial first record must have been dropped, so nothing is malformed.
+  assert.equal(source.malformed, 0);
+});
+
+test('an untruncated source reports truncated:false and full byte counts', (t) => {
+  const dir = makeDataDir(t);
+  writeJsonl(dir, AUDIT, [auditRecord({ decision: 'allow' })]);
+
+  const source = readJsonlSource(path.join(dir, AUDIT));
+  assert.equal(source.truncated, false);
+  assert.equal(source.bytesRead, source.fileBytes);
+  assert.ok(source.fileBytes > 0);
+});
+
+test('a truncated window that misses the requested window is flagged, not hidden', (t) => {
+  const dir = makeDataDir(t);
+  const many = [];
+  for (let i = 0; i < 200; i++) {
+    many.push(auditRecord({ timestamp: hoursAgo(3), decision: 'allow', message: `filler-${i}` }));
+  }
+  writeJsonl(dir, AUDIT, many);
+
+  const inv = buildInventory({ dataDir: dir, windowDays: 7, maxBytes: 4096 });
+
+  assert.equal(inv.sourceDetail.auditTrail.truncated, true);
+  // Every surviving record is 3h old, far newer than the 7-day `since`, so the
+  // tail demonstrably did not reach the start of the window.
+  assert.equal(inv.sourceDetail.auditTrail.coversWindow, false);
+  assert.equal(inv.windowFullyCovered, false);
+  assert.match(renderInventoryText(inv), /TRUNCATED: read the last/);
+  assert.match(renderInventoryText(inv), /PARTIAL view/);
+});
+
+test('a fully-read source reports windowFullyCovered true', (t) => {
+  const dir = makeDataDir(t);
+  writeJsonl(dir, AUDIT, [auditRecord({ decision: 'allow' })]);
+
+  const inv = buildInventory({ dataDir: dir, windowDays: 7 });
+  assert.equal(inv.windowFullyCovered, true);
+  assert.equal(inv.sourceDetail.auditTrail.truncated, false);
+  assert.doesNotMatch(renderInventoryText(inv), /PARTIAL view/);
+});
+
+test('windowFullyCovered is null when the audit trail was never readable', (t) => {
+  const dir = makeDataDir(t);
+  const inv = buildInventory({ dataDir: dir, windowDays: 7 });
+  assert.equal(inv.sources.auditTrail, SOURCE_STATUS.MISSING);
+  assert.equal(inv.windowFullyCovered, null);
 });
 
 // ---------------------------------------------------------------------------

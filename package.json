@@ -113,6 +113,7 @@
     "scripts/activation-tracker.js",
     "scripts/adaptive-governance-arena.js",
     "scripts/admin-override.js",
+    "scripts/agent-action-inventory.js",
     "scripts/agent-audit-trace.js",
     "scripts/agent-design-governance.js",
     "scripts/agent-egress-policy.js",

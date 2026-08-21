@@ -46,14 +46,40 @@ const DEFAULT_WINDOW_DAYS = 30;
 const DENY_DECISION = 'deny';
 
 /**
- * Decisions in audit-trail.jsonl that REVERSE a block.
- * - 'override' is written by scripts/override-audit.js (satisfy_gate, CLI
- *   satisfyCondition, break-glass) and always carries the gateId it cleared.
- * - 'approve' is written when a protected action is approved rather than blocked.
- * A deny paired with one of these is the closest thing the store has to a
- * "this block should not have fired" receipt.
+ * WHAT COUNTS AS A REVERSAL — and the trap that makes this subtle.
+ *
+ * Only two record shapes in audit-trail.jsonl mean "a block was actually cleared":
+ *
+ *   1. decision === 'override'
+ *      Written by scripts/override-audit.js for satisfy_gate, the CLI
+ *      satisfyCondition path, and break-glass. Always carries the cleared gateId.
+ *
+ *   2. decision === 'allow' AND source === 'gates-engine-admin-override'
+ *      Written by gates-engine.js when a single-use admin override is CONSUMED
+ *      against a blocking gate. The decision field reads 'allow' — the reversal
+ *      is identifiable only by the source.
+ *
+ * `decision: 'approve'` is NOT a reversal, despite the name. gates-engine.js
+ * emits it when a gate's action is 'approve' and the action needs human
+ * sign-off: it ships alongside `requiresApproval: true`, formatOutput renders it
+ * to the harness as `permissionDecision: 'deny'` with "APPROVAL REQUIRED",
+ * isBlockingDecision() groups it with 'deny', and recordStat files it under
+ * `pendingApproval`. It is a HELD action — another kind of block.
+ *
+ * Counting 'approve' as a clearance inflates the false-deny numerator with
+ * records that are themselves blocks. It is reported separately as
+ * `approvalRequiredCount` and never enters the numerator.
  */
-const CLEARING_DECISIONS = new Set(['override', 'approve']);
+const CLEARING_DECISION = 'override';
+const ADMIN_OVERRIDE_SOURCE = 'gates-engine-admin-override';
+const APPROVAL_REQUIRED_DECISION = 'approve';
+
+/** True only for records that genuinely reversed a block. */
+function isClearingRecord(record) {
+  if (!record) return false;
+  if (record.decision === CLEARING_DECISION) return true;
+  return record.decision === 'allow' && record.source === ADMIN_OVERRIDE_SOURCE;
+}
 
 const SOURCE_STATUS = Object.freeze({
   OK: 'ok',
@@ -81,16 +107,45 @@ function normalizeWindowDays(input) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Default tail window per source. Matches scripts/override-audit.js, which
+ * reads the tail rather than the whole file because audit logs reach hundreds
+ * of MB and a report must not allocate the entire history to summarise it.
+ */
+const DEFAULT_MAX_BYTES = 8 * 1024 * 1024;
+
+/**
  * Read one JSONL store and report WHY it produced the records it did.
  *
- * @returns {{ status: string, path: string, records: object[], lines: number, malformed: number }}
+ * Reads at most `maxBytes` from the END of the file, following the
+ * scripts/override-audit.js convention: allocate `Math.min(size, maxBytes)`,
+ * seek to `size - readBytes`, then discard the partial first line, since a
+ * byte-offset read almost always lands mid-record.
+ *
+ * When the file was larger than the window, `truncated` is true and
+ * `records`/`lines` describe only the tail that was read. Callers MUST surface
+ * that — a truncated `recordsTotal` presented as a whole-file count is exactly
+ * the kind of silently-partial number this module exists to avoid.
+ *
+ * @returns {{ status: string, path: string, records: object[], lines: number,
+ *             malformed: number, truncated: boolean, bytesRead: number, fileBytes: number }}
  */
-function readJsonlSource(filePath) {
-  const base = { path: filePath, records: [], lines: 0, malformed: 0 };
+function readJsonlSource(filePath, options = {}) {
+  const maxBytes = Number.isFinite(options.maxBytes) && options.maxBytes > 0
+    ? options.maxBytes
+    : DEFAULT_MAX_BYTES;
+  const base = {
+    path: filePath,
+    records: [],
+    lines: 0,
+    malformed: 0,
+    truncated: false,
+    bytesRead: 0,
+    fileBytes: 0,
+  };
 
-  let raw;
+  let size;
   try {
-    raw = fs.readFileSync(filePath, 'utf-8');
+    ({ size } = fs.statSync(filePath));
   } catch (err) {
     // ENOENT is "never written". Anything else (EACCES, EISDIR) is a real
     // read failure and must not be flattened into "missing" — an operator
@@ -103,8 +158,39 @@ function readJsonlSource(filePath) {
     };
   }
 
-  const trimmed = raw.trim();
-  if (!trimmed) return { ...base, status: SOURCE_STATUS.EMPTY };
+  if (size === 0) return { ...base, status: SOURCE_STATUS.EMPTY };
+
+  const readBytes = Math.min(size, maxBytes);
+  const truncated = readBytes < size;
+  let text = '';
+  let fd;
+  try {
+    const buf = Buffer.alloc(readBytes);
+    fd = fs.openSync(filePath, 'r');
+    fs.readSync(fd, buf, 0, readBytes, size - readBytes);
+    text = buf.toString('utf8');
+    if (truncated) {
+      // Drop the partial first record left by the byte-offset seek.
+      const nl = text.indexOf('\n');
+      text = nl === -1 ? '' : text.slice(nl + 1);
+    }
+  } catch (err) {
+    return {
+      ...base,
+      fileBytes: size,
+      status: SOURCE_STATUS.UNREADABLE,
+      error: String(err && err.message ? err.message : err),
+    };
+  } finally {
+    if (fd !== undefined) {
+      try { fs.closeSync(fd); } catch { /* already closed */ }
+    }
+  }
+
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return { ...base, status: SOURCE_STATUS.EMPTY, truncated, bytesRead: readBytes, fileBytes: size };
+  }
 
   const lines = trimmed.split('\n');
   const records = [];
@@ -116,7 +202,7 @@ function readJsonlSource(filePath) {
       if (parsed && typeof parsed === 'object') records.push(parsed);
       else malformed += 1;
     } catch {
-      malformed += 1;
+      malformed += 1; // a corrupt line must not abort the scan
     }
   }
 
@@ -127,7 +213,30 @@ function readJsonlSource(filePath) {
     records,
     lines: lines.length,
     malformed,
+    truncated,
+    bytesRead: readBytes,
+    fileBytes: size,
   };
+}
+
+/**
+ * Did the tail window actually cover the whole requested window?
+ *
+ * If the file was truncated AND its oldest surviving record is newer than
+ * `since`, then records inside the window were dropped and every count derived
+ * from this source is a partial view. That must be reported, not assumed away.
+ */
+function coversWindow(source, sinceMs) {
+  if (source.status !== SOURCE_STATUS.OK) return null;
+  if (!source.truncated) return true;
+  let oldest = null;
+  for (const r of source.records) {
+    const ts = timestampMs(r);
+    if (ts === null) continue;
+    if (oldest === null || ts < oldest) oldest = ts;
+  }
+  if (oldest === null) return false;
+  return oldest <= sinceMs;
 }
 
 function timestampMs(record, field = 'timestamp') {
@@ -182,8 +291,8 @@ function pairDeniesWithClears(records) {
       if (!gateId) continue; // an unattributed deny can never be paired
       if (!denyStack.has(gateId)) denyStack.set(gateId, []);
       denyStack.get(gateId).push({ ts, record: r });
-    } else if (CLEARING_DECISIONS.has(r.decision) && gateId) {
-      clearEvents.push({ ts, gateId, decision: r.decision });
+    } else if (isClearingRecord(r) && gateId) {
+      clearEvents.push({ ts, gateId, decision: r.decision, source: r.source || null });
     }
   }
 
@@ -217,12 +326,15 @@ function buildToolCalls(records) {
   const byTool = {};
   for (const r of records) {
     const tool = (typeof r.toolName === 'string' && r.toolName) || 'unknown';
-    if (!byTool[tool]) byTool[tool] = { total: 0, allow: 0, deny: 0, warn: 0, other: 0 };
+    if (!byTool[tool]) {
+      byTool[tool] = { total: 0, allow: 0, deny: 0, warn: 0, approvalRequired: 0, other: 0 };
+    }
     const bucket = byTool[tool];
     bucket.total += 1;
-    if (r.decision === 'allow') bucket.allow += 1;
+    if (r.decision === APPROVAL_REQUIRED_DECISION) bucket.approvalRequired += 1;
     else if (r.decision === DENY_DECISION) bucket.deny += 1;
     else if (r.decision === 'warn') bucket.warn += 1;
+    else if (r.decision === 'allow') bucket.allow += 1;
     else bucket.other += 1;
   }
   return byTool;
@@ -256,12 +368,20 @@ function buildTopGates(records, limit = 5) {
   for (const r of records) {
     if (!r.gateId) continue;
     if (!byGate[r.gateId]) {
-      byGate[r.gateId] = { gate: r.gateId, denies: 0, warns: 0, overrides: 0, other: 0 };
+      byGate[r.gateId] = {
+        gate: r.gateId,
+        denies: 0,
+        warns: 0,
+        approvalRequired: 0,
+        overrides: 0,
+        other: 0,
+      };
     }
     const bucket = byGate[r.gateId];
     if (r.decision === DENY_DECISION) bucket.denies += 1;
     else if (r.decision === 'warn') bucket.warns += 1;
-    else if (CLEARING_DECISIONS.has(r.decision)) bucket.overrides += 1;
+    else if (r.decision === APPROVAL_REQUIRED_DECISION) bucket.approvalRequired += 1;
+    else if (isClearingRecord(r)) bucket.overrides += 1;
     else bucket.other += 1;
   }
   return Object.values(byGate)
@@ -341,13 +461,19 @@ function buildAgents(kpiRecords) {
 // Report assembly
 // ---------------------------------------------------------------------------
 
-function sourceDetail(source, inWindow) {
+function sourceDetail(source, inWindow, sinceMs) {
   const detail = {
     status: source.status,
     path: source.path,
+    // NOTE: when `truncated` is true this counts only the records inside the
+    // tail window that was read, never the whole file.
     recordsTotal: source.records.length,
     recordsInWindow: source.status === SOURCE_STATUS.OK ? inWindow : null,
     malformedLines: source.malformed,
+    truncated: Boolean(source.truncated),
+    bytesRead: source.bytesRead || 0,
+    fileBytes: source.fileBytes || 0,
+    coversWindow: coversWindow(source, sinceMs),
   };
   if (source.error) detail.error = source.error;
   return detail;
@@ -426,7 +552,7 @@ function computeFalseDeny(auditSource, auditInWindow, windowDays) {
   }
 
   const { numerator, denominator, clearEvents } = pairDeniesWithClears(auditInWindow);
-  const method = `1:1 pairing — each ${[...CLEARING_DECISIONS].join('/')} record in ${AUDIT_LOG_FILENAME} is matched to the most recent unpaired preceding deny of the SAME gateId. One receipt clears at most one block, so this is a lower bound on reversals, never an inflated one.`;
+  const method = `1:1 pairing — each reversal receipt in ${AUDIT_LOG_FILENAME} is matched to the most recent unpaired preceding deny of the SAME gateId. A reversal receipt is decision "${CLEARING_DECISION}", or decision "allow" with source "${ADMIN_OVERRIDE_SOURCE}" (a consumed single-use admin override). Decision "${APPROVAL_REQUIRED_DECISION}" is deliberately NOT counted: gates-engine emits it with requiresApproval:true and renders it to the harness as permissionDecision "deny", so it is itself a block, not a clearance. One receipt clears at most one block, so the numerator is a lower bound on reversals, never an inflated one.`;
 
   if (denominator === 0) {
     return {
@@ -478,9 +604,10 @@ function buildInventory(opts = {}) {
   const nowMs = Date.now();
   const sinceMs = nowMs - windowDays * 24 * 60 * 60 * 1000;
 
-  const auditSource = readJsonlSource(path.join(dataDir, AUDIT_LOG_FILENAME));
-  const gateSource = readJsonlSource(path.join(dataDir, GATE_EVENTS_LOG_FILENAME));
-  const kpiSource = readJsonlSource(path.join(dataDir, KPI_LOG_FILENAME));
+  const readOpts = { maxBytes: opts.maxBytes };
+  const auditSource = readJsonlSource(path.join(dataDir, AUDIT_LOG_FILENAME), readOpts);
+  const gateSource = readJsonlSource(path.join(dataDir, GATE_EVENTS_LOG_FILENAME), readOpts);
+  const kpiSource = readJsonlSource(path.join(dataDir, KPI_LOG_FILENAME), readOpts);
 
   const auditInWindow = auditSource.records.filter((r) => withinWindow(r, sinceMs));
   const gateInWindow = gateSource.records.filter((r) => withinWindow(r, sinceMs));
@@ -491,12 +618,18 @@ function buildInventory(opts = {}) {
   let allowCount = 0;
   let denyCount = 0;
   let warnCount = 0;
+  let approvalRequiredCount = 0;
+  let overrideCount = 0;
   let otherDecisionCount = 0;
   for (const r of auditInWindow) {
-    if (r.decision === 'allow') allowCount += 1;
+    if (r.decision === APPROVAL_REQUIRED_DECISION) approvalRequiredCount += 1;
     else if (r.decision === DENY_DECISION) denyCount += 1;
     else if (r.decision === 'warn') warnCount += 1;
+    else if (r.decision === 'allow') allowCount += 1;
     else otherDecisionCount += 1;
+    // Counted independently of the buckets above: a consumed admin override is
+    // recorded as decision 'allow', so it is both an allow and a reversal.
+    if (isClearingRecord(r)) overrideCount += 1;
   }
 
   const agents = buildAgents(kpiInWindow);
@@ -515,10 +648,14 @@ function buildInventory(opts = {}) {
     // Per-source detail so "0 calls" is always traceable to a file that exists,
     // parsed, and simply had nothing inside the window.
     sourceDetail: {
-      auditTrail: sourceDetail(auditSource, auditInWindow.length),
-      gateEvents: sourceDetail(gateSource, gateInWindow.length),
-      toolKpi: sourceDetail(kpiSource, kpiInWindow.length),
+      auditTrail: sourceDetail(auditSource, auditInWindow.length, sinceMs),
+      gateEvents: sourceDetail(gateSource, gateInWindow.length, sinceMs),
+      toolKpi: sourceDetail(kpiSource, kpiInWindow.length, sinceMs),
     },
+    // false when a source's tail window did not reach back to `since`, i.e.
+    // records inside the requested window were dropped and every count below is
+    // a partial view. null when the audit trail was not readable at all.
+    windowFullyCovered: coversWindow(auditSource, sinceMs),
 
     agents,
     agentAttribution: buildAgentAttribution(kpiSource, agents),
@@ -527,6 +664,12 @@ function buildInventory(opts = {}) {
     allowCount,
     denyCount,
     warnCount,
+    // Also a block: gates-engine renders 'approve' to the harness as
+    // permissionDecision 'deny' with "APPROVAL REQUIRED". Reported on its own
+    // rather than folded into denyCount, because the false-deny denominator is
+    // defined strictly as decision === 'deny' and must not silently widen.
+    approvalRequiredCount,
+    overrideCount,
     otherDecisionCount,
 
     denyReasonsByGate: buildDenyReasonsByGate(auditInWindow),
@@ -573,6 +716,15 @@ function renderInventoryText(inv) {
       ? `${detail.recordsInWindow} of ${detail.recordsTotal} record(s) in window`
       : detail.path;
     lines.push(`  ${name.padEnd(11)} ${STATUS_LABEL[status] || status} — ${suffix}`);
+    if (detail.truncated) {
+      lines.push(`              TRUNCATED: read the last ${detail.bytesRead} of ${detail.fileBytes} bytes; counts above cover only that tail`);
+    }
+  }
+  if (inv.windowFullyCovered === false) {
+    lines.push('');
+    lines.push('  WARNING: the audit-trail tail window did not reach back to the start of the');
+    lines.push('  requested window. Every count below is a PARTIAL view. Raise --days scope or');
+    lines.push('  pass a larger maxBytes to cover it fully.');
   }
   lines.push('');
 
@@ -581,6 +733,8 @@ function renderInventoryText(inv) {
     lines.push(`  not measured — audit trail is ${inv.sources.auditTrail}`);
   } else {
     lines.push(`  allow ${inv.allowCount}   deny ${inv.denyCount}   warn ${inv.warnCount}   other ${inv.otherDecisionCount}`);
+    lines.push(`  approval-required ${inv.approvalRequiredCount} (also blocks; excluded from the false-deny denominator)`);
+    lines.push(`  reversals (override / consumed admin override): ${inv.overrideCount}`);
     const corroborating = inv.gateEventDenies === null
       ? `not measured (gate-events source: ${inv.sources.gateEvents})`
       : inv.gateEventDenies;
@@ -619,7 +773,7 @@ function renderInventoryText(inv) {
     lines.push(`  none in window (audit trail: ${inv.sources.auditTrail})`);
   } else {
     for (const g of inv.topGates) {
-      lines.push(`  ${g.gate.padEnd(34)} deny ${g.denies}  warn ${g.warns}  override ${g.overrides}`);
+      lines.push(`  ${g.gate.padEnd(34)} deny ${g.denies}  warn ${g.warns}  approval ${g.approvalRequired}  reversed ${g.overrides}`);
     }
   }
   lines.push('');
@@ -667,8 +821,13 @@ module.exports = {
   buildDenyReasonsByGate,
   buildTopGates,
   buildDaily,
+  coversWindow,
+  isClearingRecord,
   SOURCE_STATUS,
-  CLEARING_DECISIONS,
+  CLEARING_DECISION,
+  ADMIN_OVERRIDE_SOURCE,
+  APPROVAL_REQUIRED_DECISION,
+  DEFAULT_MAX_BYTES,
   KPI_LOG_FILENAME,
   MIN_WINDOW_DAYS,
   MAX_WINDOW_DAYS,
@@ -691,10 +850,12 @@ function runCli(argv) {
   const json = flag('json') !== undefined;
   const days = flag('days');
   const dataDir = flag('data-dir');
+  const maxBytes = flag('max-bytes');
 
   const inventory = buildInventory({
     dataDir: typeof dataDir === 'string' ? dataDir : undefined,
     windowDays: typeof days === 'string' ? days : undefined,
+    maxBytes: typeof maxBytes === 'string' ? Number(maxBytes) : undefined,
   });
 
   if (json) console.log(JSON.stringify(inventory, null, 2));
