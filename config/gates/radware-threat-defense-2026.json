@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "harness": "radware-threat-defense-2026",
+  "version": "1.0.0",
+  "description": "Deterministic pre-action defense gates against ShadowLeak data exfiltration, ZombieAgent indirect prompt injection hijacking, and 128% application-layer token-drain bursts derived from Radware Threat Report 2026 (RWI-6283).",
+  "gates": [
+    {
+      "id": "shadowleak-exfiltration-firewall",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "critical",
+      "description": "Blocks AI agent data exfiltration via secondary tool calls, hidden markdown images, tracking pixels, or URL parameter stuffing carrying sensitive context.",
+      "toolNames": ["Bash", "Edit", "Write", "Http", "Browser", "Send"],
+      "patterns": [
+        "!\\[.*?\\]\\(https?:\\/\\/.*?\\?(?:data|token|key|cookie|leak|mem)=.*?\\)",
+        "curl\\s+.*?(?:-d|--data|-F).*?(?:token|secret|password|credential|env)",
+        "(?:fetch|axios|request)\\s*\\(\\s*[`'\"]https?:\\/\\/.*?(?:exfil|leak|webhook|collect)"
+      ],
+      "message": "Action blocked: ShadowLeak data exfiltration vector detected. Secondary egress channel prohibited."
+    },
+    {
+      "id": "zombieagent-loop-interdiction",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "critical",
+      "description": "Interdicts Indirect Prompt Injection (IPI) vectors embedded in external web/email/ticket payloads attempting to hijack agent control loops.",
+      "toolNames": ["Bash", "Edit", "Write", "Eval", "Dispatch"],
+      "patterns": [
+        "(?i)\\b(?:system\\s*override|act\\s*as\\s*zombie|unrestricted\\s*agent|drop\\s*prior\\s*instructions|ignore\\s*all\\s*guardrails)\\b",
+        "(?i)\\b(?:execute\\s*without\\s*approval|silently\\s*forward\\s*to|covert\\s*execution)\\b"
+      ],
+      "message": "Action blocked: ZombieAgent indirect prompt injection hijacking attempt detected. Execution loop halted."
+    },
+    {
+      "id": "algorithmic-token-drain-circuit-breaker",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "high",
+      "description": "Enforces sub-minute rate capping and loop convergence checks to block volumetric bot-driven token depletion and runaway billing bursts.",
+      "toolNames": ["All"],
+      "maxCallsPerMinute": 60,
+      "maxConsecutiveFailures": 3,
+      "message": "Action blocked: Algorithmic token-drain burst detected. Circuit breaker open."
+    }
+  ]
+}

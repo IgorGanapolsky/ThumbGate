@@ -262,7 +262,6 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 494 -> 495 (2026-08-20): scripts/hidden-entry-points.js (+1 measured npm pack)
   // 495 -> 496 (2026-08-20): scripts/git-at-scale.js (+1 measured npm pack)
   // 496 -> 497 (2026-08-20): config/gates/actor-critic-audit.json (+1 measured npm pack)
-  // 497 -> 499 (2026-08-20): config/gates/hermes-platform.json + config/gates/hermes-sync.json
   // 499 -> 506 (2026-08-21): Future AGI adapter, evaluator, CLI bridge, guardrails gate, and learn article (+7)
   // 506 -> 507 (2026-08-21): Five Walls governance gate, index-and-leaf engine, attribution summary, and learn article (+1)
   // 507 -> 508 (2026-08-21): scripts/agent-action-inventory.js, the `thumbgate inventory` module (+1 measured npm pack).
@@ -270,7 +269,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 508 -> 510 (2026-08-21): scripts/simatree-data-governance.js + the
   //   simatree-data-governance.json gate manifest (+2 measured npm pack).
   //   Lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 510;
+  // 510 -> 512 (2026-08-21): config/gates/radware-threat-defense-2026.json + scripts/radware-threat-defense.js (+2)
+  const CEILING = 512;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

@@ -201,7 +201,6 @@ const path = require('node:path');
 // 494 -> 495 (2026-08-20): scripts/hidden-entry-points.js (+1 measured npm pack)
 // 495 -> 496 (2026-08-20): scripts/git-at-scale.js (+1 measured npm pack)
 // 496 -> 497 (2026-08-20): config/gates/actor-critic-audit.json (+1 measured npm pack)
-// 497 -> 499 (2026-08-20): config/gates/hermes-platform.json + config/gates/hermes-sync.json
 // 499 -> 506 (2026-08-21): Future AGI adapter, evaluator, CLI bridge, guardrails gate, and learn article (+7)
 // 506 -> 507 (2026-08-21): Five Walls governance gate, index-and-leaf engine, attribution summary, and learn article (+1)
 // 507 -> 508 (2026-08-21): scripts/agent-action-inventory.js, the `thumbgate inventory` module (+1 measured npm pack).
@@ -210,7 +209,8 @@ const path = require('node:path');
 // 508 -> 510 (2026-08-21): scripts/simatree-data-governance.js + the
 //   simatree-data-governance.json gate manifest (+2 measured npm pack).
 //   Lockstep with package-boundary + public-core-boundary.
-const BASELINE_FILE_COUNT = 510;
+// 510 -> 512 (2026-08-21): config/gates/radware-threat-defense-2026.json + scripts/radware-threat-defense.js (+2)
+const BASELINE_FILE_COUNT = 512;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

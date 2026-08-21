@@ -30,6 +30,7 @@ const HARNESSES = Object.freeze({
   'future-agi-guardrails': path.join(HARNESS_DIR, 'future-agi-guardrails.json'),
   'five-walls-governance': path.join(HARNESS_DIR, 'five-walls-governance.json'),
   'simatree-data-governance': path.join(HARNESS_DIR, 'simatree-data-governance.json'),
+  'radware-threat-defense': path.join(HARNESS_DIR, 'radware-threat-defense-2026.json'),
 });
 
 // ---------------------------------------------------------------------------
@@ -514,9 +515,10 @@ function extractCommandText(toolInput) {
     }
     // Fall back to serialised form
     try { return JSON.stringify(toolInput); } catch { return ''; }
-  }
   return '';
 }
+
+const { evaluateThreat } = require('./radware-threat-defense.js');
 
 module.exports = {
   selectHarness,
@@ -532,6 +534,7 @@ module.exports = {
   buildSolverWorkflowGovernance,
   formatSolverWorkflowGovernance,
   extractCommandText,
+  evaluateThreat,
   HARNESSES,
   DEPLOY_PATTERNS,
   DB_WRITE_PATTERNS,

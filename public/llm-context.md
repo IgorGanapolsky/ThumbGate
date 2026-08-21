@@ -388,3 +388,4 @@ Dedicated landing page at `/agent-manager` documents the mapping in full, includ
 - Case studies: https://thumbgate.ai/case-studies
 - Numbers: https://thumbgate.ai/numbers
 - Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+- Radware 2026 AI Threat Defense (ShadowLeak & ZombieAgent): Deterministic PreToolUse defense against 128% application-layer surge and covert exfiltration (`radware-threat-defense`, `shadowleak`, `zombieagent`).
