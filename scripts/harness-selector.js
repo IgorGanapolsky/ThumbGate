@@ -27,11 +27,22 @@ const HARNESSES = Object.freeze({
   'db-write': path.join(HARNESS_DIR, 'db-write.json'),
   routine: path.join(HARNESS_DIR, 'routine.json'),
   'actor-critic-audit': path.join(HARNESS_DIR, 'actor-critic-audit.json'),
+  'future-agi-guardrails': path.join(HARNESS_DIR, 'future-agi-guardrails.json'),
+  'five-walls-governance': path.join(HARNESS_DIR, 'five-walls-governance.json'),
 });
 
 // ---------------------------------------------------------------------------
 // Detection patterns
 // ---------------------------------------------------------------------------
+
+const FIVE_WALLS_PATTERNS = [
+  /\b(five_walls|five-walls|action_safety|hard_deny|preconditions|index_and_leaf|identity_propagation)\b/i,
+];
+
+const FUTURE_AGI_PATTERNS = [
+  /\b(future-agi|futureagi|agentcc|traceai|self_healing|adversarial_simulation|simulate_agent)\b/i,
+  /\b(prompt_injection|jailbreak|eval_rubric|guardrail_scanner)\b/i,
+];
 
 const ACTOR_CRITIC_PATTERNS = [
   /\b(publish_causal_report|causal_inference|target_trial|target-trial|actor-critic|actor_critic|process_audit)\b/i,
@@ -79,6 +90,24 @@ const CODE_EDIT_TOOL_NAMES = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdi
  * @param {object|string} toolInput - raw tool input object or string
  * @returns {string|null} absolute path to harness JSON, or null
  */
+/**
+ * Full-payload text for pattern scanning. extractCommandText short-circuits on
+ * file_path for Edit/Write, which never carries an injection string — the
+ * content/new_string fields do.
+ *
+ * @param {object|string} toolInput
+ * @returns {string}
+ */
+function extractPayloadText(toolInput) {
+  if (!toolInput) return '';
+  if (typeof toolInput === 'string') return toolInput;
+  try {
+    return JSON.stringify(toolInput);
+  } catch {
+    return extractCommandText(toolInput);
+  }
+}
+
 function selectHarness(toolName, toolInput) {
   // 1. Explicit override
   if (process.env.THUMBGATE_HARNESS) {
@@ -88,8 +117,15 @@ function selectHarness(toolName, toolInput) {
     if (path.isAbsolute(override)) return override;
   }
 
-  // 2. Edit/Write tools always get code-edit harness
+  // 2. Edit/Write tools get the code-edit harness, UNLESS the payload itself
+  //    trips a Future AGI pattern. Returning code-edit unconditionally meant
+  //    the prompt-injection gates declared for Edit/Write were never active
+  //    under automatic selection, since only the selected harness is loaded.
   if (CODE_EDIT_TOOL_NAMES.has(toolName)) {
+    const payloadText = extractPayloadText(toolInput);
+    if (payloadText && FUTURE_AGI_PATTERNS.some((p) => p.test(payloadText))) {
+      return HARNESSES['future-agi-guardrails'];
+    }
     return HARNESSES['code-edit'];
   }
 
@@ -101,6 +137,12 @@ function selectHarness(toolName, toolInput) {
     }
     if (ACTOR_CRITIC_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['actor-critic-audit'];
+    }
+    if (FUTURE_AGI_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['future-agi-guardrails'];
+    }
+    if (FIVE_WALLS_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['five-walls-governance'];
     }
     if (ROUTINE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES.routine;

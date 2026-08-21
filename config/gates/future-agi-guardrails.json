@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "harness": "future-agi-guardrails",
+  "description": "Enforces Future AGI-inspired self-healing guardrails, adversarial simulation checks, and prompt-injection defense at the pre-action tool call boundary.",
+  "gates": [
+    {
+      "id": "future-agi-unmeasured-prompt-injection",
+      "layer": "PreAction",
+      "pattern": "(?:IGNORE ALL PREVIOUS INSTRUCTIONS|SYSTEM OVERRIDE|DAN MODE|JAILBREAK|bypass_safety_checks|eval\\(atob|unfiltered_developer_mode)",
+      "toolNames": ["Bash", "Edit", "Write"],
+      "action": "block",
+      "severity": "critical",
+      "message": "Prompt injection or safety override detected in payload. Action blocked by Future AGI pre-action guardrails."
+    },
+    {
+      "id": "future-agi-failing-simulation-block",
+      "layer": "PreAction",
+      "pattern": "^(?!.*(?:simulation_passed=true|simulationReceipt=approved)).*(?:dispatch_autonomous_agent|deploy_agent_workflow|execute_production_mutation)",
+      "toolNames": ["Bash", "Edit", "Write"],
+      "action": "block",
+      "severity": "high",
+      "message": "Autonomous workflow dispatch requires an approved Future AGI adversarial simulation receipt (simulation_passed=true)."
+    },
+    {
+      "id": "future-agi-ungrounded-hallucination-warning",
+      "layer": "PreAction",
+      "pattern": "(?:unverified_citation|hallucinated_schema_column|zero_confidence_retrieval)",
+      "toolNames": ["Bash", "Edit", "Write"],
+      "action": "warn",
+      "severity": "medium",
+      "message": "Potential ungrounded generation or retrieval discrepancy detected by evaluation rubric. Verify citations before persisting changes."
+    }
+  ]
+}
