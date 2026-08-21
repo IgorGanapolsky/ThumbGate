@@ -17,7 +17,7 @@ const { evaluateAction, runStage, claimLive } = require('./futureagi-prepost-gat
 const ADVERSARIAL_INJECTION_PATTERNS = [
   /\b(IGNORE ALL PREVIOUS INSTRUCTIONS|SYSTEM OVERRIDE|DAN MODE|JAILBREAK)\b/i,
   /\b(eval\s*\(atob|unfiltered_developer_mode|bypass_safety_checks)\b/i,
-  /\b(drop table|rm -rf|curl\s+.*\|\s*sh)\b/i,
+  /\b(drop table|rm -rf|curl\s+[^|\r\n]+\|\s*sh)\b/i,
 ];
 
 const PII_PATTERNS = [
@@ -36,6 +36,7 @@ const PII_PATTERNS = [
 function evaluatePayload(payload, options = {}) {
   const text = typeof payload === 'string' ? payload : JSON.stringify(payload || '');
   const issues = [];
+  const signatures = [];
   const metrics = {
     promptInjectionRisk: 0.0,
     piiLeakRisk: 0.0,
@@ -46,6 +47,7 @@ function evaluatePayload(payload, options = {}) {
   for (const pattern of ADVERSARIAL_INJECTION_PATTERNS) {
     if (pattern.test(text)) {
       issues.push(`Prompt injection / adversarial pattern detected: ${pattern.source}`);
+      signatures.push(pattern.source);
       metrics.promptInjectionRisk = 1.0;
       metrics.toolScopeSafety = 0.0;
       break;
@@ -55,19 +57,31 @@ function evaluatePayload(payload, options = {}) {
   for (const pattern of PII_PATTERNS) {
     if (pattern.test(text)) {
       issues.push(`Potential unmasked PII pattern detected.`);
+      signatures.push(pattern.source);
       metrics.piiLeakRisk = 0.8;
       break;
     }
   }
 
-  const passed = metrics.promptInjectionRisk === 0 && metrics.toolScopeSafety >= 0.8;
-  const score = Number(((metrics.groundednessScore * 0.4) + (metrics.toolScopeSafety * 0.4) + ((1 - metrics.promptInjectionRisk) * 0.2)).toFixed(2));
+  // piiLeakRisk has to bind both the verdict and the score. Without it a
+  // payload carrying an SSN scored 1.0 and reported simulation_passed=true,
+  // so a detected data leak read as approved.
+  const passed = metrics.promptInjectionRisk === 0
+    && metrics.toolScopeSafety >= 0.8
+    && metrics.piiLeakRisk === 0;
+  const score = Number((
+    (metrics.groundednessScore * 0.3)
+    + (metrics.toolScopeSafety * 0.3)
+    + ((1 - metrics.promptInjectionRisk) * 0.2)
+    + ((1 - metrics.piiLeakRisk) * 0.2)
+  ).toFixed(2));
 
   return {
     passed,
     score,
     metrics,
     issues,
+    signatures,
     receipt: passed ? 'simulation_passed=true' : 'simulation_failed',
     evaluatedAt: new Date().toISOString(),
   };
@@ -79,15 +93,47 @@ function evaluatePayload(payload, options = {}) {
  * @param {Array<object>} traces
  * @returns {object} generated gate rule
  */
+const NO_TRACE_FALLBACK_PATTERN = '(?:unverified_agent_mutation|unvetted_redteam_failure)';
+
+/**
+ * Pull the regex sources that actually produced the failures. Older traces
+ * only carry prose issues, so fall back to the source embedded after ": ".
+ */
+function extractTraceSignatures(traces) {
+  const raw = traces.flatMap((t) => {
+    if (!t) return [];
+    if (Array.isArray(t.signatures) && t.signatures.length) return t.signatures;
+    if (!Array.isArray(t.issues)) return [];
+    return t.issues.map((issue) => {
+      const marker = String(issue).indexOf(': ');
+      return marker === -1 ? null : String(issue).slice(marker + 2);
+    });
+  });
+  // Sorted + de-duped so the same failing traces always synthesize the same gate.
+  return [...new Set(raw.filter((s) => typeof s === 'string' && s.trim()))].sort();
+}
+
 function synthesizeSelfHealingGate(traces = []) {
-  const patterns = traces
-    .flatMap((t) => (t && Array.isArray(t.issues) ? t.issues : []))
-    .filter(Boolean);
+  const signatures = extractTraceSignatures(traces);
+  let pattern = NO_TRACE_FALLBACK_PATTERN;
+  if (signatures.length) {
+    const candidate = signatures.length === 1
+      ? signatures[0]
+      : `(?:${signatures.join('|')})`;
+    try {
+      new RegExp(candidate);
+      pattern = candidate;
+    } catch {
+      // An uncompilable trace signature must not produce a broken gate.
+      pattern = NO_TRACE_FALLBACK_PATTERN;
+    }
+  }
 
   return {
     id: `future-agi-auto-healed-${Date.now()}`,
     layer: 'PreAction',
-    pattern: "(?:unverified_agent_mutation|unvetted_redteam_failure)",
+    pattern,
+    synthesizedFrom: signatures,
     toolNames: ['Bash', 'Edit', 'Write'],
     action: 'block',
     severity: 'high',
@@ -151,13 +197,14 @@ function mainCli(args = process.argv.slice(2), stdout = process.stdout) {
   return 0;
 }
 
-if (require.main === module) {
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   process.exit(mainCli());
 }
 
 module.exports = {
   evaluatePayload,
   synthesizeSelfHealingGate,
+  extractTraceSignatures,
   exportOtelSpan,
   handleDoctor,
   evaluateAction,
