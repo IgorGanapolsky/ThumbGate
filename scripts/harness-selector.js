@@ -515,6 +515,7 @@ function extractCommandText(toolInput) {
     }
     // Fall back to serialised form
     try { return JSON.stringify(toolInput); } catch { return ''; }
+  }
   return '';
 }
 
