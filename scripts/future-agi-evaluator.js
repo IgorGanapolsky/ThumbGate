@@ -10,6 +10,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const { createIndexAndLeafEngine } = require('./index-leaf-context.js');
+const { generateAttributionSummary } = require('./session-attribution-summary.js');
 
 const ADVERSARIAL_INJECTION_PATTERNS = [
   /\b(IGNORE ALL PREVIOUS INSTRUCTIONS|SYSTEM OVERRIDE|DAN MODE|JAILBREAK)\b/i,
