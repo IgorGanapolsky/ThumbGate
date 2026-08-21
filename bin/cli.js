@@ -3409,6 +3409,7 @@ function help() {
   console.log('  deepseek-v4-runtime-guardrails Map sparse-attention runtime signals to safety gates');
   console.log('  background-governance Background-agent run report and dispatch risk check');
   console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
+  console.log('  inventory             Agent action inventory: tool calls, gate denies, false-deny rate');
   console.log('  start-api             Start the ThumbGate HTTPS API server');
   console.log('');
 
@@ -3494,6 +3495,7 @@ const SUBCOMMAND_HELP = {
   compact:       'Usage: npx thumbgate compact\n\nCompact the lesson database and reclaim disk space.',
   'context-packs': 'Usage: npx thumbgate context-packs\n\nGenerate context packs from top failure patterns.',
   suggest:       'Usage: npx thumbgate suggest <gate-id>\n\nSuggest fixes for a specific gate based on lesson history.',
+  inventory:     'Usage: npx thumbgate inventory [--json] [--days=N] [--data-dir=path]\n\nRead-only inventory of agent activity in this repo\'s ThumbGate store: agents seen, tool calls by tool, allow/deny counts, deny reasons per gate, top gates, per-day activity, and the false-deny rate.\n\nEvery source reports its own status (ok / empty / missing) so an uninstrumented store never looks like a quiet one. falseDenyRate is null with a stated reason whenever a real denominator was not observed; falseDenyNumerator and falseDenyDenominator are always emitted raw.',
   cost:          'Usage: npx thumbgate cost [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nShow cumulative $ and tokens saved by PreToolUse gate blocks. Reads ~/.thumbgate/gate-stats.json.',
   savings:       'Usage: npx thumbgate savings [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nAlias for `thumbgate cost`.',
   'setup-vertex': 'Usage: npx thumbgate setup-vertex [--dry-run]\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. With --dry-run, only detect the active account/project and print the planned changes. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
@@ -4398,6 +4400,27 @@ switch (COMMAND) {
   case 'analytics': {
     const { run: runAnalytics } = require(path.join(PKG_ROOT, 'scripts', 'analytics-report'));
     runAnalytics();
+    break;
+  }
+  case 'inventory': {
+    // Read-only rollup of what agents did in this repo's ThumbGate store:
+    // tool calls, allow/deny counts, deny reasons per gate, per-day activity,
+    // and the false-deny rate (null when it cannot be honestly computed).
+    const inventoryArgs = parseArgs(process.argv.slice(3));
+    const {
+      buildInventory,
+      renderInventoryText,
+    } = require(path.join(PKG_ROOT, 'scripts', 'agent-action-inventory'));
+    const { resolveFeedbackDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
+    const inventory = buildInventory({
+      dataDir: inventoryArgs['data-dir'] || resolveFeedbackDir(),
+      windowDays: inventoryArgs.days,
+    });
+    if (inventoryArgs.json) {
+      console.log(JSON.stringify(inventory, null, 2));
+    } else {
+      process.stdout.write(renderInventoryText(inventory));
+    }
     break;
   }
   case 'start-api':
