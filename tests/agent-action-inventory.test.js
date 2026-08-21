@@ -562,3 +562,46 @@ test('buildInventory writes nothing to the data directory', (t) => {
 
   assert.deepEqual(after, before);
 });
+
+// ---------------------------------------------------------------------------
+// Packaged command path
+//
+// `bin/cli.js` loads this module with
+//   require(path.join(PKG_ROOT, 'scripts', 'agent-action-inventory'))
+// and package.json#files is an explicit per-file whitelist, not a directory
+// glob. If the module is not enumerated there, `npm pack` omits it and
+// `npx thumbgate inventory` throws MODULE_NOT_FOUND for every npm consumer
+// while still working perfectly in a repo checkout — the exact split that made
+// this defect invisible in CI.
+//
+// The bundle-count ratchets in tests/package-boundary.test.js,
+// tests/public-bundle-ratchet.test.js and tests/public-core-boundary.test.js
+// only assert a TOTAL file count, which stays satisfiable with this specific
+// file missing. This test names the file.
+// ---------------------------------------------------------------------------
+
+test('the inventory module the CLI requires is enumerated in package.json#files', () => {
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')
+  );
+
+  assert.ok(Array.isArray(pkg.files), 'package.json#files must be an explicit array');
+  assert.ok(
+    pkg.files.includes('scripts/agent-action-inventory.js'),
+    'scripts/agent-action-inventory.js missing from package.json#files — '
+      + '`npx thumbgate inventory` would throw MODULE_NOT_FOUND for npm installs'
+  );
+
+  // The CLI resolves the module by that exact path relative to the package
+  // root, so a rename must break this test rather than ship a broken command.
+  assert.ok(
+    fs.existsSync(path.join(__dirname, '..', 'scripts', 'agent-action-inventory.js')),
+    'the whitelisted path must exist on disk'
+  );
+
+  const cli = fs.readFileSync(path.join(__dirname, '..', 'bin', 'cli.js'), 'utf8');
+  assert.ok(
+    cli.includes("'scripts', 'agent-action-inventory'"),
+    'bin/cli.js no longer requires scripts/agent-action-inventory — update this guard with it'
+  );
+});

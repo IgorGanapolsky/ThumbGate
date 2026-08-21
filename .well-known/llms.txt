@@ -62,6 +62,7 @@ npx thumbgate init --agent claude-code
 - Codex Plugin: https://thumbgate.ai/codex-plugin
 - Free local CLI: 2 captures/day, 10 total captures, up to 3 active auto-promoted prevention rules, and local Pre-Action Checks after install (recall and lesson search are Pro-only)
 - Pro: $19/mo or $149/yr — personal enforcement proof, local dashboard, check debugger, DPO export, synced lessons/rules across machines, and review-ready exports
+- Managed AI Agent Workflow Gate: one-time engagement covering one supported workflow — a 60-minute review, one configured local gate, its regression test, and written rollout/rollback proof within two business days. Current terms: https://thumbgate.ai/pricing
 - Enterprise: custom pricing, scoped after intake — shared hosted lesson database, org-wide dashboard, GCP/DFCX guardrails, VPC gating, and white-glove workflow hardening sprints
 
 ## Links
