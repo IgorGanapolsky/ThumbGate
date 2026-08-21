@@ -382,6 +382,12 @@ function syncVersion(opts) {
     'adapters/vlt/.mcp.json',
     'adapters/vlt/VLT.md',
     'docs/PLUGIN_DISTRIBUTION.md',
+    // public/install.html is the buyer-facing install page and pins the package
+    // in its npx snippets and its "canonical runtime install" badge. It was
+    // never in this list, so it sat at 1.27.20 while package.json reached
+    // 1.35.0 — eight releases of drift on the page we send installers to.
+    // tests/llm-surface-consistency.test.js now fails the build if it recurs.
+    'public/install.html',
     'adapters/README.md',
     'adapters/opencode/opencode.json',
     'docs/guides/opencode-integration.md',
