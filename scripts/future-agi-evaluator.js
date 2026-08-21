@@ -97,6 +97,16 @@ function evaluatePayload(payload, options = {}) {
 const NO_TRACE_FALLBACK_PATTERN = '(?:unverified_agent_mutation|unvetted_redteam_failure)';
 
 /**
+ * Explicit code-unit comparator (Sonar S2871). Every element reaching the sort
+ * is already a non-empty string, so this reproduces the default Array#sort
+ * ordering exactly — the gate pattern is unchanged, the intent is now stated.
+ */
+function compareSignatures(a, b) {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+
+/**
  * Pull the regex sources that actually produced the failures. Older traces
  * only carry prose issues, so fall back to the source embedded after ": ".
  */
@@ -111,7 +121,7 @@ function extractTraceSignatures(traces) {
     });
   });
   // Sorted + de-duped so the same failing traces always synthesize the same gate.
-  return [...new Set(raw.filter((s) => typeof s === 'string' && s.trim()))].sort();
+  return [...new Set(raw.filter((s) => typeof s === 'string' && s.trim()))].sort(compareSignatures);
 }
 
 function synthesizeSelfHealingGate(traces = []) {
