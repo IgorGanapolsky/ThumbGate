@@ -201,7 +201,8 @@ const path = require('node:path');
 // 494 -> 495 (2026-08-20): scripts/hidden-entry-points.js (+1 measured npm pack)
 // 495 -> 496 (2026-08-20): scripts/git-at-scale.js (+1 measured npm pack)
 // 496 -> 497 (2026-08-20): config/gates/actor-critic-audit.json (+1 measured npm pack)
-const BASELINE_FILE_COUNT = 497;
+// 497 -> 499 (2026-08-20): config/gates/hermes-platform.json + config/gates/hermes-sync.json
+const BASELINE_FILE_COUNT = 499;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
