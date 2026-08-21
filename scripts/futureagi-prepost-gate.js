@@ -56,7 +56,7 @@ function receiptOf(stage, actionClass, blocked, triggered, live) {
     live: Boolean(live),
     triggered: triggered.map((row) => ({
       name: row.name,
-      score: row.score == null ? null : row.score,
+      score: row?.score ?? null,
       threshold: row.threshold,
       action: row.action,
       message: row.message,
@@ -65,18 +65,27 @@ function receiptOf(stage, actionClass, blocked, triggered, live) {
   };
 }
 
+const UNRELIABLE_REASONS = new Set(['timeout', 'error', 'unknown', 'missing_check']);
+
+function isActionBlocked(action, consequential, reason) {
+  if (action === 'block') return true;
+  if (consequential && action !== 'warn' && action !== 'log') return true;
+  if (consequential && UNRELIABLE_REASONS.has(reason)) return true;
+  return false;
+}
+
 /**
  * Run one pipeline stage.
- * @param {{stage:'pre'|'post', actionClass:string, threshold?:number, checks:Array}}
+ * @param {{stage:'pre'|'post', actionClass:string, threshold?:number, checks:Array}} input
  */
-function runStage(input) {
-  const stage = String(input && input.stage || '').toLowerCase();
+function runStage(input = {}) {
+  const stage = String(input?.stage || '').toLowerCase();
   if (!STAGES.has(stage)) {
     throw new Error('stage must be pre or post');
   }
-  const actionClass = String(input && input.actionClass || '').toLowerCase();
-  const threshold = Number.isFinite(Number(input && input.threshold)) ? Number(input.threshold) : 0;
-  const checks = Array.isArray(input && input.checks) ? input.checks : [];
+  const actionClass = String(input?.actionClass || '').toLowerCase();
+  const threshold = Number.isFinite(Number(input?.threshold)) ? Number(input.threshold) : 0;
+  const checks = Array.isArray(input?.checks) ? input.checks : [];
   const consequential = isConsequential(actionClass);
   const triggered = [];
   let blocked = false;
@@ -105,26 +114,22 @@ function runStage(input) {
       message: check.message || decision.reason,
       reason: decision.reason,
     });
-    if (action === 'block' || (consequential && action !== 'warn' && action !== 'log')) {
-      blocked = true;
-    }
-    if (consequential && (decision.reason === 'timeout' || decision.reason === 'error' || decision.reason === 'unknown' || decision.reason === 'missing_check')) {
+    if (isActionBlocked(action, consequential, decision.reason)) {
       blocked = true;
     }
   }
 
-  const live = stage === 'pre' ? !blocked : !blocked;
-  return receiptOf(stage, actionClass, blocked, triggered, live);
+  return receiptOf(stage, actionClass, blocked, triggered, !blocked);
 }
 
 /**
  * Overnight / scheduled-run liveness.
  * Actor may have run; critic + pre/post decide whether we claim live or renew a lease.
  */
-function claimLive(input) {
-  const critic = input && input.critic;
-  const pre = input && input.pre;
-  const post = input && input.post;
+function claimLive(input = {}) {
+  const critic = input?.critic;
+  const pre = input?.pre;
+  const post = input?.post;
   const reasons = [];
 
   if (!CRITIC_OK.has(String(critic || ''))) {
@@ -133,7 +138,7 @@ function claimLive(input) {
   if (!pre || pre.blocked) {
     reasons.push('pre_blocked');
   }
-  if (post && post.blocked) {
+  if (post?.blocked) {
     reasons.push('post_blocked');
   }
   if (post && post.live === false) {
@@ -145,13 +150,13 @@ function claimLive(input) {
     reasons,
     receipt: {
       critic: critic || null,
-      preBlocked: Boolean(pre && pre.blocked),
-      postBlocked: Boolean(post && post.blocked),
+      preBlocked: Boolean(pre?.blocked),
+      postBlocked: Boolean(post?.blocked),
     },
   };
 }
 
-function evaluateAction(input) {
+function evaluateAction(input = {}) {
   const pre = runStage({
     stage: 'pre',
     actionClass: input.actionClass,

@@ -8,8 +8,8 @@
  * into ThumbGate's deterministic PreToolUse firewall and self-improving memory loop.
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const { createIndexAndLeafEngine } = require('./index-leaf-context.js');
 const { generateAttributionSummary } = require('./session-attribution-summary.js');
 const { evaluateAction, runStage, claimLive } = require('./futureagi-prepost-gate.js');

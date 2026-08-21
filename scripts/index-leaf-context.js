@@ -11,8 +11,8 @@
  * never preload full warehouse schemas or sprawling code trees into prompt context.
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 /**
  * Builds a queryable index array from database tables or filesystem entities.
@@ -59,7 +59,7 @@ function mainCli(args = process.argv.slice(2), stdout = process.stdout) {
   return 0;
 }
 
-if (require.main === module) {
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   process.exit(mainCli());
 }
 
