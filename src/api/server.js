@@ -197,6 +197,15 @@ const {
   computeDecisionMetrics,
 } = require('../../scripts/decision-journal');
 const {
+  HermesPlatformProtocol,
+} = require('../hermes-platform-protocol');
+const {
+  HermesSyncPlane,
+} = require('../hermes-sync-plane');
+
+const hostedHermesProtocol = new HermesPlatformProtocol();
+const hostedHermesSyncPlane = new HermesSyncPlane();
+const {
   generateDashboard,
   buildReviewSnapshot,
   readDashboardReviewState,
@@ -11037,6 +11046,93 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           actor: body.actor || 'api-client',
         });
         sendJson(res, 200, { satisfied: true, gateId: body.gateId, ...entry });
+        return;
+      }
+
+      // POST /v1/hermes/turn/start — Start turn under Hermes Platform Protocol
+      if (req.method === 'POST' && pathname === '/v1/hermes/turn/start') {
+        const body = await parseJsonBody(req);
+        const result = hostedHermesProtocol.startTurn(body);
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes Turn Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
+        return;
+      }
+
+      // POST /v1/hermes/turn/end — End active turn under Hermes Platform Protocol
+      if (req.method === 'POST' && pathname === '/v1/hermes/turn/end') {
+        const body = await parseJsonBody(req);
+        const result = hostedHermesProtocol.endTurn(body);
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes End Turn Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
+        return;
+      }
+
+      // POST /v1/hermes/action/approve — Record human/operator approval for consequential action
+      if (req.method === 'POST' && pathname === '/v1/hermes/action/approve') {
+        const body = await parseJsonBody(req);
+        const result = hostedHermesProtocol.approve(body);
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes Approval Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
+        return;
+      }
+
+      // GET /v1/hermes/sync/read — Reactive read path with cursor + offset
+      if (req.method === 'GET' && pathname === '/v1/hermes/sync/read') {
+        const rawOffset = parsed.searchParams.get('offset');
+        const offset = rawOffset !== null ? Number(rawOffset) : undefined;
+        const cursor = parsed.searchParams.get('cursor') || undefined;
+        const userId = parsed.searchParams.get('userId') || undefined;
+        const threadId = parsed.searchParams.get('threadId') || undefined;
+        const recordId = parsed.searchParams.get('recordId') || undefined;
+        const mode = parsed.searchParams.get('mode') || undefined;
+
+        const result = hostedHermesSyncPlane.readStatus({
+          offset,
+          cursor,
+          auth: userId ? { userId } : null,
+          threadId,
+          recordId,
+          mode,
+        });
+
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes Sync Read Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
         return;
       }
 

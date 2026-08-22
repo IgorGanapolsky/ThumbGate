@@ -2840,23 +2840,39 @@ function matchesGate(gate, toolName, toolInput) {
   return matchGate(gate, toolName, toolInput).matched;
 }
 
-function hasActiveProtectedApproval(governanceState, affectedFiles) {
-  if (!Array.isArray(affectedFiles) || affectedFiles.length === 0) return false;
+function hasActiveProtectedApproval(governanceState, affectedFiles, matchText = '') {
   const approvals = Array.isArray(governanceState && governanceState.protectedApprovals)
     ? governanceState.protectedApprovals
     : [];
-  return affectedFiles.every((filePath) => approvals.some((entry) => {
-    return matchesAnyGlob(filePath, sanitizeGlobList(entry && entry.pathGlobs));
-  }));
+  if (approvals.length === 0) return false;
+
+  if (Array.isArray(affectedFiles) && affectedFiles.length > 0) {
+    return affectedFiles.every((filePath) => approvals.some((entry) => {
+      return matchesAnyGlob(filePath, sanitizeGlobList(entry && entry.pathGlobs));
+    }));
+  }
+
+  if (typeof matchText === 'string' && matchText.trim()) {
+    const rawTokens = matchText.match(/[^\s'"`;|]+/g) || [];
+    const candidatePaths = rawTokens.filter((token) => /(?:\/|\.[a-z0-9]+$)/i.test(token));
+    if (candidatePaths.length > 0) {
+      return candidatePaths.some((token) => approvals.some((entry) => {
+        return matchesAnyGlob(token, sanitizeGlobList(entry && entry.pathGlobs));
+      }));
+    }
+  }
+
+  return false;
 }
 
 function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
-  if (hasActiveProtectedApproval(loadGovernanceState(), affectedFiles)) return null;
-
   const command = String(toolInput.command || '');
   let matchText = command;
+
+  if (hasActiveProtectedApproval(loadGovernanceState(), affectedFiles, command)) return null;
+
   if (gate.id === 'self-protect-config' || gate.id === 'self-protect-hooks-disable') {
     const targetPattern = gate.id === 'self-protect-config'
       ? SELF_PROTECT_CONFIG_TARGET_PATTERN
@@ -2868,7 +2884,15 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
       const commandTargetPattern = gate.id === 'self-protect-config'
         ? SELF_PROTECT_CONFIG_COMMAND_PATTERN
         : SELF_PROTECT_HOOK_COMMAND_PATTERN;
-      if (!SHELL_FILE_MUTATION_PATTERN.test(command) || !commandTargetPattern.test(command)) return null;
+
+      // When shell redirection is used (e.g. cat > /tmp/out), inspect the redirection destination
+      const redirectMatch = command.match(/(?:^|[\s;&|])>{1,2}\s*([^\s;&|]+)/);
+      if (redirectMatch && redirectMatch[1]) {
+        const target = redirectMatch[1];
+        if (!commandTargetPattern.test(target)) return null;
+      } else {
+        if (!SHELL_FILE_MUTATION_PATTERN.test(command) || !commandTargetPattern.test(command)) return null;
+      }
     } else {
       return null;
     }
