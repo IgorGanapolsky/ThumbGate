@@ -1,0 +1,71 @@
+{
+  "gateId": "gate_deterministic_appsec_guard_2026",
+  "name": "Deterministic AppSec 10-Point Preflight Guard",
+  "description": "Non-LLM deterministic pre-action firewall enforcing 10 essential application security invariants (authentication, secret detection, CORS, SSRF, injection, path traversal, telemetry sanitization, tenant isolation, file upload safety, safe deserialization) before code dispatch or tool execution.",
+  "version": "1.0.0",
+  "category": "deterministic_appsec",
+  "enabled": true,
+  "enforcementMode": "fail_closed",
+  "invariants": [
+    {
+      "id": "APPSEC_01_UNAUTH_ENDPOINT",
+      "title": "Unauthenticated Route Exposure",
+      "description": "Blocks open/wildcard public API endpoint registrations missing explicit authentication middleware.",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "APPSEC_02_HARDCODED_SECRETS",
+      "title": "Hardcoded Credential & Key Leak",
+      "description": "Blocks strings matching API tokens, private keys, JWTs, and database credentials in source code or payload parameters.",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "APPSEC_03_PERMISSIVE_CORS",
+      "title": "Permissive CORS Wildcard with Credentials",
+      "description": "Blocks CORS configurations pairing Access-Control-Allow-Origin: * with Access-Control-Allow-Credentials: true.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "APPSEC_04_SSRF_EGRESS",
+      "title": "SSRF Unvalidated Egress to Private/Cloud Metadata",
+      "description": "Blocks HTTP/gRPC requests targeting loopback (127.0.0.1, ::1), private subnets (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16), or cloud metadata services (169.254.169.254).",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "APPSEC_05_DYNAMIC_INJECTION",
+      "title": "Unparameterized Dynamic SQL/Command Injection",
+      "description": "Blocks string concatenation or template literal formatting in database queries and exec/spawn shell invocations.",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "APPSEC_06_PATH_TRAVERSAL",
+      "title": "Arbitrary File Path Traversal",
+      "description": "Blocks file system operations containing un-sanitized relative traversal sequences (../, ..\\) resolving outside approved roots.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "APPSEC_07_TELEMETRY_PII_LEAK",
+      "title": "Telemetry & Log PII/Credential Leakage",
+      "description": "Blocks structured logger payloads containing raw authorization headers, cookies, passwords, or SSN/card numbers.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "APPSEC_08_TENANT_IDOR",
+      "title": "Multi-Tenant IDOR & Missing Partition Scope",
+      "description": "Blocks data access queries and mutations missing explicit tenant_id / organization_id filtering predicates.",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "APPSEC_09_EXECUTABLE_UPLOAD",
+      "title": "Unrestricted Web-Executable File Upload",
+      "description": "Blocks file creation or upload operations writing executable binaries/scripts (.exe, .sh, .php, .py, .js) into public web asset roots.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "APPSEC_10_INSECURE_DESERIALIZATION",
+      "title": "Insecure Object Deserialization & Eval Execution",
+      "description": "Blocks dangerous dynamic code execution (eval, vm.runInContext) and unvetted prototype-polluting deserialization.",
+      "severity": "CRITICAL"
+    }
+  ]
+}

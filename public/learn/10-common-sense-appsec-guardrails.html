@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>10 Common-Sense Solutions to AppSec Challenges (AI Not Required) | ThumbGate Learn</title>
+  <meta name="description" content="Why prompt engineering fails at application security. Discover the 10 deterministic pre-action AppSec invariants that protect against auth bypass, SSRF, injection, and multi-tenant leakage without AI hallucinations.">
+  <link rel="stylesheet" href="/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "10 Common-Sense Solutions to AppSec Challenges (AI Not Required)",
+    "description": "Deterministic rule-based pre-action firewalls for application security and agentic execution.",
+    "author": {
+      "@type": "Organization",
+      "name": "ThumbGate Security Research"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "ThumbGate",
+      "url": "https://thumbgate.ai"
+    },
+    "datePublished": "2026-08-22"
+  }
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen">
+  <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur py-4 px-6">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      <a href="/" class="text-xl font-bold text-emerald-400">ThumbGate</a>
+      <nav class="space-x-6 text-sm text-slate-300">
+        <a href="/learn.html" class="hover:text-emerald-400">Learn</a>
+        <a href="/pricing.html" class="hover:text-emerald-400">Pricing</a>
+        <a href="/docs" class="hover:text-emerald-400">Docs</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto py-12 px-6">
+    <article class="prose prose-invert lg:prose-lg max-w-none">
+      <div class="mb-8">
+        <span class="text-xs uppercase tracking-wider text-emerald-400 font-semibold">Application Security</span>
+        <h1 class="text-3xl lg:text-4xl font-extrabold text-white mt-2">10 Common-Sense Solutions to AppSec Challenges (AI Not Required)</h1>
+        <p class="text-slate-400 text-sm">Published August 22, 2026 • 7 min read • AppSec Engineering, Deterministic Firewalls</p>
+      </div>
+
+      <p class="lead text-lg text-slate-300">
+        While AI tools accelerate software development and code reviews, critical application security vulnerabilities routinely evade prompt-based defenses. Explaining why an application failed a security audit or preventing multi-tenant data exfiltration cannot be solved by asking an LLM to "be secure." Robust AppSec requires deterministic, sub-millisecond pre-action rules.
+      </p>
+
+      <h2 class="text-2xl font-bold text-white mt-8">The 10 Deterministic AppSec Invariants</h2>
+      <div class="space-y-4 my-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 class="text-emerald-400 font-bold">1. Unauthenticated Endpoint Exposure (APPSEC_01)</h3>
+          <p class="text-slate-300 text-sm">Blocks internal, administrative, or billing route registrations lacking verified authentication middleware.</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 class="text-emerald-400 font-bold">2. Hardcoded Credentials & API Keys (APPSEC_02)</h3>
+          <p class="text-slate-300 text-sm">Strict regex matching catches AWS keys, OpenAI tokens, JWTs, and private keys before they enter codebases or tool payloads.</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 class="text-emerald-400 font-bold">3. Permissive CORS Wildcards (APPSEC_03)</h3>
+          <p class="text-slate-300 text-sm">Prevents wildcard CORS origins paired with credentials: true, closing cross-origin session hijacking vectors.</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 class="text-emerald-400 font-bold">4. SSRF Egress to Private/Cloud Metadata (APPSEC_04)</h3>
+          <p class="text-slate-300 text-sm">Blocks outbound requests to 169.254.169.254, 127.0.0.1, and RFC 1918 subnets at the runtime dispatch boundary.</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 class="text-emerald-400 font-bold">5. Unparameterized Dynamic Injection (APPSEC_05)</h3>
+          <p class="text-slate-300 text-sm">Enforces parameterized database queries and structured execFile arguments, eliminating SQL and command injection.</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 class="text-emerald-400 font-bold">6. Arbitrary Path Traversal (APPSEC_06)</h3>
+          <p class="text-slate-300 text-sm">Interdicts relative directory traversal sequences (../) in file system calls before execution.</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 class="text-emerald-400 font-bold">7. Telemetry PII & Header Leakage (APPSEC_07)</h3>
+          <p class="text-slate-300 text-sm">Sanitizes log payloads to prevent dumping authorization headers, cookies, or user PII into monitoring sinks.</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 class="text-emerald-400 font-bold">8. Multi-Tenant IDOR Scope Enforcement (APPSEC_08)</h3>
+          <p class="text-slate-300 text-sm">Mandates explicit tenant_id predicates on all tenant-isolated data queries.</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 class="text-emerald-400 font-bold">9. Executable File Upload Protection (APPSEC_09)</h3>
+          <p class="text-slate-300 text-sm">Restricts upload destinations to ensure scripts (.sh, .php, .exe) cannot be written into public web asset roots.</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 class="text-emerald-400 font-bold">10. Insecure Deserialization & Eval Interdiction (APPSEC_10)</h3>
+          <p class="text-slate-300 text-sm">Blocks dynamic eval() and unsafe object deserialization that lead to remote code execution.</p>
+        </div>
+      </div>
+
+      <h2 class="text-2xl font-bold text-white mt-8">Deterministic Pre-Action Firewalling with ThumbGate</h2>
+      <p class="text-slate-300">
+        ThumbGate implements these 10 invariants as a sub-millisecond, fail-closed pre-action firewall. Instead of relying on LLM self-evaluation, ThumbGate enforces deterministic AST and regex boundaries before any agent mutation reaches production.
+      </p>
+
+      <div class="mt-10 p-6 bg-emerald-950/30 border border-emerald-800/50 rounded-xl text-center">
+        <h3 class="text-xl font-bold text-white mb-2">Automate Your AppSec Preflight Today</h3>
+        <p class="text-slate-300 text-sm mb-4">Integrate ThumbGate's deterministic AppSec firewall into your CI/CD pipelines and agent runtime loops.</p>
+        <a href="/pricing.html" class="inline-block px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg transition-colors">Start Free Evaluation</a>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

@@ -30,6 +30,8 @@ const HARNESSES = Object.freeze({
   'future-agi-guardrails': path.join(HARNESS_DIR, 'future-agi-guardrails.json'),
   'five-walls-governance': path.join(HARNESS_DIR, 'five-walls-governance.json'),
   'simatree-data-governance': path.join(HARNESS_DIR, 'simatree-data-governance.json'),
+  'secops-governance-harmonizer': path.join(HARNESS_DIR, 'secops-governance-harmonizer.json'),
+  'deterministic-appsec-guard': path.join(HARNESS_DIR, 'deterministic-appsec-guard.json'),
 });
 
 // ---------------------------------------------------------------------------
@@ -38,6 +40,14 @@ const HARNESSES = Object.freeze({
 
 const SIMATREE_PATTERNS = [
   /\b(simatree|data_lifecycle|why_before_how|pmo_transformation|bayesian_uncertainty|lakehouse_governance)\b/i,
+];
+
+const SECOPS_GOVERNANCE_PATTERNS = [
+  /\b(secops|ai_secops|governance_harmonizer|autonomy_boundary|single_pass_audit|digital_520|noah_kenney)\b/i,
+];
+
+const DETERMINISTIC_APPSEC_PATTERNS = [
+  /\b(appsec|deterministic_appsec|appsec_guard|carnival_appsec|ralph_villanueva|unauth_endpoint|ssrf_egress|hardcoded_secrets)\b/i,
 ];
 
 const FIVE_WALLS_PATTERNS = [
@@ -151,6 +161,12 @@ function selectHarness(toolName, toolInput) {
     }
     if (SIMATREE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['simatree-data-governance'];
+    }
+    if (SECOPS_GOVERNANCE_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['secops-governance-harmonizer'];
+    }
+    if (DETERMINISTIC_APPSEC_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['deterministic-appsec-guard'];
     }
     if (ROUTINE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES.routine;
