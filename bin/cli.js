@@ -3410,6 +3410,7 @@ function help() {
   console.log('  background-governance Background-agent run report and dispatch risk check');
   console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
   console.log('  inventory             Agent action inventory: tool calls, gate denies, false-deny rate');
+  console.log('  conflict-audit        Find controls that report success but enforce nothing');
   console.log('  start-api             Start the ThumbGate HTTPS API server');
   console.log('');
 
@@ -3496,6 +3497,7 @@ const SUBCOMMAND_HELP = {
   'context-packs': 'Usage: npx thumbgate context-packs\n\nGenerate context packs from top failure patterns.',
   suggest:       'Usage: npx thumbgate suggest <gate-id>\n\nSuggest fixes for a specific gate based on lesson history.',
   inventory:     'Usage: npx thumbgate inventory [--json] [--days=N] [--data-dir=path] [--max-bytes=N]\n\nRead-only inventory of agent activity in this repo\'s ThumbGate store: agents seen, tool calls by tool, allow/deny counts, deny reasons per gate, top gates, per-day activity, and the false-deny rate.\n\nEvery source reports its own status (ok / empty / missing) so an uninstrumented store never looks like a quiet one. falseDenyRate is null with a stated reason whenever a real denominator was not observed; falseDenyNumerator and falseDenyDenominator are always emitted raw.\n\nEach source is read as a bounded tail (default 8 MiB, --max-bytes to change) so a multi-hundred-MB audit log is never loaded whole. If the tail did not reach back to the start of the window, windowFullyCovered is false and the text output says so.',
+  'conflict-audit': 'Usage: npx thumbgate conflict-audit [--json] [--offline] [--repo-root=path] [--github-repo=owner/name] [--branch=main] [--consecutive-failures=N] [--excluded-lines=N] [--commits=N]\n\nDeterministic detector for controls that report success but enforce nothing. Six detectors, no model involved:\n\n  D1 gate configs declaring a `patterns` array when the engine reads `pattern` (the match block is skipped, so the gate fires on every tool in its toolNames)\n  D2 gate patterns that cannot compile (an inline (?i) flag group throws; the engine swallows the throw as "no match")\n  D3 checks that are NOT in branch protection\'s required contexts and have failed on N or more consecutive recent commits\n  D4 sonar.exclusions / sonar.coverage.exclusions entries that hide non-trivial code inside sonar.sources from scanning\n  D5 modules and entry exports with zero production call sites outside their own tests\n  D6 the bare `path.resolve(process.argv[1]) === path.resolve(__filename)` main check, which no-ops under an npm bin shim\n\nEvery detector reports its own status: `ran` (inspected), `partial` (some of the surface was not inspected, and which), or `unavailable` (could not inspect at all). An unavailable detector is NEVER reported as clean. D3 needs the `gh` CLI and read access to branch protection; use --offline to skip it explicitly.',
   cost:          'Usage: npx thumbgate cost [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nShow cumulative $ and tokens saved by PreToolUse gate blocks. Reads ~/.thumbgate/gate-stats.json.',
   savings:       'Usage: npx thumbgate savings [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nAlias for `thumbgate cost`.',
   'setup-vertex': 'Usage: npx thumbgate setup-vertex [--dry-run]\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. With --dry-run, only detect the active account/project and print the planned changes. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
@@ -4421,6 +4423,31 @@ switch (COMMAND) {
       console.log(JSON.stringify(inventory, null, 2));
     } else {
       process.stdout.write(renderInventoryText(inventory));
+    }
+    break;
+  }
+  case 'conflict-audit': {
+    // Deterministic sweep for controls that report success but enforce
+    // nothing. Each detector reports its own status, so a surface that could
+    // not be inspected is never rendered as a clean bill of health.
+    const conflictArgs = parseArgs(process.argv.slice(3));
+    const {
+      auditGovernanceConflicts,
+      renderConflictAuditText,
+    } = require(path.join(PKG_ROOT, 'scripts', 'governance-conflict-audit'));
+    const conflictReport = auditGovernanceConflicts({
+      repoRoot: conflictArgs['repo-root'] || process.cwd(),
+      gitHubRepo: conflictArgs['github-repo'],
+      branch: conflictArgs.branch,
+      consecutiveFailureThreshold: conflictArgs['consecutive-failures'],
+      excludedLineThreshold: conflictArgs['excluded-lines'],
+      commitLimit: conflictArgs.commits,
+      offline: Boolean(conflictArgs.offline),
+    });
+    if (conflictArgs.json) {
+      console.log(JSON.stringify(conflictReport, null, 2));
+    } else {
+      process.stdout.write(`${renderConflictAuditText(conflictReport)}\n`);
     }
     break;
   }
