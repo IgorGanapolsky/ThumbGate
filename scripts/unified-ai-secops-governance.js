@@ -1,6 +1,7 @@
 "use strict";
 
 const crypto = require("node:crypto");
+const fs = require("node:fs");
 const path = require("node:path");
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, "..", "config", "gates", "secops-governance-harmonizer.json");
@@ -36,16 +37,38 @@ const DEFAULT_BOUNDARIES = {
   ]
 };
 
+/**
+ * Load the harmonizer manifest.
+ *
+ * The catch here is deliberately narrow. It exists for "the operator has no
+ * manifest on disk" — NOT for "the module forgot to import fs". A broad catch
+ * around a ReferenceError silently returned the built-in defaults on every
+ * call, so an operator-supplied manifest was ignored and customised
+ * mandatory-action boundaries were evaluated as autonomous. The load result is
+ * therefore reported on the returned object so a caller can tell a real
+ * manifest from a fallback.
+ */
 function loadGateConfig(customPath) {
   const filePath = customPath || DEFAULT_CONFIG_PATH;
   try {
     if (fs.existsSync(filePath)) {
-      return JSON.parse(fs.readFileSync(filePath, "utf8"));
+      const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      return { ...parsed, configSource: filePath };
     }
-  } catch (_ignored) {
-    // fallback to defaults
+  } catch (err) {
+    // A malformed or unreadable manifest is a real operator problem: say so
+    // rather than pretending the defaults were what they asked for.
+    return {
+      gateId: "gate_secops_governance_harmonizer_2026",
+      name: "SecOps & AI Governance Harmonizer Gate",
+      autonomyBoundaries: DEFAULT_BOUNDARIES,
+      complianceFrameworks: ["ISO_42001", "EU_AI_ACT_HIGH_RISK", "NIST_AI_RMF_1_0", "SOC2_TYPE_II_SECURITY_AVAILABILITY"],
+      configSource: null,
+      configError: `${filePath}: ${err && err.message ? err.message : String(err)}`,
+    };
   }
   return {
+    configSource: null,
     gateId: "gate_secops_governance_harmonizer_2026",
     name: "SecOps & AI Governance Harmonizer Gate",
     autonomyBoundaries: DEFAULT_BOUNDARIES,
@@ -53,34 +76,67 @@ function loadGateConfig(customPath) {
   };
 }
 
+function listOf(boundaries, key) {
+  const list = boundaries && Array.isArray(boundaries[key]) ? boundaries[key] : [];
+  return list.filter((a) => typeof a === "string").map((a) => a.toLowerCase());
+}
+
+/**
+ * Classify one action against the 3-tier autonomy matrix.
+ *
+ * FAILS CLOSED ON UNKNOWN ACTIONS. The allowlist is the ONLY route to
+ * AUTONOMOUS_ALLOWED. A previous shape used the autonomous tier as the trailing
+ * `else`, so any action absent from all three lists — a new action type, a
+ * misspelling, or `delete_all_customer_data` — was classified
+ * AUTONOMOUS_ALLOWED. An autonomy matrix that a typo can walk through is not a
+ * boundary.
+ */
 function assessAutonomyBoundary(actionType, targetScope = "standard", severity = "medium", config = null) {
   const cfg = config || loadGateConfig();
   const boundaries = cfg.autonomyBoundaries || DEFAULT_BOUNDARIES;
   const actionNormalized = String(actionType || "").trim().toLowerCase();
 
-  if (boundaries.humanApprovalMandatory.some((a) => a.toLowerCase() === actionNormalized) || targetScope === "production_critical" || severity === "critical") {
+  const mandatory = listOf(boundaries, "humanApprovalMandatory");
+  const advisory = listOf(boundaries, "advisoryOnly");
+  const autonomous = listOf(boundaries, "autonomousAllowed");
+
+  if (mandatory.includes(actionNormalized) || targetScope === "production_critical" || severity === "critical") {
     return {
       boundary: AUTONOMY_LEVELS.HUMAN_APPROVAL_MANDATORY,
       requiresApproval: true,
       allowedAutonomously: false,
+      recognizedAction: mandatory.includes(actionNormalized),
       rationale: "Action incurs irreversible operational blast radius or violates human oversight mandate under ISO 42001 / EU AI Act.",
     };
   }
 
-  if (boundaries.advisoryOnly.some((a) => a.toLowerCase() === actionNormalized) || severity === "high") {
+  if (advisory.includes(actionNormalized) || severity === "high") {
     return {
       boundary: AUTONOMY_LEVELS.ADVISORY_ONLY,
       requiresApproval: true,
       allowedAutonomously: false,
+      recognizedAction: advisory.includes(actionNormalized),
       rationale: "Action requires operator confirmation before execution to prevent false-positive containment disruption.",
     };
   }
 
+  if (autonomous.includes(actionNormalized)) {
+    return {
+      boundary: AUTONOMY_LEVELS.AUTONOMOUS_ALLOWED,
+      requiresApproval: false,
+      allowedAutonomously: true,
+      recognizedAction: true,
+      rationale: "Action operates within safe read/simulation boundaries with bounded blast radius.",
+    };
+  }
+
+  // Not on any list. Unknown blast radius is not the same as no blast radius.
   return {
-    boundary: AUTONOMY_LEVELS.AUTONOMOUS_ALLOWED,
-    requiresApproval: false,
-    allowedAutonomously: true,
-    rationale: "Action operates within safe read/simulation boundaries with bounded blast radius.",
+    boundary: AUTONOMY_LEVELS.HUMAN_APPROVAL_MANDATORY,
+    requiresApproval: true,
+    allowedAutonomously: false,
+    recognizedAction: false,
+    rationale: `Action "${actionNormalized || "(empty)"}" is absent from the autonomy allowlist. The matrix fails closed: an unrecognised action type is escalated for human approval rather than assumed safe.`,
   };
 }
 
@@ -264,6 +320,10 @@ function canonicalPath(candidate) {
   }
 }
 
+// `require.main === module` is flagged by SonarQube S3403 as an always-false
+// strict equality under strict type inference. realpathSync keeps the check
+// working when the file is reached through an npm bin shim, where argv[1] is
+// the symlink and __filename is the real path.
 function isDirectInvocation() {
   const entryPoint = process.argv[1];
   if (!entryPoint) return false;

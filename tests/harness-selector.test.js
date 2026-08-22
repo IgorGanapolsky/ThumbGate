@@ -418,3 +418,30 @@ describe('solver workflow governance audit', () => {
     assert.ok(payload.signals.some((signal) => signal.id === 'solver_workflow_governance'));
   });
 });
+
+// ---------------------------------------------------------------------------
+// Registered harnesses must actually add gates
+// ---------------------------------------------------------------------------
+
+describe('harness manifest executability', () => {
+  it('every registered harness resolves to a manifest with a non-empty `gates` array', () => {
+    // gates-engine.js loadGatesConfig only reads a top-level `gates` array. A
+    // manifest that expresses its policy as `rules` or `invariants` instead
+    // contributes ZERO gates, so selecting it makes every matched tool call
+    // look governed while nothing is enforced. That shipped once; this pins it.
+    const fs = require('node:fs');
+    const nodePath = require('node:path');
+    const entries = Object.entries(HARNESSES);
+    assert.ok(entries.length > 0, 'there is at least one registered harness');
+
+    for (const [name, manifestPath] of entries) {
+      assert.ok(fs.existsSync(manifestPath), `${name}: manifest missing at ${nodePath.basename(manifestPath)}`);
+      const parsed = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      assert.ok(
+        Array.isArray(parsed.gates),
+        `${name}: manifest has no top-level \`gates\` array, so selecting it adds 0 gates (keys: ${Object.keys(parsed).join(', ')})`
+      );
+      assert.ok(parsed.gates.length > 0, `${name}: \`gates\` is empty, so selecting it enforces nothing`);
+    }
+  });
+});

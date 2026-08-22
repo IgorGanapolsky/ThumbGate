@@ -2,6 +2,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const appsec = require('../scripts/deterministic-appsec-guard');
@@ -101,10 +103,83 @@ test('Deterministic AppSec: Rule 10 catches dynamic eval and unsafe deserializat
 test('Deterministic AppSec: explainAppSecViolation returns actionable fix for each rule', () => {
   for (let i = 1; i <= 10; i++) {
     const code = `APPSEC_${String(i).padStart(2, '0')}`;
-    const matchedKey = Object.keys(appsec).find(() => true);
     const explanation = appsec.explainAppSecViolation(code);
     assert.ok(explanation.title);
     assert.ok(explanation.rootCause);
     assert.ok(explanation.fix);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Rule 01 is bound PER ROUTE, not to the whole file
+// ---------------------------------------------------------------------------
+
+test('Deterministic AppSec: Rule 01 does not let one guarded route vouch for an unguarded one', () => {
+  // The defect: the auth probe searched the ENTIRE payload. A file holding one
+  // protected route plus one unprotected privileged route passed the whole
+  // rule, leaving the exact endpoint this guard exists to catch undetected.
+  const mixedFile = [
+    'app.get("/admin/reports", requireAuth, (req, res) => { res.json(reports); });',
+    'app.get("/admin/danger", (req, res) => { res.json(secrets); });',
+  ].join('\n');
+
+  const result = appsec.evaluateDeterministicAppSec(mixedFile);
+  const unauth = result.violations.filter((v) => v.ruleId === 'APPSEC_01_UNAUTH_ENDPOINT');
+  assert.equal(unauth.length, 1, 'exactly the unguarded route is reported');
+  assert.match(unauth[0].message, /\/danger/);
+  assert.doesNotMatch(unauth[0].message, /\/reports/);
+  assert.equal(result.passed, false);
+});
+
+test('Deterministic AppSec: Rule 01 reports every unguarded privileged route, not just the first', () => {
+  const twoBad = [
+    'app.get("/admin/one", (req, res) => { res.end(); });',
+    'router.post("/billing/two", (req, res) => { res.end(); });',
+  ].join('\n');
+
+  const unauth = appsec.evaluateDeterministicAppSec(twoBad)
+    .violations.filter((v) => v.ruleId === 'APPSEC_01_UNAUTH_ENDPOINT');
+  assert.equal(unauth.length, 2);
+});
+
+test('findPrivilegedRoutes captures only each route own middleware window', () => {
+  const routes = appsec.findPrivilegedRoutes([
+    'app.get("/admin/a", requireAuth, (req, res) => {});',
+    'app.get("/admin/b", (req, res) => {});',
+  ].join('\n'));
+
+  assert.equal(routes.length, 2);
+  assert.equal(routes[0].path, '/admin/a');
+  assert.match(routes[0].middleware, /requireAuth/);
+  assert.equal(routes[1].path, '/admin/b');
+  assert.doesNotMatch(routes[1].middleware, /requireAuth/, 'the previous route guard must not leak into this window');
+});
+
+test('Deterministic AppSec: a guarded privileged route alone stays clean', () => {
+  const safe = 'app.get("/admin/reports", ensureAuthenticated, (req, res) => { res.json(reports); });';
+  assert.equal(appsec.evaluateDeterministicAppSec(safe).passed, true);
+});
+
+// ---------------------------------------------------------------------------
+// The CLI must fail the build it is guarding
+// ---------------------------------------------------------------------------
+
+test('Deterministic AppSec: --scan-file returns a NONZERO exit code when it blocks', () => {
+  // A guard that prints BLOCKED and exits 0 lets a CI preflight continue the
+  // deploy on vulnerable input unless the caller separately parses stdout.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-appsec-cli-'));
+  const vulnFile = path.join(dir, 'vuln.js');
+  const safeFile = path.join(dir, 'safe.js');
+  fs.writeFileSync(vulnFile, 'app.get("/admin/x", (req, res) => { res.end(); });\n', 'utf8');
+  fs.writeFileSync(safeFile, 'function ok() { return 1; }\n', 'utf8');
+
+  try {
+    assert.equal(appsec.mainCli([`--scan-file=${vulnFile}`, '--json']), 1, 'BLOCKED must exit nonzero');
+    assert.equal(appsec.mainCli([`--scan-file=${safeFile}`, '--json']), 0, 'PASSED must exit zero');
+    assert.equal(appsec.mainCli([`--scan-file=${path.join(dir, 'missing.js')}`]), 1, 'a missing file is a failure');
+    assert.equal(appsec.mainCli(['--help']), 0);
+    assert.equal(appsec.mainCli(['--test-sample', '--json']), 0);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });

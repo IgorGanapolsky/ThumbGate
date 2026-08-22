@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const harmonizer = require('../scripts/unified-ai-secops-governance');
@@ -101,4 +102,102 @@ test('SecOps Harmonizer: evaluateSecOpsGovernance end-to-end evaluation', () => 
   );
   assert.equal(blockedEval.decision, 'INTERDICTED');
   assert.equal(blockedEval.autonomyVerdict.requiresApproval, true);
+});
+
+// ---------------------------------------------------------------------------
+// The autonomy matrix must FAIL CLOSED
+// ---------------------------------------------------------------------------
+
+test('SecOps Harmonizer: an action absent from every list is NOT autonomous', () => {
+  // The defect: AUTONOMOUS_ALLOWED was the trailing `else`, so any action not
+  // named in the advisory or mandatory lists — a new action type, a
+  // misspelling, or an outright destructive one — was classified autonomous.
+  const unknown = harmonizer.assessAutonomyBoundary('delete_all_customer_data', 'standard', 'medium');
+  assert.equal(unknown.boundary, harmonizer.AUTONOMY_LEVELS.HUMAN_APPROVAL_MANDATORY);
+  assert.equal(unknown.allowedAutonomously, false);
+  assert.equal(unknown.requiresApproval, true);
+  assert.equal(unknown.recognizedAction, false);
+  assert.match(unknown.rationale, /absent from the autonomy allowlist/);
+
+  // A misspelling of an allowlisted action must not inherit its permission.
+  const typo = harmonizer.assessAutonomyBoundary('triage_alerts', 'standard', 'low');
+  assert.equal(typo.allowedAutonomously, false);
+
+  // An empty / missing action type is unknown too.
+  for (const bad of ['', null, undefined]) {
+    assert.equal(harmonizer.assessAutonomyBoundary(bad, 'standard', 'low').allowedAutonomously, false);
+  }
+});
+
+test('SecOps Harmonizer: only allowlisted actions reach AUTONOMOUS_ALLOWED', () => {
+  for (const action of harmonizer.DEFAULT_BOUNDARIES.autonomousAllowed) {
+    const verdict = harmonizer.assessAutonomyBoundary(action, 'standard', 'low');
+    assert.equal(verdict.boundary, harmonizer.AUTONOMY_LEVELS.AUTONOMOUS_ALLOWED, action);
+    assert.equal(verdict.recognizedAction, true, action);
+  }
+});
+
+test('SecOps Harmonizer: an unknown action is INTERDICTED end to end', () => {
+  const verdict = harmonizer.evaluateSecOpsGovernance(
+    { type: 'exfiltrate_customer_database' },
+    { scope: 'standard', severity: 'low' }
+  );
+  assert.equal(verdict.decision, 'INTERDICTED');
+});
+
+// ---------------------------------------------------------------------------
+// loadGateConfig must actually read the manifest
+// ---------------------------------------------------------------------------
+
+test('SecOps Harmonizer: loadGateConfig reads an operator manifest instead of silently defaulting', () => {
+  // The defect: the module never imported `fs`, so every call threw a
+  // ReferenceError that the broad catch swallowed. The shipped manifest and any
+  // operator --config were ignored, and customised mandatory-action boundaries
+  // were evaluated as autonomous.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-secops-config-'));
+  const configPath = path.join(dir, 'custom.json');
+  fs.writeFileSync(configPath, JSON.stringify({
+    gateId: 'gate_operator_custom',
+    autonomyBoundaries: {
+      autonomousAllowed: ['read_telemetry'],
+      advisoryOnly: [],
+      humanApprovalMandatory: ['triage_alert'],
+    },
+  }), 'utf8');
+
+  try {
+    const cfg = harmonizer.loadGateConfig(configPath);
+    assert.equal(cfg.gateId, 'gate_operator_custom', 'the operator manifest was actually read');
+    assert.equal(cfg.configSource, configPath);
+
+    // The operator moved triage_alert into the mandatory tier; that must win.
+    const verdict = harmonizer.assessAutonomyBoundary('triage_alert', 'standard', 'low', cfg);
+    assert.equal(verdict.boundary, harmonizer.AUTONOMY_LEVELS.HUMAN_APPROVAL_MANDATORY);
+    assert.equal(verdict.allowedAutonomously, false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('SecOps Harmonizer: a malformed manifest is reported, not silently replaced by defaults', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-secops-bad-'));
+  const configPath = path.join(dir, 'broken.json');
+  fs.writeFileSync(configPath, '{ not json', 'utf8');
+
+  try {
+    const cfg = harmonizer.loadGateConfig(configPath);
+    assert.equal(cfg.configSource, null);
+    assert.match(cfg.configError, /broken\.json/);
+    // It still fails safe: the built-in boundaries are in force.
+    assert.ok(cfg.autonomyBoundaries.humanApprovalMandatory.includes('isolate_production_host'));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('SecOps Harmonizer: a missing manifest path yields defaults with configSource null', () => {
+  const cfg = harmonizer.loadGateConfig(path.join(os.tmpdir(), 'tg-secops-nope', 'absent.json'));
+  assert.equal(cfg.configSource, null);
+  assert.equal(cfg.configError, undefined);
+  assert.equal(cfg.gateId, 'gate_secops_governance_harmonizer_2026');
 });

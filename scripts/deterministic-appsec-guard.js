@@ -24,6 +24,40 @@ const SSRF_TARGETS = [
   /172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}/,
 ];
 
+/** Tokens that count as an authentication guard on a route. */
+const AUTH_MIDDLEWARE_RE = /(requireAuth|authenticate|verifyToken|checkSession|passport|authMiddleware|ensureAuthenticated|isAuthenticated|requireSession|jwtVerify)/i;
+
+/**
+ * Head of a privileged route declaration: `app.get("/admin/...` — the method
+ * and the path literal. Every quantifier is bounded by a literal delimiter, so
+ * the scan is linear and cannot backtrack catastrophically on adversarial input.
+ */
+const PRIVILEGED_ROUTE_HEAD_RE = /\b(?:app|router)\s*\.\s*(get|post|put|delete|patch)\s*\(\s*([`"'])(\/(?:admin|internal|settings|billing|metrics)[^`"']*)\2/gi;
+
+/** How far past the path literal to look for the route's own middleware chain. */
+const MIDDLEWARE_WINDOW_CHARS = 300;
+
+/**
+ * Every privileged route declaration in `code`, each carrying ONLY its own
+ * middleware chain — the text between its path literal and its handler.
+ *
+ * The window stops at the first `=>`, `function`, or `;` so one route's guard
+ * can never be read as another route's guard, which is the whole point.
+ */
+function findPrivilegedRoutes(code) {
+  const routes = [];
+  PRIVILEGED_ROUTE_HEAD_RE.lastIndex = 0;
+  let match;
+  while ((match = PRIVILEGED_ROUTE_HEAD_RE.exec(code)) !== null) {
+    const from = match.index + match[0].length;
+    const after = code.slice(from, from + MIDDLEWARE_WINDOW_CHARS);
+    const stops = [after.indexOf('=>'), after.indexOf('function'), after.indexOf(';')].filter((i) => i >= 0);
+    const end = stops.length > 0 ? Math.min(...stops) : after.length;
+    routes.push({ method: match[1], path: match[3], middleware: after.slice(0, end) });
+  }
+  return routes;
+}
+
 function loadAppSecConfig(customPath) {
   const filePath = customPath || DEFAULT_CONFIG_PATH;
   try {
@@ -45,13 +79,20 @@ function evaluateDeterministicAppSec(codeOrPayload, options = {}) {
   const violations = [];
 
   // Check 1: Unauthenticated Endpoint Exposure
-  if (/(app|router)\.(get|post|put|delete|patch)\s*\(\s*[`"']\/(admin|internal|settings|billing|metrics)[^`"']*[`"']\s*,\s*(async\s*)?\([^)]*\)\s*=>/i.test(code) &&
-      !/(requireAuth|authenticate|verifyToken|checkSession|passport|authMiddleware)/i.test(code)) {
+  //
+  // Bound PER ROUTE, never file-wide. A file-wide `requireAuth` probe means one
+  // protected route anywhere in the file vouches for every other route in it —
+  // so the single unauthenticated /admin endpoint this rule exists to catch
+  // passes because an unrelated route two hundred lines away imports the
+  // middleware. Each declaration is judged on its OWN middleware chain.
+  for (const route of findPrivilegedRoutes(code)) {
+    if (AUTH_MIDDLEWARE_RE.test(route.middleware)) continue;
     violations.push({
       ruleId: 'APPSEC_01_UNAUTH_ENDPOINT',
       severity: 'CRITICAL',
-      message: 'Privileged route declared without explicit authentication middleware.',
+      message: `Privileged route ${route.method.toUpperCase()} ${route.path} declared without explicit authentication middleware.`,
       remediation: 'Inject verified auth middleware before route handler.',
+      evidence: `middleware chain between the path literal and the handler was ${JSON.stringify(route.middleware.trim()) || '(empty)'}; no auth guard token matched`,
     });
   }
 
@@ -226,6 +267,11 @@ function explainAppSecViolation(violationCode) {
   };
 }
 
+/**
+ * @returns {number} process exit code. A guard that prints BLOCKED and exits 0
+ * is not a guard: any CI preflight invoking this script would treat vulnerable
+ * input as success and continue the deploy unless it separately parsed stdout.
+ */
 function mainCli(argv = process.argv.slice(2)) {
   const args = argv;
   if (args.includes('--help') || args.length === 0) {
@@ -235,7 +281,7 @@ function mainCli(argv = process.argv.slice(2)) {
     console.log('  --explain=<ruleId>        Explain violation cause and remediation (e.g. APPSEC_04_SSRF_EGRESS)');
     console.log('  --test-sample             Run verification check against safe and vulnerable samples');
     console.log('  --json                    Output in JSON format');
-    return;
+    return 0;
   }
 
   const jsonMode = args.includes('--json');
@@ -246,19 +292,20 @@ function mainCli(argv = process.argv.slice(2)) {
     const explanation = explainAppSecViolation(explainArg);
     if (jsonMode) console.log(JSON.stringify(explanation, null, 2));
     else console.log(`[${explainArg}] ${explanation.title}:\n  Cause: ${explanation.rootCause}\n  Fix:   ${explanation.fix}`);
-    return;
+    return 0;
   }
 
   if (fileArg) {
     if (!fs.existsSync(fileArg)) {
       console.error(`File not found: ${fileArg}`);
-      process.exit(1);
+      return 1;
     }
     const code = fs.readFileSync(fileArg, 'utf8');
     const result = evaluateDeterministicAppSec(code);
     if (jsonMode) console.log(JSON.stringify(result, null, 2));
     else console.log(`[AppSec-Guard] ${fileArg}: ${result.decision} (${result.violationCount} violations)`);
-    return;
+    // Nonzero on BLOCKED so a CI preflight fails the build without parsing stdout.
+    return result.passed ? 0 : 1;
   }
 
   if (args.includes('--test-sample')) {
@@ -271,7 +318,12 @@ function mainCli(argv = process.argv.slice(2)) {
       console.log(`Safe code sample: ${safeResult.decision}`);
       console.log(`Vulnerable code sample: ${vulnResult.decision} (${vulnResult.violationCount} violations caught)`);
     }
+    // The self-test asserts the guard still catches the known-bad sample; a
+    // guard that stopped detecting it must fail loudly.
+    return safeResult.passed && !vulnResult.passed ? 0 : 1;
   }
+
+  return 0;
 }
 
 function canonicalPath(candidate) {
@@ -283,19 +335,27 @@ function canonicalPath(candidate) {
   }
 }
 
+// `require.main === module` is flagged by SonarQube S3403 as an always-false
+// strict equality under strict type inference. realpathSync keeps the check
+// working when the file is reached through an npm bin shim, where argv[1] is
+// the symlink and __filename is the real path.
 function isDirectInvocation() {
   const entryPoint = process.argv[1];
   if (!entryPoint) return false;
   return canonicalPath(entryPoint) === canonicalPath(__filename);
 }
 
+// Propagate the guard's verdict: a preflight that prints BLOCKED and exits 0
+// lets the pipeline it guards continue on vulnerable input.
 if (isDirectInvocation()) {
-  mainCli();
+  process.exitCode = mainCli();
 }
 
 module.exports = {
   SECRET_PATTERNS,
   SSRF_TARGETS,
+  AUTH_MIDDLEWARE_RE,
+  findPrivilegedRoutes,
   loadAppSecConfig,
   evaluateDeterministicAppSec,
   explainAppSecViolation,
