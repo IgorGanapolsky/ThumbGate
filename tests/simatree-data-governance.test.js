@@ -237,6 +237,39 @@ test('simatree-data-governance: require() returns exports without running the CL
 });
 
 // ---------------------------------------------------------------------------
+// Regression: the CLI must still run when launched through a symlink.
+//
+// npm `bin` shims, global installs and npx all hand Node a symlink in
+// process.argv[1] while __filename is already the realpath of the target. A
+// main check that compares those two without canonicalising is false in that
+// case, and the CLI silently exits 0 having printed nothing. `require.main ===
+// module` did not have that hole, so replacing it must not open one.
+// ---------------------------------------------------------------------------
+
+test('simatree-data-governance: CLI runs when invoked through a symlink', () => {
+  const scriptPath = path.join(__dirname, '..', 'scripts', 'simatree-data-governance.js');
+  const linkDir = fs.mkdtempSync(path.join(os.tmpdir(), 'simatree-symlink-'));
+  const linkPath = path.join(linkDir, 'simatree-cli.js');
+
+  try {
+    try {
+      fs.symlinkSync(scriptPath, linkPath);
+    } catch (err) {
+      // Windows without developer mode / restricted filesystems cannot symlink.
+      if (err.code === 'EPERM' || err.code === 'ENOSYS') return;
+      throw err;
+    }
+
+    const out = execFileSync(process.execPath, [linkPath, '--doctor'], { encoding: 'utf8' });
+    const report = JSON.parse(out);
+    assert.equal(report.ok, true);
+    assert.equal(report.name, 'simatree-data-governance');
+  } finally {
+    fs.rmSync(linkDir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Regression: qualified and quoted table names
 //
 // The matcher used to be `DELETE\s+FROM\s+\w+...`. `\w+` matches only the
