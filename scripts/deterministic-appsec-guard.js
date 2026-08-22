@@ -113,7 +113,7 @@ function evaluateDeterministicAppSec(codeOrPayload, options = {}) {
   }
 
   // Check 7: Telemetry & Log PII/Credential Leak
-  if (/console\.(log|error|warn|info)\s*\(.*(req\.headers|authorization|password|credit_card|secret_token).*\)/i.test(code)) {
+  if (/console\.(?:log|error|warn|info)\s*\([^)]*(?:req\.headers|authorization|password|credit_card|secret_token)/i.test(code)) {
     violations.push({
       ruleId: 'APPSEC_07_TELEMETRY_PII_LEAK',
       severity: 'HIGH',
@@ -123,9 +123,9 @@ function evaluateDeterministicAppSec(codeOrPayload, options = {}) {
   }
 
   // Check 8: Multi-Tenant IDOR Missing Tenant Scope
-  if (/(FROM\s+(accounts|users|billing_records|orders|subscriptions)|SELECT\s+.*FROM\s+[a-z_]+_data)/i.test(code) &&
-      !/(WHERE\s+.*tenant_id|org_id|account_id|user_id)/i.test(code) &&
-      /(WHERE|LIMIT)/i.test(code)) {
+  if (/\b(?:FROM\s+(?:accounts|users|billing_records|orders|subscriptions)|SELECT\s+[\w\s,*]+\s+FROM\s+[a-z_]+_data)\b/i.test(code) &&
+      !/\b(?:tenant_id|org_id|account_id|user_id)\b/i.test(code) &&
+      /\b(?:WHERE|LIMIT)\b/i.test(code)) {
     violations.push({
       ruleId: 'APPSEC_08_TENANT_IDOR',
       severity: 'CRITICAL',
@@ -135,7 +135,7 @@ function evaluateDeterministicAppSec(codeOrPayload, options = {}) {
   }
 
   // Check 9: Unrestricted Web-Executable File Upload
-  if (/(upload|saveFile|destination).*\.(exe|sh|php|py|bat|jsp)/i.test(code) && /(public|static|www|dist)/i.test(code)) {
+  if (/(?:upload|saveFile|destination)[^\n]*\.(?:exe|sh|php|py|bat|jsp)/i.test(code) && /(?:public|static|www|dist)/i.test(code)) {
     violations.push({
       ruleId: 'APPSEC_09_EXECUTABLE_UPLOAD',
       severity: 'HIGH',
@@ -274,7 +274,22 @@ function mainCli(argv = process.argv.slice(2)) {
   }
 }
 
-if (require.main === module) {
+function canonicalPath(candidate) {
+  const resolved = path.resolve(candidate);
+  try {
+    return fs.realpathSync(resolved);
+  } catch {
+    return resolved;
+  }
+}
+
+function isDirectInvocation() {
+  const entryPoint = process.argv[1];
+  if (!entryPoint) return false;
+  return canonicalPath(entryPoint) === canonicalPath(__filename);
+}
+
+if (isDirectInvocation()) {
   mainCli();
 }
 

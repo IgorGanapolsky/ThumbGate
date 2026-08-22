@@ -255,7 +255,22 @@ function mainCli(argv = process.argv.slice(2)) {
   }
 }
 
-if (require.main === module) {
+function canonicalPath(candidate) {
+  const resolved = path.resolve(candidate);
+  try {
+    return fs.realpathSync(resolved);
+  } catch {
+    return resolved;
+  }
+}
+
+function isDirectInvocation() {
+  const entryPoint = process.argv[1];
+  if (!entryPoint) return false;
+  return canonicalPath(entryPoint) === canonicalPath(__filename);
+}
+
+if (isDirectInvocation()) {
   mainCli();
 }
 
