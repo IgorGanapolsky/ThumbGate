@@ -30,6 +30,12 @@ const {
   globToRegExp,
   parseProperties,
   parseEntryExportNames,
+  parseEntryBindings,
+  extractEntryExportStatement,
+  deriveGitHubRepo,
+  resolveGhBinary,
+  makeGhApiReader,
+  GH_BINARY_CANDIDATES,
   stripComments,
   countCodeLines,
   DETECTOR_STATUS,
@@ -255,9 +261,29 @@ const D3_COMMITS = [
   { sha: 'eeeeeee5555555555555555555555555555555e5', commit: { author: { date: '2026-08-20T19:56:16Z' } } },
 ];
 
-function d3Routes({ contexts, perCommit, protectionError }) {
+/**
+ * @param {string[]} contexts         required by CLASSIC branch protection
+ * @param {string[]} [rulesetContexts] required by a repository RULESET only
+ * @param {Error}   [rulesetError]     the rulesets endpoint fails
+ * @param {boolean} [noRulesetRoute]   no route at all → the reader throws
+ */
+function d3Routes({
+  contexts, perCommit, protectionError, rulesetContexts, rulesetError, noRulesetRoute,
+}) {
   const routes = [];
   routes.push([/branches\/main\/protection$/, protectionError || { required_status_checks: { contexts } }]);
+  if (!noRulesetRoute) {
+    routes.push([/\/rules\/branches\//, rulesetError || [
+      { type: 'required_linear_history', ruleset_id: 7 },
+      {
+        type: 'required_status_checks',
+        ruleset_id: 7,
+        parameters: {
+          required_status_checks: (rulesetContexts || []).map((context) => ({ context })),
+        },
+      },
+    ]]);
+  }
   routes.push([/\/commits\?sha=/, D3_COMMITS]);
   for (const [sha, entries] of Object.entries(perCommit)) {
     routes.push([new RegExp(`commits/${sha}/check-runs`), checkRuns(entries)]);
@@ -289,7 +315,8 @@ test('D3 positive: a non-required check red on N consecutive commits is reported
     assert.equal(f.rule, 'D3.still-failing');
     assert.match(f.evidence, /streak of 5 consecutive 'failure'/);
     assert.match(f.evidence, /aaaaaaa1/);
-    assert.match(f.evidence, /required contexts = \[test\]/);
+    assert.match(f.evidence, /required by branch protection = \[test\]/);
+    assert.match(f.evidence, /required by ruleset\(s\) 7 = \[\]/);
   }
 });
 
@@ -411,6 +438,114 @@ test('D3 reports PARTIAL when some commits could not be read', () => {
   assert.equal(d3.notInspected.length, 2);
 });
 
+test('D3 negative: a check required ONLY by a repository ruleset is not reported as blocking nothing', () => {
+  // The defect this guards against: ThumbGate layers the "main governance"
+  // ruleset over classic branch protection. Reading only
+  // branches/main/protection would report `deploy` — required by the ruleset,
+  // red, and blocking every merge — as a check that "blocks nothing". That is
+  // a fabricated verdict, which is precisely the class D3 exists to detect.
+  const perCommit = {};
+  for (const c of D3_COMMITS) perCommit[c.sha] = [['test', 'success'], ['deploy', 'failure']];
+
+  const d3 = auditSilentlyRedChecks({
+    gitHubRepo: 'Example/Repo',
+    branch: 'main',
+    consecutiveFailureThreshold: 3,
+    commitLimit: 5,
+    ghApi: makeFakeGh(d3Routes({ contexts: ['test'], rulesetContexts: ['deploy'], perCommit })),
+  });
+
+  assert.equal(d3.status, DETECTOR_STATUS.RAN);
+  assert.deepEqual(d3.findings, [], 'the ruleset makes `deploy` required, so its failure already blocks the merge');
+  assert.deepEqual(d3.inspected.requiredContexts, ['deploy', 'test']);
+  assert.deepEqual(d3.inspected.requiredByBranchProtection, ['test']);
+  assert.deepEqual(d3.inspected.requiredByRulesets, ['deploy']);
+  assert.deepEqual(d3.inspected.rulesetsWithRequiredChecks, ['7']);
+});
+
+test('D3 positive: a check required by NEITHER surface is still reported when rulesets are readable', () => {
+  const perCommit = {};
+  for (const c of D3_COMMITS) perCommit[c.sha] = [['test', 'success'], ['deploy', 'failure']];
+
+  const d3 = auditSilentlyRedChecks({
+    gitHubRepo: 'Example/Repo',
+    branch: 'main',
+    consecutiveFailureThreshold: 3,
+    commitLimit: 5,
+    ghApi: makeFakeGh(d3Routes({ contexts: ['test'], rulesetContexts: ['CodeQL'], perCommit })),
+  });
+
+  assert.equal(d3.status, DETECTOR_STATUS.RAN);
+  assert.equal(d3.findings.length, 1);
+  assert.match(d3.findings[0].location, /"deploy"/);
+  assert.match(d3.findings[0].actually, /required by NEITHER classic branch protection NOR any repository ruleset/);
+  assert.match(d3.findings[0].evidence, /required by ruleset\(s\) 7 = \[CodeQL\]/);
+});
+
+test('D3 reports PARTIAL, naming the unread surface, when the rulesets endpoint fails', () => {
+  const perCommit = {};
+  for (const c of D3_COMMITS) perCommit[c.sha] = [['test', 'success'], ['deploy', 'failure']];
+  const err = new Error('HTTP 403');
+  err.stderr = 'gh: Resource not accessible by integration';
+
+  const d3 = auditSilentlyRedChecks({
+    gitHubRepo: 'Example/Repo',
+    branch: 'main',
+    consecutiveFailureThreshold: 3,
+    commitLimit: 5,
+    ghApi: makeFakeGh(d3Routes({ contexts: ['test'], rulesetError: err, perCommit })),
+  });
+
+  // It still reports what it CAN see, but never claims the surface was whole.
+  assert.equal(d3.status, DETECTOR_STATUS.PARTIAL);
+  assert.match(d3.reason, /ruleset-required contexts could NOT be read/);
+  assert.match(d3.reason, /misreported below as blocking nothing/);
+  assert.equal(d3.inspected.requiredByRulesets, '(NOT READ)');
+  assert.ok(d3.notInspected.some((n) => n.includes('rules/branches/main')));
+  assert.equal(d3.findings.length, 1, 'the finding is still surfaced, flagged as resting on a partial surface');
+});
+
+// ---------------------------------------------------------------------------
+// gh binary resolution — the reader must not depend on $PATH
+// ---------------------------------------------------------------------------
+
+test('resolveGhBinary only ever returns an absolute path from the fixed candidate list', () => {
+  for (const candidate of GH_BINARY_CANDIDATES) {
+    assert.ok(path.isAbsolute(candidate), `${candidate} must be absolute`);
+    assert.equal(path.basename(candidate), 'gh');
+  }
+  const resolved = resolveGhBinary();
+  if (resolved !== null) {
+    assert.ok(GH_BINARY_CANDIDATES.includes(resolved));
+    assert.ok(path.isAbsolute(resolved));
+  }
+  // A candidate list that resolves to nothing must return null, never a bare
+  // name that the OS would then look up through an attacker-writable $PATH.
+  assert.equal(resolveGhBinary(['/nonexistent/definitely/not/here/gh']), null);
+});
+
+test('makeGhApiReader throws a NAMED error when gh is absent, so D3 renders UNAVAILABLE', () => {
+  // The failure mode being guarded: a reader that quietly returned empty data
+  // would make D3 report a surface it never read as clean.
+  const reader = makeGhApiReader(null);
+  assert.throws(() => reader('repos/x/y'), (err) => {
+    assert.equal(err.code, 'ENOENT');
+    assert.match(err.message, /`gh` CLI was not found in any fixed install location/);
+    return true;
+  });
+
+  const d3 = auditSilentlyRedChecks({
+    gitHubRepo: 'Example/Repo',
+    branch: 'main',
+    consecutiveFailureThreshold: 3,
+    commitLimit: 5,
+    ghApi: reader,
+  });
+  assert.equal(d3.status, DETECTOR_STATUS.UNAVAILABLE);
+  assert.match(d3.reason, /`gh` CLI could not be executed/);
+  assert.deepEqual(d3.findings, []);
+});
+
 // ---------------------------------------------------------------------------
 // D4 — analysis blindspots
 // ---------------------------------------------------------------------------
@@ -504,7 +639,7 @@ test('D4 reports UNAVAILABLE when sonar-project.properties is missing', () => {
 // D5 — zero production call sites
 // ---------------------------------------------------------------------------
 
-test('D5 positive: a module the entry re-exports but nothing requires (the HermesPlatformProtocol case)', () => {
+test('D5 positive: in an UNPUBLISHED package, a module the entry re-exports but nothing requires is dead (the HermesPlatformProtocol case)', () => {
   const root = makeFixtureRepo({
     'package.json': JSON.stringify({ name: 'fx', main: 'src/index.js' }),
     'src/index.js': [
@@ -525,6 +660,7 @@ test('D5 positive: a module the entry re-exports but nothing requires (the Herme
     repoRoot: root,
     entryFile: 'src/index.js',
     productionRoots: ['src', 'scripts'],
+    publicApi: false, // nothing is published, so "no caller here" == "no caller"
   });
 
   assert.equal(d5.status, DETECTOR_STATUS.RAN);
@@ -594,6 +730,123 @@ test('D5 reports UNAVAILABLE when the package entry does not exist', () => {
   assert.equal(d5.status, DETECTOR_STATUS.UNAVAILABLE);
   assert.match(d5.reason, /not found/);
   assert.deepEqual(d5.findings, []);
+});
+
+/** The published-package fixture used by the public-API tests below. */
+function publishedPackageFixture() {
+  return makeFixtureRepo({
+    'package.json': JSON.stringify({ name: 'fx-published', main: 'src/index.js' }),
+    'src/index.js': [
+      "'use strict';",
+      "const { PublicClass, publicFn } = require('./public-module');",
+      'module.exports = Object.assign({}, {}, { PublicClass, publicFn });',
+    ].join('\n'),
+    'src/public-module.js': [
+      "'use strict';",
+      'class PublicClass {}',
+      'function publicFn() { return null; }',
+      'module.exports = { PublicClass, publicFn };',
+    ].join('\n'),
+    'scripts/unrelated.js': "'use strict';\nmodule.exports = {};\n",
+  });
+}
+
+test('D5 does NOT call a published entry export dead — it reports it NOT INSPECTED and drops to PARTIAL', () => {
+  // The defect this guards against: for a package on npm, the entry exports ARE
+  // the public API and their callers are downstream consumers that no local
+  // corpus can contain. "No internal reference" is not the same fact as "dead",
+  // and emitting it as a finding would be an invented verdict — the same class
+  // of dishonesty every other detector in this file exists to catch.
+  const root = publishedPackageFixture();
+
+  const d5 = auditZeroCallSites({
+    repoRoot: root,
+    entryFile: 'src/index.js',
+    productionRoots: ['src', 'scripts'],
+    publicApi: true,
+    packageName: 'fx-published',
+  });
+
+  assert.deepEqual(d5.findings, [], 'no fabricated dead-code verdict against the public API');
+  assert.equal(d5.status, DETECTOR_STATUS.PARTIAL, 'and it is NOT reported clean either');
+  assert.match(d5.reason, /downstream npm consumers are outside every corpus/);
+  assert.match(d5.reason, /reported neither dead NOR clean/);
+  assert.equal(d5.inspected.publishedPackage, 'fx-published');
+  assert.equal(d5.inspected.publicApiNotAnalyzable, 3);
+
+  // The module AND both exports are named, so a reader can see exactly what
+  // went uninspected rather than inferring it from a silence.
+  const gaps = d5.notInspected.join('\n');
+  assert.match(gaps, /src\/public-module\.js — re-exported by src\/index\.js/);
+  assert.match(gaps, /export "PublicClass"/);
+  assert.match(gaps, /export "publicFn"/);
+  for (const gap of d5.notInspected) assert.match(gap, /fx-published/);
+});
+
+test('D5 renders the published-API gap in the PARTIAL COVERAGE block, not as a clean bill of health', () => {
+  const root = publishedPackageFixture();
+  const report = auditGovernanceConflicts({ repoRoot: root, offline: true, gitHubRepo: null });
+  const text = renderConflictAuditText(report);
+
+  assert.equal(report.detectors.D5.status, DETECTOR_STATUS.PARTIAL);
+  assert.match(text, /PARTIAL — some of the surface was NOT checked/);
+  assert.match(text, /!\s+PARTIAL COVERAGE/);
+  assert.ok(
+    !/D5\s+Zero production call sites\n\s+RAN — CLEAN/.test(text),
+    'a surface that could not be inspected must never render as CLEAN',
+  );
+});
+
+test('D5 still reports a module the entry pulls in WITHOUT re-exporting, even in a published package', () => {
+  // Requiring a module for a side effect and never exporting anything from it
+  // leaves no public entry point, so "no caller" IS provable here.
+  const root = makeFixtureRepo({
+    'package.json': JSON.stringify({ name: 'fx-published', main: 'src/index.js' }),
+    'src/index.js': [
+      "'use strict';",
+      "const { PublicClass } = require('./public-module');",
+      "const internalOnly = require('./internal-module');",
+      'module.exports = { PublicClass };',
+    ].join('\n'),
+    'src/public-module.js': "'use strict';\nclass PublicClass {}\nmodule.exports = { PublicClass };\n",
+    'src/internal-module.js': "'use strict';\nmodule.exports = { helper() { return 1; } };\n",
+    'scripts/unrelated.js': "'use strict';\nmodule.exports = {};\n",
+  });
+
+  const d5 = auditZeroCallSites({
+    repoRoot: root,
+    entryFile: 'src/index.js',
+    productionRoots: ['src', 'scripts'],
+    publicApi: true,
+    packageName: 'fx-published',
+  });
+
+  const unused = findingsWithRule(d5, 'D5.module-unused').map((f) => f.location);
+  assert.deepEqual(unused, ['src/internal-module.js']);
+  assert.ok(!unused.includes('src/public-module.js'), 'the re-exported module is public API, not dead');
+});
+
+test('parseEntryBindings maps destructured and default require bindings to their specifier', () => {
+  const bindings = parseEntryBindings([
+    "const { A, B: renamed } = require('./one');",
+    "const Whole = require('./two');",
+    "const external = require('lodash');",
+  ].join('\n'));
+
+  assert.deepEqual(bindings, [
+    { specifier: './one', names: ['A', 'renamed'] },
+    { specifier: './two', names: ['Whole'] },
+    { specifier: 'lodash', names: ['external'] },
+  ]);
+});
+
+test('extractEntryExportStatement returns the whole assignment, or empty when there is none', () => {
+  const src = "const a = 1;\nmodule.exports = Object.assign({}, base, {\n  A,\n});\nconst after = 2;";
+  const statement = extractEntryExportStatement(src);
+  assert.match(statement, /^module\.exports = Object\.assign/);
+  assert.ok(statement.includes('A,'));
+  assert.ok(!statement.includes('const after'));
+  assert.equal(extractEntryExportStatement('const a = 1;\n'), '');
 });
 
 // ---------------------------------------------------------------------------
@@ -820,10 +1073,36 @@ test('stripComments blanks comments without touching strings or regex literals',
     'const real = Ghost;',
   ].join('\n');
   const out = stripComments(src);
+  const lines = out.split('\n');
 
   assert.equal((out.match(/Ghost/g) || []).length, 1, 'only the real reference survives');
-  assert.ok(out.includes('https://example.com/x'), 'string literals are preserved');
-  assert.equal(out.split('\n').length, src.split('\n').length, 'line count is preserved');
+  // Exact-equality on the stripped line, never a substring probe. A
+  // `.includes(<url>)` check here is what CodeQL's
+  // js/incomplete-url-substring-sanitization flags: a substring test on an
+  // unparsed URL proves nothing about what surrounds it. Equality proves the
+  // whole line, which is what this test actually means to assert — the `//`
+  // inside the string literal must NOT be mistaken for a comment start.
+  assert.equal(lines[0].trimEnd(), 'const url = "https://example.com/x";', 'string literals are preserved intact');
+  assert.equal(lines[1], 'const re = /https?:\\/\\/[a-z]+/;', 'regex literals are preserved intact');
+  assert.equal(lines.length, src.split('\n').length, 'line count is preserved');
+});
+
+test('deriveGitHubRepo keeps dots in the repository name and strips only a terminal .git', () => {
+  // A `[^\\s.]+` capture truncates `foo.bar.git` to `foo`, which then queries an
+  // unrelated repository and reports D3 unavailable for the wrong reason.
+  const cases = [
+    ['https://github.com/acme/foo.bar.git', 'acme/foo.bar'],
+    ['https://github.com/acme/foo.bar', 'acme/foo.bar'],
+    ['git@github.com:acme/foo.bar.git', 'acme/foo.bar'],
+    ['https://github.com/IgorGanapolsky/ThumbGate.git', 'IgorGanapolsky/ThumbGate'],
+    ['https://github.com/acme/plain', 'acme/plain'],
+  ];
+  for (const [url, expected] of cases) {
+    const root = makeFixtureRepo({
+      '.git/config': `[remote "origin"]\n\turl = ${url}\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n`,
+    });
+    assert.equal(deriveGitHubRepo(root), expected, url);
+  }
 });
 
 test('countCodeLines ignores blank lines', () => {

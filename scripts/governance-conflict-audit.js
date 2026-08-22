@@ -41,12 +41,16 @@
  *     so the gate is silently inert. Detected by attempting compilation, never
  *     by pattern-matching the pattern.
  *
- * D3  Silently-red non-required check.  A check that is NOT in
- *     `branches/<branch>/protection.required_status_checks.contexts` and has
- *     failed on N or more consecutive recent commits. Real case: the `deploy`
- *     and `verify` jobs (workflows "Deploy to Railway" / "Verify Production
- *     Deploy") failed on 18 consecutive main commits between 2026-08-19 and
- *     2026-08-21 while `test` stayed green and nothing blocked a merge.
+ * D3  Silently-red non-required check.  A check required by NEITHER
+ *     `branches/<branch>/protection.required_status_checks.contexts` NOR any
+ *     repository ruleset (`rules/branches/<branch>`), which has failed on N or
+ *     more consecutive recent commits. Both surfaces are read and UNIONED:
+ *     reading only branch protection would report a ruleset-required check as
+ *     blocking nothing, which is the same fabricated-verdict failure this file
+ *     exists to catch. Real case: the `deploy` and `verify` jobs (workflows
+ *     "Deploy to Railway" / "Verify Production Deploy") failed on 18
+ *     consecutive main commits between 2026-08-19 and 2026-08-21 while `test`
+ *     stayed green and nothing blocked a merge.
  *
  * D4  Analysis blindspots.  Entries in `sonar.exclusions` /
  *     `sonar.coverage.exclusions` that hide non-trivial code from scanning.
@@ -58,10 +62,15 @@
  *
  * D5  Zero production call sites.  A module reached from the package entry
  *     that no production code path requires, or an entry-level export that no
- *     production code path ever calls. Real cases: `HermesPlatformProtocol`
- *     (src/hermes-platform-protocol.js) had zero call sites outside its own
- *     test; `evaluateThreat` was imported by the entry and re-exported without
- *     ever being called.
+ *     production code path ever calls.
+ *     BOUNDED BY WHAT A LOCAL CORPUS CAN KNOW: when the repository publishes an
+ *     npm package, its entry exports ARE the public API and their callers are
+ *     downstream consumers no local search can see. Those are listed as NOT
+ *     INSPECTED and the detector reports PARTIAL — calling them dead would be
+ *     a fabricated verdict, and calling them clean would be the opposite lie.
+ *     A finding is only emitted where "no caller" is actually provable: a
+ *     private/unpublished package, or a module the entry pulls in without
+ *     re-exporting anything from it.
  *
  * D6  Main-check broken under symlink.  The bare
  *     `path.resolve(process.argv[1]) === path.resolve(__filename)` form, which
@@ -533,10 +542,51 @@ function auditGateConfigs({ repoRoot, gatesDir, patternKeyReadByEngine = 'patter
 // D3 — silently-red non-required check
 // ---------------------------------------------------------------------------
 
+/**
+ * Fixed install locations for the `gh` CLI, in probe order.
+ *
+ * The binary is resolved to an ABSOLUTE path before it is executed rather than
+ * being handed to the OS as the bare name `gh`. A bare name is resolved by
+ * walking $PATH, and $PATH is attacker-writable in plenty of environments — a
+ * directory prepended to it can substitute a different executable entirely
+ * (SonarQube S4036 / CWE-426). An auditor whose own GitHub reader can be
+ * swapped out from the environment would be one more control that reports
+ * success while enforcing nothing.
+ */
+const GH_BINARY_CANDIDATES = Object.freeze([
+  '/opt/homebrew/bin/gh',              // Homebrew, Apple silicon
+  '/usr/local/bin/gh',                 // Homebrew, Intel macOS
+  '/home/linuxbrew/.linuxbrew/bin/gh', // Homebrew, Linux
+  '/usr/bin/gh',                       // apt / dnf, and the GitHub Actions runner images
+  '/bin/gh',
+  '/opt/local/bin/gh',                 // MacPorts
+  '/snap/bin/gh',
+]);
+
+/** First candidate that exists and is executable, or null when none is. */
+function resolveGhBinary(candidates = GH_BINARY_CANDIDATES) {
+  for (const candidate of candidates) {
+    try {
+      if (!fs.statSync(candidate).isFile()) continue;
+      fs.accessSync(candidate, fs.constants.X_OK);
+      return candidate;
+    } catch { /* not installed here; try the next fixed location */ }
+  }
+  return null;
+}
+
 /** Default GitHub reader. Injectable so tests never touch the network. */
-function makeGhApiReader() {
+function makeGhApiReader(ghBinary = resolveGhBinary()) {
+  if (!ghBinary) {
+    // A reader that cannot run must SAY it cannot run. Returning a stub that
+    // quietly produced empty data would make D3 render as clean over a surface
+    // it never read — the exact defect class this file exists to detect.
+    const missing = new Error(`the \`gh\` CLI was not found in any fixed install location (${GH_BINARY_CANDIDATES.join(', ')})`);
+    missing.code = 'ENOENT';
+    return function ghApiUnavailable() { throw missing; };
+  }
   return function ghApi(apiPath) {
-    const raw = execFileSync('gh', ['api', apiPath], {
+    const raw = execFileSync(ghBinary, ['api', apiPath], {
       encoding: 'utf8',
       maxBuffer: 32 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -547,7 +597,7 @@ function makeGhApiReader() {
 
 function ghErrorText(err) {
   if (!err) return 'unknown error';
-  if (err.code === 'ENOENT') return 'the `gh` CLI is not installed or not on PATH';
+  if (err.code === 'ENOENT') return `the \`gh\` CLI could not be executed: ${String(err.message || err).split('\n')[0]}`;
   const stderr = err.stderr ? String(err.stderr).trim().split('\n')[0] : '';
   const message = String(err.message || err).split('\n')[0];
   const text = stderr || message;
@@ -577,18 +627,52 @@ function auditSilentlyRedChecks({
   // 1. Required contexts. Without these, "non-required" is unknowable and the
   //    detector must not guess — a check reported as non-required when it is
   //    actually required is a fabricated finding.
-  let requiredContexts;
+  //
+  //    TWO INDEPENDENT SURFACES can make a check required, and reading only one
+  //    of them is itself the defect class this file exists to find:
+  //      a. classic branch protection   → branches/<branch>/protection
+  //      b. repository RULESETS         → rules/branches/<branch>
+  //    ThumbGate layers the "main governance" ruleset on top of classic
+  //    protection. A check required only by the ruleset would, if only (a) were
+  //    read, be reported as red-and-blocking-nothing while it was in fact
+  //    blocking every merge. The two sets are UNIONED, and a ruleset read that
+  //    fails downgrades the detector to PARTIAL instead of silently narrowing
+  //    the definition of "required".
+  let protectionContexts;
   try {
     const protection = ghApi(`repos/${gitHubRepo}/branches/${branch}/protection`);
     const contexts = protection
       && protection.required_status_checks
       && protection.required_status_checks.contexts;
-    requiredContexts = Array.isArray(contexts) ? contexts : [];
+    protectionContexts = Array.isArray(contexts) ? contexts : [];
   } catch (err) {
     d3.status = DETECTOR_STATUS.UNAVAILABLE;
     d3.reason = `could not read repos/${gitHubRepo}/branches/${branch}/protection: ${ghErrorText(err)}`;
     return d3;
   }
+
+  const rulesetContexts = [];
+  const rulesetIds = [];
+  let rulesetReadError = null;
+  try {
+    const rules = ghApi(`repos/${gitHubRepo}/rules/branches/${encodeURIComponent(branch)}`);
+    for (const rule of Array.isArray(rules) ? rules : []) {
+      if (!rule || rule.type !== 'required_status_checks') continue;
+      const id = rule.ruleset_id === undefined || rule.ruleset_id === null
+        ? '<unnamed ruleset>'
+        : String(rule.ruleset_id);
+      if (!rulesetIds.includes(id)) rulesetIds.push(id);
+      const checks = rule.parameters && rule.parameters.required_status_checks;
+      for (const check of Array.isArray(checks) ? checks : []) {
+        const context = check && typeof check.context === 'string' ? check.context : null;
+        if (context && !rulesetContexts.includes(context)) rulesetContexts.push(context);
+      }
+    }
+  } catch (err) {
+    rulesetReadError = ghErrorText(err);
+  }
+
+  const requiredContexts = Array.from(new Set([...protectionContexts, ...rulesetContexts])).sort();
 
   // 2. Recent commits.
   let commits;
@@ -688,9 +772,9 @@ function auditSilentlyRedChecks({
       location: `${gitHubRepo}@${branch} → check run "${name}"`,
       appears: `"${name}" runs on every push to ${branch} and shows up in the checks list, so it reads as an enforced deploy/verification step.`,
       actually: stillFailing
-        ? `It is NOT in required_status_checks.contexts, and it has failed on the last ${best.length} scanned commit(s) up to and including the newest. Nothing was blocked by any of those failures.`
-        : `It is NOT in required_status_checks.contexts, and it failed on ${best.length} consecutive commit(s) without blocking anything. It has since recovered.`,
-      evidence: `streak of ${best.length} consecutive 'failure' conclusion(s), ${newest.short}${newest.date ? ` (${newest.date})` : ''} back to ${oldest.short}${oldest.date ? ` (${oldest.date})` : ''}: ${streakShas.join(', ')}; required contexts = [${requiredContexts.join(', ')}]`,
+        ? `It is required by NEITHER classic branch protection NOR any repository ruleset, and it has failed on the last ${best.length} scanned commit(s) up to and including the newest. Nothing was blocked by any of those failures.`
+        : `It is required by NEITHER classic branch protection NOR any repository ruleset, and it failed on ${best.length} consecutive commit(s) without blocking anything. It has since recovered.`,
+      evidence: `streak of ${best.length} consecutive 'failure' conclusion(s), ${newest.short}${newest.date ? ` (${newest.date})` : ''} back to ${oldest.short}${oldest.date ? ` (${oldest.date})` : ''}: ${streakShas.join(', ')}; required by branch protection = [${protectionContexts.join(', ')}]; required by ruleset(s) ${rulesetIds.length > 0 ? rulesetIds.join(', ') : '(none)'} = [${rulesetContexts.join(', ')}]`,
     }));
   }
 
@@ -701,13 +785,27 @@ function auditSilentlyRedChecks({
     commitsRequested: commitLimit,
     checkNamesSeen: allNames.size,
     requiredContexts,
+    requiredByBranchProtection: protectionContexts,
+    requiredByRulesets: rulesetReadError ? '(NOT READ)' : rulesetContexts,
+    rulesetsWithRequiredChecks: rulesetReadError ? '(NOT READ)' : rulesetIds,
     consecutiveFailureThreshold,
   };
 
+  // Any surface that was not read has to downgrade the verdict. Both gaps are
+  // reported together so neither hides behind the other.
+  const coverageGaps = [];
+  if (rulesetReadError) {
+    coverageGaps.push(`ruleset-required contexts could NOT be read (repos/${gitHubRepo}/rules/branches/${branch}: ${rulesetReadError}), so "required" here means classic branch protection only and a check required by a ruleset alone would be misreported below as blocking nothing`);
+  }
   if (failedCommits.length > 0) {
+    coverageGaps.push(`${failedCommits.length} commit(s) could not be read; their check runs were NOT inspected and any streak crossing them is under-counted`);
+  }
+  if (coverageGaps.length > 0) {
     d3.status = DETECTOR_STATUS.PARTIAL;
-    d3.reason = `${failedCommits.length} commit(s) could not be read; their check runs were NOT inspected and any streak crossing them is under-counted`;
-    d3.notInspected = failedCommits;
+    d3.reason = coverageGaps.join('; ');
+    d3.notInspected = rulesetReadError
+      ? [`repos/${gitHubRepo}/rules/branches/${branch} (${rulesetReadError})`, ...failedCommits]
+      : failedCommits;
   }
 
   return d3;
@@ -870,6 +968,64 @@ function parseEntryRequires(text) {
 }
 
 /**
+ * Local identifiers bound from each `require('…')` declaration in the entry.
+ *
+ * Needed to answer "is this module part of the PUBLISHED surface?": a module
+ * whose bindings reach `module.exports` is public API, and public API cannot be
+ * proven dead from this repository alone — its callers are downstream npm
+ * consumers that no local corpus contains.
+ *
+ * The destructuring pattern is matched with `[^}]*` (not a lazy `[\s\S]*?`) so
+ * the scan stays linear on any input; a nested brace inside a require
+ * destructuring is not valid CommonJS shorthand anyway.
+ */
+function parseEntryBindings(text) {
+  const out = [];
+  const re = /(?:const|let|var)\s+(\{[^}]*\}|[A-Za-z_$][\w$]*)\s*=\s*require\(\s*(['"])([^'"]+)\2\s*\)/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const target = m[1];
+    const names = [];
+    if (target.startsWith('{')) {
+      for (const chunk of target.slice(1, -1).split(',')) {
+        const trimmed = chunk.trim();
+        if (!trimmed) continue;
+        const parts = trimmed.split(':');
+        const local = (parts.length > 1 ? parts[1] : parts[0]).trim();
+        if (/^[A-Za-z_$][\w$]*$/.test(local)) names.push(local);
+      }
+    } else if (/^[A-Za-z_$][\w$]*$/.test(target)) {
+      names.push(target);
+    }
+    out.push({ specifier: m[3], names });
+  }
+  return out;
+}
+
+/**
+ * The text of the entry's `module.exports = …` statement, or '' when absent.
+ * Shared by parseEntryExportNames and the public-API check so both read exactly
+ * the same span.
+ */
+function extractEntryExportStatement(text) {
+  const start = text.indexOf('module.exports');
+  if (start === -1) return '';
+
+  // End of the assignment: the first `;` or newline reached at zero
+  // paren/brace/bracket depth.
+  let depth = 0;
+  let end = text.length;
+  const eq = text.indexOf('=', start);
+  for (let i = start; i < text.length; i += 1) {
+    const c = text[i];
+    if (c === '(' || c === '{' || c === '[') depth += 1;
+    else if (c === ')' || c === '}' || c === ']') depth -= 1;
+    else if (depth === 0 && (c === ';' || c === '\n') && i > eq) { end = i; break; }
+  }
+  return text.slice(start, end);
+}
+
+/**
  * Names re-exported by the entry's `module.exports = …` statement.
  *
  * Deliberately reads EVERY object literal in the statement, not just the first.
@@ -879,20 +1035,8 @@ function parseEntryRequires(text) {
  * failure mode this whole tool exists to catch.
  */
 function parseEntryExportNames(text) {
-  const start = text.indexOf('module.exports');
-  if (start === -1) return [];
-
-  // Find the end of the assignment statement: the first `;` or newline reached
-  // at zero paren/brace/bracket depth.
-  let depth = 0;
-  let end = text.length;
-  for (let i = start; i < text.length; i += 1) {
-    const c = text[i];
-    if (c === '(' || c === '{' || c === '[') depth += 1;
-    else if (c === ')' || c === '}' || c === ']') depth -= 1;
-    else if (depth === 0 && (c === ';' || c === '\n') && i > text.indexOf('=', start)) { end = i; break; }
-  }
-  const statement = text.slice(start, end);
+  const statement = extractEntryExportStatement(text);
+  if (!statement) return [];
 
   const names = [];
   const seen = new Set();
@@ -922,7 +1066,13 @@ function parseEntryExportNames(text) {
   return names;
 }
 
-function auditZeroCallSites({ repoRoot, entryFile, productionRoots }) {
+/**
+ * @param {boolean} [publicApi]   true when this repository IS a published npm
+ *                                package, i.e. the entry surface has consumers
+ *                                that no local corpus can contain
+ * @param {string|null} [packageName]
+ */
+function auditZeroCallSites({ repoRoot, entryFile, productionRoots, publicApi = false, packageName = null }) {
   const d5 = detectorResult('D5', 'Zero production call sites');
 
   const absEntry = path.join(repoRoot, entryFile);
@@ -938,6 +1088,15 @@ function auditZeroCallSites({ repoRoot, entryFile, productionRoots }) {
 
   const entryRel = toPosix(entryFile);
   const entryDir = path.dirname(absEntry);
+  const exportStatement = extractEntryExportStatement(entryRead.text);
+
+  // Symbols and modules that ARE the published package surface. For these the
+  // corpus below can only prove "no INTERNAL caller", which is not the same
+  // fact as "dead" — the callers are downstream npm consumers of the package,
+  // and they are outside anything this process can read. Reporting them as
+  // findings would be an invented verdict, so they are listed as NOT INSPECTED
+  // instead, and the detector drops to PARTIAL to say so out loud.
+  const publicApiNotAnalyzable = [];
 
   // Local modules the entry pulls in. Non-relative specifiers are third-party
   // and out of scope.
@@ -954,6 +1113,19 @@ function auditZeroCallSites({ repoRoot, entryFile, productionRoots }) {
     if (!localModules.some((m) => m.rel === rel)) {
       localModules.push({ rel, abs: hit, specifier });
     }
+  }
+
+  // Which local modules feed a symbol into `module.exports`? Those modules are
+  // re-exported, so they are public API rather than internal wiring.
+  const specifierToRel = new Map(localModules.map((mod) => [mod.specifier, mod.rel]));
+  const publicApiModules = new Set();
+  for (const binding of parseEntryBindings(entryRead.text)) {
+    const rel = specifierToRel.get(binding.specifier);
+    if (!rel) continue;
+    const reaches = binding.names.some(
+      (name) => new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(exportStatement),
+    );
+    if (reaches) publicApiModules.add(rel);
   }
 
   // Production corpus: everything under productionRoots except the entry file.
@@ -996,6 +1168,10 @@ function auditZeroCallSites({ repoRoot, entryFile, productionRoots }) {
       }
     }
     if (requirers.length === 0) {
+      if (publicApi && publicApiModules.has(mod.rel)) {
+        publicApiNotAnalyzable.push(`${mod.rel} — re-exported by ${entryRel}, so its call sites are downstream consumers of the published package${packageName ? ` \`${packageName}\`` : ''}, which this corpus cannot contain`);
+        continue;
+      }
       d5.findings.push(makeFinding({
         detector: 'D5',
         severity: SEVERITY.MEDIUM,
@@ -1023,6 +1199,10 @@ function auditZeroCallSites({ repoRoot, entryFile, productionRoots }) {
       if (re.test(file.text)) { users.push(file.rel); if (users.length > 2) break; }
     }
     if (users.length === 0) {
+      if (publicApi) {
+        publicApiNotAnalyzable.push(`${entryRel} → export "${name}" — a published entry export${packageName ? ` of \`${packageName}\`` : ''}, so its callers are downstream npm consumers this corpus cannot contain`);
+        continue;
+      }
       d5.findings.push(makeFinding({
         detector: 'D5',
         severity: SEVERITY.MEDIUM,
@@ -1041,12 +1221,21 @@ function auditZeroCallSites({ repoRoot, entryFile, productionRoots }) {
     productionFilesSearched: corpus.length,
     entryLocalModules: localModules.length,
     entryExportNames: exportNames.length,
+    publishedPackage: publicApi ? (packageName || 'yes') : 'no (private or unnamed)',
+    publicApiNotAnalyzable: publicApiNotAnalyzable.length,
   };
 
+  const gaps = [];
+  if (publicApiNotAnalyzable.length > 0) {
+    gaps.push(`${publicApiNotAnalyzable.length} entry-surface symbol(s)/module(s) have no INTERNAL call site, but this repository publishes${packageName ? ` \`${packageName}\`` : ' a package'} and downstream npm consumers are outside every corpus this process can read; they are reported neither dead NOR clean`);
+  }
   if (unreadable.length > 0) {
+    gaps.push(`${unreadable.length} production file(s) could not be searched; a call site inside them would have been missed, so a "zero call sites" finding here is weaker than it looks`);
+  }
+  if (gaps.length > 0) {
     d5.status = DETECTOR_STATUS.PARTIAL;
-    d5.reason = `${unreadable.length} production file(s) could not be searched; a call site inside them would have been missed, so a "zero call sites" finding here is weaker than it looks`;
-    d5.notInspected = unreadable;
+    d5.reason = gaps.join('; ');
+    d5.notInspected = [...publicApiNotAnalyzable, ...unreadable];
   }
 
   return d5;
@@ -1160,8 +1349,16 @@ function deriveGitHubRepo(repoRoot) {
   for (const candidate of candidates) {
     const read = readBounded(candidate, 1024 * 1024);
     if (!read.ok) continue;
-    const m = /url\s*=\s*(?:https:\/\/github\.com\/|git@github\.com:)([^\s/]+)\/([^\s.]+)(?:\.git)?/.exec(read.text);
-    if (m) return `${m[1]}/${m[2]}`;
+    // The repository name may contain dots (`acme/foo.bar`). Capture the whole
+    // non-whitespace tail and strip ONLY a terminal `.git`, rather than
+    // excluding dots from the name — a `[^\s.]+` capture silently truncates
+    // `foo.bar.git` to `foo`, which then queries an unrelated repository and
+    // reports D3 unavailable for a reason that is not the real one.
+    const m = /url\s*=\s*(?:https:\/\/github\.com\/|git@github\.com:)([^\s/]+)\/(\S+)/.exec(read.text);
+    if (!m) continue;
+    const owner = m[1];
+    const name = m[2].replace(/\/+$/, '').replace(/\.git$/i, '');
+    if (owner && name && !name.includes('/')) return `${owner}/${name}`;
   }
   return null;
 }
@@ -1235,7 +1432,16 @@ function auditGovernanceConflicts(opts = {}) {
     excludedLineThreshold,
     sonarFile: opts.sonarFile || SONAR_PROPERTIES,
   });
-  const d5 = auditZeroCallSites({ repoRoot, entryFile, productionRoots });
+  // A package with a name that is not marked private is published: its entry
+  // exports have consumers outside this repository.
+  const publicApi = Boolean(pkg && typeof pkg.name === 'string' && pkg.name && pkg.private !== true);
+  const d5 = auditZeroCallSites({
+    repoRoot,
+    entryFile,
+    productionRoots,
+    publicApi,
+    packageName: publicApi ? pkg.name : null,
+  });
   const d6 = auditMainCheckUnderSymlink({ repoRoot, productionRoots, binTargets });
 
   const detectors = [d1, d2, d3, d4, d5, d6];
@@ -1384,6 +1590,11 @@ module.exports = {
   parseProperties,
   parseEntryExportNames,
   parseEntryRequires,
+  parseEntryBindings,
+  extractEntryExportStatement,
+  resolveGhBinary,
+  makeGhApiReader,
+  GH_BINARY_CANDIDATES,
   stripComments,
   countCodeLines,
   deriveGitHubRepo,
