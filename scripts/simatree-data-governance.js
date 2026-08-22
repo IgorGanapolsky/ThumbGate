@@ -261,8 +261,41 @@ function checkDoctor() {
   };
 }
 
+/**
+ * Path-based main check. The `require.main === module` form trips SonarCloud
+ * rule javascript:S3403 (always-false strict equality under strict type
+ * inference), so we compare paths instead.
+ *
+ * WHY realpath AND NOT A BARE `path.resolve` COMPARE: when this CLI is launched
+ * through a symlink — an npm `bin` shim, a global install, `npx` — Node leaves
+ * `process.argv[1]` as the symlink path while `__filename` is already the
+ * realpath of the target. A plain resolve-and-compare is then false, and the
+ * process would exit 0 having printed nothing: no `--doctor` report, no
+ * `--eval` result, no `--sql` verdict. `require.main === module` did not have
+ * that hole because Node's module resolution canonicalises first. Canonicalising
+ * both sides restores the original semantics.
+ *
+ * realpathSync throws on a path that no longer exists, so each side falls back
+ * to its resolved form; that keeps the check total rather than crashing on a
+ * deleted or exotic entry point.
+ */
+function canonicalPath(candidate) {
+  const resolved = path.resolve(candidate);
+  try {
+    return fs.realpathSync(resolved);
+  } catch {
+    return resolved;
+  }
+}
+
+function isDirectInvocation() {
+  const entryPoint = process.argv[1];
+  if (!entryPoint) return false;
+  return canonicalPath(entryPoint) === canonicalPath(__filename);
+}
+
 // CLI Interface
-if (require.main === module) {
+if (isDirectInvocation()) {
   const args = process.argv.slice(2);
 
   if (args.includes('--doctor')) {

@@ -3,8 +3,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
-const { execSync } = require('node:child_process');
+const { execSync, execFileSync } = require('node:child_process');
 
 const {
   evaluateDataLifecycleIntent,
@@ -191,6 +192,81 @@ test('simatree-data-governance: CLI execution handles --doctor and --sql flags',
   const sqlJson = JSON.parse(sqlOut);
   assert.equal(sqlJson.allowed, true);
   assert.equal(sqlJson.isDestructive, false);
+});
+
+// ---------------------------------------------------------------------------
+// Regression: the CLI must stay inert when the module is required.
+//
+// The entry guard used to be `require.main === module`, which SonarCloud flags
+// as rule javascript:S3403 — an always-false strict equality under strict type
+// inference. It is now the path-resolve form this repo standardised on. Either
+// way the contract is identical, and that contract is what this test pins:
+// `require()` hands back the exports and prints nothing, even when
+// `process.argv` carries flags the CLI would otherwise act on.
+// ---------------------------------------------------------------------------
+
+test('simatree-data-governance: require() returns exports without running the CLI', () => {
+  const scriptPath = path.join(__dirname, '..', 'scripts', 'simatree-data-governance.js');
+  const probeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'simatree-require-probe-'));
+  const probePath = path.join(probeDir, 'probe.js');
+
+  fs.writeFileSync(
+    probePath,
+    [
+      "'use strict';",
+      'const mod = require(process.argv[2]);',
+      "const ok = typeof mod.checkDoctor === 'function'",
+      "  && typeof mod.evaluateDataLifecycleIntent === 'function';",
+      "process.stdout.write(ok ? 'REQUIRED_WITHOUT_CLI' : 'MISSING_EXPORTS');",
+      '',
+    ].join('\n')
+  );
+
+  try {
+    // `--doctor` is deliberately present in argv: an entry guard that keys off
+    // argv contents alone — or whose main check misfires — would emit the
+    // doctor report here and fail the exact-match assertion below.
+    // execFileSync (no shell) keeps the paths out of a command string.
+    const out = execFileSync(process.execPath, [probePath, scriptPath, '--doctor'], {
+      encoding: 'utf8',
+    });
+    assert.equal(out, 'REQUIRED_WITHOUT_CLI');
+  } finally {
+    fs.rmSync(probeDir, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Regression: the CLI must still run when launched through a symlink.
+//
+// npm `bin` shims, global installs and npx all hand Node a symlink in
+// process.argv[1] while __filename is already the realpath of the target. A
+// main check that compares those two without canonicalising is false in that
+// case, and the CLI silently exits 0 having printed nothing. `require.main ===
+// module` did not have that hole, so replacing it must not open one.
+// ---------------------------------------------------------------------------
+
+test('simatree-data-governance: CLI runs when invoked through a symlink', () => {
+  const scriptPath = path.join(__dirname, '..', 'scripts', 'simatree-data-governance.js');
+  const linkDir = fs.mkdtempSync(path.join(os.tmpdir(), 'simatree-symlink-'));
+  const linkPath = path.join(linkDir, 'simatree-cli.js');
+
+  try {
+    try {
+      fs.symlinkSync(scriptPath, linkPath);
+    } catch (err) {
+      // Windows without developer mode / restricted filesystems cannot symlink.
+      if (err.code === 'EPERM' || err.code === 'ENOSYS') return;
+      throw err;
+    }
+
+    const out = execFileSync(process.execPath, [linkPath, '--doctor'], { encoding: 'utf8' });
+    const report = JSON.parse(out);
+    assert.equal(report.ok, true);
+    assert.equal(report.name, 'simatree-data-governance');
+  } finally {
+    fs.rmSync(linkDir, { recursive: true, force: true });
+  }
 });
 
 // ---------------------------------------------------------------------------
