@@ -11040,8 +11040,6 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         return;
       }
 
-<<<<<<< HEAD
-||||||| parent of 51d61794f (feat(security): OneLeet-style continuous agent penetration testing (CAPR), questionnaire auto-responder, and trust center)
       // POST /v1/hermes/turn/start — Start turn under Hermes Platform Protocol
       if (req.method === 'POST' && pathname === '/v1/hermes/turn/start') {
         const body = await parseJsonBody(req);
@@ -11127,6 +11125,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         }
         sendJson(res, 200, result);
         return;
+      }
       // GET /v1/pentest/report — OneLeet-style continuous penetration testing audit report
       if (req.method === 'GET' && pathname === '/v1/pentest/report') {
         try {
@@ -11213,7 +11212,6 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         return;
       }
 
->>>>>>> 51d61794f (feat(security): OneLeet-style continuous agent penetration testing (CAPR), questionnaire auto-responder, and trust center)
       // GET /api/conversions — Conversion stats derived from the Stripe event log
       if (req.method === 'GET' && pathname === '/api/conversions') {
         try {
