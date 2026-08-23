@@ -210,7 +210,10 @@ const path = require('node:path');
 // 508 -> 510 (2026-08-21): scripts/simatree-data-governance.js + the
 //   simatree-data-governance.json gate manifest (+2 measured npm pack).
 //   Lockstep with package-boundary + public-core-boundary.
-const BASELINE_FILE_COUNT = 510;
+// 510 -> 511 (2026-08-23): src/trust-center.js — Oneleet-style Trust Center hub
+//   (questionnaire + honest control-tag coverage + /trust.json). Lives under
+//   packaged src/, so npm pack entryCount +1. Not a SOC 2 product clone.
+const BASELINE_FILE_COUNT = 511;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

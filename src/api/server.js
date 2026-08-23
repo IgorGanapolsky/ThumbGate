@@ -20,6 +20,10 @@ const {
   getSecurityQuestionnaire,
   renderSecurityOverviewHtml,
 } = require('../security-questionnaire');
+const {
+  getTrustCenterPack,
+  renderTrustCenterHtml,
+} = require('../trust-center');
 
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
 const POSTHOG_INGEST_HOST = 'us.i.posthog.com';
@@ -4133,8 +4137,9 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/support', changefreq: 'monthly', priority: '0.7' },
     { path: '/legal', changefreq: 'monthly', priority: '0.7' },
     { path: '/security', changefreq: 'monthly', priority: '0.65' },
-    { path: '/trust', changefreq: 'monthly', priority: '0.65' },
+    { path: '/trust', changefreq: 'monthly', priority: '0.7' },
     { path: '/security.json', changefreq: 'monthly', priority: '0.55' },
+    { path: '/trust.json', changefreq: 'monthly', priority: '0.55' },
     { path: '/legal/data-flow', changefreq: 'monthly', priority: '0.7' },
     { path: '/legal/licensing', changefreq: 'monthly', priority: '0.65' },
     { path: '/legal/msa-sow', changefreq: 'monthly', priority: '0.6' },
@@ -8648,12 +8653,17 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       }, { headOnly: isHeadRequest });
       return;
     }
-    if (isGetLikeRequest && (
-      pathname === '/security'
-      || pathname === '/security.html'
-      || pathname === '/trust'
-      || pathname === '/trust.html'
-    )) {
+    if (isGetLikeRequest && (pathname === '/trust.json' || pathname === '/v1/trust-center')) {
+      sendJson(res, 200, getTrustCenterPack(), {
+        'Cache-Control': 'public, max-age=300',
+      }, { headOnly: isHeadRequest });
+      return;
+    }
+    if (isGetLikeRequest && (pathname === '/trust' || pathname === '/trust.html')) {
+      sendHtml(res, 200, renderTrustCenterHtml(), {}, { headOnly: isHeadRequest });
+      return;
+    }
+    if (isGetLikeRequest && (pathname === '/security' || pathname === '/security.html')) {
       sendHtml(res, 200, renderSecurityOverviewHtml(), {}, { headOnly: isHeadRequest });
       return;
     }
@@ -8675,6 +8685,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 <li><a href="/terms">Terms of Service</a></li>
 <li><a href="/privacy">Privacy Policy</a></li>
 <li><a href="/support">Support</a> — <a href="mailto:support@thumbgate.ai">support@thumbgate.ai</a></li>
+<li><a href="/trust">Trust Center</a> — <a href="/trust.json">JSON</a></li>
 <li><a href="/security">Security questionnaire</a> — <a href="/security.json">JSON</a></li>
 <li><a href="/legal/licensing">MIT vs paid licensing boundary</a></li>
 <li><a href="/legal/data-flow">Data-flow map</a></li>
