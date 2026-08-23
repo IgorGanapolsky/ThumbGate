@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OneLeet vs ThumbGate: Why Cloud Compliance Platforms Need an AI Agent Runtime Firewall</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Technical comparison between cloud compliance platforms like OneLeet and autonomous AI agent runtime firewalls like ThumbGate. Learn how continuous agent penetration testing (CAPR) and pre-action enforcement protect against agentic risks.">
+<meta name="keywords" content="OneLeet, ThumbGate, SOC 2, ISO 42001, AI agent security, continuous penetration testing, CAPR, pre-action firewall, security questionnaire automation, AI compliance">
+<meta property="og:title" content="OneLeet vs ThumbGate: Cloud Compliance vs AI Agent Runtime Firewalls">
+<meta property="og:description" content="Why traditional SOC 2/ISO 27001 automation platforms like OneLeet need a pre-action AI agent firewall layer.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/oneleet-vs-thumbgate-ai-security-compliance">
+<link rel="canonical" href="https://thumbgate.ai/learn/oneleet-vs-thumbgate-ai-security-compliance">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "OneLeet vs ThumbGate: Why Cloud Compliance Platforms Need an AI Agent Runtime Firewall",
+  "description": "Technical comparison between cloud compliance automation platforms and autonomous AI agent runtime security gateways.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-08-23",
+  "dateModified": "2026-08-23",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/oneleet-vs-thumbgate-ai-security-compliance",
+  "about": [
+    {"@type": "Thing", "name": "OneLeet"},
+    {"@type": "Thing", "name": "AI Agent Security"},
+    {"@type": "Thing", "name": "SOC 2 Type II"},
+    {"@type": "Thing", "name": "ISO 42001"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+  th, td { text-align: left; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  th { color: var(--cyan); font-weight: 600; }
+  .cert-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / OneLeet vs ThumbGate</div>
+  <h1>OneLeet vs ThumbGate: Cloud Compliance vs AI Agent Runtime Firewalls</h1>
+  <p style="color:var(--muted);">5 min read &middot; Architecture Guide for Security Engineers & CISO Teams</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> <strong>OneLeet</strong> solves human and cloud infrastructure compliance (AWS/GCP IAM, employee laptops, SOC 2/ISO 27001 evidence collection, in-house penetration testing). <strong>ThumbGate</strong> solves the autonomous AI Agent execution layer—intercepting tool calls, blocking prompt injection jailbreaks, preventing secret exfiltration, and enforcing sub-millisecond pre-action guardrails before LLMs touch production data.</div>
+
+  <h2>1. The Architectural Difference</h2>
+  <p>Modern compliance platforms like OneLeet revolutionized audit readiness by bundling continuous automated testing with human vCISO support and third-party audit management. However, as organizations deploy autonomous AI agents (Claude Code, OpenAI Swarms, Cursor, OpenHands) with access to bash, databases, and internal APIs, a critical visibility gap emerges:</p>
+  <ul>
+    <li><strong>Cloud Compliance Scanners</strong> inspect static configurations (e.g., whether S3 buckets are public or whether MFA is enabled on GitHub).</li>
+    <li><strong>Runtime AI Firewalls</strong> intercept high-frequency tool invocations in real time, preventing agents from executing destructive commands (<code>rm -rf</code>), exfiltrating private credentials, or tampering with multi-tenant data.</li>
+  </ul>
+
+  <h2>2. Feature Comparison Matrix</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Capability</th>
+        <th>OneLeet</th>
+        <th>ThumbGate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Primary Focus</strong></td>
+        <td>Cloud Infrastructure & Organization Compliance</td>
+        <td>Autonomous AI Agent Tool Execution & Model Safety</td>
+      </tr>
+      <tr>
+        <td><strong>Penetration Testing</strong></td>
+        <td>In-house OSCE Web & Cloud Network Pentesting</td>
+        <td>Continuous Agent Penetration Red-Teaming (CAPR 10-Vector AI Exploit Engine)</td>
+      </tr>
+      <tr>
+        <td><strong>Runtime Tool Interception</strong></td>
+        <td>None (Post-hoc config audit)</td>
+        <td>Sub-millisecond Pre-Action Hooks (MCP PreToolUse, Bash, SQL, FS)</td>
+      </tr>
+      <tr>
+        <td><strong>Compliance Standards</strong></td>
+        <td>SOC 2, ISO 27001, HIPAA, GDPR, PCI DSS</td>
+        <td>ISO 42001 (AI Governance), NIST AI RMF, SOC 2 CC6/CC7 AI Controls</td>
+      </tr>
+      <tr>
+        <td><strong>Security Questionnaires</strong></td>
+        <td>Automated Vendor Questionnaire Response</td>
+        <td>Instant AI Security Questionnaire Solver (<code>/v1/security-questionnaire/auto-answer</code>)</td>
+      </tr>
+      <tr>
+        <td><strong>Trust Center</strong></td>
+        <td>Hosted Company Trust Center</td>
+        <td>Live Agent Trust Center & Cryptographic Audit Receipts (<code>/v1/trust-center</code>)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>3. Continuous Agent Penetration Red-Teaming (CAPR)</h2>
+  <p>Inspired by OneLeet's continuous penetration testing model, ThumbGate includes built-in automated red-teaming across 10 critical AI exploit vectors:</p>
+  <ol>
+    <li><strong>Prompt Injection Jailbreaks:</strong> Enforces fail-closed token scrubbers against adversarial system prompt overrides.</li>
+    <li><strong>Secret & Key Exfiltration:</strong> Blocks agents from scraping <code>.env</code>, <code>~/.ssh</code>, or piping credentials to external endpoints.</li>
+    <li><strong>Destructive Shell Execution:</strong> Intercepts recursive file deletions and unapproved filesystem wipes.</li>
+    <li><strong>SSRF & Cloud Metadata Ingress:</strong> Blocks web retrieval tools from querying AWS/GCP instance metadata endpoints (<code>169.254.169.254</code>).</li>
+    <li><strong>Unapproved Economic Spend:</strong> Halts unauthorized API token purchases or cloud infrastructure provisioning.</li>
+  </ol>
+
+  <h2>4. Conclusion & Coexistence</h2>
+  <p>ThumbGate does not replace OneLeet; it complements it. Leading engineering organizations use OneLeet to achieve SOC 2 and ISO 27001 certification for their human organization and cloud VPCs, and deploy ThumbGate to govern the autonomous AI agents operating within those VPCs.</p>
+
+  <div class="cta-box" style="margin-top:2rem; padding:1.5rem; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; text-align:center;">
+    <h3>Ready to Protect Your Autonomous AI Agents?</h3>
+    <p style="color:var(--muted); margin-bottom:1rem;">Deploy ThumbGate pre-action gates in 60 seconds.</p>
+    <a href="/guide" class="btn" style="display:inline-block; padding:0.6rem 1.2rem; background:var(--cyan); color:#000; border-radius:6px; font-weight:600; text-decoration:none;">Get Started Free &rarr;</a>
+  </div>
+</div>
+
+<footer>
+  <p>&copy; 2026 ThumbGate. All rights reserved. &middot; <a href="/privacy">Privacy</a> &middot; <a href="/security">Security</a> &middot; <a href="/trust-center">Trust Center</a></p>
+</footer>
+
+</body>
+</html>

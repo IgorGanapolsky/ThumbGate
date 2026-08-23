@@ -11040,6 +11040,180 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         return;
       }
 
+<<<<<<< HEAD
+||||||| parent of 51d61794f (feat(security): OneLeet-style continuous agent penetration testing (CAPR), questionnaire auto-responder, and trust center)
+      // POST /v1/hermes/turn/start — Start turn under Hermes Platform Protocol
+      if (req.method === 'POST' && pathname === '/v1/hermes/turn/start') {
+        const body = await parseJsonBody(req);
+        const result = hostedHermesProtocol.startTurn(body);
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes Turn Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
+        return;
+      }
+
+      // POST /v1/hermes/turn/end — End active turn under Hermes Platform Protocol
+      if (req.method === 'POST' && pathname === '/v1/hermes/turn/end') {
+        const body = await parseJsonBody(req);
+        const result = hostedHermesProtocol.endTurn(body);
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes End Turn Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
+        return;
+      }
+
+      // POST /v1/hermes/action/approve — Record human/operator approval for consequential action
+      if (req.method === 'POST' && pathname === '/v1/hermes/action/approve') {
+        const body = await parseJsonBody(req);
+        const result = hostedHermesProtocol.approve(body);
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes Approval Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
+        return;
+      }
+
+      // GET /v1/hermes/sync/read — Reactive read path with cursor + offset
+      if (req.method === 'GET' && pathname === '/v1/hermes/sync/read') {
+        const rawOffset = parsed.searchParams.get('offset');
+        const offset = rawOffset !== null ? Number(rawOffset) : undefined;
+        const cursor = parsed.searchParams.get('cursor') || undefined;
+        const userId = parsed.searchParams.get('userId') || undefined;
+        const threadId = parsed.searchParams.get('threadId') || undefined;
+        const recordId = parsed.searchParams.get('recordId') || undefined;
+        const mode = parsed.searchParams.get('mode') || undefined;
+
+        const result = hostedHermesSyncPlane.readStatus({
+          offset,
+          cursor,
+          auth: userId ? { userId } : null,
+          threadId,
+          recordId,
+          mode,
+        });
+
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes Sync Read Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
+        return;
+      // GET /v1/pentest/report — OneLeet-style continuous penetration testing audit report
+      if (req.method === 'GET' && pathname === '/v1/pentest/report') {
+        try {
+          const { getLatestPentestReport } = require('../../scripts/continuous-agent-pentest');
+          const report = getLatestPentestReport();
+          sendJson(res, 200, { ok: true, report });
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INTERNAL,
+            title: 'Continuous Pentest Report Error',
+            status: 500,
+            detail: err.message,
+          });
+        }
+        return;
+      }
+
+      // POST /v1/pentest/run — Trigger on-demand continuous penetration test run
+      if (req.method === 'POST' && pathname === '/v1/pentest/run') {
+        try {
+          const { runContinuousAgentPentest } = require('../../scripts/continuous-agent-pentest');
+          const report = runContinuousAgentPentest();
+          sendJson(res, 200, { ok: true, report });
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INTERNAL,
+            title: 'Continuous Pentest Execution Error',
+            status: 500,
+            detail: err.message,
+          });
+        }
+        return;
+      }
+
+      // GET /v1/trust-center — Live Trust Center compliance & security posture data
+      if (req.method === 'GET' && pathname === '/v1/trust-center') {
+        try {
+          const { buildTrustCenterData } = require('../../scripts/security-questionnaire-responder');
+          const trustCenter = buildTrustCenterData();
+          sendJson(res, 200, { ok: true, trustCenter });
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INTERNAL,
+            title: 'Trust Center Error',
+            status: 500,
+            detail: err.message,
+          });
+        }
+        return;
+      }
+
+      // POST /v1/security-questionnaire/auto-answer — Auto-answer vendor security questionnaires
+      if (req.method === 'POST' && pathname === '/v1/security-questionnaire/auto-answer') {
+        let body = {};
+        try {
+          body = await parseJsonBody(req);
+        } catch {
+          body = {};
+        }
+
+        const questions = Array.isArray(body.questions) ? body.questions : [];
+        if (!questions.length) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Invalid Questionnaire Request',
+            status: 400,
+            detail: 'Body must contain a non-empty "questions" array',
+          });
+          return;
+        }
+
+        try {
+          const { autoAnswerSecurityQuestionnaire } = require('../../scripts/security-questionnaire-responder');
+          const answers = autoAnswerSecurityQuestionnaire(questions);
+          sendJson(res, 200, { ok: true, count: answers.length, answers });
+        } catch (err) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INTERNAL,
+            title: 'Questionnaire Solver Error',
+            status: 500,
+            detail: err.message,
+          });
+        }
+        return;
+      }
+
+>>>>>>> 51d61794f (feat(security): OneLeet-style continuous agent penetration testing (CAPR), questionnaire auto-responder, and trust center)
       // GET /api/conversions — Conversion stats derived from the Stripe event log
       if (req.method === 'GET' && pathname === '/api/conversions') {
         try {
