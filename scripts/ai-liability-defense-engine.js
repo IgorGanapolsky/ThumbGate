@@ -97,7 +97,9 @@ function evaluateActionLiability(action = {}, options = {}) {
   }
 
   const dualKeyRequired = config.governance.dualKeyRequiredSeverities.includes(severity);
-  const operatorApproved = Boolean(options.operatorApproved || action.operatorSignature);
+  // A nonempty operatorSignature string is not a verified dual-key. Only an
+  // explicit options.operatorApproved flag from a verified approval path counts.
+  const operatorApproved = Boolean(options.operatorApproved);
   const excuseText = `${cmd} ${String(action.excuse || action.rationale || '')}`.toLowerCase();
   const aiDidItExcuse = /\b(ai did it|the model did it|agent went rogue|not my fault)\b/i.test(excuseText);
 
@@ -169,6 +171,14 @@ function evaluateActionLiability(action = {}, options = {}) {
  * @param {Object} operatorContext - Context including agent identity, signature key
  * @returns {Object} Signed LiabilityProofReceipt
  */
+function signedLiabilityBody(actionPayload, evaluationPayload, complianceWarranty) {
+  return JSON.stringify({
+    action: actionPayload,
+    evaluation: evaluationPayload,
+    complianceWarranty: complianceWarranty || {},
+  });
+}
+
 function generateLiabilityReceipt(action = {}, evaluation = {}, operatorContext = {}) {
   const signingSecret = operatorContext.signingSecret
     || process.env.THUMBGATE_LIABILITY_SIGNING_SECRET
@@ -183,9 +193,19 @@ function generateLiabilityReceipt(action = {}, evaluation = {}, operatorContext 
     severity: evaluation.severity,
     timestamp: evaluation.timestamp || new Date().toISOString()
   };
-
-  const payloadString = JSON.stringify(payloadToHash, Object.keys(payloadToHash).sort());
-  const receiptHash = crypto.createHash('sha256').update(payloadString).digest('hex');
+  const evaluationPayload = {
+    allowed: evaluation.allowed,
+    verdict: evaluation.verdict,
+    riskScore: evaluation.riskScore,
+    severity: evaluation.severity,
+    matchedRules: evaluation.matchedRules || [],
+    dualKeyRequired: evaluation.dualKeyRequired || false,
+    operatorApproved: evaluation.operatorApproved || false
+  };
+  const complianceWarranty = evaluation.complianceObligations || {};
+  const receiptHash = crypto.createHash('sha256')
+    .update(signedLiabilityBody(payloadToHash, evaluationPayload, complianceWarranty))
+    .digest('hex');
 
   return {
     receiptId: `rcpt_liab_${Date.now()}_${receiptHash.slice(0, 8)}`,
@@ -193,16 +213,8 @@ function generateLiabilityReceipt(action = {}, evaluation = {}, operatorContext 
     gateId: evaluation.gateId || 'gate_ai_liability_defense_2026',
     payloadHash: receiptHash,
     action: payloadToHash,
-    evaluation: {
-      allowed: evaluation.allowed,
-      verdict: evaluation.verdict,
-      riskScore: evaluation.riskScore,
-      severity: evaluation.severity,
-      matchedRules: evaluation.matchedRules || [],
-      dualKeyRequired: evaluation.dualKeyRequired || false,
-      operatorApproved: evaluation.operatorApproved || false
-    },
-    complianceWarranty: evaluation.complianceObligations || {},
+    evaluation: evaluationPayload,
+    complianceWarranty,
     unsigned: !signingSecret,
     proofSignature: signingSecret
       ? crypto.createHmac('sha256', signingSecret).update(receiptHash).digest('hex')
@@ -223,8 +235,9 @@ function verifyLiabilityReceipt(receipt = {}, signingSecret = '') {
     return false;
   }
 
-  const expectedPayloadString = JSON.stringify(receipt.action, Object.keys(receipt.action).sort());
-  const expectedHash = crypto.createHash('sha256').update(expectedPayloadString).digest('hex');
+  const expectedHash = crypto.createHash('sha256')
+    .update(signedLiabilityBody(receipt.action, receipt.evaluation, receipt.complianceWarranty))
+    .digest('hex');
 
   if (expectedHash !== receipt.payloadHash) {
     return false;

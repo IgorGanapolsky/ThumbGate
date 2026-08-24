@@ -99,7 +99,7 @@ test('Obsidian Bases Synchronizer - Synchronizes Vault Structure to Temp Directo
   assert.ok(fs.existsSync(basePath));
   const baseBody = fs.readFileSync(basePath, 'utf8');
   assert.equal(baseBody.includes('```dataview'), false);
-  assert.ok(baseBody.includes('file.inFolder("Agent-State")'));
+  assert.ok(baseBody.includes('file.inFolder("Handoffs")'));
 
   const prNote = fs.readFileSync(path.join(tmpVault, 'Handoffs', 'PR-3611.md'), 'utf8');
   assert.ok(prNote.includes('status: ready'));

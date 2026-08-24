@@ -173,8 +173,14 @@ function evaluateSupplyChainSecurity(manifestOrPath = {}, options = {}) {
   }
 
   const hasCriticalFindings = findings.some(f => f.rule === 'SUPPLY_01_LIFECYCLE_SCRIPTS' || f.rule === 'SUPPLY_03_TYPOSQUATTING_SENTINEL');
-  const allowed = !hasCriticalFindings && (findings.length === 0 || !options.strictMode);
-  const verdict = hasCriticalFindings ? 'DENY_SUPPLY_CHAIN_RISK' : (findings.length > 0 ? 'WARN_SUPPLY_CHAIN_DRIFT' : 'ALLOW');
+  const strictMode = options.strictMode !== undefined
+    ? Boolean(options.strictMode)
+    : (config.enforcementMode === 'fail_closed');
+  const deny = hasCriticalFindings || (strictMode && findings.length > 0);
+  const allowed = !deny;
+  const verdict = deny
+    ? 'DENY_SUPPLY_CHAIN_RISK'
+    : (findings.length > 0 ? 'WARN_SUPPLY_CHAIN_DRIFT' : 'ALLOW');
 
   return {
     gateId: config.gateId,
@@ -196,6 +202,14 @@ function evaluateSupplyChainSecurity(manifestOrPath = {}, options = {}) {
 /**
  * Generate a signed Supply Chain Provenance Receipt.
  */
+function signedProvenanceBody(manifestPayload, findings, slsaAttestation) {
+  return JSON.stringify({
+    manifest: manifestPayload,
+    findings: findings || [],
+    slsaAttestation: slsaAttestation || {},
+  });
+}
+
 function generateProvenanceReceipt(manifest = {}, evaluation = {}, buildDetails = {}) {
   const signingSecret = buildDetails.signingSecret || process.env.THUMBGATE_SUPPLY_SIGNING_SECRET || '';
   const payloadToHash = {
@@ -207,22 +221,24 @@ function generateProvenanceReceipt(manifest = {}, evaluation = {}, buildDetails 
     buildSha: buildDetails.gitCommitSha || process.env.GITHUB_SHA || 'local-clean-sha',
     buildRunner: buildDetails.runner || 'ThumbGate-Diode-Runner'
   };
-
-  const payloadString = JSON.stringify(payloadToHash, Object.keys(payloadToHash).sort());
-  const receiptHash = crypto.createHash('sha256').update(payloadString).digest('hex');
+  const findings = evaluation.findings || [];
+  const slsaAttestation = {
+    predicateType: 'https://slsa.dev/provenance/v1',
+    builder: { id: 'https://github.com/IgorGanapolsky/ThumbGate/.github/workflows/ci.yml' },
+    buildType: 'https://thumbgate.org/provenance/v1',
+    materials: [{ uri: `git+https://github.com/IgorGanapolsky/ThumbGate@${payloadToHash.buildSha}` }]
+  };
+  const receiptHash = crypto.createHash('sha256')
+    .update(signedProvenanceBody(payloadToHash, findings, slsaAttestation))
+    .digest('hex');
 
   return {
     receiptId: `rcpt_supply_${Date.now()}_${receiptHash.slice(0, 8)}`,
     gateId: evaluation.gateId || 'gate_supply_chain_diode_2026',
     payloadHash: receiptHash,
     manifest: payloadToHash,
-    findings: evaluation.findings || [],
-    slsaAttestation: {
-      predicateType: 'https://slsa.dev/provenance/v1',
-      builder: { id: 'https://github.com/IgorGanapolsky/ThumbGate/.github/workflows/ci.yml' },
-      buildType: 'https://thumbgate.org/provenance/v1',
-      materials: [{ uri: `git+https://github.com/IgorGanapolsky/ThumbGate@${payloadToHash.buildSha}` }]
-    },
+    findings,
+    slsaAttestation,
     unsigned: !signingSecret,
     signature: signingSecret
       ? crypto.createHmac('sha256', signingSecret).update(receiptHash).digest('hex')
@@ -239,8 +255,9 @@ function verifyProvenanceReceipt(receipt = {}, signingSecret = '') {
     return false;
   }
 
-  const expectedPayloadString = JSON.stringify(receipt.manifest, Object.keys(receipt.manifest).sort());
-  const expectedHash = crypto.createHash('sha256').update(expectedPayloadString).digest('hex');
+  const expectedHash = crypto.createHash('sha256')
+    .update(signedProvenanceBody(receipt.manifest, receipt.findings, receipt.slsaAttestation))
+    .digest('hex');
 
   if (expectedHash !== receipt.payloadHash) {
     return false;

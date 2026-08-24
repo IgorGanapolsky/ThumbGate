@@ -61,6 +61,8 @@ test('Supply Chain Diode - Flags Unpinned Dependencies', () => {
   const evalResult = evaluateSupplyChainSecurity(looseManifest);
   assert.equal(evalResult.summary.unpinnedDependencies, 2);
   assert.ok(evalResult.matchedRules.includes('SUPPLY_02_EXACT_PINNING'));
+  assert.equal(evalResult.allowed, false);
+  assert.equal(evalResult.verdict, 'DENY_SUPPLY_CHAIN_RISK');
 });
 
 test('Supply Chain Diode - Clean Manifest Passes All Checks', () => {
@@ -98,6 +100,10 @@ test('Supply Chain Diode - Provenance Receipt Generation & Tamper Proofing', () 
   const tampered = JSON.parse(JSON.stringify(receipt));
   tampered.manifest.packageVersion = '3.0.0-injected';
   assert.equal(verifyProvenanceReceipt(tampered, 'sec-test'), false);
+
+  const strippedAttestation = JSON.parse(JSON.stringify(receipt));
+  strippedAttestation.slsaAttestation.builder = { id: 'https://evil.example/builder' };
+  assert.equal(verifyProvenanceReceipt(strippedAttestation, 'sec-test'), false);
 });
 
 test('Supply Chain Diode - caret and latest are unpinned (BrightTALK 668780)', () => {
@@ -138,4 +144,14 @@ test('evaluateGates denies unpinned npm install via the diode harness', () => {
 
   const pinned = evaluateGates('Bash', { command: 'npm install axios@1.7.9' });
   assert.equal(pinned && pinned.gate === 'supply-unpinned-install' ? pinned.gate : null, null);
+
+  const scoped = evaluateGates('Bash', { command: 'npm install @scope/pkg@latest' });
+  assert.ok(scoped);
+  assert.equal(scoped.decision, 'deny');
+  assert.equal(scoped.gate, 'supply-unpinned-install');
+
+  const laterOperand = evaluateGates('Bash', { command: 'npm install axios@1.7.9 chalk@latest' });
+  assert.ok(laterOperand);
+  assert.equal(laterOperand.decision, 'deny');
+  assert.equal(laterOperand.gate, 'supply-unpinned-install');
 });

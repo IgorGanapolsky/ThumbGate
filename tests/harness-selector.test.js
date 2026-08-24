@@ -101,10 +101,10 @@ describe('selectHarnessName — deploy harness', () => {
 // ---------------------------------------------------------------------------
 
 describe('selectHarnessName — db-write harness', () => {
-  it('detects DROP TABLE', () => {
+  it('detects DROP TABLE as liability (beats db-write)', () => {
     assert.strictEqual(
       selectHarnessName('Bash', { command: 'sqlite3 app.db "DROP TABLE users;"' }),
-      'db-write'
+      'ai-liability-defense'
     );
   });
 
@@ -226,6 +226,27 @@ describe('selectHarnessName — supply-chain-diode', () => {
     assert.strictEqual(
       selectHarnessName('Bash', { command: 'npm install axios@1.7.9' }),
       null
+    );
+  });
+
+  it('selects the diode for scoped @latest', () => {
+    assert.strictEqual(
+      selectHarnessName('Bash', { command: 'npm install @scope/pkg@latest' }),
+      'supply-chain-diode'
+    );
+  });
+
+  it('selects the diode when a later operand is unpinned', () => {
+    assert.strictEqual(
+      selectHarnessName('Bash', { command: 'npm install axios@1.7.9 chalk@latest' }),
+      'supply-chain-diode'
+    );
+  });
+
+  it('selects liability over db-write for rm -rf of a sqlite file', () => {
+    assert.strictEqual(
+      selectHarnessName('Bash', { command: 'rm -rf data.sqlite' }),
+      'ai-liability-defense'
     );
   });
 });

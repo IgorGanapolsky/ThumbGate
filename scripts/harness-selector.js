@@ -53,7 +53,9 @@ const SUPPLY_CHAIN_PATTERNS = [
   // lifecycle remote-exec must select the diode harness, not just the
   // keyword names of the webinar. Otherwise gates-engine never loads
   // config/gates/supply-chain-diode.json for the actual commands.
-  /\bnpm\s+(install|i|add)\s+[^\s@]+@(?:\*|latest)(?![\w.-])/i,
+  // Any npm operand, including scoped names and later args:
+  // `npm i @scope/pkg@latest`, `npm install axios@1.7.9 chalk@latest`.
+  /\bnpm\s+(install|i|add)\b[\s\S]*?(?:^|\s)(?:@[^\s@]+\/)?[^\s@]+@(?:\*|latest)(?![\w.-])/i,
   /\b(preinstall|postinstall|npm\s+install).{0,80}(curl|wget|bash\s+-c)\b/i,
 ];
 
@@ -160,6 +162,11 @@ function selectHarness(toolName, toolInput) {
   // 3. Inspect command text for Bash tool
   const commandText = extractCommandText(toolInput);
   if (commandText) {
+    // Liability (rm -rf / DROP TABLE / git reset --hard) must beat db-write's
+    // sqlite-path heuristic so `rm -rf data.sqlite` still dual-key blocks.
+    if (AI_LIABILITY_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['ai-liability-defense'];
+    }
     if (DB_WRITE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['db-write'];
     }
@@ -174,9 +181,6 @@ function selectHarness(toolName, toolInput) {
     }
     if (SIMATREE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['simatree-data-governance'];
-    }
-    if (AI_LIABILITY_PATTERNS.some((p) => p.test(commandText))) {
-      return HARNESSES['ai-liability-defense'];
     }
     if (SUPPLY_CHAIN_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['supply-chain-diode'];

@@ -886,9 +886,9 @@ test('evaluateGatesAsync enriches memory guard results with workflow sentinel co
   writeJson(configPath, { version: 1, gates: [] });
   writeJsonl(feedbackLogPath, []);
   writeJsonl(attributedFeedbackPath, [
-    { id: 'fb_1', signal: 'negative', tool_name: 'Bash', context: 'rm -rf generated-cache removed runtime files', timestamp: new Date().toISOString() },
-    { id: 'fb_2', signal: 'negative', tool_name: 'Bash', context: 'rm -rf generated-cache removed runtime files', timestamp: new Date().toISOString() },
-    { id: 'fb_3', signal: 'negative', tool_name: 'Bash', context: 'rm -rf generated-cache removed runtime files', timestamp: new Date().toISOString() },
+    { id: 'fb_1', signal: 'negative', tool_name: 'Bash', context: 'git add scripts/tool-registry.js outside task scope', timestamp: new Date().toISOString() },
+    { id: 'fb_2', signal: 'negative', tool_name: 'Bash', context: 'git add scripts/tool-registry.js outside task scope', timestamp: new Date().toISOString() },
+    { id: 'fb_3', signal: 'negative', tool_name: 'Bash', context: 'git add scripts/tool-registry.js outside task scope', timestamp: new Date().toISOString() },
   ]);
 
   const previousFeedbackLog = process.env.THUMBGATE_FEEDBACK_LOG;
@@ -906,8 +906,10 @@ test('evaluateGatesAsync enriches memory guard results with workflow sentinel co
   });
 
   try {
+    // git add is still high-risk for the memory guard, but does not select
+    // the BrightTALK liability harness (rm -rf / git reset --hard / DROP TABLE).
     const result = await evaluateGatesAsync('Bash', {
-      command: 'rm -rf generated-cache',
+      command: 'git add scripts/tool-registry.js',
       changed_files: [
         'scripts/tool-registry.js',
         'src/api/server.js',

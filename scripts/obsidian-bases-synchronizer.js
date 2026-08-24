@@ -227,7 +227,7 @@ function syncVaultDatabases(vaultPath = DEFAULT_VAULT_PATH, data = {}, options =
   let writtenFiles = 0;
 
   const fleetBase = generateBaseFile({
-    folder: 'Agent-State',
+    folder: 'Handoffs',
     properties: {
       'file.name': { displayName: 'Agent' },
       status: { displayName: 'Status' },

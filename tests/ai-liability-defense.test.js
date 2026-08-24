@@ -37,6 +37,15 @@ test('AI Liability Defense Engine - Allows Destructive Operations when Operator 
   assert.equal(evalResult.operatorApproved, true);
 });
 
+test('AI Liability Defense Engine - nonempty operatorSignature is not approval', () => {
+  const evalResult = evaluateActionLiability({
+    command: 'rm -rf /srv/data',
+    operatorSignature: 'x',
+  });
+  assert.equal(evalResult.allowed, false);
+  assert.equal(evalResult.operatorApproved, false);
+});
+
 test('AI Liability Defense Engine - Credential Mutation & IAM Elevation Detection', () => {
   const evalResult = evaluateActionLiability({ command: 'aws iam create-user --user-name evil' });
   assert.equal(evalResult.allowed, false);
@@ -114,4 +123,9 @@ test('AI Liability Defense Engine - Cryptographic Receipt Generation & Verificat
   tamperedReceipt.action.command = 'DROP TABLE users';
   const isTamperedValid = verifyLiabilityReceipt(tamperedReceipt, 'custom-secret');
   assert.equal(isTamperedValid, false);
+
+  const flippedAllow = JSON.parse(JSON.stringify(receipt));
+  flippedAllow.evaluation.allowed = true;
+  flippedAllow.evaluation.operatorApproved = true;
+  assert.equal(verifyLiabilityReceipt(flippedAllow, 'custom-secret'), false);
 });
