@@ -1,0 +1,83 @@
+{
+  "gateId": "gate_secops_governance_harmonizer_2026",
+  "name": "SecOps & AI Governance Harmonizer Gate",
+  "description": "Enforces unified operating model for AI governance and cybersecurity operations, ensuring autonomy boundaries, dual-purpose audit logging, and conflict prevention across ISO 42001, EU AI Act, NIST AI RMF, and SOC2.",
+  "version": "1.0.0",
+  "category": "ai_secops_governance",
+  "enabled": true,
+  "enforcementMode": "fail_closed",
+  "autonomyBoundaries": {
+    "autonomousAllowed": [
+      "read_telemetry",
+      "detect_anomaly",
+      "triage_alert",
+      "simulate_response",
+      "query_threat_intel",
+      "check_compliance_status"
+    ],
+    "advisoryOnly": [
+      "recommend_firewall_rule",
+      "draft_incident_report",
+      "propose_quarantine_action",
+      "suggest_access_revocation"
+    ],
+    "humanApprovalMandatory": [
+      "isolate_production_host",
+      "revoke_executive_credential",
+      "purge_compliance_audit_logs",
+      "deploy_unreviewed_firewall_block",
+      "terminate_critical_infrastructure_process",
+      "mutate_multi_tenant_security_policies"
+    ]
+  },
+  "complianceFrameworks": [
+    "ISO_42001",
+    "EU_AI_ACT_HIGH_RISK",
+    "NIST_AI_RMF_1_0",
+    "SOC2_TYPE_II_SECURITY_AVAILABILITY"
+  ],
+  "rules": [
+    {
+      "ruleId": "RULE_HARMONIZE_AUTONOMY_LIMIT",
+      "severity": "CRITICAL",
+      "action": "BLOCK",
+      "description": "Block autonomous execution of high-blast-radius containment or security policy mutations without verified human authorization.",
+      "conditions": {
+        "disallowedAutonomousActions": [
+          "isolate_production_host",
+          "revoke_executive_credential",
+          "purge_compliance_audit_logs",
+          "deploy_unreviewed_firewall_block",
+          "terminate_critical_infrastructure_process",
+          "mutate_multi_tenant_security_policies"
+        ]
+      }
+    },
+    {
+      "ruleId": "RULE_SINGLE_PASS_AUDIT_PROVENANCE",
+      "severity": "HIGH",
+      "action": "ENFORCE",
+      "description": "Require unified audit metadata containing both regulatory governance identity and cybersecurity operational telemetry on every privileged tool call.",
+      "requiredFields": [
+        "traceId",
+        "timestamp",
+        "agentIdentity",
+        "governanceRiskTier",
+        "actionType",
+        "targetEntity",
+        "integrityHash"
+      ]
+    },
+    {
+      "ruleId": "RULE_CONFLICT_PREVENTION_INTERDICTION",
+      "severity": "CRITICAL",
+      "action": "BLOCK",
+      "description": "Prevent runtime SecOps actions from violating active regulatory compliance constraints (e.g. data retention holds, evidence preservation, cross-border data transfer limits).",
+      "conflictChecks": [
+        "data_retention_vs_quarantine_purge",
+        "incident_containment_vs_evidence_chain_of_custody",
+        "automated_response_vs_mandatory_human_oversight"
+      ]
+    }
+  ]
+}

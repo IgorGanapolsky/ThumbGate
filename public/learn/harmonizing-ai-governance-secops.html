@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harmonizing AI Governance and Cybersecurity Operations — ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="A practical unified operating model for integrating AI governance and SecOps workflows. Learn how to enforce autonomy boundaries, single-pass audit receipts, and resolve policy conflicts across ISO 42001, EU AI Act, and SOC2.">
+<meta name="keywords" content="AI Governance, SecOps, ISO 42001, EU AI Act, SOC2, NIST AI RMF, SIEM, Pre-Action Firewall, ThumbGate">
+<meta property="og:title" content="Harmonizing AI Governance and Cybersecurity Operations">
+<meta property="og:description" content="Merge compliance and runtime SecOps into a single deterministic pre-action execution gateway.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/harmonizing-ai-governance-secops">
+<link rel="canonical" href="https://thumbgate.ai/learn/harmonizing-ai-governance-secops">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Harmonizing AI Governance and Cybersecurity Operations",
+  "description": "How to merge legal compliance and runtime SecOps monitoring into a single unified AI enforcement gateway.",
+  "author": {
+    "@type": "Organization",
+    "name": "ThumbGate Research"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-08-22",
+  "dateModified": "2026-08-22",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/harmonizing-ai-governance-secops"
+}
+</script>
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<main>
+<article class="article">
+  <header class="article-header">
+    <div class="tag-row">
+      <span class="tag">AI Governance</span>
+      <span class="tag">SecOps</span>
+      <span class="tag">ISO 42001</span>
+    </div>
+    <h1>Harmonizing AI Governance and Cybersecurity Operations</h1>
+    <p class="subtitle">Why governance and security cannot operate on separate tracks — and how unified runtime firewalls bridge compliance policies with SecOps detection engineering.</p>
+    <div class="author-row">
+      <span>By <strong>ThumbGate Research</strong> · August 22, 2026</span>
+    </div>
+  </header>
+
+  <div class="tldr">
+    <strong>TL;DR:</strong> Enterprises routinely separate AI compliance (ISO 42001, EU AI Act) from SecOps detection (SIEM/SOAR). This separation creates dangerous policy conflicts. ThumbGate introduces a 3-tier autonomy matrix and single-pass cryptographic audit receipts to enforce security and compliance before agent actions execute.
+  </div>
+
+  <section>
+    <h2>1. The Dual-Track Conflict</h2>
+    <p>In most enterprises, AI governance and cybersecurity operations operate on disconnected tracks. Governance resides in legal, privacy, and risk committees. Security operations lives in SIEM/SOAR pipelines, detection engineering, and incident containment. When autonomous agents enter production, this separation creates conflicting mandates and dangerous blind spots.</p>
+    <p>When an AI agent detects an anomaly or executes a containment routine, it is simultaneously a security control, a compliance obligation, and an operational risk. If a SecOps rule automatically purges compromised logs to prevent credential leakage while an active compliance hold mandates strict data retention, the organization faces regulatory penalties.</p>
+  </section>
+
+  <section>
+    <h2>2. The 3-Tier Autonomy Matrix</h2>
+    <p>To eliminate ambiguity across both teams, agent capabilities must be classified into a deterministic autonomy boundary matrix:</p>
+    <ul>
+      <li><strong>Autonomous Allowed:</strong> Read-only diagnostics, metadata queries, and non-destructive log scanning.</li>
+      <li><strong>Advisory Only:</strong> Remediation recommendations, draft configurations, and quarantine proposals.</li>
+      <li><strong>Human Approval Mandatory:</strong> Destructive containment, credential revocation, firewall modifications, and log purging.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. Single-Pass Cryptographic Dual Audit Records</h2>
+    <p>Rather than duplicating telemetry across separate SIEM sinks and GRC portals, ThumbGate generates dual-format cryptographic audit receipts in a single execution pass. Each tool-call intercept produces an immutable record with SHA-256 HMAC provenance that satisfies both SIEM event ingestion and ISO 42001 / SOC2 compliance reviews.</p>
+  </section>
+
+  <div class="sticky-cta">
+    <h3>Start Pre-Action AI SecOps Today</h3>
+    <p>Install the open-source CLI runtime or connect via MCP:</p>
+    <code>npx thumbgate init</code>
+    <div style="margin-top: 1rem;">
+      <a href="/pricing" class="btn btn-primary">Start Evaluation</a>
+    </div>
+  </div>
+</article>
+</main>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10 Common-Sense Solutions to AppSec Challenges (AI Not Required) — ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="10 deterministic, non-LLM application security solutions that prevent critical vulnerabilities like unauthenticated routes, SSRF, IDOR, and injection in AI agent workflows.">
+<meta name="keywords" content="AppSec, Application Security, Deterministic Guardrails, SSRF, IDOR, SQL Injection, Pre-Action Firewall, ThumbGate">
+<meta property="og:title" content="10 Common-Sense Solutions to AppSec Challenges (AI Not Required)">
+<meta property="og:description" content="Why prompts cannot solve application security flaws — and how 10 deterministic pre-action rules stop vulnerabilities in <1ms.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/10-common-sense-appsec-guardrails">
+<link rel="canonical" href="https://thumbgate.ai/learn/10-common-sense-appsec-guardrails">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "10 Common-Sense Solutions to AppSec Challenges (AI Not Required)",
+  "description": "Deterministic application security solutions to common agentic and web application security challenges without relying on LLMs.",
+  "author": {
+    "@type": "Organization",
+    "name": "ThumbGate Research"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-08-22",
+  "dateModified": "2026-08-22",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/10-common-sense-appsec-guardrails"
+}
+</script>
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<main>
+<article class="article">
+  <header class="article-header">
+    <div class="tag-row">
+      <span class="tag">AppSec</span>
+      <span class="tag">Deterministic Security</span>
+      <span class="tag">Runtime Firewalls</span>
+    </div>
+    <h1>10 Common-Sense Solutions to AppSec Challenges (AI Not Required)</h1>
+    <p class="subtitle">Why AI prompts cannot solve persistent application security flaws — and how deterministic preflight rules stop vulnerabilities in &lt;1ms.</p>
+    <div class="author-row">
+      <span>By <strong>ThumbGate Research</strong> · August 22, 2026</span>
+    </div>
+  </header>
+
+  <div class="tldr">
+    <strong>TL;DR:</strong> While AI tools accelerate development, application security vulnerabilities routinely evade prompt-based defenses. Explaining why an application failed a security audit or preventing multi-tenant data exfiltration requires deterministic, sub-millisecond AST and regex rules rather than LLM self-evaluation.
+  </div>
+
+  <section>
+    <h2>The 10 Deterministic AppSec Invariants</h2>
+    <ol>
+      <li><strong>Unauthenticated Route Exposure (APPSEC_01):</strong> Blocks internal and administrative route registrations lacking verified authentication middleware.</li>
+      <li><strong>Hardcoded Credentials & API Keys (APPSEC_02):</strong> Strict regex matching catches AWS keys, OpenAI tokens, JWTs, and private keys before execution.</li>
+      <li><strong>Permissive CORS Wildcards (APPSEC_03):</strong> Prevents wildcard CORS origins paired with credentials: true, eliminating cross-origin session hijacking.</li>
+      <li><strong>SSRF Egress to Private/Cloud Metadata (APPSEC_04):</strong> Blocks outbound requests to 169.254.169.254, loopback, and RFC 1918 subnets at the runtime boundary.</li>
+      <li><strong>Unparameterized Dynamic Injection (APPSEC_05):</strong> Enforces parameterized database queries and structured execFile arguments.</li>
+      <li><strong>Arbitrary Path Traversal (APPSEC_06):</strong> Interdicts relative directory traversal sequences (../) in file system calls.</li>
+      <li><strong>Telemetry PII & Header Leakage (APPSEC_07):</strong> Sanitizes log payloads to prevent dumping authorization headers, cookies, or user PII into monitoring sinks.</li>
+      <li><strong>Multi-Tenant IDOR Scope Enforcement (APPSEC_08):</strong> Mandates explicit tenant_id predicates on all tenant-isolated data queries.</li>
+      <li><strong>Executable File Upload Protection (APPSEC_09):</strong> Restricts upload destinations to ensure scripts (.sh, .php, .exe) cannot be written into public web asset roots.</li>
+      <li><strong>Insecure Deserialization & Eval Interdiction (APPSEC_10):</strong> Blocks dynamic eval() and unsafe object deserialization.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Deterministic Pre-Action Firewalling with ThumbGate</h2>
+    <p>ThumbGate implements these 10 invariants as a sub-millisecond, fail-closed pre-action firewall. Instead of relying on LLM self-evaluation, ThumbGate enforces deterministic AST and regex boundaries before any agent mutation reaches production.</p>
+  </section>
+
+  <div class="sticky-cta">
+    <h3>Automate Your AppSec Preflight Today</h3>
+    <p>Integrate ThumbGate's deterministic AppSec firewall into your CI/CD pipelines and agent runtime loops:</p>
+    <code>npx thumbgate init</code>
+    <div style="margin-top: 1rem;">
+      <a href="/pricing" class="btn btn-primary">Start Evaluation</a>
+    </div>
+  </div>
+</article>
+</main>
+</body>
+</html>

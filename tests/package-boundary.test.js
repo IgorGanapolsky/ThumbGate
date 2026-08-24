@@ -473,8 +473,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 508 -> 510 (2026-08-21): scripts/simatree-data-governance.js + the
     //   simatree-data-governance.json gate manifest (+2 measured npm pack).
     //   Lockstep with public-bundle-ratchet + public-core-boundary.
-    manifest.fileCount <= 510,
-    `npm package should stay <= 510 files, got ${manifest.fileCount}`
+    // 510 -> 514 (2026-08-22): scripts/unified-ai-secops-governance.js, scripts/deterministic-appsec-guard.js,
+    //   and their gate configs (+4 measured npm pack). Lockstep with public-bundle-ratchet + public-core-boundary.
+    manifest.fileCount <= 514,
+    `npm package should stay <= 514 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

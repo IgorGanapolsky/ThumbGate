@@ -32,6 +32,17 @@ const HARNESSES = Object.freeze({
   'simatree-data-governance': path.join(HARNESS_DIR, 'simatree-data-governance.json'),
 });
 
+// WHY secops-governance-harmonizer / deterministic-appsec-guard are NOT here:
+// those two manifests are ENGINE configuration, not harness gate manifests.
+// gates-engine.js's loadGatesConfig only reads a top-level `gates` array; those
+// files carry `rules` and `invariants` instead, so registering them here added
+// ZERO gates to every selection while making each matched tool call look
+// governed — a control that reports success and enforces nothing. They are read
+// directly by scripts/unified-ai-secops-governance.js and
+// scripts/deterministic-appsec-guard.js, which is where their schema belongs.
+// tests/harness-selector.test.js pins the invariant that every entry above
+// resolves to a manifest carrying a non-empty `gates` array.
+
 // ---------------------------------------------------------------------------
 // Detection patterns
 // ---------------------------------------------------------------------------
