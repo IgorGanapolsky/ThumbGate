@@ -30,6 +30,7 @@ const HARNESSES = Object.freeze({
   'future-agi-guardrails': path.join(HARNESS_DIR, 'future-agi-guardrails.json'),
   'five-walls-governance': path.join(HARNESS_DIR, 'five-walls-governance.json'),
   'simatree-data-governance': path.join(HARNESS_DIR, 'simatree-data-governance.json'),
+  'llm-footprint-governance': path.join(HARNESS_DIR, 'llm-footprint-governance.json'),
 });
 
 // ---------------------------------------------------------------------------
@@ -38,6 +39,10 @@ const HARNESSES = Object.freeze({
 
 const SIMATREE_PATTERNS = [
   /\b(simatree|data_lifecycle|why_before_how|pmo_transformation|bayesian_uncertainty|lakehouse_governance)\b/i,
+];
+
+const LLM_FOOTPRINT_PATTERNS = [
+  /\b(llm-footprint|llm_footprint|cold_pitch|journalist_pitch|footprint_drift|harmonize_digital_footprint)\b/i,
 ];
 
 const FIVE_WALLS_PATTERNS = [
@@ -151,6 +156,9 @@ function selectHarness(toolName, toolInput) {
     }
     if (SIMATREE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['simatree-data-governance'];
+    }
+    if (LLM_FOOTPRINT_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['llm-footprint-governance'];
     }
     if (ROUTINE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES.routine;

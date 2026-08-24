@@ -210,7 +210,8 @@ const path = require('node:path');
 // 508 -> 510 (2026-08-21): scripts/simatree-data-governance.js + the
 //   simatree-data-governance.json gate manifest (+2 measured npm pack).
 //   Lockstep with package-boundary + public-core-boundary.
-const BASELINE_FILE_COUNT = 510;
+// 510 -> 512 (2026-08-21): config/gates/llm-footprint-governance.json + scripts/llm-footprint-oracle.js (+2)
+const BASELINE_FILE_COUNT = 512;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "name": "LLM Digital Footprint & Cold-Pitch Governance",
+  "description": "Deterministic pre-action gate suite ensuring external AI search presence, PR pitches, and marketing materials meet journalist-grade empirical rigor and cross-channel invariant congruence.",
+  "gates": [
+    {
+      "id": "journalist-cold-pitch-quality-gate",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "high",
+      "description": "Blocks outbound PR pitches, journalist cold outreach, and press releases that score below 75 on the Journalist Pitch Oracle (fluff intros, zero empirical data, commodity AI jargon).",
+      "toolNames": ["Bash", "Edit", "Write", "Eval", "Dispatch"],
+      "patterns": [
+        "\\b(?:we\\s+are\\s+excited\\s+to\\s+announce|hope\\s+this\\s+finds\\s+you\\s+well|groundbreaking\\s+AI\\s+revolution)\\b"
+      ],
+      "message": "Action blocked: Outbound pitch detected with commodity fluff or ungrounded claims. Use the Journalist Cold-Pitch Oracle (llm-footprint-oracle --pitch) to ensure empirical data density and crisp hook clarity."
+    },
+    {
+      "id": "cross-silo-llm-footprint-drift-gate",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "critical",
+      "description": "Interdicts publishing changes that introduce contradictory entity definitions across documentation, schema.org markup, and product landing pages.",
+      "toolNames": ["Bash", "Edit", "Write"],
+      "patterns": [
+        "\\b(?:FOOTPRINT_DRIFT_DETECTED|unharmonized_entity_definition)\\b"
+      ],
+      "message": "Action blocked: Cross-channel entity drift detected. External AI search visibility requires 100% semantic congruence across all digital surfaces."
+    }
+  ]
+}
