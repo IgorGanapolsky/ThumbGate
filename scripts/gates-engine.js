@@ -4809,13 +4809,13 @@ function evaluateAgentIdentityLifecycleGate(toolName, toolInput) {
   try {
     const agentId = resolveActingAgentId();
     if (!agentId) return null;
-    const orgDashboard = require('./org-dashboard');
+    const identityStore = require('./audit-trail');
     try {
-      orgDashboard.recordObservedAgent(agentId);
+      identityStore.recordObservedAgent(agentId);
     } catch {
       // Observation is best-effort.
     }
-    const registryRow = orgDashboard.loadAgentRegistry()
+    const registryRow = identityStore.loadAgentRegistry()
       .filter((agent) => agent && agent.id === agentId)
       .pop();
     const strict = process.env.THUMBGATE_STRICT_ENFORCEMENT === '1';
@@ -4824,7 +4824,7 @@ function evaluateAgentIdentityLifecycleGate(toolName, toolInput) {
       const message = `Agent identity "${agentId}" is ${lifecycleStatus} in the agent registry but is still acting. `
         + 'Re-activate it via registerAgent with lifecycleStatus "active", or stop the agent.';
       if (strict) {
-        return { gate: 'agent-identity-lifecycle', message, severity: 'critical' };
+        return { gate: 'agent-identity-lifecycle', decision: 'deny', message, severity: 'critical' };
       }
       if (!AGENT_IDENTITY_WARNED.has(`retired:${agentId}`)) {
         AGENT_IDENTITY_WARNED.add(`retired:${agentId}`);
