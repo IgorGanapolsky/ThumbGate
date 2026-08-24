@@ -494,20 +494,26 @@ function applyStageContext(currentContext, stageResult) {
   return currentContext;
 }
 
-function runCommandStage(stage) {
-  const shell = shellConfig(stage.command);
-  const result = spawnSync(shell.command, shell.args, {
-    cwd: stage.workingDirectory || process.cwd(),
+function runCommandStage(stageConfig) {
+  const tokens = String(stageConfig.command).trim().split(/\s+/).filter(Boolean);
+  if (!/^[a-zA-Z0-9_\-./]+$/.test(tokens[0])) {
+    const err = new Error(`Stage "${stageConfig.name}" command rejected: invalid executable`);
+    err.code = 'JOB_STAGE_FAILED';
+    throw err;
+  }
+  const result = spawnSync(tokens[0], tokens.slice(1), {
+    cwd: stageConfig.workingDirectory || process.cwd(),
     env: process.env,
     encoding: 'utf8',
     stdio: 'pipe',
+    shell: false,
   });
 
   if (result.status !== 0) {
     const stderr = (result.stderr || '').trim();
     const stdout = (result.stdout || '').trim();
     const error = new Error([
-      `Stage "${stage.name}" command failed`,
+      `Stage "${stageConfig.name}" command failed`,
       stderr || stdout || `exit ${result.status}`,
     ].join(': '));
     error.code = 'JOB_STAGE_FAILED';
