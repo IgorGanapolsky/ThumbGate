@@ -17,7 +17,21 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
-const { readAuditLog, auditStats, skillAdherence } = require('./audit-trail');
+const {
+  readAuditLog,
+  auditStats,
+  skillAdherence,
+  registerAgent,
+  recordAgentActivity,
+  loadAgentRegistry,
+  retireAgent,
+  recordObservedAgent,
+  loadObservedAgents,
+  getRegistryPath,
+  getObservedAgentsPath,
+  REGISTRY_FILENAME,
+  OBSERVED_FILENAME,
+} = require('./audit-trail');
 const { isProTier } = require('./rate-limiter');
 const {
   PRO_MONTHLY_PAYMENT_LINK,
@@ -29,196 +43,9 @@ const {
 // Agent Registry
 // ---------------------------------------------------------------------------
 
-const REGISTRY_FILENAME = 'agent-registry.jsonl';
-
-function getRegistryPath() {
-  return path.join(resolveFeedbackDir(), REGISTRY_FILENAME);
-}
-
-/**
- * Register an agent session. Called on MCP server startup or agent bootstrap.
- *
- * @param {object} params
- * @param {string} params.agentId - Unique agent identifier
- * @param {string} [params.source] - Where the agent was spawned from (cli, mcp, github, slack)
- * @param {string} [params.project] - Project/repo name
- * @param {string} [params.branch] - Git branch
- * @param {object} [params.metadata] - Arbitrary metadata
- * @returns {object} The registered agent record
- */
-function registerAgent({ agentId, source, project, branch, metadata } = {}) {
-  const id = agentId || `agent_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const record = {
-    id,
-    registeredAt: new Date().toISOString(),
-    lastSeenAt: new Date().toISOString(),
-    source: source || 'unknown',
-    project: project || path.basename(process.cwd()),
-    branch: branch || null,
-    toolCalls: 0,
-    gateBlocks: 0,
-    gateWarns: 0,
-    metadata: { lifecycleStatus: 'active', ...(metadata || {}) },
-  };
-
-  const registryPath = getRegistryPath();
-  const dir = path.dirname(registryPath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.appendFileSync(registryPath, JSON.stringify(record) + '\n');
-  return record;
-}
-
-/**
- * Record agent activity — called after each tool call evaluation.
- *
- * @param {string} agentId
- * @param {string} decision - 'allow' | 'deny' | 'warn'
- */
-function recordAgentActivity(agentId, decision) {
-  const registryPath = getRegistryPath();
-  if (!fs.existsSync(registryPath)) return;
-
-  const lines = fs.readFileSync(registryPath, 'utf-8').trim().split('\n');
-  const updated = [];
-  let found = false;
-
-  for (const line of lines) {
-    try {
-      const record = JSON.parse(line);
-      if (record.id === agentId && !found) {
-        record.lastSeenAt = new Date().toISOString();
-        record.toolCalls = (record.toolCalls || 0) + 1;
-        if (decision === 'deny') record.gateBlocks = (record.gateBlocks || 0) + 1;
-        if (decision === 'warn') record.gateWarns = (record.gateWarns || 0) + 1;
-        found = true;
-      }
-      updated.push(JSON.stringify(record));
-    } catch {
-      updated.push(line);
-    }
-  }
-
-  fs.writeFileSync(registryPath, updated.join('\n') + '\n');
-}
-
-// ---------------------------------------------------------------------------
-// Observed agents — the producer side of shadow-AI detection
-// ---------------------------------------------------------------------------
-
-const OBSERVED_FILENAME = 'observed-agents.jsonl';
-const OBSERVED_COMPACT_BYTES = 512 * 1024;
-
-function getObservedAgentsPath() {
-  return path.join(resolveFeedbackDir(), OBSERVED_FILENAME);
-}
-
-/**
- * Record one observation of an acting agent. Called from the gates-engine
- * evaluation path on every attributed tool call, so the file is append-only:
- * concurrent agent processes must never rewrite each other's rows. Readers
- * aggregate; the file self-compacts once it passes the size cap.
- */
-function recordObservedAgent(agentId) {
-  const id = String(agentId || '').trim();
-  if (!id) return null;
-  const observedPath = getObservedAgentsPath();
-  const dir = path.dirname(observedPath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  const event = { id, seenAt: new Date().toISOString() };
-  fs.appendFileSync(observedPath, JSON.stringify(event) + '\n');
-  try {
-    if (fs.statSync(observedPath).size > OBSERVED_COMPACT_BYTES) {
-      const compacted = loadObservedAgents()
-        .map((row) => JSON.stringify(row))
-        .join('\n');
-      fs.writeFileSync(observedPath, compacted + '\n');
-    }
-  } catch {
-    // Compaction is best-effort; observation recording must never throw.
-  }
-  return event;
-}
-
-/**
- * Aggregate observation events into one row per agent id:
- * { id, firstSeenAt, lastSeenAt, observations }.
- */
-function loadObservedAgents() {
-  const observedPath = getObservedAgentsPath();
-  if (!fs.existsSync(observedPath)) return [];
-  const byId = new Map();
-  const raw = fs.readFileSync(observedPath, 'utf-8').trim();
-  if (!raw) return [];
-  for (const line of raw.split('\n')) {
-    let event;
-    try {
-      event = JSON.parse(line);
-    } catch {
-      continue;
-    }
-    const id = String(event.id || '').trim();
-    if (!id) continue;
-    const seenAt = event.seenAt || event.lastSeenAt || new Date().toISOString();
-    const row = byId.get(id) || {
-      id,
-      firstSeenAt: event.firstSeenAt || seenAt,
-      lastSeenAt: seenAt,
-      observations: 0,
-    };
-    if (seenAt < row.firstSeenAt) row.firstSeenAt = seenAt;
-    if (seenAt > row.lastSeenAt) row.lastSeenAt = seenAt;
-    row.observations += Number(event.observations) > 0 ? Number(event.observations) : 1;
-    byId.set(id, row);
-  }
-  return [...byId.values()];
-}
-
-/**
- * Retire an agent identity. A retired agent that keeps acting is flagged by
- * the gates-engine identity gate (deny under strict enforcement).
- */
-function retireAgent(agentId, reason) {
-  const registryPath = getRegistryPath();
-  if (!fs.existsSync(registryPath)) return false;
-  const lines = fs.readFileSync(registryPath, 'utf-8').trim().split('\n');
-  const updated = [];
-  let found = false;
-  for (const line of lines) {
-    try {
-      const record = JSON.parse(line);
-      if (record.id === agentId) {
-        record.metadata = record.metadata || {};
-        record.metadata.lifecycleStatus = 'retired';
-        record.metadata.retiredAt = new Date().toISOString();
-        if (reason) record.metadata.retireReason = String(reason);
-        found = true;
-      }
-      updated.push(JSON.stringify(record));
-    } catch {
-      updated.push(line);
-    }
-  }
-  if (found) fs.writeFileSync(registryPath, updated.join('\n') + '\n');
-  return found;
-}
-
-/**
- * Load all registered agent sessions.
- */
-function loadAgentRegistry() {
-  const registryPath = getRegistryPath();
-  if (!fs.existsSync(registryPath)) return [];
-  const raw = fs.readFileSync(registryPath, 'utf-8').trim();
-  if (!raw) return [];
-  return raw.split('\n').map(line => {
-    try { return JSON.parse(line); }
-    catch { return null; }
-  }).filter(Boolean);
-}
-
-// ---------------------------------------------------------------------------
-// Org Dashboard Aggregation
-// ---------------------------------------------------------------------------
+// Agent identity store (registry, observed-agent stream, retirement) lives
+// in ./audit-trail so the public gates-engine runtime can require it while
+// this Pro dashboard module stays out of the npm tarball. Re-exported below.
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
