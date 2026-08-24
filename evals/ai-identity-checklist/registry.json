@@ -24,6 +24,7 @@
     { "id": "adapter:openmono", "purpose": "OpenMono adapter" },
     { "id": "adapter:perplexity", "purpose": "Perplexity hybrid adapter" },
     { "id": "adapter:policy-engine", "purpose": "Policy-engine adapter" },
+    { "id": "adapter:poolside", "purpose": "Poolside Pool MCP adapter (fail-open host hooks; ThumbGate MCP is the gate)" },
     { "id": "adapter:qwen", "purpose": "Qwen adapter" },
     { "id": "adapter:skool", "purpose": "Skool MCP stdio adapter" },
     { "id": "adapter:vlt", "purpose": "VLT adapter" },
