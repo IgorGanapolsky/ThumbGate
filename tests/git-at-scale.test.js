@@ -17,6 +17,9 @@ function git(args, cwd) {
 function makeRepo() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-git-scale-'));
   git(['init', '-b', 'main'], dir);
+  const hooksDir = path.join(dir, '.git', 'test-hooks');
+  fs.mkdirSync(hooksDir, { recursive: true });
+  git(['config', '--local', 'core.hooksPath', hooksDir], dir);
   git(['config', 'user.email', 'test@example.com'], dir);
   git(['config', 'user.name', 'Test'], dir);
   fs.writeFileSync(path.join(dir, 'README.md'), 'one\n');
