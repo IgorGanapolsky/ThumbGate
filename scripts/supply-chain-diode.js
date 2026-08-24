@@ -135,7 +135,7 @@ function evaluateSupplyChainSecurity(manifestOrPath = {}, options = {}) {
   // Check 2: Unpinned / loose dependency version specs
   for (const [dep, version] of Object.entries(dependencies)) {
     if (typeof version === 'string') {
-      if (version === '*' || version.startsWith('>') || version.startsWith('>=') || version.includes('||')) {
+      if (version === '*' || version === 'latest' || version.startsWith('>') || version.startsWith('>=') || version.startsWith('^') || version.startsWith('~') || version.includes('||')) {
         findings.push({
           rule: 'SUPPLY_02_EXACT_PINNING',
           type: 'UNPINNED_DEPENDENCY',
@@ -197,6 +197,7 @@ function evaluateSupplyChainSecurity(manifestOrPath = {}, options = {}) {
  * Generate a signed Supply Chain Provenance Receipt.
  */
 function generateProvenanceReceipt(manifest = {}, evaluation = {}, buildDetails = {}) {
+  const signingSecret = buildDetails.signingSecret || process.env.THUMBGATE_SUPPLY_SIGNING_SECRET || '';
   const payloadToHash = {
     packageName: manifest.name || 'unnamed-package',
     packageVersion: manifest.version || '0.0.0',
@@ -222,17 +223,19 @@ function generateProvenanceReceipt(manifest = {}, evaluation = {}, buildDetails 
       buildType: 'https://thumbgate.org/provenance/v1',
       materials: [{ uri: `git+https://github.com/IgorGanapolsky/ThumbGate@${payloadToHash.buildSha}` }]
     },
-    signature: crypto.createHmac('sha256', buildDetails.signingSecret || 'thumbgate-supply-chain-anchor')
-      .update(receiptHash)
-      .digest('hex')
+    unsigned: !signingSecret,
+    signature: signingSecret
+      ? crypto.createHmac('sha256', signingSecret).update(receiptHash).digest('hex')
+      : null
   };
 }
 
 /**
  * Verify integrity of a ProvenanceReceipt.
  */
-function verifyProvenanceReceipt(receipt = {}, signingSecret = 'thumbgate-supply-chain-anchor') {
-  if (!receipt || !receipt.payloadHash || !receipt.manifest || !receipt.signature) {
+function verifyProvenanceReceipt(receipt = {}, signingSecret = '') {
+  const secret = signingSecret || process.env.THUMBGATE_SUPPLY_SIGNING_SECRET || '';
+  if (!secret || !receipt || !receipt.payloadHash || !receipt.manifest || !receipt.signature) {
     return false;
   }
 
@@ -243,14 +246,29 @@ function verifyProvenanceReceipt(receipt = {}, signingSecret = 'thumbgate-supply
     return false;
   }
 
-  const expectedSignature = crypto.createHmac('sha256', signingSecret)
+  const expectedSignature = crypto.createHmac('sha256', secret)
     .update(receipt.payloadHash)
     .digest('hex');
 
   return expectedSignature === receipt.signature;
 }
 
-if (require.main === module) {
+function canonicalPath(candidate) {
+  const resolved = path.resolve(candidate);
+  try {
+    return fs.realpathSync(resolved);
+  } catch {
+    return resolved;
+  }
+}
+
+function isDirectInvocation() {
+  const entryPoint = process.argv[1];
+  if (!entryPoint) return false;
+  return canonicalPath(entryPoint) === canonicalPath(__filename);
+}
+
+if (isDirectInvocation()) {
   const target = process.argv[2] || path.join(process.cwd(), 'package.json');
   const evalResult = evaluateSupplyChainSecurity(target);
   const receipt = generateProvenanceReceipt({ name: 'cli-target' }, evalResult);

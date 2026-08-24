@@ -162,6 +162,25 @@ describe('selectHarnessName — code-edit harness', () => {
       'code-edit'
     );
   });
+
+  it('selects ai-liability-defense for destructive Write payloads', () => {
+    assert.strictEqual(
+      selectHarnessName('Write', {
+        file_path: 'scripts/wipe.sh',
+        content: 'rm -rf /tmp/data',
+      }),
+      'ai-liability-defense'
+    );
+  });
+});
+
+describe('selectHarnessName — ai-liability-defense', () => {
+  it('selects the liability harness for rm -rf', () => {
+    assert.strictEqual(
+      selectHarnessName('Bash', { command: 'rm -rf /tmp/data' }),
+      'ai-liability-defense'
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

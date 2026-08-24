@@ -44,6 +44,7 @@ const SIMATREE_PATTERNS = [
 
 const AI_LIABILITY_PATTERNS = [
   /\b(ai_liability|executive_defense|kolochenko|immuniweb|eu_ai_act|dora_art_30|sec_item_105)\b/i,
+  /\b(rm\s+-rf|git\s+reset\s+--hard|drop\s+table|aws\s+iam|stripe\s+payouts)\b/i,
 ];
 
 const SUPPLY_CHAIN_PATTERNS = [
@@ -140,6 +141,9 @@ function selectHarness(toolName, toolInput) {
     const payloadText = extractPayloadText(toolInput);
     if (payloadText && FUTURE_AGI_PATTERNS.some((p) => p.test(payloadText))) {
       return HARNESSES['future-agi-guardrails'];
+    }
+    if (payloadText && AI_LIABILITY_PATTERNS.some((p) => p.test(payloadText))) {
+      return HARNESSES['ai-liability-defense'];
     }
     return HARNESSES['code-edit'];
   }

@@ -59,6 +59,37 @@ test('AI Liability Defense Engine - Public Release Deploy Gating', () => {
   assert.ok(evalResult.matchedRules.includes('LIABILITY_04_PUBLIC_RELEASE_DEPLOY'));
 });
 
+test('AI Liability Defense Engine - "AI did it" excuse never clears a deny', () => {
+  const evalResult = evaluateActionLiability({
+    command: 'rm -rf /tmp/data',
+    excuse: 'AI did it, the agent went rogue',
+  });
+  assert.equal(evalResult.allowed, false);
+  assert.equal(evalResult.aiDidItIsNotADefense, true);
+  assert.equal(evalResult.certified, false);
+  assert.equal(evalResult.complianceObligations.cisoDefenseWarranty.safeHarborEligible, false);
+});
+
+test('AI Liability Defense Engine - gate JSON is executable by gates-engine', () => {
+  const config = loadLiabilityConfig();
+  assert.equal(config.certified, false);
+  assert.equal(config.aiDidItIsNotADefense, true);
+  assert.ok(Array.isArray(config.gates));
+  assert.ok(config.gates.length >= 3);
+  for (const gate of config.gates) {
+    assert.equal(typeof gate.pattern, 'string', `${gate.id} must use gates-engine pattern`);
+    assert.doesNotThrow(() => new RegExp(gate.pattern));
+  }
+});
+
+test('AI Liability Defense Engine - unsigned receipt without signing secret', () => {
+  const evalResult = evaluateActionLiability({ command: 'status' });
+  const receipt = generateLiabilityReceipt({ command: 'status' }, evalResult, {});
+  assert.equal(receipt.unsigned, true);
+  assert.equal(receipt.proofSignature, null);
+  assert.equal(verifyLiabilityReceipt(receipt), false);
+});
+
 test('AI Liability Defense Engine - Cryptographic Receipt Generation & Verification', () => {
   const action = {
     type: 'EXECUTE_QUERY',

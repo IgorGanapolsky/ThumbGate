@@ -99,3 +99,29 @@ test('Supply Chain Diode - Provenance Receipt Generation & Tamper Proofing', () 
   tampered.manifest.packageVersion = '3.0.0-injected';
   assert.equal(verifyProvenanceReceipt(tampered, 'sec-test'), false);
 });
+
+test('Supply Chain Diode - caret and latest are unpinned (BrightTALK 668780)', () => {
+  const evalResult = evaluateSupplyChainSecurity({
+    name: 'caret-pkg',
+    dependencies: { axios: '^1.7.0', trivy: 'latest' },
+  });
+  assert.equal(evalResult.summary.unpinnedDependencies, 2);
+  assert.ok(evalResult.matchedRules.includes('SUPPLY_02_EXACT_PINNING'));
+});
+
+test('Supply Chain Diode - unsigned receipt without signing secret', () => {
+  const receipt = generateProvenanceReceipt({ name: 'x', version: '1.0.0' }, { verdict: 'ALLOW' }, {});
+  assert.equal(receipt.unsigned, true);
+  assert.equal(receipt.signature, null);
+  assert.equal(verifyProvenanceReceipt(receipt), false);
+});
+
+test('Supply Chain Diode - gate JSON is executable by gates-engine', () => {
+  const config = loadSupplyChainConfig();
+  assert.equal(config.certified, false);
+  assert.ok(Array.isArray(config.gates));
+  for (const gate of config.gates) {
+    assert.equal(typeof gate.pattern, 'string');
+    assert.doesNotThrow(() => new RegExp(gate.pattern));
+  }
+});
