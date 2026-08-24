@@ -27,6 +27,18 @@ function getAuditLogPath() {
   return path.join(resolveFeedbackDir(), AUDIT_LOG_FILENAME);
 }
 
+/**
+ * Resolve the acting non-human identity for audit attribution. Sessions and
+ * worktree leases export THUMBGATE_SESSION_AGENT; THUMBGATE_AGENT_ID is the
+ * generic override. Null when the caller cannot be attributed — audit records
+ * must never invent an identity.
+ */
+function resolveAuditAgentId() {
+  return process.env.THUMBGATE_SESSION_AGENT
+    || process.env.THUMBGATE_AGENT_ID
+    || null;
+}
+
 
 // ---------------------------------------------------------------------------
 // Core audit record
@@ -53,6 +65,7 @@ function recordAuditEvent(params = {}) {
     timestamp: new Date().toISOString(),
     toolName: params.toolName || 'unknown',
     toolInput: sanitizeToolInput(params.toolInput || {}),
+    agentId: params.agentId || resolveAuditAgentId(),
     decision: params.decision || 'allow',
     gateId: params.gateId || null,
     message: params.message || null,
