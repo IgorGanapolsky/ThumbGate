@@ -1142,7 +1142,7 @@
     "node": ">=18.18.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.116.0",
+    "@anthropic-ai/sdk": "0.117.1",
     "@google/genai": "2.16.0",
     "@lancedb/lancedb": "^0.37.1",
     "apache-arrow": "^18.1.0",
@@ -1171,7 +1171,7 @@
   },
   "mcpName": "io.github.IgorGanapolsky/thumbgate",
   "devDependencies": {
-    "@changesets/changelog-github": "^0.7.0",
+    "@changesets/changelog-github": "^1.0.0",
     "@changesets/cli": "^2.31.0",
     "@playwright/test": "^1.62.1",
     "c8": "^12.0.0",
