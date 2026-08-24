@@ -4,6 +4,28 @@
   "version": "1.0.0",
   "framework": "SLSA v1.0 / Sigstore / npm OIDC Provenance Standard",
   "enforcementMode": "fail_closed",
+  "certified": false,
+  "affiliation": "Inspired by public BrightTALK #668780 (Yesenia Yser / Yes2Tech: Axios npm, Shai-Hulud, Trivy). Not affiliated.",
+  "gates": [
+    {
+      "id": "supply-lifecycle-remote-exec",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "critical",
+      "toolNames": ["Bash"],
+      "pattern": "\\b(preinstall|postinstall|npm\\s+install).{0,80}(curl|wget|bash\\s+-c)\\b",
+      "message": "Action blocked: lifecycle/install remote-exec is a supply-chain breach class (Axios/Shai-Hulud)."
+    },
+    {
+      "id": "supply-unpinned-install",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "high",
+      "toolNames": ["Bash"],
+      "pattern": "npm\\s+(install|i|add)\\s+[^\\s]+@(?:\\*|latest)",
+      "message": "Action blocked: unpinned npm install. Pin exact versions (BrightTALK #668780)."
+    }
+  ],
   "rules": [
     {
       "id": "SUPPLY_01_LIFECYCLE_SCRIPTS",

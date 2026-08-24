@@ -125,44 +125,81 @@ function validateNoteFrontmatter(content = '', requiredProperties = []) {
 }
 
 /**
- * Generate an Obsidian Bases / Dataview database hub note.
+ * Generate a real Obsidian Bases (core plugin, 1.9+) `.base` file.
+ * MakeUseOf 2026-08-18: Bases reads YAML properties into an editable table.
+ * Dataview is the old workaround — do not emit ```dataview fences.
  *
- * @param {string} category - Database category name
- * @param {Object} config - { title, folder, columns, sort, filter }
- * @returns {string} Complete Markdown document with Dataview query & Bases metadata
+ * @param {Object} config - { folder, properties, views, extraFilters }
+ * @returns {string} YAML matching vault Bases/*.base (filters/properties/views)
+ */
+function generateBaseFile(config = {}) {
+  const folder = config.folder || 'Agent-State';
+  const extraFilters = Array.isArray(config.extraFilters) ? config.extraFilters : [];
+  const properties = config.properties || {
+    'file.name': { displayName: 'Note' },
+    type: { displayName: 'Type' },
+    status: { displayName: 'Status' },
+    last_verified: { displayName: 'Verified' },
+  };
+  const views = config.views || [
+    { type: 'table', name: 'All', order: ['file.name', 'status', 'last_verified'] },
+  ];
+
+  const lines = [
+    'filters:',
+    '  and:',
+    '    - file.ext == "md"',
+    `    - file.inFolder(${JSON.stringify(folder)})`,
+  ];
+  for (const extra of extraFilters) {
+    lines.push(`    - ${extra}`);
+  }
+  lines.push('properties:');
+  for (const [key, meta] of Object.entries(properties)) {
+    lines.push(`  ${key}:`);
+    lines.push(`    displayName: ${meta.displayName || key}`);
+  }
+  lines.push('views:');
+  for (const view of views) {
+    lines.push(`  - type: ${view.type || 'table'}`);
+    lines.push(`    name: ${view.name || 'Table'}`);
+    if (Array.isArray(view.order) && view.order.length > 0) {
+      lines.push('    order:');
+      for (const col of view.order) {
+        lines.push(`      - ${col}`);
+      }
+    }
+    if (view.groupBy) {
+      lines.push('    groupBy:');
+      lines.push(`      property: ${view.groupBy.property || 'status'}`);
+      lines.push(`      direction: ${view.groupBy.direction || 'ASC'}`);
+    }
+  }
+  lines.push('');
+  return lines.join('\n');
+}
+
+/**
+ * @deprecated Dataview is not how this vault uses Bases. Prefer generateBaseFile.
+ * Kept as an alias that emits a real `.base` document, never a Dataview query.
  */
 function generateBasesDatabaseView(category = '', config = {}) {
-  const title = config.title || `${category} Database`;
-  const folder = config.folder || category;
-  const columns = config.columns || ['file.link AS "Name"', 'status AS "Status"', 'last_updated AS "Updated"'];
-  const sort = config.sort || 'last_updated DESC';
-  const filter = config.filter ? `WHERE ${config.filter}` : '';
-
-  const frontmatter = generateFrontmatter({
-    database_type: 'obsidian_bases_v1',
-    category,
-    generated_at: new Date().toISOString(),
-    managed_by: 'ThumbGate-Obsidian-Bases-Sync',
-    tags: ['database', 'obsidian-bases', category.toLowerCase()]
+  return generateBaseFile({
+    folder: config.folder || category,
+    properties: {
+      'file.name': { displayName: 'Note' },
+      status: { displayName: 'Status' },
+      last_verified: { displayName: 'Verified' },
+    },
+    views: [
+      {
+        type: 'table',
+        name: config.title || category || 'Table',
+        order: ['file.name', 'status', 'last_verified'],
+        groupBy: { property: 'status', direction: 'ASC' },
+      },
+    ],
   });
-
-  return `${frontmatter}
-
-# 🗄️ ${title}
-
-> Auto-managed by **ThumbGate Obsidian Bases Synchronizer**.
-> Powered by Obsidian Properties & Dataview database queries.
-
-\`\`\`dataview
-TABLE ${columns.join(', ')}
-FROM "${folder}"
-${filter}
-SORT ${sort}
-\`\`\`
-
----
-*Last synchronized: ${new Date().toISOString()}*
-`;
 }
 
 /**
@@ -174,79 +211,75 @@ SORT ${sort}
  * @returns {Object} Sync statistics
  */
 function syncVaultDatabases(vaultPath = DEFAULT_VAULT_PATH, data = {}, options = {}) {
+  if (options.dryRun) {
+    return { synced: false, reason: 'DRY_RUN', writtenFiles: 0, vaultPath };
+  }
+
   if (!fs.existsSync(vaultPath)) {
-    if (options.dryRun) {
-      return { synced: false, reason: 'VAULT_DIRECTORY_NOT_FOUND', writtenFiles: 0 };
-    }
     fs.mkdirSync(vaultPath, { recursive: true });
   }
 
-  const dbDir = path.join(vaultPath, '00-Databases');
-  const prsDir = path.join(vaultPath, 'Pull-Requests');
-  const gatesDir = path.join(vaultPath, 'Security-Gates');
-  const tasksDir = path.join(vaultPath, 'Agent-Tasks');
-  const auditsDir = path.join(vaultPath, 'Supply-Chain-Audits');
-
-  [dbDir, prsDir, gatesDir, tasksDir, auditsDir].forEach(d => {
-    if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
-  });
+  const basesDir = path.join(vaultPath, 'Bases');
+  const notesDir = path.join(vaultPath, 'Handoffs');
+  if (!fs.existsSync(basesDir)) fs.mkdirSync(basesDir, { recursive: true });
+  if (!fs.existsSync(notesDir)) fs.mkdirSync(notesDir, { recursive: true });
 
   let writtenFiles = 0;
 
-  // 1. Sync Active PRs Database
-  const prDbContent = generateBasesDatabaseView('Pull-Requests', {
-    title: 'Active Pull Requests & Merge Queue',
-    folder: 'Pull-Requests',
-    columns: ['file.link AS "PR"', 'pr_number AS "#"', 'status AS "Status"', 'ci_state AS "CI"', 'assigned_agent AS "Agent"', 'risk_rating AS "Risk"'],
-    sort: 'pr_number DESC'
+  const fleetBase = generateBaseFile({
+    folder: 'Agent-State',
+    properties: {
+      'file.name': { displayName: 'Agent' },
+      status: { displayName: 'Status' },
+      repo: { displayName: 'Repo' },
+      github_pr: { displayName: 'PR' },
+      last_verified: { displayName: 'Verified' },
+      type: { displayName: 'Type' },
+    },
+    views: [
+      {
+        type: 'table',
+        name: 'Live agents',
+        order: ['file.name', 'status', 'repo', 'github_pr', 'last_verified'],
+        groupBy: { property: 'status', direction: 'ASC' },
+      },
+    ],
   });
-  fs.writeFileSync(path.join(dbDir, 'Active-PRs.md'), prDbContent, 'utf8');
+  fs.writeFileSync(path.join(basesDir, 'Agent Fleet.base'), fleetBase, 'utf8');
   writtenFiles++;
 
   if (Array.isArray(data.prs)) {
     for (const pr of data.prs) {
+      const status = String(pr.status || 'open').toLowerCase();
       const prFrontmatter = generateFrontmatter({
-        id: `pr-${pr.number}`,
+        type: 'handoff',
+        agent: String(pr.assignedAgent || 'grok').toLowerCase(),
+        status,
+        github_pr: pr.url || `https://github.com/IgorGanapolsky/ThumbGate/pull/${pr.number}`,
+        last_verified: new Date().toISOString(),
         pr_number: pr.number,
         title: pr.title,
         branch: pr.branch,
-        status: pr.status || 'OPEN',
-        ci_state: pr.ciState || 'PENDING',
-        assigned_agent: pr.assignedAgent || 'CTO-Agent',
-        risk_rating: pr.riskRating || 'LOW',
-        last_updated: new Date().toISOString(),
-        tags: ['pr', pr.status?.toLowerCase() || 'open']
       });
-      const noteContent = `${prFrontmatter}\n\n# PR #${pr.number}: ${pr.title}\n\n- **Branch**: \`${pr.branch}\`\n- **CI State**: ${pr.ciState || 'PENDING'}\n- **Summary**: ${pr.summary || 'In-flight PR tracking.'}\n`;
-      fs.writeFileSync(path.join(prsDir, `PR-${pr.number}.md`), noteContent, 'utf8');
+      const noteContent = `${prFrontmatter}\n\n# PR #${pr.number}: ${pr.title}\n`;
+      fs.writeFileSync(path.join(notesDir, `PR-${pr.number}.md`), noteContent, 'utf8');
       writtenFiles++;
     }
   }
 
-  // 2. Sync Security Gates Database
-  const gatesDbContent = generateBasesDatabaseView('Security-Gates', {
-    title: 'Security Gates & Liability Enforcers',
-    folder: 'Security-Gates',
-    columns: ['file.link AS "Gate"', 'gate_id AS "ID"', 'enforcement_mode AS "Mode"', 'framework AS "Framework"', 'severity AS "Severity"'],
-    sort: 'file.name ASC'
-  });
-  fs.writeFileSync(path.join(dbDir, 'Security-Gates.md'), gatesDbContent, 'utf8');
-  writtenFiles++;
-
   if (Array.isArray(data.gates)) {
     for (const gate of data.gates) {
       const gateFrontmatter = generateFrontmatter({
-        id: gate.gateId,
+        type: 'handoff',
+        agent: 'grok',
+        status: 'active',
+        last_verified: new Date().toISOString(),
         gate_id: gate.gateId,
         name: gate.name,
-        framework: gate.framework,
-        enforcement_mode: gate.enforcementMode || 'fail_closed',
-        severity: gate.severity || 'CRITICAL',
-        last_evaluated: new Date().toISOString(),
-        tags: ['security-gate', 'liability-defense']
+        certified: false,
       });
-      const noteContent = `${gateFrontmatter}\n\n# Gate: ${gate.name}\n\n- **Gate ID**: \`${gate.gateId}\`\n- **Framework**: ${gate.framework}\n- **Mode**: \`${gate.enforcementMode}\`\n`;
-      fs.writeFileSync(path.join(gatesDir, `${gate.gateId}.md`), noteContent, 'utf8');
+      const noteContent = `${gateFrontmatter}\n\n# Gate: ${gate.name}\n`;
+      fs.writeFileSync(path.join(notesDir, `${gate.gateId}.md`), noteContent, 'utf8');
       writtenFiles++;
     }
   }
@@ -255,23 +288,49 @@ function syncVaultDatabases(vaultPath = DEFAULT_VAULT_PATH, data = {}, options =
     synced: true,
     vaultPath,
     writtenFiles,
+    usesDataview: false,
     timestamp: new Date().toISOString()
   };
 }
 
-if (require.main === module) {
-  const vault = process.argv[2] || DEFAULT_VAULT_PATH;
-  const result = syncVaultDatabases(vault, {
-    prs: [{ number: 3611, title: 'Sentinel Classifier Fix', branch: 'fix/resolve-issue-3595-3593-sentinel-and-hermes-hosted', status: 'READY', ciState: 'PASS' }],
-    gates: [{ gateId: 'gate_ai_liability_defense_2026', name: 'AI Liability Defense Gate', framework: 'ImmuniWeb / EU AI Act', enforcementMode: 'fail_closed', severity: 'CRITICAL' }]
-  });
-  console.log(JSON.stringify(result, null, 2));
+function canonicalPath(candidate) {
+  const resolved = path.resolve(candidate);
+  try {
+    return fs.realpathSync(resolved);
+  } catch {
+    return resolved;
+  }
+}
+
+function isDirectInvocation() {
+  const entryPoint = process.argv[1];
+  if (!entryPoint) return false;
+  return canonicalPath(entryPoint) === canonicalPath(__filename);
+}
+
+if (isDirectInvocation()) {
+  const write = process.argv.includes('--write');
+  const vaultArg = process.argv.slice(2).find((a) => a !== '--write');
+  const vault = vaultArg || DEFAULT_VAULT_PATH;
+  if (!write) {
+    console.log(JSON.stringify({
+      synced: false,
+      reason: 'DRY_RUN',
+      hint: 'Pass --write and an explicit vault path. Never dumps dummy PRs into ~/Documents/AI-Agent-Sync.',
+      vaultPath: vault,
+    }, null, 2));
+    process.exitCode = 0;
+  } else {
+    const result = syncVaultDatabases(vault, {}, { dryRun: false });
+    console.log(JSON.stringify(result, null, 2));
+  }
 }
 
 module.exports = {
   generateFrontmatter,
   parseFrontmatter,
   validateNoteFrontmatter,
+  generateBaseFile,
   generateBasesDatabaseView,
   syncVaultDatabases
 };

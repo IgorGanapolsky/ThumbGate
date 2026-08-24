@@ -98,6 +98,8 @@ function evaluateActionLiability(action = {}, options = {}) {
 
   const dualKeyRequired = config.governance.dualKeyRequiredSeverities.includes(severity);
   const operatorApproved = Boolean(options.operatorApproved || action.operatorSignature);
+  const excuseText = `${cmd} ${String(action.excuse || action.rationale || '')}`.toLowerCase();
+  const aiDidItExcuse = /\b(ai did it|the model did it|agent went rogue|not my fault)\b/i.test(excuseText);
 
   let allowed = true;
   let verdict = 'ALLOW';
@@ -110,6 +112,13 @@ function evaluateActionLiability(action = {}, options = {}) {
     verdict = 'DENY_EXECUTIVE_LIABILITY_RISK';
   } else if (matchedRules.length > 0 && !operatorApproved) {
     verdict = 'WARN_AUDIT_REQUIRED';
+  }
+
+  // BrightTALK #668863 (Kolochenko): excuses like "AI did it" are not a legal
+  // defense. They never flip a deny to allow.
+  if (aiDidItExcuse && matchedRules.length > 0) {
+    allowed = false;
+    verdict = dualKeyRequired ? 'DENY_DUAL_KEY_REQUIRED' : 'DENY_EXECUTIVE_LIABILITY_RISK';
   }
 
   const riskScore = severity === 'CRITICAL' ? 95 : severity === 'HIGH' ? 70 : severity === 'MEDIUM' ? 40 : 10;
@@ -129,8 +138,9 @@ function evaluateActionLiability(action = {}, options = {}) {
       immutableLogRequired: true
     },
     cisoDefenseWarranty: {
-      safeHarborEligible: allowed || operatorApproved,
-      preActionGateEnforced: true
+      safeHarborEligible: false,
+      preActionGateEnforced: true,
+      aiDidItIsNotADefense: true
     }
   };
 
@@ -145,7 +155,9 @@ function evaluateActionLiability(action = {}, options = {}) {
     dualKeyRequired,
     operatorApproved,
     matchedRules,
-    complianceObligations
+    complianceObligations,
+    certified: false,
+    aiDidItIsNotADefense: true
   };
 }
 
@@ -158,6 +170,9 @@ function evaluateActionLiability(action = {}, options = {}) {
  * @returns {Object} Signed LiabilityProofReceipt
  */
 function generateLiabilityReceipt(action = {}, evaluation = {}, operatorContext = {}) {
+  const signingSecret = operatorContext.signingSecret
+    || process.env.THUMBGATE_LIABILITY_SIGNING_SECRET
+    || '';
   const payloadToHash = {
     actionType: action.type || 'EXECUTE',
     command: action.command || action.target || '',
@@ -188,9 +203,10 @@ function generateLiabilityReceipt(action = {}, evaluation = {}, operatorContext 
       operatorApproved: evaluation.operatorApproved || false
     },
     complianceWarranty: evaluation.complianceObligations || {},
-    proofSignature: crypto.createHmac('sha256', operatorContext.signingSecret || 'thumbgate-liability-anchor')
-      .update(receiptHash)
-      .digest('hex')
+    unsigned: !signingSecret,
+    proofSignature: signingSecret
+      ? crypto.createHmac('sha256', signingSecret).update(receiptHash).digest('hex')
+      : null
   };
 }
 
@@ -201,8 +217,9 @@ function generateLiabilityReceipt(action = {}, evaluation = {}, operatorContext 
  * @param {string} signingSecret - Secret key used for signature
  * @returns {boolean} True if intact and valid
  */
-function verifyLiabilityReceipt(receipt = {}, signingSecret = 'thumbgate-liability-anchor') {
-  if (!receipt || !receipt.payloadHash || !receipt.action || !receipt.proofSignature) {
+function verifyLiabilityReceipt(receipt = {}, signingSecret = '') {
+  const secret = signingSecret || process.env.THUMBGATE_LIABILITY_SIGNING_SECRET || '';
+  if (!secret || !receipt || !receipt.payloadHash || !receipt.action || !receipt.proofSignature) {
     return false;
   }
 
@@ -213,14 +230,29 @@ function verifyLiabilityReceipt(receipt = {}, signingSecret = 'thumbgate-liabili
     return false;
   }
 
-  const expectedSignature = crypto.createHmac('sha256', signingSecret)
+  const expectedSignature = crypto.createHmac('sha256', secret)
     .update(receipt.payloadHash)
     .digest('hex');
 
   return expectedSignature === receipt.proofSignature;
 }
 
-if (require.main === module) {
+function canonicalPath(candidate) {
+  const resolved = path.resolve(candidate);
+  try {
+    return fs.realpathSync(resolved);
+  } catch {
+    return resolved;
+  }
+}
+
+function isDirectInvocation() {
+  const entryPoint = process.argv[1];
+  if (!entryPoint) return false;
+  return canonicalPath(entryPoint) === canonicalPath(__filename);
+}
+
+if (isDirectInvocation()) {
   const args = process.argv.slice(2);
   let actionJson = {};
   if (args.length > 0 && args[0].startsWith('{')) {
