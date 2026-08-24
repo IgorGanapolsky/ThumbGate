@@ -1789,6 +1789,34 @@ function captureFeedback(params) {
     // Lesson DB write is non-critical — never fail the capture pipeline
   }
 
+  // Graph layer (scripts/lesson-graph.js): ingest-time resolution of the new
+  // lesson against the knowledge graph — CORRECTION/REFINEMENT markers become
+  // supersedes/refines edges (closing the old fact's valid_to), and
+  // high-confidence near-duplicates increment the canonical node's count
+  // instead of standing as a new sibling. Only active once the operator has
+  // built the graph via scripts/migrate-lesson-graph.js (the DB file exists);
+  // best-effort — never fails the capture pipeline.
+  let graphResolution = null;
+  try {
+    const lessonGraph = require('./lesson-graph');
+    const graphDb = lessonGraph.openGraphDBIfExists({ feedbackDir: FEEDBACK_DIR });
+    if (graphDb) {
+      try {
+        // The promoted memory record drops the raw feedback `context`, but
+        // that is where operators write "CORRECTION to <id>" markers — carry
+        // it through so ingest-time supersession detection sees it.
+        graphResolution = lessonGraph.registerLesson(graphDb, {
+          ...memoryRecord,
+          context: memoryRecord.context || feedbackEvent.context || null,
+        });
+      } finally {
+        graphDb.close();
+      }
+    }
+  } catch (_graphErr) {
+    // Graph registration is non-critical — never fail the capture pipeline
+  }
+
   summary.accepted += 1;
   summary.lastUpdated = now;
   saveSummary(summary);
@@ -1849,6 +1877,7 @@ function captureFeedback(params) {
     ...(reflection && { reflection }),
     ...(feedbackSession && { feedbackSession }),
     ...(synthesisResult && { synthesis: synthesisResult }),
+    ...(graphResolution && { graphResolution }),
   };
 
   // Update statusline with lesson info (include proposed rule if reflection available)
