@@ -210,7 +210,9 @@ const path = require('node:path');
 // 508 -> 510 (2026-08-21): scripts/simatree-data-governance.js + the
 //   simatree-data-governance.json gate manifest (+2 measured npm pack).
 //   Lockstep with package-boundary + public-core-boundary.
-const BASELINE_FILE_COUNT = 510;
+// 510 -> 515 (2026-08-24): scripts/ai-liability-defense-engine.js, scripts/obsidian-bases-synchronizer.js,
+// scripts/supply-chain-diode.js + config/gates/ai-liability-defense.json, config/gates/supply-chain-diode.json.
+const BASELINE_FILE_COUNT = 515;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
