@@ -8,6 +8,7 @@
 - `codex/config.toml`: example Codex MCP profile section using the same version-pinned portable launcher.
 - `amp/skills/thumbgate-feedback/SKILL.md`: Amp skill template.
 - `opencode/opencode.json`: portable OpenCode MCP profile using the same version-pinned portable launcher.
+- `poolside/settings.yaml`, `poolside/README.md`: Pool terminal-agent MCP adapter. Pins ThumbGate, preserves Pool's native permission and sandbox boundary, and documents why Pool's fail-open hooks are observability rather than a security boundary.
 - `perplexity/.mcp.json`: Claude Code config with ThumbGate + Perplexity MCP servers side-by-side.
 - `perplexity/config.toml`: Codex config with ThumbGate + Perplexity MCP servers.
 - `perplexity/opencode.json`: OpenCode config with ThumbGate + Perplexity MCP servers.

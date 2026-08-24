@@ -562,3 +562,21 @@ test('hf-context adapter HF_CONTEXT.md references gate templates, model candidat
   assert.match(content, /Unit 1/, 'must reference Unit 1');
   assert.match(content, /Unit 5/, 'must reference Unit 5');
 });
+
+test('Poolside adapter pins ThumbGate and preserves the native enforcement boundary', () => {
+  const settingsPath = path.join(root, 'adapters/poolside/settings.yaml');
+  const readmePath = path.join(root, 'adapters/poolside/README.md');
+  const settings = fs.readFileSync(settingsPath, 'utf8');
+  const readme = fs.readFileSync(readmePath, 'utf8');
+
+  assert.match(settings, /mcp_servers:/);
+  assert.match(settings, /command: npx/);
+  assert.match(
+    settings,
+    new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+    'Poolside settings must pin the shipped ThumbGate version',
+  );
+  assert.match(readme, /fail-open/i);
+  assert.match(readme, /native permissions/i);
+  assert.match(readme, /does not imply a Poolside\s+partnership or endorsement/i);
+});
