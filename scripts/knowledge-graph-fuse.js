@@ -22,6 +22,16 @@ const MAX_HOPS = 2;
 const RRF_K = 60;
 const RESOLVE_HIGH = 0.92;
 const RESOLVE_LOW = 0.75;
+const MIN_GOLDEN_CASES = 6;
+const MIN_DETERMINISTIC_RECALL = 0.95;
+const MIN_PRECISION = 0.15;
+
+function parseTimeBound(value, ifAbsent) {
+  if (value == null || value === '') return { ok: true, ms: ifAbsent };
+  const ms = new Date(value).getTime();
+  if (!Number.isFinite(ms)) return { ok: false, ms: NaN };
+  return { ok: true, ms };
+}
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
@@ -34,11 +44,11 @@ function normalizedId(value) {
 function edgeIsActive(edge = {}, asOf) {
   if (!asOf) return true;
   const instant = new Date(asOf).getTime();
-  if (!Number.isFinite(instant)) return true;
-  const validFrom = edge.validFrom ? new Date(edge.validFrom).getTime() : -Infinity;
-  const validTo = edge.validTo ? new Date(edge.validTo).getTime() : Infinity;
-  if (!Number.isFinite(validFrom) && !Number.isFinite(validTo)) return true;
-  return instant >= validFrom && instant < validTo;
+  if (!Number.isFinite(instant)) return false;
+  const from = parseTimeBound(edge.validFrom, Number.NEGATIVE_INFINITY);
+  const to = parseTimeBound(edge.validTo, Number.POSITIVE_INFINITY);
+  if (!from.ok || !to.ok) return false;
+  return instant >= from.ms && instant < to.ms;
 }
 
 function reciprocalRankFusion(rankedLists, k = RRF_K) {
@@ -209,11 +219,13 @@ function fuseKnowledgeGraph(input = {}) {
 function evaluateFusionAblation(input = {}) {
   const cases = asArray(input.cases);
   const issues = [];
-  if (cases.length < 6) issues.push('insufficient_golden_cases');
+  if (cases.length < MIN_GOLDEN_CASES) issues.push('insufficient_golden_cases');
 
   let expected = 0;
   let fusedHits = 0;
   let searchHits = 0;
+  let retrieved = 0;
+  let casesFullRecall = 0;
   let pathTotal = 0;
   let pathCorrect = 0;
 
@@ -224,11 +236,15 @@ function evaluateFusionAblation(input = {}) {
       edges: testCase.edges || input.edges,
       asOf: testCase.asOf,
     });
-    const wanted = asArray(testCase.expectedNodeIds).map(normalizedId);
+    const wanted = asArray(testCase.expectedNodeIds).map(normalizedId).filter(Boolean);
+    const retrievedIds = asArray(fused.fusedIds);
     const expectedPaths = asArray(testCase.expectedPathTypes).map((type) => String(type).toUpperCase());
+    const hitCount = wanted.filter((id) => retrievedIds.includes(id)).length;
     expected += wanted.length;
-    fusedHits += wanted.filter((id) => fused.fusedIds.includes(id)).length;
+    retrieved += retrievedIds.length;
+    fusedHits += hitCount;
     searchHits += wanted.filter((id) => fused.searchOnlyIds.includes(id)).length;
+    if (wanted.length > 0 && hitCount === wanted.length) casesFullRecall += 1;
     pathTotal += expectedPaths.length;
     const fusedTypes = new Set(fused.paths.map((row) => row.type));
     pathCorrect += expectedPaths.filter((type) => fusedTypes.has(type)).length;
@@ -236,9 +252,18 @@ function evaluateFusionAblation(input = {}) {
 
   const fusedRecall = expected ? fusedHits / expected : 0;
   const searchRecall = expected ? searchHits / expected : 0;
+  const precision = retrieved ? fusedHits / retrieved : 0;
+  const perCaseRecall = cases.length ? casesFullRecall / cases.length : 0;
   const recallLift = fusedRecall - searchRecall;
   const pathCorrectness = pathTotal ? pathCorrect / pathTotal : 0;
-  const graphEarnsCost = issues.length === 0 && (recallLift > 0 || pathCorrectness > 0);
+
+  if (cases.length >= MIN_GOLDEN_CASES) {
+    if (fusedRecall < MIN_DETERMINISTIC_RECALL) issues.push('recall_below_0.95');
+    if (precision < MIN_PRECISION) issues.push('precision_below_0.15');
+    if (perCaseRecall < 1) issues.push('per_case_recall_not_100');
+  }
+
+  const graphEarnsCost = issues.length === 0;
 
   return {
     schemaVersion: `${SCHEMA_VERSION}.ablation`,
@@ -248,12 +273,14 @@ function evaluateFusionAblation(input = {}) {
       caseCount: cases.length,
       fusedRecall: Number(fusedRecall.toFixed(4)),
       searchOnlyRecall: Number(searchRecall.toFixed(4)),
+      precision: Number(precision.toFixed(4)),
+      perCaseRecall: Number(perCaseRecall.toFixed(4)),
       recallLift: Number(recallLift.toFixed(4)),
       pathCorrectness: Number(pathCorrectness.toFixed(4)),
     },
     claimBoundary: graphEarnsCost
-      ? 'Ablation shows the graph contributed recall lift or labeled paths. Still not Cosmos Gremlin, still not a live insurance corpus.'
-      : 'Graph did not earn its cost on this golden set. Fix extraction/resolution before expanding traversal.',
+      ? 'Ablation passed fail-closed RAG gates (6 cases, 95% recall, 15% precision, 100% per-case). Still a local fuse CLI, not lesson-retrieval, not Cosmos Gremlin.'
+      : 'Graph did not earn its cost under fail-closed RAG gates. Fix extraction/resolution before expanding traversal.',
   };
 }
 
@@ -333,7 +360,11 @@ async function main(argv = process.argv.slice(2)) {
 
 module.exports = {
   MAX_HOPS,
+  MIN_DETERMINISTIC_RECALL,
+  MIN_GOLDEN_CASES,
+  MIN_PRECISION,
   SCHEMA_VERSION,
+  edgeIsActive,
   evaluateFusionAblation,
   fuseKnowledgeGraph,
   main,

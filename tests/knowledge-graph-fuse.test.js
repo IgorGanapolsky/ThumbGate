@@ -10,6 +10,7 @@ const {
   evaluateFusionAblation,
   reciprocalRankFusion,
   resolveEntities,
+  edgeIsActive,
 } = require('../scripts/knowledge-graph-fuse');
 
 const graph = {
@@ -55,6 +56,25 @@ test('time filters edges; expired relationships do not expand', () => {
   assert.deepEqual(asOf.fusedIds, ['claim']);
 });
 
+test('malformed temporal bounds fail closed instead of activating the edge', () => {
+  assert.equal(
+    edgeIsActive({ validFrom: 'bad' }, '2026-02-15T00:00:00.000Z'),
+    false,
+  );
+  assert.equal(
+    edgeIsActive({ validFrom: '2026-01-01', validTo: 'not-a-date' }, '2026-02-15T00:00:00.000Z'),
+    false,
+  );
+  const fused = fuseKnowledgeGraph({
+    searchHits: [{ id: 'claim' }],
+    nodes: graph.nodes,
+    edges: [{ from: 'claim', to: 'triage', type: 'APPLIES_TO', validFrom: 'bad' }],
+    asOf: '2026-02-15T00:00:00.000Z',
+  });
+  assert.equal(fused.paths.length, 0);
+  assert.deepEqual(fused.fusedIds, ['claim']);
+});
+
 test('contradicts edges decline to settle instead of picking a side', () => {
   const fused = fuseKnowledgeGraph({ searchHits: [{ id: 'claim' }], ...graph });
   assert.equal(fused.answerAllowed, false);
@@ -91,8 +111,22 @@ test('ablation is the acceptance test and requires enough golden cases', () => {
   }));
   const ablation = evaluateFusionAblation({ cases });
   assert.equal(ablation.decision, 'allow');
-  assert.ok(ablation.metrics.pathCorrectness > 0);
+  assert.ok(ablation.metrics.fusedRecall >= 0.95);
+  assert.ok(ablation.metrics.precision >= 0.15);
+  assert.equal(ablation.metrics.perCaseRecall, 1);
   assert.match(ablation.claimBoundary, /not Cosmos Gremlin/);
+
+  const weak = evaluateFusionAblation({
+    cases: Array.from({ length: 6 }, () => ({
+      searchHits: [{ id: 'claim' }],
+      expectedNodeIds: ['missing-policy', 'missing-endorsement'],
+      nodes: graph.nodes,
+      edges: graph.edges,
+    })),
+  });
+  assert.equal(weak.decision, 'deny');
+  assert.ok(weak.issues.includes('recall_below_0.95'));
+  assert.ok(weak.issues.includes('per_case_recall_not_100'));
 });
 
 test('RRF is deterministic', () => {
