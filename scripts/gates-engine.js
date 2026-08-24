@@ -4210,13 +4210,29 @@ function buildRelevantLessonContext(toolName, toolInput) {
     const lessons = retrieveRelevantLessons(toolName, actionContext, { maxResults: 3 });
 
     const entropy = calculateRetrievalEntropy(lessons);
-    if (entropy > KNOWLEDGE_ENTROPY_THRESHOLD) {
+    if (entropy > KNOWLEDGE_ENTROPY_THRESHOLD && !isGraphResolvedLessonSet(lessons)) {
       return buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy);
     }
     return formatNegativeLessonContext(lessons);
   } catch {
     return null;
   }
+}
+
+/**
+ * A lesson set is graph-resolved when every retrieved lesson went through the
+ * lesson-graph layer (scripts/lesson-graph.js): supersession chains collapsed
+ * to their current fact, duplicates folded into canonicals, and contradicting
+ * pairs reduced to the newer lesson with a one-line note. Mixed signals in
+ * such a set are topic DIVERSITY, not an unresolved knowledge conflict, so
+ * the entropy-based conflict warning is skipped. Any lesson unknown to the
+ * graph (pre-migration record, or no graph DB) keeps the conservative
+ * legacy warning behavior.
+ */
+function isGraphResolvedLessonSet(lessons) {
+  return Array.isArray(lessons)
+    && lessons.length > 0
+    && lessons.every((l) => l && l.graph && l.graph.resolved === true);
 }
 
 /**
@@ -4243,9 +4259,11 @@ async function buildRelevantLessonContextAsync(toolName, toolInput) {
     
     // Knowledge Conflict Detection: if retrieved lessons have high sentiment entropy,
     // it indicates conflicting past evidence. Warn by default; hard-block only in
-    // strict mode for external/destructive side-effect commands.
+    // strict mode for external/destructive side-effect commands. A fully
+    // graph-resolved set (see isGraphResolvedLessonSet) already collapsed real
+    // conflicts structurally, so entropy over it is not a conflict signal.
     const entropy = calculateRetrievalEntropy(lessons);
-    if (entropy > KNOWLEDGE_ENTROPY_THRESHOLD) {
+    if (entropy > KNOWLEDGE_ENTROPY_THRESHOLD && !isGraphResolvedLessonSet(lessons)) {
       return buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy);
     }
 
@@ -4259,18 +4277,37 @@ async function buildRelevantLessonContextAsync(toolName, toolInput) {
  * Shared formatter: render the negative (mistake) lessons that survived retrieval
  * into the PreToolUse warning block. Retrieval already filters by relevance, so any
  * negative lesson present is relevant enough to surface.
+ *
+ * Graph-resolved lessons (scripts/lesson-graph.js via lesson-retrieval) carry a
+ * `graph` annotation: a one-line lineage note when a correction chain was
+ * collapsed to its current fact, a one-line conflict note when a contradicting
+ * older lesson was suppressed, and a duplicate count when N captures collapsed
+ * into one canonical node. Each is rendered as ONE line — never the full chain.
+ * The whole block is capped so hook context stays bounded.
  */
+const MAX_LESSON_CONTEXT_BULLETS = 3;
+const MAX_LESSON_CONTEXT_CHARS = 1200;
+
 function formatNegativeLessonContext(lessons) {
   const negative = (lessons || []).filter((l) => l.signal === 'negative');
   if (negative.length === 0) return null;
 
-  const formatted = negative.map((l) => {
+  const formatted = negative.slice(0, MAX_LESSON_CONTEXT_BULLETS).map((l) => {
     const title = (l.title || '').replace(/^MISTAKE:\s*/, '').slice(0, 140);
     const advice = extractAvoidanceAdvice(l.content);
-    return advice ? `  • ${title}\n    → ${advice}` : `  • ${title}`;
+    const lines = advice ? [`  • ${title}`, `    → ${advice}`] : [`  • ${title}`];
+    if (l.graph) {
+      if (l.graph.lineageNote) lines.push(`    ↳ ${String(l.graph.lineageNote).slice(0, 180)}`);
+      if (l.graph.conflictNote) lines.push(`    ↳ ${String(l.graph.conflictNote).slice(0, 180)}`);
+      if (l.graph.duplicateCount > 1) lines.push(`    ↳ seen ${l.graph.duplicateCount}x (collapsed to one canonical lesson)`);
+    }
+    return lines.join('\n');
   });
 
-  return `[ThumbGate] Past mistakes relevant to this action — read before proceeding:\n${formatted.join('\n')}`;
+  const block = `[ThumbGate] Past mistakes relevant to this action — read before proceeding:\n${formatted.join('\n')}`;
+  return block.length > MAX_LESSON_CONTEXT_CHARS
+    ? block.slice(0, MAX_LESSON_CONTEXT_CHARS - 1) + '…'
+    : block;
 }
 
 function isStrictKnowledgeConflictMode() {
