@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 
 const {
   computeTokenSavings,
+  estimateAgenticFanoutSpend,
   formatDollars,
   formatTokens,
   blendedPricePer1M,
@@ -12,6 +13,8 @@ const {
   DEFAULT_MODEL_MIX,
   DEFAULT_AVG_INPUT_TOKENS_PER_BLOCK,
   DEFAULT_AVG_OUTPUT_TOKENS_PER_BLOCK,
+  AGENTIC_FANOUT_ACTIONS_HIGH,
+  AGENTIC_TOKEN_MULTIPLIER_CAP,
 } = require('../scripts/token-savings');
 
 describe('token-savings', () => {
@@ -93,6 +96,30 @@ describe('token-savings', () => {
       const r = computeTokenSavings({ blockedCalls: 100 });
       assert.ok(r.dollarsSaved > 1.0 && r.dollarsSaved < 5.0,
         `expected $1-$5 saved for 100 blocks under default mix, got $${r.dollarsSaved}`);
+    });
+  });
+
+  describe('estimateAgenticFanoutSpend', () => {
+    it('labels output as modeled, not measured', () => {
+      const r = estimateAgenticFanoutSpend({
+        promptInputTokens: 2000,
+        promptOutputTokens: 400,
+        downstreamActions: 20,
+      });
+      assert.equal(r.modeledNotMeasured, true);
+      assert.equal(r.downstreamActions, 20);
+      assert.ok(r.agenticFanoutUsd > r.simplePromptUsd);
+      assert.ok(r.modeledMultiplier > 1);
+      assert.ok(r.modeledMultiplier <= AGENTIC_TOKEN_MULTIPLIER_CAP);
+    });
+
+    it('caps downstream actions at the public high bound', () => {
+      const r = estimateAgenticFanoutSpend({
+        promptInputTokens: 1000,
+        promptOutputTokens: 200,
+        downstreamActions: 9999,
+      });
+      assert.equal(r.downstreamActions, AGENTIC_FANOUT_ACTIONS_HIGH);
     });
   });
 

@@ -223,21 +223,72 @@ function isSelfProtectGate(gateId) {
   return SELF_PROTECT_HARD_FLOOR_GATE_IDS.has(gateId);
 }
 
+/**
+ * Name the existing warn-by-default vs strict postures in Trustwise Control Tower
+ * vocabulary (live / sidecar / simulation / batch) without cloning their product.
+ * Default remains sidecar (= warn-by-default). Hard floors never demote.
+ */
+function resolveGovernanceMode(env = process.env) {
+  const raw = String(env.THUMBGATE_GOVERNANCE_MODE || '').trim().toLowerCase();
+  if (raw === 'simulation' || raw === 'batch') return raw;
+  if (raw === 'live' || env.THUMBGATE_STRICT_ENFORCEMENT === '1') return 'live';
+  return 'sidecar';
+}
+
+function alignmentLayerForResult(result) {
+  const gate = String(result && result.gate || '');
+  if (
+    UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(gate)
+    || CATASTROPHIC_DECLARATIVE_GATE_IDS.has(gate)
+    || /secret|self-protect|exfil/i.test(gate)
+  ) {
+    return 'safety';
+  }
+  if (/task-scope|local-only|pr_thread|sla/i.test(gate)) return 'sla';
+  return 'business';
+}
+
 function applyEnforcementPosture(result) {
   if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
+  const mode = resolveGovernanceMode();
+  const alignmentLayer = alignmentLayerForResult(result);
   // Defensive backstop: hard-floor results must never be posture-downgraded.
-  if (UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(result.gate)) return result;
+  if (UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(result.gate)) {
+    return { ...result, governanceMode: mode, alignmentLayer };
+  }
+  // Simulation/batch shadow live traffic: record, do not block (except floors).
+  // Only denials are shadowed — allow/approve stay as-is.
+  if (mode === 'simulation' || mode === 'batch') {
+    if (result.decision === 'deny') {
+      return {
+        ...result,
+        decision: 'warn',
+        warnByDefault: true,
+        governanceMode: mode,
+        alignmentLayer,
+        simulated: true,
+        message: `${result.message}\n\n⚠️ ThumbGate governance mode=${mode} — flagged and logged, not blocked.`,
+      };
+    }
+    return { ...result, governanceMode: mode, alignmentLayer, simulated: true };
+  }
   // Full hard enforcement opt-in: keep every deny.
-  if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') return result;
+  if (mode === 'live' || process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') {
+    return { ...result, governanceMode: 'live', alignmentLayer };
+  }
   // Honor the explicit strict-knowledge-conflict opt-in for that gate.
-  if (process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT === '1' && result.gate === 'knowledge-conflict-gate') return result;
-  // Warn-by-default: the gate still fired and is recorded; the action is allowed through
+  if (process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT === '1' && result.gate === 'knowledge-conflict-gate') {
+    return { ...result, governanceMode: mode, alignmentLayer };
+  }
+  // Sidecar / warn-by-default: the gate still fired and is recorded; the action is allowed through
   // with the warning surfaced instead of hard-blocked, so legitimate work is never blocked.
   return {
     ...result,
     decision: 'warn',
     warnByDefault: true,
-    message: `${result.message}\n\n⚠️ ThumbGate is in warn-by-default mode — this was flagged and logged, not blocked. Set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block other flagged actions.`,
+    governanceMode: 'sidecar',
+    alignmentLayer,
+    message: `${result.message}\n\n⚠️ ThumbGate is in warn-by-default mode (sidecar) — this was flagged and logged, not blocked. Set THUMBGATE_STRICT_ENFORCEMENT=1 or THUMBGATE_GOVERNANCE_MODE=live to hard-block other flagged actions.`,
   };
 }
 const BREAK_GLASS_CONDITION = 'thumbgate_break_glass';
@@ -4761,6 +4812,8 @@ module.exports = {
   isTaskScopeExpired,
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   applyEnforcementPosture,
+  resolveGovernanceMode,
+  alignmentLayerForResult,
   buildTaskScopeViolation,
   setBranchGovernance,
   approveProtectedAction,
