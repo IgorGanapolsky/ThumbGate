@@ -100,7 +100,21 @@ test('security and legal index routes publish buyer-facing counsel summaries', a
 
   const trust = await fetch(apiUrl('/trust'));
   assert.equal(trust.status, 200);
-  assert.match(await trust.text(), /Security overview/i);
+  const trustBody = await trust.text();
+  assert.match(trustBody, /Trust Center/i);
+  assert.match(trustBody, /No compliance theater/i);
+  assert.match(trustBody, /Cross-framework control-tag coverage/i);
+  assert.match(trustBody, /\/trust\.json/);
+  assert.doesNotMatch(trustBody, /Security overview/i);
+
+  const trustJson = await fetch(apiUrl('/trust.json'));
+  assert.equal(trustJson.status, 200);
+  const trustPack = await trustJson.json();
+  assert.equal(trustPack.certification, false);
+  assert.equal(trustPack.kind, 'trust-center');
+  assert.ok(trustPack.controlCoverage.totalGates >= 1);
+  assert.ok(Array.isArray(trustPack.controlCoverage.frameworks));
+  assert.ok(trustPack.controlCoverage.frameworks.every((fw) => fw.attestation === false));
 
   const securityJson = await fetch(apiUrl('/security.json'));
   assert.equal(securityJson.status, 200);
@@ -115,6 +129,7 @@ test('security and legal index routes publish buyer-facing counsel summaries', a
   assert.match(legalBody, /Terms of Service/i);
   assert.match(legalBody, /href="\/terms"/);
   assert.match(legalBody, /href="\/privacy"/);
+  assert.match(legalBody, /href="\/trust"/);
   assert.match(legalBody, /href="\/security"/);
   assert.match(legalBody, /href="\/legal\/licensing"/);
   assert.match(legalBody, /href="\/legal\/msa-sow"/);
