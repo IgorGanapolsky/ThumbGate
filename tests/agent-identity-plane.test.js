@@ -131,6 +131,7 @@ test('retired agent still acting is denied under strict enforcement', () => {
   process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
   const verdict = evaluateAgentIdentityLifecycleGate('Bash', { command: 'ls' });
   assert.equal(verdict.gate, 'agent-identity-lifecycle');
+  assert.equal(verdict.decision, 'deny');
   assert.equal(verdict.severity, 'critical');
   assert.match(verdict.message, /retired/);
 });
