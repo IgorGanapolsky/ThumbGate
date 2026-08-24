@@ -58,7 +58,7 @@ function registerAgent({ agentId, source, project, branch, metadata } = {}) {
     toolCalls: 0,
     gateBlocks: 0,
     gateWarns: 0,
-    metadata: metadata || {},
+    metadata: { lifecycleStatus: 'active', ...(metadata || {}) },
   };
 
   const registryPath = getRegistryPath();
@@ -99,6 +99,107 @@ function recordAgentActivity(agentId, decision) {
   }
 
   fs.writeFileSync(registryPath, updated.join('\n') + '\n');
+}
+
+// ---------------------------------------------------------------------------
+// Observed agents — the producer side of shadow-AI detection
+// ---------------------------------------------------------------------------
+
+const OBSERVED_FILENAME = 'observed-agents.jsonl';
+const OBSERVED_COMPACT_BYTES = 512 * 1024;
+
+function getObservedAgentsPath() {
+  return path.join(resolveFeedbackDir(), OBSERVED_FILENAME);
+}
+
+/**
+ * Record one observation of an acting agent. Called from the gates-engine
+ * evaluation path on every attributed tool call, so the file is append-only:
+ * concurrent agent processes must never rewrite each other's rows. Readers
+ * aggregate; the file self-compacts once it passes the size cap.
+ */
+function recordObservedAgent(agentId) {
+  const id = String(agentId || '').trim();
+  if (!id) return null;
+  const observedPath = getObservedAgentsPath();
+  const dir = path.dirname(observedPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const event = { id, seenAt: new Date().toISOString() };
+  fs.appendFileSync(observedPath, JSON.stringify(event) + '\n');
+  try {
+    if (fs.statSync(observedPath).size > OBSERVED_COMPACT_BYTES) {
+      const compacted = loadObservedAgents()
+        .map((row) => JSON.stringify(row))
+        .join('\n');
+      fs.writeFileSync(observedPath, compacted + '\n');
+    }
+  } catch {
+    // Compaction is best-effort; observation recording must never throw.
+  }
+  return event;
+}
+
+/**
+ * Aggregate observation events into one row per agent id:
+ * { id, firstSeenAt, lastSeenAt, observations }.
+ */
+function loadObservedAgents() {
+  const observedPath = getObservedAgentsPath();
+  if (!fs.existsSync(observedPath)) return [];
+  const byId = new Map();
+  const raw = fs.readFileSync(observedPath, 'utf-8').trim();
+  if (!raw) return [];
+  for (const line of raw.split('\n')) {
+    let event;
+    try {
+      event = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    const id = String(event.id || '').trim();
+    if (!id) continue;
+    const seenAt = event.seenAt || event.lastSeenAt || new Date().toISOString();
+    const row = byId.get(id) || {
+      id,
+      firstSeenAt: event.firstSeenAt || seenAt,
+      lastSeenAt: seenAt,
+      observations: 0,
+    };
+    if (seenAt < row.firstSeenAt) row.firstSeenAt = seenAt;
+    if (seenAt > row.lastSeenAt) row.lastSeenAt = seenAt;
+    row.observations += Number(event.observations) > 0 ? Number(event.observations) : 1;
+    byId.set(id, row);
+  }
+  return [...byId.values()];
+}
+
+/**
+ * Retire an agent identity. A retired agent that keeps acting is flagged by
+ * the gates-engine identity gate (deny under strict enforcement).
+ */
+function retireAgent(agentId, reason) {
+  const registryPath = getRegistryPath();
+  if (!fs.existsSync(registryPath)) return false;
+  const lines = fs.readFileSync(registryPath, 'utf-8').trim().split('\n');
+  const updated = [];
+  let found = false;
+  for (const line of lines) {
+    try {
+      const record = JSON.parse(line);
+      if (record.id === agentId) {
+        record.metadata = record.metadata || {};
+        record.metadata.lifecycleStatus = 'retired';
+        record.metadata.retiredAt = new Date().toISOString();
+        if (reason) record.metadata.retireReason = String(reason);
+        found = true;
+      }
+      updated.push(JSON.stringify(record));
+    } catch {
+      updated.push(line);
+    }
+  }
+  if (found) fs.writeFileSync(registryPath, updated.join('\n') + '\n');
+  return found;
 }
 
 /**
@@ -285,7 +386,9 @@ function buildAgentRegistryGovernanceReport(agents = loadAgentRegistry(), opts =
     ],
     identitySecurity: buildAgentIdentitySecurityReport(
       agents,
-      asArray(opts.observedAgents),
+      opts.observedAgents !== undefined
+        ? asArray(opts.observedAgents)
+        : loadObservedAgents().map((row) => row.id),
       opts,
     ),
   };
@@ -376,10 +479,15 @@ function generateOrgDashboard(opts = {}) {
 module.exports = {
   registerAgent,
   recordAgentActivity,
+  recordObservedAgent,
+  loadObservedAgents,
+  retireAgent,
   loadAgentRegistry,
   generateOrgDashboard,
   buildAgentRegistryGovernanceReport,
   buildAgentIdentitySecurityReport,
   getRegistryPath,
+  getObservedAgentsPath,
   REGISTRY_FILENAME,
+  OBSERVED_FILENAME,
 };
