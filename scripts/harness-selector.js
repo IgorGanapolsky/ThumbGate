@@ -30,6 +30,8 @@ const HARNESSES = Object.freeze({
   'future-agi-guardrails': path.join(HARNESS_DIR, 'future-agi-guardrails.json'),
   'five-walls-governance': path.join(HARNESS_DIR, 'five-walls-governance.json'),
   'simatree-data-governance': path.join(HARNESS_DIR, 'simatree-data-governance.json'),
+  'ai-liability-defense': path.join(HARNESS_DIR, 'ai-liability-defense.json'),
+  'supply-chain-diode': path.join(HARNESS_DIR, 'supply-chain-diode.json'),
 });
 
 // ---------------------------------------------------------------------------
@@ -38,6 +40,23 @@ const HARNESSES = Object.freeze({
 
 const SIMATREE_PATTERNS = [
   /\b(simatree|data_lifecycle|why_before_how|pmo_transformation|bayesian_uncertainty|lakehouse_governance)\b/i,
+];
+
+const AI_LIABILITY_PATTERNS = [
+  /\b(ai_liability|executive_defense|kolochenko|immuniweb|eu_ai_act|dora_art_30|sec_item_105)\b/i,
+  /\b(rm\s+-rf|git\s+reset\s+--hard|drop\s+table|aws\s+iam|stripe\s+payouts)\b/i,
+];
+
+const SUPPLY_CHAIN_PATTERNS = [
+  /\b(supply_chain_diode|slsa_provenance|sigstore|npm_oidc|typosquat|shai_hulud|trivy_compromise)\b/i,
+  // BrightTALK #668780: Axios/Shai-Hulud class — unpinned installs and
+  // lifecycle remote-exec must select the diode harness, not just the
+  // keyword names of the webinar. Otherwise gates-engine never loads
+  // config/gates/supply-chain-diode.json for the actual commands.
+  // Any npm operand, including scoped names and later args:
+  // `npm i @scope/pkg@latest`, `npm install axios@1.7.9 chalk@latest`.
+  /\bnpm\s+(install|i|add)\b[\s\S]*?(?:^|\s)(?:@[^\s@]+\/)?[^\s@]+@(?:\*|latest)(?![\w.-])/i,
+  /\b(preinstall|postinstall|npm\s+install).{0,80}(curl|wget|bash\s+-c)\b/i,
 ];
 
 const FIVE_WALLS_PATTERNS = [
@@ -131,12 +150,23 @@ function selectHarness(toolName, toolInput) {
     if (payloadText && FUTURE_AGI_PATTERNS.some((p) => p.test(payloadText))) {
       return HARNESSES['future-agi-guardrails'];
     }
+    if (payloadText && AI_LIABILITY_PATTERNS.some((p) => p.test(payloadText))) {
+      return HARNESSES['ai-liability-defense'];
+    }
+    if (payloadText && SUPPLY_CHAIN_PATTERNS.some((p) => p.test(payloadText))) {
+      return HARNESSES['supply-chain-diode'];
+    }
     return HARNESSES['code-edit'];
   }
 
   // 3. Inspect command text for Bash tool
   const commandText = extractCommandText(toolInput);
   if (commandText) {
+    // Liability (rm -rf / DROP TABLE / git reset --hard) must beat db-write's
+    // sqlite-path heuristic so `rm -rf data.sqlite` still dual-key blocks.
+    if (AI_LIABILITY_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['ai-liability-defense'];
+    }
     if (DB_WRITE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['db-write'];
     }
@@ -151,6 +181,9 @@ function selectHarness(toolName, toolInput) {
     }
     if (SIMATREE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['simatree-data-governance'];
+    }
+    if (SUPPLY_CHAIN_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['supply-chain-diode'];
     }
     if (ROUTINE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES.routine;

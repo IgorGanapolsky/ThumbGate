@@ -1,0 +1,73 @@
+{
+  "gateId": "gate_supply_chain_diode_2026",
+  "name": "Zero-Trust Supply Chain & Provenance Diode Gate",
+  "version": "1.0.0",
+  "framework": "SLSA v1.0 / Sigstore / npm OIDC Provenance Standard",
+  "enforcementMode": "fail_closed",
+  "certified": false,
+  "affiliation": "Inspired by public BrightTALK #668780 (Yesenia Yser / Yes2Tech: Axios npm, Shai-Hulud, Trivy). Not affiliated.",
+  "gates": [
+    {
+      "id": "supply-lifecycle-remote-exec",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "critical",
+      "toolNames": ["Bash"],
+      "pattern": "\\b(preinstall|postinstall|npm\\s+install).{0,80}(curl|wget|bash\\s+-c)\\b",
+      "message": "Action blocked: lifecycle/install remote-exec is a supply-chain breach class (Axios/Shai-Hulud)."
+    },
+    {
+      "id": "supply-unpinned-install",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "high",
+      "toolNames": ["Bash"],
+      "pattern": "npm\\s+(install|i|add)\\b[\\s\\S]*?(?:^|\\s)(?:@[^\\s@]+\\/)?[^\\s@]+@(?:\\*|latest)(?![\\w.-])",
+      "message": "Action blocked: unpinned npm install. Pin exact versions (BrightTALK #668780)."
+    }
+  ],
+  "rules": [
+    {
+      "id": "SUPPLY_01_LIFECYCLE_SCRIPTS",
+      "severity": "CRITICAL",
+      "action": "BLOCK",
+      "description": "Reject dependencies containing unapproved arbitrary execution lifecycle scripts (preinstall, postinstall, install)."
+    },
+    {
+      "id": "SUPPLY_02_EXACT_PINNING",
+      "severity": "HIGH",
+      "action": "BLOCK",
+      "description": "Enforce strict dependency version pinning; reject wildcard or open-range specifications in production manifests."
+    },
+    {
+      "id": "SUPPLY_03_TYPOSQUATTING_SENTINEL",
+      "severity": "CRITICAL",
+      "action": "BLOCK",
+      "description": "Block packages mimicking well-known ecosystem libraries (axios, react, express, lodash, trivy, playwright)."
+    },
+    {
+      "id": "SUPPLY_04_PROVENANCE_ATTESTATION",
+      "severity": "HIGH",
+      "action": "WARN_REQUIRE_ATTESTATION",
+      "description": "Require cryptographic build provenance (SLSA level 2+ or npm provenance) for production runtime modules."
+    },
+    {
+      "id": "SUPPLY_05_TOKENLESS_OIDC_PUBLISH",
+      "severity": "HIGH",
+      "action": "ENFORCE_OIDC",
+      "description": "Reject static long-lived publish tokens in automated CI/CD release pipelines."
+    }
+  ],
+  "monitoredCriticalPackages": [
+    "axios",
+    "express",
+    "react",
+    "lodash",
+    "trivy",
+    "playwright",
+    "jsonwebtoken",
+    "chalk",
+    "commander",
+    "winston"
+  ]
+}

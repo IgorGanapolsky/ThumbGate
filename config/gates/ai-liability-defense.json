@@ -1,0 +1,78 @@
+{
+  "gateId": "gate_ai_liability_defense_2026",
+  "name": "AI Liability Defense & Pre-Action Compliance Gate",
+  "version": "1.0.0",
+  "framework": "ImmuniWeb / EU AI Act / SEC / DORA Executive Defense Model",
+  "enforcementMode": "fail_closed",
+  "certified": false,
+  "iso42001Certified": false,
+  "euAiActCertified": false,
+  "aiDidItIsNotADefense": true,
+  "affiliation": "Inspired by public BrightTALK #668863 (Dr. Ilia Kolochenko / ImmuniWeb). Not affiliated. Not legal advice.",
+  "gates": [
+    {
+      "id": "liability-destructive-ops",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "critical",
+      "toolNames": ["Bash"],
+      "pattern": "\\b(rm\\s+-rf|git\\s+reset\\s+--hard|drop\\s+table|truncate)\\b",
+      "message": "Action blocked: destructive operator-liable command. 'AI did it' is not a defense — dual-key approval required."
+    },
+    {
+      "id": "liability-credential-mutation",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "critical",
+      "toolNames": ["Bash"],
+      "pattern": "\\b(aws\\s+iam|ssh-keygen|authorized_keys|chmod\\s+777)\\b",
+      "message": "Action blocked: credential/IAM mutation is operator-liable. Dual-key approval required."
+    },
+    {
+      "id": "liability-financial-dispatch",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "critical",
+      "toolNames": ["Bash"],
+      "pattern": "\\b(stripe\\s+(payouts|charges|transfers)|wire\\s+transfer)\\b",
+      "message": "Action blocked: financial dispatch is operator-liable. Dual-key approval required."
+    }
+  ],
+  "rules": [
+    {
+      "id": "LIABILITY_01_DESTRUCTIVE_OPS",
+      "severity": "CRITICAL",
+      "autonomyLimit": "L2_GATED_EXECUTION",
+      "description": "Destructive filesystem, database, or infrastructure modifications require dual-key signoff and immutable liability receipt."
+    },
+    {
+      "id": "LIABILITY_02_CREDENTIAL_MUTATION",
+      "severity": "CRITICAL",
+      "autonomyLimit": "L2_GATED_EXECUTION",
+      "description": "API key rotation, SSH key addition, or IAM privilege elevation requires verified operator consent."
+    },
+    {
+      "id": "LIABILITY_03_FINANCIAL_DISPATCH",
+      "severity": "CRITICAL",
+      "autonomyLimit": "L2_GATED_EXECUTION",
+      "description": "Direct financial transactions, payout link creation, or billing subscription changes must carry bounded spend receipts."
+    },
+    {
+      "id": "LIABILITY_04_PUBLIC_RELEASE_DEPLOY",
+      "severity": "HIGH",
+      "autonomyLimit": "L3_AUTONOMOUS_BOUNDED",
+      "description": "Production deployments and public package releases require full provenance verification and audit trail stamping."
+    },
+    {
+      "id": "LIABILITY_05_EU_AI_ACT_RECORDKEEPING",
+      "severity": "HIGH",
+      "autonomyLimit": "L3_AUTONOMOUS_BOUNDED",
+      "description": "Autonomous decisions affecting high-risk classification surfaces must maintain 6-month tamper-evident telemetry logs."
+    }
+  ],
+  "governance": {
+    "jurisdictions": ["EU_AI_ACT", "SEC_RULE_33_11216", "DORA_ART_30", "FTC_ACT_SEC_5"],
+    "dualKeyRequiredSeverities": ["CRITICAL"],
+    "retentionDays": 180
+  }
+}

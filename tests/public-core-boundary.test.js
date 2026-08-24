@@ -273,7 +273,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 510 -> 511 (2026-08-22): scripts/governance-conflict-audit.js, the
   //   `thumbgate conflict-audit` module (+1 measured npm pack).
   //   Lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 511;
+  // 511 -> 516 (2026-08-24): rebase onto #3610 + BrightTALK steal files
+  //   (ai-liability-defense-engine, obsidian-bases-synchronizer, supply-chain-diode,
+  //   config/gates/ai-liability-defense.json, config/gates/supply-chain-diode.json).
+  const CEILING = 516;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
