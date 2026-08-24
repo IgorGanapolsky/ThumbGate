@@ -94,30 +94,34 @@ function traverseKnowledgeGraph(input = {}) {
         const type = String(relation.edge.type || 'RELATED_TO').toUpperCase();
         const relationId = edgeIdentity(relation.edge);
         const pathKey = `${anchorId}:${current.id}:${relation.next}:${type}:${hop}:${relationId}`;
+        const path = {
+          anchorId,
+          from: normalizedId(relation.edge.from),
+          to: normalizedId(relation.edge.to),
+          type,
+          direction: relation.direction,
+          hop,
+          validFrom: relation.edge.validFrom || null,
+          validTo: relation.edge.validTo || null,
+          recordedAt: relation.edge.recordedAt || null,
+          sourceIds: edgeSources(relation.edge),
+          edgeId: relationId,
+          resolved: relation.edge.resolved === true,
+        };
+        // Contradiction gating must examine every edge occurrence BEFORE
+        // presentation dedup: a resolved and an unresolved version of the same
+        // edge can share an explicit id, and skipping the second occurrence
+        // would let the unresolved contradiction fail open.
+        if (type === 'CONTRADICTS' && relation.edge.resolved !== true) {
+          const contradictionKey = `${path.from}:${path.to}:${type}:${relationId}`;
+          if (!contradictionKeys.has(contradictionKey)) {
+            contradictionKeys.add(contradictionKey);
+            unresolvedContradictions.push(path);
+          }
+        }
         if (!pathKeys.has(pathKey)) {
           pathKeys.add(pathKey);
-          const path = {
-            anchorId,
-            from: normalizedId(relation.edge.from),
-            to: normalizedId(relation.edge.to),
-            type,
-            direction: relation.direction,
-            hop,
-            validFrom: relation.edge.validFrom || null,
-            validTo: relation.edge.validTo || null,
-            recordedAt: relation.edge.recordedAt || null,
-            sourceIds: edgeSources(relation.edge),
-            edgeId: relationId,
-            resolved: relation.edge.resolved === true,
-          };
           paths.push(path);
-          if (type === 'CONTRADICTS' && relation.edge.resolved !== true) {
-            const contradictionKey = `${path.from}:${path.to}:${type}:${relationId}`;
-            if (!contradictionKeys.has(contradictionKey)) {
-              contradictionKeys.add(contradictionKey);
-              unresolvedContradictions.push(path);
-            }
-          }
         }
 
         const expandedScore = current.score * (0.8 ** hop);
