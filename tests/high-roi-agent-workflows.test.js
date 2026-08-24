@@ -329,6 +329,18 @@ test('agent audit traces capture prompt, data, tools, cost, and decision path', 
     'max_downstream_actions_exceeded',
   ]);
 
+  const missingRootUsage = evaluateAgentAuditTrace({
+    runId: 'run_telemetry_gap',
+    spans: [
+      buildAgentAuditSpan({ runId: 'run_telemetry_gap', spanId: 'input', stage: 'input', promptHash: 'sha256:def' }),
+      buildAgentAuditSpan({ runId: 'run_telemetry_gap', spanId: 'tool', stage: 'tool', inputTokens: 200 }),
+      buildAgentAuditSpan({ runId: 'run_telemetry_gap', spanId: 'decision', stage: 'decision' }),
+    ],
+    budget: { maxTokenAmplification: 2 },
+  });
+  assert.equal(missingRootUsage.decision, 'deny');
+  assert.ok(missingRootUsage.budgetIssues.includes('token_amplification_unmeasurable'));
+
   const weak = evaluateAgentAuditTrace({
     runId: 'run_2',
     spans: [buildAgentAuditSpan({ runId: 'run_2', spanId: 'tool', stage: 'tool', toolsUsed: ['write'] })],
@@ -409,22 +421,57 @@ test('knowledge graph retrieval always traverses active edges and blocks unresol
   assert.equal(graph.provenanceComplete, true);
   assert.equal(graph.decision, 'deny');
   assert.equal(graph.unresolvedContradictions.length, 1);
+
+  const parallelContradictions = traverseKnowledgeGraph({
+    nodes: [{ id: 'a' }, { id: 'b' }],
+    edges: [
+      { id: 'resolved', from: 'a', to: 'b', type: 'CONTRADICTS', resolved: true, sourceId: 'doc-1' },
+      { id: 'unresolved', from: 'a', to: 'b', type: 'CONTRADICTS', resolved: false, sourceId: 'doc-2' },
+    ],
+    searchResults: [{ id: 'a' }],
+  });
+  assert.equal(parallelContradictions.paths.filter((path) => path.hop === 1).length, 2);
+  assert.equal(parallelContradictions.decision, 'deny');
+  assert.equal(parallelContradictions.unresolvedContradictions[0].edgeId, 'unresolved');
+
+  const unsupportedExpansion = traverseKnowledgeGraph({
+    nodes: [{ id: 'a' }, { id: 'b' }],
+    edges: [{ from: 'a', to: 'b', type: 'APPLIES_TO' }],
+    searchResults: [{ id: 'a' }],
+  });
+  assert.equal(unsupportedExpansion.provenanceComplete, false);
+  assert.equal(unsupportedExpansion.answerAllowed, false);
+  assert.equal(unsupportedExpansion.decision, 'deny');
 });
 
 test('graph ablation and entity resolution make graph cost falsifiable', () => {
   const ablation = evaluateGraphAblation({
-    cases: [{
-      id: 'multi-hop',
-      expectedNodeIds: ['claim-1', 'policy-1'],
+    cases: Array.from({ length: 6 }, (_, index) => ({
+      id: `multi-hop-${index + 1}`,
+      expectedNodeIds: [`claim-${index}`, `policy-${index}`],
       expectedPathTypes: ['APPLIES_TO'],
-      searchOnlyIds: ['claim-1'],
-      fusedNodeIds: ['claim-1', 'policy-1'],
+      searchOnlyIds: [`claim-${index}`],
+      fusedNodeIds: [`claim-${index}`, `policy-${index}`],
       fusedPaths: [{ type: 'APPLIES_TO' }],
-    }],
+    })),
   });
   assert.equal(ablation.decision, 'allow');
   assert.equal(ablation.metrics.recallLift, 0.5);
   assert.equal(ablation.metrics.pathCorrectness, 1);
+  assert.equal(ablation.metrics.fusedPrecision, 1);
+
+  const insufficient = evaluateGraphAblation({
+    cases: [{
+      id: 'one-perfect-case',
+      expectedNodeIds: ['claim'],
+      searchOnlyIds: [],
+      fusedNodeIds: ['claim'],
+      expectedPathTypes: ['APPLIES_TO'],
+      fusedPaths: [{ type: 'APPLIES_TO' }],
+    }],
+  });
+  assert.equal(insufficient.decision, 'deny');
+  assert.ok(insufficient.issues.includes('insufficient_golden_cases'));
 
   const gray = resolveGraphEntity(
     { name: 'Actual cash value' },
@@ -504,6 +551,17 @@ test('runtime governance supports live enforcement and risk-free sidecar replay'
   assert.equal(sidecar.observedDecision, 'deny');
   assert.equal(sidecar.executionDecision, 'allow');
   assert.equal(sidecar.executionAllowed, true);
+
+  const slow = evaluateRuntimeGovernanceAction({
+    provider: 'openai',
+    toolName: 'search',
+    expectedLatencyMs: 5000,
+  }, {
+    mode: 'live',
+    layers: [{ id: 'client-sla', category: 'sla', maxLatencyMs: 100 }],
+  });
+  assert.equal(slow.observedDecision, 'deny');
+  assert.ok(slow.layers[0].reasons.includes('latency_over_sla:5000>100'));
 });
 
 test('hybrid supervisor decomposes structured plus unstructured questions into native source calls', () => {

@@ -23,6 +23,21 @@ function edgeSources(edge = {}) {
   ].map(normalizedId).filter(Boolean))];
 }
 
+function edgeIdentity(edge = {}) {
+  const explicit = normalizedId(edge.id);
+  if (explicit) return explicit;
+  return [
+    normalizedId(edge.from),
+    normalizedId(edge.to),
+    String(edge.type || 'RELATED_TO').toUpperCase(),
+    edge.resolved === true ? 'resolved' : 'unresolved',
+    normalizedId(edge.validFrom),
+    normalizedId(edge.validTo),
+    normalizedId(edge.recordedAt),
+    edgeSources(edge).join(','),
+  ].join(':');
+}
+
 /**
  * Expand every ranked search hit through a bounded, bitemporal graph. The
  * caller cannot choose a search-only mode: when no active edges are present,
@@ -77,7 +92,8 @@ function traverseKnowledgeGraph(input = {}) {
       for (const relation of adjacency.get(current.id) || []) {
         const hop = current.hop + 1;
         const type = String(relation.edge.type || 'RELATED_TO').toUpperCase();
-        const pathKey = `${anchorId}:${current.id}:${relation.next}:${type}:${hop}`;
+        const relationId = edgeIdentity(relation.edge);
+        const pathKey = `${anchorId}:${current.id}:${relation.next}:${type}:${hop}:${relationId}`;
         if (!pathKeys.has(pathKey)) {
           pathKeys.add(pathKey);
           const path = {
@@ -91,10 +107,12 @@ function traverseKnowledgeGraph(input = {}) {
             validTo: relation.edge.validTo || null,
             recordedAt: relation.edge.recordedAt || null,
             sourceIds: edgeSources(relation.edge),
+            edgeId: relationId,
+            resolved: relation.edge.resolved === true,
           };
           paths.push(path);
           if (type === 'CONTRADICTS' && relation.edge.resolved !== true) {
-            const contradictionKey = `${path.from}:${path.to}:${type}`;
+            const contradictionKey = `${path.from}:${path.to}:${type}:${relationId}`;
             if (!contradictionKeys.has(contradictionKey)) {
               contradictionKeys.add(contradictionKey);
               unresolvedContradictions.push(path);
@@ -117,6 +135,7 @@ function traverseKnowledgeGraph(input = {}) {
     .sort((left, right) => right.score - left.score || left.id.localeCompare(right.id))
     .slice(0, limit);
   const provenanceComplete = paths.every((path) => path.sourceIds.length > 0);
+  const answerAllowed = unresolvedContradictions.length === 0 && provenanceComplete;
 
   return {
     schemaVersion: 'thumbgate.knowledge-graph-fusion.v1',
@@ -128,8 +147,8 @@ function traverseKnowledgeGraph(input = {}) {
     paths,
     unresolvedContradictions,
     provenanceComplete,
-    decision: unresolvedContradictions.length > 0 ? 'deny' : 'allow',
-    answerAllowed: unresolvedContradictions.length === 0,
+    decision: answerAllowed ? 'allow' : 'deny',
+    answerAllowed,
   };
 }
 
@@ -138,6 +157,13 @@ function recall(expectedIds = [], actualIds = []) {
   if (expected.size === 0) return 1;
   const actual = new Set(asArray(actualIds).map(normalizedId).filter(Boolean));
   return [...expected].filter((id) => actual.has(id)).length / expected.size;
+}
+
+function precision(expectedIds = [], actualIds = []) {
+  const expected = new Set(asArray(expectedIds).map(normalizedId).filter(Boolean));
+  const actual = new Set(asArray(actualIds).map(normalizedId).filter(Boolean));
+  if (actual.size === 0) return expected.size === 0 ? 1 : 0;
+  return [...actual].filter((id) => expected.has(id)).length / actual.size;
 }
 
 /** Fused-versus-search-only acceptance test. A graph must measurably improve
@@ -154,6 +180,7 @@ function evaluateGraphAblation(input = {}) {
       id: normalizedId(testCase.id) || `case_${cases.indexOf(testCase) + 1}`,
       searchRecall: recall(testCase.expectedNodeIds, testCase.searchOnlyIds),
       fusedRecall: recall(testCase.expectedNodeIds, testCase.fusedNodeIds),
+      fusedPrecision: precision(testCase.expectedNodeIds, testCase.fusedNodeIds),
       expectedPathCount: expectedPathTypes.length,
       correctPathCount: correctPaths,
       pathCorrectness: expectedPathTypes.length ? correctPaths / expectedPathTypes.length : 1,
@@ -164,13 +191,30 @@ function evaluateGraphAblation(input = {}) {
     : 0;
   const searchRecall = mean('searchRecall');
   const fusedRecall = mean('fusedRecall');
+  const fusedPrecision = mean('fusedPrecision');
   const relationalRows = rows.filter((row) => row.expectedPathCount > 0);
   const pathCorrectness = relationalRows.length
     ? relationalRows.reduce((sum, row) => sum + row.pathCorrectness, 0) / relationalRows.length
     : 0;
-  const graphEarnsCost = rows.length > 0
+  const minimumCases = Math.max(6, Number(input.minimumCases) || 6);
+  const minimumRecall = Math.max(0.95, Number(input.minimumRecall) || 0.95);
+  const minimumPrecision = Math.max(0.15, Number(input.minimumPrecision) || 0.15);
+  const perCaseRecallComplete = rows.every((row) => row.fusedRecall === 1);
+  const graphEarnsCost = rows.length >= minimumCases
+    && fusedRecall >= minimumRecall
+    && fusedPrecision >= minimumPrecision
+    && perCaseRecallComplete
     && fusedRecall >= searchRecall
     && (fusedRecall > searchRecall || pathCorrectness > 0);
+
+  const issues = [];
+  if (rows.length < minimumCases) issues.push('insufficient_golden_cases');
+  if (fusedRecall < minimumRecall) issues.push('deterministic_recall_below_threshold');
+  if (fusedPrecision < minimumPrecision) issues.push('precision_below_threshold');
+  if (!perCaseRecallComplete) issues.push('per_case_recall_incomplete');
+  if (!(fusedRecall >= searchRecall && (fusedRecall > searchRecall || pathCorrectness > 0))) {
+    issues.push('graph_not_earning_cost');
+  }
 
   return {
     decision: graphEarnsCost ? 'allow' : 'deny',
@@ -179,10 +223,15 @@ function evaluateGraphAblation(input = {}) {
     metrics: {
       searchRecall: Number(searchRecall.toFixed(4)),
       fusedRecall: Number(fusedRecall.toFixed(4)),
+      fusedPrecision: Number(fusedPrecision.toFixed(4)),
       recallLift: Number((fusedRecall - searchRecall).toFixed(4)),
       pathCorrectness: Number(pathCorrectness.toFixed(4)),
+      perCaseRecallComplete,
+      minimumCases,
+      minimumRecall,
+      minimumPrecision,
     },
-    issues: graphEarnsCost ? [] : ['graph_not_earning_cost'],
+    issues: graphEarnsCost ? [] : issues,
   };
 }
 

@@ -53,6 +53,12 @@ function evaluateAgentAuditTrace(trace = {}) {
     budgetIssues.push('max_total_tokens_exceeded');
   }
   if (
+    Number.isFinite(Number(budget.maxTokenAmplification))
+    && rootInputTokens === 0
+    && downstreamTokens > 0
+  ) {
+    budgetIssues.push('token_amplification_unmeasurable');
+  } else if (
     tokenAmplificationRatio !== null
     && Number.isFinite(Number(budget.maxTokenAmplification))
     && tokenAmplificationRatio > Number(budget.maxTokenAmplification)

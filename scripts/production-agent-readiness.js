@@ -89,6 +89,9 @@ function evaluatePolicyLayer(layer = {}, action = {}) {
 function evaluateRuntimeGovernanceAction(input = {}, policy = {}) {
   const mode = RUNTIME_MODES.includes(policy.mode) ? policy.mode : 'simulation';
   const action = normalizeProviderAction(input);
+  if (input.expectedLatencyMs != null && action.expectedLatencyMs == null) {
+    action.expectedLatencyMs = Number(input.expectedLatencyMs);
+  }
   const layers = asArray(policy.layers).map((layer) => evaluatePolicyLayer(layer, action));
   const cost = buildCostControl(action, policy.budget || {});
   const workflow = buildWorkflowControl(action, policy.workflow || {});
