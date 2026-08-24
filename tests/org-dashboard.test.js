@@ -15,6 +15,7 @@ const {
   loadAgentRegistry,
   generateOrgDashboard,
   buildAgentRegistryGovernanceReport,
+  buildAgentIdentitySecurityReport,
   getRegistryPath,
 } = require('../scripts/org-dashboard');
 
@@ -187,5 +188,39 @@ describe('agent registry governance report', () => {
     assert.equal(report.status, 'managed');
     assert.equal(report.counts.unknownOwners, 0);
     assert.equal(report.counts.missingToolInventory, 0);
+  });
+
+  it('fails closed on shadow agents and incomplete non-human identity controls', () => {
+    const report = buildAgentIdentitySecurityReport([
+      {
+        id: 'governed-agent',
+        metadata: {
+          owner: 'security@example.com',
+          purpose: 'review pull requests',
+          humanPrincipalId: 'human-123',
+          authProtocol: 'oidc',
+          credentialsVaulted: true,
+          accessTokenTtlMinutes: 15,
+          scopes: ['repo:read'],
+          ragEnabled: true,
+          retrievalAuthorization: 'user_permissions',
+          sensitiveActions: ['merge'],
+          humanApprovalProtocol: 'CIBA',
+          downstreamServices: ['github'],
+          tokenExchangePreservesUser: true,
+          lifecycleStatus: 'active',
+          lastIdentityReviewAt: '2026-08-20T12:00:00.000Z',
+          universalLogout: true,
+          revocation: { propagates: true, logged: true },
+        },
+      },
+    ], ['governed-agent', 'shadow-agent'], {
+      now: '2026-08-24T12:00:00.000Z',
+    });
+
+    assert.equal(report.status, 'blocked');
+    assert.deepEqual(report.shadowAgents, ['shadow-agent']);
+    assert.ok(report.gaps.some((gap) => gap.control === 'shadow_agent_unregistered'));
+    assert.equal(report.gaps.some((gap) => gap.agentId === 'governed-agent'), false);
   });
 });
