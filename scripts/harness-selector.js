@@ -30,6 +30,8 @@ const HARNESSES = Object.freeze({
   'future-agi-guardrails': path.join(HARNESS_DIR, 'future-agi-guardrails.json'),
   'five-walls-governance': path.join(HARNESS_DIR, 'five-walls-governance.json'),
   'simatree-data-governance': path.join(HARNESS_DIR, 'simatree-data-governance.json'),
+  'ai-liability-defense': path.join(HARNESS_DIR, 'ai-liability-defense.json'),
+  'supply-chain-diode': path.join(HARNESS_DIR, 'supply-chain-diode.json'),
 });
 
 // ---------------------------------------------------------------------------
@@ -38,6 +40,14 @@ const HARNESSES = Object.freeze({
 
 const SIMATREE_PATTERNS = [
   /\b(simatree|data_lifecycle|why_before_how|pmo_transformation|bayesian_uncertainty|lakehouse_governance)\b/i,
+];
+
+const AI_LIABILITY_PATTERNS = [
+  /\b(ai_liability|executive_defense|kolochenko|immuniweb|eu_ai_act|dora_art_30|sec_item_105)\b/i,
+];
+
+const SUPPLY_CHAIN_PATTERNS = [
+  /\b(supply_chain_diode|slsa_provenance|sigstore|npm_oidc|typosquat|shai_hulud|trivy_compromise)\b/i,
 ];
 
 const FIVE_WALLS_PATTERNS = [
@@ -151,6 +161,12 @@ function selectHarness(toolName, toolInput) {
     }
     if (SIMATREE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['simatree-data-governance'];
+    }
+    if (AI_LIABILITY_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['ai-liability-defense'];
+    }
+    if (SUPPLY_CHAIN_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['supply-chain-diode'];
     }
     if (ROUTINE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES.routine;

@@ -1,0 +1,44 @@
+{
+  "gateId": "gate_ai_liability_defense_2026",
+  "name": "AI Liability Defense & Pre-Action Compliance Gate",
+  "version": "1.0.0",
+  "framework": "ImmuniWeb / EU AI Act / SEC / DORA Executive Defense Model",
+  "enforcementMode": "fail_closed",
+  "rules": [
+    {
+      "id": "LIABILITY_01_DESTRUCTIVE_OPS",
+      "severity": "CRITICAL",
+      "autonomyLimit": "L2_GATED_EXECUTION",
+      "description": "Destructive filesystem, database, or infrastructure modifications require dual-key signoff and immutable liability receipt."
+    },
+    {
+      "id": "LIABILITY_02_CREDENTIAL_MUTATION",
+      "severity": "CRITICAL",
+      "autonomyLimit": "L2_GATED_EXECUTION",
+      "description": "API key rotation, SSH key addition, or IAM privilege elevation requires verified operator consent."
+    },
+    {
+      "id": "LIABILITY_03_FINANCIAL_DISPATCH",
+      "severity": "CRITICAL",
+      "autonomyLimit": "L2_GATED_EXECUTION",
+      "description": "Direct financial transactions, payout link creation, or billing subscription changes must carry bounded spend receipts."
+    },
+    {
+      "id": "LIABILITY_04_PUBLIC_RELEASE_DEPLOY",
+      "severity": "HIGH",
+      "autonomyLimit": "L3_AUTONOMOUS_BOUNDED",
+      "description": "Production deployments and public package releases require full provenance verification and audit trail stamping."
+    },
+    {
+      "id": "LIABILITY_05_EU_AI_ACT_RECORDKEEPING",
+      "severity": "HIGH",
+      "autonomyLimit": "L3_AUTONOMOUS_BOUNDED",
+      "description": "Autonomous decisions affecting high-risk classification surfaces must maintain 6-month tamper-evident telemetry logs."
+    }
+  ],
+  "governance": {
+    "jurisdictions": ["EU_AI_ACT", "SEC_RULE_33_11216", "DORA_ART_30", "FTC_ACT_SEC_5"],
+    "dualKeyRequiredSeverities": ["CRITICAL"],
+    "retentionDays": 180
+  }
+}

@@ -211,11 +211,12 @@ const path = require('node:path');
 //   simatree-data-governance.json gate manifest (+2 measured npm pack).
 //   Lockstep with package-boundary + public-core-boundary.
 // 510 -> 511 (2026-08-22): scripts/governance-conflict-audit.js, the
-//   `thumbgate conflict-audit` module (+1 measured via npm pack --dry-run --json
-//   entryCount). Required: package.json#files enumerates scripts individually,
-//   so without the entry the subcommand throws MODULE_NOT_FOUND for npm installs.
-//   Lockstep with package-boundary + public-core-boundary.
-const BASELINE_FILE_COUNT = 511;
+//   `thumbgate conflict-audit` module (+1 measured npm pack).
+//   Lockstep with package-boundary + public-core-boundary + public-bundle-ratchet.
+// 511 -> 516 (2026-08-24): rebase onto #3610 + BrightTALK steal files
+//   (ai-liability-defense-engine, obsidian-bases-synchronizer, supply-chain-diode,
+//   config/gates/ai-liability-defense.json, config/gates/supply-chain-diode.json).
+const BASELINE_FILE_COUNT = 516;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
