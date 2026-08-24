@@ -202,10 +202,7 @@ const path = require('node:path');
 // 495 -> 496 (2026-08-20): scripts/git-at-scale.js (+1 measured npm pack)
 // 496 -> 497 (2026-08-20): config/gates/actor-critic-audit.json (+1 measured npm pack)
 // 497 -> 499 (2026-08-20): config/gates/hermes-platform.json + config/gates/hermes-sync.json
-// 499 -> 500 (2026-08-24): scripts/org-dashboard.js joins the runtime bundle —
-// the gates-engine agent identity plane (shadow-AI observation + lifecycle
-// gate) requires the org-dashboard registry at runtime.
-const BASELINE_FILE_COUNT = 500;
+const BASELINE_FILE_COUNT = 499;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
