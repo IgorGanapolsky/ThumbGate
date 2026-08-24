@@ -49,6 +49,12 @@ const AI_LIABILITY_PATTERNS = [
 
 const SUPPLY_CHAIN_PATTERNS = [
   /\b(supply_chain_diode|slsa_provenance|sigstore|npm_oidc|typosquat|shai_hulud|trivy_compromise)\b/i,
+  // BrightTALK #668780: Axios/Shai-Hulud class — unpinned installs and
+  // lifecycle remote-exec must select the diode harness, not just the
+  // keyword names of the webinar. Otherwise gates-engine never loads
+  // config/gates/supply-chain-diode.json for the actual commands.
+  /\bnpm\s+(install|i|add)\s+[^\s@]+@(?:\*|latest)(?![\w.-])/i,
+  /\b(preinstall|postinstall|npm\s+install).{0,80}(curl|wget|bash\s+-c)\b/i,
 ];
 
 const FIVE_WALLS_PATTERNS = [
@@ -144,6 +150,9 @@ function selectHarness(toolName, toolInput) {
     }
     if (payloadText && AI_LIABILITY_PATTERNS.some((p) => p.test(payloadText))) {
       return HARNESSES['ai-liability-defense'];
+    }
+    if (payloadText && SUPPLY_CHAIN_PATTERNS.some((p) => p.test(payloadText))) {
+      return HARNESSES['supply-chain-diode'];
     }
     return HARNESSES['code-edit'];
   }

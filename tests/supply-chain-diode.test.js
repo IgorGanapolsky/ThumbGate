@@ -125,3 +125,17 @@ test('Supply Chain Diode - gate JSON is executable by gates-engine', () => {
     assert.doesNotThrow(() => new RegExp(gate.pattern));
   }
 });
+
+test('evaluateGates denies unpinned npm install via the diode harness', () => {
+  process.env.THUMBGATE_PRO_MODE = '1';
+  process.env.THUMBGATE_NO_RATE_LIMIT = '1';
+  delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  const { evaluateGates } = require('../scripts/gates-engine');
+  const denied = evaluateGates('Bash', { command: 'npm install axios@latest' });
+  assert.ok(denied, 'gates-engine returned allow (null); diode harness did not load');
+  assert.equal(denied.decision, 'deny');
+  assert.equal(denied.gate, 'supply-unpinned-install');
+
+  const pinned = evaluateGates('Bash', { command: 'npm install axios@1.7.9' });
+  assert.equal(pinned && pinned.gate === 'supply-unpinned-install' ? pinned.gate : null, null);
+});

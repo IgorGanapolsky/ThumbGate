@@ -22,7 +22,7 @@
       "action": "block",
       "severity": "high",
       "toolNames": ["Bash"],
-      "pattern": "npm\\s+(install|i|add)\\s+[^\\s]+@(?:\\*|latest)",
+      "pattern": "npm\\s+(install|i|add)\\s+[^\\s@]+@(?:\\*|latest)(?![\\w.-])",
       "message": "Action blocked: unpinned npm install. Pin exact versions (BrightTALK #668780)."
     }
   ],
