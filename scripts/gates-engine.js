@@ -2831,7 +2831,6 @@ function matchGate(gate, toolName, toolInput = {}) {
     matchText,
     affectedFiles,
     taskScopeViolation,
-    protectedApprovalViolation,
     branchGovernanceViolation,
   };
 }
@@ -2840,38 +2839,23 @@ function matchesGate(gate, toolName, toolInput) {
   return matchGate(gate, toolName, toolInput).matched;
 }
 
-function hasActiveProtectedApproval(governanceState, affectedFiles, matchText = '') {
+function hasActiveProtectedApproval(governanceState, affectedFiles) {
+  if (!Array.isArray(affectedFiles) || affectedFiles.length === 0) return false;
   const approvals = Array.isArray(governanceState && governanceState.protectedApprovals)
     ? governanceState.protectedApprovals
     : [];
-  if (approvals.length === 0) return false;
-
-  if (Array.isArray(affectedFiles) && affectedFiles.length > 0) {
-    return affectedFiles.every((filePath) => approvals.some((entry) => {
-      return matchesAnyGlob(filePath, sanitizeGlobList(entry && entry.pathGlobs));
-    }));
-  }
-
-  if (typeof matchText === 'string' && matchText.trim()) {
-    const rawTokens = matchText.match(/[^\s'"`;|]+/g) || [];
-    const candidatePaths = rawTokens.filter((token) => /(?:\/|\.[a-z0-9]+$)/i.test(token));
-    if (candidatePaths.length > 0) {
-      return candidatePaths.some((token) => approvals.some((entry) => {
-        return matchesAnyGlob(token, sanitizeGlobList(entry && entry.pathGlobs));
-      }));
-    }
-  }
-
-  return false;
+  return affectedFiles.every((filePath) => approvals.some((entry) => {
+    return matchesAnyGlob(filePath, sanitizeGlobList(entry && entry.pathGlobs));
+  }));
 }
 
 function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
+  if (hasActiveProtectedApproval(loadGovernanceState(), affectedFiles)) return null;
+
   const command = String(toolInput.command || '');
   let matchText = command;
-
-  if (hasActiveProtectedApproval(loadGovernanceState(), affectedFiles, command)) return null;
 
   if (gate.id === 'self-protect-config' || gate.id === 'self-protect-hooks-disable') {
     const targetPattern = gate.id === 'self-protect-config'
