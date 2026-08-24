@@ -282,7 +282,6 @@
     "scripts/observability-setup.js",
     "scripts/obsidian-export.js",
     "scripts/operational-integrity.js",
-    "scripts/org-dashboard.js",
     "scripts/oss-pr-opportunity-scout.js",
     "scripts/otel-declarative-config.js",
     "scripts/override-audit.js",
