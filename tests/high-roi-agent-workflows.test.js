@@ -59,7 +59,11 @@ const {
 const {
   buildKnowledgeLayerPlan,
   buildRecommendationEvidencePath,
+  evaluateBehavioralSimulation,
+  evaluateGraphAblation,
   evaluateKnowledgeLayerRun,
+  resolveGraphEntity,
+  traverseKnowledgeGraph,
 } = require('../scripts/knowledge-layer-plan');
 const {
   evaluateModelAccessEligibility,
@@ -88,6 +92,7 @@ const {
 } = require('../scripts/skill-rag-router');
 const {
   evaluateProductionAgentReadiness,
+  evaluateRuntimeGovernanceAction,
 } = require('../scripts/production-agent-readiness');
 const {
   MARKETING_AGENT_CAMPAIGN,
@@ -307,6 +312,22 @@ test('agent audit traces capture prompt, data, tools, cost, and decision path', 
   const report = evaluateAgentAuditTrace({ runId: 'run_1', spans });
   assert.equal(report.decision, 'allow');
   assert.equal(report.totals.totalTokens, 180);
+  assert.equal(report.totals.rootInputTokens, 100);
+  assert.equal(report.totals.downstreamTokens, 80);
+  assert.equal(report.totals.downstreamActions, 1);
+  assert.equal(report.totals.tokenAmplificationRatio, 1.8);
+
+  const overBudget = evaluateAgentAuditTrace({
+    runId: 'run_1',
+    spans,
+    budget: { maxTotalTokens: 150, maxTokenAmplification: 1.5, maxDownstreamActions: 0 },
+  });
+  assert.equal(overBudget.decision, 'deny');
+  assert.deepEqual(overBudget.budgetIssues, [
+    'max_total_tokens_exceeded',
+    'max_token_amplification_exceeded',
+    'max_downstream_actions_exceeded',
+  ]);
 
   const weak = evaluateAgentAuditTrace({
     runId: 'run_2',
@@ -341,6 +362,148 @@ test('knowledge layer plan makes recommendations explainable and reusable', () =
   });
   assert.equal(run.decision, 'allow');
   assert.ok(run.roiSignals.includes('lower_graph_query_and_token_cost'));
+});
+
+test('knowledge graph retrieval always traverses active edges and blocks unresolved contradictions', () => {
+  const graph = traverseKnowledgeGraph({
+    asOf: '2026-08-24T12:00:00.000Z',
+    nodes: [
+      { id: 'claim-1', type: 'Claim' },
+      { id: 'policy-current', type: 'Policy' },
+      { id: 'policy-conflict', type: 'Policy' },
+    ],
+    edges: [
+      {
+        from: 'claim-1',
+        to: 'policy-current',
+        type: 'APPLIES_TO',
+        validFrom: '2026-01-01T00:00:00.000Z',
+        sourceIds: ['doc-1'],
+      },
+      {
+        from: 'policy-current',
+        to: 'policy-conflict',
+        type: 'CONTRADICTS',
+        validFrom: '2026-02-01T00:00:00.000Z',
+        sourceIds: ['doc-1', 'doc-2'],
+        resolved: false,
+      },
+      {
+        from: 'claim-1',
+        to: 'policy-conflict',
+        type: 'SUPERSEDED',
+        validTo: '2026-01-01T00:00:00.000Z',
+        sourceIds: ['old-doc'],
+      },
+    ],
+    searchResults: [{ id: 'claim-1', score: 0.9 }],
+  });
+
+  assert.equal(graph.strategy, 'always_fused_search_and_bitemporal_traversal');
+  assert.deepEqual(graph.rankedNodes.map((node) => node.id), [
+    'claim-1',
+    'policy-current',
+    'policy-conflict',
+  ]);
+  assert.equal(graph.paths.some((path) => path.type === 'SUPERSEDED'), false);
+  assert.equal(graph.provenanceComplete, true);
+  assert.equal(graph.decision, 'deny');
+  assert.equal(graph.unresolvedContradictions.length, 1);
+});
+
+test('graph ablation and entity resolution make graph cost falsifiable', () => {
+  const ablation = evaluateGraphAblation({
+    cases: [{
+      id: 'multi-hop',
+      expectedNodeIds: ['claim-1', 'policy-1'],
+      expectedPathTypes: ['APPLIES_TO'],
+      searchOnlyIds: ['claim-1'],
+      fusedNodeIds: ['claim-1', 'policy-1'],
+      fusedPaths: [{ type: 'APPLIES_TO' }],
+    }],
+  });
+  assert.equal(ablation.decision, 'allow');
+  assert.equal(ablation.metrics.recallLift, 0.5);
+  assert.equal(ablation.metrics.pathCorrectness, 1);
+
+  const gray = resolveGraphEntity(
+    { name: 'Actual cash value' },
+    [{ id: 'acv', name: 'ACV', aliases: ['cash settlement basis'] }],
+    { similarity: () => 0.84 },
+  );
+  assert.equal(gray.decision, 'review');
+  assert.equal(gray.reason, 'gray_zone_requires_adjudication');
+});
+
+test('behavioral simulation stays a hypothesis until observed holdout ranking passes', () => {
+  const personas = Array.from({ length: 5 }, (_, index) => ({
+    id: `persona-${index + 1}`,
+    evidence: [{
+      kind: 'observed',
+      sourceId: `event-${index + 1}`,
+      observedAt: '2026-08-20T12:00:00.000Z',
+    }],
+  }));
+  const variants = [{ id: 'risk-reversal' }, { id: 'feature-led' }];
+  const predictions = personas.flatMap((persona) => [
+    { personaId: persona.id, variantId: 'risk-reversal', score: 0.8 },
+    { personaId: persona.id, variantId: 'feature-led', score: 0.2 },
+  ]);
+  const observations = personas.flatMap((persona) => [
+    { personaId: persona.id, variantId: 'risk-reversal', outcome: 1 },
+    { personaId: persona.id, variantId: 'feature-led', outcome: 0 },
+  ]);
+
+  const simulation = evaluateBehavioralSimulation({
+    mode: 'simulation',
+    decision: { intervention: 'landing-page angle', population: 'comparison shoppers', outcomeMetric: 'qualified opt-in' },
+    personas,
+    variants,
+    predictions,
+  });
+  assert.equal(simulation.runDecision, 'allow');
+  assert.equal(simulation.deploymentDecision, 'deny');
+  assert.match(simulation.claimBoundary, /hypothesis/);
+
+  const validated = evaluateBehavioralSimulation({
+    mode: 'live',
+    decision: { intervention: 'landing-page angle', population: 'comparison shoppers', outcomeMetric: 'qualified opt-in' },
+    personas,
+    variants,
+    predictions,
+    observations,
+    holdoutPersonaIds: personas.map((persona) => persona.id),
+  });
+  assert.equal(validated.livePromotionAllowed, true);
+  assert.equal(validated.evaluation.holdoutPairwiseAccuracy, 1);
+});
+
+test('runtime governance supports live enforcement and risk-free sidecar replay', () => {
+  const action = {
+    provider: 'openai',
+    toolName: 'Bash',
+    toolInput: { command: 'git push origin main', scopes: ['repo:read'] },
+    usage: { total_tokens: 9000, costUsd: 0.4 },
+  };
+  const policy = {
+    mode: 'live',
+    layers: [
+      { id: 'safety', category: 'safety', deniedTools: ['Bash'] },
+      { id: 'business', category: 'business', maxCostUsd: 0.2 },
+      { id: 'client-sla', category: 'sla', requiredScopes: ['repo:write'] },
+    ],
+    budget: { maxTokensPerAction: 8000 },
+  };
+  const live = evaluateRuntimeGovernanceAction(action, policy);
+  assert.deepEqual(live.layers.map((layer) => layer.category), ['safety', 'business', 'sla']);
+  assert.equal(live.observedDecision, 'deny');
+  assert.equal(live.executionAllowed, false);
+  assert.equal(live.wouldDeny, true);
+
+  const sidecar = evaluateRuntimeGovernanceAction(action, { ...policy, mode: 'sidecar' });
+  assert.equal(sidecar.observedDecision, 'deny');
+  assert.equal(sidecar.executionDecision, 'allow');
+  assert.equal(sidecar.executionAllowed, true);
 });
 
 test('hybrid supervisor decomposes structured plus unstructured questions into native source calls', () => {
