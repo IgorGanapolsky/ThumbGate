@@ -434,6 +434,20 @@ test('knowledge graph retrieval always traverses active edges and blocks unresol
   assert.equal(parallelContradictions.decision, 'deny');
   assert.equal(parallelContradictions.unresolvedContradictions[0].edgeId, 'unresolved');
 
+  // Versioned edges can share one explicit id: the resolved version appearing
+  // first must not collapse the unresolved version out of contradiction gating.
+  const sharedIdVersions = traverseKnowledgeGraph({
+    nodes: [{ id: 'a' }, { id: 'b' }],
+    edges: [
+      { id: 'edge-1', from: 'a', to: 'b', type: 'CONTRADICTS', resolved: true, sourceId: 'doc-1' },
+      { id: 'edge-1', from: 'a', to: 'b', type: 'CONTRADICTS', resolved: false, sourceId: 'doc-2' },
+    ],
+    searchResults: [{ id: 'a' }],
+  });
+  assert.equal(sharedIdVersions.unresolvedContradictions.length, 1);
+  assert.equal(sharedIdVersions.answerAllowed, false);
+  assert.equal(sharedIdVersions.decision, 'deny');
+
   const unsupportedExpansion = traverseKnowledgeGraph({
     nodes: [{ id: 'a' }, { id: 'b' }],
     edges: [{ from: 'a', to: 'b', type: 'APPLIES_TO' }],
