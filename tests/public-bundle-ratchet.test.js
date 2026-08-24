@@ -213,7 +213,12 @@ const path = require('node:path');
 // 510 -> 511 (2026-08-23): src/trust-center.js — Oneleet-style Trust Center hub
 //   (questionnaire + honest control-tag coverage + /trust.json). Lives under
 //   packaged src/, so npm pack entryCount +1. Not a SOC 2 product clone.
-const BASELINE_FILE_COUNT = 511;
+// 510 -> 511 (2026-08-22): scripts/governance-conflict-audit.js, the
+//   `thumbgate conflict-audit` module (+1 measured via npm pack --dry-run --json
+//   entryCount). Required: package.json#files enumerates scripts individually,
+//   so without the entry the subcommand throws MODULE_NOT_FOUND for npm installs.
+//   Lockstep with package-boundary + public-core-boundary.
+const BASELINE_FILE_COUNT = 512;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

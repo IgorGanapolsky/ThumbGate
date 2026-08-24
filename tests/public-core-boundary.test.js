@@ -271,8 +271,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   //   simatree-data-governance.json gate manifest (+2 measured npm pack).
   //   Lockstep with package-boundary + public-bundle-ratchet.
   // 510 -> 511 (2026-08-23): src/trust-center.js under packaged src/ (+1).
+  // 510 -> 511 (2026-08-22): scripts/governance-conflict-audit.js, the
+  //   `thumbgate conflict-audit` module (+1 measured npm pack).
   //   Lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 511;
+  const CEILING = 512;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
