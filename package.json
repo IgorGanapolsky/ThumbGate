@@ -1176,7 +1176,7 @@
   "mcpName": "io.github.IgorGanapolsky/thumbgate",
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.0",
-    "@changesets/cli": "^2.31.0",
+    "@changesets/cli": "^3.0.0",
     "@playwright/test": "^1.62.1",
     "c8": "^12.0.0",
     "undici": "8.10.0"
