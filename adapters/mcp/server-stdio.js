@@ -1026,7 +1026,7 @@ function recordMcpToolTrace(name, args, outcome = {}) {
       success: outcome.success === true,
       outcome: kpiOutcome,
       blocked,
-      agentId: outcome.agentId || process.env.THUMBGATE_AGENT_ID || 'unknown',
+      agentId: outcome.agentId || process.env.THUMBGATE_AGENT_ID || process.env.THUMBGATE_SESSION_AGENT || 'unknown',
       clientId: outcome.clientId || null,
       sessionId: outcome.sessionId || null,
       writeRiskTier,
@@ -1975,8 +1975,52 @@ function acquireLock() {
   return { lockFile, cleanupLock: () => {} };
 }
 
+/**
+ * Register this MCP session as a first-class agent identity at startup.
+ * Fulfills the registry's "called on MCP server startup" contract: a session
+ * with an attributed id gets that id registered; a session without one gets a
+ * generated id, exported via THUMBGATE_SESSION_AGENT so every audit record and
+ * the gates-engine identity gate can attribute its tool calls. Best-effort by
+ * design — identity bootstrap must never block or crash server start.
+ */
+function registerSessionIdentity() {
+  try {
+    const { registerAgent, loadAgentRegistry, getRegistryPath } = require('../../scripts/audit-trail');
+    const { withFileLedgerLock } = require('../../scripts/file-ledger-lock');
+    const envId = process.env.THUMBGATE_SESSION_AGENT || process.env.THUMBGATE_AGENT_ID || null;
+    // Check-then-append runs under the registry ledger lock: concurrent stdio
+    // servers inheriting one session id must not both pass the existence check
+    // and register duplicate rows. A busy lock throws into the catch below —
+    // the session simply starts unregistered and the next startup retries.
+    const finalId = withFileLedgerLock(`${getRegistryPath()}.lock`, () => {
+      const alreadyRegistered = envId
+        ? loadAgentRegistry().some((agent) => agent && agent.id === envId)
+        : false;
+      if (alreadyRegistered) return envId;
+      const record = registerAgent({
+        agentId: envId || undefined,
+        source: 'mcp',
+        metadata: { transport: 'stdio', pid: process.pid },
+      });
+      return record && record.id ? record.id : envId;
+    });
+    if (finalId && !process.env.THUMBGATE_SESSION_AGENT) {
+      process.env.THUMBGATE_SESSION_AGENT = finalId;
+    }
+    // MCP tool telemetry (recordMcpToolTrace) attributes via THUMBGATE_AGENT_ID;
+    // without this a generated identity would trace as agentId "unknown".
+    if (finalId && !process.env.THUMBGATE_AGENT_ID) {
+      process.env.THUMBGATE_AGENT_ID = finalId;
+    }
+    return finalId;
+  } catch {
+    return null;
+  }
+}
+
 function startStdioServer() {
   acquireLock();
+  registerSessionIdentity();
 
   process.stdin.resume();
 
@@ -2054,6 +2098,7 @@ module.exports = {
   handleRequest,
   callTool,
   startStdioServer,
+  registerSessionIdentity,
   acquireLock,
   toCaptureFeedbackTextResult,
   formatCorrectiveActionsReminder,
