@@ -466,19 +466,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 495 -> 496 (2026-08-20): scripts/git-at-scale.js (+1 measured npm pack)
     // 496 -> 497 (2026-08-20): config/gates/actor-critic-audit.json (+1 measured npm pack)
     // 497 -> 499 (2026-08-20): config/gates/hermes-platform.json + config/gates/hermes-sync.json
-    // 499 -> 506 (2026-08-21): Future AGI adapter, evaluator, CLI bridge, guardrails gate, and learn article (+7)
-    // 506 -> 507 (2026-08-21): Five Walls governance gate, index-and-leaf engine, attribution summary, and learn article (+1)
-    // 507 -> 508 (2026-08-21): scripts/agent-action-inventory.js, the `thumbgate inventory` module (+1 measured npm pack).
-    //   Lockstep with public-bundle-ratchet + public-core-boundary.
-    // 508 -> 510 (2026-08-21): scripts/simatree-data-governance.js + the
-    //   simatree-data-governance.json gate manifest (+2 measured npm pack).
-    //   Lockstep with public-bundle-ratchet + public-core-boundary.
-    // 510 -> 511 (2026-08-22): scripts/governance-conflict-audit.js, the
-    //   `thumbgate conflict-audit` module (+1 measured npm pack).
-    //   Lockstep with public-bundle-ratchet + public-core-boundary.
-    // 511 -> 512 (2026-08-25): public/yt.html YouTube/CPC dedicated landing.
-    manifest.fileCount <= 512,
-    `npm package should stay <= 512 files, got ${manifest.fileCount}`
+    // 499 -> 500 (2026-08-25): src/alert-noise-ledger.js (+1 measured npm pack).
+    // Runtime code, not a dev surface: gates-engine.js is packaged and will
+    // require it to suppress repeated reminder lines. No Core dependency.
+    manifest.fileCount <= 500,
+    `npm package should stay <= 500 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -655,12 +647,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // capability-scoped authority that expires, plus its fail-closed enforcement. Shipped
   // runtime logic in an already-shipped file; no new files enter the tarball (still 371).
   // Measured artifact: 5,450,871 bytes.
-  // Bumped 8.00 MB -> 8.01 MB (2026-08-25) for public/yt.html (YouTube/CPC landing
-  // required by public-package-parity) after merging summit-funnel landing growth
-  // (#3661). CI measured 8,002,268 unpacked bytes on 26b1a4fd.
   assert.ok(
-    manifest.unpackedSize <= 8_010_000,
-    `npm package should stay <= 8.01 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 8_000_000,
+    `npm package should stay <= 8.00 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
