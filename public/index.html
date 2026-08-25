@@ -684,7 +684,8 @@
           <div class="eyebrow">Now live · Pre-action gates · Not a prompt · Not a postmortem</div>
           <div class="hero-thumbs" aria-hidden="true"><span class="up">👍</span><span class="down">👎</span></div>
           <h1>Stop AI agent mistakes before they cost you.</h1>
-          <p class="hero-lede">Hard allow/deny at the <strong>tool-call boundary</strong>. Audit entry written at decision time. Every approval teaches the next gate.</p>
+          <p class="hero-lede">Your agents run lead gen, content, sales follow-up, and ops while you are somewhere else. One of them force-pushes to main. One pipes a key into an outbound request. One runs the destructive command against the wrong path. You find out afterward, in the cleanup.</p>
+          <p class="hero-lede" style="font-size:17px;color:var(--muted)">Your agent team needs a firewall. ThumbGate is hard allow/deny at the <strong>tool-call boundary</strong>, an audit entry written at decision time, and every approval teaching the next gate — governance that lets you delegate like a CEO instead of watching a terminal.</p>
           <p class="fit-line"><strong>Dual path (buy + book):</strong> <strong>$499 Diagnostic</strong> maps one expensive failure on Claude Code, Cursor, Codex, or similar agents and installs a hard gate with proof — or self-serve <strong>Pro at $19/mo</strong> if you already know the loop. Free local evaluate stays free.</p>
           <div class="spec-chips" aria-label="What ThumbGate does">
             <span class="spec-chip"><strong>Capture</strong> feedback</span>
@@ -697,7 +698,8 @@
           </figure>
           <a class="proof-link" href="#proof">See a strict-mode deny example ↓</a>
           <a class="proof-link-secondary" href="#how-it-works" style="margin-left:14px;color:var(--cyan);font-weight:750;text-decoration:none">See how the self-improving loop works ↓</a>
-          <p class="install-hint"><code>npx thumbgate init</code> free local evaluate · first hard gate usually minutes after install · <a href="/pricing">how we stack up</a></p>
+          <p class="install-hint" style="margin-top:18px;font-size:15px"><strong style="color:var(--text)">Start free, in one line:</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy my install command</button></p>
+          <p class="install-hint">No account. No card. Nothing leaves the machine — your lessons are a local SQLite file you own. MIT-licensed: run <code>npm pack thumbgate</code> and read the gate logic yourself. First hard gate usually minutes after install · <a href="/pricing">how we stack up</a></p>
           <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · bin <code>thumbgate-dashboard</code> if global · <a href="/dashboard#insights">demo</a></p>
         </div>
         <div id="offers" class="offer-stack">
@@ -839,6 +841,38 @@
           </div>
         </div>
         <p class="loop-back"><strong>Each reviewed outcome closes the loop—under your control.</strong> Lessons are re-ranked per action, repeated failures can promote into gates, and stale auto-promoted gates expire. The firewall improves from explicit feedback without retraining the model or silently rewriting policy.</p>
+        <h3 class="section-title" style="font-size:28px;margin-top:44px">What you walk away with.</h3>
+        <div class="deliverables" style="margin-top:22px">
+          <article class="deliverable">
+            <h3>Minutes after install</h3>
+            <p>Every Bash, Edit, and Write your agent proposes gets a decision before it runs — allowed, warned, or (in strict mode) denied — and each decision is written to an audit entry you can read.</p>
+          </article>
+          <article class="deliverable">
+            <h3>After your first 👎</h3>
+            <p>One negative with context becomes a warning gate. Three matching negatives in 30 days make it a hard-block candidate. Gates that stop firing expire after ~90 days, so what's enforced stays what you actually need.</p>
+          </article>
+          <article class="deliverable">
+            <h3>From day one, without configuring anything</h3>
+            <p>Detected secret exfiltration and attempts to kill or override the gate process are denied by default — including when the attempt comes from the agent itself.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="fit">
+      <div class="shell">
+        <div class="section-kicker">Before you spend a minute</div>
+        <h2 class="section-title">Who this is for — and who it isn't.</h2>
+        <div class="deliverables" style="grid-template-columns:1fr 1fr">
+          <article class="deliverable" style="border-color:rgba(86,227,159,.35)">
+            <h3>Install it if</h3>
+            <p>You have more than one agent running unattended — lead gen, content, sales follow-up, ops, code. You have already had to undo something an agent did. You want the boundary enforced at the tool call, not restated in a prompt. You are the one who eats the cost when an agent gets it wrong.</p>
+          </article>
+          <article class="deliverable" style="border-color:rgba(255,100,124,.35)">
+            <h3>Skip it if</h3>
+            <p>You read every command yourself before it runs — then you are already the gate. You want a dashboard that reports damage after the fact; ThumbGate decides before execution, not after. You want a vendor to certify your compliance posture, or an org-wide hosted platform with SSO and multi-workflow rollout — that is separate scope and not generally available.</p>
+          </article>
+        </div>
       </div>
     </section>
 
@@ -929,9 +963,11 @@ next      decision recorded before execution</pre>
 
     <section class="final">
       <div class="shell">
-        <div class="section-kicker">Two cash paths</div>
-        <h2 class="section-title">Start self-serve, or bring the failure that already cost you time.</h2>
-        <p class="section-lede">Pro is self-serve for operators. The $499 gate is a managed install for one painful workflow—not a policy deck.</p>
+        <div class="section-kicker">Two paths from here</div>
+        <h2 class="section-title">Two paths from here.</h2>
+        <p class="section-lede"><strong style="color:var(--text)">Path A:</strong> nothing changes. Your agents keep acting unattended, and the next expensive action lands the way the last one did — you find out after it lands.<br><br><strong style="color:var(--text)">Path B:</strong> you run one line, and the next risky tool call gets a decision before it executes.</p>
+        <p class="install-hint" style="font-size:15px;margin:24px 0 0;text-align:center"><code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="final_install_copy" style="margin-left:8px">Copy my install command</button></p>
+        <p class="section-lede" style="text-align:center;font-size:15px;margin-top:26px">Want it installed and proven for you instead? Pro is self-serve for operators. The $499 gate is a managed install for one painful workflow—not a policy deck.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
           <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_final&amp;utm_campaign=pro_self_serve&amp;cta_id=final_pro_buy&amp;cta_placement=final&amp;plan_id=pro" data-offer-link data-cta-id="final_pro_buy">Start Pro — $19/mo</a>
           <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>
@@ -1317,5 +1353,18 @@ next      decision recorded before execution</pre>
     }
   </script>
 
+<script>
+  (function () {
+    document.querySelectorAll('[data-copy-install]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var prev = btn.textContent;
+        var done = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = prev; }, 1600); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText('npx thumbgate init').then(done, done);
+        } else { done(); }
+      });
+    });
+  })();
+</script>
 </body>
 </html>
