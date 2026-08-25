@@ -62,7 +62,7 @@ function hasMeasuredBaseline(baseline) {
 }
 
 function failedBusinessRules(rules) {
-  return rules.filter((rule) => !rule.valid).map((rule) => rule.issue);
+  return rules.filter(([valid]) => !valid).map(([, issue]) => issue);
 }
 
 function calculateBusinessCandidateEstimates(values) {
@@ -111,38 +111,22 @@ function normalizeBusinessFunctionCandidate(input = {}) {
     confidence,
   });
   const issues = failedBusinessRules([
-    { valid: BUSINESS_FUNCTION_IDS.has(functionId), issue: 'unsupported_business_function' },
-    { valid: Boolean(cleanText(input.objective)), issue: 'missing_objective' },
-    { valid: Boolean(cleanText(input.primaryKpi)), issue: 'missing_primary_kpi' },
-    { valid: Boolean(cleanText(input.inputSource)), issue: 'missing_input_source' },
-    { valid: hasMeasuredBaseline(input.baseline), issue: 'missing_measured_baseline' },
-    {
-      valid: estimatedMonthlyValueUsd !== null && estimatedMonthlyValueUsd > 0,
-      issue: 'missing_estimated_monthly_value_usd',
-    },
-    {
-      valid: recurringMonthlyCostUsd !== null && recurringMonthlyCostUsd >= 0,
-      issue: 'missing_recurring_monthly_cost_usd',
-    },
-    {
-      valid: implementationCostUsd !== null && implementationCostUsd > 0,
-      issue: 'missing_implementation_cost_usd',
-    },
-    {
-      valid: implementationHours !== null && implementationHours > 0,
-      issue: 'missing_implementation_hours',
-    },
-    {
-      valid: confidence !== null && confidence > 0 && confidence <= 1,
-      issue: 'invalid_confidence',
-    },
-    { valid: BUSINESS_FUNCTION_RISKS.has(risk), issue: 'invalid_risk' },
-    { valid: evidence.length > 0, issue: 'missing_evidence' },
-    {
-      valid: estimates.expectedMonthlyNetValueUsd === null
-        || estimates.expectedMonthlyNetValueUsd > 0,
-      issue: 'non_positive_expected_monthly_net_value',
-    },
+    [BUSINESS_FUNCTION_IDS.has(functionId), 'unsupported_business_function'],
+    [Boolean(cleanText(input.objective)), 'missing_objective'],
+    [Boolean(cleanText(input.primaryKpi)), 'missing_primary_kpi'],
+    [Boolean(cleanText(input.inputSource)), 'missing_input_source'],
+    [hasMeasuredBaseline(input.baseline), 'missing_measured_baseline'],
+    [estimatedMonthlyValueUsd !== null && estimatedMonthlyValueUsd > 0, 'missing_estimated_monthly_value_usd'],
+    [recurringMonthlyCostUsd !== null && recurringMonthlyCostUsd >= 0, 'missing_recurring_monthly_cost_usd'],
+    [implementationCostUsd !== null && implementationCostUsd > 0, 'missing_implementation_cost_usd'],
+    [implementationHours !== null && implementationHours > 0, 'missing_implementation_hours'],
+    [confidence !== null && confidence > 0 && confidence <= 1, 'invalid_confidence'],
+    [BUSINESS_FUNCTION_RISKS.has(risk), 'invalid_risk'],
+    [evidence.length > 0, 'missing_evidence'],
+    [
+      estimates.expectedMonthlyNetValueUsd === null || estimates.expectedMonthlyNetValueUsd > 0,
+      'non_positive_expected_monthly_net_value',
+    ],
   ]);
 
   return {
@@ -217,14 +201,12 @@ function rankBusinessFunctionAgents(candidates = []) {
     status: eligible.length > 0 ? 'ranked_estimates' : 'insufficient_evidence',
     source: {
       url: BUSINESS_FUNCTION_AGENT_SOURCE,
-      use: 'workflow inspiration only',
       claimsVerifiedByThumbGate: false,
     },
     methodology: {
       estimated: true,
       formula: 'paybackMonths = implementationCostUsd / ((estimatedMonthlyValueUsd * confidence) - recurringMonthlyCostUsd)',
-      tieBreakers: ['higher expected monthly net value', 'fewer implementation hours', 'agent ID'],
-      warning: 'Ranking is a planning estimate, not achieved revenue or production proof.',
+      warning: 'Planning estimate; not achieved revenue or production proof.',
     },
     candidateCount: normalized.length,
     evidenceCompleteCount: eligible.length,
@@ -272,49 +254,28 @@ function buildBusinessHandoffIssues(context) {
   const externalActionRequested = requestedActions.some((action) => !INTERNAL_BUSINESS_ACTION.test(action));
 
   return failedBusinessRules([
-    { valid: BUSINESS_FUNCTION_IDS.has(fromFunction), issue: 'unsupported_source_function' },
-    { valid: BUSINESS_FUNCTION_IDS.has(toFunction), issue: 'unsupported_target_function' },
-    {
-      valid: BUSINESS_FUNCTION_EDGE_IDS.has(`${fromFunction}:${toFunction}`),
-      issue: 'undeclared_handoff_edge',
-    },
-    { valid: Boolean(cleanText(input.workflowId)), issue: 'missing_workflow_id' },
-    { valid: Boolean(cleanText(input.correlationId)), issue: 'missing_correlation_id' },
-    { valid: Boolean(cleanText(input.objective)), issue: 'missing_objective' },
-    { valid: Boolean(cleanText(input.primaryKpi)), issue: 'missing_primary_kpi' },
-    { valid: Boolean(cleanText(input.expectedOutcome)), issue: 'missing_expected_outcome' },
-    { valid: validBusinessObjectSchema(input.inputSchema), issue: 'invalid_input_schema' },
-    { valid: validBusinessObjectSchema(input.outputSchema), issue: 'invalid_output_schema' },
-    { valid: dataScopes.length > 0, issue: 'missing_data_scope' },
-    { valid: typeof input.containsPersonalData === 'boolean', issue: 'missing_data_classification' },
-    { valid: requiredEvidence.length > 0, issue: 'missing_required_evidence' },
-    { valid: Boolean(cleanText(input.idempotencyKey)), issue: 'missing_idempotency_key' },
-    {
-      valid: estimatedCostUsd !== null && estimatedCostUsd >= 0,
-      issue: 'invalid_estimated_cost_usd',
-    },
-    { valid: maxCostUsd !== null && maxCostUsd >= 0, issue: 'invalid_max_cost_usd' },
-    {
-      valid: estimatedCostUsd === null || maxCostUsd === null || estimatedCostUsd <= maxCostUsd,
-      issue: 'handoff_over_budget',
-    },
-    { valid: slaMinutes !== null && slaMinutes > 0, issue: 'invalid_sla_minutes' },
-    {
-      valid: input.containsPersonalData !== true || validBusinessConsent(input.consent),
-      issue: 'personal_data_requires_verified_consent',
-    },
-    {
-      valid: !isLeadToSales || qualificationEvidence.length > 0,
-      issue: 'lead_to_sales_requires_qualification_evidence',
-    },
-    {
-      valid: !isLeadToSales || validBusinessConsent(input.consent),
-      issue: 'lead_to_sales_requires_verified_consent',
-    },
-    {
-      valid: !externalActionRequested || validBusinessApproval(input.approval),
-      issue: 'external_action_requires_approval_receipt',
-    },
+    [BUSINESS_FUNCTION_IDS.has(fromFunction), 'unsupported_source_function'],
+    [BUSINESS_FUNCTION_IDS.has(toFunction), 'unsupported_target_function'],
+    [BUSINESS_FUNCTION_EDGE_IDS.has(`${fromFunction}:${toFunction}`), 'undeclared_handoff_edge'],
+    [Boolean(cleanText(input.workflowId)), 'missing_workflow_id'],
+    [Boolean(cleanText(input.correlationId)), 'missing_correlation_id'],
+    [Boolean(cleanText(input.objective)), 'missing_objective'],
+    [Boolean(cleanText(input.primaryKpi)), 'missing_primary_kpi'],
+    [Boolean(cleanText(input.expectedOutcome)), 'missing_expected_outcome'],
+    [validBusinessObjectSchema(input.inputSchema), 'invalid_input_schema'],
+    [validBusinessObjectSchema(input.outputSchema), 'invalid_output_schema'],
+    [dataScopes.length > 0, 'missing_data_scope'],
+    [typeof input.containsPersonalData === 'boolean', 'missing_data_classification'],
+    [requiredEvidence.length > 0, 'missing_required_evidence'],
+    [Boolean(cleanText(input.idempotencyKey)), 'missing_idempotency_key'],
+    [estimatedCostUsd !== null && estimatedCostUsd >= 0, 'invalid_estimated_cost_usd'],
+    [maxCostUsd !== null && maxCostUsd >= 0, 'invalid_max_cost_usd'],
+    [estimatedCostUsd === null || maxCostUsd === null || estimatedCostUsd <= maxCostUsd, 'handoff_over_budget'],
+    [slaMinutes !== null && slaMinutes > 0, 'invalid_sla_minutes'],
+    [input.containsPersonalData !== true || validBusinessConsent(input.consent), 'personal_data_requires_verified_consent'],
+    [!isLeadToSales || qualificationEvidence.length > 0, 'lead_to_sales_requires_qualification_evidence'],
+    [!isLeadToSales || validBusinessConsent(input.consent), 'lead_to_sales_requires_verified_consent'],
+    [!externalActionRequested || validBusinessApproval(input.approval), 'external_action_requires_approval_receipt'],
   ]);
 }
 
@@ -323,7 +284,7 @@ function buildBusinessOutcomeReceiptTemplate(contract) {
     schemaVersion: 'task-outcome-template-v1',
     recordable: false,
     verificationState: 'not_run',
-    reason: 'Populate actual status, verification, efficiency, and business outcome before recording.',
+    reason: 'Add verified results before recording.',
     taskOutcome: {
       taskId: contract.correlationId,
       taskType: `business_handoff:${contract.fromFunction}:${contract.toFunction}`,
@@ -438,9 +399,9 @@ function buildBusinessFunctionAgentPlan(input = {}) {
     ranking,
     handoff: evaluatedHandoff,
     nextActions: [
-      'Pilot only the first evidence-complete candidate with the shortest estimated payback',
-      'Run every cross-function transfer through the typed handoff evaluator',
-      'Record actual KPI outcomes separately from planning estimates',
+      'Pilot the shortest evidence-backed payback',
+      'Gate every cross-function handoff',
+      'Record actual KPIs apart from estimates',
     ],
   };
 }
