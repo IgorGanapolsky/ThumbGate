@@ -1657,6 +1657,53 @@ test('HEAD /federal returns 200 with no body (telemetry parity with /numbers)', 
   assert.equal(res.status, 200);
 });
 
+test('/yt route returns the six-function YouTube landing', async () => {
+  const res = await fetch(apiUrl('/yt'));
+  assert.equal(res.status, 200);
+  const body = await res.text();
+  assert.match(body, /Six business functions\. Existing gates\./);
+  assert.match(body, /not affiliated/i);
+  assert.doesNotMatch(body, /\$499/);
+});
+
+test('/yt route records landing_page_view telemetry with pageType=yt', async () => {
+  const cookieHeader = [
+    'thumbgate_visitor_id=visitor_yt',
+    'thumbgate_session_id=session_yt',
+    'thumbgate_acquisition_id=acq_yt',
+  ].join('; ');
+  const res = await fetch(
+    apiUrl('/yt?utm_source=youtube&utm_medium=cpc&utm_campaign=six-function-agent-gates'),
+    { headers: { cookie: cookieHeader } }
+  );
+  assert.equal(res.status, 200);
+
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  const landingEvent = telemetryEvents.find((entry) => (
+    entry.eventType === 'landing_page_view' &&
+    entry.visitorId === 'visitor_yt' &&
+    entry.pageType === 'yt'
+  ));
+  assert.ok(landingEvent, 'expected landing_page_view with pageType=yt in telemetry-pings.jsonl');
+  assert.equal(landingEvent.utmSource, 'youtube');
+  assert.equal(landingEvent.utmMedium, 'cpc');
+  assert.equal(landingEvent.utmCampaign, 'six-function-agent-gates');
+});
+
+test('/yt.html and /aias-registration-yt aliases serve the YouTube landing', async () => {
+  for (const route of ['/yt.html', '/aias-registration-yt']) {
+    const res = await fetch(apiUrl(route));
+    assert.equal(res.status, 200, `${route} expected 200, got ${res.status}`);
+    const body = await res.text();
+    assert.match(body, /Six business functions\. Existing gates\./, `${route} missing sentinel`);
+  }
+});
+
+test('HEAD /yt returns 200 with no body', async () => {
+  const res = await fetch(apiUrl('/yt'), { method: 'HEAD' });
+  assert.equal(res.status, 200);
+});
+
 test('tracked link router redirects allowlisted marketing slugs and records first-party click telemetry', async () => {
   const cookieHeader = [
     'thumbgate_visitor_id=visitor_go',

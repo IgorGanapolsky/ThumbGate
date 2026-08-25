@@ -215,7 +215,10 @@ const path = require('node:path');
 //   entryCount). Required: package.json#files enumerates scripts individually,
 //   so without the entry the subcommand throws MODULE_NOT_FOUND for npm installs.
 //   Lockstep with package-boundary + public-core-boundary.
-const BASELINE_FILE_COUNT = 511;
+// 511 -> 512 (2026-08-25): public/yt.html, dedicated YouTube/CPC landing that
+//   maps six business functions onto existing gates (FORMAT steal, not a SKU).
+//   public-package-parity requires every public/*.html on the files allowlist.
+const BASELINE_FILE_COUNT = 512;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
