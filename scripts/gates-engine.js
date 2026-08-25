@@ -3207,6 +3207,22 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     return null;
   }
 
+  const agentIdentityLifecycleGate = evaluateAgentIdentityLifecycleGate(toolName, toolInput);
+  if (agentIdentityLifecycleGate) {
+    recordStat(agentIdentityLifecycleGate.gate, 'block', null, { toolName, toolInput });
+    const identityAuditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: agentIdentityLifecycleGate.gate,
+      message: agentIdentityLifecycleGate.message,
+      severity: agentIdentityLifecycleGate.severity,
+      source: 'gates-engine',
+    });
+    auditToFeedback(identityAuditRecord);
+    return agentIdentityLifecycleGate;
+  }
+
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
   if (pendingThreadResolutionGate) {
     recordStat(pendingThreadResolutionGate.gate, 'block', null, { toolName, toolInput });
@@ -3513,6 +3529,22 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
       source: 'gates-engine',
     });
     return null;
+  }
+
+  const agentIdentityLifecycleGate = evaluateAgentIdentityLifecycleGate(toolName, toolInput);
+  if (agentIdentityLifecycleGate) {
+    recordStat(agentIdentityLifecycleGate.gate, 'block', null, { toolName, toolInput });
+    const identityAuditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: agentIdentityLifecycleGate.gate,
+      message: agentIdentityLifecycleGate.message,
+      severity: agentIdentityLifecycleGate.severity,
+      source: 'gates-engine',
+    });
+    auditToFeedback(identityAuditRecord);
+    return agentIdentityLifecycleGate;
   }
 
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
@@ -4748,7 +4780,87 @@ function verifyClaimEvidence(claimText, options = {}) {
 // Exports
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Agent identity plane (Okta AI-identity checklist: shadow AI + lifecycle)
+// ---------------------------------------------------------------------------
+
+// Warn-dedup per process: one shadow/lifecycle warning per agent id, so the
+// audit log records the finding without spamming every tool call.
+const AGENT_IDENTITY_WARNED = new Set();
+
+function resolveActingAgentId() {
+  return process.env.THUMBGATE_SESSION_AGENT
+    || process.env.THUMBGATE_AGENT_ID
+    || null;
+}
+
+/**
+ * Identity gate for the enforced evaluation path. Every attributed tool call
+ * is recorded as an observation (the producer side of shadow-AI detection).
+ * An observed-but-unregistered agent is a shadow agent: warn-only on every
+ * mode — a strict-mode deny here would brick sessions on repos where nothing
+ * registers agents yet. A registry-retired or disabled agent that keeps
+ * acting is denied under THUMBGATE_STRICT_ENFORCEMENT=1 and warned otherwise:
+ * retirement is an explicit operator action, so enforcing it cannot surprise
+ * a healthy session. Fails open on any registry error — identity tracking
+ * must never break the hook path.
+ */
+function evaluateAgentIdentityLifecycleGate(toolName, toolInput) {
+  try {
+    const agentId = resolveActingAgentId();
+    if (!agentId) return null;
+    const identityStore = require('./audit-trail');
+    try {
+      identityStore.recordObservedAgent(agentId);
+    } catch {
+      // Observation is best-effort.
+    }
+    const registryRow = identityStore.loadAgentRegistry()
+      .filter((agent) => agent && agent.id === agentId)
+      .pop();
+    const strict = process.env.THUMBGATE_STRICT_ENFORCEMENT === '1';
+    const lifecycleStatus = registryRow?.metadata?.lifecycleStatus;
+    if (registryRow && (lifecycleStatus === 'retired' || lifecycleStatus === 'disabled')) {
+      const message = `Agent identity "${agentId}" is ${lifecycleStatus} in the agent registry but is still acting. `
+        + 'Re-activate it via registerAgent with lifecycleStatus "active", or stop the agent.';
+      if (strict) {
+        return { gate: 'agent-identity-lifecycle', decision: 'deny', message, severity: 'critical' };
+      }
+      if (!AGENT_IDENTITY_WARNED.has(`retired:${agentId}`)) {
+        AGENT_IDENTITY_WARNED.add(`retired:${agentId}`);
+        recordAuditEvent({
+          toolName,
+          toolInput,
+          decision: 'warn',
+          gateId: 'agent-identity-lifecycle',
+          message,
+          severity: 'high',
+          source: 'gates-engine',
+        });
+      }
+      return null;
+    }
+    if (!registryRow && !AGENT_IDENTITY_WARNED.has(`shadow:${agentId}`)) {
+      AGENT_IDENTITY_WARNED.add(`shadow:${agentId}`);
+      recordAuditEvent({
+        toolName,
+        toolInput,
+        decision: 'warn',
+        gateId: 'agent-identity-shadow',
+        message: `Shadow agent: "${agentId}" is acting but has never been registered in the agent registry. `
+          + 'Register it via registerAgent so identity, lifecycle, and audit attribution are explicit.',
+        severity: 'medium',
+        source: 'gates-engine',
+      });
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 module.exports = {
+  evaluateAgentIdentityLifecycleGate,
   loadGatesConfig,
   loadState,
   saveState,
