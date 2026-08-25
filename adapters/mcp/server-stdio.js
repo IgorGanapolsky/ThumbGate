@@ -1026,7 +1026,7 @@ function recordMcpToolTrace(name, args, outcome = {}) {
       success: outcome.success === true,
       outcome: kpiOutcome,
       blocked,
-      agentId: outcome.agentId || process.env.THUMBGATE_AGENT_ID || 'unknown',
+      agentId: outcome.agentId || process.env.THUMBGATE_AGENT_ID || process.env.THUMBGATE_SESSION_AGENT || 'unknown',
       clientId: outcome.clientId || null,
       sessionId: outcome.sessionId || null,
       writeRiskTier,
@@ -1985,22 +1985,32 @@ function acquireLock() {
  */
 function registerSessionIdentity() {
   try {
-    const { registerAgent, loadAgentRegistry } = require('../../scripts/audit-trail');
+    const { registerAgent, loadAgentRegistry, getRegistryPath } = require('../../scripts/audit-trail');
+    const { withFileLedgerLock } = require('../../scripts/file-ledger-lock');
     const envId = process.env.THUMBGATE_SESSION_AGENT || process.env.THUMBGATE_AGENT_ID || null;
-    const alreadyRegistered = envId
-      ? loadAgentRegistry().some((agent) => agent && agent.id === envId)
-      : false;
-    let finalId = envId;
-    if (!alreadyRegistered) {
+    // Check-then-append runs under the registry ledger lock: concurrent stdio
+    // servers inheriting one session id must not both pass the existence check
+    // and register duplicate rows. A busy lock throws into the catch below —
+    // the session simply starts unregistered and the next startup retries.
+    const finalId = withFileLedgerLock(`${getRegistryPath()}.lock`, () => {
+      const alreadyRegistered = envId
+        ? loadAgentRegistry().some((agent) => agent && agent.id === envId)
+        : false;
+      if (alreadyRegistered) return envId;
       const record = registerAgent({
         agentId: envId || undefined,
         source: 'mcp',
         metadata: { transport: 'stdio', pid: process.pid },
       });
-      finalId = record && record.id ? record.id : envId;
-    }
+      return record && record.id ? record.id : envId;
+    });
     if (finalId && !process.env.THUMBGATE_SESSION_AGENT) {
       process.env.THUMBGATE_SESSION_AGENT = finalId;
+    }
+    // MCP tool telemetry (recordMcpToolTrace) attributes via THUMBGATE_AGENT_ID;
+    // without this a generated identity would trace as agentId "unknown".
+    if (finalId && !process.env.THUMBGATE_AGENT_ID) {
+      process.env.THUMBGATE_AGENT_ID = finalId;
     }
     return finalId;
   } catch {
