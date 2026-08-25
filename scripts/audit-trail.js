@@ -63,7 +63,7 @@ function getObservedAgentsPath() {
  * Register an agent session. Called on MCP server startup or agent bootstrap.
  */
 function registerAgent({ agentId, source, project, branch, metadata } = {}) {
-  const id = agentId || `agent_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const id = agentId || `agent_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
   const record = {
     id,
     registeredAt: new Date().toISOString(),
