@@ -1663,6 +1663,10 @@ test('/yt route returns the six-function YouTube landing', async () => {
   const body = await res.text();
   assert.match(body, /Six business functions\. Existing gates\./);
   assert.match(body, /not affiliated/i);
+  assert.match(body, /\/go\/github\?/);
+  assert.match(body, /\/go\/npm\?/);
+  assert.match(body, /\/go\/marketplace\?/);
+  assert.match(body, /What does it cost to start\?/);
   assert.doesNotMatch(body, /\$499/);
 });
 
@@ -1764,6 +1768,67 @@ test('tracked link router redirects allowlisted marketing slugs and records firs
   assert.equal(proClick.community, 'ClaudeCode');
   assert.equal(proClick.linkSlug, 'pro');
   assert.equal(proClick.destinationPath, '/checkout/pro');
+});
+
+test('/go/github /go/npm /go/marketplace record YouTube CTA click telemetry', async () => {
+  const cookieHeader = [
+    'thumbgate_visitor_id=visitor_yt_cta',
+    'thumbgate_session_id=session_yt_cta',
+    'thumbgate_acquisition_id=acq_yt_cta',
+  ].join('; ');
+  const cases = [
+    {
+      slug: 'github',
+      host: 'github.com',
+      eventType: 'github_repo_click',
+      ctaId: 'yt_github_hero',
+    },
+    {
+      slug: 'npm',
+      host: 'www.npmjs.com',
+      eventType: 'cta_click',
+      ctaId: 'yt_npm_hero',
+    },
+    {
+      slug: 'marketplace',
+      host: 'github.com',
+      eventType: 'cta_click',
+      ctaId: 'yt_marketplace_hero',
+    },
+  ];
+
+  for (const item of cases) {
+    const res = await fetch(
+      apiUrl(`/go/${item.slug}?utm_source=youtube&utm_medium=cpc&utm_campaign=six-function-agent-gates&utm_content=hero&cta_id=${item.ctaId}&cta_placement=hero`),
+      {
+        redirect: 'manual',
+        headers: {
+          cookie: cookieHeader,
+          referer: 'https://thumbgate.ai/yt',
+        },
+      }
+    );
+    assert.equal(res.status, 302, `${item.slug} expected 302`);
+    assert.equal(res.headers.get('x-thumbgate-link-slug'), item.slug);
+    const location = new URL(res.headers.get('location'));
+    assert.equal(location.host, item.host, `${item.slug} host`);
+    assert.equal(location.searchParams.get('utm_source'), 'youtube');
+    assert.equal(location.searchParams.get('utm_campaign'), 'six-function-agent-gates');
+    assert.equal(location.searchParams.get('cta_id'), item.ctaId);
+  }
+
+  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
+  for (const item of cases) {
+    const click = telemetryEvents.find((entry) => (
+      entry.eventType === item.eventType &&
+      entry.visitorId === 'visitor_yt_cta' &&
+      entry.ctaId === item.ctaId &&
+      entry.linkSlug === item.slug
+    ));
+    assert.ok(click, `expected ${item.eventType} for /go/${item.slug}`);
+    assert.equal(click.source, 'youtube');
+    assert.equal(click.utmCampaign, 'six-function-agent-gates');
+  }
 });
 
 test('tracked link router rejects unknown slugs instead of acting as an open redirect', async () => {

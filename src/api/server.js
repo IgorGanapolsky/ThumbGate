@@ -656,6 +656,30 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       utm_campaign: 'github_repo',
     },
   },
+  npm: {
+    href: 'https://www.npmjs.com/package/thumbgate',
+    external: true,
+    ctaId: 'go_npm',
+    ctaPlacement: 'link_router',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'npm_package',
+    },
+  },
+  marketplace: {
+    href: 'https://github.com/marketplace/actions/thumbgate-agent-governance',
+    external: true,
+    ctaId: 'go_marketplace',
+    ctaPlacement: 'link_router',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'github_marketplace_action',
+    },
+  },
 });
 
 // ---------------------------------------------------------------------------
