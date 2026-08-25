@@ -17,7 +17,21 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
-const { readAuditLog, auditStats, skillAdherence } = require('./audit-trail');
+const {
+  readAuditLog,
+  auditStats,
+  skillAdherence,
+  registerAgent,
+  recordAgentActivity,
+  loadAgentRegistry,
+  retireAgent,
+  recordObservedAgent,
+  loadObservedAgents,
+  getRegistryPath,
+  getObservedAgentsPath,
+  REGISTRY_FILENAME,
+  OBSERVED_FILENAME,
+} = require('./audit-trail');
 const { isProTier } = require('./rate-limiter');
 const {
   PRO_MONTHLY_PAYMENT_LINK,
@@ -29,95 +43,9 @@ const {
 // Agent Registry
 // ---------------------------------------------------------------------------
 
-const REGISTRY_FILENAME = 'agent-registry.jsonl';
-
-function getRegistryPath() {
-  return path.join(resolveFeedbackDir(), REGISTRY_FILENAME);
-}
-
-/**
- * Register an agent session. Called on MCP server startup or agent bootstrap.
- *
- * @param {object} params
- * @param {string} params.agentId - Unique agent identifier
- * @param {string} [params.source] - Where the agent was spawned from (cli, mcp, github, slack)
- * @param {string} [params.project] - Project/repo name
- * @param {string} [params.branch] - Git branch
- * @param {object} [params.metadata] - Arbitrary metadata
- * @returns {object} The registered agent record
- */
-function registerAgent({ agentId, source, project, branch, metadata } = {}) {
-  const id = agentId || `agent_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const record = {
-    id,
-    registeredAt: new Date().toISOString(),
-    lastSeenAt: new Date().toISOString(),
-    source: source || 'unknown',
-    project: project || path.basename(process.cwd()),
-    branch: branch || null,
-    toolCalls: 0,
-    gateBlocks: 0,
-    gateWarns: 0,
-    metadata: metadata || {},
-  };
-
-  const registryPath = getRegistryPath();
-  const dir = path.dirname(registryPath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.appendFileSync(registryPath, JSON.stringify(record) + '\n');
-  return record;
-}
-
-/**
- * Record agent activity — called after each tool call evaluation.
- *
- * @param {string} agentId
- * @param {string} decision - 'allow' | 'deny' | 'warn'
- */
-function recordAgentActivity(agentId, decision) {
-  const registryPath = getRegistryPath();
-  if (!fs.existsSync(registryPath)) return;
-
-  const lines = fs.readFileSync(registryPath, 'utf-8').trim().split('\n');
-  const updated = [];
-  let found = false;
-
-  for (const line of lines) {
-    try {
-      const record = JSON.parse(line);
-      if (record.id === agentId && !found) {
-        record.lastSeenAt = new Date().toISOString();
-        record.toolCalls = (record.toolCalls || 0) + 1;
-        if (decision === 'deny') record.gateBlocks = (record.gateBlocks || 0) + 1;
-        if (decision === 'warn') record.gateWarns = (record.gateWarns || 0) + 1;
-        found = true;
-      }
-      updated.push(JSON.stringify(record));
-    } catch {
-      updated.push(line);
-    }
-  }
-
-  fs.writeFileSync(registryPath, updated.join('\n') + '\n');
-}
-
-/**
- * Load all registered agent sessions.
- */
-function loadAgentRegistry() {
-  const registryPath = getRegistryPath();
-  if (!fs.existsSync(registryPath)) return [];
-  const raw = fs.readFileSync(registryPath, 'utf-8').trim();
-  if (!raw) return [];
-  return raw.split('\n').map(line => {
-    try { return JSON.parse(line); }
-    catch { return null; }
-  }).filter(Boolean);
-}
-
-// ---------------------------------------------------------------------------
-// Org Dashboard Aggregation
-// ---------------------------------------------------------------------------
+// Agent identity store (registry, observed-agent stream, retirement) lives
+// in ./audit-trail so the public gates-engine runtime can require it while
+// this Pro dashboard module stays out of the npm tarball. Re-exported below.
 
 function asArray(value) {
   return Array.isArray(value) ? value : [];
@@ -285,7 +213,9 @@ function buildAgentRegistryGovernanceReport(agents = loadAgentRegistry(), opts =
     ],
     identitySecurity: buildAgentIdentitySecurityReport(
       agents,
-      asArray(opts.observedAgents),
+      opts.observedAgents !== undefined
+        ? asArray(opts.observedAgents)
+        : loadObservedAgents().map((row) => row.id),
       opts,
     ),
   };
@@ -376,10 +306,15 @@ function generateOrgDashboard(opts = {}) {
 module.exports = {
   registerAgent,
   recordAgentActivity,
+  recordObservedAgent,
+  loadObservedAgents,
+  retireAgent,
   loadAgentRegistry,
   generateOrgDashboard,
   buildAgentRegistryGovernanceReport,
   buildAgentIdentitySecurityReport,
   getRegistryPath,
+  getObservedAgentsPath,
   REGISTRY_FILENAME,
+  OBSERVED_FILENAME,
 };
