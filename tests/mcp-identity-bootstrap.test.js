@@ -27,12 +27,13 @@ test.after(() => {
 });
 
 const { registerSessionIdentity } = require('../adapters/mcp/server-stdio');
-const { loadAgentRegistry } = require('../scripts/audit-trail');
+const { loadAgentRegistry, getRegistryPath } = require('../scripts/audit-trail');
 
 test('an unattributed MCP session registers a generated id and exports it', () => {
   const id = registerSessionIdentity();
   assert.ok(id, 'bootstrap returned an id');
   assert.equal(process.env.THUMBGATE_SESSION_AGENT, id);
+  assert.equal(process.env.THUMBGATE_AGENT_ID, id, 'telemetry attribution env exported');
   const row = loadAgentRegistry().find((agent) => agent.id === id);
   assert.ok(row, 'registry row exists');
   assert.equal(row.source, 'mcp');
@@ -61,4 +62,44 @@ test('bootstrap never overwrites a preexisting session attribution', () => {
   process.env.THUMBGATE_SESSION_AGENT = 'mcp-boot-preset-2';
   registerSessionIdentity();
   assert.equal(process.env.THUMBGATE_SESSION_AGENT, 'mcp-boot-preset-2');
+});
+
+test('an attributed session propagates its id to telemetry attribution', () => {
+  process.env.THUMBGATE_SESSION_AGENT = 'mcp-boot-attributed-1';
+  registerSessionIdentity();
+  assert.equal(process.env.THUMBGATE_AGENT_ID, 'mcp-boot-attributed-1');
+});
+
+test('bootstrap never overwrites a preexisting telemetry attribution', () => {
+  process.env.THUMBGATE_SESSION_AGENT = 'mcp-boot-preset-3';
+  process.env.THUMBGATE_AGENT_ID = 'operator-fixed-id';
+  registerSessionIdentity();
+  assert.equal(process.env.THUMBGATE_AGENT_ID, 'operator-fixed-id');
+});
+
+test('a busy registry lock fails open: no registration, no crash, retry works', () => {
+  const lockDir = `${getRegistryPath()}.lock`;
+  fs.mkdirSync(lockDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(lockDir, 'owner.json'),
+    `${JSON.stringify({
+      schemaVersion: 'thumbgate-ledger-lock-v1',
+      pid: process.pid,
+      nonce: 'test-held-lock',
+      acquiredAt: new Date().toISOString(),
+    })}\n`,
+  );
+  try {
+    process.env.THUMBGATE_SESSION_AGENT = 'mcp-boot-locked-1';
+    const held = registerSessionIdentity();
+    assert.equal(held, null, 'held lock yields null, not a crash');
+    const rowsWhileHeld = loadAgentRegistry().filter((agent) => agent.id === 'mcp-boot-locked-1');
+    assert.equal(rowsWhileHeld.length, 0, 'no row appended while the lock is held');
+  } finally {
+    fs.rmSync(lockDir, { recursive: true, force: true });
+  }
+  const retried = registerSessionIdentity();
+  assert.equal(retried, 'mcp-boot-locked-1', 'registration succeeds once the lock frees');
+  const rows = loadAgentRegistry().filter((agent) => agent.id === 'mcp-boot-locked-1');
+  assert.equal(rows.length, 1);
 });
