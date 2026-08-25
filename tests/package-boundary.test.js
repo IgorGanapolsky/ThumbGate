@@ -477,8 +477,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     //   `thumbgate conflict-audit` module (+1 measured npm pack).
     //   Lockstep with public-bundle-ratchet + public-core-boundary.
     // 511 -> 512 (2026-08-25): public/yt.html YouTube/CPC dedicated landing.
-    manifest.fileCount <= 512,
-    `npm package should stay <= 512 files, got ${manifest.fileCount}`
+    // 512 -> 513 (2026-08-25): src/session-interactivity.js (+1 measured npm pack).
+    // Public-shell runtime: session-level E2E interactivity measurement,
+    // counting queue wait and tool gaps the standard first-token-to-last
+    // rate cannot see. No Core dependency.
+    manifest.fileCount <= 513,
+    `npm package should stay <= 513 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -659,8 +663,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // required by public-package-parity) after merging summit-funnel landing growth
   // (#3661). CI measured 8,002,268 unpacked bytes on 26b1a4fd.
   assert.ok(
-    manifest.unpackedSize <= 8_010_000,
-    `npm package should stay <= 8.01 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.01 MB -> 8.03 MB (2026-08-25) for src/session-interactivity.js.
+  // main was already at ~8.005 MB, i.e. 99.9% of the previous ceiling, so any
+  // addition tripped it. Measured ~8.015 MB after this change.
+    manifest.unpackedSize <= 8_030_000,
+    `npm package should stay <= 8.03 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

@@ -274,7 +274,11 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   //   `thumbgate conflict-audit` module (+1 measured npm pack).
   //   Lockstep with package-boundary + public-bundle-ratchet.
   // 511 -> 512 (2026-08-25): public/yt.html YouTube/CPC dedicated landing.
-  const CEILING = 512;
+  // 512 -> 513 (2026-08-25): src/session-interactivity.js (+1 measured npm pack).
+  // Public-shell runtime: session-level E2E interactivity measurement,
+  // counting queue wait and tool gaps the standard first-token-to-last
+  // rate cannot see. No Core dependency.
+  const CEILING = 513;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
