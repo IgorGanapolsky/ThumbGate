@@ -289,8 +289,8 @@ footer { padding: 32px 0 44px; color: var(--muted); }
   <div class="hero">
     <div>
       <div class="eyebrow">Enterprise Workflow Gate · $499 entry offer</div>
-      <h1>Turn one repeated AI-agent failure into a gate you can prove.</h1>
-      <p class="lede">Send the workflow that keeps failing. ThumbGate configures what should allow, warn, or deny before an agent writes, sends, deploys, or spends—and adds the regression proof.</p>
+      <h1>Your agents did the wrong thing again, and you found out afterward.</h1>
+      <p class="lede">Wrong customer email sent. Branch force-pushed. Deploy shipped past approval. You run agents across lead gen, content, sales, and ops, and every one of them is one bad tool call from work you undo by hand. Your agent team needs a firewall: ThumbGate configures what should allow, warn, or deny before the agent writes, sends, deploys, or spends—and adds the regression proof.</p>
       <div class="actions">
         <form class="diagnostic-pay-form" action="/go/diagnostic-pay" method="POST" data-diagnostic-pay-form>
           <input type="hidden" name="utm_source" value="diagnostic_page">
@@ -342,7 +342,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
   </div>
   <section data-oceans-pain>
     <h2>You didn't hire AI agents to manage calendars of incidents.</h2>
-    <p class="lede" style="font-size:17px;">High-converting operator landings name the babysitting tax first. Same play here — then sell the gate, not a vague platform story.</p>
+    <p class="lede" style="font-size:17px;">Every repeat costs you twice: once when the agent gets it wrong, and again when you stop your own work to find it, undo it, and re-explain the rule that was already written down.</p>
     <div class="pain-grid">
       <div class="pain">
         <h3>Drowning in operational agent tasks</h3>
@@ -376,6 +376,19 @@ footer { padding: 32px 0 44px; color: var(--muted); }
         <div class="step-num">03 · Proof</div>
         <h3>Two business days after access</h3>
         <p>Regression test plus rollout and rollback evidence for the next similar action.</p>
+      </div>
+    </div>
+  </section>
+  <section data-diagnostic-qualification>
+    <h2>Before you go further, check whether this is actually yours.</h2>
+    <div class="grid">
+      <div class="box">
+        <h3>This is for you if</h3>
+        <p>You run one or more AI agents that take real actions — writing code, sending mail, updating records, deploying, spending. One specific action has gone wrong more than once. You can name the command, tool call, repo, or destination involved. You want the boundary enforced at the tool call, not restated in a prompt. You want to delegate more to your agents, not less, and you need a check you can point at before you do.</p>
+      </div>
+      <div class="box">
+        <h3>This is not for you if</h3>
+        <p>The failure is a one-off you cannot reproduce. The problem is model quality rather than a risky action — a gate blocks a bad send, it does not make the draft better. You want an org-wide hosted policy, SSO, a shared audit dashboard, or a compliance certificate; those are separate scope and hosted Enterprise capabilities are not generally available. You want someone to run the workflow for you. ThumbGate constrains agents, it does not replace them.</p>
       </div>
     </div>
   </section>
@@ -437,7 +450,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
   </section>
   <section data-oceans-compare>
     <h2>How ThumbGate stacks up</h2>
-    <p class="lede" style="font-size:17px;">Simple comparison, no surprises — the pattern that converts on operator landings.</p>
+    <p class="lede" style="font-size:17px;">Same problem, four ways to pay for it. Compare on what you spend before the first hard boundary exists.</p>
     <div class="table-wrap">
       <table class="compare">
         <thead>
@@ -496,10 +509,14 @@ footer { padding: 32px 0 44px; color: var(--muted); }
       </div>
     </div>
     <div class="cta-band">
-      <p><strong>Ready to get your time back?</strong> One workflow. One gate. Proof for the team.</p>
+      <div>
+        <p><strong>Two paths from here.</strong></p>
+        <p><strong>Path one:</strong> close this tab and keep paying for the same repeat — you find it after it lands, you undo it by hand, and the rule stays written in a file the agent can skip.<br>
+        <strong>Path two:</strong> send the one workflow that keeps failing and get it back as a configured gate with a regression test and written rollout and rollback proof, two business days after access.</p>
+        <p class="hint" style="margin-top:10px;">Refunded if the failure cannot be reduced to one supported ThumbGate gate. Runs locally on your machine. Want the free path first? <code>npx thumbgate init</code> — no account, nothing sent to us. See the <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">verification evidence</a>.</p>
+      </div>
       <div class="actions">
-        <a class="button primary" href="#top" data-revenue-cta data-cta-id="diagnostic_bottom_buy" data-cta-placement="bottom_band">Buy $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ gate</a>
-        <a class="button" href="/founders?utm_source=diagnostic&amp;utm_medium=bottom_band&amp;utm_campaign=oceans_inspired_conversion" data-revenue-cta data-cta-id="diagnostic_bottom_founders" data-cta-placement="bottom_band">Founders landing</a>
+        <a class="button primary" href="#top" data-revenue-cta data-cta-id="diagnostic_bottom_buy" data-cta-placement="bottom_band">Harden my workflow — $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</a>
       </div>
     </div>
   </section>

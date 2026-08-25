@@ -317,7 +317,7 @@ footer {
     <div>
       <div class="eyebrow">For founders running AI agents in production</div>
       <h1>Scale agent impact.<br>Stop babysitting the failures.</h1>
-      <p class="lede">Hire exceptional agent throughput without the complexity of ungoverned automation. Turn one repeated write, send, deploy, or spend failure into a gate you can prove.</p>
+      <p class="lede">You have agents running lead gen, content, sales follow-up, and ops. One of them keeps doing the same wrong thing — the outbound that should never have sent, the write that should never have landed, the deploy, the charge — and you are the one who catches it. That is not delegation, that is a second job. Your agent team needs a firewall: one check that fires before the tool call, so you can hand work off the way a CEO does instead of reading every diff.</p>
       <div class="trust" aria-label="Proof points">
         <span>Local-first PreToolUse gates</span>
         <span>Fixed $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</span>
@@ -341,7 +341,7 @@ footer {
         <input type="hidden" name="cta_id" value="founders_hero_paid">
         <input type="hidden" name="cta_placement" value="hero">
         <input type="hidden" name="landing_path" value="/founders">
-        <button class="btn primary block" type="submit" data-revenue-cta data-cta-id="founders_hero_paid" data-cta-placement="hero">Buy the $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</button>
+        <button class="btn primary block" type="submit" data-revenue-cta data-cta-id="founders_hero_paid" data-cta-placement="hero">Gate my worst agent failure · $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</button>
       </form>
       <ul class="checks">
         <li>One configured local gate for the agreed failure</li>
@@ -350,14 +350,14 @@ footer {
         <li>If it is not a supported fit, we refund</li>
       </ul>
       <p class="fine" data-founders-payment-hint>No Stripe session until you submit. Secure checkout. Fit boundary is explicit.</p>
-      <a class="btn block" style="margin-top:12px;" href="/diagnostic#intake" data-revenue-cta data-cta-id="founders_hero_fit" data-cta-placement="hero">Check workflow fit first</a>
+      <a class="fine" style="display:block;margin-top:12px;text-align:center;" href="/diagnostic#intake" data-revenue-cta data-cta-id="founders_hero_fit" data-cta-placement="hero">Not sure it fits? Send us the failure first</a>
     </aside>
   </div>
 
   <section id="pain">
     <div class="eyebrow">Why founders buy this</div>
     <h2>You didn't hire AI agents to manage damage control.</h2>
-    <p class="section-lede">Oceans-style operator landings convert when pain is concrete. Same rule here: name the babysitting tax, not abstract "AI safety."</p>
+    <p class="section-lede">The cost is rarely the one bad run. It is the review loop you now own: every send, write, deploy, and charge gets a human read before it ships, and that human is you.</p>
     <div class="pain-grid">
       <article class="pain">
         <h3>Drowning in repeat agent failures</h3>
@@ -370,6 +370,39 @@ footer {
       <article class="pain">
         <h3>US platform hire is slow and expensive</h3>
         <p>Fully loaded platform or GRC work takes weeks and often ships dashboards instead of a gate on the exact failure.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="fit">
+    <div class="eyebrow">Before you pay</div>
+    <h2>Who this is for, and who it is not for.</h2>
+    <p class="section-lede">We would rather lose the order than take one we cannot close in two business days.</p>
+    <div class="pain-grid">
+      <article class="pain">
+        <h3>This is for you if</h3>
+        <ul class="checks">
+          <li>Your agents take real actions — outbound, publishing, code writes, deploys, spend</li>
+          <li>One specific failure has happened more than once and you can name it</li>
+          <li>You or a senior engineer are currently the safety net</li>
+          <li>The agents run on a supported local path you can give us access to</li>
+          <li>You want the rule enforced before the tool call, not caught in review</li>
+        </ul>
+      </article>
+      <article class="pain">
+        <h3>This is not for you if</h3>
+        <ul style="margin:14px 0 0; padding-left:20px; color:var(--muted); font-size:.92rem;">
+          <li>You want a general audit of everything your agents do</li>
+          <li>The failure is a one-off you cannot describe as a repeatable pattern</li>
+          <li>You need SOC 2, HIPAA, or any compliance certification — this is not that</li>
+          <li>You need rollout across several systems or teams in this engagement</li>
+          <li>You are trying to hire a person; this hardens the agents you already run</li>
+        </ul>
+      </article>
+      <article class="pain">
+        <h3>Not sure yet?</h3>
+        <p>Run the free local evaluate first. <code>npx thumbgate init</code> takes minutes, runs on your machine, and needs no card, no account, and no access to your repo. If it shows you the failure at the tool call, the managed diagnostic is just us doing the rest for you.</p>
+        <p style="margin-top:10px;"><a href="#buy" data-revenue-cta data-cta-id="founders_fit_buy" data-cta-placement="fit_section"><strong>Or skip ahead and gate my worst failure · $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong></a></p>
       </article>
     </div>
   </section>
@@ -398,32 +431,34 @@ footer {
   </section>
 
   <section id="what-you-get">
-    <div class="eyebrow">Not a marketplace hire</div>
-    <h2>ThumbGate does not find talent. It hardens the agents you already run.</h2>
+    <div class="eyebrow">What you walk away with</div>
+    <h2>Four things exist when we are done that do not exist today.</h2>
+    <p class="section-lede">Deliverables, not features. Path to Pro ($19/mo) or multi-workflow scope opens after proof, not before.</p>
     <div class="feature-grid">
       <article class="feature">
-        <h3>Pre-action enforcement</h3>
-        <p>Gates fire before the agent writes, sends, deploys, or spends — not after the incident postmortem.</p>
+        <h3>The failure can no longer execute</h3>
+        <p>One configured ALLOW / WARN / DENY gate on the agreed workflow, firing before the agent writes, sends, deploys, or spends — not in the postmortem.</p>
       </article>
       <article class="feature">
-        <h3>Feedback → prevention</h3>
-        <p>Thumbs-down and lessons promote into rules the agent cannot casually ignore.</p>
+        <h3>Proof that it holds</h3>
+        <p>A regression test that replays the failure and shows it blocked, plus written rollout and rollback steps you can hand to whoever is on call.</p>
       </article>
       <article class="feature">
-        <h3>Managed entry offer</h3>
-        <p>One fixed-price diagnostic. Clear fence. Path to Pro ($19/mo) or multi-workflow scope after proof.</p>
+        <h3>A written fence</h3>
+        <p>Exactly what the gate covers and what it does not, so nobody on your team assumes coverage that is not there.</p>
       </article>
       <article class="feature">
-        <h3>Honest boundary</h3>
-        <p>No multi-system implementation, compliance certification, or guaranteed savings in the $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ offer.</p>
+        <h3>A rule that outlives the session</h3>
+        <p>Thumbs-down and lessons promote into rules the agent cannot casually skip, so the next similar action is caught without you watching.</p>
       </article>
     </div>
+    <p class="fine">Not included at $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__: multi-system implementation, compliance certification, or guaranteed savings.</p>
   </section>
 
   <section id="compare">
     <div class="eyebrow">How it stacks up</div>
-    <h2>Make the alternative look expensive.</h2>
-    <p class="section-lede">Comparison tables convert when the buyer already feels the babysitting tax.</p>
+    <h2>What the alternatives actually cost you.</h2>
+    <p class="section-lede">Ranges below are market ballparks for orientation, not quotes. The ThumbGate column is the offer on this page, at the price on this page.</p>
     <div class="table-wrap">
       <table class="compare">
         <thead>
@@ -492,11 +527,13 @@ footer {
     </div>
     <div class="cta-band">
       <div>
-        <h2>Ready to get your time back?</h2>
-        <p>One workflow. One gate. Proof you can hand to the team.</p>
+        <h2>Two paths from here.</h2>
+        <p><strong>Path one:</strong> nothing changes. The same failure runs again next week and you catch it — or you don't, and a customer does.<br>
+        <strong>Path two:</strong> you name the failure today, and in two business days it is a gate with a regression test behind it and a fence written down.</p>
+        <p class="fine">Fixed $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__, one time · refunded if it is not a supported fit · gates run locally on your machine</p>
       </div>
-      <div class="nav-actions">
-        <a class="btn primary" href="#buy" data-revenue-cta data-cta-id="founders_bottom_buy" data-cta-placement="bottom_band">Buy $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
+      <div class="nav-actions" style="flex-direction:column; align-items:stretch;">
+        <a class="btn primary" href="#buy" data-revenue-cta data-cta-id="founders_bottom_buy" data-cta-placement="bottom_band">Gate my worst agent failure · $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</a>
         <a class="btn" href="/checkout/pro?utm_source=founders&amp;utm_medium=bottom_band&amp;utm_campaign=oceans_inspired_conversion&amp;cta_id=founders_bottom_pro&amp;plan_id=pro" data-offer-link data-cta-id="founders_bottom_pro" data-plan-id="pro">Start Pro · $19/mo</a>
       </div>
     </div>
@@ -505,7 +542,7 @@ footer {
 
 <footer>
   <div class="shell footer-inner">
-    <span>ThumbGate · Local-first agent governance. Inspired by high-converting operator landings; no affiliation with Oceans Talent.</span>
+    <span>ThumbGate · Local-first agent governance. Not a talent marketplace; no affiliation with Oceans Talent.</span>
     <div>
       <a href="/diagnostic">Diagnostic</a> ·
       <a href="/pricing">Pricing</a> ·

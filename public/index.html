@@ -684,7 +684,7 @@
           <div class="eyebrow">Now live · Pre-action gates · Not a prompt · Not a postmortem</div>
           <div class="hero-thumbs" aria-hidden="true"><span class="up">👍</span><span class="down">👎</span></div>
           <h1>Stop AI agent mistakes before they cost you.</h1>
-          <p class="hero-lede">Hard allow/deny at the <strong>tool-call boundary</strong>. Audit entry written at decision time. Every approval teaches the next gate.</p>
+          <p class="hero-lede">Your agents write, send, deploy, and spend unattended. Your agent team needs a firewall: hard allow/deny at the <strong>tool-call boundary</strong>, before the mistake lands.</p>
           <p class="fit-line"><strong>Dual path (buy + book):</strong> <strong>$499 Diagnostic</strong> maps one expensive failure on Claude Code, Cursor, Codex, or similar agents and installs a hard gate with proof — or self-serve <strong>Pro at $19/mo</strong> if you already know the loop. Free local evaluate stays free.</p>
           <div class="spec-chips" aria-label="What ThumbGate does">
             <span class="spec-chip"><strong>Capture</strong> feedback</span>
@@ -697,7 +697,7 @@
           </figure>
           <a class="proof-link" href="#proof">See a strict-mode deny example ↓</a>
           <a class="proof-link-secondary" href="#how-it-works" style="margin-left:14px;color:var(--cyan);font-weight:750;text-decoration:none">See how the self-improving loop works ↓</a>
-          <p class="install-hint"><code>npx thumbgate init</code> free local evaluate · first hard gate usually minutes after install · <a href="/pricing">how we stack up</a></p>
+          <p class="install-hint"><strong style="color:var(--text)">Start free:</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy command</button> · no account, local, MIT · <a href="/pricing">how we stack up</a></p>
           <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · bin <code>thumbgate-dashboard</code> if global · <a href="/dashboard#insights">demo</a></p>
         </div>
         <div id="offers" class="offer-stack">
@@ -929,9 +929,9 @@ next      decision recorded before execution</pre>
 
     <section class="final">
       <div class="shell">
-        <div class="section-kicker">Two cash paths</div>
-        <h2 class="section-title">Start self-serve, or bring the failure that already cost you time.</h2>
-        <p class="section-lede">Pro is self-serve for operators. The $499 gate is a managed install for one painful workflow—not a policy deck.</p>
+        <div class="section-kicker">Two paths</div>
+        <h2 class="section-title">Two paths from here.</h2>
+        <p class="section-lede"><strong style="color:var(--text)">Path A:</strong> nothing changes, and the next expensive action lands like the last one. <strong style="color:var(--text)">Path B:</strong> one line — <code>npx thumbgate init</code> — and the next risky call gets a decision.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
           <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_final&amp;utm_campaign=pro_self_serve&amp;cta_id=final_pro_buy&amp;cta_placement=final&amp;plan_id=pro" data-offer-link data-cta-id="final_pro_buy">Start Pro — $19/mo</a>
           <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>
@@ -1317,5 +1317,33 @@ next      decision recorded before execution</pre>
     }
   </script>
 
+<script>
+  (function () {
+    var CMD = 'npx thumbgate init';
+    function legacyCopy() {
+      var ta = document.createElement('textarea');
+      ta.value = CMD;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
+    document.querySelectorAll('[data-copy-install]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var prev = btn.textContent;
+        var flash = function (msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = prev; }, 1800); };
+        var fallback = function () { flash(legacyCopy() ? 'Copied' : 'Copy blocked — select it manually'); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(CMD).then(function () { flash('Copied'); }, fallback);
+        } else { fallback(); }
+      });
+    });
+  })();
+</script>
 </body>
 </html>
