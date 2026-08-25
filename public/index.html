@@ -1319,13 +1319,28 @@ next      decision recorded before execution</pre>
 
 <script>
   (function () {
+    var CMD = 'npx thumbgate init';
+    function legacyCopy() {
+      var ta = document.createElement('textarea');
+      ta.value = CMD;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
     document.querySelectorAll('[data-copy-install]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var prev = btn.textContent;
-        var done = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = prev; }, 1600); };
+        var flash = function (msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = prev; }, 1800); };
+        var fallback = function () { flash(legacyCopy() ? 'Copied' : 'Copy blocked — select it manually'); };
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText('npx thumbgate init').then(done, done);
-        } else { done(); }
+          navigator.clipboard.writeText(CMD).then(function () { flash('Copied'); }, fallback);
+        } else { fallback(); }
       });
     });
   })();
