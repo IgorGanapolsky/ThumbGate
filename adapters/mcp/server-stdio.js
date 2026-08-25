@@ -1975,8 +1975,42 @@ function acquireLock() {
   return { lockFile, cleanupLock: () => {} };
 }
 
+/**
+ * Register this MCP session as a first-class agent identity at startup.
+ * Fulfills the registry's "called on MCP server startup" contract: a session
+ * with an attributed id gets that id registered; a session without one gets a
+ * generated id, exported via THUMBGATE_SESSION_AGENT so every audit record and
+ * the gates-engine identity gate can attribute its tool calls. Best-effort by
+ * design — identity bootstrap must never block or crash server start.
+ */
+function registerSessionIdentity() {
+  try {
+    const { registerAgent, loadAgentRegistry } = require('../../scripts/audit-trail');
+    const envId = process.env.THUMBGATE_SESSION_AGENT || process.env.THUMBGATE_AGENT_ID || null;
+    const alreadyRegistered = envId
+      ? loadAgentRegistry().some((agent) => agent && agent.id === envId)
+      : false;
+    let finalId = envId;
+    if (!alreadyRegistered) {
+      const record = registerAgent({
+        agentId: envId || undefined,
+        source: 'mcp',
+        metadata: { transport: 'stdio', pid: process.pid },
+      });
+      finalId = record && record.id ? record.id : envId;
+    }
+    if (finalId && !process.env.THUMBGATE_SESSION_AGENT) {
+      process.env.THUMBGATE_SESSION_AGENT = finalId;
+    }
+    return finalId;
+  } catch {
+    return null;
+  }
+}
+
 function startStdioServer() {
   acquireLock();
+  registerSessionIdentity();
 
   process.stdin.resume();
 
@@ -2054,6 +2088,7 @@ module.exports = {
   handleRequest,
   callTool,
   startStdioServer,
+  registerSessionIdentity,
   acquireLock,
   toCaptureFeedbackTextResult,
   formatCorrectiveActionsReminder,
