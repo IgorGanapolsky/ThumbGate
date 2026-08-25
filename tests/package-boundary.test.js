@@ -476,8 +476,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 510 -> 511 (2026-08-22): scripts/governance-conflict-audit.js, the
     //   `thumbgate conflict-audit` module (+1 measured npm pack).
     //   Lockstep with public-bundle-ratchet + public-core-boundary.
-    manifest.fileCount <= 511,
-    `npm package should stay <= 511 files, got ${manifest.fileCount}`
+    // 511 -> 512 (2026-08-25): public/yt.html YouTube/CPC dedicated landing.
+    manifest.fileCount <= 512,
+    `npm package should stay <= 512 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -654,9 +655,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // capability-scoped authority that expires, plus its fail-closed enforcement. Shipped
   // runtime logic in an already-shipped file; no new files enter the tarball (still 371).
   // Measured artifact: 5,450,871 bytes.
+  // Bumped 8.00 MB -> 8.01 MB (2026-08-25) for public/yt.html (YouTube/CPC landing
+  // required by public-package-parity) after merging summit-funnel landing growth
+  // (#3661). CI measured 8,002,268 unpacked bytes on 26b1a4fd.
   assert.ok(
-    manifest.unpackedSize <= 8_000_000,
-    `npm package should stay <= 8.00 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 8_010_000,
+    `npm package should stay <= 8.01 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

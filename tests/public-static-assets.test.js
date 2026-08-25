@@ -1037,7 +1037,7 @@ test('GET /compare hub links to every public/compare/*.html page', async () => {
 // GEO: comparison and high-intent landing pages carry FAQPage structured data so they
 // are eligible to be pulled into AI Overviews / AI Mode on their category queries.
 test('comparison and key landing pages expose FAQPage structured data', async () => {
-  for (const pagePath of ['/compare/rein', '/agent-manager']) {
+  for (const pagePath of ['/compare/rein', '/agent-manager', '/yt']) {
     const res = await fetch(`${origin}${pagePath}`);
     assert.equal(res.status, 200, `${pagePath} must serve`);
     const body = await res.text();

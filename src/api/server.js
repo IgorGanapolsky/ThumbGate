@@ -287,6 +287,7 @@ const EVAL_SCORECARD_PAGE_PATH = path.resolve(__dirname, '../../public/eval-scor
 const EVALUATIONS_PAGE_PATH = path.resolve(__dirname, '../../public/evaluations.html');
 const CASE_STUDIES_PAGE_PATH = path.resolve(__dirname, '../../public/case-studies.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
+const YT_PAGE_PATH = path.resolve(__dirname, '../../public/yt.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const DIAGNOSTIC_PAGE_PATH = path.resolve(__dirname, '../../public/diagnostic.html');
@@ -653,6 +654,30 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       utm_source: 'website',
       utm_medium: 'link_router',
       utm_campaign: 'github_repo',
+    },
+  },
+  npm: {
+    href: 'https://www.npmjs.com/package/thumbgate',
+    external: true,
+    ctaId: 'go_npm',
+    ctaPlacement: 'link_router',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'npm_package',
+    },
+  },
+  marketplace: {
+    href: 'https://github.com/marketplace/actions/thumbgate-agent-governance',
+    external: true,
+    ctaId: 'go_marketplace',
+    ctaPlacement: 'link_router',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'github_marketplace_action',
     },
   },
 });
@@ -4151,6 +4176,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/evaluations', changefreq: 'weekly', priority: '0.85' },
     { path: '/case-studies', changefreq: 'weekly', priority: '0.9' },
     { path: '/numbers', changefreq: 'weekly', priority: '0.8' },
+    { path: '/yt', changefreq: 'weekly', priority: '0.8' },
     { path: '/learn/background-agent-control-layer', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/ac-dc-runtime-enforcement', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/feedback-loop-vs-decision-layer', changefreq: 'weekly', priority: '0.9' },
@@ -6773,6 +6799,35 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Federal page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (
+      pathname === '/yt'
+      || pathname === '/yt.html'
+      || pathname === '/aias-registration-yt'
+    )) {
+      // Dedicated YouTube/CPC destination (FORMAT steal from AIAS registration
+      // landings). /aias-registration-yt is an alias so ad paths that copy the
+      // summit slug still hit ThumbGate. Canonical is /yt. Free GitHub/npm/
+      // Marketplace CTAs only — not a $499 hero, not a 6-agent OS SKU.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: (runtimeConfig, pageContext) => loadPublicMarketingTemplateHtml(
+            YT_PAGE_PATH,
+            runtimeConfig,
+            pageContext
+          ),
+          extraTelemetry: { pageType: 'yt' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'YouTube landing page not found' });
       }
       return;
     }
