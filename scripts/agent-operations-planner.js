@@ -30,7 +30,7 @@ const BUSINESS_FUNCTION_EDGE_IDS = new Set(
   BUSINESS_FUNCTION_HANDOFF_EDGES.map((edge) => `${edge.from}:${edge.to}`),
 );
 const BUSINESS_FUNCTION_RISKS = new Set(['low', 'medium', 'high']);
-const EXTERNAL_BUSINESS_ACTION = /\b(send|email|message|post|publish|charge|payment|delete)\b/i;
+const INTERNAL_BUSINESS_ACTION = /^internal:/i;
 
 function cleanText(value) {
   return value === undefined || value === null ? '' : String(value).trim();
@@ -74,6 +74,7 @@ function calculateBusinessCandidateEstimates(values) {
   } = values;
   const valueInputsValid = estimatedMonthlyValueUsd !== null
     && estimatedMonthlyValueUsd > 0
+    && recurringMonthlyCostUsd !== null
     && recurringMonthlyCostUsd >= 0
     && confidence !== null
     && confidence > 0
@@ -97,7 +98,7 @@ function calculateBusinessCandidateEstimates(values) {
 function normalizeBusinessFunctionCandidate(input = {}) {
   const functionId = cleanText(input.functionId);
   const estimatedMonthlyValueUsd = finiteNumber(input.estimatedMonthlyValueUsd);
-  const recurringMonthlyCostUsd = finiteNumber(input.recurringMonthlyCostUsd) ?? 0;
+  const recurringMonthlyCostUsd = finiteNumber(input.recurringMonthlyCostUsd);
   const implementationCostUsd = finiteNumber(input.implementationCostUsd);
   const implementationHours = finiteNumber(input.implementationHours);
   const confidence = finiteNumber(input.confidence);
@@ -119,7 +120,10 @@ function normalizeBusinessFunctionCandidate(input = {}) {
       valid: estimatedMonthlyValueUsd !== null && estimatedMonthlyValueUsd > 0,
       issue: 'missing_estimated_monthly_value_usd',
     },
-    { valid: recurringMonthlyCostUsd >= 0, issue: 'invalid_recurring_monthly_cost_usd' },
+    {
+      valid: recurringMonthlyCostUsd !== null && recurringMonthlyCostUsd >= 0,
+      issue: 'missing_recurring_monthly_cost_usd',
+    },
     {
       valid: implementationCostUsd !== null && implementationCostUsd > 0,
       issue: 'missing_implementation_cost_usd',
@@ -169,9 +173,25 @@ function normalizeBusinessFunctionCandidate(input = {}) {
   };
 }
 
+function rejectDuplicateBusinessAgentIds(candidates) {
+  const counts = new Map();
+  for (const candidate of candidates) {
+    counts.set(candidate.agentId, (counts.get(candidate.agentId) || 0) + 1);
+  }
+  return candidates.map((candidate) => (
+    counts.get(candidate.agentId) > 1
+      ? {
+        ...candidate,
+        status: 'insufficient_evidence',
+        issues: Array.from(new Set([...candidate.issues, 'duplicate_agent_id'])),
+      }
+      : candidate
+  ));
+}
+
 function rankBusinessFunctionAgents(candidates = []) {
   const normalized = Array.isArray(candidates)
-    ? candidates.map(normalizeBusinessFunctionCandidate)
+    ? rejectDuplicateBusinessAgentIds(candidates.map(normalizeBusinessFunctionCandidate))
     : [];
   const eligible = normalized
     .filter((candidate) => candidate.status === 'evidence_complete')
@@ -249,7 +269,7 @@ function buildBusinessHandoffIssues(context) {
     slaMinutes,
   } = context;
   const isLeadToSales = fromFunction === 'lead_generation' && toFunction === 'sales_conversion';
-  const externalActionRequested = requestedActions.some((action) => EXTERNAL_BUSINESS_ACTION.test(action));
+  const externalActionRequested = requestedActions.some((action) => !INTERNAL_BUSINESS_ACTION.test(action));
 
   return failedBusinessRules([
     { valid: BUSINESS_FUNCTION_IDS.has(fromFunction), issue: 'unsupported_source_function' },
@@ -404,14 +424,19 @@ function parseBusinessAgentJson(value, fallback) {
 function buildBusinessFunctionAgentPlan(input = {}) {
   const candidates = parseBusinessAgentJson(input.candidatesJson, input.candidates || []);
   const handoff = parseBusinessAgentJson(input.handoffJson, input.handoff || null);
+  const ranking = rankBusinessFunctionAgents(candidates);
+  const evaluatedHandoff = handoff ? evaluateBusinessFunctionHandoff(handoff) : null;
   return {
     name: 'thumbgate-business-function-agent-team',
+    status: evaluatedHandoff?.decision === 'deny'
+      ? 'blocked'
+      : ranking.status,
     catalog: {
       functions: BUSINESS_FUNCTIONS,
       defaultHandoffEdges: BUSINESS_FUNCTION_HANDOFF_EDGES,
     },
-    ranking: rankBusinessFunctionAgents(candidates),
-    handoff: handoff ? evaluateBusinessFunctionHandoff(handoff) : null,
+    ranking,
+    handoff: evaluatedHandoff,
     nextActions: [
       'Pilot only the first evidence-complete candidate with the shortest estimated payback',
       'Run every cross-function transfer through the typed handoff evaluator',

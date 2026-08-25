@@ -67,7 +67,7 @@ function validHandoff(overrides = {}) {
       recordedAt: '2026-08-24T12:00:00.000Z',
     },
     qualificationEvidence: ['scorecard:prospect-42'],
-    requestedActions: ['prepare discovery call brief'],
+    requestedActions: ['internal: prepare discovery call brief'],
     budget: { estimatedCostUsd: 0.25, maxCostUsd: 1 },
     slaMinutes: 30,
     idempotencyKey: 'lead-to-sales:prospect-42:v1',
@@ -136,6 +136,28 @@ test('ranking uses transparent caller-supplied payback estimates', () => {
   assert.equal(report.source.claimsVerifiedByThumbGate, false);
 });
 
+test('ranking rejects omitted recurring cost instead of treating it as zero', () => {
+  const report = rankBusinessFunctionAgents([
+    candidate({ recurringMonthlyCostUsd: undefined }),
+  ]);
+
+  assert.equal(report.status, 'insufficient_evidence');
+  assert.equal(report.recommendedPilot, null);
+  assert.ok(report.candidates[0].issues.includes('missing_recurring_monthly_cost_usd'));
+});
+
+test('ranking rejects duplicate agent IDs instead of emitting ambiguous ranks', () => {
+  const report = rankBusinessFunctionAgents([
+    candidate(),
+    candidate({ objective: 'Second lead-generation pilot' }),
+  ]);
+
+  assert.equal(report.status, 'insufficient_evidence');
+  assert.equal(report.recommendedPilot, null);
+  assert.equal(report.candidates.every((entry) => entry.rank === null), true);
+  assert.equal(report.candidates.every((entry) => entry.issues.includes('duplicate_agent_id')), true);
+});
+
 test('lead generation to sales fails closed without consent and qualification evidence', () => {
   const result = evaluateBusinessFunctionHandoff(validHandoff({
     consent: null,
@@ -194,6 +216,21 @@ test('external sales actions require an approval receipt', () => {
   assert.equal(allowed.decision, 'allow');
 });
 
+test('unclassified side effects fail closed even when their verbs are unfamiliar', () => {
+  for (const requestedAction of [
+    'call customer phone number',
+    'upload customer list to ad platform',
+    'create public campaign',
+  ]) {
+    const result = evaluateBusinessFunctionHandoff(validHandoff({
+      requestedActions: [requestedAction],
+    }));
+
+    assert.equal(result.decision, 'deny', requestedAction);
+    assert.ok(result.issues.includes('external_action_requires_approval_receipt'));
+  }
+});
+
 test('complete handoff returns a deliberately unrecordable outcome template', () => {
   const result = evaluateBusinessFunctionHandoff(validHandoff());
 
@@ -217,7 +254,17 @@ test('business-team CLI exposes the packaged planner without inventing a pilot',
 
   assert.equal(result.status, 0, result.stderr);
   assert.equal(report.name, 'thumbgate-business-function-agent-team');
+  assert.equal(report.status, 'insufficient_evidence');
   assert.equal(report.catalog.functions.length, 6);
   assert.equal(report.ranking.status, 'insufficient_evidence');
   assert.equal(report.ranking.recommendedPilot, null);
+
+  const textResult = spawnSync(
+    process.execPath,
+    ['scripts/agent-operations-planner.js', 'business-team'],
+    { cwd: process.cwd(), encoding: 'utf8' },
+  );
+  assert.equal(textResult.status, 0, textResult.stderr);
+  assert.match(textResult.stdout, /thumbgate-business-function-agent-team: insufficient_evidence/);
+  assert.doesNotMatch(textResult.stdout, /undefined/);
 });
