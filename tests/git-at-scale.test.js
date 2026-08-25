@@ -232,7 +232,12 @@ test('tip consistency reports behind-only and diverged from ancestry', () => {
     git(['remote', 'add', 'origin', remote], repo);
     git(['push', '-u', 'origin', 'main'], repo);
 
-    git(['clone', remote, publisher]);
+    const publisherHooksDir = path.join(publisher, '.git', 'test-hooks');
+    const clone = git(['clone', '-c', `core.hooksPath=${publisherHooksDir}`, remote, publisher]);
+    assert.equal(clone.status, 0, clone.stderr);
+    fs.mkdirSync(publisherHooksDir, { recursive: true });
+    const publisherHooks = git(['config', '--local', '--get', 'core.hooksPath'], publisher);
+    assert.equal(publisherHooks.stdout.trim(), publisherHooksDir);
     git(['config', 'user.email', 'pub@example.com'], publisher);
     git(['config', 'user.name', 'Pub'], publisher);
     fs.writeFileSync(path.join(publisher, 'README.md'), 'remote-ahead\n');
