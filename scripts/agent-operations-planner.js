@@ -7,6 +7,364 @@ function toList(value) {
   return [];
 }
 
+const BUSINESS_FUNCTION_AGENT_SOURCE = 'https://events.aiunleashedglobalsummit.com/aias-registration-yt';
+const BUSINESS_FUNCTIONS = Object.freeze([
+  Object.freeze({ id: 'lead_generation', label: 'Lead Generation' }),
+  Object.freeze({ id: 'content_creation', label: 'Content Creation' }),
+  Object.freeze({ id: 'product_validation', label: 'Product Development & Validation' }),
+  Object.freeze({ id: 'marketing', label: 'Personalized Marketing' }),
+  Object.freeze({ id: 'sales_conversion', label: 'Sales & Conversion' }),
+  Object.freeze({ id: 'operations', label: 'Operations & Automation' }),
+]);
+const BUSINESS_FUNCTION_HANDOFF_EDGES = Object.freeze([
+  Object.freeze({ from: 'content_creation', to: 'marketing' }),
+  Object.freeze({ from: 'product_validation', to: 'marketing' }),
+  Object.freeze({ from: 'marketing', to: 'lead_generation' }),
+  Object.freeze({ from: 'lead_generation', to: 'sales_conversion' }),
+  Object.freeze({ from: 'sales_conversion', to: 'operations' }),
+]);
+const BUSINESS_FUNCTION_IDS = new Set(BUSINESS_FUNCTIONS.map((entry) => entry.id));
+const BUSINESS_FUNCTION_EDGE_IDS = new Set(
+  BUSINESS_FUNCTION_HANDOFF_EDGES.map((edge) => `${edge.from}:${edge.to}`),
+);
+const BUSINESS_FUNCTION_RISKS = new Set(['low', 'medium', 'high']);
+const EXTERNAL_BUSINESS_ACTION = /\b(send|email|message|post|publish|charge|payment|delete)\b/i;
+
+function cleanText(value) {
+  return value === undefined || value === null ? '' : String(value).trim();
+}
+
+function cleanUniqueList(value) {
+  return Array.from(new Set(toList(value)));
+}
+
+function finiteNumber(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function roundNumber(value, decimals = 2) {
+  const factor = 10 ** decimals;
+  return Math.round((value + Number.EPSILON) * factor) / factor;
+}
+
+function hasMeasuredBaseline(baseline) {
+  if (!baseline || typeof baseline !== 'object') return false;
+  const measuredAt = cleanText(baseline.measuredAt);
+  return finiteNumber(baseline.value) !== null
+    && Boolean(cleanText(baseline.unit))
+    && Boolean(cleanText(baseline.source))
+    && Boolean(measuredAt)
+    && Number.isFinite(Date.parse(measuredAt));
+}
+
+function normalizeBusinessFunctionCandidate(input = {}) {
+  const functionId = cleanText(input.functionId);
+  const estimatedMonthlyValueUsd = finiteNumber(input.estimatedMonthlyValueUsd);
+  const recurringMonthlyCostUsd = finiteNumber(input.recurringMonthlyCostUsd) ?? 0;
+  const implementationCostUsd = finiteNumber(input.implementationCostUsd);
+  const implementationHours = finiteNumber(input.implementationHours);
+  const confidence = finiteNumber(input.confidence);
+  const risk = cleanText(input.risk).toLowerCase();
+  const evidence = cleanUniqueList(input.evidence);
+  const issues = [];
+
+  if (!BUSINESS_FUNCTION_IDS.has(functionId)) issues.push('unsupported_business_function');
+  if (!cleanText(input.objective)) issues.push('missing_objective');
+  if (!cleanText(input.primaryKpi)) issues.push('missing_primary_kpi');
+  if (!cleanText(input.inputSource)) issues.push('missing_input_source');
+  if (!hasMeasuredBaseline(input.baseline)) issues.push('missing_measured_baseline');
+  if (estimatedMonthlyValueUsd === null || estimatedMonthlyValueUsd <= 0) {
+    issues.push('missing_estimated_monthly_value_usd');
+  }
+  if (recurringMonthlyCostUsd < 0) issues.push('invalid_recurring_monthly_cost_usd');
+  if (implementationCostUsd === null || implementationCostUsd <= 0) {
+    issues.push('missing_implementation_cost_usd');
+  }
+  if (implementationHours === null || implementationHours <= 0) {
+    issues.push('missing_implementation_hours');
+  }
+  if (confidence === null || confidence <= 0 || confidence > 1) issues.push('invalid_confidence');
+  if (!BUSINESS_FUNCTION_RISKS.has(risk)) issues.push('invalid_risk');
+  if (evidence.length === 0) issues.push('missing_evidence');
+
+  let expectedMonthlyNetValueUsd = null;
+  let paybackMonths = null;
+  if (
+    estimatedMonthlyValueUsd !== null
+    && estimatedMonthlyValueUsd > 0
+    && recurringMonthlyCostUsd >= 0
+    && confidence !== null
+    && confidence > 0
+    && confidence <= 1
+  ) {
+    expectedMonthlyNetValueUsd = roundNumber(
+      (estimatedMonthlyValueUsd * confidence) - recurringMonthlyCostUsd,
+    );
+    if (expectedMonthlyNetValueUsd <= 0) issues.push('non_positive_expected_monthly_net_value');
+  }
+  if (
+    implementationCostUsd !== null
+    && implementationCostUsd > 0
+    && expectedMonthlyNetValueUsd !== null
+    && expectedMonthlyNetValueUsd > 0
+  ) {
+    paybackMonths = roundNumber(implementationCostUsd / expectedMonthlyNetValueUsd, 3);
+  }
+
+  return {
+    agentId: cleanText(input.agentId) || functionId || null,
+    functionId: functionId || null,
+    objective: cleanText(input.objective) || null,
+    primaryKpi: cleanText(input.primaryKpi) || null,
+    inputSource: cleanText(input.inputSource) || null,
+    baseline: hasMeasuredBaseline(input.baseline) ? {
+      value: finiteNumber(input.baseline.value),
+      unit: cleanText(input.baseline.unit),
+      measuredAt: new Date(input.baseline.measuredAt).toISOString(),
+      source: cleanText(input.baseline.source),
+    } : null,
+    estimates: {
+      estimatedMonthlyValueUsd,
+      recurringMonthlyCostUsd,
+      implementationCostUsd,
+      implementationHours,
+      confidence,
+      expectedMonthlyNetValueUsd,
+      paybackMonths,
+    },
+    risk: risk || null,
+    evidence,
+    status: issues.length === 0 ? 'evidence_complete' : 'insufficient_evidence',
+    launchGate: risk === 'high' ? 'human_review_required' : 'standard_governance',
+    issues: Array.from(new Set(issues)),
+  };
+}
+
+function rankBusinessFunctionAgents(candidates = []) {
+  const normalized = Array.isArray(candidates)
+    ? candidates.map(normalizeBusinessFunctionCandidate)
+    : [];
+  const eligible = normalized
+    .filter((candidate) => candidate.status === 'evidence_complete')
+    .sort((left, right) => (
+      left.estimates.paybackMonths - right.estimates.paybackMonths
+      || right.estimates.expectedMonthlyNetValueUsd - left.estimates.expectedMonthlyNetValueUsd
+      || left.estimates.implementationHours - right.estimates.implementationHours
+      || left.agentId.localeCompare(right.agentId)
+    ));
+  const ranks = new Map(eligible.map((candidate, index) => [candidate.agentId, index + 1]));
+  const rankedCandidates = normalized.map((candidate) => ({
+    ...candidate,
+    rank: ranks.get(candidate.agentId) || null,
+  })).sort((left, right) => {
+    if (left.rank === null && right.rank === null) return left.agentId.localeCompare(right.agentId);
+    if (left.rank === null) return 1;
+    if (right.rank === null) return -1;
+    return left.rank - right.rank;
+  });
+
+  return {
+    schemaVersion: 'business-function-agent-ranking-v1',
+    status: eligible.length > 0 ? 'ranked_estimates' : 'insufficient_evidence',
+    source: {
+      url: BUSINESS_FUNCTION_AGENT_SOURCE,
+      use: 'workflow inspiration only',
+      claimsVerifiedByThumbGate: false,
+    },
+    methodology: {
+      estimated: true,
+      formula: 'paybackMonths = implementationCostUsd / ((estimatedMonthlyValueUsd * confidence) - recurringMonthlyCostUsd)',
+      tieBreakers: ['higher expected monthly net value', 'fewer implementation hours', 'agent ID'],
+      warning: 'Ranking is a planning estimate, not achieved revenue or production proof.',
+    },
+    candidateCount: normalized.length,
+    evidenceCompleteCount: eligible.length,
+    recommendedPilot: eligible.length > 0 ? eligible[0].agentId : null,
+    candidates: rankedCandidates,
+  };
+}
+
+function validBusinessObjectSchema(schema) {
+  const propertyNames = schema && schema.properties && typeof schema.properties === 'object'
+    ? Object.keys(schema.properties)
+    : [];
+  return Boolean(
+    schema
+    && typeof schema === 'object'
+    && schema.type === 'object'
+    && schema.properties
+    && typeof schema.properties === 'object'
+    && propertyNames.length > 0
+    && Array.isArray(schema.required)
+    && schema.required.length > 0
+    && schema.required.every((field) => propertyNames.includes(field))
+  );
+}
+
+function validBusinessConsent(consent) {
+  if (!consent || consent.verified !== true) return false;
+  const recordedAt = cleanText(consent.recordedAt);
+  return Boolean(cleanText(consent.source))
+    && Boolean(recordedAt)
+    && Number.isFinite(Date.parse(recordedAt));
+}
+
+function buildBusinessOutcomeReceiptTemplate(contract) {
+  return {
+    schemaVersion: 'task-outcome-template-v1',
+    recordable: false,
+    verificationState: 'not_run',
+    reason: 'Populate actual status, verification, efficiency, and business outcome before recording.',
+    taskOutcome: {
+      taskId: contract.correlationId,
+      taskType: `business_handoff:${contract.fromFunction}:${contract.toFunction}`,
+      goal: contract.objective,
+      expectedOutcome: contract.expectedOutcome,
+      status: null,
+      verification: { performed: false, passed: false, evidence: [] },
+      toolCalls: [],
+      policy: null,
+      efficiency: null,
+      businessOutcome: null,
+      metadata: {
+        workflowId: contract.workflowId,
+        primaryKpi: contract.primaryKpi,
+        estimateOnly: true,
+      },
+    },
+  };
+}
+
+function evaluateBusinessFunctionHandoff(input = {}) {
+  const fromFunction = cleanText(input.fromFunction);
+  const toFunction = cleanText(input.toFunction);
+  const requestedActions = cleanUniqueList(input.requestedActions);
+  const requiredEvidence = cleanUniqueList(input.requiredEvidence);
+  const qualificationEvidence = cleanUniqueList(input.qualificationEvidence);
+  const dataScopes = cleanUniqueList(input.dataScopes);
+  const estimatedCostUsd = finiteNumber(input.budget && input.budget.estimatedCostUsd);
+  const maxCostUsd = finiteNumber(input.budget && input.budget.maxCostUsd);
+  const slaMinutes = finiteNumber(input.slaMinutes);
+  const issues = [];
+
+  if (!BUSINESS_FUNCTION_IDS.has(fromFunction)) issues.push('unsupported_source_function');
+  if (!BUSINESS_FUNCTION_IDS.has(toFunction)) issues.push('unsupported_target_function');
+  if (!BUSINESS_FUNCTION_EDGE_IDS.has(`${fromFunction}:${toFunction}`)) {
+    issues.push('undeclared_handoff_edge');
+  }
+  if (!cleanText(input.workflowId)) issues.push('missing_workflow_id');
+  if (!cleanText(input.correlationId)) issues.push('missing_correlation_id');
+  if (!cleanText(input.objective)) issues.push('missing_objective');
+  if (!cleanText(input.primaryKpi)) issues.push('missing_primary_kpi');
+  if (!cleanText(input.expectedOutcome)) issues.push('missing_expected_outcome');
+  if (!validBusinessObjectSchema(input.inputSchema)) issues.push('invalid_input_schema');
+  if (!validBusinessObjectSchema(input.outputSchema)) issues.push('invalid_output_schema');
+  if (dataScopes.length === 0) issues.push('missing_data_scope');
+  if (typeof input.containsPersonalData !== 'boolean') issues.push('missing_data_classification');
+  if (requiredEvidence.length === 0) issues.push('missing_required_evidence');
+  if (!cleanText(input.idempotencyKey)) issues.push('missing_idempotency_key');
+  if (estimatedCostUsd === null || estimatedCostUsd < 0) issues.push('invalid_estimated_cost_usd');
+  if (maxCostUsd === null || maxCostUsd < 0) issues.push('invalid_max_cost_usd');
+  if (estimatedCostUsd !== null && maxCostUsd !== null && estimatedCostUsd > maxCostUsd) {
+    issues.push('handoff_over_budget');
+  }
+  if (slaMinutes === null || slaMinutes <= 0) issues.push('invalid_sla_minutes');
+  if (input.containsPersonalData === true && !validBusinessConsent(input.consent)) {
+    issues.push('personal_data_requires_verified_consent');
+  }
+  if (
+    fromFunction === 'lead_generation'
+    && toFunction === 'sales_conversion'
+  ) {
+    if (qualificationEvidence.length === 0) {
+      issues.push('lead_to_sales_requires_qualification_evidence');
+    }
+    if (!validBusinessConsent(input.consent)) {
+      issues.push('lead_to_sales_requires_verified_consent');
+    }
+  }
+  if (requestedActions.some((action) => EXTERNAL_BUSINESS_ACTION.test(action))) {
+    const approval = input.approval || {};
+    if (approval.status !== 'approved' || !cleanText(approval.approvalId)) {
+      issues.push('external_action_requires_approval_receipt');
+    }
+  }
+
+  const contract = {
+    contractVersion: 'business-function-handoff-v1',
+    workflowId: cleanText(input.workflowId) || null,
+    correlationId: cleanText(input.correlationId) || null,
+    fromFunction: fromFunction || null,
+    toFunction: toFunction || null,
+    objective: cleanText(input.objective) || null,
+    primaryKpi: cleanText(input.primaryKpi) || null,
+    expectedOutcome: cleanText(input.expectedOutcome) || null,
+    inputSchema: validBusinessObjectSchema(input.inputSchema) ? input.inputSchema : null,
+    outputSchema: validBusinessObjectSchema(input.outputSchema) ? input.outputSchema : null,
+    dataScopes,
+    containsPersonalData: input.containsPersonalData === true,
+    consent: validBusinessConsent(input.consent) ? {
+      verified: true,
+      source: cleanText(input.consent.source),
+      recordedAt: new Date(input.consent.recordedAt).toISOString(),
+    } : null,
+    qualificationEvidence,
+    requestedActions,
+    budget: { estimatedCostUsd, maxCostUsd },
+    slaMinutes,
+    idempotencyKey: cleanText(input.idempotencyKey) || null,
+    requiredEvidence,
+    approval: input.approval && input.approval.status === 'approved' && cleanText(input.approval.approvalId)
+      ? { status: 'approved', approvalId: cleanText(input.approval.approvalId) }
+      : null,
+  };
+  const decision = issues.length === 0 ? 'allow' : 'deny';
+
+  return {
+    schemaVersion: 'business-function-handoff-evaluation-v1',
+    decision,
+    issues: Array.from(new Set(issues)),
+    contract,
+    outcomeReceiptTemplate: decision === 'allow'
+      ? buildBusinessOutcomeReceiptTemplate(contract)
+      : null,
+  };
+}
+
+function parseBusinessAgentJson(value, fallback) {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    const invalidJson = new Error('Business agent JSON input is invalid.');
+    invalidJson.code = 'INVALID_BUSINESS_AGENT_JSON';
+    invalidJson.cause = error;
+    throw invalidJson;
+  }
+}
+
+function buildBusinessFunctionAgentPlan(input = {}) {
+  const candidates = parseBusinessAgentJson(input.candidatesJson, input.candidates || []);
+  const handoff = parseBusinessAgentJson(input.handoffJson, input.handoff || null);
+  return {
+    name: 'thumbgate-business-function-agent-team',
+    catalog: {
+      functions: BUSINESS_FUNCTIONS,
+      defaultHandoffEdges: BUSINESS_FUNCTION_HANDOFF_EDGES,
+    },
+    ranking: rankBusinessFunctionAgents(candidates),
+    handoff: handoff ? evaluateBusinessFunctionHandoff(handoff) : null,
+    nextActions: [
+      'Pilot only the first evidence-complete candidate with the shortest estimated payback',
+      'Run every cross-function transfer through the typed handoff evaluator',
+      'Record actual KPI outcomes separately from planning estimates',
+    ],
+  };
+}
+
 function buildLoopRoutinePlan(input = {}) {
   const tasks = toList(input.tasks);
   const cadenceMinutes = Number(input.cadenceMinutes || input.cadence || 60);
@@ -496,7 +854,7 @@ function parseArgs(argv = process.argv.slice(2)) {
   const args = {};
   for (const arg of argv) {
     if (arg === '--json') args.json = true;
-    else if (['loop', 'skills', 'batching', 'legal', 'dynamic', 'customize', 'pr', 'vector', 'memory', 'sandbox', 'egress', 'supply-chain', 'code-quality', 'media', 'format', 'gtm-agency', 'bedrock'].includes(arg)) args.command = arg;
+    else if (['loop', 'skills', 'batching', 'legal', 'dynamic', 'customize', 'pr', 'vector', 'memory', 'sandbox', 'egress', 'supply-chain', 'code-quality', 'media', 'format', 'gtm-agency', 'bedrock', 'business-team'].includes(arg)) args.command = arg;
     else if (arg.startsWith('--tasks=')) args.tasks = arg.slice('--tasks='.length);
     else if (arg.startsWith('--cadence-minutes=')) args.cadenceMinutes = arg.slice('--cadence-minutes='.length);
     else if (arg === '--routine' || arg === '--server-hosted') args.serverHosted = true;
@@ -564,6 +922,8 @@ function parseArgs(argv = process.argv.slice(2)) {
     else if (arg === '--agentcore-memory') args.memory = true;
     else if (arg === '--agentcore-observability') args.observability = true;
     else if (arg === '--agentcore-identity') args.identity = true;
+    else if (arg.startsWith('--candidates-json=')) args.candidatesJson = arg.slice('--candidates-json='.length);
+    else if (arg.startsWith('--handoff-json=')) args.handoffJson = arg.slice('--handoff-json='.length);
   }
   return args;
 }
@@ -587,6 +947,7 @@ function runCli(args) {
     format: buildOutputFormatPlan,
     'gtm-agency': buildMarketingAgencyGtmPlan,
     bedrock: buildBedrockAgentCorePlan,
+    'business-team': buildBusinessFunctionAgentPlan,
     loop: buildLoopRoutinePlan,
   };
   const report = (builders[command] || buildLoopRoutinePlan)(args);
@@ -618,4 +979,11 @@ module.exports = {
   buildBedrockAgentCorePlan,
   buildLegalAgentGovernancePlan,
   buildDynamicWorkflowReadinessPlan,
+  BUSINESS_FUNCTIONS,
+  BUSINESS_FUNCTION_HANDOFF_EDGES,
+  normalizeBusinessFunctionCandidate,
+  rankBusinessFunctionAgents,
+  evaluateBusinessFunctionHandoff,
+  buildBusinessOutcomeReceiptTemplate,
+  buildBusinessFunctionAgentPlan,
 };
