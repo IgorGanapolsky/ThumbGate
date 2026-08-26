@@ -248,3 +248,41 @@ test('direct purchase and guard-tampering controls remain denied', () => {
   assert.equal(tampering.decision, 'deny');
   assert.equal(tampering.ruleId, 'guard_tampering');
 });
+
+test('raw payment APIs, Chrome left clicks, and bare-price clicks are denied', () => {
+  const rawPaymentApi = evaluateSpend('Bash', {
+    command: 'curl -X POST https://api.stripe.com/v1/charges -d amount=4999',
+  });
+  assert.equal(rawPaymentApi.decision, 'deny');
+  assert.equal(rawPaymentApi.ruleId, 'payment_api_mutation');
+
+  const chromeLeftClick = evaluateSpend('mcp__chrome__computer', {
+    action: 'left_click',
+    text: 'Stripe Pro',
+  });
+  assert.equal(chromeLeftClick.decision, 'deny');
+  assert.equal(chromeLeftClick.ruleId, 'interactive_spend_ui');
+
+  const barePriceClick = evaluateSpend('mcp__browser__click', {
+    element: 'Complete order for $49.99',
+  });
+  assert.equal(barePriceClick.decision, 'deny');
+  assert.equal(barePriceClick.ruleId, 'interactive_spend_ui');
+});
+
+test('read-only payment APIs and inert price prose remain allowed', () => {
+  assert.deepEqual(
+    evaluateSpend('Bash', {
+      command: 'curl https://api.stripe.com/v1/charges?limit=1',
+    }),
+    { decision: 'allow' },
+  );
+
+  assert.deepEqual(
+    evaluateSpend('Write', {
+      file_path: 'pricing-notes.md',
+      content: 'The historical price was $49.99.',
+    }),
+    { decision: 'allow' },
+  );
+});

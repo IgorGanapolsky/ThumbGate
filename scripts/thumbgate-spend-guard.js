@@ -57,6 +57,11 @@ const MUTATION_ACTION =
 const DIRECT_CHECKOUT_PATH =
   /(?:checkout\.stripe\.com|buy\.stripe\.com|app\.apollo\.io|[\/#](?:checkout|purchase|upgrade|subscribe|plans?|billing)\b)/i;
 
+const DIRECT_PAYMENT_API_PATH =
+  /\bapi\.stripe\.com\/v1\/(?:charges|payment_intents|checkout\/sessions|subscriptions)\b/i;
+
+const PRICE_AMOUNT = /\$\s*\d[\d,]*(?:\.\d{2})?\b/;
+
 const VENDOR_UPSELL =
   /\b(?:apollo|stripe|sendgrid|twilio|openai|anthropic|resend|mailgun|postmark|thumbgate)\b[\s\S]{0,100}\b(?:upgrade|pro\b|paid|checkout|billing|subscribe|credits?)\b|\b(?:upgrade|pro\b|paid|checkout|billing|subscribe|credits?)\b[\s\S]{0,100}\b(?:apollo|stripe|sendgrid|twilio|openai|anthropic|resend|thumbgate)\b/i;
 
@@ -193,11 +198,16 @@ function evaluateSpend(toolName, toolInput) {
 
   const isInteractiveUi = /(?:browser|chrome|computer[_-]?use|playwright)/i.test(name);
   const hasInteractiveAction =
-    /\b(?:click|type|press|tap|fill|select|submit|interact|drag)\b/i.test(combined);
+    /(?:^|[^a-z0-9])(?:click|left[_-]?click|right[_-]?click|double[_-]?click|type|press|tap|fill|select|submit|interact|drag)(?=$|[^a-z0-9])/i.test(combined);
   if (
     isInteractiveUi
     && hasInteractiveAction
-    && (FINANCIAL_OBJECT.test(combined) || DIRECT_CHECKOUT_PATH.test(combined) || VENDOR_UPSELL.test(combined))
+    && (
+      FINANCIAL_OBJECT.test(combined)
+      || DIRECT_CHECKOUT_PATH.test(combined)
+      || VENDOR_UPSELL.test(combined)
+      || PRICE_AMOUNT.test(combined)
+    )
   ) {
     return { decision: 'deny', ruleId: 'interactive_spend_ui', reason: DENY_REASON };
   }
@@ -210,6 +220,10 @@ function evaluateSpend(toolName, toolInput) {
     && hasNearbyDistinctMatches(combined, MUTATION_ACTION, FINANCIAL_OBJECT)
   ) {
     return { decision: 'deny', ruleId: 'financial_action_and_object', reason: DENY_REASON };
+  }
+
+  if (hasNearbyDistinctMatches(combined, MUTATION_ACTION, DIRECT_PAYMENT_API_PATH)) {
+    return { decision: 'deny', ruleId: 'payment_api_mutation', reason: DENY_REASON };
   }
 
   if (isInteractiveUi && hasInteractiveAction && VENDOR_UPSELL.test(combined)) {
