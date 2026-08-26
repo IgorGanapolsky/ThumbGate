@@ -218,7 +218,11 @@ const path = require('node:path');
 // 511 -> 512 (2026-08-25): public/yt.html, dedicated YouTube/CPC landing that
 //   maps six business functions onto existing gates (FORMAT steal, not a SKU).
 //   public-package-parity requires every public/*.html on the files allowlist.
-const BASELINE_FILE_COUNT = 512;
+// 512 -> 513 (2026-08-25): src/alert-noise-ledger.js (+1 measured npm pack).
+// Public-shell runtime, not a Core feature: the packaged
+// scripts/gates-engine.js requires it to suppress reminder lines it has
+// already emitted this session.
+const BASELINE_FILE_COUNT = 513;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
