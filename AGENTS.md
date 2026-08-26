@@ -200,6 +200,24 @@ Permanent (not auto-generated; do not dilute into generic "investigate"). Applie
 - Maintain 100% reliability in the feedback-to-enforcement pipeline.
 - Archive or delete stale local-only branches after verifying whether they still carry unique commits.
 
+## Performance Budgets (2026-08-26 directive)
+
+Performance is a design constraint, not late-stage cleanup. Budgets live in
+`config/performance-budgets.json`; `node scripts/perf-budget-check.js` is the
+single measurement tool (`--prod` for post-deploy endpoint timing — never a
+merge gate), and `npm run test:perf-budget` enforces the local hot-path
+budgets in CI.
+
+- ALWAYS include `scripts/perf-budget-check.js` output in any PR that touches
+  a file listed in the config's `hotPathFiles` (the PreToolUse decision path,
+  the API server, the hook manifest). No numbers, no merge.
+- ALWAYS instrument before optimizing: name the largest measured bottleneck
+  before proposing a fix, and cite the measurement.
+- Design reviews for customer-facing or per-tool-call surfaces must name their
+  data movement, model calls, network round trips, and storage queries.
+- Unit economics come from the sources named in the config's `unitEconomics`
+  section — cost per completed task, never per request.
+
 ## Moat Reality
 
 ThumbGate is not defended by a meaningful closed-source intelligence split today. The strict 2026-05-18 audit in `MOAT.md` found that 212 of 216 private Core scripts also shipped publicly, so the real moat is hosted operation, adapter compatibility, dashboard/DPO export, and workflow-hardening expertise.
