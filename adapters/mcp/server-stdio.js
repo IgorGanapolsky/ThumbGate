@@ -647,9 +647,6 @@ function buildContextPackResponse(args = {}) {
     strategy: args.strategy || null,
     contextEnvelope: args.contextEnvelope || null,
   });
-  // Feed outcome-paired action receipts into the pack so an action->outcome
-  // history is available alongside lessons/rules. Additive + guarded: a
-  // receipt-store failure must never break context pack construction.
   try {
     const receiptEntries = buildReceiptContextEntries(args.query || '', Number(args.maxItems || 8));
     if (Array.isArray(receiptEntries) && receiptEntries.length && Array.isArray(pack.items)) {
@@ -663,10 +660,7 @@ function buildContextPackResponse(args = {}) {
           namespace: 'action-receipts',
           title: 'Action receipt outcome',
           structuredContext: { rawContent: receiptText },
-          provenance: {
-            source: 'action-receipts',
-            freshness: 'unknown',
-          },
+          provenance: { source: 'action-receipts', freshness: 'unknown' },
           tags: ['action-receipt', 'outcome-paired'],
           score: entry && typeof entry.score === 'number' ? entry.score : 0,
         });
@@ -680,9 +674,7 @@ function buildContextPackResponse(args = {}) {
         pack.visibility.visibleTitles = pack.items.slice(0, 5).map((item) => item.title);
       }
     }
-  } catch {
-    // ignore receipt enrichment failures
-  }
+  } catch { /* ignore */ }
   return toTextResult(pack);
 }
 

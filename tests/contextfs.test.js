@@ -278,6 +278,38 @@ test('semantic cache isolates context envelopes and reuses exact envelopes', () 
   assert.equal(changed.cache.hit, false);
 });
 
+test('semantic cache recomputes connector freshness at response time', () => {
+  const actualNow = Date.now;
+  let clock = actualNow();
+  Date.now = () => clock;
+  try {
+    upsertContextObject({
+      namespace: NAMESPACES.research,
+      title: 'Cached freshness boundary',
+      content: 'cachedfreshness evidence',
+      source: 'test-connector',
+      metadata: {
+        sourceUpdatedAt: new Date(clock - 30_000).toISOString(),
+        maxAgeSeconds: 60,
+      },
+    });
+    const first = constructContextPack({
+      query: 'cachedfreshness', maxChars: 3000, namespaces: [NAMESPACES.research],
+    });
+    const firstItem = first.items.find((item) => item.title === 'Cached freshness boundary');
+    assert.equal(firstItem.provenance.freshness, 'fresh');
+    clock += 60_000;
+    const cached = constructContextPack({
+      query: 'cachedfreshness', maxChars: 3000, namespaces: [NAMESPACES.research],
+    });
+    assert.equal(cached.cache.hit, true);
+    const cachedItem = cached.items.find((item) => item.title === 'Cached freshness boundary');
+    assert.equal(cachedItem.provenance.freshness, 'stale');
+  } finally {
+    Date.now = actualNow;
+  }
+});
+
 test('context items expose safe fresh, stale, and unknown source provenance', () => {
   const now = Date.now();
   const fixtures = [

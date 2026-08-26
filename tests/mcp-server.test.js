@@ -1475,6 +1475,16 @@ test('export_databricks_bundle defaults bundle path inside SAFE_DATA_DIR', async
 });
 
 test('construct/evaluate context pack tools work', async () => {
+  const listed = await handleRequest({ jsonrpc: '2.0', id: 3, method: 'tools/list' });
+  const contextTool = listed.tools.find((tool) => tool.name === 'construct_context_pack');
+  const envelopeSchema = contextTool.inputSchema.properties.contextEnvelope;
+  assert.equal(envelopeSchema.additionalProperties, false);
+  assert.deepEqual(envelopeSchema.required, [
+    'goal', 'businessData', 'examples', 'procedures', 'constraints', 'rubric',
+  ]);
+  assert.equal(envelopeSchema.properties.goal.type, 'string');
+  assert.equal(envelopeSchema.properties.examples.items.type, 'string');
+
   const construct = await handleRequest({
     jsonrpc: '2.0',
     id: 4,

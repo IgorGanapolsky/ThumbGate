@@ -102,16 +102,8 @@ const PACK_TEMPLATES = {
 
 const CONTEXT_ENVELOPE_VERSION = 'six-block-v1';
 const CONTEXT_ENVELOPE_KEYS = [
-  'goal',
-  'businessData',
-  'examples',
-  'procedures',
-  'constraints',
-  'rubric',
+  'goal', 'businessData', 'examples', 'procedures', 'constraints', 'rubric',
 ];
-const CONTEXT_ENVELOPE_LIST_KEYS = CONTEXT_ENVELOPE_KEYS.filter((key) => key !== 'goal');
-
-
 function ensureContextFs() {
   Object.values(NAMESPACES).forEach((subPath) => {
     ensureDir(contextFsPath(subPath));
@@ -189,22 +181,15 @@ function querySimilarity(tokensA, tokensB) {
   return union === 0 ? 0 : intersection / union;
 }
 
-function buildSemanticCacheKey({
-  namespaces,
-  maxItems,
-  maxChars,
-  strategy = 'auto',
-  contextEnvelope = null,
-}) {
+function buildSemanticCacheKey({ namespaces, maxItems, maxChars, strategy = 'auto', contextEnvelope = null }) {
   return JSON.stringify({
     retrievalVersion: CONTEXTFS_RETRIEVAL_VERSION,
     namespaces: normalizeNamespaces(namespaces),
     maxItems,
     maxChars,
     strategy,
-    contextEnvelopeHash: contextEnvelope
-      ? crypto.createHash('sha256').update(JSON.stringify(contextEnvelope)).digest('hex')
-      : null,
+    contextEnvelopeHash: contextEnvelope ? crypto.createHash('sha256')
+      .update(JSON.stringify(contextEnvelope)).digest('hex') : null,
   });
 }
 
@@ -244,23 +229,14 @@ function getSourceHash(namespaces) {
         try {
           const stats = fs.statSync(filePath);
           hasher.update(`${file}:${stats.mtimeMs}:${stats.size}`);
-        } catch {
-          // Skip if file disappeared
-        }
+        } catch { /* ignore */ }
       }
     }
   }
   return hasher.digest('hex');
 }
 
-function findSemanticCacheHit({
-  query,
-  namespaces,
-  maxItems,
-  maxChars,
-  strategy = 'auto',
-  contextEnvelope = null,
-}) {
+function findSemanticCacheHit({ query, namespaces, maxItems, maxChars, strategy = 'auto', contextEnvelope = null }) {
   const { enabled, threshold, ttlSeconds } = getSemanticCacheConfig();
   if (!enabled) return null;
 
@@ -269,20 +245,13 @@ function findSemanticCacheHit({
 
   const now = Date.now();
   const queryTokens = tokenizeQuery(query);
-  const key = buildSemanticCacheKey({
-    namespaces,
-    maxItems,
-    maxChars,
-    strategy,
-    contextEnvelope,
-  });
+  const key = buildSemanticCacheKey({ namespaces, maxItems, maxChars, strategy, contextEnvelope });
   const currentSourceHash = getSourceHash(namespaces);
 
   for (let i = entries.length - 1; i >= 0; i -= 1) {
     const entry = entries[i];
     if (!entry || entry.key !== key || !entry.pack) continue;
 
-    // Zero-Waste Caching: validate source hash
     if (entry.sourceHash !== currentSourceHash) {
       continue;
     }
@@ -424,23 +393,21 @@ function measureContextEnvelopeChars(contextEnvelope) {
   return contextEnvelope ? JSON.stringify(contextEnvelope).length : 0;
 }
 
+function getFreshness(observedAt, maxAgeSeconds, currentTimeMs) {
+  if (!observedAt) return 'unknown';
+  const observedAtMs = new Date(observedAt).getTime();
+  if (!Number.isFinite(observedAtMs)) return 'invalid';
+  if (observedAtMs > currentTimeMs + 300_000) return 'future';
+  if (!(Number.isFinite(maxAgeSeconds) && maxAgeSeconds > 0)) return 'unknown';
+  return currentTimeMs - observedAtMs <= maxAgeSeconds * 1000 ? 'fresh' : 'stale';
+}
+
 function buildItemProvenance(doc, currentTimeMs = Date.now()) {
-  const metadata = doc && doc.metadata && typeof doc.metadata === 'object'
-    ? doc.metadata
-    : {};
+  const metadata = doc && typeof doc.metadata === 'object' ? doc.metadata : {};
   const observedAtRaw = metadata.sourceUpdatedAt || doc.createdAt || null;
   const observedAtMs = observedAtRaw ? new Date(observedAtRaw).getTime() : NaN;
   const parsedMaxAge = Number(metadata.maxAgeSeconds);
-  const maxAgeSeconds = Number.isFinite(parsedMaxAge) && parsedMaxAge > 0
-    ? parsedMaxAge
-    : null;
-  const freshness = observedAtRaw && !Number.isFinite(observedAtMs)
-    ? 'invalid'
-    : (Number.isFinite(observedAtMs) && observedAtMs > currentTimeMs + 300_000
-      ? 'future'
-      : (Number.isFinite(observedAtMs) && maxAgeSeconds
-        ? (currentTimeMs - observedAtMs <= maxAgeSeconds * 1000 ? 'fresh' : 'stale')
-        : 'unknown'));
+  const maxAgeSeconds = Number.isFinite(parsedMaxAge) && parsedMaxAge > 0 ? parsedMaxAge : null;
 
   return {
     source: doc.source || 'unknown',
@@ -449,8 +416,14 @@ function buildItemProvenance(doc, currentTimeMs = Date.now()) {
       : null,
     observedAt: Number.isFinite(observedAtMs) ? new Date(observedAtMs).toISOString() : null,
     maxAgeSeconds,
-    freshness,
+    freshness: getFreshness(observedAtRaw, maxAgeSeconds, currentTimeMs),
   };
+}
+
+function refreshItemProvenance(provenance, currentTimeMs = Date.now()) {
+  if (!provenance) return provenance;
+  const freshness = getFreshness(provenance.observedAt, Number(provenance.maxAgeSeconds), currentTimeMs);
+  return { ...provenance, freshness };
 }
 
 function findExistingContextObject({ namespace, title, content, tags = [], source }) {
@@ -475,9 +448,7 @@ function findExistingContextObject({ namespace, title, content, tags = [], sourc
         filePath,
         document: doc,
       };
-    } catch {
-      // Ignore malformed entries while searching for exact duplicates.
-    }
+    } catch { /* ignore */ }
   }
 
   return null;
@@ -612,9 +583,7 @@ function loadCandidates(namespaces) {
           ...payload,
           namespace,
         });
-      } catch {
-        // ignore malformed files
-      }
+      } catch { /* ignore */ }
     });
   });
 
@@ -1016,10 +985,6 @@ function constructContextPack({
   const tokens = tokenizeQuery(query);
   const sourceHash = getSourceHash(normalizedNamespaces);
 
-  // Resolve the effective strategy. Explicit `strategy` wins; otherwise
-  // `summarizeThenExpand: true` flips the flag. Default remains auto
-  // (flat | hierarchical) so callers that don't opt in keep their cached
-  // packs addressable.
   const effectiveStrategy = strategy
     || (summarizeThenExpand ? 'summarize-then-expand' : null);
   const hierarchicalRetrievalEnabled = shouldUseHierarchicalRetrieval(normalizedNamespaces);
@@ -1028,12 +993,8 @@ function constructContextPack({
     : (hierarchicalRetrievalEnabled ? 'hierarchical' : 'flat');
 
   const cacheHit = findSemanticCacheHit({
-    query,
-    namespaces: normalizedNamespaces,
-    maxItems,
-    maxChars,
-    strategy: retrievalStrategy,
-    contextEnvelope: normalizedContextEnvelope,
+    query, namespaces: normalizedNamespaces, maxItems, maxChars,
+    strategy: retrievalStrategy, contextEnvelope: normalizedContextEnvelope,
   });
 
   if (cacheHit) {
@@ -1044,6 +1005,12 @@ function constructContextPack({
       packId,
       query,
       createdAt: nowIso(),
+      items: Array.isArray(cachedPack.items)
+        ? cachedPack.items.map((item) => ({
+          ...item,
+          provenance: refreshItemProvenance(item.provenance),
+        }))
+        : cachedPack.items,
       cache: {
         hit: true,
         similarity: Number(cacheHit.score.toFixed(4)),
@@ -1071,10 +1038,6 @@ function constructContextPack({
 
   let selection;
   if (effectiveStrategy === 'summarize-then-expand') {
-    // Explicit opt-in: bypass the hierarchical path entirely. The
-    // summarize-then-expand selector assumes a flat ranked list where each
-    // item is a single episode, and mixing it with theme-based hierarchical
-    // retrieval would double-compress the top-of-list.
     selection = selectSummarizeThenExpand(candidates, maxItems, retrievalMaxChars);
   } else if (hierarchicalRetrievalEnabled) {
     selection = retrieveHierarchicalDocuments({
@@ -1089,10 +1052,6 @@ function constructContextPack({
     selection = selectFlatContextItems(candidates, maxItems, retrievalMaxChars);
   }
 
-  // The flat + hierarchical paths emit raw docs; summarize-then-expand emits
-  // fully-shaped items that already carry structuredContext and a `tier`
-  // marker. Detect the shape so we don't double-canonicalize STE items
-  // (which would re-expand every summary into full content).
   const selected = selection.items.map((item) => {
     if (item && item.structuredContext) {
       return {
@@ -1155,11 +1114,8 @@ function constructContextPack({
     id: `cache_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     timestamp: nowIso(),
     key: buildSemanticCacheKey({
-      namespaces: normalizedNamespaces,
-      maxItems,
-      maxChars,
-      strategy: retrievalStrategy,
-      contextEnvelope: normalizedContextEnvelope,
+      namespaces: normalizedNamespaces, maxItems, maxChars,
+      strategy: retrievalStrategy, contextEnvelope: normalizedContextEnvelope,
     }),
     query,
     tokens,
