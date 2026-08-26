@@ -662,15 +662,20 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.00 MB -> 8.01 MB (2026-08-25) for public/yt.html (YouTube/CPC landing
   // required by public-package-parity) after merging summit-funnel landing growth
   // (#3661). CI measured 8,002,268 unpacked bytes on 26b1a4fd.
+  // Bumped 8.01 MB -> 8.02 MB (2026-08-26) for the claude-feedback-sync rotation
+  // guard + dedup hardening (junk re-import loop fix). Runtime logic in an
+  // already-shipped file; no new files enter the tarball. CI measured 8,010,953
+  // unpacked bytes before the comment trim on this branch.
+  // Bumped 8.02 MB -> 8.03 MB (2026-08-26, merge of #3667) for
+  // src/alert-noise-ledger.js: ~17 KB of runtime code including the
+  // session-persistence layer added for cross-invocation suppression. main was
+  // already at ~8.011 MB after the rotation-guard bump above, so the module
+  // tripped the ceiling by itself. Headroom stays deliberately narrow so the
+  // next addition is a conscious decision rather than a silent one. Shrinking
+  // explanatory comments to squeeze under a byte limit was rejected: this
+  // ratchet exists to catch unintended bloat, and a documented runtime module
+  // is not that.
   assert.ok(
-  // Bumped 8.01 MB -> 8.03 MB (2026-08-25) for src/alert-noise-ledger.js.
-  // The file is ~14.6 KB of runtime code; main was already at ~8.005 MB, i.e.
-  // 99.9% of the previous ceiling, so any addition tripped it. Measured
-  // unpackedSize after this change is ~8.019 MB, leaving ~11 KB of headroom —
-  // deliberately narrow, so the next addition is a conscious decision rather
-  // than a silent one. Shrinking explanatory comments to squeeze under a byte
-  // limit was rejected: this ratchet exists to catch unintended bloat, and a
-  // documented runtime module is not that.
     manifest.unpackedSize <= 8_030_000,
     `npm package should stay <= 8.03 MB unpacked, got ${manifest.unpackedSize}`
   );
