@@ -53,16 +53,24 @@ function measure(fn, iterations = ITERATIONS) {
   };
 }
 
+// Distinct word stems per cluster so buildHybridState forms MANY recurring
+// patterns (one per cluster) instead of collapsing all rows into a single
+// guard — a one-guard artifact would benchmark a single-item loop and miss
+// regressions that only appear with a realistically populated guard set.
+const FIXTURE_CLUSTERS = 40;
+
 function writeFixtureLog(filePath, entries) {
   const rows = [];
   for (let i = 0; i < entries; i++) {
+    const cluster = i % FIXTURE_CLUSTERS;
+    const stem = `fault${cluster}omega cluster${cluster}drift`;
     rows.push(JSON.stringify({
       id: `fb-perf-${i}`,
       signal: i % 3 === 0 ? 'negative' : 'positive',
       timestamp: new Date(Date.now() - i * 60_000).toISOString(),
       tool_name: ['Bash', 'Edit', 'Write', 'Read'][i % 4],
-      context: `synthetic lesson ${i}: the command touched path segment ${i} and the reviewer asked for a narrower diff`,
-      whatWentWrong: i % 3 === 0 ? `regression ${i} reached the branch without a focused test` : null,
+      context: `synthetic ${stem} lesson: the ${stem} step regressed and the reviewer asked for a narrower diff`,
+      whatWentWrong: i % 3 === 0 ? `the ${stem} step regressed without a focused test` : null,
       tags: ['perf-fixture'],
     }));
   }
@@ -83,13 +91,25 @@ function runLocal() {
   try {
     const feedbackLogPath = path.join(tmpDir, 'feedback-log.jsonl');
     const attributedFeedbackPath = path.join(tmpDir, 'attributed-feedback.jsonl');
+    // Every source buildHybridState reads must point into the tmp dir —
+    // otherwise THUMBGATE_FEEDBACK_INBOX / THUMBGATE_PENDING_SYNC or a
+    // populated project feedback dir leaks live operator data into the
+    // "hermetic" benchmark and CI results vary by machine state.
+    const inboxPath = path.join(tmpDir, 'inbox.jsonl');
+    const pendingSyncPath = path.join(tmpDir, 'pending_cortex_sync.jsonl');
+    fs.writeFileSync(inboxPath, '');
+    fs.writeFileSync(pendingSyncPath, '');
     writeFixtureLog(feedbackLogPath, FIXTURE_ENTRIES);
     writeFixtureLog(attributedFeedbackPath, Math.floor(FIXTURE_ENTRIES / 4));
 
-    const stateOpts = { feedbackLogPath, attributedFeedbackPath };
+    const stateOpts = { feedbackLogPath, attributedFeedbackPath, inboxPath, pendingSyncPath };
     results.hybrid_state_build_ms_p95 = measure(() => buildHybridState(stateOpts), Math.min(ITERATIONS, 25));
 
     const state = buildHybridState(stateOpts);
+    const patternCount = (state.recurringNegativePatterns || []).length;
+    if (patternCount < FIXTURE_CLUSTERS / 2) {
+      throw new Error(`fixture produced only ${patternCount} recurring patterns; expected >= ${FIXTURE_CLUSTERS / 2} for a representative guard artifact`);
+    }
     results.pretool_eval_from_state_ms_p95 = measure(
       () => evaluatePretoolFromState(state, 'Bash', 'git status --porcelain && npm run lint')
     );
@@ -124,13 +144,18 @@ async function runProd({ includeBilling }) {
   for (const [key, spec] of Object.entries(BUDGETS.productionEndpoints)) {
     if (key === 'billing_summary_ms_p95' && !includeBilling) continue;
     const samples = [];
+    let failedSamples = 0;
     let lastStatus = null;
     for (let i = 0; i < 5; i++) {
       const probe = await timeFetch(spec.url, Math.max(spec.budget * 4, 10_000));
       samples.push(probe.ms);
       lastStatus = probe.status;
+      // A redirect, 4xx/5xx, or transport error (status 0) is a breach even
+      // when it returns quickly — a fast auth failure must never read as
+      // "within budget". Only a direct 2xx counts as a successful sample.
+      if (!(probe.status >= 200 && probe.status < 300)) failedSamples += 1;
     }
-    results[key] = { p50: percentile(samples, 50), p95: percentile(samples, 95), max: Math.max(...samples), iterations: samples.length, status: lastStatus };
+    results[key] = { p50: percentile(samples, 50), p95: percentile(samples, 95), max: Math.max(...samples), iterations: samples.length, status: lastStatus, failedSamples };
   }
   return results;
 }
@@ -143,9 +168,9 @@ function evaluateAgainstBudgets(results, budgetSection) {
     const measured = results[key];
     if (!measured) continue;
     const limit = spec.budget * multiplier;
-    const pass = measured.p95 <= limit;
+    const pass = measured.p95 <= limit && !(measured.failedSamples > 0);
     if (!pass) breaches += 1;
-    rows.push({ key, p50: measured.p50, p95: measured.p95, budget: spec.budget, limit, multiplier, pass });
+    rows.push({ key, p50: measured.p50, p95: measured.p95, budget: spec.budget, limit, multiplier, pass, failedSamples: measured.failedSamples || 0 });
   }
   return { rows, breaches };
 }
