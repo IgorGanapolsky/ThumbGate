@@ -658,9 +658,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.00 MB -> 8.01 MB (2026-08-25) for public/yt.html (YouTube/CPC landing
   // required by public-package-parity) after merging summit-funnel landing growth
   // (#3661). CI measured 8,002,268 unpacked bytes on 26b1a4fd.
+  // Bumped 8.01 MB -> 8.02 MB (2026-08-26) for the claude-feedback-sync rotation
+  // guard + dedup hardening (junk re-import loop fix). Runtime logic in an
+  // already-shipped file; no new files enter the tarball. CI measured 8,010,953
+  // unpacked bytes before the comment trim on this branch.
   assert.ok(
-    manifest.unpackedSize <= 8_010_000,
-    `npm package should stay <= 8.01 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 8_020_000,
+    `npm package should stay <= 8.02 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
