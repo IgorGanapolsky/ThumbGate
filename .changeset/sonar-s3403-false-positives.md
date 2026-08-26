@@ -29,12 +29,12 @@ Rewriting 169 entry points to satisfy the rule would change real startup
 behaviour across every CLI in order to improve a score. That is the wrong trade.
 Excluding the rule is the right one.
 
-**Accepted risk, stated rather than hidden:** this suppresses `S3403`
-everywhere, so a genuinely always-false `===` elsewhere would also go
-unreported. Judged acceptable because every sampled instance was the idiom, and
-because a rule at an 84% false-positive rate is already being ignored in
-practice — just silently, which is worse. The properties file carries the
-re-check command so the exclusion can be revisited rather than trusted forever.
+**Scope, narrowed after review:** the suppression covers only where the idiom
+actually lives — `scripts/**` (168 guard files by grep), `adapters/**` (2), and
+`src/api/server.js` (1). `S3403` stays active across the rest of `src/` (the
+product core), `bin/`, and `tests/`, so a genuinely always-false `===` there is
+still reported. The properties file carries the re-check command so the
+exclusion can be revisited rather than trusted forever.
 
 Note the shape of this problem is the same one `src/alert-noise-ledger.js`
 addresses on the gate surface: a high-volume, low-precision signal trains
