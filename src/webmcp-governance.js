@@ -26,6 +26,16 @@ function toolText(tool) {
 }
 
 /**
+ * A tool is commerce-SHAPED when its NAME carries commerce vocabulary — the
+ * name is the operation's identity, while descriptions are prose that may
+ * merely mention money to disclaim it. Annotations never soften this: they
+ * come from the page and cannot establish that a commerce action is harmless.
+ */
+function isCommerceShaped(nameValue) {
+  return COMMERCE_VOCAB_RE.test(String(nameValue || '').replace(/_/g, ' '));
+}
+
+/**
  * Validate one WebMCP tool declaration (imperative registerTool shape, or the
  * declarative form shape with `autosubmit: true` when `toolautosubmit` is set).
  * Returns { ok, findings: [{ severity: 'block'|'warn', code, message }] }.
@@ -51,7 +61,7 @@ function validateToolDeclaration(tool) {
   const readOnly = annotations.readOnlyHint === true;
   const isReadNamed = READ_VOCAB_RE.test(name);
   const isMutationNamed = MUTATION_VOCAB_RE.test(name);
-  const isCommerce = COMMERCE_VOCAB_RE.test(toolText(tool));
+  const commerceShaped = isCommerceShaped(name);
 
   // Truthful side-effect hints: the annotation must match what the name says.
   if (isReadNamed && !isMutationNamed && !readOnly) {
@@ -61,8 +71,13 @@ function validateToolDeclaration(tool) {
     add('block', 'untruthful_readonly_hint', `"${name}" mutates by name but claims readOnlyHint: true — untruthful side-effect hint.`);
   }
 
-  // Commerce-shaped tools never run agent-side without a human step.
-  if (isCommerce && !readOnly) {
+  // Commerce-shaped tools never run agent-side without a human step, and a
+  // readOnlyHint claim does NOT soften this: annotations are page-supplied
+  // and cannot establish that a commerce action is harmless.
+  if (commerceShaped) {
+    if (readOnly) {
+      add('block', 'commerce_readonly_claim', `"${name}" is commerce-shaped; claiming readOnlyHint: true does not exempt it — the hint cannot be trusted for money-shaped operations.`);
+    }
     if (annotations.humanConfirmationHint !== true) {
       add('block', 'commerce_without_human_confirmation', `"${name}" is commerce-shaped; it must declare annotations.humanConfirmationHint: true and route the final step to a human.`);
     }
@@ -103,22 +118,32 @@ function auditToolRegistry(tools) {
 function evaluateWebMcpPretool(action) {
   const a = action || {};
   const annotations = a.annotations || {};
-  const text = `${String(a.toolName || '')} ${String(a.description || '')}`;
-  const isCommerce = COMMERCE_VOCAB_RE.test(text);
   const readOnly = annotations.readOnlyHint === true;
 
-  if (isCommerce && !readOnly) {
+  // Commerce-shaped names deny UNCONDITIONALLY. The page controls the
+  // annotations, so a checkout tool claiming readOnlyHint: true is exactly
+  // the misdeclaration this boundary exists to stop.
+  if (isCommerceShaped(a.toolName)) {
     return {
       decision: 'deny',
       ruleId: 'webmcp_commerce_tool',
-      reason: 'Agent-initiated invocation of a commerce-shaped WebMCP tool is forbidden; a human must complete purchase flows.',
+      reason: 'Agent-initiated invocation of a commerce-shaped WebMCP tool is forbidden regardless of its annotations; a human must complete purchase flows.',
     };
   }
-  if (a.autosubmit === true && !readOnly) {
+  if (a.autosubmit === true) {
     return {
       decision: 'deny',
-      ruleId: 'webmcp_autosubmit_mutation',
-      reason: 'Agent-invoked autosubmit on a non-read-only WebMCP form tool is forbidden.',
+      ruleId: 'webmcp_autosubmit',
+      reason: 'Agent-invoked autosubmit on a WebMCP form tool is forbidden; annotations cannot make an auto-submitting form safe.',
+    };
+  }
+  // Commerce vocabulary only in the description (prose may disclaim money)
+  // never reaches allow: warn even when the page claims readOnlyHint.
+  if (COMMERCE_VOCAB_RE.test(String(a.description || ''))) {
+    return {
+      decision: 'warn',
+      ruleId: 'webmcp_commerce_adjacent',
+      reason: 'WebMCP tool description mentions commerce; the readOnlyHint is page-supplied and unverified — apply standard gates.',
     };
   }
   if (!readOnly) {
