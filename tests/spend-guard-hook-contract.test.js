@@ -22,6 +22,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const GUARD = path.join(__dirname, '..', 'scripts', 'thumbgate-spend-guard.js');
+const { evaluateSpend } = require(GUARD);
 
 function matcher() {
   const src = fs.readFileSync(GUARD, 'utf8');
@@ -182,4 +183,68 @@ test('remedy-tool prose and quoted issue bodies are not commerce actions (#3523)
     assert.equal(out.stdout, '', `allow/${payload.tool_name}: prose must be silent`);
     assert.equal(out.code, 0, `${payload.tool_name} prose must not be a HARD BLOCK (stderr: ${out.stderr.slice(0, 160)})`);
   }
+});
+
+test('file-content tools do not treat prose or SQL as spend', () => {
+  const cases = [
+    ['Write', {
+      file_path: 'report.md',
+      content: `Currency example: $1,234.56.\n${'ordinary prose '.repeat(20)}Update the appendix.`,
+    }],
+    ['Edit', {
+      file_path: 'analysis.sql',
+      old_string: 'Invoice',
+      new_string: 'UPDATE records SET status = 1',
+    }],
+    ['NotebookEdit', {
+      notebook_path: 'analysis.ipynb',
+      new_source: 'Update the invoice-formatting example.',
+    }],
+  ];
+
+  for (const [toolName, toolInput] of cases) {
+    assert.deepEqual(evaluateSpend(toolName, toolInput), { decision: 'allow' });
+  }
+});
+
+test('financial action and object must be within 80 characters', () => {
+  const far = evaluateSpend('Bash', {
+    command: `update ${'ordinary '.repeat(20)}billing documentation`,
+  });
+  assert.deepEqual(far, { decision: 'allow' });
+
+  const nearby = evaluateSpend('Bash', {
+    command: 'update billing plan to professional tier',
+  });
+  assert.equal(nearby.decision, 'deny');
+  assert.equal(nearby.ruleId, 'financial_action_and_object');
+});
+
+test('vendor prose is allowed while interactive spend remains denied', () => {
+  assert.deepEqual(
+    evaluateSpend('Write', {
+      file_path: 'notes.md',
+      content: 'OpenAI documentation describes pro features and paid credits.',
+    }),
+    { decision: 'allow' },
+  );
+
+  const interactive = evaluateSpend('mcp__browseros_neo__act', {
+    kind: 'click',
+    url: 'https://checkout.stripe.com/c/pay/test',
+  });
+  assert.equal(interactive.decision, 'deny');
+  assert.equal(interactive.ruleId, 'interactive_spend_ui');
+});
+
+test('direct purchase and guard-tampering controls remain denied', () => {
+  const direct = evaluateSpend('domain_purchase', { domain: 'example.com' });
+  assert.equal(direct.decision, 'deny');
+  assert.equal(direct.ruleId, 'purchase_tool');
+
+  const tampering = evaluateSpend('Bash', {
+    command: 'chmod u+w ~/.thumbgate/bin/thumbgate-spend-guard.js',
+  });
+  assert.equal(tampering.decision, 'deny');
+  assert.equal(tampering.ruleId, 'guard_tampering');
 });

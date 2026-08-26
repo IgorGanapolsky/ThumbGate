@@ -49,7 +49,7 @@ const DIRECT_TOOL_RULES = [
 ];
 
 const FINANCIAL_OBJECT =
-  /\b(?:annual|monthly|paid)\s+(?:plan|seat|tier|subscription)|\b(?:billing|checkout|invoice|payment\s*method|subscription|credits?|credit\s*pack|paid\s*tier|pricing\s*tier|pro\s*plan|enterprise\s*plan)\b|\b(?:basic|professional|organization|business|team)\s+(?:plan|seat|tier)\b|\bapollo\s*pro\b|\bthumbgate\s*pro\b|\$\s*\d/i;
+  /\b(?:annual|monthly|paid)\s+(?:plan|seat|tier|subscription)|\b(?:billing|checkout|payment\s*method|subscription|credits?|credit\s*pack|paid\s*tier|pricing\s*tier|pro\s*plan|enterprise\s*plan)\b|\b(?:basic|professional|organization|business|team)\s+(?:plan|seat|tier)\b|\bapollo\s*pro\b|\bthumbgate\s*pro\b/i;
 
 const MUTATION_ACTION =
   /\b(?:buy|purchase|upgrade|subscribe|activate|checkout|pay|charge|confirm|submit|create|attach|change|update|switch|cancel|refund|add\s+payment|enter\s+card|post|put|patch)\b/i;
@@ -130,6 +130,27 @@ function flattenSideEffect(toolName, toolInput) {
   return flattenSkippingProse(input);
 }
 
+function hasNearbyDistinctMatches(text, leftPattern, rightPattern, maxGap = 80) {
+  const matchAll = (pattern) => {
+    const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+    return [...String(text).matchAll(new RegExp(pattern.source, flags))].map((match) => ({
+      start: match.index,
+      end: match.index + match[0].length,
+    }));
+  };
+  const leftMatches = matchAll(leftPattern);
+  const rightMatches = matchAll(rightPattern);
+
+  return leftMatches.some((left) => rightMatches.some((right) => {
+    const overlaps = left.start < right.end && right.start < left.end;
+    if (overlaps) return false;
+    const gap = left.end <= right.start
+      ? right.start - left.end
+      : left.start - right.end;
+    return gap <= maxGap;
+  }));
+}
+
 function evaluateSpend(toolName, toolInput) {
   const name = String(toolName || '');
   const text = flattenSideEffect(name, toolInput);
@@ -181,19 +202,17 @@ function evaluateSpend(toolName, toolInput) {
     return { decision: 'deny', ruleId: 'interactive_spend_ui', reason: DENY_REASON };
   }
 
-  // The action and the object must be TWO distinct things. Several tokens appear
-  // in both lists, so a single word would otherwise satisfy both halves and
-  // self-deny -- which is what blocked ordinary version-control subcommands.
-  const actionMatch = MUTATION_ACTION.exec(combined);
-  const objectMatch = FINANCIAL_OBJECT.exec(combined);
-  const spansOverlap = Boolean(actionMatch && objectMatch)
-    && actionMatch.index < objectMatch.index + objectMatch[0].length
-    && objectMatch.index < actionMatch.index + actionMatch[0].length;
-  if (actionMatch && objectMatch && !spansOverlap) {
+  // File-content tools write text, not money. For other tools, require a nearby
+  // non-overlapping action/object pair so unrelated prose cannot become spend.
+  const isFileContentTool = /^(?:write|edit|multiedit|notebookedit)$/i.test(name.trim());
+  if (
+    !isFileContentTool
+    && hasNearbyDistinctMatches(combined, MUTATION_ACTION, FINANCIAL_OBJECT)
+  ) {
     return { decision: 'deny', ruleId: 'financial_action_and_object', reason: DENY_REASON };
   }
 
-  if (VENDOR_UPSELL.test(combined)) {
+  if (isInteractiveUi && hasInteractiveAction && VENDOR_UPSELL.test(combined)) {
     return { decision: 'deny', ruleId: 'vendor_upsell', reason: DENY_REASON };
   }
 
