@@ -43,6 +43,7 @@ function readSyncState(options = {}) {
     return {
       historyOffset: Number(parsed.historyOffset || 0),
       historySize: Number(parsed.historySize || 0),
+      historyIno: parsed.historyIno ? String(parsed.historyIno) : null,
       processedIds: Array.isArray(parsed.processedIds) ? parsed.processedIds : [],
       statePath,
     };
@@ -50,6 +51,7 @@ function readSyncState(options = {}) {
     return {
       historyOffset: 0,
       historySize: 0,
+      historyIno: null,
       processedIds: [],
       statePath,
     };
@@ -61,6 +63,7 @@ function writeSyncState(state, options = {}) {
   const payload = {
     historyOffset: Number(state.historyOffset || 0),
     historySize: Number(state.historySize || 0),
+    historyIno: state.historyIno ? String(state.historyIno) : null,
     processedIds: Array.isArray(state.processedIds) ? state.processedIds.slice(-DEFAULT_PROCESSED_ID_LIMIT) : [],
     updatedAt: new Date().toISOString(),
   };
@@ -75,23 +78,25 @@ function readHistoryEntriesSince(filePath, state) {
       entries: [],
       nextOffset: 0,
       size: 0,
+      ino: null,
     };
   }
 
   const stat = fs.statSync(filePath);
+  const currentIno = stat.ino > 0 ? String(stat.ino) : null;
 
-  // Rotation guard: a file smaller than the recorded size means the offset
-  // points into vanished content; re-reading from 0 mass re-imported old
-  // signals. Skip past it; a first run (no recorded size) still scans once.
-  if (state && state.historySize > 0 && stat.size < state.historySize) {
-    return {
-      entries: [],
-      nextOffset: stat.size,
-      size: stat.size,
-    };
-  }
+  // Rotation guard: a replaced file (new inode) or one smaller than the
+  // recorded size means the saved offset points into vanished content. Scan
+  // the replacement from 0 so entries it already holds are preserved; the
+  // processedIds and feedback-log dedup layers stop old signals from
+  // mass re-importing. Skipping to end here would permanently drop any
+  // signal already present in the replacement file.
+  const rotated = Boolean(state) && (
+    (state.historyIno && currentIno && state.historyIno !== currentIno)
+    || (state.historySize > 0 && stat.size < state.historySize)
+  );
 
-  const safeOffset = state && state.historyOffset > 0 && state.historyOffset <= stat.size
+  const safeOffset = !rotated && state && state.historyOffset > 0 && state.historyOffset <= stat.size
     ? state.historyOffset
     : 0;
 
@@ -115,6 +120,7 @@ function readHistoryEntriesSince(filePath, state) {
     entries,
     nextOffset: stat.size,
     size: stat.size,
+    ino: currentIno,
   };
 }
 
@@ -315,6 +321,7 @@ function syncClaudeHistoryFeedback(options = {}) {
     writeSyncState({
       historyOffset: history.nextOffset,
       historySize: history.size,
+      historyIno: history.ino,
       processedIds: Array.from(processedIds),
     }, { feedbackDir });
 

@@ -136,6 +136,42 @@ test('history rotation does not re-import previously synced signals', () => {
   fs.rmSync(feedbackDir, { recursive: true, force: true });
 });
 
+test('rotation preserves new entries already present in the replacement file', () => {
+  const homeDir = makeTmpDir('thumbgate-claude-sync-home-');
+  const feedbackDir = makeTmpDir('thumbgate-claude-sync-feedback-');
+  const projectDir = '/tmp/thumbgate-project';
+  const historyPath = path.join(homeDir, '.claude', 'history.jsonl');
+
+  writeJsonl(historyPath, [
+    { display: 'thumbs down that deploy claim was wrong', timestamp: 1775750156301, project: projectDir, sessionId: 's1' },
+  ]);
+
+  const first = syncClaudeHistoryFeedback({ feedbackDir, projectDir, historyPath });
+  assert.equal(first.importedCount, 1);
+
+  // Rename-based rotation: the replacement file has a NEW inode and grows
+  // PAST the recorded size, carrying one already-synced signal plus one
+  // brand-new signal. Skip-to-end would permanently drop the new signal;
+  // a stale-offset read would slice into the middle of the new file.
+  const replacementPath = `${historyPath}.rotating`;
+  writeJsonl(replacementPath, [
+    { display: 'thumbs down that deploy claim was wrong', timestamp: 1775750156301, project: projectDir, sessionId: 's1' },
+    { display: 'thumbs down the new report also skipped verification entirely', timestamp: 1775750356301, project: projectDir, sessionId: 's2' },
+  ]);
+  fs.renameSync(replacementPath, historyPath);
+
+  const second = syncClaudeHistoryFeedback({ feedbackDir, projectDir, historyPath });
+  assert.equal(second.importedCount, 1);
+  assert.equal(second.skippedCount, 1);
+
+  const entries = fs.readFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+  assert.equal(entries.length, 2);
+  assert.equal(entries[1].submittedContext, 'thumbs down the new report also skipped verification entirely');
+
+  fs.rmSync(homeDir, { recursive: true, force: true });
+  fs.rmSync(feedbackDir, { recursive: true, force: true });
+});
+
 test('identical long text dedupes regardless of the timestamp window', () => {
   const homeDir = makeTmpDir('thumbgate-claude-sync-home-');
   const feedbackDir = makeTmpDir('thumbgate-claude-sync-feedback-');
