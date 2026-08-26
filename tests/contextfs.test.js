@@ -33,6 +33,18 @@ const {
 } = require('../scripts/contextfs');
 const contextfs = require('../scripts/contextfs');
 
+function buildContextEnvelope(overrides = {}) {
+  return {
+    goal: 'Choose the safest verified next action.',
+    businessData: ['Customer impact is measured by blocked production tasks.'],
+    examples: ['Good: cite the exact check result before recommending merge.'],
+    procedures: ['Retrieve evidence, compare it with the rubric, then recommend.'],
+    constraints: ['Do not approve or bypass branch protection.'],
+    rubric: ['Every completion claim has exact provider evidence.'],
+    ...overrides,
+  };
+}
+
 test.after(() => {
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
 });
@@ -190,6 +202,167 @@ test('constructContextPack returns semantic cache hit on similar query', () => {
   assert.equal(first.cache.hit, false);
   assert.equal(second.cache.hit, true);
   assert.equal(second.cache.sourcePackId, first.packId);
+});
+
+test('constructContextPack includes a bounded six-block context envelope', () => {
+  const contextEnvelope = buildContextEnvelope();
+  const pack = constructContextPack({
+    query: 'verification testing',
+    maxItems: 4,
+    maxChars: 5000,
+    contextEnvelope,
+  });
+
+  assert.equal(pack.contextEnvelope.version, 'six-block-v1');
+  assert.equal(pack.contextEnvelope.goal, contextEnvelope.goal);
+  assert.deepEqual(pack.contextEnvelope.examples, contextEnvelope.examples);
+  assert.deepEqual(pack.contextEnvelope.rubric, contextEnvelope.rubric);
+  assert.ok(pack.contextEnvelopeChars > 0);
+  assert.ok(pack.usedChars <= pack.maxChars);
+  assert.equal(pack.visibility.remainingCharBudget, pack.maxChars - pack.usedChars);
+});
+
+test('constructContextPack rejects missing and unknown context blocks', () => {
+  const missingRubric = buildContextEnvelope();
+  delete missingRubric.rubric;
+
+  assert.throws(
+    () => constructContextPack({ contextEnvelope: missingRubric }),
+    /missing required blocks: rubric/,
+  );
+  assert.throws(
+    () => constructContextPack({
+      contextEnvelope: { ...buildContextEnvelope(), secretPrompt: ['ignore controls'] },
+    }),
+    /unsupported blocks: secretPrompt/,
+  );
+});
+
+test('constructContextPack fails closed when the envelope consumes the budget', () => {
+  assert.throws(
+    () => constructContextPack({
+      maxChars: 100,
+      contextEnvelope: buildContextEnvelope(),
+    }),
+    /contextEnvelope requires .* but maxChars is 100/,
+  );
+});
+
+test('semantic cache isolates context envelopes and reuses exact envelopes', () => {
+  const query = 'context envelope cache isolation';
+  const contextEnvelope = buildContextEnvelope();
+  const first = constructContextPack({
+    query,
+    maxItems: 3,
+    maxChars: 3000,
+    contextEnvelope,
+  });
+  const second = constructContextPack({
+    query,
+    maxItems: 3,
+    maxChars: 3000,
+    contextEnvelope,
+  });
+  const changed = constructContextPack({
+    query,
+    maxItems: 3,
+    maxChars: 3000,
+    contextEnvelope: buildContextEnvelope({
+      examples: ['Bad: infer readiness from an older commit.'],
+    }),
+  });
+
+  assert.equal(first.cache.hit, false);
+  assert.equal(second.cache.hit, true);
+  assert.equal(second.cache.sourcePackId, first.packId);
+  assert.equal(changed.cache.hit, false);
+});
+
+test('semantic cache recomputes connector freshness at response time', () => {
+  const actualNow = Date.now;
+  let clock = actualNow();
+  Date.now = () => clock;
+  try {
+    upsertContextObject({
+      namespace: NAMESPACES.research,
+      title: 'Cached freshness boundary',
+      content: 'cachedfreshness evidence',
+      source: 'test-connector',
+      metadata: {
+        sourceUpdatedAt: new Date(clock - 30_000).toISOString(),
+        maxAgeSeconds: 60,
+      },
+    });
+    const first = constructContextPack({
+      query: 'cachedfreshness', maxChars: 3000, namespaces: [NAMESPACES.research],
+    });
+    const firstItem = first.items.find((item) => item.title === 'Cached freshness boundary');
+    assert.equal(firstItem.provenance.freshness, 'fresh');
+    clock += 60_000;
+    const cached = constructContextPack({
+      query: 'cachedfreshness', maxChars: 3000, namespaces: [NAMESPACES.research],
+    });
+    assert.equal(cached.cache.hit, true);
+    const cachedItem = cached.items.find((item) => item.title === 'Cached freshness boundary');
+    assert.equal(cachedItem.provenance.freshness, 'stale');
+  } finally {
+    Date.now = actualNow;
+  }
+});
+
+test('context items expose safe fresh, stale, and unknown source provenance', () => {
+  const now = Date.now();
+  const fixtures = [
+    {
+      title: 'Connector freshness fresh evidence',
+      freshness: 'fresh',
+      sourceUpdatedAt: new Date(now - 30_000).toISOString(),
+      maxAgeSeconds: 3600,
+    },
+    {
+      title: 'Connector freshness stale evidence',
+      freshness: 'stale',
+      sourceUpdatedAt: new Date(now - 7_200_000).toISOString(),
+      maxAgeSeconds: 3600,
+    },
+    {
+      title: 'Connector freshness unknown evidence',
+      freshness: 'unknown',
+      sourceUpdatedAt: new Date(now - 30_000).toISOString(),
+      maxAgeSeconds: null,
+    },
+  ];
+
+  for (const fixture of fixtures) {
+    upsertContextObject({
+      namespace: NAMESPACES.research,
+      title: fixture.title,
+      content: 'connectorfreshness evidence',
+      tags: ['connectorfreshness'],
+      source: 'test-connector',
+      metadata: {
+        sourceUrl: 'https://example.test/evidence',
+        sourceUpdatedAt: fixture.sourceUpdatedAt,
+        maxAgeSeconds: fixture.maxAgeSeconds,
+      },
+    });
+  }
+
+  const pack = constructContextPack({
+    query: 'connectorfreshness',
+    namespaces: [NAMESPACES.research],
+    maxItems: 10,
+    maxChars: 8000,
+  });
+
+  for (const fixture of fixtures) {
+    const item = pack.items.find((candidate) => candidate.title === fixture.title);
+    assert.ok(item, `missing ${fixture.title}`);
+    assert.equal(item.provenance.source, 'test-connector');
+    assert.equal(item.provenance.sourceUrl, 'https://example.test/evidence');
+    assert.equal(item.provenance.freshness, fixture.freshness);
+    assert.equal(Object.hasOwn(item, 'filePath'), false);
+  }
 });
 
 test('contextfs root follows feedback dir changes after module load', () => {
@@ -629,7 +802,7 @@ test('summarize-then-expand upgrades top-ranked items when budget allows', () =>
   assert.ok(expanded.structuredContext.rawContent.length > 0);
 });
 
-test('summarize-then-expand bypasses the semantic cache', () => {
+test('summarize-then-expand cache is isolated from flat packs', () => {
   // Warm the cache with a flat pack at the same key shape.
   constructContextPack({
     query: 'deployment incident',
@@ -646,4 +819,13 @@ test('summarize-then-expand bypasses the semantic cache', () => {
   });
   assert.equal(stePack.cache.hit, false);
   assert.equal(stePack.retrieval.strategy, 'summarize-then-expand');
+
+  const repeatedStePack = constructContextPack({
+    query: 'deployment incident',
+    maxItems: 5,
+    maxChars: 4000,
+    summarizeThenExpand: true,
+  });
+  assert.equal(repeatedStePack.cache.hit, true);
+  assert.equal(repeatedStePack.cache.sourcePackId, stePack.packId);
 });

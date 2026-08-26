@@ -10366,12 +10366,23 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid namespaces');
         }
-        const pack = constructContextPack({
-          query: body.query || '',
-          maxItems: Number(body.maxItems || 8),
-          maxChars: Number(body.maxChars || 6000),
-          namespaces,
-        });
+        let pack;
+        try {
+          pack = constructContextPack({
+            query: body.query || '',
+            maxItems: Number(body.maxItems || 8),
+            maxChars: Number(body.maxChars || 6000),
+            namespaces,
+            strategy: body.strategy || null,
+            contextEnvelope: body.contextEnvelope || null,
+          });
+        } catch (err) {
+          if (err.code === 'INVALID_CONTEXT_ENVELOPE'
+            || err.code === 'CONTEXT_BUDGET_EXCEEDED') {
+            throw createHttpError(400, err.message);
+          }
+          throw err;
+        }
         sendJson(res, 200, pack);
         return;
       }

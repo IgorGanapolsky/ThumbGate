@@ -104,6 +104,20 @@ const GOAL_CONTRACT_SCHEMA = {
   },
 };
 
+const CONTEXT_LIST_BLOCKS = ['businessData', 'examples', 'procedures', 'constraints', 'rubric'];
+const NON_EMPTY_STRING = { type: 'string', minLength: 1 };
+const CONTEXT_ENVELOPE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['goal', ...CONTEXT_LIST_BLOCKS],
+  properties: {
+    goal: NON_EMPTY_STRING,
+    ...Object.fromEntries(CONTEXT_LIST_BLOCKS.map((key) => [
+      key, { type: 'array', minItems: 1, items: NON_EMPTY_STRING },
+    ])),
+  },
+};
+
 const TASK_OUTCOME_INPUT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -913,6 +927,8 @@ const TOOLS = [
         maxItems: { type: 'number' },
         maxChars: { type: 'number' },
         namespaces: { type: 'array', items: { type: 'string' } },
+        strategy: { type: 'string', enum: ['summarize-then-expand'] },
+        contextEnvelope: CONTEXT_ENVELOPE_SCHEMA,
       },
     },
   }),
