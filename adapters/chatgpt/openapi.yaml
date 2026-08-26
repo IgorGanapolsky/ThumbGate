@@ -1955,6 +1955,10 @@ paths:
                       - rules
                       - tools
                       - provenance
+                strategy: { type: string, enum: [summarize-then-expand] }
+                contextEnvelope:
+                  type: object
+                  description: Six-block envelope; see context engineering docs.
       responses:
         '200':
           description: Context pack created

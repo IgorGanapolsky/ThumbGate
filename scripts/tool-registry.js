@@ -913,6 +913,11 @@ const TOOLS = [
         maxItems: { type: 'number' },
         maxChars: { type: 'number' },
         namespaces: { type: 'array', items: { type: 'string' } },
+        strategy: { type: 'string', enum: ['summarize-then-expand'] },
+        contextEnvelope: {
+          type: 'object',
+          description: 'Six-block envelope; see context engineering docs.',
+        },
       },
     },
   }),

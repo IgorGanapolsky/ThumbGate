@@ -644,6 +644,8 @@ function buildContextPackResponse(args = {}) {
     maxItems: Number(args.maxItems || 8),
     maxChars: Number(args.maxChars || 6000),
     namespaces,
+    strategy: args.strategy || null,
+    contextEnvelope: args.contextEnvelope || null,
   });
   // Feed outcome-paired action receipts into the pack so an action->outcome
   // history is available alongside lessons/rules. Additive + guarded: a
@@ -652,17 +654,31 @@ function buildContextPackResponse(args = {}) {
     const receiptEntries = buildReceiptContextEntries(args.query || '', Number(args.maxItems || 8));
     if (Array.isArray(receiptEntries) && receiptEntries.length && Array.isArray(pack.items)) {
       for (const entry of receiptEntries) {
+        if (pack.items.length >= pack.maxItems) break;
+        const receiptText = entry && entry.text ? String(entry.text) : '';
+        const receiptChars = `Action receipt outcome\n${receiptText}`.length;
+        if (pack.usedChars + receiptChars > pack.maxChars) continue;
         pack.items.push({
           id: `action-receipt_${entry && entry.score != null ? entry.score : ''}_${pack.items.length}`,
           namespace: 'action-receipts',
           title: 'Action receipt outcome',
-          structuredContext: { rawContent: entry && entry.text ? String(entry.text) : '' },
+          structuredContext: { rawContent: receiptText },
+          provenance: {
+            source: 'action-receipts',
+            freshness: 'unknown',
+          },
           tags: ['action-receipt', 'outcome-paired'],
           score: entry && typeof entry.score === 'number' ? entry.score : 0,
         });
+        pack.usedChars += receiptChars;
       }
       if (!Array.isArray(pack.namespaces)) pack.namespaces = [];
       if (!pack.namespaces.includes('action-receipts')) pack.namespaces.push('action-receipts');
+      if (pack.visibility) {
+        pack.visibility.itemCount = pack.items.length;
+        pack.visibility.remainingCharBudget = Math.max(pack.maxChars - pack.usedChars, 0);
+        pack.visibility.visibleTitles = pack.items.slice(0, 5).map((item) => item.title);
+      }
     }
   } catch {
     // ignore receipt enrichment failures
