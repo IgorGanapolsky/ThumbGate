@@ -466,6 +466,28 @@ describe('buildHybridState', () => {
     assert.match(constraints.join('\n'), /claimed merged without a sha/i);
   });
 
+  it('keeps substantive history-sync feedback rankable despite transport tags', () => {
+    const feedbackLogPath = path.join(tmpDir, 'feedback-log-history-sync-substantive.jsonl');
+    const ts = new Date().toISOString();
+    const recovered = [1, 2, 3].map((n) => ({
+      id: `fb-history-sync-real-${n}`,
+      signal: 'negative',
+      timestamp: ts,
+      context: 'thumbs down: claimed merged without a SHA on origin/main',
+      whatWentWrong: 'thumbs down: claimed merged without a SHA on origin/main',
+      tags: ['claude-history-sync', 'auto-capture-fallback'],
+    }));
+    writeJsonl(feedbackLogPath, recovered);
+
+    const state = buildHybridState({
+      feedbackLogPath,
+      attributedFeedbackPath: path.join(tmpDir, 'attributed-feedback-empty.jsonl'),
+    });
+    const constraints = deriveConstraints(state);
+    assert.ok(state.recurringNegativePatterns.length > 0, 'substantive recovered feedback must still rank');
+    assert.match(constraints.join('\n'), /claimed merged without a sha/i);
+  });
+
   it('keeps real feedback while stripping volatile hook metadata', () => {
     const feedbackLogPath = path.join(tmpDir, 'feedback-log-real-plus-hook.jsonl');
     const ts = new Date().toISOString();

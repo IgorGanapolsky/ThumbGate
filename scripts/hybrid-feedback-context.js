@@ -178,19 +178,38 @@ function patternContext(entry) {
 
 /**
  * Tags that mark capture/enforcement machinery, not a human judgment about an
- * agent action. `claude-history-sync` + `auto-capture-fallback` are written by
- * `scripts/claude-feedback-sync.js` when it re-imports rotated Claude history.
- * Those entries have context like "thumbs down" and were measured (2026-08-26)
- * becoming the PreToolUse constraint
- * `Avoid: "thumbs down claude-history-sync auto-capture-fallback" (seen 44x)`.
+ * agent action. An entry carrying one of these is never a human lesson.
  */
-const AUTOMATED_FEEDBACK_TAGS = Object.freeze([
+const MACHINERY_FEEDBACK_TAGS = Object.freeze([
   'auto-capture',
-  'auto-capture-fallback',
-  'claude-history-sync',
   'gates-engine',
   'audit-trail',
 ]);
+
+/**
+ * Transport tags stamped by `scripts/claude-feedback-sync.js` on EVERY record
+ * it recovers from Claude history — bare "thumbs down" junk and rich human
+ * lessons alike. Bare rows were measured (2026-08-26) becoming the PreToolUse
+ * constraint `Avoid: "thumbs down claude-history-sync auto-capture-fallback"
+ * (seen 44x)`. Because the tags mark the transport rather than the content,
+ * they demote an entry to "automated" only when the recovered text is a bare
+ * signal with no described mistake; substantive repeated feedback such as
+ * "thumbs down: claimed merged without a SHA" must still rank.
+ */
+const HISTORY_SYNC_TRANSPORT_TAGS = Object.freeze([
+  'auto-capture-fallback',
+  'claude-history-sync',
+]);
+
+const BARE_SIGNAL_PREFIX_RE = /^(?:thumbs\s*(?:up|down)|👍|👎)[\s:,.!-]*/i;
+
+function isBareHistorySyncSignal(entry) {
+  if (String(entry.whatToChange || entry.what_to_change || '').trim()) return false;
+  const text = String(entry.context || entry.whatWentWrong || entry.what_went_wrong || '').trim();
+  if (!text) return true;
+  const stripped = text.replace(BARE_SIGNAL_PREFIX_RE, '').trim();
+  return stripped.length < 8;
+}
 
 /**
  * Check if the feedback entry is an automated enforcement log (e.g. from gates engine)
@@ -198,7 +217,10 @@ const AUTOMATED_FEEDBACK_TAGS = Object.freeze([
  */
 function isAutomatedFeedback(entry) {
   const tags = Array.isArray(entry.tags) ? entry.tags : [];
-  if (tags.some((tag) => AUTOMATED_FEEDBACK_TAGS.includes(tag))) {
+  if (tags.some((tag) => MACHINERY_FEEDBACK_TAGS.includes(tag))) {
+    return true;
+  }
+  if (tags.some((tag) => HISTORY_SYNC_TRANSPORT_TAGS.includes(tag)) && isBareHistorySyncSignal(entry)) {
     return true;
   }
   const context = String(entry.context || entry.whatWentWrong || '').toLowerCase();
