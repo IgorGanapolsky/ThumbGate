@@ -431,6 +431,41 @@ describe('buildHybridState', () => {
     assert.deepStrictEqual(deriveConstraints(state), []);
   });
 
+  it('does not promote claude-history-sync auto-capture-fallback junk into Avoid constraints', () => {
+    const feedbackLogPath = path.join(tmpDir, 'feedback-log-history-sync-junk.jsonl');
+    const ts = new Date().toISOString();
+    const junk = [1, 2, 3, 4, 5].map((n) => ({
+      id: `fb-history-sync-${n}`,
+      signal: 'negative',
+      timestamp: ts,
+      context: 'thumbs down',
+      whatWentWrong: 'thumbs down',
+      tags: ['claude-history-sync', 'auto-capture-fallback'],
+    }));
+    const real = [1, 2].map((n) => ({
+      id: `fb-real-overclaim-${n}`,
+      signal: 'negative',
+      timestamp: ts,
+      context: 'claimed merged without a SHA on origin/main',
+      whatWentWrong: 'claimed merged without a SHA on origin/main',
+      whatToChange: 'cite merge commit SHA before saying merged',
+      tags: ['completion-claim'],
+    }));
+    writeJsonl(feedbackLogPath, [...junk, ...real]);
+
+    const state = buildHybridState({
+      feedbackLogPath,
+      attributedFeedbackPath: path.join(tmpDir, 'attributed-feedback-empty.jsonl'),
+    });
+    const constraints = deriveConstraints(state);
+    const blob = JSON.stringify({ patterns: state.recurringNegativePatterns, constraints });
+    assert.doesNotMatch(blob, /auto-capture-fallback/);
+    assert.doesNotMatch(blob, /claude-history-sync/);
+    assert.doesNotMatch(blob, /thumbs down/);
+    assert.ok(state.recurringNegativePatterns.length > 0, 'real overclaim pattern must still rank');
+    assert.match(constraints.join('\n'), /claimed merged without a sha/i);
+  });
+
   it('keeps real feedback while stripping volatile hook metadata', () => {
     const feedbackLogPath = path.join(tmpDir, 'feedback-log-real-plus-hook.jsonl');
     const ts = new Date().toISOString();

@@ -177,12 +177,28 @@ function patternContext(entry) {
 }
 
 /**
+ * Tags that mark capture/enforcement machinery, not a human judgment about an
+ * agent action. `claude-history-sync` + `auto-capture-fallback` are written by
+ * `scripts/claude-feedback-sync.js` when it re-imports rotated Claude history.
+ * Those entries have context like "thumbs down" and were measured (2026-08-26)
+ * becoming the PreToolUse constraint
+ * `Avoid: "thumbs down claude-history-sync auto-capture-fallback" (seen 44x)`.
+ */
+const AUTOMATED_FEEDBACK_TAGS = Object.freeze([
+  'auto-capture',
+  'auto-capture-fallback',
+  'claude-history-sync',
+  'gates-engine',
+  'audit-trail',
+]);
+
+/**
  * Check if the feedback entry is an automated enforcement log (e.g. from gates engine)
  * rather than real developer/user feedback.
  */
 function isAutomatedFeedback(entry) {
-  const tags = entry.tags || [];
-  if (tags.includes('auto-capture') || tags.includes('gates-engine') || tags.includes('audit-trail')) {
+  const tags = Array.isArray(entry.tags) ? entry.tags : [];
+  if (tags.some((tag) => AUTOMATED_FEEDBACK_TAGS.includes(tag))) {
     return true;
   }
   const context = String(entry.context || entry.whatWentWrong || '').toLowerCase();
@@ -313,11 +329,12 @@ function buildHybridState(opts) {
     if (cls === 'positive') positive++;
     if (cls === 'negative') {
       negative++;
-      // Track tool-level negative counts (exclude automated gate logs)
-      if (!isAutomatedFeedback(entry)) {
-        const toolName = inferToolName(entry.toolName || entry.tool_name || 'unknown', entry.context || '');
-        toolNegatives[toolName] = (toolNegatives[toolName] || 0) + 1;
-      }
+      // History-sync fallback and gate logs still count as events, but they must
+      // not become recurring "Avoid" constraints injected on every PreToolUse.
+      if (isAutomatedFeedback(entry)) continue;
+
+      const toolName = inferToolName(entry.toolName || entry.tool_name || 'unknown', entry.context || '');
+      toolNegatives[toolName] = (toolNegatives[toolName] || 0) + 1;
 
       // Build pattern from context / whatWentWrong / what_went_wrong
       const rawText = [
