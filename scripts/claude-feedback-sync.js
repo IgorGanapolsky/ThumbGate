@@ -20,10 +20,8 @@ const SYNC_STATE_FILE = 'claude-feedback-sync-state.json';
 const DEFAULT_RECENT_FEEDBACK_LIMIT = 1000;
 const DEFAULT_PROCESSED_ID_LIMIT = 4096;
 const DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
-// Above this length, an identical prompt text with the same signal is the same
-// historical prompt re-surfacing, never a genuinely repeated sentiment — the
-// timestamp window is skipped for it. Short bare signals ("thumbs up") stay
-// window-bound so a human can legitimately send the same words on another day.
+// At this length, identical text + signal is a re-surfaced prompt, not a
+// repeated sentiment; shorter bare signals stay window-bound.
 const IDENTICAL_TEXT_DEDUP_MIN_LENGTH = 20;
 
 function getClaudeHistoryPath(options = {}) {
@@ -82,13 +80,9 @@ function readHistoryEntriesSince(filePath, state) {
 
   const stat = fs.statSync(filePath);
 
-  // Rotation/truncation guard. When the history file is now SMALLER than the
-  // size recorded at the last sync, the saved offset points into content that
-  // no longer exists. Re-reading from byte 0 here re-imported every historical
-  // signal each time the file rotated — the source of the repeated
-  // "claude-history-sync auto-capture-fallback" junk entries (18-44x per
-  // machine). Skip past the rotated content; only a genuine first run (no
-  // recorded size) scans the whole file.
+  // Rotation guard: a file smaller than the recorded size means the offset
+  // points into vanished content; re-reading from 0 mass re-imported old
+  // signals. Skip past it; a first run (no recorded size) still scans once.
   if (state && state.historySize > 0 && stat.size < state.historySize) {
     return {
       entries: [],
