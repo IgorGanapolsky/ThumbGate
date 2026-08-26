@@ -17,9 +17,14 @@ const {
 const { refreshStatuslineCache } = require('./hook-thumbgate-cache-updater');
 
 const SYNC_STATE_FILE = 'claude-feedback-sync-state.json';
-const DEFAULT_RECENT_FEEDBACK_LIMIT = 250;
-const DEFAULT_PROCESSED_ID_LIMIT = 512;
+const DEFAULT_RECENT_FEEDBACK_LIMIT = 1000;
+const DEFAULT_PROCESSED_ID_LIMIT = 4096;
 const DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
+// Above this length, an identical prompt text with the same signal is the same
+// historical prompt re-surfacing, never a genuinely repeated sentiment — the
+// timestamp window is skipped for it. Short bare signals ("thumbs up") stay
+// window-bound so a human can legitimately send the same words on another day.
+const IDENTICAL_TEXT_DEDUP_MIN_LENGTH = 20;
 
 function getClaudeHistoryPath(options = {}) {
   if (options.historyPath) return options.historyPath;
@@ -76,6 +81,22 @@ function readHistoryEntriesSince(filePath, state) {
   }
 
   const stat = fs.statSync(filePath);
+
+  // Rotation/truncation guard. When the history file is now SMALLER than the
+  // size recorded at the last sync, the saved offset points into content that
+  // no longer exists. Re-reading from byte 0 here re-imported every historical
+  // signal each time the file rotated — the source of the repeated
+  // "claude-history-sync auto-capture-fallback" junk entries (18-44x per
+  // machine). Skip past the rotated content; only a genuine first run (no
+  // recorded size) scans the whole file.
+  if (state && state.historySize > 0 && stat.size < state.historySize) {
+    return {
+      entries: [],
+      nextOffset: stat.size,
+      size: stat.size,
+    };
+  }
+
   const safeOffset = state && state.historyOffset > 0 && state.historyOffset <= stat.size
     ? state.historyOffset
     : 0;
@@ -203,6 +224,10 @@ function hasMatchingFeedbackEntry(candidate, feedbackEntries) {
       || ''
     );
     if (feedbackText !== candidateText) return false;
+
+    if (candidateText.length >= IDENTICAL_TEXT_DEDUP_MIN_LENGTH) {
+      return true;
+    }
 
     const feedbackTimestamp = Date.parse(entry.timestamp || '');
     if (!Number.isFinite(feedbackTimestamp) || !Number.isFinite(candidate.timestampMs)) {
