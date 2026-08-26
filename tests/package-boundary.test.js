@@ -477,8 +477,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     //   `thumbgate conflict-audit` module (+1 measured npm pack).
     //   Lockstep with public-bundle-ratchet + public-core-boundary.
     // 511 -> 512 (2026-08-25): public/yt.html YouTube/CPC dedicated landing.
-    manifest.fileCount <= 512,
-    `npm package should stay <= 512 files, got ${manifest.fileCount}`
+    // 512 -> 513 (2026-08-25): src/alert-noise-ledger.js (+1 measured npm pack).
+    // Public-shell runtime, not a Core feature: the packaged
+    // scripts/gates-engine.js requires it to suppress reminder lines it has
+    // already emitted this session.
+    manifest.fileCount <= 513,
+    `npm package should stay <= 513 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -662,9 +666,18 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // guard + dedup hardening (junk re-import loop fix). Runtime logic in an
   // already-shipped file; no new files enter the tarball. CI measured 8,010,953
   // unpacked bytes before the comment trim on this branch.
+  // Bumped 8.02 MB -> 8.03 MB (2026-08-26, merge of #3667) for
+  // src/alert-noise-ledger.js: ~17 KB of runtime code including the
+  // session-persistence layer added for cross-invocation suppression. main was
+  // already at ~8.011 MB after the rotation-guard bump above, so the module
+  // tripped the ceiling by itself. Headroom stays deliberately narrow so the
+  // next addition is a conscious decision rather than a silent one. Shrinking
+  // explanatory comments to squeeze under a byte limit was rejected: this
+  // ratchet exists to catch unintended bloat, and a documented runtime module
+  // is not that.
   assert.ok(
-    manifest.unpackedSize <= 8_020_000,
-    `npm package should stay <= 8.02 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 8_030_000,
+    `npm package should stay <= 8.03 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
