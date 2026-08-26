@@ -15,6 +15,40 @@ Maps [Hugging Face The Context Course](https://huggingface.co/learn/context-cour
 | 5 | Hooks | PreToolUse: gate-check, spend-guard, outbound-email-guard |
 | 6 | Nano harness | `gate-check` stdin contract, `bin/cli.js` |
 
+## Reusable six-block context
+
+`construct_context_pack` accepts a durable `contextEnvelope` that makes
+few-shot examples and rubric-first evaluation reusable across agents:
+
+```json
+{
+  "query": "Is this pull request ready?",
+  "maxChars": 6000,
+  "contextEnvelope": {
+    "goal": "Decide whether the exact pull request head is merge-ready.",
+    "businessData": ["Required checks and review threads are provider evidence."],
+    "examples": ["Good: cite the exact SHA and terminal check run."],
+    "procedures": ["Retrieve, compare with the rubric, then recommend."],
+    "constraints": ["Never approve or bypass branch protection."],
+    "rubric": ["Every readiness claim includes exact provider evidence."]
+  }
+}
+```
+
+The envelope is validated, counted against the same character budget as
+retrieved memory, and included in semantic-cache identity. A changed example or
+rubric cannot reuse a pack built for different instructions.
+
+Retrieved items include safe provenance fields:
+
+- `source` and optional `sourceUrl`;
+- `observedAt` and optional `maxAgeSeconds`;
+- `freshness`: `fresh`, `stale`, `future`, `invalid`, or `unknown`.
+
+This is the connector boundary: live business data is useful only when the
+source and freshness are carried with it. ContextFS does not turn an old
+connector result into current truth.
+
 ## GSD stages (Get Shit Done)
 
 Used for every multi-file context/coding task:
