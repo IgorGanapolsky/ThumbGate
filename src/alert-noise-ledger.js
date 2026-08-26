@@ -1,5 +1,10 @@
 'use strict';
 
+const crypto = require('crypto');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
 /**
  * Alert noise ledger — suppression and correlation for the reminder surface.
  *
@@ -54,6 +59,9 @@ const NEVER_BLOCKED_SAMPLE = 20;
 
 /** Matches the existing session bucket in gates-engine.js (SESSION_ACTION_TTL_MS). */
 const SESSION_TTL_MS = 60 * 60 * 1000;
+
+/** Cap per collection in the persisted store so one session can never grow it unbounded. */
+const LEDGER_STORE_MAX_ENTRIES = 1024;
 
 /**
  * Rule bodies that carry no instruction. These occupy a "High-Priority
@@ -163,6 +171,56 @@ class AlertNoiseLedger {
     this.escalated = new Set();
     /** @type {Map<string, number>} reminder line -> timestamp last emitted */
     this.lineSeenAt = new Map();
+    /**
+     * The installed PreToolUse paths launch a NEW Node process per tool call,
+     * so in-memory state alone would reset on every invocation and cross-call
+     * suppression would never activate. When a storePath is given, state is
+     * reloaded from it on construction and re-persisted after each mutation.
+     */
+    this.storePath = options.storePath || null;
+    if (this.storePath) this._load();
+  }
+
+  _load() {
+    try {
+      const raw = JSON.parse(fs.readFileSync(this.storePath, 'utf8'));
+      const now = this.now();
+      // A stale store means the session window lapsed: start a fresh ledger.
+      if (typeof raw.updatedAt !== 'number' || now - raw.updatedAt > this.ttlMs) return;
+      const cutoff = now - this.ttlMs;
+      for (const [sig, count] of Array.isArray(raw.counts) ? raw.counts : []) {
+        if (typeof sig === 'string' && Number.isFinite(count)) this.counts.set(sig, count);
+      }
+      for (const sig of Array.isArray(raw.escalated) ? raw.escalated : []) {
+        if (typeof sig === 'string') this.escalated.add(sig);
+      }
+      for (const [key, ts] of Array.isArray(raw.lineSeenAt) ? raw.lineSeenAt : []) {
+        if (typeof key === 'string' && Number.isFinite(ts) && ts >= cutoff) this.lineSeenAt.set(key, ts);
+      }
+    } catch {
+      // Fail open: an unreadable store starts a fresh window and renders more,
+      // never less.
+    }
+  }
+
+  _persist() {
+    if (!this.storePath) return;
+    try {
+      const payload = JSON.stringify({
+        updatedAt: this.now(),
+        counts: [...this.counts].slice(-LEDGER_STORE_MAX_ENTRIES),
+        escalated: [...this.escalated].slice(-LEDGER_STORE_MAX_ENTRIES),
+        lineSeenAt: [...this.lineSeenAt].slice(-LEDGER_STORE_MAX_ENTRIES),
+      });
+      fs.mkdirSync(path.dirname(this.storePath), { recursive: true });
+      // Atomic replace: concurrent hook processes in one session last-writer-win,
+      // which at worst re-renders one repeat — never a torn/corrupt store.
+      const tmpPath = `${this.storePath}.${process.pid}.tmp`;
+      fs.writeFileSync(tmpPath, payload);
+      fs.renameSync(tmpPath, this.storePath);
+    } catch {
+      // Fail open: suppression state is a convenience, never worth failing a hook.
+    }
   }
 
   /**
@@ -186,6 +244,12 @@ class AlertNoiseLedger {
    *            signature: string, escalate: boolean, reason: string}}
    */
   admit(event) {
+    const verdict = this._admitOnce(event);
+    this._persist();
+    return verdict;
+  }
+
+  _admitOnce(event) {
     try {
       const signature = fingerprint(event);
       const count = (this.counts.get(signature) || 0) + 1;
@@ -351,6 +415,7 @@ class AlertNoiseLedger {
         rendered.pop();
       }
 
+      this._persist();
       return {
         text: rendered.length > 0 ? rendered.join('\n') : null,
         suppressedLines,
@@ -398,8 +463,34 @@ class AlertNoiseLedger {
   }
 }
 
+/**
+ * Resolve the on-disk store path for one session's ledger. The session id is
+ * hashed so arbitrary ids stay filesystem-safe.
+ */
+function resolveLedgerStorePath(sessionId, options = {}) {
+  const dir = options.storeDir
+    || process.env.THUMBGATE_ALERT_LEDGER_DIR
+    || path.join(os.tmpdir(), 'thumbgate-alert-ledger');
+  const hash = crypto.createHash('sha256').update(String(sessionId || 'default')).digest('hex').slice(0, 16);
+  return path.join(dir, `ledger-${hash}.json`);
+}
+
+/**
+ * Ledger for the run/runAsync integration points: state is keyed by session id
+ * and persisted with the session TTL, so suppression, counts and escalation
+ * survive the one-process-per-tool-call hook lifecycle.
+ */
+function createSessionLedger(sessionId, options = {}) {
+  return new AlertNoiseLedger({
+    ...options,
+    storePath: options.storePath || resolveLedgerStorePath(sessionId, options),
+  });
+}
+
 module.exports = {
   AlertNoiseLedger,
+  createSessionLedger,
+  resolveLedgerStorePath,
   fingerprint,
   normalizeAction,
   isPlaceholderRule,

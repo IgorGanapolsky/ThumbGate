@@ -3,12 +3,19 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+
 const {
   AlertNoiseLedger,
+  createSessionLedger,
+  resolveLedgerStorePath,
   fingerprint,
   normalizeAction,
   isPlaceholderRule,
   filterRules,
+  SESSION_TTL_MS,
 } = require('../src/alert-noise-ledger');
 
 // A fixed clock. Tests must never sleep, and a real clock would make the
@@ -339,4 +346,105 @@ test('replaying the measured 706-event distribution cuts the surfaced volume', (
   // The point of the exercise: far fewer walls of text reach the agent, and
   // every one of the 27 force-push blocks is still among them.
   assert.ok(rendered < 706 * 0.6, `expected a material reduction, rendered ${rendered} of 706`);
+});
+
+// ---------------------------------------------------------------------------
+// Persistence. The installed PreToolUse paths launch a new Node process per
+// tool call, so every property above is meaningless unless the ledger state
+// survives across instances of the class.
+// ---------------------------------------------------------------------------
+
+test('suppression state survives a process restart (new instance, same session)', () => {
+  const storeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anl-store-'));
+  try {
+    const event = warn('spend-guard', 'npm run social:status');
+
+    const first = createSessionLedger('sess-1', { storeDir, now: clock() });
+    assert.equal(first.admit(event).reason, 'first_occurrence');
+    assert.equal(first.admit(event).render, 'collapsed');
+
+    // A brand-new instance models the next hook invocation's fresh process.
+    const second = createSessionLedger('sess-1', { storeDir, now: clock() });
+    const verdict = second.admit(event);
+    assert.equal(verdict.count, 3, 'count continued across instances');
+    assert.notEqual(verdict.reason, 'first_occurrence');
+  } finally {
+    fs.rmSync(storeDir, { recursive: true, force: true });
+  }
+});
+
+test('escalation fires exactly once across process restarts', () => {
+  const storeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anl-store-'));
+  try {
+    const event = warn('entropy', 'lesson conflict');
+    let escalations = 0;
+    for (let i = 0; i < 8; i++) {
+      const ledger = createSessionLedger('sess-esc', { storeDir, now: clock() });
+      if (ledger.admit(event).escalate) escalations += 1;
+    }
+    assert.equal(escalations, 1, 'escalation notice must not repeat per process');
+  } finally {
+    fs.rmSync(storeDir, { recursive: true, force: true });
+  }
+});
+
+test('reminder-line suppression survives a process restart', () => {
+  const storeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anl-store-'));
+  try {
+    const context = '[ThumbGate] Recent mistakes (last 24h)\n  - avoid the same mistake';
+    const first = createSessionLedger('sess-lines', { storeDir, now: clock() });
+    assert.ok(first.suppressRepeatedLines(context).text, 'first sighting renders');
+
+    const second = createSessionLedger('sess-lines', { storeDir, now: clock() });
+    const replay = second.suppressRepeatedLines(context);
+    assert.equal(replay.text, null, 'repeat suppressed by a fresh process');
+    assert.equal(replay.suppressedLines, 1);
+  } finally {
+    fs.rmSync(storeDir, { recursive: true, force: true });
+  }
+});
+
+test('an expired session window starts a fresh ledger', () => {
+  const storeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anl-store-'));
+  try {
+    const event = warn('spend-guard', 'npm run social:status');
+    const first = createSessionLedger('sess-ttl', { storeDir, now: clock() });
+    first.admit(event);
+
+    const later = clock(FIXED_NOW + SESSION_TTL_MS + 1);
+    const second = createSessionLedger('sess-ttl', { storeDir, now: later });
+    assert.equal(second.admit(event).reason, 'first_occurrence', 'lapsed window renders in full again');
+  } finally {
+    fs.rmSync(storeDir, { recursive: true, force: true });
+  }
+});
+
+test('sessions are isolated from each other', () => {
+  const storeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anl-store-'));
+  try {
+    const event = warn('spend-guard', 'npm run social:status');
+    createSessionLedger('sess-a', { storeDir, now: clock() }).admit(event);
+    const other = createSessionLedger('sess-b', { storeDir, now: clock() });
+    assert.equal(other.admit(event).reason, 'first_occurrence');
+    assert.notEqual(
+      resolveLedgerStorePath('sess-a', { storeDir }),
+      resolveLedgerStorePath('sess-b', { storeDir })
+    );
+  } finally {
+    fs.rmSync(storeDir, { recursive: true, force: true });
+  }
+});
+
+test('a corrupt store fails open to a fresh ledger', () => {
+  const storeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anl-store-'));
+  try {
+    const storePath = resolveLedgerStorePath('sess-corrupt', { storeDir });
+    fs.mkdirSync(path.dirname(storePath), { recursive: true });
+    fs.writeFileSync(storePath, '{not json');
+    const ledger = createSessionLedger('sess-corrupt', { storeDir, now: clock() });
+    const verdict = ledger.admit(warn('g', 'a'));
+    assert.equal(verdict.reason, 'first_occurrence');
+  } finally {
+    fs.rmSync(storeDir, { recursive: true, force: true });
+  }
 });
