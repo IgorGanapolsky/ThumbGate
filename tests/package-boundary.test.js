@@ -665,7 +665,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.01 MB -> 8.02 MB (2026-08-26) for the claude-feedback-sync rotation
   // guard + dedup hardening (junk re-import loop fix). Runtime logic in an
   // already-shipped file; no new files enter the tarball. CI measured 8,010,953
-  // unpacked bytes before the comment trim on this branch.
+  // unpacked bytes before the comment trim on this branch. (#3679's branch
+  // independently measured 8,010,508 on b82287b2 after a comment-only expansion
+  // in hybrid-feedback-context.js — same bump, two causes.)
   // Bumped 8.02 MB -> 8.03 MB (2026-08-26, merge of #3667) for
   // src/alert-noise-ledger.js: ~17 KB of runtime code including the
   // session-persistence layer added for cross-invocation suppression. main was
@@ -675,9 +677,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // explanatory comments to squeeze under a byte limit was rejected: this
   // ratchet exists to catch unintended bloat, and a documented runtime module
   // is not that.
+  // Bumped 8.03 MB -> 8.04 MB (2026-08-26, merge of #3679): keeping substantive
+  // history-sync feedback rankable added ~1.2 KB of runtime logic + comments to
+  // shipped hybrid-feedback-context.js on top of the ledger bump above.
+  // Measured 8,031,249 unpacked on the merged tree — 1,249 over the old cap.
   assert.ok(
-    manifest.unpackedSize <= 8_030_000,
-    `npm package should stay <= 8.03 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 8_040_000,
+    `npm package should stay <= 8.04 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
