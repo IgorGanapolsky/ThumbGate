@@ -60,7 +60,10 @@ const chained = new Set(
 const ORPHANS = ALL.filter((n) => !chained.has(n));
 
 const filter = value('filter', null);
-const suites = filter ? ALL.filter((n) => new RegExp(filter).test(n)) : ALL;
+// `--filter` is a literal substring, never a regex. Building a RegExp from a
+// command-line argument is a regex-injection sink (CodeQL js/regex-injection)
+// and buys nothing: suite names are plain `test:foo-bar` identifiers.
+const suites = filter ? ALL.filter((n) => n.includes(filter)) : ALL;
 
 if (flag('list')) {
   suites.forEach((s) => console.log(s));
