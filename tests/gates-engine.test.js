@@ -2880,6 +2880,23 @@ test('runHardFloor ignores ordinary block gates', () => {
   }), null);
 });
 
+test('self-protect process rule needs a word boundary: prose ending in the verb stays benign', () => {
+  // 2026-08-26 false positive: "new skill thumbgate-guard-regression is registered"
+  // matched because "skill" ends in the verb and no left boundary was required.
+  assert.equal(runHardFloor({
+    tool_name: 'Bash',
+    tool_input: { command: 'echo "new skill thumbgate-guard-regression is registered"' },
+  }), null);
+  // Real invocations must still hard-deny.
+  const output = runHardFloor({
+    tool_name: 'Bash',
+    tool_input: { command: 'kill -9 4242  # thumbgate serve pid' },
+  });
+  assert.ok(output, 'expected bare verb + pid + process name to stay denied');
+  assert.match(JSON.parse(output).hookSpecificOutput.permissionDecisionReason,
+    /\[GATE:self-protect-kill\]/);
+});
+
 test('runHardFloor denies described browser purchases for snake and camel hook payloads', () => {
   cleanupStateFiles();
   for (const input of [
