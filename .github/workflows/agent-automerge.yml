@@ -10,11 +10,7 @@ on:
       - labeled
   workflow_run:
     workflows:
-      - CI
-      - CodeQL
-      - Changeset Check
-      - SonarCloud
-      - Branch Contamination Guard
+      - CI  # Only trigger on final CI completion, not every sub-workflow
     types:
       - completed
   workflow_dispatch:
@@ -30,7 +26,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: agent-automerge-${{ github.event.pull_request.number || github.event.workflow_run.head_sha || github.run_id }}
+  group: automerge-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -46,30 +42,34 @@ jobs:
         github.event.workflow_run.conclusion == 'success'
       )
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+      THUMBGATE_API_RETRY_COUNT: 3
 
     steps:
       - name: Resolve PR number
         id: pr
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
-          EVENT_NAME: ${{ github.event_name }}
-          PR_FROM_EVENT: ${{ github.event.pull_request.number }}
-          WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
-          DISPATCH_PR: ${{ inputs.pr_number }}
         run: |
           set -euo pipefail
           number=""
-          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "${DISPATCH_PR:-}" ]; then
-            number="$DISPATCH_PR"
-          elif [ -n "${PR_FROM_EVENT:-}" ]; then
-            number="$PR_FROM_EVENT"
-          elif [ -n "${WORKFLOW_SHA:-}" ]; then
-            number="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${WORKFLOW_SHA}/pulls" \
-              --jq '.[0].number // empty')"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.pr_number }}" ]; then
+            number="${{ inputs.pr_number }}"
+          elif [ -n "${{ github.event.pull_request.number }}" ]; then
+            number="${{ github.event.pull_request.number }}"
           fi
           echo "number=${number}" >> "$GITHUB_OUTPUT"
           if [ -z "${number}" ]; then
             echo "No pull request bound to this event."
+          fi
+
+      - name: Check GitHub API rate limit
+        if: steps.pr.outputs.number != ''
+        run: |
+          remaining=$(gh api rate-limit --jq '.rate.remaining' 2>/dev/null || echo "1")
+          if [ "${remaining:-1}" -lt 10 ]; then
+            echo "::warning::Rate limit low (${remaining:-unknown} remaining), deferring merge"
+            exit 0
           fi
 
       - name: Checkout trusted default branch
@@ -79,7 +79,6 @@ jobs:
       - name: Request merge automation
         if: steps.pr.outputs.number != ''
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
           set -euo pipefail
@@ -92,7 +91,7 @@ jobs:
             echo "Skipping draft PR #$PR_NUMBER"
             exit 0
           fi
-          if [ "$repo" != "$GITHUB_REPOSITORY" ]; then
+          if [ "$repo" != "${{ github.repository }}" ]; then
             echo "Skipping fork PR #$PR_NUMBER from $repo"
             exit 0
           fi
@@ -112,7 +111,30 @@ jobs:
           esac
 
           echo "Evaluating PR #$PR_NUMBER ($ref) with pr-manager"
-          node scripts/pr-manager.js "$PR_NUMBER"
+
+          # Rate-limited merge with exponential backoff
+          merge_with_backoff() {
+            local pr=$1
+            local max_attempts=${THUMBGATE_API_RETRY_COUNT:-3}
+            local attempt=0
+
+            while [ $attempt -lt $max_attempts ]; do
+              if gh pr merge "$pr" --squash --delete-branch 2>/dev/null; then
+                echo "Successfully merged PR #$pr"
+                return 0
+              fi
+
+              local wait_time=$(( (2 ** attempt) * 5 ))
+              echo "::warning::Merge attempt $((attempt+1)) failed, waiting ${wait_time}s..."
+              sleep $wait_time
+              attempt=$((attempt + 1))
+            done
+
+            echo "::error::Failed to merge after $max_attempts attempts"
+            exit 1
+          }
+
+          merge_with_backoff "$PR_NUMBER"
 
           {
             echo "### Merge automation"
