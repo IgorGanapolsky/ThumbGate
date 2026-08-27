@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.35.0",
+  "version": "1.36.0",
   "description": "ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.",
   "homepage": "https://thumbgate.ai",
   "repository": {

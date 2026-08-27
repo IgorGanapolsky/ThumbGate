@@ -44,18 +44,18 @@ Enable any of these via `npx thumbgate gate-templates` or by adding them to your
 ```toml
 [mcp_servers.thumbgate]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.35.0", "thumbgate", "serve"]
+args = ["--yes", "--package", "thumbgate@1.36.0", "thumbgate", "serve"]
 
 [hooks.pre_tool_use]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.35.0", "thumbgate", "gate-check"]
+args = ["--yes", "--package", "thumbgate@1.36.0", "thumbgate", "gate-check"]
 ```
 
 **`adapters/vlt/opencode.json`** — OpenCode profile (see file).
 
 **`adapters/vlt/.mcp.json`** — Claude Code profile with `preToolUse` hook.
 
-All configs pin `thumbgate@1.35.0` (the current shipped version).
+All configs pin `thumbgate@1.36.0` (the current shipped version).
 
 ### 2. Custom Gate Rules (Optional)
 
