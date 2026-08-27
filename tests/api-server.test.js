@@ -2968,11 +2968,24 @@ test('context construct/evaluate/provenance endpoints work', async () => {
       query: 'verification',
       maxItems: 5,
       maxChars: 4000,
+      contextEnvelope: {
+        goal: 'Verify the exact outcome.',
+        businessData: ['The current PR head is the unit of CI truth.'],
+        examples: ['Good: cite the exact check run and commit.'],
+        procedures: ['Retrieve, compare, then recommend.'],
+        constraints: ['Do not approve or bypass branch protection.'],
+        rubric: ['Every completion claim includes provider evidence.'],
+      },
     }),
   });
   assert.equal(constructRes.status, 200);
   const constructBody = await constructRes.json();
   assert.ok(constructBody.packId);
+  assert.equal(constructBody.contextEnvelope.version, 'six-block-v1');
+  assert.deepEqual(constructBody.contextEnvelope.examples, [
+    'Good: cite the exact check run and commit.',
+  ]);
+  assert.ok(constructBody.usedChars <= constructBody.maxChars);
 
   const evalRes = await fetch(apiUrl('/v1/context/evaluate'), {
     method: 'POST',
@@ -3017,6 +3030,27 @@ test('context construct rejects invalid namespaces', async () => {
     }),
   });
   assert.equal(res.status, 400);
+});
+
+test('context construct rejects incomplete six-block envelopes', async () => {
+  const res = await fetch(apiUrl('/v1/context/construct'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({
+      query: 'verification',
+      contextEnvelope: {
+        goal: 'Verify the exact outcome.',
+        businessData: ['The current PR head is the unit of CI truth.'],
+        examples: ['Good: cite the exact check run and commit.'],
+        procedures: ['Retrieve, compare, then recommend.'],
+        constraints: ['Do not approve or bypass branch protection.'],
+      },
+    }),
+  });
+
+  assert.equal(res.status, 400);
+  const body = await res.json();
+  assert.match(JSON.stringify(body), /missing required blocks: rubric/);
 });
 
 test('unauthorized without bearer token', async () => {
