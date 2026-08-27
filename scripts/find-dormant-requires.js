@@ -39,6 +39,56 @@ function tracked() {
     .filter((f) => !/\.min\.js$/.test(f));
 }
 
+/**
+ * Escape every RegExp metacharacter, backslash included.
+ * The first version escaped only `#!/usr/bin/env node
+/**
+ * find-dormant-requires — report `const X = require(...)` bindings that are
+ * never referenced again in the file.
+ *
+ * Dependency-free on purpose: this repo has no eslint, no prettier and no lint
+ * script across 1,331 JS files (measured 2026-08-27 on d0bb3768), so there is
+ * no existing tool to lean on and adding one is a separate decision.
+ *
+ * Deliberately conservative — it only reports a binding when ALL of these hold,
+ * so that acting on the output is safe:
+ *   - the require is a top-level `const` with a plain identifier or a simple
+ *     destructuring pattern
+ *   - the identifier appears exactly once in the file (its own declaration)
+ *   - the file is not a test fixture and does not use `eval`
+ *
+ * It does NOT delete anything. Output is a candidate list with file:line.
+ *
+ * Usage: node scripts/find-dormant-requires.js [--json] [--dir=src]
+ */
+'use strict';
+
+const fs = require('node:fs');
+const path = require('node:path');
+const { execFileSync } = require('node:child_process');
+
+const ROOT = path.resolve(__dirname, '..');
+const argv = process.argv.slice(2);
+const asJson = argv.includes('--json');
+const dirArg = (argv.find((a) => a.startsWith('--dir=')) || '').slice(6);
+
+function tracked() {
+  const out = execFileSync('git', ['ls-files', '*.js'], { cwd: ROOT, encoding: 'utf8' });
+  return out
+    .split('\n')
+    .filter(Boolean)
+    .filter((f) => !dirArg || f.startsWith(dirArg))
+    .filter((f) => !f.includes('node_modules/'))
+    .filter((f) => !/\.min\.js$/.test(f));
+}
+
+, which CodeQL flagged as incomplete
+ * escaping (js/incomplete-sanitization): a backslash would survive into the
+ * constructed pattern and corrupt it.
+ */
+function escapeRegExp(text) {
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\// `const NAME = require(` and `const { A, B } = require(`');
+}
 // `const NAME = require(` and `const { A, B } = require(`
 const SINGLE = /^\s*const\s+([A-Za-z_$][\w$]*)\s*=\s*require\(/;
 const DESTRUCT = /^\s*const\s*\{([^}]+)\}\s*=\s*require\(/;
@@ -78,7 +128,7 @@ for (const rel of tracked()) {
 
   for (const { name, line } of names) {
     // count whole-word occurrences across the file
-    const re = new RegExp(`\\b${name.replace(/\$/g, '\\$')}\\b`, 'g');
+    const re = new RegExp(`\\b${escapeRegExp(name)}\\b`, 'g');
     const hits = (src.match(re) || []).length;
     if (hits <= 1) findings.push({ file: rel, line, name });
   }
