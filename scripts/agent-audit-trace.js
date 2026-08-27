@@ -25,6 +25,7 @@ function buildAgentAuditSpan(input = {}) {
 function evaluateAgentAuditTrace(trace = {}) {
   const spans = Array.isArray(trace.spans) ? trace.spans : [];
   const issues = [];
+  const budgetIssues = [];
 
   if (!trace.runId) issues.push('missing_run_id');
   if (spans.length === 0) issues.push('missing_spans');
@@ -36,13 +37,52 @@ function evaluateAgentAuditTrace(trace = {}) {
 
   const totalTokens = spans.reduce((sum, span) => sum + (span.cost?.inputTokens || 0) + (span.cost?.outputTokens || 0), 0);
   const totalLatencyMs = spans.reduce((sum, span) => sum + (span.cost?.latencyMs || 0), 0);
+  const rootInputTokens = spans
+    .filter((span) => span.stage === 'input')
+    .reduce((sum, span) => sum + (span.cost?.inputTokens || 0), 0);
+  const downstreamTokens = Math.max(0, totalTokens - rootInputTokens);
+  const downstreamActions = spans.filter((span) => (
+    span.stage === 'tool' || (Array.isArray(span.toolsUsed) && span.toolsUsed.length > 0)
+  )).length;
+  const tokenAmplificationRatio = rootInputTokens > 0
+    ? Number((totalTokens / rootInputTokens).toFixed(4))
+    : null;
+  const budget = trace.budget && typeof trace.budget === 'object' ? trace.budget : {};
+
+  if (Number.isFinite(Number(budget.maxTotalTokens)) && totalTokens > Number(budget.maxTotalTokens)) {
+    budgetIssues.push('max_total_tokens_exceeded');
+  }
+  if (
+    Number.isFinite(Number(budget.maxTokenAmplification))
+    && rootInputTokens === 0
+    && downstreamTokens > 0
+  ) {
+    budgetIssues.push('token_amplification_unmeasurable');
+  } else if (
+    tokenAmplificationRatio !== null
+    && Number.isFinite(Number(budget.maxTokenAmplification))
+    && tokenAmplificationRatio > Number(budget.maxTokenAmplification)
+  ) {
+    budgetIssues.push('max_token_amplification_exceeded');
+  }
+  if (
+    Number.isFinite(Number(budget.maxDownstreamActions))
+    && downstreamActions > Number(budget.maxDownstreamActions)
+  ) {
+    budgetIssues.push('max_downstream_actions_exceeded');
+  }
 
   return {
-    decision: issues.length ? 'warn' : 'allow',
-    issues,
+    decision: budgetIssues.length ? 'deny' : issues.length ? 'warn' : 'allow',
+    issues: issues.concat(budgetIssues),
+    budgetIssues,
     totals: {
       spans: spans.length,
       totalTokens,
+      rootInputTokens,
+      downstreamTokens,
+      downstreamActions,
+      tokenAmplificationRatio,
       totalLatencyMs,
       safetyEvents: spans.reduce((sum, span) => sum + (span.safetyEvents?.length || 0), 0),
     },

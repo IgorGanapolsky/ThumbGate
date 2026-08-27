@@ -52,6 +52,26 @@ Source: [The Context Course](https://huggingface.co/learn/context-course/unit0/i
 - [ ] Deny + allow + false-positive tests
 - [ ] Live probe before “protected”
 
+## Six-block context envelope
+
+Before generation, package reusable context into all six blocks:
+
+1. `goal`: one measurable outcome.
+2. `businessData`: current evidence with source and timestamp.
+3. `examples`: concrete good or bad few-shot cases.
+4. `procedures`: ordered actions and verification.
+5. `constraints`: safety, business, and SLA limits.
+6. `rubric`: grading criteria supplied before the answer is generated.
+
+Use `construct_context_pack.contextEnvelope` instead of repeating these blocks
+in chat. All blocks are required when the envelope is present, count against
+`maxChars`, and are part of semantic-cache identity.
+
+For connector evidence, set `metadata.sourceUpdatedAt`,
+`metadata.maxAgeSeconds`, and `metadata.sourceUrl` on the stored context
+object. Treat `stale`, `future`, `invalid`, and `unknown` freshness as
+explicit evidence states, not current truth.
+
 ## Scripts
 
 ```bash

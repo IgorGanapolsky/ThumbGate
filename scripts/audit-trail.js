@@ -27,6 +27,200 @@ function getAuditLogPath() {
   return path.join(resolveFeedbackDir(), AUDIT_LOG_FILENAME);
 }
 
+/**
+ * Resolve the acting non-human identity for audit attribution. Sessions and
+ * worktree leases export THUMBGATE_SESSION_AGENT; THUMBGATE_AGENT_ID is the
+ * generic override. Null when the caller cannot be attributed — audit records
+ * must never invent an identity.
+ */
+function resolveAuditAgentId() {
+  return process.env.THUMBGATE_SESSION_AGENT
+    || process.env.THUMBGATE_AGENT_ID
+    || null;
+}
+
+// ---------------------------------------------------------------------------
+// Agent identity store — registry + observed-agent stream
+//
+// Lives here (not in org-dashboard) because the gates-engine identity gate and
+// audit attribution are public runtime surfaces, while org-dashboard stays out
+// of the npm tarball. org-dashboard re-exports these for its Pro reporting.
+// ---------------------------------------------------------------------------
+
+const REGISTRY_FILENAME = 'agent-registry.jsonl';
+const OBSERVED_FILENAME = 'observed-agents.jsonl';
+const OBSERVED_COMPACT_BYTES = 512 * 1024;
+
+function getRegistryPath() {
+  return path.join(resolveFeedbackDir(), REGISTRY_FILENAME);
+}
+
+function getObservedAgentsPath() {
+  return path.join(resolveFeedbackDir(), OBSERVED_FILENAME);
+}
+
+/**
+ * Register an agent session. Called on MCP server startup or agent bootstrap.
+ */
+function registerAgent({ agentId, source, project, branch, metadata } = {}) {
+  const id = agentId || `agent_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+  const record = {
+    id,
+    registeredAt: new Date().toISOString(),
+    lastSeenAt: new Date().toISOString(),
+    source: source || 'unknown',
+    project: project || path.basename(process.cwd()),
+    branch: branch || null,
+    toolCalls: 0,
+    gateBlocks: 0,
+    gateWarns: 0,
+    metadata: { lifecycleStatus: 'active', ...(metadata || {}) },
+  };
+  const registryPath = getRegistryPath();
+  ensureDir(path.dirname(registryPath));
+  fs.appendFileSync(registryPath, JSON.stringify(record) + '\n');
+  return record;
+}
+
+/**
+ * Record agent activity — called after each tool call evaluation.
+ */
+function recordAgentActivity(agentId, decision) {
+  const registryPath = getRegistryPath();
+  if (!fs.existsSync(registryPath)) return;
+  const lines = fs.readFileSync(registryPath, 'utf-8').trim().split('\n');
+  const updated = [];
+  let found = false;
+  for (const line of lines) {
+    try {
+      const record = JSON.parse(line);
+      if (record.id === agentId && !found) {
+        record.lastSeenAt = new Date().toISOString();
+        record.toolCalls = (record.toolCalls || 0) + 1;
+        if (decision === 'deny') record.gateBlocks = (record.gateBlocks || 0) + 1;
+        if (decision === 'warn') record.gateWarns = (record.gateWarns || 0) + 1;
+        found = true;
+      }
+      updated.push(JSON.stringify(record));
+    } catch {
+      updated.push(line);
+    }
+  }
+  fs.writeFileSync(registryPath, updated.join('\n') + '\n');
+}
+
+/**
+ * Load all registered agent sessions.
+ */
+function loadAgentRegistry() {
+  const registryPath = getRegistryPath();
+  if (!fs.existsSync(registryPath)) return [];
+  const raw = fs.readFileSync(registryPath, 'utf-8').trim();
+  if (!raw) return [];
+  const records = [];
+  for (const line of raw.split('\n')) {
+    try {
+      records.push(JSON.parse(line));
+    } catch {
+      // Skip corrupt rows; identity checks fail open, never crash.
+    }
+  }
+  return records;
+}
+
+/**
+ * Retire an agent identity. A retired agent that keeps acting is flagged by
+ * the gates-engine identity gate (deny under strict enforcement).
+ */
+function retireAgent(agentId, reason) {
+  const registryPath = getRegistryPath();
+  if (!fs.existsSync(registryPath)) return false;
+  const lines = fs.readFileSync(registryPath, 'utf-8').trim().split('\n');
+  const updated = [];
+  let found = false;
+  for (const line of lines) {
+    try {
+      const record = JSON.parse(line);
+      if (record.id === agentId) {
+        record.metadata = record.metadata || {};
+        record.metadata.lifecycleStatus = 'retired';
+        record.metadata.retiredAt = new Date().toISOString();
+        if (reason) record.metadata.retireReason = String(reason);
+        found = true;
+      }
+      updated.push(JSON.stringify(record));
+    } catch {
+      updated.push(line);
+    }
+  }
+  if (found) fs.writeFileSync(registryPath, updated.join('\n') + '\n');
+  return found;
+}
+
+/**
+ * Record one observation of an acting agent — the producer side of shadow-AI
+ * detection, called from the gates-engine evaluation path on every attributed
+ * tool call. Appends are plain (never lost to a busy lock); compaction runs
+ * only under the cross-process ledger lock so a concurrent agent's append can
+ * never be truncated by the read-aggregate-rewrite window.
+ */
+function recordObservedAgent(agentId) {
+  const id = String(agentId || '').trim();
+  if (!id) return null;
+  const observedPath = getObservedAgentsPath();
+  ensureDir(path.dirname(observedPath));
+  const event = { id, seenAt: new Date().toISOString() };
+  fs.appendFileSync(observedPath, JSON.stringify(event) + '\n');
+  try {
+    if (fs.statSync(observedPath).size > OBSERVED_COMPACT_BYTES) {
+      const { withFileLedgerLock } = require('./file-ledger-lock');
+      withFileLedgerLock(observedPath + '.lock', () => {
+        const compacted = loadObservedAgents()
+          .map((row) => JSON.stringify(row))
+          .join('\n');
+        fs.writeFileSync(observedPath, compacted + '\n');
+      });
+    }
+  } catch {
+    // Busy lock or read error: skip compaction, never drop the observation.
+  }
+  return event;
+}
+
+/**
+ * Aggregate observation events into one row per agent id:
+ * { id, firstSeenAt, lastSeenAt, observations }.
+ */
+function loadObservedAgents() {
+  const observedPath = getObservedAgentsPath();
+  if (!fs.existsSync(observedPath)) return [];
+  const byId = new Map();
+  const raw = fs.readFileSync(observedPath, 'utf-8').trim();
+  if (!raw) return [];
+  for (const line of raw.split('\n')) {
+    let event;
+    try {
+      event = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    const id = String(event.id || '').trim();
+    if (!id) continue;
+    const seenAt = event.seenAt || event.lastSeenAt || new Date().toISOString();
+    const row = byId.get(id) || {
+      id,
+      firstSeenAt: event.firstSeenAt || seenAt,
+      lastSeenAt: seenAt,
+      observations: 0,
+    };
+    if (seenAt < row.firstSeenAt) row.firstSeenAt = seenAt;
+    if (seenAt > row.lastSeenAt) row.lastSeenAt = seenAt;
+    row.observations += Number(event.observations) > 0 ? Number(event.observations) : 1;
+    byId.set(id, row);
+  }
+  return [...byId.values()];
+}
+
 
 // ---------------------------------------------------------------------------
 // Core audit record
@@ -53,6 +247,7 @@ function recordAuditEvent(params = {}) {
     timestamp: new Date().toISOString(),
     toolName: params.toolName || 'unknown',
     toolInput: sanitizeToolInput(params.toolInput || {}),
+    agentId: params.agentId || resolveAuditAgentId(),
     decision: params.decision || 'allow',
     gateId: params.gateId || null,
     message: params.message || null,
@@ -360,6 +555,16 @@ module.exports = {
   recordAuditEvent,
   auditToFeedback,
   readAuditLog,
+  registerAgent,
+  recordAgentActivity,
+  loadAgentRegistry,
+  retireAgent,
+  recordObservedAgent,
+  loadObservedAgents,
+  getRegistryPath,
+  getObservedAgentsPath,
+  REGISTRY_FILENAME,
+  OBSERVED_FILENAME,
   auditStats,
   latencyStats,
   skillAdherence,

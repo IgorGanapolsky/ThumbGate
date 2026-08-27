@@ -100,7 +100,10 @@ const PACK_TEMPLATES = {
   },
 };
 
-
+const CONTEXT_ENVELOPE_VERSION = 'six-block-v1';
+const CONTEXT_ENVELOPE_KEYS = [
+  'goal', 'businessData', 'examples', 'procedures', 'constraints', 'rubric',
+];
 function ensureContextFs() {
   Object.values(NAMESPACES).forEach((subPath) => {
     ensureDir(contextFsPath(subPath));
@@ -178,12 +181,15 @@ function querySimilarity(tokensA, tokensB) {
   return union === 0 ? 0 : intersection / union;
 }
 
-function buildSemanticCacheKey({ namespaces, maxItems, maxChars }) {
+function buildSemanticCacheKey({ namespaces, maxItems, maxChars, strategy = 'auto', contextEnvelope = null }) {
   return JSON.stringify({
     retrievalVersion: CONTEXTFS_RETRIEVAL_VERSION,
     namespaces: normalizeNamespaces(namespaces),
     maxItems,
     maxChars,
+    strategy,
+    contextEnvelopeHash: contextEnvelope ? crypto.createHash('sha256')
+      .update(JSON.stringify(contextEnvelope)).digest('hex') : null,
   });
 }
 
@@ -223,16 +229,14 @@ function getSourceHash(namespaces) {
         try {
           const stats = fs.statSync(filePath);
           hasher.update(`${file}:${stats.mtimeMs}:${stats.size}`);
-        } catch {
-          // Skip if file disappeared
-        }
+        } catch { /* ignore */ }
       }
     }
   }
   return hasher.digest('hex');
 }
 
-function findSemanticCacheHit({ query, namespaces, maxItems, maxChars }) {
+function findSemanticCacheHit({ query, namespaces, maxItems, maxChars, strategy = 'auto', contextEnvelope = null }) {
   const { enabled, threshold, ttlSeconds } = getSemanticCacheConfig();
   if (!enabled) return null;
 
@@ -241,14 +245,13 @@ function findSemanticCacheHit({ query, namespaces, maxItems, maxChars }) {
 
   const now = Date.now();
   const queryTokens = tokenizeQuery(query);
-  const key = buildSemanticCacheKey({ namespaces, maxItems, maxChars });
+  const key = buildSemanticCacheKey({ namespaces, maxItems, maxChars, strategy, contextEnvelope });
   const currentSourceHash = getSourceHash(namespaces);
 
   for (let i = entries.length - 1; i >= 0; i -= 1) {
     const entry = entries[i];
     if (!entry || entry.key !== key || !entry.pack) continue;
 
-    // Zero-Waste Caching: validate source hash
     if (entry.sourceHash !== currentSourceHash) {
       continue;
     }
@@ -343,6 +346,86 @@ function normalizeTagList(tags) {
     : [];
 }
 
+function invalidContextEnvelope(message) {
+  return Object.assign(new Error(message), { code: 'INVALID_CONTEXT_ENVELOPE' });
+}
+
+function normalizeContextEnvelope(value) {
+  if (value == null) return null;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw invalidContextEnvelope('contextEnvelope must be an object');
+  }
+
+  const unknownKeys = Object.keys(value).filter((key) => !CONTEXT_ENVELOPE_KEYS.includes(key));
+  if (unknownKeys.length > 0) {
+    throw invalidContextEnvelope(
+      `contextEnvelope contains unsupported blocks: ${unknownKeys.join(', ')}`,
+    );
+  }
+
+  const missingKeys = CONTEXT_ENVELOPE_KEYS.filter((key) => !Object.hasOwn(value, key));
+  if (missingKeys.length > 0) {
+    throw invalidContextEnvelope(
+      `contextEnvelope is missing required blocks: ${missingKeys.join(', ')}`,
+    );
+  }
+
+  const envelope = {
+    version: CONTEXT_ENVELOPE_VERSION,
+  };
+  for (const key of CONTEXT_ENVELOPE_KEYS) {
+    const items = key === 'goal' ? [value[key]] : value[key];
+    if (!Array.isArray(items)
+      || items.length === 0
+      || items.some((item) => (
+        typeof item !== 'string'
+        || !item.trim()
+      ))) {
+      throw invalidContextEnvelope(`contextEnvelope.${key} has invalid content`);
+    }
+    const normalized = items.map((item) => item.trim());
+    envelope[key] = key === 'goal' ? normalized[0] : normalized;
+  }
+  return envelope;
+}
+
+function measureContextEnvelopeChars(contextEnvelope) {
+  return contextEnvelope ? JSON.stringify(contextEnvelope).length : 0;
+}
+
+function getFreshness(observedAt, maxAgeSeconds, currentTimeMs) {
+  if (!observedAt) return 'unknown';
+  const observedAtMs = new Date(observedAt).getTime();
+  if (!Number.isFinite(observedAtMs)) return 'invalid';
+  if (observedAtMs > currentTimeMs + 300_000) return 'future';
+  if (!(Number.isFinite(maxAgeSeconds) && maxAgeSeconds > 0)) return 'unknown';
+  return currentTimeMs - observedAtMs <= maxAgeSeconds * 1000 ? 'fresh' : 'stale';
+}
+
+function buildItemProvenance(doc, currentTimeMs = Date.now()) {
+  const metadata = doc && typeof doc.metadata === 'object' ? doc.metadata : {};
+  const observedAtRaw = metadata.sourceUpdatedAt || doc.createdAt || null;
+  const observedAtMs = observedAtRaw ? new Date(observedAtRaw).getTime() : NaN;
+  const parsedMaxAge = Number(metadata.maxAgeSeconds);
+  const maxAgeSeconds = Number.isFinite(parsedMaxAge) && parsedMaxAge > 0 ? parsedMaxAge : null;
+
+  return {
+    source: doc.source || 'unknown',
+    sourceUrl: typeof metadata.sourceUrl === 'string' && metadata.sourceUrl.trim()
+      ? metadata.sourceUrl.trim()
+      : null,
+    observedAt: Number.isFinite(observedAtMs) ? new Date(observedAtMs).toISOString() : null,
+    maxAgeSeconds,
+    freshness: getFreshness(observedAtRaw, maxAgeSeconds, currentTimeMs),
+  };
+}
+
+function refreshItemProvenance(provenance, currentTimeMs = Date.now()) {
+  if (!provenance) return provenance;
+  const freshness = getFreshness(provenance.observedAt, Number(provenance.maxAgeSeconds), currentTimeMs);
+  return { ...provenance, freshness };
+}
+
 function findExistingContextObject({ namespace, title, content, tags = [], source }) {
   ensureContextFs();
 
@@ -365,9 +448,7 @@ function findExistingContextObject({ namespace, title, content, tags = [], sourc
         filePath,
         document: doc,
       };
-    } catch {
-      // Ignore malformed entries while searching for exact duplicates.
-    }
+    } catch { /* ignore */ }
   }
 
   return null;
@@ -502,9 +583,7 @@ function loadCandidates(namespaces) {
           ...payload,
           namespace,
         });
-      } catch {
-        // ignore malformed files
-      }
+      } catch { /* ignore */ }
     });
   });
 
@@ -580,6 +659,7 @@ function selectFlatContextItems(candidates, maxItems, maxChars) {
       namespace: item.doc.namespace,
       title: item.doc.title,
       structuredContext: buildStructuredContext(item.doc),
+      provenance: buildItemProvenance(item.doc),
       tags: item.doc.tags || [],
       score: item.score,
     });
@@ -687,6 +767,7 @@ function selectSummarizeThenExpand(candidates, maxItems, maxChars) {
       namespace: item.doc.namespace,
       title: item.doc.title,
       structuredContext: buildSummaryContext(item.doc),
+      provenance: buildItemProvenance(item.doc),
       tags: item.doc.tags || [],
       score: item.score,
       tier: 'summary',
@@ -888,31 +969,33 @@ function constructContextPack({
   namespaces = [],
   strategy = null,
   summarizeThenExpand = false,
+  contextEnvelope = null,
 } = {}) {
   const normalizedNamespaces = normalizeNamespaces(namespaces);
+  const normalizedContextEnvelope = normalizeContextEnvelope(contextEnvelope);
+  const contextEnvelopeChars = measureContextEnvelopeChars(normalizedContextEnvelope);
+  if (contextEnvelopeChars >= maxChars) {
+    const error = new Error(
+      `contextEnvelope requires ${contextEnvelopeChars} characters but maxChars is ${maxChars}`,
+    );
+    error.code = 'CONTEXT_BUDGET_EXCEEDED';
+    throw error;
+  }
+  const retrievalMaxChars = maxChars - contextEnvelopeChars;
   const tokens = tokenizeQuery(query);
   const sourceHash = getSourceHash(normalizedNamespaces);
 
-  // Resolve the effective strategy. Explicit `strategy` wins; otherwise
-  // `summarizeThenExpand: true` flips the flag. Default remains auto
-  // (flat | hierarchical) so callers that don't opt in keep their cached
-  // packs addressable.
   const effectiveStrategy = strategy
     || (summarizeThenExpand ? 'summarize-then-expand' : null);
+  const hierarchicalRetrievalEnabled = shouldUseHierarchicalRetrieval(normalizedNamespaces);
+  const retrievalStrategy = effectiveStrategy === 'summarize-then-expand'
+    ? 'summarize-then-expand'
+    : (hierarchicalRetrievalEnabled ? 'hierarchical' : 'flat');
 
-  // Skip the semantic cache for summarize-then-expand packs. The cache key
-  // is (namespaces, maxItems, maxChars) — it doesn't include the strategy,
-  // so a cached flat pack would be served to an STE caller (and vice versa)
-  // with the wrong shape. Cheaper to recompute than to extend the cache key
-  // and invalidate every entry on disk.
-  const cacheHit = effectiveStrategy === 'summarize-then-expand'
-    ? null
-    : findSemanticCacheHit({
-      query,
-      namespaces: normalizedNamespaces,
-      maxItems,
-      maxChars,
-    });
+  const cacheHit = findSemanticCacheHit({
+    query, namespaces: normalizedNamespaces, maxItems, maxChars,
+    strategy: retrievalStrategy, contextEnvelope: normalizedContextEnvelope,
+  });
 
   if (cacheHit) {
     const packId = `pack_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -922,6 +1005,12 @@ function constructContextPack({
       packId,
       query,
       createdAt: nowIso(),
+      items: Array.isArray(cachedPack.items)
+        ? cachedPack.items.map((item) => ({
+          ...item,
+          provenance: refreshItemProvenance(item.provenance),
+        }))
+        : cachedPack.items,
       cache: {
         hit: true,
         similarity: Number(cacheHit.score.toFixed(4)),
@@ -947,31 +1036,22 @@ function constructContextPack({
     .map((doc) => ({ doc, score: scoreDocument(doc, tokens) }))
     .sort((a, b) => b.score - a.score);
 
-  const hierarchicalRetrievalEnabled = shouldUseHierarchicalRetrieval(normalizedNamespaces);
   let selection;
   if (effectiveStrategy === 'summarize-then-expand') {
-    // Explicit opt-in: bypass the hierarchical path entirely. The
-    // summarize-then-expand selector assumes a flat ranked list where each
-    // item is a single episode, and mixing it with theme-based hierarchical
-    // retrieval would double-compress the top-of-list.
-    selection = selectSummarizeThenExpand(candidates, maxItems, maxChars);
+    selection = selectSummarizeThenExpand(candidates, maxItems, retrievalMaxChars);
   } else if (hierarchicalRetrievalEnabled) {
     selection = retrieveHierarchicalDocuments({
       documents: candidates.map((candidate) => candidate.doc),
       query,
       maxItems,
-      maxChars,
+      maxChars: retrievalMaxChars,
       scorer: scoreDocument,
       measureDocument: measureDocumentChars,
     });
   } else {
-    selection = selectFlatContextItems(candidates, maxItems, maxChars);
+    selection = selectFlatContextItems(candidates, maxItems, retrievalMaxChars);
   }
 
-  // The flat + hierarchical paths emit raw docs; summarize-then-expand emits
-  // fully-shaped items that already carry structuredContext and a `tier`
-  // marker. Detect the shape so we don't double-canonicalize STE items
-  // (which would re-expand every summary into full content).
   const selected = selection.items.map((item) => {
     if (item && item.structuredContext) {
       return {
@@ -979,6 +1059,7 @@ function constructContextPack({
         namespace: item.namespace,
         title: item.title,
         structuredContext: item.structuredContext,
+        provenance: item.provenance || buildItemProvenance(item),
         tags: item.tags || [],
         score: typeof item.score === 'number' ? item.score : scoreDocument(item, tokens),
         ...(item.tier ? { tier: item.tier } : {}),
@@ -989,11 +1070,12 @@ function constructContextPack({
       namespace: item.namespace,
       title: item.title,
       structuredContext: buildStructuredContext(item),
+      provenance: buildItemProvenance(item),
       tags: item.tags || [],
       score: scoreDocument(item, tokens),
     };
   });
-  const usedChars = selection.usedChars;
+  const usedChars = selection.usedChars + contextEnvelopeChars;
   const skippedByMaxChars = selection.skippedByMaxChars;
 
   const visibility = {
@@ -1014,6 +1096,8 @@ function constructContextPack({
     maxItems,
     maxChars,
     usedChars,
+    contextEnvelope: normalizedContextEnvelope,
+    contextEnvelopeChars,
     namespaces: normalizedNamespaces,
     createdAt: nowIso(),
     items: selected,
@@ -1026,29 +1110,27 @@ function constructContextPack({
   };
 
   appendJsonl(contextFsPath(NAMESPACES.provenance, 'packs.jsonl'), pack);
-  // Symmetric with the cache read: don't persist STE packs into the shared
-  // semantic cache because the cache key is strategy-agnostic.
-  if (effectiveStrategy !== 'summarize-then-expand') {
-    appendSemanticCacheEntry({
-      id: `cache_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      timestamp: nowIso(),
-      key: buildSemanticCacheKey({
-        namespaces: normalizedNamespaces,
-        maxItems,
-        maxChars,
-      }),
-      query,
-      tokens,
-      sourceHash,
-      pack,
-    });
-  }
+  appendSemanticCacheEntry({
+    id: `cache_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    timestamp: nowIso(),
+    key: buildSemanticCacheKey({
+      namespaces: normalizedNamespaces, maxItems, maxChars,
+      strategy: retrievalStrategy, contextEnvelope: normalizedContextEnvelope,
+    }),
+    query,
+    tokens,
+    sourceHash,
+    pack,
+  });
   recordProvenance({
     type: 'context_pack_constructed',
     packId,
     query,
     itemCount: selected.length,
     usedChars,
+    contextEnvelopeVersion: normalizedContextEnvelope
+      ? normalizedContextEnvelope.version
+      : null,
     sourceHash,
     retrievalStrategy: selection.retrieval.strategy,
   });
