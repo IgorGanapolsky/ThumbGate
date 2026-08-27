@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate vs Tailscale Aperture | Tool-Call Gate vs Identity-Aware AI Gateway</title>
+  <meta name="description" content="Tailscale Aperture is an identity-aware AI gateway on your tailnet: model access without distributing API keys. ThumbGate is the PreToolUse firewall for coding-agent tool calls. Adjacent layers, not substitutes." />
+  <meta property="og:title" content="ThumbGate vs Tailscale Aperture | Tool-call gate vs AI gateway" />
+  <meta property="og:description" content="Aperture governs which identities reach which models over the tailnet. ThumbGate evaluates the tool call an agent is about to run. Different layer, same governance instinct." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/compare/aperture" />
+  <link rel="canonical" href="https://thumbgate.ai/compare/aperture" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow { display: inline-flex; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 820px; }
+    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+    .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
+    .detail-section ol, .detail-section ul { padding-left: 18px; color: var(--muted); }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+    .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+    .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
+    .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
+    .pill.warn { color: #ffe2a4; border-color: rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.1); }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .sidebar-card { padding: 20px; }
+    .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
+    .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
+    .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+    .faq-item summary { cursor: pointer; font-weight: 600; }
+    .trace { display: grid; gap: 10px; }
+    .trace div { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--bg-raised); }
+    .trace strong { display: block; color: var(--text); }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Tailscale Aperture",
+  "description": "Tailscale Aperture is an identity-aware AI gateway on the tailnet. ThumbGate is the PreToolUse firewall for coding-agent tool calls.",
+  "url": "https://thumbgate.ai/compare/aperture",
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "mainEntityOfPage": "https://thumbgate.ai/compare/aperture"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Tailscale Aperture a ThumbGate competitor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Adjacent, not a substitute. Aperture is Tailscale's identity-aware AI gateway: which people and machines on a tailnet may reach which models and connectors, with audit, and no API keys handed to agents. ThumbGate intercepts the tool call a coding agent is about to run (Claude Code, Cursor, Codex) with allow, warn, or deny before execute. One governs model access on the network; the other governs actions at the tool boundary."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate replace Aperture's no-API-keys model?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Key brokering at the network layer is Aperture's job, per Tailscale's GA announcement. ThumbGate's secret-exfiltration deny is complementary: even when an agent legitimately holds no provider key, it can still try to read or send other secrets, and the PreToolUse gate is the layer that sees that tool call."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When should I use ThumbGate with Aperture?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use both. Route model access through Aperture on the tailnet so agents never hold API keys, and run ThumbGate PreToolUse hooks on the coding agents themselves so the Bash, Write, and git calls they emit are evaluated before execute. Aperture cannot see a local rm -rf; ThumbGate cannot broker tailnet model access."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span>ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">comparison | thumbgate vs tailscale aperture</div>
+      <h1>ThumbGate vs Tailscale Aperture</h1>
+      <p><a href="https://tailscale.com/blog/aperture-ga" target="_blank" rel="noopener">Tailscale Aperture</a> (GA August 2026) is an identity-aware AI gateway that lives on your tailnet: users and agents reach models and connectors through Tailscale identity instead of distributed API keys, with per-project tool permissions and audit trails. ThumbGate is not a gateway and not a network product. It evaluates the tool call a coding agent is about to run, blocks the unsafe ones, and leaves a reviewable record.</p>
+      <div class="pill-row">
+        <div class="pill good">ThumbGate: PreToolUse allow / warn / deny on Claude Code, Cursor, Codex</div>
+        <div class="pill warn">Aperture: identity-aware model access on the tailnet (their layer, not ours)</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="detail-section">
+          <h2>The short answer</h2>
+          <p>Adjacent, not a substitute. Same instinct — agents need governance infrastructure, not vibes — applied at different layers. Aperture answers &ldquo;which identities on this network may reach which models and connectors, with what audit?&rdquo; ThumbGate answers &ldquo;should the Bash, Write, or git call this agent just proposed run at all?&rdquo; Tailscale shipping an AI gateway is category confirmation that agent governance is infrastructure; it is not a PreToolUse hook, and we are not a tailnet.</p>
+        </div>
+
+        <div class="detail-section">
+          <h2>An identity gateway is not a tool-call gate</h2>
+          <p>Sample — not a live buyer run. Mandate: let an agent use a model over the tailnet. Do not let it exfiltrate a credential.</p>
+          <div class="trace">
+            <div><strong>01 Agent requests a model</strong>Aperture authenticates the machine and user via tailnet identity. No API key was ever distributed.</div>
+            <div><strong>02 Agent emits a tool call</strong>The model responds; the agent proposes <code>curl</code> with a token in the command line. This happens on the developer machine, below the gateway.</div>
+            <div><strong>03 PreToolUse checkpoint</strong>ThumbGate evaluates the call. Secret exfiltration is a hard floor: deny before execute.</div>
+            <div><strong>04 Recorded result</strong>Both layers keep their own audit trail. Network identity did not make the local action safe; the gate did.</div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h2>Comparison table</h2>
+          <table class="comparison-table">
+            <tr><th>Dimension</th><th>Tailscale Aperture</th><th>ThumbGate</th></tr>
+            <tr>
+              <td>What it is</td>
+              <td>Identity-aware AI gateway on the tailnet (GA per Tailscale's announcement)</td>
+              <td>Local PreToolUse firewall for coding agents</td>
+            </tr>
+            <tr>
+              <td>Question it answers</td>
+              <td>Which identities may reach which models and connectors?</td>
+              <td>Should this tool call run at all?</td>
+            </tr>
+            <tr>
+              <td>Where it sits</td>
+              <td>On the network path between agents and model providers</td>
+              <td>Inside the agent harness, on the PreToolUse hook, before execute</td>
+            </tr>
+            <tr>
+              <td>Credential story</td>
+              <td>No API keys distributed to engineers or agents; access flows through tailnet identity</td>
+              <td>Secret-exfiltration deny on the tool call itself; single-use credential and secret-egress guards</td>
+            </tr>
+            <tr>
+              <td>Default hard blocks</td>
+              <td>Access rules and approvals defined by tailnet policy</td>
+              <td>Secret exfiltration and self-protect; destructive git/fs warn unless STRICT</td>
+            </tr>
+            <tr>
+              <td>Tool permissions</td>
+              <td>Projects group chats with shared context and default tool permissions</td>
+              <td>MCP allowlist profiles (default, readonly, locked) plus per-gate policy</td>
+            </tr>
+            <tr>
+              <td>Audit</td>
+              <td>Audit trails for agent actions through the gateway</td>
+              <td>Allow / warn / deny verdicts logged locally per tool call, reviewable by a security owner</td>
+            </tr>
+            <tr>
+              <td>What it cannot see</td>
+              <td>A local <code>rm -rf</code> or <code>git push --force</code> that never touches the gateway</td>
+              <td>Tailnet topology or model-provider access it was never hooked into</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="detail-section">
+          <h2>When to use Aperture</h2>
+          <ul>
+            <li>Your team is on Tailscale and you want model access without distributing API keys.</li>
+            <li>You need network-level identity, access rules, and audit for AI usage across an organization.</li>
+            <li>You want per-project defaults for which connectors and tools agents may use, enforced at the gateway.</li>
+          </ul>
+        </div>
+
+        <div class="detail-section">
+          <h2>When to use ThumbGate</h2>
+          <ul>
+            <li>Claude Code, Cursor, or Codex is about to run Bash, Write, or git on a sensitive repo.</li>
+            <li>You need secret-exfil deny locally, with a log you can show a security owner.</li>
+            <li>Network identity is not a substitute for a hook: a fully authenticated agent can still propose a destructive local action.</li>
+          </ul>
+        </div>
+
+        <div class="detail-section">
+          <h2>FAQ</h2>
+          <details class="faq-item">
+            <summary>Is Tailscale Aperture a ThumbGate competitor?</summary>
+            <p>Adjacent. They govern model access at the network layer with tailnet identity. We gate coding-agent tool calls at the PreToolUse boundary. Do not pitch us as a gateway, and do not pitch them as a hook.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Do we claim Aperture's capabilities?</summary>
+            <p>No. Identity-aware gateway, tailnet MCPs, token bundling, and project permissions are Tailscale's features per <a href="https://tailscale.com/blog/aperture-ga" target="_blank" rel="noopener">their GA announcement</a>. We do not run your tailnet and do not broker model access.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Can they compose?</summary>
+            <p>Yes, cleanly: Aperture on the network path so agents never hold provider keys; ThumbGate on the agent harness so every proposed tool call is evaluated before execute. The layers do not overlap and neither replaces the other.</p>
+          </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h3 style="margin-top:0;">Install ThumbGate</h3>
+          <p>One command. Local evaluate is free.</p>
+          <pre><code>npx thumbgate init</code></pre>
+          <a class="cta-button" href="https://thumbgate.ai/?utm_source=aperture_comparison&amp;utm_medium=compare&amp;utm_campaign=aperture">See the product</a>
+        </div>
+        <div class="sidebar-card">
+          <span class="related-label">Related</span>
+          <a class="related-card" href="/compare/databricks-unity-ai-gateway"><strong>vs Databricks Unity AI Gateway</strong><br><span class="related-label">tool-call gate vs platform AI gateway</span></a>
+          <a class="related-card" href="/compare/cloudflare-writeguard"><strong>vs Cloudflare WriteGuard</strong><br><span class="related-label">tool-call gate vs MCP portal gate</span></a>
+          <a class="related-card" href="https://tailscale.com/blog/aperture-ga" target="_blank" rel="noopener">Aperture GA announcement</a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
