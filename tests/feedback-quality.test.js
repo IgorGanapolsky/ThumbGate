@@ -44,6 +44,12 @@ test('detectFeedbackSignal accepts explicit standalone and leading signals', () 
     ['👍 verified before claiming done', 'up'],
     ['👎 claimed published without npm proof', 'down'],
     ['perfect, the verification was clear', 'up'],
+    ['great job', 'up'],
+    ['great work on the rotation guard', 'up'],
+    ['well done', 'up'],
+    ['this response is inadequate', 'down'],
+    ['that answer was wrong', 'down'],
+    ["that didn't work", 'down'],
   ];
 
   for (const [value, expectedSignal] of cases) {
@@ -63,6 +69,8 @@ test('detectFeedbackSignal rejects quoted, descriptive, negated, and mid-sentenc
     'the example contains 👎 but is not feedback',
     '"thumbs down: reason"',
     'please update the docs',
+    'I think great job postings need work',
+    'the answer is inadequate documentation of the API',
   ];
 
   for (const value of cases) {

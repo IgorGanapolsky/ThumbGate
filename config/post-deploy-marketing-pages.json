@@ -37,6 +37,16 @@
       "description": "Federal lead-gen page (SBIR / GSA arrivals)"
     },
     {
+      "route": "/yt",
+      "sentinel": "Six business functions. Existing gates.",
+      "description": "YouTube/CPC dedicated landing mapping six business functions onto existing gates"
+    },
+    {
+      "route": "/aias-registration-yt",
+      "sentinel": "Six business functions. Existing gates.",
+      "description": "Alias matching summit-style ad paths; canonical is /yt"
+    },
+    {
       "route": "/numbers",
       "sentinel": "ThumbGate",
       "description": "First-party numbers / data transparency page"

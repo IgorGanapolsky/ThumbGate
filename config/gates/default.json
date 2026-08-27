@@ -509,7 +509,7 @@
       "toolNames": [
         "Bash"
       ],
-      "pattern": "(?:kill|pkill|killall)\\s+.*(?:thumbgate|gates-engine|budget-enforcer)",
+      "pattern": "(?:^|[^A-Za-z0-9_])(?:kill|pkill|killall)\\s+.*(?:thumbgate|gates-engine|budget-enforcer)",
       "action": "block",
       "message": "Self-protection: agent cannot terminate ThumbGate processes.",
       "severity": "critical",
