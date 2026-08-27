@@ -1,0 +1,52 @@
+{
+  "$comment": "Performance budgets for ThumbGate hot paths. Philosophy (2026-08-26, CEO directive): performance is a design constraint, not late-stage cleanup. Instrument before optimizing; fix the largest MEASURED bottleneck. Budgets are p95 milliseconds unless noted. CI applies ciHeadroomMultiplier to absorb shared-runner noise while still catching order-of-magnitude regressions. scripts/perf-budget-check.js is the single measurement tool; PRs touching hotPathFiles must include its output.",
+  "version": 1,
+  "ciHeadroomMultiplier": 3,
+  "localHotPaths": {
+    "hybrid_state_build_ms_p95": {
+      "budget": 150,
+      "what": "buildHybridState over a 400-entry feedback log — the slow rebuild path behind PreToolUse guard refresh. Runs on cache miss, so it must stay well under one second of agent-visible stall."
+    },
+    "pretool_eval_from_state_ms_p95": {
+      "budget": 5,
+      "what": "evaluatePretoolFromState with a warm state — the per-tool-call decision. This taxes EVERY tool call of EVERY fleet agent; 5ms x thousands of calls/day is the whole latency story."
+    },
+    "compiled_guard_eval_ms_p95": {
+      "budget": 3,
+      "what": "evaluateCompiledGuards against a compiled artifact — the fast path the installed hook uses per invocation."
+    },
+    "guard_artifact_compile_ms_p95": {
+      "budget": 60,
+      "what": "compileGuardArtifact from a built state — amortized, but blocks the first tool call after a feedback write."
+    }
+  },
+  "productionEndpoints": {
+    "health_ms_p95": {
+      "budget": 800,
+      "url": "https://thumbgate-production.up.railway.app/health"
+    },
+    "dashboard_ms_p95": {
+      "budget": 1500,
+      "url": "https://thumbgate-production.up.railway.app/dashboard"
+    },
+    "billing_summary_ms_p95": {
+      "budget": 5000,
+      "url": "https://thumbgate.ai/v1/billing/summary",
+      "$comment": "Measured 15,000ms timeout on 2026-08-26 session bootstrap — the largest known production bottleneck. Requires operator key; probed only with --billing."
+    }
+  },
+  "unitEconomics": {
+    "$comment": "Cost-per-outcome tracking. Sources already exist; this section names them so reviews cite measurements, not vibes.",
+    "tokenSavings": "scripts/token-savings.js",
+    "budgetGuard": "scripts/budget-guard.js --status",
+    "revenueEvidence": "scripts/grafana-revenue-evidence.js"
+  },
+  "hotPathFiles": [
+    "scripts/hybrid-feedback-context.js",
+    "scripts/gates-engine.js",
+    "scripts/feedback-loop.js",
+    "src/api/server.js",
+    "src/latency-budget.js",
+    "hooks/hooks.json"
+  ]
+}

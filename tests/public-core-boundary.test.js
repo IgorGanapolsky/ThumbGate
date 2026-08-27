@@ -273,7 +273,12 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 510 -> 511 (2026-08-22): scripts/governance-conflict-audit.js, the
   //   `thumbgate conflict-audit` module (+1 measured npm pack).
   //   Lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 511;
+  // 511 -> 512 (2026-08-25): public/yt.html YouTube/CPC dedicated landing.
+  // 512 -> 513 (2026-08-25): src/alert-noise-ledger.js (+1 measured npm pack).
+  // Public-shell runtime, not a Core feature: the packaged
+  // scripts/gates-engine.js requires it to suppress reminder lines it has
+  // already emitted this session.
+  const CEILING = 513;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

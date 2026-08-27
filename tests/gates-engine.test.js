@@ -81,6 +81,12 @@ const ORIGINAL_ENV = {
   THUMBGATE_FEEDBACK_LOG: process.env.THUMBGATE_FEEDBACK_LOG,
   THUMBGATE_ATTRIBUTED_FEEDBACK: process.env.THUMBGATE_ATTRIBUTED_FEEDBACK,
   THUMBGATE_GUARDS_PATH: process.env.THUMBGATE_GUARDS_PATH,
+  // Most tests in this file assert the DEFAULT warn-by-default posture. Strict mode
+  // turns every warn into a hard deny and swaps `additionalContext` for
+  // `permissionDecisionReason`, so an inherited value from the operator's shell
+  // silently breaks those assertions. Captured here, cleared in beforeEach, restored
+  // in afterEach. Tests that exercise strict mode set it explicitly themselves.
+  THUMBGATE_STRICT_ENFORCEMENT: process.env.THUMBGATE_STRICT_ENFORCEMENT,
 };
 
 let sandboxDir = null;
@@ -187,6 +193,8 @@ beforeEach(() => {
   delete process.env.THUMBGATE_SESSION_AGENT;
   delete process.env.THUMBGATE_SESSION_ID;
   delete process.env.CLAUDE_SESSION_ID;
+  // Keep the suite hermetic: never inherit strict enforcement from the ambient shell.
+  delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
   fs.writeFileSync(process.env.THUMBGATE_FEEDBACK_LOG, '');
   fs.writeFileSync(process.env.THUMBGATE_ATTRIBUTED_FEEDBACK, '');
   cleanupStateFiles();
@@ -209,6 +217,8 @@ afterEach(() => {
   else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = ORIGINAL_ENV.THUMBGATE_ATTRIBUTED_FEEDBACK;
   if (ORIGINAL_ENV.THUMBGATE_GUARDS_PATH === undefined) delete process.env.THUMBGATE_GUARDS_PATH;
   else process.env.THUMBGATE_GUARDS_PATH = ORIGINAL_ENV.THUMBGATE_GUARDS_PATH;
+  if (ORIGINAL_ENV.THUMBGATE_STRICT_ENFORCEMENT === undefined) delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  else process.env.THUMBGATE_STRICT_ENFORCEMENT = ORIGINAL_ENV.THUMBGATE_STRICT_ENFORCEMENT;
   if (sandboxDir) {
     removeDirRobust(sandboxDir);
     sandboxDir = null;
@@ -2868,6 +2878,23 @@ test('runHardFloor ignores ordinary block gates', () => {
     tool_name: 'Bash',
     tool_input: { command: 'git push --force origin main' },
   }), null);
+});
+
+test('self-protect process rule needs a word boundary: prose ending in the verb stays benign', () => {
+  // 2026-08-26 false positive: "new skill thumbgate-guard-regression is registered"
+  // matched because "skill" ends in the verb and no left boundary was required.
+  assert.equal(runHardFloor({
+    tool_name: 'Bash',
+    tool_input: { command: 'echo "new skill thumbgate-guard-regression is registered"' },
+  }), null);
+  // Real invocations must still hard-deny.
+  const output = runHardFloor({
+    tool_name: 'Bash',
+    tool_input: { command: 'kill -9 4242  # thumbgate serve pid' },
+  });
+  assert.ok(output, 'expected bare verb + pid + process name to stay denied');
+  assert.match(JSON.parse(output).hookSpecificOutput.permissionDecisionReason,
+    /\[GATE:self-protect-kill\]/);
 });
 
 test('runHardFloor denies described browser purchases for snake and camel hook payloads', () => {

@@ -1955,6 +1955,12 @@ paths:
                       - rules
                       - tools
                       - provenance
+                strategy: { type: string, enum: [summarize-then-expand] }
+                contextEnvelope:
+                  type: object
+                  additionalProperties: false
+                  required: [goal, businessData, examples, procedures, constraints, rubric]
+                  properties: { goal: { type: string, minLength: 1 }, businessData: &contextList { type: array, minItems: 1, items: { type: string, minLength: 1 } }, examples: *contextList, procedures: *contextList, constraints: *contextList, rubric: *contextList }
       responses:
         '200':
           description: Context pack created

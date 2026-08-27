@@ -114,6 +114,11 @@ function detectFeedbackSignal(value) {
     /^that failed\b/,
     /^it failed\b/,
     /^that was wrong\b/,
+    /^that was bad\b/,
+    /^this is wrong\b/,
+    /^th(?:is|at) (?:response|answer) (?:is|was) (?:inadequate|wrong|bad|incorrect)\b/,
+    /^that did(?: not|n t) work\b/,
+    /^that does(?: not|n t) work\b/,
   ];
   if (exactDown.some((pattern) => pattern.test(normalized))) {
     return { signal: 'down', confidence: 'exact', match: normalized };
@@ -130,6 +135,10 @@ function detectFeedbackSignal(value) {
     /^nice work\b/,
     /^perfect\b/,
     /^lgtm\b/,
+    /^great job\b/,
+    /^great work\b/,
+    /^well done\b/,
+    /^nicely done\b/,
   ];
   if (exactUp.some((pattern) => pattern.test(normalized))) {
     return { signal: 'up', confidence: 'exact', match: normalized };
