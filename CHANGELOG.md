@@ -1,5 +1,417 @@
 # Changelog
 
+## 1.36.1
+
+### Patch Changes
+
+- d0bb376: Add the ThumbGate vs Tailscale Aperture comparison page (`/compare/aperture`, spec-pinned by `tests/compare-aperture.test.js`) and embed the Chrome WebMCP origin-trial token (origin `https://thumbgate.app`, expires 2026-11-17) on the homepage and pricing page so `document.modelContext` activates for covered origins.
+- 53cf1a6: Name the existing warn-by-default vs strict postures as sidecar / live / simulation (Trustwise Control Tower vocabulary, not a clone) and add a modeled agentic token-fanout estimator so quotes use 20–50 downstream actions instead of a single prompt. Hard floors still never demote. Figures are modeled bounds, not production telemetry. Inspired by the public Eye on AI conversation with Manoj Saxena / Trustwise; not affiliated.
+  EOF
+- e7afff0: self-protect process rule now requires a left word boundary, so prose containing
+  words that merely end in the verb (e.g. "skill " followed later by a protected
+  process name) no longer hard-blocks harmless commands; real kill/pkill/killall
+  invocations still deny. Regression test added from the 2026-08-26 false positive.
+
+## 1.36.0
+
+### Minor Changes
+
+- c3e38d4: feat(eval): add progressive Adaptive Governance Arenas with deterministic replay, reward-hacking checks, fail-closed difficulty advancement, tamper-evident receipts, and DPO candidates
+- 4130205: feat(cli): add `thumbgate inventory` — read-only rollup of agent tool calls, gate denies by gate, per-day activity, and a false-deny rate that reports null with a stated reason rather than inventing a denominator.
+- 8743f77: feat(egress): CrabTrap-inspired two-tier agent egress policy — static rules (deny wins), SSRF private-range block, observe→draft policy, replay eval, injection-safe judge view, Bash helper
+- dc3a9b9: Wire the agent identity plane into enforced paths (Okta AI-identity checklist follow-through): every audit record now carries the acting `agentId` (from `THUMBGATE_SESSION_AGENT` / `THUMBGATE_AGENT_ID`); the gates-engine evaluation chain records every attributed tool call as an agent observation (the producer side of shadow-AI detection), warns once per session on observed-but-unregistered (shadow) agents, and denies retired/disabled agents that keep acting under `THUMBGATE_STRICT_ENFORCEMENT=1`. The agent identity store (registry, observed-agent stream with lock-guarded compaction, `retireAgent`) lives in `scripts/audit-trail.js` — already part of the public npm runtime — so the enforced gate path needs no new bundled files and `org-dashboard` (private, Pro reporting) re-exports the same API. The identity-security report's observed-agent list now defaults to real observations.
+- 900adb5: Block stealth memory injection from untrusted external content before it can be promoted into durable agent memory.
+
+  Memory ingress now preserves source type, identifier, and trust metadata; detects memory-write instructions, conversational concealment, instruction overrides, and delayed behavioral influence; and applies strict, balanced, or permissive enforcement. Decisions emit vendor-neutral `gen_ai.security.*` telemetry so Langfuse, LangSmith, Braintrust, Arize, OpenTelemetry, and other observability backends can record the security verdict without owning the enforcement boundary.
+
+  WhisperBench-inspired tests cover fact poisoning, preference poisoning, stealth, delayed influence, trusted-user false positives, and end-to-end blocking before the memory log is written.
+
+- 2e03c18: feat(receipts): broker-emitted canonical request digest, HMAC signature verification, and provider event ID reconciliation for action receipts
+- 3a3bec4: feat(governance): broker-signed execution receipts — Ed25519 verify/issue, hash-chain ledger, PreToolUse gate, and MCP tools. ThumbGate verifies; credential-holding brokers sign. Agents cannot self-sign proof.
+- f1d7dcc: Publish the provider-neutral execution attestation schema, RFC 8785 canonicalization verifier, and deterministic normative conformance vectors.
+- e2c498f: Improve commercial legal hygiene: index Terms/Privacy/Support/Security in the sitemap and footers; publish MIT-vs-paid licensing and MSA/SOW pages; expand Terms with subscription/cancellation and production-approval language; use thumbgate.ai domain mailboxes on commercial/legal pages instead of personal Gmail.
+- 677a1c4: feat(blog): Cursor-format research post — a $10 VPS is not a Computer
+- d74c5eb: Add Future AGI self-healing agent guardrails adapter, adversarial simulation evaluator, OTel span bridge, and CLI tool.
+- 593f954: feat(cli): add `thumbgate conflict-audit` — a deterministic, model-free detector for controls that report success but enforce nothing. Six detectors, each derived from a defect this repository actually shipped: gate configs declaring a `patterns` array when the engine reads `pattern` (the match block is skipped, so the gate fires on every tool in its `toolNames`); gate patterns that cannot compile, where the engine swallows the `new RegExp` throw as "no match"; checks required by neither classic branch protection nor any repository ruleset that have failed on N consecutive commits; Sonar exclusions that hide non-trivial code inside `sonar.sources`; modules and entry exports with zero _provable_ production call sites — for a published package the entry surface is public API whose callers live in downstream npm consumers, so those are reported as NOT INSPECTED rather than as dead code; and the bare `path.resolve(process.argv[1]) === path.resolve(__filename)` main check that no-ops under an npm bin shim. Every detector reports `ran` / `partial` / `unavailable` separately, so a surface that could not be inspected is never rendered as a clean bill of health. The `gh` reader resolves its binary from a fixed list of install locations instead of walking `$PATH`.
+- 1458b25: Add mode-aware runtime governance, token-amplification budgets, Okta-aligned agent identity checks, evidence-gated behavioral simulation, bitemporal graph traversal with ablation, and a version-pinned Poolside Pool adapter.
+- e2c498f: Add product-counsel legal coverage for paid and hosted paths: master Terms modules (local/Pro, $499 Workflow Gate, thumbgate.app), Privacy Policy with local-first vs hosted data boundary, DPA posture without SOC 2/HIPAA theater, security/incident language, third-party notices, and claim substantiation. Upgrade public /terms /privacy /support and add /security /legal so the $499 full-refund fence and control-layer non-guarantee match buyer-facing pages.
+- a93b0a3: feat(mcp): optimize RAG footprint with Matryoshka representation learning embedding compaction
+- f1b48e7: Add hierarchical Matryoshka embedding tiers, memory-layer classification, deterministic retrieval-quality gates, and canonical test coverage for the Infrastructure Firewall Reliability Gateway.
+- 75a7e23: feat(mcp): model-carried session handle registry with principal binding, short TTL, HMAC verification, and idempotency (InfoWorld MCP correlation controls; multi-turn depth-30 tests)
+- 5aa357e: feat(security): Cloudflare-style MCP WriteGuard interceptor and hop-level latency budget engine
+
+  - Implements `src/mcp-writeguard.js` and `scripts/mcp-writeguard.js` for fine-grained MCP risk-tier tool governance (read/write/privileged_write/admin), dangerous command pattern interdiction, parameter secret scrubbing, and Cloudflare WriteGuard policy JSON export.
+  - Implements `src/latency-budget.js` and `scripts/latency-budget.js` for hop-level SLA monitoring (<500ms enterprise, <250ms voice), CPU-side bottleneck identification (>70%), and OpenTelemetry attribute emission.
+  - Adds CLI subcommands `thumbgate writeguard` and `thumbgate latency-budget`.
+  - Adds public guides in `public/guides/mcp-writeguard.html` and `public/guides/latency-infrastructure.html`.
+
+- 8ee0e60: Steal high-ROI Nemotron 3.5 Lightning + NeMo Switchyard ideas: multi-model step routing (always-on 3B-active specialist for intent/gate), routing-algorithm evaluation fail-closed without cost/quality evidence, catalog candidates, and governance gates — without NVIDIA product identity.
+- 5451520: Add Netflix OCI-inspired Actor-Critic process audit gate template, architectural learning page, and InfoQ community engagement engine.
+- 4e1325c: feat(receipts): partner-neutral broker execution receipt contract schema, signature verifier, and provider event reconciliation module
+- dc163b2: Add a bulkCloud cost-saver tier to the risk-aware model router: steady high-output task types (bulk-generation, batch-processing, high-output-coding, content-generation, bulk-automation) route to a cheap OpenAI-compatible cloud flagship (Qwen3.8-Max class, ~$2/M input and ~$6/M output vs frontier ~$15/M output) configured via THUMBGATE_BULK_CLOUD_BASE_URL / THUMBGATE_BULK_CLOUD_API_KEY. Tiers may now declare pricingUsdPerMTok, and executeRoutedGeneration derives real costCents telemetry from usage tokens when the adapter reports none, so routing-holdout cost-savings metrics work out of the box. New estimateTierCostUsd export; existing tier mappings and escalation rules unchanged.
+- f28e569: Steal high-ROI Model Studio economics into the ThumbGate harness: Qwen Flash/Plus/Max role routing, Token Plan budget egress, hybrid local-first escalate, DashScope text-embedding-v4 OpenAI-compatible embeddings in vector-store, and cost-tier helpers — without adopting Alibaba agent product identity.
+- abfa117: feat(governance): add Simatree enterprise data lifecycle & BI analytics governance engine
+
+  - **Why-Before-How Intent Gate (`scripts/simatree-data-governance.js`)**: Enforces explicit context-grounded business rationale and verifiable rollback snapshot IDs before executing destructive database or lakehouse operations (DROP, ALTER, TRUNCATE, unindexed DELETE/UPDATE).
+  - **Bayesian Uncertainty Estimator**: Calculates statistical posterior confidence bounds across historical sample sizes and schema drift scores, preventing hallucinations on stale analytics tables.
+  - **PMO Transformation Audit Gate**: Validates multi-phase enterprise IT modernization plans with immutable milestone receipts.
+  - **Pre-Action Gate Configuration (`config/gates/simatree-data-governance.json`)**: Interdicts ungrounded data mutations across Snowflake, BigQuery, Databricks, and Postgres.
+  - **Learn Hub Guide (`public/learn/simatree-enterprise-data-governance-bi-analytics.html`)**: Technical reference with JSON-LD structured schemas (`TechArticle`, `FAQPage`, `SoftwareApplication`).
+  - **Comprehensive Unit & Integration Test Suite (`tests/simatree-data-governance.test.js`)**: 100% test coverage validating SQL hazard interdiction, Bayesian confidence thresholds, PMO audits, and CLI execution.
+
+### Patch Changes
+
+- 0309934: Queue fix/feat/chore pull requests through Trunk after required checks succeed, retrying via pr-manager instead of a one-shot /trunk merge comment, and never auto-approving reviews.
+- eeda518: Add free local Agent Security Central (`npx thumbgate security-central`): centralized agent posture report covering PreToolUse config drift, privileged-tool coverage, policy variance, sensitive-access audit evidence, and MCP wiring. Maps Oracle Database Security Central's free-posture GTM onto the agent control plane without paid-pilot language.
+- e8b6b28: feat(gates): add alert-noise ledger for reminder suppression and correlation
+
+  Adds `src/alert-noise-ledger.js`, a presentational suppression layer for the
+  PreToolUse reminder surface. Not yet wired into `gates-engine.js` — this lands
+  the engine and its tests first so the behaviour can be reviewed independently of
+  the call-site change.
+
+  Measured from live `gate_stats` and `prevention_rules` on 2026-08-25:
+
+  - 706 gate events (87 blocked + 619 warned); 278 first firings vs 428 repeats,
+    so **60.6% of all gate events are repeats of a signature already surfaced**.
+  - `retrieval_entropy_high`: 558 events, **0 blocks in its entire history** — 79%
+    of gate traffic from a gate that has never once blocked anything.
+  - `force-push`: 1 first block, 26 repeats (96% repeat rate).
+  - Root-cause telemetry: `guardrail_triggered` is the **#1 failure category (90)**,
+    ahead of `tool_output_misread` (28).
+  - `security:generic_assignment` alone accounts for 229 failures.
+  - Two "High-Priority Contracts" carry placeholder text ("Investigate and prevent
+    recurrence") and instruct nothing.
+
+  Simulated over 120 tool calls with the real reminder text, reduction lands
+  between 48% (implausibly churny corpus, 50% novel bullets per call) and 99.8%
+  (stable corpus); ~89% at a realistic 10% novelty.
+
+  Suppression is **presentational only** and never changes a decision. Two
+  invariants are enforced and tested: the first occurrence of any signature always
+  renders in full, and a `block` is never fully suppressed — it collapses to a
+  one-liner at most, because an agent must always be told its action did not
+  happen. The ledger fails **open** on any internal error.
+
+  27 tests in `tests/alert-noise-ledger.test.js`, including a replay of the
+  measured 706-event distribution. The test target is intentionally not registered
+  in `package.json` yet: another agent holds that file this session.
+
+- 944dca8: feat(skills): add autonomous execution mandate skill for zero-nudging workflow governance
+- 4effdae: blog: add the "No LLM in the gate" engineering post (deterministic pre-action enforcement, the feedback-to-rule loop, and the false-positive tradeoffs we fixed in the open)
+- 024c282: blog: Cursor-format first-party research post — a receipt is not world-state (evaluate → block → evidence; TOC, author, related posts on thumbgate.ai/blog)
+- 739dcf5: Bound the two remaining unbounded JSONL readers on the `/v1/dashboard` assembly path so an oversized production log degrades to a bounded tail instead of throwing V8's "Cannot create a string longer than 0x1fffffe8 characters" and returning 503 "Dashboard data too large". Intervention-policy retraining now reads its own, much larger training window rather than inheriting the dashboard tail, and both the policy summary and the telemetry summary report whether the underlying read was truncated so partial counts are never presented as complete lifetime analytics.
+- 81a433b: Bound dashboard and aggregate JSONL reads to a recent four-megabyte tail so authenticated production Reliability Gateway proofs stay inside the deploy verifier budget.
+- b729951: Add budgeted six-block context envelopes, cache isolation for reusable examples and rubrics, and safe source-freshness provenance across ContextFS API and MCP packs.
+- a39600b: feat(optimizer): budget-aware gates proof — heuristic vs MILP demo for model routing and prevention-rule knapsack (sales-safe narrative; free-pip Gurobi when available)
+- 88a73e8: chore: raise the npm bundle-cap baseline 467 -> 470 for three in-flight runtime files (override-audit, security-questionnaire, pipeline-compass) so concurrent PRs stop colliding on the cap
+- eac15fa: Add a "Your Privacy Choices" link to the homepage footer and the matching
+  anchored section in the privacy notice.
+
+  CCPA/CPRA Civil Code 1798.135(a) requires the opt-out affordance be reachable
+  from the homepage, not only from inside the privacy notice. An external
+  public-evidence scan flagged this as Not observed on thumbgate.ai and the
+  finding was correct: the footer carried only Terms / Privacy / Legal, a live
+  fetch for "do not sell | your privacy choices | global privacy control"
+  returned nothing, and privacy.html had no id anchors to link to.
+
+  The new section states that ThumbGate does not sell or share personal
+  information as CCPA/CPRA defines those terms, that the Global Privacy Control
+  signal is honored, and gives a contact route for know / delete / correct /
+  limit-sensitive-PI requests.
+
+  Honor is enforced, not just described: marketing pages suppress first-party
+  emits when GPC or DNT is set, `/v1/telemetry/ping` discards `Sec-GPC: 1` /
+  `DNT: 1` before writing the JSONL, and the notice calls those events
+  pseudonymous (visitor + session identifiers) instead of anonymous. Tests are
+  two-sided: signal set must not persist; no signal must still persist.
+
+- 168dd09: fix(hygiene): single-writer checkout session lease prevents concurrent-agent collisions (git clean / git add -A sweeps); pre-commit refuses commits under live foreign lease
+- d64016b: Speed PR CI: pure-deps/workflow PRs use a focused smoke path; skip coverage re-run on ordinary PRs (main + merge queue stay full).
+- d3424fc: fix(feedback): stop the claude-history-sync fallback from mass re-importing rotated signals
+
+  The history auto-capture fallback re-imported every historical thumbs signal
+  each time `~/.claude/history.jsonl` rotated or shrank: the saved byte offset
+  became invalid, the whole file re-scanned from zero, the processed-id ledger
+  (capped at 512) had evicted the old ids, and the text dedup only matched
+  inside a 5-minute timestamp window over the last 250 feedback lines. The
+  result was the repeated "claude-history-sync auto-capture-fallback" junk
+  entries observed 18x in this repo's lesson DB and 44x in mac-yolo-safeguards.
+
+  Three changes, each regression-tested (rotation test fails on the old code):
+
+  - Rotation guard: when the history file is smaller than the size recorded at
+    the last sync, skip past the rotated content instead of re-reading from
+    byte zero. First runs (no recorded size) still bootstrap-scan once.
+  - Identical text at length 20+ with the same signal now dedupes regardless of
+    the timestamp gap; short bare signals ("thumbs up") stay window-bound so a
+    human can legitimately repeat them on another day.
+  - Ledger capacity raised: processed-id cap 512 -> 4096, dedup read window
+    250 -> 1000 feedback lines.
+
+- 675d15f: Lock CodeQL init/analyze action pins to the same SHA, bump Sonar quality-gate action to v1.2.1, group Dependabot codeql-action updates, and add regression tests so half-bumps cannot re-break CI.
+- 615c36a: docs(compare): Agoragentic is an adjacent agent OS + marketplace, not a ThumbGate clone. Pin receipt honesty (not world-state proof) and a count-free /public-proof.json.
+- 91f3ebc: site: add the Cloudflare WriteGuard comparison page (portal MCP gate vs runtime tool-call gate) with sitemap entry and pin tests
+- b45579e: docs(compare): Dirac is a token-efficient coding agent, not a ThumbGate clone. Pin their 64.8% eval as theirs, not ours.
+- 0ce1d36: Add GEO compare page: ThumbGate vs Langfuse / LangSmith / Braintrust / Arize — pre-action enforcement vs LLM observability (2026 market map).
+- b85aa6f: Keep Cursor and Grok Bot marketplace manifests aligned with canonical feedback positioning and release version synchronization.
+- ba854e1: Close the remaining prod dashboard_data 503 path: feedback-loop readJSONL no longer full-readFileSyncs before applying maxLines (diagnostic/memory tails during analyzeFeedback). readTextTail refuses full reads past the hard ceiling even when maxBytes is oversized.
+- 35af0b3: Harden dashboard JSONL ingestion so omitted limits no longer full-read multi-hundred-MB feedback logs (prod `dashboard_data` 503 / V8 string limit). Defaults: 4 MiB / 20k-line tail; opt-in `{ full: true }` for lifetime scans.
+- eeb2098: Fail-closed DeepSeek harness grants (allow-once, reconstructable receipts) and bind 24/7 schedules to always-on VPS with a human send/spend gate.
+- 09ab8c0: Bump @google/genai from 2.15.0 to 2.16.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- fa23ce9: Bump @anthropic-ai/sdk from 0.115.0 to 0.116.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 5e9667a: Bump @lancedb/lancedb from 0.33.0 to 0.37.1 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 3f1f58c: Bump protobufjs from 8.7.1 to 8.7.2 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 8a1792b: Bump tsx from 4.23.5 to 4.23.12 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 280f15f: Bump @cloudflare/workers-types from 5.20260801.1 to 5.20260810.1 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- c701dd7: Bump @anthropic-ai/sdk from 0.116.0 to 0.117.1 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 6944526: Bump js-yaml from 5.2.3 to 5.3.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- a72ccc2: Bump @google/genai from 2.16.0 to 2.17.1 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 9556280: Bump @changesets/cli from 2.31.0 to 3.0.0 to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- d50d8f5: Bump @changesets/changelog-github from 0.7.0 to 1.0.0 to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 146324e: Bump stripe from 22.4.0 to 22.5.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 613b85d: Bump stripe from 22.4.0 to 22.5.0 in /workers to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- f426150: Bump @cloudflare/workers-types from 5.20260810.1 to 5.20260817.1 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 1c8a652: Stop the release-identity guard from reporting normal progress as deploy drift.
+
+  The guard required the published npm version's gitHead to equal the commit
+  under verification. Between releases that is never true: main is simply ahead
+  of the last published version, so every content-only merge turned the check red
+  until someone cut a release. It now passes when the published release commit is
+  an ancestor of HEAD, and still fails when the published version came from a
+  commit that is not in this history. Ancestry is resolved with local git, so the
+  guard needs no network and no credentials; an ancestry it cannot prove is
+  treated as drift, so the check fails closed on a shallow clone.
+
+- f6df393: chore(deps): bump @google/genai from 2.13.0 to 2.15.0
+- cdc10a8: chore(deps): bump js-yaml from 5.2.2 to 5.2.3
+- b8fae7f: chore(deps): bump playwright-core from 1.62.0 to 1.62.1
+- 8510499: chore(deps): bump stripe from 22.2.0 to 22.4.0
+- 9d30d81: chore(deps-dev): bump tsx from 4.22.4 to 4.23.5 in /workers
+- a605a22: Bump @google/genai from 2.7.0 to 2.13.0 for Dependabot dependency maintenance.
+- 4f834b5: chore(deps-dev): bump @playwright/test from 1.62.0 to 1.62.1
+- 01ca5f2: chore(deps): bump stripe from 20.4.1 to 22.4.0 in /workers
+- ee94d2c: Bump `@cloudflare/workers-types` in `/workers` to 5.20260801.1 (Dependabot).
+- f6866b4: chore(deps-dev): bump @types/node from 26.1.1 to 26.1.2 in /workers
+- 8da08d3: docs(memes): add engaging tech memes and align commercial README copy
+- 35c6caf: Add EdotEnv-inspired RL governance gateway, multi-step research harness (hypothesis→verify→claim), RSI safety hillclimb, progressive difficulty curriculum, Research Agent gate templates, post-training research-cycle requirements, and /compare/edotenv positioning. Complementary transfer of harder-next-round operating patterns only — no EdotEnv affiliation.
+- b007198: fix(gates): stop lexical false-denies on remedy prose and wrong-tree blast radius
+
+  Commerce and permission matchers scanned full tool text, so satisfy_gate
+  evidence, capture_feedback, and `gh issue create --body` quoting chmod/checkout
+  deadlocked the documented unblock path (#3523). Blast radius and task-scope
+  read the hook cwd / a global governance slot, so a one-file vault commit was
+  scored as the primary dirty tree (#3522).
+
+- 558ee2c: Retry ledger lock acquisition when a concurrent stale-lock recovery deletes the lock directory between mkdir and owner write (ENOENT race).
+- fe5b187: Add Oceans-inspired /founders cash-path landing and upgrade /diagnostic with pain triad, timed process, comparison table, and refund FAQ — sticky $499 diagnostic checkout with intent-gated POST, no raw Stripe URLs.
+- c41769f: fix(tests): make `tests/gates-engine.test.js` hermetic against an inherited `THUMBGATE_STRICT_ENFORCEMENT`
+
+  Five tests in this suite assert the default warn-by-default posture but read the enforcement mode straight from the ambient process environment. When an operator or agent harness exports `THUMBGATE_STRICT_ENFORCEMENT=1`, strict mode turns every warn into a hard deny and replaces `additionalContext` with `permissionDecisionReason`, so those five fail on a clean tree with no code change — a false CI signal that points at the gate engine instead of at the environment.
+
+  The variable is now captured into the existing `ORIGINAL_ENV` block, deleted in `beforeEach`, and restored in `afterEach`, matching how this file already isolates `THUMBGATE_FEEDBACK_DIR`, `THUMBGATE_FEEDBACK_LOG`, `THUMBGATE_ATTRIBUTED_FEEDBACK`, and `THUMBGATE_GUARDS_PATH`. The three tests that deliberately exercise strict mode continue to set it themselves, so strict-mode coverage is unchanged.
+
+  Verified both directions: 203/203 pass with the variable set in the environment, and 203/203 pass with it absent. Test-only change; no runtime or packaged-bundle effect.
+
+- eac097c: chore(hygiene): client-side Git scale scorecard — commit-graph + multi-pack-index, cattle prune of `.claude/worktrees`, tip-consistency vs origin. Not Cursor Origin hosting.
+
+  Also packages scripts/git-at-scale.js so agent-readiness/self-heal static deps resolve in the npm tarball.
+
+- eac097c: chore(hygiene): doctor and self-heal Cursor client Git scale tunables
+
+  Wire the existing scorecard into agent-readiness and self-heal. Add
+  fetch.writeCommitGraph / gc.writeCommitGraph / pack.writeReverseIndex
+  tune, pack bitmaps on multi-pack-index write, and a check that only
+  fails closed on pack/loose sprawl — not on a fresh CI clone missing
+  indexes.
+
+- a32a2a0: feat(marketplace): add action.yml so ThumbGate can be listed on GitHub Marketplace
+- 6a85c48: fix(gurobi): fail-closed infeasible routing with IIS + certified-only-on-OPTIMAL receipts (Pulse: proof, not plausible)
+- 40b1e18: feat(optimizer): Gurobi Optimization Engine — MILP model routing & rule knapsack, system-wide free-pip path (Fabrizio Ellis)
+- b5f9c78: Steal Codex-as-a-platform thread/turn protocol, Slack/NanoClaw named-identity gates, and James Arthur QCon/InfoQ "Why Fetch When You Can Sync?" reactive read-path (offset+cursor, authorized shape, server-authoritative writes) onto hosted Hermes ($10). Approvals stay in thumbgate.app. VPS writes; laptop sleep is the wedge.
+
+  Sources:
+
+  - https://developers.openai.com/blog/codex-as-a-platform
+  - https://thenewstack.io/add-to-slack-agents/
+  - https://www.infoq.com/presentations/local-first-sync-engine/
+
+  Refuse: openai/codex dependency, Slack Marketplace, Continuity, Mac-pair, phone leash, ElectricSQL, TanStack DB, Convex, Instant, Jazz, PowerSync, Zero, CRDTs, Yjs, Automerge, WebSocket stateful protocol, local-first as the public offer, Workers Paid.
+
+- 21fca5b: Score hidden agent-tool-call entry points (PreToolUse unwired, dynamic tools, missing identity) with an interest-ranked digest. Not BrightTALK, SailPoint, or ISO 42001. capturedRevenueUsd stays 0. Bundle cap 471 → 472.
+- c08f0fd: High-ROI steal: WorkOS MCP Auth scope hierarchy + production AuthKit guard, Herdr approvals adapter, Semantic Memory Pyramid + Symbolic Task Canvas, honest partner landing at /peter, vLLM local model roles.
+- 764cee5: Upgrade LanceDB to 0.33.0 and pin Sharp 0.35.3 to preserve a clean dependency audit.
+- e2c498f: Bump npm package file-count ceiling for commercial legal public pages (terms, privacy, support, notices).
+- 28a29af: Add a cross-surface claim consistency test that mechanically pins product name, category claim, npm package, repo URL, app origin, pinned version, and commercial terms across README, llm-context.md, llms.txt, the landing page, and the pricing page — deriving every expected value from package.json and the Stripe revenue catalog instead of duplicating them. Also names the managed workflow gate offer in the served `.well-known/llms.txt`, and removes the unreachable `public/llms.txt` duplicate that the `/llms.txt` route shadowed.
+- ec4d57d: feat(ops): sync active zero-bypass `main governance` repository ruleset (layered with classic branch protection) and restore required merge-quality checks including GitGuardian
+- 5283c1b: MCP sessions now register themselves as first-class agent identities at server startup: `startStdioServer` calls a new `registerSessionIdentity` that registers the session's attributed id (or generates one) in the agent registry with `source: mcp` and exports it via `THUMBGATE_SESSION_AGENT`, so every audit record and the gates-engine identity gate can attribute the session's tool calls. This fulfills the registry's long-standing "called on MCP server startup" contract and makes shadow-agent detection meaningful: registered MCP sessions are never shadow, while unregistered actors remain visible. Bootstrap is best-effort and can never block server start.
+- 5490d18: Map MCP tools to WriteGuard-style write risk tiers and record every tool attempt with successful/failed/blocked KPI outcomes plus optional client/session attribution. Pin Akamai-style agentic hop latency budgets (250ms read-only / 500ms wall / 1000ms critical) into the SLO engine so tool p95 is measured against hop budgets, not tokens/sec.
+- 4efc03b: Stop a corrupt feedback entry from hard-blocking every action in a repository.
+
+  A truncated hook payload leaked into the feedback store and was admitted as a
+  recurring negative pattern. Its keywords were the payload's own field names —
+  `workspaceroot`, `workspace`, `thumbgate` — which appear in every payload the
+  agent sends. `workspaceroot` is long enough that `isSpecificKeyword()` treats it
+  as decisive on its own, so a single hit produced a hard deny on every `Bash`
+  call in the repository, including the commands needed to diagnose it. The gate
+  blocked 20 times and warned zero times.
+
+  Two changes:
+
+  - `keywords()` now excludes envelope tokens (hook-payload field names and the
+    workspace identity). These describe the transport, never the mistake, so they
+    can never be evidence of a recurring failure.
+  - Pattern building now rejects text that is a serialized payload fragment rather
+    than a description of a mistake.
+
+  `tests/memory-guard-envelope-tokens.test.js` reproduces the exact fragment from
+  the incident and asserts an unrelated command is no longer denied, while a
+  genuine recurring pattern still blocks the action it describes.
+
+  Known follow-up: patterns built from generic prose can still over-match. A
+  lesson reading "test feedback on chatbot output manufacturing-copilot
+  test-suite" (count 10) blocks any command containing two of those common words.
+  That needs a discriminativeness threshold and is not addressed here.
+
+- 7dcee99: fix(feedback): stop history-sync fallback junk from becoming PreToolUse Avoid constraints
+
+  `claude-feedback-sync` tags rotated Claude history as `claude-history-sync` +
+  `auto-capture-fallback` with context like "thumbs down". `isAutomatedFeedback`
+  already skipped `auto-capture` / gate logs for tool-count attribution, but
+  those fallback rows still entered `recurringNegativePatterns`, so every tool
+  call got `Avoid: "thumbs down claude-history-sync auto-capture-fallback" (seen Nx)`.
+
+  Treat those tags as automated and skip them when ranking constraints. Real
+  human-enriched negatives (completion-claim, SHA evidence) still rank.
+  Complementary to #3678 (stop re-import) — this stops already-logged junk from
+  teaching the gate.
+
+- 90882ef: Steal Oneleet's public Trust-Page / security-questionnaire motion without SOC 2 theater: /security is now a copy-paste vendor FAQ from existing legal docs, with public /security.json for reviewers and LLM parsers.
+- 54ec9ff: Add the OpenMono adapter contract under adapters/openmono/.
+
+  OpenMono is a terminal-native local-LLM coding agent that already ships a
+  Docker sandbox, a single enforcement chokepoint, fixed doom-loop detection and
+  per-sub-agent turn budgets. Every one of those controls is static and per-run,
+  so nothing learns between run 1 and run 500. This adapter describes the
+  ThumbGate side of that integration: cross-session lesson persistence, adaptive
+  loop detection instead of a fixed 3x threshold, and evidence-based turn budgets.
+
+  The config and install notes are deliberately not added to the npm files list
+  yet. The runtime binding is proposed upstream and unconfirmed, so shipping it
+  in the published package would claim an integration that does not execute.
+
+- f6f8ff3: Add a ThumbGate vs OpenMono comparison page so local-agent buyers see the static sandbox vs learning-firewall split, with first-party Pro UTMs.
+- 2ddc94b: Keep outbound email sends hard-blocked unless a separately authenticated admin grants a short-lived, exact-action-digest, single-use override.
+- fad6842: Add measured performance budgets for the PreToolUse hot path (2026-08-26 engineering directive: performance is a design constraint, not late-stage cleanup).
+
+  - `config/performance-budgets.json` — p95 budgets for the four PreToolUse hot paths (state rebuild, per-call eval, compiled-guard eval, artifact compile), production endpoint latency targets (including the billing summary that measured a 15s timeout on 2026-08-26), and pointers to the existing unit-economics sources.
+  - `scripts/perf-budget-check.js` — the single measurement tool: hermetic `--local` micro-benchmarks over synthetic fixtures (CI-safe, 3x headroom multiplier) and post-deploy `--prod` endpoint timing. Baseline on an M-series Mac: state rebuild p95 11.2ms, per-call eval p95 0.01ms.
+  - `tests/perf-budget.test.js` (`npm run test:perf-budget`, wired into the suite) — fails CI when a measured p95 breaches its budget, so hot-path regressions surface at review time instead of in production.
+  - AGENTS.md: hot-path PRs must include the harness output as benchmark evidence.
+
+  The config file is excluded from the npm tarball (`!config/performance-budgets.json`), keeping the bundle ratchet untouched.
+
+- 13462e8: Bump public npm bundle-cap baseline 470 → 471 for `src/pipeline-compass.js` (TradeMaster-style pipeline compass). Lockstep: package-boundary, public-bundle-ratchet, public-core-boundary.
+- 13462e8: Steal TradeMaster’s pipeline-first compass (6 axes) without shipping an RL trading gym: `npx thumbgate compass` scores wire, lessons, promote, eval, deploy from local files.
+- 105b20e: docs(sales): add ThumbGate platform partner API spec, cost sheet, and public page
+- 82fd1d5: Ignore optional Vercel preview failures in pr:manage so free-plan rate limits do not block Trunk when required status checks are green.
+- 5d40f45: fix(gates): unblock the pr-thread-resolution deadlock — both layers. (1) Param mismatch: the gate's block message told agents to call satisfy_gate with `gateId=` while the MCP schema only accepts `gate`; satisfy_gate now accepts `gateId`/`gate_id` aliases and the message matches the schema (cherry-pick of e0de0ad0, stranded on an unmerged branch). (2) The deeper deadlock: hook payloads name MCP tools `mcp__<server>__<tool>`, but the pending gate's evidence-action and read-only-observability exemptions compared bare names only — so `mcp__thumbgate__satisfy_gate` itself was blocked at the hook layer and the documented escape hatch was unreachable regardless of param name (live incident 2026-08-05). Exemption checks now also match the stripped tool name, with regression tests proving the prefixed satisfy path clears the gate and that prefixed mutating tools stay gated.
+- 59ff8bd: Fix authenticated production deploy proof: seed a searchable thumbgate corpus at API startup and fail-fast dashboard billing so GHA Deploy no longer fails while /health is green.
+- 7bc3a91: Include credential-safe RFC 9457 problem diagnostics in authenticated production proof reports so Railway failures identify the failing dashboard or retrieval boundary without exposing API keys.
+- 11f6740: docs: add five-phase progressive setup guide (GUIDE.md) with a content-pinning test, README entry point, and one-line discovery post drafts
+- 4c18949: Steal Frigate-guide progressive onboarding: numbered wire-first phases, empty dashboard is success, hidden metric is hook install not gate count.
+- f31dcdb: Promote honesty/overclaim `How to avoid` lines into prevention rules (High-Priority Contracts) so CEO completion-claim contracts survive rule regen.
+- e08cd82: Map Protocol Governance vocabulary (commit boundary, continuous legitimacy) onto existing PreToolUse docs for GEO and peer engagement.
+- b23e249: Fail-closed RAG embedding identity + progressive Matryoshka retrieval (Pete Johnson / SDS #1017 ROI lessons).
+- e244fbc: feat(content): add memory-compaction dogfood case study with dynamic email subject; GEO article on RAG ROI gap; RAG improvements report
+- 2a5ba52: feat(rag): gate embedding model choice and Matryoshka dims
+- 2a63bd4: Check out full git history in the Railway deployment workflow so npm release ancestry verification can distinguish valid mainline commits from divergent package ownership.
+- 50707ff: Lean reorganize the root GitHub README into a scannable activation page (~250 lines) with docs index, honest Free/Pro limits, and security/threat-model footer links.
+- dc8a739: fix(retrieval): dedupe-aware candidate pool and slot backfill in lesson retrieval; add memory-log near-duplicate compaction CLI (scripts/compact-memory-store.js, npm run memory:compact)
+- a39ca49: Score prevention-rule sprawl against eval/token budget (load-all vs knapsack) and measure lesson retrieval under a latency budget. Review volume is not the control. Not OpenSearch. capturedRevenueUsd stays 0. Bundle cap 471 → 472.
+- 3f47203: feat(ops): dual classic/ruleset congruence, CI rulesets:check, PR-manager ruleset diagnosis, and zero-bypass gate templates
+- bd9d7e0: fix(governance): use the path-based main check in the Simatree governance CLI
+
+  The Simatree governance CLI shipped its entry guard as the `require.main` strict-equality form, which SonarCloud flags as rule `javascript:S3403` (MAJOR) — an always-false comparison under strict type inference.
+
+  Replaced with the path-resolve form this repo already standardises on, wrapped in an `isDirectInvocation()` helper that canonicalises both sides with `fs.realpathSync` before comparing.
+
+  The realpath step matters. When the CLI is launched through a symlink — an npm `bin` shim, a global install, `npx` — Node leaves `process.argv[1]` as the symlink path while `__filename` is already the realpath of the target. A bare resolve-and-compare is false in that case, and the process would exit 0 having printed nothing: no `--doctor` report, no `--eval` result, no `--sql` verdict. `require.main === module` did not have that hole because Node's module resolution canonicalises first, so the replacement must not open one. Each side falls back to its resolved path if `realpathSync` throws.
+
+  Two regression tests pin the behaviour: `require()` returns the exports and prints nothing even when `process.argv` carries `--doctor`, and the CLI still emits its doctor report when invoked through a symlink. Direct `--doctor`, `--eval` and `--sql` invocation is unchanged.
+
+- 4234621: Stamp solver receipts with decision-intelligence governance: autoApply false, human oversight required, capturedRevenueUsd 0. Heuristic remains plausible-only; MILP OPTIMAL is repeatable. PreToolUse does not load solver picks.
+- dd6da88: Freeze a solver acceptance set and compare the independent status-quo heuristic against the MILP path like-for-like (Phase One evaluation process: do not grade your own homework). Bump public npm bundle-cap 471 → 472 for `scripts/solver-parity.js`. No Gurobi affiliation; capturedRevenueUsd stays 0.
+- b4faaa2: Fix the two SonarCloud findings that surfaced once the Future AGI scripts were removed from `sonar.exclusions`: give `extractTraceSignatures` an explicit code-unit comparator (S2871) and optional-chain the `post.live` guard in the pre/post gate (S6582). Both are behaviour-preserving.
+- 45fb8b2: fix(sonar): stop S3403 false positives burying the real bugs
+
+  SonarCloud reports 176 open BUGs on this project. **147 of them (84%) are one
+  rule, `javascript:S3403`, firing on the canonical CommonJS entry-point guard:**
+
+  ```js
+  if (require.main === module) { ... }
+  ```
+
+  Sonar's type model reads `require.main` as `Module|undefined` and `module` as
+  `NodeModule`, concludes the comparison can never hold, and reports it as a bug.
+  It does hold — this is the idiom in Node's own documentation, and 169 files in
+  `scripts/`, `src/` and `bin/` depend on it to decide whether they are being run
+  directly or required as a library.
+
+  Measured live against the SonarCloud API on 2026-08-25:
+
+  |                                            |               |
+  | ------------------------------------------ | ------------- |
+  | Open BUGs                                  | 176           |
+  | ...of which `S3403`                        | **147 (84%)** |
+  | Files containing `require.main === module` | 169           |
+
+  Rewriting 169 entry points to satisfy the rule would change real startup
+  behaviour across every CLI in order to improve a score. That is the wrong trade.
+  Excluding the rule is the right one.
+
+  **Scope, narrowed after review:** the suppression covers only where the idiom
+  actually lives — `scripts/**` (168 guard files by grep), `adapters/**` (2), and
+  `src/api/server.js` (1). `S3403` stays active across the rest of `src/` (the
+  product core), `bin/`, and `tests/`, so a genuinely always-false `===` there is
+  still reported. The properties file carries the re-check command so the
+  exclusion can be revisited rather than trusted forever.
+
+  Note the shape of this problem is the same one `src/alert-noise-ledger.js`
+  addresses on the gate surface: a high-volume, low-precision signal trains
+  everyone to ignore the channel, and the real findings go with it. Here it was
+  29 genuine bugs behind 147 false ones.
+
+- e688564: Keep the authenticated production dashboard proof responsive by coalescing concurrent dashboard builds and briefly caching completed operational snapshots.
+- d13f059: Prevent statusline feedback aggregation from reading a shared operating-system temporary-directory store across unrelated tests, npx sessions, and sandboxed agents.
+- 1128cb1: Add a deterministic gate that blocks stealth memory-injection payloads from untrusted agent context.
+- 1128cb1: Block MemGhost-class stealth memory injection into durable agent carriers (MEMORY.md / AGENTS.md / SOUL.md / …) from untrusted external or email provenance (paper 2607.05189 WhisperBench). Structural PreToolUse gate `block-stealth-memory-injection-from-external`.
+- 4ebc6de: Landing-page conversion mechanics stolen (honestly) from a high-converting AI-summit registration funnel: remove leaked copy-strategy meta-lines that narrated conversion tactics to visitors on the diagnostic and founders pages; add explicit is-this-for-you qualification sections to index, founders, diagnostic, and pricing; rewrite heroes to name the visitor's concrete agent failures and the agent-team-needs-a-firewall frame; convert closes to honest two-paths framing with first-person CTAs; make the free install command a real copyable CTA on index with trust markers beside it; label competitor cost figures as market ballparks. No prices, offer terms, pinned claims, or fabricated urgency anywhere.
+- 366f891: Record every gate unlock as a typed override event, and add governed operator
+  override authorizations.
+
+  satisfyCondition previously wrote only to the gate state store, so an unlock
+  performed through the CLI reached no log at all. That is the fallback path used
+  whenever the MCP tool is unavailable, which made the least-supervised unlock the
+  least-recorded one. Overrides are now written with decision "override" carrying
+  gateId, source, actor, reason, evidence and structured reasoning, so they can be
+  filtered and counted by type rather than inferred from a tool name.
+
+  Adds scripts/admin-override.js for time-boxed, single-gate authorizations:
+  no wildcard scope, a 1 hour default with a 24 hour ceiling, and an explicit
+  acknowledgement required before overriding a gate that protects the enforcement
+  machinery itself. Issuing and cancelling both emit receipts.
+
+- 3e69bd2: Close the unattended RAG loop gap: commit project `.mcp.json` with the thumbgate MCP server, expand the MCP wiring doctor to fail loud when capture/recall is uncallable, and add hosted remote feedback capture (`THUMBGATE_API_BASE_URL` + `THUMBGATE_API_KEY`) for container agents without a Mac-local lessons store.
+- 08fa4fa: Treat the Vercel deployment status as an optional merge-quality check. It is not in required branch-protection contexts, and free-tier deploy rate-limits were stalling Trunk while every required check was green.
+- c689e0e: WebMCP agent surface for the hosted product pages plus declaration governance (2026-08-26 CEO directive: webmachinelearning/webmcp).
+
+  - `public/js/webmcp.js` — feature-detected `document.modelContext.registerTool` instrumentation for index/pricing: three READ-ONLY tools (product overview, pricing pointer, live health), every one declaring `annotations.readOnlyHint: true`. No checkout/payment tools; the payment form stays human-only; browsers without WebMCP are a no-op. Served via an explicit `/js/webmcp.js` route mirroring buyer-intent; excluded from the npm tarball (packaged runtime degrades to a 404 no-op).
+  - `src/webmcp-governance.js` — the enforcement angle: `validateToolDeclaration` / `auditToolRegistry` enforce truthful side-effect hints (mutation-named tools cannot claim readOnlyHint; commerce-shaped tools require humanConfirmationHint and can never autosubmit), and `evaluateWebMcpPretool` returns PreToolUse-shaped verdicts for agents invoking page-exposed tools (deny agent-driven commerce, warn on mutations, allow reads). Also excluded from the tarball.
+  - `tests/webmcp-governance.test.js` (`npm run test:webmcp`, wired into the suite) — validator semantics plus page-wiring proofs: script parses, registers only read-only tools, never uses toolautosubmit, both pages load it and carry the `WebMCP-ready` marker (which `scripts/revenue-status.js` already checks for), and the payment form carries no tool attributes.
+
+- 7130c95: Dedicated YouTube/CPC landing at `/yt` (alias `/aias-registration-yt`) maps six business-function agents onto existing gates. FORMAT steal from AIAS registration landings — not affiliated, not a 6-agent OS, no $499 hero. Bundle cap 511 → 512 for `public/yt.html`. Unpacked npm size cap 8.00 MB → 8.01 MB after the landing plus #3661 funnel HTML. YouTube CTAs hop through `/go/github`, `/go/npm`, and `/go/marketplace` so first-party click telemetry records before the off-site redirect.
+
 ## 1.35.0
 
 ### Minor Changes
