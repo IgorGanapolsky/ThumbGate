@@ -59,6 +59,7 @@ const {
   readTextTail,
 } = require('./fs-utils');
 const { getInspectorStatus } = require('./dashboard-debugger');
+const { auditLabels } = require('./label-governance');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -1838,6 +1839,13 @@ function generateDashboard(feedbackDir, options = {}) {
       rates: lessonPipeline.rates,
     },
     debugger: getInspectorStatus(),
+    labelGovernance: auditLabels([
+      { name: 'priority:p0' }, { name: 'priority:p1' }, { name: 'priority:p2' }, { name: 'priority:p3' },
+      { name: 'status:ready' }, { name: 'status:in-progress' }, { name: 'status:blocked' }, { name: 'status:review' },
+      { name: 'area:gateway' }, { name: 'area:control-plane' }, { name: 'area:mobile' }, { name: 'area:ci' }, { name: 'area:security' }, { name: 'area:webmcp' }, { name: 'area:dashboard' }, { name: 'area:rag' }, { name: 'area:eval' }, { name: 'area:billing' },
+      { name: 'type:bug' }, { name: 'type:feature' }, { name: 'type:enhancement' }, { name: 'type:documentation' }, { name: 'type:security' }, { name: 'type:chore' }, { name: 'type:perf' },
+      { name: 'bug' }, { name: 'documentation' }, { name: 'dependencies' }, { name: 'security' }, { name: 'webmcp' }, { name: 'automerge' }
+    ]),
   };
 }
 

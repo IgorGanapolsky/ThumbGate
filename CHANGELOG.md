@@ -8,6 +8,12 @@
 
 ### Patch Changes
 
+- label-governance: GitHub Label Governance, Taxonomy Optimization & Archiving Engine
+  (`scripts/label-governance.js`). Leverages GitHub's August 27, 2026 Label Archiving
+  GA to enforce deterministic label taxonomies (`priority:*`, `area:*`, `status:*`,
+  `type:*`), suggest contextual labels from diffs/titles, and recommend archiving
+  ad-hoc labels without losing audit history. Public npm bundle ceiling 514 → 515.
+
 - dashboard-debugger: Live Gate Debugger & Chrome DevTools / ndb Inspector Bridge
   (`scripts/dashboard-debugger.js`) added to the ThumbGate Dashboard. Provides
   sub-25ms pre-action gate simulations, 4-stage pipeline step tracing, and
