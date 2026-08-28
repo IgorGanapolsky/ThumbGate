@@ -48,7 +48,9 @@ const ALL = Object.keys(pkg.scripts)
   .filter((n) => n.startsWith('test:'))
   // `test:coverage` shells out to the whole suite; running it here would recurse.
   .filter((n) => n !== 'test:coverage')
-  .sort();
+  // Suite names are ASCII identifiers (`test:foo-bar`), so a byte-wise
+  // comparator is deterministic across locales — unlike bare `.sort()`.
+  .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
 const chained = new Set(
   String(pkg.scripts.test || '')
@@ -75,18 +77,16 @@ if (flag('orphans')) {
   process.exit(ORPHANS.length ? 1 : 0);
 }
 
-const JOBS = Math.max(1, parseInt(value('jobs', String(Math.max(1, os.cpus().length - 1))), 10) || 1);
+const JOBS = Math.max(1, Number.parseInt(value('jobs', String(Math.max(1, os.cpus().length - 1))), 10) || 1);
 
 function run(name) {
   return new Promise((resolve) => {
     const started = Date.now();
-    // NOSONAR javascript:S4036 — invoking `npm` by name is intentional: this
-    // runner executes inside a checkout where npm must come from the user's
-    // own PATH (brew/apt/scoop/Volta/nvm all install it in different places).
-    // Pinning an absolute path would break every non-standard install. The
-    // command name ('npm') is a hard-coded literal and args is an array, so
-    // spawn never goes through a shell. Reviewed as safe.
-    const child = spawn('npm', ['run', '--silent', name], {
+    // Invoking `npm` by name is intentional: this runner executes inside a
+    // checkout where npm must come from the user's own PATH (brew/apt/scoop/
+    // Volta/nvm all install it in different places). The command name is a
+    // hard-coded literal and args is an array, so spawn never uses a shell.
+    const child = spawn('npm', ['run', '--silent', name], { // NOSONAR javascript:S4036
       cwd: ROOT,
       env: { ...process.env, NO_COLOR: '1' },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -95,7 +95,7 @@ function run(name) {
     child.stdout.on('data', (d) => (out += d));
     child.stderr.on('data', (d) => (out += d));
     child.on('error', (err) =>
-      resolve({ name, code: -1, ms: Date.now() - started, out: String(err && err.message) })
+      resolve({ name, code: -1, ms: Date.now() - started, out: String(err?.message) })
     );
     child.on('close', (code) => resolve({ name, code, ms: Date.now() - started, out }));
   });
@@ -146,7 +146,10 @@ const num = (text, re) => {
       const first =
         f.out
           .split('\n')
-          .find((l) => /^not ok |Error|AssertionError|failed/i.test(l)) || '(no summary line)';
+          // `^` intentionally binds only to the "not ok " prefix; Error /
+          // AssertionError / failed may appear anywhere on the line. The
+          // grouping makes that precedence explicit (Sonar S5850).
+          .find((l) => /^(not ok )|Error|AssertionError|failed/i.test(l)) || '(no summary line)';
       console.log(`  ${f.name}  exit=${f.code}\n      ${first.trim().slice(0, 140)}`);
     }
   }

@@ -116,3 +116,38 @@ test('every test:* script points at a file that exists', () => {
   }
   assert.deepEqual(missing, [], 'a script pointing at a missing test file can never pass');
 });
+
+test('find-dormant-requires --dir= narrows the scan and prints a human report', () => {
+  const out = run(DORMANT, ['--dir=scripts/']);
+  assert.match(out, /scanned \d+ tracked \.js files/);
+  assert.match(out, /dormant require bindings: \d+/);
+});
+
+test('find-dormant-requires --json with --dir= returns only that directory', () => {
+  const parsed = JSON.parse(run(DORMANT, ['--json', '--dir=scripts/']));
+  assert.ok(parsed.scanned > 0);
+  for (const f of parsed.findings) {
+    assert.ok(f.file.startsWith('scripts/'), `${f.file} must be inside scripts/`);
+  }
+});
+
+test('test-all runs a filtered suite end-to-end through the worker loop', () => {
+  // --filter selects exactly one cheap suite, so the full async path
+  // (worker loop, run(), pass marking, summary) executes in CI time.
+  const out = run(TESTALL, ['--jobs=1', '--filter=sync-version']);
+  assert.match(out, /test-all: 1 suites, 1 parallel/);
+  assert.match(out, /ok {2}\s+test:sync-version/);
+  assert.match(out, /suites\s+: 1\/1 passed/);
+  assert.match(out, /asserts\s+: \d+ passed, 0 failed/);
+});
+
+test('test-all reports zero suites when the filter matches nothing', () => {
+  const out = run(TESTALL, ['--filter=this-matches-nothing']);
+  assert.match(out, /test-all: 0 suites/);
+  assert.match(out, /suites\s+: 0\/0 passed/);
+});
+
+test('test-all --jobs clamps to at least one worker', () => {
+  const out = run(TESTALL, ['--list', '--jobs=0']);
+  assert.ok(out.trim().length > 0);
+});

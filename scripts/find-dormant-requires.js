@@ -30,19 +30,18 @@ const asJson = argv.includes('--json');
 const dirArg = (argv.find((a) => a.startsWith('--dir=')) || '').slice(6);
 
 function tracked() {
-  // NOSONAR javascript:S4036 — invoking `git` by name is intentional: this
-  // detector runs inside a developer's repo where git must come from the
-  // user's own PATH. Pinning an absolute path would break on every machine
-  // that installs git via brew/apt/scoop/Xcode/Git-for-Windows. The command
-  // name ('git') is a hard-coded literal and args is an array, so
-  // execFileSync never goes through a shell. Reviewed as safe.
-  const out = execFileSync('git', ['ls-files', '*.js'], { cwd: ROOT, encoding: 'utf8' });
+  // Invoking `git` by name is intentional: this detector runs inside a
+  // developer's repo where git must come from the user's own PATH. Pinning an
+  // absolute path would break on machines installing git via brew/apt/scoop/
+  // Xcode/Git-for-Windows. The command name ('git') is a hard-coded literal
+  // and args is an array, so execFileSync never goes through a shell.
+  const out = execFileSync('git', ['ls-files', '*.js'], { cwd: ROOT, encoding: 'utf8' }); // NOSONAR javascript:S4036
   return out
     .split('\n')
     .filter(Boolean)
     .filter((f) => !dirArg || f.startsWith(dirArg))
     .filter((f) => !f.includes('node_modules/'))
-    .filter((f) => !/\.min\.js$/.test(f));
+    .filter((f) => !f.endsWith('.min.js'));
 }
 
 /**
@@ -76,12 +75,12 @@ for (const rel of tracked()) {
   const lines = src.split('\n');
   const names = [];
   lines.forEach((line, i) => {
-    const s = line.match(SINGLE);
+    const s = SINGLE.exec(line);
     if (s) {
       names.push({ name: s[1], line: i + 1 });
       return;
     }
-    const d = line.match(DESTRUCT);
+    const d = DESTRUCT.exec(line);
     if (d) {
       d[1]
         .split(',')
@@ -106,7 +105,10 @@ if (asJson) {
   console.log(`scanned ${scanned} tracked .js files`);
   console.log(`dormant require bindings: ${findings.length}\n`);
   const byFile = {};
-  for (const f of findings) (byFile[f.file] ||= []).push(f);
+  for (const f of findings) {
+    byFile[f.file] = byFile[f.file] || [];
+    byFile[f.file].push(f);
+  }
   const sorted = Object.entries(byFile).sort((a, b) => b[1].length - a[1].length);
   for (const [file, list] of sorted.slice(0, 40)) {
     console.log(`  ${file}`);
