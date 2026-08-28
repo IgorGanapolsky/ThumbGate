@@ -26,7 +26,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: automerge-${{ github.event.pull_request.number || github.run_id }}
+  group: agent-automerge-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -45,7 +45,6 @@ jobs:
     timeout-minutes: 5
     env:
       GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
-      THUMBGATE_API_RETRY_COUNT: 3
 
     steps:
       - name: Resolve PR number
@@ -111,30 +110,7 @@ jobs:
           esac
 
           echo "Evaluating PR #$PR_NUMBER ($ref) with pr-manager"
-
-          # Rate-limited merge with exponential backoff
-          merge_with_backoff() {
-            local pr=$1
-            local max_attempts=${THUMBGATE_API_RETRY_COUNT:-3}
-            local attempt=0
-
-            while [ $attempt -lt $max_attempts ]; do
-              if gh pr merge "$pr" --squash --delete-branch 2>/dev/null; then
-                echo "Successfully merged PR #$pr"
-                return 0
-              fi
-
-              local wait_time=$(( (2 ** attempt) * 5 ))
-              echo "::warning::Merge attempt $((attempt+1)) failed, waiting ${wait_time}s..."
-              sleep $wait_time
-              attempt=$((attempt + 1))
-            done
-
-            echo "::error::Failed to merge after $max_attempts attempts"
-            exit 1
-          }
-
-          merge_with_backoff "$PR_NUMBER"
+          node scripts/pr-manager.js "$PR_NUMBER"
 
           {
             echo "### Merge automation"
