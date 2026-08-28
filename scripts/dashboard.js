@@ -556,8 +556,14 @@ function computePreventionImpact(feedbackDir, gateStats) {
   }
 
   // Estimate time saved: ~16 min per blocked action (conservative)
+  // Based on: Claude Code review takes ~30 min, guard saves ~14 min
   const estimatedMinutesSaved = gateStats.blocked * 16;
-  const estimatedHoursSaved = (estimatedMinutesSaved / 60).toFixed(1);
+  const estimatedHoursSaved = Number((estimatedMinutesSaved / 60).toFixed(1));
+
+  // Estimate cost savings: $0.004 per blocked action (16 min @ $1.50/hr)
+  // This is the cost of the agent time saved
+  const estimatedCostSavingsCents = gateStats.blocked * 16 * 1.5; // 16min * $0.025/min
+  const estimatedCostSavings = `$${(estimatedCostSavingsCents / 100).toFixed(2)}`;
 
   // Last auto-promotion
   const autoGates = readJsonFile(autoGatesPath);
@@ -573,10 +579,63 @@ function computePreventionImpact(feedbackDir, gateStats) {
     }
   }
 
+  // Feedback-to-gate conversion rate
+  // How many negative feedback events led to prevention rules
+  const feedbackCount = gateStats.totalGates; // proxy for feedback volume
+  const conversionRate = feedbackCount > 0 ? Math.min(gateStats.blocked / feedbackCount, 1) : 0;
+
   return {
     estimatedHoursSaved,
+    estimatedCostSavings,
     ruleCount,
     lastPromotion,
+    feedbackToGateConversionRate: Number(conversionRate.toFixed(4)),
+    blockedActions: gateStats.blocked || 0,
+  };
+}
+
+function computeRoiSummary(gateStats, prevention, analytics, billing) {
+  // North Star: Earn $100/day after-tax profit
+  // ROI metrics that drive acquisition and retention
+
+  const blockedActions = gateStats.blocked || 0;
+  const warnedActions = gateStats.warned || 0;
+  const passedActions = gateStats.passed || 0;
+  const totalGates = gateStats.totalGates || 0;
+
+  // Time saved from blocked actions (16 min per block)
+  const hoursSaved = prevention.estimatedHoursSaved || 0;
+
+  // Conversion funnel effectiveness
+  const funnel = analytics.funnel || {};
+  const visitorToPaidRate = funnel.visitorToPaidRate || 0;
+  const ctaToPaidRate = funnel.ctaToPaidRate || 0;
+
+  // Revenue tracking
+  const paidOrders = funnel.paidOrders || 0;
+  const monthlyRevenueCents = billing.revenue ? billing.revenue.monthlyRevenueCents || 0 : 0;
+  const monthlyRevenue = monthlyRevenueCents / 100;
+
+  // Prevention effectiveness
+  const preventionRate = totalGates > 0 ? (blockedActions / totalGates) : 0;
+
+  return {
+    // Cost savings from prevention (time-based ROI)
+    hoursSaved: Number(hoursSaved.toFixed(1)),
+    preventionRate: Number(preventionRate.toFixed(4)),
+    blockedActions,
+
+    // Conversion metrics (acquisition ROI)
+    visitorToPaidRate: Number((visitorToPaidRate * 100).toFixed(2)),
+    ctaToPaidRate: Number((ctaToPaidRate * 100).toFixed(2)),
+
+    // Revenue signals (retention/retention)
+    monthlyRevenue: Number(monthlyRevenue.toFixed(2)),
+    paidOrders,
+
+    // North Star tracking
+    monthlyRevenueTarget: 3000, // $100/day after tax
+    revenueProgress: monthlyRevenue > 0 ? (monthlyRevenue / 3000 * 100).toFixed(1) : 0,
   };
 }
 
@@ -1796,6 +1855,9 @@ function generateDashboard(feedbackDir, options = {}) {
   });
   const reviewDelta = summarizeReviewDelta(entries, memoryEntries, auditEntries, reviewBaseline, reviewSnapshot);
 
+  // High-ROI metrics for North Star: $100/day after-tax profit
+  const roiSummary = computeRoiSummary(gateStats, prevention, analytics, billingSummary);
+
   return {
     operational: {
       source: options.billingSource || 'local',
@@ -2121,6 +2183,7 @@ module.exports = {
   computeDecisionMetrics,
   computeGateStats,
   computePreventionImpact,
+  computeRoiSummary,
   computeSessionTrend,
   computeSystemHealth,
   computeEfficiencyMetrics,
