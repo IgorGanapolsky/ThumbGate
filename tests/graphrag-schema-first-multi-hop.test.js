@@ -38,7 +38,7 @@ test('schema enumerates every entity and relation type', () => {
   assert.deepEqual(s.entityTypes, [...ENTITY_TYPES]);
   assert.deepEqual(s.relationTypes, [...RELATION_TYPES]);
   assert.equal(s.modeled, false);
-  assert.ok(s.source.includes('thenewstack.io'));
+  assert.equal(new URL(s.source).hostname, 'thenewstack.io');
 });
 
 test('alias folding kills the Acme Corp / Acme Corporation / Ame problem', () => {
