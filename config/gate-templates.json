@@ -651,6 +651,54 @@
       "rollout": "Enabled as structural gate in gates-engine (scripts/stealth-memory-injection-gate.js). Allow only with explicit operator override (THUMBGATE_ALLOW_STEALTH_MEMORY_INJECTION=1) or stealthMemoryInjectionApproved=true after human review. Capture blocked attempts with tags stealth-memory-injection,whisperbench,memghost."
     },
     {
+      "id": "require-claw-observability-before-production",
+      "name": "Require OpenTelemetry observability before claw production rollout",
+      "category": "Claw-Style Enterprise Agent Governance",
+      "signal": "👎",
+      "defaultAction": "warn",
+      "severity": "high",
+      "pattern": "(claw|harness agent|hosted agent|production rollout|deploy agent).*(no telemetry|no traces|no otel|observability|token usage|tool calls)",
+      "problem": "A claw that reads files, runs code, and calls tools is a small distributed system. Microsoft Agent Framework's production-readiness guide (2026) makes OpenTelemetry spans for every model turn and tool call, token-usage metrics, and structured logs a launch prerequisite — without them a misfiring skill, looping tool, or 10x cost spike is invisible until a customer reports it.",
+      "roi": "High: observability is the cheapest incident-response accelerator for enterprise claw buyers. ThumbGate's tool KPI telemetry and decision logs become the audit surface; this gate converts 'works on my machine' into 'we can see it run'. Maps directly to the AGENTS.md 20-observed-tool-calls production-monitoring floor.",
+      "rollout": "Warn by default; escalate to block for regulated verticals (finance/healthcare). Require an OTLP/collector endpoint or ThumbGate decision-log sink configured before any hosted or fleet deployment. Capture evidence with tags claw-observability,otel,production-readiness."
+    },
+    {
+      "id": "require-policy-content-screening",
+      "name": "Require prompt/response content-policy screening (Purview-style)",
+      "category": "Claw-Style Enterprise Agent Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(prompt|response|chat client|model call|agent output).*(credit card|pii|confidential|regulated|policy screen|purview|dls|data loss)",
+      "problem": "In regulated settings every prompt must be screened before it reaches the model and every response before it reaches the user, with an audit trail — Microsoft's production claw wraps the chat client in Purview policy middleware for exactly this. Unscreened claw traffic against sensitive documents (finance, healthcare) is a data-loss incident waiting for an audit.",
+      "roi": "High: content-policy screening is the compliance story that unlocks enterprise budgets (SOC 2, HIPAA, DLP). ThumbGate's memory-firewall + secret-leak gates already implement the pattern locally; this gate extends it to bidirectional prompt/response screening and positions ThumbGate as the vendor-neutral alternative to tenant-locked E5-only Purview.",
+      "rollout": "Block unscreened model calls for regulated workloads; allow only when a screening layer (ThumbGate memory firewall, Purview middleware, or equivalent DLP) is configured on the chat path. Opt-in by environment flag so unregulated dev loops stay fast. Capture with tags content-policy,dlp,purview-style."
+    },
+    {
+      "id": "block-hosted-claw-shell-and-fs",
+      "name": "Block shell and container-disk file access on hosted claw agents",
+      "category": "Claw-Style Enterprise Agent Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(hosted|container|shared tenant|multi tenant|foundry|cloud deploy).*(enable shell|shell access|file access|write container|container disk|arbitrary read)",
+      "problem": "Microsoft's hosted claw deliberately sets EnableFileAccess=false and EnableShell=false: in a shared hosted environment, arbitrary container filesystem or shell access is a data-exfiltration, tampering, and persistence vector even behind a deny-list. When file access is genuinely needed the pattern is an external governed file store (e.g., blob-backed AgentFileStore), never the ephemeral container disk.",
+      "roi": "High: the single clearest hosted-claw hardening rule from a first-party production guide. ThumbGate enforces it as a deterministic pre-action gate plus proof artifact, so buyers get the Microsoft-recommended lockdown with an evidence packet instead of trusting config drift.",
+      "rollout": "Block by default for any hosted/shared-tenant agent build. Explicit, reviewed exceptions only, and file access must route through a governed external store, never container disk. Capture with tags hosted-hardening,shell-off,filestore."
+    },
+    {
+      "id": "require-local-evals-on-every-change",
+      "name": "Require local deterministic evals on every claw change",
+      "category": "Claw-Style Enterprise Agent Governance",
+      "signal": "👍",
+      "defaultAction": "warn",
+      "severity": "high",
+      "pattern": "(claw|agent|prompt|tool|skill).*(regression|eval|golden|quality gate|ci check|passed/total)",
+      "problem": "The production harness pattern runs local deterministic eval checks (plain functions: passed/total over a fixed query set) on every change, always in CI, with model-graded quality scores optional and gated. Without a local eval ratchet, every prompt/tool/skill edit is a blind change — the tuning loop that keeps a deployed agent honest does not exist.",
+      "roi": "High: evals-in-CI is the cheapest regression insurance and directly extends ThumbGate's existing golden-eval discipline (gate-decisions golden, retrieval ranking MRR/recall thresholds, fail-closed RAG gates). Selling point: ThumbGate ships the local-eval layer; hosted model-graded evals stay optional.",
+      "rollout": "Warn when a prompt/tool/skill change ships without a local eval run; block merges on eval regression in CI. Keep checks deterministic, fast, free, and runnable offline; require >= 95% pass on golden cases before widening deployment. Capture with tags local-evals,ratchet,production-readiness."
+    },
+    {
       "id": "block-unauthorized-multi-channel-posts",
       "name": "Block unauthorized multi-channel posts by Hermes Agent",
       "category": "Nous Research Hermes Agent Governance",
