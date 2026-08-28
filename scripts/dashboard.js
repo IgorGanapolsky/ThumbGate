@@ -60,6 +60,7 @@ const {
 } = require('./fs-utils');
 const { getInspectorStatus } = require('./dashboard-debugger');
 const { auditLabels } = require('./label-governance');
+const { auditAgentFiles } = require('./agent-file-auditor');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -1846,6 +1847,7 @@ function generateDashboard(feedbackDir, options = {}) {
       { name: 'type:bug' }, { name: 'type:feature' }, { name: 'type:enhancement' }, { name: 'type:documentation' }, { name: 'type:security' }, { name: 'type:chore' }, { name: 'type:perf' },
       { name: 'bug' }, { name: 'documentation' }, { name: 'dependencies' }, { name: 'security' }, { name: 'webmcp' }, { name: 'automerge' }
     ]),
+    agentFilesAudit: auditAgentFiles({ repoRoot: PROJECT_ROOT }),
   };
 }
 
