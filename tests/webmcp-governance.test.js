@@ -157,18 +157,22 @@ test('the server exposes a route for /js/webmcp.js', () => {
 });
 
 // Chrome origin trial: WebMCP only activates on origins carrying a valid trial
-// token. The CEO registered https://thumbgate.app (subdomains + third-party,
-// expires 2026-11-17); the base64 payload below is that token's readable JSON
-// tail. thumbgate.ai needs its own token — when issued it lands as a second
-// origin-trial meta on the same pages and this test's floor of one still holds.
+// token. The CEO registered https://thumbgate.app (2026-08-27) and
+// https://www.thumbgate.app (2026-08-28) (subdomains + third-party, expires 2026-11-17);
+// the base64 payloads below are the tokens' readable JSON tails.
+// thumbgate.ai needs its own token — when issued it lands as a third origin-trial meta tag.
 test('wired pages embed the WebMCP origin-trial meta token', () => {
   for (const page of ['index.html', 'pricing.html']) {
     const body = fs.readFileSync(path.join(root, 'public', page), 'utf8');
     const metaCount = body.split('http-equiv="origin-trial"').length - 1;
-    assert.ok(metaCount >= 1, `${page} must carry at least one origin-trial meta tag`);
+    assert.ok(metaCount >= 2, `${page} must carry both origin-trial meta tags`);
     assert.ok(
       body.includes('eyJvcmlnaW4iOiJodHRwczovL3RodW1iZ2F0ZS5hcHA6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIs'),
       `${page} must embed the registered thumbgate.app WebMCP token`
+    );
+    assert.ok(
+      body.includes('eyJvcmlnaW4iOiJodHRwczovL3d3dy50aHVtYmdhdGUuYXBwOjQ0MyIsImZlYXR1cmUiOiJXZWJNQ1AiLC'),
+      `${page} must embed the registered www.thumbgate.app WebMCP token`
     );
   }
 });
