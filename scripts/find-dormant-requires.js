@@ -30,6 +30,12 @@ const asJson = argv.includes('--json');
 const dirArg = (argv.find((a) => a.startsWith('--dir=')) || '').slice(6);
 
 function tracked() {
+  // NOSONAR javascript:S4036 — invoking `git` by name is intentional: this
+  // detector runs inside a developer's repo where git must come from the
+  // user's own PATH. Pinning an absolute path would break on every machine
+  // that installs git via brew/apt/scoop/Xcode/Git-for-Windows. The command
+  // name ('git') is a hard-coded literal and args is an array, so
+  // execFileSync never goes through a shell. Reviewed as safe.
   const out = execFileSync('git', ['ls-files', '*.js'], { cwd: ROOT, encoding: 'utf8' });
   return out
     .split('\n')

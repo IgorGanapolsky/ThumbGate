@@ -80,6 +80,12 @@ const JOBS = Math.max(1, parseInt(value('jobs', String(Math.max(1, os.cpus().len
 function run(name) {
   return new Promise((resolve) => {
     const started = Date.now();
+    // NOSONAR javascript:S4036 — invoking `npm` by name is intentional: this
+    // runner executes inside a checkout where npm must come from the user's
+    // own PATH (brew/apt/scoop/Volta/nvm all install it in different places).
+    // Pinning an absolute path would break every non-standard install. The
+    // command name ('npm') is a hard-coded literal and args is an array, so
+    // spawn never goes through a shell. Reviewed as safe.
     const child = spawn('npm', ['run', '--silent', name], {
       cwd: ROOT,
       env: { ...process.env, NO_COLOR: '1' },
