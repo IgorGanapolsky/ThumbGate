@@ -93,6 +93,12 @@ test('gate template library exposes curated templates with shared rollout metada
   assert.ok(templates.some((template) => template.id === 'require-claw-observability-before-production' && template.defaultAction === 'warn'));
   assert.ok(templates.some((template) => template.id === 'require-local-evals-on-every-change' && template.defaultAction === 'warn'));
 
+  // Double-blind holdout (Google DeepMind contamination defense, scripts/eval-holdout.js)
+  assert.ok(templates.some((template) => template.id === 'require-double-blind-holdout-eval'));
+  const holdoutTemplate = templates.find((t) => t.id === 'require-double-blind-holdout-eval');
+  assert.equal(holdoutTemplate.category, 'Eval Integrity');
+  assert.doesNotThrow(() => new RegExp(holdoutTemplate.pattern), 'holdout pattern must compile');
+
   assert.ok(templates.every((template) => template.category));
   assert.ok(templates.every((template) => template.problem));
   assert.ok(templates.every((template) => template.roi));

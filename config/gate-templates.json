@@ -699,6 +699,18 @@
       "rollout": "Warn when a prompt/tool/skill change ships without a local eval run; block merges on eval regression in CI. Keep checks deterministic, fast, free, and runnable offline; require >= 95% pass on golden cases before widening deployment. Capture with tags local-evals,ratchet,production-readiness."
     },
     {
+      "id": "require-double-blind-holdout-eval",
+      "name": "Require double-blind holdout for benchmark tuning",
+      "category": "Eval Integrity",
+      "signal": "👎",
+      "defaultAction": "warn",
+      "severity": "high",
+      "pattern": "(benchmark|golden set|eval set|leaderboard|model score|sota).*(leak|contamin|overfit|tune against|memoriz|inflate)",
+      "problem": "Google DeepMind's first double-blind AI evaluation (2026) responds to research finding benchmark leakage in roughly half of 31 models tested; contamination inflates scores, especially for larger models. Tuning prompts, rules, or models against a fully visible benchmark set teaches to the test — the reported score stops measuring generalization. DeepMind's fix seals both sides (weights and questions) in a confidential enclave; the local equivalent is a hash-sealed holdout slice whose questions never enter the tuning loop.",
+      "roi": "High: eval score integrity is the trust product — ThumbGate sells evidence, and inflated benchmark scores are fabricated evidence. Cheap to enforce (deterministic hash partition + sealed manifest, no confidential hardware). Maps to the AGENTS.md production regression gate (>= 6 golden cases, fail-closed) and extends scripts/eval-holdout.js.",
+      "rollout": "Partition every mined benchmark deterministically (sha256 of case identity) into public + holdout (default 1/3). Store holdout as hashes and sealed verdicts only — never raw questions. Re-freeze deliberately with a human decision, like eval:baseline; block releases when the holdout seal is broken or holdout verdicts drift unexplained. Capture with tags eval-integrity,holdout,contamination."
+    },
+    {
       "id": "block-unauthorized-multi-channel-posts",
       "name": "Block unauthorized multi-channel posts by Hermes Agent",
       "category": "Nous Research Hermes Agent Governance",
