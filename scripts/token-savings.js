@@ -168,8 +168,47 @@ function formatTokens(count) {
   return String(Math.round(n));
 }
 
+// Eye on AI / Trustwise (Manoj Saxena, public remarks): one user turn can
+// fan out into 20–50 downstream tool calls (~40x tokens vs a simple prompt).
+// These are modeled bounds for quoting — not ThumbGate production telemetry.
+const AGENTIC_FANOUT_ACTIONS_LOW = 20;
+const AGENTIC_FANOUT_ACTIONS_HIGH = 50;
+const AGENTIC_TOKEN_MULTIPLIER_CAP = 40;
+
+function estimateAgenticFanoutSpend(input = {}) {
+  const promptIn = clampNumber(input.promptInputTokens, 0);
+  const promptOut = clampNumber(input.promptOutputTokens, 0);
+  const requested = input.downstreamActions === undefined
+    ? AGENTIC_FANOUT_ACTIONS_LOW
+    : clampNumber(input.downstreamActions, AGENTIC_FANOUT_ACTIONS_LOW);
+  const actions = Math.min(Math.max(requested, 1), AGENTIC_FANOUT_ACTIONS_HIGH);
+  const prices = blendedPricePer1M(
+    input.modelMix || DEFAULT_MODEL_MIX,
+    input.modelPrices || DEFAULT_MODEL_PRICES,
+  );
+  const simpleUsd = (promptIn * prices.input + promptOut * prices.output) / 1e6;
+  const perActionOut = Math.max(promptOut, DEFAULT_AVG_OUTPUT_TOKENS_PER_BLOCK);
+  const fanoutUsd = actions * ((promptIn * prices.input + perActionOut * prices.output) / 1e6);
+  const rawRatio = simpleUsd > 0 ? fanoutUsd / simpleUsd : 0;
+  const modeledMultiplier = Math.min(rawRatio, AGENTIC_TOKEN_MULTIPLIER_CAP);
+  const agenticFanoutUsd = simpleUsd > 0
+    ? simpleUsd * modeledMultiplier
+    : fanoutUsd;
+  return {
+    modeledNotMeasured: true,
+    source: 'eye-on-ai-trustwise-fanout-bounds',
+    affiliation: 'Inspired by public Eye on AI conversation with Manoj Saxena / Trustwise. Not affiliated. Not their telemetry.',
+    downstreamActions: actions,
+    simplePromptUsd: simpleUsd,
+    agenticFanoutUsd,
+    modeledMultiplier,
+    multiplierCap: AGENTIC_TOKEN_MULTIPLIER_CAP,
+  };
+}
+
 module.exports = {
   computeTokenSavings,
+  estimateAgenticFanoutSpend,
   formatDollars,
   formatTokens,
   blendedPricePer1M,
@@ -177,4 +216,7 @@ module.exports = {
   DEFAULT_MODEL_MIX,
   DEFAULT_AVG_INPUT_TOKENS_PER_BLOCK,
   DEFAULT_AVG_OUTPUT_TOKENS_PER_BLOCK,
+  AGENTIC_FANOUT_ACTIONS_LOW,
+  AGENTIC_FANOUT_ACTIONS_HIGH,
+  AGENTIC_TOKEN_MULTIPLIER_CAP,
 };
