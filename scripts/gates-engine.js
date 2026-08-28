@@ -229,9 +229,13 @@ function isSelfProtectGate(gateId) {
  * Default remains sidecar (= warn-by-default). Hard floors never demote.
  */
 function resolveGovernanceMode(env = process.env) {
+  // Strict opt-in wins over inherited simulation/batch. Hermes CLI sets
+  // THUMBGATE_STRICT_ENFORCEMENT=1 internally; a leftover shadow mode in the
+  // process env must not demote those denials.
+  if (env.THUMBGATE_STRICT_ENFORCEMENT === '1') return 'live';
   const raw = String(env.THUMBGATE_GOVERNANCE_MODE || '').trim().toLowerCase();
   if (raw === 'simulation' || raw === 'batch') return raw;
-  if (raw === 'live' || env.THUMBGATE_STRICT_ENFORCEMENT === '1') return 'live';
+  if (raw === 'live') return 'live';
   return 'sidecar';
 }
 

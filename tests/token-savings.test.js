@@ -121,6 +121,22 @@ describe('token-savings', () => {
       });
       assert.equal(r.downstreamActions, AGENTIC_FANOUT_ACTIONS_HIGH);
     });
+
+    it('applies the multiplier cap to returned spend, not only the ratio field', () => {
+      const r = estimateAgenticFanoutSpend({
+        promptInputTokens: 2000,
+        promptOutputTokens: 600,
+        downstreamActions: 50,
+      });
+      assert.ok(r.modeledMultiplier <= AGENTIC_TOKEN_MULTIPLIER_CAP);
+      if (r.simplePromptUsd > 0) {
+        const implied = r.agenticFanoutUsd / r.simplePromptUsd;
+        assert.ok(
+          implied <= AGENTIC_TOKEN_MULTIPLIER_CAP + 1e-9,
+          `spend implied ${implied}x over cap ${AGENTIC_TOKEN_MULTIPLIER_CAP}`
+        );
+      }
+    });
   });
 
   describe('blendedPricePer1M', () => {

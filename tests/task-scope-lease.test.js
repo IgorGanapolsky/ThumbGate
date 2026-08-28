@@ -238,8 +238,19 @@ test('the exemption is narrow: ordinary task-scope denials still downgrade', () 
     severity: 'high',
     reasoning: [],
   };
-  assert.strictEqual(gatesEngine.applyEnforcementPosture(ordinary).decision, 'warn',
-    'ordinary task-scope denials are no longer downgradable — the exemption was too broad');
+  const prevMode = process.env.THUMBGATE_GOVERNANCE_MODE;
+  const prevStrict = process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  try {
+    delete process.env.THUMBGATE_GOVERNANCE_MODE;
+    delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+    assert.strictEqual(gatesEngine.applyEnforcementPosture(ordinary).decision, 'warn',
+      'ordinary task-scope denials are no longer downgradable — the exemption was too broad');
+  } finally {
+    if (prevMode === undefined) delete process.env.THUMBGATE_GOVERNANCE_MODE;
+    else process.env.THUMBGATE_GOVERNANCE_MODE = prevMode;
+    if (prevStrict === undefined) delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+    else process.env.THUMBGATE_STRICT_ENFORCEMENT = prevStrict;
+  }
 });
 
 test('governanceMode sidecar/simulation/live: ordinary denials vs hard floors', () => {
@@ -284,6 +295,13 @@ test('governanceMode sidecar/simulation/live: ordinary denials vs hard floors', 
     process.env.THUMBGATE_GOVERNANCE_MODE = 'live';
     assert.equal(gatesEngine.applyEnforcementPosture(ordinary).decision, 'deny');
     assert.equal(gatesEngine.applyEnforcementPosture(ordinary).governanceMode, 'live');
+
+    process.env.THUMBGATE_GOVERNANCE_MODE = 'simulation';
+    process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
+    const strictWins = gatesEngine.applyEnforcementPosture(ordinary);
+    assert.equal(strictWins.decision, 'deny');
+    assert.equal(strictWins.governanceMode, 'live');
+    assert.equal(strictWins.simulated, undefined);
   } finally {
     if (prevMode === undefined) delete process.env.THUMBGATE_GOVERNANCE_MODE;
     else process.env.THUMBGATE_GOVERNANCE_MODE = prevMode;

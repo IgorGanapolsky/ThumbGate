@@ -190,14 +190,18 @@ function estimateAgenticFanoutSpend(input = {}) {
   const perActionOut = Math.max(promptOut, DEFAULT_AVG_OUTPUT_TOKENS_PER_BLOCK);
   const fanoutUsd = actions * ((promptIn * prices.input + perActionOut * prices.output) / 1e6);
   const rawRatio = simpleUsd > 0 ? fanoutUsd / simpleUsd : 0;
+  const modeledMultiplier = Math.min(rawRatio, AGENTIC_TOKEN_MULTIPLIER_CAP);
+  const agenticFanoutUsd = simpleUsd > 0
+    ? simpleUsd * modeledMultiplier
+    : fanoutUsd;
   return {
     modeledNotMeasured: true,
     source: 'eye-on-ai-trustwise-fanout-bounds',
     affiliation: 'Inspired by public Eye on AI conversation with Manoj Saxena / Trustwise. Not affiliated. Not their telemetry.',
     downstreamActions: actions,
     simplePromptUsd: simpleUsd,
-    agenticFanoutUsd: fanoutUsd,
-    modeledMultiplier: Math.min(rawRatio, AGENTIC_TOKEN_MULTIPLIER_CAP),
+    agenticFanoutUsd,
+    modeledMultiplier,
     multiplierCap: AGENTIC_TOKEN_MULTIPLIER_CAP,
   };
 }
