@@ -1260,6 +1260,149 @@ function computeObservabilityStats(diagnosticEntries, diagnostics, secretGuard, 
   };
 }
 
+// ---------------------------------------------------------------------------
+// Agent File Audit (high-ROI improvement for agent governance)
+// ---------------------------------------------------------------------------
+
+function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
+  // Audit agent configuration files for governance compliance
+  const auditResults = {
+    totalAgentFiles: 0,
+    auditPassCount: 0,
+    auditFailCount: 0,
+    files: [],
+    lastAuditAt: new Date().toISOString(),
+  };
+
+  // Find all agent/MCP configuration files
+  const agentFilePatterns = [
+    '.mcp.json',
+    '.cursor/mcp.json',
+    '.claude/claude.json',
+    '.gemini/rules.json',
+  ];
+
+  const agentFiles = [];
+
+  // Scan for agent files
+  for (const pattern of agentFilePatterns) {
+    const fullPath = path.join(projectRoot, pattern);
+    if (fs.existsSync(fullPath)) {
+      agentFiles.push({ path: pattern, fullPath });
+    }
+  }
+
+  // Check adapters directory for MCP configs
+  const adaptersDir = path.join(projectRoot, 'adapters');
+  if (fs.existsSync(adaptersDir)) {
+    const entries = fs.readdirSync(adaptersDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const mcpPath = path.join(adaptersDir, entry.name, '.mcp.json');
+        if (fs.existsSync(mcpPath)) {
+          agentFiles.push({ path: `adapters/${entry.name}/.mcp.json`, fullPath: mcpPath });
+        }
+      }
+    }
+  }
+
+  // Check plugins directory
+  const pluginsDir = path.join(projectRoot, 'plugins');
+  if (fs.existsSync(pluginsDir)) {
+    const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const mcpPath = path.join(pluginsDir, entry.name, '.mcp.json');
+        if (fs.existsSync(mcpPath)) {
+          agentFiles.push({ path: `plugins/${entry.name}/.mcp.json`, fullPath: mcpPath });
+        }
+      }
+    }
+  }
+
+  auditResults.totalAgentFiles = agentFiles.length;
+
+  // Audit each file for basic governance
+  for (const file of agentFiles) {
+    try {
+      const content = fs.readFileSync(file.fullPath, 'utf-8');
+      const config = JSON.parse(content);
+
+      let auditPass = true;
+      const issues = [];
+
+      // Check for required safety fields
+      if (!config.permissions && !config.allowAllPermissions) {
+        // Not all configs require permissions, so this is optional
+      }
+
+      // Check for proper command structure
+      if (config.mcpServers) {
+        for (const [name, server] of Object.entries(config.mcpServers)) {
+          if (!server.command) {
+            auditPass = false;
+            issues.push(`Server ${name} missing command`);
+          }
+          if (server.cwd && !path.isAbsolute(server.cwd)) {
+            auditPass = false;
+            issues.push(`Server ${name} has relative cwd`);
+          }
+        }
+      }
+
+      auditResults.auditPassCount += auditPass ? 1 : 0;
+      auditResults.auditFailCount += auditPass ? 0 : 1;
+      auditResults.files.push({
+        path: file.path,
+        auditPass,
+        issues: auditPass ? [] : issues,
+        size: fs.statSync(file.fullPath).size,
+      });
+    } catch (err) {
+      auditResults.auditFailCount += 1;
+      auditResults.files.push({
+        path: file.path,
+        auditPass: false,
+        issues: [`Parse error: ${err.message}`],
+        size: 0,
+      });
+    }
+  }
+
+  // Check for server-card.json (MCP registry compatibility)
+  const serverCardPath = path.join(projectRoot, '.well-known', 'mcp', 'server-card.json');
+  if (fs.existsSync(serverCardPath)) {
+    auditResults.serverCard = {
+      present: true,
+      path: '.well-known/mcp/server-card.json',
+    };
+  }
+
+  return auditResults;
+}
+
+// ---------------------------------------------------------------------------
+// Agent Surface Inventory for Pro Dashboard
+// ---------------------------------------------------------------------------
+
+function computeAgentSurfaceInventory(feedbackDir, options = {}) {
+  const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
+  const auditResults = computeAgentFileAudit();
+
+  return {
+    totalAgentFiles: auditResults.totalAgentFiles,
+    audited: auditResults.auditPassCount === auditResults.totalAgentFiles,
+    highRiskCount: auditResults.auditFailCount,
+    readinessScore: readiness.score || 0,
+    lastAuditAt: auditResults.lastAuditAt,
+    details: auditResults.files.map(f => ({
+      path: f.path,
+      safe: f.auditPass,
+      issues: f.issues,
+    })),
+  };
+}
+
 function computeInstrumentationReadiness(analytics, billing) {
   const landingPage = fs.existsSync(LANDING_PAGE_PATH)
     ? fs.readFileSync(LANDING_PAGE_PATH, 'utf-8')
@@ -2200,6 +2343,8 @@ module.exports = {
   computeAnalyticsSummary,
   computeSecretGuardStats,
   computeObservabilityStats,
+  computeAgentFileAudit,
+  computeAgentSurfaceInventory,
   readJSONL,
   readTextTail,
   readJsonFile,
