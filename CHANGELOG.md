@@ -8,6 +8,12 @@
 
 ### Patch Changes
 
+- dashboard-debugger: Live Gate Debugger & Chrome DevTools / ndb Inspector Bridge
+  (`scripts/dashboard-debugger.js`) added to the ThumbGate Dashboard. Provides
+  sub-25ms pre-action gate simulations, 4-stage pipeline step tracing, and
+  copyable launch recipes for `ndb`, Chrome DevTools, Cursor, and VSCode. Public
+  npm bundle ceiling 513 → 514 for `scripts/dashboard-debugger.js` only.
+
 - agent-security-central: Free local **Agent Security Central** posture report
   (`npx thumbgate security-central`) — Oracle Database Security Central GTM
   mapped to agent control planes: config drift, privileged-tool coverage,

@@ -94,7 +94,7 @@ describe('dashboard deep-linking e2e', () => {
 
   test('dashboard response contains all valid tab content containers', async () => {
     const res = await fetchPath(serverCtx.port, '/dashboard');
-    const validTabs = ['search', 'gates', 'team', 'generated', 'settings', 'templates', 'insights', 'export'];
+    const validTabs = ['search', 'gates', 'team', 'generated', 'settings', 'templates', 'insights', 'debug', 'export'];
     for (const tab of validTabs) {
       assert.match(
         res.body,

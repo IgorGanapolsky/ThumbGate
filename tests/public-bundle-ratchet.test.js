@@ -222,7 +222,7 @@ const path = require('node:path');
 // Public-shell runtime, not a Core feature: the packaged
 // scripts/gates-engine.js requires it to suppress reminder lines it has
 // already emitted this session.
-const BASELINE_FILE_COUNT = 513;
+const BASELINE_FILE_COUNT = 514;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

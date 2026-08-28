@@ -89,6 +89,20 @@ test('dashboard includes team metrics and gate-template tabs powered by dashboar
   assert.match(dashboard, /Highest-ROI Next Actions/);
 });
 
+test('dashboard includes Live Debugger and DevTools inspector bridge', () => {
+  const dashboard = readDashboard();
+
+  assert.match(dashboard, /switchTab\('debug'\)/);
+  assert.match(dashboard, /id="tab-debug"/);
+  assert.match(dashboard, /id="debugCommandInput"/);
+  assert.match(dashboard, /id="debugVerdictBadge"/);
+  assert.match(dashboard, /id="debugPipelineSteps"/);
+  assert.match(dashboard, /function runActionSimulation\(\)/);
+  assert.match(dashboard, /function setDebuggerTool\(tool\)/);
+  assert.match(dashboard, /function applyDebuggerPreset\(preset\)/);
+  assert.match(dashboard, /npx ndb node bin\/cli\.js check/);
+});
+
 test('dashboard includes incremental review checkpoint controls', () => {
   const dashboard = readDashboard();
 

@@ -58,6 +58,7 @@ const {
   DEFAULT_JSONL_TAIL_ENTRIES,
   readTextTail,
 } = require('./fs-utils');
+const { getInspectorStatus } = require('./dashboard-debugger');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -1836,6 +1837,7 @@ function generateDashboard(feedbackDir, options = {}) {
       stages: lessonPipeline.stages,
       rates: lessonPipeline.rates,
     },
+    debugger: getInspectorStatus(),
   };
 }
 

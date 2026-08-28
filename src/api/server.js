@@ -204,6 +204,10 @@ const {
   collectAllFeedbackEntries,
 } = require('../../scripts/dashboard');
 const {
+  getInspectorStatus,
+  inspectAction,
+} = require('../../scripts/dashboard-debugger');
+const {
   isDashboardDataLimitError,
   formatDashboardLimitDetail,
 } = require('../../scripts/dashboard-limits');
@@ -5400,6 +5404,7 @@ const OPERATOR_READONLY_GET_PATHS = new Set([
   '/v1/dashboard/render-spec',
   '/v1/dashboard/ai-inventory',
   '/v1/dashboard/review-state',
+  '/v1/debug/inspector-status',
   '/v1/intake/workflow-sprint/queue',
   '/v1/task-outcomes/monitor',
 ]);
@@ -10952,6 +10957,20 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             detail: err?.message ? err.message : 'Unable to build dashboard render spec.',
           });
         }
+        return;
+      }
+
+      // GET /v1/debug/inspector-status -- Chrome DevTools & ndb inspector state
+      if (req.method === 'GET' && pathname === '/v1/debug/inspector-status') {
+        sendJson(res, 200, getInspectorStatus());
+        return;
+      }
+
+      // POST /v1/debug/inspect-action -- Live Gate & PreToolUse Action Simulator
+      if (req.method === 'POST' && pathname === '/v1/debug/inspect-action') {
+        const body = await parseJsonBody(req);
+        const result = inspectAction(body || {});
+        sendJson(res, 200, result);
         return;
       }
 
