@@ -238,8 +238,76 @@ test('the exemption is narrow: ordinary task-scope denials still downgrade', () 
     severity: 'high',
     reasoning: [],
   };
-  assert.strictEqual(gatesEngine.applyEnforcementPosture(ordinary).decision, 'warn',
-    'ordinary task-scope denials are no longer downgradable — the exemption was too broad');
+  const prevMode = process.env.THUMBGATE_GOVERNANCE_MODE;
+  const prevStrict = process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  try {
+    delete process.env.THUMBGATE_GOVERNANCE_MODE;
+    delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+    assert.strictEqual(gatesEngine.applyEnforcementPosture(ordinary).decision, 'warn',
+      'ordinary task-scope denials are no longer downgradable — the exemption was too broad');
+  } finally {
+    if (prevMode === undefined) delete process.env.THUMBGATE_GOVERNANCE_MODE;
+    else process.env.THUMBGATE_GOVERNANCE_MODE = prevMode;
+    if (prevStrict === undefined) delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+    else process.env.THUMBGATE_STRICT_ENFORCEMENT = prevStrict;
+  }
+});
+
+test('governanceMode sidecar/simulation/live: ordinary denials vs hard floors', () => {
+  const ordinary = {
+    decision: 'deny',
+    gate: 'task-scope-edit-boundary',
+    message: 'outside scope',
+    severity: 'high',
+    reasoning: [],
+  };
+  const floor = {
+    decision: 'deny',
+    gate: 'secret-exfiltration',
+    message: 'secret',
+    severity: 'critical',
+    reasoning: [],
+  };
+  const prevMode = process.env.THUMBGATE_GOVERNANCE_MODE;
+  const prevStrict = process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  try {
+    delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+    delete process.env.THUMBGATE_GOVERNANCE_MODE;
+    const sidecar = gatesEngine.applyEnforcementPosture(ordinary);
+    assert.equal(sidecar.decision, 'warn');
+    assert.equal(sidecar.governanceMode, 'sidecar');
+    assert.equal(sidecar.alignmentLayer, 'sla');
+    assert.match(String(sidecar.message), /warn-by-default mode/i);
+
+    process.env.THUMBGATE_GOVERNANCE_MODE = 'simulation';
+    const sim = gatesEngine.applyEnforcementPosture(ordinary);
+    assert.equal(sim.decision, 'warn');
+    assert.equal(sim.simulated, true);
+    assert.equal(sim.governanceMode, 'simulation');
+    assert.equal(gatesEngine.applyEnforcementPosture(floor).decision, 'deny');
+    const simApprove = gatesEngine.applyEnforcementPosture({
+      decision: 'approve',
+      gate: 'task-scope-edit-boundary',
+      message: 'ok',
+    });
+    assert.equal(simApprove.decision, 'approve');
+
+    process.env.THUMBGATE_GOVERNANCE_MODE = 'live';
+    assert.equal(gatesEngine.applyEnforcementPosture(ordinary).decision, 'deny');
+    assert.equal(gatesEngine.applyEnforcementPosture(ordinary).governanceMode, 'live');
+
+    process.env.THUMBGATE_GOVERNANCE_MODE = 'simulation';
+    process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
+    const strictWins = gatesEngine.applyEnforcementPosture(ordinary);
+    assert.equal(strictWins.decision, 'deny');
+    assert.equal(strictWins.governanceMode, 'live');
+    assert.equal(strictWins.simulated, undefined);
+  } finally {
+    if (prevMode === undefined) delete process.env.THUMBGATE_GOVERNANCE_MODE;
+    else process.env.THUMBGATE_GOVERNANCE_MODE = prevMode;
+    if (prevStrict === undefined) delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+    else process.env.THUMBGATE_STRICT_ENFORCEMENT = prevStrict;
+  }
 });
 
 // --- End-to-end through the real evaluation path ---------------------------------------
