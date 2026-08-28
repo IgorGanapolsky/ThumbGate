@@ -4,12 +4,12 @@
 
 [mcp_servers.thumbgate]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.36.0", "thumbgate", "serve"]
+args = ["--yes", "--package", "thumbgate@1.36.1", "thumbgate", "serve"]
 
 # Hard PreToolUse hook for Codex — gates all tool calls before execution
 [hooks.pre_tool_use]
 command = "npx"
-args = ["--yes", "--package", "thumbgate@1.36.0", "thumbgate", "gate-check"]
+args = ["--yes", "--package", "thumbgate@1.36.1", "thumbgate", "gate-check"]
 
 # Context-engineering gates to enable for HF Context Course exercises:
 # - require-agent-context-freshness: Ensure AGENTS.md is fresh before code edits

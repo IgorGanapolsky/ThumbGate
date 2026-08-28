@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.36.1
+
+### Patch Changes
+
+- d0bb376: Add the ThumbGate vs Tailscale Aperture comparison page (`/compare/aperture`, spec-pinned by `tests/compare-aperture.test.js`) and embed the Chrome WebMCP origin-trial token (origin `https://thumbgate.app`, expires 2026-11-17) on the homepage and pricing page so `document.modelContext` activates for covered origins.
+- 53cf1a6: Name the existing warn-by-default vs strict postures as sidecar / live / simulation (Trustwise Control Tower vocabulary, not a clone) and add a modeled agentic token-fanout estimator so quotes use 20–50 downstream actions instead of a single prompt. Hard floors still never demote. Figures are modeled bounds, not production telemetry. Inspired by the public Eye on AI conversation with Manoj Saxena / Trustwise; not affiliated.
+  EOF
+- e7afff0: self-protect process rule now requires a left word boundary, so prose containing
+  words that merely end in the verb (e.g. "skill " followed later by a protected
+  process name) no longer hard-blocks harmless commands; real kill/pkill/killall
+  invocations still deny. Regression test added from the 2026-08-26 false positive.
+
 ## 1.36.0
 
 ### Minor Changes

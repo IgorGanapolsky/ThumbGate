@@ -7,12 +7,12 @@
         "npx",
         "--yes",
         "--package",
-        "thumbgate@1.36.0",
+        "thumbgate@1.36.1",
         "thumbgate",
         "serve"
       ],
       "enabled": true
     }
   },
-  "notes": "For Hugging Face Context Course exercises (https://huggingface.co/learn/context-course): enable ThumbGate gates for context freshness, skill validation, MCP tool safety, and agent identity separation. See adapters/huggingface-context-course/HF_CONTEXT.md and docs/guides/huggingface-context-course-governance.md. Uses vlt/gate templates for supply-chain safety on npm/vlt installs. Pin thumbgate@1.36.0."
+  "notes": "For Hugging Face Context Course exercises (https://huggingface.co/learn/context-course): enable ThumbGate gates for context freshness, skill validation, MCP tool safety, and agent identity separation. See adapters/huggingface-context-course/HF_CONTEXT.md and docs/guides/huggingface-context-course-governance.md. Uses vlt/gate templates for supply-chain safety on npm/vlt installs. Pin thumbgate@1.36.1."
 }
