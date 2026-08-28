@@ -87,6 +87,6 @@ test('one canonical policy, qualified for every registered harness', () => {
 
 test('policy cites its sources (no orphan steal)', () => {
   const p = defaultPolicy();
-  assert.ok(p.source.article.includes('wccftech.com'));
-  assert.ok(p.source.vendor.includes('blogs.nvidia.com'));
+  assert.equal(new URL(p.source.article).hostname, 'wccftech.com');
+  assert.equal(new URL(p.source.vendor).hostname, 'blogs.nvidia.com');
 });
