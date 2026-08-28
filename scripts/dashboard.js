@@ -619,6 +619,10 @@ function computeRoiSummary(gateStats, prevention, analytics, billing) {
   // Prevention effectiveness
   const preventionRate = totalGates > 0 ? (blockedActions / totalGates) : 0;
 
+  // PR merge efficiency (GitHub Label Archiving impact)
+  const decisionMetrics = analytics.decisionMetrics || {};
+  const prMergeRate = decisionMetrics.mergeRate || 0;
+
   return {
     // Cost savings from prevention (time-based ROI)
     hoursSaved: Number(hoursSaved.toFixed(1)),
@@ -636,6 +640,10 @@ function computeRoiSummary(gateStats, prevention, analytics, billing) {
     // North Star tracking
     monthlyRevenueTarget: 3000, // $100/day after tax
     revenueProgress: monthlyRevenue > 0 ? (monthlyRevenue / 3000 * 100).toFixed(1) : 0,
+
+    // Process efficiency (GitHub Label Archiving benefits)
+    prMergeRate: Number((prMergeRate * 100).toFixed(1)),
+    // Higher merge rate = better process efficiency from archived labels reducing noise
   };
 }
 
