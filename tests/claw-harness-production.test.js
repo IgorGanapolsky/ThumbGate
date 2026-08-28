@@ -16,7 +16,7 @@ test('one definition, three hosts — console/hosted/evals', () => {
   for (const h of HOSTS) {
     const m = buildHarness(h);
     assert.equal(m.host, h);
-    assert.ok(m.source.includes('devblogs.microsoft.com'), 'steal must cite its source');
+    assert.equal(new URL(m.source).hostname, 'devblogs.microsoft.com', 'steal must cite its source');
   }
 });
 
