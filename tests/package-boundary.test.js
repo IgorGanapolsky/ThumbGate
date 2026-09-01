@@ -478,11 +478,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     //   Lockstep with public-bundle-ratchet + public-core-boundary.
     // 511 -> 512 (2026-08-25): public/yt.html YouTube/CPC dedicated landing.
     // 512 -> 513 (2026-08-25): src/alert-noise-ledger.js (+1 measured npm pack).
+    // 513 -> 515 (2026-08-28): scripts/graphrag-retrieval.js + scripts/workflow-notebook.js.
     // Public-shell runtime, not a Core feature: the packaged
     // scripts/gates-engine.js requires it to suppress reminder lines it has
     // already emitted this session.
-    manifest.fileCount <= 513,
-    `npm package should stay <= 513 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 515,
+    `npm package should stay <= 515 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
