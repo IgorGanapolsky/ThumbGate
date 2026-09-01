@@ -597,23 +597,60 @@ function isSpecificKeyword(word) {
 // Whole-word matching: a bare includes() let "app" hit "apps/", "application" and "happen".
 // Boundaries are non-alphanumerics, so path and punctuation separators still delimit tokens
 // (`src/jobs/queue.js` matches the word "jobs").
-function containsWholeWord(haystack, word) {
-  const escaped = String(word).replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
-  try {
-    return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:[^a-z0-9]|$)`, 'i').test(haystack);
-  } catch {
-    return haystack.includes(word);
-  }
+//
+// NVHBM-style optimization (2026-08-28): the previous implementation compiled a NEW RegExp
+// for every word on every call — per-tool-call "memory bandwidth" burned on regex construction
+// instead of matching. The boundary scan below is semantics-identical (same boundary class:
+// non-alphanumeric delimits the word) without any regex compilation, and never throws on
+// punctuation-heavy words.
+function isWordChar(ch) {
+  return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9');
 }
 
-function hasTwoKeywordHits(normalizedInput, words) {
+function containsWholeWord(haystack, word) {
+  const hay = String(haystack == null ? '' : haystack).toLowerCase();
+  const w = String(word == null ? '' : word).toLowerCase();
+  if (!hay || !w) return false;
+  let idx = hay.indexOf(w);
+  while (idx !== -1) {
+    const before = idx === 0 ? '' : hay[idx - 1];
+    const afterIdx = idx + w.length;
+    const after = afterIdx >= hay.length ? '' : hay[afterIdx];
+    if (!isWordChar(before) && !isWordChar(after)) return true;
+    idx = hay.indexOf(w, idx + 1);
+  }
+  return false;
+}
+
+// Token membership is O(1) per word once the haystack is split, but splitting is O(n) —
+// callers that check many word lists against the SAME haystack (the guard loop) must pass
+// the precomputed set instead of letting each check re-split. Compound words (containing
+// '-' or '_') can never appear in the token set (splitting breaks on both), so they fall
+// back to the boundary scan — same rule isSpecificKeyword uses to treat them as strong hits.
+function buildHaystackTokens(normalizedInput) {
+  const tokens = new Set();
+  for (const token of String(normalizedInput || '').toLowerCase().split(/[^a-z0-9]+/)) {
+    if (token) tokens.add(token);
+  }
+  return tokens;
+}
+
+function hasTwoKeywordHits(normalizedInput, words, precomputedTokens) {
   if (!normalizedInput || !words || words.length === 0) return false;
+  const tokens = precomputedTokens || buildHaystackTokens(normalizedInput);
   let hits = 0;
   const seen = new Set();
   for (const word of words) {
     if (!word || seen.has(word)) continue;
     seen.add(word);
-    if (!containsWholeWord(normalizedInput, word)) continue;
+    // Pure-alphanumeric words are O(1) Set lookups against the precomputed token
+    // set. Anything with punctuation (compound words with '-'/'_', or any other
+    // symbol) can never equal a token, so it keeps the boundary scan — exactly
+    // the cases isSpecificKeyword treats as strong single-hit evidence.
+    const matched = /^[a-z0-9]+$/i.test(word)
+      ? tokens.has(word.toLowerCase())
+      : containsWholeWord(normalizedInput, word);
+    if (!matched) continue;
     // A specific compound/long token carries a match on its own; generic words need two.
     if (isSpecificKeyword(word)) return true;
     hits++;
@@ -717,6 +754,10 @@ function readGuardArtifact(filePath) {
 // evaluateCompiledGuards (fast path)
 // ---------------------------------------------------------------------------
 
+// Memoized normalize(guard.text) per guard object. WeakMap keeps artifacts
+// pristine (no added keys that would leak into JSON round-trips or deep-equals).
+const GUARD_NORM_TEXT_CACHE = new WeakMap();
+
 /**
  * Check compiled artifact against toolName + toolInput.
  *
@@ -732,12 +773,21 @@ function evaluateCompiledGuards(artifact, toolName, toolInput) {
 
   const normInput = normalizeActionText(buildMatchHaystack(toolInput));
   const normTool = (toolName || '').toLowerCase();
+  // NVHBM-style: hoist the O(n) haystack tokenization out of the per-guard loop
+  // (one split per call, O(1) membership per word). Guard-text normalization is
+  // memoized per guard object (WeakMap — no artifact mutation, no JSON leakage)
+  // so repeated evaluations of the same in-memory artifact pay it once.
+  const haystackTokens = buildHaystackTokens(normInput);
 
   for (const guard of artifact.guards) {
-    const guardText = normalize(guard.text || '');
-    const toolMentioned = guardText.includes(normTool) || normTool === 'unknown';
+    let normText = GUARD_NORM_TEXT_CACHE.get(guard);
+    if (normText === undefined) {
+      normText = normalize(guard.text || '');
+      GUARD_NORM_TEXT_CACHE.set(guard, normText);
+    }
+    const toolMentioned = normText.includes(normTool) || normTool === 'unknown';
 
-    const keywordMatch = hasTwoKeywordHits(normInput, guard.words || []);
+    const keywordMatch = hasTwoKeywordHits(normInput, guard.words || [], haystackTokens);
 
     // Match if: keyword hits in input, OR tool mentioned + high count.
     // Previously tool-name matching only worked for short inputs — this was
@@ -774,9 +824,11 @@ function evaluateCompiledGuards(artifact, toolName, toolInput) {
 function evaluatePretoolFromState(state, toolName, toolInput) {
   const normInput = normalizeActionText(buildMatchHaystack(toolInput));
   const normTool = (toolName || '').toLowerCase();
+  // Same NVHBM-style hoist as the compiled path: tokenize the haystack once.
+  const haystackTokens = buildHaystackTokens(normInput);
 
   for (const pattern of state.recurringNegativePatterns || []) {
-    if (hasTwoKeywordHits(normInput, pattern.words || [])) {
+    if (hasTwoKeywordHits(normInput, pattern.words || [], haystackTokens)) {
       const mode = pattern.count >= 3 ? 'block' : 'warn';
       return {
         mode,
@@ -942,6 +994,7 @@ module.exports = {
   hashText,
   hasTwoKeywordHits,
   buildMatchHaystack,
+  buildHaystackTokens,
   normalizeActionText,
   isSpecificKeyword,
   containsWholeWord,
