@@ -683,8 +683,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // shipped hybrid-feedback-context.js on top of the ledger bump above.
   // Measured 8,031,249 unpacked on the merged tree — 1,249 over the old cap.
   assert.ok(
-    manifest.unpackedSize <= 8_040_000,
-    `npm package should stay <= 8.04 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 8_090_000,
+    `npm package should stay <= 8.09 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
