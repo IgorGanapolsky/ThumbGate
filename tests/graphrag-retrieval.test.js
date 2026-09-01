@@ -110,7 +110,7 @@ test('multiHopSearch end-to-end: seeds intact, meta reports the graph layer', ()
     corpus: CORPUS.map((doc) => ({
       ...doc,
       title: doc.id,
-      content: `${doc.id} lesson content ${doc.tags.join(' ')}`,
+      content: `${doc.id} lesson content ${doc.tags.join(' ')} ${doc.tags.join(' ').replace(/-/g, ' ')}`,
       signal: 'negative',
       timestamp: '2026-08-01T00:00:00.000Z',
     })),
