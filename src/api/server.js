@@ -204,6 +204,17 @@ const {
   collectAllFeedbackEntries,
 } = require('../../scripts/dashboard');
 const {
+  getInspectorStatus,
+  inspectAction,
+} = require('../../scripts/dashboard-debugger');
+const {
+  auditLabels,
+  suggestLabels,
+} = require('../../scripts/label-governance');
+const {
+  auditAgentFiles,
+} = require('../../scripts/agent-file-auditor');
+const {
   isDashboardDataLimitError,
   formatDashboardLimitDetail,
 } = require('../../scripts/dashboard-limits');
@@ -5400,6 +5411,9 @@ const OPERATOR_READONLY_GET_PATHS = new Set([
   '/v1/dashboard/render-spec',
   '/v1/dashboard/ai-inventory',
   '/v1/dashboard/review-state',
+  '/v1/debug/inspector-status',
+  '/v1/governance/agent-files/audit',
+  '/v1/governance/labels/audit',
   '/v1/intake/workflow-sprint/queue',
   '/v1/task-outcomes/monitor',
 ]);
@@ -10952,6 +10966,49 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             detail: err?.message ? err.message : 'Unable to build dashboard render spec.',
           });
         }
+        return;
+      }
+
+      // GET /v1/debug/inspector-status -- Chrome DevTools & ndb inspector state
+      if (req.method === 'GET' && pathname === '/v1/debug/inspector-status') {
+        sendJson(res, 200, getInspectorStatus());
+        return;
+      }
+
+      // POST /v1/debug/inspect-action -- Live Gate & PreToolUse Action Simulator
+      if (req.method === 'POST' && pathname === '/v1/debug/inspect-action') {
+        const body = await parseJsonBody(req);
+        const result = inspectAction(body || {});
+        sendJson(res, 200, result);
+        return;
+      }
+
+      // GET /v1/governance/labels/audit -- GitHub Label Governance & Archiving Audit
+      if (req.method === 'GET' && pathname === '/v1/governance/labels/audit') {
+        const standardLabelsList = [
+          'priority:p0', 'priority:p1', 'priority:p2', 'priority:p3',
+          'status:ready', 'status:in-progress', 'status:blocked', 'status:review',
+          'area:gateway', 'area:control-plane', 'area:mobile', 'area:ci', 'area:security', 'area:webmcp', 'area:dashboard', 'area:rag', 'area:eval', 'area:billing',
+          'type:bug', 'type:feature', 'type:enhancement', 'type:documentation', 'type:security', 'type:chore', 'type:perf',
+          'bug', 'documentation', 'duplicate', 'enhancement', 'good first issue', 'help wanted', 'invalid', 'question', 'wontfix', 'stale', 'automerge', 'dependencies', 'security', 'webmcp'
+        ].map(name => ({ name }));
+        const audit = auditLabels(standardLabelsList);
+        sendJson(res, 200, { ok: true, audit });
+        return;
+      }
+
+      // POST /v1/governance/labels/suggest -- Suggested Labels Engine
+      if (req.method === 'POST' && pathname === '/v1/governance/labels/suggest') {
+        const body = await parseJsonBody(req);
+        const suggestions = suggestLabels(body || {});
+        sendJson(res, 200, { ok: true, ...suggestions });
+        return;
+      }
+
+      // GET /v1/governance/agent-files/audit -- Agent Configuration & Skills Hygiene Audit
+      if (req.method === 'GET' && pathname === '/v1/governance/agent-files/audit') {
+        const audit = auditAgentFiles({ repoRoot: path.resolve(__dirname, '../..') });
+        sendJson(res, 200, { ok: true, audit });
         return;
       }
 

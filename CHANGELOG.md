@@ -420,6 +420,24 @@
 
 ### Patch Changes
 
+- agent-file-auditor: Agent Configuration & Skills Hygiene Auditor (`scripts/agent-file-auditor.js`)
+  based on Addy Osmani's "Audit Your Agent Files" & Anthropic Context Engineering guidelines.
+  Audits `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, and local skills against the 200-line budget ceiling,
+  flags configuration smells (context bloat, lint leakage, generic prose, unenforced rules),
+  and scores skill quality (frontmatter, triggers, examples). Public npm bundle ceiling 515 → 516.
+
+- label-governance: GitHub Label Governance, Taxonomy Optimization & Archiving Engine
+  (`scripts/label-governance.js`). Leverages GitHub's August 27, 2026 Label Archiving
+  GA to enforce deterministic label taxonomies (`priority:*`, `area:*`, `status:*`,
+  `type:*`), suggest contextual labels from diffs/titles, and recommend archiving
+  ad-hoc labels without losing audit history. Public npm bundle ceiling 514 → 515.
+
+- dashboard-debugger: Live Gate Debugger & Chrome DevTools / ndb Inspector Bridge
+  (`scripts/dashboard-debugger.js`) added to the ThumbGate Dashboard. Provides
+  sub-25ms pre-action gate simulations, 4-stage pipeline step tracing, and
+  copyable launch recipes for `ndb`, Chrome DevTools, Cursor, and VSCode. Public
+  npm bundle ceiling 513 → 514 for `scripts/dashboard-debugger.js` only.
+
 - agent-security-central: Free local **Agent Security Central** posture report
   (`npx thumbgate security-central`) — Oracle Database Security Central GTM
   mapped to agent control planes: config drift, privileged-tool coverage,
