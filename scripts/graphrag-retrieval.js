@@ -77,6 +77,53 @@ function buildGraph(corpus = []) {
 }
 
 /**
+ * Expand one BFS frontier hop: traverse edges from current frontier nodes,
+ * keep the strongest pending entry per neighbor, and return the next frontier
+ * plus newly-visited node ids.
+ *
+ * @param {Array<{id:string, score:number, path:string[]}>} frontier current hop's frontier
+ * @param {ReturnType<typeof buildGraph>} graph adjacency graph
+ * @param {number} decay score multiplier per hop
+ * @param {Map} best best-known state per node (mutated)
+ * @param {Map} seedScore rank-based seed scores
+ * @param {Set} visited set of already-visited node ids (not mutated here)
+ * @param {number} hop current hop number
+ * @returns {{nextFrontier: Array<{id:string, score:number, path:string[]}>, newVisited: Set<string>}}
+ */
+function expandFrontierHop(frontier, graph, decay, best, seedScore, visited, hop) {
+  const nextFrontier = [];
+  const frontierIndex = Object.create(null);
+  for (const node of frontier) {
+    const edges = graph.adjacency.get(node.id) || [];
+    for (const edge of edges) {
+      if (edge.weight <= 0) continue;
+      const finalScore = node.score * decay * (Math.min(edge.weight, 3) / 3);
+      if (finalScore <= 0) continue;
+      const existing = best.get(edge.to);
+      if (existing && existing.finalScore >= finalScore) continue;
+      best.set(edge.to, {
+        id: edge.to,
+        finalScore,
+        hop,
+        via: [...node.path, ...edge.via],
+        seedId: node.id && seedScore.has(node.id) ? node.id : (best.get(node.id)?.seedId || node.id),
+      });
+      const existingFrontier = frontierIndex[edge.to];
+      if (!existingFrontier || existingFrontier.score < finalScore) {
+        frontierIndex[edge.to] = { id: edge.to, score: finalScore, path: [...node.path, ...edge.via] };
+      }
+    }
+  }
+  const newVisited = new Set();
+  for (const id of Object.keys(frontierIndex)) {
+    if (visited.has(id)) continue;
+    newVisited.add(id);
+    nextFrontier.push(frontierIndex[id]);
+  }
+  return { nextFrontier, newVisited };
+}
+
+/**
  * Expand a seed ranking along graph edges (BFS, score-decaying).
  *
  * @param {Array<{id:string, relevanceScore?:number}>} seeds ranked seed results
@@ -88,8 +135,12 @@ function buildGraph(corpus = []) {
  *          merged ranking (seeds first, hop-0), each entry carrying provenance
  */
 function expandWithGraph(seeds = [], graph, options = {}) {
-  const maxHops = Number.isFinite(options.maxHops) ? options.maxHops : DEFAULT_MAX_HOPS;
-  const decay = Number.isFinite(options.decay) ? options.decay : DEFAULT_DECAY;
+  const maxHops = Number.isFinite(options.maxHops) && options.maxHops >= 0 ? options.maxHops : DEFAULT_MAX_HOPS;
+  let decay = Number.isFinite(options.decay) ? options.decay : DEFAULT_DECAY;
+  // Bound decay to [0, 1]: values outside this range can cause scores to grow
+  // or stay negative, letting invalid decay improve and re-queue previously
+  // expanded nodes through the frontier loop.
+  if (decay < 0 || decay > 1) decay = DEFAULT_DECAY;
   if (!graph || !Array.isArray(seeds) || seeds.length === 0) {
     return (Array.isArray(seeds) ? seeds : []).map((s, i) => ({
       id: s.id,
@@ -118,7 +169,8 @@ function expandWithGraph(seeds = [], graph, options = {}) {
     });
   }
 
-  // BFS frontier: id -> {score, path}
+  // BFS frontier: id -> {score, path}; keep the strongest pending entry per node
+  // (deduplication handled inside expandFrontierHop)
   let frontier = seeds.map((seed) => ({
     id: seed.id,
     score: seedScore.get(seed.id),
@@ -127,28 +179,9 @@ function expandWithGraph(seeds = [], graph, options = {}) {
 
   const visited = new Set(seeds.map((s) => s.id));
   for (let hop = 1; hop <= maxHops; hop += 1) {
-    const nextFrontier = [];
-    for (const node of frontier) {
-      const edges = graph.adjacency.get(node.id) || [];
-      for (const edge of edges) {
-        if (edge.weight <= 0) continue;
-        // Weight scales reach: a stronger relationship carries further (cap 3).
-        const finalScore = node.score * decay * (Math.min(edge.weight, 3) / 3);
-        if (finalScore <= 0) continue;
-        const existing = best.get(edge.to);
-        if (existing && existing.finalScore >= finalScore) continue;
-        best.set(edge.to, {
-          id: edge.to,
-          finalScore,
-          hop,
-          via: [...node.path, ...edge.via],
-          seedId: node.id && seedScore.has(node.id) ? node.id : (best.get(node.id)?.seedId || node.id),
-        });
-        if (!visited.has(edge.to)) {
-          visited.add(edge.to);
-          nextFrontier.push({ id: edge.to, score: finalScore, path: [...node.path, ...edge.via] });
-        }
-      }
+    const { nextFrontier, newVisited } = expandFrontierHop(frontier, graph, decay, best, seedScore, visited, hop);
+    if (newVisited.size > visited.size) {
+      for (const id of newVisited) visited.add(id);
     }
     frontier = nextFrontier;
     if (frontier.length === 0) break;
@@ -196,7 +229,25 @@ function multiHopSearch(params = {}) {
   });
 
   const byId = new Map(corpus.map((doc) => [doc.id, doc]));
-  const results = expanded.slice(0, topK).map((entry) => ({
+
+  // Preserve the baseline single-hop top-K seed results before adding
+  // graph-only candidates. Expansion can surface additional entries, but
+  // graph-only candidates must never displace baseline seeds — this
+  // upholds the "never worse than single-hop" contract.
+  const seedIds = new Set(seeds.slice(0, topK).map((s) => s.id));
+  const seedResults = [];
+  for (const entry of expanded) {
+    if (seedIds.has(entry.id)) {
+      seedResults.push(entry);
+    }
+  }
+  // Sort seed results by their original single-hop rank, then append graph-only entries
+  const seedOrder = new Map(seeds.map((s, i) => [s.id, i]));
+  seedResults.sort((a, b) => (seedOrder.get(a.id) || 0) - (seedOrder.get(b.id) || 0));
+  const graphOnlyEntries = expanded.filter((e) => !seedIds.has(e.id));
+  const merged = [...seedResults, ...graphOnlyEntries].slice(0, topK);
+
+  const results = merged.map((entry) => ({
     ...(byId.get(entry.id) || { id: entry.id }),
     graphHop: entry.hop,
     graphVia: entry.via,
