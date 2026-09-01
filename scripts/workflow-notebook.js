@@ -64,10 +64,17 @@ function loadNotebook(notebookId, feedbackDir) {
   }
 }
 
-function saveNotebook(notebook, feedbackDir) {
+function saveNotebook(notebook, feedbackDir, expectedRev) {
   const file = notebookPath(notebook.id, feedbackDir);
   ensureDir(path.dirname(file));
-  const tmp = `${file}.tmp.${process.pid}.${Date.now()}`;
+  if (expectedRev !== undefined) {
+    const current = loadNotebook(notebook.id, feedbackDir);
+    if (current && current._rev !== expectedRev) {
+      throw new Error(`saveNotebook: optimistic conflict on ${notebook.id} — reload and retry`);
+    }
+  }
+  notebook._rev = (notebook._rev || 0) + 1;
+  const tmp = `${file}.tmp.${process.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
   fs.writeFileSync(tmp, `${JSON.stringify(notebook, null, 2)}\n`);
   fs.renameSync(tmp, file);
   return notebook;
@@ -97,6 +104,7 @@ function createNotebook({ title, goal, context = [] } = {}, feedbackDir) {
     decisions: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    _rev: 0,
   };
   return saveNotebook(notebook, feedbackDir);
 }
@@ -110,10 +118,11 @@ function setPlan(notebookId, plan, feedbackDir) {
   if (notebook.status !== 'created' && notebook.status !== 'planned') {
     throw new Error(`setPlan: notebook ${notebookId} is ${notebook.status}; plan is locked after approval`);
   }
+  const currentRev = notebook._rev;
   notebook.plan = String(plan).trim();
   notebook.status = 'planned';
   notebook.updatedAt = new Date().toISOString();
-  return saveNotebook(notebook, feedbackDir);
+  return saveNotebook(notebook, feedbackDir, currentRev);
 }
 
 /**
@@ -124,6 +133,13 @@ function approveNotebook(notebookId, approver, feedbackDir) {
   if (!approver || !String(approver).trim()) {
     throw new TypeError('approveNotebook: approver identity is required');
   }
+  // Authorization boundary: require a non-trivial identity assertion.
+  // Empty or whitespace-only approvers are rejected. Callers MUST pass
+  // a real identity (human, service account, or signed assertion).
+  const approverName = String(approver).trim();
+  if (approverName.length === 0 || approverName === notebookId) {
+    throw new Error(`approveNotebook: invalid approver — must be a distinct trusted identity`);
+  }
   const notebook = loadNotebook(notebookId, feedbackDir);
   if (!notebook) throw new Error(`approveNotebook: notebook not found: ${notebookId}`);
   if (notebook.status !== 'planned') {
@@ -132,11 +148,12 @@ function approveNotebook(notebookId, approver, feedbackDir) {
   if (!notebook.plan) {
     throw new Error(`approveNotebook: notebook ${notebookId} has no plan to approve`);
   }
+  const currentRev = notebook._rev;
   notebook.status = 'approved';
-  notebook.approvedBy = String(approver).trim();
+  notebook.approvedBy = approverName;
   notebook.approvedAt = new Date().toISOString();
   notebook.updatedAt = notebook.approvedAt;
-  return saveNotebook(notebook, feedbackDir);
+  return saveNotebook(notebook, feedbackDir, currentRev);
 }
 
 function assertApproved(notebook, verb) {
@@ -166,6 +183,7 @@ function recordStep(notebookId, { action, output = '', interpretation = '', outc
   if (!allowedOutcomes.has(outcome)) {
     throw new TypeError(`recordStep: outcome must be one of ${[...allowedOutcomes].join(', ')}`);
   }
+  const currentRev = notebook._rev;
   notebook.steps.push({
     seq: notebook.steps.length + 1,
     action: String(action).trim(),
@@ -176,7 +194,7 @@ function recordStep(notebookId, { action, output = '', interpretation = '', outc
   });
   notebook.status = 'running';
   notebook.updatedAt = new Date().toISOString();
-  return saveNotebook(notebook, feedbackDir);
+  return saveNotebook(notebook, feedbackDir, currentRev);
 }
 
 /**
@@ -192,6 +210,7 @@ function recordDecision(notebookId, { question, alternatives = [], choice, reaso
   if (!choice || !String(choice).trim()) {
     throw new TypeError('recordDecision: choice is required');
   }
+  const currentRev = notebook._rev;
   notebook.decisions.push({
     seq: notebook.decisions.length + 1,
     question: String(question).trim(),
@@ -201,7 +220,7 @@ function recordDecision(notebookId, { question, alternatives = [], choice, reaso
     at: new Date().toISOString(),
   });
   notebook.updatedAt = new Date().toISOString();
-  return saveNotebook(notebook, feedbackDir);
+  return saveNotebook(notebook, feedbackDir, currentRev);
 }
 
 function finishNotebook(notebookId, { summary = '', outcome = 'completed' } = {}, feedbackDir) {
@@ -214,7 +233,7 @@ function finishNotebook(notebookId, { summary = '', outcome = 'completed' } = {}
   notebook.summary = String(summary).trim();
   notebook.finishedAt = new Date().toISOString();
   notebook.updatedAt = notebook.finishedAt;
-  saveNotebook(notebook, feedbackDir);
+  saveNotebook(notebook, feedbackDir, notebook._rev);
   return writeIndex(notebook, feedbackDir);
 }
 
@@ -266,16 +285,16 @@ function writeIndex(notebook, feedbackDir) {
 }
 
 /**
- * Discovery: list notebooks by reading their index files, most recent first.
+ * Discovery: list notebooks by reading their JSON files, most recent first.
  * Falls back to the JSON when the index is missing.
  */
 function listNotebooks(feedbackDir) {
   const dir = getNotebooksDir(feedbackDir);
   if (!fs.existsSync(dir)) return [];
-  const entries = fs.readdirSync(dir).filter((f) => f.endsWith('.index.md'));
+  const entries = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
   const notebooks = [];
   for (const entry of entries) {
-    const id = entry.replace(/\.index\.md$/, '');
+    const id = entry.replace(/\.json$/, '');
     const notebook = loadNotebook(id, feedbackDir);
     if (!notebook) continue;
     notebooks.push({
@@ -287,13 +306,16 @@ function listNotebooks(feedbackDir) {
       steps: notebook.steps.length,
       createdAt: notebook.createdAt,
       updatedAt: notebook.updatedAt,
-      index: path.join(dir, entry),
+      index: path.join(dir, `${id}.index.md`),
     });
   }
-  return notebooks.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  notebooks.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  return notebooks;
 }
 
 function main() {
+  const feedbackDir = process.env.THUMBGATE_FEEDBACK_DIR ||
+    path.join(process.cwd(), '.thumbgate', 'feedback');
   const [cmd, ...rest] = process.argv.slice(2);
   const parseJson = (raw) => {
     try { return raw ? JSON.parse(raw) : {}; } catch { return {}; }
@@ -301,45 +323,45 @@ function main() {
   switch (cmd) {
     case 'create': {
       const opts = parseJson(rest[0]);
-      const notebook = createNotebook(opts);
+      const notebook = createNotebook(opts, feedbackDir);
       console.log(JSON.stringify({ id: notebook.id, status: notebook.status }, null, 2));
       break;
     }
     case 'plan': {
       const [id, ...planParts] = rest;
-      const notebook = setPlan(id, planParts.join(' '));
+      const notebook = setPlan(id, planParts.join(' '), feedbackDir);
       console.log(JSON.stringify({ id: notebook.id, status: notebook.status }, null, 2));
       break;
     }
     case 'approve': {
       const [id, approver] = rest;
-      const notebook = approveNotebook(id, approver);
+      const notebook = approveNotebook(id, approver, feedbackDir);
       console.log(JSON.stringify({ id: notebook.id, status: notebook.status, approvedBy: notebook.approvedBy }, null, 2));
       break;
     }
     case 'step': {
       const [id, ...jsonRaw] = rest;
       const opts = parseJson(jsonRaw.join(' '));
-      const notebook = recordStep(id, opts);
+      const notebook = recordStep(id, opts, feedbackDir);
       console.log(JSON.stringify({ id: notebook.id, steps: notebook.steps.length }, null, 2));
       break;
     }
     case 'decide': {
       const [id, ...jsonRaw] = rest;
       const opts = parseJson(jsonRaw.join(' '));
-      const notebook = recordDecision(id, opts);
+      const notebook = recordDecision(id, opts, feedbackDir);
       console.log(JSON.stringify({ id: notebook.id, decisions: notebook.decisions.length }, null, 2));
       break;
     }
     case 'finish': {
       const [id, ...jsonRaw] = rest;
       const opts = parseJson(jsonRaw.join(' '));
-      const indexPath = finishNotebook(id, opts);
+      const indexPath = finishNotebook(id, opts, feedbackDir);
       console.log(JSON.stringify({ index: indexPath }, null, 2));
       break;
     }
     case 'list': {
-      console.log(JSON.stringify(listNotebooks(), null, 2));
+      console.log(JSON.stringify(listNotebooks(feedbackDir), null, 2));
       break;
     }
     default:
@@ -351,6 +373,7 @@ function main() {
 module.exports = {
   STATUSES,
   getNotebooksDir,
+  notebookPath,
   createNotebook,
   setPlan,
   approveNotebook,
@@ -360,6 +383,7 @@ module.exports = {
   writeIndex,
   listNotebooks,
   loadNotebook,
+  saveNotebook,
 };
 
 if (require.main?.filename === module.filename) {

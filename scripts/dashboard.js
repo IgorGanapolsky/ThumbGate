@@ -560,9 +560,9 @@ function computePreventionImpact(feedbackDir, gateStats) {
   const estimatedMinutesSaved = gateStats.blocked * 16;
   const estimatedHoursSaved = Number((estimatedMinutesSaved / 60).toFixed(1));
 
-  // Estimate cost savings: $0.004 per blocked action (16 min @ $1.50/hr)
+  // Estimate cost savings: $0.004 per blocked action (16 min @ $1.50/hr = 40 cents)
   // This is the cost of the agent time saved
-  const estimatedCostSavingsCents = gateStats.blocked * 16 * 1.5; // 16min * $0.025/min
+  const estimatedCostSavingsCents = gateStats.blocked * (16 / 60) * 1.5 * 100; // 16min * $1.50/hr -> cents
   const estimatedCostSavings = `$${(estimatedCostSavingsCents / 100).toFixed(2)}`;
 
   // Last auto-promotion
@@ -580,9 +580,9 @@ function computePreventionImpact(feedbackDir, gateStats) {
   }
 
   // Feedback-to-gate conversion rate
-  // How many negative feedback events led to prevention rules
-  const feedbackCount = gateStats.totalGates; // proxy for feedback volume
-  const conversionRate = feedbackCount > 0 ? Math.min(gateStats.blocked / feedbackCount, 1) : 0;
+  // How many blocked actions led to prevention rules — rate per blocked event
+  const feedbackCount = gateStats.blocked; // denominator: blocked actions
+  const conversionRate = feedbackCount > 0 ? Math.min(gateStats.totalGates / feedbackCount, 1) : 0;
 
   return {
     estimatedHoursSaved,
@@ -601,7 +601,6 @@ function computeRoiSummary(gateStats, prevention, analytics, billing) {
   const blockedActions = gateStats.blocked || 0;
   const warnedActions = gateStats.warned || 0;
   const passedActions = gateStats.passed || 0;
-  const totalGates = gateStats.totalGates || 0;
 
   // Time saved from blocked actions (16 min per block)
   const hoursSaved = prevention.estimatedHoursSaved || 0;
@@ -611,13 +610,14 @@ function computeRoiSummary(gateStats, prevention, analytics, billing) {
   const visitorToPaidRate = funnel.visitorToPaidRate || 0;
   const ctaToPaidRate = funnel.ctaToPaidRate || 0;
 
-  // Revenue tracking
+  // Revenue tracking — aligns with billing.js getBillingSummary: revenue.bookedRevenueCents
   const paidOrders = funnel.paidOrders || 0;
-  const monthlyRevenueCents = billing.revenue ? billing.revenue.monthlyRevenueCents || 0 : 0;
+  const monthlyRevenueCents = billing.revenue ? billing.revenue.bookedRevenueCents || 0 : 0;
   const monthlyRevenue = monthlyRevenueCents / 100;
 
-  // Prevention effectiveness
-  const preventionRate = totalGates > 0 ? (blockedActions / totalGates) : 0;
+  // Prevention effectiveness: blocked actions per attempted action
+  const totalActions = blockedActions + warnedActions + passedActions;
+  const preventionRate = totalActions > 0 ? (blockedActions / totalActions) : 0;
 
   // PR merge efficiency (GitHub Label Archiving impact)
   const decisionMetrics = analytics.decisionMetrics || {};
@@ -1385,7 +1385,7 @@ function computeAgentFileAudit(projectRoot = PROJECT_ROOT) {
 // Agent Surface Inventory for Pro Dashboard
 // ---------------------------------------------------------------------------
 
-function computeAgentSurfaceInventory(feedbackDir, options = {}) {
+function computeAgentFileAuditFromFeedback(feedbackDir, options = {}) {
   const readiness = options.readiness || generateAgentReadinessReport({ projectRoot: PROJECT_ROOT });
   const auditResults = computeAgentFileAudit();
 
@@ -1724,6 +1724,16 @@ function computeAgentSurfaceInventory(feedbackDir, options = {}) {
     writeCapableTools: readiness.permissions.writeCapableTools.slice(0, 8),
     activeBootstrapFiles: readiness.bootstrap.requiredPresent,
     requiredBootstrapFiles: readiness.bootstrap.requiredCount,
+    // Merged from computeAgentFileAuditFromFeedback — audit pass/fail for dashboard
+    ...(() => {
+      const audit = computeAgentFileAuditFromFeedback(feedbackDir, options);
+      return {
+        totalAgentFiles: audit.totalAgentFiles,
+        audited: audit.audited,
+        highRiskCount: audit.highRiskCount,
+        lastAuditAt: audit.lastAuditAt,
+      };
+    })(),
   };
 }
 

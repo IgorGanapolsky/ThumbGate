@@ -169,7 +169,8 @@ async function freeze(ratio = DEFAULT_HOLDOUT_RATIO) {
   const manifest = {
     version: 1,
     scheme: 'sha256(toolName + NUL + command); holdout when first 8 hex < ratio * 2^32',
-    holdoutRatio: Number(ratio.toFixed(6)),
+    holdoutRatio: ratio,
+    holdoutThreshold: Math.floor(ratio * 0x100000000),
     goldenCases: cases.length,
     holdoutCases: holdout.length,
     publicCases: publicCases.length,
@@ -207,8 +208,8 @@ function check() {
   //    slice the hash scheme derives from the CURRENT golden set. Catches both
   //    golden-set edits that smuggle cases in/out of the holdout and manifest swaps.
   const cases = loadGolden();
-  const { holdout } = partition(cases, manifest.holdoutRatio ?? DEFAULT_HOLDOUT_RATIO);
-  const derived = new Set(holdout.map((c) => c.caseHash));
+  const { holdout: derivedHoldout } = partition(cases, manifest.holdoutRatio ?? DEFAULT_HOLDOUT_RATIO);
+  const derived = new Set(derivedHoldout.map((c) => c.caseHash));
   const sealed = new Set((manifest.holdout || []).map((e) => e.caseHash));
   if (manifest.goldenCases !== cases.length) {
     violations.push(`goldenCases ${manifest.goldenCases} != current ${cases.length}`);
@@ -252,6 +253,7 @@ async function verify() {
   const byHash = new Map(holdout.map((c) => [c.caseHash, c]));
   const verdicts = await replayHoldout(holdout);
 
+  const sealedCount = (manifest.holdout || []).length;
   let compared = 0;
   let drifted = 0;
   for (const entry of manifest.holdout || []) {
@@ -259,6 +261,13 @@ async function verify() {
     if (!c) continue;
     compared += 1;
     if (verdicts.get(entry.caseHash) !== entry.sealedVerdict) drifted += 1;
+  }
+  if (sealedCount === 0 || compared !== sealedCount) {
+    process.stderr.write(
+      `Holdout verify: partition drift — compared ${compared} of ${sealedCount} sealed cases. `
+      + 'Run: npm run eval:holdout:check\n',
+    );
+    return 1;
   }
   // Permitted-results pattern: only the aggregate leaves this function. Per-case
   // drift detail is deliberately not printed, so the holdout stays un-memorable.
