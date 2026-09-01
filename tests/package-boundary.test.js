@@ -682,9 +682,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // history-sync feedback rankable added ~1.2 KB of runtime logic + comments to
   // shipped hybrid-feedback-context.js on top of the ledger bump above.
   // Measured 8,031,249 unpacked on the merged tree — 1,249 over the old cap.
+  // Bumped 8.09 MB -> 8.10 MB (2026-09-03, PR #3715): workflow-notebook.js
+  // gained optimistic concurrency (_rev), auth boundary on approveNotebook,
+  // and listNotebooks now enumerates JSON — ~1.6 KB of guard logic.
+  // Measured 8,091,622 unpacked on the merged tree — 1,622 over the old cap.
   assert.ok(
-    manifest.unpackedSize <= 8_090_000,
-    `npm package should stay <= 8.09 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 8_100_000,
+    `npm package should stay <= 8.10 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
