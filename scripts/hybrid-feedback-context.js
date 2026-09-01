@@ -780,6 +780,7 @@ function evaluateCompiledGuards(artifact, toolName, toolInput) {
   const haystackTokens = buildHaystackTokens(normInput);
 
   for (const guard of artifact.guards) {
+    if (guard === null || typeof guard !== 'object') continue;
     let normText = GUARD_NORM_TEXT_CACHE.get(guard);
     if (normText === undefined) {
       normText = normalize(guard.text || '');

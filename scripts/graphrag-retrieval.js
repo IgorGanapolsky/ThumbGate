@@ -118,7 +118,7 @@ function expandWithGraph(seeds = [], graph, options = {}) {
     });
   }
 
-  // BFS frontier: id -> {score, path}
+  // BFS frontier: id -> {score, path}; keep the strongest pending entry per node
   let frontier = seeds.map((seed) => ({
     id: seed.id,
     score: seedScore.get(seed.id),
@@ -128,6 +128,8 @@ function expandWithGraph(seeds = [], graph, options = {}) {
   const visited = new Set(seeds.map((s) => s.id));
   for (let hop = 1; hop <= maxHops; hop += 1) {
     const nextFrontier = [];
+    // Track frontier entries so we keep only the strongest pending state per node
+    const queuedInFrontier = new Map();
     for (const node of frontier) {
       const edges = graph.adjacency.get(node.id) || [];
       for (const edge of edges) {
@@ -144,10 +146,21 @@ function expandWithGraph(seeds = [], graph, options = {}) {
           via: [...node.path, ...edge.via],
           seedId: node.id && seedScore.has(node.id) ? node.id : (best.get(node.id)?.seedId || node.id),
         });
-        if (!visited.has(edge.to)) {
-          visited.add(edge.to);
-          nextFrontier.push({ id: edge.to, score: finalScore, path: [...node.path, ...edge.via] });
+        const existingFrontier = queuedInFrontier.get(edge.to);
+        if (!existingFrontier || existingFrontier.score < finalScore) {
+          queuedInFrontier.set(edge.to, { id: edge.to, score: finalScore, path: [...node.path, ...edge.via] });
         }
+      }
+    }
+    // Merge queued entries into nextFrontier, preserving visited tracking
+    for (const entry of queuedInFrontier.values()) {
+      const alreadyQueued = nextFrontier.find((f) => f.id === entry.id);
+      if (!alreadyQueued) {
+        nextFrontier.push(entry);
+        visited.add(entry.id);
+      } else if (entry.score > alreadyQueued.score) {
+        // Propagate improved state: update in place
+        Object.assign(alreadyQueued, entry);
       }
     }
     frontier = nextFrontier;
@@ -196,7 +209,28 @@ function multiHopSearch(params = {}) {
   });
 
   const byId = new Map(corpus.map((doc) => [doc.id, doc]));
-  const results = expanded.slice(0, topK).map((entry) => ({
+
+  // Preserve the baseline single-hop top-K seed results before adding
+  // graph-only candidates. Expansion can surface additional entries, but
+  // graph-only candidates must never displace baseline seeds — this
+  // upholds the "never worse than single-hop" contract.
+  const seedIds = new Set(seeds.slice(0, topK).map((s) => s.id));
+  const seedResults = [];
+  const expandedIds = new Set();
+  for (const entry of expanded) {
+    if (seedIds.has(entry.id)) {
+      seedResults.push(entry);
+    } else {
+      expandedIds.add(entry.id);
+    }
+  }
+  // Sort seed results by their original single-hop rank, then append graph-only entries
+  const seedOrder = new Map(seeds.map((s, i) => [s.id, i]));
+  seedResults.sort((a, b) => (seedOrder.get(a.id) || 0) - (seedOrder.get(b.id) || 0));
+  const graphOnlyEntries = expanded.filter((e) => !seedIds.has(e.id));
+  const merged = [...seedResults, ...graphOnlyEntries].slice(0, topK);
+
+  const results = merged.map((entry) => ({
     ...(byId.get(entry.id) || { id: entry.id }),
     graphHop: entry.hop,
     graphVia: entry.via,
