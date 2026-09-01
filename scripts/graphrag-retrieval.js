@@ -119,6 +119,7 @@ function expandWithGraph(seeds = [], graph, options = {}) {
   }
 
   // BFS frontier: id -> {score, path}; keep the strongest pending entry per node
+  // (deduplication handled via the frontierIndex inside each hop iteration)
   let frontier = seeds.map((seed) => ({
     id: seed.id,
     score: seedScore.get(seed.id),
@@ -128,8 +129,8 @@ function expandWithGraph(seeds = [], graph, options = {}) {
   const visited = new Set(seeds.map((s) => s.id));
   for (let hop = 1; hop <= maxHops; hop += 1) {
     const nextFrontier = [];
-    // Track frontier entries so we keep only the strongest pending state per node
-    const queuedInFrontier = new Map();
+    // Index for fast lookup of the best pending entry per node in this hop's frontier
+    const frontierIndex = Object.create(null);
     for (const node of frontier) {
       const edges = graph.adjacency.get(node.id) || [];
       for (const edge of edges) {
@@ -146,22 +147,17 @@ function expandWithGraph(seeds = [], graph, options = {}) {
           via: [...node.path, ...edge.via],
           seedId: node.id && seedScore.has(node.id) ? node.id : (best.get(node.id)?.seedId || node.id),
         });
-        const existingFrontier = queuedInFrontier.get(edge.to);
+        const existingFrontier = frontierIndex[edge.to];
         if (!existingFrontier || existingFrontier.score < finalScore) {
-          queuedInFrontier.set(edge.to, { id: edge.to, score: finalScore, path: [...node.path, ...edge.via] });
+          frontierIndex[edge.to] = { id: edge.to, score: finalScore, path: [...node.path, ...edge.via] };
         }
       }
     }
-    // Merge queued entries into nextFrontier, preserving visited tracking
-    for (const entry of queuedInFrontier.values()) {
-      const alreadyQueued = nextFrontier.find((f) => f.id === entry.id);
-      if (!alreadyQueued) {
-        nextFrontier.push(entry);
-        visited.add(entry.id);
-      } else if (entry.score > alreadyQueued.score) {
-        // Propagate improved state: update in place
-        Object.assign(alreadyQueued, entry);
-      }
+    // Materialize frontier from the index, preserving visited tracking
+    for (const id of Object.keys(frontierIndex)) {
+      if (visited.has(id)) continue;
+      visited.add(id);
+      nextFrontier.push(frontierIndex[id]);
     }
     frontier = nextFrontier;
     if (frontier.length === 0) break;
