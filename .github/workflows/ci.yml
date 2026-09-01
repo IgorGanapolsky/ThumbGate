@@ -257,6 +257,18 @@ jobs:
         # until the eval case is consciously updated in the same PR.
         run: npm run gate-eval:ci
 
+      - name: Verify double-blind holdout seal
+        if: steps.ci-scope.outputs.mode == 'full'
+        # Fail-closed: the holdout manifest's seal (partition reproducibility,
+        # no case swap-in, no raw question leakage) must be intact before any
+        # release. Non-zero exit = broken seal = block merge.
+        run: npm run eval:holdout:check
+
+      - name: Verify holdout verdicts (regression gate)
+        if: steps.ci-scope.outputs.mode == 'full'
+        # Non-zero exit = holdout verdicts drifted = block merge until re-freeze.
+        run: npm run eval:holdout:verify
+
       - name: Run coverage
         # Skip on ordinary PRs: coverage re-runs the full suite and doubles wall clock.
         # Main + merge_group still re-run coverage so the merge gate keeps the signal.

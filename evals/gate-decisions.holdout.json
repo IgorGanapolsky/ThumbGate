@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "scheme": "sha256(toolName + NUL + command); holdout when first 8 hex < ratio * 2^32",
+  "holdoutRatio": 0.333333,
+  "goldenCases": 60,
+  "holdoutCases": 20,
+  "publicCases": 40,
+  "holdout": [
+    {
+      "caseHash": "445a0d0d1d129273d3bbd86154e98a3054e26418cb38e341ef5eb67fcb68f848",
+      "gateId": "permission-change-approval",
+      "sealedVerdict": "approve"
+    },
+    {
+      "caseHash": "0128c7333993466d676c89362c39accf986b0c3e01a1f7de071022054ed7337c",
+      "gateId": "permission-change-approval",
+      "sealedVerdict": "approve"
+    },
+    {
+      "caseHash": "0483b9a976f8c6980dbcdc998344efb6231d2a8ac7432d4e38ebf4cdf22f9e28",
+      "gateId": "protected-file-approval-required",
+      "sealedVerdict": "deny"
+    },
+    {
+      "caseHash": "3c27dd2d47c243ee93fb11ab64345e0e6f38d3bff992d6e05e9c68888afd3fce",
+      "gateId": "env-file-edit",
+      "sealedVerdict": "none"
+    },
+    {
+      "caseHash": "3b3985006ac2f6e13dc68edeafe38b181af778740a25812c958e024a6cd9a473",
+      "gateId": "local-only-git-writes",
+      "sealedVerdict": "deny"
+    },
+    {
+      "caseHash": "16098f1ec8ebf6d1311ec8065763d9b0b438daf994118b3180aa10895dcbf6c2",
+      "gateId": "deny-network-egress",
+      "sealedVerdict": "none"
+    },
+    {
+      "caseHash": "106967521089f35a869412971a7074fa95b94fc66ee3a5ca79b820661ea9a047",
+      "gateId": "deny-network-egress",
+      "sealedVerdict": "warn"
+    },
+    {
+      "caseHash": "32e0801ae7111b549800ade167ff473f34cda2139bb42d50d272aa1911bf36ca",
+      "gateId": "local-only-remote-side-effect",
+      "sealedVerdict": "none"
+    },
+    {
+      "caseHash": "071469c7a271435a2f3aa817992e83c064c71868d7246a8351081f5511949331",
+      "gateId": "memory-high-risk-default-deny",
+      "sealedVerdict": "none"
+    },
+    {
+      "caseHash": "38cdf60c7d7f4dc49942c0e55a5c08db14c9e5c1530c518f98067733053dd3f5",
+      "gateId": "memory-high-risk-default-deny",
+      "sealedVerdict": "none"
+    },
+    {
+      "caseHash": "0b6aca2c794189065dcd1c8526835da437777dd99ffe062b55a22943efe4a511",
+      "gateId": "local-only-remote-side-effect",
+      "sealedVerdict": "deny"
+    },
+    {
+      "caseHash": "1c9c272dd4dd713a6b71cb50b141ee6d10d4568471be0e4a3512f7149d4f99aa",
+      "gateId": "pr-thread-resolution-verified-required",
+      "sealedVerdict": "none"
+    },
+    {
+      "caseHash": "14b9f5f8f2c1fd5323a67384c2719c489ce4c12ac24773a342aeaee149fac20a",
+      "gateId": "pr-thread-resolution-verified-required",
+      "sealedVerdict": "none"
+    },
+    {
+      "caseHash": "2583db0bf099742e02994638789465b9136cc7dbbe423837f622079d6959b139",
+      "gateId": "deny-network-egress",
+      "sealedVerdict": "none"
+    },
+    {
+      "caseHash": "04659fbcf6641c1263f7636cc81e7c8c7b84a4887fc6d220e283bed9687647bd",
+      "gateId": "pr-thread-resolution-verified-required",
+      "sealedVerdict": "none"
+    },
+    {
+      "caseHash": "42895de0789b4298cfcdfea3c91c7a7217a232008e6497389b6d5f92c91d7422",
+      "gateId": "pr-thread-resolution-verified-required",
+      "sealedVerdict": "none"
+    },
+    {
+      "caseHash": "189dc82f8547fd14941c98f2dec71a7fba3f77f0f55e54aa3a55db8f55edb05e",
+      "gateId": "local-only-remote-side-effect",
+      "sealedVerdict": "deny"
+    },
+    {
+      "caseHash": "24a1ad556d89387b9775710fdf9e631fd3f79dfa1cfe07a1ba6f546ae2068a8a",
+      "gateId": "permission-change-approval",
+      "sealedVerdict": "approve"
+    },
+    {
+      "caseHash": "1cc96b4822ba3cebad552da76ca71b5fe85eaf1a8f1763078e66aabdaf63cac6",
+      "gateId": "memory-high-risk-default-deny",
+      "sealedVerdict": "none"
+    },
+    {
+      "caseHash": "2f725706d01479f3f5d71c4e841c45298dff801d8c860ee5885f3a5be3de2c17",
+      "gateId": "memory-high-risk-default-deny",
+      "sealedVerdict": "none"
+    }
+  ],
+  "sealedAt": "2026-08-28T20:52:40.861Z",
+  "contentHash": "950c760a9198198f85b45e853286d6bd3ebb01580b4d2afd82ef094c7b014040"
+}
