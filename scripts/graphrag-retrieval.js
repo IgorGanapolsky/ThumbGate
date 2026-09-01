@@ -216,12 +216,9 @@ function multiHopSearch(params = {}) {
   // upholds the "never worse than single-hop" contract.
   const seedIds = new Set(seeds.slice(0, topK).map((s) => s.id));
   const seedResults = [];
-  const expandedIds = new Set();
   for (const entry of expanded) {
     if (seedIds.has(entry.id)) {
       seedResults.push(entry);
-    } else {
-      expandedIds.add(entry.id);
     }
   }
   // Sort seed results by their original single-hop rank, then append graph-only entries
