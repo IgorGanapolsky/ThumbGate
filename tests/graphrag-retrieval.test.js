@@ -163,3 +163,18 @@ test('multiHopSearch never drops single-hop recall on the real golden corpus', (
   assert.ok(multiHopHits >= singleHopHits,
     `multi-hop recall (${multiHopHits}) must not drop below single-hop (${singleHopHits})`);
 });
+
+test('expandWithGraph bounds decay outside [0, 1] to DEFAULT_DECAY', () => {
+  const graph = buildGraph(CORPUS);
+  const seeds = [{ id: 'doc:git-force', relevanceScore: 1 }];
+
+  // decay=2.0 is out of bounds; should fall back to DEFAULT_DECAY (0.5)
+  const bounded = expandWithGraph(seeds, graph, { maxHops: 2, decay: 2.0 });
+  assert.ok(bounded.some((e) => e.id === 'doc:git-rebase'),
+    'bounded decay should still reach git-rebase via tag edge');
+
+  // decay=-1 is also out of bounds; fallback applies
+  const negDecay = expandWithGraph(seeds, graph, { maxHops: 2, decay: -1 });
+  assert.ok(negDecay.some((e) => e.id === 'doc:git-rebase'),
+    'negative decay should fall back to DEFAULT_DECAY and still reach git-rebase');
+});

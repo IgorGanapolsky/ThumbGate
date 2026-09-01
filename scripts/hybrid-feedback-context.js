@@ -788,7 +788,8 @@ function evaluateCompiledGuards(artifact, toolName, toolInput) {
     }
     const toolMentioned = normText.includes(normTool) || normTool === 'unknown';
 
-    const keywordMatch = hasTwoKeywordHits(normInput, guard.words || [], haystackTokens);
+    const guardWords = Array.isArray(guard.words) ? guard.words : [];
+    const keywordMatch = hasTwoKeywordHits(normInput, guardWords, haystackTokens);
 
     // Match if: keyword hits in input, OR tool mentioned + high count.
     // Previously tool-name matching only worked for short inputs — this was

@@ -135,8 +135,12 @@ function expandFrontierHop(frontier, graph, decay, best, seedScore, visited, hop
  *          merged ranking (seeds first, hop-0), each entry carrying provenance
  */
 function expandWithGraph(seeds = [], graph, options = {}) {
-  const maxHops = Number.isFinite(options.maxHops) ? options.maxHops : DEFAULT_MAX_HOPS;
-  const decay = Number.isFinite(options.decay) ? options.decay : DEFAULT_DECAY;
+  const maxHops = Number.isFinite(options.maxHops) && options.maxHops >= 0 ? options.maxHops : DEFAULT_MAX_HOPS;
+  let decay = Number.isFinite(options.decay) ? options.decay : DEFAULT_DECAY;
+  // Bound decay to [0, 1]: values outside this range can cause scores to grow
+  // or stay negative, letting invalid decay improve and re-queue previously
+  // expanded nodes through the frontier loop.
+  if (decay < 0 || decay > 1) decay = DEFAULT_DECAY;
   if (!graph || !Array.isArray(seeds) || seeds.length === 0) {
     return (Array.isArray(seeds) ? seeds : []).map((s, i) => ({
       id: s.id,
