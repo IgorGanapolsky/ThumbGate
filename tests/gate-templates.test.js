@@ -71,6 +71,55 @@ test('gate template library exposes curated templates with shared rollout metada
   assert.ok(templates.some((template) => template.id === 'ratchet-difficulty-after-verified-pass'));
   assert.ok(templates.some((template) => template.id === 'require-safety-hillclimb-before-rl-post-train'));
 
+  // Claw production-readiness templates (Microsoft Agent Framework harness guide:
+  // observability, Purview-style content screening, hosted shell/fs lockdown, local evals)
+  assert.ok(templates.some((template) => template.id === 'require-claw-observability-before-production'));
+  assert.ok(templates.some((template) => template.id === 'require-policy-content-screening'));
+  assert.ok(templates.some((template) => template.id === 'block-hosted-claw-shell-and-fs'));
+  assert.ok(templates.some((template) => template.id === 'require-local-evals-on-every-change'));
+  for (const id of [
+    'require-claw-observability-before-production',
+    'require-policy-content-screening',
+    'block-hosted-claw-shell-and-fs',
+    'require-local-evals-on-every-change',
+  ]) {
+    const template = templates.find((t) => t.id === id);
+    assert.equal(template.category, 'Claw-Style Enterprise Agent Governance');
+    assert.doesNotThrow(() => new RegExp(template.pattern), `${id} pattern must compile`);
+  }
+  // Hosted lockdown and content screening are hard blocks; observability/evals are advisory-first
+  assert.ok(templates.some((template) => template.id === 'require-policy-content-screening' && template.defaultAction === 'block' && template.severity === 'critical'));
+  assert.ok(templates.some((template) => template.id === 'block-hosted-claw-shell-and-fs' && template.defaultAction === 'block' && template.severity === 'critical'));
+  assert.ok(templates.some((template) => template.id === 'require-claw-observability-before-production' && template.defaultAction === 'warn'));
+  assert.ok(templates.some((template) => template.id === 'require-local-evals-on-every-change' && template.defaultAction === 'warn'));
+
+  // Double-blind holdout (Google DeepMind contamination defense, scripts/eval-holdout.js)
+  assert.ok(templates.some((template) => template.id === 'require-double-blind-holdout-eval'));
+  const holdoutTemplate = templates.find((t) => t.id === 'require-double-blind-holdout-eval');
+  assert.equal(holdoutTemplate.category, 'Eval Integrity');
+  assert.doesNotThrow(() => new RegExp(holdoutTemplate.pattern), 'holdout pattern must compile');
+
+  // AI Governance Operating Plan (30-day plan + OpenAI Codex/Runme workflow loop)
+  assert.ok(templates.some((template) => template.category === 'AI Governance Operating Plan'));
+  const operatingPlanIds = [
+    'require-ai-use-case-inventory',
+    'require-data-classification-before-ai',
+    'require-ai-threat-model-blast-radius',
+    'require-nhi-least-privilege',
+    'require-ai-incident-taxonomy-logging',
+    'require-constrained-ai-pilot',
+    'require-workflow-notebook-plan-approval',
+  ];
+  for (const id of operatingPlanIds) {
+    const template = templates.find((t) => t.id === id);
+    assert.ok(template, `missing AI Governance Operating Plan template: ${id}`);
+    assert.equal(template.category, 'AI Governance Operating Plan');
+    assert.doesNotThrow(() => new RegExp(template.pattern), `${id} pattern must compile`);
+  }
+  // Hard blocks protect data classification and machine-identity scoping
+  assert.ok(templates.some((template) => template.id === 'require-data-classification-before-ai' && template.defaultAction === 'block' && template.severity === 'critical'));
+  assert.ok(templates.some((template) => template.id === 'require-nhi-least-privilege' && template.defaultAction === 'block' && template.severity === 'critical'));
+
   assert.ok(templates.every((template) => template.category));
   assert.ok(templates.every((template) => template.problem));
   assert.ok(templates.every((template) => template.roi));
