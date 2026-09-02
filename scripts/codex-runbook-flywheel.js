@@ -34,6 +34,11 @@ const CONSEQUENTIAL = Object.freeze([
   'payment', 'external-email', 'production-deploy', 'delete', 'permission-change', 'publish',
 ]);
 
+const ALLOWED_ACTIONS = Object.freeze([
+  'read-file', 'list-files', 'grep', 'search', 'read-notes',
+  'list-models', 'estimate-cost', 'check-quota',
+]);
+
 /**
  * Create a runbook. Starts at the plan stage — execution is impossible until
  * a human approves. Mirrors "wait for me to review and approve the plan."
@@ -43,7 +48,7 @@ function newRunbook(workflow, goal) {
     throw new Error('runbook needs a workflow name and a goal');
   }
   return {
-    id: `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    id: require('crypto').randomUUID(),
     workflow,
     goal,
     state: 'plan',
@@ -68,7 +73,7 @@ function approvePlan(runbook, plan, approver) {
   if (!approver) {
     return { ok: false, reason: 'approval requires a named human approver' };
   }
-  runbook.plan = plan;
+  runbook.approvedPlan = plan.slice();
   runbook.state = 'approved';
   runbook.approvedBy = approver;
   runbook.approvedAt = new Date().toISOString();
@@ -76,11 +81,16 @@ function approvePlan(runbook, plan, approver) {
 }
 
 /**
- * Automatic approval review for individual actions. Only bounded, reversible
- * actions are eligible; consequential ones stay on the human queue. This
- * reviews WITHOUT widening permission boundaries.
+ * Automatic approval review for individual actions. Uses an explicit
+ * allowlist of safe action types — fail closed for anything unlisted.
  */
 function autoReview(action) {
+  if (!action || !action.type || typeof action.type !== 'string') {
+    return { eligible: false, reason: 'missing or invalid action type — human approval required' };
+  }
+  if (!ALLOWED_ACTIONS.includes(action.type)) {
+    return { eligible: false, reason: `"${action.type}" is unlisted — human approval required` };
+  }
   if (CONSEQUENTIAL.includes(action.type)) {
     return { eligible: false, reason: `"${action.type}" is consequential — human approval required` };
   }
@@ -96,6 +106,12 @@ function autoReview(action) {
 function executeStep(runbook, step, outcome) {
   if (runbook.state !== 'approved' && runbook.state !== 'running') {
     return { ok: false, reason: `execution refused — runbook state is "${runbook.state}", not approved` };
+  }
+  if (!Array.isArray(runbook.approvedPlan)) {
+    return { ok: false, reason: 'execution refused — no approved plan snapshot on record' };
+  }
+  if (!runbook.approvedPlan.includes(step)) {
+    return { ok: false, reason: `execution refused — "${step}" is not in the approved plan` };
   }
   runbook.state = 'running';
   runbook.steps.push({ step, outcome: outcome || 'ok', at: new Date().toISOString() });
@@ -211,6 +227,7 @@ if (isCliEntrypoint()) main();
 module.exports = {
   RUN_STATES,
   CONSEQUENTIAL,
+  ALLOWED_ACTIONS,
   newRunbook,
   approvePlan,
   autoReview,

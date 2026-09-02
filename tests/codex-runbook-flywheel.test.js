@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const {
   RUN_STATES,
   CONSEQUENTIAL,
+  ALLOWED_ACTIONS,
   newRunbook,
   approvePlan,
   autoReview,
@@ -49,20 +50,44 @@ test('approval is an explicit named human act', () => {
 
 test('auto-review approves only bounded reversible actions', () => {
   assert.equal(autoReview({ type: 'read-file' }).eligible, true);
+  assert.equal(autoReview({ type: 'grep' }).eligible, true);
   assert.equal(autoReview({ type: 'production-deploy' }).eligible, false);
   assert.equal(autoReview({ type: 'payment' }).eligible, false);
   assert.equal(autoReview({ type: 'read-file', irreversible: true }).eligible, false);
+  // fail closed for unlisted actions
+  assert.equal(autoReview({ type: 'random-arbitrary-action' }).eligible, false);
+  assert.equal(autoReview({ type: '' }).eligible, false);
+  assert.equal(autoReview({}).eligible, false);
+  assert.equal(autoReview(null).eligible, false);
   for (const c of ['external-email', 'delete', 'permission-change', 'publish']) {
     assert.ok(CONSEQUENTIAL.includes(c), `missing consequential type ${c}`);
   }
+  assert.ok(ALLOWED_ACTIONS.includes('read-file'), 'read-file must remain allowlisted');
 });
 
 test('steps only execute on approved/running runbooks', () => {
   const rb = plannedRunbook();
-  assert.equal(executeStep(rb, 'step1').ok, true);
-  assert.equal(executeStep(rb, 'step2').ok, true);
+  assert.equal(executeStep(rb, 'review previous run').ok, true);
+  assert.equal(executeStep(rb, 'run eval').ok, true);
   assert.equal(rb.steps.length, 2);
   assert.equal(rb.state, 'running');
+});
+
+test('executeStep rejects unplanned steps after approval', () => {
+  const rb = plannedRunbook();
+  const attempt = executeStep(rb, 'unplanned step');
+  assert.equal(attempt.ok, false);
+  assert.ok(attempt.reason.includes('not in the approved plan'));
+  assert.equal(rb.steps.length, 0);
+});
+
+test('executeStep rejects steps after post-approval plan mutation', () => {
+  const rb = plannedRunbook();
+  // mutate the original plan array after approval — should not grant new steps
+  rb.plan.push('injected step');
+  const attempt = executeStep(rb, 'injected step');
+  assert.equal(attempt.ok, false);
+  assert.ok(attempt.reason.includes('not in the approved plan'));
 });
 
 test('decision capture needs both choice and reason', () => {
