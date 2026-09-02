@@ -56,7 +56,7 @@ function buildHarness(host, opts) {
   const o = opts || {};
   const base = {
     host,
-    source: 'https://devblogs.microsoft.com/agent-framework/agent-harness-making-your-claw-production-ready/',
+    source: new URL('https://devblogs.microsoft.com/agent-framework/agent-harness-making-your-claw-production-ready/').href,
     telemetry: { spans: true, tokenMetrics: true, export: host === 'hosted' ? 'auto' : 'manual' },
     governance: { screenPrompts: true, screenResponses: true, audit: true },
   };
