@@ -346,6 +346,30 @@ describe('compileGuardArtifact + writeGuardArtifact + readGuardArtifact', () => 
     const result = evaluateCompiledGuards(blockArtifact, 'Bash', 'git push --force main');
     assert.strictEqual(result.mode, 'block', `Expected block for matching guard, got: ${result.mode}`);
   });
+
+  it('evaluateCompiledGuards skips guards with non-array words without crashing', () => {
+    // A corrupt guard where words is an object instead of an array should be
+    // skipped gracefully, not throw a TypeError from hasTwoKeywordHits.
+    const artifact = {
+      compiledAt: new Date().toISOString(),
+      guardCount: 1,
+      blockThreshold: 3,
+      guards: [
+        {
+          hash: 'corrupt1',
+          text: 'git push force main',
+          words: { not: 'an array' },
+          count: 3,
+          lastSeen: Date.now(),
+          attributed: true,
+          mode: 'block',
+        },
+      ],
+    };
+    const result = evaluateCompiledGuards(artifact, 'Bash', 'git push --force main');
+    assert.strictEqual(result.mode, 'allow',
+      `Expected allow when words is non-array (no valid keyword hits), got: ${result.mode}`);
+  });
 });
 
 // ---------------------------------------------------------------------------

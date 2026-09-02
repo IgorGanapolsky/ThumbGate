@@ -27,8 +27,8 @@ function pinFor(step) {
   return { sha: m[1], tag: m[2] };
 }
 
-// Immutable pin for github/codeql-action@v4.37.7 (init + analyze must share it).
-const CODEQL_V4377_SHA = 'ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd';
+// Immutable pin for github/codeql-action@v4.37.8 (init + analyze must share it).
+const CODEQL_V4378_SHA = 'db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28';
 
 test('CodeQL init and analyze use the same action SHA and version tag', () => {
   const init = pinFor('init');
@@ -43,10 +43,10 @@ test('CodeQL init and analyze use the same action SHA and version tag', () => {
   assert.match(init.tag, /^v4\./, 'CodeQL action should stay on the v4 line');
   assert.equal(
     init.sha,
-    CODEQL_V4377_SHA,
-    `CodeQL must stay pinned to immutable v4.37.7 revision ${CODEQL_V4377_SHA}`,
+    CODEQL_V4378_SHA,
+    `CodeQL must stay pinned to immutable v4.37.8 revision ${CODEQL_V4378_SHA}`,
   );
-  assert.equal(init.tag, 'v4.37.7', 'CodeQL version comment must be v4.37.7');
+  assert.equal(init.tag, 'v4.37.8', 'CodeQL version comment must be v4.37.8');
 });
 
 test('Dependabot groups github/codeql-action* so init/analyze do not half-bump', () => {
