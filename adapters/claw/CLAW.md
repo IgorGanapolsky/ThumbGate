@@ -104,6 +104,39 @@ Update your editor/agent MCP to include ThumbGate gates + claw-aware tools when 
 - Benchmark: Use new model-candidates workload for claw governance quality/cost.
 - Optional: WhisperBench-style golden cases as ThumbGate eval fixtures (injection / stealth / effectiveness triad).
 
+## Agent Harness Production-Readiness Gates (Microsoft Agent Framework, 2026)
+
+Microsoft's "Build your own claw" series (Part 4: *Making your claw production-ready*)
+defines the four axes that separate a demo claw from a production harness:
+
+1. **Observability** — OpenTelemetry spans for every model turn and tool call,
+   token-usage metrics, structured logs, one source name per agent.
+2. **Governance** — Purview-style screening of every prompt before the model and
+   every response before the user, with an audit trail.
+3. **Deployment hardening** — hosted builds run with `EnableFileAccess=false` and
+   `EnableShell=false`; real file access goes through an external governed store
+   (e.g. blob-backed AgentFileStore), never the container disk.
+4. **Evals** — local deterministic checks (plain functions, passed/total over a
+   fixed query set) always run in CI; model-graded quality scores are optional
+   and gated behind a hosted endpoint.
+
+ThumbGate encodes each axis as a reusable gate template in
+`config/gate-templates.json` (category: Claw-Style Enterprise Agent Governance):
+
+| Gate id | Action | Harness axis |
+|---|---|---|
+| `require-claw-observability-before-production` | warn (block for regulated) | Observability |
+| `require-policy-content-screening` | block | Governance (Purview-style) |
+| `block-hosted-claw-shell-and-fs` | block | Deployment hardening |
+| `require-local-evals-on-every-change` | warn | Evals-in-CI ratchet |
+
+Structural note worth stealing: the production harness defines the agent **once**
+in a shared factory and runs it through three thin hosts (console / hosted /
+evals), so observability, governance, and evals all apply to the *same* agent —
+never three subtly different copies. ThumbGate's equivalent invariant: gates and
+lessons live in the feedback store and every hook/host reads the same compiled
+guard artifact, so enforcement is identical across local, hosted, and CI.
+
 ## Matryoshka Embeddings for Efficient RAG Pipelines
 
 Per the podcast "The RAG Mistake Almost Every Team Is Making" (episode #1017), embedding model choice is the most underrated RAG decision. Matryoshka embeddings enable:

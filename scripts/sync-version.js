@@ -381,6 +381,14 @@ function syncVersion(opts) {
     'adapters/vlt/opencode.json',
     'adapters/vlt/.mcp.json',
     'adapters/vlt/VLT.md',
+    // poolside + future-agi adapters landed after the vlt registration and were
+    // never added here; the 1.36.0 release PR went red on their stale pins
+    // (adapters.test.js "Poolside settings must pin the shipped ThumbGate version").
+    'adapters/poolside/settings.yaml',
+    'adapters/poolside/README.md',
+    'adapters/future-agi/config.toml',
+    'adapters/future-agi/opencode.json',
+    'adapters/future-agi/.mcp.json',
     'docs/PLUGIN_DISTRIBUTION.md',
     // public/install.html is the buyer-facing install page and pins the package
     // in its npx snippets and its "canonical runtime install" badge. It was
