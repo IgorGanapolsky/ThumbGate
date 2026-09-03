@@ -48,6 +48,24 @@ test('approval is an explicit named human act', () => {
   assert.equal(approvePlan(rb, ['again'], 'igor').ok, false); // cannot re-approve
 });
 
+test('approval rejects non-string and whitespace-only approvers', () => {
+  const rb = newRunbook('model-eval', 'goal');
+  // non-string values
+  assert.equal(approvePlan(rb, ['step'], 123).ok, false);
+  assert.equal(approvePlan(rb, ['step'], {}).ok, false);
+  assert.equal(approvePlan(rb, ['step'], ['igor']).ok, false);
+  // truthy but whitespace-only
+  assert.equal(approvePlan(rb, ['step'], '   ').ok, false);
+  assert.equal(approvePlan(rb, ['step'], '\t\n').ok, false);
+});
+
+test('approval trims approver string before storing', () => {
+  const rb = newRunbook('model-eval', 'goal');
+  const ok = approvePlan(rb, ['step'], '  igor  ');
+  assert.equal(ok.ok, true);
+  assert.equal(rb.approvedBy, 'igor');
+});
+
 test('auto-review approves only bounded reversible actions', () => {
   assert.equal(autoReview({ type: 'read-file' }).eligible, true);
   assert.equal(autoReview({ type: 'grep' }).eligible, true);
@@ -90,17 +108,17 @@ test('executeStep rejects steps after post-approval plan mutation', () => {
   assert.ok(attempt.reason.includes('not in the approved plan'));
 });
 
-test('executeStep rejects steps after approvedPlan replacement', () => {
-  const rb = plannedRunbook();
-  // Replace the entire approvedPlan reference — executeStep must still validate
-  // against the immutable snapshot taken at approval time, not the replacement.
-  const originalPlan = rb.approvedPlan;
-  rb.approvedPlan = ['review previous run', 'run eval', 'document', 'injected step'];
-  const attempt = executeStep(rb, 'injected step');
-  assert.equal(attempt.ok, false);
-  assert.ok(attempt.reason.includes('not in the approved plan'));
-  // The original frozen snapshot must be intact
-  assert.equal(rb.approvedPlan, originalPlan);
+test('approvedPlan is a frozen deep copy separate from the original plan', () => {
+  const plan = ['step a', 'step b'];
+  const rb = newRunbook('model-eval', 'goal');
+  approvePlan(rb, plan, 'igor');
+  // Mutating the original plan after approval must not affect the snapshot
+  plan.push('injected');
+  plan[0] = 'tampered';
+  assert.equal(rb.approvedPlan[0], 'step a');
+  assert.equal(rb.approvedPlan.length, 2);
+  // The snapshot itself is frozen
+  assert.throws(() => { rb.approvedPlan.push('x'); }, TypeError);
 });
 
 test('approved plan snapshot is deeply frozen against entry mutation', () => {

@@ -70,16 +70,16 @@ function approvePlan(runbook, plan, approver) {
   if (!Array.isArray(plan) || plan.length === 0) {
     return { ok: false, reason: 'an empty plan cannot be approved' };
   }
-  if (!approver) {
-    return { ok: false, reason: 'approval requires a named human approver' };
+  if (!approver || typeof approver !== 'string' || !approver.trim()) {
+    return { ok: false, reason: 'approval requires a non-empty, trimmed string approver' };
   }
+  runbook.approvedBy = approver.trim();
   runbook.approvedPlan = Object.freeze(plan.map((s) => {
     // Deep-copy step entries so callers cannot mutate the approved snapshot
     // by holding a reference to the original objects.
     return typeof s === 'object' && s !== null ? { ...s } : s;
   }));
   runbook.state = 'approved';
-  runbook.approvedBy = approver;
   runbook.approvedAt = new Date().toISOString();
   return { ok: true, state: runbook.state };
 }
