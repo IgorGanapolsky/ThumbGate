@@ -7,6 +7,7 @@ const {
   RUN_STATES,
   CONSEQUENTIAL,
   ALLOWED_ACTIONS,
+  stepId,
   newRunbook,
   approvePlan,
   autoReview,
@@ -176,4 +177,98 @@ test('discovery reuses what earlier runs learned', () => {
   assert.equal(ctx.reusable, true);
   const none = discoverContext(index, 'brand-new-workflow');
   assert.equal(none.reusable, false);
+});
+
+test('stepId normalizes string and object steps to stable identifiers', () => {
+  assert.equal(stepId('run eval'), 'run eval');
+  assert.equal(stepId({ id: 'deploy-prod', cmd: 'echo hi' }), 'deploy-prod');
+  assert.equal(stepId({ id: '  spaced  ' }), 'spaced');
+  assert.equal(stepId({}), null);
+  assert.equal(stepId({ id: 123 }), null);
+  assert.equal(stepId({ id: '' }), null);
+  assert.equal(stepId({ id: '   ' }), null);
+  assert.equal(stepId(null), null);
+  assert.equal(stepId(undefined), null);
+});
+
+test('executeStep matches steps by stable identifier, not reference', () => {
+  const rb = newRunbook('wf', 'goal');
+  approvePlan(rb, [{ id: 'run eval' }], 'igor');
+  // A different object with the same id should execute
+  assert.equal(executeStep(rb, { id: 'run eval', cmd: 'echo hi' }).ok, true);
+  // A different id is rejected
+  assert.equal(executeStep(rb, { id: 'other' }).ok, false);
+});
+
+test('approvePlan accepts object steps with stable ids', () => {
+  const rb = newRunbook('wf', 'goal');
+  const ok = approvePlan(rb, [{ id: 'step-one' }, { id: 'step-two' }], 'igor');
+  assert.equal(ok.ok, true);
+  assert.deepEqual(rb.approvedPlan, ['step-one', 'step-two']);
+});
+
+test('approvePlan rejects object steps without stable ids', () => {
+  const rb = newRunbook('wf', 'goal');
+  const bad = approvePlan(rb, [{ name: 'no id field' }], 'igor');
+  assert.equal(bad.ok, false);
+  assert.ok(bad.reason.includes('no stable id'));
+});
+
+test('closeRunbook rejects closing a runbook in plan state', () => {
+  const rb = newRunbook('wf', 'goal');
+  // No steps have been executed — and state is 'plan', not 'approved' or 'running'
+  const res = closeRunbook(rb);
+  assert.equal(res.ok, false);
+  assert.ok(res.reason.includes('state "plan"'));
+  assert.equal(rb.state, 'plan');
+  assert.equal(rb.steps.length, 0);
+});
+
+test('closeRunbook rejects closing a done runbook', () => {
+  const rb = plannedRunbook();
+  executeStep(rb, 'run eval', 'ok');
+  closeRunbook(rb);
+  assert.equal(rb.state, 'done');
+  const again = closeRunbook(rb);
+  assert.equal(again.ok, false);
+  assert.ok(again.reason.includes('state "done"'));
+});
+
+test('buildIndex stores full decision and dead-end logs', () => {
+  const rb = plannedRunbook();
+  executeStep(rb, 'run eval', 'ok');
+  captureDecision(rb, { choice: 'reuse cluster', reason: 'quota exhausted' });
+  recordDeadEnd(rb, 'cluster provisioning failed');
+  closeRunbook(rb);
+  const index = buildIndex([rb]);
+  assert.equal(index.length, 1);
+  assert.equal(index[0].decisions, 1);
+  assert.equal(index[0].deadEnds, 1);
+  assert.deepEqual(index[0].decisionsLog, rb.decisions);
+  assert.deepEqual(index[0].deadEndsLog, rb.deadEnds);
+  assert.equal(index[0].decisionsLog[0].choice, 'reuse cluster');
+  assert.equal(index[0].deadEndsLog[0].deadEnd, 'cluster provisioning failed');
+  // Verify logs are deep copies — mutating the index must not affect the runbook
+  index[0].decisionsLog[0].choice = 'tampered';
+  assert.equal(rb.decisions[0].choice, 'reuse cluster');
+  index[0].deadEndsLog[0].deadEnd = 'tampered';
+  assert.equal(rb.deadEnds[0].deadEnd, 'cluster provisioning failed');
+});
+
+test('discoverContext returns full decision and dead-end records', () => {
+  const rb = plannedRunbook();
+  executeStep(rb, 'run eval', 'ok');
+  captureDecision(rb, { choice: 'reuse cluster', reason: 'quota exhausted', nextTime: 'check first' });
+  recordDeadEnd(rb, 'cluster provisioning failed');
+  closeRunbook(rb);
+  const index = buildIndex([rb]);
+  const ctx = discoverContext(index, 'model-eval');
+  assert.equal(ctx.priorRuns, 1);
+  assert.equal(ctx.totalDecisions, 1);
+  assert.equal(ctx.totalDeadEnds, 1);
+  assert.equal(ctx.decisions.length, 1);
+  assert.equal(ctx.deadEnds.length, 1);
+  assert.equal(ctx.decisions[0].choice, 'reuse cluster');
+  assert.equal(ctx.deadEnds[0].deadEnd, 'cluster provisioning failed');
+  assert.equal(ctx.reusable, true);
 });
