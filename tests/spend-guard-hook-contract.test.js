@@ -296,6 +296,12 @@ test('dollar amounts, padded structured plan changes, DELETE APIs, and inert not
   assert.equal(deleted.decision, 'deny');
   assert.equal(deleted.ruleId, 'payment_api_mutation');
 
+  const paymentMethods = evaluateSpend('Bash', {
+    command: 'curl -X POST https://api.stripe.com/v1/payment_methods -d type=card',
+  });
+  assert.equal(paymentMethods.decision, 'deny');
+  assert.equal(paymentMethods.ruleId, 'payment_api_mutation');
+
   assert.deepEqual(
     evaluateSpend('NotebookEdit', {
       notebook_path: 'docs/analysis.ipynb',

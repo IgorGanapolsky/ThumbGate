@@ -57,8 +57,10 @@ const MUTATION_ACTION =
 const DIRECT_CHECKOUT_PATH =
   /(?:checkout\.stripe\.com|buy\.stripe\.com|app\.apollo\.io|[\/#](?:checkout|purchase|upgrade|subscribe|plans?|billing)\b)/i;
 
+// Any Stripe API v1 resource can mint or mutate payment instruments.
+// Pair with MUTATION_ACTION so read-only GETs remain allowed.
 const DIRECT_PAYMENT_API_PATH =
-  /\bapi\.stripe\.com\/v1\/(?:charges|payment_intents|checkout\/sessions|subscriptions)\b/i;
+  /\bapi\.stripe\.com\/v1\/[A-Za-z0-9_\/-]+/i;
 
 const PRICE_AMOUNT = /\$\s*\d[\d,]*(?:\.\d{2})?\b/;
 
