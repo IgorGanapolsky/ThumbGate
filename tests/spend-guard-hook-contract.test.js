@@ -270,6 +270,41 @@ test('raw payment APIs, Chrome left clicks, and bare-price clicks are denied', (
   assert.equal(barePriceClick.ruleId, 'interactive_spend_ui');
 });
 
+test('dollar amounts, padded structured plan changes, DELETE APIs, and inert notebooks stay gated', () => {
+  for (const command of [
+    'charge $588 now',
+    'pay $588 now',
+    'curl -X POST https://api.vendor.com/charge -d amount=$588',
+  ]) {
+    const verdict = evaluateSpend('Bash', { command });
+    assert.equal(verdict.decision, 'deny', command);
+    assert.equal(verdict.ruleId, 'financial_action_and_object', command);
+  }
+
+  const padded = evaluateSpend('mcp__vendor__account', {
+    action: 'update',
+    account: 'acct_1',
+    metadata: 'x'.repeat(100),
+    plan: 'professional tier',
+  });
+  assert.equal(padded.decision, 'deny');
+  assert.equal(padded.ruleId, 'financial_action_and_object');
+
+  const deleted = evaluateSpend('Bash', {
+    command: 'curl -X DELETE https://api.stripe.com/v1/subscriptions/sub_123',
+  });
+  assert.equal(deleted.decision, 'deny');
+  assert.equal(deleted.ruleId, 'payment_api_mutation');
+
+  assert.deepEqual(
+    evaluateSpend('NotebookEdit', {
+      notebook_path: 'docs/analysis.ipynb',
+      new_source: 'See https://checkout.stripe.com/c/pay/cs_test and api.stripe.com/v1/charges',
+    }),
+    { decision: 'allow' },
+  );
+});
+
 test('read-only payment APIs and inert price prose remain allowed', () => {
   assert.deepEqual(
     evaluateSpend('Bash', {
