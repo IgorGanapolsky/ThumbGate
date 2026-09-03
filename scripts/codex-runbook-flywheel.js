@@ -61,7 +61,23 @@ function newRunbook(workflow, goal) {
 }
 
 /**
+ * Normalize a step to its stable identifier. String steps are used directly.
+ * Object steps must have an `id` property; otherwise approval is rejected.
+ * This prevents the approved-snapshot and executeStep from disagreeing due
+ * to object reference identity.
+ */
+function stepId(step) {
+  if (typeof step === 'string') return step.trim() || null;
+  if (step && typeof step === 'object' && typeof step.id === 'string' && step.id.trim()) {
+    return step.id.trim();
+  }
+  return null;
+}
+
+/**
  * Record the plan and approve it. Approval is an explicit human act.
+ * Steps are normalized to immutable identifiers so that executeStep can
+ * match against the approved plan without relying on object reference identity.
  */
 function approvePlan(runbook, plan, approver) {
   if (runbook.state !== 'plan') {
@@ -73,12 +89,18 @@ function approvePlan(runbook, plan, approver) {
   if (!approver || typeof approver !== 'string' || !approver.trim()) {
     return { ok: false, reason: 'approval requires a non-empty, trimmed string approver' };
   }
+  // Normalize each step to a stable identifier. Object entries without a
+  // usable `id` are rejected rather than silently cloned by reference.
+  const normalized = [];
+  for (const s of plan) {
+    const id = stepId(s);
+    if (id === null) {
+      return { ok: false, reason: `step ${JSON.stringify(s)} has no stable id — reject or assign one` };
+    }
+    normalized.push(id);
+  }
   runbook.approvedBy = approver.trim();
-  runbook.approvedPlan = Object.freeze(plan.map((s) => {
-    // Deep-copy step entries so callers cannot mutate the approved snapshot
-    // by holding a reference to the original objects.
-    return typeof s === 'object' && s !== null ? { ...s } : s;
-  }));
+  runbook.approvedPlan = Object.freeze(normalized);
   runbook.state = 'approved';
   runbook.approvedAt = new Date().toISOString();
   return { ok: true, state: runbook.state };
@@ -114,7 +136,7 @@ function executeStep(runbook, step, outcome) {
   if (!Array.isArray(runbook.approvedPlan)) {
     return { ok: false, reason: 'execution refused — no approved plan snapshot on record' };
   }
-  if (!runbook.approvedPlan.includes(step)) {
+  if (!runbook.approvedPlan.includes(stepId(step))) {
     return { ok: false, reason: `execution refused — "${step}" is not in the approved plan` };
   }
   runbook.state = 'running';
@@ -152,6 +174,9 @@ function recordDeadEnd(runbook, deadEnd) {
  * with at least one recorded step.
  */
 function closeRunbook(runbook) {
+  if (runbook.state !== 'approved' && runbook.state !== 'running') {
+    return { ok: false, reason: `cannot close from state "${runbook.state}"` };
+  }
   if (runbook.steps.length === 0) {
     return { ok: false, reason: 'cannot close a runbook with no recorded steps' };
   }
@@ -162,6 +187,8 @@ function closeRunbook(runbook) {
 
 /**
  * Build the companion index over completed runbooks (the *.index.md analog).
+ * Full decision and dead-end records are stored alongside counts so later
+ * runs can reuse the captured guidance.
  */
 function buildIndex(runbooks) {
   return (runbooks || [])
@@ -172,12 +199,16 @@ function buildIndex(runbooks) {
       steps: r.steps.length,
       decisions: r.decisions.length,
       deadEnds: r.deadEnds.length,
+      decisionsLog: r.decisions.map((d) => ({ ...d })),
+      deadEndsLog: r.deadEnds.map((d) => ({ ...d })),
       completedAt: r.completedAt,
     }));
 }
 
 /**
  * Discover prior context for a workflow — what earlier runs learned.
+ * Returns the full decision and dead-end records so callers can act on
+ * the captured guidance, not just counts.
  */
 function discoverContext(index, workflow) {
   const prior = (index || []).filter((e) => e.workflow === workflow);
@@ -186,6 +217,8 @@ function discoverContext(index, workflow) {
     priorRuns: prior.length,
     totalDecisions: prior.reduce((n, e) => n + e.decisions, 0),
     totalDeadEnds: prior.reduce((n, e) => n + e.deadEnds, 0),
+    decisions: prior.flatMap((e) => (e.decisionsLog || []).map((d) => ({ ...d }))),
+    deadEnds: prior.flatMap((e) => (e.deadEndsLog || []).map((d) => ({ ...d }))),
     reusable: prior.length > 0,
   };
 }
@@ -194,13 +227,49 @@ function isCliEntrypoint() {
   return require.main === module;
 }
 
+function parseCliArgs(argv) {
+  const args = argv.slice(2);
+  const mode = { dryRun: false, solve: false };
+  for (const arg of args) {
+    if (arg === '--dry-run') mode.dryRun = true;
+    else if (arg === '--solve') mode.solve = true;
+  }
+  return mode;
+}
+
 function main() {
+  const { dryRun, solve } = parseCliArgs(process.argv);
   const rb = newRunbook('model-eval', 'Run the evaluation against the current model');
 
   const premature = executeStep(rb, 'run eval'); // must refuse
   approvePlan(rb, ['review previous run', 'write plan', 'run eval', 'document'], 'igor');
   const review = { auto: autoReview({ type: 'read-file' }), blocked: autoReview({ type: 'production-deploy' }) };
 
+  if (dryRun) {
+    // Dry-run mode: do not record execution steps or complete the runbook.
+    // Surface the plan and auto-review decisions only.
+    process.stdout.write(JSON.stringify({
+      mode: 'dry-run',
+      honesty: 'deterministic model of the OpenAI Codex+Runme runbook flywheel',
+      source: 'https://developers.openai.com/blog/automating-repetitive-work-at-openai-with-codex',
+      prematureExecution: premature,
+      autoReview: review,
+      approvedPlan: rb.approvedPlan,
+      state: rb.state,
+    }, null, 2) + '\n');
+    return;
+  }
+
+  if (solve) {
+    // Solve mode: execute the approved plan end-to-end.
+    return runSolve(rb, review, premature);
+  }
+
+  // Default mode: execute the approved plan end-to-end.
+  runSolve(rb, review, premature);
+}
+
+function runSolve(rb, review, premature) {
   executeStep(rb, 'review previous run', 'ok');
   executeStep(rb, 'run eval', 'ok');
   captureDecision(rb, {
@@ -215,13 +284,16 @@ function main() {
   const context = discoverContext(index, 'model-eval');
 
   process.stdout.write(JSON.stringify({
+    mode: 'solve',
     honesty: 'deterministic model of the OpenAI Codex+Runme runbook flywheel',
     source: 'https://developers.openai.com/blog/automating-repetitive-work-at-openai-with-codex',
-    prematureExecution: premature, // proves plan-before-act
+    prematureExecution: premature,
     autoReview: review,
     finalState: rb.state,
     decisions: rb.decisions.length,
     deadEnds: rb.deadEnds.length,
+    decisionsLog: rb.decisions,
+    deadEndsLog: rb.deadEnds,
     index, context,
   }, null, 2) + '\n');
 }
@@ -232,6 +304,7 @@ module.exports = {
   RUN_STATES,
   CONSEQUENTIAL,
   ALLOWED_ACTIONS,
+  stepId,
   newRunbook,
   approvePlan,
   autoReview,
