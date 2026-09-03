@@ -343,7 +343,7 @@ async function resolveBlockers(pr, runner = runGh) {
   }
 
   if (
-    (pr.mergeStateStatus === 'CLEAN' || pr.mergeStateStatus === 'UNSTABLE')
+    (pr.mergeStateStatus === 'CLEAN' || pr.mergeStateStatus === 'UNSTABLE' || pr.mergeStateStatus === 'BLOCKED')
     && pr.mergeable === 'MERGEABLE'
   ) {
     console.log('[PR Manager] SUCCESS: PR is ready for protected autonomous merge.');

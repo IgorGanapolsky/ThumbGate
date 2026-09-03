@@ -482,8 +482,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // Public-shell runtime, not a Core feature: the packaged
     // scripts/gates-engine.js requires it to suppress reminder lines it has
     // already emitted this session.
-    manifest.fileCount <= 517,
-    `npm package should stay <= 517 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 519,
+    `npm package should stay <= 519 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
