@@ -34,6 +34,9 @@ const crypto = require('node:crypto');
 
 const ASSET_KINDS = Object.freeze(['model', 'benchmark']);
 
+// Private store for sealed asset content — never exposed in JSON serialization.
+const _contentStore = new WeakMap();
+
 /**
  * Seal one asset. The content goes into the sealed store; only metadata and
  * a sha256 commitment cross the boundary.
@@ -50,7 +53,7 @@ function sealAsset(kind, content, owner) {
     throw new Error('asset content must be a non-empty string');
   }
   const digest = crypto.createHash('sha256').update(content).digest('hex');
-  return {
+  const seal = {
     sealId: `seal_${digest.slice(0, 16)}`,
     kind,
     owner: String(owner || 'unknown'),
@@ -58,8 +61,16 @@ function sealAsset(kind, content, owner) {
     sealedAt: new Date().toISOString(),
     // token required to retrieve the content; holder != the other party
     accessToken: crypto.randomBytes(16).toString('hex'),
-    _content: content, // stays in the sealed store; never serialized out
   };
+  // Store content privately so it is never serialized by JSON.stringify.
+  Object.defineProperty(seal, '_content', {
+    value: content,
+    enumerable: false,
+    configurable: false,
+    writable: false,
+  });
+  _contentStore.set(seal, content);
+  return seal;
 }
 
 /**
@@ -92,10 +103,32 @@ function createEnclave(modelSeal, benchmarkSeal) {
  * @param {Function} scoreFn      ({ modelContent, questions }) => [{question, score}]
  */
 function runEvaluation(enclave, modelSeal, benchmarkSeal, scoreFn) {
+  // Validate seals against the enclave commitment before scoring.
+  // A caller cannot swap seals or tamper with content after enclave creation.
+  if (modelSeal.sealId !== enclave.modelSeal.sealId ||
+      modelSeal.sha256 !== enclave.modelSeal.sha256) {
+    throw new Error('model seal does not match the enclave commitment');
+  }
+  if (benchmarkSeal.sealId !== enclave.benchmarkSeal.sealId ||
+      benchmarkSeal.sha256 !== enclave.benchmarkSeal.sha256) {
+    throw new Error('benchmark seal does not match the enclave commitment');
+  }
+  const modelContent = _contentStore.get(modelSeal);
+  const benchmarkContent = _contentStore.get(benchmarkSeal);
+  if (typeof modelContent !== 'string') {
+    throw new Error('model content is not available in the private store');
+  }
+  const questions = JSON.parse(benchmarkContent);
   const results = scoreFn({
-    modelContent: modelSeal._content,
-    questions: JSON.parse(benchmarkSeal._content),
+    modelContent,
+    questions,
   });
+  // Require exactly one result per benchmark question.
+  if (!Array.isArray(results) || results.length !== questions.length) {
+    throw new Error(
+      `scoreFn must return exactly ${questions.length} results, got ${Array.isArray(results) ? results.length : 'non-array'}`,
+    );
+  }
   // Only scores cross the boundary. Questions and model content never do.
   const scores = results.map((r, i) => ({
     index: i,
@@ -133,7 +166,10 @@ function leakageGuard(output, benchmarkSeal) {
  * A third party can verify it without ever seeing either asset.
  */
 function attest(enclave, evaluationResult, attestationKey) {
-  const key = attestationKey || 'thumbgate-attestation-key';
+  if (typeof attestationKey !== 'string' || attestationKey.trim().length === 0) {
+    throw new Error('a non-empty attestationKey must be provided by the caller');
+  }
+  const key = attestationKey;
   const payload = JSON.stringify({
     enclaveId: enclave.enclaveId,
     modelSealSha: enclave.modelSeal.sha256,
@@ -158,7 +194,10 @@ function attest(enclave, evaluationResult, attestationKey) {
  * Verify an attestation receipt against the seals and scores.
  */
 function verifyAttestation(receipt, modelSeal, benchmarkSeal, scores, attestationKey) {
-  const key = attestationKey || 'thumbgate-attestation-key';
+  if (typeof attestationKey !== 'string' || attestationKey.trim().length === 0) {
+    throw new Error('a non-empty attestationKey must be provided by the caller');
+  }
+  const key = attestationKey;
   const payload = JSON.stringify({
     enclaveId: receipt.enclaveId,
     modelSealSha: modelSeal.sha256,

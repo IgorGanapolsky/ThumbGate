@@ -32,6 +32,14 @@ test('seal refuses unknown kinds and empty content', () => {
   assert.throws(() => sealAsset('model', '', 'p'));
 });
 
+test('seal content is not enumerable and not leaked via JSON.stringify', () => {
+  const secret = 'super-secret-weights-never-leave';
+  const s = sealAsset('model', secret, 'provider');
+  const serialized = JSON.stringify(s);
+  assert.ok(!serialized.includes(secret), 'input content must not appear in JSON.stringify');
+  assert.ok(!serialized.includes('_content'), '_content must not appear as a key in JSON.stringify');
+});
+
 test('enclave requires one model seal and one benchmark seal', () => {
   const { modelSeal, benchmarkSeal } = standardPair();
   assert.throws(() => createEnclave(benchmarkSeal, benchmarkSeal));
@@ -70,7 +78,7 @@ test('attestation receipt binds both seal hashes to the scores', () => {
   const result = runEvaluation(enclave, modelSeal, benchmarkSeal, ({ questions }) =>
     questions.map((q, i) => ({ question: q, score: i === 0 ? 1 : 0.5 })),
   );
-  const receipt = attest(enclave, result);
+  const receipt = attest(enclave, result, 'test-attestation-key');
   assert.equal(receipt.modelSealSha, modelSeal.sha256);
   assert.equal(receipt.benchmarkSealSha, benchmarkSeal.sha256);
   assert.equal(receipt.scoreCount, 2);
@@ -82,11 +90,12 @@ test('verification passes on honest receipts, fails on tampered scores', () => {
   const result = runEvaluation(enclave, modelSeal, benchmarkSeal, ({ questions }) =>
     questions.map((q) => ({ question: q, score: 1 })),
   );
-  const receipt = attest(enclave, result);
-  const ok = verifyAttestation(receipt, modelSeal, benchmarkSeal, result.scores);
+  const KEY = 'test-attestation-key';
+  const receipt = attest(enclave, result, KEY);
+  const ok = verifyAttestation(receipt, modelSeal, benchmarkSeal, result.scores, KEY);
   assert.equal(ok.valid, true);
   const tampered = result.scores.map((s) => ({ ...s, score: 0 })); // score inflation attempt
-  const bad = verifyAttestation(receipt, modelSeal, benchmarkSeal, tampered);
+  const bad = verifyAttestation(receipt, modelSeal, benchmarkSeal, tampered, KEY);
   assert.equal(bad.valid, false);
   assert.deepEqual(bad.sealIntegrity, { model: true, benchmark: true });
 });
@@ -97,9 +106,10 @@ test('verification detects a swapped benchmark (seal integrity)', () => {
   const result = runEvaluation(enclave, modelSeal, benchmarkSeal, ({ questions }) =>
     questions.map((q) => ({ question: q, score: 1 })),
   );
-  const receipt = attest(enclave, result);
+  const KEY = 'test-attestation-key';
+  const receipt = attest(enclave, result, KEY);
   const swapped = sealAsset('benchmark', JSON.stringify(['easier question']), 'mlcommons');
-  const bad = verifyAttestation(receipt, modelSeal, swapped, result.scores);
+  const bad = verifyAttestation(receipt, modelSeal, swapped, result.scores, KEY);
   assert.equal(bad.valid, false);
   assert.equal(bad.sealIntegrity.benchmark, false);
 });
