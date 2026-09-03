@@ -219,10 +219,12 @@ const path = require('node:path');
 //   maps six business functions onto existing gates (FORMAT steal, not a SKU).
 //   public-package-parity requires every public/*.html on the files allowlist.
 // 512 -> 513 (2026-08-25): src/alert-noise-ledger.js (+1 measured npm pack).
+// 513 -> 515 (2026-08-28): scripts/graphrag-retrieval.js + scripts/workflow-notebook.js.
+// 517 -> 519 (2026-09-02): scripts/double-blind-eval-protocol.js (missing from files array since PR #3712).
 // Public-shell runtime, not a Core feature: the packaged
 // scripts/gates-engine.js requires it to suppress reminder lines it has
 // already emitted this session.
-const BASELINE_FILE_COUNT = 513;
+const BASELINE_FILE_COUNT = 519;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

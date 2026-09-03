@@ -734,6 +734,24 @@ test('resolveBlockers treats UNSTABLE-with-all-checks-green as ready to queue', 
   assert.equal(outcome.status, 'ready', 'must queue when only the merge queue is outstanding');
 });
 
+test('resolveBlockers treats BLOCKED-with-only-self-referential-pending as ready to queue', async () => {
+  const pr = {
+    number: 2766,
+    title: 'feat: example',
+    mergeStateStatus: 'BLOCKED',
+    mergeable: 'MERGEABLE',
+    reviewDecision: null,
+    statusCheckRollup: [
+      { name: 'test', bucket: 'pass' },
+      { name: 'CodeQL', bucket: 'pass' },
+      { name: 'Trunk Merge Queue (main)', bucket: 'pending' },
+    ],
+  };
+  const runner = () => { throw new Error('no gh in tests'); };
+  const outcome = await resolveBlockers(pr, runner);
+  assert.equal(outcome.status, 'ready', 'BLOCKED must not prevent queueing when only self-referential checks are pending');
+});
+
 test('resolveBlockers still refuses UNSTABLE when a real check is failing', async () => {
   const pr = {
     number: 1,
