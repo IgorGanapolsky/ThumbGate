@@ -1,0 +1,309 @@
+#!/usr/bin/env node
+'use strict';
+
+/**
+ * bin/agent-loop — ThumbGate session context-engineering entrypoint.
+ *
+ * HuggingFace Context Course minimal loop adapted to this repo:
+ *   Recollect → Plan → Observe → Act → Evaluate → Learn
+ *
+ * Usage:
+ *   bin/agent-loop                 # human-readable session start
+ *   bin/agent-loop --json          # full loop as JSON
+ *   bin/agent-loop --health        # context-layer health only
+ *   bin/agent-loop --health --json # health as JSON (CI / session-start)
+ *   bin/agent-loop --doctor        # alias for full loop
+ *
+ * Exit codes:
+ *   0 — healthy / loop completed with no critical failures
+ *   1 — one or more required health checks failed (fail closed)
+ *   2 — usage / unexpected runtime error
+ *
+ * Required health checks (fail closed):
+ *   - package.json is readable and names thumbgate
+ *   - config/mcp-allowlists.json is valid JSON with profiles
+ *   - scripts/session-lease.js exists (checkout lease contract)
+ *   - scripts/thumbgate-spend-guard.js exists (PreToolUse money gate)
+ *   - AGENTS.md and CLAUDE.md exist
+ *
+ * Optional / warn-only:
+ *   - .mcp.json parseable
+ *   - .claude/settings.json parseable when present
+ *   - local feedback dir reachable
+ */
+
+const fs = require('node:fs');
+const path = require('node:path');
+
+const ROOT = path.resolve(__dirname, '..');
+
+function parseArgs(argv) {
+  const args = new Set(argv.slice(2));
+  return {
+    json: args.has('--json'),
+    health: args.has('--health'),
+    doctor: args.has('--doctor'),
+    help: args.has('--help') || args.has('-h'),
+  };
+}
+
+function readJsonSafe(filePath) {
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    return { ok: true, value: JSON.parse(raw) };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
+function exists(rel) {
+  return fs.existsSync(path.join(ROOT, rel));
+}
+
+function checkRequiredFile(rel, reason) {
+  const full = path.join(ROOT, rel);
+  if (!fs.existsSync(full)) {
+    return { id: rel, ok: false, required: true, reason: reason || `missing ${rel}` };
+  }
+  return { id: rel, ok: true, required: true };
+}
+
+function runHealthChecks({ injectFailure = null } = {}) {
+  const checks = [];
+
+  const pkgPath = path.join(ROOT, 'package.json');
+  const pkg = readJsonSafe(pkgPath);
+  if (!pkg.ok) {
+    checks.push({ id: 'package.json', ok: false, required: true, reason: pkg.error });
+  } else {
+    const nameOk = pkg.value && pkg.value.name === 'thumbgate';
+    checks.push({
+      id: 'package.json',
+      ok: nameOk,
+      required: true,
+      reason: nameOk ? undefined : `expected name "thumbgate", got ${JSON.stringify(pkg.value && pkg.value.name)}`,
+      version: pkg.value && pkg.value.version,
+    });
+  }
+
+  const allowPath = path.join(ROOT, 'config/mcp-allowlists.json');
+  const allow = readJsonSafe(allowPath);
+  if (!allow.ok) {
+    checks.push({ id: 'config/mcp-allowlists.json', ok: false, required: true, reason: allow.error });
+  } else {
+    const profiles = allow.value && allow.value.profiles;
+    const profileOk = profiles && typeof profiles === 'object' && Object.keys(profiles).length > 0;
+    checks.push({
+      id: 'config/mcp-allowlists.json',
+      ok: Boolean(profileOk),
+      required: true,
+      reason: profileOk ? undefined : 'profiles map missing or empty',
+      profileCount: profileOk ? Object.keys(profiles).length : 0,
+    });
+  }
+
+  checks.push(checkRequiredFile('scripts/session-lease.js', 'checkout lease script missing'));
+  checks.push(checkRequiredFile('scripts/thumbgate-spend-guard.js', 'spend-guard PreToolUse script missing'));
+  checks.push(checkRequiredFile('AGENTS.md', 'canonical agent directive missing'));
+  checks.push(checkRequiredFile('CLAUDE.md', 'canonical Claude directive missing'));
+  checks.push(checkRequiredFile('GEMINI.md', 'canonical Gemini directive missing'));
+
+  // Optional warn-only surfaces
+  const mcpJsonPath = path.join(ROOT, '.mcp.json');
+  if (fs.existsSync(mcpJsonPath)) {
+    const mcp = readJsonSafe(mcpJsonPath);
+    checks.push({
+      id: '.mcp.json',
+      ok: mcp.ok,
+      required: false,
+      reason: mcp.ok ? undefined : mcp.error,
+      mcpServers: mcp.ok && mcp.value && mcp.value.mcpServers
+        ? Object.keys(mcp.value.mcpServers).length
+        : 0,
+    });
+  } else {
+    checks.push({ id: '.mcp.json', ok: true, required: false, reason: 'absent (optional)' });
+  }
+
+  const settingsPath = path.join(ROOT, '.claude/settings.json');
+  if (fs.existsSync(settingsPath)) {
+    const settings = readJsonSafe(settingsPath);
+    checks.push({
+      id: '.claude/settings.json',
+      ok: settings.ok,
+      required: false,
+      reason: settings.ok ? undefined : settings.error,
+    });
+  } else {
+    checks.push({ id: '.claude/settings.json', ok: true, required: false, reason: 'absent (optional)' });
+  }
+
+  checks.push({
+    id: 'scripts/self-healing-check.js',
+    ok: exists('scripts/self-healing-check.js'),
+    required: false,
+    reason: exists('scripts/self-healing-check.js') ? undefined : 'self-heal entry missing',
+  });
+
+  if (injectFailure) {
+    checks.push({
+      id: injectFailure,
+      ok: false,
+      required: true,
+      reason: 'injected failure for fail-closed contract test',
+    });
+  }
+
+  const requiredFailed = checks.filter((c) => c.required && !c.ok);
+  const warnFailed = checks.filter((c) => !c.required && !c.ok);
+
+  return {
+    ok: requiredFailed.length === 0,
+    status: requiredFailed.length === 0 ? 'HEALTHY' : 'UNHEALTHY',
+    checkedAt: new Date().toISOString(),
+    root: ROOT,
+    requiredFailed: requiredFailed.map((c) => c.id),
+    warnings: warnFailed.map((c) => c.id),
+    checks,
+  };
+}
+
+function recollect() {
+  const feedbackDirCandidates = [
+    path.join(ROOT, '.claude/memory/feedback'),
+    path.join(ROOT, '.thumbgate'),
+  ];
+  const present = feedbackDirCandidates.filter((p) => fs.existsSync(p));
+  return {
+    feedbackDirsPresent: present,
+    hasPreventionRules: exists('.claude/memory/feedback/prevention-rules.md')
+      || exists('.thumbgate/prevention-rules.md'),
+  };
+}
+
+function plan() {
+  return {
+    note: 'ThumbGate has no plan.md coordination board; use open GitHub Issues + PRs + vault claims.',
+    openSurfaces: ['gh issue list', 'gh pr list', '~/Documents/AI-Agent-Sync'],
+  };
+}
+
+function act(health) {
+  const actions = [];
+  if (!health.ok) {
+    actions.push({
+      priority: 'critical',
+      action: 'Restore required context-layer files before claiming session-ready',
+      failed: health.requiredFailed,
+    });
+  }
+  if (health.warnings.length > 0) {
+    actions.push({
+      priority: 'warn',
+      action: 'Inspect optional surfaces that failed parse/existence checks',
+      warnings: health.warnings,
+    });
+  }
+  if (actions.length === 0) {
+    actions.push({
+      priority: 'info',
+      action: 'Context layer healthy — proceed with issue/PR work under session lease',
+    });
+  }
+  return actions;
+}
+
+function evaluate(health, actions) {
+  return {
+    healthStatus: health.status,
+    criticalActions: actions.filter((a) => a.priority === 'critical').length,
+    pass: health.ok,
+  };
+}
+
+function learn(health) {
+  return {
+    note: 'Capture thumbs via node .claude/scripts/feedback/capture-feedback.js; promote with npm run feedback:rules',
+    healthy: health.ok,
+  };
+}
+
+function printHuman(payload, mode) {
+  if (mode === 'health') {
+    console.log(`agent-loop health: ${payload.status}`);
+    for (const check of payload.checks) {
+      const mark = check.ok ? 'PASS' : (check.required ? 'FAIL' : 'WARN');
+      const reason = check.reason ? ` — ${check.reason}` : '';
+      console.log(`  [${mark}] ${check.id}${reason}`);
+    }
+    return;
+  }
+
+  console.log(`agent-loop: ${payload.evaluate.pass ? 'READY' : 'NOT READY'} (${payload.health.status})`);
+  for (const action of payload.act) {
+    console.log(`  - [${action.priority}] ${action.action}`);
+  }
+}
+
+function printHelp() {
+  console.log(`Usage: bin/agent-loop [--health] [--json] [--doctor] [--help]
+
+Recollect → Plan → Observe → Act → Evaluate → Learn for ThumbGate sessions.
+--health   context-layer checks only (fail closed on required misses)
+--json     machine-readable output
+--doctor   full loop (default when neither --health nor flags omit it)
+`);
+}
+
+function main(argv = process.argv) {
+  const opts = parseArgs(argv);
+  if (opts.help) {
+    printHelp();
+    return 0;
+  }
+
+  const injectFailure = process.env.THUMBGATE_AGENT_LOOP_INJECT_FAILURE || null;
+  const health = runHealthChecks({ injectFailure });
+
+  if (opts.health) {
+    if (opts.json) {
+      process.stdout.write(`${JSON.stringify(health, null, 2)}\n`);
+    } else {
+      printHuman(health, 'health');
+    }
+    return health.ok ? 0 : 1;
+  }
+
+  const payload = {
+    loop: ['recollect', 'plan', 'observe', 'act', 'evaluate', 'learn'],
+    recollect: recollect(),
+    plan: plan(),
+    health,
+    observe: health,
+    act: act(health),
+    evaluate: evaluate(health, act(health)),
+    learn: learn(health),
+  };
+
+  if (opts.json) {
+    process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+  } else {
+    printHuman(payload, 'full');
+  }
+  return payload.evaluate.pass ? 0 : 1;
+}
+
+module.exports = {
+  runHealthChecks,
+  main,
+  ROOT,
+};
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
+  try {
+    process.exitCode = main(process.argv);
+  } catch (error) {
+    console.error(`agent-loop error: ${error.message}`);
+    process.exitCode = 2;
+  }
+}
