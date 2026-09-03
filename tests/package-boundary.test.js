@@ -482,8 +482,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // Public-shell runtime, not a Core feature: the packaged
     // scripts/gates-engine.js requires it to suppress reminder lines it has
     // already emitted this session.
-    manifest.fileCount <= 515,
-    `npm package should stay <= 515 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 517,
+    `npm package should stay <= 517 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -683,12 +683,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // shipped hybrid-feedback-context.js on top of the ledger bump above.
   // Measured 8,031,249 unpacked on the merged tree — 1,249 over the old cap.
   // Bumped 8.09 MB -> 8.10 MB (2026-09-03, PR #3715): workflow-notebook.js
+    // Bumped 8.10 MB -> 8.20 MB (2026-09-03, PR #3714): codex-runbook-flywheel.js + lock file sync
   // gained optimistic concurrency (_rev), auth boundary on approveNotebook,
   // and listNotebooks now enumerates JSON — ~1.6 KB of guard logic.
   // Measured 8,091,622 unpacked on the merged tree — 1,622 over the old cap.
   assert.ok(
-    manifest.unpackedSize <= 8_100_000,
-    `npm package should stay <= 8.10 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 8_200_000,
+    `npm package should stay <= 8.20 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
