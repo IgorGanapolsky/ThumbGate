@@ -220,10 +220,11 @@ const path = require('node:path');
 //   public-package-parity requires every public/*.html on the files allowlist.
 // 512 -> 513 (2026-08-25): src/alert-noise-ledger.js (+1 measured npm pack).
 // 513 -> 515 (2026-08-28): scripts/graphrag-retrieval.js + scripts/workflow-notebook.js.
+// 515 -> 517 (2026-09-02): scripts/codex-runbook-flywheel.js + scripts/codex-runbook-flywheel.test.js.
 // Public-shell runtime, not a Core feature: the packaged
 // scripts/gates-engine.js requires it to suppress reminder lines it has
 // already emitted this session.
-const BASELINE_FILE_COUNT = 515;
+const BASELINE_FILE_COUNT = 517;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
