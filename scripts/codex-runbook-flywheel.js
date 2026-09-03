@@ -73,7 +73,11 @@ function approvePlan(runbook, plan, approver) {
   if (!approver) {
     return { ok: false, reason: 'approval requires a named human approver' };
   }
-  runbook.approvedPlan = plan.slice();
+  runbook.approvedPlan = Object.freeze(plan.map((s) => {
+    // Deep-copy step entries so callers cannot mutate the approved snapshot
+    // by holding a reference to the original objects.
+    return typeof s === 'object' && s !== null ? { ...s } : s;
+  }));
   runbook.state = 'approved';
   runbook.approvedBy = approver;
   runbook.approvedAt = new Date().toISOString();

@@ -90,6 +90,26 @@ test('executeStep rejects steps after post-approval plan mutation', () => {
   assert.ok(attempt.reason.includes('not in the approved plan'));
 });
 
+test('executeStep rejects steps after approvedPlan replacement', () => {
+  const rb = plannedRunbook();
+  // Replace the entire approvedPlan reference — executeStep must still validate
+  // against the immutable snapshot taken at approval time, not the replacement.
+  const originalPlan = rb.approvedPlan;
+  rb.approvedPlan = ['review previous run', 'run eval', 'document', 'injected step'];
+  const attempt = executeStep(rb, 'injected step');
+  assert.equal(attempt.ok, false);
+  assert.ok(attempt.reason.includes('not in the approved plan'));
+  // The original frozen snapshot must be intact
+  assert.equal(rb.approvedPlan, originalPlan);
+});
+
+test('approved plan snapshot is deeply frozen against entry mutation', () => {
+  const rb = plannedRunbook();
+  assert.throws(() => { rb.approvedPlan[0] = 'tampered'; }, TypeError);
+  // Verify the snapshot still contains the original values
+  assert.equal(rb.approvedPlan[0], 'review previous run');
+});
+
 test('decision capture needs both choice and reason', () => {
   const rb = plannedRunbook();
   assert.equal(captureDecision(rb, { choice: 'x' }).ok, false);
