@@ -22,6 +22,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const GUARD = path.join(__dirname, '..', 'scripts', 'thumbgate-spend-guard.js');
+const { evaluateSpend } = require(GUARD);
 
 function matcher() {
   const src = fs.readFileSync(GUARD, 'utf8');
@@ -182,4 +183,147 @@ test('remedy-tool prose and quoted issue bodies are not commerce actions (#3523)
     assert.equal(out.stdout, '', `allow/${payload.tool_name}: prose must be silent`);
     assert.equal(out.code, 0, `${payload.tool_name} prose must not be a HARD BLOCK (stderr: ${out.stderr.slice(0, 160)})`);
   }
+});
+
+test('file-content tools do not treat prose or SQL as spend', () => {
+  const cases = [
+    ['Write', {
+      file_path: 'report.md',
+      content: `Currency example: $1,234.56.\n${'ordinary prose '.repeat(20)}Update the appendix.`,
+    }],
+    ['Edit', {
+      file_path: 'analysis.sql',
+      old_string: 'Invoice',
+      new_string: 'UPDATE records SET status = 1',
+    }],
+    ['NotebookEdit', {
+      notebook_path: 'analysis.ipynb',
+      new_source: 'Update the invoice-formatting example.',
+    }],
+  ];
+
+  for (const [toolName, toolInput] of cases) {
+    assert.deepEqual(evaluateSpend(toolName, toolInput), { decision: 'allow' });
+  }
+});
+
+test('financial action and object must be within 80 characters', () => {
+  const far = evaluateSpend('Bash', {
+    command: `update ${'ordinary '.repeat(20)}billing documentation`,
+  });
+  assert.deepEqual(far, { decision: 'allow' });
+
+  const nearby = evaluateSpend('Bash', {
+    command: 'update billing plan to professional tier',
+  });
+  assert.equal(nearby.decision, 'deny');
+  assert.equal(nearby.ruleId, 'financial_action_and_object');
+});
+
+test('vendor prose is allowed while interactive spend remains denied', () => {
+  assert.deepEqual(
+    evaluateSpend('Write', {
+      file_path: 'notes.md',
+      content: 'OpenAI documentation describes pro features and paid credits.',
+    }),
+    { decision: 'allow' },
+  );
+
+  const interactive = evaluateSpend('mcp__browseros_neo__act', {
+    kind: 'click',
+    url: 'https://checkout.stripe.com/c/pay/test',
+  });
+  assert.equal(interactive.decision, 'deny');
+  assert.equal(interactive.ruleId, 'interactive_spend_ui');
+});
+
+test('direct purchase and guard-tampering controls remain denied', () => {
+  const direct = evaluateSpend('domain_purchase', { domain: 'example.com' });
+  assert.equal(direct.decision, 'deny');
+  assert.equal(direct.ruleId, 'purchase_tool');
+
+  const tampering = evaluateSpend('Bash', {
+    command: 'chmod u+w ~/.thumbgate/bin/thumbgate-spend-guard.js',
+  });
+  assert.equal(tampering.decision, 'deny');
+  assert.equal(tampering.ruleId, 'guard_tampering');
+});
+
+test('raw payment APIs, Chrome left clicks, and bare-price clicks are denied', () => {
+  const rawPaymentApi = evaluateSpend('Bash', {
+    command: 'curl -X POST https://api.stripe.com/v1/charges -d amount=4999',
+  });
+  assert.equal(rawPaymentApi.decision, 'deny');
+  assert.equal(rawPaymentApi.ruleId, 'payment_api_mutation');
+
+  const chromeLeftClick = evaluateSpend('mcp__chrome__computer', {
+    action: 'left_click',
+    text: 'Stripe Pro',
+  });
+  assert.equal(chromeLeftClick.decision, 'deny');
+  assert.equal(chromeLeftClick.ruleId, 'interactive_spend_ui');
+
+  const barePriceClick = evaluateSpend('mcp__browser__click', {
+    element: 'Complete order for $49.99',
+  });
+  assert.equal(barePriceClick.decision, 'deny');
+  assert.equal(barePriceClick.ruleId, 'interactive_spend_ui');
+});
+
+test('dollar amounts, padded structured plan changes, DELETE APIs, and inert notebooks stay gated', () => {
+  for (const command of [
+    'charge $588 now',
+    'pay $588 now',
+    'curl -X POST https://api.vendor.com/charge -d amount=$588',
+  ]) {
+    const verdict = evaluateSpend('Bash', { command });
+    assert.equal(verdict.decision, 'deny', command);
+    assert.equal(verdict.ruleId, 'financial_action_and_object', command);
+  }
+
+  const padded = evaluateSpend('mcp__vendor__account', {
+    action: 'update',
+    account: 'acct_1',
+    metadata: 'x'.repeat(100),
+    plan: 'professional tier',
+  });
+  assert.equal(padded.decision, 'deny');
+  assert.equal(padded.ruleId, 'financial_action_and_object');
+
+  const deleted = evaluateSpend('Bash', {
+    command: 'curl -X DELETE https://api.stripe.com/v1/subscriptions/sub_123',
+  });
+  assert.equal(deleted.decision, 'deny');
+  assert.equal(deleted.ruleId, 'payment_api_mutation');
+
+  const paymentMethods = evaluateSpend('Bash', {
+    command: 'curl -X POST https://api.stripe.com/v1/payment_methods -d type=card',
+  });
+  assert.equal(paymentMethods.decision, 'deny');
+  assert.equal(paymentMethods.ruleId, 'payment_api_mutation');
+
+  assert.deepEqual(
+    evaluateSpend('NotebookEdit', {
+      notebook_path: 'docs/analysis.ipynb',
+      new_source: 'See https://checkout.stripe.com/c/pay/cs_test and api.stripe.com/v1/charges',
+    }),
+    { decision: 'allow' },
+  );
+});
+
+test('read-only payment APIs and inert price prose remain allowed', () => {
+  assert.deepEqual(
+    evaluateSpend('Bash', {
+      command: 'curl https://api.stripe.com/v1/charges?limit=1',
+    }),
+    { decision: 'allow' },
+  );
+
+  assert.deepEqual(
+    evaluateSpend('Write', {
+      file_path: 'pricing-notes.md',
+      content: 'The historical price was $49.99.',
+    }),
+    { decision: 'allow' },
+  );
 });

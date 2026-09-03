@@ -49,13 +49,20 @@ const DIRECT_TOOL_RULES = [
 ];
 
 const FINANCIAL_OBJECT =
-  /\b(?:annual|monthly|paid)\s+(?:plan|seat|tier|subscription)|\b(?:billing|checkout|invoice|payment\s*method|subscription|credits?|credit\s*pack|paid\s*tier|pricing\s*tier|pro\s*plan|enterprise\s*plan)\b|\b(?:basic|professional|organization|business|team)\s+(?:plan|seat|tier)\b|\bapollo\s*pro\b|\bthumbgate\s*pro\b|\$\s*\d/i;
+  /\b(?:annual|monthly|paid)\s+(?:plan|seat|tier|subscription)|\b(?:billing|checkout|payment\s*method|subscription|credits?|credit\s*pack|paid\s*tier|pricing\s*tier|pro\s*plan|enterprise\s*plan)\b|\b(?:basic|professional|organization|business|team)\s+(?:plan|seat|tier)\b|\bapollo\s*pro\b|\bthumbgate\s*pro\b/i;
 
 const MUTATION_ACTION =
-  /\b(?:buy|purchase|upgrade|subscribe|activate|checkout|pay|charge|confirm|submit|create|attach|change|update|switch|cancel|refund|add\s+payment|enter\s+card|post|put|patch)\b/i;
+  /\b(?:buy|purchase|upgrade|subscribe|activate|checkout|pay|charge|confirm|submit|create|attach|change|update|switch|cancel|refund|add\s+payment|enter\s+card|post|put|patch|delete)\b/i;
 
 const DIRECT_CHECKOUT_PATH =
   /(?:checkout\.stripe\.com|buy\.stripe\.com|app\.apollo\.io|[\/#](?:checkout|purchase|upgrade|subscribe|plans?|billing)\b)/i;
+
+// Any Stripe API v1 resource can mint or mutate payment instruments.
+// Pair with MUTATION_ACTION so read-only GETs remain allowed.
+const DIRECT_PAYMENT_API_PATH =
+  /\bapi\.stripe\.com\/v1\/[A-Za-z0-9_\/-]+/i;
+
+const PRICE_AMOUNT = /\$\s*\d[\d,]*(?:\.\d{2})?\b/;
 
 const VENDOR_UPSELL =
   /\b(?:apollo|stripe|sendgrid|twilio|openai|anthropic|resend|mailgun|postmark|thumbgate)\b[\s\S]{0,100}\b(?:upgrade|pro\b|paid|checkout|billing|subscribe|credits?)\b|\b(?:upgrade|pro\b|paid|checkout|billing|subscribe|credits?)\b[\s\S]{0,100}\b(?:apollo|stripe|sendgrid|twilio|openai|anthropic|resend|thumbgate)\b/i;
@@ -124,10 +131,33 @@ function flattenSideEffect(toolName, toolInput) {
   if (/^bash$/i.test(name.trim())) {
     return stripFlaggedProse(input.command || input.cmd || '');
   }
-  if (/^(?:edit|write|multiedit)$/i.test(name.trim())) {
-    return [input.file_path, input.path, input.filePath].filter(Boolean).join(' ');
+  if (/^(?:edit|write|multiedit|notebookedit)$/i.test(name.trim())) {
+    return [input.file_path, input.path, input.filePath, input.notebook_path, input.notebookPath]
+      .filter(Boolean)
+      .join(' ');
   }
   return flattenSkippingProse(input);
+}
+
+function hasNearbyDistinctMatches(text, leftPattern, rightPattern, maxGap = 80) {
+  const matchAll = (pattern) => {
+    const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+    return [...String(text).matchAll(new RegExp(pattern.source, flags))].map((match) => ({
+      start: match.index,
+      end: match.index + match[0].length,
+    }));
+  };
+  const leftMatches = matchAll(leftPattern);
+  const rightMatches = matchAll(rightPattern);
+
+  return leftMatches.some((left) => rightMatches.some((right) => {
+    const overlaps = left.start < right.end && right.start < left.end;
+    if (overlaps) return false;
+    const gap = left.end <= right.start
+      ? right.start - left.end
+      : left.start - right.end;
+    return gap <= maxGap;
+  }));
 }
 
 function evaluateSpend(toolName, toolInput) {
@@ -172,32 +202,55 @@ function evaluateSpend(toolName, toolInput) {
 
   const isInteractiveUi = /(?:browser|chrome|computer[_-]?use|playwright)/i.test(name);
   const hasInteractiveAction =
-    /\b(?:click|type|press|tap|fill|select|submit|interact|drag)\b/i.test(combined);
+    /(?:^|[^a-z0-9])(?:click|left[_-]?click|right[_-]?click|double[_-]?click|type|press|tap|fill|select|submit|interact|drag)(?=$|[^a-z0-9])/i.test(combined);
   if (
     isInteractiveUi
     && hasInteractiveAction
-    && (FINANCIAL_OBJECT.test(combined) || DIRECT_CHECKOUT_PATH.test(combined) || VENDOR_UPSELL.test(combined))
+    && (
+      FINANCIAL_OBJECT.test(combined)
+      || DIRECT_CHECKOUT_PATH.test(combined)
+      || VENDOR_UPSELL.test(combined)
+      || PRICE_AMOUNT.test(combined)
+    )
   ) {
     return { decision: 'deny', ruleId: 'interactive_spend_ui', reason: DENY_REASON };
   }
 
-  // The action and the object must be TWO distinct things. Several tokens appear
-  // in both lists, so a single word would otherwise satisfy both halves and
-  // self-deny -- which is what blocked ordinary version-control subcommands.
-  const actionMatch = MUTATION_ACTION.exec(combined);
-  const objectMatch = FINANCIAL_OBJECT.exec(combined);
-  const spansOverlap = Boolean(actionMatch && objectMatch)
-    && actionMatch.index < objectMatch.index + objectMatch[0].length
-    && objectMatch.index < actionMatch.index + actionMatch[0].length;
-  if (actionMatch && objectMatch && !spansOverlap) {
+  // File-content tools write text, not money. For other tools, require a nearby
+  // non-overlapping action/object pair so unrelated prose cannot become spend.
+  // Dollar amounts remain financial objects (charge $588 / amount=$588).
+  // Structured object inputs skip the 80-char gap so metadata padding cannot bypass.
+  const isFileContentTool = /^(?:write|edit|multiedit|notebookedit)$/i.test(name.trim());
+  const isBashLike = /^bash$/i.test(name.trim());
+  const hasFinancialActionObject = isBashLike
+    ? (
+      hasNearbyDistinctMatches(combined, MUTATION_ACTION, FINANCIAL_OBJECT)
+      || hasNearbyDistinctMatches(combined, MUTATION_ACTION, PRICE_AMOUNT)
+    )
+    : (
+      (MUTATION_ACTION.test(combined) && FINANCIAL_OBJECT.test(combined))
+      || (MUTATION_ACTION.test(combined) && PRICE_AMOUNT.test(combined))
+      || hasNearbyDistinctMatches(combined, MUTATION_ACTION, FINANCIAL_OBJECT)
+      || hasNearbyDistinctMatches(combined, MUTATION_ACTION, PRICE_AMOUNT)
+    );
+  if (!isFileContentTool && hasFinancialActionObject) {
     return { decision: 'deny', ruleId: 'financial_action_and_object', reason: DENY_REASON };
   }
 
-  if (VENDOR_UPSELL.test(combined)) {
+  if (hasNearbyDistinctMatches(combined, MUTATION_ACTION, DIRECT_PAYMENT_API_PATH)) {
+    return { decision: 'deny', ruleId: 'payment_api_mutation', reason: DENY_REASON };
+  }
+
+  if (isInteractiveUi && hasInteractiveAction && VENDOR_UPSELL.test(combined)) {
     return { decision: 'deny', ruleId: 'vendor_upsell', reason: DENY_REASON };
   }
 
-  if (DIRECT_CHECKOUT_PATH.test(text) || DIRECT_CHECKOUT_PATH.test(combined)) {
+  // File-content tools only expose paths here; do not treat path segments
+  // like docs/billing.md as a live checkout navigation.
+  if (
+    !isFileContentTool
+    && (DIRECT_CHECKOUT_PATH.test(text) || DIRECT_CHECKOUT_PATH.test(combined))
+  ) {
     return { decision: 'deny', ruleId: 'checkout_path', reason: DENY_REASON };
   }
 
