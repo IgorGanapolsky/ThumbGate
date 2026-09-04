@@ -232,7 +232,9 @@ const path = require('node:path');
 //            lockfile/CI parity + switch checkpoint (stay on npm).
 // 523 → 525: scripts/jit-harness-compose.js + skill — JIT-Agent four-module
 //            FORMAT compose doctor (no JIT model / HarnessFactory clone).
-const BASELINE_FILE_COUNT = 525;
+// 525 → 527: scripts/intent-governed-execution.js + skill — CyberStrike FORMAT
+//            intent→governed execution (no CyberStrike/Eino clone).
+const BASELINE_FILE_COUNT = 527;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

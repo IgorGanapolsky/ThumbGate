@@ -2649,6 +2649,28 @@ function nvidiaSpecDecodeAlDoctor() {
 }
 
 
+
+function intentGovernedExecution() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildIntentGovernedExecutionReport,
+    formatIntentGovernedExecutionReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'intent-governed-execution'));
+  const report = buildIntentGovernedExecutionReport(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatIntentGovernedExecutionReport(report));
+  }
+
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function jitHarnessCompose() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3512,6 +3534,7 @@ function help() {
   console.log('  npx thumbgate nvidia-specdecode-al-doctor --speculative-decoding --accept-length=1.4 --draft-length=7 --draft-depth-ratio=0.05 --claimed-speedup=3 --json');
   console.log('  npx thumbgate package-manager-honesty-doctor --propose-switch=pnpm --json');
   console.log('  npx thumbgate jit-harness-compose --task="implement PreToolUse gate fix" --json');
+  console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
   console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
   console.log('  npx thumbgate background-governance --json');
   console.log('  npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json');
@@ -4157,6 +4180,12 @@ switch (COMMAND) {
   case 'jit-harness':
   case 'harness-compose':
     jitHarnessCompose();
+    break;
+  case 'intent-governed-execution':
+  case 'governed-intent':
+  case 'cyberstrike-governed':
+  case 'intent-govern':
+    intentGovernedExecution();
     break;
   case 'long-running-agent-context-guardrails':
   case 'agent-context-guardrails':

@@ -252,6 +252,17 @@ test('nvidia-specdecode-al-doctor exposes AL/D speedup flags', () => {
 });
 
 
+
+test('intent-governed-execution exposes HITL and intent flags', () => {
+  const cmd = findCommand('governed-intent');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'intent-governed-execution');
+  assert.ok(cmd.aliases.includes('cyberstrike-governed'));
+  assert.ok(flagNames.includes('intent'));
+  assert.ok(flagNames.includes('approved'));
+  assert.ok(flagNames.includes('map-only'));
+});
+
 test('jit-harness-compose exposes four-module compose flags', () => {
   const cmd = findCommand('jit-compose');
   const flagNames = cmd.flags.map((f) => f.name);

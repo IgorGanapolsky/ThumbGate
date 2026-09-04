@@ -284,7 +284,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 523 -> 525: scripts/jit-harness-compose.js + skill — JIT four-module FORMAT
   //   steal onto harness-selector/switchyard/subagent-profiles.
   //   Lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 525;
+  // 525 -> 527: intent-governed-execution.js + skill — CyberStrike FORMAT steal.
+  //   Lockstep with package-boundary + public-bundle-ratchet.
+  const CEILING = 527;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

@@ -458,6 +458,25 @@ const CLI_COMMANDS = [
     ],
   }),
 
+
+  discoveryCommand({
+    name: 'intent-governed-execution',
+    aliases: ['governed-intent', 'cyberstrike-governed', 'intent-govern'],
+    description: 'Compose CyberStrikeAI intent→governed-execution FORMAT onto existing rails (HITL + evidence memory; does not clone CyberStrike/Eino)',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero unless status=ready' },
+      { name: 'intent', type: 'string', description: 'Natural-language intent to govern' },
+      { name: 'task', type: 'string', description: 'Alias for --intent' },
+      { name: 'class', type: 'string', description: 'Force intent class' },
+      { name: 'risk', type: 'string', description: 'Force risk low|medium|high|critical' },
+      { name: 'harness', type: 'string', description: 'Force gate harness' },
+      { name: 'profile', type: 'string', description: 'Force subagent profile' },
+      { name: 'approved', type: 'boolean', description: 'HITL already satisfied (human grant only)' },
+      { name: 'map-only', type: 'boolean', description: 'Print six-step governance map' },
+      { name: 'root', type: 'string', description: 'Repo root to probe' },
+    ],
+  }),
   discoveryCommand({
     name: 'jit-harness-compose',
     aliases: ['jit-compose', 'jit-harness', 'harness-compose'],
