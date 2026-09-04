@@ -2692,13 +2692,13 @@ function packageManagerHonestyDoctor() {
 }
 
 
-function workspaceSearchRoute() {
+async function workspaceSearchRoute() {
   const args = parseArgs(process.argv.slice(3));
   const {
     buildWorkspaceSearchRouteReport,
     formatWorkspaceSearchRouteReport,
   } = require(path.join(PKG_ROOT, 'scripts', 'workspace-search-route'));
-  const report = buildWorkspaceSearchRouteReport(args);
+  const report = await buildWorkspaceSearchRouteReport(args);
 
   if (args.json) {
     console.log(JSON.stringify(report, null, 2));
@@ -4186,7 +4186,10 @@ switch (COMMAND) {
   case 'zg-search-route':
   case 'zvec-grep-route':
   case 'search-route':
-    workspaceSearchRoute();
+    workspaceSearchRoute().catch((err) => {
+      console.error(err && err.stack ? err.stack : err);
+      process.exitCode = 1;
+    });
     break;
   case 'long-running-agent-context-guardrails':
   case 'agent-context-guardrails':
