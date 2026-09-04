@@ -3244,6 +3244,27 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     try {
       const { selectHarness } = require('./harness-selector');
       harnessPath = selectHarness(toolName, toolInput);
+      try {
+        // Opt-in RateBurst only (THUMBGATE_RADWARE_RATE=1). Never persist in tests/CI.
+        if (process.env.THUMBGATE_RADWARE_RATE === '1') {
+          const radware = require('./radware-threat-defense.js');
+          const inTest = Boolean(process.env.NODE_TEST || process.env.NODE_TEST_CONTEXT || process.env.CI || process.env.GITHUB_ACTIONS || process.env.VITEST || process.argv.some((a) => a.includes('node:test') || a.endsWith('.test.js')));
+          if (!inTest) {
+            radware.persistCallTimestamp();
+            const burst = radware.checkRateBurst(radware.loadCallTimestamps());
+            if (burst.tripped) {
+              return recordStructuralGateBlock(toolName, toolInput, {
+                decision: 'deny',
+                gate: 'algorithmic-token-drain-circuit-breaker',
+                action: 'block',
+                severity: 'high',
+                message: burst.message,
+                receipt: 'threat_defense_interdicted=true:type=RateBurst:action=block',
+              });
+            }
+          }
+        }
+      } catch { /* optional */ }
     } catch { /* harness-selector is optional */ }
     config = loadGatesConfig(configPath, harnessPath);
   } catch {
@@ -3567,6 +3588,27 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     try {
       const { selectHarness } = require('./harness-selector');
       harnessPath = selectHarness(toolName, toolInput);
+      try {
+        // Opt-in RateBurst only (THUMBGATE_RADWARE_RATE=1). Never persist in tests/CI.
+        if (process.env.THUMBGATE_RADWARE_RATE === '1') {
+          const radware = require('./radware-threat-defense.js');
+          const inTest = Boolean(process.env.NODE_TEST || process.env.NODE_TEST_CONTEXT || process.env.CI || process.env.GITHUB_ACTIONS || process.env.VITEST || process.argv.some((a) => a.includes('node:test') || a.endsWith('.test.js')));
+          if (!inTest) {
+            radware.persistCallTimestamp();
+            const burst = radware.checkRateBurst(radware.loadCallTimestamps());
+            if (burst.tripped) {
+              return recordStructuralGateBlock(toolName, toolInput, {
+                decision: 'deny',
+                gate: 'algorithmic-token-drain-circuit-breaker',
+                action: 'block',
+                severity: 'high',
+                message: burst.message,
+                receipt: 'threat_defense_interdicted=true:type=RateBurst:action=block',
+              });
+            }
+          }
+        }
+      } catch { /* optional */ }
     } catch { /* harness-selector is optional */ }
     config = loadGatesConfig(configPath, harnessPath);
   } catch {

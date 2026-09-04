@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "harness": "radware-threat-defense-2026",
+  "version": "1.1.0",
+  "description": "Radware/Bot-Manager-inspired PreAction defense: ShadowLeak + ZombieAgent blocks and suspicious-bot challenge. Rate-burst circuit breaker is enforced in gates-engine via persisted call history (not a catch-all pattern gate).",
+  "gates": [
+    {
+      "id": "shadowleak-exfiltration-firewall",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "critical",
+      "description": "Blocks AI agent data exfiltration via secondary tool calls, hidden markdown images, tracking pixels, or URL parameter stuffing carrying sensitive context.",
+      "toolNames": [
+        "Bash",
+        "Edit",
+        "Write",
+        "Http",
+        "Browser",
+        "Send",
+        "MultiEdit"
+      ],
+      "pattern": "!\\[.*?\\]\\(https?:\\/\\/[^)\\s]+\\?(?:data|token|key|cookie|leak|mem|secret)=[^)\\s]+\\)|curl\\s+[^|\\r\\n]*?(?:-d|--data|-F)\\s+[^|\\r\\n]*?(?:token|secret|password|credential|env|auth)|(?:fetch|axios|request)\\s*\\(\\s*[`'\\\"]https?:\\/\\/[^`'\\\"]*?(?:exfil|leak|webhook|collect)",
+      "message": "Action blocked: ShadowLeak data exfiltration vector detected. Secondary egress channel prohibited."
+    },
+    {
+      "id": "zombieagent-loop-interdiction",
+      "layer": "PreAction",
+      "action": "block",
+      "severity": "critical",
+      "description": "Interdicts Indirect Prompt Injection (IPI) vectors embedded in external web/email/ticket payloads attempting to hijack agent control loops.",
+      "toolNames": [
+        "Bash",
+        "Edit",
+        "Write",
+        "Eval",
+        "Dispatch",
+        "MultiEdit"
+      ],
+      "pattern": "\\b(?:system\\s*override|act\\s*as\\s*zombie|unrestricted\\s*agent|drop\\s*prior\\s*instructions|ignore\\s*all\\s*guardrails)\\b|\\b(?:execute\\s*without\\s*approval|silently\\s*forward\\s*to|covert\\s*execution|bypass\\s*firewall)\\b",
+      "message": "Action blocked: ZombieAgent indirect prompt injection hijacking attempt detected. Execution loop halted."
+    },
+    {
+      "id": "suspicious-bot-challenge",
+      "layer": "PreAction",
+      "action": "warn",
+      "severity": "medium",
+      "description": "Bot Manager\u2013style challenge tier: flag suspicious automation / scrape / ATO spray language for human review without hard-deny of safe work.",
+      "toolNames": [
+        "Bash",
+        "Edit",
+        "Write",
+        "Http",
+        "Browser",
+        "Send",
+        "MultiEdit"
+      ],
+      "pattern": "\\b(?:scrape\\s+all|mass[- ]scrape|credential\\s*stuff|ato\\s*attack|account\\s*takeover\\s*spray)\\b|\\b(?:headless\\s+flood|burst\\s+tool\\s+calls|token\\s*drain\\s*loop)\\b",
+      "message": "Challenge: suspicious automation pattern detected (Bot Manager detect\u2192challenge ladder). Confirm intent before continuing."
+    }
+  ]
+}

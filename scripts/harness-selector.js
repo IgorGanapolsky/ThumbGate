@@ -30,6 +30,7 @@ const HARNESSES = Object.freeze({
   'future-agi-guardrails': path.join(HARNESS_DIR, 'future-agi-guardrails.json'),
   'five-walls-governance': path.join(HARNESS_DIR, 'five-walls-governance.json'),
   'simatree-data-governance': path.join(HARNESS_DIR, 'simatree-data-governance.json'),
+  'radware-threat-defense': path.join(HARNESS_DIR, 'radware-threat-defense-2026.json'),
 });
 
 // ---------------------------------------------------------------------------
@@ -120,6 +121,22 @@ function selectHarness(toolName, toolInput) {
     if (HARNESSES[override]) return HARNESSES[override];
     // Allow absolute path override
     if (path.isAbsolute(override)) return override;
+  }
+
+  // 1b. Radware / Bot Manager threat defense — auto-select when evaluateThreat or rate burst
+  //     flags ShadowLeak, ZombieAgent, suspicious-bot challenge, or rate burst.
+  //     Without this branch the registry entry is inert for normal PreToolUse.
+  try {
+    const { evaluateThreat } = require('./radware-threat-defense.js');
+    const payloadText = extractPayloadText(toolInput) || extractCommandText(toolInput) || String(toolName || '');
+    // Content threats only here. Rate-burst is enforced structurally in gates-engine
+    // (persisted history) so selector probes cannot false-select this harness.
+    const threat = evaluateThreat(payloadText);
+    if (threat.blocked || threat.challenged || threat.severity !== 'none') {
+      return HARNESSES['radware-threat-defense'];
+    }
+  } catch {
+    // Fail open on selector errors; gates still apply when harness forced via env.
   }
 
   // 2. Edit/Write tools get the code-edit harness, UNLESS the payload itself
@@ -518,6 +535,8 @@ function extractCommandText(toolInput) {
   return '';
 }
 
+const { evaluateThreat, evaluatePretoolDefense, checkRateBurst } = require('./radware-threat-defense.js');
+
 module.exports = {
   selectHarness,
   selectHarnessName,
@@ -532,6 +551,9 @@ module.exports = {
   buildSolverWorkflowGovernance,
   formatSolverWorkflowGovernance,
   extractCommandText,
+  evaluateThreat,
+  evaluatePretoolDefense,
+  checkRateBurst,
   HARNESSES,
   DEPLOY_PATTERNS,
   DB_WRITE_PATTERNS,
