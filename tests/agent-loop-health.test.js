@@ -57,4 +57,14 @@ describe('bin/agent-loop health contract (#3670)', () => {
     assert.deepEqual(payload.loop, ['recollect', 'plan', 'observe', 'act', 'evaluate', 'learn']);
     assert.equal(payload.evaluate.pass, true);
   });
+
+  it('unknown options exit 2 with usage', () => {
+    const result = spawnSync(process.execPath, [AGENT_LOOP, '--heath'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 2, result.stderr || result.stdout);
+    assert.match(result.stderr + result.stdout, /unknown option/i);
+    assert.match(result.stderr + result.stdout, /Usage: bin\/agent-loop/);
+  });
 });

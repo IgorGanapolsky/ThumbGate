@@ -38,12 +38,16 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
 
 function parseArgs(argv) {
-  const args = new Set(argv.slice(2));
+  const allowed = new Set(['--json', '--health', '--doctor', '--help', '-h']);
+  const raw = argv.slice(2);
+  const unknown = raw.filter((arg) => arg.startsWith('-') && !allowed.has(arg));
+  const args = new Set(raw);
   return {
     json: args.has('--json'),
     health: args.has('--health'),
     doctor: args.has('--doctor'),
     help: args.has('--help') || args.has('-h'),
+    unknown,
   };
 }
 
@@ -260,6 +264,11 @@ function main(argv = process.argv) {
   if (opts.help) {
     printHelp();
     return 0;
+  }
+  if (opts.unknown.length > 0) {
+    console.error(`agent-loop: unknown option(s): ${opts.unknown.join(', ')}`);
+    printHelp();
+    return 2;
   }
 
   const injectFailure = process.env.THUMBGATE_AGENT_LOOP_INJECT_FAILURE || null;
