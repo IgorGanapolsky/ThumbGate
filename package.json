@@ -1122,7 +1122,8 @@
     "codex:runbook:solve": "node scripts/codex-runbook-flywheel.js --solve",
     "test:claw-harness-production": "node --test tests/claw-harness-production.test.js",
     "test:agent-loop": "node --test tests/agent-loop-health.test.js",
-    "test:radware-threat-defense": "node --test tests/radware-threat-defense.test.js"
+    "test:radware-threat-defense": "node --test tests/radware-threat-defense.test.js",
+    "memory:vs-rag": "node scripts/memory-vs-rag-route.js"
   },
   "keywords": [
     "mcp",

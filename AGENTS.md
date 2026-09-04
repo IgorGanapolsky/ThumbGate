@@ -97,6 +97,17 @@ If the system is making $0/day, you must prioritize outreach and discovery injec
 
 This project uses a local-first **Reliability Gateway** operational loop.
 
+## Memory vs RAG (Supermemory steal)
+
+RAG = graphify/docs (stateless). Memory = lesson store with complete four-field scope (stateful). Profile = always-on static+dynamic facts. Do not clone Supermemory SaaS.
+
+```bash
+npm run memory:vs-rag -- --query "how does PreToolUse work?"
+npm run memory:vs-rag -- --query "what did we decide?" --entity <e> --project <p> --process <a> --session <s> --json
+```
+
+Details: [`docs/agents/memory-vs-rag.md`](./docs/agents/memory-vs-rag.md).
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
