@@ -215,6 +215,165 @@ describe('graphify readiness rail', () => {
     });
     assert.throws(() => setup.parseArgs(['--nope']), /Unknown argument/);
   });
+
+  it('setup summarizeGraph / ensureVenv / ensurePackage / buildGraph with injectables', () => {
+    withTempDir((dir) => {
+      const graphPath = path.join(dir, 'graph.json');
+      fs.writeFileSync(graphPath, JSON.stringify({
+        nodes: [{ id: '1' }],
+        edges: [{ source: '1', target: '1' }],
+      }));
+      const summary = setup.summarizeGraph(graphPath);
+      assert.equal(summary.nodes, 1);
+      assert.equal(summary.links, 1);
+
+      const py = path.join(dir, 'python');
+      fs.writeFileSync(py, '#!/bin/sh\n');
+      assert.deepEqual(setup.ensureVenv({ py, venv: dir }), { created: false });
+
+      const created = setup.ensureVenv({
+        py: path.join(dir, 'missing-py'),
+        venv: path.join(dir, 'venv'),
+        runFn: () => ({ status: 0, stdout: '', stderr: '' }),
+      });
+      assert.deepEqual(created, { created: true });
+      assert.throws(() => setup.ensureVenv({
+        py: path.join(dir, 'missing-py-2'),
+        venv: path.join(dir, 'venv2'),
+        runFn: () => ({ status: 1, stdout: '', stderr: 'boom' }),
+      }), /venv create failed/);
+
+      const bin = path.join(dir, 'graphify');
+      fs.writeFileSync(bin, '#!/bin/sh\n');
+      const already = setup.ensurePackage({
+        py,
+        pip: path.join(dir, 'pip'),
+        bin,
+        runFn: () => ({ status: 0, stdout: '0.9.53\n', stderr: '' }),
+      });
+      assert.equal(already.installed, false);
+      assert.equal(already.versionProbe, '0.9.53');
+
+      const installed = setup.ensurePackage({
+        py,
+        pip: path.join(dir, 'pip'),
+        bin: path.join(dir, 'will-create-bin'),
+        runFn: (cmd, args) => {
+          if (args[0] === 'install' && args.includes(setup.PACKAGE)) {
+            fs.writeFileSync(path.join(dir, 'will-create-bin'), 'ok');
+            return { status: 0, stdout: '', stderr: '' };
+          }
+          if (args[0] === '-c') return { status: 1, stdout: '', stderr: 'no module' };
+          return { status: 0, stdout: '', stderr: '' };
+        },
+      });
+      assert.equal(installed.installed, true);
+
+      assert.equal(setup.graphifyVersion({
+        bin,
+        runFn: () => ({ status: 0, stdout: 'graphify 0.9.53\n', stderr: '' }),
+      }), '0.9.53');
+      assert.equal(setup.graphifyVersion({
+        bin,
+        runFn: () => ({ status: 1, stdout: '', stderr: 'nope' }),
+      }), '');
+
+      const built = setup.buildGraph({
+        bin,
+        graphPath,
+        runFn: () => ({ status: 0, stdout: '', stderr: '' }),
+      });
+      assert.equal(built.nodes, 1);
+      assert.throws(() => setup.buildGraph({
+        bin,
+        graphPath,
+        runFn: () => ({ status: 2, stdout: '', stderr: 'fail' }),
+      }), /graphify update failed/);
+      assert.throws(() => setup.buildGraph({
+        bin,
+        graphPath: path.join(dir, 'absent.json'),
+        runFn: () => ({ status: 0, stdout: '', stderr: '' }),
+      }), /graph\.json is missing/);
+    });
+  });
+
+  it('setupReport skip-build and failure paths', () => {
+    withTempDir((dir) => {
+      const bin = path.join(dir, 'graphify');
+      const py = path.join(dir, 'python');
+      fs.writeFileSync(bin, 'x');
+      fs.writeFileSync(py, 'x');
+      const graphPath = path.join(dir, 'graph.json');
+      fs.writeFileSync(graphPath, JSON.stringify({ nodes: [], links: [] }));
+
+      const okSkip = setup.setupReport(
+        { json: false, skipBuild: true, help: false },
+        {
+          py,
+          bin,
+          pip: path.join(dir, 'pip'),
+          venv: dir,
+          graphPath,
+          runFn: () => ({ status: 0, stdout: 'graphify 0.9.53\n', stderr: '' }),
+        },
+      );
+      assert.equal(okSkip.ok, true);
+      assert.equal(okSkip.steps.graph.skippedBuild, true);
+
+      const missingGraph = setup.setupReport(
+        { json: false, skipBuild: true, help: false },
+        {
+          py,
+          bin,
+          pip: path.join(dir, 'pip'),
+          venv: dir,
+          graphPath: path.join(dir, 'nope.json'),
+          runFn: () => ({ status: 0, stdout: 'graphify 0.9.53\n', stderr: '' }),
+        },
+      );
+      assert.equal(missingGraph.ok, true);
+      assert.equal(missingGraph.steps.graph.exists, false);
+
+      const lowVer = setup.setupReport(
+        { json: false, skipBuild: true, help: false },
+        {
+          py,
+          bin,
+          pip: path.join(dir, 'pip'),
+          venv: dir,
+          graphPath,
+          runFn: () => ({ status: 0, stdout: 'graphify 0.1.0\n', stderr: '' }),
+        },
+      );
+      assert.equal(lowVer.ok, false);
+      assert.match(lowVer.error, /below required/);
+    });
+  });
+
+  it('setup main --help and --json --skip-build via injectables', () => {
+    const help = setup.main(['--help'], { exit: false });
+    assert.equal(help.status, 'HELP');
+
+    withTempDir((dir) => {
+      const bin = path.join(dir, 'graphify');
+      const py = path.join(dir, 'python');
+      fs.writeFileSync(bin, 'x');
+      fs.writeFileSync(py, 'x');
+      const graphPath = path.join(dir, 'graph.json');
+      fs.writeFileSync(graphPath, JSON.stringify({ nodes: [{ id: 'n' }], links: [] }));
+      const report = setup.main(['--json', '--skip-build'], {
+        exit: false,
+        py,
+        bin,
+        pip: path.join(dir, 'pip'),
+        venv: dir,
+        graphPath,
+        runFn: () => ({ status: 0, stdout: 'graphify 0.9.53\n', stderr: '' }),
+      });
+      assert.equal(report.ok, true);
+      assert.equal(report.version, '0.9.53');
+    });
+  });
 });
 
 function STALE_HOURS_MS() {
