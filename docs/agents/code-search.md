@@ -49,3 +49,26 @@ After large pulls, refresh before trusting path/query answers.
 - `npm run graphify:ready` → `scripts/graphify-readiness.js`
 - `npm run graphify:stale` → `scripts/graphify-staleness-check.js`
 - Fleet skill: `/knowledge-graph-fuse` (fuse search hits with bounded traversal; do not treat HTML as retrieval)
+
+
+## Unified local search routes (zg FORMAT steal)
+
+Inspiration: [zvec-ai/zvec-grep](https://github.com/zvec-ai/zvec-grep) (`zg`) — one
+local-first interface for ripgrep + BM25 + vector. **Not a ThumbGate SKU.** Do
+not install `@zvec/zvec-grep` into this repo; map the FORMAT onto rails we already ship.
+
+| Route | When | ThumbGate rail |
+|-------|------|----------------|
+| `--rg` | Exact symbol / path / regex | `rg` / Grep / Glob |
+| `--fts` | Lexical / BM25 vocabulary | `filesystem-search`, `thumbgate search`, lesson BM25F |
+| `--vector` | Paraphrase / intent | LanceDB lesson vectors (local); remote embed needs `THUMBGATE_ALLOW_REMOTE_EMBED=1` |
+| `--hybrid` (default) | Agent natural-language | `pragmatic-hybrid-search` + `reciprocalRankFusion` |
+| `--graph` | Architecture / causality | Graphify `query` / `path` / `explain` |
+
+```bash
+npx thumbgate workspace-search-route --query="how does PreToolUse connect to gates" --json
+npx thumbgate workspace-search-route --query="session-lease.js" --rg --execute
+```
+
+Skill: `.agents/skills/zvec-grep-compare-not-clone/SKILL.md` (`/zvec-grep-compare-not-clone`).
+
