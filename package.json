@@ -430,8 +430,7 @@
     "skills/thumbgate/SKILL.md",
     "smithery.yaml",
     "src/",
-    "scripts/radware-threat-defense.js",
-    "public/learn/radware-2026-ai-threat-defense-shadowleak-zombieagent.html"
+    "scripts/radware-threat-defense.js"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",

@@ -225,7 +225,8 @@ const path = require('node:path');
 // scripts/gates-engine.js requires it to suppress reminder lines it has
 // already emitted this session.
 // 519 -> 522 (2026-09-04): scripts/radware-threat-defense.js + learn page + config/gates/radware-threat-defense-2026.json (Bot Manager detect→challenge→block).
-const BASELINE_FILE_COUNT = 522;
+// 522 -> 521: unbundle public/learn/* (forbidden npm prefix).
+const BASELINE_FILE_COUNT = 521;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

@@ -483,8 +483,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // scripts/gates-engine.js requires it to suppress reminder lines it has
     // already emitted this session.
   // 519 -> 522 (2026-09-04): radware-threat-defense.js + learn page + config/gates/radware-threat-defense-2026.json.
-    manifest.fileCount <= 522,
-    `npm package should stay <= 522 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 521,
+    `npm package should stay <= 521 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

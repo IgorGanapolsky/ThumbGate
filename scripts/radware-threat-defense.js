@@ -22,9 +22,10 @@ const path = require('node:path');
 const os = require('node:os');
 
 const SHADOWLEAK_PATTERNS = [
-  /!\[.*?\]\(https?:\/\/[^)\s]+\?(?:data|token|key|cookie|leak|mem|secret)=[^)\s]+\)/i,
-  /curl\s+[^|\r\n]*?(?:-d|--data|-F)\s+[^|\r\n]*?(?:token|secret|password|credential|env|auth)/i,
-  /(?:fetch|axios|request)\s*\(\s*[`'"]https?:\/\/[^`'"]*?(?:exfil|leak|webhook|collect)/i,
+  // Bounded classes — avoid nested quantifiers on attacker-controlled input (CodeQL js/polynomial-redos).
+  /!\[[^\]\n]{0,200}\]\(https?:\/\/[^)\s]{1,300}\?(?:data|token|key|cookie|leak|mem|secret)=[^)\s]{0,300}\)/i,
+  /\bcurl[ \t][^|\r\n]{0,500}(?:-d|--data|-F)[ \t][^|\r\n]{0,400}(?:token|secret|password|credential|env|auth)/i,
+  /\b(?:fetch|axios|request)\s*\(\s*[`'"]https?:\/\/[^`'"]{0,300}(?:exfil|leak|webhook|collect)/i,
 ];
 
 const ZOMBIEAGENT_PATTERNS = [
@@ -96,7 +97,9 @@ function persistCallTimestamp(historyPath = defaultHistoryPath(), now = Date.now
  * @param {object} [options]
  */
 function evaluateThreat(payload, options = {}) {
-  const text = typeof payload === 'string' ? payload : JSON.stringify(payload || '');
+  const raw = typeof payload === 'string' ? payload : JSON.stringify(payload || '');
+  // Hard length cap before regex evaluation (ReDoS defense-in-depth).
+  const text = raw.length > 20000 ? raw.slice(0, 20000) : raw;
   const detections = [];
   let severity = 'none';
   let threatType = null;
