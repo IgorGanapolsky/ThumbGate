@@ -80,3 +80,7 @@ For every explicit PR-management and system-hygiene session:
 7. Record lessons in local memory and report whether memory helped or hindered.
 
 Use **“Done merging PRs. CI passing. System hygiene complete. Ready for next session.”** only when every condition above is verified. Otherwise report exact blockers and do not use that sentence.
+
+## Code search (Graphify-Labs)
+
+See `docs/agents/code-search.md`. Run `npm run graphify:setup` then `.graphify-venv/bin/graphify query`.

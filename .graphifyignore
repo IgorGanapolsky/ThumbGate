@@ -1,0 +1,31 @@
+# ThumbGate — Graphify-Labs graphify ignore (merged with .gitignore).
+# Keep the AST map on product code + docs; exclude agent cattle and runtime.
+
+node_modules/
+.claude/worktrees/
+.claude/memory/
+.thumbgate/
+.graphify-venv/
+graphify-out/
+coverage/
+dist/
+build/
+.tmp/
+.tmp-*/
+proof/
+*.sqlite*
+*.sqlite-shm
+*.sqlite-wal
+.dsh_trajectory.jsonl
+public/learn/
+archive/
+prototypes/
+outreach/
+pitch/
+legal-department-evaluation.ts
+governance-layer.ts
+platform-*.ts
+platform-*.html
+test-platform-*.js
+test-security-intel.js
+test-simatree-partnership.js
