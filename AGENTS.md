@@ -282,3 +282,25 @@ For every explicit PR-management and system-hygiene session:
 7. Record lessons in local memory and report whether memory helped or hindered.
 
 Use **“Done merging PRs. CI passing. System hygiene complete. Ready for next session.”** only when every condition above is verified. Otherwise report exact blockers and do not use that sentence.
+
+## Code search (Graphify-Labs)
+
+Local AST knowledge graph via [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) (`graphifyy` on PyPI). Not a vector store. Not a ThumbGate SKU.
+
+```bash
+npm run graphify:setup          # .graphify-venv + graphify-out/graph.json
+npm run graphify:ready -- --require-graph
+.graphify-venv/bin/graphify query "how does X connect to Y?"
+.graphify-venv/bin/graphify path "<A>" "<B>"
+.graphify-venv/bin/graphify explain "<concept>"
+```
+
+Rules:
+- Prefer `query` / `path` / `explain` over raw grep for architecture questions when `graphify-out/graph.json` exists.
+- After large code changes: `.graphify-venv/bin/graphify update . --no-cluster`
+- `graph.html` / `GRAPH_REPORT.md` are review aids, not retrieval.
+- Dirty `graphify-out/` is expected and gitignored — not a reason to skip Graphify.
+- Do not dual-edit DIRTY lesson-store graph PR #3650.
+
+Details: [`docs/agents/code-search.md`](./docs/agents/code-search.md). Skill: `.agents/skills/graphify/SKILL.md`.
+

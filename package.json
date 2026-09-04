@@ -1122,7 +1122,11 @@
     "codex:runbook:solve": "node scripts/codex-runbook-flywheel.js --solve",
     "test:claw-harness-production": "node --test tests/claw-harness-production.test.js",
     "test:agent-loop": "node --test tests/agent-loop-health.test.js",
-    "test:radware-threat-defense": "node --test tests/radware-threat-defense.test.js"
+    "test:radware-threat-defense": "node --test tests/radware-threat-defense.test.js",
+    "graphify:setup": "node scripts/graphify-setup.js",
+    "graphify:ready": "node scripts/graphify-readiness.js",
+    "graphify:stale": "node scripts/graphify-staleness-check.js",
+    "test:graphify": "node --test tests/graphify-readiness.test.js"
   },
   "keywords": [
     "mcp",

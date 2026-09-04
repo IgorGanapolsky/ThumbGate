@@ -137,3 +137,12 @@ archive/pre-employment*/
 docs/legal/ECI_*.md
 docs/legal/EXHIBIT_A_*.md
 docs/legal/*EMPLOYER*
+
+# Graphify-Labs graphify local runtime (AST graph + venv — do not commit 20MB+ graphs)
+.graphify-venv/
+graphify-out/
+
+# Hermes local runtime (keep skills trackable via negation if needed)
+.hermes/*
+!.hermes/skills/
+!.hermes/skills/**
