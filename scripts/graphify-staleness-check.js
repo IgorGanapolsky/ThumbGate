@@ -21,6 +21,24 @@ const BIN = path.join(REPO, '.graphify-venv', 'bin', 'graphify');
 const STALE_COMMIT_THRESHOLD = 50;
 const STALE_HOURS_THRESHOLD = 48;
 
+/** Prefer fixed absolute git paths (Sonar S4036 — avoid bare PATH lookup). */
+function resolveGitBinary() {
+  const candidates = [
+    process.env.GIT_BINARY,
+    '/usr/bin/git',
+    '/opt/homebrew/bin/git',
+    '/usr/local/bin/git',
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) return candidate;
+    } catch {
+      /* ignore */
+    }
+  }
+  return '/usr/bin/git';
+}
+
 function formatAge(hours) {
   if (hours < 1) return `${Math.round(hours * 60)}m`;
   if (hours < 24) return `${Math.round(hours * 10) / 10}h`;
@@ -41,9 +59,9 @@ function checkGraphStaleness() {
   const ageHours = (Date.now() - stat.mtimeMs) / (1000 * 60 * 60);
   const isoTime = stat.mtime.toISOString().replace(/\.\d+Z$/, 'Z');
   const revList = spawnSync(
-    'git',
+    resolveGitBinary(),
     ['-C', REPO, 'rev-list', '--count', `--since=${isoTime}`, 'HEAD'],
-    { encoding: 'utf8', timeout: 5000, shell: false },
+    { encoding: 'utf8', timeout: 5000, shell: false, env: process.env },
   );
   const commitsSince = revList.status === 0
     ? Number.parseInt(String(revList.stdout || '').trim(), 10) || 0
@@ -99,4 +117,4 @@ if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   main();
 }
 
-module.exports = { checkGraphStaleness };
+module.exports = { checkGraphStaleness, formatAge, resolveGitBinary, STALE_COMMIT_THRESHOLD, STALE_HOURS_THRESHOLD };
