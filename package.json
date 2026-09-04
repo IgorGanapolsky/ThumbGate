@@ -1139,7 +1139,8 @@
     "test:graphify": "node --test tests/graphify-readiness.test.js",
     "test:jit-harness-compose": "node --test tests/jit-harness-compose.test.js",
     "test:workspace-search-route": "node --test tests/workspace-search-route.test.js",
-    "test:intent-governed-execution": "node --test tests/intent-governed-execution.test.js"
+    "test:intent-governed-execution": "node --test tests/intent-governed-execution.test.js",
+    "memory:vs-rag": "node scripts/memory-vs-rag-route.js"
   },
   "keywords": [
     "mcp",
