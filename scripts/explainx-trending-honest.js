@@ -299,6 +299,7 @@ module.exports = {
   RAIL_MAP,
   SKIP_REASONS,
   buildReport,
+  fetchUrl,
   mapItem,
   parseArgs,
   parseTrendingHtml,

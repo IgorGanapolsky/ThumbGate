@@ -6,8 +6,11 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
+const http = require('http');
+
 const {
   buildReport,
+  fetchUrl,
   mapItem,
   parseArgs,
   parseTrendingHtml,
@@ -177,5 +180,34 @@ describe('explainx-trending-honest', () => {
     assert.equal(report.ok, false);
     assert.equal(report.status, 'UNAVAILABLE');
     assert.equal(report.items.length, 0);
+  });
+
+  it('fetchUrl follows redirects and rejects non-200', async () => {
+    const server = http.createServer((req, res) => {
+      if (req.url === '/ok') {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end('<html>ok-body</html>');
+        return;
+      }
+      if (req.url === '/redir') {
+        res.writeHead(302, { Location: '/ok' });
+        res.end();
+        return;
+      }
+      res.writeHead(503);
+      res.end('nope');
+    });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const { port } = server.address();
+    const base = `http://127.0.0.1:${port}`;
+    try {
+      const body = await fetchUrl(`${base}/ok`);
+      assert.match(body, /ok-body/);
+      const redirected = await fetchUrl(`${base}/redir`);
+      assert.match(redirected, /ok-body/);
+      await assert.rejects(() => fetchUrl(`${base}/fail`), /HTTP 503/);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
   });
 });
