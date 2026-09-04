@@ -271,6 +271,16 @@ test('package-manager-honesty-doctor exposes lockfile/CI parity flags', () => {
   assert.ok(flagNames.includes('allow-ignore-scripts-gaps'));
 });
 
+
+test('workspace-search-route exposes zg-style route flags', () => {
+  const cmd = findCommand('zg-search-route');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'workspace-search-route');
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('query'));
+  assert.ok(flagNames.includes('route') || flagNames.includes('rg'));
+});
+
 test('upstream-contributions exposes governed contribution planning flags', () => {
   const cmd = findCommand('upstream-prs');
   const flagNames = cmd.flags.map((f) => f.name);
