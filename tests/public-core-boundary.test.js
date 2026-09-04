@@ -286,7 +286,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 523 -> 525: jit-harness-compose (#3768).
   // 525 -> 527: workspace-search-route.js + skill — zg four-route FORMAT.
   //   Lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 527;
+  // 527 -> 529: intent-governed-execution after zg #3770.
+  //   Lockstep with package-boundary + public-bundle-ratchet.
+  const CEILING = 529;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

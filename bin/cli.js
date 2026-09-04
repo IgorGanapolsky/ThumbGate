@@ -2649,6 +2649,28 @@ function nvidiaSpecDecodeAlDoctor() {
 }
 
 
+
+function intentGovernedExecution() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildIntentGovernedExecutionReport,
+    formatIntentGovernedExecutionReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'intent-governed-execution'));
+  const report = buildIntentGovernedExecutionReport(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatIntentGovernedExecutionReport(report));
+  }
+
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function jitHarnessCompose() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3497,6 +3519,7 @@ function help() {
   console.log('  package-manager-honesty-doctor Audit lockfile/CI parity; fail-closed manager switches');
   console.log('  jit-harness-compose   Compose memory/planning/action/capability onto existing rails (JIT FORMAT)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
+  console.log('  intent-governed-execution  NL intent → classify/authorize/gate/HITL/evidence (CyberStrike FORMAT)');
   console.log('  background-governance Background-agent run report and dispatch risk check');
   console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
   console.log('  inventory             Agent action inventory: tool calls, gate denies, false-deny rate');
@@ -3537,6 +3560,7 @@ function help() {
   console.log('  npx thumbgate package-manager-honesty-doctor --propose-switch=pnpm --json');
   console.log('  npx thumbgate jit-harness-compose --task="implement PreToolUse gate fix" --json');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
+  console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
   console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
   console.log('  npx thumbgate background-governance --json');
   console.log('  npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json');
@@ -4191,6 +4215,12 @@ switch (COMMAND) {
       console.error(err && err.stack ? err.stack : err);
       process.exitCode = 1;
     });
+    break;
+  case 'intent-governed-execution':
+  case 'governed-intent':
+  case 'cyberstrike-governed':
+  case 'intent-govern':
+    intentGovernedExecution();
     break;
   case 'long-running-agent-context-guardrails':
   case 'agent-context-guardrails':
