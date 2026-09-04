@@ -152,11 +152,17 @@ function matchesAnyGlob(filePath, globs) {
 function toRepoRelativePath(filePath, repoRoot) {
   const value = String(filePath || '').trim();
   if (!value) return '';
-  if (repoRoot && path.isAbsolute(value)) {
+  if (path.isAbsolute(value)) {
+    if (!repoRoot) {
+      // Without a repo root, absolute paths cannot be safely scoped for
+      // protected-file approval — reject rather than preserving absolute paths.
+      return '';
+    }
     const relative = path.relative(repoRoot, value);
     if (!relative.startsWith('..') && !path.isAbsolute(relative)) {
       return normalizePosix(relative);
     }
+    return '';
   }
   return normalizePosix(value);
 }
@@ -1385,6 +1391,29 @@ function isDestructiveBypass(command) {
     || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(command);
 }
 
+function shouldAllowVersionProbe(toolName, command) {
+  return toolName === 'Bash' && isVersionOrProbeCommand(command);
+}
+
+function isVersionOrProbeCommand(command) {
+  if (!command || typeof command !== 'string') return false;
+  const trimmed = command.trim();
+  // Utility probes with no args.
+  if (/^(?:pwd|whoami|date)\s*$/i.test(trimmed)) return true;
+  // go prints version via the "version" subcommand (not -v/--version).
+  if (/^go\s+version\s*$/i.test(trimmed)) return true;
+  // node/npm/npx/gh/git/docker/claude/gemini: -v/--version/-V are version-only.
+  if (/^(?:node|npm|npx|gh|git|docker|claude|gemini)\s+(?:-v|--version|-V)\s*$/i.test(trimmed)) {
+    return true;
+  }
+  // cargo/rustc: -V/--version are version-only; bare -v means verbose.
+  // Keep this case-sensitive so /i cannot collapse -V into -v.
+  if (/^(?:cargo|rustc)\s+(?:-V|--version)\s*$/.test(trimmed)) return true;
+  // python/pytest: only --version/-V. Bare -v means verbose and must stay gated.
+  if (/^(?:python|python3|pytest)\s+(?:--version|-V)\s*$/.test(trimmed)) return true;
+  return false;
+}
+
 function getLearnedPrediction(learnedPolicy) {
   return learnedPolicy?.enabled ? learnedPolicy.prediction : null;
 }
@@ -1443,7 +1472,26 @@ function hasSoftControlWarning({ workflowContract, workflowControl, costControl,
     || (learnedRecall && riskScore >= 0.34);
 }
 
-function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command, costControl, financialControl, workflowControl, workflowContract, actionProfile }) {
+function chooseDecision({
+  riskScore,
+  integrity,
+  memoryGuard,
+  learnedPolicy,
+  blastRadius,
+  command,
+  toolName,
+  costControl,
+  financialControl,
+  workflowControl,
+  workflowContract,
+  actionProfile,
+}) {
+  // Version/probe allowlist is Bash-only — other tools may carry a "command"
+  // field without being a shell version probe.
+  if (shouldAllowVersionProbe(toolName, command)) {
+    return 'allow';
+  }
+
   if (financialControl?.mode === 'block' || costControl?.mode === 'block' || workflowControl?.mode === 'block' || workflowContract?.mode === 'block') {
     return 'deny';
   }
@@ -1524,9 +1572,19 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
   if (!repoRoot) {
     repoRoot = resolveRepoRoot(repoPath) || null;
   }
+  const explicitChanged = Array.isArray(normalizedToolInput.changedFiles)
+    ? normalizedToolInput.changedFiles
+    : (Array.isArray(normalizedToolInput.changed_files) ? normalizedToolInput.changed_files : null);
+
   const affectedFiles = Array.isArray(options.affectedFiles)
-    ? options.affectedFiles.map((filePath) => normalizePosix(filePath)).filter(Boolean)
-    : collectAffectedFiles(normalizedToolName, normalizedToolInput, repoRoot);
+    ? options.affectedFiles
+      .map((filePath) => toRepoRelativePath(filePath, repoRoot))
+      .filter(Boolean)
+    : (explicitChanged
+      ? explicitChanged
+        .map((filePath) => toRepoRelativePath(filePath, repoRoot))
+        .filter(Boolean)
+      : collectAffectedFiles(normalizedToolName, normalizedToolInput, repoRoot));
   let actionProfile = classifyActionProfile(normalizedToolInput);
   const financialControl = evaluateFinancialControl({
     toolName: normalizedToolName,
@@ -1664,6 +1722,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
       unapprovedProtectedFiles: protectedSurfaceForRisk.unapprovedProtectedFiles.length,
     },
     command: normalizedToolInput.command || '',
+    toolName: normalizedToolName,
     costControl,
     financialControl,
     workflowControl,
@@ -1769,9 +1828,12 @@ module.exports = {
   collectAffectedFiles,
   evaluateWorkflowSentinel,
   isHighRiskAction,
+  isVersionOrProbeCommand,
   loadGovernanceState,
   normalizeLearnedPolicyForSentinel,
   scoreRisk,
+  shouldAllowVersionProbe,
+  toRepoRelativePath,
 };
 
 if (require.main === module) {

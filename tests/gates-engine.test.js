@@ -3821,3 +3821,27 @@ test('satisfy_gate evidence mentioning checkout is not a financial hard floor (#
   assert.equal(result, null, 'remedy-tool evidence must not trip financial-control');
   cleanupStateFiles();
 });
+
+test('self-protect-config denies no-space and multi-redirect shell writes', () => {
+  cleanupStateFiles();
+  const cases = [
+    "printf '%s' '{}' >config/gates/default.json",
+    "printf '%s' '{}' 1> config/gates/default.json",
+    "echo safe >/tmp/out; printf '%s' '{}' > config/gates/default.json",
+    "printf '%s' '{}' 2>/tmp/err >config/gates/default.json",
+    "printf x>config/gates/default.json",
+  ];
+  for (const command of cases) {
+    const output = runHardFloor({ tool_name: 'Bash', tool_input: { command } });
+    assert.ok(output, `expected deny for ${command}`);
+    const hook = JSON.parse(output).hookSpecificOutput;
+    assert.equal(hook.permissionDecision, 'deny', command);
+    assert.match(hook.permissionDecisionReason, /\[GATE:self-protect-config\]/, command);
+  }
+  // Unrelated redirect must stay allowed through this hard floor.
+  assert.equal(runHardFloor({
+    tool_name: 'Bash',
+    tool_input: { command: "printf '%s' 'ok' >/tmp/thumbgate-benign.txt" },
+  }), null);
+  cleanupStateFiles();
+});
