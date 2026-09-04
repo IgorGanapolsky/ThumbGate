@@ -689,9 +689,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // gained optimistic concurrency (_rev), auth boundary on approveNotebook,
   // and listNotebooks now enumerates JSON — ~1.6 KB of guard logic.
   // Measured 8,091,622 unpacked on the merged tree — 1,622 over the old cap.
+  // Bumped 8.20 MB -> 8.21 MB (2026-09-04, PR #3762): nvidia-specdecode-al-doctor.js
+  // AL/D fail-closed doctor (~15 KB packaged). Measured 8,205,606 unpacked —
+  // 5,606 over the old cap. Narrow headroom retained.
   assert.ok(
-    manifest.unpackedSize <= 8_200_000,
-    `npm package should stay <= 8.20 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 8_210_000,
+    `npm package should stay <= 8.21 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
