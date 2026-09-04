@@ -17,6 +17,34 @@ standalone `copilot` CLI is unavailable, record that fact and continue with
 deterministic `gh`, git, and repository checks. Copilot advice is never
 authoritative.
 
+### Fleet Coordination Contract (Mandatory, Every Agent, Every Session)
+
+Multiple agents (Claude Code, Codex, grok, Gemini, Hermes) work this repo and
+the `~/Documents/AI-Agent-Sync` Obsidian vault concurrently. Before ANY state
+mutation — checkout switch, clean/reset, branch or worktree creation, push, PR
+open/merge, or vault write — complete the coordination sweep:
+
+```bash
+bash .claude/scripts/session-bootstrap/fleet-coordination-check.sh
+```
+
+The sweep (read-only) reports: the single-writer checkout lease, active vault
+claims touching ThumbGate, vault dirty-writer signals, live herdr panes (when
+the gateway is up), Linear issues in flight, and the open-PR census. Skill:
+`.claude/skills/fleet-coordination/SKILL.md` (also wired into
+`.claude/settings.json` SessionStart so Claude Code runs it automatically).
+
+Non-negotiable rules:
+
+1. One live session owns a checkout (`node scripts/session-lease.js claim`).
+   A live foreign lease means use a separate worktree, not a force-checkout.
+2. Never `git add -A` in a shared checkout. Stage explicit paths only.
+3. Check `Agent-Jobs/running/` in the vault before claiming or editing shared
+   project files; treat live claims as owned until stale (>7d or dead PID).
+4. Never write to another agent's state file. Commit only your own vault file
+   via PR; the vault has its own branch protection.
+5. Do not duplicate an open PR or an open Linear issue. Claim first, then work.
+
 For session closure:
 
 1. Classify every open PR as ready or blocked, with terminal check and review evidence.
