@@ -4,14 +4,20 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const {
   buildReport,
   mapItem,
+  parseArgs,
   parseTrendingHtml,
+  run,
+  skipReason,
 } = require('../scripts/explainx-trending-honest');
 
+const REPO = path.resolve(__dirname, '..');
 const FIXTURE = path.join(__dirname, 'fixtures', 'explainx-trending-rsc-snippet.html');
+const FIXTURE_REL = 'tests/fixtures/explainx-trending-rsc-snippet.html';
 
 describe('explainx-trending-honest', () => {
   it('parses scored items from RSC HTML fixture (fail closed on empty)', () => {
@@ -23,6 +29,20 @@ describe('explainx-trending-honest', () => {
     assert.deepEqual(parseTrendingHtml(''), []);
   });
 
+  it('parses plain JSON item blobs and keeps higher score on href collision', () => {
+    const html = [
+      '{"type":"blog","typeLabel":"blog","name":"Low","description":"d","href":"/a","score":10}',
+      '{"type":"blog","typeLabel":"blog","name":"High","description":"d","href":"/a","score":99}',
+      '{"type":"skill","typeLabel":"skill","name":"Other","description":"x","href":"/b","score":5}',
+    ].join('\n');
+    const items = parseTrendingHtml(html);
+    assert.equal(items.length, 2);
+    assert.equal(items[0].href, '/a');
+    assert.equal(items[0].score, 99);
+    assert.equal(items[0].name, 'High');
+    assert.match(items[0].url, /^https:\/\/explainx\.ai\/a$/);
+  });
+
   it('ranks by parsed score and never invents ROI', () => {
     const html = fs.readFileSync(FIXTURE, 'utf8');
     const report = buildReport({ html, source: 'fixture:test', top: 20 });
@@ -31,6 +51,7 @@ describe('explainx-trending-honest', () => {
     assert.match(report.disclaimer, /not ThumbGate ROI/i);
     assert.ok(!JSON.stringify(report).includes('TF-IDF'));
     assert.ok(report.items[0].score >= report.items.at(-1).score);
+    assert.ok(report.counts.parsed >= report.counts.shown);
   });
 
   it('maps /show-me and limit-reset onto existing rails; skips news noise', () => {
@@ -64,6 +85,91 @@ describe('explainx-trending-honest', () => {
     });
     assert.equal(rsa.disposition, 'skip');
     assert.equal(rsa.skipReason, 'news_noise');
+  });
+
+  it('maps grill-me / harness / skills-mcp and observes unmatched', () => {
+    assert.equal(mapItem({
+      type: 'skill', name: 'grill-me', description: '', href: '/skills/grill-me', score: 96,
+    }).mapId, 'grill-me-spec');
+    assert.equal(mapItem({
+      type: 'blog',
+      name: 'Top 10 Closed-Source and Open-Source Agent Harnesses (2026)',
+      description: 'agent harness roundup',
+      href: '/blog/harness',
+      score: 79,
+    }).mapId, 'harness-compare');
+    assert.equal(mapItem({
+      type: 'blog',
+      name: 'Skills + MCP + Loops',
+      description: 'agent skills and MCP loops',
+      href: '/blog/skills-mcp',
+      score: 50,
+    }).mapId, 'skills-mcp-loops');
+
+    const observe = mapItem({
+      type: 'blog',
+      name: 'Totally Unrelated Topic',
+      description: 'gardening tips',
+      href: '/blog/gardening',
+      score: 1,
+    });
+    assert.equal(observe.disposition, 'observe');
+    assert.match(observe.steal, /observe only/i);
+  });
+
+  it('classifies skip reasons without auto-install', () => {
+    assert.equal(skipReason({
+      name: 'ExplainX MCP Bootcamp', description: 'workshop', href: '/pricing', type: 'course',
+    }), 'product_clone');
+    assert.equal(skipReason({
+      name: 'Flutter UI kit', description: 'mobile-app-ui lottie', href: '/ui', type: 'blog',
+    }), 'ui_design_sku');
+    assert.equal(skipReason({
+      name: 'Claude Commerce Agents', description: 'shopping agent', href: '/commerce', type: 'blog',
+    }), 'eci_pause');
+    assert.equal(skipReason({
+      name: 'Ordinary note', description: 'nothing special', href: '/x', type: 'blog',
+    }), null);
+  });
+
+  it('parseArgs accepts fixture/fetch/json/top and rejects unknowns', () => {
+    assert.deepEqual(parseArgs(['--fixture', 'x.html', '--json', '--top', '5']), {
+      fixture: 'x.html',
+      fetch: false,
+      url: 'https://explainx.ai/trending',
+      json: true,
+      top: 5,
+      help: false,
+    });
+    assert.equal(parseArgs(['--help']).help, true);
+    assert.equal(parseArgs(['--fetch']).fetch, true);
+    assert.throws(() => parseArgs(['--nope']), /Unknown or incomplete/);
+  });
+
+  it('run() loads fixture and prints text + json modes', async () => {
+    const help = await run(['--help']);
+    assert.equal(help.status, 'HELP');
+
+    const text = await run(['--fixture', FIXTURE_REL, '--top', '3']);
+    assert.equal(text.ok, true);
+    assert.equal(text.status, 'OK');
+    assert.ok(text.actionable.length >= 1);
+
+    const json = await run(['--fixture', FIXTURE, '--json', '--top', '2']);
+    assert.equal(json.ok, true);
+    assert.equal(json.items.length, 2);
+
+    await assert.rejects(() => run([]), /Provide --fixture PATH or --fetch/);
+  });
+
+  it('CLI --help exits 0', () => {
+    const result = spawnSync(
+      process.execPath,
+      [path.join(REPO, 'scripts/explainx-trending-honest.js'), '--help'],
+      { encoding: 'utf8', timeout: 10000 },
+    );
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /Usage:/);
   });
 
   it('returns UNAVAILABLE when HTML has no scored items', () => {
