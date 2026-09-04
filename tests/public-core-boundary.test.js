@@ -281,7 +281,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 522 -> 523: scripts/package-manager-honesty-doctor.js — InfoQ pnpm 12
   //   honesty steal without migrating off npm (public-shell CLI/doctor).
   //   Lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 523;
+  // 523 -> 525: scripts/jit-harness-compose.js + skill — JIT four-module FORMAT
+  //   steal onto harness-selector/switchyard/subagent-profiles.
+  //   Lockstep with package-boundary + public-bundle-ratchet.
+  const CEILING = 525;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

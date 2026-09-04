@@ -457,6 +457,25 @@ const CLI_COMMANDS = [
       { name: 'allow-ignore-scripts-gaps', type: 'boolean', description: 'Do not warn when CI installs omit --ignore-scripts' },
     ],
   }),
+
+  discoveryCommand({
+    name: 'jit-harness-compose',
+    aliases: ['jit-compose', 'jit-harness', 'harness-compose'],
+    description: 'Compose JIT-Agent four-module harness FORMAT (memory/planning/action/capability) onto existing ThumbGate rails — does not train or download JIT-Agent',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero unless status=ready' },
+      { name: 'task', type: 'string', description: 'Task text to classify and compose' },
+      { name: 'query', type: 'string', description: 'Alias for --task' },
+      { name: 'class', type: 'string', description: 'Force task class (code_edit|review|deploy|research|secure|routine|db_write|default)' },
+      { name: 'harness', type: 'string', description: 'Force gate harness name' },
+      { name: 'profile', type: 'string', description: 'Force subagent profile' },
+      { name: 'roles', type: 'string', description: 'Comma-separated switchyard roles' },
+      { name: 'toolName', type: 'string', description: 'Tool-name hint for harness-selector' },
+      { name: 'map-only', type: 'boolean', description: 'Print four-module rail map only' },
+      { name: 'root', type: 'string', description: 'Repo root to probe' },
+    ],
+  }),
   discoveryCommand({
     name: 'nvidia-specdecode-al-doctor',
     aliases: ['specdecode-al-doctor', 'speculative-decoding-al-doctor', 'nvidia-speculative-decoding-doctor'],

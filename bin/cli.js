@@ -2648,6 +2648,28 @@ function nvidiaSpecDecodeAlDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+
+function jitHarnessCompose() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildJitHarnessComposeReport,
+    formatJitHarnessComposeReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'jit-harness-compose'));
+  const report = buildJitHarnessComposeReport(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatJitHarnessComposeReport(report));
+  }
+
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function packageManagerHonestyDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3489,6 +3511,7 @@ function help() {
   console.log('  npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json');
   console.log('  npx thumbgate nvidia-specdecode-al-doctor --speculative-decoding --accept-length=1.4 --draft-length=7 --draft-depth-ratio=0.05 --claimed-speedup=3 --json');
   console.log('  npx thumbgate package-manager-honesty-doctor --propose-switch=pnpm --json');
+  console.log('  npx thumbgate jit-harness-compose --task="implement PreToolUse gate fix" --json');
   console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
   console.log('  npx thumbgate background-governance --json');
   console.log('  npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json');
@@ -4128,6 +4151,12 @@ switch (COMMAND) {
   case 'pnpm12-honesty-doctor':
   case 'lockfile-ci-parity-doctor':
     packageManagerHonestyDoctor();
+    break;
+  case 'jit-harness-compose':
+  case 'jit-compose':
+  case 'jit-harness':
+  case 'harness-compose':
+    jitHarnessCompose();
     break;
   case 'long-running-agent-context-guardrails':
   case 'agent-context-guardrails':

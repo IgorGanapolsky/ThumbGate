@@ -251,6 +251,17 @@ test('nvidia-specdecode-al-doctor exposes AL/D speedup flags', () => {
   assert.ok(flagNames.includes('attention-dominated'));
 });
 
+
+test('jit-harness-compose exposes four-module compose flags', () => {
+  const cmd = findCommand('jit-compose');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'jit-harness-compose');
+  assert.ok(cmd.aliases.includes('jit-compose'));
+  assert.ok(flagNames.includes('task'));
+  assert.ok(flagNames.includes('map-only'));
+  assert.ok(flagNames.includes('profile'));
+});
+
 test('package-manager-honesty-doctor exposes lockfile/CI parity flags', () => {
   const cmd = findCommand('pnpm12-honesty-doctor');
   const flagNames = cmd.flags.map((f) => f.name);
