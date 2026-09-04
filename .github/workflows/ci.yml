@@ -130,8 +130,7 @@ jobs:
           for attempt in 1 2 3 4 5; do
             out=$(npm audit --audit-level=low 2>&1)
             code=$?
-            printf '%s
-' "$out"
+            printf '%s\n' "$out"
             if [ "$code" -eq 0 ]; then exit 0; fi
             transient=0
             printf '%s' "$out" | grep -Eqi '503 Service Unavailable|ECONNRESET|ETIMEDOUT|ENOTFOUND|network|socket hang up|audit endpoint returned an error|Service Unavailable' && transient=1
@@ -156,8 +155,7 @@ jobs:
           for attempt in 1 2 3 4 5; do
             out=$(npm --prefix workers audit --audit-level=low 2>&1)
             code=$?
-            printf '%s
-' "$out"
+            printf '%s\n' "$out"
             if [ "$code" -eq 0 ]; then exit 0; fi
             transient=0
             printf '%s' "$out" | grep -Eqi '503 Service Unavailable|ECONNRESET|ETIMEDOUT|ENOTFOUND|network|socket hang up|audit endpoint returned an error|Service Unavailable' && transient=1
