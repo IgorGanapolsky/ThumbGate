@@ -485,8 +485,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 519 -> 522 (2026-09-04): radware-threat-defense.js + learn page + config/gates/radware-threat-defense-2026.json.
   // 521 -> 522: scripts/nvidia-specdecode-al-doctor.js (AL/D doctor).
   // 522 -> 523: scripts/package-manager-honesty-doctor.js (pnpm 12 honesty).
-    manifest.fileCount <= 523,
-    `npm package should stay <= 523 files, got ${manifest.fileCount}`
+  // 523 -> 525: scripts/jit-harness-compose.js + skill (JIT-Agent FORMAT steal).
+    manifest.fileCount <= 525,
+    `npm package should stay <= 525 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -695,8 +696,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.21 MB -> 8.25 MB (2026-09-04): package-manager-honesty-doctor.js on top of AL/D.
   // 5,606 over the old cap. Narrow headroom retained.
   assert.ok(
-    manifest.unpackedSize <= 8_250_000,
-    `npm package should stay <= 8.25 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.25 MB -> 8.30 MB (2026-09-04): jit-harness-compose.js FORMAT steal.
+    manifest.unpackedSize <= 8_300_000,
+    `npm package should stay <= 8.30 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
