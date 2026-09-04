@@ -444,6 +444,19 @@ const CLI_COMMANDS = [
       { name: 'truncation-failures', type: 'boolean', description: 'Mark that failures may be truncation-related' },
     ],
   }),
+
+  discoveryCommand({
+    name: 'package-manager-honesty-doctor',
+    aliases: ['pm-honesty-doctor', 'pnpm12-honesty-doctor', 'lockfile-ci-parity-doctor'],
+    description: 'Audit lockfile/packageManager/CI install parity and fail-closed package-manager switches (InfoQ pnpm 12 process steal; does not migrate off npm)',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero on fail or actionable findings' },
+      { name: 'root', type: 'string', description: 'Repo root to scan (default cwd)' },
+      { name: 'propose-switch', type: 'string', description: 'Fail-closed checklist for switching to npm|pnpm|yarn|bun' },
+      { name: 'allow-ignore-scripts-gaps', type: 'boolean', description: 'Do not warn when CI installs omit --ignore-scripts' },
+    ],
+  }),
   discoveryCommand({
     name: 'nvidia-specdecode-al-doctor',
     aliases: ['specdecode-al-doctor', 'speculative-decoding-al-doctor', 'nvidia-speculative-decoding-doctor'],

@@ -484,8 +484,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // already emitted this session.
   // 519 -> 522 (2026-09-04): radware-threat-defense.js + learn page + config/gates/radware-threat-defense-2026.json.
   // 521 -> 522: scripts/nvidia-specdecode-al-doctor.js (AL/D doctor).
-    manifest.fileCount <= 522,
-    `npm package should stay <= 522 files, got ${manifest.fileCount}`
+  // 522 -> 523: scripts/package-manager-honesty-doctor.js (pnpm 12 honesty).
+    manifest.fileCount <= 523,
+    `npm package should stay <= 523 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -691,10 +692,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Measured 8,091,622 unpacked on the merged tree — 1,622 over the old cap.
   // Bumped 8.20 MB -> 8.21 MB (2026-09-04, PR #3762): nvidia-specdecode-al-doctor.js
   // AL/D fail-closed doctor (~15 KB packaged). Measured 8,205,606 unpacked —
+  // Bumped 8.21 MB -> 8.25 MB (2026-09-04): package-manager-honesty-doctor.js on top of AL/D.
   // 5,606 over the old cap. Narrow headroom retained.
   assert.ok(
-    manifest.unpackedSize <= 8_210_000,
-    `npm package should stay <= 8.21 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 8_250_000,
+    `npm package should stay <= 8.25 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
