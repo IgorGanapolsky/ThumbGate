@@ -14,23 +14,34 @@ set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 VAULT="${AI_AGENT_SYNC_VAULT:-$HOME/Documents/AI-Agent-Sync}"
-SESSION_AGENT="${THUMBGATE_SESSION_AGENT:-$(hostname -s)-unknown}"
+
+# Fail closed: shared hostname-unknown identity would skip foreign leases.
+if [ -z "${THUMBGATE_SESSION_AGENT:-}" ]; then
+  echo "BLOCKER: THUMBGATE_SESSION_AGENT unset. Export a unique session id before mutating shared state."
+  exit 2
+fi
+SESSION_AGENT="$THUMBGATE_SESSION_AGENT"
 
 echo "=== Fleet Coordination Check (session: ${SESSION_AGENT}) ==="
 
-# 1) Checkout lease (single-writer discipline) -----------------------------
-if [ -f "$REPO_ROOT/.git/thumbgate-session-lease.json" ]; then
-  LEASE_AGENT="$(node -e "const l=require('$REPO_ROOT/.git/thumbgate-session-lease.json');process.stdout.write(l.agent||'unknown')" 2>/dev/null || echo unknown)"
-  LEASE_PID="$(node -e "const l=require('$REPO_ROOT/.git/thumbgate-session-lease.json');process.stdout.write(String(l.pid||''))" 2>/dev/null || echo '')"
-  if [ -n "$LEASE_PID" ] && ps -p "$LEASE_PID" >/dev/null 2>&1; then
-    if [ "$LEASE_AGENT" != "$SESSION_AGENT" ]; then
-      echo "BLOCKER: lease held by live agent '$LEASE_AGENT' (pid $LEASE_PID). Use a separate worktree."
-      exit 2
-    fi
-    echo "lease: held by THIS session ($LEASE_AGENT, pid $LEASE_PID) OK"
-  else
-    echo "lease: stale/dead ($LEASE_AGENT pid $LEASE_PID) - reclaim before mutating"
+# 1) Checkout lease via canonical checker (exit 1 = foreign live lease).
+# scripts/session-lease.js check: 0 = ours/none-or-stale reclaimable, 1 = foreign live.
+if [ -f "$REPO_ROOT/scripts/session-lease.js" ]; then
+  set +e
+  CHECK_OUT="$(cd "$REPO_ROOT" && THUMBGATE_SESSION_AGENT="$SESSION_AGENT" node scripts/session-lease.js check 2>&1)"
+  CHECK_RC=$?
+  set -e
+  if [ "$CHECK_RC" -eq 1 ]; then
+    echo "BLOCKER: $CHECK_OUT"
+    echo "Use a separate worktree (git worktree add) instead of mutating this checkout."
+    exit 2
   fi
+  echo "lease: $CHECK_OUT (rc=$CHECK_RC) OK"
+elif [ -f "$REPO_ROOT/.git/thumbgate-session-lease.json" ]; then
+  # Fallback: pass path as argv data (never interpolate into JS source).
+  LEASE_PATH="$REPO_ROOT/.git/thumbgate-session-lease.json"
+  LEASE_AGENT="$(node -e "const fs=require('fs');const l=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));process.stdout.write(l.agent||'unknown')" "$LEASE_PATH" 2>/dev/null || echo unknown)"
+  echo "lease: file present agent=$LEASE_AGENT (canonical checker missing — claim/check manually)"
 else
   echo "lease: none present - claim before mutating shared state"
 fi
@@ -110,9 +121,9 @@ fi
 # 6) Open PRs on this repo (quick census) ----------------------------------
 if command -v gh >/dev/null 2>&1; then
   echo "--- Open PR census ---"
-  if PRS="$(gh pr list --repo IgorGanapolsky/ThumbGate --state open --limit 30 \
+  if PRS="$(gh pr list --repo IgorGanapolsky/ThumbGate --state open --limit 100 \
     --json number,mergeStateStatus,headRefName \
-    --jq '.[] | "#\(.number) [\(.mergeStateStatus)] \(.headRefName)"' 2>/dev/null | head -25)"; then
+    --jq '.[] | "#\(.number) [\(.mergeStateStatus)] \(.headRefName)"' 2>/dev/null)"; then
     if [ -n "$PRS" ]; then
       echo "$PRS" | sed 's/^/  /'
     else
