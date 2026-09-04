@@ -106,3 +106,21 @@ test('deepseek-v4-runtime-guardrails CLI emits machine-readable recommendations'
   assert.ok(payload.summary.recommendedTemplateCount >= 3);
   assert.ok(payload.signals.some((signal) => signal.id === 'hybrid_attention_cache'));
 });
+
+test('speculative overclaim against AL/(1+ρD) recommends acceptance checkpoint', () => {
+  const report = buildDeepSeekV4RuntimeGuardrailsPlan({
+    'speculative-decoding': true,
+    'accept-length': '4',
+    'draft-length': '7',
+    'draft-depth-ratio': '0.05',
+    'claimed-speedup': '5',
+    'cache-coherence-eval': true,
+  });
+  const recommendedIds = report.templates
+    .filter((template) => template.recommended)
+    .map((template) => template.id);
+
+  assert.ok(recommendedIds.includes('checkpoint-speculative-decoding-acceptance'));
+  assert.equal(report.metrics.theoreticalSpeedup, 2.963);
+  assert.ok(report.signals.some((signal) => signal.id === 'speculative_decoding'));
+});

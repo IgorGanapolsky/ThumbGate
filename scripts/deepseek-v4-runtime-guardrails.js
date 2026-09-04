@@ -2,6 +2,11 @@
 'use strict';
 
 const { listGateTemplates } = require('./gate-templates');
+const {
+  theoreticalSpeedup,
+  optimalDraftLengthForAttention,
+  isTileAligned,
+} = require('./nvidia-specdecode-al-doctor');
 
 const CATEGORY = 'Sparse Attention Runtime Safety';
 
@@ -33,6 +38,11 @@ function normalizeOptions(options = {}) {
     cacheCoherenceEval: normalizeBoolean(options['cache-coherence-eval'] || options['cache-eval']),
     speculativeDecoding: normalizeBoolean(options['speculative-decoding'] || options.speculative || options.mtp || options.eagle),
     acceptLength: toNumber(options['accept-length'] || options['spec-accept-length']),
+    draftLength: toNumber(options['draft-length'] || options['spec-draft-length'] || options.d),
+    draftDepthRatio: toNumber(options['draft-depth-ratio'] || options.rho),
+    claimedSpeedup: toNumber(options['claimed-speedup'] || options.speedup),
+    queryHeadsPerKvHead: toNumber(options['query-heads-per-kv'] || options.g || options.G),
+    attentionDominated: normalizeBoolean(options['attention-dominated'] || options.attention),
     kvOffload,
     training,
     rolloutReplay: normalizeBoolean(options['rollout-replay'] || options.r3),
@@ -64,7 +74,33 @@ function templateApplicability(template, options) {
     return (options.hybridAttention || isLongContext(options)) && (!options.prefixCache || !options.cacheCoherenceEval);
   }
   if (template.id === 'checkpoint-speculative-decoding-acceptance') {
-    return options.speculativeDecoding && (options.acceptLength === null || options.acceptLength < 2 || !options.cacheCoherenceEval);
+    if (!options.speculativeDecoding) return false;
+    if (options.acceptLength === null || options.acceptLength < 2 || !options.cacheCoherenceEval) return true;
+    if (options.draftLength !== null && options.acceptLength > (1 + options.draftLength)) return true;
+    const rho = options.draftDepthRatio === null ? 0 : options.draftDepthRatio;
+    if (
+      options.claimedSpeedup !== null
+      && options.acceptLength !== null
+      && options.draftLength !== null
+    ) {
+      const theory = theoreticalSpeedup(options.acceptLength, options.draftLength, rho);
+      if (theory !== null && options.claimedSpeedup > theory) return true;
+    }
+    if (
+      options.attentionDominated
+      && options.queryHeadsPerKvHead !== null
+      && options.draftLength !== null
+    ) {
+      const optimal = optimalDraftLengthForAttention(options.queryHeadsPerKvHead);
+      if (
+        optimal !== null
+        && options.draftLength > optimal
+        && !isTileAligned(options.queryHeadsPerKvHead, options.draftLength)
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
   if (template.id === 'require-long-context-kv-offload-capacity-plan') {
     return isLongContext(options) && !options.kvOffload;
@@ -108,15 +144,27 @@ function hybridAttentionSignal(options) {
 }
 
 function speculativeDecodingSignal(options) {
-  if (!(options.speculativeDecoding || options.acceptLength !== null)) return null;
+  if (!(options.speculativeDecoding || options.acceptLength !== null || options.draftLength !== null)) {
+    return null;
+  }
+  const rho = options.draftDepthRatio === null ? 0 : options.draftDepthRatio;
+  const theory = (
+    options.acceptLength !== null && options.draftLength !== null
+  )
+    ? theoreticalSpeedup(options.acceptLength, options.draftLength, rho)
+    : null;
   return {
     id: 'speculative_decoding',
     label: 'Speculative decoding rollout',
     values: [
       options.speculativeDecoding ? 'speculative decoding enabled' : 'speculative decoding not declared',
-      options.acceptLength !== null ? `${options.acceptLength} accept length` : 'accept length missing',
-    ],
-    risk: 'Draft-token metadata and rollback paths can make throughput claims look good while correctness or acceptance collapses.',
+      options.acceptLength !== null ? `${options.acceptLength} accept length (AL)` : 'accept length missing',
+      options.draftLength !== null ? `${options.draftLength} draft length (D)` : null,
+      options.draftDepthRatio !== null ? `ρ=${options.draftDepthRatio}` : null,
+      theory !== null ? `theory ${theory}x = AL/(1+ρD)` : null,
+      options.claimedSpeedup !== null ? `claimed ${options.claimedSpeedup}x` : null,
+    ].filter(Boolean),
+    risk: 'Draft-token metadata and rollback paths can make throughput claims look good while correctness or acceptance collapses. Reject claims above AL/(1+ρD).',
   };
 }
 
@@ -186,6 +234,18 @@ function buildDeepSeekV4RuntimeGuardrailsPlan(rawOptions = {}, templatesPath) {
       newThroughput: options.newThroughput,
       throughputDropPercent: throughputDropPercent(options),
       acceptLength: options.acceptLength,
+      draftLength: options.draftLength,
+      draftDepthRatio: options.draftDepthRatio,
+      claimedSpeedup: options.claimedSpeedup,
+      theoreticalSpeedup: (
+        options.acceptLength !== null && options.draftLength !== null
+      )
+        ? theoreticalSpeedup(
+          options.acceptLength,
+          options.draftLength,
+          options.draftDepthRatio === null ? 0 : options.draftDepthRatio
+        )
+        : null,
       trainInferenceDrift: options.trainInferenceDrift,
     },
     summary: {
@@ -198,11 +258,12 @@ function buildDeepSeekV4RuntimeGuardrailsPlan(rawOptions = {}, templatesPath) {
     nextActions: [
       'Benchmark DeepSeek-V4 behind the same ThumbGate eval harness before changing routing defaults.',
       'Require cache-coherence and rollback evidence before enabling hybrid prefix caching or speculative decoding.',
+      'Measure AL and D; reject speedup claims above AL/(1+ρD) via nvidia-specdecode-al-doctor.',
       'Keep long-context memory and throughput budgets explicit before raising context windows.',
       'For RL or fine-tuning, require rollout-routing replay, indexer replay, and train-inference drift checks.',
       'Treat FP4/FP8 or mixed-precision paths as gated rollouts until deterministic and sensitive-FP32 checks pass.',
     ],
-    exampleCommand: 'npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --training --json',
+    exampleCommand: 'npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --draft-length=7 --draft-depth-ratio=0.05 --claimed-speedup=3 --precision-mode=fp8 --training --json',
   };
 }
 
@@ -221,6 +282,11 @@ function formatDeepSeekV4RuntimeGuardrailsPlan(report) {
   if (report.metrics.contextTokens !== null) lines.push(`Context tokens: ${report.metrics.contextTokens}`);
   if (report.metrics.throughputDropPercent !== null) lines.push(`Throughput drop: ${report.metrics.throughputDropPercent}%`);
   if (report.metrics.acceptLength !== null) lines.push(`Spec accept length: ${report.metrics.acceptLength}`);
+  if (report.metrics.draftLength !== null) lines.push(`Spec draft length: ${report.metrics.draftLength}`);
+  if (report.metrics.theoreticalSpeedup !== null) {
+    lines.push(`Spec theory speedup: ${report.metrics.theoreticalSpeedup}x (AL/(1+ρD))`);
+  }
+  if (report.metrics.claimedSpeedup !== null) lines.push(`Spec claimed speedup: ${report.metrics.claimedSpeedup}x`);
   if (report.metrics.trainInferenceDrift !== null) lines.push(`Train/inference drift: ${report.metrics.trainInferenceDrift}`);
 
   if (report.signals.length > 0) {

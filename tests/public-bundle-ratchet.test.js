@@ -226,7 +226,9 @@ const path = require('node:path');
 // already emitted this session.
 // 519 -> 522 (2026-09-04): scripts/radware-threat-defense.js + learn page + config/gates/radware-threat-defense-2026.json (Bot Manager detect→challenge→block).
 // 522 -> 521: unbundle public/learn/* (forbidden npm prefix).
-const BASELINE_FILE_COUNT = 521;
+// 521 → 522: scripts/nvidia-specdecode-al-doctor.js — NVIDIA AL/D
+//            speculative-decoding doctor (speedup ≤ AL/(1+ρD)).
+const BASELINE_FILE_COUNT = 522;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

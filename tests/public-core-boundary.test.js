@@ -282,7 +282,7 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // Public-shell runtime, not a Core feature: the packaged
   // scripts/gates-engine.js requires it to suppress reminder lines it has
   // already emitted this session.
-  const CEILING = 521;
+  const CEILING = 522;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
