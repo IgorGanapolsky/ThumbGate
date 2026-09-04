@@ -48,12 +48,28 @@ fi
 echo "--- Vault claims (AI-Agent-Sync) ---"
 if [ -d "$VAULT/Agent-Jobs/running" ]; then
   CLAIMS="$(grep -rilE 'ThumbGate|thumbgate' "$VAULT/Agent-Jobs/running" 2>/dev/null | grep -v '.thumbgate' || true)"
+  LIVE_CLAIM=0
   if [ -n "$CLAIMS" ]; then
-    echo "$CLAIMS" | while read -r f; do
-      echo "  claim: $(basename "$f")"
-      # Show the claimed repo/scope line if present
-      grep -iE 'repository|repo|scope|project' "$f" 2>/dev/null | head -2 | sed 's/^/    /'
-    done
+    while read -r f; do
+      [ -z "$f" ] && continue
+      if [ -n "$(find "$f" -mtime +1 2>/dev/null)" ]; then
+        echo "  claim(stale): $(basename "$f") — ignore for HARD block"
+        continue
+      fi
+      OWNER="$(grep -iE '^(agent|owner|claimed_by):' "$f" 2>/dev/null | head -1 | sed 's/^[^:]*:[[:space:]]*//')"
+      echo "  claim(live): $(basename "$f") owner=${OWNER:-unknown}"
+      grep -iE 'repository|repo|scope|project|ttl' "$f" 2>/dev/null | head -3 | sed 's/^/    /'
+      # Foreign live claim on this repo is a HARD blocker.
+      if [ -n "$OWNER" ] && [ "$OWNER" != "$SESSION_AGENT" ] && [ "$OWNER" != "grok" ]; then
+        LIVE_CLAIM=1
+      elif [ -z "$OWNER" ]; then
+        LIVE_CLAIM=1
+      fi
+    done <<< "$CLAIMS"
+    if [ "$LIVE_CLAIM" -eq 1 ]; then
+      echo "BLOCKER: live vault claim covers ThumbGate. Hand off or wait; do not dual-edit."
+      exit 2
+    fi
   else
     echo "  none"
   fi
@@ -85,8 +101,9 @@ try:
     for a in agents:
         cwd = a.get('cwd','')
         print(f\"  {a.get('id','?')} state={a.get('state','?')} cwd={cwd} title={(a.get('terminal_title') or '')[:60]}\")
-except Exception:
-    pass
+except Exception as e:
+    print(f'  herdr census parse failed: {e}', file=sys.stderr)
+    raise SystemExit(1)
 " || herdr agent list 2>/dev/null | head -10
   else
     echo "herdr: gateway not running (no live pane view)"
@@ -100,7 +117,7 @@ if [ -f "$KEY_FILE" ]; then
   KEY="$(cat "$KEY_FILE")"
   curl -s -m 8 -X POST https://api.linear.app/graphql \
     -H "Content-Type: application/json" -H "Authorization: $KEY" \
-    -d '{"query":"{ issues(filter: { and: [ { updatedAt: { gte: \"2026-09-01T00:00:00.000Z\" } }, { or: [ { title: { containsIgnoreCase: \"thumbgate\" } }, { title: { containsIgnoreCase: \"radware\" } }, { title: { containsIgnoreCase: \"circuit breaker\" } }, { title: { containsIgnoreCase: \"pr hygiene\" } } ] }, { state: { name: { in: [\"In Progress\",\"In Review\"] } } } ] }, first: 10) { nodes { identifier title state { name } } } }"}' 2>/dev/null \
+    -d '{"query":"{ issues(filter: { and: [ { or: [ { title: { containsIgnoreCase: \"thumbgate\" } }, { title: { containsIgnoreCase: \"radware\" } }, { title: { containsIgnoreCase: \"circuit breaker\" } }, { title: { containsIgnoreCase: \"pr hygiene\" } } ] }, { state: { name: { in: [\"In Progress\",\"In Review\"] } } } ] }, first: 50) { nodes { identifier title state { name } } } }"}' 2>/dev/null \
     | python3 -c "
 import sys, json
 try:

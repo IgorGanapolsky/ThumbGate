@@ -63,3 +63,8 @@ Two agents, same repo, both "helpful": one force-checkouts main and cleans,
 wiping the other's untracked work; the other `git add -A`s the debris into the
 wrong branch. The lease + claim + census above make that collision visible
 before it happens.
+
+
+## Concurrent Agent-State writes (HARD)
+
+Never write to `Agent-State/<other-agent>.md`. Each session appends only its own `Agent-State/<this-agent>.md` (or `Handoffs/*<this-agent>*`). Two same-kind sessions must use distinct filenames (e.g. `grok.md` vs `grok-<session>.md`) or an atomic claim/lease before overwrite.
