@@ -41,8 +41,15 @@ function cleanUniqueList(value) {
 }
 
 function finiteNumber(value) {
-  if (value === undefined || value === null || value === '') return null;
-  const parsed = Number(value);
+  // Reject booleans/arrays/objects — Number(true)===1 and Number([])===0 would
+  // silently pass zero-cost / ranking gates.
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
@@ -217,7 +224,15 @@ function rankBusinessFunctionAgents(candidates = []) {
 
 function validBusinessObjectSchema(schema) {
   const properties = schema?.properties;
-  if (schema?.type !== 'object' || !properties || typeof properties !== 'object') return false;
+  // Arrays are typeof 'object' — reject them so properties: ['x'] cannot pass.
+  if (
+    schema?.type !== 'object'
+    || !properties
+    || typeof properties !== 'object'
+    || Array.isArray(properties)
+  ) {
+    return false;
+  }
   const propertyNames = Object.keys(properties);
   return propertyNames.length > 0
     && Array.isArray(schema.required)

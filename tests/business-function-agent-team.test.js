@@ -186,6 +186,27 @@ test('handoff requires explicit data classification and schema-required field in
   assert.ok(result.issues.includes('invalid_input_schema'));
 });
 
+test('handoff rejects array properties schemas and non-numeric cost coercion', () => {
+  const arraySchema = evaluateBusinessFunctionHandoff(validHandoff({
+    inputSchema: {
+      type: 'object',
+      properties: ['prospectId'],
+      required: ['0'],
+    },
+  }));
+  assert.equal(arraySchema.decision, 'deny');
+  assert.ok(arraySchema.issues.includes('invalid_input_schema'));
+
+  const coercedCost = evaluateBusinessFunctionHandoff(validHandoff({
+    budget: { estimatedCostUsd: true, maxCostUsd: 10 },
+  }));
+  assert.equal(coercedCost.decision, 'deny');
+  assert.ok(
+    coercedCost.issues.some((issue) => /budget|cost|estimated/i.test(issue)),
+    `expected cost/budget issue, got ${coercedCost.issues.join(',')}`,
+  );
+});
+
 test('handoff rejects undeclared edges, missing contracts, and cost overruns', () => {
   const result = evaluateBusinessFunctionHandoff(validHandoff({
     fromFunction: 'content_creation',
