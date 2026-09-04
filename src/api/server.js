@@ -11193,24 +11193,10 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       // POST /v1/hermes/turn/start — Start turn under Hermes Platform Protocol
+      // Fail closed until POST /v1/hermes/initialize registers the connectionId.
       if (req.method === 'POST' && pathname === '/v1/hermes/turn/start') {
         const body = await parseJsonBody(req);
         const { protocol } = getHostedHermes(requestDataIdentity);
-        // Auto-initialize when the caller supplies a connectionId that has not
-        // been registered yet, so turn/start is usable without a prior hop.
-        if (body.connectionId && !protocol.connections.has(body.connectionId)) {
-          const initResult = protocol.initialize({ connectionId: body.connectionId });
-          if (!initResult.ok) {
-            sendProblem(res, {
-              type: PROBLEM_TYPES.BAD_REQUEST,
-              title: 'Hermes Turn Rejected',
-              status: 400,
-              detail: initResult.reason,
-              ...initResult,
-            });
-            return;
-          }
-        }
         const result = protocol.startTurn(body);
         if (!result.ok) {
           sendProblem(res, {

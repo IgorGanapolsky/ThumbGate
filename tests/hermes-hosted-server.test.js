@@ -64,6 +64,15 @@ test('hosted Hermes Platform Protocol and Sync Plane API routes', async (t) => {
     assert.equal(res.body.reason, 'not_initialized');
   });
 
+  await t.test('POST /v1/hermes/initialize registers connectionId for later turns', async () => {
+    const init = await makeRequest('POST', '/v1/hermes/initialize', {
+      connectionId: 'init-conn-1',
+    });
+    assert.equal(init.status, 200);
+    assert.equal(init.body.ok, true);
+    assert.equal(init.body.connectionId, 'init-conn-1');
+  });
+
   await t.test('GET /v1/hermes/sync/read fails closed without cursor and offset', async () => {
     const res = await makeRequest('GET', '/v1/hermes/sync/read');
     assert.equal(res.status, 400);

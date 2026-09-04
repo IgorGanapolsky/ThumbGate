@@ -123,10 +123,31 @@ jobs:
         run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Audit root npm dependencies
-        run: npm audit --audit-level=low
+        # Retry registry 503/timeouts — npm audit endpoint outages are INFRA, not PR defects.
+        run: |
+          set +e
+          for attempt in 1 2 3 4 5; do
+            npm audit --audit-level=low
+            code=$?
+            if [ "$code" -eq 0 ]; then exit 0; fi
+            echo "npm audit attempt ${attempt} failed (exit ${code}); retrying in $((attempt * 15))s"
+            sleep $((attempt * 15))
+          done
+          exit 1
 
       - name: Audit worker npm dependencies
-        run: npm --prefix workers ci && npm --prefix workers audit --audit-level=low
+        run: |
+          set -e
+          npm --prefix workers ci
+          set +e
+          for attempt in 1 2 3 4 5; do
+            npm --prefix workers audit --audit-level=low
+            code=$?
+            if [ "$code" -eq 0 ]; then exit 0; fi
+            echo "workers npm audit attempt ${attempt} failed (exit ${code}); retrying in $((attempt * 15))s"
+            sleep $((attempt * 15))
+          done
+          exit 1
 
       - name: Check version sync
         run: node scripts/sync-version.js --check
