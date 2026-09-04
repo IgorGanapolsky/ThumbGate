@@ -27,10 +27,8 @@ echo "=== Fleet Coordination Check (session: ${SESSION_AGENT}) ==="
 # 1) Checkout lease via canonical checker (exit 1 = foreign live lease).
 # scripts/session-lease.js check: 0 = ours/none-or-stale reclaimable, 1 = foreign live.
 if [ -f "$REPO_ROOT/scripts/session-lease.js" ]; then
-  set +e
   CHECK_OUT="$(cd "$REPO_ROOT" && THUMBGATE_SESSION_AGENT="$SESSION_AGENT" node scripts/session-lease.js check 2>&1)"
   CHECK_RC=$?
-  set -e
   if [ "$CHECK_RC" -eq 1 ]; then
     echo "BLOCKER: $CHECK_OUT"
     echo "Use a separate worktree (git worktree add) instead of mutating this checkout."
