@@ -178,7 +178,7 @@ function mapItem(item) {
 
 function fetchUrl(url, timeoutMs = 20000) {
   return new Promise((resolve, reject) => {
-    const lib = url.startsWith('https') ? https : http;
+    const lib = String(url).startsWith('https') ? https : http;
     const req = lib.get(url, {
       headers: {
         'User-Agent': 'ThumbGate-explainx-trending-honest/1.0 (+https://github.com/IgorGanapolsky/ThumbGate)',
@@ -188,7 +188,8 @@ function fetchUrl(url, timeoutMs = 20000) {
     }, (res) => {
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
-        fetchUrl(res.headers.location, timeoutMs).then(resolve, reject);
+        const next = new URL(res.headers.location, url).toString();
+        fetchUrl(next, timeoutMs).then(resolve, reject);
         return;
       }
       if (res.statusCode !== 200) {
