@@ -2886,7 +2886,6 @@ function matchGate(gate, toolName, toolInput = {}) {
     matchText,
     affectedFiles,
     taskScopeViolation,
-    protectedApprovalViolation,
     branchGovernanceViolation,
   };
 }
@@ -2912,6 +2911,7 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
 
   const command = String(toolInput.command || '');
   let matchText = command;
+
   if (gate.id === 'self-protect-config' || gate.id === 'self-protect-hooks-disable') {
     const targetPattern = gate.id === 'self-protect-config'
       ? SELF_PROTECT_CONFIG_TARGET_PATTERN
@@ -2923,7 +2923,28 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
       const commandTargetPattern = gate.id === 'self-protect-config'
         ? SELF_PROTECT_CONFIG_COMMAND_PATTERN
         : SELF_PROTECT_HOOK_COMMAND_PATTERN;
-      if (!SHELL_FILE_MUTATION_PATTERN.test(command) || !commandTargetPattern.test(command)) return null;
+
+      // Inspect every shell redirection destination (optional fd, optional/no
+      // spaces, attached forms like printf x>file, multiple redirects).
+      const redirectPattern = /(?:^|[\s;&|]|[^\s;&|<>])(?:\d*)>{1,2}\s*([^\s;&|<>]+)/g;
+      const redirectTargets = [];
+      let redirectMatch = redirectPattern.exec(command);
+      while (redirectMatch) {
+        if (redirectMatch[1]) redirectTargets.push(redirectMatch[1]);
+        redirectMatch = redirectPattern.exec(command);
+      }
+      if (redirectTargets.length > 0) {
+        // Deny when any redirect destination is protected.
+        if (redirectTargets.some((target) => commandTargetPattern.test(target))) {
+          // fall through to deny
+        } else if (!SHELL_FILE_MUTATION_PATTERN.test(command) || !commandTargetPattern.test(command)) {
+          // Benign redirects and no other protected mutation → allow.
+          return null;
+        }
+        // Benign redirects but command still mutates a protected path another way → deny.
+      } else {
+        if (!SHELL_FILE_MUTATION_PATTERN.test(command) || !commandTargetPattern.test(command)) return null;
+      }
     } else {
       return null;
     }
