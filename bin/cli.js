@@ -2627,6 +2627,27 @@ function deepseekV4RuntimeGuardrails() {
   process.stdout.write(formatDeepSeekV4RuntimeGuardrailsPlan(report));
 }
 
+function packageManagerHonestyDoctor() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildPackageManagerHonestyReport,
+    formatPackageManagerHonestyReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'package-manager-honesty-doctor'));
+  const report = buildPackageManagerHonestyReport(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatPackageManagerHonestyReport(report));
+  }
+
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function upstreamContributions() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3407,6 +3428,7 @@ function help() {
   console.log('  long-running-agent-context-guardrails Map structured-memory gaps to long-running agent gates');
   console.log('  reasoning-efficiency-guardrails Map reasoning compression signals to efficiency gates');
   console.log('  deepseek-v4-runtime-guardrails Map sparse-attention runtime signals to safety gates');
+  console.log('  package-manager-honesty-doctor Audit lockfile/CI parity; fail-closed manager switches');
   console.log('  background-governance Background-agent run report and dispatch risk check');
   console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
   console.log('  inventory             Agent action inventory: tool calls, gate denies, false-deny rate');
@@ -3443,6 +3465,7 @@ function help() {
   console.log('  npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json');
   console.log('  npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json');
   console.log('  npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json');
+  console.log('  npx thumbgate package-manager-honesty-doctor --propose-switch=pnpm --json');
   console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
   console.log('  npx thumbgate background-governance --json');
   console.log('  npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json');
@@ -4070,6 +4093,12 @@ switch (COMMAND) {
   case 'deepseek-runtime-guardrails':
   case 'sparse-attention-runtime-guardrails':
     deepseekV4RuntimeGuardrails();
+    break;
+  case 'package-manager-honesty-doctor':
+  case 'pm-honesty-doctor':
+  case 'pnpm12-honesty-doctor':
+  case 'lockfile-ci-parity-doctor':
+    packageManagerHonestyDoctor();
     break;
   case 'long-running-agent-context-guardrails':
   case 'agent-context-guardrails':

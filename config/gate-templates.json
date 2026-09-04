@@ -183,6 +183,30 @@
       "rollout": "Enable on every repo where agents can install dependencies or modify lockfiles."
     },
     {
+      "id": "require-package-manager-lockfile-ci-parity",
+      "name": "Require package-manager lockfile and CI parity",
+      "category": "Supply Chain Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(pnpm-lock|yarn\\.lock|bun\\.lock|package-lock).*(and|with|plus).*(package-lock|pnpm-lock|yarn\\.lock)|packageManager.*(mismatch|disagree)|ci.*(pnpm|yarn|bun).*(npm ci|package-lock)",
+      "problem": "Blocks dual lockfiles and CI install commands that disagree with the canonical lockfile manager.",
+      "roi": "Stops agents from introducing pnpm/yarn/bun beside npm (or vice versa) and silently breaking reproducible installs after package-manager rewrites like pnpm 12.",
+      "rollout": "Enable on every repo with agent install rights. Pair with package-manager-honesty-doctor."
+    },
+    {
+      "id": "checkpoint-package-manager-switch",
+      "name": "Checkpoint package-manager switch",
+      "category": "Supply Chain Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(migrate|switch|adopt|move).*(pnpm|yarn|bun|npm)|pnpm self-update|corepack enable.*(pnpm|yarn)|add pnpm-lock",
+      "problem": "Requires an explicit migration plan before switching package managers: single lockfile, packageManager pin, rewrite every CI install, delete the old lockfile, and prove CI green.",
+      "roi": "pnpm 12-style rewrites look cheap until CI still runs npm ci against a deleted lockfile. Fail closed on silent switches; prefer --ignore-scripts honesty on the current manager.",
+      "rollout": "Block agent-proposed manager switches; allow only with package-manager-honesty-doctor --propose-switch evidence attached to the PR."
+    },
+    {
       "id": "require-section-tree-before-multimodal-answer",
       "name": "Require section tree before multimodal answers",
       "category": "Document RAG Safety",
