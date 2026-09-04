@@ -3829,6 +3829,7 @@ test('self-protect-config denies no-space and multi-redirect shell writes', () =
     "printf '%s' '{}' 1> config/gates/default.json",
     "echo safe >/tmp/out; printf '%s' '{}' > config/gates/default.json",
     "printf '%s' '{}' 2>/tmp/err >config/gates/default.json",
+    "printf x>config/gates/default.json",
   ];
   for (const command of cases) {
     const output = runHardFloor({ tool_name: 'Bash', tool_input: { command } });

@@ -14,6 +14,7 @@ const {
   evaluateWorkflowSentinel,
   isVersionOrProbeCommand,
   scoreRisk,
+  shouldAllowVersionProbe,
   toRepoRelativePath,
 } = require('../scripts/workflow-sentinel');
 const {
@@ -1151,9 +1152,20 @@ test('isVersionOrProbeCommand uses command-specific version probes', () => {
   assert.equal(isVersionOrProbeCommand('cargo -v'), false);
 });
 
+test('version-probe allowlist applies only to Bash tool actions', () => {
+  assert.equal(shouldAllowVersionProbe('Bash', 'node -v'), true);
+  assert.equal(shouldAllowVersionProbe('computer', 'node -v'), false);
+  assert.equal(shouldAllowVersionProbe('Write', 'node -v'), false);
+  const bash = evaluateWorkflowSentinel('Bash', { command: 'node -v' });
+  assert.equal(bash.decision, 'allow');
+});
+
 test('toRepoRelativePath normalizes absolute affected files under repo root', () => {
   const repoRoot = path.resolve('/tmp/thumbgate-sentinel-root');
   const abs = path.join(repoRoot, 'scripts', 'workflow-sentinel.js');
   assert.equal(toRepoRelativePath(abs, repoRoot), 'scripts/workflow-sentinel.js');
   assert.equal(toRepoRelativePath('scripts/workflow-sentinel.js', repoRoot), 'scripts/workflow-sentinel.js');
+  // Absolute paths without a repo root must not bypass protected-file scoping.
+  assert.equal(toRepoRelativePath(abs, null), '');
+  assert.equal(toRepoRelativePath('/etc/passwd', repoRoot), '');
 });

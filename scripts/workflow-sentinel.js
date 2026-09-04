@@ -152,11 +152,17 @@ function matchesAnyGlob(filePath, globs) {
 function toRepoRelativePath(filePath, repoRoot) {
   const value = String(filePath || '').trim();
   if (!value) return '';
-  if (repoRoot && path.isAbsolute(value)) {
+  if (path.isAbsolute(value)) {
+    if (!repoRoot) {
+      // Without a repo root, absolute paths cannot be safely scoped for
+      // protected-file approval — reject rather than preserving absolute paths.
+      return '';
+    }
     const relative = path.relative(repoRoot, value);
     if (!relative.startsWith('..') && !path.isAbsolute(relative)) {
       return normalizePosix(relative);
     }
+    return '';
   }
   return normalizePosix(value);
 }
@@ -1385,6 +1391,10 @@ function isDestructiveBypass(command) {
     || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(command);
 }
 
+function shouldAllowVersionProbe(toolName, command) {
+  return toolName === 'Bash' && isVersionOrProbeCommand(command);
+}
+
 function isVersionOrProbeCommand(command) {
   if (!command || typeof command !== 'string') return false;
   const trimmed = command.trim();
@@ -1462,8 +1472,23 @@ function hasSoftControlWarning({ workflowContract, workflowControl, costControl,
     || (learnedRecall && riskScore >= 0.34);
 }
 
-function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command, costControl, financialControl, workflowControl, workflowContract, actionProfile }) {
-  if (isVersionOrProbeCommand(command)) {
+function chooseDecision({
+  riskScore,
+  integrity,
+  memoryGuard,
+  learnedPolicy,
+  blastRadius,
+  command,
+  toolName,
+  costControl,
+  financialControl,
+  workflowControl,
+  workflowContract,
+  actionProfile,
+}) {
+  // Version/probe allowlist is Bash-only — other tools may carry a "command"
+  // field without being a shell version probe.
+  if (shouldAllowVersionProbe(toolName, command)) {
     return 'allow';
   }
 
@@ -1697,6 +1722,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
       unapprovedProtectedFiles: protectedSurfaceForRisk.unapprovedProtectedFiles.length,
     },
     command: normalizedToolInput.command || '',
+    toolName: normalizedToolName,
     costControl,
     financialControl,
     workflowControl,
@@ -1806,6 +1832,7 @@ module.exports = {
   loadGovernanceState,
   normalizeLearnedPolicyForSentinel,
   scoreRisk,
+  shouldAllowVersionProbe,
   toRepoRelativePath,
 };
 
