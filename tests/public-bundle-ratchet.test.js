@@ -228,7 +228,9 @@ const path = require('node:path');
 // 522 -> 521: unbundle public/learn/* (forbidden npm prefix).
 // 521 → 522: scripts/nvidia-specdecode-al-doctor.js — NVIDIA AL/D
 //            speculative-decoding doctor (speedup ≤ AL/(1+ρD)).
-const BASELINE_FILE_COUNT = 522;
+const BASELINE_FILE_COUNT = 523;
+// 521 → 522: scripts/package-manager-honesty-doctor.js — InfoQ pnpm 12
+//            lockfile/CI parity + switch checkpoint (stay on npm).
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

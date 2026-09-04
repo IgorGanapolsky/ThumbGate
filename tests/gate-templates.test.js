@@ -134,7 +134,7 @@ test('gate template library summary groups templates by category and action', ()
   assert.equal(summary.categories['Git Safety'], 1);
   assert.equal(summary.categories['Verification'], 1);
   assert.equal(summary.categories['Knowledge Graph Safety'], 3);
-  assert.equal(summary.categories['Supply Chain Safety'], 5);
+  assert.equal(summary.categories['Supply Chain Safety'], 7);
   assert.equal(summary.categories['Document RAG Safety'], 7);
   assert.equal(summary.categories['Sparse Attention Runtime Safety'], 6);
   assert.equal(summary.categories['AI Engineering Stack Safety'], 7);
