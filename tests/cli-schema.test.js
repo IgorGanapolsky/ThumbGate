@@ -253,10 +253,13 @@ test('nvidia-specdecode-al-doctor exposes AL/D speedup flags', () => {
 
 test('package-manager-honesty-doctor exposes lockfile/CI parity flags', () => {
   const cmd = findCommand('pnpm12-honesty-doctor');
+  const flagNames = cmd.flags.map((f) => f.name);
   assert.equal(cmd.name, 'package-manager-honesty-doctor');
   assert.ok(flagNames.includes('root'));
   assert.ok(flagNames.includes('propose-switch'));
   assert.ok(flagNames.includes('allow-ignore-scripts-gaps'));
+});
+
 test('upstream-contributions exposes governed contribution planning flags', () => {
   const cmd = findCommand('upstream-prs');
   const flagNames = cmd.flags.map((f) => f.name);

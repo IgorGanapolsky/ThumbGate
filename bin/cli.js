@@ -2640,17 +2640,35 @@ function nvidiaSpecDecodeAlDoctor() {
   } else {
     process.stdout.write(formatNvidiaSpecDecodeAlDoctorReport(report));
   }
+
   if (args.strict && report.status !== 'ready') {
     process.exitCode = 1;
     return;
+  }
   if (report.status === 'fail') process.exitCode = 1;
 }
+
 function packageManagerHonestyDoctor() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
     buildPackageManagerHonestyReport,
     formatPackageManagerHonestyReport,
   } = require(path.join(PKG_ROOT, 'scripts', 'package-manager-honesty-doctor'));
   const report = buildPackageManagerHonestyReport(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
     process.stdout.write(formatPackageManagerHonestyReport(report));
+  }
+
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function upstreamContributions() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -4110,6 +4128,7 @@ switch (COMMAND) {
   case 'pnpm12-honesty-doctor':
   case 'lockfile-ci-parity-doctor':
     packageManagerHonestyDoctor();
+    break;
   case 'long-running-agent-context-guardrails':
   case 'agent-context-guardrails':
   case 'slack-context-guardrails':
