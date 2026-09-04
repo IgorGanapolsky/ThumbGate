@@ -188,6 +188,7 @@ if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
 module.exports = {
   MIN_VERSION,
   PACKAGE,
+  parseArgs,
   versionAtLeast,
   graphifyBin: BIN,
   graphPath: GRAPH,
