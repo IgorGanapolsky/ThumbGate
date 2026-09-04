@@ -1,0 +1,290 @@
+[
+  {
+    "type": "blog",
+    "typeLabel": "blog",
+    "name": "Claude Code's New /limit-reset Command, Explained",
+    "description": "Claude Code's new /limit-reset command clears your 5-hour session limit once a week \u2014 but not your weekly cap. Here's ex\u2026",
+    "href": "/blog/claude-code-limit-reset-command-september-2026",
+    "score": 925
+  },
+  {
+    "type": "blog",
+    "typeLabel": "blog",
+    "name": "God's Eye View: Open-Source Spy-Satellite Simulator You Can Talk To",
+    "description": "God's Eye View is an 8.3k-star open-source spy-satellite cockpit. Clone it, add one Google Maps key, and talk to live pu\u2026",
+    "href": "/blog/gods-eye-view-open-source-spy-satellite-simulator-august-2026",
+    "score": 646
+  },
+  {
+    "type": "blog",
+    "typeLabel": "blog",
+    "name": "RSA-260 Just Fell. We Verified It in Three Lines of Python.",
+    "description": "A 130-digit prime factor of RSA-260 was posted on September 3, 2026. We checked it. Why your TLS is fine, and the imposs\u2026",
+    "href": "/blog/rsa-260-factored-verify-it-yourself-2026",
+    "score": 633
+  },
+  {
+    "type": "blog",
+    "typeLabel": "blog",
+    "name": "The 11 Best GPT-6 Astra Demos From Launch Week, Verified",
+    "description": "We tracked the video, creator, and timestamp behind 11 GPT-6 Astra launch demos, then graded which ones actually prove s\u2026",
+    "href": "/blog/gpt-6-astra-best-demos-showcase-2026",
+    "score": 217
+  },
+  {
+    "type": "blog",
+    "typeLabel": "blog",
+    "name": "Claude Commerce Agents: Anthropic's Open-Source Shopping Agent Blueprint",
+    "description": "Anthropic open-sourced a blueprint for shopping and merchant agents, with reference implementations across four vertical\u2026",
+    "href": "/blog/claude-commerce-agents-open-source-blueprint-september-2026",
+    "score": 205
+  },
+  {
+    "type": "blog",
+    "typeLabel": "blog",
+    "name": "GPT-6 Astra Is Live. Here's Every Number That Actually Matters.",
+    "description": "OpenAI shipped GPT-6 Astra on September 3, 2026, after its own page briefly went down mid-announcement. Full benchmarks,\u2026",
+    "href": "/blog/gpt-6-astra-launch-benchmarks-pricing-2026",
+    "score": 181
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "grill-me",
+    "description": "mattpocock/skills",
+    "href": "/skills/mattpocock/skills/grill-me",
+    "score": 96
+  },
+  {
+    "type": "blog",
+    "typeLabel": "blog",
+    "name": "Muse Spark 1.3: Meta's Model Ties Opus 5 on Coding Benchmarks",
+    "description": "Muse Spark 1.3 ties or beats Claude Opus 5 and GPT-5.6 Sol on two coding benchmarks, with a contributor pricing tier 12.\u2026",
+    "href": "/blog/meta-muse-spark-1-3-launch-benchmarks-pricing-september-2026",
+    "score": 91
+  },
+  {
+    "type": "blog",
+    "typeLabel": "blog",
+    "name": "The /show-me Skill: Making Coding Agents Draw Instead of Ramble",
+    "description": "The /show-me skill makes coding agents answer with trees, mermaid diagrams and annotated diffs instead of prose. What it\u2026",
+    "href": "/blog/show-me-skill-visual-output-coding-agents-2026",
+    "score": 87
+  },
+  {
+    "type": "workshop",
+    "typeLabel": "workshop",
+    "name": "Agent Skills: Build a Workflow You'll Actually Use Monday",
+    "description": "Non-technical but AI-curious? In 2 live sessions you'll install agent skills, author your own SKILL.md, and build a pers\u2026",
+    "href": "/workshops/ai-skills",
+    "score": 87
+  },
+  {
+    "type": "blog",
+    "typeLabel": "blog",
+    "name": "Skillmeet.ai: India's Engineer-Focused Career OS",
+    "description": "Skillmeet.ai combines Bengaluru-built jobs, coding, squads, and unlimited AI credits for interview prep \u2014 478 companies,\u2026",
+    "href": "/blog/skillmeet-ai-india-engineer-social-platform-august-2026",
+    "score": 86
+  },
+  {
+    "type": "blog",
+    "typeLabel": "blog",
+    "name": "What Is Recurrent Depth? AI Reasoning You Cannot Read",
+    "description": "Recurrent depth loops transformer layers to add reasoning power without writing that reasoning as text. Here's how it wo\u2026",
+    "href": "/blog/what-is-recurrent-depth-ai-reasoning-explained-2026",
+    "score": 86
+  },
+  {
+    "type": "blog",
+    "typeLabel": "blog",
+    "name": "OpenAI Astra Announced: What We Know About Its Next Major Model",
+    "description": "OpenAI revealed Astra through 10 research results, not a product launch. Here is what is confirmed, what remains unknown\u2026",
+    "href": "/blog/openai-astra-next-major-model-announcement-2026",
+    "score": 83
+  },
+  {
+    "type": "blog",
+    "typeLabel": "blog",
+    "name": "Top 10 Closed-Source and Open-Source Agent Harnesses (2026)",
+    "description": "Claude Code, Codex, Cursor, and Antigravity vs OpenCode, Pi, Aider, and Cline \u2014 a ranked look at the harnesses actually\u2026",
+    "href": "/blog/top-10-open-closed-source-agent-harnesses-2026",
+    "score": 79
+  },
+  {
+    "type": "agent",
+    "typeLabel": "agent",
+    "name": "Chat Blackbox",
+    "description": "AI Code Generation, Code Chat, Code Search",
+    "href": "/agents/chat-blackbox",
+    "score": 72
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "mobile-app-ui-design",
+    "description": "ceorkm/mobile-app-ui-design",
+    "href": "/skills/ceorkm/mobile-app-ui-design/mobile-app-ui-design",
+    "score": 66
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "antigravity-design-expert",
+    "description": "sickn33/antigravity-awesome-skills",
+    "href": "/skills/sickn33/antigravity-awesome-skills/antigravity-design-expert",
+    "score": 56
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "apple-ui-designer",
+    "description": "heyman333/atelier-ui",
+    "href": "/skills/heyman333/atelier-ui/apple-ui-designer",
+    "score": 50
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "caveman",
+    "description": "JuliusBrussee/caveman",
+    "href": "/skills/JuliusBrussee/caveman/caveman",
+    "score": 48
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "game-ui-design",
+    "description": "omer-metin/skills-for-antigravity",
+    "href": "/skills/omer-metin/skills-for-antigravity/game-ui-design",
+    "score": 40
+  },
+  {
+    "type": "agent",
+    "typeLabel": "agent",
+    "name": "Sakana Marlin",
+    "description": "Your Virtual CSO for Ultra Deep Research.",
+    "href": "/agents/sakana-marlin",
+    "score": 34
+  },
+  {
+    "type": "tool",
+    "typeLabel": "tool",
+    "name": "Imagine Explainers",
+    "description": "Create AI-powered explainer videos in minutes.",
+    "href": "/tools/imagine-explainers",
+    "score": 29
+  },
+  {
+    "type": "course",
+    "typeLabel": "course",
+    "name": "Introduction to Loop Engineering",
+    "description": "Beginner-friendly video course on agentic loops: ReAct, reflection, tool-use, and multi-agent patterns; Claude Code /loo\u2026",
+    "href": "/courses/loop-engineering",
+    "score": 27
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "typescript-best-practices",
+    "description": "jwynia/agent-skills",
+    "href": "/skills/jwynia/agent-skills/typescript-best-practices",
+    "score": 24
+  },
+  {
+    "type": "bootcamp",
+    "typeLabel": "bootcamp",
+    "name": "The Complete AI Builder Bootcamp",
+    "description": "Go from little or zero AI knowledge to expert in 6 weeks. Master Claude, build real applications, automate workflows, an\u2026",
+    "href": "/bootcamps/complete-ai-builder-bootcamp",
+    "score": 24
+  },
+  {
+    "type": "tool",
+    "typeLabel": "tool",
+    "name": "Open Generative AI",
+    "description": "A free, open-source platform for generating AI images and videos using over 200 models without content filters or subscr\u2026",
+    "href": "/tools/open-generative-ai",
+    "score": 23
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "interior-design-expert",
+    "description": "erichowens/some_claude_skills",
+    "href": "/skills/erichowens/some_claude_skills/interior-design-expert",
+    "score": 22
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "roblox-game-development",
+    "description": "greedychipmunk/agent-skills",
+    "href": "/skills/greedychipmunk/agent-skills/roblox-game-development",
+    "score": 22
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "high-end-visual-design",
+    "description": "leonxlnx/taste-skill",
+    "href": "/skills/leonxlnx/taste-skill/high-end-visual-design",
+    "score": 22
+  },
+  {
+    "type": "mcp",
+    "typeLabel": "mcp",
+    "name": "SiYuan",
+    "description": "Integrate SiYuan with leading case note software like therapynotes com for easy note creation, editing, and organization",
+    "href": "/mcp-servers/siyuan",
+    "score": 22
+  },
+  {
+    "type": "workshop",
+    "typeLabel": "workshop",
+    "name": "Claude for Work: Become an AI Power User",
+    "description": "Stop using Claude like a search engine. In 2 live sessions you'll use it as a thought partner, research assistant, and e\u2026",
+    "href": "/workshops/claude-for-work",
+    "score": 21
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "flutter-ui-ux",
+    "description": "ajianaz/skills-collection",
+    "href": "/skills/ajianaz/skills-collection/flutter-ui-ux",
+    "score": 20
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "latex-paper-en",
+    "description": "bahayonghang/academic-writing-skills",
+    "href": "/skills/bahayonghang/academic-writing-skills/latex-paper-en",
+    "score": 20
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "ui-animation",
+    "description": "mblode/agent-skills",
+    "href": "/skills/mblode/agent-skills/ui-animation",
+    "score": 20
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "deslop",
+    "description": "cursor/plugins",
+    "href": "/skills/cursor/plugins/deslop",
+    "score": 18
+  },
+  {
+    "type": "skill",
+    "typeLabel": "skill",
+    "name": "text-to-lottie",
+    "description": "diffusionstudio/lottie",
+    "href": "/skills/diffusionstudio/lottie/text-to-lottie",
+    "score": 18
+  }
+]
