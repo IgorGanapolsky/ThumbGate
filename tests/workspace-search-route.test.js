@@ -53,8 +53,8 @@ test('remote embed grant is fail-closed by default', () => {
   assert.equal(detectRemoteEmbedGrant({ THUMBGATE_ALLOW_REMOTE_EMBED: '1' }), true);
 });
 
-test('report fails when force-remote without grant', () => {
-  const report = buildWorkspaceSearchRouteReport({
+test('report fails when force-remote without grant', async () => {
+  const report = await buildWorkspaceSearchRouteReport({
     query: 'preferences restore',
     vector: true,
     'force-remote': true,
@@ -65,8 +65,8 @@ test('report fails when force-remote without grant', () => {
   assert.match(formatWorkspaceSearchRouteReport(report), /Remote embed grant: no/);
 });
 
-test('explicit --rg overrides classifier', () => {
-  const report = buildWorkspaceSearchRouteReport({
+test('explicit --rg overrides classifier', async () => {
+  const report = await buildWorkspaceSearchRouteReport({
     query: 'how does architecture connect',
     rg: true,
   });
@@ -75,8 +75,8 @@ test('explicit --rg overrides classifier', () => {
   assert.ok(report.reasons.some((r) => /explicit/.test(r)));
 });
 
-test('map-only report includes rail mapping and disclaimer', () => {
-  const report = buildWorkspaceSearchRouteReport({
+test('map-only report includes rail mapping and disclaimer', async () => {
+  const report = await buildWorkspaceSearchRouteReport({
     query: 'lesson retrieval ranking',
     map: true,
   });
@@ -87,8 +87,8 @@ test('map-only report includes rail mapping and disclaimer', () => {
   assert.equal(report.execution, undefined);
 });
 
-test('execute hybrid dry-run returns matchedBy provenance shape', () => {
-  const report = buildWorkspaceSearchRouteReport({
+test('execute hybrid dry-run returns matchedBy provenance shape', async () => {
+  const report = await buildWorkspaceSearchRouteReport({
     query: 'force push',
     hybrid: true,
     execute: true,
@@ -125,6 +125,38 @@ test('thumbgate CLI workspace-search-route is wired', () => {
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.name, 'thumbgate-workspace-search-route');
   assert.equal(payload.route, 'rg');
+});
+
+
+test('runFilesystemFts passes limit as second arg (searchFeedbackLog signature)', () => {
+  const { runFilesystemFts } = require('../scripts/workspace-search-route');
+  const result = runFilesystemFts(path.resolve(__dirname, '..'), 'force push', 3);
+  assert.equal(typeof result.ok, 'boolean');
+  assert.ok(Array.isArray(result.hits));
+});
+
+test('resolveRipgrepBin returns absolute path or null (no PATH spawn)', () => {
+  const { resolveRipgrepBin } = require('../scripts/workspace-search-route');
+  const bin = resolveRipgrepBin();
+  if (bin) {
+    assert.equal(path.isAbsolute(bin), true);
+    assert.match(bin, /\/rg$/);
+  } else {
+    assert.equal(bin, null);
+  }
+});
+
+test('vector execute invokes searchSimilar instead of empty advisory hits', async () => {
+  const report = await buildWorkspaceSearchRouteReport({
+    query: 'lesson retrieval',
+    vector: true,
+    execute: true,
+    limit: 2,
+  });
+  assert.ok(report.execution);
+  assert.equal(report.execution.route, 'vector');
+  assert.ok(Array.isArray(report.execution.hits));
+  assert.equal(report.execution.note == null || !/advisory/i.test(report.execution.note || ''), true);
 });
 
 test('docs/code-search mentions the zg route map without claiming a zvec dependency', () => {

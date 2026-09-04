@@ -165,14 +165,36 @@ function buildFindings({ route, graphify, allowRemoteEmbed, forceRemote }) {
   return findings;
 }
 
+function resolveRipgrepBin() {
+  // Sonar S4036: do not spawn bare "rg" from PATH. Prefer fixed absolute bins.
+  const candidates = [
+    process.env.THUMBGATE_RG_BIN,
+    '/opt/homebrew/bin/rg',
+    '/usr/local/bin/rg',
+    '/usr/bin/rg',
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) return candidate;
+    } catch {
+      // ignore
+    }
+  }
+  return null;
+}
+
 function runRipgrep(rootDir, query, limit) {
+  const rgBin = resolveRipgrepBin();
+  if (!rgBin) {
+    return { ok: false, error: 'rg not found at fixed absolute paths (/opt/homebrew/bin/rg, /usr/local/bin/rg, /usr/bin/rg)', hits: [] };
+  }
   const rg = spawnSync(
-    'rg',
+    rgBin,
     ['-n', '--max-count', String(Math.max(1, limit)), '--', query, '.'],
     { cwd: rootDir, encoding: 'utf8', timeout: 15000 }
   );
   if (rg.error && rg.error.code === 'ENOENT') {
-    return { ok: false, error: 'rg not found on PATH', hits: [] };
+    return { ok: false, error: `rg binary missing at ${rgBin}`, hits: [] };
   }
   const lines = String(rg.stdout || '')
     .split(/\r?\n/)
@@ -194,7 +216,12 @@ function runRipgrep(rootDir, query, limit) {
 function runFilesystemFts(rootDir, query, limit) {
   try {
     const { searchFeedbackLog } = require('./filesystem-search');
-    const rows = searchFeedbackLog(query, { limit, feedbackDir: path.join(rootDir, '.claude', 'memory', 'feedback') });
+    // Signature: searchFeedbackLog(queryText, limit = 5, options = {})
+    const rows = searchFeedbackLog(
+      query,
+      limit,
+      { feedbackDir: path.join(rootDir, '.claude', 'memory', 'feedback') }
+    );
     return {
       ok: true,
       hits: (rows || []).slice(0, limit).map((r) => ({
@@ -203,6 +230,30 @@ function runFilesystemFts(rootDir, query, limit) {
         text: String(r.context || r.title || '').slice(0, 240),
         matchedBy: ['fts'],
         matchedTokens: r._matchedTokens || [],
+      })),
+    };
+  } catch (err) {
+    return { ok: false, error: err.message, hits: [] };
+  }
+}
+
+async function runVector(rootDir, query, limit, options = {}) {
+  if (options.forceRemote && !options.allowRemoteEmbed) {
+    return { ok: false, error: 'remote embed refused (no grant)', hits: [] };
+  }
+  try {
+    const vectorStore = require('./vector-store');
+    if (typeof vectorStore.searchSimilar !== 'function') {
+      return { ok: false, error: 'vector-store.searchSimilar unavailable', hits: [] };
+    }
+    const rows = await vectorStore.searchSimilar(query, limit);
+    return {
+      ok: true,
+      hits: (rows || []).slice(0, limit).map((r) => ({
+        id: r.id || null,
+        score: r._distance != null ? r._distance : (r.score || null),
+        text: String(r.context || r.title || r.text || '').slice(0, 240),
+        matchedBy: ['vector'],
       })),
     };
   } catch (err) {
@@ -259,7 +310,7 @@ function normalizeOptions(options = {}) {
   };
 }
 
-function buildWorkspaceSearchRouteReport(rawOptions = {}) {
+async function buildWorkspaceSearchRouteReport(rawOptions = {}) {
   const options = normalizeOptions(rawOptions);
   const classified = classifyQuery(options.query);
   const route = options.route || classified.route;
@@ -326,16 +377,10 @@ function buildWorkspaceSearchRouteReport(rawOptions = {}) {
   } else if (route === 'hybrid') {
     execution = { route, ...runHybrid(options.rootDir, options.query, options.limit) };
   } else if (route === 'vector') {
-    if (options.forceRemote && !options.allowRemoteEmbed) {
-      execution = { route, ok: false, error: 'remote embed refused (no grant)', hits: [] };
-    } else {
-      execution = {
-        route,
-        ok: true,
-        hits: [],
-        note: 'Vector execute stays advisory in doctor; use lesson-semantic-retrieval / LanceDB in-session.',
-      };
-    }
+    execution = {
+      route,
+      ...(await runVector(options.rootDir, options.query, options.limit, options)),
+    };
   } else if (route === 'graph') {
     if (!graphify.binExists || !graphify.graphExists) {
       execution = { route, ok: false, error: 'graphify not ready', hits: [] };
@@ -406,7 +451,7 @@ Options:
 `);
 }
 
-function main(argv = process.argv.slice(2)) {
+async function main(argv = process.argv.slice(2)) {
   if (argv.includes('--help') || argv.includes('-h')) {
     printHelp();
     return 0;
@@ -430,7 +475,7 @@ function main(argv = process.argv.slice(2)) {
     else if (!arg.startsWith('-') && !options.query) options.query = arg;
   }
 
-  const report = buildWorkspaceSearchRouteReport(options);
+  const report = await buildWorkspaceSearchRouteReport(options);
   if (options.json) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } else {
@@ -445,7 +490,12 @@ if (require.main === module || (
   process.argv[1]
   && path.resolve(process.argv[1]) === path.resolve(__filename)
 )) {
-  process.exitCode = main();
+  main().then((code) => {
+    process.exitCode = code;
+  }).catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  });
 }
 
 module.exports = {
@@ -455,6 +505,9 @@ module.exports = {
   normalizeRoute,
   detectGraphify,
   detectRemoteEmbedGrant,
+  resolveRipgrepBin,
+  runFilesystemFts,
+  runVector,
   buildWorkspaceSearchRouteReport,
   formatWorkspaceSearchRouteReport,
   main,
