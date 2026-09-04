@@ -40,7 +40,7 @@ function parseArgs(argv) {
 
 function run(command, args, options = {}) {
   return spawnSync(command, args, {
-    cwd: REPO,
+    cwd: options.cwd || REPO,
     encoding: 'utf8',
     timeout: options.timeout || 600000,
     maxBuffer: 1024 * 1024 * 16,
@@ -49,9 +49,12 @@ function run(command, args, options = {}) {
   });
 }
 
-function ensureVenv() {
-  if (fs.existsSync(PY)) return { created: false };
-  const result = run(process.env.PYTHON || 'python3', ['-m', 'venv', VENV], {
+function ensureVenv(options = {}) {
+  const py = options.py || PY;
+  const venv = options.venv || VENV;
+  const runFn = options.runFn || run;
+  if (fs.existsSync(py)) return { created: false };
+  const result = runFn(process.env.PYTHON || 'python3', ['-m', 'venv', venv], {
     timeout: 120000,
   });
   if (result.status !== 0) {
@@ -60,24 +63,30 @@ function ensureVenv() {
   return { created: true };
 }
 
-function ensurePackage() {
-  const check = run(PY, ['-c', 'import graphify; print(getattr(graphify, "__version__", "ok"))']);
-  if (check.status === 0 && fs.existsSync(BIN)) {
+function ensurePackage(options = {}) {
+  const py = options.py || PY;
+  const pip = options.pip || PIP;
+  const bin = options.bin || BIN;
+  const runFn = options.runFn || run;
+  const check = runFn(py, ['-c', 'import graphify; print(getattr(graphify, "__version__", "ok"))']);
+  if (check.status === 0 && fs.existsSync(bin)) {
     return { installed: false, versionProbe: (check.stdout || '').trim() };
   }
-  const upgradePip = run(PIP, ['install', '-U', 'pip', 'wheel'], { timeout: 180000 });
+  const upgradePip = runFn(pip, ['install', '-U', 'pip', 'wheel'], { timeout: 180000 });
   if (upgradePip.status !== 0) {
     throw new Error(`pip upgrade failed: ${(upgradePip.stderr || '').slice(0, 500)}`);
   }
-  const install = run(PIP, ['install', PACKAGE], { timeout: 300000 });
-  if (install.status !== 0 || !fs.existsSync(BIN)) {
+  const install = runFn(pip, ['install', PACKAGE], { timeout: 300000 });
+  if (install.status !== 0 || !fs.existsSync(bin)) {
     throw new Error(`pip install ${PACKAGE} failed: ${(install.stderr || install.stdout || '').slice(0, 800)}`);
   }
   return { installed: true };
 }
 
-function graphifyVersion() {
-  const result = run(BIN, ['--version'], { timeout: 15000 });
+function graphifyVersion(options = {}) {
+  const bin = options.bin || BIN;
+  const runFn = options.runFn || run;
+  const result = runFn(bin, ['--version'], { timeout: 15000 });
   if (result.status !== 0) return '';
   const match = String(result.stdout || '').match(/\b(\d+\.\d+\.\d+)\b/);
   return match ? match[1] : '';
@@ -95,63 +104,58 @@ function versionAtLeast(actual, minimum) {
   return true;
 }
 
-function buildGraph() {
-  const result = run(BIN, ['update', '.', '--no-cluster'], { timeout: 600000 });
-  if (result.status !== 0) {
-    throw new Error(`graphify update failed: ${(result.stderr || result.stdout || '').slice(0, 800)}`);
-  }
-  if (!fs.existsSync(GRAPH)) {
-    throw new Error('graphify update exited 0 but graphify-out/graph.json is missing');
-  }
-  return summarizeGraph();
-}
-
-function summarizeGraph() {
-  const raw = fs.readFileSync(GRAPH, 'utf8');
+function summarizeGraph(graphPath = GRAPH) {
+  const raw = fs.readFileSync(graphPath, 'utf8');
   const parsed = JSON.parse(raw);
   return {
-    path: GRAPH,
+    path: graphPath,
     nodes: Array.isArray(parsed.nodes) ? parsed.nodes.length : 0,
     links: Array.isArray(parsed.links)
       ? parsed.links.length
       : (Array.isArray(parsed.edges) ? parsed.edges.length : 0),
-    mtime: fs.statSync(GRAPH).mtime.toISOString(),
+    mtime: fs.statSync(graphPath).mtime.toISOString(),
   };
 }
 
-function main() {
-  const args = parseArgs(process.argv.slice(2));
-  if (args.help) {
-    process.stdout.write(
-      'Usage: node scripts/graphify-setup.js [--json] [--skip-build]\n'
-      + 'Installs Graphify-Labs graphifyy into .graphify-venv and builds graphify-out/.\n',
-    );
-    process.exit(0);
+function buildGraph(options = {}) {
+  const bin = options.bin || BIN;
+  const graphPath = options.graphPath || GRAPH;
+  const runFn = options.runFn || run;
+  const result = runFn(bin, ['update', '.', '--no-cluster'], { timeout: 600000 });
+  if (result.status !== 0) {
+    throw new Error(`graphify update failed: ${(result.stderr || result.stdout || '').slice(0, 800)}`);
   }
+  if (!fs.existsSync(graphPath)) {
+    throw new Error('graphify update exited 0 but graphify-out/graph.json is missing');
+  }
+  return summarizeGraph(graphPath);
+}
 
+function setupReport(args, options = {}) {
   const report = {
     ok: false,
-    repo: REPO,
+    repo: options.repo || REPO,
     package: PACKAGE,
     minVersion: MIN_VERSION,
-    venv: VENV,
-    bin: BIN,
+    venv: options.venv || VENV,
+    bin: options.bin || BIN,
     steps: {},
   };
 
   try {
-    report.steps.venv = ensureVenv();
-    report.steps.package = ensurePackage();
-    report.version = graphifyVersion();
+    report.steps.venv = ensureVenv(options);
+    report.steps.package = ensurePackage(options);
+    report.version = graphifyVersion(options);
     if (!report.version || !versionAtLeast(report.version, MIN_VERSION)) {
       throw new Error(
         `graphify version ${report.version || 'unknown'} is below required ${MIN_VERSION}`,
       );
     }
+    const graphPath = options.graphPath || GRAPH;
     if (!args.skipBuild) {
-      report.steps.graph = buildGraph();
-    } else if (fs.existsSync(GRAPH)) {
-      report.steps.graph = summarizeGraph();
+      report.steps.graph = buildGraph(options);
+    } else if (fs.existsSync(graphPath)) {
+      report.steps.graph = summarizeGraph(graphPath);
       report.steps.graph.skippedBuild = true;
     } else {
       report.steps.graph = { skippedBuild: true, exists: false };
@@ -163,6 +167,20 @@ function main() {
     report.ok = false;
     report.error = error instanceof Error ? error.message : String(error);
   }
+  return report;
+}
+
+function main(argv = process.argv.slice(2), options = {}) {
+  const args = parseArgs(argv);
+  if (args.help) {
+    process.stdout.write(
+      'Usage: node scripts/graphify-setup.js [--json] [--skip-build]\n'
+      + 'Installs Graphify-Labs graphifyy into .graphify-venv and builds graphify-out/.\n',
+    );
+    return { ok: true, status: 'HELP' };
+  }
+
+  const report = setupReport(args, options);
 
   if (args.json) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
@@ -171,14 +189,17 @@ function main() {
     process.stdout.write(
       `graphify-setup: OK v${report.version}`
       + (graph.nodes != null ? ` nodes=${graph.nodes} links=${graph.links}` : '')
-      + `\nbin: ${BIN}\n`
+      + `\nbin: ${report.bin}\n`
       + `query: ${report.queryExample}\n`,
     );
   } else {
     process.stderr.write(`graphify-setup: FAIL ${report.error}\n`);
   }
 
-  process.exit(report.ok ? 0 : 1);
+  if (options.exit !== false && path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
+    process.exit(report.ok ? 0 : 1);
+  }
+  return report;
 }
 
 if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
@@ -188,8 +209,16 @@ if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
 module.exports = {
   MIN_VERSION,
   PACKAGE,
-  parseArgs,
-  versionAtLeast,
+  buildGraph,
+  ensurePackage,
+  ensureVenv,
   graphifyBin: BIN,
+  graphifyVersion,
   graphPath: GRAPH,
+  main,
+  parseArgs,
+  run,
+  setupReport,
+  summarizeGraph,
+  versionAtLeast,
 };
