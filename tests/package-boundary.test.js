@@ -485,10 +485,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 519 -> 522 (2026-09-04): radware-threat-defense.js + learn page + config/gates/radware-threat-defense-2026.json.
   // 521 -> 522: scripts/nvidia-specdecode-al-doctor.js (AL/D doctor).
   // 522 -> 523: scripts/package-manager-honesty-doctor.js (pnpm 12 honesty).
-  // 523 -> 525: scripts/jit-harness-compose.js + skill (#3768).
-  // 525 -> 527: scripts/workspace-search-route.js + skill (zg FORMAT steal).
-    manifest.fileCount <= 527,
-    `npm package should stay <= 527 files, got ${manifest.fileCount}`
+  // 525 -> 527: workspace-search-route (#3770)
+  // 527 -> 529: intent-governed-execution (#3771 CyberStrike FORMAT).
+    manifest.fileCount <= 529,
+    `npm package should stay <= 529 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -698,9 +698,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.25 MB -> 8.30 MB (2026-09-04): workspace-search-route.js zg FORMAT steal.
   // 5,606 over the old cap. Narrow headroom retained.
   assert.ok(
-  // Bumped 8.30 MB -> 8.35 MB (2026-09-04): workspace-search-route.js after jit-harness-compose.
-    manifest.unpackedSize <= 8_350_000,
-    `npm package should stay <= 8.35 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.35 MB -> 8.40 MB (2026-09-04): intent-governed-execution after zg.
+    manifest.unpackedSize <= 8_400_000,
+    `npm package should stay <= 8.40 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
