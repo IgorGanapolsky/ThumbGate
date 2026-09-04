@@ -541,7 +541,7 @@
     "test:provider-receipt-contract": "node --test tests/provider-receipt-contract.test.js",
     "test:actor-critic": "node --test tests/actor-critic-process-audit.test.js",
     "test:infoq-engage": "node --test tests/infoq-engage.test.js",
-    "test:hermes-platform": "node --test tests/hermes-platform-protocol.test.js tests/hermes-sync-plane.test.js",
+    "test:hermes-platform": "node --test tests/hermes-platform-protocol.test.js tests/hermes-sync-plane.test.js tests/hermes-hosted-server.test.js",
     "test:alert-noise-ledger": "node --test tests/alert-noise-ledger.test.js",
     "test:future-agi": "node --test tests/future-agi-bridge.test.js tests/future-agi-evaluator.test.js tests/future-agi-review-regressions.test.js",
     "test:futureagi-prepost": "node --test tests/futureagi-prepost-gate.test.js",

@@ -16,6 +16,7 @@ const LABELS = ['allow', 'recall', 'verify', 'warn', 'deny'];
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_HOLDOUT_RATIO = 0.2;
 const MIN_HOLDOUT_EXAMPLES = 5;
+const MIN_HOLDOUT_ACCURACY = 0.5;
 const MIN_TRAINING_EXAMPLES = 8;
 const MAX_TEXT_TOKENS = 24;
 const MODEL_FILENAME = 'intervention-policy.json';
@@ -734,6 +735,21 @@ function getInterventionRecommendation(params = {}, options = {}) {
       enabled: false,
       reason: 'insufficient_training_examples',
       exampleCount: Number(model && model.exampleCount || 0),
+      candidate,
+    };
+  }
+
+  if (
+    model.metrics &&
+    Number(model.metrics.holdoutSize || 0) >= MIN_HOLDOUT_EXAMPLES &&
+    Number(model.metrics.holdoutAccuracy || 0) < MIN_HOLDOUT_ACCURACY
+  ) {
+    return {
+      enabled: false,
+      reason: 'degenerate_holdout_accuracy',
+      holdoutAccuracy: Number(model.metrics.holdoutAccuracy || 0),
+      holdoutSize: Number(model.metrics.holdoutSize || 0),
+      exampleCount: Number(model.exampleCount || 0),
       candidate,
     };
   }

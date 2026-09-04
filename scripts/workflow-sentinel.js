@@ -1385,6 +1385,13 @@ function isDestructiveBypass(command) {
     || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(command);
 }
 
+function isVersionOrProbeCommand(command) {
+  if (!command || typeof command !== 'string') return false;
+  const trimmed = command.trim();
+  return /^(?:node|npm|npx|gh|git|python|python3|pytest|cargo|rustc|go|docker|claude|gemini)\s+(?:-v|--version|-V)\s*$/i.test(trimmed)
+    || /^(?:pwd|whoami|date)\s*$/i.test(trimmed);
+}
+
 function getLearnedPrediction(learnedPolicy) {
   return learnedPolicy?.enabled ? learnedPolicy.prediction : null;
 }
@@ -1444,6 +1451,10 @@ function hasSoftControlWarning({ workflowContract, workflowControl, costControl,
 }
 
 function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command, costControl, financialControl, workflowControl, workflowContract, actionProfile }) {
+  if (isVersionOrProbeCommand(command)) {
+    return 'allow';
+  }
+
   if (financialControl?.mode === 'block' || costControl?.mode === 'block' || workflowControl?.mode === 'block' || workflowContract?.mode === 'block') {
     return 'deny';
   }
@@ -1524,9 +1535,15 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
   if (!repoRoot) {
     repoRoot = resolveRepoRoot(repoPath) || null;
   }
+  const explicitChanged = Array.isArray(normalizedToolInput.changedFiles)
+    ? normalizedToolInput.changedFiles
+    : (Array.isArray(normalizedToolInput.changed_files) ? normalizedToolInput.changed_files : null);
+
   const affectedFiles = Array.isArray(options.affectedFiles)
     ? options.affectedFiles.map((filePath) => normalizePosix(filePath)).filter(Boolean)
-    : collectAffectedFiles(normalizedToolName, normalizedToolInput, repoRoot);
+    : (explicitChanged
+      ? explicitChanged.map((filePath) => normalizePosix(filePath)).filter(Boolean)
+      : collectAffectedFiles(normalizedToolName, normalizedToolInput, repoRoot));
   let actionProfile = classifyActionProfile(normalizedToolInput);
   const financialControl = evaluateFinancialControl({
     toolName: normalizedToolName,
