@@ -2691,6 +2691,28 @@ function packageManagerHonestyDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+
+async function workspaceSearchRoute() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildWorkspaceSearchRouteReport,
+    formatWorkspaceSearchRouteReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'workspace-search-route'));
+  const report = await buildWorkspaceSearchRouteReport(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatWorkspaceSearchRouteReport(report));
+  }
+
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function upstreamContributions() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3473,6 +3495,8 @@ function help() {
   console.log('  deepseek-v4-runtime-guardrails Map sparse-attention runtime signals to safety gates');
   console.log('  nvidia-specdecode-al-doctor Check speculative AL/D evidence vs AL/(1+ρD) speedup math');
   console.log('  package-manager-honesty-doctor Audit lockfile/CI parity; fail-closed manager switches');
+  console.log('  jit-harness-compose   Compose memory/planning/action/capability onto existing rails (JIT FORMAT)');
+  console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
   console.log('  background-governance Background-agent run report and dispatch risk check');
   console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
   console.log('  inventory             Agent action inventory: tool calls, gate denies, false-deny rate');
@@ -3512,6 +3536,7 @@ function help() {
   console.log('  npx thumbgate nvidia-specdecode-al-doctor --speculative-decoding --accept-length=1.4 --draft-length=7 --draft-depth-ratio=0.05 --claimed-speedup=3 --json');
   console.log('  npx thumbgate package-manager-honesty-doctor --propose-switch=pnpm --json');
   console.log('  npx thumbgate jit-harness-compose --task="implement PreToolUse gate fix" --json');
+  console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
   console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
   console.log('  npx thumbgate background-governance --json');
   console.log('  npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json');
@@ -4157,6 +4182,15 @@ switch (COMMAND) {
   case 'jit-harness':
   case 'harness-compose':
     jitHarnessCompose();
+    break;
+  case 'workspace-search-route':
+  case 'zg-search-route':
+  case 'zvec-grep-route':
+  case 'search-route':
+    workspaceSearchRoute().catch((err) => {
+      console.error(err && err.stack ? err.stack : err);
+      process.exitCode = 1;
+    });
     break;
   case 'long-running-agent-context-guardrails':
   case 'agent-context-guardrails':

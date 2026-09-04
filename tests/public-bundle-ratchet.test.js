@@ -230,9 +230,9 @@ const path = require('node:path');
 //            speculative-decoding doctor (speedup ≤ AL/(1+ρD)).
 // 522 → 523: scripts/package-manager-honesty-doctor.js — InfoQ pnpm 12
 //            lockfile/CI parity + switch checkpoint (stay on npm).
-// 523 → 525: scripts/jit-harness-compose.js + skill — JIT-Agent four-module
-//            FORMAT compose doctor (no JIT model / HarnessFactory clone).
-const BASELINE_FILE_COUNT = 525;
+// 523 → 525: scripts/jit-harness-compose.js + skill — JIT-Agent four-module (#3768).
+// 525 → 527: scripts/workspace-search-route.js + skill — zg FORMAT steal.
+const BASELINE_FILE_COUNT = 527;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
