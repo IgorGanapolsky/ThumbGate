@@ -277,12 +277,11 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 512 -> 513 (2026-08-25): src/alert-noise-ledger.js (+1 measured npm pack).
   // 517 -> 519 (2026-09-02): scripts/double-blind-eval-protocol.js (missing from files array since PR #3712).
 // 519 -> 522 (2026-09-04): radware-threat-defense.js + learn page + config/gates/radware-threat-defense-2026.json.
-  // Public-shell runtime, not a Core feature: the packaged scripts/ entrypoint
-  // for the Codex runbook flywheel agent workflow.
-  // Public-shell runtime, not a Core feature: the packaged
-  // scripts/gates-engine.js requires it to suppress reminder lines it has
-  // already emitted this session.
-  const CEILING = 522;
+  // 521 -> 522: scripts/nvidia-specdecode-al-doctor.js (AL/D doctor, landed #3762).
+  // 522 -> 523: scripts/package-manager-honesty-doctor.js — InfoQ pnpm 12
+  //   honesty steal without migrating off npm (public-shell CLI/doctor).
+  //   Lockstep with package-boundary + public-bundle-ratchet.
+  const CEILING = 523;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
