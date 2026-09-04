@@ -230,7 +230,9 @@ const path = require('node:path');
 //            speculative-decoding doctor (speedup ≤ AL/(1+ρD)).
 // 522 → 523: scripts/package-manager-honesty-doctor.js — InfoQ pnpm 12
 //            lockfile/CI parity + switch checkpoint (stay on npm).
-const BASELINE_FILE_COUNT = 523;
+// 523 → 525: scripts/workspace-search-route.js + skill — zg (zvec-grep) FORMAT
+//            route doctor onto existing rails (no @zvec install).
+const BASELINE_FILE_COUNT = 525;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

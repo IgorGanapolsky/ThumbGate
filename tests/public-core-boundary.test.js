@@ -280,8 +280,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 521 -> 522: scripts/nvidia-specdecode-al-doctor.js (AL/D doctor, landed #3762).
   // 522 -> 523: scripts/package-manager-honesty-doctor.js — InfoQ pnpm 12
   //   honesty steal without migrating off npm (public-shell CLI/doctor).
+  // 523 -> 525: scripts/workspace-search-route.js + skill — zg four-route FORMAT
+  //   steal onto existing rails (not @zvec/zvec-grep).
   //   Lockstep with package-boundary + public-bundle-ratchet.
-  const CEILING = 523;
+  const CEILING = 525;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
