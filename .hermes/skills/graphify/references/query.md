@@ -168,10 +168,19 @@ Replace `QUESTION` with the **expanded** query string, `MODE` with `bfs` or `dfs
 After writing the answer, save it back into the graph so it improves future queries. Include the expanded tokens inside the `--answer` text (e.g. `"Expanded from original query via vocab: [tokens]. Then traversed..."`) so the next `--update` extracts the expansion history as a graph node:
 
 ```bash
-$(cat graphify-out/.graphify_python) -m graphify save-result --question "ORIGINAL_QUESTION" --answer "ANSWER" --type query --nodes NODE1 NODE2
+# Pass Q/A/nodes as argv/env — never splice untrusted text into a shell template.
+ORIGINAL_QUESTION='...'
+ANSWER='...'
+NODE1='...'
+NODE2='...'
+$(cat graphify-out/.graphify_python) -m graphify save-result \
+  --question "$ORIGINAL_QUESTION" \
+  --answer "$ANSWER" \
+  --type query \
+  --nodes "$NODE1" "$NODE2"
 ```
 
-Replace `ORIGINAL_QUESTION` with the user's verbatim question, `ANSWER` with your full answer text (containing the expanded-token trace), `NODE1 NODE2` with the list of node labels you cited. This closes the feedback loop: the next `--update` will extract this Q&A as a node in the graph.
+Set shell vars `ORIGINAL_QUESTION`, `ANSWER`, and cited node labels (`NODE1`/`NODE2`…). This closes the feedback loop: the next `--update` will extract this Q&A as a node in the graph.
 
 **Work memory (self-improving loop).** Add an `--outcome` so future sessions learn from this one — append `--outcome useful|dead_end|corrected` to the `save-result` command (and `--correction "the right answer"` when correcting):
 
@@ -191,9 +200,11 @@ Find the shortest path between two named concepts in the graph. Prefer the CLI w
 graphify path "NODE_A" "NODE_B"
 ```
 
-If the CLI is unavailable, run it inline:
+If the CLI is unavailable, run it inline (pass node labels as argv after `-c`, never inside the source):
 
 ```bash
+NODE_A='...'
+NODE_B='...'
 $(cat graphify-out/.graphify_python) -c "
 import json, sys
 import networkx as nx
@@ -203,8 +214,9 @@ from pathlib import Path
 data = json.loads(Path('graphify-out/graph.json').read_text(encoding='utf-8'))
 G = json_graph.node_link_graph(data, edges='links')
 
-a_term = 'NODE_A'
-b_term = 'NODE_B'
+# NODE_A / NODE_B arrive as sys.argv[1] / sys.argv[2] (see invocation below)
+a_term = sys.argv[1]
+b_term = sys.argv[2]
 
 def find_node(term):
     term = term.lower()
@@ -238,15 +250,15 @@ except nx.NetworkXNoPath:
     print(f'No path found between {a_term!r} and {b_term!r}')
 except nx.NodeNotFound as e:
     print(f'Node not found: {e}')
-"
+" "$NODE_A" "$NODE_B"
 ```
 
-Replace `NODE_A` and `NODE_B` with the actual concept names from the user. Then explain the path in plain language - what each hop means, why it's significant.
+Set shell vars `NODE_A` / `NODE_B` (passed as argv after `-c`). Then explain the path in plain language - what each hop means, why it's significant.
 
 After writing the explanation, save it back:
 
 ```bash
-$(cat graphify-out/.graphify_python) -m graphify save-result --question "Path from NODE_A to NODE_B" --answer "ANSWER" --type path_query --nodes NODE_A NODE_B
+$(cat graphify-out/.graphify_python) -m graphify save-result --question "Path from $NODE_A to $NODE_B" --answer "$ANSWER" --type path_query --nodes -- "$NODE_A" "$NODE_B"
 ```
 
 ---
@@ -259,9 +271,10 @@ Give a plain-language explanation of a single node - everything connected to it.
 graphify explain "NODE_NAME"
 ```
 
-If the CLI is unavailable, run it inline:
+If the CLI is unavailable, run it inline (pass the label as argv after `-c`):
 
 ```bash
+NODE_NAME='...'
 $(cat graphify-out/.graphify_python) -c "
 import json, sys
 import networkx as nx
@@ -271,7 +284,7 @@ from pathlib import Path
 data = json.loads(Path('graphify-out/graph.json').read_text(encoding='utf-8'))
 G = json_graph.node_link_graph(data, edges='links')
 
-term = 'NODE_NAME'
+term = sys.argv[1]  # pass NODE_NAME as argv after -c
 term_lower = term.lower()
 
 # Find best matching node
@@ -299,13 +312,13 @@ for neighbor in G.neighbors(nid):
     conf = edge.get('confidence', '')
     src_file = G.nodes[neighbor].get('source_file', '')
     print(f'  --{rel}--> {nlabel} [{conf}] ({src_file})')
-"
+" "$NODE_NAME"
 ```
 
-Replace `NODE_NAME` with the concept the user asked about. Then write a 3-5 sentence explanation of what this node is, what it connects to, and why those connections are significant. Use the source locations as citations.
+Set shell var `NODE_NAME` (passed as argv after `-c`). Then write a 3-5 sentence explanation of what this node is, what it connects to, and why those connections are significant. Use the source locations as citations.
 
 After writing the explanation, save it back:
 
 ```bash
-$(cat graphify-out/.graphify_python) -m graphify save-result --question "Explain NODE_NAME" --answer "ANSWER" --type explain --nodes NODE_NAME
+$(cat graphify-out/.graphify_python) -m graphify save-result --question "Explain $NODE_NAME" --answer "$ANSWER" --type explain --nodes -- "$NODE_NAME"
 ```
