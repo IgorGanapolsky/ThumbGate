@@ -7,13 +7,20 @@ Load this when the user ran `/graphify add <url>` or passed `--watch`. Neither i
 Fetch a URL and add it to the corpus, then update the graph.
 
 ```bash
+# Pass URL/AUTHOR/CONTRIBUTOR via env (never interpolate into Python source).
+export GRAPHIFY_URL='https://example.com/doc'
+export GRAPHIFY_AUTHOR=''          # optional
+export GRAPHIFY_CONTRIBUTOR=''     # optional
 $(cat graphify-out/.graphify_python) -c "
-import sys
+import os, sys
 from graphify.ingest import ingest
 from pathlib import Path
 
+url = os.environ['GRAPHIFY_URL']
+author = os.environ.get('GRAPHIFY_AUTHOR') or None
+contributor = os.environ.get('GRAPHIFY_CONTRIBUTOR') or None
 try:
-    out = ingest('URL', Path('./raw'), author='AUTHOR', contributor='CONTRIBUTOR')
+    out = ingest(url, Path('./raw'), author=author, contributor=contributor)
     print(f'Saved to {out}')
 except ValueError as e:
     print(f'error: {e}', file=sys.stderr)
@@ -24,7 +31,7 @@ except RuntimeError as e:
 "
 ```
 
-Replace `URL` with the actual URL, `AUTHOR` with the user's name if provided, `CONTRIBUTOR` likewise. If the command exits with an error, tell the user what went wrong - do not silently continue. After a successful save, automatically run the `--update` pipeline on `./raw` to merge the new file into the existing graph.
+Set `GRAPHIFY_URL` (required) and optional `GRAPHIFY_AUTHOR` / `GRAPHIFY_CONTRIBUTOR` in the environment before running. If the command exits with an error, tell the user what went wrong - do not silently continue. After a successful save, automatically run the `--update` pipeline on `./raw` to merge the new file into the existing graph.
 
 Supported URL types (auto-detected):
 - YouTube / any video URL → audio downloaded via yt-dlp, transcribed to `.txt` on next run (requires `pip install 'graphifyy[video]'`)
@@ -41,10 +48,12 @@ Supported URL types (auto-detected):
 Start a background watcher that monitors a folder and auto-updates the graph when files change.
 
 ```bash
-$(cat graphify-out/.graphify_python) -m graphify.watch INPUT_PATH --debounce 3
+# Pass the watch root as a CLI argv (never splice into Python -c).
+INPUT_PATH='./raw'
+$(cat graphify-out/.graphify_python) -m graphify.watch "$INPUT_PATH" --debounce 3
 ```
 
-Replace INPUT_PATH with the folder to watch. Behavior depends on what changed:
+Set shell var `INPUT_PATH` to the folder to watch. Behavior depends on what changed:
 
 - **Code files only (.py, .ts, .go, etc.):** re-runs AST extraction + rebuild + cluster immediately, no LLM needed. `graph.json` and `GRAPH_REPORT.md` are updated automatically.
 - **Docs, papers, or images:** writes a `graphify-out/needs_update` flag and prints a notification to run `/graphify --update` (LLM semantic re-extraction required).
