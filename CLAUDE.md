@@ -406,11 +406,14 @@ We practice **context engineering** ([HF Context Course](https://huggingface.co/
 
 | Layer | Location |
 |-------|----------|
+| Agent loop | `bin/agent-loop` — Recollect→Plan→Observe→Act→Evaluate→Learn; `bin/agent-loop --health --json` for CI/session-start |
 | Skills | `skills/*`, `~/.grok/skills/*` — checklist: `/context-engineering-checklist` |
 | MCP | `adapters/mcp/`, profiles in `config/mcp-allowlists.json` |
 | Workflows | `.grok/workflows/*.rhai` — GSD review: `/context-engineering-pr-check` |
 | Sub-agents | Parallel workflows + Linear/vault ownership (`/gsd-ralph-context-loop`) |
 | Hooks | PreToolUse: `gate-check`, spend-guard, outbound-email-guard |
+
+**Session start:** run `bin/agent-loop` (or `bin/agent-loop --health --json`). Health fails closed when required context-layer files are missing.
 
 **GSD:** Capture → Clarify → Organize → Execute → Review.  
 **Ralph:** Observe → Act → Feedback → Promote (**matchable** surfaces) → Enforce.  
