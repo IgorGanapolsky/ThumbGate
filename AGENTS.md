@@ -97,6 +97,17 @@ If the system is making $0/day, you must prioritize outreach and discovery injec
 
 This project uses a local-first **Reliability Gateway** operational loop.
 
+## ExplainX trending (honest)
+
+Parse live https://explainx.ai/trending scores; map onto existing rails; never invent ROI; never auto-install.
+
+```bash
+npm run explainx:trending -- --fixture tests/fixtures/explainx-trending-rsc-snippet.html
+npm run explainx:trending -- --fetch --top 10 --json
+```
+
+Visual answers: `.agents/skills/show-me/SKILL.md` (`/show-me`). Details: `docs/agents/explainx-trending.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
