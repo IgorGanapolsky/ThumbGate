@@ -197,6 +197,49 @@ const {
   computeDecisionMetrics,
 } = require('../../scripts/decision-journal');
 const {
+  HermesPlatformProtocol,
+} = require('../hermes-platform-protocol');
+const {
+  HermesSyncPlane,
+} = require('../hermes-sync-plane');
+
+// Partition Hermes protocol/sync state by hosted tenant so one customer's
+// connection/thread/approval maps cannot be read or mutated by another.
+const hostedHermesByTenant = new Map();
+
+function resolveHermesTenantKey(requestDataIdentity) {
+  return requestDataIdentity?.partition || '__default__';
+}
+
+function getHostedHermes(requestDataIdentity) {
+  const key = resolveHermesTenantKey(requestDataIdentity);
+  let entry = hostedHermesByTenant.get(key);
+  if (!entry) {
+    entry = {
+      protocol: new HermesPlatformProtocol(),
+      syncPlane: new HermesSyncPlane(),
+    };
+    hostedHermesByTenant.set(key, entry);
+  }
+  return entry;
+}
+
+function resolveHermesApproverId(req, humanReviewerConfig, requestDataIdentity) {
+  if (humanReviewerConfig?.key && humanReviewerConfig?.id) {
+    const header = req.headers['x-thumbgate-human-reviewer-key'];
+    const presented = Array.isArray(header) ? header[0] : header;
+    if (safeKeyEqual(presented, humanReviewerConfig.key)) {
+      return humanReviewerConfig.id;
+    }
+  }
+  if (requestDataIdentity?.accessContext?.principalId) {
+    return requestDataIdentity.accessContext.principalId;
+  }
+  const role = resolveKeyRole(extractApiKey(req));
+  if (role) return `thumbgate:${role}`;
+  return null;
+}
+const {
   generateDashboard,
   buildReviewSnapshot,
   readDashboardReviewState,
@@ -11125,6 +11168,140 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           actor: body.actor || 'api-client',
         });
         sendJson(res, 200, { satisfied: true, gateId: body.gateId, ...entry });
+        return;
+      }
+
+      // POST /v1/hermes/initialize — Bind a connectionId before turn start/end
+      if (req.method === 'POST' && pathname === '/v1/hermes/initialize') {
+        const body = await parseJsonBody(req);
+        const { protocol } = getHostedHermes(requestDataIdentity);
+        const result = protocol.initialize({
+          connectionId: body.connectionId,
+        });
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes Initialize Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
+        return;
+      }
+
+      // POST /v1/hermes/turn/start — Start turn under Hermes Platform Protocol
+      // Fail closed until POST /v1/hermes/initialize registers the connectionId.
+      if (req.method === 'POST' && pathname === '/v1/hermes/turn/start') {
+        const body = await parseJsonBody(req);
+        const { protocol } = getHostedHermes(requestDataIdentity);
+        const result = protocol.startTurn(body);
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes Turn Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
+        return;
+      }
+
+      // POST /v1/hermes/turn/end — End active turn under Hermes Platform Protocol
+      if (req.method === 'POST' && pathname === '/v1/hermes/turn/end') {
+        const body = await parseJsonBody(req);
+        const { protocol } = getHostedHermes(requestDataIdentity);
+        const result = protocol.endTurn(body);
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes End Turn Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
+        return;
+      }
+
+      // POST /v1/hermes/action/approve — Record human/operator approval for consequential action
+      if (req.method === 'POST' && pathname === '/v1/hermes/action/approve') {
+        const body = await parseJsonBody(req);
+        const boundApproverId = resolveHermesApproverId(
+          req,
+          humanReviewerConfig,
+          requestDataIdentity,
+        );
+        if (!boundApproverId) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.UNAUTHORIZED,
+            title: 'Hermes Approval Rejected',
+            status: 401,
+            detail: 'Authenticated reviewer identity is required for Hermes approvals.',
+          });
+          return;
+        }
+        const { protocol } = getHostedHermes(requestDataIdentity);
+        const result = protocol.approve({
+          ...body,
+          approverId: boundApproverId,
+        });
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes Approval Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
+        return;
+      }
+
+      // GET /v1/hermes/sync/read — Reactive read path with cursor + offset
+      if (req.method === 'GET' && pathname === '/v1/hermes/sync/read') {
+        const rawOffset = parsed.searchParams.get('offset');
+        const offset = rawOffset !== null ? Number(rawOffset) : undefined;
+        const cursor = parsed.searchParams.get('cursor') || undefined;
+        const threadId = parsed.searchParams.get('threadId') || undefined;
+        const recordId = parsed.searchParams.get('recordId') || undefined;
+        const mode = parsed.searchParams.get('mode') || undefined;
+        // Prefer the authenticated principal over a client-supplied userId so
+        // hosted tenants cannot probe another identity's sync shapes.
+        const authUserId = requestDataIdentity?.accessContext?.principalId
+          || parsed.searchParams.get('userId')
+          || undefined;
+
+        const { syncPlane } = getHostedHermes(requestDataIdentity);
+        const result = syncPlane.readStatus({
+          offset,
+          cursor,
+          auth: authUserId ? { userId: authUserId } : null,
+          threadId,
+          recordId,
+          mode,
+        });
+
+        if (!result.ok) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.BAD_REQUEST,
+            title: 'Hermes Sync Read Rejected',
+            status: 400,
+            detail: result.reason,
+            ...result,
+          });
+          return;
+        }
+        sendJson(res, 200, result);
         return;
       }
 
