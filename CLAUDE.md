@@ -400,6 +400,17 @@ Adopted 2026-05-12 after a full PR/branch sweep. Persisted here so every future 
 - Keep public multi-agent workflows durable and executable without hosted-only modules; persist states, preserve failures, and terminate timed-out worker process groups.
 - Production monitoring is not healthy until at least 20 measured task outcomes and 20 observed tool calls pass the configured threshold set.
 
+## Code search (Graphify-Labs)
+
+Use Graphify-Labs `graphify` for architecture queries when wired:
+
+```bash
+npm run graphify:setup
+.graphify-venv/bin/graphify query "<question>"
+```
+
+See `docs/agents/code-search.md`. Do not clone Graphify into a ThumbGate SKU; do not dual-edit DIRTY lesson-graph PR #3650.
+
 ## Context Engineering (HF course → ThumbGate)
 
 We practice **context engineering** ([HF Context Course](https://huggingface.co/learn/context-course/unit0/introduction)): structure skills, MCP, plugins/workflows, sub-agents, and hooks so agents find and obey the right knowledge.
