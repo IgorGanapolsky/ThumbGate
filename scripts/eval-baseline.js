@@ -89,6 +89,6 @@ async function main() {
 
 module.exports = { main, GOLDEN, OUT };
 
-if (require.main?.filename === module.filename) {
+if (require.main === module) {
   main().then((c) => process.exit(c));
 }
