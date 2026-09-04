@@ -3495,6 +3495,7 @@ function help() {
   console.log('  deepseek-v4-runtime-guardrails Map sparse-attention runtime signals to safety gates');
   console.log('  nvidia-specdecode-al-doctor Check speculative AL/D evidence vs AL/(1+ρD) speedup math');
   console.log('  package-manager-honesty-doctor Audit lockfile/CI parity; fail-closed manager switches');
+  console.log('  jit-harness-compose   Compose memory/planning/action/capability onto existing rails (JIT FORMAT)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
   console.log('  background-governance Background-agent run report and dispatch risk check');
   console.log('  analytics             Unified analytics snapshot (npm, GitHub, landing)');
