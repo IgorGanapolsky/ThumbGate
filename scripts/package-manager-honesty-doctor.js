@@ -90,28 +90,69 @@ function listWorkflowFiles(workflowsDir) {
 
 /**
  * Extract install-ish commands from workflow YAML text (line-oriented, not a YAML parser).
+ * Only inspects `run:` steps (including folded `|` / `>` blocks) and splits shell
+ * chains (`&&`, `;`, `|`) so each manager+flags pair is recorded separately.
  */
 function extractInstallCommands(text, filePath) {
   const lines = String(text).split(/\r?\n/);
   const commands = [];
   const installRe = /\b(npm\s+ci|npm\s+install|npm\s+i\b|pnpm\s+(?:i|install|fetch|import)|yarn\s+(?:install|immutable)|bun\s+install)\b/i;
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
-    if (!installRe.test(line)) continue;
-    const trimmed = line.trim();
-    // skip comments
-    if (trimmed.startsWith('#')) continue;
+  const runStartRe = /^(\s*)-\s*run:\s*(.*)$/;
+
+  function recordCommand(cmdText, lineNo) {
+    const trimmed = String(cmdText || '').trim();
+    if (!trimmed || trimmed.startsWith('#') || !installRe.test(trimmed)) return;
     let manager = 'npm';
-    if (/\bpnpm\b/i.test(line)) manager = 'pnpm';
-    else if (/\byarn\b/i.test(line)) manager = 'yarn';
-    else if (/\bbun\b/i.test(line)) manager = 'bun';
+    if (/\bpnpm\b/i.test(trimmed)) manager = 'pnpm';
+    else if (/\byarn\b/i.test(trimmed)) manager = 'yarn';
+    else if (/\bbun\b/i.test(trimmed)) manager = 'bun';
     commands.push({
       file: filePath,
-      line: i + 1,
-      text: trimmed.replace(/^-\s*run:\s*/, '').replace(/^run:\s*/, ''),
+      line: lineNo,
+      text: trimmed,
       manager,
-      ignoreScripts: /--ignore-scripts\b/.test(line),
+      ignoreScripts: /--ignore-scripts\b/.test(trimmed),
     });
+  }
+
+  function splitShellChain(raw) {
+    // Split on &&, ;, and bare | (not ||). Keep install segments intact.
+    return String(raw)
+      .split(/(?:&&|;|(?<!\|)\|(?!\|))/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const match = runStartRe.exec(lines[i]);
+    if (!match) continue;
+    const indent = match[1].length;
+    let rest = match[2].trim();
+    let startLine = i + 1;
+
+    if (rest === '|' || rest === '>' || rest === '|-' || rest === '>-') {
+      // Multiline run block: each deeper-indented line is its own shell statement
+      // (and may itself contain && / ; chains).
+      let j = i + 1;
+      while (j < lines.length) {
+        const next = lines[j];
+        if (!next.trim()) { j += 1; continue; }
+        const nextIndent = next.match(/^(\s*)/)[1].length;
+        if (nextIndent <= indent) break;
+        const lineNo = j + 1;
+        for (const segment of splitShellChain(next.trim())) {
+          recordCommand(segment, lineNo);
+        }
+        j += 1;
+      }
+      i = j - 1;
+      continue;
+    }
+    if (!rest) continue;
+
+    for (const segment of splitShellChain(rest)) {
+      recordCommand(segment, startLine);
+    }
   }
   return commands;
 }
@@ -171,7 +212,14 @@ function buildFindings({
     });
   }
 
-  if (!pinInfo.pin && canonical) {
+  if (pinInfo.parseError) {
+    findings.push({
+      id: 'package_json_parse_error',
+      severity: 'fail',
+      gateId: 'require-package-manager-lockfile-ci-parity',
+      message: 'package.json could not be parsed. Fix JSON before trusting packageManager pin / install commands.',
+    });
+  } else if (!pinInfo.pin && canonical) {
     findings.push({
       id: 'package_manager_pin_missing',
       severity: 'info',

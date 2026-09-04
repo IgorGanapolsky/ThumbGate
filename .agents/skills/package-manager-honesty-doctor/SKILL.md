@@ -13,8 +13,8 @@ pnpm 12, InfoQ pnpm Rust, migrate to pnpm/yarn/bun, dual lockfiles, CI npm ci vs
 
 ## Do
 ```bash
-npx thumbgate package-manager-honesty-doctor --json
-npx thumbgate package-manager-honesty-doctor --propose-switch=pnpm --json
+npx thumbgate@1.36.1 package-manager-honesty-doctor --json
+npx thumbgate@1.36.1 package-manager-honesty-doctor --propose-switch=pnpm --json
 ```
 
 ## Never

@@ -42,6 +42,47 @@ test('detectLockfiles finds npm and pnpm locks', () => {
   assert.deepEqual(locks.map((l) => l.manager).sort(), ['npm', 'pnpm']);
 });
 
+
+test('extractInstallCommands splits chained run commands', () => {
+  const cmds = extractInstallCommands(`
+jobs:
+  a:
+    steps:
+      - run: npm ci && pnpm install --ignore-scripts
+`, 'ci.yml');
+  assert.equal(cmds.length, 2);
+  assert.equal(cmds[0].manager, 'npm');
+  assert.equal(cmds[0].ignoreScripts, false);
+  assert.equal(cmds[1].manager, 'pnpm');
+  assert.equal(cmds[1].ignoreScripts, true);
+});
+
+test('extractInstallCommands reads multiline run blocks', () => {
+  const cmds = extractInstallCommands(`
+jobs:
+  a:
+    steps:
+      - run: |
+          npm ci --ignore-scripts
+          pnpm install
+`, 'ci.yml');
+  assert.equal(cmds.length, 2);
+  assert.equal(cmds[0].manager, 'npm');
+  assert.equal(cmds[0].ignoreScripts, true);
+  assert.equal(cmds[1].manager, 'pnpm');
+  assert.equal(cmds[1].ignoreScripts, false);
+});
+
+test('doctor fails when package.json is malformed', () => {
+  const root = makeFixture({
+    lockfiles: ['package-lock.json'],
+  });
+  require('node:fs').writeFileSync(require('node:path').join(root, 'package.json'), '{ not-json');
+  const report = buildPackageManagerHonestyReport({ root });
+  assert.equal(report.status, 'fail');
+  assert.ok(report.findings.some((f) => f.id === 'package_json_parse_error'));
+});
+
 test('extractInstallCommands flags ignore-scripts', () => {
   const cmds = extractInstallCommands(`
 jobs:
