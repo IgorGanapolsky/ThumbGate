@@ -369,10 +369,10 @@
       "signal": "👎",
       "defaultAction": "warn",
       "severity": "high",
-      "pattern": "(speculative|mtp|eagle).*(accept|rollback|draft).*(low|missing|unstable)",
-      "problem": "Requires acceptance-rate, rollback, and correctness evidence before speculative decoding is treated as a production speedup.",
-      "roi": "Avoids routing traffic to a faster-looking path that collapses acceptance length or hides draft-token correctness failures.",
-      "rollout": "Start in warn mode for lab benchmarks; promote to block when speculation is enabled for customer traffic."
+      "pattern": "(speculative|mtp|eagle|draft.?length|accept.?length).*(accept|rollback|draft|speedup|al\\b).*(low|missing|unstable|overclaim|above.?theory)",
+      "problem": "Requires measured accept length (AL), draft length (D), rollback/coherence evidence, and speedup claims at or below AL/(1+ρD) before speculative decoding is treated as a production speedup.",
+      "roi": "Avoids routing traffic to a faster-looking path that collapses acceptance length, overclaims beyond AL/(1+ρD), or hides draft-token correctness failures.",
+      "rollout": "Start in warn mode for lab benchmarks; promote to block when speculation is enabled for customer traffic. Pair with nvidia-specdecode-al-doctor for AL/D math."
     },
     {
       "id": "require-long-context-kv-offload-capacity-plan",
