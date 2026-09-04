@@ -1388,8 +1388,20 @@ function isDestructiveBypass(command) {
 function isVersionOrProbeCommand(command) {
   if (!command || typeof command !== 'string') return false;
   const trimmed = command.trim();
-  return /^(?:node|npm|npx|gh|git|python|python3|pytest|cargo|rustc|go|docker|claude|gemini)\s+(?:-v|--version|-V)\s*$/i.test(trimmed)
-    || /^(?:pwd|whoami|date)\s*$/i.test(trimmed);
+  // Utility probes with no args.
+  if (/^(?:pwd|whoami|date)\s*$/i.test(trimmed)) return true;
+  // go prints version via the "version" subcommand (not -v/--version).
+  if (/^go\s+version\s*$/i.test(trimmed)) return true;
+  // node/npm/npx/gh/git/docker/claude/gemini: -v/--version/-V are version-only.
+  if (/^(?:node|npm|npx|gh|git|docker|claude|gemini)\s+(?:-v|--version|-V)\s*$/i.test(trimmed)) {
+    return true;
+  }
+  // cargo/rustc: -V/--version are version-only; bare -v means verbose.
+  // Keep this case-sensitive so /i cannot collapse -V into -v.
+  if (/^(?:cargo|rustc)\s+(?:-V|--version)\s*$/.test(trimmed)) return true;
+  // python/pytest: only --version/-V. Bare -v means verbose and must stay gated.
+  if (/^(?:python|python3|pytest)\s+(?:--version|-V)\s*$/.test(trimmed)) return true;
+  return false;
 }
 
 function getLearnedPrediction(learnedPolicy) {
@@ -1540,9 +1552,13 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     : (Array.isArray(normalizedToolInput.changed_files) ? normalizedToolInput.changed_files : null);
 
   const affectedFiles = Array.isArray(options.affectedFiles)
-    ? options.affectedFiles.map((filePath) => normalizePosix(filePath)).filter(Boolean)
+    ? options.affectedFiles
+      .map((filePath) => toRepoRelativePath(filePath, repoRoot))
+      .filter(Boolean)
     : (explicitChanged
-      ? explicitChanged.map((filePath) => normalizePosix(filePath)).filter(Boolean)
+      ? explicitChanged
+        .map((filePath) => toRepoRelativePath(filePath, repoRoot))
+        .filter(Boolean)
       : collectAffectedFiles(normalizedToolName, normalizedToolInput, repoRoot));
   let actionProfile = classifyActionProfile(normalizedToolInput);
   const financialControl = evaluateFinancialControl({
@@ -1786,9 +1802,11 @@ module.exports = {
   collectAffectedFiles,
   evaluateWorkflowSentinel,
   isHighRiskAction,
+  isVersionOrProbeCommand,
   loadGovernanceState,
   normalizeLearnedPolicyForSentinel,
   scoreRisk,
+  toRepoRelativePath,
 };
 
 if (require.main === module) {

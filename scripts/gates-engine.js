@@ -2924,11 +2924,17 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
         ? SELF_PROTECT_CONFIG_COMMAND_PATTERN
         : SELF_PROTECT_HOOK_COMMAND_PATTERN;
 
-      // When shell redirection is used (e.g. cat > /tmp/out), inspect the redirection destination
-      const redirectMatch = command.match(/(?:^|[\s;&|])>{1,2}\s*([^\s;&|]+)/);
-      if (redirectMatch && redirectMatch[1]) {
-        const target = redirectMatch[1];
-        if (!commandTargetPattern.test(target)) return null;
+      // Inspect every shell redirection destination (optional fd, optional spaces,
+      // multiple redirects). Deny when any destination hits a protected target.
+      const redirectPattern = /(?:^|[\s;&|])(?:\d*)>{1,2}\s*([^\s;&|<>]+)/g;
+      const redirectTargets = [];
+      let redirectMatch = redirectPattern.exec(command);
+      while (redirectMatch) {
+        if (redirectMatch[1]) redirectTargets.push(redirectMatch[1]);
+        redirectMatch = redirectPattern.exec(command);
+      }
+      if (redirectTargets.length > 0) {
+        if (!redirectTargets.some((target) => commandTargetPattern.test(target))) return null;
       } else {
         if (!SHELL_FILE_MUTATION_PATTERN.test(command) || !commandTargetPattern.test(command)) return null;
       }

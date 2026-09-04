@@ -12,7 +12,9 @@ const {
   buildReasoning,
   buildRemediations,
   evaluateWorkflowSentinel,
+  isVersionOrProbeCommand,
   scoreRisk,
+  toRepoRelativePath,
 } = require('../scripts/workflow-sentinel');
 const {
   evaluateGatesAsync,
@@ -1134,4 +1136,24 @@ test('workflow sentinel learned recall evidence and remediations are operator-re
   assert.ok(remediations.some((entry) => entry.id === 'retrieve_lessons'));
   assert.match(reasoning.join('\n'), /Learned policy predicted recall/);
   assert.match(reasoning.join('\n'), /Inspect prior lessons/);
+});
+
+
+test('isVersionOrProbeCommand uses command-specific version probes', () => {
+  assert.equal(isVersionOrProbeCommand('node -v'), true);
+  assert.equal(isVersionOrProbeCommand('cargo --version'), true);
+  assert.equal(isVersionOrProbeCommand('go version'), true);
+  assert.equal(isVersionOrProbeCommand('python --version'), true);
+  assert.equal(isVersionOrProbeCommand('pytest --version'), true);
+  // Verbose flags must NOT bypass denial checks.
+  assert.equal(isVersionOrProbeCommand('pytest -v'), false);
+  assert.equal(isVersionOrProbeCommand('python -v'), false);
+  assert.equal(isVersionOrProbeCommand('cargo -v'), false);
+});
+
+test('toRepoRelativePath normalizes absolute affected files under repo root', () => {
+  const repoRoot = path.resolve('/tmp/thumbgate-sentinel-root');
+  const abs = path.join(repoRoot, 'scripts', 'workflow-sentinel.js');
+  assert.equal(toRepoRelativePath(abs, repoRoot), 'scripts/workflow-sentinel.js');
+  assert.equal(toRepoRelativePath('scripts/workflow-sentinel.js', repoRoot), 'scripts/workflow-sentinel.js');
 });
