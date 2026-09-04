@@ -45,22 +45,27 @@ function formatAge(hours) {
   return `${Math.round((hours / 24) * 10) / 10}d`;
 }
 
-function checkGraphStaleness() {
-  if (!fs.existsSync(GRAPH)) {
+function checkGraphStaleness(options = {}) {
+  const graphPath = options.graphPath || GRAPH;
+  const binPath = options.bin || BIN;
+  const repoPath = options.repo || REPO;
+  const nowMs = Number.isFinite(options.nowMs) ? options.nowMs : Date.now();
+
+  if (!fs.existsSync(graphPath)) {
     return {
       exists: false,
       stale: true,
       reason: 'graph.json missing — run: npm run graphify:setup',
-      graphifyAvailable: fs.existsSync(BIN),
+      graphifyAvailable: fs.existsSync(binPath),
     };
   }
 
-  const stat = fs.statSync(GRAPH);
-  const ageHours = (Date.now() - stat.mtimeMs) / (1000 * 60 * 60);
+  const stat = fs.statSync(graphPath);
+  const ageHours = (nowMs - stat.mtimeMs) / (1000 * 60 * 60);
   const isoTime = stat.mtime.toISOString().replace(/\.\d+Z$/, 'Z');
   const revList = spawnSync(
     resolveGitBinary(),
-    ['-C', REPO, 'rev-list', '--count', `--since=${isoTime}`, 'HEAD'],
+    ['-C', repoPath, 'rev-list', '--count', `--since=${isoTime}`, 'HEAD'],
     { encoding: 'utf8', timeout: 5000, shell: false, env: process.env },
   );
   const commitsSince = revList.status === 0
@@ -70,7 +75,7 @@ function checkGraphStaleness() {
   let nodeCount = 0;
   let linkCount = 0;
   try {
-    const parsed = JSON.parse(fs.readFileSync(GRAPH, 'utf8'));
+    const parsed = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
     nodeCount = Array.isArray(parsed.nodes) ? parsed.nodes.length : 0;
     linkCount = Array.isArray(parsed.links)
       ? parsed.links.length
@@ -89,7 +94,7 @@ function checkGraphStaleness() {
     nodeCount,
     linkCount,
     stale,
-    graphifyAvailable: fs.existsSync(BIN),
+    graphifyAvailable: fs.existsSync(binPath),
     threshold: { hours: STALE_HOURS_THRESHOLD, commits: STALE_COMMIT_THRESHOLD },
     refresh: '.graphify-venv/bin/graphify update . --no-cluster',
   };

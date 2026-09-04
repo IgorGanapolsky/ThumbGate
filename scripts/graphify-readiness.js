@@ -45,16 +45,16 @@ function readVersion(bin) {
   return match ? match[1] : '';
 }
 
-function summarizeGraph() {
-  if (!fs.existsSync(GRAPH)) {
+function summarizeGraph(graphPath = GRAPH) {
+  if (!fs.existsSync(graphPath)) {
     return { exists: false };
   }
   try {
-    const parsed = JSON.parse(fs.readFileSync(GRAPH, 'utf8'));
-    const stat = fs.statSync(GRAPH);
+    const parsed = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
+    const stat = fs.statSync(graphPath);
     return {
       exists: true,
-      path: GRAPH,
+      path: graphPath,
       nodes: Array.isArray(parsed.nodes) ? parsed.nodes.length : 0,
       links: Array.isArray(parsed.links)
         ? parsed.links.length
@@ -64,7 +64,7 @@ function summarizeGraph() {
   } catch (error) {
     return {
       exists: true,
-      path: GRAPH,
+      path: graphPath,
       parseError: error instanceof Error ? error.message : String(error),
     };
   }
@@ -72,11 +72,13 @@ function summarizeGraph() {
 
 function assess(options = {}) {
   const requireGraph = Boolean(options.requireGraph);
-  const version = readVersion(VENV_BIN);
-  const graph = summarizeGraph();
+  const bin = options.bin || VENV_BIN;
+  const graphPath = options.graphPath || GRAPH;
+  const version = readVersion(bin);
+  const graph = summarizeGraph(graphPath);
   const reasons = [];
 
-  if (!fs.existsSync(VENV_BIN)) {
+  if (!fs.existsSync(bin)) {
     reasons.push('missing .graphify-venv/bin/graphify — run: npm run graphify:setup');
   } else if (!version || !versionAtLeast(version, MIN_VERSION)) {
     reasons.push(
@@ -96,7 +98,7 @@ function assess(options = {}) {
     ready: reasons.length === 0 && Boolean(graph.exists),
     version,
     minVersion: MIN_VERSION,
-    bin: VENV_BIN,
+    bin,
     graph,
     reasons,
     commands: {
@@ -147,4 +149,4 @@ if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   main();
 }
 
-module.exports = { assess, MIN_VERSION };
+module.exports = { assess, parseArgs, summarizeGraph, readVersion, MIN_VERSION };
