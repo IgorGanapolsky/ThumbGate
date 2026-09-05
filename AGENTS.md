@@ -108,6 +108,17 @@ npm run explainx:trending -- --fetch --top 10 --json
 
 Visual answers: `.agents/skills/show-me/SKILL.md` (`/show-me`). Details: `docs/agents/explainx-trending.md`.
 
+## Memory vs RAG (Supermemory steal)
+
+RAG = graphify/docs (stateless). Memory = lesson store with complete four-field scope (stateful). Profile = always-on static+dynamic facts. Do not clone Supermemory SaaS.
+
+```bash
+npm run memory:vs-rag -- --query "how does PreToolUse work?"
+npm run memory:vs-rag -- --query "what did we decide?" --entity entity-id --project project-id --process process-id --session session-id --json
+```
+
+Details: [`docs/agents/memory-vs-rag.md`](./docs/agents/memory-vs-rag.md).
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
