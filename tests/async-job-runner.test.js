@@ -361,6 +361,50 @@ test('command stages that emit no stdout preserve the current context', () => {
   }
 });
 
+test('parseCommandArgv keeps quoted args and rejects shell metacharacters', () => {
+  const runner = require('../scripts/async-job-runner');
+
+  assert.deepEqual(
+    runner.parseCommandArgv(`${process.execPath} -e "process.exit(0)"`),
+    [process.execPath, '-e', 'process.exit(0)'],
+  );
+  assert.deepEqual(
+    runner.parseCommandArgv(`${process.execPath} -e ""`),
+    [process.execPath, '-e', ''],
+  );
+
+  assert.throws(
+    () => runner.parseCommandArgv('echo hi; rm -rf /'),
+    (err) => err && err.code === 'JOB_STAGE_FAILED',
+  );
+  assert.throws(
+    () => runner.parseCommandArgv('node -e "process.exit(0)" | cat'),
+    (err) => err && err.code === 'JOB_STAGE_FAILED',
+  );
+});
+
+test('command stages fail closed on shell metacharacters without spawning a shell', () => {
+  const feedbackDir = createFeedbackDir();
+  const harness = loadRuntimeHarness({ feedbackDir });
+
+  try {
+    const result = harness.runner.executeJob({
+      id: 'shell-meta-reject-job',
+      tags: ['testing'],
+      stages: [
+        { name: 'inject', command: 'echo pwned; true' },
+      ],
+    });
+
+    assert.equal(result.status, 'failed');
+    const evidence = (result.taskOutcome && result.taskOutcome.verification && result.taskOutcome.verification.evidence) || [];
+    assert.ok(evidence.some((line) => /shell metacharacters/i.test(String(line))));
+  } finally {
+    harness.cleanup();
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
 test('runHarness compiles and executes a natural-language harness through async-job-runner', () => {
   const feedbackDir = createFeedbackDir();
   const harness = loadRuntimeHarness({ feedbackDir });
