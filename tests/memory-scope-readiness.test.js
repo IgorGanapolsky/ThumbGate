@@ -251,6 +251,31 @@ test('routeMemoryVsRag memory rail succeeds with complete scope', () => {
   assert.ok(route.containerTag);
 });
 
+test('routeMemoryVsRag rejects invalid forceRail instead of falling through', () => {
+  const route = routeMemoryVsRag('how does PreToolUse work?', { forceRail: 'memroy' });
+  assert.equal(route.ok, false);
+  assert.equal(route.error, 'invalid_force_rail');
+  assert.equal(route.rail, null);
+});
+
+test('routeMemoryVsRag memory rail fails closed when encodeContainerTag rejects scope', () => {
+  const route = routeMemoryVsRag('what did we decide last time?', {
+    forceRail: 'memory',
+    entityId: 'alice:admin',
+    projectId: 'thumbgate',
+    processId: 'coder',
+    sessionId: 's1',
+  });
+  assert.equal(route.rail, 'memory');
+  assert.equal(route.ok, false);
+  assert.equal(route.containerTag, null);
+});
+
+test('decodeContainerTag rejects forbidden charset and overlength tags', () => {
+  assert.equal(decodeContainerTag('entity:alice:project:tg:process:p:session:s!'), null);
+  assert.equal(decodeContainerTag(`entity:${'a'.repeat(120)}:project:p:process:x:session:s`), null);
+});
+
 test('resolveDreamingMode defaults to dynamic', () => {
   assert.deepEqual(resolveDreamingMode({}), {
     mode: 'dynamic',

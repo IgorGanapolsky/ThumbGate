@@ -114,7 +114,7 @@ RAG = graphify/docs (stateless). Memory = lesson store with complete four-field 
 
 ```bash
 npm run memory:vs-rag -- --query "how does PreToolUse work?"
-npm run memory:vs-rag -- --query "what did we decide?" --entity <e> --project <p> --process <a> --session <s> --json
+npm run memory:vs-rag -- --query "what did we decide?" --entity entity-id --project project-id --process process-id --session session-id --json
 ```
 
 Details: [`docs/agents/memory-vs-rag.md`](./docs/agents/memory-vs-rag.md).

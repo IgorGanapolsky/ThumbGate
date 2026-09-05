@@ -525,7 +525,7 @@ function encodeContainerTag(scopeInput = {}) {
  */
 function decodeContainerTag(tag) {
   const text = normalizeId(tag);
-  if (!text) return null;
+  if (!text || !CONTAINER_TAG_PATTERN.test(text) || text.length > 100) return null;
   const parts = text.split(':');
   if (parts.length !== 8) return null;
   const scope = {};
@@ -568,8 +568,24 @@ function routeMemoryVsRag(query = '', options = {}) {
   let memoryHits = memoryCues.filter((c) => lower.includes(c)).length;
   let ragHits = ragCues.filter((c) => lower.includes(c)).length;
 
-  // Explicit override
-  if (options.forceRail === 'memory' || options.forceRail === 'rag' || options.forceRail === 'hybrid') {
+  // Explicit override — reject typos instead of falling through to heuristics.
+  if (options.forceRail != null && options.forceRail !== '') {
+    if (options.forceRail !== 'memory' && options.forceRail !== 'rag' && options.forceRail !== 'hybrid') {
+      return {
+        ok: false,
+        rail: null,
+        query: text,
+        scope,
+        missingFields: missing,
+        containerTag: null,
+        rails: {},
+        recommended: [],
+        reason: 'invalid forceRail (expected rag|memory|hybrid)',
+        error: 'invalid_force_rail',
+        memoryHits,
+        ragHits,
+      };
+    }
     return finalizeRoute(options.forceRail, text, scope, missing, {
       memoryHits,
       ragHits,
@@ -594,8 +610,11 @@ function routeMemoryVsRag(query = '', options = {}) {
 }
 
 function finalizeRoute(rail, text, scope, missing, meta) {
-  const ok = rail !== 'memory' || missing.length === 0;
   const container = encodeContainerTag(scope);
+  // Memory rail requires a complete, encodable scope (fail closed on bad tags).
+  const ok = rail !== 'memory'
+    ? true
+    : (missing.length === 0 && container.ok);
   return {
     ok,
     rail,
@@ -629,7 +648,11 @@ function finalizeRoute(rail, text, scope, missing, meta) {
     reason: meta.reason,
     memoryHits: meta.memoryHits,
     ragHits: meta.ragHits,
-    error: ok ? null : `memory rail requires complete scope; missing: ${missing.join(', ')}`,
+    error: ok
+      ? null
+      : (!container.ok
+        ? (container.reason || 'memory rail requires encodable containerTag')
+        : `memory rail requires complete scope; missing: ${missing.join(', ')}`),
   };
 }
 

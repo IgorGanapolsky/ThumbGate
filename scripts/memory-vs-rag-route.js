@@ -24,6 +24,13 @@ const {
   routeMemoryVsRag,
 } = require('./memory-scope-readiness');
 
+function takeValue(flag, next) {
+  if (next == null || next.startsWith('-')) {
+    throw new Error(`Incomplete argument: ${flag} requires a value`);
+  }
+  return next;
+}
+
 function parseArgs(argv) {
   const out = {
     query: '',
@@ -44,25 +51,31 @@ function parseArgs(argv) {
     if (arg === '--help' || arg === '-h') out.help = true;
     else if (arg === '--json') out.json = true;
     else if (arg === '--profile') out.profile = true;
-    else if (arg === '--query' && next) { out.query = next; i += 1; }
-    else if (arg === '--dreaming' && next) { out.dreaming = next; i += 1; }
-    else if (arg === '--force-rail' && next) { out.forceRail = next; i += 1; }
-    else if (arg === '--entity' && next) { out.entityId = next; i += 1; }
-    else if (arg === '--project' && next) { out.projectId = next; i += 1; }
-    else if (arg === '--process' && next) { out.processId = next; i += 1; }
-    else if (arg === '--session' && next) { out.sessionId = next; i += 1; }
-    else if (arg === '--container-tag' && next) { out.containerTag = next; i += 1; }
+    else if (arg === '--query') { out.query = takeValue(arg, next); i += 1; }
+    else if (arg === '--dreaming') { out.dreaming = takeValue(arg, next); i += 1; }
+    else if (arg === '--force-rail') { out.forceRail = takeValue(arg, next); i += 1; }
+    else if (arg === '--entity') { out.entityId = takeValue(arg, next); i += 1; }
+    else if (arg === '--project') { out.projectId = takeValue(arg, next); i += 1; }
+    else if (arg === '--process') { out.processId = takeValue(arg, next); i += 1; }
+    else if (arg === '--session') { out.sessionId = takeValue(arg, next); i += 1; }
+    else if (arg === '--container-tag') { out.containerTag = takeValue(arg, next); i += 1; }
     else if (!arg.startsWith('-') && !out.query) out.query = arg;
     else throw new Error(`Unknown or incomplete argument: ${arg}`);
   }
   return out;
 }
 
+const MAX_STDIN_BYTES = 2 * 1024 * 1024;
+
 function readStdinJson() {
   if (process.stdin.isTTY) return null;
-  const raw = fs.readFileSync(0, 'utf8').trim();
-  if (!raw) return null;
-  return JSON.parse(raw);
+  const raw = fs.readFileSync(0, 'utf8');
+  if (Buffer.byteLength(raw, 'utf8') > MAX_STDIN_BYTES) {
+    throw new Error(`stdin exceeds ${MAX_STDIN_BYTES} bytes`);
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  return JSON.parse(trimmed);
 }
 
 function printHelp() {
