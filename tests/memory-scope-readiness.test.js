@@ -189,3 +189,138 @@ test('buildMemoryOsLayerReport flags missing curation, structured facts, and int
   assert.ok(report.recommendations.some((item) => /typed records/.test(item)));
   assert.ok(report.recommendations.some((item) => /dedupe/.test(item)));
 });
+
+const {
+  buildLessonProfile,
+  decodeContainerTag,
+  encodeContainerTag,
+  resolveDreamingMode,
+  routeMemoryVsRag,
+} = require('../scripts/memory-scope-readiness');
+
+test('encode/decode containerTag round-trips four-field scope', () => {
+  const scope = {
+    entityId: 'alice',
+    projectId: 'thumbgate',
+    processId: 'coder',
+    sessionId: 'session-7',
+  };
+  const encoded = encodeContainerTag(scope);
+  assert.equal(encoded.ok, true);
+  assert.match(encoded.containerTag, /^entity:alice:project:thumbgate:process:coder:session:session-7$/);
+  assert.deepEqual(decodeContainerTag(encoded.containerTag), scope);
+  assert.deepEqual(normalizeScope({ containerTag: encoded.containerTag }), scope);
+});
+
+test('encodeContainerTag rejects colon-bearing ids', () => {
+  const bad = encodeContainerTag({
+    entityId: 'org:acme',
+    projectId: 'thumbgate',
+    processId: 'coder',
+    sessionId: 's1',
+  });
+  assert.equal(bad.ok, false);
+});
+
+test('routeMemoryVsRag sends architecture questions to rag', () => {
+  const route = routeMemoryVsRag('how does PreToolUse gate-check work?');
+  assert.equal(route.rail, 'rag');
+  assert.equal(route.ok, true);
+  assert.ok(route.recommended.includes('graphify'));
+});
+
+test('routeMemoryVsRag fails closed for memory rail without complete scope', () => {
+  const route = routeMemoryVsRag('what did we decide about checkout last time?', {
+    entityId: 'alice',
+    projectId: 'thumbgate',
+  });
+  assert.equal(route.rail, 'memory');
+  assert.equal(route.ok, false);
+  assert.deepEqual(route.missingFields, ['processId', 'sessionId']);
+});
+
+test('routeMemoryVsRag memory rail succeeds with complete scope', () => {
+  const route = routeMemoryVsRag('what did we decide about checkout last time?', {
+    entityId: 'alice',
+    projectId: 'thumbgate',
+    processId: 'coder',
+    sessionId: 's1',
+  });
+  assert.equal(route.rail, 'memory');
+  assert.equal(route.ok, true);
+  assert.ok(route.containerTag);
+});
+
+test('routeMemoryVsRag rejects invalid forceRail instead of falling through', () => {
+  const route = routeMemoryVsRag('how does PreToolUse work?', { forceRail: 'memroy' });
+  assert.equal(route.ok, false);
+  assert.equal(route.error, 'invalid_force_rail');
+  assert.equal(route.rail, null);
+});
+
+test('routeMemoryVsRag memory rail fails closed when encodeContainerTag rejects scope', () => {
+  const route = routeMemoryVsRag('what did we decide last time?', {
+    forceRail: 'memory',
+    entityId: 'alice:admin',
+    projectId: 'thumbgate',
+    processId: 'coder',
+    sessionId: 's1',
+  });
+  assert.equal(route.rail, 'memory');
+  assert.equal(route.ok, false);
+  assert.equal(route.containerTag, null);
+});
+
+test('decodeContainerTag rejects forbidden charset and overlength tags', () => {
+  assert.equal(decodeContainerTag('entity:alice:project:tg:process:p:session:s!'), null);
+  assert.equal(decodeContainerTag(`entity:${'a'.repeat(120)}:project:p:process:x:session:s`), null);
+});
+
+test('resolveDreamingMode defaults to dynamic', () => {
+  assert.deepEqual(resolveDreamingMode({}), {
+    mode: 'dynamic',
+    promoteImmediately: false,
+    batchRelated: true,
+    reason: 'dynamic dreaming: group related feedback before promotion (default)',
+  });
+  assert.equal(resolveDreamingMode({ dreaming: 'instant' }).promoteImmediately, true);
+});
+
+test('buildLessonProfile separates static preferences from recent dynamic facts', () => {
+  const scope = {
+    entityId: 'alice',
+    projectId: 'thumbgate',
+    processId: 'agent-a',
+    sessionId: 'session-1',
+  };
+  const now = '2026-09-04T12:00:00.000Z';
+  const records = [
+    {
+      id: 'pref',
+      ...scope,
+      importance: 'high',
+      content: 'CEO standing order: never approve PRs as the agent.',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    },
+    {
+      id: 'recent',
+      ...scope,
+      content: 'Debugging Railway rebuild lag this week.',
+      updatedAt: '2026-09-01T00:00:00.000Z',
+    },
+    {
+      id: 'other-user',
+      entityId: 'bob',
+      projectId: 'thumbgate',
+      processId: 'agent-a',
+      sessionId: 'session-1',
+      content: 'Bob private note',
+      updatedAt: '2026-09-01T00:00:00.000Z',
+    },
+  ];
+  const profile = buildLessonProfile(records, scope, { now });
+  assert.equal(profile.ok, true);
+  assert.equal(profile.profile.static.some((f) => f.id === 'pref'), true);
+  assert.equal(profile.profile.dynamic.some((f) => f.id === 'recent'), true);
+  assert.equal(profile.profile.dynamic.some((f) => f.id === 'other-user'), false);
+});
