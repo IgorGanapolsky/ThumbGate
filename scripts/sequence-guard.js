@@ -154,6 +154,9 @@ function evaluateSequenceState(toolName, toolInput) {
   const entry = state.repos[repoKey] || { dirty: false, lastEditAt: 0 };
 
   // 1. Task Scope Verification
+  // Prefer gates-engine (session-scoped when THUMBGATE_SESSION_AGENT is set).
+  // Fall back to the base governance-state.json when the engine returns no
+  // taskScope — keeps agents that write the base path enforceable.
   let taskScope = null;
   try {
     const engine = require('./gates-engine');
@@ -163,7 +166,8 @@ function evaluateSequenceState(toolName, toolInput) {
         taskScope = gov.taskScope;
       }
     }
-  } catch {
+  } catch { /* fall through to base file */ }
+  if (!taskScope) {
     try {
       if (fs.existsSync(GOVERNANCE_STATE_PATH)) {
         const gov = JSON.parse(fs.readFileSync(GOVERNANCE_STATE_PATH, 'utf8'));
