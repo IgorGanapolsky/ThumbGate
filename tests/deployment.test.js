@@ -430,7 +430,7 @@ test('Deploy to Railway hard-gates build health and keeps revenue readiness advi
   assert.match(ownershipStep, /node scripts\/verify-npm-githead\.js/);
   assert.match(ownershipStep, /--expected-sha="\$GITHUB_SHA"/);
   assert.match(ownershipStep, /--max-attempts=(?:[3-9][0-9]|[1-9][0-9]{2,})/);
-  assert.doesNotMatch(ownershipStep, /--allow-unpublished/);
+  assert.match(ownershipStep, /--allow-unpublished/, 'content merges between npm releases must not red the Railway Deploy workflow');
   assert.ok(revenueIndex > healthIndex, 'revenue readiness must inspect the promoted build after SHA verification');
   assert.ok(revenueIndex > behaviorIndex, 'revenue readiness follows the hard authenticated behavior gate');
   assert.ok(evidenceIndex > revenueIndex, 'revenue evidence upload must follow the advisory probe');

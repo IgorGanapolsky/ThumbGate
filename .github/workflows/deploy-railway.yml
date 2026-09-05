@@ -322,6 +322,10 @@ jobs:
             --max-attempts=6 \
             --retry-delay-ms=10000 \
             --json
+      # Between releases npm correctly has no package for this SHA (tag may
+      # already exist on an older commit). Fail-closed on foreign ownership;
+      # allow unpublished so content-only main deploys stay green. The earlier
+      # pre-deploy ownership step already uses --allow-unpublished.
       - name: Verify deployed package ownership after publication
         if: steps.railway-config.outputs.enabled == 'true'
         timeout-minutes: 12
@@ -329,6 +333,7 @@ jobs:
           node scripts/verify-npm-githead.js \
             --version="$(node -p "require('./package.json').version")" \
             --expected-sha="$GITHUB_SHA" \
+            --allow-unpublished \
             --max-attempts=60 \
             --retry-delay-ms=10000 \
             --json
