@@ -133,6 +133,16 @@ function normalizeId(value) {
 }
 
 function normalizeScope(input = {}) {
+  // Supermemory-style containerTag is an opaque namespace. If present and
+  // parseable as our four-field encoding, prefer it; otherwise fall through
+  // to field aliases. (Steal: https://supermemory.ai/docs/concepts/container-tags)
+  const fromTag = decodeContainerTag(
+    input.containerTag || input.container_tag || input.metadata?.containerTag
+  );
+  if (fromTag && missingScopeFields(fromTag).length === 0) {
+    return fromTag;
+  }
+
   const scope = {};
   for (const field of REQUIRED_SCOPE_FIELDS) {
     let resolved = null;
@@ -460,15 +470,304 @@ function buildMemoriStyleBenchmarkRecords() {
   ];
 }
 
+
+// ---------------------------------------------------------------------------
+// Supermemory process steal (NOT a product clone)
+// Docs: Memory vs RAG, container tags, profiles, dreaming modes.
+// ---------------------------------------------------------------------------
+
+const CONTAINER_TAG_PATTERN = /^[a-zA-Z0-9_:-]+$/;
+const DREAMING_MODES = Object.freeze(['dynamic', 'instant']);
+
+/**
+ * Encode four-field ThumbGate scope as a Supermemory-valid containerTag.
+ * Format: entity:<id>:project:<id>:process:<id>:session:<id>
+ */
+function encodeContainerTag(scopeInput = {}) {
+  const scope = normalizeScope(scopeInput);
+  const missing = missingScopeFields(scope);
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      containerTag: null,
+      missingFields: missing,
+      reason: `incomplete scope: ${missing.join(', ')}`,
+    };
+  }
+  const values = [scope.entityId, scope.projectId, scope.processId, scope.sessionId];
+  if (values.some((value) => String(value).includes(':'))) {
+    return {
+      ok: false,
+      containerTag: null,
+      missingFields: [],
+      reason: 'scope field values must not contain ":" (reserved for containerTag encoding)',
+    };
+  }
+  const tag = [
+    `entity:${scope.entityId}`,
+    `project:${scope.projectId}`,
+    `process:${scope.processId}`,
+    `session:${scope.sessionId}`,
+  ].join(':');
+  if (!CONTAINER_TAG_PATTERN.test(tag) || tag.length > 100) {
+    return {
+      ok: false,
+      containerTag: null,
+      missingFields: [],
+      reason: 'encoded tag fails supermemory charset/length rules',
+    };
+  }
+  return { ok: true, containerTag: tag, missingFields: [], scope };
+}
+
+/**
+ * Decode containerTag produced by encodeContainerTag (or null if opaque).
+ */
+function decodeContainerTag(tag) {
+  const text = normalizeId(tag);
+  if (!text || !CONTAINER_TAG_PATTERN.test(text) || text.length > 100) return null;
+  const parts = text.split(':');
+  if (parts.length !== 8) return null;
+  const scope = {};
+  for (let i = 0; i < 8; i += 2) {
+    const key = parts[i];
+    const value = parts[i + 1];
+    if (key === 'entity') scope.entityId = value;
+    else if (key === 'project') scope.projectId = value;
+    else if (key === 'process') scope.processId = value;
+    else if (key === 'session') scope.sessionId = value;
+    else return null;
+  }
+  if (missingScopeFields(scope).length > 0) return null;
+  return scope;
+}
+
+/**
+ * Route a question to RAG (stateless knowledge) vs MEMORY (scoped temporal).
+ * Steal: https://supermemory.ai/docs/concepts/memory-vs-rag
+ * RAG answers "what do I know?"; Memory answers "what do I remember about you?"
+ */
+function routeMemoryVsRag(query = '', options = {}) {
+  const text = String(query || '').trim();
+  const scope = normalizeScope(options.scope || options);
+  const missing = missingScopeFields(scope);
+  const lower = text.toLowerCase();
+
+  const memoryCues = [
+    'i prefer', 'my preference', 'last time', 'we decided', 'remember that',
+    'what did we', 'what do i usually', 'my usual', 'for this user', 'for this project',
+    'previous mistake', 'lesson about', 'prevention rule', 'thumbs down', 'what went wrong',
+    'session', 'our agent', 'ceo said', 'standing order',
+  ];
+  const ragCues = [
+    'how does', 'where is', 'which file', 'architecture', 'implements',
+    'api endpoint', 'readme', 'documentation', 'source of', 'call graph',
+    'pretooluse', 'gate-check', 'package.json', 'what connects',
+  ];
+
+  let memoryHits = memoryCues.filter((c) => lower.includes(c)).length;
+  let ragHits = ragCues.filter((c) => lower.includes(c)).length;
+
+  // Explicit override — reject typos instead of falling through to heuristics.
+  if (options.forceRail != null && options.forceRail !== '') {
+    if (options.forceRail !== 'memory' && options.forceRail !== 'rag' && options.forceRail !== 'hybrid') {
+      return {
+        ok: false,
+        rail: null,
+        query: text,
+        scope,
+        missingFields: missing,
+        containerTag: null,
+        rails: {},
+        recommended: [],
+        reason: 'invalid forceRail (expected rag|memory|hybrid)',
+        error: 'invalid_force_rail',
+        memoryHits,
+        ragHits,
+      };
+    }
+    return finalizeRoute(options.forceRail, text, scope, missing, {
+      memoryHits,
+      ragHits,
+      reason: `forced:${options.forceRail}`,
+    });
+  }
+
+  let rail = 'hybrid';
+  let reason = 'default hybrid: prefer graphify/docs for code, lesson-store only with complete scope';
+  if (memoryHits > ragHits && memoryHits > 0) {
+    rail = 'memory';
+    reason = 'memory cues dominate (preferences, prior decisions, lessons)';
+  } else if (ragHits > memoryHits && ragHits > 0) {
+    rail = 'rag';
+    reason = 'rag cues dominate (code/docs/architecture)';
+  } else if (!text) {
+    rail = 'rag';
+    reason = 'empty query defaults to rag/code-map';
+  }
+
+  return finalizeRoute(rail, text, scope, missing, { memoryHits, ragHits, reason });
+}
+
+function finalizeRoute(rail, text, scope, missing, meta) {
+  const container = encodeContainerTag(scope);
+  // Memory rail requires a complete, encodable scope (fail closed on bad tags).
+  const ok = rail !== 'memory'
+    ? true
+    : (missing.length === 0 && container.ok);
+  return {
+    ok,
+    rail,
+    query: text,
+    scope,
+    missingFields: missing,
+    containerTag: container.ok ? container.containerTag : null,
+    rails: {
+      rag: {
+        tools: [
+          'graphify query/path/explain (when graphify-out/graph.json exists)',
+          'grepai / codebase search',
+          'docs/ and public/ HTML',
+        ],
+        note: 'Stateless knowledge — same answer for every user',
+      },
+      memory: {
+        tools: [
+          'lesson-retrieval.js (requires complete four-field scope)',
+          'memory-scope-readiness.selectRecordsForScope',
+          'temporal-decay-weighting.js',
+        ],
+        note: 'Stateful scoped memory — fails closed without entity/project/process/session',
+      },
+    },
+    recommended: rail === 'rag'
+      ? ['graphify', 'docs']
+      : rail === 'memory'
+        ? ['lesson-retrieval', 'profile']
+        : ['graphify', 'lesson-retrieval+scope', 'profile'],
+    reason: meta.reason,
+    memoryHits: meta.memoryHits,
+    ragHits: meta.ragHits,
+    error: ok
+      ? null
+      : (!container.ok
+        ? (container.reason || 'memory rail requires encodable containerTag')
+        : `memory rail requires complete scope; missing: ${missing.join(', ')}`),
+  };
+}
+
+/**
+ * Dreaming mode for feedback→memory promotion (Supermemory process steal).
+ * dynamic = batch related feedback into coherent units (default, cheaper/higher quality)
+ * instant = promote this signal alone immediately (demo / crisis)
+ */
+function resolveDreamingMode(input = {}) {
+  const raw = String(input.dreaming || input.mode || 'dynamic').toLowerCase().trim();
+  const mode = DREAMING_MODES.includes(raw) ? raw : 'dynamic';
+  return {
+    mode,
+    promoteImmediately: mode === 'instant',
+    batchRelated: mode === 'dynamic',
+    reason: mode === 'instant'
+      ? 'instant dreaming: promote this document/feedback alone now'
+      : 'dynamic dreaming: group related feedback before promotion (default)',
+  };
+}
+
+/**
+ * Build a static+dynamic profile from lesson-like records for one container/scope.
+ * Steal: https://supermemory.ai/docs/concepts/user-profiles
+ * Profile rides along every turn; search stays for query-specific recall.
+ */
+function buildLessonProfile(records = [], scopeInput = {}, options = {}) {
+  const scope = normalizeScope(scopeInput);
+  const missing = missingScopeFields(scope);
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      missingFields: missing,
+      profile: { static: [], dynamic: [] },
+      reason: `incomplete scope: ${missing.join(', ')}`,
+    };
+  }
+
+  const selected = selectRecordsForScope(records, scope, options);
+  const now = options.now ? new Date(options.now).getTime() : Date.now();
+  const dynamicWindowMs = Number.isFinite(options.dynamicWindowMs)
+    ? options.dynamicWindowMs
+    : 14 * 24 * 60 * 60 * 1000;
+
+  const staticFacts = [];
+  const dynamicFacts = [];
+
+  for (const record of selected.allowed) {
+    const content = String(
+      record.content || record.title || record.whatWorked || record.whatToChange || ''
+    ).trim();
+    if (!content) continue;
+
+    const ts = Date.parse(record.updatedAt || record.createdAt || record.timestamp || '');
+    const ageOk = Number.isFinite(ts) ? (now - ts) <= dynamicWindowMs : false;
+    const isPreference = /prefer|always|never|standing|ceo|mandate|policy/i.test(content)
+      || record.type === 'fact'
+      || record.visibility === 'shared'
+      || record.importance === 'high';
+
+    const entry = {
+      id: record.id || null,
+      content: content.slice(0, 280),
+      type: record.type || null,
+    };
+
+    if (isPreference && !ageOk) {
+      staticFacts.push(entry);
+    } else if (ageOk) {
+      dynamicFacts.push(entry);
+    } else if (isPreference) {
+      staticFacts.push(entry);
+    } else {
+      // Older non-preference lessons stay out of always-on profile
+      // (search/lesson-retrieval still covers them).
+    }
+  }
+
+  const encoded = encodeContainerTag(scope);
+  return {
+    ok: true,
+    missingFields: [],
+    containerTag: encoded.containerTag,
+    scope,
+    profile: {
+      static: staticFacts.slice(0, options.staticLimit || 12),
+      dynamic: dynamicFacts.slice(0, options.dynamicLimit || 12),
+    },
+    counts: {
+      allowed: selected.allowed.length,
+      blocked: selected.blocked.length,
+      static: Math.min(staticFacts.length, options.staticLimit || 12),
+      dynamic: Math.min(dynamicFacts.length, options.dynamicLimit || 12),
+    },
+    reason: 'profile synthesizes always-on facts; use search/lesson-retrieval for query-specific recall',
+  };
+}
+
+
 module.exports = {
   MEMORY_OS_LAYERS,
   REQUIRED_SCOPE_FIELDS,
+  DREAMING_MODES,
+  CONTAINER_TAG_PATTERN,
+  buildLessonProfile,
   buildMemoriStyleBenchmarkRecords,
   buildMemoryOsLayerReport,
   buildMemoryScopeReadinessReport,
+  decodeContainerTag,
+  encodeContainerTag,
   isSharedMemory,
   memoryScopeKey,
   missingScopeFields,
   normalizeScope,
+  resolveDreamingMode,
+  routeMemoryVsRag,
   selectRecordsForScope,
 };
