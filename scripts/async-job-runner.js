@@ -448,18 +448,96 @@ function getJobStats() {
   };
 }
 
-function shellConfig(command) {
-  if (process.platform === 'win32') {
-    return {
-      command: process.env.ComSpec || 'cmd.exe',
-      args: ['/d', '/s', '/c', command],
-    };
+const SAFE_EXECUTABLE_RE = /^[A-Za-z0-9_./\\:+-]+$/;
+
+/**
+ * Quote-aware argv split for command stages (no shell).
+ * Supports single/double quotes; rejects unquoted shell metacharacters.
+ */
+function parseCommandArgv(command) {
+  const raw = String(command == null ? '' : command).trim();
+  if (!raw) {
+    const err = new Error('Command stage rejected: empty command');
+    err.code = 'JOB_STAGE_FAILED';
+    throw err;
   }
 
-  return {
-    command: process.env.SHELL || '/bin/sh',
-    args: ['-lc', command],
+  const tokens = [];
+  let current = '';
+  let quote = null;
+  let tokenStarted = false;
+
+  const flushToken = ({ allowEmpty = false } = {}) => {
+    if (tokenStarted || (allowEmpty && current === '')) {
+      tokens.push(current);
+      current = '';
+      tokenStarted = false;
+    }
   };
+
+  for (let i = 0; i < raw.length; i += 1) {
+    const ch = raw[i];
+    if (quote) {
+      if (ch === quote) {
+        quote = null;
+        // Closing quotes always emits a token (including empty `-e ""`).
+        flushToken({ allowEmpty: true });
+      } else if (ch === '\\' && quote === '"' && i + 1 < raw.length) {
+        current += raw[i + 1];
+        tokenStarted = true;
+        i += 1;
+      } else {
+        current += ch;
+        tokenStarted = true;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      // Flush any unquoted token abutting the quote (`node -e"code"`).
+      flushToken();
+      quote = ch;
+      tokenStarted = true;
+      continue;
+    }
+
+    if (/\s/.test(ch)) {
+      flushToken();
+      continue;
+    }
+
+    // Unquoted shell metacharacters would require a shell; fail closed.
+    if (/[;&|`$<>(){}]/.test(ch)) {
+      const err = new Error('Command stage rejected: shell metacharacters are not allowed');
+      err.code = 'JOB_STAGE_FAILED';
+      throw err;
+    }
+
+    current += ch;
+    tokenStarted = true;
+  }
+
+  if (quote) {
+    const err = new Error('Command stage rejected: unmatched quote');
+    err.code = 'JOB_STAGE_FAILED';
+    throw err;
+  }
+
+  flushToken();
+
+  if (tokens.length === 0) {
+    const err = new Error('Command stage rejected: empty command');
+    err.code = 'JOB_STAGE_FAILED';
+    throw err;
+  }
+
+  if (!SAFE_EXECUTABLE_RE.test(tokens[0])) {
+    const err = new Error(`Command stage rejected: invalid executable "${tokens[0]}"`);
+    err.code = 'JOB_STAGE_FAILED';
+    throw err;
+  }
+
+  return tokens;
 }
 
 function normalizeStageResult(result, currentContext) {
@@ -495,13 +573,25 @@ function applyStageContext(currentContext, stageResult) {
 }
 
 function runCommandStage(stage) {
-  const shell = shellConfig(stage.command);
-  const result = spawnSync(shell.command, shell.args, {
+  const tokens = parseCommandArgv(stage.command);
+  const result = spawnSync(tokens[0], tokens.slice(1), {
     cwd: stage.workingDirectory || process.cwd(),
     env: process.env,
     encoding: 'utf8',
     stdio: 'pipe',
+    shell: false,
   });
+
+  if (result.error) {
+    const error = new Error([
+      `Stage "${stage.name}" command failed`,
+      result.error.message || 'spawn error',
+    ].join(': '));
+    error.code = 'JOB_STAGE_FAILED';
+    error.stdout = '';
+    error.stderr = result.error.message || '';
+    throw error;
+  }
 
   if (result.status !== 0) {
     const stderr = (result.stderr || '').trim();
@@ -1044,6 +1134,7 @@ module.exports = {
   resumeJob,
   resumeManagedJobs,
   getJobRuntimePaths,
+  parseCommandArgv,
   JOB_LOG_FILENAME,
   JOB_CONTROL_FILENAME,
   JOB_STATE_DIRNAME,
