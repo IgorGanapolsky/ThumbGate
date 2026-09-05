@@ -6,15 +6,15 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { evaluateSequenceState } = require('../scripts/sequence-guard');
+const { setTaskScope } = require('../scripts/gates-engine');
 
-const STATE_DIR = process.env.THUMBGATE_STATE_DIR || 
+const STATE_DIR = process.env.THUMBGATE_STATE_DIR ||
                   (process.env.XDG_STATE_HOME ? path.join(process.env.XDG_STATE_HOME, 'thumbgate') : null) ||
                   (process.env.CODEX_SANDBOX ? path.join(os.tmpdir(), 'thumbgate') : null) ||
                   path.join(process.env.HOME || '/tmp', '.thumbgate');
 
 const SEQUENCE_STATE_PATH = path.join(STATE_DIR, 'sequence-state.json');
 const SESSION_ACTIONS_PATH = path.join(STATE_DIR, 'session-actions.json');
-const GOVERNANCE_STATE_PATH = path.join(STATE_DIR, 'governance-state.json');
 
 function resetSequenceState() {
   try { fs.rmSync(SEQUENCE_STATE_PATH, { force: true }); } catch { /* ignore */ }
@@ -31,7 +31,9 @@ function clearTestsPassed() {
 }
 
 function resetGovernanceState() {
-  try { fs.rmSync(GOVERNANCE_STATE_PATH, { force: true }); } catch { /* ignore */ }
+  // Clear via setTaskScope so session-scoped governance files
+  // (governance-state.<THUMBGATE_SESSION_AGENT>.json) are cleared too.
+  try { setTaskScope({ clear: true }); } catch { /* ignore */ }
 }
 
 const REPO = process.cwd();
@@ -85,15 +87,11 @@ test('sequence-guard - edit in one repo does NOT block a commit in another (per-
 test('sequence-guard - task scope active - edit outside allowedPaths is blocked', () => {
   resetSequenceState();
   clearTestsPassed();
+  resetGovernanceState();
 
-  // Set up active task scope allowing only files under src/api
-  fs.mkdirSync(STATE_DIR, { recursive: true });
-  fs.writeFileSync(GOVERNANCE_STATE_PATH, JSON.stringify({
-    taskScope: {
-      allowedPaths: ['src/api/**'],
-      repoPath: REPO
-    }
-  }));
+  // Use setTaskScope so the write lands on the same session-scoped
+  // governance path loadGovernanceState / sequence-guard read.
+  setTaskScope({ allowedPaths: ['src/api/**'], repoPath: REPO });
 
   // Editing a file inside allowedPaths -> should be allowed (returns null)
   const allowedEdit = evaluateSequenceState('Edit', { file_path: path.join(REPO, 'src/api/server.js') });
@@ -112,20 +110,14 @@ test('sequence-guard - task scope active - edit outside allowedPaths is blocked'
 test('sequence-guard - task scope active - commit/complete with modified files outside allowedPaths is blocked', () => {
   resetSequenceState();
   clearTestsPassed();
+  resetGovernanceState();
 
   // Write a temporary untracked file to ensure there is a modified file outside allowedPaths
   const tempFile = path.join(REPO, 'tests/temp-test-file.txt');
   fs.writeFileSync(tempFile, 'temp content', 'utf8');
 
   try {
-    // Mock task scope allowing files under 'dummy'
-    fs.mkdirSync(STATE_DIR, { recursive: true });
-    fs.writeFileSync(GOVERNANCE_STATE_PATH, JSON.stringify({
-      taskScope: {
-        allowedPaths: ['dummy/**'],
-        repoPath: REPO
-      }
-    }));
+    setTaskScope({ allowedPaths: ['dummy/**'], repoPath: REPO });
 
     // Commit attempt should fail since we have a modified file that doesn't match 'dummy/**'
     const commit = evaluateSequenceState('Bash', { command: 'git commit -m "wip"', repoPath: REPO });
@@ -133,7 +125,7 @@ test('sequence-guard - task scope active - commit/complete with modified files o
     assert.equal(commit.decision, 'deny');
     assert.equal(commit.gate, 'task-scope-violation');
   } finally {
-    try { fs.unlinkSync(tempFile); } catch {}
+    try { fs.unlinkSync(tempFile); } catch { /* ignore */ }
   }
 
   resetSequenceState();
