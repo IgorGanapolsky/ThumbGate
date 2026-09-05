@@ -487,8 +487,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 522 -> 523: scripts/package-manager-honesty-doctor.js (pnpm 12 honesty).
   // 525 -> 527: workspace-search-route (#3770)
   // 527 -> 529: intent-governed-execution (#3771 CyberStrike FORMAT).
-    manifest.fileCount <= 529,
-    `npm package should stay <= 529 files, got ${manifest.fileCount}`
+  // 529 -> 530: memory-vs-rag-route.js (Supermemory FORMAT steal).
+    manifest.fileCount <= 530,
+    `npm package should stay <= 530 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

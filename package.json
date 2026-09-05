@@ -282,6 +282,7 @@
     "scripts/mcp-wiring-doctor.js",
     "scripts/memory-firewall.js",
     "scripts/memory-scope-readiness.js",
+    "scripts/memory-vs-rag-route.js",
     "scripts/meta-agent-loop.js",
     "scripts/model-access-eligibility.js",
     "scripts/model-eval.js",
