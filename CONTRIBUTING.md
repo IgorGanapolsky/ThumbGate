@@ -2,6 +2,8 @@
 
 Thank you for your interest in improving ThumbGate.
 
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## How to Contribute
 
 1. Open an issue to discuss significant changes before writing code.

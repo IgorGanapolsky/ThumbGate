@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: ThumbGate docs and install
+    url: https://thumbgate.ai
+    about: Quick start, hosted docs, and product pages. Not a GitHub Issue.
+  - name: GitHub Marketplace Action
+    url: https://github.com/marketplace/actions/thumbgate-agent-governance
+    about: 'Free Action. uses: IgorGanapolsky/ThumbGate@v1'
+  - name: npm package thumbgate
+    url: https://www.npmjs.com/package/thumbgate
+    about: Install with npx thumbgate init. Weekly downloads are the usage signal, not star count.

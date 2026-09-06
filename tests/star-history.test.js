@@ -119,4 +119,14 @@ test('README surfaces live star and npm-download badges without hardcoded star c
   assert.match(readme, /Stars are not npm installs and not revenue/);
   assert.match(readme, /marketplace\/actions\/thumbgate-agent-governance/);
   assert.match(readme, /uses: IgorGanapolsky\/ThumbGate@v1/);
+  assert.match(readme, /Usage over star count/);
+  assert.match(readme, /No pitch deck is required/);
+  const coc = fs.readFileSync(path.join(ROOT, 'CODE_OF_CONDUCT.md'), 'utf8');
+  assert.match(coc, /Contributor Covenant/);
+  const issueConfig = fs.readFileSync(
+    path.join(ROOT, '.github', 'ISSUE_TEMPLATE', 'config.yml'),
+    'utf8',
+  );
+  assert.match(issueConfig, /marketplace\/actions\/thumbgate-agent-governance/);
+  assert.match(issueConfig, /npmjs\.com\/package\/thumbgate/);
 });
