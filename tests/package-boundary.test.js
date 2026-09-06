@@ -488,7 +488,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 525 -> 527: workspace-search-route (#3770)
   // 527 -> 529: intent-governed-execution (#3771 CyberStrike FORMAT).
   // 529 -> 530: memory-vs-rag-route.js (Supermemory FORMAT steal).
-    manifest.fileCount <= 530,
+  // 530 -> 532: test-all.js + find-dormant-requires.js (aggregate runner, #3703 successor).
+    manifest.fileCount <= 532,
     `npm package should stay <= 530 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
