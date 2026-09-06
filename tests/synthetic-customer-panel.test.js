@@ -205,6 +205,48 @@ test('ingestObservations refuses unlabeled or non-numeric rows', () => {
   assert.equal(rows[0].kind, 'fixture');
 });
 
+test('null or duplicate contexts fail closed and never reach stepAgent', () => {
+  const panel = loadPanel();
+  const poisoned = clone(panel);
+  poisoned.contexts = [null];
+  const denied = runPanel(poisoned);
+  assert.equal(denied.runDecision, 'deny');
+  assert.ok(denied.validation.issues.includes('context_invalid'));
+  assert.ok(denied.validation.issues.includes('missing_contexts'));
+  assert.equal(denied.runs.length, 0);
+
+  const duplicate = clone(panel);
+  duplicate.contexts = [panel.contexts[0], panel.contexts[0]];
+  assert.ok(validatePanel(duplicate).issues.includes(`duplicate_context:${panel.contexts[0].id}`));
+
+  assert.equal(runScenarios(panel, { contexts: [null] }).length, 0);
+});
+
+test('empty holdoutPersonaIds cannot promote even with many observed labels', () => {
+  const panel = loadPanel();
+  const preview = runPanel(panel);
+  const observations = [];
+  for (const persona of panel.personas) {
+    for (const variant of panel.variants) {
+      const mean = preview.runs
+        .filter((run) => run.personaId === persona.id && run.variantId === variant.id)
+        .reduce((sum, run, _, all) => sum + run.score / all.length, 0);
+      observations.push({
+        personaId: persona.id,
+        variantId: variant.id,
+        outcome: mean,
+        kind: 'observed',
+        sourceId: 'no-holdout-labels',
+        observedAt: '2026-08-24T00:00:00.000Z',
+      });
+    }
+  }
+  const scored = runPanel(panel, { observations, holdoutPersonaIds: [] });
+  assert.equal(scored.evaluation.livePromotionAllowed, false);
+  assert.equal(scored.deploymentDecision, 'deny');
+  assert.equal(scored.evaluation.holdoutPairs, 0);
+});
+
 test('validatePanel fails closed without intervention, personas, or observed evidence', () => {
   const panel = loadPanel();
   const empty = runPanel({ decision: {}, personas: [], variants: [] });

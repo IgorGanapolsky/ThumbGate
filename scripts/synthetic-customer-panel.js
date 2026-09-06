@@ -147,7 +147,30 @@ function validatePanel(panel) {
     }
   }
 
+  const contextCheck = collectContexts(panel.contexts);
+  issues.push(...contextCheck.issues);
+
   return { ok: issues.length === 0, issues, personaIds, variantIds };
+}
+
+function collectContexts(raw) {
+  const issues = [];
+  const ids = new Set();
+  const valid = [];
+  for (const context of asArray(raw)) {
+    if (!context || typeof context !== 'object' || Array.isArray(context) || !context.id) {
+      issues.push('context_invalid');
+      continue;
+    }
+    if (ids.has(context.id)) {
+      issues.push(`duplicate_context:${context.id}`);
+      continue;
+    }
+    ids.add(context.id);
+    valid.push(context);
+  }
+  if (valid.length === 0) issues.push('missing_contexts');
+  return { valid, issues };
 }
 
 function retrieveEvidence(persona, panel, limit = 5) {
@@ -271,7 +294,8 @@ function stepAgent(persona, variant, context, panel) {
 }
 
 function runScenarios(panel, options = {}) {
-  const contexts = asArray(options.contexts || panel.contexts);
+  const source = options.contexts !== undefined ? options.contexts : panel.contexts;
+  const contexts = collectContexts(source).valid;
   const runs = [];
   for (const persona of asArray(panel.personas)) {
     for (const variant of asArray(panel.variants)) {
@@ -426,11 +450,14 @@ function evaluateHoldout(panel, runs, options = {}) {
   const usable = observed.length ? observed : fixtures;
   const holdoutIds = asArray(options.holdoutPersonaIds || panel.holdoutPersonaIds)
     .filter(Boolean);
-  const holdoutSet = holdoutIds.length ? new Set(holdoutIds) : null;
+  const holdoutSet = new Set(holdoutIds);
   const predictions = meanScorePredictions(runs);
   const overall = pairwiseAccuracy(predictions, usable);
-  const holdout = pairwiseAccuracy(predictions, usable, holdoutSet);
-  const livePromotionAllowed = observed.length > 0
+  const holdout = holdoutIds.length
+    ? pairwiseAccuracy(predictions, usable, holdoutSet)
+    : { total: 0, correct: 0, accuracy: null, mismatches: [] };
+  const livePromotionAllowed = holdoutIds.length > 0
+    && observed.length > 0
     && holdout.total >= MINIMUM_HOLDOUT_PAIRS
     && holdout.accuracy !== null
     && holdout.accuracy >= MINIMUM_HOLDOUT_ACCURACY;
