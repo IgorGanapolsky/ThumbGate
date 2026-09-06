@@ -7,14 +7,16 @@
 </p>
 
 <p align="center">
-  <b>Self-improving pre-action firewall for AI coding agents</b><br>
+  <b>ThumbGate is the self-improving pre-action firewall for AI coding agents</b><br>
   AI coding agents repeat mistakes — and one wrong tool call can wipe a directory, leak a key, or push broken code.
 </p>
 
 <p align="center">
   <a href="https://mcptoplist.com/server/glama%2FIgorGanapolsky%2FThumbGate"><img src="https://mcptoplist.com/badge/glama%2FIgorGanapolsky%2FThumbGate.svg" alt="MCP Toplist" /></a>
   <a href="https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml"><img src="https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="https://www.npmjs.com/package/thumbgate"><img src="https://img.shields.io/npm/v/thumbgate" alt="npm" /></a>
+  <a href="https://www.npmjs.com/package/thumbgate"><img src="https://img.shields.io/npm/v/thumbgate" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/thumbgate"><img src="https://img.shields.io/npm/dw/thumbgate" alt="npm weekly downloads" /></a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate/stargazers"><img src="https://img.shields.io/github/stars/IgorGanapolsky/ThumbGate" alt="GitHub stars" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
 </p>
 
@@ -30,6 +32,8 @@
 ## What it does
 
 ThumbGate is the local-first **Pre-Action Checks** engine for AI coding agents. It runs in the PreToolUse hook to evaluate the proposed tool call before execution — so costly mistakes can be caught before they happen.
+
+ThumbGate GitHub star growth is measured with GitHub's privacy-safe [`GET /repos/{owner}/{repo}/stargazers/history`](https://docs.github.com/en/rest/activity/starring#get-repository-star-history) endpoint (weekly counts, no stargazer identities). Run `npm run stars:history -- --fixture tests/fixtures/github-star-history.json --json` for the local proof. Stars are not npm installs and not revenue.
 
 ### Tech memes (shareable)
 
