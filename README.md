@@ -36,7 +36,7 @@ ThumbGate is the local-first **Pre-Action Checks** engine for AI coding agents. 
 
 ThumbGate GitHub star growth is measured with GitHub's privacy-safe [`GET /repos/{owner}/{repo}/stargazers/history`](https://docs.github.com/en/rest/activity/starring#get-repository-star-history) endpoint (weekly counts, no stargazer identities). Run `npm run stars:history -- --fixture tests/fixtures/github-star-history.json --json` for the local proof. Stars are not npm installs and not revenue. The live GitHub Marketplace Action is [ThumbGate Agent Governance](https://github.com/marketplace/actions/thumbgate-agent-governance) (`uses: IgorGanapolsky/ThumbGate@v1`).
 
-**Usage over star count.** Evaluate ThumbGate from the install path and live usage badges above (`npx thumbgate init`, Marketplace `uses:`, npm weekly downloads, GitHub clones), not from whether the repo has twenty stars or twenty thousand. No pitch deck is required.
+**Usage over star count.** Evaluate ThumbGate from the install path and live usage badges above (`npx thumbgate init`, Marketplace `uses:`, npm weekly downloads, GitHub clones), not from whether the repo has twenty stars or twenty thousand. No pitch deck is required. We do not farm GitHub profile badges (no YOLO-merge of protected `main`, no 5-minute Issue close theater, no fake `Co-authored-by`). Galaxy Brain needs real accepted answers in [Discussions Q&A](https://github.com/IgorGanapolsky/ThumbGate/discussions/categories/q-a). `npm run github:achievements -- --fixture tests/fixtures/github-achievements.json --json` inventories what is already earned vs what we refuse to farm.
 
 ### Tech memes (shareable)
 
