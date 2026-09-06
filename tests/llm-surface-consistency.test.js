@@ -254,6 +254,23 @@ test('the npm package name agrees with package.json wherever it is published', (
 
 test('the canonical repo URL agrees across every surface that cites one', () => {
   const repoPattern = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+/g;
+  // First path segment is a GitHub product surface, not owner/repo.
+  const nonRepoOwners = new Set([
+    'marketplace',
+    'orgs',
+    'settings',
+    'topics',
+    'features',
+    'sponsors',
+    'apps',
+    'codespaces',
+    'collections',
+    'events',
+    'explore',
+    'login',
+    'notifications',
+    'pricing',
+  ]);
   const allowedRepos = new Set([
     CANONICAL.repoUrl,
     // The private staging repo is deliberately referenced by name in README.
@@ -261,10 +278,16 @@ test('the canonical repo URL agrees across every surface that cites one', () => 
   ]);
 
   let sawCanonicalRepo = false;
+  let sawMarketplaceListing = false;
 
   for (const { file } of PUBLISHED_SURFACES) {
     for (const url of readText(file).match(repoPattern) || []) {
       const normalized = url.replace(/\.git$/, '');
+      const owner = normalized.split('/')[3];
+      if (nonRepoOwners.has(owner)) {
+        if (owner === 'marketplace') sawMarketplaceListing = true;
+        continue;
+      }
       if (normalized === CANONICAL.repoUrl) sawCanonicalRepo = true;
       assert.ok(
         allowedRepos.has(normalized),
@@ -274,6 +297,10 @@ test('the canonical repo URL agrees across every surface that cites one', () => 
   }
 
   assert.ok(sawCanonicalRepo, 'no published surface cites the canonical repository URL');
+  assert.ok(
+    sawMarketplaceListing,
+    'README must keep the live GitHub Marketplace listing URL (not a repo)'
+  );
 });
 
 test('no published surface advertises a stale product origin', () => {
