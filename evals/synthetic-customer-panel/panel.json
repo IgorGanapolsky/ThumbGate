@@ -1,0 +1,567 @@
+{
+  "schemaVersion": "thumbgate.synthetic-customer-panel.v1",
+  "id": "landing-install-intent-2026-08",
+  "decision": {
+    "intervention": "landing-page angle",
+    "population": "operators evaluating ThumbGate after a public click",
+    "outcomeMetric": "qualified_install_intent",
+    "notOutcome": "diagnostic_499_checkout"
+  },
+  "contexts": [
+    { "id": "ad_click", "label": "User sees the angle as an ad, then the landing H1" },
+    { "id": "comparison_page", "label": "User is already on /compare, then hits the angle CTA" },
+    { "id": "pricing_page", "label": "User is on pricing, then sees the angle above the install path" }
+  ],
+  "evidence": [
+    {
+      "id": "ev-cost-h1",
+      "kind": "observed",
+      "sourceId": "public/agents-cost-savings.html#h1",
+      "sourceUrl": "https://thumbgate.ai/agents-cost-savings",
+      "observedAt": "2026-08-24T00:00:00.000Z",
+      "tags": ["cost", "token-burn", "finops"],
+      "quote": "Cost dashboards tell you what your agents wasted last week. ThumbGate stops the waste before it fires."
+    },
+    {
+      "id": "ev-index-h1",
+      "kind": "observed",
+      "sourceId": "public/index.html#h1",
+      "sourceUrl": "https://thumbgate.ai/",
+      "observedAt": "2026-08-24T00:00:00.000Z",
+      "tags": ["preaction", "cost", "hero"],
+      "quote": "Stop AI agent mistakes before they cost you."
+    },
+    {
+      "id": "ev-compare-h1",
+      "kind": "observed",
+      "sourceId": "public/compare.html#h1",
+      "sourceUrl": "https://thumbgate.ai/compare",
+      "observedAt": "2026-08-24T00:00:00.000Z",
+      "tags": ["comparison", "skepticism", "proof"],
+      "quote": "Best Pre-Action Check Tools for AI Coding Agents (2026 Comparison)"
+    },
+    {
+      "id": "ev-install-h1",
+      "kind": "observed",
+      "sourceId": "public/install.html#h1",
+      "sourceUrl": "https://thumbgate.ai/install",
+      "observedAt": "2026-08-24T00:00:00.000Z",
+      "tags": ["install", "time", "proof"],
+      "quote": "Install the agent guardrail before the next repeated mistake costs real money."
+    },
+    {
+      "id": "ev-issue-3595",
+      "kind": "observed",
+      "sourceId": "github:IgorGanapolsky/ThumbGate#3595",
+      "sourceUrl": "https://github.com/IgorGanapolsky/ThumbGate/issues/3595",
+      "observedAt": "2026-08-21T18:45:52.000Z",
+      "tags": ["overclaim", "holdout", "skepticism", "proof"],
+      "quote": "P0: workflow-sentinel learned classifier is degenerate (0.038 holdout accuracy) and traps agent sessions"
+    },
+    {
+      "id": "ev-issue-3523",
+      "kind": "observed",
+      "sourceId": "github:IgorGanapolsky/ThumbGate#3523",
+      "sourceUrl": "https://github.com/IgorGanapolsky/ThumbGate/issues/3523",
+      "observedAt": "2026-08-18T17:30:30.000Z",
+      "tags": ["false-positive", "skepticism", "security"],
+      "quote": "Commerce and permission lexical matchers fire on remedy-tool prose and quoted command text"
+    },
+    {
+      "id": "ev-issue-3522",
+      "kind": "observed",
+      "sourceId": "github:IgorGanapolsky/ThumbGate#3522",
+      "sourceUrl": "https://github.com/IgorGanapolsky/ThumbGate/issues/3522",
+      "observedAt": "2026-08-18T17:28:30.000Z",
+      "tags": ["false-positive", "time", "nih"],
+      "quote": "Gates: blast-radius and scope evaluators read the wrong tree (false-blocks single-file vault commits)"
+    },
+    {
+      "id": "ev-issue-3173",
+      "kind": "observed",
+      "sourceId": "github:IgorGanapolsky/ThumbGate#3173",
+      "sourceUrl": "https://github.com/IgorGanapolsky/ThumbGate/issues/3173",
+      "observedAt": "2026-08-02T21:31:42.000Z",
+      "tags": ["cost", "price", "security"],
+      "quote": "ERP-style financial controls: fail closed on zero-spend budgets"
+    },
+    {
+      "id": "ev-agents-claim-contract",
+      "kind": "observed",
+      "sourceId": "AGENTS.md#completion-claim-contract",
+      "sourceUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/AGENTS.md",
+      "observedAt": "2026-07-30T00:00:00.000Z",
+      "tags": ["overclaim", "proof", "skepticism"],
+      "quote": "Never say done, deployed, shipped, or live without the matching evidence class."
+    },
+    {
+      "id": "ev-pro-price",
+      "kind": "observed",
+      "sourceId": "public/index.html#description",
+      "sourceUrl": "https://thumbgate.ai/",
+      "observedAt": "2026-08-24T00:00:00.000Z",
+      "tags": ["price", "pro"],
+      "quote": "Self-serve is $19/mo; the $499 Diagnostic installs one hard, test-backed safety gate."
+    }
+  ],
+  "variants": [
+    {
+      "id": "cost-loop",
+      "name": "Cost-loop / FinOps",
+      "sourceUrl": "https://thumbgate.ai/agents-cost-savings",
+      "headline": "Cost dashboards tell you what your agents wasted last week. ThumbGate stops the waste before it fires.",
+      "cta": "Install the local CLI, then open the cost page",
+      "riskReversal": "Blocks the next repeat token-burn instead of reporting last week's bill",
+      "attributes": {
+        "costProof": 0.95,
+        "riskReversal": 0.45,
+        "socialProof": 0.25,
+        "timeToValue": 0.55,
+        "evidenceDensity": 0.4,
+        "priceClarity": 0.55,
+        "hype": 0.25,
+        "comparisonFriendly": 0.35
+      }
+    },
+    {
+      "id": "preaction-block",
+      "name": "Pre-action block hero",
+      "sourceUrl": "https://thumbgate.ai/",
+      "headline": "Stop AI agent mistakes before they cost you.",
+      "cta": "Install now",
+      "riskReversal": "Generic pre-action framing; Diagnostic CTA sits beside install",
+      "attributes": {
+        "costProof": 0.55,
+        "riskReversal": 0.4,
+        "socialProof": 0.35,
+        "timeToValue": 0.8,
+        "evidenceDensity": 0.3,
+        "priceClarity": 0.45,
+        "hype": 0.55,
+        "comparisonFriendly": 0.25
+      }
+    },
+    {
+      "id": "proof-first",
+      "name": "Proof-first comparison",
+      "sourceUrl": "https://thumbgate.ai/compare",
+      "headline": "Best Pre-Action Check Tools for AI Coding Agents (2026 Comparison)",
+      "cta": "Compare the install path against alternatives, then run doctor",
+      "riskReversal": "Puts receipts and comparisons before the ask; no Diagnostic as the primary CTA",
+      "attributes": {
+        "costProof": 0.45,
+        "riskReversal": 0.9,
+        "socialProof": 0.55,
+        "timeToValue": 0.4,
+        "evidenceDensity": 0.95,
+        "priceClarity": 0.5,
+        "hype": 0.1,
+        "comparisonFriendly": 0.95
+      }
+    }
+  ],
+  "personas": [
+    {
+      "id": "token-burn-operator",
+      "name": "Token-burn operator",
+      "background": "Pays a coding-agent bill and saw a week of retry loops.",
+      "goals": ["Cut repeat token spend", "Keep the current agent"],
+      "currentContext": "Opened a cost-themed result after a CI minutes scare",
+      "constraints": ["No sales call", "Must stay on the current model vendor"],
+      "purchaseTriggers": ["A blocked repeat that would have cost tokens"],
+      "objections": ["Dashboards already show spend", "Another FinOps tool"],
+      "historicalActions": ["Installed a cost dashboard", "Did not install another agent"],
+      "preferences": ["Local CLI", "Numbers over slogans"],
+      "statedBeliefs": ["I just need visibility"],
+      "observedVsStated": "Stated visibility; public cost-page copy argues prevention, not reporting",
+      "likelyResponseByOffer": {
+        "cost-loop": "Reads the H1 as the job-to-be-done",
+        "preaction-block": "Skims, treats it as generic security copy",
+        "proof-first": "Will compare, slower to install"
+      },
+      "tags": ["cost", "token-burn", "finops"],
+      "weights": {
+        "costProof": 1.0,
+        "riskReversal": 0.4,
+        "socialProof": 0.2,
+        "timeToValue": 0.5,
+        "evidenceDensity": 0.4,
+        "priceClarity": 0.5,
+        "hypeAllergy": 0.5
+      },
+      "biases": {
+        "statusQuo": 0.2,
+        "comparisonShopping": 0.2,
+        "timePoverty": 0.3,
+        "socialProofNeed": 0.1,
+        "overclaimAllergy": 0.4,
+        "priceSensitivity": 0.4
+      },
+      "actionSpace": ["opt_in", "compare", "bookmark", "object", "bounce"],
+      "memory": ["Last week the agent retried a failed deploy three times"],
+      "evidenceIds": ["ev-cost-h1", "ev-issue-3173"]
+    },
+    {
+      "id": "skeptical-comparison-shopper",
+      "name": "Skeptical comparison shopper",
+      "background": "Tabs open on /compare-class pages; will not buy a slogan.",
+      "goals": ["Rank alternatives", "Avoid another unverified AI tool"],
+      "currentContext": "Arrived from a 'best pre-action check' query",
+      "constraints": ["Needs receipts before email", "Allergic to Diagnostic upsell in the hero"],
+      "purchaseTriggers": ["Side-by-side proof that a gate actually fired"],
+      "objections": ["Marketing pages overclaim", "Holdout accuracy of 0.038 is a cautionary tale"],
+      "historicalActions": ["Read comparison pages", "Abandoned pricing"],
+      "preferences": ["Tables", "GitHub issues as proof"],
+      "statedBeliefs": ["I am rational and will pick the best tool"],
+      "observedVsStated": "Stated rational ranking; bias is risk-reversal and comparison delay",
+      "likelyResponseByOffer": {
+        "cost-loop": "Wants the cost claim proven, not asserted",
+        "preaction-block": "Reads hero as hype",
+        "proof-first": "This is the native habitat"
+      },
+      "tags": ["comparison", "skepticism", "proof", "overclaim"],
+      "weights": {
+        "costProof": 0.4,
+        "riskReversal": 1.0,
+        "socialProof": 0.5,
+        "timeToValue": 0.3,
+        "evidenceDensity": 1.0,
+        "priceClarity": 0.4,
+        "hypeAllergy": 1.0
+      },
+      "biases": {
+        "statusQuo": 0.3,
+        "comparisonShopping": 0.9,
+        "timePoverty": 0.2,
+        "socialProofNeed": 0.5,
+        "overclaimAllergy": 0.95,
+        "priceSensitivity": 0.3
+      },
+      "actionSpace": ["opt_in", "compare", "bookmark", "object", "bounce"],
+      "memory": ["A classifier with 0.038 holdout accuracy shipped and trapped sessions"],
+      "evidenceIds": ["ev-compare-h1", "ev-issue-3595", "ev-agents-claim-contract"]
+    },
+    {
+      "id": "time-starved-lead",
+      "name": "Time-starved lead",
+      "background": "Between CI failures; ninety seconds of attention.",
+      "goals": ["Install something that works before standup"],
+      "currentContext": "Ad click on mobile",
+      "constraints": ["Will not read a comparison table", "No calendar booking"],
+      "purchaseTriggers": ["One command, doctor green"],
+      "objections": ["Long proof pages", "Sales CTAs"],
+      "historicalActions": ["Bounced from long landing pages"],
+      "preferences": ["npm one-liner"],
+      "statedBeliefs": ["I will evaluate properly later"],
+      "observedVsStated": "Stated later evaluation; observed pattern is bounce if time-to-value is low",
+      "likelyResponseByOffer": {
+        "cost-loop": "Maybe if the first screen is a command",
+        "preaction-block": "Fastest CTA",
+        "proof-first": "Too slow"
+      },
+      "tags": ["time", "install"],
+      "weights": {
+        "costProof": 0.3,
+        "riskReversal": 0.3,
+        "socialProof": 0.2,
+        "timeToValue": 1.0,
+        "evidenceDensity": 0.2,
+        "priceClarity": 0.3,
+        "hypeAllergy": 0.15
+      },
+      "biases": {
+        "statusQuo": 0.2,
+        "comparisonShopping": 0.1,
+        "timePoverty": 0.95,
+        "socialProofNeed": 0.2,
+        "overclaimAllergy": 0.3,
+        "priceSensitivity": 0.3
+      },
+      "actionSpace": ["opt_in", "compare", "bookmark", "object", "bounce"],
+      "memory": ["Last tool tab is still open from Tuesday"],
+      "evidenceIds": ["ev-install-h1", "ev-index-h1"]
+    },
+    {
+      "id": "price-sensitive-indie",
+      "name": "Price-sensitive indie",
+      "background": "Solo operator; $19 is thinkable, $499 is a hard no.",
+      "goals": ["Stay on free/CLI until a blocked repeat is proven"],
+      "currentContext": "Pricing page after a tweet",
+      "constraints": ["Will bounce if Diagnostic is the primary ask"],
+      "purchaseTriggers": ["Clear $19 vs free split"],
+      "objections": ["$499 in the hero", "Enterprise framing"],
+      "historicalActions": ["Used free npm tools only"],
+      "preferences": ["Price in the first screen"],
+      "statedBeliefs": ["I will pay for quality"],
+      "observedVsStated": "Stated quality; price-clarity and Diagnostic allergy dominate",
+      "likelyResponseByOffer": {
+        "cost-loop": "Cost story helps if $19 is visible",
+        "preaction-block": "Hero still pairs install with Diagnostic",
+        "proof-first": "Neutral if price is not hidden"
+      },
+      "tags": ["price", "pro"],
+      "weights": {
+        "costProof": 0.5,
+        "riskReversal": 0.5,
+        "socialProof": 0.3,
+        "timeToValue": 0.5,
+        "evidenceDensity": 0.4,
+        "priceClarity": 1.0,
+        "hypeAllergy": 0.5
+      },
+      "biases": {
+        "statusQuo": 0.4,
+        "comparisonShopping": 0.4,
+        "timePoverty": 0.4,
+        "socialProofNeed": 0.3,
+        "overclaimAllergy": 0.5,
+        "priceSensitivity": 0.95
+      },
+      "actionSpace": ["opt_in", "compare", "bookmark", "object", "bounce"],
+      "memory": ["Paid for an AI wrapper that did nothing"],
+      "evidenceIds": ["ev-pro-price", "ev-index-h1"]
+    },
+    {
+      "id": "nih-hook-author",
+      "name": "NIH hook author",
+      "background": "Already shipped a bash PreToolUse hook. Default is 'I will just harden mine'.",
+      "goals": ["Avoid adopting a product", "Fix false blocks in the current hook"],
+      "currentContext": "Arrived from a false-positive issue search",
+      "constraints": ["Will not give email to a vendor that blocked a vault commit"],
+      "purchaseTriggers": ["Proof the product fails closed without false blocks"],
+      "objections": ["I can write this hook", "Your matcher fired on quoted text"],
+      "historicalActions": ["Wrote a local hook", "Filed or read false-positive issues"],
+      "preferences": ["Source, not a pitch"],
+      "statedBeliefs": ["I am evaluating vendors"],
+      "observedVsStated": "Stated evaluation; status-quo and NIH dominate",
+      "likelyResponseByOffer": {
+        "cost-loop": "Cost is not the job",
+        "preaction-block": "Sounds like the hook they already have",
+        "proof-first": "Might keep reading if false-positives are named"
+      },
+      "tags": ["nih", "false-positive", "skepticism"],
+      "weights": {
+        "costProof": 0.2,
+        "riskReversal": 0.7,
+        "socialProof": 0.2,
+        "timeToValue": 0.3,
+        "evidenceDensity": 0.8,
+        "priceClarity": 0.3,
+        "hypeAllergy": 0.8
+      },
+      "biases": {
+        "statusQuo": 0.85,
+        "comparisonShopping": 0.5,
+        "timePoverty": 0.3,
+        "socialProofNeed": 0.1,
+        "overclaimAllergy": 0.7,
+        "priceSensitivity": 0.4
+      },
+      "actionSpace": ["opt_in", "compare", "bookmark", "object", "bounce"],
+      "memory": ["A gate blocked a single-file vault commit"],
+      "evidenceIds": ["ev-issue-3522", "ev-issue-3523"]
+    },
+    {
+      "id": "overclaim-allergic",
+      "name": "Overclaim-allergic reviewer",
+      "background": "Treats unverified 'deployed' / 'holdout accuracy' claims as a bounce.",
+      "goals": ["Punish uncalibrated metrics", "Find receipts"],
+      "currentContext": "Read AGENTS.md completion-claim contract, then the landing",
+      "constraints": ["Any unverified conversion % is a hard bounce"],
+      "purchaseTriggers": ["Explicit modeledNotMeasured labeling"],
+      "objections": ["Winner language without holdout"],
+      "historicalActions": ["Rejected a classifier with 0.038 holdout accuracy"],
+      "preferences": ["Calibration talk"],
+      "statedBeliefs": ["I want the best model"],
+      "observedVsStated": "Stated best model; observed behavior is punishing uncalibrated claims",
+      "likelyResponseByOffer": {
+        "cost-loop": "Wants the spend number sourced",
+        "preaction-block": "Hero is under-specified",
+        "proof-first": "Least likely to invent a winner"
+      },
+      "tags": ["overclaim", "holdout", "proof", "skepticism"],
+      "weights": {
+        "costProof": 0.4,
+        "riskReversal": 0.8,
+        "socialProof": 0.3,
+        "timeToValue": 0.3,
+        "evidenceDensity": 1.0,
+        "priceClarity": 0.3,
+        "hypeAllergy": 1.0
+      },
+      "biases": {
+        "statusQuo": 0.3,
+        "comparisonShopping": 0.6,
+        "timePoverty": 0.2,
+        "socialProofNeed": 0.2,
+        "overclaimAllergy": 1.0,
+        "priceSensitivity": 0.2
+      },
+      "actionSpace": ["opt_in", "compare", "bookmark", "object", "bounce"],
+      "memory": ["workflow-sentinel holdout accuracy 0.038"],
+      "evidenceIds": ["ev-issue-3595", "ev-agents-claim-contract"]
+    },
+    {
+      "id": "social-proof-seeker",
+      "name": "Social-proof seeker",
+      "background": "Will not be first. Wants logos, stars, or a named comparison.",
+      "goals": ["See that peers installed this"],
+      "currentContext": "Comparison page with a thin proof strip",
+      "constraints": ["No case-study theater", "Public artifacts only"],
+      "purchaseTriggers": ["Named comparison page plus live npm version"],
+      "objections": ["Unknown vendor", "Empty social proof"],
+      "historicalActions": ["Installed tools with marketplace listings"],
+      "preferences": ["Proof strips"],
+      "statedBeliefs": ["I evaluate on merit"],
+      "observedVsStated": "Stated merit; social-proof need is the actual gate",
+      "likelyResponseByOffer": {
+        "cost-loop": "Weak social proof",
+        "preaction-block": "Marketplace mentions help a little",
+        "proof-first": "Comparison framing supplies the missing peer signal"
+      },
+      "tags": ["proof", "comparison", "install"],
+      "weights": {
+        "costProof": 0.3,
+        "riskReversal": 0.5,
+        "socialProof": 1.0,
+        "timeToValue": 0.4,
+        "evidenceDensity": 0.6,
+        "priceClarity": 0.3,
+        "hypeAllergy": 0.4
+      },
+      "biases": {
+        "statusQuo": 0.4,
+        "comparisonShopping": 0.6,
+        "timePoverty": 0.3,
+        "socialProofNeed": 0.9,
+        "overclaimAllergy": 0.4,
+        "priceSensitivity": 0.3
+      },
+      "actionSpace": ["opt_in", "compare", "bookmark", "object", "bounce"],
+      "memory": ["Skipped tools with no public comparison"],
+      "evidenceIds": ["ev-compare-h1", "ev-install-h1"]
+    },
+    {
+      "id": "security-floor-seeker",
+      "name": "Security-floor seeker",
+      "background": "Wants secret-exfil deny and spend fail-closed, not a slogan.",
+      "goals": ["Hard floor on secrets and zero-spend"],
+      "currentContext": "GitHub issue about financial controls",
+      "constraints": ["Lexical false positives are a deal-breaker"],
+      "purchaseTriggers": ["Named hard floors with tests"],
+      "objections": ["Matchers that fire on quoted commands"],
+      "historicalActions": ["Read ERP-style financial control issue"],
+      "preferences": ["Fail closed"],
+      "statedBeliefs": ["Security first"],
+      "observedVsStated": "Stated security first; false-positive pain can override",
+      "likelyResponseByOffer": {
+        "cost-loop": "Spend control is adjacent",
+        "preaction-block": "Too vague",
+        "proof-first": "Will look for the floor in the comparison"
+      },
+      "tags": ["security", "cost", "false-positive"],
+      "weights": {
+        "costProof": 0.6,
+        "riskReversal": 0.7,
+        "socialProof": 0.2,
+        "timeToValue": 0.4,
+        "evidenceDensity": 0.8,
+        "priceClarity": 0.3,
+        "hypeAllergy": 0.7
+      },
+      "biases": {
+        "statusQuo": 0.3,
+        "comparisonShopping": 0.5,
+        "timePoverty": 0.3,
+        "socialProofNeed": 0.2,
+        "overclaimAllergy": 0.7,
+        "priceSensitivity": 0.3
+      },
+      "actionSpace": ["opt_in", "compare", "bookmark", "object", "bounce"],
+      "memory": ["Zero-spend budgets should fail closed"],
+      "evidenceIds": ["ev-issue-3173", "ev-issue-3523"]
+    },
+    {
+      "id": "team-lead-eval",
+      "name": "Team-lead evaluator",
+      "background": "Needs an install path the team can copy, not an identity platform.",
+      "goals": ["One documented install", "No new IdP project"],
+      "currentContext": "Pricing then install",
+      "constraints": ["Will not start a $499 conversation from a landing test"],
+      "purchaseTriggers": ["Copy-paste doctor command that matches the agent"],
+      "objections": ["Enterprise identity checklist as the first ask"],
+      "historicalActions": ["Standardized an npm tool across two repos"],
+      "preferences": ["Install matrix"],
+      "statedBeliefs": ["We might need enterprise later"],
+      "observedVsStated": "Stated enterprise later; current action is local install",
+      "likelyResponseByOffer": {
+        "cost-loop": "Useful if it leads to doctor",
+        "preaction-block": "Install now is fine",
+        "proof-first": "Useful for the eval writeup"
+      },
+      "tags": ["install", "time", "price"],
+      "weights": {
+        "costProof": 0.4,
+        "riskReversal": 0.5,
+        "socialProof": 0.4,
+        "timeToValue": 0.7,
+        "evidenceDensity": 0.5,
+        "priceClarity": 0.6,
+        "hypeAllergy": 0.5
+      },
+      "biases": {
+        "statusQuo": 0.4,
+        "comparisonShopping": 0.5,
+        "timePoverty": 0.6,
+        "socialProofNeed": 0.4,
+        "overclaimAllergy": 0.5,
+        "priceSensitivity": 0.5
+      },
+      "actionSpace": ["opt_in", "compare", "bookmark", "object", "bounce"],
+      "memory": ["Last vendor wanted a security questionnaire before npm install"],
+      "evidenceIds": ["ev-install-h1", "ev-pro-price"]
+    },
+    {
+      "id": "refund-scarred",
+      "name": "Refund-scarred buyer",
+      "background": "Paid for AI tools that did not change behavior. Default is bookmark-and-leave.",
+      "goals": ["Do not get burned again"],
+      "currentContext": "Ad click, then pricing",
+      "constraints": ["Needs risk reversal stronger than a refund promise"],
+      "purchaseTriggers": ["Local install they can uninstall", "No Diagnostic as first CTA"],
+      "objections": ["Hero Diagnostic", "Unverified lift"],
+      "historicalActions": ["Requested a refund from an AI SaaS"],
+      "preferences": ["Local-first", "Uninstall path"],
+      "statedBeliefs": ["I am done buying AI tools"],
+      "observedVsStated": "Stated done; will still install if perceived risk drops",
+      "likelyResponseByOffer": {
+        "cost-loop": "Spend story is familiar and slightly aversive",
+        "preaction-block": "Sounds like the last pitch",
+        "proof-first": "Lowest perceived commitment"
+      },
+      "tags": ["skepticism", "price", "proof"],
+      "weights": {
+        "costProof": 0.3,
+        "riskReversal": 1.0,
+        "socialProof": 0.4,
+        "timeToValue": 0.4,
+        "evidenceDensity": 0.7,
+        "priceClarity": 0.6,
+        "hypeAllergy": 0.8
+      },
+      "biases": {
+        "statusQuo": 0.7,
+        "comparisonShopping": 0.5,
+        "timePoverty": 0.4,
+        "socialProofNeed": 0.4,
+        "overclaimAllergy": 0.8,
+        "priceSensitivity": 0.7
+      },
+      "actionSpace": ["opt_in", "compare", "bookmark", "object", "bounce"],
+      "memory": ["Requested a refund after an AI SaaS did not change a workflow"],
+      "evidenceIds": ["ev-pro-price", "ev-agents-claim-contract", "ev-compare-h1"]
+    }
+  ],
+  "observations": [],
+  "holdoutPersonaIds": []
+}
