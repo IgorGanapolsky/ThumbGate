@@ -38,6 +38,12 @@ ThumbGate GitHub star growth is measured with GitHub's privacy-safe [`GET /repos
 
 **Usage over star count.** Evaluate ThumbGate from the install path and live usage badges above (`npx thumbgate init`, Marketplace `uses:`, npm weekly downloads, GitHub clones), not from whether the repo has twenty stars or twenty thousand. No pitch deck is required. We do not farm GitHub profile badges (no YOLO-merge of protected `main`, no 5-minute Issue close theater, no fake `Co-authored-by`). Galaxy Brain needs real accepted answers in [Discussions Q&A](https://github.com/IgorGanapolsky/ThumbGate/discussions/categories/q-a). `npm run github:achievements -- --fixture tests/fixtures/github-achievements.json --json` inventories what is already earned vs what we refuse to farm.
 
+### Who it's for
+
+ThumbGate is for operators whose AI coding agents can leak a secret or destroy a checkout before a human sees the tool call (Claude Code, Cursor, Codex, Gemini CLI, MCP). Discovery should reach those operators — not a star campaign.
+
+ThumbGate is **not** a GitHub star package, not fake engagement, and not a substitute for npm installs or merged PRs. Real engagement is `npx thumbgate init` and a PreToolUse hook that actually fires.
+
 ### Tech memes (shareable)
 
 Lightweight visuals for how agents fail without a pre-action gate:

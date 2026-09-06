@@ -121,6 +121,9 @@ test('README surfaces live star and npm-download badges without hardcoded star c
   assert.match(readme, /uses: IgorGanapolsky\/ThumbGate@v1/);
   assert.match(readme, /Usage over star count/);
   assert.match(readme, /No pitch deck is required/);
+  assert.match(readme, /Who it's for/);
+  assert.match(readme, /not.*GitHub star package/i);
+  assert.match(readme, /not fake engagement/i);
   const coc = fs.readFileSync(path.join(ROOT, 'CODE_OF_CONDUCT.md'), 'utf8');
   assert.match(coc, /Contributor Covenant/);
   const issueConfig = fs.readFileSync(
