@@ -233,7 +233,8 @@ const path = require('node:path');
 // 523 → 525: jit-harness-compose (#3768)
 // 525 → 527: workspace-search-route (#3770)
 // 527 → 529: intent-governed-execution CyberStrike FORMAT (#3771)
-const BASELINE_FILE_COUNT = 530;
+// 530 → 532: test-all.js + find-dormant-requires.js (#3703 successor)
+const BASELINE_FILE_COUNT = 532;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
