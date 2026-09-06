@@ -45,6 +45,8 @@ test('CLI --fixture --json never recommends a farm CLI and exits 0', () => {
   assert.equal(report.farmCliUsed, false);
   assert.equal(report.yoloAllowedOnThumbGateMain, false);
   assert.ok(report.missingObtainable.includes('galaxy-brain'));
+  assert.equal(report.missingObtainable.includes('arctic-code-vault-contributor'), false);
+  assert.ok(report.earned.includes('arctic-code-vault-contributor'));
   assert.match(report.disclaimer, /not npm installs and not revenue/i);
   assert.doesNotMatch(JSON.stringify(report), /GitHub-Achievement-CLI/);
 });
@@ -63,6 +65,8 @@ test('run() injected getter parses live-shaped HTML without farming', async () =
   }
   assert.ok(report.earned.includes('pull-shark'));
   assert.equal(report.farmCliUsed, false);
+  assert.equal(report.qnaCategoryPresent, null);
+  assert.equal(report.acceptedDiscussionAnswers, null);
 });
 
 test('parseArgs rejects an unsafe user', () => {

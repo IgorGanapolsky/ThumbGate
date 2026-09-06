@@ -39,8 +39,10 @@ const OBTAINABLE = Object.freeze([
   'quickdraw',
   'galaxy-brain',
   'public-sponsor',
-  'arctic-code-vault-contributor',
 ]);
+// One-time 2020 Arctic snapshot — still recognized if already earned, not a gap.
+const RETIRED = Object.freeze(['arctic-code-vault-contributor']);
+const RECOGNIZED = Object.freeze([...OBTAINABLE, ...RETIRED]);
 
 function parseArgs(argv) {
   const out = {
@@ -91,7 +93,7 @@ function parseAchievementSlugs(html) {
 }
 
 function buildReport({ slugs, qnaCategory, acceptedAnswers, currentStars, source, user, repo }) {
-  const earned = slugs.filter((s) => OBTAINABLE.includes(s));
+  const earned = slugs.filter((s) => RECOGNIZED.includes(s));
   const missing = OBTAINABLE.filter((s) => !earned.includes(s));
   return {
     ok: true,
@@ -103,8 +105,8 @@ function buildReport({ slugs, qnaCategory, acceptedAnswers, currentStars, source
     missingObtainable: missing,
     refuseFarm: [...REFUSE_FARM],
     farmCliUsed: false,
-    qnaCategoryPresent: Boolean(qnaCategory),
-    acceptedDiscussionAnswers: Number.isInteger(acceptedAnswers) ? acceptedAnswers : 0,
+    qnaCategoryPresent: qnaCategory === null ? null : Boolean(qnaCategory),
+    acceptedDiscussionAnswers: Number.isInteger(acceptedAnswers) ? acceptedAnswers : null,
     starstruckNextTierStars: STARSTRUCK_NEXT_TIER,
     currentStars: Number.isInteger(currentStars) ? currentStars : null,
     yoloAllowedOnThumbGateMain: false,
@@ -177,8 +179,8 @@ async function run(argv = process.argv.slice(2), deps = {}) {
     const get = deps.getHtml || httpsGet;
     const html = await get(`https://github.com/${args.user}`);
     slugs = parseAchievementSlugs(html);
-    qnaCategory = true;
-    acceptedAnswers = 0;
+    qnaCategory = null;
+    acceptedAnswers = null;
     source = `fetch:github.com/${args.user}`;
   } else {
     throw new Error('Provide --fixture PATH or --fetch');
@@ -209,6 +211,8 @@ if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
 module.exports = {
   DEFAULT_USER,
   OBTAINABLE,
+  RECOGNIZED,
+  RETIRED,
   REFUSE_FARM,
   STARSTRUCK_NEXT_TIER,
   buildReport,

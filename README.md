@@ -16,7 +16,7 @@
   <a href="https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml"><img src="https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://www.npmjs.com/package/thumbgate"><img src="https://img.shields.io/npm/v/thumbgate" alt="npm version" /></a>
   <a href="https://www.npmjs.com/package/thumbgate"><img src="https://img.shields.io/npm/dw/thumbgate" alt="npm weekly downloads" /></a>
-  <a href="https://github.com/IgorGanapolsky/ThumbGate/stargazers"><img src="https://img.shields.io/github/stars/IgorGanapolsky/ThumbGate" alt="GitHub stars" /></a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate"><img src="https://img.shields.io/github/stars/IgorGanapolsky/ThumbGate" alt="GitHub stars" /></a>
   <a href="https://github.com/marketplace/actions/thumbgate-agent-governance"><img src="https://img.shields.io/badge/GitHub_Marketplace-ThumbGate_Agent_Governance-0969da" alt="GitHub Marketplace: ThumbGate Agent Governance" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
 </p>
