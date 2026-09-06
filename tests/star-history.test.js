@@ -82,17 +82,24 @@ test('run() with an injected getter never hits the listing endpoint', async () =
   const calls = [];
   const weeks = validateHistory(JSON.parse(fs.readFileSync(FIXTURE, 'utf8'))).slice(0, 2);
   const payload = weeks.map((row) => ({ week: row.week, total: row.total, days: row.days }));
-  const report = await run(['--fetch'], {
-    get: async (pathname) => {
-      calls.push(pathname);
-      if (pathname.includes(LISTING_PATH) && !pathname.includes(HISTORY_PATH) && !pathname.includes('/stargazers/count')) {
-        throw new Error(`test injected listing call: ${pathname}`);
-      }
-      if (pathname.includes(HISTORY_PATH)) return payload;
-      if (pathname.includes('/stargazers/count')) return { count: 26 };
-      throw new Error(`unexpected path ${pathname}`);
-    },
-  });
+  const origWrite = process.stdout.write.bind(process.stdout);
+  process.stdout.write = () => true;
+  let report;
+  try {
+    report = await run(['--fetch'], {
+      get: async (pathname) => {
+        calls.push(pathname);
+        if (pathname.includes(LISTING_PATH) && !pathname.includes(HISTORY_PATH) && !pathname.includes('/stargazers/count')) {
+          throw new Error(`test injected listing call: ${pathname}`);
+        }
+        if (pathname.includes(HISTORY_PATH)) return payload;
+        if (pathname.includes('/stargazers/count')) return { count: 26 };
+        throw new Error(`unexpected path ${pathname}`);
+      },
+    });
+  } finally {
+    process.stdout.write = origWrite;
+  }
   assert.ok(calls.every((p) => p.includes('/history') || p.includes('/count')));
   assert.equal(report.listingEndpointUsed, false);
   assert.equal(report.addedStars, weeks.reduce((sum, row) => sum + row.total, 0));
@@ -110,4 +117,6 @@ test('README surfaces live star and npm-download badges without hardcoded star c
   assert.match(readme, /stargazers\/history/);
   assert.doesNotMatch(readme, /\b26 stars\b/);
   assert.match(readme, /Stars are not npm installs and not revenue/);
+  assert.match(readme, /marketplace\/actions\/thumbgate-agent-governance/);
+  assert.match(readme, /uses: IgorGanapolsky\/ThumbGate@v1/);
 });

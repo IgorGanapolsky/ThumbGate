@@ -17,6 +17,7 @@
   <a href="https://www.npmjs.com/package/thumbgate"><img src="https://img.shields.io/npm/v/thumbgate" alt="npm version" /></a>
   <a href="https://www.npmjs.com/package/thumbgate"><img src="https://img.shields.io/npm/dw/thumbgate" alt="npm weekly downloads" /></a>
   <a href="https://github.com/IgorGanapolsky/ThumbGate/stargazers"><img src="https://img.shields.io/github/stars/IgorGanapolsky/ThumbGate" alt="GitHub stars" /></a>
+  <a href="https://github.com/marketplace/actions/thumbgate-agent-governance"><img src="https://img.shields.io/badge/GitHub_Marketplace-ThumbGate_Agent_Governance-0969da" alt="GitHub Marketplace: ThumbGate Agent Governance" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
 </p>
 
@@ -33,7 +34,7 @@
 
 ThumbGate is the local-first **Pre-Action Checks** engine for AI coding agents. It runs in the PreToolUse hook to evaluate the proposed tool call before execution — so costly mistakes can be caught before they happen.
 
-ThumbGate GitHub star growth is measured with GitHub's privacy-safe [`GET /repos/{owner}/{repo}/stargazers/history`](https://docs.github.com/en/rest/activity/starring#get-repository-star-history) endpoint (weekly counts, no stargazer identities). Run `npm run stars:history -- --fixture tests/fixtures/github-star-history.json --json` for the local proof. Stars are not npm installs and not revenue.
+ThumbGate GitHub star growth is measured with GitHub's privacy-safe [`GET /repos/{owner}/{repo}/stargazers/history`](https://docs.github.com/en/rest/activity/starring#get-repository-star-history) endpoint (weekly counts, no stargazer identities). Run `npm run stars:history -- --fixture tests/fixtures/github-star-history.json --json` for the local proof. Stars are not npm installs and not revenue. The live GitHub Marketplace Action is [ThumbGate Agent Governance](https://github.com/marketplace/actions/thumbgate-agent-governance) (`uses: IgorGanapolsky/ThumbGate@v1`).
 
 ### Tech memes (shareable)
 
@@ -127,6 +128,7 @@ npx -y thumbgate serve
 | **OpenCode** | `npx thumbgate init --agent opencode` | 💬 Advisory — MCP `gate_check` |
 | **Any MCP agent** | `npx thumbgate serve` | 💬 Advisory — MCP `gate_check` |
 | **Amp** | `npx thumbgate init --agent amp` | 📝 Feedback capture |
+| **GitHub Actions** | `uses: IgorGanapolsky/ThumbGate@v1` | 🩺 Marketplace Action — doctor / AI inventory in CI |
 
 Per-agent guides: [Claude/Codex bridge](plugins/claude-codex-bridge/README.md) · [Codex profile](plugins/codex-profile/README.md) · [Cursor](docs/CURSOR_PLUGIN_OPERATIONS.md) · [MCP setup](docs/MCP_AUTONOMOUS_SETUP.md)
 
