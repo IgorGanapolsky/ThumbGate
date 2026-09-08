@@ -110,6 +110,37 @@ test('CLI --json --strict exits 1 on overflow', () => {
   assert.equal(report.status, 'fail');
 });
 
+test('filesystem-root --root does not false-positive path_escape', () => {
+  const report = buildGistPromptBudgetReport({
+    root: path.parse(process.cwd()).root,
+    files: ['NO_SUCH_GIST_PACK.md'],
+    maxTokensPerFile: 1000,
+    maxTokensTotal: 1000,
+  });
+  assert.equal(report.findings.some((f) => f.id === 'path_escape'), false);
+  assert.ok(report.findings.some((f) => f.id === 'instruction_pack_missing'));
+});
+
+test('symlink that escapes --root is path_escape', () => {
+  const root = makeFixture({ 'AGENTS.md': 'ok\n' });
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'gist-out-'));
+  const secret = path.join(outside, 'secret.md');
+  fs.writeFileSync(secret, 'secret\n');
+  const link = path.join(root, 'ESCAPE.md');
+  try {
+    fs.symlinkSync(secret, link);
+  } catch {
+    return;
+  }
+  const report = buildGistPromptBudgetReport({
+    root,
+    files: ['ESCAPE.md'],
+    maxTokensPerFile: 1000,
+    maxTokensTotal: 1000,
+  });
+  assert.ok(report.findings.some((f) => f.id === 'path_escape'));
+});
+
 test('CLI --json exits 0 on a small pack', () => {
   const root = makeFixture({ 'AGENTS.md': 'tiny\n' });
   const result = spawnSync(process.execPath, [

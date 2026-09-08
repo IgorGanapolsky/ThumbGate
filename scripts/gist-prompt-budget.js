@@ -56,10 +56,28 @@ function normalizeOptions(options = {}) {
   };
 }
 
+function realpathIfExists(target) {
+  try {
+    if (fs.existsSync(target)) return fs.realpathSync(target);
+  } catch {
+    // fall through to lexical path
+  }
+  return target;
+}
+
+function containedInRoot(rootAbs, candidateAbs) {
+  const rootReal = realpathIfExists(rootAbs);
+  const candReal = realpathIfExists(candidateAbs);
+  const relative = path.relative(rootReal, candReal);
+  return relative !== '..'
+    && !relative.startsWith(`..${path.sep}`)
+    && !path.isAbsolute(relative);
+}
+
 function readPackFile(root, rel) {
-  const abs = path.resolve(root, rel);
-  const rootAbs = path.resolve(root);
-  if (abs !== rootAbs && !abs.startsWith(`${rootAbs}${path.sep}`)) {
+  const rootAbs = realpathIfExists(path.resolve(root));
+  const abs = path.resolve(rootAbs, rel);
+  if (!containedInRoot(rootAbs, abs)) {
     return { rel, path: abs, error: 'path_escape', tokens: 0, bytes: 0 };
   }
   if (!fs.existsSync(abs)) {
@@ -220,6 +238,8 @@ module.exports = {
   DEFAULT_MAX_TOKENS_PER_FILE,
   DEFAULT_MAX_TOKENS_TOTAL,
   normalizeOptions,
+  containedInRoot,
+  readPackFile,
   buildGistPromptBudgetReport,
   formatGistPromptBudgetReport,
   parseCliArgs,

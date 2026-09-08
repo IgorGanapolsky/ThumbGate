@@ -90,6 +90,44 @@ test('WIF without id-token: write fails', () => {
   assert.ok(report.findings.some((f) => f.id === 'wif_without_id_token'));
 });
 
+test('unrelated job id-token write does not cover a WIF job', () => {
+  const root = makeFixture({
+    'oidc.yml': `jobs:
+  other:
+    permissions:
+      id-token: write
+    steps:
+      - run: echo
+  d:
+    permissions:
+      contents: read
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/1/locations/global/workloadIdentityPools/p/providers/github
+`,
+  });
+  const report = buildWorkloadIdentityHonestyReport({ root });
+  assert.equal(report.status, 'fail');
+  assert.ok(report.findings.some((f) => f.id === 'wif_without_id_token' && f.job === 'd'));
+});
+
+test('folded PAT scalar with github.token fallback is ready', () => {
+  const root = makeFixture({
+    'ci.yml': `jobs:
+  t:
+    steps:
+      - env:
+          GH_TOKEN: >
+            \${{ secrets.GH_PAT || github.token }}
+        run: echo ok
+`,
+  });
+  const report = buildWorkloadIdentityHonestyReport({ root });
+  assert.equal(report.status, 'ready');
+  assert.equal(report.metrics.patWithoutFallback, 0);
+});
+
 test('WIF plus id-token write is ready', () => {
   const root = makeFixture({
     'oidc.yml': `permissions:

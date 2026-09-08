@@ -19,6 +19,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const yaml = require('js-yaml');
 
 const SOURCE = 'InfoQ 2026-09-08 Workload Identity Federation FORMAT (keys vs federated trust)';
 const PAT_LINE = /secrets\.GH_PAT\b/;
@@ -52,6 +53,30 @@ function listWorkflowFiles(workflowsDir) {
     .map((name) => path.join(workflowsDir, name));
 }
 
+function walkStrings(node, visit) {
+  if (typeof node === 'string') {
+    visit(node);
+    return;
+  }
+  if (Array.isArray(node)) {
+    for (const item of node) walkStrings(item, visit);
+    return;
+  }
+  if (node && typeof node === 'object') {
+    for (const value of Object.values(node)) walkStrings(value, visit);
+  }
+}
+
+function grantsIdTokenWrite(permissions) {
+  if (permissions === 'write-all') return true;
+  if (!permissions || typeof permissions !== 'object') return false;
+  return String(permissions['id-token'] || '').toLowerCase() === 'write';
+}
+
+function jobContainsWif(job) {
+  return JSON.stringify(job).includes('workload_identity_provider');
+}
+
 function scanWorkflowText(text, filePath) {
   const findings = [];
   const lines = String(text).split(/\r?\n/);
@@ -61,8 +86,6 @@ function scanWorkflowText(text, filePath) {
 
   lines.forEach((line, idx) => {
     const lineNo = idx + 1;
-    if (WIF.test(line)) hasWif = true;
-    if (ID_TOKEN_WRITE.test(line)) hasIdToken = true;
     if (CREDENTIALS_JSON.test(line) || GAC.test(line)) {
       hasCredentialsJson = true;
       findings.push({
@@ -82,23 +105,77 @@ function scanWorkflowText(text, filePath) {
         detail: 'AWS_SECRET_ACCESS_KEY appears as a non-secret literal',
       });
     }
-    if (PAT_LINE.test(line) && !TOKEN_FALLBACK.test(line)) {
+  });
+
+  let doc;
+  try {
+    doc = yaml.load(text) || {};
+  } catch (error) {
+    findings.push({
+      id: 'workflow_yaml_unreadable',
+      severity: 'actionable',
+      file: filePath,
+      detail: `workflow YAML did not parse (${error.message}); PAT/WIF checks used line scan only`,
+    });
+    lines.forEach((line, idx) => {
+      if (PAT_LINE.test(line) && !TOKEN_FALLBACK.test(line)) {
+        findings.push({
+          id: 'pat_without_token_fallback',
+          severity: 'actionable',
+          file: filePath,
+          line: idx + 1,
+          detail: 'secrets.GH_PAT without github.token fallback (EMU GraphQL writes may still need PAT)',
+        });
+      }
+    });
+    hasWif = WIF.test(text);
+    hasIdToken = ID_TOKEN_WRITE.test(text);
+    if (hasWif && !hasIdToken) {
+      findings.push({
+        id: 'wif_without_id_token',
+        severity: 'fail',
+        file: filePath,
+        detail: 'workload_identity_provider present but permissions.id-token is not write',
+      });
+    }
+    return {
+      file: filePath,
+      hasWif,
+      hasIdToken,
+      hasCredentialsJson,
+      findings,
+    };
+  }
+
+  walkStrings(doc, (value) => {
+    if (PAT_LINE.test(value) && !TOKEN_FALLBACK.test(value)) {
       findings.push({
         id: 'pat_without_token_fallback',
         severity: 'actionable',
         file: filePath,
-        line: lineNo,
         detail: 'secrets.GH_PAT without github.token fallback (EMU GraphQL writes may still need PAT)',
       });
     }
   });
 
-  if (hasWif && !hasIdToken) {
+  const topPerms = doc.permissions;
+  if (grantsIdTokenWrite(topPerms)) hasIdToken = true;
+  const jobs = doc.jobs && typeof doc.jobs === 'object' ? doc.jobs : {};
+  for (const [jobName, job] of Object.entries(jobs)) {
+    if (!job || typeof job !== 'object') continue;
+    if (!jobContainsWif(job)) continue;
+    hasWif = true;
+    const perms = job.permissions !== undefined ? job.permissions : topPerms;
+    if (grantsIdTokenWrite(perms)) {
+      hasIdToken = true;
+      continue;
+    }
     findings.push({
       id: 'wif_without_id_token',
       severity: 'fail',
       file: filePath,
-      detail: 'workload_identity_provider present but permissions.id-token is not write',
+      job: jobName,
+      detail: `job ${jobName} uses workload_identity_provider but its effective permissions.id-token is not write`,
     });
   }
 
