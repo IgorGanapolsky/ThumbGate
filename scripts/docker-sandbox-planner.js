@@ -4,6 +4,7 @@
 const path = require('node:path');
 
 const { classifyCommand } = require('./operational-integrity');
+const { classifyHostRole } = require('./agent-egress-policy');
 
 const HIGH_RISK_ACTION_TYPES = new Set([
   'shell.exec',
@@ -41,15 +42,30 @@ function quoteShellArg(value) {
 
 function buildNetworkPolicy(input = {}) {
   const allowedHosts = normalizeStringArray(input.allowedHosts || input.egressAllowlist);
+  const hosts = allowedHosts.map((host) => classifyHostRole(host));
+  const treatAsTrust = input.treatAllowlistAsTrustBoundary === true || input.trusted === true;
+  const bridgeHosts = hosts.filter((row) => row.role === 'bridge');
   if (input.requiresNetwork !== true) {
     return {
       mode: 'deny_all',
       allowedHosts: [],
+      hosts: [],
+      allowlistIsTrustBoundary: false,
     };
   }
   return {
     mode: allowedHosts.length > 0 ? 'allow_list' : 'egress_enabled',
     allowedHosts,
+    hosts,
+    bridgeHosts: bridgeHosts.map((row) => row.host),
+    allowlistIsTrustBoundary: false,
+    independentAuthRequired: bridgeHosts.length > 0,
+    findings: treatAsTrust && bridgeHosts.length
+      ? [{
+        id: 'allowlist_treated_as_trust_boundary',
+        message: 'Docker sandbox allowlist includes package-registry/proxy hops; those are not a trust boundary.',
+      }]
+      : [],
   };
 }
 
