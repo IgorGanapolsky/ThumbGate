@@ -870,8 +870,8 @@ function draftPolicyFromObservations(observations = [], options = {}) {
     }
   }
 
-  allowHosts.sort();
-  bridgeHosts.sort();
+  allowHosts.sort((a, b) => String(a).localeCompare(String(b)));
+  bridgeHosts.sort((a, b) => String(a).localeCompare(String(b)));
   const naturalLanguagePolicy = [
     `Agent ${agentId} may call only these hosts observed in production traffic: ${allowHosts.join(', ') || '(none yet)'}.`,
     bridgeHosts.length

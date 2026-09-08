@@ -8,6 +8,9 @@ const path = require('node:path');
 const {
   classifyTrustHandoffPath,
   buildAllowlistBridgeHonestyReport,
+  extractHostsFromGatePattern,
+  escapeRegExp,
+  formatAllowlistBridgeHonestyReport,
   SOURCE_URL,
 } = require('../scripts/allowlist-bridge-honesty');
 const egress = require('../scripts/agent-egress-policy');
@@ -56,11 +59,13 @@ test('observe-mode does not promote package-proxy traffic onto allowHosts', () =
     { host: 'package-proxy.example', agentId: 'default' },
     { host: 'package-proxy.example', agentId: 'default' },
   ], { agentId: 'default' });
-  assert.ok(drafted.allowHosts.includes('api.github.com'));
-  assert.ok(!drafted.allowHosts.includes('registry.npmjs.org'));
-  assert.ok(!drafted.allowHosts.includes('package-proxy.example'));
-  assert.ok(drafted.bridgeHosts.includes('registry.npmjs.org'));
-  assert.ok(drafted.bridgeHosts.includes('package-proxy.example'));
+  const allow = new Set(drafted.allowHosts);
+  const bridge = new Set(drafted.bridgeHosts);
+  assert.equal(allow.has('api.github.com'), true);
+  assert.equal(allow.has('registry.npmjs.org'), false);
+  assert.equal(allow.has('package-proxy.example'), false);
+  assert.equal(bridge.has('registry.npmjs.org'), true);
+  assert.equal(bridge.has('package-proxy.example'), true);
 });
 
 test('trust-handoff paths are not sandbox-contained', () => {
@@ -136,5 +141,36 @@ test('docker sandbox network policy does not treat allowlist as trust', () => {
     allowedHosts: ['registry.npmjs.org', 'api.github.com'],
   });
   assert.equal(policy.allowlistIsTrustBoundary, false);
-  assert.ok(policy.bridgeHosts.includes('registry.npmjs.org'));
+  assert.equal(new Set(policy.bridgeHosts).has('registry.npmjs.org'), true);
+});
+
+test('escapeRegExp escapes backslash as well as dots', () => {
+  assert.equal(escapeRegExp('a\\b.c'), 'a\\\\b\\.c');
+  assert.equal(escapeRegExp('registry.npmjs.org'), 'registry\\.npmjs\\.org');
+});
+
+test('extractHostsFromGatePattern matches regex-escaped hops, not substrings', () => {
+  const found = new Set(extractHostsFromGatePattern('(?!registry\\.npmjs\\.org|github\\.com)'));
+  assert.equal(found.has('registry.npmjs.org'), true);
+  assert.equal(found.has('github.com'), true);
+  assert.equal(found.has('pypi.org'), false);
+});
+
+test('doctor evaluate of a credentialed npm hop stays fail-closed', () => {
+  const report = buildAllowlistBridgeHonestyReport({
+    allowHosts: ['registry.npmjs.org'],
+    evaluateUrl: 'https://registry.npmjs.org/thumbgate',
+    authorization: 'Bearer not-a-live-secret',
+  });
+  assert.equal(report.ok, true);
+  assert.equal(report.evaluate.action, 'deny');
+  assert.equal(report.evaluate.judgmentType, 'ALLOWLIST_BRIDGE_CREDENTIAL');
+  const text = formatAllowlistBridgeHonestyReport(report);
+  assert.match(text, /Allowlist is trust boundary: false/);
+});
+
+test('CLI --help exits 0', () => {
+  const result = spawnSync(process.execPath, [SCRIPT, '--help'], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.match(result.stdout, /treat-allowlist-as-trust/);
 });

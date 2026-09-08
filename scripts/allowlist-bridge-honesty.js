@@ -71,27 +71,31 @@ function classifyTrustHandoffPath(filePath) {
   };
 }
 
+/**
+ * Escape every RegExp metacharacter, backslash included.
+ * CodeQL js/incomplete-sanitization flags replace(/\./g, '\\.') because a
+ * leading backslash would survive. Keep backslash in the character class.
+ */
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const EXTRA_GATE_HOSTS = [
+  'github.com',
+  'api.github.com',
+  'api.anthropic.com',
+  'thumbgate.ai',
+  'thumbgate-production.up.railway.app',
+  'localhost',
+  '127.0.0.1',
+];
+
 function extractHostsFromGatePattern(pattern) {
-  const text = String(pattern || '');
+  const source = String(pattern || '');
   const found = new Set();
-  for (const host of BRIDGE_HOST_SUFFIXES) {
-    if (text.includes(host) || text.includes(host.replace(/\./g, '\\.'))) {
-      found.add(host);
-    }
-  }
-  const extra = [
-    'github.com',
-    'api.github.com',
-    'api.anthropic.com',
-    'thumbgate.ai',
-    'thumbgate-production.up.railway.app',
-    'localhost',
-    '127.0.0.1',
-  ];
-  for (const host of extra) {
-    if (text.includes(host) || text.includes(host.replace(/\./g, '\\.'))) {
-      found.add(host);
-    }
+  for (const host of [...BRIDGE_HOST_SUFFIXES, ...EXTRA_GATE_HOSTS]) {
+    const escaped = escapeRegExp(host);
+    if (source.indexOf(escaped) !== -1) found.add(host);
   }
   return [...found];
 }
@@ -392,6 +396,8 @@ function runCli(argv = process.argv.slice(2)) {
 module.exports = {
   SOURCE_URL,
   HANDOFF_PATH_PATTERNS,
+  EXTRA_GATE_HOSTS,
+  escapeRegExp,
   classifyTrustHandoffPath,
   extractHostsFromGatePattern,
   loadDenyNetworkEgressGate,
