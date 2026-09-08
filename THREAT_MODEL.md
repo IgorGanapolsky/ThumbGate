@@ -53,7 +53,12 @@ ThumbGate is strongest paired with an OS/sandbox boundary that owns what the hoo
 
 - an **allowlisted working directory** and a **minimal set of writable paths**;
 - a **process boundary** (no unsupervised subprocess escape);
-- a **network boundary** (egress allowlist).
+- a **network boundary** (egress allowlist) that treats package registries, proxies,
+  and Hugging Face hosts as **hops, not trust boundaries** — GitLab's 2026-09 analysis
+  showed an allowlisted package proxy became the sandbox escape path. Independent
+  auth is still required; `STATIC_ALLOW` on `registry.npmjs.org` is not a credential
+  destination. Writes consumed by hooks/CI/MCP are **trust handoffs**, not
+  sandbox-contained execution (`allowlist-bridge-honesty`).
 
 > **Containment (sandbox)** = what the agent physically *can* do.
 > **ThumbGate (policy + learning)** = what the agent is *allowed* to do, and what it learns not to

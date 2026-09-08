@@ -20,7 +20,9 @@
  * 3. replayPolicy against audit before promoting a draft
  * 4. SSRF / private-network fail-closed
  * 5. Injection-safe structured request view for any LLM judge (JSON, caps)
- * 6. Decision attribution: STATIC_DENY | STATIC_ALLOW | SSRF | OBSERVE | JUDGE | FALLBACK
+ * 6. Decision attribution: STATIC_DENY | STATIC_ALLOW | STATIC_ALLOW_BRIDGE | SSRF | OBSERVE | JUDGE | FALLBACK
+ * 7. GitLab 2026-09 FORMAT: allowlisted package registries/proxies/HF are hops, not trust
+ *    boundaries (ALLOWLIST_BRIDGE_CREDENTIAL deny when secrets ride the hop)
  */
 
 const fs = require('fs');
@@ -61,7 +63,110 @@ const DEFAULT_AGENT_POLICY = {
     { id: 'deny-metadata-https', action: 'deny', match: 'prefix', url: 'https://169.254.169.254' },
   ],
   allowHosts: [],
+  bridgeHosts: [],
 };
+
+/** Package registries, proxies, and Hugging Face — hops, not trust boundaries. */
+const BRIDGE_HOST_SUFFIXES = [
+  'registry.npmjs.org',
+  'registry.yarnpkg.com',
+  'pypi.org',
+  'files.pythonhosted.org',
+  'pypi.python.org',
+  'rubygems.org',
+  'index.crates.io',
+  'crates.io',
+  'proxy.golang.org',
+  'sum.golang.org',
+  'huggingface.co',
+  'hf.co',
+  'cas-bridge.huggingface.co',
+  'docker.io',
+  'registry-1.docker.io',
+  'ghcr.io',
+  'quay.io',
+  'pkg.go.dev',
+];
+
+const BRIDGE_HOST_RES = [
+  /(?:^|\.)(?:verdaccio|nexus|artifactory|proxies?)\b/i,
+  /package[-.]proxy/i,
+  /npm[-.]proxy/i,
+];
+
+function hostMatchesSuffix(host, suffix) {
+  const h = String(host || '').toLowerCase();
+  const s = String(suffix || '').toLowerCase();
+  return h === s || h.endsWith(`.${s}`);
+}
+
+function classifyHostRole(host) {
+  const h = String(host || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .split('/')[0]
+    .split(':')[0];
+  if (!h) {
+    return {
+      host: h,
+      role: 'unknown',
+      trusted: false,
+      independentAuthRequired: true,
+    };
+  }
+  if (isPrivateOrLinkLocalHost(h)) {
+    return {
+      host: h,
+      role: 'ssrf_private',
+      trusted: false,
+      independentAuthRequired: true,
+      reason: 'Private, link-local, or cloud-metadata host is never a sandbox trust boundary.',
+    };
+  }
+  const isBridge = BRIDGE_HOST_SUFFIXES.some((s) => hostMatchesSuffix(h, s))
+    || BRIDGE_HOST_RES.some((re) => re.test(h));
+  if (isBridge) {
+    return {
+      host: h,
+      role: 'bridge',
+      trusted: false,
+      independentAuthRequired: true,
+      reason: 'Allowlisted package registry/proxy/HF is a hop, not a trust boundary (GitLab 2026-09).',
+    };
+  }
+  return {
+    host: h,
+    role: 'public',
+    trusted: false,
+    independentAuthRequired: false,
+  };
+}
+
+function requestCarriesSecrets(request = {}) {
+  const headers = request.headers && typeof request.headers === 'object' ? request.headers : {};
+  for (const key of Object.keys(headers)) {
+    const lower = String(key).toLowerCase();
+    if (
+      lower === 'authorization'
+      || lower === 'proxy-authorization'
+      || lower === 'cookie'
+      || lower.includes('api-key')
+      || lower.includes('huggingface')
+      || (lower.includes('token') && lower !== 'content-type')
+    ) {
+      const value = String(headers[key] || '').trim();
+      if (value && value !== '[REDACTED]') return true;
+    }
+  }
+  const url = String(request.url || request.target || '');
+  if (/https?:\/\/[^/@\s]+:[^/@\s]+@/i.test(url)) return true;
+  const body = request.body == null ? '' : String(request.body);
+  if (/\b(authorization|x-api-key|hf_tok)\b/i.test(body) && /bearer|hf_|sk-|ghp_/i.test(body)) {
+    return true;
+  }
+  return Boolean(request.carriesSecrets);
+}
 
 function nowIso() {
   return new Date().toISOString();
@@ -332,6 +437,59 @@ function hostAllowlisted(host, allowHosts = []) {
 }
 
 /**
+ * GitLab FORMAT: an allowlisted bridge host is a hop. GET/fetch may proceed;
+ * credentials on that hop fail closed unless independentAuth is already granted.
+ */
+function evaluateAllowlistHit(request, target, mode, started, ruleId) {
+  const role = classifyHostRole(target.host);
+  const secrets = requestCarriesSecrets(request);
+  const independentAuth = request.independentAuth === true
+    || (request.metadata && request.metadata.independentAuth === true);
+
+  if (role.role === 'bridge' && secrets && !independentAuth) {
+    return decision({
+      action: mode === 'observe' ? 'observe_would_deny' : 'deny',
+      judgmentType: 'ALLOWLIST_BRIDGE_CREDENTIAL',
+      reason: `Host '${target.host}' is an allowlisted bridge hop, not a trust boundary — credentials require independent auth (GitLab 2026-09).`,
+      target,
+      latencyMs: Date.now() - started,
+      mode,
+      ruleId: 'allowlist_bridge_credential',
+      hostRole: 'bridge',
+      trusted: false,
+      independentAuthRequired: true,
+    });
+  }
+
+  if (role.role === 'bridge') {
+    return decision({
+      action: mode === 'observe' ? 'observe_would_allow' : 'allow',
+      judgmentType: 'STATIC_ALLOW_BRIDGE',
+      reason: `Host '${target.host}' is allowlisted as a bridge hop, not a trust boundary`,
+      target,
+      latencyMs: Date.now() - started,
+      mode,
+      ruleId: ruleId || 'allowlist_bridge_host',
+      hostRole: 'bridge',
+      trusted: false,
+      independentAuthRequired: true,
+    });
+  }
+
+  return decision({
+    action: mode === 'observe' ? 'observe_would_allow' : 'allow',
+    judgmentType: 'STATIC_ALLOW',
+    reason: `Host '${target.host}' is on the agent allowlist`,
+    target,
+    latencyMs: Date.now() - started,
+    mode,
+    ruleId: ruleId || 'allowlist_host',
+    hostRole: role.role,
+    trusted: false,
+  });
+}
+
+/**
  * Evaluate an egress request against a policy.
  * @param {object} request - { method, url|host, headers, body, toolName, agentId }
  * @param {object} policy
@@ -348,6 +506,7 @@ async function evaluateEgress(request = {}, policy = {}, options = {}) {
       ...(policy.staticRules || []),
     ],
     allowHosts: policy.allowHosts || policy.allowedHosts || DEFAULT_AGENT_POLICY.allowHosts,
+    bridgeHosts: policy.bridgeHosts || DEFAULT_AGENT_POLICY.bridgeHosts,
   };
   const mode = options.mode || pol.mode || 'enforce';
 
@@ -368,6 +527,9 @@ async function evaluateEgress(request = {}, policy = {}, options = {}) {
   const staticHit = matchStaticRules(target, pol.staticRules);
   if (staticHit.hit) {
     const denied = staticHit.action === 'deny';
+    if (!denied && classifyHostRole(target.host).role === 'bridge') {
+      return evaluateAllowlistHit(request, target, mode, started, staticHit.rule.id);
+    }
     return decision({
       action: mode === 'observe'
         ? (denied ? 'observe_would_deny' : 'observe_would_allow')
@@ -383,17 +545,9 @@ async function evaluateEgress(request = {}, policy = {}, options = {}) {
     });
   }
 
-  // Implicit host allowlist = static allow
-  if (hostAllowlisted(target.host, pol.allowHosts)) {
-    return decision({
-      action: mode === 'observe' ? 'observe_would_allow' : 'allow',
-      judgmentType: 'STATIC_ALLOW',
-      reason: `Host '${target.host}' is on the agent allowlist`,
-      target,
-      latencyMs: Date.now() - started,
-      mode,
-      ruleId: 'allowlist_host',
-    });
+  // Implicit host allowlist = static allow (bridge hops still untrusted)
+  if (hostAllowlisted(target.host, pol.allowHosts) || hostAllowlisted(target.host, pol.bridgeHosts)) {
+    return evaluateAllowlistHit(request, target, mode, started, 'allowlist_host');
   }
 
   // Tier 2: long-tail LLM judge (optional)
@@ -488,6 +642,11 @@ function decision(partial) {
     interdictionSource: 'ThumbGate-Egress-Policy',
     at: nowIso(),
     ...(partial.judgeView ? { judgeView: partial.judgeView } : {}),
+    ...(partial.hostRole ? { hostRole: partial.hostRole } : {}),
+    ...(partial.trusted !== undefined ? { trusted: partial.trusted } : {}),
+    ...(partial.independentAuthRequired !== undefined
+      ? { independentAuthRequired: partial.independentAuthRequired }
+      : {}),
   };
 }
 
@@ -507,6 +666,7 @@ function evaluateEgressStaticOnly(request = {}, policy = {}, options = {}) {
       ...(policy.staticRules || []),
     ],
     allowHosts: policy.allowHosts || policy.allowedHosts || [],
+    bridgeHosts: policy.bridgeHosts || [],
   };
   const mode = options.mode || pol.mode || 'enforce';
 
@@ -525,6 +685,9 @@ function evaluateEgressStaticOnly(request = {}, policy = {}, options = {}) {
   const staticHit = matchStaticRules(target, pol.staticRules);
   if (staticHit.hit) {
     const denied = staticHit.action === 'deny';
+    if (!denied && classifyHostRole(target.host).role === 'bridge') {
+      return evaluateAllowlistHit(request, target, mode, started, staticHit.rule.id);
+    }
     return decision({
       action: mode === 'observe'
         ? (denied ? 'observe_would_deny' : 'observe_would_allow')
@@ -540,16 +703,8 @@ function evaluateEgressStaticOnly(request = {}, policy = {}, options = {}) {
     });
   }
 
-  if (hostAllowlisted(target.host, pol.allowHosts)) {
-    return decision({
-      action: mode === 'observe' ? 'observe_would_allow' : 'allow',
-      judgmentType: 'STATIC_ALLOW',
-      reason: `Host '${target.host}' is on the agent allowlist`,
-      target,
-      latencyMs: Date.now() - started,
-      mode,
-      ruleId: 'allowlist_host',
-    });
+  if (hostAllowlisted(target.host, pol.allowHosts) || hostAllowlisted(target.host, pol.bridgeHosts)) {
+    return evaluateAllowlistHit(request, target, mode, started, 'allowlist_host');
   }
 
   if (mode === 'observe') {
@@ -595,7 +750,9 @@ function evaluateCrabTrapRequest(reqPayload = {}, policy = {}, options = {}) {
       : 'BLOCK',
     status: result.status,
     reason: result.reason,
-    judgmentType: result.judgmentType === 'STATIC_ALLOW' || result.judgmentType === 'STATIC_DENY'
+    judgmentType: result.judgmentType === 'STATIC_ALLOW'
+      || result.judgmentType === 'STATIC_ALLOW_BRIDGE'
+      || result.judgmentType === 'STATIC_DENY'
       ? 'STATIC_RULE_MATCH'
       : result.judgmentType,
     ruleId: result.ruleId,
@@ -680,6 +837,7 @@ function draftPolicyFromObservations(observations = [], options = {}) {
   }
 
   const allowHosts = [];
+  const bridgeHosts = [];
   const denyHosts = [];
   const staticRules = [
     { id: 'deny-metadata', action: 'deny', match: 'prefix', url: 'http://169.254.169.254' },
@@ -698,6 +856,10 @@ function draftPolicyFromObservations(observations = [], options = {}) {
       continue;
     }
     if (count >= minCount) {
+      if (classifyHostRole(host).role === 'bridge') {
+        bridgeHosts.push(host);
+        continue;
+      }
       allowHosts.push(host);
       staticRules.push({
         id: `allow-observed-${host.replace(/[^a-z0-9.-]/gi, '_')}`,
@@ -709,10 +871,15 @@ function draftPolicyFromObservations(observations = [], options = {}) {
   }
 
   allowHosts.sort();
+  bridgeHosts.sort();
   const naturalLanguagePolicy = [
     `Agent ${agentId} may call only these hosts observed in production traffic: ${allowHosts.join(', ') || '(none yet)'}.`,
+    bridgeHosts.length
+      ? `Bridge hops (registries/proxies/HF, not trust boundaries): ${bridgeHosts.join(', ')}.`
+      : '',
     'Deny all private networks, link-local, and cloud metadata endpoints.',
     'Deny unknown public hosts until explicitly allowlisted.',
+    'Never treat an allowlisted package proxy as a credential destination.',
     options.extraPolicyText || '',
   ].filter(Boolean).join(' ');
 
@@ -722,12 +889,14 @@ function draftPolicyFromObservations(observations = [], options = {}) {
     fallback: 'deny',
     naturalLanguagePolicy,
     allowHosts,
+    bridgeHosts,
     staticRules,
     stats: {
       observationCount: scopedObservationCount,
       totalObservations: observations.length,
       uniqueHosts: counts.size,
       allowHostCount: allowHosts.length,
+      bridgeHostCount: bridgeHosts.length,
       denyHostCount: denyHosts.length,
       minCount,
       agentScoped: filterAgent,
@@ -925,14 +1094,18 @@ module.exports = {
   DEFAULT_AGENT_POLICY,
   DEFAULT_HEADER_CAP,
   DEFAULT_BODY_CAP,
+  BRIDGE_HOST_SUFFIXES,
   parseTarget,
   isPrivateOrLinkLocalHost,
+  classifyHostRole,
+  requestCarriesSecrets,
   matchStaticRules,
   compileRule,
   buildJudgeSafeRequestView,
   evaluateEgress,
   evaluateEgressSync,
   evaluateEgressStaticOnly,
+  evaluateAllowlistHit,
   evaluateCrabTrapRequest,
   observeEgress,
   readObserveLedger,
