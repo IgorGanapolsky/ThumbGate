@@ -289,7 +289,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 527 -> 529: intent-governed-execution after zg #3770.
   //   Lockstep with package-boundary + public-bundle-ratchet.
   // 530 -> 532: test-all.js + find-dormant-requires.js (#3703 successor).
-  const CEILING = 532;
+  // 532 -> 534: allowlist-bridge-honesty.js + gitlab-sandbox-allowlist-not-trust skill.
+  const CEILING = 534;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
