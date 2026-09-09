@@ -27,6 +27,8 @@
   ],
   "optionalChecks": [
     "Vercel",
-    "Vercel Preview Comments"
+    "Vercel Preview Comments",
+    "Gitar",
+    "Gitar AI"
   ]
 }
