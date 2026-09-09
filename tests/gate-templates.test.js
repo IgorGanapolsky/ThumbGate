@@ -16,6 +16,7 @@ test('checkpoint-allowlist-bridge-not-trust matches claim terms in any order', (
   assert.equal(re.test('registry.npmjs.org is trusted because it is on the allowlist'), true);
   assert.equal(re.test('sandbox allowlist trusted npm registry'), true);
   assert.equal(re.test('trusted npm on the allowlist'), true);
+  assert.equal(re.test('internal.example is trusted because it is on the allowlist'), false);
   assert.equal(re.test('random prose without hop vocabulary'), false);
 });
 
