@@ -780,7 +780,9 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
     /Treating this no-op as release-audited until the next versioned publish lands\./,
     'the unbounded exemption must not return',
   );
-  assert.match(workflow, /npm publish --tag "\$\{\{\s*steps\.plan\.outputs\.npm_tag \|\| 'latest'\s*\}\}" --provenance/);
+  assert.match(workflow, /NPM_TAG:\s*\$\{\{\s*steps\.plan\.outputs\.npm_tag \|\| 'latest'\s*\}\}/);
+  assert.match(workflow, /npm publish --tag "\$\{NPM_TAG\}" --provenance/);
+  assert.match(workflow, /unset NODE_AUTH_TOKEN/);
   assert.match(workflow, /--install-attempts 12 --install-delay-ms 10000/);
 });
 
