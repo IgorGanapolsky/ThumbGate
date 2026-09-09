@@ -8,6 +8,18 @@ const {
   summarizeGateTemplates,
 } = require('../scripts/gate-templates');
 
+test('checkpoint-allowlist-bridge-not-trust matches claim terms in any order', () => {
+  const templates = listGateTemplates();
+  const gate = templates.find((template) => template.id === 'checkpoint-allowlist-bridge-not-trust');
+  assert.ok(gate);
+  const re = new RegExp(gate.pattern, 'i');
+  assert.equal(re.test('registry.npmjs.org is trusted because it is on the allowlist'), true);
+  assert.equal(re.test('sandbox allowlist trusted npm registry'), true);
+  assert.equal(re.test('trusted npm on the allowlist'), true);
+  assert.equal(re.test('internal.example is trusted because it is on the allowlist'), false);
+  assert.equal(re.test('random prose without hop vocabulary'), false);
+});
+
 test('gate template library exposes curated templates with shared rollout metadata', () => {
   const templates = listGateTemplates();
 
@@ -20,6 +32,7 @@ test('gate template library exposes curated templates with shared rollout metada
   assert.ok(templates.some((template) => template.id === 'block-package-lifecycle-secret-harvest'));
   assert.ok(templates.some((template) => template.id === 'require-local-dependency-vulnerability-scan'));
   assert.ok(templates.some((template) => template.category === 'Supply Chain Safety'));
+  assert.ok(templates.some((template) => template.id === 'checkpoint-allowlist-bridge-not-trust'));
   assert.ok(templates.some((template) => template.category === 'Document RAG Safety'));
   assert.ok(templates.some((template) => template.id === 'require-image-pointer-grounding'));
   assert.ok(templates.some((template) => template.category === 'Sparse Attention Runtime Safety'));
@@ -134,7 +147,7 @@ test('gate template library summary groups templates by category and action', ()
   assert.equal(summary.categories['Git Safety'], 1);
   assert.equal(summary.categories['Verification'], 1);
   assert.equal(summary.categories['Knowledge Graph Safety'], 3);
-  assert.equal(summary.categories['Supply Chain Safety'], 7);
+  assert.equal(summary.categories['Supply Chain Safety'], 8);
   assert.equal(summary.categories['Document RAG Safety'], 7);
   assert.equal(summary.categories['Sparse Attention Runtime Safety'], 6);
   assert.equal(summary.categories['AI Engineering Stack Safety'], 7);
