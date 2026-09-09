@@ -236,7 +236,9 @@ const path = require('node:path');
 // 530 → 532: test-all.js + find-dormant-requires.js (#3703 successor)
 // 532 → 534: allowlist-bridge-honesty.js + gitlab-sandbox-allowlist-not-trust skill
 //            (GitLab 2026-09 allowlist-as-bridge FORMAT steal).
-const BASELINE_FILE_COUNT = 534;
+// 534 → 536: openui-catalog-compose-honesty.js + skill — OpenUI FORMAT steal
+//            (catalog-compose-only, root-first, repair-before-claim; not @openuidev).
+const BASELINE_FILE_COUNT = 536;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
