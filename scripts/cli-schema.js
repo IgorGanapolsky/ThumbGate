@@ -475,6 +475,22 @@ const CLI_COMMANDS = [
     ],
   }),
 
+  discoveryCommand({
+    name: 'openui-catalog-compose-honesty',
+    aliases: ['openui-honesty-doctor', 'catalog-compose-honesty', 'repair-before-compose-claim'],
+    description: 'OpenUI FORMAT steal: catalog-compose-only, root-first streaming, repair-before-claim (does not install @openuidev or clone Thesys Gateway)',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero on fail or actionable findings' },
+      { name: 'root', type: 'string', description: 'Repo root for relative paths (default cwd)' },
+      { name: 'catalog', type: 'string', description: 'Path to JSON component catalog' },
+      { name: 'stream', type: 'string', description: 'Path to line-oriented compose stream' },
+      { name: 'compose', type: 'string', description: 'Alias for --stream' },
+      { name: 'repair', type: 'boolean', description: 'Include dropped lines and repaired stream text' },
+      { name: 'claim-ready', type: 'boolean', description: 'Fail unless repair is clean (root + zero drops)' },
+    ],
+  }),
+
 
   discoveryCommand({
     name: 'intent-governed-execution',

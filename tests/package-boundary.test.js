@@ -490,8 +490,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 529 -> 530: memory-vs-rag-route.js (Supermemory FORMAT steal).
   // 530 -> 532: test-all.js + find-dormant-requires.js (aggregate runner, #3703 successor).
   // 532 -> 534: allowlist-bridge-honesty.js + gitlab-sandbox-allowlist-not-trust skill.
-    manifest.fileCount <= 534,
-    `npm package should stay <= 534 files, got ${manifest.fileCount}`
+  // 534 -> 536: openui-catalog-compose-honesty.js + skill — OpenUI FORMAT steal.
+    manifest.fileCount <= 536,
+    `npm package should stay <= 536 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
