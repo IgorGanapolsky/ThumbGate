@@ -19,7 +19,13 @@ const {
 test.after(() => {
   if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
   else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
-  fs.rmSync(tmpDir, { recursive: true, force: true });
+  // launchPublicManagedJob spawns detached+unref workers that can recreate files
+  // while rimraf walks tmpDir (Trunk queue #3836: ENOTEMPTY hookFailed).
+  try {
+    fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 50 });
+  } catch {
+    // leftover unref'd writers after retries must not fail the file
+  }
 });
 
 test('public-package workflow launcher runs durable jobs and preserves failures', async () => {
