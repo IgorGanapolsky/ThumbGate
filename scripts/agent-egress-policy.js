@@ -89,7 +89,7 @@ const BRIDGE_HOST_SUFFIXES = [
 ];
 
 const BRIDGE_HOST_RES = [
-  /(?:^|\.)(?:verdaccio|nexus|artifactory|proxies?)\b/i,
+  /(?:^|\.)(?:verdaccio|nexus|artifactory|prox(?:y|ies))\b/i,
   /package[-.]proxy/i,
   /npm[-.]proxy/i,
 ];

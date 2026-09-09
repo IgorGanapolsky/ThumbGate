@@ -174,3 +174,10 @@ test('CLI --help exits 0', () => {
   assert.equal(result.status, 0, result.stderr + result.stdout);
   assert.match(result.stdout, /treat-allowlist-as-trust/);
 });
+
+test('proxy.corp hostnames classify as bridge hops (not only proxies*)', () => {
+  const { classifyHostRole } = require('../scripts/agent-egress-policy');
+  assert.equal(classifyHostRole('proxy.corp.example').role, 'bridge');
+  assert.equal(classifyHostRole('registry.proxy.example').role, 'bridge');
+  assert.equal(classifyHostRole('proxies.corp.example').role, 'bridge');
+});

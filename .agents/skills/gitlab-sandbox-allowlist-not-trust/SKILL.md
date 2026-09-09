@@ -45,7 +45,7 @@ Weak: Summarize GitLab Duo and add a container sandbox class.
 Gold:
 
 ```bash
-$ npx thumbgate allowlist-bridge-honesty --json
+$ npx thumbgate@1.36.1 allowlist-bridge-honesty --json
 allowlistIsTrustBoundary: false
 $ node --test tests/allowlist-bridge-honesty.test.js
 # Authorization to registry.npmjs.org → ALLOWLIST_BRIDGE_CREDENTIAL deny
@@ -54,9 +54,9 @@ $ node --test tests/allowlist-bridge-honesty.test.js
 ## Procedures
 
 ```bash
-npx thumbgate allowlist-bridge-honesty --json
-npx thumbgate allowlist-bridge-honesty --allow-hosts=registry.npmjs.org --treat-allowlist-as-trust --json
-npx thumbgate allowlist-bridge-honesty --write=.github/workflows/ci.yml --claimed-contained --json
+npx thumbgate@1.36.1 allowlist-bridge-honesty --json
+npx thumbgate@1.36.1 allowlist-bridge-honesty --allow-hosts=registry.npmjs.org --treat-allowlist-as-trust --json
+npx thumbgate@1.36.1 allowlist-bridge-honesty --write=.github/workflows/ci.yml --claimed-contained --json
 npm run test:allowlist-bridge-honesty
 ```
 

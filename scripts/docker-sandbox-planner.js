@@ -171,6 +171,8 @@ function buildDockerSandboxPlan(input = {}) {
     requiresNetwork: input.requiresNetwork === true || governedCommand || commandInfo.isPublish || actionType === 'upload' || actionType === 'message.send',
     allowedHosts: input.allowedHosts,
     egressAllowlist: input.egressAllowlist,
+    treatAllowlistAsTrustBoundary: input.treatAllowlistAsTrustBoundary,
+    trusted: input.trusted,
   });
   const launchers = buildLaunchers(workspacePath);
   const summary = buildSummary(shouldSandbox, recommendation);

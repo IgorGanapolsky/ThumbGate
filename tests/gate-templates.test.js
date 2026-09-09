@@ -8,6 +8,17 @@ const {
   summarizeGateTemplates,
 } = require('../scripts/gate-templates');
 
+test('checkpoint-allowlist-bridge-not-trust matches claim terms in any order', () => {
+  const templates = listGateTemplates();
+  const gate = templates.find((template) => template.id === 'checkpoint-allowlist-bridge-not-trust');
+  assert.ok(gate);
+  const re = new RegExp(gate.pattern, 'i');
+  assert.equal(re.test('registry.npmjs.org is trusted because it is on the allowlist'), true);
+  assert.equal(re.test('sandbox allowlist trusted npm registry'), true);
+  assert.equal(re.test('trusted npm on the allowlist'), true);
+  assert.equal(re.test('random prose without hop vocabulary'), false);
+});
+
 test('gate template library exposes curated templates with shared rollout metadata', () => {
   const templates = listGateTemplates();
 
