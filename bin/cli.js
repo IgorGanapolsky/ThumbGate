@@ -2692,6 +2692,27 @@ function jitHarnessCompose() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function allowlistBridgeHonestyDoctor() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildAllowlistBridgeHonestyReport,
+    formatAllowlistBridgeHonestyReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'allowlist-bridge-honesty'));
+  const report = buildAllowlistBridgeHonestyReport(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatAllowlistBridgeHonestyReport(report));
+  }
+
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function packageManagerHonestyDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3517,6 +3538,7 @@ function help() {
   console.log('  deepseek-v4-runtime-guardrails Map sparse-attention runtime signals to safety gates');
   console.log('  nvidia-specdecode-al-doctor Check speculative AL/D evidence vs AL/(1+ρD) speedup math');
   console.log('  package-manager-honesty-doctor Audit lockfile/CI parity; fail-closed manager switches');
+  console.log('  allowlist-bridge-honesty Audit allowlisted registries/proxies as hops, not trust boundaries');
   console.log('  jit-harness-compose   Compose memory/planning/action/capability onto existing rails (JIT FORMAT)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
   console.log('  intent-governed-execution  NL intent → classify/authorize/gate/HITL/evidence (CyberStrike FORMAT)');
@@ -3558,6 +3580,7 @@ function help() {
   console.log('  npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json');
   console.log('  npx thumbgate nvidia-specdecode-al-doctor --speculative-decoding --accept-length=1.4 --draft-length=7 --draft-depth-ratio=0.05 --claimed-speedup=3 --json');
   console.log('  npx thumbgate package-manager-honesty-doctor --propose-switch=pnpm --json');
+  console.log('  npx thumbgate allowlist-bridge-honesty --json');
   console.log('  npx thumbgate jit-harness-compose --task="implement PreToolUse gate fix" --json');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
   console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
@@ -4200,6 +4223,12 @@ switch (COMMAND) {
   case 'pnpm12-honesty-doctor':
   case 'lockfile-ci-parity-doctor':
     packageManagerHonestyDoctor();
+    break;
+  case 'allowlist-bridge-honesty':
+  case 'gitlab-sandbox-allowlist':
+  case 'allowlist-not-trust':
+  case 'trust-handoff-honesty':
+    allowlistBridgeHonestyDoctor();
     break;
   case 'jit-harness-compose':
   case 'jit-compose':

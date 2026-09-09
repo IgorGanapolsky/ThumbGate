@@ -51,3 +51,21 @@ test('buildDockerSandboxPlan keeps low-risk actions on the host path', () => {
   assert.equal(plan.recommendation, 'not_needed');
   assert.equal(plan.claims, null);
 });
+
+test('buildDockerSandboxPlan forwards trust flags into networkPolicy findings', () => {
+  const plan = buildDockerSandboxPlan({
+    toolName: 'Bash',
+    actionType: 'shell.exec',
+    command: 'npm publish',
+    requiresNetwork: true,
+    allowedHosts: ['registry.npmjs.org'],
+    treatAllowlistAsTrustBoundary: true,
+    riskBand: 'high',
+    affectedFiles: ['package.json'],
+  });
+
+  assert.equal(plan.networkPolicy.mode, 'allow_list');
+  assert.ok(
+    (plan.networkPolicy.findings || []).some((f) => f.id === 'allowlist_treated_as_trust_boundary'),
+  );
+});
