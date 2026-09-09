@@ -2734,6 +2734,27 @@ function packageManagerHonestyDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function openuiCatalogComposeHonestyDoctor() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildOpenuiCatalogComposeHonestyReport,
+    formatOpenuiCatalogComposeHonestyReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'openui-catalog-compose-honesty'));
+  const report = buildOpenuiCatalogComposeHonestyReport(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatOpenuiCatalogComposeHonestyReport(report));
+  }
+
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 
 async function workspaceSearchRoute() {
   const args = parseArgs(process.argv.slice(3));
@@ -3538,6 +3559,7 @@ function help() {
   console.log('  deepseek-v4-runtime-guardrails Map sparse-attention runtime signals to safety gates');
   console.log('  nvidia-specdecode-al-doctor Check speculative AL/D evidence vs AL/(1+ρD) speedup math');
   console.log('  package-manager-honesty-doctor Audit lockfile/CI parity; fail-closed manager switches');
+  console.log('  openui-catalog-compose-honesty Catalog-compose-only + repair-before-claim (OpenUI FORMAT)');
   console.log('  allowlist-bridge-honesty Audit allowlisted registries/proxies as hops, not trust boundaries');
   console.log('  jit-harness-compose   Compose memory/planning/action/capability onto existing rails (JIT FORMAT)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
@@ -3580,6 +3602,7 @@ function help() {
   console.log('  npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json');
   console.log('  npx thumbgate nvidia-specdecode-al-doctor --speculative-decoding --accept-length=1.4 --draft-length=7 --draft-depth-ratio=0.05 --claimed-speedup=3 --json');
   console.log('  npx thumbgate package-manager-honesty-doctor --propose-switch=pnpm --json');
+  console.log('  npx thumbgate openui-catalog-compose-honesty --catalog=catalog.json --stream=compose.txt --repair --json');
   console.log('  npx thumbgate allowlist-bridge-honesty --json');
   console.log('  npx thumbgate jit-harness-compose --task="implement PreToolUse gate fix" --json');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
@@ -4223,6 +4246,12 @@ switch (COMMAND) {
   case 'pnpm12-honesty-doctor':
   case 'lockfile-ci-parity-doctor':
     packageManagerHonestyDoctor();
+    break;
+  case 'openui-catalog-compose-honesty':
+  case 'openui-honesty-doctor':
+  case 'catalog-compose-honesty':
+  case 'repair-before-compose-claim':
+    openuiCatalogComposeHonestyDoctor();
     break;
   case 'allowlist-bridge-honesty':
   case 'gitlab-sandbox-allowlist':

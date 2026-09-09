@@ -600,7 +600,7 @@ describe('bin/cli.js', () => {
       'oss-pr-opportunity-scout', 'chatgpt-ads-readiness-pack',
       'model-candidates', 'upstream-contributions',
       'deepseek-v4-runtime-guardrails', 'nvidia-specdecode-al-doctor',
-      'package-manager-honesty-doctor', 'allowlist-bridge-honesty', 'risk', 'export-dpo',
+      'package-manager-honesty-doctor', 'openui-catalog-compose-honesty', 'allowlist-bridge-honesty', 'risk', 'export-dpo',
       'export-databricks', 'lessons', 'stats', 'north-star', 'eval',
       'rules', 'self-heal', 'prove', 'doctor', 'compass', 'dispatch',
       'background-governance', 'analytics', 'gate-check', 'statusline-render',

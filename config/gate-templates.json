@@ -38,6 +38,30 @@
       "rollout": "Use for every workflow where proof matters more than speed."
     },
     {
+      "id": "require-catalog-compose-only",
+      "name": "Require catalog-compose-only agent UI",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(generative\\s*ui|compose\\s*ui|openui|@openuidev).*(invent|arbitrary|eval|new Function|dangerouslySetInnerHTML|install\\s+@openuidev|clone\\s+openui)|component\\s+not\\s+in\\s+catalog|unknown\\s+component",
+      "problem": "Blocks agents from inventing UI components outside an allowlisted catalog or running generated code. OpenUI's safe-by-default FORMAT: compose only from your components.",
+      "roi": "Stops generative-UI theater and arbitrary-code compose paths. Keeps agent dashboards/widgets inside a known catalog without cloning OpenUI/Thesys.",
+      "rollout": "Enable for any agent-composed UI, dashboard widget, or tool-result card. Pair with openui-catalog-compose-honesty --catalog --stream --json."
+    },
+    {
+      "id": "require-repair-before-compose-claim",
+      "name": "Require repair-before-claim on composed UI",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(ui|compose|generative\\s*ui|dashboard\\s*widget).*(ready|done|shipped|fixed|live)|claim.*compose.*(ready|done)",
+      "problem": "Blocks claiming composed UI is ready before a line-level validate+repair pass (root present, unknown components dropped, zero arbitrary-code lines).",
+      "roi": "Mirrors OpenUI Gateway's repair-before-users-see-it FORMAT on ThumbGate rails: invalid compose never becomes a completion claim.",
+      "rollout": "Require openui-catalog-compose-honesty --repair --claim-ready evidence before any compose/UI done claim. Does not install OpenUI Gateway."
+    },
+    {
       "id": "require-broker-signed-execution-receipt",
       "name": "Require broker-signed execution receipts",
       "category": "Provider Side-Effect Governance",
