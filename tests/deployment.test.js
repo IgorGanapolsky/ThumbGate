@@ -745,6 +745,8 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /group:\s*publish-npm-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*false/);
   assert.match(workflow, /permissions:\s+contents:\s+write\s+id-token:\s+write/s);
+  assert.match(workflow, /Publishing via GitHub Actions OIDC trusted publisher/);
+  assert.match(workflow, /THUMBGATE_NPM_TOKEN_FALLBACK/);
   assert.match(workflow, /node-version:\s*'24\.x'/);
   assert.match(workflow, /timeout-minutes:\s*25/);
   assert.match(workflow, /cache:\s*'npm'/);
