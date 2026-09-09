@@ -446,6 +446,23 @@ const CLI_COMMANDS = [
   }),
 
   discoveryCommand({
+    name: 'allowlist-bridge-honesty',
+    aliases: ['gitlab-sandbox-allowlist', 'allowlist-not-trust', 'trust-handoff-honesty'],
+    description: 'Audit allowlisted package registries/proxies as hops not trust boundaries (GitLab 2026-09 FORMAT steal; does not clone GitLab Duo)',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero on fail' },
+      { name: 'root', type: 'string', description: 'Repo root to scan (default cwd)' },
+      { name: 'allow-hosts', type: 'string', description: 'Comma-separated extra allowlisted hosts' },
+      { name: 'treat-allowlist-as-trust', type: 'boolean', description: 'Fail closed if bridge hosts are treated as trusted' },
+      { name: 'write', type: 'string', description: 'Privileged consumer path to classify as trust-handoff' },
+      { name: 'claimed-contained', type: 'boolean', description: 'Fail if a handoff write is claimed sandbox-contained' },
+      { name: 'evaluate-url', type: 'string', description: 'Probe egress evaluation against the allowlist' },
+      { name: 'clone-gitlab-duo', type: 'boolean', description: 'Refuse GitLab Duo sandbox SKU clone' },
+    ],
+  }),
+
+  discoveryCommand({
     name: 'package-manager-honesty-doctor',
     aliases: ['pm-honesty-doctor', 'pnpm12-honesty-doctor', 'lockfile-ci-parity-doctor'],
     description: 'Audit lockfile/packageManager/CI install parity and fail-closed package-manager switches (InfoQ pnpm 12 process steal; does not migrate off npm)',

@@ -208,7 +208,7 @@ test('stateful helper bypass guard blocks risky package script after package.jso
   });
 
   assert.ok(
-    harness.gates.listSessionActions()[harness.gates.HELPER_BYPASS_ACTION],
+    harness.gates.listSessionActions()[harness.gates.helperBypassActionKey()],
     'should remember package script modification',
   );
 

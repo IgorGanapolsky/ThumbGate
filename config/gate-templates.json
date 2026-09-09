@@ -207,6 +207,18 @@
       "rollout": "Block agent-proposed manager switches; allow only with package-manager-honesty-doctor --propose-switch evidence attached to the PR."
     },
     {
+      "id": "checkpoint-allowlist-bridge-not-trust",
+      "name": "Checkpoint allowlisted registry/proxy as a hop, not a trust boundary",
+      "category": "Supply Chain Safety",
+      "signal": "👎",
+      "defaultAction": "warn",
+      "severity": "high",
+      "pattern": "(?=.*(sandbox|allowlist))(?=.*(trusted|safe|secure))(?=.*(npm|pypi|huggingface|package proxy|registry\\.npmjs|verdaccio|nexus)).+",
+      "problem": "Blocks treating an allowlisted package registry, proxy, or Hugging Face host as a sandbox trust boundary. GitLab's 2026-09 analysis showed a permitted package proxy became the escape hop.",
+      "roi": "Keeps deny-network-egress and agent-egress-policy honest: hops stay hops. Pair with allowlist-bridge-honesty. Does not clone GitLab Duo.",
+      "rollout": "Warn when agents claim an allowlisted registry is trusted; require allowlist-bridge-honesty --json evidence before expanding egress allowlists."
+    },
+    {
       "id": "require-section-tree-before-multimodal-answer",
       "name": "Require section tree before multimodal answers",
       "category": "Document RAG Safety",

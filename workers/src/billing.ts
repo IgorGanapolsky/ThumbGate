@@ -4,7 +4,8 @@ import { problemResponse, PROBLEM_TYPES } from './problem-detail';
 
 function getStripe(env: Env): Stripe {
   return new Stripe(env.STRIPE_SECRET_KEY, {
-    apiVersion: '2026-07-29.dahlia',
+    // Stripe 22.6.0 LatestApiVersion; workers typecheck fails if this lags the SDK.
+    apiVersion: '2026-08-26.dahlia',
     httpClient: Stripe.createFetchHttpClient(),
   });
 }

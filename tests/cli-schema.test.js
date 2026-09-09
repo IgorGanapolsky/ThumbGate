@@ -273,6 +273,16 @@ test('jit-harness-compose exposes four-module compose flags', () => {
   assert.ok(flagNames.includes('profile'));
 });
 
+test('allowlist-bridge-honesty exposes hop-not-trust flags', () => {
+  const cmd = findCommand('gitlab-sandbox-allowlist');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'allowlist-bridge-honesty');
+  assert.ok(cmd.aliases.includes('gitlab-sandbox-allowlist'));
+  assert.ok(flagNames.includes('root'));
+  assert.ok(flagNames.includes('treat-allowlist-as-trust'));
+  assert.ok(flagNames.includes('clone-gitlab-duo'));
+});
+
 test('package-manager-honesty-doctor exposes lockfile/CI parity flags', () => {
   const cmd = findCommand('pnpm12-honesty-doctor');
   const flagNames = cmd.flags.map((f) => f.name);
