@@ -35,6 +35,7 @@ test('supply chain safety templates ship as concrete local execution gates', () 
     'require-local-dependency-vulnerability-scan',
     'require-package-manager-lockfile-ci-parity',
     'checkpoint-package-manager-switch',
+    'checkpoint-allowlist-bridge-not-trust',
   ]);
   assert.ok(templates.every((template) => template.problem));
   assert.ok(templates.every((template) => template.roi));

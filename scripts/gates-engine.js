@@ -335,19 +335,51 @@ function commandContainsSequence(words, sequence) {
 }
 
 function commandHasPostMethod(words) {
-  for (let i = 0; i < words.length; i += 1) {
-    const word = words[i];
-    if ((word === '-x' || word === '--method') && words[i + 1] === 'post') return true;
-    if (word === '--method=post' || word === '-xpost') return true;
+  return ghApiHttpMethod(words) === 'post';
+}
+
+function ghApiHttpMethod(words) {
+  const list = Array.isArray(words) ? words : [];
+  for (let i = 0; i < list.length; i += 1) {
+    const word = list[i];
+    if ((word === '-x' || word === '--method') && list[i + 1]) return String(list[i + 1]).toLowerCase();
+    if (word.startsWith('--method=')) return word.slice('--method='.length).toLowerCase();
+    if (word.startsWith('-x') && word.length > 2 && !word.startsWith('-x=')) {
+      return word.slice(2).toLowerCase();
+    }
   }
-  return false;
+  return null;
+}
+
+function ghApiEndpoint(words) {
+  const list = Array.isArray(words) ? words : [];
+  const apiIndex = list.findIndex((word, i) => word === 'api' && list[i - 1] === 'gh');
+  if (apiIndex < 0) return null;
+  const flagsWithValue = new Set([
+    '-x', '--method', '-f', '--field', '-F', '--raw-field',
+    '-h', '--header', '--hostname', '--jq', '--input', '--cache',
+  ]);
+  for (let i = apiIndex + 1; i < list.length; i += 1) {
+    const word = list[i];
+    if (word.startsWith('-')) {
+      if (word.includes('=')) continue;
+      if (flagsWithValue.has(word)) i += 1;
+      continue;
+    }
+    return word;
+  }
+  return null;
 }
 
 function isGhApiPrCreateCommand(command) {
   const words = commandWords(command);
   if (!commandContainsSequence(words, ['gh', 'api'])) return false;
-  const hasPullsEndpoint = words.some((word) => word === '/pulls' || word.endsWith('/pulls'));
-  if (!hasPullsEndpoint) return false;
+  const method = ghApiHttpMethod(words);
+  if (method && method !== 'post') return false;
+  const endpoint = ghApiEndpoint(words);
+  if (!endpoint) return false;
+  if (/\/pulls\/\d+/.test(endpoint)) return false;
+  if (!(endpoint === '/pulls' || /\/pulls$/.test(endpoint))) return false;
   const fieldFlags = new Set(['-f', '--field', '--raw-field']);
   const hasFieldWrite = words.some((word) => (
     fieldFlags.has(word) ||
@@ -2272,8 +2304,13 @@ function recordHelperScriptWrite(toolName, toolInput = {}) {
     packageScriptTouched,
     reasons,
   };
-  trackAction(HELPER_BYPASS_ACTION, metadata);
+  trackAction(helperBypassActionKey(), metadata);
   return metadata;
+}
+
+function helperBypassActionKey() {
+  const sessionId = currentScopeSessionId();
+  return sessionId ? `${HELPER_BYPASS_ACTION}:${sessionId}` : HELPER_BYPASS_ACTION;
 }
 
 function evaluateStatefulHelperBypassGate(toolName, toolInput = {}) {
@@ -2301,7 +2338,7 @@ function evaluateStatefulHelperBypassGate(toolName, toolInput = {}) {
 
   const writeMetadata = recordHelperScriptWrite(toolName, toolInput);
   const actions = listSessionActions();
-  const recentWrite = actions[HELPER_BYPASS_ACTION];
+  const recentWrite = actions[helperBypassActionKey()];
   const recentMetadata = recentWrite && recentWrite.metadata && typeof recentWrite.metadata === 'object'
     ? recentWrite.metadata
     : null;
@@ -2808,6 +2845,10 @@ function matchGate(gate, toolName, toolInput = {}) {
           return { matched: false, matchText, affectedFiles };
         }
         if (isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
+          return { matched: false, matchText, affectedFiles };
+        }
+      } else if (gate.id === 'gh-api-pr-create-restricted') {
+        if (!isGhApiPrCreateCommand(String(toolInput.command || ''))) {
           return { matched: false, matchText, affectedFiles };
         }
       } else {
@@ -5020,6 +5061,8 @@ module.exports = {
   currentScopeSessionId,
   isRemedyToolName,
   isCommandPositionPermissionChange,
+  isGhApiPrCreateCommand,
+  helperBypassActionKey,
   parseGitPathspec,
   canonicalizeGitCommand,
   canonicalizeCommandForGates,
