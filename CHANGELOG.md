@@ -1,5 +1,233 @@
 # Changelog
 
+## 1.37.0
+
+### Minor Changes
+
+- 07929ae: feat(governance): steal the ML-SecOps AI governance operating plan
+  
+  The episode operating plan (music.youtube.com/watch?v=9aSJpOQGANM): start
+  with low-risk measurable use cases, establish visibility and ownership, add
+  continuous controls before expanding capability. All ten steps encoded as
+  deterministic enforcement primitives:
+  
+  - registerUseCase(): complete CMDB-for-AI entries with validated risk tiers
+  - classifyFlow(): sensitive data barred from unapproved models / unmanaged
+    browser sessions
+  - checkPilotScope(): constrained pilot types, exactly one success metric,
+    no production modification
+  - assessBlastRadius(): named exposure surfaces + approval-gate requirements
+  - checkMachineIdentity(): least privilege, no birthrights, rotation <= 90d
+  - eventTaxonomy(): seven reportable event types with owner/severity/containment
+  - releaseGate(): blocks regression, permission broadening, missing monitoring
+  - checkKitchen(): five-function cross-functional review group
+  - tabletopScenario(): injection -> sensitive retrieval -> privileged tool call
+- 3978f6a: feat(harness): steal Microsoft Agent Framework production-readiness harness
+  
+  The Microsoft Agent Framework claw series Part 4 (devblogs.microsoft.com/
+  agent-framework): one agent factory + three thin hosts (console/hosted/evals),
+  Purview content screening, risky-capability downgrade when hosted, and
+  two-layer evals. Mapped onto ThumbGate claw governance:
+  
+  - buildHarness(host): one capability manifest, three postures; hosted kills
+    shell + container-disk file access (external governed store only) and
+    gates CodeAct on an external sandbox
+  - screenContent(): deterministic prompt/response screen with policy
+    replacement and a metadata-only audit trail
+  - runLocalEvals(): plain-function evaluators (fast, free, CI-runnable)
+  - rollupTelemetry(): span/token/tool aggregation
+  
+  Deterministic policy logic only; no Azure/Foundry/Purview runtime.
+- f0a4811: feat(agents): steal the OpenAI Codex runbook flywheel
+  
+  The OpenAI developer blog (developers.openai.com/blog/automating-repetitive-
+  work-at-openai-with-codex): one automation that collects context, keeps
+  review/approval boundaries, and improves future runs with what earlier runs
+  learned. Mapped onto ThumbGate:
+  
+  - newRunbook()/approvePlan(): plan-before-act; execution is impossible
+    until a named human approves the plan
+  - autoReview(): automatic approval review for bounded reversible actions
+    only; consequential types (payment, deploy, delete, permission-change,
+    publish, external-email) stay on the human queue without widening
+    permission boundaries
+  - captureDecision(): decisions with choice/reason/nextTime instead of
+    vanishing into chat history
+  - recordDeadEnd(): dead ends documented so the next run skips them
+  - buildIndex()/discoverContext(): the *.index.md analog — prior runs are
+    discoverable and reusable by workflow name
+- ccf151c: feat(governance): add high-ROI dashboard metrics, GraphRAG retrieval layer, NVHBM base-die gate decisions, and AI governance operating plan. Implements deterministic multi-hop expansion, eval integrity gate, and hot-path bandwidth optimization for North Star $100/day profit target.
+- 3978f6a: feat(evals): steal Google DeepMind double-blind evaluation protocol
+  
+  TheNewStack coverage of the DeepMind pilot (with MLCommons + Singapore AI
+  Safety Institute): confidential-computing enclave keeps model weights
+  hidden from evaluators and benchmark questions hidden from the provider;
+  only scores leave. Mapped onto ThumbGate as the enclave broker:
+  
+  - sealAsset(): sha256 commitment + access token; content never crosses
+    the boundary
+  - createEnclave()/runEvaluation(): scores-only release, questions and
+    model content explicitly withheld
+  - leakageGuard(): refuses any output containing benchmark question text
+  - attest()/verifyAttestation(): HMAC hash-chain receipt; tampered scores
+    or swapped benchmarks fail verification
+  
+  Deterministic local model of the protocol; not real confidential
+  computing.
+- baadd3a: feat(context): wire Graphify-Labs AST knowledge graph rail
+  
+  Install and dogfood Graphify-Labs/graphify (PyPI graphifyy) as the local
+  code-map: `.graphify-venv` setup, AST-only `graphify-out` build, readiness
+  and staleness checks, agent skill, and query-first docs. Complements grepai;
+  does not clone a product SKU or dual-edit the lesson-store graph.
+- 95dafca: feat(retrieval): steal GraphRAG — schema-first multi-hop recall over the lesson store
+  
+  TheNewStack GraphRAG walkthrough (thenewstack.io/graphrag-multi-hop-reasoning-python):
+  basic vector RAG fails multi-hop questions; schema-first entity extraction plus
+  typed 1-hop traversal fixes it. Mapped onto the ThumbGate lesson store:
+  
+  - canonical schema (6 entity types, 5 relation types); degenerate mentions
+    ("Acme Corp" / "Acme Corporation" / "Ame") fold to one canonical node
+  - deterministic LLM-free graph build + traverseOneHop typed expansion
+    (VectorCypherRetriever analog)
+  - ingestion budget guard (costs modeled, tagged modeled=true)
+  - dumpGraph: human-readable audit surface instead of floating-point arrays
+- e77df45: feat(gates): steal NVIDIA NVHBM — base-die gate decisions off the agent's context die
+  
+  NVHBM moves the memory controller off the XPU into the HBM base die
+  (+30% bandwidth, -15% power, +25% freed die area, one standard across
+  vendors). ThumbGate maps it 1:1: gate decisions move off the agent's
+  context window into the local synchronous hook layer.
+  
+  - scripts/nvhbm-base-die-gates.js: zero-dep decision engine (escalate
+    payments, block rm -rf and secret egress, log expensive inference)
+    with a canonical multi-harness policy and vendor conformance report.
+  - All savings figures are MODELED and tagged modeled=true — no claim of
+    measured telemetry.
+
+### Patch Changes
+
+- c7dd4f9: Allowlist ThumbGate production hosts in `deny-network-egress` so the mandated `/health` curl no longer false-warns (#3702 fix #1).
+- e9c1e48: Add a local intent-vs-scope runtime doctor that maps Broadcom AgentMinder's public FORMAT (declared intent must sit inside authorized scope before a tool call) onto existing PreToolUse rails.
+  
+  Identity-only calls deny. Empty scope inventories fail closed. Model "this is safe" is not a grant. AuthZEN, VCF, and redirect gateways stay not-wired. This is not AgentMinder, not VMware Cloud Foundation, and not a live enterprise fabric. Script is not packed.
+- 7c1b6e4: Add `test:all`, an aggregating suite runner, and `lint:dormant-requires`, a dependency-free dead-import detector.
+  
+  `npm test` chains 360 commands with `&&`, so the first failing suite hides every later one — measured on `d0bb3768`, 8 suites fail but `npm test` halts at `test:ops` (chain position 23 of 374) and reports one. Chain membership is also hand-maintained and had drifted: 46 `test:*` scripts were defined but never executed, including `test:redteam`, `test:stealth-memory-injection`, `test:mcp-policy`, `test:reward-hacking-guardrails` and `test:proactive-agent-eval-guardrails` — 33 assertions that passed on demand while guarding nothing.
+  
+  `scripts/test-all.js` discovers suites instead of listing them, runs them in parallel and reports every failure, marking previously-unchained suites `[+]`. `scripts/find-dormant-requires.js` reports require bindings never referenced again; it is dependency-free because the repo has no eslint, prettier or lint script.
+  
+  Also removes `test:copilot-instructions`, which still points at a test file that does not exist on `main`. Successor of #3703: rebased onto current `main` without replacing the hand-maintained `npm test` chain (that would hide 26 newer suites). `test:all` remains the aggregator; `test:tooling-scripts` is appended to `npm test`.
+- a69fbcf: Run async-job command stages with quote-aware argv parsing and `shell: false` (no `sh -lc` / `cmd /c`), rejecting unquoted shell metacharacters.
+- 55e6e8f: Add a propose-only break-glass `--gates` doctor for issue #3702 leftover: emit a unified diff that sets named gates to warn, never write `config/gates/default.json`, never live-apply, never pack.
+- f7ca7be: Add evidence-ranked business-function agent pilots and fail-closed, typed handoff governance for cross-function workflows.
+- 8b16f3e: fix(codex-runbook): resolve CodeRabbit review threads on runbook flywheel
+  
+  - Implement --dry-run and --solve CLI modes in main() via parseCliArgs()
+  - Normalize plan steps to stable identifiers via stepId() helper; executeStep
+    matches by id instead of object reference
+  - Validate runbook state before allowing closeRunbook()
+  - Store full decision/dead-end records in buildIndex/index and return
+    matching records from discoverContext()
+- 7940c49: Bump @anthropic-ai/sdk from 0.117.1 to 0.120.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 048fa9e: Bump @changesets/cli from 3.0.0 to 3.0.1 to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 7c06f4f: Bump @google/genai from 2.17.1 to 2.18.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 8397cf6: Bump @cloudflare/workers-types from 5.20260817.1 to 5.20260823.1 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 7ea6e40: Bump protobufjs from 8.7.2 to 8.8.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- d38c20c: Bump js-yaml from 5.3.0 to 5.4.1 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 7c06f4f: Bump @google/genai from 2.17.1 to 2.19.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 8aae27a: Dependabot successor for #3799: bump @lancedb/lancedb to ^0.38.0 on current main.
+- fde06b0: Dependabot successor for #3800: bump @anthropic-ai/sdk to ^0.122.0 on current main.
+- 6086dfd: Bump stripe from 22.5.0 to 22.6.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 176528f: Bump stripe from 22.5.0 to 22.6.0 in /workers to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 72a0e79: Bump @types/node from 26.2.0 to 26.4.0 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- dbda34f: Bump tsx from 4.23.12 to 4.23.13 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 8397cf6: Bump @cloudflare/workers-types from 5.20260823.1 to 5.20260831.1 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- c9f7bbf: feat(context): honest ExplainX trending ingest + /show-me visual answers
+  
+  Parse live explainx.ai/trending scores, map onto existing rails, fail closed
+  on empty HTML. Add house /show-me skill. Do not clone ExplainX or the theater
+  rag-engine.
+- 7957fd0: fix(evals/security): harden double-blind evaluation protocol against seal substitution and incomplete scorer output
+  
+  - runEvaluation now validates that model and benchmark seals match the enclave commitment before scoring, preventing post-approval seal substitution attacks
+  - scoreFn must return exactly one result per benchmark question, or runEvaluation throws before computing passRate
+  - Remove hardcoded attestation key (CWE-321) — both attest() and verifyAttestation() now require a non-empty caller-provided attestationKey and throw on missing/empty/whitespace keys
+  - Private content store — asset content stored in a private WeakMap instead of enumerable _content; seals expose only metadata via JSON.stringify
+- cc4f1dd: fix(governance): commit guard null-check for compiled guards and graphrag frontier deduplication
+  
+  - Guard against null/non-object entries in the compiled guards array before
+    normalization, preventing a crash that would hard-block all agent actions.
+  - Replace naive BFS frontier push with a queuedInFrontier map that keeps only
+    the strongest pending entry per node, preserving visited tracking and
+    propagating improved state in place.
+  - Preserve baseline single-hop top-K seed results before appending graph-only
+    candidates, upholding the "never worse than single-hop" contract.
+- ab23224: fix(sentinel): resolve degenerate classifier circuit breaker, probe allowlist, and wire Hermes hosted routes
+  
+  - Added MIN_HOLDOUT_ACCURACY (0.50) circuit breaker to intervention-policy. When holdout accuracy falls below chance level, predictions are disabled rather than issuing false deny verdicts (fixes #3595).
+  - Added isVersionOrProbeCommand allowlist in workflow-sentinel to immediately allow harmless discovery probes.
+  - Enhanced matchSelfProtectHardFloor in gates-engine to inspect redirection targets and check command token approvals.
+  - Mounted hosted HermesPlatformProtocol and HermesSyncPlane API routes on /v1/hermes/* in src/api/server.js and exported from src/index.js (fixes #3593).
+  - Added integration tests in tests/hermes-hosted-server.test.js.
+- de85506: Treat Gitar status as optional in merge-quality checks so pending Gitar no longer blocks pr:manage.
+- 21b42a6: Measure ThumbGate GitHub star growth with GitHub's privacy-safe `stargazers/history` REST endpoint (weekly counts, no stargazer identities) and surface live star + npm-download badges on the README.
+  
+  `npm run stars:history` parses weekly buckets, refuses listing payloads that include logins, and never treats stars as npm installs or revenue. Complements the existing GitHub traffic poller snapshot; does not clone star-history.com.
+  
+  README now leads with usage over star count (npm, Marketplace `uses:`, clones) so the repo can be judged without a pitch deck. Adds Contributor Covenant + Issue contact links so GitHub Community health is complete.
+  
+  `npm run github:achievements` inventories public profile badges honestly and refuses YOLO/Quickdraw/fake-coauthor farm recipes from achievement guides. Does not clone 4xmen/get-github-achievements.
+- f832deb: Add allowlist-bridge-honesty (GitLab 2026-09 FORMAT steal): treat allowlisted package registries, proxies, and Hugging Face hosts as hops rather than trust boundaries; deny credentialed requests on those hops; keep observe-mode from promoting proxies onto allowHosts; classify hook/CI/MCP writes as trust-handoff. Does not clone GitLab Duo.
+- 2d507d9: Add InfoQ 2026-09-08 FORMAT steal doctors: gist-prompt-budget (instruction-pack token cap, no learned tokens), workload-identity-honesty (PAT fallback + refuse long-lived cloud keys), and config-strict-parse (JSON required-keys, not a KYAML dialect). Repo-local; does not bump the public npm bundle.
+- 35d1ca2: Steal CyberStrikeAI intent→governed-execution FORMAT onto existing rails via `intent-governed-execution` doctor — classify / authorize / gate / HITL / bounded execute / evidence memory — without cloning CyberStrike, Eino, WebShell, or C2.
+- a9ac9ab: Match GitHub PR-create and helper-bypass gates on the action (POST to /pulls, current session) instead of substring /pulls + -f or a sibling session's scratch file (#3702).
+- 6a36809: Steal JIT-Agent (arXiv:2608.25593) four-module harness FORMAT onto existing rails via `jit-harness-compose` doctor — memory / planning / action / capability — without training or downloading JIT-Agent.
+- dd85d73: Add a local critic/reviewer doctor that maps Google Mantis FORMAT onto existing scanner and PreToolUse rails: do not auto-FP low-risk findings, parse the gh api action from the positional path (not field-value substrings), and require sandbox/test reproduction before promoting a high finding to a rule.
+  
+  Google Mantis, the 85% token-cut claim, and LLM adjudication stay not-wired. Script is not packed. Does not dual-edit config/gates/default.json.
+- Unstick npm publish after v1.36.1 tag/SHA ambiguity left 1.36.1 unpublished; ship tip as 1.36.2.
+- 565c33c: Add nvidia-specdecode-al-doctor: fail-closed AL/D speculative-decoding checks using speedup ≤ AL/(1+ρD), attention D=128/G-1, and tile alignment. Extends deepseek-v4-runtime-guardrails + checkpoint-speculative-decoding-acceptance. Process steal from NVIDIA co-design blog — not TensorRT/EAGLE/Model-Optimizer.
+- ba30e44: Add a local AI-identity checklist doctor and an always-fused knowledge-graph retrieval pipeline.
+  
+  The identity scanner maps Okta's public agent-identity format onto existing ThumbGate surfaces: unique adapter id, human owner, purpose, and shadow AI as an unregistered adapter directory. CIBA, token vaulting, and universal logout stay not-wired.
+  
+  The graph fuser (TDS Cekikj process steal) always runs search then 1-2 hop traversal then RRF, treats time as a filter, declines to settle CONTRADICTS edges, and uses ablation as the acceptance test. This is not Okta for AI Agents, not Cosmos Gremlin, and not a live identity or insurance corpus.
+  
+  Successor of #3791/#3651 (Okta identity + fused retrieval). Not #3650 (lesson-store graph — do not dual-edit). Unique files only on tip after #3792. Ablation already fail-closes on 6 cases / 95% recall / 15% precision / 100% per-case recall; malformed `validFrom`/`validTo` fail closed. Scripts are not packed (same as the original PR).
+- b058875: Steal OpenUI's catalog-compose-only / root-first / repair-before-claim FORMAT onto ThumbGate honesty rails.
+  
+  Adds `openui-catalog-compose-honesty` doctor + CLI, Agent Honesty gate templates (`require-catalog-compose-only`, `require-repair-before-compose-claim`), and skill. Does not install `@openuidev/cli`, OpenUI Gateway, or Thesys Observability, and does not ship a generative-UI SKU.
+- dc7e537: Add package-manager-honesty-doctor: lockfile/CI parity + fail-closed manager switches (InfoQ pnpm 12 process steal). Stays on npm; does not migrate to pnpm. Adds require-package-manager-lockfile-ci-parity and checkpoint-package-manager-switch gates.
+- b607eeb: Radware/Bot-Manager-inspired PreToolUse defense: ShadowLeak + ZombieAgent blocks, suspicious-bot challenge tier, and a live rate circuit breaker wired through harness auto-selection (singular gate.pattern contract).
+- 9a4aeb6: fix(agents): restore documented `bin/agent-loop` health entrypoint
+  
+  Adds the fail-closed session-start health command required by #3670 and
+  wires it into AGENTS.md / CLAUDE.md Context Engineering so agents stop
+  hitting exit 127 on the documented entrypoint.
+- 74b6311: Fix sequence-guard task-scope tests to use session-scoped governance via setTaskScope (#3682).
+- 5fa6e5a: Add a local skill-library compactness doctor that maps SkillGLoW's public FORMAT (store reusable procedures, not every past task; admit a prior only when measured execution does not degrade the library) onto existing feedback-to-rules and lesson-canonical rails.
+  
+  A single generic document collapses. A flat per-task pool inflates. Instance-bound priors deny. Model "this is better" is not a grant. SkillGLoW / GLoW / ALFWorld stay not-wired. This is not SkillGLoW and not a 17.2-point claim. Script is not packed.
+- 92cdc5c: Reduce spend-guard false positives for file content and distant prose while
+  preserving checkout, payment API, interactive purchase, and tampering blocks.
+- 75712df: feat(memory): steal Supermemory Memory-vs-RAG routing into local lesson scope
+  
+  Add containerTag encode/decode, fail-closed memory-vs-RAG routing, static/dynamic
+  lesson profiles, and dreaming promotion modes. Process steal only — not a
+  Supermemory SaaS clone.
+- 18f5cb8: Add a narrow synthetic customer panel that ranks three existing public landing-page angles for qualified install intent.
+  
+  The runner stores 10 structured personas with public evidence, simulates ad/compare/pricing contexts, and prints a hypothesized ranking plus a 10–20% traffic-split recommendation. Simulated ranks stay modeled-not-measured until observed holdout rankings pass; this is not a conversion-lift claim and not a digital twin of every visitor.
+  
+  Successor of #3649: rebased onto current `main` without taking the stale `package.json` test-chain rewrite. `test:synthetic-customer-panel` is appended to `npm test`. The new script is not packed (same as the original PR), so the public bundle ceiling is unchanged.
+- 6944239: Add a local Unicode TAG-block normalizer that maps Microsoft/Register ASCII-smuggling FORMAT onto existing match rails: strip U+E0000–U+E007F before keyword, regex, or gate matching so `fun⟨U+E0020⟩ding` no longer evades `funding`.
+  
+  Hidden tag-encoded prompts fold to ASCII and deny. Matching before strip fails closed. Empty `--decide` is not a checkout. Microsoft Defender campaign volume stays not-wired. Script is not packed. Does not dual-edit config/gates/default.json.
+- e19210d: Disable Vercel Git auto-deploys (hobby rate-limit noise) and allow unpublished npm ownership on Railway post-deploy checks between releases.
+- 0655f00: Record that the Vercel thumbgate project is Git-disconnected so hobby rate-limit statuses stop on new pushes.
+- a222490: Steal zg (zvec-grep) four-route local search FORMAT onto existing rails via `workspace-search-route` doctor — ripgrep / BM25 / vector / hybrid RRF / Graphify — without installing `@zvec/zvec-grep`.
+
 ## 1.36.1
 
 ### Patch Changes
