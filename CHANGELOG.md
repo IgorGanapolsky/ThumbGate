@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.37.1
+
+### Patch Changes
+
+- Unstick unpublished 1.37.0: tip moved past tag v1.37.0@da9a8e69 after OIDC publish workflow landed; bump so publish-decision can tag+publish a matching commit via trusted publisher OIDC.
+
 ## 1.37.0
 
 ### Minor Changes
