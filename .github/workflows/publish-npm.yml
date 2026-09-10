@@ -48,17 +48,10 @@ jobs:
           set -euo pipefail
           # Trusted publishing needs npm >= 11.5.1. Do not jump to npm 12 here:
           # v12 flipped install-script defaults (GitHub changelog 2026-07-08).
+          # Parse patch: npm 11.5.0 is below the OIDC floor (see scripts/npm-oidc-cli-floor.js).
           current="$(npm -v)"
           echo "npm ${current}"
-          node -e '
-            const { execFileSync } = require("node:child_process");
-            const v = execFileSync("npm", ["-v"], { encoding: "utf8" }).trim();
-            const [maj, min] = v.split(".").map(Number);
-            if (!(Number.isFinite(maj) && (maj > 11 || (maj === 11 && min >= 5)))) {
-              console.error("trusted publishing needs npm >= 11.5.1, got", v);
-              process.exit(2);
-            }
-          '
+          node scripts/npm-oidc-cli-floor.js --version="$current"
       - run: npm ci --onnxruntime-node-install-cuda=skip
       - name: Run release safety checks
         run: |

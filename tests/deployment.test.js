@@ -752,7 +752,8 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /package-manager-cache:\s*false/);
   assert.doesNotMatch(workflow, /cache:\s*'npm'/);
   assert.match(workflow, /Require npm CLI for OIDC trusted publishing/);
-  assert.match(workflow, /trusted publishing needs npm >= 11\.5\.1/);
+  assert.match(workflow, /Trusted publishing needs npm >= 11\.5\.1/);
+  assert.match(workflow, /node scripts\/npm-oidc-cli-floor\.js --version=/);
   assert.match(workflow, /token_fallback:/);
   assert.match(workflow, /GAT bypass-2FA direct publish is scheduled to die Jan 2027/);
   assert.match(workflow, /Allow npm publish/);
