@@ -11,6 +11,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      token_fallback:
+        description: 'Emergency NODE_AUTH_TOKEN fallback. GAT bypass-2FA direct publish dies Jan 2027 — prefer OIDC.'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -35,8 +40,25 @@ jobs:
           # npm provenance on GitHub Actions is most reliable on current LTS.
           node-version: '24.x'
           registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
+          # Trusted publishing: never cache the package manager in release builds
+          # (docs.npmjs.com/trusted-publishers, 2026-09-04).
+          package-manager-cache: false
+      - name: Require npm CLI for OIDC trusted publishing
+        run: |
+          set -euo pipefail
+          # Trusted publishing needs npm >= 11.5.1. Do not jump to npm 12 here:
+          # v12 flipped install-script defaults (GitHub changelog 2026-07-08).
+          current="$(npm -v)"
+          echo "npm ${current}"
+          node -e '
+            const { execFileSync } = require("node:child_process");
+            const v = execFileSync("npm", ["-v"], { encoding: "utf8" }).trim();
+            const [maj, min] = v.split(".").map(Number);
+            if (!(Number.isFinite(maj) && (maj > 11 || (maj === 11 && min >= 5)))) {
+              console.error("trusted publishing needs npm >= 11.5.1, got", v);
+              process.exit(2);
+            }
+          '
       - run: npm ci --onnxruntime-node-install-cuda=skip
       - name: Run release safety checks
         run: |
@@ -148,11 +170,14 @@ jobs:
         if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.publish_npm == 'true') || (github.event_name == 'release' && steps.npm.outputs.published == 'false')
         # OIDC-first (id-token: write above). A stale classic NPM_TOKEN returns
         # E404 "Not found" and masks trusted publishing. Only inject NODE_AUTH_TOKEN
-        # when THUMBGATE_NPM_TOKEN_FALLBACK=1 is set on the workflow_dispatch input
-        # or repo variable — default is OIDC-only.
+        # when workflow_dispatch token_fallback=true or vars.THUMBGATE_NPM_TOKEN_FALLBACK=1.
+        # Default is OIDC-only. GAT bypass-2FA direct publish is scheduled to die Jan 2027
+        # (github.blog/changelog/2026-07-31-restricting-npm-bypass-2fa-granular-access-tokens).
+        # Configs created after 2026-09-03 default to npm stage publish unless
+        # "Allow npm publish" is checked on the Trusted Publisher form.
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN_FALLBACK: ${{ vars.THUMBGATE_NPM_TOKEN_FALLBACK }}
+          NPM_TOKEN_FALLBACK: ${{ github.event.inputs.token_fallback == 'true' && '1' || vars.THUMBGATE_NPM_TOKEN_FALLBACK }}
           NPM_TAG: ${{ steps.plan.outputs.npm_tag || 'latest' }}
         run: |
           set -euo pipefail
