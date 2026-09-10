@@ -23,7 +23,9 @@ const ERROR_PREFIX = 'trusted publishing needs npm >= 11.5.1';
 function parseNpmVersion(raw) {
   const text = String(raw || '').trim().replace(/^v/i, '');
   if (!text) return null;
-  const match = /^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/.exec(text);
+  // Stable X.Y.Z plus optional build metadata. Prerelease (11.5.1-rc.0) is below
+  // the OIDC floor even when the numeric triple matches.
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(text);
   if (!match) return null;
   const major = Number(match[1]);
   const minor = Number(match[2]);

@@ -91,6 +91,10 @@ test('OIDC npm CLI floor rejects 11.5.0 and accepts 11.5.1+', () => {
   assert.equal(meetsNpmOidcCliFloor('11.4.2'), false);
   assert.equal(meetsNpmOidcCliFloor('10.9.2'), false);
   assert.equal(meetsNpmOidcCliFloor('11.5'), false);
+  assert.equal(meetsNpmOidcCliFloor('11.5.1-rc.0'), false);
+  assert.equal(meetsNpmOidcCliFloor('11.5.1-beta'), false);
+  assert.equal(meetsNpmOidcCliFloor('12.0.0-rc.1'), false);
+  assert.equal(meetsNpmOidcCliFloor('11.5.1+build.1'), true);
   assert.equal(meetsNpmOidcCliFloor('not-a-version'), false);
   assert.equal(parseNpmVersion('11.5.0').patch, 0);
   assert.equal(evaluateNpmOidcCliFloor('11.5.0').ok, false);
@@ -109,4 +113,10 @@ test('OIDC npm CLI floor helper exits 2 for 11.5.0', () => {
   });
   assert.equal(pass.status, 0);
   assert.match(pass.stdout, /meets OIDC floor 11\.5\.1/);
+
+  const pre = spawnSync(process.execPath, [FLOOR_CLI, '--version=11.5.1-rc.0'], {
+    encoding: 'utf8',
+  });
+  assert.equal(pre.status, 2);
+  assert.match(pre.stderr, /got 11\.5\.1-rc\.0/);
 });
