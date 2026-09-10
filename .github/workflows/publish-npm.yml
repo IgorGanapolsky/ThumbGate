@@ -146,9 +146,27 @@ jobs:
           git push origin "v${VERSION}"
       - name: Publish npm package
         if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.publish_npm == 'true') || (github.event_name == 'release' && steps.npm.outputs.published == 'false')
-        run: npm publish --tag "${{ steps.plan.outputs.npm_tag || 'latest' }}" --provenance
+        # OIDC-first (id-token: write above). A stale classic NPM_TOKEN returns
+        # E404 "Not found" and masks trusted publishing. Only inject NODE_AUTH_TOKEN
+        # when THUMBGATE_NPM_TOKEN_FALLBACK=1 is set on the workflow_dispatch input
+        # or repo variable — default is OIDC-only.
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN_FALLBACK: ${{ vars.THUMBGATE_NPM_TOKEN_FALLBACK }}
+          NPM_TAG: ${{ steps.plan.outputs.npm_tag || 'latest' }}
+        run: |
+          set -euo pipefail
+          if [ "${NPM_TOKEN_FALLBACK:-}" = "1" ] && [ -n "${NPM_TOKEN:-}" ]; then
+            export NODE_AUTH_TOKEN="${NPM_TOKEN}"
+            echo "Using NPM_TOKEN fallback (THUMBGATE_NPM_TOKEN_FALLBACK=1)."
+          else
+            unset NODE_AUTH_TOKEN || true
+            echo "Publishing via GitHub Actions OIDC trusted publisher (no NODE_AUTH_TOKEN)."
+          fi
+          if ! npm publish --tag "${NPM_TAG}" --provenance; then
+            echo "::error::npm publish failed. Configure Trusted Publisher on npmjs.com for package thumbgate → GitHub Actions → IgorGanapolsky/ThumbGate / publish-npm.yml (WebAuthn once), then re-run. Do not pin unpublished versions in customer emails (see thumbgate-npm-pin-honesty)."
+            exit 1
+          fi
       - name: Verify published npm runtime smoke
         if: ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.publish_npm == 'true') || (github.event_name == 'release' && steps.npm.outputs.published == 'false')
         env:

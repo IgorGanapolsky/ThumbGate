@@ -745,6 +745,8 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /group:\s*publish-npm-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*false/);
   assert.match(workflow, /permissions:\s+contents:\s+write\s+id-token:\s+write/s);
+  assert.match(workflow, /Publishing via GitHub Actions OIDC trusted publisher/);
+  assert.match(workflow, /THUMBGATE_NPM_TOKEN_FALLBACK/);
   assert.match(workflow, /node-version:\s*'24\.x'/);
   assert.match(workflow, /timeout-minutes:\s*25/);
   assert.match(workflow, /cache:\s*'npm'/);
@@ -780,7 +782,9 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
     /Treating this no-op as release-audited until the next versioned publish lands\./,
     'the unbounded exemption must not return',
   );
-  assert.match(workflow, /npm publish --tag "\$\{\{\s*steps\.plan\.outputs\.npm_tag \|\| 'latest'\s*\}\}" --provenance/);
+  assert.match(workflow, /NPM_TAG:\s*\$\{\{\s*steps\.plan\.outputs\.npm_tag \|\| 'latest'\s*\}\}/);
+  assert.match(workflow, /npm publish --tag "\$\{NPM_TAG\}" --provenance/);
+  assert.match(workflow, /unset NODE_AUTH_TOKEN/);
   assert.match(workflow, /--install-attempts 12 --install-delay-ms 10000/);
 });
 
