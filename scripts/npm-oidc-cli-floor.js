@@ -9,11 +9,12 @@
  *
  * CI-only. Not added to package.json files (not a packaged runtime).
  *
- *   node scripts/npm-oidc-cli-floor.js
  *   node scripts/npm-oidc-cli-floor.js --version=11.5.0
+ *
+ * Caller supplies the version (workflow: `npm -v`). This helper does not spawn
+ * `npm` from PATH (Sonar S4036).
  */
 
-const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 
 const FLOOR = { major: 11, minor: 5, patch: 1 };
@@ -55,10 +56,6 @@ function parseCliArgs(argv = []) {
   return options;
 }
 
-function readInstalledNpmVersion() {
-  return execFileSync('npm', ['-v'], { encoding: 'utf8' }).trim();
-}
-
 function evaluateNpmOidcCliFloor(raw) {
   const parsed = parseNpmVersion(raw);
   const ok = compareNpmVersion(parsed) >= 0;
@@ -74,10 +71,10 @@ function evaluateNpmOidcCliFloor(raw) {
 }
 
 function printHelp() {
-  process.stdout.write(`Usage: node scripts/npm-oidc-cli-floor.js [--version=X.Y.Z]
+  process.stdout.write(`Usage: node scripts/npm-oidc-cli-floor.js --version=X.Y.Z
 
 Fail closed unless npm >= ${FLOOR_LABEL} (OIDC trusted publishing).
-npm 11.5.0 is rejected. Omit --version to read \`npm -v\`.
+npm 11.5.0 and prereleases are rejected. --version is required (no PATH spawn).
 `);
 }
 
@@ -87,7 +84,11 @@ function runCli(argv = process.argv.slice(2)) {
     printHelp();
     return 0;
   }
-  const version = args.version == null ? readInstalledNpmVersion() : args.version;
+  if (args.version == null) {
+    process.stderr.write(`${ERROR_PREFIX}, got (missing --version)\n`);
+    return 2;
+  }
+  const version = args.version;
   const result = evaluateNpmOidcCliFloor(version);
   if (result.ok) {
     process.stdout.write(`npm ${result.version} meets OIDC floor ${FLOOR_LABEL}\n`);

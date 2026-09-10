@@ -25,6 +25,7 @@ const { spawnSync } = require('node:child_process');
 const ROOT = path.join(__dirname, '..');
 const WORKFLOW = path.join(ROOT, '.github', 'workflows', 'publish-npm.yml');
 const FLOOR_CLI = path.join(ROOT, 'scripts', 'npm-oidc-cli-floor.js');
+const FLOOR_SRC = fs.readFileSync(FLOOR_CLI, 'utf8');
 const {
   meetsNpmOidcCliFloor,
   parseNpmVersion,
@@ -81,6 +82,11 @@ test('release job disables package-manager cache and requires npm >= 11.5.1', ()
     /maj === 11 && min >= 5/,
     'must not accept npm 11.5.0 via major.minor-only compare',
   );
+  assert.doesNotMatch(
+    FLOOR_SRC,
+    /execFileSync\(\s*['"]npm['"]/,
+    'helper must not spawn npm from PATH (Sonar S4036)',
+  );
 });
 
 test('OIDC npm CLI floor rejects 11.5.0 and accepts 11.5.1+', () => {
@@ -119,4 +125,8 @@ test('OIDC npm CLI floor helper exits 2 for 11.5.0', () => {
   });
   assert.equal(pre.status, 2);
   assert.match(pre.stderr, /got 11\.5\.1-rc\.0/);
+
+  const missing = spawnSync(process.execPath, [FLOOR_CLI], { encoding: 'utf8' });
+  assert.equal(missing.status, 2);
+  assert.match(missing.stderr, /missing --version/);
 });
