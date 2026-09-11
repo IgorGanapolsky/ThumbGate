@@ -146,6 +146,10 @@ const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
 const HELPER_BYPASS_ACTION = 'helper_script_modified';
 const KNOWLEDGE_ENTROPY_THRESHOLD = 0.7;
+// Issue #3689: do not inject lessons that only barely matched. Retrieval already
+// filters >0.1 for ranking; injection requires a higher bar so low-relevance
+// memories cannot ride along with an entropy disclaimer.
+const MIN_LESSON_INJECTION_RELEVANCE = 0.75;
 // Generous character bound: keeps every affected file for realistic actions while still
 // preventing an unbounded haystack. Chosen over a file-count cap, which dropped targets.
 const MEMORY_GUARD_MAX_SERIALIZED_CHARS = 200000;
@@ -4452,7 +4456,11 @@ async function buildRelevantLessonContextAsync(toolName, toolInput) {
  * negative lesson present is relevant enough to surface.
  */
 function formatNegativeLessonContext(lessons) {
-  const negative = (lessons || []).filter((l) => l.signal === 'negative');
+  const negative = (lessons || []).filter((l) => {
+    if (l.signal !== 'negative') return false;
+    const score = Number(l.rerankedScore ?? l.relevanceScore ?? 0);
+    return score >= MIN_LESSON_INJECTION_RELEVANCE;
+  });
   if (negative.length === 0) return null;
 
   const formatted = negative.map((l) => {
@@ -4477,8 +4485,10 @@ function isKnowledgeConflictHardBlockAction(toolName, toolInput = {}) {
 }
 
 function buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy) {
-  const lessonContext = formatNegativeLessonContext(lessons);
-  const message = `Knowledge conflict warning: retrieved lessons disagree for this action (entropy ${entropy}). Treat the reminders below as cautionary context, but do not stop unrelated work solely because memory is noisy.`;
+  // Issue #3689: high entropy means the scorer disagrees with itself. Do NOT
+  // inject a disclaimer + noisy lessons into unrelated tool calls — suppress.
+  // Strict mode may still hard-block destructive/external side effects.
+  const message = `Knowledge conflict: retrieved lessons disagree for this action (entropy ${entropy}).`;
 
   if (isKnowledgeConflictHardBlockAction(toolName, toolInput)) {
     recordStat('retrieval_entropy_high', 'block', null, { toolName, toolInput });
@@ -4490,8 +4500,9 @@ function buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy) {
     };
   }
 
-  recordStat('retrieval_entropy_high', 'warn', null, { toolName, toolInput });
-  return mergeContextStrings(`[ThumbGate] ${message}`, lessonContext);
+  // Count as log (not warn): we intentionally did not inject context.
+  recordStat('retrieval_entropy_high', 'log', null, { toolName, toolInput });
+  return null;
 }
 
 function extractActionContext(toolName, toolInput) {
