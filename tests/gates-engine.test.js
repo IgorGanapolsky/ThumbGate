@@ -1056,31 +1056,62 @@ async function withConflictingLessonRetrieval(fn) {
   }
 }
 
-test('knowledge conflict warns instead of hard-blocking safe credential chmod', async () => {
+test('knowledge conflict suppresses lesson injection on safe credential chmod (#3689)', async () => {
   cleanupStateFiles();
   await withConflictingLessonRetrieval(() => {
     const output = JSON.parse(run({
       tool_name: 'Bash',
       tool_input: { command: 'chmod 600 ~/.config/gemini/key.json' },
     }));
-    assert.notEqual(output.hookSpecificOutput.permissionDecision, 'deny');
-    assert.match(output.hookSpecificOutput.additionalContext, /Knowledge conflict warning/);
-    assert.match(output.hookSpecificOutput.additionalContext, /do not stop unrelated work solely because memory is noisy/);
+    assert.notEqual(output.hookSpecificOutput?.permissionDecision, 'deny');
+    const ctx = output.hookSpecificOutput?.additionalContext || '';
+    assert.doesNotMatch(ctx, /Knowledge conflict warning/);
+    assert.doesNotMatch(ctx, /Past mistakes relevant to this action/);
   });
   cleanupStateFiles();
 });
 
-test('knowledge conflict warns instead of hard-blocking package setup', async () => {
+test('knowledge conflict suppresses lesson injection on package setup (#3689)', async () => {
   cleanupStateFiles();
   await withConflictingLessonRetrieval(async () => {
     const output = JSON.parse(await runAsync({
       tool_name: 'Bash',
       tool_input: { command: 'pip install paperbanana' },
     }));
-    assert.notEqual(output.hookSpecificOutput.permissionDecision, 'deny');
-    assert.match(output.hookSpecificOutput.additionalContext, /Knowledge conflict warning/);
+    assert.notEqual(output.hookSpecificOutput?.permissionDecision, 'deny');
+    const ctx = output.hookSpecificOutput?.additionalContext || '';
+    assert.doesNotMatch(ctx, /Knowledge conflict warning/);
   });
   cleanupStateFiles();
+});
+
+
+test('low-relevance negative lessons are not injected (#3689)', async () => {
+  cleanupStateFiles();
+  const retrieval = require('../scripts/lesson-retrieval');
+  const originalRetrieve = retrieval.retrieveRelevantLessons;
+  const originalEntropy = retrieval.calculateRetrievalEntropy;
+  retrieval.retrieveRelevantLessons = () => ([{
+    id: 'weak',
+    title: 'MISTAKE: weakly related',
+    content: 'How to avoid: ignore me',
+    signal: 'negative',
+    relevanceScore: 0.2,
+  }]);
+  retrieval.calculateRetrievalEntropy = () => 0.1;
+  try {
+    const output = JSON.parse(run({
+      tool_name: 'Bash',
+      tool_input: { command: 'echo hello' },
+    }));
+    const ctx = output.hookSpecificOutput?.additionalContext || '';
+    assert.doesNotMatch(ctx, /Past mistakes relevant to this action/);
+    assert.doesNotMatch(ctx, /weakly related/);
+  } finally {
+    retrieval.retrieveRelevantLessons = originalRetrieve;
+    retrieval.calculateRetrievalEntropy = originalEntropy;
+    cleanupStateFiles();
+  }
 });
 
 test('strict knowledge conflict mode can still block external destructive side effects', async () => {
