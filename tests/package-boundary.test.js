@@ -492,8 +492,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 532 -> 534: allowlist-bridge-honesty.js + gitlab-sandbox-allowlist-not-trust skill.
   // 534 -> 536: openui-catalog-compose-honesty.js + skill — OpenUI FORMAT steal.
   // 536 -> 538: cobble-hot-store-split.js + skill — CobbleDB FORMAT steal.
-    manifest.fileCount <= 538,
-    `npm package should stay <= 538 files, got ${manifest.fileCount}`
+  // 538 -> 540: token-shunt-honesty.js + skill — Spotify Portal/shunt FORMAT.
+    manifest.fileCount <= 540,
+    `npm package should stay <= 540 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -707,8 +708,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.40 MB -> 8.42 MB (2026-09-16): cobble-hot-store-split.js + skill
   //   (CobbleDB three-plane FORMAT steal). Measured 8,409,898 unpacked — 9,898
   //   over the old cap. Narrow headroom retained.
-    manifest.unpackedSize <= 8_420_000,
-    `npm package should stay <= 8.42 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.42 MB -> 8.44 MB (2026-09-16): token-shunt-honesty.js + skill.
+    manifest.unpackedSize <= 8_440_000,
+    `npm package should stay <= 8.44 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

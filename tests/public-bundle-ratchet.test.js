@@ -240,7 +240,9 @@ const path = require('node:path');
 //            (catalog-compose-only, root-first, repair-before-claim; not @openuidev).
 // 536 → 538: cobble-hot-store-split.js + skill — CobbleDB three-plane FORMAT
 //            steal onto existing lesson rails (not RocksDB/YTsaurus).
-const BASELINE_FILE_COUNT = 538;
+// 538 → 540: token-shunt-honesty.js + skill — Spotify Portal/shunt FORMAT
+//            (untargeted Read intercept; not shunt@portal).
+const BASELINE_FILE_COUNT = 540;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
