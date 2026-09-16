@@ -1,0 +1,19 @@
+{
+  "writes": [
+    { "source": "processing", "plane": "durable", "keys": ["lesson-1", "lesson-2"] },
+    { "source": "export", "plane": "delivery", "keys": ["lesson-1"] },
+    { "source": "ingest", "plane": "hot", "keys": ["lesson-1"] }
+  ],
+  "reads": [
+    {
+      "keys": ["lesson-1", "lesson-2", "lesson-3", "lesson-4", "lesson-5"],
+      "mode": "batched",
+      "hedgeMs": 15
+    }
+  ],
+  "hotSubset": { "policy": "promoted_matchable", "keys": ["lesson-1"] },
+  "versions": [
+    { "key": "lesson-1", "representations": ["embed-v1", "embed-v2"], "overwrite": false }
+  ],
+  "transactionsOnHot": false
+}

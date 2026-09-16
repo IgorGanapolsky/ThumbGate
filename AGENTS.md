@@ -119,6 +119,17 @@ npm run memory:vs-rag -- --query "what did we decide?" --entity entity-id --proj
 
 Details: [`docs/agents/memory-vs-rag.md`](./docs/agents/memory-vs-rag.md).
 
+## Cobble hot-store split (honest)
+
+Separate durable lesson state, batched promotion, and query-time MultiGet. Map onto existing rails; never clone CobbleDB / RocksDB / YTsaurus. Do not quote Perplexity 5× / 20% as ours.
+
+```bash
+npx thumbgate cobble-hot-store-split --json
+npx thumbgate cobble-hot-store-split --trace=tests/fixtures/cobble-hot-store-split-coupled.json --json
+```
+
+Skill: `.agents/skills/cobble-hot-store-compare-not-clone/SKILL.md` (`/cobble-hot-store-compare-not-clone`). Details: `docs/agents/cobble-hot-store-split.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
