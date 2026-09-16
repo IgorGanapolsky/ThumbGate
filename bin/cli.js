@@ -2692,6 +2692,38 @@ function jitHarnessCompose() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function agentContextArtifact() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildAgentContextArtifactReport,
+    formatAgentContextArtifactReport,
+    normalizeBoolean,
+  } = require(path.join(PKG_ROOT, 'scripts', 'agent-context-artifact'));
+  const json = normalizeBoolean(args.json);
+  const strict = normalizeBoolean(args.strict);
+  const map = normalizeBoolean(args.map) || normalizeBoolean(args['map-only']);
+  const cloneAce = normalizeBoolean(args['clone-ace']);
+  const report = buildAgentContextArtifactReport({
+    json,
+    strict,
+    pack: args.pack,
+    now: args.now,
+    map,
+    'clone-ace': cloneAce,
+    argv: process.argv.slice(3),
+  });
+  if (json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatAgentContextArtifactReport(report));
+  }
+  if (strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function allowlistBridgeHonestyDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3562,6 +3594,7 @@ function help() {
   console.log('  openui-catalog-compose-honesty Catalog-compose-only + repair-before-claim (OpenUI FORMAT)');
   console.log('  allowlist-bridge-honesty Audit allowlisted registries/proxies as hops, not trust boundaries');
   console.log('  jit-harness-compose   Compose memory/planning/action/capability onto existing rails (JIT FORMAT)');
+  console.log('  agent-context-artifact Lint agent context packs (Wisdom FORMAT; not ACE/Foundry/OSI)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
   console.log('  intent-governed-execution  NL intent → classify/authorize/gate/HITL/evidence (CyberStrike FORMAT)');
   console.log('  background-governance Background-agent run report and dispatch risk check');
@@ -3605,6 +3638,7 @@ function help() {
   console.log('  npx thumbgate openui-catalog-compose-honesty --catalog=catalog.json --stream=compose.txt --repair --json');
   console.log('  npx thumbgate allowlist-bridge-honesty --json');
   console.log('  npx thumbgate jit-harness-compose --task="implement PreToolUse gate fix" --json');
+  console.log('  npx thumbgate agent-context-artifact --json --pack=pack.json');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
   console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
   console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
@@ -4264,6 +4298,11 @@ switch (COMMAND) {
   case 'jit-harness':
   case 'harness-compose':
     jitHarnessCompose();
+    break;
+  case 'agent-context-artifact':
+  case 'wisdom-context-artifact':
+  case 'context-artifact':
+    agentContextArtifact();
     break;
   case 'workspace-search-route':
   case 'zg-search-route':
