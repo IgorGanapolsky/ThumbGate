@@ -1,0 +1,34 @@
+{
+  "operational": {
+    "requestCount": 12,
+    "errorCount": 1,
+    "latencyMs": { "p50": 120, "p95": 380 },
+    "tokenIn": 2400,
+    "tokenOut": 600,
+    "budgetUsd": 10,
+    "spendUsd": 0.42,
+    "alerts": ["error_rate", "latency", "token_budget"]
+  },
+  "security": {
+    "promptInjectionChecked": true,
+    "piiScrubbed": true,
+    "redactionRail": "scripts/secret-redaction.js",
+    "rawPrompt": null
+  },
+  "quality": {
+    "failureToAnswer": false,
+    "topicRelevancy": "on_topic",
+    "toxicity": "clean",
+    "sentiment": "neutral",
+    "userFeedback": "up"
+  },
+  "tracing": {
+    "traceId": "trace-gold",
+    "spans": [
+      { "id": "s-in", "parentId": null, "kind": "input", "latencyMs": 4 },
+      { "id": "s-rag", "parentId": "s-in", "kind": "retrieve", "latencyMs": 18, "evidenceIds": ["doc-1"] },
+      { "id": "s-llm", "parentId": "s-in", "kind": "llm", "latencyMs": 90, "tokensIn": 200, "tokensOut": 40 },
+      { "id": "s-tool", "parentId": "s-in", "kind": "tool", "latencyMs": 25, "evidenceIds": ["receipt-1"] }
+    ]
+  }
+}
