@@ -173,16 +173,31 @@ function batchGetPrepared(keys, options = {}) {
     const primaryLatency = Number(replicaLatencies[`${partition}:0`] ?? 0);
     const backupLatency = Number(replicaLatencies[`${partition}:1`] ?? 0);
     const primaryOk = replicaOk[`${partition}:0`] !== false;
-    const shouldHedge = !primaryOk
-      || (Number.isFinite(hedgeMs) && hedgeMs >= 0 && primaryLatency > hedgeMs);
-    const replica = shouldHedge ? 1 : 0;
+    const backupOk = replicaOk[`${partition}:1`] !== false;
+    const primarySlow = Number.isFinite(hedgeMs) && hedgeMs >= 0 && primaryLatency > hedgeMs;
+    let replica = 0;
+    let shouldHedge = false;
+    let unavailable = false;
+    if (primaryOk && !primarySlow) {
+      replica = 0;
+    } else if (backupOk) {
+      replica = 1;
+      shouldHedge = true;
+    } else if (primaryOk) {
+      replica = 0;
+    } else {
+      unavailable = true;
+      replica = null;
+    }
     if (shouldHedge) hedgedPartitions += 1;
-    const latencyMs = replica === 1 ? backupLatency : primaryLatency;
+    const latencyMs = unavailable
+      ? null
+      : (replica === 1 ? backupLatency : primaryLatency);
     const hits = pkeys.map((key) => {
-      const found = store.has(key);
+      const found = !unavailable && store.has(key);
       const value = found ? store.get(key) : null;
       records.push({
-        key, partition, replica, found, value, hedged: shouldHedge,
+        key, partition, replica, found, value, hedged: shouldHedge, unavailable,
       });
       return { key, found };
     });
@@ -191,6 +206,7 @@ function batchGetPrepared(keys, options = {}) {
       keys: pkeys,
       replica,
       hedged: shouldHedge,
+      unavailable,
       latencyMs,
       hits,
     });
@@ -236,10 +252,50 @@ function selectHotSubset(records, policy = 'promoted_matchable') {
 
 function auditTrace(trace = {}) {
   const findings = [];
-  const writes = Array.isArray(trace.writes) ? trace.writes : [];
-  const reads = Array.isArray(trace.reads) ? trace.reads : [];
+  if (!trace || typeof trace !== 'object' || Array.isArray(trace)) {
+    findings.push({
+      severity: 'fail',
+      id: 'empty_trace',
+      message: 'Trace is missing or not an object. A fail-closed three-plane audit needs writes, reads, hotSubset.policy, and versions.',
+    });
+    return findings;
+  }
 
-  for (const write of writes) {
+  const writes = Array.isArray(trace.writes) ? trace.writes : null;
+  const reads = Array.isArray(trace.reads) ? trace.reads : null;
+  if (!writes || writes.length === 0) {
+    findings.push({
+      severity: 'fail',
+      id: 'missing_write_evidence',
+      message: 'Trace omits writes[]. Require durable, delivery, and hot-ingest evidence (or a coupled-write finding).',
+    });
+  }
+  if (!reads || reads.length === 0) {
+    findings.push({
+      severity: 'fail',
+      id: 'missing_read_evidence',
+      message: 'Trace omits reads[]. Query-time batch evidence is required before certifying the serving path.',
+    });
+  }
+  if (!trace.hotSubset || typeof trace.hotSubset !== 'object' || !trace.hotSubset.policy) {
+    findings.push({
+      severity: 'fail',
+      id: 'missing_subset_policy',
+      message: 'Trace omits hotSubset.policy. Unspecified hot sets are not a pass.',
+    });
+  }
+  if (!Array.isArray(trace.versions)) {
+    findings.push({
+      severity: 'fail',
+      id: 'missing_version_evidence',
+      message: 'Trace omits versions[]. Representation coexistence must be declared as an array.',
+    });
+  }
+
+  const writeList = writes || [];
+  const readList = reads || [];
+
+  for (const write of writeList) {
     if (write.source === 'processing' && write.plane === 'hot') {
       findings.push({
         severity: 'fail',
@@ -249,10 +305,10 @@ function auditTrace(trace = {}) {
     }
   }
 
-  const processingDurable = writes.some((w) => w.source === 'processing' && w.plane === 'durable');
-  const hasDelivery = writes.some((w) => w.plane === 'delivery' || w.source === 'export');
-  const hotWrite = writes.some((w) => w.plane === 'hot');
-  const coupled = writes.some((w) => w.source === 'processing' && w.plane === 'hot');
+  const processingDurable = writeList.some((w) => w.source === 'processing' && w.plane === 'durable');
+  const hasDelivery = writeList.some((w) => w.plane === 'delivery' || w.source === 'export');
+  const hotWrite = writeList.some((w) => w.plane === 'hot');
+  const coupled = writeList.some((w) => w.source === 'processing' && w.plane === 'hot');
   if (processingDurable && hotWrite && !hasDelivery && !coupled) {
     findings.push({
       severity: 'fail',
@@ -261,7 +317,7 @@ function auditTrace(trace = {}) {
     });
   }
 
-  for (const read of reads) {
+  for (const read of readList) {
     const keys = normalizeKeyList(read.keys);
     const mode = String(read.mode || '').toLowerCase();
     if (keys.length >= 3 && mode === 'sequential') {

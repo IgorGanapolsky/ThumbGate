@@ -96,6 +96,32 @@ test('auditTrace fails coupled processing→hot, sequential reads, unbounded sub
   assert.ok(ids.includes('hot_transactions'));
 });
 
+test('auditTrace fails closed on empty or schema-less traces', () => {
+  const emptyIds = auditTrace({}).map((f) => f.id);
+  assert.ok(emptyIds.includes('missing_write_evidence'));
+  assert.ok(emptyIds.includes('missing_read_evidence'));
+  assert.ok(emptyIds.includes('missing_subset_policy'));
+  assert.ok(emptyIds.includes('missing_version_evidence'));
+  const report = buildCobbleHotStoreSplitReport({ trace: {} });
+  assert.equal(report.status, 'fail');
+  assert.equal(report.ok, false);
+});
+
+test('batchGetPrepared does not certify hits from a dead backup', () => {
+  const keyA = 'lesson-alpha';
+  const partition = hashPartition(keyA, 8);
+  const result = batchGetPrepared([keyA], {
+    store: { [keyA]: { title: 'secret' } },
+    hedgeMs: 10,
+    replicaLatencies: { [`${partition}:0`]: 40, [`${partition}:1`]: 4 },
+    replicaOk: { [`${partition}:0`]: false, [`${partition}:1`]: false },
+  });
+  assert.equal(result.found, 0);
+  assert.equal(result.records[0].found, false);
+  assert.equal(result.records[0].unavailable, true);
+  assert.equal(result.partitions[0].unavailable, true);
+});
+
 test('auditTrace flags missing delivery when durable jumps to hot ingest', () => {
   const findings = auditTrace({
     writes: [
