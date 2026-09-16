@@ -65,6 +65,7 @@ test('pack freshness.now cannot bypass the staleness gate', () => {
 test('detectCloneAttempt refuses ACE / Foundry / OSI', () => {
   const hits = detectCloneAttempt('clone Adaptive Context Engine and vendor Palantir Foundry');
   assert.ok(hits.includes('ace_sku') || hits.includes('foundry_sku'));
+  assert.ok(detectCloneAttempt('clone ACE').includes('ace_sku'));
 });
 
 test('buildAgentContextArtifactReport clone-ace fails closed', () => {
@@ -122,12 +123,34 @@ test('lintPack fails unrunnable verifier and unmeasurable freshness', () => {
   pack.verifier = { command: 'npm run test:agent-context-artifact' };
   pack.freshness = { note: 'recent' };
   assert.ok(lintPack(pack, GOLD_CLOCK).some((f) => f.id === 'freshness_unmeasurable'));
+  pack.freshness = { maxAgeHours: 24 };
+  assert.ok(lintPack(pack, GOLD_CLOCK).some((f) => f.id === 'freshness_unmeasurable'));
 });
 
 test('no --pack warns instead of inventing a catalog', () => {
   const report = buildAgentContextArtifactReport({});
   assert.equal(report.status, 'ready_with_warnings');
   assert.ok(report.findings.some((f) => f.id === 'no_pack'));
+});
+
+test('missing pack file is pack_load_failed not a thrown CLI crash', () => {
+  const report = buildAgentContextArtifactReport({
+    pack: path.join(__dirname, 'fixtures', 'does-not-exist.json'),
+    json: true,
+  });
+  assert.equal(report.ok, false);
+  assert.ok(report.findings.some((f) => f.id === 'pack_load_failed'));
+  assert.ok(!report.findings.some((f) => f.id === 'no_pack'));
+});
+
+test('thumbgate CLI --map=false still lints the gold pack', () => {
+  const result = spawnSync(process.execPath, [
+    CLI, 'agent-context-artifact', '--json', `--pack=${GOLD}`, `--now=${GOLD_NOW}`, '--map=false',
+  ], { cwd: path.resolve(__dirname, '..'), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.ok, true);
+  assert.ok(payload.pack);
 });
 
 test('script CLI --clone-ace exits 1', () => {

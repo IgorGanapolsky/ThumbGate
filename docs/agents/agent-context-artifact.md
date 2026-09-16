@@ -23,7 +23,7 @@ Complements six-block SKILL.md packs and ContextFS. Does not replace them.
 ## CLI
 
 ```bash
-npx thumbgate agent-context-artifact --json --pack=tests/fixtures/agent-context-artifact-gold.json
+npx thumbgate agent-context-artifact --json --pack=tests/fixtures/agent-context-artifact-gold.json --now=2026-09-16T13:00:00Z
 npx thumbgate agent-context-artifact --json --pack=tests/fixtures/agent-context-artifact-human.json
 npm run test:agent-context-artifact
 ```

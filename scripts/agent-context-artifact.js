@@ -31,7 +31,7 @@ const REQUIRED_FIELDS = Object.freeze(['goal', 'constraints', 'sources', 'freshn
 const REQUIRED_WRONG_FIT = 'wisdom_ai';
 
 const CLONE_PATTERNS = Object.freeze([
-  { id: 'ace_sku', re: /\b(clone|install|vendor)\b.{0,50}\b(adaptive context engine|wisdom\.?ai ace)\b/i },
+  { id: 'ace_sku', re: /\b(clone|install|vendor)\b.{0,50}\b(adaptive context engine|wisdom\.?ai ace|ace)\b/i },
   { id: 'foundry_sku', re: /\b(clone|install|vendor)\b.{0,40}\b(palantir )?foundry\b/i },
   { id: 'osi_sku', re: /\b(clone|implement)\b.{0,40}\b(open semantic interchange|snowflake osi)\b/i },
 ]);
@@ -120,7 +120,7 @@ function lintPack(pack = {}, options = {}) {
         message: `Context asOf is ${ageHours.toFixed(1)}h old; maxAgeHours=${maxAgeHours}. Agents must not consume stale packs.`,
       });
     }
-  } else if (pack.freshness && !Number.isFinite(maxAgeHours) && !Number.isFinite(asOf)) {
+  } else if (pack.freshness && (!Number.isFinite(maxAgeHours) || !Number.isFinite(asOf))) {
     findings.push({
       severity: 'fail',
       id: 'freshness_unmeasurable',
@@ -178,14 +178,24 @@ function buildAgentContextArtifactReport(options = {}) {
 
   const mapOnly = normalizeBoolean(options.map || options['map-only']);
   let pack = null;
+  let packLoadFailed = false;
   if (!mapOnly) {
     if (options.pack && typeof options.pack === 'object' && !Array.isArray(options.pack)) {
       pack = options.pack;
     } else if (options.pack) {
-      pack = loadPack(options.pack);
+      try {
+        pack = loadPack(options.pack);
+      } catch (error) {
+        packLoadFailed = true;
+        findings.push({
+          severity: 'fail',
+          id: 'pack_load_failed',
+          message: `Cannot load pack: ${error && error.message ? error.message : error}`,
+        });
+      }
     }
     if (pack) findings.push(...lintPack(pack, { now: options.now }));
-    else if (!cloneHits.length) {
+    else if (!cloneHits.length && !packLoadFailed) {
       findings.push({
         severity: 'warn',
         id: 'no_pack',
@@ -290,6 +300,7 @@ module.exports = {
   REQUIRED_WRONG_FIT,
   SOURCE_URLS,
   detectCloneAttempt,
+  normalizeBoolean,
   resolveTrustedNow,
   lintPack,
   buildAgentContextArtifactReport,

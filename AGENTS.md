@@ -124,7 +124,7 @@ Details: [`docs/agents/memory-vs-rag.md`](./docs/agents/memory-vs-rag.md).
 Context for agents is a reusable pack: goal, constraints, sources, freshness, verifier. `consumer` must be `agent`. `wrongFit` must include `wisdom_ai`. Never clone ACE / Foundry / OSI.
 
 ```bash
-npx thumbgate agent-context-artifact --json --pack=tests/fixtures/agent-context-artifact-gold.json
+npx thumbgate agent-context-artifact --json --pack=tests/fixtures/agent-context-artifact-gold.json --now=2026-09-16T13:00:00Z
 ```
 
 Skill: `.agents/skills/wisdom-context-artifact-not-clone/SKILL.md`. Details: `docs/agents/agent-context-artifact.md`.

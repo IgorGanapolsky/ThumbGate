@@ -40,7 +40,7 @@ Weak: "The semantic layer is in the warehouse; agents will figure it out."
 Gold:
 
 ```bash
-$ npx thumbgate agent-context-artifact --json --pack=tests/fixtures/agent-context-artifact-gold.json
+$ npx thumbgate agent-context-artifact --json --pack=tests/fixtures/agent-context-artifact-gold.json --now=2026-09-16T13:00:00Z
 ok: true  consumer=agent  wrongFit includes wisdom_ai
 ```
 

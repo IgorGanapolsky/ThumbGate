@@ -2697,22 +2697,27 @@ function agentContextArtifact() {
   const {
     buildAgentContextArtifactReport,
     formatAgentContextArtifactReport,
+    normalizeBoolean,
   } = require(path.join(PKG_ROOT, 'scripts', 'agent-context-artifact'));
+  const json = normalizeBoolean(args.json);
+  const strict = normalizeBoolean(args.strict);
+  const map = normalizeBoolean(args.map) || normalizeBoolean(args['map-only']);
+  const cloneAce = normalizeBoolean(args['clone-ace']);
   const report = buildAgentContextArtifactReport({
-    json: Boolean(args.json),
-    strict: Boolean(args.strict),
+    json,
+    strict,
     pack: args.pack,
     now: args.now,
-    map: Boolean(args.map || args['map-only']),
-    'clone-ace': Boolean(args['clone-ace']),
+    map,
+    'clone-ace': cloneAce,
     argv: process.argv.slice(3),
   });
-  if (args.json) {
+  if (json) {
     console.log(JSON.stringify(report, null, 2));
   } else {
     process.stdout.write(formatAgentContextArtifactReport(report));
   }
-  if (args.strict && report.status !== 'ready') {
+  if (strict && report.status !== 'ready') {
     process.exitCode = 1;
     return;
   }
