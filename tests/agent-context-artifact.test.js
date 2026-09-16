@@ -18,6 +18,8 @@ const SCRIPT = path.resolve(__dirname, '..', 'scripts', 'agent-context-artifact.
 const CLI = path.resolve(__dirname, '..', 'bin', 'cli.js');
 const GOLD = path.resolve(__dirname, 'fixtures', 'agent-context-artifact-gold.json');
 const HUMAN = path.resolve(__dirname, 'fixtures', 'agent-context-artifact-human.json');
+const GOLD_NOW = '2026-09-16T13:00:00Z';
+const GOLD_CLOCK = { now: GOLD_NOW };
 
 test('required fields and wrong-fit are the Wisdom artifact contract', () => {
   assert.deepEqual([...REQUIRED_FIELDS], ['goal', 'constraints', 'sources', 'freshness', 'verifier']);
@@ -26,7 +28,7 @@ test('required fields and wrong-fit are the Wisdom artifact contract', () => {
 
 test('lintPack accepts the gold agent pack', () => {
   const pack = JSON.parse(fs.readFileSync(GOLD, 'utf8'));
-  assert.deepEqual(lintPack(pack).filter((f) => f.severity === 'fail'), []);
+  assert.deepEqual(lintPack(pack, GOLD_CLOCK).filter((f) => f.severity === 'fail'), []);
 });
 
 test('lintPack fails human-consumer packs missing fields and wisdom_ai wrong-fit', () => {
@@ -39,8 +41,25 @@ test('lintPack fails human-consumer packs missing fields and wisdom_ai wrong-fit
 
 test('lintPack fails stale freshness', () => {
   const pack = JSON.parse(fs.readFileSync(GOLD, 'utf8'));
-  pack.freshness = { maxAgeHours: 1, asOf: '2026-09-01T00:00:00Z', now: '2026-09-16T00:00:00Z' };
-  assert.ok(lintPack(pack).some((f) => f.id === 'stale_context'));
+  pack.freshness = { maxAgeHours: 1, asOf: '2026-09-01T00:00:00Z' };
+  assert.ok(lintPack(pack, { now: '2026-09-16T00:00:00Z' }).some((f) => f.id === 'stale_context'));
+});
+
+test('pack freshness.now cannot bypass the staleness gate', () => {
+  const pack = JSON.parse(fs.readFileSync(GOLD, 'utf8'));
+  pack.freshness = {
+    maxAgeHours: 1,
+    asOf: '2026-09-01T00:00:00Z',
+    now: '2026-09-01T00:00:00Z',
+  };
+  const findings = lintPack(pack, { now: '2026-09-16T00:00:00Z' });
+  assert.ok(findings.some((f) => f.id === 'stale_context'));
+  const spoofed = buildAgentContextArtifactReport({
+    pack,
+    now: '2026-09-16T00:00:00Z',
+  });
+  assert.equal(spoofed.ok, false);
+  assert.ok(spoofed.findings.some((f) => f.id === 'stale_context'));
 });
 
 test('detectCloneAttempt refuses ACE / Foundry / OSI', () => {
@@ -55,7 +74,9 @@ test('buildAgentContextArtifactReport clone-ace fails closed', () => {
 });
 
 test('script CLI --pack gold exits 0', () => {
-  const result = spawnSync(process.execPath, [SCRIPT, '--json', `--pack=${GOLD}`], { encoding: 'utf8' });
+  const result = spawnSync(process.execPath, [
+    SCRIPT, '--json', `--pack=${GOLD}`, `--now=${GOLD_NOW}`,
+  ], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.name, 'thumbgate-agent-context-artifact');
@@ -71,7 +92,7 @@ test('script CLI fails human fixture', () => {
 
 test('thumbgate CLI agent-context-artifact is wired', () => {
   const result = spawnSync(process.execPath, [
-    CLI, 'agent-context-artifact', '--json', `--pack=${GOLD}`,
+    CLI, 'agent-context-artifact', '--json', `--pack=${GOLD}`, `--now=${GOLD_NOW}`,
   ], { cwd: path.resolve(__dirname, '..'), encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr + result.stdout);
   const payload = JSON.parse(result.stdout);
@@ -91,16 +112,16 @@ test('lintPack fails empty pack and unidentified sources', () => {
   assert.ok(lintPack(null).some((f) => f.id === 'empty_pack'));
   const pack = JSON.parse(fs.readFileSync(GOLD, 'utf8'));
   pack.sources = [{ note: 'tribal knowledge' }];
-  assert.ok(lintPack(pack).some((f) => f.id === 'source_unidentified'));
+  assert.ok(lintPack(pack, GOLD_CLOCK).some((f) => f.id === 'source_unidentified'));
 });
 
 test('lintPack fails unrunnable verifier and unmeasurable freshness', () => {
   const pack = JSON.parse(fs.readFileSync(GOLD, 'utf8'));
   pack.verifier = { note: 'looks good' };
-  assert.ok(lintPack(pack).some((f) => f.id === 'verifier_unrunnable'));
+  assert.ok(lintPack(pack, GOLD_CLOCK).some((f) => f.id === 'verifier_unrunnable'));
   pack.verifier = { command: 'npm run test:agent-context-artifact' };
   pack.freshness = { note: 'recent' };
-  assert.ok(lintPack(pack).some((f) => f.id === 'freshness_unmeasurable'));
+  assert.ok(lintPack(pack, GOLD_CLOCK).some((f) => f.id === 'freshness_unmeasurable'));
 });
 
 test('no --pack warns instead of inventing a catalog', () => {

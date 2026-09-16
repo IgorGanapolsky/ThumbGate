@@ -12,8 +12,7 @@
   ],
   "freshness": {
     "maxAgeHours": 24,
-    "asOf": "2026-09-16T12:00:00Z",
-    "now": "2026-09-16T13:00:00Z"
+    "asOf": "2026-09-16T12:00:00Z"
   },
   "verifier": {
     "command": "npx thumbgate agent-context-artifact --pack=tests/fixtures/agent-context-artifact-gold.json --json"

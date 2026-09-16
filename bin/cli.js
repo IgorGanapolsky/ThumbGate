@@ -2702,6 +2702,7 @@ function agentContextArtifact() {
     json: Boolean(args.json),
     strict: Boolean(args.strict),
     pack: args.pack,
+    now: args.now,
     map: Boolean(args.map || args['map-only']),
     'clone-ace': Boolean(args['clone-ace']),
     argv: process.argv.slice(3),

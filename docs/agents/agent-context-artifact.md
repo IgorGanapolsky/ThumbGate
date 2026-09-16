@@ -14,7 +14,7 @@ Does **not** clone Adaptive Context Engine, Palantir Foundry, or Snowflake Open 
 | `goal` | What the pack is for |
 | `constraints` | Hard limits (local-only, no Vertex, …) |
 | `sources` | Citeable ids/paths/urls — not tribal knowledge |
-| `freshness` | `asOf` + `maxAgeHours` |
+| `freshness` | `asOf` + `maxAgeHours`. Clock is `Date.now()` (or test `--now=`). Pack `freshness.now` is ignored. |
 | `verifier` | Runnable check, not "looks good" |
 | `wrongFit` | **Must include `wisdom_ai`** — ACE is the wrong SKU here |
 

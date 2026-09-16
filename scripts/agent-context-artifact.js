@@ -52,7 +52,15 @@ function asList(value) {
   return [value];
 }
 
-function lintPack(pack = {}) {
+function resolveTrustedNow(options = {}) {
+  if (options.now != null && options.now !== '') {
+    const parsed = typeof options.now === 'number' ? options.now : Date.parse(String(options.now));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return Date.now();
+}
+
+function lintPack(pack = {}, options = {}) {
   const findings = [];
   if (!pack || typeof pack !== 'object' || Array.isArray(pack)) {
     return [{
@@ -100,7 +108,9 @@ function lintPack(pack = {}) {
   const freshness = pack.freshness && typeof pack.freshness === 'object' ? pack.freshness : {};
   const maxAgeHours = Number(freshness.maxAgeHours);
   const asOf = freshness.asOf ? Date.parse(String(freshness.asOf)) : NaN;
-  const now = freshness.now ? Date.parse(String(freshness.now)) : Date.now();
+  // Pack-supplied freshness.now is not a clock. A stale pack could set now=asOf
+  // and certify ready. CLI uses Date.now(); tests may pass options.now / --now=.
+  const now = resolveTrustedNow(options);
   if (Number.isFinite(maxAgeHours) && Number.isFinite(asOf)) {
     const ageHours = (now - asOf) / 3600000;
     if (ageHours > maxAgeHours) {
@@ -174,7 +184,7 @@ function buildAgentContextArtifactReport(options = {}) {
     } else if (options.pack) {
       pack = loadPack(options.pack);
     }
-    if (pack) findings.push(...lintPack(pack));
+    if (pack) findings.push(...lintPack(pack, { now: options.now }));
     else if (!cloneHits.length) {
       findings.push({
         severity: 'warn',
@@ -240,6 +250,7 @@ function parseArgv(argv) {
     else if (arg === '--map-only' || arg === '--map') options.map = true;
     else if (arg === '--clone-ace') options['clone-ace'] = true;
     else if (arg.startsWith('--pack=')) options.pack = arg.slice('--pack='.length);
+    else if (arg.startsWith('--now=')) options.now = arg.slice('--now='.length);
   }
   return options;
 }
@@ -253,6 +264,7 @@ Does not clone ACE / Foundry / OSI.
 
 Options:
   --pack=<file.json>
+  --now=<ISO>     Trusted clock (tests). Pack freshness.now is ignored.
   --map-only
   --clone-ace     Fail closed
   --json --strict
@@ -278,6 +290,7 @@ module.exports = {
   REQUIRED_WRONG_FIT,
   SOURCE_URLS,
   detectCloneAttempt,
+  resolveTrustedNow,
   lintPack,
   buildAgentContextArtifactReport,
   formatAgentContextArtifactReport,
