@@ -17,6 +17,7 @@
  * Does NOT install shunt@portal, buy Spotify Portal, or sell ThumbGate through it.
  */
 
+const fs = require('node:fs');
 const path = require('node:path');
 
 const SOURCE_URLS = Object.freeze([
@@ -30,6 +31,9 @@ const REASONING_KINDS = Object.freeze(['reasoning', 'debug', 'architecture', 'sa
 const DELEGABLE_KINDS = Object.freeze(['boilerplate', 'config', 'test_scaffold', 'large_read']);
 const METERED_WORKERS = Object.freeze([
   'gemini-2.5-flash', 'gemini_2_5_flash', 'gemini_flash', 'portal', 'aika',
+]);
+const FRONTIER_WORKERS = Object.freeze([
+  'hermes_main', 'hermes-main', 'grok', 'grok_4', 'grok_4_6', 'frontier',
 ]);
 
 const CLONE_PATTERNS = Object.freeze([
@@ -74,28 +78,88 @@ function evaluateReadIntercept({ lineCount, targeted, threshold = DEFAULT_MIN_LI
   };
 }
 
-function evaluateBashRead({ command, lineCount, threshold = DEFAULT_MIN_LINES } = {}) {
-  const cmd = String(command || '').trim();
-  const lines = Number(lineCount) || 0;
+function countFileLines(filePath) {
+  if (!filePath) return null;
+  try {
+    const text = fs.readFileSync(filePath, 'utf8');
+    if (!text) return 0;
+    return text.split(/\r?\n/).length;
+  } catch {
+    return null;
+  }
+}
+
+function stripWrappers(command) {
+  let cmd = String(command || '').trim();
+  cmd = cmd.replace(/^(?:env\s+)+/i, '');
+  cmd = cmd.replace(/^(?:\/(?:usr\/)?bin\/)/, '');
+  return cmd.trim();
+}
+
+function splitCompound(command) {
+  return String(command).split(/\s*(?:\|\||&&|;)\s*/).map((s) => s.trim()).filter(Boolean);
+}
+
+function parseHeadTailLimit(stage) {
+  const m = String(stage).match(/\b(?:head|tail)\b(?:\s+-n\s*|\s+--lines(?:=|\s+))(\d+)/i);
+  return m ? Number(m[1]) : null;
+}
+
+function extractReaderPath(stage) {
+  const tokens = String(stage).trim().split(/\s+/).filter((t) => !t.startsWith('-'));
+  if (tokens.length < 2) return null;
+  return tokens[tokens.length - 1];
+}
+
+function evaluateBashRead({ command, lineCount, cwd = process.cwd(), threshold = DEFAULT_MIN_LINES } = {}) {
+  const raw = String(command || '').trim();
   const limit = Number(threshold) || DEFAULT_MIN_LINES;
-  if (!cmd) {
+  if (!raw) {
     return { action: 'skip_bash', ok: true, id: 'skip_bash', reason: 'No bash command.' };
   }
-  if (PIPE_TARGET_RE.test(cmd) || HEAD_LIMIT_RE.test(cmd)) {
-    return {
-      action: 'allow_targeted_bash',
-      ok: true,
-      id: 'allow_targeted_bash',
-      reason: 'Piped or line-limited read is already targeted.',
-    };
-  }
-  if (BARE_READER_RE.test(cmd) && lines > limit) {
-    return {
-      action: 'block_bare_reader',
-      ok: false,
-      id: 'bare_bulk_cat',
-      reason: `Bare ${cmd.split(/\s+/)[0]} of ${lines} lines bypasses Read intercept. Pipe to grep/rg or use head -n.`,
-    };
+  const compounds = splitCompound(raw);
+  for (const part of compounds) {
+    const stages = part.split('|').map((s) => stripWrappers(s)).filter(Boolean);
+    const last = stages[stages.length - 1] || '';
+    const first = stages[0] || '';
+    const headCount = parseHeadTailLimit(first) ?? parseHeadTailLimit(last);
+    if (headCount != null) {
+      if (headCount > limit) {
+        return {
+          action: 'block_bare_reader',
+          ok: false,
+          id: 'bare_bulk_cat',
+          reason: `head/tail -n ${headCount} exceeds ${limit}-line slice. Cap --lines at the threshold.`,
+        };
+      }
+      continue;
+    }
+    const lastIsBoundedFilter = /^(?:grep|rg)\b/i.test(last) && stages.length > 1;
+    if (lastIsBoundedFilter) continue;
+    const reader = first.match(/^(?:cat|head|tail|less|more)\b/i);
+    if (reader) {
+      let lines = Number.isFinite(Number(lineCount)) ? Number(lineCount) : null;
+      if (lines == null) {
+        const fileArg = extractReaderPath(first);
+        lines = countFileLines(fileArg ? path.resolve(cwd, fileArg) : null);
+      }
+      if (lines == null) {
+        return {
+          action: 'warn_unknown_size',
+          ok: false,
+          id: 'unknown_size',
+          reason: 'Bare reader without --lines and without a readable file. Do not invent a size; pass --lines or a path.',
+        };
+      }
+      if (lines > limit) {
+        return {
+          action: 'block_bare_reader',
+          ok: false,
+          id: 'bare_bulk_cat',
+          reason: `Bare ${reader[0]} of ${lines} lines bypasses Read intercept. Pipe to grep/rg or use head -n <= ${limit}.`,
+        };
+      }
+    }
   }
   return { action: 'allow_bash', ok: true, id: 'allow_bash', reason: 'Not a bulk file dump.' };
 }
@@ -108,12 +172,20 @@ function evaluateTaskRoute({ taskKind, model } = {}) {
   }
   const metered = METERED_WORKERS.includes(worker) || worker.includes('flash');
   if (REASONING_KINDS.includes(kind)) {
-    if (metered || worker.includes('local_slice')) {
+    if (metered || worker.includes('local_slice') || worker.startsWith('portal') || worker.startsWith('aika')) {
       return {
         action: 'block_delegate_reason',
         ok: false,
         id: 'cheap_worker_reasoning',
         reason: 'Do not delegate debug/architecture to Portal, AiKA, or Gemini Flash.',
+      };
+    }
+    if (!FRONTIER_WORKERS.includes(worker)) {
+      return {
+        action: 'block_metered',
+        ok: false,
+        id: 'unknown_route',
+        reason: 'Reasoning needs an explicit frontier worker (hermes-main/grok). Missing or unrecognized models are denied.',
       };
     }
     return {
@@ -152,13 +224,14 @@ function evaluateTaskRoute({ taskKind, model } = {}) {
   return { action: 'skip_route', ok: true, id: 'skip_route', reason: 'No task route to audit.' };
 }
 
-function evaluateContextReturn({ sourceLines, returnedLines } = {}) {
+function evaluateContextReturn({ sourceLines, returnedLines, threshold = DEFAULT_MIN_LINES } = {}) {
   const source = Number(sourceLines) || 0;
   const returned = Number(returnedLines) || 0;
+  const limit = Number(threshold) || DEFAULT_MIN_LINES;
   if (!source && !returned) {
     return { action: 'skip_return', ok: true, id: 'skip_return', reason: 'No return sizes.' };
   }
-  if (source > DEFAULT_MIN_LINES && returned >= source) {
+  if (source > limit && returned >= source) {
     return {
       action: 'block_full_dump',
       ok: false,
@@ -171,6 +244,53 @@ function evaluateContextReturn({ sourceLines, returnedLines } = {}) {
     ok: true,
     id: 'allow_slice',
     reason: 'Frontier context is a slice, not the whole file.',
+  };
+}
+
+function isTargetedRead(toolInput = {}) {
+  const offset = Number(toolInput.offset);
+  const limit = Number(toolInput.limit);
+  return Number.isFinite(offset) || (Number.isFinite(limit) && limit > 0);
+}
+
+function evaluatePreToolUse({
+  toolName,
+  toolInput = {},
+  cwd = process.cwd(),
+  threshold = DEFAULT_MIN_LINES,
+} = {}) {
+  const name = String(toolName || '');
+  const input = toolInput && typeof toolInput === 'object' ? toolInput : {};
+  if (/^read$/i.test(name) || name === 'read_file') {
+    const rel = input.file_path || input.path || input.target_file;
+    const abs = rel ? path.resolve(cwd, String(rel)) : null;
+    const lines = countFileLines(abs);
+    if (lines == null) {
+      return {
+        action: 'warn_unknown_size',
+        ok: true,
+        id: 'unknown_size',
+        reason: 'Read path missing or unreadable; not inventing a line count.',
+      };
+    }
+    return evaluateReadIntercept({
+      lineCount: lines,
+      targeted: isTargetedRead(input),
+      threshold,
+    });
+  }
+  if (/^bash$/i.test(name) || name === 'Shell') {
+    return evaluateBashRead({
+      command: input.command || input.cmd,
+      cwd,
+      threshold,
+    });
+  }
+  return {
+    action: 'skip_tool',
+    ok: true,
+    id: 'skip_tool',
+    reason: 'Not a Read/Bash dump surface.',
   };
 }
 
@@ -215,7 +335,8 @@ function buildTokenShuntHonestyReport(options = {}) {
   if (hasBash) {
     const d = evaluateBashRead({
       command: options.bash || options.command,
-      lineCount: lineCount == null ? threshold + 1 : lineCount,
+      lineCount,
+      cwd: options.cwd,
       threshold,
     });
     findings.push({
@@ -241,6 +362,7 @@ function buildTokenShuntHonestyReport(options = {}) {
     const d = evaluateContextReturn({
       sourceLines: options['source-lines'],
       returnedLines: options['returned-lines'],
+      threshold,
     });
     findings.push({
       severity: d.ok ? 'info' : 'fail',
@@ -369,6 +491,7 @@ module.exports = {
   evaluateBashRead,
   evaluateTaskRoute,
   evaluateContextReturn,
+  evaluatePreToolUse,
   buildTokenShuntHonestyReport,
   formatTokenShuntHonestyReport,
   main,

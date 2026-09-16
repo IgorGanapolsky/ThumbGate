@@ -45,9 +45,9 @@ Gold:
 
 ```bash
 $ npx thumbgate token-shunt-honesty --json --lines=800
-ok: false  untargeted_bulk_read
+{"ok":false,"findings":[{"id":"untargeted_bulk_read"}]}
 $ npx thumbgate token-shunt-honesty --json --lines=800 --targeted
-ok: true
+{"ok":true}
 ```
 
 ## Procedures

@@ -3055,6 +3055,25 @@ async function gateCheck() {
       return;
     }
 
+    const { evaluatePreToolUse } = require(path.join(PKG_ROOT, 'scripts', 'token-shunt-honesty'));
+    const shunt = evaluatePreToolUse({
+      toolName: input.tool_name || input.toolName,
+      toolInput: input.tool_input || input.toolInput || {},
+      cwd: input.cwd || process.cwd(),
+    });
+    if (shunt && shunt.ok === false) {
+      process.stdout.write(`${JSON.stringify({
+        decision: 'block',
+        reason: `token-shunt: ${shunt.reason}`,
+        hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
+          permissionDecision: 'deny',
+          permissionDecisionReason: `token-shunt: ${shunt.reason}`,
+        },
+      })}\n`);
+      return;
+    }
+
     const output = await gatesEngine.runAsync(input);
     process.stdout.write(output + '\n');
   } catch (err) {
