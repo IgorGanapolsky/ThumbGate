@@ -2692,6 +2692,27 @@ function jitHarnessCompose() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function cobbleHotStoreSplit() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildCobbleHotStoreSplitReport,
+    formatCobbleHotStoreSplitReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'cobble-hot-store-split'));
+  const report = buildCobbleHotStoreSplitReport(args);
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatCobbleHotStoreSplitReport(report));
+  }
+
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function allowlistBridgeHonestyDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3562,6 +3583,7 @@ function help() {
   console.log('  openui-catalog-compose-honesty Catalog-compose-only + repair-before-claim (OpenUI FORMAT)');
   console.log('  allowlist-bridge-honesty Audit allowlisted registries/proxies as hops, not trust boundaries');
   console.log('  jit-harness-compose   Compose memory/planning/action/capability onto existing rails (JIT FORMAT)');
+  console.log('  cobble-hot-store-split Split durable/delivery/hot lesson planes (CobbleDB FORMAT)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
   console.log('  intent-governed-execution  NL intent → classify/authorize/gate/HITL/evidence (CyberStrike FORMAT)');
   console.log('  background-governance Background-agent run report and dispatch risk check');
@@ -3605,6 +3627,7 @@ function help() {
   console.log('  npx thumbgate openui-catalog-compose-honesty --catalog=catalog.json --stream=compose.txt --repair --json');
   console.log('  npx thumbgate allowlist-bridge-honesty --json');
   console.log('  npx thumbgate jit-harness-compose --task="implement PreToolUse gate fix" --json');
+  console.log('  npx thumbgate cobble-hot-store-split --json');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
   console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
   console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
@@ -4264,6 +4287,12 @@ switch (COMMAND) {
   case 'jit-harness':
   case 'harness-compose':
     jitHarnessCompose();
+    break;
+  case 'cobble-hot-store-split':
+  case 'cobble-hot-store':
+  case 'cobbledb-split':
+  case 'hot-store-split':
+    cobbleHotStoreSplit();
     break;
   case 'workspace-search-route':
   case 'zg-search-route':

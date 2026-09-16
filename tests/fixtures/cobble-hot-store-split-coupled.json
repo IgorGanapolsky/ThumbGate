@@ -1,0 +1,13 @@
+{
+  "writes": [
+    { "source": "processing", "plane": "hot", "keys": ["lesson-1"] }
+  ],
+  "reads": [
+    { "keys": ["lesson-1", "lesson-2", "lesson-3"], "mode": "sequential" }
+  ],
+  "hotSubset": { "policy": "unbounded" },
+  "versions": [
+    { "key": "lesson-1", "representations": ["embed-v1"], "overwrite": true }
+  ],
+  "transactionsOnHot": true
+}
