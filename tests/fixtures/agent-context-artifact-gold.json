@@ -1,0 +1,22 @@
+{
+  "consumer": "agent",
+  "goal": "Assemble matchable lessons for PreToolUse without dumping the raw feedback log",
+  "constraints": [
+    "local ThumbGate memory only",
+    "no Vertex RAG",
+    "promoted/matchable subset on the hot path"
+  ],
+  "sources": [
+    { "id": "memory-log", "path": ".claude/memory/feedback/memory-log.jsonl" },
+    { "id": "prevention-rules", "path": ".claude/memory/feedback/prevention-rules.md" }
+  ],
+  "freshness": {
+    "maxAgeHours": 24,
+    "asOf": "2026-09-16T12:00:00Z",
+    "now": "2026-09-16T13:00:00Z"
+  },
+  "verifier": {
+    "command": "npx thumbgate agent-context-artifact --pack=tests/fixtures/agent-context-artifact-gold.json --json"
+  },
+  "wrongFit": ["wisdom_ai", "foundry", "osi"]
+}
