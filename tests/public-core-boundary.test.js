@@ -299,7 +299,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   //   (typed noul/choice/score + code-owned route; not a Jev SKU).
   // 542 -> 544: colab-compute-honesty.js + skill — Colab CU honesty.
   // 544 -> 546: deeppattern-discipline-honesty.js + skill — layer-check + closeout.
-  const CEILING = 546;
+  // 546 -> 547: src/observability/datadog-agent-observability.js (Datadog agent observability engine).
+  const CEILING = 547;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

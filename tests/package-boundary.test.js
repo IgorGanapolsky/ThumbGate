@@ -496,8 +496,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 540 -> 542: typesafe-typed-questions.js + skill — TypeSafe FORMAT steal.
   // 542 -> 544: colab-compute-honesty.js + skill — Colab /signup CU honesty.
   // 544 -> 546: deeppattern-discipline-honesty.js + skill — DeepPattern layer-check + evidence-closeout.
-    manifest.fileCount <= 546,
-    `npm package should stay <= 546 files, got ${manifest.fileCount}`
+  // 546 -> 547: src/observability/datadog-agent-observability.js (Datadog agent observability engine).
+    manifest.fileCount <= 547,
+    `npm package should stay <= 547 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
