@@ -47,7 +47,7 @@ function runGh(args, options = {}) {
   });
 }
 
-function listOpenPrs() {
+function listOpenPrs(runner = runGh) {
   const args = [
     'pr',
     'list',
@@ -58,14 +58,14 @@ function listOpenPrs() {
     '--json',
     'number,title,state,isDraft,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,author,comments',
   ];
-  const res = runGh(args);
+  const res = runner(args);
   if (res.status !== 0) {
     throw new Error(`Failed to list PRs: ${res.stderr || res.stdout}`);
   }
   return JSON.parse(res.stdout || '[]');
 }
 
-function getPrReviewThreads(prNumber) {
+function getPrReviewThreads(prNumber, runner = runGh) {
   const query = `
     query($owner: String!, $repo: String!, $pr: Int!) {
       repository(owner: $owner, name: $repo) {
@@ -87,7 +87,7 @@ function getPrReviewThreads(prNumber) {
       }
     }
   `;
-  const res = runGh([
+  const res = runner([
     'api',
     'graphql',
     '-f',
@@ -111,7 +111,7 @@ function getPrReviewThreads(prNumber) {
   }
 }
 
-function resolveReviewThread(threadId) {
+function resolveReviewThread(threadId, runner = runGh) {
   const mutation = `
     mutation($threadId: ID!) {
       resolveReviewThread(input: { threadId: $threadId }) {
@@ -122,7 +122,7 @@ function resolveReviewThread(threadId) {
       }
     }
   `;
-  const res = runGh([
+  const res = runner([
     'api',
     'graphql',
     '-f',
@@ -133,16 +133,16 @@ function resolveReviewThread(threadId) {
   return res.status === 0;
 }
 
-function updatePrBranch(prNumber) {
-  const res = runGh(['pr', 'update-branch', String(prNumber)]);
+function updatePrBranch(prNumber, runner = runGh) {
+  const res = runner(['pr', 'update-branch', String(prNumber)]);
   return {
     ok: res.status === 0,
     output: (res.stdout || res.stderr || '').trim(),
   };
 }
 
-function submitTrunkMerge(prNumber) {
-  const res = runGh(['pr', 'comment', String(prNumber), '--body', '/trunk merge']);
+function submitTrunkMerge(prNumber, runner = runGh) {
+  const res = runner(['pr', 'comment', String(prNumber), '--body', '/trunk merge']);
   return {
     ok: res.status === 0,
     output: (res.stdout || res.stderr || '').trim(),
@@ -177,7 +177,7 @@ function evaluateChecks(statusCheckRollup = []) {
   return { isGreen, passing, failing, pending };
 }
 
-async function orchestrateCycle(options = {}) {
+async function orchestrateCycle(options = {}, runner = runGh) {
   const { dryRun = false } = options;
   const obs = new DatadogAgentObservability({ serviceName: 'thumbgate-pr-orchestrator' });
   const rootSpan = obs.startTrace('pr_orchestration_cycle');
@@ -187,7 +187,7 @@ async function orchestrateCycle(options = {}) {
   const discoverySpan = obs.startChildSpan(rootSpan, 'pr_discovery');
   let openPrs = [];
   try {
-    openPrs = listOpenPrs();
+    openPrs = listOpenPrs(runner);
     discoverySpan.setTag('open_pr_count', openPrs.length);
     discoverySpan.finish('SUCCESS');
   } catch (err) {
@@ -222,7 +222,7 @@ async function orchestrateCycle(options = {}) {
     }
 
     // 2. Auto-resolve Bot Review Threads under required_conversation_resolution
-    const threads = getPrReviewThreads(pr.number);
+    const threads = getPrReviewThreads(pr.number, runner);
     const unresolvedBotThreads = threads.filter((t) => {
       if (t.isResolved) return false;
       const firstComment = t.comments?.nodes?.[0];
@@ -232,7 +232,7 @@ async function orchestrateCycle(options = {}) {
 
     for (const thread of unresolvedBotThreads) {
       if (!dryRun) {
-        const resolved = resolveReviewThread(thread.id);
+        const resolved = resolveReviewThread(thread.id, runner);
         if (resolved) {
           summary.threadsResolved.push({ pr: pr.number, threadId: thread.id });
           console.log(`  ✅ Resolved bot review thread ${thread.id} on PR #${pr.number}`);
@@ -244,7 +244,7 @@ async function orchestrateCycle(options = {}) {
     if (pr.mergeStateStatus === 'BEHIND') {
       console.log(`  🔄 PR #${pr.number} is BEHIND main. Triggering automated update-branch...`);
       if (!dryRun) {
-        const updateRes = updatePrBranch(pr.number);
+        const updateRes = updatePrBranch(pr.number, runner);
         if (updateRes.ok) {
           summary.updatedBehind.push(pr.number);
           console.log(`    ✓ PR #${pr.number} branch updated to main.`);
@@ -277,7 +277,7 @@ async function orchestrateCycle(options = {}) {
     if (!isAlreadyQueued && (pr.mergeStateStatus === 'CLEAN' || pr.mergeStateStatus === 'BLOCKED')) {
       console.log(`  🚀 PR #${pr.number} is green and ready. Submitting to Trunk merge queue...`);
       if (!dryRun) {
-        const mergeRes = submitTrunkMerge(pr.number);
+        const mergeRes = submitTrunkMerge(pr.number, runner);
         if (mergeRes.ok) {
           summary.trunkQueued.push(pr.number);
           console.log(`    ✓ Enqueued PR #${pr.number} (/trunk merge).`);
@@ -321,6 +321,12 @@ if (require.main === module) {
 module.exports = {
   orchestrateCycle,
   evaluateChecks,
+  listOpenPrs,
+  getPrReviewThreads,
+  resolveReviewThread,
+  updatePrBranch,
+  submitTrunkMerge,
+  runGh,
   REQUIRED_CHECKS,
   BOT_REVIEW_AUTHORS,
 };
