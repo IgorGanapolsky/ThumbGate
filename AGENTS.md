@@ -119,6 +119,17 @@ npm run memory:vs-rag -- --query "what did we decide?" --entity entity-id --proj
 
 Details: [`docs/agents/memory-vs-rag.md`](./docs/agents/memory-vs-rag.md).
 
+## LLM-obs honesty (Datadog FORMAT)
+
+Four practices on existing rails: operational metrics, injection+PII scrub, quality evals, parented spans. Never clone Datadog / dd-trace / OTLP. Do not dual-edit PR #3881.
+
+```bash
+npx thumbgate llm-obs-honesty --json
+npx thumbgate llm-obs-honesty --trace=tests/fixtures/llm-obs-honesty-blind.json --json
+```
+
+Skill: `.agents/skills/datadog-llm-obs-compare-not-clone/SKILL.md`. Details: `docs/agents/llm-obs-honesty.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
