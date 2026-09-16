@@ -567,6 +567,20 @@ function main() {
   const actionContext = extractActionContext(toolName, effectiveInput);
   const lessons = retrieveLessons(toolName, actionContext);
 
+  try {
+    const { evaluatePreToolUse } = require('./token-shunt-honesty');
+    const shunt = evaluatePreToolUse({
+      toolName,
+      toolInput: effectiveInput,
+      cwd: input.cwd || process.cwd(),
+    });
+    if (shunt && shunt.ok === false) {
+      return block(`token-shunt: ${shunt.reason}`);
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const blockReason = maybeBlockOnRisk(lessons);
   if (blockReason) return block(blockReason);
 

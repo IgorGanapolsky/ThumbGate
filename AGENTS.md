@@ -130,6 +130,16 @@ npx thumbgate cobble-hot-store-split --trace=tests/fixtures/cobble-hot-store-spl
 
 Skill: `.agents/skills/cobble-hot-store-compare-not-clone/SKILL.md` (`/cobble-hot-store-compare-not-clone`). Details: `docs/agents/cobble-hot-store-split.md`.
 
+## Token-shunt honesty (Portal FORMAT)
+
+Untargeted Read above 350 lines is blocked. Bare `cat` of large files is blocked. Do not install `shunt@portal` or claim 90% savings from GitHub App 162279530.
+
+```bash
+npx thumbgate token-shunt-honesty --json --lines=800
+```
+
+Skill: `.agents/skills/token-shunt-honesty-not-clone/SKILL.md`. Details: `docs/agents/token-shunt-honesty.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
