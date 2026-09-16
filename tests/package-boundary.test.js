@@ -491,8 +491,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 530 -> 532: test-all.js + find-dormant-requires.js (aggregate runner, #3703 successor).
   // 532 -> 534: allowlist-bridge-honesty.js + gitlab-sandbox-allowlist-not-trust skill.
   // 534 -> 536: openui-catalog-compose-honesty.js + skill — OpenUI FORMAT steal.
-    manifest.fileCount <= 536,
-    `npm package should stay <= 536 files, got ${manifest.fileCount}`
+  // 536 -> 538: thumbgate-board-loop.js + skill — Issues+PR wall loop.
+    manifest.fileCount <= 538,
+    `npm package should stay <= 538 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -703,8 +704,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 5,606 over the old cap. Narrow headroom retained.
   assert.ok(
   // Bumped 8.35 MB -> 8.40 MB (2026-09-04): intent-governed-execution after zg.
-    manifest.unpackedSize <= 8_400_000,
-    `npm package should stay <= 8.40 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.40 MB -> 8.42 MB (2026-09-16): thumbgate-board-loop.js + skill.
+  // Measured 8,404,236 unpacked.
+    manifest.unpackedSize <= 8_420_000,
+    `npm package should stay <= 8.42 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

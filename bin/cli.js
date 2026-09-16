@@ -2692,6 +2692,25 @@ function jitHarnessCompose() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function thumbgateBoardLoop() {
+  const args = parseArgs(process.argv.slice(3));
+  const { buildReport, formatReport } = require(path.join(PKG_ROOT, 'scripts', 'thumbgate-board-loop'));
+  const report = buildReport({
+    json: Boolean(args.json),
+    apply: Boolean(args.apply),
+    maxUpdateBranch: Number(args['max-update-branch'] ?? 1),
+    maxPrManage: Number(args['max-pr-manage'] ?? 1),
+    maxComments: Number(args['max-comments'] ?? 4),
+    skipPr: args['skip-pr'] ? Number(args['skip-pr']) : null,
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatReport(report));
+  }
+}
+
 function allowlistBridgeHonestyDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3562,6 +3581,7 @@ function help() {
   console.log('  openui-catalog-compose-honesty Catalog-compose-only + repair-before-claim (OpenUI FORMAT)');
   console.log('  allowlist-bridge-honesty Audit allowlisted registries/proxies as hops, not trust boundaries');
   console.log('  jit-harness-compose   Compose memory/planning/action/capability onto existing rails (JIT FORMAT)');
+  console.log('  board-loop            Classify+drain Issues/PR wall (BEHIND Dependabot, never approve)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
   console.log('  intent-governed-execution  NL intent → classify/authorize/gate/HITL/evidence (CyberStrike FORMAT)');
   console.log('  background-governance Background-agent run report and dispatch risk check');
@@ -3605,6 +3625,7 @@ function help() {
   console.log('  npx thumbgate openui-catalog-compose-honesty --catalog=catalog.json --stream=compose.txt --repair --json');
   console.log('  npx thumbgate allowlist-bridge-honesty --json');
   console.log('  npx thumbgate jit-harness-compose --task="implement PreToolUse gate fix" --json');
+  console.log('  npx thumbgate board-loop --json');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
   console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
   console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
@@ -4264,6 +4285,11 @@ switch (COMMAND) {
   case 'jit-harness':
   case 'harness-compose':
     jitHarnessCompose();
+    break;
+  case 'board-loop':
+  case 'thumbgate-board-loop':
+  case 'pr-issue-loop':
+    thumbgateBoardLoop();
     break;
   case 'workspace-search-route':
   case 'zg-search-route':
