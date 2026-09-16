@@ -2692,6 +2692,36 @@ function jitHarnessCompose() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function sessionExportGate() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildSessionExportGateReport,
+    formatSessionExportGateReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'session-export-gate'));
+  let text = args.text;
+  if (!text && args.input) {
+    text = fs.readFileSync(String(args.input), 'utf8');
+  }
+  const report = buildSessionExportGateReport({
+    json: Boolean(args.json),
+    apply: Boolean(args.apply),
+    lane: args.lane,
+    optIn: Boolean(args['opt-in-export'] || args.optIn),
+    irreversibleAck: Boolean(args['i-understand-irreversible'] || args.irreversibleAck),
+    dest: args.dest,
+    log: args.log,
+    text,
+    'clone-bolt-forge': Boolean(args['clone-bolt-forge']),
+    argv: process.argv.slice(3),
+  });
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatSessionExportGateReport(report));
+  }
+  if (report.status === 'fail' || !report.ok) process.exitCode = 1;
+}
+
 function allowlistBridgeHonestyDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3562,6 +3592,7 @@ function help() {
   console.log('  openui-catalog-compose-honesty Catalog-compose-only + repair-before-claim (OpenUI FORMAT)');
   console.log('  allowlist-bridge-honesty Audit allowlisted registries/proxies as hops, not trust boundaries');
   console.log('  jit-harness-compose   Compose memory/planning/action/capability onto existing rails (JIT FORMAT)');
+  console.log('  session-export-gate   Per-session opt-in research export; operator DENY (Bolt Forge FORMAT)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
   console.log('  intent-governed-execution  NL intent → classify/authorize/gate/HITL/evidence (CyberStrike FORMAT)');
   console.log('  background-governance Background-agent run report and dispatch risk check');
@@ -3605,6 +3636,7 @@ function help() {
   console.log('  npx thumbgate openui-catalog-compose-honesty --catalog=catalog.json --stream=compose.txt --repair --json');
   console.log('  npx thumbgate allowlist-bridge-honesty --json');
   console.log('  npx thumbgate jit-harness-compose --task="implement PreToolUse gate fix" --json');
+  console.log('  npx thumbgate session-export-gate --json --lane=operator');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
   console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
   console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
@@ -4264,6 +4296,11 @@ switch (COMMAND) {
   case 'jit-harness':
   case 'harness-compose':
     jitHarnessCompose();
+    break;
+  case 'session-export-gate':
+  case 'bolt-forge-opt-in':
+  case 'forge-export-gate':
+    sessionExportGate();
     break;
   case 'workspace-search-route':
   case 'zg-search-route':
