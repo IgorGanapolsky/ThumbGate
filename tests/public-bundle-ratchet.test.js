@@ -238,7 +238,8 @@ const path = require('node:path');
 //            (GitLab 2026-09 allowlist-as-bridge FORMAT steal).
 // 534 → 536: openui-catalog-compose-honesty.js + skill — OpenUI FORMAT steal
 //            (catalog-compose-only, root-first, repair-before-claim; not @openuidev).
-const BASELINE_FILE_COUNT = 536;
+// 536 → 538: session-export-gate.js + skill — Bolt Forge opt-in FORMAT steal.
+const BASELINE_FILE_COUNT = 538;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

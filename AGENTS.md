@@ -119,6 +119,17 @@ npm run memory:vs-rag -- --query "what did we decide?" --entity entity-id --proj
 
 Details: [`docs/agents/memory-vs-rag.md`](./docs/agents/memory-vs-rag.md).
 
+## Session export (Bolt Forge FORMAT)
+
+Per-session opt-in, secret strip + seeded tests, operator DENY vs research, already-exported irreversible. Never clone Forge. Never claim 50×. Never upload to Arcee.
+
+```bash
+npx thumbgate session-export-gate --json --lane=operator
+npx thumbgate session-export-gate --json --lane=research --opt-in-export --i-understand-irreversible --text=hi
+```
+
+Skill: `.agents/skills/bolt-forge-opt-in-not-clone/SKILL.md`. Details: `docs/agents/session-export-gate.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
