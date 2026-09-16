@@ -119,6 +119,17 @@ npm run memory:vs-rag -- --query "what did we decide?" --entity entity-id --proj
 
 Details: [`docs/agents/memory-vs-rag.md`](./docs/agents/memory-vs-rag.md).
 
+## Board loop (Issues + PRs)
+
+GitHub list-view `4/4` is not mergeable. After each Trunk land, Dependabot goes `SUCCESS`+`BEHIND`. Classify then act — never approve.
+
+```bash
+npx thumbgate board-loop --json
+npx thumbgate board-loop --apply --json
+```
+
+Skill: `.agents/skills/thumbgate-board-loop/SKILL.md` (`/thumbgate-board-loop`). Details: `docs/agents/thumbgate-board-loop.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:

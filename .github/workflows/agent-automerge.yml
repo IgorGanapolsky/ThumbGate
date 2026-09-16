@@ -49,6 +49,8 @@ jobs:
     steps:
       - name: Resolve PR number
         id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
         run: |
           set -euo pipefail
           number=""
@@ -56,6 +58,12 @@ jobs:
             number="${{ inputs.pr_number }}"
           elif [ -n "${{ github.event.pull_request.number }}" ]; then
             number="${{ github.event.pull_request.number }}"
+          elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+            sha="${{ github.event.workflow_run.head_sha }}"
+            if [ -n "${sha}" ]; then
+              number="$(gh pr list --state open --limit 50 --json number,headRefOid \
+                --jq ".[] | select(.headRefOid==\"${sha}\") | .number" | head -n 1 || true)"
+            fi
           fi
           echo "number=${number}" >> "$GITHUB_OUTPUT"
           if [ -z "${number}" ]; then
@@ -96,7 +104,7 @@ jobs:
           fi
 
           case "$ref" in
-            claude/*|codex/*|auto/*|agent/*|fix/*|feat/*|chore/*) ;;
+            claude/*|codex/*|auto/*|agent/*|fix/*|feat/*|chore/*|dependabot/*) ;;
             *)
               labels="$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name]|join(",")')"
               case ",$labels," in
@@ -111,6 +119,10 @@ jobs:
 
           echo "Evaluating PR #$PR_NUMBER ($ref) with pr-manager"
           node scripts/pr-manager.js "$PR_NUMBER"
+
+          if [ -f scripts/thumbgate-board-loop.js ]; then
+            node scripts/thumbgate-board-loop.js --apply --max-update-branch=1 --skip-pr="$PR_NUMBER" --json
+          fi
 
           {
             echo "### Merge automation"

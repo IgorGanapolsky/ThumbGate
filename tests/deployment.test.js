@@ -1106,6 +1106,8 @@ test('Agent auto-merge queues fix/feat/chore branches and never auto-approves', 
   assert.match(workflow, /fix\/\*/);
   assert.match(workflow, /feat\/\*/);
   assert.match(workflow, /chore\/\*/);
+  assert.match(workflow, /dependabot\/\*/);
+  assert.match(workflow, /workflow_run\.head_sha/);
   assert.doesNotMatch(workflow, /event:\s*"APPROVE"/);
   assert.doesNotMatch(workflow, /Auto-approved by agent automerge policy/);
   assert.doesNotMatch(workflow, /pulls\.createReview/);
