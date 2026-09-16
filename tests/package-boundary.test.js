@@ -493,14 +493,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 534 -> 536: openui-catalog-compose-honesty.js + skill — OpenUI FORMAT steal.
   // 536 -> 538: cobble-hot-store-split.js + skill — CobbleDB FORMAT steal.
   // 538 -> 540: token-shunt-honesty.js + skill — Spotify Portal/shunt FORMAT.
-  // 540 -> 542: typesafe-typed-questions.js + skill — TypeSafe FORMAT steal.
-  // 542 -> 544: colab-compute-honesty.js + skill — Colab /signup CU honesty.
-  // 544 -> 546: deeppattern-discipline-honesty.js + skill — DeepPattern layer-check + evidence-closeout.
   // 546 -> 548: ci-gha-buildkite-patterns.js + skill — Buildkite FORMAT on GHA.
   // 548 -> 549 (2026-09-18): src/integrations/ideabrowser-connector.js (IdeaBrowser connector #3823).
   // 549 -> 551 (2026-09-20): thumbgate-board-loop.js + skill — Issues+PR wall classifier.
-    manifest.fileCount <= 551,
-    `npm package should stay <= 551 files, got ${manifest.fileCount}`
+  // 551 -> 552 (2026-09-22): src/observability/datadog-agent-observability.js (Datadog agent observability engine).
+  assert.ok(
+    manifest.fileCount <= 552,
+    `npm package should stay <= 552 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

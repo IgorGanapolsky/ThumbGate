@@ -246,13 +246,12 @@ const path = require('node:path');
 //            FORMAT steal onto PreToolUse (not typesafe-sdk / Jev).
 // 542 → 544: colab-compute-honesty.js + skill — Colab /signup CU honesty
 //            (subscribe≠receipt; not a GPU SKU).
-// 544 → 546: deeppattern-discipline-honesty.js + skill — DeepPattern
-//            layer-check + evidence-closeout FORMAT (not AQG/DE).
 // 546 → 548: ci-gha-buildkite-patterns.js + skill — Buildkite pipeline
 //            FORMAT on GitHub Actions (not a Buildkite vendor).
 // 548 → 549 (2026-09-18): src/integrations/ideabrowser-connector.js (#3823).
 // 549 → 551: thumbgate-board-loop.js + skill — Issues+PR wall classifier.
-const BASELINE_FILE_COUNT = 551;
+// 551 → 552: src/observability/datadog-agent-observability.js (Datadog agent observability engine).
+const BASELINE_FILE_COUNT = 552;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
