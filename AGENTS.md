@@ -119,6 +119,17 @@ npm run memory:vs-rag -- --query "what did we decide?" --entity entity-id --proj
 
 Details: [`docs/agents/memory-vs-rag.md`](./docs/agents/memory-vs-rag.md).
 
+## Coverage gaps (VS FORMAT, honest)
+
+Baseline first, skip no-behavior files, remeasure the **same** scope. Never clone Copilot Test Agent. Never claim 100% coverage.
+
+```bash
+npx thumbgate coverage-gap --json --coverage=tests/fixtures/coverage-gap-before.json --scope=scripts/risk --floor=50
+npx thumbgate coverage-gap --json --before=tests/fixtures/coverage-gap-before.json --after=tests/fixtures/coverage-gap-after.json --scope=scripts/risk
+```
+
+Skill: `.agents/skills/vs-coverage-gap-not-clone/SKILL.md`. Details: `docs/agents/coverage-gap.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
