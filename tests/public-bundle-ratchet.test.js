@@ -242,7 +242,9 @@ const path = require('node:path');
 //            steal onto existing lesson rails (not RocksDB/YTsaurus).
 // 538 → 540: token-shunt-honesty.js + skill — Spotify Portal/shunt FORMAT
 //            (untargeted Read intercept; not shunt@portal).
-const BASELINE_FILE_COUNT = 540;
+// 540 → 542: typesafe-typed-questions.js + skill — TypeSafe noul/choice/score
+//            FORMAT steal onto PreToolUse (not typesafe-sdk / Jev).
+const BASELINE_FILE_COUNT = 542;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

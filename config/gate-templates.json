@@ -62,6 +62,30 @@
       "rollout": "Require openui-catalog-compose-honesty --repair --claim-ready evidence before any compose/UI done claim. Does not install OpenUI Gateway."
     },
     {
+      "id": "require-typed-pretool-questions",
+      "name": "Require typed noul/choice/score PreToolUse questions",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(should we allow this tool call|free-?form judge|llm[- ]adjudicat|typesafe-sdk|api\\.typesafe\\.ai|clone\\s+jev|jev-latest).*(pretooluse|gate-check)|question type (prompt|text|chat)",
+      "problem": "Blocks free-form LLM judges and TypeSafe/Jev SKU clones as the PreToolUse gate. TypeSafe FORMAT: atomic noul/choice/score questions over one tool-call state, answered deterministically.",
+      "roi": "Keeps PreToolUse as typed, inspectable questions instead of a prompt-and-parse adjudicator. Does not install typesafe-sdk.",
+      "rollout": "Pair with typesafe-typed-questions --json. Enable wherever an agent wants to add a second-model judge in front of gate-check."
+    },
+    {
+      "id": "require-code-owned-route",
+      "name": "Require code-owned pass/review/block route",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(model-emitted verdict|wire jev as the gate|use-typesafe-api|llm[- ]adjudicat|clone jev).*(route|verdict|pretooluse)|permissionDecision.*(allow|deny).*from (jev|llm)",
+      "problem": "Blocks letting Jev, an LLM adjudicator, or any model emit the PreToolUse verdict. TypeSafe FORMAT: code owns route(); confidence is a second axis.",
+      "roi": "Same probabilities, different policies. Thresholds live in code, not in a prompt. LLM adjudicator #3690/#3687 stays parked.",
+      "rollout": "Require typesafe-typed-questions --claim-ready evidence before claiming a typed-question hook is ready. Does not call api.typesafe.ai."
+    },
+    {
       "id": "require-broker-signed-execution-receipt",
       "name": "Require broker-signed execution receipts",
       "category": "Provider Side-Effect Governance",

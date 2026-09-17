@@ -140,6 +140,17 @@ npx thumbgate token-shunt-honesty --json --lines=800
 
 Skill: `.agents/skills/token-shunt-honesty-not-clone/SKILL.md`. Details: `docs/agents/token-shunt-honesty.md`.
 
+## TypeSafe typed questions (FORMAT steal)
+
+Typed noul/choice/score over one PreToolUse state; code owns pass|review|block. Do not install `typesafe-sdk`, call Jev, or unpark the LLM adjudicator (#3690/#3687).
+
+```bash
+npx thumbgate typesafe-typed-questions --json --map-only
+npx thumbgate typesafe-typed-questions --json --tool-name=Bash --command='git push --force origin main'
+```
+
+Skill: `.agents/skills/typesafe-typed-questions-not-clone/SKILL.md`. Details: `docs/agents/typesafe-typed-questions.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
