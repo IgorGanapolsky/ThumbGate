@@ -273,6 +273,17 @@ test('jit-harness-compose exposes four-module compose flags', () => {
   assert.ok(flagNames.includes('profile'));
 });
 
+test('typesafe-typed-questions exposes typed-question flags', () => {
+  const cmd = findCommand('typesafe-hook');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'typesafe-typed-questions');
+  assert.ok(cmd.aliases.includes('typed-questions'));
+  assert.ok(flagNames.includes('payload'));
+  assert.ok(flagNames.includes('clone-jev'));
+  assert.ok(flagNames.includes('llm-adjudicate'));
+  assert.ok(flagNames.includes('map-only'));
+});
+
 test('allowlist-bridge-honesty exposes hop-not-trust flags', () => {
   const cmd = findCommand('gitlab-sandbox-allowlist');
   const flagNames = cmd.flags.map((f) => f.name);

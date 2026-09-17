@@ -295,7 +295,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 536 -> 538: cobble-hot-store-split.js + skill — CobbleDB three-plane FORMAT
   //   steal onto existing lesson rails (not a KV SKU).
   // 538 -> 540: token-shunt-honesty.js + skill — Spotify Portal/shunt FORMAT.
-  const CEILING = 540;
+  // 540 -> 542: typesafe-typed-questions.js + skill — TypeSafe FORMAT steal
+  //   (typed noul/choice/score + code-owned route; not a Jev SKU).
+  const CEILING = 542;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

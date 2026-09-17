@@ -476,6 +476,28 @@ const CLI_COMMANDS = [
   }),
 
   discoveryCommand({
+    name: 'typesafe-typed-questions',
+    aliases: ['typesafe-hook', 'typed-questions', 'jev-typed-questions'],
+    description: 'TypeSafe FORMAT steal: typed noul/choice/score over PreToolUse state, code-owned pass/review/block (does not install typesafe-sdk or clone Jev)',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero on fail or actionable findings' },
+      { name: 'root', type: 'string', description: 'Repo root for relative paths (default cwd)' },
+      { name: 'payload', type: 'string', description: 'Path to PreToolUse JSON payload' },
+      { name: 'battery', type: 'string', description: 'Path to typed questions JSON' },
+      { name: 'tool-name', type: 'string', description: 'Shortcut tool_name' },
+      { name: 'command', type: 'string', description: 'Shortcut tool_input.command' },
+      { name: 'policy', type: 'string', description: 'strict|permissive route policy' },
+      { name: 'map-only', type: 'boolean', description: 'Print TypeSafe → ThumbGate rail map' },
+      { name: 'claim-ready', type: 'boolean', description: 'Fail unless code owns the route' },
+      { name: 'clone-jev', type: 'boolean', description: 'Refuse TypeSafe/Jev SKU clone' },
+      { name: 'use-typesafe-api', type: 'boolean', description: 'Refuse live api.typesafe.ai as the gate' },
+      { name: 'llm-adjudicate', type: 'boolean', description: 'Refuse LLM adjudicator (#3690/#3687 parked)' },
+      { name: 'model-emitted-verdict', type: 'string', description: 'Refuse a model-emitted pass/review/block' },
+    ],
+  }),
+
+  discoveryCommand({
     name: 'openui-catalog-compose-honesty',
     aliases: ['openui-honesty-doctor', 'catalog-compose-honesty', 'repair-before-compose-claim'],
     description: 'OpenUI FORMAT steal: catalog-compose-only, root-first streaming, repair-before-claim (does not install @openuidev or clone Thesys Gateway)',
