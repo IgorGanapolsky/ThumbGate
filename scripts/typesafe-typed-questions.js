@@ -32,6 +32,8 @@ const SOURCE_URLS = Object.freeze([
 
 const TYPED_KINDS = Object.freeze(['noul', 'choice', 'score']);
 const ROUTE_PRECEDENCE = Object.freeze(['block', 'review', 'pass']);
+const ROUTE_ACTIONS = Object.freeze(['block', 'review', 'pass']);
+const WRITE_TOOLS = Object.freeze(['Write', 'Edit', 'MultiEdit', 'NotebookEdit', 'Bash']);
 
 const POLICIES = Object.freeze({
   strict: { reviewThreshold: 0.35, actionThreshold: 0.7, severityBlock: 2 },
@@ -90,6 +92,8 @@ const DEFAULT_BATTERY = Object.freeze({
       false: 'No guardrail file is in the write set',
     },
     matcher: 'config/gates|prevention-rules\\.md|gate-templates\\.json|thumbgate-spend-guard',
+    writeTools: WRITE_TOOLS,
+    writeCommandMatcher: '(?:^|[\\s;|&])(?:tee|rm|mv|cp|sed\\s+-i|>|>>)',
     stakes: 'high',
   },
   clone_jev: {
@@ -178,12 +182,44 @@ function compileMatcher(source) {
   }
 }
 
-function noulFromMatchers(blob, question) {
+function toolNameOf(payload) {
+  return String((payload && (payload.tool_name || payload.toolName)) || '').trim();
+}
+
+function commandOf(payload) {
+  const input = (payload && (payload.tool_input || payload.toolInput)) || {};
+  return String((input && input.command) || (payload && payload.command) || '');
+}
+
+function isWriteCapable(question, payload) {
+  const allowed = Array.isArray(question.writeTools) ? question.writeTools : null;
+  if (!allowed || allowed.length === 0) return true;
+  const name = toolNameOf(payload);
+  const hit = allowed.some((tool) => String(tool).toLowerCase() === name.toLowerCase());
+  if (!hit) return false;
+  if (name.toLowerCase() === 'bash' && question.writeCommandMatcher) {
+    const re = compileMatcher(question.writeCommandMatcher);
+    if (re && !re.test(commandOf(payload))) return false;
+  }
+  return true;
+}
+
+function noulFromMatchers(blob, question, payload) {
+  if (!isWriteCapable(question, payload || {})) {
+    return { noul: 0, band: 'pass' };
+  }
   const hard = compileMatcher(question.matcher);
   const warn = compileMatcher(question.warnMatcher);
   if (hard && hard.test(blob)) return { noul: 1, band: 'action' };
   if (warn && warn.test(blob)) return { noul: 0.55, band: 'review' };
   return { noul: 0, band: 'pass' };
+}
+
+function actionForNoul(id, question) {
+  if (HAZARD_ACTION[id]) return HAZARD_ACTION[id];
+  const action = String((question && question.action) || '').toLowerCase();
+  if (ROUTE_ACTIONS.includes(action)) return action;
+  return null;
 }
 
 function validateQuestion(id, question) {
@@ -205,6 +241,13 @@ function validateQuestion(id, question) {
     errors.push({ id: 'missing_instructions', questionId: id, message: `Question ${id} is missing instructions.` });
   }
   if (type === 'noul') {
+    if (actionForNoul(id, question) == null) {
+      errors.push({
+        id: 'noul_without_route_action',
+        questionId: id,
+        message: `Noul ${id} has no route action. Use a built-in hazard id or set action=block|review|pass.`,
+      });
+    }
     const c = question.criteria || {};
     if (c.true == null || c.false == null) {
       errors.push({
@@ -287,11 +330,11 @@ function composeSeverity(nouls) {
   return anyReview ? 1 : 0;
 }
 
-function route({ nouls, severity, policy }) {
+function route({ nouls, severity, policy, battery }) {
   const triggered = [];
   for (const [hazard, probability] of Object.entries(nouls)) {
-    const action = HAZARD_ACTION[hazard];
-    if (!action) continue;
+    const action = actionForNoul(hazard, battery && battery[hazard]);
+    if (!action || action === 'pass') continue;
     if (probability >= policy.actionThreshold) triggered.push(action);
     else if (probability >= policy.reviewThreshold) triggered.push('review');
   }
@@ -304,21 +347,23 @@ function route({ nouls, severity, policy }) {
   return ROUTE_PRECEDENCE.find((action) => triggered.includes(action)) || 'pass';
 }
 
-function evaluateBattery({ battery, blob, flags }) {
+function evaluateBattery({ battery, blob, flags, payload }) {
   const nouls = {};
   const answers = {};
   const unevaluated = [];
 
   for (const [id, question] of Object.entries(battery)) {
+    if (!question || typeof question !== 'object') continue;
     const type = String(question.type || '').toLowerCase();
     if (type === 'noul') {
       let result;
       if (flags.cloneJev && id === 'clone_jev') result = { noul: 1, band: 'action' };
       else if (flags.useTypesafeApi && id === 'clone_jev') result = { noul: 1, band: 'action' };
       else if (flags.llmAdjudicate && id === 'clone_jev') result = { noul: 1, band: 'action' };
-      else if (question.matcher || question.warnMatcher) result = noulFromMatchers(blob, question);
-      else if (DEFAULT_BATTERY[id] && DEFAULT_BATTERY[id].matcher) {
-        result = noulFromMatchers(blob, DEFAULT_BATTERY[id]);
+      else if (question.matcher || question.warnMatcher) {
+        result = noulFromMatchers(blob, question, payload);
+      } else if (DEFAULT_BATTERY[id] && DEFAULT_BATTERY[id].matcher) {
+        result = noulFromMatchers(blob, DEFAULT_BATTERY[id], payload);
       } else {
         unevaluated.push(id);
         result = { noul: null, band: 'unevaluated' };
@@ -546,12 +591,17 @@ function buildTypesafeTypedQuestionsReport(rawOptions = {}) {
 
   const evaluated = options.mapOnly
     ? { nouls: {}, answers: {}, unevaluated: [], family: 'none', severity: 0 }
-    : evaluateBattery({ battery, blob, flags });
+    : evaluateBattery({ battery, blob, flags, payload });
 
   const policy = POLICIES[options.policyName];
   const composedRoute = options.mapOnly
     ? 'pass'
-    : route({ nouls: evaluated.nouls, severity: evaluated.severity, policy });
+    : route({
+      nouls: evaluated.nouls,
+      severity: evaluated.severity,
+      policy,
+      battery,
+    });
 
   const findings = [
     ...ioErrors.map((e) => ({
@@ -618,10 +668,10 @@ function buildTypesafeTypedQuestionsReport(rawOptions = {}) {
     metrics: {
       payloadPath: options.payloadPath,
       batteryPath: options.batteryPath,
-      questionCount: Object.keys(battery).length,
-      noulCount: Object.values(battery).filter((q) => String(q.type).toLowerCase() === 'noul').length,
-      choiceCount: Object.values(battery).filter((q) => String(q.type).toLowerCase() === 'choice').length,
-      scoreCount: Object.values(battery).filter((q) => String(q.type).toLowerCase() === 'score').length,
+      questionCount: Object.values(battery).filter((q) => q && typeof q === 'object').length,
+      noulCount: Object.values(battery).filter((q) => q && String(q.type).toLowerCase() === 'noul').length,
+      choiceCount: Object.values(battery).filter((q) => q && String(q.type).toLowerCase() === 'choice').length,
+      scoreCount: Object.values(battery).filter((q) => q && String(q.type).toLowerCase() === 'score').length,
       mapOnly: options.mapOnly,
       claimReady: options.claimReady,
       hazardFamily: evaluated.family,
@@ -749,6 +799,7 @@ module.exports = {
   parseBattery,
   validateQuestion,
   noulFromMatchers,
+  actionForNoul,
   composeHazardFamily,
   composeSeverity,
   route,

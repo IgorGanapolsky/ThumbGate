@@ -207,6 +207,62 @@ test('payload file round-trip', () => {
   }
 });
 
+test('Read of a gate path is not tamper; Write of the same path blocks', () => {
+  const read = buildTypesafeTypedQuestionsReport({
+    payloadText: JSON.stringify({
+      tool_name: 'Read',
+      tool_input: { file_path: 'config/gates/default.json' },
+    }),
+  });
+  assert.equal(read.route, 'pass');
+  assert.equal(read.answers.guardrail_tamper.noul, 0);
+
+  const write = buildTypesafeTypedQuestionsReport({
+    payloadText: JSON.stringify({
+      tool_name: 'Write',
+      tool_input: { file_path: 'config/gates/default.json', content: '{}' },
+    }),
+  });
+  assert.equal(write.route, 'block');
+  assert.equal(write.answers.guardrail_tamper.noul, 1);
+});
+
+test('custom noul without a route action fails closed', () => {
+  const report = buildTypesafeTypedQuestionsReport({
+    batteryText: JSON.stringify({
+      mystery: {
+        type: 'noul',
+        instructions: 'Is this risky?',
+        criteria: { true: 'yes', false: 'no' },
+        matcher: 'mystery',
+      },
+    }),
+    command: 'mystery',
+  });
+  assert.equal(report.status, 'fail');
+  assert.ok(report.findings.some((f) => f.id === 'noul_without_route_action'));
+});
+
+test('malformed null question returns a finding instead of throwing', () => {
+  const report = buildTypesafeTypedQuestionsReport({
+    batteryText: JSON.stringify({ questions: { x: null } }),
+  });
+  assert.equal(report.status, 'fail');
+  assert.ok(report.findings.some((f) => f.id === 'malformed_question'));
+});
+
+test('typed-question gate patterns match reverse-order rail text', () => {
+  const config = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', 'config', 'gate-templates.json'), 'utf8')
+  );
+  const typed = config.templates.find((t) => t.id === 'require-typed-pretool-questions');
+  const owned = config.templates.find((t) => t.id === 'require-code-owned-route');
+  const typedRe = new RegExp(typed.pattern, 'i');
+  const ownedRe = new RegExp(owned.pattern, 'i');
+  assert.ok(typedRe.test('PreToolUse gate calls api.typesafe.ai'));
+  assert.ok(ownedRe.test('PreToolUse route uses a model-emitted verdict'));
+});
+
 test('gate templates include typed-question honesty pair', () => {
   const config = JSON.parse(
     fs.readFileSync(path.join(__dirname, '..', 'config', 'gate-templates.json'), 'utf8')
