@@ -17,6 +17,9 @@ const {
   buildTypesafeTypedQuestionsReport,
   buildTypesafeTypedQuestionsReportAsync,
   questionsForApi,
+  compareShadow,
+  normalizeMetric,
+  computeVariance,
   formatTypesafeTypedQuestionsReport,
 } = require('../scripts/typesafe-typed-questions');
 
@@ -309,16 +312,19 @@ test('--live without a key fails closed and does not call fetch', async () => {
 });
 
 test('--live shadow disagrees without changing route', async () => {
+  let called = 0;
   const report = await buildTypesafeTypedQuestionsReportAsync({
     live: true,
     apiKey: 'test-key',
     toolName: 'Bash',
     command: 'git reset --hard HEAD',
     fetchImpl: async (url, init) => {
+      called += 1;
       assert.match(String(url), /systemone/);
       const body = JSON.parse(init.body);
       assert.equal(body.model, 'jev-latest');
       assert.equal(body.questions.destructive.matcher, undefined);
+      assert.ok(Object.keys(body.questions).length >= 5, 'batched POST must send the whole battery');
       return {
         ok: true,
         status: 200,
@@ -330,10 +336,32 @@ test('--live shadow disagrees without changing route', async () => {
       };
     },
   });
+  assert.equal(called, 1);
   assert.equal(report.route, 'block');
   assert.equal(report.shadow.used, true);
   assert.equal(report.shadow.ownsRoute, false);
   assert.ok(report.findings.some((f) => f.id === 'shadow_divergence'));
+  assert.equal(report.parallel.batchedCalls, 1);
+  assert.ok(report.parallel.questionCount >= 5);
+  assert.equal(report.parallel.inputTokens, 12);
+  assert.equal(report.parallel.estimatedFanoutInputTokens, 12 * report.parallel.questionCount);
+  assert.match(report.parallel.cookbook, /parallel_questions/);
+});
+
+test('--fan-out-questions fails closed without extra HTTP', async () => {
+  let called = 0;
+  const report = await buildTypesafeTypedQuestionsReportAsync({
+    live: true,
+    fanOutQuestions: true,
+    apiKey: 'test-key',
+    fetchImpl: async () => {
+      called += 1;
+      return { ok: true, status: 200, text: async () => '{}' };
+    },
+  });
+  assert.equal(called, 0);
+  assert.equal(report.status, 'fail');
+  assert.ok(report.findings.some((f) => f.id === 'parallel_fanout_refused'));
 });
 
 test('--use-typesafe-api still refuses Jev as the gate even with --live', async () => {
@@ -372,3 +400,43 @@ test('docs and skill refuse Jev clones and LLM adjudicator', () => {
   assert.match(skill, /Do NOT install/i);
   assert.match(skill, /console\.typesafe\.ai\/hook/);
 });
+
+test('normalizeMetric extracts standardized 0..1 metrics per primitive', () => {
+  const noulMetric = normalizeMetric({ type: 'noul', noul: 0.85 });
+  assert.equal(noulMetric, 0.85);
+
+  const choiceMetric = normalizeMetric({
+    type: 'choice',
+    choice: 'destructive',
+    probabilities: { destructive: 0.92, none: 0.08 },
+  });
+  assert.equal(choiceMetric, 0.92);
+
+  const scoreMetric = normalizeMetric(
+    { type: 'score', score: 2 },
+    { criteria: ['None', 'Mild', 'Serious', 'Severe'] }
+  );
+  assert.equal(scoreMetric, 0.6667);
+});
+
+test('computeVariance detects zero variance across identical repeats', () => {
+  const runs = [
+    { breach: 0.8, destructive: 1.0 },
+    { breach: 0.8, destructive: 1.0 },
+    { breach: 0.8, destructive: 1.0 },
+  ];
+  const stats = computeVariance(runs);
+  assert.equal(stats.destructive.mean, 1.0);
+  assert.equal(stats.destructive.stdDev, 0.0);
+  assert.equal(stats.destructive.zeroVariance, true);
+});
+
+test('compareShadow records divergence on score mismatch', () => {
+  const det = { severity: { type: 'score', score: 2 } };
+  const jev = { severity: { type: 'score', score: 0 } };
+  const diffs = compareShadow(det, jev);
+  assert.equal(diffs.length, 1);
+  assert.equal(diffs[0].id, 'severity');
+  assert.equal(diffs[0].delta, 2);
+});
+

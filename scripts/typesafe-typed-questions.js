@@ -34,6 +34,7 @@ const SOURCE_URLS = Object.freeze([
 ]);
 
 const SYSTEMONE_URL = 'https://api.typesafe.ai/v1/systemone';
+const PARALLEL_QUESTIONS_COOKBOOK = 'https://docs.typesafe.ai/cookbooks/parallel_questions';
 const SHADOW_NOUL_DELTA = 0.4;
 
 const TYPED_KINDS = Object.freeze(['noul', 'choice', 'score']);
@@ -138,6 +139,7 @@ const DEFAULT_BATTERY = Object.freeze({
 });
 
 const RAIL_MAP = Object.freeze([
+  { typesafe: 'one POST with all N questions (parallel_questions cookbook)', thumbgate: '--live sends the whole battery once; --fan-out-questions is refused' },
   { typesafe: 'noul (one hazard each)', thumbgate: 'existing secret / destructive / outbound / tamper matchers' },
   { typesafe: 'choice over a closed set', thumbgate: 'hazard_family composed in code from which noul fired' },
   { typesafe: 'score rubric', thumbgate: 'severity 0–3 from the same matchers' },
@@ -448,6 +450,7 @@ function normalizeOptions(raw = {}) {
     llmAdjudicate: normalizeBoolean(raw['llm-adjudicate'] || raw.llmAdjudicate),
     modelEmittedVerdict: raw['model-emitted-verdict'] || raw.modelEmittedVerdict || null,
     live: normalizeBoolean(raw.live),
+    fanOutQuestions: normalizeBoolean(raw['fan-out-questions'] || raw.fanOutQuestions),
     apiKey: Object.prototype.hasOwnProperty.call(raw, 'apiKey')
       ? raw.apiKey
       : (raw['api-key'] || undefined),
@@ -464,6 +467,24 @@ function loadTypesafeApiKey() {
   if (!fs.existsSync(fallback)) return null;
   const text = fs.readFileSync(fallback, 'utf8').trim();
   return text || null;
+}
+
+function parallelReceipt(questions, usage) {
+  const questionCount = Object.keys(questions || {}).length;
+  const inputTokens = usage && usage.input_tokens != null ? Number(usage.input_tokens) : null;
+  const estimatedFanoutInputTokens = inputTokens != null && questionCount > 0
+    ? inputTokens * questionCount
+    : null;
+  return {
+    cookbook: PARALLEL_QUESTIONS_COOKBOOK,
+    batchedCalls: 1,
+    questionCount,
+    estimatedFanoutCalls: questionCount,
+    inputTokens,
+    estimatedFanoutInputTokens,
+    estimatedTokenFactor: questionCount || null,
+    note: 'Estimated fan-out cost is N× this call\'s input tokens (document-dominated). Not a measured 12.2× cookbook number.',
+  };
 }
 
 function questionsForApi(battery) {
@@ -547,11 +568,81 @@ function compareShadow(detAnswers, jevAnswers) {
         jev: live.choice,
       });
     }
+    if (det.type === 'score' && live.type === 'score' && det.score != null && live.score != null) {
+      const delta = Math.abs(Number(live.score) - Number(det.score));
+      if (delta >= 1) {
+        divergences.push({
+          id,
+          type: 'score',
+          deterministic: Number(det.score),
+          jev: Number(live.score),
+          delta,
+        });
+      }
+    }
   }
   return divergences;
 }
 
+function normalizeMetric(answer, question = {}) {
+  if (!answer || typeof answer !== 'object') return null;
+  const type = String(answer.type || (question && question.type) || '').toLowerCase();
+  if (type === 'noul') {
+    return answer.noul != null ? Number(answer.noul) : null;
+  }
+  if (type === 'choice') {
+    if (answer.probabilities && typeof answer.probabilities === 'object') {
+      const probs = Object.values(answer.probabilities).map(Number).filter((n) => !Number.isNaN(n));
+      if (probs.length) return Math.max(...probs);
+    }
+    return answer.confidence != null ? Number(answer.confidence) : 1.0;
+  }
+  if (type === 'score') {
+    const raw = answer.score != null ? Number(answer.score) : 0;
+    const criteria = question && Array.isArray(question.criteria) ? question.criteria : null;
+    const maxLevel = criteria && criteria.length > 1 ? criteria.length - 1 : 3;
+    return maxLevel > 0 ? Number((raw / maxLevel).toFixed(4)) : raw;
+  }
+  return null;
+}
+
+function computeVariance(runs) {
+  if (!Array.isArray(runs) || runs.length < 2) return {};
+  const stats = {};
+  const keys = Object.keys(runs[0] || {});
+  for (const key of keys) {
+    const values = runs.map((r) => Number(r[key])).filter((v) => !Number.isNaN(v));
+    if (values.length < 2) continue;
+    const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+    const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / (values.length - 1);
+    const stdDev = Math.sqrt(variance);
+    stats[key] = {
+      mean: Number(mean.toFixed(4)),
+      stdDev: Number(stdDev.toFixed(4)),
+      runs: values.length,
+      zeroVariance: stdDev === 0,
+    };
+  }
+  return stats;
+}
+
 async function attachLiveShadow(report, options = {}) {
+  if (options.fanOutQuestions) {
+    report.findings.push({
+      id: 'parallel_fanout_refused',
+      severity: 'fail',
+      gateId: 'require-typed-pretool-questions',
+      message: 'Refused --fan-out-questions. Parallel-questions cookbook: one POST with all N questions, not N calls. Do not re-pay the document N times.',
+    });
+    report.status = 'fail';
+    report.ok = false;
+    report.parallel = {
+      cookbook: PARALLEL_QUESTIONS_COOKBOOK,
+      batchedCalls: 0,
+      refusedFanOut: true,
+    };
+    return report;
+  }
   if (!options.live || options.mapOnly || options.useTypesafeApi) return report;
   const apiKey = options.apiKey !== undefined ? options.apiKey : loadTypesafeApiKey();
   if (!apiKey) {
@@ -583,6 +674,7 @@ async function attachLiveShadow(report, options = {}) {
     });
     const jevAnswers = (body && body.answers) || {};
     const divergences = compareShadow(report.answers, jevAnswers);
+    report.parallel = parallelReceipt(questions, body && body.usage);
     report.shadow = {
       used: true,
       ownsRoute: false,
@@ -629,6 +721,7 @@ async function attachLiveShadow(report, options = {}) {
 async function buildTypesafeTypedQuestionsReportAsync(rawOptions = {}) {
   const report = buildTypesafeTypedQuestionsReport(rawOptions);
   const options = normalizeOptions(rawOptions);
+  if (options.fanOutQuestions) return report;
   if (!options.live || options.mapOnly) return report;
   const payloadText = options.payloadText || JSON.stringify({
     tool_name: options.toolName,
@@ -638,6 +731,7 @@ async function buildTypesafeTypedQuestionsReportAsync(rawOptions = {}) {
     live: true,
     mapOnly: false,
     useTypesafeApi: options.useTypesafeApi,
+    fanOutQuestions: options.fanOutQuestions,
     apiKey: options.apiKey,
     fetchImpl: options.fetchImpl,
     batteryText: options.batteryText,
@@ -706,6 +800,14 @@ function buildFindings({
       severity: 'fail',
       gateId: 'require-code-owned-route',
       message: 'Refused --use-typesafe-api. Do not call api.typesafe.ai from PreToolUse (ECI; LLM adjudicator parked).',
+    });
+  }
+  if (flags.fanOutQuestions) {
+    findings.push({
+      id: 'parallel_fanout_refused',
+      severity: 'fail',
+      gateId: 'require-typed-pretool-questions',
+      message: 'Refused --fan-out-questions. Parallel-questions cookbook: one POST with all N questions, not N calls.',
     });
   }
   if (flags.llmAdjudicate) {
@@ -789,6 +891,7 @@ function buildTypesafeTypedQuestionsReport(rawOptions = {}) {
     useTypesafeApi: options.useTypesafeApi,
     llmAdjudicate: options.llmAdjudicate,
     modelEmittedVerdict: options.modelEmittedVerdict,
+    fanOutQuestions: options.fanOutQuestions,
   };
 
   const evaluated = options.mapOnly
@@ -948,6 +1051,7 @@ function parseCliArgs(argv) {
     if (arg === '--use-typesafe-api') { options['use-typesafe-api'] = true; continue; }
     if (arg === '--llm-adjudicate') { options['llm-adjudicate'] = true; continue; }
     if (arg === '--live') { options.live = true; continue; }
+    if (arg === '--fan-out-questions') { options['fan-out-questions'] = true; continue; }
     if (arg === '--help' || arg === '-h') { options.help = true; continue; }
     const m = /^--([^=]+)(?:=(.*))?$/.exec(arg);
     if (!m) continue;
@@ -969,7 +1073,8 @@ Flags:
   --claim-ready            Fail unless code owns the route
   --clone-jev              Always fail (SKU clone)
   --use-typesafe-api       Always fail (Jev as the PreToolUse gate)
-  --live                   Shadow the battery against api.typesafe.ai; code still owns route
+  --live                   Shadow the battery against api.typesafe.ai; one POST, all questions
+  --fan-out-questions      Always fail (cookbook: do not pay the document N times)
   --llm-adjudicate         Always fail (#3690/#3687 parked)
   --model-emitted-verdict=V  Always fail (code must own route)
   --root=DIR               Repo root for relative paths
@@ -1013,6 +1118,10 @@ module.exports = {
   callSystemOne,
   compareShadow,
   attachLiveShadow,
+  parallelReceipt,
+  PARALLEL_QUESTIONS_COOKBOOK,
+  normalizeMetric,
+  computeVariance,
   buildTypesafeTypedQuestionsReport,
   buildTypesafeTypedQuestionsReportAsync,
   formatTypesafeTypedQuestionsReport,

@@ -292,6 +292,7 @@ test('typesafe-typed-questions exposes typed-question flags', () => {
   assert.ok(flagNames.includes('llm-adjudicate'));
   assert.ok(flagNames.includes('map-only'));
   assert.ok(flagNames.includes('live'));
+  assert.ok(flagNames.includes('fan-out-questions'));
 });
 
 test('allowlist-bridge-honesty exposes hop-not-trust flags', () => {

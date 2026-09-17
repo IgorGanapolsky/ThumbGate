@@ -27,6 +27,7 @@ not a SKU, not an LLM adjudicator.
 | Unpark LLM adjudicator (#3690/#3687) | Code owns `route()`; model does not emit the verdict |
 | One free-form "should we allow this?" judge | Atomic noul per hazard + score for severity |
 | Dual-edit untracked `llm-adjudicator` theater | Map onto existing `gate-check` rails |
+| N HTTP calls (one question each) | One POST with the whole battery (`parallel_questions`) |
 
 HARD fail closed. REFUSE SKU clones. ECI: no net-new governance product.
 Do NOT install `typesafe-sdk`. Do NOT let Jev emit `permissionDecision`. `--live` is a shadow scorer (grok-fleet key), not the gate.
@@ -37,6 +38,7 @@ Complementary to trading `/typesafe-system-one-not-clone` (AGENT-651 claim gate)
 
 - https://console.typesafe.ai/hook (signed-in intro / Replay intro)
 - https://docs.typesafe.ai/cookbooks/llm_guardrails.md
+- https://docs.typesafe.ai/cookbooks/parallel_questions
 - https://docs.typesafe.ai/patterns/confidence-routing.md
 - Playground "Support agent audit" (noul battery + choice + score over one state)
 - `scripts/typesafe-typed-questions.js`
@@ -71,7 +73,7 @@ npm run test:typesafe-typed-questions
 3. Answer them with deterministic matchers — never Jev.
 4. `route()` in code: action threshold → block, review threshold → review, severity ≥ 2 promotes review to block.
 5. Refuse `--clone-jev`, `--use-typesafe-api` (gate), `--llm-adjudicate`, and model-emitted verdicts.
-6. Optional `--live` shadows the same battery against Jev (`TYPESAFE_API_KEY` / grok-fleet). Divergences are warnings. Route stays deterministic. Never print the key.
+6. Optional `--live` shadows the same battery against Jev in **one** POST. `--fan-out-questions` fails. Receipt is estimated N× input tokens, not the cookbook's 12.2×.
 
 ## Rubric
 
