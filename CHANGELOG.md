@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.37.2
+
+### Patch Changes
+
+- 0e53737: Steal CobbleDB's three-plane hot-store FORMAT (durable state, batched delivery, query-time MultiGet + hedge + subset) onto existing lesson rails via `cobble-hot-store-split`. Compare-not-clone: no RocksDB/YTsaurus SKU.
+- 643adbe: Steal Colab /signup compute-unit honesty (subscribe≠receipt, CU≠dedicated GPU, 24h background is Pro+) onto a fail-closed doctor. Does not buy Colab Pro/Pro+ or clone a notebook GPU SKU.
+- 55345bb: Bump @changesets/changelog-github from 1.0.0 to 1.0.1 to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 0a51f59: Bump @google/genai from 2.19.0 to 2.21.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 0b412cd: Bump @changesets/cli from 3.0.1 to 3.0.2 to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 29f0763: Bump @playwright/test from 1.62.1 to 1.63.0 to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- c385e89: Bump stripe from 22.6.0 to 22.6.1 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- ba69ca5: Bump undici from 8.10.0 to 8.10.2 to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 911f1bb: Bump @cloudflare/workers-types from 5.20260831.1 to 5.20260907.1 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 1f94310: Bump stripe from 22.6.0 to 22.6.1 in /workers to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 0ebeb69: Isolate issue-3702 PR-create gate tests from live task-scope and branch diffs of AGENTS.md so `gh api POST /pulls` is classified as `gh-api-pr-create-restricted`, not a catch-all protected-file deny.
+- 602d3cd: Relevance-gate PreToolUse lesson injection (#3689): suppress high-entropy conflict disclaimers and skip low-relevance negatives instead of polluting every tool call.
+- 27b3bf9: OIDC-first npm publish hardening for the Sept 2026 GAT bypass-2FA deprecation: require npm >= 11.5.1, disable release package-manager cache, and keep NODE_AUTH_TOKEN opt-in until January 2027.
+- a60dac0: Steal Spotify Portal/shunt FORMAT onto local Read/bash intercepts (`npx thumbgate token-shunt-honesty`). Does not install shunt@portal or buy Portal.
+- ae3f970: Steal TypeSafe (console.typesafe.ai/hook) typed noul/choice/score + code-owned route() FORMAT onto existing PreToolUse rails. Adds `typesafe-typed-questions` doctor, Agent Honesty gate templates, and skill. Does not install typesafe-sdk, call Jev, or unpark the LLM adjudicator.
+
 ## 1.37.1
 
 ### Patch Changes
