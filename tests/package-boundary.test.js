@@ -713,8 +713,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.44 MB -> 8.47 MB (2026-09-17): typesafe-typed-questions.js + skill
   //   (TypeSafe noul/choice/score FORMAT steal). Measured 8,468,952 unpacked —
   //   28,952 over the old cap. Narrow headroom retained.
-    manifest.unpackedSize <= 8_470_000,
-    `npm package should stay <= 8.47 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.47 MB -> 8.48 MB (2026-09-17): CodeRabbit follow-up (write-tool
+  //   tamper gate + noul action validation). CI measured 8,471,013 unpacked —
+  //   1,013 over the old cap.
+    manifest.unpackedSize <= 8_480_000,
+    `npm package should stay <= 8.48 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
