@@ -16,19 +16,25 @@
  *   3. Code owns route() (pass | review | block) — the model does not emit the verdict
  *   4. Confidence is a second axis; low confidence on high-stakes fails closed
  *
- * Does NOT install typesafe-sdk, call api.typesafe.ai, clone Jev, or wire
- * an LLM adjudicator (#3690 / #3687, ECI pause). Deterministic matchers
- * answer the battery; existing PreToolUse / gate-check remains the enforcer.
+ * Does NOT install typesafe-sdk, clone Jev, or wire an LLM adjudicator
+ * (#3690 / #3687, ECI pause) as the PreToolUse gate. Deterministic matchers
+ * own route(). Optional `--live` shadows the same battery against
+ * POST /v1/systemone (Jev) for calibration — never as the verdict.
  */
 
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const SOURCE_URLS = Object.freeze([
   'https://console.typesafe.ai/hook',
+  'https://docs.typesafe.ai/api',
   'https://docs.typesafe.ai/cookbooks/llm_guardrails.md',
   'https://docs.typesafe.ai/patterns/confidence-routing.md',
 ]);
+
+const SYSTEMONE_URL = 'https://api.typesafe.ai/v1/systemone';
+const SHADOW_NOUL_DELTA = 0.4;
 
 const TYPED_KINDS = Object.freeze(['noul', 'choice', 'score']);
 const ROUTE_PRECEDENCE = Object.freeze(['block', 'review', 'pass']);
@@ -441,9 +447,205 @@ function normalizeOptions(raw = {}) {
     useTypesafeApi: normalizeBoolean(raw['use-typesafe-api'] || raw.useTypesafeApi),
     llmAdjudicate: normalizeBoolean(raw['llm-adjudicate'] || raw.llmAdjudicate),
     modelEmittedVerdict: raw['model-emitted-verdict'] || raw.modelEmittedVerdict || null,
+    live: normalizeBoolean(raw.live),
+    apiKey: Object.prototype.hasOwnProperty.call(raw, 'apiKey')
+      ? raw.apiKey
+      : (raw['api-key'] || undefined),
+    fetchImpl: typeof raw.fetchImpl === 'function' ? raw.fetchImpl : undefined,
     strict: normalizeBoolean(raw.strict),
     json: normalizeBoolean(raw.json),
   };
+}
+
+function loadTypesafeApiKey() {
+  const env = process.env.TYPESAFE_API_KEY;
+  if (env && String(env).trim()) return String(env).trim();
+  const fallback = path.join(os.homedir(), '.resume_secrets', 'TYPESAFE_API_KEY');
+  if (!fs.existsSync(fallback)) return null;
+  const text = fs.readFileSync(fallback, 'utf8').trim();
+  return text || null;
+}
+
+function questionsForApi(battery) {
+  const out = {};
+  for (const [id, question] of Object.entries(battery || {})) {
+    if (!question || typeof question !== 'object') continue;
+    const type = String(question.type || '').toLowerCase();
+    if (!TYPED_KINDS.includes(type) || !question.instructions) continue;
+    const entry = { type, instructions: question.instructions };
+    if (question.criteria != null) entry.criteria = question.criteria;
+    out[id] = entry;
+  }
+  return out;
+}
+
+async function callSystemOne({
+  state,
+  questions,
+  apiKey,
+  model = 'jev-latest',
+  fetchImpl,
+} = {}) {
+  if (!apiKey) {
+    const err = new Error('missing_api_key');
+    err.code = 'missing_api_key';
+    throw err;
+  }
+  const fetchFn = typeof fetchImpl === 'function' ? fetchImpl : globalThis.fetch;
+  if (typeof fetchFn !== 'function') {
+    const err = new Error('fetch_unavailable');
+    err.code = 'fetch_unavailable';
+    throw err;
+  }
+  const res = await fetchFn(SYSTEMONE_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ state, model, questions }),
+  });
+  const text = await res.text();
+  let body = null;
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = null;
+  }
+  if (!res.ok) {
+    const err = new Error(`systemone_http_${res.status}`);
+    err.code = res.status === 401 ? 'live_unauthorized' : 'live_http_error';
+    err.status = res.status;
+    throw err;
+  }
+  return body;
+}
+
+function compareShadow(detAnswers, jevAnswers) {
+  const divergences = [];
+  const jev = jevAnswers && typeof jevAnswers === 'object' ? jevAnswers : {};
+  for (const [id, det] of Object.entries(detAnswers || {})) {
+    const live = jev[id];
+    if (!live || !det) continue;
+    if (det.type === 'noul' && live.type === 'noul' && det.noul != null && live.noul != null) {
+      const delta = Math.abs(Number(live.noul) - Number(det.noul));
+      if (delta >= SHADOW_NOUL_DELTA) {
+        divergences.push({
+          id,
+          type: 'noul',
+          deterministic: Number(det.noul),
+          jev: Number(live.noul),
+          delta,
+        });
+      }
+    }
+    if (det.type === 'choice' && live.type === 'choice' && det.choice && live.choice && det.choice !== live.choice) {
+      divergences.push({
+        id,
+        type: 'choice',
+        deterministic: det.choice,
+        jev: live.choice,
+      });
+    }
+  }
+  return divergences;
+}
+
+async function attachLiveShadow(report, options = {}) {
+  if (!options.live || options.mapOnly || options.useTypesafeApi) return report;
+  const apiKey = options.apiKey !== undefined ? options.apiKey : loadTypesafeApiKey();
+  if (!apiKey) {
+    report.findings.push({
+      id: 'live_key_missing',
+      severity: 'fail',
+      gateId: 'require-code-owned-route',
+      message: '--live needs TYPESAFE_API_KEY (env or ~/.resume_secrets/TYPESAFE_API_KEY). Key is never printed.',
+    });
+    report.status = 'fail';
+    report.ok = false;
+    report.shadow = { used: false, reason: 'missing_api_key' };
+    return report;
+  }
+
+  const battery = parseBattery(options.batteryText || '').battery || DEFAULT_BATTERY;
+  const questions = questionsForApi(battery);
+  try {
+    const body = await callSystemOne({
+      state: options.payloadText
+        ? parsePayload(options.payloadText).payload
+        : {
+          tool_name: options.toolName,
+          tool_input: { command: options.command },
+        },
+      questions,
+      apiKey,
+      fetchImpl: options.fetchImpl,
+    });
+    const jevAnswers = (body && body.answers) || {};
+    const divergences = compareShadow(report.answers, jevAnswers);
+    report.shadow = {
+      used: true,
+      ownsRoute: false,
+      model: body && body.model,
+      usage: body && body.usage,
+      answers: jevAnswers,
+      divergences,
+    };
+    for (const d of divergences) {
+      report.findings.push({
+        id: 'shadow_divergence',
+        severity: 'warn',
+        gateId: 'require-typed-pretool-questions',
+        questionId: d.id,
+        message: `Jev shadow disagrees with deterministic ${d.type} on ${d.id} (code still owns route=${report.route}).`,
+      });
+    }
+    if (divergences.length && report.status === 'ready') report.status = 'actionable';
+  } catch (err) {
+    const id = err && err.code === 'live_unauthorized' ? 'live_unauthorized' : 'live_http_error';
+    const status = err && err.status ? Number(err.status) : null;
+    const raw = String((err && err.message) || '');
+    const safeMsg = /apikey_|bearer\s/i.test(raw) ? 'redacted' : raw.slice(0, 160);
+    const errorCode = err && (err.code || (err.cause && err.cause.code));
+    report.findings.push({
+      id,
+      severity: 'fail',
+      gateId: 'require-code-owned-route',
+      message: `Live System One call failed (HTTP ${status || 'unknown'}${safeMsg ? `: ${safeMsg}` : ''}). Route stays deterministic. Secret is not logged.`,
+    });
+    report.status = 'fail';
+    report.ok = false;
+    report.shadow = {
+      used: false,
+      reason: id,
+      status,
+      errorName: err && err.name,
+      errorCode: errorCode || null,
+    };
+  }
+  return report;
+}
+
+async function buildTypesafeTypedQuestionsReportAsync(rawOptions = {}) {
+  const report = buildTypesafeTypedQuestionsReport(rawOptions);
+  const options = normalizeOptions(rawOptions);
+  if (!options.live || options.mapOnly) return report;
+  const payloadText = options.payloadText || JSON.stringify({
+    tool_name: options.toolName,
+    tool_input: { command: options.command },
+  });
+  await attachLiveShadow(report, {
+    live: true,
+    mapOnly: false,
+    useTypesafeApi: options.useTypesafeApi,
+    apiKey: options.apiKey,
+    fetchImpl: options.fetchImpl,
+    batteryText: options.batteryText,
+    payloadText,
+    toolName: options.toolName,
+    command: options.command,
+  });
+  return report;
 }
 
 function buildFindings({
@@ -745,6 +947,7 @@ function parseCliArgs(argv) {
     if (arg === '--clone-jev') { options['clone-jev'] = true; continue; }
     if (arg === '--use-typesafe-api') { options['use-typesafe-api'] = true; continue; }
     if (arg === '--llm-adjudicate') { options['llm-adjudicate'] = true; continue; }
+    if (arg === '--live') { options.live = true; continue; }
     if (arg === '--help' || arg === '-h') { options.help = true; continue; }
     const m = /^--([^=]+)(?:=(.*))?$/.exec(arg);
     if (!m) continue;
@@ -765,7 +968,8 @@ Flags:
   --map-only               Print TypeSafe → ThumbGate rail map
   --claim-ready            Fail unless code owns the route
   --clone-jev              Always fail (SKU clone)
-  --use-typesafe-api       Always fail (do not call Jev)
+  --use-typesafe-api       Always fail (Jev as the PreToolUse gate)
+  --live                   Shadow the battery against api.typesafe.ai; code still owns route
   --llm-adjudicate         Always fail (#3690/#3687 parked)
   --model-emitted-verdict=V  Always fail (code must own route)
   --root=DIR               Repo root for relative paths
@@ -776,13 +980,13 @@ Sources: ${SOURCE_URLS.join(' ')}
 `);
 }
 
-function runCli(argv = process.argv.slice(2)) {
+async function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args.help) {
     printHelp();
     return 0;
   }
-  const report = buildTypesafeTypedQuestionsReport(args);
+  const report = await buildTypesafeTypedQuestionsReportAsync(args);
   if (args.json) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   else process.stdout.write(formatTypesafeTypedQuestionsReport(report));
   if (args.strict && report.status !== 'ready') return 1;
@@ -803,11 +1007,23 @@ module.exports = {
   composeHazardFamily,
   composeSeverity,
   route,
+  SYSTEMONE_URL,
+  loadTypesafeApiKey,
+  questionsForApi,
+  callSystemOne,
+  compareShadow,
+  attachLiveShadow,
   buildTypesafeTypedQuestionsReport,
+  buildTypesafeTypedQuestionsReportAsync,
   formatTypesafeTypedQuestionsReport,
   runCli,
 };
 
 if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
-  process.exitCode = runCli();
+  runCli().then((code) => {
+    process.exitCode = code;
+  }).catch((err) => {
+    process.stderr.write(`${err && err.message ? err.message : err}\n`);
+    process.exitCode = 1;
+  });
 }

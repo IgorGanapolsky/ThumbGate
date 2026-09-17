@@ -15,6 +15,8 @@ const {
   route,
   POLICIES,
   buildTypesafeTypedQuestionsReport,
+  buildTypesafeTypedQuestionsReportAsync,
+  questionsForApi,
   formatTypesafeTypedQuestionsReport,
 } = require('../scripts/typesafe-typed-questions');
 
@@ -273,6 +275,80 @@ test('gate templates include typed-question honesty pair', () => {
   const typed = config.templates.find((t) => t.id === 'require-typed-pretool-questions');
   assert.equal(typed.category, 'Agent Honesty');
   assert.match(typed.rollout, /typesafe-typed-questions/);
+});
+
+test('questionsForApi strips matcher fields before System One', () => {
+  const q = questionsForApi({
+    destructive: {
+      type: 'noul',
+      instructions: 'Destructive?',
+      criteria: { true: 'yes', false: 'no' },
+      matcher: 'rm -rf',
+    },
+  });
+  assert.equal(q.destructive.matcher, undefined);
+  assert.equal(q.destructive.type, 'noul');
+});
+
+test('--live without a key fails closed and does not call fetch', async () => {
+  let called = 0;
+  const report = await buildTypesafeTypedQuestionsReportAsync({
+    live: true,
+    apiKey: null,
+    fetchImpl: async () => {
+      called += 1;
+      return { ok: true, status: 200, text: async () => '{}' };
+    },
+    toolName: 'Read',
+    command: 'README.md',
+  });
+  assert.equal(called, 0);
+  assert.equal(report.status, 'fail');
+  assert.ok(report.findings.some((f) => f.id === 'live_key_missing'));
+  assert.equal(report.route, 'pass');
+});
+
+test('--live shadow disagrees without changing route', async () => {
+  const report = await buildTypesafeTypedQuestionsReportAsync({
+    live: true,
+    apiKey: 'test-key',
+    toolName: 'Bash',
+    command: 'git reset --hard HEAD',
+    fetchImpl: async (url, init) => {
+      assert.match(String(url), /systemone/);
+      const body = JSON.parse(init.body);
+      assert.equal(body.model, 'jev-latest');
+      assert.equal(body.questions.destructive.matcher, undefined);
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({
+          model: 'jev-latest',
+          answers: { destructive: { type: 'noul', noul: 0.05 } },
+          usage: { input_tokens: 12, output_tokens: 3 },
+        }),
+      };
+    },
+  });
+  assert.equal(report.route, 'block');
+  assert.equal(report.shadow.used, true);
+  assert.equal(report.shadow.ownsRoute, false);
+  assert.ok(report.findings.some((f) => f.id === 'shadow_divergence'));
+});
+
+test('--use-typesafe-api still refuses Jev as the gate even with --live', async () => {
+  let called = 0;
+  const report = await buildTypesafeTypedQuestionsReportAsync({
+    live: true,
+    useTypesafeApi: true,
+    apiKey: 'test-key',
+    fetchImpl: async () => {
+      called += 1;
+      return { ok: true, status: 200, text: async () => '{}' };
+    },
+  });
+  assert.equal(called, 0);
+  assert.ok(report.findings.some((f) => f.id === 'typesafe_api_refused'));
 });
 
 test('docs and skill refuse Jev clones and LLM adjudicator', () => {
