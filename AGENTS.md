@@ -151,6 +151,16 @@ npx thumbgate typesafe-typed-questions --json --tool-name=Bash --command='git pu
 
 Skill: `.agents/skills/typesafe-typed-questions-not-clone/SKILL.md`. Details: `docs/agents/typesafe-typed-questions.md`.
 
+## Colab compute honesty (FORMAT steal)
+
+Colab /signup sells Compute Units, not a dedicated GPU. Subscribe visible ≠ subscribed. Do not buy Pro/Pro+/CU. Do not clone colab-cli.
+
+```bash
+npx thumbgate colab-compute-honesty --json --map-only
+```
+
+Skill: `.agents/skills/colab-compute-honesty-not-clone/SKILL.md`. Details: `docs/agents/colab-compute-honesty.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
