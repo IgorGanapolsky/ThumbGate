@@ -21,14 +21,15 @@ not a SKU, not an LLM adjudicator.
 
 | NEVER | ALWAYS |
 | --- | --- |
-| Install `typesafe-sdk` / call `api.typesafe.ai` | `npx thumbgate typesafe-typed-questions --json` |
+| Install `typesafe-sdk` / wire Jev as the PreToolUse gate | `npx thumbgate typesafe-typed-questions --json` |
+| `--use-typesafe-api` (gate) | `--live` shadow vs `POST /v1/systemone`; code still owns `route()` |
 | Clone Jev / System One as the gate | Deterministic matchers answer the battery |
 | Unpark LLM adjudicator (#3690/#3687) | Code owns `route()`; model does not emit the verdict |
 | One free-form "should we allow this?" judge | Atomic noul per hazard + score for severity |
 | Dual-edit untracked `llm-adjudicator` theater | Map onto existing `gate-check` rails |
 
 HARD fail closed. REFUSE SKU clones. ECI: no net-new governance product.
-Do NOT install `typesafe-sdk`. Do NOT call `api.typesafe.ai` from PreToolUse.
+Do NOT install `typesafe-sdk`. Do NOT let Jev emit `permissionDecision`. `--live` is a shadow scorer (grok-fleet key), not the gate.
 
 Complementary to trading `/typesafe-system-one-not-clone` (AGENT-651 claim gate). Do **not** dual-edit `IgorGanapolsky/trading` `scripts/typesafe_claim_gate.py`. This skill is ThumbGate PreToolUse only.
 
@@ -69,7 +70,8 @@ npm run test:typesafe-typed-questions
 2. Ask independent typed questions (noul per hazard, choice for family, score for severity).
 3. Answer them with deterministic matchers — never Jev.
 4. `route()` in code: action threshold → block, review threshold → review, severity ≥ 2 promotes review to block.
-5. Refuse `--clone-jev`, `--use-typesafe-api`, `--llm-adjudicate`, and model-emitted verdicts.
+5. Refuse `--clone-jev`, `--use-typesafe-api` (gate), `--llm-adjudicate`, and model-emitted verdicts.
+6. Optional `--live` shadows the same battery against Jev (`TYPESAFE_API_KEY` / grok-fleet). Divergences are warnings. Route stays deterministic. Never print the key.
 
 ## Rubric
 

@@ -25,10 +25,12 @@ The signed-in playground "Support agent audit" example is the same shape: four n
 
 ```bash
 npx thumbgate typesafe-typed-questions --json --map-only
-npx thumbgate typesafe-typed-questions --json --tool-name=Bash --command='git push --force origin main'
 npx thumbgate typesafe-typed-questions --json --clone-jev
+npx thumbgate typesafe-typed-questions --json --live --tool-name=Read --command=README.md
 npm run test:typesafe-typed-questions
 ```
+
+`--live` shadows the battery against `POST https://api.typesafe.ai/v1/systemone` using `TYPESAFE_API_KEY` (grok-fleet). Jev never owns `route()`. CI does not call the API.
 
 ## Out of scope
 
