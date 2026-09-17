@@ -476,6 +476,24 @@ const CLI_COMMANDS = [
   }),
 
   discoveryCommand({
+    name: 'colab-compute-honesty',
+    aliases: ['colab-honesty', 'compute-unit-honesty'],
+    description: 'Colab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt (does not buy Pro/Pro+ or clone colab-cli)',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero on fail' },
+      { name: 'claim', type: 'string', description: 'Claim to audit' },
+      { name: 'plan', type: 'string', description: 'free|payg|pro|proplus|unknown' },
+      { name: 'plan-proof', type: 'string', description: 'Live Current-plan receipt, not a Subscribe button' },
+      { name: 'snapshot', type: 'string', description: 'Live /signup snapshot JSON' },
+      { name: 'map-only', type: 'boolean', description: 'Print Colab → ThumbGate rail map' },
+      { name: 'claim-ready', type: 'boolean', description: 'Fail unless compute proof is clean' },
+      { name: 'clone-colab', type: 'boolean', description: 'Refuse Colab-runner SKU clone' },
+      { name: 'buy-pro', type: 'boolean', description: 'Refuse buying Colab Pro/Pro+/CU' },
+    ],
+  }),
+
+  discoveryCommand({
     name: 'typesafe-typed-questions',
     aliases: ['typesafe-hook', 'typed-questions', 'jev-typed-questions'],
     description: 'TypeSafe FORMAT steal: typed noul/choice/score over PreToolUse state, code-owned pass/review/block (does not install typesafe-sdk or clone Jev)',

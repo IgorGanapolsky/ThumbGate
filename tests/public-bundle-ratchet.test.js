@@ -244,7 +244,9 @@ const path = require('node:path');
 //            (untargeted Read intercept; not shunt@portal).
 // 540 → 542: typesafe-typed-questions.js + skill — TypeSafe noul/choice/score
 //            FORMAT steal onto PreToolUse (not typesafe-sdk / Jev).
-const BASELINE_FILE_COUNT = 542;
+// 542 → 544: colab-compute-honesty.js + skill — Colab /signup CU honesty
+//            (subscribe≠receipt; not a GPU SKU).
+const BASELINE_FILE_COUNT = 544;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
