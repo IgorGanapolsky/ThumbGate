@@ -2711,13 +2711,13 @@ function tokenShuntHonesty() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
-function typesafeTypedQuestionsDoctor() {
+async function typesafeTypedQuestionsDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
-    buildTypesafeTypedQuestionsReport,
+    buildTypesafeTypedQuestionsReportAsync,
     formatTypesafeTypedQuestionsReport,
   } = require(path.join(PKG_ROOT, 'scripts', 'typesafe-typed-questions'));
-  const report = buildTypesafeTypedQuestionsReport(args);
+  const report = await buildTypesafeTypedQuestionsReportAsync(args);
   if (args.json) {
     console.log(JSON.stringify(report, null, 2));
   } else {
@@ -4365,7 +4365,10 @@ switch (COMMAND) {
   case 'typesafe-hook':
   case 'typed-questions':
   case 'jev-typed-questions':
-    typesafeTypedQuestionsDoctor();
+    typesafeTypedQuestionsDoctor().catch((err) => {
+      console.error(err && err.stack ? err.stack : err);
+      process.exitCode = 1;
+    });
     break;
   case 'workspace-search-route':
   case 'zg-search-route':
