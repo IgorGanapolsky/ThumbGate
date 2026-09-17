@@ -719,8 +719,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   //   1,013 over the old cap.
   // Bumped 8.48 MB -> 8.49 MB (2026-09-17): colab-compute-honesty.js + skill.
   // Measured 8,487,846 unpacked — 7,846 over the old cap.
-    manifest.unpackedSize <= 8_490_000,
-    `npm package should stay <= 8.49 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.49 MB -> 8.52 MB (2026-09-17): deeppattern-discipline-honesty.js + skill.
+  // Measured 8,511,706 unpacked — 21,706 over the 8.49 MB cap.
+    manifest.unpackedSize <= 8_520_000,
+    `npm package should stay <= 8.52 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

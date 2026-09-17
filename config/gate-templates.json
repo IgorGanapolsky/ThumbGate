@@ -110,6 +110,42 @@
       "rollout": "Enable wherever an agent proposes Colab offload. Does not purchase a plan."
     },
     {
+      "id": "require-same-layer-comparison",
+      "name": "Require same-layer product comparisons (DeepPattern layer-check)",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(?=[\\s\\S]*(openrouter|litellm|token aggregat|api gateway|raw (model )?api|foundation model))(?=[\\s\\S]*(replace[sd]?|substitut|commoditiz|competes? with|instead of)[\\s\\S]*(thumbgate|pretooluse))",
+      "problem": "Blocks treating L4 transport / L2 models as substitutes for L7 ThumbGate PreToolUse governance (DeepPattern layer-check FORMAT).",
+      "roi": "Stops category-error competitive analysis. Gateways are inputs; hosted multi-model panels are complements.",
+      "rollout": "Pair with deeppattern-discipline-honesty --json. Tag L1–L8 before competitor claims."
+    },
+    {
+      "id": "require-evidence-closeout-items",
+      "name": "Require evidence-closeout items before done claims",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(?=[\\s\\S]*(done|shipped|fixed|complete|merged))(?![\\s\\S]*(scope completed|verification run|production boundary))",
+      "problem": "Blocks summary-without-evidence closeouts. AQG evidence-closeout FORMAT: six required items under an Evidence heading.",
+      "roi": "Aligns with Completion Claim Contract. Fresh verification before the word done.",
+      "rollout": "Pair with deeppattern-discipline-honesty --closeout=path.md --strict."
+    },
+    {
+      "id": "refuse-deeppattern-sku-clone",
+      "name": "Refuse DeepPattern AQG/Decision-Engine SKU clones",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "dp-install|install_aqg|agent-quality-gates|decision-engine.{0,40}(clone|install|sku)|clone.{0,20}(aqg|decision.engine|deeppattern)",
+      "problem": "Blocks cloning Agent Quality Gates or Decision Engine as a ThumbGate product surface.",
+      "roi": "FORMAT steal only (layer-check + evidence-closeout). No hosted cross-vendor audit SKU.",
+      "rollout": "Enable on competitive-steal and install prompts. Does not vendor DeepPattern."
+    },
+    {
       "id": "require-broker-signed-execution-receipt",
       "name": "Require broker-signed execution receipts",
       "category": "Provider Side-Effect Governance",

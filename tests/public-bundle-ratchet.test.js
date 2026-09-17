@@ -246,7 +246,9 @@ const path = require('node:path');
 //            FORMAT steal onto PreToolUse (not typesafe-sdk / Jev).
 // 542 → 544: colab-compute-honesty.js + skill — Colab /signup CU honesty
 //            (subscribe≠receipt; not a GPU SKU).
-const BASELINE_FILE_COUNT = 544;
+// 544 → 546: deeppattern-discipline-honesty.js + skill — DeepPattern
+//            layer-check + evidence-closeout FORMAT (not AQG/DE).
+const BASELINE_FILE_COUNT = 546;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
