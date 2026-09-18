@@ -86,7 +86,7 @@ class AgentTraceSpan {
 class DatadogAgentObservability {
   constructor(options = {}) {
     this.serviceName = options.serviceName || 'thumbgate-fleet-orchestrator';
-    this.budgetLimitUsd = options.budgetLimitUsd || 10.0;
+    this.budgetLimitUsd = options.budgetLimitUsd ?? 10.0;
     this.spans = [];
     this.activeTraces = new Map();
     this.stats = {

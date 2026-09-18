@@ -61,6 +61,7 @@ spec:
           owner: ${{ parameters.owner }}
           enable_datadog_tracing: ${{ parameters.enable_datadog_tracing }}
           enable_preaction_firewall: ${{ parameters.enable_preaction_firewall }}
+          fail_closed_mode: ${{ parameters.fail_closed_mode }}
     - id: publish-github
       name: Publish to GitHub
       action: publish:github

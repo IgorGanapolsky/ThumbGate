@@ -61,6 +61,15 @@ test('DatadogAgentObservability: triggers tripwire when budget ceiling is breach
   assert.equal(obs.stats.budgetBreaches, 1);
 });
 
+test('DatadogAgentObservability: preserves explicit zero-dollar budget ceiling', () => {
+  const obs = new DatadogAgentObservability({ budgetLimitUsd: 0 });
+  assert.equal(obs.budgetLimitUsd, 0);
+  const root = obs.startTrace('zero_budget');
+  assert.throws(() => {
+    obs.recordUsage(root, { costUsd: 0.001 });
+  }, /Cost ceiling breached/);
+});
+
 test('DatadogAgentObservability: quality evaluation checks no-ops and violations', () => {
   const obs = new DatadogAgentObservability();
   const passEval = obs.evaluateQuality({ traceId: 'trace-1', actionCount: 3, noOpDetected: false });

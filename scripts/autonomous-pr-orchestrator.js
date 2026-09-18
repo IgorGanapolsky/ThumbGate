@@ -197,9 +197,12 @@ async function orchestrateCycle(options = {}, runner = runGh) {
     discoverySpan.setTag('open_pr_count', openPrs.length);
     discoverySpan.finish('SUCCESS');
   } catch (err) {
-    discoverySpan.finish('ERROR', err);
-    rootSpan.finish('ERROR', err);
-    throw err;
+    const safeError = new Error(
+      obs.scrubSensitiveData(err?.message || String(err))
+    );
+    discoverySpan.finish('ERROR', safeError);
+    rootSpan.finish('ERROR', safeError);
+    throw safeError;
   }
 
   console.log(`🔍 Discovered ${openPrs.length} open pull requests.`);
