@@ -381,6 +381,12 @@ jobs:
           THUMBGATE_GITHUB_ABOUT_VERIFY_DELAY_MS: 5000
         run: npm run test:congruence:live
 
+      - name: Annotate first failed step
+        if: failure()
+        # Buildkite annotation FORMAT on GHA: name the red step in the job
+        # summary. Do not dump logs first. Do not add Buildkite as a vendor.
+        run: node scripts/ci-gha-buildkite-patterns.js --annotate --json
+
       - name: Upload proof artifacts
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

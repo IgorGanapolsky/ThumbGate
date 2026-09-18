@@ -134,6 +134,18 @@
       "rollout": "Pair with deeppattern-discipline-honesty --closeout=path.md --strict."
     },
     {
+      "id": "refuse-buildkite-vendor-migration",
+      "name": "Refuse Buildkite vendor migration on public GitHub Actions",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "migrate.{0,40}buildkite|replace github actions with buildkite|add buildkite as.{0,20}required|buildkite-agent|test engine auto-?quarantine",
+      "problem": "Blocks adding Buildkite Pipelines/agents/Test Engine as a second CI vendor. Steal first-fail + fail-fast onto existing GHA.",
+      "roi": "Public repo GHA minutes stay $0. No second required check. Diagnosis stays the first failed step.",
+      "rollout": "Pair with ci-gha-buildkite-patterns --json. Keep ubuntu-latest required contexts."
+    },
+    {
       "id": "refuse-deeppattern-sku-clone",
       "name": "Refuse DeepPattern AQG/Decision-Engine SKU clones",
       "category": "Agent Honesty",
