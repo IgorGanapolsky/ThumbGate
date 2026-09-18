@@ -494,6 +494,23 @@ const CLI_COMMANDS = [
   }),
 
   discoveryCommand({
+    name: 'deeppattern-discipline-honesty',
+    aliases: ['deeppattern-honesty', 'layer-check-honesty', 'evidence-closeout-honesty', 'aqg-de-honesty'],
+    description: 'DeepPattern FORMAT steal: layer-check + evidence-closeout (does not install AQG/Decision Engine)',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero on fail' },
+      { name: 'claim', type: 'string', description: 'Comparative / substitute claim to layer-check' },
+      { name: 'subject-layer', type: 'string', description: 'Subject product layer (default L7)' },
+      { name: 'closeout', type: 'string', description: 'Markdown closeout / PR body path' },
+      { name: 'closeout-text', type: 'string', description: 'Inline closeout markdown' },
+      { name: 'map-only', type: 'boolean', description: 'Print DeepPattern → ThumbGate rail map' },
+      { name: 'claim-ready', type: 'boolean', description: 'Fail unless layer-check + closeout are clean' },
+      { name: 'clone-deeppattern', type: 'boolean', description: 'Refuse AQG/DE SKU clone' },
+    ],
+  }),
+
+  discoveryCommand({
     name: 'typesafe-typed-questions',
     aliases: ['typesafe-hook', 'typed-questions', 'jev-typed-questions'],
     description: 'TypeSafe FORMAT steal: typed noul/choice/score over PreToolUse state, code-owned pass/review/block (does not install typesafe-sdk or clone Jev)',
