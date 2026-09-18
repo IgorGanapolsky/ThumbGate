@@ -21,6 +21,8 @@ const {
   normalizeMetric,
   computeVariance,
   formatTypesafeTypedQuestionsReport,
+  attachLiveShadow,
+  parallelReceipt,
 } = require('../scripts/typesafe-typed-questions');
 
 const CLI = path.resolve(__dirname, '..', 'bin', 'cli.js');
@@ -439,4 +441,131 @@ test('compareShadow records divergence on score mismatch', () => {
   assert.equal(diffs[0].id, 'severity');
   assert.equal(diffs[0].delta, 2);
 });
+
+test('CLI script text output and help output', () => {
+  const resultHelp = spawnSync(process.execPath, [SCRIPT, '--help'], { encoding: 'utf8' });
+  assert.equal(resultHelp.status, 0);
+  assert.match(resultHelp.stdout, /Usage: node scripts\/typesafe-typed-questions\.js/);
+
+  const resultText = spawnSync(process.execPath, [SCRIPT, '--map-only'], { encoding: 'utf8' });
+  assert.equal(resultText.status, 0);
+  assert.match(resultText.stdout, /Rail map:/);
+});
+
+test('attachLiveShadow handles HTTP errors and mock fetch responses', async () => {
+  const mockUnauthorizedFetch = async () => ({
+    ok: false,
+    status: 401,
+    statusText: 'Unauthorized',
+    headers: { get: () => 'application/json' },
+    text: async () => JSON.stringify({ error: 'invalid_key' }),
+  });
+
+  const rep1 = buildTypesafeTypedQuestionsReport({
+    toolName: 'Bash',
+    command: 'ls',
+  });
+  await attachLiveShadow(rep1, {
+    live: true,
+    apiKey: 'mock_key',
+    fetchImpl: mockUnauthorizedFetch,
+  });
+  assert.equal(rep1.status, 'fail');
+  assert.ok(rep1.findings.some((f) => f.id === 'live_unauthorized'));
+
+  const mockNetworkErrorFetch = async () => {
+    const err = new Error('connect ECONNREFUSED 127.0.0.1');
+    err.code = 'ECONNREFUSED';
+    throw err;
+  };
+
+  const rep2 = buildTypesafeTypedQuestionsReport({
+    toolName: 'Bash',
+    command: 'ls',
+  });
+  await attachLiveShadow(rep2, {
+    live: true,
+    apiKey: 'mock_key',
+    fetchImpl: mockNetworkErrorFetch,
+  });
+  assert.equal(rep2.status, 'fail');
+  assert.ok(rep2.findings.some((f) => f.id === 'live_http_error'));
+
+  const mockSuccessFetch = async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: () => 'application/json' },
+    text: async () => JSON.stringify({
+      model: 'system-one-v1',
+      usage: { input_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+      answers: {
+        destructive: { type: 'choice', choice: 'destructive', probabilities: { destructive: 0.9 } },
+      },
+    }),
+  });
+
+  const rep3 = buildTypesafeTypedQuestionsReport({
+    toolName: 'Bash',
+    command: 'ls',
+  });
+  await attachLiveShadow(rep3, {
+    live: true,
+    apiKey: 'mock_key',
+    fetchImpl: mockSuccessFetch,
+  });
+  assert.ok(rep3.shadow.used);
+  assert.equal(rep3.shadow.model, 'system-one-v1');
+});
+
+test('parallelReceipt and validateQuestion branch coverage', () => {
+  const r = parallelReceipt({ q1: { type: 'choice' } }, { input_tokens: 100 });
+  assert.equal(r.batchedCalls, 1);
+  assert.equal(r.questionCount, 1);
+
+  const invalidTypeQ = validateQuestion('bad', { type: 'unsupported_type' });
+  assert.ok(invalidTypeQ.length > 0);
+  assert.equal(invalidTypeQ[0].id, 'freeform_question');
+
+  const invalidChoiceQ = validateQuestion('bad_choice', { type: 'choice', instructions: 'choose' });
+  assert.ok(invalidChoiceQ.length > 0);
+  assert.equal(invalidChoiceQ[0].id, 'choice_criteria_shape');
+
+  const invalidScoreQ = validateQuestion('bad_score', { type: 'score', instructions: 'rate' });
+  assert.ok(invalidScoreQ.length > 0);
+  assert.equal(invalidScoreQ[0].id, 'score_criteria_shape');
+});
+
+test('IO errors, format findings, and boolean/matcher edge cases', () => {
+  const rep = buildTypesafeTypedQuestionsReport({
+    batteryPath: '/tmp/nonexistent-battery-file.json',
+    payloadPath: '/tmp/nonexistent-payload-file.json',
+  });
+  assert.equal(rep.status, 'fail');
+  assert.ok(rep.findings.some((f) => f.id === 'battery_read_error'));
+  assert.ok(rep.findings.some((f) => f.id === 'payload_read_error'));
+
+  const formattedWithFindings = formatTypesafeTypedQuestionsReport(rep);
+  assert.match(formattedWithFindings, /Findings:/);
+  assert.match(formattedWithFindings, /battery_read_error/);
+
+  assert.equal(parseBattery([]).error, 'battery_shape_error');
+  assert.equal(parseBattery({ questions: {} }).error, 'empty_battery');
+  const repRaw = buildTypesafeTypedQuestionsReport({ payloadText: 'raw string command' });
+  assert.equal(repRaw.ok, true);
+
+  assert.equal(composeHazardFamily({ guardrail_tamper: 0.9 }), 'tamper');
+  assert.equal(composeHazardFamily({ clone_jev: 0.9 }), 'clone');
+  assert.equal(composeHazardFamily({ outbound_send: 0.9 }), 'outbound');
+  assert.equal(composeHazardFamily({ destructive: 0.9 }), 'destructive');
+
+  assert.equal(composeSeverity({ clone_jev: 0.9 }), 2);
+  assert.equal(composeSeverity({ outbound_send: 0.9 }), 2);
+  assert.equal(composeSeverity({ other: 0.4 }), 1);
+
+  const routeBlock = route({ nouls: {}, severity: 3, policy: POLICIES.strict, battery: {} });
+  assert.equal(routeBlock, 'block');
+});
+
+
+
 
