@@ -17,12 +17,6 @@ const { DatadogAgentObservability } = require('../src/observability/datadog-agen
 
 const REQUIRED_CHECKS = new Set([
   'test',
-  'Analyze JavaScript (javascript-typescript)',
-  'CodeQL',
-  'Socket Security: Project Report',
-  'Verify changeset',
-  'Socket Security: Pull Request Alerts',
-  'GitGuardian Security Checks',
 ]);
 
 const BOT_REVIEW_AUTHORS = new Set([
@@ -54,7 +48,7 @@ function listOpenPrs(runner = runGh) {
     '--state',
     'open',
     '--limit',
-    '50',
+    '300',
     '--json',
     'number,title,state,isDraft,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,author,comments',
   ];
@@ -74,6 +68,7 @@ function getPrReviewThreads(prNumber, runner = runGh) {
             nodes {
               id
               isResolved
+              isOutdated
               comments(first: 5) {
                 nodes {
                   id
@@ -149,7 +144,7 @@ function submitTrunkMerge(prNumber, runner = runGh) {
   };
 }
 
-function evaluateChecks(statusCheckRollup = []) {
+function evaluateChecks(statusCheckRollup = [], requiredChecks = REQUIRED_CHECKS) {
   const passing = [];
   const failing = [];
   const pending = [];
@@ -173,8 +168,19 @@ function evaluateChecks(statusCheckRollup = []) {
     }
   }
 
-  const isGreen = failing.length === 0 && pending.length === 0;
-  return { isGreen, passing, failing, pending };
+  const passingSet = new Set(passing);
+  const missingRequired = [];
+  if (requiredChecks && requiredChecks.size > 0) {
+    for (const req of requiredChecks) {
+      if (!passingSet.has(req)) {
+        missingRequired.push(req);
+      }
+    }
+  }
+
+  const hasEvidence = statusCheckRollup.length > 0;
+  const isGreen = hasEvidence && failing.length === 0 && pending.length === 0 && missingRequired.length === 0;
+  return { isGreen, passing, failing, pending, missingRequired };
 }
 
 async function orchestrateCycle(options = {}, runner = runGh) {
@@ -202,6 +208,7 @@ async function orchestrateCycle(options = {}, runner = runGh) {
     total: openPrs.length,
     updatedBehind: [],
     threadsResolved: [],
+    unresolvedThreads: [],
     trunkQueued: [],
     blockedChecks: [],
     conflicts: [],
@@ -221,23 +228,36 @@ async function orchestrateCycle(options = {}, runner = runGh) {
       continue;
     }
 
-    // 2. Auto-resolve Bot Review Threads under required_conversation_resolution
+    // 2. Unresolved review threads under required_conversation_resolution
+    // Never auto-resolve active threads without verified fixes. Outdated bot threads may be resolved.
     const threads = getPrReviewThreads(pr.number, runner);
-    const unresolvedBotThreads = threads.filter((t) => {
-      if (t.isResolved) return false;
-      const firstComment = t.comments?.nodes?.[0];
-      const author = firstComment?.author?.login || '';
-      return BOT_REVIEW_AUTHORS.has(author.toLowerCase());
-    });
+    const unresolvedThreads = threads.filter((t) => !t.isResolved);
+    const activeBlockers = [];
 
-    for (const thread of unresolvedBotThreads) {
-      if (!dryRun) {
-        const resolved = resolveReviewThread(thread.id, runner);
-        if (resolved) {
-          summary.threadsResolved.push({ pr: pr.number, threadId: thread.id });
-          console.log(`  ✅ Resolved bot review thread ${thread.id} on PR #${pr.number}`);
+    for (const thread of unresolvedThreads) {
+      const firstComment = thread.comments?.nodes?.[0];
+      const author = (firstComment?.author?.login || '').toLowerCase();
+      const isBot = BOT_REVIEW_AUTHORS.has(author);
+
+      if (thread.isOutdated && isBot) {
+        if (!dryRun) {
+          const resolved = resolveReviewThread(thread.id, runner);
+          if (resolved) {
+            summary.threadsResolved.push({ pr: pr.number, threadId: thread.id });
+            console.log(`  ✅ Resolved outdated bot review thread ${thread.id} on PR #${pr.number}`);
+          }
         }
+      } else {
+        activeBlockers.push(thread);
       }
+    }
+
+    if (activeBlockers.length > 0) {
+      summary.unresolvedThreads.push({ pr: pr.number, count: activeBlockers.length });
+      console.log(`  ⚠️ PR #${pr.number} has ${activeBlockers.length} active unresolved review threads. Leaving as blocker.`);
+      prSpan.setTag('status', 'ACTIVE_REVIEW_THREADS');
+      prSpan.finish('SUCCESS');
+      continue;
     }
 
     // 3. Handle 'BEHIND' PRs: Auto-update branch on top of latest main
@@ -263,18 +283,31 @@ async function orchestrateCycle(options = {}, runner = runGh) {
         number: pr.number,
         failing: checkEval.failing,
         pending: checkEval.pending,
+        missingRequired: checkEval.missingRequired,
       });
       prSpan.setTag('status', 'BLOCKED_CHECKS');
       prSpan.finish('SUCCESS');
       continue;
     }
 
-    // 5. Green PR: Enqueue to Trunk if not already queued
+    // 5. Review Check: reject outstanding review states
+    if (pr.reviewDecision === 'REVIEW_REQUIRED' || pr.reviewDecision === 'CHANGES_REQUESTED') {
+      console.log(`  ⏸️ PR #${pr.number} blocked by review state (${pr.reviewDecision}).`);
+      prSpan.setTag('status', 'REVIEW_REQUIRED');
+      prSpan.finish('SUCCESS');
+      continue;
+    }
+
+    // 6. Green PR: Enqueue to Trunk if not already queued
     const isAlreadyQueued = (pr.comments || []).some(
       (c) => c.body && c.body.includes('/trunk merge')
     );
 
-    if (!isAlreadyQueued && (pr.mergeStateStatus === 'CLEAN' || pr.mergeStateStatus === 'BLOCKED')) {
+    if (
+      !isAlreadyQueued &&
+      (pr.mergeStateStatus === 'CLEAN' || pr.mergeStateStatus === 'BLOCKED') &&
+      pr.mergeable === 'MERGEABLE'
+    ) {
       console.log(`  🚀 PR #${pr.number} is green and ready. Submitting to Trunk merge queue...`);
       if (!dryRun) {
         const mergeRes = submitTrunkMerge(pr.number, runner);
