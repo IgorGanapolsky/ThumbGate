@@ -722,8 +722,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Measured 8,487,846 unpacked — 7,846 over the old cap.
   // Bumped 8.49 MB -> 8.52 MB (2026-09-17): deeppattern-discipline-honesty.js + skill.
   // Measured 8,511,706 unpacked — 21,706 over the 8.49 MB cap.
-    manifest.unpackedSize <= 8_520_000,
-    `npm package should stay <= 8.52 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.52 MB -> 8.53 MB (2026-09-18): typesafe-parallel-questions-batch on
+  //   main tip 60f76d8f (DeepPattern already merged). Measured 8,524,203 unpacked
+  //   — 4,203 over the 8.52 MB cap. File-count ceilings stay 546.
+    manifest.unpackedSize <= 8_530_000,
+    `npm package should stay <= 8.53 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
