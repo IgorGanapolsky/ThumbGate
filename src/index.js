@@ -12,6 +12,12 @@ const {
   isNamedIdentity,
 } = require('./hermes-platform-protocol');
 const { HermesSyncPlane } = require('./hermes-sync-plane');
+const {
+  IdeaBrowserConnector,
+  ToolTier,
+  DEFAULT_READ_ONLY_TOOLS,
+  DEFAULT_MUTATING_TOOLS,
+} = require('./integrations/ideabrowser-connector');
 
 // The package entry point is the production surface for `thumbgate`.
 // The hosted-Hermes identity/lifecycle/approval gates are exported here so
@@ -29,4 +35,8 @@ module.exports = Object.assign({}, feedbackLoop, {
   THREAD_MODES,
   FORBIDDEN_IDENTITIES,
   isNamedIdentity,
+  IdeaBrowserConnector,
+  ToolTier,
+  DEFAULT_READ_ONLY_TOOLS,
+  DEFAULT_MUTATING_TOOLS,
 });
