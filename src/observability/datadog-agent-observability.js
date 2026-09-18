@@ -11,15 +11,10 @@
  */
 
 const crypto = require('node:crypto');
+const path = require('node:path');
+const { redactSecrets } = require(path.resolve(__dirname, '../../scripts/secret-redaction'));
 
-const SENSITIVE_PATTERNS = [
-  /(?:Bearer\s+)[A-Za-z0-9_\-\.]{20,}/gi,
-  /(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{36}/g,
-  /(?:sk-[A-Za-z0-9]{32,})/g,
-  /(?:AIza[0-9A-Za-z-_]{35})/g,
-  /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, // Email
-  /(?:xox[baprs]-[0-9]{10,13}-[0-9]{10,13}[a-zA-Z0-9-]*)/g, // Slack
-];
+const EMAIL_PATTERN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 
 class AgentTraceSpan {
   constructor(name, parentSpanId = null, traceId = null) {
@@ -111,11 +106,17 @@ class DatadogAgentObservability {
   scrubSensitiveData(text) {
     if (typeof text !== 'string') return text;
     let scrubbed = text;
-    for (const pattern of SENSITIVE_PATTERNS) {
-      scrubbed = scrubbed.replace(pattern, (match) => {
-        this.stats.piiRedactionCount++;
-        return `[REDACTED_${match.slice(0, 4)}...]`;
-      });
+    scrubbed = scrubbed.replace(EMAIL_PATTERN, () => {
+      this.stats.piiRedactionCount++;
+      return '[REDACTED_email]';
+    });
+    const beforeSecrets = scrubbed;
+    scrubbed = redactSecrets(scrubbed);
+    if (scrubbed !== beforeSecrets) {
+      const matches = scrubbed.match(/\[REDACTED:[^\]]+\]/g);
+      if (matches) {
+        this.stats.piiRedactionCount += matches.length;
+      }
     }
     return scrubbed;
   }
@@ -200,5 +201,5 @@ class DatadogAgentObservability {
 module.exports = {
   AgentTraceSpan,
   DatadogAgentObservability,
-  SENSITIVE_PATTERNS,
+  EMAIL_PATTERN,
 };

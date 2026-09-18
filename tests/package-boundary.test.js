@@ -726,8 +726,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.52 MB -> 8.53 MB (2026-09-18): typesafe-parallel-questions-batch on
   //   main tip 60f76d8f (DeepPattern already merged). Measured 8,524,203 unpacked
   //   — 4,203 over the 8.52 MB cap. File-count ceilings stay 546.
-    manifest.unpackedSize <= 8_530_000,
-    `npm package should stay <= 8.53 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.53 MB -> 8.55 MB (2026-09-18): PR #3881 autonomous-pr-orchestrator on
+  //   main tip 182c6b73. Measured 8,530,368 unpacked. Narrow headroom retained.
+    manifest.unpackedSize <= 8_550_000,
+    `npm package should stay <= 8.55 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

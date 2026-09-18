@@ -39,6 +39,17 @@ test('DatadogAgentObservability: sensitive data scanner redacts tokens and PII',
   assert.equal(obs.stats.piiRedactionCount, 2);
 });
 
+test('DatadogAgentObservability: redacts modern provider credentials including github_pat and sk-proj', () => {
+  const obs = new DatadogAgentObservability();
+  const raw = 'Keys: github_pat_11AAAAAAA01234567890abcdef1234567890 and sk-proj-12345678901234567890';
+  const scrubbed = obs.scrubSensitiveData(raw);
+
+  assert.ok(!scrubbed.includes('github_pat_'));
+  assert.ok(!scrubbed.includes('sk-proj-'));
+  assert.ok(scrubbed.includes('[REDACTED:github_fine_grained_pat]'));
+  assert.ok(scrubbed.includes('[REDACTED:openai_project_key]'));
+});
+
 test('DatadogAgentObservability: triggers tripwire when budget ceiling is breached', () => {
   const obs = new DatadogAgentObservability({ budgetLimitUsd: 0.05 });
   const root = obs.startTrace('budget_check');

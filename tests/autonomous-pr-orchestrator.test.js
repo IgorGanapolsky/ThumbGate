@@ -47,6 +47,18 @@ test('evaluateChecks: flags in-progress checks as pending', () => {
   assert.deepEqual(res.pending, ['test']);
 });
 
+test('evaluateChecks: rejects empty rollup or missing required checks', () => {
+  const emptyRes = evaluateChecks([]);
+  assert.equal(emptyRes.isGreen, false);
+  assert.deepEqual(emptyRes.missingRequired, ['test']);
+
+  const missingReq = evaluateChecks([
+    { name: 'CodeQL', status: 'COMPLETED', conclusion: 'SUCCESS' },
+  ]);
+  assert.equal(missingReq.isGreen, false);
+  assert.deepEqual(missingReq.missingRequired, ['test']);
+});
+
 test('BOT_REVIEW_AUTHORS contains known review bots', () => {
   assert.ok(BOT_REVIEW_AUTHORS.has('coderabbitai'));
   assert.ok(BOT_REVIEW_AUTHORS.has('socket-security'));
@@ -168,6 +180,7 @@ test('orchestrateCycle E2E: executes full sweep across conflicting, behind, fail
                     {
                       id: 'thread_bot_1',
                       isResolved: false,
+                      isOutdated: true,
                       comments: { nodes: [{ author: { login: 'coderabbitai' } }] },
                     },
                   ],
