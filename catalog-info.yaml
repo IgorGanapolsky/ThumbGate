@@ -1,0 +1,53 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: thumbgate
+  title: ThumbGate — The Infrastructure Firewall
+  description: The Pre-Action Infrastructure Firewall, Gate Engine, and Agentic Reliability Gateway for LLMs, autonomous agents, and MCP servers.
+  annotations:
+    github.com/project-slug: IgorGanapolsky/ThumbGate
+    backstage.io/source-location: url:https://github.com/IgorGanapolsky/ThumbGate
+    datadoghq.com/service-name: thumbgate
+  tags:
+    - ai-governance
+    - mcp
+    - firewall
+    - agentic
+    - security
+  links:
+    - url: https://thumbgate-production.up.railway.app/health
+      title: Production Health
+      icon: check
+    - url: https://thumbgate.app
+      title: ThumbGate Website
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: max-smith-kdp-llc-3027-plg
+  system: enterprise-developer-platform
+  providesApis:
+    - thumbgate-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: thumbgate-api
+  title: ThumbGate Pre-Action Gate & Telemetry API
+  description: OpenAPI interface for ThumbGate gate checks, task outcome recording, and session feedback.
+spec:
+  type: openapi
+  lifecycle: production
+  owner: max-smith-kdp-llc-3027-plg
+  system: enterprise-developer-platform
+  definition:
+    $text: https://raw.githubusercontent.com/IgorGanapolsky/ThumbGate/main/openapi/openapi.yaml
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: enterprise-developer-platform
+  title: Enterprise Developer Platform & Governed AI Infrastructure
+  description: Spotify Portal developer workspace for Max Smith KDP LLC.
+spec:
+  owner: max-smith-kdp-llc-3027-plg

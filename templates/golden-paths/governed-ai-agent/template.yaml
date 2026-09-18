@@ -1,0 +1,86 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: governed-ai-agent-golden-path
+  title: Governed Enterprise AI Agent & MCP Server (ThumbGate)
+  description: Scaffolds a zero-egress, production-grade autonomous agent or MCP server with ThumbGate pre-action firewall, Datadog tracing, and CI/CD security scanning.
+  tags:
+    - golden-path
+    - ai-agents
+    - mcp
+    - governance
+    - security
+    - spotify-portal
+spec:
+  owner: max-smith-kdp-llc-3027-plg
+  type: service
+  parameters:
+    - title: Service Details
+      required:
+        - component_id
+        - description
+        - owner
+      properties:
+        component_id:
+          title: Service / Agent Name
+          type: string
+          description: Unique kebab-case identifier for this AI agent service
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+          description: What does this agent do in production?
+        owner:
+          title: Owner
+          type: string
+          description: Team or user owning this service
+          default: max-smith-kdp-llc-3027-plg
+    - title: AI Governance & Observability Options
+      properties:
+        enable_datadog_tracing:
+          title: Enable Datadog LLM Observability
+          type: boolean
+          default: true
+        enable_preaction_firewall:
+          title: Enable ThumbGate Pre-Action Firewall
+          type: boolean
+          default: true
+        fail_closed_mode:
+          title: Fail-Closed Security Policy
+          type: boolean
+          default: true
+  steps:
+    - id: fetch-base
+      name: Fetch Golden Path Skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          component_id: ${{ parameters.component_id }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          enable_datadog_tracing: ${{ parameters.enable_datadog_tracing }}
+          enable_preaction_firewall: ${{ parameters.enable_preaction_firewall }}
+          fail_closed_mode: ${{ parameters.fail_closed_mode }}
+    - id: publish-github
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        allowedHosts: ['github.com']
+        description: ${{ parameters.description }}
+        repoUrl: github.com?owner=IgorGanapolsky&repo=${{ parameters.component_id }}
+        defaultBranch: main
+        protectDefaultBranch: true
+    - id: register-catalog
+      name: Register in Spotify Portal Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish-github'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish-github'].output.remoteUrl }}
+      - title: Open in Spotify Portal
+        icon: dashboard
+        entityRef: ${{ steps['register-catalog'].output.entityRef }}
