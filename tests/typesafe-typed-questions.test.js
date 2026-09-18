@@ -15,7 +15,14 @@ const {
   route,
   POLICIES,
   buildTypesafeTypedQuestionsReport,
+  buildTypesafeTypedQuestionsReportAsync,
+  questionsForApi,
+  compareShadow,
+  normalizeMetric,
+  computeVariance,
   formatTypesafeTypedQuestionsReport,
+  attachLiveShadow,
+  parallelReceipt,
 } = require('../scripts/typesafe-typed-questions');
 
 const CLI = path.resolve(__dirname, '..', 'bin', 'cli.js');
@@ -275,6 +282,105 @@ test('gate templates include typed-question honesty pair', () => {
   assert.match(typed.rollout, /typesafe-typed-questions/);
 });
 
+test('questionsForApi strips matcher fields before System One', () => {
+  const q = questionsForApi({
+    destructive: {
+      type: 'noul',
+      instructions: 'Destructive?',
+      criteria: { true: 'yes', false: 'no' },
+      matcher: 'rm -rf',
+    },
+  });
+  assert.equal(q.destructive.matcher, undefined);
+  assert.equal(q.destructive.type, 'noul');
+});
+
+test('--live without a key fails closed and does not call fetch', async () => {
+  let called = 0;
+  const report = await buildTypesafeTypedQuestionsReportAsync({
+    live: true,
+    apiKey: null,
+    fetchImpl: async () => {
+      called += 1;
+      return { ok: true, status: 200, text: async () => '{}' };
+    },
+    toolName: 'Read',
+    command: 'README.md',
+  });
+  assert.equal(called, 0);
+  assert.equal(report.status, 'fail');
+  assert.ok(report.findings.some((f) => f.id === 'live_key_missing'));
+  assert.equal(report.route, 'pass');
+});
+
+test('--live shadow disagrees without changing route', async () => {
+  let called = 0;
+  const report = await buildTypesafeTypedQuestionsReportAsync({
+    live: true,
+    apiKey: 'test-key',
+    toolName: 'Bash',
+    command: 'git reset --hard HEAD',
+    fetchImpl: async (url, init) => {
+      called += 1;
+      assert.match(String(url), /systemone/);
+      const body = JSON.parse(init.body);
+      assert.equal(body.model, 'jev-latest');
+      assert.equal(body.questions.destructive.matcher, undefined);
+      assert.ok(Object.keys(body.questions).length >= 5, 'batched POST must send the whole battery');
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({
+          model: 'jev-latest',
+          answers: { destructive: { type: 'noul', noul: 0.05 } },
+          usage: { input_tokens: 12, output_tokens: 3 },
+        }),
+      };
+    },
+  });
+  assert.equal(called, 1);
+  assert.equal(report.route, 'block');
+  assert.equal(report.shadow.used, true);
+  assert.equal(report.shadow.ownsRoute, false);
+  assert.ok(report.findings.some((f) => f.id === 'shadow_divergence'));
+  assert.equal(report.parallel.batchedCalls, 1);
+  assert.ok(report.parallel.questionCount >= 5);
+  assert.equal(report.parallel.inputTokens, 12);
+  assert.equal(report.parallel.estimatedFanoutInputTokens, 12 * report.parallel.questionCount);
+  assert.match(report.parallel.cookbook, /parallel_questions/);
+});
+
+test('--fan-out-questions fails closed without extra HTTP', async () => {
+  let called = 0;
+  const report = await buildTypesafeTypedQuestionsReportAsync({
+    live: true,
+    fanOutQuestions: true,
+    apiKey: 'test-key',
+    fetchImpl: async () => {
+      called += 1;
+      return { ok: true, status: 200, text: async () => '{}' };
+    },
+  });
+  assert.equal(called, 0);
+  assert.equal(report.status, 'fail');
+  assert.ok(report.findings.some((f) => f.id === 'parallel_fanout_refused'));
+});
+
+test('--use-typesafe-api still refuses Jev as the gate even with --live', async () => {
+  let called = 0;
+  const report = await buildTypesafeTypedQuestionsReportAsync({
+    live: true,
+    useTypesafeApi: true,
+    apiKey: 'test-key',
+    fetchImpl: async () => {
+      called += 1;
+      return { ok: true, status: 200, text: async () => '{}' };
+    },
+  });
+  assert.equal(called, 0);
+  assert.ok(report.findings.some((f) => f.id === 'typesafe_api_refused'));
+});
+
 test('docs and skill refuse Jev clones and LLM adjudicator', () => {
   const doc = fs.readFileSync(
     path.join(__dirname, '..', 'docs', 'agents', 'typesafe-typed-questions.md'),
@@ -296,3 +402,170 @@ test('docs and skill refuse Jev clones and LLM adjudicator', () => {
   assert.match(skill, /Do NOT install/i);
   assert.match(skill, /console\.typesafe\.ai\/hook/);
 });
+
+test('normalizeMetric extracts standardized 0..1 metrics per primitive', () => {
+  const noulMetric = normalizeMetric({ type: 'noul', noul: 0.85 });
+  assert.equal(noulMetric, 0.85);
+
+  const choiceMetric = normalizeMetric({
+    type: 'choice',
+    choice: 'destructive',
+    probabilities: { destructive: 0.92, none: 0.08 },
+  });
+  assert.equal(choiceMetric, 0.92);
+
+  const scoreMetric = normalizeMetric(
+    { type: 'score', score: 2 },
+    { criteria: ['None', 'Mild', 'Serious', 'Severe'] }
+  );
+  assert.equal(scoreMetric, 0.6667);
+});
+
+test('computeVariance detects zero variance across identical repeats', () => {
+  const runs = [
+    { breach: 0.8, destructive: 1.0 },
+    { breach: 0.8, destructive: 1.0 },
+    { breach: 0.8, destructive: 1.0 },
+  ];
+  const stats = computeVariance(runs);
+  assert.equal(stats.destructive.mean, 1.0);
+  assert.equal(stats.destructive.stdDev, 0.0);
+  assert.equal(stats.destructive.zeroVariance, true);
+});
+
+test('compareShadow records divergence on score mismatch', () => {
+  const det = { severity: { type: 'score', score: 2 } };
+  const jev = { severity: { type: 'score', score: 0 } };
+  const diffs = compareShadow(det, jev);
+  assert.equal(diffs.length, 1);
+  assert.equal(diffs[0].id, 'severity');
+  assert.equal(diffs[0].delta, 2);
+});
+
+test('CLI script text output and help output', () => {
+  const resultHelp = spawnSync(process.execPath, [SCRIPT, '--help'], { encoding: 'utf8' });
+  assert.equal(resultHelp.status, 0);
+  assert.match(resultHelp.stdout, /Usage: node scripts\/typesafe-typed-questions\.js/);
+
+  const resultText = spawnSync(process.execPath, [SCRIPT, '--map-only'], { encoding: 'utf8' });
+  assert.equal(resultText.status, 0);
+  assert.match(resultText.stdout, /Rail map:/);
+});
+
+test('attachLiveShadow handles HTTP errors and mock fetch responses', async () => {
+  const mockUnauthorizedFetch = async () => ({
+    ok: false,
+    status: 401,
+    statusText: 'Unauthorized',
+    headers: { get: () => 'application/json' },
+    text: async () => JSON.stringify({ error: 'invalid_key' }),
+  });
+
+  const rep1 = buildTypesafeTypedQuestionsReport({
+    toolName: 'Bash',
+    command: 'ls',
+  });
+  await attachLiveShadow(rep1, {
+    live: true,
+    apiKey: 'mock_key',
+    fetchImpl: mockUnauthorizedFetch,
+  });
+  assert.equal(rep1.status, 'fail');
+  assert.ok(rep1.findings.some((f) => f.id === 'live_unauthorized'));
+
+  const mockNetworkErrorFetch = async () => {
+    const err = new Error('connect ECONNREFUSED 127.0.0.1');
+    err.code = 'ECONNREFUSED';
+    throw err;
+  };
+
+  const rep2 = buildTypesafeTypedQuestionsReport({
+    toolName: 'Bash',
+    command: 'ls',
+  });
+  await attachLiveShadow(rep2, {
+    live: true,
+    apiKey: 'mock_key',
+    fetchImpl: mockNetworkErrorFetch,
+  });
+  assert.equal(rep2.status, 'fail');
+  assert.ok(rep2.findings.some((f) => f.id === 'live_http_error'));
+
+  const mockSuccessFetch = async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: () => 'application/json' },
+    text: async () => JSON.stringify({
+      model: 'system-one-v1',
+      usage: { input_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+      answers: {
+        destructive: { type: 'choice', choice: 'destructive', probabilities: { destructive: 0.9 } },
+      },
+    }),
+  });
+
+  const rep3 = buildTypesafeTypedQuestionsReport({
+    toolName: 'Bash',
+    command: 'ls',
+  });
+  await attachLiveShadow(rep3, {
+    live: true,
+    apiKey: 'mock_key',
+    fetchImpl: mockSuccessFetch,
+  });
+  assert.ok(rep3.shadow.used);
+  assert.equal(rep3.shadow.model, 'system-one-v1');
+});
+
+test('parallelReceipt and validateQuestion branch coverage', () => {
+  const r = parallelReceipt({ q1: { type: 'choice' } }, { input_tokens: 100 });
+  assert.equal(r.batchedCalls, 1);
+  assert.equal(r.questionCount, 1);
+
+  const invalidTypeQ = validateQuestion('bad', { type: 'unsupported_type' });
+  assert.ok(invalidTypeQ.length > 0);
+  assert.equal(invalidTypeQ[0].id, 'freeform_question');
+
+  const invalidChoiceQ = validateQuestion('bad_choice', { type: 'choice', instructions: 'choose' });
+  assert.ok(invalidChoiceQ.length > 0);
+  assert.equal(invalidChoiceQ[0].id, 'choice_criteria_shape');
+
+  const invalidScoreQ = validateQuestion('bad_score', { type: 'score', instructions: 'rate' });
+  assert.ok(invalidScoreQ.length > 0);
+  assert.equal(invalidScoreQ[0].id, 'score_criteria_shape');
+});
+
+test('IO errors, format findings, and boolean/matcher edge cases', () => {
+  const rep = buildTypesafeTypedQuestionsReport({
+    batteryPath: '/tmp/nonexistent-battery-file.json',
+    payloadPath: '/tmp/nonexistent-payload-file.json',
+  });
+  assert.equal(rep.status, 'fail');
+  assert.ok(rep.findings.some((f) => f.id === 'battery_read_error'));
+  assert.ok(rep.findings.some((f) => f.id === 'payload_read_error'));
+
+  const formattedWithFindings = formatTypesafeTypedQuestionsReport(rep);
+  assert.match(formattedWithFindings, /Findings:/);
+  assert.match(formattedWithFindings, /battery_read_error/);
+
+  assert.equal(parseBattery([]).error, 'battery_shape_error');
+  assert.equal(parseBattery({ questions: {} }).error, 'empty_battery');
+  const repRaw = buildTypesafeTypedQuestionsReport({ payloadText: 'raw string command' });
+  assert.equal(repRaw.ok, true);
+
+  assert.equal(composeHazardFamily({ guardrail_tamper: 0.9 }), 'tamper');
+  assert.equal(composeHazardFamily({ clone_jev: 0.9 }), 'clone');
+  assert.equal(composeHazardFamily({ outbound_send: 0.9 }), 'outbound');
+  assert.equal(composeHazardFamily({ destructive: 0.9 }), 'destructive');
+
+  assert.equal(composeSeverity({ clone_jev: 0.9 }), 2);
+  assert.equal(composeSeverity({ outbound_send: 0.9 }), 2);
+  assert.equal(composeSeverity({ other: 0.4 }), 1);
+
+  const routeBlock = route({ nouls: {}, severity: 3, policy: POLICIES.strict, battery: {} });
+  assert.equal(routeBlock, 'block');
+});
+
+
+
+
