@@ -455,7 +455,9 @@
     "scripts/colab-compute-honesty.js",
     ".agents/skills/colab-compute-honesty-not-clone/",
     ".agents/skills/deeppattern-discipline-honesty-not-clone/",
-    "scripts/deeppattern-discipline-honesty.js"
+    "scripts/deeppattern-discipline-honesty.js",
+    ".agents/skills/ci-gha-buildkite-patterns-not-clone/",
+    "scripts/ci-gha-buildkite-patterns.js"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
@@ -1201,7 +1203,9 @@
     "config:strict-parse": "node scripts/config-strict-parse.js",
     "test:config-strict-parse": "node --test tests/config-strict-parse.test.js",
     "test:deeppattern-discipline-honesty": "node --test tests/deeppattern-discipline-honesty.test.js",
-    "deeppattern-discipline-honesty": "node scripts/deeppattern-discipline-honesty.js"
+    "deeppattern-discipline-honesty": "node scripts/deeppattern-discipline-honesty.js",
+    "test:ci-gha-buildkite-patterns": "node --test tests/ci-gha-buildkite-patterns.test.js",
+    "ci-gha-buildkite-patterns": "node scripts/ci-gha-buildkite-patterns.js"
   },
   "keywords": [
     "mcp",

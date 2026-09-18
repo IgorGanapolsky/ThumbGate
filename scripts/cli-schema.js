@@ -494,6 +494,22 @@ const CLI_COMMANDS = [
   }),
 
   discoveryCommand({
+    name: 'ci-gha-buildkite-patterns',
+    aliases: ['ci-buildkite-patterns', 'gha-buildkite-honesty', 'first-fail-gha'],
+    description: 'Buildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations (does not add Buildkite)',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero on fail' },
+      { name: 'map-only', type: 'boolean', description: 'Print Buildkite → GHA rail map' },
+      { name: 'jobs-json', type: 'string', description: 'Path to gh run view --json jobs payload' },
+      { name: 'workflow', type: 'string', description: 'Workflow YAML to audit' },
+      { name: 'annotate', type: 'boolean', description: 'Append first-fail block to GITHUB_STEP_SUMMARY' },
+      { name: 'clone-buildkite', type: 'boolean', description: 'Refuse Buildkite SKU clone' },
+      { name: 'migrate', type: 'boolean', description: 'Refuse migrating this repo to Buildkite' },
+    ],
+  }),
+
+  discoveryCommand({
     name: 'deeppattern-discipline-honesty',
     aliases: ['deeppattern-honesty', 'layer-check-honesty', 'evidence-closeout-honesty', 'aqg-de-honesty'],
     description: 'DeepPattern FORMAT steal: layer-check + evidence-closeout (does not install AQG/Decision Engine)',
