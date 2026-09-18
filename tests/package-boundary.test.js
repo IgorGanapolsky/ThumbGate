@@ -495,8 +495,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 538 -> 540: token-shunt-honesty.js + skill — Spotify Portal/shunt FORMAT.
   // 540 -> 542: typesafe-typed-questions.js + skill — TypeSafe FORMAT steal.
   // 542 -> 544: colab-compute-honesty.js + skill — Colab /signup CU honesty.
-    manifest.fileCount <= 544,
-    `npm package should stay <= 544 files, got ${manifest.fileCount}`
+  // 544 -> 546: deeppattern-discipline-honesty.js + skill — DeepPattern layer-check + evidence-closeout.
+    manifest.fileCount <= 546,
+    `npm package should stay <= 546 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
