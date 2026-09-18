@@ -298,7 +298,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 540 -> 542: typesafe-typed-questions.js + skill — TypeSafe FORMAT steal
   //   (typed noul/choice/score + code-owned route; not a Jev SKU).
   // 542 -> 544: colab-compute-honesty.js + skill — Colab CU honesty.
-  const CEILING = 544;
+  // 544 -> 546: deeppattern-discipline-honesty.js + skill — layer-check + closeout.
+  const CEILING = 546;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
