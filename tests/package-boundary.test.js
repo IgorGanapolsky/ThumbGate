@@ -497,8 +497,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 542 -> 544: colab-compute-honesty.js + skill — Colab /signup CU honesty.
   // 544 -> 546: deeppattern-discipline-honesty.js + skill — DeepPattern layer-check + evidence-closeout.
   // 546 -> 548: ci-gha-buildkite-patterns.js + skill — Buildkite FORMAT on GHA.
-    manifest.fileCount <= 548,
-    `npm package should stay <= 548 files, got ${manifest.fileCount}`
+  // 548 -> 549 (2026-09-18): src/integrations/ideabrowser-connector.js (IdeaBrowser connector #3823).
+    manifest.fileCount <= 549,
+    `npm package should stay <= 549 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -728,8 +729,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   //   — 4,203 over the 8.52 MB cap.
   // Bumped 8.53 MB -> 8.55 MB (2026-09-18): ci-gha-buildkite-patterns.js + skill.
   // Measured 8,544,410 unpacked — 14,410 over the 8.53 MB cap. File-count 548.
-    manifest.unpackedSize <= 8_550_000,
-    `npm package should stay <= 8.55 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.55 MB -> 8.56 MB (2026-09-18): ideabrowser-connector.js (#3823).
+  // Measured 8,549,898 unpacked — narrow headroom retained. File-count 549.
+    manifest.unpackedSize <= 8_560_000,
+    `npm package should stay <= 8.56 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
