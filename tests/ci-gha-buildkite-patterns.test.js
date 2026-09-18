@@ -12,6 +12,8 @@ const {
   auditWorkflowText,
   renderAnnotation,
   buildCiGhaBuildkitePatternsReport,
+  formatCiGhaBuildkitePatternsReport,
+  runCli,
   parseArgs,
 } = require('../scripts/ci-gha-buildkite-patterns');
 
@@ -132,3 +134,107 @@ test('skill refuses Buildkite clone', () => {
   assert.match(skill, /not a\s+Buildkite clone/i);
   assert.match(skill, /Never.*migrate/i);
 });
+
+test('runCli prints help and handles flags', () => {
+  assert.equal(runCli(['--help']), 0);
+  assert.equal(runCli(['-h']), 0);
+  assert.equal(runCli(['--map-only']), 0);
+  assert.equal(runCli(['--map-only', '--json']), 0);
+  assert.equal(runCli(['--map-only', '--strict']), 0);
+});
+
+test('formatCiGhaBuildkitePatternsReport formats various report variations', () => {
+  const rep1 = {
+    name: 'test-report',
+    status: 'ready',
+    vendor: 'github-actions',
+    clone: false,
+    firstFail: { job: 'test', step: 'Run tests', conclusion: 'failure' },
+    missingRequired: ['CodeQL'],
+    findings: [{ id: 'test_id', message: 'test finding' }],
+    railMap: [{ buildkite: 'bk', githubActions: 'gha' }],
+    note: 'test note',
+  };
+  const out1 = formatCiGhaBuildkitePatternsReport(rep1);
+  assert.match(out1, /first_fail: job=test step=Run tests conclusion=failure/);
+  assert.match(out1, /missing_required: CodeQL/);
+  assert.match(out1, /test_id: test finding/);
+
+  const rep2 = {
+    name: 'test-report-none',
+    status: 'ready',
+    vendor: 'github-actions',
+    clone: false,
+    firstFail: { job: 'deploy', step: null, conclusion: 'cancelled' },
+    missingRequired: [],
+    findings: [],
+    railMap: [],
+    note: 'no notes',
+  };
+  const out2 = formatCiGhaBuildkitePatternsReport(rep2);
+  assert.match(out2, /first_fail: job=deploy step=\(job\) conclusion=cancelled/);
+  assert.match(out2, /findings: \(none\)/);
+
+  const rep3 = {
+    name: 'test-report-empty',
+    status: 'ready',
+    vendor: 'github-actions',
+    clone: false,
+    firstFail: null,
+    missingRequired: [],
+    findings: [],
+    railMap: [],
+    note: 'note',
+  };
+  const out3 = formatCiGhaBuildkitePatternsReport(rep3);
+  assert.match(out3, /first_fail: \(none\)/);
+});
+
+test('renderAnnotation handles null firstFail and extraLines', () => {
+  const nullAnn = renderAnnotation(null, ['Extra custom note']);
+  assert.match(nullAnn, /No failed step in the provided jobs JSON/);
+  assert.match(nullAnn, /Extra custom note/);
+});
+
+test('firstFailedStep handles jobs with no steps and missing steps', () => {
+  const jobs = [
+    { name: 'build', conclusion: 'success', steps: [] },
+    { name: 'deploy', conclusion: 'failure' }, // no steps property
+  ];
+  const fail = firstFailedStep(jobs);
+  assert.equal(fail.job, 'deploy');
+  assert.equal(fail.step, null);
+  assert.equal(fail.conclusion, 'failure');
+});
+
+test('buildCiGhaBuildkitePatternsReport handles annotate and step summary', () => {
+  const summaryFile = writeTemp('summary.md', '');
+  const prevEnv = process.env.GITHUB_STEP_SUMMARY;
+  try {
+    process.env.GITHUB_STEP_SUMMARY = summaryFile;
+    const report = buildCiGhaBuildkitePatternsReport({
+      annotate: true,
+      claim: 'we should migrate to buildkite',
+    });
+    assert.equal(report.status, 'fail');
+    assert.equal(report.annotationWritten, true);
+    assert.ok(fs.readFileSync(summaryFile, 'utf8').length > 0);
+  } finally {
+    if (prevEnv !== undefined) {
+      process.env.GITHUB_STEP_SUMMARY = prevEnv;
+    } else {
+      delete process.env.GITHUB_STEP_SUMMARY;
+    }
+  }
+});
+
+test('buildCiGhaBuildkitePatternsReport audits workflow files and detects missing files', () => {
+  const missing = buildCiGhaBuildkitePatternsReport({ workflow: 'nonexistent-workflow.yml' });
+  assert.ok(missing.findings.some((f) => f.id === 'workflow_missing'));
+
+  const badWorkflow = writeTemp('bad.yml', 'jobs:\n  t:\n    uses: buildkite/agent-action@v1\n');
+  const bad = buildCiGhaBuildkitePatternsReport({ workflow: badWorkflow });
+  assert.ok(bad.findings.some((f) => f.id === 'clone_buildkite'));
+});
+
+
