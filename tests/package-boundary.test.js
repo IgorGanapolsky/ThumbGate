@@ -494,8 +494,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 536 -> 538: cobble-hot-store-split.js + skill — CobbleDB FORMAT steal.
   // 538 -> 540: token-shunt-honesty.js + skill — Spotify Portal/shunt FORMAT.
   // 540 -> 542: typesafe-typed-questions.js + skill — TypeSafe FORMAT steal.
-    manifest.fileCount <= 542,
-    `npm package should stay <= 542 files, got ${manifest.fileCount}`
+  // 542 -> 544: colab-compute-honesty.js + skill — Colab /signup CU honesty.
+  // 544 -> 546: deeppattern-discipline-honesty.js + skill — DeepPattern layer-check + evidence-closeout.
+    manifest.fileCount <= 546,
+    `npm package should stay <= 546 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -716,8 +718,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.47 MB -> 8.48 MB (2026-09-17): CodeRabbit follow-up (write-tool
   //   tamper gate + noul action validation). CI measured 8,471,013 unpacked —
   //   1,013 over the old cap.
-    manifest.unpackedSize <= 8_480_000,
-    `npm package should stay <= 8.48 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.48 MB -> 8.49 MB (2026-09-17): colab-compute-honesty.js + skill.
+  // Measured 8,487,846 unpacked — 7,846 over the old cap.
+  // Bumped 8.49 MB -> 8.52 MB (2026-09-17): deeppattern-discipline-honesty.js + skill.
+  // Measured 8,511,706 unpacked — 21,706 over the 8.49 MB cap.
+    manifest.unpackedSize <= 8_520_000,
+    `npm package should stay <= 8.52 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

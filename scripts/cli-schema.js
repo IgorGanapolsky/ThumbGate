@@ -476,6 +476,41 @@ const CLI_COMMANDS = [
   }),
 
   discoveryCommand({
+    name: 'colab-compute-honesty',
+    aliases: ['colab-honesty', 'compute-unit-honesty'],
+    description: 'Colab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt (does not buy Pro/Pro+ or clone colab-cli)',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero on fail' },
+      { name: 'claim', type: 'string', description: 'Claim to audit' },
+      { name: 'plan', type: 'string', description: 'free|payg|pro|proplus|unknown' },
+      { name: 'plan-proof', type: 'string', description: 'Live Current-plan receipt, not a Subscribe button' },
+      { name: 'snapshot', type: 'string', description: 'Live /signup snapshot JSON' },
+      { name: 'map-only', type: 'boolean', description: 'Print Colab → ThumbGate rail map' },
+      { name: 'claim-ready', type: 'boolean', description: 'Fail unless compute proof is clean' },
+      { name: 'clone-colab', type: 'boolean', description: 'Refuse Colab-runner SKU clone' },
+      { name: 'buy-pro', type: 'boolean', description: 'Refuse buying Colab Pro/Pro+/CU' },
+    ],
+  }),
+
+  discoveryCommand({
+    name: 'deeppattern-discipline-honesty',
+    aliases: ['deeppattern-honesty', 'layer-check-honesty', 'evidence-closeout-honesty', 'aqg-de-honesty'],
+    description: 'DeepPattern FORMAT steal: layer-check + evidence-closeout (does not install AQG/Decision Engine)',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero on fail' },
+      { name: 'claim', type: 'string', description: 'Comparative / substitute claim to layer-check' },
+      { name: 'subject-layer', type: 'string', description: 'Subject product layer (default L7)' },
+      { name: 'closeout', type: 'string', description: 'Markdown closeout / PR body path' },
+      { name: 'closeout-text', type: 'string', description: 'Inline closeout markdown' },
+      { name: 'map-only', type: 'boolean', description: 'Print DeepPattern → ThumbGate rail map' },
+      { name: 'claim-ready', type: 'boolean', description: 'Fail unless layer-check + closeout are clean' },
+      { name: 'clone-deeppattern', type: 'boolean', description: 'Refuse AQG/DE SKU clone' },
+    ],
+  }),
+
+  discoveryCommand({
     name: 'typesafe-typed-questions',
     aliases: ['typesafe-hook', 'typed-questions', 'jev-typed-questions'],
     description: 'TypeSafe FORMAT steal: typed noul/choice/score over PreToolUse state, code-owned pass/review/block (does not install typesafe-sdk or clone Jev)',

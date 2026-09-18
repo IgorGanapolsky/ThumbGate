@@ -2730,6 +2730,44 @@ async function typesafeTypedQuestionsDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function deeppatternDisciplineHonestyDoctor() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildDeeppatternDisciplineHonestyReport,
+    formatDeeppatternDisciplineHonestyReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'deeppattern-discipline-honesty'));
+  const report = buildDeeppatternDisciplineHonestyReport(args);
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatDeeppatternDisciplineHonestyReport(report));
+  }
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
+function colabComputeHonestyDoctor() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildColabComputeHonestyReport,
+    formatColabComputeHonestyReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'colab-compute-honesty'));
+  const report = buildColabComputeHonestyReport(args);
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatColabComputeHonestyReport(report));
+  }
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function cobbleHotStoreSplit() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3643,6 +3681,8 @@ function help() {
   console.log('  cobble-hot-store-split Split durable/delivery/hot lesson planes (CobbleDB FORMAT)');
   console.log('  token-shunt-honesty   Intercept untargeted bulk reads (Portal FORMAT; not shunt@portal)');
   console.log('  typesafe-typed-questions Typed noul/choice/score + code-owned route (TypeSafe FORMAT; not Jev)');
+  console.log('  deeppattern-discipline-honesty Layer-check + evidence-closeout (DeepPattern FORMAT; not AQG/DE)');
+  console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
   console.log('  intent-governed-execution  NL intent → classify/authorize/gate/HITL/evidence (CyberStrike FORMAT)');
   console.log('  background-governance Background-agent run report and dispatch risk check');
@@ -3689,6 +3729,8 @@ function help() {
   console.log('  npx thumbgate cobble-hot-store-split --json');
   console.log('  npx thumbgate token-shunt-honesty --json --lines=800');
   console.log('  npx thumbgate typesafe-typed-questions --json --tool-name=Bash --command="git push --force origin main"');
+  console.log('  npx thumbgate deeppattern-discipline-honesty --json --map-only');
+  console.log('  npx thumbgate colab-compute-honesty --json --map-only');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
   console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
   console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
@@ -3731,6 +3773,8 @@ const SUBCOMMAND_HELP = {
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
+  'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',
+  'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
   'claim-stop-check': 'Usage: npx thumbgate claim-stop-check\n\nClaude Stop-hook interface: reads the hook payload from stdin and blocks factual claims that disagree with configured sources.',
   'verify-claims': 'Usage: npx thumbgate verify-claims --claim="the row count is 1,284" [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nRecheck supported factual claims against operator-configured SQLite, filesystem, and JSON sources. Exits non-zero on mismatch, missing verifier, or verifier error.',
   'hermes-gate': 'Usage: npx thumbgate hermes-gate\n\nNous Research Hermes Agent pre_tool_call shell hook: reads Hermes tool-call JSON from stdin, runs the ThumbGate gate pipeline (strict by default), and outputs {"decision":"block","reason":...} to veto or {} to allow. Gates terminal/patch/skill_manage etc. See adapters/hermes/config.yaml.',
@@ -4369,6 +4413,18 @@ switch (COMMAND) {
       console.error(err && err.stack ? err.stack : err);
       process.exitCode = 1;
     });
+    break;
+  case 'colab-compute-honesty':
+  case 'colab-honesty':
+  case 'compute-unit-honesty':
+    colabComputeHonestyDoctor();
+    break;
+  case 'deeppattern-discipline-honesty':
+  case 'deeppattern-honesty':
+  case 'layer-check-honesty':
+  case 'evidence-closeout-honesty':
+  case 'aqg-de-honesty':
+    deeppatternDisciplineHonestyDoctor();
     break;
   case 'workspace-search-route':
   case 'zg-search-route':

@@ -86,6 +86,66 @@
       "rollout": "Require typesafe-typed-questions --claim-ready evidence before claiming a typed-question hook is ready. Does not call api.typesafe.ai."
     },
     {
+      "id": "require-compute-unit-proof",
+      "name": "Require Compute Unit / plan receipt before Colab GPU claims",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(?=[\\s\\S]*(colab pro\\+|proplus|a100|v100|background execution|24 hours?|compute units?))(?=[\\s\\S]*(eval|offload|gpu|notebook|colab))",
+      "problem": "Blocks treating a Colab Subscribe button or CU pack as a dedicated GPU. Live /signup: paid SKUs sell Compute Units; Subscribe visible is not a receipt.",
+      "roi": "Stops A100/Pro+ offload theater. ThumbGate evals stay on GitHub Actions.",
+      "rollout": "Pair with colab-compute-honesty --json. Require --plan-proof from a Current-plan receipt."
+    },
+    {
+      "id": "refuse-colab-sku-clone",
+      "name": "Refuse Colab-runner SKU clones and surprise Pro spend",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "colab-cli|google-colab-pro-runner|ngrok.{0,40}colab|colab.{0,40}ssh|zero-cost a100|buy.{0,20}colab pro",
+      "problem": "Blocks cloning Colab as a ThumbGate GPU harness or buying Pro/Pro+/CU from an agent session.",
+      "roi": "No surprise $9.99/$49.99 spend. No fake colab-cli.",
+      "rollout": "Enable wherever an agent proposes Colab offload. Does not purchase a plan."
+    },
+    {
+      "id": "require-same-layer-comparison",
+      "name": "Require same-layer product comparisons (DeepPattern layer-check)",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(?=[\\s\\S]*(openrouter|litellm|token aggregat|api gateway|raw (model )?api|foundation model))(?=[\\s\\S]*(replace[sd]?|substitut|commoditiz|competes? with|instead of)[\\s\\S]*(thumbgate|pretooluse))",
+      "problem": "Blocks treating L4 transport / L2 models as substitutes for L7 ThumbGate PreToolUse governance (DeepPattern layer-check FORMAT).",
+      "roi": "Stops category-error competitive analysis. Gateways are inputs; hosted multi-model panels are complements.",
+      "rollout": "Pair with deeppattern-discipline-honesty --json. Tag L1–L8 before competitor claims."
+    },
+    {
+      "id": "require-evidence-closeout-items",
+      "name": "Require evidence-closeout items before done claims",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(?=[\\s\\S]*(done|shipped|fixed|complete|merged))(?![\\s\\S]*(scope completed|verification run|production boundary))",
+      "problem": "Blocks summary-without-evidence closeouts. AQG evidence-closeout FORMAT: six required items under an Evidence heading.",
+      "roi": "Aligns with Completion Claim Contract. Fresh verification before the word done.",
+      "rollout": "Pair with deeppattern-discipline-honesty --closeout=path.md --strict."
+    },
+    {
+      "id": "refuse-deeppattern-sku-clone",
+      "name": "Refuse DeepPattern AQG/Decision-Engine SKU clones",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "dp-install|install_aqg|agent-quality-gates|decision-engine.{0,40}(clone|install|sku)|clone.{0,20}(aqg|decision.engine|deeppattern)",
+      "problem": "Blocks cloning Agent Quality Gates or Decision Engine as a ThumbGate product surface.",
+      "roi": "FORMAT steal only (layer-check + evidence-closeout). No hosted cross-vendor audit SKU.",
+      "rollout": "Enable on competitive-steal and install prompts. Does not vendor DeepPattern."
+    },
+    {
       "id": "require-broker-signed-execution-receipt",
       "name": "Require broker-signed execution receipts",
       "category": "Provider Side-Effect Governance",

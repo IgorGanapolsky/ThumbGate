@@ -273,6 +273,15 @@ test('jit-harness-compose exposes four-module compose flags', () => {
   assert.ok(flagNames.includes('profile'));
 });
 
+test('colab-compute-honesty exposes CU-proof flags', () => {
+  const cmd = findCommand('colab-honesty');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'colab-compute-honesty');
+  assert.ok(flagNames.includes('plan-proof'));
+  assert.ok(flagNames.includes('clone-colab'));
+  assert.ok(flagNames.includes('buy-pro'));
+});
+
 test('typesafe-typed-questions exposes typed-question flags', () => {
   const cmd = findCommand('typesafe-hook');
   const flagNames = cmd.flags.map((f) => f.name);

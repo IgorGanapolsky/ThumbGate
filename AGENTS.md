@@ -151,6 +151,28 @@ npx thumbgate typesafe-typed-questions --json --tool-name=Bash --command='git pu
 
 Skill: `.agents/skills/typesafe-typed-questions-not-clone/SKILL.md`. Details: `docs/agents/typesafe-typed-questions.md`.
 
+## DeepPattern discipline honesty (FORMAT steal)
+
+Layer-check + evidence-closeout from DeepPattern AQG/DE onto existing rails. Do not install AQG, Decision Engine, or `dp-install`.
+
+```bash
+npx thumbgate deeppattern-discipline-honesty --json --map-only
+npx thumbgate deeppattern-discipline-honesty --json --claim='OpenRouter replaces ThumbGate'
+npx thumbgate deeppattern-discipline-honesty --json --closeout=pr-body.md --strict
+```
+
+Skill: `.agents/skills/deeppattern-discipline-honesty-not-clone/SKILL.md`. Details: `docs/agents/deeppattern-discipline-honesty.md`.
+
+## Colab compute honesty (FORMAT steal)
+
+Colab /signup sells Compute Units, not a dedicated GPU. Subscribe visible ≠ subscribed. Do not buy Pro/Pro+/CU. Do not clone colab-cli.
+
+```bash
+npx thumbgate colab-compute-honesty --json --map-only
+```
+
+Skill: `.agents/skills/colab-compute-honesty-not-clone/SKILL.md`. Details: `docs/agents/colab-compute-honesty.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
