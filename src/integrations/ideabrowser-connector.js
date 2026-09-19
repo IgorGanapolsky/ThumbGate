@@ -137,13 +137,22 @@ class IdeaBrowserConnector extends EventEmitter {
     if (tier === ToolTier.MUTATING) {
       const targetUrl = params.url || params.target || context.url;
       if (targetUrl && !this.isAllowedDomain(targetUrl)) {
-        const error = new Error(`Domain not allowed for mutating tool "${name}": ${targetUrl}`);
+        let domainOnly = targetUrl;
+        try {
+          const parsed = targetUrl.startsWith('http')
+            ? new URL(targetUrl)
+            : new URL(`https://${targetUrl}`);
+          domainOnly = parsed.origin;
+        } catch {
+          domainOnly = redactSecrets(targetUrl);
+        }
+        const error = new Error(`Domain not allowed for mutating tool "${name}": ${domainOnly}`);
         error.code = 'DOMAIN_INTERDICTED';
         this.emit('interdict', {
           name,
           params: redactSecretsDeep(params),
           context: redactSecretsDeep(context),
-          reason: error.message,
+          reason: redactSecrets(error.message),
         });
         if (this.failClosed) {
           throw error;

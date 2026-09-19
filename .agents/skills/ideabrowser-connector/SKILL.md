@@ -13,7 +13,7 @@ description: Secure IdeaBrowser agent connector with read-only vs mutating class
 
 1. **Zero Plaintext Credentials**:
    - Connector tokens/secrets must **never** be stored in tracked repository files or plaintext configuration files.
-   - Resolve credentials via authenticated environment variables (`IDEABROWSER_API_KEY`) or local macOS Keychain lookup (`security find-generic-password -s "ideabrowser"`).
+   - Resolve credentials via authenticated environment variables (`IDEABROWSER_API_KEY`) or secure secret storage.
 
 2. **Strict Tool Classification**:
    - Every discovered tool/action from IdeaBrowser must be classified into one of two operational tiers:
@@ -22,8 +22,7 @@ description: Secure IdeaBrowser agent connector with read-only vs mutating class
    - **Fail-Closed on Provider Drift**: Any newly introduced or unclassified tool defaults immediately to `mutating` and triggers a gate check.
 
 3. **Pre-Action Interdiction**:
-   - Before executing any `mutating` tool, the connector evaluates:
-     - Target domain against allowlist (empty allowlist fails closed).
-     - Action blast radius (e.g. form fields, sensitive input).
-     - User authorization level and active scope state.
-   - All interdiction event payloads recursively redact sensitive keys before notifying listeners.
+   - Before executing any `mutating` tool, `executeTool` evaluates:
+     - Target domain against configured allowlist (empty allowlist fails closed).
+     - Caller-provided `context.blocked` flag (upstream policy is responsible for evaluating blast radius, authorization, and scope state to set `context.blocked`).
+   - All interdiction event payloads recursively redact sensitive keys, query parameters, and error reasons before notifying listeners.

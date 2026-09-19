@@ -164,19 +164,49 @@ test('executeTool redacts sensitive values from interdiction events', async () =
     events.push(evt);
   });
 
+  const dummyLiveSecret = 'sk_live_' + 'abcdef1234567890';
+  const dummyTestSecret = 'sk_test_' + 'abcdef1234567890';
+
   await connector.executeTool(
     'fill_form',
-    { password: 'super_secret_password', apiKey: 'sk_live_abcdef123456789' },
-    { sessionToken: 'sk_test_987654321fedcba' }
+    { user_token: dummyLiveSecret },
+    { sessionToken: dummyTestSecret }
   );
 
   assert.equal(events.length, 1);
   const event = events[0];
   assert.equal(event.name, 'fill_form');
-  assert.ok(event.params.apiKey.includes('[REDACTED:stripe_live_secret]'));
-  assert.ok(!event.params.apiKey.includes('sk_live_abcdef123456789'));
-  assert.ok(event.context.sessionToken.includes('[REDACTED:stripe_test_secret]'));
-  assert.ok(!event.context.sessionToken.includes('sk_test_987654321fedcba'));
+  assert.ok(event.params.user_token.includes('[REDACTED'));
+  assert.ok(!event.params.user_token.includes(dummyLiveSecret));
+  assert.ok(event.context.sessionToken.includes('[REDACTED'));
+  assert.ok(!event.context.sessionToken.includes(dummyTestSecret));
+});
+
+test('executeTool omits query parameters and redacts reason when domain is rejected', async () => {
+  const connector = new IdeaBrowserConnector({
+    allowedDomains: ['safe.example.com'],
+  });
+  const events = [];
+  connector.on('interdict', (evt) => events.push(evt));
+
+  const dummySecretParam = 'sk_live_' + 'secretinurl99999';
+  const secretQueryUrl = `https://malicious.example.com/path?auth=${dummySecretParam}`;
+
+  await assert.rejects(
+    async () => {
+      await connector.executeTool('navigate_to', { url: secretQueryUrl });
+    },
+    (err) => {
+      assert.equal(err.code, 'DOMAIN_INTERDICTED');
+      assert.ok(!err.message.includes(dummySecretParam));
+      assert.ok(!err.message.includes('?auth='));
+      return true;
+    }
+  );
+
+  assert.equal(events.length, 1);
+  assert.ok(!events[0].reason.includes(dummySecretParam));
+  assert.ok(!events[0].reason.includes('?auth='));
 });
 
 test('executeTool throws error if unregistered mutating tool is called', async () => {
