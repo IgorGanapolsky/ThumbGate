@@ -188,3 +188,19 @@ test('executeTool throws error if unregistered mutating tool is called', async (
     /IdeaBrowser tool "non_existent_tool" not found/
   );
 });
+
+test('failClosed: false allows blocked mutating tools and unclassified tools to proceed', async () => {
+  const connector = new IdeaBrowserConnector({
+    failClosed: false,
+    handlers: {
+      click_element: async (params) => ({ executed: true, params }),
+    },
+  });
+
+  assert.equal(connector.classifyTool('unknown_custom_action'), ToolTier.READ_ONLY);
+
+  // Even if context.blocked === true, failClosed: false permits execution
+  const res = await connector.executeTool('click_element', { x: 10 }, { blocked: true });
+  assert.deepEqual(res, { executed: true, params: { x: 10 } });
+});
+

@@ -107,8 +107,11 @@ class IdeaBrowserConnector extends EventEmitter {
 
   classifyTool(name) {
     const entry = this.toolRegistry.get(name);
+    if (entry) {
+      return entry.tier;
+    }
     // Fail closed on drift: Unknown tools are classified as mutating
-    return entry ? entry.tier : ToolTier.MUTATING;
+    return this.failClosed ? ToolTier.MUTATING : ToolTier.READ_ONLY;
   }
 
   isAllowedDomain(urlOrDomain) {
@@ -142,7 +145,9 @@ class IdeaBrowserConnector extends EventEmitter {
           context: redactSecretsDeep(context),
           reason: error.message,
         });
-        throw error;
+        if (this.failClosed) {
+          throw error;
+        }
       }
 
       this.emit('interdict', {
@@ -152,9 +157,11 @@ class IdeaBrowserConnector extends EventEmitter {
       });
 
       if (context.blocked === true) {
-        const error = new Error(`Execution of mutating tool "${name}" blocked by pre-action gate.`);
-        error.code = 'GATE_INTERDICTED';
-        throw error;
+        if (this.failClosed) {
+          const error = new Error(`Execution of mutating tool "${name}" blocked by pre-action gate.`);
+          error.code = 'GATE_INTERDICTED';
+          throw error;
+        }
       }
     }
 
