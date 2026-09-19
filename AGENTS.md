@@ -163,6 +163,17 @@ npx thumbgate deeppattern-discipline-honesty --json --closeout=pr-body.md --stri
 
 Skill: `.agents/skills/deeppattern-discipline-honesty-not-clone/SKILL.md`. Details: `docs/agents/deeppattern-discipline-honesty.md`.
 
+## CI GHA Buildkite patterns (FORMAT steal)
+
+Steal first-fail step identity, PR fail-fast, `needs:` wait honesty, skip conditions, and `GITHUB_STEP_SUMMARY` annotations onto existing GitHub Actions. Do not add Buildkite Pipelines, agents, Test Engine, or a second required check.
+
+```bash
+npx thumbgate ci-gha-buildkite-patterns --json --map-only
+npx thumbgate ci-gha-buildkite-patterns --json --workflow=.github/workflows/ci.yml
+```
+
+Skill: `.agents/skills/ci-gha-buildkite-patterns-not-clone/SKILL.md`. Details: `docs/agents/ci-gha-buildkite-patterns.md`.
+
 ## Colab compute honesty (FORMAT steal)
 
 Colab /signup sells Compute Units, not a dedicated GPU. Subscribe visible ≠ subscribed. Do not buy Pro/Pro+/CU. Do not clone colab-cli.
@@ -171,7 +182,11 @@ Colab /signup sells Compute Units, not a dedicated GPU. Subscribe visible ≠ su
 npx thumbgate colab-compute-honesty --json --map-only
 ```
 
-Skill: `.agents/skills/colab-compute-honesty-not-clone/SKILL.md`. Details: `docs/agents/colab-compute-honesty.md`.
+## IdeaBrowser connector & governance diode (#3823)
+
+Hardened IdeaBrowser connector without credential leakage, classifying all actions into read-only or mutating tiers. Emits interdiction events and fails closed on unclassified tool drift.
+
+Skill: `.agents/skills/ideabrowser-connector/SKILL.md`.
 
 ## Canonical Product Scope
 

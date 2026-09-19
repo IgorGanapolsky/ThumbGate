@@ -2711,17 +2711,49 @@ function tokenShuntHonesty() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
-function typesafeTypedQuestionsDoctor() {
+async function typesafeTypedQuestionsDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
-    buildTypesafeTypedQuestionsReport,
+    buildTypesafeTypedQuestionsReportAsync,
     formatTypesafeTypedQuestionsReport,
   } = require(path.join(PKG_ROOT, 'scripts', 'typesafe-typed-questions'));
-  const report = buildTypesafeTypedQuestionsReport(args);
+  const report = await buildTypesafeTypedQuestionsReportAsync(args);
   if (args.json) {
     console.log(JSON.stringify(report, null, 2));
   } else {
     process.stdout.write(formatTypesafeTypedQuestionsReport(report));
+  }
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
+function ciGhaBuildkitePatternsDoctor() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildCiGhaBuildkitePatternsReport,
+    formatCiGhaBuildkitePatternsReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'ci-gha-buildkite-patterns'));
+  const report = args['map-only']
+    ? buildCiGhaBuildkitePatternsReport({ ...args, mapOnly: true })
+    : buildCiGhaBuildkitePatternsReport({
+      json: Boolean(args.json),
+      strict: Boolean(args.strict),
+      mapOnly: Boolean(args['map-only']),
+      annotate: Boolean(args.annotate),
+      cloneBuildkite: Boolean(args['clone-buildkite']),
+      migrate: Boolean(args.migrate),
+      rerunQueued: Boolean(args['rerun-queued']),
+      quarantine: Boolean(args.quarantine),
+      jobsJson: args['jobs-json'] || '',
+      workflow: args.workflow || '',
+    });
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatCiGhaBuildkitePatternsReport(report));
   }
   if (args.strict && report.status !== 'ready') {
     process.exitCode = 1;
@@ -3681,6 +3713,7 @@ function help() {
   console.log('  cobble-hot-store-split Split durable/delivery/hot lesson planes (CobbleDB FORMAT)');
   console.log('  token-shunt-honesty   Intercept untargeted bulk reads (Portal FORMAT; not shunt@portal)');
   console.log('  typesafe-typed-questions Typed noul/choice/score + code-owned route (TypeSafe FORMAT; not Jev)');
+  console.log('  ci-gha-buildkite-patterns First-fail + PR fail-fast on GitHub Actions (Buildkite FORMAT; not Buildkite)');
   console.log('  deeppattern-discipline-honesty Layer-check + evidence-closeout (DeepPattern FORMAT; not AQG/DE)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
@@ -3729,6 +3762,7 @@ function help() {
   console.log('  npx thumbgate cobble-hot-store-split --json');
   console.log('  npx thumbgate token-shunt-honesty --json --lines=800');
   console.log('  npx thumbgate typesafe-typed-questions --json --tool-name=Bash --command="git push --force origin main"');
+  console.log('  npx thumbgate ci-gha-buildkite-patterns --json --map-only');
   console.log('  npx thumbgate deeppattern-discipline-honesty --json --map-only');
   console.log('  npx thumbgate colab-compute-honesty --json --map-only');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
@@ -3773,6 +3807,7 @@ const SUBCOMMAND_HELP = {
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
+  'ci-gha-buildkite-patterns': 'Usage: npx thumbgate ci-gha-buildkite-patterns [--jobs-json=path] [--workflow=path] [--json] [--map-only]\n\nBuildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations. Does not add Buildkite.',
   'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
   'claim-stop-check': 'Usage: npx thumbgate claim-stop-check\n\nClaude Stop-hook interface: reads the hook payload from stdin and blocks factual claims that disagree with configured sources.',
@@ -4409,12 +4444,21 @@ switch (COMMAND) {
   case 'typesafe-hook':
   case 'typed-questions':
   case 'jev-typed-questions':
-    typesafeTypedQuestionsDoctor();
+    typesafeTypedQuestionsDoctor().catch((err) => {
+      console.error(err && err.stack ? err.stack : err);
+      process.exitCode = 1;
+    });
     break;
   case 'colab-compute-honesty':
   case 'colab-honesty':
   case 'compute-unit-honesty':
     colabComputeHonestyDoctor();
+    break;
+  case 'ci-gha-buildkite-patterns':
+  case 'ci-buildkite-patterns':
+  case 'gha-buildkite-honesty':
+  case 'first-fail-gha':
+    ciGhaBuildkitePatternsDoctor();
     break;
   case 'deeppattern-discipline-honesty':
   case 'deeppattern-honesty':
