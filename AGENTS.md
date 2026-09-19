@@ -186,7 +186,7 @@ npx thumbgate colab-compute-honesty --json --map-only
 
 Hardened IdeaBrowser connector without credential leakage, classifying all actions into read-only or mutating tiers. Emits interdiction events and fails closed on unclassified tool drift.
 
-Skill: `/Users/igorganapolsky/.gemini/config/skills/ideabrowser-connector/SKILL.md`.
+Skill: `.agents/skills/ideabrowser-connector/SKILL.md`.
 
 ## Canonical Product Scope
 
