@@ -21,7 +21,7 @@
  */
 
 const { EventEmitter } = require('node:events');
-const { redactSecrets } = require('../../scripts/secret-redaction');
+const { redactSecrets, redactSecretsDeep } = require('../../scripts/secret-redaction');
 
 const ToolTier = Object.freeze({
   READ_ONLY: 'read-only',
@@ -112,9 +112,10 @@ class IdeaBrowserConnector extends EventEmitter {
   }
 
   isAllowedDomain(urlOrDomain) {
-    if (!this.allowedDomains || this.allowedDomains.size === 0) {
+    if (!this.allowedDomains) {
       return true;
     }
+    if (this.allowedDomains.size === 0) return false;
     if (!urlOrDomain) return false;
     try {
       const parsed = urlOrDomain.startsWith('http')
@@ -135,11 +136,20 @@ class IdeaBrowserConnector extends EventEmitter {
       if (targetUrl && !this.isAllowedDomain(targetUrl)) {
         const error = new Error(`Domain not allowed for mutating tool "${name}": ${targetUrl}`);
         error.code = 'DOMAIN_INTERDICTED';
-        this.emit('interdict', { name, params, context, reason: error.message });
+        this.emit('interdict', {
+          name,
+          params: redactSecretsDeep(params),
+          context: redactSecretsDeep(context),
+          reason: error.message,
+        });
         throw error;
       }
 
-      this.emit('interdict', { name, params, context });
+      this.emit('interdict', {
+        name,
+        params: redactSecretsDeep(params),
+        context: redactSecretsDeep(context),
+      });
 
       if (context.blocked === true) {
         const error = new Error(`Execution of mutating tool "${name}" blocked by pre-action gate.`);

@@ -140,6 +140,43 @@ test('executeTool enforces domain allowlist on mutating actions', async () => {
       message: /Domain not allowed/,
     }
   );
+
+  // Configured empty allowedDomains fails closed
+  const connectorEmptyAllowlist = new IdeaBrowserConnector({
+    allowedDomains: [],
+  });
+  assert.equal(connectorEmptyAllowlist.isAllowedDomain('https://example.com'), false);
+  await assert.rejects(
+    async () => {
+      await connectorEmptyAllowlist.executeTool('click_element', {}, { url: 'https://example.com' });
+    },
+    {
+      code: 'DOMAIN_INTERDICTED',
+      message: /Domain not allowed/,
+    }
+  );
+});
+
+test('executeTool redacts sensitive values from interdiction events', async () => {
+  const events = [];
+  const connector = new IdeaBrowserConnector();
+  connector.on('interdict', (evt) => {
+    events.push(evt);
+  });
+
+  await connector.executeTool(
+    'fill_form',
+    { password: 'super_secret_password', apiKey: 'sk_live_abcdef123456789' },
+    { sessionToken: 'sk_test_987654321fedcba' }
+  );
+
+  assert.equal(events.length, 1);
+  const event = events[0];
+  assert.equal(event.name, 'fill_form');
+  assert.ok(event.params.apiKey.includes('[REDACTED:stripe_live_secret]'));
+  assert.ok(!event.params.apiKey.includes('sk_live_abcdef123456789'));
+  assert.ok(event.context.sessionToken.includes('[REDACTED:stripe_test_secret]'));
+  assert.ok(!event.context.sessionToken.includes('sk_test_987654321fedcba'));
 });
 
 test('executeTool throws error if unregistered mutating tool is called', async () => {
