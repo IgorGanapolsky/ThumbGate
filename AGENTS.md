@@ -182,7 +182,11 @@ Colab /signup sells Compute Units, not a dedicated GPU. Subscribe visible ≠ su
 npx thumbgate colab-compute-honesty --json --map-only
 ```
 
-Skill: `.agents/skills/colab-compute-honesty-not-clone/SKILL.md`. Details: `docs/agents/colab-compute-honesty.md`.
+## IdeaBrowser connector & governance diode (#3823)
+
+Hardened IdeaBrowser connector without credential leakage, classifying all actions into read-only or mutating tiers. Emits interdiction events and fails closed on unclassified tool drift.
+
+Skill: `.agents/skills/ideabrowser-connector/SKILL.md`.
 
 ## Canonical Product Scope
 
