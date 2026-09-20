@@ -119,6 +119,17 @@ npm run memory:vs-rag -- --query "what did we decide?" --entity entity-id --proj
 
 Details: [`docs/agents/memory-vs-rag.md`](./docs/agents/memory-vs-rag.md).
 
+## Board loop (Issues + PRs)
+
+GitHub list-view `4/4` is not mergeable. After each Trunk land, Dependabot goes `SUCCESS`+`BEHIND`. Classify then act — never approve.
+
+```bash
+npx thumbgate board-loop --json
+npx thumbgate board-loop --apply --json
+```
+
+Skill: `.agents/skills/thumbgate-board-loop/SKILL.md` (`/thumbgate-board-loop`). Details: `docs/agents/thumbgate-board-loop.md`.
+
 ## Cobble hot-store split (honest)
 
 Separate durable lesson state, batched promotion, and query-time MultiGet. Map onto existing rails; never clone CobbleDB / RocksDB / YTsaurus. Do not quote Perplexity 5× / 20% as ours.

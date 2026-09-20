@@ -23,6 +23,7 @@ Hard rules shared across workflows: **read-only by default**, evidence-backed fi
 | `resume-ready-to-submit-package` | RTS package audit + apply order | `/resume-ready-to-submit-package` |
 | `pr-adversarial-review` | Multi-specialist PR review + merge readiness | `/pr-adversarial-review` |
 | `thumbgate-enforcement-audit` | Live wall + match surfaces + prose-gate census | `/thumbgate-enforcement-audit` |
+| `thumbgate-board-hygiene` | Issues+PR wall: BEHIND Dependabot drain, never approve | `/thumbgate-board-hygiene` |
 
 ## Args
 

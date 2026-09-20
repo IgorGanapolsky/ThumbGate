@@ -475,6 +475,21 @@ const CLI_COMMANDS = [
     ],
   }),
 
+
+  discoveryCommand({
+    name: 'board-loop',
+    aliases: ['thumbgate-board-loop', 'pr-issue-loop'],
+    description: 'Classify+drain Issues/PR wall (BEHIND Dependabot update-branch; never approve)',
+    flags: [
+      jsonFlag(),
+      { name: 'apply', type: 'boolean', description: 'Perform update-branch / pr:manage / comments (default classify-only)' },
+      { name: 'max-update-branch', type: 'number', description: 'Max BEHIND PRs to update-branch per tick (default 1)' },
+      { name: 'max-pr-manage', type: 'number', description: 'Max READY PRs to submit via pr:manage (default 1)' },
+      { name: 'max-comments', type: 'number', description: 'Max needs-rebase / issue comments (default 4)' },
+      { name: 'skip-pr', type: 'number', description: 'Skip a PR number (e.g. the one just merged)' },
+    ],
+  }),
+
   discoveryCommand({
     name: 'colab-compute-honesty',
     aliases: ['colab-honesty', 'compute-unit-honesty'],

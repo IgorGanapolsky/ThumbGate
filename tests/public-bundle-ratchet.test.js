@@ -251,7 +251,8 @@ const path = require('node:path');
 // 546 → 548: ci-gha-buildkite-patterns.js + skill — Buildkite pipeline
 //            FORMAT on GitHub Actions (not a Buildkite vendor).
 // 548 → 549 (2026-09-18): src/integrations/ideabrowser-connector.js (#3823).
-const BASELINE_FILE_COUNT = 549;
+// 549 → 551: thumbgate-board-loop.js + skill — Issues+PR wall classifier.
+const BASELINE_FILE_COUNT = 551;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
