@@ -16,6 +16,8 @@ const {
   applyPlan,
   ciRollup,
   buildReport,
+  resolveGhBinary,
+  FIXED_GH_BINARIES,
   MARKER,
 } = require('../scripts/thumbgate-board-loop');
 
@@ -164,6 +166,18 @@ test('thumbgate CLI board-loop is wired', () => {
   assert.equal(payload.name, 'thumbgate-board-loop');
 });
 
+
+
+test('resolveGhBinary uses fixed executable paths only', () => {
+  const accessSync = (candidate) => {
+    if (candidate === '/usr/bin/gh') return;
+    throw new Error('missing');
+  };
+  assert.equal(resolveGhBinary({ accessSync }), '/usr/bin/gh');
+  for (const candidate of FIXED_GH_BINARIES) {
+    assert.equal(path.isAbsolute(candidate), true);
+  }
+});
 
 test('ciRollup returns UNKNOWN when no checks exist', () => {
   assert.equal(ciRollup({}), 'UNKNOWN');

@@ -13,6 +13,36 @@
 
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
+const fs = require('node:fs');
+
+const FIXED_GH_BINARIES = Object.freeze([
+  '/opt/homebrew/bin/gh',
+  '/usr/local/bin/gh',
+  '/usr/bin/gh',
+]);
+
+function resolveGhBinary(options = {}) {
+  const accessSync = options.accessSync || fs.accessSync;
+  const candidates = [];
+  const configuredBinary = options.ghBinary || process.env.THUMBGATE_GH_BINARY;
+  if (configuredBinary) {
+    if (!path.isAbsolute(configuredBinary)) {
+      throw new Error(`Unsafe GH binary path: ${configuredBinary}`);
+    }
+    candidates.push(configuredBinary);
+  }
+  candidates.push(...FIXED_GH_BINARIES);
+  for (const candidate of candidates) {
+    try {
+      accessSync(candidate, fs.constants.X_OK);
+      return candidate;
+    } catch {
+      continue;
+    }
+  }
+  throw new Error(`Unable to locate GH CLI in fixed paths: ${candidates.join(', ')}`);
+}
+
 
 const MARKER = '<!-- thumbgate-board-loop -->';
 const SOURCE = 'thumbgate-board-loop';
@@ -181,7 +211,7 @@ function dirtyPrCommentBody(classified) {
 
 function runGh(args, runner) {
   if (typeof runner === 'function') return runner(args);
-  return spawnSync('gh', args, { encoding: 'utf8' });
+  return spawnSync(resolveGhBinary(), args, { encoding: 'utf8' });
 }
 
 function parseJson(stdout, fallback) {
@@ -392,6 +422,8 @@ module.exports = {
   applyPlan,
   buildReport,
   formatReport,
+  resolveGhBinary,
+  FIXED_GH_BINARIES,
   main,
 };
 
