@@ -14,6 +14,8 @@ const {
   alreadyMarked,
   planBoard,
   applyPlan,
+  ciRollup,
+  buildReport,
   MARKER,
 } = require('../scripts/thumbgate-board-loop');
 
@@ -162,6 +164,59 @@ test('thumbgate CLI board-loop is wired', () => {
   assert.equal(payload.name, 'thumbgate-board-loop');
 });
 
+
+test('ciRollup returns UNKNOWN when no checks exist', () => {
+  assert.equal(ciRollup({}), 'UNKNOWN');
+  assert.equal(ciRollup({ statusCheckRollup: [] }), 'UNKNOWN');
+  assert.equal(ciRollup({ ciRollup: 'SUCCESS' }), 'SUCCESS');
+});
+
+test('classifyPr: UNKNOWN CI waits instead of merge', () => {
+  const row = classifyPr({
+    number: 42,
+    isDraft: false,
+    mergeStateStatus: 'CLEAN',
+    mergeable: 'MERGEABLE',
+    statusCheckRollup: [],
+  });
+  assert.equal(row.class, 'pending');
+  assert.equal(row.action, 'wait');
+  assert.equal(row.ci, 'UNKNOWN');
+});
+
+test('applyPlan skips alreadyMarked DIRTY comments', () => {
+  const plan = planBoard([
+    {
+      number: 1,
+      isDraft: false,
+      mergeStateStatus: 'DIRTY',
+      mergeable: 'CONFLICTING',
+      comments: [{ body: `x ${MARKER}` }],
+      statusCheckRollup: [{ name: 'test', status: 'COMPLETED', conclusion: 'FAILURE' }],
+    },
+  ], []);
+  assert.equal(plan.prPlan[0].alreadyMarked, true);
+  const calls = [];
+  const applied = applyPlan(plan, { maxUpdateBranch: 0, maxPrManage: 0, maxComments: 4 }, (args) => {
+    calls.push(args);
+    return { status: 0, stdout: '', stderr: '' };
+  });
+  assert.equal(calls.length, 0);
+  assert.equal(applied.actions.length, 0);
+});
+
+test('buildReport fails closed when gh board load errors', () => {
+  const report = buildReport({ apply: true }, {
+    prs: [],
+    issues: [],
+    prsError: 'gh auth failed',
+    issuesError: null,
+  });
+  assert.equal(report.ok, false);
+  assert.deepEqual(report.errors, ['gh auth failed']);
+  assert.equal(report.applied.length, 0);
+});
+
 test('agent-automerge resolves workflow_run PRs and allows dependabot/*', () => {
   const yml = fs.readFileSync(
     path.join(__dirname, '..', '.github', 'workflows', 'agent-automerge.yml'),
@@ -170,6 +225,8 @@ test('agent-automerge resolves workflow_run PRs and allows dependabot/*', () => 
   assert.match(yml, /dependabot\/\*/);
   assert.match(yml, /workflow_run\.head_sha/);
   assert.match(yml, /thumbgate-board-loop\.js/);
+  assert.match(yml, /secrets\.GH_PAT/);
+  assert.match(yml, /board-loop --apply skipped/);
   assert.doesNotMatch(yml, /event:\s*"APPROVE"/);
   assert.doesNotMatch(yml, /gh\s+pr\s+merge[^\n]*--auto/);
 });

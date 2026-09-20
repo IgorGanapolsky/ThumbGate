@@ -121,7 +121,11 @@ jobs:
           node scripts/pr-manager.js "$PR_NUMBER"
 
           if [ -f scripts/thumbgate-board-loop.js ]; then
-            node scripts/thumbgate-board-loop.js --apply --max-update-branch=1 --skip-pr="$PR_NUMBER" --json
+            if [ -n "${{ secrets.GH_PAT }}" ]; then
+              node scripts/thumbgate-board-loop.js --apply --max-update-branch=1 --skip-pr="$PR_NUMBER" --json
+            else
+              echo "board-loop --apply skipped: GH_PAT unset (GITHUB_TOKEN update-branch would approval-gate CI)"
+            fi
           fi
 
           {

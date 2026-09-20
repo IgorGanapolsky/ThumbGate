@@ -75,7 +75,7 @@ function ciRollup(pr) {
   }
   if (failing) return 'FAILURE';
   if (pending) return 'PENDING';
-  return 'SUCCESS';
+  return checks.length ? 'SUCCESS' : 'UNKNOWN';
 }
 
 function classifyPr(pr, options = {}) {
@@ -103,8 +103,8 @@ function classifyPr(pr, options = {}) {
   if (ci === 'FAILURE') {
     return { number, class: 'failing', action: 'triage', ci, mss, reason: 'required check red' };
   }
-  if (ci === 'PENDING') {
-    return { number, class: 'pending', action: 'wait', ci, mss, reason: 'required check pending' };
+  if (ci === 'PENDING' || ci === 'UNKNOWN') {
+    return { number, class: 'pending', action: 'wait', ci, mss, reason: ci === 'UNKNOWN' ? 'no CI evidence yet' : 'required check pending' };
   }
   if (mss === 'BEHIND' && ci === 'SUCCESS') {
     return { number, class: 'behind', action: 'update_branch', ci, mss, reason: 'green but behind tip' };
@@ -195,7 +195,7 @@ function parseJson(stdout, fallback) {
 function loadBoard(runner) {
   const prsRes = runGh([
     'pr', 'list', '--state', 'open', '--limit', '50',
-    '--json', 'number,title,author,isDraft,mergeable,mergeStateStatus,headRefName,url,statusCheckRollup',
+    '--json', 'number,title,author,isDraft,mergeable,mergeStateStatus,headRefName,url,statusCheckRollup,comments',
   ], runner);
   const issuesRes = runGh([
     'issue', 'list', '--state', 'open', '--limit', '50',
@@ -216,6 +216,7 @@ function planBoard(prs, issues) {
       url: pr.url,
       author: pr.author && (pr.author.login || pr.author),
       headRefName: pr.headRefName,
+      alreadyMarked: alreadyMarked(pr.comments),
     };
   });
   const issuePlan = issues.map((issue) => ({
@@ -262,7 +263,11 @@ function applyPlan(plan, options, runner) {
         detail: (res.stdout || res.stderr || '').trim().slice(0, 200),
       });
       manages += 1;
-    } else if (row.action === 'comment_needs_rebase' && comments < options.maxComments) {
+    } else if (
+      row.action === 'comment_needs_rebase'
+      && !row.alreadyMarked
+      && comments < options.maxComments
+    ) {
       const res = runGh([
         'pr', 'comment', String(row.number), '--body', dirtyPrCommentBody(row),
       ], runner);
@@ -297,21 +302,28 @@ function applyPlan(plan, options, runner) {
 }
 
 function buildReport(options = {}, io = {}) {
-  const loaded = io.prs && io.issues
-    ? { prs: io.prs, issues: io.issues }
+  const loaded = (io.prs || io.issues)
+    ? {
+      prs: io.prs || [],
+      issues: io.issues || [],
+      prsError: io.prsError || null,
+      issuesError: io.issuesError || null,
+    }
     : loadBoard(io.runner);
+  const errors = [loaded.prsError, loaded.issuesError].filter(Boolean);
   const plan = planBoard(loaded.prs || [], loaded.issues || []);
   const counts = {};
   for (const row of plan.prPlan) {
     counts[row.class] = (counts[row.class] || 0) + 1;
   }
   let applied = { actions: [], refused: [] };
-  if (options.apply) {
+  if (options.apply && errors.length === 0) {
     applied = applyPlan(plan, options, io.runner);
   }
   return {
     name: SOURCE,
-    ok: true,
+    ok: errors.length === 0,
+    errors,
     never: ['approve a PR', 'gh pr merge --auto', '--admin', 'close DIRTY <30d without evidence'],
     prs: plan.prPlan.length,
     issues: plan.issuePlan.length,

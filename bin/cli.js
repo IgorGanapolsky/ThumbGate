@@ -2785,9 +2785,10 @@ function deeppatternDisciplineHonestyDoctor() {
 function thumbgateBoardLoop() {
   const args = parseArgs(process.argv.slice(3));
   const { buildReport, formatReport } = require(path.join(PKG_ROOT, 'scripts', 'thumbgate-board-loop'));
+  const truthy = (value) => value === true || /^(1|true|yes|on)$/i.test(String(value || '').trim());
   const report = buildReport({
-    json: Boolean(args.json),
-    apply: Boolean(args.apply),
+    json: truthy(args.json),
+    apply: truthy(args.apply),
     maxUpdateBranch: Number(args['max-update-branch'] ?? 1),
     maxPrManage: Number(args['max-pr-manage'] ?? 1),
     maxComments: Number(args['max-comments'] ?? 4),
