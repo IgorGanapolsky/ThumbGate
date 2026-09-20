@@ -406,7 +406,7 @@ function main(argv = process.argv.slice(2)) {
   const report = buildReport(args);
   if (args.json) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   else process.stdout.write(formatReport(report));
-  return 0;
+  return report.ok ? 0 : 1;
 }
 
 module.exports = {

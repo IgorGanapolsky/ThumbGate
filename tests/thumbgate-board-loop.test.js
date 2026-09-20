@@ -144,16 +144,27 @@ test('applyPlan update-branches at most one behind PR and never approves', () =>
 });
 
 test('script --json classifies without applying', () => {
+  const offline = buildReport({ apply: false }, { prs: [], issues: [] });
+  assert.equal(offline.name, 'thumbgate-board-loop');
+  assert.equal(offline.ok, true);
+  assert.deepEqual(offline.applied, []);
+  assert.ok(offline.never.some((n) => /approve/i.test(n)));
+
   const result = spawnSync(process.execPath, [SCRIPT, '--json'], {
     encoding: 'utf8',
-    env: { ...process.env, GH_TOKEN: process.env.GH_TOKEN || process.env.GITHUB_TOKEN },
+    env: { ...process.env, GH_TOKEN: process.env.GH_TOKEN || process.env.GITHUB_TOKEN || '' },
   });
-  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout, result.stderr);
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.name, 'thumbgate-board-loop');
-  assert.equal(payload.ok, true);
   assert.deepEqual(payload.applied, []);
-  assert.ok(payload.never.some((n) => /approve/i.test(n)));
+  assert.ok(Array.isArray(payload.errors));
+  if (payload.ok) {
+    assert.equal(result.status, 0);
+  } else {
+    assert.notEqual(result.status, 0);
+    assert.ok(payload.errors.length > 0);
+  }
 });
 
 test('thumbgate CLI board-loop is wired', () => {
