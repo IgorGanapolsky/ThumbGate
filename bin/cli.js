@@ -2781,6 +2781,26 @@ function deeppatternDisciplineHonestyDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+
+function thumbgateBoardLoop() {
+  const args = parseArgs(process.argv.slice(3));
+  const { buildReport, formatReport } = require(path.join(PKG_ROOT, 'scripts', 'thumbgate-board-loop'));
+  const report = buildReport({
+    json: Boolean(args.json),
+    apply: Boolean(args.apply),
+    maxUpdateBranch: Number(args['max-update-branch'] ?? 1),
+    maxPrManage: Number(args['max-pr-manage'] ?? 1),
+    maxComments: Number(args['max-comments'] ?? 4),
+    skipPr: args['skip-pr'] ? Number(args['skip-pr']) : null,
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatReport(report));
+  }
+}
+
 function colabComputeHonestyDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3716,6 +3736,7 @@ function help() {
   console.log('  ci-gha-buildkite-patterns First-fail + PR fail-fast on GitHub Actions (Buildkite FORMAT; not Buildkite)');
   console.log('  deeppattern-discipline-honesty Layer-check + evidence-closeout (DeepPattern FORMAT; not AQG/DE)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
+  console.log('  board-loop            Classify+drain Issues/PR wall (BEHIND Dependabot, never approve)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
   console.log('  intent-governed-execution  NL intent → classify/authorize/gate/HITL/evidence (CyberStrike FORMAT)');
   console.log('  background-governance Background-agent run report and dispatch risk check');
@@ -3765,6 +3786,7 @@ function help() {
   console.log('  npx thumbgate ci-gha-buildkite-patterns --json --map-only');
   console.log('  npx thumbgate deeppattern-discipline-honesty --json --map-only');
   console.log('  npx thumbgate colab-compute-honesty --json --map-only');
+  console.log('  npx thumbgate board-loop --json');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
   console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
   console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
@@ -3809,6 +3831,7 @@ const SUBCOMMAND_HELP = {
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
   'ci-gha-buildkite-patterns': 'Usage: npx thumbgate ci-gha-buildkite-patterns [--jobs-json=path] [--workflow=path] [--json] [--map-only]\n\nBuildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations. Does not add Buildkite.',
   'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',
+  'board-loop': 'Usage: npx thumbgate board-loop [--apply] [--json] [--max-update-branch=1] [--max-pr-manage=1] [--max-comments=4] [--skip-pr=N]\n\nClassify Issues+PR wall: update-branch BEHIND green Dependabot, pr:manage READY, comment DIRTY/ECI. Never approve.',
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
   'claim-stop-check': 'Usage: npx thumbgate claim-stop-check\n\nClaude Stop-hook interface: reads the hook payload from stdin and blocks factual claims that disagree with configured sources.',
   'verify-claims': 'Usage: npx thumbgate verify-claims --claim="the row count is 1,284" [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nRecheck supported factual claims against operator-configured SQLite, filesystem, and JSON sources. Exits non-zero on mismatch, missing verifier, or verifier error.',
@@ -4448,6 +4471,11 @@ switch (COMMAND) {
       console.error(err && err.stack ? err.stack : err);
       process.exitCode = 1;
     });
+    break;
+  case 'board-loop':
+  case 'thumbgate-board-loop':
+  case 'pr-issue-loop':
+    thumbgateBoardLoop();
     break;
   case 'colab-compute-honesty':
   case 'colab-honesty':

@@ -310,6 +310,11 @@ node bin/cli.js cfo --today
 # 3. State what was completed and what's next
 ```
 
+
+## Board loop
+
+Use `npx thumbgate board-loop --json` / `--apply` to classify the Issues+PR wall (BEHIND Dependabot drain). Never approve. See AGENTS.md.
+
 ## Session Startup
 
 ```bash

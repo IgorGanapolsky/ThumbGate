@@ -301,7 +301,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 544 -> 546: deeppattern-discipline-honesty.js + skill — layer-check + closeout.
   // 546 -> 548: ci-gha-buildkite-patterns.js + skill — Buildkite FORMAT on GHA.
   // 548 -> 549 (2026-09-18): src/integrations/ideabrowser-connector.js (#3823).
-  const CEILING = 549;
+  // 549 -> 551: thumbgate-board-loop.js + skill — Issues+PR wall classifier.
+  const CEILING = 551;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
