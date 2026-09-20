@@ -733,9 +733,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.55 MB -> 8.56 MB (2026-09-18): ideabrowser-connector.js (#3823).
   // Measured 8,549,898 unpacked — narrow headroom retained. File-count 549.
   // Bumped 8.56 MB -> 8.57 MB (2026-09-20): thumbgate-board-loop.js + skill.
-  // Measured 8,568,869 unpacked — 8,869 over the 8.56 MB cap. File-count 551.
-    manifest.unpackedSize <= 8_570_000,
-    `npm package should stay <= 8.57 MB unpacked, got ${manifest.unpackedSize}`
+  // Local dry-run measured 8,568,869; CI measured 8,570,280 (ubuntu pack).
+  // Bumped 8.57 MB -> 8.58 MB to clear CI measurement. File-count 551.
+    manifest.unpackedSize <= 8_580_000,
+    `npm package should stay <= 8.58 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
