@@ -12,10 +12,10 @@
     "types": "wrangler types"
   },
   "dependencies": {
-    "stripe": "^22.6.1"
+    "stripe": "^22.6.2"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260907.1",
+    "@cloudflare/workers-types": "^5.20260914.1",
     "@types/node": "^26.4.0",
     "tsx": "^4.23.13",
     "typescript": "^5.5.0"
