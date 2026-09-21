@@ -1266,7 +1266,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.125.0",
-    "@google/genai": "2.21.0",
+    "@google/genai": "2.22.0",
     "@lancedb/lancedb": "^0.38.0",
     "apache-arrow": "^18.1.0",
     "better-sqlite3": "^12.9.0",
