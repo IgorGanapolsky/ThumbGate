@@ -34,6 +34,10 @@ const {
   actionFingerprint,
   sanitizeFeedbackText,
 } = require('./feedback-sanitizer');
+const {
+  classifyGateIntent,
+  lexicalGateApplies,
+} = require('./gate-intent-route');
 
 /**
  * Computes the SHA-256 hash of an executable binary to prevent path-based bypasses.
@@ -3016,8 +3020,10 @@ function evaluateSelfProtectHardFloor(input = {}) {
   const toolInput = input.tool_input || input.toolInput || {};
   const config = loadGatesConfig(DEFAULT_CONFIG_PATH);
 
+  const selfProtectRoute = classifyGateIntent(toolName, toolInput);
   for (const gate of config.gates) {
     if (!isSelfProtectGate(gate.id)) continue;
+    if (selfProtectRoute.intent === 'read' && gate.id !== 'self-protect-kill') continue;
     const matchDetails = matchSelfProtectHardFloor(gate, toolName, toolInput);
     if (!matchDetails) continue;
 
@@ -3056,6 +3062,7 @@ function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
 }
 
 function evaluateMemoryGuard(toolName, toolInput = {}) {
+  if (classifyGateIntent(toolName, toolInput).intent === 'read') return null;
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
   if (isSafeSecretStorageWrite(toolName, toolInput, process.cwd())) {
@@ -3428,7 +3435,9 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   const METRIC_SKIP_TOOLS = ['capture_feedback', 'feedback_stats', 'recall', 'feedback_summary', 'prevention_rules'];
   const skipMetrics = METRIC_SKIP_TOOLS.includes(toolName);
 
+  const intentRoute = classifyGateIntent(toolName, toolInput);
   for (const gate of config.gates) {
+    if (!lexicalGateApplies(gate, intentRoute)) continue;
     const matchDetails = matchGate(gate, toolName, toolInput);
     if (!matchDetails.matched) continue;
 
@@ -3769,7 +3778,9 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     }
   }
 
+  const intentRoute = classifyGateIntent(toolName, toolInput);
   for (const gate of config.gates) {
+    if (!lexicalGateApplies(gate, intentRoute)) continue;
     const matchDetails = matchGate(gate, toolName, toolInput);
     if (!matchDetails.matched) continue;
 
@@ -4105,6 +4116,8 @@ function evaluateFinancialHardFloor(input = {}, consumeReservation = false, opti
   const toolName = input.tool_name || input.toolName || 'unknown';
   if (isRemedyToolName(toolName)) return null;
   const rawToolInput = input.tool_input ?? input.toolInput;
+  const routeInput = rawToolInput && typeof rawToolInput === 'object' ? rawToolInput : {};
+  if (classifyGateIntent(toolName, routeInput).intent === 'read') return null;
   const toolInput = rawToolInput && typeof rawToolInput === 'object'
     ? rawToolInput
     : {};

@@ -23,6 +23,7 @@ const {
   getVerifiedApproval,
   requestEscalation,
 } = require('./human-escalation');
+const { classifyGateIntent } = require('./gate-intent-route');
 
 const LEDGER_FILE = 'financial-control-ledger.jsonl';
 const LEDGER_HEAD_FILE = 'financial-control-ledger.head.json';
@@ -406,6 +407,9 @@ function detectEconomicAction(toolName, toolInput = {}) {
     ...screenMutationProse,
   ].map((value) => String(value || '')).join(' ');
   if (ECONOMIC_URL_PATTERNS.some((pattern) => pattern.test(combined))) return true;
+  // Read-only diagnosis still hits payment URLs above. It does not hit
+  // prose/path words such as "purchase" inside git diff or a doc filename.
+  if (classifyGateIntent(normalizedToolName, toolInput).intent === 'read') return false;
   return ECONOMIC_ACTION_PATTERNS.some((pattern) => pattern.test(combined));
 }
 

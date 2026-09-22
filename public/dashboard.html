@@ -498,6 +498,11 @@
       </details>
 
       <div id="gatesList"><div class="loading">Loading gates...</div></div>
+      <div class="panel" style="margin-top:16px;">
+        <h3>Per-gate false positives</h3>
+        <p class="template-summary">A candidate false positive is a deny followed by an allow of the same command within 30 minutes.</p>
+        <div id="gateFpList"><div class="loading">Loading false-positive rates...</div></div>
+      </div>
     </div>
   </div>
 
@@ -1647,6 +1652,7 @@ function renderDashboardData(data) {
         '<span class="gate-action ' + action + '">' + action.toUpperCase() + '</span></div>';
     }).join('');
   }
+  renderGateFalsePositives(data.perGateFalsePositives || []);
 
   renderTeam(data.team || {}, data.analytics || {});
   renderAgentInventory(data.agentSurfaceInventory || {});
@@ -2357,6 +2363,7 @@ function loadDemo() {
       '<div class="gate-pattern">' + escHtml(g.pattern) + '</div></div>' +
       '<span class="gate-action ' + g.action + '">' + g.action.toUpperCase() + '</span></div>';
   }).join('');
+  renderGateFalsePositives([]);
   renderTeam({
     totalAgents: 4,
     activeAgents: 3,
@@ -2580,6 +2587,23 @@ var feedbackChart = null;
 var lessonChart = null;
 var gateAuditChart = null;
 var pendingInsightsData = null;
+
+function renderGateFalsePositives(rows) {
+  var list = document.getElementById('gateFpList');
+  if (!list) return;
+  if (!Array.isArray(rows) || !rows.length) {
+    list.innerHTML = '<div class="empty">No per-gate false positives yet. A candidate is a deny followed by an allow of the same command within 30 minutes.</div>';
+    return;
+  }
+  list.innerHTML = rows.map(function(row) {
+    var rate = typeof row.falsePositiveRate === 'number'
+      ? (Math.round(row.falsePositiveRate * 1000) / 10) + '%'
+      : 'n/a';
+    return '<div class="gate-card"><div><div class="gate-name">' + escHtml(row.gateId || 'gate') + '</div>' +
+      '<div class="gate-pattern">' + escHtml(String(row.candidateFalsePositives || 0) + ' candidate FP / ' + String(row.denies || 0) + ' denies') + '</div></div>' +
+      '<span class="gate-action warn">' + escHtml(rate) + '</span></div>';
+  }).join('');
+}
 
 function renderInsights(data) {
   renderTokenSavings(data.tokenSavings, data.gateStats || {});

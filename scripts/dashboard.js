@@ -18,6 +18,7 @@ const { resolveHostedBillingConfig } = require('./hosted-config');
 const { generateAgentReadinessReport } = require('./agent-readiness');
 const { summarizeGateTemplates } = require('./gate-templates');
 const { mergeRepeatMetricIntoGateStats } = require('./repeat-metric');
+const { computePerGateFalsePositives } = require('./gate-stats');
 const { buildPredictiveInsights } = loadOptionalModule('./predictive-insights', () => ({
   buildPredictiveInsights: () => ({
     upgradePropensity: {
@@ -2027,6 +2028,7 @@ function generateDashboard(feedbackDir, options = {}) {
     },
     approval,
     gateStats,
+    perGateFalsePositives: computePerGateFalsePositives(auditEntries),
     gates,
     prevention,
     trend,
@@ -2107,6 +2109,14 @@ function printDashboard(data) {
   console.log(`  Actions Warned   : ${gateStats.warned}`);
   if (gateStats.topBlocked) {
     console.log(`  Top Blocked      : ${gateStats.topBlocked} (${gateStats.topBlockedCount}\u00D7)`);
+  }
+  const fpRows = Array.isArray(data.perGateFalsePositives) ? data.perGateFalsePositives : [];
+  if (fpRows.length) {
+    console.log('  False positives  : deny then allow, same command, 30 min');
+    for (const row of fpRows.slice(0, 5)) {
+      const pct = `${Math.round(row.falsePositiveRate * 1000) / 10}%`;
+      console.log(`    ${row.gateId}: ${row.candidateFalsePositives}/${row.denies} (${pct})`);
+    }
   }
 
   console.log('');

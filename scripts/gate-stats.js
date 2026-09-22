@@ -201,6 +201,60 @@ function formatLastPromotion(promo) {
   return label;
 }
 
+const FP_WINDOW_MS = 30 * 60 * 1000;
+
+function commandFingerprint(row) {
+  const input = row && row.toolInput && typeof row.toolInput === 'object' ? row.toolInput : {};
+  const command = String(input.command || input.cmd || '');
+  const file = String(input.file_path || input.path || '');
+  return `${row.toolName || ''}|${command}|${file}`.slice(0, 240);
+}
+
+/**
+ * Candidate false positive: a deny followed by an allow of the same command
+ * within 30 minutes. That later allow is the sanctioned workaround.
+ */
+function computePerGateFalsePositives(auditEntries) {
+  const rows = (Array.isArray(auditEntries) ? auditEntries : [])
+    .map((row) => ({
+      ts: Date.parse(row && row.timestamp) || 0,
+      gateId: row && row.gateId,
+      decision: row && row.decision,
+      fingerprint: commandFingerprint(row || {}),
+    }))
+    .filter((row) => row.ts && row.gateId && row.fingerprint.split('|').slice(1).join('').length > 0)
+    .sort((a, b) => a.ts - b.ts);
+
+  const allows = rows.filter((row) => row.decision === 'allow');
+  const byGate = new Map();
+  for (const deny of rows) {
+    if (deny.decision !== 'deny') continue;
+    const later = allows.find((allow) => (
+      allow.fingerprint === deny.fingerprint
+      && allow.ts > deny.ts
+      && allow.ts - deny.ts <= FP_WINDOW_MS
+    ));
+    const bucket = byGate.get(deny.gateId) || {
+      gateId: deny.gateId,
+      denies: 0,
+      candidateFalsePositives: 0,
+    };
+    bucket.denies += 1;
+    if (later) bucket.candidateFalsePositives += 1;
+    byGate.set(deny.gateId, bucket);
+  }
+
+  return [...byGate.values()].map((bucket) => ({
+    ...bucket,
+    falsePositiveRate: bucket.denies
+      ? Number((bucket.candidateFalsePositives / bucket.denies).toFixed(3))
+      : 0,
+  })).sort((a, b) => (
+    b.falsePositiveRate - a.falsePositiveRate
+    || b.candidateFalsePositives - a.candidateFalsePositives
+  ));
+}
+
 function formatStats(stats) {
   const lines = [];
   lines.push('Gate Statistics');
@@ -258,6 +312,7 @@ module.exports = {
   loadGatesFile,
   tryComputeBayesErrorRate,
   computeCalibration,
+  computePerGateFalsePositives,
   MANUAL_GATES_PATH,
   STATS_PATH,
 };

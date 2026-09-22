@@ -1015,6 +1015,9 @@ function buildRemediations({
   workflowControl,
   workflowContract,
   actionProfile,
+  toolName,
+  command,
+  actionContext,
 }) {
   const remediations = [];
   const seen = new Set();
@@ -1022,7 +1025,18 @@ function buildRemediations({
   function push(id, title, action, why) {
     if (seen.has(id)) return;
     seen.add(id);
-    remediations.push({ id, title, action, why });
+    const { executableFor } = require('./remediation-exec');
+    remediations.push({
+      id,
+      title,
+      action,
+      why,
+      executable: executableFor(id, {
+        toolName: toolName || 'Bash',
+        actionContext: actionContext || command || action,
+        paths: protectedSurface && protectedSurface.unapprovedProtectedFiles,
+      }),
+    });
   }
 
   if (taskScopeViolation) {
@@ -1070,7 +1084,7 @@ function buildRemediations({
     push(
       'retrieve_lessons',
       'Inspect prior lessons',
-      'Call retrieve_lessons or search_lessons for this tool context before retrying.',
+      'Call retrieve_lessons with required toolName and actionContext for this tool context before retrying.',
       'The system already has evidence that this action pattern failed before.'
     );
   }
@@ -1087,7 +1101,7 @@ function buildRemediations({
       push(
         'retrieve_lessons',
         'Inspect prior lessons',
-        'Call retrieve_lessons or search_lessons for this tool context before retrying.',
+        'Call retrieve_lessons with required toolName and actionContext for this tool context before retrying.',
         'The learned policy predicts this action needs prior lessons and corrective context.'
       );
     }
@@ -1756,6 +1770,9 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     workflowControl,
     workflowContract,
     actionProfile,
+    toolName: normalizedToolName,
+    command: normalizedToolInput.command || '',
+    actionContext: normalizedToolInput.command || normalizedToolName,
   });
   const summary = decision === 'allow'
     ? 'No predictive workflow blockers detected.'
