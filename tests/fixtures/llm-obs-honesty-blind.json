@@ -1,0 +1,10 @@
+{
+  "operational": { "requestCount": 3 },
+  "security": {
+    "promptInjectionChecked": false,
+    "piiScrubbed": false,
+    "rawPrompt": "export OPENAI_API_KEY=sk-abcdefghijklmnopqrstuvwxyz0123456789"
+  },
+  "quality": {},
+  "tracing": { "spans": [] }
+}

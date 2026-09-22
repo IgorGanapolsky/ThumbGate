@@ -2821,6 +2821,25 @@ function colabComputeHonestyDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function llmObsHonesty() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildLlmObsHonestyReport,
+    formatLlmObsHonestyReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'llm-obs-honesty'));
+  const report = buildLlmObsHonestyReport(args);
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatLlmObsHonestyReport(report));
+  }
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function cobbleHotStoreSplit() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3737,6 +3756,7 @@ function help() {
   console.log('  ci-gha-buildkite-patterns First-fail + PR fail-fast on GitHub Actions (Buildkite FORMAT; not Buildkite)');
   console.log('  deeppattern-discipline-honesty Layer-check + evidence-closeout (DeepPattern FORMAT; not AQG/DE)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
+  console.log('  llm-obs-honesty       Four LLM-obs practices on existing rails (Datadog FORMAT, not a clone)');
   console.log('  board-loop            Classify+drain Issues/PR wall (BEHIND Dependabot, never approve)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
   console.log('  intent-governed-execution  NL intent → classify/authorize/gate/HITL/evidence (CyberStrike FORMAT)');
@@ -3787,6 +3807,7 @@ function help() {
   console.log('  npx thumbgate ci-gha-buildkite-patterns --json --map-only');
   console.log('  npx thumbgate deeppattern-discipline-honesty --json --map-only');
   console.log('  npx thumbgate colab-compute-honesty --json --map-only');
+  console.log('  npx thumbgate llm-obs-honesty --json');
   console.log('  npx thumbgate board-loop --json');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
   console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
@@ -4482,6 +4503,11 @@ switch (COMMAND) {
   case 'colab-honesty':
   case 'compute-unit-honesty':
     colabComputeHonestyDoctor();
+    break;
+  case 'llm-obs-honesty':
+  case 'datadog-llm-obs':
+  case 'llm-observability-honesty':
+    llmObsHonesty();
     break;
   case 'ci-gha-buildkite-patterns':
   case 'ci-buildkite-patterns':
