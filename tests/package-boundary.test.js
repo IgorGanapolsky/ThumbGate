@@ -498,9 +498,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 544 -> 546: deeppattern-discipline-honesty.js + skill — DeepPattern layer-check + evidence-closeout.
   // 546 -> 548: ci-gha-buildkite-patterns.js + skill — Buildkite FORMAT on GHA.
   // 548 -> 549 (2026-09-18): src/integrations/ideabrowser-connector.js (IdeaBrowser connector #3823).
-  // 549 -> 551 (2026-09-20): thumbgate-board-loop.js + skill — Issues+PR wall classifier.
-    manifest.fileCount <= 551,
-    `npm package should stay <= 551 files, got ${manifest.fileCount}`
+  // 551 -> 553 (2026-09-22): llm-obs-honesty.js + skill — successor of DIRTY #3885.
+    manifest.fileCount <= 553,
+    `npm package should stay <= 553 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -734,9 +734,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Measured 8,549,898 unpacked — narrow headroom retained. File-count 549.
   // Bumped 8.56 MB -> 8.57 MB (2026-09-20): thumbgate-board-loop.js + skill.
   // Local dry-run measured 8,568,869; CI measured 8,570,280 (ubuntu pack).
-  // Bumped 8.57 MB -> 8.58 MB to clear CI measurement. File-count 551.
-    manifest.unpackedSize <= 8_580_000,
-    `npm package should stay <= 8.58 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.58 MB -> 8.62 MB: llm-obs-honesty successor. Local pack 8,591,361; CI slack.
+    manifest.unpackedSize <= 8_620_000,
+    `npm package should stay <= 8.62 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
