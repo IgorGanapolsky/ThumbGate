@@ -36,67 +36,7 @@ const LEDGER_PATH = path.join(REPO_ROOT, '.thumbgate', 'daily-discoveries-ledger
 const LOCK_PATH = path.join(REPO_ROOT, '.thumbgate', 'daily-discoveries.lock');
 const VAULT_DIR = process.env.VAULT_DIR || path.join(process.env.HOME || '', 'Documents', 'Igor');
 
-const CURATED_TOPICS = [
-  {
-    slug: 'architectural-injection-immunity',
-    title: 'Architectural Prompt Injection Immunity at the Tool-Call Boundary',
-    tagline: 'Why system prompts fail and how pre-action gates eliminate prompt injection at runtime.',
-    problem: 'Prompt injection cannot be solved by text instructions alone. Once an agent receives untrusted inputs and tool execution permissions, any prompt-layer defense can be bypassed with base64, nested translations, or recursive tool calls.',
-    solution: 'ThumbGate segments the control plane from the data plane. Untrusted inputs are quarantined, and pre-action hooks validate every proposed tool call and argument against deterministic semantic schemas before execution.',
-    codeSnippet: `// PreToolUse gate: enforce tool parameter boundary validation
-function evaluateToolCallBoundary(toolName, args) {
-  if (isDangerousSystemCommand(args) && !hasDeterministicApproval(args)) {
-    return { decision: 'block', reason: 'PreToolUse: untrusted payload attempted unauthorized exec' };
-  }
-  return { decision: 'allow' };
-}`,
-    tags: ['ai', 'security', 'architecture', 'devtools'],
-  },
-  {
-    slug: 'datadog-llm-obs-four-practices',
-    title: 'LLM Observability on Existing Rails: The Four Hardened Practices',
-    tagline: 'Operational metrics, injection/PII scrubbing, quality evals, and parented spans without heavy vendor SKUs.',
-    problem: 'Traditional APM tools add massive dependency bloat and vendor lock-in for AI agent observability, while ad-hoc logging misses parent-child tool call spans and leaks sensitive tokens.',
-    solution: 'ThumbGate steals the four essential Datadog LLM-obs formats onto native Node.js rails: structured execution receipts, automatic PII redaction, deterministic quality evals, and correlation-parented spans.',
-    codeSnippet: `// Lightweight e2e parented execution receipt
-const receipt = {
-  spanId: generateSpanId(),
-  parentId: activeTrace.parentId,
-  toolName: 'Bash',
-  redactedArgs: scrubPII(rawArgs),
-  verdict: 'allowed',
-  durationMs: 42,
-  timestamp: new Date().toISOString()
-};`,
-    tags: ['ai', 'devops', 'observability', 'opensource'],
-  },
-  {
-    slug: 'gulli-gap-map-routing-before-lexical',
-    title: 'Agentic Design Patterns: Read/Diagnose Routing Before Lexical Gates',
-    tagline: 'Preventing false-positive gate alarms on innocent inspection commands in agent swarms.',
-    problem: 'Naive keyword or lexical filters often trip on read-only commands (e.g., inspecting a billing file or reading a checkout handler), halting agent work without actual safety risk.',
-    solution: 'We route read/diagnosis intent before applying transaction gates. Every advertised remediation has an executable validation payload, and the dashboard tracks false-positive rates from deny-then-allow sequences.',
-    codeSnippet: `// Route intent before applying mutating transaction rules
-const intent = classifyCommandIntent(command);
-if (intent.category === 'read_only_diagnostic') {
-  // Pass inspection through without triggering financial control gates
-  return { decision: 'allow', bypassTransactionGate: true };
-}`,
-    tags: ['ai', 'architecture', 'security', 'devtools'],
-  },
-  {
-    slug: 'feedback-noise-guards-tiny-sample',
-    title: 'Feedback-to-Rule Noise Guards: Stopping Agent Echoes and Tiny-Sample Alerts',
-    tagline: 'How to prevent 3 high-risk tool calls from triggering 100% false alarm risk scores.',
-    problem: 'Autonomous feedback loops can over-fit on single-run edge cases, generating circular prevention rules from self-echoed errors or alerting 100% risk on 3 samples.',
-    solution: 'ThumbGate enforces a 10-sample statistical threshold, whole-word semantic tag matching, and mutual exclusion on the event being captured before promoting any lesson into a blocking rule.',
-    codeSnippet: `// Require statistically meaningful samples before firing risk alerts
-if (sampleCount < 10) {
-  return { alert: 'suppressed', reason: 'Insufficient sample threshold (N < 10)' };
-}`,
-    tags: ['ai', 'machinelearning', 'reliability', 'devtools'],
-  },
-];
+const CURATED_TOPICS = require('./daily-discoveries-topics.json');
 
 function getFormattedDate(date = new Date()) {
   const yyyy = date.getFullYear();

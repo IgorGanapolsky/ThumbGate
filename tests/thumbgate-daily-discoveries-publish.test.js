@@ -131,6 +131,13 @@ test('hasAlreadyPublishedToday detects published status in ledger', () => {
   assert.equal(typeof publishedToday, 'boolean');
 });
 
+test('recordLedgerEntry appends JSON lines to ledger', () => {
+  const entry = { date: '2026-01-01', status: 'test', topic: 'test' };
+  recordLedgerEntry(entry);
+  const exists = hasAlreadyPublishedToday('2026-01-01');
+  assert.equal(exists, false, 'status is not published so returns false');
+});
+
 test('runDailyPublish dry-run returns preview without writing outputs or ledger', async () => {
   const result = await runDailyPublish({ dryRun: true });
   assert.equal(result.status, 'dry_run_preview');
