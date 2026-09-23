@@ -145,8 +145,10 @@ test('actionableRemediations emits high-risk domain/tag entries from the risk su
   withTempDir(() => {
     withPatchedModule('../scripts/risk-scorer', {
       getRiskSummary: () => ({
-        highRiskDomains: [{ key: 'git-workflow', highRisk: 3, total: 4, riskRate: 0.75 }],
-        highRiskTags: [{ key: 'force-push', highRisk: 2, total: 3, riskRate: 0.667 }],
+        // Alerts need >= 10 samples and a rate above the overall base rate.
+        baseRate: 0.3,
+        highRiskDomains: [{ key: 'git-workflow', highRisk: 9, total: 12, riskRate: 0.75 }],
+        highRiskTags: [{ key: 'force-push', highRisk: 7, total: 10, riskRate: 0.7 }],
       }),
     }, () => {
       const analysis = analyzeFeedback();
