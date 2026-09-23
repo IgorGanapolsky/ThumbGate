@@ -461,7 +461,16 @@
     "scripts/thumbgate-board-loop.js",
     ".agents/skills/thumbgate-board-loop/",
     "scripts/llm-obs-honesty.js",
-    ".agents/skills/datadog-llm-obs-compare-not-clone/"
+    ".agents/skills/datadog-llm-obs-compare-not-clone/",
+    "scripts/thumbgate-daily-discoveries-publish.js",
+    "scripts/thumbgate-daily-discoveries-publish.sh",
+    "scripts/install-thumbgate-daily-publish-launchd.sh",
+    ".agents/skills/thumbgate-daily-discoveries/",
+    ".agents/skills/comet-session-logger/",
+    ".agents/skills/article-syndication-pipeline/",
+    "skills/thumbgate-daily-discoveries/",
+    "skills/comet-session-logger/",
+    "skills/article-syndication-pipeline/"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
