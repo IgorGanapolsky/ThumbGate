@@ -316,15 +316,6 @@ async function runDailyPublish(options = {}) {
   const dateStr = getFormattedDate(now);
   const dryRun = options.dryRun === true;
   const force = options.force === true;
-
-  if (!force && hasAlreadyPublishedToday(dateStr)) {
-    return {
-      status: 'skipped',
-      reason: `Already published daily discovery for ${dateStr}. Use --force to override.`,
-      date: dateStr,
-    };
-  }
-
   const topic = selectTopicForDay(now);
   const gitCommit = getRecentGitCommit();
   const content = generatePostContent(topic, dateStr, gitCommit);
@@ -347,6 +338,14 @@ async function runDailyPublish(options = {}) {
       stagedPath,
       dryRun: true,
       previewSnippet: content.slice(0, 300) + '...',
+    };
+  }
+
+  if (!force && hasAlreadyPublishedToday(dateStr)) {
+    return {
+      status: 'skipped',
+      reason: `Already published daily discovery for ${dateStr}. Use --force to override.`,
+      date: dateStr,
     };
   }
 
@@ -462,5 +461,13 @@ module.exports = {
   generatePostContent,
   renderBlogHtml,
   runDailyPublish,
+  buildUTMLink,
+  getFormattedDate,
+  acquireRunLock,
+  releaseRunLock,
+  canWriteToSharedVault,
+  hasAlreadyPublishedToday,
+  getRecentGitCommit,
+  recordLedgerEntry,
   CURATED_TOPICS,
 };
