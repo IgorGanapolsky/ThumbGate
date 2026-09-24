@@ -22,6 +22,23 @@ No API key needed. All data stays local.
 - Starting a new task or session — recall past context first
 - After completing work that succeeded or failed — capture feedback
 - When the agent keeps making the same mistake — check prevention rules
+- When tempted to dump a Soft Obsidian `Agents/Memory` diary — **route first** (see Soft Memory thin)
+
+## Soft Memory vs ThumbGate (Hawk/Harsh)
+
+Autonomous Soft Memory diaries are mostly worthless. **Lasting corrections you’d hate to
+repeat** belong here (ThumbGate capture → prevention rules), not in Obsidian firehose.
+
+| Intent | Where |
+| --- | --- |
+| Lasting pref / NEVER-AGAIN | **This skill** — `capture_feedback` (+ `prevention_rules`) |
+| Surface lease (owner + UTC) | Soft Memory only — thin; skill `soft-memory-thin` |
+| Open human gate `- [ ]` | Soft Memory only — thin |
+| Research novel / mermaid / session diary | **Nowhere** — reject |
+
+```bash
+node scripts/soft-memory-thin.js route --intent "I'd hate to repeat …" --json
+```
 
 ## Workflow
 

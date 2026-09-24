@@ -1572,6 +1572,7 @@ function captureFeedback(params) {
       const hardIssues = (lifecycle.issues || []).filter((issue) =>
         issue === 'transport_transcript'
         || issue === 'oversized_blob'
+        || issue === 'autonomous_session_dump'
       );
       if (hardIssues.length > 0) {
         summary.rejected += 1;

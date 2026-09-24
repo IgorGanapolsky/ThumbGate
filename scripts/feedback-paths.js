@@ -14,6 +14,7 @@ function buildFeedbackPathsFromDir(dirPath) {
     FEEDBACK_LOG_PATH: path.join(dirPath, 'feedback-log.jsonl'),
     DIAGNOSTIC_LOG_PATH: path.join(dirPath, 'diagnostic-log.jsonl'),
     MEMORY_LOG_PATH: path.join(dirPath, 'memory-log.jsonl'),
+    MEMORY_ARCHIVE_PATH: path.join(dirPath, 'memory-archive.jsonl'),
     REJECTION_LEDGER_PATH: path.join(dirPath, 'rejection-ledger.jsonl'),
     SUMMARY_PATH: path.join(dirPath, 'feedback-summary.json'),
     PREVENTION_RULES_PATH: path.join(dirPath, 'prevention-rules.md'),

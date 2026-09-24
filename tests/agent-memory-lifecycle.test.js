@@ -5,14 +5,17 @@ const assert = require('node:assert/strict');
 
 const {
   PYRAMID_LAYERS,
-  classifyPyramidLayer,
-  distillMemoryPyramid,
+  archiveStaleMemories,
   buildMemoryLifecyclePolicy,
   buildMemoryLifecycleView,
+  classifyPyramidLayer,
+  distillMemoryPyramid,
   evaluateMemoryPromotion,
   extractMemoryEntities,
   inferMemoryScope,
+  isAutonomousSessionDump,
   normalizeMemoryType,
+  pruneAndArchiveExpiredMemories,
   scoreHybridMemoryMatch,
   scoreMemoryDecay,
 } = require('../scripts/agent-memory-lifecycle');
@@ -154,6 +157,97 @@ describe('agent-memory-lifecycle', () => {
       allowWorkingPromotion: true,
     });
     assert.equal(promoted.decision, 'promote');
+  });
+
+  it('rejects autonomous session dumps and diaries (Hawk principle)', () => {
+    assert.equal(isAutonomousSessionDump('what I learned today in this session: things happened'), true);
+    assert.equal(isAutonomousSessionDump('autonomous notes: summary of step 1 through 10'), true);
+    assert.equal(isAutonomousSessionDump('session diary: tried this and failed'), true);
+    assert.equal(isAutonomousSessionDump('clean structured lesson about git branching'), false);
+
+    const held = evaluateMemoryPromotion({
+      type: 'episodic',
+      content: 'what I did today: explored codebase and wrote random thoughts',
+      source: 'capture_feedback',
+      outcome: 'failed',
+    });
+    assert.equal(held.decision, 'hold');
+    assert.ok(held.issues.includes('autonomous_session_dump'));
+    assert.equal(held.retrievalEligible, false);
+  });
+
+  it('scores unpromoted episodic memory decay faster than sticky invariants', () => {
+    const now = Date.now();
+    const eightyDaysAgo = new Date(now - 80 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Routine episodic memory past 60 days without structured rule -> archive_candidate
+    const routineEpisodic = {
+      type: 'episodic',
+      title: 'Formatting glitch in markdown',
+      content: 'Extra whitespace in header',
+      tags: ['docs'],
+      timestamp: eightyDaysAgo,
+    };
+    const episodicDecay = scoreMemoryDecay(routineEpisodic, { now });
+    assert.equal(episodicDecay.state, 'archive_candidate');
+    assert.equal(episodicDecay.score, 0.1);
+
+    // High-risk invariant (git / production / security) remains sticky even at 200 days old
+    const twoHundredDaysAgo = new Date(now - 200 * 24 * 60 * 60 * 1000).toISOString();
+    const stickyInvariant = {
+      type: 'procedural',
+      title: 'Git force push policy',
+      content: 'Never run git push --force on main branch',
+      tags: ['git', 'security'],
+      timestamp: twoHundredDaysAgo,
+    };
+    const stickyDecay = scoreMemoryDecay(stickyInvariant, { now });
+    assert.equal(stickyDecay.state, 'sticky');
+    assert.equal(stickyDecay.score, 1);
+  });
+
+  it('partitions and archives expired memories from memory-log.jsonl', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-lifecycle-archive-'));
+    const now = Date.now();
+
+    const memActive = {
+      id: 'active-1',
+      type: 'episodic',
+      title: 'Recent fix',
+      content: 'Fixed null check',
+      tags: ['bug'],
+      timestamp: new Date().toISOString(),
+    };
+    const memExpired = {
+      id: 'expired-1',
+      type: 'episodic',
+      title: 'Old observation',
+      content: 'Temporary quirk in test runner',
+      tags: ['test'],
+      timestamp: new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+
+    fs.writeFileSync(
+      path.join(tmpDir, 'memory-log.jsonl'),
+      [JSON.stringify(memActive), JSON.stringify(memExpired)].join('\n') + '\n',
+    );
+
+    const result = pruneAndArchiveExpiredMemories(tmpDir, { now });
+    assert.equal(result.activeCount, 1);
+    assert.equal(result.archivedCount, 1);
+    assert.deepEqual(result.archivedIds, ['expired-1']);
+
+    const activeRemaining = fs.readFileSync(path.join(tmpDir, 'memory-log.jsonl'), 'utf8');
+    assert.ok(activeRemaining.includes('active-1'));
+    assert.ok(!activeRemaining.includes('expired-1'));
+
+    const archivedStored = fs.readFileSync(path.join(tmpDir, 'memory-archive.jsonl'), 'utf8');
+    assert.ok(archivedStored.includes('expired-1'));
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
 });

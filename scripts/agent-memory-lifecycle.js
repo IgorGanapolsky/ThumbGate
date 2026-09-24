@@ -6,6 +6,13 @@ const MEMORY_SCOPES = new Set(['task', 'session', 'user', 'project', 'org']);
 const DEFAULT_MAX_PROMOTE_CHARS = 12_000;
 const TRANSPORT_TURN_RE = /^(user|assistant|system|human|tool|model)\s*:/gim;
 const TRANSPORT_META_RE = /\b(conversation[_-]?id|message[_-]?id|tool_call_id|chat_completion|role\s*:\s*["']?(user|assistant|system))\b/i;
+const AUTONOMOUS_DUMP_RE = /\b(autonomous\s+(diary|memory|notes)|session diary|what I (did|learned) (today|this session)|research dump|conversation dump|full chat log|raw transcript)\b/i;
+
+function isAutonomousSessionDump(text) {
+  const content = normalizeText(text);
+  if (!content) return false;
+  return AUTONOMOUS_DUMP_RE.test(content);
+}
 
 function isTransportTranscript(text, options = {}) {
   const content = normalizeText(text);
@@ -16,7 +23,7 @@ function isTransportTranscript(text, options = {}) {
   const lineCount = content.split(/\n/).length;
   if (lineCount >= 40 && turnMarkers >= 2) return true;
   if (TRANSPORT_META_RE.test(content) && content.length >= 1500) return true;
-  if (/\b(raw transcript|conversation dump|full chat log)\b/i.test(content)) return true;
+  if (isAutonomousSessionDump(content)) return true;
   return false;
 }
 
@@ -170,6 +177,22 @@ function scoreMemoryDecay(memory = {}, options = {}) {
       reason: 'memory has no timestamp, so it needs review before durable promotion',
     };
   }
+
+  // Unpromoted episodic memories decay faster: without distillation into a structured rule,
+  // raw episodic history rots into worthless noise (Hawk Kroeger principle).
+  const isEpisodic = normalizeMemoryType(memory.type) === 'episodic' && !memory.structuredRule;
+  const maxEpisodicAgeDays = Number.isFinite(options.maxEpisodicAgeDays)
+    ? options.maxEpisodicAgeDays
+    : 60;
+
+  if (isEpisodic && ageDays > maxEpisodicAgeDays) {
+    return {
+      state: 'archive_candidate',
+      ageDays,
+      score: 0.1,
+      reason: `unpromoted episodic memory exceeds ${maxEpisodicAgeDays} days without distillation into a rule`,
+    };
+  }
   if (ageDays > 180) {
     return {
       state: 'archive_candidate',
@@ -321,6 +344,9 @@ function evaluateMemoryPromotion(memory = {}, policy = buildMemoryLifecyclePolic
   if (isTransportTranscript(content)) {
     issues.push('transport_transcript');
   }
+  if (isAutonomousSessionDump(content)) {
+    issues.push('autonomous_session_dump');
+  }
   if (isOversizedMemoryBlob(content, { maxChars })) {
     issues.push('oversized_blob');
   }
@@ -329,6 +355,7 @@ function evaluateMemoryPromotion(memory = {}, policy = buildMemoryLifecyclePolic
     'secret_like_content',
     'transport_transcript',
     'oversized_blob',
+    'autonomous_session_dump',
   ]);
   const retrievalBlocked = issues.some((issue) => hardRetrievalBlocks.has(issue));
 
@@ -426,12 +453,80 @@ function distillMemoryPyramid(memories = [], options = {}) {
   };
 }
 
+/**
+ * Separate a collection of memories into active vs archive candidates based on
+ * temporal decay and promotion status.
+ */
+function archiveStaleMemories(memories = [], options = {}) {
+  const active = [];
+  const archived = [];
+  for (const m of memories) {
+    if (!m || typeof m !== 'object') continue;
+    if (m.archived === true || m.pruned === true) {
+      archived.push(m);
+      continue;
+    }
+    const decay = scoreMemoryDecay(m, options);
+    if (decay.state === 'archive_candidate') {
+      archived.push({
+        ...m,
+        archived: true,
+        archivedAt: new Date().toISOString(),
+        archiveReason: decay.reason,
+      });
+    } else {
+      active.push(m);
+    }
+  }
+  return { active, archived };
+}
+
+/**
+ * Prune and archive expired episodic / stale memories from memory-log.jsonl to memory-archive.jsonl.
+ */
+function pruneAndArchiveExpiredMemories(feedbackDir, options = {}) {
+  const fs = require('fs');
+  const path = require('path');
+  const { getFeedbackPaths, buildFeedbackPathsFromDir } = require('./feedback-paths');
+  const paths = feedbackDir ? buildFeedbackPathsFromDir(feedbackDir) : getFeedbackPaths();
+  const memoryLogPath = paths.MEMORY_LOG_PATH;
+  const memoryArchivePath = paths.MEMORY_ARCHIVE_PATH || path.join(paths.FEEDBACK_DIR, 'memory-archive.jsonl');
+
+  if (!fs.existsSync(memoryLogPath)) {
+    return { activeCount: 0, archivedCount: 0, archivedIds: [] };
+  }
+
+  const rawLines = fs.readFileSync(memoryLogPath, 'utf8')
+    .split(/\r?\n/)
+    .filter(Boolean);
+  const memories = rawLines.map((line) => {
+    try { return JSON.parse(line); } catch { return null; }
+  }).filter(Boolean);
+
+  const { active, archived } = archiveStaleMemories(memories, options);
+
+  if (archived.length > 0 && options.dryRun !== true) {
+    const archiveLines = archived.map((m) => JSON.stringify(m)).join('\n') + '\n';
+    fs.appendFileSync(memoryArchivePath, archiveLines, 'utf8');
+    const activeLines = active.map((m) => JSON.stringify(m)).join('\n') + (active.length > 0 ? '\n' : '');
+    fs.writeFileSync(memoryLogPath, activeLines, 'utf8');
+  }
+
+  return {
+    activeCount: active.length,
+    archivedCount: archived.length,
+    archivedIds: archived.map((m) => m.id),
+  };
+}
+
 module.exports = {
+  isAutonomousSessionDump,
   isTransportTranscript,
   isOversizedMemoryBlob,
   DEFAULT_MAX_PROMOTE_CHARS,
 
   PYRAMID_LAYERS,
+  archiveStaleMemories,
   buildMemoryLifecyclePolicy,
   buildMemoryLifecycleView,
   classifyPyramidLayer,
@@ -440,6 +535,7 @@ module.exports = {
   extractMemoryEntities,
   inferMemoryScope,
   normalizeMemoryType,
+  pruneAndArchiveExpiredMemories,
   scoreHybridMemoryMatch,
   scoreMemoryDecay,
 };

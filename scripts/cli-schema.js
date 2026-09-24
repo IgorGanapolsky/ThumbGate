@@ -542,6 +542,19 @@ const CLI_COMMANDS = [
   }),
 
   discoveryCommand({
+    name: 'swarm-coordination',
+    aliases: ['swarm-coordination-doctor', 'coordination-doctor'],
+    description: 'Census Obsidian, Linear, GitHub issues, NotebookLM, GitButler, and the TypeSafe rail. Jev does not own coordination.',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero unless every surface is ready' },
+      { name: 'session', type: 'string', description: 'Session agent id' },
+      { name: 'fixture', type: 'string', description: 'JSON snapshot instead of a live census' },
+      { name: 'jev-owns-coordination', type: 'boolean', description: 'Refuse letting Jev own the swarm' },
+    ],
+  }),
+
+  discoveryCommand({
     name: 'typesafe-typed-questions',
     aliases: ['typesafe-hook', 'typed-questions', 'jev-typed-questions'],
     description: 'TypeSafe FORMAT steal: typed noul/choice/score over PreToolUse state, code-owned pass/review/block (does not install typesafe-sdk or clone Jev)',
