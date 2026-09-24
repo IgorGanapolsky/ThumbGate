@@ -303,7 +303,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 548 -> 549 (2026-09-18): src/integrations/ideabrowser-connector.js (#3823).
   // 551 -> 553: llm-obs-honesty.js + datadog-llm-obs-compare-not-clone skill (successor of #3885).
   // 553 -> 555: gate-intent-route.js + remediation-exec.js (#3693).
-  const CEILING = 555;
+  // 555 -> 556: swarm-coordination-doctor.js.
+  const CEILING = 556;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

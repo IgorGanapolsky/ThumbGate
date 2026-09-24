@@ -255,7 +255,9 @@ const path = require('node:path');
 // 553 → 555: gate-intent-route.js + remediation-exec.js — Gulli gap map
 //            (#3693): route read/diagnose before lexical transaction gates,
 //            and execute each advertised remediation in CI.
-const BASELINE_FILE_COUNT = 555;
+// 555 → 556: swarm-coordination-doctor.js — one census for Obsidian,
+//            Linear, GitHub issues, NotebookLM, GitButler, and TypeSafe.
+const BASELINE_FILE_COUNT = 556;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
