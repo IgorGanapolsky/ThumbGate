@@ -72,7 +72,7 @@ An agent holding an owner's credential can do anything the owner can. That is pr
 For every explicit PR-management and system-hygiene session:
 
 1. Read `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`; query local ThumbGate memory.
-2. Reconcile GitHub Issues and Actions, standalone Copilot CLI advice, Linear AI when authenticated, and `~/Documents/AI-Agent-Sync`. Deterministic git and GitHub evidence remain authoritative.
+2. Reconcile GitHub Issues and Actions, standalone Copilot CLI advice, Linear AI when authenticated, and `~/Documents/Igor` (`~/Documents/AI-Agent-Sync` when present). Deterministic git and GitHub evidence remain authoritative.
 3. Classify every open PR and every remote branch without an open PR. Never approve a PR or bypass branch protection.
 4. Submit only terminal-green, review-complete PRs through `npm run pr:manage` and Trunk.
 5. Remove only verified-disposable branches, clean worktrees, dormant files, and logs, with before/after counts.
@@ -84,3 +84,7 @@ Use **“Done merging PRs. CI passing. System hygiene complete. Ready for next s
 ## Code search (Graphify-Labs)
 
 See `docs/agents/code-search.md`. Run `npm run graphify:setup` then `.graphify-venv/bin/graphify query`.
+
+## Soft Memory thin
+
+Lasting prefs → ThumbGate capture. Soft Memory = leases/Waiting only. `npm run soft-memory:thin` · skill `soft-memory-thin`.
