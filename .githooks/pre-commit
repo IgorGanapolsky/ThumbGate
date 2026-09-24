@@ -65,6 +65,18 @@ if [ -n "$LEAKED" ]; then
   exit 1
 fi
 
+# 0b. HARD BLOCK — corporate/employer email address must never be used in ThumbGate.
+CURRENT_GIT_EMAIL=$(git config user.email || true)
+if echo "$CURRENT_GIT_EMAIL" | grep -qiE "ecisolutions\.com"; then
+  echo -e "${RED}✗ ThumbGate pre-commit: refusing commit with corporate email ($CURRENT_GIT_EMAIL)${NC}"
+  echo -e "${YELLOW}ThumbGate is personal open-source. Set personal email:${NC}"
+  echo -e "  git config --local user.email \"iganapolsky@gmail.com\""
+  echo -e "  git config --local user.name \"Igor Ganapolsky\""
+  exit 1
+fi
+
+
+
 # 1. Block commits if packaging references missing files OR HTML not in whitelist.
 # This catches the 1.5.0/1.5.1/1.5.3 regression class (HTML not in package.json "files").
 if has_staged '(package\.json|public/.*\.html|scripts/.*\.js)$'; then
