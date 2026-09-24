@@ -257,7 +257,8 @@ const path = require('node:path');
 //            and execute each advertised remediation in CI.
 // 555 → 556: swarm-coordination-doctor.js — one census for Obsidian,
 //            Linear, GitHub issues, NotebookLM, GitButler, and TypeSafe.
-const BASELINE_FILE_COUNT = 556;
+// 556 → 566 (2026-09-24): daily discoveries, skills expansion, gulli blog article.
+const BASELINE_FILE_COUNT = 566;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
