@@ -731,34 +731,41 @@ test('P0: tagged multi-thumbs promote produces a pattern that gate-check denies'
   // Regression for 2026-07-31 inert auto-promote: tag group keys must not become match patterns.
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-p0-tag-promote-'));
   const logPath = path.join(dir, 'feedback-log.jsonl');
+  const prevRateLimit = process.env.THUMBGATE_NO_RATE_LIMIT;
   process.env.THUMBGATE_FEEDBACK_DIR = dir;
   process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
+  process.env.THUMBGATE_NO_RATE_LIMIT = '1';
 
-  const cmd = 'kubectl delete deploy checkout-api -n prod';
-  const rows = [1, 2, 3].map(() => JSON.stringify({
-    signal: 'negative',
-    feedback: 'down',
-    tags: ['entity:Customer', 'entity:Funnel', 'feedback', 'negative'],
-    context: cmd,
-    whatWentWrong: 'wiped prod checkout deployment',
-    whatToChange: 'never delete prod deployments',
-    timestamp: new Date().toISOString(),
-  }));
-  fs.writeFileSync(logPath, rows.join('\n') + '\n');
+  try {
+    const cmd = 'kubectl delete deploy checkout-api -n prod';
+    const rows = [1, 2, 3].map(() => JSON.stringify({
+      signal: 'negative',
+      feedback: 'down',
+      tags: ['entity:Customer', 'entity:Funnel', 'feedback', 'negative'],
+      context: cmd,
+      whatWentWrong: 'wiped prod checkout deployment',
+      whatToChange: 'never delete prod deployments',
+      timestamp: new Date().toISOString(),
+    }));
+    fs.writeFileSync(logPath, rows.join('\n') + '\n');
 
-  const result = promote(logPath, { skipRegression: true });
-  assert.ok(result.data.gates.length >= 1, 'expected at least one promoted gate');
-  const gate = result.data.gates.find((g) => (g.pattern || '').includes('kubectl'));
-  assert.ok(gate, 'promoted gate pattern must derive from the command, not the tag key');
-  assert.doesNotMatch(gate.pattern, /entity:Customer/, 'pattern must not be the tag group key');
-  assert.match(gate.pattern, /kubectl delete deploy checkout-api -n prod/);
+    const result = promote(logPath, { skipRegression: true });
+    assert.ok(result.data.gates.length >= 1, 'expected at least one promoted gate');
+    const gate = result.data.gates.find((g) => (g.pattern || '').includes('kubectl'));
+    assert.ok(gate, 'promoted gate pattern must derive from the command, not the tag key');
+    assert.doesNotMatch(gate.pattern, /entity:Customer/, 'pattern must not be the tag group key');
+    assert.match(gate.pattern, /kubectl delete deploy checkout-api -n prod/);
 
-  // Live engine path — same as PreToolUse / CLI gate-check.
-  const { run } = require('../scripts/gates-engine');
-  const raw = run({ tool_name: 'Bash', tool_input: { command: cmd } });
-  const parsed = JSON.parse(raw);
-  const decision = (parsed.hookSpecificOutput || parsed).permissionDecision;
-  assert.equal(decision, 'deny', 'auto-promoted gate must deny the originating command');
+    // Live engine path — same as PreToolUse / CLI gate-check.
+    const { run } = require('../scripts/gates-engine');
+    const raw = run({ tool_name: 'Bash', tool_input: { command: cmd } });
+    const parsed = JSON.parse(raw);
+    const decision = (parsed.hookSpecificOutput || parsed).permissionDecision;
+    assert.equal(decision, 'deny', 'auto-promoted gate must deny the originating command');
+  } finally {
+    if (prevRateLimit === undefined) delete process.env.THUMBGATE_NO_RATE_LIMIT;
+    else process.env.THUMBGATE_NO_RATE_LIMIT = prevRateLimit;
+  }
 });
 
 test('extractExecutableAction: prefers toolInput.command over prose context', () => {

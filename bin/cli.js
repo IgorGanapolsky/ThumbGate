@@ -2840,6 +2840,21 @@ function llmObsHonesty() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function haloTraceOptimizer() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildHaloTraceOptimizerReport,
+    formatHaloTraceOptimizerReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'halo-trace-optimizer'));
+  const report = buildHaloTraceOptimizerReport(args);
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatHaloTraceOptimizerReport(report));
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function cobbleHotStoreSplit() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3757,6 +3772,7 @@ function help() {
   console.log('  deeppattern-discipline-honesty Layer-check + evidence-closeout (DeepPattern FORMAT; not AQG/DE)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  llm-obs-honesty       Four LLM-obs practices on existing rails (Datadog FORMAT, not a clone)');
+  console.log('  halo-trace-optimizer  Analyze agent trace logs for thrashing and stalls (HALO FORMAT)');
   console.log('  board-loop            Classify+drain Issues/PR wall (BEHIND Dependabot, never approve)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
   console.log('  intent-governed-execution  NL intent → classify/authorize/gate/HITL/evidence (CyberStrike FORMAT)');
@@ -4508,6 +4524,12 @@ switch (COMMAND) {
   case 'datadog-llm-obs':
   case 'llm-observability-honesty':
     llmObsHonesty();
+    break;
+  case 'halo-trace-optimizer':
+  case 'halo:optimize':
+  case 'halo-optimizer':
+  case 'trace-optimizer':
+    haloTraceOptimizer();
     break;
   case 'ci-gha-buildkite-patterns':
   case 'ci-buildkite-patterns':
