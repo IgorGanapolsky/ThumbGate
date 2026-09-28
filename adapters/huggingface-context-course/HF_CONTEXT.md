@@ -25,7 +25,7 @@ npx thumbgate serve
 # Codex — add to ~/.codex/config.toml
 # [hooks.pre_tool_use]
 # command = "npx"
-# args = ["--yes", "--package", "thumbgate@1.37.2", "thumbgate", "gate-check"]
+# args = ["--yes", "--package", "thumbgate@1.37.3", "thumbgate", "gate-check"]
 
 # OpenCode — add MCP server to ~/.config/opencode.json
 ```
@@ -96,7 +96,7 @@ npx thumbgate capture \
 - `opencode.json`: For OpenCode (copy into ~/.config/opencode.json)
 - `.mcp.json`: For Claude Code (copy into project .mcp.json)
 
-All configs pin `thumbgate@1.37.2`.
+All configs pin `thumbgate@1.37.3`.
 
 ## Model Candidates
 
