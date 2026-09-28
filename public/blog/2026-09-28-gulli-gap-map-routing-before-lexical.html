@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agentic Design Patterns: Read/Diagnose Routing Before Lexical Gates | ThumbGate</title>
+  <link rel="canonical" href="https://thumbgate.ai/blog/2026-09-28-gulli-gap-map-routing-before-lexical">
+  <meta name="description" content="Preventing false-positive gate alarms on innocent inspection commands in agent swarms.">
+  <meta property="og:title" content="Agentic Design Patterns: Read/Diagnose Routing Before Lexical Gates">
+  <meta property="og:description" content="Preventing false-positive gate alarms on innocent inspection commands in agent swarms.">
+  <meta property="og:url" content="https://thumbgate.ai/blog/2026-09-28-gulli-gap-map-routing-before-lexical">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="blog-post-page">
+  <main class="container">
+    <article class="post-content">
+      <h1>Agentic Design Patterns: Read/Diagnose Routing Before Lexical Gates</h1>
+      <p class="post-meta">Published on 2026-09-28 by Igor Ganapolsky</p>
+      <section class="post-body">
+        <p class="lead">Preventing false-positive gate alarms on innocent inspection commands in agent swarms.</p>
+        <h2>The Failure Mode</h2>
+        <p>Naive keyword or lexical filters often trip on read-only commands (e.g., inspecting a billing file or reading a checkout handler), halting agent work without actual safety risk.</p>
+        <h2>Architectural Resolution</h2>
+        <p>We route read/diagnosis intent before applying transaction gates. Every advertised remediation has an executable validation payload, and the dashboard tracks false-positive rates from deny-then-allow sequences.</p>
+        <pre><code>// Route intent before applying mutating transaction rules
+const intent = classifyCommandIntent(command);
+if (intent.category === 'read_only_diagnostic') {
+  // Pass inspection through without triggering financial control gates
+  return { decision: 'allow', bypassTransactionGate: true };
+}</code></pre>
+      </section>
+      <footer class="post-footer">
+        <a href="https://thumbgate.ai/go/pro?utm_source=blog&utm_medium=article&utm_campaign=2026-09-28-gulli-gap-map-routing-before-lexical" class="cta-btn">Upgrade to ThumbGate Pro</a>
+      </footer>
+    </article>
+  </main>
+</body>
+</html>
