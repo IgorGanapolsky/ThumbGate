@@ -8,6 +8,9 @@ const os = require('node:os');
 
 const {
   detectCloneAttempt,
+  resolveTraceLogPaths,
+  parseJsonlFile,
+  extractActionString,
   detectRedundantToolCalls,
   detectRetryStalls,
   detectExpensiveSpans,
@@ -164,4 +167,114 @@ test('formatHaloTraceOptimizerReport formats text cleanly', () => {
   assert.match(formatted, /=== HALO Trace Optimizer/);
   assert.match(formatted, /Top Ranked Failure Modes/);
   assert.match(formatted, /Synthesized Gate Fixes/);
+
+  // Refusal branch formatting
+  const refusalReport = buildHaloTraceOptimizerReport({ cloneHalo: true });
+  const refusalFormatted = formatHaloTraceOptimizerReport(refusalReport);
+  assert.match(refusalFormatted, /refusal: halo_clone_refused/);
+
+  // Mapping branch formatting
+  const mapReport = buildHaloTraceOptimizerReport({ mapOnly: true });
+  const mapFormatted = formatHaloTraceOptimizerReport(mapReport);
+  assert.match(mapFormatted, /Architecture Mapping:/);
+
+  // Clean / no failure modes formatting
+  const cleanReport = buildHaloTraceOptimizerReport({ entries: [] });
+  const cleanFormatted = formatHaloTraceOptimizerReport(cleanReport);
+  assert.match(cleanFormatted, /No agent trace thrashing/);
+});
+
+test('resolveTraceLogPaths handles custom paths and fallback paths', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'halo-paths-'));
+  const testFile = path.join(tmpDir, 'custom.jsonl');
+  fs.writeFileSync(testFile, '{"test":1}\n', 'utf8');
+
+  const resolved = resolveTraceLogPaths(testFile);
+  assert.deepEqual(resolved, [testFile]);
+
+  const nonExistent = resolveTraceLogPaths(path.join(tmpDir, 'does-not-exist.jsonl'));
+  assert.deepEqual(nonExistent, []);
+
+  const defaultPaths = resolveTraceLogPaths();
+  assert.ok(Array.isArray(defaultPaths));
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('parseJsonlFile parses valid JSONL and ignores invalid/empty lines', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'halo-jsonl-'));
+  const testFile = path.join(tmpDir, 'test.jsonl');
+  fs.writeFileSync(testFile, '{"a": 1}\nnot-json\n{"b": 2}\n\n', 'utf8');
+
+  const parsed = parseJsonlFile(testFile);
+  assert.equal(parsed.length, 2);
+  assert.equal(parsed[0].a, 1);
+  assert.equal(parsed[1].b, 2);
+
+  const emptyParsed = parseJsonlFile(path.join(tmpDir, 'nonexistent.jsonl'));
+  assert.deepEqual(emptyParsed, []);
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('extractActionString handles diverse toolInput and command structures', () => {
+  assert.equal(extractActionString(null), '');
+  assert.equal(extractActionString('string'), '');
+  assert.equal(extractActionString({ toolInput: 'raw string action' }), 'raw string action');
+  assert.equal(extractActionString({ toolInput: { file_path: '/path/to/file.js' } }), '/path/to/file.js');
+  assert.equal(extractActionString({ toolInput: { query: 'SELECT *' } }), 'SELECT *');
+  assert.equal(extractActionString({ toolInput: { foo: 'bar' } }), '{"foo":"bar"}');
+  assert.equal(extractActionString({ command: 'echo hello' }), 'echo hello');
+  assert.equal(extractActionString({ input: 'test input' }), 'test input');
+});
+
+test('detectExpensiveSpans handles high severity thresholds', () => {
+  const entries = [
+    { sessionId: 's1', toolName: 'Bash', latencyMs: 35000, action: 'long slow operation' },
+    { sessionId: 's1', toolName: 'Bash', lineCount: 1500, action: 'huge line output' },
+  ];
+  const findings = detectExpensiveSpans(entries);
+  assert.equal(findings.length, 2);
+  assert.equal(findings[0].severity, 'high');
+  assert.equal(findings[1].severity, 'high');
+});
+
+test('detectUnhandledDenies flags critical severity on 5+ denies', () => {
+  const entries = [
+    { decision: 'deny', gateId: 'spend-limit' },
+    { decision: 'deny', gateId: 'spend-limit' },
+    { decision: 'deny', gateId: 'spend-limit' },
+    { decision: 'deny', gateId: 'spend-limit' },
+    { decision: 'deny', gateId: 'spend-limit' },
+  ];
+  const findings = detectUnhandledDenies(entries);
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].severity, 'critical');
+});
+
+test('buildHaloTraceOptimizerReport integrates trace file and apply options', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'halo-report-'));
+  const traceFile = path.join(tmpDir, 'test-trace.jsonl');
+  const autoGatesPath = path.join(tmpDir, 'auto-promoted-gates.json');
+
+  const traceData = [
+    { sessionId: 's1', toolName: 'Bash', command: 'git status' },
+    { sessionId: 's1', toolName: 'Bash', command: 'git status' },
+    { sessionId: 's1', toolName: 'Bash', command: 'git status' },
+  ].map((d) => JSON.stringify(d)).join('\n') + '\n';
+
+  fs.writeFileSync(traceFile, traceData, 'utf8');
+
+  const report = buildHaloTraceOptimizerReport({
+    trace: traceFile,
+    apply: true,
+    autoGatesPath,
+  });
+
+  assert.equal(report.ok, true);
+  assert.equal(report.status, 'ready');
+  assert.equal(report.applied.length, 1);
+  assert.ok(fs.existsSync(autoGatesPath));
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
 });
