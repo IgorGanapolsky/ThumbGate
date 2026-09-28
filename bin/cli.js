@@ -3496,6 +3496,30 @@ function artifacts() {
 
 function gateStats() {
   const args = parseArgs(process.argv.slice(3));
+  if (args.rank) {
+    const fs = require('fs');
+    const os = require('os');
+    const { rankHarnessIncidents } = require(path.join(PKG_ROOT, 'scripts', 'hook-runtime'));
+    const home = path.join(os.homedir(), '.thumbgate');
+    let stats = {};
+    let audit = [];
+    try {
+      stats = JSON.parse(fs.readFileSync(path.join(home, 'gate-stats.json'), 'utf8'));
+    } catch {
+      stats = {};
+    }
+    try {
+      audit = fs.readFileSync(path.join(home, 'audit-trail.jsonl'), 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
+    } catch {
+      audit = [];
+    }
+    const report = rankHarnessIncidents({ stats, audit });
+    console.log(JSON.stringify(report, null, 2));
+    process.exit(report.ok ? 0 : 1);
+  }
   const { calculateStats, formatStats } = require(path.join(PKG_ROOT, 'scripts', 'gate-stats'));
   const stats = calculateStats();
   if (args.json) {
@@ -3818,6 +3842,7 @@ function help() {
   console.log('  npx thumbgate lessons "force push" --json');
   console.log('  npx thumbgate lessons --query="deploy" --remote');
   console.log('  npx thumbgate gate-stats --json');
+  console.log('  npx thumbgate gate-stats --rank');
   console.log('  npx thumbgate capture --feedback=down --context="agent broke deploy" --json');
   proNudge();
 }
