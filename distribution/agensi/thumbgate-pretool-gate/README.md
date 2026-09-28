@@ -4,7 +4,7 @@ A SKILL.md that makes an agent hard-block a secret and a repeated lesson failure
 
 ## What you get
 
-- Install of the public `thumbgate` package at version 1.37.2.
+- Install of the public `thumbgate` package at version 1.37.3.
 - A deny rule for secret exfiltration.
 - A deny rule for a failure that ranked lessons already recorded.
 - The feedback command that turns the miss into the next rule.

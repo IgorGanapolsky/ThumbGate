@@ -11,14 +11,14 @@ external_urls:
 
 ThumbGate checks a tool call before it runs. Ranked lessons become prevention rules. A detected secret is a deny. A warning is not permission to continue a secret leak.
 
-The public package is `thumbgate` at version 1.37.2. Hosted Pro (shared lesson history, dashboard, proof) is a separate product at https://thumbgate.ai and is not included in this file.
+The public package is `thumbgate` at version 1.37.3. Hosted Pro (shared lesson history, dashboard, proof) is a separate product at https://thumbgate.ai and is not included in this file.
 
 ## Install
 
 Run this in the project the agent is editing:
 
 ```bash
-npx thumbgate@1.37.2 init
+npx thumbgate@1.37.3 init
 ```
 
 That scaffolds local gate state and the MCP config. It talks only to the npm registry and, if the user asks for a trial note, to thumbgate.ai. Do not add another installer, a pipe into a shell, or a host that is not in `external_urls`.
@@ -33,7 +33,7 @@ That scaffolds local gate state and the MCP config. It talks only to the npm reg
 Pipe the tool call through the public checker when the host agent does not already run the hook:
 
 ```bash
-npx thumbgate@1.37.2 gate-check
+npx thumbgate@1.37.3 gate-check
 ```
 
 Pass the tool name and the tool input on stdin as JSON. A deny result ends the turn.
@@ -43,19 +43,19 @@ Pass the tool name and the tool input on stdin as JSON. A deny result ends the t
 When a gate should have fired and did not, record the miss:
 
 ```bash
-npx thumbgate@1.37.2 feedback --feedback=down --context="what happened" --what-went-wrong="specific failure" --what-to-change="specific fix" --tags="secrets,pretool"
+npx thumbgate@1.37.3 feedback --feedback=down --context="what happened" --what-went-wrong="specific failure" --what-to-change="specific fix" --tags="secrets,pretool"
 ```
 
 When a deny saved the turn:
 
 ```bash
-npx thumbgate@1.37.2 feedback --feedback=up --context="what the gate stopped" --what-worked="specific block" --tags="secrets,pretool"
+npx thumbgate@1.37.3 feedback --feedback=up --context="what the gate stopped" --what-worked="specific block" --tags="secrets,pretool"
 ```
 
 Read the counters with:
 
 ```bash
-npx thumbgate@1.37.2 gate-stats
+npx thumbgate@1.37.3 gate-stats
 ```
 
 ## What this file does not do
