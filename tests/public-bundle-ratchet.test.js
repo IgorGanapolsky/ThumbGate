@@ -252,7 +252,9 @@ const path = require('node:path');
 //            FORMAT on GitHub Actions (not a Buildkite vendor).
 // 548 → 549 (2026-09-18): src/integrations/ideabrowser-connector.js (#3823).
 // 551 → 553: llm-obs-honesty.js + datadog-llm-obs-compare-not-clone skill (successor of #3885).
-const BASELINE_FILE_COUNT = 553;
+// 553 → 563 (2026-09-23): daily discoveries publishing engine + launchd installer + 3 skills + blog html (1.37.3).
+// 563 → 565 (2026-09-28): scripts/halo-trace-optimizer.js + skill (HALO trace-to-fix FORMAT steal).
+const BASELINE_FILE_COUNT = 565;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

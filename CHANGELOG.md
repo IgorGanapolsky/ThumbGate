@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.37.3
+
+### Minor Changes
+
+- Implement IdeaBrowser connector and read-only vs mutating classification governance diode (closes #3823).
+
+### Patch Changes
+
+- Orchestrate the Issues+PR wall: `board-loop` classifies BEHIND Dependabot vs DIRTY vs ECI issues, update-branches one green PR per tick, and teaches agent-automerge to bind `workflow_run.head_sha` plus `dependabot/*`. Never approve.
+- Steal Buildkite pipeline architecture onto existing GitHub Actions: first-fail step identity, PR fail-fast, needs:/skip honesty, and GITHUB_STEP_SUMMARY annotations. Does not add Buildkite Pipelines, agents, or Test Engine.
+- Steal DeepPattern Agent Quality Gates + Decision Engine FORMAT onto honesty rails: layer-check (same-layer substitutes only) and evidence-closeout (six required items before done). Adds `deeppattern-discipline-honesty` doctor + skill. Does not install AQG/DE or ship a cross-vendor audit SKU.
+- Bump @anthropic-ai/sdk from 0.122.0 to 0.125.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- Bump js-yaml from 5.4.1 to 5.4.2 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- Bump @google/genai from 2.21.0 to 2.22.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- Bump stripe from 22.6.1 to 22.6.2 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- Bump @cloudflare/workers-types from 5.20260907.1 to 5.20260914.1 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- Bump stripe from 22.6.1 to 22.6.2 in /workers to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- Bump @types/node from 26.4.0 to 26.5.1 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- Steal Datadog LLM Observability's four practices (operational, security, quality, tracing) onto existing receipts/redaction/feedback/audit-trace rails via `llm-obs-honesty`. Compare-not-clone: no dd-trace SKU. Successor of DIRTY #3885.
+- Steal TypeSafe parallel_questions FORMAT: one System One POST for the whole noul/choice/score battery. `--fan-out-questions` is refused. Receipt is estimated N× input tokens, not a claimed 12.2× cookbook number.
+- feat(publishing): add autonomous daily discoveries engine, UTM attribution, and skills:
+  - Add autonomous daily publishing engine (`scripts/thumbgate-daily-discoveries-publish.js` and `.sh`) with dual scheduling (crontab and macOS LaunchAgent) for daily 9:00 AM EST technical news publication.
+  - Add mandatory UTM parameter construction and first-party `/go/pro` tracked redirect linking for all outbound documentation and checkout links.
+  - Add dedicated skills `thumbgate-daily-discoveries`, `comet-session-logger`, and `article-syndication-pipeline`.
+  - Propagate version 1.37.3 across manifests and adapters.
+
 ## 1.37.2
 
 ### Patch Changes

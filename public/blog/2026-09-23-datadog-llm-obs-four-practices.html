@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Observability on Existing Rails: The Four Hardened Practices | ThumbGate</title>
+  <link rel="canonical" href="https://thumbgate.ai/blog/2026-09-23-datadog-llm-obs-four-practices">
+  <meta name="description" content="Operational metrics, injection/PII scrubbing, quality evals, and parented spans without heavy vendor SKUs.">
+  <meta property="og:title" content="LLM Observability on Existing Rails: The Four Hardened Practices">
+  <meta property="og:description" content="Operational metrics, injection/PII scrubbing, quality evals, and parented spans without heavy vendor SKUs.">
+  <meta property="og:url" content="https://thumbgate.ai/blog/2026-09-23-datadog-llm-obs-four-practices">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="blog-post-page">
+  <main class="container">
+    <article class="post-content">
+      <h1>LLM Observability on Existing Rails: The Four Hardened Practices</h1>
+      <p class="post-meta">Published on 2026-09-23 by Igor Ganapolsky</p>
+      <section class="post-body">
+        <p class="lead">Operational metrics, injection/PII scrubbing, quality evals, and parented spans without heavy vendor SKUs.</p>
+        <h2>The Failure Mode</h2>
+        <p>Traditional APM tools add massive dependency bloat and vendor lock-in for AI agent observability, while ad-hoc logging misses parent-child tool call spans and leaks sensitive tokens.</p>
+        <h2>Architectural Resolution</h2>
+        <p>ThumbGate steals the four essential Datadog LLM-obs formats onto native Node.js rails: structured execution receipts, automatic PII redaction, deterministic quality evals, and correlation-parented spans.</p>
+        <pre><code>// Lightweight e2e parented execution receipt
+const receipt = {
+  spanId: generateSpanId(),
+  parentId: activeTrace.parentId,
+  toolName: 'Bash',
+  redactedArgs: scrubPII(rawArgs),
+  verdict: 'allowed',
+  durationMs: 42,
+  timestamp: new Date().toISOString()
+};</code></pre>
+      </section>
+      <footer class="post-footer">
+        <a href="https://thumbgate.ai/go/pro?utm_source=blog&utm_medium=article&utm_campaign=2026-09-23-datadog-llm-obs-four-practices" class="cta-btn">Upgrade to ThumbGate Pro</a>
+      </footer>
+    </article>
+  </main>
+</body>
+</html>

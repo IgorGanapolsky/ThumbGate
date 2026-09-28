@@ -11,7 +11,7 @@ Merge [`settings.yaml`](./settings.yaml) into
 `~/.config/poolside/settings.yaml`, or run:
 
 ```bash
-pool mcp add thumbgate -- npx --yes --package thumbgate@1.37.2 thumbgate serve
+pool mcp add thumbgate -- npx --yes --package thumbgate@1.37.3 thumbgate serve
 pool mcp get thumbgate
 ```
 
