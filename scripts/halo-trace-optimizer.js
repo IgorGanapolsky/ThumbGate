@@ -242,24 +242,33 @@ function detectExpensiveSpans(entries) {
 
 /**
  * 4. Unhandled Denies Detection
- * Identifies repeated triggers of the same gate ID.
+ * Identifies repeated triggers of the same gate ID and captures representative action.
  */
 function detectUnhandledDenies(entries) {
   const findings = [];
-  const gateCounts = new Map();
+  const gateMap = new Map();
 
   for (const entry of entries) {
     if (entry.decision === 'deny' || entry.shadowDecision === 'block') {
       const gateId = entry.gateId || entry.gate_id || 'unknown-gate';
-      gateCounts.set(gateId, (gateCounts.get(gateId) || 0) + 1);
+      const action = extractActionString(entry);
+      if (!gateMap.has(gateId)) {
+        gateMap.set(gateId, { count: 0, action });
+      }
+      const data = gateMap.get(gateId);
+      data.count += 1;
+      if (!data.action && action) {
+        data.action = action;
+      }
     }
   }
 
-  for (const [gateId, count] of gateCounts.entries()) {
+  for (const [gateId, { count, action }] of gateMap.entries()) {
     if (count >= 2) {
       findings.push({
         type: 'unhandled_denies',
         gateId,
+        action: action || gateId,
         occurrences: count,
         severity: count >= 5 ? 'critical' : 'high',
         summary: `Gate "${gateId}" was triggered ${count} times without automated resolution`,
@@ -295,7 +304,7 @@ function synthesizeGateFix(failureMode) {
   const gateId = `auto-promoted-halo-${cleanToken}-${hash}`.toLowerCase();
 
   let pattern = '';
-  if (failureMode.type === 'redundant_tool_calls' || failureMode.type === 'retry_stall') {
+  if (failureMode.type === 'redundant_tool_calls' || failureMode.type === 'retry_stall' || failureMode.type === 'unhandled_denies') {
     // Escape regex specials for literal matching of root command/action
     const escaped = actionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').slice(0, 60);
     pattern = escaped.length > 0 ? `^${escaped}` : '.*';
@@ -305,7 +314,7 @@ function synthesizeGateFix(failureMode) {
     pattern = `.*${cleanToken}.*`;
   }
 
-  const suggestedAction = failureMode.severity === 'critical' || failureMode.severity === 'high' ? 'warn' : 'warn';
+  const suggestedAction = failureMode.severity === 'critical' ? 'block' : 'warn';
   const remediation = failureMode.type === 'retry_stall'
     ? 'Do not retry the exact failed command without modifying input or environment state.'
     : failureMode.type === 'redundant_tool_calls'
@@ -480,39 +489,48 @@ function formatHaloTraceOptimizerReport(report) {
   ];
 
   if (report.refusal) {
-    lines.push(`refusal: ${report.refusal}`);
-    lines.push(`reason: ${report.reason}`);
+    lines.push(
+      `refusal: ${report.refusal}`,
+      `reason: ${report.reason}`
+    );
     return lines.join('\n') + '\n';
   }
 
   if (report.mapping) {
-    lines.push('Architecture Mapping:');
-    lines.push(`  HALO Concept   : ${report.mapping.haloConcept}`);
-    lines.push(`  ThumbGate Rail : ${report.mapping.thumbGateRail}`);
-    lines.push(`  Gate Store     : ${report.mapping.targetGateStore}`);
+    lines.push(
+      'Architecture Mapping:',
+      `  HALO Concept   : ${report.mapping.haloConcept}`,
+      `  ThumbGate Rail : ${report.mapping.thumbGateRail}`,
+      `  Gate Store     : ${report.mapping.targetGateStore}`
+    );
     return lines.join('\n') + '\n';
   }
 
-  lines.push(`traces analyzed : ${report.summary.tracesAnalyzed}`);
-  lines.push(`failure modes   : ${report.summary.failureModesFound}`);
-  lines.push(`fixes applied   : ${report.summary.appliedCount}`);
-  lines.push('');
+  lines.push(
+    `traces analyzed : ${report.summary.tracesAnalyzed}`,
+    `failure modes   : ${report.summary.failureModesFound}`,
+    `fixes applied   : ${report.summary.appliedCount}`,
+    ''
+  );
 
   if (report.rankedFailureModes.length === 0) {
     lines.push('✓ No agent trace thrashing, retry stalls, or unhandled denies detected.');
   } else {
     lines.push('Top Ranked Failure Modes:');
     report.rankedFailureModes.slice(0, 5).forEach((m, idx) => {
-      lines.push(`  [#${idx + 1}] (${m.type}) impact: ${m.impactScore} | severity: ${m.severity}`);
-      lines.push(`      ${m.summary}`);
+      lines.push(
+        `  [#${idx + 1}] (${m.type}) impact: ${m.impactScore} | severity: ${m.severity}`,
+        `      ${m.summary}`
+      );
     });
 
-    lines.push('');
-    lines.push('Synthesized Gate Fixes:');
+    lines.push('', 'Synthesized Gate Fixes:');
     report.synthesizedFixes.slice(0, 3).forEach((f, idx) => {
-      lines.push(`  [Fix #${idx + 1}] ${f.id} [${f.action}]`);
-      lines.push(`      pattern    : ${f.pattern}`);
-      lines.push(`      remediation: ${f.remediation}`);
+      lines.push(
+        `  [Fix #${idx + 1}] ${f.id} [${f.action}]`,
+        `      pattern    : ${f.pattern}`,
+        `      remediation: ${f.remediation}`
+      );
     });
   }
 
