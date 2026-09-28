@@ -64,6 +64,7 @@ const ORIGINAL_ENV = {
   THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
   THUMBGATE_FEEDBACK_LOG: process.env.THUMBGATE_FEEDBACK_LOG,
   THUMBGATE_ATTRIBUTED_FEEDBACK: process.env.THUMBGATE_ATTRIBUTED_FEEDBACK,
+  THUMBGATE_NO_RATE_LIMIT: process.env.THUMBGATE_NO_RATE_LIMIT,
 };
 
 let repo;
@@ -79,6 +80,7 @@ beforeEach(() => {
   process.env.THUMBGATE_FEEDBACK_DIR = path.join(sandbox, 'feedback-runtime');
   process.env.THUMBGATE_FEEDBACK_LOG = path.join(sandbox, 'feedback-log.jsonl');
   process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = path.join(sandbox, 'attributed-feedback.jsonl');
+  process.env.THUMBGATE_NO_RATE_LIMIT = '1';
   fs.mkdirSync(process.env.THUMBGATE_FEEDBACK_DIR, { recursive: true });
   fs.writeFileSync(process.env.THUMBGATE_FEEDBACK_LOG, '');
   fs.writeFileSync(process.env.THUMBGATE_ATTRIBUTED_FEEDBACK, '');

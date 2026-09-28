@@ -500,8 +500,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 548 -> 549 (2026-09-18): src/integrations/ideabrowser-connector.js (IdeaBrowser connector #3823).
   // 551 -> 553 (2026-09-22): llm-obs-honesty.js + skill — successor of DIRTY #3885.
   // 553 -> 563 (2026-09-23): daily discoveries publishing engine + launchd installer + 3 skills + blog html (1.37.3).
-    manifest.fileCount <= 563,
-    `npm package should stay <= 563 files, got ${manifest.fileCount}`
+  // 563 -> 565 (2026-09-28): scripts/halo-trace-optimizer.js + skill (HALO trace-to-fix FORMAT steal).
+    manifest.fileCount <= 565,
+    `npm package should stay <= 565 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
