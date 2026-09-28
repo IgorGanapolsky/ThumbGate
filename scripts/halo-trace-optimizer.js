@@ -110,30 +110,39 @@ function normalizeActionString(str) {
     .replace(/\s+/g, ' ');
 }
 
+function groupEntriesBySession(entries) {
+  const sessionBuckets = new Map();
+  for (const entry of entries) {
+    const sId = entry.sessionId || entry.session_id || 'default';
+    if (!sessionBuckets.has(sId)) sessionBuckets.set(sId, []);
+    sessionBuckets.get(sId).push(entry);
+  }
+  return sessionBuckets;
+}
+
+function countToolActions(sessionEntries) {
+  const runCounts = new Map();
+  for (const entry of sessionEntries) {
+    const tool = entry.toolName || entry.tool_name || 'unknown';
+    const action = normalizeActionString(extractActionString(entry));
+    if (!action || action.length < 3) continue;
+
+    const key = `${tool}::${action}`;
+    runCounts.set(key, (runCounts.get(key) || 0) + 1);
+  }
+  return runCounts;
+}
+
 /**
  * 1. Redundant Tool Thrashing Detection
  * Identifies 3+ repeated calls to the same tool with identical or near-identical action.
  */
 function detectRedundantToolCalls(entries) {
   const findings = [];
-  const sessionBuckets = new Map();
-
-  for (const entry of entries) {
-    const sId = entry.sessionId || entry.session_id || 'default';
-    if (!sessionBuckets.has(sId)) sessionBuckets.set(sId, []);
-    sessionBuckets.get(sId).push(entry);
-  }
+  const sessionBuckets = groupEntriesBySession(entries);
 
   for (const [sessionId, sessionEntries] of sessionBuckets.entries()) {
-    const runCounts = new Map();
-    for (const entry of sessionEntries) {
-      const tool = entry.toolName || entry.tool_name || 'unknown';
-      const action = normalizeActionString(extractActionString(entry));
-      if (!action || action.length < 3) continue;
-
-      const key = `${tool}::${action}`;
-      runCounts.set(key, (runCounts.get(key) || 0) + 1);
-    }
+    const runCounts = countToolActions(sessionEntries);
 
     for (const [key, count] of runCounts.entries()) {
       if (count >= 3) {
@@ -208,7 +217,7 @@ function detectExpensiveSpans(entries) {
 
   for (const entry of entries) {
     const latency = Number(entry.latencyMs || entry.duration_ms || 0);
-    const lines = Number(entry.lineCount || (entry.toolInput && entry.toolInput.lines) || 0);
+    const lines = Number(entry.lineCount ?? entry.toolInput?.lines ?? 0);
     const action = extractActionString(entry);
 
     if (latency >= 10000) {
@@ -241,14 +250,8 @@ function detectExpensiveSpans(entries) {
   return findings;
 }
 
-/**
- * 4. Unhandled Denies Detection
- * Identifies repeated triggers of the same gate ID and captures representative action.
- */
-function detectUnhandledDenies(entries) {
-  const findings = [];
+function aggregateGateDenies(entries) {
   const gateMap = new Map();
-
   for (const entry of entries) {
     if (entry.decision === 'deny' || entry.shadowDecision === 'block') {
       const gateId = entry.gateId || entry.gate_id || 'unknown-gate';
@@ -263,6 +266,16 @@ function detectUnhandledDenies(entries) {
       }
     }
   }
+  return gateMap;
+}
+
+/**
+ * 4. Unhandled Denies Detection
+ * Identifies repeated triggers of the same gate ID and captures representative action.
+ */
+function detectUnhandledDenies(entries) {
+  const findings = [];
+  const gateMap = aggregateGateDenies(entries);
 
   for (const [gateId, { count, action }] of gateMap.entries()) {
     if (count >= 2) {
@@ -288,11 +301,44 @@ function rankFailureModes(findings) {
     .map((f) => {
       const weight = FAILURE_MODE_WEIGHTS[f.type] || 1;
       const count = Number(f.occurrences || 1);
-      const sevMultiplier = f.severity === 'critical' ? 3 : f.severity === 'high' ? 2 : 1;
+      let sevMultiplier = 1;
+      if (f.severity === 'critical') {
+        sevMultiplier = 3;
+      } else if (f.severity === 'high') {
+        sevMultiplier = 2;
+      }
       const impactScore = count * weight * sevMultiplier;
       return { ...f, impactScore };
     })
     .sort((a, b) => b.impactScore - a.impactScore);
+}
+
+function buildGatePattern(type, actionText, cleanToken) {
+  if (type === 'redundant_tool_calls' || type === 'retry_stall' || type === 'unhandled_denies') {
+    const escaped = actionText.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`).slice(0, 60);
+    return escaped.length > 0 ? `^${escaped}` : '.*';
+  }
+  if (type === 'expensive_span') {
+    if (actionText && actionText !== 'expensive_span' && actionText !== 'repeated_action') {
+      const escaped = actionText.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`).slice(0, 60);
+      return escaped.length > 0 ? `^${escaped}` : String.raw`cat\s+.*|head\s+-[0-9]{4,}|tail\s+-[0-9]{4,}`;
+    }
+    return String.raw`cat\s+.*|head\s+-[0-9]{4,}|tail\s+-[0-9]{4,}`;
+  }
+  return `.*${cleanToken}.*`;
+}
+
+function getRemediationForFailureMode(type) {
+  switch (type) {
+    case 'retry_stall':
+      return 'Do not retry the exact failed command without modifying input or environment state.';
+    case 'redundant_tool_calls':
+      return 'Cached state is unchanged; proceed with the next task step instead of repeating the query.';
+    case 'expensive_span':
+      return 'Use targeted line ranges or token-shunt instead of full file dumps.';
+    default:
+      return 'Review active gate requirements before invoking.';
+  }
 }
 
 /**
@@ -303,31 +349,9 @@ function synthesizeGateFix(failureMode) {
   const cleanToken = actionText.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
   const hash = crypto.createHash('sha256').update(actionText).digest('hex').slice(0, 8);
   const gateId = `auto-promoted-halo-${cleanToken}-${hash}`.toLowerCase();
-
-  let pattern = '';
-  if (failureMode.type === 'redundant_tool_calls' || failureMode.type === 'retry_stall' || failureMode.type === 'unhandled_denies') {
-    // Escape regex specials for literal matching of root command/action
-    const escaped = actionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').slice(0, 60);
-    pattern = escaped.length > 0 ? `^${escaped}` : '.*';
-  } else if (failureMode.type === 'expensive_span') {
-    if (actionText && actionText !== 'expensive_span' && actionText !== 'repeated_action') {
-      const escaped = actionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').slice(0, 60);
-      pattern = escaped.length > 0 ? `^${escaped}` : 'cat\\s+.*|head\\s+-[0-9]{4,}|tail\\s+-[0-9]{4,}';
-    } else {
-      pattern = 'cat\\s+.*|head\\s+-[0-9]{4,}|tail\\s+-[0-9]{4,}';
-    }
-  } else {
-    pattern = `.*${cleanToken}.*`;
-  }
-
+  const pattern = buildGatePattern(failureMode.type, actionText, cleanToken);
   const suggestedAction = failureMode.severity === 'critical' ? 'block' : 'warn';
-  const remediation = failureMode.type === 'retry_stall'
-    ? 'Do not retry the exact failed command without modifying input or environment state.'
-    : failureMode.type === 'redundant_tool_calls'
-    ? 'Cached state is unchanged; proceed with the next task step instead of repeating the query.'
-    : failureMode.type === 'expensive_span'
-    ? 'Use targeted line ranges or token-shunt instead of full file dumps.'
-    : 'Review active gate requirements before invoking.';
+  const remediation = getRemediationForFailureMode(failureMode.type);
 
   return {
     id: gateId,
@@ -400,7 +424,7 @@ function applyFixes(fixes, options = {}) {
   if (applied.length > 0) {
     const dir = path.dirname(autoGatesPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    const tmpPath = `${autoGatesPath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`;
+    const tmpPath = `${autoGatesPath}.tmp.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
     fs.writeFileSync(tmpPath, JSON.stringify(currentConfig, null, 2) + '\n', 'utf8');
     fs.renameSync(tmpPath, autoGatesPath);
   }
