@@ -30,6 +30,7 @@
 
 ### Patch Changes
 
+- Steal the September 2026 InfoQ architects newsletter FORMAT onto `infoq-architect-honesty`: a done claim names `Code as truth` and `Provenance`, the host stays a language we already run, durable work stays on the session lease, and queue freshness is the oldest stamp. Does not register for InfoQ, install Vortex, or add Temporal.
 - 0e53737: Steal CobbleDB's three-plane hot-store FORMAT (durable state, batched delivery, query-time MultiGet + hedge + subset) onto existing lesson rails via `cobble-hot-store-split`. Compare-not-clone: no RocksDB/YTsaurus SKU.
 - 643adbe: Steal Colab /signup compute-unit honesty (subscribe≠receipt, CU≠dedicated GPU, 24h background is Pro+) onto a fail-closed doctor. Does not buy Colab Pro/Pro+ or clone a notebook GPU SKU.
 - 55345bb: Bump @changesets/changelog-github from 1.0.0 to 1.0.1 to keep the shipped build and test dependency set current under ThumbGate's audited release flow.

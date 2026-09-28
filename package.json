@@ -454,7 +454,9 @@
     ".agents/skills/typesafe-typed-questions-not-clone/",
     "scripts/colab-compute-honesty.js",
     ".agents/skills/colab-compute-honesty-not-clone/",
+    ".agents/skills/infoq-architect-honesty-not-clone/",
     ".agents/skills/deeppattern-discipline-honesty-not-clone/",
+    "scripts/infoq-architect-honesty.js",
     "scripts/deeppattern-discipline-honesty.js",
     ".agents/skills/ci-gha-buildkite-patterns-not-clone/",
     "scripts/ci-gha-buildkite-patterns.js",
@@ -1230,7 +1232,9 @@
     "test:ci-gha-buildkite-patterns": "node --test tests/ci-gha-buildkite-patterns.test.js",
     "ci-gha-buildkite-patterns": "node scripts/ci-gha-buildkite-patterns.js",
     "test:board-loop": "node --test tests/thumbgate-board-loop.test.js",
-    "board-loop": "node scripts/thumbgate-board-loop.js"
+    "board-loop": "node scripts/thumbgate-board-loop.js",
+    "infoq-architect-honesty": "node scripts/infoq-architect-honesty.js",
+    "test:infoq-architect-honesty": "node --test tests/infoq-architect-honesty.test.js"
   },
   "keywords": [
     "mcp",
