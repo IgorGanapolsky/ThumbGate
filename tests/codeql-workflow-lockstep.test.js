@@ -27,9 +27,9 @@ function pinFor(step) {
   return { sha: m[1], tag: m[2] };
 }
 
-// Immutable pin for github/codeql-action@v4.38.0 (init + analyze must share it).
-// Peeled tag SHA verified via git ls-remote refs/tags/v4.38.0^{}.
-const CODEQL_V4380_SHA = 'b96794f015dfd88f77b49b1c93e0fa7110f94c63';
+// Immutable pin for github/codeql-action@v4.38.1 (init + analyze must share it).
+// Peeled tag SHA verified via git ls-remote refs/tags/v4.38.1^{}.
+const CODEQL_V4381_SHA = '1c5b675653bb5c22dbe9b12b556ec555138e09fd';
 
 test('CodeQL init and analyze use the same action SHA and version tag', () => {
   const init = pinFor('init');
@@ -44,10 +44,10 @@ test('CodeQL init and analyze use the same action SHA and version tag', () => {
   assert.match(init.tag, /^v4\./, 'CodeQL action should stay on the v4 line');
   assert.equal(
     init.sha,
-    CODEQL_V4380_SHA,
-    `CodeQL must stay pinned to immutable v4.38.0 revision ${CODEQL_V4380_SHA}`,
+    CODEQL_V4381_SHA,
+    `CodeQL must stay pinned to immutable v4.38.1 revision ${CODEQL_V4381_SHA}`,
   );
-  assert.equal(init.tag, 'v4.38.0', 'CodeQL version comment must be v4.38.0');
+  assert.equal(init.tag, 'v4.38.1', 'CodeQL version comment must be v4.38.1');
 });
 
 test('Dependabot groups github/codeql-action* so init/analyze do not half-bump', () => {
