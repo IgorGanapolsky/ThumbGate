@@ -20,7 +20,7 @@ test('the Agensi skill folder matches its frontmatter and the published version'
   assert.match(skill, /^---\nname: thumbgate-pretool-gate\n/);
   assert.match(skill, /description: "/);
   assert.match(skill, /Use when the user asks/);
-  assert.match(skill, new RegExp(`thumbgate@${VERSION.replace(/\./g, '\\.')}`));
+  assert.ok(skill.includes(`thumbgate@${VERSION}`), 'SKILL.md must pin current thumbgate version');
   assert.match(skill, /https:\/\/thumbgate\.ai/);
   assert.match(skill, /https:\/\/www\.npmjs\.com\/package\/thumbgate/);
   assert.match(skill, /https:\/\/github\.com\/IgorGanapolsky\/ThumbGate/);
