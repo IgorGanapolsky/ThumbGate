@@ -28,6 +28,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
+const { getAutoGatesPath, getRuleTtlMs } = require('./auto-promote-gates');
 
 const SOURCE_URL = 'https://inference.net/products/halo/';
 
@@ -309,7 +310,12 @@ function synthesizeGateFix(failureMode) {
     const escaped = actionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').slice(0, 60);
     pattern = escaped.length > 0 ? `^${escaped}` : '.*';
   } else if (failureMode.type === 'expensive_span') {
-    pattern = 'cat\\s+.*|head\\s+-[0-9]{4,}|tail\\s+-[0-9]{4,}';
+    if (actionText && actionText !== 'expensive_span' && actionText !== 'repeated_action') {
+      const escaped = actionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').slice(0, 60);
+      pattern = escaped.length > 0 ? `^${escaped}` : 'cat\\s+.*|head\\s+-[0-9]{4,}|tail\\s+-[0-9]{4,}';
+    } else {
+      pattern = 'cat\\s+.*|head\\s+-[0-9]{4,}|tail\\s+-[0-9]{4,}';
+    }
   } else {
     pattern = `.*${cleanToken}.*`;
   }
@@ -345,14 +351,17 @@ function synthesizeGateFix(failureMode) {
 function applyFixes(fixes, options = {}) {
   const autoGatesPath =
     options.autoGatesPath ||
-    path.join(process.cwd(), '.thumbgate', 'auto-promoted-gates.json');
+    (typeof getAutoGatesPath === 'function'
+      ? getAutoGatesPath()
+      : path.join(process.cwd(), '.thumbgate', 'auto-promoted-gates.json'));
 
   let currentConfig = { version: 1, gates: [], promotionLog: [] };
   if (fs.existsSync(autoGatesPath)) {
     try {
       currentConfig = JSON.parse(fs.readFileSync(autoGatesPath, 'utf8'));
-    } catch {
-      currentConfig = { version: 1, gates: [], promotionLog: [] };
+    } catch (err) {
+      process.stderr.write(`[HALO] Warning: failed to parse ${autoGatesPath}: ${err.message}. Aborting apply to prevent corruption.\n`);
+      return [];
     }
   }
 
@@ -361,6 +370,8 @@ function applyFixes(fixes, options = {}) {
 
   const existingIds = new Set(currentConfig.gates.map((g) => g.id));
   const applied = [];
+  const nowMs = Date.now();
+  const ttlMs = typeof getRuleTtlMs === 'function' ? getRuleTtlMs() : 90 * 24 * 60 * 60 * 1000;
 
   for (const fix of fixes) {
     if (!existingIds.has(fix.id)) {
@@ -372,7 +383,8 @@ function applyFixes(fixes, options = {}) {
         remediation: fix.remediation,
         severity: fix.severity,
         source: fix.source,
-        promotedAt: new Date().toISOString(),
+        promotedAt: new Date(nowMs).toISOString(),
+        expiresAt: new Date(nowMs + ttlMs).toISOString(),
       };
       currentConfig.gates.push(newGate);
       currentConfig.promotionLog.push({
@@ -388,7 +400,9 @@ function applyFixes(fixes, options = {}) {
   if (applied.length > 0) {
     const dir = path.dirname(autoGatesPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(autoGatesPath, JSON.stringify(currentConfig, null, 2) + '\n', 'utf8');
+    const tmpPath = `${autoGatesPath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`;
+    fs.writeFileSync(tmpPath, JSON.stringify(currentConfig, null, 2) + '\n', 'utf8');
+    fs.renameSync(tmpPath, autoGatesPath);
   }
 
   return applied;
