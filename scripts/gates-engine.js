@@ -18,6 +18,8 @@ const {
 } = require('./workflow-sentinel');
 const {
   evaluateFinancialControl,
+  governAgentDataPlane,
+  dataPlaneFromTool,
 } = require('./financial-control-plane');
 const {
   evaluateBrokerReceiptGate,
@@ -4083,9 +4085,44 @@ function evaluateSecretGuard(input = {}) {
   return result;
 }
 
+function evaluateDataPlaneHardFloor(input = {}) {
+  const toolName = input.tool_name || input.toolName || 'unknown';
+  const rawToolInput = input.tool_input ?? input.toolInput;
+  const toolInput = rawToolInput && typeof rawToolInput === 'object' ? rawToolInput : {};
+  const record = governAgentDataPlane(dataPlaneFromTool(toolName, toolInput));
+  if (record.control !== 'deny') return null;
+  const result = {
+    decision: 'deny',
+    gate: 'data-plane-governance',
+    message: record.reasons[0] || 'Data plane governance denied this action.',
+    severity: 'critical',
+    dataPlane: record,
+    reasoning: record.reasons,
+  };
+  try {
+    recordStat('data-plane-governance', 'block', null, { toolName, toolInput });
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: 'data-plane-governance',
+      message: result.message,
+      severity: result.severity,
+      source: 'data-plane-governance',
+    });
+    auditToFeedback(auditRecord);
+  } catch (_) {
+    // The deny still stands. A stats write must not fail the hook open.
+  }
+  return result;
+}
+
 function evaluateUnconditionalHardFloor(input = {}, options = {}) {
   const secretGuard = evaluateSecretGuard(input);
   if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
+
+  const dataPlane = evaluateDataPlaneHardFloor(input);
+  if (dataPlane) return { hardFloor: dataPlane, securityScan: null };
 
   const securityScan = evaluateSecurityScan(input);
   if (securityScan && securityScan.decision === 'deny') {

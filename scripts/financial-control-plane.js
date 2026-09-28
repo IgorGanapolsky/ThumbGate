@@ -1640,6 +1640,133 @@ function financialError(message) {
   return error;
 }
 
+// One governance record for an agent task: context, control, and cost.
+// Bill = interactions × contextTokens / 1e6 × usdPerMillionTokens.
+// Format from the 2026-09-28 Towards Data Science / CData Foundations mailer
+// ("the cost math below the model"). Does not install CData and does not
+// register for the Nov 5 event.
+const DATA_PLANE_REFUSES = Object.freeze([
+  'CData install',
+  'CData Foundations registration',
+]);
+
+function nonNegativeNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+function valuePresent(value) {
+  return value !== undefined && value !== null && value !== '';
+}
+
+function namedSystem(value) {
+  const clean = String(value ?? '').trim().replace(/\s+/g, ' ');
+  return clean || null;
+}
+
+function taskContextBillUsd(input = {}) {
+  const interactions = nonNegativeNumber(input.interactions);
+  const contextTokens = nonNegativeNumber(input.contextTokens);
+  const usdPerMillionTokens = nonNegativeNumber(input.usdPerMillionTokens);
+  if (interactions === null || contextTokens === null || usdPerMillionTokens === null) return null;
+  return Math.round((interactions * contextTokens / 1e6) * usdPerMillionTokens * 1e6) / 1e6;
+}
+
+function triggeredDataPlaneRefusals(input = {}) {
+  const triggered = [];
+  const intent = String(input.intent || '').slice(0, 4000);
+  const installCommand = /\b(?:pip3?|npm|npx|pnpm|yarn|brew)\s+install\b[^|\n;&]*\bcdata\b/i.test(intent)
+    || /\bnpx\s+cdata\b/i.test(intent)
+    || /\bmcp\.cloud\.cdata\.com\b/i.test(intent);
+  if (input.installCdata === true || installCommand) triggered.push(DATA_PLANE_REFUSES[0]);
+  const foundationsSignup = /\bcdata\b/i.test(intent)
+    && /\bfoundations\b/i.test(intent)
+    && /\b(?:regist(?:er|ration)|signup|sign-up|rsvp)\b/i.test(intent);
+  if (input.registerFoundations === true || foundationsSignup) triggered.push(DATA_PLANE_REFUSES[1]);
+  return triggered;
+}
+
+function governAgentDataPlane(input = {}) {
+  const source = input && typeof input === 'object' ? input : {};
+  const system = namedSystem(source.system);
+  const targetSystem = namedSystem(source.targetSystem);
+  const localOnly = source.localOnly === true;
+  const remote = source.remoteSystem === true || /^https?:\/\//i.test(targetSystem || '');
+  const budgetUsd = valuePresent(source.budgetUsd) ? nonNegativeNumber(source.budgetUsd) : null;
+  const billUsd = taskContextBillUsd(source);
+  const pricing = ['interactions', 'contextTokens', 'usdPerMillionTokens', 'budgetUsd']
+    .some((key) => valuePresent(source[key]));
+  const triggered = triggeredDataPlaneRefusals(source);
+  const reasons = [];
+  let control = 'allow';
+
+  function deny(reason) {
+    reasons.push(reason);
+    control = 'deny';
+  }
+
+  function warn(reason) {
+    reasons.push(reason);
+    if (control !== 'deny') control = 'warn';
+  }
+
+  for (const item of triggered) deny(`${item} is refused.`);
+  if (system && targetSystem && system.toLowerCase() !== targetSystem.toLowerCase()) {
+    deny(`Context is ${system}; the action targets ${targetSystem}.`);
+  }
+  if (localOnly && remote) deny('Local-only scope cannot act on a remote system.');
+  if (pricing) {
+    if (budgetUsd === null) warn('Missing explicit USD budget.');
+    else if (billUsd === null) warn('Cost math is incomplete.');
+    else if (billUsd > budgetUsd) deny(`Context bill $${billUsd} exceeds USD budget $${budgetUsd}.`);
+  }
+
+  return {
+    context: {
+      system,
+      targetSystem,
+      localOnly,
+      remote,
+      interactions: nonNegativeNumber(source.interactions),
+      contextTokens: nonNegativeNumber(source.contextTokens),
+    },
+    control,
+    cost: {
+      billUsd,
+      budgetUsd,
+      usdPerMillionTokens: nonNegativeNumber(source.usdPerMillionTokens),
+      overBudget: budgetUsd !== null && billUsd !== null && billUsd > budgetUsd,
+    },
+    reasons,
+    refuses: DATA_PLANE_REFUSES.slice(),
+    triggered,
+    source: 'cdata-foundations-2026-09-28',
+  };
+}
+
+function dataPlaneFromTool(toolName, toolInput = {}) {
+  const input = toolInput && typeof toolInput === 'object' ? toolInput : {};
+  const nested = input.dataPlane && typeof input.dataPlane === 'object' ? input.dataPlane : {};
+  const command = [input.command, input.cmd].filter((part) => typeof part === 'string').join('\n');
+  const intent = [command, nested.intent, input.intent]
+    .filter((part) => typeof part === 'string' && part.trim())
+    .join('\n');
+  return {
+    intent,
+    system: nested.system ?? input.system,
+    targetSystem: nested.targetSystem ?? input.targetSystem,
+    localOnly: nested.localOnly === true || input.localOnly === true,
+    remoteSystem: nested.remoteSystem === true || input.remoteSystem === true,
+    interactions: nested.interactions ?? input.interactions,
+    contextTokens: nested.contextTokens ?? input.contextTokens,
+    usdPerMillionTokens: nested.usdPerMillionTokens ?? input.usdPerMillionTokens,
+    budgetUsd: nested.budgetUsd ?? input.budgetUsd,
+    installCdata: nested.installCdata === true || input.installCdata === true,
+    registerFoundations: nested.registerFoundations === true || input.registerFoundations === true,
+    toolName,
+  };
+}
+
 module.exports = {
   ECONOMIC_ACTION_PATTERNS,
   ECONOMIC_URL_PATTERNS,
@@ -1649,6 +1776,10 @@ module.exports = {
   isRemedyControlTool,
   detectOpaqueScreenMutation,
   evaluateFinancialControl,
+  taskContextBillUsd,
+  governAgentDataPlane,
+  dataPlaneFromTool,
+  DATA_PLANE_REFUSES,
   getLedgerHeadPath,
   getLedgerJournalPath,
   getLedgerPath,

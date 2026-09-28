@@ -127,10 +127,13 @@ function codexStatuslineCommand() {
 //     rank failure modes, cite the row, name one harness fix, re-run.
 //     Do not pip install halo-engine or export OTLP to inference.net.
 //   Qoder — keep a review point before raising autonomy.
-// Does not install Felony Bench, inference.net HALO, or Qoder.
+//   CData Foundations mailer (2026-09-28) — one record of context, control,
+//     and cost. Bill = interactions × context. Do not install CData.
+// Does not install Felony Bench, inference.net HALO, Qoder, or CData.
 const THIRD_PARTY_EFFECT_GATES = Object.freeze([
   'secret-exfiltration',
   'local-only-remote-side-effect',
+  'data-plane-governance',
 ]);
 
 function parseGateId(reason) {
@@ -277,7 +280,7 @@ function rankHarnessIncidents({ stats, audit } = {}) {
   if (findings.length > 0) {
     nextFix = findings[0].fix;
   } else if (topInternal) {
-    nextFix = `Leave ${topInternal.gateId} (${topInternal.blocked} blocks) in warn. Deny only secret-exfiltration and local-only-remote-side-effect (${thirdPartyBlocked} historical blocks).`;
+    nextFix = `Leave ${topInternal.gateId} (${topInternal.blocked} blocks) in warn. Deny secret-exfiltration, local-only-remote-side-effect, and data-plane-governance (${thirdPartyBlocked} historical blocks).`;
   } else {
     nextFix = 'No gate counters to rank.';
   }
