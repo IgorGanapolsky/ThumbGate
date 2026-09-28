@@ -12,9 +12,14 @@
  * - ThumbGate does NOT store third-party provider credentials.
  *
  * Modes (THUMBGATE_BROKER_RECEIPT_MODE):
- * - off      — gate is a no-op
+ * - off      — receipt checks are a no-op; divergent venue prints on an order still freeze
  * - verify   — if a receipt is attached, it must verify (default)
  * - enforce  — high-risk provider actions require a valid receipt
+ *
+ * Venue disagreement: an order with two positive prints for the same symbol
+ * is denied when the relative gap exceeds the bound (default 50 bps). Both
+ * prints stay on the deny. This module does not fetch market data and does
+ * not sign a receipt.
  */
 
 const crypto = require('node:crypto');
@@ -599,11 +604,114 @@ function receiptBindsToAction(receipt, toolName, toolInput = {}) {
   return { bound: reasons.length === 0, reasons };
 }
 
+const VENUE_DISAGREEMENT_DEFAULT_BPS = 50;
+const ORDER_SURFACE_PATTERN = /\b(?:buy|sell|limit\s+orders?|place\s+orders?|execute\s+orders?)\b/i;
+
+function positivePrintPrice(value) {
+  const price = typeof value === 'number' ? value : Number(cleanString(value));
+  if (!Number.isFinite(price) || price <= 0) return null;
+  return price;
+}
+
+function readMaxDivergenceBps(toolInput, options) {
+  const raw = (toolInput && (toolInput.maxDivergenceBps ?? toolInput.max_divergence_bps))
+    ?? options.maxDivergenceBps;
+  if (raw === undefined || raw === null || raw === '') return VENUE_DISAGREEMENT_DEFAULT_BPS;
+  const parsed = typeof raw === 'number' ? raw : Number(cleanString(raw));
+  if (!Number.isFinite(parsed) || parsed < 0) return VENUE_DISAGREEMENT_DEFAULT_BPS;
+  return parsed;
+}
+
+function isOrderPlacement(toolName, toolInput) {
+  if (toolInput && typeof toolInput === 'object') {
+    if (toolInput.order || toolInput.limitOrder || toolInput.limit_order) return true;
+  }
+  const command = toolInput && typeof toolInput === 'object'
+    ? cleanString(toolInput.command || toolInput.cmd || '')
+    : '';
+  return ORDER_SURFACE_PATTERN.test(`${toolName || ''} ${command}`);
+}
+
+function readVenuePrints(toolInput) {
+  if (!toolInput || typeof toolInput !== 'object') return [];
+  const raw = toolInput.venuePrints || toolInput.venue_prints;
+  if (!Array.isArray(raw)) return [];
+  const prints = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue;
+    const venue = cleanString(entry.venue || entry.venueId || entry.venue_id, 120);
+    const symbol = cleanString(entry.symbol, 32).toUpperCase();
+    const price = positivePrintPrice(entry.price);
+    if (!venue || !symbol || price === null) continue;
+    prints.push({ venue, symbol, price });
+  }
+  return prints;
+}
+
+function relativeGapBps(low, high) {
+  if (!(low > 0) || !(high >= low)) return 0;
+  return ((high - low) / low) * 10000;
+}
+
+/**
+ * Freeze an order when two venue prints for the same symbol diverge.
+ * Returns null when the call is not an order, has fewer than two usable
+ * prints, or the gap is within the bound. Does not sign anything.
+ */
+function evaluateVenueDisagreement(toolName, toolInput = {}, options = {}) {
+  if (!isOrderPlacement(toolName, toolInput)) return null;
+  const prints = readVenuePrints(toolInput);
+  if (prints.length < 2) return null;
+
+  const maxBps = readMaxDivergenceBps(toolInput, options);
+  const bySymbol = new Map();
+  for (const print of prints) {
+    if (!bySymbol.has(print.symbol)) bySymbol.set(print.symbol, []);
+    bySymbol.get(print.symbol).push(print);
+  }
+
+  for (const [symbol, group] of bySymbol) {
+    if (group.length < 2) continue;
+    let low = group[0];
+    let high = group[0];
+    for (const print of group) {
+      if (print.price < low.price) low = print;
+      if (print.price > high.price) high = print;
+    }
+    const gapBps = relativeGapBps(low.price, high.price);
+    if (gapBps > maxBps) {
+      return {
+        decision: 'deny',
+        gate: 'broker-execution-receipt',
+        message: `Order frozen: ${symbol} prints disagree by ${gapBps.toFixed(1)} bps `
+          + `(${low.venue} ${low.price} vs ${high.venue} ${high.price}, bound ${maxBps} bps). `
+          + 'Both prints stay on this deny. The execution receipt is still signed by the broker, not the agent.',
+        severity: 'critical',
+        reasons: ['venue_disagreement'],
+        source: 'broker-execution-receipts',
+        symbol,
+        divergenceBps: gapBps,
+        maxDivergenceBps: maxBps,
+        venuePrints: group.map((print) => ({
+          venue: print.venue,
+          symbol: print.symbol,
+          price: print.price,
+        })),
+      };
+    }
+  }
+  return null;
+}
+
 /**
  * Pre-tool gate evaluation for broker receipts.
  * Returns null when the gate does not apply or allows; otherwise a deny/warn result.
+ * Venue disagreement is checked before receipt mode, including mode off.
  */
 function evaluateBrokerReceiptGate(toolName, toolInput = {}, options = {}) {
+  const disagreement = evaluateVenueDisagreement(toolName, toolInput, options);
+  if (disagreement) return disagreement;
+
   const mode = getReceiptMode(options);
   if (mode === 'off') return null;
 
@@ -702,7 +810,9 @@ module.exports = {
   buildSignableBody,
   computePayloadHash,
   evaluateBrokerReceiptGate,
+  evaluateVenueDisagreement,
   extractReceiptFromToolInput,
+  VENUE_DISAGREEMENT_DEFAULT_BPS,
   generateBrokerKeyPair,
   receiptBindsToAction,
   getLedgerPath,

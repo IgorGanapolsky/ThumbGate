@@ -12,7 +12,7 @@ current `main` CI run before changing repository state.
 In PR-management sessions, reconcile GitHub Issues and Actions plus any
 available Linear AI and local Obsidian coordination surfaces. Close or advance
 actionable Issues in the same session — do not leave the Issues board untouched
-while only draining PRs. If Linear, `~/Documents/AI-Agent-Sync`, or the
+while only draining PRs. If Linear, `~/Documents/Igor` (or `~/Documents/AI-Agent-Sync` when that directory exists), or the
 standalone `copilot` CLI is unavailable, record that fact and continue with
 deterministic `gh`, git, and repository checks. Copilot advice is never
 authoritative.
@@ -20,7 +20,7 @@ authoritative.
 ### Fleet Coordination Contract (Mandatory, Every Agent, Every Session)
 
 Multiple agents (Claude Code, Codex, grok, Gemini, Hermes) work this repo and
-the `~/Documents/AI-Agent-Sync` Obsidian vault concurrently. Before ANY state
+the `~/Documents/Igor` Obsidian vault concurrently (`NotebookLM/` is a read mirror, not a claim store). `~/Documents/AI-Agent-Sync` is included when that directory exists. Before ANY state
 mutation — checkout switch, clean/reset, branch or worktree creation, push, PR
 open/merge, or vault write — complete the coordination sweep:
 
@@ -29,8 +29,11 @@ bash .claude/scripts/session-bootstrap/fleet-coordination-check.sh
 ```
 
 The sweep (read-only) reports: the single-writer checkout lease, active vault
-claims touching ThumbGate, vault dirty-writer signals, live herdr panes (when
-the gateway is up), Linear issues in flight, and the open-PR census. Skill:
+claims touching ThumbGate (`Agent-Jobs/running/` and `Agents/Claims/`), vault
+dirty-writer signals, live herdr panes (when the gateway is up), Linear when
+authenticated, the open-PR census, GitHub issue title collisions, GitButler
+conflicted stacks, and the TypeSafe rail (code owns the verdict; Jev does not
+coordinate the swarm). Doctor: `node scripts/swarm-coordination-doctor.js --json`. Skill:
 `.claude/skills/fleet-coordination/SKILL.md` (also wired into
 `.claude/settings.json` SessionStart so Claude Code runs it automatically).
 
@@ -39,7 +42,7 @@ Non-negotiable rules:
 1. One live session owns a checkout (`node scripts/session-lease.js claim`).
    A live foreign lease means use a separate worktree, not a force-checkout.
 2. Never `git add -A` in a shared checkout. Stage explicit paths only.
-3. Check `Agent-Jobs/running/` in the vault before claiming or editing shared
+3. Check `Agent-Jobs/running/` and `Agents/Claims/` in the vault before claiming or editing shared
    project files; treat live claims as owned until stale (>7d or dead PID).
 4. Never write to another agent's state file. Commit only your own vault file
    via PR; the vault has its own branch protection.
@@ -118,6 +121,20 @@ npm run memory:vs-rag -- --query "what did we decide?" --entity entity-id --proj
 ```
 
 Details: [`docs/agents/memory-vs-rag.md`](./docs/agents/memory-vs-rag.md).
+
+## Soft Memory thin (Hawk/Harsh) — ThumbGate owns lasting prefs
+
+Autonomous Soft Obsidian diaries are mostly worthless. **Lasting corrections** → ThumbGate
+`capture_feedback` / prevention rules / skills. Soft `Agents/Memory` = leases, one-liners,
+Waiting `- [ ]` only (≤40 lines). Never mermaid research novels in Memory.
+
+```bash
+npm run soft-memory:thin -- route --intent "I'd hate to repeat Fast ON" --json
+npm run soft-memory:thin -- check --file ~/Documents/Igor/Agents/Memory/note.md
+npm run test:soft-memory-thin
+```
+
+Skill: `skills/soft-memory-thin/SKILL.md`. Docs: [`docs/agents/soft-memory-thin.md`](./docs/agents/soft-memory-thin.md).
 
 ## Board loop (Issues + PRs)
 
@@ -387,7 +404,7 @@ Rules:
 For every explicit PR-management and system-hygiene session:
 
 1. Read `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`; query local ThumbGate memory.
-2. Reconcile GitHub Issues and Actions, standalone Copilot CLI advice, Linear AI when authenticated, and `~/Documents/AI-Agent-Sync`. Deterministic git and GitHub evidence remain authoritative.
+2. Reconcile GitHub Issues and Actions, standalone Copilot CLI advice, Linear AI when authenticated, and `~/Documents/Igor` (`~/Documents/AI-Agent-Sync` when present). Deterministic git and GitHub evidence remain authoritative.
 3. Classify every open PR and every remote branch without an open PR. Never approve a PR or bypass branch protection.
 4. Submit only terminal-green, review-complete PRs through `npm run pr:manage` and Trunk.
 5. Remove only verified-disposable branches, clean worktrees, dormant files, and logs, with before/after counts.

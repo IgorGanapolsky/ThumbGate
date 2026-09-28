@@ -18,6 +18,8 @@ const {
 } = require('./workflow-sentinel');
 const {
   evaluateFinancialControl,
+  governAgentDataPlane,
+  dataPlaneFromTool,
 } = require('./financial-control-plane');
 const {
   evaluateBrokerReceiptGate,
@@ -34,6 +36,10 @@ const {
   actionFingerprint,
   sanitizeFeedbackText,
 } = require('./feedback-sanitizer');
+const {
+  classifyGateIntent,
+  lexicalGateApplies,
+} = require('./gate-intent-route');
 
 /**
  * Computes the SHA-256 hash of an executable binary to prevent path-based bypasses.
@@ -3016,8 +3022,10 @@ function evaluateSelfProtectHardFloor(input = {}) {
   const toolInput = input.tool_input || input.toolInput || {};
   const config = loadGatesConfig(DEFAULT_CONFIG_PATH);
 
+  const selfProtectRoute = classifyGateIntent(toolName, toolInput);
   for (const gate of config.gates) {
     if (!isSelfProtectGate(gate.id)) continue;
+    if (selfProtectRoute.intent === 'read' && gate.id !== 'self-protect-kill') continue;
     const matchDetails = matchSelfProtectHardFloor(gate, toolName, toolInput);
     if (!matchDetails) continue;
 
@@ -3056,6 +3064,7 @@ function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
 }
 
 function evaluateMemoryGuard(toolName, toolInput = {}) {
+  if (classifyGateIntent(toolName, toolInput).intent === 'read') return null;
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
   if (isSafeSecretStorageWrite(toolName, toolInput, process.cwd())) {
@@ -3428,7 +3437,9 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   const METRIC_SKIP_TOOLS = ['capture_feedback', 'feedback_stats', 'recall', 'feedback_summary', 'prevention_rules'];
   const skipMetrics = METRIC_SKIP_TOOLS.includes(toolName);
 
+  const intentRoute = classifyGateIntent(toolName, toolInput);
   for (const gate of config.gates) {
+    if (!lexicalGateApplies(gate, intentRoute)) continue;
     const matchDetails = matchGate(gate, toolName, toolInput);
     if (!matchDetails.matched) continue;
 
@@ -3769,7 +3780,9 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     }
   }
 
+  const intentRoute = classifyGateIntent(toolName, toolInput);
   for (const gate of config.gates) {
+    if (!lexicalGateApplies(gate, intentRoute)) continue;
     const matchDetails = matchGate(gate, toolName, toolInput);
     if (!matchDetails.matched) continue;
 
@@ -4083,9 +4096,44 @@ function evaluateSecretGuard(input = {}) {
   return result;
 }
 
+function evaluateDataPlaneHardFloor(input = {}) {
+  const toolName = input.tool_name || input.toolName || 'unknown';
+  const rawToolInput = input.tool_input ?? input.toolInput;
+  const toolInput = rawToolInput && typeof rawToolInput === 'object' ? rawToolInput : {};
+  const record = governAgentDataPlane(dataPlaneFromTool(toolName, toolInput));
+  if (record.control !== 'deny') return null;
+  const result = {
+    decision: 'deny',
+    gate: 'data-plane-governance',
+    message: record.reasons[0] || 'Data plane governance denied this action.',
+    severity: 'critical',
+    dataPlane: record,
+    reasoning: record.reasons,
+  };
+  try {
+    recordStat('data-plane-governance', 'block', null, { toolName, toolInput });
+    const auditRecord = recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'deny',
+      gateId: 'data-plane-governance',
+      message: result.message,
+      severity: result.severity,
+      source: 'data-plane-governance',
+    });
+    auditToFeedback(auditRecord);
+  } catch (_) {
+    // The deny still stands. A stats write must not fail the hook open.
+  }
+  return result;
+}
+
 function evaluateUnconditionalHardFloor(input = {}, options = {}) {
   const secretGuard = evaluateSecretGuard(input);
   if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
+
+  const dataPlane = evaluateDataPlaneHardFloor(input);
+  if (dataPlane) return { hardFloor: dataPlane, securityScan: null };
 
   const securityScan = evaluateSecurityScan(input);
   if (securityScan && securityScan.decision === 'deny') {
@@ -4105,6 +4153,8 @@ function evaluateFinancialHardFloor(input = {}, consumeReservation = false, opti
   const toolName = input.tool_name || input.toolName || 'unknown';
   if (isRemedyToolName(toolName)) return null;
   const rawToolInput = input.tool_input ?? input.toolInput;
+  const routeInput = rawToolInput && typeof rawToolInput === 'object' ? rawToolInput : {};
+  if (classifyGateIntent(toolName, routeInput).intent === 'read') return null;
   const toolInput = rawToolInput && typeof rawToolInput === 'object'
     ? rawToolInput
     : {};

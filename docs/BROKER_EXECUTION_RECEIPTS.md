@@ -46,7 +46,7 @@ Or store keys as JSON under the project feedback dir: `broker-public-keys.json`.
 
 - **verify**: if `tool_input.brokerReceipt` is present, it must verify
 - **enforce**: high-risk provider actions require a valid receipt
-- **off**: no-op
+- **off**: receipt checks are a no-op. An order that carries two venue prints for the same symbol still freezes when the relative gap exceeds 50 bps (`maxDivergenceBps` overrides the bound). Both prints stay on the deny. ThumbGate does not fetch those prints and does not sign the receipt.
 
 Attach proof as:
 

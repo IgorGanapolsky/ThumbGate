@@ -534,3 +534,87 @@ test('retrieveWithLatencyBudget reports oversizedRejected false when corpus has 
   assert.equal(res.oversizedRejected, false);
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
+
+test('selectRetrievalMemories excludes archive_candidate and explicitly archived memories', () => {
+  const { selectRetrievalMemories } = require('../scripts/lesson-retrieval');
+  const now = Date.now();
+  const ninetyDaysAgo = new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString();
+
+  const memories = [
+    {
+      id: 'active-1',
+      title: 'Active rule',
+      content: 'Current rule for docker build',
+      tags: ['docker'],
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: 'stale-episodic',
+      type: 'episodic',
+      title: 'Old log observation',
+      content: 'Notice about formatting',
+      tags: ['docs'],
+      timestamp: ninetyDaysAgo,
+    },
+    {
+      id: 'explicit-archived',
+      title: 'Archived lesson',
+      content: 'Old obsolete process',
+      tags: ['workflow'],
+      archived: true,
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: 'sticky-invariant',
+      title: 'Git push policy',
+      content: 'Never git push --force on main',
+      tags: ['git', 'security'],
+      timestamp: ninetyDaysAgo,
+    },
+  ];
+
+  // Default: excludes archive_candidate (stale-episodic) and archived (explicit-archived)
+  const filtered = selectRetrievalMemories(memories, { now });
+  assert.equal(filtered.length, 2);
+  assert.ok(filtered.some((m) => m.id === 'active-1'));
+  assert.ok(filtered.some((m) => m.id === 'sticky-invariant'));
+  assert.ok(!filtered.some((m) => m.id === 'stale-episodic'));
+  assert.ok(!filtered.some((m) => m.id === 'explicit-archived'));
+
+  // Opt-in: includeArchiveCandidates preserves stale-episodic, but still excludes archived: true
+  const withCandidates = selectRetrievalMemories(memories, { now, includeArchiveCandidates: true });
+  assert.equal(withCandidates.length, 3);
+  assert.ok(withCandidates.some((m) => m.id === 'stale-episodic'));
+  assert.ok(!withCandidates.some((m) => m.id === 'explicit-archived'));
+});
+
+test('captureFeedback blocks autonomous session dumps via lifecycle gate', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-feedback-dump-'));
+  const origDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+
+  try {
+    const { captureFeedback } = require('../scripts/feedback-loop');
+    const res = captureFeedback({
+      signal: 'down',
+      context: 'what I learned today in this session: tried several things and dumped chat',
+      whatWentWrong: 'autonomous notes: full chat log dump',
+    });
+
+    assert.equal(res.status, 'rejected');
+    assert.ok(res.reason.includes('autonomous_session_dump') || res.reason.includes('Memory lifecycle'));
+    assert.equal(res.promoted, false);
+
+    // Verify it was NOT written into memory-log.jsonl
+    const memoryLogPath = path.join(tmpDir, 'memory-log.jsonl');
+    const memoryLogExists = fs.existsSync(memoryLogPath);
+    if (memoryLogExists) {
+      const content = fs.readFileSync(memoryLogPath, 'utf8');
+      assert.ok(!content.includes('what I learned today in this session'));
+    }
+  } finally {
+    if (origDir) process.env.THUMBGATE_FEEDBACK_DIR = origDir;
+    else delete process.env.THUMBGATE_FEEDBACK_DIR;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});

@@ -47,6 +47,7 @@ const MAX_RETRIEVAL_MEMORY_LINES = Math.max(
 
 function isRetrievableMemory(memory, options = {}) {
   if (!memory || typeof memory !== 'object') return false;
+  if (memory.archived === true || memory.pruned === true) return false;
   const { looksLikeTransportBlob } = require('./feedback-sanitizer');
   const title = String(memory.title || '');
   const content = String(memory.content || '');
@@ -70,6 +71,17 @@ function selectRetrievalMemories(memories = [], options = {}) {
     selected = selectRecordsForScope(selected, options.scope, {
       includeShared: options.includeShared !== false,
     }).allowed;
+  }
+  if (options.includeArchiveCandidates !== true) {
+    try {
+      const { scoreMemoryDecay } = require('./agent-memory-lifecycle');
+      selected = selected.filter((memory) => {
+        const decay = scoreMemoryDecay(memory, options);
+        return decay.state !== 'archive_candidate';
+      });
+    } catch {
+      // optional
+    }
   }
   return selected.filter((memory) => matchesMetadataFilters(
     memory,
@@ -668,7 +680,7 @@ function bigramJaccard(setA, setB) {
   return union === 0 ? 0 : intersection / union;
 }
 
-function scoreRelevance(memory, toolName, actionContext, actionSig) {
+function scoreRelevance(memory, toolName, actionContext, actionSig, options = {}) {
   const sig = actionSig || buildActionSignature(toolName, actionContext);
   let score = 0;
 
@@ -715,6 +727,16 @@ function scoreRelevance(memory, toolName, actionContext, actionSig) {
       const ageDays = ageMs / (1000 * 60 * 60 * 24);
       const decay = Math.max(0, 1 - ageDays / RECENCY_DECAY_DAYS);
       score *= 0.5 + 0.5 * decay;
+    }
+
+    try {
+      const { scoreMemoryDecay } = require('./agent-memory-lifecycle');
+      const decay = scoreMemoryDecay(memory, options);
+      if (decay && Number.isFinite(decay.score)) {
+        score *= decay.score;
+      }
+    } catch {
+      // optional
     }
   }
 

@@ -499,7 +499,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 546 -> 548: ci-gha-buildkite-patterns.js + skill — Buildkite FORMAT on GHA.
   // 548 -> 549 (2026-09-18): src/integrations/ideabrowser-connector.js (IdeaBrowser connector #3823).
   // 551 -> 553 (2026-09-22): llm-obs-honesty.js + skill — successor of DIRTY #3885.
-    manifest.fileCount <= 553,
+  // 553 -> 555: gate-intent-route.js + remediation-exec.js (#3693).
+  // 555 -> 556: swarm-coordination-doctor.js.
+  // 556 -> 566 (2026-09-24): daily discoveries, skills expansion, gulli blog article.
+    manifest.fileCount <= 566,
     `npm package should stay <= 553 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
@@ -735,8 +738,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.56 MB -> 8.57 MB (2026-09-20): thumbgate-board-loop.js + skill.
   // Local dry-run measured 8,568,869; CI measured 8,570,280 (ubuntu pack).
   // Bumped 8.58 MB -> 8.62 MB: llm-obs-honesty successor. Local pack 8,591,361; CI slack.
-    manifest.unpackedSize <= 8_620_000,
-    `npm package should stay <= 8.62 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.62 MB -> 8.70 MB (2026-09-24): daily discoveries, skills expansion, gulli blog article. Local pack 8,664,389.
+    manifest.unpackedSize <= 8_700_000,
+    `npm package should stay <= 8.70 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

@@ -54,6 +54,10 @@ When an agent action succeeds or fails, capture structured feedback:
 - **Thumbs up**: Records what worked, tags it, and stores it as a reusable pattern.
 - **Thumbs down**: Records the failure context, what went wrong, and what to change. Repeated failures auto-promote into prevention rules.
 
+**Soft Memory thin:** lasting corrections you’d hate to repeat belong in ThumbGate (this
+capture path), not Obsidian autonomous diaries. Soft `Agents/Memory` stays leases /
+Waiting `- [ ]` / one-liners only — see skill `soft-memory-thin`.
+
 ### Prevention Rules
 
 After a failure pattern repeats (default: 2 occurrences), ThumbGate auto-generates a prevention rule. These rules are injected into agent context before every tool call, blocking the known-bad pattern before it executes.

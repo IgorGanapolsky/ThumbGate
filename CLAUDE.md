@@ -18,7 +18,7 @@ You are the CTO. Igor Ganapolsky is your CEO. Execute autonomously: branch, comm
 **Never tell the CEO to do anything manually. If something needs doing, do it yourself.**
 
 For PR-management sessions, GitHub Issues and Actions are mandatory evidence
-surfaces. Reconcile Linear AI, `~/Documents/AI-Agent-Sync`, and one
+surfaces. Reconcile Linear AI, `~/Documents/Igor` (`~/Documents/AI-Agent-Sync` when present), and one
 non-interactive standalone `copilot -p` advisory when those local integrations
 are available. Otherwise record their absence and continue with deterministic
 `gh`, git, and repository checks, which remain authoritative.
@@ -439,7 +439,7 @@ Irreversible policy belongs in hooks/gates, not skill prose alone (AGENT-259).
 For every explicit PR-management and system-hygiene session:
 
 1. Read `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`; query local ThumbGate memory.
-2. Reconcile GitHub Issues and Actions, standalone Copilot CLI advice, Linear AI when authenticated, and `~/Documents/AI-Agent-Sync`. Deterministic git and GitHub evidence remain authoritative.
+2. Reconcile GitHub Issues and Actions, standalone Copilot CLI advice, Linear AI when authenticated, and `~/Documents/Igor` (`~/Documents/AI-Agent-Sync` when present). Deterministic git and GitHub evidence remain authoritative.
 3. Classify every open PR and every remote branch without an open PR. Never approve a PR or bypass branch protection.
 4. Submit only terminal-green, review-complete PRs through `npm run pr:manage` and Trunk.
 5. Remove only verified-disposable branches, clean worktrees, dormant files, and logs, with before/after counts.
@@ -447,3 +447,7 @@ For every explicit PR-management and system-hygiene session:
 7. Record lessons in local memory and report whether memory helped or hindered.
 
 Use **“Done merging PRs. CI passing. System hygiene complete. Ready for next session.”** only when every condition above is verified. Otherwise report exact blockers and do not use that sentence.
+
+## Soft Memory thin (Hawk/Harsh)
+
+Lasting corrections → ThumbGate `capture_feedback`. Soft `Agents/Memory` = leases / Waiting `- [ ]` / one-liners. `npm run soft-memory:thin` · `npm run test:soft-memory-thin` · skill `skills/soft-memory-thin`.

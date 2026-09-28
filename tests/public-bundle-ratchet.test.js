@@ -252,7 +252,19 @@ const path = require('node:path');
 //            FORMAT on GitHub Actions (not a Buildkite vendor).
 // 548 → 549 (2026-09-18): src/integrations/ideabrowser-connector.js (#3823).
 // 551 → 553: llm-obs-honesty.js + datadog-llm-obs-compare-not-clone skill (successor of #3885).
-const BASELINE_FILE_COUNT = 553;
+// 553 → 555: gate-intent-route.js + remediation-exec.js — Gulli gap map
+//            (#3693): route read/diagnose before lexical transaction gates,
+//            and execute each advertised remediation in CI.
+// 555 → 556: swarm-coordination-doctor.js — one census for Obsidian,
+//            Linear, GitHub issues, NotebookLM, GitButler, and TypeSafe.
+// 556 → 566 (2026-09-24): daily discoveries, skills expansion, gulli blog article.
+// 566 → 572 measured `npm pack --dry-run --json` entryCount on 2026-09-28.
+// +2 this change: scripts/infoq-architect-honesty.js and
+// .agents/skills/infoq-architect-honesty-not-clone/SKILL.md.
+// The rest of the gap is files already in this checkout's pack: one tracked
+// file over the old 566 ceiling, plus three untracked public/blog posts
+// (2026-09-25, 2026-09-26, 2026-09-27). Those posts are not this change.
+const BASELINE_FILE_COUNT = 572;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

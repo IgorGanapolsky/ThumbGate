@@ -469,3 +469,234 @@ test('THUMBGATE_SESSION_PID is recorded as the durable lease holder', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('monotonic lease epoch increments on reclamation and fencing token validates correctly', () => {
+  const dir = makeSandbox();
+  try {
+    // Claim 1
+    const firstClaim = lease.claim(dir);
+    assert.strictEqual(firstClaim.ok, true);
+    assert.strictEqual(firstClaim.lease.lease_epoch, 1);
+    assert.strictEqual(firstClaim.lease.fencing_token, `epoch-1-pid-${process.pid}`);
+
+    // Verify fencing token matches
+    const verifyValid = lease.verifyFencingToken(dir, firstClaim.lease.fencing_token);
+    assert.strictEqual(verifyValid.ok, true);
+    assert.strictEqual(verifyValid.lease.lease_epoch, 1);
+
+    // Verify stale/invalid fencing token fails
+    const verifyStale = lease.verifyFencingToken(dir, 'epoch-0-pid-9999');
+    assert.strictEqual(verifyStale.ok, false);
+    assert.strictEqual(verifyStale.code, 'STALE_LEASE_FENCED');
+
+    // Release lease
+    lease.release(dir);
+
+    // Claim 2: dead PID / new epoch simulation
+    fs.writeFileSync(
+      lease.leasePath(dir),
+      JSON.stringify({ agent: 'stale-agent', pid: 99999999, lease_epoch: 1, startedAt: new Date().toISOString() })
+    );
+
+    const secondClaim = lease.claim(dir);
+    assert.strictEqual(secondClaim.ok, true);
+    assert.strictEqual(secondClaim.lease.lease_epoch, 2);
+    assert.strictEqual(secondClaim.lease.fencing_token, `epoch-2-pid-${process.pid}`);
+
+    // Previous epoch token is now fenced
+    const verifyOlder = lease.verifyFencingToken(dir, firstClaim.lease.fencing_token);
+    assert.strictEqual(verifyOlder.ok, false);
+    assert.strictEqual(verifyOlder.code, 'STALE_LEASE_FENCED');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('auditControlPlane detects secrets and validates clean leases', () => {
+  const cleanLease = {
+    agent: 'test-agent',
+    pid: 12345,
+    lease_epoch: 3,
+    fencing_token: 'epoch-3-pid-12345',
+  };
+  const cleanAudit = lease.auditControlPlane(cleanLease);
+  assert.strictEqual(cleanAudit.ok, true);
+  assert.strictEqual(cleanAudit.clean, true);
+
+  const dirtyLease = {
+    agent: 'test-agent',
+    pid: 12345,
+    token: 'ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890',
+  };
+  const dirtyAudit = lease.auditControlPlane(dirtyLease);
+  assert.strictEqual(dirtyAudit.ok, false);
+  assert.strictEqual(dirtyAudit.clean, false);
+  assert.strictEqual(dirtyAudit.code, 'SECRET_FOUND');
+
+  const emptyAudit = lease.auditControlPlane(null);
+  assert.strictEqual(emptyAudit.ok, true);
+  assert.strictEqual(emptyAudit.clean, true);
+});
+
+test('release with executionId prevents releasing when replaced by newer execution', () => {
+  const dir = makeSandbox();
+  try {
+    fs.writeFileSync(
+      lease.leasePath(dir),
+      JSON.stringify({
+        agent: lease.agentId(),
+        pid: process.pid,
+        executionId: 'exec-new',
+        startedAt: new Date().toISOString(),
+      })
+    );
+
+    // Stale release attempt with older executionId
+    const staleRelease = lease.release(dir, { executionId: 'exec-old' });
+    assert.strictEqual(staleRelease.ok, false);
+    assert.strictEqual(staleRelease.code, 'STALE_EXECUTION');
+
+    // Matching executionId releases successfully
+    const validRelease = lease.release(dir, { executionId: 'exec-new' });
+    assert.strictEqual(validRelease.ok, true);
+    assert.strictEqual(validRelease.released, true);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('same-session claim keeps executionId and a dead holder gets a new one', () => {
+  const dir = makeSandbox();
+  const prev = process.env.THUMBGATE_SESSION_AGENT;
+  try {
+    process.env.THUMBGATE_SESSION_AGENT = 'grok-e2b-planes-test';
+    const first = lease.claim(dir);
+    assert.strictEqual(first.ok, true);
+    assert.match(first.lease.executionId, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    const second = lease.claim(dir);
+    assert.strictEqual(second.alreadyHeld, true);
+    assert.strictEqual(second.lease.executionId, first.lease.executionId);
+    assert.strictEqual(second.lease.lease_epoch, first.lease.lease_epoch);
+
+    fs.writeFileSync(
+      lease.leasePath(dir),
+      JSON.stringify({
+        agent: 'dead-other',
+        pid: 99999999,
+        executionId: first.lease.executionId,
+        lease_epoch: 4,
+        startedAt: new Date().toISOString(),
+      })
+    );
+    const reclaimed = lease.claim(dir);
+    assert.strictEqual(reclaimed.ok, true);
+    assert.notStrictEqual(reclaimed.lease.executionId, first.lease.executionId);
+    assert.strictEqual(reclaimed.lease.lease_epoch, 5);
+  } finally {
+    if (prev === undefined) {
+      delete process.env.THUMBGATE_SESSION_AGENT;
+    } else {
+      process.env.THUMBGATE_SESSION_AGENT = prev;
+    }
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('force does not delete a lease when the executionId is stale', () => {
+  const dir = makeSandbox();
+  try {
+    fs.writeFileSync(
+      lease.leasePath(dir),
+      JSON.stringify({
+        agent: 'someone-else',
+        pid: process.pid,
+        executionId: 'exec-new',
+        startedAt: new Date().toISOString(),
+      })
+    );
+    const stale = lease.release(dir, { executionId: 'exec-old', force: true });
+    assert.strictEqual(stale.ok, false);
+    assert.strictEqual(stale.code, 'STALE_EXECUTION');
+    const still = JSON.parse(fs.readFileSync(lease.leasePath(dir), 'utf8'));
+    assert.strictEqual(still.executionId, 'exec-new');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('claim refuses a secret session identity and does not store it', () => {
+  const dir = makeSandbox();
+  const prev = process.env.THUMBGATE_SESSION_AGENT;
+  const secret = 'ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+  try {
+    process.env.THUMBGATE_SESSION_AGENT = secret;
+    assert.throws(
+      () => lease.claim(dir),
+      (error) => {
+        assert.strictEqual(error.code, 'SECRET_IN_CONTROL_PLANE');
+        assert.ok(!String(error.message).includes(secret));
+        assert.ok(!String(error.message).includes('ghp_'));
+        return true;
+      }
+    );
+    const file = lease.leasePath(dir);
+    if (fs.existsSync(file)) {
+      assert.ok(!fs.readFileSync(file, 'utf8').includes('ghp_'));
+    }
+  } finally {
+    if (prev === undefined) {
+      delete process.env.THUMBGATE_SESSION_AGENT;
+    } else {
+      process.env.THUMBGATE_SESSION_AGENT = prev;
+    }
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('planes flags a shell payload and does not echo a secret', () => {
+  const secret = 'github_pat_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+  const audited = lease.auditControlPlane({
+    agent: 'holder',
+    command: 'git clean -fd; rm -rf /',
+    token: secret,
+  });
+  assert.strictEqual(audited.ok, false);
+  assert.strictEqual(audited.code, 'SECRET_FOUND');
+  const encoded = JSON.stringify(audited);
+  assert.ok(!encoded.includes(secret));
+  assert.ok(!encoded.includes('github_pat_'));
+
+  const payloadOnly = lease.auditControlPlane({
+    agent: 'holder',
+    command: 'echo hi | tee /tmp/x',
+  });
+  assert.strictEqual(payloadOnly.ok, false);
+  assert.strictEqual(payloadOnly.code, 'DATA_PLANE_PAYLOAD');
+  assert.ok(!JSON.stringify(payloadOnly).includes('echo hi'));
+});
+
+test('planes on an empty checkout exits 0', () => {
+  const dir = makeSandbox();
+  try {
+    const result = runScript(['planes'], dir);
+    assert.strictEqual(result.status, 0, result.stderr);
+    const parsed = JSON.parse(result.stdout);
+    assert.strictEqual(parsed.ok, true);
+    assert.strictEqual(parsed.clean, true);
+    assert.deepStrictEqual(parsed.findings, []);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('claim removes the checkout lock when it finishes', () => {
+  const dir = makeSandbox();
+  try {
+    const result = lease.claim(dir);
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(fs.existsSync(`${lease.leasePath(dir)}.lock`), false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+

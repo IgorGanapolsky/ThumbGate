@@ -313,3 +313,89 @@ test('gates-engine blocks invalid broker receipt when evaluateGates runs', () =>
     delete process.env.THUMBGATE_BROKER_PUBLIC_KEY;
   }
 });
+
+test('venue prints inside the 50 bps bound do not freeze the order', () => {
+  const result = evaluateBrokerReceiptGate('place_order', {
+    order: { symbol: 'SPY', side: 'buy' },
+    venue_prints: [
+      { venue: 'cboe', symbol: 'SPY', price: 250 },
+      { venue: 'arca', symbol: 'SPY', price: 251 },
+    ],
+  }, { mode: 'off' });
+  assert.equal(result, null);
+});
+
+test('venue prints exactly at 50 bps do not freeze the order', () => {
+  const result = evaluateBrokerReceiptGate('Bash', {
+    command: 'place order buy limit',
+    venuePrints: [
+      { venue: 'cboe', symbol: 'SPY', price: 200 },
+      { venue: 'arca', symbol: 'SPY', price: 201 },
+    ],
+  }, { mode: 'off' });
+  assert.equal(result, null);
+});
+
+test('divergent venue prints freeze the order and keep both prices', () => {
+  const result = evaluateBrokerReceiptGate('Bash', {
+    command: 'execute order sell limit',
+    venuePrints: [
+      { venue: 'cboe', symbol: 'SPY', price: 100 },
+      { venue: 'nasdaq', symbol: 'SPY', price: 101 },
+    ],
+  }, { mode: 'verify' });
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'broker-execution-receipt');
+  assert.ok(result.reasons.includes('venue_disagreement'));
+  assert.equal(result.symbol, 'SPY');
+  assert.equal(result.venuePrints.length, 2);
+  assert.deepEqual(
+    result.venuePrints.map((print) => ({ venue: print.venue, price: print.price })),
+    [
+      { venue: 'cboe', price: 100 },
+      { venue: 'nasdaq', price: 101 },
+    ],
+  );
+});
+
+test('venue disagreement still freezes when broker receipts are off', () => {
+  const result = evaluateBrokerReceiptGate('limit_order', {
+    limit_order: { symbol: 'SPY' },
+    venuePrints: [
+      { venue: 'cboe', symbol: 'spy', price: 100 },
+      { venue: 'nasdaq', symbol: 'SPY', price: 101 },
+    ],
+  }, { mode: 'off' });
+  assert.equal(result.decision, 'deny');
+  assert.ok(result.reasons.includes('venue_disagreement'));
+});
+
+test('one venue print does not freeze an order', () => {
+  const result = evaluateBrokerReceiptGate('Bash', {
+    command: 'execute order sell',
+    venuePrints: [{ venue: 'cboe', symbol: 'SPY', price: 100 }],
+  }, { mode: 'off' });
+  assert.equal(result, null);
+});
+
+test('divergent prints on a non-order do not freeze', () => {
+  const result = evaluateBrokerReceiptGate('Bash', {
+    command: 'echo hello',
+    venuePrints: [
+      { venue: 'cboe', symbol: 'SPY', price: 100 },
+      { venue: 'nasdaq', symbol: 'SPY', price: 101 },
+    ],
+  }, { mode: 'off' });
+  assert.equal(result, null);
+});
+
+test('prints for different symbols are not compared', () => {
+  const result = evaluateBrokerReceiptGate('Bash', {
+    command: 'buy limit order',
+    venuePrints: [
+      { venue: 'cboe', symbol: 'SPY', price: 100 },
+      { venue: 'nasdaq', symbol: 'QQQ', price: 400 },
+    ],
+  }, { mode: 'off' });
+  assert.equal(result, null);
+});

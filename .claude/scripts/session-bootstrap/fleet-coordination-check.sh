@@ -13,7 +13,17 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-VAULT="${AI_AGENT_SYNC_VAULT:-$HOME/Documents/AI-Agent-Sync}"
+# Live Obsidian vault on this machine is ~/Documents/Igor. AI-Agent-Sync is
+# checked only when that directory exists. THUMBGATE_VAULT overrides both.
+if [ -n "${THUMBGATE_VAULT:-}" ] && [ -d "$THUMBGATE_VAULT" ]; then
+  VAULT="$THUMBGATE_VAULT"
+elif [ -d "$HOME/Documents/Igor" ]; then
+  VAULT="$HOME/Documents/Igor"
+elif [ -d "${AI_AGENT_SYNC_VAULT:-$HOME/Documents/AI-Agent-Sync}" ]; then
+  VAULT="${AI_AGENT_SYNC_VAULT:-$HOME/Documents/AI-Agent-Sync}"
+else
+  VAULT="${THUMBGATE_VAULT:-$HOME/Documents/Igor}"
+fi
 
 # Fail closed: shared hostname-unknown identity would skip foreign leases.
 if [ -z "${THUMBGATE_SESSION_AGENT:-}" ]; then
@@ -45,7 +55,7 @@ else
 fi
 
 # 2) Vault running claims touching this repo -------------------------------
-echo "--- Vault claims (AI-Agent-Sync) ---"
+echo "--- Vault claims ($VAULT) ---"
 if [ -d "$VAULT/Agent-Jobs/running" ]; then
   CLAIMS="$(grep -rilE 'ThumbGate|thumbgate' "$VAULT/Agent-Jobs/running" 2>/dev/null | grep -v '.thumbgate' || true)"
   LIVE_CLAIM=0
@@ -75,6 +85,32 @@ if [ -d "$VAULT/Agent-Jobs/running" ]; then
   fi
 else
   echo "  vault Agent-Jobs/running missing (VAULT=$VAULT)"
+fi
+if [ -d "$VAULT/Agents/Claims" ]; then
+  echo "--- Vault claims (Agents/Claims, ThumbGate) ---"
+  CLAIM_FILES="$(grep -liE 'thumbgate' "$VAULT/Agents/Claims"/*.md 2>/dev/null || true)"
+  if [ -z "$CLAIM_FILES" ]; then
+    echo "  none"
+  else
+    while read -r f; do
+      [ -z "$f" ] && continue
+      STATUS="$(grep -m1 -E '^status:' "$f" 2>/dev/null | awk '{print tolower($2)}')"
+      OWNER="$(grep -m1 -E '^(agent_session|owner|agent):' "$f" 2>/dev/null | head -1 | sed 's/^[^:]*:[[:space:]]*//')"
+      if [ "$STATUS" = "done" ] || [ "$STATUS" = "released" ] || [ "$STATUS" = "closed" ]; then
+        echo "  claim(done): $(basename "$f") owner=${OWNER:-unknown}"
+        continue
+      fi
+      if [ -n "$(find "$f" -mtime +7 2>/dev/null)" ]; then
+        echo "  claim(stale): $(basename "$f") — ignore for HARD block"
+        continue
+      fi
+      echo "  claim(live): $(basename "$f") owner=${OWNER:-unknown}"
+      if [ -n "$OWNER" ] && [ "$OWNER" != "$SESSION_AGENT" ] && [ "$OWNER" != "grok" ]; then
+        echo "BLOCKER: live ThumbGate vault claim covers this repo. Hand off or wait; do not dual-edit."
+        exit 2
+      fi
+    done <<< "$CLAIM_FILES"
+  fi
 fi
 
 # 3) Vault dirty state (who is mid-flight) ---------------------------------
@@ -147,6 +183,15 @@ if command -v gh >/dev/null 2>&1; then
   else
     echo "  gh pr list failed (auth or network)"
   fi
+fi
+
+echo "--- Swarm coordination doctor ---"
+DOCTOR_OUT="$(cd "$REPO_ROOT" && THUMBGATE_SESSION_AGENT="$SESSION_AGENT" node scripts/swarm-coordination-doctor.js --session="$SESSION_AGENT" 2>&1)"
+DOCTOR_RC=$?
+echo "$DOCTOR_OUT"
+if [ "$DOCTOR_RC" -eq 2 ]; then
+  echo "BLOCKER: swarm coordination doctor reported a collision."
+  exit 2
 fi
 
 echo "=== Coordination sweep complete ==="

@@ -2730,6 +2730,15 @@ async function typesafeTypedQuestionsDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function swarmCoordinationDoctor() {
+  const { spawnSync } = require('child_process');
+  const result = spawnSync(process.execPath, [
+    path.join(PKG_ROOT, 'scripts', 'swarm-coordination-doctor.js'),
+    ...process.argv.slice(3),
+  ], { stdio: 'inherit', cwd: PKG_ROOT, env: process.env });
+  process.exitCode = result.status == null ? 1 : result.status;
+}
+
 function ciGhaBuildkitePatternsDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3027,6 +3036,17 @@ function backgroundGovernance() {
       runType: args['run-type'] || args.type || 'pr',
       branch: args.branch,
       filesChanged: Number(args['files-changed'] || 0),
+      toolName: args['tool-name'] || (args.command ? 'Bash' : ''),
+      command: args.command || '',
+      unattended: args.unattended,
+      enabled: args.enabled,
+      automaticReview: args['automatic-review'],
+      operatorGrant: args['operator-grant'],
+      wake: args.wake || null,
+      grantIdentity: args['grant-identity'] || null,
+      actorId: args['actor-id'] || null,
+      durableNote: args['durable-note'] || null,
+      rawCapture: args['raw-capture'] ? 'present' : null,
     }, feedbackDir);
 
     if (args.json) {
@@ -3496,6 +3516,30 @@ function artifacts() {
 
 function gateStats() {
   const args = parseArgs(process.argv.slice(3));
+  if (args.rank) {
+    const fs = require('fs');
+    const os = require('os');
+    const { rankHarnessIncidents } = require(path.join(PKG_ROOT, 'scripts', 'hook-runtime'));
+    const home = path.join(os.homedir(), '.thumbgate');
+    let stats = {};
+    let audit = [];
+    try {
+      stats = JSON.parse(fs.readFileSync(path.join(home, 'gate-stats.json'), 'utf8'));
+    } catch {
+      stats = {};
+    }
+    try {
+      audit = fs.readFileSync(path.join(home, 'audit-trail.jsonl'), 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
+    } catch {
+      audit = [];
+    }
+    const report = rankHarnessIncidents({ stats, audit });
+    console.log(JSON.stringify(report, null, 2));
+    process.exit(report.ok ? 0 : 1);
+  }
   const { calculateStats, formatStats } = require(path.join(PKG_ROOT, 'scripts', 'gate-stats'));
   const stats = calculateStats();
   if (args.json) {
@@ -3753,6 +3797,7 @@ function help() {
   console.log('  cobble-hot-store-split Split durable/delivery/hot lesson planes (CobbleDB FORMAT)');
   console.log('  token-shunt-honesty   Intercept untargeted bulk reads (Portal FORMAT; not shunt@portal)');
   console.log('  typesafe-typed-questions Typed noul/choice/score + code-owned route (TypeSafe FORMAT; not Jev)');
+  console.log('  swarm-coordination    Vault, Linear, GitHub issues, NotebookLM, GitButler, TypeSafe census');
   console.log('  ci-gha-buildkite-patterns First-fail + PR fail-fast on GitHub Actions (Buildkite FORMAT; not Buildkite)');
   console.log('  deeppattern-discipline-honesty Layer-check + evidence-closeout (DeepPattern FORMAT; not AQG/DE)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
@@ -3818,6 +3863,7 @@ function help() {
   console.log('  npx thumbgate lessons "force push" --json');
   console.log('  npx thumbgate lessons --query="deploy" --remote');
   console.log('  npx thumbgate gate-stats --json');
+  console.log('  npx thumbgate gate-stats --rank');
   console.log('  npx thumbgate capture --feedback=down --context="agent broke deploy" --json');
   proNudge();
 }
@@ -3851,6 +3897,7 @@ const SUBCOMMAND_HELP = {
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
+  'swarm-coordination': 'Usage: npx thumbgate swarm-coordination [--json] [--strict] [--session=id]\n\nCensus Obsidian, Linear, GitHub issues, NotebookLM, GitButler, and the TypeSafe rail. Exit 2 on a live collision. Jev does not own coordination.',
   'ci-gha-buildkite-patterns': 'Usage: npx thumbgate ci-gha-buildkite-patterns [--jobs-json=path] [--workflow=path] [--json] [--map-only]\n\nBuildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations. Does not add Buildkite.',
   'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',
   'board-loop': 'Usage: npx thumbgate board-loop [--apply] [--json] [--max-update-branch=1] [--max-pr-manage=1] [--max-comments=4] [--skip-pr=N]\n\nClassify Issues+PR wall: update-branch BEHIND green Dependabot, pr:manage READY, comment DIRTY/ECI. Never approve.',
@@ -4484,6 +4531,11 @@ switch (COMMAND) {
   case 'token-shunt':
   case 'shunt-honesty':
     tokenShuntHonesty();
+    break;
+  case 'swarm-coordination':
+  case 'swarm-coordination-doctor':
+  case 'coordination-doctor':
+    swarmCoordinationDoctor();
     break;
   case 'typesafe-typed-questions':
   case 'typesafe-hook':

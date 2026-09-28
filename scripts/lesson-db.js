@@ -452,14 +452,32 @@ function searchLessons(db, query, options = {}) {
  * @param {number} [limit=3]
  * @returns {string[]} Top corrective actions
  */
-function inferCorrectiveActions(db, feedbackEvent, limit = 3) {
-  const tags = Array.isArray(feedbackEvent.tags) ? feedbackEvent.tags : [];
-  const domain = feedbackEvent.richContext?.domain || 'general';
+// Tags that say nothing about what went wrong. Matching on them pairs unrelated
+// failures (e.g. every negative event shares 'feedback' + 'negative').
+const NON_DISCRIMINATING_TAGS = new Set([
+  'feedback', 'negative', 'positive', 'thumbs-down', 'thumbs-up',
+  'entity:customer', 'entity:revenue', 'entity:funnel', 'metric:roi',
+]);
 
-  // Strategy: find past negative lessons with overlapping tags, ranked by recency
+function discriminatingTags(tags) {
+  return (Array.isArray(tags) ? tags : [])
+    .filter((t) => typeof t === 'string' && t && !NON_DISCRIMINATING_TAGS.has(t.toLowerCase()));
+}
+
+function inferCorrectiveActions(db, feedbackEvent, limit = 3) {
+  const tags = discriminatingTags(feedbackEvent.tags);
+  const domain = feedbackEvent.richContext?.domain || 'general';
+  // The event being captured is upserted before this runs; never echo it back as a "past" fix.
+  const selfIds = [feedbackEvent.id, feedbackEvent.memoryId].filter(Boolean);
+  const selfAction = String(feedbackEvent.whatToChange || '').trim();
+  const selfClause = selfIds.length
+    ? `AND l.id NOT IN (${selfIds.map(() => '?').join(',')}) AND (l.sourceFeedbackId IS NULL OR l.sourceFeedbackId NOT IN (${selfIds.map(() => '?').join(',')}))`
+    : '';
+  const selfParams = selfIds.length ? [...selfIds, ...selfIds] : [];
+
   let candidates = [];
 
-  // 1. Tag overlap search — find lessons sharing tags with this failure
+  // 1. Tag overlap search — past lessons sharing a discriminating tag with this failure.
   if (tags.length > 0) {
     const tagPlaceholders = tags.map(() => `l.tags LIKE ?`).join(' OR ');
     const tagParams = tags.map((t) => `%"${t}"%`);
@@ -471,15 +489,17 @@ function inferCorrectiveActions(db, feedbackEvent, limit = 3) {
         AND l.whatToChange IS NOT NULL
         AND l.whatToChange != ''
         AND (${tagPlaceholders})
+        ${selfClause}
       ORDER BY l.timestamp DESC
       LIMIT 20
     `;
 
-    candidates = db.prepare(sql).all(...tagParams);
+    candidates = db.prepare(sql).all(...tagParams, ...selfParams);
   }
 
-  // 2. Domain fallback if no tag matches
-  if (candidates.length === 0) {
+  // 2. Domain fallback only for a specific domain. 'general' is the catch-all, so
+  //    falling back to it returns arbitrary unrelated lessons.
+  if (candidates.length === 0 && domain !== 'general') {
     const sql = `
       SELECT whatToChange, tags, timestamp
       FROM lessons l
@@ -487,11 +507,12 @@ function inferCorrectiveActions(db, feedbackEvent, limit = 3) {
         AND l.whatToChange IS NOT NULL
         AND l.whatToChange != ''
         AND l.domain = ?
+        ${selfClause}
       ORDER BY l.timestamp DESC
       LIMIT 10
     `;
 
-    candidates = db.prepare(sql).all(domain);
+    candidates = db.prepare(sql).all(domain, ...selfParams);
   }
 
   if (candidates.length === 0) return [];
@@ -500,6 +521,7 @@ function inferCorrectiveActions(db, feedbackEvent, limit = 3) {
   const actionMap = new Map();
   for (const c of candidates) {
     const action = c.whatToChange.trim();
+    if (selfAction && action === selfAction) continue;
     if (actionMap.has(action)) {
       actionMap.get(action).count += 1;
     } else {

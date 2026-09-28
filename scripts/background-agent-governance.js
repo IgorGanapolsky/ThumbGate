@@ -55,14 +55,164 @@ function recordAgentRun({ agentId, runType, source, branch, prNumber, status, ga
 }
 
 // ---------------------------------------------------------------------------
-// 2. Governance Gate — pre-run check
+// 2. Unattended wake — DevDay 2026 FORMAT on this rail
+// ---------------------------------------------------------------------------
+
+const INBOUND_WAKE_KINDS = new Set([
+  'mention', 'at-mention', 'email', 'slack', 'teams', 'board', 'mcp-event', 'inbound', 'dm',
+]);
+
+const MUTATING_TOOLS = new Set([
+  'write', 'edit', 'multiedit', 'notebookedit', 'delete', 'strreplace', 'applypatch',
+]);
+
+const READ_TOOLS = new Set(['read', 'grep', 'glob', 'ls', 'webfetch', 'websearch', 'list']);
+
+function truthy(value) {
+  if (value === true) return true;
+  if (value == null || value === false) return false;
+  const text = String(value).trim().toLowerCase();
+  return text === '1' || text === 'true' || text === 'yes' || text === 'on';
+}
+
+function cleanId(value) {
+  if (value == null) return '';
+  return String(value).trim();
+}
+
+function wakeKind(wake) {
+  if (!wake) return '';
+  if (typeof wake === 'string') return wake.trim().toLowerCase();
+  if (typeof wake === 'object') {
+    return String(wake.kind || wake.type || wake.channel || '').trim().toLowerCase();
+  }
+  return '';
+}
+
+function hasRawCapture(value) {
+  if (value == null || value === false) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (typeof value === 'object') return true;
+  return Boolean(value);
+}
+
+function isLandingCommand(command) {
+  const text = String(command || '');
+  if (/\bgh\s+pr\s+merge\b/i.test(text)) return true;
+  if (/\bgh\s+pr\s+review\b[\s\S]*--approve\b/i.test(text)) return true;
+  if (/\bgh\s+api\b[\s\S]*\bmerges\b/i.test(text)) return true;
+  if (/(^|\s)\/trunk\s+merge\b/.test(text)) return true;
+  return false;
+}
+
+function hasWriteRedirect(command) {
+  return /(?:^|[^<>=])>(?!&)/.test(String(command || ''));
+}
+
+function isReadOnlyCommand(command) {
+  const text = String(command || '').trim();
+  if (!text) return true;
+  if (hasWriteRedirect(text)) return false;
+  const parts = text.split(/\s*(?:&&|\|\||;|\|)\s*/);
+  return parts.every((part) => {
+    const piece = part.trim();
+    if (!piece) return true;
+    return /^(?:git\s+(?:status|log|diff|show|rev-parse|branch)(?:\s|$)|gh\s+pr\s+(?:view|list|checks|diff)(?:\s|$)|gh\s+run\s+(?:list|view)(?:\s|$)|ls(?:\s|$)|pwd(?:\s|$)|cat(?:\s|$)|head(?:\s|$)|tail(?:\s|$)|rg(?:\s|$)|echo(?:\s|$)|node\s+--test(?:\s|$)|true(?:\s|$)|false(?:\s|$))/i.test(piece);
+  });
+}
+
+function isMutating(toolName, command) {
+  const name = String(toolName || '').trim().toLowerCase();
+  if (MUTATING_TOOLS.has(name)) return true;
+  if (READ_TOOLS.has(name)) return false;
+  if (isLandingCommand(command) || hasWriteRedirect(command)) return true;
+  if (name === 'bash' || name === 'shell' || command) {
+    return !isReadOnlyCommand(command);
+  }
+  return false;
+}
+
+function denyUnattended(code, message) {
+  return {
+    decision: 'deny',
+    gate: 'unattended-wake',
+    code,
+    message,
+    reasons: [code],
+  };
+}
+
+/**
+ * Always-on work stays off until an admin enables it.
+ * An inbound mention, email, or board event is data, not a tool grant.
+ * An automatic review cannot approve or merge.
+ * A permission does not transfer to another identity.
+ * A raw capture is refused once a durable note exists.
+ * Returns null when this gate does not apply. Never copies wake text or raw bytes into the result.
+ */
+function evaluateUnattendedWake(request = {}) {
+  const toolName = request.toolName || request.tool_name || '';
+  const command = request.command || '';
+  const unattended = truthy(request.unattended);
+  const enabled = truthy(request.enabled) || truthy(request.adminEnabled) || truthy(request.unattendedEnabled);
+  const automaticReview = truthy(request.automaticReview);
+  const operatorGrant = truthy(request.operatorGrant);
+  const inbound = INBOUND_WAKE_KINDS.has(wakeKind(request.wake || request.trigger));
+  const grantIdentity = cleanId(request.grantIdentity || request.permissionOwner);
+  const actorId = cleanId(request.actorId || request.agentId);
+  const durableNote = request.durableNote != null && String(request.durableNote).trim().length > 0;
+  const raw = hasRawCapture(request.rawCapture) || hasRawCapture(request.rawAudio) || hasRawCapture(request.rawTranscript);
+
+  if (durableNote && raw) {
+    return denyUnattended('RAW_CAPTURE_RETAINED', 'Drop the raw capture. The durable note is the record.');
+  }
+  if (grantIdentity && actorId && grantIdentity !== actorId) {
+    return denyUnattended('GRANT_NOT_INHERITED', 'A permission belongs to one identity. It does not transfer.');
+  }
+  if ((unattended || automaticReview) && isLandingCommand(command)) {
+    return denyUnattended('AUTOMATIC_REVIEW_CANNOT_LAND', 'An automatic review can summarize a diff. It cannot approve or merge.');
+  }
+  const mutating = isMutating(toolName, command);
+  if (inbound && mutating && !operatorGrant) {
+    return denyUnattended('MENTION_IS_NOT_A_GRANT', 'An inbound mention or event is data. It does not grant a tool.');
+  }
+  if (unattended && !enabled && mutating) {
+    return denyUnattended('UNATTENDED_DEFAULT_OFF', 'Unattended work stays off until an admin enables it.');
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// 3. Governance Gate — pre-run check
 // ---------------------------------------------------------------------------
 
 /**
  * Check if a background agent run should proceed based on governance rules.
  * Returns { allowed, blockers, warnings, governanceScore }.
  */
-function checkRunGovernance({ agentId, runType, branch, filesChanged } = {}, feedbackDir) {
+function checkRunGovernance({
+  agentId,
+  runType,
+  branch,
+  filesChanged,
+  toolName,
+  command,
+  unattended,
+  enabled,
+  adminEnabled,
+  unattendedEnabled,
+  automaticReview,
+  operatorGrant,
+  wake,
+  trigger,
+  grantIdentity,
+  permissionOwner,
+  actorId,
+  durableNote,
+  rawCapture,
+  rawAudio,
+  rawTranscript,
+} = {}, feedbackDir) {
   const runs = readJsonl(getRunsPath(feedbackDir));
   const blockers = [];
   const warnings = [];
@@ -88,6 +238,25 @@ function checkRunGovernance({ agentId, runType, branch, filesChanged } = {}, fee
   // Rule 4: Warn if too many files changed (large blast radius)
   if (filesChanged > 20) {
     warnings.push({ rule: 'large_blast_radius', message: `${filesChanged} files changed — consider splitting into smaller PRs`, severity: 'warning' });
+  }
+
+  const wakeVerdict = evaluateUnattendedWake({
+    toolName,
+    command,
+    unattended,
+    enabled: enabled || adminEnabled || unattendedEnabled,
+    automaticReview,
+    operatorGrant,
+    wake: wake || trigger,
+    grantIdentity: grantIdentity || permissionOwner,
+    actorId: actorId || (grantIdentity || permissionOwner ? agentId : ''),
+    durableNote,
+    rawCapture,
+    rawAudio,
+    rawTranscript,
+  });
+  if (wakeVerdict) {
+    blockers.push({ rule: wakeVerdict.code, message: wakeVerdict.message, severity: 'critical' });
   }
 
   const governanceScore = Math.max(0, 100 - blockers.length * 40 - warnings.length * 10);
@@ -224,6 +393,6 @@ function formatGovernanceReport(report) {
 }
 
 module.exports = {
-  recordAgentRun, checkRunGovernance, auditCompletedRun,
+  recordAgentRun, checkRunGovernance, evaluateUnattendedWake, auditCompletedRun,
   generateGovernanceReport, formatGovernanceReport, getRunsPath,
 };

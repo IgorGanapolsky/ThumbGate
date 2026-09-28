@@ -96,6 +96,7 @@ node_modules
 docs/marketing/reddit-posts/
 docs/marketing/hn-posts/
 docs/marketing/discord-posts/
+docs/marketing/daily-discoveries/
 .github/workflows/ralph-*.yml
 .github/workflows/social-engagement-hourly.yml
 .github/workflows/social-engagement-*.yml

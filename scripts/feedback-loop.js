@@ -1224,24 +1224,18 @@ function extractAndSetConstraints(context) {
   }
 }
 
-function inferSemanticTags(context = '') {
-  const lower = context.toLowerCase();
-  const tags = new Set();
-  
-  if (lower.includes('revenue') || lower.includes('paid') || lower.includes('dollar') || lower.includes('cent') || lower.includes('price')) {
-    tags.add('entity:Revenue');
-  }
-  if (lower.includes('customer') || lower.includes('user') || lower.includes('pro') || lower.includes('tier')) {
-    tags.add('entity:Customer');
-  }
-  if (lower.includes('funnel') || lower.includes('conversion') || lower.includes('visitor') || lower.includes('checkout') || lower.includes('lead')) {
-    tags.add('entity:Funnel');
-  }
-  if (lower.includes('roi') || lower.includes('campaign') || lower.includes('attribution')) {
-    tags.add('metric:ROI');
-  }
+// Whole-word matches only. Substrings mislabeled ordinary text: "user", "prompt"
+// ("pro") -> entity:Customer, "recent"/"percent" ("cent") -> entity:Revenue.
+const SEMANTIC_TAG_PATTERNS = [
+  ['entity:Revenue', /\b(revenue|paid|payments?|dollars?|cents|pric(e|es|ing)|mrr|arr)\b/],
+  ['entity:Customer', /\b(customers?|subscribers?|paying users?|pro (tier|plan|users?)|tiers?)\b/],
+  ['entity:Funnel', /\b(funnel|conversions?|visitors?|checkout|leads)\b/],
+  ['metric:ROI', /\b(roi|campaigns?|attribution)\b/],
+];
 
-  return Array.from(tags);
+function inferSemanticTags(context = '') {
+  const lower = String(context || '').toLowerCase();
+  return SEMANTIC_TAG_PATTERNS.filter(([, re]) => re.test(lower)).map(([tag]) => tag);
 }
 
 function inferLessonFromConversation(conversationWindow, signal) {
@@ -1572,6 +1566,7 @@ function captureFeedback(params) {
       const hardIssues = (lifecycle.issues || []).filter((issue) =>
         issue === 'transport_transcript'
         || issue === 'oversized_blob'
+        || issue === 'autonomous_session_dump'
       );
       if (hardIssues.length > 0) {
         summary.rejected += 1;
@@ -1782,7 +1777,11 @@ function captureFeedback(params) {
       const { upsertLesson, inferCorrectiveActions } = require('./lesson-db');
       upsertLesson(lessonDB, feedbackEvent, memoryRecord);
       if (feedbackEvent.signal === 'negative') {
-        correctiveActions = inferCorrectiveActions(lessonDB, feedbackEvent, 3);
+        correctiveActions = inferCorrectiveActions(
+          lessonDB,
+          { ...feedbackEvent, memoryId: memoryRecord?.id },
+          3,
+        );
       }
     }
   } catch (_err) {
@@ -2164,8 +2163,16 @@ function addTrendRecs(metrics, output) {
   });
 }
 
-function addRiskBuckets(buckets, kind, output) {
-  for (const bucket of buckets.slice(0, 2)) {
+// A bucket is only worth an alert with enough samples AND a risk rate above the
+// overall base rate. With 3 events that are all high-risk, "100%" is just the
+// base rate repeated per tag, not a finding.
+const MIN_RISK_BUCKET_SAMPLES = 10;
+
+function addRiskBuckets(buckets, kind, output, baseRate) {
+  const base = Number.isFinite(baseRate) ? baseRate : 0;
+  const meaningful = (buckets || []).filter((bucket) =>
+    bucket.total >= MIN_RISK_BUCKET_SAMPLES && (bucket.riskRate || 0) > base);
+  for (const bucket of meaningful.slice(0, 2)) {
     addRec(output, `CHECK high-risk ${kind} '${bucket.key}' (${bucket.highRisk}/${bucket.total} high-risk)`, {
       type: `high-risk-${kind}`,
       target: bucket.key,
@@ -2182,8 +2189,8 @@ function addRiskRecs(feedbackDir, output) {
     if (!riskScorer) return null;
     const boostedRisk = riskScorer.getRiskSummary(feedbackDir);
     if (!boostedRisk) return null;
-    addRiskBuckets(boostedRisk.highRiskDomains, 'domain', output);
-    addRiskBuckets(boostedRisk.highRiskTags, 'tag', output);
+    addRiskBuckets(boostedRisk.highRiskDomains, 'domain', output, boostedRisk.baseRate);
+    addRiskBuckets(boostedRisk.highRiskTags, 'tag', output, boostedRisk.baseRate);
     return boostedRisk;
   } catch {
     return null;
@@ -2796,6 +2803,8 @@ function buildCorrectiveActionsReminder(correctiveActions = []) {
 
 module.exports = {
   captureFeedback: captureFeedbackIdempotent,
+  inferSemanticTags,
+  addRiskBuckets,
   emitAnonymousFeedbackPing,
   buildFeedbackSourceIdentity,
   compactMemories,
