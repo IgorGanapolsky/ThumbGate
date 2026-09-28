@@ -124,11 +124,21 @@ function countToolActions(sessionEntries) {
   const runCounts = new Map();
   for (const entry of sessionEntries) {
     const tool = entry.toolName || entry.tool_name || 'unknown';
-    const action = normalizeActionString(extractActionString(entry));
-    if (!action || action.length < 3) continue;
+    const rawAction = extractActionString(entry).trim();
+    if (!rawAction || rawAction.length < 3) continue;
 
-    const key = `${tool}::${action}`;
-    runCounts.set(key, (runCounts.get(key) || 0) + 1);
+    const normAction = rawAction.replace(/\s+/g, ' ');
+    const lookupKey = JSON.stringify({ tool, action: normAction.toLowerCase() });
+    const existing = runCounts.get(lookupKey);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      runCounts.set(lookupKey, {
+        tool,
+        action: normAction,
+        count: 1,
+      });
+    }
   }
   return runCounts;
 }
@@ -144,17 +154,16 @@ function detectRedundantToolCalls(entries) {
   for (const [sessionId, sessionEntries] of sessionBuckets.entries()) {
     const runCounts = countToolActions(sessionEntries);
 
-    for (const [key, count] of runCounts.entries()) {
-      if (count >= 3) {
-        const [tool, action] = key.split('::');
+    for (const record of runCounts.values()) {
+      if (record.count >= 3) {
         findings.push({
           type: 'redundant_tool_calls',
           sessionId,
-          tool,
-          action,
-          occurrences: count,
-          severity: count >= 5 ? 'high' : 'medium',
-          summary: `Tool "${tool}" called ${count} times with identical action: "${action.slice(0, 80)}"`,
+          tool: record.tool,
+          action: record.action,
+          occurrences: record.count,
+          severity: record.count >= 5 ? 'high' : 'medium',
+          summary: `Tool "${record.tool}" called ${record.count} times with identical action: "${record.action.slice(0, 80)}"`,
         });
       }
     }
@@ -186,18 +195,18 @@ function detectRetryStalls(entries) {
     if (prevFailed) {
       const prevTool = prevEntry.toolName || prevEntry.tool_name || '';
       const currTool = entry.toolName || entry.tool_name || '';
-      const prevAction = normalizeActionString(extractActionString(prevEntry));
-      const currAction = normalizeActionString(extractActionString(entry));
+      const rawPrevAction = extractActionString(prevEntry).trim().replace(/\s+/g, ' ');
+      const rawCurrAction = extractActionString(entry).trim().replace(/\s+/g, ' ');
 
-      if (prevTool === currTool && prevAction && prevAction === currAction) {
+      if (prevTool === currTool && rawPrevAction && rawPrevAction.toLowerCase() === rawCurrAction.toLowerCase()) {
         findings.push({
           type: 'retry_stall',
           sessionId: entry.sessionId || entry.session_id || 'default',
           tool: currTool,
-          action: currAction,
+          action: rawCurrAction,
           occurrences: 2,
           severity: 'high',
-          summary: `Immediate duplicate retry of failed tool "${currTool}": "${currAction.slice(0, 80)}"`,
+          summary: `Immediate duplicate retry of failed tool "${currTool}": "${rawCurrAction.slice(0, 80)}"`,
         });
       }
     }
@@ -315,12 +324,14 @@ function rankFailureModes(findings) {
 
 function buildGatePattern(type, actionText, cleanToken) {
   if (type === 'redundant_tool_calls' || type === 'retry_stall' || type === 'unhandled_denies') {
-    const escaped = actionText.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`).slice(0, 60);
+    const truncated = (actionText || '').slice(0, 60);
+    const escaped = truncated.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
     return escaped.length > 0 ? `^${escaped}` : '.*';
   }
   if (type === 'expensive_span') {
     if (actionText && actionText !== 'expensive_span' && actionText !== 'repeated_action') {
-      const escaped = actionText.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`).slice(0, 60);
+      const truncated = actionText.slice(0, 60);
+      const escaped = truncated.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
       return escaped.length > 0 ? `^${escaped}` : String.raw`cat\s+.*|head\s+-[0-9]{4,}|tail\s+-[0-9]{4,}`;
     }
     return String.raw`cat\s+.*|head\s+-[0-9]{4,}|tail\s+-[0-9]{4,}`;

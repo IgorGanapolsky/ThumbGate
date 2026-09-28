@@ -278,3 +278,44 @@ test('buildHaloTraceOptimizerReport integrates trace file and apply options', ()
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
+
+test('detectRedundantToolCalls preserves full action containing :: delimiter and casing', () => {
+  const entries = [
+    { sessionId: 's1', toolName: 'Bash', toolInput: { command: 'git::log --oneline' } },
+    { sessionId: 's1', toolName: 'Bash', toolInput: { command: 'git::log --oneline' } },
+    { sessionId: 's1', toolName: 'Bash', toolInput: { command: 'git::log --oneline' } },
+  ];
+  const findings = detectRedundantToolCalls(entries);
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].tool, 'Bash');
+  assert.equal(findings[0].action, 'git::log --oneline');
+});
+
+test('detectRetryStalls preserves original action casing for live gate checks', () => {
+  const entries = [
+    { sessionId: 's1', toolName: 'Bash', command: 'git Push Origin Main', exitCode: 1 },
+    { sessionId: 's1', toolName: 'Bash', command: 'git push origin main', exitCode: 0 },
+  ];
+  const findings = detectRetryStalls(entries);
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].action, 'git push origin main');
+});
+
+test('synthesizeGateFix truncates action before escaping without trailing backslash', () => {
+  // 59 'a' characters followed by a regex metacharacter '.'
+  const longAction = 'a'.repeat(59) + '.';
+  const finding = {
+    type: 'redundant_tool_calls',
+    tool: 'Bash',
+    action: longAction,
+    occurrences: 3,
+    severity: 'medium',
+  };
+  const fix = synthesizeGateFix(finding);
+  assert.ok(fix);
+  // Must compile as a valid RegExp without throwing SyntaxError
+  assert.doesNotThrow(() => new RegExp(fix.pattern));
+  // Must end with escaped dot and not dangling backslash
+  assert.ok(fix.pattern.endsWith(String.raw`\.`));
+});
+
