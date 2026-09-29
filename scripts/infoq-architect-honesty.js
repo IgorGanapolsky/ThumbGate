@@ -58,7 +58,7 @@ const RAIL_MAP = Object.freeze([
   },
 ]);
 
-const DONE_RE = /\b(done|shipped|live|fixed|deployed)\b/i;
+const DONE_RE = /\b(done|shipped|live|fixed|deployed|crisis over|kill-switch complete|complete|completed)\b/i;
 const CODE_RE = /Code as truth:\s*(\S+)/;
 const PROVENANCE_RE = /Provenance:\s*(\S+)/;
 const HOST_RE = /\bHost:\s*([A-Za-z0-9_+#.-]+)/;
@@ -170,26 +170,68 @@ function codeAsTruth(text, cwd) {
       reason: 'done claim needs Code as truth: <path> and Provenance: <id>',
     };
   }
-  const absolute = path.resolve(cwd || process.cwd(), cited);
-  const exists = fs.existsSync(absolute);
+  const root = path.resolve(cwd || process.cwd());
+  const absolute = path.resolve(root, cited);
+  const relative = path.relative(root, absolute);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    return {
+      required: true,
+      cited,
+      provenance,
+      exists: false,
+      ok: false,
+      reason: `Code as truth path must be inside repository: ${cited}`,
+    };
+  }
+  let isRegularFile = false;
+  try {
+    const stat = fs.statSync(absolute);
+    isRegularFile = stat.isFile();
+  } catch {
+    isRegularFile = false;
+  }
+  if (!isRegularFile) {
+    return {
+      required: true,
+      cited,
+      provenance,
+      exists: false,
+      ok: false,
+      reason: `Code as truth path must be an existing regular file: ${cited}`,
+    };
+  }
   return {
     required: true,
     cited,
     provenance,
-    exists,
-    ok: exists,
-    reason: exists ? '' : `Code as truth path is missing: ${cited}`,
+    exists: true,
+    ok: true,
+    reason: '',
   };
 }
 
 function buildInfoqArchitectHonestyReport(options = {}) {
   const mapOnly = options.mapOnly === true || options['map-only'] === true || options.mapOnly === 'true';
   const nowMs = parseTime(options.now) || Date.now();
-  const maxAgeMs = options.maxAgeMs != null && options.maxAgeMs !== ''
-    ? Number(options.maxAgeMs)
-    : (options['max-age-ms'] != null ? Number(options['max-age-ms']) : null);
   const text = textOf(options);
   const findings = [];
+
+  let maxAgeMs = null;
+  const rawMaxAge = options.maxAgeMs != null && options.maxAgeMs !== ''
+    ? options.maxAgeMs
+    : (options['max-age-ms'] != null && options['max-age-ms'] !== '' ? options['max-age-ms'] : null);
+  if (rawMaxAge != null) {
+    const parsed = Number(rawMaxAge);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      findings.push({
+        gateId: 'time-in-queue',
+        severity: 'fail',
+        message: `Invalid max-age-ms: ${rawMaxAge}. Expected non-negative finite number.`,
+      });
+    } else {
+      maxAgeMs = parsed;
+    }
+  }
 
   if (!mapOnly && text) {
     for (const hit of triggeredRefusals(text)) {
@@ -219,7 +261,7 @@ function buildInfoqArchitectHonestyReport(options = {}) {
         message: `Missing enqueuedAt on ${queue.missingTimestamps.length} item(s). Age is not guessed.`,
       });
     }
-    if (queue.oldest && Number.isFinite(maxAgeMs) && queue.oldest.ageMs > maxAgeMs) {
+    if (queue.oldest && maxAgeMs != null && queue.oldest.ageMs > maxAgeMs) {
       findings.push({
         gateId: 'time-in-queue',
         severity: 'fail',

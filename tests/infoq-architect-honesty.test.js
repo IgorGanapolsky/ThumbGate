@@ -100,3 +100,38 @@ test('a lease file without claimedAt is review, not an invented age', () => {
   assert.equal(report.queue.oldest, null);
   assert.equal(report.queue.timedCount, 0);
 });
+
+test('completion contract phrases require code as truth and provenance', () => {
+  for (const phrase of ['crisis over', 'kill-switch complete', 'rollout completed']) {
+    const report = buildInfoqArchitectHonestyReport({ claim: phrase });
+    assert.equal(report.status, 'fail', phrase);
+    assert.equal(report.findings[0].gateId, 'code-as-truth', phrase);
+  }
+});
+
+test('code as truth rejects directories and out-of-repo paths', () => {
+  const dirReport = buildInfoqArchitectHonestyReport({
+    cwd: path.resolve(__dirname, '..'),
+    claim: 'done\nCode as truth: .\nProvenance: root',
+  });
+  assert.equal(dirReport.status, 'fail');
+  assert.equal(dirReport.findings[0].gateId, 'code-as-truth');
+
+  const escapeReport = buildInfoqArchitectHonestyReport({
+    cwd: path.resolve(__dirname, '..'),
+    claim: 'done\nCode as truth: ../../../etc/passwd\nProvenance: escape',
+  });
+  assert.equal(escapeReport.status, 'fail');
+  assert.equal(escapeReport.findings[0].gateId, 'code-as-truth');
+});
+
+test('invalid max-age-ms produces a failing finding', () => {
+  const report = buildInfoqArchitectHonestyReport({
+    maxAgeMs: 'bogus',
+    queueJson: JSON.stringify([{ id: 'test', enqueuedAt: '2026-09-28T20:50:00.000Z' }]),
+  });
+  assert.equal(report.status, 'fail');
+  assert.equal(report.findings[0].gateId, 'time-in-queue');
+  assert.match(report.findings[0].message, /Invalid max-age-ms/);
+});
+
