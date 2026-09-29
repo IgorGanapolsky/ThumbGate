@@ -24,7 +24,7 @@ npx thumbgate init
 npx thumbgate gate-check
 ```
 
-Pass the tool name and the tool input to `gate-check`. A deny result ends the turn. Hosted Pro, which keeps shared lesson history and the dashboard, is separate from the public package.
+Pass the tool name and the tool input to `gate-check` via stdin JSON. A deny result ends the turn. Hosted Pro, which keeps shared lesson history and the dashboard, is separate from the public package.
 
 - Dev.to readers: [ThumbGate Pro](https://thumbgate.ai/pro?utm_source=devto&utm_medium=article&utm_campaign=pretool-secrets)
 - Coder Legion readers: [ThumbGate Pro](https://thumbgate.ai/pro?utm_source=coderlegion&utm_medium=community&utm_campaign=pretool-secrets)

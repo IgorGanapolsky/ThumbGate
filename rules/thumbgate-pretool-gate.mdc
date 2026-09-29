@@ -12,8 +12,12 @@ Before a shell or network command runs:
 2. If this repository already recorded the same failure, do not repeat it.
 3. A warning is not permission to continue a secret leak.
 
+For automated pre-action inspection:
+
 ```bash
 npx thumbgate gate-check
 ```
+
+Pass the tool name and tool input JSON on stdin. A deny result stops the action.
 
 Product page: https://thumbgate.ai/pro
