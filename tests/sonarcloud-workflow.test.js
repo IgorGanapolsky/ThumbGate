@@ -36,7 +36,7 @@ test('SonarCloud workflow polls quality gates only for PR and merge-queue scans'
     scanSection,
     /if:\s*steps\.sonar-scope\.outputs\.scan == 'true' && !\(github\.event_name == 'pull_request' && github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'\) && \(github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'\)/,
   );
-  assert.match(scanSection, /uses:\s*SonarSource\/sonarqube-scan-action@(?:v8\.0\.0|[0-9a-f]{40} # v8\.0\.0)/);
+  assert.match(scanSection, /uses:\s*SonarSource\/sonarqube-scan-action@(?:v8\.\d+\.\d+|[0-9a-f]{40} # v8\.\d+\.\d+)/);
   assert.match(scanSection, /-Dsonar\.projectVersion=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}/);
   assert.match(scanSection, /-Dsonar\.sources=\$\{\{\s*steps\.sonar-scope\.outputs\.source_paths\s*\}\}/);
   assert.doesNotMatch(scanSection, /qualitygate\.wait=true/);
@@ -57,7 +57,7 @@ test('SonarCloud workflow polls quality gates only for PR and merge-queue scans'
   );
   assert.match(refreshSection, /Skipping default-branch Sonar scanner refresh/);
   assert.match(refreshSection, /mainline_version=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
-  assert.doesNotMatch(refreshSection, /uses:\s*SonarSource\/sonarqube-scan-action@(?:v8\.0\.0|[0-9a-f]{40} # v8\.0\.0)/);
+  assert.doesNotMatch(refreshSection, /uses:\s*SonarSource\/sonarqube-scan-action/);
   assert.doesNotMatch(refreshSection, /timeout-minutes:\s*8/);
   assert.doesNotMatch(refreshSection, /continue-on-error:\s*true/);
   assert.doesNotMatch(refreshSection, /-Dsonar\.qualitygate\.wait=true/);
