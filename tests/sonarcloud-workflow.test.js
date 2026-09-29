@@ -36,7 +36,7 @@ test('SonarCloud workflow polls quality gates only for PR and merge-queue scans'
     scanSection,
     /if:\s*steps\.sonar-scope\.outputs\.scan == 'true' && !\(github\.event_name == 'pull_request' && github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'\) && \(github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'\)/,
   );
-  assert.match(scanSection, /uses:\s*SonarSource\/sonarqube-scan-action@(?:v8\.\d+\.\d+|[0-9a-f]{40} # v8\.\d+\.\d+)/);
+  assert.match(scanSection, /uses:\s*SonarSource\/sonarqube-scan-action@(?:v8\.\d+\.\d+|[0-9a-f]{40} # v8\.\d+\.\d+)(?=\s|$)/);
   assert.match(scanSection, /-Dsonar\.projectVersion=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}/);
   assert.match(scanSection, /-Dsonar\.sources=\$\{\{\s*steps\.sonar-scope\.outputs\.source_paths\s*\}\}/);
   assert.doesNotMatch(scanSection, /qualitygate\.wait=true/);
