@@ -253,7 +253,9 @@ const path = require('node:path');
 // 548 → 549 (2026-09-18): src/integrations/ideabrowser-connector.js (#3823).
 // 551 → 553: llm-obs-honesty.js + datadog-llm-obs-compare-not-clone skill (successor of #3885).
 // 553 → 563 (2026-09-23): daily discoveries publishing engine + launchd installer + 3 skills + blog html (1.37.3).
-const BASELINE_FILE_COUNT = 563;
+// 563 → 565 (2026-09-28): scripts/halo-trace-optimizer.js + skill (HALO trace-to-fix FORMAT steal).
+// 565 → 567 (2026-09-29): scripts/infoq-architect-honesty.js + skill (InfoQ architect honesty FORMAT steal).
+const BASELINE_FILE_COUNT = 567;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

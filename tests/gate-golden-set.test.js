@@ -46,6 +46,7 @@ const ORIGINAL_PATHS = {
 
 let repo;
 let sandbox;
+let savedNoRateLimit;
 
 before(() => {
   // Isolated state. Several gates are stateful (push-without-thread-check is satisfied by
@@ -58,6 +59,8 @@ before(() => {
   gatesEngine.CONSTRAINTS_PATH = path.join(sandbox, 'session-constraints.json');
   gatesEngine.SESSION_ACTIONS_PATH = path.join(sandbox, 'session-actions.json');
   gatesEngine.GOVERNANCE_STATE_PATH = path.join(sandbox, 'governance-state.json');
+  savedNoRateLimit = process.env.THUMBGATE_NO_RATE_LIMIT;
+  process.env.THUMBGATE_NO_RATE_LIMIT = '1';
 
   repo = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-golden-repo-'));
   const git = (args) => execFileSync('git', args, { cwd: repo, stdio: ['ignore', 'ignore', 'ignore'] });
@@ -73,6 +76,8 @@ before(() => {
 
 after(() => {
   Object.assign(gatesEngine, ORIGINAL_PATHS);
+  if (savedNoRateLimit === undefined) delete process.env.THUMBGATE_NO_RATE_LIMIT;
+  else process.env.THUMBGATE_NO_RATE_LIMIT = savedNoRateLimit;
   fs.rmSync(sandbox, { recursive: true, force: true });
   fs.rmSync(repo, { recursive: true, force: true });
 });
