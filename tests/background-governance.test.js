@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
+const { spawnSync } = require('node:child_process');
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bgov-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
@@ -136,4 +137,239 @@ test('formatGovernanceReport produces readable text', () => {
 // === getRunsPath ===
 test('getRunsPath returns correct path', () => {
   assert.ok(gov.getRunsPath().endsWith('agent-runs.jsonl'));
+});
+
+// === Unattended wake (DevDay 2026 compare-not-clone) ===
+const WAKE_SECRET = 'SECRET-WAKE-TEXT';
+const AUDIO_SECRET = 'SECRET-AUDIO-BYTES';
+
+test('evaluateUnattendedWake leaves an attended merge alone', () => {
+  assert.equal(gov.evaluateUnattendedWake({
+    toolName: 'Bash',
+    command: 'gh pr merge 12',
+  }), null);
+});
+
+test('evaluateUnattendedWake keeps an unattended mutation off until an admin enables it', () => {
+  const denied = gov.evaluateUnattendedWake({
+    toolName: 'Bash',
+    command: 'git commit -m "wip"',
+    unattended: true,
+  });
+  assert.equal(denied.code, 'UNATTENDED_DEFAULT_OFF');
+  assert.equal(denied.decision, 'deny');
+  const allowed = gov.evaluateUnattendedWake({
+    toolName: 'Bash',
+    command: 'git commit -m "wip"',
+    unattended: true,
+    enabled: true,
+  });
+  assert.equal(allowed, null);
+});
+
+test('evaluateUnattendedWake lets an unattended read through', () => {
+  assert.equal(gov.evaluateUnattendedWake({
+    toolName: 'Bash',
+    command: 'gh pr view 12',
+    unattended: true,
+  }), null);
+  assert.equal(gov.evaluateUnattendedWake({
+    toolName: 'Bash',
+    command: 'echo x 2>&1',
+    unattended: true,
+  }), null);
+});
+
+test('evaluateUnattendedWake treats a write redirect as a mutation', () => {
+  const denied = gov.evaluateUnattendedWake({
+    toolName: 'Bash',
+    command: 'echo x > file',
+    unattended: true,
+  });
+  assert.equal(denied.code, 'UNATTENDED_DEFAULT_OFF');
+});
+
+test('evaluateUnattendedWake refuses an automatic approve or merge', () => {
+  const away = gov.evaluateUnattendedWake({
+    toolName: 'Bash',
+    command: 'gh pr merge 12',
+    unattended: true,
+    enabled: true,
+  });
+  assert.equal(away.code, 'AUTOMATIC_REVIEW_CANNOT_LAND');
+  const review = gov.evaluateUnattendedWake({
+    toolName: 'Bash',
+    command: 'gh pr review 12 --approve',
+    automaticReview: true,
+  });
+  assert.equal(review.code, 'AUTOMATIC_REVIEW_CANNOT_LAND');
+});
+
+test('evaluateUnattendedWake treats an inbound mention as data', () => {
+  const denied = gov.evaluateUnattendedWake({
+    toolName: 'Write',
+    wake: { kind: 'mention', text: WAKE_SECRET },
+  });
+  assert.equal(denied.code, 'MENTION_IS_NOT_A_GRANT');
+  assert.equal(JSON.stringify(denied).includes(WAKE_SECRET), false);
+  assert.equal(gov.evaluateUnattendedWake({
+    toolName: 'Bash',
+    command: 'gh pr view 12',
+    wake: 'slack',
+  }), null);
+  assert.equal(gov.evaluateUnattendedWake({
+    toolName: 'Write',
+    wake: 'email',
+    unattended: true,
+    enabled: true,
+    operatorGrant: true,
+  }), null);
+});
+
+test('evaluateUnattendedWake does not transfer a permission across identities', () => {
+  const denied = gov.evaluateUnattendedWake({
+    toolName: 'Read',
+    grantIdentity: 'owner-a',
+    actorId: 'actor-b',
+  });
+  assert.equal(denied.code, 'GRANT_NOT_INHERITED');
+  assert.equal(gov.evaluateUnattendedWake({
+    toolName: 'Read',
+    grantIdentity: 'same',
+    actorId: ' same ',
+  }), null);
+});
+
+test('evaluateUnattendedWake drops a raw capture once a durable note exists', () => {
+  const denied = gov.evaluateUnattendedWake({
+    toolName: 'Read',
+    durableNote: 'action items only',
+    rawAudio: AUDIO_SECRET,
+  });
+  assert.equal(denied.code, 'RAW_CAPTURE_RETAINED');
+  assert.equal(JSON.stringify(denied).includes(AUDIO_SECRET), false);
+});
+
+test('checkRunGovernance records an unattended mutation as a blocker', () => {
+  const denied = gov.checkRunGovernance({
+    agentId: 'wake-off',
+    unattended: true,
+    command: 'git commit -m "wip"',
+    toolName: 'Bash',
+  });
+  assert.equal(denied.allowed, false);
+  assert.ok(denied.blockers.some((blocker) => blocker.rule === 'UNATTENDED_DEFAULT_OFF'));
+  const enabled = gov.checkRunGovernance({
+    agentId: 'wake-on',
+    unattended: true,
+    enabled: true,
+    command: 'git commit -m "wip"',
+    toolName: 'Bash',
+  });
+  assert.equal(enabled.allowed, true);
+});
+
+function runWakeHook(input, env = {}) {
+  const budget = path.join(os.tmpdir(), `tg-wake-budget-${Math.random().toString(36).slice(2)}.json`);
+  const childEnv = { ...process.env, THUMBGATE_BUDGET_STATE_PATH: budget };
+  delete childEnv.THUMBGATE_SESSION_AGENT;
+  delete childEnv.THUMBGATE_UNATTENDED;
+  delete childEnv.THUMBGATE_UNATTENDED_ENABLED;
+  delete childEnv.THUMBGATE_HOOKS_ENFORCE;
+  delete childEnv.THUMBGATE_AUTOGATE_PR_COMMITS;
+  Object.assign(childEnv, env);
+  const result = spawnSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'hook-pre-tool-use.js')], {
+    input: JSON.stringify(input),
+    env: childEnv,
+    encoding: 'utf8',
+    cwd: path.join(__dirname, '..'),
+  });
+  try { fs.rmSync(budget, { force: true }); } catch { /* already gone */ }
+  let parsed = null;
+  try { parsed = JSON.parse(result.stdout || '{}'); } catch { /* not json */ }
+  return { status: result.status, stdout: result.stdout || '', parsed };
+}
+
+test('hook allows an attended commit and blocks an unattended one', () => {
+  const attended = runWakeHook({
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'git commit -m "wip"' },
+  });
+  assert.equal(attended.status, 0);
+  assert.notEqual(attended.parsed && attended.parsed.decision, 'block');
+
+  const off = runWakeHook({
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'git commit -m "wip"' },
+  }, { THUMBGATE_UNATTENDED: '1' });
+  assert.equal(off.status, 0);
+  assert.equal(off.parsed.decision, 'block');
+  assert.match(off.parsed.reason, /UNATTENDED_DEFAULT_OFF/);
+
+  const on = runWakeHook({
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'git commit -m "wip"' },
+  }, { THUMBGATE_UNATTENDED: '1', THUMBGATE_UNATTENDED_ENABLED: '1' });
+  assert.equal(on.status, 0);
+  assert.equal((on.stdout.includes('UNATTENDED_DEFAULT_OFF')), false);
+});
+
+test('hook still refuses an unattended merge after the admin enables wakes', () => {
+  const res = runWakeHook({
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'gh pr merge 12' },
+  }, { THUMBGATE_UNATTENDED: '1', THUMBGATE_UNATTENDED_ENABLED: '1' });
+  assert.equal(res.parsed.decision, 'block');
+  assert.match(res.parsed.reason, /AUTOMATIC_REVIEW_CANNOT_LAND/);
+});
+
+test('hook blocks a mention write and omits the wake text', () => {
+  const res = runWakeHook({
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Write',
+    tool_input: { wake: { kind: 'mention', text: WAKE_SECRET }, file_path: 'notes.md' },
+  });
+  assert.equal(res.parsed.decision, 'block');
+  assert.match(res.parsed.reason, /MENTION_IS_NOT_A_GRANT/);
+  assert.equal(res.stdout.includes(WAKE_SECRET), false);
+});
+
+test('hook drops raw audio once a durable note exists and omits the bytes', () => {
+  const res = runWakeHook({
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Read',
+    tool_input: { durableNote: 'decisions only', rawAudio: AUDIO_SECRET, file_path: 'notes.md' },
+  });
+  assert.equal(res.parsed.decision, 'block');
+  assert.match(res.parsed.reason, /RAW_CAPTURE_RETAINED/);
+  assert.equal(res.stdout.includes(AUDIO_SECRET), false);
+});
+
+test('cli check forwards the unattended flag and stores no raw bytes', () => {
+  const cli = path.join(__dirname, '..', 'bin', 'cli.js');
+  const result = spawnSync(process.execPath, [
+    cli,
+    'background-agent-governance',
+    '--check',
+    '--json',
+    '--feedback-dir', tmpDir,
+    '--agent-id', 'cli-wake',
+    '--unattended',
+    '--command', 'git commit -m wip',
+    '--raw-capture', AUDIO_SECRET,
+    '--durable-note', 'note only',
+  ], {
+    encoding: 'utf8',
+    cwd: path.join(__dirname, '..'),
+    env: { ...process.env, THUMBGATE_FEEDBACK_DIR: tmpDir },
+  });
+  assert.equal(result.status, 2);
+  assert.equal((result.stdout || '').includes(AUDIO_SECRET), false);
+  const body = JSON.parse(result.stdout);
+  assert.equal(body.allowed, false);
+  assert.ok(body.blockers.some((blocker) => blocker.rule === 'RAW_CAPTURE_RETAINED'));
 });

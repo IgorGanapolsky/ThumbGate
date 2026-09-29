@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- Steal DevDay 2026's default-off always-on posture onto background-agent governance. An unattended mutation stays off until an admin enables it. An inbound mention is data and does not grant a tool. An automatic review cannot approve or merge. A permission does not transfer across identities. A raw capture is refused once a durable note exists. Compare-not-clone: does not install Codex, a ChatGPT plugin, Bedrock, or Daybreak, and does not call a model from the gate.
 - Steal E2B's execution-id routing fence and metadata-only control plane onto the checkout session lease. A release that names an older execution leaves the newer lease in place. The lease stores no secret value and no shell payload. Compare-not-clone: does not install e2b, Firecracker, or the embed stack.
 - Steal the two-print venue-disagreement freeze onto `evaluateBrokerReceiptGate`: an order freezes when two prints for the same symbol diverge by more than 50 bps, and both prints stay on the deny. The execution receipt stays broker-signed. Compare-not-clone: does not install pulse-verity or start a market-data plan.
 - Live swarm census reads NotebookLM (`Packs/` stays a mirror), open pull-request titles, herdr panes, and Linear only when `~/.config/linear/api_key` exists. An unset session is degraded. The API key is never printed.

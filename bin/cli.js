@@ -3036,6 +3036,17 @@ function backgroundGovernance() {
       runType: args['run-type'] || args.type || 'pr',
       branch: args.branch,
       filesChanged: Number(args['files-changed'] || 0),
+      toolName: args['tool-name'] || (args.command ? 'Bash' : ''),
+      command: args.command || '',
+      unattended: args.unattended,
+      enabled: args.enabled,
+      automaticReview: args['automatic-review'],
+      operatorGrant: args['operator-grant'],
+      wake: args.wake || null,
+      grantIdentity: args['grant-identity'] || null,
+      actorId: args['actor-id'] || null,
+      durableNote: args['durable-note'] || null,
+      rawCapture: args['raw-capture'] ? 'present' : null,
     }, feedbackDir);
 
     if (args.json) {

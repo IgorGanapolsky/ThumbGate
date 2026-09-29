@@ -581,6 +581,31 @@ function main() {
     failOpen(err);
   }
 
+  try {
+    const { evaluateUnattendedWake } = require('./background-agent-governance');
+    const command = effectiveInput?.command || effectiveInput?.cmd || '';
+    const wakeVerdict = evaluateUnattendedWake({
+      toolName,
+      command,
+      unattended: isTrueEnv(process.env.THUMBGATE_UNATTENDED) || effectiveInput?.unattended || input.unattended,
+      enabled: isTrueEnv(process.env.THUMBGATE_UNATTENDED_ENABLED) || effectiveInput?.unattendedEnabled || effectiveInput?.adminEnabled,
+      automaticReview: effectiveInput?.automaticReview || input.automaticReview,
+      operatorGrant: effectiveInput?.operatorGrant,
+      wake: effectiveInput?.wake || effectiveInput?.trigger || input.wake || null,
+      grantIdentity: effectiveInput?.grantIdentity || effectiveInput?.permissionOwner || null,
+      actorId: effectiveInput?.actorId || effectiveInput?.agentId || null,
+      durableNote: effectiveInput?.durableNote || null,
+      rawCapture: effectiveInput?.rawCapture || null,
+      rawAudio: effectiveInput?.rawAudio || null,
+      rawTranscript: effectiveInput?.rawTranscript || null,
+    });
+    if (wakeVerdict && wakeVerdict.decision === 'deny') {
+      return block(`unattended-wake: ${wakeVerdict.code}. ${wakeVerdict.message}`);
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const blockReason = maybeBlockOnRisk(lessons);
   if (blockReason) return block(blockReason);
 
