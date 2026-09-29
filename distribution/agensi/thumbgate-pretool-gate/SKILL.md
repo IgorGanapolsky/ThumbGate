@@ -36,7 +36,16 @@ Pipe the tool call through the public checker when the host agent does not alrea
 npx thumbgate@1.37.3 gate-check
 ```
 
-Pass the tool name and the tool input on stdin as JSON. A deny result ends the turn.
+Send a PreToolUse JSON object on stdin:
+
+```json
+{
+  "tool_name": "<tool name>",
+  "tool_input": { "...": "..." }
+}
+```
+
+Parse the JSON response. If `hookSpecificOutput.permissionDecision` is `"deny"`, stop the turn and do not run the tool call. Do not rely on the process exit status; denied calls exit with status 0. Treat checker errors or an invalid response as a failure and do not run the tool call.
 
 ## After the action
 
