@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Patch Changes
+
+- Live swarm census reads NotebookLM (`Packs/` stays a mirror), open pull-request titles, herdr panes, and Linear only when `~/.config/linear/api_key` exists. An unset session is degraded. The API key is never printed.
+
 ## 1.37.2
 
 ### Patch Changes
