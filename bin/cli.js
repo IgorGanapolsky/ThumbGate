@@ -2762,6 +2762,34 @@ function ciGhaBuildkitePatternsDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function infoqArchitectHonesty() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildInfoqArchitectHonestyReport,
+    formatInfoqArchitectHonestyReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'infoq-architect-honesty'));
+  const truthy = (value) => value === true || /^(1|true|yes|on)$/i.test(String(value || '').trim());
+  const report = buildInfoqArchitectHonestyReport({
+    mapOnly: truthy(args['map-only']),
+    claim: args.claim || '',
+    command: args.command || '',
+    host: args.host || '',
+    queue: args.queue || '',
+    queueJson: args['queue-json'] || '',
+    lease: args.lease || '',
+    maxAgeMs: args['max-age-ms'],
+    now: args.now,
+    cwd: args.cwd || process.cwd(),
+  });
+  if (truthy(args.json)) console.log(JSON.stringify(report, null, 2));
+  else process.stdout.write(formatInfoqArchitectHonestyReport(report));
+  if (truthy(args.strict) && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function deeppatternDisciplineHonestyDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3770,6 +3798,7 @@ function help() {
   console.log('  typesafe-typed-questions Typed noul/choice/score + code-owned route (TypeSafe FORMAT; not Jev)');
   console.log('  ci-gha-buildkite-patterns First-fail + PR fail-fast on GitHub Actions (Buildkite FORMAT; not Buildkite)');
   console.log('  deeppattern-discipline-honesty Layer-check + evidence-closeout (DeepPattern FORMAT; not AQG/DE)');
+  console.log('  infoq-architect-honesty Code-as-truth, typed host, lease, time-in-queue (InfoQ FORMAT)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  llm-obs-honesty       Four LLM-obs practices on existing rails (Datadog FORMAT, not a clone)');
   console.log('  halo-trace-optimizer  Analyze agent trace logs for thrashing and stalls (HALO FORMAT)');
@@ -3869,6 +3898,7 @@ const SUBCOMMAND_HELP = {
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
   'ci-gha-buildkite-patterns': 'Usage: npx thumbgate ci-gha-buildkite-patterns [--jobs-json=path] [--workflow=path] [--json] [--map-only]\n\nBuildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations. Does not add Buildkite.',
   'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',
+  'infoq-architect-honesty': 'Usage: npx thumbgate infoq-architect-honesty [--claim="..."] [--host=javascript] [--queue=path.json] [--max-age-ms=N] [--json] [--map-only]\n\nInfoQ September 2026 FORMAT: code-as-truth, typed host, existing lease, time-in-queue. Does not register for InfoQ or install Vortex.',
   'board-loop': 'Usage: npx thumbgate board-loop [--apply] [--json] [--max-update-branch=1] [--max-pr-manage=1] [--max-comments=4] [--skip-pr=N]\n\nClassify Issues+PR wall: update-branch BEHIND green Dependabot, pr:manage READY, comment DIRTY/ECI. Never approve.',
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
   'claim-stop-check': 'Usage: npx thumbgate claim-stop-check\n\nClaude Stop-hook interface: reads the hook payload from stdin and blocks factual claims that disagree with configured sources.',
@@ -4543,6 +4573,11 @@ switch (COMMAND) {
   case 'evidence-closeout-honesty':
   case 'aqg-de-honesty':
     deeppatternDisciplineHonestyDoctor();
+    break;
+  case 'infoq-architect-honesty':
+  case 'infoq-architects':
+  case 'architect-honesty':
+    infoqArchitectHonesty();
     break;
   case 'workspace-search-route':
   case 'zg-search-route':
