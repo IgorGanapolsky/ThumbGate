@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- Steal the two-print venue-disagreement freeze onto `evaluateBrokerReceiptGate`: an order freezes when two prints for the same symbol diverge by more than 50 bps, and both prints stay on the deny. The execution receipt stays broker-signed. Compare-not-clone: does not install pulse-verity or start a market-data plan.
 - Live swarm census reads NotebookLM (`Packs/` stays a mirror), open pull-request titles, herdr panes, and Linear only when `~/.config/linear/api_key` exists. An unset session is degraded. The API key is never printed.
 
 ## 1.37.2
