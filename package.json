@@ -432,6 +432,7 @@
     "scripts/workos-production-guard.js",
     "scripts/workspace-agent-routines.js",
     "scripts/workspace-evolver.js",
+    "scripts/rrsi-regularizer.js",
     "scripts/xmemory-lite.js",
     "server.json",
     "skills/thumbgate/SKILL.md",

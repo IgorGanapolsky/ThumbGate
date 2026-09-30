@@ -9,6 +9,7 @@
 ### Patch Changes
 
 - feat(blog): publish the PreToolUse secret-deny teardown article (`public/blog/2026-09-28-pretool-secret-deny.html`). Public bundle file-count baseline increased from 567 to 568.
+- feat(evolver): add rrsi-regularizer for agent harness recursive self-improvement regularization (arXiv:2609.24972). Public npm bundle file-count baseline increased from 568 to 569.
 - Orchestrate the Issues+PR wall: `board-loop` classifies BEHIND Dependabot vs DIRTY vs ECI issues, update-branches one green PR per tick, and teaches agent-automerge to bind `workflow_run.head_sha` plus `dependabot/*`. Never approve.
 - Steal Buildkite pipeline architecture onto existing GitHub Actions: first-fail step identity, PR fail-fast, needs:/skip honesty, and GITHUB_STEP_SUMMARY annotations. Does not add Buildkite Pipelines, agents, or Test Engine.
 - Steal DeepPattern Agent Quality Gates + Decision Engine FORMAT onto honesty rails: layer-check (same-layer substitutes only) and evidence-closeout (six required items before done). Adds `deeppattern-discipline-honesty` doctor + skill. Does not install AQG/DE or ship a cross-vendor audit SKU.
