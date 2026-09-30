@@ -102,6 +102,12 @@ async function runIteration(opts = {}) {
     holdoutCommands: options.holdoutCommands || [],
     timeoutMs,
     cwd: options.cwd,
+    iteration: options.iteration,
+    totalIterations: options.totalIterations,
+    history: options.history,
+    enableRRSI: options.enableRRSI,
+    lambda: options.lambda,
+    stabilityFloor: options.stabilityFloor,
     hypothesisSuffix: research ? `Research query: ${research.query}` : null,
     additionalMetrics: {
       researchQuery: research ? research.query : null,
@@ -132,6 +138,9 @@ async function runIteration(opts = {}) {
  * @param {number} [params.paperLimit] - Max papers to ingest for research context
  * @param {Function} [params.fetchImpl] - Optional fetch implementation override
  * @param {Function} [params.searchPapersImpl] - Optional paper search override
+ * @param {boolean} [params.enableRRSI=true] - Enable RRSI regularized proposal and selection
+ * @param {number} [params.lambda] - RRSI complexity penalty weight
+ * @param {number} [params.stabilityFloor] - RRSI stability floor
  * @returns {Promise<object>} { results, progress }
  */
 async function runLoop(params) {
@@ -152,10 +161,20 @@ async function runLoop(params) {
         paperLimit: params.paperLimit,
         fetchImpl: params.fetchImpl,
         searchPapersImpl: params.searchPapersImpl,
+        iteration: i,
+        totalIterations: iterations,
+        history: results,
+        enableRRSI: params.enableRRSI,
+        lambda: params.lambda,
+        stabilityFloor: params.stabilityFloor,
       });
       results.push(result);
       if (result.kept) {
-        console.log(`  ✓ KEPT: ${result.name} (delta: +${(result.delta || 0).toFixed(4)})`);
+        const regDelta = result.metrics?.rrsi?.regularizedDelta;
+        const deltaStr = typeof regDelta === 'number'
+          ? `reg delta: +${regDelta.toFixed(4)}`
+          : `delta: +${(result.delta || 0).toFixed(4)}`;
+        console.log(`  ✓ KEPT: ${result.name} (${deltaStr})`);
       } else if (result.skipped) {
         console.log(`  ⊘ SKIPPED: ${result.reason}`);
       } else {

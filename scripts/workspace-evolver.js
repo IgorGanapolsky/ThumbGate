@@ -15,6 +15,15 @@ const {
   restoreEvolutionSnapshot,
   withTemporaryEvolutionSettings,
 } = require('./evolution-state');
+const {
+  calculateAnnealedBudget,
+  calculateAnnealedStepMultiplier,
+  screenLeakage,
+  computeComplexityDelta,
+  evaluateComplexityRegularizedScore,
+  detectStagnation,
+  selectTargetWithExploration,
+} = require('./rrsi-regularizer');
 
 const DEFAULT_TIMEOUT_MS = 120000;
 
@@ -248,13 +257,18 @@ function evaluateWorkspace({
   };
 }
 
-function chooseNextValue(target, currentValue, requestedValue = undefined) {
+function chooseNextValue(target, currentValue, requestedValue = undefined, stepMultiplier = 1.0) {
   if (Number.isFinite(requestedValue)) {
     return Math.max(target.range[0], Math.min(target.range[1], requestedValue));
   }
 
   const direction = Math.random() >= 0.5 ? 1 : -1;
-  const candidate = currentValue + (direction * target.step);
+  const rawStep = target.step * (Number.isFinite(stepMultiplier) ? stepMultiplier : 1.0);
+  const effectiveStep = typeof target.step === 'number' && Number.isInteger(target.step)
+    ? Math.max(1, Math.round(rawStep))
+    : Math.max(1e-4, rawStep);
+
+  const candidate = currentValue + (direction * effectiveStep);
   const bounded = Math.max(target.range[0], Math.min(target.range[1], candidate));
   return typeof target.step === 'number' && Number.isInteger(target.step)
     ? Math.round(bounded)
@@ -276,9 +290,27 @@ function recommendEvolutionTarget({ failureType, tags = [] } = {}) {
 }
 
 function runWorkspaceEvolution(opts = {}) {
-  const target = opts.targetName
-    ? EVOLUTION_TARGETS.find((entry) => entry.name === opts.targetName)
-    : EVOLUTION_TARGETS[Math.floor(Math.random() * EVOLUTION_TARGETS.length)];
+  const enableRRSI = opts.enableRRSI !== false;
+  const iteration = Number.isFinite(opts.iteration) ? opts.iteration : 0;
+  const totalIterations = Number.isFinite(opts.totalIterations) ? opts.totalIterations : 1;
+  const history = Array.isArray(opts.history) ? opts.history : [];
+
+  let target = null;
+  let targetSelectionMeta = null;
+
+  if (opts.targetName) {
+    target = EVOLUTION_TARGETS.find((entry) => entry.name === opts.targetName);
+  } else if (enableRRSI) {
+    const stagnation = detectStagnation(history, { windowSize: opts.stagnationWindow });
+    targetSelectionMeta = selectTargetWithExploration({
+      targets: EVOLUTION_TARGETS,
+      history,
+      isStagnant: stagnation.isStagnant,
+    });
+    target = targetSelectionMeta.target;
+  } else {
+    target = EVOLUTION_TARGETS[Math.floor(Math.random() * EVOLUTION_TARGETS.length)];
+  }
 
   if (!target) {
     throw new Error(`Unknown evolution target: ${opts.targetName}`);
@@ -289,7 +321,15 @@ function runWorkspaceEvolution(opts = {}) {
   const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : DEFAULT_TIMEOUT_MS;
   const feedbackDir = opts.feedbackDir;
   const currentValue = getEffectiveSetting(target.settingKey, target.range[0], feedbackDir);
-  const nextValue = chooseNextValue(target, currentValue, opts.nextValue);
+
+  const stepMultiplier = enableRRSI
+    ? calculateAnnealedStepMultiplier(iteration, totalIterations)
+    : 1.0;
+  const annealedBudget = enableRRSI
+    ? calculateAnnealedBudget(iteration, totalIterations)
+    : 1;
+
+  const nextValue = chooseNextValue(target, currentValue, opts.nextValue, stepMultiplier);
 
   if (nextValue === currentValue) {
     return {
@@ -299,6 +339,30 @@ function runWorkspaceEvolution(opts = {}) {
       currentValue,
       nextValue,
     };
+  }
+
+  // RRSI Selection Critic: screen proposed mutation & commands for benchmark leakage
+  if (enableRRSI) {
+    const leakageCheck = screenLeakage({
+      target: target.name,
+      settingKey: target.settingKey,
+      from: currentValue,
+      to: nextValue,
+      hypothesisSuffix: opts.hypothesisSuffix,
+      primaryCommands,
+      holdoutCommands,
+    });
+
+    if (!leakageCheck.passed) {
+      return {
+        skipped: true,
+        reason: `[RRSI Leakage Critic] ${leakageCheck.reason}`,
+        leakageCheck,
+        target,
+        currentValue,
+        nextValue,
+      };
+    }
   }
 
   const experiment = createExperiment({
@@ -332,7 +396,28 @@ function runWorkspaceEvolution(opts = {}) {
     [target.settingKey]: nextValue,
   }, () => evaluateWorkspace(evaluationOptions), feedbackDir);
 
-  const kept = candidateEvaluation.passed && candidateEvaluation.score > baselineEvaluation.score;
+  const complexityDelta = enableRRSI
+    ? computeComplexityDelta(nextValue, currentValue, { range: target.range })
+    : 0;
+
+  let kept = false;
+  let rrsiDecision = null;
+
+  if (enableRRSI) {
+    rrsiDecision = evaluateComplexityRegularizedScore({
+      baselineScore: baselineEvaluation.score,
+      candidateScore: candidateEvaluation.score,
+      testsPassed: candidateEvaluation.passed,
+      complexityDelta,
+    }, {
+      lambda: opts.lambda,
+      stabilityFloor: opts.stabilityFloor,
+    });
+    kept = rrsiDecision.accepted;
+  } else {
+    kept = candidateEvaluation.passed && candidateEvaluation.score > baselineEvaluation.score;
+  }
+
   const acceptedMutation = kept
     ? applyAcceptedMutation({
       targetKey: target.settingKey,
@@ -353,6 +438,8 @@ function runWorkspaceEvolution(opts = {}) {
     score: candidateEvaluation.score,
     baseline: baselineEvaluation.score,
     testsPassed: candidateEvaluation.passed,
+    kept,
+    reason: rrsiDecision ? rrsiDecision.reason : undefined,
     metrics: {
       target: target.name,
       settingKey: target.settingKey,
@@ -364,6 +451,17 @@ function runWorkspaceEvolution(opts = {}) {
       candidateEvaluation,
       evolutionStatePath: getEvolutionPaths(feedbackDir).statePath,
       rollbackSnapshotId: acceptedMutation ? acceptedMutation.rollbackSnapshot.snapshotId : null,
+      rrsi: enableRRSI ? {
+        enabled: true,
+        iteration,
+        totalIterations,
+        annealedBudget,
+        stepMultiplier,
+        complexityDelta,
+        penalty: rrsiDecision?.penalty ?? 0,
+        regularizedDelta: rrsiDecision?.regularizedDelta ?? (candidateEvaluation.score - baselineEvaluation.score),
+        targetStrategy: targetSelectionMeta?.strategy ?? 'explicit',
+      } : { enabled: false },
       ...(opts.additionalMetrics || {}),
     },
   });
@@ -378,6 +476,7 @@ function runWorkspaceEvolution(opts = {}) {
     candidateEvaluation,
     acceptedMutation,
     evolutionState: readEvolutionState(feedbackDir),
+    rrsiDecision,
   };
 }
 
