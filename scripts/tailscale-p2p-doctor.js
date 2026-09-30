@@ -13,7 +13,24 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { execSync } = require('node:child_process');
+const { execFileSync } = require('node:child_process');
+
+const SAFE_PATH = '/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin';
+const TAILSCALE_BINS = [
+  '/usr/local/bin/tailscale',
+  '/usr/bin/tailscale',
+  '/opt/homebrew/bin/tailscale',
+  '/Applications/Tailscale.app/Contents/MacOS/Tailscale',
+];
+
+function resolveTailscaleBinary() {
+  for (const binPath of TAILSCALE_BINS) {
+    if (fs.existsSync(binPath)) {
+      return binPath;
+    }
+  }
+  return null;
+}
 
 function parseArgs(argv = process.argv.slice(2)) {
   const options = {
@@ -42,17 +59,30 @@ function probeTailscale(fixturePath = null) {
   if (fixturePath && fs.existsSync(fixturePath)) {
     try {
       const data = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
-      return { ok: true, source: 'fixture', status: data };
+      return {
+        ok: true,
+        source: 'fixture',
+        status: {
+          backendState: data.BackendState || data.backendState || 'Running',
+          self: data.Self || data.self || null,
+          peerCount: data.peerCount ?? (data.Peer ? Object.keys(data.Peer).length : (data.peer ? Object.keys(data.peer).length : 0)),
+        },
+      };
     } catch (err) {
       return { ok: false, source: 'fixture_error', error: err.message };
     }
   }
 
   try {
-    const raw = execSync('tailscale status --json', {
+    const bin = resolveTailscaleBinary();
+    if (!bin) {
+      throw new Error('Tailscale binary not found in safe paths');
+    }
+    const raw = execFileSync(bin, ['status', '--json'], {
       timeout: 3000,
       stdio: ['ignore', 'pipe', 'ignore'],
       encoding: 'utf8',
+      env: { ...process.env, PATH: SAFE_PATH },
     });
     const parsed = JSON.parse(raw);
     return {
@@ -198,8 +228,13 @@ if (require.main === module) {
 }
 
 module.exports = {
+  parseArgs,
   probeTailscale,
   countPreventionRules,
   evaluatePamDiode,
   evaluateDiagnostics,
+  main,
+  resolveTailscaleBinary,
+  TAILSCALE_BINS,
+  SAFE_PATH,
 };
