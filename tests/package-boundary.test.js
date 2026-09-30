@@ -502,8 +502,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 553 -> 563 (2026-09-23): daily discoveries publishing engine + launchd installer + 3 skills + blog html (1.37.3).
   // 563 -> 565 (2026-09-28): scripts/halo-trace-optimizer.js + skill (HALO trace-to-fix FORMAT steal).
   // 565 -> 567 (2026-09-29): scripts/infoq-architect-honesty.js + skill (InfoQ architect FORMAT steal).
-    manifest.fileCount <= 567,
-    `npm package should stay <= 567 files, got ${manifest.fileCount}`
+  // 567 -> 568 (2026-09-29): public/blog/2026-09-28-pretool-secret-deny.html
+    manifest.fileCount <= 568,
+    `npm package should stay <= 568 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -740,8 +741,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.58 MB -> 8.62 MB: llm-obs-honesty successor. Local pack 8,591,361; CI slack.
   // Bumped 8.62 MB -> 8.65 MB (2026-09-23): daily discoveries publishing engine + launchd installer + skills + blog html. Local pack 8,629,526; CI slack.
   // Bumped 8.65 MB -> 8.68 MB (2026-09-29): scripts/infoq-architect-honesty.js + skill. Local pack 8,662,783; CI slack.
-    manifest.unpackedSize <= 8_680_000,
-    `npm package should stay <= 8.68 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.68 MB -> 8.70 MB (2026-09-29): pretool-secret-deny blog html. Local pack 8,666,717; CI slack.
+    manifest.unpackedSize <= 8_700_000,
+    `npm package should stay <= 8.70 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

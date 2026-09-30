@@ -255,7 +255,8 @@ const path = require('node:path');
 // 553 → 563 (2026-09-23): daily discoveries publishing engine + launchd installer + 3 skills + blog html (1.37.3).
 // 563 → 565 (2026-09-28): scripts/halo-trace-optimizer.js + skill (HALO trace-to-fix FORMAT steal).
 // 565 → 567 (2026-09-29): scripts/infoq-architect-honesty.js + skill (InfoQ architect honesty FORMAT steal).
-const BASELINE_FILE_COUNT = 567;
+// 567 → 568 (2026-09-29): public/blog/2026-09-28-pretool-secret-deny.html
+const BASELINE_FILE_COUNT = 568;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
