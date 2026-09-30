@@ -311,3 +311,86 @@ test('RRSI Workspace Evolution Integration: Complexity Penalty rejects marginal 
   }
 });
 
+test('RRSI Doctor: audits all 6 regularization pillars and returns PASS', () => {
+  const { auditRRSI, RAIL_MAP } = require('../scripts/rrsi-doctor');
+  assert.ok(Array.isArray(RAIL_MAP));
+  assert.ok(RAIL_MAP.length >= 6);
+
+  const report = auditRRSI();
+  assert.equal(report.status, 'PASS');
+  assert.ok(report.checks.length >= 6);
+  assert.ok(report.checks.every((c) => c.passed));
+  assert.match(report.summary, /RRSI regularizers active & healthy/);
+  assert.match(report.paperCitation, /arXiv:2609\.24972/);
+});
+
+test('RRSI Doctor: CLI invocation support (--json, --map-only, --map-only --json, default)', () => {
+  const { execFileSync } = require('node:child_process');
+  const path = require('node:path');
+  const doctorScript = path.resolve(__dirname, '../scripts/rrsi-doctor.js');
+
+  // 1. --json mode
+  const jsonOut = execFileSync(process.execPath, [doctorScript, '--json'], { encoding: 'utf8' });
+  const parsed = JSON.parse(jsonOut);
+  assert.equal(parsed.status, 'PASS');
+  assert.ok(parsed.checks.length >= 6);
+
+  // 2. --map-only text mode
+  const mapText = execFileSync(process.execPath, [doctorScript, '--map-only'], { encoding: 'utf8' });
+  assert.match(mapText, /RRSI Architectural Rail Map/);
+  assert.match(mapText, /Cosine-Annealed Update Sparsity/);
+
+  // 3. --map-only --json mode
+  const mapJson = execFileSync(process.execPath, [doctorScript, '--map-only', '--json'], { encoding: 'utf8' });
+  const parsedMap = JSON.parse(mapJson);
+  assert.ok(Array.isArray(parsedMap));
+  assert.ok(parsedMap.length >= 6);
+
+  // 4. default human-readable mode
+  const defaultText = execFileSync(process.execPath, [doctorScript], { encoding: 'utf8' });
+  assert.match(defaultText, /RRSI HARNESS REGULARIZATION DOCTOR/);
+  assert.match(defaultText, /All RRSI regularizers fail closed\./);
+});
+
+test('RRSI Workspace Evolution: coverage for target recommendation, no-op mutation, and standard mode', () => {
+  const os = require('node:os');
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const { recommendEvolutionTarget, runWorkspaceEvolution } = require('../scripts/workspace-evolver');
+
+  // Target recommendations
+  assert.equal(recommendEvolutionTarget({ failureType: 'verification', tags: ['security'] }), 'prevention_min_occurrences');
+  assert.equal(recommendEvolutionTarget({ failureType: 'verification', tags: ['billing'] }), 'prevention_min_occurrences');
+  assert.equal(recommendEvolutionTarget({ failureType: 'verification', tags: ['other'] }), 'verification_max_retries');
+  assert.equal(recommendEvolutionTarget({ failureType: 'execution', tags: ['testing'] }), 'verification_max_retries');
+  assert.equal(recommendEvolutionTarget({ failureType: 'execution', tags: [] }), 'half_life_days');
+  assert.equal(recommendEvolutionTarget({}), 'half_life_days');
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-rrsi-noop-test-'));
+  try {
+    // No-op mutation test: nextValue equals currentValue (7 is default half_life_days)
+    const noopResult = runWorkspaceEvolution({
+      targetName: 'half_life_days',
+      nextValue: 7,
+      feedbackDir: tmpDir,
+    });
+    assert.equal(noopResult.skipped, true);
+    assert.match(noopResult.reason, /no-op mutation/);
+
+    // Evolution in standard mode (enableRRSI: false) with mock command
+    const testCmd = `${JSON.stringify(process.execPath)} -e "console.log('ℹ tests 1\\nℹ pass 1')"`;
+    const standardResult = runWorkspaceEvolution({
+      targetName: 'half_life_days',
+      nextValue: 8,
+      enableRRSI: false,
+      primaryCommands: [testCmd],
+      feedbackDir: tmpDir,
+    });
+    assert.ok(standardResult);
+    assert.equal(standardResult.metrics.rrsi.enabled, false);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+

@@ -1,5 +1,6 @@
 'use strict';
 
+const { randomInt } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 
 const {
@@ -124,8 +125,7 @@ function parseCommandLine(cmdString) {
   let inSingleQuote = false;
   let escaped = false;
 
-  for (let i = 0; i < cmdString.length; i++) {
-    const char = cmdString[i];
+  for (const char of cmdString) {
 
     if (escaped) {
       current += char;
@@ -262,7 +262,7 @@ function chooseNextValue(target, currentValue, requestedValue = undefined, stepM
     return Math.max(target.range[0], Math.min(target.range[1], requestedValue));
   }
 
-  const direction = Math.random() >= 0.5 ? 1 : -1;
+  const direction = randomInt(0, 2) === 1 ? 1 : -1;
   const rawStep = target.step * (Number.isFinite(stepMultiplier) ? stepMultiplier : 1.0);
   const effectiveStep = typeof target.step === 'number' && Number.isInteger(target.step)
     ? Math.max(1, Math.round(rawStep))
@@ -289,32 +289,73 @@ function recommendEvolutionTarget({ failureType, tags = [] } = {}) {
   return 'half_life_days';
 }
 
+function resolveEvolutionTarget(opts, enableRRSI, history) {
+  if (opts.targetName) {
+    const target = EVOLUTION_TARGETS.find((entry) => entry.name === opts.targetName);
+    if (!target) {
+      throw new Error(`Unknown evolution target: ${opts.targetName}`);
+    }
+    return { target, meta: null };
+  }
+
+  if (enableRRSI) {
+    const stagnation = detectStagnation(history, { windowSize: opts.stagnationWindow });
+    const selection = selectTargetWithExploration({
+      targets: EVOLUTION_TARGETS,
+      history,
+      isStagnant: stagnation.isStagnant,
+    });
+    return { target: selection.target, meta: selection };
+  }
+
+  const index = randomInt(0, EVOLUTION_TARGETS.length);
+  return { target: EVOLUTION_TARGETS[index], meta: null };
+}
+
+function evaluateCandidateMutation({
+  target,
+  currentValue,
+  nextValue,
+  enableRRSI,
+  candidateEvaluation,
+  baselineEvaluation,
+  opts,
+}) {
+  const complexityDelta = enableRRSI
+    ? computeComplexityDelta(nextValue, currentValue, { range: target.range })
+    : 0;
+
+  if (enableRRSI) {
+    const rrsiDecision = evaluateComplexityRegularizedScore({
+      baselineScore: baselineEvaluation.score,
+      candidateScore: candidateEvaluation.score,
+      testsPassed: candidateEvaluation.passed,
+      complexityDelta,
+    }, {
+      lambda: opts.lambda,
+      stabilityFloor: opts.stabilityFloor,
+    });
+    return {
+      kept: rrsiDecision.accepted,
+      rrsiDecision,
+      complexityDelta,
+    };
+  }
+
+  return {
+    kept: candidateEvaluation.passed && candidateEvaluation.score > baselineEvaluation.score,
+    rrsiDecision: null,
+    complexityDelta,
+  };
+}
+
 function runWorkspaceEvolution(opts = {}) {
   const enableRRSI = opts.enableRRSI !== false;
   const iteration = Number.isFinite(opts.iteration) ? opts.iteration : 0;
   const totalIterations = Number.isFinite(opts.totalIterations) ? opts.totalIterations : 1;
   const history = Array.isArray(opts.history) ? opts.history : [];
 
-  let target = null;
-  let targetSelectionMeta = null;
-
-  if (opts.targetName) {
-    target = EVOLUTION_TARGETS.find((entry) => entry.name === opts.targetName);
-  } else if (enableRRSI) {
-    const stagnation = detectStagnation(history, { windowSize: opts.stagnationWindow });
-    targetSelectionMeta = selectTargetWithExploration({
-      targets: EVOLUTION_TARGETS,
-      history,
-      isStagnant: stagnation.isStagnant,
-    });
-    target = targetSelectionMeta.target;
-  } else {
-    target = EVOLUTION_TARGETS[Math.floor(Math.random() * EVOLUTION_TARGETS.length)];
-  }
-
-  if (!target) {
-    throw new Error(`Unknown evolution target: ${opts.targetName}`);
-  }
+  const { target, meta: targetSelectionMeta } = resolveEvolutionTarget(opts, enableRRSI, history);
 
   const primaryCommands = normalizeCommands(opts.primaryCommands || opts.testCommand, ['npm test']);
   const holdoutCommands = normalizeCommands(opts.holdoutCommands, []);
@@ -396,27 +437,17 @@ function runWorkspaceEvolution(opts = {}) {
     [target.settingKey]: nextValue,
   }, () => evaluateWorkspace(evaluationOptions), feedbackDir);
 
-  const complexityDelta = enableRRSI
-    ? computeComplexityDelta(nextValue, currentValue, { range: target.range })
-    : 0;
 
-  let kept = false;
-  let rrsiDecision = null;
 
-  if (enableRRSI) {
-    rrsiDecision = evaluateComplexityRegularizedScore({
-      baselineScore: baselineEvaluation.score,
-      candidateScore: candidateEvaluation.score,
-      testsPassed: candidateEvaluation.passed,
-      complexityDelta,
-    }, {
-      lambda: opts.lambda,
-      stabilityFloor: opts.stabilityFloor,
-    });
-    kept = rrsiDecision.accepted;
-  } else {
-    kept = candidateEvaluation.passed && candidateEvaluation.score > baselineEvaluation.score;
-  }
+  const { kept, rrsiDecision, complexityDelta } = evaluateCandidateMutation({
+    target,
+    currentValue,
+    nextValue,
+    enableRRSI,
+    candidateEvaluation,
+    baselineEvaluation,
+    opts,
+  });
 
   const acceptedMutation = kept
     ? applyAcceptedMutation({
