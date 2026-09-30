@@ -223,7 +223,10 @@ function auditRRSI(options = {}) {
     const experiments = loadExperiments();
     let leakedCount = 0;
     experiments.forEach((exp) => {
-      const screen = screenLeakage(exp);
+      const proposal = exp.hypothesis
+        ? { name: exp.name, hypothesis: exp.hypothesis, mutation: exp.mutation }
+        : exp;
+      const screen = screenLeakage(proposal);
       if (!screen.passed) leakedCount++;
     });
 

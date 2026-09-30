@@ -109,10 +109,19 @@ function calculateAnnealedStepMultiplier(iteration, totalIterations, options = {
  * @param {object} [options]
  * @returns {{ passed: boolean, leaks: string[], reason: string | null }}
  */
+function extractScreenableText(candidate) {
+  if (typeof candidate === 'string') return candidate;
+  if (!candidate || typeof candidate !== 'object') return '';
+  const clone = { ...candidate };
+  if (clone.metrics && typeof clone.metrics === 'object') {
+    const { evolutionStatePath, ...cleanedMetrics } = clone.metrics;
+    clone.metrics = cleanedMetrics;
+  }
+  return JSON.stringify(clone);
+}
+
 function screenLeakage(candidate, options = {}) {
-  const text = typeof candidate === 'string'
-    ? candidate
-    : JSON.stringify(candidate || '');
+  const text = extractScreenableText(candidate);
 
   const customDenyPatterns = Array.isArray(options.denyPatterns) ? options.denyPatterns : [];
 
