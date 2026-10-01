@@ -503,8 +503,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 563 -> 565 (2026-09-28): scripts/halo-trace-optimizer.js + skill (HALO trace-to-fix FORMAT steal).
   // 565 -> 567 (2026-09-29): scripts/infoq-architect-honesty.js + skill (InfoQ architect FORMAT steal).
   // 567 -> 568 (2026-09-29): public/blog/2026-09-28-pretool-secret-deny.html
-    manifest.fileCount <= 568,
-    `npm package should stay <= 568 files, got ${manifest.fileCount}`
+  // 568 -> 570 (2026-10-01): scripts/salt-code-policy-honesty.js + skill (Salt Code 40-policy FORMAT steal).
+    manifest.fileCount <= 570,
+    `npm package should stay <= 570 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

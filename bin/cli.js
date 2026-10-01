@@ -2809,6 +2809,24 @@ function deeppatternDisciplineHonestyDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function saltCodePolicyHonestyDoctor() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildSaltCodePolicyHonestyReport,
+    formatSaltCodePolicyHonestyReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'salt-code-policy-honesty'));
+  const report = buildSaltCodePolicyHonestyReport(args);
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatSaltCodePolicyHonestyReport(report));
+  }
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
 
 function thumbgateBoardLoop() {
   const args = parseArgs(process.argv.slice(3));
@@ -3798,6 +3816,7 @@ function help() {
   console.log('  typesafe-typed-questions Typed noul/choice/score + code-owned route (TypeSafe FORMAT; not Jev)');
   console.log('  ci-gha-buildkite-patterns First-fail + PR fail-fast on GitHub Actions (Buildkite FORMAT; not Buildkite)');
   console.log('  deeppattern-discipline-honesty Layer-check + evidence-closeout (DeepPattern FORMAT; not AQG/DE)');
+  console.log('  salt-code-policy-honesty 40-policy taxonomy + context vs PreToolUse diode (Salt Code FORMAT)');
   console.log('  infoq-architect-honesty Code-as-truth, typed host, lease, time-in-queue (InfoQ FORMAT)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  llm-obs-honesty       Four LLM-obs practices on existing rails (Datadog FORMAT, not a clone)');
@@ -3851,6 +3870,7 @@ function help() {
   console.log('  npx thumbgate typesafe-typed-questions --json --tool-name=Bash --command="git push --force origin main"');
   console.log('  npx thumbgate ci-gha-buildkite-patterns --json --map-only');
   console.log('  npx thumbgate deeppattern-discipline-honesty --json --map-only');
+  console.log('  npx thumbgate salt-code-policy-honesty --inspect-code=src/api.js --json');
   console.log('  npx thumbgate colab-compute-honesty --json --map-only');
   console.log('  npx thumbgate llm-obs-honesty --json');
   console.log('  npx thumbgate board-loop --json');
@@ -3898,6 +3918,7 @@ const SUBCOMMAND_HELP = {
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
   'ci-gha-buildkite-patterns': 'Usage: npx thumbgate ci-gha-buildkite-patterns [--jobs-json=path] [--workflow=path] [--json] [--map-only]\n\nBuildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations. Does not add Buildkite.',
   'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',
+  'salt-code-policy-honesty': 'Usage: npx thumbgate salt-code-policy-honesty [--inspect-code=...] [--inspect-api=...] [--inspect-mcp=...] [--strict] [--json] [--map-only]\n\nSalt Code FORMAT steal: 40-policy taxonomy, active PreToolUse vs context injection, OpenAPI query secret diode. Does not connect to mcp.getsaltcode.com.',
   'infoq-architect-honesty': 'Usage: npx thumbgate infoq-architect-honesty [--claim="..."] [--host=javascript] [--queue=path.json] [--max-age-ms=N] [--json] [--map-only]\n\nInfoQ September 2026 FORMAT: code-as-truth, typed host, existing lease, time-in-queue. Does not register for InfoQ or install Vortex.',
   'board-loop': 'Usage: npx thumbgate board-loop [--apply] [--json] [--max-update-branch=1] [--max-pr-manage=1] [--max-comments=4] [--skip-pr=N]\n\nClassify Issues+PR wall: update-branch BEHIND green Dependabot, pr:manage READY, comment DIRTY/ECI. Never approve.',
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
@@ -4573,6 +4594,12 @@ switch (COMMAND) {
   case 'evidence-closeout-honesty':
   case 'aqg-de-honesty':
     deeppatternDisciplineHonestyDoctor();
+    break;
+  case 'salt-code-policy-honesty':
+  case 'salt-code-honesty':
+  case 'salt-code':
+  case 'saltcode':
+    saltCodePolicyHonestyDoctor();
     break;
   case 'infoq-architect-honesty':
   case 'infoq-architects':
