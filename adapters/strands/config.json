@@ -1,0 +1,31 @@
+{
+  "provider": "bedrock",
+  "fallbackProvider": "ollama",
+  "tokenShunt": {
+    "enabled": true,
+    "maxOutputLines": 350,
+    "maxOutputBytes": 16384
+  },
+  "compaction": {
+    "enabled": true,
+    "thresholdPct": 0.75,
+    "preservePinnedRules": true
+  },
+  "inLoopRecovery": {
+    "enabled": true,
+    "emergencyPruningFloor": 5
+  },
+  "preActionDiode": {
+    "enabled": true,
+    "blockedToolPatterns": [
+      "rm\\s+(-rf|-fr|--recursive)",
+      "git\\s+push.*(--force|-f)",
+      "chmod\\s+777",
+      "deploy-to-qa\\.py"
+    ]
+  },
+  "benchmarks": {
+    "terminalBench2_1SavingsPct": 0.77,
+    "multiBenchmarkSavingsPct": 0.45
+  }
+}
