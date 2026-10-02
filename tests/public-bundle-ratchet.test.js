@@ -256,8 +256,9 @@ const path = require('node:path');
 // 563 → 565 (2026-09-28): scripts/halo-trace-optimizer.js + skill (HALO trace-to-fix FORMAT steal).
 // 565 → 567 (2026-09-29): scripts/infoq-architect-honesty.js + skill (InfoQ architect honesty FORMAT steal).
 // 567 → 568 (2026-09-29): public/blog/2026-09-28-pretool-secret-deny.html
-// 568 → 569 (2026-09-30): scripts/rrsi-regularizer.js (arXiv:2609.24972 agent harness self-improvement regularization).
-const BASELINE_FILE_COUNT = 569;
+// 568 → 570 (2026-10-01): scripts/meko-datapack-honesty.js + skill (Meko Datapack FORMAT steal).
+// 570 → 571 (2026-09-30): scripts/rrsi-regularizer.js (arXiv:2609.24972 agent harness self-improvement regularization).
+const BASELINE_FILE_COUNT = 571;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
