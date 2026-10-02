@@ -338,6 +338,7 @@ const FOUNDERS_PAGE_PATH = path.resolve(__dirname, '../../public/founders.html')
 const PARTNER_INTAKE_PAGE_PATH = path.resolve(__dirname, '../../public/partner-intake.html');
 const PETER_PAGE_PATH = path.resolve(__dirname, '../../public/peter.html');
 const INSTALL_PAGE_PATH = path.resolve(__dirname, '../../public/install.html');
+const ONBOARDING_PAGE_PATH = path.resolve(__dirname, '../../public/onboarding.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -3575,6 +3576,10 @@ function loadLearnPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(LEARN_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadOnboardingPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(ONBOARDING_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function readOptionalPublicTemplate(filePath) {
   try {
     return fs.readFileSync(filePath, 'utf-8');
@@ -5788,7 +5793,7 @@ function createApiServer() {
                   return;
                 }
               }
-              (async () => {
+              void (async () => {
                 try {
                   const { callTool } = require('../../adapters/mcp/server-stdio');
                   const name = msg.params?.name;
@@ -6667,6 +6672,25 @@ async function addContext(){
         });
       } catch (err) {
         sendText(res, 500, err.message || 'Partner intake page unavailable');
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/onboarding' || pathname === '/onboarding.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadOnboardingPageHtml,
+          extraTelemetry: {
+            pageType: 'onboarding',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Onboarding page unavailable');
       }
       return;
     }
@@ -11444,7 +11468,12 @@ module.exports = {
 };
 
 if (require.main === module) {
-  startServer().then(({ host, port }) => {
-    console.log(`ThumbGate API listening on http://${host}:${port}`);
-  });
+  startServer()
+    .then(({ host, port }) => {
+      console.log(`ThumbGate API listening on http://${host}:${port}`);
+    })
+    .catch((err) => {
+      console.error('Failed to start ThumbGate server:', err);
+      process.exit(1);
+    });
 }
