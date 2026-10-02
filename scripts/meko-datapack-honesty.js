@@ -78,8 +78,8 @@ const PLANE_RAILS = Object.freeze({
     meko: 'Artifacts (artifact_put / artifact_get) — content-addressed SHA-256 file store',
     rails: [
       'scripts/action-receipts.js',
-      'scripts/verification-evidence.js',
       'scripts/operator-artifacts.js',
+      'VERIFICATION_EVIDENCE.md',
     ],
     when: 'Guarantees that files referenced by agents are tamper-proof and verifiable by hash.',
   },
@@ -121,11 +121,20 @@ function createDatapackDescriptor({ id, name, scope, owner }) {
   if (!id || typeof id !== 'string') {
     throw new TypeError('Datapack descriptor requires a string id');
   }
+  if (!scope || typeof scope !== 'object') {
+    throw new TypeError('Datapack descriptor requires a scope object');
+  }
+  const required = ['entity', 'project', 'process', 'session'];
+  for (const f of required) {
+    if (!scope[f] || typeof scope[f] !== 'string' || !scope[f].trim()) {
+      throw new Error(`Datapack descriptor requires non-empty scope field: ${f}`);
+    }
+  }
   const cleanScope = {
-    entity: scope?.entity || 'default-entity',
-    project: scope?.project || 'default-project',
-    process: scope?.process || 'default-process',
-    session: scope?.session || 'default-session',
+    entity: scope.entity.trim(),
+    project: scope.project.trim(),
+    process: scope.process.trim(),
+    session: scope.session.trim(),
   };
 
   return {
@@ -135,7 +144,7 @@ function createDatapackDescriptor({ id, name, scope, owner }) {
     owner: owner || 'operator',
     scope: cleanScope,
     createdAt: new Date().toISOString(),
-    planes: { ...PLANES },
+    planes: [...PLANES],
   };
 }
 
@@ -209,8 +218,11 @@ function auditTrace(trace, options = {}) {
   }
 
   // 2. Passive store without firewall check
-  const hasStore = trace.hasMemoryStore || trace.tools?.some((t) => t.startsWith('memory_') || t.startsWith('datapack_'));
-  const hasPreToolUseFirewall = trace.hasPreToolUseFirewall || trace.firewall === true || trace.gates?.includes('PreToolUse');
+  const hasStore = trace.hasMemoryStore === true || trace.tools?.some((t) => t.startsWith('memory_') || t.startsWith('datapack_'));
+  const hasPreToolUseFirewall =
+    trace.hasPreToolUseFirewall === true ||
+    trace.firewall === true ||
+    (Array.isArray(trace.gates) && trace.gates.includes('PreToolUse'));
   if (hasStore && !hasPreToolUseFirewall) {
     findings.push({
       code: 'passive_store_without_firewall',
@@ -289,7 +301,26 @@ function auditTrace(trace, options = {}) {
  */
 function buildMekoDatapackReport(options = {}) {
   const trace = options.trace ? JSON.parse(fs.readFileSync(options.trace, 'utf8')) : null;
-  const audit = trace ? auditTrace(trace, options) : null;
+  let audit = null;
+  if (trace) {
+    audit = auditTrace(trace, options);
+  } else if (options['map-only'] || options.mapOnly) {
+    audit = {
+      status: 'map_only',
+      pass: null,
+      findings: [],
+      planesCovered: [...PLANES],
+      note: 'Map-only run. Rail definitions mapped to local codebase.',
+    };
+  } else {
+    audit = {
+      status: 'not_run',
+      pass: null,
+      findings: [],
+      planesCovered: [],
+      note: 'No trace supplied. Pass --trace=<path> to audit a live multi-agent execution trace.',
+    };
+  }
 
   return {
     schemaVersion: 'thumbgate.meko-datapack-honesty.v1',
@@ -299,12 +330,7 @@ function buildMekoDatapackReport(options = {}) {
     doctrine: 'Collective Memory & Datapacks are FORMAT, not a YugabyteDB install. Steal the 5 planes onto existing ThumbGate rails.',
     planes: PLANES,
     planeRails: PLANE_RAILS,
-    audit: audit || {
-      pass: true,
-      findings: [],
-      planesCovered: [...PLANES],
-      note: 'Map-only run. Pass --trace=<path> to audit a live multi-agent execution trace.',
-    },
+    audit,
   };
 }
 
@@ -329,12 +355,18 @@ function formatMekoDatapackReport(report) {
 
   if (report.audit) {
     lines.push('--- Audit Findings ---');
-    lines.push(`Status: ${report.audit.pass ? 'PASS (Honest)' : 'FAIL (Violations Detected)'}`);
+    if (report.audit.pass === true) {
+      lines.push('Status: PASS (Honest)');
+    } else if (report.audit.pass === false) {
+      lines.push('Status: FAIL (Violations Detected)');
+    } else {
+      lines.push(`Status: ${report.audit.status || 'NOT RUN'} (${report.audit.note || 'No trace evaluated'})`);
+    }
     if (report.audit.findings.length > 0) {
       for (const f of report.audit.findings) {
         lines.push(`  [FAIL] ${f.code}: ${f.reason}`);
       }
-    } else {
+    } else if (report.audit.pass === true) {
       lines.push('  No fail-closed violations detected.');
     }
   }
@@ -352,6 +384,7 @@ if (require.main === module) {
 
   const report = buildMekoDatapackReport({
     trace: mapOnly ? null : tracePath,
+    'map-only': mapOnly,
   });
 
   if (jsonMode) {
@@ -360,7 +393,7 @@ if (require.main === module) {
     console.log(formatMekoDatapackReport(report));
   }
 
-  if (report.audit && !report.audit.pass) {
+  if (report.audit && report.audit.pass === false) {
     process.exit(1);
   }
   process.exit(0);

@@ -188,6 +188,34 @@ test('buildMekoDatapackReport and formatMekoDatapackReport generate valid output
   assert.ok(text.includes('[Plane: LEARNING]'));
 });
 
+test('createDatapackDescriptor fails closed on missing scope fields', () => {
+  assert.throws(
+    () => createDatapackDescriptor({ id: 'p1', scope: { entity: 'e1', project: 'p1' } }),
+    /Datapack descriptor requires non-empty scope field/
+  );
+  assert.throws(
+    () => createDatapackDescriptor({ id: 'p1', scope: null }),
+    /Datapack descriptor requires a scope object/
+  );
+});
+
+test('auditTrace rejects string boolean firewall flags', () => {
+  const badTrace = {
+    hasMemoryStore: true,
+    hasPreToolUseFirewall: 'false',
+  };
+  const audit = auditTrace(badTrace);
+  assert.equal(audit.pass, false);
+  assert.ok(audit.findings.some((f) => f.code === 'passive_store_without_firewall'));
+});
+
+test('buildMekoDatapackReport without trace reports not_run status', () => {
+  const report = buildMekoDatapackReport();
+  assert.equal(report.audit.status, 'not_run');
+  assert.equal(report.audit.pass, null);
+  assert.equal(report.audit.planesCovered.length, 0);
+});
+
 test('CLI runs cleanly with --json and --map-only', () => {
   const res = spawnSync(process.execPath, [SCRIPT, '--json', '--map-only'], {
     encoding: 'utf8',
