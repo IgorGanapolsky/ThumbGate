@@ -163,3 +163,90 @@ test('AWS Strands Harness Doctor: runDoctor executes all 5 pillars with healthy 
   assert.match(report.benchmarks.terminalBench2_1CostSavingsClaim, /77% cheaper/);
   assert.match(report.benchmarks.sixBenchmarkAverageSavingsClaim, /45% cheaper/);
 });
+
+test('AWS Strands Harness: output shunting edge cases and non-string inputs', () => {
+  const nullResult = evaluateOutputShunt(null);
+  assert.equal(nullResult.shunted, false);
+  assert.equal(nullResult.originalLineCount, 1);
+
+  const numResult = evaluateOutputShunt(12345);
+  assert.equal(numResult.shunted, false);
+  assert.equal(numResult.shuntedContent, '12345');
+});
+
+test('AWS Strands Harness: simulateOverflowRecovery handles under-capacity history cleanly', () => {
+  const turns = [
+    { turn: 0, tokens: 100 },
+    { turn: 1, tokens: 200 },
+  ];
+  const result = simulateOverflowRecovery({ turns, maxTokens: 5000 });
+  assert.equal(result.recovered, false);
+  assert.equal(result.action, 'none');
+  assert.equal(result.survivingTurns, 2);
+  assert.equal(result.estimatedTokens, 300);
+});
+
+test('AWS Strands Harness Middleware: handles disabled diode and normal output', async () => {
+  const disabledMiddleware = createStrandsGateMiddleware({
+    preActionDiode: { enabled: false },
+  });
+  const res = await disabledMiddleware.beforeToolCall({
+    toolName: 'shell_execute',
+    input: { command: 'rm -rf /' },
+  });
+  assert.equal(res.allow, true);
+
+  // Normal output through afterToolCall without shunting
+  const normalRes = await disabledMiddleware.afterToolCall({
+    toolName: 'read_file',
+    result: 'short output',
+  });
+  assert.equal(normalRes.shunted, false);
+  assert.equal(normalRes.result, 'short output');
+});
+
+test('AWS Strands Harness Middleware: registerStrandsGatePlugin registers hooks on agent', () => {
+  const { registerStrandsGatePlugin } = require('../adapters/strands/strands-middleware');
+  const hooks = {};
+  const mockAgent = {
+    addHook(name, fn) {
+      hooks[name] = fn;
+    },
+  };
+  const plugin = registerStrandsGatePlugin(mockAgent, { preActionDiode: { enabled: true } });
+  assert.ok(plugin);
+  assert.equal(typeof hooks.beforeToolCall, 'function');
+  assert.equal(typeof hooks.afterToolCall, 'function');
+});
+
+test('AWS Strands Harness Doctor: CLI modes execute cleanly', () => {
+  const { execSync } = require('node:child_process');
+  const scriptPath = path.resolve(__dirname, '../scripts/strands-harness-doctor.js');
+
+  // 1. Text mode default
+  const textOutput = execSync(`node ${scriptPath}`, { encoding: 'utf8' });
+  assert.match(textOutput, /=== AWS Strands Harness Doctor \(ThumbGate Diode\) ===/);
+  assert.match(textOutput, /Status: HEALTHY/);
+
+  // 2. JSON mode
+  const jsonOutput = execSync(`node ${scriptPath} --json`, { encoding: 'utf8' });
+  const parsed = JSON.parse(jsonOutput);
+  assert.equal(parsed.name, 'strands-harness-doctor');
+  assert.equal(parsed.status, 'healthy');
+
+  // 3. Map only text mode
+  const mapTextOutput = execSync(`node ${scriptPath} --map-only`, { encoding: 'utf8' });
+  assert.match(mapTextOutput, /=== AWS Strands Harness Architecture Map ===/);
+  assert.match(mapTextOutput, /gate-strands-harness-output-compaction/);
+
+  // 4. Map only JSON mode
+  const mapJsonOutput = execSync(`node ${scriptPath} --map-only --json`, { encoding: 'utf8' });
+  const parsedMap = JSON.parse(mapJsonOutput);
+  assert.match(parsedMap.source, /AWS Strands Harness/);
+  assert.equal(parsedMap.architecturePillars.length, 5);
+
+  // 5. Check mode
+  const checkOutput = execSync(`node ${scriptPath} --check`, { encoding: 'utf8' });
+  assert.match(checkOutput, /Status: HEALTHY/);
+});
+
