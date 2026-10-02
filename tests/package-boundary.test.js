@@ -504,8 +504,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 565 -> 567 (2026-09-29): scripts/infoq-architect-honesty.js + skill (InfoQ architect FORMAT steal).
   // 567 -> 568 (2026-09-29): public/blog/2026-09-28-pretool-secret-deny.html
   // 568 -> 569 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html
-    manifest.fileCount <= 569,
-    `npm package should stay <= 569 files, got ${manifest.fileCount}`
+  // 569 -> 573 (2026-10-01): adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/
+    manifest.fileCount <= 573,
+    `npm package should stay <= 573 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

@@ -257,7 +257,8 @@ const path = require('node:path');
 // 565 → 567 (2026-09-29): scripts/infoq-architect-honesty.js + skill (InfoQ architect honesty FORMAT steal).
 // 567 → 568 (2026-09-29): public/blog/2026-09-28-pretool-secret-deny.html
 // 568 → 569 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html (AWS Strands Harness FORMAT steal).
-const BASELINE_FILE_COUNT = 569;
+// 569 → 573 (2026-10-01): adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/
+const BASELINE_FILE_COUNT = 573;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
