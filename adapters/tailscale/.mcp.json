@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "thumbgate-tailscale": {
+      "command": "node",
+      "args": [
+        "scripts/tailscale-p2p-doctor.js",
+        "--serve-mcp"
+      ],
+      "env": {
+        "THUMBGATE_ADAPTER": "tailscale",
+        "THUMBGATE_P2P_PORT": "9877"
+      }
+    }
+  }
+}
