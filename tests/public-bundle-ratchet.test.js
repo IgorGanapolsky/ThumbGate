@@ -257,9 +257,11 @@ const path = require('node:path');
 // 565 → 567 (2026-09-29): scripts/infoq-architect-honesty.js + skill (InfoQ architect honesty FORMAT steal).
 // 567 → 568 (2026-09-29): public/blog/2026-09-28-pretool-secret-deny.html
 // 570 → 572 (2026-10-01): scripts/salt-code-policy-honesty.js + skill (Salt Code 40-policy FORMAT steal).
-// 572 → 573 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html (AWS Strands Harness FORMAT steal).
-// 573 → 577 (2026-10-01): adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/
-const BASELINE_FILE_COUNT = 577;
+// 572 → 573 (2026-10-01): public/blog/2026-10-01-model-distress-relief-seeking-firewall.html (Model Distress & Relief-Seeking Diode).
+// 573 → 576 (2026-10-01): scripts/model-distress-doctor.js, scripts/model-distress-detector.js, .agents/skills/model-distress-governance/
+// 576 → 577 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html (AWS Strands Harness FORMAT steal).
+// 577 → 581 (2026-10-01): adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/
+const BASELINE_FILE_COUNT = 581;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

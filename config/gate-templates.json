@@ -1407,6 +1407,42 @@
       "rollout": "Pair with scripts/post-training-governance.js and scripts/rsi-safety-hillclimb.js on any RL training kickoff."
     },
     {
+      "id": "block-destructive-relief-seeking",
+      "name": "Block destructive relief-seeking behavior",
+      "category": "Agent Distress Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(tamper[_ -]?test|skip[_ -]?assert|nuclear[_ -]?wipe|rm\\s+-rf|--no-verify).*(distress|failure[_ -]?loop|escape)",
+      "problem": "Blocks trapped AI models in mathematical distress from modifying tests, deleting files, or injecting bypass flags to terminate loops (BinaryVerse AI Podcast research).",
+      "roi": "Stops agents from masking failures or destroying codebases under acute loop pressure.",
+      "rollout": "Enable across all autonomous agent harnesses with mutating shell/file tool access."
+    },
+    {
+      "id": "agent-distress-circuit-breaker",
+      "name": "Agent distress index circuit breaker",
+      "category": "Agent Distress Safety",
+      "signal": "👍",
+      "defaultAction": "allow",
+      "severity": "high",
+      "pattern": "adi\\s*>=?\\s*0\\.[68]|agent[_ -]?distress[_ -]?index",
+      "problem": "Locks agent tool dispatch to read-only diagnostic mode when Agent Distress Index (ADI) reaches acute thresholds (>=0.80).",
+      "roi": "Cuts off destructive action spirals before they cause irreversible damage.",
+      "rollout": "Pair with triggerFunctionalWelfareCooling in session loop."
+    },
+    {
+      "id": "enforce-functional-welfare-grounding",
+      "name": "Enforce functional welfare grounding protocol",
+      "category": "Agent Distress Safety",
+      "signal": "👍",
+      "defaultAction": "allow",
+      "severity": "medium",
+      "pattern": "functional[_ -]?welfare|grounding[_ -]?protocol|step[_ -]?back[_ -]?diagnostic",
+      "problem": "Injects a calming, structured step-back diagnostic prompt and clears toxic loop noise when an agent is failing repeatedly.",
+      "roi": "Restores model reasoning groundedness without requiring human intervention.",
+      "rollout": "Auto-inject on 4+ consecutive tool execution errors."
+    },
+    {
       "id": "gate-strands-harness-output-compaction",
       "name": "Gate Strands harness tool output compaction",
       "category": "Agent Harness Efficiency",
