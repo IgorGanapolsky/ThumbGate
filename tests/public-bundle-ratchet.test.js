@@ -256,7 +256,8 @@ const path = require('node:path');
 // 563 → 565 (2026-09-28): scripts/halo-trace-optimizer.js + skill (HALO trace-to-fix FORMAT steal).
 // 565 → 567 (2026-09-29): scripts/infoq-architect-honesty.js + skill (InfoQ architect honesty FORMAT steal).
 // 567 → 568 (2026-09-29): public/blog/2026-09-28-pretool-secret-deny.html
-const BASELINE_FILE_COUNT = 568;
+// 568 → 570 (2026-10-01): scripts/meko-datapack-honesty.js + skill (Meko Datapack FORMAT steal).
+const BASELINE_FILE_COUNT = 570;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
