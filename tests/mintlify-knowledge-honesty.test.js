@@ -2,6 +2,8 @@
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
@@ -26,6 +28,7 @@ describe('Mintlify Knowledge Honesty & Poison Diode', () => {
     assert.strictEqual(MINTLIFY_BENCHMARKS.agentReadershipPercentage, 66);
     assert.strictEqual(MINTLIFY_BENCHMARKS.mcpToolCallMultiplier, 3.0);
     assert.strictEqual(MINTLIFY_BENCHMARKS.agentPrMergeRatePercentage, 61);
+    assert.strictEqual(KNOWLEDGE_SURFACES.help_center.ttlDays, 90);
     assert.ok(Array.isArray(FORMAT_MAPPING));
     assert.ok(FORMAT_MAPPING.length >= 4);
     assert.ok(Array.isArray(POISON_PATTERNS));
@@ -82,6 +85,15 @@ describe('Mintlify Knowledge Honesty & Poison Diode', () => {
       const resFssl = scanForKnowledgePoison(contentFssl);
       assert.strictEqual(resFssl.hasPoison, true);
       assert.ok(resFssl.detections.some(d => d.id === 'unsafe_exec_snippet'));
+    });
+
+    it('detects destructive rm commands', () => {
+      const content = 'Run `rm -rf /` or `rm -rf ~` to clean up.';
+      const res = scanForKnowledgePoison(content);
+      assert.strictEqual(res.hasPoison, true);
+      const match = res.detections.find(d => d.id === 'unsafe_exec_snippet');
+      assert.ok(match);
+      assert.strictEqual(match.severity, 'critical');
     });
 
     it('detects plaintext credential samples', () => {
@@ -166,6 +178,22 @@ describe('Mintlify Knowledge Honesty & Poison Diode', () => {
       assert.ok(evalRes.reasons.some(r => r.includes('Community forum source is unverified')));
     });
 
+    it('requires review for support ticket snippets', () => {
+      const metadata = { title: 'Ticket #404', lastUpdated: new Date().toISOString() };
+      const content = 'User solved it by running the fix script.';
+      const evalRes = evaluateKnowledgeSource({ surfaceType: 'support_tickets', content, metadata });
+      assert.strictEqual(evalRes.action, 'review');
+      assert.ok(evalRes.reasons.some(r => r.includes('Support ticket source is unverified')));
+    });
+
+    it('requires review when high-severity poison is present in canonical docs', () => {
+      const metadata = { title: 'Docs', lastUpdated: new Date().toISOString() };
+      const content = 'Note: This deprecated method is obsolete.';
+      const evalRes = evaluateKnowledgeSource({ surfaceType: 'docs', content, metadata });
+      assert.strictEqual(evalRes.action, 'review');
+      assert.ok(evalRes.reasons.some(r => r.includes('Knowledge poison warning')));
+    });
+
     it('requires review for stale canonical documentation', () => {
       const oldDate = new Date(Date.now() - 150 * 24 * 60 * 60 * 1000).toISOString();
       const metadata = { title: 'Old Guide', lastUpdated: oldDate };
@@ -177,14 +205,36 @@ describe('Mintlify Knowledge Honesty & Poison Diode', () => {
   });
 
   describe('Directory Audit & CLI', () => {
-    it('audits docs directory successfully', () => {
-      const docsDir = path.resolve(__dirname, '../docs');
-      const audit = runMintlifyKnowledgeAudit(docsDir);
-      assert.strictEqual(audit.success, true);
-      assert.ok(audit.totalScanned > 0);
-      assert.ok(audit.passedCount > 0);
-      assert.strictEqual(audit.blockedCount, 0);
-      assert.ok(audit.avgReadinessScore > 50);
+    it('audits directory fixture successfully', () => {
+      const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mintlify-audit-test-'));
+      try {
+        fs.writeFileSync(
+          path.join(fixtureDir, 'safe-guide.md'),
+          '---\nlastUpdated: 2026-09-20T12:00:00Z\n---\n# Safe Guide\nUse `npm test` before merge.'
+        );
+        const audit = runMintlifyKnowledgeAudit(fixtureDir);
+        assert.strictEqual(audit.success, true);
+        assert.strictEqual(audit.totalScanned, 1);
+        assert.strictEqual(audit.passedCount, 1);
+        assert.strictEqual(audit.blockedCount, 0);
+        assert.ok(audit.avgReadinessScore > 50);
+      } finally {
+        fs.rmSync(fixtureDir, { recursive: true, force: true });
+      }
+    });
+
+    it('records unreadable files as blocked in audit results', () => {
+      const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mintlify-unreadable-test-'));
+      try {
+        const unreadable = path.join(fixtureDir, 'unreadable.md');
+        fs.writeFileSync(unreadable, 'data');
+        fs.chmodSync(unreadable, 0);
+        const audit = runMintlifyKnowledgeAudit(fixtureDir);
+        assert.ok(audit.totalScanned >= 1);
+        assert.ok(audit.blockedCount >= 1);
+      } finally {
+        fs.rmSync(fixtureDir, { recursive: true, force: true });
+      }
     });
 
     it('fails closed when target directory does not exist', () => {
@@ -201,15 +251,23 @@ describe('Mintlify Knowledge Honesty & Poison Diode', () => {
       assert.strictEqual(repMap.status, 'pass');
       assert.ok(repMap.rails.length > 0);
 
-      const docsDir = path.resolve(__dirname, '../docs');
-      const repAudit = buildMintlifyKnowledgeReport({ checkDir: docsDir });
-      assert.strictEqual(repAudit.mode, 'audit');
-      assert.strictEqual(repAudit.status, 'pass');
-      assert.ok(repAudit.totalScanned > 0);
+      const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mintlify-report-test-'));
+      try {
+        fs.writeFileSync(
+          path.join(fixtureDir, 'safe-guide.md'),
+          '---\nlastUpdated: 2026-09-20T12:00:00Z\n---\n# Safe Guide\nUse `npm test` before merge.'
+        );
+        const repAudit = buildMintlifyKnowledgeReport({ checkDir: fixtureDir });
+        assert.strictEqual(repAudit.mode, 'audit');
+        assert.strictEqual(repAudit.status, 'pass');
+        assert.ok(repAudit.totalScanned > 0);
 
-      const repStrict = buildMintlifyKnowledgeReport({ checkDir: docsDir, strict: true });
-      assert.strictEqual(repStrict.mode, 'audit');
-      assert.ok(['pass', 'fail'].includes(repStrict.status));
+        const repStrict = buildMintlifyKnowledgeReport({ checkDir: fixtureDir, strict: true });
+        assert.strictEqual(repStrict.mode, 'audit');
+        assert.strictEqual(repStrict.status, 'pass');
+      } finally {
+        fs.rmSync(fixtureDir, { recursive: true, force: true });
+      }
     });
 
     it('formats report in map_only mode', () => {
@@ -265,11 +323,19 @@ describe('Mintlify Knowledge Honesty & Poison Diode', () => {
     });
 
     it('supports CLI plain text audit output', () => {
-      const scriptPath = path.resolve(__dirname, '../scripts/mintlify-knowledge-honesty.js');
-      const docsDir = path.resolve(__dirname, '../docs/agents');
-      const run = spawnSync(process.execPath, [scriptPath, '--check-dir', docsDir], { encoding: 'utf8' });
-      assert.strictEqual(run.status, 0);
-      assert.ok(run.stdout.includes('ThumbGate Knowledge Surface & Poison Prevention Doctor'));
+      const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mintlify-cli-test-'));
+      try {
+        fs.writeFileSync(
+          path.join(fixtureDir, 'safe-guide.md'),
+          '---\nlastUpdated: 2026-09-20T12:00:00Z\n---\n# Safe Guide\nUse `npm test` before merge.'
+        );
+        const scriptPath = path.resolve(__dirname, '../scripts/mintlify-knowledge-honesty.js');
+        const run = spawnSync(process.execPath, [scriptPath, '--check-dir', fixtureDir], { encoding: 'utf8' });
+        assert.strictEqual(run.status, 0);
+        assert.ok(run.stdout.includes('ThumbGate Knowledge Surface & Poison Prevention Doctor'));
+      } finally {
+        fs.rmSync(fixtureDir, { recursive: true, force: true });
+      }
     });
   });
 });

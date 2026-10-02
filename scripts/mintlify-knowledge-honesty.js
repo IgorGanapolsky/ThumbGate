@@ -48,6 +48,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const REPORT_SOURCE_URL = 'https://www.mintlify.com/state-of-knowledge';
 
@@ -68,7 +69,7 @@ const POISON_PATTERNS = Object.freeze([
   },
   {
     id: 'unsafe_exec_snippet',
-    regex: /(?:curl\s+-[a-zA-Z0-9_-]+\s+https?:\/\/[^\n\s|]+\s*\|\s*(?:ba)?sh|chmod\s+777\s+\/)/i,
+    regex: /(?:curl\s+-[a-zA-Z0-9_-]+\s+https?:\/\/[^\n\s|]+\s*\|\s*(?:ba)?sh|chmod\s+777\s+\/|(?:^|[`$;|&\n])\s*rm\s+-[rfRF]{2,}\s+(?:--no-preserve-root\s+)?(?:\/|~)(?:[\s;`"']|$))/i,
     severity: 'critical',
     description: 'Dangerous shell execution or unsafe permission snippet in unverified knowledge.',
   },
@@ -101,7 +102,7 @@ const KNOWLEDGE_SURFACES = Object.freeze({
   },
   help_center: {
     name: 'Help Center / Knowledgebase',
-    ttlDays: 120,
+    ttlDays: 90,
     trustTier: 'curated',
     requiresSchema: false,
   },
@@ -262,10 +263,10 @@ function evaluateKnowledgeSource({ surfaceType = 'docs', content = '', metadata 
     reasons.push(`Critical knowledge poison detected: ${criticalPoison.id} (${criticalPoison.description})`);
   }
 
-  // Untrusted community forum advice requires review before mutating ops
-  if (surfaceConfig.trustTier === 'untrusted_community') {
+  // Untrusted community forum advice and support tickets require review before mutating ops
+  if (surfaceConfig.trustTier === 'untrusted_community' || surfaceType === 'support_tickets') {
     if (action !== 'block') action = 'review';
-    reasons.push('Community forum source is unverified; requires human confirmation before execution');
+    reasons.push(`${surfaceType === 'support_tickets' ? 'Support ticket' : 'Community forum'} source is unverified; requires human confirmation before execution`);
   }
 
   // Stale canonical docs require review to prevent propagating outdated API knowledge
@@ -348,8 +349,18 @@ function runMintlifyKnowledgeAudit(targetDir, options = {}) {
             }
           }
         }
-        if (!lastUpdated && stat.mtime) {
-          lastUpdated = stat.mtime.toISOString();
+        if (!lastUpdated) {
+          try {
+            const gitOut = spawnSync('git', ['log', '-1', '--format=%cI', '--', current], { encoding: 'utf8' });
+            if (gitOut.status === 0 && gitOut.stdout && gitOut.stdout.trim()) {
+              const gitDate = new Date(gitOut.stdout.trim());
+              if (!Number.isNaN(gitDate.getTime())) {
+                lastUpdated = gitDate.toISOString();
+              }
+            }
+          } catch {
+            // git unavailable or unversioned
+          }
         }
 
         const metadata = {
@@ -362,8 +373,14 @@ function runMintlifyKnowledgeAudit(targetDir, options = {}) {
           file: relPath,
           ...evalResult,
         });
-      } catch {
-        // Skip unreadable files
+      } catch (readErr) {
+        results.push({
+          file: path.relative(resolvedDir, current),
+          allowed: false,
+          action: 'block',
+          readinessScore: 0,
+          reasons: [`Unreadable knowledge source: ${readErr.message}`],
+        });
       }
     }
   }
