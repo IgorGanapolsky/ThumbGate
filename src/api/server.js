@@ -5793,7 +5793,7 @@ function createApiServer() {
                   return;
                 }
               }
-              (async () => {
+              void (async () => {
                 try {
                   const { callTool } = require('../../adapters/mcp/server-stdio');
                   const name = msg.params?.name;
@@ -11468,7 +11468,12 @@ module.exports = {
 };
 
 if (require.main === module) {
-  startServer().then(({ host, port }) => {
-    console.log(`ThumbGate API listening on http://${host}:${port}`);
-  });
+  startServer()
+    .then(({ host, port }) => {
+      console.log(`ThumbGate API listening on http://${host}:${port}`);
+    })
+    .catch((err) => {
+      console.error('Failed to start ThumbGate server:', err);
+      process.exit(1);
+    });
 }
