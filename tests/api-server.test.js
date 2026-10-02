@@ -1171,6 +1171,26 @@ test('support page exposes email, GitHub issues, status, and refund paths', asyn
   assert.match(body, /href="\/terms"/);
 });
 
+test('onboarding page serves universal multi-agent onboarding and 1-click install portal', async () => {
+  const res = await fetch(apiUrl('/onboarding'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  assert.match(body, /Universal Multi-Agent Onboarding/i);
+  assert.match(body, /1-Click Install/i);
+  assert.match(body, /cursor:\/\/anysphere\.cursor-deeplink/i);
+  assert.match(body, /vscode:mcp\/install/i);
+  assert.match(body, /PreToolUse/i);
+
+  // /onboarding.html alias
+  const htmlRes = await fetch(apiUrl('/onboarding.html'));
+  assert.equal(htmlRes.status, 200);
+
+  // HEAD request support
+  const headRes = await fetch(apiUrl('/onboarding'), { method: 'HEAD' });
+  assert.equal(headRes.status, 200);
+});
+
 test('case studies page surfaces verifiable signal', async () => {
   // Conversion-optimization surface: buyers need a proof page with
   // reproducible first-party dogfood narratives (not empty placeholders)
