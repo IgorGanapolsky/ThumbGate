@@ -84,17 +84,17 @@ const POLICY_CATALOG = Object.freeze([
   { id: 'API9:2023', category: 'OWASP_API_TOP_10', name: 'Improper Inventory Management', gate: 'api_version_and_retirement_check' },
   { id: 'API10:2023', category: 'OWASP_API_TOP_10', name: 'Unsafe Consumption of APIs', gate: 'third_party_payload_sanitizer' },
 
-  // Tier 2: OWASP Top 10 for LLM Applications (2025/2026)
+  // Tier 2: OWASP Top 10 for LLM Applications (2025)
   { id: 'LLM01:2025', category: 'OWASP_LLM_TOP_10', name: 'Prompt Injection', gate: 'indirect_prompt_injection_firewall' },
-  { id: 'LLM02:2025', category: 'OWASP_LLM_TOP_10', name: 'Insecure Output Handling', gate: 'insecure_output_execution' },
-  { id: 'LLM03:2025', category: 'OWASP_LLM_TOP_10', name: 'Training Data Poisoning', gate: 'feedback_noise_guard' },
-  { id: 'LLM04:2025', category: 'OWASP_LLM_TOP_10', name: 'Model Denial of Service', gate: 'token_budget_shunt' },
-  { id: 'LLM05:2025', category: 'OWASP_LLM_TOP_10', name: 'Supply Chain Vulnerabilities', gate: 'package_manager_honesty_gate' },
-  { id: 'LLM06:2025', category: 'OWASP_LLM_TOP_10', name: 'Sensitive Information Disclosure', gate: 'secret_leak_interdiction' },
-  { id: 'LLM07:2025', category: 'OWASP_LLM_TOP_10', name: 'Insecure Plugin/Tool Design', gate: 'tool_contract_validation_diode' },
-  { id: 'LLM08:2025', category: 'OWASP_LLM_TOP_10', name: 'Excessive Agency', gate: 'human_review_required_gate' },
-  { id: 'LLM09:2025', category: 'OWASP_LLM_TOP_10', name: 'Overreliance', gate: 'deterministic_pretool_verification' },
-  { id: 'LLM10:2025', category: 'OWASP_LLM_TOP_10', name: 'Model Theft & Egress', gate: 'egress_allowlist_enforcement' },
+  { id: 'LLM02:2025', category: 'OWASP_LLM_TOP_10', name: 'Sensitive Information Disclosure', gate: 'secret_leak_interdiction' },
+  { id: 'LLM03:2025', category: 'OWASP_LLM_TOP_10', name: 'Supply Chain Vulnerabilities', gate: 'package_manager_honesty_gate' },
+  { id: 'LLM04:2025', category: 'OWASP_LLM_TOP_10', name: 'Data and Model Poisoning', gate: 'feedback_noise_guard' },
+  { id: 'LLM05:2025', category: 'OWASP_LLM_TOP_10', name: 'Improper Output Handling', gate: 'insecure_output_execution' },
+  { id: 'LLM06:2025', category: 'OWASP_LLM_TOP_10', name: 'Excessive Agency', gate: 'human_review_required_gate' },
+  { id: 'LLM07:2025', category: 'OWASP_LLM_TOP_10', name: 'System Prompt Leakage', gate: 'tool_contract_validation_diode' },
+  { id: 'LLM08:2025', category: 'OWASP_LLM_TOP_10', name: 'Vector and Embedding Weaknesses', gate: 'deterministic_pretool_verification' },
+  { id: 'LLM09:2025', category: 'OWASP_LLM_TOP_10', name: 'Misinformation', gate: 'truthful_kpi_telemetry' },
+  { id: 'LLM10:2025', category: 'OWASP_LLM_TOP_10', name: 'Unbounded Consumption', gate: 'token_budget_shunt' },
 
   // Tier 3: MCP Security Guidelines (Tool Authorization & Transport)
   { id: 'MCP01:AUTH', category: 'MCP_SECURITY', name: 'Mandatory Tool Authorization', gate: 'tool_authorization_verification' },
@@ -309,7 +309,7 @@ function evaluatePolicies({ codeText, apiText, mcpText, contextText, claimText, 
         severity: 'fail',
         gateId: 'insecure_output_execution',
         message:
-          'Model output or dynamic string passed directly into eval()/Function()/exec(). Violates OWASP LLM02 (Insecure Output Handling).',
+          'Model output or dynamic string passed directly into eval()/Function()/exec(). Violates OWASP LLM05 (Improper Output Handling).',
       });
     }
   }
