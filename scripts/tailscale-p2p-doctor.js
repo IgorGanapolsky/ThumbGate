@@ -107,7 +107,7 @@ function probeTailscale(fixturePath = null) {
         backendState: 'Standby',
         self: {
           dnsName: 'local-agent-node.tailnet.local',
-          tailscaleIPs: ['100.64.0.1'],
+          tailscaleIPs: [],
         },
         peerCount: 0,
       },
@@ -202,6 +202,14 @@ function evaluateDiagnostics(options = {}) {
 
 function main() {
   const options = parseArgs();
+
+  if (options.serveMcp) {
+    const cliPath = path.resolve(__dirname, '..', 'bin', 'cli.js');
+    process.argv = [process.argv[0], cliPath, 'serve'];
+    require(cliPath);
+    return;
+  }
+
   const report = evaluateDiagnostics(options);
 
   if (options.json) {
