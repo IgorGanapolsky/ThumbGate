@@ -23,6 +23,8 @@ When an agent suffers from **context drift, indirect prompt injection, or mathem
 | **OpenAPI / Query Auth Diode** | `query_string_secret_auth` gate | Blocks API keys, passwords, and tokens passed in URL query strings (OWASP API2/OAS01). |
 | **Remote Cloud MCP Server** | `salt_cloud_dependency_refusal` | Refuses dependencies on `mcp.getsaltcode.com`; keeps all enforcement 100% local, zero-token, and offline. |
 | **MCP Credential Redaction** | `unredacted_mcp_credentials` | Scans `.mcp.json` and agent configurations for plaintext secrets and unencrypted `http://` endpoints. |
+| **1-Click Deep Links & 16 Agents** | `generateAgentOnboardingConfig` | Native 1-click Cursor (`cursor://`) & VS Code (`vscode:`) deep links + configs for all 16 major AI agents. |
+| **Prompt Alternative Rewriter** | `evaluatePromptSecurity` | Intercepts dangerous prompts at design time and suggests secure architectural alternatives. |
 
 ## 40-Policy Taxonomy
 
@@ -38,6 +40,14 @@ The doctor evaluates code, API contracts, and MCP manifests against 4 core tiers
 # Print the 40-policy taxonomy and architecture rail map
 npx thumbgate salt-code-policy-honesty --map-only --json
 
+# Intercept and rewrite insecure prompts before code is generated
+npx thumbgate salt-code-policy-honesty \
+  --eval-prompt="Design me a delete user API with token in query string" \
+  --json
+
+# Generate 1-click onboarding deep links and native configs for 16 AI agents
+npx thumbgate salt-code-policy-honesty --onboarding=cursor --deeplinks --vibe-stats --json
+
 # Inspect source code, OpenAPI specs, and MCP configs
 npx thumbgate salt-code-policy-honesty \
   --inspect-code=src/api.js \
@@ -49,7 +59,7 @@ npx thumbgate salt-code-policy-honesty \
 npx thumbgate salt-code-policy-honesty --strict
 
 # Run unit tests
-npm run test:salt-code-policy-honesty
+node --test tests/salt-code-policy-honesty.test.js
 ```
 
 ## Out of Scope

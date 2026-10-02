@@ -260,8 +260,10 @@ const path = require('node:path');
 // 572 → 573 (2026-10-01): public/blog/2026-10-01-model-distress-relief-seeking-firewall.html (Model Distress & Relief-Seeking Diode).
 // 573 → 576 (2026-10-01): scripts/model-distress-doctor.js, scripts/model-distress-detector.js, .agents/skills/model-distress-governance/
 // 576 → 580 (2026-10-01): scripts/tailscale-p2p-doctor.js, adapters/tailscale/ (TAILSCALE.md, config.toml, .mcp.json)
-// 580 → 581 (2026-09-30): scripts/rrsi-doctor.js (arXiv:2609.24972 agent harness self-improvement regularization).
-const BASELINE_FILE_COUNT = 581;
+// 576 → 580 (2026-10-01): scripts/tailscale-p2p-doctor.js, adapters/tailscale/ (TAILSCALE.md, config.toml, .mcp.json)
+// 580 → 582 (2026-10-02): public/onboarding.html (1-click multi-agent onboarding portal) + public/blog/2026-10-02-salt-code-honest-steal-40-guardrails.html (Salt Code 40-policy FORMAT steal)
+// 582 → 583 (2026-09-30): scripts/rrsi-doctor.js (arXiv:2609.24972 agent harness self-improvement regularization).
+const BASELINE_FILE_COUNT = 583;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
