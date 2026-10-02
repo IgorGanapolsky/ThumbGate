@@ -204,6 +204,12 @@ npx thumbgate llm-obs-honesty --trace=tests/fixtures/llm-obs-honesty-blind.json 
 
 Skill: `.agents/skills/datadog-llm-obs-compare-not-clone/SKILL.md`. Details: `docs/agents/llm-obs-honesty.md`.
 
+## Pulse Verity consensus & disagreement gate (FORMAT steal)
+
+Cross-venue dispersion gating and signed execution prints (ECDSA P-256) onto existing PreToolUse / financial control plane rails. Never vendor live market feeds or clone thepulse.markets.
+
+Details: [`docs/agents/pulse-consensus-disagreement-gate.md`](./docs/agents/pulse-consensus-disagreement-gate.md).
+
 ## Meko Datapack & Collective Memory honesty (FORMAT steal)
 
 Five planes on existing rails: datapacks (4-field scope), episodic memory, rubric-promoted learnings, SHA-256 content-addressed artifacts, and decision traces. Never vendor YugabyteDB, meko-skills, or depend on cloud.mekodata.ai. A passive database is not a firewall.
@@ -231,6 +237,30 @@ npx thumbgate salt-code-policy-honesty --strict --json
 ```
 
 Skill: `.agents/skills/salt-code-policy-honesty-not-clone/SKILL.md`. Details: `docs/agents/salt-code-policy-honesty.md`.
+
+## OpenAI DevDay 2026 always-on agent governance (FORMAT steal)
+
+Always-on autonomous background agents ("Dots") across Slack, Teams, email, and browsers amplify L7 PreToolUse governance and infrastructure firewalls. Steal inbound taint-tracking admission, monotonic workspace session fencing, prompt caching static prefix ordering, and feedback-to-edge distillation. Never buy $500/mo Pro tiers or vendor closed Astra/Sol runtimes.
+
+```bash
+node scripts/openai-devday-honesty.js --json
+node scripts/openai-devday-honesty.js --map-only
+node --test tests/openai-devday-honesty.test.js
+```
+
+Details: [`docs/agents/openai-devday-2026-format-steal.md`](./docs/agents/openai-devday-2026-format-steal.md).
+
+## RRSI agent harness regularization (FORMAT steal)
+
+Regularized Recursive Self-Improvement (Google Cloud AI Research arXiv:2609.24972) on agent harnesses (prompts, hyperparameters, retry policies, prevention rules). Steal cosine-annealed update sparsity, annealed step sizing, pre-screening benchmark leakage critic, complexity-aware L1 score regularization, and stagnation-driven structured exploration. Never install external Python ML packages or call unregularized evaluators.
+
+```bash
+node scripts/rrsi-doctor.js --json
+node scripts/rrsi-doctor.js --map-only
+node --test tests/rrsi-regularizer.test.js
+```
+
+Details: [`docs/agents/rrsi-harness-regularization.md`](./docs/agents/rrsi-harness-regularization.md).
 
 ## Canonical Product Scope
 
@@ -403,7 +433,11 @@ Rules:
 
 ## 🛡️ Self-Harness Prevention Rules (Auto-Generated)
 
-- No active auto-generated prevention rules at this time.
+> [!IMPORTANT]
+> The following rules were automatically derived from execution failures and thumbs-down feedback.
+> You MUST follow these constraints strictly to prevent repeated errors.
+
+- **Rule [auto-promoted-muecca6h-0]**: NEVER repeated problem context string
 ## CEO PR Session Persistence Contract
 
 For every explicit PR-management and system-hygiene session:
