@@ -221,6 +221,17 @@ Hardened IdeaBrowser connector without credential leakage, classifying all actio
 
 Skill: `.agents/skills/ideabrowser-connector/SKILL.md`.
 
+## Salt Code policy honesty (FORMAT steal)
+
+40-policy taxonomy across OWASP API & LLM Top 10, OpenAPI query-string secret diode, and MCP credential hygiene. Distinguishes passive prompt-time context injection from active `PreToolUse` infrastructure firewall. Never install Salt Code MCP or send traffic to `mcp.getsaltcode.com`.
+
+```bash
+npx thumbgate salt-code-policy-honesty --map-only --json
+npx thumbgate salt-code-policy-honesty --strict --json
+```
+
+Skill: `.agents/skills/salt-code-policy-honesty-not-clone/SKILL.md`. Details: `docs/agents/salt-code-policy-honesty.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
