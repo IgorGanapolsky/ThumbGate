@@ -365,9 +365,28 @@ function extractFrontMatterDate(content) {
   return Number.isNaN(parsedDate.getTime()) ? null : parsedDate.toISOString();
 }
 
+/** Prefer fixed absolute git paths (Sonar S4036 — avoid bare PATH lookup). */
+function resolveGitBinary() {
+  const candidates = [
+    process.env.GIT_BINARY,
+    '/usr/bin/git',
+    '/opt/homebrew/bin/git',
+    '/usr/local/bin/git',
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) return candidate;
+    } catch {
+      /* ignore */
+    }
+  }
+  return '/usr/bin/git';
+}
+
 function extractGitLastUpdated(filePath) {
   try {
-    const gitOut = spawnSync('git', ['log', '-1', '--format=%cI', '--', filePath], {
+    const gitBin = resolveGitBinary();
+    const gitOut = spawnSync(gitBin, ['log', '-1', '--format=%cI', '--', filePath], {
       encoding: 'utf8',
       cwd: path.dirname(filePath),
       shell: false,
