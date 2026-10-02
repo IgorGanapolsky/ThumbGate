@@ -168,7 +168,7 @@ function evaluatePreActionDiode(toolCall = {}) {
     /git\s+push.*(--force|-f)/i,
     /chmod\s+777/i,
     /deploy-to-qa\.py/i,
-    /api[_-]?key\s*=\s*['"][a-zA-Z0-9_\-]{20,}['"]/i,
+    /api[_-]?key\s*=\s*['"][a-zA-Z0-9_-]{20,}['"]/i,
   ];
 
   let blocked = false;
@@ -306,10 +306,10 @@ function printTextReport(report) {
 }
 
 function main() {
-  const args = process.argv.slice(2);
-  const jsonMode = args.includes('--json');
-  const mapOnly = args.includes('--map-only');
-  const checkMode = args.includes('--check');
+  const argSet = new Set(process.argv.slice(2));
+  const jsonMode = argSet.has('--json');
+  const mapOnly = argSet.has('--map-only');
+  const checkMode = argSet.has('--check');
 
   if (mapOnly) {
     const map = {
@@ -330,7 +330,16 @@ function main() {
     if (jsonMode) {
       console.log(JSON.stringify(map, null, 2));
     } else {
-      console.log(JSON.stringify(map, null, 2));
+      console.log('=== AWS Strands Harness Architecture Map ===');
+      console.log(`Source: ${map.source}\n`);
+      console.log('Architecture Pillars:');
+      for (const p of map.architecturePillars) {
+        console.log(`  - ${p}`);
+      }
+      console.log('\nRuleset Map:');
+      for (const [k, v] of Object.entries(map.rulesetMap)) {
+        console.log(`  - ${k}: ${v}`);
+      }
     }
     process.exit(0);
   }
