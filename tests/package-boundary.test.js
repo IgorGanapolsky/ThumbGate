@@ -512,8 +512,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 582 -> 583 (2026-09-30): scripts/rrsi-doctor.js (arXiv:2609.24972 agent harness self-improvement regularization).
   // 583 -> 589 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html, adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/ + skills/aws-strands-harness-not-clone/
   // 589 -> 590 (2026-10-02): adapters/strands/config.json (AWS Strands harness config)
-    manifest.fileCount <= 590,
-    `npm package should stay <= 590 files, got ${manifest.fileCount}`
+  // 590 -> 592 (2026-10-02): scripts/mintlify-knowledge-honesty.js + skill (Mintlify 2026 State of Knowledge FORMAT steal)
+    manifest.fileCount <= 592,
+    `npm package should stay <= 592 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -758,8 +759,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.80 MB -> 8.85 MB (2026-10-02): 1-click multi-agent onboarding portal & blog. Local pack 8,816,436; CI slack.
   // Bumped 8.85 MB -> 8.87 MB (2026-09-30): rrsi-doctor.js (arXiv:2609.24972). Local pack 8,837,462; CI slack.
   // Bumped 8.87 MB -> 8.90 MB (2026-10-01): strands-harness modules & skills. Local pack 8,867,170; CI slack.
-    manifest.unpackedSize <= 8_900_000,
-    `npm package should stay <= 8.90 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.90 MB -> 8.93 MB (2026-10-02): mintlify-knowledge module & skill. CI slack.
+    manifest.unpackedSize <= 8_930_000,
+    `npm package should stay <= 8.93 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

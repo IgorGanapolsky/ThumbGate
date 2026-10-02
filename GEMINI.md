@@ -88,3 +88,8 @@ See `docs/agents/code-search.md`. Run `npm run graphify:setup` then `.graphify-v
 ## Meko Datapack honesty
 
 Five planes on existing rails: datapacks (4-field scope), episodic memory, rubric-promoted learnings, SHA-256 artifacts, decision traces. Never vendor YugabyteDB or rely on passive databases without PreToolUse firewalls. `node scripts/meko-datapack-honesty.js --json` · skill `meko-datapack-honesty-not-clone`.
+
+## Mintlify State of Knowledge honesty
+
+Knowledge as operational infrastructure: pre-action freshness diodes, poison prevention (deprecated APIs, unsafe scripts), and non-docs surface federation. Never vendor Mintlify SaaS or build docsite generators. `node scripts/mintlify-knowledge-honesty.js --json` · skill `mintlify-knowledge-honesty-not-clone`.
+
