@@ -44,6 +44,12 @@ $ npx thumbgate salt-code-policy-honesty --inspect-context=.cursorrules --json
 
 $ npx thumbgate salt-code-policy-honesty --map-only --json
 # Dumps complete 40-policy taxonomy mapped to deterministic PreToolUse gates.
+
+$ npx thumbgate salt-code-policy-honesty --eval-prompt="Design me a delete user API with token in query string" --json
+# Intercepts prompt violations and emits proactive, safe alternative designs.
+
+$ npx thumbgate salt-code-policy-honesty --onboarding=cursor --deeplinks --vibe-stats --json
+# Emits 1-click cursor:// and vscode: deep links plus empirical vibe-coding CVE stats.
 ```
 
 ## Procedures
@@ -51,6 +57,12 @@ $ npx thumbgate salt-code-policy-honesty --map-only --json
 ```bash
 # Print taxonomy and rail map
 npx thumbgate salt-code-policy-honesty --map-only --json
+
+# Intercept and rewrite insecure prompts before code generation
+npx thumbgate salt-code-policy-honesty --eval-prompt="Design delete user endpoint with token in query" --json
+
+# 1-Click onboarding deep links and configs for 16 AI coding agents
+npx thumbgate salt-code-policy-honesty --onboarding=cursor --deeplinks --vibe-stats --json
 
 # Audit code, OpenAPI spec, and MCP config
 npx thumbgate salt-code-policy-honesty \
@@ -60,5 +72,5 @@ npx thumbgate salt-code-policy-honesty \
   --strict
 
 # Run regression test suite
-npm run test:salt-code-policy-honesty
+node --test tests/salt-code-policy-honesty.test.js
 ```

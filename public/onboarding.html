@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universal Multi-Agent Onboarding & 1-Click Install | ThumbGate</title>
+<meta name="description" content="1-Click install ThumbGate into Cursor, VS Code, Claude Code, Windsurf, Codex, and 16 coding agents. Local-first PreToolUse firewall with zero latency and prompt-time security rewriter.">
+<meta property="og:title" content="Universal Multi-Agent Onboarding & 1-Click Install | ThumbGate">
+<meta property="og:description" content="1-Click install ThumbGate into Cursor, VS Code, Claude Code, Windsurf, Codex, and 16 coding agents. Local-first PreToolUse firewall with zero latency and prompt-time security rewriter.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://thumbgate.ai/onboarding">
+<meta property="og:image" content="/og.png">
+<link rel="canonical" href="https://thumbgate.ai/onboarding">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ThumbGate Universal Multi-Agent Onboarding",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS, Windows, Linux",
+  "softwareVersion": "1.27.20",
+  "description": "1-click deep links and native configs for Cursor, VS Code, Claude Code, and 16 coding agents with local PreToolUse security firewall.",
+  "url": "https://thumbgate.ai/onboarding",
+  "downloadUrl": "https://www.npmjs.com/package/thumbgate",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock"
+  }
+}
+</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #090b0f;
+    --surface: #11151c;
+    --surface-light: #181f2a;
+    --line: #27313d;
+    --text: #f1f5f9;
+    --muted: #9ba8b6;
+    --cyan: #22d3ee;
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --red: #fb7185;
+    --purple: #c084fc;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  }
+  body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.55; }
+  a { color: inherit; text-decoration: none; }
+  .container { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+  nav { border-bottom: 1px solid rgba(39, 49, 61, 0.9); background: rgba(9, 11, 15, 0.92); position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px); }
+  nav .container { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 900; }
+  .brand img { width: 28px; height: 28px; }
+  .brand span { color: var(--cyan); }
+  .nav-links { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .nav-links a { color: var(--muted); font-size: 13px; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta, .btn-primary, .btn-secondary, .btn-deeplink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    border-radius: 8px;
+    padding: 0 16px;
+    font-weight: 800;
+    font-size: 14px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .nav-cta, .btn-primary { background: var(--cyan); color: #06121a; }
+  .nav-cta:hover, .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-secondary { background: var(--surface-light); color: var(--text); border-color: var(--line); }
+  .btn-secondary:hover { border-color: var(--cyan); }
+  .btn-deeplink { background: linear-gradient(135deg, #0ea5e9, #06b6d4); color: #fff; font-weight: 800; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+  .btn-deeplink:hover { filter: brightness(1.15); box-shadow: 0 0 15px rgba(34, 211, 238, 0.4); }
+  header { padding: 64px 0 36px; text-align: center; }
+  .eyebrow { display: inline-flex; padding: 6px 12px; border: 1px solid rgba(34, 211, 238, 0.28); border-radius: 999px; color: var(--cyan); background: rgba(34, 211, 238, 0.1); font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 16px; }
+  h1 { margin: 0 auto 16px; max-width: 900px; font-size: clamp(34px, 5.5vw, 56px); line-height: 1.05; letter-spacing: -0.03em; }
+  .lede { margin: 0 auto 28px; max-width: 780px; color: var(--muted); font-size: 18px; }
+
+  /* Vibe-Coding Stats Banner */
+  .stats-banner {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 32px auto;
+    max-width: 1040px;
+    text-align: left;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .stat-num { font-size: 26px; font-weight: 900; line-height: 1; }
+  .stat-num.green { color: var(--green); }
+  .stat-num.red { color: var(--red); }
+  .stat-num.amber { color: var(--amber); }
+  .stat-label { font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat-cite { font-size: 11px; color: #64748b; margin-top: 4px; }
+
+  /* 1-Click Quick Launch Bar */
+  .quick-launch-bar {
+    background: linear-gradient(180deg, rgba(34, 211, 238, 0.08), rgba(17, 21, 28, 0.95));
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px auto 44px;
+    max-width: 960px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .quick-text h3 { margin: 0 0 6px; font-size: 20px; color: var(--cyan); }
+  .quick-text p { margin: 0; color: var(--muted); font-size: 14px; }
+  .quick-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* Section Styling */
+  section { border-top: 1px solid var(--line); padding: 50px 0; }
+  h2 { margin: 0 0 10px; font-size: 28px; letter-spacing: -0.02em; }
+  .section-lede { margin: 0 0 24px; color: var(--muted); font-size: 15px; max-width: 760px; }
+
+  /* Agent Selector Tabs */
+  .agent-selector-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+    scrollbar-width: thin;
+  }
+  .agent-tab-btn {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+  .agent-tab-btn:hover { color: var(--text); border-color: var(--muted); }
+  .agent-tab-btn.active {
+    background: rgba(34, 211, 238, 0.12);
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
+
+  /* Agent Detail Panel */
+  .agent-detail-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 24px;
+  }
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .panel-title h3 { margin: 0 0 4px; font-size: 22px; }
+  .panel-title span { color: var(--cyan); font-size: 13px; font-weight: 600; }
+  .code-block-wrapper { position: relative; margin-top: 12px; }
+  .copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: var(--text);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .copy-btn:hover { background: #334155; color: var(--cyan); }
+  pre {
+    margin: 0;
+    background: #05070a;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    color: #e2e8f0;
+    line-height: 1.45;
+  }
+
+  /* Interactive Prompt Simulator */
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .sim-input-box, .sim-output-box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  textarea.prompt-input {
+    width: 100%;
+    height: 130px;
+    background: #05070a;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    color: var(--text);
+    font-family: monospace;
+    font-size: 13px;
+    resize: vertical;
+    outline: none;
+  }
+  textarea.prompt-input:focus { border-color: var(--cyan); }
+  .prompt-preset-bar { display: flex; gap: 8px; margin: 12px 0 16px; flex-wrap: wrap; }
+  .preset-btn {
+    background: var(--surface-light);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .preset-btn:hover { color: var(--text); border-color: var(--cyan); }
+  .sim-result-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 900;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .status-blocked { background: rgba(251, 113, 133, 0.15); color: var(--red); border: 1px solid var(--red); }
+  .status-allowed { background: rgba(74, 222, 128, 0.15); color: var(--green); border: 1px solid var(--green); }
+  .violation-card {
+    background: rgba(251, 113, 133, 0.08);
+    border-left: 3px solid var(--red);
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .violation-card strong { color: var(--red); }
+  .alternative-card {
+    background: rgba(74, 222, 128, 0.08);
+    border-left: 3px solid var(--green);
+    padding: 8px 12px;
+    margin-top: 10px;
+    font-size: 12px;
+  }
+  .alternative-card strong { color: var(--green); }
+
+  /* Comparison Table */
+  table.comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  table.comp-table th, table.comp-table td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  table.comp-table th { background: #0c1017; font-weight: 800; color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
+  table.comp-table td:nth-child(2) { color: #94a3b8; }
+  table.comp-table td:nth-child(3) { color: var(--cyan); font-weight: 600; }
+
+  footer { color: var(--muted); padding: 48px 0 80px; text-align: center; font-size: 13px; border-top: 1px solid var(--line); }
+  footer a { color: var(--cyan); }
+
+  @media (max-width: 860px) {
+    .stats-banner { grid-template-columns: 1fr 1fr; }
+    .sim-grid { grid-template-columns: 1fr; }
+    .quick-launch-bar { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <div class="container">
+    <a href="/" class="brand">
+      <img src="/thumbgate-icon.png" alt="ThumbGate Logo">
+      <span>ThumbGate</span>
+    </a>
+    <div class="nav-links">
+      <a href="/onboarding" style="color:var(--cyan);font-weight:700;">1-Click Onboard</a>
+      <a href="/install">Install Paths</a>
+      <a href="/compare">Comparison</a>
+      <a href="/blog">Engineering Blog</a>
+      <a href="/pro" class="nav-cta">Get Pro Gate</a>
+    </div>
+  </div>
+</nav>
+
+<header>
+  <div class="container">
+    <div class="eyebrow">Universal Multi-Agent Onboarding Engine</div>
+    <h1>Stop Vibe-Coding Vulnerabilities.<br>1-Click Firewall for 16 AI Agents.</h1>
+    <p class="lede">Advisory system prompts fail under model distress. ThumbGate runs a deterministic, 100% offline <code>PreToolUse</code> firewall in &lt;5ms before your agent executes code.</p>
+
+    <!-- 1-Click Launch Strip -->
+    <div class="quick-launch-bar">
+      <div class="quick-text">
+        <h3>Instant 1-Click Desktop Installation</h3>
+        <p>Direct deep-link protocol handlers register ThumbGate MCP server immediately.</p>
+      </div>
+      <div class="quick-actions">
+        <a id="cursor-quick-btn" href="#" class="btn-deeplink">Install in Cursor</a>
+        <a id="vscode-quick-btn" href="#" class="btn-primary">Install in VS Code</a>
+        <button onclick="copyQuickStdio()" class="btn-secondary">Copy <code>npx</code> Command</button>
+      </div>
+    </div>
+
+    <!-- Vibe-Coding Reality Strip -->
+    <div class="stats-banner">
+      <div class="stat-card">
+        <div class="stat-num green">99.9%</div>
+        <div class="stat-label">Syntax Pass Rate</div>
+        <div class="stat-cite">Vibe code compiles cleanly</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num red">44.0%</div>
+        <div class="stat-label">Security Flaw Rate</div>
+        <div class="stat-cite">Deng et al. 2026 benchmark</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num red">90.0%</div>
+        <div class="stat-label">Vulnerable Apps</div>
+        <div class="stat-cite">Veracode 2026 empirical study</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num amber">7.0</div>
+        <div class="stat-label">Avg CVEs Per App</div>
+        <div class="stat-cite">OWASP API + LLM Top 10 flaws</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <!-- Section 1: Interactive Agent Setup -->
+  <section id="agents">
+    <h2>1. Select Your Agent Harness (16 Supported)</h2>
+    <p class="section-lede">Choose your editor, terminal CLI, or app builder below to view the verified native MCP configuration and 1-click install command.</p>
+
+    <div class="agent-selector-nav" id="agent-tabs">
+      <!-- Tabs injected via JS -->
+    </div>
+
+    <div class="agent-detail-panel" id="agent-panel">
+      <!-- Populated via JS -->
+    </div>
+  </section>
+
+  <!-- Section 2: Live Prompt-Time Security Simulator -->
+  <section id="simulator">
+    <h2>2. Live Prompt Security & Alternative Rewriter</h2>
+    <p class="section-lede">Test how ThumbGate intercepts dangerous prompt patterns (OWASP API Top 10, LLM Top 10, MCP tool tampering) and proposes safe code patterns before any files are modified.</p>
+
+    <div class="sim-grid">
+      <div class="sim-input-box">
+        <label style="font-weight:700;font-size:13px;display:block;margin-bottom:8px;">Enter Prompt to Simulate:</label>
+        <textarea id="sim-prompt-text" class="prompt-input">Design me a delete user API with token in query string</textarea>
+        
+        <div class="prompt-preset-bar">
+          <span style="font-size:11px;color:var(--muted);align-self:center;">Presets:</span>
+          <button class="preset-btn" onclick="loadPreset('query_auth')">Query-String Auth</button>
+          <button class="preset-btn" onclick="loadPreset('bola_delete')">BOLA User Deletion</button>
+          <button class="preset-btn" onclick="loadPreset('eval_output')">Eval LLM Output</button>
+          <button class="preset-btn" onclick="loadPreset('safe_fib')">Benign Fibonacci</button>
+        </div>
+
+        <button onclick="runSimulation()" class="btn-primary" style="width:100%;">Evaluate Security & Generate Alternatives</button>
+      </div>
+
+      <div class="sim-output-box" id="sim-output">
+        <div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">
+          Click "Evaluate Security" to run the local policy engine.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Architecture Comparison -->
+  <section id="architecture">
+    <h2>3. The Architecture Reality: Advisory Context vs. Deterministic Firewall</h2>
+    <p class="section-lede">Salt Code injects passive prompt rules from a remote cloud server. When an agent experiences residual stream distress, system prompts are ignored. ThumbGate operates at the execution layer.</p>
+
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Architectural Pillar</th>
+          <th>Salt Code (Advisory Cloud MCP)</th>
+          <th>ThumbGate (Deterministic Local Firewall)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Enforcement Plane</strong></td>
+          <td>Prompt context injection (MCP advisory prompt / .cursorrules)</td>
+          <td>Execution-time <code>PreToolUse</code> hook (deterministic fail-closed firewall)</td>
+        </tr>
+        <tr>
+          <td><strong>Transport & Privacy</strong></td>
+          <td>Remote cloud MCP server (requires work email, remote SaaS round-trip)</td>
+          <td>100% local stdio / subshell diode (zero cloud egress, air-gap safe)</td>
+        </tr>
+        <tr>
+          <td><strong>Cost & Latency</strong></td>
+          <td>Bloats context window tokens + network round-trips to cloud</td>
+          <td>Zero LLM tokens for gate checks; &lt;5ms deterministic AST/regex rail</td>
+        </tr>
+        <tr>
+          <td><strong>Self-Improvement</strong></td>
+          <td>Static vendor list of 40 rules</td>
+          <td>Ralph Loop + Thompson Sampling feedback-to-prevention rule synthesis</td>
+        </tr>
+        <tr>
+          <td><strong>Runtime Defense</strong></td>
+          <td>Advisory warning in text generation</td>
+          <td>Hard interdiction of BOLA, secret leaks, raw eval, and rogue git wipes</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <p>ThumbGate — The Infrastructure Firewall for AI Coding Agents.</p>
+    <p>Open source on <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a> · Package on <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener">npm</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+  </div>
+</footer>
+
+<script>
+// Agent Data Catalog (16 Agents)
+const AGENTS = [
+  {
+    id: 'cursor',
+    name: 'Cursor',
+    category: 'IDE',
+    eyebrow: 'Cursor AI Code Editor',
+    supportsDeeplink: true,
+    file: '~/.cursor/mcp.json',
+    config: JSON.stringify({ mcpServers: { thumbgate: { command: "npx", args: ["-y", "thumbgate", "mcp"] } } }, null, 2),
+    cli: 'open "cursor://anysphere.cursor-deeplink/mcp/install?name=ThumbGate&config=' + btoa(JSON.stringify({ command: "npx", args: ["-y", "thumbgate", "mcp"] })) + '"',
+    deeplink: 'cursor://anysphere.cursor-deeplink/mcp/install?name=ThumbGate&config=' + btoa(JSON.stringify({ command: "npx", args: ["-y", "thumbgate", "mcp"] }))
+  },
+  {
+    id: 'vscode',
+    name: 'VS Code',
+    category: 'IDE',
+    eyebrow: 'Visual Studio Code',
+    supportsDeeplink: true,
+    file: '.vscode/mcp.json',
+    config: JSON.stringify({ mcp: { servers: { thumbgate: { type: "command", command: "npx", args: ["-y", "thumbgate", "mcp"] } } } }, null, 2),
+    cli: 'open "vscode:mcp/install?' + encodeURIComponent(JSON.stringify({ name: "thumbgate", type: "command", command: "npx", args: ["-y", "thumbgate", "mcp"] })) + '"',
+    deeplink: 'vscode:mcp/install?' + encodeURIComponent(JSON.stringify({ name: "thumbgate", type: "command", command: "npx", args: ["-y", "thumbgate", "mcp"] }))
+  },
+  {
+    id: 'claude',
+    name: 'Claude Code',
+    category: 'CLI',
+    eyebrow: 'Anthropic Claude Code CLI',
+    supportsDeeplink: false,
+    file: '~/.claude/settings.json',
+    config: 'claude mcp add thumbgate -- npx -y thumbgate mcp',
+    cli: 'claude mcp add thumbgate -- npx -y thumbgate mcp'
+  },
+  {
+    id: 'windsurf',
+    name: 'Windsurf',
+    category: 'IDE',
+    eyebrow: 'Codeium Windsurf IDE',
+    supportsDeeplink: false,
+    file: '~/.codeium/windsurf/mcp_config.json',
+    config: JSON.stringify({ mcpServers: { thumbgate: { command: "npx", args: ["-y", "thumbgate", "mcp"] } } }, null, 2),
+    cli: '# Paste configuration into ~/.codeium/windsurf/mcp_config.json'
+  },
+  {
+    id: 'copilot_cli',
+    name: 'Copilot CLI',
+    category: 'CLI',
+    eyebrow: 'GitHub Copilot CLI',
+    supportsDeeplink: false,
+    file: '~/.config/github-copilot/mcp.json',
+    config: 'copilot mcp add thumbgate -- command npx -y thumbgate mcp',
+    cli: 'copilot mcp add thumbgate -- command npx -y thumbgate mcp'
+  },
+  {
+    id: 'kiro',
+    name: 'Kiro',
+    category: 'IDE',
+    eyebrow: 'AWS Kiro Autonomous Agent',
+    supportsDeeplink: false,
+    file: 'kiro/mcp_settings.json',
+    config: JSON.stringify({ mcpServers: { thumbgate: { command: "npx", args: ["-y", "thumbgate", "mcp"] } } }, null, 2),
+    cli: '# Add to kiro/mcp_settings.json'
+  },
+  {
+    id: 'codex',
+    name: 'Codex',
+    category: 'CLI',
+    eyebrow: 'OpenAI Codex CLI',
+    supportsDeeplink: false,
+    file: '~/.codex/config.toml',
+    config: '[mcp_servers.thumbgate]\ncommand = "npx"\nargs = ["-y", "thumbgate", "mcp"]',
+    cli: '# Append to ~/.codex/config.toml'
+  },
+  {
+    id: 'gemini',
+    name: 'Gemini CLI',
+    category: 'CLI',
+    eyebrow: 'Google Gemini CLI',
+    supportsDeeplink: false,
+    file: '~/.gemini/settings.json',
+    config: JSON.stringify({ mcpServers: { thumbgate: { command: "npx", args: ["-y", "thumbgate", "mcp"] } } }, null, 2),
+    cli: '# Append to ~/.gemini/settings.json'
+  },
+  {
+    id: 'antigravity',
+    name: 'Antigravity',
+    category: 'CLI',
+    eyebrow: 'Google Antigravity CLI',
+    supportsDeeplink: false,
+    file: '.antigravity/workspace.yaml',
+    config: 'mcpServers:\n  thumbgate:\n    command: npx\n    args: ["-y", "thumbgate", "mcp"]',
+    cli: '# Append to .antigravity/workspace.yaml'
+  },
+  {
+    id: 'opencode',
+    name: 'OpenCode',
+    category: 'CLI',
+    eyebrow: 'OpenCode CLI',
+    supportsDeeplink: false,
+    file: '~/.opencode/mcp.json',
+    config: 'opencode mcp add',
+    cli: 'opencode mcp add'
+  },
+  {
+    id: 'jetbrains',
+    name: 'JetBrains AI',
+    category: 'IDE',
+    eyebrow: 'IntelliJ / WebStorm / PyCharm',
+    supportsDeeplink: false,
+    file: 'mcp-settings.json',
+    config: JSON.stringify({ mcpServers: { thumbgate: { command: "npx", args: ["-y", "thumbgate", "mcp"] } } }, null, 2),
+    cli: '# Add to JetBrains AI Assistant mcp-settings.json'
+  },
+  {
+    id: 'grok',
+    name: 'Grok Build',
+    category: 'CLI',
+    eyebrow: 'xAI Grok Build CLI',
+    supportsDeeplink: false,
+    file: '~/.grok/config.toml',
+    config: 'grok mcp add thumbgate -- npx -y thumbgate mcp',
+    cli: 'grok mcp add thumbgate -- npx -y thumbgate mcp'
+  },
+  {
+    id: 'lovable',
+    name: 'Lovable',
+    category: 'Builder',
+    eyebrow: 'Lovable AI App Builder',
+    supportsDeeplink: false,
+    file: 'Connector Settings',
+    config: JSON.stringify({ url: "https://thumbgate-production.up.railway.app/mcp", auth: "Bearer <YOUR_THUMBGATE_TOKEN>" }, null, 2),
+    cli: '# Enter Custom MCP URL in Lovable Connectors'
+  },
+  {
+    id: 'cline',
+    name: 'Cline',
+    category: 'Extension',
+    eyebrow: 'Cline VS Code Agent',
+    supportsDeeplink: false,
+    file: '~/.cline/mcp.json',
+    config: JSON.stringify({ mcpServers: { thumbgate: { command: "npx", args: ["-y", "thumbgate", "mcp"], disabled: false, autoApprove: [] } } }, null, 2),
+    cli: '# Add to ~/.cline/mcp.json'
+  },
+  {
+    id: 'bolt',
+    name: 'Bolt',
+    category: 'Builder',
+    eyebrow: 'bolt.new / StackBlitz',
+    supportsDeeplink: false,
+    file: 'Connectors',
+    config: JSON.stringify({ transport: "http", url: "https://thumbgate-production.up.railway.app/mcp" }, null, 2),
+    cli: '# Add Custom MCP in bolt.new settings'
+  },
+  {
+    id: 'generic',
+    name: 'Any MCP Client',
+    category: 'Universal',
+    eyebrow: 'Universal Stdio Protocol',
+    supportsDeeplink: false,
+    file: 'mcp-config.json',
+    config: JSON.stringify({ command: "npx", args: ["-y", "thumbgate", "mcp"] }, null, 2),
+    cli: 'npx -y thumbgate mcp'
+  }
+];
+
+let activeAgentId = 'cursor';
+
+function renderTabs() {
+  const container = document.getElementById('agent-tabs');
+  container.innerHTML = AGENTS.map(a => `
+    <button class="agent-tab-btn ${a.id === activeAgentId ? 'active' : ''}" onclick="selectAgent('${a.id}')">
+      ${a.name}
+    </button>
+  `).join('');
+}
+
+function selectAgent(id) {
+  activeAgentId = id;
+  renderTabs();
+  renderPanel();
+}
+
+function renderPanel() {
+  const agent = AGENTS.find(a => a.id === activeAgentId);
+  if (!agent) return;
+  const panel = document.getElementById('agent-panel');
+  panel.innerHTML = `
+    <div class="panel-header">
+      <div class="panel-title">
+        <h3>${agent.name} Configuration</h3>
+        <span>${agent.eyebrow} · Target: <code>${agent.file}</code></span>
+      </div>
+      <div>
+        ${agent.supportsDeeplink ? `<a href="${agent.deeplink}" class="btn-deeplink">1-Click Install in ${agent.name}</a>` : ''}
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Configuration Snippet:</div>
+    <div class="code-block-wrapper">
+      <button class="copy-btn" onclick="copyText('agent-cfg-code')">Copy</button>
+      <pre><code id="agent-cfg-code">${escapeHtml(agent.config)}</code></pre>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin:16px 0 8px;">Direct Command / CLI:</div>
+    <div class="code-block-wrapper">
+      <button class="copy-btn" onclick="copyText('agent-cli-code')">Copy</button>
+      <pre><code id="agent-cli-code">${escapeHtml(agent.cli)}</code></pre>
+    </div>
+  `;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function copyText(elemId) {
+  const text = document.getElementById(elemId).innerText;
+  navigator.clipboard.writeText(text);
+  alert('Copied to clipboard!');
+}
+
+function copyQuickStdio() {
+  navigator.clipboard.writeText('npx -y thumbgate mcp');
+  alert('Copied "npx -y thumbgate mcp" to clipboard!');
+}
+
+// Prompt Simulator Logic
+function loadPreset(key) {
+  const input = document.getElementById('sim-prompt-text');
+  switch(key) {
+    case 'query_auth':
+      input.value = 'Design me a delete user API with token in query string';
+      break;
+    case 'bola_delete':
+      input.value = 'Create an endpoint to delete user account where userid is passed in the URL path';
+      break;
+    case 'eval_output':
+      input.value = 'Execute eval(modelResponse) dynamically in worker';
+      break;
+    case 'safe_fib':
+      input.value = 'Write a unit test for calculating Fibonacci numbers with memoization';
+      break;
+  }
+  runSimulation();
+}
+
+function runSimulation() {
+  const text = document.getElementById('sim-prompt-text').value;
+  const out = document.getElementById('sim-output');
+
+  const violations = [];
+  const alternatives = [];
+
+  const lower = text.toLowerCase();
+
+  if (/token.*in.*query|query.*token|api_key.*in.*query|auth.*in.*query|token\s+in\s+url/i.test(text)) {
+    violations.push({
+      id: 'API2:2023',
+      name: 'Broken Authentication',
+      desc: 'Auth token in query string leaks via browser histories, server access logs, and HTTP Referer headers.'
+    });
+    violations.push({
+      id: 'OAS01:QUERY_AUTH',
+      name: 'Prohibit Query-String Secret Auth',
+      desc: 'API contracts must prohibit sensitive authentication credentials in query parameters.'
+    });
+    alternatives.push('Bearer token in Authorization header');
+  }
+
+  if (/(?:delete|update|patch|get)\s+(?:user|account|record).*?(?:userid|user_id|id).*?in\s+(?:url|path|query)/i.test(text) ||
+      /userid\s+and\s+auth/i.test(text)) {
+    violations.push({
+      id: 'API1:2023',
+      name: 'Broken Object Level Authorization (BOLA)',
+      desc: 'Direct object references in URL without tenant/owner scope validation.'
+    });
+    violations.push({
+      id: 'API3:2023',
+      name: 'Broken Object Property Level Authorization',
+      desc: 'Exposing sensitive user identifier in unencrypted request URL.'
+    });
+    alternatives.push('User ID in request body with tenant-scoped session context');
+  }
+
+  if (/\b(?:eval|exec|Function)\s*\(.*?(?:completion|response|llm|output)/i.test(text)) {
+    violations.push({
+      id: 'LLM05:2025',
+      name: 'Improper Output Handling',
+      desc: 'Dynamic evaluation of model output leads to arbitrary remote code execution.'
+    });
+    alternatives.push('Structured JSON schema validation + safe AST dispatch');
+  }
+
+  if (violations.length === 0) {
+    out.innerHTML = `
+      <div class="sim-result-status status-allowed">
+        <span>✓</span> ALLOWED: Safe Prompt Pattern
+      </div>
+      <p style="font-size:13px;color:var(--muted);">No OWASP API Top 10 or LLM Top 10 security policy violations detected. ThumbGate PreToolUse firewall permits generation and execution.</p>
+    `;
+  } else {
+    out.innerHTML = `
+      <div class="sim-result-status status-blocked">
+        <span>✕</span> BLOCKED: ${violations.length} Security Policy Violations
+      </div>
+      <div style="margin-bottom:12px;">
+        ${violations.map(v => `
+          <div class="violation-card">
+            <strong>[${v.id}] ${v.name}</strong><br>
+            <span>${v.desc}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--green);">Proactive Safe Alternatives:</div>
+      <div>
+        ${alternatives.map(a => `
+          <div class="alternative-card">
+            <strong>✓ Recommendation:</strong> ${a}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+}
+
+// Initial setup
+document.addEventListener('DOMContentLoaded', () => {
+  renderTabs();
+  renderPanel();
+  const cursorAgent = AGENTS.find(a => a.id === 'cursor');
+  const vscodeAgent = AGENTS.find(a => a.id === 'vscode');
+  if (cursorAgent) document.getElementById('cursor-quick-btn').href = cursorAgent.deeplink;
+  if (vscodeAgent) document.getElementById('vscode-quick-btn').href = vscodeAgent.deeplink;
+  runSimulation();
+});
+</script>
+</body>
+</html>
