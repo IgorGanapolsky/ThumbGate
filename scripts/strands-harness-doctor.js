@@ -168,7 +168,7 @@ function evaluatePreActionDiode(toolCall = {}) {
     /git\s+push.*(--force|-f)/i,
     /chmod\s+777/i,
     /deploy-to-qa\.py/i,
-    /api[_-]?key\s*=\s*['"][a-zA-Z0-9_-]{20,}['"]/i,
+    /api[_-]?key\s*=\s*['"][a-z0-9_-]{20,}['"]/i,
   ];
 
   let blocked = false;
