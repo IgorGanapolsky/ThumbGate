@@ -13,15 +13,33 @@ const {
 } = require('../scripts/tailscale-p2p-doctor');
 
 test('tailscale-p2p: evaluatePamDiode protects privileged patterns', () => {
-  const pam = evaluatePamDiode();
+  const pam = evaluatePamDiode(path.resolve(__dirname, '..'));
   assert.equal(pam.enforced, true);
   assert.ok(pam.privilegedPatternsProtected >= 5);
   assert.equal(pam.diodeStatus, 'ACTIVE');
+
+  // Unconfigured directory returns inactive
+  const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ts-unconfigured-'));
+  try {
+    const inactivePam = evaluatePamDiode(emptyDir);
+    assert.equal(inactivePam.enforced, false);
+    assert.equal(inactivePam.diodeStatus, 'INACTIVE');
+  } finally {
+    fs.rmSync(emptyDir, { recursive: true, force: true });
+  }
 });
 
-test('tailscale-p2p: countPreventionRules counts rules from local repo', () => {
+test('tailscale-p2p: countPreventionRules counts rules from local repo and preserves zero', () => {
   const count = countPreventionRules(path.resolve(__dirname, '..'));
   assert.ok(count >= 1, `expected at least 1 rule, got ${count}`);
+
+  const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ts-empty-rules-'));
+  try {
+    const zeroCount = countPreventionRules(emptyDir);
+    assert.equal(zeroCount, 0);
+  } finally {
+    fs.rmSync(emptyDir, { recursive: true, force: true });
+  }
 });
 
 test('tailscale-p2p: probeTailscale handles missing CLI gracefully with standby state', () => {

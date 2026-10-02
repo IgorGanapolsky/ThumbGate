@@ -119,6 +119,7 @@ function countPreventionRules(rootDir) {
   const candidates = [
     path.join(rootDir, '.thumbgate', 'rules'),
     path.join(rootDir, '.claude', 'memory', 'feedback'),
+    path.join(rootDir, 'config', 'gates'),
     path.join(rootDir, 'config', 'prevention-rules.json'),
   ];
 
@@ -143,15 +144,18 @@ function countPreventionRules(rootDir) {
       }
     }
   }
-  return Math.max(ruleCount, 1);
+  return ruleCount;
 }
 
-function evaluatePamDiode() {
+function evaluatePamDiode(rootDir = process.cwd()) {
   const privilegedCommands = ['rm -rf', 'sudo', 'git push --force', 'deploy-to-qa.py', 'chmod 777'];
+  const hasHooks =
+    fs.existsSync(path.join(rootDir, 'hooks', 'hooks.json')) ||
+    fs.existsSync(path.join(rootDir, '.claude', 'settings.json'));
   return {
-    enforced: true,
+    enforced: hasHooks,
     privilegedPatternsProtected: privilegedCommands.length,
-    diodeStatus: 'ACTIVE',
+    diodeStatus: hasHooks ? 'ACTIVE' : 'INACTIVE',
   };
 }
 
@@ -159,7 +163,7 @@ function evaluateDiagnostics(options = {}) {
   const rootDir = process.cwd();
   const tailscaleProbe = probeTailscale(options.fixture);
   const ruleCount = countPreventionRules(rootDir);
-  const pamDiode = evaluatePamDiode();
+  const pamDiode = evaluatePamDiode(rootDir);
 
   const isHealthy = tailscaleProbe.ok || tailscaleProbe.source === 'cli_unavailable';
 

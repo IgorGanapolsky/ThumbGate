@@ -104,3 +104,14 @@ Run the dedicated health check:
 ```bash
 node scripts/tailscale-p2p-doctor.js --json
 ```
+
+> [!NOTE]
+> **Operational Boundary & Guarantees:**
+> `evaluateDiagnostics()` reports local network probe status and local rule counts. If the Tailscale CLI is absent or inactive, it runs in simulated/advisory mode.
+> - `replicatedRuleCount` reflects local rules eligible for mesh publication, not active confirmation of peer sync across other nodes.
+> - To verify peer replication end-to-end, query the peer's node directly:
+>   ```bash
+>   tailscale ping <peer-ip-or-magicdns>
+>   curl -s http://<peer-ip>:9877/rules | jq '.count'
+>   ```
+> - Always confirm that `hooks.PreToolUse` is active in `.claude/settings.json` or `hooks/hooks.json` to ensure fail-closed PAM enforcement across all agent worktrees.
