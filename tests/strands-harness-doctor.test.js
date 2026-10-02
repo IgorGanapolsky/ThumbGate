@@ -220,33 +220,33 @@ test('AWS Strands Harness Middleware: registerStrandsGatePlugin registers hooks 
 });
 
 test('AWS Strands Harness Doctor: CLI modes execute cleanly', () => {
-  const { execSync } = require('node:child_process');
+  const { execFileSync } = require('node:child_process');
   const scriptPath = path.resolve(__dirname, '../scripts/strands-harness-doctor.js');
 
   // 1. Text mode default
-  const textOutput = execSync(`node ${scriptPath}`, { encoding: 'utf8' });
+  const textOutput = execFileSync(process.execPath, [scriptPath], { encoding: 'utf8' });
   assert.match(textOutput, /=== AWS Strands Harness Doctor \(ThumbGate Diode\) ===/);
   assert.match(textOutput, /Status: HEALTHY/);
 
   // 2. JSON mode
-  const jsonOutput = execSync(`node ${scriptPath} --json`, { encoding: 'utf8' });
+  const jsonOutput = execFileSync(process.execPath, [scriptPath, '--json'], { encoding: 'utf8' });
   const parsed = JSON.parse(jsonOutput);
   assert.equal(parsed.name, 'strands-harness-doctor');
   assert.equal(parsed.status, 'healthy');
 
   // 3. Map only text mode
-  const mapTextOutput = execSync(`node ${scriptPath} --map-only`, { encoding: 'utf8' });
+  const mapTextOutput = execFileSync(process.execPath, [scriptPath, '--map-only'], { encoding: 'utf8' });
   assert.match(mapTextOutput, /=== AWS Strands Harness Architecture Map ===/);
   assert.match(mapTextOutput, /gate-strands-harness-output-compaction/);
 
   // 4. Map only JSON mode
-  const mapJsonOutput = execSync(`node ${scriptPath} --map-only --json`, { encoding: 'utf8' });
+  const mapJsonOutput = execFileSync(process.execPath, [scriptPath, '--map-only', '--json'], { encoding: 'utf8' });
   const parsedMap = JSON.parse(mapJsonOutput);
   assert.match(parsedMap.source, /AWS Strands Harness/);
   assert.equal(parsedMap.architecturePillars.length, 5);
 
   // 5. Check mode
-  const checkOutput = execSync(`node ${scriptPath} --check`, { encoding: 'utf8' });
+  const checkOutput = execFileSync(process.execPath, [scriptPath, '--check'], { encoding: 'utf8' });
   assert.match(checkOutput, /Status: HEALTHY/);
 });
 
