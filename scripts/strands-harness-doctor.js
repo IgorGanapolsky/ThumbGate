@@ -62,20 +62,38 @@ function evaluateOutputShunt(output, options = {}) {
   }
 
   const keepLines = Math.floor(maxLines / 2);
-  const head = lines.slice(0, keepLines).join('\n');
-  const tail = lines.slice(-keepLines).join('\n');
-  const omittedCount = lineCount - (keepLines * 2);
+  let head = lines.slice(0, keepLines).join('\n');
+  let tail = lines.slice(-keepLines).join('\n');
+  const omittedCount = Math.max(0, lineCount - (keepLines * 2));
 
   const marker = `\n... [ThumbGate Token-Shunt: ${omittedCount} lines (${Math.max(0, byteLength - maxBytes)} bytes) omitted. Target with grep or offset/limit] ...\n`;
-  const shuntedContent = `${head}${marker}${tail}`;
-  const shuntedBytes = Buffer.byteLength(shuntedContent, 'utf8');
+  let shuntedContent = `${head}${marker}${tail}`;
+  let shuntedBytes = Buffer.byteLength(shuntedContent, 'utf8');
+
+  // Enforce byte limit strictly: if head + marker + tail exceeds maxBytes (e.g. single-line or wide lines)
+  if (shuntedBytes > maxBytes) {
+    const markerBytes = Buffer.byteLength(marker, 'utf8');
+    const budgetForText = Math.max(0, maxBytes - markerBytes);
+    const halfChars = Math.floor(budgetForText / 2);
+
+    let headStr = output.slice(0, halfChars);
+    let tailStr = output.slice(-halfChars);
+    while (Buffer.byteLength(`${headStr}${marker}${tailStr}`, 'utf8') > maxBytes && (headStr.length > 0 || tailStr.length > 0)) {
+      if (headStr.length > 0) headStr = headStr.slice(0, -10);
+      if (tailStr.length > 0) tailStr = tailStr.slice(10);
+    }
+    shuntedContent = `${headStr}${marker}${tailStr}`;
+    shuntedBytes = Buffer.byteLength(shuntedContent, 'utf8');
+  }
+
   const reductionPct = Number(((1 - (shuntedBytes / byteLength)) * 100).toFixed(2));
+  const finalLines = shuntedContent.split('\n').length;
 
   return {
     shunted: true,
     originalLineCount: lineCount,
     originalBytes: byteLength,
-    shuntedLineCount: keepLines * 2 + 1,
+    shuntedLineCount: finalLines,
     shuntedBytes,
     reductionPct,
     shuntedContent,

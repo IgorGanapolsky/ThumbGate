@@ -182,6 +182,14 @@ test('AWS Strands Harness: output shunting edge cases and non-string inputs', ()
   const numResult = evaluateOutputShunt(12345);
   assert.equal(numResult.shunted, false);
   assert.equal(numResult.shuntedContent, '12345');
+
+  // Single-line 25 KB byte-only overflow
+  const singleLineHuge = 'x'.repeat(25 * 1024);
+  const shunt = evaluateOutputShunt(singleLineHuge, { maxOutputLines: 350, maxOutputBytes: 16384 });
+  assert.equal(shunt.shunted, true);
+  assert.equal(shunt.originalLineCount, 1);
+  assert.ok(shunt.shuntedBytes <= 16384, `shuntedBytes ${shunt.shuntedBytes} exceeds max 16384`);
+  assert.match(shunt.shuntedContent, /\[ThumbGate Token-Shunt/);
 });
 
 test('AWS Strands Harness: simulateOverflowRecovery handles under-capacity history cleanly', () => {
