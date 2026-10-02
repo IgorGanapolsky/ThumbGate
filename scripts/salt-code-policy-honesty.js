@@ -39,8 +39,19 @@ const QUERY_STRING_SECRET_RE =
 const OPENAPI_QUERY_SECRET_RE =
   /(name:\s*['"]?(api[_-]?key|token|auth[_-]?token|secret|access[_-]?token|password)["']?[\s\S]{0,80}in:\s*['"]?query['"]?|in:\s*['"]?query['"]?[\s\S]{0,80}name:\s*['"]?(api[_-]?key|token|auth[_-]?token|secret|access[_-]?token|password)["']?)/i;
 
-const BOLA_UNSCOPED_RE =
-  /\b(req\.(params|query)\.id|params\.id|args\.id)\b(?![\s\S]{0,120}\b(userId|tenantId|ownerId|orgId|account[_-]?id|scopedBy|where\s*:\s*\{[\s\S]*userId)\b)/i;
+const BOLA_ID_RE = /\b(req\.(params|query)\.id|params\.id|args\.id)\b/gi;
+const BOLA_SCOPE_RE =
+  /\b(userId|tenantId|ownerId|orgId|account[_-]?id|scopedBy)\b/i;
+const BOLA_UNSCOPED_RE = BOLA_ID_RE;
+
+function hasUnscopedBola(codeText) {
+  for (const match of codeText.matchAll(BOLA_ID_RE)) {
+    const start = Math.max(0, match.index - 120);
+    const end = Math.min(codeText.length, match.index + match[0].length + 120);
+    if (!BOLA_SCOPE_RE.test(codeText.slice(start, end))) return true;
+  }
+  return false;
+}
 
 const SSRF_DYNAMIC_FETCH_RE =
   /\b(fetch|axios\.(get|post|put|delete|request)|http\.request|https\.request|curl)\s*\(\s*(req\.(body|query|params)\.\w+|input\.\w+|args\.\w+|params\.\w+)\s*[,)]/i;
@@ -269,7 +280,7 @@ function evaluatePolicies({ codeText, apiText, mcpText, contextText, claimText, 
       });
     }
 
-    if (BOLA_UNSCOPED_RE.test(codeText)) {
+    if (hasUnscopedBola(codeText)) {
       findings.push({
         id: 'bola_unscoped_resource',
         category: 'OWASP_API_TOP_10',
@@ -394,11 +405,19 @@ function buildSaltCodePolicyHonestyReport(rawOptions = {}) {
     }
   }
 
-  // Check if workspace has active PreToolUse hook configuration
+  const hasPreToolHook = (p) => {
+    try {
+      const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
+      const pre = cfg && cfg.hooks && cfg.hooks.PreToolUse;
+      return Array.isArray(pre) && pre.length > 0;
+    } catch (_) {
+      return false;
+    }
+  };
   const hasPretoolConfig =
-    fs.existsSync(path.join(rootDir, 'hooks', 'hooks.json')) ||
-    fs.existsSync(path.join(rootDir, '.claude', 'settings.json')) ||
-    rawOptions.hasPretoolConfig === true;
+    rawOptions.hasPretoolConfig === true ||
+    hasPreToolHook(path.join(rootDir, 'hooks', 'hooks.json')) ||
+    hasPreToolHook(path.join(rootDir, '.claude', 'settings.json'));
 
   const evaluationFindings = evaluatePolicies({
     codeText,

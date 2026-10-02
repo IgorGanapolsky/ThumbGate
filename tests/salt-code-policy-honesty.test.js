@@ -167,6 +167,16 @@ test('salt-code-policy-honesty: flags BOLA, SSRF, and insecure output execution 
   assert.ok(findings.some((f) => f.id === 'bola_unscoped_resource'));
   assert.ok(findings.some((f) => f.id === 'ssrf_unvalidated_destination'));
   assert.ok(findings.some((f) => f.id === 'insecure_output_execution'));
+
+  // Preceding or trailing userId scope avoids BOLA false positive
+  const scopedCode = `
+    app.get('/item/:id', async (req, res) => {
+      const item = await db.items.findOne({ userId: req.user.id, id: req.params.id });
+      res.json(item);
+    });
+  `;
+  const scopedFindings = evaluatePolicies({ codeText: scopedCode });
+  assert.ok(!scopedFindings.some((f) => f.id === 'bola_unscoped_resource'));
 });
 
 test('salt-code-policy-honesty: clean code and config produce ready report with zero findings', () => {
