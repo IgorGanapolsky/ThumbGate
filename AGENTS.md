@@ -262,6 +262,17 @@ node --test tests/rrsi-regularizer.test.js
 
 Details: [`docs/agents/rrsi-harness-regularization.md`](./docs/agents/rrsi-harness-regularization.md).
 
+## Mintlify State of Knowledge honesty (FORMAT steal)
+
+Treat knowledge as living operational infrastructure: pre-action freshness diodes (TTL ≤ 90d), downstream poison prevention (deprecated APIs, dangerous scripts, plaintext tokens), and non-docs surface federation. Never vendor Mintlify SaaS, build docsite generators, or claim external 15k stats.
+
+```bash
+npx thumbgate mintlify-knowledge-honesty --map-only --json
+npx thumbgate mintlify-knowledge-honesty --check-dir docs --json
+```
+
+Skill: `.agents/skills/mintlify-knowledge-honesty-not-clone/SKILL.md`. Details: `docs/agents/mintlify-knowledge-honesty.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
