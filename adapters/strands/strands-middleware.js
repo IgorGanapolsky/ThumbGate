@@ -109,6 +109,10 @@ function registerStrandsGatePlugin(agent, options = {}) {
   if (agent && typeof agent.addHook === 'function') {
     agent.addHook('beforeToolCall', (e) => middleware.beforeToolCall(e));
     agent.addHook('afterToolCall', (e) => middleware.afterToolCall(e));
+    agent.addHook('onContextCompaction', (e) => middleware.onContextCompaction(e));
+  }
+  if (agent && agent.contextManager && typeof agent.contextManager.onCompaction === 'function') {
+    agent.contextManager.onCompaction((e) => middleware.onContextCompaction(e));
   }
   return middleware;
 }

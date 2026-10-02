@@ -205,18 +205,26 @@ test('AWS Strands Harness Middleware: handles disabled diode and normal output',
   assert.equal(normalRes.result, 'short output');
 });
 
-test('AWS Strands Harness Middleware: registerStrandsGatePlugin registers hooks on agent', () => {
+test('AWS Strands Harness Middleware: registerStrandsGatePlugin registers hooks on agent and context manager', () => {
   const { registerStrandsGatePlugin } = require('../adapters/strands/strands-middleware');
   const hooks = {};
+  let contextManagerCompacted = false;
   const mockAgent = {
     addHook(name, fn) {
       hooks[name] = fn;
+    },
+    contextManager: {
+      onCompaction(fn) {
+        contextManagerCompacted = true;
+      },
     },
   };
   const plugin = registerStrandsGatePlugin(mockAgent, { preActionDiode: { enabled: true } });
   assert.ok(plugin);
   assert.equal(typeof hooks.beforeToolCall, 'function');
   assert.equal(typeof hooks.afterToolCall, 'function');
+  assert.equal(typeof hooks.onContextCompaction, 'function');
+  assert.equal(contextManagerCompacted, true);
 });
 
 test('AWS Strands Harness Doctor: CLI modes execute cleanly', () => {
