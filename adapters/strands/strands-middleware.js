@@ -16,6 +16,9 @@ const { evaluateOutputShunt, evaluatePreActionDiode } = require('../../scripts/s
 function createStrandsGateMiddleware(options = {}) {
   const shuntConfig = options.tokenShunt || { maxOutputLines: 350, maxOutputBytes: 16384 };
   const preActionEnabled = options.preActionDiode?.enabled !== false;
+  const defaultPinnedRules = options.pinnedRules && options.pinnedRules.length > 0
+    ? options.pinnedRules
+    : ['Always verify against local tests before claiming completion'];
 
   return {
     name: 'thumbgate-strands-middleware',
@@ -60,16 +63,40 @@ function createStrandsGateMiddleware(options = {}) {
     /**
      * Hook called by Strands Harness right after a tool produces output.
      * Truncates oversized returns to enforce token efficiency.
-     * Supports updating native event.result in place.
+     * Supports updating native event.result in place (retaining ToolResultBlock structure).
      */
     async afterToolCall(event = {}) {
       const rawResult = event.result !== undefined ? event.result : event;
-      const outputText = typeof rawResult === 'string' ? rawResult : JSON.stringify(rawResult);
+      let outputText = '';
+      if (typeof rawResult === 'string') {
+        outputText = rawResult;
+      } else if (rawResult && typeof rawResult === 'object') {
+        if (Array.isArray(rawResult.content)) {
+          outputText = rawResult.content.map((c) => (typeof c === 'string' ? c : c.text || '')).join('\n');
+        } else if (typeof rawResult.text === 'string') {
+          outputText = rawResult.text;
+        } else {
+          outputText = JSON.stringify(rawResult);
+        }
+      } else {
+        outputText = String(rawResult || '');
+      }
+
       const shunt = evaluateOutputShunt(outputText, shuntConfig);
 
       if (shunt.shunted) {
         if (typeof event === 'object' && event !== null && 'result' in event) {
-          event.result = shunt.shuntedContent;
+          if (event.result && typeof event.result === 'object') {
+            if (Array.isArray(event.result.content)) {
+              event.result.content = [{ type: 'text', text: shunt.shuntedContent }];
+            } else if ('text' in event.result) {
+              event.result.text = shunt.shuntedContent;
+            } else {
+              event.result.content = [{ type: 'text', text: shunt.shuntedContent }];
+            }
+          } else {
+            event.result = shunt.shuntedContent;
+          }
         }
         return {
           shunted: true,
@@ -87,16 +114,54 @@ function createStrandsGateMiddleware(options = {}) {
     },
 
     /**
-     * Hook called when context utilization reaches threshold (e.g. 75%).
-     * Pins critical prevention rules so they are never forgotten during compaction.
+     * Hook or ContextStrategy called when context utilization reaches threshold.
+     * Implements Strands ContextStrategy.apply(context) returning boolean while
+     * retaining pinned rules in conversation history.
      */
-    async onContextCompaction({ history = [], pinnedRules = [] } = {}) {
+    onContextCompaction(param = {}) {
+      const context = param.context || param;
+      const history = Array.isArray(param.history)
+        ? param.history
+        : (context && Array.isArray(context.messages) ? context.messages : []);
+      const pinnedRules = (param && Array.isArray(param.pinnedRules) && param.pinnedRules.length > 0)
+        ? param.pinnedRules
+        : defaultPinnedRules;
       const preservedRules = pinnedRules.map((r) => `[PINNED RULE]: ${r}`);
+
+      let applied = false;
+      if (preservedRules.length > 0) {
+        const prefix = preservedRules.join('\n');
+        if (history.length > 0 && typeof history[0] === 'object') {
+          if (typeof history[0].content === 'string') {
+            if (!history[0].content.includes('[PINNED RULE]')) {
+              history[0].content = `${prefix}\n\n${history[0].content}`;
+              applied = true;
+            }
+          } else if (Array.isArray(history[0].content)) {
+            history[0].content.unshift({ type: 'text', text: prefix });
+            applied = true;
+          }
+        } else if (Array.isArray(history)) {
+          history.unshift({ role: 'system', content: prefix });
+          applied = true;
+        }
+      }
+
       return {
         compacted: true,
+        applied,
         injectedPrefix: preservedRules.join('\n'),
         timestamp: new Date().toISOString(),
       };
+    },
+
+    /**
+     * Strands ContextStrategy contract: apply(context) => boolean
+     */
+    apply(context) {
+      if (!context) return false;
+      const res = this.onContextCompaction(context);
+      return res && typeof res === 'object' ? Boolean(res.applied || res.compacted) : Boolean(res);
     },
   };
 }
@@ -111,8 +176,12 @@ function registerStrandsGatePlugin(agent, options = {}) {
     agent.addHook('afterToolCall', (e) => middleware.afterToolCall(e));
     agent.addHook('onContextCompaction', (e) => middleware.onContextCompaction(e));
   }
-  if (agent && agent.contextManager && typeof agent.contextManager.onCompaction === 'function') {
-    agent.contextManager.onCompaction((e) => middleware.onContextCompaction(e));
+  if (agent && agent.contextManager) {
+    if (typeof agent.contextManager.addStrategy === 'function') {
+      agent.contextManager.addStrategy(middleware);
+    } else if (typeof agent.contextManager.onCompaction === 'function') {
+      agent.contextManager.onCompaction((e) => middleware.onContextCompaction(e));
+    }
   }
   return middleware;
 }

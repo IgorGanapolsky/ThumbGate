@@ -131,15 +131,18 @@ test('AWS Strands Harness: createStrandsGateMiddleware hooks execute cleanly in 
   assert.equal(shuntResult.shunted, true);
   assert.ok(shuntResult.reductionPct > 0);
 
-  // onContextCompaction pins rules
+  // onContextCompaction pins rules and implements Strands ContextStrategy
+  const testHistory = [{ role: 'system', content: 'Base instruction' }];
   const compactResult = await middleware.onContextCompaction({
-    history: [],
+    history: testHistory,
     pinnedRules: ['No force pushes'],
   });
   assert.equal(compactResult.compacted, true);
-  assert.match(compactResult.injectedPrefix, /\[PINNED RULE\]: No force pushes/);
+  assert.equal(compactResult.applied, true);
+  assert.match(testHistory[0].content, /\[PINNED RULE\]: No force pushes/);
+  assert.equal(middleware.apply({ messages: [{ role: 'system', content: 'Context strategy' }] }), true);
 
-  // Native Strands event contract (event.toolUse, event.cancel, event.result)
+  // Native Strands event contract (event.toolUse, event.cancel, event.result with ToolResultBlock)
   const nativeBlockEvent = {
     toolUse: { name: 'shell_execute', input: { command: 'git push --force origin main' } },
   };
@@ -149,10 +152,17 @@ test('AWS Strands Harness: createStrandsGateMiddleware hooks execute cleanly in 
 
   const nativeShuntEvent = {
     toolUse: { name: 'shell_execute', input: { command: 'cat huge.log' } },
-    result: longOutput,
+    result: {
+      toolUseId: 'call_456',
+      status: 'success',
+      content: [{ type: 'text', text: longOutput }],
+    },
   };
   await middleware.afterToolCall(nativeShuntEvent);
-  assert.match(nativeShuntEvent.result, /\[ThumbGate Token-Shunt/);
+  assert.equal(nativeShuntEvent.result.toolUseId, 'call_456');
+  assert.equal(nativeShuntEvent.result.status, 'success');
+  assert.ok(Array.isArray(nativeShuntEvent.result.content));
+  assert.match(nativeShuntEvent.result.content[0].text, /\[ThumbGate Token-Shunt/);
 });
 
 test('AWS Strands Harness Doctor: runDoctor executes all 5 pillars with healthy status', () => {
