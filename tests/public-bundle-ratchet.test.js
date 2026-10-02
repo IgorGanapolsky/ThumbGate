@@ -256,11 +256,11 @@ const path = require('node:path');
 // 563 → 565 (2026-09-28): scripts/halo-trace-optimizer.js + skill (HALO trace-to-fix FORMAT steal).
 // 565 → 567 (2026-09-29): scripts/infoq-architect-honesty.js + skill (InfoQ architect honesty FORMAT steal).
 // 567 → 568 (2026-09-29): public/blog/2026-09-28-pretool-secret-deny.html
-// 568 → 570 (2026-10-01): scripts/meko-datapack-honesty.js + skill (Meko Datapack FORMAT steal).
 // 570 → 572 (2026-10-01): scripts/salt-code-policy-honesty.js + skill (Salt Code 40-policy FORMAT steal).
 // 572 → 573 (2026-10-01): public/blog/2026-10-01-model-distress-relief-seeking-firewall.html (Model Distress & Relief-Seeking Diode).
 // 573 → 576 (2026-10-01): scripts/model-distress-doctor.js, scripts/model-distress-detector.js, .agents/skills/model-distress-governance/
-const BASELINE_FILE_COUNT = 576;
+// 576 → 580 (2026-10-01): scripts/tailscale-p2p-doctor.js, adapters/tailscale/ (TAILSCALE.md, config.toml, .mcp.json)
+const BASELINE_FILE_COUNT = 580;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
