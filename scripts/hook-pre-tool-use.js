@@ -581,6 +581,19 @@ function main() {
     failOpen(err);
   }
 
+  try {
+    const { evaluateReliefSeekingAction } = require('./model-distress-detector');
+    const distressEval = evaluateReliefSeekingAction({
+      toolName,
+      toolInput: effectiveInput,
+    });
+    if (distressEval && distressEval.decision === 'BLOCK') {
+      return block(`model-distress: ${distressEval.violation || 'destructive relief-seeking behavior interdicted'}`);
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const blockReason = maybeBlockOnRisk(lessons);
   if (blockReason) return block(blockReason);
 

@@ -258,7 +258,9 @@ const path = require('node:path');
 // 567 → 568 (2026-09-29): public/blog/2026-09-28-pretool-secret-deny.html
 // 568 → 570 (2026-10-01): scripts/meko-datapack-honesty.js + skill (Meko Datapack FORMAT steal).
 // 570 → 572 (2026-10-01): scripts/salt-code-policy-honesty.js + skill (Salt Code 40-policy FORMAT steal).
-const BASELINE_FILE_COUNT = 572;
+// 572 → 573 (2026-10-01): public/blog/2026-10-01-model-distress-relief-seeking-firewall.html (Model Distress & Relief-Seeking Diode).
+// 573 → 576 (2026-10-01): scripts/model-distress-doctor.js, scripts/model-distress-detector.js, .agents/skills/model-distress-governance/
+const BASELINE_FILE_COUNT = 576;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
