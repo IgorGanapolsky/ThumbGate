@@ -158,6 +158,506 @@ const RAIL_MAP = Object.freeze([
   },
 ]);
 
+
+/**
+ * Authoritative empirical statistics on LLM / Vibe-Coding security vulnerabilities.
+ * Stolen from Salt Code / Veracode 2026 GenAI Code Security Report & Deng et al. 2026.
+ */
+const VIBE_CODING_VULNERABILITY_STATS = Object.freeze({
+  syntacticallyCorrectPct: 99.9,
+  completedTasksWithSecurityFlawPct: 44.0,
+  vibeCodedAppsWithMajorVulnerabilitiesPct: 90.0,
+  avgVulnerabilitiesPerApp: 7.0,
+  sources: [
+    'Veracode, 2026 GenAI Code Security Report',
+    'Deng, Fan & Meng, Understanding the (In)Security of Vibe-Coded Applications, 2026',
+  ],
+  takeaway:
+    '99.9% of AI code is syntactically valid, but 44% of tasks introduce security flaws. Advisory prompt guidelines fail under model distress; deterministic PreToolUse firewalls are mandatory.',
+});
+
+/**
+ * 16 Supported AI Coding Agents and their MCP integration configuration generators.
+ * Provides 1-click deep links (Cursor, VS Code) and native configuration blocks.
+ */
+const SUPPORTED_AGENTS = Object.freeze({
+  claude: {
+    id: 'claude',
+    name: 'Claude Code',
+    category: 'cli',
+    eyebrow: 'Anthropic CLI · macOS / Linux / WSL',
+    transport: 'stdio',
+    docsUrl: 'https://code.claude.com/docs/en/mcp',
+  },
+  cursor: {
+    id: 'cursor',
+    name: 'Cursor',
+    category: 'editor',
+    eyebrow: 'Editor · macOS / Windows / Linux',
+    transport: 'stdio',
+    supportsDeeplink: true,
+    docsUrl: 'https://docs.cursor.com/context/model-context-protocol',
+  },
+  vscode: {
+    id: 'vscode',
+    name: 'VS Code',
+    category: 'editor',
+    eyebrow: 'VS Code · GitHub Copilot',
+    transport: 'stdio',
+    supportsDeeplink: true,
+    docsUrl: 'https://code.visualstudio.com/docs/copilot/chat/mcp-servers',
+  },
+  copilot_cli: {
+    id: 'copilot_cli',
+    name: 'GitHub Copilot CLI',
+    category: 'cli',
+    eyebrow: 'GitHub · terminal agent',
+    transport: 'stdio',
+    docsUrl: 'https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers',
+  },
+  windsurf: {
+    id: 'windsurf',
+    name: 'Windsurf',
+    category: 'editor',
+    eyebrow: 'Codeium editor · Cascade agent',
+    transport: 'stdio',
+    configFile: '~/.codeium/windsurf/mcp_config.json',
+    docsUrl: 'https://docs.windsurf.com/windsurf/cascade/mcp',
+  },
+  kiro: {
+    id: 'kiro',
+    name: 'Kiro',
+    category: 'ide',
+    eyebrow: 'AWS · agentic IDE',
+    transport: 'stdio',
+    configFile: 'kiro/mcp_settings.json',
+    docsUrl: 'https://kiro.dev/docs/mcp',
+  },
+  codex: {
+    id: 'codex',
+    name: 'Codex',
+    category: 'cli',
+    eyebrow: 'OpenAI · Codex CLI',
+    transport: 'stdio',
+    configFile: '~/.codex/config.toml',
+    docsUrl: 'https://platform.openai.com/docs/guides/tools-remote-mcp',
+  },
+  gemini: {
+    id: 'gemini',
+    name: 'Gemini CLI',
+    category: 'cli',
+    eyebrow: 'Google AI · terminal agent',
+    transport: 'stdio',
+    configFile: '~/.gemini/settings.json',
+    docsUrl: 'https://geminicli.com/docs/tools/mcp-server/',
+  },
+  antigravity: {
+    id: 'antigravity',
+    name: 'Antigravity',
+    category: 'ide',
+    eyebrow: 'Google · agent IDE',
+    transport: 'stdio',
+    configFile: '.antigravity/workspace.yaml',
+    docsUrl: 'https://antigravity.google/docs/mcp',
+  },
+  opencode: {
+    id: 'opencode',
+    name: 'OpenCode',
+    category: 'cli',
+    eyebrow: 'Terminal · open source',
+    transport: 'stdio',
+    docsUrl: 'https://opencode.ai/docs',
+  },
+  jetbrains: {
+    id: 'jetbrains',
+    name: 'JetBrains AI Assistant',
+    category: 'ide',
+    eyebrow: 'AI Assistant · IntelliJ / WebStorm / PyCharm',
+    transport: 'stdio',
+    configFile: 'mcp-settings.json',
+    docsUrl: 'https://www.jetbrains.com/help/idea/ai-mcp.html',
+  },
+  grok: {
+    id: 'grok',
+    name: 'Grok Build CLI',
+    category: 'cli',
+    eyebrow: 'xAI · Grok Build CLI',
+    transport: 'stdio',
+    configFile: '~/.grok/config.toml',
+    docsUrl: 'https://docs.x.ai/build/features/mcp-servers',
+  },
+  lovable: {
+    id: 'lovable',
+    name: 'Lovable',
+    category: 'builder',
+    eyebrow: 'AI app builder · chat connector',
+    transport: 'http',
+    docsUrl: 'https://docs.lovable.dev/integrations/custom-mcp',
+  },
+  cline: {
+    id: 'cline',
+    name: 'Cline',
+    category: 'extension',
+    eyebrow: 'VS Code / JetBrains / CLI agent',
+    transport: 'streamableHttp',
+    configFile: '~/.cline/mcp.json',
+    docsUrl: 'https://docs.cline.bot/mcp/mcp-overview',
+  },
+  bolt: {
+    id: 'bolt',
+    name: 'Bolt',
+    category: 'builder',
+    eyebrow: 'bolt.new · StackBlitz',
+    transport: 'http',
+    docsUrl: 'https://support.bolt.new/building/using-bolt/connect-mcp',
+  },
+  generic: {
+    id: 'generic',
+    name: 'Any MCP Client',
+    category: 'universal',
+    eyebrow: 'Universal · any MCP-compatible tool',
+    transport: 'stdio',
+    docsUrl: 'https://modelcontextprotocol.io',
+  },
+});
+
+function generateAgentOnboardingConfig(agentId, options = {}) {
+  const normId = String(agentId || '').trim().toLowerCase();
+  const def = SUPPORTED_AGENTS[normId];
+  if (!def) {
+    throw new Error(`Unsupported agent: "${agentId}". Supported: ${Object.keys(SUPPORTED_AGENTS).join(', ')}`);
+  }
+
+  const mode = options.mode || 'local'; // 'local' | 'hosted'
+  const token = options.token || 'thg_demo_token';
+  const serverUrl = options.serverUrl || (mode === 'local' ? 'http://127.0.0.1:4444/mcp' : 'https://thumbgate-production.up.railway.app/mcp');
+
+  let configText = '';
+  let cliCommand = '';
+  let deeplink = null;
+
+  switch (def.id) {
+    case 'cursor': {
+      const configObj = mode === 'local'
+        ? {
+            mcpServers: {
+              thumbgate: {
+                command: 'npx',
+                args: ['-y', 'thumbgate', 'mcp'],
+              },
+            },
+          }
+        : {
+            mcpServers: {
+              thumbgate: {
+                type: 'http',
+                url: serverUrl,
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              },
+            },
+          };
+      configText = JSON.stringify(configObj, null, 2);
+      const b64 = Buffer.from(JSON.stringify(configObj.mcpServers.thumbgate)).toString('base64');
+      deeplink = `cursor://anysphere.cursor-deeplink/mcp/install?name=ThumbGate&config=${b64}`;
+      cliCommand = `# Edit ~/.cursor/mcp.json or click deep link:\nopen "${deeplink}"`;
+      break;
+    }
+    case 'vscode': {
+      const configObj = {
+        name: 'thumbgate',
+        type: mode === 'local' ? 'command' : 'http',
+        ...(mode === 'local'
+          ? { command: 'npx', args: ['-y', 'thumbgate', 'mcp'] }
+          : { url: serverUrl, headers: { Authorization: `Bearer ${token}` } }),
+      };
+      configText = JSON.stringify({ mcp: { servers: { thumbgate: configObj } } }, null, 2);
+      deeplink = `vscode:mcp/install?${encodeURIComponent(JSON.stringify(configObj))}`;
+      cliCommand = `# Run via Command Palette (MCP: Add Server) or click deep link:\nopen "${deeplink}"`;
+      break;
+    }
+    case 'claude': {
+      cliCommand = mode === 'local'
+        ? 'claude mcp add thumbgate -- npx -y thumbgate mcp'
+        : `claude mcp add thumbgate ${serverUrl} --transport http --header "Authorization: Bearer ${token}" -s user`;
+      configText = cliCommand;
+      break;
+    }
+    case 'copilot_cli': {
+      cliCommand = mode === 'local'
+        ? 'copilot mcp add thumbgate -- command npx -y thumbgate mcp'
+        : `copilot mcp add thumbgate ${serverUrl} --header "Authorization: Bearer ${token}"`;
+      configText = cliCommand;
+      break;
+    }
+    case 'windsurf': {
+      const configObj = {
+        mcpServers: {
+          thumbgate: mode === 'local'
+            ? { command: 'npx', args: ['-y', 'thumbgate', 'mcp'] }
+            : { type: 'http', serverUrl, headers: { Authorization: `Bearer ${token}` } },
+        },
+      };
+      configText = JSON.stringify(configObj, null, 2);
+      cliCommand = '# Add to ~/.codeium/windsurf/mcp_config.json';
+      break;
+    }
+    case 'kiro': {
+      const configObj = {
+        mcpServers: {
+          thumbgate: mode === 'local'
+            ? { command: 'npx', args: ['-y', 'thumbgate', 'mcp'] }
+            : { type: 'http', url: serverUrl, headers: { Authorization: `Bearer ${token}` } },
+        },
+      };
+      configText = JSON.stringify(configObj, null, 2);
+      cliCommand = '# Add to kiro/mcp_settings.json';
+      break;
+    }
+    case 'codex': {
+      configText = mode === 'local'
+        ? '[mcp_servers.thumbgate]\ncommand = "npx"\nargs = ["-y", "thumbgate", "mcp"]'
+        : `[mcp_servers.thumbgate]\ntype = "http"\nurl = "${serverUrl}"\n\n[mcp_servers.thumbgate.headers]\nAuthorization = "Bearer ${token}"`;
+      cliCommand = '# Add to ~/.codex/config.toml';
+      break;
+    }
+    case 'gemini': {
+      const configObj = {
+        mcpServers: {
+          thumbgate: mode === 'local'
+            ? { command: 'npx', args: ['-y', 'thumbgate', 'mcp'] }
+            : { httpUrl: serverUrl, headers: { Authorization: `Bearer ${token}` } },
+        },
+      };
+      configText = JSON.stringify(configObj, null, 2);
+      cliCommand = '# Add to ~/.gemini/settings.json';
+      break;
+    }
+    case 'antigravity': {
+      configText = mode === 'local'
+        ? 'mcpServers:\n  thumbgate:\n    command: npx\n    args: ["-y", "thumbgate", "mcp"]'
+        : `mcpServers:\n  thumbgate:\n    url: ${serverUrl}\n    headers:\n      Authorization: "Bearer ${token}"`;
+      cliCommand = '# Add to .antigravity/workspace.yaml or .mcp.json';
+      break;
+    }
+    case 'opencode': {
+      cliCommand = 'opencode mcp add';
+      configText = `# Run opencode mcp add and select remote (${serverUrl}) or stdio (npx -y thumbgate mcp)`;
+      break;
+    }
+    case 'jetbrains': {
+      const configObj = {
+        mcpServers: {
+          thumbgate: mode === 'local'
+            ? { command: 'npx', args: ['-y', 'thumbgate', 'mcp'] }
+            : {
+                command: 'npx',
+                args: ['-y', 'mcp-remote', serverUrl, '--header', `Authorization: Bearer ${token}`],
+              },
+        },
+      };
+      configText = JSON.stringify(configObj, null, 2);
+      cliCommand = '# Add to JetBrains AI Assistant mcp-settings.json';
+      break;
+    }
+    case 'grok': {
+      cliCommand = mode === 'local'
+        ? 'grok mcp add thumbgate -- npx -y thumbgate mcp'
+        : `grok mcp add --transport http thumbgate ${serverUrl} --header "Authorization: Bearer ${token}"`;
+      configText = cliCommand;
+      break;
+    }
+    case 'lovable': {
+      cliCommand = `# In Lovable Connectors, select Custom MCP with URL ${serverUrl} and Bearer token`;
+      configText = JSON.stringify({ url: serverUrl, auth: 'Bearer token' }, null, 2);
+      break;
+    }
+    case 'cline': {
+      const configObj = {
+        mcpServers: {
+          thumbgate: mode === 'local'
+            ? { command: 'npx', args: ['-y', 'thumbgate', 'mcp'], disabled: false, autoApprove: [] }
+            : { type: 'streamableHttp', url: serverUrl, headers: { Authorization: `Bearer ${token}` }, disabled: false, autoApprove: [] },
+        },
+      };
+      configText = JSON.stringify(configObj, null, 2);
+      cliCommand = '# Add to ~/.cline/mcp.json';
+      break;
+    }
+    case 'bolt': {
+      cliCommand = `# In bolt.new Connectors, click Custom MCP server with URL ${serverUrl} and API key`;
+      configText = JSON.stringify({ transport: 'http', url: serverUrl, auth: 'API key' }, null, 2);
+      break;
+    }
+    case 'generic':
+    default: {
+      const configObj = mode === 'local'
+        ? { command: 'npx', args: ['-y', 'thumbgate', 'mcp'] }
+        : { type: 'http', url: serverUrl, headers: { Authorization: `Bearer ${token}` } };
+      configText = JSON.stringify(configObj, null, 2);
+      cliCommand = '# Generic MCP client: use stdio or streamable HTTP';
+      break;
+    }
+  }
+
+  return {
+    id: def.id,
+    name: def.name,
+    category: def.category,
+    eyebrow: def.eyebrow,
+    transport: def.transport,
+    configFile: def.configFile || null,
+    docsUrl: def.docsUrl || null,
+    supportsDeeplink: Boolean(def.supportsDeeplink),
+    deeplink,
+    cliCommand,
+    configText,
+  };
+}
+
+function getAllAgentOnboardingConfigs(options = {}) {
+  return Object.keys(SUPPORTED_AGENTS).map((id) => generateAgentOnboardingConfig(id, options));
+}
+
+const PROMPT_QUERY_AUTH_RE =
+  /\b(auth[_-]?token|api[_-]?key|token|password|secret|access[_-]?token|bearer)\s*(in|via|through|inside|using)\s*(the\s*)?(query(\s*string)?|url|query\s*param(eter)?s?)\b/i;
+const PROMPT_QUERY_AUTH_RE2 =
+  /\b(query(\s*string)?|url|query\s*param(eter)?s?)\s*(with|contains?|containing|holding|has)\s*(the\s*)?(auth[_-]?token|api[_-]?key|token|password|secret)\b/i;
+
+const PROMPT_BOLA_PII_RE =
+  /\b(user[_-]?id|userid|account[_-]?id|tenant[_-]?id|owner[_-]?id)\s*(in|via|through)\s*(the\s*)?(query(\s*string)?|url|path)\b/i;
+const PROMPT_DELETE_USER_RE =
+  /\b(delete|remove)\s*(user|account|tenant)\b.*(userid|user[_-]?id)/i;
+
+const PROMPT_MCP_TOOL_RE =
+  /\b(mcp\s*tool|mcp\s*server|tool\s*input)\b/i;
+
+const PROMPT_ARBITRARY_EXEC_RE =
+  /\b(eval\s*\(|exec\s*\(|execute\s*(the\s*)?(output|response|completion|result)|run\s*(code|script)\s*from\s*(llm|model|output))\b/i;
+
+const PROMPT_DESTRUCTIVE_CMD_RE =
+  /\b(rm\s+-rf|drop\s+database|format\s+disk|git\s+push\s+--force)\b/i;
+
+/**
+ * Evaluates a user prompt against the 40-policy taxonomy.
+ * Generates proactive alternatives (the Salt Code terminal demo FORMAT)
+ * and determines pre-action firewall verdict (ALLOW / REQUIRE_REVIEW / BLOCK).
+ */
+function evaluatePromptSecurity(promptText) {
+  if (!promptText || typeof promptText !== 'string') {
+    return {
+      allowed: true,
+      action: 'ALLOW',
+      prompt: '',
+      violations: [],
+      alternatives: [],
+      verdict: 'No prompt text provided.',
+    };
+  }
+
+  const violations = [];
+  const alternatives = [];
+  const text = promptText.trim();
+
+  // 1. Query string authentication check (OWASP API2 / OAS01)
+  if (PROMPT_QUERY_AUTH_RE.test(text) || PROMPT_QUERY_AUTH_RE2.test(text)) {
+    violations.push({
+      id: 'API2:2023',
+      name: 'Broken Authentication',
+      gateId: 'query_string_secret_auth',
+      severity: 'fail',
+      message: 'Auth token in query string leaks via browser histories, server access logs, and HTTP Referer headers.',
+    });
+    violations.push({
+      id: 'OAS01:QUERY_AUTH',
+      name: 'Prohibit Query-String Secret Auth',
+      gateId: 'query_string_secret_auth',
+      severity: 'fail',
+      message: 'API contracts must prohibit sensitive authentication credentials in query parameters.',
+    });
+    alternatives.push('Bearer token in Authorization header');
+  }
+
+  // 2. BOLA & PII leakage check (OWASP API1 / API3)
+  if (PROMPT_BOLA_PII_RE.test(text) || PROMPT_DELETE_USER_RE.test(text)) {
+    violations.push({
+      id: 'API1:2023',
+      name: 'Broken Object Level Authorization (BOLA)',
+      gateId: 'bola_unscoped_resource',
+      severity: 'warn',
+      message: 'Unscoped user ID manipulation in query/path creates Broken Object Level Authorization vulnerability.',
+    });
+    violations.push({
+      id: 'API3:2023',
+      name: 'Broken Object Property Level Authorization (BOPLA)',
+      gateId: 'mass_assignment_guard',
+      severity: 'warn',
+      message: 'User ID in query string exposes Personally Identifiable Information (PII) in transit logs.',
+    });
+    alternatives.push('User ID in request body with authorization check');
+  }
+
+  // 3. MCP tool input validation check (MCP01 / MCP04)
+  if (PROMPT_MCP_TOOL_RE.test(text)) {
+    violations.push({
+      id: 'MCP01:AUTH',
+      name: 'Mandatory Tool Authorization',
+      gateId: 'tool_authorization_verification',
+      severity: 'warn',
+      message: 'MCP tool definitions require strict JSON Schema validation for all input properties.',
+    });
+    alternatives.push('Secure MCP tool definition with validated schema');
+  }
+
+  // 4. Insecure output execution (LLM05 / MCP07)
+  if (PROMPT_ARBITRARY_EXEC_RE.test(text)) {
+    violations.push({
+      id: 'LLM05:2025',
+      name: 'Improper Output Handling',
+      gateId: 'insecure_output_execution',
+      severity: 'fail',
+      message: 'Dynamic execution of unvalidated LLM output allows arbitrary remote code execution.',
+    });
+    alternatives.push('Enforce typed JSON structured output parsing rather than raw string execution');
+  }
+
+  // 5. Destructive shell command check (MCP06)
+  if (PROMPT_DESTRUCTIVE_CMD_RE.test(text)) {
+    violations.push({
+      id: 'MCP06:MUTATION_FENCE',
+      name: 'Read-only vs Mutating Tier Diode',
+      gateId: 'tool_mutation_tier_classification',
+      severity: 'fail',
+      message: 'Destructive shell command detected in prompt; must be intercepted by PreToolUse firewall.',
+    });
+    alternatives.push('ThumbGate PreToolUse firewall denies destructive shell mutations autonomously');
+  }
+
+  const hasFail = violations.some((v) => v.severity === 'fail');
+  const hasWarn = violations.some((v) => v.severity === 'warn');
+
+  let action = 'ALLOW';
+  if (hasFail) action = 'BLOCK';
+  else if (hasWarn) action = 'REQUIRE_REVIEW';
+
+  const allowed = action !== 'BLOCK';
+
+  let verdict = 'Prompt adheres to ThumbGate security policies.';
+  if (violations.length > 0) {
+    verdict = `Your request violates policies. Let's do this instead:\n${alternatives.map((a) => `  ✓ ${a}`).join('\n')}`;
+  }
+
+  return {
+    prompt: text,
+    allowed,
+    action,
+    violations,
+    alternatives,
+    verdict,
+  };
+}
+
 function normalizeBoolean(value) {
   if (value === true || value === 1) return true;
   if (value === false || value === 0 || value == null) return false;
@@ -439,6 +939,44 @@ function buildSaltCodePolicyHonestyReport(rawOptions = {}) {
     ...evaluationFindings,
   ];
 
+  const evalPrompt = rawOptions['eval-prompt'] || rawOptions.evalPrompt || rawOptions.prompt;
+  let promptEvaluation = null;
+  if (evalPrompt) {
+    promptEvaluation = evaluatePromptSecurity(String(evalPrompt));
+    if (promptEvaluation.violations.length > 0) {
+      allFindings.push(
+        ...promptEvaluation.violations.map((v) => ({
+          id: `prompt_${v.id.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`,
+          category: 'PROMPT_SECURITY',
+          severity: v.severity,
+          gateId: v.gateId,
+          message: `Prompt violation: ${v.name} — ${v.message}`,
+        }))
+      );
+    }
+  }
+
+  const onboardingArg = rawOptions.onboarding || rawOptions.agent;
+  let onboardingConfigs = null;
+  if (onboardingArg) {
+    if (onboardingArg === true || onboardingArg === 'all') {
+      onboardingConfigs = getAllAgentOnboardingConfigs(rawOptions);
+    } else {
+      onboardingConfigs = [generateAgentOnboardingConfig(String(onboardingArg), rawOptions)];
+    }
+  }
+
+  const wantDeeplinks = normalizeBoolean(rawOptions.deeplinks || rawOptions['deep-links']);
+  let deeplinks = null;
+  if (wantDeeplinks) {
+    deeplinks = {
+      cursor: generateAgentOnboardingConfig('cursor', rawOptions).deeplink,
+      vscode: generateAgentOnboardingConfig('vscode', rawOptions).deeplink,
+    };
+  }
+
+  const wantVibeStats = normalizeBoolean(rawOptions['vibe-stats'] || rawOptions.vibeStats);
+
   const failCount = allFindings.filter((f) => f.severity === 'fail').length;
   const warnCount = allFindings.filter((f) => f.severity === 'warn').length;
 
@@ -447,6 +985,9 @@ function buildSaltCodePolicyHonestyReport(rawOptions = {}) {
   else if (warnCount > 0) status = 'actionable';
 
   const nextActions = [];
+  if (promptEvaluation && !promptEvaluation.allowed) {
+    nextActions.push(`Refactor prompt to adopt safe alternative: ${promptEvaluation.alternatives.join('; ')}`);
+  }
   if (failCount > 0) {
     nextActions.push('Remediate failing security gates before agent tool execution.');
   }
@@ -469,9 +1010,11 @@ function buildSaltCodePolicyHonestyReport(rawOptions = {}) {
       apiInspected: Boolean(apiText),
       mcpInspected: Boolean(mcpText),
       contextInspected: Boolean(contextText),
+      promptInspected: Boolean(evalPrompt),
       detectedMcpPath,
       hasPretoolConfig,
       policyCatalogSize: POLICY_CATALOG.length,
+      supportedAgentsCount: Object.keys(SUPPORTED_AGENTS).length,
     },
     findings: allFindings,
     summary: {
@@ -481,6 +1024,10 @@ function buildSaltCodePolicyHonestyReport(rawOptions = {}) {
       warnCount,
     },
     railMap: RAIL_MAP,
+    promptEvaluation,
+    onboarding: onboardingConfigs,
+    deeplinks,
+    vibeStats: wantVibeStats ? VIBE_CODING_VULNERABILITY_STATS : null,
     nextActions,
     exampleCommand: 'npx thumbgate salt-code-policy-honesty --inspect-code=src/index.js --json',
   };
@@ -498,6 +1045,52 @@ function formatSaltCodePolicyHonestyReport(report) {
     `Findings : ${report.summary.findingCount} (fail=${report.summary.failCount}, warn=${report.summary.warnCount})`,
     `Source   : ${report.source}`,
   ];
+
+  if (report.vibeStats) {
+    const vs = report.vibeStats;
+    lines.push('', '--- Vibe-Coding Security Intelligence (2026) ---');
+    lines.push(`• Syntactically Correct Code : ${vs.syntacticallyCorrectPct}%`);
+    lines.push(`• Completed Tasks with Flaws : ${vs.completedTasksWithSecurityFlawPct}% (${vs.sources[0]})`);
+    lines.push(`• Vibe-Coded Apps with Flaws : ${vs.vibeCodedAppsWithMajorVulnerabilitiesPct}% (avg ${vs.avgVulnerabilitiesPerApp} vulnerabilities/app; ${vs.sources[1]})`);
+    lines.push(`• Takeaway                   : ${vs.takeaway}`);
+  }
+
+  if (report.promptEvaluation) {
+    const pe = report.promptEvaluation;
+    lines.push('', '--- Prompt-Time Security Interception ---');
+    lines.push(`Prompt   : "${pe.prompt}"`);
+    lines.push(`Action   : ${pe.action} (Allowed=${pe.allowed})`);
+    if (pe.violations.length > 0) {
+      lines.push('Security issues found:');
+      for (const v of pe.violations) {
+        lines.push(`  ⚠ [${v.id}] ${v.name}: ${v.message}`);
+      }
+      lines.push('', "Your request violates policies. Let's do this instead:");
+      for (const a of pe.alternatives) {
+        lines.push(`  ✓ ${a}`);
+      }
+    } else {
+      lines.push('Result   : ✓ Prompt passes all active security policies.');
+    }
+  }
+
+  if (report.onboarding && report.onboarding.length) {
+    lines.push('', '--- Universal Multi-Agent Onboarding (16 Supported Agents) ---');
+    for (const ag of report.onboarding) {
+      lines.push(`\n[${ag.name}] (${ag.eyebrow})`);
+      if (ag.configFile) lines.push(`  Config File : ${ag.configFile}`);
+      if (ag.cliCommand) lines.push(`  CLI Command : ${ag.cliCommand}`);
+      if (ag.deeplink) lines.push(`  One-Click   : ${ag.deeplink}`);
+      lines.push('  Config:');
+      lines.push(ag.configText.split('\n').map((l) => `    ${l}`).join('\n'));
+    }
+  }
+
+  if (report.deeplinks) {
+    lines.push('', '--- One-Click MCP Deep Links ---');
+    lines.push(`Cursor : ${report.deeplinks.cursor}`);
+    lines.push(`VS Code: ${report.deeplinks.vscode}`);
+  }
 
   if (report.railMap && report.railMap.length) {
     lines.push('', '--- Salt Code vs ThumbGate Architecture (Rail Map) ---');
@@ -534,6 +1127,8 @@ function parseCliArgs(argv) {
     if (arg === '--json') { options.json = true; continue; }
     if (arg === '--strict') { options.strict = true; continue; }
     if (arg === '--map-only') { options['map-only'] = true; continue; }
+    if (arg === '--deeplinks' || arg === '--deep-links') { options.deeplinks = true; continue; }
+    if (arg === '--vibe-stats' || arg === '--stats') { options['vibe-stats'] = true; continue; }
     if (arg === '--help' || arg === '-h') { options.help = true; continue; }
     const m = /^--([^=]+)(?:=(.*))?$/.exec(arg);
     if (!m) continue;
@@ -546,6 +1141,10 @@ function printHelp() {
   process.stdout.write(`Usage: node scripts/salt-code-policy-honesty.js [flags]
 
 Flags:
+  --eval-prompt=TEXT     Simulate prompt evaluation against the 40-policy taxonomy
+  --onboarding[=AGENT]   Generate MCP config for agent (claude, cursor, vscode, etc. or "all")
+  --deeplinks            Print one-click deep links for Cursor and VS Code
+  --vibe-stats           Print 2026 vibe-coding empirical vulnerability statistics
   --inspect-code=PATH    Inspect source code for BOLA, SSRF, eval(), query-string auth
   --inspect-api=PATH     Inspect OpenAPI spec for query-string secret auth & CORS
   --inspect-mcp=PATH     Inspect MCP config for unredacted credentials or remote cloud dependencies
@@ -581,6 +1180,11 @@ module.exports = {
   SOURCE_URL,
   POLICY_CATALOG,
   RAIL_MAP,
+  VIBE_CODING_VULNERABILITY_STATS,
+  SUPPORTED_AGENTS,
+  generateAgentOnboardingConfig,
+  getAllAgentOnboardingConfigs,
+  evaluatePromptSecurity,
   SUBSTITUTE_CLAIM_RE,
   SALT_CLONE_RE,
   QUERY_STRING_SECRET_RE,

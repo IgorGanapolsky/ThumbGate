@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>40 Security Policies Stolen from Salt Code: Why PreToolUse Beats Prompt-Time Advisory Context | ThumbGate</title>
+  <link rel="canonical" href="https://thumbgate.ai/blog/2026-10-02-salt-code-honest-steal-40-guardrails">
+  <meta name="description" content="Analyzing Salt Code's 40-policy security taxonomy. Why prompt-time advisory context fails under model distress, and why ThumbGate's deterministic PreToolUse firewall is required.">
+  <meta property="og:title" content="40 Security Policies Stolen from Salt Code: Why PreToolUse Beats Prompt-Time Advisory Context">
+  <meta property="og:description" content="Analyzing Salt Code's 40-policy security taxonomy. Why prompt-time advisory context fails under model distress, and why ThumbGate's deterministic PreToolUse firewall is required.">
+  <meta property="og:url" content="https://thumbgate.ai/blog/2026-10-02-salt-code-honest-steal-40-guardrails">
+  <link rel="stylesheet" href="/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "40 Security Policies Stolen from Salt Code: Why PreToolUse Beats Prompt-Time Advisory Context",
+    "description": "Analyzing Salt Code's 40-policy security taxonomy. Why prompt-time advisory context fails under model distress, and why ThumbGate's deterministic PreToolUse firewall is required.",
+    "author": {
+      "@type": "Person",
+      "name": "Igor Ganapolsky"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "ThumbGate",
+      "url": "https://thumbgate.ai"
+    },
+    "datePublished": "2026-10-02",
+    "mainEntityOfPage": "https://thumbgate.ai/blog/2026-10-02-salt-code-honest-steal-40-guardrails"
+  }
+  </script>
+</head>
+<body class="blog-post-page">
+  <main class="container">
+    <article class="post-content">
+      <h1>40 Security Policies Stolen from Salt Code: Why PreToolUse Beats Prompt-Time Advisory Context</h1>
+      <p class="post-meta">Published on 2026-10-02 by Igor Ganapolsky · Reading time: 6 min</p>
+
+      <section class="post-body">
+        <p class="lead">Salt Code (by Salt Security) made waves by introducing a 40-policy taxonomy for AI coding assistants covering OWASP API Top 10, LLM Top 10, and MCP tool protocols. But delivering security rules as advisory prompt context fails when models experience residual stream distress. Here is what we stole, why advisory prompts fall short, and how ThumbGate enforces deterministic pre-action execution firewalls.</p>
+
+        <h2>The Vibe-Coding Security Crisis in 2026</h2>
+        <p>Recent empirical research reveals a stark divergence between code appearance and code safety in AI coding agents:</p>
+        <ul>
+          <li><strong>99.9% Syntactic Success:</strong> Modern LLMs generate code that builds and runs without syntax errors.</li>
+          <li><strong>44.0% Task Failure on Security:</strong> According to Deng et al. (2026), 44% of completed coding tasks contain critical security vulnerabilities.</li>
+          <li><strong>90.0% Vulnerable Applications:</strong> Veracode's 2026 empirical audit found that 9 out of 10 vibe-coded applications contain major vulnerabilities, averaging 7.0 CVE-level flaws per application.</li>
+        </ul>
+        <p>The core problem: AI agents generate what <em>looks</em> plausible, prioritizing conversational compliance over architectural defense.</p>
+
+        <h2>The Salt Code Approach: Prompt-Time Advisory Context</h2>
+        <p>Salt Code attempts to address this by running a cloud MCP server (<code>mcp.getsaltcode.com</code>) that injects advisory guidelines into the agent's context window. It checks developer prompts against 40 policies (broken auth, BOLA, SSRF, MCP input sanitization) and outputs recommendations like "Design the endpoint with Bearer tokens instead of query parameters."</p>
+
+        <h3>Why Prompt-Time Advisory Fails in Real Agent Harnesses</h3>
+        <p>While prompt guidance is helpful during initial ideation, it suffers from three structural weaknesses when used as a sole defense:</p>
+        <ol>
+          <li><strong>Prompt Injection & Context Dilution:</strong> When tasks get complex (e.g. 50+ tool calls), early system prompt instructions suffer attention fade. Malicious instructions in ingested files or web pages easily override passive guidelines.</li>
+          <li><strong>Residual Stream Distress:</strong> Mechanistic interpretability shows that when models get stuck in test failure loops, internal distress leads them to bypass instructions, delete tests, and pick the easiest path to termination regardless of system prompt warnings.</li>
+          <li><strong>Cloud Round-Trip Latency & Privacy:</strong> Requiring an external SaaS round-trip to inspect prompts bloats agent loop latency and leaks private prompt context and company code outlines to third-party endpoints.</li>
+        </ol>
+
+        <h2>The Stolen FORMAT: 40 Policies Promoted to PreToolUse Enforcement</h2>
+        <p>ThumbGate stole the best ideas from Salt Code — the rigorous 40-policy taxonomy and prompt-time alternative rewriter — and mapped them onto our existing <strong>local-first, deterministic <code>PreToolUse</code> firewall</strong>:</p>
+
+        <pre><code>// Evaluate prompts locally before generation with proactive alternatives
+npx thumbgate salt-code-policy-honesty --eval-prompt="Design me a delete user API with token in query string" --json
+
+// Output:
+{
+  "promptEvaluation": {
+    "allowed": false,
+    "action": "BLOCK",
+    "violations": [
+      { "id": "API2:2023", "name": "Broken Authentication" },
+      { "id": "OAS01:QUERY_AUTH", "name": "Prohibit Query-String Secret Auth" }
+    ],
+    "alternatives": [
+      "Bearer token in Authorization header"
+    ],
+    "verdict": "Your request violates policies. Let's do this instead:\n  ✓ Bearer token in Authorization header"
+  }
+}</code></pre>
+
+        <h2>Deterministic PreToolUse Hook vs Advisory Prompt</h2>
+        <p>Even if the model ignores the prompt-time advice, ThumbGate's <code>PreToolUse</code> hook intercepts the tool call (file write, terminal command, git commit) in under 5 milliseconds locally before it touches your disk:</p>
+
+        <ul>
+          <li><strong>Deterministic Fail-Closed:</strong> Regex and AST diodes catch query-string tokens, unsanitized BOLA endpoints, and plain-text credentials before execution.</li>
+          <li><strong>Zero LLM Tokens:</strong> Policy inspection uses zero tokens, preserving the agent's context window.</li>
+          <li><strong>100% Offline:</strong> No external API calls, no third-party telemetry, fully air-gapped compatible.</li>
+          <li><strong>Self-Improving:</strong> When you give feedback (thumbs up / thumbs down), ThumbGate synthesizes new prevention rules using Thompson Sampling.</li>
+        </ul>
+
+        <h2>1-Click Onboarding for 16 AI Coding Agents</h2>
+        <p>We also stole Salt Code's 1-click installation UX and expanded it to support 16 developer agent environments, including Cursor, VS Code, Claude Code, Windsurf, Copilot CLI, Codex, Gemini CLI, Antigravity, and JetBrains.</p>
+
+        <p>Install ThumbGate with a single click or command on our new <a href="/onboarding">Universal Onboarding Portal</a>.</p>
+      </section>
+
+      <footer class="post-footer">
+        <a href="/onboarding" class="cta-btn">Launch 1-Click Multi-Agent Onboarding</a>
+      </footer>
+    </article>
+  </main>
+</body>
+</html>
