@@ -204,6 +204,17 @@ npx thumbgate llm-obs-honesty --trace=tests/fixtures/llm-obs-honesty-blind.json 
 
 Skill: `.agents/skills/datadog-llm-obs-compare-not-clone/SKILL.md`. Details: `docs/agents/llm-obs-honesty.md`.
 
+## Meko Datapack & Collective Memory honesty (FORMAT steal)
+
+Five planes on existing rails: datapacks (4-field scope), episodic memory, rubric-promoted learnings, SHA-256 content-addressed artifacts, and decision traces. Never vendor YugabyteDB, meko-skills, or depend on cloud.mekodata.ai. A passive database is not a firewall.
+
+```bash
+npx thumbgate meko-datapack-honesty --json
+npx thumbgate meko-datapack-honesty --map-only
+```
+
+Skill: `.agents/skills/meko-datapack-honesty-not-clone/SKILL.md`. Details: `docs/agents/meko-datapack-honesty.md`.
+
 ## IdeaBrowser connector & governance diode (#3823)
 
 Hardened IdeaBrowser connector without credential leakage, classifying all actions into read-only or mutating tiers. Emits interdiction events and fails closed on unclassified tool drift.
