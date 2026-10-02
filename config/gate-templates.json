@@ -1465,6 +1465,18 @@
       "problem": "Blocks unvetted autonomous shell/file execution inside AWS Strands Harness without ThumbGate PreToolUse evaluation.",
       "roi": "Prevents cheap, high-speed production destruction when autonomous agents run tools at scale.",
       "rollout": "Wire createStrandsGateMiddleware beforeToolCall in all Strands Harness instances."
+    },
+    {
+      "id": "gate-mintlify-knowledge-poison-prevention",
+      "name": "Mintlify Knowledge Freshness & Poison Prevention Diode",
+      "category": "Knowledge Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "knowledge_poison_detected|stale_knowledge_expired|unverified_community_advice|explicitly_deprecated_api",
+      "problem": "Blocks agents from ingesting or acting on stale (>90d), deprecated, or poisoned knowledge surfaces (Anthropic warning: misleading docs mislead an unknowable number of downstream agents).",
+      "roi": "Prevents downstream hallucination propagation, broken API tool calls, and dangerous copy-paste snippets across 66% agent readership traffic.",
+      "rollout": "Pair with npx thumbgate mintlify-knowledge-honesty --check-dir docs --json before agent task execution."
     }
   ]
 }

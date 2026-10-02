@@ -2903,6 +2903,23 @@ function mekoDatapackHonesty() {
   }
 }
 
+function mintlifyKnowledgeHonesty() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildMintlifyKnowledgeReport,
+    formatMintlifyKnowledgeReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'mintlify-knowledge-honesty'));
+  const report = buildMintlifyKnowledgeReport(args);
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatMintlifyKnowledgeReport(report) + '\n');
+  }
+  if (report.status === 'fail') {
+    process.exitCode = 1;
+  }
+}
+
 function haloTraceOptimizer() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3891,6 +3908,7 @@ function help() {
   console.log('  npx thumbgate colab-compute-honesty --json --map-only');
   console.log('  npx thumbgate llm-obs-honesty --json');
   console.log('  npx thumbgate meko-datapack-honesty --json');
+  console.log('  npx thumbgate mintlify-knowledge-honesty --json');
   console.log('  npx thumbgate board-loop --json');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
   console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
@@ -4598,6 +4616,11 @@ switch (COMMAND) {
   case 'meko-datapack':
   case 'meko-honesty':
     mekoDatapackHonesty();
+    break;
+  case 'mintlify-knowledge-honesty':
+  case 'mintlify-knowledge':
+  case 'mintlify-state-of-knowledge':
+    mintlifyKnowledgeHonesty();
     break;
   case 'halo-trace-optimizer':
   case 'halo:optimize':
