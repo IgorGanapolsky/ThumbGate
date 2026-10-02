@@ -264,7 +264,8 @@ const path = require('node:path');
 // 580 → 582 (2026-10-02): public/onboarding.html (1-click multi-agent onboarding portal) + public/blog/2026-10-02-salt-code-honest-steal-40-guardrails.html (Salt Code 40-policy FORMAT steal)
 // 582 → 583 (2026-09-30): scripts/rrsi-doctor.js (arXiv:2609.24972 agent harness self-improvement regularization).
 // 583 → 589 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html, adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/ + skills/aws-strands-harness-not-clone/
-const BASELINE_FILE_COUNT = 589;
+// 589 → 590 (2026-10-02): adapters/strands/config.json (AWS Strands harness config)
+const BASELINE_FILE_COUNT = 590;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
