@@ -477,6 +477,7 @@
     "adapters/strands/STRANDS.md",
     "scripts/strands-harness-doctor.js",
     ".agents/skills/aws-strands-harness-not-clone/",
+    "skills/aws-strands-harness-not-clone/",
     "scripts/tailscale-p2p-doctor.js",
     "adapters/tailscale/TAILSCALE.md",
     "adapters/tailscale/config.toml",
