@@ -309,9 +309,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 570 -> 572 (2026-10-01): scripts/salt-code-policy-honesty.js + skill (Salt Code 40-policy FORMAT steal).
   // 572 -> 573 (2026-10-01): public/blog/2026-10-01-model-distress-relief-seeking-firewall.html
   // 573 -> 576 (2026-10-01): scripts/model-distress-doctor.js, scripts/model-distress-detector.js, .agents/skills/model-distress-governance/
-  // 576 -> 577 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html
-  // 577 -> 581 (2026-10-01): adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/
-  const CEILING = 581;
+  // 576 -> 580 (2026-10-01): scripts/tailscale-p2p-doctor.js, adapters/tailscale/ (TAILSCALE.md, config.toml, .mcp.json)
+  // 580 -> 585 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html, adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/
+  const CEILING = 586;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

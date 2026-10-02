@@ -28,6 +28,7 @@
     { "id": "adapter:qwen", "purpose": "Qwen adapter" },
     { "id": "adapter:skool", "purpose": "Skool MCP stdio adapter" },
     { "id": "adapter:strands", "purpose": "AWS Strands Harness agent adapter and governance diode" },
+    { "id": "adapter:tailscale", "purpose": "Tailscale P2P rule mesh and zero-trust execution diode" },
     { "id": "adapter:vlt", "purpose": "VLT adapter" },
     { "id": "adapter:workos", "purpose": "WorkOS adapter docs" },
     { "id": "adapter:xai-grok", "purpose": "xAI Grok adapter docs" }
