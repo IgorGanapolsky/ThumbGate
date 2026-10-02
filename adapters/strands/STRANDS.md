@@ -46,32 +46,28 @@ flowchart TD
 ### TypeScript (`@strands-agents/harness`)
 
 ```typescript
-import { StrandsHarness } from '@strands-agents/harness';
-import { createStrandsGateMiddleware } from 'thumbgate/adapters/strands/strands-middleware';
+import { createHarness } from '@strands-agents/harness';
+import { registerStrandsGatePlugin } from 'thumbgate/adapters/strands/strands-middleware';
 
-// 1. Initialize ThumbGate Diode Middleware
-const thumbGateMiddleware = createStrandsGateMiddleware({
+// 1. Initialize Strands Harness Agent
+const agent = await createHarness({
+  model: 'anthropic/claude-sonnet-5', // or Bedrock / OpenAI / Google / Ollama
+});
+
+// 2. Register ThumbGate Governance Plugin
+registerStrandsGatePlugin(agent, {
   tokenShunt: { maxOutputLines: 350, maxOutputBytes: 16384 },
   preActionDiode: { enabled: true },
 });
 
-// 2. Wrap Strands Harness Tool Pipeline
-const harness = new StrandsHarness({
-  model: 'anthropic.claude-3-5-sonnet', // or Bedrock / OpenAI / Ollama
-  hooks: {
-    beforeToolCall: thumbGateMiddleware.beforeToolCall,
-    afterToolCall: thumbGateMiddleware.afterToolCall,
-    onCompaction: thumbGateMiddleware.onContextCompaction,
-  },
-});
-
-await harness.run('Deploy migration and verify health');
+// 3. Run Agent with PreToolUse Diode and Token-Shunt Protection
+await agent.invoke('Deploy migration and verify health');
 ```
 
 ### Python (`strands-harness`)
 
 ```python
-from strands_harness import StrandsAgent
+from strands_harness import create_harness
 import subprocess
 import json
 

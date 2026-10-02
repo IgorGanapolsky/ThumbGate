@@ -10,6 +10,25 @@
   <meta property="og:description" content="AWS open-sources Strands Harness claiming 45% lower token costs. How harness-level context management works and why pre-action firewalls are essential.">
   <meta property="og:url" content="https://thumbgate.ai/blog/2026-10-01-aws-strands-harness-token-firewall">
   <link rel="stylesheet" href="/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "AWS Strands Harness: 45% Token Savings and Why Agents Need Pre-Action Firewalls",
+    "description": "AWS open-sources Strands Harness claiming 45% lower token costs. How harness-level context management works and why pre-action firewalls are essential.",
+    "author": {
+      "@type": "Person",
+      "name": "Igor Ganapolsky"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "ThumbGate",
+      "url": "https://thumbgate.ai"
+    },
+    "datePublished": "2026-10-01",
+    "mainEntityOfPage": "https://thumbgate.ai/blog/2026-10-01-aws-strands-harness-token-firewall"
+  }
+  </script>
 </head>
 <body class="blog-post-page">
   <main class="container">
@@ -33,23 +52,21 @@
         <h2>Governing Strands Harness with ThumbGate</h2>
         <p>ThumbGate drops directly into `@strands-agents/harness` (TypeScript) and `strands-harness` (Python) via zero-dependency pre-tool middleware. Every tool invocation passes through ThumbGate's <code>PreToolUse</code> diode before execution, and all outputs are verified against token-shunt ceilings:</p>
 
-        <pre><code>import { StrandsHarness } from '@strands-agents/harness';
-import { createStrandsGateMiddleware } from 'thumbgate/adapters/strands/strands-middleware';
+        <pre><code>import { createHarness } from '@strands-agents/harness';
+import { registerStrandsGatePlugin } from 'thumbgate/adapters/strands/strands-middleware';
 
-const diode = createStrandsGateMiddleware({
+const agent = await createHarness({
+  model: 'anthropic/claude-sonnet-5'
+});
+
+registerStrandsGatePlugin(agent, {
   tokenShunt: { maxOutputLines: 350, maxOutputBytes: 16384 },
   preActionDiode: { enabled: true }
 });
 
-const harness = new StrandsHarness({
-  model: 'anthropic.claude-3-5-sonnet',
-  hooks: {
-    beforeToolCall: diode.beforeToolCall,
-    afterToolCall: diode.afterToolCall
-  }
-});</code></pre>
+await agent.invoke('Deploy migration and verify health');</code></pre>
 
-        <p>Audit your agent harness compliance today with <code>npx thumbgate strands:doctor --check</code>.</p>
+        <p>Audit your agent harness compliance today with <code>npm run strands:doctor</code>.</p>
       </section>
       <footer class="post-footer">
         <a href="https://thumbgate.ai/go/pro?utm_source=blog&utm_medium=article&utm_campaign=2026-10-01-aws-strands-harness-token-firewall" class="cta-btn">Upgrade to ThumbGate Pro</a>

@@ -23,19 +23,28 @@ function createStrandsGateMiddleware(options = {}) {
 
     /**
      * Hook called by Strands Harness right before a tool is dispatched.
-     * Return { allow: true } to proceed, or { allow: false, reason } to halt tool execution.
+     * Supports both Strands native event format (event.toolUse, event.cancel)
+     * and direct parameters ({ toolName, input }).
      */
-    async beforeToolCall({ toolName, input, context = {} }) {
+    async beforeToolCall(event = {}) {
       if (!preActionEnabled) {
         return { allow: true };
       }
 
+      const toolName = event.toolUse?.name || event.toolName || '';
+      const input = event.toolUse?.input !== undefined ? event.toolUse.input : event.input;
+
       const evaluation = evaluatePreActionDiode({ name: toolName, input });
       if (evaluation.decision === 'BLOCK') {
+        const reason = evaluation.violation || 'Action blocked by ThumbGate pre-action diode';
+        if (typeof event === 'object' && event !== null) {
+          event.cancel = true;
+          event.reason = reason;
+        }
         return {
           allow: false,
           decision: 'BLOCK',
-          reason: evaluation.violation || 'Action blocked by ThumbGate pre-action diode',
+          reason,
           toolName,
           timestamp: new Date().toISOString(),
         };
@@ -50,13 +59,18 @@ function createStrandsGateMiddleware(options = {}) {
 
     /**
      * Hook called by Strands Harness right after a tool produces output.
-     * Truncates oversized returns to enforce 45-77% token efficiency.
+     * Truncates oversized returns to enforce token efficiency.
+     * Supports updating native event.result in place.
      */
-    async afterToolCall({ toolName, result, context = {} }) {
-      const outputText = typeof result === 'string' ? result : JSON.stringify(result);
+    async afterToolCall(event = {}) {
+      const rawResult = event.result !== undefined ? event.result : event;
+      const outputText = typeof rawResult === 'string' ? rawResult : JSON.stringify(rawResult);
       const shunt = evaluateOutputShunt(outputText, shuntConfig);
 
       if (shunt.shunted) {
+        if (typeof event === 'object' && event !== null && 'result' in event) {
+          event.result = shunt.shuntedContent;
+        }
         return {
           shunted: true,
           result: shunt.shuntedContent,
@@ -68,7 +82,7 @@ function createStrandsGateMiddleware(options = {}) {
 
       return {
         shunted: false,
-        result,
+        result: rawResult,
       };
     },
 
@@ -76,7 +90,7 @@ function createStrandsGateMiddleware(options = {}) {
      * Hook called when context utilization reaches threshold (e.g. 75%).
      * Pins critical prevention rules so they are never forgotten during compaction.
      */
-    async onContextCompaction({ history = [], pinnedRules = [] }) {
+    async onContextCompaction({ history = [], pinnedRules = [] } = {}) {
       const preservedRules = pinnedRules.map((r) => `[PINNED RULE]: ${r}`);
       return {
         compacted: true,
@@ -87,6 +101,19 @@ function createStrandsGateMiddleware(options = {}) {
   };
 }
 
+/**
+ * Helper to register ThumbGate middleware with a Strands Agent instance.
+ */
+function registerStrandsGatePlugin(agent, options = {}) {
+  const middleware = createStrandsGateMiddleware(options);
+  if (agent && typeof agent.addHook === 'function') {
+    agent.addHook('beforeToolCall', (e) => middleware.beforeToolCall(e));
+    agent.addHook('afterToolCall', (e) => middleware.afterToolCall(e));
+  }
+  return middleware;
+}
+
 module.exports = {
   createStrandsGateMiddleware,
+  registerStrandsGatePlugin,
 };

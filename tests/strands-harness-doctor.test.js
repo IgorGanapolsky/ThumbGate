@@ -138,6 +138,21 @@ test('AWS Strands Harness: createStrandsGateMiddleware hooks execute cleanly in 
   });
   assert.equal(compactResult.compacted, true);
   assert.match(compactResult.injectedPrefix, /\[PINNED RULE\]: No force pushes/);
+
+  // Native Strands event contract (event.toolUse, event.cancel, event.result)
+  const nativeBlockEvent = {
+    toolUse: { name: 'shell_execute', input: { command: 'git push --force origin main' } },
+  };
+  await middleware.beforeToolCall(nativeBlockEvent);
+  assert.equal(nativeBlockEvent.cancel, true);
+  assert.match(nativeBlockEvent.reason, /--force/);
+
+  const nativeShuntEvent = {
+    toolUse: { name: 'shell_execute', input: { command: 'cat huge.log' } },
+    result: longOutput,
+  };
+  await middleware.afterToolCall(nativeShuntEvent);
+  assert.match(nativeShuntEvent.result, /\[ThumbGate Token-Shunt/);
 });
 
 test('AWS Strands Harness Doctor: runDoctor executes all 5 pillars with healthy status', () => {
