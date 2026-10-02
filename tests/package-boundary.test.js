@@ -503,10 +503,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 563 -> 565 (2026-09-28): scripts/halo-trace-optimizer.js + skill (HALO trace-to-fix FORMAT steal).
   // 565 -> 567 (2026-09-29): scripts/infoq-architect-honesty.js + skill (InfoQ architect FORMAT steal).
   // 567 -> 568 (2026-09-29): public/blog/2026-09-28-pretool-secret-deny.html
-  // 568 -> 570 (2026-10-01): scripts/meko-datapack-honesty.js + skill (Meko Datapack FORMAT steal).
-  // 570 -> 571 (2026-09-30): scripts/rrsi-regularizer.js (arXiv:2609.24972 agent harness self-improvement regularization).
-    manifest.fileCount <= 571,
-    `npm package should stay <= 571 files, got ${manifest.fileCount}`
+  // 570 -> 572 (2026-10-01): scripts/salt-code-policy-honesty.js + skill (Salt Code 40-policy FORMAT steal).
+  // 572 -> 573 (2026-09-30): scripts/rrsi-doctor.js (arXiv:2609.24972 agent harness self-improvement regularization).
+    manifest.fileCount <= 573,
+    `npm package should stay <= 573 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -744,9 +744,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.62 MB -> 8.65 MB (2026-09-23): daily discoveries publishing engine + launchd installer + skills + blog html. Local pack 8,629,526; CI slack.
   // Bumped 8.65 MB -> 8.68 MB (2026-09-29): scripts/infoq-architect-honesty.js + skill. Local pack 8,662,783; CI slack.
   // Bumped 8.68 MB -> 8.70 MB (2026-09-29): pretool-secret-deny blog html. Local pack 8,666,717; CI slack.
-  // Bumped 8.70 MB -> 8.75 MB (2026-09-30): meko-datapack + rrsi-regularizer.js (arXiv:2609.24972). CI slack.
-    manifest.unpackedSize <= 8_750_000,
-    `npm package should stay <= 8.75 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.70 MB -> 8.75 MB (2026-10-01): meko-datapack + salt-code-policy modules & skills. Local pack 8,716,119; CI slack.
+  // Bumped 8.75 MB -> 8.78 MB (2026-09-30): rrsi-doctor.js (arXiv:2609.24972). Local pack 8,737,145; CI slack.
+    manifest.unpackedSize <= 8_780_000,
+    `npm package should stay <= 8.78 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
