@@ -510,8 +510,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 576 -> 580 (2026-10-01): scripts/tailscale-p2p-doctor.js, adapters/tailscale/ (TAILSCALE.md, config.toml, .mcp.json)
   // 580 -> 582 (2026-10-02): public/onboarding.html (1-click multi-agent onboarding portal) + public/blog/2026-10-02-salt-code-honest-steal-40-guardrails.html (Salt Code 40-policy FORMAT steal)
   // 582 -> 583 (2026-09-30): scripts/rrsi-doctor.js (arXiv:2609.24972 agent harness self-improvement regularization).
-    manifest.fileCount <= 583,
-    `npm package should stay <= 583 files, got ${manifest.fileCount}`
+  // 583 -> 589 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html, adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/ + skills/aws-strands-harness-not-clone/
+    manifest.fileCount <= 589,
+    `npm package should stay <= 589 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -755,8 +756,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.78 MB -> 8.80 MB (2026-10-01): tailscale p2p doctor and config files. Local pack 8,756,308; CI slack.
   // Bumped 8.80 MB -> 8.85 MB (2026-10-02): 1-click multi-agent onboarding portal & blog. Local pack 8,816,436; CI slack.
   // Bumped 8.85 MB -> 8.87 MB (2026-09-30): rrsi-doctor.js (arXiv:2609.24972). Local pack 8,837,462; CI slack.
-    manifest.unpackedSize <= 8_870_000,
-    `npm package should stay <= 8.87 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.87 MB -> 8.90 MB (2026-10-01): strands-harness modules & skills. Local pack 8,867,170; CI slack.
+    manifest.unpackedSize <= 8_900_000,
+    `npm package should stay <= 8.90 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

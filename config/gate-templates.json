@@ -1441,6 +1441,30 @@
       "problem": "Injects a calming, structured step-back diagnostic prompt and clears toxic loop noise when an agent is failing repeatedly.",
       "roi": "Restores model reasoning groundedness without requiring human intervention.",
       "rollout": "Auto-inject on 4+ consecutive tool execution errors."
+    },
+    {
+      "id": "gate-strands-harness-output-compaction",
+      "name": "Gate Strands harness tool output compaction",
+      "category": "Agent Harness Efficiency",
+      "signal": "👍",
+      "defaultAction": "allow",
+      "severity": "medium",
+      "pattern": "(strands[_ -]?harness|@strands-agents/harness).*(output[_ -]?shunt|compaction|token[_ -]?savings)",
+      "problem": "Enforces 16KB / 350-line ceiling on raw tool outputs and preserves pinned lessons during 75% window compaction (AWS Strands Harness FORMAT steal).",
+      "roi": "Yields 45% lower token costs across multi-agent loops and 77% on terminal tasks without context blowout.",
+      "rollout": "Enable on any agent using @strands-agents/harness, Bedrock AgentCore, or long-running CLI tools."
+    },
+    {
+      "id": "gate-strands-pre-action-tool-diode",
+      "name": "Require pre-action diode on Strands Harness tool calls",
+      "category": "Agent Harness Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(strands[_ -]?agent|strands[_ -]?harness).*(unvetted[_ -]?exec|skip[_ -]?diode|no[_ -]?pretool)|(rm\\s+-rf|git\\s+push.*--force)\\s+via\\s+strands",
+      "problem": "Blocks unvetted autonomous shell/file execution inside AWS Strands Harness without ThumbGate PreToolUse evaluation.",
+      "roi": "Prevents cheap, high-speed production destruction when autonomous agents run tools at scale.",
+      "rollout": "Wire createStrandsGateMiddleware beforeToolCall in all Strands Harness instances."
     }
   ]
 }

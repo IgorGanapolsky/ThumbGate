@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS Strands Harness: 45% Token Savings and Why Agents Need Pre-Action Firewalls | ThumbGate</title>
+  <link rel="canonical" href="https://thumbgate.ai/blog/2026-10-01-aws-strands-harness-token-firewall">
+  <meta name="description" content="AWS open-sources Strands Harness claiming 45% lower token costs. How harness-level context management works and why pre-action firewalls are essential.">
+  <meta property="og:title" content="AWS Strands Harness: 45% Token Savings and Why Agents Need Pre-Action Firewalls">
+  <meta property="og:description" content="AWS open-sources Strands Harness claiming 45% lower token costs. How harness-level context management works and why pre-action firewalls are essential.">
+  <meta property="og:url" content="https://thumbgate.ai/blog/2026-10-01-aws-strands-harness-token-firewall">
+  <link rel="stylesheet" href="/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "AWS Strands Harness: 45% Token Savings and Why Agents Need Pre-Action Firewalls",
+    "description": "AWS open-sources Strands Harness claiming 45% lower token costs. How harness-level context management works and why pre-action firewalls are essential.",
+    "author": {
+      "@type": "Person",
+      "name": "Igor Ganapolsky"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "ThumbGate",
+      "url": "https://thumbgate.ai"
+    },
+    "datePublished": "2026-10-01",
+    "mainEntityOfPage": "https://thumbgate.ai/blog/2026-10-01-aws-strands-harness-token-firewall"
+  }
+  </script>
+</head>
+<body class="blog-post-page">
+  <main class="container">
+    <article class="post-content">
+      <h1>AWS Strands Harness: 45% Token Savings and Why Agents Need Pre-Action Firewalls</h1>
+      <p class="post-meta">Published on 2026-10-01 by Igor Ganapolsky</p>
+      <section class="post-body">
+        <p class="lead">AWS open-sourced Strands Harness, demonstrating that context management defaults can make agents 45% cheaper overall and 77% cheaper on Terminal-Bench 2.1 ($56.29 vs $248.05).</p>
+        
+        <h2>The Harness-Layer Breakthrough</h2>
+        <p>As Marc Brooker (VP & Distinguished Engineer at AWS) observed, the surrounding agent harness machinery materially affects token spend even when the foundation model remains identical. Strands Harness achieves dramatic cost reduction via three core mechanisms:</p>
+        <ul>
+          <li><strong>Output Shunting:</strong> Truncating tool returns above 350 lines / 16KB with structured offset markers so agents use targeted queries instead of ingesting raw firehoses.</li>
+          <li><strong>Context Compaction Thresholds:</strong> Automating conversational summarization at 75% window utilization.</li>
+          <li><strong>In-Loop Overflow Recovery:</strong> Pruning intermediate tool traces in-loop without throwing unhandled exceptions.</li>
+        </ul>
+
+        <h2>The Missing Piece: Pre-Action Safety Diode</h2>
+        <p>A cheaper agent that executes shell commands and file mutations autonomously without safety checks merely produces cheap, accelerated production disasters. If an agent force-pushes a branch, leaks an API token, or deletes files, the 77% token discount is worthless.</p>
+        
+        <h2>Governing Strands Harness with ThumbGate</h2>
+        <p>ThumbGate drops directly into `@strands-agents/harness` (TypeScript) and `strands-harness` (Python) via zero-dependency pre-tool middleware. Every tool invocation passes through ThumbGate's <code>PreToolUse</code> diode before execution, and all outputs are verified against token-shunt ceilings:</p>
+
+        <pre><code>import { createHarness } from '@strands-agents/harness';
+import { registerStrandsGatePlugin } from 'thumbgate/adapters/strands/strands-middleware';
+
+const agent = await createHarness({
+  model: 'anthropic/claude-sonnet-5'
+});
+
+registerStrandsGatePlugin(agent, {
+  tokenShunt: { maxOutputLines: 350, maxOutputBytes: 16384 },
+  preActionDiode: { enabled: true }
+});
+
+await agent.invoke('Deploy migration and verify health');</code></pre>
+
+        <p>Audit your agent harness compliance today with <code>npm run strands:doctor</code>.</p>
+      </section>
+      <footer class="post-footer">
+        <a href="https://thumbgate.ai/go/pro?utm_source=blog&utm_medium=article&utm_campaign=2026-10-01-aws-strands-harness-token-firewall" class="cta-btn">Upgrade to ThumbGate Pro</a>
+      </footer>
+    </article>
+  </main>
+</body>
+</html>
