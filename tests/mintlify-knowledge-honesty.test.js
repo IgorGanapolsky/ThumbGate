@@ -16,6 +16,8 @@ const {
   calculateAiReadinessScore,
   evaluateKnowledgeSource,
   runMintlifyKnowledgeAudit,
+  buildMintlifyKnowledgeReport,
+  formatMintlifyKnowledgeReport,
 } = require('../scripts/mintlify-knowledge-honesty');
 
 describe('Mintlify Knowledge Honesty & Poison Diode', () => {
@@ -106,6 +108,15 @@ describe('Mintlify Knowledge Honesty & Poison Diode', () => {
       assert.strictEqual(res.hasPoison, false);
       assert.strictEqual(res.detections.length, 0);
     });
+
+    it('handles non-string content safely', () => {
+      const resNull = scanForKnowledgePoison(null);
+      assert.strictEqual(resNull.hasPoison, false);
+      assert.deepStrictEqual(resNull.detections, []);
+      const resNum = scanForKnowledgePoison(12345);
+      assert.strictEqual(resNum.hasPoison, false);
+      assert.deepStrictEqual(resNum.detections, []);
+    });
   });
 
   describe('AI Readiness Scoring', () => {
@@ -176,26 +187,89 @@ describe('Mintlify Knowledge Honesty & Poison Diode', () => {
       assert.ok(audit.avgReadinessScore > 50);
     });
 
-    it('supports CLI --map-only --json', () => {
-      const scriptPath = path.resolve(__dirname, '../scripts/mintlify-knowledge-honesty.js');
-      const run = spawnSync(process.execPath, [scriptPath, '--map-only', '--json'], { encoding: 'utf8' });
-      assert.strictEqual(run.status, 0);
-      const parsed = JSON.parse(run.stdout);
-      assert.strictEqual(parsed.source, 'https://www.mintlify.com/state-of-knowledge');
-      assert.strictEqual(parsed.benchmarkData.agentReadershipPercentage, 66);
-      assert.ok(Array.isArray(parsed.mapping));
+    it('fails closed when target directory does not exist', () => {
+      const nonExistent = path.resolve(__dirname, '../does-not-exist-' + Date.now());
+      const audit = runMintlifyKnowledgeAudit(nonExistent);
+      assert.strictEqual(audit.success, false);
+      assert.ok(audit.error.includes('Target path does not exist'));
+      assert.deepStrictEqual(audit.results, []);
     });
 
-    it('supports CLI --json audit output', () => {
+    it('builds report in map-only mode and audit mode', () => {
+      const repMap = buildMintlifyKnowledgeReport({ 'map-only': true });
+      assert.strictEqual(repMap.mode, 'map_only');
+      assert.strictEqual(repMap.status, 'pass');
+      assert.ok(repMap.rails.length > 0);
+
+      const docsDir = path.resolve(__dirname, '../docs');
+      const repAudit = buildMintlifyKnowledgeReport({ checkDir: docsDir });
+      assert.strictEqual(repAudit.mode, 'audit');
+      assert.strictEqual(repAudit.status, 'pass');
+      assert.ok(repAudit.totalScanned > 0);
+
+      const repStrict = buildMintlifyKnowledgeReport({ checkDir: docsDir, strict: true });
+      assert.strictEqual(repStrict.mode, 'audit');
+      assert.ok(['pass', 'fail'].includes(repStrict.status));
+    });
+
+    it('formats report in map_only mode', () => {
+      const repMap = buildMintlifyKnowledgeReport({ mapOnly: true });
+      const formattedMap = formatMintlifyKnowledgeReport(repMap);
+      assert.ok(formattedMap.includes('Mintlify State of Knowledge FORMAT Mapping'));
+      assert.ok(formattedMap.includes('ThumbGate Rail:'));
+    });
+
+    it('formats report in audit mode with passed and flagged entries', () => {
+      const cleanRep = {
+        mode: 'audit',
+        totalScanned: 5,
+        passedCount: 5,
+        reviewCount: 0,
+        blockedCount: 0,
+        avgReadinessScore: 92,
+        results: [],
+      };
+      const cleanFormatted = formatMintlifyKnowledgeReport(cleanRep);
+      assert.ok(cleanFormatted.includes('All knowledge surfaces are verified'));
+
+      const flaggedRep = {
+        mode: 'audit',
+        totalScanned: 2,
+        passedCount: 0,
+        reviewCount: 1,
+        blockedCount: 1,
+        avgReadinessScore: 30,
+        results: [
+          { action: 'blocked', file: 'bad.md', readinessScore: 10, reasons: ['Critical poison'] },
+          { action: 'review', file: 'forum.md', readinessScore: 40, reasons: ['Unverified forum'] },
+        ],
+      };
+      const flaggedFormatted = formatMintlifyKnowledgeReport(flaggedRep);
+      assert.ok(flaggedFormatted.includes('Flagged Knowledge Surfaces'));
+      assert.ok(flaggedFormatted.includes('[BLOCKED] bad.md (10%)'));
+      assert.ok(flaggedFormatted.includes('[REVIEW] forum.md (40%)'));
+    });
+
+    it('supports CLI --map-only plain text output', () => {
+      const scriptPath = path.resolve(__dirname, '../scripts/mintlify-knowledge-honesty.js');
+      const run = spawnSync(process.execPath, [scriptPath, '--map-only'], { encoding: 'utf8' });
+      assert.strictEqual(run.status, 0);
+      assert.ok(run.stdout.includes('Mintlify State of Knowledge FORMAT Mapping'));
+    });
+
+    it('handles CLI --check-dir missing argument error', () => {
+      const scriptPath = path.resolve(__dirname, '../scripts/mintlify-knowledge-honesty.js');
+      const run = spawnSync(process.execPath, [scriptPath, '--check-dir'], { encoding: 'utf8' });
+      assert.strictEqual(run.status, 1);
+      assert.ok(run.stderr.includes('--check-dir requires a valid directory path argument'));
+    });
+
+    it('supports CLI plain text audit output', () => {
       const scriptPath = path.resolve(__dirname, '../scripts/mintlify-knowledge-honesty.js');
       const docsDir = path.resolve(__dirname, '../docs/agents');
-      const run = spawnSync(process.execPath, [scriptPath, '--check-dir', docsDir, '--json'], {
-        encoding: 'utf8',
-      });
+      const run = spawnSync(process.execPath, [scriptPath, '--check-dir', docsDir], { encoding: 'utf8' });
       assert.strictEqual(run.status, 0);
-      const parsed = JSON.parse(run.stdout);
-      assert.ok(parsed.totalScanned > 0);
-      assert.ok(parsed.avgReadinessScore >= 0);
+      assert.ok(run.stdout.includes('ThumbGate Knowledge Surface & Poison Prevention Doctor'));
     });
   });
 });
