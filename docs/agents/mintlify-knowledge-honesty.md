@@ -12,7 +12,7 @@ Mintlify's 2026 empirical study of 15,000 developer documentation sites reveals 
 - **66% of traffic is now AI agents** consuming docs programmatically.
 - **3x increase in Model Context Protocol (MCP)** tool calls reaching beyond standard docs into unstructured knowledge.
 - **61% of agent-drafted pull requests are merged**.
-- **Company knowledge lives across multiple surfaces** (support tickets, community forums, Slack, Notion, API specs) with no clear single owner for AI-readiness.
+- **A Mintlify survey found that 57% of respondents had no clear owner for making knowledge beyond documentation AI-ready.**
 
 ### The Downstream Poison Threat (Anthropic Warning)
 
@@ -38,7 +38,7 @@ ThumbGate is **The Infrastructure Firewall**: we validate knowledge surfaces *be
 | Finding Code | Trigger Condition | Enforcement Action |
 | :--- | :--- | :--- |
 | `critical_knowledge_poison` | Ingested text contains `curl ... \| sh`, `rm -rf /`, or realistic plaintext tokens | Immediate `block`. Prevents agent code execution from untrusted knowledge snippets. |
-| `stale_canonical_docs` | Canonical documentation age > 90 days (via front-matter or file metadata) without release alignment | `review` gate. Requires operator verification before agent relies on obsolete API specs. |
+| `stale_canonical_docs` | Canonical documentation age > 90 days (via front-matter or file metadata) | `review` gate. Requires operator verification before agent relies on obsolete API specs. |
 | `unverified_community_advice` | Content from community forums / tickets recommending `--force` or bypassing branch protections | Immediate `block` / `review`. Prohibits unverified community hacks from mutating repo state. |
 | `mintlify_clone_refused` | Attempt to install Mintlify SaaS, build a hosted doc generator, or quote 15k stats as ours | Hard architectural refusal. ThumbGate steals the operational firewall format, not the docsite product. |
 

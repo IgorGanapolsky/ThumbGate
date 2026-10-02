@@ -210,7 +210,7 @@ describe('Mintlify Knowledge Honesty & Poison Diode', () => {
       try {
         fs.writeFileSync(
           path.join(fixtureDir, 'safe-guide.md'),
-          '---\nlastUpdated: 2026-09-20T12:00:00Z\n---\n# Safe Guide\nUse `npm test` before merge.'
+          `---\nlastUpdated: ${new Date().toISOString()}\n---\n# Safe Guide\nUse \`npm test\` before merge.`
         );
         const audit = runMintlifyKnowledgeAudit(fixtureDir);
         assert.strictEqual(audit.success, true);
@@ -225,14 +225,23 @@ describe('Mintlify Knowledge Honesty & Poison Diode', () => {
 
     it('records unreadable files as blocked in audit results', () => {
       const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mintlify-unreadable-test-'));
+      const originalReadFileSync = fs.readFileSync;
       try {
         const unreadable = path.join(fixtureDir, 'unreadable.md');
         fs.writeFileSync(unreadable, 'data');
-        fs.chmodSync(unreadable, 0);
+        fs.readFileSync = (filePath, ...args) => {
+          if (typeof filePath === 'string' && filePath.includes('unreadable.md')) {
+            const err = new Error('EACCES: permission denied');
+            err.code = 'EACCES';
+            throw err;
+          }
+          return originalReadFileSync.call(fs, filePath, ...args);
+        };
         const audit = runMintlifyKnowledgeAudit(fixtureDir);
         assert.ok(audit.totalScanned >= 1);
         assert.ok(audit.blockedCount >= 1);
       } finally {
+        fs.readFileSync = originalReadFileSync;
         fs.rmSync(fixtureDir, { recursive: true, force: true });
       }
     });
@@ -255,7 +264,7 @@ describe('Mintlify Knowledge Honesty & Poison Diode', () => {
       try {
         fs.writeFileSync(
           path.join(fixtureDir, 'safe-guide.md'),
-          '---\nlastUpdated: 2026-09-20T12:00:00Z\n---\n# Safe Guide\nUse `npm test` before merge.'
+          `---\nlastUpdated: ${new Date().toISOString()}\n---\n# Safe Guide\nUse \`npm test\` before merge.`
         );
         const repAudit = buildMintlifyKnowledgeReport({ checkDir: fixtureDir });
         assert.strictEqual(repAudit.mode, 'audit');

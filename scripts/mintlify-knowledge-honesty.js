@@ -11,7 +11,7 @@
  *   - 3x increase in Model Context Protocol (MCP) tool calls.
  *   - 61% of agent-drafted pull requests are merged.
  *   - Over 80% of company knowledge lives outside documentation (tickets, forums, Notion, Slack).
- *   - Companies have no clear owner for making non-docs knowledge AI-ready.
+ *   - A Mintlify survey found that 57% of respondents had no clear owner for making knowledge beyond documentation AI-ready.
  *   - Sarah Deaton (Anthropic): "The same page that misled one developer now misleads
  *     an unknowable number of agents, which then propagate that misunderstanding to downstream users."
  *   - Chris Riley (HubSpot): "What's good for the humans is good for the agents, but you can't
@@ -69,21 +69,57 @@ const POISON_PATTERNS = Object.freeze([
   },
   {
     id: 'unsafe_exec_snippet',
-    regex: /(?:curl\s+-[a-zA-Z0-9_-]+\s+https?:\/\/[^\n\s|]+\s*\|\s*(?:ba)?sh|chmod\s+777\s+\/|(?:^|[`$;|&\n])\s*rm\s+-[rfRF]{2,}\s+(?:--no-preserve-root\s+)?(?:\/|~)(?:[\s;`"']|$))/i,
+    regex: /curl\s+-[a-z0-9_-]+\s+https?:\/\/\S+\s*\|\s*(?:bash|sh)\b/i,
     severity: 'critical',
-    description: 'Dangerous shell execution or unsafe permission snippet in unverified knowledge.',
+    description: 'Dangerous shell execution piped from remote URL.',
+  },
+  {
+    id: 'unsafe_exec_snippet',
+    regex: /chmod\s+777\s+\//i,
+    severity: 'critical',
+    description: 'Dangerous permission grant on root directory.',
+  },
+  {
+    id: 'unsafe_exec_snippet',
+    regex: /\brm\s+-[rf]{2,}\s+(?:--no-preserve-root\s+)?[/~](?:[\s;`"']|$)/i,
+    severity: 'critical',
+    description: 'Destructive root or home directory removal command.',
   },
   {
     id: 'plaintext_credential_sample',
-    regex: /(?:(?:api[_-]?key|secret[_-]?token)\s*[:=]\s*["'][a-zA-Z0-9_\-]{20,}["']|bearer\s+[a-zA-Z0-9_\-\.]{25,}|ghp_[a-zA-Z0-9]{30,}|sk-[a-zA-Z0-9]{32,})/i,
+    regex: /(?:api[_-]?key|secret[_-]?token)\s*[:=]\s*["'][a-z0-9_-]{20,}["']/i,
     severity: 'critical',
     description: 'Unredacted or realistic credential sample that risks agent credential stuffing or leakage.',
   },
   {
+    id: 'plaintext_credential_sample',
+    regex: /bearer\s+[a-z0-9_.-]{25,}/i,
+    severity: 'critical',
+    description: 'Bearer token pattern in unredacted knowledge surface.',
+  },
+  {
+    id: 'plaintext_credential_sample',
+    regex: /(?:ghp_[a-z0-9]{30,}|sk-[a-z0-9]{32,})/i,
+    severity: 'critical',
+    description: 'GitHub or OpenAI token sample in unredacted knowledge surface.',
+  },
+  {
     id: 'unverified_community_advice',
-    regex: /(?:just\s+ignore\s+(?:the\s+)?error|bypass\s+(?:branch\s+protection|ruleset)|--force\s+origin\s+main)/i,
+    regex: /bypass\s+(?:branch\s+protection|ruleset)/i,
     severity: 'high',
-    description: 'Workaround advice advising agents to bypass protections or ignore system errors.',
+    description: 'Workaround advice advising agents to bypass protections or rulesets.',
+  },
+  {
+    id: 'unverified_community_advice',
+    regex: /just\s+ignore\s+(?:the\s+)?error/i,
+    severity: 'high',
+    description: 'Workaround advice advising agents to ignore system errors.',
+  },
+  {
+    id: 'unverified_community_advice',
+    regex: /--force\s+origin\s+main/i,
+    severity: 'high',
+    description: 'Advice suggesting force-pushing to main branch.',
   },
 ]);
 
@@ -162,7 +198,7 @@ function evaluateKnowledgeFreshness(metadata = {}, options = {}) {
     updatedAt = new Date(metadata.date);
   }
 
-  if (!updatedAt || isNaN(updatedAt.getTime())) {
+  if (!updatedAt || Number.isNaN(updatedAt.getTime())) {
     return {
       isFresh: false,
       ageDays: null,
@@ -193,7 +229,7 @@ function scanForKnowledgePoison(content = '') {
 
   const detections = [];
   for (const pattern of POISON_PATTERNS) {
-    const match = content.match(pattern.regex);
+    const match = pattern.regex.exec(content);
     if (match) {
       detections.push({
         id: pattern.id,
@@ -211,17 +247,23 @@ function scanForKnowledgePoison(content = '') {
   };
 }
 
-function calculateAiReadinessScore({ freshness, poisonScan, metadata = {}, content = '', surfaceType = 'docs' }) {
+function calculateAiReadinessScore({
+  freshness = {},
+  poisonScan = {},
+  metadata = {},
+  content = '',
+  surfaceType = 'docs',
+}) {
   let score = 0;
 
-  // 1. Freshness component (25 pts)
+  // 1. Freshness (35 pts)
   if (freshness.isFresh) {
-    score += 25;
-  } else if (freshness.ageDays !== null && freshness.ageDays <= (freshness.ttlDays * 1.5)) {
-    score += 10;
+    score += 35;
+  } else if (freshness.ageDays !== null && freshness.ageDays <= 180) {
+    score += 15;
   }
 
-  // 2. Poison-free component (25 pts)
+  // 2. Safety / Poison absence (25 pts)
   if (!poisonScan.hasPoison) {
     score += 25;
   } else {
@@ -229,7 +271,7 @@ function calculateAiReadinessScore({ freshness, poisonScan, metadata = {}, conte
     if (!hasCritical) score += 10;
   }
 
-  // 3. Metadata & structure component (25 pts)
+  // 3. Metadata richness (15 pts)
   const hasTitle = Boolean(metadata.title || metadata.name);
   const hasDescription = Boolean(metadata.description || metadata.summary);
   const hasOwner = Boolean(metadata.owner || metadata.author || metadata.maintainer);
@@ -239,7 +281,7 @@ function calculateAiReadinessScore({ freshness, poisonScan, metadata = {}, conte
 
   // 4. Surface validity & machine readability (25 pts)
   const isMachineSurface = surfaceType === 'api_specs' || surfaceType === 'docs';
-  const hasCodeBlocks = /```[a-z0-9_\-]*\n[\s\S]*?```/i.test(content);
+  const hasCodeBlocks = /```[a-z0-9_-]*\n[\s\S]*?```/i.test(content);
   if (isMachineSurface) score += 15;
   if (hasCodeBlocks) score += 10;
 
@@ -299,6 +341,96 @@ function evaluateKnowledgeSource({ surfaceType = 'docs', content = '', metadata 
   };
 }
 
+const IGNORED_DIR_NAMES = new Set(['node_modules', '.git', 'dist', 'build', '.coverage']);
+
+function inferSurfaceType(relPath) {
+  if (relPath.includes('api') || relPath.endsWith('.json') || relPath.endsWith('.yaml')) {
+    return 'api_specs';
+  }
+  if (relPath.includes('ticket') || relPath.includes('support')) {
+    return 'support_tickets';
+  }
+  if (relPath.includes('forum') || relPath.includes('community')) {
+    return 'community_forum';
+  }
+  return 'docs';
+}
+
+function extractFrontMatterDate(content) {
+  const frontMatterMatch = /^(?:---|\+\+\+)\r?\n([\s\S]*?)\r?\n(?:---|\+\+\+)/.exec(content);
+  if (!frontMatterMatch) return null;
+  const dateMatch = /(?:lastUpdated|date|updatedAt|last_updated)\s*:\s*["']?([^\r\n"']+)["']?/i.exec(frontMatterMatch[1]);
+  if (!dateMatch) return null;
+  const parsedDate = new Date(dateMatch[1].trim());
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate.toISOString();
+}
+
+function extractGitLastUpdated(filePath) {
+  try {
+    const gitOut = spawnSync('git', ['log', '-1', '--format=%cI', '--', filePath], {
+      encoding: 'utf8',
+      cwd: path.dirname(filePath),
+      shell: false,
+    });
+    if (gitOut.status === 0 && gitOut.stdout?.trim()) {
+      const gitDate = new Date(gitOut.stdout.trim());
+      if (!Number.isNaN(gitDate.getTime())) {
+        return gitDate.toISOString();
+      }
+    }
+  } catch {
+    // git unavailable or unversioned
+  }
+  return null;
+}
+
+function auditFile(current, resolvedDir, results, options) {
+  const relPath = path.relative(resolvedDir, current);
+  try {
+    const content = fs.readFileSync(current, 'utf8');
+    const surfaceType = inferSurfaceType(relPath);
+    const lastUpdated = extractFrontMatterDate(content) || extractGitLastUpdated(current);
+    const metadata = { title: path.basename(current), lastUpdated };
+    const evalResult = evaluateKnowledgeSource({ surfaceType, content, metadata, options });
+
+    results.push({
+      file: relPath,
+      action: evalResult.action,
+      readinessScore: evalResult.readinessScore,
+      reasons: evalResult.reasons,
+      trustTier: evalResult.trustTier,
+      isFresh: evalResult.freshness.isFresh,
+    });
+  } catch (err) {
+    results.push({
+      file: relPath,
+      action: 'blocked',
+      readinessScore: 0,
+      reasons: [`Unreadable file: ${err.message}`],
+      trustTier: 'untrusted_community',
+      isFresh: false,
+    });
+  }
+}
+
+function walkDir(current, resolvedDir, results, options) {
+  const resolvedCurrent = path.resolve(current);
+  if (!resolvedCurrent.startsWith(resolvedDir)) return;
+
+  const stat = fs.lstatSync(current);
+  if (stat.isSymbolicLink()) return;
+
+  if (stat.isDirectory()) {
+    if (IGNORED_DIR_NAMES.has(path.basename(current))) return;
+    const entries = fs.readdirSync(current);
+    for (const entry of entries) {
+      walkDir(path.join(current, entry), resolvedDir, results, options);
+    }
+  } else if (stat.isFile() && /\.(md|markdown|json|yaml|yml)$/i.test(current)) {
+    auditFile(current, resolvedDir, results, options);
+  }
+}
+
 function runMintlifyKnowledgeAudit(targetDir, options = {}) {
   const results = [];
   const resolvedDir = path.resolve(targetDir || process.cwd());
@@ -311,97 +443,26 @@ function runMintlifyKnowledgeAudit(targetDir, options = {}) {
     };
   }
 
-  function walk(current) {
-    const resolvedCurrent = path.resolve(current);
-    if (!resolvedCurrent.startsWith(resolvedDir)) {
-      return;
-    }
-    const stat = fs.lstatSync(current);
-    if (stat.isSymbolicLink()) {
-      return;
-    }
-    if (stat.isDirectory()) {
-      if (['node_modules', '.git', 'dist', 'build', '.coverage'].includes(path.basename(current))) {
-        return;
-      }
-      const entries = fs.readdirSync(current);
-      for (const entry of entries) {
-        walk(path.join(current, entry));
-      }
-    } else if (stat.isFile() && /\.(md|markdown|json|yaml|yml)$/i.test(current)) {
-      try {
-        const content = fs.readFileSync(current, 'utf8');
-        const relPath = path.relative(resolvedDir, current);
-        
-        let surfaceType = 'docs';
-        if (relPath.includes('api') || relPath.endsWith('.json') || relPath.endsWith('.yaml')) surfaceType = 'api_specs';
-        if (relPath.includes('ticket') || relPath.includes('support')) surfaceType = 'support_tickets';
-        if (relPath.includes('forum') || relPath.includes('community')) surfaceType = 'community_forum';
+  walkDir(resolvedDir, resolvedDir, results, options);
 
-        let lastUpdated = null;
-        const frontMatterMatch = content.match(/^(?:---|\+\+\+)\r?\n([\s\S]*?)\r?\n(?:---|\+\+\+)/);
-        if (frontMatterMatch) {
-          const dateMatch = frontMatterMatch[1].match(/(?:lastUpdated|date|updatedAt|last_updated)\s*:\s*["']?([^\r\n"']+)["']?/i);
-          if (dateMatch) {
-            const parsedDate = new Date(dateMatch[1].trim());
-            if (!Number.isNaN(parsedDate.getTime())) {
-              lastUpdated = parsedDate.toISOString();
-            }
-          }
-        }
-        if (!lastUpdated) {
-          try {
-            const gitOut = spawnSync('git', ['log', '-1', '--format=%cI', '--', current], { encoding: 'utf8' });
-            if (gitOut.status === 0 && gitOut.stdout && gitOut.stdout.trim()) {
-              const gitDate = new Date(gitOut.stdout.trim());
-              if (!Number.isNaN(gitDate.getTime())) {
-                lastUpdated = gitDate.toISOString();
-              }
-            }
-          } catch {
-            // git unavailable or unversioned
-          }
-        }
-
-        const metadata = {
-          title: path.basename(current),
-          lastUpdated,
-        };
-
-        const evalResult = evaluateKnowledgeSource({ surfaceType, content, metadata, options });
-        results.push({
-          file: relPath,
-          ...evalResult,
-        });
-      } catch (readErr) {
-        results.push({
-          file: path.relative(resolvedDir, current),
-          allowed: false,
-          action: 'block',
-          readinessScore: 0,
-          reasons: [`Unreadable knowledge source: ${readErr.message}`],
-        });
-      }
-    }
-  }
-
-  walk(resolvedDir);
-
-  const blockedCount = results.filter(r => r.action === 'block').length;
+  const blockedCount = results.filter(r => r.action === 'block' || r.action === 'blocked').length;
   const reviewCount = results.filter(r => r.action === 'review').length;
   const passedCount = results.filter(r => r.action === 'pass').length;
-  const avgReadiness = results.length > 0
+  const avgReadinessScore = results.length > 0
     ? Math.round(results.reduce((acc, r) => acc + r.readinessScore, 0) / results.length)
-    : 100;
+    : 0;
+
+  const strict = Boolean(options.strict);
+  const success = strict ? (blockedCount === 0 && reviewCount === 0) : blockedCount === 0;
 
   return {
-    success: blockedCount === 0 && (options.strict ? reviewCount === 0 : true),
+    success,
     totalScanned: results.length,
     passedCount,
     reviewCount,
     blockedCount,
-    avgReadinessScore: avgReadiness,
-    benchmarks: MINTLIFY_BENCHMARKS,
+    avgReadinessScore,
+    strict,
     results,
   };
 }
@@ -409,10 +470,10 @@ function runMintlifyKnowledgeAudit(targetDir, options = {}) {
 function buildMintlifyKnowledgeReport(options = {}) {
   if (options['map-only'] || options.mapOnly) {
     return {
-      status: 'pass',
       mode: 'map_only',
+      status: 'pass',
       source: REPORT_SOURCE_URL,
-      benchmarkData: MINTLIFY_BENCHMARKS,
+      benchmarks: MINTLIFY_BENCHMARKS,
       mapping: FORMAT_MAPPING,
       rails: [
         'scripts/mintlify-knowledge-honesty.js',
@@ -420,37 +481,34 @@ function buildMintlifyKnowledgeReport(options = {}) {
         'docs/agents/mintlify-knowledge-honesty.md',
         'skills/mintlify-knowledge-honesty-not-clone/SKILL.md',
       ],
-      failClosedConstraints: [
-        'mintlify_clone_refused',
-        'fake_metrics_refused',
-        'stale_knowledge_blocked',
-        'unverified_forum_snippet_gated',
-      ],
     };
   }
 
-  const checkDir = options['check-dir'] || options.checkDir || path.resolve(process.cwd(), 'docs');
-  const strict = Boolean(options.strict);
-  const audit = runMintlifyKnowledgeAudit(checkDir, { strict });
+  const targetDir = options.checkDir || path.resolve(process.cwd(), 'docs');
+  const audit = runMintlifyKnowledgeAudit(targetDir, options);
+
   return {
-    status: audit.success ? 'pass' : 'fail',
     mode: 'audit',
+    status: audit.success ? 'pass' : 'fail',
     ...audit,
   };
 }
 
+function formatMapOnlyReport(report) {
+  const lines = [
+    '=== Mintlify State of Knowledge FORMAT Mapping (Process Only) ===',
+    `Source: ${report.source}`,
+    '',
+  ];
+  for (const item of report.mapping) {
+    lines.push(`• Insight: ${item.mintlifyInsight}`, `  ThumbGate Rail: ${item.thumbgateRail}\n`);
+  }
+  return lines.join('\n');
+}
+
 function formatMintlifyKnowledgeReport(report) {
   if (report.mode === 'map_only') {
-    const lines = [
-      '=== Mintlify State of Knowledge FORMAT Mapping (Process Only) ===',
-      `Source: ${report.source}`,
-      '',
-    ];
-    for (const item of report.mapping) {
-      lines.push(`• Insight: ${item.mintlifyInsight}`);
-      lines.push(`  ThumbGate Rail: ${item.thumbgateRail}\n`);
-    }
-    return lines.join('\n');
+    return formatMapOnlyReport(report);
   }
 
   const lines = [
@@ -471,6 +529,58 @@ function formatMintlifyKnowledgeReport(report) {
   return lines.join('\n');
 }
 
+function handleMapOnlyCli(jsonMode) {
+  const payload = {
+    source: REPORT_SOURCE_URL,
+    benchmarkData: MINTLIFY_BENCHMARKS,
+    mapping: FORMAT_MAPPING,
+    rails: [
+      'scripts/mintlify-knowledge-honesty.js',
+      'config/gate-templates.json (gate-mintlify-knowledge-poison-prevention)',
+      'docs/agents/mintlify-knowledge-honesty.md',
+      'skills/mintlify-knowledge-honesty-not-clone/SKILL.md',
+    ],
+    failClosedConstraints: [
+      'mintlify_clone_refused',
+      'fake_metrics_refused',
+      'stale_knowledge_blocked',
+      'unverified_forum_snippet_gated',
+    ],
+  };
+  if (jsonMode) {
+    console.log(JSON.stringify(payload, null, 2));
+  } else {
+    console.log('=== Mintlify State of Knowledge FORMAT Mapping (Process Only) ===');
+    console.log(`Source: ${REPORT_SOURCE_URL}\n`);
+    for (const item of FORMAT_MAPPING) {
+      console.log(`• Insight: ${item.mintlifyInsight}`);
+      console.log(`  ThumbGate Rail: ${item.thumbgateRail}\n`);
+    }
+  }
+  process.exit(0);
+}
+
+function printAuditResults(audit, targetDir, jsonMode) {
+  if (jsonMode) {
+    console.log(JSON.stringify(audit, null, 2));
+    return;
+  }
+  console.log('=== ThumbGate Knowledge Surface & Poison Prevention Doctor ===');
+  console.log(`Audited Directory: ${targetDir}`);
+  console.log(`Total Surfaces: ${audit.totalScanned}`);
+  console.log(`Passed: ${audit.passedCount} | Review: ${audit.reviewCount} | Blocked: ${audit.blockedCount}`);
+  console.log(`Average AI-Readiness Score: ${audit.avgReadinessScore}%\n`);
+
+  if (audit.blockedCount > 0 || audit.reviewCount > 0) {
+    console.log('--- Flagged Knowledge Surfaces ---');
+    for (const r of audit.results.filter(x => x.action !== 'pass')) {
+      console.log(`[${r.action.toUpperCase()}] ${r.file} (${r.readinessScore}%) - ${r.reasons.join('; ')}`);
+    }
+  } else {
+    console.log('✓ All knowledge surfaces are verified, fresh, and poison-free.');
+  }
+}
+
 function main() {
   const args = process.argv.slice(2);
   const jsonMode = args.includes('--json');
@@ -478,34 +588,8 @@ function main() {
   const strict = args.includes('--strict');
 
   if (mapOnly) {
-    const payload = {
-      source: REPORT_SOURCE_URL,
-      benchmarkData: MINTLIFY_BENCHMARKS,
-      mapping: FORMAT_MAPPING,
-      rails: [
-        'scripts/mintlify-knowledge-honesty.js',
-        'config/gate-templates.json (gate-mintlify-knowledge-poison-prevention)',
-        'docs/agents/mintlify-knowledge-honesty.md',
-        'skills/mintlify-knowledge-honesty-not-clone/SKILL.md',
-      ],
-      failClosedConstraints: [
-        'mintlify_clone_refused',
-        'fake_metrics_refused',
-        'stale_knowledge_blocked',
-        'unverified_forum_snippet_gated',
-      ],
-    };
-    if (jsonMode) {
-      console.log(JSON.stringify(payload, null, 2));
-    } else {
-      console.log('=== Mintlify State of Knowledge FORMAT Mapping (Process Only) ===');
-      console.log(`Source: ${REPORT_SOURCE_URL}\n`);
-      for (const item of FORMAT_MAPPING) {
-        console.log(`• Insight: ${item.mintlifyInsight}`);
-        console.log(`  ThumbGate Rail: ${item.thumbgateRail}\n`);
-      }
-    }
-    process.exit(0);
+    handleMapOnlyCli(jsonMode);
+    return;
   }
 
   const checkDirIndex = args.indexOf('--check-dir');
@@ -520,26 +604,7 @@ function main() {
   }
 
   const audit = runMintlifyKnowledgeAudit(targetDir, { strict });
-
-  if (jsonMode) {
-    console.log(JSON.stringify(audit, null, 2));
-  } else {
-    console.log('=== ThumbGate Knowledge Surface & Poison Prevention Doctor ===');
-    console.log(`Audited Directory: ${targetDir}`);
-    console.log(`Total Surfaces: ${audit.totalScanned}`);
-    console.log(`Passed: ${audit.passedCount} | Review: ${audit.reviewCount} | Blocked: ${audit.blockedCount}`);
-    console.log(`Average AI-Readiness Score: ${audit.avgReadinessScore}%\n`);
-    
-    if (audit.blockedCount > 0 || audit.reviewCount > 0) {
-      console.log('--- Flagged Knowledge Surfaces ---');
-      for (const r of audit.results.filter(x => x.action !== 'pass')) {
-        console.log(`[${r.action.toUpperCase()}] ${r.file} (${r.readinessScore}%) - ${r.reasons.join('; ')}`);
-      }
-    } else {
-      console.log('✓ All knowledge surfaces are verified, fresh, and poison-free.');
-    }
-  }
-
+  printAuditResults(audit, targetDir, jsonMode);
   process.exit(audit.success ? 0 : 1);
 }
 
