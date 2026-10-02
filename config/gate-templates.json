@@ -1473,7 +1473,7 @@
       "signal": "👎",
       "defaultAction": "block",
       "severity": "high",
-      "pattern": "knowledge_poison_detected|stale_knowledge_expired|unverified_community_advice|explicitly_deprecated_api",
+      "pattern": "deprecated_api_call|unsafe_exec_snippet|plaintext_credential_sample|unverified_community_advice|stale_expired|stale_unversioned",
       "problem": "Blocks agents from ingesting or acting on stale (>90d), deprecated, or poisoned knowledge surfaces (Anthropic warning: misleading docs mislead an unknowable number of downstream agents).",
       "roi": "Prevents downstream hallucination propagation, broken API tool calls, and dangerous copy-paste snippets across 66% agent readership traffic.",
       "rollout": "Pair with npx thumbgate mintlify-knowledge-honesty --check-dir docs --json before agent task execution."

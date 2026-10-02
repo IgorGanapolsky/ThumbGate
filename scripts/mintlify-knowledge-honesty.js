@@ -68,7 +68,7 @@ const POISON_PATTERNS = Object.freeze([
   },
   {
     id: 'unsafe_exec_snippet',
-    regex: /(?:curl\s+-[sS]*[fF]*[L|s]*\s+https?:\/\/[^\n\s|]+\s*\|\s*(?:ba)?sh|chmod\s+777\s+\/)/i,
+    regex: /(?:curl\s+-[a-zA-Z0-9_-]+\s+https?:\/\/[^\n\s|]+\s*\|\s*(?:ba)?sh|chmod\s+777\s+\/)/i,
     severity: 'critical',
     description: 'Dangerous shell execution or unsafe permission snippet in unverified knowledge.',
   },
@@ -311,7 +311,14 @@ function runMintlifyKnowledgeAudit(targetDir, options = {}) {
   }
 
   function walk(current) {
-    const stat = fs.statSync(current);
+    const resolvedCurrent = path.resolve(current);
+    if (!resolvedCurrent.startsWith(resolvedDir)) {
+      return;
+    }
+    const stat = fs.lstatSync(current);
+    if (stat.isSymbolicLink()) {
+      return;
+    }
     if (stat.isDirectory()) {
       if (['node_modules', '.git', 'dist', 'build', '.coverage'].includes(path.basename(current))) {
         return;
@@ -330,9 +337,24 @@ function runMintlifyKnowledgeAudit(targetDir, options = {}) {
         if (relPath.includes('ticket') || relPath.includes('support')) surfaceType = 'support_tickets';
         if (relPath.includes('forum') || relPath.includes('community')) surfaceType = 'community_forum';
 
+        let lastUpdated = null;
+        const frontMatterMatch = content.match(/^(?:---|\+\+\+)\r?\n([\s\S]*?)\r?\n(?:---|\+\+\+)/);
+        if (frontMatterMatch) {
+          const dateMatch = frontMatterMatch[1].match(/(?:lastUpdated|date|updatedAt|last_updated)\s*:\s*["']?([^\r\n"']+)["']?/i);
+          if (dateMatch) {
+            const parsedDate = new Date(dateMatch[1].trim());
+            if (!Number.isNaN(parsedDate.getTime())) {
+              lastUpdated = parsedDate.toISOString();
+            }
+          }
+        }
+        if (!lastUpdated && stat.mtime) {
+          lastUpdated = stat.mtime.toISOString();
+        }
+
         const metadata = {
           title: path.basename(current),
-          lastUpdated: stat.mtime.toISOString(),
+          lastUpdated,
         };
 
         const evalResult = evaluateKnowledgeSource({ surfaceType, content, metadata, options });
@@ -470,7 +492,15 @@ function main() {
   }
 
   const checkDirIndex = args.indexOf('--check-dir');
-  const targetDir = checkDirIndex !== -1 ? args[checkDirIndex + 1] : path.resolve(process.cwd(), 'docs');
+  let targetDir = path.resolve(process.cwd(), 'docs');
+  if (checkDirIndex !== -1) {
+    const rawDir = args[checkDirIndex + 1];
+    if (!rawDir || rawDir.startsWith('--')) {
+      console.error('Error: --check-dir requires a valid directory path argument.');
+      process.exit(1);
+    }
+    targetDir = path.resolve(process.cwd(), rawDir);
+  }
 
   const audit = runMintlifyKnowledgeAudit(targetDir, { strict });
 
