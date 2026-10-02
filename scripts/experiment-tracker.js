@@ -116,7 +116,9 @@ function recordResult(params) {
 
   const improved = params.score > params.baseline;
   const testsPassed = params.testsPassed !== false;
-  const kept = improved && testsPassed;
+  const kept = typeof params.kept === 'boolean'
+    ? params.kept
+    : (improved && testsPassed);
 
   const result = {
     ...experiment,
@@ -128,11 +130,11 @@ function recordResult(params) {
     testsPassed,
     metrics: params.metrics || null,
     kept,
-    reason: !testsPassed
+    reason: params.reason || (!testsPassed
       ? 'Tests failed — discarded'
       : improved
         ? `Score improved by ${(params.score - params.baseline).toFixed(4)}`
-        : `Score did not improve (${params.score} <= ${params.baseline})`,
+        : `Score did not improve (${params.score} <= ${params.baseline})`),
   };
 
   appendJSONL(logPath, result);
