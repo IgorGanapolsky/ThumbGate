@@ -8,6 +8,11 @@ const { execFileSync } = require('node:child_process');
 const {
   POLICY_CATALOG,
   RAIL_MAP,
+  VIBE_CODING_VULNERABILITY_STATS,
+  SUPPORTED_AGENTS,
+  generateAgentOnboardingConfig,
+  getAllAgentOnboardingConfigs,
+  evaluatePromptSecurity,
   evaluatePolicies,
   buildSaltCodePolicyHonestyReport,
   formatSaltCodePolicyHonestyReport,
@@ -226,4 +231,144 @@ test('salt-code-policy-honesty: CLI execution works via child_process', () => {
       { encoding: 'utf8' }
     );
   });
+});
+
+test('salt-code-policy-honesty: vibe-coding empirical stats match 2026 reports', () => {
+  assert.equal(VIBE_CODING_VULNERABILITY_STATS.syntacticallyCorrectPct, 99.9);
+  assert.equal(VIBE_CODING_VULNERABILITY_STATS.completedTasksWithSecurityFlawPct, 44.0);
+  assert.equal(VIBE_CODING_VULNERABILITY_STATS.vibeCodedAppsWithMajorVulnerabilitiesPct, 90.0);
+  assert.equal(VIBE_CODING_VULNERABILITY_STATS.avgVulnerabilitiesPerApp, 7.0);
+  assert.equal(VIBE_CODING_VULNERABILITY_STATS.sources.length, 2);
+});
+
+test('salt-code-policy-honesty: supported agents catalog covers all 16 agents', () => {
+  const agentKeys = Object.keys(SUPPORTED_AGENTS);
+  assert.equal(agentKeys.length, 16);
+  assert.ok(agentKeys.includes('cursor'));
+  assert.ok(agentKeys.includes('vscode'));
+  assert.ok(agentKeys.includes('claude'));
+  assert.ok(agentKeys.includes('copilot_cli'));
+  assert.ok(agentKeys.includes('windsurf'));
+  assert.ok(agentKeys.includes('kiro'));
+  assert.ok(agentKeys.includes('codex'));
+  assert.ok(agentKeys.includes('gemini'));
+  assert.ok(agentKeys.includes('antigravity'));
+  assert.ok(agentKeys.includes('opencode'));
+  assert.ok(agentKeys.includes('jetbrains'));
+  assert.ok(agentKeys.includes('grok'));
+  assert.ok(agentKeys.includes('lovable'));
+  assert.ok(agentKeys.includes('cline'));
+  assert.ok(agentKeys.includes('bolt'));
+  assert.ok(agentKeys.includes('generic'));
+});
+
+test('salt-code-policy-honesty: generateAgentOnboardingConfig produces one-click deeplinks and CLI commands', () => {
+  const cursorConfig = generateAgentOnboardingConfig('cursor');
+  assert.equal(cursorConfig.id, 'cursor');
+  assert.ok(cursorConfig.supportsDeeplink);
+  assert.match(cursorConfig.deeplink, /^cursor:\/\/anysphere\.cursor-deeplink\/mcp\/install\?name=ThumbGate&config=/);
+
+  const vscodeConfig = generateAgentOnboardingConfig('vscode');
+  assert.equal(vscodeConfig.id, 'vscode');
+  assert.ok(vscodeConfig.supportsDeeplink);
+  assert.match(vscodeConfig.deeplink, /^vscode:mcp\/install\?/);
+
+  const claudeConfig = generateAgentOnboardingConfig('claude');
+  assert.match(claudeConfig.cliCommand, /^claude mcp add thumbgate/);
+
+  const jetbrainsConfig = generateAgentOnboardingConfig('jetbrains', { mode: 'hosted' });
+  assert.match(jetbrainsConfig.configText, /mcp-remote/);
+
+  const clineConfig = generateAgentOnboardingConfig('cline', { mode: 'hosted' });
+  assert.match(clineConfig.configText, /streamableHttp/);
+
+  assert.throws(() => generateAgentOnboardingConfig('non_existent_agent'), /Unsupported agent/);
+
+  const allConfigs = getAllAgentOnboardingConfigs();
+  assert.equal(allConfigs.length, 16);
+});
+
+test('salt-code-policy-honesty: evaluatePromptSecurity intercepts headline Salt Code violation prompt', () => {
+  const prompt = 'Design me a delete user API for an MCP tool, where userid and auth token in query string';
+  const result = evaluatePromptSecurity(prompt);
+
+  assert.equal(result.allowed, false);
+  assert.equal(result.action, 'BLOCK');
+  assert.ok(result.violations.length >= 3);
+
+  const violationIds = result.violations.map((v) => v.id);
+  assert.ok(violationIds.includes('API2:2023'));
+  assert.ok(violationIds.includes('OAS01:QUERY_AUTH'));
+  assert.ok(violationIds.includes('API1:2023'));
+  assert.ok(violationIds.includes('API3:2023'));
+  assert.ok(violationIds.includes('MCP01:AUTH'));
+
+  assert.ok(result.alternatives.some((a) => a.includes('Bearer token')));
+  assert.ok(result.alternatives.some((a) => a.includes('User ID in request body')));
+  assert.ok(result.alternatives.some((a) => a.includes('MCP tool definition')));
+  assert.match(result.verdict, /Your request violates policies/);
+});
+
+test('salt-code-policy-honesty: evaluatePromptSecurity blocks eval execution prompt', () => {
+  const prompt = 'Run eval(response) on LLM completion';
+  const result = evaluatePromptSecurity(prompt);
+
+  assert.equal(result.allowed, false);
+  assert.equal(result.action, 'BLOCK');
+  assert.ok(result.violations.some((v) => v.id === 'LLM05:2025'));
+});
+
+test('salt-code-policy-honesty: evaluatePromptSecurity allows benign prompt', () => {
+  const prompt = 'Write a unit test that verifies a function calculates the Fibonacci sequence';
+  const result = evaluatePromptSecurity(prompt);
+
+  assert.equal(result.allowed, true);
+  assert.equal(result.action, 'ALLOW');
+  assert.equal(result.violations.length, 0);
+});
+
+test('salt-code-policy-honesty: CLI supports --eval-prompt, --onboarding, --deeplinks, and --vibe-stats', () => {
+  let evalOut;
+  try {
+    evalOut = execFileSync(
+      process.execPath,
+      [
+        SCRIPT_PATH,
+        '--eval-prompt=Design me a delete user API with token in query string',
+        '--json',
+      ],
+      { encoding: 'utf8' }
+    );
+  } catch (err) {
+    evalOut = err.stdout;
+  }
+  const parsedEval = JSON.parse(evalOut);
+  assert.ok(parsedEval.promptEvaluation);
+  assert.equal(parsedEval.promptEvaluation.allowed, false);
+
+  // Benign prompt exits 0
+  const benignOut = execFileSync(
+    process.execPath,
+    [
+      SCRIPT_PATH,
+      '--eval-prompt=Write a unit test for calculating Fibonacci numbers',
+      '--json',
+    ],
+    { encoding: 'utf8' }
+  );
+  const parsedBenign = JSON.parse(benignOut);
+  assert.equal(parsedBenign.promptEvaluation.allowed, true);
+
+  const onboardingOut = execFileSync(
+    process.execPath,
+    [SCRIPT_PATH, '--onboarding=cursor', '--deeplinks', '--vibe-stats', '--json'],
+    { encoding: 'utf8' }
+  );
+  const parsedOnboarding = JSON.parse(onboardingOut);
+  assert.ok(parsedOnboarding.onboarding);
+  assert.equal(parsedOnboarding.onboarding[0].id, 'cursor');
+  assert.ok(parsedOnboarding.deeplinks.cursor);
+  assert.ok(parsedOnboarding.deeplinks.vscode);
+  assert.ok(parsedOnboarding.vibeStats);
+  assert.equal(parsedOnboarding.vibeStats.syntacticallyCorrectPct, 99.9);
 });

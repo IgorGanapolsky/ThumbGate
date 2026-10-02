@@ -507,8 +507,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 572 -> 573 (2026-10-01): public/blog/2026-10-01-model-distress-relief-seeking-firewall.html
   // 573 -> 576 (2026-10-01): scripts/model-distress-doctor.js, scripts/model-distress-detector.js, .agents/skills/model-distress-governance/
   // 576 -> 580 (2026-10-01): scripts/tailscale-p2p-doctor.js, adapters/tailscale/ (TAILSCALE.md, config.toml, .mcp.json)
-    manifest.fileCount <= 580,
-    `npm package should stay <= 580 files, got ${manifest.fileCount}`
+  // 580 -> 582 (2026-10-02): public/onboarding.html (1-click multi-agent onboarding portal) + public/blog/2026-10-02-salt-code-honest-steal-40-guardrails.html (Salt Code 40-policy FORMAT steal)
+    manifest.fileCount <= 582,
+    `npm package should stay <= 582 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -749,8 +750,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.70 MB -> 8.75 MB (2026-10-01): meko-datapack + salt-code-policy modules & skills.
   // Bumped 8.75 MB -> 8.78 MB (2026-10-01): model-distress modules & skills. Local pack 8,741,657; CI slack.
   // Bumped 8.78 MB -> 8.80 MB (2026-10-01): tailscale p2p doctor and config files. Local pack 8,756,308; CI slack.
-    manifest.unpackedSize <= 8_800_000,
-    `npm package should stay <= 8.80 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.80 MB -> 8.85 MB (2026-10-02): 1-click multi-agent onboarding portal & blog. Local pack 8,816,436; CI slack.
+    manifest.unpackedSize <= 8_850_000,
+    `npm package should stay <= 8.85 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
