@@ -84,3 +84,7 @@ Use **“Done merging PRs. CI passing. System hygiene complete. Ready for next s
 ## Code search (Graphify-Labs)
 
 See `docs/agents/code-search.md`. Run `npm run graphify:setup` then `.graphify-venv/bin/graphify query`.
+
+## Meko Datapack honesty
+
+Five planes on existing rails: datapacks (4-field scope), episodic memory, rubric-promoted learnings, SHA-256 artifacts, decision traces. Never vendor YugabyteDB or rely on passive databases without PreToolUse firewalls. `node scripts/meko-datapack-honesty.js --json` · skill `meko-datapack-honesty-not-clone`.
