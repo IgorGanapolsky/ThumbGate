@@ -1,0 +1,16 @@
+[tailscale]
+enabled = true
+port = 9877
+mode = "p2p-mesh"
+fail_closed = true
+sync_interval_seconds = 60
+
+[crdt]
+journal_type = "g-set-append-only"
+rules_sync = true
+feedback_sync = true
+advisory_sync = true
+
+[pam]
+enforce_privileged_access = true
+audit_interdictions = true
