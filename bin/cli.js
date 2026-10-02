@@ -2868,6 +2868,23 @@ function llmObsHonesty() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function mekoDatapackHonesty() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildMekoDatapackReport,
+    formatMekoDatapackReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'meko-datapack-honesty'));
+  const report = buildMekoDatapackReport(args);
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatMekoDatapackReport(report) + '\n');
+  }
+  if (report.audit && !report.audit.pass) {
+    process.exitCode = 1;
+  }
+}
+
 function haloTraceOptimizer() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3853,6 +3870,7 @@ function help() {
   console.log('  npx thumbgate deeppattern-discipline-honesty --json --map-only');
   console.log('  npx thumbgate colab-compute-honesty --json --map-only');
   console.log('  npx thumbgate llm-obs-honesty --json');
+  console.log('  npx thumbgate meko-datapack-honesty --json');
   console.log('  npx thumbgate board-loop --json');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
   console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
@@ -4554,6 +4572,11 @@ switch (COMMAND) {
   case 'datadog-llm-obs':
   case 'llm-observability-honesty':
     llmObsHonesty();
+    break;
+  case 'meko-datapack-honesty':
+  case 'meko-datapack':
+  case 'meko-honesty':
+    mekoDatapackHonesty();
     break;
   case 'halo-trace-optimizer':
   case 'halo:optimize':

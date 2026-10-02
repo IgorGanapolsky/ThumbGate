@@ -306,8 +306,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 563 -> 565 (2026-09-28): scripts/halo-trace-optimizer.js + skill (HALO trace-to-fix FORMAT steal).
   // 565 -> 567 (2026-09-29): scripts/infoq-architect-honesty.js + skill (InfoQ architect FORMAT steal).
   // 567 -> 568 (2026-09-29): public/blog/2026-09-28-pretool-secret-deny.html
-  // 568 -> 572 (2026-09-30): scripts/tailscale-p2p-doctor.js, adapters/tailscale/ (TAILSCALE.md, config.toml, .mcp.json)
-  const CEILING = 572;
+  // 568 -> 570 (2026-10-01): scripts/meko-datapack-honesty.js + meko-datapack-honesty-not-clone skill (Meko Datapack & Collective Memory FORMAT steal).
+  // 570 -> 574 (2026-09-30): scripts/tailscale-p2p-doctor.js, adapters/tailscale/ (TAILSCALE.md, config.toml, .mcp.json)
+  const CEILING = 574;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
