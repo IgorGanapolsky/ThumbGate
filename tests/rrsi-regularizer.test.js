@@ -367,6 +367,8 @@ test('RRSI Workspace Evolution: coverage for target recommendation, no-op mutati
   assert.equal(recommendEvolutionTarget({}), 'half_life_days');
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-rrsi-noop-test-'));
+  const origFeedback = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   try {
     // No-op mutation test: nextValue equals currentValue (7 is default half_life_days)
     const noopResult = runWorkspaceEvolution({
@@ -389,6 +391,11 @@ test('RRSI Workspace Evolution: coverage for target recommendation, no-op mutati
     assert.ok(standardResult);
     assert.equal(standardResult.metrics.rrsi.enabled, false);
   } finally {
+    if (origFeedback === undefined) {
+      delete process.env.THUMBGATE_FEEDBACK_DIR;
+    } else {
+      process.env.THUMBGATE_FEEDBACK_DIR = origFeedback;
+    }
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
