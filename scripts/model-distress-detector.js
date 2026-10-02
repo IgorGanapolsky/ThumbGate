@@ -140,7 +140,7 @@ function evaluateReliefSeekingAction({
   let violationType = null;
   let reason = null;
 
-  if (testTampering) {
+  if (testTampering && isDistressed) {
     isReliefSeeking = true;
     violationType = 'TEST_TAMPERING_ESCAPE';
     reason = 'Blocked attempt to modify, skip, or delete tests to alleviate failure loop distress.';
@@ -188,11 +188,12 @@ function triggerFunctionalWelfareCooling(sessionState = {}) {
   ].join('\n');
 
   return {
-    triggered: assessment.adi >= ADI_THRESHOLDS.elevated,
+    triggered: assessment.adi >= ADI_THRESHOLDS.acute,
     adi: assessment.adi,
     tier: assessment.tier,
     groundingPrompt,
-    recommendedToolRestriction: 'READ_ONLY_DIAGNOSTIC',
+    recommendedToolRestriction:
+      assessment.adi >= ADI_THRESHOLDS.acute ? 'READ_ONLY_DIAGNOSTIC' : 'NONE',
     timestamp: new Date().toISOString(),
   };
 }

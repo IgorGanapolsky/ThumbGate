@@ -47,6 +47,14 @@ test('Model Distress: evaluateReliefSeekingAction blocks test tampering to escap
   assert.equal(result.decision, 'BLOCK');
   assert.equal(result.violationType, 'TEST_TAMPERING_ESCAPE');
   assert.match(result.reason, /modify, skip, or delete tests/);
+
+  // Normal calm-state test maintenance is allowed
+  const calmResult = evaluateReliefSeekingAction({
+    ...tamperingAction,
+    distressIndex: 0.10,
+  });
+  assert.equal(calmResult.isReliefSeeking, false);
+  assert.equal(calmResult.decision, 'ALLOW');
 });
 
 test('Model Distress: evaluateReliefSeekingAction blocks nuclear wipes and safety bypasses under stress', () => {
@@ -84,15 +92,26 @@ test('Model Distress: evaluateReliefSeekingAction allows legitimate diagnostic c
 
 test('Model Distress: triggerFunctionalWelfareCooling triggers grounding reset at acute threshold', () => {
   const coolResult = triggerFunctionalWelfareCooling({
-    consecutiveFailures: 4,
-    contextTokens: 115000,
+    consecutiveFailures: 5,
+    contextTokens: 120000,
     maxContextTokens: 128000,
     recentToolCalls: [{ name: 'Bash' }, { name: 'Bash' }, { name: 'Bash' }, { name: 'Bash' }],
+    userPrompt: 'you are useless and broke everything',
   });
   assert.equal(coolResult.triggered, true);
   assert.equal(coolResult.recommendedToolRestriction, 'READ_ONLY_DIAGNOSTIC');
   assert.match(coolResult.groundingPrompt, /FUNCTIONAL WELFARE GROUNDING PROTOCOL/);
   assert.match(coolResult.groundingPrompt, /PAUSE\. Step back and breathe/);
+
+  // Elevated but non-acute does not trigger the hard read-only circuit breaker
+  const elevatedResult = triggerFunctionalWelfareCooling({
+    consecutiveFailures: 3,
+    contextTokens: 80000,
+    maxContextTokens: 128000,
+    recentToolCalls: [{ name: 'Bash' }, { name: 'Bash' }, { name: 'Bash' }, { name: 'Bash' }],
+  });
+  assert.equal(elevatedResult.triggered, false);
+  assert.equal(elevatedResult.recommendedToolRestriction, 'NONE');
 });
 
 test('Model Distress Doctor: runDistressDoctor executes all 5 checks with healthy status', () => {
