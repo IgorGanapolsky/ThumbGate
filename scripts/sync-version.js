@@ -593,6 +593,37 @@ function syncVersion(opts) {
     targets.push(vscodeExtensionPath);
   }
 
+  // 18. distribution/agensi/thumbgate-pretool-gate (README.md & SKILL.md)
+  const agensiReadmePath = 'distribution/agensi/thumbgate-pretool-gate/README.md';
+  const agensiReadmeFile = path.join(PROJECT_ROOT, agensiReadmePath);
+  if (fs.existsSync(agensiReadmeFile)) {
+    const content = fs.readFileSync(agensiReadmeFile, 'utf-8');
+    const versionMatch = content.match(new RegExp(`version\\s+(${VERSION_PATTERN})\\.`));
+    if (versionMatch && versionMatch[1] !== version) {
+      drifted.push({ file: agensiReadmePath, field: 'package-version', current: versionMatch[1] });
+      if (!checkOnly) {
+        fs.writeFileSync(agensiReadmeFile, content.replace(new RegExp(`version\\s+${VERSION_PATTERN}\\.`), `version ${version}.`));
+      }
+    }
+    targets.push(agensiReadmePath);
+  }
+
+  const agensiSkillPath = 'distribution/agensi/thumbgate-pretool-gate/SKILL.md';
+  const agensiSkillFile = path.join(PROJECT_ROOT, agensiSkillPath);
+  if (fs.existsSync(agensiSkillFile)) {
+    const content = fs.readFileSync(agensiSkillFile, 'utf-8');
+    const versionMatch = content.match(new RegExp(`version\\s+(${VERSION_PATTERN})\\.`)) || content.match(new RegExp(`thumbgate@(${VERSION_PATTERN})`));
+    if (versionMatch && versionMatch[1] !== version) {
+      drifted.push({ file: agensiSkillPath, field: 'skill-version', current: versionMatch[1] });
+      if (!checkOnly) {
+        let updated = content.replace(new RegExp(`version\\s+${VERSION_PATTERN}\\.`, 'g'), `version ${version}.`);
+        updated = updated.replace(new RegExp(`thumbgate@${VERSION_PATTERN}`, 'g'), `thumbgate@${version}`);
+        fs.writeFileSync(agensiSkillFile, updated);
+      }
+    }
+    targets.push(agensiSkillPath);
+  }
+
   // Post-sync generators: targets whose content embeds the version but isn't a
   // simple string replacement — they have their own generator. Run AFTER the
   // simple sync so the package.json is at the new version when the generator
