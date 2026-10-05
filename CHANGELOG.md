@@ -30,6 +30,7 @@
 - f8b39d3: Add universal 1-click onboarding engine for 16 AI coding agents (Cursor and VS Code deep links, CLI and config generators), prompt-time security rewriter (`evaluatePromptSecurity`), empirical vibe-coding CVE metrics, and public onboarding and comparison portal.
 - dc19e9f: Steal Salt Code (getsaltcode.com by Salt Security) 40-policy taxonomy across OWASP API & LLM Top 10, OpenAPI query-string secret diode, and MCP credential hygiene onto ThumbGate PreToolUse rails. Adds `salt-code-policy-honesty` doctor + skill.
 - 8260628: test(ci): permit semver updates for SonarCloud scan action in workflow test
+- 7b10fdd: Bump @cloudflare/workers-types from 5.20260923.1 to 5.20260928.1 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
 
 ## 1.37.3
 
