@@ -1349,7 +1349,7 @@
     },
     "js-yaml": "5.4.2",
     "sharp": "0.35.4",
-    "undici": "8.10.2"
+    "undici": "8.11.2"
   },
   "mcpName": "io.github.IgorGanapolsky/thumbgate",
   "devDependencies": {
@@ -1357,7 +1357,7 @@
     "@changesets/cli": "^3.0.0",
     "@playwright/test": "^1.62.1",
     "c8": "^12.0.0",
-    "undici": "8.10.2"
+    "undici": "8.11.2"
   },
   "hotfix": "gate-check-bypass-2026-06-03"
 }
