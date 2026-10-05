@@ -486,6 +486,9 @@
     ".agents/skills/meko-datapack-honesty-not-clone/",
     "scripts/mintlify-knowledge-honesty.js",
     ".agents/skills/mintlify-knowledge-honesty-not-clone/",
+    "scripts/siren-mcp-governance.js",
+    ".agents/skills/siren-mcp-governance/",
+    "skills/siren-mcp-governance/",
     "scripts/thumbgate-daily-discoveries-publish.js",
     "scripts/thumbgate-daily-discoveries-publish.sh",
     "scripts/install-thumbgate-daily-publish-launchd.sh",
@@ -1269,7 +1272,10 @@
     "test:salt-code-policy-honesty": "node --test tests/salt-code-policy-honesty.test.js",
     "mintlify-knowledge-honesty": "node scripts/mintlify-knowledge-honesty.js",
     "mintlify:knowledge": "node scripts/mintlify-knowledge-honesty.js",
-    "test:mintlify-knowledge": "node --test tests/mintlify-knowledge-honesty.test.js"
+    "test:mintlify-knowledge": "node --test tests/mintlify-knowledge-honesty.test.js",
+    "siren-mcp-governance": "node scripts/siren-mcp-governance.js",
+    "siren:governance": "node scripts/siren-mcp-governance.js",
+    "test:siren-mcp": "node --test tests/siren-mcp-governance.test.js"
   },
   "keywords": [
     "mcp",

@@ -513,8 +513,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 583 -> 589 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html, adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/ + skills/aws-strands-harness-not-clone/
   // 589 -> 590 (2026-10-02): adapters/strands/config.json (AWS Strands harness config)
   // 590 -> 592 (2026-10-02): scripts/mintlify-knowledge-honesty.js + skill (Mintlify 2026 State of Knowledge FORMAT steal)
-    manifest.fileCount <= 592,
-    `npm package should stay <= 592 files, got ${manifest.fileCount}`
+  // 592 -> 594 (2026-10-02): scripts/siren-mcp-governance.js + skills (Siren MCP Marketing Diode & Autonomous Campaign Governance)
+    manifest.fileCount <= 594,
+    `npm package should stay <= 594 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
