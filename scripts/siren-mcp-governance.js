@@ -233,8 +233,16 @@ function evaluateCampaignBudget(budgetUsd, options = {}) {
     };
   }
 
+  if (Array.isArray(budgetUsd) || typeof budgetUsd === 'boolean') {
+    return {
+      valid: false,
+      reason: 'invalid_budget_value',
+      message: `Campaign budget must be a positive number: "${budgetUsd}".`,
+    };
+  }
+
   const numBudget = Number(budgetUsd);
-  if (Number.isNaN(numBudget) || numBudget < 0) {
+  if (!Number.isFinite(numBudget) || numBudget < 0) {
     return {
       valid: false,
       reason: 'invalid_budget_value',
@@ -330,7 +338,7 @@ function evaluateSirenToolCall(toolName, args = {}, options = {}) {
   // 3. Tool-Specific Diodes
   if (toolName === 'post_run') {
     const isDryRun = Boolean(args.dry_run || options.dryRun);
-    const hasHumanApproval = Boolean(args.reviewed || args.approval_id || options.humanApproval);
+    const hasHumanApproval = Boolean(options.humanApproval || options.reviewed || options.approval_id);
 
     if (!isDryRun && !hasHumanApproval) {
       if (strict) {
@@ -353,7 +361,7 @@ function evaluateSirenToolCall(toolName, args = {}, options = {}) {
   } else if (toolName === 'create_campaign') {
     const budgetResult = evaluateCampaignBudget(args.budget || args.daily_budget, {
       maxDailyBudgetUsd: options.maxDailyBudgetUsd || tool.maxDailyBudgetUsd,
-      executiveOverride: args.executive_override || options.executiveOverride,
+      executiveOverride: options.executiveOverride,
     });
     if (!budgetResult.valid) {
       blocked = true;

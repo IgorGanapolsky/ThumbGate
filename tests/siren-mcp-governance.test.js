@@ -169,6 +169,9 @@ describe('Siren MCP Governance & Marketing Diode', () => {
     it('rejects negative or invalid budget values', () => {
       assert.strictEqual(evaluateCampaignBudget(-50).valid, false);
       assert.strictEqual(evaluateCampaignBudget('not-a-number').valid, false);
+      assert.strictEqual(evaluateCampaignBudget([100]).valid, false);
+      assert.strictEqual(evaluateCampaignBudget(true).valid, false);
+      assert.strictEqual(evaluateCampaignBudget(Infinity).valid, false);
     });
   });
 
@@ -208,20 +211,27 @@ describe('Siren MCP Governance & Marketing Diode', () => {
         assert.ok(res.reasons.some(r => r.includes('unreviewed_immediate_dispatch')));
       });
 
-      it('allows immediate post_run when human approval is present', () => {
+      it('allows immediate post_run when human approval is present in context', () => {
+        const res = evaluateSirenToolCall('post_run', {
+          content: 'Live post going out now! Video made with Siren',
+        }, { humanApproval: true });
+        assert.strictEqual(res.allowed, true);
+        assert.strictEqual(res.action, 'allow');
+      });
+
+      it('ignores untrusted reviewed flag in tool args', () => {
         const res = evaluateSirenToolCall('post_run', {
           content: 'Live post going out now! Video made with Siren',
           reviewed: true,
         });
-        assert.strictEqual(res.allowed, true);
-        assert.strictEqual(res.action, 'allow');
+        assert.strictEqual(res.allowed, false);
+        assert.strictEqual(res.action, 'review');
       });
 
       it('blocks post_run with brand safety violation regardless of approval', () => {
         const res = evaluateSirenToolCall('post_run', {
           content: 'Guaranteed 100% profit risk-free returns! Video made with Siren',
-          reviewed: true,
-        });
+        }, { humanApproval: true });
         assert.strictEqual(res.allowed, false);
         assert.strictEqual(res.action, 'block');
         assert.ok(res.reasons.some(r => r.includes('brand_safety_violation')));
@@ -270,6 +280,26 @@ describe('Siren MCP Governance & Marketing Diode', () => {
         assert.strictEqual(res.allowed, false);
         assert.strictEqual(res.action, 'block');
         assert.ok(res.reasons.some(r => r.includes('budget_limit_exceeded')));
+      });
+
+      it('ignores untrusted executive_override in tool args', () => {
+        const res = evaluateSirenToolCall('create_campaign', {
+          campaign_name: 'Overbudget Campaign',
+          budget: 2500,
+          executive_override: true,
+        });
+        assert.strictEqual(res.allowed, false);
+        assert.strictEqual(res.action, 'block');
+        assert.ok(res.reasons.some(r => r.includes('budget_limit_exceeded')));
+      });
+
+      it('allows high budget when executiveOverride is set in trusted options', () => {
+        const res = evaluateSirenToolCall('create_campaign', {
+          campaign_name: 'Executive Approved Campaign',
+          budget: 2500,
+        }, { executiveOverride: true });
+        assert.strictEqual(res.allowed, true);
+        assert.strictEqual(res.action, 'allow');
       });
     });
   });
