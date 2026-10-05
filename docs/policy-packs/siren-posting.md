@@ -12,7 +12,7 @@ This file does not install Siren. It does not run inside Siren's cloud. It is th
 
 Posting stays off until the human turns on **Allow posting** on the consent screen. A posting tool that lacks the `post` scope refuses. Do not retry that refusal. Tell the human to reconnect and turn Allow posting on, then stop.
 
-Confirm with the human before any live post. Show the asset and the caption, and wait for a yes. The agent cannot connect a channel. Posting uses a channel the human already connected in the Siren dashboard.
+Confirm with the human before any live post. For `post_run` and `schedule_post`, the run is already finished: show that asset and the caption, and wait for a yes. The agent cannot connect a channel. Posting uses a channel the human already connected in the Siren dashboard.
 
 ## Gates
 
@@ -34,7 +34,7 @@ ThumbGate decision: **review**, always. Do not call `schedule_post` until the hu
 
 `create_campaign` runs the pipeline from a brief and spends credits. A still is 10 credits. A film is 25. A platinum film is 50.
 
-Passing `scheduled_at` queues a post for when the render succeeds. That form needs Allow posting.
+Passing `scheduled_at` queues a post for when the render succeeds. That form needs Allow posting. The asset does not exist at call time. Siren tells the agent to render first and show the asset before `post_run` and `schedule_post`. `scheduled_at` skips that preview: the post is queued when the render succeeds. The review here is the brief, the credit cost, and the time the human named. Say yes only if the human accepts that this post goes out from that brief and that time, with no second look at the finished asset.
 
 Without `scheduled_at`, the call spends credits and does not post. This posting pack does not gate that form.
 
