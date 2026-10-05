@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.38.0
+
+### Minor Changes
+
+- 1185d3d: Add AWS Strands Harness audit doctor, middleware diode, gate templates, and governance skills.
+- bd94a49: Steal the September 2026 InfoQ Software Architects Newsletter format: code-as-truth provenance, typed host language boundaries, existing session lease durability, and time-in-queue telemetry via `npx thumbgate infoq-architect-honesty`.
+- 7a6ae0f: feat(knowledge): steal Mintlify 2026 State of Knowledge operational infrastructure FORMAT onto pre-action freshness and poison diodes
+- bfcb33a: Operationalize model mathematical distress detection, Agent Distress Index (ADI), and destructive relief-seeking pre-action interdiction diodes.
+- ffdd880: Regularize recursive self-improvement of agent harnesses (arXiv:2609.24972). Adds cosine-annealed cardinality budget ($b_t$), step attenuation ($\alpha_t$), pre-screening benchmark leakage critic, complexity-aware $L_1$ score regularization, stagnation-driven structured exploration, and $L_0$ rule pruning to workspace evolution and autoresearch rails.
+- acc9a88: feat(adapters): add Tailscale P2P rule mesh & zero-trust execution diode adapter (HiveMind FORMAT steal)
+
+### Patch Changes
+
+- 7664ea8: Package the ThumbGate pre-tool gate skill listing for Agensi marketplace and wire listing tests into test-suite parity.
+- c387e5e: Adjust bundle ratchet and package boundary file count ceiling to 590 to account for AWS Strands harness configuration.
+- 7e9f69f: Bump @lancedb/lancedb from 0.38.0 to 0.39.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- ad33925: Bump @anthropic-ai/sdk from 0.125.0 to 0.128.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- cde6190: Bump @google/genai from 2.22.0 to 2.23.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 888cbf5: Bump @changesets/cli from 3.0.2 to 3.0.3 to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- afe01e4: Bump dotenv from 17.4.2 to 18.0.1 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 7604c31: Bump @cloudflare/workers-types from 5.20260914.1 to 5.20260923.1 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 9c48b82: Bump @types/node from 26.5.1 to 26.6.2 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 372adb2: Bump tsx from 4.23.13 to 4.23.15 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- f6a13d4: Steal Inference.net HALO trace-to-fix optimization FORMAT onto ThumbGate local audit-trail rails via `halo-trace-optimizer`. Detects redundant tool calls, retry stalls, expensive spans, and unhandled gate hits, synthesizing auto-promoted gates and eval fixtures.
+- c9a3255: Steal Meko Data collective memory and structured datapack taxonomy onto ThumbGate lesson rails: four-plane memory split, schema-enforced datapacks, and collective retrieval diodes. Adds `meko-datapack-honesty` doctor + skill.
+- 3fd8a2a: Serve universal multi-agent onboarding portal and 1-click install deep links at canonical `/onboarding` and `/onboarding.html` public routes.
+- 52cae3d: Publish the PreToolUse secret-deny teardown blog article and Cursor rule template.
+- f8b39d3: Add universal 1-click onboarding engine for 16 AI coding agents (Cursor and VS Code deep links, CLI and config generators), prompt-time security rewriter (`evaluatePromptSecurity`), empirical vibe-coding CVE metrics, and public onboarding and comparison portal.
+- dc19e9f: Steal Salt Code (getsaltcode.com by Salt Security) 40-policy taxonomy across OWASP API & LLM Top 10, OpenAPI query-string secret diode, and MCP credential hygiene onto ThumbGate PreToolUse rails. Adds `salt-code-policy-honesty` doctor + skill.
+- 8260628: test(ci): permit semver updates for SonarCloud scan action in workflow test
+- 7b10fdd: Bump @cloudflare/workers-types from 5.20260923.1 to 5.20260928.1 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+
 ## 1.37.3
 
 ### Minor Changes
