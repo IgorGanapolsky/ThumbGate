@@ -30,15 +30,15 @@ ThumbGate decision: **review**, always. Do not call `post_run` until the human h
 
 ThumbGate decision: **review**, always. Do not call `schedule_post` until the human has named the time and said yes.
 
-### create_campaign — only when `scheduled_at` is set
+### create_campaign — never with scheduled_at
 
 `create_campaign` runs the pipeline from a brief and spends credits. A still is 10 credits. A film is 25. A platinum film is 50.
 
-Passing `scheduled_at` queues a post for when the render succeeds. That form needs Allow posting. The asset does not exist at call time. Siren tells the agent to render first and show the asset before `post_run` and `schedule_post`. `scheduled_at` skips that preview: the post is queued when the render succeeds. The review here is the brief, the credit cost, and the time the human named. Say yes only if the human accepts that this post goes out from that brief and that time, with no second look at the finished asset.
+Never pass `scheduled_at` in `create_campaign`. When `scheduled_at` is set, the finished asset does not exist yet at call time: the pipeline renders and automatically posts upon render completion without human preview. This violates the core requirement to inspect the rendered asset and caption before publishing.
 
-Without `scheduled_at`, the call spends credits and does not post. This posting pack does not gate that form.
+Agents must call `create_campaign` without `scheduled_at` to trigger the render. Once the render completes, inspect the asset and caption, obtain explicit human approval, and only then invoke `schedule_post` or `post_run`.
 
-ThumbGate decision: **review** only when `scheduled_at` is present. A `create_campaign` with no `scheduled_at` is outside this pack.
+ThumbGate decision: **block** if `scheduled_at` is present in `create_campaign`. Unscheduled `create_campaign` runs are ungated by this posting pack.
 
 ## Same Allow posting rule on three other tools
 
