@@ -1479,6 +1479,18 @@
       "rollout": "Pair with npx thumbgate mintlify-knowledge-honesty --check-dir docs --json before agent task execution."
     },
     {
+      "id": "gate-siren-mcp-marketing-diode",
+      "name": "Siren MCP Autonomous Marketing & Social Media Diode",
+      "category": "Autonomous Marketing Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "siren[_ -]?mcp|post_run|schedule_post|create_campaign",
+      "problem": "Blocks unreviewed live posts, invalid scheduling windows (<300s), unbudgeted campaigns, and attribution-lacking media generated via Siren MCP.",
+      "roi": "Prevents live brand reputation damage, compliance violations, and spam rate-limit account bans from runaway autonomous marketing agents.",
+      "rollout": "Pair with npx thumbgate siren-mcp-governance --tool <toolName> --args <json> before tool dispatch."
+    },
+    {
       "id": "gate-vulnerability-pre-action-diode",
       "name": "Vulnerability Pre-Action Diode (WHOOP/TNS Pattern)",
       "category": "Vulnerability Governance",
@@ -1492,3 +1504,4 @@
     }
   ]
 }
+
