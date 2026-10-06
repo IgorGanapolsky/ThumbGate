@@ -695,6 +695,19 @@ describe('bin/cli.js', () => {
       'written brain should contain the title');
   });
 
+  test('capture rejects unknown flags without writing feedback', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync(['capture', '--dry-run', '--feedback=down', '--context=probe'], {
+      env: { THUMBGATE_FEEDBACK_DIR: feedbackDir, THUMBGATE_NO_NUDGE: '1' },
+    });
+
+    assert.equal(result.status, 2, `Expected exit 2, got ${result.status}\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+    assert.match(result.stderr, /unknown flag --dry-run/);
+    assert.equal(fs.existsSync(path.join(feedbackDir, 'feedback-log.jsonl')), false, 'no feedback may be written');
+
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
   test('feedback-self-test verifies capture and lesson writes in explicit isolated store', () => {
     const feedbackDir = makeTmpDir();
     const result = runCliSync(['feedback-self-test', '--json', `--feedback-dir=${feedbackDir}`], {

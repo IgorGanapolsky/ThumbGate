@@ -1280,8 +1280,20 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   telemetryPing(config.installId);
 }
 
+const CAPTURE_FLAGS = new Set([
+  'feedback', 'context', 'what-worked', 'what-went-wrong', 'what-to-change',
+  'signal', 'tags', 'action', 'json', 'stats', 'summary', 'recent',
+]);
+
 function capture() {
   const args = parseArgs(process.argv.slice(3));
+  // Unknown flags used to be ignored, so `capture --dry-run` silently wrote a real entry.
+  const unknown = Object.keys(args).filter((key) => !CAPTURE_FLAGS.has(key));
+  if (unknown.length) {
+    console.error(`thumbgate capture: unknown flag --${unknown[0]} (nothing was written)`);
+    console.error(SUBCOMMAND_HELP.capture);
+    process.exit(2);
+  }
 
   // Delegate to the full engine
   const { captureFeedback, analyzeFeedback, feedbackSummary, writePreventionRules } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
@@ -1320,7 +1332,7 @@ function capture() {
     }
   }
 
-  let signal = (args.feedback || '').toLowerCase();
+  let signal = (args.feedback || args.signal || '').toLowerCase();
   let consumedSignalArgs = 0;
   if (!signal && positionalArgs[0]) {
     const { detectFeedbackSignal } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
