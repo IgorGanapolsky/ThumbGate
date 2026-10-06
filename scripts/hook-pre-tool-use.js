@@ -594,6 +594,20 @@ function main() {
     failOpen(err);
   }
 
+  try {
+    const { evaluateVulnerabilityRisk } = require('./vulnerability-pre-action-diode');
+    const isShell = ['bash', 'shell', 'exec', 'run_command', 'terminal'].includes(toolName.toLowerCase());
+    const command = effectiveInput.command || effectiveInput.cmd || (isShell ? effectiveInput.input : null);
+    if (command && typeof command === 'string') {
+      const vulnResult = evaluateVulnerabilityRisk({ toolName, command });
+      if (vulnResult && vulnResult.verdict === 'block') {
+        return block(`vulnerability-diode: ${vulnResult.reason}`);
+      }
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const blockReason = maybeBlockOnRisk(lessons);
   if (blockReason) return block(blockReason);
 
