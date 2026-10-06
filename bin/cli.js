@@ -2920,6 +2920,23 @@ function mintlifyKnowledgeHonesty() {
   }
 }
 
+function sirenMcpGovernance() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildSirenGovernanceReport,
+    formatSirenGovernanceReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'siren-mcp-governance'));
+  const report = buildSirenGovernanceReport(args);
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatSirenGovernanceReport(report) + '\n');
+  }
+  if (report.status === 'fail' || (report.evaluation && !report.evaluation.allowed)) {
+    process.exitCode = 1;
+  }
+}
+
 function haloTraceOptimizer() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3909,6 +3926,7 @@ function help() {
   console.log('  npx thumbgate llm-obs-honesty --json');
   console.log('  npx thumbgate meko-datapack-honesty --json');
   console.log('  npx thumbgate mintlify-knowledge-honesty --json');
+  console.log('  npx thumbgate siren-mcp-governance --json --map-only');
   console.log('  npx thumbgate board-loop --json');
   console.log('  npx thumbgate workspace-search-route --query="how does X connect" --json');
   console.log('  npx thumbgate intent-governed-execution --intent="railway deploy" --json');
@@ -4621,6 +4639,11 @@ switch (COMMAND) {
   case 'mintlify-knowledge':
   case 'mintlify-state-of-knowledge':
     mintlifyKnowledgeHonesty();
+    break;
+  case 'siren-mcp-governance':
+  case 'siren-governance':
+  case 'siren-mcp':
+    sirenMcpGovernance();
     break;
   case 'halo-trace-optimizer':
   case 'halo:optimize':

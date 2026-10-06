@@ -1477,6 +1477,19 @@
       "problem": "Blocks agents from ingesting or acting on stale (>90d), deprecated, or poisoned knowledge surfaces (Anthropic warning: misleading docs mislead an unknowable number of downstream agents).",
       "roi": "Prevents downstream hallucination propagation, broken API tool calls, and dangerous copy-paste snippets across 66% agent readership traffic.",
       "rollout": "Pair with npx thumbgate mintlify-knowledge-honesty --check-dir docs --json before agent task execution."
+    },
+    {
+      "id": "gate-siren-mcp-marketing-diode",
+      "name": "Siren MCP Autonomous Marketing & Social Media Diode",
+      "category": "Autonomous Marketing Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "siren[_ -]?mcp|post_run|schedule_post|create_campaign",
+      "problem": "Blocks unreviewed live posts, invalid scheduling windows (<300s), unbudgeted campaigns, and attribution-lacking media generated via Siren MCP.",
+      "roi": "Prevents live brand reputation damage, compliance violations, and spam rate-limit account bans from runaway autonomous marketing agents.",
+      "rollout": "Pair with npx thumbgate siren-mcp-governance --tool <toolName> --args <json> before tool dispatch."
     }
   ]
 }
+
