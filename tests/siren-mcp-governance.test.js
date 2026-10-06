@@ -403,4 +403,17 @@ describe('Siren MCP Governance & Marketing Diode', () => {
       assert.strictEqual(parsed.args, '{"content":"test"}');
     });
   });
+
+  describe('MCP Tool Name Normalization', () => {
+    it('normalizes MCP tool names with single or double underscores and periods', () => {
+      const normalize = (name) => name.replace(/^(?:mcp__)?(?:siren|mysiren)[._]+/i, '');
+      assert.strictEqual(normalize('mcp__siren__post_run'), 'post_run');
+      assert.strictEqual(normalize('mcp__siren__create_campaign'), 'create_campaign');
+      assert.strictEqual(normalize('mcp__siren__schedule_post'), 'schedule_post');
+      assert.strictEqual(normalize('siren.post_run'), 'post_run');
+      assert.strictEqual(normalize('mysiren_post_run'), 'post_run');
+      assert.strictEqual(normalize('post_run'), 'post_run');
+    });
+  });
 });
+

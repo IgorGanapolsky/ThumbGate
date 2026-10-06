@@ -596,7 +596,7 @@ function main() {
 
   try {
     const { evaluateSirenToolCall, SIREN_MCP_TOOLS } = require('./siren-mcp-governance');
-    const normalizedToolName = toolName.replace(/^(?:mcp__)?(?:siren|mysiren)[._]/i, '');
+    const normalizedToolName = toolName.replace(/^(?:mcp__)?(?:siren|mysiren)[._]+/i, '');
     if (SIREN_MCP_TOOLS[normalizedToolName] || SIREN_MCP_TOOLS[toolName]) {
       const sirenTarget = SIREN_MCP_TOOLS[normalizedToolName] ? normalizedToolName : toolName;
       const sirenResult = evaluateSirenToolCall(sirenTarget, effectiveInput || {}, {
