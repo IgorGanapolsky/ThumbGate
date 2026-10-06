@@ -489,6 +489,8 @@
     "scripts/thumbgate-daily-discoveries-publish.js",
     "scripts/thumbgate-daily-discoveries-publish.sh",
     "scripts/install-thumbgate-daily-publish-launchd.sh",
+    "scripts/vulnerability-pre-action-diode.js",
+    "scripts/triage-savings-calculator.js",
     ".agents/skills/thumbgate-daily-discoveries/",
     ".agents/skills/comet-session-logger/",
     ".agents/skills/article-syndication-pipeline/",

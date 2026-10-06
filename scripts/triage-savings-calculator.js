@@ -19,7 +19,8 @@ const {
 
 const PRICING_TIERS = Object.freeze({
   free: { name: 'Community', monthlyCost: 0, annualCost: 0 },
-  pro: { name: 'Pro Firewall', monthlyCost: 499, annualCost: 5388 },
+  pro: { name: 'Pro Firewall', monthlyCost: 19, annualCost: 149 },
+  managed: { name: 'Managed Workflow Gate', monthlyCost: 499, annualCost: 499 },
   enterprise: { name: 'Enterprise Gateway', monthlyCost: 2500, annualCost: 27000 },
 });
 
@@ -106,10 +107,50 @@ function runCli() {
   const tierArg = args.find((a) => a.startsWith('--tier='));
   const rateArg = args.find((a) => a.startsWith('--rate='));
 
-  const vulns = vulnsArg ? parseInt(vulnsArg.slice('--vulnerabilities='.length), 10) : 2;
-  const general = generalArg ? parseInt(generalArg.slice('--interdictions='.length), 10) : 10;
-  const tier = tierArg ? tierArg.slice('--tier='.length) : 'pro';
-  const rate = rateArg ? parseFloat(rateArg.slice('--rate='.length)) : 125;
+  let vulns = 2;
+  if (vulnsArg) {
+    const raw = vulnsArg.slice('--vulnerabilities='.length);
+    if (!/^\d+$/.test(raw)) {
+      console.error(`error: invalid --vulnerabilities operand: "${raw}". Must be a non-negative integer.`);
+      process.exitCode = 1;
+      return;
+    }
+    vulns = parseInt(raw, 10);
+  }
+
+  let general = 10;
+  if (generalArg) {
+    const raw = generalArg.slice('--interdictions='.length);
+    if (!/^\d+$/.test(raw)) {
+      console.error(`error: invalid --interdictions operand: "${raw}". Must be a non-negative integer.`);
+      process.exitCode = 1;
+      return;
+    }
+    general = parseInt(raw, 10);
+  }
+
+  let tier = 'pro';
+  if (tierArg) {
+    const raw = tierArg.slice('--tier='.length).toLowerCase();
+    if (!PRICING_TIERS[raw]) {
+      console.error(`error: unknown --tier: "${raw}". Supported tiers: ${Object.keys(PRICING_TIERS).join(', ')}.`);
+      process.exitCode = 1;
+      return;
+    }
+    tier = raw;
+  }
+
+  let rate = 125;
+  if (rateArg) {
+    const raw = rateArg.slice('--rate='.length);
+    const parsed = parseFloat(raw);
+    if (isNaN(parsed) || parsed <= 0) {
+      console.error(`error: invalid --rate operand: "${raw}". Must be a positive number.`);
+      process.exitCode = 1;
+      return;
+    }
+    rate = parsed;
+  }
 
   const result = calculateEnterpriseRoi(
     { vulnerabilities: vulns, general },

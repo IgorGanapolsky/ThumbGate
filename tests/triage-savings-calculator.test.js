@@ -21,11 +21,11 @@ test('calculateEnterpriseRoi calculates positive ROI for Pro tier with modest in
 
   // 141 * $125 = $17,625 gross savings
   assert.equal(result.economics.grossSavingsDollars, 17625);
-  // Pro tier = 499 * 12 = $5,988
-  assert.equal(result.economics.totalCostDollars, 5988);
-  assert.equal(result.economics.netSavingsDollars, 17625 - 5988); // $11,637
-  assert.ok(result.economics.roiMultiplier > 2.5);
-  assert.ok(result.economics.vulnsToBreakEven < 1.0); // Less than 1 vulnerability pays for entire year!
+  // Pro tier = 19 * 12 = $228
+  assert.equal(result.economics.totalCostDollars, 228);
+  assert.equal(result.economics.netSavingsDollars, 17625 - 228); // $17,397
+  assert.ok(result.economics.roiMultiplier > 70.0);
+  assert.ok(result.economics.vulnsToBreakEven < 0.1); // Less than 0.1 vulnerability pays for entire year!
 });
 
 test('calculateEnterpriseRoi handles zero interdictions gracefully', () => {
