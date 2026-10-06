@@ -46,8 +46,9 @@ function calculateEnterpriseRoi(metrics = {}, options = {}) {
   // Single vulnerability break-even analysis
   const valuePerVulnInterdiction = BENCHMARK_TRIAGE_HOURS_PER_INCIDENT * hourlyRate;
   const annualTierCost = tier.annualCost || (tier.monthlyCost * 12);
-  const vulnsToBreakEven = annualTierCost > 0
-    ? Number((annualTierCost / valuePerVulnInterdiction).toFixed(2))
+  const costForBreakEven = totalCostDollars > 0 ? totalCostDollars : annualTierCost;
+  const vulnsToBreakEven = costForBreakEven > 0
+    ? Number((costForBreakEven / valuePerVulnInterdiction).toFixed(2))
     : 0;
 
   return {
@@ -72,7 +73,7 @@ function calculateEnterpriseRoi(metrics = {}, options = {}) {
       annualCost: annualTierCost,
       vulnsToBreakEven,
     },
-    pitchSummary: `Preventing just ${vulnsToBreakEven} critical vulnerabilities pays for ${tier.name} for an entire year. Current metrics show $${grossSavingsDollars.toLocaleString()} in engineering time preserved.`,
+    pitchSummary: `Preventing just ${vulnsToBreakEven} critical vulnerabilities pays for ${tier.name} over ${timeframeMonths} months. Current metrics show $${grossSavingsDollars.toLocaleString()} in engineering time preserved.`,
   };
 }
 

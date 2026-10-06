@@ -37,7 +37,7 @@
       <p class="post-meta">Published on 2026-10-05 by Igor Ganapolsky · Reading time: 7 min</p>
 
       <section class="post-body">
-        <p class="lead">Industry telemetry published in October 2026 confirms the crisis every engineering leader feels: autonomous AI coding agents have driven pull request volume up nearly 2x while pushing defect density and production bugs up 54%. In response, enterprise security teams are celebrating cutting 3-day manual vulnerability triage down to an afternoon with workflow automation. But automating post-mortem triage is solving the wrong end of the pipeline. Here is why post-facto triage arrives too late, and why autonomous agents require deterministic pre-action infrastructure firewalls.</p>
+        <p class="lead">Industry telemetry published in October 2026 confirms the crisis every engineering leader feels: autonomous AI coding agents have driven pull request volume up nearly 2x while pushing defect density and production bugs up 54% (documented in <a href="/docs/VERIFICATION_EVIDENCE.md">VERIFICATION_EVIDENCE.md</a> and industry analyses from The New Stack). In response, enterprise security teams are celebrating cutting 3-day manual vulnerability triage down to an afternoon with workflow automation. But automating post-mortem triage is solving the wrong end of the pipeline. Here is why post-facto triage arrives too late, and why autonomous agents require deterministic pre-action infrastructure firewalls.</p>
 
         <h2>The Velocity Paradox: PRs Up 2x, Bugs Up 54%</h2>
         <p>Autonomous agents (Claude Code, Grok, Codex, Antigravity, and Strands) write code orders of magnitude faster than humans can review. As reported by The New Stack and enterprise case studies from teams like WHOOP:</p>
@@ -68,10 +68,10 @@ Agent Intent -> [ThumbGate Diode: &lt;5ms Evaluation] -> Allowed Tool Execution
 
         <h3>Core Diode Rules Enforced at Runtime</h3>
         <ul>
-          <li><strong>Zero Arbitrary Remote Execution:</strong> Patterns like <code>curl | bash</code> and <code>wget | sh</code> are blocked unconditionally at the tool barrier.</li>
-          <li><strong>Insecure Protocol Interdiction:</strong> Plaintext HTTP package endpoints and unauthenticated git mirrors are rejected before network sockets open.</li>
+          <li><strong>Zero Arbitrary Remote Execution:</strong> Patterns like <code>curl | bash</code> and <code>wget | sh</code> are flagged or blocked by the diode rules when invoked from PreToolUse.</li>
+          <li><strong>Insecure Protocol Interdiction:</strong> Plaintext HTTP package endpoints and <code>git+http://</code> sources are flagged or rejected by diode rules before command dispatch.</li>
           <li><strong>Mandatory Pinned Dependencies:</strong> Floating package additions that invite supply chain drift trigger automated review requirements.</li>
-          <li><strong>Compromised Package Blacklisting:</strong> Known hijacked or poisoned artifacts are intercepted before disk writes occur.</li>
+          <li><strong>Compromised Package Blacklisting:</strong> Known hijacked or poisoned artifacts are flagged or blocked by diode rules when install commands are evaluated.</li>
         </ul>
 
         <h2>The Hard Economics: 96 Hours vs. 0 Seconds</h2>
@@ -103,7 +103,7 @@ Agent Intent -> [ThumbGate Diode: &lt;5ms Evaluation] -> Allowed Tool Execution
             <tr>
               <td>Annual ROI on Enterprise Tier ($2,500/mo)</td>
               <td>Cost Center (Absorbs Alert Surge)</td>
-              <td><strong>2.05x to 5.4x Net Profit Multiplier</strong></td>
+              <td><strong>2.05x Gross Savings-to-Cost Ratio</strong> (4 vulnerabilities, 24 general interdictions, $125/hour, 12 months)</td>
             </tr>
           </tbody>
         </table>
