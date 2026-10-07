@@ -8,14 +8,14 @@ const {
   buildSprintBuyerUrl,
 } = require('./buyer-paths');
 
-const DEFAULT_FROM = 'ThumbGate <onboarding@resend.dev>';
-const DEFAULT_REPLY_TO = 'igor.ganapolsky@gmail.com';
+const DEFAULT_FROM = 'ThumbGate <igor@igorganapolsky.com>';
+const DEFAULT_REPLY_TO = 'igor@igorganapolsky.com';
 const BUSINESS_FOOTER = [
   '',
   '--',
   'Max Smith KDP LLC',
   '2261 Market Street #4242, San Francisco, CA 94114',
-  'Unsubscribe: mailto:igor.ganapolsky@gmail.com?subject=unsubscribe',
+  'Unsubscribe: mailto:igor@igorganapolsky.com?subject=unsubscribe',
 ].join('\n');
 
 const CAMPAIGNS = {
@@ -72,12 +72,16 @@ async function main(argv = process.argv.slice(2), deps = {}) {
     throw new Error(`Revenue email blocked: ${campaign.status} — ${campaign.blockedReason}`);
   }
   if (options.dryRun || !options.confirmSend) {
+    let reason = null;
+    if (!campaignAllowed) {
+      reason = campaign.status;
+    } else if (!options.confirmSend && !options.dryRun) {
+      reason = 'missing_confirm_send';
+    }
     console.log(JSON.stringify({
       dryRun: true,
       blocked: !campaignAllowed || (!options.confirmSend && !options.dryRun),
-      reason: !campaignAllowed
-        ? campaign.status
-        : (!options.confirmSend && !options.dryRun ? 'missing_confirm_send' : null),
+      reason,
       message,
     }, null, 2));
     return { sent: false, dryRun: true, message };
