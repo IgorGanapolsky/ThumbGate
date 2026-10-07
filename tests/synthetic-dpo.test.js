@@ -223,4 +223,61 @@ describe('synthetic-dpo', () => {
     assert.equal(contrastive.length, 1, '1 contrastive pair from unpaired');
     assert.equal(result.syntheticPairs, 3, 'total synthetic = 3');
   });
+
+  test('contrastive matching skips invalid top candidates and retains a valid fallback', () => {
+    const error = { id: 'E', content: 'Skip tests', tags: ['testing', 'deployment'], rubricSummary: { weightedScore: 0.7 } };
+    const invalid = { id: 'bad', content: 'Skip tests', tags: error.tags, rubricSummary: { weightedScore: 0.9 } };
+    const learning = { id: 'L', content: 'Run tests', tags: ['testing'], rubricSummary: { weightedScore: 0.7001 } };
+    const pairs = subject.buildContrastivePairs([error], [invalid, learning]);
+    assert.equal(pairs.length, 1);
+    assert.equal(pairs[0].metadata.learningId, 'L');
+  });
+
+  test('synthetic augmentation cannot resurrect ineligible exporter leftovers', (t) => {
+    t.mock.method(require('../scripts/entitlement'), 'requireEntitlement', () => ({ entitled: true, tier: 'pro' }));
+    const { exportDpoFromMemories } = require('../scripts/export-dpo-pairs');
+    const error = { id: 'E', category: 'error', content: 'Skip tests', tags: ['testing'], rubricSummary: { weightedScore: 0.7 } };
+    const learning = { id: 'L', category: 'learning', content: 'Run tests', tags: ['testing'], rubricSummary: { weightedScore: 0.8 } };
+    const invalidPairs = [
+      [error, { ...learning, content: '  Skip tests  ' }],
+      [{ ...error, content: 'Run tests\r\nDeploy' }, { ...learning, content: 'Run tests\nDeploy' }],
+      [error, { ...learning, content: '' }],
+      [{ ...error, content: null }, learning],
+      [error, { ...learning, rubricSummary: { weightedScore: 0.7 } }],
+      [error, { ...learning, rubricSummary: { weightedScore: 0.6999 } }],
+      [{ ...error, content: 'Use sk_test_aaaaaaaaaaaaaaaa' }, { ...learning, content: 'Use sk_test_bbbbbbbbbbbbbbbb' }],
+    ];
+    for (const memories of invalidPairs) {
+      const exported = exportDpoFromMemories(memories);
+      assert.equal(exported.pairs.length, 0);
+      assert.equal(exported.unpairedErrors.length, 1);
+      assert.equal(exported.unpairedLearnings.length, 1);
+      const augmented = subject.augmentDpoExport(exported, { requireProFn: () => true });
+      assert.deepEqual(augmented.pairs, []);
+      assert.equal(augmented.syntheticPairs, 0);
+      assert.equal(augmented.totalPairs, 0);
+    }
+  });
+
+  test('contrastive pairs redact content, prompts, and metadata without changing inputs', () => {
+    const secret = 'sk_test_aaaaaaaaaaaaaaaa';
+    const error = { id: 'E', content: `Used ${secret}`, title: `ERROR: Exposed ${secret}`, tags: ['security', secret] };
+    const learning = { id: 'L', content: `Store ${secret} in a vault`, tags: ['security', secret] };
+    const before = JSON.stringify([error, learning]);
+    const pairs = subject.buildContrastivePairs([error], [learning]);
+    assert.equal(pairs.length, 1);
+    assert.equal(pairs[0].rejected, 'Used [REDACTED:stripe_test_secret]');
+    assert.equal(pairs[0].chosen, 'Store [REDACTED:stripe_test_secret] in a vault');
+    assert.ok(!JSON.stringify(pairs).includes(secret));
+    assert.equal(JSON.stringify([error, learning]), before);
+  });
+
+  test('contrastive matching keeps legacy pairs with missing or malformed scores', () => {
+    for (const weightedScore of [undefined, null, '', false, [], '0.9']) {
+      const error = { id: 'E', content: 'Skip tests', tags: ['testing'], rubricSummary: { weightedScore } };
+      const learning = { id: 'L', content: 'Run tests', tags: ['testing'], rubricSummary: { weightedScore: 0 } };
+      assert.equal(subject.buildContrastivePairs([error], [learning]).length, 1);
+    }
+  });
+
 });

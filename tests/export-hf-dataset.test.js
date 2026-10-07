@@ -16,7 +16,8 @@ const {
 describe('export-hf-dataset', () => {
   let tmpDir;
 
-  beforeEach(() => {
+  beforeEach((t) => {
+    t.mock.method(require('../scripts/entitlement'), 'requireEntitlement', () => ({ entitled: true, tier: 'pro' }));
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hf-export-test-'));
   });
 
@@ -226,6 +227,64 @@ describe('export-hf-dataset', () => {
       assert.strictEqual(info.dataset_info.splits.traces.num_examples, 2);
       assert.strictEqual(info.exporter, 'thumbgate/export-hf-dataset');
     });
+
+    it('excludes preferences that become identical after path redaction from rows and counts', () => {
+      const feedbackDir = path.join(tmpDir, 'feedback');
+      const outputDir = path.join(tmpDir, 'hf-output');
+      fs.mkdirSync(feedbackDir);
+      const memories = [
+        { id: 'E1', category: 'error', content: 'Read /Users/alice/project/file.js', tags: ['mac-path'] },
+        { id: 'L1', category: 'learning', content: 'Read /Users/bob/project/file.js', tags: ['mac-path'] },
+        { id: 'E2', category: 'error', content: 'Read /home/alice/project/file.js', tags: ['linux-path'] },
+        { id: 'L2', category: 'learning', content: 'Read /home/bob/project/file.js', tags: ['linux-path'] },
+        { id: 'E3', category: 'error', content: 'Read C:\\Users\\Alice\\file.js', tags: ['windows-path'] },
+        { id: 'L3', category: 'learning', content: 'Read C:\\Users\\Bob\\file.js', tags: ['windows-path'] },
+        { id: 'E4', category: 'error', content: 'Skip tests', tags: ['testing'] },
+        { id: 'L4', category: 'learning', content: 'Run tests', tags: ['testing'] },
+      ];
+      fs.writeFileSync(path.join(feedbackDir, 'memory-log.jsonl'), memories.map((memory) => JSON.stringify(memory)).join('\n'));
+
+      const result = exportHfDataset({ feedbackDir, outputDir, includeProvenance: false });
+      const rows = fs.readFileSync(path.join(outputDir, 'preferences.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
+      const info = JSON.parse(fs.readFileSync(path.join(outputDir, 'dataset_info.json'), 'utf8'));
+      assert.strictEqual(result.preferenceCount, 1);
+      assert.strictEqual(info.dataset_info.splits.preferences.num_examples, 1);
+      assert.strictEqual(rows.length, 1);
+      assert.strictEqual(rows[0].chosen, 'Run tests');
+      assert.strictEqual(rows[0].rejected, 'Skip tests');
+    });
+
+    for (const hasFallback of [true, false]) {
+      it(`exports ${hasFallback ? 'the valid fallback' : 'no preference'} when the best match collapses after path redaction`, () => {
+        const feedbackDir = path.join(tmpDir, 'feedback');
+        const outputDir = path.join(tmpDir, 'hf-output');
+        fs.mkdirSync(feedbackDir);
+        const memories = [
+          { id: 'E1', category: 'error', content: 'Read /Users/alice/project/file.js', tags: ['files', 'read'] },
+          { id: 'L1', category: 'learning', content: 'Read /Users/bob/project/file.js', tags: ['files', 'read'] },
+        ];
+        if (hasFallback) {
+          memories.push({ id: 'L2', category: 'learning', content: 'Read only the explicitly requested file.', tags: ['files'] });
+        }
+        const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
+        const memoryLog = memories.map((memory) => JSON.stringify(memory)).join('\n');
+        fs.writeFileSync(memoryLogPath, memoryLog);
+
+        const result = exportHfDataset({ feedbackDir, outputDir, includeProvenance: false });
+        const jsonl = fs.readFileSync(path.join(outputDir, 'preferences.jsonl'), 'utf8').trim();
+        const rows = jsonl ? jsonl.split('\n').map(JSON.parse) : [];
+        const info = JSON.parse(fs.readFileSync(path.join(outputDir, 'dataset_info.json'), 'utf8'));
+        const expectedCount = hasFallback ? 1 : 0;
+        assert.strictEqual(result.preferenceCount, expectedCount);
+        assert.strictEqual(info.dataset_info.splits.preferences.num_examples, expectedCount);
+        assert.strictEqual(rows.length, expectedCount);
+        assert.strictEqual(fs.readFileSync(memoryLogPath, 'utf8'), memoryLog);
+        if (hasFallback) {
+          assert.strictEqual(rows[0].chosen, 'Read only the explicitly requested file.');
+          assert.strictEqual(rows[0].rejected, 'Read /Users/redacted/project/file.js');
+        }
+      });
+    }
 
     it('handles empty feedback directory gracefully', () => {
       const feedbackDir = path.join(tmpDir, 'empty-feedback');

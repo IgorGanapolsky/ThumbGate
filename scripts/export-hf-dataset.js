@@ -24,7 +24,7 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
-const { exportDpoFromMemories } = require('./export-dpo-pairs');
+const { exportDpoFromMemories, hasDistinctResponses } = require('./export-dpo-pairs');
 const { getProvenance } = require('./contextfs');
 const { ensureDir } = require('./fs-utils');
 
@@ -226,8 +226,14 @@ function exportHfDataset(options = {}) {
 
   if (memories.length > 0) {
     try {
-      const dpoResult = exportDpoFromMemories(memories);
-      preferenceRows = dpoResult.pairs.map((pair, i) => buildPreferenceRow(pair, i));
+      const preferenceMemories = memories.map((memory) => ({
+        ...memory,
+        content: redactPaths(memory.content),
+      }));
+      const dpoResult = exportDpoFromMemories(preferenceMemories);
+      preferenceRows = dpoResult.pairs
+        .map((pair, i) => buildPreferenceRow(pair, i))
+        .filter((row) => hasDistinctResponses(row.chosen, row.rejected));
     } catch {
       // DPO export failure should not break the traces export
     }

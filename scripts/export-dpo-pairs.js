@@ -73,9 +73,27 @@ function inferPrompt(error, learning) {
 
 function getRubricWeightedScore(memory) {
   if (!memory || !memory.rubricSummary) return null;
-  const score = Number(memory.rubricSummary.weightedScore);
+  const score = memory.rubricSummary.weightedScore;
   if (!Number.isFinite(score)) return null;
   return score;
+}
+
+function preferenceContent(content) {
+  if (typeof content !== 'string') return null;
+  return redactSecretsDeep(content).replace(/\r\n/g, '\n').trim();
+}
+
+function hasDistinctResponses(chosen, rejected) {
+  const normalizedChosen = preferenceContent(chosen);
+  const normalizedRejected = preferenceContent(rejected);
+  return Boolean(normalizedChosen && normalizedRejected && normalizedChosen !== normalizedRejected);
+}
+
+function isEligiblePreference(error, learning) {
+  if (!hasDistinctResponses(learning.content, error.content)) return false;
+  const errorScore = getRubricWeightedScore(error);
+  const learningScore = getRubricWeightedScore(learning);
+  return errorScore == null || learningScore == null || learningScore > errorScore;
 }
 
 function buildRubricDelta(error, learning) {
@@ -95,20 +113,26 @@ function buildRubricDelta(error, learning) {
 }
 
 /**
- * Find distractor errors for a learning: same-domain errors that are NOT
- * the best match but look similar (high overlap, low rubric delta).
- * These are harder negatives that train retrieval precision.
+ * Find distinct same-domain negatives compatible with the learning's rubric.
  */
 function findDistractors(learning, errorKeys, usedErrorId, maxDistractors) {
   const learningKeys = extractDomainKeys(learning);
+  const pairedError = errorKeys.find((err) => err.memory.id === usedErrorId);
+  const seen = new Set(pairedError ? [preferenceContent(pairedError.memory.content)] : []);
   return errorKeys
-    .filter((err) => err.memory.id !== usedErrorId)
+    .filter((err) => err.memory.id !== usedErrorId && isEligiblePreference(err.memory, learning))
     .map((err) => {
       const overlap = domainOverlap(err.keys, learningKeys);
       return { memory: err.memory, overlap };
     })
     .filter((d) => d.overlap > 0)
     .sort((a, b) => b.overlap - a.overlap)
+    .filter((d) => {
+      const content = preferenceContent(d.memory.content);
+      if (seen.has(content)) return false;
+      seen.add(content);
+      return true;
+    })
     .slice(0, maxDistractors)
     .map((d) => ({
       id: d.memory.id,
@@ -133,9 +157,12 @@ function buildDpoPairs(errors, learnings, { maxDistractors = 2 } = {}) {
 
     for (const learn of learningKeys) {
       if (usedLearnings.has(learn.memory.id)) continue;
+      if (!isEligiblePreference(err.memory, learn.memory)) continue;
       const overlap = domainOverlap(err.keys, learn.keys);
-      const rubric = buildRubricDelta(err.memory, learn.memory);
-      const rubricDelta = rubric && rubric.weightedDelta != null ? rubric.weightedDelta : 0;
+      if (overlap === 0) continue;
+      const errorScore = getRubricWeightedScore(err.memory);
+      const learningScore = getRubricWeightedScore(learn.memory);
+      const rubricDelta = errorScore != null && learningScore != null ? learningScore - errorScore : 0;
       const score = overlap + Math.max(0, rubricDelta);
       if (score > bestScore) {
         best = learn;
@@ -343,6 +370,8 @@ module.exports = {
   domainOverlap,
   inferPrompt,
   buildRubricDelta,
+  isEligiblePreference,
+  hasDistinctResponses,
   findDistractors,
   buildDpoPairs,
   toJSONL,

@@ -18,7 +18,8 @@
  */
 
 const { requirePro } = require('./pro-features');
-const { extractDomainKeys, domainOverlap, inferPrompt, buildRubricDelta } = require('./export-dpo-pairs');
+const { extractDomainKeys, domainOverlap, inferPrompt, buildRubricDelta, isEligiblePreference } = require('./export-dpo-pairs');
+const { redactSecretsDeep } = require('./secret-redaction');
 
 /**
  * Extract an abstract principle from an error+learning pair.
@@ -99,8 +100,7 @@ function generateScenarioVariations(pair) {
 
 /**
  * Build contrastive pairs from unpaired errors and learnings.
- * Uses softer domain matching (single key overlap) to find weak matches
- * that wouldn't qualify for primary pairing but are useful for training.
+ * Uses domain overlap while preserving primary pair eligibility.
  */
 function buildContrastivePairs(unpairedErrors, unpairedLearnings) {
   const pairs = [];
@@ -110,7 +110,6 @@ function buildContrastivePairs(unpairedErrors, unpairedLearnings) {
   const errorKeys = unpairedErrors.map((e) => ({ memory: e, keys: extractDomainKeys(e) }));
   const learningKeys = unpairedLearnings.map((l) => ({ memory: l, keys: extractDomainKeys(l) }));
 
-  // Relaxed matching: 1+ key overlap (primary pairing requires higher scores)
   for (const err of errorKeys) {
     if (usedErrors.has(err.memory.id)) continue;
 
@@ -119,6 +118,7 @@ function buildContrastivePairs(unpairedErrors, unpairedLearnings) {
 
     for (const learn of learningKeys) {
       if (usedLearnings.has(learn.memory.id)) continue;
+      if (!isEligiblePreference(err.memory, learn.memory)) continue;
       const overlap = domainOverlap(err.keys, learn.keys);
       if (overlap > bestOverlap) {
         best = learn;
@@ -150,7 +150,7 @@ function buildContrastivePairs(unpairedErrors, unpairedLearnings) {
     }
   }
 
-  return pairs;
+  return pairs.map((pair) => redactSecretsDeep(pair));
 }
 
 /**
