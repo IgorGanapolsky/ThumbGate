@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review the Tool Calls That Write, Spend, or Leave the Machine | ThumbGate</title>
+  <link rel="canonical" href="https://thumbgate.ai/blog/2026-10-07-review-calls-that-leave-the-machine">
+  <meta name="description" content="A person should see the calls that change something. Reads can run when a policy already allows that tool and those arguments.">
+  <meta property="og:title" content="Review the Tool Calls That Write, Spend, or Leave the Machine">
+  <meta property="og:description" content="A person should see the calls that change something. Reads can run when a policy already allows that tool and those arguments.">
+  <meta property="og:url" content="https://thumbgate.ai/blog/2026-10-07-review-calls-that-leave-the-machine">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="blog-post-page">
+  <main class="container">
+    <article class="post-content">
+      <h1>Review the Tool Calls That Write, Spend, or Leave the Machine</h1>
+      <p class="post-meta">Published on 2026-10-07 by Igor Ganapolsky</p>
+      <section class="post-body">
+        <p class="lead">A person should see the calls that change something. Reads can run when a policy already allows that tool and those arguments.</p>
+        <h2>The Failure Mode</h2>
+        <p>Reviewing every tool call does not scale, and reviewing none of them leaves a coding agent free to write files, spend money, send messages, or leave the machine. A review after the call is a transcript of damage that already happened.</p>
+        <h2>Architectural Resolution</h2>
+        <p>ThumbGate checks the tool name and the arguments before the call runs. The gate shows one line of intent for a write, a payment, a message, or a command that leaves the machine: the command, the path, or the destination. A read or a local lookup proceeds when the policy already allows that tool and those arguments.</p>
+        <pre><code>function reviewBeforeRun(toolName, args) {
+  const command = String(args.command || '');
+  const leaves = toolName === 'Bash' && /\b(curl|ssh|scp|git\s+push)\b/.test(command);
+  const writes = toolName === 'Write' || toolName === 'Edit';
+  const sends = toolName === 'SendMessage' || toolName === 'WebFetch';
+  if (leaves || writes || sends) {
+    return { decision: 'review', show: command || args.path || args.url || toolName };
+  }
+  return { decision: 'allow' };
+}</code></pre>
+      </section>
+      <footer class="post-footer">
+        <a href="https://thumbgate.ai/go/pro?utm_source=blog&utm_medium=article&utm_campaign=2026-10-07-review-calls-that-leave-the-machine" class="cta-btn">Upgrade to ThumbGate Pro</a>
+      </footer>
+    </article>
+  </main>
+</body>
+</html>

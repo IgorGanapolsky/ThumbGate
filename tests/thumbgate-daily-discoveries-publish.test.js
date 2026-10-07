@@ -30,4 +30,7 @@ test('generatePostContent renders markdown with code snippet and canonical url',
   assert.match(content, /Canonical URL/);
   assert.match(content, /PreToolUse/);
   assert.match(content, /https:\/\/thumbgate\.ai/);
+  assert.match(content, /npx thumbgate init/);
+  assert.match(content, /\$19 a month or \$149 a year/);
+  assert.doesNotMatch(content, /under 5ms/);
 });

@@ -1,6 +1,6 @@
 ---
 name: thumbgate-daily-discoveries
-description: Autonomous daily publishing engine and monitoring skill for ThumbGate news and technical discoveries. Generates high-density engineering posts with full UTM attribution, synchronizes to Obsidian, schedules dual cron/launchd runs at 9:00 AM EST, and tracks publication ledgers.
+description: Autonomous daily publishing engine for ThumbGate technical discoveries. One post per calendar day, staged locally with UTM links and a publication ledger. The live schedule is thumbgate-always-on-promotion, not the 9:00 and 18:30 lines disabled on 2026-10-05.
 ---
 
 # 📰 ThumbGate Daily Technical Discoveries & News Engine
@@ -11,11 +11,8 @@ This skill automates the daily harvesting, synthesis, UTM attribution, and multi
 
 ## 🎯 Architecture & Operating Principles
 
-1. **Daily Cadence (9:00 AM EST):** Runs once per calendar day. Avoids spam while establishing consistent technical authority.
-2. **Dual Scheduling Redundancy:**
-   - Primary: macOS crontab (`0 9 * * * /bin/bash scripts/thumbgate-daily-discoveries-publish.sh ...`)
-   - Fallback: macOS LaunchAgent (`~/Library/LaunchAgents/com.thumbgate.daily-publish.plist`)
-   - Note: GitHub Actions `schedule:` is strictly limited to `codeql.yml` per repo hygiene tests.
+1. **Daily Cadence:** One discovery per calendar day. The live trigger is `scripts/thumbgate-always-on.sh` (see `thumbgate-always-on-promotion`).
+2. **Schedule that stays off:** The 9:00 and 18:30 crontab lines that call `thumbgate-daily-discoveries-publish.sh` directly stay commented. `com.thumbgate.daily-publish` stays unloaded. GitHub Actions `schedule:` stays limited to `codeql.yml`.
 3. **Full UTM Attribution & Tracked Redirects:**
    - All outbound links to `thumbgate.ai` must use `buildUTMLink` from `scripts/social-analytics/utm.js`.
    - Outbound pro/checkout links must route through `/go/pro` (`serveTrackedLinkRedirect` in `src/api/server.js`) to capture first-party funnel telemetry.
@@ -39,8 +36,8 @@ node scripts/thumbgate-daily-discoveries-publish.js --json
 # Force publish/restage today's discovery even if already logged in ledger
 node scripts/thumbgate-daily-discoveries-publish.js --force
 
-# Shell wrapper (used by crontab / launchd)
-./scripts/thumbgate-daily-discoveries-publish.sh
+# Direct publisher. Cron calls scripts/thumbgate-always-on.sh, which runs this once per day.
+node scripts/thumbgate-daily-discoveries-publish.js --json
 
 # Run test suite
 node --test tests/thumbgate-daily-discoveries-publish.test.js
@@ -52,6 +49,7 @@ node --test tests/thumbgate-daily-discoveries-publish.test.js
 
 - [ ] Verify `node --test tests/thumbgate-daily-discoveries-publish.test.js` passes.
 - [ ] Verify outbound links contain valid UTM parameters (`utm_source=daily_discoveries`, `utm_campaign=daily_technical_discoveries`).
-- [ ] Verify `launchctl list | grep thumbgate` reports exit code 0.
-- [ ] Verify `crontab -l | grep thumbgate` contains the 9:00 AM daily trigger.
+- [ ] Verify `crontab -l | grep thumbgate-always-on` shows `5 9 * * *` and `0 */4 * * *`.
+- [ ] The 9:00 and 18:30 lines that call this publisher directly stay commented. They were disabled on 2026-10-05. `scripts/thumbgate-always-on.sh` is the live trigger and it does not send email.
+- [ ] `com.thumbgate.daily-publish` stays unloaded. The plist on disk has a `.disabled-chief-cold-send-20261005` suffix.
 - [ ] Check `.thumbgate/daily-discoveries-ledger.jsonl` for recent execution receipts.

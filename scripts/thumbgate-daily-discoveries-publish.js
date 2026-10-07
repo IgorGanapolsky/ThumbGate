@@ -96,6 +96,24 @@ if (sampleCount < 10) {
 }`,
     tags: ['ai', 'machinelearning', 'reliability', 'devtools'],
   },
+  {
+    slug: 'review-calls-that-leave-the-machine',
+    title: 'Review the Tool Calls That Write, Spend, or Leave the Machine',
+    tagline: 'A person should see the calls that change something. Reads can run when a policy already allows that tool and those arguments.',
+    problem: 'Reviewing every tool call does not scale, and reviewing none of them leaves a coding agent free to write files, spend money, send messages, or leave the machine. A review after the call is a transcript of damage that already happened.',
+    solution: 'ThumbGate checks the tool name and the arguments before the call runs. The gate shows one line of intent for a write, a payment, a message, or a command that leaves the machine: the command, the path, or the destination. A read or a local lookup proceeds when the policy already allows that tool and those arguments.',
+    codeSnippet: `function reviewBeforeRun(toolName, args) {
+  const command = String(args.command || '');
+  const leaves = toolName === 'Bash' && /\\b(curl|ssh|scp|git\\s+push)\\b/.test(command);
+  const writes = toolName === 'Write' || toolName === 'Edit';
+  const sends = toolName === 'SendMessage' || toolName === 'WebFetch';
+  if (leaves || writes || sends) {
+    return { decision: 'review', show: command || args.path || args.url || toolName };
+  }
+  return { decision: 'allow' };
+}`,
+    tags: ['ai', 'security', 'devtools', 'agents'],
+  },
 ];
 
 function getFormattedDate(date = new Date()) {
@@ -110,6 +128,38 @@ function selectTopicForDay(date = new Date()) {
   const dayOfYear = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
   const index = Math.abs(dayOfYear % CURATED_TOPICS.length);
   return CURATED_TOPICS[index];
+}
+
+function recentPublishedSlugs(limit) {
+  if (!fs.existsSync(LEDGER_PATH)) return [];
+  const slugs = [];
+  let lines = [];
+  try {
+    lines = fs.readFileSync(LEDGER_PATH, 'utf8').trim().split('\n');
+  } catch (_) {
+    return [];
+  }
+  for (let i = lines.length - 1; i >= 0 && slugs.length < limit; i -= 1) {
+    try {
+      const item = JSON.parse(lines[i]);
+      if (item.status === 'published' && item.topic && !slugs.includes(item.topic)) {
+        slugs.push(item.topic);
+      }
+    } catch (_) {}
+  }
+  return slugs;
+}
+
+function chooseTopic(date = new Date()) {
+  const preferred = selectTopicForDay(date);
+  const recent = new Set(recentPublishedSlugs(Math.max(CURATED_TOPICS.length - 1, 1)));
+  if (!recent.has(preferred.slug)) return preferred;
+  const start = CURATED_TOPICS.findIndex((topic) => topic.slug === preferred.slug);
+  for (let offset = 1; offset < CURATED_TOPICS.length; offset += 1) {
+    const topic = CURATED_TOPICS[(start + offset) % CURATED_TOPICS.length];
+    if (!recent.has(topic.slug)) return topic;
+  }
+  return preferred;
 }
 
 function getRecentGitCommit() {
@@ -142,7 +192,7 @@ function generatePostContent(topic, dateStr, gitCommit) {
 > **ThumbGate Engineering Daily** | ${dateStr}  
 > *Author:* Igor Ganapolsky ([@IgorGanapolsky](https://github.com/IgorGanapolsky))  
 > *Verified on Commit:* \`${gitCommit}\`  
-> *Canonical URL:* \`${canonicalUrl}\`
+> *Canonical URL:* \`${canonicalUrl}\` (serves after this file is on main)
 
 ---
 
@@ -177,7 +227,7 @@ ${topic.solution}
 ${topic.codeSnippet}
 \`\`\`
 
-By enforcing this check in the **PreToolUse** hook lifecycle, the agent runtime intercepts and validates commands in under 5ms, long before any shell or network call can execute.
+The check belongs in the **PreToolUse** hook, on the tool name and the arguments, before a shell or network call runs.
 
 ---
 
@@ -193,7 +243,8 @@ By enforcing this check in the **PreToolUse** hook lifecycle, the agent runtime 
 
 - **GitHub Repository (Open Source):** [ThumbGate GitHub](${githubUrl})
 - **Production Platform:** [ThumbGate Infrastructure Firewall](${siteUrl})
-- **Try ThumbGate Pro:** [Upgrade & Access Live Gates](${proUrl})
+- **Install:** \`npx thumbgate init\`
+- **ThumbGate Pro:** $19 a month or $149 a year per operator. [Pricing](https://thumbgate.ai/pricing). [Checkout](${proUrl})
 - **Documentation & MCP Integration:** [ThumbGate Docs](${docsUrl})
 `;
 }
@@ -325,7 +376,7 @@ async function runDailyPublish(options = {}) {
     };
   }
 
-  const topic = selectTopicForDay(now);
+  const topic = chooseTopic(now);
   const gitCommit = getRecentGitCommit();
   const content = generatePostContent(topic, dateStr, gitCommit);
   const canonicalUrl = `https://thumbgate.ai/blog/${dateStr}-${topic.slug}`;
@@ -392,7 +443,6 @@ async function runDailyPublish(options = {}) {
         body_markdown: content,
         tags: topic.tags,
         published: true,
-        canonical_url: canonicalUrl,
       });
       devtoResult = { id: res.id, url: res.url };
       outputs.push({ type: 'devto', url: res.url });
@@ -459,6 +509,7 @@ if (require.main === module) {
 
 module.exports = {
   selectTopicForDay,
+  chooseTopic,
   generatePostContent,
   renderBlogHtml,
   runDailyPublish,
