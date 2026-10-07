@@ -19,8 +19,8 @@ const dns = require('node:dns').promises;
 
 const PRODUCT_NAME = 'ThumbGate Pro';
 const DASHBOARD_URL = 'https://thumbgate-production.up.railway.app/dashboard';
-const DEFAULT_CONTACT_EMAIL = 'support@thumbgate.ai';
-const DEFAULT_FROM = 'onboarding@resend.dev';
+const DEFAULT_CONTACT_EMAIL = 'igor@igorganapolsky.com';
+const DEFAULT_FROM = 'ThumbGate <igor@igorganapolsky.com>';
 const DEFAULT_REPLY_TO = DEFAULT_CONTACT_EMAIL;
 const DEFAULT_UNSUBSCRIBE_EMAIL = DEFAULT_CONTACT_EMAIL;
 const DEFAULT_BUSINESS_NAME = 'Max Smith KDP LLC';
@@ -112,8 +112,11 @@ function splitCsv(value) {
     .filter(Boolean);
 }
 
+const DEFAULT_VERIFIED_SENDER_DOMAINS = ['igorganapolsky.com'];
+
 function getVerifiedSenderDomains() {
-  return new Set(splitCsv(process.env.THUMBGATE_VERIFIED_SENDER_DOMAINS));
+  const fromEnv = splitCsv(process.env.THUMBGATE_VERIFIED_SENDER_DOMAINS);
+  return new Set([...DEFAULT_VERIFIED_SENDER_DOMAINS, ...fromEnv]);
 }
 
 function flattenTxt(records) {
