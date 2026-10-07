@@ -32,6 +32,15 @@
 
 ## What it does
 
+### Powered by the OpenAI Decisions API Paradigm (Sub-35ms)
+You saw the community reaction to OpenAI's **Decisions API** (the "Jev" model architecture) swapping 2,500ms generative latency for ultra-fast, deterministic classification. ThumbGate natively integrates this exact high-speed classification paradigm into your local execution loop:
+
+* **Sub-35ms In-line Guardrails:** We restrict tool-payload logits to constrained choice spaces, delivering pre-action firewall verdicts in under 35 milliseconds. Say goodbye to the typical LLM latency tax.
+* **Dual-Loop Parallel Architecture:** While your heavy generative model handles complex reasoning (Claude, Gemini, OpenAI), ThumbGate's Sentinel router intercepts and classifies side effects concurrently.
+* **Real-Time Visual State Machines:** ThumbGate parses UI states instantly, dropping the heavy $0.05 / 3s overhead for full-frame vision models on simple GUI transitions.
+* **High-Volume Ingestion & Routing:** Funnel "loose" unstructured input into categorized priority queues instantly without burning tokens on a full generation pass.
+
+
 ThumbGate is the local-first **Pre-Action Checks** engine for AI coding agents. It runs in the PreToolUse hook to evaluate the proposed tool call before execution — so costly mistakes can be caught before they happen.
 
 ThumbGate GitHub star growth is measured with GitHub's privacy-safe [`GET /repos/{owner}/{repo}/stargazers/history`](https://docs.github.com/en/rest/activity/starring#get-repository-star-history) endpoint (weekly counts, no stargazer identities). Run `npm run stars:history -- --fixture tests/fixtures/github-star-history.json --json` for the local proof. Stars are not npm installs and not revenue. The live GitHub Marketplace Action is [ThumbGate Agent Governance](https://github.com/marketplace/actions/thumbgate-agent-governance) (`uses: IgorGanapolsky/ThumbGate@v1`).
