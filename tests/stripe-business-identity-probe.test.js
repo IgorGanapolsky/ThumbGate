@@ -61,7 +61,7 @@ test('diagnoseIdentityGaps fires critical on missing business name and logo', ()
     brandingIcon: null,
     statementDescriptor: 'THUMBGATE',
     websiteUrl: 'https://thumbgate.ai',
-    supportEmail: 'support@thumbgate.ai',
+    supportEmail: 'igor@igorganapolsky.com',
     productDescription: 'AI agent governance',
   });
   const nameGap = gaps.find((g) => g.field === 'business_profile.name');
@@ -92,7 +92,7 @@ test('diagnoseIdentityGaps returns empty array when identity is fully branded', 
     brandingIcon: 'file_y',
     statementDescriptor: 'THUMBGATE',
     websiteUrl: 'https://thumbgate.ai',
-    supportEmail: 'support@thumbgate.ai',
+    supportEmail: 'igor@igorganapolsky.com',
     productDescription: 'Pre-action checks for AI coding agents',
   });
   assert.deepEqual(gaps, []);
