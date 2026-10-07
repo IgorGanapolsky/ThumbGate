@@ -120,7 +120,7 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers, reply_to, and 
   // Subject is personalized with the first name when available.
   assert.equal(body.subject, 'Igor, your ThumbGate Pro key is inside');
   // reply_to defaults to a deliverable operator inbox until thumbgate.app is registered.
-  assert.equal(body.reply_to, 'support@thumbgate.ai');
+  assert.equal(body.reply_to, 'igor@igorganapolsky.com');
 
   // License key + activation command present in both bodies.
   assert.ok(body.html && body.html.includes('tg_09239a0a433649ba442467567af1825b'));
@@ -143,7 +143,7 @@ test('sendTrialWelcomeEmail POSTs to Resend with correct headers, reply_to, and 
   // CAN-SPAM compliance: business name + physical address + unsubscribe.
   assert.ok(body.html.includes('Max Smith KDP LLC'), 'html footer must carry business name');
   assert.ok(body.html.includes('2261 Market Street #4242, San Francisco, CA 94114'), 'html footer must carry business address');
-  assert.ok(body.html.includes('support@thumbgate.ai'), 'html footer must expose a deliverable unsubscribe mailto');
+  assert.ok(body.html.includes('igor@igorganapolsky.com'), 'html footer must expose a deliverable unsubscribe mailto');
   assert.ok(body.text.includes('Max Smith KDP LLC'), 'text footer must carry business name');
   assert.ok(body.text.includes('Unsubscribe:'), 'text footer must carry unsubscribe instruction');
 
@@ -194,7 +194,7 @@ test('sendTrialWelcomeEmail falls back to "Hi there" greeting and generic subjec
   restore();
 });
 
-test('sendTrialWelcomeEmail defaults RESEND_FROM_EMAIL to onboarding@resend.dev', async () => {
+test('sendTrialWelcomeEmail defaults RESEND_FROM_EMAIL to ThumbGate <igor@igorganapolsky.com>', async () => {
   const restore = savingEnv(['RESEND_API_KEY', 'RESEND_FROM_EMAIL']);
   process.env.RESEND_API_KEY = 're_test_123';
   delete process.env.RESEND_FROM_EMAIL;
@@ -213,11 +213,11 @@ test('sendTrialWelcomeEmail defaults RESEND_FROM_EMAIL to onboarding@resend.dev'
   });
 
   const body = JSON.parse(captured.init.body);
-  assert.equal(body.from, 'onboarding@resend.dev');
+  assert.equal(body.from, 'ThumbGate <igor@igorganapolsky.com>');
   restore();
 });
 
-test('sendTrialWelcomeEmail falls back to resend.dev when configured sender lacks Resend DNS', async () => {
+test('sendTrialWelcomeEmail falls back to default sender when configured sender lacks Resend DNS', async () => {
   const restore = savingEnv([
     'RESEND_API_KEY',
     'RESEND_FROM_EMAIL',
@@ -255,7 +255,7 @@ test('sendTrialWelcomeEmail falls back to resend.dev when configured sender lack
   assert.equal(res.senderFallback.reason, 'resend_dns_not_ready');
   assert.equal(res.senderFallback.domain, 'thumbgate.app');
   const body = JSON.parse(captured.init.body);
-  assert.equal(body.from, 'onboarding@resend.dev');
+  assert.equal(body.from, 'ThumbGate <igor@igorganapolsky.com>');
   restore();
 });
 
@@ -382,7 +382,7 @@ test('renderTrialWelcomeBodies embeds license key, activation command, dashboard
   assert.equal(activationCommand, 'npx thumbgate pro --activate --key=tg_abc');
   assert.equal(trialEndLabel, 'Apr 24, 2026');
   assert.equal(greeting, 'Hi Ada,');
-  assert.equal(unsubscribeEmail, 'support@thumbgate.ai');
+  assert.equal(unsubscribeEmail, 'igor@igorganapolsky.com');
   assert.equal(businessName, 'Max Smith KDP LLC');
   assert.ok(businessAddress.length > 0);
   for (const fragment of [
@@ -397,8 +397,8 @@ test('renderTrialWelcomeBodies embeds license key, activation command, dashboard
     assert.ok(html.includes(fragment), `html missing: ${fragment}`);
     assert.ok(text.includes(fragment), `text missing: ${fragment}`);
   }
-  assert.ok(html.includes('support@thumbgate.ai'));
-  assert.ok(text.includes('support@thumbgate.ai'));
+  assert.ok(html.includes('igor@igorganapolsky.com'));
+  assert.ok(text.includes('igor@igorganapolsky.com'));
   // Customer ID shows in the html footer only — not in the customer-visible body prose.
   assert.ok(html.includes('cus_42'));
   // Customer ID must NOT appear in the text body — we want to stop leaking debug IDs in

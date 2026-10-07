@@ -594,6 +594,36 @@ function main() {
     failOpen(err);
   }
 
+  try {
+    const { evaluateSirenToolCall, SIREN_MCP_TOOLS } = require('./siren-mcp-governance');
+    const normalizedToolName = toolName.replace(/^(?:mcp__)?(?:siren|mysiren)[._]+/i, '');
+    if (SIREN_MCP_TOOLS[normalizedToolName] || SIREN_MCP_TOOLS[toolName]) {
+      const sirenTarget = SIREN_MCP_TOOLS[normalizedToolName] ? normalizedToolName : toolName;
+      const sirenResult = evaluateSirenToolCall(sirenTarget, effectiveInput || {}, {
+        strict: process.env.THUMBGATE_HOOKS_ENFORCE === '1',
+      });
+      if (sirenResult && !sirenResult.allowed) {
+        return block(`siren-governance: ${sirenResult.reasons.join('; ')}`);
+      }
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
+  try {
+    const { evaluateVulnerabilityRisk } = require('./vulnerability-pre-action-diode');
+    const isShell = ['bash', 'shell', 'exec', 'run_command', 'terminal'].includes(toolName.toLowerCase());
+    const command = effectiveInput.command || effectiveInput.cmd || (isShell ? effectiveInput.input : null);
+    if (command && typeof command === 'string') {
+      const vulnResult = evaluateVulnerabilityRisk({ toolName, command });
+      if (vulnResult && vulnResult.verdict === 'block') {
+        return block(`vulnerability-diode: ${vulnResult.reason}`);
+      }
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const blockReason = maybeBlockOnRisk(lessons);
   if (blockReason) return block(blockReason);
 

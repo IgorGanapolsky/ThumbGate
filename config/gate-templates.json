@@ -1477,6 +1477,31 @@
       "problem": "Blocks agents from ingesting or acting on stale (>90d), deprecated, or poisoned knowledge surfaces (Anthropic warning: misleading docs mislead an unknowable number of downstream agents).",
       "roi": "Prevents downstream hallucination propagation, broken API tool calls, and dangerous copy-paste snippets across 66% agent readership traffic.",
       "rollout": "Pair with npx thumbgate mintlify-knowledge-honesty --check-dir docs --json before agent task execution."
+    },
+    {
+      "id": "gate-siren-mcp-marketing-diode",
+      "name": "Siren MCP Autonomous Marketing & Social Media Diode",
+      "category": "Autonomous Marketing Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "siren[_ -]?mcp|post_run|schedule_post|create_campaign",
+      "problem": "Blocks unreviewed live posts, invalid scheduling windows (<300s), unbudgeted campaigns, and attribution-lacking media generated via Siren MCP.",
+      "roi": "Prevents live brand reputation damage, compliance violations, and spam rate-limit account bans from runaway autonomous marketing agents.",
+      "rollout": "Pair with npx thumbgate siren-mcp-governance --tool <toolName> --args <json> before tool dispatch."
+    },
+    {
+      "id": "gate-vulnerability-pre-action-diode",
+      "name": "Vulnerability Pre-Action Diode (WHOOP/TNS Pattern)",
+      "category": "Vulnerability Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(npm\\s+i(nstall)?|yarn\\s+add|pnpm\\s+add|pip\\s+install|gem\\s+install)\\s+.*(--ignore-scripts\\s+false|http:\\/\\/|git\\+http:|unpinned|latest\\b)|curl\\s+.*\\|\\s*(ba)?sh",
+      "problem": "Blocks unpinned dependency injection, insecure package downloads, dangerous curl-to-bash executions, and script execution bypasses before network resolution. Replaces 3-day post-mortem triage with sub-5ms pre-action enforcement.",
+      "roi": "Eliminates up to 96 engineering hours per incident (~$9,600-$12,000 per triage cycle as benchmarked by WHOOP/Datadog).",
+      "rollout": "Enable across all CI workflows, local MCP hooks, and agent harness PreToolUse gates."
     }
   ]
 }
+
