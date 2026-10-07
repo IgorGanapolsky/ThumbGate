@@ -36,6 +36,7 @@ concurrency:
 jobs:
   e2e:
     name: Playwright (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+    if: github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -95,7 +96,7 @@ jobs:
 
   merge-reports:
     name: Merge blob reports
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.e2e.result == 'success' }}
     needs: [e2e]
     runs-on: ubuntu-latest
     # Merging two Playwright blob artifacts regularly needs npm install plus
