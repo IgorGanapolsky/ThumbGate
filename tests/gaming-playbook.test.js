@@ -53,9 +53,12 @@ describe('Gaming AI Agent Playbook Delivery & Route Verification', () => {
     assert.ok(html.includes('8x2dR91M84r4cSd9uj3sI3f'), 'Must include Pro Stripe checkout link slug');
     assert.ok(html.includes('9B69ATbmI4r4aK5eOD3sI3k'), 'Must include $499 audit Stripe checkout link slug');
     assert.ok(html.includes('LTQFR7P9AR3QG'), 'Must include sprint checkout link slug');
+
+    // Security Invariants: No innerHTML usage
+    assert.equal(html.includes('.innerHTML'), false, 'gaming-playbook.html must not use innerHTML');
   });
 
-  for (const route of ['/gaming-playbook', '/gaming-playbook.html', '/gaming', '/industry-playbook']) {
+  for (const route of ['/gaming-playbook', '/gaming-playbook.html', '/gaming', '/industry-playbook', '/industry-playbook/gaming']) {
     test(`API server serves ${route} with 200 OK and HTML content`, async () => {
       const res = await fetch(`${base}${route}`);
       assert.equal(res.status, 200, `${route} must return 200 OK`);

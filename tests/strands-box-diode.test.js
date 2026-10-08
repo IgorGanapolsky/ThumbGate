@@ -115,4 +115,59 @@ describe('Strands Box & Dogwood Policy Diode', () => {
     assert.equal(res.decision, 'BLOCK');
     assert.equal(res.reason, 'CRITICAL_DELETION_CONTAINMENT_BREACH');
   });
+
+  test('decomposes and interdicts compound shell commands', () => {
+    const session = createBoxSession({ name: 'compound-box' });
+    const res = evaluateBoxAction(session, {
+      type: EVENT_SHELL_EXEC,
+      target: 'rm -rf /'
+    });
+    assert.equal(res.allowed, false);
+    assert.equal(res.decision, 'BLOCK');
+    assert.equal(res.reason, 'CRITICAL_DELETION_CONTAINMENT_BREACH');
+  });
+
+  test('permits non-sensitive file reads without tainting session', () => {
+    const session = createBoxSession({ name: 'clean-read-box' });
+    const res = evaluateBoxAction(session, {
+      type: EVENT_FS_READ,
+      target: 'README.md'
+    });
+    assert.equal(res.allowed, true);
+    assert.equal(session.isTainted, false);
+  });
+
+  test('handles malformed URLs gracefully during egress evaluation', () => {
+    const session = createBoxSession({ name: 'malformed-url-box' });
+    session.isTainted = true;
+    const res = evaluateBoxAction(session, {
+      type: EVENT_HTTP_REQUEST,
+      target: '::not a valid url::'
+    });
+    assert.equal(res.allowed, false);
+    assert.equal(res.decision, 'BLOCK');
+  });
+
+  test('runs strands-box-doctor programmatically and via CLI', () => {
+    const { runStrandsBoxDiagnostics } = require('../scripts/strands-box-doctor');
+    const diag = runStrandsBoxDiagnostics();
+    assert.equal(diag.status, 'HEALTHY');
+    assert.equal(diag.checksPassed, diag.checksTotal);
+    assert.ok(diag.elapsedMs >= 0);
+
+    const { execFileSync } = require('node:child_process');
+    const stdout = execFileSync('node', [require.resolve('../scripts/strands-box-doctor'), '--json'], {
+      encoding: 'utf8'
+    });
+    const parsed = JSON.parse(stdout);
+    assert.equal(parsed.status, 'HEALTHY');
+    assert.equal(parsed.checksPassed, 5);
+
+    const textOut = execFileSync('node', [require.resolve('../scripts/strands-box-doctor')], {
+      encoding: 'utf8'
+    });
+    assert.ok(textOut.includes('Strands Box & Multi-Harness Doctor'));
+    assert.ok(textOut.includes('HEALTHY'));
+  });
 });
+

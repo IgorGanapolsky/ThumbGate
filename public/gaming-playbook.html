@@ -675,23 +675,53 @@ function calculateRisk() {
   let riskScore = "HIGH";
   let estimatedLoss = "$3,200 - $14,500";
 
+  function setSafeContent(container, beforeText, boldText, afterText) {
+    container.textContent = '';
+    if (beforeText) {
+      container.appendChild(document.createTextNode(beforeText));
+    }
+    if (boldText) {
+      const strong = document.createElement('strong');
+      strong.textContent = boldText;
+      container.appendChild(strong);
+    }
+    if (afterText) {
+      container.appendChild(document.createTextNode(afterText));
+    }
+  }
+
   if (guard === "none") {
     riskScore = "CRITICAL";
     estimatedLoss = "$" + (agents * 180).toLocaleString() + " - $" + (agents * 450).toLocaleString();
-    title.innerText = "Critical Risk: Ungated Agent State Mutations";
+    title.textContent = "Critical Risk: Ungated Agent State Mutations";
     title.style.color = "#ef4444";
-    text.innerHTML = "Your agents execute tool calls without pre-action validation. Players can trigger runaway loops burning an estimated <strong>" + estimatedLoss + "/month</strong> in unmonitored API calls, plus direct in-game economy inventory manipulation.";
+    setSafeContent(
+      text,
+      "Your agents execute tool calls without pre-action validation. Players can trigger runaway loops burning an estimated ",
+      estimatedLoss + "/month",
+      " in unmonitored API calls, plus direct in-game economy inventory manipulation."
+    );
   } else if (guard === "prompt") {
     riskScore = "HIGH";
     estimatedLoss = "$" + (agents * 90).toLocaleString() + " - $" + (agents * 240).toLocaleString();
-    title.innerText = "High Risk: System Prompts Are Not Firewalls";
+    title.textContent = "High Risk: System Prompts Are Not Firewalls";
     title.style.color = "#f59e0b";
-    text.innerHTML = "Jailbreak bypass rates against system-prompt-only constraints exceed 68% in competitive multiplayer. You are exposed to an estimated <strong>" + estimatedLoss + "/month</strong> in adversarial token abuse.";
+    setSafeContent(
+      text,
+      "Jailbreak bypass rates against system-prompt-only constraints exceed 68% in competitive multiplayer. You are exposed to an estimated ",
+      estimatedLoss + "/month",
+      " in adversarial token abuse."
+    );
   } else {
     riskScore = "MODERATE (Latency Bottleneck)";
-    title.innerText = "Moderate Risk: Latency & Frame Drops";
+    title.textContent = "Moderate Risk: Latency & Frame Drops";
     title.style.color = "#06b6d4";
-    text.innerHTML = "Cloud judges protect against some exploits but introduce 800ms-2,000ms latency spikes, breaking game immersion. ThumbGate's local CPU engine resolves in &lt;0.5ms with zero frame drops.";
+    setSafeContent(
+      text,
+      "Cloud judges protect against some exploits but introduce 800ms-2,000ms latency spikes, breaking game immersion. ThumbGate's local CPU engine resolves in <0.5ms with zero frame drops.",
+      null,
+      null
+    );
   }
 
   resultBox.style.display = 'block';
