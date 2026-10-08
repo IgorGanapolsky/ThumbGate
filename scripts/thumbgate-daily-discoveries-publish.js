@@ -55,7 +55,7 @@ function selectTopicForDay(date = new Date()) {
 function getRecentGitCommit() {
   const gitBin = fs.existsSync('/usr/bin/git') ? '/usr/bin/git' : 'git';
   try {
-    const log = execSync(`${gitBin} log -1 --format="%h - %s" origin/main 2>/dev/null || ${gitBin} log -1 --format="%h - %s"`, {
+    const log = execSync(`${gitBin} log -1 --format="%h - %s" origin/main 2>/dev/null || ${gitBin} log -1 --format="%h - %s" 2>/dev/null`, {
       cwd: REPO_ROOT,
       encoding: 'utf8',
     }).trim();
