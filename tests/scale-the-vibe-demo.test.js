@@ -31,18 +31,21 @@ const mode = process.env.DEMO_FIXTURE;
 if (process.argv[2] === 'serve') {
   const rl = require('node:readline').createInterface({ input: process.stdin });
   process.stdin.on('end', () => process.exit(0));
+  let initialized = false;
   rl.on('line', (line) => {
     const request = JSON.parse(line);
     if (request.method === 'initialize') {
-      process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: 0, result: { protocolVersion: '2024-11-05', capabilities: {}, serverInfo: { name: 'fixture', version: '1' } } }) + '\\n');
-    } else if (request.id === 1) {
+      process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: request.id, result: { protocolVersion: '2024-11-05', capabilities: {}, serverInfo: { name: 'fixture', version: '1' } } }) + '\\n');
+    } else if (request.method === 'notifications/initialized') {
+      initialized = true;
+    } else if (request.method === 'tools/call' && request.params.name === 'gate_check' && initialized) {
       if (request.params.arguments.tool_input.command !== 'echo demo-mcp-probe') throw new Error('expected inert safe probe');
       setTimeout(() => {
         if (mode === 'mcp-missing') return process.exit(0);
         if (mode === 'mcp-malformed') return process.stdout.write('not JSON\\n');
-        if (mode === 'mcp-error') return process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: 1, error: { code: -32603, message: 'fixture failure' } }) + '\\n');
+        if (mode === 'mcp-error') return process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: request.id, error: { code: -32603, message: 'fixture failure' } }) + '\\n');
         const verdict = mode === 'mcp-empty' ? {} : { decision: mode === 'mcp-deny' ? 'block' : 'allow', flagged: false, enforcement: 'strict' };
-        process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: 1, result: { content: [{ type: 'text', text: JSON.stringify(verdict) }] } }) + '\\n');
+        process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: request.id, result: { content: [{ type: 'text', text: JSON.stringify(verdict) }] } }) + '\\n');
       }, 40);
     }
   });
