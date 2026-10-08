@@ -441,3 +441,67 @@ test('migration - dry-run writes nothing; apply is idempotent and non-destructiv
   assert.equal(fs.readFileSync(path.join(dir, 'memory-log.jsonl'), 'utf8'), memBefore, 'memory-log untouched');
   assert.equal(fs.readFileSync(path.join(dir, 'feedback-log.jsonl'), 'utf8'), fbBefore, 'feedback-log untouched');
 });
+
+
+test('feedbackIdentity keeps exact misses independent and avoids graph scans', () => {
+  const { feedbackIdentity, resolveNodeRef } = require('../scripts/lesson-graph');
+  const dir = tmpDir('tg-graph-exact-');
+  const db = openTmpGraph(dir);
+  try {
+    upsertNode(db, { ...scope, id: 'mem_long', sourceFeedbackId: 'fb_123_suffix' });
+    const queries = [];
+    const traced = { prepare(sql) { queries.push(sql); return db.prepare(sql); } };
+    assert.equal(feedbackIdentity(traced, { ...scope, id: 'fb_123' }), 'fb_123');
+    assert.equal(queries.length, 1, 'exact miss must stop after the indexed lookup');
+    assert.equal(resolveNodeRef(db, 'fb_123', scope), 'mem_long');
+    assert.equal(feedbackIdentity(db, { ...scope, id: 'fb_123_suffix' }), 'mem_long');
+  } finally { db.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('resolveNodeRef limits prefix candidates to the indexed complete scope', () => {
+  const { resolveNodeRef } = require('../scripts/lesson-graph');
+  const dir = tmpDir('tg-graph-prefix-');
+  const db = openTmpGraph(dir);
+  try {
+    upsertNode(db, { ...scope, id: 'mem_local', sourceFeedbackId: 'fb_123_local' });
+    upsertNode(db, { ...scope, sessionId: 'foreign', id: 'mem_foreign', sourceFeedbackId: 'fb_123_foreign' });
+    const queries = [];
+    const traced = { prepare(sql) { queries.push(sql); return db.prepare(sql); } };
+    assert.equal(resolveNodeRef(traced, 'fb_123', scope), 'mem_local');
+    const fallback = queries[1];
+    const plan = db.prepare('EXPLAIN QUERY PLAN ' + fallback).all(scope.entityId, scope.projectId, scope.processId, scope.sessionId);
+    assert.ok(plan.some(row => row.detail.includes('idx_lesson_nodes_scope')), JSON.stringify(plan));
+    upsertNode(db, { ...scope, id: 'mem_ambiguous', sourceFeedbackId: 'fb_123_other' });
+    assert.equal(resolveNodeRef(db, 'fb_123', scope), null);
+  } finally { db.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+for (const filename of ['memory-log.jsonl', 'feedback-log.jsonl']) {
+  test('buildPlan reads records before byte and line tails in ' + filename, () => {
+    const dir = tmpDir('tg-graph-full-');
+    try {
+      const first = { ...scope, id: 'fb_old', title: 'old lesson', context: 'old lesson' };
+      const last = { ...scope, id: 'fb_new', title: 'new lesson', context: 'new lesson' };
+      fs.writeFileSync(path.join(dir, filename), JSON.stringify(first) + '\n' + '{}\n'.repeat(20001) + ' '.repeat(4 * 1024 * 1024) + '\n' + JSON.stringify(last) + '\n');
+      const plan = buildPlan(dir);
+      assert.deepEqual(plan.records.map(record => record.id), ['fb_old', 'fb_new']);
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  test('migration rejects truncated ' + filename + ' without replacing the graph', () => {
+    const dir = tmpDir('tg-graph-large-');
+    const db = openTmpGraph(dir);
+    try {
+      upsertNode(db, { ...scope, id: 'mem_preserved' });
+      const input = path.join(dir, filename);
+      fs.writeFileSync(input, JSON.stringify({ ...scope, id: 'mem_oversize', title: 'oversized source' }) + '\n');
+      fs.truncateSync(input, 64 * 1024 * 1024 + 1);
+      const { spawnSync } = require('node:child_process');
+      const result = spawnSync(process.execPath, [path.join(__dirname, '../scripts/migrate-lesson-graph.js'), '--feedback-dir', dir, '--json'], { encoding: 'utf8' });
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /complete JSONL read required/);
+      assert.ok(getNode(db, 'mem_preserved'));
+      assert.equal(fs.readdirSync(dir).some(name => name.includes('.bak-')), false);
+    } finally { db.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+}

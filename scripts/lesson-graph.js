@@ -215,14 +215,20 @@ function getNode(db, id) {
  * frequently truncated ("fb_1780589059204" for "fb_1780589059204_abc123"),
  * so fall back to a unique prefix match on id / source_feedback_id.
  */
-function resolveNodeRef(db, ref, scope) {
+function resolveNodeRef(db, ref, scope, { exactOnly = false } = {}) {
   if (!ref || !scopeKey(scope)) return null;
   const rows = db.prepare('SELECT * FROM lesson_nodes WHERE id = ? OR source_feedback_id = ?').all(ref, ref)
     .filter(row => sameScope(row, scope));
   if (rows.length === 1) return rows[0].id;
   if (rows.length > 1) return null;
-  const prefixed = db.prepare('SELECT * FROM lesson_nodes').all()
-    .filter(row => sameScope(row, scope) && (row.id.startsWith(String(ref)) || String(row.source_feedback_id || '').startsWith(String(ref))));
+  if (exactOnly) return null;
+  const normalized = normalizeScope(scope);
+  const needle = String(ref);
+  const prefixed = db.prepare(`
+    SELECT id, source_feedback_id FROM lesson_nodes
+    WHERE entityId = ? AND projectId = ? AND processId = ? AND sessionId = ?
+  `).all(normalized.entityId, normalized.projectId, normalized.processId, normalized.sessionId)
+    .filter(row => row.id.startsWith(needle) || String(row.source_feedback_id || '').startsWith(needle));
   return prefixed.length === 1 ? prefixed[0].id : null;
 }
 
@@ -748,7 +754,7 @@ function graphProvenance(options = {}, openDb) {
 
 function feedbackIdentity(db, record) {
   if (!scopeKey(record)) return record.id || null;
-  const id = resolveNodeRef(db, record.sourceFeedbackId || record.feedbackId || record.id, record);
+  const id = resolveNodeRef(db, record.sourceFeedbackId || record.feedbackId || record.id, record, { exactOnly: true });
   if (!id) return record.id || null;
   return resolveCurrentId(db, id).id;
 }

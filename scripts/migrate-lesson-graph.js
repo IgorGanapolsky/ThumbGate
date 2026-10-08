@@ -7,7 +7,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { readJsonl } = require('./fs-utils');
+const { readTextTail } = require('./fs-utils');
 const { canonicalHash, canonicalizeText } = require('./lesson-canonical');
 const {
   initGraphDB,
@@ -171,6 +171,18 @@ function clusterDuplicates(records) {
   return { clusters: result, byId };
 }
 
+function readCompleteJsonl(filePath) {
+  let source;
+  try {
+    source = readTextTail(filePath, 0);
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+  if (source.truncated) throw new Error('lesson-graph: complete JSONL read required for ' + filePath);
+  return source.text.split('\n').filter(line => line.trim()).map(line => JSON.parse(line));
+}
+
 /**
  * Build the full migration plan (pure — no writes).
  */
@@ -178,7 +190,7 @@ function buildPlan(feedbackDir) {
   const memoryLogPath = path.join(feedbackDir, 'memory-log.jsonl');
   const feedbackLogPath = path.join(feedbackDir, 'feedback-log.jsonl');
 
-  const memoryRecords = readJsonl(memoryLogPath)
+  const memoryRecords = readCompleteJsonl(memoryLogPath)
     .map((r) => toPlanRecord(r, 'memory'))
     .filter(Boolean);
   const memoryFeedbackIds = new Set(
@@ -186,7 +198,7 @@ function buildPlan(feedbackDir) {
   );
   // Feedback events already promoted into a memory record are represented by
   // that record; only unpromoted events need their own nodes for clustering.
-  const feedbackRecords = readJsonl(feedbackLogPath)
+  const feedbackRecords = readCompleteJsonl(feedbackLogPath)
     .filter((r) => r && r.id && !memoryFeedbackIds.has(scopeKey(r) + ':' + r.id))
     .map((r) => toPlanRecord(r, 'feedback'))
     .filter(Boolean);
