@@ -763,8 +763,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.87 MB -> 8.90 MB (2026-10-01): strands-harness modules & skills. Local pack 8,867,170; CI slack.
   // Bumped 8.90 MB -> 8.93 MB (2026-10-02): mintlify-knowledge module & skill. CI slack.
   // Bumped 8.93 MB -> 8.98 MB (2026-10-06): vulnerability-diode + triage calculator + siren-mcp-governance. Local pack 8,952,525; CI slack.
-    manifest.unpackedSize <= 9_010_000,
-    `npm package should stay <= 8.98 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.98 MB -> 9.01 MB: scoped lesson graph runtime.
+  // Bumped 9.01 MB -> 9.15 MB (2026-10-08): Strands Box diode/decider, connectors/enterprise/gaming landing pages, ActiveSaddler, WinDbg, multi-harness invariants, agent reliability client, strands-box doctor.
+    manifest.unpackedSize <= 9_150_000,
+    `npm package should stay <= 9.15 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
