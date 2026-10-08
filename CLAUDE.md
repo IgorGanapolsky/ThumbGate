@@ -447,3 +447,13 @@ For every explicit PR-management and system-hygiene session:
 7. Record lessons in local memory and report whether memory helped or hindered.
 
 Use **“Done merging PRs. CI passing. System hygiene complete. Ready for next session.”** only when every condition above is verified. Otherwise report exact blockers and do not use that sentence.
+
+## Session evidence and tool fallback contract (2026-10-08)
+
+- PR and system-hygiene sessions must attempt `gh copilot -- -p` advice, inspect every open GitHub Issue and Actions run relevant to the exact target SHA, reconcile Linear through an authenticated connector or the Mac/browser session, and inspect both available Documents vaults. A missing local API-key file does not establish that a connector or browser is unavailable.
+- Inventory all branches and worktrees before cleanup. Preserve unique commits and uncommitted files; record before/after counts and an evidence receipt for every deletion. Do not delete dormant code based on age alone.
+- Verify `main` and `develop` when those branches exist. An absent `develop` is not a failing check. Run the clean-worktree verification suite and a read-only operational dry run before claiming session completion.
+- Record lessons and mistakes in local ThumbGate feedback, assess whether retrieval helped, and distinguish test evidence from training or enforcement that actually ran.
+- Never print raw process environments, credential stores, or `launchctl print` output. Parse internally and emit only an explicit allowlist of non-sensitive diagnostic fields.
+- Publishing requires a verified public URL or platform receipt. A locally generated article is staged, not published. Engagement requires a visible reply; monetization requires a paid transaction before claiming revenue.
+- Use the existing session claims and obey branch protection. No owner approvals, forced merges, protection changes, paid upgrades, duplicate outreach, or secrets in directive files.
