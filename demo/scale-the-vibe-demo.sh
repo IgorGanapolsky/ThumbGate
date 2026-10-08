@@ -265,7 +265,7 @@ if [ "$FAST" -eq 0 ] && [ "$LEARN_ONLY" -eq 0 ]; then
 section "6. No PreToolUse hook? Still get a verdict over MCP"
 printf '%s\n\n' "${DIM}Cursor / Cline / OpenCode call gate_check. Nothing executes; enforcement is advisory if the harness ignores it.${OFF}"
 printf '%s\n' 'MCP proof budget: 10s initialization, 60s tool response. Response time is reported below.'
-if ! MCP_OUT=$(python3 - "$CLI" <<'MCP_CLIENT'
+if ! MCP_OUT=$(python3 - "$CLI" 2>&1 <<'MCP_CLIENT'
 import json, os, selectors, subprocess, sys, time
 
 process = subprocess.Popen(["node", sys.argv[1], "serve"], stdin=subprocess.PIPE,
@@ -345,7 +345,7 @@ finally:
             process.wait()
 MCP_CLIENT
 ); then
-  fail "MCP gate_check is missing, malformed, or contradicted the expected verdict"
+  fail "$MCP_OUT"
 fi
 printf '%s\n' "$MCP_OUT" | sed 's/^/  /'
 MCP_STATUS=VERIFIED
