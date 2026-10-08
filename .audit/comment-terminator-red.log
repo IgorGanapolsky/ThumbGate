@@ -1,0 +1,32 @@
+✖ review: every JavaScript line terminator ends a line comment (1.684125ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 179.054875
+
+✖ failing tests:
+
+test at tests/coverage-gap.test.js:190:1
+✖ review: every JavaScript line terminator ends a line comment (1.684125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'empty'
+  - 'behavior'
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/coverage-gap.test.js:192:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'empty',
+    expected: 'behavior',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

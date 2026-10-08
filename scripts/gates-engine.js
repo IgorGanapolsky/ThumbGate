@@ -4466,7 +4466,9 @@ function formatNegativeLessonContext(lessons) {
   const formatted = negative.map((l) => {
     const title = (l.title || '').replace(/^MISTAKE:\s*/, '').slice(0, 140);
     const advice = extractAvoidanceAdvice(l.content);
-    return advice ? `  • ${title}\n    → ${advice}` : `  • ${title}`;
+    const body = advice ? `  • ${title}\n    → ${advice}` : `  • ${title}`;
+    const notes = [l.graph?.lineageNote, l.graph?.conflictNote].filter(Boolean);
+    return body + notes.map(note => `\n    ↳ ${String(note).slice(0, 220)}`).join('');
   });
 
   return `[ThumbGate] Past mistakes relevant to this action — read before proceeding:\n${formatted.join('\n')}`;

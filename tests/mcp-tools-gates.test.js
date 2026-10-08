@@ -165,7 +165,7 @@ test('approve_protected_action stores runtime approval over MCP', async () => {
   const payload = JSON.parse(result.content[0].text);
   assert.equal(payload.approved, true);
   assert.deepEqual(payload.approval.pathGlobs, ['AGENTS.md']);
-  assert.equal(fs.existsSync(gatesEngine.GOVERNANCE_STATE_PATH), true);
+  assert.equal(fs.existsSync(gatesEngine.governanceStatePath()), true);
 });
 
 test('set_branch_governance and get_branch_governance round-trip over MCP', async () => {

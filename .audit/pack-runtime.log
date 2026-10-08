@@ -1,0 +1,13 @@
+✔ every runtime file in package.json:files that exists on disk is in the packed tarball (2583.619333ms)
+✔ every runtime-required local module resolves inside the packed tarball (2312.223334ms)
+✔ packed npm artifact exposes the Grafana revenue-evidence command and dashboard (2296.191708ms)
+✔ packed npm artifact exposes the read-only Stripe catalog audit with all local dependencies (1979.069417ms)
+✔ packed npm artifact keeps the advertised intake queue command executable (2000.312958ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11299.274625

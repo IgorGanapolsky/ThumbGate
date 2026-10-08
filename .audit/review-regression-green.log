@@ -1,0 +1,44 @@
+✔ classifySource skips enums, re-exports, and empty files (3.171625ms)
+✔ baseline reports gaps under floor and skips no-behavior files (1.910375ms)
+✔ compare same scope: gaps shrink, skip-other-project files ignored (1.118709ms)
+✔ compare fails when claiming 100% or when gaps grow (0.698917ms)
+✔ detectCloneAttempt refuses Test Agent / @test #solution / fail-under 100 (0.272917ms)
+✔ buildCoverageGapReport clone-test-agent fails closed (0.294667ms)
+✔ script CLI compare --json is ready for gold fixtures (182.158625ms)
+✔ script CLI --claim-100 fails (171.861542ms)
+✔ thumbgate CLI coverage-gap is wired (227.81475ms)
+✔ docs refuse Test Agent and 100% claims (0.907958ms)
+✔ recovery: empty scopes fail instead of claiming perfect coverage (0.268459ms)
+✔ recovery: scope excludes similarly prefixed sibling directories (0.124958ms)
+✔ recovery: an uncovered new enum is not evidence of a new test (1.395125ms)
+✔ recovery review: coverage-gap.js explicit false preserves skipped files (151.493792ms)
+✔ recovery review: coverage-gap.js strict=false permits a warning (132.983917ms)
+✔ recovery review: cli.js explicit false preserves skipped files (151.425083ms)
+✔ recovery review: cli.js strict=false permits a warning (212.650833ms)
+✔ recovery: uncertain executable source stays in coverage gaps (0.568791ms)
+✔ THE INCIDENT: a fast generation behind a long queue is not a fast request (1.307958ms)
+✔ a session flags when most of the wait is invisible to the standard metric (0.399167ms)
+✔ a genuinely responsive request does not trip the budget (0.078542ms)
+✔ time between turns is counted as wait, not subtracted (0.071167ms)
+✔ output tokens and wall time aggregate across every turn (0.05875ms)
+✔ INVARIANT: one unmeasurable turn makes the whole session UNKNOWN (0.235583ms)
+✔ INVARIANT: an unmeasurable rate is null, never Infinity (0.099917ms)
+✔ an empty or missing session reports NO_DATA (0.051583ms)
+✔ out-of-order and malformed timestamps are named, not swallowed (0.198583ms)
+✔ context growth across a session is reported as a factor (0.171833ms)
+✔ context growth without prompt tokens reports NO_DATA rather than 1x (0.162167ms)
+✔ comparing two runs over the same sessions yields a speedup (0.454041ms)
+✔ INVARIANT: comparing runs over different traffic is refused (0.111541ms)
+✔ a run containing an unmeasurable session cannot produce a speedup (0.095375ms)
+✔ recovery: comparisons require nonempty unique structural session IDs (0.054667ms)
+✔ recovery: overlapping turns cannot report negative hidden wait (0.049917ms)
+✔ recovery: context growth needs two prompt-token observations (0.0565ms)
+✔ recovery: context growth uses chronological order without mutating input (0.5785ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1444.280208

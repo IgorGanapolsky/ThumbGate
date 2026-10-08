@@ -1,0 +1,3006 @@
+[
+  {
+    "id": "thumbgate@1.38.0",
+    "name": "thumbgate",
+    "version": "1.38.0",
+    "size": 3011175,
+    "unpackedSize": 8962632,
+    "shasum": "87e7dce35a0d5f125a3df2bc68943f7f1ab52349",
+    "integrity": "sha512-NqHEELQ4fDPjZ2TjEKQsJacqQMOx/tM+mOq6iRkqOd1YRVmInVW3KkgfP7UZaJx4hpkxM3Fk2a6HVOdhu+Q0Sw==",
+    "filename": "thumbgate-1.38.0.tgz",
+    "files": [
+      {
+        "path": ".agents/skills/article-syndication-pipeline/SKILL.md",
+        "size": 2018,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/aws-strands-harness-not-clone/SKILL.md",
+        "size": 2145,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/ci-gha-buildkite-patterns-not-clone/SKILL.md",
+        "size": 2518,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/cobble-hot-store-compare-not-clone/SKILL.md",
+        "size": 3033,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/colab-compute-honesty-not-clone/SKILL.md",
+        "size": 2373,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/comet-session-logger/SKILL.md",
+        "size": 2351,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/cyberstrike-compare-not-clone/SKILL.md",
+        "size": 1443,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/datadog-llm-obs-compare-not-clone/SKILL.md",
+        "size": 2695,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/deeppattern-discipline-honesty-not-clone/SKILL.md",
+        "size": 2679,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/gitlab-sandbox-allowlist-not-trust/SKILL.md",
+        "size": 3120,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/halo-trace-optimize-not-clone/SKILL.md",
+        "size": 2113,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/infoq-architect-honesty-not-clone/SKILL.md",
+        "size": 1390,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/jit-harness-compare-not-clone/SKILL.md",
+        "size": 1275,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/meko-datapack-honesty-not-clone/SKILL.md",
+        "size": 1818,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/mintlify-knowledge-honesty-not-clone/SKILL.md",
+        "size": 2093,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/model-distress-governance/SKILL.md",
+        "size": 2918,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/openui-catalog-compose-honesty/SKILL.md",
+        "size": 2229,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/salt-code-policy-honesty-not-clone/SKILL.md",
+        "size": 3133,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/siren-mcp-governance/SKILL.md",
+        "size": 2249,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/thumbgate-board-loop/SKILL.md",
+        "size": 2481,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/thumbgate-daily-discoveries/SKILL.md",
+        "size": 2815,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/token-shunt-honesty-not-clone/SKILL.md",
+        "size": 2454,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/typesafe-typed-questions-not-clone/SKILL.md",
+        "size": 4166,
+        "mode": 420
+      },
+      {
+        "path": ".agents/skills/zvec-grep-compare-not-clone/SKILL.md",
+        "size": 1136,
+        "mode": 420
+      },
+      {
+        "path": ".claude-plugin/plugin.json",
+        "size": 1086,
+        "mode": 420
+      },
+      {
+        "path": ".claude/commands/dashboard.md",
+        "size": 561,
+        "mode": 420
+      },
+      {
+        "path": ".claude/commands/thumbgate-blocked.md",
+        "size": 1404,
+        "mode": 420
+      },
+      {
+        "path": ".claude/commands/thumbgate-dashboard.md",
+        "size": 1059,
+        "mode": 420
+      },
+      {
+        "path": ".claude/commands/thumbgate-doctor.md",
+        "size": 1415,
+        "mode": 420
+      },
+      {
+        "path": ".claude/commands/thumbgate-guard.md",
+        "size": 2016,
+        "mode": 420
+      },
+      {
+        "path": ".claude/commands/thumbgate-protect.md",
+        "size": 1746,
+        "mode": 420
+      },
+      {
+        "path": ".claude/commands/thumbgate-rules.md",
+        "size": 1363,
+        "mode": 420
+      },
+      {
+        "path": ".well-known/agentic-verify.txt",
+        "size": 65,
+        "mode": 420
+      },
+      {
+        "path": ".well-known/llms.txt",
+        "size": 5415,
+        "mode": 420
+      },
+      {
+        "path": ".well-known/mcp/server-card.json",
+        "size": 706,
+        "mode": 420
+      },
+      {
+        "path": "CONTRIBUTING.md",
+        "size": 3975,
+        "mode": 420
+      },
+      {
+        "path": "LICENSE",
+        "size": 1072,
+        "mode": 420
+      },
+      {
+        "path": "README.md",
+        "size": 22871,
+        "mode": 420
+      },
+      {
+        "path": "THIRD_PARTY_NOTICES.md",
+        "size": 3595,
+        "mode": 420
+      },
+      {
+        "path": "adapters/amp/skills/thumbgate-feedback/SKILL.md",
+        "size": 569,
+        "mode": 420
+      },
+      {
+        "path": "adapters/claude/.mcp.json",
+        "size": 306,
+        "mode": 420
+      },
+      {
+        "path": "adapters/codex/config.toml",
+        "size": 993,
+        "mode": 420
+      },
+      {
+        "path": "adapters/forge/forge.yaml",
+        "size": 814,
+        "mode": 420
+      },
+      {
+        "path": "adapters/future-agi/.mcp.json",
+        "size": 154,
+        "mode": 420
+      },
+      {
+        "path": "adapters/future-agi/config.toml",
+        "size": 112,
+        "mode": 420
+      },
+      {
+        "path": "adapters/future-agi/FUTURE_AGI.md",
+        "size": 1286,
+        "mode": 420
+      },
+      {
+        "path": "adapters/future-agi/future-agi-bridge.js",
+        "size": 225,
+        "mode": 420
+      },
+      {
+        "path": "adapters/future-agi/opencode.json",
+        "size": 154,
+        "mode": 420
+      },
+      {
+        "path": "adapters/gcp/dfcx-webhook-gate.js",
+        "size": 12014,
+        "mode": 420
+      },
+      {
+        "path": "adapters/gemini/function-declarations.json",
+        "size": 7937,
+        "mode": 420
+      },
+      {
+        "path": "adapters/herdr/herdr-plugin.toml",
+        "size": 580,
+        "mode": 420
+      },
+      {
+        "path": "adapters/letta/README.md",
+        "size": 1747,
+        "mode": 420
+      },
+      {
+        "path": "adapters/letta/thumbgate-letta-adapter.js",
+        "size": 4128,
+        "mode": 420
+      },
+      {
+        "path": "adapters/mcp/server-stdio.js",
+        "size": 81332,
+        "mode": 420
+      },
+      {
+        "path": "adapters/opencode/opencode.json",
+        "size": 283,
+        "mode": 420
+      },
+      {
+        "path": "adapters/policy-engine/ethicore-guardian-client.js",
+        "size": 1802,
+        "mode": 420
+      },
+      {
+        "path": "adapters/policy-engine/thumbgate-policy-engine-adapter.js",
+        "size": 7397,
+        "mode": 420
+      },
+      {
+        "path": "adapters/strands/strands-middleware.js",
+        "size": 7004,
+        "mode": 420
+      },
+      {
+        "path": "adapters/strands/STRANDS.md",
+        "size": 4090,
+        "mode": 420
+      },
+      {
+        "path": "adapters/tailscale/.mcp.json",
+        "size": 278,
+        "mode": 420
+      },
+      {
+        "path": "adapters/tailscale/config.toml",
+        "size": 273,
+        "mode": 420
+      },
+      {
+        "path": "adapters/tailscale/TAILSCALE.md",
+        "size": 6080,
+        "mode": 420
+      },
+      {
+        "path": "adapters/workos/WORKOS.md",
+        "size": 2255,
+        "mode": 420
+      },
+      {
+        "path": "bench/observability-eval-suite.json",
+        "size": 1198,
+        "mode": 420
+      },
+      {
+        "path": "bench/programbench-smoke.json",
+        "size": 2849,
+        "mode": 420
+      },
+      {
+        "path": "bench/prompt-eval-suite.json",
+        "size": 3700,
+        "mode": 420
+      },
+      {
+        "path": "bench/thumbgate-bench.json",
+        "size": 3920,
+        "mode": 420
+      },
+      {
+        "path": "bin/cli.js",
+        "size": 209282,
+        "mode": 493
+      },
+      {
+        "path": "bin/dashboard-cli.js",
+        "size": 171,
+        "mode": 493
+      },
+      {
+        "path": "bin/futureagi-bridge",
+        "size": 315,
+        "mode": 493
+      },
+      {
+        "path": "bin/postinstall.js",
+        "size": 1833,
+        "mode": 493
+      },
+      {
+        "path": "commands/dashboard.md",
+        "size": 590,
+        "mode": 420
+      },
+      {
+        "path": "commands/thumbgate-dashboard.md",
+        "size": 1059,
+        "mode": 420
+      },
+      {
+        "path": "config/agent-outcome-monitor-thresholds.json",
+        "size": 1191,
+        "mode": 420
+      },
+      {
+        "path": "config/budget.json",
+        "size": 317,
+        "mode": 420
+      },
+      {
+        "path": "config/build-metadata.json",
+        "size": 46,
+        "mode": 420
+      },
+      {
+        "path": "config/e2e-critical-flows.json",
+        "size": 1729,
+        "mode": 420
+      },
+      {
+        "path": "config/enforcement.json",
+        "size": 2456,
+        "mode": 420
+      },
+      {
+        "path": "config/entitlement-public-keys.json",
+        "size": 198,
+        "mode": 420
+      },
+      {
+        "path": "config/evals/agent-outcomes-baseline.json",
+        "size": 712,
+        "mode": 420
+      },
+      {
+        "path": "config/evals/agent-outcomes-golden.json",
+        "size": 10703,
+        "mode": 420
+      },
+      {
+        "path": "config/evals/agent-safety-eval.json",
+        "size": 16921,
+        "mode": 420
+      },
+      {
+        "path": "config/evals/generation-quality-golden.json",
+        "size": 4644,
+        "mode": 420
+      },
+      {
+        "path": "config/evals/prompt-eval-baseline.json",
+        "size": 1171,
+        "mode": 420
+      },
+      {
+        "path": "config/evals/rag-answer-quality-golden.json",
+        "size": 3579,
+        "mode": 420
+      },
+      {
+        "path": "config/evals/retrieval-hybrid-ablation.json",
+        "size": 2066,
+        "mode": 420
+      },
+      {
+        "path": "config/evals/retrieval-ranking-golden.json",
+        "size": 13624,
+        "mode": 420
+      },
+      {
+        "path": "config/gate-classifier-routing.json",
+        "size": 3073,
+        "mode": 420
+      },
+      {
+        "path": "config/gate-templates.json",
+        "size": 108712,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/actor-critic-audit.json",
+        "size": 1794,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/claim-verification.json",
+        "size": 2676,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/claim-verifiers.example.json",
+        "size": 1198,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/claim-verifiers.json",
+        "size": 701,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/code-edit.json",
+        "size": 2374,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/computer-use.json",
+        "size": 1620,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/db-write.json",
+        "size": 2350,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/default.json",
+        "size": 20668,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/deploy.json",
+        "size": 2477,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/five-walls-governance.json",
+        "size": 1440,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/future-agi-guardrails.json",
+        "size": 1655,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/radware-threat-defense-2026.json",
+        "size": 2902,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/routine.json",
+        "size": 1824,
+        "mode": 420
+      },
+      {
+        "path": "config/gates/simatree-data-governance.json",
+        "size": 2651,
+        "mode": 420
+      },
+      {
+        "path": "config/github-about.json",
+        "size": 887,
+        "mode": 420
+      },
+      {
+        "path": "config/mcp-allowlists.json",
+        "size": 8633,
+        "mode": 420
+      },
+      {
+        "path": "config/merge-quality-checks.json",
+        "size": 648,
+        "mode": 420
+      },
+      {
+        "path": "config/model-candidates.json",
+        "size": 25481,
+        "mode": 420
+      },
+      {
+        "path": "config/model-tiers.json",
+        "size": 2766,
+        "mode": 420
+      },
+      {
+        "path": "config/partner-routing.json",
+        "size": 3909,
+        "mode": 420
+      },
+      {
+        "path": "config/policy-bundles/constrained-v1.json",
+        "size": 1659,
+        "mode": 420
+      },
+      {
+        "path": "config/policy-bundles/default-v1.json",
+        "size": 2277,
+        "mode": 420
+      },
+      {
+        "path": "config/post-deploy-marketing-pages.json",
+        "size": 4235,
+        "mode": 420
+      },
+      {
+        "path": "config/pro/constraints-pro.json",
+        "size": 2431,
+        "mode": 420
+      },
+      {
+        "path": "config/pro/prevention-rules-pro.md",
+        "size": 1278,
+        "mode": 420
+      },
+      {
+        "path": "config/pro/reminders-pro.json",
+        "size": 1098,
+        "mode": 420
+      },
+      {
+        "path": "config/pro/thompson-presets.json",
+        "size": 1030,
+        "mode": 420
+      },
+      {
+        "path": "config/progressive/01-wire-only.json",
+        "size": 280,
+        "mode": 420
+      },
+      {
+        "path": "config/progressive/02-dashboard-empty-ok.json",
+        "size": 276,
+        "mode": 420
+      },
+      {
+        "path": "config/progressive/03-one-lesson.json",
+        "size": 393,
+        "mode": 420
+      },
+      {
+        "path": "config/progressive/04-warn-fires.json",
+        "size": 301,
+        "mode": 420
+      },
+      {
+        "path": "config/progressive/05-strict-optional.json",
+        "size": 309,
+        "mode": 420
+      },
+      {
+        "path": "config/progressive/README.md",
+        "size": 589,
+        "mode": 420
+      },
+      {
+        "path": "config/rubrics/default-v1.json",
+        "size": 1140,
+        "mode": 420
+      },
+      {
+        "path": "config/schemas/broker-execution-receipt.schema.json",
+        "size": 3350,
+        "mode": 420
+      },
+      {
+        "path": "config/schemas/provider-execution-attestation-v1.schema.json",
+        "size": 3271,
+        "mode": 420
+      },
+      {
+        "path": "config/schemas/task-outcome-receipt.schema.json",
+        "size": 6082,
+        "mode": 420
+      },
+      {
+        "path": "config/skill-packs/react-testing.json",
+        "size": 485,
+        "mode": 420
+      },
+      {
+        "path": "config/skill-packs/stripe-integration/references/api-spec.json",
+        "size": 17,
+        "mode": 420
+      },
+      {
+        "path": "config/skill-packs/stripe-integration/references/webhook-guide.md",
+        "size": 42,
+        "mode": 420
+      },
+      {
+        "path": "config/skill-specs/pr-reviewer.json",
+        "size": 382,
+        "mode": 420
+      },
+      {
+        "path": "config/skill-specs/release-status.json",
+        "size": 291,
+        "mode": 420
+      },
+      {
+        "path": "config/skill-specs/ticket-triage.json",
+        "size": 335,
+        "mode": 420
+      },
+      {
+        "path": "config/specs/agent-safety.json",
+        "size": 2582,
+        "mode": 420
+      },
+      {
+        "path": "config/subagent-profiles.json",
+        "size": 845,
+        "mode": 420
+      },
+      {
+        "path": "config/tessl-tiles.json",
+        "size": 773,
+        "mode": 420
+      },
+      {
+        "path": "config/thumbgate-settings.managed.json",
+        "size": 200,
+        "mode": 420
+      },
+      {
+        "path": "conformance/provider-attestation/vectors.json",
+        "size": 12681,
+        "mode": 420
+      },
+      {
+        "path": "docs/integrations/grafana/README.md",
+        "size": 7550,
+        "mode": 420
+      },
+      {
+        "path": "docs/integrations/grafana/thumbgate-revenue-evidence-dashboard.json",
+        "size": 45357,
+        "mode": 420
+      },
+      {
+        "path": "docs/specs/provider-execution-attestation-v1.md",
+        "size": 3670,
+        "mode": 420
+      },
+      {
+        "path": "glama.json",
+        "size": 105,
+        "mode": 420
+      },
+      {
+        "path": "hooks/hooks.json",
+        "size": 754,
+        "mode": 420
+      },
+      {
+        "path": "openapi/openapi.yaml",
+        "size": 61064,
+        "mode": 420
+      },
+      {
+        "path": "package.json",
+        "size": 108484,
+        "mode": 420
+      },
+      {
+        "path": "public/about.html",
+        "size": 7127,
+        "mode": 420
+      },
+      {
+        "path": "public/agent-manager.html",
+        "size": 13115,
+        "mode": 420
+      },
+      {
+        "path": "public/agents-cost-savings.html",
+        "size": 12997,
+        "mode": 420
+      },
+      {
+        "path": "public/ai-malpractice-prevention.html",
+        "size": 51790,
+        "mode": 420
+      },
+      {
+        "path": "public/architecture.html",
+        "size": 7281,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/brand/thumbgate-icon-512.png",
+        "size": 24887,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/brand/thumbgate-icon-pro-512.png",
+        "size": 26585,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/brand/thumbgate-icon-team-512.png",
+        "size": 26359,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/brand/thumbgate-logo-1200x360.png",
+        "size": 32033,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/brand/thumbgate-logo-transparent.svg",
+        "size": 1970,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/brand/thumbgate-mark-inline-v3.svg",
+        "size": 1492,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/brand/thumbgate-mark-pro.svg",
+        "size": 1684,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/brand/thumbgate-mark-team.svg",
+        "size": 1832,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/brand/thumbgate-mark.svg",
+        "size": 1421,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/brand/thumbgate-wordmark.svg",
+        "size": 1594,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/claude-thumbgate-statusbar.svg",
+        "size": 978,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/codex-thumbgate-statusbar-test.svg",
+        "size": 1308,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/diagrams/agent-integration.png",
+        "size": 344837,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/diagrams/before-after.svg",
+        "size": 1921,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/diagrams/decision.svg",
+        "size": 3142,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/diagrams/feedback-pipeline.png",
+        "size": 194669,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/diagrams/hero-thumbs.svg",
+        "size": 5203,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/diagrams/loop.svg",
+        "size": 3584,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/diagrams/plugin-topology.png",
+        "size": 67384,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/diagrams/pre-action-gate-loop.svg",
+        "size": 5538,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/diagrams/self-improving-thumbs-loop.svg",
+        "size": 8096,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/diagrams/stack.svg",
+        "size": 1539,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/diagrams/thumbgate-architecture.png",
+        "size": 332710,
+        "mode": 420
+      },
+      {
+        "path": "public/assets/legal-intake-control-flow.svg",
+        "size": 5050,
+        "mode": 420
+      },
+      {
+        "path": "public/blog.html",
+        "size": 20467,
+        "mode": 420
+      },
+      {
+        "path": "public/blog/2026-09-23-datadog-llm-obs-four-practices.html",
+        "size": 2381,
+        "mode": 420
+      },
+      {
+        "path": "public/blog/2026-09-28-pretool-secret-deny.html",
+        "size": 5582,
+        "mode": 420
+      },
+      {
+        "path": "public/blog/2026-10-01-aws-strands-harness-token-firewall.html",
+        "size": 4652,
+        "mode": 420
+      },
+      {
+        "path": "public/blog/2026-10-01-model-distress-relief-seeking-firewall.html",
+        "size": 4768,
+        "mode": 420
+      },
+      {
+        "path": "public/blog/2026-10-02-salt-code-honest-steal-40-guardrails.html",
+        "size": 7604,
+        "mode": 420
+      },
+      {
+        "path": "public/blog/2026-10-05-why-3-days-of-triage-wont-save-ai-speed-code.html",
+        "size": 8617,
+        "mode": 420
+      },
+      {
+        "path": "public/blog/a-10-dollar-vps-is-not-a-computer.html",
+        "size": 8808,
+        "mode": 420
+      },
+      {
+        "path": "public/blog/a-receipt-is-not-world-state.html",
+        "size": 18969,
+        "mode": 420
+      },
+      {
+        "path": "public/blog/git-at-agent-scale.html",
+        "size": 15681,
+        "mode": 420
+      },
+      {
+        "path": "public/blog/inside-your-boundary.html",
+        "size": 7158,
+        "mode": 420
+      },
+      {
+        "path": "public/blog/no-llm-in-the-gate.html",
+        "size": 12710,
+        "mode": 420
+      },
+      {
+        "path": "public/blog/process-over-outcome-gates.html",
+        "size": 7519,
+        "mode": 420
+      },
+      {
+        "path": "public/brand/thumbgate-mark.svg",
+        "size": 1010,
+        "mode": 420
+      },
+      {
+        "path": "public/brand/thumbgate-og.svg",
+        "size": 1066,
+        "mode": 420
+      },
+      {
+        "path": "public/case-studies.html",
+        "size": 10681,
+        "mode": 420
+      },
+      {
+        "path": "public/chatgpt-app.html",
+        "size": 15903,
+        "mode": 420
+      },
+      {
+        "path": "public/codex-enterprise.html",
+        "size": 10081,
+        "mode": 420
+      },
+      {
+        "path": "public/codex-plugin.html",
+        "size": 19626,
+        "mode": 420
+      },
+      {
+        "path": "public/compare.html",
+        "size": 24673,
+        "mode": 420
+      },
+      {
+        "path": "public/dashboard.html",
+        "size": 157934,
+        "mode": 420
+      },
+      {
+        "path": "public/diagnostic.html",
+        "size": 26557,
+        "mode": 420
+      },
+      {
+        "path": "public/docs/connectors.html",
+        "size": 2589,
+        "mode": 420
+      },
+      {
+        "path": "public/eval-scorecard.html",
+        "size": 9646,
+        "mode": 420
+      },
+      {
+        "path": "public/eval-scorecard.json",
+        "size": 432,
+        "mode": 420
+      },
+      {
+        "path": "public/evaluations.html",
+        "size": 13640,
+        "mode": 420
+      },
+      {
+        "path": "public/federal.html",
+        "size": 23522,
+        "mode": 420
+      },
+      {
+        "path": "public/founders.html",
+        "size": 26212,
+        "mode": 420
+      },
+      {
+        "path": "public/guide.html",
+        "size": 22353,
+        "mode": 420
+      },
+      {
+        "path": "public/index.html",
+        "size": 66712,
+        "mode": 420
+      },
+      {
+        "path": "public/install.html",
+        "size": 13697,
+        "mode": 420
+      },
+      {
+        "path": "public/js/buyer-intent.js",
+        "size": 25845,
+        "mode": 420
+      },
+      {
+        "path": "public/learn.html",
+        "size": 31423,
+        "mode": 420
+      },
+      {
+        "path": "public/lessons.html",
+        "size": 64084,
+        "mode": 420
+      },
+      {
+        "path": "public/numbers.html",
+        "size": 12463,
+        "mode": 420
+      },
+      {
+        "path": "public/onboarding.html",
+        "size": 29780,
+        "mode": 420
+      },
+      {
+        "path": "public/partner-intake.html",
+        "size": 7374,
+        "mode": 420
+      },
+      {
+        "path": "public/peter.html",
+        "size": 10912,
+        "mode": 420
+      },
+      {
+        "path": "public/platform-partners.html",
+        "size": 6367,
+        "mode": 420
+      },
+      {
+        "path": "public/pricing.html",
+        "size": 28300,
+        "mode": 420
+      },
+      {
+        "path": "public/privacy.html",
+        "size": 7946,
+        "mode": 420
+      },
+      {
+        "path": "public/pro.html",
+        "size": 39740,
+        "mode": 420
+      },
+      {
+        "path": "public/support.html",
+        "size": 3933,
+        "mode": 420
+      },
+      {
+        "path": "public/terms.html",
+        "size": 10424,
+        "mode": 420
+      },
+      {
+        "path": "public/third-party-notices.html",
+        "size": 5235,
+        "mode": 420
+      },
+      {
+        "path": "public/whitepaper.html",
+        "size": 10768,
+        "mode": 420
+      },
+      {
+        "path": "public/yt.html",
+        "size": 18005,
+        "mode": 420
+      },
+      {
+        "path": "scripts/a-plus-evidence-scorecard.js",
+        "size": 15763,
+        "mode": 420
+      },
+      {
+        "path": "scripts/access-anomaly-detector.js",
+        "size": 3630,
+        "mode": 420
+      },
+      {
+        "path": "scripts/action-receipts.js",
+        "size": 14753,
+        "mode": 420
+      },
+      {
+        "path": "scripts/activation-quickstart.js",
+        "size": 7463,
+        "mode": 420
+      },
+      {
+        "path": "scripts/activation-tracker.js",
+        "size": 4273,
+        "mode": 420
+      },
+      {
+        "path": "scripts/adaptive-governance-arena.js",
+        "size": 11809,
+        "mode": 420
+      },
+      {
+        "path": "scripts/admin-override.js",
+        "size": 6812,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-action-inventory.js",
+        "size": 32997,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-audit-trace.js",
+        "size": 3799,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-design-governance.js",
+        "size": 8848,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-egress-policy.js",
+        "size": 37760,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-memory-lifecycle.js",
+        "size": 15286,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-operations-planner.js",
+        "size": 51213,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-outcome-eval.js",
+        "size": 4903,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-outcome-monitor.js",
+        "size": 11035,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-readiness-plan.js",
+        "size": 3595,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-readiness.js",
+        "size": 14261,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-reasoning-traces.js",
+        "size": 26206,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-reward-model.js",
+        "size": 18261,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-security-central.js",
+        "size": 22233,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agent-stack-survival-audit.js",
+        "size": 7306,
+        "mode": 420
+      },
+      {
+        "path": "scripts/agentic-data-pipeline.js",
+        "size": 29066,
+        "mode": 420
+      },
+      {
+        "path": "scripts/ai-component-inventory.js",
+        "size": 13030,
+        "mode": 420
+      },
+      {
+        "path": "scripts/ai-engineering-stack-guardrails.js",
+        "size": 10444,
+        "mode": 420
+      },
+      {
+        "path": "scripts/ai-search-distribution.js",
+        "size": 1417,
+        "mode": 420
+      },
+      {
+        "path": "scripts/allowlist-bridge-honesty.js",
+        "size": 14541,
+        "mode": 420
+      },
+      {
+        "path": "scripts/analytics-window.js",
+        "size": 4258,
+        "mode": 420
+      },
+      {
+        "path": "scripts/async-eval-observability.js",
+        "size": 9091,
+        "mode": 420
+      },
+      {
+        "path": "scripts/async-job-runner.js",
+        "size": 39739,
+        "mode": 420
+      },
+      {
+        "path": "scripts/audit-trail.js",
+        "size": 23190,
+        "mode": 420
+      },
+      {
+        "path": "scripts/audit.js",
+        "size": 1614,
+        "mode": 420
+      },
+      {
+        "path": "scripts/auto-promote-gates.js",
+        "size": 31819,
+        "mode": 420
+      },
+      {
+        "path": "scripts/auto-wire-hooks.js",
+        "size": 27081,
+        "mode": 420
+      },
+      {
+        "path": "scripts/autoresearch-runner.js",
+        "size": 9676,
+        "mode": 420
+      },
+      {
+        "path": "scripts/aws-blocks-guardrails.js",
+        "size": 10925,
+        "mode": 420
+      },
+      {
+        "path": "scripts/background-agent-governance.js",
+        "size": 9489,
+        "mode": 420
+      },
+      {
+        "path": "scripts/bayes-optimal-gate.js",
+        "size": 9947,
+        "mode": 420
+      },
+      {
+        "path": "scripts/belief-update.js",
+        "size": 2616,
+        "mode": 420
+      },
+      {
+        "path": "scripts/billing.js",
+        "size": 159223,
+        "mode": 493
+      },
+      {
+        "path": "scripts/bot-detection.js",
+        "size": 6687,
+        "mode": 420
+      },
+      {
+        "path": "scripts/broker-execution-receipts.js",
+        "size": 24649,
+        "mode": 420
+      },
+      {
+        "path": "scripts/budget-aware-gates-proof.js",
+        "size": 15925,
+        "mode": 420
+      },
+      {
+        "path": "scripts/build-metadata.js",
+        "size": 5128,
+        "mode": 420
+      },
+      {
+        "path": "scripts/buyer-paths.js",
+        "size": 2682,
+        "mode": 420
+      },
+      {
+        "path": "scripts/chatgpt-ads-readiness-pack.js",
+        "size": 7982,
+        "mode": 420
+      },
+      {
+        "path": "scripts/checkout-attribution-reference.js",
+        "size": 3514,
+        "mode": 420
+      },
+      {
+        "path": "scripts/ci-gha-buildkite-patterns.js",
+        "size": 13878,
+        "mode": 420
+      },
+      {
+        "path": "scripts/classifier-routing.js",
+        "size": 5942,
+        "mode": 420
+      },
+      {
+        "path": "scripts/claude-feedback-sync.js",
+        "size": 11764,
+        "mode": 420
+      },
+      {
+        "path": "scripts/claw-harness-production.js",
+        "size": 8161,
+        "mode": 420
+      },
+      {
+        "path": "scripts/cli-demo.js",
+        "size": 4281,
+        "mode": 420
+      },
+      {
+        "path": "scripts/cli-feedback.js",
+        "size": 7392,
+        "mode": 420
+      },
+      {
+        "path": "scripts/cli-progress.js",
+        "size": 2590,
+        "mode": 420
+      },
+      {
+        "path": "scripts/cli-schema.js",
+        "size": 57204,
+        "mode": 420
+      },
+      {
+        "path": "scripts/cli-status.js",
+        "size": 5541,
+        "mode": 420
+      },
+      {
+        "path": "scripts/cli-telemetry.js",
+        "size": 3262,
+        "mode": 420
+      },
+      {
+        "path": "scripts/cloudflare-dynamic-sandbox.js",
+        "size": 9718,
+        "mode": 420
+      },
+      {
+        "path": "scripts/cobble-hot-store-split.js",
+        "size": 20409,
+        "mode": 420
+      },
+      {
+        "path": "scripts/code-graph-guardrails.js",
+        "size": 6210,
+        "mode": 420
+      },
+      {
+        "path": "scripts/code-mode-mcp-plan.js",
+        "size": 2594,
+        "mode": 420
+      },
+      {
+        "path": "scripts/code-reasoning.js",
+        "size": 12815,
+        "mode": 420
+      },
+      {
+        "path": "scripts/codegraph-context.js",
+        "size": 12732,
+        "mode": 420
+      },
+      {
+        "path": "scripts/codex-runbook-flywheel.js",
+        "size": 11044,
+        "mode": 420
+      },
+      {
+        "path": "scripts/codex-self-heal.js",
+        "size": 1240,
+        "mode": 420
+      },
+      {
+        "path": "scripts/colab-compute-honesty.js",
+        "size": 10490,
+        "mode": 420
+      },
+      {
+        "path": "scripts/colbert-style-maxsim.js",
+        "size": 7052,
+        "mode": 420
+      },
+      {
+        "path": "scripts/commercial-offer.js",
+        "size": 5124,
+        "mode": 420
+      },
+      {
+        "path": "scripts/context-engine.js",
+        "size": 22841,
+        "mode": 420
+      },
+      {
+        "path": "scripts/context-footprint.js",
+        "size": 13197,
+        "mode": 420
+      },
+      {
+        "path": "scripts/context-manager.js",
+        "size": 12748,
+        "mode": 420
+      },
+      {
+        "path": "scripts/contextfs.js",
+        "size": 47566,
+        "mode": 420
+      },
+      {
+        "path": "scripts/conversation-context.js",
+        "size": 3266,
+        "mode": 420
+      },
+      {
+        "path": "scripts/cross-encoder-reranker.js",
+        "size": 16673,
+        "mode": 420
+      },
+      {
+        "path": "scripts/dashboard-chat.js",
+        "size": 22967,
+        "mode": 420
+      },
+      {
+        "path": "scripts/dashboard-limits.js",
+        "size": 959,
+        "mode": 420
+      },
+      {
+        "path": "scripts/dashboard-render-spec.js",
+        "size": 13830,
+        "mode": 420
+      },
+      {
+        "path": "scripts/dashboard.js",
+        "size": 96057,
+        "mode": 420
+      },
+      {
+        "path": "scripts/decision-journal.js",
+        "size": 13352,
+        "mode": 420
+      },
+      {
+        "path": "scripts/deeppattern-discipline-honesty.js",
+        "size": 16171,
+        "mode": 420
+      },
+      {
+        "path": "scripts/deepseek-v4-runtime-guardrails.js",
+        "size": 14592,
+        "mode": 420
+      },
+      {
+        "path": "scripts/docker-sandbox-planner.js",
+        "size": 7694,
+        "mode": 420
+      },
+      {
+        "path": "scripts/document-intake.js",
+        "size": 36623,
+        "mode": 420
+      },
+      {
+        "path": "scripts/document-workflow-governance.js",
+        "size": 2110,
+        "mode": 420
+      },
+      {
+        "path": "scripts/double-blind-eval-protocol.js",
+        "size": 9445,
+        "mode": 420
+      },
+      {
+        "path": "scripts/durability/step.js",
+        "size": 8408,
+        "mode": 420
+      },
+      {
+        "path": "scripts/edotenv-rl-gateway.js",
+        "size": 7835,
+        "mode": 420
+      },
+      {
+        "path": "scripts/ensure-production-search-corpus.js",
+        "size": 5449,
+        "mode": 420
+      },
+      {
+        "path": "scripts/entitlement.js",
+        "size": 9663,
+        "mode": 420
+      },
+      {
+        "path": "scripts/eval-holdout.js",
+        "size": 12117,
+        "mode": 420
+      },
+      {
+        "path": "scripts/eval-quality-suite.js",
+        "size": 6964,
+        "mode": 420
+      },
+      {
+        "path": "scripts/evolution-state.js",
+        "size": 6369,
+        "mode": 420
+      },
+      {
+        "path": "scripts/experiment-tracker.js",
+        "size": 8793,
+        "mode": 420
+      },
+      {
+        "path": "scripts/explore-subcommands.js",
+        "size": 8754,
+        "mode": 420
+      },
+      {
+        "path": "scripts/explore.js",
+        "size": 17412,
+        "mode": 420
+      },
+      {
+        "path": "scripts/export-databricks-bundle.js",
+        "size": 7743,
+        "mode": 420
+      },
+      {
+        "path": "scripts/export-dpo-pairs.js",
+        "size": 11066,
+        "mode": 420
+      },
+      {
+        "path": "scripts/export-hf-dataset.js",
+        "size": 10267,
+        "mode": 420
+      },
+      {
+        "path": "scripts/external-customer-audit.js",
+        "size": 35989,
+        "mode": 420
+      },
+      {
+        "path": "scripts/failure-diagnostics.js",
+        "size": 16320,
+        "mode": 420
+      },
+      {
+        "path": "scripts/feedback_quality_eval.py",
+        "size": 26751,
+        "mode": 420
+      },
+      {
+        "path": "scripts/feedback-aggregate.js",
+        "size": 10123,
+        "mode": 420
+      },
+      {
+        "path": "scripts/feedback-attribution.js",
+        "size": 10340,
+        "mode": 420
+      },
+      {
+        "path": "scripts/feedback-history-distiller.js",
+        "size": 12189,
+        "mode": 420
+      },
+      {
+        "path": "scripts/feedback-loop.js",
+        "size": 105110,
+        "mode": 420
+      },
+      {
+        "path": "scripts/feedback-paths.js",
+        "size": 9975,
+        "mode": 420
+      },
+      {
+        "path": "scripts/feedback-quality.js",
+        "size": 8907,
+        "mode": 420
+      },
+      {
+        "path": "scripts/feedback-sanitizer.js",
+        "size": 8512,
+        "mode": 420
+      },
+      {
+        "path": "scripts/feedback-schema.js",
+        "size": 15811,
+        "mode": 420
+      },
+      {
+        "path": "scripts/feedback-session.js",
+        "size": 10105,
+        "mode": 420
+      },
+      {
+        "path": "scripts/feedback-to-rules.js",
+        "size": 12842,
+        "mode": 420
+      },
+      {
+        "path": "scripts/file-ledger-lock.js",
+        "size": 4273,
+        "mode": 420
+      },
+      {
+        "path": "scripts/filesystem-search.js",
+        "size": 15925,
+        "mode": 420
+      },
+      {
+        "path": "scripts/financial-control-plane.js",
+        "size": 67070,
+        "mode": 420
+      },
+      {
+        "path": "scripts/find-dormant-requires.js",
+        "size": 4241,
+        "mode": 420
+      },
+      {
+        "path": "scripts/fs-utils.js",
+        "size": 5371,
+        "mode": 420
+      },
+      {
+        "path": "scripts/gate-stats.js",
+        "size": 9954,
+        "mode": 420
+      },
+      {
+        "path": "scripts/gate-templates.js",
+        "size": 2022,
+        "mode": 420
+      },
+      {
+        "path": "scripts/gates-engine.js",
+        "size": 207336,
+        "mode": 420
+      },
+      {
+        "path": "scripts/gemini-embedding-policy.js",
+        "size": 7542,
+        "mode": 420
+      },
+      {
+        "path": "scripts/generate-case-study-outreach.js",
+        "size": 8505,
+        "mode": 420
+      },
+      {
+        "path": "scripts/generate-eval-scorecard.js",
+        "size": 12161,
+        "mode": 420
+      },
+      {
+        "path": "scripts/git-at-scale.js",
+        "size": 19519,
+        "mode": 420
+      },
+      {
+        "path": "scripts/governance-conflict-audit.js",
+        "size": 70255,
+        "mode": 420
+      },
+      {
+        "path": "scripts/governance-difficulty-curriculum.js",
+        "size": 10424,
+        "mode": 420
+      },
+      {
+        "path": "scripts/grafana-revenue-evidence.js",
+        "size": 36678,
+        "mode": 420
+      },
+      {
+        "path": "scripts/graphrag-retrieval.js",
+        "size": 10318,
+        "mode": 420
+      },
+      {
+        "path": "scripts/growth-campaigns.js",
+        "size": 7233,
+        "mode": 420
+      },
+      {
+        "path": "scripts/gurobi_optimizer.py",
+        "size": 17187,
+        "mode": 420
+      },
+      {
+        "path": "scripts/gurobi-optimizer.js",
+        "size": 10229,
+        "mode": 420
+      },
+      {
+        "path": "scripts/halo-trace-optimizer.js",
+        "size": 20046,
+        "mode": 493
+      },
+      {
+        "path": "scripts/harness-selector.js",
+        "size": 21964,
+        "mode": 420
+      },
+      {
+        "path": "scripts/harness-tool-names.js",
+        "size": 2235,
+        "mode": 420
+      },
+      {
+        "path": "scripts/hf-papers.js",
+        "size": 8073,
+        "mode": 420
+      },
+      {
+        "path": "scripts/hidden-entry-points.js",
+        "size": 8707,
+        "mode": 420
+      },
+      {
+        "path": "scripts/hook-runtime.js",
+        "size": 4061,
+        "mode": 420
+      },
+      {
+        "path": "scripts/hook-stop-anti-claim.js",
+        "size": 11928,
+        "mode": 420
+      },
+      {
+        "path": "scripts/hook-thumbgate-cache-updater.js",
+        "size": 3750,
+        "mode": 420
+      },
+      {
+        "path": "scripts/hosted-config.js",
+        "size": 5924,
+        "mode": 420
+      },
+      {
+        "path": "scripts/human-escalation.js",
+        "size": 29275,
+        "mode": 420
+      },
+      {
+        "path": "scripts/hybrid-feedback-context.js",
+        "size": 38993,
+        "mode": 420
+      },
+      {
+        "path": "scripts/hybrid-supervisor-agent.js",
+        "size": 2834,
+        "mode": 420
+      },
+      {
+        "path": "scripts/imperative-detector.js",
+        "size": 3488,
+        "mode": 420
+      },
+      {
+        "path": "scripts/inference-cache-policy.js",
+        "size": 4238,
+        "mode": 420
+      },
+      {
+        "path": "scripts/infoq-architect-honesty.js",
+        "size": 11673,
+        "mode": 420
+      },
+      {
+        "path": "scripts/install-mcp.js",
+        "size": 4736,
+        "mode": 420
+      },
+      {
+        "path": "scripts/install-shim.js",
+        "size": 2793,
+        "mode": 420
+      },
+      {
+        "path": "scripts/install-thumbgate-daily-publish-launchd.sh",
+        "size": 2185,
+        "mode": 493
+      },
+      {
+        "path": "scripts/intent-governed-execution.js",
+        "size": 19848,
+        "mode": 420
+      },
+      {
+        "path": "scripts/internal-agent-bootstrap.js",
+        "size": 14270,
+        "mode": 420
+      },
+      {
+        "path": "scripts/intervention-policy.js",
+        "size": 32657,
+        "mode": 420
+      },
+      {
+        "path": "scripts/jit-harness-compose.js",
+        "size": 21342,
+        "mode": 420
+      },
+      {
+        "path": "scripts/jsonl-watcher.js",
+        "size": 5458,
+        "mode": 420
+      },
+      {
+        "path": "scripts/jsonl-window.js",
+        "size": 2411,
+        "mode": 420
+      },
+      {
+        "path": "scripts/judge-reward-function.js",
+        "size": 13761,
+        "mode": 420
+      },
+      {
+        "path": "scripts/lesson-canonical.js",
+        "size": 7335,
+        "mode": 420
+      },
+      {
+        "path": "scripts/lesson-db.js",
+        "size": 22216,
+        "mode": 420
+      },
+      {
+        "path": "scripts/lesson-embedding-index.js",
+        "size": 11089,
+        "mode": 420
+      },
+      {
+        "path": "scripts/lesson-embedding-maintenance.js",
+        "size": 5580,
+        "mode": 420
+      },
+      {
+        "path": "scripts/lesson-inference.js",
+        "size": 27288,
+        "mode": 420
+      },
+      {
+        "path": "scripts/lesson-reranker.js",
+        "size": 11019,
+        "mode": 420
+      },
+      {
+        "path": "scripts/lesson-retrieval.js",
+        "size": 36044,
+        "mode": 420
+      },
+      {
+        "path": "scripts/lesson-rotation.js",
+        "size": 4109,
+        "mode": 420
+      },
+      {
+        "path": "scripts/lesson-search.js",
+        "size": 27405,
+        "mode": 420
+      },
+      {
+        "path": "scripts/lesson-synthesis.js",
+        "size": 7061,
+        "mode": 420
+      },
+      {
+        "path": "scripts/license.js",
+        "size": 2625,
+        "mode": 420
+      },
+      {
+        "path": "scripts/llm-behavior-monitor.js",
+        "size": 8998,
+        "mode": 420
+      },
+      {
+        "path": "scripts/llm-client.js",
+        "size": 19930,
+        "mode": 420
+      },
+      {
+        "path": "scripts/llm-obs-honesty.js",
+        "size": 17270,
+        "mode": 420
+      },
+      {
+        "path": "scripts/local-model-profile.js",
+        "size": 14630,
+        "mode": 420
+      },
+      {
+        "path": "scripts/long-running-agent-context-guardrails.js",
+        "size": 6760,
+        "mode": 420
+      },
+      {
+        "path": "scripts/mailer/index.js",
+        "size": 285,
+        "mode": 420
+      },
+      {
+        "path": "scripts/mailer/resend-mailer.js",
+        "size": 27696,
+        "mode": 420
+      },
+      {
+        "path": "scripts/matryoshka-embedding.js",
+        "size": 9626,
+        "mode": 420
+      },
+      {
+        "path": "scripts/mcp-config.js",
+        "size": 7494,
+        "mode": 420
+      },
+      {
+        "path": "scripts/mcp-oauth.js",
+        "size": 14189,
+        "mode": 420
+      },
+      {
+        "path": "scripts/mcp-policy.js",
+        "size": 3482,
+        "mode": 420
+      },
+      {
+        "path": "scripts/mcp-session-handles.js",
+        "size": 31191,
+        "mode": 420
+      },
+      {
+        "path": "scripts/mcp-transport-strategy.js",
+        "size": 2440,
+        "mode": 420
+      },
+      {
+        "path": "scripts/mcp-wiring-doctor.js",
+        "size": 10249,
+        "mode": 420
+      },
+      {
+        "path": "scripts/meko-datapack-honesty.js",
+        "size": 14063,
+        "mode": 420
+      },
+      {
+        "path": "scripts/memory-firewall.js",
+        "size": 11105,
+        "mode": 420
+      },
+      {
+        "path": "scripts/memory-scope-readiness.js",
+        "size": 24899,
+        "mode": 420
+      },
+      {
+        "path": "scripts/memory-vs-rag-route.js",
+        "size": 5306,
+        "mode": 420
+      },
+      {
+        "path": "scripts/meta-agent-loop.js",
+        "size": 24860,
+        "mode": 420
+      },
+      {
+        "path": "scripts/mintlify-knowledge-honesty.js",
+        "size": 22653,
+        "mode": 493
+      },
+      {
+        "path": "scripts/model-access-eligibility.js",
+        "size": 1257,
+        "mode": 420
+      },
+      {
+        "path": "scripts/model-distress-detector.js",
+        "size": 7801,
+        "mode": 420
+      },
+      {
+        "path": "scripts/model-distress-doctor.js",
+        "size": 7675,
+        "mode": 420
+      },
+      {
+        "path": "scripts/model-eval.js",
+        "size": 13305,
+        "mode": 420
+      },
+      {
+        "path": "scripts/model-migration-readiness.js",
+        "size": 1954,
+        "mode": 420
+      },
+      {
+        "path": "scripts/model-tier-router.js",
+        "size": 27593,
+        "mode": 420
+      },
+      {
+        "path": "scripts/multimodal-retrieval-plan.js",
+        "size": 5492,
+        "mode": 420
+      },
+      {
+        "path": "scripts/native-messaging-audit.js",
+        "size": 16101,
+        "mode": 420
+      },
+      {
+        "path": "scripts/natural-language-harness.js",
+        "size": 9180,
+        "mode": 420
+      },
+      {
+        "path": "scripts/noop-detect.js",
+        "size": 10992,
+        "mode": 420
+      },
+      {
+        "path": "scripts/nvidia-specdecode-al-doctor.js",
+        "size": 20714,
+        "mode": 420
+      },
+      {
+        "path": "scripts/observability-env.js",
+        "size": 4776,
+        "mode": 420
+      },
+      {
+        "path": "scripts/observability-setup.js",
+        "size": 1751,
+        "mode": 420
+      },
+      {
+        "path": "scripts/obsidian-export.js",
+        "size": 22082,
+        "mode": 420
+      },
+      {
+        "path": "scripts/openui-catalog-compose-honesty.js",
+        "size": 18953,
+        "mode": 420
+      },
+      {
+        "path": "scripts/operational-integrity.js",
+        "size": 32876,
+        "mode": 420
+      },
+      {
+        "path": "scripts/oss-pr-opportunity-scout.js",
+        "size": 10756,
+        "mode": 420
+      },
+      {
+        "path": "scripts/otel-declarative-config.js",
+        "size": 1801,
+        "mode": 420
+      },
+      {
+        "path": "scripts/override-audit.js",
+        "size": 6940,
+        "mode": 420
+      },
+      {
+        "path": "scripts/package-manager-honesty-doctor.js",
+        "size": 16417,
+        "mode": 420
+      },
+      {
+        "path": "scripts/parallel-workflow-orchestrator.js",
+        "size": 11146,
+        "mode": 420
+      },
+      {
+        "path": "scripts/perplexity-client.js",
+        "size": 5905,
+        "mode": 420
+      },
+      {
+        "path": "scripts/plan-gate.js",
+        "size": 7365,
+        "mode": 420
+      },
+      {
+        "path": "scripts/plausible-domain-config.js",
+        "size": 3554,
+        "mode": 420
+      },
+      {
+        "path": "scripts/plausible-server-events.js",
+        "size": 5574,
+        "mode": 420
+      },
+      {
+        "path": "scripts/pr-manager.js",
+        "size": 16065,
+        "mode": 420
+      },
+      {
+        "path": "scripts/pragmatic-hybrid-search.js",
+        "size": 12964,
+        "mode": 420
+      },
+      {
+        "path": "scripts/private-core-boundary.js",
+        "size": 1891,
+        "mode": 420
+      },
+      {
+        "path": "scripts/pro-local-dashboard.js",
+        "size": 12327,
+        "mode": 420
+      },
+      {
+        "path": "scripts/proactive-agent-eval-guardrails.js",
+        "size": 9852,
+        "mode": 420
+      },
+      {
+        "path": "scripts/problem-detail.js",
+        "size": 1885,
+        "mode": 420
+      },
+      {
+        "path": "scripts/product-feedback.js",
+        "size": 3635,
+        "mode": 420
+      },
+      {
+        "path": "scripts/profile-router.js",
+        "size": 8492,
+        "mode": 420
+      },
+      {
+        "path": "scripts/prompt-eval.js",
+        "size": 33392,
+        "mode": 420
+      },
+      {
+        "path": "scripts/prompt-guard.js",
+        "size": 2227,
+        "mode": 420
+      },
+      {
+        "path": "scripts/prompt-programs.js",
+        "size": 3439,
+        "mode": 420
+      },
+      {
+        "path": "scripts/prompting-operating-system.js",
+        "size": 9805,
+        "mode": 420
+      },
+      {
+        "path": "scripts/prove-herdr-adapter.js",
+        "size": 1813,
+        "mode": 420
+      },
+      {
+        "path": "scripts/prove-memory-pyramid-and-symbolic-canvas.js",
+        "size": 3378,
+        "mode": 420
+      },
+      {
+        "path": "scripts/prove-workos.js",
+        "size": 2057,
+        "mode": 493
+      },
+      {
+        "path": "scripts/provider-action-normalizer.js",
+        "size": 20614,
+        "mode": 420
+      },
+      {
+        "path": "scripts/provider-attestation-conformance.js",
+        "size": 7446,
+        "mode": 420
+      },
+      {
+        "path": "scripts/provider-live-evidence.js",
+        "size": 59704,
+        "mode": 420
+      },
+      {
+        "path": "scripts/provider-payment-reconciler.js",
+        "size": 17682,
+        "mode": 420
+      },
+      {
+        "path": "scripts/provider-receipt-contract.js",
+        "size": 5025,
+        "mode": 420
+      },
+      {
+        "path": "scripts/provider-revenue-evidence.js",
+        "size": 12580,
+        "mode": 420
+      },
+      {
+        "path": "scripts/proxy-pointer-rag-guardrails.js",
+        "size": 9118,
+        "mode": 420
+      },
+      {
+        "path": "scripts/published-cli.js",
+        "size": 2913,
+        "mode": 420
+      },
+      {
+        "path": "scripts/qa-scenario-planner.js",
+        "size": 6130,
+        "mode": 420
+      },
+      {
+        "path": "scripts/qwen38-max-cost-optimizer.js",
+        "size": 14743,
+        "mode": 420
+      },
+      {
+        "path": "scripts/radware-threat-defense.js",
+        "size": 9319,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rag-document-pipeline.js",
+        "size": 16072,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rag-embedding-identity.js",
+        "size": 7859,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rag-precision-guardrails.js",
+        "size": 16624,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rag-structured-output.js",
+        "size": 15222,
+        "mode": 420
+      },
+      {
+        "path": "scripts/ragas-style-metrics.js",
+        "size": 11658,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rate-limiter.js",
+        "size": 9093,
+        "mode": 420
+      },
+      {
+        "path": "scripts/reasoning-efficiency-guardrails.js",
+        "size": 11359,
+        "mode": 420
+      },
+      {
+        "path": "scripts/refresh-proof-pack.js",
+        "size": 8211,
+        "mode": 420
+      },
+      {
+        "path": "scripts/remote-feedback-capture.js",
+        "size": 4335,
+        "mode": 420
+      },
+      {
+        "path": "scripts/repeat-metric.js",
+        "size": 5136,
+        "mode": 420
+      },
+      {
+        "path": "scripts/request-envelope.js",
+        "size": 5433,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rerank-pipeline.js",
+        "size": 11664,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rerank-quality-eval.js",
+        "size": 4202,
+        "mode": 420
+      },
+      {
+        "path": "scripts/research-agent-harness.js",
+        "size": 7924,
+        "mode": 420
+      },
+      {
+        "path": "scripts/retrieval-hybrid-ablation.js",
+        "size": 3961,
+        "mode": 420
+      },
+      {
+        "path": "scripts/retrieval-quality-tier.js",
+        "size": 3977,
+        "mode": 420
+      },
+      {
+        "path": "scripts/revenue-action-eligibility.js",
+        "size": 15911,
+        "mode": 420
+      },
+      {
+        "path": "scripts/revenue-evidence-remediation.js",
+        "size": 27267,
+        "mode": 420
+      },
+      {
+        "path": "scripts/revenue-offer-system.js",
+        "size": 31692,
+        "mode": 420
+      },
+      {
+        "path": "scripts/reward-hacking-guardrails.js",
+        "size": 11601,
+        "mode": 420
+      },
+      {
+        "path": "scripts/risk-scorer.js",
+        "size": 22640,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rlaif-self-audit.js",
+        "size": 4130,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rrsi-regularizer.js",
+        "size": 16248,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rsi-safety-hillclimb.js",
+        "size": 5935,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rubric-engine.js",
+        "size": 7584,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rule-sprawl.js",
+        "size": 6179,
+        "mode": 420
+      },
+      {
+        "path": "scripts/rule-validator.js",
+        "size": 10555,
+        "mode": 420
+      },
+      {
+        "path": "scripts/sales-pipeline.js",
+        "size": 39749,
+        "mode": 420
+      },
+      {
+        "path": "scripts/salt-code-policy-honesty.js",
+        "size": 47718,
+        "mode": 420
+      },
+      {
+        "path": "scripts/schedule-manager.js",
+        "size": 13717,
+        "mode": 420
+      },
+      {
+        "path": "scripts/secret-fixture-tokens.js",
+        "size": 1807,
+        "mode": 420
+      },
+      {
+        "path": "scripts/secret-redaction.js",
+        "size": 7246,
+        "mode": 420
+      },
+      {
+        "path": "scripts/secret-scanner.js",
+        "size": 38834,
+        "mode": 420
+      },
+      {
+        "path": "scripts/security-scanner.js",
+        "size": 25671,
+        "mode": 420
+      },
+      {
+        "path": "scripts/self-distill-agent.js",
+        "size": 18366,
+        "mode": 420
+      },
+      {
+        "path": "scripts/self-harness-optimizer.js",
+        "size": 4779,
+        "mode": 493
+      },
+      {
+        "path": "scripts/self-heal.js",
+        "size": 4649,
+        "mode": 420
+      },
+      {
+        "path": "scripts/self-healing-check.js",
+        "size": 6847,
+        "mode": 420
+      },
+      {
+        "path": "scripts/self-protection.js",
+        "size": 3061,
+        "mode": 420
+      },
+      {
+        "path": "scripts/semantic-dedup.js",
+        "size": 3462,
+        "mode": 420
+      },
+      {
+        "path": "scripts/semantic-layer.js",
+        "size": 3141,
+        "mode": 420
+      },
+      {
+        "path": "scripts/seo-gsd.js",
+        "size": 241010,
+        "mode": 420
+      },
+      {
+        "path": "scripts/session-lease.js",
+        "size": 13554,
+        "mode": 420
+      },
+      {
+        "path": "scripts/settings-hierarchy.js",
+        "size": 5596,
+        "mode": 420
+      },
+      {
+        "path": "scripts/silent-failure-cluster.js",
+        "size": 19325,
+        "mode": 420
+      },
+      {
+        "path": "scripts/simatree-data-governance.js",
+        "size": 12940,
+        "mode": 420
+      },
+      {
+        "path": "scripts/single-use-credential-gate.js",
+        "size": 6436,
+        "mode": 420
+      },
+      {
+        "path": "scripts/siren-mcp-governance.js",
+        "size": 16567,
+        "mode": 493
+      },
+      {
+        "path": "scripts/skill-generator.js",
+        "size": 13397,
+        "mode": 420
+      },
+      {
+        "path": "scripts/skill-packs.js",
+        "size": 11386,
+        "mode": 420
+      },
+      {
+        "path": "scripts/skill-rag-router.js",
+        "size": 1839,
+        "mode": 420
+      },
+      {
+        "path": "scripts/slo-alert-engine.js",
+        "size": 5623,
+        "mode": 420
+      },
+      {
+        "path": "scripts/slow-loop.js",
+        "size": 3658,
+        "mode": 420
+      },
+      {
+        "path": "scripts/solver-parity.js",
+        "size": 17828,
+        "mode": 420
+      },
+      {
+        "path": "scripts/spec-gate.js",
+        "size": 11364,
+        "mode": 420
+      },
+      {
+        "path": "scripts/statusline-cache-path.js",
+        "size": 1424,
+        "mode": 420
+      },
+      {
+        "path": "scripts/statusline-cache-read.js",
+        "size": 2017,
+        "mode": 420
+      },
+      {
+        "path": "scripts/statusline-context.js",
+        "size": 5125,
+        "mode": 420
+      },
+      {
+        "path": "scripts/statusline-lesson.js",
+        "size": 443,
+        "mode": 420
+      },
+      {
+        "path": "scripts/statusline-links.js",
+        "size": 6786,
+        "mode": 420
+      },
+      {
+        "path": "scripts/statusline-local-stats.js",
+        "size": 1094,
+        "mode": 420
+      },
+      {
+        "path": "scripts/statusline-meta.js",
+        "size": 1435,
+        "mode": 420
+      },
+      {
+        "path": "scripts/statusline-tower.js",
+        "size": 1239,
+        "mode": 420
+      },
+      {
+        "path": "scripts/statusline.sh",
+        "size": 10103,
+        "mode": 493
+      },
+      {
+        "path": "scripts/stealth-memory-injection-gate.js",
+        "size": 11078,
+        "mode": 420
+      },
+      {
+        "path": "scripts/strands-harness-doctor.js",
+        "size": 13744,
+        "mode": 420
+      },
+      {
+        "path": "scripts/stripe-credentials.js",
+        "size": 1044,
+        "mode": 420
+      },
+      {
+        "path": "scripts/stripe-revenue-catalog-audit.js",
+        "size": 12732,
+        "mode": 420
+      },
+      {
+        "path": "scripts/stripe-revenue-catalog.js",
+        "size": 6050,
+        "mode": 420
+      },
+      {
+        "path": "scripts/structured-prompt-driven.js",
+        "size": 8534,
+        "mode": 420
+      },
+      {
+        "path": "scripts/switchyard-router.js",
+        "size": 12159,
+        "mode": 420
+      },
+      {
+        "path": "scripts/sync-telemetry-from-prod.js",
+        "size": 13832,
+        "mode": 420
+      },
+      {
+        "path": "scripts/synthetic-data-provenance.js",
+        "size": 3473,
+        "mode": 420
+      },
+      {
+        "path": "scripts/tailscale-p2p-doctor.js",
+        "size": 7681,
+        "mode": 493
+      },
+      {
+        "path": "scripts/task-context-result.js",
+        "size": 3026,
+        "mode": 420
+      },
+      {
+        "path": "scripts/task-outcomes.js",
+        "size": 15579,
+        "mode": 420
+      },
+      {
+        "path": "scripts/telemetry-analytics.js",
+        "size": 60766,
+        "mode": 420
+      },
+      {
+        "path": "scripts/temporal-decay-weighting.js",
+        "size": 4805,
+        "mode": 420
+      },
+      {
+        "path": "scripts/test-all.js",
+        "size": 6510,
+        "mode": 420
+      },
+      {
+        "path": "scripts/thompson-sampling.js",
+        "size": 16615,
+        "mode": 420
+      },
+      {
+        "path": "scripts/thumbgate-bench.js",
+        "size": 26544,
+        "mode": 420
+      },
+      {
+        "path": "scripts/thumbgate-board-loop.js",
+        "size": 14867,
+        "mode": 420
+      },
+      {
+        "path": "scripts/thumbgate-daily-discoveries-publish.js",
+        "size": 14146,
+        "mode": 493
+      },
+      {
+        "path": "scripts/thumbgate-daily-discoveries-publish.sh",
+        "size": 615,
+        "mode": 493
+      },
+      {
+        "path": "scripts/thumbgate-search.js",
+        "size": 11917,
+        "mode": 420
+      },
+      {
+        "path": "scripts/tier-budget-guard.js",
+        "size": 6073,
+        "mode": 420
+      },
+      {
+        "path": "scripts/token-savings.js",
+        "size": 7913,
+        "mode": 420
+      },
+      {
+        "path": "scripts/token-shunt-honesty.js",
+        "size": 17131,
+        "mode": 420
+      },
+      {
+        "path": "scripts/token-tco.js",
+        "size": 1835,
+        "mode": 420
+      },
+      {
+        "path": "scripts/tool-contract-validator.js",
+        "size": 10870,
+        "mode": 420
+      },
+      {
+        "path": "scripts/tool-kpi-tracker.js",
+        "size": 6386,
+        "mode": 420
+      },
+      {
+        "path": "scripts/tool-registry.js",
+        "size": 93306,
+        "mode": 420
+      },
+      {
+        "path": "scripts/trajectory-scorer.js",
+        "size": 2003,
+        "mode": 420
+      },
+      {
+        "path": "scripts/triage-savings-calculator.js",
+        "size": 6683,
+        "mode": 420
+      },
+      {
+        "path": "scripts/typesafe-typed-questions.js",
+        "size": 40672,
+        "mode": 420
+      },
+      {
+        "path": "scripts/universal-claim-evaluator.js",
+        "size": 27078,
+        "mode": 420
+      },
+      {
+        "path": "scripts/upstream-contribution-engine.js",
+        "size": 15016,
+        "mode": 420
+      },
+      {
+        "path": "scripts/user-profile.js",
+        "size": 3214,
+        "mode": 420
+      },
+      {
+        "path": "scripts/validate-workflow-contract.js",
+        "size": 8474,
+        "mode": 420
+      },
+      {
+        "path": "scripts/vector-store.js",
+        "size": 28664,
+        "mode": 420
+      },
+      {
+        "path": "scripts/verification-loop.js",
+        "size": 9616,
+        "mode": 420
+      },
+      {
+        "path": "scripts/verifier-scoring.js",
+        "size": 2428,
+        "mode": 420
+      },
+      {
+        "path": "scripts/verify-marketing-pages-deployed.js",
+        "size": 10671,
+        "mode": 420
+      },
+      {
+        "path": "scripts/visitor-journey.js",
+        "size": 5704,
+        "mode": 420
+      },
+      {
+        "path": "scripts/vulnerability-pre-action-diode.js",
+        "size": 10822,
+        "mode": 420
+      },
+      {
+        "path": "scripts/workflow-intake-queue.js",
+        "size": 17993,
+        "mode": 420
+      },
+      {
+        "path": "scripts/workflow-notebook.js",
+        "size": 14781,
+        "mode": 420
+      },
+      {
+        "path": "scripts/workflow-runs.js",
+        "size": 5152,
+        "mode": 420
+      },
+      {
+        "path": "scripts/workflow-sentinel.js",
+        "size": 67819,
+        "mode": 420
+      },
+      {
+        "path": "scripts/workos-production-guard.js",
+        "size": 8559,
+        "mode": 420
+      },
+      {
+        "path": "scripts/workspace-agent-routines.js",
+        "size": 4144,
+        "mode": 420
+      },
+      {
+        "path": "scripts/workspace-evolver.js",
+        "size": 16342,
+        "mode": 420
+      },
+      {
+        "path": "scripts/workspace-search-route.js",
+        "size": 18799,
+        "mode": 420
+      },
+      {
+        "path": "scripts/xmemory-lite.js",
+        "size": 12213,
+        "mode": 420
+      },
+      {
+        "path": "server.json",
+        "size": 1419,
+        "mode": 420
+      },
+      {
+        "path": "skills/article-syndication-pipeline/SKILL.md",
+        "size": 2018,
+        "mode": 420
+      },
+      {
+        "path": "skills/aws-strands-harness-not-clone/SKILL.md",
+        "size": 2145,
+        "mode": 420
+      },
+      {
+        "path": "skills/comet-session-logger/SKILL.md",
+        "size": 2351,
+        "mode": 420
+      },
+      {
+        "path": "skills/siren-mcp-governance/SKILL.md",
+        "size": 2249,
+        "mode": 420
+      },
+      {
+        "path": "skills/thumbgate-daily-discoveries/SKILL.md",
+        "size": 2815,
+        "mode": 420
+      },
+      {
+        "path": "skills/thumbgate/SKILL.md",
+        "size": 3595,
+        "mode": 420
+      },
+      {
+        "path": "smithery.yaml",
+        "size": 658,
+        "mode": 420
+      },
+      {
+        "path": "src/agent-identity-boundary.js",
+        "size": 2339,
+        "mode": 420
+      },
+      {
+        "path": "src/agent-retrieval-cache.js",
+        "size": 3930,
+        "mode": 420
+      },
+      {
+        "path": "src/alert-noise-ledger.js",
+        "size": 18206,
+        "mode": 420
+      },
+      {
+        "path": "src/api/server.js",
+        "size": 471369,
+        "mode": 420
+      },
+      {
+        "path": "src/git-fast-cache.js",
+        "size": 6080,
+        "mode": 420
+      },
+      {
+        "path": "src/git-wal-sync.js",
+        "size": 4479,
+        "mode": 420
+      },
+      {
+        "path": "src/hash-anchored-edit.js",
+        "size": 2328,
+        "mode": 420
+      },
+      {
+        "path": "src/hermes-platform-protocol.js",
+        "size": 15627,
+        "mode": 420
+      },
+      {
+        "path": "src/hermes-sync-plane.js",
+        "size": 7661,
+        "mode": 420
+      },
+      {
+        "path": "src/index.js",
+        "size": 1273,
+        "mode": 420
+      },
+      {
+        "path": "src/integrations/ideabrowser-connector.js",
+        "size": 5784,
+        "mode": 420
+      },
+      {
+        "path": "src/iso42001-compliance-guard.js",
+        "size": 3288,
+        "mode": 420
+      },
+      {
+        "path": "src/latency-budget.js",
+        "size": 6845,
+        "mode": 420
+      },
+      {
+        "path": "src/mcp-writeguard.js",
+        "size": 8925,
+        "mode": 420
+      },
+      {
+        "path": "src/miminions-adapter.js",
+        "size": 3116,
+        "mode": 420
+      },
+      {
+        "path": "src/pipeline-compass.js",
+        "size": 3494,
+        "mode": 420
+      },
+      {
+        "path": "src/ppl-alert-pipeline.js",
+        "size": 8634,
+        "mode": 420
+      },
+      {
+        "path": "src/rendezvous-router.js",
+        "size": 2953,
+        "mode": 420
+      },
+      {
+        "path": "src/security-questionnaire.js",
+        "size": 10664,
+        "mode": 420
+      },
+      {
+        "path": "src/session-interactivity.js",
+        "size": 9957,
+        "mode": 420
+      }
+    ],
+    "entryCount": 598,
+    "bundled": []
+  }
+]

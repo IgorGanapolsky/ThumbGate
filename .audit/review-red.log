@@ -1,0 +1,355 @@
+✖ recovery review: coverage-gap.js explicit false preserves skipped files (220.600542ms)
+✖ recovery review: coverage-gap.js strict=false permits a warning (565.227667ms)
+✖ recovery review: cli.js explicit false preserves skipped files (234.841ms)
+✖ recovery review: cli.js strict=false permits a warning (322.629291ms)
+✖ recovery review: session-export-gate.js trailing opt-in-export=false wins (527.555792ms)
+✖ recovery review: session-export-gate.js trailing i-understand-irreversible=false wins (340.07125ms)
+✖ recovery review: session-export-gate.js trailing apply=false wins (223.930417ms)
+✔ recovery review: cli.js trailing opt-in-export=false wins (251.549458ms)
+✔ recovery review: cli.js trailing i-understand-irreversible=false wins (275.565625ms)
+✔ recovery review: cli.js trailing apply=false wins (228.635334ms)
+✖ recovery review: destination cannot alias the log via symlink (4.59925ms)
+✖ recovery review: destination cannot alias the log via hardlink (2.554791ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 3
+ℹ fail 9
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2123.405792
+
+✖ failing tests:
+
+test at tests/coverage-gap.test.js:130:3
+✖ recovery review: coverage-gap.js explicit false preserves skipped files (220.600542ms)
+  AssertionError [ERR_ASSERTION]: {
+    "name": "thumbgate-coverage-gap",
+    "status": "fail",
+    "ok": false,
+    "mode": "baseline",
+    "baseline": {
+      "scope": "scripts/risk",
+      "floor": 50,
+      "skipNoBehavior": false,
+      "files": 2,
+      "skippedNoBehavior": [],
+      "gaps": [
+        {
+          "path": "scripts/risk/enums.js",
+          "pct": 0,
+          "kind": "enum"
+        },
+        {
+          "path": "scripts/risk/decide.js",
+          "pct": 20,
+          "kind": "behavior"
+        }
+      ],
+      "pct": 18.5,
+      "claim100": true
+    },
+    "comparison": null,
+    "compareNotClone": true,
+    "runner": "scripts/test-coverage.js",
+    "never": [
+      "clone Copilot Test Agent / @test #solution",
+      "cov-fail-under=100",
+      "write tests for enums/re-exports/constants-only files",
+      "remeasure a different directory than the baseline scope",
+      "claim 100% coverage"
+    ],
+    "source": "https://devblogs.microsoft.com/visualstudio/today-i-will-improve-test-coverage/",
+    "disclaimer": "FORMAT steal only. Not affiliated with Visual Studio, GitHub Copilot, or Test Agent. Gaps first; never 100%.",
+    "findings": [
+      {
+        "severity": "fail",
+        "id": "vs_test_agent_clone_refused",
+        "message": "Refusing Copilot Test Agent / @test #solution / 100% coverage clones (test_agent, at_test_solution). Baseline gaps, skip no-behavior, remeasure same scope."
+      },
+      {
+        "severity": "fail",
+        "id": "claim_100",
+        "message": "Never claim 100% coverage as the win. Report remaining gaps instead."
+      }
+    ]
+  }
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/coverage-gap.test.js:132:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/coverage-gap.test.js:139:3
+✖ recovery review: coverage-gap.js strict=false permits a warning (565.227667ms)
+  AssertionError [ERR_ASSERTION]: {
+    "name": "thumbgate-coverage-gap",
+    "status": "ready_with_warnings",
+    "ok": true,
+    "mode": "baseline",
+    "baseline": null,
+    "comparison": null,
+    "compareNotClone": true,
+    "runner": "scripts/test-coverage.js",
+    "never": [
+      "clone Copilot Test Agent / @test #solution",
+      "cov-fail-under=100",
+      "write tests for enums/re-exports/constants-only files",
+      "remeasure a different directory than the baseline scope",
+      "claim 100% coverage"
+    ],
+    "source": "https://devblogs.microsoft.com/visualstudio/today-i-will-improve-test-coverage/",
+    "disclaimer": "FORMAT steal only. Not affiliated with Visual Studio, GitHub Copilot, or Test Agent. Gaps first; never 100%.",
+    "findings": [
+      {
+        "severity": "warn",
+        "id": "no_coverage_input",
+        "message": "No --coverage/--before JSON. Pass a coverage fixture to baseline gaps. Maps onto scripts/test-coverage.js."
+      }
+    ]
+  }
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/coverage-gap.test.js:141:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/coverage-gap.test.js:130:3
+✖ recovery review: cli.js explicit false preserves skipped files (234.841ms)
+  AssertionError [ERR_ASSERTION]: {
+    "name": "thumbgate-coverage-gap",
+    "status": "fail",
+    "ok": false,
+    "mode": "baseline",
+    "baseline": {
+      "scope": "scripts/risk",
+      "floor": 50,
+      "skipNoBehavior": false,
+      "files": 2,
+      "skippedNoBehavior": [],
+      "gaps": [
+        {
+          "path": "scripts/risk/enums.js",
+          "pct": 0,
+          "kind": "enum"
+        },
+        {
+          "path": "scripts/risk/decide.js",
+          "pct": 20,
+          "kind": "behavior"
+        }
+      ],
+      "pct": 18.5,
+      "claim100": true
+    },
+    "comparison": null,
+    "compareNotClone": true,
+    "runner": "scripts/test-coverage.js",
+    "never": [
+      "clone Copilot Test Agent / @test #solution",
+      "cov-fail-under=100",
+      "write tests for enums/re-exports/constants-only files",
+      "remeasure a different directory than the baseline scope",
+      "claim 100% coverage"
+    ],
+    "source": "https://devblogs.microsoft.com/visualstudio/today-i-will-improve-test-coverage/",
+    "disclaimer": "FORMAT steal only. Not affiliated with Visual Studio, GitHub Copilot, or Test Agent. Gaps first; never 100%.",
+    "findings": [
+      {
+        "severity": "fail",
+        "id": "vs_test_agent_clone_refused",
+        "message": "Refusing Copilot Test Agent / @test #solution / 100% coverage clones (test_agent, at_test_solution). Baseline gaps, skip no-behavior, remeasure same scope."
+      },
+      {
+        "severity": "fail",
+        "id": "claim_100",
+        "message": "Never claim 100% coverage as the win. Report remaining gaps instead."
+      }
+    ]
+  }
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/coverage-gap.test.js:132:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/coverage-gap.test.js:139:3
+✖ recovery review: cli.js strict=false permits a warning (322.629291ms)
+  AssertionError [ERR_ASSERTION]: {
+    "name": "thumbgate-coverage-gap",
+    "status": "ready_with_warnings",
+    "ok": true,
+    "mode": "baseline",
+    "baseline": null,
+    "comparison": null,
+    "compareNotClone": true,
+    "runner": "scripts/test-coverage.js",
+    "never": [
+      "clone Copilot Test Agent / @test #solution",
+      "cov-fail-under=100",
+      "write tests for enums/re-exports/constants-only files",
+      "remeasure a different directory than the baseline scope",
+      "claim 100% coverage"
+    ],
+    "source": "https://devblogs.microsoft.com/visualstudio/today-i-will-improve-test-coverage/",
+    "disclaimer": "FORMAT steal only. Not affiliated with Visual Studio, GitHub Copilot, or Test Agent. Gaps first; never 100%.",
+    "findings": [
+      {
+        "severity": "warn",
+        "id": "no_coverage_input",
+        "message": "No --coverage/--before JSON. Pass a coverage fixture to baseline gaps. Maps onto scripts/test-coverage.js."
+      }
+    ]
+  }
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/coverage-gap.test.js:141:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/session-export-gate.test.js:182:5
+✖ recovery review: session-export-gate.js trailing opt-in-export=false wins (527.555792ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/session-export-gate.test.js:188:14)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/session-export-gate.test.js:182:5
+✖ recovery review: session-export-gate.js trailing i-understand-irreversible=false wins (340.07125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/session-export-gate.test.js:188:14)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/session-export-gate.test.js:182:5
+✖ recovery review: session-export-gate.js trailing apply=false wins (223.930417ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/session-export-gate.test.js:188:14)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/session-export-gate.test.js:200:3
+✖ recovery review: destination cannot alias the log via symlink (4.59925ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/session-export-gate.test.js:209:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /different files/,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at tests/session-export-gate.test.js:200:3
+✖ recovery review: destination cannot alias the log via hardlink (2.554791ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/session-export-gate.test.js:209:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /different files/,
+    operator: 'throws',
+    diff: 'simple'
+  }

@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Recover context-artifact validation, consent-gated local session export, coverage-gap reporting and session interactivity metrics with review regressions repaired. The public package grows from 597 to 604 files for three command modules, their three skills and the session metric module. Raise the unpacked limit from 8.98 MB to 9.025 MB for the measured additions.
+- Recover context-artifact validation, consent-gated local session export, coverage-gap reporting, session interactivity metrics, and the scoped lesson graph with review regressions repaired. The public package grows from 597 to 606 files to include the commands, metrics, and runtime modules required by the Reliability Gateway. Raise the unpacked limit to account for the measured additions.
+- Recover the opt-in scoped lesson graph and migration command. The measured npm bundle grows from 597 to 599 files to include both runtime modules required by the Reliability Gateway.
 
 ## 1.38.0
 

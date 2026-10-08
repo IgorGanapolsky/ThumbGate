@@ -1,0 +1,13 @@
+✔ npm test includes every repository test file (19.977375ms)
+✔ listRepoTests handles directories recursively (5.718083ms)
+✔ collectReachableScriptCommands handles seen set (0.607833ms)
+✔ collectReachableScriptCommands returns empty for nonexistent script (0.079375ms)
+✔ listNpmTestFiles returns a set (5.983792ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 344.120125

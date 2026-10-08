@@ -1,0 +1,63 @@
+✖ recovery review: standalone trailing map=false still validates supplied context (160.666625ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 396.199916
+
+✖ failing tests:
+
+test at tests/agent-context-artifact.test.js:179:1
+✖ recovery review: standalone trailing map=false still validates supplied context (160.666625ms)
+  AssertionError [ERR_ASSERTION]: {
+    "name": "thumbgate-agent-context-artifact",
+    "status": "ready",
+    "ok": true,
+    "requiredFields": [
+      "goal",
+      "constraints",
+      "sources",
+      "freshness",
+      "verifier"
+    ],
+    "requiredWrongFit": "wisdom_ai",
+    "pack": null,
+    "compareNotClone": true,
+    "complements": [
+      "six-block SKILL.md packs (goal/constraints/reference/examples/procedures/rubric)",
+      "ContextFS envelopes",
+      "memory-vs-rag-route (stateful lessons vs stateless RAG)"
+    ],
+    "never": [
+      "clone Wisdom Adaptive Context Engine",
+      "clone Palantir Foundry or Snowflake OSI",
+      "treat catalogs/query logs as afterthought metadata",
+      "ship a pack with consumer=human",
+      "omit wisdom_ai from wrongFit"
+    ],
+    "source": [
+      "https://www.wisdom.ai/",
+      "https://music.youtube.com/watch?v=lRuI0imju0Y"
+    ],
+    "disclaimer": "FORMAT steal only. Not affiliated with Wisdom.ai, Palantir, or Snowflake. Local agent packs; no ACE SKU.",
+    "findings": []
+  }
+  
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/agent-context-artifact.test.js:181:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

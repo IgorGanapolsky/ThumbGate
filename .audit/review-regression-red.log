@@ -1,0 +1,99 @@
+✔ classifySource skips enums, re-exports, and empty files (2.449708ms)
+✔ baseline reports gaps under floor and skips no-behavior files (2.18475ms)
+✔ compare same scope: gaps shrink, skip-other-project files ignored (2.129042ms)
+✔ compare fails when claiming 100% or when gaps grow (1.673208ms)
+✔ detectCloneAttempt refuses Test Agent / @test #solution / fail-under 100 (0.336916ms)
+✔ buildCoverageGapReport clone-test-agent fails closed (0.350333ms)
+✔ script CLI compare --json is ready for gold fixtures (471.656625ms)
+✔ script CLI --claim-100 fails (240.518083ms)
+✔ thumbgate CLI coverage-gap is wired (202.834291ms)
+✔ docs refuse Test Agent and 100% claims (0.897625ms)
+✔ recovery: empty scopes fail instead of claiming perfect coverage (0.19ms)
+✔ recovery: scope excludes similarly prefixed sibling directories (0.190708ms)
+✔ recovery: an uncovered new enum is not evidence of a new test (1.142291ms)
+✔ recovery review: coverage-gap.js explicit false preserves skipped files (238.265833ms)
+✔ recovery review: coverage-gap.js strict=false permits a warning (136.813042ms)
+✔ recovery review: cli.js explicit false preserves skipped files (157.602417ms)
+✔ recovery review: cli.js strict=false permits a warning (146.661375ms)
+✖ recovery: uncertain executable source stays in coverage gaps (0.78925ms)
+✔ THE INCIDENT: a fast generation behind a long queue is not a fast request (0.938625ms)
+✔ a session flags when most of the wait is invisible to the standard metric (0.204541ms)
+✔ a genuinely responsive request does not trip the budget (0.119083ms)
+✔ time between turns is counted as wait, not subtracted (0.091583ms)
+✔ output tokens and wall time aggregate across every turn (0.078ms)
+✔ INVARIANT: one unmeasurable turn makes the whole session UNKNOWN (0.093958ms)
+✔ INVARIANT: an unmeasurable rate is null, never Infinity (0.090125ms)
+✔ an empty or missing session reports NO_DATA (0.091333ms)
+✔ out-of-order and malformed timestamps are named, not swallowed (0.142125ms)
+✔ context growth across a session is reported as a factor (0.322292ms)
+✔ context growth without prompt tokens reports NO_DATA rather than 1x (0.108166ms)
+✔ comparing two runs over the same sessions yields a speedup (0.282208ms)
+✔ INVARIANT: comparing runs over different traffic is refused (0.132291ms)
+✔ a run containing an unmeasurable session cannot produce a speedup (0.157375ms)
+✔ recovery: comparisons require nonempty unique structural session IDs (0.19875ms)
+✔ recovery: overlapping turns cannot report negative hidden wait (0.112291ms)
+✔ recovery: context growth needs two prompt-token observations (0.1545ms)
+✖ recovery: context growth uses chronological order without mutating input (2.189042ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 34
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1817.246833
+
+✖ failing tests:
+
+test at tests/coverage-gap.test.js:147:1
+✖ recovery: uncertain executable source stays in coverage gaps (0.78925ms)
+  AssertionError [ERR_ASSERTION]: const add = (a, b) => a + b;
+  + actual - expected
+  
+  + 'types'
+  - 'behavior'
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/coverage-gap.test.js:149:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'types',
+    expected: 'behavior',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/session-interactivity.test.js:233:1
+✖ recovery: context growth uses chronological order without mutating input (2.189042ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+  +   first: 200,
+  +   growthFactor: 0.5,
+  +   last: 100,
+  -   first: 100,
+  -   growthFactor: 2,
+  -   last: 200,
+      status: 'OK'
+    }
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/session-interactivity.test.js:238:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { status: 'OK', first: 200, last: 100, growthFactor: 0.5 },
+    expected: { status: 'OK', first: 100, last: 200, growthFactor: 2 },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

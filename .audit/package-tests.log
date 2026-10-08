@@ -1,0 +1,20 @@
+✔ npm package excludes generated runtime state from included directories (2129.5845ms)
+✔ npm package ships static dependencies needed for packaged entrypoints (1971.243917ms)
+✔ API runtime declares its YAML parser as a production dependency (0.721541ms)
+✔ npm package ships a slim runtime boundary instead of repo/dev surfaces (1641.943083ms)
+✔ package main resolves through src entrypoint (0.427042ms)
+✔ public npm bundle file count stays at or below the 2026-05-18 audit baseline (2851.195459ms)
+✔ bundle includes the canonical entrypoints (sanity check that the snapshot is real) (2628.152958ms)
+✔ public-core-boundary: no packaged file imports ThumbGate-Core (2075.385834ms)
+✔ public-core-boundary: package.json does not depend on Core (0.586542ms)
+✔ public-core-boundary: npm bundle stays thin (file count ceiling) (1915.989708ms)
+✔ public-core-boundary: federal lead-gen surfaces present (0.144042ms)
+✔ public-core-boundary: only THUMBGATE_DEPLOY gates federal behavior (1703.553958ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5918.2565

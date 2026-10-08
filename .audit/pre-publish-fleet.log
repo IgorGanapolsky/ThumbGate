@@ -1,0 +1,19 @@
+=== Fleet Coordination Check (session: codex-recover-features-20261008) ===
+lease: lease free (rc=0) OK
+--- Vault claims (AI-Agent-Sync) ---
+  none
+vault dirty files: 9
+  recent coordination writes:
+    ?? Handoffs/linear-claims/2026-10-05_AGENT-33_agy.md
+    ?? Handoffs/linear-claims/2026-10-05_AGENT-34_agy.md
+    ?? Handoffs/linear-claims/2026-10-07_AGENT-35_agy.md
+    ?? Handoffs/linear-claims/2026-10-07_AGENT-36_agy.md
+    ?? Handoffs/linear-claims/2026-10-07_AGENT-37_agy.md
+herdr: gateway not running (no live pane view)
+linear: no api_key at ~/.config/linear/api_key
+--- Open PR census ---
+  #4080 [BLOCKED] codex/fix-publisher-isolation-20261008
+  #3891 [DIRTY] feat/agent-context-artifact
+  #3889 [DIRTY] feat/session-export-gate
+  #3888 [DIRTY] feat/coverage-gap-honesty
+=== Coordination sweep complete ===

@@ -1,0 +1,4 @@
+npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+
+added 282 packages in 11s

@@ -1,0 +1,180 @@
+▶ bin/cli.js
+  ✔ CLI file exists and is executable (2.618667ms)
+  ✔ help command exits 0 and shows curated short surface (455.685458ms)
+  ✔ help all exits 0 and lists the full subcommand surface (311.977417ms)
+  ✔ server commands honor --help without starting long-running processes (1122.759041ms)
+  ✔ dashboard --open starts the local HTTP dashboard before returning its URL (879.563875ms)
+  ✔ brain --json emits a structured context model (308.789709ms)
+  ✔ brain renders a deterministic agent-readable markdown brain (938.031ms)
+  ✔ brain --write saves a versioned BRAIN.md to .thumbgate/ (404.640708ms)
+  ✔ feedback-self-test verifies capture and lesson writes in explicit isolated store (427.258958ms)
+  ✔ eval command turns local feedback into reusable proof JSON (445.731375ms)
+  ✔ gate-check allows ordinary edits when no task scope is declared (7375.972ms)
+  ✔ gate-check warns on high-risk git writes by default, denies under strict enforcement (1975.7335ms)
+  ✔ hook-auto-capture records the user prompt and refreshes statusline counts (248.7695ms)
+  ✔ hook-auto-capture renders thumbs down for down feedback (257.0105ms)
+  ✔ hook-auto-capture uses recent context for a bare thumbs up (223.635542ms)
+  ✔ hook-auto-capture records typo variants from alternate prompt env (223.8765ms)
+  ✔ hook-auto-capture records typo variants from stdin (227.537834ms)
+  ✔ hook-auto-capture acknowledges a bare thumbs signal without inventing a reusable memory (221.799417ms)
+  ✔ statusline-render syncs missed Claude feedback even when the cache is still fresh (2094.192375ms)
+  ✔ session-start refreshes the statusline cache from missed Claude feedback (262.91025ms)
+  ✔ pro command prints truthful local-first Pro offer info when unlicensed (167.57875ms)
+  ✔ pro --upgrade installs the shipped public Pro config bundle (235.538708ms)
+  ✔ pro command launches local dashboard when a license is already saved (318.221458ms)
+  ✔ pro command keeps local dashboard process alive after printing URL (1671.270042ms)
+  ✔ pro --info prints local-first offer info even when a license is already saved (268.820792ms)
+  ✔ lessons command prints linked corrective actions (342.104916ms)
+  ✔ lessons command blocks free users with a Pro upgrade prompt (245.949167ms)
+  ✔ summary text excludes automated and imported feedback like summary JSON (342.509708ms)
+  ✔ help command shows Pro nudge on stderr (223.944667ms)
+  ✔ THUMBGATE_NO_NUDGE=1 suppresses Pro nudge (199.24775ms)
+  ✔ Pro nudge is suppressed when env signals a Pro tier (229.939375ms)
+  ✔ pro command includes hosted link (247.596583ms)
+  ✔ THUMBGATE_NO_TELEMETRY=1 prevents telemetry ping on init (630.9545ms)
+  ✔ init --help prints usage without creating project files (154.113041ms)
+  ✔ init prints onboarding, trial deadline, and checkout path (933.687958ms)
+  ✔ init --email posts installer email to onboarding endpoint (1200.543625ms)
+  ✔ init records local CLI telemetry when telemetry is enabled (999.539666ms)
+  ✔ --help flag exits 0 (204.41375ms)
+  ✔ no-arg invocation exits 0 with help (187.896083ms)
+  ✔ unknown command exits 1 (181.968875ms)
+  ✔ doctor --json reports readiness for a bootstrapped project (507.764833ms)
+  ✔ native-messaging-audit --json reports dormant AI browser bridges (247.699333ms)
+  ✔ background-governance --json reports background-agent run metrics (281.008625ms)
+  ✔ background-governance --check --json emits dispatch risk verdict (255.832083ms)
+  ✔ code-graph-guardrails --json recommends graph-informed gates (279.030167ms)
+  ✔ dispatch --json emits a phone-safe remote ops brief (1673.569417ms)
+  ✔ cfo emits local operational billing summary JSON when hosted summary is not configured (269.169625ms)
+  ✔ cfo supports today window and timezone arguments (324.745958ms)
+  ✔ cfo surfaces Stripe-reconciled historical revenue and keeps today at zero when only past charges exist (284.511041ms)
+  ✔ repair-github-marketplace previews and writes legacy marketplace amount repairs (392.620333ms)
+  ✔ cfo prefers hosted billing summary when a live billing API base and admin key are configured (535.899667ms)
+  ✔ model-fit writes a machine-readable report using hardware overrides (222.719875ms)
+  ✔ gemini-embedding-plan reports task prefixes and dimension plan (206.029042ms)
+  ✔ agent-design-governance reports architecture and safeguards (212.624125ms)
+  ✔ proactive-agent-eval-guardrails reports PARE-style write risk (207.148708ms)
+  ✔ reward-hacking-guardrails blocks unsupported completion claims (181.134292ms)
+  ✔ oss-pr-opportunity-scout maps dependencies to upstream repos (163.200375ms)
+  ✔ chatgpt-ads-readiness-pack prepares paid AI campaign proof gates (173.375042ms)
+  ✔ model-candidates ranks managed candidates and writes a report (175.361916ms)
+  ✔ risk trains and persists the boosted local risk scorer (176.403458ms)
+  ✔ risk scores a candidate from CLI flags (167.829959ms)
+  ✔ init creates .thumbgate/ directory (616.721667ms)
+  ✔ init --wire-hooks accepts split --agent value and writes Claude hooks (157.203125ms)
+  ✔ init detects Claude Code and wires the canonical PreToolUse hook bundle (748.588709ms)
+  ✔ init --wire-hooks accepts split --agent value and writes Codex hooks plus status line (141.813167ms)
+  ✔ init repairs a stale Codex config without requiring a separate wire-hooks command (1472.12125ms)
+  ✔ init creates config.json with required fields (0.199667ms)
+  ✔ init emits acquisition funnel event correlated by installId (9815.919958ms)
+  ✔ north-star command reports workflow progress (9889.196792ms)
+⚠️ ThumbGate: risk-scorer summary requires a paid license (tier: free). Advisory mode — set THUMBGATE_ENFORCE_ENTITLEMENTS=1 to enforce. License: https://thumbgate.ai/pricing
+⚠️ ThumbGate: intervention-policy summary requires a paid license (tier: free). Advisory mode — set THUMBGATE_ENFORCE_ENTITLEMENTS=1 to enforce. License: https://thumbgate.ai/pricing
+⚠️ ThumbGate: intervention-policy training requires a paid license (tier: free). Advisory mode — set THUMBGATE_ENFORCE_ENTITLEMENTS=1 to enforce. License: https://thumbgate.ai/pricing
+  ✔ north-star prefers hosted operational dashboard when configured (8491.017209ms)
+  ✔ init creates .mcp.json with server entry (3839.6525ms)
+  ✔ init NEVER writes a machine-absolute server path into committed .mcp.json (1733.461959ms)
+  ✔ init writes a stable ChatGPT OpenAPI spec into .thumbgate (0.757708ms)
+  ✔ init writes a durable published Codex launcher when running from source checkout (1118.274875ms)
+  ✔ init rewrites an existing Codex launcher to the durable published runtime (1059.25475ms)
+  ✔ init output includes initialized message and platform detection (753.037084ms)
+  ✔ --version prints package version (255.42925ms)
+  ✔ capture --feedback=up routes to full engine (360.0275ms)
+  ✔ capture --feedback=down routes to full engine (398.479ms)
+  ✔ capture down [context] positional arguments route to full engine (439.628084ms)
+  ✔ capture typo thumbs positional arguments route to full engine (381.754792ms)
+  ✔ import-doc ingests a policy file and returns proposed gates as JSON (360.459333ms)
+  ✔ serve responds to initialize over Content-Length framed transport (512.798875ms)
+  ✔ serve responds to initialize over newline-delimited JSON transport (326.352667ms)
+  ✔ serve returns ndjson error envelope for malformed ndjson input (333.092917ms)
+  ✔ serve responds to initialize from a clean cwd even when HOME is a file (573.951834ms)
+  ✔ init is idempotent — running twice exits 0 (1784.420209ms)
+  ✔ unknown proof target lists local-intelligence in available targets (284.462458ms)
+✔ bin/cli.js (80200.678083ms)
+▶ thumbgate audit
+  ✔ reports repeat-offender patterns and estimated waste (276.138417ms)
+  ✔ clean transcript reports no repeat offenders (370.858ms)
+  ✔ missing file argument prints usage and exits non-zero (279.514875ms)
+  ✔ nonexistent transcript path exits non-zero with a clear error (254.919292ms)
+  ✔ setup-vertex CLI command exits 0 and falls back gracefully when gcloud is absent (316.181458ms)
+  ✔ setup-vertex --dry-run never enables services or writes .env (629.914ms)
+✔ thumbgate audit (2127.934334ms)
+▶ bin/ entrypoint syntax integrity
+  ✔ bin/cli.js parses with node --check (210.009834ms)
+  ✔ bin/dashboard-cli.js parses with node --check (208.361208ms)
+  ✔ bin/postinstall.js parses with node --check (231.761583ms)
+✔ bin/ entrypoint syntax integrity (650.352833ms)
+✔ npm package excludes generated runtime state from included directories (2877.497959ms)
+✔ npm package ships static dependencies needed for packaged entrypoints (3101.862584ms)
+✔ API runtime declares its YAML parser as a production dependency (1.028333ms)
+✖ npm package ships a slim runtime boundary instead of repo/dev surfaces (2802.611916ms)
+✔ package main resolves through src entrypoint (0.717917ms)
+✖ public npm bundle file count stays at or below the 2026-05-18 audit baseline (6828.4505ms)
+✔ bundle includes the canonical entrypoints (sanity check that the snapshot is real) (4133.631041ms)
+✔ public-core-boundary: no packaged file imports ThumbGate-Core (3019.602875ms)
+✔ public-core-boundary: package.json does not depend on Core (0.787375ms)
+✖ public-core-boundary: npm bundle stays thin (file count ceiling) (3242.812916ms)
+✔ public-core-boundary: federal lead-gen surfaces present (1.327833ms)
+✔ public-core-boundary: only THUMBGATE_DEPLOY gates federal behavior (2781.499542ms)
+ℹ tests 109
+ℹ suites 3
+ℹ pass 106
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 83270.998583
+
+✖ failing tests:
+
+test at tests/package-boundary.test.js:127:1
+✖ npm package ships a slim runtime boundary instead of repo/dev surfaces (2802.611916ms)
+  AssertionError [ERR_ASSERTION]: npm package should stay <= 597 files, got 604
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/package-boundary.test.js:407:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/public-bundle-ratchet.test.js:283:1
+✖ public npm bundle file count stays at or below the 2026-05-18 audit baseline (6828.4505ms)
+  AssertionError [ERR_ASSERTION]: public npm bundle has 604 files (ceiling 597). Either remove files from package.json:files OR raise BASELINE_FILE_COUNT in this test with a CHANGELOG note explaining what was added and why.
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/public-bundle-ratchet.test.js:286:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/public-core-boundary.test.js:103:1
+✖ public-core-boundary: npm bundle stays thin (file count ceiling) (3242.812916ms)
+  AssertionError [ERR_ASSERTION]: public npm bundle should stay <= 597 files, got 604. This test exists to catch silent re-expansion of the public shell with features that belong in ThumbGate-Core. If the growth is intentional and stays inside the public shell scope (CLI / hooks / adapters / schemas / marketing), bump the ceiling and add a comment here explaining why.
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/public-core-boundary.test.js:320:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

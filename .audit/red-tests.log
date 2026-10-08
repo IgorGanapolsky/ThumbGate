@@ -1,0 +1,201 @@
+✖ recovery: empty scopes fail instead of claiming perfect coverage (2.62625ms)
+✖ recovery: scope excludes similarly prefixed sibling directories (0.316125ms)
+✖ recovery: an uncovered new enum is not evidence of a new test (1.620416ms)
+✖ recovery: denied reports contain no payload (2.12825ms)
+✖ recovery: invalid log target leaves no exported payload (4.039083ms)
+✖ recovery: CLI explicit false never grants consent or applies an export (136.1105ms)
+✖ recovery: comparisons require nonempty unique structural session IDs (2.02675ms)
+✖ recovery: overlapping turns cannot report negative hidden wait (0.161666ms)
+✖ recovery: context growth needs two prompt-token observations (0.099084ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 0
+ℹ fail 9
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 318.826916
+
+✖ failing tests:
+
+test at tests/coverage-gap.test.js:108:1
+✖ recovery: empty scopes fail instead of claiming perfect coverage (2.62625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'ready' !== 'fail'
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/coverage-gap.test.js:110:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'ready',
+    expected: 'fail',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/coverage-gap.test.js:115:1
+✖ recovery: scope excludes similarly prefixed sibling directories (0.316125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  3 !== 1
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/coverage-gap.test.js:117:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 3,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/coverage-gap.test.js:121:1
+✖ recovery: an uncovered new enum is not evidence of a new test (1.620416ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   {
+  +     id: 'tested_no_behavior',
+  +     message: 'Wrote tests for no-behavior files (scripts/risk/e.js). Skip enums/re-exports.',
+  +     severity: 'fail'
+  +   }
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/coverage-gap.test.js:125:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { severity: 'fail', id: 'tested_no_behavior', message: 'Wrote tests for no-behavior files (scripts/risk/e.js). Skip enums/re-exports.' } ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/session-export-gate.test.js:132:1
+✖ recovery: denied reports contain no payload (2.12825ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/session-export-gate.test.js:134:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/session-export-gate.test.js:138:1
+✖ recovery: invalid log target leaves no exported payload (4.039083ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/session-export-gate.test.js:148:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/session-export-gate.test.js:152:1
+✖ recovery: CLI explicit false never grants consent or applies an export (136.1105ms)
+  SyntaxError [Error]: Unexpected end of JSON input
+      at JSON.parse (<anonymous>)
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/session-export-gate.test.js:157:23)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/session-interactivity.test.js:215:1
+✖ recovery: comparisons require nonempty unique structural session IDs (2.02675ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'OK' !== 'INVALID'
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/session-interactivity.test.js:217:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'OK',
+    expected: 'INVALID',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/session-interactivity.test.js:222:1
+✖ recovery: overlapping turns cannot report negative hidden wait (0.161666ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'OK' !== 'UNKNOWN'
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/session-interactivity.test.js:224:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'OK',
+    expected: 'UNKNOWN',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/session-interactivity.test.js:227:1
+✖ recovery: context growth needs two prompt-token observations (0.099084ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'OK' !== 'NO_DATA'
+  
+      at TestContext.<anonymous> (/Users/iganapolsky/.codex/worktrees/recover-features-1008/ThumbGate/tests/session-interactivity.test.js:229:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'OK',
+    expected: 'NO_DATA',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

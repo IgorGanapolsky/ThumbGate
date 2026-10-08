@@ -1,0 +1,20 @@
+✔ recovery review: coverage-gap.js explicit false preserves skipped files (166.045083ms)
+✔ recovery review: coverage-gap.js strict=false permits a warning (166.359416ms)
+✔ recovery review: cli.js explicit false preserves skipped files (169.141458ms)
+✔ recovery review: cli.js strict=false permits a warning (184.7915ms)
+✔ recovery review: session-export-gate.js trailing opt-in-export=false wins (165.990083ms)
+✔ recovery review: session-export-gate.js trailing i-understand-irreversible=false wins (165.151458ms)
+✔ recovery review: session-export-gate.js trailing apply=false wins (161.492334ms)
+✔ recovery review: cli.js trailing opt-in-export=false wins (214.474917ms)
+✔ recovery review: cli.js trailing i-understand-irreversible=false wins (166.678708ms)
+✔ recovery review: cli.js trailing apply=false wins (182.133791ms)
+✔ recovery review: destination cannot alias the log via symlink (2.555959ms)
+✔ recovery review: destination cannot alias the log via hardlink (2.357167ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1281.440542
