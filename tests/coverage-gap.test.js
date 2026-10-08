@@ -142,3 +142,18 @@ for (const [entry, prefix] of [[SCRIPT, []], [CLI, ['coverage-gap']]]) {
     assert.equal(JSON.parse(result.stdout).status, 'ready_with_warnings');
   });
 }
+
+
+test('recovery: uncertain executable source stays in coverage gaps', () => {
+  for (const source of ['const add = (a, b) => a + b;', 'process.exit(1);', 'const value = compute();', "const start = '/*'; process.exit(1); const end = '*/';", 'module.exports = Object.freeze({ get value() { return compute(); } });']) {
+    assert.equal(classifySource(source, 'src/types/runtime.js'), 'behavior', source);
+    const report = baselineCoverage({ files: {
+      'src/covered.js': { source: 'function covered() {}', lines: 1, covered: 1 },
+      'src/uncovered.js': { source, lines: 1, covered: 0 },
+    } }, { scope: 'src' });
+    assert.equal(report.files, 2);
+    assert.equal(report.gaps.length, 1);
+    assert.equal(report.pct, 50);
+  }
+  assert.equal(classifySource('const MAX = 4;'), 'constants');
+});

@@ -228,3 +228,13 @@ test('recovery: context growth needs two prompt-token observations', () => {
   const turns = [{ submittedAt: 0, firstTokenAt: 0, lastTokenAt: 1000, outputTokens: 100, promptTokens: 10 }];
   assert.equal(contextGrowth({ id: 'a', turns }).status, 'NO_DATA');
 });
+
+
+test('recovery: context growth uses chronological order without mutating input', () => {
+  const turns = [
+    { submittedAt: 2000, firstTokenAt: 2010, lastTokenAt: 3000, outputTokens: 10, promptTokens: 200 },
+    { submittedAt: 0, firstTokenAt: 10, lastTokenAt: 1000, outputTokens: 10, promptTokens: 100 },
+  ];
+  assert.deepEqual(contextGrowth({ id: 'unordered', turns }), { status: 'OK', first: 100, last: 200, growthFactor: 2 });
+  assert.equal(turns[0].promptTokens, 200);
+});

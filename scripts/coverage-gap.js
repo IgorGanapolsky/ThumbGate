@@ -40,24 +40,20 @@ function detectCloneAttempt(text) {
   return CLONE_PATTERNS.filter((p) => p.re.test(t)).map((p) => p.id);
 }
 
-function stripComments(src) {
-  return String(src || '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1')
-    .trim();
-}
-
 function classifySource(src, filePath = '') {
   const name = String(filePath).replace(/\\/g, '/');
-  if (/\.d\.ts$/.test(name) || /\/types\//.test(name)) return 'types';
-  const body = stripComments(src);
-  if (!body) return 'empty';
-  if (/^export\s*\{[\s\S]*\}\s*from\s+['"][^'"]+['"]\s*;?\s*$/.test(body)) return 'reexport';
-  const withoutExport = body.replace(/^['"]use strict['"];?/gm, '').trim();
-  const hasBehavior = /\b(function|class|if\s*\(|switch\s*\(|try\s*\{|=>|while\s*\(|for\s*\()/.test(withoutExport);
-  if (hasBehavior) return 'behavior';
-  if (/\benum\b/.test(withoutExport) || /Object\.freeze\s*\(/.test(withoutExport)) return 'enum';
-  return 'constants';
+  if (/\.d\.ts$/.test(name)) return 'types';
+  const body = String(src || '').trim();
+  if (/^(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*(?:\n|$))*$/.test(body)) return 'empty';
+  if (/^export\s*\{[\w\s,$]*\}\s*from\s+['"][^'"\n]+['"]\s*;?\s*$/.test(body)) return 'reexport';
+  const code = body.replace(/^['"]use strict['"];?/gm, '').trim();
+  const literal = String.raw`(?:-?\d+(?:\.\d+)?|true|false|null|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')`;
+  const field = String.raw`\s*[A-Za-z_$][\w$]*\s*:\s*${literal}\s*`;
+  const frozen = new RegExp(String.raw`^(?:module\.exports\s*=|(?:export\s+)?const\s+[A-Za-z_$][\w$]*\s*=)\s*Object\.freeze\(\{(?:${field}(?:,${field})*,?)?\}\)\s*;?$`);
+  if (frozen.test(code)) return 'enum';
+  const constant = new RegExp(String.raw`^(?:(?:export\s+)?const\s+[A-Za-z_$][\w$]*\s*=\s*${literal}\s*;\s*)+$`);
+  if (constant.test(code)) return 'constants';
+  return 'behavior';
 }
 
 function inScope(filePath, scope) {
