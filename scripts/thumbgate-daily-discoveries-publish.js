@@ -251,7 +251,7 @@ function getPublicationStatus(dateStr) {
       continue;
     }
     if (!item || item.date !== dateStr) continue;
-    if (item.status === 'publication_unknown') return 'publication_unknown';
+    if (item.status === 'publication_unknown') status = 'publication_unknown';
     if (item.status === 'published' && hasPublicationReceipt(item.devto)) status = 'published';
   }
   return status;
@@ -350,6 +350,17 @@ async function runDailyPublish(options = {}) {
     let devtoResult = null;
     if (process.env.DEVTO_API_KEY) {
       const { publishArticle } = require('./social-analytics/publishers/devto');
+      recordLedgerEntry({
+        date: dateStr,
+        topic: topic.slug,
+        title: topic.title,
+        status: 'publication_unknown',
+        attemptedAt: now.toISOString(),
+        canonicalUrl,
+        outputs,
+        devto: null,
+        reason: 'Dev.to publication attempt started. Reconcile the remote outcome if no confirmed receipt follows.',
+      });
       const res = await publishArticle({
         title: topic.title,
         body_markdown: content,
@@ -359,17 +370,6 @@ async function runDailyPublish(options = {}) {
       });
       if (!hasPublicationReceipt(res)) {
         const reason = 'Dev.to accepted the request without a valid publication receipt. Reconcile the remote outcome before retrying.';
-        recordLedgerEntry({
-          date: dateStr,
-          topic: topic.slug,
-          title: topic.title,
-          status: 'publication_unknown',
-          attemptedAt: now.toISOString(),
-          canonicalUrl,
-          outputs,
-          devto: null,
-          reason,
-        });
         return { status: 'publication_unknown', reason, date: dateStr, canonicalUrl, stagedPath, publicBlogHtmlPath, dryRun: false };
       }
       devtoResult = { id: res.id, url: res.url };

@@ -284,7 +284,10 @@ test('runDailyPublish records a confirmed remote receipt and skips the next run'
   process.env.DEVTO_API_KEY = 'test-only-never-sent';
   const result = await runDailyPublish();
   assert.equal(result.status, 'published');
-  const entry = JSON.parse(fs.readFileSync(ledgerPath, 'utf8').trim());
+  const entries = fs.readFileSync(ledgerPath, 'utf8').trim().split('\n').map(JSON.parse);
+  assert.equal(entries.length, 2);
+  assert.equal(entries[0].status, 'publication_unknown');
+  const entry = entries[1];
   assert.equal(entry.status, 'published');
   assert.deepEqual(entry.devto, receipt);
   assert.ok(entry.publishedAt);
@@ -337,13 +340,30 @@ test('runDailyPublish persists ambiguous receipts and prevents duplicate retries
   }
 });
 
-test('runDailyPublish releases its lock after remote failure without recording publication', async (t) => {
-  const publisher = require(path.join(runtimeDir, 'scripts/social-analytics/publishers/devto.js'));
-  t.mock.method(publisher, 'publishArticle', async () => { throw new Error('remote unavailable'); });
+test('runDailyPublish holds ambiguous transport and JSON failures instead of repeating the POST', async (t) => {
   process.env.DEVTO_API_KEY = 'test-only-never-sent';
-  await assert.rejects(runDailyPublish(), /remote unavailable/);
-  assert.equal(fs.existsSync(ledgerPath), false);
-  assert.equal(fs.existsSync(lockPath), false);
-  process.env.DEVTO_API_KEY = '';
-  assert.equal((await runDailyPublish()).status, 'staged');
+  for (const failure of ['transport', 'json']) {
+    fs.rmSync(ledgerPath, { force: true });
+    const post = t.mock.method(globalThis, 'fetch', async (url, options) => {
+      assert.equal(url, 'https://dev.to/api/articles');
+      assert.equal(options.method, 'POST');
+      const attempt = JSON.parse(fs.readFileSync(ledgerPath, 'utf8').trim());
+      assert.equal(attempt.status, 'publication_unknown', 'hold must be persisted before sending');
+      if (failure === 'transport') throw new Error('connection lost after sending');
+      return { ok: true, json: async () => { throw new SyntaxError('invalid response JSON'); } };
+    });
+    await assert.rejects(runDailyPublish(), /connection lost|invalid response JSON/);
+    assert.equal(fs.existsSync(ledgerPath), true, 'unknown attempt must survive a response failure');
+    const entry = JSON.parse(fs.readFileSync(ledgerPath, 'utf8').trim());
+    assert.equal(entry.status, 'publication_unknown');
+    assert.equal(entry.publishedAt, undefined);
+    assert.equal(hasAlreadyPublishedToday(dateStr), false);
+    assert.equal(fs.existsSync(lockPath), false);
+    assert.equal((await runDailyPublish()).status, 'publication_unknown');
+    assert.equal((await runDailyPublish({ force: true })).status, 'publication_unknown');
+    const cliResult = JSON.parse(execFileSync(process.execPath, [scriptPath, '--json', '--force'], cliOptions));
+    assert.equal(cliResult.status, 'publication_unknown');
+    assert.equal(post.mock.callCount(), 1);
+    post.mock.restore();
+  }
 });
