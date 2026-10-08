@@ -514,8 +514,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 589 -> 590 (2026-10-02): adapters/strands/config.json (AWS Strands harness config)
   // 592 -> 594 (2026-10-06): scripts/vulnerability-pre-action-diode.js + scripts/triage-savings-calculator.js (WHOOP / TNS vulnerability diode)
   // 594 -> 597 (2026-10-06): scripts/siren-mcp-governance.js + skills (Siren MCP Marketing Diode & Autonomous Campaign Governance)
-    manifest.fileCount <= 597,
-    `npm package should stay <= 597 files, got ${manifest.fileCount}`
+    // Two runtime files restore the optional scoped lesson graph.
+    manifest.fileCount <= 599,
+    `npm package should stay <= 599 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -762,7 +763,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.87 MB -> 8.90 MB (2026-10-01): strands-harness modules & skills. Local pack 8,867,170; CI slack.
   // Bumped 8.90 MB -> 8.93 MB (2026-10-02): mintlify-knowledge module & skill. CI slack.
   // Bumped 8.93 MB -> 8.98 MB (2026-10-06): vulnerability-diode + triage calculator + siren-mcp-governance. Local pack 8,952,525; CI slack.
-    manifest.unpackedSize <= 8_980_000,
+    manifest.unpackedSize <= 9_010_000,
     `npm package should stay <= 8.98 MB unpacked, got ${manifest.unpackedSize}`
   );
 
