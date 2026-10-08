@@ -229,6 +229,16 @@ function canWriteToSharedVault(vaultDir) {
   return true;
 }
 
+function hasPublicationReceipt(receipt) {
+  if (!receipt || !Number.isSafeInteger(receipt.id) || receipt.id <= 0 || typeof receipt.url !== 'string') return false;
+  try {
+    const url = new URL(receipt.url);
+    return url.protocol === 'https:' && url.hostname === 'dev.to' && url.pathname !== '/';
+  } catch (_) {
+    return false;
+  }
+}
+
 function hasAlreadyPublishedToday(dateStr) {
   if (!fs.existsSync(LEDGER_PATH)) return false;
   try {
@@ -236,7 +246,7 @@ function hasAlreadyPublishedToday(dateStr) {
     return lines.some((line) => {
       try {
         const item = JSON.parse(line);
-        return item.date === dateStr && item.status === 'published';
+        return item.date === dateStr && item.status === 'published' && hasPublicationReceipt(item.devto);
       } catch (_) {
         return false;
       }
@@ -333,24 +343,27 @@ async function runDailyPublish(options = {}) {
         published: true,
         canonical_url: canonicalUrl,
       });
+      if (!hasPublicationReceipt(res)) {
+        throw new Error('Dev.to response did not include a valid publication receipt.');
+      }
       devtoResult = { id: res.id, url: res.url };
       outputs.push({ type: 'devto', url: res.url });
     }
 
-    // Record idempotent ledger entry only on complete success
+    const status = devtoResult ? 'published' : 'staged';
     recordLedgerEntry({
       date: dateStr,
       topic: topic.slug,
       title: topic.title,
-      status: 'published',
-      publishedAt: now.toISOString(),
+      status,
+      ...(devtoResult ? { publishedAt: now.toISOString() } : { stagedAt: now.toISOString() }),
       canonicalUrl,
       outputs,
       devto: devtoResult,
     });
 
     return {
-      status: 'published',
+      status,
       date: dateStr,
       topic: topic.slug,
       title: topic.title,
