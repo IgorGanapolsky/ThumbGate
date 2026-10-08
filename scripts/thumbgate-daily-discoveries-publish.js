@@ -15,7 +15,7 @@
  * 5. Generates public canonical HTML page under public/blog/ ensuring valid canonical target.
  * 6. Coordinates fleet lease before writing to shared Obsidian Vault.
  * 7. Acquires atomic run lock to prevent duplicate execution across cron and launchd.
- * 8. Dispatches to Dev.to with canonical_url, preserving retryability on network error.
+ * 8. Dispatches to Dev.to with canonical_url, holding ambiguous attempts until their outcome is reconciled.
  * 9. Records idempotent receipts to .thumbgate/daily-discoveries-ledger.jsonl.
  *
  * Usage:
@@ -29,7 +29,7 @@ const path = require('node:path');
 const { execSync } = require('node:child_process');
 const { buildUTMLink } = require('./social-analytics/utm');
 
-const REPO_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(process.env.THUMBGATE_PUBLISH_ROOT || path.join(__dirname, '..'));
 const MARKETING_DIR = path.join(REPO_ROOT, 'docs', 'marketing', 'daily-discoveries');
 const PUBLIC_BLOG_DIR = path.join(REPO_ROOT, 'public', 'blog');
 const LEDGER_PATH = path.join(REPO_ROOT, '.thumbgate', 'daily-discoveries-ledger.jsonl');
@@ -60,7 +60,8 @@ function getRecentGitCommit() {
       encoding: 'utf8',
     }).trim();
     return log;
-  } catch (_) {
+  } catch {
+    // Staging outside a Git checkout still produces a usable draft.
     return 'Tip of main';
   }
 }
@@ -140,8 +141,8 @@ By enforcing this check in the **PreToolUse** hook lifecycle, the agent runtime 
 
 function renderBlogHtml(topic, dateStr, markdownContent) {
   const slug = `${dateStr}-${topic.slug}`;
-  const title = String(topic.title || '').replace(/"/g, '&quot;');
-  const tagline = String(topic.tagline || '').replace(/"/g, '&quot;');
+  const title = String(topic.title || '').replaceAll('"', '&quot;');
+  const tagline = String(topic.tagline || '').replaceAll('"', '&quot;');
   const canonicalUrl = `https://thumbgate.ai/blog/${slug}`;
 
   return `<!DOCTYPE html>
@@ -168,7 +169,7 @@ function renderBlogHtml(topic, dateStr, markdownContent) {
         <p>${topic.problem}</p>
         <h2>Architectural Resolution</h2>
         <p>${topic.solution}</p>
-        <pre><code>${String(topic.codeSnippet || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+        <pre><code>${String(topic.codeSnippet || '').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</code></pre>
       </section>
       <footer class="post-footer">
         <a href="https://thumbgate.ai/go/pro?utm_source=blog&utm_medium=article&utm_campaign=${slug}" class="cta-btn">Upgrade to ThumbGate Pro</a>
@@ -195,7 +196,9 @@ function acquireRunLock() {
           fs.unlinkSync(LOCK_PATH);
           return acquireRunLock();
         }
-      } catch (_) {}
+      } catch {
+        // A changed or unreadable lock cannot grant this process ownership.
+      }
       return false;
     }
     return false;
@@ -207,7 +210,9 @@ function releaseRunLock() {
     if (fs.existsSync(LOCK_PATH)) {
       fs.unlinkSync(LOCK_PATH);
     }
-  } catch (_) {}
+  } catch {
+    // Keep an unreleasable lock in place so later runs remain blocked.
+  }
 }
 
 function canWriteToSharedVault(vaultDir) {
@@ -223,27 +228,46 @@ function canWriteToSharedVault(vaultDir) {
             return false;
           }
         }
-      } catch (_) {}
+      } catch {
+        // Unreadable coordination claims cannot authorize a vault write.
+        return false;
+      }
     }
   }
   return true;
 }
 
-function hasAlreadyPublishedToday(dateStr) {
-  if (!fs.existsSync(LEDGER_PATH)) return false;
+function hasPublicationReceipt(receipt) {
+  if (!receipt || !Number.isSafeInteger(receipt.id) || receipt.id <= 0 || typeof receipt.url !== 'string') return false;
   try {
-    const lines = fs.readFileSync(LEDGER_PATH, 'utf8').trim().split('\n');
-    return lines.some((line) => {
-      try {
-        const item = JSON.parse(line);
-        return item.date === dateStr && item.status === 'published';
-      } catch (_) {
-        return false;
-      }
-    });
-  } catch (_) {
+    const url = new URL(receipt.url);
+    return url.protocol === 'https:' && url.hostname === 'dev.to' && url.pathname !== '/';
+  } catch {
+    // Invalid URLs cannot serve as proof of remote publication.
     return false;
   }
+}
+
+function getPublicationStatus(dateStr) {
+  if (!fs.existsSync(LEDGER_PATH)) return null;
+  let status = null;
+  const lines = fs.readFileSync(LEDGER_PATH, 'utf8').trim().split('\n');
+  for (const line of lines) {
+    let item;
+    try {
+      item = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (!item || item.date !== dateStr) continue;
+    if (item.status === 'publication_unknown') status = 'publication_unknown';
+    if (item.status === 'published' && hasPublicationReceipt(item.devto)) status = 'published';
+  }
+  return status;
+}
+
+function hasAlreadyPublishedToday(dateStr) {
+  return getPublicationStatus(dateStr) === 'published';
 }
 
 function recordLedgerEntry(entry) {
@@ -281,14 +305,6 @@ async function runDailyPublish(options = {}) {
     };
   }
 
-  if (!force && hasAlreadyPublishedToday(dateStr)) {
-    return {
-      status: 'skipped',
-      reason: `Already published daily discovery for ${dateStr}. Use --force to override.`,
-      date: dateStr,
-    };
-  }
-
   // Acquire atomic process lock to prevent duplicate runs
   if (!acquireRunLock()) {
     return {
@@ -299,6 +315,23 @@ async function runDailyPublish(options = {}) {
   }
 
   try {
+    const publicationStatus = getPublicationStatus(dateStr);
+    if (publicationStatus === 'publication_unknown') {
+      return {
+        status: 'publication_unknown',
+        reason: 'A prior Dev.to attempt has an unknown outcome. Reconcile its remote publication before retrying; --force cannot override this hold.',
+        date: dateStr,
+        canonicalUrl,
+      };
+    }
+    if (!force && publicationStatus === 'published') {
+      return {
+        status: 'skipped',
+        reason: `Already published daily discovery for ${dateStr}. Use --force to override.`,
+        date: dateStr,
+      };
+    }
+
     // 1. Stage local marketing markdown
     fs.mkdirSync(MARKETING_DIR, { recursive: true });
     fs.writeFileSync(stagedPath, content, 'utf8');
@@ -326,6 +359,17 @@ async function runDailyPublish(options = {}) {
     let devtoResult = null;
     if (process.env.DEVTO_API_KEY) {
       const { publishArticle } = require('./social-analytics/publishers/devto');
+      recordLedgerEntry({
+        date: dateStr,
+        topic: topic.slug,
+        title: topic.title,
+        status: 'publication_unknown',
+        attemptedAt: now.toISOString(),
+        canonicalUrl,
+        outputs,
+        devto: null,
+        reason: 'Dev.to publication attempt started. Reconcile the remote outcome if no confirmed receipt follows.',
+      });
       const res = await publishArticle({
         title: topic.title,
         body_markdown: content,
@@ -333,24 +377,28 @@ async function runDailyPublish(options = {}) {
         published: true,
         canonical_url: canonicalUrl,
       });
+      if (!hasPublicationReceipt(res)) {
+        const reason = 'Dev.to accepted the request without a valid publication receipt. Reconcile the remote outcome before retrying.';
+        return { status: 'publication_unknown', reason, date: dateStr, canonicalUrl, stagedPath, publicBlogHtmlPath, dryRun: false };
+      }
       devtoResult = { id: res.id, url: res.url };
       outputs.push({ type: 'devto', url: res.url });
     }
 
-    // Record idempotent ledger entry only on complete success
+    const status = devtoResult ? 'published' : 'staged';
     recordLedgerEntry({
       date: dateStr,
       topic: topic.slug,
       title: topic.title,
-      status: 'published',
-      publishedAt: now.toISOString(),
+      status,
+      ...(devtoResult ? { publishedAt: now.toISOString() } : { stagedAt: now.toISOString() }),
       canonicalUrl,
       outputs,
       devto: devtoResult,
     });
 
     return {
-      status: 'published',
+      status,
       date: dateStr,
       topic: topic.slug,
       title: topic.title,
@@ -366,10 +414,10 @@ async function runDailyPublish(options = {}) {
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  const dryRun = args.includes('--dry-run');
-  const json = args.includes('--json');
-  const force = args.includes('--force');
+  const args = new Set(process.argv.slice(2));
+  const dryRun = args.has('--dry-run');
+  const json = args.has('--json');
+  const force = args.has('--force');
 
   try {
     const result = await runDailyPublish({ dryRun, force });
@@ -393,7 +441,7 @@ async function main() {
 }
 
 if (require.main === module) {
-  main();
+  void main();
 }
 
 module.exports = {
