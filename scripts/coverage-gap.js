@@ -40,11 +40,27 @@ function detectCloneAttempt(text) {
   return CLONE_PATTERNS.filter((p) => p.re.test(t)).map((p) => p.id);
 }
 
+function isCommentOnly(source) {
+  let offset = 0;
+  while (offset < source.length) {
+    if (/\s/.test(source[offset])) { offset += 1; continue; }
+    if (source.startsWith('//', offset)) {
+      offset += 2;
+      while (offset < source.length && !'\n\r\u2028\u2029'.includes(source[offset])) offset += 1;
+    } else if (source.startsWith('/*', offset)) {
+      const end = source.indexOf('*/', offset + 2);
+      if (end === -1) return false;
+      offset = end + 2;
+    } else return false;
+  }
+  return true;
+}
+
 function classifySource(src, filePath = '') {
   const name = String(filePath).replace(/\\/g, '/');
   if (/\.d\.ts$/.test(name)) return 'types';
   const body = String(src || '').trim();
-  if (/^(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*(?:\n|$))*$/.test(body)) return 'empty';
+  if (isCommentOnly(body)) return 'empty';
   if (/^export\s*\{[\w\s,$]*\}\s*from\s+['"][^'"\n]+['"]\s*;?\s*$/.test(body)) return 'reexport';
   const code = body.replace(/^['"]use strict['"];?/gm, '').trim();
   const literal = String.raw`(?:-?\d+(?:\.\d+)?|true|false|null|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')`;
@@ -91,11 +107,13 @@ function normalizeFiles(coverage) {
     if (!entry || typeof entry !== 'object') continue;
     const src = entry.source != null ? String(entry.source) : '';
     const kind = entry.kind || (src ? classifySource(src, filePath) : (entry.noBehavior ? 'constants' : 'behavior'));
+    const statements = entry.s && typeof entry.s === 'object' ? Object.values(entry.s) : [];
+    const statementOnly = entry.lines == null && entry.covered == null && statements.length > 0;
     rows.push({
       path: filePath.replace(/\\/g, '/'),
       pct: filePct(entry),
-      lines: Number(entry.lines) || 0,
-      covered: Number(entry.covered) || 0,
+      lines: statementOnly ? statements.length : Number(entry.lines) || 0,
+      covered: statementOnly ? statements.filter(value => Number(value) > 0).length : Number(entry.covered) || 0,
       kind,
       noBehavior: NO_BEHAVIOR_KINDS.includes(kind) || entry.noBehavior === true,
     });
@@ -105,6 +123,7 @@ function normalizeFiles(coverage) {
 
 function baselineCoverage(coverage, options = {}) {
   const floor = options.floor == null ? DEFAULT_FLOOR : Number(options.floor);
+  if (!Number.isFinite(floor) || floor < 0 || floor > 100) throw new RangeError('Coverage floor must be a finite percentage from 0 to 100');
   const scope = options.scope || '';
   const skipNoBehavior = options.skipNoBehavior !== false;
   const rows = normalizeFiles(coverage).filter((r) => inScope(r.path, scope));
@@ -146,6 +165,9 @@ function compareCoverage(beforeCov, afterCov, options = {}) {
       message: 'Never cov-fail-under=100 and never claim 100% coverage as the win. Gaps, not completeness.',
     });
   }
+  const oldGapPaths = new Set(before.gaps.map(gap => gap.path));
+  const newGaps = after.gaps.filter(gap => !oldGapPaths.has(gap.path));
+  if (newGaps.length) findings.push({ severity: 'fail', id: 'new_gaps', message: `New uncovered behavioral files: ${newGaps.map(gap => gap.path).join(', ')}` });
   if (after.gaps.length > before.gaps.length) {
     findings.push({
       severity: 'fail',
@@ -195,6 +217,7 @@ function buildCoverageGapReport(options = {}) {
   }
 
   const floor = options.floor == null ? DEFAULT_FLOOR : Number(options.floor);
+  if (!Number.isFinite(floor) || floor < 0 || floor > 100) throw new RangeError('Coverage floor must be a finite percentage from 0 to 100');
   const scope = options.scope || '';
   const skipNoBehavior = options.skipNoBehavior !== false && !normalizeBoolean(options['include-no-behavior']);
 

@@ -157,3 +157,38 @@ test('recovery: uncertain executable source stays in coverage gaps', () => {
   }
   assert.equal(classifySource('const MAX = 4;'), 'constants');
 });
+
+
+test('review: invalid percentage floors cannot report ready', () => {
+  for (const floor of [NaN, Infinity, -1, 101, 'bogus']) {
+    assert.throws(() => baselineCoverage({ files: {} }, { floor }), /floor/i);
+  }
+  const result = spawnSync(process.execPath, [CLI, 'coverage-gap', '--json', `--coverage=${BEFORE}`, '--floor=bogus'], { encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+});
+
+test('review: a new uncovered path is a regression even if another gap closes', () => {
+  const before = { a: { lines: 1, covered: 0 }, b: { lines: 1, covered: 1 } };
+  const after = { a: { lines: 1, covered: 1 }, b: { lines: 1, covered: 0 } };
+  assert.ok(compareCoverage(before, after).findings.some(f => f.id === 'new_gaps'));
+});
+
+test('review: statement-only coverage preserves weighted totals', () => {
+  const before = { a: { s: { 0: 1, 1: 1 } }, b: { s: { 0: 0 } } };
+  assert.equal(baselineCoverage(before).pct, 66.7);
+  assert.ok(compareCoverage(before, { a: { s: { 0: 1, 1: 0 } }, b: { s: { 0: 0 } } }).findings.some(f => f.id === 'pct_dropped'));
+});
+
+test('review: repeated comment delimiters finish within a bounded CLI run', () => {
+  const source = '/*' + '*//*'.repeat(10000) + 'x';
+  const result = spawnSync(process.execPath, ['-e', 'console.log(require(process.argv[2]).classifySource(process.argv[3]))', 'coverage-probe', SCRIPT, source], { encoding: 'utf8', timeout: 3000 });
+  assert.equal(result.error, undefined);
+  assert.equal(result.stdout.trim(), 'behavior');
+});
+
+
+test('review: every JavaScript line terminator ends a line comment', () => {
+  for (const terminator of ['\n', '\r', '\u2028', '\u2029']) {
+    assert.equal(classifySource('// header' + terminator + 'doDangerousWork();'), 'behavior');
+  }
+});
