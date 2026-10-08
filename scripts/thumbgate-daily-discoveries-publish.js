@@ -60,7 +60,7 @@ function getRecentGitCommit() {
       encoding: 'utf8',
     }).trim();
     return log;
-  } catch (_) {
+  } catch {
     // Staging outside a Git checkout still produces a usable draft.
     return 'Tip of main';
   }
@@ -141,8 +141,8 @@ By enforcing this check in the **PreToolUse** hook lifecycle, the agent runtime 
 
 function renderBlogHtml(topic, dateStr, markdownContent) {
   const slug = `${dateStr}-${topic.slug}`;
-  const title = String(topic.title || '').replaceAll(/"/g, '&quot;');
-  const tagline = String(topic.tagline || '').replaceAll(/"/g, '&quot;');
+  const title = String(topic.title || '').replaceAll('"', '&quot;');
+  const tagline = String(topic.tagline || '').replaceAll('"', '&quot;');
   const canonicalUrl = `https://thumbgate.ai/blog/${slug}`;
 
   return `<!DOCTYPE html>
@@ -169,7 +169,7 @@ function renderBlogHtml(topic, dateStr, markdownContent) {
         <p>${topic.problem}</p>
         <h2>Architectural Resolution</h2>
         <p>${topic.solution}</p>
-        <pre><code>${String(topic.codeSnippet || '').replaceAll(/</g, '&lt;').replaceAll(/>/g, '&gt;')}</code></pre>
+        <pre><code>${String(topic.codeSnippet || '').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</code></pre>
       </section>
       <footer class="post-footer">
         <a href="https://thumbgate.ai/go/pro?utm_source=blog&utm_medium=article&utm_campaign=${slug}" class="cta-btn">Upgrade to ThumbGate Pro</a>
@@ -196,7 +196,7 @@ function acquireRunLock() {
           fs.unlinkSync(LOCK_PATH);
           return acquireRunLock();
         }
-      } catch (_) {
+      } catch {
         // A changed or unreadable lock cannot grant this process ownership.
       }
       return false;
@@ -210,7 +210,7 @@ function releaseRunLock() {
     if (fs.existsSync(LOCK_PATH)) {
       fs.unlinkSync(LOCK_PATH);
     }
-  } catch (_) {
+  } catch {
     // Keep an unreleasable lock in place so later runs remain blocked.
   }
 }
@@ -228,7 +228,8 @@ function canWriteToSharedVault(vaultDir) {
             return false;
           }
         }
-      } catch (_) {
+      } catch {
+        // Unreadable coordination claims cannot authorize a vault write.
         return false;
       }
     }
@@ -241,7 +242,7 @@ function hasPublicationReceipt(receipt) {
   try {
     const url = new URL(receipt.url);
     return url.protocol === 'https:' && url.hostname === 'dev.to' && url.pathname !== '/';
-  } catch (_) {
+  } catch {
     // Invalid URLs cannot serve as proof of remote publication.
     return false;
   }
@@ -255,7 +256,7 @@ function getPublicationStatus(dateStr) {
     let item;
     try {
       item = JSON.parse(line);
-    } catch (_) {
+    } catch {
       continue;
     }
     if (!item || item.date !== dateStr) continue;
