@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connect ThumbGate to Claude, Cursor, ChatGPT & more | ThumbGate</title>
+  <meta name="description" content="Connect your AI coding agents to ThumbGate in one click. Stop agent leaks, runaway CI spend, and credential exposure over a standard remote MCP connection.">
+  <link rel="canonical" href="https://thumbgate.ai/connectors">
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png">
+  <style>
+    :root {
+      --ink: #171d1a;
+      --muted: #5b6761;
+      --paper: #f5f2e9;
+      --card: #fffdf8;
+      --line: #d8d4c8;
+      --green: #006e52;
+      --green2: #004c3a;
+      --red: #a72f2f;
+      --accent: #10b981;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+    a { color: inherit; text-decoration: none; }
+    .shell { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
+    
+    /* Nav */
+    nav { border-bottom: 1px solid var(--line); background: rgba(245, 242, 233, .95); position: sticky; top: 0; z-index: 50; }
+    .nav-inner { min-height: 70px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .brand { font-weight: 850; letter-spacing: -.03em; font-size: 1.25rem; }
+    .nav-links { display: flex; align-items: center; gap: 20px; color: var(--muted); font-size: .92rem; }
+    .nav-links a:hover { color: var(--ink); }
+    .btn-primary {
+      display: inline-flex; justify-content: center; align-items: center;
+      border: 0; border-radius: 10px; background: var(--green); color: #fff;
+      padding: 10px 18px; font-weight: 800; cursor: pointer; transition: background .15s;
+    }
+    .btn-primary:hover { background: var(--green2); }
+
+    /* Hero */
+    header.hero { padding: 60px 0 40px; text-align: center; }
+    .eyebrow { color: var(--green); font-size: .78rem; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 12px; }
+    h1 { font-size: clamp(2.4rem, 5vw, 4rem); line-height: 1.05; letter-spacing: -.04em; margin: 0 auto 16px; max-width: 800px; }
+    .lede { font-size: 1.18rem; color: var(--muted); max-width: 680px; margin: 0 auto 30px; }
+
+    /* Leak Audit Banner (Senpi Steal) */
+    .leak-banner {
+      border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 16px;
+      padding: 24px 30px; margin-bottom: 48px; display: flex;
+      align-items: center; justify-content: space-between; gap: 24px;
+      box-shadow: 0 4px 20px rgba(0, 110, 82, 0.06);
+    }
+    .leak-content h3 { margin: 0 0 6px; font-size: 1.2rem; color: var(--green2); }
+    .leak-content p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+    /* Connector Grid */
+    .grid-title { font-size: 1.6rem; letter-spacing: -.03em; margin: 0 0 20px; }
+    .connectors-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-bottom: 60px;
+    }
+    .card {
+      border: 1px solid var(--line); border-radius: 16px; background: var(--card);
+      padding: 24px; display: flex; flex-direction: column; justify-content: space-between;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,.06); }
+    .card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .card-icon {
+      width: 44px; height: 44px; border-radius: 10px; display: flex;
+      align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 800;
+      background: #ece8dc; color: var(--ink);
+    }
+    .card-title { font-size: 1.15rem; font-weight: 800; margin: 0; }
+    .card-desc { font-size: .88rem; color: var(--muted); margin: 0 0 20px; flex-grow: 1; }
+    .btn-connect {
+      width: 100%; border: 1px solid var(--line); border-radius: 8px;
+      background: #fff; color: var(--ink); padding: 10px; font-weight: 700;
+      font-size: .88rem; cursor: pointer; text-align: center; transition: all .15s;
+    }
+    .btn-connect:hover { background: var(--green); color: #fff; border-color: var(--green); }
+
+    /* Capabilities Box */
+    .capabilities {
+      border: 1px solid var(--line); border-radius: 20px; background: var(--card);
+      padding: 40px; margin-bottom: 80px;
+    }
+    .cap-header { margin-bottom: 28px; }
+    .cap-header h2 { font-size: 1.8rem; margin: 0 0 8px; letter-spacing: -.03em; }
+    .cap-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+    .cap-item { display: flex; gap: 16px; }
+    .cap-icon {
+      width: 32px; height: 32px; border-radius: 8px; background: #e0f2fe; color: #0369a1;
+      display: grid; place-items: center; font-weight: 900; flex: 0 0 32px;
+    }
+    .cap-item strong { display: block; font-size: 1.05rem; margin-bottom: 4px; }
+    .cap-item span { font-size: .9rem; color: var(--muted); line-height: 1.45; }
+
+    /* Code Modal snippet */
+    .code-box {
+      background: #1e293b; color: #f8fafc; padding: 16px; border-radius: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: .88rem; overflow-x: auto; margin: 12px 0; display: flex; justify-content: space-between; align-items: center;
+    }
+    .code-box code { color: #38bdf8; }
+    .btn-copy { background: #334155; border: 0; color: #fff; padding: 6px 12px; border-radius: 6px; font-weight: 650; font-size: .78rem; cursor: pointer; }
+    .btn-copy:hover { background: #475569; }
+
+    footer { border-top: 1px solid var(--line); padding: 40px 0; color: var(--muted); font-size: .88rem; }
+    .footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: gap: 20px; }
+    @media (max-width: 768px) {
+      .leak-banner { flex-direction: column; align-items: flex-start; }
+      .nav-links a:not(.btn-primary) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="shell nav-inner">
+      <a href="/" class="brand">ThumbGate</a>
+      <div class="nav-links">
+        <a href="/pricing">Pricing</a>
+        <a href="/docs/connectors">Docs</a>
+        <a href="/blog">Blog</a>
+        <a href="/about">About</a>
+        <a href="/connectors" class="btn-primary">Connectors</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="shell">
+    <header class="hero">
+      <div class="eyebrow">Universal Model Context Protocol</div>
+      <h1>Use ThumbGate inside your AI coding apps</h1>
+      <p class="lede">Connect your agents in seconds. ThumbGate intercepts rogue tool calls, plugs token leaks, and enforces sub-100ms safety gates across your entire engineering fleet.</p>
+    </header>
+
+    <!-- Stolen Senpi "Fix Your Leaks" Audit Callout -->
+    <div class="leak-banner">
+      <div class="leak-content">
+        <h3>🔍 Don't know where your agents are leaking?</h3>
+        <p>Run a free 30-second audit on your local repository to uncover runaway CI crons, infinite retry loops, and exposed secrets.</p>
+      </div>
+      <a href="/pricing#buy" class="btn-primary" style="white-space: nowrap;">Run Free Repo Audit</a>
+    </div>
+
+    <h2 class="grid-title">Choose Your Agent Harness</h2>
+    <div class="connectors-grid">
+
+      <!-- Claude Code -->
+      <div class="card">
+        <div>
+          <div class="card-header">
+            <div class="card-icon" style="background: #fde047; color: #854d0e;">CC</div>
+            <h3 class="card-title">Claude Code</h3>
+          </div>
+          <p class="card-desc">Native pre-tool hook & MCP server support. Blocks recursive directory deletions and secret leakage.</p>
+        </div>
+        <button class="btn-connect" onclick="showModal('Claude Code', 'claude mcp add thumbgate https://thumbgate.ai/mcp')">Connect</button>
+      </div>
+
+      <!-- Cursor -->
+      <div class="card">
+        <div>
+          <div class="card-header">
+            <div class="card-icon" style="background: #e2e8f0; color: #0f172a;">CU</div>
+            <h3 class="card-title">Cursor</h3>
+          </div>
+          <p class="card-desc">Real-time composer and chat inline tool gate. Protects workspace files and restricts terminal commands.</p>
+        </div>
+        <button class="btn-connect" onclick="showModal('Cursor', 'Endpoint URL: https://thumbgate.ai/mcp')">Connect</button>
+      </div>
+
+      <!-- ChatGPT -->
+      <div class="card">
+        <div>
+          <div class="card-header">
+            <div class="card-icon" style="background: #dcfce7; color: #166534;">GP</div>
+            <h3 class="card-title">ChatGPT</h3>
+          </div>
+          <p class="card-desc">Connect Custom GPTs and Canvas workflows directly to your local file gates and sandboxes.</p>
+        </div>
+        <button class="btn-connect" onclick="showModal('ChatGPT', 'https://thumbgate.ai/.well-known/mcp.json')">Connect</button>
+      </div>
+
+      <!-- Codex -->
+      <div class="card">
+        <div>
+          <div class="card-header">
+            <div class="card-icon" style="background: #e0e7ff; color: #3730a3;">CX</div>
+            <h3 class="card-title">Codex</h3>
+          </div>
+          <p class="card-desc">Enterprise terminal agent integration. Hard boundary verification for continuous execution.</p>
+        </div>
+        <button class="btn-connect" onclick="showModal('Codex', 'codex mcp install thumbgate https://thumbgate.ai/mcp')">Connect</button>
+      </div>
+
+      <!-- Windsurf / Antigravity -->
+      <div class="card">
+        <div>
+          <div class="card-header">
+            <div class="card-icon" style="background: #fae8ff; color: #86198f;">WS</div>
+            <h3 class="card-title">Windsurf / AGY</h3>
+          </div>
+          <p class="card-desc">Sub-100ms Decisions API classifier integration for Cascade flows and IDE background tasks.</p>
+        </div>
+        <button class="btn-connect" onclick="showModal('Windsurf', 'https://thumbgate.ai/mcp')">Connect</button>
+      </div>
+
+      <!-- Grok -->
+      <div class="card">
+        <div>
+          <div class="card-header">
+            <div class="card-icon" style="background: #fee2e2; color: #991b1b;">GK</div>
+            <h3 class="card-title">Grok</h3>
+          </div>
+          <p class="card-desc">Autonomous code reasoning with fail-closed safety diodes and rate-limit backoff.</p>
+        </div>
+        <button class="btn-connect" onclick="showModal('Grok', 'https://thumbgate.ai/mcp')">Connect</button>
+      </div>
+
+      <!-- Gemini at Work / Vertex AI -->
+      <div class="card">
+        <div>
+          <div class="card-header">
+            <div class="card-icon" style="background: #e0f2fe; color: #0284c7;">GA</div>
+            <h3 class="card-title">Gemini at Work</h3>
+          </div>
+          <p class="card-desc">In-line pre-action firewall for Gemini Workspace agents & Vertex AI Agent Builder. Blocks runaway loops and DML drops.</p>
+        </div>
+        <button class="btn-connect" onclick="showModal('Gemini at Work', 'Endpoint URL: https://thumbgate.ai/mcp (or see /enterprise-governance)')">Connect</button>
+      </div>
+
+      <!-- Mistral Work / Vibe -->
+      <div class="card">
+        <div>
+          <div class="card-header">
+            <div class="card-icon" style="background: #ffedd5; color: #c2410c;">MW</div>
+            <h3 class="card-title">Mistral Work</h3>
+          </div>
+          <p class="card-desc">Connect Le Chat & Work mode scheduled agent tasks to ThumbGate remote MCP tools with strict identity diodes.</p>
+        </div>
+        <button class="btn-connect" onclick="showModal('Mistral Work', 'Add custom MCP tool: https://thumbgate.ai/mcp')">Connect</button>
+      </div>
+
+      <!-- Thinking Machines / Tinker -->
+      <div class="card">
+        <div>
+          <div class="card-header">
+            <div class="card-icon" style="background: #f3f4f6; color: #111827;">TM</div>
+            <h3 class="card-title">Thinking Machines</h3>
+          </div>
+          <p class="card-desc">Stream verified action traces and RL reward signals directly to Tinker fine-tuning and distillation recipes.</p>
+        </div>
+        <button class="btn-connect" onclick="showModal('Thinking Machines', 'https://thumbgate.ai/mcp')">Connect</button>
+      </div>
+
+    </div>
+
+    <!-- What Every Connected App Gets (Direct Steal from Senpi Capabilities) -->
+    <div class="capabilities">
+      <div class="cap-header">
+        <h2>Every connected app gets full access to:</h2>
+        <p style="color: var(--muted); margin: 0;">One universal connection gives your agent institutional-grade defense and cost controls.</p>
+      </div>
+
+      <div class="cap-list">
+        <div class="cap-item">
+          <div class="cap-icon">🛡️</div>
+          <div>
+            <strong>48 Typed MCP Tools</strong>
+            <span>Direct access to memory gates, pre-tool filters, secret scanners, safe test runners, and rollback diodes over standard MCP.</span>
+          </div>
+        </div>
+
+        <div class="cap-item">
+          <div class="cap-icon">⚡</div>
+          <div>
+            <strong>Sub-100ms Decisions API Guardrail</strong>
+            <span>Ultra-fast discrete logit classification gaurdrails that inspect commands without adding 15-second LLM latency taxes.</span>
+          </div>
+        </div>
+
+        <div class="cap-item">
+          <div class="cap-icon">💰</div>
+          <div>
+            <strong>Runaway CI & Token Watchdog</strong>
+            <span>Automatically detects and terminates hanging test loops, 24/7 cron burns, and runaway autonomous agent retries.</span>
+          </div>
+        </div>
+
+        <div class="cap-item">
+          <div class="cap-icon">🧠</div>
+          <div>
+            <strong>Persistent Cross-Agent Memory</strong>
+            <span>Learned mistake lessons and boundary rules follow you across Claude Code, Cursor, and terminal agents automatically.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="shell footer-inner">
+      <div>© 2026 ThumbGate. Stop AI agent mistakes before they cost you.</div>
+      <div style="display: flex; gap: 20px;">
+        <a href="/pricing">Pricing</a>
+        <a href="/docs/connectors">Docs</a>
+        <a href="/terms">Terms</a>
+        <a href="/privacy">Privacy</a>
+        <a href="mailto:igor@igorganapolsky.com">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function showModal(agent, cmd) {
+      alert(`Connect ${agent}:\n\nAdd this MCP Server URL to your ${agent} settings:\n\n${cmd}\n\nThumbGate will automatically protect all tool executions.`);
+    }
+  </script>
+</body>
+</html>
