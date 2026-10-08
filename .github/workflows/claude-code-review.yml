@@ -14,8 +14,9 @@ jobs:
   claude-review:
     name: Claude Code Review
     if: |
-      (github.event_name == 'pull_request') ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+      (github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]') &&
+      ((github.event_name == 'pull_request') ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')))
     runs-on: ubuntu-latest
     permissions:
       contents: read
