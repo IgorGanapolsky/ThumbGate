@@ -62,7 +62,8 @@ if (process.argv[2] === 'serve') {
     return spawnSync('bash', [path.join(root, 'demo/scale-the-vibe-demo.sh'), ...args], {
       cwd: root,
       encoding: 'utf8',
-      timeout: 30000,
+      // Cover 10s initialization + 60s reply + 4s cleanup and 46s for CLI/host overhead.
+      timeout: 120000,
       env: { ...process.env, DEMO_FIXTURE: mode, THUMBGATE_NO_TELEMETRY: '1', DO_NOT_TRACK: '1' },
     });
   } finally {
