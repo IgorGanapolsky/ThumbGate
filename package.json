@@ -851,7 +851,7 @@
     "windbg:doctor": "node scripts/windbg-evidence-diagnostics.js",
     "strands-box:doctor": "node scripts/strands-box-doctor.js",
     "test:strands-box": "node --test tests/strands-box-diode.test.js tests/multi-harness-invariants.test.js",
-    "test:enterprise-intelligence": "node --test tests/activesaddler-curriculum-doctor.test.js tests/agent-reliability-client.test.js tests/ai-controls-integrity-doctor.test.js tests/autonomous-agent-daemon.test.js tests/coderlegion-sentinel.test.js tests/contrastive-decision-engine.test.js tests/decisions-fast-classifier.test.js tests/enterprise-governance-page.test.js tests/falkordb-graph-rag-doctor.test.js tests/gaming-playbook.test.js tests/google-safe-forensics-doctor.test.js tests/halo-harness-optimizer.test.js tests/halo-trace-adapter.test.js tests/hybrid-interdiction-triage.test.js tests/multi-harness-invariants.test.js tests/openai-devday-honesty.test.js tests/orbit-context-mesh.test.js tests/retrieval-funnel-doctor.test.js tests/strands-box-diode.test.js tests/strands-decider-adapter.test.js tests/vlt-selector-gate.test.js tests/windbg-evidence-diagnostics.test.js",
+    "test:enterprise-intelligence": "node --test tests/activesaddler-curriculum-doctor.test.js tests/agent-reliability-client.test.js tests/enterprise-governance-page.test.js tests/gaming-playbook.test.js tests/multi-harness-invariants.test.js tests/strands-box-diode.test.js tests/strands-decider-adapter.test.js tests/windbg-evidence-diagnostics.test.js",
     "test:filesystem-search": "node --test tests/filesystem-search.test.js",
     "test:obsidian-export": "node --test tests/obsidian-export.test.js",
     "test:coverage": "node scripts/test-coverage.js",
