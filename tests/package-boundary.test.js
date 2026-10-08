@@ -513,10 +513,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 583 -> 589 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html, adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/ + skills/aws-strands-harness-not-clone/
   // 589 -> 590 (2026-10-02): adapters/strands/config.json (AWS Strands harness config)
   // 592 -> 594 (2026-10-06): scripts/vulnerability-pre-action-diode.js + scripts/triage-savings-calculator.js (WHOOP / TNS vulnerability diode)
-  // 594 -> 597 (2026-10-06): scripts/siren-mcp-governance.js + skills (Siren MCP Marketing Diode & Autonomous Campaign Governance)
     // Two runtime files restore the optional scoped lesson graph.
-    manifest.fileCount <= 599,
-    `npm package should stay <= 599 files, got ${manifest.fileCount}`
+    // 599 -> 609 (2026-10-08): Strands Box diode/decider, connectors/enterprise/gaming landing pages, ActiveSaddler, WinDbg, multi-harness invariants, agent reliability client, strands-box doctor (+10)
+    manifest.fileCount <= 609,
+    `npm package should stay <= 609 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

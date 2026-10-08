@@ -265,9 +265,9 @@ const path = require('node:path');
 // 582 → 583 (2026-09-30): scripts/rrsi-doctor.js (arXiv:2609.24972 agent harness self-improvement regularization).
 // 583 → 589 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html, adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/ + skills/aws-strands-harness-not-clone/
 // 592 → 594 (2026-10-06): scripts/vulnerability-pre-action-diode.js + scripts/triage-savings-calculator.js (WHOOP / TNS vulnerability diode).
-// 594 → 597 (2026-10-06): scripts/siren-mcp-governance.js + skills (Siren MCP Marketing Diode & Autonomous Campaign Governance).
 // 597 -> 599: scoped lesson graph runtime and its opt-in migration command.
-const BASELINE_FILE_COUNT = 599;
+// 599 → 609 (2026-10-08): Strands Box diode/decider, connectors/enterprise/gaming landing pages, ActiveSaddler, WinDbg, multi-harness invariants, agent reliability client, strands-box doctor (+10).
+const BASELINE_FILE_COUNT = 609;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
