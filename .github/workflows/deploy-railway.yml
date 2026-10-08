@@ -13,7 +13,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
       THUMBGATE_OPERATOR_KEY: ${{ secrets.THUMBGATE_OPERATOR_KEY }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
@@ -46,6 +45,7 @@ jobs:
       THUMBGATE_CHECKOUT_FALLBACK_URL: ${{ vars.THUMBGATE_CHECKOUT_FALLBACK_URL }}
       THUMBGATE_GOOGLE_SITE_VERIFICATION: ${{ vars.THUMBGATE_GOOGLE_SITE_VERIFICATION }}
       RAILWAY_TOKEN_ROTATED_AT: ${{ vars.RAILWAY_TOKEN_ROTATED_AT }}
+      RAILWAY_API_TOKEN_ROTATED_AT: ${{ vars.RAILWAY_API_TOKEN_ROTATED_AT }}
       THUMBGATE_API_KEY_ROTATED_AT: ${{ vars.THUMBGATE_API_KEY_ROTATED_AT }}
       STRIPE_SECRET_KEY_ROTATED_AT: ${{ vars.STRIPE_SECRET_KEY_ROTATED_AT }}
       STRIPE_WEBHOOK_SECRET_ROTATED_AT: ${{ vars.STRIPE_WEBHOOK_SECRET_ROTATED_AT }}
@@ -75,6 +75,21 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 20
+      - name: Select Railway deployment credential
+        if: steps.deploy-scope.outputs.should_deploy == 'true'
+        env:
+          RAILWAY_API_TOKEN_INPUT: ${{ secrets.RAILWAY_API_TOKEN }}
+          RAILWAY_PROJECT_TOKEN_INPUT: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          # Railway prioritizes a present project-token variable, even when empty.
+          if [ -n "$RAILWAY_API_TOKEN_INPUT" ]; then
+            printf 'RAILWAY_API_TOKEN=%s\n' "$RAILWAY_API_TOKEN_INPUT" >> "$GITHUB_ENV"
+          elif [ -n "$RAILWAY_PROJECT_TOKEN_INPUT" ]; then
+            printf 'RAILWAY_TOKEN=%s\n' "$RAILWAY_PROJECT_TOKEN_INPUT" >> "$GITHUB_ENV"
+          else
+            echo "::error::Railway deploy blocked: RAILWAY_API_TOKEN or RAILWAY_TOKEN is required."
+            exit 1
+          fi
       - name: Check Railway deployment configuration
         id: railway-config
         run: |
@@ -85,7 +100,7 @@ jobs:
           fi
 
           missing_config=()
-          [ -z "$RAILWAY_TOKEN" ] && missing_config+=('RAILWAY_TOKEN')
+          [ -z "${RAILWAY_API_TOKEN:-}" ] && [ -z "${RAILWAY_TOKEN:-}" ] && missing_config+=('RAILWAY_API_TOKEN or RAILWAY_TOKEN')
           [ -z "$RAILWAY_PROJECT_ID" ] && missing_config+=('RAILWAY_PROJECT_ID')
           [ -z "$RAILWAY_ENVIRONMENT_ID" ] && missing_config+=('RAILWAY_ENVIRONMENT_ID')
           [ -z "$RAILWAY_HEALTHCHECK_URL" ] && missing_config+=('RAILWAY_HEALTHCHECK_URL')

@@ -6,6 +6,21 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const { execFileSync } = require('node:child_process');
+const REPO_ROOT = path.resolve(__dirname, '..');
+const runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-daily-publish-test-'));
+const vaultDir = path.join(runtimeDir, 'vault');
+const scriptPath = path.join(REPO_ROOT, 'scripts', 'thumbgate-daily-discoveries-publish.js');
+const ledgerPath = path.join(runtimeDir, '.thumbgate', 'daily-discoveries-ledger.jsonl');
+const lockPath = path.join(runtimeDir, '.thumbgate', 'daily-discoveries.lock');
+const originalEnv = { DEVTO_API_KEY: process.env.DEVTO_API_KEY, VAULT_DIR: process.env.VAULT_DIR, THUMBGATE_PUBLISH_ROOT: process.env.THUMBGATE_PUBLISH_ROOT };
+process.env.DEVTO_API_KEY = '';
+process.env.VAULT_DIR = vaultDir;
+process.env.THUMBGATE_PUBLISH_ROOT = runtimeDir;
+const cliOptions = {
+  cwd: runtimeDir,
+  encoding: 'utf8',
+  env: { ...process.env, DEVTO_API_KEY: '', VAULT_DIR: vaultDir },
+};
 const {
   selectTopicForDay,
   generatePostContent,
@@ -20,7 +35,48 @@ const {
   getRecentGitCommit,
   recordLedgerEntry,
   CURATED_TOPICS,
-} = require('../scripts/thumbgate-daily-discoveries-publish');
+} = require(scriptPath);
+
+const dateStr = getFormattedDate();
+const topic = selectTopicForDay();
+const outputPaths = [
+  path.join('docs', 'marketing', 'daily-discoveries', `${dateStr}-${topic.slug}.md`),
+  path.join('public', 'blog', `${dateStr}-${topic.slug}.html`),
+];
+const repoStatePaths = [
+  ...outputPaths,
+  path.join('.thumbgate', 'daily-discoveries-ledger.jsonl'),
+  path.join('.thumbgate', 'daily-discoveries.lock'),
+];
+const repoStateBefore = repoStatePaths.map((relative) => {
+  const absolute = path.join(REPO_ROOT, relative);
+  return fs.existsSync(absolute) ? fs.readFileSync(absolute) : null;
+});
+
+test.beforeEach((t) => {
+  t.mock.method(globalThis, 'fetch', async () => { throw new Error('Network disabled in publisher tests'); });
+  process.env.DEVTO_API_KEY = '';
+  for (const relative of ['.thumbgate', 'docs', 'public', 'vault']) {
+    fs.rmSync(path.join(runtimeDir, relative), { recursive: true, force: true });
+  }
+  fs.mkdirSync(vaultDir, { recursive: true });
+});
+
+test.afterEach(() => {
+  for (const [index, relative] of repoStatePaths.entries()) {
+    const absolute = path.join(REPO_ROOT, relative);
+    const actual = fs.existsSync(absolute) ? fs.readFileSync(absolute) : null;
+    assert.deepEqual(actual, repoStateBefore[index], `publisher test changed repository ${relative}`);
+  }
+});
+
+test.after(() => {
+  fs.rmSync(runtimeDir, { recursive: true, force: true });
+  for (const [key, value] of Object.entries(originalEnv)) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 test('selectTopicForDay selects deterministic topic from curated list', () => {
   const d1 = new Date('2026-09-23T09:00:00Z');
@@ -96,12 +152,10 @@ test('acquireRunLock reclaims stale lock (>30m old)', () => {
   releaseRunLock();
   acquireRunLock();
   const fortyMinutesAgo = (Date.now() - 40 * 60 * 1000) / 1000;
-  const lockPath = path.resolve(__dirname, '../.thumbgate/daily-discoveries.lock');
-  if (fs.existsSync(lockPath)) {
-    fs.utimesSync(lockPath, fortyMinutesAgo, fortyMinutesAgo);
-    const reclaimed = acquireRunLock();
-    assert.equal(reclaimed, true, 'stale lock should be reclaimed');
-  }
+  assert.ok(fs.existsSync(lockPath));
+  fs.utimesSync(lockPath, fortyMinutesAgo, fortyMinutesAgo);
+  const reclaimed = acquireRunLock();
+  assert.equal(reclaimed, true, 'stale lock should be reclaimed');
   releaseRunLock();
 });
 
@@ -127,8 +181,10 @@ test('hasAlreadyPublishedToday detects published status in ledger', () => {
   const res = hasAlreadyPublishedToday('1999-01-01');
   assert.equal(res, false, 'future or unrecorded date returns false');
 
-  const publishedToday = hasAlreadyPublishedToday('2026-09-23');
-  assert.equal(typeof publishedToday, 'boolean');
+  recordLedgerEntry({ date: '2026-09-23', status: 'published', devto: { id: 123, url: 'https://dev.to/test/discovery' } });
+  assert.equal(hasAlreadyPublishedToday('2026-09-23'), true);
+  recordLedgerEntry({ date: '2026-09-24', status: 'published', devto: null });
+  assert.equal(hasAlreadyPublishedToday('2026-09-24'), false, 'local outputs are not a remote receipt');
 });
 
 test('recordLedgerEntry appends JSON lines to ledger', () => {
@@ -146,15 +202,18 @@ test('runDailyPublish dry-run returns preview without writing outputs or ledger'
   assert.ok(result.title);
   assert.ok(result.canonicalUrl);
   assert.ok(result.previewSnippet);
+  assert.equal(fs.existsSync(ledgerPath), false);
+  for (const relative of outputPaths) assert.equal(fs.existsSync(path.join(runtimeDir, relative)), false);
+  assert.deepEqual(fs.readdirSync(vaultDir), []);
 });
 
 test('runDailyPublish returns skipped when already published today', async () => {
+  recordLedgerEntry({ date: dateStr, status: 'published', devto: { id: 123, url: 'https://dev.to/test/discovery' } });
   const result = await runDailyPublish({ force: false });
-  if (result.status === 'skipped') {
-    assert.match(result.reason, /Already published daily discovery/);
-  } else {
-    assert.ok(['published', 'locked'].includes(result.status));
-  }
+  assert.equal(result.status, 'skipped');
+  assert.match(result.reason, /Already published daily discovery/);
+  for (const relative of outputPaths) assert.equal(fs.existsSync(path.join(runtimeDir, relative)), false);
+  assert.deepEqual(fs.readdirSync(vaultDir), []);
 });
 
 test('runDailyPublish returns locked when lock is already held', async () => {
@@ -169,13 +228,133 @@ test('runDailyPublish returns locked when lock is already held', async () => {
 });
 
 test('thumbgate-daily-discoveries-publish CLI executes dry-run and json modes', () => {
-  const scriptPath = path.resolve(__dirname, '../scripts/thumbgate-daily-discoveries-publish.js');
-  
-  const stdoutDryRun = execFileSync(process.execPath, [scriptPath, '--dry-run'], { encoding: 'utf8' });
+  const stdoutDryRun = execFileSync(process.execPath, [scriptPath, '--dry-run'], cliOptions);
   assert.match(stdoutDryRun, /\[ThumbGate Daily Discoveries\] Status: dry_run_preview/);
 
-  const stdoutJson = execFileSync(process.execPath, [scriptPath, '--dry-run', '--json'], { encoding: 'utf8' });
+  const stdoutJson = execFileSync(process.execPath, [scriptPath, '--dry-run', '--json'], cliOptions);
   const parsed = JSON.parse(stdoutJson);
   assert.equal(parsed.status, 'dry_run_preview');
   assert.equal(parsed.dryRun, true);
+});
+
+
+test('runDailyPublish stages local outputs without claiming publication or blocking retries', async () => {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const result = await runDailyPublish();
+    assert.equal(result.status, 'staged');
+    assert.ok(fs.readFileSync(result.stagedPath, 'utf8').includes(result.title));
+    assert.ok(fs.readFileSync(result.publicBlogHtmlPath, 'utf8').includes(result.title));
+    assert.equal(hasAlreadyPublishedToday(result.date), false);
+    assert.equal(fs.existsSync(lockPath), false);
+  }
+  const entries = fs.readFileSync(ledgerPath, 'utf8').trim().split('\n').map(JSON.parse);
+  assert.equal(entries.length, 2);
+  for (const entry of entries) {
+    assert.equal(entry.status, 'staged');
+    assert.equal(entry.devto, null);
+    assert.equal(entry.publishedAt, undefined);
+    assert.ok(entry.stagedAt);
+  }
+});
+
+test('CLI stages outputs only inside the isolated runtime', () => {
+  const result = JSON.parse(execFileSync(process.execPath, [scriptPath, '--json'], cliOptions));
+  assert.equal(result.status, 'staged');
+  for (const relative of outputPaths) {
+    assert.equal(fs.existsSync(path.join(runtimeDir, relative)), true);
+  }
+  assert.equal(fs.existsSync(path.join(vaultDir, 'Research', 'Daily-Discoveries', path.basename(result.stagedPath))), true);
+  assert.equal(hasAlreadyPublishedToday(result.date), false);
+});
+
+
+test('runDailyPublish records a confirmed remote receipt and skips the next run', async (t) => {
+  const publisher = require(path.join(REPO_ROOT, 'scripts/social-analytics/publishers/devto.js'));
+  const receipt = { id: 123, url: 'https://dev.to/test/discovery' };
+  const publish = t.mock.method(publisher, 'publishArticle', async () => receipt);
+  process.env.DEVTO_API_KEY = 'test-only-never-sent';
+  const result = await runDailyPublish();
+  assert.equal(result.status, 'published');
+  const entries = fs.readFileSync(ledgerPath, 'utf8').trim().split('\n').map(JSON.parse);
+  assert.equal(entries.length, 2);
+  assert.equal(entries[0].status, 'publication_unknown');
+  const entry = entries[1];
+  assert.equal(entry.status, 'published');
+  assert.deepEqual(entry.devto, receipt);
+  assert.ok(entry.publishedAt);
+  assert.equal(entry.stagedAt, undefined);
+  assert.equal(hasAlreadyPublishedToday(result.date), true);
+  assert.equal((await runDailyPublish()).status, 'skipped');
+  assert.equal(publish.mock.callCount(), 1);
+});
+
+test('runDailyPublish blocks unresolved publication outcomes even with force', async (t) => {
+  const publisher = require(path.join(REPO_ROOT, 'scripts/social-analytics/publishers/devto.js'));
+  const publish = t.mock.method(publisher, 'publishArticle', async () => ({ id: 123, url: 'https://dev.to/test/discovery' }));
+  process.env.DEVTO_API_KEY = 'test-only-never-sent';
+  recordLedgerEntry({ date: dateStr, status: 'publication_unknown', devto: null });
+  for (const force of [false, true]) {
+    const result = await runDailyPublish({ force });
+    assert.equal(result.status, 'publication_unknown');
+    assert.match(result.reason, /reconcil/i);
+  }
+  assert.equal(publish.mock.callCount(), 0);
+  assert.equal(hasAlreadyPublishedToday(dateStr), false);
+  assert.equal(fs.existsSync(lockPath), false);
+  for (const relative of outputPaths) assert.equal(fs.existsSync(path.join(runtimeDir, relative)), false);
+});
+
+test('runDailyPublish persists ambiguous receipts and prevents duplicate retries', async (t) => {
+  const publisher = require(path.join(REPO_ROOT, 'scripts/social-analytics/publishers/devto.js'));
+  process.env.DEVTO_API_KEY = 'test-only-never-sent';
+  for (const receipt of [null, {}, { id: 123 }, { id: 0, url: 'https://dev.to/test/post' }, { id: 123, url: 'not-a-url' }, { id: 123, url: 'https://example.com/post' }]) {
+    fs.rmSync(ledgerPath, { force: true });
+    const publish = t.mock.method(publisher, 'publishArticle', async () => receipt);
+    const result = await runDailyPublish();
+    assert.equal(result.status, 'publication_unknown');
+    assert.match(result.reason, /reconcil/i);
+    const entry = JSON.parse(fs.readFileSync(ledgerPath, 'utf8').trim());
+    assert.equal(entry.status, 'publication_unknown');
+    assert.equal(entry.publishedAt, undefined);
+    assert.equal(entry.devto, null);
+    assert.ok(entry.attemptedAt);
+    assert.equal(entry.canonicalUrl, result.canonicalUrl);
+    assert.equal(fs.existsSync(lockPath), false);
+    assert.equal(hasAlreadyPublishedToday(dateStr), false);
+    assert.equal((await runDailyPublish()).status, 'publication_unknown');
+    assert.equal((await runDailyPublish({ force: true })).status, 'publication_unknown');
+    const cliResult = JSON.parse(execFileSync(process.execPath, [scriptPath, '--json', '--force'], cliOptions));
+    assert.equal(cliResult.status, 'publication_unknown');
+    assert.equal(fs.readFileSync(ledgerPath, 'utf8').trim().split('\n').length, 1);
+    assert.equal(publish.mock.callCount(), 1);
+    publish.mock.restore();
+  }
+});
+
+test('runDailyPublish holds ambiguous transport and JSON failures instead of repeating the POST', async (t) => {
+  process.env.DEVTO_API_KEY = 'test-only-never-sent';
+  for (const failure of ['transport', 'json']) {
+    fs.rmSync(ledgerPath, { force: true });
+    const post = t.mock.method(globalThis, 'fetch', async (url, options) => {
+      assert.equal(url, 'https://dev.to/api/articles');
+      assert.equal(options.method, 'POST');
+      const attempt = JSON.parse(fs.readFileSync(ledgerPath, 'utf8').trim());
+      assert.equal(attempt.status, 'publication_unknown', 'hold must be persisted before sending');
+      if (failure === 'transport') throw new Error('connection lost after sending');
+      return { ok: true, json: async () => { throw new SyntaxError('invalid response JSON'); } };
+    });
+    await assert.rejects(runDailyPublish(), /connection lost|invalid response JSON/);
+    assert.equal(fs.existsSync(ledgerPath), true, 'unknown attempt must survive a response failure');
+    const entry = JSON.parse(fs.readFileSync(ledgerPath, 'utf8').trim());
+    assert.equal(entry.status, 'publication_unknown');
+    assert.equal(entry.publishedAt, undefined);
+    assert.equal(hasAlreadyPublishedToday(dateStr), false);
+    assert.equal(fs.existsSync(lockPath), false);
+    assert.equal((await runDailyPublish()).status, 'publication_unknown');
+    assert.equal((await runDailyPublish({ force: true })).status, 'publication_unknown');
+    const cliResult = JSON.parse(execFileSync(process.execPath, [scriptPath, '--json', '--force'], cliOptions));
+    assert.equal(cliResult.status, 'publication_unknown');
+    assert.equal(post.mock.callCount(), 1);
+    post.mock.restore();
+  }
 });

@@ -16,6 +16,7 @@ const SECRET_POLICY = {
     maxAgeDays: 90,
   },
   RAILWAY_TOKEN: { rotatedAtEnv: 'RAILWAY_TOKEN_ROTATED_AT', maxAgeDays: 90 },
+  RAILWAY_API_TOKEN: { rotatedAtEnv: 'RAILWAY_API_TOKEN_ROTATED_AT', maxAgeDays: 90 },
   GITHUB_MARKETPLACE_WEBHOOK_SECRET: {
     rotatedAtEnv: 'GITHUB_MARKETPLACE_WEBHOOK_SECRET_ROTATED_AT',
     maxAgeDays: 90,
@@ -122,6 +123,19 @@ function evaluateDeployPolicy(env = process.env, { profiles = ['runtime'], now =
   const requiredVars = collectRequiredItems(selectedProfiles, 'requiredVars');
   const errors = [];
   const warnings = [];
+
+  if (selectedProfiles.includes('deploy')) {
+    if (Object.hasOwn(env, 'RAILWAY_API_TOKEN') && Object.hasOwn(env, 'RAILWAY_TOKEN')) {
+      errors.push({
+        type: 'ambiguous_railway_auth',
+        name: 'RAILWAY_API_TOKEN',
+        message: 'Export only RAILWAY_API_TOKEN or RAILWAY_TOKEN; even an empty project token overrides API authentication',
+      });
+    }
+    if (resolveEnvValue('RAILWAY_API_TOKEN', env)) {
+      requiredSecrets[requiredSecrets.indexOf('RAILWAY_TOKEN')] = 'RAILWAY_API_TOKEN';
+    }
+  }
 
   for (const name of requiredVars) {
     const value = resolveEnvValue(name, env);
