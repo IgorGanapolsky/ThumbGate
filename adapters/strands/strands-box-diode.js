@@ -11,6 +11,7 @@
  * - Sub-1ms local CPU execution
  */
 
+const crypto = require('node:crypto');
 const { performance } = require('node:perf_hooks');
 
 const EVENT_FS_READ = 'fs:read';
@@ -40,7 +41,7 @@ const DEFAULT_SENSITIVE_PATTERNS = [
  * @returns {Object} Box session instance
  */
 function createBoxSession(opts = {}) {
-  const sessionId = opts.id || `box_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const sessionId = opts.id || `box_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
   const name = opts.name || 'default-box';
   const workspace = opts.workspace || process.cwd();
   const sensitivePatterns = opts.sensitivePatterns || DEFAULT_SENSITIVE_PATTERNS;

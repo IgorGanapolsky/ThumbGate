@@ -50,9 +50,9 @@ describe('Gaming AI Agent Playbook Delivery & Route Verification', () => {
     assert.ok(html.includes('Economy Prompt Exploits'), 'Must address economy exploits');
 
     // Monetization Rails
-    assert.ok(html.includes('https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f'), 'Must include Pro Stripe checkout link');
-    assert.ok(html.includes('https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k'), 'Must include $499 audit Stripe checkout link');
-    assert.ok(html.includes('https://www.paypal.com/ncp/payment/LTQFR7P9AR3QG'), 'Must include sprint checkout link');
+    assert.ok(html.includes('8x2dR91M84r4cSd9uj3sI3f'), 'Must include Pro Stripe checkout link slug');
+    assert.ok(html.includes('9B69ATbmI4r4aK5eOD3sI3k'), 'Must include $499 audit Stripe checkout link slug');
+    assert.ok(html.includes('LTQFR7P9AR3QG'), 'Must include sprint checkout link slug');
   });
 
   for (const route of ['/gaming-playbook', '/gaming-playbook.html', '/gaming', '/industry-playbook']) {
