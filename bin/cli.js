@@ -2671,6 +2671,103 @@ function intentGovernedExecution() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function agentContextArtifact() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildAgentContextArtifactReport,
+    formatAgentContextArtifactReport,
+    normalizeBoolean,
+  } = require(path.join(PKG_ROOT, 'scripts', 'agent-context-artifact'));
+  const json = normalizeBoolean(args.json);
+  const strict = normalizeBoolean(args.strict);
+  const map = normalizeBoolean(args.map) || normalizeBoolean(args['map-only']);
+  const cloneAce = normalizeBoolean(args['clone-ace']);
+  const report = buildAgentContextArtifactReport({
+    json,
+    strict,
+    pack: args.pack,
+    now: args.now,
+    map,
+    'clone-ace': cloneAce,
+    argv: process.argv.slice(3),
+  });
+  if (json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatAgentContextArtifactReport(report));
+  }
+  if (strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
+function sessionExportGate() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildSessionExportGateReport,
+    formatSessionExportGateReport,
+    normalizeBoolean,
+  } = require(path.join(PKG_ROOT, 'scripts', 'session-export-gate'));
+  let text = args.text;
+  if (!text && args.input) {
+    text = fs.readFileSync(String(args.input), 'utf8');
+  }
+  const report = buildSessionExportGateReport({
+    json: normalizeBoolean(args.json),
+    apply: normalizeBoolean(args.apply),
+    lane: args.lane,
+    optIn: normalizeBoolean(args['opt-in-export'] ?? args.optIn),
+    irreversibleAck: normalizeBoolean(args['i-understand-irreversible'] ?? args.irreversibleAck),
+    dest: args.dest,
+    log: args.log,
+    text,
+    'clone-bolt-forge': normalizeBoolean(args['clone-bolt-forge']),
+    argv: process.argv.slice(3),
+  });
+  if (normalizeBoolean(args.json)) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatSessionExportGateReport(report));
+  }
+  if (report.status === 'fail' || !report.ok) process.exitCode = 1;
+}
+
+function coverageGap() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildCoverageGapReport,
+    formatCoverageGapReport,
+    normalizeBoolean,
+  } = require(path.join(PKG_ROOT, 'scripts', 'coverage-gap'));
+  const report = buildCoverageGapReport({
+    json: normalizeBoolean(args.json),
+    strict: normalizeBoolean(args.strict),
+    coverage: args.coverage,
+    before: args.before,
+    after: args.after,
+    scope: args.scope,
+    floor: args.floor != null ? Number(args.floor) : undefined,
+    claim100: normalizeBoolean(args['claim-100'] ?? args.claim100),
+    'clone-test-agent': normalizeBoolean(args['clone-test-agent']),
+    'include-no-behavior': normalizeBoolean(args['include-no-behavior']),
+    argv: process.argv.slice(3),
+  });
+
+  if (normalizeBoolean(args.json)) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatCoverageGapReport(report));
+  }
+
+  if (normalizeBoolean(args.strict) && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function jitHarnessCompose() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3861,6 +3958,12 @@ function help() {
   console.log('  package-manager-honesty-doctor Audit lockfile/CI parity; fail-closed manager switches');
   console.log('  openui-catalog-compose-honesty Catalog-compose-only + repair-before-claim (OpenUI FORMAT)');
   console.log('  allowlist-bridge-honesty Audit allowlisted registries/proxies as hops, not trust boundaries');
+  console.log('  agent-context-artifact Lint agent context packs (Wisdom FORMAT; not ACE/Foundry/OSI)');
+  console.log('  npx thumbgate agent-context-artifact --json --pack=pack.json');
+  console.log('  session-export-gate   Per-session opt-in research export; operator DENY (Bolt Forge FORMAT)');
+  console.log('  npx thumbgate session-export-gate --json --lane=operator');
+  console.log('  coverage-gap          Baseline coverage gaps; skip no-behavior; remeasure same scope (VS FORMAT)');
+  console.log('  npx thumbgate coverage-gap --json --scope=scripts/risk --floor=50');
   console.log('  jit-harness-compose   Compose memory/planning/action/capability onto existing rails (JIT FORMAT)');
   console.log('  cobble-hot-store-split Split durable/delivery/hot lesson planes (CobbleDB FORMAT)');
   console.log('  token-shunt-honesty   Intercept untargeted bulk reads (Portal FORMAT; not shunt@portal)');
@@ -4588,6 +4691,21 @@ switch (COMMAND) {
   case 'allowlist-not-trust':
   case 'trust-handoff-honesty':
     allowlistBridgeHonestyDoctor();
+    break;
+  case 'agent-context-artifact':
+  case 'wisdom-context-artifact':
+  case 'context-artifact':
+    agentContextArtifact();
+    break;
+  case 'session-export-gate':
+  case 'bolt-forge-opt-in':
+  case 'forge-export-gate':
+    sessionExportGate();
+    break;
+  case 'coverage-gap':
+  case 'vs-coverage-gap':
+  case 'coverage-gap-honesty':
+    coverageGap();
     break;
   case 'jit-harness-compose':
   case 'jit-compose':

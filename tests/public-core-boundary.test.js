@@ -316,7 +316,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 583 -> 589 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html, adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/ + skills/aws-strands-harness-not-clone/
   // 592 -> 594 (2026-10-06): scripts/vulnerability-pre-action-diode.js + scripts/triage-savings-calculator.js (WHOOP / TNS vulnerability diode)
   // 594 -> 597 (2026-10-06): scripts/siren-mcp-governance.js + skills (Siren MCP Marketing Diode & Autonomous Campaign Governance)
-  const CEILING = 597;
+  // 597 -> 604: three recovered command/skill pairs and session-interactivity.js.
+  const CEILING = 604;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
