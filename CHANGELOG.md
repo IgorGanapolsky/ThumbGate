@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Recover context-artifact validation, consent-gated local session export, coverage-gap reporting and session interactivity metrics with review regressions repaired. The public package grows from 597 to 604 files for three command modules, their three skills and the session metric module. Raise the unpacked limit from 8.98 MB to 9.025 MB for the measured additions.
+
 ## 1.38.0
 
 ### Minor Changes
