@@ -45,6 +45,45 @@ test('same id cannot overwrite another scope', t => {
   assert.throws(() => graph.registerLesson(db, lesson('mem_a', { scope: { ...scope, entityId: 'other' }, title: 'foreign private data' })), /scope/);
   assert.equal(graph.getNode(db, 'mem_a').title, lesson('mem_a').title);
 });
+for (const field of Object.keys(scope)) {
+  test(`incomplete ${field} identity collisions fail closed`, t => {
+    const { db, dir } = fixture(t);
+    const original = lesson('mem_partial', { scope: { [field]: 'original' } });
+    const foreign = lesson('mem_partial', { scope: { [field]: 'foreign' }, title: 'foreign private data' });
+    graph.registerLesson(db, original);
+    assert.throws(() => graph.registerLesson(db, foreign), /scope/);
+    assert.throws(() => graph.upsertNode(db, foreign), /scope/);
+    assert.equal(graph.getNode(db, original.id).title, original.title);
+    assert.equal(graph.registerLesson(db, original).status, 'new');
+    jsonl(dir, 'memory-log.jsonl', [original, foreign]);
+    assert.throws(() => buildPlan(dir), /scope/);
+  });
+}
+for (const marker of ['CORRECTION', 'REFINEMENT']) {
+  test(`live ${marker} of a duplicate replaces the cluster canonical`, t => {
+    const { db } = fixture(t);
+    graph.registerLesson(db, lesson('mem_original'));
+    graph.registerLesson(db, lesson('mem_duplicate'));
+    const current = lesson('mem_current', { title: `${marker} to mem_duplicate: verify the signed artifact.`, timestamp: '2026-10-08T12:00:00Z' });
+    assert.equal(graph.registerLesson(db, current).targetId, 'mem_original');
+    for (const id of ['mem_original', 'mem_duplicate']) assert.equal(graph.resolveCurrentId(db, id).id, current.id);
+  });
+  test(`migration ${marker} of a duplicate replaces the cluster canonical`, t => {
+    const { dir, db } = fixture(t);
+    const original = lesson('mem_original');
+    const duplicate = lesson('mem_duplicate', { timestamp: '2026-10-08T11:00:00Z' });
+    const current = lesson('mem_current', { title: `${marker} to mem_duplicate: verify the signed release artifact before publishing.`, content: 'Use the current release signature.', timestamp: '2026-10-08T12:00:00Z' });
+    jsonl(dir, 'memory-log.jsonl', [original, duplicate, current]);
+    const plan = buildPlan(dir);
+    assert.equal(plan.lineageEdges[0].dst, original.id);
+    applyPlan(plan, path.join(dir, 'lesson-graph.sqlite'));
+    for (const id of [original.id, duplicate.id]) assert.equal(graph.resolveCurrentId(db, id).id, current.id);
+    const rows = graph.annotateAndFilterLessons(db, [original, duplicate], { lookup: new Map([original, duplicate, current].map(row => [row.id, row])) });
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].id, current.id);
+    assert.equal(rows[0].content, current.content);
+  });
+}
 test('missing scope and missing authorized canonical content fail closed', t => {
   const { db } = fixture(t);
   graph.registerLesson(db, lesson('mem_unscoped', { scope: undefined }));

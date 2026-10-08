@@ -13,7 +13,7 @@ const {
   initGraphDB,
   upsertNode,
   addEdge,
-  scopeKey, sameScope,
+  scopeKey, sameScope, sameScopeIdentity,
   extractCorrectionTarget,
   lessonSignal,
   lessonText,
@@ -194,13 +194,14 @@ function buildPlan(feedbackDir) {
   const byIdentity = new Map();
   for (const record of [...memoryRecords, ...feedbackRecords]) {
     const existing = byIdentity.get(record.id);
-    if (existing && scopeKey(existing) !== scopeKey(record)) throw new Error('lesson-graph: duplicate id across scopes');
+    if (existing && !sameScopeIdentity(existing, record)) throw new Error('lesson-graph: duplicate id across scopes');
     if (!existing) byIdentity.set(record.id, record);
   }
   const all = [...byIdentity.values()];
   const { clusters, byId } = clusterDuplicates(all);
 
   const duplicateEdges = [];
+  const canonicalById = new Map();
   let collapsedRecords = 0;
   let largestCluster = { size: 0, title: null };
   for (const { canonical, members } of clusters) {
@@ -213,6 +214,7 @@ function buildPlan(feedbackDir) {
       };
     }
     for (const member of members) {
+      canonicalById.set(member.id, canonical.id);
       if (member.id === canonical.id) continue;
       collapsedRecords += 1;
       duplicateEdges.push({
@@ -242,7 +244,7 @@ function buildPlan(feedbackDir) {
   for (const rec of all) {
     const correction = extractCorrectionTarget(rec.text);
     if (!correction) continue;
-    const targetId = resolveRef(correction.targetRef, rec.id);
+    const targetId = canonicalById.get(resolveRef(correction.targetRef, rec.id));
     if (!targetId) {
       unresolvedRefs.push({ id: rec.id, ref: correction.targetRef });
       continue;

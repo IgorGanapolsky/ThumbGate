@@ -1916,7 +1916,7 @@ function captureFeedback(params) {
   // Vector storage — track promise synchronously so waitForBackgroundSideEffects works
   const vectorStore = getVectorStoreModule();
   if (vectorStore && typeof vectorStore.upsertFeedback === 'function') {
-    trackBackgroundSideEffect(vectorStore.upsertFeedback(feedbackEvent));
+    void trackBackgroundSideEffect(vectorStore.upsertFeedback(feedbackEvent));
   }
 
   // Auto-promote gates on negative feedback (sync — tests depend on immediate promotion)
@@ -1976,7 +1976,7 @@ function captureFeedback(params) {
         resolve();
       });
     });
-    trackBackgroundSideEffect(exportPromise);
+    void trackBackgroundSideEffect(exportPromise);
   }
 
   // --- Deferred side-effects (contextFs, RLAIF — non-critical, potentially slow) ---

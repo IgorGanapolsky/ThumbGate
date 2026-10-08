@@ -19,6 +19,11 @@ function sameScope(a, b) {
   return key !== null && key === scopeKey(b);
 }
 
+function sameScopeIdentity(a, b) {
+  const left = normalizeScope(a);
+  const right = normalizeScope(b);
+  return Object.keys(left).every(field => left[field] === right[field]);
+}
 
 const EDGE_TYPES = ['supersedes', 'contradicts', 'duplicate_of', 'refines'];
 const LINEAGE_EDGE_TYPES = new Set(['supersedes', 'refines']);
@@ -165,7 +170,7 @@ function lessonText(lesson) {
 function upsertNode(db, node) {
   if (!node || !node.id) return null;
   const old = getNode(db, node.id);
-  if (old && scopeKey(old) !== scopeKey(node)) throw new Error('lesson-graph: id already belongs to another scope');
+  if (old && !sameScopeIdentity(old, node)) throw new Error('lesson-graph: id already belongs to another scope');
   const scope = normalizeScope(node);
   const { canonicalizeText } = require('./lesson-canonical');
   const canonicalText = node.canonicalText != null
@@ -497,7 +502,7 @@ function registerLessonInTransaction(db, lesson, options = {}) {
   if (!lesson || !lesson.id) return { status: 'new', id: null };
   const existing = getNode(db, lesson.id);
   if (existing) {
-    if (scopeKey(existing) !== scopeKey(lesson)) throw new Error('lesson-graph: id already belongs to another scope');
+    if (!sameScopeIdentity(existing, lesson)) throw new Error('lesson-graph: id already belongs to another scope');
     return { status: existing.canonical_id ? 'duplicate' : 'new', id: lesson.id, canonicalId: existing.canonical_id };
   }
   const { canonicalHash, canonicalizeText } = require('./lesson-canonical');
@@ -517,7 +522,8 @@ function registerLessonInTransaction(db, lesson, options = {}) {
 
   const correction = extractCorrectionTarget(lessonText(lesson));
   if (correction) {
-    const targetId = resolveNodeRef(db, correction.targetRef, lesson);
+    const referencedId = resolveNodeRef(db, correction.targetRef, lesson);
+    const targetId = referencedId ? resolveCurrentId(db, referencedId).id : null;
     if (targetId && targetId !== lesson.id) {
       upsertNode(db, baseNode);
       addEdge(db, {
@@ -748,7 +754,7 @@ function feedbackIdentity(db, record) {
 }
 
 module.exports = {
-  scopeKey, sameScope, graphProvenance, feedbackIdentity,
+  scopeKey, sameScope, sameScopeIdentity, graphProvenance, feedbackIdentity,
   EDGE_TYPES,
   DUPLICATE_SIMILARITY_THRESHOLD,
   CONTRADICTION_SIMILARITY_THRESHOLD,
