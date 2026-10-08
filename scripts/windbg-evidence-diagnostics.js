@@ -16,6 +16,7 @@
  * Strictly fail-closed: Refuses Windows WinDbg, DbgEng.dll, or proprietary debuggers. Pure JS.
  */
 
+const fs = require('node:fs');
 const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const { performance } = require('node:perf_hooks');
@@ -79,10 +80,17 @@ class EvidenceDiagnosticEngine {
       };
     }
 
-    const run = spawnSync('sh', ['-c', command], {
+    const shellBin = ['/bin/sh', '/usr/bin/sh'].find(p => fs.existsSync(p)) || '/bin/sh';
+    const safeEnv = {
+      ...process.env,
+      PATH: '/usr/bin:/bin:/usr/sbin:/sbin'
+    };
+
+    const run = spawnSync(shellBin, ['-c', command], {
       cwd,
       timeout,
       encoding: 'utf8',
+      env: safeEnv,
       maxBuffer: this.maxOutputBytes
     });
 
