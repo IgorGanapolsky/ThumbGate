@@ -294,15 +294,45 @@ test('runDailyPublish records a confirmed remote receipt and skips the next run'
   assert.equal(publish.mock.callCount(), 1);
 });
 
-test('runDailyPublish rejects missing or malformed remote receipts and remains retryable', async (t) => {
+test('runDailyPublish blocks unresolved publication outcomes even with force', async (t) => {
+  const publisher = require(path.join(runtimeDir, 'scripts/social-analytics/publishers/devto.js'));
+  const publish = t.mock.method(publisher, 'publishArticle', async () => ({ id: 123, url: 'https://dev.to/test/discovery' }));
+  process.env.DEVTO_API_KEY = 'test-only-never-sent';
+  recordLedgerEntry({ date: dateStr, status: 'publication_unknown', devto: null });
+  for (const force of [false, true]) {
+    const result = await runDailyPublish({ force });
+    assert.equal(result.status, 'publication_unknown');
+    assert.match(result.reason, /reconcil/i);
+  }
+  assert.equal(publish.mock.callCount(), 0);
+  assert.equal(hasAlreadyPublishedToday(dateStr), false);
+  assert.equal(fs.existsSync(lockPath), false);
+  for (const relative of outputPaths) assert.equal(fs.existsSync(path.join(runtimeDir, relative)), false);
+});
+
+test('runDailyPublish persists ambiguous receipts and prevents duplicate retries', async (t) => {
   const publisher = require(path.join(runtimeDir, 'scripts/social-analytics/publishers/devto.js'));
   process.env.DEVTO_API_KEY = 'test-only-never-sent';
   for (const receipt of [null, {}, { id: 123 }, { id: 0, url: 'https://dev.to/test/post' }, { id: 123, url: 'not-a-url' }, { id: 123, url: 'https://example.com/post' }]) {
+    fs.rmSync(ledgerPath, { force: true });
     const publish = t.mock.method(publisher, 'publishArticle', async () => receipt);
-    await assert.rejects(runDailyPublish(), /valid publication receipt/);
-    assert.equal(fs.existsSync(ledgerPath), false);
+    const result = await runDailyPublish();
+    assert.equal(result.status, 'publication_unknown');
+    assert.match(result.reason, /reconcil/i);
+    const entry = JSON.parse(fs.readFileSync(ledgerPath, 'utf8').trim());
+    assert.equal(entry.status, 'publication_unknown');
+    assert.equal(entry.publishedAt, undefined);
+    assert.equal(entry.devto, null);
+    assert.ok(entry.attemptedAt);
+    assert.equal(entry.canonicalUrl, result.canonicalUrl);
     assert.equal(fs.existsSync(lockPath), false);
     assert.equal(hasAlreadyPublishedToday(dateStr), false);
+    assert.equal((await runDailyPublish()).status, 'publication_unknown');
+    assert.equal((await runDailyPublish({ force: true })).status, 'publication_unknown');
+    const cliResult = JSON.parse(execFileSync(process.execPath, [scriptPath, '--json', '--force'], cliOptions));
+    assert.equal(cliResult.status, 'publication_unknown');
+    assert.equal(fs.readFileSync(ledgerPath, 'utf8').trim().split('\n').length, 1);
+    assert.equal(publish.mock.callCount(), 1);
     publish.mock.restore();
   }
 });

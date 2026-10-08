@@ -239,21 +239,26 @@ function hasPublicationReceipt(receipt) {
   }
 }
 
-function hasAlreadyPublishedToday(dateStr) {
-  if (!fs.existsSync(LEDGER_PATH)) return false;
-  try {
-    const lines = fs.readFileSync(LEDGER_PATH, 'utf8').trim().split('\n');
-    return lines.some((line) => {
-      try {
-        const item = JSON.parse(line);
-        return item.date === dateStr && item.status === 'published' && hasPublicationReceipt(item.devto);
-      } catch (_) {
-        return false;
-      }
-    });
-  } catch (_) {
-    return false;
+function getPublicationStatus(dateStr) {
+  if (!fs.existsSync(LEDGER_PATH)) return null;
+  let status = null;
+  const lines = fs.readFileSync(LEDGER_PATH, 'utf8').trim().split('\n');
+  for (const line of lines) {
+    let item;
+    try {
+      item = JSON.parse(line);
+    } catch (_) {
+      continue;
+    }
+    if (!item || item.date !== dateStr) continue;
+    if (item.status === 'publication_unknown') return 'publication_unknown';
+    if (item.status === 'published' && hasPublicationReceipt(item.devto)) status = 'published';
   }
+  return status;
+}
+
+function hasAlreadyPublishedToday(dateStr) {
+  return getPublicationStatus(dateStr) === 'published';
 }
 
 function recordLedgerEntry(entry) {
@@ -291,14 +296,6 @@ async function runDailyPublish(options = {}) {
     };
   }
 
-  if (!force && hasAlreadyPublishedToday(dateStr)) {
-    return {
-      status: 'skipped',
-      reason: `Already published daily discovery for ${dateStr}. Use --force to override.`,
-      date: dateStr,
-    };
-  }
-
   // Acquire atomic process lock to prevent duplicate runs
   if (!acquireRunLock()) {
     return {
@@ -309,6 +306,23 @@ async function runDailyPublish(options = {}) {
   }
 
   try {
+    const publicationStatus = getPublicationStatus(dateStr);
+    if (publicationStatus === 'publication_unknown') {
+      return {
+        status: 'publication_unknown',
+        reason: 'A prior Dev.to attempt has an unknown outcome. Reconcile its remote publication before retrying; --force cannot override this hold.',
+        date: dateStr,
+        canonicalUrl,
+      };
+    }
+    if (!force && publicationStatus === 'published') {
+      return {
+        status: 'skipped',
+        reason: `Already published daily discovery for ${dateStr}. Use --force to override.`,
+        date: dateStr,
+      };
+    }
+
     // 1. Stage local marketing markdown
     fs.mkdirSync(MARKETING_DIR, { recursive: true });
     fs.writeFileSync(stagedPath, content, 'utf8');
@@ -344,7 +358,19 @@ async function runDailyPublish(options = {}) {
         canonical_url: canonicalUrl,
       });
       if (!hasPublicationReceipt(res)) {
-        throw new Error('Dev.to response did not include a valid publication receipt.');
+        const reason = 'Dev.to accepted the request without a valid publication receipt. Reconcile the remote outcome before retrying.';
+        recordLedgerEntry({
+          date: dateStr,
+          topic: topic.slug,
+          title: topic.title,
+          status: 'publication_unknown',
+          attemptedAt: now.toISOString(),
+          canonicalUrl,
+          outputs,
+          devto: null,
+          reason,
+        });
+        return { status: 'publication_unknown', reason, date: dateStr, canonicalUrl, stagedPath, publicBlogHtmlPath, dryRun: false };
       }
       devtoResult = { id: res.id, url: res.url };
       outputs.push({ type: 'devto', url: res.url });
