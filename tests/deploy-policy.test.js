@@ -65,6 +65,65 @@ test('deploy policy infers canonical hosted config when billing vars are omitted
   assert.equal(report.errors.length, 0);
 });
 
+test('deploy policy accepts an API token with its own rotation timestamp', () => {
+  const report = evaluateDeployPolicy({
+    RAILWAY_API_TOKEN: 'api-token-fixture',
+    RAILWAY_API_TOKEN_ROTATED_AT: isoDaysAgo(1),
+    RAILWAY_PROJECT_ID: 'proj_123',
+    RAILWAY_ENVIRONMENT_ID: 'env_123',
+    RAILWAY_HEALTHCHECK_URL: 'https://thumbgate-production.up.railway.app/health',
+  }, { profiles: ['deploy'] });
+
+  assert.equal(report.ok, true, JSON.stringify(report.errors));
+  assert.deepEqual(report.requiredSecrets, ['RAILWAY_API_TOKEN']);
+});
+
+test('deploy policy does not use project-token rotation metadata for an API token', () => {
+  const report = evaluateDeployPolicy({
+    RAILWAY_API_TOKEN: 'api-token-fixture',
+    RAILWAY_TOKEN_ROTATED_AT: isoDaysAgo(1),
+    RAILWAY_PROJECT_ID: 'proj_123',
+    RAILWAY_ENVIRONMENT_ID: 'env_123',
+    RAILWAY_HEALTHCHECK_URL: 'https://thumbgate-production.up.railway.app/health',
+  }, { profiles: ['deploy'] });
+
+  assert.equal(report.ok, false);
+  assert.ok(report.errors.some((error) => error.type === 'missing_rotation_timestamp'
+    && error.name === 'RAILWAY_API_TOKEN_ROTATED_AT'), JSON.stringify(report.errors));
+});
+
+test('deploy policy rejects ambiguous Railway auth even when the project token is empty', () => {
+  for (const projectToken of ['', 'stale-project-token-fixture']) {
+    const report = evaluateDeployPolicy({
+      RAILWAY_API_TOKEN: 'api-token-fixture',
+      RAILWAY_API_TOKEN_ROTATED_AT: isoDaysAgo(1),
+      RAILWAY_TOKEN: projectToken,
+      RAILWAY_TOKEN_ROTATED_AT: isoDaysAgo(1),
+      RAILWAY_PROJECT_ID: 'proj_123',
+      RAILWAY_ENVIRONMENT_ID: 'env_123',
+      RAILWAY_HEALTHCHECK_URL: 'https://thumbgate-production.up.railway.app/health',
+    }, { profiles: ['deploy'] });
+
+    assert.equal(report.ok, false);
+    assert.ok(report.errors.some((error) => error.type === 'ambiguous_railway_auth'), JSON.stringify(report.errors));
+  }
+});
+
+test('deploy policy rejects missing Railway credentials and expired API tokens', () => {
+  const env = {
+    RAILWAY_PROJECT_ID: 'proj_123',
+    RAILWAY_ENVIRONMENT_ID: 'env_123',
+    RAILWAY_HEALTHCHECK_URL: 'https://thumbgate-production.up.railway.app/health',
+  };
+  assert.equal(evaluateDeployPolicy(env, { profiles: ['deploy'] }).ok, false);
+  const stale = evaluateDeployPolicy({
+    ...env,
+    RAILWAY_API_TOKEN: 'api-token-fixture',
+    RAILWAY_API_TOKEN_ROTATED_AT: isoDaysAgo(91),
+  }, { profiles: ['deploy'] });
+  assert.ok(stale.errors.some((error) => error.type === 'stale_secret' && error.name === 'RAILWAY_API_TOKEN'), JSON.stringify(stale.errors));
+});
+
 test('deploy policy resolves canonical ThumbGate env names', () => {
   assert.equal(resolveEnvValue('THUMBGATE_API_KEY', { THUMBGATE_API_KEY: 'live_key' }), 'live_key');
   assert.equal(
