@@ -1410,6 +1410,7 @@ function captureFeedback(params) {
     signal,
     context,
     submittedContext,
+    scope: require('./memory-scope-readiness').normalizeScope(params),
     relatedFeedbackId: params.relatedFeedbackId || null,
     lastAction,
     whatWentWrong,
@@ -1642,6 +1643,7 @@ function captureFeedback(params) {
   const memoryRecord = {
     id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     ...prepared.memory,
+    scope: feedbackEvent.scope,
     richContext: feedbackEvent.richContext || null,
     distillation: feedbackEvent.distillation || null,
     diagnosis: storedDiagnosis,
@@ -1705,7 +1707,14 @@ function captureFeedback(params) {
   let synthesisResult = null;
   try {
     const { findSimilarLesson, mergeIntoExisting, shouldAutoPromote, synthesizePreventionRule, appendJSONLLocal } = require('./lesson-synthesis');
-    const similar = findSimilarLesson(MEMORY_LOG_PATH, memoryRecord);
+    const graph = require('./lesson-graph');
+    const graphOwnsIdentity = graph.scopeKey(memoryRecord)
+      && fs.existsSync(graph.resolveDefaultGraphDbPath({ feedbackDir: FEEDBACK_DIR }));
+    const candidate = graphOwnsIdentity ? null : findSimilarLesson(MEMORY_LOG_PATH, memoryRecord);
+    const similar = candidate && (
+      (!graph.scopeKey(memoryRecord) && !graph.scopeKey(candidate.match))
+      || graph.sameScope(memoryRecord, candidate.match)
+    ) ? candidate : null;
 
     if (similar) {
       // Merge into existing lesson
@@ -1787,6 +1796,20 @@ function captureFeedback(params) {
     }
   } catch (_err) {
     // Lesson DB write is non-critical — never fail the capture pipeline
+  }
+
+  try {
+    const graph = require('./lesson-graph');
+    const db = graph.openGraphDBIfExists({ feedbackDir: FEEDBACK_DIR });
+    if (db) {
+      try {
+        graph.registerLesson(db, memoryRecord);
+      } finally {
+        db.close();
+      }
+    }
+  } catch {
+    // Graph enrichment is optional; JSONL remains the source of truth.
   }
 
   summary.accepted += 1;

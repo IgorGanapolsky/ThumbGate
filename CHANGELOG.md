@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Recover the opt-in scoped lesson graph and migration command. The measured npm bundle grows from 597 to 599 files to include both runtime modules required by the Reliability Gateway.
+
 ## 1.38.0
 
 ### Minor Changes
