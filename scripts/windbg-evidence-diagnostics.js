@@ -115,7 +115,9 @@ class EvidenceDiagnosticEngine {
     }
 
     let verdict = 'EVIDENCE_INSUFFICIENT';
-    if (assertion) {
+    if (!combinedOutput || combinedOutput.trim().length === 0) {
+      verdict = assertion ? 'GROUNDED_FALSE' : 'EVIDENCE_INSUFFICIENT';
+    } else if (assertion) {
       const assertionRegex = new RegExp(assertion, 'i');
       if (assertionRegex.test(combinedOutput)) {
         verdict = exitCode === 0 ? 'GROUNDED_TRUE' : 'GROUNDED_ERROR_MATCH';
@@ -135,6 +137,7 @@ class EvidenceDiagnosticEngine {
       evidenceSha,
       outputSnippet: combinedOutput.slice(0, 500),
       outputLength: combinedOutput.length,
+      rawEvidence: combinedOutput,
       timestamp: new Date().toISOString(),
       latencyMs: Number(elapsed.toFixed(3)),
       withinBudget: elapsed < 5000
@@ -151,6 +154,17 @@ class EvidenceDiagnosticEngine {
     const validHex = /^[a-f0-9]{64}$/i.test(envelope.evidenceSha);
     if (!validHex) {
       return { ok: false, reason: 'INVALID_SHA256_FINGERPRINT' };
+    }
+    if (typeof envelope.rawEvidence === 'string') {
+      const computed = crypto.createHash('sha256').update(envelope.rawEvidence).digest('hex');
+      if (computed !== envelope.evidenceSha) {
+        return { ok: false, reason: 'EVIDENCE_FINGERPRINT_MISMATCH' };
+      }
+    } else if (typeof envelope.outputSnippet === 'string' && (envelope.outputLength === undefined || envelope.outputLength <= 500)) {
+      const computed = crypto.createHash('sha256').update(envelope.outputSnippet).digest('hex');
+      if (computed !== envelope.evidenceSha) {
+        return { ok: false, reason: 'EVIDENCE_FINGERPRINT_MISMATCH' };
+      }
     }
     return { ok: true, verified: true };
   }

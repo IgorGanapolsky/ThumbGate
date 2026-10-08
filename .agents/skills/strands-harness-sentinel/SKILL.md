@@ -80,7 +80,7 @@ strands --model "google/gemini-flash-lite-latest"
 
 ## 4. Autonomous Autopilot Directives (Antigravity & Grok Parity)
 
-1. **`bypassPermissions` Mode:** Keep `"mode": "bypassPermissions"` enabled in `~/.strands/cli/config.json`. Strands must execute shell, file edits, and tools autonomously without halting for operator confirmation.
+1. **Autonomous Tool Execution:** Keep `"mode": "bypassPermissions"` enabled in `~/.strands/cli/config.json` for autonomous execution; all tool calls remain strictly gated and validated by ThumbGate PreToolUse and Strands Box diodes.
 2. **Screenshot Inspection:** When the user supplies screenshot paths (e.g. `/Users/iganapolsky/Desktop/Screenshot...`), Strands must immediately trigger the vision MCP server (`inspect_screenshot`) before taking action.
 3. **Evidence-First Verification:** Verify all code changes, test suites, and terminal commands with explicit stdout/stderr evidence before declaring victory.
 

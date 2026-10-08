@@ -299,12 +299,20 @@ class ActiveSaddlerCurriculum {
 function runDoctor(options = {}) {
   const curriculum = new ActiveSaddlerCurriculum();
 
-  // Feed synthetic realistic telemetry for baseline diagnosis
-  curriculum.recordObservation('arm:force-push-main', { violation: false, latencyMs: 0.1 });
-  curriculum.recordObservation('arm:bypass-branch-protection', { violation: false, latencyMs: 0.1 });
-  curriculum.recordObservation('arm:token-shunt-overflow', { violation: true, latencyMs: 0.2 });
-  curriculum.recordObservation('arm:token-shunt-overflow', { violation: true, latencyMs: 0.2 });
-  curriculum.recordObservation('arm:runaway-halo-loop', { violation: false, latencyMs: 0.1 });
+  if (Array.isArray(options.observations) && options.observations.length > 0) {
+    for (const obs of options.observations) {
+      if (obs && obs.armId) {
+        curriculum.recordObservation(obs.armId, obs);
+      }
+    }
+  } else {
+    // Feed baseline observations for initial curriculum diagnosis
+    curriculum.recordObservation('arm:force-push-main', { violation: false, latencyMs: 0.1 });
+    curriculum.recordObservation('arm:bypass-branch-protection', { violation: false, latencyMs: 0.1 });
+    curriculum.recordObservation('arm:token-shunt-overflow', { violation: true, latencyMs: 0.2 });
+    curriculum.recordObservation('arm:token-shunt-overflow', { violation: true, latencyMs: 0.2 });
+    curriculum.recordObservation('arm:runaway-halo-loop', { violation: false, latencyMs: 0.1 });
+  }
 
   const diagnosis = curriculum.diagnose();
 

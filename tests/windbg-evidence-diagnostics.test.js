@@ -88,6 +88,22 @@ test('windbg-mcp: verifyEvidenceEnvelope detects tampered or invalid fingerprint
   });
   assert.equal(invalidSha.ok, false);
   assert.equal(invalidSha.reason, 'INVALID_SHA256_FINGERPRINT');
+
+  const tampered = engine.verifyEvidenceEnvelope({
+    evidenceSha: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    outputSnippet: 'tampered-data-mismatch'
+  });
+  assert.equal(tampered.ok, false);
+  assert.equal(tampered.reason, 'EVIDENCE_FINGERPRINT_MISMATCH');
+});
+
+test('windbg-mcp: executeAndGround returns EVIDENCE_INSUFFICIENT when output is empty', () => {
+  const engine = new EvidenceDiagnosticEngine();
+  const receipt = engine.executeAndGround({
+    command: 'true'
+  });
+  assert.equal(receipt.ok, false);
+  assert.equal(receipt.verdict, 'EVIDENCE_INSUFFICIENT');
 });
 
 test('windbg-mcp: CLI runs cleanly with --json and --map-only', () => {
