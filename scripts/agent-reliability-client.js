@@ -26,11 +26,11 @@ function maskToken(token) {
 class AgentReliabilityClient {
   constructor(options = {}) {
     this.options = options;
-    this.token = this.resolveToken();
-    this.issuer = 'Gaetano Franco <gtnfrnc@gmail.com>';
-    this.target = 'ThumbGate';
-    this.tier = 'private_trial';
-    this.expiresAt = '2026-10-21T23:59:59Z';
+    this.token = options.token !== undefined ? options.token : this.resolveToken();
+    this.issuer = options.issuer || 'Gaetano Franco <gtnfrnc@gmail.com>';
+    this.target = options.target || 'ThumbGate';
+    this.tier = options.tier || 'private_trial';
+    this.expiresAt = options.expiresAt || '2026-10-21T23:59:59Z';
   }
 
   resolveToken() {
@@ -73,6 +73,16 @@ class AgentReliabilityClient {
   getStatus() {
     const configured = this.hasToken();
     const expired = this.isExpired();
+    let tokenSource = 'unconfigured';
+    if (this.options.token !== undefined) {
+      tokenSource = 'options:token';
+    } else if (process.env.AGENT_RELIABILITY_TOKEN) {
+      tokenSource = 'env:AGENT_RELIABILITY_TOKEN';
+    } else if (fs.existsSync(CREDENTIAL_PATH)) {
+      tokenSource = 'file:~/.thumbgate/credentials/agent-reliability.json';
+    } else if (fs.existsSync(DOWNLOADS_TOKEN_PATH)) {
+      tokenSource = 'file:downloads';
+    }
     return {
       configured,
       active: configured && !expired,
@@ -81,9 +91,7 @@ class AgentReliabilityClient {
       tier: this.tier,
       expiresAt: this.expiresAt,
       tokenMasked: this.getMaskedToken(),
-      tokenSource: process.env.AGENT_RELIABILITY_TOKEN
-        ? 'env:AGENT_RELIABILITY_TOKEN'
-        : (fs.existsSync(CREDENTIAL_PATH) ? 'file:~/.thumbgate/credentials/agent-reliability.json' : 'file:downloads')
+      tokenSource,
     };
   }
 
