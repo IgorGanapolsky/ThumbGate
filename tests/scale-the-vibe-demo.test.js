@@ -11,7 +11,18 @@ function runDemo(mode = 'valid', args = []) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-buyer-demo-'));
   try {
     for (const dir of ['demo', 'bin', 'scripts']) fs.mkdirSync(path.join(root, dir));
-    fs.copyFileSync(path.resolve(__dirname, '../demo/scale-the-vibe-demo.sh'), path.join(root, 'demo/scale-the-vibe-demo.sh'));
+    let demo = fs.readFileSync(path.resolve(__dirname, '../demo/scale-the-vibe-demo.sh'), 'utf8');
+    const mutations = {
+      'mcp-no-initialized': ['    send({"jsonrpc":"2.0", "method":"notifications/initialized"})', ''],
+      'mcp-wrong-method': ['"method":"tools/call"', '"method":"tools/list"'],
+      'mcp-wrong-tool': ['"name":"gate_check"', '"name":"capture_feedback"'],
+    };
+    if (mutations[mode]) {
+      const [original, replacement] = mutations[mode];
+      assert.ok(demo.includes(original), `missing mutation target for ${mode}`);
+      demo = demo.replace(original, replacement);
+    }
+    fs.writeFileSync(path.join(root, 'demo/scale-the-vibe-demo.sh'), demo);
     fs.writeFileSync(path.join(root, 'scripts/gates-engine.js'), '');
     fs.writeFileSync(path.join(root, 'scripts/auto-promote-gates.js'), `
 const fs = require('node:fs');
@@ -31,11 +42,16 @@ const mode = process.env.DEMO_FIXTURE;
 if (process.argv[2] === 'serve') {
   const rl = require('node:readline').createInterface({ input: process.stdin });
   process.stdin.on('end', () => process.exit(0));
+  let initialized = false;
   rl.on('line', (line) => {
     const request = JSON.parse(line);
     if (request.method === 'initialize') {
       process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: 0, result: { protocolVersion: '2024-11-05', capabilities: {}, serverInfo: { name: 'fixture', version: '1' } } }) + '\\n');
+    } else if (request.method === 'notifications/initialized') {
+      initialized = true;
     } else if (request.id === 1) {
+      if (!initialized) throw new Error('expected initialized notification before tool call');
+      if (request.method !== 'tools/call' || request.params?.name !== 'gate_check') throw new Error('expected tools/call gate_check');
       if (request.params.arguments.tool_input.command !== 'echo demo-mcp-probe') throw new Error('expected inert safe probe');
       setTimeout(() => {
         if (mode === 'mcp-missing') return process.exit(0);
@@ -71,7 +87,7 @@ if (process.argv[2] === 'serve') {
   }
 }
 
-for (const mode of ['mcp-missing', 'mcp-malformed', 'mcp-error', 'mcp-empty', 'mcp-deny', 'cli-empty', 'cli-malformed', 'cli-missing-decision', 'cli-error-context', 'danger-allowed', 'safe-denied', 'learning-failed', 'bad-pattern']) {
+for (const mode of ['mcp-no-initialized', 'mcp-wrong-method', 'mcp-wrong-tool', 'mcp-missing', 'mcp-malformed', 'mcp-error', 'mcp-empty', 'mcp-deny', 'cli-empty', 'cli-malformed', 'cli-missing-decision', 'cli-error-context', 'danger-allowed', 'safe-denied', 'learning-failed', 'bad-pattern']) {
   test(`buyer demo rejects ${mode} instead of announcing success`, () => {
     const result = runDemo(mode);
     assert.equal(result.error, undefined);
