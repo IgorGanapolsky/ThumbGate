@@ -9,22 +9,13 @@ const { execFileSync } = require('node:child_process');
 const REPO_ROOT = path.resolve(__dirname, '..');
 const runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-daily-publish-test-'));
 const vaultDir = path.join(runtimeDir, 'vault');
-const scriptPath = path.join(runtimeDir, 'scripts', 'thumbgate-daily-discoveries-publish.js');
+const scriptPath = path.join(REPO_ROOT, 'scripts', 'thumbgate-daily-discoveries-publish.js');
 const ledgerPath = path.join(runtimeDir, '.thumbgate', 'daily-discoveries-ledger.jsonl');
 const lockPath = path.join(runtimeDir, '.thumbgate', 'daily-discoveries.lock');
-const originalEnv = { DEVTO_API_KEY: process.env.DEVTO_API_KEY, VAULT_DIR: process.env.VAULT_DIR };
+const originalEnv = { DEVTO_API_KEY: process.env.DEVTO_API_KEY, VAULT_DIR: process.env.VAULT_DIR, THUMBGATE_PUBLISH_ROOT: process.env.THUMBGATE_PUBLISH_ROOT };
 process.env.DEVTO_API_KEY = '';
 process.env.VAULT_DIR = vaultDir;
-for (const relative of [
-  'scripts/thumbgate-daily-discoveries-publish.js',
-  'scripts/daily-discoveries-topics.json',
-  'scripts/social-analytics/utm.js',
-  'scripts/social-analytics/publishers/devto.js',
-]) {
-  const destination = path.join(runtimeDir, relative);
-  fs.mkdirSync(path.dirname(destination), { recursive: true });
-  fs.copyFileSync(path.join(REPO_ROOT, relative), destination);
-}
+process.env.THUMBGATE_PUBLISH_ROOT = runtimeDir;
 const cliOptions = {
   cwd: runtimeDir,
   encoding: 'utf8',
@@ -278,7 +269,7 @@ test('CLI stages outputs only inside the isolated runtime', () => {
 
 
 test('runDailyPublish records a confirmed remote receipt and skips the next run', async (t) => {
-  const publisher = require(path.join(runtimeDir, 'scripts/social-analytics/publishers/devto.js'));
+  const publisher = require(path.join(REPO_ROOT, 'scripts/social-analytics/publishers/devto.js'));
   const receipt = { id: 123, url: 'https://dev.to/test/discovery' };
   const publish = t.mock.method(publisher, 'publishArticle', async () => receipt);
   process.env.DEVTO_API_KEY = 'test-only-never-sent';
@@ -298,7 +289,7 @@ test('runDailyPublish records a confirmed remote receipt and skips the next run'
 });
 
 test('runDailyPublish blocks unresolved publication outcomes even with force', async (t) => {
-  const publisher = require(path.join(runtimeDir, 'scripts/social-analytics/publishers/devto.js'));
+  const publisher = require(path.join(REPO_ROOT, 'scripts/social-analytics/publishers/devto.js'));
   const publish = t.mock.method(publisher, 'publishArticle', async () => ({ id: 123, url: 'https://dev.to/test/discovery' }));
   process.env.DEVTO_API_KEY = 'test-only-never-sent';
   recordLedgerEntry({ date: dateStr, status: 'publication_unknown', devto: null });
@@ -314,7 +305,7 @@ test('runDailyPublish blocks unresolved publication outcomes even with force', a
 });
 
 test('runDailyPublish persists ambiguous receipts and prevents duplicate retries', async (t) => {
-  const publisher = require(path.join(runtimeDir, 'scripts/social-analytics/publishers/devto.js'));
+  const publisher = require(path.join(REPO_ROOT, 'scripts/social-analytics/publishers/devto.js'));
   process.env.DEVTO_API_KEY = 'test-only-never-sent';
   for (const receipt of [null, {}, { id: 123 }, { id: 0, url: 'https://dev.to/test/post' }, { id: 123, url: 'not-a-url' }, { id: 123, url: 'https://example.com/post' }]) {
     fs.rmSync(ledgerPath, { force: true });

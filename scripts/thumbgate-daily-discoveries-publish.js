@@ -15,7 +15,7 @@
  * 5. Generates public canonical HTML page under public/blog/ ensuring valid canonical target.
  * 6. Coordinates fleet lease before writing to shared Obsidian Vault.
  * 7. Acquires atomic run lock to prevent duplicate execution across cron and launchd.
- * 8. Dispatches to Dev.to with canonical_url, preserving retryability on network error.
+ * 8. Dispatches to Dev.to with canonical_url, holding ambiguous attempts until their outcome is reconciled.
  * 9. Records idempotent receipts to .thumbgate/daily-discoveries-ledger.jsonl.
  *
  * Usage:
@@ -29,7 +29,7 @@ const path = require('node:path');
 const { execSync } = require('node:child_process');
 const { buildUTMLink } = require('./social-analytics/utm');
 
-const REPO_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(process.env.THUMBGATE_PUBLISH_ROOT || path.join(__dirname, '..'));
 const MARKETING_DIR = path.join(REPO_ROOT, 'docs', 'marketing', 'daily-discoveries');
 const PUBLIC_BLOG_DIR = path.join(REPO_ROOT, 'public', 'blog');
 const LEDGER_PATH = path.join(REPO_ROOT, '.thumbgate', 'daily-discoveries-ledger.jsonl');
@@ -61,6 +61,7 @@ function getRecentGitCommit() {
     }).trim();
     return log;
   } catch (_) {
+    // Staging outside a Git checkout still produces a usable draft.
     return 'Tip of main';
   }
 }
@@ -140,8 +141,8 @@ By enforcing this check in the **PreToolUse** hook lifecycle, the agent runtime 
 
 function renderBlogHtml(topic, dateStr, markdownContent) {
   const slug = `${dateStr}-${topic.slug}`;
-  const title = String(topic.title || '').replace(/"/g, '&quot;');
-  const tagline = String(topic.tagline || '').replace(/"/g, '&quot;');
+  const title = String(topic.title || '').replaceAll(/"/g, '&quot;');
+  const tagline = String(topic.tagline || '').replaceAll(/"/g, '&quot;');
   const canonicalUrl = `https://thumbgate.ai/blog/${slug}`;
 
   return `<!DOCTYPE html>
@@ -168,7 +169,7 @@ function renderBlogHtml(topic, dateStr, markdownContent) {
         <p>${topic.problem}</p>
         <h2>Architectural Resolution</h2>
         <p>${topic.solution}</p>
-        <pre><code>${String(topic.codeSnippet || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+        <pre><code>${String(topic.codeSnippet || '').replaceAll(/</g, '&lt;').replaceAll(/>/g, '&gt;')}</code></pre>
       </section>
       <footer class="post-footer">
         <a href="https://thumbgate.ai/go/pro?utm_source=blog&utm_medium=article&utm_campaign=${slug}" class="cta-btn">Upgrade to ThumbGate Pro</a>
@@ -195,7 +196,9 @@ function acquireRunLock() {
           fs.unlinkSync(LOCK_PATH);
           return acquireRunLock();
         }
-      } catch (_) {}
+      } catch (_) {
+        // A changed or unreadable lock cannot grant this process ownership.
+      }
       return false;
     }
     return false;
@@ -207,7 +210,9 @@ function releaseRunLock() {
     if (fs.existsSync(LOCK_PATH)) {
       fs.unlinkSync(LOCK_PATH);
     }
-  } catch (_) {}
+  } catch (_) {
+    // Keep an unreleasable lock in place so later runs remain blocked.
+  }
 }
 
 function canWriteToSharedVault(vaultDir) {
@@ -223,7 +228,9 @@ function canWriteToSharedVault(vaultDir) {
             return false;
           }
         }
-      } catch (_) {}
+      } catch (_) {
+        return false;
+      }
     }
   }
   return true;
@@ -235,6 +242,7 @@ function hasPublicationReceipt(receipt) {
     const url = new URL(receipt.url);
     return url.protocol === 'https:' && url.hostname === 'dev.to' && url.pathname !== '/';
   } catch (_) {
+    // Invalid URLs cannot serve as proof of remote publication.
     return false;
   }
 }
@@ -405,10 +413,10 @@ async function runDailyPublish(options = {}) {
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  const dryRun = args.includes('--dry-run');
-  const json = args.includes('--json');
-  const force = args.includes('--force');
+  const args = new Set(process.argv.slice(2));
+  const dryRun = args.has('--dry-run');
+  const json = args.has('--json');
+  const force = args.has('--force');
 
   try {
     const result = await runDailyPublish({ dryRun, force });
@@ -432,7 +440,7 @@ async function main() {
 }
 
 if (require.main === module) {
-  main();
+  void main();
 }
 
 module.exports = {
