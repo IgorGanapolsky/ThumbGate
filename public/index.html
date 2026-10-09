@@ -687,11 +687,34 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div class="hero-copy">
-          <div class="eyebrow">Now live · Pre-action gates · Not a prompt · Not a postmortem</div>
+          <div class="eyebrow">Enterprise Infrastructure Firewall · Stop AI agent mistakes before they cost you</div>
           <div class="hero-thumbs" aria-hidden="true"><span class="up">👍</span><span class="down">👎</span></div>
-          <h1>Stop AI agent mistakes before they cost you.</h1>
-          <p class="hero-lede">Your agents write, send, deploy, and spend unattended. Your agent team needs a firewall: hard allow/deny at the <strong>tool-call boundary</strong>, before the mistake lands.</p>
-          <p class="fit-line"><strong>Dual path (buy + book):</strong> <strong>$499 Diagnostic</strong> maps one expensive failure on Claude Code, Cursor, Codex, or similar agents and installs a hard gate with proof — or self-serve <strong>Pro at $19/mo</strong> if you already know the loop. Free local evaluate stays free.</p>
+          <h1>Stop Your Coding Agents From Dropping Production.</h1>
+          <p class="hero-lede">Your agents write, send, deploy, and spend unattended. ThumbGate is the <strong>infrastructure firewall</strong> for Claude Code, Cursor, and Windsurf: hard allow/deny at the <strong>tool-call boundary</strong> in &lt;0.5ms before the mistake lands.</p>
+          <div class="terminal-split-comparison" style="margin: 22px 0 20px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #070b12;">
+            <div style="display: flex; border-bottom: 1px solid var(--line); background: #0c121d; padding: 9px 16px; font-size: 12px; font-weight: 750; color: var(--muted); justify-content: space-between;">
+              <span>⚡ Real-Time PreToolUse Interception</span>
+              <span style="color: var(--green);">Latency: 0.4ms (CPU Local)</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0;">
+              <div style="padding: 16px; border-right: 1px solid var(--line); font: 12px/1.6 ui-monospace, SFMono-Regular, monospace; background: rgba(255, 100, 124, 0.03);">
+                <div style="color: var(--red); font-weight: 800; margin-bottom: 6px;">❌ WITHOUT FIREWALL (STAGING WIPED)</div>
+                <div style="color: var(--muted);">$ claude "Refactor user schema"</div>
+                <div style="color: #cbd5e1;">Running: <span style="color: var(--yellow);">DROP TABLE users_audit;</span></div>
+                <div style="color: var(--muted);">Connecting to staging-db.cluster...</div>
+                <div style="color: var(--red); margin-top: 6px;">💥 Schema dropped. 15 engineers blocked.</div>
+              </div>
+              <div style="padding: 16px; font: 12px/1.6 ui-monospace, SFMono-Regular, monospace; background: rgba(86, 227, 159, 0.04);">
+                <div style="color: var(--green); font-weight: 800; margin-bottom: 6px;">🛡️ WITH THUMBGATE (HARD INTERDICTION)</div>
+                <div style="color: var(--muted);">$ claude "Refactor user schema"</div>
+                <div style="color: #cbd5e1;">Intercepted: <span style="color: var(--yellow);">DROP TABLE users_audit;</span></div>
+                <div style="color: var(--red); font-weight: 800; margin-top: 6px;">🛑 [ThumbGate DENY in 0.4ms]</div>
+                <div style="color: var(--green); font-size: 11px;">Rule: org.data.no_destructive_db_drop</div>
+                <div style="color: var(--cyan); font-size: 11px;">Receipt: signed_ecdsa_98f21a (Audit logged)</div>
+              </div>
+            </div>
+          </div>
+          <p class="fit-line"><strong>Enterprise Governance:</strong> Centralized policy sync for engineering teams ($49/seat/mo), $499 Diagnostic Gate for acute workflows, or free local MIT CLI for individual devs.</p>
           <div class="spec-chips" aria-label="What ThumbGate does">
             <span class="spec-chip"><strong>Capture</strong> feedback</span>
             <span class="spec-chip"><strong>Rank</strong> lessons</span>

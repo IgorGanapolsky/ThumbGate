@@ -267,7 +267,8 @@ const path = require('node:path');
 // 592 → 594 (2026-10-06): scripts/vulnerability-pre-action-diode.js + scripts/triage-savings-calculator.js (WHOOP / TNS vulnerability diode).
 // 597 -> 599: scoped lesson graph runtime and its opt-in migration command.
 // 599 → 609 (2026-10-08): Strands Box diode/decider, connectors/enterprise/gaming landing pages, ActiveSaddler, WinDbg, multi-harness invariants, agent reliability client, strands-box doctor (+10).
-const BASELINE_FILE_COUNT = 609;
+// 609 → 612 (2026-10-09): Third-Author blog, Third-Author CLI, EmbeddingGemma adapter runtime (+3).
+const BASELINE_FILE_COUNT = 612;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
