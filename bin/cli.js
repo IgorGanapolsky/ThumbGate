@@ -3315,6 +3315,27 @@ async function gateCheck() {
       return;
     }
 
+    const { evaluateMcpPreToolUse } = require(path.join(PKG_ROOT, 'scripts', 'third-author-governance'));
+    const thirdAuthor = evaluateMcpPreToolUse({
+      toolName: input.tool_name || input.toolName,
+      toolInput: input.tool_input || input.toolInput || {},
+      authorContext: { isAgent: true, cwd: input.cwd || process.cwd() },
+    });
+    if (thirdAuthor && thirdAuthor.permissionDecision === 'deny') {
+      process.stdout.write(`${JSON.stringify({
+        decision: 'block',
+        reason: thirdAuthor.permissionDecisionReason,
+        hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
+          permissionDecision: 'deny',
+          permissionDecisionReason: thirdAuthor.permissionDecisionReason,
+          findingId: thirdAuthor.findingId,
+          alternatives: thirdAuthor.alternatives,
+        },
+      })}\n`);
+      return;
+    }
+
     const output = await gatesEngine.runAsync(input);
     process.stdout.write(output + '\n');
   } catch (err) {
@@ -3853,6 +3874,8 @@ function help() {
   console.log('  rag-precision-guardrails Map retrieval tuning regressions to Document RAG Safety gates');
   console.log('  ai-engineering-stack-guardrails Map gateway, MCP, AGENTS.md, LLM wiki, reviewer, and sandbox gaps to stack gates');
   console.log('  ai-inventory          Scan AI/ML components and export JSON or CycloneDX ML-BOM evidence');
+  console.log('  third-author          The Third Author governance: 3 checkpoints & 4-risk BOM (Earnie FORMAT)');
+  console.log('  explain <id>          Inspect finding evidence, offending command, and permissive alternatives');
   console.log('  upstream-contributions Find dependency issues worth fixing without promotional PRs');
   console.log('  long-running-agent-context-guardrails Map structured-memory gaps to long-running agent gates');
   console.log('  reasoning-efficiency-guardrails Map reasoning compression signals to efficiency gates');
@@ -4559,6 +4582,12 @@ switch (COMMAND) {
   case 'ml-bom':
   case 'mlbom':
     aiInventory();
+    break;
+  case 'third-author':
+  case 'third-author-governance':
+  case 'earnie-audit':
+  case 'explain':
+    require(path.join(PKG_ROOT, 'scripts', 'third-author-cli')).main();
     break;
   case 'deepseek-v4-runtime-guardrails':
   case 'deepseek-runtime-guardrails':
