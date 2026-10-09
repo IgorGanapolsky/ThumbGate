@@ -194,27 +194,33 @@ function evaluateMcpPreToolUse({ toolName, toolInput, authorContext = {} }) {
     }
 
     // 2. Check for pipe-to-bash unpinned supply chain downloads
-    if (/(curl|wget)\s+[^|]+\|\s*(ba|z|sh|sudo)/i.test(cmd)) {
-      const findingId = generateFindingId('security');
-      const reason = `[THIRD-AUTHOR:untrusted-pipe-to-shell] Direct pipe from remote network curl/wget to shell execution blocked. Download and verify hash before running.`;
-      const finding = {
-        findingId,
-        checkpoint: 'mcp_pretooluse',
-        author,
-        category: 'security_vulnerabilities',
-        command: cmd,
-        decision: 'deny',
-        reason
-      };
-      recordFinding(finding);
+    const isStrict = process.env.THUMBGATE_STRICT_ENFORCEMENT === '1' ||
+                     process.env.THUMBGATE_GOVERNANCE_MODE === 'live' ||
+                     Boolean(authorContext.strict);
 
-      return {
-        hookEventName: 'PreToolUse',
-        permissionDecision: 'deny',
-        permissionDecisionReason: reason,
-        findingId,
-        evalLatencyMs: Date.now() - startTime
-      };
+    if (/(curl|wget)\s+[^|]+\|\s*(ba|z|sh|sudo)/i.test(cmd)) {
+      if (isStrict || /\bsudo\b/i.test(cmd)) {
+        const findingId = generateFindingId('security');
+        const reason = `[THIRD-AUTHOR:untrusted-pipe-to-shell] Direct pipe from remote network curl/wget to shell execution blocked. Download and verify hash before running.`;
+        const finding = {
+          findingId,
+          checkpoint: 'mcp_pretooluse',
+          author,
+          category: 'security_vulnerabilities',
+          command: cmd,
+          decision: 'deny',
+          reason
+        };
+        recordFinding(finding);
+
+        return {
+          hookEventName: 'PreToolUse',
+          permissionDecision: 'deny',
+          permissionDecisionReason: reason,
+          findingId,
+          evalLatencyMs: Date.now() - startTime
+        };
+      }
     }
   }
 
