@@ -2952,6 +2952,11 @@ function haloTraceOptimizer() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function fiddlerControlPlaneHonesty() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'fiddler-control-plane-honesty'));
+  runCli(process.argv.slice(3));
+}
+
 function cobbleHotStoreSplit() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3862,6 +3867,7 @@ function help() {
   console.log('  openui-catalog-compose-honesty Catalog-compose-only + repair-before-claim (OpenUI FORMAT)');
   console.log('  allowlist-bridge-honesty Audit allowlisted registries/proxies as hops, not trust boundaries');
   console.log('  jit-harness-compose   Compose memory/planning/action/capability onto existing rails (JIT FORMAT)');
+  console.log('  fiddler-control-plane-honesty Two-layer control plane + Trust Tax TCO (Fiddler FORMAT)');
   console.log('  cobble-hot-store-split Split durable/delivery/hot lesson planes (CobbleDB FORMAT)');
   console.log('  token-shunt-honesty   Intercept untargeted bulk reads (Portal FORMAT; not shunt@portal)');
   console.log('  typesafe-typed-questions Typed noul/choice/score + code-owned route (TypeSafe FORMAT; not Jev)');
@@ -3916,6 +3922,7 @@ function help() {
   console.log('  npx thumbgate openui-catalog-compose-honesty --catalog=catalog.json --stream=compose.txt --repair --json');
   console.log('  npx thumbgate allowlist-bridge-honesty --json');
   console.log('  npx thumbgate jit-harness-compose --task="implement PreToolUse gate fix" --json');
+  console.log('  npx thumbgate fiddler-control-plane-honesty --tco-calc --json');
   console.log('  npx thumbgate cobble-hot-store-split --json');
   console.log('  npx thumbgate token-shunt-honesty --json --lines=800');
   console.log('  npx thumbgate typesafe-typed-questions --json --tool-name=Bash --command="git push --force origin main"');
@@ -4594,6 +4601,12 @@ switch (COMMAND) {
   case 'jit-harness':
   case 'harness-compose':
     jitHarnessCompose();
+    break;
+  case 'fiddler-control-plane-honesty':
+  case 'fiddler-honesty':
+  case 'control-plane-honesty':
+  case 'fiddler-control-plane':
+    fiddlerControlPlaneHonesty();
     break;
   case 'cobble-hot-store-split':
   case 'cobble-hot-store':
