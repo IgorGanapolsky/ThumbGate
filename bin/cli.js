@@ -3876,6 +3876,7 @@ function help() {
   console.log('  ai-inventory          Scan AI/ML components and export JSON or CycloneDX ML-BOM evidence');
   console.log('  third-author          The Third Author governance: 3 checkpoints & 4-risk BOM (Earnie FORMAT)');
   console.log('  explain <id>          Inspect finding evidence, offending command, and permissive alternatives');
+  console.log('  embeddinggemma        EmbeddingGemma 2 multimodal 8K context & MRL fast-gate verification');
   console.log('  upstream-contributions Find dependency issues worth fixing without promotional PRs');
   console.log('  long-running-agent-context-guardrails Map structured-memory gaps to long-running agent gates');
   console.log('  reasoning-efficiency-guardrails Map reasoning compression signals to efficiency gates');
@@ -4588,6 +4589,34 @@ switch (COMMAND) {
   case 'earnie-audit':
   case 'explain':
     require(path.join(PKG_ROOT, 'scripts', 'third-author-cli')).main();
+    break;
+  case 'embeddinggemma':
+  case 'embeddinggemma-2':
+  case 'embedding-gemma':
+    {
+      const { runEmbeddingGemmaDoctor } = require(path.join(PKG_ROOT, 'scripts', 'embeddinggemma-adapter'));
+      const isJson = process.argv.includes('--json');
+      const results = runEmbeddingGemmaDoctor();
+      if (isJson) {
+        console.log(JSON.stringify(results, null, 2));
+      } else {
+        console.log('\n============================================================');
+        console.log(' ThumbGate: Google DeepMind EmbeddingGemma 2 Architecture');
+        console.log('============================================================');
+        console.log(`Model:           ${results.model} (${results.backbone})`);
+        console.log(`Native Dim:      ${results.nativeDimension}d (MRL Tiers: ${results.mrlTiers.join(', ')}d)`);
+        console.log(`Fast-Gate Dim:   ${results.fastGateDimension}d (<0.5ms CPU budget)`);
+        console.log(`Context Window:  ${results.contextTokens} tokens (~32KB chars)`);
+        console.log('------------------------------------------------------------');
+        console.log('Verification Checks:');
+        for (const chk of results.checks) {
+          console.log(`  • [${chk.status.toUpperCase()}] ${chk.name}`);
+        }
+        console.log('------------------------------------------------------------');
+        console.log(`Overall Status:  ${results.status.toUpperCase()}`);
+        console.log('============================================================\n');
+      }
+    }
     break;
   case 'deepseek-v4-runtime-guardrails':
   case 'deepseek-runtime-guardrails':

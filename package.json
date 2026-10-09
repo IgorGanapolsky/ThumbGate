@@ -522,6 +522,8 @@
     "tailscale:doctor": "node scripts/tailscale-p2p-doctor.js",
     "third-author:audit": "node scripts/third-author-cli.js",
     "test:third-author": "node --test tests/third-author-governance.test.js",
+    "embeddinggemma:doctor": "node scripts/embeddinggemma-adapter.js",
+    "test:embeddinggemma": "node --test tests/embeddinggemma-adapter.test.js",
     "test:canary": "node --test tests/gate-decision-canary.test.js",
     "postinstall": "node bin/postinstall.js || true",
     "start": "node src/api/server.js",
