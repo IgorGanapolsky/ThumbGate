@@ -515,8 +515,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 592 -> 594 (2026-10-06): scripts/vulnerability-pre-action-diode.js + scripts/triage-savings-calculator.js (WHOOP / TNS vulnerability diode)
     // Two runtime files restore the optional scoped lesson graph.
     // 599 -> 609 (2026-10-08): Strands Box diode/decider, connectors/enterprise/gaming landing pages, ActiveSaddler, WinDbg, multi-harness invariants, agent reliability client, strands-box doctor (+10)
-    manifest.fileCount <= 609,
-    `npm package should stay <= 609 files, got ${manifest.fileCount}`
+    // 609 -> 612 (2026-10-09): Third-Author blog, Third-Author CLI, EmbeddingGemma adapter runtime (+3)
+    manifest.fileCount <= 612,
+    `npm package should stay <= 612 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
