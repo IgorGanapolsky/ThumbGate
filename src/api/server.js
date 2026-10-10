@@ -330,6 +330,8 @@ const EVAL_SCORECARD_PAGE_PATH = path.resolve(__dirname, '../../public/eval-scor
 const EVALUATIONS_PAGE_PATH = path.resolve(__dirname, '../../public/evaluations.html');
 const CASE_STUDIES_PAGE_PATH = path.resolve(__dirname, '../../public/case-studies.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
+const ENTERPRISE_GOVERNANCE_PAGE_PATH = path.resolve(__dirname, '../../public/enterprise-governance.html');
+const GAMING_PLAYBOOK_PAGE_PATH = path.resolve(__dirname, '../../public/gaming-playbook.html');
 const YT_PAGE_PATH = path.resolve(__dirname, '../../public/yt.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
@@ -6888,6 +6890,51 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Federal page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (
+      pathname === '/enterprise-governance'
+      || pathname === '/enterprise-governance.html'
+      || pathname === '/enterprise'
+      || pathname === '/gemini-at-work'
+    )) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(ENTERPRISE_GOVERNANCE_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'enterprise-governance' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Enterprise governance page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (
+      pathname === '/gaming-playbook'
+      || pathname === '/gaming-playbook.html'
+      || pathname === '/gaming'
+      || pathname === '/industry-playbook'
+      || pathname === '/industry-playbook/gaming'
+    )) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(GAMING_PLAYBOOK_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'gaming-playbook' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Gaming playbook page not found' });
       }
       return;
     }

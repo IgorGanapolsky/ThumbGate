@@ -67,6 +67,16 @@ const EMBEDDING_PROFILES = {
     maxChars: 4096,
     rationale: 'Higher-quality local embedding when memory headroom is available.',
   },
+  embeddinggemma: {
+    id: 'embeddinggemma',
+    model: 'google/embeddinggemma-2-270m',
+    quantized: true,
+    maxChars: 32768, // 8K token context window (~4 chars/token)
+    dimensions: 768,
+    matryoshkaDim: 256,
+    modality: 'multimodal',
+    rationale: 'Google DeepMind EmbeddingGemma 2: 740M/270M modular architecture, 8K context, native 768d with MRL 256d for sub-0.5ms PreToolUse evaluation.',
+  },
 };
 
 const INDEXCACHE_SERVER_ENGINES = new Set([

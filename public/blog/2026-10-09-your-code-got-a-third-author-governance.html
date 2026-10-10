@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Code Got a Third Author: In-Line AI Agent Governance Across Three Checkpoints | ThumbGate</title>
+  <link rel="canonical" href="https://thumbgate.ai/blog/2026-10-09-your-code-got-a-third-author-governance">
+  <meta name="description" content="Your codebase is no longer written solely by humans and open source. AI agents are the third author. How to govern agent actions across MCP PreToolUse, Pre-Commit, and PR gates with zero latency.">
+  <meta property="og:title" content="Your Code Got a Third Author: In-Line AI Agent Governance Across Three Checkpoints">
+  <meta property="og:description" content="Governing human, open-source, and autonomous agent contributions across AIBOM, Post-Quantum Cryptography (CBOM), and License Compliance (SBOM) in <0.5ms.">
+  <meta property="og:url" content="https://thumbgate.ai/blog/2026-10-09-your-code-got-a-third-author-governance">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Your Code Got a Third Author: In-Line AI Agent Governance Across Three Checkpoints",
+    "author": {
+      "@type": "Person",
+      "name": "Igor Ganapolsky"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "ThumbGate",
+      "url": "https://thumbgate.ai"
+    },
+    "datePublished": "2026-10-09",
+    "description": "How to govern autonomous AI agents alongside human and open-source contributors across three checkpoints: MCP PreToolUse, git pre-commit, and PR merge gates."
+  }
+  </script>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="blog-post-page">
+  <main class="container">
+    <article class="post-content">
+      <h1>Your Code Got a Third Author: In-Line AI Agent Governance Across Three Checkpoints</h1>
+      <p class="post-meta">Published on October 9, 2026 by Igor Ganapolsky</p>
+      
+      <section class="post-body">
+        <p class="lead">For thirty years, code had two authors: human developers and open-source maintainers. Today, autonomous AI coding agents (Claude Code, Cursor, OpenHands, Codex) are the third author. But governing an autonomous agent using traditional post-commit PR review is a recipe for disaster.</p>
+
+        <h2>The Three-Author Problem</h2>
+        <p>When an autonomous coding agent works on your repository, it doesn't just write functions. It makes structural decisions in milliseconds:</p>
+        <ul>
+          <li><strong>Package Selection:</strong> Agents frequently introduce copyleft dependencies (AGPLv3, SSPL) with viral license implications into proprietary codebases.</li>
+          <li><strong>Cryptographic Drift:</strong> Agents generate classical RSA-2048 or MD5/SHA-1 hashing routines that violate post-quantum cryptography (PQC / NIST FIPS 203) requirements.</li>
+          <li><strong>Autonomous Secrets Egress:</strong> Indirect prompt injection can trick an agent into sending private repository tokens or environment keys to external endpoints.</li>
+        </ul>
+
+        <h2>One Policy, Three Checkpoints</h2>
+        <p>ThumbGate implements the <strong>Three Checkpoint Architecture</strong> stolen from industry analysis of SCANOSS Earnie, adapted to run completely locally on CPU in sub-0.5ms with 0 tokens:</p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Checkpoint</th>
+                <th>Target Surface</th>
+                <th>Enforcement Mode</th>
+                <th>Budget</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Checkpoint 1: Pre-Generation</strong></td>
+                <td>MCP PreToolUse / Stdin IPC</td>
+                <td>Hard deny with permissive alternative injection</td>
+                <td>&lt;0.5ms</td>
+              </tr>
+              <tr>
+                <td><strong>Checkpoint 2: Pre-Commit</strong></td>
+                <td>Git Hook / Staged Diffs</td>
+                <td>Refuses commit on Shor-vulnerable crypto &amp; copyleft manifests</td>
+                <td>&lt;2.0ms</td>
+              </tr>
+              <tr>
+                <td><strong>Checkpoint 3: PR Gate</strong></td>
+                <td>GitHub Action / CI &amp; Trunk</td>
+                <td>Gated merge with cryptographic SHA-256 evidence receipt</td>
+                <td>Deterministic</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Pre-Action Steerage Over Post-Factum Blame</h2>
+        <p>Rather than failing a CI build 15 minutes later, ThumbGate intercepts the agent's MCP call <em>before</em> execution and returns a structured redirection directly into the model's prompt context:</p>
+
+        <pre><code>$ echo '{"tool_name": "bash", "tool_input": {"command": "npm i fast-charts@4.2.1"}}' | npx thumbgate gate-check
+{
+  "hookEventName": "PreToolUse",
+  "permissionDecision": "deny",
+  "permissionDecisionReason": "[GATE:third-author-license] Interdicted copyleft dependency install: fast-charts (AGPL-3.0). Permissive alternatives: chart.js (MIT), recharts (MIT). Finding ID: TG-LIC-3284B1.",
+  "findingId": "TG-LIC-3284B1",
+  "suggestedAlternatives": ["chart.js (MIT)", "recharts (MIT)"]
+}</code></pre>
+
+        <p>The agent sees the denial, immediately switches to <code>chart.js</code>, and continues solving the ticket without breaking licensing policy or needing a human engineer to intervene.</p>
+
+        <h2>Instant Inspection with Finding Fingerprints</h2>
+        <p>Every decision is recorded in an immutable local ledger with a unique finding fingerprint. Audit any finding in one command:</p>
+
+        <pre><code>$ npx thumbgate explain TG-LIC-3284B1
+
+================================================================================
+THUMBGATE VERIFIABLE EVIDENCE BOX: FINDING EXPLANATION
+================================================================================
+Finding ID:      TG-LIC-3284B1
+Author Type:     ai_agent
+Risk Category:   SBOM_LICENSE
+Severity:        CRITICAL
+Summary:         Interdicted copyleft dependency install: fast-charts (AGPL-3.0). Permissive alternatives: chart.js (MIT), recharts (MIT). Finding ID: TG-LIC-3284B1.
+Offending Input: npm i fast-charts@4.2.1
+Alternatives:    chart.js (MIT), recharts (MIT)
+================================================================================</code></pre>
+
+        <h2>Get Started in 30 Seconds</h2>
+        <p>Install ThumbGate into your agent harness or CI pipeline today:</p>
+        <pre><code>npx thumbgate third-author --audit</code></pre>
+      </section>
+
+      <footer class="post-footer">
+        <p>Need enterprise multi-agent fleet synchronization and custom PQC cryptographic policy packs?</p>
+        <a href="https://thumbgate.ai/go/pro?utm_source=blog&utm_medium=article&utm_campaign=2026-10-09-your-code-got-a-third-author-governance" class="cta-btn">Upgrade to ThumbGate Pro ($19/mo)</a>
+        <a href="https://thumbgate.ai/enterprise" class="secondary-btn" style="margin-left: 12px;">Schedule an Enterprise Gate Diagnostic ($499)</a>
+      </footer>
+    </article>
+  </main>
+</body>
+</html>
