@@ -514,8 +514,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 589 -> 590 (2026-10-02): adapters/strands/config.json (AWS Strands harness config)
   // 592 -> 594 (2026-10-06): scripts/vulnerability-pre-action-diode.js + scripts/triage-savings-calculator.js (WHOOP / TNS vulnerability diode)
     // Two runtime files restore the optional scoped lesson graph.
-    // 599 -> 609 (2026-10-08): Strands Box diode/decider, connectors/enterprise/gaming landing pages, ActiveSaddler, WinDbg, multi-harness invariants, agent reliability client, strands-box doctor (+10)
-    // 609 -> 612 (2026-10-09): Third-Author blog, Third-Author CLI, EmbeddingGemma adapter runtime (+3)
+    // 599 -> 601 (2026-10-09): scripts/fiddler-control-plane-honesty.js + .agents/skills/fiddler-control-plane-honesty/
+    // 601 -> 612 (2026-10-09): Strands Box diode/decider, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma (+11)
     manifest.fileCount <= 612,
     `npm package should stay <= 612 files, got ${manifest.fileCount}`
   );
@@ -764,10 +764,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.87 MB -> 8.90 MB (2026-10-01): strands-harness modules & skills. Local pack 8,867,170; CI slack.
   // Bumped 8.90 MB -> 8.93 MB (2026-10-02): mintlify-knowledge module & skill. CI slack.
   // Bumped 8.93 MB -> 8.98 MB (2026-10-06): vulnerability-diode + triage calculator + siren-mcp-governance. Local pack 8,952,525; CI slack.
-  // Bumped 8.98 MB -> 9.01 MB: scoped lesson graph runtime.
-  // Bumped 9.01 MB -> 9.15 MB (2026-10-08): Strands Box diode/decider, connectors/enterprise/gaming landing pages, ActiveSaddler, WinDbg, multi-harness invariants, agent reliability client, strands-box doctor.
-    manifest.unpackedSize <= 9_150_000,
-    `npm package should stay <= 9.15 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 8.98 MB -> 9.05 MB (2026-10-09): fiddler-control-plane-honesty.js + skill. Local pack 9,020,887; CI slack.
+  // Bumped 9.05 MB -> 9.16 MB (2026-10-09): Strands Box, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma. Local pack 9,142,709; CI slack.
+    manifest.unpackedSize <= 9_160_000,
+    `npm package should stay <= 9.16 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

@@ -266,8 +266,8 @@ const path = require('node:path');
 // 583 → 589 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html, adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/ + skills/aws-strands-harness-not-clone/
 // 592 → 594 (2026-10-06): scripts/vulnerability-pre-action-diode.js + scripts/triage-savings-calculator.js (WHOOP / TNS vulnerability diode).
 // 597 -> 599: scoped lesson graph runtime and its opt-in migration command.
-// 599 → 609 (2026-10-08): Strands Box diode/decider, connectors/enterprise/gaming landing pages, ActiveSaddler, WinDbg, multi-harness invariants, agent reliability client, strands-box doctor (+10).
-// 609 → 612 (2026-10-09): Third-Author blog, Third-Author CLI, EmbeddingGemma adapter runtime (+3).
+// 599 -> 601 (2026-10-09): scripts/fiddler-control-plane-honesty.js + .agents/skills/fiddler-control-plane-honesty/
+// 601 → 612 (2026-10-09): Strands Box diode/decider, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma (+11).
 const BASELINE_FILE_COUNT = 612;
 
 function readBundleSnapshot() {
