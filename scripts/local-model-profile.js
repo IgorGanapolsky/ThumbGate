@@ -304,13 +304,7 @@ function pickAutoProfile(hardware) {
 }
 
 function cloneProfile(profile) {
-  return {
-    id: profile.id,
-    model: profile.model,
-    quantized: profile.quantized,
-    maxChars: profile.maxChars,
-    rationale: profile.rationale,
-  };
+  return { ...profile };
 }
 
 function resolveEmbeddingProfile(env = process.env) {

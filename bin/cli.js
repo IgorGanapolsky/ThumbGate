@@ -3285,22 +3285,6 @@ async function gateCheck() {
     const input = payload ? JSON.parse(payload) : {};
     const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
 
-    // The operator bypass only skips advisory and strict-mode gates. Security and
-    // self-protection floors are evaluated before the early approval path.
-    if (process.env.THUMBGATE_HOTFIX_BYPASS === '1') {
-      const hardFloorOutput = gatesEngine.runHardFloor(input);
-      if (hardFloorOutput) {
-        process.stdout.write(hardFloorOutput + '\n');
-        return;
-      }
-      process.stdout.write(JSON.stringify({
-        decision: 'approve',
-        reason: 'operator-bypass-opt-in',
-        hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: '' }
-      }) + '\n');
-      return;
-    }
-
     const { evaluatePreToolUse } = require(path.join(PKG_ROOT, 'scripts', 'token-shunt-honesty'));
     const shunt = evaluatePreToolUse({
       toolName: input.tool_name || input.toolName,
@@ -3338,6 +3322,22 @@ async function gateCheck() {
           alternatives: thirdAuthor.alternatives,
         },
       })}\n`);
+      return;
+    }
+
+    // The operator bypass only skips advisory and strict-mode gates. Security and
+    // self-protection floors are evaluated before the early approval path.
+    if (process.env.THUMBGATE_HOTFIX_BYPASS === '1') {
+      const hardFloorOutput = gatesEngine.runHardFloor(input);
+      if (hardFloorOutput) {
+        process.stdout.write(hardFloorOutput + '\n');
+        return;
+      }
+      process.stdout.write(JSON.stringify({
+        decision: 'approve',
+        reason: 'operator-bypass-opt-in',
+        hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: '' }
+      }) + '\n');
       return;
     }
 
@@ -4604,6 +4604,9 @@ switch (COMMAND) {
       const { runEmbeddingGemmaDoctor } = require(path.join(PKG_ROOT, 'scripts', 'embeddinggemma-adapter'));
       const isJson = process.argv.includes('--json');
       const results = runEmbeddingGemmaDoctor();
+      if (results && results.status === 'fail') {
+        process.exitCode = 1;
+      }
       if (isJson) {
         console.log(JSON.stringify(results, null, 2));
       } else {

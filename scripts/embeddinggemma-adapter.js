@@ -256,8 +256,8 @@ function evaluatePreToolUseGate(toolCall = {}, lessonCorpus = [], options = {}) 
   for (const lesson of lessonCorpus) {
     const lessonText = lesson.content || lesson.text || lesson.whatWentWrong || '';
     const lessonModality = lesson.modality || 'text';
-    const targetVector = lesson.vector && lesson.vector.length === dimension
-      ? lesson.vector
+    const targetVector = Array.isArray(lesson.vector) && lesson.vector.length === dimension
+      ? l2Normalize(lesson.vector)
       : generateEmbeddingVector(formatEmbeddingInput(lessonText, { isQuery: false, modality: lessonModality }), { dimension });
 
     const sim = cosineSimilarity(queryVector, targetVector);

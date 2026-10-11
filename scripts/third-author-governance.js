@@ -28,7 +28,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-const FINDINGS_LEDGER_PATH = path.join(__dirname, '..', '.thumbgate', 'findings-ledger.jsonl');
+function resolveFindingsLedgerPath(cwd = process.cwd()) {
+  if (process.env.THUMBGATE_FINDINGS_LEDGER_PATH) {
+    return process.env.THUMBGATE_FINDINGS_LEDGER_PATH;
+  }
+  if (process.env.THUMBGATE_DATA_DIR) {
+    return path.join(process.env.THUMBGATE_DATA_DIR, 'findings-ledger.jsonl');
+  }
+  return path.join(cwd, '.thumbgate', 'findings-ledger.jsonl');
+}
+
+const FINDINGS_LEDGER_PATH = resolveFindingsLedgerPath();
 
 // Author Classifications
 const AUTHOR_HUMAN = 'human';
@@ -125,27 +135,37 @@ function classifyAuthor(context = {}) {
   return AUTHOR_HUMAN;
 }
 
-function recordFinding(finding) {
+function recordFinding(finding, cwd) {
   try {
-    fs.mkdirSync(path.dirname(FINDINGS_LEDGER_PATH), { recursive: true });
-    fs.appendFileSync(FINDINGS_LEDGER_PATH, JSON.stringify({
+    const targetPath = resolveFindingsLedgerPath(cwd);
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.appendFileSync(targetPath, JSON.stringify({
       timestamp: new Date().toISOString(),
       ...finding
     }) + '\n', 'utf8');
   } catch (_) {}
 }
 
-function getFindingById(findingId) {
-  if (!fs.existsSync(FINDINGS_LEDGER_PATH)) return null;
-  try {
-    const lines = fs.readFileSync(FINDINGS_LEDGER_PATH, 'utf8').trim().split('\n');
-    for (let i = lines.length - 1; i >= 0; i--) {
-      try {
-        const item = JSON.parse(lines[i]);
-        if (item.findingId === findingId) return item;
-      } catch (_) {}
-    }
-  } catch (_) {}
+function getFindingById(findingId, cwd) {
+  const primaryPath = resolveFindingsLedgerPath(cwd);
+  const candidates = [primaryPath];
+  const pkgFallback = path.join(__dirname, '..', '.thumbgate', 'findings-ledger.jsonl');
+  if (pkgFallback !== primaryPath) {
+    candidates.push(pkgFallback);
+  }
+
+  for (const p of candidates) {
+    if (!fs.existsSync(p)) continue;
+    try {
+      const lines = fs.readFileSync(p, 'utf8').trim().split('\n');
+      for (let i = lines.length - 1; i >= 0; i--) {
+        try {
+          const item = JSON.parse(lines[i]);
+          if (item.findingId === findingId) return item;
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
   return null;
 }
 
@@ -180,7 +200,7 @@ function evaluateMcpPreToolUse({ toolName, toolInput, authorContext = {} }) {
           reason,
           alternatives: alts
         };
-        recordFinding(finding);
+        recordFinding(finding, authorContext.cwd);
 
         return {
           hookEventName: 'PreToolUse',
@@ -198,29 +218,31 @@ function evaluateMcpPreToolUse({ toolName, toolInput, authorContext = {} }) {
                      process.env.THUMBGATE_GOVERNANCE_MODE === 'live' ||
                      Boolean(authorContext.strict);
 
-    if (/(curl|wget)\s+[^|]+\|\s*(ba|z|sh|sudo)/i.test(cmd)) {
-      if (isStrict || /\bsudo\b/i.test(cmd)) {
-        const findingId = generateFindingId('security');
-        const reason = `[THIRD-AUTHOR:untrusted-pipe-to-shell] Direct pipe from remote network curl/wget to shell execution blocked. Download and verify hash before running.`;
-        const finding = {
-          findingId,
-          checkpoint: 'mcp_pretooluse',
-          author,
-          category: 'security_vulnerabilities',
-          command: cmd,
-          decision: 'deny',
-          reason
-        };
-        recordFinding(finding);
+    if (/\b(curl|wget)\b[^|]*\|\s*(sudo\s+)?(ba|z|da)?sh\b/i.test(cmd)) {
+      const isDeny = isStrict || /\bsudo\b/i.test(cmd);
+      const findingId = generateFindingId('security');
+      const reason = isDeny
+        ? `[THIRD-AUTHOR:untrusted-pipe-to-shell] Direct pipe from remote network curl/wget to shell execution blocked. Download and verify hash before running.`
+        : `[THIRD-AUTHOR:untrusted-pipe-to-shell] Warning: Direct pipe from remote network curl/wget to shell execution detected. Download and verify hash before running.`;
+      const finding = {
+        findingId,
+        checkpoint: 'mcp_pretooluse',
+        author,
+        category: 'security_vulnerabilities',
+        command: cmd,
+        decision: isDeny ? 'deny' : 'warn',
+        reason
+      };
+      recordFinding(finding, authorContext.cwd);
 
-        return {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'deny',
-          permissionDecisionReason: reason,
-          findingId,
-          evalLatencyMs: Date.now() - startTime
-        };
-      }
+      return {
+        hookEventName: 'PreToolUse',
+        permissionDecision: isDeny ? 'deny' : 'allow',
+        permissionDecisionReason: reason,
+        findingId,
+        author,
+        evalLatencyMs: Date.now() - startTime
+      };
     }
   }
 
@@ -410,5 +432,6 @@ module.exports = {
   evaluatePrGate,
   getFindingById,
   recordFinding,
-  formatExplainFinding
+  formatExplainFinding,
+  resolveFindingsLedgerPath
 };

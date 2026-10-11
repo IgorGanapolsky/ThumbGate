@@ -89,9 +89,12 @@
 {
   "hookEventName": "PreToolUse",
   "permissionDecision": "deny",
-  "permissionDecisionReason": "[GATE:third-author-license] Interdicted copyleft dependency install: fast-charts (AGPL-3.0). Permissive alternatives: chart.js (MIT), recharts (MIT). Finding ID: TG-LIC-3284B1.",
+  "permissionDecisionReason": "[THIRD-AUTHOR:copyleft-license] Prohibited copyleft dependency 'fast-charts' detected in proposed command. Author: ai_agent. Suggested permissive alternatives: chart.js (MIT) - Simple yet flexible JavaScript charting; recharts (MIT) - Redefined chart library built on React components",
   "findingId": "TG-LIC-3284B1",
-  "suggestedAlternatives": ["chart.js (MIT)", "recharts (MIT)"]
+  "alternatives": [
+    { "name": "chart.js", "license": "MIT", "description": "Simple yet flexible JavaScript charting" },
+    { "name": "recharts", "license": "MIT", "description": "Redefined chart library built on React components" }
+  ]
 }</code></pre>
 
         <p>The agent sees the denial, immediately switches to <code>chart.js</code>, and continues solving the ticket without breaking licensing policy or needing a human engineer to intervene.</p>
@@ -101,17 +104,26 @@
 
         <pre><code>$ npx thumbgate explain TG-LIC-3284B1
 
-================================================================================
-THUMBGATE VERIFIABLE EVIDENCE BOX: FINDING EXPLANATION
-================================================================================
-Finding ID:      TG-LIC-3284B1
-Author Type:     ai_agent
-Risk Category:   SBOM_LICENSE
-Severity:        CRITICAL
-Summary:         Interdicted copyleft dependency install: fast-charts (AGPL-3.0). Permissive alternatives: chart.js (MIT), recharts (MIT). Finding ID: TG-LIC-3284B1.
-Offending Input: npm i fast-charts@4.2.1
-Alternatives:    chart.js (MIT), recharts (MIT)
-================================================================================</code></pre>
+============================================================
+ThumbGate Finding Evidence: TG-LIC-3284B1
+============================================================
+Category:    license_compliance
+Severity:    CRITICAL
+Checkpoint:  mcp_pretooluse
+Author:      ai_agent
+Decision:    deny
+Reason:      [THIRD-AUTHOR:copyleft-license] Prohibited copyleft dependency 'fast-charts' detected in proposed command. Author: ai_agent. Suggested permissive alternatives: chart.js (MIT) - Simple yet flexible JavaScript charting; recharts (MIT) - Redefined chart library built on React components
+
+Offending Command:
+  npm i fast-charts@4.2.1
+
+Permissive Alternatives (Approved):
+  • chart.js [MIT]: Simple yet flexible JavaScript charting
+  • recharts [MIT]: Redefined chart library built on React components
+
+Remediation:
+  Substitute the non-compliant dependency or algorithm with an approved alternative.
+============================================================</code></pre>
 
         <h2>Get Started in 30 Seconds</h2>
         <p>Install ThumbGate into your agent harness or CI pipeline today:</p>
