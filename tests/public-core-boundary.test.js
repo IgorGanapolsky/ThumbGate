@@ -315,10 +315,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 582 -> 583 (2026-09-30): scripts/rrsi-doctor.js (arXiv:2609.24972 agent harness self-improvement regularization).
   // 583 -> 589 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html, adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/ + skills/aws-strands-harness-not-clone/
   // 592 -> 594 (2026-10-06): scripts/vulnerability-pre-action-diode.js + scripts/triage-savings-calculator.js (WHOOP / TNS vulnerability diode)
-  // 594 -> 597 (2026-10-06): scripts/siren-mcp-governance.js + skills (Siren MCP Marketing Diode & Autonomous Campaign Governance)
   // 597 -> 599: scoped lesson graph runtime and its opt-in migration command.
   // 599 -> 601 (2026-10-09): scripts/fiddler-control-plane-honesty.js + .agents/skills/fiddler-control-plane-honesty/
-  const CEILING = 601;
+  // 601 -> 612 (2026-10-09): Strands Box diode/decider, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma (+11)
+  const CEILING = 612;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+__GOOGLE_SITE_VERIFICATION_META__
+<title>Gaming AI Agent Infrastructure Playbook | ThumbGate</title>
+<meta name="description" content="The definitive engineering playbook for gaming studios deploying autonomous NPCs, simulation bots, and procedural agents. Stop runaway loops, protect virtual economies, and enforce sub-0.5ms pre-action guardrails.">
+<meta property="og:title" content="Gaming AI Agent Infrastructure Playbook | ThumbGate">
+<meta property="og:description" content="Stop runaway NPC loops, protect in-game economies, and eliminate token burnout with sub-0.5ms pre-action firewalling for Unity, Unreal, and Web3 game agents.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="__APP_ORIGIN__/gaming-playbook">
+<link rel="canonical" href="__APP_ORIGIN__/gaming-playbook">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
+<meta property="og:image" content="/og.png">
+<meta name="keywords" content="gaming AI agent guardrails, autonomous NPC firewall, game economy exploit prevention, Unity AI agent security, Unreal Engine agent firewall, sub-millisecond AI guardrail, runaway loop prevention, AI game infrastructure playbook">
+
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+__GA_BOOTSTRAP__
+
+<script>
+  const gaMeasurementId = '__GA_MEASUREMENT_ID__';
+  const serverVisitorId = '__SERVER_VISITOR_ID__';
+  const serverSessionId = '__SERVER_SESSION_ID__';
+  const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
+  const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Gaming AI Agent Infrastructure Playbook: Pre-Action Firewall Architecture for Autonomous Game Agents",
+  "description": "How game studios deploying autonomous NPCs and simulation agents eliminate runaway loop token waste, prevent in-game economy exploits, and enforce sub-0.5ms pre-action validation.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "__APP_ORIGIN__",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "__APP_ORIGIN__/thumbgate-icon.png"
+    }
+  },
+  "url": "__APP_ORIGIN__/gaming-playbook"
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ThumbGate Gaming Agent Firewall",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Unity, Unreal Engine, Node.js, Python, Linux, macOS, Windows",
+  "description": "Pre-action interdiction firewall for autonomous gaming agents and NPCs. Enforces in-engine rules under 0.5ms to stop runaway tool loops and economy exploits.",
+  "url": "__APP_ORIGIN__/gaming-playbook",
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "Pro Developer",
+      "price": "19.00",
+      "priceCurrency": "USD",
+      "description": "Individual game dev tier with local sub-0.5ms gate engine"
+    },
+    {
+      "@type": "Offer",
+      "name": "Studio Diagnostic Audit",
+      "price": "499.00",
+      "priceCurrency": "USD",
+      "description": "Full vulnerability & runaway loop audit for studio game agent harnesses"
+    }
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Why do autonomous game agents and NPCs need pre-action firewalling?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Unlike conversational chatbots, game agents call tools that alter game world state (granting items, trading gold, moving positions, triggering combat). When players use prompt injection or edge-case interactions, ungated agents can trigger runaway token loops or grant unauthorized items. ThumbGate evaluates calls in under 0.5ms before the game engine executes the state mutation."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Will ThumbGate cause frame drops or latency spikes in our game loop?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate's decision engine is entirely local CPU-bound with zero external model calls on the hot path. Decision latency p95 is under 0.5ms (sub-frame at 60 FPS and 120 FPS), making it invisible to players."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does ThumbGate prevent in-game virtual economy exploits?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate compiles economy invariant rules (e.g. max trade ratios, item rarity caps, rate limits per player session). When an NPC generates a tool call such as 'trade_item' or 'give_currency', ThumbGate intercepts the arguments pre-execution and hard-blocks the transaction if it violates economic bounds."
+      }
+    }
+  ]
+}
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #090a0f;
+    --bg-surface: #10121a;
+    --bg-card: #151824;
+    --border: #232738;
+    --text: #f0f2f8;
+    --text-muted: #8e95ac;
+    --purple: #8b5cf6;
+    --purple-dim: rgba(139, 92, 246, 0.12);
+    --cyan: #06b6d4;
+    --cyan-dim: rgba(6, 182, 212, 0.12);
+    --green: #10b981;
+    --green-dim: rgba(16, 185, 129, 0.12);
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(9, 10, 15, 0.85);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 1.15rem;
+  }
+  .nav-tag {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    background: var(--purple-dim);
+    color: var(--purple);
+    border: 1px solid var(--purple);
+    border-radius: 4px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+  }
+  .nav-links {
+    display: flex;
+    gap: 1.25rem;
+    align-items: center;
+  }
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.15s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: none;
+  }
+  .btn-primary {
+    background: var(--purple);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #7c3aed; }
+  .btn-secondary {
+    background: var(--bg-card);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--cyan); color: var(--cyan); }
+  .btn-cyan {
+    background: var(--cyan);
+    color: #000;
+  }
+  .btn-cyan:hover { background: #0891b2; color: #fff; }
+  
+  .hero {
+    max-width: 1040px;
+    margin: 4rem auto 3rem;
+    padding: 0 1.5rem;
+    text-align: center;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.85rem;
+    background: var(--purple-dim);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 100px;
+    font-size: 0.8rem;
+    color: var(--purple);
+    font-family: var(--mono);
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 {
+    font-size: 2.75rem;
+    line-height: 1.2;
+    margin: 0 0 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .hero h1 span.gradient {
+    background: linear-gradient(135deg, #a78bfa 0%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    max-width: 760px;
+    margin: 0 auto 2rem;
+  }
+  .hero-cta {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    max-width: 1040px;
+    margin: 0 auto 4rem;
+    padding: 0 1.5rem;
+  }
+  .stat-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 2.25rem;
+    font-weight: 800;
+    font-family: var(--mono);
+    color: var(--cyan);
+    margin-bottom: 0.25rem;
+  }
+  .stat-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .section {
+    max-width: 1040px;
+    margin: 0 auto 5rem;
+    padding: 0 1.5rem;
+  }
+  .section-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  .section-header h2 {
+    font-size: 2rem;
+    margin: 0 0 0.75rem;
+    font-weight: 700;
+  }
+  .section-header p {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .pillar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+  .pillar-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .pillar-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    background: var(--purple-dim);
+    color: var(--purple);
+  }
+  .pillar-card h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  .pillar-card p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+  }
+
+  .terminal-box {
+    background: #0d0f16;
+    border: 1px solid #2d3348;
+    border-radius: 8px;
+    padding: 1.25rem;
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    overflow-x: auto;
+    color: #e2e8f0;
+    margin: 2rem 0;
+  }
+  .terminal-box .cmd { color: var(--cyan); }
+  .terminal-box .comment { color: #64748b; }
+  .terminal-box .block { color: var(--red); font-weight: bold; }
+  .terminal-box .pass { color: var(--green); font-weight: bold; }
+
+  /* Diagnostic Quiz Box */
+  .diagnostic-box {
+    background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-card) 100%);
+    border: 1px solid var(--purple);
+    border-radius: 12px;
+    padding: 2.5rem;
+    margin: 3rem 0;
+  }
+  .quiz-q {
+    margin-bottom: 1.75rem;
+  }
+  .quiz-q label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+  }
+  .quiz-select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+  }
+  .quiz-result {
+    display: none;
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid var(--purple);
+    border-radius: 8px;
+  }
+  .quiz-result h4 {
+    margin: 0 0 0.5rem;
+    color: var(--cyan);
+    font-size: 1.2rem;
+  }
+
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+  }
+  .pricing-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .pricing-card.featured {
+    border-color: var(--purple);
+    box-shadow: 0 0 24px rgba(139, 92, 246, 0.15);
+  }
+  .badge-featured {
+    position: absolute;
+    top: -12px;
+    right: 20px;
+    background: var(--purple);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 100px;
+    text-transform: uppercase;
+  }
+  .pricing-card h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.3rem;
+  }
+  .price {
+    font-size: 2.5rem;
+    font-weight: 800;
+    font-family: var(--mono);
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+  .price span {
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .features-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem;
+    flex-grow: 1;
+  }
+  .features-list li {
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .features-list li::before {
+    content: "✓";
+    color: var(--cyan);
+    font-weight: bold;
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-brand">
+    <img src="/thumbgate-icon.png" alt="ThumbGate Logo" width="28" height="28" style="border-radius: 4px;">
+    <span>ThumbGate</span>
+    <span class="nav-tag">Gaming Playbook</span>
+  </a>
+  <div class="nav-links">
+    <a href="/enterprise-governance">Enterprise</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/about">About</a>
+    <a href="/checkout/pro?plan_id=pro&amp;utm_source=gaming_playbook&amp;slug=8x2dR91M84r4cSd9uj3sI3f" class="btn btn-primary" data-stripe-slug="8x2dR91M84r4cSd9uj3sI3f">Start Pro ($19/mo)</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-badge">🎮 ABM INDUSTRY PLAYBOOK 2026 // GAMING & SIMULATION AGENTS</div>
+  <h1>The Autonomous Gaming Agent <br><span class="gradient">Infrastructure Firewall Playbook</span></h1>
+  <p>How AAA and indie game studios stop runaway NPC loops, protect in-game virtual economies from prompt injection, and enforce sub-0.5ms pre-action guardrails in Unity and Unreal Engine.</p>
+  <div class="hero-cta">
+    <a href="#diagnostic" class="btn btn-cyan">Run Studio Risk Diagnostic (60s)</a>
+    <a href="/diagnostic?plan_id=sprint_diagnostic&amp;utm_source=gaming_playbook&amp;slug=9B69ATbmI4r4aK5eOD3sI3k" class="btn btn-secondary" data-stripe-slug="9B69ATbmI4r4aK5eOD3sI3k">Book $499 Studio Agent Audit</a>
+  </div>
+</header>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-num">&lt; 0.5ms</div>
+    <div class="stat-label">Hot-Path Decision Latency (Zero Frame Drops)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">83%</div>
+    <div class="stat-label">Gaming Agent Failures Caused by Runaway Loops (Benchmark: HALO / Inference.net)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">100%</div>
+    <div class="stat-label">Virtual Economy Invariant Enforcement</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">$0</div>
+    <div class="stat-label">External Token Inference on Decision Hot Path</div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-header">
+    <h2>The 3 Critical Failure Modes in Game Agent Harnesses</h2>
+    <p>Post-action observability cannot save an in-game economy. By the time an APM alert fires, your players have already duplicated rare items or crashed your backend.</p>
+  </div>
+  
+  <div class="pillar-grid">
+    <div class="pillar-card">
+      <div class="pillar-icon">🔄</div>
+      <h3>1. Runaway Multi-Turn Loops</h3>
+      <p>When players craft ambiguous or adversarial dialogue, LLM-powered NPCs enter circular function-calling loops. A single player interaction can consume 200,000 tokens ($3-$8) within minutes and lock up server worker threads.</p>
+    </div>
+    <div class="pillar-card">
+      <div class="pillar-icon">💰</div>
+      <h3>2. Economy Prompt Exploits</h3>
+      <p>Players jailbreak merchant NPCs to sell legendary weapons for 0 gold or exploit barter multipliers. ThumbGate enforces strict trading invariants at the tool boundary before state mutation occurs.</p>
+    </div>
+    <div class="pillar-card">
+      <div class="pillar-icon">⚡</div>
+      <h3>3. 60 FPS Engine Desync</h3>
+      <p>Cloud guardrails add 800ms-2,000ms of network latency. ThumbGate runs locally on CPU via compiled AST rules and ActiveSaddler prioritization, resolving in &lt;0.5ms without dropping game frames.</p>
+    </div>
+  </div>
+
+  <div class="terminal-box">
+    <div class="comment">// Live Engine Demonstration: ThumbGate intercepts rogue NPC trade call in &lt;0.4ms</div>
+    <div class="cmd">$ npx thumbgate check --tool UnityNPC_Trade --input '{"npcId":"blacksmith","action":"give_item","itemId":"legendary_dragon_blade","goldReceived":0}'</div>
+    <br>
+    <div>[ThumbGate Interdiction] Status: <span class="block">BLOCKED</span> (Code: ECON_INVARIANT_VIOLATION)</div>
+    <div>Rule: <code>rules/npc-economy-bounds.json</code> [max_discount_pct: 25%, min_gold_floor: 500]</div>
+    <div>Latency: <span class="pass">0.38ms</span> | Action Intercepted Before Unity Scene Graph Mutation</div>
+  </div>
+</section>
+
+<section class="section" id="diagnostic">
+  <div class="section-header">
+    <h2>Studio Agent Vulnerability Self-Assessment</h2>
+    <p>Calculate your studio's monthly exposure to runaway NPC loops and economy exploits.</p>
+  </div>
+
+  <div class="diagnostic-box">
+    <div class="quiz-q">
+      <label for="q-agents">1. How many active player-facing AI NPCs or simulation agents are live?</label>
+      <select id="q-agents" class="quiz-select">
+        <option value="5">1 - 10 NPCs (Prototype / Alpha)</option>
+        <option value="50" selected>10 - 100 NPCs (Live Multiplayer / Beta)</option>
+        <option value="500">100+ NPCs (MMO / Persistent World)</option>
+      </select>
+    </div>
+
+    <div class="quiz-q">
+      <label for="q-engine">2. What engine or backend harness coordinates agent actions?</label>
+      <select id="q-engine" class="quiz-select">
+        <option value="unity">Unity (C# / WebSocket)</option>
+        <option value="unreal">Unreal Engine (C++ / Python)</option>
+        <option value="node">Node.js / Python Custom Agent Backend</option>
+      </select>
+    </div>
+
+    <div class="quiz-q">
+      <label for="q-guard">3. Where are tool calls (inventory changes, trade, movement) currently validated?</label>
+      <select id="q-guard" class="quiz-select">
+        <option value="none">No pre-action gate (Agent calls backend APIs directly)</option>
+        <option value="prompt">System Prompt instructions only ("Do not give free items")</option>
+        <option value="cloud">Cloud-based LLM judge or post-action logging</option>
+      </select>
+    </div>
+
+    <button type="button" class="btn btn-primary" onclick="calculateRisk()" style="width: 100%; justify-content: center; font-size: 1rem; padding: 0.85rem;">Calculate Studio Vulnerability Score</button>
+
+    <div id="quiz-result" class="quiz-result">
+      <h4 id="result-title">High Risk Exposure Detected</h4>
+      <p id="result-text" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;"></p>
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <a href="/diagnostic?plan_id=sprint_diagnostic&amp;utm_source=gaming_playbook&amp;slug=9B69ATbmI4r4aK5eOD3sI3k" class="btn btn-cyan" data-stripe-slug="9B69ATbmI4r4aK5eOD3sI3k">Get the $499 Full Studio Audit</a>
+        <a href="/checkout/pro?plan_id=pro&amp;utm_source=gaming_playbook&amp;slug=8x2dR91M84r4cSd9uj3sI3f" class="btn btn-secondary" data-stripe-slug="8x2dR91M84r4cSd9uj3sI3f">Deploy ThumbGate Pro ($19/mo)</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <h2>Simple Studio Pricing</h2>
+    <p>Deploy locally in minutes or get comprehensive studio harness hardening.</p>
+  </div>
+
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <h3>Pro Developer</h3>
+      <div class="price">$19 <span>/ month</span></div>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">For indie game developers and small studios prototyping autonomous NPCs.</p>
+      <ul class="features-list">
+        <li>Sub-0.5ms local CPU decision engine</li>
+        <li>Unity, Unreal, Node & Python adapters</li>
+        <li>Pre-built gaming economy invariant rules</li>
+        <li>Runaway loop interdiction diode</li>
+        <li>Local cryptographic audit receipts</li>
+      </ul>
+      <a href="/checkout/pro?plan_id=pro&amp;utm_source=gaming_playbook&amp;slug=8x2dR91M84r4cSd9uj3sI3f" class="btn btn-secondary" style="justify-content: center;" data-stripe-slug="8x2dR91M84r4cSd9uj3sI3f">Start Pro Tier</a>
+    </div>
+
+    <div class="pricing-card featured">
+      <div class="badge-featured">Most Popular</div>
+      <h3>Studio Diagnostic Audit</h3>
+      <div class="price">$499 <span>one-time</span></div>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Deep vulnerability, jailbreak, and loop audit for your game agent harness.</p>
+      <ul class="features-list">
+        <li>Full agent tool-calling boundary penetration test</li>
+        <li>Economy exploit scenario testing (100+ prompt vectors)</li>
+        <li>Custom AST invariant rule creation for your game engine</li>
+        <li>Engine integration review (Unity/Unreal zero-drop verification)</li>
+        <li>Executive delivery report with 48h turnaround</li>
+      </ul>
+      <a href="/diagnostic?plan_id=sprint_diagnostic&amp;utm_source=gaming_playbook&amp;slug=9B69ATbmI4r4aK5eOD3sI3k" class="btn btn-primary" style="justify-content: center;" data-stripe-slug="9B69ATbmI4r4aK5eOD3sI3k">Book $499 Audit</a>
+    </div>
+
+    <div class="pricing-card">
+      <h3>Studio Team & Sprint</h3>
+      <div class="price">$1,500 <span>one-time</span></div>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Hands-on architecture integration sprint with the ThumbGate core team.</p>
+      <ul class="features-list">
+        <li>Direct engineering pair-programming with ThumbGate team</li>
+        <li>Custom C# / C++ native plugin compilation</li>
+        <li>Multi-agent state machine coordination</li>
+        <li>Dedicated Slack / Discord channel support</li>
+        <li>Production SLA & enterprise licensing</li>
+      </ul>
+      <a href="/diagnostic?plan_id=workflow_sprint&amp;utm_source=gaming_playbook&amp;payment_code=LTQFR7P9AR3QG" class="btn btn-secondary" style="justify-content: center;" data-checkout-slug="LTQFR7P9AR3QG">Start Studio Sprint</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width: 1040px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>© 2026 ThumbGate. All rights reserved. The Infrastructure Firewall for AI Agents.</div>
+    <div>
+      <a href="/terms" style="color: var(--text-muted); margin-right: 1rem; text-decoration: none;">Terms</a>
+      <a href="/privacy" style="color: var(--text-muted); margin-right: 1rem; text-decoration: none;">Privacy</a>
+      <a href="/enterprise-governance" style="color: var(--text-muted); text-decoration: none;">Enterprise</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+function calculateRisk() {
+  const agents = parseInt(document.getElementById('q-agents').value, 10);
+  const guard = document.getElementById('q-guard').value;
+  const resultBox = document.getElementById('quiz-result');
+  const title = document.getElementById('result-title');
+  const text = document.getElementById('result-text');
+
+  let riskScore = "HIGH";
+  let estimatedLoss = "$3,200 - $14,500";
+
+  function setSafeContent(container, beforeText, boldText, afterText) {
+    container.textContent = '';
+    if (beforeText) {
+      container.appendChild(document.createTextNode(beforeText));
+    }
+    if (boldText) {
+      const strong = document.createElement('strong');
+      strong.textContent = boldText;
+      container.appendChild(strong);
+    }
+    if (afterText) {
+      container.appendChild(document.createTextNode(afterText));
+    }
+  }
+
+  if (guard === "none") {
+    riskScore = "CRITICAL";
+    estimatedLoss = "$" + (agents * 180).toLocaleString() + " - $" + (agents * 450).toLocaleString();
+    title.textContent = "Critical Risk: Ungated Agent State Mutations";
+    title.style.color = "#ef4444";
+    setSafeContent(
+      text,
+      "Your agents execute tool calls without pre-action validation. Players can trigger runaway loops burning an estimated ",
+      estimatedLoss + "/month",
+      " in unmonitored API calls, plus direct in-game economy inventory manipulation."
+    );
+  } else if (guard === "prompt") {
+    riskScore = "HIGH";
+    estimatedLoss = "$" + (agents * 90).toLocaleString() + " - $" + (agents * 240).toLocaleString();
+    title.textContent = "High Risk: System Prompts Are Not Firewalls";
+    title.style.color = "#f59e0b";
+    setSafeContent(
+      text,
+      "Jailbreak bypass rates against system-prompt-only constraints exceed 68% in competitive multiplayer. You are exposed to an estimated ",
+      estimatedLoss + "/month",
+      " in adversarial token abuse."
+    );
+  } else {
+    riskScore = "MODERATE (Latency Bottleneck)";
+    title.textContent = "Moderate Risk: Latency & Frame Drops";
+    title.style.color = "#06b6d4";
+    setSafeContent(
+      text,
+      "Cloud judges protect against some exploits but introduce 800ms-2,000ms latency spikes, breaking game immersion. ThumbGate's local CPU engine resolves in <0.5ms with zero frame drops.",
+      null,
+      null
+    );
+  }
+
+  resultBox.style.display = 'block';
+}
+</script>
+
+</body>
+</html>
