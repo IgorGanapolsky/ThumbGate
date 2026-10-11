@@ -30,7 +30,7 @@ function parseEmbeddingIdentity(fingerprint, dimensionHint) {
   const dimension = Number.isFinite(Number(dimensionHint)) && Number(dimensionHint) > 0
     ? Number(dimensionHint)
     : dimensionFromParts || null;
-  const model = parts.find((p) => /embed|gemini|text-|qwen|openai|voyage|bge|e5|mini/i.test(p)) || parts[1] || null;
+  const model = parts.find((p) => /embed|gemini|gemma|embeddinggemma|text-|qwen|openai|voyage|bge|e5|mini/i.test(p)) || parts[1] || null;
   const source = parts[0] || raw;
   return {
     fingerprint: raw,

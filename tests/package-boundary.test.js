@@ -513,11 +513,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 583 -> 589 (2026-10-01): public/blog/2026-10-01-aws-strands-harness-token-firewall.html, adapters/strands/ (middleware, md), scripts/strands-harness-doctor.js, .agents/skills/aws-strands-harness-not-clone/ + skills/aws-strands-harness-not-clone/
   // 589 -> 590 (2026-10-02): adapters/strands/config.json (AWS Strands harness config)
   // 592 -> 594 (2026-10-06): scripts/vulnerability-pre-action-diode.js + scripts/triage-savings-calculator.js (WHOOP / TNS vulnerability diode)
-  // 594 -> 597 (2026-10-06): scripts/siren-mcp-governance.js + skills (Siren MCP Marketing Diode & Autonomous Campaign Governance)
     // Two runtime files restore the optional scoped lesson graph.
     // 599 -> 601 (2026-10-09): scripts/fiddler-control-plane-honesty.js + .agents/skills/fiddler-control-plane-honesty/
-    manifest.fileCount <= 601,
-    `npm package should stay <= 601 files, got ${manifest.fileCount}`
+    // 601 -> 612 (2026-10-09): Strands Box diode/decider, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma (+11)
+    manifest.fileCount <= 612,
+    `npm package should stay <= 612 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -765,8 +765,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.90 MB -> 8.93 MB (2026-10-02): mintlify-knowledge module & skill. CI slack.
   // Bumped 8.93 MB -> 8.98 MB (2026-10-06): vulnerability-diode + triage calculator + siren-mcp-governance. Local pack 8,952,525; CI slack.
   // Bumped 8.98 MB -> 9.05 MB (2026-10-09): fiddler-control-plane-honesty.js + skill. Local pack 9,020,887; CI slack.
-    manifest.unpackedSize <= 9_050_000,
-    `npm package should stay <= 9.05 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 9.05 MB -> 9.16 MB (2026-10-09): Strands Box, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma. Local pack 9,142,709; CI slack.
+    manifest.unpackedSize <= 9_160_000,
+    `npm package should stay <= 9.16 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
