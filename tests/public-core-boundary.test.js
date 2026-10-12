@@ -318,7 +318,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 597 -> 599: scoped lesson graph runtime and its opt-in migration command.
   // 599 -> 601 (2026-10-09): scripts/fiddler-control-plane-honesty.js + .agents/skills/fiddler-control-plane-honesty/
   // 601 -> 612 (2026-10-09): Strands Box diode/decider, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma (+11)
-  const CEILING = 612;
+  // 612 -> 619 (2026-10-12): three recovered command/skill pairs and session-interactivity.js (+7)
+  const CEILING = 619;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
