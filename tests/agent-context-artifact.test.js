@@ -45,6 +45,17 @@ test('lintPack fails stale freshness', () => {
   assert.ok(lintPack(pack, { now: '2026-09-16T00:00:00Z' }).some((f) => f.id === 'stale_context'));
 });
 
+test('lintPack rejects a future freshness.asOf', () => {
+  const pack = JSON.parse(fs.readFileSync(GOLD, 'utf8'));
+  pack.freshness = { maxAgeHours: 24, asOf: '2026-09-17T13:00:00Z' };
+  const future = lintPack(pack, GOLD_CLOCK);
+  assert.ok(future.some((f) => f.id === 'freshness_in_future' && f.severity === 'fail'));
+  const sameInstant = JSON.parse(fs.readFileSync(GOLD, 'utf8'));
+  sameInstant.freshness = { maxAgeHours: 24, asOf: GOLD_NOW };
+  assert.equal(lintPack(sameInstant, GOLD_CLOCK).some((f) => f.id === 'freshness_in_future'), false);
+  assert.equal(lintPack(JSON.parse(fs.readFileSync(GOLD, 'utf8')), GOLD_CLOCK).some((f) => f.severity === 'fail'), false);
+});
+
 test('pack freshness.now cannot bypass the staleness gate', () => {
   const pack = JSON.parse(fs.readFileSync(GOLD, 'utf8'));
   pack.freshness = {

@@ -30,4 +30,4 @@ npm run test:session-export-gate
 
 Skill: `.agents/skills/bolt-forge-opt-in-not-clone/SKILL.md`
 
-Denied reports omit payload content. Explicit false consent and apply flags remain false. When an audit log is supplied, the gate opens and validates its target before writing the destination. The destination and log must refer to different files, including through symbolic or hard links. Repeated boolean flags use the last supplied value in both CLI entrypoints.
+Denied reports omit payload content. Explicit false consent and apply flags remain false. When an audit log is supplied, the gate opens and validates its target before writing the destination. The destination is replaced only after that audit row is appended. The destination and log must refer to different files, including through symbolic or hard links. Repeated boolean flags use the last supplied value in both CLI entrypoints.

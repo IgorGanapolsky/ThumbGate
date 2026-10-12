@@ -113,7 +113,13 @@ function lintPack(pack = {}, options = {}) {
   const now = resolveTrustedNow(options);
   if (Number.isFinite(maxAgeHours) && Number.isFinite(asOf)) {
     const ageHours = (now - asOf) / 3600000;
-    if (ageHours > maxAgeHours) {
+    if (ageHours < 0) {
+      findings.push({
+        severity: 'fail',
+        id: 'freshness_in_future',
+        message: `Context asOf is ${(-ageHours).toFixed(1)}h ahead of the trusted clock. A future timestamp skips the staleness check.`,
+      });
+    } else if (ageHours > maxAgeHours) {
       findings.push({
         severity: 'fail',
         id: 'stale_context',

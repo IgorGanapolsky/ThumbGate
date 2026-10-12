@@ -220,26 +220,29 @@ function applyExport(report, options = {}) {
     return { written: false };
   }
   let logFd;
-  let destFd;
+  let tempPath;
   try {
     if (options.log) {
       if (path.resolve(options.log) === path.resolve(dest)) {
         throw new Error('Export destination and audit log must be different files');
       }
       logFd = fs.openSync(options.log, 'a');
-      if (!fs.fstatSync(logFd).isFile()) throw new Error('Audit log must be a regular file');
-    }
-    fs.mkdirSync(path.dirname(path.resolve(dest)), { recursive: true });
-    destFd = fs.openSync(dest, 'a');
-    if (logFd !== undefined) {
       const logStat = fs.fstatSync(logFd);
-      const destStat = fs.fstatSync(destFd);
-      if (logStat.dev === destStat.dev && logStat.ino === destStat.ino) {
-        throw new Error('Export destination and audit log must be different files');
+      if (!logStat.isFile()) throw new Error('Audit log must be a regular file');
+      if (fs.existsSync(dest)) {
+        const destStat = fs.statSync(dest);
+        if (logStat.dev === destStat.dev && logStat.ino === destStat.ino) {
+          throw new Error('Export destination and audit log must be different files');
+        }
       }
     }
-    fs.ftruncateSync(destFd, 0);
-    fs.writeFileSync(destFd, report.stripped, 'utf8');
+    const destAbs = path.resolve(dest);
+    fs.mkdirSync(path.dirname(destAbs), { recursive: true });
+    tempPath = path.join(
+      path.dirname(destAbs),
+      `.${path.basename(destAbs)}.${process.pid}.${Date.now()}.tmp`,
+    );
+    fs.writeFileSync(tempPath, report.stripped, { encoding: 'utf8', flag: 'wx' });
     if (logFd !== undefined) {
       const row = JSON.stringify({
         at: new Date().toISOString(),
@@ -249,8 +252,18 @@ function applyExport(report, options = {}) {
       });
       fs.appendFileSync(logFd, `${row}\n`, 'utf8');
     }
+    fs.renameSync(tempPath, destAbs);
+    tempPath = null;
+  } catch (error) {
+    if (tempPath) {
+      try {
+        fs.unlinkSync(tempPath);
+      } catch (unlinkError) {
+        if (unlinkError.code !== 'ENOENT') throw unlinkError;
+      }
+    }
+    throw error;
   } finally {
-    if (destFd !== undefined) fs.closeSync(destFd);
     if (logFd !== undefined) fs.closeSync(logFd);
   }
   return { written: true, dest };

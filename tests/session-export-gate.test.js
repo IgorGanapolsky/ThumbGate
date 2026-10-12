@@ -135,6 +135,28 @@ test('recovery: denied reports contain no payload', () => {
   assert.equal(Object.hasOwn(report, 'stripped'), false);
 });
 
+test('recovery: a failed audit open leaves an existing destination untouched', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-export-keep-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const dest = path.join(dir, 'out.txt');
+  fs.writeFileSync(dest, 'keep-me');
+  const blocker = path.join(dir, 'not-a-dir');
+  fs.writeFileSync(blocker, 'x');
+  const log = path.join(blocker, 'audit.jsonl');
+  assert.throws(() => buildSessionExportGateReport({
+    lane: 'research',
+    optIn: true,
+    irreversibleAck: true,
+    text: 'hello',
+    dest,
+    log,
+    apply: true,
+  }));
+  assert.equal(fs.readFileSync(dest, 'utf8'), 'keep-me');
+  const leftovers = fs.readdirSync(dir).filter((name) => name.includes('.tmp') || name.startsWith('.out.txt.'));
+  assert.deepEqual(leftovers, []);
+});
+
 test('recovery: invalid log target leaves no exported payload', (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-export-fail-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
