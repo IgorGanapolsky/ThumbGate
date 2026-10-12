@@ -273,6 +273,19 @@ npx thumbgate mintlify-knowledge-honesty --check-dir docs --json
 
 Skill: `.agents/skills/mintlify-knowledge-honesty-not-clone/SKILL.md`. Details: `docs/agents/mintlify-knowledge-honesty.md`.
 
+## Fiddler AI Control Plane honesty (FORMAT steal)
+
+Unified dual-layer control plane across Creation (coding agents: Claude Code, Cursor, Antigravity) and Production (enterprise runtime daemons, API workers). Steal the Evaluation Trust Tax TCO calculator (proves $0 token cost vs $0.002/trace SaaS tax) and Centor-Diode multi-stage discriminant pre-action firewall (<0.5ms on local CPU vs Fiddler's 80ms). Never vendor Fiddler AI SaaS, install proprietary Centor model weights, or call cloud evaluators.
+
+```bash
+npx thumbgate fiddler-control-plane-honesty --map-only --json
+npx thumbgate fiddler-control-plane-honesty --eval-rate --traces 1000000 --json
+npx thumbgate fiddler-control-plane-honesty --tool-name Bash --command "git push --force origin main" --layer creation --json
+```
+
+Skill: `.agents/skills/fiddler-control-plane-honesty/SKILL.md`. Details: `docs/agents/fiddler-control-plane-honesty.md`.
+
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:

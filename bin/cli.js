@@ -3049,6 +3049,11 @@ function haloTraceOptimizer() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function fiddlerControlPlaneHonesty() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'fiddler-control-plane-honesty'));
+  runCli(process.argv.slice(3));
+}
+
 function cobbleHotStoreSplit() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3377,22 +3382,6 @@ async function gateCheck() {
     const input = payload ? JSON.parse(payload) : {};
     const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
 
-    // The operator bypass only skips advisory and strict-mode gates. Security and
-    // self-protection floors are evaluated before the early approval path.
-    if (process.env.THUMBGATE_HOTFIX_BYPASS === '1') {
-      const hardFloorOutput = gatesEngine.runHardFloor(input);
-      if (hardFloorOutput) {
-        process.stdout.write(hardFloorOutput + '\n');
-        return;
-      }
-      process.stdout.write(JSON.stringify({
-        decision: 'approve',
-        reason: 'operator-bypass-opt-in',
-        hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: '' }
-      }) + '\n');
-      return;
-    }
-
     const { evaluatePreToolUse } = require(path.join(PKG_ROOT, 'scripts', 'token-shunt-honesty'));
     const shunt = evaluatePreToolUse({
       toolName: input.tool_name || input.toolName,
@@ -3409,6 +3398,43 @@ async function gateCheck() {
           permissionDecisionReason: `token-shunt: ${shunt.reason}`,
         },
       })}\n`);
+      return;
+    }
+
+    const { evaluateMcpPreToolUse } = require(path.join(PKG_ROOT, 'scripts', 'third-author-governance'));
+    const thirdAuthor = evaluateMcpPreToolUse({
+      toolName: input.tool_name || input.toolName,
+      toolInput: input.tool_input || input.toolInput || {},
+      authorContext: { isAgent: true, cwd: input.cwd || process.cwd() },
+    });
+    if (thirdAuthor && thirdAuthor.permissionDecision === 'deny') {
+      process.stdout.write(`${JSON.stringify({
+        decision: 'block',
+        reason: thirdAuthor.permissionDecisionReason,
+        hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
+          permissionDecision: 'deny',
+          permissionDecisionReason: thirdAuthor.permissionDecisionReason,
+          findingId: thirdAuthor.findingId,
+          alternatives: thirdAuthor.alternatives,
+        },
+      })}\n`);
+      return;
+    }
+
+    // The operator bypass only skips advisory and strict-mode gates. Security and
+    // self-protection floors are evaluated before the early approval path.
+    if (process.env.THUMBGATE_HOTFIX_BYPASS === '1') {
+      const hardFloorOutput = gatesEngine.runHardFloor(input);
+      if (hardFloorOutput) {
+        process.stdout.write(hardFloorOutput + '\n');
+        return;
+      }
+      process.stdout.write(JSON.stringify({
+        decision: 'approve',
+        reason: 'operator-bypass-opt-in',
+        hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: '' }
+      }) + '\n');
       return;
     }
 
@@ -3950,6 +3976,9 @@ function help() {
   console.log('  rag-precision-guardrails Map retrieval tuning regressions to Document RAG Safety gates');
   console.log('  ai-engineering-stack-guardrails Map gateway, MCP, AGENTS.md, LLM wiki, reviewer, and sandbox gaps to stack gates');
   console.log('  ai-inventory          Scan AI/ML components and export JSON or CycloneDX ML-BOM evidence');
+  console.log('  third-author          The Third Author governance: 3 checkpoints & 4-risk BOM (Earnie FORMAT)');
+  console.log('  explain <id>          Inspect finding evidence, offending command, and permissive alternatives');
+  console.log('  embeddinggemma        EmbeddingGemma 2 multimodal 8K context & MRL fast-gate verification');
   console.log('  upstream-contributions Find dependency issues worth fixing without promotional PRs');
   console.log('  long-running-agent-context-guardrails Map structured-memory gaps to long-running agent gates');
   console.log('  reasoning-efficiency-guardrails Map reasoning compression signals to efficiency gates');
@@ -3965,6 +3994,7 @@ function help() {
   console.log('  coverage-gap          Baseline coverage gaps; skip no-behavior; remeasure same scope (VS FORMAT)');
   console.log('  npx thumbgate coverage-gap --json --scope=scripts/risk --floor=50');
   console.log('  jit-harness-compose   Compose memory/planning/action/capability onto existing rails (JIT FORMAT)');
+  console.log('  fiddler-control-plane-honesty Two-layer control plane + Trust Tax TCO (Fiddler FORMAT)');
   console.log('  cobble-hot-store-split Split durable/delivery/hot lesson planes (CobbleDB FORMAT)');
   console.log('  token-shunt-honesty   Intercept untargeted bulk reads (Portal FORMAT; not shunt@portal)');
   console.log('  typesafe-typed-questions Typed noul/choice/score + code-owned route (TypeSafe FORMAT; not Jev)');
@@ -4019,6 +4049,7 @@ function help() {
   console.log('  npx thumbgate openui-catalog-compose-honesty --catalog=catalog.json --stream=compose.txt --repair --json');
   console.log('  npx thumbgate allowlist-bridge-honesty --json');
   console.log('  npx thumbgate jit-harness-compose --task="implement PreToolUse gate fix" --json');
+  console.log('  npx thumbgate fiddler-control-plane-honesty --tco-calc --json');
   console.log('  npx thumbgate cobble-hot-store-split --json');
   console.log('  npx thumbgate token-shunt-honesty --json --lines=800');
   console.log('  npx thumbgate typesafe-typed-questions --json --tool-name=Bash --command="git push --force origin main"');
@@ -4663,6 +4694,43 @@ switch (COMMAND) {
   case 'mlbom':
     aiInventory();
     break;
+  case 'third-author':
+  case 'third-author-governance':
+  case 'earnie-audit':
+  case 'explain':
+    require(path.join(PKG_ROOT, 'scripts', 'third-author-cli')).main();
+    break;
+  case 'embeddinggemma':
+  case 'embeddinggemma-2':
+  case 'embedding-gemma':
+    {
+      const { runEmbeddingGemmaDoctor } = require(path.join(PKG_ROOT, 'scripts', 'embeddinggemma-adapter'));
+      const isJson = process.argv.includes('--json');
+      const results = runEmbeddingGemmaDoctor();
+      if (results && results.status === 'fail') {
+        process.exitCode = 1;
+      }
+      if (isJson) {
+        console.log(JSON.stringify(results, null, 2));
+      } else {
+        console.log('\n============================================================');
+        console.log(' ThumbGate: Google DeepMind EmbeddingGemma 2 Architecture');
+        console.log('============================================================');
+        console.log(`Model:           ${results.model} (${results.backbone})`);
+        console.log(`Native Dim:      ${results.nativeDimension}d (MRL Tiers: ${results.mrlTiers.join(', ')}d)`);
+        console.log(`Fast-Gate Dim:   ${results.fastGateDimension}d (<0.5ms CPU budget)`);
+        console.log(`Context Window:  ${results.contextTokens} tokens (~32KB chars)`);
+        console.log('------------------------------------------------------------');
+        console.log('Verification Checks:');
+        for (const chk of results.checks) {
+          console.log(`  • [${chk.status.toUpperCase()}] ${chk.name}`);
+        }
+        console.log('------------------------------------------------------------');
+        console.log(`Overall Status:  ${results.status.toUpperCase()}`);
+        console.log('============================================================\n');
+      }
+    }
+    break;
   case 'deepseek-v4-runtime-guardrails':
   case 'deepseek-runtime-guardrails':
   case 'sparse-attention-runtime-guardrails':
@@ -4712,6 +4780,12 @@ switch (COMMAND) {
   case 'jit-harness':
   case 'harness-compose':
     jitHarnessCompose();
+    break;
+  case 'fiddler-control-plane-honesty':
+  case 'fiddler-honesty':
+  case 'control-plane-honesty':
+  case 'fiddler-control-plane':
+    fiddlerControlPlaneHonesty();
     break;
   case 'cobble-hot-store-split':
   case 'cobble-hot-store':

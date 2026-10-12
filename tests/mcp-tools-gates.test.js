@@ -10,6 +10,15 @@ const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-gate
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_MCP_PROFILE = 'default';
 
+const ORIGINAL_SESSION_ENV = {
+  THUMBGATE_SESSION_AGENT: process.env.THUMBGATE_SESSION_AGENT,
+  THUMBGATE_SESSION_ID: process.env.THUMBGATE_SESSION_ID,
+  CLAUDE_SESSION_ID: process.env.CLAUDE_SESSION_ID,
+};
+delete process.env.THUMBGATE_SESSION_AGENT;
+delete process.env.THUMBGATE_SESSION_ID;
+delete process.env.CLAUDE_SESSION_ID;
+
 const { handleRequest, TOOLS } = require('../adapters/mcp/server-stdio');
 const gatesEngine = require('../scripts/gates-engine');
 
@@ -25,6 +34,10 @@ let runtimeSandboxDir = null;
 
 test.after(() => {
   fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+  for (const [k, v] of Object.entries(ORIGINAL_SESSION_ENV)) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
 });
 
 beforeEach(() => {
@@ -165,7 +178,7 @@ test('approve_protected_action stores runtime approval over MCP', async () => {
   const payload = JSON.parse(result.content[0].text);
   assert.equal(payload.approved, true);
   assert.deepEqual(payload.approval.pathGlobs, ['AGENTS.md']);
-  assert.equal(fs.existsSync(gatesEngine.GOVERNANCE_STATE_PATH), true);
+  assert.equal(fs.existsSync(gatesEngine.governanceStatePath()), true);
 });
 
 test('set_branch_governance and get_branch_governance round-trip over MCP', async () => {

@@ -35,9 +35,11 @@ function getHybridPaths(options = {}) {
     feedbackDir: options.feedbackDir,
     home: options.home,
   });
+  const feedbackLog = options.feedbackLogPath || process.env.THUMBGATE_FEEDBACK_LOG || path.join(feedbackDir, 'feedback-log.jsonl');
   return {
     feedbackDir,
-    feedbackLog: path.join(feedbackDir, 'feedback-log.jsonl'),
+    graphFeedbackDir: options.feedbackDir || path.dirname(feedbackLog),
+    feedbackLog,
     inbox: path.join(feedbackDir, 'inbox.jsonl'),
     pendingSync: path.join(feedbackDir, 'pending_cortex_sync.jsonl'),
     attributedFeedback: path.join(feedbackDir, 'attributed-feedback.jsonl'),
@@ -321,10 +323,33 @@ function buildHybridState(opts) {
   const pendingSyncPath = o.pendingSyncPath || process.env.THUMBGATE_PENDING_SYNC || paths.pendingSync;
   const attributedFeedbackPath = o.attributedFeedbackPath || process.env.THUMBGATE_ATTRIBUTED_FEEDBACK || paths.attributedFeedback;
 
-  const feedbackEntries = readJsonl(feedbackLogPath, HYBRID_JSONL_READ_LIMIT);
-  const inboxEntries = readJsonl(inboxPath, HYBRID_JSONL_READ_LIMIT);
-  const pendingSyncEntries = readJsonl(pendingSyncPath, HYBRID_JSONL_READ_LIMIT);
-  const attributedEntries = readJsonl(attributedFeedbackPath, HYBRID_JSONL_READ_LIMIT);
+  const { selectRecordsForScope } = require('./memory-scope-readiness');
+  if (o.requireScope && !o.scope) throw new Error('Scoped hybrid state requires scope');
+  const readEntries = file => {
+    const rows = readJsonl(file, HYBRID_JSONL_READ_LIMIT);
+    return o.scope ? selectRecordsForScope(rows, o.scope, { includeShared: o.includeShared !== false }).allowed : rows;
+  };
+  const feedbackEntries = readEntries(feedbackLogPath);
+  const inboxEntries = readEntries(inboxPath);
+  const pendingSyncEntries = readEntries(pendingSyncPath);
+  const attributedEntries = readEntries(attributedFeedbackPath);
+  const graph = require('./lesson-graph');
+  const graphOptions = { feedbackDir: paths.graphFeedbackDir };
+  const graphDb = graph.openGraphDBIfExists(graphOptions);
+  const identities = new Map();
+  let provenance = null;
+  try {
+    if (graphDb) graphDb.transaction(() => {
+      for (const entry of [...feedbackEntries, ...inboxEntries, ...pendingSyncEntries, ...attributedEntries]) {
+        identities.set(entry, JSON.stringify([graph.scopeKey(entry), graph.feedbackIdentity(graphDb, entry) || hashText(JSON.stringify(entry))]));
+      }
+      provenance = graph.graphProvenance(graphOptions, graphDb);
+    })();
+  } finally {
+    if (graphDb) graphDb.close();
+  }
+  const enforcementSeen = new Set();
+  const attributedSeen = new Set();
 
   // Deduplicate by id across all sources
   const seen = new Set();
@@ -354,6 +379,9 @@ function buildHybridState(opts) {
       // History-sync fallback and gate logs still count as events, but they must
       // not become recurring "Avoid" constraints injected on every PreToolUse.
       if (isAutomatedFeedback(entry)) continue;
+      const identity = identities.get(entry);
+      if (identity && enforcementSeen.has(identity)) continue;
+      if (identity) enforcementSeen.add(identity);
 
       const toolName = inferToolName(entry.toolName || entry.tool_name || 'unknown', entry.context || '');
       toolNegatives[toolName] = (toolNegatives[toolName] || 0) + 1;
@@ -398,6 +426,11 @@ function buildHybridState(opts) {
   for (const entry of attributedEntries) {
     if (classify(entry) !== 'negative') continue; // skip pruned/positive
     if (isAutomatedFeedback(entry)) continue; // skip automated gate blocks
+    const identity = identities.get(entry);
+    if (identity && attributedSeen.has(identity)) continue;
+    if (identity) attributedSeen.add(identity);
+    const alreadyCounted = identity && enforcementSeen.has(identity);
+    if (identity) enforcementSeen.add(identity);
     const toolName = inferToolName(entry.toolName || entry.tool_name || entry.attributed_tool || 'unknown', entry.context || '');
     toolNegativesAttributed[toolName] = (toolNegativesAttributed[toolName] || 0) + 1;
 
@@ -433,7 +466,7 @@ function buildHybridState(opts) {
     if (!patternMap[patKey].sources.includes('attributedFeedback')) {
       patternMap[patKey].sources.push('attributedFeedback');
     }
-    patternMap[patKey].count++;
+    if (!alreadyCounted) patternMap[patKey].count++;
     const ts = getTimestampMs(entry.timestamp);
     if (ts > patternMap[patKey].lastSeen) patternMap[patKey].lastSeen = ts;
   }
@@ -450,6 +483,8 @@ function buildHybridState(opts) {
     .filter(Boolean);
 
   return {
+    graphScope: o.scope ? JSON.stringify([graph.scopeKey(o.scope), o.includeShared !== false]) : null,
+    graphProvenance: provenance,
     counts: { total, positive, negative },
     recurringNegativePatterns,
     preventionRules,
@@ -706,6 +741,8 @@ function compileGuardArtifact(state, opts) {
   });
 
   return {
+    graphScope: state.graphScope || null,
+    graphProvenance: state.graphProvenance || null,
     compiledAt: new Date().toISOString(),
     guardCount: guards.length,
     blockThreshold,
@@ -884,7 +921,11 @@ function evaluatePretool(toolName, toolInput, opts) {
   // Fast path: compiled artifact
   const artifactPath = o.guardArtifactPath || process.env.THUMBGATE_GUARDS_PATH || getHybridPaths(o).guardArtifact;
   const artifact = readGuardArtifact(artifactPath);
-  if (artifact) {
+  const graph = require('./lesson-graph');
+  if ((o.requireScope && !o.scope) || (o.scope && !graph.scopeKey(o.scope))) throw new Error('Scoped hybrid evaluation requires complete scope');
+  const graphScope = o.scope ? JSON.stringify([graph.scopeKey(o.scope), o.includeShared !== false]) : null;
+  const provenance = graph.graphProvenance({ feedbackDir: getHybridPaths(o).graphFeedbackDir });
+  if (artifact && provenance !== 'unavailable' && (artifact.graphProvenance || null) === provenance && (artifact.graphScope || null) === graphScope) {
     const result = evaluateCompiledGuards(artifact, toolName, toolInput);
     if (result.mode !== 'allow') return result;
 
@@ -900,6 +941,11 @@ function evaluatePretool(toolName, toolInput, opts) {
 
   // Slow path: build live state (also used when compiled guards are stale)
   const state = buildHybridState({
+    scope: o.scope,
+    requireScope: o.requireScope,
+    includeShared: o.includeShared,
+    inboxPath: o.inboxPath,
+    pendingSyncPath: o.pendingSyncPath,
     feedbackDir: o.feedbackDir,
     feedbackLogPath: o.feedbackLogPath,
     attributedFeedbackPath: o.attributedFeedbackPath,

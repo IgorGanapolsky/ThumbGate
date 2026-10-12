@@ -247,7 +247,7 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
         mode: 'sync',
       }, { feedbackDir });
       return filterTopP(
-        dedupeSupersededLessons(results),
+        applyGraphResolution(dedupeSupersededLessons(results), options, memories),
         resolveTopP(options),
         { minKeep: options.minKeep },
       ).slice(0, maxResults).map(shapeLesson);
@@ -295,18 +295,10 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
 
   // Stage 3 (opt-in) — Memora-style nucleus stop: trim the low-mass tail so a
   // dominant lesson isn't padded out to maxResults. No-op unless topP < 1.
-  const deduped = dedupeSupersededLessons(reranked);
+  const deduped = applyGraphResolution(dedupeSupersededLessons(reranked), options, memories);
   const selected = filterTopP(deduped, resolveTopP(options), { minKeep: options.minKeep });
 
-  const shaped = selected.slice(0, maxResults).map((m) => ({
-    id: m.id,
-    title: m.title,
-    content: m.content,
-    signal: m.tags?.includes('negative') ? 'negative' : 'positive',
-    rule: m.structuredRule || null,
-    relevanceScore: m.rerankedScore ?? m.relevanceScore,
-    timestamp: m.timestamp,
-  }));
+  const shaped = selected.slice(0, maxResults).map(shapeLesson);
 
   // Attach retrieval quality tier once (non-enumerable-ish via property on array)
   try {
@@ -375,16 +367,31 @@ function loadMemories(feedbackDir, options = {}) {
   );
 }
 
+function applyGraphResolution(lessons, options = {}, memories) {
+  const graph = require('./lesson-graph');
+  const db = graph.openGraphDBIfExists(options);
+  if (!db) return lessons;
+  try {
+    const allowed = selectRetrievalMemories(memories || loadMemories(options.feedbackDir, options), options);
+    return graph.annotateAndFilterLessons(db, lessons, { lookup: new Map(allowed.map(record => [record.id, record])) });
+  } catch {
+    return lessons;
+  } finally {
+    db.close();
+  }
+}
+
 function shapeLesson(m, retrieval = null) {
   const shaped = {
     id: m.id,
     title: m.title,
     content: m.content,
-    signal: m.tags?.includes('negative') ? 'negative' : 'positive',
+    signal: m.signal === 'negative' || m.signal === 'positive' ? m.signal : (m.tags?.includes('negative') ? 'negative' : 'positive'),
     rule: m.structuredRule || null,
     relevanceScore: m.rerankedScore ?? m.relevanceScore,
     timestamp: m.timestamp,
   };
+  if (m.lessonGraph) shaped.graph = m.lessonGraph;
   if (retrieval) shaped.retrieval = retrieval;
   return shaped;
 }
@@ -482,7 +489,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     // Short-circuit: skip embedding/dense search completely
     const { rerankLessons } = require('./lesson-reranker');
     const reranked = rerankLessons(actionContext, dedupeCandidatePool(lexicalScored), { topK: Math.max(maxResults * 2, maxResults), toolName });
-    return filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep })
+    return filterTopP(applyGraphResolution(dedupeSupersededLessons(reranked), options, memories), resolveTopP(options), { minKeep: options.minKeep })
       .slice(0, maxResults)
       .map(shapeLesson);
   }
@@ -584,7 +591,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
       lexicalPool: meta.lexicalPool,
     }, { feedbackDir });
     const cut = filterTopP(
-      dedupeSupersededLessons(results),
+      applyGraphResolution(dedupeSupersededLessons(results), options, memories),
       resolveTopP(options),
       { minKeep: options.minKeep },
     ).slice(0, maxResults);
@@ -626,7 +633,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
 
   const { rerankLessons } = require('./lesson-reranker');
   const reranked = rerankLessons(actionContext, candidates, { topK: Math.max(maxResults * 2, maxResults), toolName });
-  const rows = filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep })
+  const rows = filterTopP(applyGraphResolution(dedupeSupersededLessons(reranked), options, memories), resolveTopP(options), { minKeep: options.minKeep })
     .slice(0, maxResults)
     .map(shapeLesson);
   return attachArrayRetrievalMeta(rows, {
@@ -890,6 +897,7 @@ function calculateRetrievalEntropy(lessons) {
 }
 
 module.exports = {
+  applyGraphResolution,
   retrieveRelevantLessons,
   retrieveWithLatencyBudget,
   retrieveRelevantLessonsAsync,
