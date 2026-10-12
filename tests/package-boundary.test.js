@@ -516,8 +516,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // Two runtime files restore the optional scoped lesson graph.
     // 599 -> 601 (2026-10-09): scripts/fiddler-control-plane-honesty.js + .agents/skills/fiddler-control-plane-honesty/
     // 601 -> 612 (2026-10-09): Strands Box diode/decider, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma (+11)
-    manifest.fileCount <= 612,
-    `npm package should stay <= 612 files, got ${manifest.fileCount}`
+    // 612 -> 619: three recovered command/skill pairs and session-interactivity.js (+7).
+    manifest.fileCount <= 619,
+    `npm package should stay <= 619 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -766,8 +767,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.93 MB -> 8.98 MB (2026-10-06): vulnerability-diode + triage calculator + siren-mcp-governance. Local pack 8,952,525; CI slack.
   // Bumped 8.98 MB -> 9.05 MB (2026-10-09): fiddler-control-plane-honesty.js + skill. Local pack 9,020,887; CI slack.
   // Bumped 9.05 MB -> 9.16 MB (2026-10-09): Strands Box, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma. Local pack 9,142,709; CI slack.
-    manifest.unpackedSize <= 9_160_000,
-    `npm package should stay <= 9.16 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 9.16 MB -> 9.25 MB (2026-10-12): recovered features measure 9,204,239 unpacked; CI slack.
+    manifest.unpackedSize <= 9_250_000,
+    `npm package should stay <= 9.25 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

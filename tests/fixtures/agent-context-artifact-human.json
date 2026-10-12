@@ -1,0 +1,9 @@
+{
+  "consumer": "human",
+  "goal": "",
+  "constraints": [],
+  "sources": [],
+  "freshness": {},
+  "verifier": {},
+  "wrongFit": ["foundry"]
+}
