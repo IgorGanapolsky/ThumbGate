@@ -44,6 +44,7 @@ Non-negotiable rules:
 4. Never write to another agent's state file. Commit only your own vault file
    via PR; the vault has its own branch protection.
 5. Do not duplicate an open PR or an open Linear issue. Claim first, then work.
+6. A handoff is a saved state-and-next file. A new session keeps the old one. Children get disjoint files and do not inherit the parent transcript. Observation is view-only. Do not install omp or open a link that can drive the host. Check with `npx thumbgate omp-coordination-honesty --json --map-only`.
 
 For session closure:
 
@@ -285,6 +286,15 @@ npx thumbgate fiddler-control-plane-honesty --tool-name Bash --command "git push
 
 Skill: `.agents/skills/fiddler-control-plane-honesty/SKILL.md`. Details: `docs/agents/fiddler-control-plane-honesty.md`.
 
+## omp coordination honesty (FORMAT steal)
+
+omp.sh sessions, subagents, and collab are a coordination format. A new session keeps the previous one. A handoff is saved state and the next step. Children write disjoint files and do not inherit the parent transcript. Observation is view-only. One named model. Do not install omp. Do not open a link that can prompt or interrupt the host.
+
+```bash
+npx thumbgate omp-coordination-honesty --json --map-only
+```
+
+Skill: `.agents/skills/omp-coordination-honesty-not-clone/SKILL.md`. Details: `docs/agents/omp-coordination-honesty.md`.
 
 ## Canonical Product Scope
 

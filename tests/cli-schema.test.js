@@ -282,6 +282,17 @@ test('colab-compute-honesty exposes CU-proof flags', () => {
   assert.ok(flagNames.includes('buy-pro'));
 });
 
+test('omp-coordination-honesty exposes handoff flags', () => {
+  const cmd = findCommand('omp-honesty');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'omp-coordination-honesty');
+  assert.ok(cmd.aliases.includes('omp-coordination'));
+  assert.ok(flagNames.includes('claim'));
+  assert.ok(flagNames.includes('handoff'));
+  assert.ok(flagNames.includes('map-only'));
+  assert.ok(flagNames.includes('strict'));
+});
+
 test('typesafe-typed-questions exposes typed-question flags', () => {
   const cmd = findCommand('typesafe-hook');
   const flagNames = cmd.flags.map((f) => f.name);
