@@ -432,6 +432,90 @@ function pruneStructuralRedundancy(rules = [], options = {}) {
   };
 }
 
+/**
+ * arXiv:2610.11655 Harness Evolution Ceiling Evaluator:
+ * "Harness Evolution Hits a Ceiling: When Weight Training Should Begin"
+ *
+ * Separates process failures (repaired by harness evolution) from content failures
+ * (repaired by weight training or model escalation).
+ *
+ * @param {object} params
+ * @param {object} [params.failureComposition]
+ * @param {object} [params.stagnationResult]
+ * @param {Array<object|string>} [params.recentEdits]
+ * @returns {object}
+ */
+function evaluateHarnessCeiling({ failureComposition = {}, stagnationResult = {}, recentEdits = [] } = {}) {
+  const processRate = Number.isFinite(failureComposition.processFailureRate) ? failureComposition.processFailureRate : 0;
+  const contentRate = Number.isFinite(failureComposition.contentFailureRate) ? failureComposition.contentFailureRate : 0;
+  const totalFailures = Number.isFinite(failureComposition.totalFailures) ? failureComposition.totalFailures : 0;
+  const isStagnant = stagnationResult.isStagnant === true;
+
+  const ceilingDetected = totalFailures >= 3 && processRate <= 0.2 && contentRate >= 0.8;
+
+  let recommendation = 'continue_harness_evolution';
+  let rationale = '';
+
+  if (ceilingDetected) {
+    recommendation = 'weight_training_or_model_escalation';
+    rationale = `Harness evolution ceiling hit: process failures suppressed (${(processRate * 100).toFixed(1)}%), ` +
+      `content failures dominate (${(contentRate * 100).toFixed(1)}%)${isStagnant ? ' (evolution stagnant)' : ''}. Switch lever from harness prompt bloat to ` +
+      `weight training (LoRA/distillation) or model tier escalation.`;
+  } else if (processRate >= 0.2) {
+    recommendation = 'harness_evolution';
+    rationale = `Process failures active (${(processRate * 100).toFixed(1)}%). Harness evolution (rules, gates, tool contracts) has high ROI.`;
+  } else {
+    recommendation = 'monitor';
+    rationale = `Failure rates balanced or sample too small (${totalFailures} failures).`;
+  }
+
+  const partitions = partitionAcceptedEdits(recentEdits);
+
+  return {
+    ceilingDetected,
+    recommendation,
+    rationale,
+    processFailureRate: processRate,
+    contentFailureRate: contentRate,
+    totalFailures,
+    partitions,
+  };
+}
+
+/**
+ * Partition accepted harness edits into those that can be internalized into
+ * weights (LoRA / distillation) vs those that must remain in the runtime harness.
+ * (arXiv:2610.11655)
+ *
+ * @param {Array<object|string>} edits
+ * @returns {{ trainableIntoWeights: Array, keepInRuntimeHarness: Array }}
+ */
+function partitionAcceptedEdits(edits = []) {
+  const trainableIntoWeights = [];
+  const keepInRuntimeHarness = [];
+
+  const RUNTIME_KEYWORDS = /security|gate|lease|credential|secret|token|firewall|authoriz|sandbox|fence|verify|signature/i;
+  const TRAINABLE_KEYWORDS = /style|format|prompt|tone|template|convention|plan_format|reasoning_step|cot|persona/i;
+
+  for (const edit of edits) {
+    const text = typeof edit === 'string'
+      ? edit
+      : [edit.name, edit.description, edit.rule].filter(Boolean).join(' ') || JSON.stringify(edit);
+    if (RUNTIME_KEYWORDS.test(text)) {
+      keepInRuntimeHarness.push(edit);
+    } else if (TRAINABLE_KEYWORDS.test(text)) {
+      trainableIntoWeights.push(edit);
+    } else {
+      keepInRuntimeHarness.push(edit);
+    }
+  }
+
+  return {
+    trainableIntoWeights,
+    keepInRuntimeHarness,
+  };
+}
+
 module.exports = {
   RRSI_DEFAULTS,
   calculateAnnealedBudget,
@@ -442,4 +526,6 @@ module.exports = {
   detectStagnation,
   selectTargetWithExploration,
   pruneStructuralRedundancy,
+  evaluateHarnessCeiling,
+  partitionAcceptedEdits,
 };
