@@ -533,6 +533,17 @@ const CLI_COMMANDS = [
       { name: 'content', type: 'number', description: 'Count of content failures to evaluate' },
     ],
   }),
+
+  discoveryCommand({
+    name: 'decisive-step',
+    aliases: ['decisive-step-doctor', 'nvidia-decisive-step'],
+    description: 'NVIDIA arXiv:2610.10478 decisive-step evaluation (predicts post-training coding skill at rho=0.964)',
+    flags: [
+      jsonFlag(),
+      { name: 'map-only', type: 'boolean', description: 'Print arXiv:2610.10478 → ThumbGate rail map' },
+    ],
+  }),
+
   discoveryCommand({
     name: 'ci-gha-buildkite-patterns',
     aliases: ['ci-buildkite-patterns', 'gha-buildkite-honesty', 'first-fail-gha'],
