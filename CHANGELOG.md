@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add an omp coordination honesty check. A new session keeps the previous one, a handoff is saved state and the next step, children write disjoint files, and observation stays view-only. The public package grows from 619 to 621 files for the doctor and its skill. Measured clean unpacked size is 9,228,207 bytes, under the existing 9.25 MB cap.
 - Recover context-artifact validation, consent-gated local session export, coverage-gap reporting and session interactivity metrics with review regressions repaired. The public package grows from 612 to 619 files for three command modules, their three skills and the session metric module. Raise the unpacked limit from 9.16 MB to 9.25 MB for the measured additions.
 - Recover the opt-in scoped lesson graph and migration command. The measured npm bundle grows from 597 to 599 files to include both runtime modules required by the Reliability Gateway.
 

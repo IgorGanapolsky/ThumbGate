@@ -509,6 +509,19 @@ const CLI_COMMANDS = [
   }),
 
   discoveryCommand({
+    name: 'omp-coordination-honesty',
+    aliases: ['omp-coordination', 'omp-honesty'],
+    description: 'omp.sh session/subagent/collab FORMAT on the checkout lease (does not install omp)',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero on fail' },
+      { name: 'claim', type: 'string', description: 'Claim or handoff text to audit' },
+      { name: 'handoff', type: 'string', description: 'Path to a saved handoff JSON or markdown header' },
+      { name: 'map-only', type: 'boolean', description: 'Print omp → ThumbGate rail map' },
+    ],
+  }),
+
+  discoveryCommand({
     name: 'ci-gha-buildkite-patterns',
     aliases: ['ci-buildkite-patterns', 'gha-buildkite-honesty', 'first-fail-gha'],
     description: 'Buildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations (does not add Buildkite)',
