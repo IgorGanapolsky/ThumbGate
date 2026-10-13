@@ -285,16 +285,17 @@ npx thumbgate fiddler-control-plane-honesty --tool-name Bash --command "git push
 
 Skill: `.agents/skills/fiddler-control-plane-honesty/SKILL.md`. Details: `docs/agents/fiddler-control-plane-honesty.md`.
 
-## Harness ceiling & weight training trigger (FORMAT steal)
+## Harness ceiling diagnostics (FORMAT steal)
 
-Failure composition diagnostics and weight-training trigger from arXiv:2610.11655 (Tian et al., October 2026). Labels failed trajectories by first signal: F1 (evidence/unbacked), F2 (harness friction/blocked calls), F3 (execution loops/step limits), and F4 (planning/content quality). Proves harness evolution ceilings at F4; triggers LoRA/DPO weight training when delivery saturates (r >= 0.85). Enforces Proposition 1 selection optimism bound ($s \sqrt{2 \ln K}$) and writes-vs-sees edit partitioning.
+Failure composition from arXiv:2610.11655 (Tian et al., October 2026) on a supplied trace. First signal wins: F1 evidence, F2 harness friction, F3 execution loops, F4 content. Delivery is `delivered === true` only. When delivery is at least 0.85 and F4 is at least 0.40, stop the harness rewrite. The doctor does not run a training job. Secrets, self-protect, and outbound email stay blocked. 0.023, 0.035, and 0.18 are the paper's DeepPlanning numbers, not ThumbGate measurements. A bare run without `--trace` or `--map-only` exits non-zero.
 
 ```bash
-npm run harness-ceiling:diagnostics
-node scripts/harness-ceiling-diagnostics.js --json
+node scripts/harness-ceiling-diagnostics.js --trace=path/to/trace.json --json
 node scripts/harness-ceiling-diagnostics.js --map-only
 node --test tests/harness-ceiling-diagnostics.test.js
 ```
+
+`npm run harness-ceiling:diagnostics` with no arguments exits non-zero.
 
 Skill: `.agents/skills/harness-ceiling-diagnostics/SKILL.md`. Details: `docs/agents/harness-ceiling-weight-training.md`.
 

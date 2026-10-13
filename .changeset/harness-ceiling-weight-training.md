@@ -2,4 +2,4 @@
 "thumbgate": minor
 ---
 
-Integrate Harness Ceiling and Failure Composition diagnostics (FORMAT steal from arXiv:2610.11655), providing deterministic F1-F4 trajectory classification, mathematical score delta decomposition (S = r * q_bar), Proposition 1 selection optimism bounding, a diagnose-then-intervene rule to trigger weight training when harness evolution ceilings, and a writes-vs-sees edit partition.
+The harness ceiling doctor classifies a supplied trace into F1-F4, decomposes S = r * q_bar, refuses to invent a sample when no trace is passed, stops the harness rewrite on a content-saturated trace, keeps secrets, self-protect, and outbound email blocked, and does not run a training job.

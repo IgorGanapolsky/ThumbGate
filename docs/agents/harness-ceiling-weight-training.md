@@ -1,107 +1,58 @@
-# Harness Evolution Ceiling & Weight Training Trigger (arXiv:2610.11655)
+# Harness ceiling diagnostics (arXiv:2610.11655)
 
-> **Paper**: *Harness Evolution Hits a Ceiling: When Weight Training Should Begin*  
-> **Authors**: Yuan Tian, Bing Hu, Hao Wang, Binghang Lu, Fang Wu (October 2026)  
-> **Target**: ThumbGate PreToolUse Reliability Gateway & DPO Distillation Pipeline  
-> **CLI**: `npm run harness-ceiling:diagnostics` or `node scripts/harness-ceiling-diagnostics.js`
+> **Paper**: *Harness Evolution Hits a Ceiling: When Weight Training Should Begin*
+> **Authors**: Yuan Tian, Bing Hu, Hao Wang, Binghang Lu, Fang Wu (October 2026)
+> **Target**: ThumbGate PreToolUse failure composition on a supplied trace
+> **CLI**: `node scripts/harness-ceiling-diagnostics.js --trace=<file> --json` or `--map-only`
 
----
+`npm run harness-ceiling:diagnostics` runs the script with no arguments and exits non-zero. It does not invent a sample. This doctor does not run a training job.
 
-## 1. Executive Summary & Core Architectural Insight
+## What we take from the paper
 
-When improving long-horizon autonomous AI agents, engineering teams have two primary levers:
-1. **The Harness Lever**: Changing the code and runtime environment around a frozen model (prompts, tool definitions, middleware, PreToolUse execution firewalls, state ledgers, loop breakers).
-2. **The Weight Lever**: Changing the underlying model weights via trajectory fine-tuning (LoRA, QLoRA, DPO preference optimization).
+The paper's diagnose-then-intervene order is: label each trajectory by the first signal that fires, then pick one lever.
 
-arXiv:2610.11655 proves empirically that **harness self-evolution hits a structural ceiling**. While harness evolution rapidly resolves process-level failures (tool thrashing, loops, step exhaustion) and boosts delivery rates, it cannot eliminate content-level failures (poor plans or flawed reasoning delivered cleanly without process exceptions).
+- **F1 evidence**: unbacked-citation ratio ≥ 0.50, or an exit gate passed with unresolved items.
+- **F2 harness friction**: the harness blocked the agent (forced checkpoint unlock, or ≥ 10 blocked tool calls) and the score is low.
+- **F3 execution**: the same tool call ≥ 3 times, ≥ 90% of the step budget, or the harness terminated the run.
+- **F4 content**: none of those fired, and a delivered plan scores below 0.50.
+- **Healthy**: a delivered plan scores ≥ 0.50.
 
-ThumbGate steals this architectural insight into a deterministic, CPU-local (<0.5ms) diagnostic engine:
-- Labels failed trajectories by the **first signal that fires** across four distinct classes ($F_1$ to $F_4$).
-- Decomposes score deltas into **delivery gains vs. quality gains** ($\Delta S = \Delta r \cdot \bar{q} + r' \cdot \Delta \bar{q}$).
-- Bounds selection optimism noise via **Proposition 1** ($s \sqrt{2 \ln K}$).
-- Executes the **Diagnose-Then-Intervene Rule** to mathematically signal when to stop evolving the harness and trigger **Weight Training / DPO export**.
-- Enforces the **Writes-vs-Sees Partition**: only edits affecting what the model *writes* can be distilled into weights; edits affecting what the model *sees* must remain in the runtime harness.
+Delivery is true only when `trajectory.delivered === true`. A positive score or a present `output` is not delivery.
 
----
+Composite score is `S = r * q_bar`: delivery rate times mean quality among delivered plans. A score delta splits into a delivery term and a quality term. Process classes (F2, F3) are the harness lever. F4 is a content ceiling because those process signals do not separate it from a healthy run.
 
-## 2. The Four-Class Failure Taxonomy ($F_1$ – $F_4$)
+Edits that change what the model sees (a second context page, history, a ledger, retrieval) stay in the harness. The field `distillablePercentage` counts write-surface edits only. An unknown path, and a path that matches both a write pattern and a see pattern, stay sees.
 
-Every failed agent trajectory is labelled post hoc by the first signal that fires:
+## Their numbers stay theirs
 
-| Failure Class | Name | Operational Definition | Target Lever |
-| :--- | :--- | :--- | :--- |
-| **$F_1$** | **Evidence Failure** | Unbacked citation ratio $\ge 0.50$, or the agent passed an exit gate with unresolved checklist items. | **Harness** (Verification Diode / Grounding Gate) |
-| **$F_2$** | **Harness Friction** | The harness itself blocked the agent ($\ge 10$ blocked tool calls or forced lock) and score is low. | **Harness** (Prune / Calibrate Overzealous Deny Rules) |
-| **$F_3$** | **Execution Control** | The same tool call repeated $\ge 3$ times (loop), trajectory used $\ge 90\%$ of step budget, or timed out. | **Harness** (State Ledger / Loop Breaker / PreToolUse) |
-| **$F_4$** | **Planning Capacity / Content** | None of $F_1$–$F_3$ fired; the deliverable was returned cleanly without process errors, but quality is poor (score $< 0.50$). | **Weights** (LoRA / DPO Trajectory Fine-Tuning) |
-| **Healthy** | **Success** | Deliverable was completed cleanly and scored $\ge 0.50$. | Baseline Retention |
+| Figure | Where it came from | How this doctor uses it |
+| :--- | :--- | :--- |
+| 0.18 | Paper DeepPlanning capacity floor | Named only as `PAPER_DEEP_PLANNING.capacityFloor`. Not a ThumbGate measurement. |
+| 0.023 | Paper DeepPlanning rollout sigma | Used only when the caller passes a finite sigma. |
+| 0.035 | Paper DeepPlanning resolvability line | `Math.max(0.035, bound)` only when sigma was passed. |
 
----
+`--map-only` labels that source as `arXiv:2610.11655 DeepPlanning, not a ThumbGate measurement`. With no measured sigma, `computeSelectionOptimismBound(10)` returns a null bound and `noiseMeasured: false`. Sigma 0 is finite and measured: the bound is 0 and the threshold stays 0.035.
 
-## 3. Mathematical Foundations
+## Diagnose order
 
-### 3.1 The Score Identity (Equation 2)
-Let $r$ be the delivery rate (fraction of trajectories returning a parsable output) and $\bar{q}$ be the mean score among delivered outputs. The composite score $S$ is:
-$$S = r \cdot \bar{q}$$
+First match wins.
 
-When transitioning from seed $(r, \bar{q})$ to evolved $(r', \bar{q}')$, the score delta $\Delta S$ decomposes into:
-$$\Delta S = \underbrace{\Delta r \cdot \bar{q}}_{\text{Delivery Term}} + \underbrace{r' \cdot \Delta \bar{q}}_{\text{Quality Term}}$$
+1. Healthy share ≥ 0.75 → `MAINTAIN_STABLE`. Action: retain the harness and monitor drift.
+2. Mean quality among delivered plans < 0.18 and delivery > 0.5 → `MODEL_CAPACITY_INSUFFICIENT`, lever `PAPER_CAPACITY_FLOOR`. Stop the rewrite. This doctor does not name a replacement model.
+3. F2 ≥ 0.20 → `HARNESS_FRICTION_CALIBRATION`, lever `CALIBRATE_FALSE_POSITIVES`. Calibrate false-positive denies. Secrets, self-protect, and outbound email stay blocked.
+4. Delivery < 0.80, or F3 ≥ 0.30, or F1 ≥ 0.25 → `HARNESS_EVOLUTION`, lever `HARNESS_RUNTIME`. State ledger, identical-call break, citation check before an exit gate.
+5. Delivery ≥ 0.85 and F4 ≥ 0.40 → `CONTENT_CEILING`, lever `STOP_HARNESS_REWRITE`. Keep the harness that already delivers.
+6. Otherwise → `HYBRID_TUNING`. Address residual process loops. The same hard floor stays.
 
-- **Harness Evolution** primarily moves the **Delivery Term** ($\Delta r \cdot \bar{q}$) by eliminating $F_2$ and $F_3$.
-- Once delivery saturates ($r \to 1.0$), further gains require moving $\bar{q}$ via the **Quality Term** ($r' \cdot \Delta \bar{q}$), which is strictly the domain of **Weight Training**.
+An empty trajectory list is status `empty`, recommendation `NONE`, exit 1. A missing or unreadable `--trace` is `trace_unreadable`. A parse error is `trace_parse_error`. `--profile` is not a substitute for a trace.
 
-### 3.2 Proposition 1: Selection Optimism Bound
-During iterative harness candidate search across $K$ candidates with $m$ rollouts:
-$$\mathbb{E}\left[\max_{k} \varepsilon_k\right] \le s \sqrt{2 \ln K}, \quad \text{where } s = \frac{\sigma}{\sqrt{m}}$$
-
-- With baseline rollout standard deviation $\sigma = 0.023$ and $m = 4$ rollouts, $s = 0.0115$.
-- For $K = 10$ candidates, the bound is $\approx 0.0247$.
-- **Rule**: Any candidate gain below the resolvability line ($0.035$) is treated as within noise and rejected. Fresh anchors are measured after every accepted modification to prevent selection drift.
-
----
-
-## 4. The Diagnose-Then-Intervene Rule
-
-```mermaid
-flowchart TD
-    Start["Analyze Trajectory Failure Composition"] --> CheckCap{"Delivered Plans Score < 0.18?"}
-    CheckCap -- "Yes" --> ModelUpgrade["MODEL_CAPACITY_INSUFFICIENT<br/>Harness changes just shift process errors to F4.<br/>Upgrade base model / reasoning tier."]
-    CheckCap -- "No" --> CheckFric{"F2 Harness Friction >= 20%?"}
-    CheckFric -- "Yes" --> PruneGates["HARNESS_FRICTION_CALIBRATION<br/>PreToolUse gates choking agent.<br/>Relax deny rules & prune false positives."]
-    CheckFric -- "No" --> CheckProc{"Delivery < 80% OR F3 >= 30%?"}
-    CheckProc -- "Yes" --> EvolveHarness["HARNESS_EVOLUTION<br/>Inject state ledger, loop breakers, checklists.<br/>Do not train weights yet."]
-    CheckProc -- "No" --> CheckCeiling{"Delivery >= 85% AND F4 >= 40%?"}
-    CheckCeiling -- "Yes" --> TrainWeights["WEIGHT_TRAINING_CEILING<br/>Harness has hit its ceiling!<br/>Trigger 'thumbgate export-dpo' & train LoRA."]
-    CheckCeiling -- "No" --> Stable["MAINTAIN_STABLE<br/>Healthy rate >= 75%. Monitor drift."]
-```
-
----
-
-## 5. What-Model-Writes vs. What-Model-Sees Partition
-
-The paper establishes a strict boundary between what can and cannot be distilled into model weights:
-
-1. **What Model Writes (Trainable into Weights)**:
-   - System prompt instructions, output formatting constraints, tool schema preferences, prevention rules.
-   - *Result*: Internalized into LoRA adapters (attention projections + MLP layers).
-2. **What Model Sees (Must Stay in Runtime Harness)**:
-   - Rolling history window, multi-page context, state ledger logs, runtime retrieved context.
-   - *Result*: Trajectory fine-tuning *cannot* replace context that the model must perceive at runtime.
-
----
-
-## 6. CLI Usage & Integration
+## Commands
 
 ```bash
-# Run failure composition diagnostics on synthetic or default fixture
-npm run harness-ceiling:diagnostics
-
-# Output structured JSON report
 node scripts/harness-ceiling-diagnostics.js --json
-
-# Run diagnostics on custom recorded agent trace
 node scripts/harness-ceiling-diagnostics.js --trace=path/to/trace.json --json
-
-# Inspect theoretical paper mapping and constants
 node scripts/harness-ceiling-diagnostics.js --map-only
+node --test tests/harness-ceiling-diagnostics.test.js
 ```
+
+The first command exits non-zero.

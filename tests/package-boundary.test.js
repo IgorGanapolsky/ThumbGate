@@ -517,8 +517,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 599 -> 601 (2026-10-09): scripts/fiddler-control-plane-honesty.js + .agents/skills/fiddler-control-plane-honesty/
     // 601 -> 612 (2026-10-09): Strands Box diode/decider, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma (+11)
     // 612 -> 619: three recovered command/skill pairs and session-interactivity.js (+7).
-    manifest.fileCount <= 619,
-    `npm package should stay <= 619 files, got ${manifest.fileCount}`
+    // 619 -> 621 (2026-10-13): scripts/harness-ceiling-diagnostics.js + .agents/skills/harness-ceiling-diagnostics/ (+2).
+    manifest.fileCount <= 621,
+    `npm package should stay <= 621 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

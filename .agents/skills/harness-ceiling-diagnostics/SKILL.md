@@ -1,48 +1,57 @@
 ---
 name: harness-ceiling-diagnostics
 description: >
-  Harness Evolution Ceiling and Failure Composition diagnostics stolen from arXiv:2610.11655
-  (Tian et al., October 2026). Labels failed agent trajectories (F1 evidence, F2 harness friction,
-  F3 loops/process, F4 content/quality), decomposes score deltas (S = r * q_bar), bounds selection
-  optimism (s * sqrt(2 * ln(K))), and triggers weight training / DPO distillation when the harness
-  hits its ceiling. Slash: /harness-ceiling-diagnostics.
+  Harness ceiling diagnostics stolen from arXiv:2610.11655 (Tian et al., October 2026).
+  Labels a supplied trace (F1 evidence, F2 harness friction, F3 loops, F4 content),
+  decomposes S = r * q_bar, and stops a harness rewrite when delivery is saturated
+  and content failures dominate. Does not train weights. A bare run without --trace
+  or --map-only exits non-zero. Slash: /harness-ceiling-diagnostics.
 ---
 
-# Harness Evolution Ceiling & Weight Training Trigger (arXiv:2610.11655)
+# Harness ceiling diagnostics (arXiv:2610.11655)
+
+Paper: *Harness Evolution Hits a Ceiling: When Weight Training Should Begin*. Their DeepPlanning numbers stay theirs. This doctor does not run a training job.
 
 ## Goal
 
-Provide deterministic, sub-millisecond (<0.5ms) CPU-local failure composition analysis to diagnose
-whether an agent needs further **harness runtime engineering** (state ledgers, loop breakers, PreToolUse relaxation)
-or has ceilinged and requires **model weight training** (LoRA / DPO trajectory distillation).
+Classify one supplied agent trace on the local CPU. Process failures (friction, loops, missing evidence) stay a harness change. A trace that already delivers, and whose remaining failures are content, stops the rewrite.
 
-## The Four-Class Failure Taxonomy
+## Taxonomy
 
-1. **F1 (Evidence)**: Unbacked claim ratio $\ge 0.50$ or exit gate passed with unresolved checklist items.
-2. **F2 (Harness Friction)**: $\ge 10$ blocked tool calls or forced checkpoint unlock.
-3. **F3 (Execution Control / Process)**: Tool loop ($\ge 3$ repeated calls), step budget $\ge 90\%$, or timeout.
-4. **F4 (Planning / Content)**: Delivered cleanly without process exceptions, but score $< 0.50$.
-5. **Healthy**: Clean delivery with score $\ge 0.50$.
+The first signal that fires wins.
 
-## Constraints
+1. **F1 (Evidence)**: Unbacked-citation ratio ≥ 0.50, or an exit gate passed with unresolved items.
+2. **F2 (Harness friction)**: The harness blocked the agent (forced checkpoint unlock, or ≥ 10 blocked tool calls) and the score is low. Calibrate false positives. Secrets, self-protect, and outbound email stay blocked.
+3. **F3 (Execution)**: The same tool call ≥ 3 times, ≥ 90% of the step budget, or the harness terminated the run.
+4. **F4 (Content)**: None of those fired, and a delivered plan scores below 0.50.
+5. **Healthy**: A delivered plan scores ≥ 0.50.
 
-| NEVER | ALWAYS |
-| :--- | :--- |
-| Train weights when delivery is low ($r < 80\%$) | Evolve harness (ledger, loop breaker) to raise delivery first |
-| Waste compute evolving harness when $F_4$ dominates and $r \ge 85\%$ | Export trajectories to DPO via `npx thumbgate export-dpo` and fine-tune LoRA |
-| Ignore harness friction ($F_2 \ge 20\%$) | Calibrate and prune overzealous PreToolUse deny gates |
-| Distill edits that change what the model *sees* (history window, ledger) | Keep *sees* edits in harness; distill only *writes* edits (prompts, schemas, outputs) |
-| Accept noisy candidates below $0.035$ | Bound selection optimism via $s \sqrt{2 \ln K}$ and re-anchor after every accept |
+Delivery is true only when `trajectory.delivered === true`. A score or an `output` field is not delivery.
 
-## Execution
+## Rule
+
+First match wins:
+
+- Healthy share ≥ 0.75 → `MAINTAIN_STABLE`.
+- Mean quality among delivered plans < 0.18 and delivery > 0.5 → `MODEL_CAPACITY_INSUFFICIENT`. 0.18 is the paper's DeepPlanning floor, not a ThumbGate measurement. The doctor does not name a replacement model.
+- F2 ≥ 0.20 → `CALIBRATE_FALSE_POSITIVES`. The hard floor stays.
+- Delivery < 0.80, or F3 ≥ 0.30, or F1 ≥ 0.25 → `HARNESS_EVOLUTION` (state ledger, loop break).
+- Delivery ≥ 0.85 and F4 ≥ 0.40 → `CONTENT_CEILING` / `STOP_HARNESS_REWRITE`.
+- Otherwise → residual process loops in the harness, hard floor unchanged.
+
+Edits that change what the model sees (a second context page, history, a ledger, retrieval) stay in the harness. Without a caller-supplied finite sigma, selection noise is unmeasured and a score delta is not called resolvable. 0.023 and 0.035 are the paper's DeepPlanning noise figures.
+
+## Commands
 
 ```bash
-# Run diagnostics on synthetic profile or default run
+# Bare run. Exits non-zero. Does not invent a sample.
 node scripts/harness-ceiling-diagnostics.js --json
 
-# Run diagnostics on custom recorded agent trace
+# Classify a recorded trace.
 node scripts/harness-ceiling-diagnostics.js --trace=path/to/trace.json --json
 
-# Inspect theoretical paper mapping
+# Rail map. Exit 0. Labels the paper's DeepPlanning constants.
 node scripts/harness-ceiling-diagnostics.js --map-only
 ```
+
+`npm run harness-ceiling:diagnostics` is that bare script. Pass `--trace` or `--map-only`.
