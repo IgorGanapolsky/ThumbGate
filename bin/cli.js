@@ -4129,6 +4129,7 @@ const SUBCOMMAND_HELP = {
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
+  'claim-stop-check': 'Usage: npx thumbgate claim-stop-check [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nClaude Stop hook interface: reads hook JSON from stdin, rechecks configured factual claims before Claude stops.',
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
   'ci-gha-buildkite-patterns': 'Usage: npx thumbgate ci-gha-buildkite-patterns [--jobs-json=path] [--workflow=path] [--json] [--map-only]\n\nBuildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations. Does not add Buildkite.',
   'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',

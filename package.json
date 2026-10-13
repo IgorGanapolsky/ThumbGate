@@ -475,6 +475,7 @@
     ".agents/skills/harness-evolution-ceiling/",
     ".agents/skills/deeppattern-discipline-honesty-not-clone/",
     ".agents/skills/salt-code-policy-honesty-not-clone/",
+    ".agents/skills/infoq-architect-honesty-not-clone/",
     "scripts/infoq-architect-honesty.js",
     "scripts/deeppattern-discipline-honesty.js",
     "scripts/salt-code-policy-honesty.js",

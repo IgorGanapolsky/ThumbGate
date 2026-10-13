@@ -303,6 +303,11 @@ function classifyFailureType(outcome = {}) {
   if (Number(outcome.policy?.unsafeEscapes || 0) > 0) return { type: 'process', firstSignal: 'unsafe_escape' };
   if (Number(outcome.policy?.falseBlocks || 0) > 0) return { type: 'process', firstSignal: 'safe_false_block' };
 
+  if (outcome.verification?.performed === true && (outcome.verification?.passed === false || Number(outcome.verification?.unsupportedClaims || 0) > 0)) {
+    const signal = outcome.verification.passed === false ? 'verification_failed' : 'unsupported_claim';
+    return { type: 'content', firstSignal: signal };
+  }
+
   const processReason = reasons.find((r) => [
     'tool_contract_invalid',
     'tool_policy_denied',
@@ -315,21 +320,17 @@ function classifyFailureType(outcome = {}) {
     'status_cancelled',
     'status_aborted',
     'status_timeout',
+    'verification_not_performed',
+    'evidence_missing',
   ].includes(r));
   if (processReason) return { type: 'process', firstSignal: processReason };
 
   const contentReason = reasons.find((r) => [
     'verification_failed',
     'unsupported_claim',
-    'evidence_missing',
-    'verification_not_performed',
     'incorrect_escalation',
   ].includes(r));
   if (contentReason) return { type: 'content', firstSignal: contentReason };
-
-  if (outcome.verification?.passed === false) {
-    return { type: 'content', firstSignal: 'verification_failed' };
-  }
 
   return { type: 'process', firstSignal: reasons[0] || 'unspecified_failure' };
 }

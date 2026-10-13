@@ -451,8 +451,7 @@ function evaluateHarnessCeiling({ failureComposition = {}, stagnationResult = {}
   const totalFailures = Number.isFinite(failureComposition.totalFailures) ? failureComposition.totalFailures : 0;
   const isStagnant = stagnationResult.isStagnant === true;
 
-  const ceilingDetected = (totalFailures >= 3 && processRate <= 0.2 && contentRate >= 0.8) ||
-    (isStagnant && totalFailures > 0 && processRate <= 0.1 && contentRate >= 0.7);
+  const ceilingDetected = totalFailures >= 3 && processRate <= 0.2 && contentRate >= 0.8;
 
   let recommendation = 'continue_harness_evolution';
   let rationale = '';
@@ -460,7 +459,7 @@ function evaluateHarnessCeiling({ failureComposition = {}, stagnationResult = {}
   if (ceilingDetected) {
     recommendation = 'weight_training_or_model_escalation';
     rationale = `Harness evolution ceiling hit: process failures suppressed (${(processRate * 100).toFixed(1)}%), ` +
-      `content failures dominate (${(contentRate * 100).toFixed(1)}%). Switch lever from harness prompt bloat to ` +
+      `content failures dominate (${(contentRate * 100).toFixed(1)}%)${isStagnant ? ' (evolution stagnant)' : ''}. Switch lever from harness prompt bloat to ` +
       `weight training (LoRA/distillation) or model tier escalation.`;
   } else if (processRate >= 0.2) {
     recommendation = 'harness_evolution';

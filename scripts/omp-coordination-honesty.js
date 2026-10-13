@@ -80,9 +80,14 @@ function agentsAllowed(value) {
   return text === '1' || text === 'one';
 }
 
-function normPath(value) {
-  let text = String(value || '').trim().replace(/\\/g, '/');
-  text = text.replace(/^\.\//, '').replace(/\/+/g, '/');
+function normPath(value, root) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const rootDir = (typeof root === 'string' && root) ? root : process.cwd();
+  const resolved = path.isAbsolute(raw) ? path.resolve(raw) : path.resolve(rootDir, raw);
+  const rel = path.relative(rootDir, resolved);
+  const target = (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) ? rel : resolved;
+  let text = target.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+/g, '/');
   if (text.length > 1) text = text.replace(/\/$/, '');
   return text;
 }
