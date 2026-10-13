@@ -522,6 +522,18 @@ const CLI_COMMANDS = [
   }),
 
   discoveryCommand({
+    name: 'harness-ceiling',
+    aliases: ['harness-ceiling-doctor'],
+    description: 'arXiv:2610.11655 diagnose-then-intervene rail: failure composition and harness evolution ceiling detection',
+    flags: [
+      jsonFlag(),
+      { name: 'map-only', type: 'boolean', description: 'Print arXiv:2610.11655 → ThumbGate rail map' },
+      { name: 'evaluate', type: 'boolean', description: 'Evaluate failure intervention for given process and content failure counts' },
+      { name: 'process', type: 'number', description: 'Count of process failures to evaluate' },
+      { name: 'content', type: 'number', description: 'Count of content failures to evaluate' },
+    ],
+  }),
+  discoveryCommand({
     name: 'ci-gha-buildkite-patterns',
     aliases: ['ci-buildkite-patterns', 'gha-buildkite-honesty', 'first-fail-gha'],
     description: 'Buildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations (does not add Buildkite)',

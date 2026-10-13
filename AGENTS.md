@@ -260,8 +260,19 @@ node scripts/rrsi-doctor.js --json
 node scripts/rrsi-doctor.js --map-only
 node --test tests/rrsi-regularizer.test.js
 ```
-
 Details: [`docs/agents/rrsi-harness-regularization.md`](./docs/agents/rrsi-harness-regularization.md).
+
+## Harness evolution ceiling & weight training (arXiv:2610.11655 FORMAT steal)
+
+Diagnose-then-intervene rail on agent failure composition: label failed trajectories by the first signal that fires into process vs content failures. Harness evolution (rules, gates, tool contracts) repairs process failures; when content failures dominate (≥80%) and process failures drop (≤20%), harness evolution hits its ceiling. Switch the lever from prompt/rule bloat to weight training (LoRA/distillation) or named-model route escalation. Keep runtime security gates in the harness; train only formatting/planning templates. Never add prompt rules to solve reasoning limits.
+
+```bash
+npx thumbgate harness-ceiling --json
+npx thumbgate harness-ceiling --map-only --json
+npx thumbgate harness-ceiling --evaluate --process=0 --content=8 --json
+```
+
+Skill: `.agents/skills/harness-evolution-ceiling/SKILL.md`. Details: `docs/agents/harness-evolution-ceiling.md`.
 
 ## Mintlify State of Knowledge honesty (FORMAT steal)
 

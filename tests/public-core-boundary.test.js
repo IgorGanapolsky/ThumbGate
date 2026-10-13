@@ -320,7 +320,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 601 -> 612 (2026-10-09): Strands Box diode/decider, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma (+11)
   // 612 -> 619 (2026-10-12): three recovered command/skill pairs and session-interactivity.js (+7)
   // 619 -> 621 (2026-10-13): scripts/omp-coordination-honesty.js + omp-coordination-honesty-not-clone skill (+2)
-  const CEILING = 621;
+  // 621 -> 622 (2026-10-13): scripts/harness-ceiling-doctor.js + harness-evolution-ceiling skill (+1 relative to omp clean pack)
+  const CEILING = 622;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

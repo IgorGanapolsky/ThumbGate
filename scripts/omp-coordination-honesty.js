@@ -39,6 +39,7 @@ const RAIL_MAP = Object.freeze([
   { omp: 'Collab host stays authoritative; default share is view-only', thumbgate: 'Observation is view-only. Host stays local.' },
   { omp: 'Crash recovery continues completed entries and does not invent an interrupted result', thumbgate: 'An interrupted tool entry that also carries a result fails.' },
   { omp: 'Named provider/model-id; Auto and Fast are not a route', thumbgate: 'Named model. Fast off. Agents one. Install none.' },
+  { omp: 'Diagnose failure composition before prompt bloat; named-model escalation at ceiling (arXiv:2610.11655)', thumbgate: 'When content failures dominate (>=80%) and process failures are low, escalate named model tier instead of bloating AGENTS.md/prompts.' },
 ]);
 
 function normalizeBoolean(value) {
@@ -254,6 +255,9 @@ function scanText(text, findings) {
   if (concurrency && Number(concurrency[1]) > 1) {
     findings.push(finding('agent_fanout', 'Agents stays one. omp maxConcurrency 32 is refused.'));
   }
+  if (/\b(?:auto[- ]?rule|prompt[- ]?rule|add[- ]?rule)\b/i.test(body) && /\b(?:content[- ]?failure|reasoning[- ]?failure|harness[- ]?ceiling)\b/i.test(body) && !/model|weight|lora|distill/i.test(body)) {
+    findings.push(finding('harness_ceiling_prompt_bloat', 'Harness ceiling reached: content/reasoning failures cannot be resolved with prompt rules. Escalate named model route or train weights (arXiv:2610.11655).'));
+  }
 }
 
 function validateHandoff(doc, findings) {
@@ -299,6 +303,13 @@ function validateHandoff(doc, findings) {
     if (isInterrupted(entry) && hasInventedResult(entry)) {
       findings.push(finding('invented_interrupted_result', 'An interrupted tool call must not carry an invented result. Continue completed entries only.'));
       break;
+    }
+  }
+  if (doc.failureComposition && typeof doc.failureComposition === 'object') {
+    const p = Number(doc.failureComposition.processFailureRate || 0);
+    const c = Number(doc.failureComposition.contentFailureRate || 0);
+    if (c >= 0.8 && p <= 0.2 && doc.action === 'add_prompt_rule') {
+      findings.push(finding('harness_ceiling_prompt_bloat', 'Content failures dominate (>=80%). Do not add prompt rules; escalate named model route or train weights (arXiv:2610.11655).'));
     }
   }
 }
@@ -431,6 +442,31 @@ function runCli(argv = process.argv.slice(2)) {
   if (report.status === 'fail') return 1;
   return 0;
 }
+function diagnoseFailureIntervention({ processFailures = 0, contentFailures = 0, totalFailures = 0 } = {}) {
+  const total = totalFailures || (processFailures + contentFailures);
+  if (total === 0) return { ceilingHit: false, intervention: 'none', rationale: 'No failures recorded.' };
+  const pRate = processFailures / total;
+  const cRate = contentFailures / total;
+  if (total >= 3 && cRate >= 0.8 && pRate <= 0.2) {
+    return {
+      ceilingHit: true,
+      intervention: 'model_tier_escalation_or_weight_training',
+      rationale: `Content failures dominate (${(cRate * 100).toFixed(1)}%). Harness evolution ceiling hit per arXiv:2610.11655. Escalate named model or train weights instead of adding prompt rules.`,
+    };
+  }
+  if (pRate >= 0.2) {
+    return {
+      ceilingHit: false,
+      intervention: 'harness_evolution',
+      rationale: `Process failures present (${(pRate * 100).toFixed(1)}%). Harness evolution has high ROI.`,
+    };
+  }
+  return {
+    ceilingHit: false,
+    intervention: 'monitor',
+    rationale: 'Failure distribution inconclusive.',
+  };
+}
 
 module.exports = {
   SOURCE_URL,
@@ -438,6 +474,7 @@ module.exports = {
   RAIL_MAP,
   buildOmpCoordinationHonestyReport,
   formatOmpCoordinationHonestyReport,
+  diagnoseFailureIntervention,
   runCli,
 };
 

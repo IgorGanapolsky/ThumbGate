@@ -270,8 +270,8 @@ const path = require('node:path');
 // 601 → 612 (2026-10-09): Strands Box diode/decider, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma (+11).
 // 612 -> 619 (2026-10-12): three recovered command/skill pairs and session-interactivity.js (+7).
 // 619 -> 621 (2026-10-13): scripts/omp-coordination-honesty.js + omp-coordination-honesty-not-clone skill (+2).
-const BASELINE_FILE_COUNT = 621;
-
+// 621 -> 622 (2026-10-13): scripts/harness-ceiling-doctor.js + harness-evolution-ceiling skill (+1 relative to omp clean pack).
+const BASELINE_FILE_COUNT = 622;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {

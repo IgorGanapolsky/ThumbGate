@@ -518,8 +518,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 601 -> 612 (2026-10-09): Strands Box diode/decider, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma (+11)
     // 612 -> 619: three recovered command/skill pairs and session-interactivity.js (+7).
     // 619 -> 621 (2026-10-13): scripts/omp-coordination-honesty.js + omp-coordination-honesty-not-clone skill (+2).
-    manifest.fileCount <= 621,
-    `npm package should stay <= 621 files, got ${manifest.fileCount}`
+    // 621 -> 622 (2026-10-13): scripts/harness-ceiling-doctor.js + harness-evolution-ceiling skill (+1 relative to omp clean pack).
+    manifest.fileCount <= 622,
+    `npm package should stay <= 622 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -769,9 +770,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 8.98 MB -> 9.05 MB (2026-10-09): fiddler-control-plane-honesty.js + skill. Local pack 9,020,887; CI slack.
   // Bumped 9.05 MB -> 9.16 MB (2026-10-09): Strands Box, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma. Local pack 9,142,709; CI slack.
   // Bumped 9.16 MB -> 9.25 MB (2026-10-12): recovered features measure 9,204,239 unpacked; CI slack.
-  // 2026-10-13: omp doctor + skill add 20,594 bytes. Clean pack (tracked files + those two) is 9,228,207. Cap stays 9.25 MB.
-    manifest.unpackedSize <= 9_250_000,
-    `npm package should stay <= 9.25 MB unpacked, got ${manifest.unpackedSize}`
+  // 2026-10-13: omp doctor + skill add 20,594 bytes. Clean pack (tracked files + those two) is 9,228,207.
+  // 2026-10-13: harness-ceiling doctor + skill add ~15 KB. Measured clean pack is 9,253,595 bytes. Bump cap 9.25 MB -> 9.28 MB.
+    manifest.unpackedSize <= 9_280_000,
+    `npm package should stay <= 9.28 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
