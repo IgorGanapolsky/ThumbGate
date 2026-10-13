@@ -67,7 +67,24 @@ function normalizeTaskOutcome(input = {}, now = new Date()) {
   const verdict = evaluateWorkingVerdict(receipt);
   receipt.working = verdict.working;
   receipt.workingReasons = verdict.reasons;
-  receipt.receiptHash = hashReceipt(receipt);
+  const isExplicitType = Boolean(input.failure && input.failure.type);
+  const isExplicitSignal = Boolean(input.failure && input.failure.firstSignal);
+  if (!verdict.working) {
+    const classification = classifyFailureType(receipt);
+    if (!receipt.failure) {
+      receipt.failure = {
+        type: classification.type,
+        firstSignal: classification.firstSignal,
+      };
+    } else {
+      if (!receipt.failure.type) receipt.failure.type = classification.type;
+      if (!receipt.failure.firstSignal) receipt.failure.firstSignal = classification.firstSignal;
+    }
+  }
+  receipt.receiptHash = hashReceipt(receipt, {
+    excludeType: !isExplicitType,
+    excludeSignal: !isExplicitSignal,
+  });
   return receipt;
 }
 
@@ -156,7 +173,39 @@ function calculateTaskOutcomeMetrics(outcomes = []) {
   const latencies = valid.map((entry) => Number(entry.efficiency?.latencyMs)).filter(Number.isFinite);
   const totalCostUsd = valid.reduce((sum, entry) => sum + nonNegativeNumber(entry.efficiency?.costUsd), 0);
   const businessOutcomes = aggregateBusinessOutcomes(valid);
+  const nonWorking = valid.filter((entry) => !entry.working || entry.status === 'failed');
+  let processFailureCount = 0;
+  let contentFailureCount = 0;
+  for (const entry of nonWorking) {
+    const classification = classifyFailureType(entry);
+    if (classification.type === 'process') processFailureCount += 1;
+    else if (classification.type === 'content') contentFailureCount += 1;
+  }
+  const totalFailures = nonWorking.length;
+  const processFailureRate = rate(processFailureCount, totalFailures);
+  const contentFailureRate = rate(contentFailureCount, totalFailures);
 
+  let recommendedIntervention = 'none';
+  const harnessCeiling = totalFailures >= 3 && (processFailureRate || 0) <= 0.2 && (contentFailureRate || 0) >= 0.8;
+  if (totalFailures > 0) {
+    if (harnessCeiling) {
+      recommendedIntervention = 'weight_training_or_model_escalation';
+    } else if ((processFailureRate || 0) >= 0.2) {
+      recommendedIntervention = 'harness_evolution';
+    } else {
+      recommendedIntervention = 'mixed_investigation';
+    }
+  }
+
+  const failureComposition = {
+    totalFailures,
+    processFailures: processFailureCount,
+    contentFailures: contentFailureCount,
+    processFailureRate,
+    contentFailureRate,
+    harnessCeiling,
+    recommendedIntervention,
+  };
   return {
     generatedAt: new Date().toISOString(),
     sampleSize: valid.length,
@@ -217,7 +266,86 @@ function calculateTaskOutcomeMetrics(outcomes = []) {
         : null,
     },
     businessOutcomes,
+    failureComposition,
   };
+}
+
+/**
+ * arXiv:2610.11655 First-Signal-Fires Failure Classifier:
+ * Separates process failures (repaired by harness evolution) from
+ * content failures (repaired by weight training or model escalation).
+ */
+function classifyFailureType(outcome = {}) {
+  if (outcome.working && outcome.status === 'completed' && outcome.verification?.passed) {
+    return { type: 'none', firstSignal: null };
+  }
+
+  const explicitType = String(outcome.failure?.type || '').toLowerCase();
+  if (explicitType === 'process' || explicitType === 'content') {
+    return { type: explicitType, firstSignal: outcome.failure?.firstSignal || `explicit_${explicitType}` };
+  }
+
+  const explicitCategory = String(outcome.failure?.category || '').toLowerCase();
+  if (['process', 'contract', 'runtime', 'timeout', 'tool', 'policy', 'syntax'].includes(explicitCategory)) {
+    return { type: 'process', firstSignal: `category_${explicitCategory}` };
+  }
+  if (['content', 'reasoning', 'planning', 'logic', 'domain', 'quality'].includes(explicitCategory)) {
+    return { type: 'content', firstSignal: `category_${explicitCategory}` };
+  }
+
+  const reasons = Array.isArray(outcome.workingReasons) ? outcome.workingReasons : [];
+  const toolCalls = Array.isArray(outcome.toolCalls) ? outcome.toolCalls : [];
+
+  // Check process failure signals first (first signal that fires)
+  for (const call of toolCalls) {
+    if (!call.contractValid) return { type: 'process', firstSignal: `tool_contract_invalid:${call.name}` };
+    if (!call.allowed) return { type: 'process', firstSignal: `tool_policy_denied:${call.name}` };
+    if (!call.succeeded) return { type: 'process', firstSignal: `tool_call_failed:${call.name}` };
+    if (call.duplicateSideEffect) return { type: 'process', firstSignal: `duplicate_side_effect:${call.name}` };
+  }
+
+  if (Number(outcome.policy?.violations || 0) > 0) return { type: 'process', firstSignal: 'policy_violation' };
+  if (Number(outcome.policy?.unsafeEscapes || 0) > 0) return { type: 'process', firstSignal: 'unsafe_escape' };
+  if (Number(outcome.policy?.falseBlocks || 0) > 0) return { type: 'process', firstSignal: 'safe_false_block' };
+
+  const statusReason = reasons.find((r) => [
+    'status_failed',
+    'status_cancelled',
+    'status_aborted',
+    'status_timeout',
+  ].includes(r));
+  if (statusReason) return { type: 'process', firstSignal: statusReason };
+
+  if (outcome.verification?.performed === true && (outcome.verification?.passed === false || Number(outcome.verification?.unsupportedClaims || 0) > 0)) {
+    const signal = outcome.verification.passed === false ? 'verification_failed' : 'unsupported_claim';
+    return { type: 'content', firstSignal: signal };
+  }
+
+  const processReason = reasons.find((r) => [
+    'tool_contract_invalid',
+    'tool_policy_denied',
+    'tool_call_failed',
+    'duplicate_side_effect',
+    'policy_violation',
+    'unsafe_escape',
+    'safe_false_block',
+    'status_failed',
+    'status_cancelled',
+    'status_aborted',
+    'status_timeout',
+    'verification_not_performed',
+  ].includes(r));
+  if (processReason) return { type: 'process', firstSignal: processReason };
+
+  const contentReason = reasons.find((r) => [
+    'verification_failed',
+    'unsupported_claim',
+    'evidence_missing',
+    'incorrect_escalation',
+  ].includes(r));
+  if (contentReason) return { type: 'content', firstSignal: contentReason };
+
+  return { type: 'process', firstSignal: reasons[0] || 'unspecified_failure' };
 }
 
 function recordOutcomeTrace(receipt, options) {
@@ -279,6 +407,8 @@ function normalizeFailure(value) {
   if (!value) return undefined;
   return {
     category: optionalString(value.category),
+    type: optionalString(value.type),
+    firstSignal: optionalString(value.firstSignal),
     recovered: value.recovered === true,
     repeated: value.repeated === true,
     rolledBack: value.rolledBack === true,
@@ -328,10 +458,24 @@ function aggregateBusinessOutcomes(outcomes) {
   return Array.from(groups.values()).map((entry) => ({ ...entry, value: roundMetric(entry.value) }));
 }
 
-function hashReceipt(receipt) {
+function hashReceipt(receipt, options = {}) {
   const copy = { ...receipt };
   delete copy.receiptHash;
   delete copy.recordedAt;
+  if (copy.failure) {
+    const failureCopy = { ...copy.failure };
+    if (options.excludeType ?? false) {
+      delete failureCopy.type;
+    }
+    if (options.excludeSignal ?? false) {
+      delete failureCopy.firstSignal;
+    }
+    if (Object.keys(failureCopy).length === 0) {
+      delete copy.failure;
+    } else {
+      copy.failure = failureCopy;
+    }
+  }
   return crypto.createHash('sha256').update(stableStringify(copy)).digest('hex');
 }
 
@@ -416,6 +560,7 @@ if (isCliInvocation()) {
 module.exports = {
   TASK_OUTCOME_SCHEMA,
   calculateTaskOutcomeMetrics,
+  classifyFailureType,
   evaluateWorkingVerdict,
   getTaskOutcome,
   getTaskOutcomesPath,
