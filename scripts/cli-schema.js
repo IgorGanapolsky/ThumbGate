@@ -522,6 +522,19 @@ const CLI_COMMANDS = [
   }),
 
   discoveryCommand({
+    name: 'decisive-step-honesty',
+    aliases: [],
+    description: 'Score only the first fail-to-pass edit; does not train',
+    flags: [
+      jsonFlag(),
+      { name: 'strict', type: 'boolean', description: 'Exit non-zero on fail' },
+      { name: 'claim', type: 'string', description: 'Claim to audit' },
+      { name: 'trace', type: 'string', description: 'Trace JSON array, {steps:[]}, {actions:[]}, or a file path' },
+      { name: 'map-only', type: 'boolean', description: 'Print decisive-step rail map' },
+    ],
+  }),
+
+  discoveryCommand({
     name: 'harness-ceiling',
     aliases: ['harness-ceiling-doctor'],
     description: 'arXiv:2610.11655 diagnose-then-intervene rail: failure composition and harness evolution ceiling detection',
