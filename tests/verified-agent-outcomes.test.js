@@ -104,6 +104,20 @@ test('task outcomes are idempotent and reject conflicting duplicate writes', () 
       () => recordTaskOutcome(verifiedReceipt({ goal: 'Conflicting goal' }), { feedbackDir, recordTrace: false }),
       { code: 'THUMBGATE_IDEMPOTENCY_CONFLICT' },
     );
+
+    // Failed outcome replay preserves idempotency without conflict from derived failure fields
+    const failedTask = {
+      taskId: 'fail-task-1',
+      idempotencyKey: 'fail-task-1',
+      goal: 'Failed task goal',
+      status: 'failed',
+      verification: { performed: true, passed: false, evidence: ['failed test'] },
+    };
+    const failFirst = recordTaskOutcome(failedTask, { feedbackDir, recordTrace: false });
+    assert.equal(failFirst.recorded, true);
+    const failDuplicate = recordTaskOutcome(failedTask, { feedbackDir, recordTrace: false });
+    assert.equal(failDuplicate.recorded, false);
+    assert.equal(failDuplicate.duplicate, true);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
