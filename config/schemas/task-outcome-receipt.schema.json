@@ -165,6 +165,18 @@
           "type": "string",
           "maxLength": 200
         },
+        "type": {
+          "type": "string",
+          "enum": [
+            "process",
+            "content",
+            "none"
+          ]
+        },
+        "firstSignal": {
+          "type": "string",
+          "maxLength": 200
+        },
         "recovered": {
           "type": "boolean"
         },

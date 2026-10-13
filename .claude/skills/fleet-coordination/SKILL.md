@@ -68,3 +68,12 @@ before it happens.
 ## Concurrent Agent-State writes (HARD)
 
 Never write to `Agent-State/<other-agent>.md`. Each session appends only its own `Agent-State/<this-agent>.md` (or `Handoffs/*<this-agent>*`). Two same-kind sessions must use distinct filenames (e.g. `grok.md` vs `grok-<session>.md`) or an atomic claim/lease before overwrite.
+
+## Session handoff (omp.sh, do not install)
+
+A handoff is a saved state-and-next file. Starting a new session keeps the previous one. A child does not inherit the parent transcript and writes files the parent does not write. Observation is view-only. Do not install omp or open a link that can prompt or interrupt the host.
+
+```bash
+npx thumbgate omp-coordination-honesty --json --map-only
+```
+

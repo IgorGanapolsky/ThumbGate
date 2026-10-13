@@ -44,6 +44,7 @@ Non-negotiable rules:
 4. Never write to another agent's state file. Commit only your own vault file
    via PR; the vault has its own branch protection.
 5. Do not duplicate an open PR or an open Linear issue. Claim first, then work.
+6. A handoff is a saved state-and-next file. A new session keeps the old one. Children get disjoint files and do not inherit the parent transcript. Observation is view-only. Do not install omp or open a link that can drive the host. Check with `npx thumbgate omp-coordination-honesty --json --map-only`.
 
 For session closure:
 
@@ -259,8 +260,19 @@ node scripts/rrsi-doctor.js --json
 node scripts/rrsi-doctor.js --map-only
 node --test tests/rrsi-regularizer.test.js
 ```
-
 Details: [`docs/agents/rrsi-harness-regularization.md`](./docs/agents/rrsi-harness-regularization.md).
+
+## Harness evolution ceiling & weight training (arXiv:2610.11655 FORMAT steal)
+
+Diagnose-then-intervene rail on agent failure composition: label failed trajectories by the first signal that fires into process vs content failures. Harness evolution (rules, gates, tool contracts) repairs process failures; when content failures dominate (≥80%) and process failures drop (≤20%), harness evolution hits its ceiling. Switch the lever from prompt/rule bloat to weight training (LoRA/distillation) or named-model route escalation. Keep runtime security gates in the harness; train only formatting/planning templates. Never add prompt rules to solve reasoning limits.
+
+```bash
+npx thumbgate harness-ceiling --json
+npx thumbgate harness-ceiling --map-only --json
+npx thumbgate harness-ceiling --evaluate --process=0 --content=8 --json
+```
+
+Skill: `.agents/skills/harness-evolution-ceiling/SKILL.md`. Details: `docs/agents/harness-evolution-ceiling.md`.
 
 ## Mintlify State of Knowledge honesty (FORMAT steal)
 
@@ -285,6 +297,15 @@ npx thumbgate fiddler-control-plane-honesty --tool-name Bash --command "git push
 
 Skill: `.agents/skills/fiddler-control-plane-honesty/SKILL.md`. Details: `docs/agents/fiddler-control-plane-honesty.md`.
 
+## omp coordination honesty (FORMAT steal)
+
+omp.sh sessions, subagents, and collab are a coordination format. A new session keeps the previous one. A handoff is saved state and the next step. Children write disjoint files and do not inherit the parent transcript. Observation is view-only. One named model. Do not install omp. Do not open a link that can prompt or interrupt the host.
+
+```bash
+npx thumbgate omp-coordination-honesty --json --map-only
+```
+
+Skill: `.agents/skills/omp-coordination-honesty-not-clone/SKILL.md`. Details: `docs/agents/omp-coordination-honesty.md`.
 
 ## Canonical Product Scope
 
