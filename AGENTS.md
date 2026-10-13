@@ -285,6 +285,20 @@ npx thumbgate fiddler-control-plane-honesty --tool-name Bash --command "git push
 
 Skill: `.agents/skills/fiddler-control-plane-honesty/SKILL.md`. Details: `docs/agents/fiddler-control-plane-honesty.md`.
 
+## Harness ceiling & weight training trigger (FORMAT steal)
+
+Failure composition diagnostics and weight-training trigger from arXiv:2610.11655 (Tian et al., October 2026). Labels failed trajectories by first signal: F1 (evidence/unbacked), F2 (harness friction/blocked calls), F3 (execution loops/step limits), and F4 (planning/content quality). Proves harness evolution ceilings at F4; triggers LoRA/DPO weight training when delivery saturates (r >= 0.85). Enforces Proposition 1 selection optimism bound ($s \sqrt{2 \ln K}$) and writes-vs-sees edit partitioning.
+
+```bash
+npm run harness-ceiling:diagnostics
+node scripts/harness-ceiling-diagnostics.js --json
+node scripts/harness-ceiling-diagnostics.js --map-only
+node --test tests/harness-ceiling-diagnostics.test.js
+```
+
+Skill: `.agents/skills/harness-ceiling-diagnostics/SKILL.md`. Details: `docs/agents/harness-ceiling-weight-training.md`.
+
+
 
 ## Canonical Product Scope
 

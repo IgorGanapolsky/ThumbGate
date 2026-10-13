@@ -93,3 +93,7 @@ Five planes on existing rails: datapacks (4-field scope), episodic memory, rubri
 
 Knowledge as operational infrastructure: pre-action freshness diodes, poison prevention (deprecated APIs, unsafe scripts), and non-docs surface federation. Never vendor Mintlify SaaS or build docsite generators. `node scripts/mintlify-knowledge-honesty.js --json` · skill `mintlify-knowledge-honesty-not-clone`.
 
+## Harness ceiling & weight training honesty
+
+Four-class failure taxonomy (F1 evidence, F2 friction, F3 execution, F4 content) from arXiv:2610.11655. Mathematically identifies when harness evolution ceilings at F4 and triggers LoRA/DPO weight training ($r \ge 0.85$). Enforces Proposition 1 selection optimism bound ($s \sqrt{2 \ln K}$) and writes-vs-sees edit partitioning. `npm run harness-ceiling:diagnostics` · skill `harness-ceiling-diagnostics`.
+
