@@ -20,7 +20,7 @@ When developers and autonomous agents attempt to improve long-horizon task perfo
    - Once process failures drop, the remaining bottlenecks are **Content Failures** (nuanced domain judgment, complex reasoning, architectural intuition).
    - Trying to fix content failures with prompt additions yields **zero or negative ROI**: it bloats context, slows latency, causes instruction distraction, and degrades performance.
 
-2. ** premature Weight Training:** Operators attempt fine-tuning or LoRA adaptation while the harness is still leaking basic process failures (e.g. malformed tool arguments, unhandled exceptions, infinite loops). Training on noisy, process-failing trajectories bakes bad execution habits into model weights.
+2. **Premature Weight Training:** Operators attempt fine-tuning or LoRA adaptation while the harness is still leaking basic process failures (e.g. malformed tool arguments, unhandled exceptions, infinite loops). Training on noisy, process-failing trajectories bakes bad execution habits into model weights.
 
 **The Solution:** The **Diagnose-Then-Intervene Rule**:
 - **First Signal Fires:** Label every failed trajectory by the *first signal that fires* to separate Process Failures from Content Failures.

@@ -499,7 +499,9 @@ function partitionAcceptedEdits(edits = []) {
   const TRAINABLE_KEYWORDS = /style|format|prompt|tone|template|convention|plan_format|reasoning_step|cot|persona/i;
 
   for (const edit of edits) {
-    const text = typeof edit === 'string' ? edit : (edit.name || edit.description || edit.rule || JSON.stringify(edit));
+    const text = typeof edit === 'string'
+      ? edit
+      : [edit.name, edit.description, edit.rule].filter(Boolean).join(' ') || JSON.stringify(edit);
     if (RUNTIME_KEYWORDS.test(text)) {
       keepInRuntimeHarness.push(edit);
     } else if (TRAINABLE_KEYWORDS.test(text)) {

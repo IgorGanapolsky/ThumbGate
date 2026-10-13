@@ -67,6 +67,7 @@ function normalizeTaskOutcome(input = {}, now = new Date()) {
   const verdict = evaluateWorkingVerdict(receipt);
   receipt.working = verdict.working;
   receipt.workingReasons = verdict.reasons;
+  receipt.receiptHash = hashReceipt(receipt);
   if (!verdict.working) {
     const classification = classifyFailureType(receipt);
     if (!receipt.failure) {
@@ -79,7 +80,6 @@ function normalizeTaskOutcome(input = {}, now = new Date()) {
       if (!receipt.failure.firstSignal) receipt.failure.firstSignal = classification.firstSignal;
     }
   }
-  receipt.receiptHash = hashReceipt(receipt);
   return receipt;
 }
 
@@ -448,6 +448,16 @@ function hashReceipt(receipt) {
   const copy = { ...receipt };
   delete copy.receiptHash;
   delete copy.recordedAt;
+  if (copy.failure) {
+    const failureCopy = { ...copy.failure };
+    delete failureCopy.type;
+    delete failureCopy.firstSignal;
+    if (Object.keys(failureCopy).length === 0) {
+      delete copy.failure;
+    } else {
+      copy.failure = failureCopy;
+    }
+  }
   return crypto.createHash('sha256').update(stableStringify(copy)).digest('hex');
 }
 

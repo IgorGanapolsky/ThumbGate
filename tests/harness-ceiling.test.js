@@ -259,6 +259,12 @@ test('partitionAcceptedEdits separates trainable behaviors from runtime security
   assert.ok(keepInRuntimeHarness.some((e) => e.name === 'gate-deny-force-push'));
   assert.ok(keepInRuntimeHarness.some((e) => e.name === 'single-writer-lease'));
   assert.ok(keepInRuntimeHarness.some((e) => e.name === 'sandbox-fence-bounds'));
+
+  // Edge case: trainable name but security rule -> stays in runtime harness
+  const mixedEdit = [{ name: 'response-template', rule: 'verify signature before deploy' }];
+  const mixedResult = partitionAcceptedEdits(mixedEdit);
+  assert.equal(mixedResult.keepInRuntimeHarness.length, 1);
+  assert.equal(mixedResult.trainableIntoWeights.length, 0);
 });
 
 test('omp.sh coordination prevents prompt bloat when content ceiling is reached', () => {
