@@ -107,7 +107,7 @@ function collectOwners(writes) {
       continue;
     }
     if (!row || typeof row !== 'object') continue;
-    const paths = asArray(row.paths || row.path || row.files).map(normPath).filter(Boolean);
+    const paths = asArray(row.paths || row.path || row.files).map((p) => normPath(p)).filter(Boolean);
     owners.push({ owner: String(row.owner || row.agent || 'unknown'), paths });
   }
   return owners;
