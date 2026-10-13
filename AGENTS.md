@@ -274,6 +274,16 @@ npx thumbgate harness-ceiling --evaluate --process=0 --content=8 --json
 
 Skill: `.agents/skills/harness-evolution-ceiling/SKILL.md`. Details: `docs/agents/harness-evolution-ceiling.md`.
 
+## Decisive-step evaluation (NVIDIA arXiv:2610.10478 FORMAT steal)
+
+Replaying trajectories and rerunning tests after every code edit isolates the decisive step: the first edit whose cumulative patch flips the repository from failing to passing. Scoring candidate base models on this decisive action (via Decisive BPB and Patch MCQ contrastive discrimination) predicts post-trained coding skill at Spearman $\rho = 0.964$; all-step averaging dilutes signal with noise ($\rho = 0.915$) and mis-orders models.
+
+```bash
+npx thumbgate decisive-step --json
+npx thumbgate decisive-step --map-only --json
+```
+
+Skill: `.agents/skills/decisive-step-evaluator/SKILL.md`. Details: `docs/agents/decisive-step-evaluator.md`.
 ## Mintlify State of Knowledge honesty (FORMAT steal)
 
 Treat knowledge as living operational infrastructure: pre-action freshness diodes (TTL ≤ 90d), downstream poison prevention (deprecated APIs, dangerous scripts, plaintext tokens), and non-docs surface federation. Never vendor Mintlify SaaS, build docsite generators, or claim external 15k stats.
