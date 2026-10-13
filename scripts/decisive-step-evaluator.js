@@ -44,16 +44,22 @@ function findDecisiveStep(steps = [], options = {}) {
     };
   }
 
-  let previousPassed = options.initialTestStatus === 'pass' || false;
+  let previousPassed = options.initialTestStatus === 'pass'
+    ? true
+    : options.initialTestStatus === 'fail'
+      ? false
+      : null;
   let decisiveIndex = -1;
   const rejectedSteps = [];
 
   for (let i = 0; i < steps.length; i += 1) {
     const step = steps[i];
-    const passed = step.testsPassed === true ||
+    const passed = Boolean(
+      step.testsPassed === true ||
       step.testStatus === 'pass' ||
       step.verificationPassed === true ||
-      (step.verification && step.verification.passed === true);
+      (step.verification && step.verification.passed === true)
+    );
 
     const isCodeEdit = Boolean(
       step.patch ||
@@ -63,12 +69,17 @@ function findDecisiveStep(steps = [], options = {}) {
       (step.action && /edit|patch|write|modify/i.test(String(step.action)))
     );
 
-    if (!previousPassed && passed && isCodeEdit) {
+    const hasTestOutcome = step.testsPassed !== undefined ||
+      step.testStatus !== undefined ||
+      step.verificationPassed !== undefined ||
+      (step.verification && step.verification.passed !== undefined);
+
+    if (previousPassed === false && passed && isCodeEdit) {
       decisiveIndex = i;
       break;
     }
 
-    if (!passed && isCodeEdit) {
+    if (hasTestOutcome && !passed && isCodeEdit) {
       rejectedSteps.push({
         index: i,
         step,
@@ -77,7 +88,9 @@ function findDecisiveStep(steps = [], options = {}) {
       });
     }
 
-    previousPassed = passed;
+    if (hasTestOutcome) {
+      previousPassed = passed;
+    }
   }
 
   if (decisiveIndex === -1) {

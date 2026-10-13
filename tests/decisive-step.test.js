@@ -54,7 +54,21 @@ test('findDecisiveStep rejects trajectories without a fail->pass flip', () => {
   assert.equal(rPassing.hasDecisiveStep, false);
   assert.ok(rPassing.reason.includes('already passing'));
 
-  // 3. Empty trajectory
+  // 3. First passing edit without observed failure
+  const firstPass = findDecisiveStep([
+    { stepNumber: 1, tool: 'edit', patch: 'x = 1', testsPassed: true },
+  ]);
+  assert.equal(firstPass.hasDecisiveStep, false);
+
+  // 4. Statusless steps do not reset baseline when initially passing
+  const statuslessStep = findDecisiveStep([
+    { stepNumber: 1, tool: 'bash', action: 'ls' },
+    { stepNumber: 2, tool: 'edit', patch: 'x = 2', testsPassed: true },
+  ], { initialTestStatus: 'pass' });
+  assert.equal(statuslessStep.hasDecisiveStep, false);
+  assert.ok(statuslessStep.reason.includes('already passing'));
+
+  // 5. Empty trajectory
   const rEmpty = findDecisiveStep([]);
   assert.equal(rEmpty.hasDecisiveStep, false);
 });
