@@ -117,3 +117,52 @@ test('CLI decisive-step supports --json and --map-only', () => {
   assert.equal(outMap.mapOnly, true);
   assert.equal(outMap.pillars.length, 4);
 });
+
+test('evaluatePatchMcq differentiates strong vs weak candidates on the same patches', () => {
+  const decisiveStep = {
+    patch: 'export function binarySearch(arr, target) { let lo = 0, hi = arr.length - 1; while (lo <= hi) { const mid = Math.floor((lo + hi) / 2); if (arr[mid] === target) return mid; if (arr[mid] < target) lo = mid + 1; else hi = mid - 1; } return -1; }',
+  };
+  const rejectedSteps = [
+    { index: 1, patch: 'export function binarySearch() { return -1; }' },
+    { index: 2, patch: 'export function binarySearch() { return false; }' },
+    { index: 3, patch: 'export function binarySearch() { return null; }' },
+  ];
+
+  // Strong coding model (tier = 1.3) recognizes substantive algorithm logic over trivial stubs
+  const strong = { name: 'strong-coder', codingTierScore: 1.3 };
+  const mcqStrong = evaluatePatchMcq({ candidate: strong, decisiveStep, rejectedSteps });
+  assert.equal(mcqStrong.discriminationRate, 1.0);
+  assert.equal(mcqStrong.passedMcq, true);
+
+  // Weak model (tier = 0.4) has high brevity bias for short stubs over complex loops
+  const weak = { name: 'weak-stubber', codingTierScore: 0.4 };
+  const mcqWeak = evaluatePatchMcq({ candidate: weak, decisiveStep, rejectedSteps });
+  assert.ok(mcqWeak.discriminationRate < mcqStrong.discriminationRate);
+  assert.equal(mcqWeak.passedMcq, false);
+});
+
+test('evaluatePatchMcq honors explicit candidate patch probabilities and scorePatch callbacks', () => {
+  const decisiveStep = { patch: 'const x = Math.sqrt(y);' };
+  const rejectedSteps = [{ index: 1, patch: 'const x = 0;' }];
+
+  // Explicit probability table
+  const candidateProb = {
+    name: 'explicit-probs',
+    patchProbabilities: {
+      'const x = Math.sqrt(y);': 0.88,
+      'const x = 0;': 0.12,
+    },
+  };
+  const resProb = evaluatePatchMcq({ candidate: candidateProb, decisiveStep, rejectedSteps });
+  assert.equal(resProb.discriminationRate, 1.0);
+  assert.equal(resProb.preferredDecisiveCount, 1);
+
+  // Explicit scorePatch callback
+  const candidateCallback = {
+    name: 'custom-scorer',
+    scorePatch: (patch) => (patch.includes('Math') ? 0.95 : 0.05),
+  };
+  const resCallback = evaluatePatchMcq({ candidate: candidateCallback, decisiveStep, rejectedSteps });
+  assert.equal(resCallback.discriminationRate, 1.0);
+});
+

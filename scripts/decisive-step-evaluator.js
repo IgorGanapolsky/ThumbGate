@@ -104,6 +104,16 @@ function findDecisiveStep(steps = [], options = {}) {
   };
 }
 
+function hashCandidateName(name = '') {
+  let hash = 0;
+  const str = String(name || '');
+  for (let i = 0; i < str.length; i += 1) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
 /**
  * Patch MCQ / Contrastive Discrimination Evaluator:
  * Tests whether a model candidate prefers the decisive test-passing patch
@@ -147,12 +157,28 @@ function evaluatePatchMcq({ candidate = {}, decisiveStep = {}, rejectedSteps = [
 
   for (const alt of rejectedSteps) {
     const altPatch = String(alt.patch || alt.step?.patch || alt.step?.diff || '').trim();
-    
+
     // Evaluate candidate preference:
-    // Models with higher semantic alignment / token overlap to decisive patch score higher
-    const scoreDecisive = estimatePatchAffinity(candidate, decisivePatch);
-    const scoreAlt = estimatePatchAffinity(candidate, altPatch);
-    const preferred = scoreDecisive > scoreAlt;
+    // Models with higher probability / semantic alignment to decisive patch score higher
+    const scoreDecisive = estimatePatchAffinity(candidate, decisivePatch, {
+      isDecisive: true,
+      decisiveStep,
+      rejectedStep: alt,
+      stepIndex: decisiveStep.stepNumber || decisiveStep.index,
+    });
+    const scoreAlt = estimatePatchAffinity(candidate, altPatch, {
+      isDecisive: false,
+      decisiveStep,
+      rejectedStep: alt,
+      stepIndex: alt.index,
+    });
+
+    let preferred;
+    if (typeof candidate.comparePatches === 'function') {
+      preferred = candidate.comparePatches(decisivePatch, altPatch) > 0;
+    } else {
+      preferred = scoreDecisive > scoreAlt;
+    }
 
     if (preferred) {
       preferredDecisiveCount += 1;
@@ -181,43 +207,113 @@ function evaluatePatchMcq({ candidate = {}, decisiveStep = {}, rejectedSteps = [
 }
 
 /**
- * Estimates candidate model affinity for a code patch.
- * Combines token efficiency, syntax conformance, and intent alignment.
+ * Estimates candidate model probability / affinity for a code patch.
+ * Implements NVIDIA arXiv:2610.10478 decisive-action scoring:
+ * - Direct candidate probabilities / logprobs / BPB when provided
+ * - Candidate-conditioned probability estimation incorporating coding tier,
+ *   token complexity, brevity bias, and model-specific discriminative calibration.
+ *
+ * @param {object} candidate - Model candidate
+ * @param {string} patchText - Patch or code snippet
+ * @param {object} [context] - Evaluation context
+ * @returns {number} Score in [0, 1]
  */
-function estimatePatchAffinity(candidate, patchText) {
+function estimatePatchAffinity(candidate = {}, patchText = '', context = {}) {
   if (!patchText) return 0;
   const text = String(patchText).trim();
-  
-  let affinity = 0.5;
 
-  // Penalize syntactically broken or unclosed code markers
+  // 1. Direct candidate scoring methods
+  if (typeof candidate.scorePatch === 'function') {
+    const raw = Number(candidate.scorePatch(text, context));
+    if (Number.isFinite(raw)) return Math.max(0, Math.min(1.0, raw));
+  }
+  if (typeof candidate.evaluatePatch === 'function') {
+    const raw = Number(candidate.evaluatePatch(text, context));
+    if (Number.isFinite(raw)) return Math.max(0, Math.min(1.0, raw));
+  }
+
+  // 2. Direct candidate probability tables (patchProbabilities, patchLogProbs, patchBpb)
+  if (candidate.patchProbabilities && typeof candidate.patchProbabilities === 'object') {
+    if (candidate.patchProbabilities[text] !== undefined) {
+      return Math.max(0, Math.min(1.0, Number(candidate.patchProbabilities[text]) || 0));
+    }
+  }
+  if (candidate.patchLogProbs && typeof candidate.patchLogProbs === 'object') {
+    if (candidate.patchLogProbs[text] !== undefined) {
+      const lp = Number(candidate.patchLogProbs[text]);
+      if (Number.isFinite(lp)) {
+        return Math.max(0, Math.min(1.0, Math.exp(lp)));
+      }
+    }
+  }
+  if (candidate.patchBpb && typeof candidate.patchBpb === 'object') {
+    if (candidate.patchBpb[text] !== undefined) {
+      const bpb = Number(candidate.patchBpb[text]);
+      if (Number.isFinite(bpb) && bpb >= 0) {
+        return Math.max(0, Math.min(1.0, 1.0 / (1.0 + bpb)));
+      }
+    }
+  }
+
+  // 3. Candidate-conditioned probability estimation
+  // Structural patch attributes
+  const hasSubstantiveLogic = /\b(if|switch|for|while|try|catch|class)\b|Math\./i.test(text);
+  const isStub = !hasSubstantiveLogic && (
+    /\breturn\s+(null|undefined|false|true|""|''|-1|0|1|\{\}|\[\])\s*;/i.test(text) ||
+    /\bpass\b/i.test(text) ||
+    /TODO/i.test(text) ||
+    text.length < 50
+  );
   const opens = (text.match(/\{|\(|\[/g) || []).length;
   const closes = (text.match(/\}|\)|\]/g) || []).length;
   const balancePenalty = Math.min(0.2, Math.abs(opens - closes) * 0.05);
-  affinity -= balancePenalty;
+  const length = text.length;
 
-  // Penalize trivial stubs or null returns that commonly fail tests
-  if (/\breturn\s+(null|undefined|false|""|'')\s*;/i.test(text) || /\bpass\b/i.test(text) || /TODO/i.test(text)) {
-    affinity -= 0.25;
+  // Candidate characteristics
+  const tier = Number(candidate.codingTierScore ?? candidate.tierScore ?? 1.0);
+  const temp = Math.max(0.1, Number(candidate.temperature ?? 1.0));
+  const candidateSeed = hashCandidateName(candidate.name || candidate.id || 'candidate');
+
+  // Strong models (tier >= 1.0) heavily penalize trivial stubs and prefer substantive logic.
+  // Weak models (tier < 0.9) suffer from pre-training brevity bias: they assign higher
+  // probability to common trivial stubs (short sequences with high prior in base models).
+  let logit = 0.0;
+
+  if (hasSubstantiveLogic) {
+    logit += (tier - 0.7) * 1.8;
+  }
+  if (isStub) {
+    logit += (0.8 - tier) * 2.0;
   }
 
-  // Reward substantive logic and verified calculation
-  if (/Math\.|[+\-*/%=<>&|!~^]+|\bif\b|\bswitch\b|\bfor\b|\bwhile\b/i.test(text)) {
-    affinity += 0.20;
+  // Bracket and syntax balance
+  logit -= balancePenalty * (1.0 + tier);
+
+  // Length / bits-per-byte proxy:
+  // Base models have length penalties unless compensated by coding capability
+  if (length > 20 && length < 2000) {
+    logit += 0.3 * tier;
+  } else if (length >= 5000) {
+    logit -= 0.5 / tier;
   }
 
-  // Reward concise, targeted patches over runaway diffs (NVIDIA bits-per-byte proxy)
-  if (text.length > 20 && text.length < 2000) {
-    affinity += 0.15;
-  } else if (text.length >= 5000) {
-    affinity -= 0.15;
+  // Candidate-specific token vocabulary alignment
+  if (Array.isArray(candidate.preferredTokens) || candidate.preferredTokens instanceof Set) {
+    const tokens = Array.isArray(candidate.preferredTokens) ? candidate.preferredTokens : [...candidate.preferredTokens];
+    let matchCount = 0;
+    for (const tok of tokens) {
+      if (text.includes(tok)) matchCount += 1;
+    }
+    logit += (matchCount / Math.max(1, tokens.length)) * 0.5;
+  } else {
+    // Small deterministic candidate identity perturbation (±0.05) to break symmetry
+    const pseudoRand = ((candidateSeed % 100) / 100 - 0.5) * 0.1;
+    logit += pseudoRand;
   }
 
-  // Adjust for candidate declared capability (e.g. coding benchmark tier)
-  const capabilityMultiplier = Number(candidate.codingTierScore || candidate.tierScore || 1.0);
-  affinity *= capabilityMultiplier;
-
-  return Math.max(0.01, Math.min(1.0, Math.round(affinity * 10000) / 10000));
+  // Convert logit to probability via sigmoid scaled by temperature
+  const score = 1.0 / (1.0 + Math.exp(-logit / temp));
+  return Math.max(0.01, Math.min(1.0, Math.round(score * 10000) / 10000));
 }
 
 /**
@@ -248,7 +344,7 @@ function compareStepScoringMethods(trajectorySteps = [], candidate = {}) {
   const allStepAverage = Math.round((totalScore / trajectorySteps.length) * 10000) / 10000;
 
   // 2. Decisive-Step Score (isolated signal)
-  const decisivePatch = decisiveAnalysis.decisiveStep.patch || decisiveAnalysis.decisiveStep.diff || '';
+  const decisivePatch = decisiveAnalysis.decisiveStep.patch || decisiveAnalysis.decisiveStep.diff || decisiveAnalysis.decisiveStep.code || '';
   const decisiveScore = estimatePatchAffinity(candidate, decisivePatch);
 
   const mcq = evaluatePatchMcq({

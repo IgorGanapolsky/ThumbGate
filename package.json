@@ -480,6 +480,7 @@
     ".agents/skills/infoq-architect-honesty-not-clone/",
     "scripts/infoq-architect-honesty.js",
     "scripts/deeppattern-discipline-honesty.js",
+    ".agents/skills/deeppattern-discipline-honesty-not-clone/",
     "scripts/salt-code-policy-honesty.js",
     ".agents/skills/ci-gha-buildkite-patterns-not-clone/",
     "scripts/ci-gha-buildkite-patterns.js",
