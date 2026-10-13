@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The harness ceiling doctor refuses a missing trace, checks friction before a healthy share can return a stable verdict, keeps an undelivered row out of the content bucket, keeps secrets and outbound email blocked, and does not run a training job. The public package grows from 619 to 621 files for `scripts/harness-ceiling-diagnostics.js` and `.agents/skills/harness-ceiling-diagnostics/`. Measured unpacked size on this worktree is 9,229,231 bytes, under the existing 9.25 MB cap.
 - Recover context-artifact validation, consent-gated local session export, coverage-gap reporting and session interactivity metrics with review regressions repaired. The public package grows from 612 to 619 files for three command modules, their three skills and the session metric module. Raise the unpacked limit from 9.16 MB to 9.25 MB for the measured additions.
 - Recover the opt-in scoped lesson graph and migration command. The measured npm bundle grows from 597 to 599 files to include both runtime modules required by the Reliability Gateway.
 
