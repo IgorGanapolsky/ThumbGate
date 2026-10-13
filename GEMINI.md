@@ -95,5 +95,5 @@ Knowledge as operational infrastructure: pre-action freshness diodes, poison pre
 
 ## Harness ceiling diagnostics
 
-Four-class labels (F1 evidence, F2 friction, F3 execution, F4 content) from arXiv:2610.11655 on a supplied trace. A content-saturated trace stops the harness rewrite. The doctor does not run a training job. A bare `npm run harness-ceiling:diagnostics` exits non-zero without `--trace` or `--map-only`. Skill `harness-ceiling-diagnostics`.
+Labels from arXiv:2610.11655 on a supplied trace: F1 evidence, F2 friction, F3 execution, then a delivered healthy plan, then F4 content. An undelivered row is not F4. Friction, loops, and evidence are checked before a healthy share can return a stable verdict. A content-saturated trace stops the harness rewrite. The doctor does not run a training job. A bare `npm run harness-ceiling:diagnostics` exits non-zero without `--trace` or `--map-only`. Skill `harness-ceiling-diagnostics`.
 

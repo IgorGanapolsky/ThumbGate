@@ -40,6 +40,17 @@ test('classifyTrajectory classifies healthy trajectories when score >= 0.5', () 
   assert.equal(res.score, 0.85);
 });
 
+test('classifyTrajectory applies failure signals before a healthy label', () => {
+  const evidence = classifyTrajectory({ score: 0.9, delivered: true, unbackedCitationRatio: 1 });
+  assert.equal(evidence.classification, FAILURE_CLASSES.F1_EVIDENCE);
+
+  const friction = classifyTrajectory({ score: 0.9, delivered: true, forcedCheckpointUnlock: true });
+  assert.equal(friction.classification, FAILURE_CLASSES.F2_FRICTION);
+
+  const execution = classifyTrajectory({ score: 0.9, delivered: true, timedOut: true });
+  assert.equal(execution.classification, FAILURE_CLASSES.F3_EXECUTION);
+});
+
 test('classifyTrajectory identifies F1 (evidence) failures', () => {
   const res1 = classifyTrajectory({ score: 0.3, delivered: true, unbackedCitationRatio: 0.55 });
   assert.equal(res1.classification, FAILURE_CLASSES.F1_EVIDENCE);
@@ -84,7 +95,8 @@ test('a missing delivered flag is not delivery, even when a score and output are
   const res = classifyTrajectory({ score: 0.9, output: 'plan' });
   assert.equal(res.delivered, false);
   assert.notEqual(res.classification, FAILURE_CLASSES.HEALTHY);
-  assert.equal(res.classification, FAILURE_CLASSES.F4_CONTENT);
+  assert.equal(res.classification, FAILURE_CLASSES.UNDELIVERED);
+  assert.notEqual(res.classification, FAILURE_CLASSES.F4_CONTENT);
 });
 
 test('analyzeFailureComposition calculates mathematical score identities (S = r * q_bar)', () => {
@@ -162,6 +174,38 @@ test('diagnoseIntervention identifies HARNESS_EVOLUTION when loops/process failu
   assert.equal(diag.primaryLever, 'HARNESS_RUNTIME');
   assert.match(diag.reason, /Process failures dominate/);
   assert.ok(diag.actions.some((action) => action.includes('state ledger')));
+});
+
+test('diagnoseIntervention checks friction before a healthy majority', () => {
+  const rows = [
+    { score: 0.9, delivered: true },
+    { score: 0.9, delivered: true },
+    { score: 0.9, delivered: true },
+    { score: 0.2, delivered: false, blockedToolCalls: 12 },
+  ];
+  const diag = diagnoseIntervention(analyzeFailureComposition(rows));
+  assert.equal(diag.recommendation, 'HARNESS_FRICTION_CALIBRATION');
+});
+
+test('diagnoseIntervention does not prescribe from an empty total', () => {
+  const diag = diagnoseIntervention({ total: 0, deliveryRate: 0, shares: {} });
+  assert.equal(diag.recommendation, 'NONE');
+  assert.equal(diag.primaryLever, 'NONE');
+});
+
+test('undelivered rows are not content failures', () => {
+  const healthy = Array.from({ length: 60 }, () => ({ score: 0.9, delivered: true }));
+  const content = Array.from({ length: 25 }, () => ({ score: 0.3, delivered: true }));
+  const unknown = Array.from({ length: 15 }, () => ({ score: 0.9, output: 'plan' }));
+  const analysis = analyzeFailureComposition([...healthy, ...content, ...unknown]);
+  assert.equal(analysis.deliveryRate, 0.85);
+  assert.equal(analysis.counts.HEALTHY, 60);
+  assert.equal(analysis.counts.F4_CONTENT, 25);
+  assert.equal(analysis.counts.UNDELIVERED, 15);
+  assert.equal(analysis.shares.F4_CONTENT, 0.25);
+  const diag = diagnoseIntervention(analysis);
+  assert.notEqual(diag.recommendation, 'CONTENT_CEILING');
+  assert.equal(diag.recommendation, 'HYBRID_TUNING');
 });
 
 test('diagnoseIntervention calibrates false positives and keeps the hard floor', () => {

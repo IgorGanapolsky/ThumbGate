@@ -287,7 +287,7 @@ Skill: `.agents/skills/fiddler-control-plane-honesty/SKILL.md`. Details: `docs/a
 
 ## Harness ceiling diagnostics (FORMAT steal)
 
-Failure composition from arXiv:2610.11655 (Tian et al., October 2026) on a supplied trace. First signal wins: F1 evidence, F2 harness friction, F3 execution loops, F4 content. Delivery is `delivered === true` only. When delivery is at least 0.85 and F4 is at least 0.40, stop the harness rewrite. The doctor does not run a training job. Secrets, self-protect, and outbound email stay blocked. 0.023, 0.035, and 0.18 are the paper's DeepPlanning numbers, not ThumbGate measurements. A bare run without `--trace` or `--map-only` exits non-zero.
+Failure composition from arXiv:2610.11655 (Tian et al., October 2026) on a supplied trace. First signal wins: F1 evidence, F2 harness friction, F3 execution loops, then a delivered healthy plan, then F4 content. An undelivered row with no earlier signal is not F4. Delivery is `delivered === true` only. An empty total returns NONE. Friction, loops, and evidence are checked before a healthy share can return a stable verdict. When delivery is at least 0.85 and F4 is at least 0.40, stop the harness rewrite. The doctor does not run a training job. Secrets, self-protect, and outbound email stay blocked. 0.023, 0.035, and 0.18 are the paper's DeepPlanning numbers, not ThumbGate measurements. A bare run without `--trace` or `--map-only` exits non-zero.
 
 ```bash
 node scripts/harness-ceiling-diagnostics.js --trace=path/to/trace.json --json

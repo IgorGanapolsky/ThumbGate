@@ -8,7 +8,9 @@
  * "Harness Evolution Hits a Ceiling: When Weight Training Should Begin"
  *
  * A trajectory is labeled by the first signal that fires:
- *   F1 evidence, F2 harness friction, F3 execution, F4 content, or healthy.
+ *   F1 evidence, F2 harness friction, F3 execution, then healthy,
+ *   then F4 content only for a delivered low score.
+ *   An undelivered row with no earlier signal is not F4.
  * Composite score S = r * q_bar. Delta S = q_bar * Delta r + r' * Delta q_bar.
  * Process classes (F2, F3) are the harness lever. F4 is a content ceiling
  * because process signals do not separate it from a healthy delivery.
@@ -27,6 +29,7 @@ const FAILURE_CLASSES = Object.freeze({
   F2_FRICTION: 'F2_FRICTION',
   F3_EXECUTION: 'F3_EXECUTION',
   F4_CONTENT: 'F4_CONTENT',
+  UNDELIVERED: 'UNDELIVERED',
 });
 
 const PAPER_DEEP_PLANNING = Object.freeze({
@@ -56,15 +59,6 @@ const PAPER_ID = 'arXiv:2610.11655';
 function classifyTrajectory(trajectory = {}) {
   const score = Number.isFinite(Number(trajectory.score)) ? Number(trajectory.score) : 0;
   const delivered = trajectory.delivered === true;
-
-  if (delivered && score >= 0.5) {
-    return {
-      classification: FAILURE_CLASSES.HEALTHY,
-      reason: 'Delivered valid plan with score >= 0.5',
-      score,
-      delivered: true,
-    };
-  }
 
   const unbackedRatio = Number(trajectory.unbackedCitationRatio ?? 0);
   const unresolvedItems = Number(trajectory.unresolvedChecklistItems ?? 0);
@@ -114,13 +108,29 @@ function classifyTrajectory(trajectory = {}) {
     };
   }
 
+  if (delivered && score >= 0.5) {
+    return {
+      classification: FAILURE_CLASSES.HEALTHY,
+      reason: 'Delivered valid plan with score >= 0.5 and no earlier signal',
+      score,
+      delivered: true,
+    };
+  }
+
+  if (delivered) {
+    return {
+      classification: FAILURE_CLASSES.F4_CONTENT,
+      reason: `Plan delivered cleanly without process signals, but score (${score.toFixed(2)}) < 0.50`,
+      score,
+      delivered: true,
+    };
+  }
+
   return {
-    classification: FAILURE_CLASSES.F4_CONTENT,
-    reason: delivered
-      ? `Plan delivered cleanly without process signals, but score (${score.toFixed(2)}) < 0.50`
-      : 'Undelivered trajectory without process signals',
+    classification: FAILURE_CLASSES.UNDELIVERED,
+    reason: 'Undelivered trajectory without an evidence, friction, or execution signal',
     score,
-    delivered,
+    delivered: false,
   };
 }
 
@@ -130,7 +140,14 @@ function classifyTrajectory(trajectory = {}) {
  */
 function analyzeFailureComposition(trajectories = []) {
   const total = trajectories.length;
-  const emptyCounts = { HEALTHY: 0, F1_EVIDENCE: 0, F2_FRICTION: 0, F3_EXECUTION: 0, F4_CONTENT: 0 };
+  const emptyCounts = {
+    HEALTHY: 0,
+    F1_EVIDENCE: 0,
+    F2_FRICTION: 0,
+    F3_EXECUTION: 0,
+    F4_CONTENT: 0,
+    UNDELIVERED: 0,
+  };
   if (total === 0) {
     return {
       total: 0,
@@ -148,6 +165,7 @@ function analyzeFailureComposition(trajectories = []) {
     [FAILURE_CLASSES.F2_FRICTION]: 0,
     [FAILURE_CLASSES.F3_EXECUTION]: 0,
     [FAILURE_CLASSES.F4_CONTENT]: 0,
+    [FAILURE_CLASSES.UNDELIVERED]: 0,
   };
 
   let deliveredCount = 0;
@@ -258,21 +276,22 @@ function computeSelectionOptimismBound(numCandidates = 10, sigma, numRollouts = 
  * @returns {Object}
  */
 function diagnoseIntervention(metrics = {}) {
+  const total = Number(metrics.total);
+  if (!(total > 0)) {
+    return {
+      recommendation: 'NONE',
+      primaryLever: 'NONE',
+      reason: 'No measured trajectories.',
+      actions: [],
+    };
+  }
+
   const { deliveryRate = 0, meanQualityDelivered = 0, shares = {} } = metrics;
   const f1 = shares.F1_EVIDENCE || 0;
   const f2 = shares.F2_FRICTION || 0;
   const f3 = shares.F3_EXECUTION || 0;
   const f4 = shares.F4_CONTENT || 0;
   const healthy = shares.HEALTHY || 0;
-
-  if (healthy >= 0.75) {
-    return {
-      recommendation: 'MAINTAIN_STABLE',
-      primaryLever: 'NONE',
-      reason: `System is performing reliably (${(healthy * 100).toFixed(1)}% healthy trajectories).`,
-      actions: ['Retain the harness and monitor drift.'],
-    };
-  }
 
   if (meanQualityDelivered < PAPER_DEEP_PLANNING.capacityFloor && deliveryRate > 0.5) {
     return {
@@ -322,6 +341,15 @@ function diagnoseIntervention(metrics = {}) {
         STOP_REWRITE,
         'Keep the harness that already delivers and measure content quality on a real trace.',
       ],
+    };
+  }
+
+  if (healthy >= 0.75) {
+    return {
+      recommendation: 'MAINTAIN_STABLE',
+      primaryLever: 'NONE',
+      reason: `System is performing reliably (${(healthy * 100).toFixed(1)}% healthy trajectories).`,
+      actions: ['Retain the harness and monitor drift.'],
     };
   }
 
@@ -442,6 +470,11 @@ function generateFixtureTrajectories(profile = 'ceilinged') {
   ];
 }
 
+function emit(line) {
+  const text = String(line);
+  process.stdout.write(text.endsWith('\n') ? text : `${text}\n`);
+}
+
 function failClosed(status, extra = {}) {
   const payload = {
     ...extra,
@@ -458,7 +491,7 @@ function failClosed(status, extra = {}) {
       actions: [],
     },
   };
-  console.log(JSON.stringify(payload, null, 2));
+  emit(JSON.stringify(payload, null, 2));
   process.exit(1);
 }
 
@@ -536,27 +569,29 @@ function buildReport(trajectories, tracePath) {
 
 function printTextReport(report) {
   const { analysis, diagnosis, optimismBound } = report;
-  console.log('\n=== ThumbGate Harness Ceiling Diagnostics (arXiv:2610.11655) ===');
-  console.log(report.disclaimer);
-  console.log(`Evaluated: ${analysis.total} trajectories | Delivery: ${(analysis.deliveryRate * 100).toFixed(1)}% | Quality: ${analysis.meanQualityDelivered.toFixed(3)} | Score: ${analysis.compositeScore.toFixed(3)}`);
-  console.log('\n--- Failure Composition ---');
-  console.log(`  Healthy:     ${(analysis.shares.HEALTHY * 100).toFixed(1)}% (${analysis.counts.HEALTHY})`);
-  console.log(`  F1 Evidence: ${(analysis.shares.F1_EVIDENCE * 100).toFixed(1)}% (${analysis.counts.F1_EVIDENCE})`);
-  console.log(`  F2 Friction: ${(analysis.shares.F2_FRICTION * 100).toFixed(1)}% (${analysis.counts.F2_FRICTION})`);
-  console.log(`  F3 Process:  ${(analysis.shares.F3_EXECUTION * 100).toFixed(1)}% (${analysis.counts.F3_EXECUTION})`);
-  console.log(`  F4 Content:  ${(analysis.shares.F4_CONTENT * 100).toFixed(1)}% (${analysis.counts.F4_CONTENT})`);
-  console.log('\n--- Diagnostic Verdict ---');
-  console.log(`  Recommendation: ${diagnosis.recommendation}`);
-  console.log(`  Primary Lever:  ${diagnosis.primaryLever}`);
-  console.log(`  Reason:         ${diagnosis.reason}`);
-  console.log('  Actions:');
+  const share = (key) => `${(analysis.shares[key] * 100).toFixed(1)}% (${analysis.counts[key]})`;
+  emit('\n=== ThumbGate Harness Ceiling Diagnostics (arXiv:2610.11655) ===');
+  emit(report.disclaimer);
+  emit(`Evaluated: ${analysis.total} trajectories | Delivery: ${(analysis.deliveryRate * 100).toFixed(1)}% | Quality: ${analysis.meanQualityDelivered.toFixed(3)} | Score: ${analysis.compositeScore.toFixed(3)}`);
+  emit('\n--- Failure Composition ---');
+  emit(`  Healthy:      ${share('HEALTHY')}`);
+  emit(`  F1 Evidence:  ${share('F1_EVIDENCE')}`);
+  emit(`  F2 Friction:  ${share('F2_FRICTION')}`);
+  emit(`  F3 Process:   ${share('F3_EXECUTION')}`);
+  emit(`  F4 Content:   ${share('F4_CONTENT')}`);
+  emit(`  Undelivered:  ${share('UNDELIVERED')}`);
+  emit('\n--- Diagnostic Verdict ---');
+  emit(`  Recommendation: ${diagnosis.recommendation}`);
+  emit(`  Primary Lever:  ${diagnosis.primaryLever}`);
+  emit(`  Reason:         ${diagnosis.reason}`);
+  emit('  Actions:');
   for (const action of diagnosis.actions) {
-    console.log(`    - ${action}`);
+    emit(`    - ${action}`);
   }
   const boundText = optimismBound.noiseMeasured
     ? String(optimismBound.selectionOptimismBound)
     : 'unmeasured';
-  console.log(`\nSelection optimism (K=10): ${boundText}. A score delta is not called resolvable without a measured sigma.\n`);
+  emit(`\nSelection optimism (K=10): ${boundText}. A score delta is not called resolvable without a measured sigma.\n`);
 }
 
 function mapOnlyReport() {
@@ -575,10 +610,13 @@ function mapOnlyReport() {
     },
     scoreIdentity: 'S = r * q_bar, Delta S = Delta r * q_bar + r_prime * Delta q_bar',
     branches: [
+      'NONE (total is 0)',
       'MODEL_CAPACITY_INSUFFICIENT (paper DeepPlanning q_bar < 0.18)',
       'HARNESS_FRICTION_CALIBRATION (F2 >= 20%, hard floor stays)',
       'HARNESS_EVOLUTION (r < 0.80 or F3 >= 30% or F1 >= 25%)',
       'CONTENT_CEILING (r >= 0.85 and F4 >= 40%)',
+      'MAINTAIN_STABLE (healthy >= 75% after the failure branches)',
+      'HYBRID_TUNING (residual after the branches above)',
     ],
     writesVsSeesRule: 'A path that changes what the model sees stays in the harness. An unknown path stays sees.',
   };
@@ -603,7 +641,7 @@ module.exports = {
 function runCli() {
   const args = process.argv.slice(2);
   if (args.includes('--map-only')) {
-    console.log(JSON.stringify(mapOnlyReport(), null, 2));
+    emit(JSON.stringify(mapOnlyReport(), null, 2));
     return;
   }
 
@@ -617,7 +655,7 @@ function runCli() {
   const trajectories = loadTrace(tracePath);
   const report = buildReport(trajectories, tracePath);
   if (args.includes('--json')) {
-    console.log(JSON.stringify(report, null, 2));
+    emit(JSON.stringify(report, null, 2));
     return;
   }
   printTextReport(report);

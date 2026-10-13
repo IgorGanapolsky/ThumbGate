@@ -12,10 +12,11 @@
 The paper's diagnose-then-intervene order is: label each trajectory by the first signal that fires, then pick one lever.
 
 - **F1 evidence**: unbacked-citation ratio ≥ 0.50, or an exit gate passed with unresolved items.
-- **F2 harness friction**: the harness blocked the agent (forced checkpoint unlock, or ≥ 10 blocked tool calls) and the score is low.
+- **F2 harness friction**: the harness blocked the agent (forced checkpoint unlock, or ≥ 10 blocked tool calls), including when the score is high.
 - **F3 execution**: the same tool call ≥ 3 times, ≥ 90% of the step budget, or the harness terminated the run.
+- **Healthy**: a delivered plan scores ≥ 0.50 and no earlier signal fired.
 - **F4 content**: none of those fired, and a delivered plan scores below 0.50.
-- **Healthy**: a delivered plan scores ≥ 0.50.
+- **Undelivered**: the row is not delivered and no evidence, friction, or execution signal fired. This is not F4.
 
 Delivery is true only when `trajectory.delivered === true`. A positive score or a present `output` is not delivery.
 
@@ -37,14 +38,15 @@ Edits that change what the model sees (a second context page, history, a ledger,
 
 First match wins.
 
-1. Healthy share ≥ 0.75 → `MAINTAIN_STABLE`. Action: retain the harness and monitor drift.
+1. Total is 0 → recommendation `NONE`. The library returns this before any lever. An empty trajectory list is also status `empty`, exit 1.
 2. Mean quality among delivered plans < 0.18 and delivery > 0.5 → `MODEL_CAPACITY_INSUFFICIENT`, lever `PAPER_CAPACITY_FLOOR`. Stop the rewrite. This doctor does not name a replacement model.
-3. F2 ≥ 0.20 → `HARNESS_FRICTION_CALIBRATION`, lever `CALIBRATE_FALSE_POSITIVES`. Calibrate false-positive denies. Secrets, self-protect, and outbound email stay blocked.
+3. F2 ≥ 0.20, including when the score is high → `HARNESS_FRICTION_CALIBRATION`, lever `CALIBRATE_FALSE_POSITIVES`. Calibrate false-positive denies. Secrets, self-protect, and outbound email stay blocked.
 4. Delivery < 0.80, or F3 ≥ 0.30, or F1 ≥ 0.25 → `HARNESS_EVOLUTION`, lever `HARNESS_RUNTIME`. State ledger, identical-call break, citation check before an exit gate.
-5. Delivery ≥ 0.85 and F4 ≥ 0.40 → `CONTENT_CEILING`, lever `STOP_HARNESS_REWRITE`. Keep the harness that already delivers.
-6. Otherwise → `HYBRID_TUNING`. Address residual process loops. The same hard floor stays.
+5. Delivery ≥ 0.85 and F4 ≥ 0.40 of all rows → `CONTENT_CEILING`, lever `STOP_HARNESS_REWRITE`. Keep the harness that already delivers. An undelivered row is not F4, so it cannot fill this share.
+6. Healthy share ≥ 0.75, after the branches above → `MAINTAIN_STABLE`. Action: retain the harness and monitor drift.
+7. Otherwise → `HYBRID_TUNING`. Address residual process loops. The same hard floor stays.
 
-An empty trajectory list is status `empty`, recommendation `NONE`, exit 1. A missing or unreadable `--trace` is `trace_unreadable`. A parse error is `trace_parse_error`. `--profile` is not a substitute for a trace.
+A missing or unreadable `--trace` is `trace_unreadable`. A parse error is `trace_parse_error`. `--profile` is not a substitute for a trace.
 
 ## Commands
 
