@@ -2964,6 +2964,30 @@ function colabComputeHonestyDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function ompCoordinationHonestyDoctor() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildOmpCoordinationHonestyReport,
+    formatOmpCoordinationHonestyReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'omp-coordination-honesty'));
+  const report = buildOmpCoordinationHonestyReport(args);
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    process.stdout.write(formatOmpCoordinationHonestyReport(report));
+  }
+  if (args.strict && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
+function harnessCeilingDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'harness-ceiling-doctor'));
+  const exitCode = runCli(process.argv.slice(3));
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
 function llmObsHonesty() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -4003,7 +4027,8 @@ function help() {
   console.log('  salt-code-policy-honesty 40-policy taxonomy + context vs PreToolUse diode (Salt Code FORMAT)');
   console.log('  infoq-architect-honesty Code-as-truth, typed host, lease, time-in-queue (InfoQ FORMAT)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
-  console.log('  llm-obs-honesty       Four LLM-obs practices on existing rails (Datadog FORMAT, not a clone)');
+  console.log('  omp-coordination-honesty   Named-model session handoff on the checkout lease (omp FORMAT; does not install omp)');
+  console.log('  harness-ceiling       Failure composition and harness evolution ceiling detection (arXiv:2610.11655)');
   console.log('  halo-trace-optimizer  Analyze agent trace logs for thrashing and stalls (HALO FORMAT)');
   console.log('  board-loop            Classify+drain Issues/PR wall (BEHIND Dependabot, never approve)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
@@ -4057,6 +4082,7 @@ function help() {
   console.log('  npx thumbgate deeppattern-discipline-honesty --json --map-only');
   console.log('  npx thumbgate salt-code-policy-honesty --inspect-code=src/api.js --json');
   console.log('  npx thumbgate colab-compute-honesty --json --map-only');
+  console.log('  npx thumbgate omp-coordination-honesty --json --map-only');
   console.log('  npx thumbgate llm-obs-honesty --json');
   console.log('  npx thumbgate meko-datapack-honesty --json');
   console.log('  npx thumbgate mintlify-knowledge-honesty --json');
@@ -4103,6 +4129,7 @@ const SUBCOMMAND_HELP = {
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
+  'claim-stop-check': 'Usage: npx thumbgate claim-stop-check [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nClaude Stop hook interface: reads hook JSON from stdin, rechecks configured factual claims before Claude stops.',
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
   'ci-gha-buildkite-patterns': 'Usage: npx thumbgate ci-gha-buildkite-patterns [--jobs-json=path] [--workflow=path] [--json] [--map-only]\n\nBuildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations. Does not add Buildkite.',
   'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',
@@ -4110,7 +4137,8 @@ const SUBCOMMAND_HELP = {
   'infoq-architect-honesty': 'Usage: npx thumbgate infoq-architect-honesty [--claim="..."] [--host=javascript] [--queue=path.json] [--max-age-ms=N] [--json] [--map-only]\n\nInfoQ September 2026 FORMAT: code-as-truth, typed host, existing lease, time-in-queue. Does not register for InfoQ or install Vortex.',
   'board-loop': 'Usage: npx thumbgate board-loop [--apply] [--json] [--max-update-branch=1] [--max-pr-manage=1] [--max-comments=4] [--skip-pr=N]\n\nClassify Issues+PR wall: update-branch BEHIND green Dependabot, pr:manage READY, comment DIRTY/ECI. Never approve.',
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
-  'claim-stop-check': 'Usage: npx thumbgate claim-stop-check\n\nClaude Stop-hook interface: reads the hook payload from stdin and blocks factual claims that disagree with configured sources.',
+  'omp-coordination-honesty': 'Usage: npx thumbgate omp-coordination-honesty [--claim="..."] [--handoff=path] [--json] [--map-only] [--strict]\n\nMap omp session/subagent/collab FORMAT onto the checkout lease. Does not install omp.',
+  'harness-ceiling': 'Usage: npx thumbgate harness-ceiling [--json] [--map-only] [--evaluate] [--process=N] [--content=N]\n\narXiv:2610.11655 diagnose-then-intervene rail: failure composition and harness evolution ceiling detection.',
   'verify-claims': 'Usage: npx thumbgate verify-claims --claim="the row count is 1,284" [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nRecheck supported factual claims against operator-configured SQLite, filesystem, and JSON sources. Exits non-zero on mismatch, missing verifier, or verifier error.',
   'hermes-gate': 'Usage: npx thumbgate hermes-gate\n\nNous Research Hermes Agent pre_tool_call shell hook: reads Hermes tool-call JSON from stdin, runs the ThumbGate gate pipeline (strict by default), and outputs {"decision":"block","reason":...} to veto or {} to allow. Gates terminal/patch/skill_manage etc. See adapters/hermes/config.yaml.',
   'break-glass': 'Usage: npx thumbgate break-glass --reason="why" [--ttl=5m] [--json]\n\nShort-lived recovery path for over-firing gates. Allows hook settings edits and satisfies PR-create/thread-check gates without disabling core destructive-action protections.',
@@ -4816,6 +4844,15 @@ switch (COMMAND) {
   case 'colab-honesty':
   case 'compute-unit-honesty':
     colabComputeHonestyDoctor();
+    break;
+  case 'omp-coordination-honesty':
+  case 'omp-coordination':
+  case 'omp-honesty':
+    ompCoordinationHonestyDoctor();
+    break;
+  case 'harness-ceiling':
+  case 'harness-ceiling-doctor':
+    harnessCeilingDoctor();
     break;
   case 'llm-obs-honesty':
   case 'datadog-llm-obs':
