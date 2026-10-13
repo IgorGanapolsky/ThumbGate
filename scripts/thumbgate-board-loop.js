@@ -92,7 +92,7 @@ function ciRollup(pr) {
   let failing = 0;
   for (const check of checks) {
     const name = String(check.name || '');
-    if (/vercel|gitar|sonarcloud|merge blob/i.test(name)) continue;
+    if (/vercel|gitar|sonarcloud|merge blob|trunk[- ]merge[- ]queue/i.test(name)) continue;
     const conclusion = String(check.conclusion || '').toUpperCase();
     const status = String(check.status || '').toUpperCase();
     if (status && status !== 'COMPLETED') {
