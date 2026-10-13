@@ -519,8 +519,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 612 -> 619: three recovered command/skill pairs and session-interactivity.js (+7).
     // 619 -> 621 (2026-10-13): scripts/omp-coordination-honesty.js + omp-coordination-honesty-not-clone skill (+2).
     // 621 -> 622 (2026-10-13): scripts/harness-ceiling-doctor.js + harness-evolution-ceiling skill (+1 relative to omp clean pack).
-    manifest.fileCount <= 622,
-    `npm package should stay <= 622 files, got ${manifest.fileCount}`
+    // 622 -> 623 (2026-10-13): restored .agents/skills/infoq-architect-honesty-not-clone/ in package.json files (+1).
+    manifest.fileCount <= 623,
+    `npm package should stay <= 623 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
