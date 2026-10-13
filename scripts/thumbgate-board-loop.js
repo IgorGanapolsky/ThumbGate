@@ -90,9 +90,11 @@ function ciRollup(pr) {
   if (!checks.length && pr.ci) return String(pr.ci).toUpperCase();
   let pending = 0;
   let failing = 0;
+  let included = 0;
   for (const check of checks) {
     const name = String(check.name || '');
     if (/vercel|gitar|sonarcloud|merge blob|trunk[- ]merge[- ]queue/i.test(name)) continue;
+    included += 1;
     const conclusion = String(check.conclusion || '').toUpperCase();
     const status = String(check.status || '').toUpperCase();
     if (status && status !== 'COMPLETED') {
@@ -105,7 +107,7 @@ function ciRollup(pr) {
   }
   if (failing) return 'FAILURE';
   if (pending) return 'PENDING';
-  return checks.length ? 'SUCCESS' : 'UNKNOWN';
+  return included ? 'SUCCESS' : 'UNKNOWN';
 }
 
 function classifyPr(pr, options = {}) {

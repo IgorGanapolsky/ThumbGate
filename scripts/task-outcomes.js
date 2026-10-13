@@ -67,7 +67,8 @@ function normalizeTaskOutcome(input = {}, now = new Date()) {
   const verdict = evaluateWorkingVerdict(receipt);
   receipt.working = verdict.working;
   receipt.workingReasons = verdict.reasons;
-  receipt.receiptHash = hashReceipt(receipt);
+  const isExplicitType = Boolean(input.failure && input.failure.type);
+  const isExplicitSignal = Boolean(input.failure && input.failure.firstSignal);
   if (!verdict.working) {
     const classification = classifyFailureType(receipt);
     if (!receipt.failure) {
@@ -80,6 +81,10 @@ function normalizeTaskOutcome(input = {}, now = new Date()) {
       if (!receipt.failure.firstSignal) receipt.failure.firstSignal = classification.firstSignal;
     }
   }
+  receipt.receiptHash = hashReceipt(receipt, {
+    excludeType: !isExplicitType,
+    excludeSignal: !isExplicitSignal,
+  });
   return receipt;
 }
 
@@ -303,6 +308,14 @@ function classifyFailureType(outcome = {}) {
   if (Number(outcome.policy?.unsafeEscapes || 0) > 0) return { type: 'process', firstSignal: 'unsafe_escape' };
   if (Number(outcome.policy?.falseBlocks || 0) > 0) return { type: 'process', firstSignal: 'safe_false_block' };
 
+  const statusReason = reasons.find((r) => [
+    'status_failed',
+    'status_cancelled',
+    'status_aborted',
+    'status_timeout',
+  ].includes(r));
+  if (statusReason) return { type: 'process', firstSignal: statusReason };
+
   if (outcome.verification?.performed === true && (outcome.verification?.passed === false || Number(outcome.verification?.unsupportedClaims || 0) > 0)) {
     const signal = outcome.verification.passed === false ? 'verification_failed' : 'unsupported_claim';
     return { type: 'content', firstSignal: signal };
@@ -321,13 +334,13 @@ function classifyFailureType(outcome = {}) {
     'status_aborted',
     'status_timeout',
     'verification_not_performed',
-    'evidence_missing',
   ].includes(r));
   if (processReason) return { type: 'process', firstSignal: processReason };
 
   const contentReason = reasons.find((r) => [
     'verification_failed',
     'unsupported_claim',
+    'evidence_missing',
     'incorrect_escalation',
   ].includes(r));
   if (contentReason) return { type: 'content', firstSignal: contentReason };
@@ -445,14 +458,18 @@ function aggregateBusinessOutcomes(outcomes) {
   return Array.from(groups.values()).map((entry) => ({ ...entry, value: roundMetric(entry.value) }));
 }
 
-function hashReceipt(receipt) {
+function hashReceipt(receipt, options = {}) {
   const copy = { ...receipt };
   delete copy.receiptHash;
   delete copy.recordedAt;
   if (copy.failure) {
     const failureCopy = { ...copy.failure };
-    delete failureCopy.type;
-    delete failureCopy.firstSignal;
+    if (options.excludeType ?? false) {
+      delete failureCopy.type;
+    }
+    if (options.excludeSignal ?? false) {
+      delete failureCopy.firstSignal;
+    }
     if (Object.keys(failureCopy).length === 0) {
       delete copy.failure;
     } else {

@@ -139,6 +139,39 @@ test('first-signal-fires failure classification distinguishes process vs content
   const cClaim = classifyFailureType(claimFail);
   assert.equal(cClaim.type, 'content');
   assert.equal(cClaim.firstSignal, 'unsupported_claim');
+
+  // 7. Status failed with failed verification -> process failure (status_failed before verification)
+  const statusFailedWithVerif = sampleOutcome({
+    status: 'failed',
+    verification: {
+      performed: true,
+      passed: false,
+      evidence: [],
+      unsupportedClaims: 0,
+    },
+  });
+  const cStatusVerif = classifyFailureType(statusFailedWithVerif);
+  assert.equal(cStatusVerif.type, 'process');
+  assert.equal(cStatusVerif.firstSignal, 'status_failed');
+
+  // 8. Completed with missing evidence -> content failure
+  const missingEvidenceFail = sampleOutcome({
+    status: 'completed',
+    verification: {
+      performed: true,
+      passed: true,
+      evidence: [],
+      unsupportedClaims: 0,
+    },
+  });
+  const cMissingEv = classifyFailureType(missingEvidenceFail);
+  assert.equal(cMissingEv.type, 'content');
+  assert.equal(cMissingEv.firstSignal, 'evidence_missing');
+
+  // 9. Explicit failure type in input is preserved in receiptHash
+  const explicitProcess = sampleOutcome({ failure: { type: 'process' } });
+  const explicitContent = sampleOutcome({ failure: { type: 'content' } });
+  assert.notEqual(explicitProcess.receiptHash, explicitContent.receiptHash);
 });
 
 test('calculateTaskOutcomeMetrics computes failureComposition and recommends correct intervention', () => {
