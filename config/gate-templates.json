@@ -110,6 +110,18 @@
       "rollout": "Enable wherever an agent proposes Colab offload. Does not purchase a plan."
     },
     {
+      "id": "refuse-omp-install-collab",
+      "name": "Refuse omp installer and full-control collab write links",
+      "category": "Agent Honesty",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "omp\\.sh/install|@oh-my-pi/pi-coding-agent|wss://my\\.omp\\.sh|full-control collab",
+      "problem": "Blocks installing @oh-my-pi/pi-coding-agent and opening a bearer link that can prompt or interrupt the host.",
+      "roi": "Keeps coordination on the checkout lease. Reading omp.sh/docs does not match.",
+      "rollout": "Pair with omp-coordination-honesty --json. Does not install omp."
+    },
+    {
       "id": "require-same-layer-comparison",
       "name": "Require same-layer product comparisons (DeepPattern layer-check)",
       "category": "Agent Honesty",
