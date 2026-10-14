@@ -12,6 +12,7 @@
  *    for LoRA fine-tuning / on-device student model adaptation.
  */
 
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { findDecisiveStep } = require('./decisive-step-evaluator');
@@ -103,7 +104,7 @@ function distillDecisiveDpoPair({ taskGoal = '', trajectorySteps = [] } = {}, op
   ].filter(Boolean).join('\n\n');
 
   const pair = {
-    id: `distill_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    id: `distill_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
     prompt: fullPrompt,
     chosen: chosenPatch,
     rejected: rejectedPatch,
