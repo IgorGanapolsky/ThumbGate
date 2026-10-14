@@ -10,6 +10,7 @@
     { "id": "adapter:claw", "purpose": "Claw-style enterprise agent adapter docs" },
     { "id": "adapter:cline", "purpose": "Cline install path" },
     { "id": "adapter:codex", "purpose": "OpenAI Codex local adapter" },
+    { "id": "adapter:confidence", "purpose": "Spotify Confidence MCP pre-action governance diode and flag rollout gate" },
     { "id": "adapter:forge", "purpose": "Forge.yaml adapter" },
     { "id": "adapter:future-agi", "purpose": "Future AGI evaluator bridge" },
     { "id": "adapter:gcp", "purpose": "Dialogflow CX / Vertex scorer adapter" },
