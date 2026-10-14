@@ -522,8 +522,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 622 -> 625 (2026-10-13): scripts/decisive-step-evaluator.js + scripts/decisive-step-doctor.js + decisive-step-evaluator skill (+3).
     // 625 -> 626 (2026-10-13): restored .agents/skills/deeppattern-discipline-honesty-not-clone/ in package.json files (+1).
     // 626 -> 628 (2026-10-14): scripts/agentic-graph-rag.js + scripts/decisive-dpo-distiller.js (+2).
-    manifest.fileCount <= 628,
-    `npm package should stay <= 628 files, got ${manifest.fileCount}`
+    // 628 -> 631 (2026-10-14): adapters/confidence/ (CONFIDENCE.md, config.json) + scripts/spotify-confidence-diode.js (+3).
+    manifest.fileCount <= 631,
+    `npm package should stay <= 631 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
