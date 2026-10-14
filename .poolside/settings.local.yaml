@@ -1,0 +1,9 @@
+default_config_options:
+  mode: always-allow
+tools:
+  shell:
+    allow:
+      - "*"
+paths:
+  allow:
+    - path: /**
