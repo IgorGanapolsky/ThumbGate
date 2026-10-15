@@ -2988,6 +2988,12 @@ function harnessCeilingDoctor() {
   const exitCode = runCli(process.argv.slice(3));
   if (exitCode !== 0) process.exitCode = exitCode;
 }
+
+function decisiveStepDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'decisive-step-doctor'));
+  const exitCode = runCli(process.argv.slice(3));
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
 function llmObsHonesty() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -4030,6 +4036,7 @@ function help() {
   console.log('  omp-coordination-honesty   Named-model session handoff on the checkout lease (omp FORMAT; does not install omp)');
   console.log('  harness-ceiling       Failure composition and harness evolution ceiling detection (arXiv:2610.11655)');
   console.log('  halo-trace-optimizer  Analyze agent trace logs for thrashing and stalls (HALO FORMAT)');
+  console.log('  decisive-step         Decisive-step coding agent evaluation (NVIDIA arXiv:2610.10478)');
   console.log('  board-loop            Classify+drain Issues/PR wall (BEHIND Dependabot, never approve)');
   console.log('  workspace-search-route     Route query to rg/fts/vector/hybrid/graph (zg FORMAT)');
   console.log('  intent-governed-execution  NL intent → classify/authorize/gate/HITL/evidence (CyberStrike FORMAT)');
@@ -4140,6 +4147,7 @@ const SUBCOMMAND_HELP = {
   'omp-coordination-honesty': 'Usage: npx thumbgate omp-coordination-honesty [--claim="..."] [--handoff=path] [--json] [--map-only] [--strict]\n\nMap omp session/subagent/collab FORMAT onto the checkout lease. Does not install omp.',
   'harness-ceiling': 'Usage: npx thumbgate harness-ceiling [--json] [--map-only] [--evaluate] [--process=N] [--content=N]\n\narXiv:2610.11655 diagnose-then-intervene rail: failure composition and harness evolution ceiling detection.',
   'verify-claims': 'Usage: npx thumbgate verify-claims --claim="the row count is 1,284" [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nRecheck supported factual claims against operator-configured SQLite, filesystem, and JSON sources. Exits non-zero on mismatch, missing verifier, or verifier error.',
+  'decisive-step': 'Usage: npx thumbgate decisive-step [--json] [--map-only]\n\nNVIDIA arXiv:2610.10478 decisive-step evaluation: isolates the first edit that flips tests from fail to pass and predicts coding skill at rho=0.964.',
   'hermes-gate': 'Usage: npx thumbgate hermes-gate\n\nNous Research Hermes Agent pre_tool_call shell hook: reads Hermes tool-call JSON from stdin, runs the ThumbGate gate pipeline (strict by default), and outputs {"decision":"block","reason":...} to veto or {} to allow. Gates terminal/patch/skill_manage etc. See adapters/hermes/config.yaml.',
   'break-glass': 'Usage: npx thumbgate break-glass --reason="why" [--ttl=5m] [--json]\n\nShort-lived recovery path for over-firing gates. Allows hook settings edits and satisfies PR-create/thread-check gates without disabling core destructive-action protections.',
   serve:         'Usage: npx thumbgate serve\n\nStart the MCP stdio server. This is for agent runtimes, not the local HTTP dashboard.',
@@ -4853,6 +4861,11 @@ switch (COMMAND) {
   case 'harness-ceiling':
   case 'harness-ceiling-doctor':
     harnessCeilingDoctor();
+    break;
+  case 'decisive-step':
+  case 'decisive-step-doctor':
+  case 'nvidia-decisive-step':
+    decisiveStepDoctor();
     break;
   case 'llm-obs-honesty':
   case 'datadog-llm-obs':
