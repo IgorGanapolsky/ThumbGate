@@ -175,6 +175,7 @@ jobs:
 
           sync_railway_variables() {
             retry_railway "set THUMBGATE_API_KEY" railway variables set --skip-deploys THUMBGATE_API_KEY="$THUMBGATE_API_KEY" "${SERVICE_ARGS[@]}"
+            retry_railway "set THUMBGATE_OPERATOR_KEY" railway variables set --skip-deploys THUMBGATE_OPERATOR_KEY="$THUMBGATE_OPERATOR_KEY" "${SERVICE_ARGS[@]}"
             retry_railway "set THUMBGATE_BUILD_SHA" railway variables set --skip-deploys THUMBGATE_BUILD_SHA="$GITHUB_SHA" "${SERVICE_ARGS[@]}"
             retry_railway "set THUMBGATE_BUILD_GENERATED_AT" railway variables set --skip-deploys THUMBGATE_BUILD_GENERATED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "${SERVICE_ARGS[@]}"
             retry_railway "set THUMBGATE_PUBLIC_APP_ORIGIN" railway variables set --skip-deploys THUMBGATE_PUBLIC_APP_ORIGIN="$THUMBGATE_PUBLIC_APP_ORIGIN" "${SERVICE_ARGS[@]}"
