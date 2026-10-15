@@ -85,12 +85,28 @@ function finalizeEmbedding(vector, options = {}) {
 }
 
 
+let _explicitVectorStoreEngine = null;
+
 function resolveVectorBackend(env = process.env) {
+  if (_explicitVectorStoreEngine) return _explicitVectorStoreEngine;
   const explicit = String(env.THUMBGATE_VECTOR_BACKEND || '').trim().toLowerCase();
   if (explicit === 'hotdata') return 'hotdata';
   if (explicit === 'lancedb') return 'lancedb';
   if (env.HOTDATA_API_KEY && env.HOTDATA_WORKSPACE_ID) return 'hotdata';
   return 'lancedb';
+}
+
+function getVectorStoreEngine() {
+  return _explicitVectorStoreEngine || resolveVectorBackend();
+}
+
+function setVectorStoreEngine(engine) {
+  _explicitVectorStoreEngine = engine;
+  if (engine) {
+    process.env.THUMBGATE_VECTOR_BACKEND = engine;
+  } else {
+    delete process.env.THUMBGATE_VECTOR_BACKEND;
+  }
 }
 
 async function getLanceDB() {
@@ -785,6 +801,8 @@ async function upsertFeedback(feedbackEvent) {
       await db.createTable(TABLE_NAME, [record]);
     }
   });
+
+  return { ok: true, store: resolveVectorBackend(), id: feedbackEvent.id };
 }
 
 async function searchSimilar(queryText, limit = 5) {
@@ -864,5 +882,7 @@ module.exports = {
   resolveOutputDimensionality,
   applyMatryoshkaDimensionality,
   resolveVectorBackend,
+  getVectorStoreEngine,
+  setVectorStoreEngine,
   finalizeEmbedding,
 };

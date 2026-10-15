@@ -1,0 +1,61 @@
+{
+  "$schema": "https://thumbgate.dev/schemas/policy-pack-v1.json",
+  "name": "google-universal-cart-diode",
+  "version": "1.0.0",
+  "title": "Google Universal Cart & UCP Pre-Action Spend Diode",
+  "description": "Sub-0.5ms PreToolUse execution firewall for agentic commerce. Prevents Gemini, Claude, and shopping bots from executing unauthorized purchases, duplicate checkouts, and runaway spend via Google Pay and the Universal Commerce Protocol.",
+  "author": "ThumbGate",
+  "license": "MIT",
+  "rules": [
+    {
+      "id": "ucp-max-order-ceiling",
+      "severity": "BLOCK",
+      "metric": "order.total",
+      "operator": "LESS_THAN_OR_EQUAL",
+      "threshold": 100.00,
+      "message": "Order total exceeds $100.00 ceiling. Operator override required."
+    },
+    {
+      "id": "ucp-daily-spend-limit",
+      "severity": "BLOCK",
+      "metric": "spend.daily_rolling",
+      "operator": "LESS_THAN_OR_EQUAL",
+      "threshold": 250.00,
+      "message": "Cumulative daily agent commerce spend exceeded $250.00 ceiling."
+    },
+    {
+      "id": "ucp-item-quantity-spike",
+      "severity": "BLOCK",
+      "metric": "items[].quantity",
+      "operator": "LESS_THAN_OR_EQUAL",
+      "threshold": 5,
+      "message": "Single item quantity exceeds 5 units. Possible hallucinated bulk purchase."
+    },
+    {
+      "id": "ucp-duplicate-checkout-window",
+      "severity": "BLOCK",
+      "metric": "cart.hash.cooldown_seconds",
+      "operator": "GREATER_THAN",
+      "threshold": 600,
+      "message": "Duplicate checkout attempted within 600 seconds. Runaway retry loop interdicted."
+    },
+    {
+      "id": "ucp-seller-of-record-whitelist",
+      "severity": "BLOCK",
+      "metric": "merchant.domain",
+      "operator": "IN_SET",
+      "allowlist": [
+        "target.com",
+        "walmart.com",
+        "nike.com",
+        "sephora.com",
+        "ulta.com",
+        "wayfair.com",
+        "stevemadden.com",
+        "quince.com",
+        "myshopify.com"
+      ],
+      "message": "Merchant domain not in trusted Universal Commerce Seller-of-Record registry."
+    }
+  ]
+}

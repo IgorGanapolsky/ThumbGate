@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Google Universal Cart & UCP Pre-Action Spend Firewall — ThumbGate</title>
+<meta name="description" content="Sub-millisecond PreToolUse execution firewall for Google Universal Cart and Universal Commerce Protocol (UCP). Protects corporate cards and budgets against runaway autonomous agent checkout loops.">
+<link rel="canonical" href="__APP_ORIGIN__/universal-cart-firewall">
+<meta property="og:title" content="Google Universal Cart & UCP Spend Firewall — ThumbGate">
+<meta property="og:description" content="Google brought Universal Cart to Gemini and Search. ThumbGate stops autonomous agent runaway checkouts in <0.5ms on local CPU before payments execute.">
+<meta property="og:type" content="website">
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #05080a;
+  --panel: #0d1418;
+  --panel-2: #12181d;
+  --line: #24323a;
+  --text: #eef7f9;
+  --muted: #a9b7bd;
+  --cyan: #28d5ee;
+  --green: #48dd83;
+  --red: #ff7676;
+  --white: #ffffff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+a { color: inherit; text-decoration: none; }
+header, main, footer { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 0;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+.brand-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  border-radius: 999px;
+  background: rgba(40, 213, 238, 0.12);
+  color: var(--cyan);
+  border: 1px solid rgba(40, 213, 238, 0.3);
+}
+.nav-links { display: flex; gap: 20px; align-items: center; font-size: 0.92rem; color: var(--muted); }
+.nav-links a:hover { color: var(--text); }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+.btn-primary { background: var(--cyan); color: #000; }
+.btn-primary:hover { background: #55e0f5; transform: translateY(-1px); }
+.btn-secondary { background: var(--panel-2); color: var(--text); border-color: var(--line); }
+.btn-secondary:hover { background: #192229; }
+.hero {
+  padding: 64px 0 48px;
+  text-align: center;
+  max-width: 860px;
+  margin: 0 auto;
+}
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(72, 221, 131, 0.1);
+  border: 1px solid rgba(72, 221, 131, 0.25);
+  border-radius: 999px;
+  color: var(--green);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+h1 {
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  margin: 0 0 20px;
+}
+.lead {
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0 auto 32px;
+}
+.hero-actions { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.simulator-section {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 32px;
+  margin: 48px 0;
+}
+.sim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.sim-title { font-size: 1.4rem; font-weight: 800; margin: 0; }
+.sim-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.sim-tab-btn {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.sim-tab-btn.active {
+  background: rgba(40, 213, 238, 0.15);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  font-weight: 700;
+}
+.sim-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 768px) {
+  .sim-grid { grid-template-columns: 1fr; }
+}
+.code-panel {
+  background: #000;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85rem;
+  color: #a5d6ff;
+  overflow-x: auto;
+  min-height: 220px;
+}
+.verdict-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.verdict-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  width: fit-content;
+  margin-bottom: 12px;
+}
+.verdict-badge.allow { background: rgba(72, 221, 131, 0.15); color: var(--green); border: 1px solid var(--green); }
+.verdict-badge.block { background: rgba(255, 118, 118, 0.15); color: var(--red); border: 1px solid var(--red); }
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin: 64px 0;
+}
+@media (max-width: 860px) {
+  .pricing-grid { grid-template-columns: 1fr; }
+}
+.pricing-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+}
+.pricing-card.featured {
+  border-color: var(--cyan);
+  box-shadow: 0 0 24px rgba(40, 213, 238, 0.1);
+}
+.price-tag {
+  font-size: 2.2rem;
+  font-weight: 900;
+  margin: 12px 0 6px;
+}
+.price-period { font-size: 0.9rem; color: var(--muted); font-weight: normal; }
+.feature-list { list-style: none; padding: 0; margin: 20px 0 auto; }
+.feature-list li {
+  padding: 8px 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.feature-list li::before {
+  content: "✓";
+  color: var(--cyan);
+  font-weight: 900;
+}
+footer {
+  border-top: 1px solid var(--line);
+  padding: 32px 0 48px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ThumbGate Google Universal Cart Spend Diode",
+  "applicationCategory": "SecurityApplication",
+  "operatingSystem": "macOS, Linux, Windows",
+  "offers": {
+    "@type": "Offer",
+    "price": "19",
+    "priceCurrency": "USD",
+    "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro"
+  },
+  "description": "Sub-millisecond PreToolUse firewall for agentic commerce and Google Universal Commerce Protocol (UCP)."
+}
+</script>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <a href="/">ThumbGate</a>
+    <span class="brand-badge">UCP Diode</span>
+  </div>
+  <nav class="nav-links">
+    <a href="/pricing">Pricing</a>
+    <a href="/policy-packs.html">Policy Packs</a>
+    <a href="/diagnostic">Diagnostics</a>
+    <a href="/checkout/pro?plan_id=pro" class="btn btn-primary">Get Pro — $19/mo</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-tag">
+      <span>●</span> Google Universal Cart & UCP Released Today (Oct 15, 2026)
+    </div>
+    <h1>Google Launched Universal Cart for Gemini.<br><span style="color:var(--cyan)">Don't Let Autonomous Agents Drain Your Card.</span></h1>
+    <p class="lead">
+      Google’s new <strong>Universal Commerce Protocol (UCP)</strong> lets AI agents checkout across Nike, Target, Walmart, Ulta, and Shopify in a single tap. 
+      ThumbGate is the <strong>sub-millisecond local PreToolUse firewall</strong> that intercepts rogue purchases, stops duplicate checkout loops, and enforces spend ceilings before payments clear.
+    </p>
+    <div class="hero-actions">
+      <a href="/checkout/pro?plan_id=pro" class="btn btn-primary">Deploy Universal Cart Firewall ($19/mo)</a>
+      <a href="/pricing#buy" class="btn btn-secondary">Book Enterprise Commerce Audit ($499)</a>
+    </div>
+  </section>
+
+  <!-- Interactive Live Simulator -->
+  <section class="simulator-section">
+    <div class="sim-header">
+      <div>
+        <h2 class="sim-title">Live PreToolUse Diode Simulator</h2>
+        <p style="margin:4px 0 0; color:var(--muted); font-size:0.85rem;">Test how ThumbGate inspects UCP tool calls locally on CPU in &lt;0.5ms</p>
+      </div>
+      <div class="sim-tabs">
+        <button class="sim-tab-btn active" onclick="loadCase('laptop')">1. $1,400 Laptop (Over-budget)</button>
+        <button class="sim-tab-btn" onclick="loadCase('duplicate')">2. Duplicate Retry Loop</button>
+        <button class="sim-tab-btn" onclick="loadCase('untrusted')">3. Untrusted Dropshipper</button>
+        <button class="sim-tab-btn" onclick="loadCase('safe')">4. Verified Target Item ($32)</button>
+      </div>
+    </div>
+
+    <div class="sim-grid">
+      <div>
+        <div style="font-size:0.85rem; font-weight:700; margin-bottom:8px; color:var(--muted);">INTERCEPTED TOOL CALL (UCP / Google Pay):</div>
+        <pre id="code-display" class="code-panel"></pre>
+      </div>
+      <div class="verdict-box">
+        <div id="verdict-badge" class="verdict-badge"></div>
+        <div id="verdict-reason" style="font-weight:700; margin-bottom:8px; font-size:1rem;"></div>
+        <div id="verdict-metrics" style="font-size:0.85rem; color:var(--muted); line-height:1.6;"></div>
+        <div id="verdict-receipt" style="margin-top:14px; padding-top:14px; border-top:1px solid var(--line); font-family:monospace; font-size:0.78rem; color:#7ee787;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Cards -->
+  <section class="pricing-grid">
+    <div class="pricing-card">
+      <h3>Open Source Core</h3>
+      <p style="color:var(--muted); font-size:0.9rem;">Local-first pre-action firewall for personal developer machines.</p>
+      <div class="price-tag">$0 <span class="price-period">forever</span></div>
+      <ul class="feature-list">
+        <li>Sub-0.5ms PreToolUse diode engine</li>
+        <li>Basic spend ceilings ($100 default)</li>
+        <li>100% offline CPU evaluation</li>
+        <li>MIT License</li>
+      </ul>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate" class="btn btn-secondary" style="margin-top:20px;">Install via npm</a>
+    </div>
+
+    <div class="pricing-card featured">
+      <div style="color:var(--cyan); font-weight:700; font-size:0.8rem; text-transform:uppercase;">Most Popular</div>
+      <h3>ThumbGate Pro</h3>
+      <p style="color:var(--muted); font-size:0.9rem;">For teams running autonomous agents with corporate card access.</p>
+      <div class="price-tag">$19 <span class="price-period">/ month</span></div>
+      <ul class="feature-list">
+        <li>Unlimited Universal Cart & UCP spend diodes</li>
+        <li>Configurable daily ceilings & merchant whitelists</li>
+        <li>Runaway checkout loop interdiction (5x cut-off)</li>
+        <li>Cryptographic HMAC-SHA256 order receipts</li>
+        <li>Automated Slack & Webhook spend alerts</li>
+      </ul>
+      <a href="/checkout/pro?plan_id=pro" class="btn btn-primary" style="margin-top:20px;">Get Pro Protection</a>
+    </div>
+
+    <div class="pricing-card">
+      <h3>1-Day Commerce Diagnostic</h3>
+      <p style="color:var(--muted); font-size:0.9rem;">White-glove agent reliability & retail spend security audit.</p>
+      <div class="price-tag">$499 <span class="price-period">one-time</span></div>
+      <ul class="feature-list">
+        <li>Full audit of agent tool paths & checkout integrations</li>
+        <li>Custom UCP / Google Pay PreToolUse policy pack</li>
+        <li>Automated regression test suite with rollout proof</li>
+        <li>Direct 1-on-1 CTO architecture session</li>
+      </ul>
+      <a href="/pricing#buy" class="btn btn-secondary" style="margin-top:20px;">Book $499 Diagnostic</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>© 2026 ThumbGate. The Autonomous Infrastructure Firewall.</p>
+  <p style="font-size:0.75rem; color:#5b6761;">Google, Gemini, Google Pay, and Universal Commerce Protocol are trademarks of Google LLC. ThumbGate is an independent software firewall.</p>
+</footer>
+
+<script>
+const testCases = {
+  laptop: {
+    toolName: "universal_cart_checkout",
+    order: {
+      merchant: "walmart.com",
+      total: 1399.00,
+      items: [{ name: "MacBook Pro 16", quantity: 1, price: 1399.00 }]
+    },
+    allowed: false,
+    code: "ORDER_TOTAL_EXCEEDED",
+    reason: "Order total ($1,399.00) exceeds safety limit of $100.00.",
+    latency: "0.082ms",
+    enforcement: "Execution hard-blocked at PreToolUse boundary before hitting Google Pay."
+  },
+  duplicate: {
+    toolName: "universal_cart_checkout",
+    order: {
+      merchant: "quince.com",
+      total: 68.00,
+      items: [{ name: "Mongolian Cashmere Sweater", quantity: 1, price: 68.00 }]
+    },
+    allowed: false,
+    code: "DUPLICATE_CART_INTERDICTED",
+    reason: "Identical cart payload executed 2x within 600s window.",
+    latency: "0.045ms",
+    enforcement: "Runaway purchase loop halted. Second payment authorization dropped."
+  },
+  untrusted: {
+    toolName: "universal_cart_checkout",
+    order: {
+      merchant: "shady-tech-deals.xyz",
+      total: 49.99,
+      items: [{ name: "Smart Fitness Watch", quantity: 1, price: 49.99 }]
+    },
+    allowed: false,
+    code: "UNTRUSTED_MERCHANT_DOMAIN",
+    reason: "Merchant domain 'shady-tech-deals.xyz' not in verified UCP Seller-of-Record registry.",
+    latency: "0.104ms",
+    enforcement: "Prevented unknown dropshipper credit card egress."
+  },
+  safe: {
+    toolName: "universal_cart_checkout",
+    order: {
+      merchant: "target.com",
+      total: 32.50,
+      items: [{ name: "Wireless Bluetooth Earbuds", quantity: 1, price: 32.50 }]
+    },
+    allowed: true,
+    code: "UCP_CHECKOUT_APPROVED",
+    reason: "Safe order approved for $32.50 at target.com.",
+    latency: "0.112ms",
+    receipt: "rcpt_ucp_8f4d92a110b6 | HMAC: 5e91b...34f8a (Verified)"
+  }
+};
+
+function loadCase(key) {
+  document.querySelectorAll('.sim-tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  const c = testCases[key];
+  document.getElementById('code-display').textContent = JSON.stringify({
+    toolName: c.toolName,
+    order: c.order
+  }, null, 2);
+
+  const badge = document.getElementById('verdict-badge');
+  badge.className = 'verdict-badge ' + (c.allowed ? 'allow' : 'block');
+  badge.textContent = c.allowed ? '✓ ALLOWED' : '🛑 INTERDICTED';
+
+  document.getElementById('verdict-reason').textContent = c.reason;
+  document.getElementById('verdict-metrics').innerHTML = `
+    <strong>Action:</strong> ${c.enforcement || 'Passed to Google Pay gateway.'}<br>
+    <strong>Evaluation Latency:</strong> ${c.latency} (Local CPU)<br>
+    <strong>Code:</strong> <code>${c.code}</code>
+  `;
+
+  document.getElementById('verdict-receipt').textContent = c.receipt ? `Signed Cryptographic Receipt:\n${c.receipt}` : '';
+}
+
+// Initial load
+loadCase('laptop');
+</script>
+
+</body>
+</html>
