@@ -28,6 +28,7 @@ const _pipelineCache = new Map();
 let _lastEmbeddingProfile = null;
 let _pipelineLoader = null;
 let _geminiEmbedderForTests = null;
+let _vectorStoreEngine = process.env.THUMBGATE_VECTOR_STORE || 'lancedb';
 const TABLE_NAME = 'thumbgate_memories';
 const FEATURE_HASH_DIMENSIONS = 384;
 
@@ -740,6 +741,20 @@ async function upsertFeedback(feedbackEvent) {
     title: feedbackEvent.id || 'thumbgate feedback',
   });
 
+  if (_vectorStoreEngine === 'hotdata') {
+    const { getHotDataDbStore } = require('../adapters/hotdata/hotdata-db-store');
+    const hotStore = getHotDataDbStore();
+    return hotStore.upsertFeedback({
+      id: feedbackEvent.id,
+      text: textForEmbedding,
+      vector,
+      category: feedbackEvent.signal || 'feedback',
+      tags: feedbackEvent.tags || [],
+      timestamp: feedbackEvent.timestamp,
+      metadata: { context: feedbackEvent.context || '' },
+    });
+  }
+
   const record = {
     id: feedbackEvent.id,
     text: textForEmbedding,
@@ -771,6 +786,17 @@ async function upsertFeedback(feedbackEvent) {
 }
 
 async function searchSimilar(queryText, limit = 5) {
+  if (_vectorStoreEngine === 'hotdata') {
+    const { getHotDataDbStore } = require('../adapters/hotdata/hotdata-db-store');
+    const hotStore = getHotDataDbStore();
+    const vector = await embed(queryText, {
+      kind: 'query',
+      task: 'code retrieval',
+    });
+    const result = await hotStore.searchSimilar(vector, { limit });
+    return result.results;
+  }
+
   const lanceDir = getLanceDir();
   ensureDir(lanceDir);
 
@@ -824,11 +850,21 @@ function setOpenAICompatibleEmbedderForTests(loader) {
   _lastEmbeddingProfile = null;
 }
 
+function setVectorStoreEngine(engine) {
+  _vectorStoreEngine = engine;
+}
+
+function getVectorStoreEngine() {
+  return _vectorStoreEngine;
+}
+
 module.exports = {
   upsertFeedback,
   searchSimilar,
   embed,
   TABLE_NAME,
+  setVectorStoreEngine,
+  getVectorStoreEngine,
   getEmbeddingConfig,
   getLastEmbeddingProfile,
   getActiveEmbeddingProfile: getLastEmbeddingProfile,
