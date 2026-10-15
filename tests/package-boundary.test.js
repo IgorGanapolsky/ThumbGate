@@ -518,9 +518,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 601 -> 612 (2026-10-09): Strands Box diode/decider, gaming pages, ActiveSaddler, WinDbg, multi-harness, Third-Author, EmbeddingGemma (+11)
     // 612 -> 619: three recovered command/skill pairs and session-interactivity.js (+7).
     // 621 -> 641 (2026-10-15): operator framework landing, blog posts, policy packs, and continuity pages (+20).
-    // 641 -> 647 (2026-10-15): HotData DB integration adapters and Google Universal Cart spend firewall blog (+6).
-    manifest.fileCount <= 647,
-    `npm package should stay <= 647 files, got ${manifest.fileCount}`
+    // 641 -> 648 (2026-10-15): HotData DB integration adapters, Google Universal Cart spend firewall blog & landing page (+7).
+    manifest.fileCount <= 648,
+    `npm package should stay <= 648 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

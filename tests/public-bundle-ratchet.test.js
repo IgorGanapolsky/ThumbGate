@@ -271,8 +271,8 @@ const path = require('node:path');
 // 612 -> 619 (2026-10-12): three recovered command/skill pairs and session-interactivity.js (+7).
 // 619 -> 621 (2026-10-13): scripts/omp-coordination-honesty.js + omp-coordination-honesty-not-clone skill (+2).
 // 621 -> 641 (2026-10-15): Autotomy Dual-Lock doctor, skills, operator-framework, and public pages (+20).
-// 641 -> 647 (2026-10-15): HotData DB integration adapters and Google Universal Cart spend firewall blog (+6).
-const BASELINE_FILE_COUNT = 647;
+// 641 -> 648 (2026-10-15): HotData DB integration adapters, Google Universal Cart spend firewall blog & landing page (+7).
+const BASELINE_FILE_COUNT = 648;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
