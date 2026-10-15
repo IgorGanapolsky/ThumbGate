@@ -59,13 +59,29 @@ node scripts/demo-hotdata-eddie.js
 
 ---
 
-## 4. Live Cloud Verification Receipt (`https://api.hotdata.dev/v1`)
+## 4. Live Cloud Verification Receipt ([Hotdata Console](https://app.hotdata.dev/databases/work3kgcef3w9om5zsxbmkz77ndwh7/) · [API Reference](https://www.hotdata.dev/docs/api-reference))
+
+> **Note on REST API URLs**: `https://api.hotdata.dev/v1/...` is an authenticated REST API prefix (opening bare `/v1` in a browser without `Authorization: Bearer <token>` and `X-Workspace-Id` headers returns `HTTP 404`). Use the clickable console links below in a browser, or run the authenticated `curl` command to inspect the live database directly.
+
+### Clickable Web Console Links
+- **Live Databases Console (`thumbgate-memories`)**: [https://app.hotdata.dev/databases/work3kgcef3w9om5zsxbmkz77ndwh7/](https://app.hotdata.dev/databases/work3kgcef3w9om5zsxbmkz77ndwh7/)
+- **Live Observability Dashboard**: [https://app.hotdata.dev/observability/work3kgcef3w9om5zsxbmkz77ndwh7/](https://app.hotdata.dev/observability/work3kgcef3w9om5zsxbmkz77ndwh7/)
+- **Hotdata Public API Docs**: [https://www.hotdata.dev/docs/api-reference](https://www.hotdata.dev/docs/api-reference)
+
+### Reproducible CLI / `curl` Verification
+```bash
+HOTDATA_API_KEY="$(security find-generic-password -a thumbgate -s HOTDATA_API_KEY -w)"
+curl -s \
+  -H "Authorization: Bearer $HOTDATA_API_KEY" \
+  -H "X-Workspace-Id: work3kgcef3w9om5zsxbmkz77ndwh7" \
+  https://api.hotdata.dev/v1/databases | jq .
+```
 
 Verified end-to-end against live Hotdata Cloud (`2026-10-15T19:42Z`):
 
 | Resource / Operation | Live Receipt ID / Metric |
 | :--- | :--- |
-| **Workspace ID** | `work3kgcef3w9om5zsxbmkz77ndwh7` |
+| **Workspace ID** | [`work3kgcef3w9om5zsxbmkz77ndwh7`](https://app.hotdata.dev/databases/work3kgcef3w9om5zsxbmkz77ndwh7/) |
 | **Database ID (`thumbgate-memories`)** | `dbid4wjx1vw06kr9peb8bqm31g5ydf` |
 | **Connection ID** | `connlbq6hvrqmn65wkulu4yq5npw13` |
 | **HNSW Vector Index** | `thumbgate_memories_vector_idx` (`status: "ready"`, `metric: "cosine"`, `vector_precision: "float32"`, `algorithm: "hnsw"`) |
@@ -74,7 +90,7 @@ Verified end-to-end against live Hotdata Cloud (`2026-10-15T19:42Z`):
 | **384-dim `Xenova/all-MiniLM-L6-v2` Cosine Ranking** | Top match `fb_e2e_live_1` (`_distance: 0.216993`) vs `fb_e2e_live_2` (`_distance: 0.939921`) |
 | **ThumbGate `PreToolUse` Gate Overhead** | `0.08ms` on local CPU (`gate:hotdata:runaway_query_loop` & `gate:hotdata:destructive_write_boundary`) |
 
-### Production Adapter Hardening Notes (Discovered During Live `api.hotdata.dev/v1` Testing)
+### Production Adapter Hardening Notes
 1. **Arrow Timestamp Precision Normalization (`timestamp_s` vs `timestamp_ms`)**: Hotdata's Arrow schema inference returns `409 Conflict` if an initial load uses second-precision ISO strings (`YYYY-MM-DDTHH:MM:SSZ` $\rightarrow$ `timestamp_s`) and a subsequent load uses millisecond ISO strings (`YYYY-MM-DDTHH:MM:SS.sssZ` $\rightarrow$ `timestamp_ms`). `serializeRecordsToCsv()` normalizes all ISO timestamps to second precision (`.replace(/\.\d+Z$/, 'Z')`).
 2. **Content-Addressed `idempotency_key`**: Re-using a record-ID-only `idempotency_key` when upserting modified text/vectors returns `409 IDEMPOTENCY_KEY_CONFLICT`. `HotdataTable.add()` computes `tg_${sha256(mode + '::' + csvData).slice(0, 32)}` so exact retries are idempotent while updated rows never collide.
 3. **Presigned `/v1/uploads` Load Payload**: When loading via `upload_id` after `POST /v1/uploads/{id}/finalize`, `idempotency_key` is omitted (`upload_id` is natively idempotent per Hotdata API spec).
