@@ -56,3 +56,25 @@ node scripts/demo-hotdata-eddie.js
 | **Table Publish / Upsert** | `POST /v1/databases/{db_id}/schemas/main/tables/thumbgate_memories/loads` | First load uses `mode: "replace"`; subsequent updates use `mode: "upsert"` with `key: ["id"]` and `idempotency_key`. Automatically branches on `413 INLINE_DATA_TOO_LARGE` to `/v1/uploads` presigned PUT + `/finalize`. |
 | **Vector Index Build** | `POST /v1/connections/{conn_id}/tables/main/thumbgate_memories/indexes` | Builds `{ index_name: "thumbgate_memories_vector_idx", index_type: "vector", algorithm: "hnsw", columns: ["vector"], metric: "cosine", vector_precision: "float32" }`. |
 | **Nearest-Neighbor Search** | `POST /v1/query` (`X-Database-Id`, `dialect: "hotsql"`) | Executes `SELECT id, text, vector, signal, tags, timestamp, context, _distance FROM vector_search('default.main.thumbgate_memories', 'vector', '[...]', 50) ORDER BY _distance ASC LIMIT <k>`. |
+
+---
+
+## 4. Live Cloud Verification Receipt (`https://api.hotdata.dev/v1`)
+
+Verified end-to-end against live Hotdata Cloud (`2026-10-15T19:42Z`):
+
+| Resource / Operation | Live Receipt ID / Metric |
+| :--- | :--- |
+| **Workspace ID** | `work3kgcef3w9om5zsxbmkz77ndwh7` |
+| **Database ID (`thumbgate-memories`)** | `dbid4wjx1vw06kr9peb8bqm31g5ydf` |
+| **Connection ID** | `connlbq6hvrqmn65wkulu4yq5npw13` |
+| **HNSW Vector Index** | `thumbgate_memories_vector_idx` (`status: "ready"`, `metric: "cosine"`, `vector_precision: "float32"`, `algorithm: "hnsw"`) |
+| **Live SQL Query Run ID** | `qrunwwg1njv8sb3n749vhhjnn8irej` (`result_id: rslt1n0pjaagq5sojzfpt34sgf0ggs`, `execution_time_ms: 339`) |
+| **Live `vector_search` Query Run ID** | `qrunix49fvkmnql25mnoplvp5v5fql` (`result_id: rslt5gdb55p23edmizr0u6dg5ljt31`) |
+| **384-dim `Xenova/all-MiniLM-L6-v2` Cosine Ranking** | Top match `fb_e2e_live_1` (`_distance: 0.216993`) vs `fb_e2e_live_2` (`_distance: 0.939921`) |
+| **ThumbGate `PreToolUse` Gate Overhead** | `0.08ms` on local CPU (`gate:hotdata:runaway_query_loop` & `gate:hotdata:destructive_write_boundary`) |
+
+### Production Adapter Hardening Notes (Discovered During Live `api.hotdata.dev/v1` Testing)
+1. **Arrow Timestamp Precision Normalization (`timestamp_s` vs `timestamp_ms`)**: Hotdata's Arrow schema inference returns `409 Conflict` if an initial load uses second-precision ISO strings (`YYYY-MM-DDTHH:MM:SSZ` $\rightarrow$ `timestamp_s`) and a subsequent load uses millisecond ISO strings (`YYYY-MM-DDTHH:MM:SS.sssZ` $\rightarrow$ `timestamp_ms`). `serializeRecordsToCsv()` normalizes all ISO timestamps to second precision (`.replace(/\.\d+Z$/, 'Z')`).
+2. **Content-Addressed `idempotency_key`**: Re-using a record-ID-only `idempotency_key` when upserting modified text/vectors returns `409 IDEMPOTENCY_KEY_CONFLICT`. `HotdataTable.add()` computes `tg_${sha256(mode + '::' + csvData).slice(0, 32)}` so exact retries are idempotent while updated rows never collide.
+3. **Presigned `/v1/uploads` Load Payload**: When loading via `upload_id` after `POST /v1/uploads/{id}/finalize`, `idempotency_key` is omitted (`upload_id` is natively idempotent per Hotdata API spec).

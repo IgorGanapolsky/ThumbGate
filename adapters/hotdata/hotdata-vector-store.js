@@ -23,6 +23,7 @@
  *     unbounded destructive write-plane mutations (`gate:hotdata:destructive_write_boundary`).
  */
 
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -109,7 +110,10 @@ function serializeRecordsToCsv(records = []) {
   const columns = ['id', 'text', 'vector', 'signal', 'tags', 'timestamp', 'context'];
   const header = columns.join(',');
   const rows = records.map(rec =>
-    columns.map(col => escapeCsvCell(rec[col])).join(',')
+    columns.map(col => {
+      const val = col === 'timestamp' && rec[col] ? String(rec[col]).replace(/\.\d+Z$/, 'Z') : rec[col];
+      return escapeCsvCell(val);
+    }).join(',')
   );
   return [header, ...rows].join('\n');
 }
@@ -230,11 +234,13 @@ class HotdataTable {
     // Remote Hotdata API execution when credentials are configured
     if (this.config.remoteEnabled && this.httpClient) {
       const csvData = serializeRecordsToCsv(records);
+      const contentHash = crypto.createHash('sha256').update(`${mode}::${csvData}`).digest('hex').slice(0, 32);
       const loadBody = {
         mode,
         ...(mode === 'upsert' ? { key: ['id'] } : {}),
         data: csvData,
-        idempotency_key: `tg_load_${records[0].id || Date.now()}_${records.length}`,
+        format: 'csv',
+        idempotency_key: `tg_${contentHash}`,
       };
       await this.httpClient.publishTableLoad({
         table: this.tableName,
@@ -335,7 +341,21 @@ class HotdataTable {
 
         if (self.config.remoteEnabled && self.httpClient) {
           const remoteRows = await self.httpClient.executeHotSql(sql);
-          if (Array.isArray(remoteRows)) return remoteRows;
+          if (Array.isArray(remoteRows)) {
+            return remoteRows
+              .map(row => {
+                let parsedVec = row.vector;
+                if (typeof parsedVec === 'string') {
+                  try { parsedVec = JSON.parse(parsedVec); } catch { parsedVec = null; }
+                }
+                const dist = Array.isArray(parsedVec) && parsedVec.length === queryVector.length
+                  ? cosineDistance(queryVector, parsedVec)
+                  : Number(row._distance ?? 1.0);
+                return { ...row, ...(Array.isArray(parsedVec) ? { vector: parsedVec } : {}), _distance: dist };
+              })
+              .sort((a, b) => a._distance - b._distance)
+              .slice(0, _limit);
+          }
         }
 
         const rows = self._readLocalRows();
