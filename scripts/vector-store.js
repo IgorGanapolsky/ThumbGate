@@ -85,9 +85,25 @@ function finalizeEmbedding(vector, options = {}) {
 }
 
 
+function resolveVectorBackend(env = process.env) {
+  const explicit = String(env.THUMBGATE_VECTOR_BACKEND || '').trim().toLowerCase();
+  if (explicit === 'hotdata') return 'hotdata';
+  if (explicit === 'lancedb') return 'lancedb';
+  if (env.HOTDATA_API_KEY && env.HOTDATA_WORKSPACE_ID) return 'hotdata';
+  return 'lancedb';
+}
+
 async function getLanceDB() {
+  if (_lancedbLoader) {
+    if (!_lancedb) _lancedb = await _lancedbLoader();
+    return _lancedb;
+  }
+  if (resolveVectorBackend() === 'hotdata') {
+    const { createHotdataLanceAdapter } = require('../adapters/hotdata/hotdata-vector-store');
+    return createHotdataLanceAdapter();
+  }
   if (!_lancedb) {
-    _lancedb = _lancedbLoader ? await _lancedbLoader() : await import('@lancedb/lancedb');
+    _lancedb = await import('@lancedb/lancedb');
   }
   return _lancedb;
 }
@@ -97,7 +113,8 @@ function getFeedbackDir() {
 }
 
 function getLanceDir() {
-  return path.join(getFeedbackDir(), 'lancedb');
+  const subdir = resolveVectorBackend() === 'hotdata' ? 'hotdata' : 'lancedb';
+  return path.join(getFeedbackDir(), subdir);
 }
 
 
@@ -846,5 +863,6 @@ module.exports = {
   l2NormalizeVector,
   resolveOutputDimensionality,
   applyMatryoshkaDimensionality,
+  resolveVectorBackend,
   finalizeEmbedding,
 };
