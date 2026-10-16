@@ -102,7 +102,13 @@
     .verdicts th,.verdicts td { text-align:left; padding:12px 14px; border-bottom:1px solid var(--line); }
     .verdicts th { background:#efece3; }
     code { background:#ece8dc; padding:1px 5px; border-radius:5px; font-size:.9em; }
-    @media (max-width:900px) { .offers { grid-template-columns:1fr; } }
+    .hero > * { min-width:0; }
+    .verdicts { table-layout:fixed; }
+    .verdicts th:first-child,.verdicts td:first-child { width:30%; }
+    .verdicts td { overflow-wrap:anywhere; }
+    .verdicts code { white-space:normal; overflow-wrap:anywhere; }
+    .card { min-width:0; }
+    @media (max-width:900px) { .offers { grid-template-columns:1fr; } .card { padding:20px; } }
   </style>
   <script type="application/ld+json">
 {
