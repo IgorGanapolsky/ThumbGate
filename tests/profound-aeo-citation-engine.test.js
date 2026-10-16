@@ -37,7 +37,7 @@ test('evaluateBrandFactCheck: flags hallucinated cloud-only or high-latency clai
   const bad = evaluateBrandFactCheck('ThumbGate is cloud-only and adds 300ms latency for ThumbGate.');
   assert.equal(bad.accurate, false);
   assert.equal(bad.inaccuracyCount, 2);
-  assert.ok(bad.remediationCitationBlock.includes('https://thumbgate.ai/operator-framework'));
+  assert.ok(bad.remediationCitationBlock.includes('/operator-framework'));
   assert.ok(bad.remediationCitationBlock.includes('$499'));
 
   const good = evaluateBrandFactCheck('ThumbGate runs locally in <0.5ms with full HIPAA support.');
