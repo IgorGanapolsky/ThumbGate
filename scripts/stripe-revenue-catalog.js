@@ -44,6 +44,46 @@ const DEFAULT_STRIPE_REVENUE_CATALOG = Object.freeze([
     expectedPriceActive: true,
     expectedProductActive: true,
   }),
+  // Operator Framework $499 Sprint Diagnostic Payment Link (separate price on
+  // the "ThumbGate — Sprint Diagnostic" product), verified in Stripe 2026-10-16.
+  Object.freeze({
+    offerId: 'operator_sprint_diagnostic',
+    priceId: 'price_1TX5mTGGBpd520QY1MjCH2BZ',
+    productId: 'prod_UW82mY4J9yND1i',
+    unitAmountCents: 49900,
+    currency: 'usd',
+    cadence: 'one_time',
+    intervalCount: null,
+    status: 'current',
+    expectedPriceActive: true,
+    expectedProductActive: true,
+  }),
+  // Operator Framework service rails (/operator-framework), verified in Stripe
+  // 2026-10-15: Turnkey Setup $2,500 once and Managed Retainer $500/mo.
+  Object.freeze({
+    offerId: 'operator_turnkey_setup',
+    priceId: 'price_1UQw8pGGBpd520QYGr85jyhK',
+    productId: 'prod_VRpoNq4gtjHSqq',
+    unitAmountCents: 250000,
+    currency: 'usd',
+    cadence: 'one_time',
+    intervalCount: null,
+    status: 'current',
+    expectedPriceActive: true,
+    expectedProductActive: true,
+  }),
+  Object.freeze({
+    offerId: 'operator_managed_retainer',
+    priceId: 'price_1UQw8pGGBpd520QYNUbngVy6',
+    productId: 'prod_VRpolIw7nbbOZO',
+    unitAmountCents: 50000,
+    currency: 'usd',
+    cadence: 'month',
+    intervalCount: 1,
+    status: 'current',
+    expectedPriceActive: true,
+    expectedProductActive: true,
+  }),
   Object.freeze({
     offerId: 'team_monthly_legacy',
     priceId: 'price_1TMIagGGBpd520QY1fUOawZt',
