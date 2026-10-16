@@ -1,5 +1,97 @@
 # Changelog
 
+## 1.39.0
+
+### Minor Changes
+
+- 0e2cda9: Integrate ActiveSaddler curriculum non-stationary bandit learning, WinDbg empirical evidence diagnostics, Gaming AI agent infrastructure playbook, and Strands Box Dogwood containment with multi-harness RL invariants. Bump package bundle ratchet from 597 to 607 for the 10 newly packaged runtime and distribution files.
+- 927e6c1: Integrate Fiddler AI control plane honesty (FORMAT steal) providing a unified two-layer control plane across Creation (coding agents) and Production (enterprise runtime agents), an Evaluation Trust Tax TCO calculator ($0 token cost on CPU vs Fiddler $0.002/trace SaaS tax), and sub-millisecond Centor-Diode multi-stage discriminant pre-action firewall.
+- dd796ed: Recover the opt-in lesson graph with complete memory-scope isolation, correction lineage, and canonical feedback counting. Invalidate compiled Reliability Gateway guards when graph identity or the requested scope changes.
+- 5895d84: feat(governance): implement Siren MCP marketing diode and autonomous campaign policy pack
+- 168b061: Implement Vulnerability Pre-Action Diode and Enterprise Triage ROI Calculator (WHOOP/TNS pattern) replacing 3-day manual vulnerability triage with sub-5ms pre-action interdiction.
+
+### Patch Changes
+
+- e85793d: Add Unified Agentic Graph RAG (multi-hop traversal connecting AST symbols, PreToolUse gates, and $499 Diagnostic cash paths) and on-device Decisive DPO Distiller (extracting test-flip preference triples without synthetic benchmark leakage).
+- 6d5a43d: Steal Wisdom.ai context-as-product FORMAT: lint agent packs (goal, constraints, sources, freshness, verifier) with consumer=agent and wrongFit including wisdom_ai. Never clone ACE/Foundry/OSI.
+- 81f1f95: Make the buyer demo fail when required CLI, learning, or MCP proof is missing or contradicted. Keep the MCP client connected until the matching response arrives, and label intentionally skipped sections unverified.
+- 6d5a43d: Steal Visual Studio coverage FORMAT (baseline gaps, skip no-behavior files, remeasure the same scope) onto `scripts/test-coverage.js` via `coverage-gap`. Never clone Test Agent. Never 100%.
+- 91cde1a: Add NVIDIA arXiv:2610.10478 Decisive-Step Evaluation rail. Isolates the first code edit in an agent trajectory that flips the test suite from failing to passing, scores candidate models on decisive-action probability and Patch MCQ contrastive discrimination rather than noisy all-step averaging, and predicts post-training coding capability with Spearman rho = 0.964.
+- 1b9e185: Bump undici from 8.10.2 to 8.11.2 to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 2d5f308: Bump dotenv from 18.0.1 to 18.0.4 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 4bcffeb: Bump @google/genai from 2.23.0 to 2.24.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- f7f56d8: Bump @types/node from 26.6.2 to 26.6.3 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 0d5e6c3: fix(mailer): enforce verified business identity `igor@igorganapolsky.com` and eliminate silent sandbox fallback
+- db8497c: Add arXiv:2610.11655 Harness Evolution Ceiling & Failure Composition rail (diagnose-then-intervene protocol). Labels failed trajectories by the first signal that fires into process vs content failures, detects when harness evolution hits its ceiling (content failures >= 80%, process failures <= 20%), switches the lever to weight training (LoRA/distillation) or model tier escalation, partitions accepted edits into trainable behaviors vs runtime security controls, and guards omp.sh against prompt rule bloat.
+- 59eded8: Isolate daily discovery publisher tests from repository state, credentials, and the shared vault. Keep local outputs staged until Dev.to returns a valid publication receipt, so staging does not suppress retries. Hold retries, including forced runs, when Dev.to returns an ambiguous receipt until the remote outcome is reconciled.
+- 43b6594: Serve `/operator-framework`, add Apple Minions (arXiv:2610.12970) & System-One UMA routing (`scripts/apple-minions-idle-compute-steal.js`), UCP Agentic Checkout Diode (`scripts/ucp-agentic-checkout-diode.js`), Hotdata DB vector store adapter (`adapters/hotdata/`), and OpenFinance Wealth Advisor (`scripts/wealth-freedom-advisor.js`).
+- 22a29e6: Add the /operator-framework page (done-for-you Sprint Diagnostic, Turnkey Setup, Managed Retainer, Pro mention, and a 30% Agency Partner Program) with /go/operator-* checkout redirects, catalog entries for the Turnkey and Retainer prices, a sitemap entry, and a /pricing nav link.
+- 3c3361c: Accept Railway API tokens in deployment policy and select one credential class in the deployment workflow so a stale project token cannot override API authentication.
+- 6d5a43d: Recover four preserved features on current main. Package three CLI modules and their skill packs plus session interactivity metrics, adding seven runtime files. Raise the measured package file ceiling from 612 to 619 and the unpacked size budget from 9.16 MB to 9.25 MB. Preserve the current package contents and existing tests.
+- 6d5a43d: Steal Bolt Forge session-export FORMAT (per-session opt-in, secret strip + seeded tests, operator DENY vs research, already-exported irreversible) onto secret-redaction.js. Never clone Forge. Never 50×.
+- 6d5a43d: feat(metrics): measure what the user waited, not what the server was busy for
+  
+  Adds `src/session-interactivity.js`, implementing the two rates NVIDIA's
+  SemiAnalysis AgentX methodology reports side by side:
+  
+  - **Standard Interactivity** — "output tokens divided by the elapsed time from
+    the first token to the last"
+  - **E2E Normalized Interactivity** — "average output-token rate per user over
+    the full request, calculated by dividing total output tokens by the time from
+    request submission to final-token delivery"
+  
+  Standard starts the clock at the first token, so queue time, scheduling, and a
+  runner that has not claimed the work yet are all invisible to it. **The gap
+  between the two rates is user wait the system does not currently count.**
+  
+  ## Why this is not theoretical
+  
+  2026-08-25, production: a task was created 17:34:08Z and completed 17:34:53Z.
+  Execution was quick and the UI advertised a "90s lease", so every server-side
+  measure said healthy. The user spent 45 seconds watching a spinner that read
+  "Waiting for the fenced VPS runner to pick this up."
+  
+  Standard Interactivity scores that request at ~100 tok/s. E2E scores it at ~11.
+  The test suite pins that ~9x divergence using the incident's real timestamps, so
+  this class of defect becomes a number instead of a screenshot.
+  
+  ## Session-level, because agentic traffic is not request-shaped
+  
+  Also from AgentX: "Agentic sessions are long, stateful, and variable: they chain
+  model calls, tool use, and growing context rather than following a fixed
+  prompt-and-response pattern" — their sample session grows ~60K to ~400K tokens,
+  and a single agentic request is cited at ~15x the tokens of ordinary chat.
+  
+  So the module aggregates whole sessions and **keeps tool gaps in the
+  denominator**: a tool call the user waits through is wait, whoever executes it.
+  A serving stack does not get to subtract offloaded time from its own score.
+  
+  Also included:
+  - `contextGrowth` — reports first/last prompt tokens and the growth factor,
+    which a fixed 8K-in/1K-out benchmark cannot show.
+  - `compareRuns` — refuses to compare two runs unless they replayed the same
+    sessions in the same order. AgentX: "Because every system receives the same
+    recorded traffic, observed differences reflect the serving stack rather than
+    benchmark-specific tuning." Comparing over different traffic measures the
+    traffic.
+  
+  ## Fails closed
+  
+  One unmeasurable turn makes the whole session `UNKNOWN`, never fast — measuring
+  only the good turns would understate the wait, which is the original failure
+  mode. A zero-length generation window yields a `null` rate rather than
+  `Infinity`, since an unmeasurable rate is not an infinitely fast one.
+  
+  14 tests. Not wired into the dashboard yet; this lands the metric and its
+  contract first.
+  
+  Note: this bumps the three npm file-count ceilings 512 -> 513 and the size
+  ceiling 8.01 -> 8.03 MB (main sits at 99.9% of the old size limit). PR #3667
+  makes the same +1 claim, so whichever lands second needs a one-line rebase.
+- 2d18a6b: docs(policy): publish Siren marketing campaign posting policy pack and remediate npm audit findings
+- 27f7ee1: Add Spotify Confidence MCP Pre-Action Governance Diode (`adapters/confidence/`, `scripts/spotify-confidence-diode.js`). Enforces a 10% maximum autonomous canary rollout ceiling, requires verified test proofs before enabling feature flags, locks active A/B experiments against autonomous mutation, and blocks flag deletion in production.
+- 27f7ee1: Update Cloudflare Workers billing handler for Stripe v23 compatibility, updating apiVersion and leveraging dashboard payment methods.
+
 ## Unreleased
 - Add Spotify Confidence MCP Pre-Action Governance Diode (adapters/confidence/, scripts/spotify-confidence-diode.js). Enforces a 10% maximum autonomous canary rollout ceiling, requires verified test proofs before enabling feature flags, locks active A/B experiments against mutation, and blocks production flag deletions. The public package grows from 628 to 631 files.
 - Add Unified Agentic Graph RAG and on-device Decisive DPO Distillation engine. Multi-hop BFS graph traversal connects 25k+ AST code symbols to PreToolUse runtime gates and economic cash paths ($499 Diagnostic). Distills high-signal DPO preference triples from verified fail-to-pass test flips with RRSI benchmark leakage pre-screening. The public package grows from 626 to 628 files.
