@@ -396,14 +396,19 @@ test('the recurring subscription prices agree with the canonical catalog', () =>
   const monthlyDollars = wholeDollars(currentOffer('pro_monthly'));
   const annualDollars = wholeDollars(currentOffer('pro_annual'));
 
+  // The Operator Framework page is the one surface that also sells the managed
+  // retainer; its monthly amount is still read from the catalog, never typed in.
+  const retainerDollars = wholeDollars(currentOffer('operator_managed_retainer'));
+  const extraMonthlyBySurface = { 'public/operator-framework.html': [retainerDollars] };
+
   for (const file of priceBearingSurfaces()) {
     const text = claimText(file);
+    const allowedMonthly = [monthlyDollars, ...(extraMonthlyBySurface[file] || [])];
 
     for (const match of text.matchAll(MONTHLY_PRICE)) {
-      assert.equal(
-        Number(match[1]),
-        monthlyDollars,
-        `${file} advertises $${match[1]}/mo but the canonical catalog says $${monthlyDollars}/mo`,
+      assert.ok(
+        allowedMonthly.includes(Number(match[1])),
+        `${file} advertises $${match[1]}/mo but the canonical catalog says $${allowedMonthly.join(' or $')}/mo`,
       );
     }
 
