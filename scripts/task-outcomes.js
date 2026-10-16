@@ -42,7 +42,7 @@ function normalizeTaskOutcome(input = {}, now = new Date()) {
       evidence: cleanStringArray(verification.evidence),
       unsupportedClaims: nonNegativeInteger(verification.unsupportedClaims),
     },
-    toolCalls: toolCalls.map(normalizeToolCall),
+    toolCalls: toolCalls.map((x) => normalizeToolCall(x)),
     policy: {
       violations: nonNegativeInteger(policy.violations),
       unsafeEscapes: nonNegativeInteger(policy.unsafeEscapes),

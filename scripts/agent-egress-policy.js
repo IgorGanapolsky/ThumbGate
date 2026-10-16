@@ -336,7 +336,7 @@ function ruleMatches(compiled, target) {
  * @returns {{ hit: boolean, action?: string, rule?: object }}
  */
 function matchStaticRules(target, rules = []) {
-  const compiled = (rules || []).map(compileRule);
+  const compiled = (rules || []).map((x) => compileRule(x));
   const denies = compiled.filter((r) => r.action === 'deny');
   const allows = compiled.filter((r) => r.action === 'allow');
 

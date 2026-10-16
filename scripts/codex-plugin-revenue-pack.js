@@ -238,12 +238,12 @@ function buildReadyTargetLanes(report = {}) {
     .filter((target) => /workflow hardening sprint/i.test(normalizeText(target.motionLabel)))
     .sort(compareReadyTargets)
     .slice(0, 4)
-    .map(buildReadyTarget);
+    .map((x) => buildReadyTarget(x));
   const selfServeTargets = targets
     .filter((target) => /pro at/i.test(normalizeText(target.motionLabel)))
     .sort(compareReadyTargets)
     .slice(0, 3)
-    .map(buildReadyTarget);
+    .map((x) => buildReadyTarget(x));
 
   return [
     {
@@ -691,7 +691,7 @@ function renderCodexPluginRevenuePackCsv(pack) {
     ])),
   ];
 
-  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+  return `${rows.map((row) => row.map((x) => csvCell(x)).join(',')).join('\n')}\n`;
 }
 
 function renderCodexReadyTargetsCsv(pack) {
@@ -733,7 +733,7 @@ function renderCodexReadyTargetsCsv(pack) {
     ]))),
   ];
 
-  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+  return `${rows.map((row) => row.map((x) => csvCell(x)).join(',')).join('\n')}\n`;
 }
 
 function parseArgs(argv = []) {
