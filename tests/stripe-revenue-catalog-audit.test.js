@@ -73,8 +73,8 @@ test('live catalog audit verifies every exact offer and public checkout rail', a
 
   assert.equal(report.verified, true);
   assert.deepEqual(report.gaps, []);
-  assert.equal(report.summary.expectedOfferCount, 4);
-  assert.equal(report.summary.verifiedOfferCount, 4);
+  assert.equal(report.summary.expectedOfferCount, DEFAULT_STRIPE_REVENUE_CATALOG.length);
+  assert.equal(report.summary.verifiedOfferCount, DEFAULT_STRIPE_REVENUE_CATALOG.length);
   assert.equal(report.summary.priceDriftCount, 0);
   assert.equal(report.summary.expectedPublicPaymentRailCount, 2);
   assert.equal(report.summary.verifiedPublicPaymentRailCount, 2);
@@ -151,7 +151,7 @@ test('provider retrieval failures stay explicit without reflecting provider erro
   const report = await buildStripeRevenueCatalogAudit({ stripe, generatedAt: NOW });
 
   assert.equal(report.verified, false);
-  assert.equal(report.summary.priceDriftCount, 4);
+  assert.equal(report.summary.priceDriftCount, DEFAULT_STRIPE_REVENUE_CATALOG.length);
   assert.doesNotMatch(JSON.stringify(report), /secret provider response/);
 });
 
@@ -190,7 +190,7 @@ test('Markdown rendering reports only aggregate verification counts and gaps', a
   const markdown = renderMarkdown(report);
 
   assert.match(markdown, /Status: VERIFIED/);
-  assert.match(markdown, /Exact live offers: 4\/4/);
+  assert.match(markdown, new RegExp(`Exact live offers: ${DEFAULT_STRIPE_REVENUE_CATALOG.length}/${DEFAULT_STRIPE_REVENUE_CATALOG.length}`));
   assert.match(markdown, /Exact public payment rails: 2\/2/);
   assert.doesNotMatch(markdown, /sk_live|secret/i);
 });
