@@ -527,7 +527,8 @@
     "scripts/session-export-gate.js",
     ".agents/skills/bolt-forge-opt-in-not-clone/",
     "scripts/coverage-gap.js",
-    ".agents/skills/vs-coverage-gap-not-clone/"
+    ".agents/skills/vs-coverage-gap-not-clone/",
+    "scripts/decisive-step-honesty.js"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
