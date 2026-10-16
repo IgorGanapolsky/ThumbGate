@@ -6563,6 +6563,59 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (pathname === '/operator-framework' || pathname === '/operator-framework.html' || pathname === '/operator-framework/')) {
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ThumbGate Operator Framework — Pre-Action Infrastructure Firewall for AI Automation Agencies</title>
+  <meta name="description" content="Sub-0.5ms PreToolUse kill-switches, hard token caps, PII diodes, and 30% agency partner revenue share for n8n, LangGraph, CrewAI, and MCP fleets." />
+  <style>
+    body { background: #0a0f1d; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 2.5rem 1.5rem; line-height: 1.6; }
+    .container { max-width: 920px; margin: 0 auto; }
+    .badge { display: inline-block; background: #0284c7; color: #fff; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600; }
+    h1 { font-size: 2.5rem; margin: 1rem 0 0.75rem; color: #38bdf8; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; margin: 2rem 0; }
+    .card { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 1.5rem; }
+    .price { font-size: 2rem; font-weight: 700; color: #22d3ee; margin: 0.5rem 0; }
+    .btn { display: inline-block; background: #0ea5e9; color: #fff; text-decoration: none; padding: 0.75rem 1.25rem; border-radius: 8px; font-weight: 600; margin-top: 0.75rem; }
+    code { background: #1e293b; padding: 0.2rem 0.4rem; border-radius: 4px; color: #7dd3fc; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <span class="badge">30% Agency &amp; Co-Sell Partner Revenue Share</span>
+    <h1>The ThumbGate Operator Framework</h1>
+    <p>Drop-in <code>&lt;0.5ms</code> local CPU <code>PreToolUse</code> kill-switches, 5x retry-loop breakers, PII/HIPAA exfiltration diodes, and SHA-256 tamper-evident execution receipts for <strong>n8n, LangGraph, CrewAI, Claude Code, Cursor, Hotdata, and UCP Agentic Commerce</strong> fleets.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Sprint Diagnostic</h3>
+        <div class="price">$499</div>
+        <p>48-hour workflow &amp; MCP security audit + custom PreToolUse gate ruleset. <strong>Agencies keep 30% ($150) on resale.</strong></p>
+        <a class="btn" href="https://buy.stripe.com/fZueVd9eA4r42dz7mb3sI2W">Book $499 Diagnostic</a>
+      </div>
+      <div class="card">
+        <h3>Turnkey Agency Setup</h3>
+        <div class="price">$2,500</div>
+        <p>Full multi-agent PreToolUse firewall + tenant isolation deployed across your client stack. <strong>$500–$750 partner referral share.</strong></p>
+        <a class="btn" href="https://buy.stripe.com/14A8wP62o0aOcSd35V3sJ0Q">Start Turnkey Setup</a>
+      </div>
+      <div class="card">
+        <h3>Managed Operator Retainer</h3>
+        <div class="price">$500/mo</div>
+        <p>Continuous DPO failure-to-rule distillation, rule tuning, and compliance receipts. <strong>20%–30% recurring partner share.</strong></p>
+        <a class="btn" href="https://buy.stripe.com/9B614n0I43n03hD35V3sJ0P">Subscribe ($500/mo)</a>
+      </div>
+    </div>
+    <p>Quick install: <code>npx thumbgate@latest init</code> &bull; <a href="/pricing" style="color:#38bdf8;">All Pricing &amp; Pro ($19/mo)</a></p>
+  </main>
+</body>
+</html>`;
+      sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
     if (isGetLikeRequest && (
       pathname === '/chatgpt-app'
       || pathname === '/chatgpt-app.html'
