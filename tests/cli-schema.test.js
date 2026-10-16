@@ -293,6 +293,19 @@ test('omp-coordination-honesty exposes handoff flags', () => {
   assert.ok(flagNames.includes('strict'));
 });
 
+test('decisive-step-honesty exposes verifier-trace flags', () => {
+  const cmd = findCommand('decisive-step-honesty');
+  const flagNames = cmd.flags.map((f) => f.name);
+  assert.equal(cmd.name, 'decisive-step-honesty');
+  assert.equal(cmd.aliases.includes('decisive-step'), false);
+  assert.ok(flagNames.includes('json'));
+  assert.ok(flagNames.includes('strict'));
+  assert.ok(flagNames.includes('claim'));
+  assert.ok(flagNames.includes('trace'));
+  assert.ok(flagNames.includes('map-only'));
+  assert.equal(flagNames.includes('handoff'), false);
+});
+
 test('typesafe-typed-questions exposes typed-question flags', () => {
   const cmd = findCommand('typesafe-hook');
   const flagNames = cmd.flags.map((f) => f.name);
