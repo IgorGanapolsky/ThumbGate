@@ -778,7 +778,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 2026-10-13: harness-ceiling doctor + skill add ~15 KB. Measured clean pack is 9,253,595 bytes. Bump cap 9.25 MB -> 9.28 MB.
   // 2026-10-13: restored deeppattern skill (+6.8 KB) on top of decisive-step modules. Measured pack 9,282,461 bytes. Bump cap 9.28 MB -> 9.50 MB.
   // 2026-10-14: scripts/agentic-graph-rag.js + scripts/decisive-dpo-distiller.js add ~12.7 KB. Measured clean pack is 9,295,171 bytes. Bump cap 9.50 MB -> 9.50 MB.
-    manifest.unpackedSize <= 9_320_000,
+    manifest.unpackedSize <= 9_500_000,
     `npm package should stay <= 9.50 MB unpacked, got ${manifest.unpackedSize}`
   );
 
