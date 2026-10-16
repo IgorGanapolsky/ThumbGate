@@ -521,8 +521,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 621 -> 622 (2026-10-13): scripts/harness-ceiling-doctor.js + harness-evolution-ceiling skill (+1 relative to omp clean pack).
     // 622 -> 625 (2026-10-13): scripts/decisive-step-evaluator.js + scripts/decisive-step-doctor.js + decisive-step-evaluator skill (+3).
     // 625 -> 626 (2026-10-13): restored .agents/skills/deeppattern-discipline-honesty-not-clone/ in package.json files (+1).
-    manifest.fileCount <= 626,
-    `npm package should stay <= 626 files, got ${manifest.fileCount}`
+    // 626 -> 628 (2026-10-13): scripts/decisive-step-honesty.js + decisive-step-honesty-not-clone skill (+2).
+    manifest.fileCount <= 628,
+    `npm package should stay <= 628 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -775,8 +776,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 2026-10-13: omp doctor + skill add 20,594 bytes. Clean pack (tracked files + those two) is 9,228,207.
   // 2026-10-13: harness-ceiling doctor + skill add ~15 KB. Measured clean pack is 9,253,595 bytes. Bump cap 9.25 MB -> 9.28 MB.
   // 2026-10-13: restored deeppattern skill (+6.8 KB) on top of decisive-step modules. Measured pack 9,282,461 bytes. Bump cap 9.28 MB -> 9.30 MB.
-    manifest.unpackedSize <= 9_300_000,
-    `npm package should stay <= 9.30 MB unpacked, got ${manifest.unpackedSize}`
+  // 2026-10-13: scripts/decisive-step-honesty.js + skill. Measured pack 9,300,756 bytes — 756 over the 9.30 MB cap. Bump cap 9.30 MB -> 9.31 MB.
+    manifest.unpackedSize <= 9_310_000,
+    `npm package should stay <= 9.31 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
