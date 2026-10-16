@@ -16,6 +16,7 @@
     { "id": "adapter:gemini", "purpose": "Gemini function-declaration adapter" },
     { "id": "adapter:herdr", "purpose": "Herdr terminal plugin adapter" },
     { "id": "adapter:hermes", "purpose": "Nous Hermes local adapter" },
+    { "id": "adapter:hotdata", "purpose": "Hotdata DB Apache DataFusion/Arrow vector store adapter and PreToolUse diode" },
     { "id": "adapter:huggingface-context-course", "purpose": "HF Context Course adapter" },
     { "id": "adapter:letta", "purpose": "Letta memory adapter" },
     { "id": "adapter:mcp", "purpose": "Packaged MCP stdio server" },
