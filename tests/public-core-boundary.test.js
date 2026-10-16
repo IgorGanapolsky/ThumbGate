@@ -323,7 +323,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 621 -> 622 (2026-10-13): scripts/harness-ceiling-doctor.js + harness-evolution-ceiling skill (+1 relative to omp clean pack)
   // 622 -> 625 (2026-10-13): scripts/decisive-step-evaluator.js + scripts/decisive-step-doctor.js + decisive-step-evaluator skill (+3)
   // 625 -> 626 (2026-10-13): restored .agents/skills/deeppattern-discipline-honesty-not-clone/ in package.json files (+1)
-  const CEILING = 626;
+  // 626 -> 628 (2026-10-13): scripts/decisive-step-honesty.js + decisive-step-honesty-not-clone skill (+2).
+  const CEILING = 628;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
