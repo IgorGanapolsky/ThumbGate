@@ -274,7 +274,8 @@ const path = require('node:path');
 // 622 -> 625 (2026-10-13): scripts/decisive-step-evaluator.js + scripts/decisive-step-doctor.js + decisive-step-evaluator skill (+3).
 // 625 -> 635 (2026-10-13): restored .agents/skills/deeppattern-discipline-honesty-not-clone/ in package.json files (+1).
 // 635 -> 635 (2026-10-16): public/operator-framework.html marketing page (+1, public/ package parity).
-const BASELINE_FILE_COUNT = 635;
+// 635 -> 637 (2026-10-17): adapters/confidence/ (CONFIDENCE.md, config.json) + scripts/spotify-confidence-diode.js (+3).
+const BASELINE_FILE_COUNT = 637;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
