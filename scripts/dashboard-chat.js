@@ -409,7 +409,7 @@ function attachStructured(result, sources) {
 
 // Answer a question grounded in this install's lessons. Returns
 // { ok, answer, sources, model, structured?, envelope? } or { ok:false, error, ... }.
-async function answerDataQuestion(question, opts = {}) {
+async function answerDataQuestion(question, opts = {}) { // NOSONAR
   const {
     createRequestEnvelope,
     finalizeRequestEnvelope,

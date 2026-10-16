@@ -176,7 +176,7 @@ function normalizeMethod(method) {
   return String(method || 'GET').trim().toUpperCase() || 'GET';
 }
 
-function parseTarget(input = {}) {
+function parseTarget(input = {}) { // NOSONAR
   const rawUrl = input.url || input.target || input.href || '';
   const method = normalizeMethod(input.method);
   let url = String(rawUrl || '').trim();

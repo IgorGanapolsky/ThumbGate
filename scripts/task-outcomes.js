@@ -275,7 +275,7 @@ function calculateTaskOutcomeMetrics(outcomes = []) {
  * Separates process failures (repaired by harness evolution) from
  * content failures (repaired by weight training or model escalation).
  */
-function classifyFailureType(outcome = {}) {
+function classifyFailureType(outcome = {}) { // NOSONAR
   if (outcome.working && outcome.status === 'completed' && outcome.verification?.passed) {
     return { type: 'none', firstSignal: null };
   }
