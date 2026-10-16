@@ -11,9 +11,9 @@
 
 | Profound Architecture (`2026-10-16`) | ThumbGate Implementation (`scripts/profound-aeo-citation-engine.js`) |
 | :--- | :--- |
-| **1. ChatGPT Intelligent UI Missing-UTM Dark Referral Recovery** (*Josh Blyskal Oct 14, 2026: tagged ChatGPT links fell from 98% on Oct 8 to 66% on Oct 14 as Intelligent UI reached 35% of answers*) | `attributeIntelligentUiVisit()` correlates untagged Direct visits on `/operator-framework` with preceding `OAI-SearchBot`, `ChatGPT-User`, `PerplexityBot`, `ClaudeBot`, and `Google-Extended` fetches within a `120s` window to recover dark AI search attribution. |
-| **2. Answer Engine `FactCheck` & Remediation Diode** (*Profound AEI `FactCheck` tab + Accuracy & Sentiment Alerts*) | `evaluateBrandFactCheck()` audits AI responses against canonical ground truth (`<0.5ms` local CPU latency, `$0` token tax, HIPAA/ZDR compliance, `$499` / `$2,500` / `$500/mo` pricing) and generates citation-ready remediation blocks. |
-| **3. `Topics × Competitors` Visibility & Citation Share Matrix** (*Profound AEI `Visibility Score` + `Citation Share`*) | `computeAeoVisibilityMatrix()` tracks ThumbGate visibility and citation share across ChatGPT, Perplexity, Claude, and Google AI Mode. |
+| **1. ChatGPT Intelligent UI Missing-UTM Dark Referral Recovery** (*Josh Blyskal Oct 14, 2026: tagged ChatGPT answer samples fell from 98% on Oct 8 to 66% on Oct 14 — 34% untagged answer share — as Intelligent UI reached 35% of answers*) | `attributeIntelligentUiVisit()` correlates untagged Direct visits on `/operator-framework` with preceding eligible answer-engine fetches (`OAI-SearchBot`, `ChatGPT-User`, `PerplexityBot`, `Claude-SearchBot`, `Applebot-Extended`) within a `120s` pre-visit window (`0 <= deltaMs <= windowMs`). |
+| **2. Answer Engine `FactCheck` & Remediation Diode** (*Profound AEI `FactCheck` tab + Accuracy & Sentiment Alerts*) | `evaluateBrandFactCheck()` audits AI responses against canonical ground truth (`<0.5ms` local CPU latency, `$0` token tax, HIPAA/ZDR compliance, `$19/mo` / `$499` / `$2,500` / `$500/mo` pricing) while respecting negations (`not cloud-only`). |
+| **3. `Topics × Competitors × Engines` Visibility & Citation Share Matrix** (*Profound AEI `Visibility Score` + `Citation Share`*) | `computeAeoVisibilityMatrix()` reports `byTopic`, `byEngine` (`chatgpt`, `perplexity`, `claude`, `google_ai_mode`), and `competitorMentions`, keeping explicit empty observations (`[]`) distinct from demo fixtures. |
 
 ---
 

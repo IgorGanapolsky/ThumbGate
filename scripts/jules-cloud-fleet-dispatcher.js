@@ -7,28 +7,29 @@
  * Autonomous Google Jules Cloud Fleet Orchestrator (`https://jules.googleapis.com/v1alpha`).
  *
  * Capabilities:
- *   1. Reads `JULES_API_KEY` from environment or macOS Keychain (`security find-generic-password -s JULES_API_KEY -w`)
- *      with zero plaintext secret storage.
- *   2. Lists active cloud sessions across `sources/github/IgorGanapolsky/ThumbGate`, `RealEstate`, and `trading`.
- *   3. Auto-unblocks stalled `AWAITING_USER_FEEDBACK` / `AWAITING_PLAN_APPROVAL` sessions via
- *      `POST /v1alpha/{session}:approvePlan` and `POST /v1alpha/{session}:sendMessage` so cloud workers
- *      never sit idle waiting for "Proceed with your plan" confirmation.
- *   4. Dispatches parallel Google Jules cloud coding sessions with `requirePlanApproval: false`,
- *      `automationMode: "AUTO_CREATE_PR"`, and ThumbGate's mandatory pre-commit/parity instructions
- *      (`tests/test-suite-parity.test.js`, `tests/package-boundary.test.js`, `.changeset/`).
+ *   1. Reads `JULES_API_KEY` from environment or macOS Keychain (`/usr/bin/security find-generic-password -s JULES_API_KEY -w`)
+ *      with zero plaintext secret storage and fixed binary path.
+ *   2. Enforces origin pinning (`https://jules.googleapis.com`) before attaching `X-Goog-Api-Key`.
+ *   3. Lists active cloud sessions across `sources/github/IgorGanapolsky/ThumbGate`, `RealEstate`, and `trading`.
+ *   4. Auto-unblocks stalled `AWAITING_PLAN_APPROVAL` (via `:approvePlan`) or `AWAITING_USER_FEEDBACK`
+ *      (via `:sendMessage`) sessions without sending duplicate prompts after plan approval.
+ *   5. Dispatches parallel Google Jules cloud coding sessions with `requirePlanApproval: false`,
+ *      `automationMode: "AUTO_CREATE_PR"`, and ThumbGate's mandatory pre-commit/parity instructions.
  */
 
 const { execFileSync } = require('node:child_process');
 
-const JULES_API_BASE = 'https://jules.googleapis.com/v1alpha';
+const JULES_API_ORIGIN = 'https://jules.googleapis.com';
+const JULES_API_BASE = `${JULES_API_ORIGIN}/v1alpha`;
 const THUMBGATE_SOURCE = 'sources/github/IgorGanapolsky/ThumbGate';
+const MACOS_SECURITY_BIN = '/usr/bin/security';
 
 function resolveJulesApiKey(env = process.env) {
   if (env.JULES_API_KEY && String(env.JULES_API_KEY).trim()) {
     return String(env.JULES_API_KEY).trim();
   }
   try {
-    return execFileSync('security', ['find-generic-password', '-s', 'JULES_API_KEY', '-w'], {
+    return execFileSync(MACOS_SECURITY_BIN, ['find-generic-password', '-s', 'JULES_API_KEY', '-w'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
@@ -37,10 +38,6 @@ function resolveJulesApiKey(env = process.env) {
   }
 }
 
-/**
- * Build a ThumbGate-hardened prompt for Google Jules cloud VMs so every Jules PR passes
- * `test-suite-parity.test.js`, `package-boundary.test.js`, and `Verify changeset` on the first run.
- */
 function buildHardenedThumbGateJulesPrompt({ title, taskInstructions }) {
   return [
     `# Task: ${title}`,
@@ -79,11 +76,23 @@ function buildJulesCreateSessionPayload({
   };
 }
 
+function resolveSafeJulesUrl(path) {
+  const raw = String(path || '').trim();
+  if (!raw || /^https?:\/\//i.test(raw)) {
+    throw new Error('julesRequest requires a relative v1alpha path; absolute URLs are rejected to protect X-Goog-Api-Key');
+  }
+  const fullUrl = new URL(`${JULES_API_BASE}${raw.startsWith('/') ? '' : '/'}${raw}`);
+  if (fullUrl.origin !== JULES_API_ORIGIN || !fullUrl.pathname.startsWith('/v1alpha/')) {
+    throw new Error(`Unsafe Jules API target: ${fullUrl.toString()}`);
+  }
+  return fullUrl.toString();
+}
+
 async function julesRequest(path, { method = 'GET', body = null, apiKey = resolveJulesApiKey(), fetchImpl = globalThis.fetch } = {}) {
   if (!apiKey) {
     throw new Error('Missing JULES_API_KEY in environment and macOS Keychain');
   }
-  const url = path.startsWith('http') ? path : `${JULES_API_BASE}${path.startsWith('/') ? '' : '/'}${path}`;
+  const url = resolveSafeJulesUrl(path);
   const res = await fetchImpl(url, {
     method,
     headers: {
@@ -108,12 +117,16 @@ async function julesRequest(path, { method = 'GET', body = null, apiKey = resolv
   return json;
 }
 
-async function unblockWaitingJulesSession(sessionName, message, options = {}) {
+/**
+ * Unblock a waiting Jules session:
+ * - If `sessionState === 'AWAITING_PLAN_APPROVAL'`, call `:approvePlan` and return immediately.
+ * - Otherwise (e.g. `AWAITING_USER_FEEDBACK`), send the unblock message via `:sendMessage`.
+ */
+async function unblockWaitingJulesSession(sessionName, message, { sessionState = null, ...options } = {}) {
   const cleanName = String(sessionName).startsWith('sessions/') ? sessionName : `sessions/${sessionName}`;
-  // Try approvePlan first (ignore if not in plan-approval state), then sendMessage
-  try {
-    await julesRequest(`/${cleanName}:approvePlan`, { method: 'POST', body: {}, ...options });
-  } catch (_) {}
+  if (sessionState === 'AWAITING_PLAN_APPROVAL') {
+    return julesRequest(`/${cleanName}:approvePlan`, { method: 'POST', body: {}, ...options });
+  }
   return julesRequest(`/${cleanName}:sendMessage`, {
     method: 'POST',
     body: {
@@ -162,9 +175,12 @@ if (require.main === module) {
 }
 
 module.exports = {
+  JULES_API_ORIGIN,
   JULES_API_BASE,
   THUMBGATE_SOURCE,
+  MACOS_SECURITY_BIN,
   resolveJulesApiKey,
+  resolveSafeJulesUrl,
   buildHardenedThumbGateJulesPrompt,
   buildJulesCreateSessionPayload,
   julesRequest,

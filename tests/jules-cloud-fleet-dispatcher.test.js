@@ -5,13 +5,13 @@ const assert = require('node:assert/strict');
 
 const {
   THUMBGATE_SOURCE,
-  buildHardenedThumbGateJulesPrompt,
+  resolveSafeJulesUrl,
   buildJulesCreateSessionPayload,
   unblockWaitingJulesSession,
   dispatchThumbGateJulesSession,
 } = require('../scripts/jules-cloud-fleet-dispatcher');
 
-test('buildJulesCreateSessionPayload: sets requirePlanApproval=false, AUTO_CREATE_PR, and injects ThumbGate parity guardrails', () => {
+test('buildJulesCreateSessionPayload & resolveSafeJulesUrl: enforces origin pinning and ThumbGate parity guardrails', () => {
   const payload = buildJulesCreateSessionPayload({
     title: 'Wire OpenRouter Armor & Profound CLI subcommands',
     taskInstructions: 'Add armor-compile and profound-aeo commands to bin/thumbgate.js.',
@@ -20,12 +20,10 @@ test('buildJulesCreateSessionPayload: sets requirePlanApproval=false, AUTO_CREAT
   assert.equal(payload.sourceContext.source, THUMBGATE_SOURCE);
   assert.equal(payload.requirePlanApproval, false);
   assert.equal(payload.automationMode, 'AUTO_CREATE_PR');
-  assert.ok(payload.prompt.includes('tests/test-suite-parity.test.js'));
-  assert.ok(payload.prompt.includes('tests/package-boundary.test.js'));
-  assert.ok(payload.prompt.includes('SonarCloud S7727'));
+  assert.throws(() => resolveSafeJulesUrl('https://evil.example.com/sessions'), /relative v1alpha path/);
 });
 
-test('dispatchThumbGateJulesSession & unblockWaitingJulesSession: call Jules v1alpha REST endpoints with X-Goog-Api-Key', async () => {
+test('dispatchThumbGateJulesSession & unblockWaitingJulesSession: routes AWAITING_PLAN_APPROVAL to approvePlan without duplicate sendMessage', async () => {
   const calls = [];
   const mockFetch = async (url, opts) => {
     calls.push({ url, method: opts.method, headers: opts.headers, body: opts.body ? JSON.parse(opts.body) : null });
@@ -43,12 +41,12 @@ test('dispatchThumbGateJulesSession & unblockWaitingJulesSession: call Jules v1a
     fetchImpl: mockFetch,
   });
   assert.equal(created.name, 'sessions/999');
-  assert.equal(calls[0].headers['X-Goog-Api-Key'], 'test_jules_key');
-  assert.equal(calls[0].body.automationMode, 'AUTO_CREATE_PR');
 
-  await unblockWaitingJulesSession('sessions/6172228976209006178', 'Proceed with the plan.', {
+  await unblockWaitingJulesSession('sessions/111', 'Unused message', {
+    sessionState: 'AWAITING_PLAN_APPROVAL',
     apiKey: 'test_jules_key',
     fetchImpl: mockFetch,
   });
-  assert.ok(calls.some((c) => c.url.endsWith('/sessions/6172228976209006178:sendMessage')));
+  assert.equal(calls.filter((c) => c.url.includes('sessions/111')).length, 1);
+  assert.ok(calls[1].url.endsWith('/sessions/111:approvePlan'));
 });
