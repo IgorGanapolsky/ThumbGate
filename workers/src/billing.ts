@@ -4,8 +4,8 @@ import { problemResponse, PROBLEM_TYPES } from './problem-detail';
 
 function getStripe(env: Env): Stripe {
   return new Stripe(env.STRIPE_SECRET_KEY, {
-    // Stripe 22.6.0 LatestApiVersion; workers typecheck fails if this lags the SDK.
-    apiVersion: '2026-08-26.dahlia',
+    // Stripe 23.0.0 LatestApiVersion; workers typecheck fails if this lags the SDK.
+    apiVersion: '2026-09-30.endive',
     httpClient: Stripe.createFetchHttpClient(),
   });
 }
@@ -47,7 +47,6 @@ export async function handleCheckout(
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
-    payment_method_types: ['card'],
     line_items: [
       {
         price: env.STRIPE_PRICE_ID,
