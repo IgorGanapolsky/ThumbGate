@@ -76,8 +76,8 @@ test('live catalog audit verifies every exact offer and public checkout rail', a
   assert.equal(report.summary.expectedOfferCount, DEFAULT_STRIPE_REVENUE_CATALOG.length);
   assert.equal(report.summary.verifiedOfferCount, DEFAULT_STRIPE_REVENUE_CATALOG.length);
   assert.equal(report.summary.priceDriftCount, 0);
-  assert.equal(report.summary.expectedPublicPaymentRailCount, 2);
-  assert.equal(report.summary.verifiedPublicPaymentRailCount, 2);
+  assert.equal(report.summary.expectedPublicPaymentRailCount, DEFAULT_STRIPE_PUBLIC_PAYMENT_RAILS.length);
+  assert.equal(report.summary.verifiedPublicPaymentRailCount, DEFAULT_STRIPE_PUBLIC_PAYMENT_RAILS.length);
   assert.equal(report.summary.paymentRailDriftCount, 0);
   const legacy = report.offers.find((offer) => offer.offerId === 'team_monthly_legacy');
   assert.equal(legacy.observedPriceActive, true);
@@ -191,6 +191,6 @@ test('Markdown rendering reports only aggregate verification counts and gaps', a
 
   assert.match(markdown, /Status: VERIFIED/);
   assert.match(markdown, new RegExp(`Exact live offers: ${DEFAULT_STRIPE_REVENUE_CATALOG.length}/${DEFAULT_STRIPE_REVENUE_CATALOG.length}`));
-  assert.match(markdown, /Exact public payment rails: 2\/2/);
+  assert.match(markdown, new RegExp(`Exact public payment rails: ${DEFAULT_STRIPE_PUBLIC_PAYMENT_RAILS.length}/${DEFAULT_STRIPE_PUBLIC_PAYMENT_RAILS.length}`));
   assert.doesNotMatch(markdown, /sk_live|secret/i);
 });

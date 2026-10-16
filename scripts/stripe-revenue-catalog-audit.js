@@ -31,6 +31,28 @@ const DEFAULT_STRIPE_PUBLIC_PAYMENT_RAILS = Object.freeze([
     priceId: 'price_1TsO6kGGBpd520QYbbEgThb3',
     expectedActive: true,
   }),
+  // Operator Framework rails served via /go/operator-* (verified 2026-10-16).
+  Object.freeze({
+    offerId: 'operator_sprint_diagnostic',
+    paymentLinkId: 'plink_1TbM1cGGBpd520QYxCgHVqkz',
+    url: 'https://buy.stripe.com/fZueVd9eA4r42dz7mb3sI2W',
+    priceId: 'price_1TX5mTGGBpd520QY1MjCH2BZ',
+    expectedActive: true,
+  }),
+  Object.freeze({
+    offerId: 'operator_turnkey_setup',
+    paymentLinkId: 'plink_1UQwBSGGBpd520QYgHMnwv3D',
+    url: 'https://buy.stripe.com/14A8wP62o0aOcSd35V3sJ0Q',
+    priceId: 'price_1UQw8pGGBpd520QYGr85jyhK',
+    expectedActive: true,
+  }),
+  Object.freeze({
+    offerId: 'operator_managed_retainer',
+    paymentLinkId: 'plink_1UQwBSGGBpd520QYux4veyz3',
+    url: 'https://buy.stripe.com/9B614n0I43n03hD35V3sJ0P',
+    priceId: 'price_1UQw8pGGBpd520QYNUbngVy6',
+    expectedActive: true,
+  }),
 ]);
 
 function parseArgs(argv = []) {

@@ -49,6 +49,11 @@ test('GET /operator-framework serves the offers, partner program, and FAQ schema
   assert.match(html, /\$2,500/);
   assert.match(html, /\$500<span[^>]*>\/mo/);
   assert.match(html, /\$19\/mo/);
+  assert.match(html, /<h3>Managed Retainer<\/h3>\s*<div class="price">\$500<span[^>]*>\/mo/);
+  assert.match(html, /<h3>Turnkey Setup<\/h3>\s*<div class="price">\$2,500</);
+  assert.match(html, /<h3>Sprint Diagnostic<\/h3>\s*<div class="price">\$499</);
+  assert.match(html, /<div class="pro-strip">[\s\S]*?ThumbGate Pro is \$19\/mo[\s\S]*?Get Pro · \$19\/mo/);
+  assert.match(html, /VERIFICATION_EVIDENCE\.md/);
   assert.match(html, /30% revenue share/);
   assert.match(html, /mailto:iganapolsky@gmail\.com/);
   assert.match(html, /"@type":\s*"FAQPage"/);
