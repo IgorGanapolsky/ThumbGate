@@ -31,6 +31,18 @@ const DEFAULT_STRIPE_PUBLIC_PAYMENT_RAILS = Object.freeze([
     priceId: 'price_1TsO6kGGBpd520QYbbEgThb3',
     expectedActive: true,
   }),
+  // Operator Framework rails served via /go/operator-* (verified 2026-10-16).
+  ...[
+    ['operator_sprint_diagnostic', 'plink_1TbM1cGGBpd520QYxCgHVqkz', 'fZueVd9eA4r42dz7mb3sI2W', 'price_1TX5mTGGBpd520QY1MjCH2BZ'],
+    ['operator_turnkey_setup', 'plink_1UQwBSGGBpd520QYgHMnwv3D', '14A8wP62o0aOcSd35V3sJ0Q', 'price_1UQw8pGGBpd520QYGr85jyhK'],
+    ['operator_managed_retainer', 'plink_1UQwBSGGBpd520QYux4veyz3', '9B614n0I43n03hD35V3sJ0P', 'price_1UQw8pGGBpd520QYNUbngVy6'],
+  ].map(([offerId, paymentLinkId, slug, priceId]) => Object.freeze({
+    offerId,
+    paymentLinkId,
+    url: `https://buy.stripe.com/${slug}`,
+    priceId,
+    expectedActive: true,
+  })),
 ]);
 
 function parseArgs(argv = []) {

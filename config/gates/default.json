@@ -200,6 +200,19 @@
       ]
     },
     {
+      "id": "eci-corporate-email-isolation",
+      "layer": "Execution",
+      "trigger": "any:eci_corporate_email_isolation",
+      "pattern": "(?=[\\s\\S]*(?:@ecisolutions\\.com|@ecinexus\\.com|@eci\\.com|Microsoft\\s+Outlook\\.app))(?=[\\s\\S]*(?:sendmail|msmtp|mailx|smtplib|nodemailer|view=cm|send_email|create_draft|reply_to_email|boardy|viktor|openfinance|mail\\.google\\.com))",
+      "action": "block",
+      "message": "CRITICAL SECURITY BLOCK: Corporate ECI email domains (@ecisolutions.com, @ecinexus.com, @eci.com) and Microsoft Outlook.app are strictly isolated and must NEVER be touched by personal, ThumbGate, Boardy, or Viktor workflows.",
+      "severity": "critical",
+      "compliance": [
+        "SOC2-CC6.1",
+        "CWE-200"
+      ]
+    },
+    {
       "id": "git-reset-hard",
       "layer": "Execution",
       "trigger": "Bash:git_reset_hard",
