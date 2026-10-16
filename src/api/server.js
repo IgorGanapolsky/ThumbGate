@@ -37,6 +37,12 @@ const PRO_CHECKOUT_URL = 'https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f';
 // missing Railway env cannot silently charge $499 under a $1500 label.
 const SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k';
 const WORKFLOW_SPRINT_CHECKOUT_URL = 'https://www.paypal.com/ncp/payment/LTQFR7P9AR3QG';
+// Operator Framework service rails (public/operator-framework.html). Stripe
+// Payment Links stay server-side behind /go/operator-* so public HTML never
+// exposes buy.stripe.com and bots are deflected back to the page.
+const OPERATOR_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/fZueVd9eA4r42dz7mb3sI2W';
+const OPERATOR_TURNKEY_CHECKOUT_URL = 'https://buy.stripe.com/14A8wP62o0aOcSd35V3sJ0Q';
+const OPERATOR_RETAINER_CHECKOUT_URL = 'https://buy.stripe.com/9B614n0I43n03hD35V3sJ0P';
 
 function getPosthogProxyPath(pathname) {
   return pathname.slice('/ingest'.length) || '/';
@@ -329,6 +335,7 @@ const WHITEPAPER_PAGE_PATH = path.resolve(__dirname, '../../public/whitepaper.ht
 const EVAL_SCORECARD_PAGE_PATH = path.resolve(__dirname, '../../public/eval-scorecard.html');
 const EVALUATIONS_PAGE_PATH = path.resolve(__dirname, '../../public/evaluations.html');
 const CASE_STUDIES_PAGE_PATH = path.resolve(__dirname, '../../public/case-studies.html');
+const OPERATOR_FRAMEWORK_PAGE_PATH = path.resolve(__dirname, '../../public/operator-framework.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const ENTERPRISE_GOVERNANCE_PAGE_PATH = path.resolve(__dirname, '../../public/enterprise-governance.html');
 const GAMING_PLAYBOOK_PAGE_PATH = path.resolve(__dirname, '../../public/gaming-playbook.html');
@@ -561,6 +568,64 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     },
     allowCustomerEmail: true,
     prefillStripeEmail: true,
+  },
+  // Operator Framework offers (/operator-framework). Same-origin hop keeps
+  // buy.stripe.com out of public HTML; bots are deflected to the page.
+  'operator-diagnostic': {
+    fallbackHref: OPERATOR_DIAGNOSTIC_CHECKOUT_URL,
+    external: true,
+    botDeflectPath: '/operator-framework',
+    ctaId: 'operator_diagnostic_buy',
+    ctaPlacement: 'operator_framework',
+    eventType: 'operator_framework_checkout_click',
+    defaults: {
+      utm_source: 'operator_framework',
+      utm_medium: 'offer_card',
+      utm_campaign: 'operator_framework',
+      plan_id: 'sprint_diagnostic',
+    },
+  },
+  'operator-turnkey': {
+    fallbackHref: OPERATOR_TURNKEY_CHECKOUT_URL,
+    external: true,
+    botDeflectPath: '/operator-framework',
+    ctaId: 'operator_turnkey_buy',
+    ctaPlacement: 'operator_framework',
+    eventType: 'operator_framework_checkout_click',
+    defaults: {
+      utm_source: 'operator_framework',
+      utm_medium: 'offer_card',
+      utm_campaign: 'operator_framework',
+      plan_id: 'turnkey_setup',
+    },
+  },
+  'operator-retainer': {
+    fallbackHref: OPERATOR_RETAINER_CHECKOUT_URL,
+    external: true,
+    botDeflectPath: '/operator-framework',
+    ctaId: 'operator_retainer_buy',
+    ctaPlacement: 'operator_framework',
+    eventType: 'operator_framework_checkout_click',
+    defaults: {
+      utm_source: 'operator_framework',
+      utm_medium: 'offer_card',
+      utm_campaign: 'operator_framework',
+      plan_id: 'managed_retainer',
+    },
+  },
+  'operator-pro': {
+    fallbackHref: PRO_CHECKOUT_URL,
+    external: true,
+    botDeflectPath: '/operator-framework',
+    ctaId: 'operator_pro_buy',
+    ctaPlacement: 'operator_framework',
+    eventType: 'operator_framework_checkout_click',
+    defaults: {
+      utm_source: 'operator_framework',
+      utm_medium: 'offer_card',
+      utm_campaign: 'operator_framework',
+      plan_id: 'pro',
+    },
   },
   // 2026-06-02: Teams/Aiventyx deprecated. Redirect legacy links to Pro.
   teams: {
@@ -3566,6 +3631,10 @@ function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRICING_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadOperatorFrameworkPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(OPERATOR_FRAMEWORK_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function loadAboutPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(ABOUT_PAGE_PATH, runtimeConfig, pageContext);
 }
@@ -4201,6 +4270,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/diagnostic', changefreq: 'weekly', priority: '0.9' },
     { path: '/founders', changefreq: 'weekly', priority: '0.95' },
+    { path: '/operator-framework', changefreq: 'weekly', priority: '0.9' },
     { path: '/peter', changefreq: 'weekly', priority: '0.9' },
     { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
@@ -9021,6 +9091,26 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         });
       } catch {
         sendJson(res, 404, { error: 'Case studies page not found' });
+      }
+      return;
+    }
+
+    // Operator Framework: done-for-you ThumbGate offers + agency partner program.
+    if (isGetLikeRequest && (pathname === '/operator-framework' || pathname === '/operator-framework.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadOperatorFrameworkPageHtml,
+          extraTelemetry: {
+            pageType: 'operator_framework',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Operator Framework page unavailable');
       }
       return;
     }
