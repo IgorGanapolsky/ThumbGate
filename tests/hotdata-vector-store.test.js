@@ -16,7 +16,7 @@ const vectorStore = require('../scripts/vector-store');
 test('resolveVectorBackend: selects hotdata when THUMBGATE_VECTOR_BACKEND=hotdata or HOTDATA_API_KEY+WORKSPACE_ID set', () => {
   assert.equal(vectorStore.resolveVectorBackend({ THUMBGATE_VECTOR_BACKEND: 'hotdata' }), 'hotdata');
   assert.equal(
-    vectorStore.resolveVectorBackend({ HOTDATA_API_KEY: 'hd_test', HOTDATA_WORKSPACE_ID: 'work_123' }),
+    vectorStore.resolveVectorBackend({ HOTDATA_API_KEY: 'hd_test', HOTDATA_WORKSPACE_ID: 'work_123', HOTDATA_DATABASE_ID: 'dbid_123' }),
     'hotdata'
   );
   assert.equal(vectorStore.resolveVectorBackend({}), 'lancedb');

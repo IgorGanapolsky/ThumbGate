@@ -134,7 +134,7 @@ function classifyLinkedInPostAndDraftComment(post) {
     return null;
   }
 
-  if (t.includes('n8n') || t.includes('make.com') || t.includes('zapier') || t.includes('webhook')) {
+  if (t.includes('n8n') || /\bmake\s+automation\b/.test(t) || t.includes('zapier') || t.includes('webhook')) {
     return {
       category: 'workflow_automation_guardrail',
       comment:

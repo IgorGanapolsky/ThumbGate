@@ -92,7 +92,7 @@ function resolveVectorBackend(env = process.env) {
   const explicit = String(env.THUMBGATE_VECTOR_BACKEND || '').trim().toLowerCase();
   if (explicit === 'hotdata') return 'hotdata';
   if (explicit === 'lancedb') return 'lancedb';
-  if (env.HOTDATA_API_KEY && env.HOTDATA_WORKSPACE_ID) return 'hotdata';
+  if (env.HOTDATA_API_KEY && env.HOTDATA_WORKSPACE_ID && env.HOTDATA_DATABASE_ID) return 'hotdata';
   return 'lancedb';
 }
 
@@ -115,7 +115,8 @@ async function getLanceDB() {
     return _lancedb;
   }
   if (resolveVectorBackend() === 'hotdata') {
-    const { createHotdataLanceAdapter } = require('../adapters/hotdata/hotdata-vector-store');
+    const hotdataModPath = path.join(__dirname, '..', 'adapters', 'hotdata', 'hotdata-vector-store');
+    const { createHotdataLanceAdapter } = require(hotdataModPath);
     return createHotdataLanceAdapter();
   }
   if (!_lancedb) {

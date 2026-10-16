@@ -76,7 +76,8 @@ function evaluateUcpCheckoutGate({
     const allowedSet = new Set((mergedPolicy.allowedSellersOfRecord || []).map(s => s.toLowerCase()));
     for (const item of items) {
       const seller = String(item.sellerOfRecord || item.merchant || '').toLowerCase().trim();
-      if (!seller || (!allowedSet.has(seller) && !Array.from(allowedSet).some(a => seller.includes(a)))) {
+      const isAllowedSeller = allowedSet.has(seller) || Array.from(allowedSet).some(a => seller.endsWith('.' + a) || seller.startsWith(a + ':'));
+      if (!seller || !isAllowedSeller) {
         decision = 'block';
         gateId = 'gate:ucp:seller_of_record_allowlist';
         reason = `Unverified seller of record '${item.sellerOfRecord || item.merchant || 'unknown'}' blocked before Google Pay / UCP transfer`;
