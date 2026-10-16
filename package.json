@@ -530,7 +530,8 @@
     ".agents/skills/vs-coverage-gap-not-clone/",
     "adapters/hotdata/",
     "scripts/apple-minions-idle-compute-steal.js",
-    "scripts/corporate-email-isolation-diode.js"
+    "scripts/corporate-email-isolation-diode.js",
+    "scripts/github-license-compliance-diode.js"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
@@ -1341,7 +1342,9 @@
     "apple-minions:idle-compute": "node scripts/apple-minions-idle-compute-steal.js",
     "test:apple-minions": "node --test tests/apple-minions-idle-compute-steal.test.js",
     "obsidian:enveloppe-diode": "node scripts/corporate-email-isolation-diode.js",
-    "test:obsidian-enveloppe-diode": "node --test tests/corporate-email-isolation-diode.test.js"
+    "test:obsidian-enveloppe-diode": "node --test tests/corporate-email-isolation-diode.test.js",
+    "github:license-compliance": "node scripts/github-license-compliance-diode.js",
+    "test:github-license-compliance": "node --test tests/github-license-compliance-diode.test.js"
   },
   "keywords": [
     "mcp",
