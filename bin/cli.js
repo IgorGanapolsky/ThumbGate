@@ -4159,6 +4159,8 @@ const SUBCOMMAND_HELP = {
   'claim-stop-check': 'Usage: npx thumbgate claim-stop-check [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nClaude Stop hook interface: reads hook JSON from stdin, rechecks configured factual claims before Claude stops.',
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
   'ci-gha-buildkite-patterns': 'Usage: npx thumbgate ci-gha-buildkite-patterns [--jobs-json=path] [--workflow=path] [--json] [--map-only]\n\nBuildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations. Does not add Buildkite.',
+  'armor-compile': 'Usage: npx thumbgate armor-compile [--json]\n\nEmits OpenRouter Armor v1 classifier_context plugin config.',
+  'profound-aeo': 'Usage: npx thumbgate profound-aeo [--json]\n\nComputes Profound Answer Engine Visibility & Citation Share.',
   'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',
   'salt-code-policy-honesty': 'Usage: npx thumbgate salt-code-policy-honesty [--inspect-code=...] [--inspect-api=...] [--inspect-mcp=...] [--strict] [--json] [--map-only]\n\nSalt Code FORMAT steal: 40-policy taxonomy, active PreToolUse vs context injection, OpenAPI query secret diode. Does not connect to mcp.getsaltcode.com.',
   'infoq-architect-honesty': 'Usage: npx thumbgate infoq-architect-honesty [--claim="..."] [--host=javascript] [--queue=path.json] [--max-age-ms=N] [--json] [--map-only]\n\nInfoQ September 2026 FORMAT: code-as-truth, typed host, existing lease, time-in-queue. Does not register for InfoQ or install Vortex.',
@@ -4793,6 +4795,32 @@ switch (COMMAND) {
   case 'sparse-attention-runtime-guardrails':
     deepseekV4RuntimeGuardrails();
     break;
+  case 'armor-compile': {
+    const { compileThumbGateToArmorPlugin } = require(path.join(PKG_ROOT, 'scripts', 'openrouter-armor-partnership-diode'));
+    const plugin = compileThumbGateToArmorPlugin({
+      trustedRepo: 'github.com/IgorGanapolsky/ThumbGate',
+      currentBranch: 'main',
+      isProtectedBranch: true,
+    });
+    const args = parseArgs(process.argv.slice(3));
+    if (args.json) {
+      console.log(JSON.stringify(plugin, null, 2));
+    } else {
+      console.log(JSON.stringify(plugin.classifier_context, null, 2));
+    }
+    break;
+  }
+  case 'profound-aeo': {
+    const { computeAeoVisibilityMatrix } = require(path.join(PKG_ROOT, 'scripts', 'profound-aeo-citation-engine'));
+    const matrix = computeAeoVisibilityMatrix();
+    const args = parseArgs(process.argv.slice(3));
+    if (args.json) {
+      console.log(JSON.stringify(matrix, null, 2));
+    } else {
+      console.log(JSON.stringify(matrix, null, 2));
+    }
+    break;
+  }
   case 'nvidia-specdecode-al-doctor':
   case 'specdecode-al-doctor':
   case 'speculative-decoding-al-doctor':
