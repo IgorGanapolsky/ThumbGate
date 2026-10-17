@@ -74,3 +74,37 @@ test('computeAeoVisibilityMatrix: returns empty metrics for [] and full Topics x
   assert.ok(demo.byEngine.claude);
   assert.ok(demo.competitorMentions.ThumbGate >= 4);
 });
+
+
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const {
+  SUPPORTED_CHANNELS,
+  retrieveGraphRagEvidenceForQuery,
+  selectOptimalChannelOfferArm,
+  composeOmnichannelPostOrReply,
+  recordOmnichannelAttestation,
+  verifyOmnichannelAttestationLedger,
+} = require('../scripts/profound-aeo-citation-engine');
+
+test('Omnichannel ML + 3-Tier Graph RAG + SHA-256 Attestation Ledger across LinkedIn, Reddit, X, Skool, ZyVOP, and HackerNews', () => {
+  const rag = retrieveGraphRagEvidenceForQuery('OpenRouter Armor HIPAA ZDR local fallback');
+  assert.ok(rag.tier1Anchors.includes('node:openrouter_armor_zdr_hipaa'));
+  const ml = selectOptimalChannelOfferArm({ channel: 'skool', query: 'collaborate on agency client builds' });
+  assert.equal(ml.chosenArm.id, 'agency_partner_30pct');
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-omni-'));
+  try {
+    const ledgerPath = path.join(tmpDir, 'attestation.jsonl');
+    for (const ch of SUPPORTED_CHANNELS) {
+      const msg = composeOmnichannelPostOrReply({ channel: ch, targetUrl: `https://${ch}.example.com/1`, threadTitleOrText: 'agent retry loop' });
+      recordOmnichannelAttestation(msg, ledgerPath);
+    }
+    const ver = verifyOmnichannelAttestationLedger(ledgerPath);
+    assert.equal(ver.valid, true);
+    assert.equal(ver.totalEntries, 6);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
