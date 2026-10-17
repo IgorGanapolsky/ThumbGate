@@ -306,7 +306,7 @@ function executeSearchPlan(plan, { perPage = 25, ...dependencies } = {}) {
       ? peopleFromResponse(search.response)
       : contactsFromResponse(search.response);
     const candidates = rawCandidates
-      .map(sanitizeCandidate)
+      .map((x) => sanitizeCandidate(x))
       .filter((candidate) => knownTargetIdentityMatches(spec.targetName, candidate))
       .filter((candidate) => !spec.organization || normalize(candidate.organization) === normalize(spec.organization));
     return {
@@ -325,7 +325,7 @@ function executeSearchPlan(plan, { perPage = 25, ...dependencies } = {}) {
       ? peopleFromResponse(response)
       : contactsFromResponse(response);
     const candidates = rawCandidates
-      .map(sanitizeCandidate)
+      .map((x) => sanitizeCandidate(x))
       .filter((candidate) => normalize(candidate.organization) === normalize(spec.organization))
       .map((candidate) => ({ ...candidate, ...scoreOrganizationCandidate(candidate) }))
       .filter((candidate) => candidate.priorityScore > 0)
