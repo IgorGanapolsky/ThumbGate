@@ -241,7 +241,7 @@ function compareRuns(baseline, candidate) {
   }
 
   const summarize = (run) => {
-    const results = run.map(measureSession);
+    const results = run.map((x) => measureSession(x));
     if (results.some((r) => r.status !== 'OK')) {
       return { status: 'UNKNOWN', results };
     }

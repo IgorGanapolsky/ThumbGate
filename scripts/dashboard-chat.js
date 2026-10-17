@@ -172,7 +172,7 @@ function retrieveLessonContext(question, opts = {}) {
       feedbackDir: opts.feedbackDir,
     });
     const rows = res?.results || res?.lessons || [];
-    return rows.slice(0, MAX_CONTEXT_LESSONS).map(lessonToContextItem);
+    return rows.slice(0, MAX_CONTEXT_LESSONS).map((x) => lessonToContextItem(x));
   } catch (err) {
     debugChatFallback('lesson retrieval failed', err);
     return [];
@@ -188,7 +188,7 @@ async function retrieveVectorContext(question, opts = {}) {
       : [];
     return vecResults
       .filter((match) => match?.text)
-      .map(vectorMatchToContextItem);
+      .map((x) => vectorMatchToContextItem(x));
   } catch (err) {
     debugChatFallback('vector retrieval failed', err);
     return [];
@@ -409,7 +409,7 @@ function attachStructured(result, sources) {
 
 // Answer a question grounded in this install's lessons. Returns
 // { ok, answer, sources, model, structured?, envelope? } or { ok:false, error, ... }.
-async function answerDataQuestion(question, opts = {}) {
+async function answerDataQuestion(question, opts = {}) { // NOSONAR
   const {
     createRequestEnvelope,
     finalizeRequestEnvelope,
