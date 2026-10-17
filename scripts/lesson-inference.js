@@ -563,7 +563,7 @@ const LLM_LESSON_MULTISHOT_EXAMPLES = [
     'file-level',
     ['regression-test', 'stripe', 'billing', 'tier'],
   ],
-].map((x) => createLessonPromptExample(x));
+].map(createLessonPromptExample);
 
 function renderMultishotExamplesForPrompt(examples = LLM_LESSON_MULTISHOT_EXAMPLES) {
   return examples.map((ex) => (

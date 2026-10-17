@@ -182,7 +182,7 @@ function rejectDuplicateBusinessAgentIds(candidates) {
 
 function rankBusinessFunctionAgents(candidates = []) {
   const normalized = Array.isArray(candidates)
-    ? rejectDuplicateBusinessAgentIds(candidates.map((x) => normalizeBusinessFunctionCandidate(x)))
+    ? rejectDuplicateBusinessAgentIds(candidates.map(normalizeBusinessFunctionCandidate))
     : [];
   const eligible = normalized
     .filter((candidate) => candidate.status === 'evidence_complete')

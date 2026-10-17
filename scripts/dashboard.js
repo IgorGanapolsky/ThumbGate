@@ -1052,8 +1052,8 @@ function computeAnalyticsSummary(feedbackDir, options = {}) {
     return eventType === 'checkout_start' || eventType === 'checkout_bootstrap';
   });
   const acquisitionEntries = funnelEntries.filter((entry) => entry && entry.stage === 'acquisition');
-  const checkoutKeys = new Set(checkoutStartEntries.map((x) => resolveJourneyKey(x)).filter(Boolean));
-  const acquisitionKeys = new Set(acquisitionEntries.map((x) => resolveJourneyKey(x)).filter(Boolean));
+  const checkoutKeys = new Set(checkoutStartEntries.map(resolveJourneyKey).filter(Boolean));
+  const acquisitionKeys = new Set(acquisitionEntries.map(resolveJourneyKey).filter(Boolean));
   const matchedAcquisitionKeys = new Set([...checkoutKeys].filter((key) => acquisitionKeys.has(key)));
   const matchedPaidOrders = paidOrderEntries.filter((entry) => {
     const key = resolveJourneyKey(entry);

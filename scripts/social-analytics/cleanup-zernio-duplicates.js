@@ -164,7 +164,7 @@ function findDuplicatePosts(posts = [], options = {}) {
     duplicateGroups.push({
       key,
       keep: summarizePost(sorted[0]),
-      delete: sorted.slice(1).map((x) => summarizePost(x)).filter((post) => post.id),
+      delete: sorted.slice(1).map(summarizePost).filter((post) => post.id),
       total: sorted.length,
     });
   }

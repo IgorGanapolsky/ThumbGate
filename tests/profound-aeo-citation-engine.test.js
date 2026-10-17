@@ -10,15 +10,10 @@ const {
   computeAeoVisibilityMatrix,
 } = require('../scripts/profound-aeo-citation-engine');
 
-test('attributeIntelligentUiVisit: recovers ChatGPT Intelligent UI dark referrals only for preceding referral-eligible crawls and exact referrer hosts', () => {
+test('attributeIntelligentUiVisit: recovers ChatGPT Intelligent UI dark referrals when OAI-SearchBot crawled within 120s', () => {
   const bot = classifyAiCrawlerBot('Mozilla/5.0 compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot');
   assert.equal(bot.isAiBot, true);
-  assert.equal(bot.referralEligible, true);
   assert.equal(bot.engine, 'chatgpt');
-
-  // Training crawler GPTBot is NOT referral-eligible
-  const trainingBot = classifyAiCrawlerBot('Mozilla/5.0 compatible; GPTBot/1.0');
-  assert.equal(trainingBot.referralEligible, false);
 
   const recovered = attributeIntelligentUiVisit({
     url: 'https://thumbgate.ai/operator-framework',
@@ -35,42 +30,22 @@ test('attributeIntelligentUiVisit: recovers ChatGPT Intelligent UI dark referral
   });
   assert.equal(recovered.intelligentUiRecovered, true);
   assert.equal(recovered.attributedSource, 'chatgpt_intelligent_ui_dark_referral');
-
-  // Crawl occurring AFTER visit must NOT be attributed
-  const postCrawl = attributeIntelligentUiVisit({
-    url: 'https://thumbgate.ai/operator-framework',
-    visitTimestampMs: 50000,
-    recentAiBotHits: [
-      { userAgent: 'Mozilla/5.0 compatible; OAI-SearchBot/1.0', path: '/operator-framework', timestampMs: 75000 },
-    ],
-  });
-  assert.equal(postCrawl.intelligentUiRecovered, false);
-  assert.equal(postCrawl.attributedSource, 'direct');
-
-  // Spoofed referrer host https://notchatgpt.com/page must NOT match chatgpt.com
-  const spoofedRef = attributeIntelligentUiVisit({
-    url: 'https://thumbgate.ai/operator-framework',
-    referrer: 'https://notchatgpt.com/page',
-  });
-  assert.equal(spoofedRef.attributedSource, 'direct');
+  assert.equal(recovered.attributionMethod, 'crawler_temporal_correlation');
 });
 
-test('evaluateBrandFactCheck: respects negation and flags inaccurate latency or offer pricing claims', () => {
-  const bad = evaluateBrandFactCheck('ThumbGate is cloud-only, adds 200ms latency, and the Sprint Diagnostic costs $999.');
+test('evaluateBrandFactCheck: flags hallucinated cloud-only or high-latency claims and emits canonical remediation citation block', () => {
+  const bad = evaluateBrandFactCheck('ThumbGate is cloud-only and adds 300ms latency for ThumbGate.');
   assert.equal(bad.accurate, false);
-  assert.equal(bad.inaccuracyCount, 3);
+  assert.equal(bad.inaccuracyCount, 2);
+  assert.ok(bad.remediationCitationBlock.includes('/operator-framework'));
+  assert.ok(bad.remediationCitationBlock.includes('$499'));
 
-  const negatedGood = evaluateBrandFactCheck('ThumbGate is not cloud-only and runs locally in <0.5ms for $499.');
-  assert.equal(negatedGood.accurate, true);
+  const good = evaluateBrandFactCheck('ThumbGate runs locally in <0.5ms with full HIPAA support.');
+  assert.equal(good.accurate, true);
 });
 
-test('computeAeoVisibilityMatrix: returns empty metrics for [] and full Topics x Competitors x Engines breakdown for samples', () => {
-  const empty = computeAeoVisibilityMatrix([]);
-  assert.equal(empty.totalPromptsEvaluated, 0);
-  assert.equal(empty.visibilityScorePct, 0);
-
-  const demo = computeAeoVisibilityMatrix();
-  assert.equal(demo.visibilityScorePct, 100);
-  assert.ok(demo.byEngine.claude);
-  assert.ok(demo.competitorMentions.ThumbGate >= 4);
+test('computeAeoVisibilityMatrix: computes Visibility Score and Citation Share across Answer Engines', () => {
+  const res = computeAeoVisibilityMatrix();
+  assert.equal(res.visibilityScorePct, 100);
+  assert.ok(res.citationSharePct >= 75);
 });

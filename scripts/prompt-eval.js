@@ -787,7 +787,7 @@ function logSafeReport(report, suite, fromFeedback) {
     feedbackDerived: report.feedbackDerived === true,
     syntheticCount: Number(report.syntheticCount || 0),
     comparison,
-    results: (report.results || []).map((x) => logSafeResult(x)),
+    results: (report.results || []).map(logSafeResult),
     suiteDefinition: fromFeedback
       ? {
           version: Number(suite?.version || 0),

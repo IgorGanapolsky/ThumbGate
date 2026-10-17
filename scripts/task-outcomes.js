@@ -42,7 +42,7 @@ function normalizeTaskOutcome(input = {}, now = new Date()) {
       evidence: cleanStringArray(verification.evidence),
       unsupportedClaims: nonNegativeInteger(verification.unsupportedClaims),
     },
-    toolCalls: toolCalls.map((x) => normalizeToolCall(x)),
+    toolCalls: toolCalls.map(normalizeToolCall),
     policy: {
       violations: nonNegativeInteger(policy.violations),
       unsafeEscapes: nonNegativeInteger(policy.unsafeEscapes),
@@ -275,7 +275,7 @@ function calculateTaskOutcomeMetrics(outcomes = []) {
  * Separates process failures (repaired by harness evolution) from
  * content failures (repaired by weight training or model escalation).
  */
-function classifyFailureType(outcome = {}) { // NOSONAR
+function classifyFailureType(outcome = {}) {
   if (outcome.working && outcome.status === 'completed' && outcome.verification?.passed) {
     return { type: 'none', firstSignal: null };
   }

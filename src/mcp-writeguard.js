@@ -176,7 +176,7 @@ function scrubSensitiveData(value) {
   }
 
   if (Array.isArray(value)) {
-    return value.map((x) => scrubSensitiveData(x));
+    return value.map(scrubSensitiveData);
   }
 
   if (typeof value === 'object') {
