@@ -2983,25 +2983,6 @@ function ompCoordinationHonestyDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
-function decisiveStepHonestyDoctor() {
-  const args = parseArgs(process.argv.slice(3));
-  const {
-    buildDecisiveStepHonestyReport,
-    formatDecisiveStepHonestyReport,
-  } = require(path.join(PKG_ROOT, 'scripts', 'decisive-step-honesty'));
-  const report = buildDecisiveStepHonestyReport(args);
-  if (args.json) {
-    console.log(JSON.stringify(report, null, 2));
-  } else {
-    process.stdout.write(formatDecisiveStepHonestyReport(report));
-  }
-  if (args.strict && report.status !== 'ready') {
-    process.exitCode = 1;
-    return;
-  }
-  if (report.status === 'fail') process.exitCode = 1;
-}
-
 function harnessCeilingDoctor() {
   const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'harness-ceiling-doctor'));
   const exitCode = runCli(process.argv.slice(3));
@@ -4053,7 +4034,6 @@ function help() {
   console.log('  infoq-architect-honesty Code-as-truth, typed host, lease, time-in-queue (InfoQ FORMAT)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  omp-coordination-honesty   Named-model session handoff on the checkout lease (omp FORMAT; does not install omp)');
-  console.log('  decisive-step-honesty   Score only the first fail-to-pass edit (arXiv:2610.10478; does not train)');
   console.log('  harness-ceiling       Failure composition and harness evolution ceiling detection (arXiv:2610.11655)');
   console.log('  halo-trace-optimizer  Analyze agent trace logs for thrashing and stalls (HALO FORMAT)');
   console.log('  decisive-step         Decisive-step coding agent evaluation (NVIDIA arXiv:2610.10478)');
@@ -4159,13 +4139,14 @@ const SUBCOMMAND_HELP = {
   'claim-stop-check': 'Usage: npx thumbgate claim-stop-check [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nClaude Stop hook interface: reads hook JSON from stdin, rechecks configured factual claims before Claude stops.',
   'typesafe-typed-questions': 'Usage: npx thumbgate typesafe-typed-questions [--payload=path] [--tool-name=Bash] [--command="..."] [--json] [--map-only] [--clone-jev]\n\nTypeSafe FORMAT steal: typed noul/choice/score over a PreToolUse payload, code-owned pass/review/block. Does not install typesafe-sdk or call Jev.',
   'ci-gha-buildkite-patterns': 'Usage: npx thumbgate ci-gha-buildkite-patterns [--jobs-json=path] [--workflow=path] [--json] [--map-only]\n\nBuildkite pipeline FORMAT on GitHub Actions: first-fail step, PR fail-fast, needs:/skip/annotations. Does not add Buildkite.',
+  'armor-compile': 'Usage: npx thumbgate armor-compile [--json]\n\nEmits OpenRouter Armor v1 classifier_context plugin config.',
+  'profound-aeo': 'Usage: npx thumbgate profound-aeo [--json]\n\nComputes Profound Answer Engine Visibility & Citation Share.',
   'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',
   'salt-code-policy-honesty': 'Usage: npx thumbgate salt-code-policy-honesty [--inspect-code=...] [--inspect-api=...] [--inspect-mcp=...] [--strict] [--json] [--map-only]\n\nSalt Code FORMAT steal: 40-policy taxonomy, active PreToolUse vs context injection, OpenAPI query secret diode. Does not connect to mcp.getsaltcode.com.',
   'infoq-architect-honesty': 'Usage: npx thumbgate infoq-architect-honesty [--claim="..."] [--host=javascript] [--queue=path.json] [--max-age-ms=N] [--json] [--map-only]\n\nInfoQ September 2026 FORMAT: code-as-truth, typed host, existing lease, time-in-queue. Does not register for InfoQ or install Vortex.',
   'board-loop': 'Usage: npx thumbgate board-loop [--apply] [--json] [--max-update-branch=1] [--max-pr-manage=1] [--max-comments=4] [--skip-pr=N]\n\nClassify Issues+PR wall: update-branch BEHIND green Dependabot, pr:manage READY, comment DIRTY/ECI. Never approve.',
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
   'omp-coordination-honesty': 'Usage: npx thumbgate omp-coordination-honesty [--claim="..."] [--handoff=path] [--json] [--map-only] [--strict]\n\nMap omp session/subagent/collab FORMAT onto the checkout lease. Does not install omp.',
-  'decisive-step-honesty': 'Usage: npx thumbgate decisive-step-honesty [--claim="..."] [--trace=path] [--json] [--map-only] [--strict]\n\nScore only the first code edit a verifier flips from fail to pass. Does not train a model.',
   'harness-ceiling': 'Usage: npx thumbgate harness-ceiling [--json] [--map-only] [--evaluate] [--process=N] [--content=N]\n\narXiv:2610.11655 diagnose-then-intervene rail: failure composition and harness evolution ceiling detection.',
   'verify-claims': 'Usage: npx thumbgate verify-claims --claim="the row count is 1,284" [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nRecheck supported factual claims against operator-configured SQLite, filesystem, and JSON sources. Exits non-zero on mismatch, missing verifier, or verifier error.',
   'decisive-step': 'Usage: npx thumbgate decisive-step [--json] [--map-only]\n\nNVIDIA arXiv:2610.10478 decisive-step evaluation: isolates the first edit that flips tests from fail to pass and predicts coding skill at rho=0.964.',
@@ -4793,6 +4774,32 @@ switch (COMMAND) {
   case 'sparse-attention-runtime-guardrails':
     deepseekV4RuntimeGuardrails();
     break;
+  case 'armor-compile': {
+    const { compileThumbGateToArmorPlugin } = require(path.join(PKG_ROOT, 'scripts', 'openrouter-armor-partnership-diode'));
+    const plugin = compileThumbGateToArmorPlugin({
+      trustedRepo: 'github.com/IgorGanapolsky/ThumbGate',
+      currentBranch: 'main',
+      isProtectedBranch: true,
+    });
+    const args = parseArgs(process.argv.slice(3));
+    if (args.json) {
+      console.log(JSON.stringify(plugin, null, 2));
+    } else {
+      console.log(JSON.stringify(plugin.classifier_context, null, 2));
+    }
+    break;
+  }
+  case 'profound-aeo': {
+    const { computeAeoVisibilityMatrix } = require(path.join(PKG_ROOT, 'scripts', 'profound-aeo-citation-engine'));
+    const matrix = computeAeoVisibilityMatrix();
+    const args = parseArgs(process.argv.slice(3));
+    if (args.json) {
+      console.log(JSON.stringify(matrix, null, 2));
+    } else {
+      console.log(JSON.stringify(matrix, null, 2));
+    }
+    break;
+  }
   case 'nvidia-specdecode-al-doctor':
   case 'specdecode-al-doctor':
   case 'speculative-decoding-al-doctor':
@@ -4878,9 +4885,6 @@ switch (COMMAND) {
   case 'omp-coordination':
   case 'omp-honesty':
     ompCoordinationHonestyDoctor();
-    break;
-  case 'decisive-step-honesty':
-    decisiveStepHonestyDoctor();
     break;
   case 'harness-ceiling':
   case 'harness-ceiling-doctor':

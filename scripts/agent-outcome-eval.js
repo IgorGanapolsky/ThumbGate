@@ -56,7 +56,7 @@ function runAgentOutcomeEval(options = {}) {
   if (!Array.isArray(suite.cases) || suite.cases.length === 0) {
     throw new Error('Agent outcome suite must contain non-empty cases');
   }
-  const results = suite.cases.map(runCase);
+  const results = suite.cases.map((x) => runCase(x));
   const passed = results.filter((result) => result.status === 'pass').length;
   const score = Math.round((results.reduce((sum, result) => sum + result.score, 0) / results.length));
   const minimumCases = Number(suite.successCriteria?.minimumCases || 1);

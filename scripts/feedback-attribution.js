@@ -5,7 +5,6 @@ const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { readJsonl } = require('./fs-utils');
-const { findDecisiveStep } = require('./decisive-step-honesty');
 
 function getAttributionPaths(options = {}) {
   const feedbackDir = resolveFeedbackDir({
@@ -201,24 +200,7 @@ function attributeFeedback(signal, feedbackContext, opts = {}) {
     return { action, confidence };
   }).sort((a, b) => b.confidence - a.confidence);
 
-  let selected = scored.filter(s => s.confidence >= threshold).slice(0, topK);
-  const decisiveMode = actions.some((action) => (
-    action && typeof action === 'object' && (
-      Object.prototype.hasOwnProperty.call(action, 'verifier')
-      || Object.prototype.hasOwnProperty.call(action, 'tests')
-      || Object.prototype.hasOwnProperty.call(action, 'testResult')
-    )
-  ));
-  let decisiveStepId = null;
-  if (decisiveMode) {
-    const decisive = findDecisiveStep(actions.slice().reverse());
-    if (decisive && decisive.step) {
-      selected = [{ action: decisive.step, confidence: 1 }];
-      decisiveStepId = decisive.step.action_id || null;
-    } else {
-      selected = [];
-    }
-  }
+  const selected = scored.filter(s => s.confidence >= threshold).slice(0, topK);
 
   const attribution = {
     attribution_id: `att_${Date.now()}_${hashText(`${sig}|${feedbackNormalized}`)}`,
@@ -238,10 +220,6 @@ function attributeFeedback(signal, feedbackContext, opts = {}) {
       risk_score: s.action.risk_score,
     })),
   };
-  if (decisiveMode) {
-    attribution.scoring = 'decisive-edit';
-    attribution.decisive_step = decisiveStepId;
-  }
 
   appendJsonl(attributionsPath, attribution);
 
@@ -263,7 +241,7 @@ function attributeFeedback(signal, feedbackContext, opts = {}) {
     }
   }
 
-  const result = {
+  return {
     ok: true,
     signal: sig,
     attributedCount: selected.length,
@@ -273,11 +251,6 @@ function attributeFeedback(signal, feedbackContext, opts = {}) {
     attributionsPath,
     attributedFeedbackPath,
   };
-  if (decisiveMode) {
-    result.scoring = 'decisive-edit';
-    result.decisive_step = decisiveStepId;
-  }
-  return result;
 }
 
 function main() {
