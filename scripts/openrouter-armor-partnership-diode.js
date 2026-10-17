@@ -156,10 +156,24 @@ function evaluateUnauthorizedWalletSpendDiode({
   const raw = typeof commandOrPayload === 'string' ? commandOrPayload : JSON.stringify(commandOrPayload || '');
   const blob = `${toolName} ${raw}`;
 
-  // 1. Hard-block any attempt to read keystores, seed phrases, private keys, or wallet files
-  if (
-    /(?:\.ethereum\/keystore|\.foundry\/keystores|\.solana\/id\.json|\bPRIVATE_KEY\b|\bMNEMONIC\b|\bseed\s+phrase\b|\b0x[a-fA-F0-9]{64}\b)/i.test(blob)
-  ) {
+  // 1. Hard-block any attempt to read keystores, seed phrases, private keys, or wallet files.
+  //    SECURITY: A 32-byte Ethereum private key is 64 hex chars, but so are transaction
+  //    hashes and block hashes. Only block 0x{64} in key-material contexts (env var
+  //    assignment, file references), never as a bare transaction-hash argument.
+  const keyContextPattern = /(?:\bPRIVATE_KEY\b|\bMNEMONIC\b|\bseed\s+phrase\b|\.ethereum\/keystore|\.foundry\/keystores|\.solana\/id\.json)/i;
+  if (keyContextPattern.test(blob)) {
+    return {
+      allowed: false,
+      decision: 'block',
+      gateId: 'gate:vitalik_paranoid:wallet_secret_access_blocked',
+      reason: 'Blocked unauthorized access to local crypto keystore, mnemonic, or 32-byte private key.',
+    };
+  }
+  const assignmentPattern = new RegExp(
+    '(?:PRIVATE_KEY|WALLET_KEY|PRIVKEY)\\s*[:=]\\s*0x[a-fA-F0-9]{64}',
+    'i'
+  );
+  if (assignmentPattern.test(blob)) {
     return {
       allowed: false,
       decision: 'block',
@@ -168,19 +182,35 @@ function evaluateUnauthorizedWalletSpendDiode({
     };
   }
 
-  // 2. Check transaction broadcast / signing invocations
+  // 2. Check transaction broadcast / signing invocations.
+  //    SECURITY: Validate the SENDER (from-account), not just the destination.
+  //    A command like `cast send 0x... --account unapproved-wallet` may contain
+  //    authorizedDepositAddress as the *destination* (to), but the sender is
+  //    the unapproved wallet. Fail closed when the sender cannot be established.
   const isTxBroadcast =
     /(?:\beth_sendTransaction\b|\beth_sendRawTransaction\b|\beth_signTransaction\b|\bcast\s+(?:send|mktx|publish)\b|\bsolana\s+transfer\b|\bzkapi-clientd\s+withdraw\b|\bsendTransaction\s*\()/i.test(blob);
 
   if (isTxBroadcast) {
     const normAuth = authorizedDepositAddress ? String(authorizedDepositAddress).toLowerCase() : null;
-    const addresses = Array.from(blob.matchAll(/\b(0x[a-fA-F0-9]{40})\b/g)).map((m) => m[1].toLowerCase());
-    if (!normAuth || addresses.length === 0 || addresses.some((a) => a !== normAuth)) {
+    if (!normAuth) {
       return {
         allowed: false,
         decision: 'block',
         gateId: 'gate:vitalik_paranoid:unauthorized_wallet_spend_blocked',
-        reason: 'Blocked unauthorized ETH/crypto transaction broadcast to or from an unapproved wallet address.',
+        reason: 'Blocked transaction broadcast: no authorizedDepositAddress configured. Sender identity cannot be verified.',
+      };
+    }
+    // Parse sender identity from --account, --from, or JSON from-field
+    const senderMatch = blob.match(/(?:--account\s+|--from\s+|from["\s:=]+)(0x[a-fA-F0-9]{40}|[^,\s}]+)/i);
+    const senderAddr = senderMatch
+      ? String(senderMatch[1]).toLowerCase()
+      : null;
+    if (!senderAddr || senderAddr !== normAuth) {
+      return {
+        allowed: false,
+        decision: 'block',
+        gateId: 'gate:vitalik_paranoid:unauthorized_wallet_spend_blocked',
+        reason: 'Blocked unauthorized ETH/crypto transaction broadcast: sender identity cannot be established or does not match authorizedDepositAddress.',
       };
     }
   }
@@ -237,10 +267,14 @@ function rewritePromptParanoidMode({
 
   // Protect verbatim spans: backticked code (`...`), exact quotes ("..."), URLs, and file paths
   const preservedSpans = [];
+  // SECURITY: Use collision-free sentinels with random prefix to prevent user text
+  // from containing a string that collides with a verbatim-span placeholder,
+  // which would cause silent prompt corruption during restoration.
+  const sentinelPrefix = `___TG_P${crypto.randomBytes(4).toString('hex')}_`;
   const tokenized = rawContent.replace(/(`[^`]+`|"[^"]+"|https?:\/\/[^\s)]+)/g, (match) => {
     const idx = preservedSpans.length;
     preservedSpans.push(match);
-    return `__VERBATIM_SPAN_${idx}__`;
+    return `${sentinelPrefix}${idx}___`;
   });
 
   // Strip stylometric filler while preserving prohibitions, numbers, and task verbs
@@ -249,8 +283,8 @@ function rewritePromptParanoidMode({
     .replace(/\s{2,}/g, ' ')
     .trim();
 
-  // Restore verbatim spans
-  cleaned = cleaned.replace(/__VERBATIM_SPAN_(\d+)__/g, (_, idx) => preservedSpans[Number(idx)]);
+  // Restore verbatim spans using the collision-free prefix
+  cleaned = cleaned.replace(new RegExp(`${sentinelPrefix}(\\d+)___`, 'g'), (_, idx) => preservedSpans[Number(idx)]);
 
   const updatedMessages = [
     ...messages.slice(0, -1),
@@ -344,6 +378,12 @@ function scheduleUnbufferedCoverTraffic({
       throw new Error(`Invalid cover URL: ${raw}`);
     }
     const host = parsed.hostname.toLowerCase();
+    // IPv6 hosts may be bracketed: [::1], [fc00::1], etc.
+    const bracketed = /^\[(.+)\]$/.exec(host);
+    const bareHost = bracketed ? bracketed[1] : host;
+    const isPrivateV4 = /^(?:127\.|10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|169\.254\.)/.test(bareHost);
+    const isPrivateV6 = /^(?:::1|fc[0-9a-f]{2}::|fd[0-9a-f]{2}::|fe[89ab][0-9a-f]{0,2}::)/i.test(bareHost);
+    const isCloudMetadata = /^(?:metadata\.google\.internal|169\.254\.169\.254)$/.test(bareHost);
     if (
       parsed.protocol !== 'https:' ||
       (parsed.port && parsed.port !== '443') ||
@@ -351,8 +391,10 @@ function scheduleUnbufferedCoverTraffic({
       parsed.password ||
       parsed.search ||
       parsed.hash ||
-      host === 'localhost' ||
-      /^127\.|^10\.|^192\.168\.|^172\.(?:1[6-9]|2\d|3[01])\./.test(host)
+      bareHost === 'localhost' ||
+      isPrivateV4 ||
+      isPrivateV6 ||
+      isCloudMetadata
     ) {
       throw new Error(`Rejected unsafe or non-HTTPS-443 cover URL: ${raw}`);
     }
