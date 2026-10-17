@@ -2983,25 +2983,6 @@ function ompCoordinationHonestyDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
-function decisiveStepHonestyDoctor() {
-  const args = parseArgs(process.argv.slice(3));
-  const {
-    buildDecisiveStepHonestyReport,
-    formatDecisiveStepHonestyReport,
-  } = require(path.join(PKG_ROOT, 'scripts', 'decisive-step-honesty'));
-  const report = buildDecisiveStepHonestyReport(args);
-  if (args.json) {
-    console.log(JSON.stringify(report, null, 2));
-  } else {
-    process.stdout.write(formatDecisiveStepHonestyReport(report));
-  }
-  if (args.strict && report.status !== 'ready') {
-    process.exitCode = 1;
-    return;
-  }
-  if (report.status === 'fail') process.exitCode = 1;
-}
-
 function harnessCeilingDoctor() {
   const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'harness-ceiling-doctor'));
   const exitCode = runCli(process.argv.slice(3));
@@ -4053,7 +4034,6 @@ function help() {
   console.log('  infoq-architect-honesty Code-as-truth, typed host, lease, time-in-queue (InfoQ FORMAT)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  omp-coordination-honesty   Named-model session handoff on the checkout lease (omp FORMAT; does not install omp)');
-  console.log('  decisive-step-honesty   Score only the first fail-to-pass edit (arXiv:2610.10478; does not train)');
   console.log('  harness-ceiling       Failure composition and harness evolution ceiling detection (arXiv:2610.11655)');
   console.log('  halo-trace-optimizer  Analyze agent trace logs for thrashing and stalls (HALO FORMAT)');
   console.log('  decisive-step         Decisive-step coding agent evaluation (NVIDIA arXiv:2610.10478)');
@@ -4165,7 +4145,6 @@ const SUBCOMMAND_HELP = {
   'board-loop': 'Usage: npx thumbgate board-loop [--apply] [--json] [--max-update-branch=1] [--max-pr-manage=1] [--max-comments=4] [--skip-pr=N]\n\nClassify Issues+PR wall: update-branch BEHIND green Dependabot, pr:manage READY, comment DIRTY/ECI. Never approve.',
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
   'omp-coordination-honesty': 'Usage: npx thumbgate omp-coordination-honesty [--claim="..."] [--handoff=path] [--json] [--map-only] [--strict]\n\nMap omp session/subagent/collab FORMAT onto the checkout lease. Does not install omp.',
-  'decisive-step-honesty': 'Usage: npx thumbgate decisive-step-honesty [--claim="..."] [--trace=path] [--json] [--map-only] [--strict]\n\nScore only the first code edit a verifier flips from fail to pass. Does not train a model.',
   'harness-ceiling': 'Usage: npx thumbgate harness-ceiling [--json] [--map-only] [--evaluate] [--process=N] [--content=N]\n\narXiv:2610.11655 diagnose-then-intervene rail: failure composition and harness evolution ceiling detection.',
   'verify-claims': 'Usage: npx thumbgate verify-claims --claim="the row count is 1,284" [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nRecheck supported factual claims against operator-configured SQLite, filesystem, and JSON sources. Exits non-zero on mismatch, missing verifier, or verifier error.',
   'decisive-step': 'Usage: npx thumbgate decisive-step [--json] [--map-only]\n\nNVIDIA arXiv:2610.10478 decisive-step evaluation: isolates the first edit that flips tests from fail to pass and predicts coding skill at rho=0.964.',
@@ -4878,9 +4857,6 @@ switch (COMMAND) {
   case 'omp-coordination':
   case 'omp-honesty':
     ompCoordinationHonestyDoctor();
-    break;
-  case 'decisive-step-honesty':
-    decisiveStepHonestyDoctor();
     break;
   case 'harness-ceiling':
   case 'harness-ceiling-doctor':

@@ -317,16 +317,6 @@ npx thumbgate omp-coordination-honesty --json --map-only
 
 Skill: `.agents/skills/omp-coordination-honesty-not-clone/SKILL.md`. Details: `docs/agents/omp-coordination-honesty.md`.
 
-## Decisive-step honesty (FORMAT steal)
-
-When a verifier result is on the action log, attribute feedback to the first code edit that the tests flip from fail to pass. Steps before that edit are context. Steps after the certifying pass are cleanup. A coding quiz is not an agent ranking. The paper's correlation stays the paper's. Do not install Nvidia, train a base model, or score every step.
-
-```bash
-npx thumbgate decisive-step-honesty --json --map-only
-```
-
-Skill: `.agents/skills/decisive-step-honesty-not-clone/SKILL.md`. Details: `docs/agents/decisive-step-honesty.md`.
-
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
