@@ -324,7 +324,7 @@ function summarizeQueue(payload, apiBaseUrl) {
     },
     latestSubmittedAt: safeTimestamp(payload.latestSubmittedAt),
     oldestSubmittedAt: safeTimestamp(payload.oldestSubmittedAt),
-    leads: payload.leads.map((x) => summarizeLead(x)),
+    leads: payload.leads.map(summarizeLead),
     privacy: {
       contactDetailsIncluded: false,
       draftsIncluded: false,

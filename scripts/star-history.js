@@ -117,7 +117,7 @@ function validateHistory(payload) {
     throw new Error('star history payload must be an array of weeks');
   }
   assertNoIdentities(payload);
-  return payload.map((x) => validateWeek(x));
+  return payload.map(validateWeek);
 }
 
 function lastNWeeks(weeks, n) {

@@ -45,7 +45,7 @@ function recommendMcpTransport(service = {}) {
 }
 
 function buildMcpTransportMigrationPlan(services = []) {
-  const recommendations = services.map((x) => recommendMcpTransport(x));
+  const recommendations = services.map(recommendMcpTransport);
   return {
     recommendations,
     pilots: recommendations.filter((item) => item.transport === 'grpc').slice(0, 1),

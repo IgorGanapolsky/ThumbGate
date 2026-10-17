@@ -149,7 +149,7 @@ async function searchPapers({
     try {
       const payload = await readJson(url, fetchImpl);
       const papers = extractPaperItems(payload)
-        .map((x) => normalizePaper(x))
+        .map(normalizePaper)
         .filter((paper) => paper.paperId || paper.title);
 
       if (papers.length > 0) {

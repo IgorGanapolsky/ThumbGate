@@ -25,7 +25,7 @@ const DEFAULT_THRESHOLDS = {
 
 function analyzeBehaviorEvents(events = [], options = {}) {
   const thresholds = { ...DEFAULT_THRESHOLDS, ...(options.thresholds || {}) };
-  const normalized = events.map((x) => normalizeEvent(x));
+  const normalized = events.map(normalizeEvent);
   const total = normalized.length;
   const counts = {
     malformed: normalized.filter((event) => !event.schemaValid).length,

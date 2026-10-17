@@ -176,7 +176,7 @@ function normalizeMethod(method) {
   return String(method || 'GET').trim().toUpperCase() || 'GET';
 }
 
-function parseTarget(input = {}) { // NOSONAR
+function parseTarget(input = {}) {
   const rawUrl = input.url || input.target || input.href || '';
   const method = normalizeMethod(input.method);
   let url = String(rawUrl || '').trim();
@@ -336,7 +336,7 @@ function ruleMatches(compiled, target) {
  * @returns {{ hit: boolean, action?: string, rule?: object }}
  */
 function matchStaticRules(target, rules = []) {
-  const compiled = (rules || []).map((x) => compileRule(x));
+  const compiled = (rules || []).map(compileRule);
   const denies = compiled.filter((r) => r.action === 'deny');
   const allows = compiled.filter((r) => r.action === 'allow');
 
