@@ -2338,7 +2338,7 @@ function appendFeedbackListLines(lines, { entries, signal, intent }) {
   }
   lines.push(
     `${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`,
-    ...entries.map(formatFeedbackEntry)
+    ...entries.map((x) => formatFeedbackEntry(x))
   );
 }
 

@@ -377,7 +377,7 @@ function renderMcpDirectorySurfacesCsv(pack = {}) {
     ])),
   ];
 
-  return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
+  return `${rows.map((row) => row.map((x) => csvCell(x)).join(',')).join('\n')}\n`;
 }
 
 function writeMcpDirectoryRevenuePack(pack, options = {}) {

@@ -250,7 +250,7 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
         applyGraphResolution(dedupeSupersededLessons(results), options, memories),
         resolveTopP(options),
         { minKeep: options.minKeep },
-      ).slice(0, maxResults).map(shapeLesson);
+      ).slice(0, maxResults).map((x) => shapeLesson(x));
     } catch {
       // fall through to classic path
     }
@@ -298,7 +298,7 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
   const deduped = applyGraphResolution(dedupeSupersededLessons(reranked), options, memories);
   const selected = filterTopP(deduped, resolveTopP(options), { minKeep: options.minKeep });
 
-  const shaped = selected.slice(0, maxResults).map(shapeLesson);
+  const shaped = selected.slice(0, maxResults).map((x) => shapeLesson(x));
 
   // Attach retrieval quality tier once (non-enumerable-ish via property on array)
   try {
@@ -491,7 +491,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     const reranked = rerankLessons(actionContext, dedupeCandidatePool(lexicalScored), { topK: Math.max(maxResults * 2, maxResults), toolName });
     return filterTopP(applyGraphResolution(dedupeSupersededLessons(reranked), options, memories), resolveTopP(options), { minKeep: options.minKeep })
       .slice(0, maxResults)
-      .map(shapeLesson);
+      .map((x) => shapeLesson(x));
   }
 
   const queryPlan = lexicalScored[0]?.relevanceScore >= (options.rewriteBelowScore ?? 0.6)
@@ -635,7 +635,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
   const reranked = rerankLessons(actionContext, candidates, { topK: Math.max(maxResults * 2, maxResults), toolName });
   const rows = filterTopP(applyGraphResolution(dedupeSupersededLessons(reranked), options, memories), resolveTopP(options), { minKeep: options.minKeep })
     .slice(0, maxResults)
-    .map(shapeLesson);
+    .map((x) => shapeLesson(x));
   return attachArrayRetrievalMeta(rows, {
     strategy: 'hybrid-rrf+bm25',
     indexUpdatedAtMs: options.indexUpdatedAtMs ?? null,
