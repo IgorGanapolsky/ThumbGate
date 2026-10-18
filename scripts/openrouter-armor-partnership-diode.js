@@ -1690,11 +1690,52 @@ function verifyPasskeyStepUpAssertion({
 }
 
 function evaluateMuseSparkLongRunningFence({
-  modelId = 'meta/muse-spark-open',
+  modelId = 'meta/muse-spark-open-816b-a42b',
   unverifiedTurnsSinceCheckpoint = 0,
   maxUnverifiedTurns = 5,
   lastVerifierPassed = true,
+  contextTokens = 100000,
+  maxContextTokens = 1000000,
+  deploymentMode = 'gemini_cloud',
+  localUnifiedMemoryGb = 1024,
+  hasBuiltWithAttribution = true,
+  isCommercialApiReseller = false,
+  annualProviderRevenueUsd = 0,
+  hasMetaCommercialAgreement = false,
 } = {}) {
+  if (Number(contextTokens) > Number(maxContextTokens)) {
+    return {
+      allowed: false,
+      decision: 'block',
+      modelId,
+      reasonCode: 'muse_spark_1m_context_exceeded',
+    };
+  }
+  if (!hasBuiltWithAttribution) {
+    return {
+      allowed: false,
+      decision: 'block',
+      modelId,
+      reasonCode: 'missing_built_with_muse_spark_open_attribution',
+      requiredLabel: 'Built with Muse Spark Open',
+    };
+  }
+  if (isCommercialApiReseller && Number(annualProviderRevenueUsd) > 20000000 && !hasMetaCommercialAgreement) {
+    return {
+      allowed: false,
+      decision: 'block',
+      modelId,
+      reasonCode: 'meta_20m_revenue_commercial_license_required',
+    };
+  }
+  if (String(deploymentMode) === 'local_m5_ultra_cluster' && Number(localUnifiedMemoryGb) < 1024) {
+    return {
+      allowed: false,
+      decision: 'block',
+      modelId,
+      reasonCode: 'insufficient_m5_ultra_unified_memory_requires_2x512gb',
+    };
+  }
   if (!lastVerifierPassed || Number(unverifiedTurnsSinceCheckpoint) > Number(maxUnverifiedTurns)) {
     return {
       allowed: false,
@@ -1707,6 +1748,9 @@ function evaluateMuseSparkLongRunningFence({
     allowed: true,
     decision: 'allow',
     modelId,
+    totalParamsB: 816,
+    activeParamsB: 42,
+    maxContextTokens: 1000000,
     reasonCode: 'within_verified_checkpoint_horizon',
   };
 }
@@ -1970,6 +2014,174 @@ function evaluateOnCallDotToCodexHandoff({
   };
 }
 
+/**
+ * Anthropic Scion & Antique Agent-Scale VCS Steals (`thenewstack.io/anthropic-scion-git-replacement/`, Oct 15, 2026):
+ *   - Handles the 2,500 -> 30,000+ daily agent merge surge with a 200x smaller CPU/memory footprint and 100x faster checkout:
+ *     1. Clone-Free API History & Blobless Checkout Diode: blocks full unshallow `git clone` when a job only queries
+ *        history/blame or checks out a single sparse subtree.
+ *     2. Sophisticated Per-Agent Merge-Queue Rate Limiting + Simulation/Fuzzing Verification (`Antique` review gate).
+ */
+function evaluateScionAgentScaleVcsGate({
+  commandOrOperation = '',
+  operationIntent = 'history_query',
+  agentMergesPerHour = 10,
+  maxAgentMergesPerHour = 120,
+  simulationAndFuzzingPassed = true,
+  touchesCoreInfra = false,
+} = {}) {
+  const cmd = String(commandOrOperation || '').trim();
+  const isFullUnfilteredClone =
+    /\bgit\s+clone\b/i.test(cmd) &&
+    !/--filter=blob:none|--depth\b|--sparse\b/i.test(cmd);
+
+  if (isFullUnfilteredClone && ['history_query', 'ci_single_path', 'blame_lookup'].includes(String(operationIntent))) {
+    return {
+      allowed: false,
+      decision: 'block',
+      reasonCode: 'full_git_clone_blocked_use_api_or_blobless_sparse_checkout',
+      footprintReductionFactor: 200,
+      checkoutSpeedupFactor: 100,
+    };
+  }
+  if (Number(agentMergesPerHour) > Number(maxAgentMergesPerHour)) {
+    return {
+      allowed: false,
+      decision: 'block',
+      reasonCode: 'scion_agent_merge_rate_limit_exceeded',
+    };
+  }
+  if (touchesCoreInfra && !simulationAndFuzzingPassed) {
+    return {
+      allowed: false,
+      decision: 'block',
+      reasonCode: 'antique_core_infra_requires_simulation_and_fuzzing',
+    };
+  }
+  return {
+    allowed: true,
+    decision: 'allow',
+    reasonCode: 'scion_agent_scale_vcs_admissible',
+    footprintReductionFactor: 200,
+    checkoutSpeedupFactor: 100,
+  };
+}
+
+/**
+ * 1. Subquadratic `SubQ Snap` (`thenewstack.io/subquadratic-snap-jev-decision-model/`, Oct 14, 2026 — Alex Whedon):
+ *    Coarse Whole-Module Retrieval across 384K tokens (12x Jev's 32K, linear SSA, $0.05/1M input, $0 output),
+ *    routing `when2call` tool-invocation boundaries through ThumbGate's deterministic `<0.5ms` `PreToolUse` gate.
+ *
+ * 2. `SanSi: A Looped Typed Decision Model for System 1.5 Thinking` (`arXiv:2610.07730`, `@rohanpaul_ai` Oct 13, 2026):
+ *    Loops a compact 1.4B parameter-reusing model (`Ouro-1.4B`) across `1..8` recurrent passes with anytime early-exit.
+ *
+ * 3. Bruno Open-Source Git-Native API Client (`github.com/usebruno/bruno`, `@githubprojects` Threads):
+ *    Offline-first `.bru` plain-text collection format + `vars:secret` diode (blocks literal secrets in `.bru` files
+ *    and cloud-sync collection leaks, and compiles PreToolUse gate checks into git-diffable `.bru` assertions).
+ */
+function evaluateSubQSnapCoarseModuleRouter({
+  modules = [],
+  maxSnapWindowTokens = 384000,
+  taskType = 'cross_module_bug_triage',
+  pricePerMillionInputUsd = 0.05,
+} = {}) {
+  const totalModuleTokens = (Array.isArray(modules) ? modules : []).reduce(
+    (acc, m) => acc + Math.max(0, Number(m.tokens) || 0),
+    0,
+  );
+  const fitsCoarseWholeModules = totalModuleTokens <= Number(maxSnapWindowTokens);
+  const estimatedInputCostUsd = Number(((totalModuleTokens / 1e6) * Number(pricePerMillionInputUsd)).toFixed(6));
+
+  if (String(taskType).toLowerCase() === 'when2call') {
+    return {
+      selectedEngine: 'thumbgate_deterministic_pretooluse_plus_jev',
+      retrievalStrategy: 'exact_tool_call_state',
+      fragileSnippetChunkingEliminated: true,
+      totalModuleTokens,
+      estimatedInputCostUsd: 0,
+    };
+  }
+  return {
+    selectedEngine: fitsCoarseWholeModules ? 'subq_snap_384k_ssa' : 'coarse_module_filter_then_subq_snap',
+    retrievalStrategy: fitsCoarseWholeModules ? 'whole_modules_no_snippet_chunking' : 'coarse_module_selection',
+    fragileSnippetChunkingEliminated: fitsCoarseWholeModules,
+    totalModuleTokens,
+    estimatedInputCostUsd,
+    outputCostUsd: 0,
+  };
+}
+
+function evaluateSanSiLoopedSystem15Gate({
+  loopProbabilities = [],
+  maxLoops = 8,
+  earlyStopConfidenceThreshold = 0.85,
+} = {}) {
+  const probs = (Array.isArray(loopProbabilities) ? loopProbabilities : []).slice(0, Number(maxLoops) || 8);
+  if (probs.length === 0) {
+    return {
+      allowed: false,
+      decision: 'block',
+      loopsExecuted: 0,
+      reasonCode: 'no_loop_observations',
+    };
+  }
+  let stoppedAtLoop = probs.length;
+  let finalProb = Number(probs[probs.length - 1]);
+  let earlyStopped = false;
+
+  for (let i = 0; i < probs.length; i += 1) {
+    const p = Number(probs[i]);
+    if (p >= Number(earlyStopConfidenceThreshold) || p <= 1 - Number(earlyStopConfidenceThreshold)) {
+      stoppedAtLoop = i + 1;
+      finalProb = p;
+      earlyStopped = i + 1 < probs.length;
+      break;
+    }
+  }
+
+  const allowed = finalProb >= Number(earlyStopConfidenceThreshold);
+  return {
+    allowed,
+    decision: allowed ? 'allow' : 'block',
+    systemTier: 'system_1.5_looped_ouro_1.4b',
+    loopsExecuted: stoppedAtLoop,
+    maxLoops: Number(maxLoops) || 8,
+    earlyStopped,
+    finalConfidence: Number(finalProb.toFixed(4)),
+    memorySavedVsSinglePass4B: '3x_smaller_parameter_footprint',
+  };
+}
+
+function evaluateBrunoGitNativeCollectionDiode({
+  bruContent = '',
+  cloudSyncEnabled = false,
+} = {}) {
+  if (cloudSyncEnabled) {
+    return {
+      allowed: false,
+      decision: 'block',
+      reasonCode: 'bruno_offline_first_cloud_collection_sync_forbidden',
+    };
+  }
+  const raw = String(bruContent || '');
+  const hasInlineSecret =
+    /\b(?:Authorization:\s*Bearer\s+(?!\{\{)[A-Za-z0-9._-]{12,}|sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})\b/i.test(
+      raw,
+    );
+  if (hasInlineSecret) {
+    return {
+      allowed: false,
+      decision: 'block',
+      reasonCode: 'inline_secret_in_bru_file_use_vars_secret',
+      remediation: 'Replace literal token with {{process.env.TOKEN}} and declare in vars:secret [...]',
+    };
+  }
+  return {
+    allowed: true,
+    decision: 'allow',
+    reasonCode: 'git_native_bru_collection_verified',
+  };
+}
+
 if (require.main === module) {
   const plugin = compileThumbGateToArmorPlugin();
   const rewritten = rewritePromptParanoidMode({
@@ -2028,4 +2240,8 @@ module.exports = {
   evaluateSonableFourAgentVisibilityLoop,
   evaluateServiceNowAiPassportAndBrake,
   evaluateOnCallDotToCodexHandoff,
+  evaluateScionAgentScaleVcsGate,
+  evaluateSubQSnapCoarseModuleRouter,
+  evaluateSanSiLoopedSystem15Gate,
+  evaluateBrunoGitNativeCollectionDiode,
 };

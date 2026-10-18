@@ -44,6 +44,10 @@ const {
   evaluateSonableFourAgentVisibilityLoop,
   evaluateServiceNowAiPassportAndBrake,
   evaluateOnCallDotToCodexHandoff,
+  evaluateScionAgentScaleVcsGate,
+  evaluateSubQSnapCoarseModuleRouter,
+  evaluateSanSiLoopedSystem15Gate,
+  evaluateBrunoGitNativeCollectionDiode,
 } = require('../scripts/openrouter-armor-partnership-diode');
 
 test('compileThumbGateToArmorPlugin: emits OpenRouter Armor v1 classifier_context with 0.6 deny and 0.7 allow thresholds', () => {
@@ -684,10 +688,22 @@ test('Auth0 Passkeys, Meta Muse Spark Open, Semrush 126M AI Visibility Index, an
     true,
   );
 
-  // 2. Meta Muse Spark Open long-running coding checkpoint fence
+  // 2. Meta Muse Spark Open (816B-A42B, 1M context, 2x512GB M5 Ultra, "Built with Muse Spark Open" label, $20M license)
   assert.equal(
     evaluateMuseSparkLongRunningFence({ unverifiedTurnsSinceCheckpoint: 8, maxUnverifiedTurns: 5 }).allowed,
     false,
+  );
+  assert.equal(
+    evaluateMuseSparkLongRunningFence({ hasBuiltWithAttribution: false }).reasonCode,
+    'missing_built_with_muse_spark_open_attribution',
+  );
+  assert.equal(
+    evaluateMuseSparkLongRunningFence({ isCommercialApiReseller: true, annualProviderRevenueUsd: 25000000, hasMetaCommercialAgreement: false }).reasonCode,
+    'meta_20m_revenue_commercial_license_required',
+  );
+  assert.equal(
+    evaluateMuseSparkLongRunningFence({ deploymentMode: 'local_m5_ultra_cluster', localUnifiedMemoryGb: 512 }).reasonCode,
+    'insufficient_m5_ultra_unified_memory_requires_2x512gb',
   );
   assert.equal(
     evaluateMuseSparkLongRunningFence({ unverifiedTurnsSinceCheckpoint: 3, maxUnverifiedTurns: 5 }).allowed,
@@ -818,4 +834,68 @@ test('OpenAI On-Call Dot -> Codex 3am Triage & GPT-6 Maintenance steals: blocks 
     proposedCommand: 'git log -n 10 --oneline',
   });
   assert.equal(validTriage.allowed, true);
+});
+
+test('Anthropic Scion & Antique agent-scale VCS steal: blocks full git clone for history/CI queries (200x smaller footprint), rate-limits agent merge bursts, and requires simulation+fuzzing on core infra', () => {
+  const fullCloneBlocked = evaluateScionAgentScaleVcsGate({
+    commandOrOperation: 'git clone https://github.com/IgorGanapolsky/ThumbGate.git',
+    operationIntent: 'history_query',
+  });
+  assert.equal(fullCloneBlocked.allowed, false);
+  assert.equal(fullCloneBlocked.reasonCode, 'full_git_clone_blocked_use_api_or_blobless_sparse_checkout');
+  assert.equal(fullCloneBlocked.footprintReductionFactor, 200);
+
+  const bloblessAllowed = evaluateScionAgentScaleVcsGate({
+    commandOrOperation: 'git clone --filter=blob:none --sparse https://github.com/IgorGanapolsky/ThumbGate.git',
+    operationIntent: 'ci_single_path',
+  });
+  assert.equal(bloblessAllowed.allowed, true);
+
+  const missingFuzzing = evaluateScionAgentScaleVcsGate({
+    commandOrOperation: 'gh pr merge',
+    touchesCoreInfra: true,
+    simulationAndFuzzingPassed: false,
+  });
+  assert.equal(missingFuzzing.allowed, false);
+  assert.equal(missingFuzzing.reasonCode, 'antique_core_infra_requires_simulation_and_fuzzing');
+});
+
+test('Subquadratic SubQ Snap 384K router, SanSi (arXiv:2610.07730) System 1.5 looped decisions, and Bruno .bru Git-native API diode', () => {
+  const snap = evaluateSubQSnapCoarseModuleRouter({
+    modules: [
+      { name: 'scripts/gates-engine.js', tokens: 65000 },
+      { name: 'scripts/financial-control-plane.js', tokens: 35000 },
+    ],
+    taskType: 'cross_module_bug_triage',
+  });
+  assert.equal(snap.selectedEngine, 'subq_snap_384k_ssa');
+  assert.equal(snap.fragileSnippetChunkingEliminated, true);
+  assert.equal(snap.estimatedInputCostUsd, 0.005);
+  assert.equal(snap.outputCostUsd, 0);
+
+  const when2call = evaluateSubQSnapCoarseModuleRouter({
+    modules: [{ name: 'tool.js', tokens: 2000 }],
+    taskType: 'when2call',
+  });
+  assert.equal(when2call.selectedEngine, 'thumbgate_deterministic_pretooluse_plus_jev');
+
+  const sansi = evaluateSanSiLoopedSystem15Gate({
+    loopProbabilities: [0.52, 0.61, 0.74, 0.91, 0.92, 0.93, 0.93, 0.94],
+    earlyStopConfidenceThreshold: 0.85,
+  });
+  assert.equal(sansi.allowed, true);
+  assert.equal(sansi.loopsExecuted, 4);
+  assert.equal(sansi.earlyStopped, true);
+  assert.equal(sansi.finalConfidence, 0.91);
+
+  const bruLeak = evaluateBrunoGitNativeCollectionDiode({
+    bruContent: 'headers {\n  Authorization: Bearer sk-live1234567890abcdef123456\n}',
+  });
+  assert.equal(bruLeak.allowed, false);
+  assert.equal(bruLeak.reasonCode, 'inline_secret_in_bru_file_use_vars_secret');
+
+  const bruSafe = evaluateBrunoGitNativeCollectionDiode({
+    bruContent: 'vars:secret [\n  apiKey\n]\nheaders {\n  Authorization: Bearer {{apiKey}}\n}',
+  });
+  assert.equal(bruSafe.allowed, true);
 });
