@@ -2182,6 +2182,58 @@ function evaluateBrunoGitNativeCollectionDiode({
   };
 }
 
+/**
+ * Ouroboros Continuity & Reviewed Core-Evolution Steal (`github.com/razzant/ouroboros`, `ouroboros-continuity-not-clone`):
+ *   1. Self-Rewrite Is a Gated Tool Call: an agent rewriting its own harness, prompts, or firewall (`config/gates/**`,
+ *      `AGENTS.md`, `scripts/gates-engine.js`) is blocked unless an independent human approval is attached.
+ *   2. Forked Memory Mode (`memoryMode === 'forked'`): subagents working on external workspaces read a forked
+ *      snapshot and return a patch (`patchOutPath`) without mutating parent durable memory until reviewed.
+ *   3. Disclosed Reward-Hack Trial Zeroing: zeroes any benchmark/eval trial flagged for reward hacking and reports
+ *      both `rawScore` and `auditedScore` (never claiming unverified revenue or cloning desktop installers).
+ */
+function evaluateOuroborosContinuityAndRewardHackGate({
+  targetFile = '',
+  hasIndependentHumanApproval = false,
+  memoryMode = 'forked',
+  subagentAttemptsParentMemoryWrite = false,
+  totalTrials = 89,
+  passedRawTrials = 77,
+  rewardHackTrialsCount = 1,
+} = {}) {
+  const touchesFirewallOrSelfCore =
+    /^(?:config\/gates\/|scripts\/gates-engine\.js|AGENTS\.md|CLAUDE\.md)/i.test(String(targetFile || '').trim());
+  if (touchesFirewallOrSelfCore && !hasIndependentHumanApproval) {
+    return {
+      allowed: false,
+      decision: 'block',
+      reasonCode: 'self_rewrite_is_a_gated_tool_call_requires_human_approval',
+      offerPath: '/continuity.html',
+    };
+  }
+  if (String(memoryMode) === 'forked' && subagentAttemptsParentMemoryWrite) {
+    return {
+      allowed: false,
+      decision: 'block',
+      reasonCode: 'forked_memory_mode_subagent_cannot_mutate_parent_memory',
+    };
+  }
+  const total = Math.max(1, Number(totalTrials) || 1);
+  const rawPass = Math.max(0, Number(passedRawTrials) || 0);
+  const hacked = Math.max(0, Number(rewardHackTrialsCount) || 0);
+  const rawScorePct = Number(((rawPass / total) * 100).toFixed(2));
+  const auditedPass = Math.max(0, rawPass - hacked);
+  const auditedScorePct = Number(((auditedPass / total) * 100).toFixed(2));
+
+  return {
+    allowed: true,
+    decision: 'allow',
+    reasonCode: 'continuity_and_reward_hack_audit_verified',
+    rawScorePct,
+    auditedScorePct,
+    zeroedRewardHackTrials: hacked,
+  };
+}
+
 if (require.main === module) {
   const plugin = compileThumbGateToArmorPlugin();
   const rewritten = rewritePromptParanoidMode({
@@ -2244,4 +2296,5 @@ module.exports = {
   evaluateSubQSnapCoarseModuleRouter,
   evaluateSanSiLoopedSystem15Gate,
   evaluateBrunoGitNativeCollectionDiode,
+  evaluateOuroborosContinuityAndRewardHackGate,
 };

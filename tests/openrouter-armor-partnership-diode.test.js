@@ -48,6 +48,7 @@ const {
   evaluateSubQSnapCoarseModuleRouter,
   evaluateSanSiLoopedSystem15Gate,
   evaluateBrunoGitNativeCollectionDiode,
+  evaluateOuroborosContinuityAndRewardHackGate,
 } = require('../scripts/openrouter-armor-partnership-diode');
 
 test('compileThumbGateToArmorPlugin: emits OpenRouter Armor v1 classifier_context with 0.6 deny and 0.7 allow thresholds', () => {
@@ -898,4 +899,33 @@ test('Subquadratic SubQ Snap 384K router, SanSi (arXiv:2610.07730) System 1.5 lo
     bruContent: 'vars:secret [\n  apiKey\n]\nheaders {\n  Authorization: Bearer {{apiKey}}\n}',
   });
   assert.equal(bruSafe.allowed, true);
+});
+
+test('Ouroboros continuity & reward-hack audit steal: blocks unchecked self-rewrite of firewall, enforces forked subagent memory isolation, and zeroes reward-hacked benchmark trials', () => {
+  const selfRewriteBlocked = evaluateOuroborosContinuityAndRewardHackGate({
+    targetFile: 'config/gates/default.json',
+    hasIndependentHumanApproval: false,
+  });
+  assert.equal(selfRewriteBlocked.allowed, false);
+  assert.equal(selfRewriteBlocked.reasonCode, 'self_rewrite_is_a_gated_tool_call_requires_human_approval');
+  assert.equal(selfRewriteBlocked.offerPath, '/continuity.html');
+
+  const forkedWriteBlocked = evaluateOuroborosContinuityAndRewardHackGate({
+    targetFile: 'src/app.js',
+    memoryMode: 'forked',
+    subagentAttemptsParentMemoryWrite: true,
+  });
+  assert.equal(forkedWriteBlocked.allowed, false);
+  assert.equal(forkedWriteBlocked.reasonCode, 'forked_memory_mode_subagent_cannot_mutate_parent_memory');
+
+  const audited = evaluateOuroborosContinuityAndRewardHackGate({
+    targetFile: 'src/app.js',
+    totalTrials: 445,
+    passedRawTrials: 387,
+    rewardHackTrialsCount: 1,
+  });
+  assert.equal(audited.allowed, true);
+  assert.equal(audited.rawScorePct, 86.97);
+  assert.equal(audited.auditedScorePct, 86.74);
+  assert.equal(audited.zeroedRewardHackTrials, 1);
 });
