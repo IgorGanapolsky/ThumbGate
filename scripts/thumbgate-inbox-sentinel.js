@@ -43,7 +43,7 @@ function normalizeSubject(subject = '') {
     .toLowerCase();
 }
 
-function extractEmailAddress(raw = '') {
+function extractEmailAddress(raw) {
   const str = String(raw || '').trim();
   const angle = str.match(/<([^>]+)>/);
   return (angle ? angle[1] : str).trim().toLowerCase();
