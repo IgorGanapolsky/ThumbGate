@@ -540,6 +540,187 @@ function evaluateArmorWithThumbGateFallback({
   };
 }
 
+const ZKAPI_CIRCUIT_ID = 'zkapi-v2-note-bound-v1';
+const ZKAPI_RETIREMENT_STAGES = Object.freeze(['disable', 'grace', 'usage_capture', 'revocation']);
+
+/**
+ * zkapi.org / vbuterin/zkapi (`docs/note-bound-commitments.md`):
+ * Computes a note-bound balance commitment where the note leaf `L` survives
+ * balance deductions (`balanceGwei - chargeGwei`) and binds to a specific
+ * deployment pool (`ethereum-mainnet` vs `robinhood-chain-mainnet`) and circuit header.
+ */
+function computeZkApiNoteBoundCommitment({
+  circuitId = ZKAPI_CIRCUIT_ID,
+  poolId = 'robinhood-chain-mainnet',
+  vaultAddress = '0x4386fdbda35d995beb3bf8625118ec5982ec81fe',
+  noteId = '',
+  registrationSecret = '',
+  depositGwei = 0,
+  balanceGwei = 0,
+  chargeGwei = 0,
+  blinding = '',
+  expiryEpochSec = 0,
+} = {}) {
+  if (circuitId !== ZKAPI_CIRCUIT_ID) {
+    throw new Error(`Rejected proof artifact: expected circuit header ${ZKAPI_CIRCUIT_ID}, got ${circuitId}`);
+  }
+  if (!noteId || !registrationSecret || !poolId || !vaultAddress) {
+    throw new Error('noteId, registrationSecret, poolId, and vaultAddress are required for note-bound commitment');
+  }
+  const nextBalanceGwei = Number(balanceGwei) - Number(chargeGwei);
+  if (!Number.isFinite(nextBalanceGwei) || nextBalanceGwei < 0) {
+    throw new Error('Insufficient note balance for charge deduction');
+  }
+
+  const noteLeafL = crypto
+    .createHash('sha256')
+    .update(
+      JSON.stringify({
+        domain: 'zkapi.v2.note-binding.generator.v1',
+        poolId: String(poolId).toLowerCase(),
+        vaultAddress: String(vaultAddress).toLowerCase(),
+        noteId: String(noteId),
+        registrationSecretHash: crypto.createHash('sha256').update(String(registrationSecret)).digest('hex'),
+        depositGwei: Number(depositGwei),
+        expiryEpochSec: Number(expiryEpochSec),
+      }),
+    )
+    .digest('hex');
+
+  const commitmentHash = crypto
+    .createHash('sha256')
+    .update(
+      JSON.stringify({
+        circuitId,
+        noteLeafL,
+        balanceGwei: nextBalanceGwei,
+        blindingHash: crypto.createHash('sha256').update(String(blinding)).digest('hex'),
+      }),
+    )
+    .digest('hex');
+
+  const nullifier = crypto
+    .createHash('sha256')
+    .update(`zkapi.v2.nullifier:${poolId}:${vaultAddress}:${noteId}:${registrationSecret}`)
+    .digest('hex');
+
+  return {
+    circuitId,
+    poolId: String(poolId).toLowerCase(),
+    vaultAddress: String(vaultAddress).toLowerCase(),
+    noteId: String(noteId),
+    noteLeafL,
+    balanceGwei: nextBalanceGwei,
+    commitmentHash,
+    nullifier,
+  };
+}
+
+/**
+ * zkapi.org / `docs/v2-acceptance.md` (Steps 8-9):
+ * Failed-issuance + escape withdrawal nullifier gate + cross-pool replay isolation.
+ * Once a note begins or completes an escape withdrawal (or its nullifier is spent),
+ * retrying a saved issuance request fails closed with `nullifier_used` and zero provider key creation.
+ */
+function evaluateZkApiNullifierEscapeGate({
+  requestPoolId = 'robinhood-chain-mainnet',
+  expectedPoolId = 'robinhood-chain-mainnet',
+  requestCircuitId = ZKAPI_CIRCUIT_ID,
+  noteLeafL = '',
+  commitmentNoteLeafL = '',
+  nullifier = '',
+  usedNullifiers = [],
+  escapeState = 'none',
+} = {}) {
+  if (requestCircuitId !== ZKAPI_CIRCUIT_ID) {
+    return {
+      allowed: false,
+      decision: 'block',
+      reasonCode: 'circuit_header_mismatch',
+      createProviderKey: false,
+    };
+  }
+  if (String(requestPoolId).toLowerCase() !== String(expectedPoolId).toLowerCase()) {
+    return {
+      allowed: false,
+      decision: 'block',
+      reasonCode: 'cross_pool_replay_blocked',
+      createProviderKey: false,
+    };
+  }
+  if (!noteLeafL || noteLeafL !== commitmentNoteLeafL) {
+    return {
+      allowed: false,
+      decision: 'block',
+      reasonCode: 'note_binding_mismatch',
+      createProviderKey: false,
+    };
+  }
+  const usedSet = new Set(Array.isArray(usedNullifiers) ? usedNullifiers : []);
+  if (!nullifier || usedSet.has(nullifier) || ['escaping', 'escaped', 'withdrawn'].includes(String(escapeState))) {
+    return {
+      allowed: false,
+      decision: 'block',
+      reasonCode: 'nullifier_used',
+      createProviderKey: false,
+    };
+  }
+  return {
+    allowed: true,
+    decision: 'allow',
+    reasonCode: 'admissible_unused_note',
+    createProviderKey: true,
+  };
+}
+
+/**
+ * zkapi.org / `docs/note-bound-commitments.md`:
+ * 4-stage lease retirement state machine (`disable -> grace -> usage_capture -> revocation`).
+ * Refuses to sign final settlement before the grace window elapses for in-flight calls
+ * and confirmed key deletion (`revocation`) completes.
+ */
+function evaluateZkApiLeaseRetirement({
+  completedStages = [],
+  inFlightCalls = 0,
+  graceElapsedMs = 0,
+  requiredGraceMs = 5000,
+  keyDeletionConfirmed = false,
+  reservedGwei = 0,
+  meteredUsageGwei = 0,
+} = {}) {
+  const stageSet = new Set(Array.isArray(completedStages) ? completedStages : []);
+  const missingStages = ZKAPI_RETIREMENT_STAGES.filter((s) => !stageSet.has(s));
+  if (missingStages.length > 0) {
+    return {
+      canSignSettlement: false,
+      reasonCode: 'retirement_stages_incomplete',
+      missingStages,
+    };
+  }
+  if (Number(inFlightCalls) > 0 || Number(graceElapsedMs) < Number(requiredGraceMs)) {
+    return {
+      canSignSettlement: false,
+      reasonCode: 'grace_window_or_inflight_active',
+      missingStages: [],
+    };
+  }
+  if (!keyDeletionConfirmed) {
+    return {
+      canSignSettlement: false,
+      reasonCode: 'key_revocation_unconfirmed',
+      missingStages: [],
+    };
+  }
+  const chargedGwei = Math.min(Number(reservedGwei), Math.max(0, Number(meteredUsageGwei)));
+  const refundedGwei = Math.max(0, Number(reservedGwei) - chargedGwei);
+  return {
+    canSignSettlement: true,
+    reasonCode: 'settled_after_confirmed_revocation',
+    chargedGwei,
+    refundedGwei,
+  };
+}
+
 if (require.main === module) {
   const plugin = compileThumbGateToArmorPlugin();
   const rewritten = rewritePromptParanoidMode({
@@ -560,4 +741,9 @@ module.exports = {
   resolveParanoidSessionCircuit,
   scheduleUnbufferedCoverTraffic,
   evaluateArmorWithThumbGateFallback,
+  ZKAPI_CIRCUIT_ID,
+  ZKAPI_RETIREMENT_STAGES,
+  computeZkApiNoteBoundCommitment,
+  evaluateZkApiNullifierEscapeGate,
+  evaluateZkApiLeaseRetirement,
 };

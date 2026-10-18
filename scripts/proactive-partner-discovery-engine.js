@@ -121,6 +121,18 @@ const GLOBAL_PARTNER_TARGETS = Object.freeze([
     offerTier: 'Co-Sell & MCP Firewall Integration',
     draftPath: null,
   },
+  {
+    id: 'zkapi-open-anonymity',
+    company: 'zkAPI / Open Anonymity (Ethereum Foundation dAI)',
+    domain: 'zkapi.org',
+    category: 'zk_private_api_credits',
+    decisionMakers: ['Vittorio Rivabella (EF dAI Team)', 'Davide Crapis (EF Research)'],
+    integrationSurface: 'zkapi-clientd localhost OpenAI/Ollama proxy + Robinhood Chain / Ethereum Mainnet ZK notes',
+    painPoint: 'zkapi-clientd hides billing identity and caps session spend in ETH/USDC, but a rogue coding agent can still burn its entire private note in a 50-turn retry loop or leak local secrets inside the prompt payload.',
+    thumbgateSolution: 'Pair ThumbGate <0.5ms PreToolUse loop/secret firewall with zkapi-clientd note-bound commitments, 4-stage lease retirement, and nullifier escape locks.',
+    offerTier: 'Co-Engineered Localhost Proxy Integration (zkapi-clientd × ThumbGate)',
+    draftPath: null,
+  },
 ]);
 
 function composePartnerOfferDraft(target) {

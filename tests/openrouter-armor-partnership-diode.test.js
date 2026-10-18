@@ -11,6 +11,10 @@ const {
   resolveParanoidSessionCircuit,
   scheduleUnbufferedCoverTraffic,
   evaluateArmorWithThumbGateFallback,
+  ZKAPI_CIRCUIT_ID,
+  computeZkApiNoteBoundCommitment,
+  evaluateZkApiNullifierEscapeGate,
+  evaluateZkApiLeaseRetirement,
 } = require('../scripts/openrouter-armor-partnership-diode');
 
 test('compileThumbGateToArmorPlugin: emits OpenRouter Armor v1 classifier_context with 0.6 deny and 0.7 allow thresholds', () => {
@@ -214,4 +218,82 @@ test('Vitalik Paranoid Mode: rewrites user stylometry, preserves code/quotes ver
   });
   assert.equal(envKeyRead.allowed, false);
   assert.equal(envKeyRead.gateId, 'gate:vitalik_paranoid:wallet_secret_access_blocked');
+});
+
+test('zkapi.org v2 protocol steals: note-bound commitments, cross-pool isolation, failed-issuance escape nullifiers, and 4-stage lease retirement', () => {
+  const genesis = computeZkApiNoteBoundCommitment({
+    circuitId: ZKAPI_CIRCUIT_ID,
+    poolId: 'robinhood-chain-mainnet',
+    vaultAddress: '0x4386fdbda35d995beb3bf8625118ec5982ec81fe',
+    noteId: 'note_42',
+    registrationSecret: 'secret_abc',
+    depositGwei: 100000,
+    balanceGwei: 100000,
+    chargeGwei: 15000,
+    blinding: 'blind_1',
+    expiryEpochSec: 1800000000,
+  });
+  assert.equal(genesis.balanceGwei, 85000);
+
+  const afterSecondCharge = computeZkApiNoteBoundCommitment({
+    circuitId: ZKAPI_CIRCUIT_ID,
+    poolId: 'robinhood-chain-mainnet',
+    vaultAddress: '0x4386fdbda35d995beb3bf8625118ec5982ec81fe',
+    noteId: 'note_42',
+    registrationSecret: 'secret_abc',
+    depositGwei: 100000,
+    balanceGwei: genesis.balanceGwei,
+    chargeGwei: 5000,
+    blinding: 'blind_2',
+    expiryEpochSec: 1800000000,
+  });
+  assert.equal(afterSecondCharge.noteLeafL, genesis.noteLeafL, 'note leaf L must survive balance updates');
+  assert.notEqual(afterSecondCharge.commitmentHash, genesis.commitmentHash);
+
+  const crossPool = evaluateZkApiNullifierEscapeGate({
+    requestPoolId: 'robinhood-chain-mainnet',
+    expectedPoolId: 'ethereum-mainnet',
+    noteLeafL: genesis.noteLeafL,
+    commitmentNoteLeafL: genesis.noteLeafL,
+    nullifier: genesis.nullifier,
+  });
+  assert.equal(crossPool.allowed, false);
+  assert.equal(crossPool.reasonCode, 'cross_pool_replay_blocked');
+
+  const escapedRetry = evaluateZkApiNullifierEscapeGate({
+    requestPoolId: 'robinhood-chain-mainnet',
+    expectedPoolId: 'robinhood-chain-mainnet',
+    noteLeafL: genesis.noteLeafL,
+    commitmentNoteLeafL: genesis.noteLeafL,
+    nullifier: genesis.nullifier,
+    escapeState: 'escaping',
+  });
+  assert.equal(escapedRetry.allowed, false);
+  assert.equal(escapedRetry.reasonCode, 'nullifier_used');
+  assert.equal(escapedRetry.createProviderKey, false);
+
+  const premature = evaluateZkApiLeaseRetirement({
+    completedStages: ['disable', 'grace', 'usage_capture'],
+    inFlightCalls: 0,
+    graceElapsedMs: 6000,
+    requiredGraceMs: 5000,
+    keyDeletionConfirmed: false,
+    reservedGwei: 50000,
+    meteredUsageGwei: 12000,
+  });
+  assert.equal(premature.canSignSettlement, false);
+  assert.equal(premature.reasonCode, 'retirement_stages_incomplete');
+
+  const settled = evaluateZkApiLeaseRetirement({
+    completedStages: ['disable', 'grace', 'usage_capture', 'revocation'],
+    inFlightCalls: 0,
+    graceElapsedMs: 6000,
+    requiredGraceMs: 5000,
+    keyDeletionConfirmed: true,
+    reservedGwei: 50000,
+    meteredUsageGwei: 12000,
+  });
+  assert.equal(settled.canSignSettlement, true);
+  assert.equal(settled.chargedGwei, 12000);
+  assert.equal(settled.refundedGwei, 38000);
 });
