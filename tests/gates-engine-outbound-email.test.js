@@ -484,3 +484,38 @@ test('proactive partner discovery engine includes MacPaw Eney and enforces hardN
   assert.match(draft.subject, /MacPaw \(Eney\) × ThumbGate/);
   assert.match(draft.body, /Hi Oleksandr Kosovan,/);
 });
+
+const {
+  runSalesPromotion24x7Cycle,
+  writePartnerOfferMarkdownFiles,
+} = require('../scripts/thumbgate-24x7-sales-promotion-job');
+
+test('24/7 sales & promotion job writes partner offer markdown files and enforces hardNoSendEnforced', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-sales-24x7-'));
+  try {
+    const files = writePartnerOfferMarkdownFiles([
+      {
+        id: 'macpaw-eney',
+        company: 'MacPaw (Eney)',
+        domain: 'eney.ai',
+        status: 'OFFER_STAGED_AWAITING_IGOR_YES',
+        draft: composePartnerOfferDraft(GLOBAL_PARTNER_TARGETS[0]),
+      },
+    ], tmpDir);
+    assert.equal(files.length, 1);
+    assert.ok(fs.existsSync(files[0]));
+
+    const statusPath = path.join(tmpDir, 'status.json');
+    const receipt = await runSalesPromotion24x7Cycle({
+      includeLiveMail: false,
+      includeLiveShowHn: false,
+      statusPath,
+    });
+    assert.equal(receipt.ok, true);
+    assert.equal(receipt.hardNoSendEnforced, true);
+    assert.equal(receipt.oneTouchEnforced, true);
+    assert.ok(receipt.partnerOutreach.totalTargets >= 8);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
