@@ -299,3 +299,138 @@ test('outbound-email-send hard-blocks nodemailer createTransport usage', () => {
   assert.equal(result.gate, 'outbound-email-send');
   assert.equal(result.requiresAdminOverride, true);
 });
+
+test('withdrawn admin override before execution fails closed at T=0 and cannot be consumed', () => {
+  const toolName = 'mcp__claude_ai_Gmail__send_message';
+  const toolInput = { to: ['mark@arqua.com.au'], subject: 'Walkthrough', body: 'Exact body' };
+  const blocked = evaluateGates(toolName, toolInput, CONFIG);
+  assert.equal(blocked.decision, 'deny');
+
+  decideEscalation({
+    escalationId: blocked.adminOverride.escalationId,
+    decision: 'approved',
+    reason: 'Admin approved at T1.',
+  }, {
+    authenticatedActor: { id: 'admin-igor', kind: 'human', role: 'admin' },
+    approvalSigningKey: process.env.THUMBGATE_HUMAN_REVIEWER_KEY,
+    feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
+  });
+
+  decideEscalation({
+    escalationId: blocked.adminOverride.escalationId,
+    decision: 'cancelled',
+    reason: 'Authority withdrawn before T=0 execution.',
+  }, {
+    authenticatedActor: { id: 'admin-igor', kind: 'human', role: 'admin' },
+    approvalSigningKey: process.env.THUMBGATE_HUMAN_REVIEWER_KEY,
+    feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
+  });
+
+  const atExecution = evaluateGates(toolName, toolInput, CONFIG);
+  assert.equal(atExecution.decision, 'deny', 'withdrawn approval must fail closed at T=0');
+  assert.notEqual(atExecution.adminOverride.escalationId, blocked.adminOverride.escalationId);
+  assert.match(atExecution.adminOverride.taskId, /:attempt:2$/);
+});
+
+const {
+  assertNoCorporateLeak,
+  classifyThreads,
+} = require('../scripts/thumbgate-inbox-sentinel');
+
+test('inbox sentinel enforces ONE-TOUCH lock when Sent Mail already replied after inbound Boardy intro', () => {
+  const report = classifyThreads([
+    {
+      mailbox: 'All Mail',
+      date: '2026-10-18T12:00:00.000Z',
+      from: 'Boardy Boardman <boardy@boardy.ai>',
+      to: ['mark@arqua.com.au', 'igor@igorganapolsky.com'],
+      cc: [],
+      subject: 'Boardy Intro: Igor + Mark',
+      body: 'Mark and Igor, connecting you on execution admissibility.',
+    },
+    {
+      mailbox: 'Sent Mail',
+      date: '2026-10-18T14:52:58.000Z',
+      from: 'Igor Ganapolsky <igor@igorganapolsky.com>',
+      to: ['mark@arqua.com.au'],
+      cc: ['boardy@boardy.ai'],
+      subject: 'Re: Boardy Intro: Igor + Mark',
+      body: 'Hi Mark, As promised, a short walkthrough of how ThumbGate checks a tool call.',
+    },
+  ]);
+
+  assert.equal(report.threadCount, 1);
+  assert.equal(report.actionableCount, 0);
+  const markThread = report.threads[0];
+  assert.equal(markThread.status, 'REPLIED_IN_SENT');
+  assert.equal(markThread.oneTouchLocked, true);
+  assert.equal(markThread.actionRequired, false);
+  assert.deepEqual(markThread.externalGuests, ['mark@arqua.com.au']);
+});
+
+test('inbox sentinel surfaces unsent Boardy intro draft as DRAFT_READY_AWAITING_IGOR_YES and flags missing Boardy CC', () => {
+  const report = classifyThreads([
+    {
+      mailbox: 'INBOX',
+      date: '2026-10-18T15:59:24.000Z',
+      from: 'Boardy Boardman <boardy@boardy.ai>',
+      to: ['keshav@alcoyai.com', 'igor@igorganapolsky.com'],
+      cc: [],
+      subject: 'Boardy Intro: Keshav + Igor',
+      body: 'Keshav is building Alcoy, the human-in-the-loop layer.',
+    },
+    {
+      mailbox: 'Drafts',
+      date: '2026-10-18T16:17:41.000Z',
+      from: 'Igor Ganapolsky <igor@igorganapolsky.com>',
+      to: ['keshav@alcoyai.com'],
+      cc: [],
+      subject: 'Re: Boardy Intro: Keshav + Igor',
+      body: 'Hi Keshav, Thanks, Boardy. As promised, a short walkthrough of how approvals work in ThumbGate.',
+    },
+    {
+      mailbox: 'All Mail',
+      date: '2026-10-18T16:17:41.000Z',
+      from: 'Igor Ganapolsky <igor@igorganapolsky.com>',
+      to: ['keshav@alcoyai.com'],
+      cc: [],
+      subject: 'Re: Boardy Intro: Keshav + Igor',
+      body: 'Hi Keshav, Thanks, Boardy. As promised, a short walkthrough of how approvals work in ThumbGate.',
+    },
+  ]);
+
+  assert.equal(report.threadCount, 1);
+  assert.equal(report.actionableCount, 1);
+  const keshavThread = report.threads[0];
+  assert.equal(keshavThread.status, 'DRAFT_READY_AWAITING_IGOR_YES');
+  assert.equal(keshavThread.actionRequired, true);
+  assert.equal(keshavThread.oneTouchLocked, false);
+  assert.equal(keshavThread.sentCount, 0);
+  assert.ok(keshavThread.warnings.includes('draft_missing_boardy_cc'));
+});
+
+test('inbox sentinel marks third-person Fo drafts as STALE_FO_DRAFT_DO_NOT_SEND and blocks corporate domains', () => {
+  const report = classifyThreads([
+    {
+      mailbox: 'Drafts',
+      date: '2026-10-18T06:11:29.000Z',
+      from: 'Igor Ganapolsky <igor@igorganapolsky.com>',
+      to: ['boardy@boardy.ai'],
+      cc: [],
+      subject: 'Re: a control-plane architect to stress-test your governance model',
+      body: 'Hi Boardy, Igor will review and decide on connecting.\n\nBest,\nFo (assistant to Igor Ganapolsky)',
+    },
+  ]);
+
+  assert.equal(report.threads[0].status, 'STALE_FO_DRAFT_DO_NOT_SEND');
+  assert.equal(report.threads[0].actionRequired, false);
+  assert.ok(report.threads[0].warnings.includes('stale_third_person_fo_draft_do_not_send'));
+
+  assert.throws(() => assertNoCorporateLeak([
+    {
+      from: 'iganapolsky@ecisolutions.com',
+      to: ['boardy@boardy.ai'],
+      subject: 'Boardy Intro',
+    },
+  ]), { code: 'THUMBGATE_ECI_ISOLATION_BLOCK' });
+});

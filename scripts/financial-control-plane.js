@@ -729,8 +729,11 @@ function applyEscalationState(state, requested, now, options) {
 
 function applyFinancialEvent(state, event, now) {
   if (event.eventType === 'reserved') {
+    const withdrawn = state.status === 'cancelled' || state.status === 'rejected';
     Object.assign(state, {
-      status: Date.parse(event.reservationExpiresAt) <= now.getTime() ? 'reservation_expired' : 'reserved',
+      status: withdrawn
+        ? state.status
+        : (Date.parse(event.reservationExpiresAt) <= now.getTime() ? 'reservation_expired' : 'reserved'),
       reservationId: event.reservationId,
       reservationIdempotencyKey: event.reservationIdempotencyKey,
       reservedAmountUsd: event.amountUsd,
