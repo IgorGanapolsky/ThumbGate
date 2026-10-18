@@ -152,10 +152,22 @@ function classifyThreads(messages = []) {
     let oneTouchLocked = false;
 
     const latestInboundBody = latestInbound ? (latestInbound.body || latestInbound.snippet || '') : '';
-    if (latestSent && (!latestInbound || Date.parse(latestSent.date) >= Date.parse(latestInbound.date))) {
+    const latestSentBody = latestSent ? (latestSent.body || latestSent.snippet || '') : '';
+    const promisedFollowupAfterCheck =
+      /\b(?:let you know if it still isn't routing|give it the 10 minutes|let you know once it resolves)\b/i.test(
+        latestSentBody,
+      );
+    if (promisedFollowupAfterCheck) {
+      warnings.push('sent_reply_promised_dns_followup_verify_http_307');
+    }
+    if (latestSent && (!latestInbound || Date.parse(latestSent.date) >= Date.parse(latestInbound.date)) && !promisedFollowupAfterCheck) {
       status = 'REPLIED_IN_SENT';
       actionRequired = false;
       oneTouchLocked = true;
+    } else if (promisedFollowupAfterCheck) {
+      status = 'FOLLOWUP_REQUIRED_ZYVOP_VERIFY_HTTP_400';
+      actionRequired = true;
+      oneTouchLocked = false;
     } else if (bucket.sent.length > 0 && BOARDY_INTRO_DISPATCHED_RE.test(latestInboundBody)) {
       status = 'INTRO_OPT_IN_COMPLETE';
       actionRequired = false;
