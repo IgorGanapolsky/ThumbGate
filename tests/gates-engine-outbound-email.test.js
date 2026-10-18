@@ -434,3 +434,53 @@ test('inbox sentinel marks third-person Fo drafts as STALE_FO_DRAFT_DO_NOT_SEND 
     },
   ]), { code: 'THUMBGATE_ECI_ISOLATION_BLOCK' });
 });
+
+const {
+  captureEneyThumbSignal,
+  evaluateEneyActionGate,
+} = require('../scripts/macpaw-eney-thumbgate-adapter');
+const {
+  GLOBAL_PARTNER_TARGETS,
+  composePartnerOfferDraft,
+} = require('../scripts/proactive-partner-discovery-engine');
+
+test('MacPaw Eney adapter: compiles 👎 on "Quit Ollama now?" into a <0.5ms PreToolUse block that overrides "do everything you need"', () => {
+  const feedback = captureEneyThumbSignal({
+    signal: 'down',
+    userPrompt: "why are my Mac's fan's running crazy?",
+    eneyProposal: 'Quit Ollama now?',
+    proposedAction: { skill: 'quit_app', target: 'Ollama', process: 'llama-server' },
+  });
+  assert.equal(feedback.promotedToPreToolUseGate, true);
+  assert.equal(feedback.preventionRule.id, 'gate:eney:thumb_down:ollama');
+  assert.ok(feedback.dpoPair.chosen.includes('Ollama'));
+
+  const blocked = evaluateEneyActionGate({
+    skill: 'quit_app',
+    target: 'Ollama',
+    processName: 'llama-server',
+    userDelegationText: 'do everything you need',
+    customRules: [feedback.preventionRule],
+  });
+  assert.equal(blocked.allowed, false);
+  assert.equal(blocked.decision, 'deny');
+  assert.equal(blocked.blanketDelegationOverridden, true);
+  assert.ok(blocked.latencyMs < 5);
+
+  const corpBlocked = evaluateEneyActionGate({
+    skill: 'summarize_emails',
+    emailDomain: 'iganapolsky@ecisolutions.com',
+    userDelegationText: 'do everything you need',
+  });
+  assert.equal(corpBlocked.allowed, false);
+  assert.equal(corpBlocked.gateId, 'gate:eney:eci_corporate_email_isolation');
+});
+
+test('proactive partner discovery engine includes MacPaw Eney and enforces hardNoSendEnforced on all offers', () => {
+  const eneyTarget = GLOBAL_PARTNER_TARGETS.find((t) => t.id === 'macpaw-eney');
+  assert.ok(eneyTarget);
+  const draft = composePartnerOfferDraft(eneyTarget);
+  assert.equal(draft.hardNoSendEnforced, true);
+  assert.match(draft.subject, /MacPaw \(Eney\) × ThumbGate/);
+  assert.match(draft.body, /Hi Oleksandr Kosovan,/);
+});
