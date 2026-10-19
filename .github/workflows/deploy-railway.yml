@@ -67,7 +67,7 @@ jobs:
           bash scripts/deploy-scope.sh
       - name: Upload deploy scope evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           retention-days: 7
           name: deploy-scope
@@ -404,7 +404,7 @@ jobs:
           echo "revenue_ready=true" >> "$GITHUB_OUTPUT"
       - name: Upload revenue observability evidence
         if: always() && steps.railway-config.outputs.enabled == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           retention-days: 7
           name: revenue-observability-${{ github.run_id }}
@@ -446,7 +446,7 @@ jobs:
           fi
       - name: Upload public conversion-surface evidence
         if: always() && steps.railway-config.outputs.enabled == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           retention-days: 7
           name: public-conversion-surfaces-${{ github.run_id }}
@@ -458,7 +458,7 @@ jobs:
         run: bash scripts/capture-railway-diagnostics.sh railway-diagnostics
       - name: Upload Railway diagnostics artifact
         if: always() && steps.railway-config.outputs.enabled == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           retention-days: 7
           name: railway-diagnostics-${{ github.run_id }}
