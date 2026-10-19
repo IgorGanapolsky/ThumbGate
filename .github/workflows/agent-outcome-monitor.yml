@@ -37,7 +37,7 @@ jobs:
             --output agent-outcome-production-monitor.json
           node -e "const r=require('./agent-outcome-production-monitor.json'); if(r.verdict !== 'healthy') { console.error('Production agent outcome monitor: ' + r.verdict); process.exit(1) }"
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: agent-outcome-monitor
