@@ -42,7 +42,7 @@ const DEFAULT_PROTECTED_MAC_DAEMONS = Object.freeze([
   'tailscaled',
 ]);
 
-const FORBIDDEN_CORP_DOMAINS = /@(?:ecisolutions|ecinexus|eci)\.com\b/i;
+const FORBIDDEN_CORP_DOMAINS = /(?:^|@|\.)(?:ecisolutions|ecinexus|eci)\.com\b/i;
 
 function normalizeProcessTarget(raw) {
   return String(raw || '')
@@ -142,9 +142,12 @@ function evaluateEneyActionGate({
 
   // 3. Check user-generated 👎 prevention rules first
   for (const rule of Array.isArray(customRules) ? customRules : []) {
-    if (!rule || rule.action !== 'block') continue;
+    if (rule?.action !== 'block') continue;
+    const ruleSkill = String(rule.skill || '').trim().toLowerCase();
+    if (ruleSkill && ruleSkill !== cleanSkill) continue;
     const ruleTargets = Array.isArray(rule.protectedTargets) ? rule.protectedTargets : [];
-    if (candidates.some((c) => ruleTargets.includes(c))) {
+    const targetMatched = ruleTargets.length === 0 || candidates.some((c) => ruleTargets.includes(c));
+    if (targetMatched) {
       const latencyMs = Number(process.hrtime.bigint() - startNs) / 1e6;
       return {
         decision: 'deny',
@@ -156,7 +159,6 @@ function evaluateEneyActionGate({
       };
     }
   }
-    const protectedSet = new Set(protectedDaemons.map((d) => normalizeProcessTarget(d)));
   // 4. Hard Protected Mac Daemons (Ollama, llama-server, Screenpipe, Postgres, Orchestrad, FortiClient)
   if (['quit_app', 'kill_process', 'force_quit', 'stop_service'].includes(cleanSkill)) {
     const protectedSet = new Set(protectedDaemons.map(normalizeProcessTarget));

@@ -38,15 +38,17 @@ const BOARDY_INTRO_DISPATCHED_RE = /\bintroduction is going out by email shortly
 function normalizeSubject(subject = '') {
   return String(subject || '')
     .trim()
-    .replace(/^(?:re|fwd?):\s*/gi, '')
+    .replace(/^(?:(?:re|fwd?):\s*)+/i, '')
     .replace(/\s+/g, ' ')
     .toLowerCase();
 }
 
 function extractEmailAddress(raw) {
   const str = String(raw || '').trim();
-  const angle = str.match(/<([^>]+)>/);
-  return (angle ? angle[1] : str).trim().toLowerCase();
+  const start = str.indexOf('<');
+  const end = str.indexOf('>', start + 1);
+  const extracted = start !== -1 && end !== -1 ? str.slice(start + 1, end) : str;
+  return extracted.trim().toLowerCase();
 }
 
 function assertNoCorporateLeak(messages = []) {
@@ -152,10 +154,15 @@ function classifyThreads(messages = []) {
     let oneTouchLocked = false;
 
     const latestInboundBody = latestInbound ? (latestInbound.body || latestInbound.snippet || '') : '';
-    const latestSentBody = latestSent ? (latestSent.body || latestSent.snippet || '') : '';
+    const latestSentUnquoted = latestSent
+      ? String(latestSent.body || latestSent.snippet || '')
+          .split('\n')
+          .filter((line) => !/^\s*>/.test(line) && !/^On .* wrote:\s*$/i.test(line.trim()))
+          .join('\n')
+      : '';
     const promisedFollowupAfterCheck =
       /\b(?:let you know if it still isn't routing|give it the 10 minutes|let you know once it resolves)\b/i.test(
-        latestSentBody,
+        latestSentUnquoted,
       );
     if (promisedFollowupAfterCheck) {
       warnings.push('sent_reply_promised_dns_followup_verify_http_307');
@@ -166,8 +173,6 @@ function classifyThreads(messages = []) {
       oneTouchLocked = true;
     } else if (promisedFollowupAfterCheck) {
       status = 'FOLLOWUP_REQUIRED_ZYVOP_VERIFY_HTTP_400';
-      actionRequired = true;
-      oneTouchLocked = false;
     } else if (bucket.sent.length > 0 && BOARDY_INTRO_DISPATCHED_RE.test(latestInboundBody)) {
       status = 'INTRO_OPT_IN_COMPLETE';
       actionRequired = false;
@@ -178,8 +183,6 @@ function classifyThreads(messages = []) {
       oneTouchLocked = true;
     } else if (latestDraft) {
       status = 'DRAFT_READY_AWAITING_IGOR_YES';
-      actionRequired = true;
-      oneTouchLocked = false;
     }
 
     threads.push({
@@ -224,7 +227,11 @@ function classifyThreads(messages = []) {
 function fetchAppleMailGoogleMessages(limitPerBox = 25) {
   const jxa = `
 const Mail = Application("Mail");
-const googleAcct = Mail.accounts().find(a => a.name().toLowerCase().includes("google"));
+const googleAcct = Mail.accounts().find(a => {
+  const n = (a.name() || "").toLowerCase();
+  const addrs = (a.emailAddresses ? a.emailAddresses() : []).join(" ").toLowerCase();
+  return !/@(?:ecisolutions|ecinexus|eci)\\.com/.test(n + " " + addrs) && (n.includes("google") || /igor@igorganapolsky\\.com|iganapolsky@gmail\\.com/.test(addrs));
+});
 if (!googleAcct) {
   JSON.stringify({ error: "Google account not found in Mail.app", messages: [] });
 } else {
@@ -264,7 +271,7 @@ if (!googleAcct) {
   return JSON.parse(raw);
 }
 
-function writeLedgerSnapshot(report, stateDir = path.join(process.cwd(), '.thumbgate')) {
+function writeLedgerSnapshot(report, stateDir = path.join(__dirname, '..', '.thumbgate')) {
   fs.mkdirSync(stateDir, { recursive: true });
   const ledgerPath = path.join(stateDir, 'inbox-triage-ledger.json');
   fs.writeFileSync(ledgerPath, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
@@ -273,6 +280,9 @@ function writeLedgerSnapshot(report, stateDir = path.join(process.cwd(), '.thumb
 
 if (require.main === module) {
   const fetched = fetchAppleMailGoogleMessages(25);
+  if (fetched && fetched.error) {
+    throw new Error(fetched.error);
+  }
   const report = classifyThreads(fetched.messages || []);
   const ledgerPath = writeLedgerSnapshot(report);
   console.log(JSON.stringify({ ...report, ledgerPath }, null, 2));

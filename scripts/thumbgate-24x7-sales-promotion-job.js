@@ -36,7 +36,7 @@ function writePartnerOfferMarkdownFiles(offers = [], outDir = PARTNER_OFFERS_DIR
   fs.mkdirSync(outDir, { recursive: true });
   const written = [];
   for (const offer of offers) {
-    if (!offer || !offer.id || !offer.draft) continue;
+    if (!offer?.id || !offer?.draft) continue;
     const filePath = path.join(outDir, `${offer.id}.md`);
     const content = [
       `To: ${offer.draft.recipientLabel} (${offer.company} — ${offer.domain})`,
@@ -72,9 +72,15 @@ async function runSalesPromotion24x7Cycle({
   if (includeLiveMail) {
     try {
       const fetched = fetchAppleMailGoogleMessages(25);
+      if (fetched && fetched.error) {
+        throw new Error(fetched.error);
+      }
       inboxReport = classifyThreads(fetched.messages || []);
-      writeLedgerSnapshot(inboxReport);
+      writeLedgerSnapshot(inboxReport, path.join(REPO_ROOT, '.thumbgate'));
     } catch (err) {
+      if (err && err.code === 'THUMBGATE_ECI_ISOLATION_BLOCK') {
+        throw err;
+      }
       inboxReport.error = err.message;
     }
   }

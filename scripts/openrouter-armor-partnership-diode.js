@@ -568,19 +568,22 @@ function computeZkApiNoteBoundCommitment({
   if (!noteId || !registrationSecret || !poolId || !vaultAddress) {
     throw new Error('noteId, registrationSecret, poolId, and vaultAddress are required for note-bound commitment');
   }
-  const nextBalanceGwei = Number(balanceGwei) - Number(chargeGwei);
-  if (!Number.isFinite(nextBalanceGwei) || nextBalanceGwei < 0) {
+  const numBalance = Number(balanceGwei);
+  const numCharge = Number(chargeGwei);
+  const nextBalanceGwei = numBalance - numCharge;
+  if (!Number.isFinite(numBalance) || !Number.isFinite(numCharge) || numBalance < 0 || numCharge < 0 || nextBalanceGwei < 0) {
     throw new Error('Insufficient note balance for charge deduction');
   }
+  const normPoolId = String(poolId).toLowerCase();
+  const normVaultAddress = String(vaultAddress).toLowerCase();
 
   const noteLeafL = crypto
     .createHash('sha256')
     .update(
       JSON.stringify({
         domain: 'zkapi.v2.note-binding.generator.v1',
-        poolId: String(poolId).toLowerCase(),
-        vaultAddress: String(vaultAddress).toLowerCase(),
-        noteId: String(noteId),
+        poolId: normPoolId,
+        vaultAddress: normVaultAddress,
         registrationSecretHash: crypto.createHash('sha256').update(String(registrationSecret)).digest('hex'),
         depositGwei: Number(depositGwei),
         expiryEpochSec: Number(expiryEpochSec),
@@ -602,13 +605,13 @@ function computeZkApiNoteBoundCommitment({
 
   const nullifier = crypto
     .createHash('sha256')
-    .update(`zkapi.v2.nullifier:${poolId}:${vaultAddress}:${noteId}:${registrationSecret}`)
+    .update(`zkapi.v2.nullifier:${normPoolId}:${normVaultAddress}:${noteId}:${registrationSecret}`)
     .digest('hex');
 
   return {
     circuitId,
-    poolId: String(poolId).toLowerCase(),
-    vaultAddress: String(vaultAddress).toLowerCase(),
+    poolId: normPoolId,
+    vaultAddress: normVaultAddress,
     noteId: String(noteId),
     noteLeafL,
     balanceGwei: nextBalanceGwei,
@@ -698,7 +701,13 @@ function evaluateZkApiLeaseRetirement({
       missingStages,
     };
   }
-  if (Number(inFlightCalls) > 0 || Number(graceElapsedMs) < Number(requiredGraceMs)) {
+  if (
+    !Number.isFinite(Number(inFlightCalls)) ||
+    Number(inFlightCalls) > 0 ||
+    !Number.isFinite(Number(graceElapsedMs)) ||
+    !Number.isFinite(Number(requiredGraceMs)) ||
+    Number(graceElapsedMs) < Number(requiredGraceMs)
+  ) {
     return {
       canSignSettlement: false,
       reasonCode: 'grace_window_or_inflight_active',
@@ -886,7 +895,7 @@ function evaluateTorNewIdentityAndAnonymityCheck({
   directOriginIp = '',
 } = {}) {
   const cmd = String(commandOrProxyUrl || '');
-  if (/\bsocks5:\/\/(?!h)/i.test(cmd) || /(?:^|\s)--socks5(?=\s|$)/i.test(cmd)) {
+  if (/\bsocks5:\/\//i.test(cmd) || /(?:^|\s)--socks5(?=\s|$)/i.test(cmd)) {
     return {
       allowed: false,
       decision: 'block',
@@ -978,9 +987,14 @@ function evaluateHyperframesVideoAgentGate({
 
   // 3. Revision / QA micro-preview gate (13:15): block full-video re-renders on revision turns
   if (isRenderCmd && phase === 'revision_qa') {
+    const framesMatch = /--frames[=\s]+(\d+)-(\d+)/i.exec(cmd);
+    const validFramesRange = framesMatch
+      ? Number(framesMatch[2]) >= Number(framesMatch[1]) && Number(framesMatch[2]) - Number(framesMatch[1]) <= 450
+      : false;
     const hasBoundedFramesOrTime =
       (Number.isFinite(Number(previewDurationSec)) && Number(previewDurationSec) > 0 && Number(previewDurationSec) <= 15) ||
-      /\s(?:-t\s+(?:[1-9]|1[0-5])\b|--frames[=\s]+[0-9]+-[0-9]+)/i.test(cmd);
+      /(?:^|\s)-t\s+(?:[1-9]|1[0-5])(?:\.0+)?(?=\s|$)/i.test(cmd) ||
+      validFramesRange;
     if (!hasBoundedFramesOrTime) {
       return {
         allowed: false,
@@ -1129,8 +1143,8 @@ function evaluateLeanProofCompletionGate({
   const claimsVerified = /\b(?:formally\s+verified|machine-verified|proof\s+complete|theorem\s+proved|100%\s+verified)\b/i.test(
     String(claimText || ''),
   );
-  const placeholderMatch = String(sourceOrProofCode || '').match(
-    /\b(?:sorry|admit|todo!\(\)|unimplemented!\(\)|pytest\.skip|test\.skip|it\.skip)\b/,
+  const placeholderMatch = /(?:todo!\(\)|unimplemented!\(\)|\b(?:sorry|admit|pytest\.skip|test\.skip|it\.skip)\b)/.exec(
+    String(sourceOrProofCode || ''),
   );
   if (claimsVerified && placeholderMatch) {
     return {
@@ -1298,7 +1312,18 @@ function evaluateBeeAmbientActionGate({
       gateId: 'gate:bee_ambient:corporate_outlook_eci_isolated',
     };
   }
-  if (['send_email', 'auto_purchase_item', 'confirm_checkout', 'delete_calendar'].includes(act)) {
+  const ALLOWED_AMBIENT_ACTIONS = new Set([
+    'create_draft_email',
+    'draft_email',
+    'draft_followup_email',
+    'suggest_todo',
+    'create_todo',
+    'shopping_recommendation',
+    'surface_shopping_recommendation',
+    'log_transcript_note',
+    'alexa_readout_summary',
+  ]);
+  if (!ALLOWED_AMBIENT_ACTIONS.has(act)) {
     return {
       allowed: false,
       decision: 'block',
@@ -1492,7 +1517,7 @@ function createDurableGovernanceCell({
   maxIsolateMemoryBytes = 300 * 1024,
   runtimeTarget = 'workerd-self-hosted',
 } = {}) {
-  const scopeKey = `${entity}:${project}:${processName}:${session}`;
+  const scopeKey = JSON.stringify([String(entity), String(project), String(processName), String(session)]);
   const globalCellId = `cell_${crypto.createHash('sha256').update(scopeKey).digest('hex').slice(0, 24)}`;
   const colocatedSqliteDb = `${globalCellId}.sqlite`;
   const withinIsolateBudget = Number(statePayloadBytes) <= Number(maxIsolateMemoryBytes);
@@ -1595,7 +1620,9 @@ function evaluateSystemOneDecisionModelGuard({
   maxEce = 0.08,
 } = {}) {
   const profile = SYSTEM_ONE_DECISION_MODEL_BENCHMARKS[String(modelId || '').toLowerCase()];
-  const canonicalOptions = [...(Array.isArray(options) ? options : [])].map((o) => String(o)).sort();
+  const canonicalOptions = [...(Array.isArray(options) ? options : [])]
+    .map(String)
+    .sort((a, b) => a.localeCompare(b));
   if (!profile) {
     return {
       codeVerdict: 'review',
@@ -1619,7 +1646,7 @@ function evaluateSystemOneDecisionModelGuard({
       canonicalOptions,
     };
   }
-  if (forwardWinner && reversedOrderWinner && forwardWinner !== reversedOrderWinner) {
+  if (!forwardWinner || !reversedOrderWinner || forwardWinner !== reversedOrderWinner) {
     return {
       codeVerdict: 'review',
       reasonCode: 'paired_option_order_flip_detected',
@@ -1678,7 +1705,10 @@ function verifyPasskeyStepUpAssertion({
   if (!userPresent || !userVerified) {
     return { allowed: false, decision: 'block', reasonCode: 'webauthn_up_uv_biometric_flags_required' };
   }
-  if (Number(currentSignCount) <= Number(previousSignCount)) {
+  const prevCount = Number(previousSignCount);
+  const currCount = Number(currentSignCount);
+  const isCounterlessPasskey = prevCount === 0 && currCount === 0;
+  if (!Number.isFinite(prevCount) || !Number.isFinite(currCount) || (!isCounterlessPasskey && currCount <= prevCount)) {
     return { allowed: false, decision: 'block', reasonCode: 'cloned_authenticator_sign_count_regression' };
   }
   return {
@@ -1796,7 +1826,7 @@ function evaluateSpaceSandboxPlusThumbGateFirewall({
     };
   }
   const abusesAuthorizedCredentialInsideSandbox =
-    /(?:\bgit\s+push\s+--force\b|\brm\s+-rf\b|\bstripe\s+refunds\s+create\b|@(?:ecisolutions|ecinexus|eci)\.com\b)/i.test(
+    /(?:\bgit\s+push\b[^\n]*(?:\s--force(?:-with-lease)?\b|\s-f\b|\s\+[A-Za-z0-9_./-]+)|\brm\s+-rf\b|\bstripe\s+refunds\s+create\b|@(?:ecisolutions|ecinexus|eci)\.com\b)/i.test(
       String(inSandboxToolCall || ''),
     );
   if (abusesAuthorizedCredentialInsideSandbox) {
@@ -2200,8 +2230,12 @@ function evaluateOuroborosContinuityAndRewardHackGate({
   passedRawTrials = 77,
   rewardHackTrialsCount = 1,
 } = {}) {
+  const normalizedTarget = String(targetFile || '')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^(?:\.\/)+/, '');
   const touchesFirewallOrSelfCore =
-    /^(?:config\/gates\/|scripts\/gates-engine\.js|AGENTS\.md|CLAUDE\.md)/i.test(String(targetFile || '').trim());
+    /(?:^|\/)(?:config\/gates\/|scripts\/gates-engine\.js|AGENTS\.md|CLAUDE\.md)/i.test(normalizedTarget);
   if (touchesFirewallOrSelfCore && !hasIndependentHumanApproval) {
     return {
       allowed: false,

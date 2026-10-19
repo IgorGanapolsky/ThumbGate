@@ -929,3 +929,38 @@ test('Ouroboros continuity & reward-hack audit steal: blocks unchecked self-rewr
   assert.equal(audited.auditedScorePct, 86.74);
   assert.equal(audited.zeroedRewardHackTrials, 1);
 });
+
+const {
+  evaluateWorktreeNotesIsolationAndCliEnvelope,
+} = require('../scripts/proactive-partner-discovery-engine');
+
+test('097-personal-notes-worktrees & 129-agent-cli steals: refuses notes inside any worktree, enforces --expect SHA-256 CAS exit 4, and emits argv next_actions', () => {
+  const insideWorktree = evaluateWorktreeNotesIsolationAndCliEnvelope({
+    notesDir: '/repo/.claude/worktrees/feat-a/notes',
+    worktreePaths: ['/repo', '/repo/.claude/worktrees/feat-a'],
+  });
+  assert.equal(insideWorktree.ok, false);
+  assert.equal(insideWorktree.exit, 1);
+  assert.equal(insideWorktree.diagnostics[0].name, 'notes_inside_repository');
+  assert.deepEqual(insideWorktree.diagnostics[0].next_actions[0].argv, ['node', 'bin/cli.js', 'doctor', '--json']);
+
+  const casConflict = evaluateWorktreeNotesIsolationAndCliEnvelope({
+    notesDir: '/Users/iganapolsky/Documents/AI-Agent-Sync',
+    worktreePaths: ['/repo'],
+    apply: true,
+    expectedSha256: 'aaa',
+    actualSha256: 'bbb',
+  });
+  assert.equal(casConflict.ok, false);
+  assert.equal(casConflict.exit, 4);
+  assert.equal(casConflict.diagnostics[0].name, 'concurrent_edit_hash_mismatch');
+
+  const previewOk = evaluateWorktreeNotesIsolationAndCliEnvelope({
+    notesDir: '/Users/iganapolsky/Documents/AI-Agent-Sync',
+    worktreePaths: ['/repo'],
+    apply: false,
+  });
+  assert.equal(previewOk.ok, true);
+  assert.equal(previewOk.outcome, 'preview');
+  assert.equal(previewOk.exit, 0);
+});
