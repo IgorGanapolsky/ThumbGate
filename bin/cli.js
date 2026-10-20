@@ -1797,9 +1797,13 @@ function pro() {
 
     // Validate key format (signed Ed25519 token, THUMBGATE_API_KEY prefix, or legacy prefix)
     const { isValidKey } = require(path.join(PKG_ROOT, 'scripts', 'license'));
+    const { isEnforced } = require(path.join(PKG_ROOT, 'scripts', 'entitlement'));
+    const enforced = isEnforced(process.env);
     const legacyPrefix = String.fromCharCode(114, 108, 104, 102) + '_';
-    if (!isValidKey(key) && !key.startsWith(legacyPrefix)) {
-      console.error('❌ Invalid license key format. Keys start with "tg_" or must be a valid signed Ed25519 token.');
+    if (!isValidKey(key) && (enforced || !key.startsWith(legacyPrefix))) {
+      console.error(enforced
+        ? '❌ Invalid license token. A signed Ed25519 entitlement token is required when THUMBGATE_ENFORCE_ENTITLEMENTS=1.'
+        : '❌ Invalid license key format. Keys start with "tg_" or must be a valid signed Ed25519 token.');
       process.exit(1);
     }
 

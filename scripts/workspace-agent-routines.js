@@ -87,13 +87,13 @@ const ROUTINE_HOURLY_CAPS = Object.freeze({
   perTaskApiRunNowOneOffPerHour: 30,
 });
 
-const FORBIDDEN_WRITE_CONNECTORS_RE = /^(?:gmail|apple[\s_-]*mail|mail\.app|linkedin|x\.com|twitter|resend)$/i;
-const APPROVAL_BYPASS_PAYLOAD_RE = /\b(?:ignore\s+(?:all\s+)?previous\s+instructions|approve_protected_action|--admin\b|bypass\s+branch\s+protection|act\s+as\s+human\s+approval)\b/i;
+const FORBIDDEN_WRITE_CONNECTORS_RE = /^(?:gmail|apple[\s_-]*mail|mail\.app|linkedin|x(?:\.com)?|twitter|resend)(?:\b|$)/i;
+const APPROVAL_BYPASS_PAYLOAD_RE = /(?:\b(?:ignore\s+(?:all\s+)?previous\s+instructions|approve_protected_action|bypass\s+branch\s+protection|act\s+as\s+human\s+approval)\b|(?:^|\s)--admin\b)/i;
 
 const RAIL_MAP = Object.freeze([
   {
     claudeRoutineFeature: 'Three trigger modes (Schedule, API /fire bearer endpoint, GitHub PR/Release webhooks) combinable on one routine',
-    thumbgateRail: 'scripts/workspace-agent-routines.js (validateRoutineTriggers + evaluateGitHubRoutineTrigger)',
+    thumbgateRail: 'scripts/workspace-agent-routines.js (validateRoutineSchedule + evaluateGitHubRoutineTrigger)',
   },
   {
     claudeRoutineFeature: '<routine-fire-payload> wrapper treats dynamic API/Run-now text as untrusted data unless saved prompt opts in',
@@ -300,12 +300,8 @@ function validateRoutineSchedule({
   }
 
   const [minuteField, hourField] = parts;
-  // Sub-hourly check: `*`, `*/N`, ranges, or comma-lists in minute field run multiple times per hour
-  const isSubHourly = minuteField === '*'
-    || /^\*\/\d+$/.test(minuteField)
-    || minuteField.includes(',')
-    || minuteField.includes('-');
-  if (isSubHourly) {
+  // Only a single fixed minute (0-59) guarantees at most one run per hour.
+  if (!/^\d{1,2}$/.test(minuteField)) {
     return {
       valid: false,
       reason: 'minimum_interval_is_one_hour',
@@ -313,7 +309,14 @@ function validateRoutineSchedule({
       warnings: [],
     };
   }
-
+  if (Number(minuteField) > 59) {
+    return {
+      valid: false,
+      reason: 'invalid_cron_expression',
+      nextRunAt: null,
+      warnings: [],
+    };
+  }
   const warnings = [];
   if (minuteField === '0' || minuteField === '00') {
     warnings.push({

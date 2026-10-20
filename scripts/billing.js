@@ -3004,7 +3004,6 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
   const sessionPayload = {
     success_url: successUrl,
     cancel_url: cancelUrl,
-    payment_method_types: ['card', 'link'],
     mode: pack ? 'payment' : 'subscription',
     line_items: lineItems,
     allow_promotion_codes: true,

@@ -105,9 +105,14 @@ function finding(id, message) {
   return { id, severity: 'fail', gateId: GATE_ID, message };
 }
 
+const CLI_SECRET_ARG_RE = /(?:--(?:password|passwd|secret|token|api[-_]?key)(?:\s+|=)|\b(?:password|passwd|secret|token|api[_-]?key)\s*[:=]\s*|\b-u\s+[^\s:]+\s*:\s*)([^\s'"]+|'[^']*'|"[^"]*")/gi;
+
 function normalizeCommandPattern(rawCommand) {
   if (typeof rawCommand !== 'string' || !rawCommand.trim()) return '';
-  const scrubbed = String(redactSecretsDeep(rawCommand))
+  const preScrubbed = rawCommand.replace(CLI_SECRET_ARG_RE, (match, secretPart) =>
+    match.slice(0, match.length - secretPart.length) + '[REDACTED]'
+  );
+  const scrubbed = String(redactSecretsDeep(preScrubbed))
     .replace(/\/Users\/[^\s/'"]+/g, '/Users/<user>')
     .replace(/\/home\/[^\s/'"]+/g, '/home/<user>')
     .replace(/C:\\Users\\[^\s\\'"]+/gi, 'C:\\Users\\<user>')
@@ -226,14 +231,20 @@ function auditEntitlementBoundary(repoRoot = path.resolve(__dirname, '..')) {
   const gatedModels = [];
   const gatedExporters = [];
 
+  const stripImports = (source) =>
+    String(source || '')
+      .split('\n')
+      .filter((line) => !/\brequire\s*\(/.test(line))
+      .join('\n');
+
   for (const relPath of CROWN_JEWEL_MODELS) {
     const abs = path.join(repoRoot, relPath);
     if (!fs.existsSync(abs)) {
       findings.push(finding('missing-crown-jewel-model', `Missing learned model file: ${relPath}`));
       continue;
     }
-    const src = fs.readFileSync(abs, 'utf8');
-    if (/requireLearnedModelsEntitlement|requireEntitlement/.test(src)) {
+    const bodyWithoutImports = stripImports(fs.readFileSync(abs, 'utf8'));
+    if (/\b(?:requireLearnedModelsEntitlement|requireEntitlement|requirePaidFeature)\s*\(/.test(bodyWithoutImports)) {
       gatedModels.push(relPath);
     } else {
       findings.push(finding('ungated-crown-jewel-model', `Learned model lacks entitlement check: ${relPath}`));
@@ -389,6 +400,11 @@ function runCli(argv = process.argv.slice(2)) {
   let events;
   if (typeof args.events === 'string' && args.events.trim()) {
     events = JSON.parse(fs.readFileSync(path.resolve(args.events.trim()), 'utf8'));
+    if (!Array.isArray(events)) {
+      console.error('saas-moat-honesty: --events file must contain a JSON array of events');
+      process.exitCode = 1;
+      return 1;
+    }
   }
   const report = buildSaasMoatHonestyReport({
     mapOnly: args['map-only'],

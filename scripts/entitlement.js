@@ -169,14 +169,25 @@ function issueLicense(privateKeyPem, claims) {
   return `${h}.${p}.${b64urlEncode(sig)}`;
 }
 
-/** Resolve the active license token from env or the local config file. */
-function resolveLicenseToken(env = process.env) {
+/** Resolve the active license token from env or the local config/activation files. */
+function resolveLicenseToken(env = process.env, opts = {}) {
   if (env.THUMBGATE_LICENSE && env.THUMBGATE_LICENSE.trim()) return env.THUMBGATE_LICENSE.trim();
-  try {
-    const p = path.join(os.homedir(), '.config', 'thumbgate', 'license.json');
-    const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
-    if (raw.license || raw.token) return String(raw.license || raw.token).trim();
-  } catch { /* no local license */ }
+  for (const envName of ['THUMBGATE_PRO_KEY', 'THUMBGATE_API_KEY']) {
+    const val = typeof env[envName] === 'string' ? env[envName].trim() : '';
+    if (val && val.split('.').length === 3) return val;
+  }
+  const homeDir = opts.homeDir || env.HOME || env.USERPROFILE || os.homedir();
+  const candidatePaths = [
+    path.join(homeDir, '.config', 'thumbgate', 'license.json'),
+    path.join(homeDir, '.thumbgate', 'license.json'),
+  ];
+  for (const p of candidatePaths) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
+      const token = raw.license || raw.token || raw.key;
+      if (token && String(token).trim()) return String(token).trim();
+    } catch { /* try next path */ }
+  }
   return null;
 }
 
