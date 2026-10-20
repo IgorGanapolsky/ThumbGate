@@ -125,16 +125,30 @@ const RAIL_MAP = Object.freeze([
  * Tool 1 (`web_fetch` format): Extract brand identity tokens (title, headings,
  * top hex colors sorted by frequency, and Google Fonts) from a product HTML page.
  */
+function stripMarkupToPlainText(fragment = '') {
+  return String(fragment || '')
+    .split('<')
+    .map((chunk, idx) => {
+      if (idx === 0) return chunk;
+      const closeIdx = chunk.indexOf('>');
+      return closeIdx === -1 ? '' : chunk.slice(closeIdx + 1);
+    })
+    .join(' ')
+    .replace(/[<>]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function extractBrandTokensFromHtml(html = '') {
   const src = String(html || '');
   const titleMatch = src.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  const title = titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : '';
+  const title = titleMatch ? stripMarkupToPlainText(titleMatch[1]) : '';
 
   const headings = [];
   const headingRe = /<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi;
   let hm;
   while ((hm = headingRe.exec(src)) !== null) {
-    const clean = hm[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    const clean = stripMarkupToPlainText(hm[1]);
     if (clean) headings.push(clean);
   }
 
