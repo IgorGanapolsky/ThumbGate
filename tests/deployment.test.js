@@ -1017,7 +1017,8 @@ test('Dependabot auto-merge trusts the pull request author instead of the trigge
   assert.match(workflow, /GH_TOKEN:\s*\$\{\{\s*secrets\.GH_PAT \|\| github\.token\s*\}\}/);
   assert.match(workflow, /group:\s*dependabot-automerge-\$\{\{\s*github\.event\.pull_request\.number \|\| github\.run_id\s*\}\}/);
   assert.match(workflow, /jobs:\s+dependabot-automerge:\s+name:\s*dependabot-automerge/s);
-  assert.match(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER:\s*trunk/);
+  assert.doesNotMatch(workflow, /THUMBGATE_MAIN_MERGE_PROVIDER/);
+  assert.match(workflow, /name: Enable GitHub native auto-merge/);
   assert.match(workflow, /name:\s*Checkout trusted base workflow tools/);
   assert.match(workflow, /name:\s*Checkout Dependabot head/);
   assert.match(workflow, /name:\s*Add generated changeset for manifest-only dependency bumps/);
@@ -1029,9 +1030,9 @@ test('Dependabot auto-merge trusts the pull request author instead of the trigge
   assert.doesNotMatch(workflow, /output_path="\.dependabot-head\/\.changeset\//);
   assert.doesNotMatch(workflow, /git -C \.dependabot-head diff --quiet -- "\$output_path"/);
   assert.match(workflow, /git -C \.dependabot-head push origin "HEAD:\$\{HEAD_REF\}"/);
-  assert.match(workflow, /gh api "repos\/\$\{GITHUB_REPOSITORY\}\/issues\/\$\{PR_NUMBER\}\/comments"/);
-  assert.match(workflow, /-f body='\/trunk merge'/);
-  assert.doesNotMatch(workflow, /gh pr checks "\$PR_URL"/);
+  assert.match(workflow, /gh api\s+-X PUT\s+"repos\/\$\{GITHUB_REPOSITORY\}\/pulls\/\$\{PR_NUMBER\}\/auto-merge"/);
+  assert.match(workflow, /merge_method=squash/);
+  assert.doesNotMatch(workflow, /-f body='\/trunk merge'/);
 });
 
 test('Publish Claude Plugin workflow builds the MCPB and review zip and uploads channel-safe release assets', () => {
@@ -1129,7 +1130,7 @@ test('merge workflows never arm raw GitHub auto-merge before terminal quality ch
   assert.match(agentWorkflow, /node scripts\/pr-manager\.js "\$PR_NUMBER"/);
 
   const dependabotWorkflow = fs.readFileSync(path.join(workflowsDir, 'dependabot-automerge.yml'), 'utf8');
-  assert.match(dependabotWorkflow, /name: Request merge automation/);
+  assert.match(dependabotWorkflow, /name: Enable GitHub native auto-merge/);
   assert.doesNotMatch(dependabotWorkflow, /gh pr checks "\$PR_URL"/);
   assert.doesNotMatch(dependabotWorkflow, /gh pr checks "\$PR_URL" --required/);
 
