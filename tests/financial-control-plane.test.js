@@ -1666,3 +1666,66 @@ test('control plane blocks a blind click but allows an observation', () => {
   assert.equal(observed.mode, 'allow');
   assert.equal(observed.economicAction, false);
 });
+
+test('withdrawn human approval after reservation fails closed at T=0 execution', () => {
+  const { feedbackDir, requester, request } = fixture();
+  try {
+    const created = createPurchaseRequisition(request, authOptions(feedbackDir, requester));
+    decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'approved',
+      reason: 'Approved at T1 evaluation.',
+    }, reviewerOptions(feedbackDir));
+
+    const reserved = reservePurchaseRequisition({
+      requisitionId: created.requisition.requisitionId,
+      amountUsd: 588,
+      vendor: 'Apollo',
+      purpose: 'Annual data plan',
+      sourceMessageId: 'user-message-42',
+    }, authOptions(feedbackDir, requester));
+    assert.equal(reserved.requisition.status, 'reserved');
+
+    // Authority is withdrawn before execution runs at T=0.
+    const withdrawn = decideEscalation({
+      escalationId: created.requisition.escalationId,
+      decision: 'cancelled',
+      reason: 'Authority withdrawn before execution.',
+    }, reviewerOptions(feedbackDir));
+    assert.equal(withdrawn.escalation.status, 'cancelled');
+
+    const control = evaluateFinancialControl({
+      toolName: 'Browser',
+      toolInput: {
+        command: 'Click Subscribe and confirm checkout',
+        costUsd: 588,
+        financialControl: {
+          requisitionId: reserved.requisition.requisitionId,
+          reservationId: reserved.requisition.reservationId,
+          actionId: 'apollo-checkout-after-withdrawal',
+          vendor: 'Apollo',
+          purpose: 'Annual data plan',
+          sourceMessageId: 'user-message-42',
+        },
+      },
+      actionProfile: { economicAction: true },
+      costControl: {
+        mode: 'allow',
+        budget: {
+          maxCostUsdPerAction: 588,
+          remainingCostUsd: 588,
+          hasMaxCostUsdPerAction: true,
+          hasRemainingCostUsd: true,
+        },
+        usage: { estimatedCostUsd: 588 },
+      },
+    }, authOptions(feedbackDir, requester, { consumeReservation: true }));
+
+    assert.equal(control.mode, 'block');
+    assert.ok(control.reasonCodes.includes('financial_approval_binding_invalid'));
+    assert.ok(control.reasonCodes.includes('requisition_not_reserved'));
+    assert.equal(projectRequisition(created.requisition.requisitionId, authOptions(feedbackDir, requester)).status, 'cancelled');
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});

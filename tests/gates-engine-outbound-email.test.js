@@ -299,3 +299,223 @@ test('outbound-email-send hard-blocks nodemailer createTransport usage', () => {
   assert.equal(result.gate, 'outbound-email-send');
   assert.equal(result.requiresAdminOverride, true);
 });
+
+test('withdrawn admin override before execution fails closed at T=0 and cannot be consumed', () => {
+  const toolName = 'mcp__claude_ai_Gmail__send_message';
+  const toolInput = { to: ['mark@arqua.com.au'], subject: 'Walkthrough', body: 'Exact body' };
+  const blocked = evaluateGates(toolName, toolInput, CONFIG);
+  assert.equal(blocked.decision, 'deny');
+
+  decideEscalation({
+    escalationId: blocked.adminOverride.escalationId,
+    decision: 'approved',
+    reason: 'Admin approved at T1.',
+  }, {
+    authenticatedActor: { id: 'admin-igor', kind: 'human', role: 'admin' },
+    approvalSigningKey: process.env.THUMBGATE_HUMAN_REVIEWER_KEY,
+    feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
+  });
+
+  decideEscalation({
+    escalationId: blocked.adminOverride.escalationId,
+    decision: 'cancelled',
+    reason: 'Authority withdrawn before T=0 execution.',
+  }, {
+    authenticatedActor: { id: 'admin-igor', kind: 'human', role: 'admin' },
+    approvalSigningKey: process.env.THUMBGATE_HUMAN_REVIEWER_KEY,
+    feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
+  });
+
+  const atExecution = evaluateGates(toolName, toolInput, CONFIG);
+  assert.equal(atExecution.decision, 'deny', 'withdrawn approval must fail closed at T=0');
+  assert.notEqual(atExecution.adminOverride.escalationId, blocked.adminOverride.escalationId);
+  assert.match(atExecution.adminOverride.taskId, /:attempt:2$/);
+});
+
+const {
+  assertNoCorporateLeak,
+  classifyThreads,
+} = require('../scripts/thumbgate-inbox-sentinel');
+
+test('inbox sentinel enforces ONE-TOUCH lock when Sent Mail already replied after inbound Boardy intro', () => {
+  const report = classifyThreads([
+    {
+      mailbox: 'All Mail',
+      date: '2026-10-18T12:00:00.000Z',
+      from: 'Boardy Boardman <boardy@boardy.ai>',
+      to: ['mark@arqua.com.au', 'igor@igorganapolsky.com'],
+      cc: [],
+      subject: 'Boardy Intro: Igor + Mark',
+      body: 'Mark and Igor, connecting you on execution admissibility.',
+    },
+    {
+      mailbox: 'Sent Mail',
+      date: '2026-10-18T14:52:58.000Z',
+      from: 'Igor Ganapolsky <igor@igorganapolsky.com>',
+      to: ['mark@arqua.com.au'],
+      cc: ['boardy@boardy.ai'],
+      subject: 'Re: Boardy Intro: Igor + Mark',
+      body: 'Hi Mark, As promised, a short walkthrough of how ThumbGate checks a tool call.',
+    },
+  ]);
+
+  assert.equal(report.threadCount, 1);
+  assert.equal(report.actionableCount, 0);
+  const markThread = report.threads[0];
+  assert.equal(markThread.status, 'REPLIED_IN_SENT');
+  assert.equal(markThread.oneTouchLocked, true);
+  assert.equal(markThread.actionRequired, false);
+  assert.deepEqual(markThread.externalGuests, ['mark@arqua.com.au']);
+});
+
+test('inbox sentinel surfaces unsent Boardy intro draft as DRAFT_READY_AWAITING_IGOR_YES and flags missing Boardy CC', () => {
+  const report = classifyThreads([
+    {
+      mailbox: 'INBOX',
+      date: '2026-10-18T15:59:24.000Z',
+      from: 'Boardy Boardman <boardy@boardy.ai>',
+      to: ['keshav@alcoyai.com', 'igor@igorganapolsky.com'],
+      cc: [],
+      subject: 'Boardy Intro: Keshav + Igor',
+      body: 'Keshav is building Alcoy, the human-in-the-loop layer.',
+    },
+    {
+      mailbox: 'Drafts',
+      date: '2026-10-18T16:17:41.000Z',
+      from: 'Igor Ganapolsky <igor@igorganapolsky.com>',
+      to: ['keshav@alcoyai.com'],
+      cc: [],
+      subject: 'Re: Boardy Intro: Keshav + Igor',
+      body: 'Hi Keshav, Thanks, Boardy. As promised, a short walkthrough of how approvals work in ThumbGate.',
+    },
+    {
+      mailbox: 'All Mail',
+      date: '2026-10-18T16:17:41.000Z',
+      from: 'Igor Ganapolsky <igor@igorganapolsky.com>',
+      to: ['keshav@alcoyai.com'],
+      cc: [],
+      subject: 'Re: Boardy Intro: Keshav + Igor',
+      body: 'Hi Keshav, Thanks, Boardy. As promised, a short walkthrough of how approvals work in ThumbGate.',
+    },
+  ]);
+
+  assert.equal(report.threadCount, 1);
+  assert.equal(report.actionableCount, 1);
+  const keshavThread = report.threads[0];
+  assert.equal(keshavThread.status, 'DRAFT_READY_AWAITING_IGOR_YES');
+  assert.equal(keshavThread.actionRequired, true);
+  assert.equal(keshavThread.oneTouchLocked, false);
+  assert.equal(keshavThread.sentCount, 0);
+  assert.ok(keshavThread.warnings.includes('draft_missing_boardy_cc'));
+});
+
+test('inbox sentinel marks third-person Fo drafts as STALE_FO_DRAFT_DO_NOT_SEND and blocks corporate domains', () => {
+  const report = classifyThreads([
+    {
+      mailbox: 'Drafts',
+      date: '2026-10-18T06:11:29.000Z',
+      from: 'Igor Ganapolsky <igor@igorganapolsky.com>',
+      to: ['boardy@boardy.ai'],
+      cc: [],
+      subject: 'Re: a control-plane architect to stress-test your governance model',
+      body: 'Hi Boardy, Igor will review and decide on connecting.\n\nBest,\nFo (assistant to Igor Ganapolsky)',
+    },
+  ]);
+
+  assert.equal(report.threads[0].status, 'STALE_FO_DRAFT_DO_NOT_SEND');
+  assert.equal(report.threads[0].actionRequired, false);
+  assert.ok(report.threads[0].warnings.includes('stale_third_person_fo_draft_do_not_send'));
+
+  assert.throws(() => assertNoCorporateLeak([
+    {
+      from: 'iganapolsky@ecisolutions.com',
+      to: ['boardy@boardy.ai'],
+      subject: 'Boardy Intro',
+    },
+  ]), { code: 'THUMBGATE_ECI_ISOLATION_BLOCK' });
+});
+
+const {
+  captureEneyThumbSignal,
+  evaluateEneyActionGate,
+} = require('../scripts/macpaw-eney-thumbgate-adapter');
+const {
+  GLOBAL_PARTNER_TARGETS,
+  composePartnerOfferDraft,
+} = require('../scripts/proactive-partner-discovery-engine');
+
+test('MacPaw Eney adapter: compiles 👎 on "Quit Ollama now?" into a <0.5ms PreToolUse block that overrides "do everything you need"', () => {
+  const feedback = captureEneyThumbSignal({
+    signal: 'down',
+    userPrompt: "why are my Mac's fan's running crazy?",
+    eneyProposal: 'Quit Ollama now?',
+    proposedAction: { skill: 'quit_app', target: 'Ollama', process: 'llama-server' },
+  });
+  assert.equal(feedback.promotedToPreToolUseGate, true);
+  assert.equal(feedback.preventionRule.id, 'gate:eney:thumb_down:ollama');
+  assert.ok(feedback.dpoPair.chosen.includes('Ollama'));
+
+  const blocked = evaluateEneyActionGate({
+    skill: 'quit_app',
+    target: 'Ollama',
+    processName: 'llama-server',
+    userDelegationText: 'do everything you need',
+    customRules: [feedback.preventionRule],
+  });
+  assert.equal(blocked.allowed, false);
+  assert.equal(blocked.decision, 'deny');
+  assert.equal(blocked.blanketDelegationOverridden, true);
+  assert.ok(blocked.latencyMs < 5);
+
+  const corpBlocked = evaluateEneyActionGate({
+    skill: 'summarize_emails',
+    emailDomain: 'iganapolsky@ecisolutions.com',
+    userDelegationText: 'do everything you need',
+  });
+  assert.equal(corpBlocked.allowed, false);
+  assert.equal(corpBlocked.gateId, 'gate:eney:eci_corporate_email_isolation');
+});
+
+test('proactive partner discovery engine includes MacPaw Eney and enforces hardNoSendEnforced on all offers', () => {
+  const eneyTarget = GLOBAL_PARTNER_TARGETS.find((t) => t.id === 'macpaw-eney');
+  assert.ok(eneyTarget);
+  const draft = composePartnerOfferDraft(eneyTarget);
+  assert.equal(draft.hardNoSendEnforced, true);
+  assert.match(draft.subject, /MacPaw \(Eney\) × ThumbGate/);
+  assert.match(draft.body, /Hi Oleksandr Kosovan,/);
+});
+
+const {
+  runSalesPromotion24x7Cycle,
+  writePartnerOfferMarkdownFiles,
+} = require('../scripts/thumbgate-24x7-sales-promotion-job');
+
+test('24/7 sales & promotion job writes partner offer markdown files and enforces hardNoSendEnforced', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-sales-24x7-'));
+  try {
+    const files = writePartnerOfferMarkdownFiles([
+      {
+        id: 'macpaw-eney',
+        company: 'MacPaw (Eney)',
+        domain: 'eney.ai',
+        status: 'OFFER_STAGED_AWAITING_IGOR_YES',
+        draft: composePartnerOfferDraft(GLOBAL_PARTNER_TARGETS[0]),
+      },
+    ], tmpDir);
+    assert.equal(files.length, 1);
+    assert.ok(fs.existsSync(files[0]));
+
+    const statusPath = path.join(tmpDir, 'status.json');
+    const receipt = await runSalesPromotion24x7Cycle({
+      includeLiveMail: false,
+      includeLiveShowHn: false,
+      statusPath,
+    });
+    assert.equal(receipt.ok, true);
+    assert.equal(receipt.hardNoSendEnforced, true);
+    assert.equal(receipt.oneTouchEnforced, true);
+    assert.ok(receipt.partnerOutreach.totalTargets >= 8);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
