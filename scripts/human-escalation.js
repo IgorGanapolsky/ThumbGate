@@ -107,7 +107,13 @@ function decideEscalation(input = {}, options = {}) {
     const current = projectEscalations(ledger.events, options)
       .find((entry) => entry.escalationId === escalationId);
     if (!current) throw escalationError(`unknown escalation '${escalationId}'`);
-    if (current.status !== 'pending') throw escalationError(`escalation '${escalationId}' is already ${current.status}`);
+    if (current.eventType === 'consumed') {
+      throw escalationError(`escalation '${escalationId}' is already consumed`);
+    }
+    const isWithdrawingUnconsumedApproval = current.status === 'approved' && decision === 'cancelled';
+    if (current.status !== 'pending' && !isWithdrawingUnconsumedApproval) {
+      throw escalationError(`escalation '${escalationId}' is already ${current.status}`);
+    }
     if (sameIdentity(current.requester, actor)) throw escalationError('requester cannot decide their own escalation');
     if (current.requiredReviewerRole && actor.role !== current.requiredReviewerRole) {
       throw escalationError(`authenticated reviewer must have role '${current.requiredReviewerRole}'`);
