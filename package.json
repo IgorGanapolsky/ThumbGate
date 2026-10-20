@@ -1440,6 +1440,7 @@
     "@changesets/cli": "^3.0.0",
     "@playwright/test": "^1.62.1",
     "c8": "^12.0.0",
+    "launch-editor": "^2.14.2",
     "undici": "8.11.2"
   },
   "hotfix": "gate-check-bypass-2026-06-03"

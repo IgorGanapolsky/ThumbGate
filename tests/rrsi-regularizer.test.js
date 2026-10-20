@@ -400,4 +400,115 @@ test('RRSI Workspace Evolution: coverage for target recommendation, no-op mutati
   }
 });
 
+test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-cache reuse, verified-facts pre-training gates, and checkpoint bleed selection', () => {
+  const {
+    evaluateGraniteSwitchAlora,
+    buildGraniteSwitchHonestyReport,
+    evaluateMlInternBriefAndBudget,
+    selectOptimalCheckpointBeforeBleed,
+    buildMlInternHonestyReport,
+    executeTurnFlushAndStateCommit,
+    evaluateAgentAwarePrefixRoute,
+    normalizeWireProtocolAndEvalDeterminism,
+    evaluateDynamicToolGistAndAbstentionGate,
+    buildPyTorchCon2026HonestyReport,
+  } = require('../scripts/rrsi-doctor');
 
+  const alora = evaluateGraniteSwitchAlora({
+    adapterType: 'alora',
+    baseVramGb: 16,
+    switchedModes: ['chat', 'guardian', 'decision', 'speech'],
+  });
+  assert.equal(alora.kvCacheReused, true);
+  assert.equal(alora.prefillRecomputeCount, 0);
+  assert.equal(alora.estimatedVramGb, 16);
+
+  const stdLora = evaluateGraniteSwitchAlora({
+    adapterType: 'lora',
+    baseVramGb: 16,
+    switchedModes: ['chat', 'guardian', 'decision'],
+  });
+  assert.equal(stdLora.kvCacheReused, false);
+  assert.equal(stdLora.prefillRecomputeCount, 2);
+  assert.equal(buildGraniteSwitchHonestyReport().ok, true);
+
+  const blockedMlIntern = evaluateMlInternBriefAndBudget({
+    promptText: 'Train a LoRA on Qwen3.5-2B.',
+    zeroShotBaselineRecorded: false,
+    smokeTestSteps: 50,
+    smokeTestWeightsDeltaL2: 0,
+    initialBudgetUsd: 0,
+    approvedCapUsd: 12,
+    estimatedJobCostUsd: 16,
+  });
+  assert.equal(blockedMlIntern.allowed, false);
+  assert.ok(blockedMlIntern.blockers.includes('missing_pre_training_zero_shot_baseline'));
+  assert.ok(blockedMlIntern.blockers.includes('smoke_test_weights_unchanged_or_missing'));
+  assert.ok(blockedMlIntern.blockers.includes('spend_cap_missing_or_exceeded'));
+
+  const allowedMlIntern = evaluateMlInternBriefAndBudget({
+    promptText: '## Verified facts, do not re-derive\nTrainer supports transparent PNGs.',
+    zeroShotBaselineRecorded: true,
+    smokeTestSteps: 50,
+    smokeTestWeightsDeltaL2: 0.042,
+    initialBudgetUsd: 0,
+    approvedCapUsd: 16,
+    estimatedJobCostUsd: 7.6,
+  });
+  assert.equal(allowedMlIntern.allowed, true);
+  assert.equal(allowedMlIntern.hasVerifiedFactsHeading, true);
+
+  const cp = selectOptimalCheckpointBeforeBleed([
+    { step: 100, onModel: false, unrelatedPromptBleed: false, score: 0.4 },
+    { step: 200, onModel: true, unrelatedPromptBleed: false, score: 0.88 },
+    { step: 500, onModel: true, unrelatedPromptBleed: true, score: 0.92 },
+  ]);
+  assert.equal(cp.selectedStep, 200);
+  assert.equal(buildMlInternHonestyReport().ok, true);
+
+  // PyTorchCon NA Oct 20, 2026: MemT-1.0 turn-flush, llm-d QoS, DeepInfer batch-invariant eval, and Flash abstention gate
+  const memt = executeTurnFlushAndStateCommit({
+    turns: [
+      { toolName: 'Bash', summary: 'Checked git status' },
+      { toolName: 'Read', summary: 'Read server.js' },
+      { toolName: 'Edit', summary: 'Patched billing.js' },
+      { toolName: 'Bash', summary: 'Ran node --test' },
+    ],
+    retainRecentRawTurns: 2,
+  });
+  assert.equal(memt.flushedRawTurnCount, 2);
+  assert.equal(memt.activeRawTurnCount, 2);
+  assert.equal(memt.kvReductionFactor, 66);
+
+  const llmd = evaluateAgentAwarePrefixRoute({
+    sessionId: 'sess_42',
+    staticPrefixShare: 0.85,
+    dynamicInjectedAtTail: true,
+    workloadTier: 'interactive_cli',
+  });
+  assert.equal(llmd.prefixPreserved, true);
+  assert.equal(llmd.priorityRank, 1);
+  assert.equal(llmd.estimatedCacheHitRate, 0.96);
+
+  const deepInfer = normalizeWireProtocolAndEvalDeterminism({
+    protocol: 'Responses',
+    isEvalRun: true,
+    batchSize: 4,
+    batchInvariantKernel: false,
+  });
+  assert.equal(deepInfer.deterministicEval, false);
+
+  const flashGate = evaluateDynamicToolGistAndAbstentionGate({
+    totalMcpTools: 80,
+    injectedToolSchemas: 4,
+    rawSystemPromptTokens: 6000,
+    gistPromptTokens: 1500,
+    modelTier: 'MiniMax-M3.1-Flash',
+    schemaHasInsufficientContextBranch: true,
+    missingRequiredContext: true,
+  });
+  assert.equal(flashGate.allowed, true);
+  assert.equal(flashGate.gistCompressionRatio, 4);
+  assert.equal(flashGate.recommendedAction, 'HALT_AND_RETURN_INSUFFICIENT_CONTEXT');
+  assert.equal(buildPyTorchCon2026HonestyReport().ok, true);
+});
