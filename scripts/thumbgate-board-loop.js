@@ -109,6 +109,14 @@ function ciRollup(pr) {
   if (pending) return 'PENDING';
   return included ? 'SUCCESS' : 'UNKNOWN';
 }
+function hasTrunkQueueFailure(pr) {
+  const checks = Array.isArray(pr.statusCheckRollup) ? pr.statusCheckRollup : [];
+  return checks.some((check) => {
+    const name = String(check.name || '');
+    const conclusion = String(check.conclusion || '').toUpperCase();
+    return /trunk[- ]merge[- ]queue/i.test(name) && conclusion === 'FAILURE';
+  });
+}
 
 function classifyPr(pr, options = {}) {
   const number = Number(pr.number);
@@ -132,8 +140,15 @@ function classifyPr(pr, options = {}) {
   if (mss === 'DIRTY' || mergeable === 'CONFLICTING') {
     return { number, class: 'dirty', action: 'comment_needs_rebase', ci, mss, reason: 'conflicts vs main' };
   }
-  if (ci === 'FAILURE') {
-    return { number, class: 'failing', action: 'triage', ci, mss, reason: 'required check red' };
+  if (ci === 'FAILURE' || hasTrunkQueueFailure(pr)) {
+    return {
+      number,
+      class: 'failing',
+      action: 'triage',
+      ci: ci === 'FAILURE' ? ci : 'TRUNK_FAILURE',
+      mss,
+      reason: ci === 'FAILURE' ? 'required check red' : 'trunk merge queue failed on current head',
+    };
   }
   if (ci === 'PENDING' || ci === 'UNKNOWN') {
     return { number, class: 'pending', action: 'wait', ci, mss, reason: ci === 'UNKNOWN' ? 'no CI evidence yet' : 'required check pending' };

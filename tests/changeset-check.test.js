@@ -275,6 +275,18 @@ test('evaluateChangesetRequirement allows release-relevant changes when a releas
   assert.match(result.reason, /already consumed pending changesets/i);
 });
 
+test('evaluateChangesetRequirement skips manifest-only dependency updates when package version is unchanged', () => {
+  const result = evaluateChangesetRequirement({
+    changedFiles: ['package.json', 'package-lock.json', 'workers/package.json', 'workers/package-lock.json'],
+    changesets: [],
+    versionChanged: false,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.required, false);
+  assert.match(result.reason, /manifest-only dependency update/i);
+});
+
 test('getChangedFiles includes deleted changesets so versioned release PRs pass', () => {
   const calls = [];
   const runner = (_cmd, args) => {

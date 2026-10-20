@@ -16,6 +16,12 @@ const RELEASE_RELEVANT_FILES = new Set([
   'package-lock.json',
   'server.json',
 ]);
+const MANIFEST_ONLY_DEPENDENCY_FILES = new Set([
+  'package.json',
+  'package-lock.json',
+  'workers/package.json',
+  'workers/package-lock.json',
+]);
 const RELEASE_RELEVANT_PREFIXES = [
   '.claude-plugin/',
   '.cursor-plugin/',
@@ -75,6 +81,15 @@ function isVersionedReleaseChangeSet(changedFiles = []) {
     );
 }
 
+function isManifestOnlyDependencyBump(relevantFiles = [], { versionChanged = false } = {}) {
+  if (versionChanged || !Array.isArray(relevantFiles) || relevantFiles.length === 0) {
+    return false;
+  }
+  return relevantFiles.every((file) => {
+    const normalized = String(file || '').trim().replaceAll('\\', '/');
+    return MANIFEST_ONLY_DEPENDENCY_FILES.has(normalized);
+  });
+}
 function splitChangesetDocument(content) {
   const normalized = String(content || '').replaceAll('\r\n', '\n');
   const lines = normalized.split('\n');
@@ -249,6 +264,16 @@ function evaluateChangesetRequirement({
     };
   }
 
+  if (isManifestOnlyDependencyBump(relevantFiles, { versionChanged })) {
+    return {
+      ok: true,
+      required: false,
+      relevantFiles,
+      validChangesets,
+      invalidChangesets,
+      reason: 'Manifest-only dependency update without package version bump. Changeset not required.',
+    };
+  }
   if (validChangesets.length > 0) {
     return {
       ok: true,
@@ -446,9 +471,9 @@ module.exports = {
   getChangedFiles,
   getPackageVersionAtRef,
   isChangesetMarkdownFile,
+  isManifestOnlyDependencyBump,
   isReleaseRelevantFile,
   isVersionedReleaseChangeSet,
-  parseArgs,
   parseChangesetMarkdown,
   parsePackageVersion,
   resolveBaseRef,

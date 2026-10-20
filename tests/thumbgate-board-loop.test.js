@@ -255,3 +255,20 @@ test('agent-automerge resolves workflow_run PRs and allows dependabot/*', () => 
   assert.doesNotMatch(yml, /event:\s*"APPROVE"/);
   assert.doesNotMatch(yml, /gh\s+pr\s+merge[^\n]*--auto/);
 });
+
+test('classifyPr: Trunk Merge Queue failure on head classifies as failing triage instead of re-submitting', () => {
+  const row = classifyPr({
+    number: 4499,
+    isDraft: false,
+    mergeStateStatus: 'BEHIND',
+    mergeable: 'MERGEABLE',
+    statusCheckRollup: [
+      { name: 'test', status: 'COMPLETED', conclusion: 'SUCCESS' },
+      { name: 'Verify changeset', status: 'COMPLETED', conclusion: 'SUCCESS' },
+      { name: 'Trunk Merge Queue (main)', status: 'COMPLETED', conclusion: 'FAILURE' },
+    ],
+  });
+  assert.equal(row.class, 'failing');
+  assert.equal(row.action, 'triage');
+  assert.equal(row.ci, 'TRUNK_FAILURE');
+});
