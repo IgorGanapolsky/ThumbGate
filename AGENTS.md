@@ -417,6 +417,15 @@ npx thumbgate pytorchcon-2026-honesty --json
 npx thumbgate pytorchcon-2026-honesty --map-only --json
 ```
 
+## Cognition Devin Fusion Sidekick & Compaction-Switch honesty (FORMAT steal)
+
+Steal the 3 hybrid-model harness rails from Cognition's Devin Fusion (`https://cognition.com/blog/devin-fusion` — 63.1 on FrontierCode 1.1 Extended at `$1.35`/task, up to 60% lower cost) onto `scripts/switchyard-router.js`: (1) run parallel Frontier Main + Sidekick agents with independent persistent cached contexts (`300s` prompt-cache TTL guard) rather than uncached "Smart Friend" / "Advisor" cross-model tool calls; (2) keep planning, ambiguity resolution, and judgment-heavy coding (`judgmentIsDeliverable: true`) on the Frontier Main Agent while delegating slow test/e2e suites (`-62%` cost), mechanical multi-file deprecations (`-32%`), and upstream pattern reuse (`-25%`) to the Sidekick; (3) couple mid-session model switching and Sidekick model upgrades to context compaction boundaries (`switchTriggeredAtCompaction: true` $\rightarrow$ `extraCacheMissPenalty: 0`).
+
+```bash
+npx thumbgate devin-fusion-honesty --json
+npx thumbgate devin-fusion-honesty --map-only --json
+```
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:

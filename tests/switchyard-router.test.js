@@ -10,6 +10,9 @@ const {
   evaluateRoutingAlgorithm,
   buildAlwaysOnAgentPlan,
   DEFAULT_POOL,
+  evaluateDevinFusionSidekickSplit,
+  evaluateDualCacheAndCompactionSwitch,
+  buildDevinFusionHonestyReport,
 } = require('../scripts/switchyard-router');
 
 const {
@@ -96,4 +99,41 @@ test('adapters/nvidia config and always-on plan', () => {
 
   const plan = planAlwaysOnAgent({ highVolume: true });
   assert.equal(plan.multiModel, true);
+});
+
+test('Cognition Devin Fusion FORMAT steal: Sidekick delegation split, 300s dual-cache TTL, and free compaction-boundary model switch', () => {
+  const keepOnMain = evaluateDevinFusionSidekickSplit({
+    taskType: 'feature',
+    judgmentIsDeliverable: true,
+    ambiguityScore: 0.75,
+  });
+  assert.equal(keepOnMain.assignedTo, 'frontier_main');
+  assert.equal(keepOnMain.delegationAllowed, false);
+
+  const slowTests = evaluateDevinFusionSidekickSplit({
+    taskType: 'verification',
+    slowVerificationSuite: true,
+  });
+  assert.equal(slowTests.assignedTo, 'sidekick');
+  assert.equal(slowTests.expectedCostSavingsPercent, 62);
+
+  const compactionSwitch = evaluateDualCacheAndCompactionSwitch({
+    pattern: 'parallel_dual_cache',
+    idleSeconds: 180,
+    cacheTtlSeconds: 300,
+    midSessionModelSwitch: true,
+    switchTriggeredAtCompaction: true,
+  });
+  assert.equal(compactionSwitch.cacheWarm, true);
+  assert.equal(compactionSwitch.extraCacheMissPenalty, 0);
+  assert.equal(compactionSwitch.freeCompactionSwitch, true);
+
+  const advisorMiss = evaluateDualCacheAndCompactionSwitch({
+    pattern: 'smart_friend_advisor_tool',
+    midSessionModelSwitch: true,
+    switchTriggeredAtCompaction: false,
+  });
+  assert.equal(advisorMiss.cacheWarm, false);
+  assert.equal(advisorMiss.extraCacheMissPenalty, 1);
+  assert.equal(buildDevinFusionHonestyReport().ok, true);
 });

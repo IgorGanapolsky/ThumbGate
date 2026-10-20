@@ -3059,6 +3059,12 @@ function pytorchCon2026HonestyDoctor() {
   const exitCode = runCli(['--pytorchcon-2026', ...process.argv.slice(3)]);
   if (exitCode !== 0) process.exitCode = exitCode;
 }
+
+function devinFusionHonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'switchyard-router'));
+  const exitCode = runCli(process.argv.slice(3));
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
 function llmObsHonesty() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -4109,6 +4115,7 @@ function help() {
   console.log('  granite-switch-honesty Activated LoRA (aLoRA) KV-cache reuse across chat, Guardian, decision, and speech (Granite Switch 4.1 FORMAT)');
   console.log('  ml-intern-honesty     "Verified facts, do not re-derive", zero-shot baseline, 50-step smoke test, and $0 budget cap (HF ML Intern FORMAT)');
   console.log('  pytorchcon-2026-honesty MemT-1.0 turn-flush, llm-d 1.0 QoS routing, DeepInfer batch-invariant evals, and Flash abstention gate');
+  console.log('  devin-fusion-honesty  Parallel Main+Sidekick dual cache, judgment guard, and compaction-boundary switch (Devin Fusion FORMAT)');
   console.log('  harness-ceiling       Failure composition and harness evolution ceiling detection (arXiv:2610.11655)');
   console.log('  halo-trace-optimizer  Analyze agent trace logs for thrashing and stalls (HALO FORMAT)');
   console.log('  decisive-step         Decisive-step coding agent evaluation (NVIDIA arXiv:2610.10478)');
@@ -4175,6 +4182,7 @@ function help() {
   console.log('  npx thumbgate granite-switch-honesty --json --map-only');
   console.log('  npx thumbgate ml-intern-honesty --json --map-only');
   console.log('  npx thumbgate pytorchcon-2026-honesty --json --map-only');
+  console.log('  npx thumbgate devin-fusion-honesty --json --map-only');
   console.log('  npx thumbgate llm-obs-honesty --json');
   console.log('  npx thumbgate meko-datapack-honesty --json');
   console.log('  npx thumbgate mintlify-knowledge-honesty --json');
@@ -4242,6 +4250,7 @@ const SUBCOMMAND_HELP = {
   'granite-switch-honesty': 'Usage: npx thumbgate granite-switch-honesty [--claim="..."] [--json] [--map-only]\n\nIBM Granite Switch 4.1 FORMAT: Activated LoRA (aLoRA) base KV-cache reuse across chat, Guardian safety, /v1/systemone decisions, and Turbo-CTC speech.',
   'ml-intern-honesty': 'Usage: npx thumbgate ml-intern-honesty [--claim="..."] [--json] [--map-only]\n\nHuggingFace ML Intern FORMAT: "Verified facts, do not re-derive" prompt block, mandatory pre-training zero-shot baseline, 50-step weight-delta smoke test, $0 initial budget cap, and checkpoint bleed detection.',
   'pytorchcon-2026-honesty': 'Usage: npx thumbgate pytorchcon-2026-honesty [--claim="..."] [--json] [--map-only]\n\nPyTorchCon NA Oct 20, 2026 FORMAT: MemT-1.0 turn-flush state commit, llm-d 1.0 session-pinned QoS routing, DeepSeek DeepInfer batch-invariant evals, dynamic discover_tools, Shopify prompt gisting, and MiniMax M3.1 Flash abstention gate.',
+  'devin-fusion-honesty': 'Usage: npx thumbgate devin-fusion-honesty [--claim="..."] [--json] [--map-only]\n\nCognition Devin Fusion FORMAT: parallel Main+Sidekick dual-cached contexts (300s TTL), judgment-vs-mechanical delegation split, and zero-penalty model switching at compaction boundaries.',
   'harness-ceiling': 'Usage: npx thumbgate harness-ceiling [--json] [--map-only] [--evaluate] [--process=N] [--content=N]\n\narXiv:2610.11655 diagnose-then-intervene rail: failure composition and harness evolution ceiling detection.',
   'verify-claims': 'Usage: npx thumbgate verify-claims --claim="the row count is 1,284" [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nRecheck supported factual claims against operator-configured SQLite, filesystem, and JSON sources. Exits non-zero on mismatch, missing verifier, or verifier error.',
   'decisive-step': 'Usage: npx thumbgate decisive-step [--json] [--map-only]\n\nNVIDIA arXiv:2610.10478 decisive-step evaluation: isolates the first edit that flips tests from fail to pass and predicts coding skill at rho=0.964.',
@@ -5029,6 +5038,11 @@ switch (COMMAND) {
   case 'deepinfer-honesty':
   case 'llmd-honesty':
     pytorchCon2026HonestyDoctor();
+    break;
+  case 'devin-fusion-honesty':
+  case 'devin-fusion':
+  case 'sidekick-routing-honesty':
+    devinFusionHonestyDoctor();
     break;
   case 'harness-ceiling':
   case 'harness-ceiling-doctor':
