@@ -256,8 +256,8 @@ test('agent-automerge resolves workflow_run PRs and allows dependabot/*', () => 
   assert.doesNotMatch(yml, /gh\s+pr\s+merge[^\n]*--auto/);
 });
 
-test('classifyPr: Trunk Merge Queue failure on head classifies as failing triage instead of re-submitting', () => {
-  const row = classifyPr({
+test('classifyPr: Trunk Merge Queue failure on head (CheckRun or StatusContext) classifies as failing triage', () => {
+  const checkRunRow = classifyPr({
     number: 4499,
     isDraft: false,
     mergeStateStatus: 'BEHIND',
@@ -268,7 +268,32 @@ test('classifyPr: Trunk Merge Queue failure on head classifies as failing triage
       { name: 'Trunk Merge Queue (main)', status: 'COMPLETED', conclusion: 'FAILURE' },
     ],
   });
-  assert.equal(row.class, 'failing');
-  assert.equal(row.action, 'triage');
-  assert.equal(row.ci, 'TRUNK_FAILURE');
+  assert.equal(checkRunRow.class, 'failing');
+  assert.equal(checkRunRow.action, 'triage');
+  assert.equal(checkRunRow.ci, 'TRUNK_FAILURE');
+
+  const statusContextRow = classifyPr({
+    number: 4498,
+    isDraft: false,
+    mergeStateStatus: 'CLEAN',
+    mergeable: 'MERGEABLE',
+    statusCheckRollup: [
+      { context: 'test', state: 'SUCCESS' },
+      { context: 'Trunk Merge Queue (main)', state: 'ERROR' },
+    ],
+  });
+  assert.equal(statusContextRow.class, 'failing');
+  assert.equal(statusContextRow.action, 'triage');
+  assert.equal(statusContextRow.ci, 'TRUNK_FAILURE');
+
+  const pendingContextRow = classifyPr({
+    number: 4497,
+    isDraft: false,
+    mergeStateStatus: 'CLEAN',
+    mergeable: 'MERGEABLE',
+    statusCheckRollup: [
+      { context: 'test', state: 'PENDING' },
+    ],
+  });
+  assert.equal(pendingContextRow.class, 'pending');
 });

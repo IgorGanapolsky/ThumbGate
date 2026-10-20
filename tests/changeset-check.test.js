@@ -14,6 +14,8 @@ const {
   getCurrentPackageVersion,
   getChangedFiles,
   getPackageVersionAtRef,
+  isDependencyOnlyManifestDiff,
+  isManifestOnlyDependencyBump,
   isReleaseRelevantFile,
   isVersionedReleaseChangeSet,
   parseChangesetMarkdown,
@@ -275,16 +277,42 @@ test('evaluateChangesetRequirement allows release-relevant changes when a releas
   assert.match(result.reason, /already consumed pending changesets/i);
 });
 
-test('evaluateChangesetRequirement skips manifest-only dependency updates when package version is unchanged', () => {
+test('evaluateChangesetRequirement skips manifest-only dependency updates when only dependency fields change', () => {
   const result = evaluateChangesetRequirement({
     changedFiles: ['package.json', 'package-lock.json', 'workers/package.json', 'workers/package-lock.json'],
     changesets: [],
     versionChanged: false,
+    nonDependencyManifestChanged: false,
   });
 
   assert.equal(result.ok, true);
   assert.equal(result.required, false);
   assert.match(result.reason, /manifest-only dependency update/i);
+
+  const blockedScriptEdit = evaluateChangesetRequirement({
+    changedFiles: ['package.json'],
+    changesets: [],
+    versionChanged: false,
+    nonDependencyManifestChanged: true,
+  });
+  assert.equal(blockedScriptEdit.ok, false);
+  assert.equal(blockedScriptEdit.required, true);
+  assert.equal(isManifestOnlyDependencyBump([], { versionChanged: false }), false);
+  assert.equal(
+    isDependencyOnlyManifestDiff(
+      '{"name":"thumbgate","version":"1.0.0","dependencies":{"a":"1.0.0"}}',
+      '{"name":"thumbgate","version":"1.0.0","dependencies":{"a":"1.0.1"}}',
+    ),
+    true,
+  );
+  assert.equal(
+    isDependencyOnlyManifestDiff(
+      '{"name":"thumbgate","version":"1.0.0","scripts":{"test":"a"}}',
+      '{"name":"thumbgate","version":"1.0.0","scripts":{"test":"b"}}',
+    ),
+    false,
+  );
+  assert.equal(isDependencyOnlyManifestDiff('{invalid', '{}'), false);
 });
 
 test('getChangedFiles includes deleted changesets so versioned release PRs pass', () => {
@@ -407,6 +435,22 @@ test('runCli accepts a generated release only after its Changeset directory is e
   } finally {
     console.log = originalLog;
   }
+});
+
+test('runCli accepts a dependency-only package.json bump when package version is unchanged', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-dep-cli-'));
+  fs.mkdirSync(path.join(tempDir, '.changeset'));
+  fs.writeFileSync(path.join(tempDir, 'package.json'), '{"name":"thumbgate","version":"1.28.0","dependencies":{"dotenv":"18.0.7"}}\n');
+  const runner = (_cmd, args) => {
+    if (args[0] === 'rev-parse') return 'origin/main\n';
+    if (args[0] === 'merge-base') return 'base123\n';
+    if (args[0] === 'diff') return 'package-lock.json\npackage.json\n';
+    if (args[0] === 'show') return '{"name":"thumbgate","version":"1.28.0","dependencies":{"dotenv":"18.0.4"}}\n';
+    throw new Error(`unexpected git args: ${args.join(' ')}`);
+  };
+  const result = runCli({ cwd: tempDir, env: { CHANGESET_BASE_REF: 'origin/main' }, runner });
+  assert.equal(result.ok, true);
+  assert.equal(result.required, false);
 });
 
 test('runCli blocks a versioned release with pending Changesets and explains the repair', () => {

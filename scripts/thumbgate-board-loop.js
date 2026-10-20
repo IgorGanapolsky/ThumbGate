@@ -84,6 +84,14 @@ function parseArgs(argv = process.argv.slice(2)) {
   return out;
 }
 
+function normalizeStatusCheck(check = {}) {
+  return {
+    name: String(check.name || check.context || ''),
+    conclusion: String(check.conclusion || check.state || '').toUpperCase(),
+    status: String(check.status || '').toUpperCase(),
+  };
+}
+
 function ciRollup(pr) {
   const checks = Array.isArray(pr.statusCheckRollup) ? pr.statusCheckRollup : [];
   if (pr.ciRollup) return String(pr.ciRollup).toUpperCase();
@@ -92,16 +100,14 @@ function ciRollup(pr) {
   let failing = 0;
   let included = 0;
   for (const check of checks) {
-    const name = String(check.name || '');
+    const { name, conclusion, status } = normalizeStatusCheck(check);
     if (/vercel|gitar|sonarcloud|merge blob|trunk[- ]merge[- ]queue/i.test(name)) continue;
     included += 1;
-    const conclusion = String(check.conclusion || '').toUpperCase();
-    const status = String(check.status || '').toUpperCase();
-    if (status && status !== 'COMPLETED') {
+    if ((status && status !== 'COMPLETED') || ['EXPECTED', 'PENDING'].includes(conclusion)) {
       pending += 1;
       continue;
     }
-    if (['FAILURE', 'TIMED_OUT', 'CANCELLED', 'STARTUP_FAILURE', 'ACTION_REQUIRED'].includes(conclusion)) {
+    if (['ERROR', 'FAILURE', 'TIMED_OUT', 'CANCELLED', 'STARTUP_FAILURE', 'ACTION_REQUIRED'].includes(conclusion)) {
       failing += 1;
     }
   }
@@ -109,12 +115,12 @@ function ciRollup(pr) {
   if (pending) return 'PENDING';
   return included ? 'SUCCESS' : 'UNKNOWN';
 }
+
 function hasTrunkQueueFailure(pr) {
   const checks = Array.isArray(pr.statusCheckRollup) ? pr.statusCheckRollup : [];
   return checks.some((check) => {
-    const name = String(check.name || '');
-    const conclusion = String(check.conclusion || '').toUpperCase();
-    return /trunk[- ]merge[- ]queue/i.test(name) && conclusion === 'FAILURE';
+    const { name, conclusion } = normalizeStatusCheck(check);
+    return /trunk[- ]merge[- ]queue/i.test(name) && ['FAILURE', 'ERROR'].includes(conclusion);
   });
 }
 

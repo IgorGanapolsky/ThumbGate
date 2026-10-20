@@ -22,6 +22,13 @@ const MANIFEST_ONLY_DEPENDENCY_FILES = new Set([
   'workers/package.json',
   'workers/package-lock.json',
 ]);
+const DEPENDENCY_MANIFEST_KEYS = new Set([
+  'dependencies',
+  'devDependencies',
+  'optionalDependencies',
+  'peerDependencies',
+  'overrides',
+]);
 const RELEASE_RELEVANT_PREFIXES = [
   '.claude-plugin/',
   '.cursor-plugin/',
@@ -81,8 +88,30 @@ function isVersionedReleaseChangeSet(changedFiles = []) {
     );
 }
 
-function isManifestOnlyDependencyBump(relevantFiles = [], { versionChanged = false } = {}) {
-  if (versionChanged || !Array.isArray(relevantFiles) || relevantFiles.length === 0) {
+function isDependencyOnlyManifestDiff(baseContent, headContent) {
+  let basePkg;
+  let headPkg;
+  try {
+    basePkg = JSON.parse(String(baseContent || ''));
+    headPkg = JSON.parse(String(headContent || ''));
+  } catch {
+    return false;
+  }
+  const allKeys = new Set([...Object.keys(basePkg), ...Object.keys(headPkg)]);
+  for (const key of allKeys) {
+    if (DEPENDENCY_MANIFEST_KEYS.has(key)) continue;
+    if (JSON.stringify(basePkg[key]) !== JSON.stringify(headPkg[key])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isManifestOnlyDependencyBump(relevantFiles = [], {
+  versionChanged = false,
+  nonDependencyManifestChanged = false,
+} = {}) {
+  if (versionChanged || nonDependencyManifestChanged || !Array.isArray(relevantFiles) || relevantFiles.length === 0) {
     return false;
   }
   return relevantFiles.every((file) => {
@@ -220,6 +249,7 @@ function evaluateChangesetRequirement({
   changesets = [],
   pendingChangesets = [],
   versionChanged = false,
+  nonDependencyManifestChanged = false,
 } = {}) {
   const relevantFiles = changedFiles.filter(isReleaseRelevantFile);
   const required = relevantFiles.length > 0;
@@ -264,7 +294,7 @@ function evaluateChangesetRequirement({
     };
   }
 
-  if (isManifestOnlyDependencyBump(relevantFiles, { versionChanged })) {
+  if (isManifestOnlyDependencyBump(relevantFiles, { versionChanged, nonDependencyManifestChanged })) {
     return {
       ok: true,
       required: false,
@@ -438,11 +468,18 @@ function runCli({
   const pendingChangesets = collectChangesets({ dir: changesetDir });
   const baseVersion = getPackageVersionAtRef({ ref: baseRef, cwd, runner });
   const currentVersion = getCurrentPackageVersion({ cwd });
+  let nonDependencyManifestChanged = false;
+  if (changedFiles.includes('package.json') && baseVersion === currentVersion) {
+    const basePkgRaw = runGitCommand(['show', `${baseRef}:package.json`], { cwd, runner });
+    const headPkgRaw = fs.readFileSync(path.join(cwd, 'package.json'), 'utf8');
+    nonDependencyManifestChanged = !isDependencyOnlyManifestDiff(basePkgRaw, headPkgRaw);
+  }
   const result = evaluateChangesetRequirement({
     changedFiles,
     changesets,
     pendingChangesets,
     versionChanged: baseVersion !== currentVersion,
+    nonDependencyManifestChanged,
   });
   if (result.ok) {
     console.log(result.reason);
@@ -471,6 +508,7 @@ module.exports = {
   getChangedFiles,
   getPackageVersionAtRef,
   isChangesetMarkdownFile,
+  isDependencyOnlyManifestDiff,
   isManifestOnlyDependencyBump,
   isReleaseRelevantFile,
   isVersionedReleaseChangeSet,
