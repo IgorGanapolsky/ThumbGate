@@ -134,9 +134,7 @@ jobs:
           set -euo pipefail
 
           # Enable GitHub auto-merge via API (idempotent — skips if already enabled).
-          gh api \
-            -X PUT \
-            "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/auto-merge" \
+          gh api -X PUT "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/auto-merge" \
             -f "merge_method=squash" \
             -f "commit_message=Auto-merge: Dependabot update" \
             -f "commit_title=chore: auto-merge ${PR_NUMBER}" \
