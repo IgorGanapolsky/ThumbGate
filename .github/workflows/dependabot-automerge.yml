@@ -19,9 +19,6 @@ concurrency:
   group: dependabot-automerge-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
-env:
-  THUMBGATE_MAIN_MERGE_PROVIDER: trunk
-
 jobs:
   dependabot-automerge:
     name: dependabot-automerge
@@ -36,7 +33,7 @@ jobs:
 
       - name: Auto-approve update
         continue-on-error: true
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        uses: actions/github-script@3a2844b7e9c422d3a10d287c895573f7108da1b3 # v9
         with:
           github-token: ${{ github.token }}
           script: |
@@ -122,61 +119,34 @@ jobs:
           git -C .dependabot-head commit -m "chore: add changeset for dependabot PR #${PR_NUMBER}"
           git -C .dependabot-head push origin "HEAD:${HEAD_REF}"
 
-      - name: Request merge automation
+      - name: Enable GitHub native auto-merge
+        # Replaces the /trunk merge comment workflow that was stalling on
+        # BEHIND branches (Oct 2026). GitHub's native auto-merge handles
+        # branch auto-update (via allow_update_branch: true) + merge after
+        # all required status checks pass. The dependabot.yml `auto-merge`
+        # block is the primary mechanism; this step is the belt-and-suspenders
+        # fallback for PRs that don't match the dependabot.yml criteria.
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           set -euo pipefail
 
-          if [ "$BASE_REF" = "main" ] && [ "${THUMBGATE_MAIN_MERGE_PROVIDER}" = "trunk" ]; then
-            if ! existing_comment_id="$(
-              gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-                --jq '.[] | select(.user.login == "github-actions[bot]" and .body == "/trunk merge") | .id' \
-                | head -n 1
-            )"; then
-              {
-                echo "### Merge automation"
-                echo "- Provider: trunk"
-                echo "- PR: $PR_URL"
-                echo "- Queue request: deferred because GitHub API was rate-limited or unavailable"
-              } >> "$GITHUB_STEP_SUMMARY"
-              exit 0
-            fi
-
-            if [ -n "${existing_comment_id:-}" ]; then
-              echo "Trunk merge request already exists for $PR_URL"
-            else
-              if ! gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-                --method POST \
-                -f body='/trunk merge' >/dev/null; then
-                {
-                  echo "### Merge automation"
-                  echo "- Provider: trunk"
-                  echo "- PR: $PR_URL"
-                  echo "- Queue request: deferred because GitHub API was rate-limited or unavailable"
-                } >> "$GITHUB_STEP_SUMMARY"
-                exit 0
-              fi
-              echo "Requested Trunk merge for $PR_URL"
-            fi
-
-            {
-              echo "### Merge automation"
-              echo "- Provider: trunk"
-              echo "- PR: $PR_URL"
-              echo "- Queue request: \`/trunk merge\`"
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
-          gh pr merge --squash --delete-branch "$PR_URL"
+          # Enable GitHub auto-merge via API (idempotent — skips if already enabled).
+          gh api \
+            -X PUT \
+            "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/auto-merge" \
+            -f "merge_method=squash" \
+            -f "commit_message=Auto-merge: Dependabot update" \
+            -f "commit_title=chore: auto-merge ${PR_NUMBER}" \
+            2>/dev/null || {
+            echo "Auto-merge already enabled or failed to enable — relying on dependabot.yml config"
+          }
 
           {
             echo "### Merge automation"
-            echo "- Provider: github"
+            echo "- Provider: github-native-auto-merge"
             echo "- PR: $PR_URL"
-            echo "- Mode: direct squash after terminal checks"
+            echo "- Mode: squash, auto-merge after required checks pass"
           } >> "$GITHUB_STEP_SUMMARY"
