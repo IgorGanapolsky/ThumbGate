@@ -773,8 +773,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 2026-10-13: omp doctor + skill add 20,594 bytes. Clean pack (tracked files + those two) is 9,228,207. Cap stays 9.25 MB.
   // Bumped 9.25 MB -> 9.35 MB (2026-10-15): Autotomy Dual-Lock doctor, skills, and docs. Local pack 9,293,036; CI slack.
   // Bumped 9.35 MB -> 9.40 MB (2026-10-15): HotData DB integration & Google Universal Cart firewall. Local pack 9,340,830; CI slack.
-  manifest.unpackedSize <= 9_400_000,
-  `npm package should stay <= 9.40 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 9.40 MB -> 9.45 MB (2026-10-20): saas-moat-honesty.js + skill + Ed25519 license.js bridge. Local pack 9,404,120; CI slack.
+  manifest.unpackedSize <= 9_450_000,
+  `npm package should stay <= 9.45 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

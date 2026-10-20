@@ -317,6 +317,17 @@ npx thumbgate omp-coordination-honesty --json --map-only
 
 Skill: `.agents/skills/omp-coordination-honesty-not-clone/SKILL.md`. Details: `docs/agents/omp-coordination-honesty.md`.
 
+## SaaS Moat & Seat-Compression honesty (Walling 2026 FORMAT steal)
+
+Audit ThumbGate against Rob Walling's 8 defensible SaaS moats (Agency, Operational Grit, System of Record, Reliance, Learning Loop, Network Effect, Trust & Ecosystem, Regulatory), enforce Ed25519 signed entitlements across all 5 learned models and 3 exporters (`scripts/entitlement.js` + `scripts/license.js`), and distill blocked tool calls into secret-redacted, path-normalized SHA-256 structural signatures so cross-customer intelligence compounds in the control plane even when raw DPO pairs are exported.
+
+```bash
+npx thumbgate saas-moat-honesty --json
+npx thumbgate saas-moat-honesty --map-only --json
+```
+
+Skill: `.agents/skills/saas-moat-honesty-not-clone/SKILL.md`. Details: `docs/agents/saas-moat-honesty.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:

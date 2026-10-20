@@ -531,7 +531,9 @@
     "adapters/hotdata/",
     "scripts/apple-minions-idle-compute-steal.js",
     "scripts/corporate-email-isolation-diode.js",
-    "scripts/github-license-compliance-diode.js"
+    "scripts/github-license-compliance-diode.js",
+    "scripts/saas-moat-honesty.js",
+    ".agents/skills/saas-moat-honesty-not-clone/"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
@@ -1088,7 +1090,7 @@
     "workflow:autonomous": "node scripts/autonomous-workflow.js",
     "test:lesson-export-import": "node --test tests/lesson-export-import.test.js",
     "test:landing-page-claims": "node --test tests/landing-page-claims.test.js",
-    "test:competitive-positioning-marketing": "node --test tests/competitive-positioning-marketing.test.js tests/knowledge-graph-guardrails.test.js tests/supply-chain-guardrails.test.js",
+    "test:competitive-positioning-marketing": "node --test tests/competitive-positioning-marketing.test.js tests/knowledge-graph-guardrails.test.js tests/supply-chain-guardrails.test.js tests/saas-moat-honesty.test.js",
     "test:medium-weekly": "node --test tests/medium-weekly.test.js",
     "test:dashboard-deeplink-e2e": "node --test tests/dashboard-deeplink-e2e.test.js",
     "test:e2e:playwright": "playwright test",
@@ -1300,6 +1302,8 @@
     "colab-compute-honesty": "node scripts/colab-compute-honesty.js",
     "test:omp-coordination-honesty": "node --test tests/omp-coordination-honesty.test.js",
     "omp-coordination-honesty": "node scripts/omp-coordination-honesty.js",
+    "test:saas-moat-honesty": "node --test tests/saas-moat-honesty.test.js",
+    "saas-moat-honesty": "node scripts/saas-moat-honesty.js",
     "test:llm-obs-honesty": "node --test tests/llm-obs-honesty.test.js",
     "llm-obs-honesty": "node scripts/llm-obs-honesty.js",
     "test:halo-trace-optimizer": "node --test tests/halo-trace-optimizer.test.js",
