@@ -1937,7 +1937,7 @@ function renderRevenueTargetMarkdown(target) {
 
 function renderRevenueLoopMarkdown(report) {
   const fallbackReason = report.fallbackReason ? ` (${report.fallbackReason})` : '';
-  const targets = Array.isArray(report.targets) ? report.targets.map(enrichRenderableTarget) : [];
+  const targets = Array.isArray(report.targets) ? report.targets.map((x) => enrichRenderableTarget(x)) : [];
   const warmTargets = targets.filter((target) => target.temperature === 'warm');
   const coldTargets = targets.filter((target) => target.temperature !== 'warm');
   const warmTargetLines = warmTargets.length
@@ -2202,7 +2202,7 @@ function isProductionRolloutTarget(target) {
 }
 
 function buildOperatorHandoffPayload(report) {
-  const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets.map(enrichRenderableTarget) : []);
+  const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets.map((x) => enrichRenderableTarget(x)) : []);
   const approvalReadyTargets = rankedTargets.filter((target) => target.actionEligibility?.readyForOutbound === true);
   const internalTargets = rankedTargets.filter((target) => target.actionEligibility?.queueClass === 'internal_ready');
   const heldTargets = rankedTargets.filter((target) => (
@@ -2649,7 +2649,7 @@ function renderOperatorSendNowMarkdown(report) {
 function renderTeamOutreachMessagesMarkdown(report) {
   const warmTargets = Array.isArray(report?.targets)
     ? report.targets
-      .map(enrichRenderableTarget)
+      .map((x) => enrichRenderableTarget(x))
       .filter((target) => target.temperature === 'warm' && target.actionEligibility?.readyForOutbound === true)
     : [];
   const warmTargetLines = warmTargets.length
@@ -2826,7 +2826,7 @@ function escapeCsvValue(value) {
 }
 
 function renderRevenueLoopCsv(report) {
-  const targets = Array.isArray(report.targets) ? report.targets.map(enrichRenderableTarget) : [];
+  const targets = Array.isArray(report.targets) ? report.targets.map((x) => enrichRenderableTarget(x)) : [];
   const rows = [
     [
       'temperature',
@@ -2927,7 +2927,7 @@ function renderRevenueLoopCsv(report) {
 }
 
 function renderRevenueLoopJsonl(report) {
-  const targets = Array.isArray(report.targets) ? report.targets.map(enrichRenderableTarget) : [];
+  const targets = Array.isArray(report.targets) ? report.targets.map((x) => enrichRenderableTarget(x)) : [];
   return `${targets.map((target) => JSON.stringify(target)).join('\n')}\n`;
 }
 

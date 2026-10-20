@@ -19,7 +19,7 @@ function normalizeTask(task, index = 0) {
 function buildArtifactAgentPlan(input = {}) {
   const baselineName = normalizeText(input.baselineName) || 'baseline';
   const gitUrl = normalizeText(input.gitUrl) || 'https://github.com/IgorGanapolsky/ThumbGate.git';
-  const tasks = Array.isArray(input.tasks) ? input.tasks.map(normalizeTask) : [];
+  const tasks = Array.isArray(input.tasks) ? input.tasks.map((x) => normalizeTask(x)) : [];
   const forks = tasks.map((task) => ({
     taskId: task.id,
     forkName: `${baselineName}-${task.id}`.toLowerCase().replaceAll(/[^a-z0-9-]+/g, '-'),
