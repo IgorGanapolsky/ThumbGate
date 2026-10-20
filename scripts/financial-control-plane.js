@@ -19,6 +19,7 @@ const path = require('node:path');
 const { getFeedbackPaths } = require('./feedback-paths');
 const { withFileLedgerLock } = require('./file-ledger-lock');
 const {
+  consumeVerifiedApproval,
   getEscalation,
   getVerifiedApproval,
   requestEscalation,
@@ -650,7 +651,7 @@ function settlePurchaseRequisition(input = {}, options = {}) {
       throw financialError('reservationId does not match the active reservation');
     }
     assertPrincipalOwnsRequisition(requester, requisition);
-    verifyPurchaseApprovalBinding(requisition, options);
+    verifyPurchaseApprovalBinding(requisition, { ...options, allowConsumed: true });
     assertReservationBoundToApproval(requisition);
 
     const base = {
@@ -729,8 +730,12 @@ function applyEscalationState(state, requested, now, options) {
 
 function applyFinancialEvent(state, event, now) {
   if (event.eventType === 'reserved') {
+    const withdrawn = state.status === 'cancelled' || state.status === 'rejected';
+    const reservationStatus = Date.parse(event.reservationExpiresAt) <= now.getTime()
+      ? 'reservation_expired'
+      : 'reserved';
     Object.assign(state, {
-      status: Date.parse(event.reservationExpiresAt) <= now.getTime() ? 'reservation_expired' : 'reserved',
+      status: withdrawn ? state.status : reservationStatus,
       reservationId: event.reservationId,
       reservationIdempotencyKey: event.reservationIdempotencyKey,
       reservedAmountUsd: event.amountUsd,
@@ -1022,6 +1027,9 @@ function consumeReservation(input, options) {
       throw financialError('financial tool changed before authorization');
     }
     assertScopeMatches(input, current);
+    if (current.escalationId) {
+      consumeVerifiedApproval(current.escalationId, { consumer: input.principal }, options);
+    }
     appendEventUnlocked({
       schemaVersion: 'financial-control-v2',
       eventType: 'authorized',
