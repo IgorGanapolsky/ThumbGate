@@ -350,6 +350,17 @@ npx thumbgate herdr-civilization-honesty --map-only --json
 
 Details: `docs/agents/herdr-civilization-honesty.md`.
 
+## Strands Decider 2B intervention honesty (FORMAT steal)
+
+Steal the 4 decision-model and intervention rails from AWS Strands Decider 2B (`https://strandsagents.com/blog/introducing-strands-decider/`) onto `adapters/strands/strands-decider-adapter.js`: (1) pointer-head option scoring (`scoreChoiceQuestion`) with calibrated confidence and `canGenerateFreeformText: false`; (2) parallel `Decider.noul` pre-tool questions (`args_grounded` + `premature`) catching guessed/invented tool arguments not present in the user's messages; (3) `InterventionHandler.before_tool_call` returning typed `Proceed`, `Deny`, `Confirm`, or `Guide` (handing the turn back to the model to ask a clarifying question when tool arguments are ungrounded); (4) Brier score calibration (`computeBrierScore`) and sub-0.5ms local CPU execution without installing 2B Python/HuggingFace weights into the hot path.
+
+```bash
+npx thumbgate strands-decider-honesty --json
+npx thumbgate strands-decider-honesty --map-only --json
+```
+
+Details: `docs/agents/strands-decider-honesty.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
