@@ -328,6 +328,17 @@ npx thumbgate saas-moat-honesty --map-only --json
 
 Skill: `.agents/skills/saas-moat-honesty-not-clone/SKILL.md`. Details: `docs/agents/saas-moat-honesty.md`.
 
+## Claude Code Routines governance honesty (FORMAT steal)
+
+Steal the 7 execution-safety rails from Claude Code Routines (`https://claude.com/resources/articles/introducing-routines-in-claude-code` & `https://code.claude.com/docs/en/routines`) onto `scripts/workspace-agent-routines.js`: (1) `<routine-fire-payload untrusted="true">` wrapping with tag-breakout escaping for API `/fire` payloads; (2) fired prompts and payloads never act as live human approval (`canActAsHumanApproval: false`); (3) $\ge 1\text{h}$ cron floor, `:07` off-hour jitter, `one_off` auto-completion, and `nextRunAt: null` on webhook/API-only tasks; (4) full-string anchored `matches_regex` PR filters (`.*hotfix.*` vs `hotfix`) pushing to `claude/` branches; (5) stripping unreferenced default MCP connectors and blocking outbound mail/social write connectors; (6) rejecting bare green session exit codes when transcripts contain `403 x-deny-reason: host_not_allowed` or unverified tests.
+
+```bash
+npx thumbgate claude-routines-honesty --json
+npx thumbgate claude-routines-honesty --map-only --json
+```
+
+Details: `docs/agents/claude-routines-honesty.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:

@@ -3001,6 +3001,12 @@ function saasMoatHonestyDoctor() {
   const exitCode = runCli(process.argv.slice(3));
   if (exitCode !== 0) process.exitCode = exitCode;
 }
+
+function claudeRoutinesHonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'workspace-agent-routines'));
+  const exitCode = runCli(process.argv.slice(3));
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
 function llmObsHonesty() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -4042,6 +4048,7 @@ function help() {
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  omp-coordination-honesty   Named-model session handoff on the checkout lease (omp FORMAT; does not install omp)');
   console.log('  saas-moat-honesty     8-moat diagnostic, Ed25519 entitlement audit, and cross-customer signature loop (Walling FORMAT)');
+  console.log('  claude-routines-honesty <routine-fire-payload> diode, 1h cron floor, and PR filter regex audit (Claude Routines FORMAT)');
   console.log('  harness-ceiling       Failure composition and harness evolution ceiling detection (arXiv:2610.11655)');
   console.log('  halo-trace-optimizer  Analyze agent trace logs for thrashing and stalls (HALO FORMAT)');
   console.log('  decisive-step         Decisive-step coding agent evaluation (NVIDIA arXiv:2610.10478)');
@@ -4099,6 +4106,7 @@ function help() {
   console.log('  npx thumbgate colab-compute-honesty --json --map-only');
   console.log('  npx thumbgate omp-coordination-honesty --json --map-only');
   console.log('  npx thumbgate saas-moat-honesty --json --map-only');
+  console.log('  npx thumbgate claude-routines-honesty --json --map-only');
   console.log('  npx thumbgate llm-obs-honesty --json');
   console.log('  npx thumbgate meko-datapack-honesty --json');
   console.log('  npx thumbgate mintlify-knowledge-honesty --json');
@@ -4157,6 +4165,7 @@ const SUBCOMMAND_HELP = {
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
   'omp-coordination-honesty': 'Usage: npx thumbgate omp-coordination-honesty [--claim="..."] [--handoff=path] [--json] [--map-only] [--strict]\n\nMap omp session/subagent/collab FORMAT onto the checkout lease. Does not install omp.',
   'saas-moat-honesty': 'Usage: npx thumbgate saas-moat-honesty [--claim="..."] [--events=path.json] [--json] [--map-only] [--strict]\n\nRob Walling 2026 SaaS Moat & Seat-Compression FORMAT: 8-moat audit, Ed25519 entitlement boundary check, and anonymized cross-customer signature aggregation.',
+  'claude-routines-honesty': 'Usage: npx thumbgate claude-routines-honesty [--claim="..."] [--json] [--map-only] [--strict]\n\nClaude Code Routines FORMAT: <routine-fire-payload> untrusted wrapper, non-consent trigger invariant, >=1h cron floor, anchored PR regex filters, and connector least-privilege.',
   'harness-ceiling': 'Usage: npx thumbgate harness-ceiling [--json] [--map-only] [--evaluate] [--process=N] [--content=N]\n\narXiv:2610.11655 diagnose-then-intervene rail: failure composition and harness evolution ceiling detection.',
   'verify-claims': 'Usage: npx thumbgate verify-claims --claim="the row count is 1,284" [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nRecheck supported factual claims against operator-configured SQLite, filesystem, and JSON sources. Exits non-zero on mismatch, missing verifier, or verifier error.',
   'decisive-step': 'Usage: npx thumbgate decisive-step [--json] [--map-only]\n\nNVIDIA arXiv:2610.10478 decisive-step evaluation: isolates the first edit that flips tests from fail to pass and predicts coding skill at rho=0.964.',
@@ -4900,6 +4909,11 @@ switch (COMMAND) {
   case 'saas-moats':
   case 'moat-honesty':
     saasMoatHonestyDoctor();
+    break;
+  case 'claude-routines-honesty':
+  case 'routines-honesty':
+  case 'workspace-routines':
+    claudeRoutinesHonestyDoctor();
     break;
   case 'harness-ceiling':
   case 'harness-ceiling-doctor':
