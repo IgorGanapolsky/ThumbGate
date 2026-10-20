@@ -361,6 +361,17 @@ npx thumbgate strands-decider-honesty --map-only --json
 
 Details: `docs/agents/strands-decider-honesty.md`.
 
+## LaunchVideo.io deterministic film honesty (FORMAT steal)
+
+Steal the 4 programmatic video-generation rails from LaunchVideo.io (`https://launchvideo.io/` / `diggerhq/shipvideo`) onto `scripts/cli-demo.js`: (1) no video diffusion model — write the film as HTML/CSS/JS and replace `requestAnimationFrame`/timers/`Date`/CSS & Web Animations with a deterministic virtual clock (`buildVirtualClockTimeline`, `seekVirtualClockFrame`, `1920x1080` @ `30fps` piped into `libx264 -crf 18`); (2) 3-tool director surface (`extractBrandTokensFromHtml` for headings/top hex colors/Google Fonts, `checkSceneGate` blocking `render_video` on JS runtime errors or blank sample timestamps); (3) zero-secret per-job upload manifest (`mintScopedBlobUploadManifest`, 3-hour TTL scoped to `jobs/<jobId>/launch.mp4`); (4) artifact-verified completion (`verifyMp4ArtifactCompletion` treats the MP4 appearing in Blob as done, never `turn.completed` alone).
+
+```bash
+npx thumbgate launchvideo-honesty --json
+npx thumbgate launchvideo-honesty --map-only --json
+```
+
+Details: `docs/agents/launchvideo-honesty.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:

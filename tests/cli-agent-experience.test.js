@@ -321,6 +321,90 @@ describe('agent-first CLI experience', () => {
     assert.ok(Array.isArray(result.steps));
   });
 
+  test('LaunchVideo.io FORMAT steal: brand token extraction, virtual clock seek, check_scene gate, 3h scoped Blob manifest, and MP4 completion gate', () => {
+    const {
+      extractBrandTokensFromHtml,
+      buildVirtualClockTimeline,
+      seekVirtualClockFrame,
+      checkSceneGate,
+      mintScopedBlobUploadManifest,
+      verifyMp4ArtifactCompletion,
+      buildLaunchVideoHonestyReport,
+    } = require('../scripts/cli-demo');
+
+    const tokens = extractBrandTokensFromHtml(`
+      <html>
+        <head>
+          <title>ThumbGate — Infrastructure Firewall</title>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+          <style>body { color: #0f172a; background: #0f172a; border-color: #22c55e; }</style>
+        </head>
+        <body><h1>Stop paying for the same AI mistake twice.</h1><h2>Sub-5ms PreToolUse gates</h2></body>
+      </html>
+    `);
+    assert.equal(tokens.title, 'ThumbGate — Infrastructure Firewall');
+    assert.deepEqual(tokens.headings, ['Stop paying for the same AI mistake twice.', 'Sub-5ms PreToolUse gates']);
+    assert.equal(tokens.topHexColors[0], '#0f172a');
+    assert.deepEqual(tokens.googleFonts, ['Inter', 'JetBrains Mono']);
+
+    const timeline = buildVirtualClockTimeline({ durationSeconds: 32, fps: 30 });
+    assert.equal(timeline.usesVideoDiffusionModel, false);
+    assert.equal(timeline.totalFrames, 960);
+    assert.equal(timeline.crf, 18);
+    assert.equal(seekVirtualClockFrame(45, 30).virtualTimeMs, 1500);
+
+    const failedScene = checkSceneGate({
+      jsErrors: ['ReferenceError: x is not defined'],
+      sampleFrames: [{ t: 0, visibleText: 'Title' }],
+    });
+    assert.equal(failedScene.readyToRender, false);
+    assert.equal(failedScene.reason, 'js_runtime_errors_detected');
+
+    const passedScene = checkSceneGate({
+      jsErrors: [],
+      sampleFrames: [
+        { t: 0, visibleText: 'Ship a launch video.' },
+        { t: 10, visibleText: 'Sub-5ms PreToolUse Firewall' },
+      ],
+    });
+    assert.equal(passedScene.readyToRender, true);
+
+    const secretLeakManifest = mintScopedBlobUploadManifest({
+      jobId: 'job_123',
+      agentEnv: { BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_secret' },
+    });
+    assert.equal(secretLeakManifest.ok, false);
+    assert.equal(secretLeakManifest.agentHoldsMasterSecret, true);
+
+    const cleanManifest = mintScopedBlobUploadManifest({
+      jobId: 'job_123',
+      ttlSeconds: 999999,
+      agentEnv: {},
+    });
+    assert.equal(cleanManifest.ok, true);
+    assert.equal(cleanManifest.agentHoldsMasterSecret, false);
+    assert.equal(cleanManifest.scopedPath, 'jobs/job_123/launch.mp4');
+    assert.equal(cleanManifest.ttlSeconds, 10800);
+
+    const prematureDone = verifyMp4ArtifactCompletion({
+      events: ['tool.started', 'tool.completed', 'turn.completed'],
+      blobArtifact: null,
+    });
+    assert.equal(prematureDone.done, false);
+    assert.equal(prematureDone.status, 'turn_completed_without_mp4_artifact');
+
+    const verifiedDone = verifyMp4ArtifactCompletion({
+      events: ['tool.started', 'tool.completed', 'turn.completed'],
+      blobArtifact: { url: 'https://blob.example.com/jobs/job_123/launch.mp4', sizeBytes: 4128760 },
+    });
+    assert.equal(verifiedDone.done, true);
+    assert.equal(verifiedDone.status, 'mp4_verified_in_blob');
+
+    const report = buildLaunchVideoHonestyReport();
+    assert.equal(report.ok, true);
+    assert.equal(report.railMap.length, 4);
+  });
+
   // -------------------------------------------------------------------------
   // context signal badges in output
   // -------------------------------------------------------------------------

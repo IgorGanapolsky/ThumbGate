@@ -3019,6 +3019,12 @@ function strandsDeciderHonestyDoctor() {
   const exitCode = runCli(process.argv.slice(3));
   if (exitCode !== 0) process.exitCode = exitCode;
 }
+
+function launchVideoHonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'cli-demo'));
+  const exitCode = runCli(process.argv.slice(3));
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
 function llmObsHonesty() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -4063,6 +4069,7 @@ function help() {
   console.log('  claude-routines-honesty <routine-fire-payload> diode, 1h cron floor, and PR filter regex audit (Claude Routines FORMAT)');
   console.log('  herdr-civilization-honesty Seats/Pods, 3-altitude graph, Refocus, Mind-Virus purge, and Ceremony APM (Herdr FORMAT)');
   console.log('  strands-decider-honesty Pointer-head choice scoring, noul args_grounded/premature, and Guide intervention (Strands Decider FORMAT)');
+  console.log('  launchvideo-honesty   Deterministic virtual-clock HTML->MP4, check_scene gate, and 3h scoped Blob token (LaunchVideo FORMAT)');
   console.log('  harness-ceiling       Failure composition and harness evolution ceiling detection (arXiv:2610.11655)');
   console.log('  halo-trace-optimizer  Analyze agent trace logs for thrashing and stalls (HALO FORMAT)');
   console.log('  decisive-step         Decisive-step coding agent evaluation (NVIDIA arXiv:2610.10478)');
@@ -4123,6 +4130,7 @@ function help() {
   console.log('  npx thumbgate claude-routines-honesty --json --map-only');
   console.log('  npx thumbgate herdr-civilization-honesty --json --map-only');
   console.log('  npx thumbgate strands-decider-honesty --json --map-only');
+  console.log('  npx thumbgate launchvideo-honesty --json --map-only');
   console.log('  npx thumbgate llm-obs-honesty --json');
   console.log('  npx thumbgate meko-datapack-honesty --json');
   console.log('  npx thumbgate mintlify-knowledge-honesty --json');
@@ -4184,6 +4192,7 @@ const SUBCOMMAND_HELP = {
   'claude-routines-honesty': 'Usage: npx thumbgate claude-routines-honesty [--claim="..."] [--json] [--map-only] [--strict]\n\nClaude Code Routines FORMAT: <routine-fire-payload> untrusted wrapper, non-consent trigger invariant, >=1h cron floor, anchored PR regex filters, and connector least-privilege.',
   'herdr-civilization-honesty': 'Usage: npx thumbgate herdr-civilization-honesty [--json] [--map-only]\n\nHerdr AI Civilization FORMAT: persistent Seats/Pods, Project->Mission->Slice graph, upward Refocus & altitude-bridged approvals, Mind-Virus contact tracing, and Ceremony-to-Progress APM.',
   'strands-decider-honesty': 'Usage: npx thumbgate strands-decider-honesty [--claim="..."] [--json] [--map-only]\n\nStrands Decider 2B FORMAT: pointer-head option scoring, Decider.noul args_grounded/premature checks, InterventionHandler Proceed/Deny/Confirm/Guide, and Brier calibration.',
+  'launchvideo-honesty': 'Usage: npx thumbgate launchvideo-honesty [--claim="..."] [--json] [--map-only]\n\nLaunchVideo.io (diggerhq/shipvideo) FORMAT: virtual-clock HTML->libx264 rendering (no video model), check_scene pre-render gate, 3h scoped Blob token, and MP4-in-Blob completion check.',
   'harness-ceiling': 'Usage: npx thumbgate harness-ceiling [--json] [--map-only] [--evaluate] [--process=N] [--content=N]\n\narXiv:2610.11655 diagnose-then-intervene rail: failure composition and harness evolution ceiling detection.',
   'verify-claims': 'Usage: npx thumbgate verify-claims --claim="the row count is 1,284" [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nRecheck supported factual claims against operator-configured SQLite, filesystem, and JSON sources. Exits non-zero on mismatch, missing verifier, or verifier error.',
   'decisive-step': 'Usage: npx thumbgate decisive-step [--json] [--map-only]\n\nNVIDIA arXiv:2610.10478 decisive-step evaluation: isolates the first edit that flips tests from fail to pass and predicts coding skill at rho=0.964.',
@@ -4942,6 +4951,11 @@ switch (COMMAND) {
   case 'strands-decider':
   case 'decider-honesty':
     strandsDeciderHonestyDoctor();
+    break;
+  case 'launchvideo-honesty':
+  case 'launchvideo':
+  case 'shipvideo-honesty':
+    launchVideoHonestyDoctor();
     break;
   case 'harness-ceiling':
   case 'harness-ceiling-doctor':
