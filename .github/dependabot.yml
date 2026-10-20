@@ -7,7 +7,7 @@ updates:
       day: "monday"
       time: "09:00"
     cooldown:
-      default-days: 7
+      default-days: 1
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -15,6 +15,27 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    # Group all npm dependencies into one PR to reduce churn.
+    # Security advisories are still split into individual PRs by Dependabot.
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
+    # Native GitHub auto-merge (GA 2026-02). Handles branch auto-update
+    # (requires allow_update_branch: true, now enabled) + merge after
+    # required status checks pass. Replaces the /trunk merge comment
+    # workflow that was stalling on BEHIND branches.
+    auto-merge:
+      - match:
+          dependency_type: "all"
+          update_type: "version-update:semver-patch"
+        merge_method: "squash"
+        wait_for_all_checks: true
+      - match:
+          dependency_type: "all"
+          update_type: "version-update:semver-minor"
+        merge_method: "squash"
+        wait_for_all_checks: true
 
   - package-ecosystem: "npm"
     directory: "/workers"
@@ -23,7 +44,7 @@ updates:
       day: "monday"
       time: "09:05"
     cooldown:
-      default-days: 7
+      default-days: 1
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -32,6 +53,21 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    groups:
+      workers-dependencies:
+        patterns:
+          - "*"
+    auto-merge:
+      - match:
+          dependency_type: "all"
+          update_type: "version-update:semver-patch"
+        merge_method: "squash"
+        wait_for_all_checks: true
+      - match:
+          dependency_type: "all"
+          update_type: "version-update:semver-minor"
+        merge_method: "squash"
+        wait_for_all_checks: true
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -40,7 +76,7 @@ updates:
       day: "monday"
       time: "09:15"
     cooldown:
-      default-days: 7
+      default-days: 1
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -49,4 +85,13 @@ updates:
       codeql-action:
         patterns:
           - "github/codeql-action*"
-
+      github-actions:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "github/codeql-action*"
+    auto-merge:
+      - match:
+          dependency_type: "all"
+        merge_method: "squash"
+        wait_for_all_checks: true
