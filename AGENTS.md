@@ -339,6 +339,17 @@ npx thumbgate claude-routines-honesty --map-only --json
 
 Details: `docs/agents/claude-routines-honesty.md`.
 
+## Herdr AI Civilization governance honesty (FORMAT steal)
+
+Steal the 5 multi-agent software-factory governance rails from Herdr (`https://www.youtube.com/watch?v=AL-PQuB2wy0`) onto `scripts/prove-herdr-adapter.js`: (1) decouple persistent Seat identity (`builder@workshop`, `culture.md`, tribal wisdom inheritance, P2P tmux routing) from ephemeral sessions; (2) structure work as a 3-altitude traversable graph (`Project -> Mission -> Slice` with `spec -> build -> test` and `proof` artifacts) driven by a step-feeding workflow harness; (3) inject upward-graph Refocus prompts (`Slice -> Mission -> Project`) after compaction and require altitude-bridged context (`Slice` + `Project`) before any orchestrator rule/scope approval; (4) contact-trace and purge "mind viruses" across seats and docs with `PreToolUse` inoculation gates; (5) monitor Ceremony-to-Progress APM ratios and auto-dispatch context-aware Rig triage agents when handoffs/checks stall slice delivery.
+
+```bash
+npx thumbgate herdr-civilization-honesty --json
+npx thumbgate herdr-civilization-honesty --map-only --json
+```
+
+Details: `docs/agents/herdr-civilization-honesty.md`.
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
