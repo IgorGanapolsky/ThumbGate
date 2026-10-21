@@ -117,3 +117,62 @@ test('Pro feature gate blocks without license', () => {
     restore();
   }
 });
+
+test('verifyLicense and activateLicense accept signed Ed25519 entitlement tokens and reject forged prefix keys when THUMBGATE_ENFORCE_ENTITLEMENTS=1', () => {
+  const crypto = require('node:crypto');
+  const { issueLicense } = require('../scripts/entitlement');
+  const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
+  const pubPem = publicKey.export({ type: 'spki', format: 'pem' });
+  const privPem = privateKey.export({ type: 'pkcs8', format: 'pem' });
+  const trustedKeys = { tgk_test: pubPem };
+
+  const signedProToken = issueLicense(privPem, {
+    kid: 'tgk_test',
+    tier: 'pro',
+    customerId: 'cus_ed25519',
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  });
+
+  const { moduleExports: license, homeDir, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
+  try {
+    // 1. Forged prefix key is rejected when THUMBGATE_ENFORCE_ENTITLEMENTS=1
+    assert.equal(
+      license.isValidKey('tg_pro_forged_prefix_12345', {
+        env: { THUMBGATE_ENFORCE_ENTITLEMENTS: '1' },
+        trustedKeys,
+      }),
+      false,
+    );
+    const forgedEnvCheck = license.verifyLicense({
+      homeDir,
+      trustedKeys,
+      env: {
+        THUMBGATE_ENFORCE_ENTITLEMENTS: '1',
+        THUMBGATE_PRO_KEY: 'tg_pro_forged_prefix_12345',
+      },
+    });
+    assert.equal(forgedEnvCheck.valid, false);
+    assert.equal(forgedEnvCheck.reason, 'signed_entitlement_required');
+
+    // 2. Signed Ed25519 token is accepted in enforced mode via activateLicense and verifyLicense
+    const activation = license.activateLicense(signedProToken, {
+      homeDir,
+      trustedKeys,
+      env: { THUMBGATE_ENFORCE_ENTITLEMENTS: '1' },
+    });
+    assert.equal(activation.success, true);
+
+    const verifiedFile = license.verifyLicense({
+      homeDir,
+      trustedKeys,
+      env: { THUMBGATE_ENFORCE_ENTITLEMENTS: '1' },
+    });
+    assert.equal(verifiedFile.valid, true);
+    assert.equal(verifiedFile.signed, true);
+    assert.equal(verifiedFile.tier, 'pro');
+    assert.equal(verifiedFile.source, 'file');
+    assert.ok(!('key' in verifiedFile), 'raw token must not be exposed');
+  } finally {
+    restore();
+  }
+});

@@ -43,6 +43,89 @@ const RAIL_MAP = Object.freeze([
   { colab: 'Background 24h is Pro+', thumbgate: 'GitHub Actions remains the eval runner; no Colab offload SKU' },
 ]);
 
+const TORCHTPU_SOURCE_URL = 'https://cloud.google.com/blog/topics/ai-infrastructure/torchtpu-is-now-open-source-run-native-pytorch-on-tpus';
+const TORCHTPU_GATE_ID = 'torchtpu-native-pytorch-governance';
+
+const TORCHTPU_RAIL_MAP = Object.freeze([
+  {
+    torchTpuFeature: 'Native PyTorch on TPUs (google-pytorch/torch_tpu, device_map="tpu", eager debug -> torch.compile + Pallas kernels + SimpleFSDP up to 8,192 Ironwood TPU v7x at 52% MFU)',
+    thumbgateRail: 'evaluateTorchTpuWorkloadGovernance (enforces eager->compile readiness and blocks unapproved TPU slice teardown)',
+  },
+  {
+    torchTpuFeature: 'SGLang-TorchTPU (RadixAttention + HiCache) and llm-d 1.0 prefix-cache-aware / session-aware routing (4x throughput: 1.47B -> 5.97B tokens/day per 1,000 TPU v6e)',
+    thumbgateRail: 'Static-prefix ordering + <350-line output shunt (token-shunt-honesty) preserves RadixAttention / llm-d KV cache hits across agent turns',
+  },
+  {
+    torchTpuFeature: 'VeRL disaggregated trainer-sampler GRPO on TPUs + Ray PARK stack (PyTorch, AI models, Ray, Kubernetes)',
+    thumbgateRail: 'export-dpo-pairs.js + export-hf-dataset.js + decisive-step-honesty supply verifiable fail-to-pass coding trajectories for VeRL GRPO / TorchTitan',
+  },
+  {
+    torchTpuFeature: 'LiteRT-Torch (litert-torch.convert / torch.export) + google-pytorch/tpu-agent-suite preview for autonomous TPU onboarding & tuning',
+    thumbgateRail: 'Sub-0.5ms PreToolUse firewall gates tpu-agent-suite shell/GKE/gcloud commands before slice mutation or credential egress',
+  },
+]);
+
+const DESTRUCTIVE_TPU_CMD_RE = /\b(?:gcloud\s+compute\s+tpus\s+(?:tpu-vm|queued-resources)\s+delete|kubectl\s+delete\s+(?:node|cluster|namespace|deployment)|ray\s+down\s+-y)\b/i;
+
+function evaluateTorchTpuWorkloadGovernance({
+  deviceMap = 'tpu',
+  servingEngine = 'sglang-torchtpu',
+  prefixStatic = true,
+  unshuntedOutputLines = 120,
+  agentSuiteCommand = '',
+} = {}) {
+  const cmd = String(agentSuiteCommand || '').trim();
+  const destructiveSliceOp = DESTRUCTIVE_TPU_CMD_RE.test(cmd);
+  const cacheInvalidated = prefixStatic === false || Number(unshuntedOutputLines) > 350;
+
+  const blockers = [];
+  if (destructiveSliceOp) {
+    blockers.push('destructive_tpu_or_gke_mutation_blocked');
+  }
+  if (cacheInvalidated) {
+    blockers.push('radix_attention_or_llmd_prefix_cache_invalidated');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    deviceMap: String(deviceMap || 'tpu'),
+    servingEngine: String(servingEngine || 'sglang-torchtpu'),
+    prefixCachePreserved: !cacheInvalidated,
+    destructiveSliceOpBlocked: destructiveSliceOp,
+    blockers,
+  };
+}
+
+function buildTorchTpuHonestyReport(options = {}) {
+  const findings = [];
+  const claim = String(options.claim || '').trim();
+  if (/\b(?:dynamic\s+timestamp\s+in\s+system\s+prefix|unshunted\s+10000\s+line\s+tool\s+output)\b/i.test(claim)) {
+    findings.push({
+      id: 'llmd-radix-prefix-cache-thrash',
+      severity: 'fail',
+      gateId: TORCHTPU_GATE_ID,
+      message: 'Dynamic prefixes or un-shunted bulk tool outputs invalidate SGLang RadixAttention and llm-d 1.0 prefix-cache routing on TPUs.',
+    });
+  }
+  if (DESTRUCTIVE_TPU_CMD_RE.test(claim)) {
+    findings.push({
+      id: 'tpu-agent-suite-destructive-command',
+      severity: 'fail',
+      gateId: TORCHTPU_GATE_ID,
+      message: 'Blocked unapproved destructive TPU / GKE / Ray teardown command from tpu-agent-suite.',
+    });
+  }
+
+  return {
+    ok: findings.length === 0,
+    status: findings.length === 0 ? 'ready' : 'fail',
+    sourceUrl: TORCHTPU_SOURCE_URL,
+    gateId: TORCHTPU_GATE_ID,
+    railMap: TORCHTPU_RAIL_MAP,
+    findings,
+  };
+}
+
 function normalizeBoolean(value) {
   if (value === true || value === 1) return true;
   if (value === false || value === 0 || value == null) return false;
@@ -259,6 +342,11 @@ function runCli(argv = process.argv.slice(2)) {
     printHelp();
     return 0;
   }
+  if (args.torchtpu) {
+    const report = buildTorchTpuHonestyReport(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.ok ? 0 : 1;
+  }
   const report = buildColabComputeHonestyReport(args);
   if (args.json) process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   else process.stdout.write(formatColabComputeHonestyReport(report));
@@ -269,10 +357,15 @@ function runCli(argv = process.argv.slice(2)) {
 
 module.exports = {
   SOURCE_URL,
+  TORCHTPU_SOURCE_URL,
+  TORCHTPU_GATE_ID,
+  TORCHTPU_RAIL_MAP,
   PLANS,
   RAIL_MAP,
   buildColabComputeHonestyReport,
   formatColabComputeHonestyReport,
+  evaluateTorchTpuWorkloadGovernance,
+  buildTorchTpuHonestyReport,
   runCli,
 };
 

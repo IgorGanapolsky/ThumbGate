@@ -4,7 +4,8 @@ const fs = require('fs');
 const crypto = require('crypto');
 const os = require('os');
 const path = require('path');
-
+const { isValidKey } = require('./license');
+const { isEnforced } = require('./entitlement');
 const DEFAULT_PRO_API = 'https://thumbgate-production.up.railway.app';
 const DEFAULT_PRO_ACTIVATION_ALERT_EMAIL = 'igor.ganapolsky@gmail.com';
 const CREATOR_BYPASS_VALUE = process.env.THUMBGATE_DEV_SECRET || '';
@@ -332,7 +333,13 @@ async function startLocalProDashboard({
   if (!normalizedKey && !isCreatorDev({ env, homeDir })) {
     throw new Error('Pro license key required.');
   }
-
+  if (
+    isEnforced(env)
+    && !isCreatorDev({ env, homeDir })
+    && !isValidKey(normalizedKey, { env })
+  ) {
+    throw new Error('Signed Ed25519 entitlement token required when THUMBGATE_ENFORCE_ENTITLEMENTS=1.');
+  }
   env.THUMBGATE_PRO_MODE = '1';
   env.THUMBGATE_API_KEY = normalizedKey;
 

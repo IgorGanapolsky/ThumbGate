@@ -460,6 +460,57 @@ function main(argv = process.argv.slice(2)) {
   return 0;
 }
 
+/**
+ * Audit the three multi-agent crew blind spots from datadog.pdf on local rails
+ * ($0 cost, zero dd-trace / OTLP dependencies):
+ *   1. Cost per agent across multi-model crews (Gemini, Grok, Ollama, Codex, Claude)
+ *   2. Exact handoff edge (`fromAgent -> toAgent`) where a 3-4 agent chain breaks
+ *   3. Runs that fail quietly (exitCode === 0 / status === 'completed' with empty handoff output)
+ */
+function auditMultiAgentCrewHandoffs(crewTrace = {}) {
+  const steps = Array.isArray(crewTrace.steps) ? crewTrace.steps : [];
+  const costByAgent = {};
+  const brokenHandoffEdges = [];
+  const silentFailureRuns = [];
+
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i] || {};
+    const agentId = String(step.agentId || step.fromAgent || `agent_${i + 1}`).trim();
+    const costUsd = Number(step.costUsd) || 0;
+    costByAgent[agentId] = Number(((costByAgent[agentId] || 0) + costUsd).toFixed(4));
+
+    if (step.toAgent && (step.handoffFailed === true || step.status === 'handoff_broken')) {
+      brokenHandoffEdges.push({
+        stepIndex: i,
+        fromAgent: agentId,
+        toAgent: String(step.toAgent).trim(),
+        edge: `${agentId} -> ${String(step.toAgent).trim()}`,
+        reason: String(step.error || 'handoff_chain_broken'),
+      });
+    }
+
+    const exitedGreen = step.exitCode === 0 || step.status === 'completed';
+    const emptyOutput = (Number(step.tokensOut) === 0 && !step.outputArtifact) || step.handoffPayloadEmpty === true;
+    if (exitedGreen && emptyOutput) {
+      silentFailureRuns.push({
+        stepIndex: i,
+        agentId,
+        model: step.model || 'unknown',
+        reason: 'silent_failure_green_exit_with_empty_handoff',
+      });
+    }
+  }
+
+  return {
+    ok: brokenHandoffEdges.length === 0 && silentFailureRuns.length === 0,
+    totalSteps: steps.length,
+    costByAgent,
+    totalCostUsd: Number(Object.values(costByAgent).reduce((a, b) => a + b, 0).toFixed(4)),
+    brokenHandoffEdges,
+    silentFailureRuns,
+  };
+}
+
 module.exports = {
   PRACTICES,
   PRACTICE_RAILS,
@@ -467,6 +518,7 @@ module.exports = {
   SOURCE_URL,
   detectCloneAttempt,
   auditTrace,
+  auditMultiAgentCrewHandoffs,
   probeRails,
   buildLlmObsHonestyReport,
   formatLlmObsHonestyReport,

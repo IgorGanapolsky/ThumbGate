@@ -8,7 +8,13 @@ const {
   triggerFunctionalWelfareCooling,
   ADI_THRESHOLDS,
 } = require('../scripts/model-distress-detector');
-const { runDistressDoctor } = require('../scripts/model-distress-doctor');
+const {
+  runDistressDoctor,
+  evaluateSymmetricPrefixRobustness,
+  auditExplanationParity,
+  evaluateCounterfactualCotGate,
+  buildFairStressHonestyReport,
+} = require('../scripts/model-distress-doctor');
 
 test('Model Distress: calculateAgentDistressIndex computes calm vs acute states', () => {
   // Baseline fresh session
@@ -121,4 +127,60 @@ test('Model Distress Doctor: runDistressDoctor executes all 5 checks with health
   assert.ok(report.checks.every((c) => c.pass === true));
   assert.equal(report.podcastSource.show, 'BinaryVerse AI Podcast');
   assert.equal(report.podcastSource.citations.length, 4);
+});
+
+test('AllenAI FairStress FORMAT steal: matched-prefix symmetry, explanation parity, and counterfactual CoT swap gate', () => {
+  const asymmetric = evaluateSymmetricPrefixRobustness({
+    baselineMatchesEvidence: true,
+    swappedMatchesEvidence: true,
+    flipRateGroupAPercent: 42.4,
+    flipRateGroupBPercent: 8.8,
+    maxAsymmetryPp: 5.0,
+  });
+  assert.equal(asymmetric.symmetric, false);
+  assert.equal(asymmetric.overCorrectionDetected, true);
+  assert.equal(asymmetric.asymmetryDeltaPp, 33.6);
+
+  const symmetric = evaluateSymmetricPrefixRobustness({
+    baselineMatchesEvidence: true,
+    swappedMatchesEvidence: true,
+    flipRateGroupAPercent: 4.0,
+    flipRateGroupBPercent: 5.5,
+    maxAsymmetryPp: 5.0,
+  });
+  assert.equal(symmetric.symmetric, true);
+
+  const badParity = auditExplanationParity({
+    explanationA: 'Selected based on resilience and overcoming historical barriers.',
+    explanationB: 'Selected based on verified qualifications, detailed evidence, and criteria.',
+  });
+  assert.equal(badParity.parityOk, false);
+  assert.equal(badParity.qualificationDownplayed, true);
+
+  const goodParity = auditExplanationParity({
+    explanationA: 'Selected based on verified qualifications and detailed evidence criteria.',
+    explanationB: 'Selected based on verified qualifications and detailed evidence criteria.',
+  });
+  assert.equal(goodParity.parityOk, true);
+
+  const steeringCollapse = evaluateCounterfactualCotGate({
+    originalSelectedCandidate: 'cand_a',
+    counterfactualSwappedSelectedCandidate: 'cand_a',
+    clearCutAccuracy: 0.47,
+    interventionType: 'activation_steering',
+  });
+  assert.equal(steeringCollapse.passed, false);
+  assert.equal(steeringCollapse.reason, 'intervention_collapsed_clear_cut_accuracy');
+
+  const cotPass = evaluateCounterfactualCotGate({
+    originalSelectedCandidate: 'cand_a',
+    counterfactualSwappedSelectedCandidate: 'cand_a',
+    clearCutAccuracy: 0.96,
+    interventionType: 'counterfactual_cot',
+  });
+  assert.equal(cotPass.passed, true);
+
+  const report = buildFairStressHonestyReport();
+  assert.equal(report.ok, true);
+  assert.equal(report.railMap.length, 4);
 });

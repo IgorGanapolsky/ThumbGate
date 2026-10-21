@@ -1795,10 +1795,15 @@ function pro() {
       process.exit(1);
     }
 
-    // Validate key format (THUMBGATE_API_KEY prefix)
+    // Validate key format (signed Ed25519 token, THUMBGATE_API_KEY prefix, or legacy prefix)
+    const { isValidKey } = require(path.join(PKG_ROOT, 'scripts', 'license'));
+    const { isEnforced } = require(path.join(PKG_ROOT, 'scripts', 'entitlement'));
+    const enforced = isEnforced(process.env);
     const legacyPrefix = String.fromCharCode(114, 108, 104, 102) + '_';
-    if (!key.startsWith('tg_') && !key.startsWith(legacyPrefix)) {
-      console.error('❌ Invalid license key format. Keys start with "tg_".');
+    if (!isValidKey(key) && (enforced || !key.startsWith(legacyPrefix))) {
+      console.error(enforced
+        ? '❌ Invalid license token. A signed Ed25519 entitlement token is required when THUMBGATE_ENFORCE_ENTITLEMENTS=1.'
+        : '❌ Invalid license key format. Keys start with "tg_" or must be a valid signed Ed25519 token.');
       process.exit(1);
     }
 
@@ -2994,6 +2999,72 @@ function decisiveStepDoctor() {
   const exitCode = runCli(process.argv.slice(3));
   if (exitCode !== 0) process.exitCode = exitCode;
 }
+
+function saasMoatHonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'saas-moat-honesty'));
+  const exitCode = runCli(process.argv.slice(3));
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
+
+function claudeRoutinesHonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'workspace-agent-routines'));
+  const exitCode = runCli(process.argv.slice(3));
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
+
+function herdrCivilizationHonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'prove-herdr-adapter'));
+  const exitCode = runCli(['--herdr-civilization', ...process.argv.slice(3)]);
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
+
+function strandsDeciderHonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'adapters', 'strands', 'strands-decider-adapter'));
+  const exitCode = runCli(process.argv.slice(3));
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
+
+function launchVideoHonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'cli-demo'));
+  const exitCode = runCli(process.argv.slice(3));
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
+
+function torchTpuHonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'colab-compute-honesty'));
+  const exitCode = runCli(['--torchtpu', ...process.argv.slice(3)]);
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
+
+function fairStressHonestyDoctor() {
+  const { runFairStressCli } = require(path.join(PKG_ROOT, 'scripts', 'model-distress-doctor'));
+  const exitCode = runFairStressCli(process.argv.slice(3));
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
+
+function graniteSwitchHonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'rrsi-doctor'));
+  const exitCode = runCli(['--granite-switch', ...process.argv.slice(3)]);
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
+
+function mlInternHonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'rrsi-doctor'));
+  const exitCode = runCli(['--ml-intern', ...process.argv.slice(3)]);
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
+
+function pytorchCon2026HonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'rrsi-doctor'));
+  const exitCode = runCli(['--pytorchcon-2026', ...process.argv.slice(3)]);
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
+
+function devinFusionHonestyDoctor() {
+  const { runCli } = require(path.join(PKG_ROOT, 'scripts', 'switchyard-router'));
+  const exitCode = runCli(process.argv.slice(3));
+  if (exitCode !== 0) process.exitCode = exitCode;
+}
 function llmObsHonesty() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -4034,6 +4105,17 @@ function help() {
   console.log('  infoq-architect-honesty Code-as-truth, typed host, lease, time-in-queue (InfoQ FORMAT)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  omp-coordination-honesty   Named-model session handoff on the checkout lease (omp FORMAT; does not install omp)');
+  console.log('  saas-moat-honesty     8-moat diagnostic, Ed25519 entitlement audit, and cross-customer signature loop (Walling FORMAT)');
+  console.log('  claude-routines-honesty <routine-fire-payload> diode, 1h cron floor, and PR filter regex audit (Claude Routines FORMAT)');
+  console.log('  herdr-civilization-honesty Seats/Pods, 3-altitude graph, Refocus, Mind-Virus purge, and Ceremony APM (Herdr FORMAT)');
+  console.log('  strands-decider-honesty Pointer-head choice scoring, noul args_grounded/premature, and Guide intervention (Strands Decider FORMAT)');
+  console.log('  launchvideo-honesty   Deterministic virtual-clock HTML->MP4, check_scene gate, and 3h scoped Blob token (LaunchVideo FORMAT)');
+  console.log('  torchtpu-honesty      Native PyTorch TPU prefix-cache guard, VeRL GRPO export, and tpu-agent-suite diode (TorchTPU FORMAT)');
+  console.log('  fairstress-honesty    Matched-prefix flip symmetry, explanation parity, and counterfactual CoT swap gate (Ai2 FairStress FORMAT)');
+  console.log('  granite-switch-honesty Activated LoRA (aLoRA) KV-cache reuse across chat, Guardian, decision, and speech (Granite Switch 4.1 FORMAT)');
+  console.log('  ml-intern-honesty     "Verified facts, do not re-derive", zero-shot baseline, 50-step smoke test, and $0 budget cap (HF ML Intern FORMAT)');
+  console.log('  pytorchcon-2026-honesty MemT-1.0 turn-flush, llm-d 1.0 QoS routing, DeepInfer batch-invariant evals, and Flash abstention gate');
+  console.log('  devin-fusion-honesty  Parallel Main+Sidekick dual cache, judgment guard, and compaction-boundary switch (Devin Fusion FORMAT)');
   console.log('  harness-ceiling       Failure composition and harness evolution ceiling detection (arXiv:2610.11655)');
   console.log('  halo-trace-optimizer  Analyze agent trace logs for thrashing and stalls (HALO FORMAT)');
   console.log('  decisive-step         Decisive-step coding agent evaluation (NVIDIA arXiv:2610.10478)');
@@ -4090,6 +4172,17 @@ function help() {
   console.log('  npx thumbgate salt-code-policy-honesty --inspect-code=src/api.js --json');
   console.log('  npx thumbgate colab-compute-honesty --json --map-only');
   console.log('  npx thumbgate omp-coordination-honesty --json --map-only');
+  console.log('  npx thumbgate saas-moat-honesty --json --map-only');
+  console.log('  npx thumbgate claude-routines-honesty --json --map-only');
+  console.log('  npx thumbgate herdr-civilization-honesty --json --map-only');
+  console.log('  npx thumbgate strands-decider-honesty --json --map-only');
+  console.log('  npx thumbgate launchvideo-honesty --json --map-only');
+  console.log('  npx thumbgate torchtpu-honesty --json --map-only');
+  console.log('  npx thumbgate fairstress-honesty --json --map-only');
+  console.log('  npx thumbgate granite-switch-honesty --json --map-only');
+  console.log('  npx thumbgate ml-intern-honesty --json --map-only');
+  console.log('  npx thumbgate pytorchcon-2026-honesty --json --map-only');
+  console.log('  npx thumbgate devin-fusion-honesty --json --map-only');
   console.log('  npx thumbgate llm-obs-honesty --json');
   console.log('  npx thumbgate meko-datapack-honesty --json');
   console.log('  npx thumbgate mintlify-knowledge-honesty --json');
@@ -4147,6 +4240,17 @@ const SUBCOMMAND_HELP = {
   'board-loop': 'Usage: npx thumbgate board-loop [--apply] [--json] [--max-update-branch=1] [--max-pr-manage=1] [--max-comments=4] [--skip-pr=N]\n\nClassify Issues+PR wall: update-branch BEHIND green Dependabot, pr:manage READY, comment DIRTY/ECI. Never approve.',
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
   'omp-coordination-honesty': 'Usage: npx thumbgate omp-coordination-honesty [--claim="..."] [--handoff=path] [--json] [--map-only] [--strict]\n\nMap omp session/subagent/collab FORMAT onto the checkout lease. Does not install omp.',
+  'saas-moat-honesty': 'Usage: npx thumbgate saas-moat-honesty [--claim="..."] [--events=path.json] [--json] [--map-only] [--strict]\n\nRob Walling 2026 SaaS Moat & Seat-Compression FORMAT: 8-moat audit, Ed25519 entitlement boundary check, and anonymized cross-customer signature aggregation.',
+  'claude-routines-honesty': 'Usage: npx thumbgate claude-routines-honesty [--claim="..."] [--json] [--map-only] [--strict]\n\nClaude Code Routines FORMAT: <routine-fire-payload> untrusted wrapper, non-consent trigger invariant, >=1h cron floor, anchored PR regex filters, and connector least-privilege.',
+  'herdr-civilization-honesty': 'Usage: npx thumbgate herdr-civilization-honesty [--json] [--map-only]\n\nHerdr AI Civilization FORMAT: persistent Seats/Pods, Project->Mission->Slice graph, upward Refocus & altitude-bridged approvals, Mind-Virus contact tracing, and Ceremony-to-Progress APM.',
+  'strands-decider-honesty': 'Usage: npx thumbgate strands-decider-honesty [--claim="..."] [--json] [--map-only]\n\nStrands Decider 2B FORMAT: pointer-head option scoring, Decider.noul args_grounded/premature checks, InterventionHandler Proceed/Deny/Confirm/Guide, and Brier calibration.',
+  'launchvideo-honesty': 'Usage: npx thumbgate launchvideo-honesty [--claim="..."] [--json] [--map-only]\n\nLaunchVideo.io (diggerhq/shipvideo) FORMAT: virtual-clock HTML->libx264 rendering (no video model), check_scene pre-render gate, 3h scoped Blob token, and MP4-in-Blob completion check.',
+  'torchtpu-honesty': 'Usage: npx thumbgate torchtpu-honesty [--claim="..."] [--json] [--map-only]\n\nGoogle Cloud TorchTPU FORMAT: SGLang RadixAttention / llm-d prefix-cache protection, VeRL GRPO trajectory export, and tpu-agent-suite PreToolUse diode.',
+  'fairstress-honesty': 'Usage: npx thumbgate fairstress-honesty [--claim="..."] [--json] [--map-only]\n\nAllenAI FairStress FORMAT: symmetric robustness under matched adversarial prefixes, explanation parity audit, and counterfactual CoT identity-swap gate.',
+  'granite-switch-honesty': 'Usage: npx thumbgate granite-switch-honesty [--claim="..."] [--json] [--map-only]\n\nIBM Granite Switch 4.1 FORMAT: Activated LoRA (aLoRA) base KV-cache reuse across chat, Guardian safety, /v1/systemone decisions, and Turbo-CTC speech.',
+  'ml-intern-honesty': 'Usage: npx thumbgate ml-intern-honesty [--claim="..."] [--json] [--map-only]\n\nHuggingFace ML Intern FORMAT: "Verified facts, do not re-derive" prompt block, mandatory pre-training zero-shot baseline, 50-step weight-delta smoke test, $0 initial budget cap, and checkpoint bleed detection.',
+  'pytorchcon-2026-honesty': 'Usage: npx thumbgate pytorchcon-2026-honesty [--claim="..."] [--json] [--map-only]\n\nPyTorchCon NA Oct 20, 2026 FORMAT: MemT-1.0 turn-flush state commit, llm-d 1.0 session-pinned QoS routing, DeepSeek DeepInfer batch-invariant evals, dynamic discover_tools, Shopify prompt gisting, and MiniMax M3.1 Flash abstention gate.',
+  'devin-fusion-honesty': 'Usage: npx thumbgate devin-fusion-honesty [--claim="..."] [--json] [--map-only]\n\nCognition Devin Fusion FORMAT: parallel Main+Sidekick dual-cached contexts (300s TTL), judgment-vs-mechanical delegation split, and zero-penalty model switching at compaction boundaries.',
   'harness-ceiling': 'Usage: npx thumbgate harness-ceiling [--json] [--map-only] [--evaluate] [--process=N] [--content=N]\n\narXiv:2610.11655 diagnose-then-intervene rail: failure composition and harness evolution ceiling detection.',
   'verify-claims': 'Usage: npx thumbgate verify-claims --claim="the row count is 1,284" [--config=.thumbgate/claim-verifiers.json] [--cwd=path] [--json]\n\nRecheck supported factual claims against operator-configured SQLite, filesystem, and JSON sources. Exits non-zero on mismatch, missing verifier, or verifier error.',
   'decisive-step': 'Usage: npx thumbgate decisive-step [--json] [--map-only]\n\nNVIDIA arXiv:2610.10478 decisive-step evaluation: isolates the first edit that flips tests from fail to pass and predicts coding skill at rho=0.964.',
@@ -4885,6 +4989,60 @@ switch (COMMAND) {
   case 'omp-coordination':
   case 'omp-honesty':
     ompCoordinationHonestyDoctor();
+    break;
+  case 'saas-moat-honesty':
+  case 'saas-moats':
+  case 'moat-honesty':
+    saasMoatHonestyDoctor();
+    break;
+  case 'claude-routines-honesty':
+  case 'routines-honesty':
+  case 'workspace-routines':
+    claudeRoutinesHonestyDoctor();
+    break;
+  case 'herdr-civilization-honesty':
+  case 'herdr-honesty':
+  case 'herdr-civilization':
+    herdrCivilizationHonestyDoctor();
+    break;
+  case 'strands-decider-honesty':
+  case 'strands-decider':
+  case 'decider-honesty':
+    strandsDeciderHonestyDoctor();
+    break;
+  case 'launchvideo-honesty':
+  case 'launchvideo':
+  case 'shipvideo-honesty':
+    launchVideoHonestyDoctor();
+    break;
+  case 'torchtpu-honesty':
+  case 'torchtpu':
+  case 'torch-tpu-honesty':
+    torchTpuHonestyDoctor();
+    break;
+  case 'fairstress-honesty':
+  case 'fairstress':
+  case 'ai2-fairstress':
+    fairStressHonestyDoctor();
+    break;
+  case 'granite-switch-honesty':
+  case 'granite-switch':
+    graniteSwitchHonestyDoctor();
+    break;
+  case 'ml-intern-honesty':
+  case 'ml-intern':
+    mlInternHonestyDoctor();
+    break;
+  case 'pytorchcon-2026-honesty':
+  case 'memt-honesty':
+  case 'deepinfer-honesty':
+  case 'llmd-honesty':
+    pytorchCon2026HonestyDoctor();
+    break;
+  case 'devin-fusion-honesty':
+  case 'devin-fusion':
+  case 'sidekick-routing-honesty':
+    devinFusionHonestyDoctor();
     break;
   case 'harness-ceiling':
   case 'harness-ceiling-doctor':

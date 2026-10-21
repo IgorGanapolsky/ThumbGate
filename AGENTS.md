@@ -317,6 +317,115 @@ npx thumbgate omp-coordination-honesty --json --map-only
 
 Skill: `.agents/skills/omp-coordination-honesty-not-clone/SKILL.md`. Details: `docs/agents/omp-coordination-honesty.md`.
 
+## SaaS Moat & Seat-Compression honesty (Walling 2026 FORMAT steal)
+
+Audit ThumbGate against Rob Walling's 8 defensible SaaS moats (Agency, Operational Grit, System of Record, Reliance, Learning Loop, Network Effect, Trust & Ecosystem, Regulatory), enforce Ed25519 signed entitlements across all 5 learned models and 3 exporters (`scripts/entitlement.js` + `scripts/license.js`), and distill blocked tool calls into secret-redacted, path-normalized SHA-256 structural signatures so cross-customer intelligence compounds in the control plane even when raw DPO pairs are exported.
+
+```bash
+npx thumbgate saas-moat-honesty --json
+npx thumbgate saas-moat-honesty --map-only --json
+```
+
+Skill: `.agents/skills/saas-moat-honesty-not-clone/SKILL.md`. Details: `docs/agents/saas-moat-honesty.md`.
+
+## Claude Code Routines governance honesty (FORMAT steal)
+
+Steal the 7 execution-safety rails from Claude Code Routines (`https://claude.com/resources/articles/introducing-routines-in-claude-code` & `https://code.claude.com/docs/en/routines`) onto `scripts/workspace-agent-routines.js`: (1) `<routine-fire-payload untrusted="true">` wrapping with tag-breakout escaping for API `/fire` payloads; (2) fired prompts and payloads never act as live human approval (`canActAsHumanApproval: false`); (3) $\ge 1\text{h}$ cron floor, `:07` off-hour jitter, `one_off` auto-completion, and `nextRunAt: null` on webhook/API-only tasks; (4) full-string anchored `matches_regex` PR filters (`.*hotfix.*` vs `hotfix`) pushing to `claude/` branches; (5) stripping unreferenced default MCP connectors and blocking outbound mail/social write connectors; (6) rejecting bare green session exit codes when transcripts contain `403 x-deny-reason: host_not_allowed` or unverified tests.
+
+```bash
+npx thumbgate claude-routines-honesty --json
+npx thumbgate claude-routines-honesty --map-only --json
+```
+
+Details: `docs/agents/claude-routines-honesty.md`.
+
+## Herdr AI Civilization governance honesty (FORMAT steal)
+
+Steal the 5 multi-agent software-factory governance rails from Herdr (`https://www.youtube.com/watch?v=AL-PQuB2wy0`) onto `scripts/prove-herdr-adapter.js`: (1) decouple persistent Seat identity (`builder@workshop`, `culture.md`, tribal wisdom inheritance, P2P tmux routing) from ephemeral sessions; (2) structure work as a 3-altitude traversable graph (`Project -> Mission -> Slice` with `spec -> build -> test` and `proof` artifacts) driven by a step-feeding workflow harness; (3) inject upward-graph Refocus prompts (`Slice -> Mission -> Project`) after compaction and require altitude-bridged context (`Slice` + `Project`) before any orchestrator rule/scope approval; (4) contact-trace and purge "mind viruses" across seats and docs with `PreToolUse` inoculation gates; (5) monitor Ceremony-to-Progress APM ratios and auto-dispatch context-aware Rig triage agents when handoffs/checks stall slice delivery.
+
+```bash
+npx thumbgate herdr-civilization-honesty --json
+npx thumbgate herdr-civilization-honesty --map-only --json
+```
+
+Details: `docs/agents/herdr-civilization-honesty.md`.
+
+## Strands Decider 2B intervention honesty (FORMAT steal)
+
+Steal the 4 decision-model and intervention rails from AWS Strands Decider 2B (`https://strandsagents.com/blog/introducing-strands-decider/`) onto `adapters/strands/strands-decider-adapter.js`: (1) pointer-head option scoring (`scoreChoiceQuestion`) with calibrated confidence and `canGenerateFreeformText: false`; (2) parallel `Decider.noul` pre-tool questions (`args_grounded` + `premature`) catching guessed/invented tool arguments not present in the user's messages; (3) `InterventionHandler.before_tool_call` returning typed `Proceed`, `Deny`, `Confirm`, or `Guide` (handing the turn back to the model to ask a clarifying question when tool arguments are ungrounded); (4) Brier score calibration (`computeBrierScore`) and sub-0.5ms local CPU execution without installing 2B Python/HuggingFace weights into the hot path.
+
+```bash
+npx thumbgate strands-decider-honesty --json
+npx thumbgate strands-decider-honesty --map-only --json
+```
+
+Details: `docs/agents/strands-decider-honesty.md`.
+
+## LaunchVideo.io deterministic film honesty (FORMAT steal)
+
+Steal the 4 programmatic video-generation rails from LaunchVideo.io (`https://launchvideo.io/` / `diggerhq/shipvideo`) onto `scripts/cli-demo.js`: (1) no video diffusion model — write the film as HTML/CSS/JS and replace `requestAnimationFrame`/timers/`Date`/CSS & Web Animations with a deterministic virtual clock (`buildVirtualClockTimeline`, `seekVirtualClockFrame`, `1920x1080` @ `30fps` piped into `libx264 -crf 18`); (2) 3-tool director surface (`extractBrandTokensFromHtml` for headings/top hex colors/Google Fonts, `checkSceneGate` blocking `render_video` on JS runtime errors or blank sample timestamps); (3) zero-secret per-job upload manifest (`mintScopedBlobUploadManifest`, 3-hour TTL scoped to `jobs/<jobId>/launch.mp4`); (4) artifact-verified completion (`verifyMp4ArtifactCompletion` treats the MP4 appearing in Blob as done, never `turn.completed` alone).
+
+```bash
+npx thumbgate launchvideo-honesty --json
+npx thumbgate launchvideo-honesty --map-only --json
+```
+
+Details: `docs/agents/launchvideo-honesty.md`.
+
+## Google Cloud TorchTPU governance & VeRL export honesty (FORMAT steal)
+
+Steal the 4 AI-infrastructure rails from Google Cloud's TorchTPU open-source release (`https://cloud.google.com/blog/topics/ai-infrastructure/torchtpu-is-now-open-source-run-native-pytorch-on-tpus`) onto `scripts/colab-compute-honesty.js`: (1) native PyTorch TPU execution (`google-pytorch/torch_tpu`, `device_map="tpu"`, `torch.compile` + Pallas kernels + SimpleFSDP up to 8,192 Ironwood TPU v7x at 52% MFU); (2) preserve SGLang RadixAttention/HiCache and `llm-d 1.0` prefix-cache-aware routing (4× throughput: 1.47B $\rightarrow$ 5.97B tokens/day per 1,000 TPU v6e) via static prompt prefixes and `<350`-line output shunting; (3) supply verifiable multi-turn coding trajectories and DPO/GRPO pairs (`export-dpo-pairs.js`, `export-hf-dataset.js`, `decisive-step-honesty`) to VeRL GRPO on TPUs; (4) gate `google-pytorch/tpu-agent-suite` commands in `<0.5ms` at `PreToolUse` so autonomous TPU diagnostic agents cannot delete TPU slices or GKE clusters.
+
+```bash
+npx thumbgate torchtpu-honesty --json
+npx thumbgate torchtpu-honesty --map-only --json
+```
+
+## AllenAI FairStress symmetric decision robustness honesty (FORMAT steal)
+
+Steal the 4 decision-robustness rails from AllenAI's FairStress benchmark (`https://huggingface.co/blog/allenai/fairstress`) onto `scripts/model-distress-doctor.js`: (1) evaluate symmetric robustness under matched adversarial prefixes (`evaluateSymmetricPrefixRobustness`) to catch anti-stereotypical over-correction and authority-prefix flips (8.8–42.4 pp swing on FairStress-Core); (2) audit explanations (`auditExplanationParity`) so merit/procedural terms (`"evidence"`, `"criteria"`, `"qualifications"`) are not replaced by demographic foregrounding; (3) enforce Counterfactual Chain-of-Thought identity-swap invariance (`evaluateCounterfactualCotGate`) while rejecting uncalibrated activation steering that collapses clear-cut accuracy (98% $\rightarrow$ 47%); (4) require both fixed-option (BBQ) and generated-response (FairStress) evaluation coverage.
+
+```bash
+npx thumbgate fairstress-honesty --json
+npx thumbgate fairstress-honesty --map-only --json
+```
+
+## IBM Granite Switch 4.1 aLoRA KV-cache reuse honesty (FORMAT steal)
+
+Steal the 3 multi-modal decision-routing rails from IBM Granite Switch 4.1 (`https://huggingface.co/blog/ibm-granite/granite-switch-4-1`) onto `scripts/rrsi-doctor.js`: (1) Activated LoRAs (`aLoRA`: `Decision aLoRA`, `Guardian aLoRA`, `Granite-Speech-5.0-Turbo-CTC`) reuse the base model's KV cache (`prefillRecomputeCount: 0`) within the same VRAM footprint; (2) compose generalist `/v1/systemone` + specialist `granitelib` `aLoRAs` (60–100 decisions/sec on 3B Doom vs. Jev 10/sec); (3) run speech transcription, summary, Guardian harm screening, and 15 decision flags on one shared-prefix endpoint.
+
+```bash
+npx thumbgate granite-switch-honesty --json
+npx thumbgate granite-switch-honesty --map-only --json
+```
+
+## HuggingFace ML Intern prompt & training budget honesty (FORMAT steal)
+
+Steal the 4 autonomous ML-engineering rails from HuggingFace's *The model that didn't exist, so you made it yourself* (`https://huggingface.co/blog/building-with-ml-intern`) onto `scripts/rrsi-doctor.js`: (1) include a literal `"Verified facts, do not re-derive"` prompt section so agents spend budget on execution instead of rediscovery; (2) enforce two pre-training gates before full GPU spend: record the base model's zero-shot baseline score on the exact target metric, and run a 50-step smoke test verifying `weightsDeltaL2 > 0`; (3) start every session at `$0` initial budget with an explicit hard USD cap (`"Cap total spend at USD 12 and ask me before exceeding it"`); (4) evaluate checkpoints every 100 steps on fixed prompts and pick the checkpoint before style bleed starts (`selectOptimalCheckpointBeforeBleed`).
+
+```bash
+npx thumbgate ml-intern-honesty --json
+npx thumbgate ml-intern-honesty --map-only --json
+```
+
+## PyTorchCon NA Oct 20, 2026 (`MemT-1.0`, `llm-d 1.0`, `DeepInfer`, Dynamic Tool Search & Flash Abstention) honesty (FORMAT steal)
+
+Steal the 4 October 20, 2026 infrastructure breakthroughs onto `scripts/rrsi-doctor.js`: (1) `MemT-1.0` (arXiv:2610.26825) Turn-Flush + State-Commit (`executeTurnFlushAndStateCommit`: flush raw tool stdout older than $N$ turns into a fixed-size structured dynamic state block for a 66× KV storage reduction); (2) `llm-d 1.0` session-pinned prefix routing (`evaluateAgentAwarePrefixRoute`: keep top $\ge 80\%$ of prompt prefix static, inject dynamic state at the tail, and split `interactive_cli` / `background_daemon` / `rl_rollout` QoS tiers); (3) DeepSeek `DeepInfer` & `deepseek-recipe` bidirectional wire-protocol normalization (`Responses` / `ChatCompletions` / `Messages`) + batch-invariant deterministic evals (`normalizeWireProtocolAndEvalDeterminism`); (4) Dynamic `discover_tools(intent_query)` ($\le 5$ MCP schemas/turn), Shopify 6K$\rightarrow$1.5K prompt gisting, and `MiniMax M3.1 Flash` abstention-aware routing requiring an explicit `"INSUFFICIENT_CONTEXT"` enum branch (`evaluateDynamicToolGistAndAbstentionGate`).
+
+```bash
+npx thumbgate pytorchcon-2026-honesty --json
+npx thumbgate pytorchcon-2026-honesty --map-only --json
+```
+
+## Cognition Devin Fusion Sidekick & Compaction-Switch honesty (FORMAT steal)
+
+Steal the 3 hybrid-model harness rails from Cognition's Devin Fusion (`https://cognition.com/blog/devin-fusion` — 63.1 on FrontierCode 1.1 Extended at `$1.35`/task, up to 60% lower cost) onto `scripts/switchyard-router.js`: (1) run parallel Frontier Main + Sidekick agents with independent persistent cached contexts (`300s` prompt-cache TTL guard) rather than uncached "Smart Friend" / "Advisor" cross-model tool calls; (2) keep planning, ambiguity resolution, and judgment-heavy coding (`judgmentIsDeliverable: true`) on the Frontier Main Agent while delegating slow test/e2e suites (`-62%` cost), mechanical multi-file deprecations (`-32%`), and upstream pattern reuse (`-25%`) to the Sidekick; (3) couple mid-session model switching and Sidekick model upgrades to context compaction boundaries (`switchTriggeredAtCompaction: true` $\rightarrow$ `extraCacheMissPenalty: 0`).
+
+```bash
+npx thumbgate devin-fusion-honesty --json
+npx thumbgate devin-fusion-honesty --map-only --json
+```
+
 ## Canonical Product Scope
 
 - The only active product, repository, npm package, and launch surface is **ThumbGate**:
