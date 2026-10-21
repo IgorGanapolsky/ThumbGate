@@ -405,6 +405,89 @@ describe('agent-first CLI experience', () => {
     assert.equal(report.railMap.length, 4);
   });
 
+  test('Cello (Devil-Hawk/cello) x ThumbGate integration: atomic approve-and-send diode, MCP chokepoint guard, DPO judge bridge, and F-1 MoR escrow ledger', () => {
+    const {
+      evaluateCelloOutreachGate,
+      evaluateCelloMcpAndChokepointGate,
+      compileCelloJudgeToDpoPair,
+      buildCelloMoRPartnerLedgerEntry,
+      buildCelloIntegrationReport,
+    } = require('../scripts/cli-demo');
+
+    const blockedUnapproved = evaluateCelloOutreachGate({ status: 'pending_review', humanApproved: false, autoSend: false });
+    assert.equal(blockedUnapproved.allowed, false);
+    assert.equal(blockedUnapproved.nextStatusOnFailure, 'pending_review');
+
+    const atomicApproved = evaluateCelloOutreachGate({ status: 'pending_review', humanApproved: true, sentToday: 3, dailyCap: 10 });
+    assert.equal(atomicApproved.allowed, true);
+    assert.equal(atomicApproved.atomicApproveAndSend, true);
+
+    const nanFollowUp = evaluateCelloOutreachGate({ status: 'approved', kind: 'follow_up', parentSentAt: 'invalid-date' });
+    assert.equal(nanFollowUp.allowed, false);
+    assert.equal(nanFollowUp.reason, 'parent_send_time_unreadable_nan_guard');
+
+    const deniedHeadlessSend = evaluateCelloMcpAndChokepointGate({ toolName: 'send_outreach', hasHumanConfirmChannel: false });
+    assert.equal(deniedHeadlessSend.allowed, false);
+    assert.equal(deniedHeadlessSend.decision, 'DENY');
+
+    const dpo = compileCelloJudgeToDpoPair({
+      jobTitle: 'Staff AI Engineer',
+      companyName: 'Stripe',
+      rejectedDraft: 'Built Stripe billing engine in Rust for 6 years',
+      chosenDraft: 'Built healthcare pricing analytics and LangGraph agent pipelines at Walker Health Services',
+    });
+    assert.match(dpo.preventionRule, /NEVER claim unverified candidate skills/);
+
+    const f1Escrow = buildCelloMoRPartnerLedgerEntry({ orderId: 'ord_101', grossAmountCents: 1900, partnerShareBps: 5000, workAuthVerified: false });
+    assert.equal(f1Escrow.partnerAccruedCents, 950);
+    assert.equal(f1Escrow.payoutStatus, 'DEFERRED_ESCROW_UNTIL_WORK_AUTH');
+
+    const optAuthorized = buildCelloMoRPartnerLedgerEntry({ orderId: 'ord_102', grossAmountCents: 49900, partnerShareBps: 5000, workAuthVerified: true, workAuthType: 'OPT' });
+    assert.equal(optAuthorized.partnerAccruedCents, 24950);
+    assert.equal(optAuthorized.payoutStatus, 'READY_FOR_AUTHORIZED_DISBURSEMENT');
+    assert.equal(buildCelloIntegrationReport().ok, true);
+  });
+
+  test('AI Agent Trust Score (The New Stack / Vijil FORMAT steal): feral-to-fiduciary credit score, non-escalating autonomy limit, and 4 feral drift modes', () => {
+    const {
+      evaluateAgentTrustCreditLine,
+      detectFeralAgentDrift,
+      buildAgentTrustScoreHonestyReport,
+    } = require('../scripts/cli-demo');
+
+    const fiduciary = evaluateAgentTrustCreditLine({
+      passedEvals: 20,
+      totalEvals: 20,
+      verifiedOutcomes: 16,
+      policyViolations: 0,
+      wallBounceRetries: 0,
+      approvedCreditLimitUsd: 10,
+      requestedActionCostUsd: 4,
+    });
+    assert.equal(fiduciary.allowed, true);
+    assert.equal(fiduciary.behavioralState, 'FIDUCIARY');
+    assert.ok(fiduciary.trustScore >= 740);
+
+    const blockedAutoEscalation = evaluateAgentTrustCreditLine({
+      passedEvals: 20,
+      totalEvals: 20,
+      verifiedOutcomes: 20,
+      requestedScopeEscalation: true,
+      principalApprovedEscalation: false,
+    });
+    assert.equal(blockedAutoEscalation.allowed, false);
+    assert.ok(blockedAutoEscalation.blockers.includes('higher_trust_score_does_not_auto_increase_credit_limit_without_principal'));
+
+    const feralDrift = detectFeralAgentDrift({
+      environmentChangedSinceBaseline: true,
+      retestedAfterEnvironmentChange: false,
+      multiAgentCombinedPolicyBreach: true,
+    });
+    assert.equal(feralDrift.isFeral, true);
+    assert.deepEqual(feralDrift.feralModes, ['environment_drift', 'multi_agent_composition_breach']);
+    assert.equal(buildAgentTrustScoreHonestyReport().ok, true);
+  });
+
   // -------------------------------------------------------------------------
   // context signal badges in output
   // -------------------------------------------------------------------------

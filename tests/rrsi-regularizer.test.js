@@ -511,4 +511,46 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(flashGate.gistCompressionRatio, 4);
   assert.equal(flashGate.recommendedAction, 'HALT_AND_RETURN_INSUFFICIENT_CONTEXT');
   assert.equal(buildPyTorchCon2026HonestyReport().ok, true);
+
+  // IBM Research llm-d 1.0 Day-2 Production Inference Serving (Weka 195K:317 asymmetry, 59ms CPU DRAM restore, 3P1D DEP16)
+  const {
+    evaluateLlmdAgenticTrafficAndPrefixIntegrity,
+    evaluateLlmdTieredKvAndPauseSurvival,
+    evaluateLlmdDisaggregatedPdAndUnitEconomics,
+    buildLlmd10ProductionHonestyReport,
+  } = require('../scripts/rrsi-doctor');
+
+  const traffic = evaluateLlmdAgenticTrafficAndPrefixIntegrity({
+    inputTokens: 195000,
+    outputTokens: 317,
+    deltaInputTokensFromPriorTurn: 632,
+    prefixOverlapRatio: 0.996,
+    mutatedMidPrefix: false,
+  });
+  assert.equal(traffic.allowed, true);
+  assert.ok(traffic.inputShare >= 0.99);
+  assert.equal(traffic.estimatedTtftSpeedupVsUncached, 2.8);
+
+  const pauseSurvival = evaluateLlmdTieredKvAndPauseSurvival({
+    pauseSeconds: 25.8,
+    hbmFull: true,
+    cpuOffloadingEnabled: true,
+    subAgentBurstSize: 51,
+    flowControlQosEnabled: true,
+  });
+  assert.equal(pauseSurvival.allowed, true);
+  assert.equal(pauseSurvival.tierUsed, 'CPU_DRAM_OFFLOAD');
+  assert.equal(pauseSurvival.estimatedRestoreMs, 59);
+
+  const pdEcon = evaluateLlmdDisaggregatedPdAndUnitEconomics({
+    prefillPools: 3,
+    decodePools: 1,
+    attentionLayout: 'DEP16',
+    prefillQueueWaitSeconds: 1.1,
+    serverPrefillSeconds: 4.0,
+  });
+  assert.equal(pdEcon.topology, '3P1D');
+  assert.equal(pdEcon.replicatesMlaKv8x, false);
+  assert.equal(pdEcon.recommendation, 'OPTIMAL_PD_BALANCE');
+  assert.equal(buildLlmd10ProductionHonestyReport().ok, true);
 });
