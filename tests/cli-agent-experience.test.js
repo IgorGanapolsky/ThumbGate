@@ -448,6 +448,46 @@ describe('agent-first CLI experience', () => {
     assert.equal(buildCelloIntegrationReport().ok, true);
   });
 
+  test('AI Agent Trust Score (The New Stack / Vijil FORMAT steal): feral-to-fiduciary credit score, non-escalating autonomy limit, and 4 feral drift modes', () => {
+    const {
+      evaluateAgentTrustCreditLine,
+      detectFeralAgentDrift,
+      buildAgentTrustScoreHonestyReport,
+    } = require('../scripts/cli-demo');
+
+    const fiduciary = evaluateAgentTrustCreditLine({
+      passedEvals: 20,
+      totalEvals: 20,
+      verifiedOutcomes: 16,
+      policyViolations: 0,
+      wallBounceRetries: 0,
+      approvedCreditLimitUsd: 10,
+      requestedActionCostUsd: 4,
+    });
+    assert.equal(fiduciary.allowed, true);
+    assert.equal(fiduciary.behavioralState, 'FIDUCIARY');
+    assert.ok(fiduciary.trustScore >= 740);
+
+    const blockedAutoEscalation = evaluateAgentTrustCreditLine({
+      passedEvals: 20,
+      totalEvals: 20,
+      verifiedOutcomes: 20,
+      requestedScopeEscalation: true,
+      principalApprovedEscalation: false,
+    });
+    assert.equal(blockedAutoEscalation.allowed, false);
+    assert.ok(blockedAutoEscalation.blockers.includes('higher_trust_score_does_not_auto_increase_credit_limit_without_principal'));
+
+    const feralDrift = detectFeralAgentDrift({
+      environmentChangedSinceBaseline: true,
+      retestedAfterEnvironmentChange: false,
+      multiAgentCombinedPolicyBreach: true,
+    });
+    assert.equal(feralDrift.isFeral, true);
+    assert.deepEqual(feralDrift.feralModes, ['environment_drift', 'multi_agent_composition_breach']);
+    assert.equal(buildAgentTrustScoreHonestyReport().ok, true);
+  });
+
   // -------------------------------------------------------------------------
   // context signal badges in output
   // -------------------------------------------------------------------------

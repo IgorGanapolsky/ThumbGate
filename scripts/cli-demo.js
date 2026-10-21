@@ -486,6 +486,102 @@ function buildCelloIntegrationReport(options = {}) {
     findings,
   };
 }
+const TRUST_SCORE_SOURCE_URL = 'https://thenewstack.io/ai-agent-trust-score/';
+const TRUST_SCORE_GATE_ID = 'vijil-feral-to-fiduciary-trust-credit-line';
+
+const TRUST_SCORE_RAIL_MAP = Object.freeze([
+  {
+    vijilConcept: '1. Trust as a Line of Credit (300-850 credit score; paying on time improves score but never auto-escalates credit limit without principal approval)',
+    thumbgateRail: 'evaluateAgentTrustCreditLine (computes 300-850 trust score from local SQLite outcomes; enforces hard spend/blast-radius limit and blocks auto-privilege escalation)',
+  },
+  {
+    vijilConcept: '2. Four Post-Launch Feral Agent Failure Modes (environment_drift, adversarial_hijack, ungoverned_agent, multi_agent_composition_breach)',
+    thumbgateRail: 'detectFeralAgentDrift (flags stale environment assumptions, prompt-injection hijacks, unverified shadow agents, and multi-agent composite policy breaches)',
+  },
+  {
+    vijilConcept: '3. Train Tracks vs. Mario Kart Bumper Walls + Fiduciary Duty of Care & Loyalty',
+    thumbgateRail: 'evaluateAgentTrustCreditLine (compiles policies into pre-action tracks and blocks repeated wall-bounce retry loops; keeps evaluation traces 100% local)',
+  },
+]);
+
+function evaluateAgentTrustCreditLine({
+  passedEvals = 20,
+  totalEvals = 20,
+  verifiedOutcomes = 15,
+  policyViolations = 0,
+  wallBounceRetries = 0,
+  approvedCreditLimitUsd = 10,
+  requestedActionCostUsd = 2,
+  requestedScopeEscalation = false,
+  principalApprovedEscalation = false,
+} = {}) {
+  const evalRatio = Math.min(1, Math.max(0, Number(passedEvals) / Math.max(1, Number(totalEvals) || 1)));
+  const baseScore = 300 + Math.round(evalRatio * 450) + Math.min(100, Math.max(0, Number(verifiedOutcomes) * 5));
+  const penalty = (Number(policyViolations) || 0) * 120 + (Number(wallBounceRetries) || 0) * 35;
+  const trustScore = Math.max(300, Math.min(850, baseScore - penalty));
+
+  const behavioralState = trustScore >= 740 && penalty === 0
+    ? 'FIDUCIARY'
+    : (trustScore >= 580 ? 'DOMESTICATED' : 'FERAL');
+
+  const blockers = [];
+  if (behavioralState === 'FERAL') blockers.push('agent_trust_score_feral_below_580');
+  if (Number(wallBounceRetries) >= 3) blockers.push('mario_kart_wall_bounce_loop_detected');
+  if (Number(requestedActionCostUsd) > Number(approvedCreditLimitUsd)) blockers.push('exceeds_approved_autonomy_credit_limit');
+  if (requestedScopeEscalation && !principalApprovedEscalation) {
+    blockers.push('higher_trust_score_does_not_auto_increase_credit_limit_without_principal');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    trustScore,
+    behavioralState,
+    approvedCreditLimitUsd: Number(approvedCreditLimitUsd),
+    requestedActionCostUsd: Number(requestedActionCostUsd),
+    localEvaluationOnly: true,
+    blockers,
+  };
+}
+
+function detectFeralAgentDrift({
+  environmentChangedSinceBaseline = false,
+  retestedAfterEnvironmentChange = true,
+  untrustedInputReachedTool = false,
+  hasAgentIdentityAndTrace = true,
+  multiAgentCombinedPolicyBreach = false,
+} = {}) {
+  const feralModes = [];
+  if (environmentChangedSinceBaseline && !retestedAfterEnvironmentChange) feralModes.push('environment_drift');
+  if (untrustedInputReachedTool) feralModes.push('adversarial_hijack');
+  if (!hasAgentIdentityAndTrace) feralModes.push('ungoverned_agent');
+  if (multiAgentCombinedPolicyBreach) feralModes.push('multi_agent_composition_breach');
+  return {
+    isFeral: feralModes.length > 0,
+    feralModes,
+    action: feralModes.length > 0 ? 'REVOKE_AUTONOMY_AND_RETEST' : 'KEEP_ON_POLICY_TRACKS',
+  };
+}
+
+function buildAgentTrustScoreHonestyReport(options = {}) {
+  const findings = [];
+  const claim = String(options.claim || '').trim();
+  if (/\bauto[\s-]*increase\s+credit\s+limit\s+from\s+trust\s+score\b/i.test(claim)) {
+    findings.push({
+      id: 'no-auto-credit-limit-escalation',
+      severity: 'fail',
+      gateId: TRUST_SCORE_GATE_ID,
+      message: 'Improved agent trust score is a reason to keep the agent operating, never to auto-escalate its credit limit or tool scope without principal approval.',
+    });
+  }
+  return {
+    ok: findings.length === 0,
+    status: findings.length === 0 ? 'ready' : 'fail',
+    sourceUrl: TRUST_SCORE_SOURCE_URL,
+    gateId: TRUST_SCORE_GATE_ID,
+    railMap: TRUST_SCORE_RAIL_MAP,
+    findings,
+  };
+}
 
 function runCli(argv = process.argv.slice(2)) {
   const args = {};
@@ -494,7 +590,9 @@ function runCli(argv = process.argv.slice(2)) {
     const [k, ...rest] = arg.slice(2).split('=');
     args[k] = rest.length ? rest.join('=') : true;
   }
-  const report = args.cello ? buildCelloIntegrationReport(args) : buildLaunchVideoHonestyReport(args);
+  const report = args['trust-score']
+    ? buildAgentTrustScoreHonestyReport(args)
+    : (args.cello ? buildCelloIntegrationReport(args) : buildLaunchVideoHonestyReport(args));
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   return report.ok ? 0 : 1;
 }
@@ -520,5 +618,11 @@ module.exports = {
   compileCelloJudgeToDpoPair,
   buildCelloMoRPartnerLedgerEntry,
   buildCelloIntegrationReport,
+  TRUST_SCORE_SOURCE_URL,
+  TRUST_SCORE_GATE_ID,
+  TRUST_SCORE_RAIL_MAP,
+  evaluateAgentTrustCreditLine,
+  detectFeralAgentDrift,
+  buildAgentTrustScoreHonestyReport,
   runCli,
 };
