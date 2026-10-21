@@ -679,4 +679,28 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(gaetanoRun.ok, true);
   assert.equal(gaetanoRun.alerts.length, 5);
   assert.equal(gaetanoRun.compiledGates.length, 5);
+
+  // Paper Instruments Ultramarine 1 Flash ($0.13/task vs $8.19) & Non-Verifiable RL Substantive Boundary Rubric Grader
+  const { evaluatePaperInstrumentsRubricAndUltramarineRoute } = require('../scripts/rrsi-doctor');
+  const overfit = evaluatePaperInstrumentsRubricAndUltramarineRoute({
+    criterionText: "The callout uses the phrase 'sole forecast basis' and presents the approval request before the counsel-clearance caveat",
+  });
+  assert.equal(overfit.allowed, false);
+  assert.equal(overfit.isOverfit, true);
+
+  const vague = evaluatePaperInstrumentsRubricAndUltramarineRoute({
+    criterionText: 'Provides a useful forecast update for the board',
+  });
+  assert.equal(vague.allowed, false);
+  assert.equal(vague.isVague, true);
+
+  const substantive = evaluatePaperInstrumentsRubricAndUltramarineRoute({
+    criterionText: 'Separates what the board can approve now (v7 forecast) from what still requires counsel clearance (external wording and tables)',
+    separatesApprovedNowFromClearanceRequired: true,
+    apiEndpoint: '/v1/chat/completions',
+    hasStickySessionHeader: true,
+    reasoningEffort: 'max',
+  });
+  assert.equal(substantive.allowed, true);
+  assert.equal(substantive.costSavingsMultiple, 63);
 });

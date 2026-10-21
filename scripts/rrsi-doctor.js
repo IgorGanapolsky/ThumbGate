@@ -1068,6 +1068,55 @@ function evaluateAgentReliabilityEventStream(doc = {}) {
   };
 }
 
+/**
+ * Paper Instruments Ultramarine 1 Flash (`https://api.paperinstruments.com/v1`, $0.13/task vs $8.19 Claude Fable 5)
+ * & Non-Verifiable RL Substantive Boundary Rubric Grader (`PerCriterionOneShotGrader`).
+ *
+ * Enforces:
+ *  1. Rubric Criterion Boundary Design: rejects overfit criteria (exact phrase/word-order lock-in)
+ *     and vague criteria ("provides an appropriate/useful..."), requiring explicit entity, threshold,
+ *     and approval-boundary separation (what can be approved now vs. what requires human/counsel clearance).
+ *  2. Ultramarine API Routing: enforces `x-session-id` sticky header for prefix cache reuse,
+ *     `reasoning_effort: "max"`, `stream: true`, and rejects `top_k` on the `/v1/responses` endpoint.
+ */
+function evaluatePaperInstrumentsRubricAndUltramarineRoute({
+  criterionText = '',
+  separatesApprovedNowFromClearanceRequired = true,
+  apiEndpoint = '/v1/chat/completions',
+  hasStickySessionHeader = true,
+  reasoningEffort = 'max',
+  passesTopK = false,
+  zeroBalanceSpendGuard = true,
+} = {}) {
+  const text = String(criterionText || '').trim();
+  const isOverfit = /\buses\s+the\s+(?:exact\s+)?phrase\b|\bbefore\s+the\s+[^\s]+\s+caveat\b/i.test(text);
+  const isVague = /^\s*provides\s+a(?:n)?\s+(?:useful|appropriate|good|helpful)\b/i.test(text);
+  const topKOnResponses = apiEndpoint === '/v1/responses' && Boolean(passesTopK);
+
+  const blockers = [];
+  if (isOverfit) blockers.push('overfit_rubric_criterion_rejects_valid_equivalent_answers');
+  if (isVague) blockers.push('vague_rubric_criterion_rewards_incomplete_answers');
+  if (!separatesApprovedNowFromClearanceRequired) {
+    blockers.push('criterion_must_separate_immediate_approval_from_counsel_or_human_clearance');
+  }
+  if (!hasStickySessionHeader) blockers.push('missing_x_session_id_header_for_ultramarine_sticky_cache');
+  if (topKOnResponses) blockers.push('ultramarine_responses_endpoint_rejects_top_k');
+  if (!zeroBalanceSpendGuard) blockers.push('never_auto_add_funds_request_eval_capacity_from_founders');
+
+  return {
+    allowed: blockers.length === 0,
+    model: 'ultramarine-1-flash',
+    baseUrl: 'https://api.paperinstruments.com/v1',
+    costPerTaskUsd: 0.13,
+    fableBaselineCostPerTaskUsd: 8.19,
+    costSavingsMultiple: Number((8.19 / 0.13).toFixed(1)),
+    reasoningEffort,
+    isOverfit,
+    isVague,
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['granite-switch']) {
@@ -1189,5 +1238,6 @@ module.exports = {
   evaluateAeoCitationAndReadmeBacklinkGate,
   evaluateFoundryBrowserAutomationGovernance,
   evaluateAgentReliabilityEventStream,
+  evaluatePaperInstrumentsRubricAndUltramarineRoute,
   runCli,
 };
