@@ -21,6 +21,7 @@ const { spawnSync } = require('node:child_process');
 const { chromium } = require('playwright-core');
 const {
   buildVirtualClockTimeline,
+  seekVirtualClockFrame,
   checkSceneGate,
   verifyMp4ArtifactCompletion,
 } = require('../cli-demo');
@@ -64,18 +65,6 @@ async function main() {
   const jsErrors = [];
   page.on('pageerror', (err) => jsErrors.push(err.message || String(err)));
 
-  await page.goto('file://' + HTML);
-  const initialText = await page.evaluate(() => (document.body && document.body.innerText) || '');
-  const sceneCheck = checkSceneGate({
-    jsErrors,
-    sampleFrames: [{ timestampSeconds: 0, visibleText: initialText || 'ThumbGate Demo' }],
-  });
-  if (!sceneCheck.readyToRender) {
-    await context.close();
-    await browser.close();
-    throw new Error(`[check_scene] aborted before ffmpeg encode: ${sceneCheck.reason}`);
-  }
-
   const timelineSpec = buildVirtualClockTimeline({
     durationSeconds: TIMELINE_MS / 1000,
     fps: 30,
@@ -83,6 +72,29 @@ async function main() {
     height: HEIGHT,
     crf: 18,
   });
+  await page.addInitScript((fps) => {
+    window.__virtualClockFrame = 0;
+    window.__virtualClockFps = fps;
+    window.__seekVirtualFrame = (idx) => {
+      window.__virtualClockFrame = idx;
+      window.__virtualTimeMs = (idx / fps) * 1000;
+    };
+  }, timelineSpec.fps);
+  await page.goto('file://' + HTML);
+  const sampleCheck = seekVirtualClockFrame(0, timelineSpec.fps);
+  await page.evaluate((idx) => window.__seekVirtualFrame && window.__seekVirtualFrame(idx), sampleCheck.frameIndex);
+  const initialText = await page.evaluate(() => (document.body && document.body.innerText) || '');
+  const sceneCheck = checkSceneGate({
+    jsErrors,
+    sampleFrames: [{ timestampSeconds: 0, visibleText: initialText }],
+  });
+  if (!sceneCheck.readyToRender) {
+    await context.close();
+    await browser.close();
+    throw new Error(`[check_scene] aborted before ffmpeg encode: ${sceneCheck.reason}`);
+  }
+
+  // timelineSpec initialized before page load so virtual clock is injected deterministically.
   console.log(`[render] playing timeline (${(TIMELINE_MS + TAIL_MS) / 1000}s, codec=${timelineSpec.codec}, crf=${timelineSpec.crf})`);
 
   // Wait for the timeline flag set at t=90s, then a tail for the last scene to settle.
