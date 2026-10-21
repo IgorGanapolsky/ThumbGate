@@ -346,6 +346,147 @@ function buildLaunchVideoHonestyReport(options = {}) {
   };
 }
 
+const CELLO_REPO_URL = 'https://github.com/Devil-Hawk/cello';
+const CELLO_GATE_ID = 'cello-thumbgate-career-agent-diode';
+
+const CELLO_RAIL_MAP = Object.freeze([
+  {
+    celloMechanism: '1. Atomic Approve-and-Send Outreach Diode (apps/web/lib/outreach/guardrails.ts: canSendNow + humanApproved + checkDailyCap + followUpWindowElapsed)',
+    thumbgateRail: 'evaluateCelloOutreachGate (blocks unapproved sends, enforces daily cap & NaN-safe follow-up window, and keeps failed sends in pending_review instead of arming approved)',
+  },
+  {
+    celloMechanism: '2. Stateless MCP Server Refusal on Send/Submit Tools (apps/web/app/api/mcp/route.ts: refuses is_demo tokens and any submitOrSendReason tool lacking a human confirm UI)',
+    thumbgateRail: 'evaluateCelloMcpAndChokepointGate (blocks demo tokens, unframed employer HTML, resume fabrications, and headless MCP send/submit calls)',
+  },
+  {
+    celloMechanism: '3. Judge Verdicts -> DPO Preference Pairs & Local Prevention Rules',
+    thumbgateRail: 'compileCelloJudgeToDpoPair (turns Cello want-judge / claims-judge resume fabrication diffs into DPO chosen/rejected pairs and PreToolUse rules)',
+  },
+  {
+    celloMechanism: '4. F-1 Visa-Safe Merchant-of-Record (MoR) Partner Attribution & Escrow Ledger',
+    thumbgateRail: 'buildCelloMoRPartnerLedgerEntry (ThumbGate acts as 100% Stripe MoR; accrues 50% partner share in deferred escrow until CPT/OPT/O-1A work authorization is verified)',
+  },
+]);
+
+function evaluateCelloOutreachGate({
+  status = 'pending_review',
+  humanApproved = false,
+  autoSend = false,
+  sentToday = 0,
+  dailyCap = 10,
+  kind = 'initial',
+  parentSentAt = null,
+  followUpDays = 5,
+  nowMs = Date.now(),
+} = {}) {
+  if (status === 'sent') return { allowed: false, nextStatusOnFailure: 'sent', reason: 'already_sent' };
+  if (status === 'skipped' || status === 'failed') return { allowed: false, nextStatusOnFailure: status, reason: `message_is_${status}` };
+  const cap = Math.max(1, Number(dailyCap) || 10);
+  if (Number(sentToday) >= cap) {
+    return { allowed: false, nextStatusOnFailure: status === 'pending_review' ? 'pending_review' : status, reason: `daily_cap_reached (${sentToday}/${cap})` };
+  }
+  if (kind === 'follow_up') {
+    if (!parentSentAt) return { allowed: false, nextStatusOnFailure: 'pending_review', reason: 'parent_was_never_sent' };
+    const sentMs = new Date(parentSentAt).getTime();
+    if (!Number.isFinite(sentMs)) return { allowed: false, nextStatusOnFailure: 'pending_review', reason: 'parent_send_time_unreadable_nan_guard' };
+    const needMs = Math.max(1, Number(followUpDays) || 5) * 24 * 60 * 60 * 1000;
+    if (nowMs - sentMs < needMs) return { allowed: false, nextStatusOnFailure: 'pending_review', reason: 'follow_up_window_not_elapsed' };
+  }
+  if (status === 'approved' || (status === 'pending_review' && (humanApproved === true || autoSend === true))) {
+    return {
+      allowed: true,
+      atomicApproveAndSend: Boolean(status === 'pending_review' && humanApproved === true),
+      nextStatusOnFailure: 'pending_review',
+      reason: 'approved_for_delivery',
+    };
+  }
+  return { allowed: false, nextStatusOnFailure: 'pending_review', reason: 'awaiting_human_approval' };
+}
+
+function evaluateCelloMcpAndChokepointGate({
+  toolName = '',
+  isDemoProfile = false,
+  hasMcpScope = true,
+  hasHumanConfirmChannel = false,
+  employerTextFramed = true,
+  withinMonthlyBudgetCap = true,
+  resumeFabricationCount = 0,
+} = {}) {
+  const blockers = [];
+  if (isDemoProfile) blockers.push('demo_workspace_cannot_use_mcp');
+  if (!hasMcpScope) blockers.push('missing_mcp_token_scope');
+  if (!withinMonthlyBudgetCap) blockers.push('monthly_spend_cap_exceeded');
+  if (!employerTextFramed) blockers.push('unframed_employer_text_prompt_injection_risk');
+  if (Number(resumeFabricationCount) > 0) blockers.push('resume_fabrication_detected_against_ground_truth');
+  if (/^(?:send_email|send_outreach|submit_application|browser_submit_application)$/i.test(String(toolName || '').trim()) && !hasHumanConfirmChannel) {
+    blockers.push('mcp_headless_send_or_submit_refused_without_human_click');
+  }
+  return { allowed: blockers.length === 0, decision: blockers.length === 0 ? 'ALLOW' : 'DENY', toolName, blockers };
+}
+
+function compileCelloJudgeToDpoPair({
+  jobTitle = 'Senior AI Engineer',
+  companyName = 'Acme AI',
+  rejectedDraft = '',
+  chosenDraft = '',
+  judgeVerdictReason = 'Fabricated skill not present in ground-truth resume',
+} = {}) {
+  return {
+    prompt: `Tailor resume/outreach for ${jobTitle} at ${companyName} strictly using verified candidate facts.`,
+    chosen: String(chosenDraft || '').trim(),
+    rejected: String(rejectedDraft || '').trim(),
+    metadata: { source: 'cello-judge-bridge', companyName, jobTitle, judgeVerdictReason },
+    preventionRule: `NEVER claim unverified candidate skills or auto-send outreach for ${companyName} (${judgeVerdictReason}).`,
+  };
+}
+
+function buildCelloMoRPartnerLedgerEntry({
+  orderId = 'ord_cello_001',
+  planId = 'pro_cello_bundle',
+  grossAmountCents = 1900,
+  partnerShareBps = 5000,
+  workAuthVerified = false,
+  workAuthType = null,
+} = {}) {
+  const gross = Math.max(0, Math.floor(Number(grossAmountCents) || 0));
+  const bps = Math.min(10000, Math.max(0, Math.floor(Number(partnerShareBps) || 5000)));
+  const partnerAccruedCents = Math.floor((gross * bps) / 10000);
+  const canDisburseNow = Boolean(workAuthVerified && workAuthType && /^(?:CPT|OPT|STEM_OPT|O1A|H1B|NON_US_FOREIGN)$/i.test(String(workAuthType)));
+  return {
+    orderId,
+    partnerRepo: CELLO_REPO_URL,
+    merchantOfRecord: 'ThumbGate (Igor Ganapolsky)',
+    planId,
+    grossAmountCents: gross,
+    partnerShareBps: bps,
+    partnerAccruedCents,
+    workAuthVerified: Boolean(workAuthVerified),
+    workAuthType: workAuthType || 'F1_NO_ACTIVE_PAYOUT',
+    payoutStatus: canDisburseNow ? 'READY_FOR_AUTHORIZED_DISBURSEMENT' : 'DEFERRED_ESCROW_UNTIL_WORK_AUTH',
+  };
+}
+
+function buildCelloIntegrationReport(options = {}) {
+  const findings = [];
+  const claim = String(options.claim || '').trim();
+  if (/\bdirect\s+stripe\s+payout\s+on\s+unauthorized\s+f1\b/i.test(claim)) {
+    findings.push({
+      id: 'f1-visa-unauthorized-payout-blocked',
+      severity: 'fail',
+      gateId: CELLO_GATE_ID,
+      message: 'Keep ThumbGate as 100% Merchant of Record and hold partner revenue in deferred escrow until CPT/OPT/O-1A work authorization is verified.',
+    });
+  }
+  return {
+    ok: findings.length === 0,
+    status: findings.length === 0 ? 'ready' : 'fail',
+    sourceUrl: CELLO_REPO_URL,
+    gateId: CELLO_GATE_ID,
+    railMap: CELLO_RAIL_MAP,
+    findings,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = {};
   for (const arg of argv) {
@@ -353,7 +494,7 @@ function runCli(argv = process.argv.slice(2)) {
     const [k, ...rest] = arg.slice(2).split('=');
     args[k] = rest.length ? rest.join('=') : true;
   }
-  const report = buildLaunchVideoHonestyReport(args);
+  const report = args.cello ? buildCelloIntegrationReport(args) : buildLaunchVideoHonestyReport(args);
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   return report.ok ? 0 : 1;
 }
@@ -371,5 +512,13 @@ module.exports = {
   mintScopedBlobUploadManifest,
   verifyMp4ArtifactCompletion,
   buildLaunchVideoHonestyReport,
+  CELLO_REPO_URL,
+  CELLO_GATE_ID,
+  CELLO_RAIL_MAP,
+  evaluateCelloOutreachGate,
+  evaluateCelloMcpAndChokepointGate,
+  compileCelloJudgeToDpoPair,
+  buildCelloMoRPartnerLedgerEntry,
+  buildCelloIntegrationReport,
   runCli,
 };
