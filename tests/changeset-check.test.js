@@ -8,12 +8,14 @@ const path = require('node:path');
 
 const {
   MIN_SUMMARY_LENGTH,
+  MANIFEST_DEPENDENCY_FILES,
   collectChangesets,
   evaluateChangesetRequirement,
   formatFailure,
   getCurrentPackageVersion,
   getChangedFiles,
   getPackageVersionAtRef,
+  isManifestOnlyDependencyBump,
   isReleaseRelevantFile,
   isVersionedReleaseChangeSet,
   parseChangesetMarkdown,
@@ -25,6 +27,34 @@ test('isReleaseRelevantFile requires changesets for runtime and landing changes'
   assert.equal(isReleaseRelevantFile('scripts/workflow-sentinel.js'), true);
   assert.equal(isReleaseRelevantFile('public/index.html'), true);
   assert.equal(isReleaseRelevantFile('README.md'), true);
+});
+
+test('isManifestOnlyDependencyBump identifies root and worker manifest-only dependency PRs', () => {
+  assert.equal(isManifestOnlyDependencyBump(['package.json', 'package-lock.json']), true);
+  assert.equal(isManifestOnlyDependencyBump(['workers/package.json', 'workers/package-lock.json']), true);
+  assert.equal(isManifestOnlyDependencyBump(['workers/package-lock.json']), true);
+  assert.equal(isManifestOnlyDependencyBump(['.changeset/dependabot-pr-4619.md', 'package.json', 'package-lock.json']), true);
+  assert.equal(isManifestOnlyDependencyBump(['package.json', 'src/index.js']), false);
+  assert.equal(isManifestOnlyDependencyBump(['workers/package.json', 'workers/src/index.ts']), false);
+  assert.equal(isManifestOnlyDependencyBump(['docs/SEMVER_POLICY.md']), false);
+});
+
+test('evaluateChangesetRequirement allows manifest-only Dependabot PRs without manual changesets', () => {
+  const rootResult = evaluateChangesetRequirement({
+    changedFiles: ['package.json', 'package-lock.json'],
+    changesets: [],
+  });
+  assert.equal(rootResult.ok, true);
+  assert.equal(rootResult.required, false);
+  assert.match(rootResult.reason, /manifest-only dependency bump/i);
+
+  const workerResult = evaluateChangesetRequirement({
+    changedFiles: ['workers/package.json', 'workers/package-lock.json'],
+    changesets: [],
+  });
+  assert.equal(workerResult.ok, true);
+  assert.equal(workerResult.required, false);
+  assert.match(workerResult.reason, /manifest-only dependency bump/i);
 });
 
 test('isReleaseRelevantFile skips docs, tests, and changeset files', () => {

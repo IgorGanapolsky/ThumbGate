@@ -10,6 +10,12 @@ const CHANGESET_DIR = path.join(PROJECT_ROOT, '.changeset');
 const DEFAULT_PACKAGE_NAME = 'thumbgate';
 const MIN_SUMMARY_LENGTH = 20;
 const RELEASE_TYPES = new Set(['major', 'minor', 'patch']);
+const MANIFEST_DEPENDENCY_FILES = new Set([
+  'package.json',
+  'package-lock.json',
+  'workers/package.json',
+  'workers/package-lock.json',
+]);
 const RELEASE_RELEVANT_FILES = new Set([
   'README.md',
   'package.json',
@@ -63,6 +69,15 @@ function isReleaseRelevantFile(relPath) {
     return true;
   }
   return RELEASE_RELEVANT_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+}
+
+function isManifestOnlyDependencyBump(changedFiles = []) {
+  const normalizedFiles = changedFiles
+    .map((file) => String(file || '').trim().replaceAll('\\', '/'))
+    .filter((file) => file && !isChangesetMarkdownFile(file));
+
+  return normalizedFiles.length > 0
+    && normalizedFiles.every((file) => MANIFEST_DEPENDENCY_FILES.has(file));
 }
 
 function isVersionedReleaseChangeSet(changedFiles = []) {
@@ -235,6 +250,17 @@ function evaluateChangesetRequirement({
       invalidChangesets,
       pendingChangesets,
       reason: 'Versioned release is missing generated release artifacts such as CHANGELOG.md and package-lock.json.',
+    };
+  }
+
+  if (isManifestOnlyDependencyBump(changedFiles)) {
+    return {
+      ok: true,
+      required: false,
+      relevantFiles,
+      validChangesets,
+      invalidChangesets,
+      reason: 'Manifest-only dependency bump detected. Changeset not required.',
     };
   }
 
@@ -436,6 +462,7 @@ if (require.main === module) {
 module.exports = {
   CHANGESET_DIR,
   DEFAULT_PACKAGE_NAME,
+  MANIFEST_DEPENDENCY_FILES,
   MIN_SUMMARY_LENGTH,
   RELEASE_RELEVANT_FILES,
   RELEASE_RELEVANT_PREFIXES,
@@ -446,6 +473,7 @@ module.exports = {
   getChangedFiles,
   getPackageVersionAtRef,
   isChangesetMarkdownFile,
+  isManifestOnlyDependencyBump,
   isReleaseRelevantFile,
   isVersionedReleaseChangeSet,
   parseArgs,
