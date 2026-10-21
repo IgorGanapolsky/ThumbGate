@@ -653,4 +653,30 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   });
   assert.equal(foundryBrowser.allowed, true);
   assert.equal(foundryBrowser.traceIsolationTable, 'AppGenAIContent');
+
+  // Gaetano Franco Agent Reliability (igor-async-evaluation.zip v1) -> ThumbGate Detect-to-Enforce Bridge
+  const { evaluateAgentReliabilityEventStream } = require('../scripts/rrsi-doctor');
+  const gaetanoRun = evaluateAgentReliabilityEventStream({
+    schema_version: 1,
+    events: [
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:00Z', event_type: 'task', task: 'Fix checkout' },
+      { agent: 'codex', repo: 'tg', session_id: 's2', timestamp: '2026-10-21T14:00:01Z', event_type: 'task', task: 'Fix checkout' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:02Z', event_type: 'file_edit', file_path: 'src/checkout.py' },
+      { agent: 'codex', repo: 'tg', session_id: 's2', timestamp: '2026-10-21T14:00:03Z', event_type: 'file_edit', file_path: 'src/checkout.py' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:10Z', event_type: 'command', command: 'pytest', result: 'failed' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:15Z', event_type: 'file_edit', file_path: 'src/checkout.py' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:20Z', event_type: 'command', command: 'pytest', result: 'failed' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:25Z', event_type: 'file_edit', file_path: 'src/checkout.py' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:30Z', event_type: 'command', command: 'pytest', result: 'failed' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:35Z', event_type: 'success', result: 'All tests pass' },
+      { agent: 'cursor', repo: 'tg', session_id: 's3', timestamp: '2026-10-21T14:01:00Z', event_type: 'command', command: 'cat src/checkout.py', result: 'ok' },
+      { agent: 'cursor', repo: 'tg', session_id: 's3', timestamp: '2026-10-21T14:01:01Z', event_type: 'command', command: 'cat src/checkout.py', result: 'ok' },
+      { agent: 'cursor', repo: 'tg', session_id: 's3', timestamp: '2026-10-21T14:01:02Z', event_type: 'command', command: 'cat src/checkout.py', result: 'ok' },
+      { agent: 'cursor', repo: 'tg', session_id: 's3', timestamp: '2026-10-21T14:01:03Z', event_type: 'command', command: 'cat src/checkout.py', result: 'ok' },
+      { agent: 'cursor', repo: 'tg', session_id: 's3', timestamp: '2026-10-21T14:01:04Z', event_type: 'command', command: 'cat src/checkout.py', result: 'ok' },
+    ],
+  });
+  assert.equal(gaetanoRun.ok, true);
+  assert.equal(gaetanoRun.alerts.length, 5);
+  assert.equal(gaetanoRun.compiledGates.length, 5);
 });

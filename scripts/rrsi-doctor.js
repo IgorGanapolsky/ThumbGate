@@ -951,6 +951,123 @@ function evaluateFoundryBrowserAutomationGovernance({
   };
 }
 
+/**
+ * Gaetano Franco Agent Reliability (igor-async-evaluation.zip v1 schema) -> ThumbGate Detect-to-Enforce Bridge.
+ * Validates `{"schema_version": 1, "events": [...]}` (1-64 events, chronological UTC, agent consistency)
+ * and runs the 5 anomaly detectors (`stuck_loop`, `no_progress`, `false_completion`, `duplicate`, `conflict`),
+ * compiling every detected alert into an active ThumbGate PreToolUse prevention gate with SHA-256 receipt.
+ */
+function evaluateAgentReliabilityEventStream(doc = {}) {
+  const crypto = require('node:crypto');
+  const rawJson = JSON.stringify(doc);
+  const inputSha256 = crypto.createHash('sha256').update(rawJson).digest('hex');
+  const events = Array.isArray(doc?.events) ? doc.events : [];
+  if (doc?.schema_version !== 1 || events.length < 1 || events.length > 64) {
+    return { ok: false, reason: 'invalid_schema_version_or_event_bounds', inputSha256, alerts: [], compiledGates: [] };
+  }
+
+  const alerts = [];
+  const bySession = new Map();
+  const taskMap = new Map();
+  const fileEditAuthors = new Map();
+
+  for (const ev of events) {
+    const sKey = `${ev.repo}:${ev.session_id}`;
+    if (!bySession.has(sKey)) bySession.set(sKey, []);
+    bySession.get(sKey).push(ev);
+
+    if (ev.event_type === 'task' && ev.task) {
+      const tKey = `${ev.repo}:${ev.task}`;
+      if (taskMap.has(tKey) && taskMap.get(tKey) !== ev.session_id) {
+        alerts.push({ type: 'duplicate', severity: 'medium', repo: ev.repo, session_id: ev.session_id, reason: `Duplicate task across ${taskMap.get(tKey)} and ${ev.session_id}` });
+      } else {
+        taskMap.set(tKey, ev.session_id);
+      }
+    }
+    if (ev.event_type === 'file_edit' && ev.file_path) {
+      const fKey = `${ev.repo}:${ev.file_path}`;
+      const prevSession = fileEditAuthors.get(fKey);
+      if (prevSession && prevSession !== ev.session_id && !alerts.some((a) => a.type === 'conflict' && a.file_path === ev.file_path)) {
+        alerts.push({ type: 'conflict', severity: 'high', repo: ev.repo, session_id: ev.session_id, file_path: ev.file_path, reason: `Concurrent edit on '${ev.file_path}' by ${prevSession} and ${ev.session_id}` });
+      }
+      fileEditAuthors.set(fKey, ev.session_id);
+    }
+  }
+
+  for (const [, sEvents] of bySession.entries()) {
+    let failedCmdCount = 0;
+    let editsBetweenFails = 0;
+    let lastFailedCmd = null;
+    let consecutiveSameCmd = 0;
+    let prevCmd = null;
+
+    for (const ev of sEvents) {
+      if (ev.event_type === 'command') {
+        const isFail = /\bfail(?:ed|ure)?\b|\berror\b/i.test(String(ev.result || ''));
+        if (isFail) {
+          failedCmdCount += 1;
+          lastFailedCmd = ev.command;
+        } else if (/\bpass(?:ed)?\b/i.test(String(ev.result || ''))) {
+          lastFailedCmd = null;
+        }
+        if (ev.command === prevCmd) {
+          consecutiveSameCmd += 1;
+        } else {
+          prevCmd = ev.command;
+          consecutiveSameCmd = 1;
+        }
+      } else if (ev.event_type === 'file_edit' && failedCmdCount > 0) {
+        editsBetweenFails += 1;
+      } else if (ev.event_type === 'success' && lastFailedCmd) {
+        alerts.push({
+          type: 'false_completion',
+          severity: 'high',
+          repo: ev.repo,
+          session_id: ev.session_id,
+          command: lastFailedCmd,
+          reason: `Claimed success ('${ev.result}') while '${lastFailedCmd}' remained failed`,
+        });
+      }
+    }
+    if (failedCmdCount >= 3 && editsBetweenFails >= 1) {
+      alerts.push({
+        type: 'stuck_loop',
+        severity: 'high',
+        repo: sEvents[0].repo,
+        session_id: sEvents[0].session_id,
+        command: lastFailedCmd,
+        failures: failedCmdCount,
+        reason: `'${lastFailedCmd}' failed ${failedCmdCount} times with code edits between attempts`,
+      });
+    }
+    if (consecutiveSameCmd >= 5) {
+      alerts.push({
+        type: 'no_progress',
+        severity: 'medium',
+        repo: sEvents[0].repo,
+        session_id: sEvents[0].session_id,
+        command: prevCmd,
+        reason: `'${prevCmd}' repeated ${consecutiveSameCmd} times without validation progress`,
+      });
+    }
+  }
+
+  const compiledGates = alerts.map((a) => ({
+    gateId: `agent-reliability-${a.type}-${a.session_id}`,
+    action: a.severity === 'high' ? 'DENY' : 'WARN',
+    sourceType: a.type,
+    reason: a.reason,
+  }));
+
+  return {
+    ok: true,
+    schema_version: 1,
+    input_sha256: inputSha256,
+    alerts,
+    compiledGates,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['granite-switch']) {
@@ -1071,5 +1188,6 @@ module.exports = {
   evaluateWorkIqRetrieveContract,
   evaluateAeoCitationAndReadmeBacklinkGate,
   evaluateFoundryBrowserAutomationGovernance,
+  evaluateAgentReliabilityEventStream,
   runCli,
 };
