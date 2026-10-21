@@ -150,6 +150,7 @@
        developer.chrome.com/origintrials (feature: WebMCP) — add it as a second meta tag here when issued. -->
   <meta http-equiv="origin-trial" content="A3633z8xsnM5ZtIb7be9VOquiUXGhKl9jO/0f62+bmai51dkFVOmQrhXRrq0VF2f8S4uUkfl0PWi/iQZvh56oQMAAAB0eyJvcmlnaW4iOiJodHRwczovL3RodW1iZ2F0ZS5hcHA6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIsImV4cGlyeSI6MTc5NDg3MzYwMCwiaXNTdWJkb21haW4iOnRydWUsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=" />
   <script src="/js/webmcp.js" defer></script>
+  <script src="/js/buyer-intent.js" defer></script>
 </head>
 <body>
   <nav>
@@ -182,10 +183,17 @@
       </div>
 
       <div class="offer-grid" id="buy">
+        <aside class="pro-card" id="pro" aria-label="ThumbGate Pro">
+          <div class="eyebrow">Self-serve · Individual developers</div>
+          <div class="price">$19<span style="font-size:1rem;font-weight:700">/mo</span></div>
+          <p class="price-note">Or $149/yr. Unlimited active gates, curated rule packs (Claude Code, Cursor, Git, AWS), visual gate debugger, and DPO exports. Cancel anytime.</p>
+          <a class="button" href="/checkout/pro?utm_source=pricing&amp;utm_medium=card&amp;utm_campaign=value_packaging_v1&amp;cta_id=pricing_pro_buy&amp;plan_id=pro" data-offer-link data-cta-id="pricing_pro_buy" data-plan-id="pro" data-value="19" data-segment="solo_operator" style="width:100%;box-sizing:border-box">Start Pro</a>
+          <p class="fine">Hosted checkout. Free local evaluate remains free after you subscribe.</p>
+        </aside>
         <aside class="card" id="enterprise-gate" style="border-color:var(--green);box-shadow:0 18px 50px rgba(0,110,82,.12);">
-          <div class="eyebrow">Cash path · recommended</div>
+          <div class="eyebrow">Done-with-you setup · 1 workflow</div>
           <div class="price">$499</div>
-          <p class="price-note">Diagnostic gate. Fixed price. One supported local workflow. No subscription.</p>
+          <p class="price-note">Diagnostic gate. Fixed price. One supported local workflow wired with regression proof in 2 business days. No subscription.</p>
           <form action="/go/diagnostic-pay" method="POST" data-primary-checkout>
             <label for="pricing-email">Work email for the receipt and scheduling</label>
             <input id="pricing-email" name="customer_email" type="email" autocomplete="email" placeholder="you@company.com" required>
@@ -199,15 +207,8 @@
             <input type="hidden" name="landing_path" value="/pricing">
             <button class="button" type="submit">Get Started — $499 Diagnostic</button>
           </form>
-          <p class="fine">Secure payment. We reply with scheduling and the workflow checklist.</p>
+          <p class="fine">Prefer to talk before paying? <a href="/support" style="color:var(--green);font-weight:750;">Book a 15-min triage call first →</a></p>
           <div class="boundary">Detected secret exfiltration denies by default: literal secrets, secret-file paths in uploads/pipes/redirections/command-substitution, secret env vars to network tools, scp/rsync/cloud CLI uploads of credential files, and common interpreter one-liners. Not a full network sandbox. Other destructive actions warn by default and deny when strict enforcement is enabled.</div>
-        </aside>
-        <aside class="pro-card" id="pro" aria-label="ThumbGate Pro">
-          <div class="eyebrow">Self-serve</div>
-          <div class="price">$19<span style="font-size:1rem;font-weight:700">/mo</span></div>
-          <p class="price-note">Or $149/yr. Individual operators. Cancel anytime.</p>
-          <a class="button" href="/checkout/pro?utm_source=pricing&amp;utm_medium=card&amp;utm_campaign=value_packaging_v1&amp;cta_id=pricing_pro_buy&amp;plan_id=pro" data-offer-link data-cta-id="pricing_pro_buy" data-plan-id="pro" data-value="19" data-segment="solo_operator" style="width:100%;box-sizing:border-box">Start Pro</a>
-          <p class="fine">Hosted checkout. Free local evaluate remains free after you subscribe.</p>
         </aside>
       </div>
     </div>
