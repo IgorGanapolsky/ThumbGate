@@ -21,7 +21,10 @@ updates:
       npm-dependencies:
         patterns:
           - "*"
-
+    ignore:
+      # @lancedb/lancedb@0.40.0 requires peer apache-arrow@">=15.0.0 <=18.1.0"
+      - dependency-name: "apache-arrow"
+        versions: [">= 19.0.0"]
   - package-ecosystem: "npm"
     directory: "/workers"
     schedule:

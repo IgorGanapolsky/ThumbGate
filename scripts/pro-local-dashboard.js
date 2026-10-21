@@ -298,6 +298,16 @@ function resolveProKey({ env = process.env, homeDir } = {}) {
     };
   }
 
+  const { resolveLicenseToken } = require('./entitlement');
+  const configToken = resolveLicenseToken(env, { homeDir });
+  if (configToken) {
+    return {
+      key: configToken,
+      source: 'config-license',
+      licensePath: path.join(homeDir || os.homedir(), '.config', 'thumbgate', 'license.json'),
+    };
+  }
+
   return null;
 }
 

@@ -2894,6 +2894,26 @@ ${hiddenInputs}
     }
     fetch('/v1/telemetry/ping', { method:'POST', headers:{ 'content-type':'application/json' }, body: body, keepalive: true }).catch(function(){});
   }
+  var emailInput = document.querySelector('input[name=customer_email]');
+  var skipLink = document.querySelector('a[data-i=pro_checkout_direct_stripe]');
+  function updateSkipLink() {
+    if (!skipLink) return;
+    try {
+      var u = new URL(skipLink.href, window.location.origin);
+      var email = emailInput ? emailInput.value.trim() : '';
+      if (email && email.indexOf('@') > 0) {
+        u.searchParams.set('customer_email', email);
+      } else {
+        u.searchParams.delete('customer_email');
+      }
+      skipLink.href = u.toString();
+    } catch(_) {}
+  }
+  if (emailInput) {
+    emailInput.addEventListener('input', updateSkipLink);
+    emailInput.addEventListener('change', updateSkipLink);
+    updateSkipLink();
+  }
   document.querySelector('form').addEventListener('submit', function(){
     submitted = true;
     var emailInput = document.querySelector('input[name=customer_email]');
