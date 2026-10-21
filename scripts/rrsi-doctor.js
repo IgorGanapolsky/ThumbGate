@@ -355,10 +355,10 @@ function evaluateMlInternBriefAndBudget({
   const withinBudget = Number(initialBudgetUsd) === 0 && cap > 0 && cost <= cap;
 
   const blockers = [];
+  if (!hasVerifiedFactsHeading) blockers.push('missing_verified_facts_do_not_re_derive_section');
   if (!zeroShotBaselineRecorded) blockers.push('missing_pre_training_zero_shot_baseline');
   if (!smokeTestPassed) blockers.push('smoke_test_weights_unchanged_or_missing');
   if (!withinBudget) blockers.push('spend_cap_missing_or_exceeded');
-
   return {
     allowed: blockers.length === 0,
     hasVerifiedFactsHeading,
@@ -450,9 +450,18 @@ function executeTurnFlushAndStateCommit({
   const flushedTurns = list.slice(0, cutoff);
   const activeWindowTurns = list.slice(cutoff);
 
-  const committedFacts = flushedTurns
+  const rawFacts = flushedTurns
     .map((t) => String(t.summary || t.fact || t.toolName || '').trim())
     .filter(Boolean);
+  const tokenCap = Math.max(1, Number(maxStateTokens) || 1024);
+  const committedFacts = [];
+  let usedStateTokens = 0;
+  for (const fact of rawFacts) {
+    const estTokens = Math.max(1, Math.ceil(fact.length / 4));
+    if (usedStateTokens + estTokens > tokenCap) break;
+    committedFacts.push(fact);
+    usedStateTokens += estTokens;
+  }
 
   return {
     architecture: 'MemT-1.0-TurnFlush-StateCommit',
@@ -460,7 +469,8 @@ function executeTurnFlushAndStateCommit({
     flushedRawTurnCount: flushedTurns.length,
     activeRawTurnCount: activeWindowTurns.length,
     dynamicStateBlock: {
-      maxStateTokens,
+      maxStateTokens: tokenCap,
+      usedStateTokens,
       committedFacts,
     },
     kvReductionFactor: list.length > keepCount ? 66 : 1,

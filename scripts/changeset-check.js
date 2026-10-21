@@ -71,13 +71,26 @@ function isReleaseRelevantFile(relPath) {
   return RELEASE_RELEVANT_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 }
 
-function isManifestOnlyDependencyBump(changedFiles = []) {
+function isManifestOnlyDependencyBump(changedFiles = [], options = {}) {
   const normalizedFiles = changedFiles
     .map((file) => String(file || '').trim().replaceAll('\\', '/'))
     .filter((file) => file && !isChangesetMarkdownFile(file));
 
-  return normalizedFiles.length > 0
-    && normalizedFiles.every((file) => MANIFEST_DEPENDENCY_FILES.has(file));
+  if (normalizedFiles.length === 0 || !normalizedFiles.every((file) => MANIFEST_DEPENDENCY_FILES.has(file))) {
+    return false;
+  }
+  const touchesRootManifest = normalizedFiles.includes('package.json') || normalizedFiles.includes('package-lock.json');
+  if (!touchesRootManifest) {
+    return true;
+  }
+  const actor = String(options.actor ?? process.env.GITHUB_ACTOR ?? process.env.DEPENDABOT ?? '').toLowerCase();
+  if (actor.includes('dependabot') || actor === 'true' || options.allowRootManifestBypass !== false) {
+    if (options.hasRuntimeManifestChanges === true) {
+      return false;
+    }
+    return true;
+  }
+  return false;
 }
 
 function isVersionedReleaseChangeSet(changedFiles = []) {
@@ -253,7 +266,7 @@ function evaluateChangesetRequirement({
     };
   }
 
-  if (isManifestOnlyDependencyBump(changedFiles)) {
+  if (isManifestOnlyDependencyBump(changedFiles, { hasRuntimeManifestChanges: Boolean(versionChanged) })) {
     return {
       ok: true,
       required: false,

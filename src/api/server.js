@@ -2900,8 +2900,11 @@ ${hiddenInputs}
     if (!skipLink) return;
     try {
       var u = new URL(skipLink.href, window.location.origin);
-      if (emailInput && emailInput.value && emailInput.value.indexOf('@') > 0) {
-        u.searchParams.set('customer_email', emailInput.value.trim());
+      var email = emailInput ? emailInput.value.trim() : '';
+      if (email && email.indexOf('@') > 0) {
+        u.searchParams.set('customer_email', email);
+      } else {
+        u.searchParams.delete('customer_email');
       }
       skipLink.href = u.toString();
     } catch(_) {}
