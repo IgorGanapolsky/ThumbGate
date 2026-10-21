@@ -1181,6 +1181,153 @@ function evaluateFeatherSamplingAndPromptTuning({
   };
 }
 
+/**
+ * SpecAgent (arXiv:2610.05132, Oct 2026) — 32-Bit Structural Fingerprint Retrieval via Bitwise Jaccard Similarity:
+ * S_J(F_f, F_g) = popcount(F_f & F_g) / popcount(F_f | F_g)
+ */
+function popcount32(n) {
+  let x = n >>> 0;
+  x -= (x >>> 1) & 0x55555555;
+  x = (x & 0x33333333) + ((x >>> 2) & 0x33333333);
+  return (((x + (x >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24;
+}
+
+function computeBitwiseJaccardSimilarity(fpA = 0, fpB = 0) {
+  const a = fpA >>> 0;
+  const b = fpB >>> 0;
+  const unionPop = popcount32(a | b);
+  if (unionPop === 0) return 1.0;
+  return Number((popcount32(a & b) / unionPop).toFixed(4));
+}
+
+function retrieveTopStructuralSpecTemplates(queryFingerprint = 0, candidates = [], topK = 3) {
+  return (Array.isArray(candidates) ? candidates : [])
+    .map((c) => ({
+      ...c,
+      jaccardSimilarity: computeBitwiseJaccardSimilarity(queryFingerprint, c.fingerprint >>> 0),
+    }))
+    .sort((a, b) => b.jaccardSimilarity - a.jaccardSimilarity)
+    .slice(0, Math.max(1, Number(topK) || 3));
+}
+
+/**
+ * SpecAgent Postcondition Completeness Probe (PCP) & Call-Graph Deficiency Propagation Router.
+ */
+function evaluateSpecAgentPostconditionAndCallGraphRepair({
+  primaryVerifierPassed = true,
+  mutatedStateVars = ['balance', 'ledgerStatus'],
+  constrainedPostconditionVars = ['balance', 'ledgerStatus'],
+  localRepairAttempts = 0,
+  upstreamContractDeficient = false,
+  upstreamSpecNode = 'spec://billing/checkout-contract',
+} = {}) {
+  const constrainedSet = new Set(Array.isArray(constrainedPostconditionVars) ? constrainedPostconditionVars : []);
+  const unconstrainedMutatedStateVars = (Array.isArray(mutatedStateVars) ? mutatedStateVars : []).filter(
+    (v) => !constrainedSet.has(v)
+  );
+  const pcpPassed = primaryVerifierPassed && unconstrainedMutatedStateVars.length === 0;
+  const shouldBacktrackToUpstreamSpec = !primaryVerifierPassed && (Boolean(upstreamContractDeficient) || Number(localRepairAttempts) >= 2);
+
+  const blockers = [];
+  if (!primaryVerifierPassed) blockers.push('primary_verifier_failed');
+  if (unconstrainedMutatedStateVars.length > 0) {
+    blockers.push(`trivial_spec_unconstrained_state_vars:${unconstrainedMutatedStateVars.join(',')}`);
+  }
+
+  return {
+    allowed: pcpPassed,
+    pcpPassed,
+    unconstrainedMutatedStateVars,
+    repairRoute: shouldBacktrackToUpstreamSpec
+      ? `BACKTRACK_UPSTREAM_SUB_SPEC:${upstreamSpecNode}`
+      : (pcpPassed ? 'COMPLETE' : 'REFINE_POSTCONDITIONS_OR_LOCAL_IMPL'),
+    blockers,
+  };
+}
+
+/**
+ * Self-Improving Outer Harnesses & Context Language Models (Oct 14-20, 2026: AGENTS.md Telemetry + Tencent Hy-Memory-30B-A3B).
+ * Enforces:
+ *  1. AGENTS.md word-budget ceiling (<= 3000 words before rule-adherence drop).
+ *  2. Co-Committed Rule-Test Invariant ("A rule without a test is a wish").
+ *  3. Self-Pointing 4-Line Failure Telemetry (INVARIANT VIOLATION / WHY / FIX / SPEC REFERENCE).
+ *  4. Surgical Context Editor diff patches to STATE.md/AGENTS.md over lossy rolling transcript summarization.
+ */
+function evaluateOuterHarnessRuleTestCoCommitAndContextEditor({
+  agentsMdWordCount = 2400,
+  ruleModifiedInAgentsMd = true,
+  coCommittedStructuralTest = true,
+  usesLossyTranscriptSummarization = false,
+  usesSurgicalStateDiffPatch = true,
+  violationSymptom = 'Routes ["/v1/checkout"] mutate state without a pre-action gate.',
+  whyExplanation = 'Unverified external side effects cause state drift and unapproved spend.',
+  fixInstruction = 'Wrap the handler in requireVerificationGate().',
+  specReference = 'AGENTS.md -> Section 4.2 Pre-Action Verification Gates',
+} = {}) {
+  const blockers = [];
+  if (Number(agentsMdWordCount) > 3000) {
+    blockers.push('agents_md_exceeds_3000_word_adherence_ceiling_prune_into_tests');
+  }
+  if (ruleModifiedInAgentsMd && !coCommittedStructuralTest) {
+    blockers.push('rule_without_co_committed_structural_test_is_a_wish');
+  }
+  if (usesLossyTranscriptSummarization || !usesSurgicalStateDiffPatch) {
+    blockers.push('replace_lossy_transcript_summarization_with_surgical_state_diff_patch');
+  }
+  const selfPointingFailureMessage = [
+    `INVARIANT VIOLATION: ${violationSymptom}`,
+    `WHY: ${whyExplanation}`,
+    `FIX: ${fixInstruction}`,
+    `SPEC REFERENCE: See ${specReference}.`,
+  ].join('\n');
+
+  return {
+    allowed: blockers.length === 0,
+    agentsMdWordCount: Number(agentsMdWordCount),
+    coCommittedStructuralTest: Boolean(coCommittedStructuralTest),
+    memoryStrategy: usesSurgicalStateDiffPatch ? 'Hy-Memory-Surgical-State-Diff' : 'Lossy-Transcript-Summary',
+    selfPointingFailureMessage,
+    blockers,
+  };
+}
+
+/**
+ * 2026 Spec-Anchored SDD 6-Block Scaffold Validator (Constitution + EARS + Non-Goals + Locked Decisions + Worktree Tasks + Adversarial PCP).
+ */
+function validateSpecDrivenScaffold({
+  constitutionReference = '',
+  earsAcceptanceCriteria = [],
+  explicitOutOfScopeBoundaries = [],
+  lockedArchitecturalDecisions = [],
+  worktreeIsolatedAtomicTasks = [],
+  adversarialVerificationAndPcpContract = '',
+} = {}) {
+  const blockers = [];
+  if (!String(constitutionReference || '').trim()) blockers.push('missing_block_1_constitution_reference');
+  const earsList = Array.isArray(earsAcceptanceCriteria) ? earsAcceptanceCriteria : [];
+  const allEarsValid = earsList.length > 0 && earsList.every(
+    (c) => /\bWHEN\b[\s\S]+\b(?:WHILE\b[\s\S]+)?\bTHE\s+SYSTEM\s+SHALL\b/i.test(String(c || ''))
+  );
+  if (!allEarsValid) blockers.push('missing_or_invalid_block_2_ears_acceptance_criteria');
+  if (!Array.isArray(explicitOutOfScopeBoundaries) || explicitOutOfScopeBoundaries.length === 0) {
+    blockers.push('missing_block_3_explicit_out_of_scope_boundaries');
+  }
+  if (!Array.isArray(lockedArchitecturalDecisions) || lockedArchitecturalDecisions.length === 0) {
+    blockers.push('missing_block_4_locked_architectural_decisions');
+  }
+  if (!Array.isArray(worktreeIsolatedAtomicTasks) || worktreeIsolatedAtomicTasks.length === 0) {
+    blockers.push('missing_block_5_worktree_isolated_atomic_tasks');
+  }
+  if (!String(adversarialVerificationAndPcpContract || '').trim()) {
+    blockers.push('missing_block_6_adversarial_verification_and_pcp_contract');
+  }
+  return {
+    allowed: blockers.length === 0,
+    validEarsCount: allEarsValid ? earsList.length : 0,
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['granite-switch']) {
@@ -1304,5 +1451,11 @@ module.exports = {
   evaluateAgentReliabilityEventStream,
   evaluatePaperInstrumentsRubricAndUltramarineRoute,
   evaluateFeatherSamplingAndPromptTuning,
+  popcount32,
+  computeBitwiseJaccardSimilarity,
+  retrieveTopStructuralSpecTemplates,
+  evaluateSpecAgentPostconditionAndCallGraphRepair,
+  evaluateOuterHarnessRuleTestCoCommitAndContextEditor,
+  validateSpecDrivenScaffold,
   runCli,
 };

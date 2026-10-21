@@ -733,4 +733,54 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(cleanFeather.reasoningField, 'output_config.effort');
   assert.equal(cleanFeather.maxTokensField, 'max_tokens');
   assert.equal(cleanFeather.compaction.shouldCompactHistory, true);
+
+  // SpecAgent (arXiv:2610.05132), Outer Harness Co-Commit & Hy-Memory Context Editor, and 6-Block EARS SDD Scaffold
+  const {
+    computeBitwiseJaccardSimilarity,
+    retrieveTopStructuralSpecTemplates,
+    evaluateSpecAgentPostconditionAndCallGraphRepair,
+    evaluateOuterHarnessRuleTestCoCommitAndContextEditor,
+    validateSpecDrivenScaffold,
+  } = require('../scripts/rrsi-doctor');
+
+  assert.equal(computeBitwiseJaccardSimilarity(0b1111, 0b0111), 0.75);
+  const topTemplates = retrieveTopStructuralSpecTemplates(0b1011, [
+    { id: 't1', fingerprint: 0b0001 },
+    { id: 't2', fingerprint: 0b1011 },
+    { id: 't3', fingerprint: 0b1010 },
+  ], 2);
+  assert.equal(topTemplates[0].id, 't2');
+  assert.equal(topTemplates[0].jaccardSimilarity, 1);
+
+  const pcpBlocked = evaluateSpecAgentPostconditionAndCallGraphRepair({
+    primaryVerifierPassed: false,
+    mutatedStateVars: ['balance', 'ledgerStatus'],
+    constrainedPostconditionVars: ['balance'],
+    localRepairAttempts: 3,
+    upstreamContractDeficient: true,
+    upstreamSpecNode: 'spec://billing/checkout',
+  });
+  assert.equal(pcpBlocked.allowed, false);
+  assert.equal(pcpBlocked.repairRoute, 'BACKTRACK_UPSTREAM_SUB_SPEC:spec://billing/checkout');
+
+  const outerHarness = evaluateOuterHarnessRuleTestCoCommitAndContextEditor({
+    agentsMdWordCount: 2200,
+    ruleModifiedInAgentsMd: true,
+    coCommittedStructuralTest: true,
+    usesLossyTranscriptSummarization: false,
+    usesSurgicalStateDiffPatch: true,
+  });
+  assert.equal(outerHarness.allowed, true);
+  assert.match(outerHarness.selfPointingFailureMessage, /INVARIANT VIOLATION:[\s\S]*WHY:[\s\S]*FIX:[\s\S]*SPEC REFERENCE:/);
+
+  const sddScaffold = validateSpecDrivenScaffold({
+    constitutionReference: 'AGENTS.md#PreToolUse',
+    earsAcceptanceCriteria: ['WHEN a tool call mutates git history, WHILE on branch main, THE SYSTEM SHALL deny execution in <0.5ms.'],
+    explicitOutOfScopeBoundaries: ['Do not add OAuth or external cloud vault dependencies'],
+    lockedArchitecturalDecisions: ['Use local SQLite FTS5 + Ed25519 offline token verification'],
+    worktreeIsolatedAtomicTasks: ['Task 1: worktree /tmp/tg-slice-1'],
+    adversarialVerificationAndPcpContract: 'Run Postcondition Completeness Probe over all mutated state fields',
+  });
+  assert.equal(sddScaffold.allowed, true);
+  assert.equal(sddScaffold.validEarsCount, 1);
 });
