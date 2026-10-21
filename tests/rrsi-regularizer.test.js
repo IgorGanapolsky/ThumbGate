@@ -595,4 +595,62 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(blockedAcl.decision, 'DENY');
   assert.ok(blockedAcl.blockers.includes('missing_four_field_ontology_acl_scope'));
   assert.equal(buildNvidiaAgentKnowledgeFoundationReport().ok, true);
+
+  // Capital One Databolt Vaultless FPT, vLLM AgentX, Microsoft Work IQ Retrieve, Gergely Orosz AEO Gate, & Foundry Browser GA
+  const {
+    tokenizeFormatPreservingVaultless,
+    enforceZeroTrustDetokenizationGate,
+  } = require('../scripts/secret-redaction');
+  const {
+    evaluateVllmWideEpAndAgentxEconomics,
+    evaluateWorkIqRetrieveContract,
+    evaluateAeoCitationAndReadmeBacklinkGate,
+    evaluateFoundryBrowserAutomationGovernance,
+  } = require('../scripts/rrsi-doctor');
+
+  const tokenizedText = tokenizeFormatPreservingVaultless(
+    'Contact alice@company.com with SSN 123-45-6789 and phone 415-890-1234'
+  );
+  assert.doesNotMatch(tokenizedText, /alice@company\.com|123-45-6789|415-890-1234/);
+  assert.match(tokenizedText, /tok_[0-9a-f]{8}@tokenized\.local/);
+  assert.match(tokenizedText, /\b900-\d{2}-\d{4}\b/);
+  assert.match(tokenizedText, /\b555-01\d-\d{4}\b/);
+  assert.equal(
+    tokenizeFormatPreservingVaultless('alice@company.com'),
+    tokenizeFormatPreservingVaultless('alice@company.com')
+  );
+  assert.equal(enforceZeroTrustDetokenizationGate({ authenticated: true }).viewMode, 'TOKENIZED_ONLY');
+
+  const vllmAgentX = evaluateVllmWideEpAndAgentxEconomics({
+    engine: 'vllm',
+    wideEpEnabled: true,
+    eplbEnabled: true,
+    tokensPerSecPerGpu: 954000,
+    p90TpsPerUser: 196,
+    lowLatencyB300Path: true,
+  });
+  assert.equal(vllmAgentX.allowed, true);
+  assert.equal(vllmAgentX.effectiveUserTps, 829);
+  assert.equal(vllmAgentX.estimatedRevenuePerGpuHrUsd, 38.96);
+
+  const validWorkIq = evaluateWorkIqRetrieveContract({ query: 'Find latest launch decision', strategy: 'copilot' });
+  assert.equal(validWorkIq.allowed, true);
+  assert.equal(validWorkIq.resolvedCitationCount, 1);
+
+  const blockedTencentBacklink = evaluateAeoCitationAndReadmeBacklinkGate({
+    requestsFreeGithubReadmeLinkForSmallVoucher: true,
+    voucherAmountUsd: 100,
+    reciprocalPartnerOrSponsorVerified: false,
+  });
+  assert.equal(blockedTencentBacklink.allowed, false);
+  assert.ok(blockedTencentBacklink.blockers.includes('refuse_permanent_github_readme_aeo_backlink_for_small_unverified_voucher'));
+
+  const foundryBrowser = evaluateFoundryBrowserAutomationGovernance({
+    observedPageBeforeAct: true,
+    verifiedStateAfterAct: true,
+    isStateChangingAction: true,
+    humanApprovalOrTakeControlReady: true,
+  });
+  assert.equal(foundryBrowser.allowed, true);
+  assert.equal(foundryBrowser.traceIsolationTable, 'AppGenAIContent');
 });

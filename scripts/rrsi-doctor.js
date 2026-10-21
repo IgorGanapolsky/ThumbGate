@@ -818,6 +818,139 @@ function buildNvidiaAgentKnowledgeFoundationReport(options = {}) {
   };
 }
 
+function evaluateVllmWideEpAndAgentxEconomics({
+  engine = 'vllm',
+  isOnlineAgenticServing = true,
+  wideEpEnabled = true,
+  eplbEnabled = true,
+  mtpNextN = 3,
+  tokensPerSecPerGpu = 954000,
+  p90TpsPerUser = 196,
+  lowLatencyB300Path = false,
+} = {}) {
+  const blockers = [];
+  if (isOnlineAgenticServing && String(engine).toLowerCase() === 'deepinfer_offline_only') {
+    blockers.push('deepinfer_oss_lacks_online_kv_cache_and_pd_disaggregation_use_vllm');
+  }
+  if (!wideEpEnabled || !eplbEnabled) {
+    blockers.push('missing_wide_ep_or_eplb_expert_load_balancer');
+  }
+  if (Number(p90TpsPerUser) < 150) {
+    blockers.push('p90_tps_below_agentx_interactive_sla');
+  }
+  const effectiveUserTps = lowLatencyB300Path ? Math.max(Number(p90TpsPerUser), 829) : Number(p90TpsPerUser);
+  const estimatedRevenuePerGpuHrUsd = Number(((Number(tokensPerSecPerGpu) / 954000) * 38.96).toFixed(2));
+  return {
+    allowed: blockers.length === 0,
+    engine,
+    wideEpEnabled: Boolean(wideEpEnabled),
+    eplbEnabled: Boolean(eplbEnabled),
+    mtpNextN: Number(mtpNextN),
+    decodeParityVsDeepInferPct: 94,
+    effectiveUserTps,
+    estimatedRevenuePerGpuHrUsd,
+    blockers,
+  };
+}
+
+function evaluateWorkIqRetrieveContract({
+  query = '',
+  strategy = 'copilot',
+  agentId = '',
+  capabilities = [],
+  includeDeveloperCard = false,
+  attemptsTaskDelegationInQuery = false,
+  responseMarkdown = '## Files\n- **Decision** [^h1]',
+  retrievalHits = [{ id: 'h1', webUrl: 'https://example.com/doc', entityType: 'Files', sensitivityLabel: { id: 'confidential' } }],
+} = {}) {
+  const blockers = [];
+  const cleanQuery = String(query || '').trim();
+  if (!cleanQuery) blockers.push('empty_or_whitespace_query_invalid');
+  if (strategy !== 'copilot' && strategy !== 'grounding') {
+    blockers.push(`invalid_strategy_${strategy}_must_be_copilot_or_grounding`);
+  }
+  const caps = Array.isArray(capabilities) ? capabilities : [];
+  if (caps.length > 0 && String(agentId || '').trim() !== '') {
+    blockers.push('capabilities_cannot_combine_with_non_default_agent_id');
+  }
+  if (strategy === 'grounding' && caps.some((c) => /^(?:Dataverse|GraphConnectors)$/i.test(String(c?.name || c || '')))) {
+    blockers.push('dataverse_and_graph_connectors_cannot_combine_with_grounding_strategy');
+  }
+  if (attemptsTaskDelegationInQuery) {
+    blockers.push('retrieval_and_delegation_are_separate_use_ask_or_do_action_to_delegate');
+  }
+  const hitMap = new Map((Array.isArray(retrievalHits) ? retrievalHits : []).map((h) => [String(h.id), h]));
+  const citedIds = [...String(responseMarkdown || '').matchAll(/\[\^([A-Za-z0-9_-]+)\]/g)].map((m) => m[1]);
+  const unresolvedCitations = citedIds.filter((id) => !hitMap.has(id));
+  if (unresolvedCitations.length > 0) {
+    blockers.push(`unresolved_inline_citations:${unresolvedCitations.join(',')}`);
+  }
+  return {
+    allowed: blockers.length === 0,
+    mimeType: 'application/vnd.ms-workiq.retrieval',
+    strategy,
+    includeDeveloperCard: Boolean(includeDeveloperCard),
+    resolvedCitationCount: citedIds.length - unresolvedCitations.length,
+    unresolvedCitations,
+    blockers,
+  };
+}
+
+function evaluateAeoCitationAndReadmeBacklinkGate({
+  hasUnsubscribeFooter = false,
+  isThirdPartyLinkBuildingAgency = false,
+  hasReproducibleBenchmarkOrPr = true,
+  requestsFreeGithubReadmeLinkForSmallVoucher = false,
+  voucherAmountUsd = 0,
+  reciprocalPartnerOrSponsorVerified = true,
+} = {}) {
+  const blockers = [];
+  if (hasUnsubscribeFooter || isThirdPartyLinkBuildingAgency) {
+    blockers.push('agency_mass_blast_aeo_link_begging_rejected');
+  }
+  if (!hasReproducibleBenchmarkOrPr) {
+    blockers.push('aeo_citation_requires_reproducible_benchmark_or_working_pr');
+  }
+  if (requestsFreeGithubReadmeLinkForSmallVoucher && Number(voucherAmountUsd) <= 250 && !reciprocalPartnerOrSponsorVerified) {
+    blockers.push('refuse_permanent_github_readme_aeo_backlink_for_small_unverified_voucher');
+  }
+  return {
+    allowed: blockers.length === 0,
+    decision: blockers.length === 0 ? 'ALLOW' : 'DENY',
+    blockers,
+  };
+}
+
+function evaluateFoundryBrowserAutomationGovernance({
+  observedPageBeforeAct = true,
+  verifiedStateAfterAct = true,
+  isStateChangingAction = false,
+  humanApprovalOrTakeControlReady = true,
+  pageContentSeparatedFromSystemPolicy = true,
+  sensitiveTracesRoutedToDenyByDefaultTable = true,
+} = {}) {
+  const blockers = [];
+  if (!observedPageBeforeAct || !verifiedStateAfterAct) {
+    blockers.push('observe_act_verify_loop_incomplete');
+  }
+  if (isStateChangingAction && !humanApprovalOrTakeControlReady) {
+    blockers.push('state_changing_browser_action_requires_approval_or_live_view_take_control');
+  }
+  if (!pageContentSeparatedFromSystemPolicy) {
+    blockers.push('untrusted_web_content_mixed_into_system_policy');
+  }
+  if (!sensitiveTracesRoutedToDenyByDefaultTable) {
+    blockers.push('sensitive_browser_traces_must_route_to_deny_by_default_app_genai_content');
+  }
+  return {
+    allowed: blockers.length === 0,
+    decision: blockers.length === 0 ? 'ALLOW' : 'DENY',
+    liveViewAndTakeControlSupported: Boolean(humanApprovalOrTakeControlReady),
+    traceIsolationTable: 'AppGenAIContent',
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['granite-switch']) {
@@ -934,5 +1067,9 @@ module.exports = {
   evaluateKumoRelationalPrediction,
   enforceOntologyMcpAclGate,
   buildNvidiaAgentKnowledgeFoundationReport,
+  evaluateVllmWideEpAndAgentxEconomics,
+  evaluateWorkIqRetrieveContract,
+  evaluateAeoCitationAndReadmeBacklinkGate,
+  evaluateFoundryBrowserAutomationGovernance,
   runCli,
 };
