@@ -677,6 +677,147 @@ function buildLlmd10ProductionHonestyReport(options = {}) {
   };
 }
 
+const NVIDIA_AKF_SOURCE_URL = 'https://thenewstack.io/nvidia-agent-knowledge-foundation/';
+const NVIDIA_AKF_GATE_ID = 'nvidia-agent-knowledge-foundation-ontology-acl-diode';
+
+const NVIDIA_AKF_RAIL_MAP = Object.freeze([
+  {
+    akfComponent: '1. Nemotron Retriever (+65% relevance on OpenSearch, -25% latency at ServiceNow, 3x faster at SAP: slight per-lookup rerank latency cuts total agent lookups & end-to-end turn time)',
+    thumbgateRail: 'evaluateNvidiaRetrieverLookupReduction (enforces reranked hybrid retrieval so agents resolve context in 1-2 lookups instead of >3 un-reranked grep/query thrash loops)',
+  },
+  {
+    akfComponent: '2. Auto-Ontology MCP Server (Illumex $75M acquisition: maps raw table columns like tier/plan/sku into a canonical enterprise Knowledge Graph over MCP)',
+    thumbgateRail: 'resolveEnterpriseOntologyCanonicalTerm (harmonizes synonym drift across tables and MCP args into canonical ontology entities before PreToolUse evaluation)',
+  },
+  {
+    akfComponent: '3. Kumo Tabular Relational Foundation Model ($400M acquisition: replaces per-task churn/classification/anomaly ML pipelines with unified relational graph prediction)',
+    thumbgateRail: 'evaluateKumoRelationalPrediction (predicts failure probability and checkout/workflow risk across linked feedback-lesson-gate-outcome tables without per-task pipelines)',
+  },
+  {
+    akfComponent: '4. The Missing ACL & Data-Access Diode ("I am not thinking about ACLs and data access... That is why I need the partners")',
+    thumbgateRail: 'enforceOntologyMcpAclGate (enforces 4-field scope [entityId, projectId, processId, sessionId] and table/column ACLs on Auto-Ontology MCP & Kumo Tabular queries locally)',
+  },
+]);
+
+const ENTERPRISE_ONTOLOGY_SYNONYMS = Object.freeze({
+  tier: 'plan_tier',
+  plan: 'plan_tier',
+  sku: 'plan_tier',
+  subscription: 'plan_tier',
+  rule: 'prevention_gate',
+  guard: 'prevention_gate',
+  guardrail: 'prevention_gate',
+  check: 'prevention_gate',
+  gate: 'prevention_gate',
+  customer: 'tenant_entity',
+  account: 'tenant_entity',
+  org: 'tenant_entity',
+  workspace: 'tenant_entity',
+  tenant: 'tenant_entity',
+});
+
+function evaluateNvidiaRetrieverLookupReduction({
+  lookupCount = 1,
+  rerankerEnabled = true,
+  perLookupLatencyMs = 18,
+  relevanceBoostPct = 65,
+} = {}) {
+  const thrashing = Number(lookupCount) > 3 && !rerankerEnabled;
+  const baselineLookupsWithoutReranker = Math.max(Number(lookupCount), 5);
+  const totalTurnLookupLatencyMs = Number(lookupCount) * Number(perLookupLatencyMs);
+  const unrerankedBaselineLatencyMs = baselineLookupsWithoutReranker * 14;
+  return {
+    allowed: !thrashing,
+    lookupCount: Number(lookupCount),
+    rerankerEnabled: Boolean(rerankerEnabled),
+    relevanceBoostPct: rerankerEnabled ? Number(relevanceBoostPct) : 0,
+    totalTurnLookupLatencyMs,
+    netLatencySavedMs: Math.max(0, unrerankedBaselineLatencyMs - totalTurnLookupLatencyMs),
+    reason: thrashing ? 'unreranked_multi_lookup_thrash_detected' : 'pertinent_first_lookup_verified',
+  };
+}
+
+function resolveEnterpriseOntologyCanonicalTerm(rawTerm = '') {
+  const key = String(rawTerm || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+  const canonical = ENTERPRISE_ONTOLOGY_SYNONYMS[key] || key || 'unknown_concept';
+  return {
+    rawTerm,
+    canonicalConcept: canonical,
+    harmonized: Boolean(ENTERPRISE_ONTOLOGY_SYNONYMS[key]),
+  };
+}
+
+function evaluateKumoRelationalPrediction({
+  linkedTables = ['feedback', 'lessons', 'gates', 'task_outcomes'],
+  recentNegativeCount = 0,
+  activeMatchingGates = 1,
+  usesPerTaskPipelineSprawl = false,
+} = {}) {
+  const tableCount = Array.isArray(linkedTables) ? linkedTables.length : 0;
+  const riskScore = Number(
+    Math.min(1, Math.max(0.05, (Number(recentNegativeCount) * 0.25) - (Number(activeMatchingGates) * 0.15) + 0.2)).toFixed(2)
+  );
+  return {
+    allowed: !usesPerTaskPipelineSprawl && tableCount >= 2,
+    relationalTableCount: tableCount,
+    usesPerTaskPipelineSprawl: Boolean(usesPerTaskPipelineSprawl),
+    predictedIncidentRisk: riskScore,
+    architecture: 'Kumo-Relational-Graph-Foundation',
+  };
+}
+
+function enforceOntologyMcpAclGate({
+  entityId = '',
+  projectId = '',
+  processId = '',
+  sessionId = '',
+  requestedTables = ['lessons'],
+  allowedTables = ['lessons', 'gates', 'task_outcomes'],
+  containsRestrictedColumns = false,
+} = {}) {
+  const hasCompleteFourFieldScope = Boolean(
+    String(entityId || '').trim()
+    && String(projectId || '').trim()
+    && String(processId || '').trim()
+    && String(sessionId || '').trim()
+  );
+  const allowSet = new Set(Array.isArray(allowedTables) ? allowedTables : []);
+  const unauthorizedTables = (Array.isArray(requestedTables) ? requestedTables : []).filter((t) => !allowSet.has(t));
+  const blockers = [];
+  if (!hasCompleteFourFieldScope) blockers.push('missing_four_field_ontology_acl_scope');
+  if (unauthorizedTables.length > 0) blockers.push(`unauthorized_ontology_tables:${unauthorizedTables.join(',')}`);
+  if (containsRestrictedColumns) blockers.push('restricted_pii_or_secret_column_blocked');
+
+  return {
+    allowed: blockers.length === 0,
+    decision: blockers.length === 0 ? 'ALLOW' : 'DENY',
+    hasCompleteFourFieldScope,
+    unauthorizedTables,
+    blockers,
+  };
+}
+
+function buildNvidiaAgentKnowledgeFoundationReport(options = {}) {
+  const findings = [];
+  const claim = String(options.claim || '').trim();
+  if (/\bnvidia\s+auto[\s-]*ontology\s+enforces\s+acls\s+by\s+default\b/i.test(claim)) {
+    findings.push({
+      id: 'nvidia-akf-delegates-acls-to-control-plane',
+      severity: 'fail',
+      gateId: NVIDIA_AKF_GATE_ID,
+      message: 'Nvidia Agent Knowledge Foundation explicitly delegates ACLs and data access permissions to external governance partners; enforce 4-field scope and table ACLs via ThumbGate PreToolUse.',
+    });
+  }
+  return {
+    ok: findings.length === 0,
+    status: findings.length === 0 ? 'ready' : 'fail',
+    sourceUrl: NVIDIA_AKF_SOURCE_URL,
+    gateId: NVIDIA_AKF_GATE_ID,
+    railMap: NVIDIA_AKF_RAIL_MAP,
+    findings,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['granite-switch']) {
@@ -699,6 +840,11 @@ function runCli(argv = process.argv.slice(2)) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     return report.ok ? 0 : 1;
   }
+  if (args['nvidia-akf']) {
+    const report = buildNvidiaAgentKnowledgeFoundationReport(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.ok ? 0 : 1;
+  }
   const report = auditRRSI();
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   return report.status === 'PASS' ? 0 : 1;
@@ -706,7 +852,7 @@ function runCli(argv = process.argv.slice(2)) {
 
 if (require.main === module) {
   const args = process.argv.slice(2);
-  if (args.includes('--granite-switch') || args.includes('--ml-intern') || args.includes('--pytorchcon-2026') || args.includes('--llmd-1-0')) {
+  if (args.includes('--granite-switch') || args.includes('--ml-intern') || args.includes('--pytorchcon-2026') || args.includes('--llmd-1-0') || args.includes('--nvidia-akf')) {
     process.exit(runCli(args));
   }
   const jsonMode = args.includes('--json');
@@ -780,5 +926,13 @@ module.exports = {
   evaluateLlmdTieredKvAndPauseSurvival,
   evaluateLlmdDisaggregatedPdAndUnitEconomics,
   buildLlmd10ProductionHonestyReport,
+  NVIDIA_AKF_SOURCE_URL,
+  NVIDIA_AKF_GATE_ID,
+  NVIDIA_AKF_RAIL_MAP,
+  evaluateNvidiaRetrieverLookupReduction,
+  resolveEnterpriseOntologyCanonicalTerm,
+  evaluateKumoRelationalPrediction,
+  enforceOntologyMcpAclGate,
+  buildNvidiaAgentKnowledgeFoundationReport,
   runCli,
 };

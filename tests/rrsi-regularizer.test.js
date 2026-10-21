@@ -553,4 +553,46 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(pdEcon.replicatesMlaKv8x, false);
   assert.equal(pdEcon.recommendation, 'OPTIMAL_PD_BALANCE');
   assert.equal(buildLlmd10ProductionHonestyReport().ok, true);
+
+  // Nvidia Agent Knowledge Foundation (GTC Berlin Oct 21, 2026: Nemotron Retriever, Auto-Ontology MCP, Kumo Tabular, ACL Diode)
+  const {
+    evaluateNvidiaRetrieverLookupReduction,
+    resolveEnterpriseOntologyCanonicalTerm,
+    evaluateKumoRelationalPrediction,
+    enforceOntologyMcpAclGate,
+    buildNvidiaAgentKnowledgeFoundationReport,
+  } = require('../scripts/rrsi-doctor');
+
+  const retriever = evaluateNvidiaRetrieverLookupReduction({
+    lookupCount: 1,
+    rerankerEnabled: true,
+    perLookupLatencyMs: 18,
+  });
+  assert.equal(retriever.allowed, true);
+  assert.equal(retriever.relevanceBoostPct, 65);
+  assert.ok(retriever.netLatencySavedMs > 0);
+
+  assert.equal(resolveEnterpriseOntologyCanonicalTerm('tier').canonicalConcept, 'plan_tier');
+  assert.equal(resolveEnterpriseOntologyCanonicalTerm('plan').canonicalConcept, 'plan_tier');
+  assert.equal(resolveEnterpriseOntologyCanonicalTerm('guardrail').canonicalConcept, 'prevention_gate');
+
+  const kumo = evaluateKumoRelationalPrediction({
+    linkedTables: ['feedback', 'lessons', 'gates', 'task_outcomes'],
+    recentNegativeCount: 2,
+    activeMatchingGates: 1,
+    usesPerTaskPipelineSprawl: false,
+  });
+  assert.equal(kumo.allowed, true);
+
+  const blockedAcl = enforceOntologyMcpAclGate({
+    entityId: 'user_1',
+    projectId: '',
+    processId: 'proc_1',
+    sessionId: 'sess_1',
+    requestedTables: ['lessons', 'billing_secrets'],
+  });
+  assert.equal(blockedAcl.allowed, false);
+  assert.equal(blockedAcl.decision, 'DENY');
+  assert.ok(blockedAcl.blockers.includes('missing_four_field_ontology_acl_scope'));
+  assert.equal(buildNvidiaAgentKnowledgeFoundationReport().ok, true);
 });
