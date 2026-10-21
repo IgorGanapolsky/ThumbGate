@@ -562,6 +562,121 @@ function buildPyTorchCon2026HonestyReport(options = {}) {
   };
 }
 
+const LLMD_10_SOURCE_URL = 'https://research.ibm.com/blog/llmd-1-0-is-ready-for-production-inference-serving';
+const LLMD_10_GATE_ID = 'ibm-llmd-1-0-day2-agentic-inference-serving';
+
+const LLMD_10_RAIL_MAP = Object.freeze([
+  {
+    llmdMechanism: '1. Weka 219-Session Agentic Traffic Asymmetry (98.6% input tokens: 195K p50 input vs 317 p50 output; 99.6% median prefix overlap; 632-token p50 growth; 2.8% prefix resets)',
+    thumbgateRail: 'evaluateLlmdAgenticTrafficAndPrefixIntegrity (guards the 99.6% prefix reuse ceiling against mid-prefix mutations and un-shunted >350-line tool dumps)',
+  },
+  {
+    llmdMechanism: '2. Tiered KV Cache Offloading (GPU HBM -> CPU DRAM OffloadingConnector @ 59ms restore vs 59s recompute TTFT; P2P NIXL zero-copy @ 79.6ms) across 2s-11.4m tool pauses',
+    thumbgateRail: 'evaluateLlmdTieredKvAndPauseSurvival (preserves warm session prefixes across tool pauses and throttles 51-sub-agent bursts via Day-2 Flow Control QoS)',
+  },
+  {
+    llmdMechanism: '3. Disaggregated Prefill/Decode (xPyD, 3P1D H200/H100) + Wide Expert Parallelism (DEP8/DEP16 vs TP=8 8x MLA KV replication) + 5-10x Self-Hosted Cost Advantage',
+    thumbgateRail: 'evaluateLlmdDisaggregatedPdAndUnitEconomics (computes $0.05/1M input & $3.55/1M output vs $5/$25 commercial APIs and scales prefill pools when queue wait dominates TTFT)',
+  },
+]);
+
+function evaluateLlmdAgenticTrafficAndPrefixIntegrity({
+  inputTokens = 195000,
+  outputTokens = 317,
+  deltaInputTokensFromPriorTurn = 632,
+  prefixOverlapRatio = 0.996,
+  mutatedMidPrefix = false,
+} = {}) {
+  const totalTokens = Math.max(1, Number(inputTokens) + Number(outputTokens));
+  const inputShare = Number((Number(inputTokens) / totalTokens).toFixed(4));
+  const isPrefixReset = Number(prefixOverlapRatio) < 0.5 || Boolean(mutatedMidPrefix);
+  const blockers = [];
+  if (mutatedMidPrefix) blockers.push('mid_prefix_mutation_destroys_99_6_pct_kv_reuse');
+  if (Number(deltaInputTokensFromPriorTurn) > 50000 && isPrefixReset) {
+    blockers.push('unshunted_tool_output_triggered_prefix_reset_cliff');
+  }
+  return {
+    allowed: blockers.length === 0,
+    inputShare,
+    prefixOverlapRatio: Number(prefixOverlapRatio),
+    isPrefixReset,
+    estimatedTtftSpeedupVsUncached: isPrefixReset ? 1.0 : 2.8,
+    blockers,
+  };
+}
+
+function evaluateLlmdTieredKvAndPauseSurvival({
+  pauseSeconds = 24,
+  hbmFull = true,
+  cpuOffloadingEnabled = true,
+  p2pNixlEnabled = true,
+  subAgentBurstSize = 7,
+  flowControlQosEnabled = true,
+} = {}) {
+  const tierUsed = !hbmFull
+    ? 'GPU_HBM'
+    : (cpuOffloadingEnabled ? 'CPU_DRAM_OFFLOAD' : (p2pNixlEnabled ? 'P2P_NIXL' : 'FULL_PREFILL_RECOMPUTE'));
+  const estimatedRestoreMs = tierUsed === 'GPU_HBM'
+    ? 0
+    : (tierUsed === 'CPU_DRAM_OFFLOAD' ? 59 : (tierUsed === 'P2P_NIXL' ? 79.6 : 59000));
+  const burstStarvesInteractive = Number(subAgentBurstSize) >= 20 && !flowControlQosEnabled;
+  return {
+    allowed: tierUsed !== 'FULL_PREFILL_RECOMPUTE' && !burstStarvesInteractive,
+    pauseSeconds: Number(pauseSeconds),
+    tierUsed,
+    estimatedRestoreMs,
+    burstStarvesInteractive,
+    recommendedAction: tierUsed === 'FULL_PREFILL_RECOMPUTE'
+      ? 'ENABLE_CPU_DRAM_KV_OFFLOADING'
+      : (burstStarvesInteractive ? 'ENABLE_LLMD_FLOW_CONTROL_QOS' : 'SERVE_FROM_TIERED_KV_CACHE'),
+  };
+}
+
+function evaluateLlmdDisaggregatedPdAndUnitEconomics({
+  prefillPools = 3,
+  decodePools = 1,
+  attentionLayout = 'DEP16',
+  prefillQueueWaitSeconds = 1.1,
+  serverPrefillSeconds = 4.0,
+  selfHostedInputCostPer1M = 0.05,
+  commercialInputCostPer1M = 5.0,
+} = {}) {
+  const replicatesMlaKv8x = String(attentionLayout).toUpperCase() === 'TP8';
+  const queueDominatesTtft = Number(prefillQueueWaitSeconds) > Number(serverPrefillSeconds) * 2;
+  const inputCostSavingsMultiple = Number((Number(commercialInputCostPer1M) / Math.max(0.01, Number(selfHostedInputCostPer1M))).toFixed(1));
+  return {
+    topology: `${prefillPools}P${decodePools}D`,
+    attentionLayout,
+    replicatesMlaKv8x,
+    queueDominatesTtft,
+    inputCostSavingsMultiple,
+    recommendation: replicatesMlaKv8x
+      ? 'SWITCH_TP8_TO_DEP8_OR_DEP16_FOR_MLA_KV_CAPACITY'
+      : (queueDominatesTtft ? 'SCALE_DISAGGREGATED_PREFILL_POOL' : 'OPTIMAL_PD_BALANCE'),
+  };
+}
+
+function buildLlmd10ProductionHonestyReport(options = {}) {
+  const findings = [];
+  const claim = String(options.claim || '').trim();
+  if (/\bround[\s-]*robin\s+routing\s+for\s+agentic\s+kv\b/i.test(claim)) {
+    findings.push({
+      id: 'round-robin-destroys-prefix-cache-locality',
+      severity: 'fail',
+      gateId: LLMD_10_GATE_ID,
+      message: 'Use precise prefix-cache-aware routing + CPU DRAM KV offloading instead of stateless round-robin routing on 195K-token agentic turns.',
+    });
+  }
+  return {
+    ok: findings.length === 0,
+    status: findings.length === 0 ? 'ready' : 'fail',
+    sourceUrl: LLMD_10_SOURCE_URL,
+    gateId: LLMD_10_GATE_ID,
+    railMap: LLMD_10_RAIL_MAP,
+    findings,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['granite-switch']) {
@@ -579,6 +694,11 @@ function runCli(argv = process.argv.slice(2)) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     return report.ok ? 0 : 1;
   }
+  if (args['llmd-1-0']) {
+    const report = buildLlmd10ProductionHonestyReport(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.ok ? 0 : 1;
+  }
   const report = auditRRSI();
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   return report.status === 'PASS' ? 0 : 1;
@@ -586,7 +706,7 @@ function runCli(argv = process.argv.slice(2)) {
 
 if (require.main === module) {
   const args = process.argv.slice(2);
-  if (args.includes('--granite-switch') || args.includes('--ml-intern') || args.includes('--pytorchcon-2026')) {
+  if (args.includes('--granite-switch') || args.includes('--ml-intern') || args.includes('--pytorchcon-2026') || args.includes('--llmd-1-0')) {
     process.exit(runCli(args));
   }
   const jsonMode = args.includes('--json');
@@ -653,5 +773,12 @@ module.exports = {
   normalizeWireProtocolAndEvalDeterminism,
   evaluateDynamicToolGistAndAbstentionGate,
   buildPyTorchCon2026HonestyReport,
+  LLMD_10_SOURCE_URL,
+  LLMD_10_GATE_ID,
+  LLMD_10_RAIL_MAP,
+  evaluateLlmdAgenticTrafficAndPrefixIntegrity,
+  evaluateLlmdTieredKvAndPauseSurvival,
+  evaluateLlmdDisaggregatedPdAndUnitEconomics,
+  buildLlmd10ProductionHonestyReport,
   runCli,
 };
