@@ -1117,6 +1117,70 @@ function evaluatePaperInstrumentsRubricAndUltramarineRoute({
   };
 }
 
+/**
+ * Paper Instruments Default Sampling Config (`/docs/ultramarine/default-sampling-config`)
+ * & Prompt Tuning / Feather House Style (`/docs/ultramarine/prompt-tuning`).
+ */
+function evaluateFeatherSamplingAndPromptTuning({
+  wireApi = 'ChatCompletions',
+  temperature = 1,
+  topP = 0.95,
+  topK = -1,
+  maxOutputTokens = 65536,
+  contextTokens = 105000,
+  compactionTriggerTokens = 101072,
+  keepRecentTurns = 2,
+  deliverableText = '',
+  reopenedUnchangedFileAfterPass = false,
+} = {}) {
+  const text = String(deliverableText || '');
+  const hasEmDash = /\u2014/.test(text);
+  const hasMiddleDotMetadata = /\u00b7/.test(text);
+  const hasSlopBuzzwords = /\b(?:robust|seamless|leverage|landscape|unlock|underscore)\b/i.test(text);
+  const hasBracketedPlaceholder = /\[(?:TBD|TODO|INSERT|PLACEHOLDER)[^\]]*\]/i.test(text);
+
+  const reasoningFieldByApi = {
+    ChatCompletions: 'reasoning_effort',
+    Responses: 'reasoning.effort',
+    Messages: 'output_config.effort',
+  };
+  const maxTokensFieldByApi = {
+    ChatCompletions: 'max_completion_tokens',
+    Responses: 'max_output_tokens',
+    Messages: 'max_tokens',
+  };
+
+  const blockers = [];
+  if (wireApi === 'Responses' && topK !== null && topK !== undefined) {
+    blockers.push('responses_api_rejects_top_k_omit_field');
+  }
+  if (Number(maxOutputTokens) < 32768) {
+    blockers.push('max_output_tokens_below_32768_risks_truncation_under_max_reasoning');
+  }
+  if (hasEmDash) blockers.push('feather_style_forbids_em_dash');
+  if (hasMiddleDotMetadata) blockers.push('feather_style_forbids_middle_dot_metadata_chains');
+  if (hasSlopBuzzwords) blockers.push('feather_style_forbids_inflated_ai_slop_buzzwords');
+  if (hasBracketedPlaceholder) blockers.push('deliverable_contains_unfilled_bracketed_placeholder');
+  if (reopenedUnchangedFileAfterPass) blockers.push('stop_when_work_is_done_violation_reopened_unchanged_file');
+
+  const shouldCompactHistory = Number(contextTokens) >= Number(compactionTriggerTokens);
+
+  return {
+    allowed: blockers.length === 0,
+    wireApi,
+    recommendedSampling: { temperature: Number(temperature), top_p: Number(topP), top_k: wireApi === 'Responses' ? undefined : Number(topK) },
+    reasoningField: reasoningFieldByApi[wireApi] || 'reasoning_effort',
+    maxTokensField: maxTokensFieldByApi[wireApi] || 'max_completion_tokens',
+    compaction: {
+      contextWindowTokens: 131072,
+      triggerTokens: Number(compactionTriggerTokens),
+      keepRecentTurns: Number(keepRecentTurns),
+      shouldCompactHistory,
+    },
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['granite-switch']) {
@@ -1239,5 +1303,6 @@ module.exports = {
   evaluateFoundryBrowserAutomationGovernance,
   evaluateAgentReliabilityEventStream,
   evaluatePaperInstrumentsRubricAndUltramarineRoute,
+  evaluateFeatherSamplingAndPromptTuning,
   runCli,
 };

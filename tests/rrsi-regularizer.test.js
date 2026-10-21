@@ -703,4 +703,34 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   });
   assert.equal(substantive.allowed, true);
   assert.equal(substantive.costSavingsMultiple, 63);
+
+  // Paper Instruments Default Sampling Config & Feather Prompt Tuning (/docs/ultramarine/default-sampling-config & prompt-tuning)
+  const { evaluateFeatherSamplingAndPromptTuning } = require('../scripts/rrsi-doctor');
+  const badFeather = evaluateFeatherSamplingAndPromptTuning({
+    wireApi: 'Responses',
+    topK: -1,
+    maxOutputTokens: 8192,
+    deliverableText: 'Draft · Audit Committee — this robust solution will unlock seamless value [TBD].',
+    reopenedUnchangedFileAfterPass: true,
+  });
+  assert.equal(badFeather.allowed, false);
+  assert.ok(badFeather.blockers.includes('responses_api_rejects_top_k_omit_field'));
+  assert.ok(badFeather.blockers.includes('max_output_tokens_below_32768_risks_truncation_under_max_reasoning'));
+  assert.ok(badFeather.blockers.includes('feather_style_forbids_em_dash'));
+  assert.ok(badFeather.blockers.includes('feather_style_forbids_middle_dot_metadata_chains'));
+  assert.ok(badFeather.blockers.includes('feather_style_forbids_inflated_ai_slop_buzzwords'));
+  assert.ok(badFeather.blockers.includes('stop_when_work_is_done_violation_reopened_unchanged_file'));
+
+  const cleanFeather = evaluateFeatherSamplingAndPromptTuning({
+    wireApi: 'Messages',
+    topK: -1,
+    maxOutputTokens: 65536,
+    contextTokens: 105000,
+    deliverableText: 'Gross margin fell 240 basis points in Q3 because freight costs rose faster than prices.',
+    reopenedUnchangedFileAfterPass: false,
+  });
+  assert.equal(cleanFeather.allowed, true);
+  assert.equal(cleanFeather.reasoningField, 'output_config.effort');
+  assert.equal(cleanFeather.maxTokensField, 'max_tokens');
+  assert.equal(cleanFeather.compaction.shouldCompactHistory, true);
 });
