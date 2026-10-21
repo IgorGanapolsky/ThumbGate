@@ -9,6 +9,8 @@ const { spawnSync } = require('node:child_process');
 const {
   buildColabComputeHonestyReport,
   formatColabComputeHonestyReport,
+  evaluateTorchTpuWorkloadGovernance,
+  buildTorchTpuHonestyReport,
   PLANS,
 } = require('../scripts/colab-compute-honesty');
 
@@ -109,4 +111,37 @@ test('gate templates and skill refuse Colab SKU clones', () => {
   assert.match(skill, /Gold:/);
   assert.match(skill, /Do NOT/);
   assert.match(skill, /colab\.research\.google\.com\/signup/);
+});
+
+test('TorchTPU FORMAT steal: preserves SGLang/llm-d prefix cache, blocks destructive tpu-agent-suite commands, and wires torchtpu-honesty CLI', () => {
+  const cleanTpu = evaluateTorchTpuWorkloadGovernance({
+    deviceMap: 'tpu',
+    servingEngine: 'sglang-torchtpu',
+    prefixStatic: true,
+    unshuntedOutputLines: 120,
+    agentSuiteCommand: 'gcloud compute tpus tpu-vm list',
+  });
+  assert.equal(cleanTpu.allowed, true);
+  assert.equal(cleanTpu.prefixCachePreserved, true);
+
+  const blockedTpu = evaluateTorchTpuWorkloadGovernance({
+    deviceMap: 'tpu',
+    servingEngine: 'llm-d',
+    prefixStatic: false,
+    unshuntedOutputLines: 800,
+    agentSuiteCommand: 'gcloud compute tpus tpu-vm delete slice-v7x --quiet',
+  });
+  assert.equal(blockedTpu.allowed, false);
+  assert.equal(blockedTpu.prefixCachePreserved, false);
+  assert.equal(blockedTpu.destructiveSliceOpBlocked, true);
+
+  const report = buildTorchTpuHonestyReport();
+  assert.equal(report.ok, true);
+  assert.equal(report.railMap.length, 4);
+
+  const cliRes = spawnSync(process.execPath, [CLI, 'torchtpu-honesty', '--json', '--map-only'], {
+    cwd: path.resolve(__dirname, '..'),
+    encoding: 'utf8',
+  });
+  assert.equal(cliRes.status, 0, cliRes.stderr || cliRes.stdout);
 });

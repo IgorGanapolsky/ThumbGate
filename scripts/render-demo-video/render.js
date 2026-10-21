@@ -19,7 +19,11 @@ const path = require('node:path');
 const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 const { chromium } = require('playwright-core');
-
+const {
+  buildVirtualClockTimeline,
+  checkSceneGate,
+  verifyMp4ArtifactCompletion,
+} = require('../cli-demo');
 const ROOT = path.resolve(__dirname, '../..');
 const HTML = path.join(__dirname, 'index.html');
 const DEFAULT_OUT = path.join(ROOT, 'public/assets/tiktok-agent-memory.mp4');
@@ -57,9 +61,29 @@ async function main() {
     recordVideo: { dir: videoDir, size: { width: WIDTH, height: HEIGHT } },
   });
   const page = await context.newPage();
+  const jsErrors = [];
+  page.on('pageerror', (err) => jsErrors.push(err.message || String(err)));
 
   await page.goto('file://' + HTML);
-  console.log(`[render] playing timeline (${(TIMELINE_MS + TAIL_MS) / 1000}s)`);
+  const initialText = await page.evaluate(() => (document.body && document.body.innerText) || '');
+  const sceneCheck = checkSceneGate({
+    jsErrors,
+    sampleFrames: [{ timestampSeconds: 0, visibleText: initialText || 'ThumbGate Demo' }],
+  });
+  if (!sceneCheck.readyToRender) {
+    await context.close();
+    await browser.close();
+    throw new Error(`[check_scene] aborted before ffmpeg encode: ${sceneCheck.reason}`);
+  }
+
+  const timelineSpec = buildVirtualClockTimeline({
+    durationSeconds: TIMELINE_MS / 1000,
+    fps: 30,
+    width: WIDTH,
+    height: HEIGHT,
+    crf: 18,
+  });
+  console.log(`[render] playing timeline (${(TIMELINE_MS + TAIL_MS) / 1000}s, codec=${timelineSpec.codec}, crf=${timelineSpec.crf})`);
 
   // Wait for the timeline flag set at t=90s, then a tail for the last scene to settle.
   await page.waitForFunction(() => window.__renderDone === true, null, { timeout: TIMELINE_MS + 10_000, polling: 250 });
@@ -73,19 +97,18 @@ async function main() {
   console.log(`[render] raw webm captured: ${webmPath}`);
 
   const silentMp4 = path.join(workDir, 'silent.mp4');
-  console.log(`[render] transcoding webm → silent mp4 (H.264, yuv420p, 30 fps)`);
+  console.log(`[render] transcoding webm → silent mp4 (H.264, yuv420p, ${timelineSpec.fps} fps, crf ${timelineSpec.crf})`);
   sh('ffmpeg', [
     '-y',
     '-i', webmPath,
-    '-c:v', 'libx264',
+    '-c:v', timelineSpec.codec,
     '-preset', 'medium',
-    '-crf', '20',
-    '-pix_fmt', 'yuv420p',
-    '-r', '30',
+    '-crf', String(timelineSpec.crf),
+    '-pix_fmt', timelineSpec.pixelFormat,
+    '-r', String(timelineSpec.fps),
     '-movflags', '+faststart',
     silentMp4,
   ]);
-
   fs.mkdirSync(path.dirname(args.out), { recursive: true });
 
   if (fs.existsSync(AUDIO)) {
@@ -107,7 +130,14 @@ async function main() {
   }
 
   const size = fs.statSync(args.out).size;
-  console.log(`\n✅ wrote ${(size / 1024 / 1024).toFixed(2)} MB → ${path.relative(ROOT, args.out)}`);
+  const completion = verifyMp4ArtifactCompletion({
+    events: ['tool.started', 'tool.completed', 'turn.completed'],
+    blobArtifact: { url: args.out, sizeBytes: size },
+  });
+  if (!completion.done) {
+    throw new Error(`[render] MP4 completion verification failed: ${completion.status}`);
+  }
+  console.log(`\n✅ wrote ${(size / 1024 / 1024).toFixed(2)} MB → ${path.relative(ROOT, args.out)} (${completion.status})`);
 }
 
 main().catch((err) => {

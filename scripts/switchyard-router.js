@@ -352,6 +352,152 @@ function describeNemotronLightning() {
     companion: 'NeMo Switchyard (multi-model step routing + evaluation)',
   };
 }
+const DEVIN_FUSION_SOURCE_URL = 'https://cognition.com/blog/devin-fusion';
+const DEVIN_FUSION_GATE_ID = 'devin-fusion-sidekick-compaction-switch';
+
+const DEVIN_FUSION_RAIL_MAP = Object.freeze([
+  {
+    devinFusionConcept: 'Parallel Frontier Main + Sidekick agents with independent persistent cached contexts (avoids Smart Friend / Advisor tool cache misses; 60% lower cost at 63.1 FrontierCode)',
+    thumbgateRail: 'evaluateDualCacheAndCompactionSwitch (parallel_dual_cache with 300s cache-TTL guard; rejects uncached advisor-tool cross-calls)',
+  },
+  {
+    devinFusionConcept: 'Main agent takes minimal actions (plan, ambiguity, final review) and delegates slow Playwright/e2e test runs (-62% cost), mechanical deprecations (-32%), and upstream reuse (-25%)',
+    thumbgateRail: 'evaluateDevinFusionSidekickSplit (delegates mechanical/test-suite work to Sidekick; blocks delegation when judgmentIsDeliverable=true)',
+  },
+  {
+    devinFusionConcept: 'Dynamic mid-session model switching coupled to context compaction boundaries ("model switching for free" with zero extra cache-miss penalty)',
+    thumbgateRail: 'evaluateDualCacheAndCompactionSwitch (switchTriggeredAtCompaction=true -> extraCacheMissPenalty=0)',
+  },
+]);
+
+/**
+ * Decide whether a sub-task belongs on the Frontier Main Agent or the Sidekick Agent.
+ * Delegating when judgment IS the deliverable backfires (e.g. 54 -> 27 on FrontierCode);
+ * delegating slow test suites (-62%), mechanical deprecations (-32%), or upstream reuse (-25%)
+ * saves cost at equal or higher quality.
+ */
+function evaluateDevinFusionSidekickSplit({
+  taskType = 'implementation',
+  judgmentIsDeliverable = false,
+  ambiguityScore = 0.2,
+  slowVerificationSuite = false,
+  mechanicalMultiFile = false,
+  reuseUpstreamPattern = false,
+} = {}) {
+  const highAmbiguity = Number(ambiguityScore) >= 0.6;
+  if (judgmentIsDeliverable || highAmbiguity) {
+    return {
+      assignedTo: 'frontier_main',
+      delegationAllowed: false,
+      reason: 'judgment_or_ambiguity_is_the_deliverable_keep_on_main',
+      expectedCostSavingsPercent: 0,
+    };
+  }
+
+  if (slowVerificationSuite) {
+    return {
+      assignedTo: 'sidekick',
+      delegationAllowed: true,
+      reason: 'slow_test_or_e2e_verification_suite',
+      expectedCostSavingsPercent: 62,
+    };
+  }
+  if (mechanicalMultiFile) {
+    return {
+      assignedTo: 'sidekick',
+      delegationAllowed: true,
+      reason: 'mechanical_multi_file_deprecation_or_refactor',
+      expectedCostSavingsPercent: 32,
+    };
+  }
+  if (reuseUpstreamPattern) {
+    return {
+      assignedTo: 'sidekick',
+      delegationAllowed: true,
+      reason: 'mechanical_upstream_pattern_reuse',
+      expectedCostSavingsPercent: 25,
+    };
+  }
+
+  return {
+    assignedTo: String(taskType).toLowerCase() === 'review' || String(taskType).toLowerCase() === 'plan'
+      ? 'frontier_main'
+      : 'sidekick',
+    delegationAllowed: String(taskType).toLowerCase() !== 'review' && String(taskType).toLowerCase() !== 'plan',
+    reason: 'standard_main_plans_sidekick_executes',
+    expectedCostSavingsPercent: 38,
+  };
+}
+
+/**
+ * Audit dual-cache persistence (5-minute TTL) and compaction-boundary model switching.
+ */
+function evaluateDualCacheAndCompactionSwitch({
+  pattern = 'parallel_dual_cache',
+  idleSeconds = 120,
+  cacheTtlSeconds = 300,
+  midSessionModelSwitch = false,
+  switchTriggeredAtCompaction = true,
+} = {}) {
+  const isAdvisorAntiPattern = /smart_friend|advisor_tool/i.test(String(pattern || ''));
+  const cacheWarm = !isAdvisorAntiPattern && Number(idleSeconds) <= Number(cacheTtlSeconds);
+  const extraCacheMissPenalty = !midSessionModelSwitch
+    ? 0
+    : (switchTriggeredAtCompaction ? 0 : 1);
+
+  return {
+    pattern,
+    cacheWarm,
+    cacheExpiredByTtl: Number(idleSeconds) > Number(cacheTtlSeconds),
+    isAdvisorAntiPattern,
+    midSessionModelSwitch: Boolean(midSessionModelSwitch),
+    switchTriggeredAtCompaction: Boolean(switchTriggeredAtCompaction),
+    extraCacheMissPenalty,
+    freeCompactionSwitch: Boolean(midSessionModelSwitch && switchTriggeredAtCompaction),
+  };
+}
+
+function buildDevinFusionHonestyReport(options = {}) {
+  const findings = [];
+  const claim = String(options.claim || '').trim();
+  if (/\bdelegate\s+ambiguous\s+judgment\s+to\s+sidekick\b/i.test(claim)) {
+    findings.push({
+      id: 'delegating-judgment-backfires',
+      severity: 'fail',
+      gateId: DEVIN_FUSION_GATE_ID,
+      message: 'When product/UX judgment is the deliverable, delegating coding to the sidekick loses subtle intent (54 -> 27 on FrontierCode); keep judgment on the frontier main agent.',
+    });
+  }
+  if (/\bswitch\s+models\s+every\s+turn\s+without\s+compaction\b/i.test(claim)) {
+    findings.push({
+      id: 'uncompacted-switch-cache-miss',
+      severity: 'fail',
+      gateId: DEVIN_FUSION_GATE_ID,
+      message: 'Couple mid-session model switches to context compaction boundaries to avoid extra KV-cache miss penalties.',
+    });
+  }
+
+  return {
+    ok: findings.length === 0,
+    status: findings.length === 0 ? 'ready' : 'fail',
+    sourceUrl: DEVIN_FUSION_SOURCE_URL,
+    gateId: DEVIN_FUSION_GATE_ID,
+    railMap: DEVIN_FUSION_RAIL_MAP,
+    findings,
+  };
+}
+
+function runCli(argv = process.argv.slice(2)) {
+  const args = {};
+  for (const a of argv) {
+    if (!a.startsWith('--')) continue;
+    const [k, ...rest] = a.slice(2).split('=');
+    args[k] = rest.length ? rest.join('=') : true;
+  }
+  const report = buildDevinFusionHonestyReport(args);
+  process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+  return report.ok ? 0 : 1;
+}
 
 module.exports = {
   DEFAULT_POOL,
@@ -363,4 +509,11 @@ module.exports = {
   evaluateRoutingAlgorithm,
   buildAlwaysOnAgentPlan,
   describeNemotronLightning,
+  DEVIN_FUSION_SOURCE_URL,
+  DEVIN_FUSION_GATE_ID,
+  DEVIN_FUSION_RAIL_MAP,
+  evaluateDevinFusionSidekickSplit,
+  evaluateDualCacheAndCompactionSwitch,
+  buildDevinFusionHonestyReport,
+  runCli,
 };

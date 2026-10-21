@@ -9,6 +9,7 @@ const { spawnSync } = require('node:child_process');
 const {
   PRACTICES,
   auditTrace,
+  auditMultiAgentCrewHandoffs,
   detectCloneAttempt,
   buildLlmObsHonestyReport,
 } = require('../scripts/llm-obs-honesty');
@@ -119,4 +120,25 @@ test('docs are compare-not-clone', () => {
   );
   assert.match(doc, /not affiliated|compare-not-clone|do not clone/i);
   assert.doesNotMatch(doc, /npm install dd-trace|DD_API_KEY=/);
+});
+
+test('auditMultiAgentCrewHandoffs tracks cost per agent, pinpoints broken handoff edge, and flags silent failures without Datadog SaaS', () => {
+  const result = auditMultiAgentCrewHandoffs({
+    steps: [
+      { agentId: 'scout-gemini', toAgent: 'builder-codex', model: 'gemini-2.5-pro', costUsd: 0.12, tokensOut: 450, exitCode: 0 },
+      { agentId: 'builder-codex', toAgent: 'qa-grok', model: 'codex', costUsd: 0.34, tokensOut: 180, handoffFailed: true, error: 'missing_schema_field' },
+      { agentId: 'qa-grok', model: 'grok-4', costUsd: 0.05, tokensOut: 0, handoffPayloadEmpty: true, exitCode: 0 },
+    ],
+  });
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.costByAgent, {
+    'scout-gemini': 0.12,
+    'builder-codex': 0.34,
+    'qa-grok': 0.05,
+  });
+  assert.equal(result.totalCostUsd, 0.51);
+  assert.equal(result.brokenHandoffEdges.length, 1);
+  assert.equal(result.brokenHandoffEdges[0].edge, 'builder-codex -> qa-grok');
+  assert.equal(result.silentFailureRuns.length, 1);
+  assert.equal(result.silentFailureRuns[0].agentId, 'qa-grok');
 });
