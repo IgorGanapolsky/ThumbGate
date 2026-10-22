@@ -1,5 +1,111 @@
 # Changelog
 
+## 1.39.0
+
+### Minor Changes
+
+- 0e2cda9: Integrate ActiveSaddler curriculum non-stationary bandit learning, WinDbg empirical evidence diagnostics, Gaming AI agent infrastructure playbook, and Strands Box Dogwood containment with multi-harness RL invariants. Bump package bundle ratchet from 597 to 607 for the 10 newly packaged runtime and distribution files.
+- 927e6c1: Integrate Fiddler AI control plane honesty (FORMAT steal) providing a unified two-layer control plane across Creation (coding agents) and Production (enterprise runtime agents), an Evaluation Trust Tax TCO calculator ($0 token cost on CPU vs Fiddler $0.002/trace SaaS tax), and sub-millisecond Centor-Diode multi-stage discriminant pre-action firewall.
+- f2927ed: Add Nvidia Agent Knowledge Foundation ontology/ACL gates, Capital One Databolt vaultless format-preserving tokenization, vLLM Wide-EP/EPLB AgentX economics, Microsoft Work IQ Retrieve contract validator, Gergely Orosz AEO backlink guard, Microsoft Foundry Browser Automation GA governance, Gaetano Agent Reliability v1 5-detector Detect-to-Enforce bridge, and Paper Instruments Ultramarine 1 Flash rubric grader.
+- dd796ed: Recover the opt-in lesson graph with complete memory-scope isolation, correction lineage, and canonical feedback counting. Invalidate compiled Reliability Gateway guards when graph identity or the requested scope changes.
+- d138aa1: Bridge Ed25519 signed license entitlements in `scripts/license.js`, fix the deprecated Stripe `payment_method_types` HTTP 400 error in `scripts/billing.js`, and add the 2026 SaaS 8-Moat (`saas-moat-honesty`), Claude Code Routines (`claude-routines-honesty`), Herdr 5-pillar (`herdr-civilization-honesty`), Strands Decider 2B (`strands-decider-honesty`), LaunchVideo.io (`launchvideo-honesty`), Google Cloud TorchTPU (`torchtpu-honesty`), AllenAI FairStress (`fairstress-honesty`), IBM Granite Switch 4.1 (`granite-switch-honesty`), HuggingFace ML Intern (`ml-intern-honesty`), PyTorchCon NA Oct 2026 `MemT-1.0`/`llm-d 1.0`/`DeepInfer`/Flash-Abstention (`pytorchcon-2026-honesty`), and Cognition Devin Fusion (`devin-fusion-honesty`) governance rails.
+- 5895d84: feat(governance): implement Siren MCP marketing diode and autonomous campaign policy pack
+- 168b061: Implement Vulnerability Pre-Action Diode and Enterprise Triage ROI Calculator (WHOOP/TNS pattern) replacing 3-day manual vulnerability triage with sub-5ms pre-action interdiction.
+
+### Patch Changes
+
+- 6d5a43d: Steal Wisdom.ai context-as-product FORMAT: lint agent packs (goal, constraints, sources, freshness, verifier) with consumer=agent and wrongFit including wisdom_ai. Never clone ACE/Foundry/OSI.
+- d21e46c: feat(cli): wire armor-compile and profound-aeo subcommands into bin/cli.js
+- 81f1f95: Make the buyer demo fail when required CLI, learning, or MCP proof is missing or contradicted. Keep the MCP client connected until the matching response arrives, and label intentionally skipped sections unverified.
+- 01b19cc: Improve `/checkout/pro` and `/pricing` conversion flow by dynamically preserving customer email in direct checkout links and bundling buyer intent tracking.
+- 6d5a43d: Steal Visual Studio coverage FORMAT (baseline gaps, skip no-behavior files, remeasure the same scope) onto `scripts/test-coverage.js` via `coverage-gap`. Never clone Test Agent. Never 100%.
+- 91cde1a: Add NVIDIA arXiv:2610.10478 Decisive-Step Evaluation rail. Isolates the first code edit in an agent trajectory that flips the test suite from failing to passing, scores candidate models on decisive-action probability and Patch MCQ contrastive discrimination rather than noisy all-step averaging, and predicts post-training coding capability with Spearman rho = 0.964.
+- 01b19cc: Allow manifest-only Dependabot dependency bumps to pass changeset checks cleanly without manual changesets.
+- 1b9e185: Bump undici from 8.10.2 to 8.11.2 to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 2d5f308: Bump dotenv from 18.0.1 to 18.0.4 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 4bcffeb: Bump @google/genai from 2.23.0 to 2.24.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- f7f56d8: Bump @types/node from 26.6.2 to 26.6.3 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 035c9b4: Bump stripe from 22.6.2 to 23.0.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- d2746bc: Bump dotenv from 18.0.4 to 18.0.5 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- ac70659: Bump @google/genai from 2.24.0 to 2.27.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- e31d2d5: Bump @anthropic-ai/sdk from 0.128.0 to 0.131.0 to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 1f88f77: Bump stripe from 22.6.2 to 23.0.0 in /workers to keep the shipped runtime dependency set current under ThumbGate's audited release flow.
+- 57cb7ad: Bump @types/node from 26.6.3 to 26.6.4 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 840c4b7: Bump @cloudflare/workers-types from 5.20260928.1 to 5.20261006.1 in /workers to keep the shipped build and test dependency set current under ThumbGate's audited release flow.
+- 0d5e6c3: fix(mailer): enforce verified business identity `igor@igorganapolsky.com` and eliminate silent sandbox fallback
+- db8497c: Add arXiv:2610.11655 Harness Evolution Ceiling & Failure Composition rail (diagnose-then-intervene protocol). Labels failed trajectories by the first signal that fires into process vs content failures, detects when harness evolution hits its ceiling (content failures >= 80%, process failures <= 20%), switches the lever to weight training (LoRA/distillation) or model tier escalation, partitions accepted edits into trainable behaviors vs runtime security controls, and guards omp.sh against prompt rule bloat.
+- 59eded8: Isolate daily discovery publisher tests from repository state, credentials, and the shared vault. Keep local outputs staged until Dev.to returns a valid publication receipt, so staging does not suppress retries. Hold retries, including forced runs, when Dev.to returns an ambiguous receipt until the remote outcome is reconciled.
+- 44ec36d: feat: add 24/7 Omni-Channel ML Bandit, 3-Tier Agentic Graph RAG, and SHA-256 Attestation Ledger across LinkedIn, Reddit, X, Skool, ZyVOP, and HackerNews
+- 4595513: feat: add OpenRouter Armor local ZDR/HIPAA fallback diode and Profound AEO/Intelligent UI attribution engine
+- 43b6594: Serve `/operator-framework`, add Apple Minions (arXiv:2610.12970) & System-One UMA routing (`scripts/apple-minions-idle-compute-steal.js`), UCP Agentic Checkout Diode (`scripts/ucp-agentic-checkout-diode.js`), Hotdata DB vector store adapter (`adapters/hotdata/`), and OpenFinance Wealth Advisor (`scripts/wealth-freedom-advisor.js`).
+- 22a29e6: Add the /operator-framework page (done-for-you Sprint Diagnostic, Turnkey Setup, Managed Retainer, Pro mention, and a 30% Agency Partner Program) with /go/operator-* checkout redirects, catalog entries for the Turnkey and Retainer prices, a sitemap entry, and a /pricing nav link.
+- 3c3361c: Accept Railway API tokens in deployment policy and select one credential class in the deployment workflow so a stale project token cannot override API authentication.
+- 6d5a43d: Recover four preserved features on current main. Package three CLI modules and their skill packs plus session interactivity metrics, adding seven runtime files. Raise the measured package file ceiling from 612 to 619 and the unpacked size budget from 9.16 MB to 9.25 MB. Preserve the current package contents and existing tests.
+- 6d5a43d: Steal Bolt Forge session-export FORMAT (per-session opt-in, secret strip + seeded tests, operator DENY vs research, already-exported irreversible) onto secret-redaction.js. Never clone Forge. Never 50×.
+- 6d5a43d: feat(metrics): measure what the user waited, not what the server was busy for
+  
+  Adds `src/session-interactivity.js`, implementing the two rates NVIDIA's
+  SemiAnalysis AgentX methodology reports side by side:
+  
+  - **Standard Interactivity** — "output tokens divided by the elapsed time from
+    the first token to the last"
+  - **E2E Normalized Interactivity** — "average output-token rate per user over
+    the full request, calculated by dividing total output tokens by the time from
+    request submission to final-token delivery"
+  
+  Standard starts the clock at the first token, so queue time, scheduling, and a
+  runner that has not claimed the work yet are all invisible to it. **The gap
+  between the two rates is user wait the system does not currently count.**
+  
+  ## Why this is not theoretical
+  
+  2026-08-25, production: a task was created 17:34:08Z and completed 17:34:53Z.
+  Execution was quick and the UI advertised a "90s lease", so every server-side
+  measure said healthy. The user spent 45 seconds watching a spinner that read
+  "Waiting for the fenced VPS runner to pick this up."
+  
+  Standard Interactivity scores that request at ~100 tok/s. E2E scores it at ~11.
+  The test suite pins that ~9x divergence using the incident's real timestamps, so
+  this class of defect becomes a number instead of a screenshot.
+  
+  ## Session-level, because agentic traffic is not request-shaped
+  
+  Also from AgentX: "Agentic sessions are long, stateful, and variable: they chain
+  model calls, tool use, and growing context rather than following a fixed
+  prompt-and-response pattern" — their sample session grows ~60K to ~400K tokens,
+  and a single agentic request is cited at ~15x the tokens of ordinary chat.
+  
+  So the module aggregates whole sessions and **keeps tool gaps in the
+  denominator**: a tool call the user waits through is wait, whoever executes it.
+  A serving stack does not get to subtract offloaded time from its own score.
+  
+  Also included:
+  - `contextGrowth` — reports first/last prompt tokens and the growth factor,
+    which a fixed 8K-in/1K-out benchmark cannot show.
+  - `compareRuns` — refuses to compare two runs unless they replayed the same
+    sessions in the same order. AgentX: "Because every system receives the same
+    recorded traffic, observed differences reflect the serving stack rather than
+    benchmark-specific tuning." Comparing over different traffic measures the
+    traffic.
+  
+  ## Fails closed
+  
+  One unmeasurable turn makes the whole session `UNKNOWN`, never fast — measuring
+  only the good turns would understate the wait, which is the original failure
+  mode. A zero-length generation window yields a `null` rate rather than
+  `Infinity`, since an unmeasurable rate is not an infinitely fast one.
+  
+  14 tests. Not wired into the dashboard yet; this lands the metric and its
+  contract first.
+  
+  Note: this bumps the three npm file-count ceilings 512 -> 513 and the size
+  ceiling 8.01 -> 8.03 MB (main sits at 99.9% of the old size limit). PR #3667
+  makes the same +1 claim, so whichever lands second needs a one-line rebase.
+- 2d18a6b: docs(policy): publish Siren marketing campaign posting policy pack and remediate npm audit findings
+- e6cc404: fix(reliability): audit and fix SonarCloud S7727 multi-argument Array.prototype.map callbacks across scripts/ and src/
+- b640ef8: Allow authenticated human reviewers to withdraw (`decision: 'cancelled'`) unconsumed `approved` escalations before `T=0` execution across `human-escalation` and `financial-control-plane`, and add the read-only `thumbgate-inbox-sentinel` for `ONE-TOUCH` Boardy thread deduplication.
+- e088a6d: feat: steal Vitalik Buterin's zkapi Paranoid Mode (253-token stylometry rewriter, prefix-continuation circuit isolation, unbuffered Poisson cover traffic, and unauthorized ETH wallet spend interdiction)
+
 ## Unreleased
 - Add the /operator-framework page: done-for-you ThumbGate offers ($499 Sprint Diagnostic, $2,500 Turnkey Setup, $500/mo Managed Retainer, $19/mo Pro) behind same-origin /go/operator-* redirects with bot deflection, plus the Agency Partner Program (30% revenue share on Turnkey and Retainer revenue). Adds the Turnkey and Retainer prices to the Stripe revenue catalog and links the page from /pricing and the sitemap. The public package grows from 626 to 627 files; measured unpacked size 9,313,941 bytes raises the limit from 9.30 MB to 9.32 MB.
 - Add NVIDIA arXiv:2610.10478 Decisive-Step Evaluation rail. Replays trajectories and reruns tests after each code edit to isolate the first edit that flips tests from fail to pass. Scores candidate models on the decisive action (Decisive BPB and Patch MCQ contrastive discrimination) rather than noisy all-step averaging, predicting post-trained SWE-bench Verified coding capability at Spearman rho = 0.964. The public package grows from 622 to 625 files.

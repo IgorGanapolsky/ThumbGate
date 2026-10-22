@@ -22,7 +22,7 @@ In [`apps/web/lib/outreach/guardrails.ts`](https://github.com/Devil-Hawk/cello/b
 
 Cello exposes its 18 copilot tools via a stateless Streamable HTTP MCP server ([`apps/web/app/api/mcp/route.ts`](https://github.com/Devil-Hawk/cello/blob/main/apps/web/app/api/mcp/route.ts)):
 - In the web UI, `dispatchExecute` pauses at a LangGraph `interrupt()` when `submitOrSendReason()` flags a tool.
-- Over headless MCP, there is no human confirmation UI. Rather than downgrading to auto-approval or hanging an serverless function on an unanswerable interrupt, Cello's `mcpView()` strips and refuses every send/submit tool at the door.
+- Over headless MCP, there is no human confirmation UI. Rather than downgrading to auto-approval or hanging a serverless function on an unanswerable interrupt, Cello's `mcpView()` strips and refuses every send/submit tool at the door.
 
 ## 3. Pairing Cello With ThumbGate (`PreToolUse` + DPO Distillation)
 
