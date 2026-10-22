@@ -1043,4 +1043,119 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
     'earsAcceptanceCriteria',
     'explicitOutOfScopeBoundaries',
   ]);
+  // Anthropic "Dream Mode / Auto Dream" REM Memory Consolidation & NVIDIA CUDA Programming Guide Kernel/SIMT Gate
+  const {
+    evaluateAnthropicDreamModeConsolidation,
+    evaluateCudaProgrammingGuideKernelAndGraphOptimization,
+  } = require('../scripts/rrsi-doctor');
+
+  const unsafeDream = evaluateAnthropicDreamModeConsolidation({
+    hoursSinceLastDream: 30,
+    activeSessionsSinceLastDream: 6,
+    readOnlySourceCodeSandbox: false,
+    attemptedSourceCodeWrite: true,
+    hasSingleInstanceDreamLock: false,
+    backgroundTokenSpendUsd: 4.5,
+  });
+  assert.equal(unsafeDream.allowed, false);
+  assert.ok(unsafeDream.blockers.includes('dream_mode_violated_read_only_source_code_sandbox'));
+  assert.ok(unsafeDream.blockers.includes('background_dream_token_burn_detected_use_zero_cost_local_consolidation'));
+
+  const cleanDream = evaluateAnthropicDreamModeConsolidation({
+    hoursSinceLastDream: 25,
+    activeSessionsSinceLastDream: 5,
+    referenceDateIso: '2026-10-22',
+    memoryEntries: [
+      { topic: 'deploy_port', content: 'Use port 3000 yesterday', sessionId: 's1', workflowPattern: 'worktree_verify_push' },
+      { topic: 'deploy_port', content: 'Use port 3000 yesterday', sessionId: 's2', workflowPattern: 'worktree_verify_push' },
+      { topic: 'deploy_port', content: 'Use port 8080 today', sessionId: 's3', workflowPattern: 'worktree_verify_push' },
+    ],
+  });
+  assert.equal(cleanDream.allowed, true);
+  assert.equal(cleanDream.shouldRunDream, true);
+  assert.equal(cleanDream.triggerMode, 'AUTO_24H_5_SESSIONS');
+  assert.equal(cleanDream.deduplicatedCount, 1);
+  assert.equal(cleanDream.contradictionsResolvedCount, 1);
+  assert.equal(cleanDream.relativeDatesNormalizedCount, 3);
+  assert.deepEqual(cleanDream.extractedMacroWorkflows, ['worktree_verify_push']);
+
+  const unlaunchableCudaKernel = evaluateCudaProgrammingGuideKernelAndGraphOptimization({
+    threadsPerBlock: 300,
+    registersPerThread: 256,
+    maxRegistersPerSm: 65536,
+    divergentBranchesInWarp: 2,
+    interBlockDependencyWithoutCluster: true,
+    coalescedGlobalMemoryAccess: false,
+    unprefetchedUnifiedMemoryPageFaults: 12,
+  });
+  assert.equal(unlaunchableCudaKernel.allowed, false);
+  assert.ok(unlaunchableCudaKernel.blockers.includes('threads_per_block_must_be_multiple_of_32_warp_size_up_to_1024'));
+  assert.ok(unlaunchableCudaKernel.blockers.includes('register_file_exceeded_kernel_unlaunchable_reduce_threads_or_regs'));
+  assert.ok(unlaunchableCudaKernel.blockers.includes('simt_warp_divergence_masks_active_lanes_specialize_warps'));
+
+  const coalescedCudaKernel = evaluateCudaProgrammingGuideKernelAndGraphOptimization({
+    threadsPerBlock: 256,
+    registersPerThread: 64,
+    maxRegistersPerSm: 65536,
+    sharedMemoryBytesPerBlock: 16384,
+    divergentBranchesInWarp: 0,
+    interBlockDependencyWithoutCluster: false,
+    coalescedGlobalMemoryAccess: true,
+    unprefetchedUnifiedMemoryPageFaults: 0,
+  });
+  assert.equal(coalescedCudaKernel.allowed, true);
+  assert.equal(coalescedCudaKernel.activeWarpsPerBlock, 8);
+  assert.equal(coalescedCudaKernel.maxBlocksPerSmByRegs, 4);
+});
+
+test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Confidence Diode', () => {
+  const { buildAgenticGraph, traverseMultiHop, queryAgenticGraph } = require('../scripts/agentic-graph-rag');
+  const { distillDecisiveDpoPair } = require('../scripts/decisive-dpo-distiller');
+  const { evaluateConfidenceAction, auditConfidenceDiodes } = require('../scripts/spotify-confidence-diode');
+
+  const graph = buildAgenticGraph();
+  assert.ok(graph.nodeCount >= 10);
+  assert.ok(graph.nodes.has('gate:pretool:decisive-step'));
+  assert.ok(graph.nodes.has('cash:diagnostic-499'));
+
+  const traversal = traverseMultiHop(graph, 'scripts/decisive-step-evaluator.js', 'cash:diagnostic-499', 4);
+  assert.equal(traversal.found, true);
+  assert.equal(traversal.depth, 2);
+  assert.equal(queryAgenticGraph('spend').status, 'ok');
+
+  const distilled = distillDecisiveDpoPair({
+    taskGoal: 'Harden Stripe webhook signature verification',
+    trajectorySteps: [
+      { stepNumber: 1, tool: 'bash', action: 'inspect webhook code', testsPassed: false },
+      { stepNumber: 2, tool: 'edit', action: 'pass-through stub', patch: 'return true;', testsPassed: false },
+      { stepNumber: 3, tool: 'edit', action: 'verified HMAC verification', patch: 'return crypto.timingSafeEqual(expected, actual);', testsPassed: true },
+    ],
+  });
+  assert.equal(distilled.valid, true);
+  assert.equal(distilled.pair.decisiveStepIndex, 2);
+
+  const blockedRollout = evaluateConfidenceAction({ tool: 'set_rollout', flag: 'new-checkout-flow', rolloutPercent: 50 });
+  assert.equal(blockedRollout.decision, 'block');
+  assert.equal(auditConfidenceDiodes().status, 'PASS');
+
+  // Cordum Edge Typed Gate Verdict & 5-Case POC (scripts/typed-gate-verdicts.js)
+  const {
+    runCordumEdgeFiveCasePoc,
+    stageLearnedRuleForFleetReview,
+  } = require('../scripts/typed-gate-verdicts');
+  const poc = runCordumEdgeFiveCasePoc();
+  assert.equal(poc.ok, true);
+  assert.equal(poc.cases.case1ExfilHardDeny.localDenyOverridesCentralAllow, true);
+  assert.deepEqual(poc.cases.case1ExfilHardDeny.evidence.trustedCordumRiskTags, [
+    'risk:tainted_dotenv_secret_read',
+    'risk:tainted_ssh_private_key_read',
+  ]);
+  assert.notEqual(
+    poc.cases.case1ExfilHardDeny.evidence.payloadSha256,
+    poc.cases.case1ExfilHardDeny.evidence.action_hash
+  );
+  assert.equal(
+    stageLearnedRuleForFleetReview({ ruleId: 'r1', pattern: 'rm -rf', reviewerApproved: false }).status,
+    'STAGED_AWAITING_ORG_REVIEW'
+  );
 });
