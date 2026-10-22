@@ -162,8 +162,11 @@ const crypto = require('node:crypto');
 /**
  * Capital One Databolt-style Vaultless Format-Preserving Tokenization (FPT).
  */
-function tokenizeFormatPreservingVaultless(text, { salt = 'thumbgate-local-fpt-v1' } = {}) {
+function tokenizeFormatPreservingVaultless(text, { salt = process.env.THUMBGATE_FPT_KEY } = {}) {
   if (typeof text !== 'string' || text.length === 0) return text;
+  if (typeof salt !== 'string' || salt.length < 16) {
+    throw new Error('tokenizeFormatPreservingVaultless requires a secret key of at least 16 characters');
+  }
   const digestHex = (val) => crypto.createHmac('sha256', String(salt)).update(String(val)).digest('hex');
   const digestDigits = (val, len) => {
     const hex = digestHex(val);
@@ -192,15 +195,15 @@ function tokenizeFormatPreservingVaultless(text, { salt = 'thumbgate-local-fpt-v
 }
 
 function enforceZeroTrustDetokenizationGate({
-  authenticated = true,
+  authenticated = false,
   roleAuthorizedForPlaintext = false,
   explicitDetokenizePermission = false,
   crossesExternalNetwork = false,
 } = {}) {
   const blockers = [];
-  if (!authenticated) blockers.push('unauthenticated_caller');
+  if (authenticated !== true) blockers.push('unauthenticated_caller');
   if (crossesExternalNetwork) blockers.push('vaultless_tokenization_must_stay_in_customer_environment');
-  if (!roleAuthorizedForPlaintext || !explicitDetokenizePermission) {
+  if (roleAuthorizedForPlaintext !== true || explicitDetokenizePermission !== true) {
     blockers.push('default_tokenized_view_enforced_explicit_detokenize_permission_required');
   }
   return {

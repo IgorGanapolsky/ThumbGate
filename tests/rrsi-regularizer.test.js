@@ -590,6 +590,7 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
     processId: 'proc_1',
     sessionId: 'sess_1',
     requestedTables: ['lessons', 'billing_secrets'],
+    allowedTables: ['lessons', 'gates', 'task_outcomes'],
   });
   assert.equal(blockedAcl.allowed, false);
   assert.equal(blockedAcl.decision, 'DENY');
@@ -608,16 +609,18 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
     evaluateFoundryBrowserAutomationGovernance,
   } = require('../scripts/rrsi-doctor');
 
+  const testSalt = 'test-installation-secret-fpt-key-2026';
   const tokenizedText = tokenizeFormatPreservingVaultless(
-    'Contact alice@company.com with SSN 123-45-6789 and phone 415-890-1234'
+    'Contact alice@company.com with SSN 123-45-6789 and phone 415-890-1234',
+    { salt: testSalt }
   );
   assert.doesNotMatch(tokenizedText, /alice@company\.com|123-45-6789|415-890-1234/);
   assert.match(tokenizedText, /tok_[0-9a-f]{8}@tokenized\.local/);
   assert.match(tokenizedText, /\b900-\d{2}-\d{4}\b/);
   assert.match(tokenizedText, /\b555-01\d-\d{4}\b/);
   assert.equal(
-    tokenizeFormatPreservingVaultless('alice@company.com'),
-    tokenizeFormatPreservingVaultless('alice@company.com')
+    tokenizeFormatPreservingVaultless('alice@company.com', { salt: testSalt }),
+    tokenizeFormatPreservingVaultless('alice@company.com', { salt: testSalt })
   );
   assert.equal(enforceZeroTrustDetokenizationGate({ authenticated: true }).viewMode, 'TOKENIZED_ONLY');
 
@@ -633,11 +636,17 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(vllmAgentX.effectiveUserTps, 829);
   assert.equal(vllmAgentX.estimatedRevenuePerGpuHrUsd, 38.96);
 
-  const validWorkIq = evaluateWorkIqRetrieveContract({ query: 'Find latest launch decision', strategy: 'copilot' });
+  const validWorkIq = evaluateWorkIqRetrieveContract({
+    query: 'Find latest launch decision',
+    strategy: 'copilot',
+    responseMarkdown: '## Files\n- **Decision** [^h1]',
+    retrievalHits: [{ id: 'h1', webUrl: 'https://example.com/doc', entityType: 'Files', sensitivityLabel: { id: 'confidential' } }],
+  });
   assert.equal(validWorkIq.allowed, true);
   assert.equal(validWorkIq.resolvedCitationCount, 1);
 
   const blockedTencentBacklink = evaluateAeoCitationAndReadmeBacklinkGate({
+    hasReproducibleBenchmarkOrPr: true,
     requestsFreeGithubReadmeLinkForSmallVoucher: true,
     voucherAmountUsd: 100,
     reciprocalPartnerOrSponsorVerified: false,
@@ -650,10 +659,11 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
     verifiedStateAfterAct: true,
     isStateChangingAction: true,
     humanApprovalOrTakeControlReady: true,
+    pageContentSeparatedFromSystemPolicy: true,
+    sensitiveTracesRoutedToDenyByDefaultTable: true,
   });
   assert.equal(foundryBrowser.allowed, true);
   assert.equal(foundryBrowser.traceIsolationTable, 'AppGenAIContent');
-
   // Gaetano Franco Agent Reliability (igor-async-evaluation.zip v1) -> ThumbGate Detect-to-Enforce Bridge
   const { evaluateAgentReliabilityEventStream } = require('../scripts/rrsi-doctor');
   const gaetanoRun = evaluateAgentReliabilityEventStream({
@@ -783,4 +793,11 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   });
   assert.equal(sddScaffold.allowed, true);
   assert.equal(sddScaffold.validEarsCount, 1);
+
+  const { runSddHarnessStagePipeline } = require('../scripts/rrsi-doctor');
+  const sddVis = runSddHarnessStagePipeline({ mode: 'spec_backtrack', stage: 5 });
+  assert.equal(sddVis.ok, true);
+  assert.equal(sddVis.totalStages, 6);
+  assert.equal(sddVis.activeStage.title, '5. SpecAgent Gate (PCP)');
+  assert.match(sddVis.activeTransition, /5 -> 1/);
 });

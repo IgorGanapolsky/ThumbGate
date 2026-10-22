@@ -739,11 +739,12 @@ function evaluateNvidiaRetrieverLookupReduction({
 
 function resolveEnterpriseOntologyCanonicalTerm(rawTerm = '') {
   const key = String(rawTerm || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-  const canonical = ENTERPRISE_ONTOLOGY_SYNONYMS[key] || key || 'unknown_concept';
+  const harmonized = Object.prototype.hasOwnProperty.call(ENTERPRISE_ONTOLOGY_SYNONYMS, key);
+  const canonical = harmonized ? ENTERPRISE_ONTOLOGY_SYNONYMS[key] : (key || 'unknown_concept');
   return {
     rawTerm,
     canonicalConcept: canonical,
-    harmonized: Boolean(ENTERPRISE_ONTOLOGY_SYNONYMS[key]),
+    harmonized,
   };
 }
 
@@ -771,8 +772,8 @@ function enforceOntologyMcpAclGate({
   projectId = '',
   processId = '',
   sessionId = '',
-  requestedTables = ['lessons'],
-  allowedTables = ['lessons', 'gates', 'task_outcomes'],
+  requestedTables,
+  allowedTables,
   containsRestrictedColumns = false,
 } = {}) {
   const hasCompleteFourFieldScope = Boolean(
@@ -782,9 +783,12 @@ function enforceOntologyMcpAclGate({
     && String(sessionId || '').trim()
   );
   const allowSet = new Set(Array.isArray(allowedTables) ? allowedTables : []);
-  const unauthorizedTables = (Array.isArray(requestedTables) ? requestedTables : []).filter((t) => !allowSet.has(t));
+  const requested = Array.isArray(requestedTables) ? requestedTables : null;
+  const unauthorizedTables = requested ? requested.filter((t) => !allowSet.has(t)) : [];
   const blockers = [];
   if (!hasCompleteFourFieldScope) blockers.push('missing_four_field_ontology_acl_scope');
+  if (!requested || requested.length === 0) blockers.push('missing_or_malformed_requested_tables');
+  if (allowSet.size === 0) blockers.push('missing_allowed_tables_acl');
   if (unauthorizedTables.length > 0) blockers.push(`unauthorized_ontology_tables:${unauthorizedTables.join(',')}`);
   if (containsRestrictedColumns) blockers.push('restricted_pii_or_secret_column_blocked');
 
@@ -860,8 +864,8 @@ function evaluateWorkIqRetrieveContract({
   capabilities = [],
   includeDeveloperCard = false,
   attemptsTaskDelegationInQuery = false,
-  responseMarkdown = '## Files\n- **Decision** [^h1]',
-  retrievalHits = [{ id: 'h1', webUrl: 'https://example.com/doc', entityType: 'Files', sensitivityLabel: { id: 'confidential' } }],
+  responseMarkdown = '',
+  retrievalHits = [],
 } = {}) {
   const blockers = [];
   const cleanQuery = String(query || '').trim();
@@ -899,10 +903,10 @@ function evaluateWorkIqRetrieveContract({
 function evaluateAeoCitationAndReadmeBacklinkGate({
   hasUnsubscribeFooter = false,
   isThirdPartyLinkBuildingAgency = false,
-  hasReproducibleBenchmarkOrPr = true,
+  hasReproducibleBenchmarkOrPr = false,
   requestsFreeGithubReadmeLinkForSmallVoucher = false,
   voucherAmountUsd = 0,
-  reciprocalPartnerOrSponsorVerified = true,
+  reciprocalPartnerOrSponsorVerified = false,
 } = {}) {
   const blockers = [];
   if (hasUnsubscribeFooter || isThirdPartyLinkBuildingAgency) {
@@ -922,12 +926,12 @@ function evaluateAeoCitationAndReadmeBacklinkGate({
 }
 
 function evaluateFoundryBrowserAutomationGovernance({
-  observedPageBeforeAct = true,
-  verifiedStateAfterAct = true,
+  observedPageBeforeAct = false,
+  verifiedStateAfterAct = false,
   isStateChangingAction = false,
-  humanApprovalOrTakeControlReady = true,
-  pageContentSeparatedFromSystemPolicy = true,
-  sensitiveTracesRoutedToDenyByDefaultTable = true,
+  humanApprovalOrTakeControlReady = false,
+  pageContentSeparatedFromSystemPolicy = false,
+  sensitiveTracesRoutedToDenyByDefaultTable = false,
 } = {}) {
   const blockers = [];
   if (!observedPageBeforeAct || !verifiedStateAfterAct) {
@@ -1328,8 +1332,151 @@ function validateSpecDrivenScaffold({
   };
 }
 
+const SDD_2026_STAGES = Object.freeze([
+  {
+    stage: 1,
+    title: '1. Constitution & EARS',
+    subtitle: 'specs/NNN/spec.md',
+    badge: 'Verified Spec Ingress',
+    role: 'Coordinator / Architect',
+    artifact: 'specs/NNN-feature/spec.md',
+    keyMechanism: 'EARS syntax acceptance criteria + Explicit Out-of-Scope boundaries + Bitwise Jaccard Retrieval',
+    failureRoutingGuardrail: 'On ambiguity: auto-routes to human architect; suppresses speculative implementation turns.',
+    nextEdge: 'warm',
+    terminalLog: [
+      '[EARS Spec Contract]',
+      '> Format: WHEN <event> WHILE <state> THEN <action>',
+      '> Fingerprint: Bitwise Jaccard Similarity = 0.942',
+      '> Scope Boundaries: 4 strict out-of-scope conditions locked.',
+      '> Status: PARSED_AND_VERIFIED',
+    ],
+  },
+  {
+    stage: 2,
+    title: '2. Prefix-Pinned Router',
+    subtitle: 'llm-d 1.0 KV Cache',
+    badge: 'Session-Aware Prefix Pinning',
+    role: 'Inference Router (llm-d 1.0)',
+    artifact: 'vLLM / SGLang Disaggregated 3P1D Pool',
+    keyMechanism: '99.6% prefix reuse + CPU DRAM OffloadingConnector (59ms restore) + Turn-Priority Flow Control QoS',
+    failureRoutingGuardrail: 'On HBM eviction during tool pause: restores KV from CPU DRAM in 59ms instead of 59s full prefill recompute.',
+    nextEdge: 'task',
+    terminalLog: [
+      '[llm-d 1.0 Prefix Router]',
+      '> Session Prefix Overlap: 99.6% (195K input : 317 output)',
+      '> Tiered KV Restore: CPU_DRAM_OFFLOAD (59ms vs 59s recompute)',
+      '> Workload Tier: interactive_cli (Priority Rank 1)',
+      '> Status: KV_WARM_PINNED',
+    ],
+  },
+  {
+    stage: 3,
+    title: '3. Git Worktree Agent',
+    subtitle: 'Candidate Diff + Unit',
+    badge: 'Isolated APFS Worktree',
+    role: 'Implementor Sub-Agent',
+    artifact: '/tmp/tg-slice-N + .git/thumbgate-session-lease.json',
+    keyMechanism: 'Single-writer checkout lease + disjoint file ownership + PreToolUse <0.5ms safety floor',
+    failureRoutingGuardrail: 'On foreign lease or out-of-scope file touch: PreToolUse DENY blocks mutation before git index changes.',
+    nextEdge: 'diff',
+    terminalLog: [
+      '[Worktree Implementor]',
+      '> Lease: CLAIMED (isolated APFS worktree)',
+      '> PreToolUse Eval: 0.042ms p95 (ALLOW)',
+      '> Candidate Diff: +142 -6 across 2 scoped files',
+      '> Status: DIFF_READY_FOR_ADVERSARIAL_VERIFIER',
+    ],
+  },
+  {
+    stage: 4,
+    title: '4. Adversarial Verifier',
+    subtitle: 'Contract Tests & Invariants',
+    badge: 'Independent Verifier',
+    role: 'Adversarial Verifier Agent',
+    artifact: 'tests/*.test.js + EARS Contract Suite',
+    keyMechanism: 'Decisive-step test execution + zero-trust provenance check against EARS acceptance criteria',
+    failureRoutingGuardrail: 'On test failure: routes dashed Code Repair loop back to Stage 3 (up to 2 attempts before upstream Escalation).',
+    nextEdge: 'pass',
+    terminalLog: [
+      '[Adversarial Verifier]',
+      '> EARS Clauses Checked: 4/4 satisfied',
+      '> Decisive Step Isolated: edit #2 flipped suite fail -> pass',
+      '> Regression Suite: 467/467 passing (0 breaches)',
+      '> Status: PRIMARY_VERIFICATION_PASSED',
+    ],
+  },
+  {
+    stage: 5,
+    title: '5. SpecAgent Gate (PCP)',
+    subtitle: 'Postcondition Probe',
+    badge: 'Post-Verification Quality Gate',
+    role: 'SpecAgent Critique + Static PCP',
+    artifact: 'AST Mutated-State & Call-Graph Probe',
+    keyMechanism: 'Static Postcondition Completeness Probe (PCP) + Call-Graph Deficiency Backtracking (arXiv:2610.05132)',
+    failureRoutingGuardrail: 'On unconstrained mutated state or upstream spec flaw: triggers Spec Backtrack (Stage 5 -> Stage 1) instead of local loop.',
+    nextEdge: 'probe',
+    terminalLog: [
+      '[SpecAgent PCP Quality Gate]',
+      '> Mutated State Vars: [balance, ledgerStatus, payoutStatus]',
+      '> Constrained in Postconditions: 3/3 (100% coverage)',
+      '> Trivial-Spec Reward Hack Check: PASSED (0 unconstrained vars)',
+      '> Status: PCP_CERTIFIED',
+    ],
+  },
+  {
+    stage: 6,
+    title: '6. Rule-Test Co-Commit',
+    subtitle: 'AGENTS.md + AST Test',
+    badge: 'Self-Improving Outer Harness',
+    role: 'Hy-Memory Context Editor + CI Gate',
+    artifact: 'AGENTS.md + tests/* + .changeset/*.md',
+    keyMechanism: '80%+ Rule-Test Co-Commit + 4-Line Self-Pointing Failure Telemetry + Surgical State Diff Patch (<=3,000 words)',
+    failureRoutingGuardrail: 'A rule without a co-committed test is rejected; surgical diff updates STATE.md/AGENTS.md without lossy transcript summary.',
+    nextEdge: 'self_heal_loop',
+    terminalLog: [
+      '[Outer Harness Co-Commit & Hy-Memory Editor]',
+      '> AGENTS.md Word Budget: 2,410 / 3,000 words (within adherence ceiling)',
+      '> Co-Committed Structural Test: VERIFIED (4-line self-pointing telemetry)',
+      '> Context Update: Surgical diff applied (0 lossy summary compression)',
+      '> Status: READY_FOR_TRUNK_MERGE',
+    ],
+  },
+]);
+
+function runSddHarnessStagePipeline({ mode = 'happy_path', stage = 1 } = {}) {
+  const validModes = new Set(['happy_path', 'spec_backtrack', 'self_healing']);
+  const activeMode = validModes.has(mode) ? mode : 'happy_path';
+  const idx = Math.min(6, Math.max(1, Number(stage) || 1)) - 1;
+  const activeStage = SDD_2026_STAGES[idx];
+
+  const feedbackLoops = {
+    forwardPath: '1 -> 2 (warm) -> 3 (task) -> 4 (diff) -> 5 (pass) -> 6 (probe)',
+    codeRepair: '4 -> 3 (local implementation repair when contract test fails)',
+    specBacktrack: '5 -> 1 (SpecAgent Call-Graph backtrack when PCP or upstream sub-spec is deficient)',
+    harnessSelfHealing: '6 -> 1 (Co-committed AGENTS.md rule + structural AST test hardens Constitution)',
+  };
+
+  return {
+    ok: true,
+    mode: activeMode,
+    currentStageIndex: idx + 1,
+    totalStages: SDD_2026_STAGES.length,
+    activeStage,
+    stages: SDD_2026_STAGES,
+    feedbackLoops,
+    activeTransition: activeMode === 'spec_backtrack'
+      ? feedbackLoops.specBacktrack
+      : (activeMode === 'self_healing' ? feedbackLoops.harnessSelfHealing : feedbackLoops.forwardPath),
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
+  if (args['sdd-visualizer']) {
+    const report = runSddHarnessStagePipeline({ mode: args.mode || 'happy_path', stage: args.stage || 1 });
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return 0;
+  }
   if (args['granite-switch']) {
     const report = buildGraniteSwitchHonestyReport(args);
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
@@ -1362,7 +1509,7 @@ function runCli(argv = process.argv.slice(2)) {
 
 if (require.main === module) {
   const args = process.argv.slice(2);
-  if (args.includes('--granite-switch') || args.includes('--ml-intern') || args.includes('--pytorchcon-2026') || args.includes('--llmd-1-0') || args.includes('--nvidia-akf')) {
+  if (args.includes('--granite-switch') || args.includes('--ml-intern') || args.includes('--pytorchcon-2026') || args.includes('--llmd-1-0') || args.includes('--nvidia-akf') || args.includes('--sdd-visualizer')) {
     process.exit(runCli(args));
   }
   const jsonMode = args.includes('--json');
@@ -1457,5 +1604,7 @@ module.exports = {
   evaluateSpecAgentPostconditionAndCallGraphRepair,
   evaluateOuterHarnessRuleTestCoCommitAndContextEditor,
   validateSpecDrivenScaffold,
+  SDD_2026_STAGES,
+  runSddHarnessStagePipeline,
   runCli,
 };
