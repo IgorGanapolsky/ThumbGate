@@ -197,7 +197,8 @@ async function batchEvaluateGates(toolName, toolInput, opts = {}) {
   const startTime = process.hrtime.bigint();
   const rulesDir = opts.rulesDir;
   const hotCache = await loadHotCache(opts.cachePath);
-  const rulesByCategory = classifyRulesByCategory(await loadPreventionRules(rulesDir));
+  // Pass toolName for query pushdown: Gold layer only loads rules relevant to this tool
+  const rulesByCategory = classifyRulesByCategory(await loadPreventionRules(rulesDir, { toolName }));
 
   // CUDA: launch worker threads for each gate category (SIMT dispatch)
   const workers = [];
@@ -262,40 +263,55 @@ async function batchEvaluateGates(toolName, toolInput, opts = {}) {
  * Global Memory: Load prevention rules from feedback store.
  * This is the "global memory" — persisted, comprehensive, but slower.
  * Accepts an optional rulesDir for testability (CUDA: configurable memory region).
+ *
+ * DATA+AI Summit principle: "Plug agents into Gold tables, not raw data."
+ * Uses the Gate Semantic Layer's Gold view which provides query pushdown
+ * (only loads rules relevant to the specific tool) and sampling for large
+ * datasets (cost optimization: avoid loading all feedback rows).
  */
-async function loadPreventionRules(rulesDir) {
-  const thumbgateDir = rulesDir || path.join(PKG_ROOT, '.thumbgate');
-  const rules = [];
+async function loadPreventionRules(rulesDir, opts = {}) {
+  // Use the Gold layer with pushdown filtering (stops SELECT * from feedback store)
+  const semanticLayer = require('./gate-semantic-layer');
+  const { toolName, category } = opts;
+  const rules = semanticLayer.loadGoldRules({
+    rulesDir: rulesDir || PKG_ROOT,
+    toolName,
+    category,
+    sample: opts.sample !== false,
+  });
 
-  // Load from .thumbgate/prevention-rules.json (global memory)
-  const rulesPath = path.join(thumbgateDir, 'prevention-rules.json');
-  if (fs.existsSync(rulesPath)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(rulesPath, 'utf8'));
-      rules.push(...(data.rules || []));
-    } catch (_e) { /* skip malformed */ }
-  }
-
-  // Load from feedback directory (global memory)
-  if (fs.existsSync(FEEDBACK_DIR)) {
-    const entries = fs.readdirSync(FEEDBACK_DIR).filter(f => f.endsWith('.json'));
-    for (const entry of entries) {
+  // If no Gold rules found, fall back to raw loading (backward compat)
+  if (rules.length === 0) {
+    const thumbgateDir = rulesDir || path.join(PKG_ROOT, '.thumbgate');
+    const rulesPath = path.join(thumbgateDir, 'prevention-rules.json');
+    if (fs.existsSync(rulesPath)) {
       try {
-        const fb = JSON.parse(fs.readFileSync(path.join(FEEDBACK_DIR, entry), 'utf8'));
-        if (fb.type === 'prevention_rule' && fb.rule) {
-          rules.push({
-            id: fb.rule.id || path.basename(entry, '.json'),
-            type: fb.rule.type || 'pattern',
-            pattern: fb.rule.pattern,
-            paths: fb.rule.paths,
-            commands: fb.rule.commands,
-            tools: fb.rule.tools,
-            decision: fb.rule.decision || 'deny',
-            category: GATE_CATEGORIES.PREVENTION,
-            source: 'feedback',
-          });
-        }
-      } catch (_e) { /* skip */ }
+        const data = JSON.parse(fs.readFileSync(rulesPath, 'utf8'));
+        rules.push(...(data.rules || []));
+      } catch (_e) { /* skip malformed */ }
+    }
+
+    // Also check feedback dir
+    if (fs.existsSync(FEEDBACK_DIR)) {
+      const entries = fs.readdirSync(FEEDBACK_DIR).filter(f => f.endsWith('.json'));
+      for (const entry of entries) {
+        try {
+          const fb = JSON.parse(fs.readFileSync(path.join(FEEDBACK_DIR, entry), 'utf8'));
+          if (fb.type === 'prevention_rule' && fb.rule) {
+            rules.push({
+              id: fb.rule.id || path.basename(entry, '.json'),
+              type: fb.rule.type || 'pattern',
+              pattern: fb.rule.pattern,
+              paths: fb.rule.paths,
+              commands: fb.rule.commands,
+              tools: fb.rule.tools,
+              decision: fb.rule.decision || 'deny',
+              category: GATE_CATEGORIES.PREVENTION,
+              source: 'feedback',
+            });
+          }
+        } catch (_e) { /* skip */ }
+      }
     }
   }
 
@@ -539,4 +555,6 @@ module.exports = {
   cudaGateBatchCmd,
   telemetryQueue,
   telemetryFlushScheduled,
+  // Gold layer (semantic layer + query pushdown)
+  loadGoldRules: () => require('./gate-semantic-layer').loadGoldRules,
 };

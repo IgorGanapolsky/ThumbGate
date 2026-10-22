@@ -351,6 +351,88 @@ test('CUDA Gate: telemetry queue and flush work', () => {
   assert.strictEqual(telemetryQueue.length, 0, 'Queue should be empty after flush');
 });
 
+test('CUDA Gate: Gold layer provides query pushdown (only loads rules for matching tool)', async () => {
+  const semanticLayer = require(path.join(__dirname, '..', 'scripts', 'gate-semantic-layer'));
+
+  // Create a temp dir with rules
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-gold-test-'));
+  const thumbgateDir = path.join(tmpDir, '.thumbgate');
+  fs.mkdirSync(thumbgateDir, { recursive: true });
+
+  // Rules with specific tool restrictions and general rules
+  fs.writeFileSync(
+    path.join(thumbgateDir, 'prevention-rules.json'),
+    JSON.stringify({
+      rules: [
+        { id: 'no-force-push', type: 'command', patterns: ['git push --force'], decision: 'deny', tools: ['Bash'], category: 'security' },
+        { id: 'no-admin-merge', type: 'command', patterns: ['--admin'], decision: 'deny', tools: ['Bash'], category: 'policy' },
+        { id: 'no-secrets', type: 'pattern', pattern: 'password=.*', decision: 'deny', category: 'security' },
+      ],
+    })
+  );
+
+  try {
+    // With pushdown for Bash tool — should load rules that apply to Bash OR have no tool restriction
+    const bashRules = semanticLayer.loadGoldRules({ rulesDir: tmpDir, toolName: 'Bash', sample: false });
+    assert.ok(bashRules.length >= 2, `Should load Bash-specific + general rules, got ${bashRules.length}`);
+
+    // With pushdown for Write tool — should only load general rules (no Bash-specific ones)
+    const writeRules = semanticLayer.loadGoldRules({ rulesDir: tmpDir, toolName: 'Write', sample: false });
+    const bashOnlyRules = writeRules.filter(r => r.tools && r.tools.includes('Bash'));
+    assert.strictEqual(bashOnlyRules.length, 0, 'Should not load Bash-specific rules for Write tool');
+
+    // Without pushdown — should load all rules
+    const allRules = semanticLayer.loadGoldRules({ rulesDir: tmpDir, sample: false });
+    assert.ok(allRules.length >= 3, `Should load all rules, got ${allRules.length}`);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('CUDA Gate: Gold layer describes schema in single call', () => {
+  const semanticLayer = require(path.join(__dirname, '..', 'scripts', 'gate-semantic-layer'));
+  const schema = semanticLayer.describeGoldLayer();
+
+  assert.ok(schema.name, 'Should have a name');
+  assert.ok(schema.sources, 'Should list data sources');
+  assert.ok(schema.ruleTypes, 'Should list rule types');
+  assert.ok(schema.categories, 'Should list categories');
+  assert.ok(schema.anomalyPatterns, 'Should list anomaly patterns');
+  assert.ok(schema.pushdownFilters, 'Should list pushdown filters');
+});
+
+test('CUDA Gate: anomaly detection tags contradictions in feedback', () => {
+  const semanticLayer = require(path.join(__dirname, '..', 'scripts', 'gate-semantic-layer'));
+
+  const feedbackEntry = {
+    type: 'prevention_rule',
+    signal: 'down',
+    whatWentWrong: 'You are wrong about the security bypass — the agent bypassed the gate check',
+    rule: { id: 'test-rule', type: 'pattern', pattern: 'bypass', decision: 'deny' },
+  };
+
+  const tags = semanticLayer.detectAnomalies(feedbackEntry);
+  const tagIds = tags.map(t => t.id);
+  assert.ok(tagIds.includes('security-bypass'), 'Should detect security bypass anomaly');
+  assert.ok(tagIds.includes('contradiction'), 'Should detect contradiction anomaly');
+});
+
+test('CUDA Gate: loadPreventionRules uses Gold layer with pushdown', async () => {
+  const { tmpDir, thumbgateDir } = createTempGateEnv();
+  try {
+    // Request rules for a specific tool — pushdown should only load matching rules
+    const rules = await loadPreventionRules(thumbgateDir, { toolName: 'Bash' });
+    assert.ok(Array.isArray(rules), 'Should return an array');
+    assert.ok(rules.length >= 1, 'Should load at least 1 rule for Bash tool');
+
+    // Rules should have confidence and source metadata from Gold layer
+    const hasMetadata = rules.some(r => r.confidence !== undefined || r.source !== undefined);
+    assert.ok(hasMetadata, 'Rules should have Gold layer metadata');
+  } finally {
+    cleanup(tmpDir);
+  }
+});
+
 test('CUDA Gate: PKG_ROOT is set to the package root', () => {
   assert.ok(PKG_ROOT.length > 0, 'PKG_ROOT should be set');
   assert.ok(fs.existsSync(path.join(PKG_ROOT, 'package.json')), 'PKG_ROOT should contain package.json');

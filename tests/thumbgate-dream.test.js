@@ -27,10 +27,11 @@ const {
   acquireLock,
   releaseLock,
   scanSessionForSignals,
+  detectAnomalies,
   mergeSignals,
   truncate,
   extractTimestamp,
-  GATE_CATEGORIES_DEFAULT: _unused,
+  ANOMALY_PATTERNS,
   PKG_ROOT,
   READ_ONLY_PATHS,
   MIN_HOURS_SINCE_LAST,
@@ -569,4 +570,28 @@ test('Dream Mode: full cycle completes with all phases', () => {
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
+});
+
+test('Dream Mode: detectAnomalies identifies security bypass patterns', () => {
+  const text = { whatWentWrong: 'The agent tried to bypass the gate check by overriding the security guard' };
+  const tags = detectAnomalies(text);
+  const tagIds = tags.map(t => t.id);
+  assert.ok(tagIds.includes('security-bypass'), 'Should detect security bypass');
+});
+
+test('Dream Mode: detectAnomalies identifies cost spike patterns', () => {
+  const text = { whatWentWrong: 'The cost exploded after we added 1000 LLM calls per row' };
+  const tags = detectAnomalies(text);
+  const tagIds = tags.map(t => t.id);
+  assert.ok(tagIds.includes('cost-spike'), 'Should detect cost spike');
+});
+
+test('Dream Mode: ANOMALY_PATTERNS has 5 standard patterns', () => {
+  assert.strictEqual(ANOMALY_PATTERNS.length, 5, 'Should have 5 anomaly patterns');
+  const ids = ANOMALY_PATTERNS.map(p => p.id);
+  assert.ok(ids.includes('contradiction'), 'Should have contradiction pattern');
+  assert.ok(ids.includes('regression'), 'Should have regression pattern');
+  assert.ok(ids.includes('cost-spike'), 'Should have cost-spike pattern');
+  assert.ok(ids.includes('security-bypass'), 'Should have security-bypass pattern');
+  assert.ok(ids.includes('boundary-violation'), 'Should have boundary-violation pattern');
 });

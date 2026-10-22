@@ -57,6 +57,41 @@ const MIN_HOURS_SINCE_LAST = 24;
 const MIN_SESSIONS_SINCE_LAST = 5;
 const LOCK_TTL_MS = 30 * 60 * 1000; // 30-minute lock TTL
 
+// Anomaly patterns baked into signal detection (DATA+AI Summit #3:
+// "Bake common analytical reasoning into prompts or tool logic")
+const ANOMALY_PATTERNS = [
+  {
+    id: 'contradiction',
+    pattern: /(correction|you[''re]?|you are)\s+(wrong|incorrect|mistaken)/gi,
+    severity: 'high',
+    description: 'User correction signals contradiction with prior guidance',
+  },
+  {
+    id: 'regression',
+    pattern: /(same error|previously.{0,20}fixed|back.{0,5}regress)/gi,
+    severity: 'high',
+    description: 'Previously fixed issue reappeared',
+  },
+  {
+    id: 'cost-spike',
+    pattern: /(cost\s*(spike|overrun|explode|balloon)|expensive.{0,20}(call|request|token))/gi,
+    severity: 'medium',
+    description: 'Cost anomaly detected',
+  },
+  {
+    id: 'security-bypass',
+    pattern: /(bypass|broke|override|circumvent).*?(gate|guard|check|auth)/gi,
+    severity: 'critical',
+    description: 'Security bypass attempt detected',
+  },
+  {
+    id: 'boundary-violation',
+    pattern: /(read.{0,5}only|never).{0,20}(source|config|test|code)/gi,
+    severity: 'high',
+    description: 'Read-only boundary violation attempted',
+  },
+];
+
 // Files that Dream Mode must never modify (read-only safety boundary).
 // Mirrors CUDA's "read-only code region" — the input store is never touched.
 const READ_ONLY_PATHS = new Set([
@@ -257,6 +292,22 @@ function _gatherSignalParallel(sessionFiles, feedbackDir, signals) {
 }
 
 /**
+ * Bake analytical reasoning into signal detection (DATA+AI Summit #3).
+ * Detect common failure patterns so the gate engine can pre-filter.
+ */
+function detectAnomalies(obj) {
+  const text = JSON.stringify(obj).toLowerCase();
+  const tags = [];
+  for (const { id, pattern, severity, description } of ANOMALY_PATTERNS) {
+    pattern.lastIndex = 0;
+    if (pattern.test(text)) {
+      tags.push({ id, severity, description });
+    }
+  }
+  return tags;
+}
+
+/**
  * Scan a single session transcript for signals.
  * This is the SIMT kernel — same logic, different input file.
  */
@@ -337,14 +388,32 @@ function scanSessionForSignals(filepath, feedbackDir) {
   // CUDA memory hierarchy: query "shared" feedback cache alongside "global" sessions
   if (feedbackDir && fs.existsSync(feedbackDir)) {
     const feedbackFiles = fs.readdirSync(feedbackDir).filter(f => f.endsWith('.json'));
-    for (const fbFile of feedbackFiles) {
+
+    // Cost optimization: sample large feedback datasets (DATA+AI Summit #4:
+    // "avoid naive row-by-row LLM calls at scale")
+    let filesToScan = feedbackFiles;
+    if (feedbackFiles.length > 100) {
+      const sampleSize = Math.max(50, Math.floor(feedbackFiles.length * 0.3));
+      const step = feedbackFiles.length / sampleSize;
+      filesToScan = [];
+      for (let i = 0; i < sampleSize; i++) {
+        const idx = Math.floor(i * step);
+        if (idx < feedbackFiles.length) filesToScan.push(feedbackFiles[idx]);
+      }
+    }
+
+    for (const fbFile of filesToScan) {
       try {
         const fb = JSON.parse(fs.readFileSync(path.join(feedbackDir, fbFile), 'utf8'));
         if (fb.signal === 'down' && fb.whatWentWrong) {
+          // DATA+AI Summit #3: bake analytical reasoning into detection logic
+          // Detect anomaly patterns in feedback for proactive gate rule generation
+          const anomalyTags = detectAnomalies(fb);
           signals.contradictions.push({
             source: 'feedback',
             context: fb.whatWentWrong,
             timestamp: fb.timestamp || new Date().toISOString(),
+            anomalyTags: anomalyTags.length > 0 ? anomalyTags : undefined,
           });
         }
       } catch (_e) { /* skip malformed */ }
@@ -798,7 +867,9 @@ module.exports = {
   MIN_HOURS_SINCE_LAST,
   MIN_SESSIONS_SINCE_LAST,
   READ_ONLY_PATHS,
+  ANOMALY_PATTERNS,
   scanSessionForSignals,
+  detectAnomalies,
   mergeSignals,
   truncate,
   extractTimestamp,
