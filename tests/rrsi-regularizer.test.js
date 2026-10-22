@@ -553,4 +553,494 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(pdEcon.replicatesMlaKv8x, false);
   assert.equal(pdEcon.recommendation, 'OPTIMAL_PD_BALANCE');
   assert.equal(buildLlmd10ProductionHonestyReport().ok, true);
+
+  // Nvidia Agent Knowledge Foundation (GTC Berlin Oct 21, 2026: Nemotron Retriever, Auto-Ontology MCP, Kumo Tabular, ACL Diode)
+  const {
+    evaluateNvidiaRetrieverLookupReduction,
+    resolveEnterpriseOntologyCanonicalTerm,
+    evaluateKumoRelationalPrediction,
+    enforceOntologyMcpAclGate,
+    buildNvidiaAgentKnowledgeFoundationReport,
+  } = require('../scripts/rrsi-doctor');
+
+  const retriever = evaluateNvidiaRetrieverLookupReduction({
+    lookupCount: 1,
+    rerankerEnabled: true,
+    perLookupLatencyMs: 18,
+  });
+  assert.equal(retriever.allowed, true);
+  assert.equal(retriever.relevanceBoostPct, 65);
+  assert.ok(retriever.netLatencySavedMs > 0);
+
+  assert.equal(resolveEnterpriseOntologyCanonicalTerm('tier').canonicalConcept, 'plan_tier');
+  assert.equal(resolveEnterpriseOntologyCanonicalTerm('plan').canonicalConcept, 'plan_tier');
+  assert.equal(resolveEnterpriseOntologyCanonicalTerm('guardrail').canonicalConcept, 'prevention_gate');
+
+  const kumo = evaluateKumoRelationalPrediction({
+    linkedTables: ['feedback', 'lessons', 'gates', 'task_outcomes'],
+    recentNegativeCount: 2,
+    activeMatchingGates: 1,
+    usesPerTaskPipelineSprawl: false,
+  });
+  assert.equal(kumo.allowed, true);
+
+  const blockedAcl = enforceOntologyMcpAclGate({
+    entityId: 'user_1',
+    projectId: '',
+    processId: 'proc_1',
+    sessionId: 'sess_1',
+    requestedTables: ['lessons', 'billing_secrets'],
+    allowedTables: ['lessons', 'gates', 'task_outcomes'],
+  });
+  assert.equal(blockedAcl.allowed, false);
+  assert.equal(blockedAcl.decision, 'DENY');
+  assert.ok(blockedAcl.blockers.includes('missing_four_field_ontology_acl_scope'));
+  assert.equal(buildNvidiaAgentKnowledgeFoundationReport().ok, true);
+
+  // Capital One Databolt Vaultless FPT, vLLM AgentX, Microsoft Work IQ Retrieve, Gergely Orosz AEO Gate, & Foundry Browser GA
+  const {
+    tokenizeFormatPreservingVaultless,
+    enforceZeroTrustDetokenizationGate,
+  } = require('../scripts/secret-redaction');
+  const {
+    evaluateVllmWideEpAndAgentxEconomics,
+    evaluateWorkIqRetrieveContract,
+    evaluateAeoCitationAndReadmeBacklinkGate,
+    evaluateFoundryBrowserAutomationGovernance,
+  } = require('../scripts/rrsi-doctor');
+
+  const testSalt = 'test-installation-secret-fpt-key-2026';
+  const tokenizedText = tokenizeFormatPreservingVaultless(
+    'Contact alice@company.com with SSN 123-45-6789 and phone 415-890-1234',
+    { salt: testSalt }
+  );
+  assert.doesNotMatch(tokenizedText, /alice@company\.com|123-45-6789|415-890-1234/);
+  assert.match(tokenizedText, /tok_[0-9a-f]{8}@tokenized\.local/);
+  assert.match(tokenizedText, /\b900-\d{2}-\d{4}\b/);
+  assert.match(tokenizedText, /\b555-01\d-\d{4}\b/);
+  assert.equal(
+    tokenizeFormatPreservingVaultless('alice@company.com', { salt: testSalt }),
+    tokenizeFormatPreservingVaultless('alice@company.com', { salt: testSalt })
+  );
+  assert.equal(enforceZeroTrustDetokenizationGate({ authenticated: true }).viewMode, 'TOKENIZED_ONLY');
+
+  const vllmAgentX = evaluateVllmWideEpAndAgentxEconomics({
+    engine: 'vllm',
+    wideEpEnabled: true,
+    eplbEnabled: true,
+    tokensPerSecPerGpu: 954000,
+    p90TpsPerUser: 196,
+    lowLatencyB300Path: true,
+  });
+  assert.equal(vllmAgentX.allowed, true);
+  assert.equal(vllmAgentX.effectiveUserTps, 829);
+  assert.equal(vllmAgentX.estimatedRevenuePerGpuHrUsd, 38.96);
+
+  const validWorkIq = evaluateWorkIqRetrieveContract({
+    query: 'Find latest launch decision',
+    strategy: 'copilot',
+    responseMarkdown: '## Files\n- **Decision** [^h1]',
+    retrievalHits: [{ id: 'h1', webUrl: 'https://example.com/doc', entityType: 'Files', sensitivityLabel: { id: 'confidential' } }],
+  });
+  assert.equal(validWorkIq.allowed, true);
+  assert.equal(validWorkIq.resolvedCitationCount, 1);
+
+  const blockedTencentBacklink = evaluateAeoCitationAndReadmeBacklinkGate({
+    hasReproducibleBenchmarkOrPr: true,
+    requestsFreeGithubReadmeLinkForSmallVoucher: true,
+    voucherAmountUsd: 100,
+    reciprocalPartnerOrSponsorVerified: false,
+  });
+  assert.equal(blockedTencentBacklink.allowed, false);
+  assert.ok(blockedTencentBacklink.blockers.includes('refuse_permanent_github_readme_aeo_backlink_for_small_unverified_voucher'));
+
+  const foundryBrowser = evaluateFoundryBrowserAutomationGovernance({
+    observedPageBeforeAct: true,
+    verifiedStateAfterAct: true,
+    isStateChangingAction: true,
+    humanApprovalOrTakeControlReady: true,
+    pageContentSeparatedFromSystemPolicy: true,
+    sensitiveTracesRoutedToDenyByDefaultTable: true,
+  });
+  assert.equal(foundryBrowser.allowed, true);
+  assert.equal(foundryBrowser.traceIsolationTable, 'AppGenAIContent');
+  // Gaetano Franco Agent Reliability (igor-async-evaluation.zip v1) -> ThumbGate Detect-to-Enforce Bridge
+  const { evaluateAgentReliabilityEventStream } = require('../scripts/rrsi-doctor');
+  const gaetanoRun = evaluateAgentReliabilityEventStream({
+    schema_version: 1,
+    events: [
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:00Z', event_type: 'task', task: 'Fix checkout' },
+      { agent: 'codex', repo: 'tg', session_id: 's2', timestamp: '2026-10-21T14:00:01Z', event_type: 'task', task: 'Fix checkout' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:02Z', event_type: 'file_edit', file_path: 'src/checkout.py' },
+      { agent: 'codex', repo: 'tg', session_id: 's2', timestamp: '2026-10-21T14:00:03Z', event_type: 'file_edit', file_path: 'src/checkout.py' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:10Z', event_type: 'command', command: 'pytest', result: 'failed' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:15Z', event_type: 'file_edit', file_path: 'src/checkout.py' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:20Z', event_type: 'command', command: 'pytest', result: 'failed' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:25Z', event_type: 'file_edit', file_path: 'src/checkout.py' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:30Z', event_type: 'command', command: 'pytest', result: 'failed' },
+      { agent: 'claude', repo: 'tg', session_id: 's1', timestamp: '2026-10-21T14:00:35Z', event_type: 'success', result: 'All tests pass' },
+      { agent: 'cursor', repo: 'tg', session_id: 's3', timestamp: '2026-10-21T14:01:00Z', event_type: 'command', command: 'cat src/checkout.py', result: 'ok' },
+      { agent: 'cursor', repo: 'tg', session_id: 's3', timestamp: '2026-10-21T14:01:01Z', event_type: 'command', command: 'cat src/checkout.py', result: 'ok' },
+      { agent: 'cursor', repo: 'tg', session_id: 's3', timestamp: '2026-10-21T14:01:02Z', event_type: 'command', command: 'cat src/checkout.py', result: 'ok' },
+      { agent: 'cursor', repo: 'tg', session_id: 's3', timestamp: '2026-10-21T14:01:03Z', event_type: 'command', command: 'cat src/checkout.py', result: 'ok' },
+      { agent: 'cursor', repo: 'tg', session_id: 's3', timestamp: '2026-10-21T14:01:04Z', event_type: 'command', command: 'cat src/checkout.py', result: 'ok' },
+    ],
+  });
+  assert.equal(gaetanoRun.ok, true);
+  assert.equal(gaetanoRun.alerts.length, 5);
+  assert.equal(gaetanoRun.compiledGates.length, 5);
+
+  // Paper Instruments Ultramarine 1 Flash ($0.13/task vs $8.19) & Non-Verifiable RL Substantive Boundary Rubric Grader
+  const { evaluatePaperInstrumentsRubricAndUltramarineRoute } = require('../scripts/rrsi-doctor');
+  const overfit = evaluatePaperInstrumentsRubricAndUltramarineRoute({
+    criterionText: "The callout uses the phrase 'sole forecast basis' and presents the approval request before the counsel-clearance caveat",
+  });
+  assert.equal(overfit.allowed, false);
+  assert.equal(overfit.isOverfit, true);
+
+  const vague = evaluatePaperInstrumentsRubricAndUltramarineRoute({
+    criterionText: 'Provides a useful forecast update for the board',
+  });
+  assert.equal(vague.allowed, false);
+  assert.equal(vague.isVague, true);
+
+  const substantive = evaluatePaperInstrumentsRubricAndUltramarineRoute({
+    criterionText: 'Separates what the board can approve now (v7 forecast) from what still requires counsel clearance (external wording and tables)',
+    separatesApprovedNowFromClearanceRequired: true,
+    apiEndpoint: '/v1/chat/completions',
+    hasStickySessionHeader: true,
+    reasoningEffort: 'max',
+    zeroBalanceSpendGuard: true,
+  });
+  assert.equal(substantive.allowed, true);
+  assert.equal(substantive.costSavingsMultiple, 63);
+
+  // Paper Instruments Default Sampling Config & Feather Prompt Tuning (/docs/ultramarine/default-sampling-config & prompt-tuning)
+  const { evaluateFeatherSamplingAndPromptTuning } = require('../scripts/rrsi-doctor');
+  const badFeather = evaluateFeatherSamplingAndPromptTuning({
+    wireApi: 'Responses',
+    topK: -1,
+    maxOutputTokens: 8192,
+    deliverableText: 'Draft · Audit Committee — this robust solution will unlock seamless value [TBD].',
+    reopenedUnchangedFileAfterPass: true,
+  });
+  assert.equal(badFeather.allowed, false);
+  assert.ok(badFeather.blockers.includes('responses_api_rejects_top_k_omit_field'));
+  assert.ok(badFeather.blockers.includes('max_output_tokens_below_32768_risks_truncation_under_max_reasoning'));
+  assert.ok(badFeather.blockers.includes('feather_style_forbids_em_dash'));
+  assert.ok(badFeather.blockers.includes('feather_style_forbids_middle_dot_metadata_chains'));
+  assert.ok(badFeather.blockers.includes('feather_style_forbids_inflated_ai_slop_buzzwords'));
+  assert.ok(badFeather.blockers.includes('stop_when_work_is_done_violation_reopened_unchanged_file'));
+
+  const cleanFeather = evaluateFeatherSamplingAndPromptTuning({
+    wireApi: 'Messages',
+    topK: -1,
+    maxOutputTokens: 65536,
+    contextTokens: 105000,
+    deliverableText: 'Gross margin fell 240 basis points in Q3 because freight costs rose faster than prices.',
+    reopenedUnchangedFileAfterPass: false,
+  });
+  assert.equal(cleanFeather.allowed, true);
+  assert.equal(cleanFeather.reasoningField, 'output_config.effort');
+  assert.equal(cleanFeather.maxTokensField, 'max_tokens');
+  assert.equal(cleanFeather.compaction.shouldCompactHistory, true);
+
+  // SpecAgent (arXiv:2610.05132), Outer Harness Co-Commit & Hy-Memory Context Editor, and 6-Block EARS SDD Scaffold
+  const {
+    computeBitwiseJaccardSimilarity,
+    retrieveTopStructuralSpecTemplates,
+    evaluateSpecAgentPostconditionAndCallGraphRepair,
+    evaluateOuterHarnessRuleTestCoCommitAndContextEditor,
+    validateSpecDrivenScaffold,
+  } = require('../scripts/rrsi-doctor');
+
+  assert.equal(computeBitwiseJaccardSimilarity(0b1111, 0b0111), 0.75);
+  const topTemplates = retrieveTopStructuralSpecTemplates(0b1011, [
+    { id: 't1', fingerprint: 0b0001 },
+    { id: 't2', fingerprint: 0b1011 },
+    { id: 't3', fingerprint: 0b1010 },
+  ], 2);
+  assert.equal(topTemplates[0].id, 't2');
+  assert.equal(topTemplates[0].jaccardSimilarity, 1);
+
+  const pcpBlocked = evaluateSpecAgentPostconditionAndCallGraphRepair({
+    primaryVerifierPassed: false,
+    mutatedStateVars: ['balance', 'ledgerStatus'],
+    constrainedPostconditionVars: ['balance'],
+    localRepairAttempts: 3,
+    upstreamContractDeficient: true,
+    upstreamSpecNode: 'spec://billing/checkout',
+  });
+  assert.equal(pcpBlocked.allowed, false);
+  assert.equal(pcpBlocked.repairRoute, 'BACKTRACK_UPSTREAM_SUB_SPEC:spec://billing/checkout');
+
+  const outerHarness = evaluateOuterHarnessRuleTestCoCommitAndContextEditor({
+    agentsMdWordCount: 2200,
+    ruleModifiedInAgentsMd: true,
+    coCommittedStructuralTest: true,
+    usesLossyTranscriptSummarization: false,
+    usesSurgicalStateDiffPatch: true,
+  });
+  assert.equal(outerHarness.allowed, true);
+  assert.match(outerHarness.selfPointingFailureMessage, /INVARIANT VIOLATION:[\s\S]*WHY:[\s\S]*FIX:[\s\S]*SPEC REFERENCE:/);
+
+  const sddScaffold = validateSpecDrivenScaffold({
+    constitutionReference: 'AGENTS.md#PreToolUse',
+    earsAcceptanceCriteria: ['WHEN a tool call mutates git history, WHILE on branch main, THE SYSTEM SHALL deny execution in <0.5ms.'],
+    explicitOutOfScopeBoundaries: ['Do not add OAuth or external cloud vault dependencies'],
+    lockedArchitecturalDecisions: ['Use local SQLite FTS5 + Ed25519 offline token verification'],
+    worktreeIsolatedAtomicTasks: ['Task 1: worktrees/tg-slice-1'],
+    adversarialVerificationAndPcpContract: 'Run Postcondition Completeness Probe over all mutated state fields',
+  });
+  assert.equal(sddScaffold.allowed, true);
+  assert.equal(sddScaffold.validEarsCount, 1);
+
+  const {
+    runSddHarnessStagePipeline,
+    evaluateWealthOfAgentsRouting,
+    evaluateSimileBehavioralSimulationAndTwinGate,
+    evaluateLevingerBehavioralConversionMatrix,
+    evaluateKurtzApexPredatorAgentSecurityAndRouting,
+    evaluateLiteRtEdgeTensorAuthoringAndExport,
+    evaluateMicroIpAcquisitionValuationAndEscrowGate,
+    detectConversationEndAndThumbsDownChurn,
+    promoteFeedbackToSddSpec,
+  } = require('../scripts/rrsi-doctor');
+  const sddVis = runSddHarnessStagePipeline({ mode: 'spec_backtrack', stage: 5 });
+  assert.equal(sddVis.ok, true);
+  assert.equal(sddVis.totalStages, 6);
+  assert.equal(sddVis.activeStage.title, '5. SpecAgent Gate (PCP)');
+  assert.match(sddVis.activeTransition, /5 -> 1/);
+
+  // Princeton Wealth of Agents (arXiv:2610.20518v1): SealQA single-skill & collinear pools avoid delta-MDA split; trained experience buffer + marginal welfare payoff reaches 70% on GAIA (+12pp) and lifts SealQA->GAIA from 40.4% -> 53.2% with a 19.1% standalone specialist
+  const sealQaSingleSkill = evaluateWealthOfAgentsRouting({
+    distinctSkillDomains: ['web_search_only'],
+    singleGeneralAgentAccuracy: 0.62,
+  });
+  assert.equal(sealQaSingleSkill.routeDecision, 'SINGLE_GENERAL_AGENT_AVOID_SEALQA_SPLIT_OVERHEAD');
+
+  const collinearMasPool = evaluateWealthOfAgentsRouting({
+    distinctSkillDomains: ['code_edit', 'sqlite_audit'],
+    poolComposition: 'nested_mas',
+    singleGeneralAgentAccuracy: 0.67,
+  });
+  assert.equal(collinearMasPool.routeDecision, 'ROUTED_SDA_AVOID_COLLINEAR_OR_MAS_COORDINATION_LOSS');
+
+  const untrainedTrafficShareBlocked = evaluateWealthOfAgentsRouting({
+    distinctSkillDomains: ['code_edit', 'sqlite_audit', 'browser_verify'],
+    trainedExperienceRouter: false,
+    compensationModel: 'traffic_share',
+  });
+  assert.equal(untrainedTrafficShareBlocked.allowed, false);
+  assert.ok(untrainedTrafficShareBlocked.blockers.includes('untrained_description_only_router_9_1pp_penalty'));
+  assert.ok(untrainedTrafficShareBlocked.blockers.includes('prop5_traffic_share_induces_generalist_collapse'));
+
+  const gaiaEnsemble = evaluateWealthOfAgentsRouting({
+    distinctSkillDomains: ['code_edit', 'sqlite_audit', 'browser_verify'],
+    singleGeneralAgentAccuracy: 0.58,
+  });
+  assert.equal(gaiaEnsemble.allowed, true);
+  assert.equal(gaiaEnsemble.routeDecision, 'MULTI_DEVELOPER_SPECIALIST_ENSEMBLE');
+  assert.equal(gaiaEnsemble.combinedAccuracy, 0.70);
+  assert.equal(gaiaEnsemble.gainVsGeneralAgent, 0.12);
+  assert.equal(gaiaEnsemble.augmentedTransferAccuracy, 0.532);
+
+  // Joon Sung Park / Simile Behavioral Simulation, Quantum Preference Percolation & Executive Sibling Twin Gate (tEYA-M30u0E)
+  const overfitWebScrapeSim = evaluateSimileBehavioralSimulationAndTwinGate({
+    environmentStateText: 'Pricing page /pricing with $499 Diagnostic CTA and $19/mo Pro checkout',
+    groundedInInterviewAndPanelData: false,
+    validatedPillars: ['gss_survey'],
+    pearsonCorrelation: 0.55,
+    observedAccuracy: 0.96,
+    simulatedPersonaWalkthroughs: 1,
+    proposalViolatesLockedExecutiveInvariants: true,
+    fdeCoConstructedUseCase: false,
+  });
+  assert.equal(overfitWebScrapeSim.allowed, false);
+  assert.equal(overfitWebScrapeSim.executiveTwinVerdict, 'REJECT_BEFORE_ESCALATION');
+  assert.ok(overfitWebScrapeSim.blockers.includes('web_scrape_only_permanently_online_bias_requires_interview_panel_grounding'));
+  assert.ok(overfitWebScrapeSim.blockers.includes('overfit_above_human_test_retest_noise_ceiling_86pct'));
+  assert.ok(overfitWebScrapeSim.blockers.includes('executive_sibling_twin_rejected_proposal_before_human_escalation'));
+
+  const calibratedSimileTwin = evaluateSimileBehavioralSimulationAndTwinGate({
+    environmentStateText: 'Pricing page /pricing with $499 FDE Diagnostic and $19/mo Pro',
+    groundedInInterviewAndPanelData: true,
+    validatedPillars: ['gss_survey', 'big_five_traits', 'economic_games', 'published_rcts'],
+    pearsonCorrelation: 0.74,
+    observedAccuracy: 0.85,
+    simulatedPersonaWalkthroughs: 5,
+    proposalViolatesLockedExecutiveInvariants: false,
+    fdeCoConstructedUseCase: true,
+  });
+  assert.equal(calibratedSimileTwin.allowed, true);
+  assert.equal(calibratedSimileTwin.executiveTwinVerdict, 'APPROVE_FOR_HUMAN_REVIEW');
+  assert.ok(calibratedSimileTwin.humanParityRatio >= 0.98);
+  assert.ok(calibratedSimileTwin.percolatedPreferenceScore >= 0.95);
+
+  // Sarah Levinger Behavioral Conversion Matrix (nCij0S5oZWM): Valence x Intensity, Self-Discrepancy (Ought/Actual vs Ideal), and Messy Middle 4-Stage Journey
+  const badIdealSelfAd = evaluateLevingerBehavioralConversionMatrix({
+    copyText: 'You deserve an enterprise-grade AI future!',
+    copyZone: 'positive_high',
+    customerReviewDominantZone: 'negative_low',
+    targetSelf: 'ideal_self',
+    competitorDominantSelf: 'ideal_self',
+    messyMiddleStage: 'exploration',
+    creativeFormat: 'direct_offer_cta',
+  });
+  assert.equal(badIdealSelfAd.allowed, false);
+  assert.ok(badIdealSelfAd.blockers.includes('passive_word_shift_replace_you_deserve_with_you_earned'));
+  assert.ok(badIdealSelfAd.blockers.includes('saturated_ideal_self_requires_actual_or_ought_self_pivot'));
+  assert.ok(badIdealSelfAd.blockers.includes('messy_middle_stage_exploration_requires_myth_busting_how_its_made'));
+
+  const highConvertingOughtSelf = evaluateLevingerBehavioralConversionMatrix({
+    copyText: 'You earned a clean repo: lock down that chronic agent mistake from last sprint in <0.5ms.',
+    copyZone: 'negative_low',
+    customerReviewDominantZone: 'negative_low',
+    targetSelf: 'ought_self',
+    competitorDominantSelf: 'ideal_self',
+    messyMiddleStage: 'purchase',
+    creativeFormat: 'direct_offer_cta',
+  });
+  assert.equal(highConvertingOughtSelf.allowed, true);
+  assert.equal(highConvertingOughtSelf.usesEarnedAgencyLanguage, true);
+
+  // CrowdStrike CEO George Kurtz "Apex Predator" Agent Security, 27s Breakout Interdiction & Anti-Token-Maxing Router (PST8yesYOSo)
+  const vulnerableShadowAgent = evaluateKurtzApexPredatorAgentSecurityAndRouting({
+    agentIdentityMapped: false,
+    usesHumanEquivalentCredentials: true,
+    instrumentedChainSurfaces: ['sub_agent_spawns'],
+    interdictionLatencyMs: 85,
+    pairedWithSecurityReviewAgent: false,
+    redBlueDigitalTwinConverged: false,
+    defenderModelHasAirbagRefusalRisk: true,
+    stopsTokenMaxingWithHybridRoute: false,
+    capturesProprietaryTelemetryForDpo: false,
+  });
+  assert.equal(vulnerableShadowAgent.allowed, false);
+  assert.ok(vulnerableShadowAgent.blockers.includes('agent_must_not_use_broad_human_equivalent_credentials'));
+  assert.ok(vulnerableShadowAgent.blockers.includes('token_maxing_detected_reserve_formula1_frontier_for_high_alpha_only'));
+
+  const hardenedKurtzFirewall = evaluateKurtzApexPredatorAgentSecurityAndRouting({
+    agentIdentityMapped: true,
+    usesHumanEquivalentCredentials: false,
+    instrumentedChainSurfaces: [
+      'sub_agent_spawns',
+      'mcp_server_connections',
+      'unvetted_package_downloads',
+      'sensitive_data_pulls',
+    ],
+    interdictionLatencyMs: 0.042,
+    fastestAdversaryBreakoutMs: 27000,
+    pairedWithSecurityReviewAgent: true,
+    redBlueDigitalTwinConverged: true,
+    defenderModelHasAirbagRefusalRisk: false,
+    stopsTokenMaxingWithHybridRoute: true,
+    capturesProprietaryTelemetryForDpo: true,
+  });
+  assert.equal(hardenedKurtzFirewall.allowed, true);
+  assert.ok(hardenedKurtzFirewall.speedAdvantageVsBreakout > 600000);
+
+  // Google LiteRT Tensor API "Native Model Authoring for Edge" (Oct 19, 2026): zero-copy shared buffers (0.34ms), branchless ReLU lowering, dual-mixin tags, and pixel-exact reference parity (>3x FPS)
+  const naiveEdgePipeline = evaluateLiteRtEdgeTensorAuthoringAndExport({
+    cpuRoundTripCopies: 3,
+    prePostProcessingLatencyMs: 4.2,
+    booleanCpuFallbackOps: 1,
+    supportsDualBackendMixin: false,
+    directSafetensorsIngestion: false,
+    pixelExactReferenceVerified: false,
+  });
+  assert.equal(naiveEdgePipeline.allowed, false);
+  assert.ok(naiveEdgePipeline.blockers.includes('cpu_buffer_round_trips_detected_chain_shared_accelerator_buffers'));
+  assert.ok(naiveEdgePipeline.blockers.includes('boolean_comparison_cpu_fallback_rewrite_with_branchless_relu_arithmetic'));
+
+  const optimizedLiteRtGraph = evaluateLiteRtEdgeTensorAuthoringAndExport({
+    cpuRoundTripCopies: 0,
+    prePostProcessingLatencyMs: 0.34,
+    booleanCpuFallbackOps: 0,
+    visibilityScore: 0.0002,
+    supportsDualBackendMixin: true,
+    directSafetensorsIngestion: true,
+    pixelExactReferenceVerified: true,
+    baselineFps: 9.8,
+    optimizedFps: 31.4,
+  });
+  assert.equal(optimizedLiteRtGraph.allowed, true);
+  assert.equal(optimizedLiteRtGraph.branchlessVisible, 1);
+  assert.ok(optimizedLiteRtGraph.fpsSpeedupMultiple >= 3.0);
+
+  // Zero-Outbound-Spend & "They Pay Us" Partner / Micro-IP Gate (CEO Mandate, Oct 22, 2026)
+  const forbiddenCashBuyout = evaluateMicroIpAcquisitionValuationAndEscrowGate({
+    outboundCashSpendUsd: 4500,
+    upfrontWireUsd: 2250,
+    coreArchitectureImplementedNatively: false,
+    partnerPaysUsUsd: 0,
+    fundedStrictlyFromPartnerBroughtCustomerReceipts: false,
+  });
+  assert.equal(forbiddenCashBuyout.allowed, false);
+  assert.ok(forbiddenCashBuyout.blockers.includes('zero_outbound_spend_mandate_violated_they_pay_us'));
+  assert.ok(forbiddenCashBuyout.blockers.includes('steal_and_implement_architecture_natively_at_zero_cost_first'));
+
+  const theyPayUsDiagnostic = evaluateMicroIpAcquisitionValuationAndEscrowGate({
+    outboundCashSpendUsd: 0,
+    upfrontWireUsd: 0,
+    coreArchitectureImplementedNatively: true,
+    partnerPaysUsUsd: 499,
+    fundedStrictlyFromPartnerBroughtCustomerReceipts: true,
+    partnerBroughtNetCustomerReceiptsUsd: 1000,
+    revenueShareBps: 5000,
+  });
+  assert.equal(theyPayUsDiagnostic.allowed, true);
+  assert.equal(theyPayUsDiagnostic.outboundCashSpendUsd, 0);
+  assert.equal(theyPayUsDiagnostic.partnerPaysUsUsd, 499);
+  assert.equal(theyPayUsDiagnostic.netCashRetainedByThumbGateUsd, 999);
+
+  // Conversation-End Continuous Thumbs-Down Churn Detector & Feedback-to-SDD Spec Promoter
+  const rageQuitChurn = detectConversationEndAndThumbsDownChurn({
+    explicitSessionEnd: true,
+    sessionEvents: [
+      { signal: 'up', whatWorked: 'Fast local SQLite lookup' },
+      { signal: 'down', whatWentWrong: 'Offered cash buyout to external founder' },
+      { signal: 'down', whatWentWrong: 'Did not enforce $0 outbound spend mandate' },
+    ],
+  });
+  assert.equal(rageQuitChurn.conversationEnded, true);
+  assert.equal(rageQuitChurn.causedByContinuousThumbsDown, true);
+  assert.equal(rageQuitChurn.churnClassification, 'FRUSTRATION_ABANDONMENT_CONTINUOUS_THUMBS_DOWN');
+  assert.equal(rageQuitChurn.consecutiveTrailingNegativeCount, 2);
+  assert.equal(rageQuitChurn.requiresSpecPromotion, true);
+  assert.equal(rageQuitChurn.requiresNextSessionRecoveryHandoff, true);
+
+  const promotedSpec = promoteFeedbackToSddSpec({
+    explicitSessionEnd: true,
+    feedbackItems: [
+      {
+        signal: 'up',
+        whatWorked: 'Keep PreToolUse evaluation under 0.5ms on local SQLite',
+      },
+      {
+        signal: 'down',
+        trigger: 'an external founder pitches an IP buyout or partnership',
+        whatWentWrong: 'Offered 50/50 cash wire instead of $0 outbound spend',
+        whatToChange: 'block any outboundCashSpendUsd > 0 and require the partner to pay $499 Diagnostic or $19/mo Pro',
+        mutatedStateVars: ['outboundCashSpendUsd', 'partnerPaysUsUsd'],
+      },
+      {
+        signal: 'down',
+        trigger: 'a user ends a conversation after repeated negative feedback',
+        whatWentWrong: 'Only logged sentiment instead of updating the SDD specification',
+        whatToChange: 'compile trailing thumbs-down reasons into EARS acceptance criteria and Out-of-Scope boundaries',
+        mutatedStateVars: ['earsAcceptanceCriteria', 'explicitOutOfScopeBoundaries'],
+      },
+    ],
+  });
+  assert.equal(promotedSpec.promotedToSpec, true);
+  assert.equal(promotedSpec.churnReport.causedByContinuousThumbsDown, true);
+  assert.equal(promotedSpec.scaffoldValidation.validEarsCount, 2);
+  assert.equal(promotedSpec.specScaffold.explicitOutOfScopeBoundaries.length, 2);
+  assert.deepEqual(promotedSpec.specScaffold.constrainedPostconditionVars, [
+    'outboundCashSpendUsd',
+    'partnerPaysUsUsd',
+    'earsAcceptanceCriteria',
+    'explicitOutOfScopeBoundaries',
+  ]);
 });
