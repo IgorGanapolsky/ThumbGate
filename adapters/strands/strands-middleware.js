@@ -12,7 +12,7 @@
  */
 
 const { evaluateOutputShunt, evaluatePreActionDiode } = require('../../scripts/strands-harness-doctor');
-
+const { beforeToolCallIntervention } = require('./strands-decider-adapter');
 function createStrandsGateMiddleware(options = {}) {
   const shuntConfig = options.tokenShunt || { maxOutputLines: 350, maxOutputBytes: 16384 };
   const preActionEnabled = options.preActionDiode?.enabled !== false;
@@ -31,15 +31,22 @@ function createStrandsGateMiddleware(options = {}) {
      */
     async beforeToolCall(event = {}) {
       if (!preActionEnabled) {
-        return { allow: true };
+        return { allow: true, interventionAction: 'Proceed' };
       }
 
       const toolName = event.toolUse?.name || event.toolName || '';
       const input = event.toolUse?.input !== undefined ? event.toolUse.input : event.input;
 
       const evaluation = evaluatePreActionDiode({ name: toolName, input });
-      if (evaluation.decision === 'BLOCK') {
-        const reason = evaluation.violation || 'Action blocked by ThumbGate pre-action diode';
+      const decider = beforeToolCallIntervention({
+        toolName,
+        args: input,
+        userMessages: event.userMessages,
+        exemptKeys: event.exemptKeys,
+      });
+
+      if (evaluation.decision === 'BLOCK' || decider.action === 'Deny') {
+        const reason = evaluation.violation || decider.reason || 'Action blocked by ThumbGate pre-action diode';
         if (typeof event === 'object' && event !== null) {
           event.cancel = true;
           event.reason = reason;
@@ -47,7 +54,26 @@ function createStrandsGateMiddleware(options = {}) {
         return {
           allow: false,
           decision: 'BLOCK',
+          interventionAction: 'Deny',
           reason,
+          toolName,
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      if (decider.action === 'Guide' || decider.action === 'Confirm') {
+        if (typeof event === 'object' && event !== null) {
+          event.cancel = true;
+          event.reason = decider.feedback || decider.reason;
+          event.interventionAction = decider.action;
+        }
+        return {
+          allow: false,
+          decision: decider.action.toUpperCase(),
+          interventionAction: decider.action,
+          reason: decider.reason,
+          feedback: decider.feedback,
+          noul: decider.noul || null,
           toolName,
           timestamp: new Date().toISOString(),
         };
@@ -56,6 +82,7 @@ function createStrandsGateMiddleware(options = {}) {
       return {
         allow: true,
         decision: 'ALLOW',
+        interventionAction: 'Proceed',
         toolName,
       };
     },
