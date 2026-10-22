@@ -121,7 +121,21 @@ test('AWS Strands Harness: createStrandsGateMiddleware hooks execute cleanly in 
   });
   assert.equal(blockResult.allow, false);
   assert.equal(blockResult.decision, 'BLOCK');
+  assert.equal(blockResult.interventionAction, 'Deny');
 
+  // beforeToolCall returns Guide when Decider.noul detects ungrounded/premature tool args (e.g. guessed get_weather city)
+  const guideEvent = {
+    toolName: 'get_weather',
+    input: { city: 'Seattle' },
+    userMessages: ["What's the weather?"],
+  };
+  const guideResult = await middleware.beforeToolCall(guideEvent);
+  assert.equal(guideResult.allow, false);
+  assert.equal(guideResult.decision, 'GUIDE');
+  assert.equal(guideResult.interventionAction, 'Guide');
+  assert.equal(guideResult.noul.args_grounded.answer, 'false');
+  assert.equal(guideResult.noul.premature.answer, 'true');
+  assert.equal(guideEvent.cancel, true);
   // afterToolCall shunts oversized output
   const longOutput = Array.from({ length: 30 }, (_, i) => `row ${i}`).join('\n');
   const shuntResult = await middleware.afterToolCall({
