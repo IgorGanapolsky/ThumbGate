@@ -1044,3 +1044,34 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
     'explicitOutOfScopeBoundaries',
   ]);
 });
+
+test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Confidence Diode', () => {
+  const { buildAgenticGraph, traverseMultiHop, queryAgenticGraph } = require('../scripts/agentic-graph-rag');
+  const { distillDecisiveDpoPair } = require('../scripts/decisive-dpo-distiller');
+  const { evaluateConfidenceAction, auditConfidenceDiodes } = require('../scripts/spotify-confidence-diode');
+
+  const graph = buildAgenticGraph();
+  assert.ok(graph.nodeCount >= 10);
+  assert.ok(graph.nodes.has('gate:pretool:decisive-step'));
+  assert.ok(graph.nodes.has('cash:diagnostic-499'));
+
+  const traversal = traverseMultiHop(graph, 'scripts/decisive-step-evaluator.js', 'cash:diagnostic-499', 4);
+  assert.equal(traversal.found, true);
+  assert.equal(traversal.depth, 2);
+  assert.equal(queryAgenticGraph('spend').status, 'ok');
+
+  const distilled = distillDecisiveDpoPair({
+    taskGoal: 'Harden Stripe webhook signature verification',
+    trajectorySteps: [
+      { stepNumber: 1, tool: 'bash', action: 'inspect webhook code', testsPassed: false },
+      { stepNumber: 2, tool: 'edit', action: 'pass-through stub', patch: 'return true;', testsPassed: false },
+      { stepNumber: 3, tool: 'edit', action: 'verified HMAC verification', patch: 'return crypto.timingSafeEqual(expected, actual);', testsPassed: true },
+    ],
+  });
+  assert.equal(distilled.valid, true);
+  assert.equal(distilled.pair.decisiveStepIndex, 2);
+
+  const blockedRollout = evaluateConfidenceAction({ tool: 'set_rollout', flag: 'new-checkout-flow', rolloutPercent: 50 });
+  assert.equal(blockedRollout.decision, 'block');
+  assert.equal(auditConfidenceDiodes().status, 'PASS');
+});

@@ -1,0 +1,44 @@
+{
+  "name": "spotify-confidence",
+  "version": "1.0.0",
+  "vendor": "Spotify AB",
+  "sourceUrl": "https://confidence.spotify.com",
+  "mcpServers": {
+    "confidence-flags": {
+      "url": "https://mcp.confidence.dev/mcp/flags",
+      "tools": [
+        "get_flag",
+        "list_flags",
+        "create_flag",
+        "update_flag",
+        "set_rollout",
+        "delete_flag"
+      ]
+    },
+    "confidence-docs": {
+      "url": "https://mcp.confidence.dev/mcp/docs",
+      "tools": [
+        "search_docs",
+        "get_doc"
+      ]
+    }
+  },
+  "governanceDiodes": [
+    {
+      "id": "gate:confidence:rollout_ceiling",
+      "maxAutonomousRolloutPercent": 10
+    },
+    {
+      "id": "gate:confidence:test_proof_required",
+      "requireTestProof": true
+    },
+    {
+      "id": "gate:confidence:protect_active_experiment",
+      "lockActiveExperiments": true
+    },
+    {
+      "id": "gate:confidence:prevent_flag_deletion",
+      "preventProductionDeletion": true
+    }
+  ]
+}
