@@ -637,3 +637,7 @@ Rules:
 
 Details: [`docs/agents/code-search.md`](./docs/agents/code-search.md). Skill: `.agents/skills/graphify/SKILL.md`.
 
+## HARD — ZERO OUTBOUND SPEND: THEY PAY US (added 2026-10-22)
+
+Igor / ThumbGate **NEVER** spends money (`$0` outbound cash spend, forever). Never offer to pay cash, wire money, pay a fixed buyout price out of pocket, or purchase paid tiers/subscriptions from external founders or vendors. Steal the architecture natively at `$0` cost and flip every external conversation so **THEY PAY US**: (1) **`$499` Managed Workflow / Partner Integration Diagnostic** or **`$19/mo` Pro**, or (2) **`$0` upfront**, paid strictly out of net cash collected from paying customers the partner brings into our Stripe checkout first. Skill: `.agents/skills/zero-outbound-spend-they-pay-us/SKILL.md`.
+

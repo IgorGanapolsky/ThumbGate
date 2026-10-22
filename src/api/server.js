@@ -2901,7 +2901,7 @@ ${hiddenInputs}
     try {
       var u = new URL(skipLink.href, window.location.origin);
       var email = emailInput ? emailInput.value.trim() : '';
-      if (email && email.indexOf('@') > 0) {
+      if (email && email.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         u.searchParams.set('customer_email', email);
       } else {
         u.searchParams.delete('customer_email');
