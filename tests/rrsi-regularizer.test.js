@@ -795,7 +795,12 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(sddScaffold.allowed, true);
   assert.equal(sddScaffold.validEarsCount, 1);
 
-  const { runSddHarnessStagePipeline, evaluateWealthOfAgentsRouting } = require('../scripts/rrsi-doctor');
+  const {
+    runSddHarnessStagePipeline,
+    evaluateWealthOfAgentsRouting,
+    evaluateSimileBehavioralSimulationAndTwinGate,
+    evaluateLevingerBehavioralConversionMatrix,
+  } = require('../scripts/rrsi-doctor');
   const sddVis = runSddHarnessStagePipeline({ mode: 'spec_backtrack', stage: 5 });
   assert.equal(sddVis.ok, true);
   assert.equal(sddVis.totalStages, 6);
@@ -834,4 +839,63 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(gaiaEnsemble.combinedAccuracy, 0.70);
   assert.equal(gaiaEnsemble.gainVsGeneralAgent, 0.12);
   assert.equal(gaiaEnsemble.augmentedTransferAccuracy, 0.532);
+
+  // Joon Sung Park / Simile Behavioral Simulation, Quantum Preference Percolation & Executive Sibling Twin Gate (tEYA-M30u0E)
+  const overfitWebScrapeSim = evaluateSimileBehavioralSimulationAndTwinGate({
+    environmentStateText: 'Pricing page /pricing with $499 Diagnostic CTA and $19/mo Pro checkout',
+    groundedInInterviewAndPanelData: false,
+    validatedPillars: ['gss_survey'],
+    pearsonCorrelation: 0.55,
+    observedAccuracy: 0.96,
+    simulatedPersonaWalkthroughs: 1,
+    proposalViolatesLockedExecutiveInvariants: true,
+    fdeCoConstructedUseCase: false,
+  });
+  assert.equal(overfitWebScrapeSim.allowed, false);
+  assert.equal(overfitWebScrapeSim.executiveTwinVerdict, 'REJECT_BEFORE_ESCALATION');
+  assert.ok(overfitWebScrapeSim.blockers.includes('web_scrape_only_permanently_online_bias_requires_interview_panel_grounding'));
+  assert.ok(overfitWebScrapeSim.blockers.includes('overfit_above_human_test_retest_noise_ceiling_86pct'));
+  assert.ok(overfitWebScrapeSim.blockers.includes('executive_sibling_twin_rejected_proposal_before_human_escalation'));
+
+  const calibratedSimileTwin = evaluateSimileBehavioralSimulationAndTwinGate({
+    environmentStateText: 'Pricing page /pricing with $499 FDE Diagnostic and $19/mo Pro',
+    groundedInInterviewAndPanelData: true,
+    validatedPillars: ['gss_survey', 'big_five_traits', 'economic_games', 'published_rcts'],
+    pearsonCorrelation: 0.74,
+    observedAccuracy: 0.85,
+    simulatedPersonaWalkthroughs: 5,
+    proposalViolatesLockedExecutiveInvariants: false,
+    fdeCoConstructedUseCase: true,
+  });
+  assert.equal(calibratedSimileTwin.allowed, true);
+  assert.equal(calibratedSimileTwin.executiveTwinVerdict, 'APPROVE_FOR_HUMAN_REVIEW');
+  assert.ok(calibratedSimileTwin.humanParityRatio >= 0.98);
+  assert.ok(calibratedSimileTwin.percolatedPreferenceScore >= 0.95);
+
+  // Sarah Levinger Behavioral Conversion Matrix (nCij0S5oZWM): Valence x Intensity, Self-Discrepancy (Ought/Actual vs Ideal), and Messy Middle 4-Stage Journey
+  const badIdealSelfAd = evaluateLevingerBehavioralConversionMatrix({
+    copyText: 'You deserve an enterprise-grade AI future!',
+    copyZone: 'positive_high',
+    customerReviewDominantZone: 'negative_low',
+    targetSelf: 'ideal_self',
+    competitorDominantSelf: 'ideal_self',
+    messyMiddleStage: 'exploration',
+    creativeFormat: 'direct_offer_cta',
+  });
+  assert.equal(badIdealSelfAd.allowed, false);
+  assert.ok(badIdealSelfAd.blockers.includes('passive_word_shift_replace_you_deserve_with_you_earned'));
+  assert.ok(badIdealSelfAd.blockers.includes('saturated_ideal_self_requires_actual_or_ought_self_pivot'));
+  assert.ok(badIdealSelfAd.blockers.includes('messy_middle_stage_exploration_requires_myth_busting_how_its_made'));
+
+  const highConvertingOughtSelf = evaluateLevingerBehavioralConversionMatrix({
+    copyText: 'You earned a clean repo: lock down that chronic agent mistake from last sprint in <0.5ms.',
+    copyZone: 'negative_low',
+    customerReviewDominantZone: 'negative_low',
+    targetSelf: 'ought_self',
+    competitorDominantSelf: 'ideal_self',
+    messyMiddleStage: 'purchase',
+    creativeFormat: 'direct_offer_cta',
+  });
+  assert.equal(highConvertingOughtSelf.allowed, true);
+  assert.equal(highConvertingOughtSelf.usesEarnedAgencyLanguage, true);
 });

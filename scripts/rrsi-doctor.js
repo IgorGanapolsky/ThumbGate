@@ -1608,6 +1608,153 @@ function evaluateWealthOfAgentsRouting({
   };
 }
 
+/**
+ * Joon Sung Park / Simile Behavioral Simulation, Quantum Preference Percolation & Executive Sibling Twin Gate
+ * (https://www.youtube.com/watch?v=tEYA-M30u0E).
+ */
+function evaluateSimileBehavioralSimulationAndTwinGate({
+  environmentStateText = '',
+  groundedInInterviewAndPanelData = false,
+  validatedPillars = [],
+  pearsonCorrelation = 0,
+  observedAccuracy = 0,
+  humanTestRetestCeiling = 0.86,
+  quantumPreferenceUnits = {
+    brevity_bluf: 0.95,
+    evidence_ledger_first: 0.98,
+    zero_ai_slop: 0.96,
+    fail_closed_gates: 0.99,
+    single_touch_send_safety: 1,
+  },
+  simulatedPersonaWalkthroughs = 0,
+  proposalViolatesLockedExecutiveInvariants = false,
+  fdeCoConstructedUseCase = false,
+} = {}) {
+  const blockers = [];
+  if (!String(environmentStateText || '').trim()) {
+    blockers.push('missing_environment_state_language_context');
+  }
+  if (groundedInInterviewAndPanelData !== true) {
+    blockers.push('web_scrape_only_permanently_online_bias_requires_interview_panel_grounding');
+  }
+
+  const requiredPillars = ['gss_survey', 'big_five_traits', 'economic_games', 'published_rcts'];
+  const pillarSet = new Set(Array.isArray(validatedPillars) ? validatedPillars : []);
+  const missingPillars = requiredPillars.filter((p) => !pillarSet.has(p));
+  if (missingPillars.length > 0) {
+    blockers.push(`missing_rct_behavioral_pillars:${missingPillars.join(',')}`);
+  }
+
+  const r = Number(pearsonCorrelation);
+  if (!Number.isFinite(r) || r < 0.70) {
+    blockers.push('pearson_correlation_below_0_70_rct_threshold');
+  }
+
+  const acc = Number(observedAccuracy);
+  const ceiling = Number.isFinite(Number(humanTestRetestCeiling)) && Number(humanTestRetestCeiling) > 0
+    ? Number(humanTestRetestCeiling)
+    : 0.86;
+  if (!Number.isFinite(acc) || acc < 0.80) {
+    blockers.push('behavioral_prediction_accuracy_below_80pct');
+  } else if (acc > ceiling + 0.01) {
+    blockers.push('overfit_above_human_test_retest_noise_ceiling_86pct');
+  }
+
+  const units = quantumPreferenceUnits && typeof quantumPreferenceUnits === 'object'
+    ? Object.values(quantumPreferenceUnits).map(Number).filter(Number.isFinite)
+    : [];
+  const percolatedPreferenceScore = units.length > 0
+    ? Number((units.reduce((a, b) => a + b, 0) / units.length).toFixed(3))
+    : 0;
+  if (units.length < 3 || percolatedPreferenceScore < 0.85) {
+    blockers.push('insufficient_quantum_preference_unit_percolation');
+  }
+
+  if (!Number.isFinite(Number(simulatedPersonaWalkthroughs)) || Number(simulatedPersonaWalkthroughs) < 3) {
+    blockers.push('social_simulacra_requires_at_least_3_persona_walkthroughs_pre_launch');
+  }
+  if (proposalViolatesLockedExecutiveInvariants === true) {
+    blockers.push('executive_sibling_twin_rejected_proposal_before_human_escalation');
+  }
+  if (fdeCoConstructedUseCase !== true) {
+    blockers.push('enterprise_motion_requires_fde_co_constructed_diagnostic_over_hands_off_saas');
+  }
+
+  const humanParityRatio = Number.isFinite(acc) ? Number((acc / ceiling).toFixed(3)) : 0;
+
+  return {
+    allowed: blockers.length === 0,
+    pearsonCorrelation: r,
+    observedAccuracy: acc,
+    humanTestRetestCeiling: ceiling,
+    humanParityRatio,
+    percolatedPreferenceScore,
+    executiveTwinVerdict: proposalViolatesLockedExecutiveInvariants ? 'REJECT_BEFORE_ESCALATION' : 'APPROVE_FOR_HUMAN_REVIEW',
+    blockers,
+  };
+}
+
+/**
+ * Sarah Levinger Behavioral Conversion & Ad Psychology Matrix (https://www.youtube.com/watch?v=nCij0S5oZWM):
+ *  1. The How (Valence x Intensity Matrix & Agency Word Shift [14:01-21:55]): matches copy zone against
+ *     customer review zone (`positive_high`, `positive_low`, `negative_low`, `negative_high`) and blocks
+ *     passive entitlement wording ("you deserve") in favor of active earned agency ("you earned").
+ *  2. The Who (Self-Discrepancy Theory [22:31-27:45]): when competitors crowd `ideal_self`, blocks copy
+ *     that also defaults to `ideal_self` and pivots to `ought_self` (paired with `negative_low` intensity
+ *     for chronic neglected obligations) or `actual_self` (present validation).
+ *  3. The When (4-Stage Messy Middle Journey [35:18-44:19]): enforces stage-to-format alignment across
+ *     `trigger` (`pov_day_in_the_life`), `exploration` (`myth_busting_how_its_made`), `evaluation`
+ *     (`hard_proof_specs_usp`), and `purchase` (`direct_offer_cta`).
+ */
+function evaluateLevingerBehavioralConversionMatrix({
+  copyText = '',
+  copyZone = 'negative_low',
+  customerReviewDominantZone = 'negative_low',
+  targetSelf = 'ought_self',
+  competitorDominantSelf = 'ideal_self',
+  messyMiddleStage = 'purchase',
+  creativeFormat = 'direct_offer_cta',
+} = {}) {
+  const blockers = [];
+  const text = String(copyText || '').trim();
+  if (!text) {
+    blockers.push('missing_conversion_copy_text');
+  }
+  if (/\byou\s+deserve\b/i.test(text)) {
+    blockers.push('passive_word_shift_replace_you_deserve_with_you_earned');
+  }
+  if (copyZone !== customerReviewDominantZone) {
+    blockers.push(`valence_intensity_mismatch_copy_${copyZone}_vs_reviews_${customerReviewDominantZone}`);
+  }
+  if (competitorDominantSelf === 'ideal_self' && targetSelf === 'ideal_self') {
+    blockers.push('saturated_ideal_self_requires_actual_or_ought_self_pivot');
+  }
+  if (targetSelf === 'ought_self' && copyZone !== 'negative_low') {
+    blockers.push('ought_self_requires_low_intensity_slightly_negative_delivery');
+  }
+
+  const expectedFormatByStage = {
+    trigger: 'pov_day_in_the_life',
+    exploration: 'myth_busting_how_its_made',
+    evaluation: 'hard_proof_specs_usp',
+    purchase: 'direct_offer_cta',
+  };
+  const expectedFormat = expectedFormatByStage[messyMiddleStage];
+  if (!expectedFormat || creativeFormat !== expectedFormat) {
+    blockers.push(`messy_middle_stage_${messyMiddleStage}_requires_${expectedFormat || 'valid_stage_format'}`);
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    copyZone,
+    targetSelf,
+    messyMiddleStage,
+    creativeFormat,
+    usesEarnedAgencyLanguage: /\byou\s+earned\b/i.test(text),
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['sdd-visualizer']) {
@@ -1745,5 +1892,7 @@ module.exports = {
   SDD_2026_STAGES,
   runSddHarnessStagePipeline,
   evaluateWealthOfAgentsRouting,
+  evaluateSimileBehavioralSimulationAndTwinGate,
+  evaluateLevingerBehavioralConversionMatrix,
   runCli,
 };
