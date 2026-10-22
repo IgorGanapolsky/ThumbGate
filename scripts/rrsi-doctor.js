@@ -1506,22 +1506,7 @@ function runSddHarnessStagePipeline({ mode = 'happy_path', stage = 1 } = {}) {
   };
 }
 
-/**
- * Princeton "The Wealth of Agents: Scaling Agentic AI Across Developers" (arXiv:2610.20518v1, Oct 14, 2026):
- *  1. Regime Selection (Lemma 3 & Prop 4): routes to `ROUTED_SDA_SINGLE_SKILL_OR_COLLINEAR_POOL` when
- *     `distinctSkillDomains.length <= 1` (SealQA web-search-only) OR `poolComposition` is `'collinear_generalists'`
- *     (A_G) or `'nested_mas'` (A_MAS, where delta-MDA drops to 63% at $29 vs 67-68% rSDA).
- *  2. Experience Buffer B = {(x_j, a_i(x_j), y_j*)}_j vs Untrained Description Router (Fig. 4a):
- *     relying on developer self-descriptions alone loses -9.1pp (70.1% -> 61.0%); requires empirical
- *     contextual rankings from verified outcomes (`trainedExperienceRouter === true`).
- *  3. Proposition 5 Incentive Equilibrium: blocks `compensationModel === 'traffic_share'` (which forces
- *     every Nash equilibrium back to generalists A_G) and enforces `'marginal_welfare_contribution'`
- *     so niche gap-fillers (like a_AUG scoring 19.1% standalone on GAIA yet lifting SealQA->GAIA from
- *     40.4% -> 53.2% [+12.8pp] and GAIA->SealQA from 53.2% -> 58.2% [+5.0pp]) are rewarded.
- *  4. Non-Frontier Medium-Tier Leverage (Fig. 4c & 5b): tracks medium-tier routing share (56% in delta-MDA
- *     vs 33% in rSDA, reaching 67% at $9 without high-tier models vs 60% at $8 for best medium/low SDA).
- *  5. Cross-Developer Security & Sandboxing Gate (Section 7): requires `evalScoresVerified` and `preToolUseSandboxed`.
- */
+// Princeton "The Wealth of Agents" (arXiv:2610.20518v1, Oct 14, 2026)
 function evaluateWealthOfAgentsRouting({
   distinctSkillDomains = ['code_edit', 'sqlite_audit', 'browser_verify'],
   poolComposition = 'complementary_specialists',
@@ -1694,18 +1679,7 @@ function evaluateSimileBehavioralSimulationAndTwinGate({
   };
 }
 
-/**
- * Sarah Levinger Behavioral Conversion & Ad Psychology Matrix (https://www.youtube.com/watch?v=nCij0S5oZWM):
- *  1. The How (Valence x Intensity Matrix & Agency Word Shift [14:01-21:55]): matches copy zone against
- *     customer review zone (`positive_high`, `positive_low`, `negative_low`, `negative_high`) and blocks
- *     passive entitlement wording ("you deserve") in favor of active earned agency ("you earned").
- *  2. The Who (Self-Discrepancy Theory [22:31-27:45]): when competitors crowd `ideal_self`, blocks copy
- *     that also defaults to `ideal_self` and pivots to `ought_self` (paired with `negative_low` intensity
- *     for chronic neglected obligations) or `actual_self` (present validation).
- *  3. The When (4-Stage Messy Middle Journey [35:18-44:19]): enforces stage-to-format alignment across
- *     `trigger` (`pov_day_in_the_life`), `exploration` (`myth_busting_how_its_made`), `evaluation`
- *     (`hard_proof_specs_usp`), and `purchase` (`direct_offer_cta`).
- */
+// Sarah Levinger Behavioral Conversion Matrix (nCij0S5oZWM)
 function evaluateLevingerBehavioralConversionMatrix({
   copyText = '',
   copyZone = 'negative_low',
@@ -1755,20 +1729,7 @@ function evaluateLevingerBehavioralConversionMatrix({
   };
 }
 
-/**
- * CrowdStrike CEO George Kurtz "Apex Predator: Adversaries Armed With AI Agents" (https://www.youtube.com/watch?v=PST8yesYOSo):
- *  1. Shadow AI & Agent Identity Separation ([02:03-10:14]): maps every autonomous agent identity and blocks
- *     agents operating under broad human-equivalent credentials (`usesHumanEquivalentCredentials === false`).
- *  2. Full Agent Execution Chain Interdiction at <27s Inference Speed ([07:57, 10:02, 18:10-18:16, 38:35]):
- *     gates all 4 lifecycle surfaces (`sub_agent_spawns`, `mcp_server_connections`, `unvetted_package_downloads`,
- *     `sensitive_data_pulls`) with sub-10ms local PreToolUse latency (0.042ms vs 27,000ms fastest breakout).
- *  3. Dedicated Security Review Agent + Red/Blue Digital Twin + Uncensored Defender ([10:45-15:54, 38:06]):
- *     pairs coding agents with security review agents, requires Red/Blue digital twin convergence, and prevents
- *     commercial "airbag" refusals during active defensive incident analysis.
- *  4. Stop "Token Maxing" + Net-Data-Creator System of Record ([19:24-25:00, 29:14, 41:31]): reserves expensive
- *     "Formula 1" frontier models for high-alpha tasks while routing standard workflows to DPO-distilled /
- *     post-trained models and capturing proprietary telemetry for post-training.
- */
+// CrowdStrike CEO George Kurtz "Apex Predator" Agent Security & Routing (PST8yesYOSo)
 function evaluateKurtzApexPredatorAgentSecurityAndRouting({
   agentIdentityMapped = false,
   usesHumanEquivalentCredentials = true,
@@ -1835,21 +1796,7 @@ function evaluateKurtzApexPredatorAgentSecurityAndRouting({
   };
 }
 
-/**
- * Google LiteRT Tensor API "Native Model Authoring for Edge" (https://developers.googleblog.com/native-model-authoring-for-edge-with-litert-tensor-api/, Oct 19, 2026):
- *  1. Zero-Copy Shared-Buffer Pipeline Chaining (`SetOutput` -> `GetInput` via `CreateLambdaRunner`):
- *     chains pre-processing, encoder, decoder, and post-processing through shared accelerator buffers with
- *     zero intermediate CPU round-trips (`cpuRoundTripCopies === 0`, pre/post-processing <= 0.5ms, e.g. 0.34ms).
- *  2. Branchless Arithmetic Lowering (`Sub(1.0f, Relu(Sub(1.0f, Mul(Relu(score), 1e4f))))` vs `Greater` boolean fallback):
- *     eliminates boolean comparison ops that force WebGPU/GPU fallback to CPU (`booleanCpuFallbackOps === 0`)
- *     and computes branchless visibility mask `1 - ReLU(1 - ReLU(score) * 1e4)`.
- *  3. Dual-Mixin Tagging (`Tensor<TfLiteMixinTag, XnnpackMixinTag>`) + Direct `.safetensors` Ingestion:
- *     iterates directly on XNNPACK CPU from `.safetensors` weights with zero intermediate model rebuilds,
- *     then exports multi-signature `.tflite` for WebGPU / Metal (1.5x faster than MLX) / OpenCL / NPU.
- *  4. Pixel-Exact Reference Verification Before Keeping Agent Optimizations:
- *     requires `pixelExactReferenceVerified === true` (matching PyTorch reference pixel-for-pixel while
- *     tripling frame rate from <10 FPS to >30 FPS).
- */
+// Google LiteRT Tensor API Edge Authoring & Zero-Copy Pipeline (Oct 19, 2026)
 function evaluateLiteRtEdgeTensorAuthoringAndExport({
   cpuRoundTripCopies = 3,
   prePostProcessingLatencyMs = 4.5,
@@ -1899,16 +1846,7 @@ function evaluateLiteRtEdgeTensorAuthoringAndExport({
   };
 }
 
-/**
- * Zero-Outbound-Spend & "They Pay Us" Partner / Micro-IP Gate (CEO Mandate, Oct 22, 2026):
- *  1. Hard $0 Outbound Cash Spend (`outboundCashSpendUsd === 0` & `upfrontWireUsd === 0`):
- *     blocks ANY deal, buyout, or subscription that spends our cash (`zero_outbound_spend_mandate_violated_they_pay_us`).
- *  2. Build Natively First (`coreArchitectureImplementedNatively === true`):
- *     steals and implements the core detector/router architecture natively inside ThumbGate at $0 cost.
- *  3. They Pay Us First (`partnerPaysUsUsd >= 19` OR `fundedStrictlyFromPartnerBroughtCustomerReceipts === true`):
- *     external founders either pay us ($499 Managed Workflow / Integration Diagnostic or $19/mo Pro)
- *     or get paid strictly out of net cash collected from paying customers they bring in first.
- */
+// Zero-Outbound-Spend & "They Pay Us" Partner Gate (CEO Mandate, Oct 22, 2026)
 function evaluateMicroIpAcquisitionValuationAndEscrowGate({
   outboundCashSpendUsd = 0,
   upfrontWireUsd = 0,
