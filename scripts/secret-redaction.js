@@ -157,10 +157,68 @@ function redactSecretsDeep(value) {
   }
   return value;
 }
+const crypto = require('node:crypto');
+
+/**
+ * Capital One Databolt-style Vaultless Format-Preserving Tokenization (FPT).
+ */
+function tokenizeFormatPreservingVaultless(text, { salt = process.env.THUMBGATE_FPT_KEY } = {}) {
+  if (typeof text !== 'string' || text.length === 0) return text;
+  if (typeof salt !== 'string' || salt.length < 16) {
+    throw new Error('tokenizeFormatPreservingVaultless requires a secret key of at least 16 characters');
+  }
+  const digestHex = (val) => crypto.createHmac('sha256', String(salt)).update(String(val)).digest('hex');
+  const digestDigits = (val, len) => {
+    const hex = digestHex(val);
+    let out = '';
+    for (let i = 0; i < hex.length && out.length < len; i += 2) {
+      out += String(Number.parseInt(hex.slice(i, i + 2), 16) % 10);
+    }
+    return out.padEnd(len, '0').slice(0, len);
+  };
+
+  let out = redactSecrets(text);
+  out = out.replace(/\b([A-Za-z0-9._%+-]{1,64})@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g, (match, _local, domain) => {
+    if (domain.toLowerCase() === 'tokenized.local') return match;
+    return `tok_${digestHex(match.toLowerCase()).slice(0, 8)}@tokenized.local`;
+  });
+  out = out.replace(/\b(?!900-)\d{3}-\d{2}-\d{4}\b/g, (match) => {
+    const d = digestDigits(match, 6);
+    return `900-${d.slice(0, 2)}-${d.slice(2, 6)}`;
+  });
+  out = out.replace(/\b(\d{3})-(\d{3})-(\d{4})\b/g, (match, a, b) => {
+    if (a === '900' || (a === '555' && b.startsWith('01'))) return match;
+    const d = digestDigits(match, 6);
+    return `555-01${d.slice(0, 1)}-${d.slice(1, 5)}`;
+  });
+  return out;
+}
+
+function enforceZeroTrustDetokenizationGate({
+  authenticated = false,
+  roleAuthorizedForPlaintext = false,
+  explicitDetokenizePermission = false,
+  crossesExternalNetwork = false,
+} = {}) {
+  const blockers = [];
+  if (authenticated !== true) blockers.push('unauthenticated_caller');
+  if (crossesExternalNetwork) blockers.push('vaultless_tokenization_must_stay_in_customer_environment');
+  if (roleAuthorizedForPlaintext !== true || explicitDetokenizePermission !== true) {
+    blockers.push('default_tokenized_view_enforced_explicit_detokenize_permission_required');
+  }
+  return {
+    allowed: blockers.length === 0,
+    viewMode: blockers.length === 0 ? 'DETOKENIZED_PLAINTEXT' : 'TOKENIZED_ONLY',
+    vaultlessInEnvironment: !crossesExternalNetwork,
+    blockers,
+  };
+}
 
 module.exports = {
   SECRET_REDACTION_PATTERNS,
   redactSecrets,
   redactSecretsDeep,
   containsSecret,
+  tokenizeFormatPreservingVaultless,
+  enforceZeroTrustDetokenizationGate,
 };
