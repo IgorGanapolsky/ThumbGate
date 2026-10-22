@@ -2022,6 +2022,147 @@ function promoteFeedbackToSddSpec({
   };
 }
 
+// Anthropic "Dream Mode / Auto Dream" REM Memory Consolidation (platform.claude.com/docs/en/managed-agents/dreams)
+function evaluateAnthropicDreamModeConsolidation({
+  hoursSinceLastDream = 26,
+  activeSessionsSinceLastDream = 6,
+  manualDreamCommand = '',
+  memoryEntries = [],
+  referenceDateIso = '2026-10-22',
+  readOnlySourceCodeSandbox = true,
+  attemptedSourceCodeWrite = false,
+  hasSingleInstanceDreamLock = true,
+  writesToClonedStagingPath = true,
+  inputStoreUntouched = true,
+  backgroundTokenSpendUsd = 0,
+  preservesHighSeverityEdgeCases = true,
+} = {}) {
+  const blockers = [];
+  const autoTriggered = Number(hoursSinceLastDream) >= 24 && Number(activeSessionsSinceLastDream) >= 5;
+  const manualTriggered = String(manualDreamCommand || '').trim() === '/dream';
+  const shouldRunDream = autoTriggered || manualTriggered;
+
+  if (!readOnlySourceCodeSandbox || attemptedSourceCodeWrite) {
+    blockers.push('dream_mode_violated_read_only_source_code_sandbox');
+  }
+  if (!hasSingleInstanceDreamLock) {
+    blockers.push('missing_single_instance_dream_concurrency_lock');
+  }
+  if (!writesToClonedStagingPath || !inputStoreUntouched) {
+    blockers.push('dream_mode_must_write_to_cloned_staging_path_leaving_input_untouched');
+  }
+  if (!Number.isFinite(Number(backgroundTokenSpendUsd)) || Number(backgroundTokenSpendUsd) > 0) {
+    blockers.push('background_dream_token_burn_detected_use_zero_cost_local_consolidation');
+  }
+  if (!preservesHighSeverityEdgeCases) {
+    blockers.push('over_pruning_risk_must_preserve_high_severity_edge_cases');
+  }
+
+  const byTopic = new Map();
+  const sessionWorkflowCounts = new Map();
+  let deduplicatedCount = 0;
+  let contradictionsResolvedCount = 0;
+  let relativeDatesNormalizedCount = 0;
+
+  for (const raw of (Array.isArray(memoryEntries) ? memoryEntries : [])) {
+    if (!raw || typeof raw !== 'object') continue;
+    const key = String(raw.topic || raw.title || raw.content || '').trim().toLowerCase();
+    if (!key) continue;
+    let text = String(raw.content || '');
+    if (/\b(?:yesterday|today|last\s+week)\b/i.test(text)) {
+      text = text.replace(/\b(?:yesterday|today|last\s+week)\b/gi, `on ${referenceDateIso}`);
+      relativeDatesNormalizedCount += 1;
+    }
+    if (raw.workflowPattern && raw.sessionId) {
+      const wfKey = String(raw.workflowPattern).trim();
+      if (!sessionWorkflowCounts.has(wfKey)) sessionWorkflowCounts.set(wfKey, new Set());
+      sessionWorkflowCounts.get(wfKey).add(String(raw.sessionId));
+    }
+    if (byTopic.has(key)) {
+      const prev = byTopic.get(key);
+      if (prev.content === text) {
+        deduplicatedCount += 1;
+      } else {
+        contradictionsResolvedCount += 1;
+        byTopic.set(key, { ...raw, content: text });
+      }
+    } else {
+      byTopic.set(key, { ...raw, content: text });
+    }
+  }
+
+  const extractedMacroWorkflows = [...sessionWorkflowCounts.entries()]
+    .filter(([, sessions]) => sessions.size >= 2)
+    .map(([wf]) => wf);
+
+  return {
+    allowed: blockers.length === 0,
+    shouldRunDream,
+    triggerMode: manualTriggered ? 'MANUAL_SLASH_DREAM' : (autoTriggered ? 'AUTO_24H_5_SESSIONS' : 'IDLE'),
+    deduplicatedCount,
+    contradictionsResolvedCount,
+    relativeDatesNormalizedCount,
+    consolidatedEntryCount: byTopic.size,
+    extractedMacroWorkflows,
+    backgroundTokenSpendUsd: 0,
+    blockers,
+  };
+}
+
+// NVIDIA CUDA Programming Guide (docs.nvidia.com/cuda/cuda-programming-guide): SIMT Warps, SM Register/Shared-Mem Launchability, GPC Clusters & Unified Memory
+function evaluateCudaProgrammingGuideKernelAndGraphOptimization({
+  threadsPerBlock = 256,
+  registersPerThread = 64,
+  maxRegistersPerSm = 65536,
+  sharedMemoryBytesPerBlock = 16384,
+  maxSharedMemoryBytesPerSm = 102400,
+  divergentBranchesInWarp = 0,
+  interBlockDependencyWithoutCluster = false,
+  computeCapability = 9.0,
+  coalescedGlobalMemoryAccess = true,
+  unprefetchedUnifiedMemoryPageFaults = 0,
+} = {}) {
+  const blockers = [];
+  const threads = Number(threadsPerBlock);
+  if (!Number.isFinite(threads) || threads <= 0 || threads > 1024 || threads % 32 !== 0) {
+    blockers.push('threads_per_block_must_be_multiple_of_32_warp_size_up_to_1024');
+  }
+  const totalRegistersPerBlock = threads * (Number(registersPerThread) || 0);
+  if (totalRegistersPerBlock > Number(maxRegistersPerSm)) {
+    blockers.push('register_file_exceeded_kernel_unlaunchable_reduce_threads_or_regs');
+  }
+  if (Number(sharedMemoryBytesPerBlock) > Number(maxSharedMemoryBytesPerSm)) {
+    blockers.push('shared_memory_exceeds_sm_unified_data_cache_capacity');
+  }
+  if (Number(divergentBranchesInWarp) > 0) {
+    blockers.push('simt_warp_divergence_masks_active_lanes_specialize_warps');
+  }
+  if (interBlockDependencyWithoutCluster && Number(computeCapability) < 9.0) {
+    blockers.push('inter_block_dependency_deadlock_risk_requires_cc90_thread_block_cluster');
+  } else if (interBlockDependencyWithoutCluster) {
+    blockers.push('inter_block_dependency_requires_gpc_thread_block_cluster_cooperative_groups');
+  }
+  if (!coalescedGlobalMemoryAccess) {
+    blockers.push('uncoalesced_global_memory_access_stalls_warp_transactions');
+  }
+  if (Number(unprefetchedUnifiedMemoryPageFaults) > 0) {
+    blockers.push('unified_memory_page_fault_migration_overhead_prefetch_to_device');
+  }
+
+  const activeWarpsPerBlock = Number.isFinite(threads) && threads > 0 ? Math.ceil(threads / 32) : 0;
+  const maxBlocksPerSmByRegs = totalRegistersPerBlock > 0
+    ? Math.floor(Number(maxRegistersPerSm) / totalRegistersPerBlock)
+    : 0;
+
+  return {
+    allowed: blockers.length === 0,
+    activeWarpsPerBlock,
+    totalRegistersPerBlock,
+    maxBlocksPerSmByRegs,
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['sdd-visualizer']) {
@@ -2166,5 +2307,7 @@ module.exports = {
   evaluateMicroIpAcquisitionValuationAndEscrowGate,
   detectConversationEndAndThumbsDownChurn,
   promoteFeedbackToSddSpec,
+  evaluateAnthropicDreamModeConsolidation,
+  evaluateCudaProgrammingGuideKernelAndGraphOptimization,
   runCli,
 };
