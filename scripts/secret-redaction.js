@@ -172,7 +172,7 @@ function tokenizeFormatPreservingVaultless(text, { salt = process.env.THUMBGATE_
     const hex = digestHex(val);
     let out = '';
     for (let i = 0; i < hex.length && out.length < len; i += 2) {
-      out += String(parseInt(hex.slice(i, i + 2), 16) % 10);
+      out += String(Number.parseInt(hex.slice(i, i + 2), 16) % 10);
     }
     return out.padEnd(len, '0').slice(0, len);
   };

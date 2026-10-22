@@ -739,7 +739,7 @@ function evaluateNvidiaRetrieverLookupReduction({
 
 function resolveEnterpriseOntologyCanonicalTerm(rawTerm = '') {
   const key = String(rawTerm || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-  const harmonized = Object.prototype.hasOwnProperty.call(ENTERPRISE_ONTOLOGY_SYNONYMS, key);
+  const harmonized = Object.hasOwn(ENTERPRISE_ONTOLOGY_SYNONYMS, key);
   const canonical = harmonized ? ENTERPRISE_ONTOLOGY_SYNONYMS[key] : (key || 'unknown_concept');
   return {
     rawTerm,
@@ -1405,7 +1405,7 @@ const SDD_2026_STAGES = Object.freeze([
     subtitle: 'Candidate Diff + Unit',
     badge: 'Isolated APFS Worktree',
     role: 'Implementor Sub-Agent',
-    artifact: '/tmp/tg-slice-N + .git/thumbgate-session-lease.json',
+    artifact: 'worktrees/tg-slice-N + .git/thumbgate-session-lease.json',
     keyMechanism: 'Single-writer checkout lease + disjoint file ownership + PreToolUse <0.5ms safety floor',
     failureRoutingGuardrail: 'On foreign lease or out-of-scope file touch: PreToolUse DENY blocks mutation before git index changes.',
     nextEdge: 'diff',
@@ -1476,7 +1476,7 @@ const SDD_2026_STAGES = Object.freeze([
 function runSddHarnessStagePipeline({ mode = 'happy_path', stage = 1 } = {}) {
   const validModes = new Set(['happy_path', 'spec_backtrack', 'self_healing']);
   const activeMode = validModes.has(mode) ? mode : 'happy_path';
-  const idx = Math.min(6, Math.max(1, Number(stage) || 1)) - 1;
+  const idx = Math.min(6, Math.max(1, Math.floor(Number(stage) || 1))) - 1;
   const activeStage = SDD_2026_STAGES[idx];
 
   const feedbackLoops = {
@@ -1486,6 +1486,13 @@ function runSddHarnessStagePipeline({ mode = 'happy_path', stage = 1 } = {}) {
     harnessSelfHealing: '6 -> 1 (Co-committed AGENTS.md rule + structural AST test hardens Constitution)',
   };
 
+  let activeTransition = feedbackLoops.forwardPath;
+  if (activeMode === 'spec_backtrack') {
+    activeTransition = feedbackLoops.specBacktrack;
+  } else if (activeMode === 'self_healing') {
+    activeTransition = feedbackLoops.harnessSelfHealing;
+  }
+
   return {
     ok: true,
     mode: activeMode,
@@ -1494,9 +1501,71 @@ function runSddHarnessStagePipeline({ mode = 'happy_path', stage = 1 } = {}) {
     activeStage,
     stages: SDD_2026_STAGES,
     feedbackLoops,
-    activeTransition: activeMode === 'spec_backtrack'
-      ? feedbackLoops.specBacktrack
-      : (activeMode === 'self_healing' ? feedbackLoops.harnessSelfHealing : feedbackLoops.forwardPath),
+    activeTransition,
+  };
+}
+
+/**
+ * Princeton "The Wealth of Agents: Scaling Agentic AI Across Developers" (arXiv:2610.20518, Oct 20, 2026).
+ */
+function evaluateWealthOfAgentsRouting({
+  distinctSkillDomains = ['code_edit', 'sqlite_audit', 'browser_verify'],
+  singleGeneralAgentAccuracy = 0.58,
+  specialists = [
+    { id: 'dev_a_code', domain: 'code_edit', globalAccuracy: 0.35, domainAccuracy: 0.72, evalScoresVerified: true, pricingDeclared: true, failureModesDeclared: true, preToolUseSandboxed: true },
+    { id: 'dev_b_sql', domain: 'sqlite_audit', globalAccuracy: 0.19, domainAccuracy: 0.68, evalScoresVerified: true, pricingDeclared: true, failureModesDeclared: true, preToolUseSandboxed: true },
+    { id: 'dev_c_web', domain: 'browser_verify', globalAccuracy: 0.32, domainAccuracy: 0.70, evalScoresVerified: true, pricingDeclared: true, failureModesDeclared: true, preToolUseSandboxed: true },
+  ],
+} = {}) {
+  const domains = Array.isArray(distinctSkillDomains) ? distinctSkillDomains : [];
+  if (domains.length <= 1) {
+    return {
+      allowed: true,
+      routeDecision: 'SINGLE_GENERAL_AGENT_AVOID_SEALQA_SPLIT_OVERHEAD',
+      combinedAccuracy: Number(singleGeneralAgentAccuracy),
+      gainVsGeneralAgent: 0,
+      selectedSpecialists: [],
+      blockers: [],
+    };
+  }
+
+  const pool = Array.isArray(specialists) ? specialists : [];
+  const blockers = [];
+  const selectedSpecialists = [];
+
+  for (const dom of domains) {
+    const candidates = pool.filter((s) => s && s.domain === dom);
+    if (candidates.length === 0) {
+      blockers.push(`missing_specialist_for_domain:${dom}`);
+      continue;
+    }
+    candidates.sort((a, b) => (Number(b.domainAccuracy) || 0) - (Number(a.domainAccuracy) || 0));
+    const best = candidates[0];
+    if (!best.evalScoresVerified || !best.pricingDeclared || !best.failureModesDeclared || !best.preToolUseSandboxed) {
+      blockers.push(`untrusted_external_specialist_passport:${best.id}`);
+    }
+    selectedSpecialists.push(best);
+  }
+
+  const avgDomainAcc = selectedSpecialists.length > 0
+    ? selectedSpecialists.reduce((acc, s) => acc + (Number(s.domainAccuracy) || 0), 0) / selectedSpecialists.length
+    : 0;
+  const combinedAccuracy = Number(avgDomainAcc.toFixed(2));
+  const gainVsGeneralAgent = Number((combinedAccuracy - Number(singleGeneralAgentAccuracy)).toFixed(2));
+
+  return {
+    allowed: blockers.length === 0 && combinedAccuracy > Number(singleGeneralAgentAccuracy),
+    routeDecision: 'MULTI_DEVELOPER_SPECIALIST_ENSEMBLE',
+    combinedAccuracy,
+    singleGeneralAgentAccuracy: Number(singleGeneralAgentAccuracy),
+    gainVsGeneralAgent,
+    selectedSpecialists: selectedSpecialists.map((s) => ({
+      id: s.id,
+      domain: s.domain,
+      globalAccuracy: s.globalAccuracy,
+      domainAccuracy: s.domainAccuracy,
+    })),
+    blockers,
   };
 }
 
@@ -1636,5 +1705,6 @@ module.exports = {
   validateSpecDrivenScaffold,
   SDD_2026_STAGES,
   runSddHarnessStagePipeline,
+  evaluateWealthOfAgentsRouting,
   runCli,
 };

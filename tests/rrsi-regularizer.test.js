@@ -788,16 +788,32 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
     earsAcceptanceCriteria: ['WHEN a tool call mutates git history, WHILE on branch main, THE SYSTEM SHALL deny execution in <0.5ms.'],
     explicitOutOfScopeBoundaries: ['Do not add OAuth or external cloud vault dependencies'],
     lockedArchitecturalDecisions: ['Use local SQLite FTS5 + Ed25519 offline token verification'],
-    worktreeIsolatedAtomicTasks: ['Task 1: worktree /tmp/tg-slice-1'],
+    worktreeIsolatedAtomicTasks: ['Task 1: worktrees/tg-slice-1'],
     adversarialVerificationAndPcpContract: 'Run Postcondition Completeness Probe over all mutated state fields',
   });
   assert.equal(sddScaffold.allowed, true);
   assert.equal(sddScaffold.validEarsCount, 1);
 
-  const { runSddHarnessStagePipeline } = require('../scripts/rrsi-doctor');
+  const { runSddHarnessStagePipeline, evaluateWealthOfAgentsRouting } = require('../scripts/rrsi-doctor');
   const sddVis = runSddHarnessStagePipeline({ mode: 'spec_backtrack', stage: 5 });
   assert.equal(sddVis.ok, true);
   assert.equal(sddVis.totalStages, 6);
   assert.equal(sddVis.activeStage.title, '5. SpecAgent Gate (PCP)');
   assert.match(sddVis.activeTransition, /5 -> 1/);
+
+  // Princeton Wealth of Agents (arXiv:2610.20518): multi-developer specialists reach 70% on GAIA vs 58% general agent, while single-skill SealQA avoids split
+  const sealQaSingleSkill = evaluateWealthOfAgentsRouting({
+    distinctSkillDomains: ['web_search_only'],
+    singleGeneralAgentAccuracy: 0.62,
+  });
+  assert.equal(sealQaSingleSkill.routeDecision, 'SINGLE_GENERAL_AGENT_AVOID_SEALQA_SPLIT_OVERHEAD');
+
+  const gaiaEnsemble = evaluateWealthOfAgentsRouting({
+    distinctSkillDomains: ['code_edit', 'sqlite_audit', 'browser_verify'],
+    singleGeneralAgentAccuracy: 0.58,
+  });
+  assert.equal(gaiaEnsemble.allowed, true);
+  assert.equal(gaiaEnsemble.routeDecision, 'MULTI_DEVELOPER_SPECIALIST_ENSEMBLE');
+  assert.equal(gaiaEnsemble.combinedAccuracy, 0.70);
+  assert.equal(gaiaEnsemble.gainVsGeneralAgent, 0.12);
 });
