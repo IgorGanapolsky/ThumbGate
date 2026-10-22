@@ -187,9 +187,7 @@ function extractBrandTokensFromHtml(html = '') {
   };
 }
 
-/**
- * Deterministic virtual clock timeline & frame seeker (no video diffusion model).
- */
+// Deterministic virtual clock timeline & frame seeker
 function buildVirtualClockTimeline({
   durationSeconds = 32,
   fps = 30,
@@ -225,10 +223,7 @@ function seekVirtualClockFrame(frameIndex, fps = 30) {
   };
 }
 
-/**
- * Tool 2 (`check_scene` gate before `render_video`):
- * Verifies zero JS runtime errors and non-empty visible text across sampled timestamps.
- */
+// Scene gate before render_video
 function checkSceneGate({ jsErrors = [], sampleFrames = [] } = {}) {
   const errors = Array.isArray(jsErrors) ? jsErrors.filter(Boolean) : [];
   const samples = Array.isArray(sampleFrames) ? sampleFrames : [];
@@ -251,9 +246,7 @@ function checkSceneGate({ jsErrors = [], sampleFrames = [] } = {}) {
   };
 }
 
-/**
- * Zero-secret per-job upload manifest (3-hour max TTL, single path scope).
- */
+// Zero-secret per-job upload manifest
 function mintScopedBlobUploadManifest({
   jobId = '',
   ttlSeconds = 10800,
@@ -288,10 +281,7 @@ function mintScopedBlobUploadManifest({
   };
 }
 
-/**
- * Control-plane completion verifier: `turn.completed` alone is NOT done;
- * the MP4 artifact must exist in Blob storage with non-zero bytes.
- */
+// MP4 artifact completion verifier
 function verifyMp4ArtifactCompletion({
   events = [],
   blobArtifact = null,
@@ -348,24 +338,12 @@ function buildLaunchVideoHonestyReport(options = {}) {
 
 const CELLO_REPO_URL = 'https://github.com/Devil-Hawk/cello';
 const CELLO_GATE_ID = 'cello-thumbgate-career-agent-diode';
-
+const PAYOUT_ELIGIBLE_WORK_AUTH = new Set(['CPT', 'OPT', 'STEM_OPT', 'O1A']);
 const CELLO_RAIL_MAP = Object.freeze([
-  {
-    celloMechanism: '1. Atomic Approve-and-Send Outreach Diode (apps/web/lib/outreach/guardrails.ts: canSendNow + humanApproved + checkDailyCap + followUpWindowElapsed)',
-    thumbgateRail: 'evaluateCelloOutreachGate (blocks unapproved sends, enforces daily cap & NaN-safe follow-up window, and keeps failed sends in pending_review instead of arming approved)',
-  },
-  {
-    celloMechanism: '2. Stateless MCP Server Refusal on Send/Submit Tools (apps/web/app/api/mcp/route.ts: refuses is_demo tokens and any submitOrSendReason tool lacking a human confirm UI)',
-    thumbgateRail: 'evaluateCelloMcpAndChokepointGate (blocks demo tokens, unframed employer HTML, resume fabrications, and headless MCP send/submit calls)',
-  },
-  {
-    celloMechanism: '3. Judge Verdicts -> DPO Preference Pairs & Local Prevention Rules',
-    thumbgateRail: 'compileCelloJudgeToDpoPair (turns Cello want-judge / claims-judge resume fabrication diffs into DPO chosen/rejected pairs and PreToolUse rules)',
-  },
-  {
-    celloMechanism: '4. F-1 Visa-Safe Merchant-of-Record (MoR) Partner Attribution & Escrow Ledger',
-    thumbgateRail: 'buildCelloMoRPartnerLedgerEntry (ThumbGate acts as 100% Stripe MoR; accrues 50% partner share in deferred escrow until CPT/OPT/O-1A work authorization is verified)',
-  },
+  { celloMechanism: '1. Atomic Approve-and-Send Outreach Diode', thumbgateRail: 'evaluateCelloOutreachGate' },
+  { celloMechanism: '2. Stateless MCP Refusal on Send/Submit Tools', thumbgateRail: 'evaluateCelloMcpAndChokepointGate' },
+  { celloMechanism: '3. Judge Verdicts -> DPO Pairs & Prevention Rules', thumbgateRail: 'compileCelloJudgeToDpoPair' },
+  { celloMechanism: '4. F-1 Visa-Safe MoR Partner Escrow Ledger', thumbgateRail: 'buildCelloMoRPartnerLedgerEntry' },
 ]);
 
 function evaluateCelloOutreachGate({
@@ -381,21 +359,24 @@ function evaluateCelloOutreachGate({
 } = {}) {
   if (status === 'sent') return { allowed: false, nextStatusOnFailure: 'sent', reason: 'already_sent' };
   if (status === 'skipped' || status === 'failed') return { allowed: false, nextStatusOnFailure: status, reason: `message_is_${status}` };
-  const cap = Math.max(1, Number(dailyCap) || 10);
-  if (Number(sentToday) >= cap) {
+  const parsedCap = Number(dailyCap);
+  const cap = Number.isFinite(parsedCap) ? Math.max(1, parsedCap) : 10;
+  const sent = Number(sentToday);
+  if (!Number.isFinite(sent) || sent >= cap) {
     return { allowed: false, nextStatusOnFailure: status === 'pending_review' ? 'pending_review' : status, reason: `daily_cap_reached (${sentToday}/${cap})` };
   }
   if (kind === 'follow_up') {
     if (!parentSentAt) return { allowed: false, nextStatusOnFailure: 'pending_review', reason: 'parent_was_never_sent' };
     const sentMs = new Date(parentSentAt).getTime();
     if (!Number.isFinite(sentMs)) return { allowed: false, nextStatusOnFailure: 'pending_review', reason: 'parent_send_time_unreadable_nan_guard' };
-    const needMs = Math.max(1, Number(followUpDays) || 5) * 24 * 60 * 60 * 1000;
-    if (nowMs - sentMs < needMs) return { allowed: false, nextStatusOnFailure: 'pending_review', reason: 'follow_up_window_not_elapsed' };
+    const parsedDays = Number(followUpDays);
+    const needMs = (Number.isFinite(parsedDays) ? Math.max(1, parsedDays) : 5) * 24 * 60 * 60 * 1000;
+    if (!Number.isFinite(nowMs) || nowMs - sentMs < needMs) return { allowed: false, nextStatusOnFailure: 'pending_review', reason: 'follow_up_window_not_elapsed' };
   }
-  if (status === 'approved' || (status === 'pending_review' && (humanApproved === true || autoSend === true))) {
+  if (status === 'pending_review' && humanApproved === true) {
     return {
       allowed: true,
-      atomicApproveAndSend: Boolean(status === 'pending_review' && humanApproved === true),
+      atomicApproveAndSend: true,
       nextStatusOnFailure: 'pending_review',
       reason: 'approved_for_delivery',
     };
@@ -418,7 +399,7 @@ function evaluateCelloMcpAndChokepointGate({
   if (!withinMonthlyBudgetCap) blockers.push('monthly_spend_cap_exceeded');
   if (!employerTextFramed) blockers.push('unframed_employer_text_prompt_injection_risk');
   if (Number(resumeFabricationCount) > 0) blockers.push('resume_fabrication_detected_against_ground_truth');
-  if (/^(?:send_email|send_outreach|submit_application|browser_submit_application)$/i.test(String(toolName || '').trim()) && !hasHumanConfirmChannel) {
+  if (/(?:^|[_.:-])(?:send|submit)(?:[_.:-]|$)/i.test(String(toolName || '').trim()) && !hasHumanConfirmChannel) {
     blockers.push('mcp_headless_send_or_submit_refused_without_human_click');
   }
   return { allowed: blockers.length === 0, decision: blockers.length === 0 ? 'ALLOW' : 'DENY', toolName, blockers };
@@ -449,9 +430,11 @@ function buildCelloMoRPartnerLedgerEntry({
   workAuthType = null,
 } = {}) {
   const gross = Math.max(0, Math.floor(Number(grossAmountCents) || 0));
-  const bps = Math.min(10000, Math.max(0, Math.floor(Number(partnerShareBps) || 5000)));
+  const rawBps = Number(partnerShareBps);
+  const bps = Number.isFinite(rawBps) ? Math.min(10000, Math.max(0, Math.floor(rawBps))) : 5000;
   const partnerAccruedCents = Math.floor((gross * bps) / 10000);
-  const canDisburseNow = Boolean(workAuthVerified && workAuthType && /^(?:CPT|OPT|STEM_OPT|O1A|H1B|NON_US_FOREIGN)$/i.test(String(workAuthType)));
+  const normalizedAuthType = String(workAuthType || '').toUpperCase().replace(/[\s-]/g, '');
+  const canDisburseNow = Boolean(workAuthVerified && PAYOUT_ELIGIBLE_WORK_AUTH.has(normalizedAuthType));
   return {
     orderId,
     partnerRepo: CELLO_REPO_URL,
@@ -490,24 +473,15 @@ const TRUST_SCORE_SOURCE_URL = 'https://thenewstack.io/ai-agent-trust-score/';
 const TRUST_SCORE_GATE_ID = 'vijil-feral-to-fiduciary-trust-credit-line';
 
 const TRUST_SCORE_RAIL_MAP = Object.freeze([
-  {
-    vijilConcept: '1. Trust as a Line of Credit (300-850 credit score; paying on time improves score but never auto-escalates credit limit without principal approval)',
-    thumbgateRail: 'evaluateAgentTrustCreditLine (computes 300-850 trust score from local SQLite outcomes; enforces hard spend/blast-radius limit and blocks auto-privilege escalation)',
-  },
-  {
-    vijilConcept: '2. Four Post-Launch Feral Agent Failure Modes (environment_drift, adversarial_hijack, ungoverned_agent, multi_agent_composition_breach)',
-    thumbgateRail: 'detectFeralAgentDrift (flags stale environment assumptions, prompt-injection hijacks, unverified shadow agents, and multi-agent composite policy breaches)',
-  },
-  {
-    vijilConcept: '3. Train Tracks vs. Mario Kart Bumper Walls + Fiduciary Duty of Care & Loyalty',
-    thumbgateRail: 'evaluateAgentTrustCreditLine (compiles policies into pre-action tracks and blocks repeated wall-bounce retry loops; keeps evaluation traces 100% local)',
-  },
+  { vijilConcept: '1. Trust as a Line of Credit (300-850 score)', thumbgateRail: 'evaluateAgentTrustCreditLine' },
+  { vijilConcept: '2. Four Post-Launch Feral Agent Failure Modes', thumbgateRail: 'detectFeralAgentDrift' },
+  { vijilConcept: '3. Policy Tracks vs Wall-Bounce Loops', thumbgateRail: 'evaluateAgentTrustCreditLine' },
 ]);
 
 function evaluateAgentTrustCreditLine({
-  passedEvals = 20,
-  totalEvals = 20,
-  verifiedOutcomes = 15,
+  passedEvals = 0,
+  totalEvals = 0,
+  verifiedOutcomes = 0,
   policyViolations = 0,
   wallBounceRetries = 0,
   approvedCreditLimitUsd = 10,
@@ -527,7 +501,11 @@ function evaluateAgentTrustCreditLine({
   const blockers = [];
   if (behavioralState === 'FERAL') blockers.push('agent_trust_score_feral_below_580');
   if (Number(wallBounceRetries) >= 3) blockers.push('mario_kart_wall_bounce_loop_detected');
-  if (Number(requestedActionCostUsd) > Number(approvedCreditLimitUsd)) blockers.push('exceeds_approved_autonomy_credit_limit');
+  const costUsd = Number(requestedActionCostUsd);
+  const limitUsd = Number(approvedCreditLimitUsd);
+  if (!Number.isFinite(costUsd) || costUsd < 0 || !Number.isFinite(limitUsd) || limitUsd < 0 || costUsd > limitUsd) {
+    blockers.push('exceeds_approved_autonomy_credit_limit');
+  }
   if (requestedScopeEscalation && !principalApprovedEscalation) {
     blockers.push('higher_trust_score_does_not_auto_increase_credit_limit_without_principal');
   }
