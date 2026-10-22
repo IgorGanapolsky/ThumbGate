@@ -803,6 +803,8 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
     evaluateKurtzApexPredatorAgentSecurityAndRouting,
     evaluateLiteRtEdgeTensorAuthoringAndExport,
     evaluateMicroIpAcquisitionValuationAndEscrowGate,
+    detectConversationEndAndThumbsDownChurn,
+    promoteFeedbackToSddSpec,
   } = require('../scripts/rrsi-doctor');
   const sddVis = runSddHarnessStagePipeline({ mode: 'spec_backtrack', stage: 5 });
   assert.equal(sddVis.ok, true);
@@ -991,4 +993,54 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(theyPayUsDiagnostic.outboundCashSpendUsd, 0);
   assert.equal(theyPayUsDiagnostic.partnerPaysUsUsd, 499);
   assert.equal(theyPayUsDiagnostic.netCashRetainedByThumbGateUsd, 999);
+
+  // Conversation-End Continuous Thumbs-Down Churn Detector & Feedback-to-SDD Spec Promoter
+  const rageQuitChurn = detectConversationEndAndThumbsDownChurn({
+    explicitSessionEnd: true,
+    sessionEvents: [
+      { signal: 'up', whatWorked: 'Fast local SQLite lookup' },
+      { signal: 'down', whatWentWrong: 'Offered cash buyout to external founder' },
+      { signal: 'down', whatWentWrong: 'Did not enforce $0 outbound spend mandate' },
+    ],
+  });
+  assert.equal(rageQuitChurn.conversationEnded, true);
+  assert.equal(rageQuitChurn.causedByContinuousThumbsDown, true);
+  assert.equal(rageQuitChurn.churnClassification, 'FRUSTRATION_ABANDONMENT_CONTINUOUS_THUMBS_DOWN');
+  assert.equal(rageQuitChurn.consecutiveTrailingNegativeCount, 2);
+  assert.equal(rageQuitChurn.requiresSpecPromotion, true);
+  assert.equal(rageQuitChurn.requiresNextSessionRecoveryHandoff, true);
+
+  const promotedSpec = promoteFeedbackToSddSpec({
+    explicitSessionEnd: true,
+    feedbackItems: [
+      {
+        signal: 'up',
+        whatWorked: 'Keep PreToolUse evaluation under 0.5ms on local SQLite',
+      },
+      {
+        signal: 'down',
+        trigger: 'an external founder pitches an IP buyout or partnership',
+        whatWentWrong: 'Offered 50/50 cash wire instead of $0 outbound spend',
+        whatToChange: 'block any outboundCashSpendUsd > 0 and require the partner to pay $499 Diagnostic or $19/mo Pro',
+        mutatedStateVars: ['outboundCashSpendUsd', 'partnerPaysUsUsd'],
+      },
+      {
+        signal: 'down',
+        trigger: 'a user ends a conversation after repeated negative feedback',
+        whatWentWrong: 'Only logged sentiment instead of updating the SDD specification',
+        whatToChange: 'compile trailing thumbs-down reasons into EARS acceptance criteria and Out-of-Scope boundaries',
+        mutatedStateVars: ['earsAcceptanceCriteria', 'explicitOutOfScopeBoundaries'],
+      },
+    ],
+  });
+  assert.equal(promotedSpec.promotedToSpec, true);
+  assert.equal(promotedSpec.churnReport.causedByContinuousThumbsDown, true);
+  assert.equal(promotedSpec.scaffoldValidation.validEarsCount, 2);
+  assert.equal(promotedSpec.specScaffold.explicitOutOfScopeBoundaries.length, 2);
+  assert.deepEqual(promotedSpec.specScaffold.constrainedPostconditionVars, [
+    'outboundCashSpendUsd',
+    'partnerPaysUsUsd',
+    'earsAcceptanceCriteria',
+    'explicitOutOfScopeBoundaries',
+  ]);
 });

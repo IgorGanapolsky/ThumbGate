@@ -1887,6 +1887,141 @@ function evaluateMicroIpAcquisitionValuationAndEscrowGate({
   };
 }
 
+// 1) Conversation-End & Continuous Thumbs-Down Frustration Churn Detector
+// 2) Feedback-to-SDD Spec Promoter (promotes feedback into EARS specs, Non-Goals & PCP state invariants)
+function detectConversationEndAndThumbsDownChurn({
+  sessionEvents = [],
+  explicitSessionEnd = false,
+  idleMinutes = 0,
+  idleTimeoutMinutes = 15,
+} = {}) {
+  const events = Array.isArray(sessionEvents) ? sessionEvents : [];
+  const conversationEnded = Boolean(explicitSessionEnd) || Number(idleMinutes) >= Number(idleTimeoutMinutes || 15);
+
+  let consecutiveTrailingNegativeCount = 0;
+  let totalNegativeCount = 0;
+  let totalPositiveCount = 0;
+  const unresolvedReasons = [];
+
+  for (const ev of events) {
+    if (!ev || typeof ev !== 'object') continue;
+    const sig = String(ev.signal || '').toLowerCase();
+    if (sig === 'down' || sig === 'negative') {
+      totalNegativeCount += 1;
+      consecutiveTrailingNegativeCount += 1;
+      if (ev.whatWentWrong || ev.context) {
+        unresolvedReasons.push(String(ev.whatWentWrong || ev.context).trim());
+      }
+    } else if (sig === 'up' || sig === 'positive' || ev.verifiedFix === true) {
+      if (sig === 'up' || sig === 'positive') totalPositiveCount += 1;
+      consecutiveTrailingNegativeCount = 0;
+      unresolvedReasons.length = 0;
+    }
+  }
+
+  let churnClassification = 'ACTIVE_SESSION';
+  if (conversationEnded) {
+    if (consecutiveTrailingNegativeCount >= 2) {
+      churnClassification = 'FRUSTRATION_ABANDONMENT_CONTINUOUS_THUMBS_DOWN';
+    } else if (consecutiveTrailingNegativeCount === 1) {
+      churnClassification = 'UNRESOLVED_SINGLE_THUMBS_DOWN_EXIT';
+    } else {
+      churnClassification = 'SATISFIED_TASK_COMPLETION';
+    }
+  }
+
+  return {
+    conversationEnded,
+    churnClassification,
+    causedByContinuousThumbsDown: conversationEnded && consecutiveTrailingNegativeCount >= 2,
+    consecutiveTrailingNegativeCount,
+    totalNegativeCount,
+    totalPositiveCount,
+    unresolvedReasons,
+    requiresSpecPromotion: conversationEnded && consecutiveTrailingNegativeCount >= 1,
+    requiresNextSessionRecoveryHandoff: conversationEnded && consecutiveTrailingNegativeCount >= 2,
+  };
+}
+
+function promoteFeedbackToSddSpec({
+  feedbackItems = [],
+  constitutionReference = 'AGENTS.md#PreToolUse',
+  sessionEvents = [],
+  explicitSessionEnd = true,
+} = {}) {
+  const churn = detectConversationEndAndThumbsDownChurn({
+    sessionEvents: sessionEvents.length > 0 ? sessionEvents : feedbackItems,
+    explicitSessionEnd,
+  });
+  const items = Array.isArray(feedbackItems) ? feedbackItems : [];
+  const earsAcceptanceCriteria = [];
+  const explicitOutOfScopeBoundaries = [];
+  const lockedArchitecturalDecisions = [];
+  const worktreeIsolatedAtomicTasks = [];
+  const constrainedPostconditionVars = new Set();
+
+  for (let i = 0; i < items.length; i += 1) {
+    const item = items[i] || {};
+    const sig = String(item.signal || '').toLowerCase();
+    const trigger = String(item.trigger || item.domain || 'an agent executes a workflow step').trim();
+    const change = String(item.whatToChange || item.remediation || '').trim();
+    const wrong = String(item.whatWentWrong || item.context || '').trim();
+    const worked = String(item.whatWorked || '').trim();
+
+    if (sig === 'down' || sig === 'negative') {
+      if (change) {
+        earsAcceptanceCriteria.push(
+          `WHEN ${trigger}, WHILE enforcing ThumbGate governance, THE SYSTEM SHALL ${change.replace(/\.$/, '')}.`
+        );
+      }
+      if (wrong) {
+        explicitOutOfScopeBoundaries.push(`Do NOT repeat: ${wrong}`);
+      }
+      worktreeIsolatedAtomicTasks.push(
+        `Task ${worktreeIsolatedAtomicTasks.length + 1}: worktrees/tg-spec-fix-${i + 1} (${change || wrong || 'remediation'})`
+      );
+    } else if ((sig === 'up' || sig === 'positive') && worked) {
+      lockedArchitecturalDecisions.push(worked);
+    }
+
+    for (const v of (Array.isArray(item.mutatedStateVars) ? item.mutatedStateVars : [])) {
+      if (v) constrainedPostconditionVars.add(String(v));
+    }
+  }
+
+  if (lockedArchitecturalDecisions.length === 0) {
+    lockedArchitecturalDecisions.push('Enforce fail-closed PreToolUse gates and co-committed structural tests');
+  }
+  const pcpVars = [...constrainedPostconditionVars];
+  const adversarialVerificationAndPcpContract = pcpVars.length > 0
+    ? `Run Postcondition Completeness Probe over mutated state vars: ${pcpVars.join(', ')}`
+    : 'Run Postcondition Completeness Probe over all mutated state fields';
+
+  const scaffoldValidation = validateSpecDrivenScaffold({
+    constitutionReference,
+    earsAcceptanceCriteria,
+    explicitOutOfScopeBoundaries,
+    lockedArchitecturalDecisions,
+    worktreeIsolatedAtomicTasks,
+    adversarialVerificationAndPcpContract,
+  });
+
+  return {
+    promotedToSpec: scaffoldValidation.allowed,
+    churnReport: churn,
+    specScaffold: {
+      constitutionReference,
+      earsAcceptanceCriteria,
+      explicitOutOfScopeBoundaries,
+      lockedArchitecturalDecisions,
+      worktreeIsolatedAtomicTasks,
+      adversarialVerificationAndPcpContract,
+      constrainedPostconditionVars: pcpVars,
+    },
+    scaffoldValidation,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['sdd-visualizer']) {
@@ -2029,5 +2164,7 @@ module.exports = {
   evaluateKurtzApexPredatorAgentSecurityAndRouting,
   evaluateLiteRtEdgeTensorAuthoringAndExport,
   evaluateMicroIpAcquisitionValuationAndEscrowGate,
+  detectConversationEndAndThumbsDownChurn,
+  promoteFeedbackToSddSpec,
   runCli,
 };
