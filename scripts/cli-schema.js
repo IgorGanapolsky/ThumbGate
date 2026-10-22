@@ -814,6 +814,30 @@ const CLI_COMMANDS = [
     flags: [],
   },
   {
+    name: 'cuda-gate',
+    aliases: ['cuda-gate-batch'],
+    description: 'CUDA-inspired parallel PreToolUse gate evaluation (SIMT + shared-memory hot cache)',
+    group: 'gates',
+    flags: [
+      { name: 'tool', type: 'string', description: 'Tool name being gated (e.g. Bash, Write, Read)' },
+      { name: 'input', type: 'string', description: 'Path to JSON file with tool input' },
+      { name: 'json', type: 'boolean', description: 'Output as JSON' },
+      { name: 'map-only', type: 'boolean', description: 'Output only category/rule mapping' },
+    ],
+  },
+  {
+    name: 'dream',
+    aliases: ['dream-mode'],
+    description: 'Anthropic Dream Mode — 4-phase memory consolidation (orientation → gather → consolidate → prune & index)',
+    group: 'advanced',
+    flags: [
+      { name: 'force', type: 'boolean', description: 'Force run regardless of trigger thresholds' },
+      { name: 'dry-run', type: 'boolean', description: 'Preview what would change without writing' },
+      { name: 'json', type: 'boolean', description: 'Output as JSON' },
+      { name: 'memory-dir', type: 'string', description: 'Custom memory directory path' },
+    ],
+  },
+  {
     name: 'force-gate',
     description: 'Immediately create a blocking gate from a pattern string',
     group: 'gates',

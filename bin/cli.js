@@ -5498,6 +5498,36 @@ switch (COMMAND) {
     }
     break;
   }
+  case 'dream':
+  case 'dream-mode': {
+    // ThumbGate Dream Mode — Anthropic-inspired memory consolidation engine.
+    // 4-phase pipeline (Orientation → Gather Signal → Consolidation → Prune & Index)
+    // with CUDA-inspired parallel scanning via worker_threads.
+    //
+    // Usage:
+    //   npx thumbgate dream                 # Run if triggers are met (24h + 5 sessions)
+    //   npx thumbgate dream --force         # Force run regardless of triggers
+    //   npx thumbgate dream --dry-run       # Preview what would change
+    //   npx thumbgate dream --json          # JSON output
+    //
+    // Safety: read-only on source code; writes only to .thumbgate/dreams/
+    const { dreamCmd } = require(path.join(PKG_ROOT, 'scripts', 'thumbgate-dream'));
+    dreamCmd();
+    break;
+  }
+  case 'cuda-gate':
+  case 'cuda-gate-batch': {
+    // CUDA-inspired parallel PreToolUse gate evaluation.
+    // Maps CUDA thread hierarchy (grid → blocks → threads) onto ThumbGate gates.
+    // Uses parallel worker threads for gate categories + shared-memory hot cache.
+    //
+    // Usage:
+    //   npx thumbgate cuda-gate --tool=Bash --input=cmd.json --json
+    //   npx thumbgate cuda-gate --map-only
+    const { cudaGateBatchCmd } = require(path.join(PKG_ROOT, 'scripts', 'cuda-gate-batch'));
+    cudaGateBatchCmd();
+    break;
+  }
   case 'start-api':
     startApi();
     break;
