@@ -1835,6 +1835,70 @@ function evaluateKurtzApexPredatorAgentSecurityAndRouting({
   };
 }
 
+/**
+ * Google LiteRT Tensor API "Native Model Authoring for Edge" (https://developers.googleblog.com/native-model-authoring-for-edge-with-litert-tensor-api/, Oct 19, 2026):
+ *  1. Zero-Copy Shared-Buffer Pipeline Chaining (`SetOutput` -> `GetInput` via `CreateLambdaRunner`):
+ *     chains pre-processing, encoder, decoder, and post-processing through shared accelerator buffers with
+ *     zero intermediate CPU round-trips (`cpuRoundTripCopies === 0`, pre/post-processing <= 0.5ms, e.g. 0.34ms).
+ *  2. Branchless Arithmetic Lowering (`Sub(1.0f, Relu(Sub(1.0f, Mul(Relu(score), 1e4f))))` vs `Greater` boolean fallback):
+ *     eliminates boolean comparison ops that force WebGPU/GPU fallback to CPU (`booleanCpuFallbackOps === 0`)
+ *     and computes branchless visibility mask `1 - ReLU(1 - ReLU(score) * 1e4)`.
+ *  3. Dual-Mixin Tagging (`Tensor<TfLiteMixinTag, XnnpackMixinTag>`) + Direct `.safetensors` Ingestion:
+ *     iterates directly on XNNPACK CPU from `.safetensors` weights with zero intermediate model rebuilds,
+ *     then exports multi-signature `.tflite` for WebGPU / Metal (1.5x faster than MLX) / OpenCL / NPU.
+ *  4. Pixel-Exact Reference Verification Before Keeping Agent Optimizations:
+ *     requires `pixelExactReferenceVerified === true` (matching PyTorch reference pixel-for-pixel while
+ *     tripling frame rate from <10 FPS to >30 FPS).
+ */
+function evaluateLiteRtEdgeTensorAuthoringAndExport({
+  cpuRoundTripCopies = 3,
+  prePostProcessingLatencyMs = 4.5,
+  booleanCpuFallbackOps = 2,
+  visibilityScore = 0.0002,
+  supportsDualBackendMixin = false,
+  directSafetensorsIngestion = false,
+  pixelExactReferenceVerified = false,
+  baselineFps = 9.5,
+  optimizedFps = 31.2,
+} = {}) {
+  const blockers = [];
+  if (Number(cpuRoundTripCopies) > 0) {
+    blockers.push('cpu_buffer_round_trips_detected_chain_shared_accelerator_buffers');
+  }
+  const prePostMs = Number(prePostProcessingLatencyMs);
+  if (!Number.isFinite(prePostMs) || prePostMs > 0.5) {
+    blockers.push('pre_post_processing_exceeds_0_5ms_use_lambda_runner_on_accelerator');
+  }
+  if (Number(booleanCpuFallbackOps) > 0) {
+    blockers.push('boolean_comparison_cpu_fallback_rewrite_with_branchless_relu_arithmetic');
+  }
+  if (supportsDualBackendMixin !== true) {
+    blockers.push('missing_dual_mixin_tflite_and_xnnpack_portability_tags');
+  }
+  if (directSafetensorsIngestion !== true) {
+    blockers.push('intermediate_checkpoint_conversion_script_detected_ingest_safetensors_directly');
+  }
+  if (pixelExactReferenceVerified !== true) {
+    blockers.push('unverified_graph_rewrite_requires_pixel_exact_reference_parity');
+  }
+
+  const s = Number(visibilityScore) || 0;
+  const reluScore = Math.max(0, s);
+  const branchlessVisible = Number((1 - Math.max(0, 1 - reluScore * 1e4)).toFixed(4));
+  const fpsSpeedupMultiple = Number(baselineFps) > 0
+    ? Number((Number(optimizedFps) / Number(baselineFps)).toFixed(2))
+    : 0;
+
+  return {
+    allowed: blockers.length === 0,
+    cpuRoundTripCopies: Number(cpuRoundTripCopies),
+    prePostProcessingLatencyMs: prePostMs,
+    branchlessVisible,
+    fpsSpeedupMultiple,
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['sdd-visualizer']) {
@@ -1975,5 +2039,6 @@ module.exports = {
   evaluateSimileBehavioralSimulationAndTwinGate,
   evaluateLevingerBehavioralConversionMatrix,
   evaluateKurtzApexPredatorAgentSecurityAndRouting,
+  evaluateLiteRtEdgeTensorAuthoringAndExport,
   runCli,
 };

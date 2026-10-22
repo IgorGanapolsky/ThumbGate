@@ -801,6 +801,7 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
     evaluateSimileBehavioralSimulationAndTwinGate,
     evaluateLevingerBehavioralConversionMatrix,
     evaluateKurtzApexPredatorAgentSecurityAndRouting,
+    evaluateLiteRtEdgeTensorAuthoringAndExport,
   } = require('../scripts/rrsi-doctor');
   const sddVis = runSddHarnessStagePipeline({ mode: 'spec_backtrack', stage: 5 });
   assert.equal(sddVis.ok, true);
@@ -935,4 +936,32 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   });
   assert.equal(hardenedKurtzFirewall.allowed, true);
   assert.ok(hardenedKurtzFirewall.speedAdvantageVsBreakout > 600000);
+
+  // Google LiteRT Tensor API "Native Model Authoring for Edge" (Oct 19, 2026): zero-copy shared buffers (0.34ms), branchless ReLU lowering, dual-mixin tags, and pixel-exact reference parity (>3x FPS)
+  const naiveEdgePipeline = evaluateLiteRtEdgeTensorAuthoringAndExport({
+    cpuRoundTripCopies: 3,
+    prePostProcessingLatencyMs: 4.2,
+    booleanCpuFallbackOps: 1,
+    supportsDualBackendMixin: false,
+    directSafetensorsIngestion: false,
+    pixelExactReferenceVerified: false,
+  });
+  assert.equal(naiveEdgePipeline.allowed, false);
+  assert.ok(naiveEdgePipeline.blockers.includes('cpu_buffer_round_trips_detected_chain_shared_accelerator_buffers'));
+  assert.ok(naiveEdgePipeline.blockers.includes('boolean_comparison_cpu_fallback_rewrite_with_branchless_relu_arithmetic'));
+
+  const optimizedLiteRtGraph = evaluateLiteRtEdgeTensorAuthoringAndExport({
+    cpuRoundTripCopies: 0,
+    prePostProcessingLatencyMs: 0.34,
+    booleanCpuFallbackOps: 0,
+    visibilityScore: 0.0002,
+    supportsDualBackendMixin: true,
+    directSafetensorsIngestion: true,
+    pixelExactReferenceVerified: true,
+    baselineFps: 9.8,
+    optimizedFps: 31.4,
+  });
+  assert.equal(optimizedLiteRtGraph.allowed, true);
+  assert.equal(optimizedLiteRtGraph.branchlessVisible, 1);
+  assert.ok(optimizedLiteRtGraph.fpsSpeedupMultiple >= 3.0);
 });
