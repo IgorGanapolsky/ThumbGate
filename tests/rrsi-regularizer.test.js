@@ -966,35 +966,29 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(optimizedLiteRtGraph.branchlessVisible, 1);
   assert.ok(optimizedLiteRtGraph.fpsSpeedupMultiple >= 3.0);
 
-  // Micro-IP Outright Acquisition & Build-vs-Buy Deal Gate (Gaetano Franco Agent Reliability Buyout, Oct 22, 2026)
-  const overpricedUpfrontBuyout = evaluateMicroIpAcquisitionValuationAndEscrowGate({
-    sellerNamedPriceFirst: false,
-    acquisitionScope: 'engine_and_interfaces_only',
-    proposedBuyoutUsd: 25000,
-    transferredMrrUsd: 0,
-    engineeringReplacementHours: 40,
-    hourlyEngineeringCostUsd: 125,
-    upfrontWireShare: 1.0,
-    requiresSignedIpAssignment: false,
-    requiresTestSuitePassForSecondTranche: false,
+  // Zero-Outbound-Spend & "They Pay Us" Partner / Micro-IP Gate (CEO Mandate, Oct 22, 2026)
+  const forbiddenCashBuyout = evaluateMicroIpAcquisitionValuationAndEscrowGate({
+    outboundCashSpendUsd: 4500,
+    upfrontWireUsd: 2250,
+    coreArchitectureImplementedNatively: false,
+    partnerPaysUsUsd: 0,
+    fundedStrictlyFromPartnerBroughtCustomerReceipts: false,
   });
-  assert.equal(overpricedUpfrontBuyout.allowed, false);
-  assert.ok(overpricedUpfrontBuyout.blockers.includes('seller_must_name_fixed_buyout_price_first'));
-  assert.ok(overpricedUpfrontBuyout.blockers.includes('upfront_wire_exceeds_50pct_require_2_tranche_escrow'));
+  assert.equal(forbiddenCashBuyout.allowed, false);
+  assert.ok(forbiddenCashBuyout.blockers.includes('zero_outbound_spend_mandate_violated_they_pay_us'));
+  assert.ok(forbiddenCashBuyout.blockers.includes('steal_and_implement_architecture_natively_at_zero_cost_first'));
 
-  const disciplinedTwoTrancheBuyout = evaluateMicroIpAcquisitionValuationAndEscrowGate({
-    sellerNamedPriceFirst: true,
-    acquisitionScope: 'engine_and_interfaces_only',
-    proposedBuyoutUsd: 4500,
-    transferredMrrUsd: 0,
-    engineeringReplacementHours: 40,
-    hourlyEngineeringCostUsd: 125,
-    upfrontWireShare: 0.5,
-    requiresSignedIpAssignment: true,
-    requiresTestSuitePassForSecondTranche: true,
+  const theyPayUsDiagnostic = evaluateMicroIpAcquisitionValuationAndEscrowGate({
+    outboundCashSpendUsd: 0,
+    upfrontWireUsd: 0,
+    coreArchitectureImplementedNatively: true,
+    partnerPaysUsUsd: 499,
+    fundedStrictlyFromPartnerBroughtCustomerReceipts: true,
+    partnerBroughtNetCustomerReceiptsUsd: 1000,
+    revenueShareBps: 5000,
   });
-  assert.equal(disciplinedTwoTrancheBuyout.allowed, true);
-  assert.equal(disciplinedTwoTrancheBuyout.buildVsBuyCeilingUsd, 5000);
-  assert.equal(disciplinedTwoTrancheBuyout.firstTrancheUsd, 2250);
-  assert.equal(disciplinedTwoTrancheBuyout.secondTrancheUsd, 2250);
+  assert.equal(theyPayUsDiagnostic.allowed, true);
+  assert.equal(theyPayUsDiagnostic.outboundCashSpendUsd, 0);
+  assert.equal(theyPayUsDiagnostic.partnerPaysUsUsd, 499);
+  assert.equal(theyPayUsDiagnostic.netCashRetainedByThumbGateUsd, 999);
 });

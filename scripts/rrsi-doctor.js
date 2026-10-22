@@ -1900,56 +1900,51 @@ function evaluateLiteRtEdgeTensorAuthoringAndExport({
 }
 
 /**
- * Micro-IP Outright Acquisition & Build-vs-Buy Deal Gate (Gaetano Franco Agent Reliability Buyout, Oct 22, 2026):
- *  1. Seller-Names-Price-First Qualification (Dan Lok / Hormozi): blocks buyer-side blind bidding on pre-revenue
- *     code (`sellerNamedPriceFirst === true`).
- *  2. Scope Split (`engine_and_interfaces_only` vs `complete_product`): prices the core technical asset
- *     (5-detector engine + JSON schema + tests) against our internal engineering replacement ceiling
- *     (`engineeringReplacementHours * hourlyEngineeringCostUsd`) rather than SaaS revenue multiples when
- *     `transferredMrrUsd === 0`.
- *  3. Two-Tranche Milestone Escrow: blocks >50% upfront wire (`upfrontWireShare <= 0.5`) and requires passing
- *     the local acceptance test suite + 14-day async handover before releasing the second 50% tranche.
+ * Zero-Outbound-Spend & "They Pay Us" Partner / Micro-IP Gate (CEO Mandate, Oct 22, 2026):
+ *  1. Hard $0 Outbound Cash Spend (`outboundCashSpendUsd === 0` & `upfrontWireUsd === 0`):
+ *     blocks ANY deal, buyout, or subscription that spends our cash (`zero_outbound_spend_mandate_violated_they_pay_us`).
+ *  2. Build Natively First (`coreArchitectureImplementedNatively === true`):
+ *     steals and implements the core detector/router architecture natively inside ThumbGate at $0 cost.
+ *  3. They Pay Us First (`partnerPaysUsUsd >= 19` OR `fundedStrictlyFromPartnerBroughtCustomerReceipts === true`):
+ *     external founders either pay us ($499 Managed Workflow / Integration Diagnostic or $19/mo Pro)
+ *     or get paid strictly out of net cash collected from paying customers they bring in first.
  */
 function evaluateMicroIpAcquisitionValuationAndEscrowGate({
-  sellerNamedPriceFirst = false,
-  acquisitionScope = 'engine_and_interfaces_only',
-  proposedBuyoutUsd = 25000,
-  transferredMrrUsd = 0,
-  engineeringReplacementHours = 40,
-  hourlyEngineeringCostUsd = 125,
-  upfrontWireShare = 1,
-  requiresSignedIpAssignment = false,
-  requiresTestSuitePassForSecondTranche = false,
+  outboundCashSpendUsd = 0,
+  upfrontWireUsd = 0,
+  coreArchitectureImplementedNatively = false,
+  partnerPaysUsUsd = 0,
+  fundedStrictlyFromPartnerBroughtCustomerReceipts = false,
+  partnerBroughtNetCustomerReceiptsUsd = 0,
+  revenueShareBps = 5000,
 } = {}) {
   const blockers = [];
-  if (sellerNamedPriceFirst !== true) {
-    blockers.push('seller_must_name_fixed_buyout_price_first');
+  const spend = Number(outboundCashSpendUsd);
+  const upfront = Number(upfrontWireUsd);
+  if (!Number.isFinite(spend) || spend > 0 || !Number.isFinite(upfront) || upfront > 0) {
+    blockers.push('zero_outbound_spend_mandate_violated_they_pay_us');
   }
-  const replacementCostUsd = Math.max(0, Number(engineeringReplacementHours) || 0)
-    * Math.max(0, Number(hourlyEngineeringCostUsd) || 0);
-  const scopeMultiplier = acquisitionScope === 'complete_product' ? 1.5 : 1;
-  const mrrCreditUsd = Math.max(0, Number(transferredMrrUsd) || 0) * 24;
-  const buildVsBuyCeilingUsd = Math.round(replacementCostUsd * scopeMultiplier + mrrCreditUsd);
+  if (coreArchitectureImplementedNatively !== true) {
+    blockers.push('steal_and_implement_architecture_natively_at_zero_cost_first');
+  }
+  const paidToUs = Number(partnerPaysUsUsd);
+  const hasDirectPaymentToUs = Number.isFinite(paidToUs) && paidToUs >= 19;
+  if (!hasDirectPaymentToUs && fundedStrictlyFromPartnerBroughtCustomerReceipts !== true) {
+    blockers.push('partner_must_pay_us_499_diagnostic_or_19_pro_or_bring_paying_customers_first');
+  }
 
-  const price = Number(proposedBuyoutUsd);
-  if (!Number.isFinite(price) || price <= 0 || price > buildVsBuyCeilingUsd) {
-    blockers.push(`proposed_buyout_exceeds_build_vs_buy_ceiling_${buildVsBuyCeilingUsd}`);
-  }
-  const upfront = Number(upfrontWireShare);
-  if (!Number.isFinite(upfront) || upfront > 0.5) {
-    blockers.push('upfront_wire_exceeds_50pct_require_2_tranche_escrow');
-  }
-  if (requiresSignedIpAssignment !== true || requiresTestSuitePassForSecondTranche !== true) {
-    blockers.push('missing_signed_ip_assignment_or_test_suite_second_tranche_gate');
-  }
+  const netReceipts = Math.max(0, Number(partnerBroughtNetCustomerReceiptsUsd) || 0);
+  const bps = Math.min(5000, Math.max(0, Number(revenueShareBps) || 0));
+  const customerFundedPartnerShareUsd = fundedStrictlyFromPartnerBroughtCustomerReceipts
+    ? Math.floor((netReceipts * bps) / 10000)
+    : 0;
 
   return {
     allowed: blockers.length === 0,
-    acquisitionScope,
-    proposedBuyoutUsd: price,
-    buildVsBuyCeilingUsd,
-    firstTrancheUsd: Number.isFinite(price) ? Math.round(price * 0.5) : 0,
-    secondTrancheUsd: Number.isFinite(price) ? Math.round(price * 0.5) : 0,
+    outboundCashSpendUsd: 0,
+    partnerPaysUsUsd: hasDirectPaymentToUs ? paidToUs : 0,
+    customerFundedPartnerShareUsd,
+    netCashRetainedByThumbGateUsd: (hasDirectPaymentToUs ? paidToUs : 0) + (netReceipts - customerFundedPartnerShareUsd),
     blockers,
   };
 }
