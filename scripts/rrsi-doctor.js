@@ -1755,6 +1755,86 @@ function evaluateLevingerBehavioralConversionMatrix({
   };
 }
 
+/**
+ * CrowdStrike CEO George Kurtz "Apex Predator: Adversaries Armed With AI Agents" (https://www.youtube.com/watch?v=PST8yesYOSo):
+ *  1. Shadow AI & Agent Identity Separation ([02:03-10:14]): maps every autonomous agent identity and blocks
+ *     agents operating under broad human-equivalent credentials (`usesHumanEquivalentCredentials === false`).
+ *  2. Full Agent Execution Chain Interdiction at <27s Inference Speed ([07:57, 10:02, 18:10-18:16, 38:35]):
+ *     gates all 4 lifecycle surfaces (`sub_agent_spawns`, `mcp_server_connections`, `unvetted_package_downloads`,
+ *     `sensitive_data_pulls`) with sub-10ms local PreToolUse latency (0.042ms vs 27,000ms fastest breakout).
+ *  3. Dedicated Security Review Agent + Red/Blue Digital Twin + Uncensored Defender ([10:45-15:54, 38:06]):
+ *     pairs coding agents with security review agents, requires Red/Blue digital twin convergence, and prevents
+ *     commercial "airbag" refusals during active defensive incident analysis.
+ *  4. Stop "Token Maxing" + Net-Data-Creator System of Record ([19:24-25:00, 29:14, 41:31]): reserves expensive
+ *     "Formula 1" frontier models for high-alpha tasks while routing standard workflows to DPO-distilled /
+ *     post-trained models and capturing proprietary telemetry for post-training.
+ */
+function evaluateKurtzApexPredatorAgentSecurityAndRouting({
+  agentIdentityMapped = false,
+  usesHumanEquivalentCredentials = true,
+  instrumentedChainSurfaces = [],
+  interdictionLatencyMs = 80,
+  fastestAdversaryBreakoutMs = 27000,
+  pairedWithSecurityReviewAgent = false,
+  redBlueDigitalTwinConverged = false,
+  defenderModelHasAirbagRefusalRisk = true,
+  stopsTokenMaxingWithHybridRoute = false,
+  capturesProprietaryTelemetryForDpo = false,
+} = {}) {
+  const blockers = [];
+  if (agentIdentityMapped !== true) {
+    blockers.push('unmapped_shadow_ai_agent_identity');
+  }
+  if (usesHumanEquivalentCredentials === true) {
+    blockers.push('agent_must_not_use_broad_human_equivalent_credentials');
+  }
+
+  const requiredSurfaces = [
+    'sub_agent_spawns',
+    'mcp_server_connections',
+    'unvetted_package_downloads',
+    'sensitive_data_pulls',
+  ];
+  const surfaceSet = new Set(Array.isArray(instrumentedChainSurfaces) ? instrumentedChainSurfaces : []);
+  const missingSurfaces = requiredSurfaces.filter((s) => !surfaceSet.has(s));
+  if (missingSurfaces.length > 0) {
+    blockers.push(`uninstrumented_agent_execution_chain:${missingSurfaces.join(',')}`);
+  }
+
+  const latency = Number(interdictionLatencyMs);
+  const breakoutMs = Number(fastestAdversaryBreakoutMs) || 27000;
+  if (!Number.isFinite(latency) || latency <= 0 || latency > 10) {
+    blockers.push('interdiction_latency_exceeds_inference_speed_budget_10ms');
+  }
+  if (pairedWithSecurityReviewAgent !== true) {
+    blockers.push('fire_and_forget_coding_agent_requires_security_review_agent');
+  }
+  if (redBlueDigitalTwinConverged !== true) {
+    blockers.push('red_blue_digital_twin_intrusion_path_not_converged');
+  }
+  if (defenderModelHasAirbagRefusalRisk === true) {
+    blockers.push('commercial_airbag_refusal_risk_equip_post_trained_defender_model');
+  }
+  if (stopsTokenMaxingWithHybridRoute !== true) {
+    blockers.push('token_maxing_detected_reserve_formula1_frontier_for_high_alpha_only');
+  }
+  if (capturesProprietaryTelemetryForDpo !== true) {
+    blockers.push('missing_net_data_creator_system_of_record_telemetry_moat');
+  }
+
+  const speedAdvantageVsBreakout = Number.isFinite(latency) && latency > 0
+    ? Math.round(breakoutMs / latency)
+    : 0;
+
+  return {
+    allowed: blockers.length === 0,
+    interdictionLatencyMs: latency,
+    fastestAdversaryBreakoutMs: breakoutMs,
+    speedAdvantageVsBreakout,
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['sdd-visualizer']) {
@@ -1894,5 +1974,6 @@ module.exports = {
   evaluateWealthOfAgentsRouting,
   evaluateSimileBehavioralSimulationAndTwinGate,
   evaluateLevingerBehavioralConversionMatrix,
+  evaluateKurtzApexPredatorAgentSecurityAndRouting,
   runCli,
 };

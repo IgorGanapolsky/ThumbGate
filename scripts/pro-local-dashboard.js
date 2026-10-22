@@ -280,7 +280,7 @@ function resolveProKey({ env = process.env, homeDir } = {}) {
     };
   }
 
-  const envKey = String(env.THUMBGATE_API_KEY || '').trim();
+  const envKey = String(env.THUMBGATE_API_KEY || env.THUMBGATE_LICENSE || '').trim();
   if (envKey) {
     return {
       key: envKey,
@@ -299,7 +299,7 @@ function resolveProKey({ env = process.env, homeDir } = {}) {
   }
 
   const { resolveLicenseToken } = require('./entitlement');
-  const configToken = resolveLicenseToken(env, { homeDir });
+  const configToken = resolveLicenseToken({}, { homeDir });
   if (configToken) {
     return {
       key: configToken,

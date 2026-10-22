@@ -800,6 +800,7 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
     evaluateWealthOfAgentsRouting,
     evaluateSimileBehavioralSimulationAndTwinGate,
     evaluateLevingerBehavioralConversionMatrix,
+    evaluateKurtzApexPredatorAgentSecurityAndRouting,
   } = require('../scripts/rrsi-doctor');
   const sddVis = runSddHarnessStagePipeline({ mode: 'spec_backtrack', stage: 5 });
   assert.equal(sddVis.ok, true);
@@ -898,4 +899,40 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   });
   assert.equal(highConvertingOughtSelf.allowed, true);
   assert.equal(highConvertingOughtSelf.usesEarnedAgencyLanguage, true);
+
+  // CrowdStrike CEO George Kurtz "Apex Predator" Agent Security, 27s Breakout Interdiction & Anti-Token-Maxing Router (PST8yesYOSo)
+  const vulnerableShadowAgent = evaluateKurtzApexPredatorAgentSecurityAndRouting({
+    agentIdentityMapped: false,
+    usesHumanEquivalentCredentials: true,
+    instrumentedChainSurfaces: ['sub_agent_spawns'],
+    interdictionLatencyMs: 85,
+    pairedWithSecurityReviewAgent: false,
+    redBlueDigitalTwinConverged: false,
+    defenderModelHasAirbagRefusalRisk: true,
+    stopsTokenMaxingWithHybridRoute: false,
+    capturesProprietaryTelemetryForDpo: false,
+  });
+  assert.equal(vulnerableShadowAgent.allowed, false);
+  assert.ok(vulnerableShadowAgent.blockers.includes('agent_must_not_use_broad_human_equivalent_credentials'));
+  assert.ok(vulnerableShadowAgent.blockers.includes('token_maxing_detected_reserve_formula1_frontier_for_high_alpha_only'));
+
+  const hardenedKurtzFirewall = evaluateKurtzApexPredatorAgentSecurityAndRouting({
+    agentIdentityMapped: true,
+    usesHumanEquivalentCredentials: false,
+    instrumentedChainSurfaces: [
+      'sub_agent_spawns',
+      'mcp_server_connections',
+      'unvetted_package_downloads',
+      'sensitive_data_pulls',
+    ],
+    interdictionLatencyMs: 0.042,
+    fastestAdversaryBreakoutMs: 27000,
+    pairedWithSecurityReviewAgent: true,
+    redBlueDigitalTwinConverged: true,
+    defenderModelHasAirbagRefusalRisk: false,
+    stopsTokenMaxingWithHybridRoute: true,
+    capturesProprietaryTelemetryForDpo: true,
+  });
+  assert.equal(hardenedKurtzFirewall.allowed, true);
+  assert.ok(hardenedKurtzFirewall.speedAdvantageVsBreakout > 600000);
 });
