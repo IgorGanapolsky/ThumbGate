@@ -802,6 +802,7 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
     evaluateLevingerBehavioralConversionMatrix,
     evaluateKurtzApexPredatorAgentSecurityAndRouting,
     evaluateLiteRtEdgeTensorAuthoringAndExport,
+    evaluateMicroIpAcquisitionValuationAndEscrowGate,
   } = require('../scripts/rrsi-doctor');
   const sddVis = runSddHarnessStagePipeline({ mode: 'spec_backtrack', stage: 5 });
   assert.equal(sddVis.ok, true);
@@ -964,4 +965,36 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(optimizedLiteRtGraph.allowed, true);
   assert.equal(optimizedLiteRtGraph.branchlessVisible, 1);
   assert.ok(optimizedLiteRtGraph.fpsSpeedupMultiple >= 3.0);
+
+  // Micro-IP Outright Acquisition & Build-vs-Buy Deal Gate (Gaetano Franco Agent Reliability Buyout, Oct 22, 2026)
+  const overpricedUpfrontBuyout = evaluateMicroIpAcquisitionValuationAndEscrowGate({
+    sellerNamedPriceFirst: false,
+    acquisitionScope: 'engine_and_interfaces_only',
+    proposedBuyoutUsd: 25000,
+    transferredMrrUsd: 0,
+    engineeringReplacementHours: 40,
+    hourlyEngineeringCostUsd: 125,
+    upfrontWireShare: 1.0,
+    requiresSignedIpAssignment: false,
+    requiresTestSuitePassForSecondTranche: false,
+  });
+  assert.equal(overpricedUpfrontBuyout.allowed, false);
+  assert.ok(overpricedUpfrontBuyout.blockers.includes('seller_must_name_fixed_buyout_price_first'));
+  assert.ok(overpricedUpfrontBuyout.blockers.includes('upfront_wire_exceeds_50pct_require_2_tranche_escrow'));
+
+  const disciplinedTwoTrancheBuyout = evaluateMicroIpAcquisitionValuationAndEscrowGate({
+    sellerNamedPriceFirst: true,
+    acquisitionScope: 'engine_and_interfaces_only',
+    proposedBuyoutUsd: 4500,
+    transferredMrrUsd: 0,
+    engineeringReplacementHours: 40,
+    hourlyEngineeringCostUsd: 125,
+    upfrontWireShare: 0.5,
+    requiresSignedIpAssignment: true,
+    requiresTestSuitePassForSecondTranche: true,
+  });
+  assert.equal(disciplinedTwoTrancheBuyout.allowed, true);
+  assert.equal(disciplinedTwoTrancheBuyout.buildVsBuyCeilingUsd, 5000);
+  assert.equal(disciplinedTwoTrancheBuyout.firstTrancheUsd, 2250);
+  assert.equal(disciplinedTwoTrancheBuyout.secondTrancheUsd, 2250);
 });

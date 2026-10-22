@@ -1899,6 +1899,61 @@ function evaluateLiteRtEdgeTensorAuthoringAndExport({
   };
 }
 
+/**
+ * Micro-IP Outright Acquisition & Build-vs-Buy Deal Gate (Gaetano Franco Agent Reliability Buyout, Oct 22, 2026):
+ *  1. Seller-Names-Price-First Qualification (Dan Lok / Hormozi): blocks buyer-side blind bidding on pre-revenue
+ *     code (`sellerNamedPriceFirst === true`).
+ *  2. Scope Split (`engine_and_interfaces_only` vs `complete_product`): prices the core technical asset
+ *     (5-detector engine + JSON schema + tests) against our internal engineering replacement ceiling
+ *     (`engineeringReplacementHours * hourlyEngineeringCostUsd`) rather than SaaS revenue multiples when
+ *     `transferredMrrUsd === 0`.
+ *  3. Two-Tranche Milestone Escrow: blocks >50% upfront wire (`upfrontWireShare <= 0.5`) and requires passing
+ *     the local acceptance test suite + 14-day async handover before releasing the second 50% tranche.
+ */
+function evaluateMicroIpAcquisitionValuationAndEscrowGate({
+  sellerNamedPriceFirst = false,
+  acquisitionScope = 'engine_and_interfaces_only',
+  proposedBuyoutUsd = 25000,
+  transferredMrrUsd = 0,
+  engineeringReplacementHours = 40,
+  hourlyEngineeringCostUsd = 125,
+  upfrontWireShare = 1,
+  requiresSignedIpAssignment = false,
+  requiresTestSuitePassForSecondTranche = false,
+} = {}) {
+  const blockers = [];
+  if (sellerNamedPriceFirst !== true) {
+    blockers.push('seller_must_name_fixed_buyout_price_first');
+  }
+  const replacementCostUsd = Math.max(0, Number(engineeringReplacementHours) || 0)
+    * Math.max(0, Number(hourlyEngineeringCostUsd) || 0);
+  const scopeMultiplier = acquisitionScope === 'complete_product' ? 1.5 : 1;
+  const mrrCreditUsd = Math.max(0, Number(transferredMrrUsd) || 0) * 24;
+  const buildVsBuyCeilingUsd = Math.round(replacementCostUsd * scopeMultiplier + mrrCreditUsd);
+
+  const price = Number(proposedBuyoutUsd);
+  if (!Number.isFinite(price) || price <= 0 || price > buildVsBuyCeilingUsd) {
+    blockers.push(`proposed_buyout_exceeds_build_vs_buy_ceiling_${buildVsBuyCeilingUsd}`);
+  }
+  const upfront = Number(upfrontWireShare);
+  if (!Number.isFinite(upfront) || upfront > 0.5) {
+    blockers.push('upfront_wire_exceeds_50pct_require_2_tranche_escrow');
+  }
+  if (requiresSignedIpAssignment !== true || requiresTestSuitePassForSecondTranche !== true) {
+    blockers.push('missing_signed_ip_assignment_or_test_suite_second_tranche_gate');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    acquisitionScope,
+    proposedBuyoutUsd: price,
+    buildVsBuyCeilingUsd,
+    firstTrancheUsd: Number.isFinite(price) ? Math.round(price * 0.5) : 0,
+    secondTrancheUsd: Number.isFinite(price) ? Math.round(price * 0.5) : 0,
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['sdd-visualizer']) {
@@ -2040,5 +2095,6 @@ module.exports = {
   evaluateLevingerBehavioralConversionMatrix,
   evaluateKurtzApexPredatorAgentSecurityAndRouting,
   evaluateLiteRtEdgeTensorAuthoringAndExport,
+  evaluateMicroIpAcquisitionValuationAndEscrowGate,
   runCli,
 };
