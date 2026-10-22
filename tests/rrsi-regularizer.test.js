@@ -710,6 +710,7 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
     apiEndpoint: '/v1/chat/completions',
     hasStickySessionHeader: true,
     reasoningEffort: 'max',
+    zeroBalanceSpendGuard: true,
   });
   assert.equal(substantive.allowed, true);
   assert.equal(substantive.costSavingsMultiple, 63);
@@ -801,12 +802,28 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(sddVis.activeStage.title, '5. SpecAgent Gate (PCP)');
   assert.match(sddVis.activeTransition, /5 -> 1/);
 
-  // Princeton Wealth of Agents (arXiv:2610.20518): multi-developer specialists reach 70% on GAIA vs 58% general agent, while single-skill SealQA avoids split
+  // Princeton Wealth of Agents (arXiv:2610.20518v1): SealQA single-skill & collinear pools avoid delta-MDA split; trained experience buffer + marginal welfare payoff reaches 70% on GAIA (+12pp) and lifts SealQA->GAIA from 40.4% -> 53.2% with a 19.1% standalone specialist
   const sealQaSingleSkill = evaluateWealthOfAgentsRouting({
     distinctSkillDomains: ['web_search_only'],
     singleGeneralAgentAccuracy: 0.62,
   });
   assert.equal(sealQaSingleSkill.routeDecision, 'SINGLE_GENERAL_AGENT_AVOID_SEALQA_SPLIT_OVERHEAD');
+
+  const collinearMasPool = evaluateWealthOfAgentsRouting({
+    distinctSkillDomains: ['code_edit', 'sqlite_audit'],
+    poolComposition: 'nested_mas',
+    singleGeneralAgentAccuracy: 0.67,
+  });
+  assert.equal(collinearMasPool.routeDecision, 'ROUTED_SDA_AVOID_COLLINEAR_OR_MAS_COORDINATION_LOSS');
+
+  const untrainedTrafficShareBlocked = evaluateWealthOfAgentsRouting({
+    distinctSkillDomains: ['code_edit', 'sqlite_audit', 'browser_verify'],
+    trainedExperienceRouter: false,
+    compensationModel: 'traffic_share',
+  });
+  assert.equal(untrainedTrafficShareBlocked.allowed, false);
+  assert.ok(untrainedTrafficShareBlocked.blockers.includes('untrained_description_only_router_9_1pp_penalty'));
+  assert.ok(untrainedTrafficShareBlocked.blockers.includes('prop5_traffic_share_induces_generalist_collapse'));
 
   const gaiaEnsemble = evaluateWealthOfAgentsRouting({
     distinctSkillDomains: ['code_edit', 'sqlite_audit', 'browser_verify'],
@@ -816,4 +833,5 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(gaiaEnsemble.routeDecision, 'MULTI_DEVELOPER_SPECIALIST_ENSEMBLE');
   assert.equal(gaiaEnsemble.combinedAccuracy, 0.70);
   assert.equal(gaiaEnsemble.gainVsGeneralAgent, 0.12);
+  assert.equal(gaiaEnsemble.augmentedTransferAccuracy, 0.532);
 });

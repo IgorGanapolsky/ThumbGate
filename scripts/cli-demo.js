@@ -348,7 +348,7 @@ function buildLaunchVideoHonestyReport(options = {}) {
 
 const CELLO_REPO_URL = 'https://github.com/Devil-Hawk/cello';
 const CELLO_GATE_ID = 'cello-thumbgate-career-agent-diode';
-
+const PAYOUT_ELIGIBLE_WORK_AUTH = new Set(['CPT', 'OPT', 'STEM_OPT', 'O1A']);
 const CELLO_RAIL_MAP = Object.freeze([
   {
     celloMechanism: '1. Atomic Approve-and-Send Outreach Diode (apps/web/lib/outreach/guardrails.ts: canSendNow + humanApproved + checkDailyCap + followUpWindowElapsed)',
@@ -381,21 +381,24 @@ function evaluateCelloOutreachGate({
 } = {}) {
   if (status === 'sent') return { allowed: false, nextStatusOnFailure: 'sent', reason: 'already_sent' };
   if (status === 'skipped' || status === 'failed') return { allowed: false, nextStatusOnFailure: status, reason: `message_is_${status}` };
-  const cap = Math.max(1, Number(dailyCap) || 10);
-  if (Number(sentToday) >= cap) {
+  const parsedCap = Number(dailyCap);
+  const cap = Number.isFinite(parsedCap) ? Math.max(1, parsedCap) : 10;
+  const sent = Number(sentToday);
+  if (!Number.isFinite(sent) || sent >= cap) {
     return { allowed: false, nextStatusOnFailure: status === 'pending_review' ? 'pending_review' : status, reason: `daily_cap_reached (${sentToday}/${cap})` };
   }
   if (kind === 'follow_up') {
     if (!parentSentAt) return { allowed: false, nextStatusOnFailure: 'pending_review', reason: 'parent_was_never_sent' };
     const sentMs = new Date(parentSentAt).getTime();
     if (!Number.isFinite(sentMs)) return { allowed: false, nextStatusOnFailure: 'pending_review', reason: 'parent_send_time_unreadable_nan_guard' };
-    const needMs = Math.max(1, Number(followUpDays) || 5) * 24 * 60 * 60 * 1000;
-    if (nowMs - sentMs < needMs) return { allowed: false, nextStatusOnFailure: 'pending_review', reason: 'follow_up_window_not_elapsed' };
+    const parsedDays = Number(followUpDays);
+    const needMs = (Number.isFinite(parsedDays) ? Math.max(1, parsedDays) : 5) * 24 * 60 * 60 * 1000;
+    if (!Number.isFinite(nowMs) || nowMs - sentMs < needMs) return { allowed: false, nextStatusOnFailure: 'pending_review', reason: 'follow_up_window_not_elapsed' };
   }
-  if (status === 'approved' || (status === 'pending_review' && (humanApproved === true || autoSend === true))) {
+  if (status === 'pending_review' && humanApproved === true) {
     return {
       allowed: true,
-      atomicApproveAndSend: Boolean(status === 'pending_review' && humanApproved === true),
+      atomicApproveAndSend: true,
       nextStatusOnFailure: 'pending_review',
       reason: 'approved_for_delivery',
     };
@@ -418,7 +421,7 @@ function evaluateCelloMcpAndChokepointGate({
   if (!withinMonthlyBudgetCap) blockers.push('monthly_spend_cap_exceeded');
   if (!employerTextFramed) blockers.push('unframed_employer_text_prompt_injection_risk');
   if (Number(resumeFabricationCount) > 0) blockers.push('resume_fabrication_detected_against_ground_truth');
-  if (/^(?:send_email|send_outreach|submit_application|browser_submit_application)$/i.test(String(toolName || '').trim()) && !hasHumanConfirmChannel) {
+  if (/(?:^|[_.:-])(?:send|submit)(?:[_.:-]|$)/i.test(String(toolName || '').trim()) && !hasHumanConfirmChannel) {
     blockers.push('mcp_headless_send_or_submit_refused_without_human_click');
   }
   return { allowed: blockers.length === 0, decision: blockers.length === 0 ? 'ALLOW' : 'DENY', toolName, blockers };
@@ -449,9 +452,11 @@ function buildCelloMoRPartnerLedgerEntry({
   workAuthType = null,
 } = {}) {
   const gross = Math.max(0, Math.floor(Number(grossAmountCents) || 0));
-  const bps = Math.min(10000, Math.max(0, Math.floor(Number(partnerShareBps) || 5000)));
+  const rawBps = Number(partnerShareBps);
+  const bps = Number.isFinite(rawBps) ? Math.min(10000, Math.max(0, Math.floor(rawBps))) : 5000;
   const partnerAccruedCents = Math.floor((gross * bps) / 10000);
-  const canDisburseNow = Boolean(workAuthVerified && workAuthType && /^(?:CPT|OPT|STEM_OPT|O1A|H1B|NON_US_FOREIGN)$/i.test(String(workAuthType)));
+  const normalizedAuthType = String(workAuthType || '').toUpperCase().replace(/[\s-]/g, '');
+  const canDisburseNow = Boolean(workAuthVerified && PAYOUT_ELIGIBLE_WORK_AUTH.has(normalizedAuthType));
   return {
     orderId,
     partnerRepo: CELLO_REPO_URL,
@@ -492,7 +497,7 @@ const TRUST_SCORE_GATE_ID = 'vijil-feral-to-fiduciary-trust-credit-line';
 const TRUST_SCORE_RAIL_MAP = Object.freeze([
   {
     vijilConcept: '1. Trust as a Line of Credit (300-850 credit score; paying on time improves score but never auto-escalates credit limit without principal approval)',
-    thumbgateRail: 'evaluateAgentTrustCreditLine (computes 300-850 trust score from local SQLite outcomes; enforces hard spend/blast-radius limit and blocks auto-privilege escalation)',
+    thumbgateRail: 'evaluateAgentTrustCreditLine (computes 300-850 trust score from supplied outcome counts; enforces hard spend/blast-radius limit and blocks auto-privilege escalation)',
   },
   {
     vijilConcept: '2. Four Post-Launch Feral Agent Failure Modes (environment_drift, adversarial_hijack, ungoverned_agent, multi_agent_composition_breach)',
@@ -505,9 +510,9 @@ const TRUST_SCORE_RAIL_MAP = Object.freeze([
 ]);
 
 function evaluateAgentTrustCreditLine({
-  passedEvals = 20,
-  totalEvals = 20,
-  verifiedOutcomes = 15,
+  passedEvals = 0,
+  totalEvals = 0,
+  verifiedOutcomes = 0,
   policyViolations = 0,
   wallBounceRetries = 0,
   approvedCreditLimitUsd = 10,
@@ -527,7 +532,11 @@ function evaluateAgentTrustCreditLine({
   const blockers = [];
   if (behavioralState === 'FERAL') blockers.push('agent_trust_score_feral_below_580');
   if (Number(wallBounceRetries) >= 3) blockers.push('mario_kart_wall_bounce_loop_detected');
-  if (Number(requestedActionCostUsd) > Number(approvedCreditLimitUsd)) blockers.push('exceeds_approved_autonomy_credit_limit');
+  const costUsd = Number(requestedActionCostUsd);
+  const limitUsd = Number(approvedCreditLimitUsd);
+  if (!Number.isFinite(costUsd) || costUsd < 0 || !Number.isFinite(limitUsd) || limitUsd < 0 || costUsd > limitUsd) {
+    blockers.push('exceeds_approved_autonomy_credit_limit');
+  }
   if (requestedScopeEscalation && !principalApprovedEscalation) {
     blockers.push('higher_trust_score_does_not_auto_increase_credit_limit_without_principal');
   }

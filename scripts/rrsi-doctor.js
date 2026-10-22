@@ -1115,12 +1115,12 @@ function evaluateAgentReliabilityEventStream(doc = {}) {
  */
 function evaluatePaperInstrumentsRubricAndUltramarineRoute({
   criterionText = '',
-  separatesApprovedNowFromClearanceRequired = true,
+  separatesApprovedNowFromClearanceRequired = false,
   apiEndpoint = '/v1/chat/completions',
-  hasStickySessionHeader = true,
+  hasStickySessionHeader = false,
   reasoningEffort = 'max',
   passesTopK = false,
-  zeroBalanceSpendGuard = true,
+  zeroBalanceSpendGuard = false,
 } = {}) {
   const text = String(criterionText || '').trim();
   const isOverfit = /\buses\s+the\s+(?:exact\s+)?phrase\b|\bbefore\s+the\s+[^\s]+\s+caveat\b/i.test(text);
@@ -1288,9 +1288,9 @@ function evaluateSpecAgentPostconditionAndCallGraphRepair({
  *  4. Surgical Context Editor diff patches to STATE.md/AGENTS.md over lossy rolling transcript summarization.
  */
 function evaluateOuterHarnessRuleTestCoCommitAndContextEditor({
-  agentsMdWordCount = 2400,
+  agentsMdWordCount = Number.NaN,
   ruleModifiedInAgentsMd = true,
-  coCommittedStructuralTest = true,
+  coCommittedStructuralTest = false,
   usesLossyTranscriptSummarization = false,
   usesSurgicalStateDiffPatch = true,
   violationSymptom = 'Routes ["/v1/checkout"] mutate state without a pre-action gate.',
@@ -1299,7 +1299,8 @@ function evaluateOuterHarnessRuleTestCoCommitAndContextEditor({
   specReference = 'AGENTS.md -> Section 4.2 Pre-Action Verification Gates',
 } = {}) {
   const blockers = [];
-  if (Number(agentsMdWordCount) > 3000) {
+  const wordCount = Number(agentsMdWordCount);
+  if (!Number.isFinite(wordCount) || wordCount > 3000) {
     blockers.push('agents_md_exceeds_3000_word_adherence_ceiling_prune_into_tests');
   }
   if (ruleModifiedInAgentsMd && !coCommittedStructuralTest) {
@@ -1340,7 +1341,7 @@ function validateSpecDrivenScaffold({
   if (!String(constitutionReference || '').trim()) blockers.push('missing_block_1_constitution_reference');
   const earsList = Array.isArray(earsAcceptanceCriteria) ? earsAcceptanceCriteria : [];
   const allEarsValid = earsList.length > 0 && earsList.every(
-    (c) => /\bWHEN\b[\s\S]+\b(?:WHILE\b[\s\S]+)?\bTHE\s+SYSTEM\s+SHALL\b/i.test(String(c || ''))
+    (c) => /\bWHEN\b[\s\S]*?\bTHE\s+SYSTEM\s+SHALL\s+\S/i.test(String(c || ''))
   );
   if (!allEarsValid) blockers.push('missing_or_invalid_block_2_ears_acceptance_criteria');
   if (!Array.isArray(explicitOutOfScopeBoundaries) || explicitOutOfScopeBoundaries.length === 0) {
@@ -1506,22 +1507,41 @@ function runSddHarnessStagePipeline({ mode = 'happy_path', stage = 1 } = {}) {
 }
 
 /**
- * Princeton "The Wealth of Agents: Scaling Agentic AI Across Developers" (arXiv:2610.20518, Oct 20, 2026).
+ * Princeton "The Wealth of Agents: Scaling Agentic AI Across Developers" (arXiv:2610.20518v1, Oct 14, 2026):
+ *  1. Regime Selection (Lemma 3 & Prop 4): routes to `ROUTED_SDA_SINGLE_SKILL_OR_COLLINEAR_POOL` when
+ *     `distinctSkillDomains.length <= 1` (SealQA web-search-only) OR `poolComposition` is `'collinear_generalists'`
+ *     (A_G) or `'nested_mas'` (A_MAS, where delta-MDA drops to 63% at $29 vs 67-68% rSDA).
+ *  2. Experience Buffer B = {(x_j, a_i(x_j), y_j*)}_j vs Untrained Description Router (Fig. 4a):
+ *     relying on developer self-descriptions alone loses -9.1pp (70.1% -> 61.0%); requires empirical
+ *     contextual rankings from verified outcomes (`trainedExperienceRouter === true`).
+ *  3. Proposition 5 Incentive Equilibrium: blocks `compensationModel === 'traffic_share'` (which forces
+ *     every Nash equilibrium back to generalists A_G) and enforces `'marginal_welfare_contribution'`
+ *     so niche gap-fillers (like a_AUG scoring 19.1% standalone on GAIA yet lifting SealQA->GAIA from
+ *     40.4% -> 53.2% [+12.8pp] and GAIA->SealQA from 53.2% -> 58.2% [+5.0pp]) are rewarded.
+ *  4. Non-Frontier Medium-Tier Leverage (Fig. 4c & 5b): tracks medium-tier routing share (56% in delta-MDA
+ *     vs 33% in rSDA, reaching 67% at $9 without high-tier models vs 60% at $8 for best medium/low SDA).
+ *  5. Cross-Developer Security & Sandboxing Gate (Section 7): requires `evalScoresVerified` and `preToolUseSandboxed`.
  */
 function evaluateWealthOfAgentsRouting({
   distinctSkillDomains = ['code_edit', 'sqlite_audit', 'browser_verify'],
+  poolComposition = 'complementary_specialists',
+  trainedExperienceRouter = true,
+  compensationModel = 'marginal_welfare_contribution',
   singleGeneralAgentAccuracy = 0.58,
+  baselineTransferAccuracy = 0.404,
   specialists = [
-    { id: 'dev_a_code', domain: 'code_edit', globalAccuracy: 0.35, domainAccuracy: 0.72, evalScoresVerified: true, pricingDeclared: true, failureModesDeclared: true, preToolUseSandboxed: true },
-    { id: 'dev_b_sql', domain: 'sqlite_audit', globalAccuracy: 0.19, domainAccuracy: 0.68, evalScoresVerified: true, pricingDeclared: true, failureModesDeclared: true, preToolUseSandboxed: true },
-    { id: 'dev_c_web', domain: 'browser_verify', globalAccuracy: 0.32, domainAccuracy: 0.70, evalScoresVerified: true, pricingDeclared: true, failureModesDeclared: true, preToolUseSandboxed: true },
+    { id: 'dev_a_code', domain: 'code_edit', tier: 'high', globalAccuracy: 0.35, domainAccuracy: 0.72, marginalWelfareDelta: 0.10, evalScoresVerified: true, pricingDeclared: true, failureModesDeclared: true, preToolUseSandboxed: true },
+    { id: 'dev_b_sql', domain: 'sqlite_audit', tier: 'medium', globalAccuracy: 0.191, domainAccuracy: 0.68, marginalWelfareDelta: 0.128, evalScoresVerified: true, pricingDeclared: true, failureModesDeclared: true, preToolUseSandboxed: true },
+    { id: 'dev_c_web', domain: 'browser_verify', tier: 'medium', globalAccuracy: 0.32, domainAccuracy: 0.70, marginalWelfareDelta: 0.05, evalScoresVerified: true, pricingDeclared: true, failureModesDeclared: true, preToolUseSandboxed: true },
   ],
 } = {}) {
   const domains = Array.isArray(distinctSkillDomains) ? distinctSkillDomains : [];
-  if (domains.length <= 1) {
+  if (domains.length <= 1 || poolComposition === 'collinear_generalists' || poolComposition === 'nested_mas') {
     return {
       allowed: true,
-      routeDecision: 'SINGLE_GENERAL_AGENT_AVOID_SEALQA_SPLIT_OVERHEAD',
+      routeDecision: domains.length <= 1
+        ? 'SINGLE_GENERAL_AGENT_AVOID_SEALQA_SPLIT_OVERHEAD'
+        : 'ROUTED_SDA_AVOID_COLLINEAR_OR_MAS_COORDINATION_LOSS',
       combinedAccuracy: Number(singleGeneralAgentAccuracy),
       gainVsGeneralAgent: 0,
       selectedSpecialists: [],
@@ -1531,8 +1551,14 @@ function evaluateWealthOfAgentsRouting({
 
   const pool = Array.isArray(specialists) ? specialists : [];
   const blockers = [];
-  const selectedSpecialists = [];
+  if (!trainedExperienceRouter) {
+    blockers.push('untrained_description_only_router_9_1pp_penalty');
+  }
+  if (compensationModel === 'traffic_share') {
+    blockers.push('prop5_traffic_share_induces_generalist_collapse');
+  }
 
+  const selectedSpecialists = [];
   for (const dom of domains) {
     const candidates = pool.filter((s) => s && s.domain === dom);
     if (candidates.length === 0) {
@@ -1547,11 +1573,20 @@ function evaluateWealthOfAgentsRouting({
     selectedSpecialists.push(best);
   }
 
-  const avgDomainAcc = selectedSpecialists.length > 0
+  const rawAvgAcc = selectedSpecialists.length > 0
     ? selectedSpecialists.reduce((acc, s) => acc + (Number(s.domainAccuracy) || 0), 0) / selectedSpecialists.length
     : 0;
-  const combinedAccuracy = Number(avgDomainAcc.toFixed(2));
+  const effectiveAcc = trainedExperienceRouter ? rawAvgAcc : Math.max(0, rawAvgAcc - 0.091);
+  const combinedAccuracy = Number(effectiveAcc.toFixed(2));
   const gainVsGeneralAgent = Number((combinedAccuracy - Number(singleGeneralAgentAccuracy)).toFixed(2));
+  const mediumTierCount = selectedSpecialists.filter((s) => s.tier === 'medium').length;
+  const mediumTierRoutingShare = selectedSpecialists.length > 0
+    ? Number((mediumTierCount / selectedSpecialists.length).toFixed(2))
+    : 0;
+  const maxComplementaryAugLift = selectedSpecialists.reduce(
+    (max, s) => Math.max(max, Number(s.marginalWelfareDelta) || 0),
+    0
+  );
 
   return {
     allowed: blockers.length === 0 && combinedAccuracy > Number(singleGeneralAgentAccuracy),
@@ -1559,11 +1594,15 @@ function evaluateWealthOfAgentsRouting({
     combinedAccuracy,
     singleGeneralAgentAccuracy: Number(singleGeneralAgentAccuracy),
     gainVsGeneralAgent,
+    mediumTierRoutingShare,
+    augmentedTransferAccuracy: Number((Number(baselineTransferAccuracy) + maxComplementaryAugLift).toFixed(3)),
     selectedSpecialists: selectedSpecialists.map((s) => ({
       id: s.id,
       domain: s.domain,
+      tier: s.tier || 'medium',
       globalAccuracy: s.globalAccuracy,
       domainAccuracy: s.domainAccuracy,
+      marginalWelfareDelta: s.marginalWelfareDelta || 0,
     })),
     blockers,
   };
