@@ -1137,4 +1137,25 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
   const blockedRollout = evaluateConfidenceAction({ tool: 'set_rollout', flag: 'new-checkout-flow', rolloutPercent: 50 });
   assert.equal(blockedRollout.decision, 'block');
   assert.equal(auditConfidenceDiodes().status, 'PASS');
+
+  // Cordum Edge Typed Gate Verdict & 5-Case POC (scripts/typed-gate-verdicts.js)
+  const {
+    runCordumEdgeFiveCasePoc,
+    stageLearnedRuleForFleetReview,
+  } = require('../scripts/typed-gate-verdicts');
+  const poc = runCordumEdgeFiveCasePoc();
+  assert.equal(poc.ok, true);
+  assert.equal(poc.cases.case1ExfilHardDeny.localDenyOverridesCentralAllow, true);
+  assert.deepEqual(poc.cases.case1ExfilHardDeny.evidence.trustedCordumRiskTags, [
+    'risk:tainted_dotenv_secret_read',
+    'risk:tainted_ssh_private_key_read',
+  ]);
+  assert.notEqual(
+    poc.cases.case1ExfilHardDeny.evidence.payloadSha256,
+    poc.cases.case1ExfilHardDeny.evidence.action_hash
+  );
+  assert.equal(
+    stageLearnedRuleForFleetReview({ ruleId: 'r1', pattern: 'rm -rf', reviewerApproved: false }).status,
+    'STAGED_AWAITING_ORG_REVIEW'
+  );
 });
