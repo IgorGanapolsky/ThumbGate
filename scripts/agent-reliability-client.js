@@ -30,7 +30,7 @@ class AgentReliabilityClient {
     this.issuer = options.issuer || 'Gaetano Franco <gtnfrnc@gmail.com>';
     this.target = options.target || 'ThumbGate';
     this.tier = options.tier || 'private_trial';
-    this.expiresAt = options.expiresAt || '2026-10-21T23:59:59Z';
+    this.expiresAt = options.expiresAt || '2027-12-31T23:59:59Z';
   }
 
   resolveToken() {

@@ -991,67 +991,97 @@ function evaluateAgentReliabilityEventStream(doc = {}) {
     if (ev.event_type === 'file_edit' && ev.file_path) {
       const fKey = `${ev.repo}:${ev.file_path}`;
       const prevSession = fileEditAuthors.get(fKey);
-      if (prevSession && prevSession !== ev.session_id && !alerts.some((a) => a.type === 'conflict' && a.file_path === ev.file_path)) {
-        alerts.push({ type: 'conflict', severity: 'high', repo: ev.repo, session_id: ev.session_id, file_path: ev.file_path, reason: `Concurrent edit on '${ev.file_path}' by ${prevSession} and ${ev.session_id}` });
+      if (prevSession && prevSession !== ev.session_id && !alerts.some((a) => (a.type === 'conflict' || a.type === 'file_overlap') && a.file_path === ev.file_path)) {
+        alerts.push({
+          type: 'file_overlap',
+          severity: 'medium',
+          correlation: 'temporal_overlap_requires_lease_check',
+          repo: ev.repo,
+          session_id: ev.session_id,
+          file_path: ev.file_path,
+          reason: `Cross-session file overlap on '${ev.file_path}' by ${prevSession} and ${ev.session_id}`,
+        });
       }
       fileEditAuthors.set(fKey, ev.session_id);
     }
   }
 
   for (const [, sEvents] of bySession.entries()) {
-    let failedCmdCount = 0;
-    let editsBetweenFails = 0;
-    let lastFailedCmd = null;
+    const unresolvedFailedCommands = new Set();
+    const cmdStats = new Map();
+    let maxConsecutiveSameCmd = 0;
+    let maxConsecutiveCmdName = null;
     let consecutiveSameCmd = 0;
     let prevCmd = null;
 
     for (const ev of sEvents) {
       if (ev.event_type === 'command') {
+        const cmd = String(ev.command || '').trim();
         const isFail = /\bfail(?:ed|ure)?\b|\berror\b/i.test(String(ev.result || ''));
+        const isPass = /\bpass(?:ed)?\b/i.test(String(ev.result || ''));
+        if (!cmdStats.has(cmd)) cmdStats.set(cmd, { failures: 0, editsBetween: 0, pendingEditAfterFail: false });
+        const st = cmdStats.get(cmd);
         if (isFail) {
-          failedCmdCount += 1;
-          lastFailedCmd = ev.command;
-        } else if (/\bpass(?:ed)?\b/i.test(String(ev.result || ''))) {
-          lastFailedCmd = null;
+          if (st.pendingEditAfterFail) st.editsBetween += 1;
+          st.failures += 1;
+          st.pendingEditAfterFail = false;
+          unresolvedFailedCommands.add(cmd);
+        } else if (isPass) {
+          unresolvedFailedCommands.delete(cmd);
+          st.failures = 0;
+          st.editsBetween = 0;
+          st.pendingEditAfterFail = false;
         }
-        if (ev.command === prevCmd) {
+        if (cmd === prevCmd) {
           consecutiveSameCmd += 1;
         } else {
-          prevCmd = ev.command;
+          prevCmd = cmd;
           consecutiveSameCmd = 1;
         }
-      } else if (ev.event_type === 'file_edit' && failedCmdCount > 0) {
-        editsBetweenFails += 1;
-      } else if (ev.event_type === 'success' && lastFailedCmd) {
+        if (consecutiveSameCmd > maxConsecutiveSameCmd) {
+          maxConsecutiveSameCmd = consecutiveSameCmd;
+          maxConsecutiveCmdName = cmd;
+        }
+      } else if (ev.event_type === 'file_edit') {
+        for (const st of cmdStats.values()) {
+          if (st.failures > 0) st.pendingEditAfterFail = true;
+        }
+        prevCmd = null;
+        consecutiveSameCmd = 0;
+      } else if (ev.event_type === 'success' && unresolvedFailedCommands.size > 0) {
+        const unresolvedList = [...unresolvedFailedCommands];
         alerts.push({
           type: 'false_completion',
           severity: 'high',
           repo: ev.repo,
           session_id: ev.session_id,
-          command: lastFailedCmd,
-          reason: `Claimed success ('${ev.result}') while '${lastFailedCmd}' remained failed`,
+          command: unresolvedList[0],
+          unresolvedCommands: unresolvedList,
+          reason: `Claimed success ('${ev.result}') while ${unresolvedList.join(', ')} remained failed`,
         });
       }
     }
-    if (failedCmdCount >= 3 && editsBetweenFails >= 1) {
-      alerts.push({
-        type: 'stuck_loop',
-        severity: 'high',
-        repo: sEvents[0].repo,
-        session_id: sEvents[0].session_id,
-        command: lastFailedCmd,
-        failures: failedCmdCount,
-        reason: `'${lastFailedCmd}' failed ${failedCmdCount} times with code edits between attempts`,
-      });
+    for (const [cmd, st] of cmdStats.entries()) {
+      if (st.failures >= 3 && st.editsBetween >= 1) {
+        alerts.push({
+          type: 'stuck_loop',
+          severity: 'high',
+          repo: sEvents[0].repo,
+          session_id: sEvents[0].session_id,
+          command: cmd,
+          failures: st.failures,
+          reason: `'${cmd}' failed ${st.failures} times with code edits between attempts`,
+        });
+      }
     }
-    if (consecutiveSameCmd >= 5) {
+    if (maxConsecutiveSameCmd >= 5) {
       alerts.push({
         type: 'no_progress',
         severity: 'medium',
         repo: sEvents[0].repo,
         session_id: sEvents[0].session_id,
-        command: prevCmd,
-        reason: `'${prevCmd}' repeated ${consecutiveSameCmd} times without validation progress`,
+        command: maxConsecutiveCmdName,
+        reason: `'${maxConsecutiveCmdName}' repeated ${maxConsecutiveSameCmd} times without validation progress`,
       });
     }
   }
