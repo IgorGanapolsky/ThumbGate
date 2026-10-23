@@ -1162,6 +1162,10 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
   // Shreya Shankar (CMU / DocETL / Data Agent Bench) & Tristan Handy (dbt Labs) Data-Agent & Criteria-Drift Gate (k5YL1NmhwFY)
   const {
     evaluateShankarDbtDataAgentAndCriteriaDriftGate,
+    evaluateXdaClaudeGeminiCrossModelLoop,
+    evaluateOpenAdaptCompiledWorkflowAndSaveVerification,
+    evaluateGitLab195EcaGovernanceAndJobSecrets,
+    evaluateAiosPrivacyCostRouterAndHumanYesDiode,
   } = require('../scripts/rrsi-doctor');
   const badDataAgent = evaluateShankarDbtDataAgentAndCriteriaDriftGate({
     queriesRawTablesDirectly: true,
@@ -1186,4 +1190,14 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
 
   const cleanDataAgent = evaluateShankarDbtDataAgentAndCriteriaDriftGate();
   assert.equal(cleanDataAgent.allowed, true);
+
+  // XDA Claude+Gemini Cross-Model Loop, OpenAdapt Compiled Workflow, GitLab 19.5 ECA Governance & AIOS Privacy/Cost Router
+  assert.equal(evaluateXdaClaudeGeminiCrossModelLoop().allowed, true);
+  assert.equal(evaluateXdaClaudeGeminiCrossModelLoop({ criticRewritesDirectly: true }).allowed, false);
+  assert.equal(evaluateOpenAdaptCompiledWorkflowAndSaveVerification().allowed, true);
+  assert.equal(evaluateOpenAdaptCompiledWorkflowAndSaveVerification({ modelCallsPerReplayStep: 5 }).allowed, false);
+  assert.equal(evaluateGitLab195EcaGovernanceAndJobSecrets().allowed, true);
+  assert.equal(evaluateGitLab195EcaGovernanceAndJobSecrets({ rawToolOutputSentToSiem: true }).allowed, false);
+  assert.equal(evaluateAiosPrivacyCostRouterAndHumanYesDiode().allowed, true);
+  assert.equal(evaluateAiosPrivacyCostRouterAndHumanYesDiode({ isPrivilegedClientData: true, privilegedDataLeavesMachine: true }).allowed, false);
 });

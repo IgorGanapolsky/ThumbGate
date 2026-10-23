@@ -2228,6 +2228,118 @@ function evaluateShankarDbtDataAgentAndCriteriaDriftGate({
   };
 }
 
+// 1) XDA Claude + Gemini 4-Stage Cross-Model Adversarial Collaboration Loop (Oct 19, 2026)
+function evaluateXdaClaudeGeminiCrossModelLoop({
+  modelARefinedPromptAndMissingContext = true,
+  modelBExecutedFromStructuredSpec = true,
+  criticRewritesDirectly = false,
+  criticFlagsUnverifiedClaimsAndGaps = true,
+  humanFilteredValidCriticisms = true,
+  independentFactVerificationPassed = true,
+} = {}) {
+  const blockers = [];
+  if (!modelARefinedPromptAndMissingContext) {
+    blockers.push('stage1_missing_model_a_prompt_and_missing_context_refinement');
+  }
+  if (!modelBExecutedFromStructuredSpec) {
+    blockers.push('stage2_missing_cross_family_model_b_structured_execution');
+  }
+  if (criticRewritesDirectly || !criticFlagsUnverifiedClaimsAndGaps) {
+    blockers.push('stage3_critic_must_audit_gaps_and_claims_without_rewriting_prose');
+  }
+  if (!humanFilteredValidCriticisms || !independentFactVerificationPassed) {
+    blockers.push('stage4_requires_filtered_revision_and_independent_fact_verification');
+  }
+  return {
+    allowed: blockers.length === 0,
+    stagesVerified: 4 - blockers.length,
+    blockers,
+  };
+}
+
+// 2) Dan Kornas / OpenAdapt Demonstration-to-Program & Pre/Post-Save Record Verification (status/2113099005961842862)
+function evaluateOpenAdaptCompiledWorkflowAndSaveVerification({
+  compiledFromDemonstration = true,
+  modelCallsPerReplayStep = 0,
+  verifiedTargetRecordBeforeSave = true,
+  readBackRecordAfterSave = true,
+  exposedAsSingleMcpToolCall = true,
+  uiLayoutHashMatchesCompiled = true,
+} = {}) {
+  const blockers = [];
+  if (!compiledFromDemonstration) {
+    blockers.push('workflow_not_compiled_from_demonstration');
+  }
+  if (Number(modelCallsPerReplayStep) > 0) {
+    blockers.push('per_click_model_calls_detected_replay_compiled_program_with_zero_model_calls');
+  }
+  if (!verifiedTargetRecordBeforeSave || !readBackRecordAfterSave) {
+    blockers.push('missing_pre_save_target_check_or_post_save_record_readback');
+  }
+  if (!exposedAsSingleMcpToolCall) {
+    blockers.push('expose_compiled_workflow_as_single_mcp_tool_call');
+  }
+  if (!uiLayoutHashMatchesCompiled) {
+    blockers.push('ui_layout_drift_detected_recompile_workflow_before_replay');
+  }
+  return {
+    allowed: blockers.length === 0,
+    modelCallsPerReplayStep: Number(modelCallsPerReplayStep),
+    blockers,
+  };
+}
+
+// 3) GitLab 19.5 Externally Connected Agents (ECAs) Governance, OpenBao Job-Scoped Secrets & Auto-Mode Deny Floor (Oct 15, 2026)
+function evaluateGitLab195EcaGovernanceAndJobSecrets({
+  ecaRegisteredViaGlabGovern = true,
+  rawToolOutputSentToSiem = false,
+  ciSecretsScopedToJobAndBranch = true,
+  alwaysDenyToolsEnforcedInAutoMode = true,
+} = {}) {
+  const blockers = [];
+  if (!ecaRegisteredViaGlabGovern) {
+    blockers.push('unregistered_external_agent_run_glab_govern_setup');
+  }
+  if (rawToolOutputSentToSiem) {
+    blockers.push('raw_tool_stdout_leaked_to_siem_send_metadata_and_short_errors_only');
+  }
+  if (!ciSecretsScopedToJobAndBranch) {
+    blockers.push('overscoped_ci_variables_use_openbao_job_and_branch_scoped_secrets');
+  }
+  if (!alwaysDenyToolsEnforcedInAutoMode) {
+    blockers.push('auto_mode_must_still_enforce_always_deny_tool_governance');
+  }
+  return {
+    allowed: blockers.length === 0,
+    blockers,
+  };
+}
+
+// 4) AIOS (Advisor AI Partners) 3-Lane Privacy/Cost Router & Wait-for-Human-Yes Outbound Diode
+function evaluateAiosPrivacyCostRouterAndHumanYesDiode({
+  isPrivilegedClientData = true,
+  selectedRoute = 'LOCAL_MACHINE_FREE_ZERO_EGRESS',
+  privilegedDataLeavesMachine = false,
+  waitsForHumanYesBeforeClientSend = true,
+  onDeviceDictationZeroSubscription = true,
+} = {}) {
+  const blockers = [];
+  if (isPrivilegedClientData && (selectedRoute !== 'LOCAL_MACHINE_FREE_ZERO_EGRESS' || privilegedDataLeavesMachine)) {
+    blockers.push('privileged_client_data_must_stay_on_local_machine_zero_cloud_egress');
+  }
+  if (!waitsForHumanYesBeforeClientSend) {
+    blockers.push('unapproved_outbound_client_send_must_wait_for_human_yes');
+  }
+  if (!onDeviceDictationZeroSubscription) {
+    blockers.push('replace_paid_dictation_seat_with_on_device_local_speech_to_text');
+  }
+  return {
+    allowed: blockers.length === 0,
+    selectedRoute,
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['sdd-visualizer']) {
@@ -2375,5 +2487,9 @@ module.exports = {
   evaluateAnthropicDreamModeConsolidation,
   evaluateCudaProgrammingGuideKernelAndGraphOptimization,
   evaluateShankarDbtDataAgentAndCriteriaDriftGate,
+  evaluateXdaClaudeGeminiCrossModelLoop,
+  evaluateOpenAdaptCompiledWorkflowAndSaveVerification,
+  evaluateGitLab195EcaGovernanceAndJobSecrets,
+  evaluateAiosPrivacyCostRouterAndHumanYesDiode,
   runCli,
 };
