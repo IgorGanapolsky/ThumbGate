@@ -1247,11 +1247,7 @@ async function callToolInner(name, args) {
     case 'feedback_stats':
       return toTextResult(analyzeFeedback(undefined, { humanOnly: true }));
     case 'gold_gate_check': {
-      // DATA+AI Summit #1: "Plug agents into Gold tables and semantic layers, not raw data."
-      // One-call gate evaluation using the Gold layer with query pushdown.
-      // Instead of requiring agents to load raw feedback JSON and evaluate rules themselves,
-      // this single endpoint answers: "is this tool action allowed?" with curated context.
-      const cudaGateBatch = require('../../scripts/cuda-gate-batch');
+      const cudaGateBatch = require(path.join(__dirname, '..', '..', 'scripts', 'cuda-gate-batch'));
       const result = await cudaGateBatch.runGatePipeline({
         tool_name: args.tool_name,
         tool_input: args.tool_input || {},
@@ -1269,9 +1265,7 @@ async function callToolInner(name, args) {
       }, null, 2));
     }
     case 'gate_semantic_layer': {
-      // DATA+AI Summit #2: high-level MCP endpoint that describes the semantic layer
-      // in a single call (no need for agents to explore raw rule files).
-      const semanticLayer = require('../../scripts/gate-semantic-layer');
+      const semanticLayer = require(path.join(__dirname, '..', '..', 'scripts', 'gate-semantic-layer'));
       return toTextResult(JSON.stringify(semanticLayer.describeGoldLayer(), null, 2));
     }
     case 'diagnose_failure':
