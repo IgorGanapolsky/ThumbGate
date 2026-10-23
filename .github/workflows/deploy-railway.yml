@@ -81,9 +81,6 @@ jobs:
           RAILWAY_API_TOKEN_INPUT: ${{ secrets.RAILWAY_API_TOKEN }}
           RAILWAY_PROJECT_TOKEN_INPUT: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          if [ -n "$RAILWAY_PROJECT_TOKEN_INPUT" ]; then
-            printf 'RAILWAY_PROJECT_TOKEN_FALLBACK=%s\n' "$RAILWAY_PROJECT_TOKEN_INPUT" >> "$GITHUB_ENV"
-          fi
           if [ -n "$RAILWAY_API_TOKEN_INPUT" ]; then
             printf 'RAILWAY_API_TOKEN=%s\n' "$RAILWAY_API_TOKEN_INPUT" >> "$GITHUB_ENV"
           elif [ -n "$RAILWAY_PROJECT_TOKEN_INPUT" ]; then
@@ -214,6 +211,8 @@ jobs:
         id: railway-deploy
         if: steps.railway-config.outputs.enabled == 'true'
         timeout-minutes: 5
+        env:
+          RAILWAY_PROJECT_TOKEN_FALLBACK: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           retry_railway() {
             local description="$1"
