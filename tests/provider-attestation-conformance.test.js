@@ -87,7 +87,7 @@ test('JCS rejects unpaired UTF-16 surrogates', () => {
 });
 
 test('signature must be strict Base64 Ed25519 bytes', () => {
-  const suite = require('../conformance/provider-attestation/vectors.json');
+  const suite = require('../specs/conformance/provider-attestation/vectors.json');
   const { verifyAttestation } = require('../scripts/provider-attestation-conformance');
   const good = suite.vectors.find((vector) => vector.id === 'matched-valid-jcs').attestation;
   const polluted = {
@@ -105,6 +105,6 @@ test('signature must be strict Base64 Ed25519 bytes', () => {
 test('npm package files include verifier and normative vectors', () => {
   const pkg = require('../package.json');
   assert.ok(pkg.files.includes('scripts/provider-attestation-conformance.js'));
-  assert.ok(pkg.files.includes('conformance/provider-attestation/'));
+  assert.ok(pkg.files.includes('specs/conformance/provider-attestation/'));
   assert.ok(pkg.files.includes('docs/specs/provider-execution-attestation-v1.md'));
 });

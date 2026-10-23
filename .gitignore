@@ -147,3 +147,4 @@ graphify-out/
 .hermes/*
 !.hermes/skills/
 !.hermes/skills/**
+dist/

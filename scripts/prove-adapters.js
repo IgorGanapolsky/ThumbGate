@@ -750,7 +750,7 @@ async function runProof(options = {}) {
     // Spec and adapter files checks
     {
       currentCheck = 'adapter.chatgpt.openapi.parity';
-      const canonical = fs.readFileSync(path.join(ROOT, 'openapi/openapi.yaml'), 'utf-8');
+      const canonical = fs.readFileSync(path.join(ROOT, 'specs/openapi/openapi.yaml'), 'utf-8');
       const chatgpt = fs.readFileSync(path.join(ROOT, 'adapters/chatgpt/openapi.yaml'), 'utf-8');
       check(canonical === chatgpt, 'chatgpt openapi not in sync with canonical openapi');
 
