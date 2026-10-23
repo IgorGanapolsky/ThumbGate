@@ -81,7 +81,6 @@ jobs:
           RAILWAY_API_TOKEN_INPUT: ${{ secrets.RAILWAY_API_TOKEN }}
           RAILWAY_PROJECT_TOKEN_INPUT: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          # Railway prioritizes a present project-token variable, even when empty.
           if [ -n "$RAILWAY_API_TOKEN_INPUT" ]; then
             printf 'RAILWAY_API_TOKEN=%s\n' "$RAILWAY_API_TOKEN_INPUT" >> "$GITHUB_ENV"
           elif [ -n "$RAILWAY_PROJECT_TOKEN_INPUT" ]; then
@@ -212,6 +211,8 @@ jobs:
         id: railway-deploy
         if: steps.railway-config.outputs.enabled == 'true'
         timeout-minutes: 5
+        env:
+          RAILWAY_PROJECT_TOKEN_FALLBACK: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           retry_railway() {
             local description="$1"
@@ -223,11 +224,15 @@ jobs:
             local kill_after_seconds="${RAILWAY_DEPLOY_COMMAND_KILL_AFTER_SECONDS:-15}"
 
             until timeout --foreground --kill-after="${kill_after_seconds}s" "${timeout_seconds}s" "$@"; do
+              if [ -n "${RAILWAY_API_TOKEN:-}" ] && [ -n "${RAILWAY_PROJECT_TOKEN_FALLBACK:-}" ]; then
+                echo "RAILWAY_API_TOKEN failed; switching to RAILWAY_TOKEN project token fallback..."
+                unset RAILWAY_API_TOKEN
+                export RAILWAY_TOKEN="$RAILWAY_PROJECT_TOKEN_FALLBACK"
+              fi
               if [ "$attempt" -ge "$max_attempts" ]; then
                 echo "Railway command failed after $attempt attempts: $description"
                 return 1
               fi
-
               echo "Railway command failed (attempt $attempt/$max_attempts): $description"
               echo "Retrying in ${sleep_seconds}s..."
               sleep "$sleep_seconds"

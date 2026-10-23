@@ -1,17 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-/**
- * cli-demo.js — simulated walkthrough of the ThumbGate value prop.
- *
- * Shows in ~10 seconds:
- *   1. A mock bad action (force-push)
- *   2. Giving it a thumbs-down
- *   3. Lesson created
- *   4. Next session: gate fires, action blocked
- *
- * No actual data is written — this is a pure simulation for onboarding.
- */
+// cli-demo.js — simulated walkthrough of the ThumbGate value prop
 
 const BD = '\x1b[1m';
 const RST = '\x1b[0m';
@@ -103,22 +93,10 @@ const REPO_URL = 'https://github.com/diggerhq/shipvideo';
 const GATE_ID = 'launchvideo-deterministic-film-diode';
 
 const RAIL_MAP = Object.freeze([
-  {
-    launchVideoConcept: 'No video diffusion model: LLM writes film as HTML/CSS/JS; virtual clock replaces rAF/timers/Date/Web Animations (1920x1080 @ 30fps, libx264 crf 18)',
-    thumbgateRail: 'buildVirtualClockTimeline + seekVirtualClockFrame (usesVideoDiffusionModel=false; deterministic frame seek)',
-  },
-  {
-    launchVideoConcept: '3-tool director surface: web_fetch (text, headings, top hex colors, Google Fonts), check_scene (JS errors + visible text at sample timestamps), render_video',
-    thumbgateRail: 'extractBrandTokensFromHtml + checkSceneGate (blocks render_video on JS errors or blank sample frames)',
-  },
-  {
-    launchVideoConcept: 'Agent holds no secrets: per-job manifest mints 3-hour single-path Blob upload token',
-    thumbgateRail: 'mintScopedBlobUploadManifest (agentHoldsMasterSecret=false; blocks raw BLOB_READ_WRITE_TOKEN / AWS secrets; TTL <= 10800s)',
-  },
-  {
-    launchVideoConcept: 'Control plane polls tool.started/tool.completed/turn.completed and treats MP4 appearing in Blob as done',
-    thumbgateRail: 'verifyMp4ArtifactCompletion (turn.completed alone is not done; requires verified MP4 artifact with sizeBytes > 0)',
-  },
+  { launchVideoConcept: '1. Virtual clock replaces rAF/timers/Date/CSS Animations', thumbgateRail: 'buildVirtualClockTimeline + seekVirtualClockFrame' },
+  { launchVideoConcept: '2. 3-tool director surface (web_fetch, check_scene, render_video)', thumbgateRail: 'extractBrandTokensFromHtml + checkSceneGate' },
+  { launchVideoConcept: '3. Zero-secret per-job 3h scoped Blob upload manifest', thumbgateRail: 'mintScopedBlobUploadManifest' },
+  { launchVideoConcept: '4. MP4 artifact in Blob is completion gate', thumbgateRail: 'verifyMp4ArtifactCompletion' },
 ]);
 
 /**
