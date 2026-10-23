@@ -2340,6 +2340,82 @@ function evaluateAiosPrivacyCostRouterAndHumanYesDiode({
   };
 }
 
+// 5) Zero-Cost Bidirectional Antigravity (agy) Issue Mailbox & Forensic Domain Alias Governance (gemini.google.com/share/6fa6f19cd489)
+function checkAgyMailboxAndAuth(opts, blockers) {
+  if (opts.fileMailboxCommitsTriggerBuilds || opts.transportProtocol !== 'GITHUB_ISSUE_MAILBOX_V1') {
+    blockers.push('repo_file_mailbox_blocked_use_github_issue_mailbox_v1_to_avoid_ci_and_vercel_builds');
+  }
+  if (!opts.usesAgySessionContinuation) {
+    blockers.push('cold_agy_headless_or_jules_cloud_vm_blocked_require_agy_continue_or_conversation_id');
+  }
+  if (opts.usesPaidGeminiApiKey) {
+    blockers.push('paid_gemini_api_key_blocked_use_zero_cost_google_account_ultra_subscription_login');
+  }
+}
+
+function checkForensicDomainGovernance(opts, blockers) {
+  if (!opts.adHocCliAliasMutationBlocked) {
+    blockers.push('adhoc_cli_prod_or_alias_set_blocked_require_commit_bound_deployment_checks');
+  }
+  if (!opts.hasForensicAliasTransitionReceipt || !opts.commitBoundDeploymentChecksEnabled) {
+    blockers.push('github_prose_domain_claim_rejected_require_control_plane_alias_transition_receipt');
+  }
+}
+
+function evaluateAntigravityZeroCostMailboxAndDomainGovernance(options = {}) {
+  const opts = {
+    transportProtocol: 'GITHUB_ISSUE_MAILBOX_V1',
+    fileMailboxCommitsTriggerBuilds: false,
+    usesAgySessionContinuation: true,
+    usesPaidGeminiApiKey: false,
+    adHocCliAliasMutationBlocked: true,
+    hasForensicAliasTransitionReceipt: true,
+    commitBoundDeploymentChecksEnabled: true,
+    ...options,
+  };
+  const blockers = [];
+  checkAgyMailboxAndAuth(opts, blockers);
+  checkForensicDomainGovernance(opts, blockers);
+  return {
+    allowed: blockers.length === 0,
+    transportProtocol: opts.transportProtocol,
+    incrementalCostUsd: opts.usesPaidGeminiApiKey ? null : 0,
+    blockers,
+  };
+}
+
+// 6) InfoWorld Model Routing & Anti-Pareto-Trap Switchyard Guard (infoworld.com/article/4238176)
+function evaluateModelRoutingParetoTrapGuard(options = {}) {
+  const opts = {
+    routesOnlyTop20PercentToFrontier: false,
+    complexityScore: 0.55,
+    conservativeFrontierThreshold: 0.45,
+    consecutiveToolFailures: 0,
+    evaluatesSessionCacheAndDownstreamSteps: true,
+    escalatesOnSustainedDifficultyOrToolFailure: true,
+    hasCrossDepartmentFailureMonitoring: true,
+    ...options,
+  };
+  const blockers = [];
+  if (opts.routesOnlyTop20PercentToFrontier) {
+    blockers.push('pareto_trap_80_20_routing_blocked_moderate_complexity_edge_cases_cause_4x_5x_retention_damage');
+  }
+  if (!opts.evaluatesSessionCacheAndDownstreamSteps || !opts.escalatesOnSustainedDifficultyOrToolFailure) {
+    blockers.push('require_session_cache_awareness_and_nemo_switchyard_stage_escalation');
+  }
+  if (!opts.hasCrossDepartmentFailureMonitoring) {
+    blockers.push('require_cross_department_downstream_failure_monitoring_to_catch_silent_cheap_model_errors');
+  }
+  const requiresFrontier = opts.complexityScore >= opts.conservativeFrontierThreshold || opts.consecutiveToolFailures > 0;
+  const selectedTier = requiresFrontier ? 'FRONTIER_MODEL' : 'COST_EFFICIENT_MODEL';
+  return {
+    allowed: blockers.length === 0,
+    selectedTier,
+    requiresFrontier,
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['sdd-visualizer']) {
@@ -2491,5 +2567,7 @@ module.exports = {
   evaluateOpenAdaptCompiledWorkflowAndSaveVerification,
   evaluateGitLab195EcaGovernanceAndJobSecrets,
   evaluateAiosPrivacyCostRouterAndHumanYesDiode,
+  evaluateAntigravityZeroCostMailboxAndDomainGovernance,
+  evaluateModelRoutingParetoTrapGuard,
   runCli,
 };

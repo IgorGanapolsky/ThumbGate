@@ -1166,6 +1166,8 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
     evaluateOpenAdaptCompiledWorkflowAndSaveVerification,
     evaluateGitLab195EcaGovernanceAndJobSecrets,
     evaluateAiosPrivacyCostRouterAndHumanYesDiode,
+    evaluateAntigravityZeroCostMailboxAndDomainGovernance,
+    evaluateModelRoutingParetoTrapGuard,
   } = require('../scripts/rrsi-doctor');
   const badDataAgent = evaluateShankarDbtDataAgentAndCriteriaDriftGate({
     queriesRawTablesDirectly: true,
@@ -1200,4 +1202,9 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
   assert.equal(evaluateGitLab195EcaGovernanceAndJobSecrets({ rawToolOutputSentToSiem: true }).allowed, false);
   assert.equal(evaluateAiosPrivacyCostRouterAndHumanYesDiode().allowed, true);
   assert.equal(evaluateAiosPrivacyCostRouterAndHumanYesDiode({ isPrivilegedClientData: true, privilegedDataLeavesMachine: true }).allowed, false);
+  assert.equal(evaluateAntigravityZeroCostMailboxAndDomainGovernance().allowed, true);
+  assert.equal(evaluateAntigravityZeroCostMailboxAndDomainGovernance({ fileMailboxCommitsTriggerBuilds: true, usesPaidGeminiApiKey: true }).allowed, false);
+  assert.equal(evaluateModelRoutingParetoTrapGuard().allowed, true);
+  assert.equal(evaluateModelRoutingParetoTrapGuard({ complexityScore: 0.55 }).selectedTier, 'FRONTIER_MODEL');
+  assert.equal(evaluateModelRoutingParetoTrapGuard({ routesOnlyTop20PercentToFrontier: true }).allowed, false);
 });
