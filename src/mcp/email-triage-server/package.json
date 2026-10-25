@@ -1,0 +1,12 @@
+{
+  "name": "email-triage-server",
+  "version": "1.0.0",
+  "description": "MCP server for email triage: read Gmail/Apple Mail, classify, generate drafts",
+  "main": "index.js",
+  "bin": {
+    "email-triage-server": "index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1"
+  }
+}
