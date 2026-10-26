@@ -567,7 +567,7 @@
     "revenue:truth": "bash bin/revenue-truth.sh",
     "revenue:doctor": "node scripts/revenue-observability-doctor.js",
     "rrsi:doctor": "node scripts/rrsi-doctor.js",
-    "test:rrsi": "node --test tests/rrsi-regularizer.test.js",
+    "test:rrsi": "node --test tests/rrsi-regularizer.test.js tests/cost-router-routing.test.js tests/cost-router.test.js",
     "harness-ceiling:doctor": "node scripts/harness-ceiling-doctor.js",
     "test:harness-ceiling": "node --test tests/harness-ceiling.test.js",
     "decisive-step:doctor": "node scripts/decisive-step-doctor.js",
