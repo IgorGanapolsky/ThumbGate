@@ -1231,6 +1231,9 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
     evaluateMrBeastMultiVariantAndInstitutionalMemoryGate,
     evaluatePancakeGtmBrainPlayAndInstallMdGate,
     evaluateLangChainCompanyHarnessAndIdentityMatrixGate,
+    evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate,
+    evaluateWarpAiNativeTaskParityAndExternalStochasticityGate,
+    evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate,
   } = require('../scripts/rrsi-doctor');
   const sycophanticInterruptedLoop = evaluateElephantGoldfishAutonomousSanctuaryLoop({
     goalStatement: 'Organize workspace projects in Obsidian and sync repo/obsidian/',
@@ -1531,4 +1534,44 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
   assert.ok(badCompanyHarness.blockers.includes('personal_obo_email_tools_forbidden_in_shared_channels_restrict_to_direct_messages_only'));
   assert.ok(badCompanyHarness.blockers.includes('background_ambient_agent_runs_must_use_fixed_app_or_service_identity_not_personal_obo'));
   assert.equal(evaluateLangChainCompanyHarnessAndIdentityMatrixGate().allowed, true);
+
+  // 19. rtk-ai/icm Competitor Architecture Steal (3-arm RRF k=60, 0-LLM store/recall, PreToolUse edge)
+  const badIcm = evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate({
+    llmCallsPerStoreOrRecall: 2,
+    criticalImportanceDecayMultiplier: 1.0,
+    enforcesActivePreToolUseFirewallOverPassiveRecall: false,
+  });
+  assert.equal(badIcm.allowed, false);
+  assert.ok(badIcm.blockers.includes('memory_store_and_recall_must_require_zero_llm_calls_on_hot_path'));
+  assert.ok(badIcm.blockers.includes('critical_importance_memories_and_prevention_rules_must_never_decay_or_prune'));
+  assert.ok(badIcm.blockers.includes('passive_memory_without_active_pretooluse_firewall_cannot_stop_repeat_agent_failures'));
+  assert.equal(evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate().allowed, true);
+
+  // 20. Warp AI-Native Task Parity & DeepMind External Stochasticity (@rohanpaul_ai 2114083454564585720)
+  const badWarp = evaluateWarpAiNativeTaskParityAndExternalStochasticityGate({
+    agentExecutableTaskParityPct: 60,
+    requiresHumanSignoffForStatutoryOrFinancialCommit: false,
+    randomnessGeneratedInHostCodeNotLlmPrompt: false,
+  });
+  assert.equal(badWarp.allowed, false);
+  assert.ok(badWarp.blockers.includes('ai_native_architecture_requires_100_pct_agent_executable_task_parity_across_cli_and_mcp'));
+  assert.ok(badWarp.blockers.includes('statutory_compliance_or_financial_commits_require_explicit_human_signoff_gate'));
+  assert.ok(badWarp.blockers.includes('llm_stochasticity_illusion_generate_randomness_and_thompson_sampling_in_host_code_never_in_prompt'));
+  assert.equal(evaluateWarpAiNativeTaskParityAndExternalStochasticityGate().allowed, true);
+
+  // 21. Lehmann & Vahdati ARC-AGI-3 Self-Improving Harness Study (arXiv:2610.30499)
+  const badArcHarness = evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate({
+    devBaselineScore: 37.64,
+    devRevisionScore: 56.37,
+    testBaselineScore: 43.95,
+    testRevisionScore: 21.99,
+    baselineRunCostUsd: 31.39,
+    revisionRunCostUsd: 7.18,
+    preservesParentSnapshotsAndBreaksTiesToEarlierH0: false,
+  });
+  assert.equal(badArcHarness.allowed, false);
+  assert.equal(badArcHarness.paretoOutcome, 'cheaper_rhae_down');
+  assert.ok(badArcHarness.blockers.includes('harness_adaptation_gap_exceeded_dev_gains_overfit_and_fail_to_transfer_to_held_out_tasks'));
+  assert.ok(badArcHarness.blockers.includes('cheaper_rhae_down_cost_contraction_trap_cost_reduction_degraded_held_out_task_performance'));
+  assert.equal(evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate().allowed, true);
 });

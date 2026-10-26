@@ -3351,6 +3351,157 @@ function evaluateLangChainCompanyHarnessAndIdentityMatrixGate({
   };
 }
 
+// 19. rtk-ai/icm Competitor Architecture Steal (`https://github.com/rtk-ai/icm`):
+//     - 3-Arm Reciprocal Rank Fusion (`rrf_fuse`, k = 60) over ranks (lexical FTS5 BM25 + cosine vector + temporal window)
+//       plus read-only keyword+temporal prompt hook (`6.8ms` median, zero LLM store/recall calls, 88.6% LoCoMo top-5).
+//     - Importance-tiered access-damped decay:
+//       effective_rate = (base_decay * importance_multiplier) / (1 + 0.1 * access_count), where Critical = 0.0 (never decays).
+//     - Auto-merge dedup (>0.85 hybrid or >0.95 cosine in same topic), byte-offset transcript watermarking (`last_byte_offset`),
+//       compact tabular recall (`-40%` tokens), and consecutive non-store nudge (`>= 10` tool calls).
+//     - CRITICAL COMPETITIVE ADVANTAGE FOR THUMBGATE: ICM's `icm hook pre` passively auto-allows commands with zero PreToolUse
+//       enforcement or DPO preference learning; ThumbGate pairs zero-LLM RRF recall with active PreToolUse blocking (`< 0.1ms`).
+function evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate({
+  llmCallsPerStoreOrRecall = 0,
+  usesThreeArmRrfRankFusionK60 = true,
+  promptHookReadOnlyKeywordAndTemporal = true,
+  wakeUpPackTokenCount = 480,
+  maxWakeUpPackTokens = 500,
+  criticalImportanceDecayMultiplier = 0,
+  autoMergeDuplicateSimilarityThreshold = 0.85,
+  tracksTranscriptByteOffsetWatermark = true,
+  compactModeTokenSavingsPct = 40,
+  enforcesActivePreToolUseFirewallOverPassiveRecall = true,
+} = {}) {
+  const blockers = [];
+
+  if (Number(llmCallsPerStoreOrRecall) > 0) {
+    blockers.push('memory_store_and_recall_must_require_zero_llm_calls_on_hot_path');
+  }
+  if (!usesThreeArmRrfRankFusionK60 || !promptHookReadOnlyKeywordAndTemporal) {
+    blockers.push('recall_must_use_3_arm_rrf_k60_rank_fusion_and_read_only_keyword_temporal_prompt_hook');
+  }
+  if (Number(wakeUpPackTokenCount) > Number(maxWakeUpPackTokens)) {
+    blockers.push('session_start_wakeup_pack_exceeds_500_token_budget');
+  }
+  if (Number(criticalImportanceDecayMultiplier) !== 0) {
+    blockers.push('critical_importance_memories_and_prevention_rules_must_never_decay_or_prune');
+  }
+  if (Number(autoMergeDuplicateSimilarityThreshold) > 0.95 || !tracksTranscriptByteOffsetWatermark) {
+    blockers.push('require_in_topic_similarity_auto_merge_and_byte_offset_transcript_watermarking');
+  }
+  if (Number(compactModeTokenSavingsPct) < 35) {
+    blockers.push('compact_tabular_recall_format_must_save_at_least_35_pct_tokens');
+  }
+  if (!enforcesActivePreToolUseFirewallOverPassiveRecall) {
+    blockers.push('passive_memory_without_active_pretooluse_firewall_cannot_stop_repeat_agent_failures');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    rrfConstantK: 60,
+    llmCallsPerStoreOrRecall: Number(llmCallsPerStoreOrRecall) || 0,
+    compactModeTokenSavingsPct: Number(compactModeTokenSavingsPct) || 0,
+    blockers,
+  };
+}
+
+// 20. Warp AI-Native Task Parity & DeepMind External Stochasticity (`https://x.com/rohanpaul_ai/status/2114083454564585720`):
+//     - Ayush Sharma (Warp CEO on YC Root Access): build the product, platform, and architecture so EVERY task —
+//       starting with deep compliance/billing/governance workflows — is 100% executable by an agent via CLI/MCP.
+//     - Statutory Sign-Off Gate (`@dusangran` reply): agents execute 100% of compliance preparation and validation,
+//       but statutory filings or irreversible spend commitments require a cryptographic human sign-off gate.
+//     - DeepMind "The Illusion of Stochasticity in LLMs": LLMs fail at true randomness (mode collapse toward favorite numbers).
+//       Never ask an LLM to sample randomly in-prompt; generate randomness/Thompson Sampling in host code (`crypto.randomBytes`).
+function evaluateWarpAiNativeTaskParityAndExternalStochasticityGate({
+  agentExecutableTaskParityPct = 100,
+  requiresHumanSignoffForStatutoryOrFinancialCommit = true,
+  randomnessGeneratedInHostCodeNotLlmPrompt = true,
+} = {}) {
+  const blockers = [];
+
+  if (Number(agentExecutableTaskParityPct) < 100) {
+    blockers.push('ai_native_architecture_requires_100_pct_agent_executable_task_parity_across_cli_and_mcp');
+  }
+  if (!requiresHumanSignoffForStatutoryOrFinancialCommit) {
+    blockers.push('statutory_compliance_or_financial_commits_require_explicit_human_signoff_gate');
+  }
+  if (!randomnessGeneratedInHostCodeNotLlmPrompt) {
+    blockers.push('llm_stochasticity_illusion_generate_randomness_and_thompson_sampling_in_host_code_never_in_prompt');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    agentExecutableTaskParityPct: Number(agentExecutableTaskParityPct) || 0,
+    blockers,
+  };
+}
+
+// 21. Lehmann & Vahdati ARC-AGI-3 Self-Improving Harness Study (`arXiv:2610.30499`):
+//     - Harness Adaptation Gap: G_t = [J_dev(H_t) - J_dev(H_0)] - [J_test(H_t) - J_test(H_0)] (mean G_2 = +5.62 RHAE).
+//       Development gains overstate held-out improvement; never accept a harness revision from dev tasks alone.
+//     - Joint 3-Tuple Resource-Rational Evaluation: (J_test(H_t), -C_run(H_t), -C_outer(H_{0:t})).
+//       Block "Cheaper/RHAE-down" Cost-Contraction Traps (9 of 27 lineages saved cost by breaking response chaining/memory).
+//     - Abstention & Preserved-Parent Checkpoint Selection: 0/54 LLM revisions abstained voluntarily, causing 12/27 held-out
+//       regressions; selecting max J_dev across preserved snapshots {H_0, H_1, H_2} with ties broken to earlier H_0 raises
+//       held-out gain from +2.80 to +4.53 and cuts regressions from 12 to 5.
+//     - Fixed-Harness Execution Variance (sigma = 3.99 RHAE across 10 runs) & CoT Unfaithfulness Triangulation:
+//       treat single-run gains within noise epsilon as indeterminate, and triangulate narration against tool/diff/runtime traces.
+function evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate({
+  devBaselineScore = 30.0,
+  devRevisionScore = 38.42,
+  testBaselineScore = 24.54,
+  testRevisionScore = 31.0,
+  maxAllowedAdaptationGap = 5.62,
+  baselineRunCostUsd = 10.30,
+  revisionRunCostUsd = 7.57,
+  outerLoopAdaptationCostUsd = 18.5,
+  preservesParentSnapshotsAndBreaksTiesToEarlierH0 = true,
+  executionNoiseStdDev = 3.99,
+  triangulatesNarrationAgainstToolsDiffsAndRuntime = true,
+} = {}) {
+  const blockers = [];
+  const devGain = Number((Number(devRevisionScore) - Number(devBaselineScore)).toFixed(4));
+  const testGain = Number((Number(testRevisionScore) - Number(testBaselineScore)).toFixed(4));
+  const adaptationGap = Number((devGain - testGain).toFixed(4));
+  const runCostDeltaUsd = Number((Number(revisionRunCostUsd) - Number(baselineRunCostUsd)).toFixed(4));
+
+  if (adaptationGap > Number(maxAllowedAdaptationGap)) {
+    blockers.push('harness_adaptation_gap_exceeded_dev_gains_overfit_and_fail_to_transfer_to_held_out_tasks');
+  }
+  if (runCostDeltaUsd < 0 && testGain < 0) {
+    blockers.push('cheaper_rhae_down_cost_contraction_trap_cost_reduction_degraded_held_out_task_performance');
+  }
+  if (!preservesParentSnapshotsAndBreaksTiesToEarlierH0) {
+    blockers.push('require_preserved_parent_snapshots_with_abstention_rollback_and_tie_break_to_earlier_h0');
+  }
+  if (testGain > 0 && testGain < Number(executionNoiseStdDev) && runCostDeltaUsd >= 0) {
+    blockers.push('sub_threshold_gain_within_fixed_harness_execution_variance_sigma_3_99_without_cost_reduction');
+  }
+  if (!triangulatesNarrationAgainstToolsDiffsAndRuntime) {
+    blockers.push('unfaithful_updater_narration_must_be_triangulated_against_tools_code_diffs_and_runtime_traces');
+  }
+
+  const paretoOutcome =
+    testGain > 0 && runCostDeltaUsd <= 0
+      ? 'pareto_gain'
+      : testGain > 0 && runCostDeltaUsd > 0
+        ? 'score_up_cost_up'
+        : testGain < 0 && runCostDeltaUsd < 0
+          ? 'cheaper_rhae_down'
+          : 'worse_both';
+
+  return {
+    allowed: blockers.length === 0,
+    devGain,
+    testGain,
+    adaptationGap,
+    runCostDeltaUsd,
+    outerLoopAdaptationCostUsd: Number(outerLoopAdaptationCostUsd) || 0,
+    paretoOutcome,
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['sdd-visualizer']) {
@@ -3483,6 +3634,21 @@ function runCli(argv = process.argv.slice(2)) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     return report.allowed ? 0 : 1;
   }
+  if (args['rtk-icm']) {
+    const report = evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['warp-ai-native']) {
+    const report = evaluateWarpAiNativeTaskParityAndExternalStochasticityGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['arc-agi-3-harness']) {
+    const report = evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
   const report = auditRRSI();
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   return report.status === 'PASS' ? 0 : 1;
@@ -3516,7 +3682,10 @@ if (require.main === module) {
     args.includes('--thesys-openui') ||
     args.includes('--mrbeast-cpto') ||
     args.includes('--pancake-gtm') ||
-    args.includes('--company-harness')
+    args.includes('--company-harness') ||
+    args.includes('--rtk-icm') ||
+    args.includes('--warp-ai-native') ||
+    args.includes('--arc-agi-3-harness')
   ) {
     process.exit(runCli(args));
   }
@@ -3644,5 +3813,8 @@ module.exports = {
   evaluateMrBeastMultiVariantAndInstitutionalMemoryGate,
   evaluatePancakeGtmBrainPlayAndInstallMdGate,
   evaluateLangChainCompanyHarnessAndIdentityMatrixGate,
+  evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate,
+  evaluateWarpAiNativeTaskParityAndExternalStochasticityGate,
+  evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate,
   runCli,
 };
