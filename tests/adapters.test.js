@@ -576,7 +576,13 @@ test('Poolside adapter pins ThumbGate and preserves the native enforcement bound
     new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
     'Poolside settings must pin the shipped ThumbGate version',
   );
+  assert.match(settings, /auto_mode_classifier:\s*poolside\/laguna-xs-2\.1/);
+  assert.match(settings, /git log --all --grep \*/);
+  assert.match(settings, /git reflog \*/);
   assert.match(readme, /fail-open/i);
   assert.match(readme, /native permissions/i);
+  assert.match(readme, /Laguna S 2\.1/);
+  assert.match(readme, /DFlash/);
+  assert.match(readme, /--moe-backend triton/);
   assert.match(readme, /does not imply a Poolside\s+partnership or endorsement/i);
 });

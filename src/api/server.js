@@ -569,6 +569,53 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     allowCustomerEmail: true,
     prefillStripeEmail: true,
   },
+  'founding-100': {
+    fallbackHref: 'https://buy.stripe.com/bJe28rduQ5v82dz6i73sJ0n',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_founding_100',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'pro_checkout_direct_stripe',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'founding_100',
+      plan_id: 'founding_100',
+      billing_cycle: 'one_time',
+    },
+    allowCustomerEmail: true,
+    prefillStripeEmail: true,
+  },
+  'bundle-49': {
+    fallbackHref: 'https://iganapolsky.gumroad.com/l/vcrho',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_bundle_49',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'bundle_49',
+      plan_id: 'bundle_49',
+      billing_cycle: 'one_time',
+    },
+  },
+  'playbook-10': {
+    fallbackHref: 'https://iganapolsky.gumroad.com/l/odrkon',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_playbook_10',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'playbook_10',
+      plan_id: 'playbook_10',
+      billing_cycle: 'one_time',
+    },
+  },
   // Operator Framework offers (/operator-framework). Same-origin hop keeps
   // buy.stripe.com out of public HTML; bots are deflected to the page.
   'operator-diagnostic': {
@@ -2809,7 +2856,7 @@ h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:70
 p{color:#cbd5e1;margin:8px 0}form{margin:0}
 input[type=email]{width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid #374151;border-radius:8px;background:#111827;color:#fff;font-size:15px;margin:16px 0 0;outline:none}
 input[type=email]:focus{border-color:#22d3ee}input[type=email]::placeholder{color:#64748b}
-button.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%}
+button.primary,a.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%;box-sizing:border-box}
 a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}
 .trust,.objection-box{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}
 .trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}
@@ -2834,7 +2881,9 @@ ${hiddenInputs}
 <p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
-<a class="secondary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">Skip form — open Stripe checkout directly →</a>
+<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">→ Skip form — open Stripe checkout directly</a>
+<a class="secondary" data-i="pro_checkout_founding_100" rel="nofollow" href="/go/founding-100?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=founding_100&amp;cta_id=pro_checkout_founding_100&amp;cta_placement=checkout_interstitial">Prefer one-time (no subscription)? Founding Pass — $100 →</a>
+<a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Corporate card (&lt;$50 no-approval)? Production Rule-Pack Kit — $49 one-time →</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
 <p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages. Email path keeps receipts attributable; skip uses a same-origin hop that bot-deflects crawlers.</p>
 <div class="objection-box" aria-label="Checkout feedback">
@@ -4004,7 +4053,16 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   techParts.push(`<tr><td class="label">Feedback Event ID</td><td><code>${esc(feedbackEventId || lessonId)}</code></td></tr>`);
   if (memoryRecordId) techParts.push(`<tr><td class="label">Memory Record ID</td><td><code>${esc(memoryRecordId)}</code></td></tr>`);
   techParts.push(`<tr><td class="label">Promoted to Memory</td><td>${promotedToMemory ? '<span style="color:var(--green)">✓ Yes</span>' : '<span style="color:var(--text-muted)">✗ No</span>'}</td></tr>`);
-  if (failureType) techParts.push(`<tr><td class="label">Failure Type</td><td><span style="color:${failureType === 'decision' ? 'var(--yellow)' : 'var(--purple)'};font-weight:600">${esc(failureType)}</span> <span style="color:var(--text-muted);font-size:11px">${failureType === 'decision' ? '(wrong tool/action chosen)' : '(right tool, bad params/output)'}</span></td></tr>`);
+  if (failureType) {
+    const failureMeta = {
+      decision: { color: 'var(--yellow)', label: 'Wrong tool/action chosen' },
+      execution: { color: 'var(--purple)', label: 'Right tool, bad params/output' },
+      verification: { color: 'var(--red)', label: 'Verification guard triggered' },
+      environmental: { color: 'var(--orange)', label: 'Environmental noise/flakiness' },
+      app_change: { color: 'var(--cyan)', label: 'Expected application behavior change' },
+    }[failureType] || { color: 'var(--text-muted)', label: failureType };
+    techParts.push(`<tr><td class=\"label\">Failure Type</td><td><span style=\"color:${failureMeta.color};font-weight:600\">${esc(failureType)}</span> <span style=\"color:var(--text-muted);font-size:11px\">(${failureMeta.label})</span></td></tr>`);
+  }
   if (skill) techParts.push(`<tr><td class="label">Skill</td><td><code>${esc(skill)}</code></td></tr>`);
   if (source) techParts.push(`<tr><td class="label">Source</td><td>${esc(source)}</td></tr>`);
   if (relatedFeedbackId) techParts.push(`<tr><td class="label">Related Feedback</td><td><a href="/lessons/${esc(relatedFeedbackId)}" style="color:var(--cyan)">${esc(relatedFeedbackId)}</a></td></tr>`);
@@ -4056,7 +4114,7 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #141414; --border: #222225;
   --text: #e8e8ec; --text-muted: #8b8b96; --cyan: #22d3ee;
   --cyan-dim: rgba(34,211,238,0.12); --green: #4ade80; --red: #f87171;
-  --yellow: #fbbf24; --purple: #a78bfa;
+  --yellow: #fbbf24; --purple: #a78bfa; --orange: #f97316;
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
   --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
 }

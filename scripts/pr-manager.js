@@ -342,6 +342,36 @@ async function resolveBlockers(pr, runner = runGh) {
     return { status: 'blocked', reason: 'review_required' };
   }
 
+  if (Array.isArray(pr.changedFiles) || pr.headRepository || pr.baseRepository) {
+    const stackAudit = evaluateStackedPrGovernance({
+      baseRefName: pr.baseRefName || 'main',
+      changedFiles: pr.changedFiles || [],
+      headRepoFullName: pr.headRepository?.nameWithOwner || 'IgorGanapolsky/ThumbGate',
+      baseRepoFullName: pr.baseRepository?.nameWithOwner || 'IgorGanapolsky/ThumbGate',
+      prBody: pr.body || '',
+    });
+    if (!stackAudit.allowed) {
+      console.log(`[PR Manager] BLOCKED: Stacked PR governance violation (${stackAudit.blockers.join(', ')}).`);
+      return { status: 'blocked', reason: stackAudit.blockers[0], blockers: stackAudit.blockers };
+    }
+  }
+
+  // Isolated Verifier gate: additive check — require verifier_passed session
+  // action before allowing autonomous merge. Never bypasses branch protection.
+  const sessionActionsPath = path.join(process.env.HOME || '/tmp', '.thumbgate', 'session-actions.json');
+  let verifierPassed = false;
+  try {
+    if (fs.existsSync(sessionActionsPath)) {
+      const actions = JSON.parse(fs.readFileSync(sessionActionsPath, 'utf8'));
+      verifierPassed = Boolean(actions.verifier_passed);
+    }
+  } catch { /* ignore — fail closed below */ }
+
+  if (!verifierPassed) {
+    console.log('[PR Manager] BLOCKED: Isolated Verifier evidence (verifier_passed) is missing.');
+    return { status: 'blocked', reason: 'verifier_not_passed' };
+  }
+
   if (
     (pr.mergeStateStatus === 'CLEAN' || pr.mergeStateStatus === 'UNSTABLE' || pr.mergeStateStatus === 'BLOCKED')
     && pr.mergeable === 'MERGEABLE'
@@ -446,6 +476,69 @@ function performMerge(prInput, runner = runGh, options = {}) {
   return { ok: false, mode: 'failed', args, error: formatGhError(result) };
 }
 
+/**
+ * GitHub Native Stacked PR Governance (https://www.youtube.com/watch?v=sbHoDdAalMI — S02E05 The GitHub Podcast):
+ * 1. Block mid-stack CODEOWNERS edits: GitHub evaluates CODEOWNERS strictly against `main` (stack base)
+ *    to prevent security bypasses in a chain; mid-stack CODEOWNERS changes are ignored by upper PRs.
+ * 2. Block cross-fork stacks: native stacked PRs require head and base within the same repository.
+ * 3. Detect sequential bottleneck anti-patterns ("Do not merge until PR #X is merged") for `gh stack` conversion.
+ * 4. Enforce asynchronous merge/queue submission (avoiding legacy 10s synchronous merge endpoint timeouts).
+ */
+function evaluateStackedPrGovernance({
+  baseRefName = 'main',
+  changedFiles = [],
+  headRepoFullName = 'IgorGanapolsky/ThumbGate',
+  baseRepoFullName = 'IgorGanapolsky/ThumbGate',
+  prBody = '',
+  mergeApiMode = 'async_queue',
+  codeownersGroupsTouched = 1,
+  hasIntermediateBranchCiTriggerHack = false,
+  preservesSignedCommitsOnRebase = true,
+} = {}) {
+  const normalizedBase = String(baseRefName || 'main').trim();
+  const isMidStackPr = normalizedBase.toLowerCase() !== 'main' && normalizedBase.toLowerCase() !== 'master';
+  const normalizedFiles = Array.isArray(changedFiles) ? changedFiles.map((f) => String(f || '').trim()) : [];
+  const touchesCodeowners = normalizedFiles.some((f) => /(?:^|\/)CODEOWNERS$/i.test(f));
+  const sequentialBottleneckMatch = /do\s+not\s+merge\s+until\s+(?:pr\s*)?#?\d+/i.test(String(prBody || ''));
+  const blockers = [];
+  const warnings = [];
+
+  if (isMidStackPr && touchesCodeowners) {
+    blockers.push('mid_stack_codeowners_edit_ignored_by_github_merge_to_main_first');
+  }
+  if (
+    String(headRepoFullName || '').trim().toLowerCase() !==
+    String(baseRepoFullName || '').trim().toLowerCase()
+  ) {
+    blockers.push('cross_fork_stacking_unsupported_keep_stack_within_single_repo');
+  }
+  if (mergeApiMode === 'legacy_sync_10s') {
+    blockers.push('legacy_sync_merge_endpoint_times_out_at_10s_on_stacks_use_async_merge_api');
+  }
+  if (hasIntermediateBranchCiTriggerHack) {
+    blockers.push('unwind_intermediate_branch_ci_trigger_hacks_native_stacks_inherit_main_protection');
+  }
+  if (!preservesSignedCommitsOnRebase) {
+    blockers.push('native_stack_rebase_must_preserve_github_signed_commits');
+  }
+  if (Number(codeownersGroupsTouched) > 1) {
+    warnings.push('slice_pr_stack_by_single_codeowners_group_and_architectural_layer');
+  }
+  if (sequentialBottleneckMatch) {
+    warnings.push('convert_sequential_bottleneck_pr_to_native_gh_stack');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    isMidStackPr,
+    touchesCodeowners,
+    convertToNativeGhStackRecommended: sequentialBottleneckMatch,
+    asyncMergeEndpoint: mergeApiMode !== 'legacy_sync_10s',
+    blockers,
+    warnings,
+  };
+}
+
 async function managePrs(prNumber = '', runner = runGh, options = {}) {
   const prs = loadManagedPrs(prNumber, runner).filter(Boolean);
 
@@ -508,4 +601,5 @@ module.exports = {
   managePrs,
   summarizeChecks,
   inspectRepositoryRulesets,
+  evaluateStackedPrGovernance,
 };

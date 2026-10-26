@@ -25,7 +25,14 @@
   <a href="#quick-start"><img src="https://img.shields.io/badge/⚡_Quick_Start-npx_thumbgate_init-22d3ee?style=for-the-badge" alt="Quick Start" /></a>
   <a href="https://thumbgate.ai/#demo?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/🎬_Watch-90s_Demo-ff647c?style=for-the-badge" alt="Watch Demo" /></a>
   <a href="https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/💬_Try-ThumbGate_GPT-56e39f?style=for-the-badge" alt="Try GPT" /></a>
-  <a href="https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/💼_Pro-$19/mo-ffd166?style=for-the-badge" alt="Pro Tier" /></a>
+  <a href="https://thumbgate.ai/go/pro-direct?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/💼_Pro-$19/mo-ffd166?style=for-the-badge" alt="Pro Tier" /></a>
+  <a href="https://iganapolsky.gumroad.com/l/vcrho"><img src="https://img.shields.io/badge/📦_Rule--Pack_Kit-$49_One--Time-ff90e8?style=for-the-badge" alt="Production Rule-Pack Kit $49" /></a>
+  <a href="https://buy.stripe.com/bJe28rduQ5v82dz6i73sJ0n"><img src="https://img.shields.io/badge/🚀_One--Time_Pass-$100_No_Subscription-38bdf8?style=for-the-badge" alt="One-Time Pass $100" /></a>
+  <a href="https://thumbgate.ai/diagnostic?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/🛡️_Workflow_Gate-$499_Diagnostic-006e52?style=for-the-badge" alt="Workflow Gate $499" /></a>
+</p>
+
+<p align="center">
+  <code>Set up ThumbGate by reading https://thumbgate.ai/install.md and following its instructions.</code>
 </p>
 
 ---
