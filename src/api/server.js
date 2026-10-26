@@ -569,22 +569,19 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     allowCustomerEmail: true,
     prefillStripeEmail: true,
   },
-  'founding-100': {
-    fallbackHref: 'https://buy.stripe.com/bJe28rduQ5v82dz6i73sJ0n',
-    external: true,
-    botDeflectPath: '/checkout/pro',
-    ctaId: 'pro_checkout_founding_100',
+  'pro-annual': {
+    path: '/checkout/pro?plan_id=pro&billing_cycle=annual',
+    ctaId: 'pro_checkout_annual_149',
     ctaPlacement: 'checkout_interstitial',
-    eventType: 'pro_checkout_direct_stripe',
+    eventType: 'cta_click',
     defaults: {
       utm_source: 'website',
       utm_medium: 'checkout_interstitial',
-      utm_campaign: 'founding_100',
-      plan_id: 'founding_100',
-      billing_cycle: 'one_time',
+      utm_campaign: 'pro_annual_149',
+      plan_id: 'pro',
+      billing_cycle: 'annual',
     },
     allowCustomerEmail: true,
-    prefillStripeEmail: true,
   },
   'bundle-49': {
     fallbackHref: 'https://iganapolsky.gumroad.com/l/vcrho',
@@ -2882,8 +2879,8 @@ ${hiddenInputs}
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
 <a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">→ Skip form — open Stripe checkout directly</a>
-<a class="secondary" data-i="pro_checkout_founding_100" rel="nofollow" href="/go/founding-100?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=founding_100&amp;cta_id=pro_checkout_founding_100&amp;cta_placement=checkout_interstitial">Prefer one-time (no subscription)? Founding Pass — $100 →</a>
-<a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Corporate card (&lt;$50 no-approval)? Production Rule-Pack Kit — $49 one-time →</a>
+<a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Prefer one-time (no subscription)? Production Rule-Pack Kit — $49 →</a>
+<a class="secondary" data-i="pro_checkout_annual_149" rel="nofollow" href="/go/pro-annual?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_annual_149&amp;cta_id=pro_checkout_annual_149&amp;cta_placement=checkout_interstitial">Annual billing (save 35%)? ThumbGate Pro — $149/yr →</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
 <p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages. Email path keeps receipts attributable; skip uses a same-origin hop that bot-deflects crawlers.</p>
 <div class="objection-box" aria-label="Checkout feedback">

@@ -33,7 +33,7 @@ test('evaluateFastMoneyFunnelAndTierLadder validates all 4 monetization tiers an
   assert.equal(healthyFunnel.tiers.tier1Playbook.url, 'https://iganapolsky.gumroad.com/l/odrkon');
   assert.equal(healthyFunnel.tiers.tier2ExpenseBundle.priceUsd, 49.0);
   assert.equal(healthyFunnel.tiers.tier2ExpenseBundle.url, 'https://iganapolsky.gumroad.com/l/vcrho');
-  assert.equal(healthyFunnel.tiers.tier3FoundingOrPro.priceUsd, 100.0);
+  assert.equal(healthyFunnel.tiers.tier3FoundingOrPro.priceUsd, 149.0);
   assert.equal(healthyFunnel.tiers.tier4FdeDiagnostic.priceUsd, 499.0);
 });
 
@@ -53,7 +53,7 @@ test('generatePartnerFlipReply enforces reciprocal-first gate, 50% net rev-share
   assert.equal(reply.slopViolations.length, 0);
   assert.match(reply.text, /Add mine on your side first/);
   assert.match(reply.text, /https:\/\/iganapolsky\.gumroad\.com\/l\/vcrho/);
-  assert.match(reply.text, /https:\/\/buy\.stripe\.com\/bJe28rduQ5v82dz6i73sJ0n/);
+  assert.match(reply.text, /https:\/\/thumbgate\.ai\/go\/pro-direct/);
   assert.match(reply.text, /https:\/\/thumbgate\.ai\/diagnostic/);
 });
 
@@ -63,7 +63,7 @@ test('buildFourTierCtaBlock includes all 4 revenue tiers plus MIT CLI', () => {
   assert.match(block, /\$9\.99 Playbook/);
   assert.match(block, /\$49 Complete Production Rule-Pack/);
   assert.match(block, /https:\/\/iganapolsky\.gumroad\.com\/l\/vcrho/);
-  assert.match(block, /\$100 Founding Member Pass/);
+  assert.match(block, /\$19\/mo or \$149\/yr ThumbGate Pro/);
   assert.match(block, /\$499 Enterprise/);
 });
 

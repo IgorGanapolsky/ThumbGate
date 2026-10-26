@@ -37,12 +37,12 @@ const TIER_LADDER = Object.freeze({
     salesNeededFor100PerDay: 2,
   },
   tier3FoundingOrPro: {
-    id: 'tier3_stripe_founding_tier',
-    name: 'ThumbGate Founding Member Pass ($100) / Pro Direct ($19/mo)',
-    priceUsd: 100.0,
+    id: 'tier3_stripe_pro_tier',
+    name: 'ThumbGate Pro ($19/mo or $149/yr Direct Stripe)',
+    priceUsd: 149.0,
     proMonthlyUsd: 19.0,
-    billingType: 'one_time_or_subscription',
-    url: 'https://buy.stripe.com/bJe28rduQ5v82dz6i73sJ0n',
+    billingType: 'subscription_monthly_or_annual',
+    url: 'https://thumbgate.ai/go/pro-direct',
     proDirectUrl: 'https://thumbgate.ai/go/pro-direct',
     salesNeededFor100PerDay: 1,
   },
@@ -152,8 +152,7 @@ function generatePartnerFlipReply({
     '',
     `Also, I saw ${specificPainHook}. That exact operating-loop failure is why I built ThumbGate (https://github.com/IgorGanapolsky/ThumbGate) — a local sub-millisecond PreToolUse firewall that blocks runaway tool calls, git history reward-hacking, and token maxing before they hit the bill.`,
     '',
-    `If you want to feature a concrete teardown of that loop for your readers, I set up a $100 Founding Tier here: ${TIER_LADDER.tier3FoundingOrPro.url} (plus a $49 one-time Production Rule-Pack Bundle at ${TIER_LADDER.tier2ExpenseBundle.url} and a $499 hands-on Workflow Gate Diagnostic at ${TIER_LADDER.tier4FdeDiagnostic.url}). Happy to share a ${partnerRevSharePct}% partner cut strictly out of net collected checkouts from any buyers you send over.`,
-    '',
+    `If you want to feature a concrete teardown of that loop for your readers, I set up a $49 one-time Production Rule-Pack Bundle here: ${TIER_LADDER.tier2ExpenseBundle.url} (plus $19/mo Pro Direct at ${TIER_LADDER.tier3FoundingOrPro.url} and a $499 hands-on Workflow Gate Diagnostic at ${TIER_LADDER.tier4FdeDiagnostic.url}). Happy to share a ${partnerRevSharePct}% partner cut strictly out of net collected checkouts from any buyers you send over.`,
     'Best,',
     'Igor',
   ];
@@ -176,7 +175,7 @@ function buildFourTierCtaBlock({ gumroadBundleUrl = TIER_LADDER.tier2ExpenseBund
     `• Free Open-Source CLI (MIT): npx thumbgate@latest init (https://github.com/IgorGanapolsky/ThumbGate)`,
     `• $9.99 Playbook (Laguna 2.1 DFlash + AKV Cache Engineering): ${TIER_LADDER.tier1Playbook.url}`,
     `• $49 Complete Production Rule-Pack & DPO/AKV Kit (1-Time Expense): ${gumroadBundleUrl}`,
-    `• $100 Founding Member Pass / $19/mo Pro: ${TIER_LADDER.tier3FoundingOrPro.url}`,
+    `• $19/mo or $149/yr ThumbGate Pro (Direct Stripe): ${TIER_LADDER.tier3FoundingOrPro.url}`,
     `• $499 Enterprise / FDE Workflow Hardening Diagnostic: ${TIER_LADDER.tier4FdeDiagnostic.url}`,
   ].join('\n');
 }
@@ -187,7 +186,7 @@ function compileOpenUiLangPricingAndCarouselStream() {
     'heroCard = Card([Heading("Stop AI Agent Mistakes & Token Maxing in <0.5ms"), Badge("0.041ms p95 Local CPU")])',
     `tier1Card = Card([CardHeader("$9.99 Playbook"), TextContent("Laguna 2.1 DFlash + AKV Cache Engineering"), CtaButton("${TIER_LADDER.tier1Playbook.url}")])`,
     `tier2Card = Card([CardHeader("$49 Production Bundle"), TextContent("40 PreToolUse Gates + Multi-Agent Configs (No Manager Approval Needed)"), CtaButton("${TIER_LADDER.tier2ExpenseBundle.url}")])`,
-    `tier3Card = Card([CardHeader("$100 Founding Pass / $19/mo Pro"), TextContent("Unlimited Recall, DPO Export & Signed Receipts"), CtaButton("${TIER_LADDER.tier3FoundingOrPro.url}")])`,
+    `tier3Card = Card([CardHeader("$19/mo or $149/yr Pro"), TextContent("Unlimited Recall, DPO Export & Signed Receipts"), CtaButton("${TIER_LADDER.tier3FoundingOrPro.url}")])`,
     `tier4Card = Card([CardHeader("$499 Workflow Gate Diagnostic"), TextContent("1 Painful Workflow Hardened with Proof Pack"), CtaButton("${TIER_LADDER.tier4FdeDiagnostic.url}")])`,
   ].join('\n');
 
