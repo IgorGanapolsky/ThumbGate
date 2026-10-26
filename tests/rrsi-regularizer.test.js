@@ -1237,6 +1237,7 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
     evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate,
     evaluateTokenGateLearnedPrefillPruningAndGatedAttention,
     evaluateSweAfHierarchicalFactoryAndDebtPropagationGate,
+    evaluateEntireTrailsStopCopAndSessionSearchGate,
   } = require('../scripts/rrsi-doctor');
   const sycophanticInterruptedLoop = evaluateElephantGoldfishAutonomousSanctuaryLoop({
     goalStatement: 'Organize workspace projects in Obsidian and sync repo/obsidian/',
@@ -1612,4 +1613,17 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
   assert.ok(badSweAf.blockers.includes('replanner_crash_fallback_must_default_to_continue_not_abort'));
   assert.ok(badSweAf.blockers.includes('never_silently_drop_relaxed_acceptance_criteria_propagate_typed_debt_notes_downstream'));
   assert.equal(evaluateSweAfHierarchicalFactoryAndDebtPropagationGate().allowed, true);
+
+  // 25. Entire Trails Agentic Code Review, "Stop Cop" HUD & Dual-Engine Session Search
+  const badEntire = evaluateEntireTrailsStopCopAndSessionSearchGate({
+    capturesRejectedApproachesAndWorkingCodeDisapprovalAsDpo: false,
+    stopCopEvalGreen: false,
+    parallelCleanupReviewerCount: 1,
+    runsOnExistingGitForgeAtZeroHotPathLlmCost: false,
+  });
+  assert.equal(badEntire.allowed, false);
+  assert.ok(badEntire.blockers.includes('trail_must_link_original_intent_multi_repo_diffs_and_rejected_approach_dpo_checkpoints'));
+  assert.ok(badEntire.blockers.includes('stop_cop_eval_or_intent_match_confidence_below_merge_threshold'));
+  assert.ok(badEntire.blockers.includes('avoid_forced_git_forge_migration_and_per_push_llm_token_markup_use_local_pretooluse_stop_cop'));
+  assert.equal(evaluateEntireTrailsStopCopAndSessionSearchGate().allowed, true);
 });

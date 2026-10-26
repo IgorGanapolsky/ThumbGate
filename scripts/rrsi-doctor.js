@@ -3639,6 +3639,54 @@ function evaluateSweAfHierarchicalFactoryAndDebtPropagationGate({
   };
 }
 
+// 25. Entire Trails Agentic Code Review, "Stop Cop" HUD & Dual-Engine Session Search (`https://entire.com/` & `https://thenewstack.io/entire-trails-agentic-code-review/`):
+//     - Replaces manual line-by-line PR reading with an Eval-Driven "Pilot Head-Up Display" (`Trails`) that links:
+//       (1) original goal/intent, (2) agent session checkpoints (including rejected approaches / "working code wasn't what I wanted" DPO pairs),
+//       (3) multi-repo branches under one `trailId`, and (4) automated Monitors + the `"Stop Cop"` eval gate.
+//     - 4 Parallel Cleanup Reviewers consolidated by 1 Judge (`--set-agents`, `--set-judge`) with proactive pushback to the authoring agent.
+//     - 6-Stage Push-to-Searchable Indexing (`push -> indexer -> strip_scaffolding -> chunk_700_tok -> embed_bm25_ann -> at_least_once_retry_lane`)
+//       powering Dual-Engine Agentic Search (exact symbol-aware code search + semantic session/commit "why" search: 81/90 vs 70/90 accuracy, -52% tokens).
+//     - THUMBGATE MOAT: Entire requires migrating off GitHub to a new forge and charges LLM token markup after a $100 credit;
+//       ThumbGate runs natively on existing GitHub/GitLab repos at $0.00 hot-path LLM cost (`0.042ms` local PreToolUse "Stop Cop" firewall).
+function evaluateEntireTrailsStopCopAndSessionSearchGate({
+  linksIntentSessionCheckpointsAndMultiRepoDiffInTrail = true,
+  capturesRejectedApproachesAndWorkingCodeDisapprovalAsDpo = true,
+  stopCopEvalGreen = true,
+  intentMatchConfidence = 0.94,
+  minIntentMatchConfidence = 0.85,
+  parallelCleanupReviewerCount = 4,
+  consolidatesReviewsWithSingleJudgeAndPushesBackToAgent = true,
+  stripsToolScaffoldingInto700TokenPassagesWithRetryLane = true,
+  redactsSecretsLocallyBeforeSessionStorage = true,
+  runsOnExistingGitForgeAtZeroHotPathLlmCost = true,
+} = {}) {
+  const blockers = [];
+
+  if (!linksIntentSessionCheckpointsAndMultiRepoDiffInTrail || !capturesRejectedApproachesAndWorkingCodeDisapprovalAsDpo) {
+    blockers.push('trail_must_link_original_intent_multi_repo_diffs_and_rejected_approach_dpo_checkpoints');
+  }
+  if (!stopCopEvalGreen || Number(intentMatchConfidence) < Number(minIntentMatchConfidence)) {
+    blockers.push('stop_cop_eval_or_intent_match_confidence_below_merge_threshold');
+  }
+  if (Number(parallelCleanupReviewerCount) < 4 || !consolidatesReviewsWithSingleJudgeAndPushesBackToAgent) {
+    blockers.push('require_4_parallel_cleanup_reviewers_consolidated_by_single_judge_with_agent_pushback');
+  }
+  if (!stripsToolScaffoldingInto700TokenPassagesWithRetryLane || !redactsSecretsLocallyBeforeSessionStorage) {
+    blockers.push('session_indexer_must_redact_secrets_strip_scaffolding_chunk_700_tokens_and_use_retry_lane');
+  }
+  if (!runsOnExistingGitForgeAtZeroHotPathLlmCost) {
+    blockers.push('avoid_forced_git_forge_migration_and_per_push_llm_token_markup_use_local_pretooluse_stop_cop');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    stopCopEvalGreen: Boolean(stopCopEvalGreen),
+    intentMatchConfidence: Number(intentMatchConfidence) || 0,
+    parallelCleanupReviewerCount: Number(parallelCleanupReviewerCount) || 0,
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['sdd-visualizer']) {
@@ -3801,6 +3849,11 @@ function runCli(argv = process.argv.slice(2)) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     return report.allowed ? 0 : 1;
   }
+  if (args['entire-trails']) {
+    const report = evaluateEntireTrailsStopCopAndSessionSearchGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
   const report = auditRRSI();
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   return report.status === 'PASS' ? 0 : 1;
@@ -3840,7 +3893,8 @@ if (require.main === module) {
     args.includes('--arc-agi-3-harness') ||
     args.includes('--witness-dsse') ||
     args.includes('--tokengate-prefill') ||
-    args.includes('--swe-af-factory')
+    args.includes('--swe-af-factory') ||
+    args.includes('--entire-trails')
   ) {
     process.exit(runCli(args));
   }
@@ -3974,5 +4028,6 @@ module.exports = {
   evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate,
   evaluateTokenGateLearnedPrefillPruningAndGatedAttention,
   evaluateSweAfHierarchicalFactoryAndDebtPropagationGate,
+  evaluateEntireTrailsStopCopAndSessionSearchGate,
   runCli,
 };
