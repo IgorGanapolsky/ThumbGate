@@ -4058,7 +4058,7 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
       environmental: { color: 'var(--orange)', label: 'Environmental noise/flakiness' },
       app_change: { color: 'var(--cyan)', label: 'Expected application behavior change' },
     }[failureType] || { color: 'var(--text-muted)', label: failureType };
-    techParts.push(`<tr><td class=\"label\">Failure Type</td><td><span style=\"color:${failureMeta.color};font-weight:600\">${esc(failureType)}</span> <span style=\"color:var(--text-muted);font-size:11px\">(${failureMeta.label})</span></td></tr>`);
+    techParts.push(`<tr><td class="label">Failure Type</td><td><span style="color:${failureMeta.color};font-weight:600">${esc(failureType)}</span> <span style="color:var(--text-muted);font-size:11px">(${esc(failureMeta.label)})</span></td></tr>`);
   }
   if (skill) techParts.push(`<tr><td class="label">Skill</td><td><code>${esc(skill)}</code></td></tr>`);
   if (source) techParts.push(`<tr><td class="label">Source</td><td>${esc(source)}</td></tr>`);
@@ -7197,6 +7197,19 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'AI Malpractice Prevention page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/install.md') {
+      try {
+        const installMdPath = path.join(PUBLIC_DIR, 'install.md');
+        const body = fs.readFileSync(installMdPath, 'utf-8');
+        res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+        if (!isHeadRequest) res.end(body);
+        else res.end();
+      } catch {
+        sendJson(res, 404, { error: 'install.md not found' });
       }
       return;
     }

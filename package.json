@@ -586,7 +586,7 @@
     "revenue:truth": "bash bin/revenue-truth.sh",
     "revenue:doctor": "node scripts/revenue-observability-doctor.js",
     "rrsi:doctor": "node scripts/rrsi-doctor.js",
-    "test:rrsi": "node --test tests/rrsi-regularizer.test.js tests/a-plus-stack.test.js tests/cuda-gate-batch.test.js tests/fast-money-engine.test.js tests/spotify-confidence-diode.test.js tests/thumbgate-dream.test.js",
+    "test:rrsi": "node --test tests/rrsi-regularizer.test.js tests/a-plus-stack.test.js tests/cuda-gate-batch.test.js tests/fast-money-engine.test.js tests/spotify-confidence-diode.test.js tests/thumbgate-dream.test.js tests/checkout-recovery.test.js",
     "harness-ceiling:doctor": "node scripts/harness-ceiling-doctor.js",
     "test:harness-ceiling": "node --test tests/harness-ceiling.test.js",
     "decisive-step:doctor": "node scripts/decisive-step-doctor.js",
