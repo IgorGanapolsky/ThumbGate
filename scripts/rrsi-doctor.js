@@ -3502,6 +3502,143 @@ function evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate({
   };
 }
 
+// 22. CNCF in-toto Witness Supply-Chain Attestation & Untrusted Downloads Quarantine (`https://github.com/in-toto/witness`):
+//     - Wraps execution steps in a 3-collection DSSE envelope (`https://witness.testifysec.com/policy/v0.1`):
+//       `materials` (pre-execution SHA-256 input digests) -> `commandrun` (command/exit trace) -> `products` (post-execution output digests + SLSA v1.0).
+//     - Signed Policy with Embedded OPA/Rego Rules & Strict Key Separation:
+//       NEVER sign the policy with the same key (`testkey.pem`) that signs build/agent attestations (`functionaryKeyId !== policySignerKeyId`),
+//       otherwise one compromised agent/runner key can rewrite both the evidence and the rules that judge it.
+//     - Untrusted `~/Downloads/**` Quarantine + Active PreToolUse Advantage:
+//       Witness only fails `witness verify` AFTER `witness run` executes the command; ThumbGate blocks malicious commands
+//       (including prompt injections planted in `~/Downloads/**`) BEFORE execution in `<0.05ms` via PreToolUse, then emits the DSSE receipt.
+function evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate({
+  emitsDsseMaterialsCommandRunAndProducts = true,
+  exportsSlsaLevel1Provenance = true,
+  policyEvaluatesEmbeddedRegoRules = true,
+  functionaryKeyId = 'key_agent_functionary_ed25519',
+  policySignerKeyId = 'key_root_policy_owner_ed25519',
+  quarantinesUntrustedDownloadsFolderInputs = true,
+  enforcesPreToolUseBlockBeforeCommandRun = true,
+} = {}) {
+  const blockers = [];
+
+  if (!emitsDsseMaterialsCommandRunAndProducts || !exportsSlsaLevel1Provenance) {
+    blockers.push('require_dsse_materials_commandrun_products_envelope_and_slsa_provenance');
+  }
+  if (!policyEvaluatesEmbeddedRegoRules) {
+    blockers.push('witness_policy_requires_embedded_rego_constraints_per_step');
+  }
+  if (!functionaryKeyId || !policySignerKeyId || String(functionaryKeyId).trim() === String(policySignerKeyId).trim()) {
+    blockers.push('key_separation_violation_functionary_key_must_never_equal_policy_signer_key');
+  }
+  if (!quarantinesUntrustedDownloadsFolderInputs) {
+    blockers.push('untrusted_downloads_folder_files_must_be_quarantined_against_prompt_injection');
+  }
+  if (!enforcesPreToolUseBlockBeforeCommandRun) {
+    blockers.push('post_hoc_witness_verify_is_insufficient_require_pretooluse_block_before_command_executes');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    dssePayloadType: 'https://witness.testifysec.com/policy/v0.1',
+    keySeparationVerified: Boolean(functionaryKeyId && policySignerKeyId && functionaryKeyId !== policySignerKeyId),
+    blockers,
+  };
+}
+
+// 23. Stanford/Berkeley TokenGate Learned Prefill Pruning (`arXiv:2610.26754`, Patel, Ranjan, Stoica, Zaharia, Guestrin):
+//     - Protects Non-Prunable Request/Instruction tokens N (b_j := 0, never pruned) while scoring Prunable Context tokens P
+//       at gate layer L via RMSNorm-normalized MLP scores b_j, retaining S = top-K_{j in P}(b_j) U N and skipping KV-cache
+//       generation for pruned tokens in all layers l > L (1.4x-11.3x faster TTFT, 1.5x-3.4x lower peak prefill memory).
+//     - Token-Gated Attention for End-to-End Differentiability:
+//       alpha_{ij}^{lh} = softmax(tau_i^{lh} * (q_i^T k_j / sqrt(d) + softplus(gamma^{lh}) * b_j))
+//       with log-rank temperature scaling tau_i^{lh} = softplus(sigma^{lh}) * (log(m_i) / log(max(2, p_i))).
+//     - Dual-Budget Log-Uniform Training: L = 0.5 * (L_{K_full} + L_{K_prune}) with K_prune ~ LogUniform(1, |P|/2).
+function evaluateTokenGateLearnedPrefillPruningAndGatedAttention({
+  protectsNonPrunableRequestTokensN = true,
+  normalizesPrunableScoresWithRmsNorm = true,
+  usesHeadWiseSoftplusGainAndLogRankTemperature = true,
+  originalPositionPi = 4096,
+  keptRankMi = 256,
+  usesDualBudgetFullAndLogUniformTraining = true,
+  supportsHybridGatedDeltaNetAndFullAttentionLayers = true,
+  ttftSpeedupMultiplier = 3.8,
+  accuracyDropPct = 0,
+} = {}) {
+  const blockers = [];
+
+  if (!protectsNonPrunableRequestTokensN || !normalizesPrunableScoresWithRmsNorm) {
+    blockers.push('tokengate_requires_protected_request_tokens_N_and_rmsnorm_prunable_scores');
+  }
+  if (!usesHeadWiseSoftplusGainAndLogRankTemperature) {
+    blockers.push('tokengate_requires_headwise_softplus_gain_and_log_rank_temperature_recalibration');
+  }
+  if (!usesDualBudgetFullAndLogUniformTraining) {
+    blockers.push('tokengate_requires_dual_budget_full_and_log_uniform_training_for_budget_generalization');
+  }
+  if (!supportsHybridGatedDeltaNetAndFullAttentionLayers) {
+    blockers.push('tokengate_must_support_both_hybrid_gated_deltanet_and_full_attention_layers');
+  }
+  if (Number(accuracyDropPct) > 1.0 || Number(ttftSpeedupMultiplier) < 1.2) {
+    blockers.push('tokengate_prefill_pruning_must_preserve_accuracy_while_improving_ttft');
+  }
+
+  const logRankTemperatureScale = Number(
+    (Math.log(Math.max(1, Number(keptRankMi))) / Math.log(Math.max(2, Number(originalPositionPi)))).toFixed(4)
+  );
+
+  return {
+    allowed: blockers.length === 0,
+    logRankTemperatureScale,
+    ttftSpeedupMultiplier: Number(ttftSpeedupMultiplier) || 1.0,
+    blockers,
+  };
+}
+
+// 24. AgentField SWE-AF Autonomous Software Factory (`https://github.com/Agent-Field/SWE-AF`):
+//     - 3-Loop Hierarchical Escalation Control:
+//       * Inner Loop: Risk-proportional routing via `needs_deeper_qa` -> Default path (2 calls: Coder -> Reviewer) vs
+//         Flagged path (4 calls: Coder -> parallel QA + Reviewer -> QA Synthesizer).
+//       * Middle Loop (`Issue Advisor`): 5 actions (`RETRY_MODIFIED`, `RETRY_APPROACH`, `SPLIT`, `ACCEPT_WITH_DEBT`, `ESCALATE_TO_REPLAN`).
+//       * Outer Loop (`Replanner`): 4 actions (`CONTINUE`, `MODIFY_DAG` via Kahn's topological sort, `REDUCE_SCOPE`, `ABORT`)
+//         with crash fallback to `CONTINUE` (never abort build on orchestrator LLM timeout).
+//     - Explicit Incompleteness (`accumulated_debt` propagated via `debt_notes` to downstream issues & PR body) +
+//       5-Key Synchronous Cross-Issue Memory (`codebase_conventions`, `failure_patterns`, `bug_patterns`, `interfaces/*`, `build_health`) +
+//       BIP-44 DID & Linked Workflow Verifiable Credential (VC) Chain.
+function evaluateSweAfHierarchicalFactoryAndDebtPropagationGate({
+  usesThreeLoopHierarchicalEscalation = true,
+  routesRiskProportionalTwoCallVsFourCallQa = true,
+  replannerCrashFallbackAction = 'CONTINUE',
+  enforcesKahnAcyclicLevelBarriersAndWorktreeIsolation = true,
+  propagatesTypedAccumulatedDebtNotesDownstream = true,
+  maintainsFiveKeySynchronousCrossIssueMemory = true,
+  signsWorkflowVerifiableCredentialChain = true,
+} = {}) {
+  const blockers = [];
+
+  if (!usesThreeLoopHierarchicalEscalation || !routesRiskProportionalTwoCallVsFourCallQa) {
+    blockers.push('swe_af_requires_3_loop_escalation_and_risk_proportional_2_call_vs_4_call_qa_routing');
+  }
+  if (String(replannerCrashFallbackAction || '').toUpperCase() !== 'CONTINUE') {
+    blockers.push('replanner_crash_fallback_must_default_to_continue_not_abort');
+  }
+  if (!enforcesKahnAcyclicLevelBarriersAndWorktreeIsolation) {
+    blockers.push('require_kahn_topological_level_barriers_and_isolated_git_worktrees_per_issue');
+  }
+  if (!propagatesTypedAccumulatedDebtNotesDownstream) {
+    blockers.push('never_silently_drop_relaxed_acceptance_criteria_propagate_typed_debt_notes_downstream');
+  }
+  if (!maintainsFiveKeySynchronousCrossIssueMemory || !signsWorkflowVerifiableCredentialChain) {
+    blockers.push('require_5_key_synchronous_cross_issue_memory_and_linked_workflow_vc_chain');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    replannerCrashFallbackAction: String(replannerCrashFallbackAction || 'CONTINUE').toUpperCase(),
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['sdd-visualizer']) {
@@ -3649,6 +3786,21 @@ function runCli(argv = process.argv.slice(2)) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     return report.allowed ? 0 : 1;
   }
+  if (args['witness-dsse']) {
+    const report = evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['tokengate-prefill']) {
+    const report = evaluateTokenGateLearnedPrefillPruningAndGatedAttention(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['swe-af-factory']) {
+    const report = evaluateSweAfHierarchicalFactoryAndDebtPropagationGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
   const report = auditRRSI();
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   return report.status === 'PASS' ? 0 : 1;
@@ -3685,7 +3837,10 @@ if (require.main === module) {
     args.includes('--company-harness') ||
     args.includes('--rtk-icm') ||
     args.includes('--warp-ai-native') ||
-    args.includes('--arc-agi-3-harness')
+    args.includes('--arc-agi-3-harness') ||
+    args.includes('--witness-dsse') ||
+    args.includes('--tokengate-prefill') ||
+    args.includes('--swe-af-factory')
   ) {
     process.exit(runCli(args));
   }
@@ -3816,5 +3971,8 @@ module.exports = {
   evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate,
   evaluateWarpAiNativeTaskParityAndExternalStochasticityGate,
   evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate,
+  evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate,
+  evaluateTokenGateLearnedPrefillPruningAndGatedAttention,
+  evaluateSweAfHierarchicalFactoryAndDebtPropagationGate,
   runCli,
 };

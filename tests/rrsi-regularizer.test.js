@@ -1234,6 +1234,9 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
     evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate,
     evaluateWarpAiNativeTaskParityAndExternalStochasticityGate,
     evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate,
+    evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate,
+    evaluateTokenGateLearnedPrefillPruningAndGatedAttention,
+    evaluateSweAfHierarchicalFactoryAndDebtPropagationGate,
   } = require('../scripts/rrsi-doctor');
   const sycophanticInterruptedLoop = evaluateElephantGoldfishAutonomousSanctuaryLoop({
     goalStatement: 'Organize workspace projects in Obsidian and sync repo/obsidian/',
@@ -1574,4 +1577,39 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
   assert.ok(badArcHarness.blockers.includes('harness_adaptation_gap_exceeded_dev_gains_overfit_and_fail_to_transfer_to_held_out_tasks'));
   assert.ok(badArcHarness.blockers.includes('cheaper_rhae_down_cost_contraction_trap_cost_reduction_degraded_held_out_task_performance'));
   assert.equal(evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate().allowed, true);
+
+  // 22. CNCF in-toto Witness Supply-Chain Attestation & Untrusted Downloads Quarantine
+  const badWitness = evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate({
+    functionaryKeyId: 'testkey.pem',
+    policySignerKeyId: 'testkey.pem',
+    quarantinesUntrustedDownloadsFolderInputs: false,
+    enforcesPreToolUseBlockBeforeCommandRun: false,
+  });
+  assert.equal(badWitness.allowed, false);
+  assert.ok(badWitness.blockers.includes('key_separation_violation_functionary_key_must_never_equal_policy_signer_key'));
+  assert.ok(badWitness.blockers.includes('untrusted_downloads_folder_files_must_be_quarantined_against_prompt_injection'));
+  assert.ok(badWitness.blockers.includes('post_hoc_witness_verify_is_insufficient_require_pretooluse_block_before_command_executes'));
+  assert.equal(evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate().allowed, true);
+
+  // 23. Stanford/Berkeley TokenGate Learned Prefill Pruning (arXiv:2610.26754)
+  const badTokenGate = evaluateTokenGateLearnedPrefillPruningAndGatedAttention({
+    protectsNonPrunableRequestTokensN: false,
+    usesHeadWiseSoftplusGainAndLogRankTemperature: false,
+    usesDualBudgetFullAndLogUniformTraining: false,
+  });
+  assert.equal(badTokenGate.allowed, false);
+  assert.ok(badTokenGate.blockers.includes('tokengate_requires_protected_request_tokens_N_and_rmsnorm_prunable_scores'));
+  assert.ok(badTokenGate.blockers.includes('tokengate_requires_headwise_softplus_gain_and_log_rank_temperature_recalibration'));
+  assert.equal(evaluateTokenGateLearnedPrefillPruningAndGatedAttention().allowed, true);
+
+  // 24. AgentField SWE-AF Autonomous Software Factory (3-loop escalation, debt propagation, DID/VC chain)
+  const badSweAf = evaluateSweAfHierarchicalFactoryAndDebtPropagationGate({
+    replannerCrashFallbackAction: 'ABORT',
+    propagatesTypedAccumulatedDebtNotesDownstream: false,
+    signsWorkflowVerifiableCredentialChain: false,
+  });
+  assert.equal(badSweAf.allowed, false);
+  assert.ok(badSweAf.blockers.includes('replanner_crash_fallback_must_default_to_continue_not_abort'));
+  assert.ok(badSweAf.blockers.includes('never_silently_drop_relaxed_acceptance_criteria_propagate_typed_debt_notes_downstream'));
+  assert.equal(evaluateSweAfHierarchicalFactoryAndDebtPropagationGate().allowed, true);
 });
