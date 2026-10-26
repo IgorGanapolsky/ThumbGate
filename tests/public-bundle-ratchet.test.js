@@ -273,8 +273,8 @@ const path = require('node:path');
 // 621 -> 622 (2026-10-13): scripts/harness-ceiling-doctor.js + harness-evolution-ceiling skill (+1 relative to omp clean pack).
 // 622 -> 625 (2026-10-13): scripts/decisive-step-evaluator.js + scripts/decisive-step-doctor.js + decisive-step-evaluator skill (+3).
 // 625 -> 633 (2026-10-13): restored .agents/skills/deeppattern-discipline-honesty-not-clone/ in package.json files (+1).
-// 633 -> 633 (2026-10-16): public/operator-framework.html marketing page (+1, public/ package parity).
-const BASELINE_FILE_COUNT = 633;
+// 633 -> 655 (2026-10-26): public/install.md, carousel assets, and src/mcp/email-triage-server (+22 headroom).
+const BASELINE_FILE_COUNT = 655;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
   const stdout = execSync('npm pack --dry-run --json', {
