@@ -117,8 +117,15 @@ async function createGumroadProduct(draft, pdfPath) {
   const ctx = (await browser.contexts())[0];
   const pages = await ctx.pages();
   
-  // Find or create Gumroad page
-  let gumPage = pages.find(p => p.url().includes('gumroad.com'));
+  // Find or create Gumroad page using strict hostname validation
+  let gumPage = pages.find((p) => {
+    try {
+      const host = new URL(p.url()).hostname.toLowerCase();
+      return host === 'gumroad.com' || host.endsWith('.gumroad.com');
+    } catch {
+      return false;
+    }
+  });
   if (!gumPage) {
     gumPage = await ctx.newPage();
   }
