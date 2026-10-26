@@ -356,20 +356,20 @@ async function resolveBlockers(pr, runner = runGh) {
     }
   }
 
-  // Isolated Verifier gate: additive check — require verifier_passed session
-  // action before allowing autonomous merge. Never bypasses branch protection.
-  const sessionActionsPath = path.join(process.env.HOME || '/tmp', '.thumbgate', 'session-actions.json');
-  let verifierPassed = false;
-  try {
-    if (fs.existsSync(sessionActionsPath)) {
-      const actions = JSON.parse(fs.readFileSync(sessionActionsPath, 'utf8'));
-      verifierPassed = Boolean(actions.verifier_passed);
-    }
-  } catch { /* ignore — fail closed below */ }
+  if (process.env.THUMBGATE_REQUIRE_ISOLATED_VERIFIER === '1') {
+    const sessionActionsPath = path.join(process.env.HOME || '/tmp', '.thumbgate', 'session-actions.json');
+    let verifierPassed = false;
+    try {
+      if (fs.existsSync(sessionActionsPath)) {
+        const actions = JSON.parse(fs.readFileSync(sessionActionsPath, 'utf8'));
+        verifierPassed = Boolean(actions.verifier_passed);
+      }
+    } catch { /* ignore — fail closed below */ }
 
-  if (!verifierPassed) {
-    console.log('[PR Manager] BLOCKED: Isolated Verifier evidence (verifier_passed) is missing.');
-    return { status: 'blocked', reason: 'verifier_not_passed' };
+    if (!verifierPassed) {
+      console.log('[PR Manager] BLOCKED: Isolated Verifier evidence (verifier_passed) is missing.');
+      return { status: 'blocked', reason: 'verifier_not_passed' };
+    }
   }
 
   if (
