@@ -17,8 +17,8 @@ description: Automate the 8-step high-converting social carousel and lead-magnet
 - Every carousel must route to a live, `HTTP 200` verified lead magnet and checkout ladder **before** rendering or staging:
   - **Free Lead Magnet / CLI:** `npx thumbgate@latest init` (`https://github.com/IgorGanapolsky/ThumbGate`)
   - **`$9.99` Playbook:** `https://iganapolsky.gumroad.com/l/odrkon`
-  - **`$49.00` One-Time Corporate-Expense Bundle:** `https://iganapolsky.gumroad.com/l/xtghec`
-  - **`$100.00` Founding Tier:** `https://buy.stripe.com/bJe28rduQ5v82dz6i73sJ0n`
+  - **`$49.00` One-Time Corporate-Expense Bundle:** `https://iganapolsky.gumroad.com/l/vcrho`
+  - **`$100.00` Founding Tier:** `https://thumbgate.ai/go/pro-direct`
   - **`$499.00` Workflow Gate Diagnostic:** `https://thumbgate.ai/diagnostic`
 
 ### Step 3: Engineer the Hook Slide (Slide 1)

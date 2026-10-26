@@ -36,7 +36,7 @@ To reach **`$100/day`** with minimum friction, every outbound post, partner repl
    - Why it converts faster: Engineers can expense `< $50` one-time tools on corporate cards without manager approval or recurring-subscription procurement review.
    - Volume target: 2 sales/day = `$98.00/day`.
 3. **Tier 3 — Founding Member / Pro Tier (`$100.00` One-Time Pass or `$19/mo` Pro on Stripe):**
-   - URL (Founding `$100` One-Time): `https://buy.stripe.com/bJe28rduQ5v82dz6i73sJ0n`
+   - URL (Founding `$100` One-Time): `https://thumbgate.ai/go/pro-direct`
    - URL (Pro `$19/mo` 1-Click Direct): `https://thumbgate.ai/go/pro-direct` (`https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f`)
    - Volume target: 1 Founding sale/day = `$100.00/day`.
 4. **Tier 4 — Enterprise / FDE Workflow Hardening Diagnostic (`$499.00` on Stripe):**

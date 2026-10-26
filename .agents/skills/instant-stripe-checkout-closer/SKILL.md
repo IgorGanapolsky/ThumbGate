@@ -1,6 +1,6 @@
 ---
 name: instant-stripe-checkout-closer
-description: Diagnose checkout funnel drop-offs, enforce 1-click direct Stripe bypass (/go/pro-direct, $100 Founding Tier, $499 Diagnostic), and run signed-receipt abandoned checkout recovery. Use when conversion rate drops, checkoutInterstitialViews spike with 0 clicks, or checkoutCancelPageViews > 0.
+description: Diagnose checkout funnel drop-offs, enforce 1-click direct Stripe bypass (/go/pro-direct, $19/mo or $149/yr ThumbGate Pro, $499 Diagnostic), and run signed-receipt abandoned checkout recovery. Use when conversion rate drops, checkoutInterstitialViews spike with 0 clicks, or checkoutCancelPageViews > 0.
 ---
 
 # Instant Stripe Checkout Closer
@@ -14,7 +14,7 @@ Eliminate checkout interstitial friction between buyer intent (`go_pro` / `go_gp
 | Tier | Price | Canonical URL | When to Route |
 | --- | --- | --- | --- |
 | **Pro Direct (Monthly)** | `$19/mo` | `https://thumbgate.ai/go/pro-direct` (`https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f`) | Solo developer self-serve (skips email wall for human browsers; deflects bots to `/checkout/pro`) |
-| **Founding Tier (One-Time)** | `$100` | `https://buy.stripe.com/bJe28rduQ5v82dz6i73sJ0n` | Founders, newsletter subscribers, and buyers who want zero recurring billing |
+| **Founding Tier (One-Time)** | `$100` | `https://thumbgate.ai/go/pro-direct` | Founders, newsletter subscribers, and buyers who want zero recurring billing |
 | **Workflow Gate Diagnostic** | `$499` | `https://thumbgate.ai/diagnostic` (`/go/diagnostic`) | Engineering teams with one painful agent workflow failure or FDEs deploying for clients |
 
 ## Workflow

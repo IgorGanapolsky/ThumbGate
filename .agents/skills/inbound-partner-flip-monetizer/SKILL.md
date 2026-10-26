@@ -10,7 +10,7 @@ description: Convert inbound newsletter, podcast, Boardy, Substack, LinkedIn, an
 1. **Zero Outbound Cash Spend (`outboundCashSpendUsd === 0`):** Never pay for sponsorships, ad slots, external SaaS tiers, or upfront wires.
 2. **Reciprocal Distribution Proof First:** When a newsletter/creator (e.g., Substack recommendation swap) has a smaller list or high outbound dilution, require them to add Igor's link first and send a screenshot/URL before adding theirs.
 3. **Two-Tier Monetization Hook in Every Reply:**
-   - **Direct Purchase / Bundle:** `$100` Founding Tier (`https://buy.stripe.com/bJe28rduQ5v82dz6i73sJ0n`) or `$499` Managed Workflow Gate Diagnostic (`https://thumbgate.ai/diagnostic`).
+   - **Direct Purchase / Bundle:** `$100` Founding Tier (`https://thumbgate.ai/go/pro-direct`) or `$499` Managed Workflow Gate Diagnostic (`https://thumbgate.ai/diagnostic`).
    - **Self-Liquidating Partner Cut:** Offer a **50% partner revenue share paid strictly out of net cash collected** in Stripe from customers they bring in first (`0` sales = `$0` payout).
 4. **Anti-Bot-Slop Verification (Mandatory):**
    Every generated reply must pass:

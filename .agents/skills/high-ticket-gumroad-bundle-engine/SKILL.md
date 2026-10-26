@@ -14,7 +14,7 @@ description: Package and publish $9.99 Playbooks and $49 One-Time Corporate-Expe
 
 - **Tier 1 (`$9.99` Gumroad Playbook):** `https://iganapolsky.gumroad.com/l/odrkon`
 - **Tier 2 (`$49.00` Gumroad Complete Production Rule-Pack & DPO/AKV Kit):** Published via `scripts/gumroad-product-publisher.js`
-- **Tier 3 (`$100.00` Stripe Founding Tier):** `https://buy.stripe.com/bJe28rduQ5v82dz6i73sJ0n`
+- **Tier 3 (`$100.00` Stripe Founding Tier):** `https://thumbgate.ai/go/pro-direct`
 - **Tier 4 (`$499.00` Stripe Workflow Gate Diagnostic):** `https://thumbgate.ai/diagnostic`
 
 ## Execution Commands

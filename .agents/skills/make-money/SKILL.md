@@ -30,7 +30,7 @@ npm run make:money
    - Generates 30 daily drafts (`10` platforms × `3` posts) wired with the **4-Tier Value Ladder**:
      - **Tier 1 (`$9.99` Playbook):** `https://iganapolsky.gumroad.com/l/odrkon`
      - **Tier 2 (`$49.00` 1-Time Corporate-Expense Kit):** `https://iganapolsky.gumroad.com/l/vcrho`
-     - **Tier 3 (`$100.00` Founding Pass / `$19/mo` Pro):** `https://buy.stripe.com/bJe28rduQ5v82dz6i73sJ0n`
+     - **Tier 3 (`$100.00` Founding Pass / `$19/mo` Pro):** `https://thumbgate.ai/go/pro-direct`
      - **Tier 4 (`$499.00` Workflow Gate Diagnostic):** `https://thumbgate.ai/diagnostic`
    - Generates 9-platform carousel JSONs (`public/assets/carousels/drafts/`) and the 7-slide verified HTML carousel deck (`2026-10-26-linkedin-instagram-carousel-deck.html`).
 4. **Stage 4 — Thesys OpenUI Lang Offer Stream (`compileOpenUiLangPricingAndCarouselStream`):**
