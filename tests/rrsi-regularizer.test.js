@@ -1619,11 +1619,13 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
     capturesRejectedApproachesAndWorkingCodeDisapprovalAsDpo: false,
     stopCopEvalGreen: false,
     parallelCleanupReviewerCount: 1,
+    countAuthorApprovals: true,
     runsOnExistingGitForgeAtZeroHotPathLlmCost: false,
   });
   assert.equal(badEntire.allowed, false);
   assert.ok(badEntire.blockers.includes('trail_must_link_original_intent_multi_repo_diffs_and_rejected_approach_dpo_checkpoints'));
   assert.ok(badEntire.blockers.includes('stop_cop_eval_or_intent_match_confidence_below_merge_threshold'));
+  assert.ok(badEntire.blockers.includes('never_count_author_or_agent_self_approvals_toward_trail_merge_gate'));
   assert.ok(badEntire.blockers.includes('avoid_forced_git_forge_migration_and_per_push_llm_token_markup_use_local_pretooluse_stop_cop'));
   assert.equal(evaluateEntireTrailsStopCopAndSessionSearchGate().allowed, true);
 });

@@ -3658,6 +3658,9 @@ function evaluateEntireTrailsStopCopAndSessionSearchGate({
   consolidatesReviewsWithSingleJudgeAndPushesBackToAgent = true,
   stripsToolScaffoldingInto700TokenPassagesWithRetryLane = true,
   redactsSecretsLocallyBeforeSessionStorage = true,
+  pairsContinuousMemoryWithPreToolUseFirewall = true,
+  blocksHighOrHigherFindingsAndRequiresLatestBase = true,
+  countAuthorApprovals = false,
   runsOnExistingGitForgeAtZeroHotPathLlmCost = true,
 } = {}) {
   const blockers = [];
@@ -3674,12 +3677,19 @@ function evaluateEntireTrailsStopCopAndSessionSearchGate({
   if (!stripsToolScaffoldingInto700TokenPassagesWithRetryLane || !redactsSecretsLocallyBeforeSessionStorage) {
     blockers.push('session_indexer_must_redact_secrets_strip_scaffolding_chunk_700_tokens_and_use_retry_lane');
   }
+  if (!pairsContinuousMemoryWithPreToolUseFirewall || !blocksHighOrHigherFindingsAndRequiresLatestBase) {
+    blockers.push('continuous_memory_cm_must_pair_with_pretooluse_firewall_and_4_pillar_trail_merge_gate');
+  }
+  if (countAuthorApprovals) {
+    blockers.push('never_count_author_or_agent_self_approvals_toward_trail_merge_gate');
+  }
   if (!runsOnExistingGitForgeAtZeroHotPathLlmCost) {
     blockers.push('avoid_forced_git_forge_migration_and_per_push_llm_token_markup_use_local_pretooluse_stop_cop');
   }
 
   return {
     allowed: blockers.length === 0,
+    pillars: ['CI', 'CD', 'CM', 'CF'],
     stopCopEvalGreen: Boolean(stopCopEvalGreen),
     intentMatchConfidence: Number(intentMatchConfidence) || 0,
     parallelCleanupReviewerCount: Number(parallelCleanupReviewerCount) || 0,
