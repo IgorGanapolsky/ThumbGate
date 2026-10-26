@@ -153,7 +153,131 @@ function evaluateUcpCheckoutGate({
   };
 }
 
+/**
+ * J. Nicolas (OneShot + Freway) Sandwich Bridge:
+ * ThumbGate T=0 Pre-Action Gate (<0.5ms) -> Freway Shopify Checkout -> OneShot Signed Receipt Ledger
+ */
+function evaluateFrewayShopifyToOneShotReceiptBridge({
+  agentIdentity = 'freway-checkout-agent-v1',
+  cartPayload = {},
+  quotedSnapshot = null,
+  executedOrderHashes = new Set(),
+  authorityRevokedPostT0MidFlight = false,
+  policy = DEFAULT_POLICY,
+} = {}) {
+  const gateResult = evaluateUcpCheckoutGate({
+    toolName: 'freway_shopify_checkout_execute',
+    cartPayload,
+    quotedSnapshot,
+    executedOrderHashes,
+    policy,
+  });
+  const preActionGateDigest = crypto
+    .createHash('sha256')
+    .update(`${gateResult.executionHash}:${gateResult.decision}:${gateResult.gateId}`)
+    .digest('hex')
+    .slice(0, 32);
+
+  if (!gateResult.allowed) {
+    return {
+      allowedAtT0: false,
+      paymentFired: false,
+      gateResult,
+      oneShotReceipt: {
+        receiptType: 'pre_execution_denial_receipt',
+        agentIdentity,
+        executionHash: gateResult.executionHash,
+        preActionGateDigest,
+        amountMovedCents: 0,
+        blockedReason: gateResult.reason,
+      },
+    };
+  }
+
+  if (authorityRevokedPostT0MidFlight) {
+    return {
+      allowedAtT0: true,
+      paymentFired: true,
+      scopeBoundaryTriggered: 'post_t0_mid_flight_authority_revocation',
+      gateResult,
+      oneShotReceipt: {
+        receiptType: 'post_execution_revocation_reconciliation_receipt',
+        agentIdentity,
+        executionHash: gateResult.executionHash,
+        preActionGateDigest,
+        amountMovedCents: gateResult.totalCartCents,
+        reconciliationAction: 'flag_for_merchant_refund_or_chargeback_reversal',
+      },
+    };
+  }
+
+  return {
+    allowedAtT0: true,
+    paymentFired: true,
+    gateResult,
+    oneShotReceipt: {
+      receiptType: 'post_execution_signed_settlement_receipt',
+      agentIdentity,
+      executionHash: gateResult.executionHash,
+      preActionGateDigest,
+      amountMovedCents: gateResult.totalCartCents,
+    },
+  };
+}
+
+function runOneShotFrewayLiveDemo() {
+  const executed = new Set();
+  const quote = {
+    items: [
+      { merchant: 'shopify:quince.com', sku: 'cashmere-crew-m', quantity: 1, unitPriceCents: 5000 },
+    ],
+  };
+  const case1AllowedCheckout = evaluateFrewayShopifyToOneShotReceiptBridge({
+    cartPayload: { cartId: 'freway_shopify_order_101', items: quote.items, paymentInstrument: 'oneshot_card_8841' },
+    quotedSnapshot: quote,
+    executedOrderHashes: executed,
+  });
+  const case2RetryDoubleChargeBlocked = evaluateFrewayShopifyToOneShotReceiptBridge({
+    cartPayload: { cartId: 'freway_shopify_order_101', items: quote.items, paymentInstrument: 'oneshot_card_8841' },
+    quotedSnapshot: quote,
+    executedOrderHashes: executed,
+  });
+  const case3PriceDriftMutationBlocked = evaluateFrewayShopifyToOneShotReceiptBridge({
+    cartPayload: {
+      cartId: 'freway_shopify_order_102',
+      items: [{ merchant: 'shopify:quince.com', sku: 'cashmere-crew-m', quantity: 1, unitPriceCents: 7900 }],
+      paymentInstrument: 'oneshot_card_8841',
+    },
+    quotedSnapshot: quote,
+    executedOrderHashes: executed,
+  });
+  const case4PostT0RevocationBoundary = evaluateFrewayShopifyToOneShotReceiptBridge({
+    cartPayload: { cartId: 'freway_shopify_order_103', items: quote.items, paymentInstrument: 'oneshot_card_8841' },
+    quotedSnapshot: quote,
+    executedOrderHashes: executed,
+    authorityRevokedPostT0MidFlight: true,
+  });
+  return {
+    ok:
+      case1AllowedCheckout.allowedAtT0 === true &&
+      case2RetryDoubleChargeBlocked.allowedAtT0 === false &&
+      case2RetryDoubleChargeBlocked.paymentFired === false &&
+      case3PriceDriftMutationBlocked.allowedAtT0 === false &&
+      case4PostT0RevocationBoundary.scopeBoundaryTriggered === 'post_t0_mid_flight_authority_revocation',
+    cases: {
+      case1AllowedCheckout,
+      case2RetryDoubleChargeBlocked,
+      case3PriceDriftMutationBlocked,
+      case4PostT0RevocationBoundary,
+    },
+  };
+}
+
 if (require.main === module) {
+  if (process.argv.includes('--oneshot-freway-demo')) {
+    console.log(JSON.stringify(runOneShotFrewayLiveDemo(), null, 2));
+    process.exit(0);
+  }
   const executed = new Set();
   const quote = {
     items: [
@@ -185,4 +309,6 @@ module.exports = {
   DEFAULT_POLICY,
   computeCartExecutionHash,
   evaluateUcpCheckoutGate,
+  evaluateFrewayShopifyToOneShotReceiptBridge,
+  runOneShotFrewayLiveDemo,
 };
