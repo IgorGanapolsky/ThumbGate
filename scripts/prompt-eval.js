@@ -949,7 +949,7 @@ if (isCliInvocation()) {
     console.log(report.pass ? '\u2705 PASS' : `\u274C FAIL (min: ${minScore}%)`);
   }
 
-  process.exit(report.pass ? 0 : 1);
+  process.exitCode = report.pass ? 0 : 1;
 }
 
 module.exports = {
