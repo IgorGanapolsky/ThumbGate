@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="ThumbGate">
   <meta name="author" content="Igor Ganapolsky">
-  <meta name="thumbgate-version" content="1.39.0">
+  <meta name="thumbgate-version" content="1.40.0">
   __GOOGLE_SITE_VERIFICATION_META__
   <link rel="icon" type="image/png" href="/thumbgate-icon.png">
   <link rel="canonical" href="__APP_ORIGIN__/">
@@ -775,6 +775,36 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
       </div>
     </section>
 
+    <section id="cloud-saas" aria-label="ThumbGate Cloud SaaS" style="padding:36px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#0b1018;">
+      <div class="shell">
+        <div class="section-kicker">AWS Cloud · Free Local Forever</div>
+        <p class="section-lede" style="margin:6px 0 12px;"><strong>1. Token Saving (-42%)</strong> · <strong>2. Loop Fixing</strong> · <strong>3. RLHF &amp; DPO Pipeline</strong> · <strong>4. Compliance</strong></p>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+          <a class="button-pro" href="/go/cloud-indie?utm_source=website&amp;utm_medium=cloud_section&amp;utm_campaign=cloud_indie_49&amp;cta_id=cloud_indie_buy&amp;cta_placement=cloud_section&amp;plan_id=cloud_indie" data-offer-link data-cta-id="cloud_indie_buy">Start Cloud Indie — $49/mo</a>
+          <a class="button-primary" href="/go/cloud-startup?utm_source=website&amp;utm_medium=cloud_section&amp;utm_campaign=cloud_startup_199&amp;cta_id=cloud_startup_buy&amp;cta_placement=cloud_section&amp;plan_id=cloud_startup" data-offer-link data-cta-id="cloud_startup_buy" style="text-decoration:none;">Start Cloud Startup — $199/mo</a>
+          <a href="/v1/cloud/integration-guide.md" style="color:var(--cyan);font-size:14px;font-weight:700;">Guide →</a>
+          <input id="calc-llm-spend" type="number" min="50" max="50000" step="50" value="500" aria-label="API Spend" style="width:90px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text);">
+          <span id="calc-monthly-savings" style="font-weight:800;color:var(--green);">$210.00/mo</span>
+          <span id="calc-net-roi" style="font-weight:800;color:var(--cyan);">+$161.00/mo (4.3x ROI)</span>
+        </div>
+        <script>
+          (function(){
+            var input = document.getElementById('calc-llm-spend');
+            var savingsEl = document.getElementById('calc-monthly-savings');
+            var roiEl = document.getElementById('calc-net-roi');
+            if (!input || !savingsEl || !roiEl) return;
+            input.addEventListener('input', function() {
+              var spend = Math.max(0, parseFloat(input.value) || 0);
+              var saved = spend * 0.42;
+              var net = saved - 49;
+              savingsEl.textContent = '$' + saved.toFixed(2) + '/mo';
+              roiEl.textContent = (net >= 0 ? '+$' : '-$') + Math.abs(net).toFixed(2) + '/mo (' + (saved / 49).toFixed(1) + 'x ROI)';
+            });
+          })();
+        </script>
+      </div>
+    </section>
+
     <section class="diagram-strip" id="before-after" aria-label="Before and after ThumbGate">
       <div class="shell">
         <div class="section-kicker">Why it’s called ThumbGate</div>
@@ -884,18 +914,18 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
         <div class="deliverables">
           <article class="deliverable">
             <h3>Failure map</h3>
-            <p>The exact risky action, trigger, accountable owner, current safeguard, and missing proof.</p>
+            <p>Risky action, trigger, owner, proof.</p>
           </article>
           <article class="deliverable">
             <h3>Configured gate</h3>
-            <p>One supported local rule wired to deny, warn, or require a human before execution.</p>
+            <p>Local rule wired to deny or warn.</p>
           </article>
           <article class="deliverable">
             <h3>Regression and rollout proof</h3>
-            <p>The working test, rollout check, rollback boundary, and evidence receipt for the installed gate.</p>
+            <p>Test, rollout, rollback, and receipt.</p>
           </article>
         </div>
-        <div class="boundary"><strong>Boundary:</strong> the offer covers one supported local workflow. Multi-system implementation, legal or compliance certification, guaranteed savings, and hosted team features require separate scope. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
+        <div class="boundary"><strong>Boundary:</strong> one supported local workflow. Multi-system implementation, compliance certification, and hosted team features require separate scope. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
       </div>
     </section>
 
@@ -923,8 +953,8 @@ next      decision recorded before execution</pre>
             </div>
           </div>
           <div class="proof-copy">
-            <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don’t learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default (process-kill/environment-override self-disable floors). Matching destructive actions warn by default and deny in strict mode (managed strict-mode example—not a claim that every free install blocks every risky command automatically).</p>
-            <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
+            <p><strong>Why not a static hook?</strong> Prompts compact away; static hooks don’t learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn by default and deny in strict mode (not a claim that every free install blocks every risky command automatically).</p>
+            <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence →</a>
             <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">Cases</a></p>
           </div>
       </div>
@@ -974,7 +1004,7 @@ next      decision recorded before execution</pre>
 
   <footer>
     <div class="shell footer-inner">
-      <span>ThumbGate · MIT License · npm v1.39.0</span>
+      <span>ThumbGate · MIT License · npm v1.40.0</span>
       <div class="footer-links">
         <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
         <a href="/guide">Technical setup</a>

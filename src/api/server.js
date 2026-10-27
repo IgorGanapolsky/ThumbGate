@@ -319,6 +319,25 @@ const {
   renderSeoPageHtml,
   THUMBGATE_SEO_SITEMAP_ENTRIES,
 } = require('../../scripts/seo-gsd');
+const {
+  CLOUD_SAAS_TIERS,
+  interceptAgentRequest,
+  buildCloudIntegrationGuideMarkdown,
+  calculateCloudSaasEconomics,
+  evaluateEntireCiTrailAndProjectSync,
+  buildRlhfDpoTrainingPairFromInterception,
+  buildFourPillarPositioningMatrix,
+  ingestEnterpriseCloudSinkBatch,
+  getCloudCustomerPortalSession,
+  manageCloudSubscription,
+  submitCloudPortalFeedbackAndFeatureRequest,
+  startSsoAuthorizationFlow,
+  buildMacAndLinuxInstallerScript,
+  buildWindowsInstallerScript,
+  buildHomebrewFormulaRuby,
+} = require('../cloud-token-firewall');
+
+const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
 
 const LANDING_PAGE_PATH = path.resolve(__dirname, '../../public/index.html');
 const PRO_PAGE_PATH = path.resolve(__dirname, '../../public/pro.html');
@@ -568,6 +587,78 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     },
     allowCustomerEmail: true,
     prefillStripeEmail: true,
+  },
+  'pro-annual': {
+    path: '/checkout/pro?plan_id=pro&billing_cycle=annual',
+    ctaId: 'pro_checkout_annual_149',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'pro_annual_149',
+      plan_id: 'pro',
+      billing_cycle: 'annual',
+    },
+    allowCustomerEmail: true,
+  },
+  'bundle-49': {
+    fallbackHref: 'https://iganapolsky.gumroad.com/l/vcrho',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_bundle_49',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'bundle_49',
+      plan_id: 'bundle_49',
+      billing_cycle: 'one_time',
+    },
+  },
+  'playbook-10': {
+    fallbackHref: 'https://iganapolsky.gumroad.com/l/odrkon',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_playbook_10',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'playbook_10',
+      plan_id: 'playbook_10',
+      billing_cycle: 'one_time',
+    },
+  },
+  'cloud-indie': {
+    path: '/checkout/pro?plan_id=cloud_indie&billing_cycle=monthly',
+    ctaId: 'cloud_indie_49',
+    ctaPlacement: 'cloud_saas',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'cloud_saas',
+      utm_campaign: 'cloud_indie_49',
+      plan_id: 'cloud_indie',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+  },
+  'cloud-startup': {
+    path: '/checkout/pro?plan_id=cloud_startup&billing_cycle=monthly',
+    ctaId: 'cloud_startup_199',
+    ctaPlacement: 'cloud_saas',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'cloud_saas',
+      utm_campaign: 'cloud_startup_199',
+      plan_id: 'cloud_startup',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
   },
   // Operator Framework offers (/operator-framework). Same-origin hop keeps
   // buy.stripe.com out of public HTML; bots are deflected to the page.
@@ -2809,7 +2900,7 @@ h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:70
 p{color:#cbd5e1;margin:8px 0}form{margin:0}
 input[type=email]{width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid #374151;border-radius:8px;background:#111827;color:#fff;font-size:15px;margin:16px 0 0;outline:none}
 input[type=email]:focus{border-color:#22d3ee}input[type=email]::placeholder{color:#64748b}
-button.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%}
+button.primary,a.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%;box-sizing:border-box}
 a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}
 .trust,.objection-box{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}
 .trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}
@@ -2834,7 +2925,11 @@ ${hiddenInputs}
 <p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
-<a class="secondary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">Skip form — open Stripe checkout directly →</a>
+<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">→ Skip form — open Stripe checkout directly</a>
+<a class="secondary" data-i="cloud_indie_49" rel="nofollow" href="/go/cloud-indie?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=cloud_indie_49&amp;cta_id=cloud_indie_49&amp;cta_placement=checkout_interstitial">Cloud Indie (AWS Token Optimizer · 1M tokens/mo) — $49/mo →</a>
+<a class="secondary" data-i="cloud_startup_199" rel="nofollow" href="/go/cloud-startup?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=cloud_startup_199&amp;cta_id=cloud_startup_199&amp;cta_placement=checkout_interstitial">Cloud Startup (10M tokens/mo + Loop-Kill Webhooks) — $199/mo →</a>
+<a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Prefer one-time (no subscription)? Production Rule-Pack Kit — $49 →</a>
+<a class="secondary" data-i="pro_checkout_annual_149" rel="nofollow" href="/go/pro-annual?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_annual_149&amp;cta_id=pro_checkout_annual_149&amp;cta_placement=checkout_interstitial">Annual billing (save 35%)? ThumbGate Pro — $149/yr →</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
 <p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages. Email path keeps receipts attributable; skip uses a same-origin hop that bot-deflects crawlers.</p>
 <div class="objection-box" aria-label="Checkout feedback">
@@ -4004,7 +4099,16 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   techParts.push(`<tr><td class="label">Feedback Event ID</td><td><code>${esc(feedbackEventId || lessonId)}</code></td></tr>`);
   if (memoryRecordId) techParts.push(`<tr><td class="label">Memory Record ID</td><td><code>${esc(memoryRecordId)}</code></td></tr>`);
   techParts.push(`<tr><td class="label">Promoted to Memory</td><td>${promotedToMemory ? '<span style="color:var(--green)">✓ Yes</span>' : '<span style="color:var(--text-muted)">✗ No</span>'}</td></tr>`);
-  if (failureType) techParts.push(`<tr><td class="label">Failure Type</td><td><span style="color:${failureType === 'decision' ? 'var(--yellow)' : 'var(--purple)'};font-weight:600">${esc(failureType)}</span> <span style="color:var(--text-muted);font-size:11px">${failureType === 'decision' ? '(wrong tool/action chosen)' : '(right tool, bad params/output)'}</span></td></tr>`);
+  if (failureType) {
+    const failureMeta = {
+      decision: { color: 'var(--yellow)', label: 'Wrong tool/action chosen' },
+      execution: { color: 'var(--purple)', label: 'Right tool, bad params/output' },
+      verification: { color: 'var(--red)', label: 'Verification guard triggered' },
+      environmental: { color: 'var(--orange)', label: 'Environmental noise/flakiness' },
+      app_change: { color: 'var(--cyan)', label: 'Expected application behavior change' },
+    }[failureType] || { color: 'var(--text-muted)', label: failureType };
+    techParts.push(`<tr><td class="label">Failure Type</td><td><span style="color:${failureMeta.color};font-weight:600">${esc(failureType)}</span> <span style="color:var(--text-muted);font-size:11px">(${esc(failureMeta.label)})</span></td></tr>`);
+  }
   if (skill) techParts.push(`<tr><td class="label">Skill</td><td><code>${esc(skill)}</code></td></tr>`);
   if (source) techParts.push(`<tr><td class="label">Source</td><td>${esc(source)}</td></tr>`);
   if (relatedFeedbackId) techParts.push(`<tr><td class="label">Related Feedback</td><td><a href="/lessons/${esc(relatedFeedbackId)}" style="color:var(--cyan)">${esc(relatedFeedbackId)}</a></td></tr>`);
@@ -4056,7 +4160,7 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #141414; --border: #222225;
   --text: #e8e8ec; --text-muted: #8b8b96; --cyan: #22d3ee;
   --cyan-dim: rgba(34,211,238,0.12); --green: #4ade80; --red: #f87171;
-  --yellow: #fbbf24; --purple: #a78bfa;
+  --yellow: #fbbf24; --purple: #a78bfa; --orange: #f97316;
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
   --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
 }
@@ -7146,6 +7250,19 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/install.md') {
+      try {
+        const installMdPath = path.join(PUBLIC_DIR, 'install.md');
+        const body = fs.readFileSync(installMdPath, 'utf-8');
+        res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+        if (!isHeadRequest) res.end(body);
+        else res.end();
+      } catch {
+        sendJson(res, 404, { error: 'install.md not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/learn/learn.css') {
       try {
         const cssPath = path.join(LEARN_DIR, 'learn.css');
@@ -9350,6 +9467,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           nextSteps: result.apiKey ? {
             env: `THUMBGATE_API_KEY=${result.apiKey || ''}\nTHUMBGATE_API_BASE_URL=${hostedConfig.billingApiBaseUrl}`,
             curl: `curl -X POST ${hostedConfig.billingApiBaseUrl}/v1/feedback/capture \\\n  -H 'Authorization: Bearer ${result.apiKey || ''}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{"signal":"down","context":"example","whatWentWrong":"example","whatToChange":"example"}'`,
+            cloudInterceptCurl: `curl -X POST ${hostedConfig.billingApiBaseUrl}/v1/cloud/intercept \\\n  -H 'Authorization: Bearer ${result.apiKey || ''}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{"sessionId":"agent-run-1","toolCall":{"name":"bash","arguments":{"cmd":"npm test"}},"messages":[{"role":"user","content":"Fix failing test"}]}'`,
+            integrationGuideUrl: `${hostedConfig.billingApiBaseUrl}/v1/cloud/integration-guide.md?apiKey=${encodeURIComponent(result.apiKey || '')}`,
           } : nextSteps,
         }, getPublicBillingHeaders(resolvedTraceId));
       } catch (err) {
@@ -9363,6 +9482,163 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
       return;
     }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/calculator') {
+      const economics = calculateCloudSaasEconomics({
+        indieSubscribers: parsed.searchParams.get('indieSubscribers') ?? 15,
+        startupSubscribers: parsed.searchParams.get('startupSubscribers') ?? 20,
+        architecture: parsed.searchParams.get('architecture') || 'serverless_lambda_dynamodb_sqs',
+        developerMonthlyApiBillUsd: parsed.searchParams.get('developerMonthlyApiBillUsd') ?? 500,
+        compactionReductionPct: parsed.searchParams.get('compactionReductionPct') ?? 42,
+      });
+      sendJson(res, 200, economics, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/integration-guide.md') {
+      const apiKeyParam = parsed.searchParams.get('apiKey') || extractBearerToken(req) || 'tg_live_YOUR_API_KEY';
+      const tierParam = parsed.searchParams.get('tier') || 'cloud_indie';
+      const guideMd = buildCloudIntegrationGuideMarkdown({
+        apiKey: apiKeyParam,
+        tierId: tierParam,
+        apiBaseUrl: hostedConfig.billingApiBaseUrl || 'https://thumbgate.ai',
+      });
+      res.writeHead(200, {
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Type': 'text/markdown; charset=utf-8',
+      });
+      res.end(isHeadRequest ? '' : guideMd);
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/positioning') {
+      sendJson(res, 200, buildFourPillarPositioningMatrix(), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/ci-trail-eval') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, evaluateEntireCiTrailAndProjectSync(body));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/dpo-sync') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, buildRlhfDpoTrainingPairFromInterception(body));
+      return;
+    }
+    if (req.method === 'POST' && pathname === '/v1/cloud/sink/ingest') {
+      const body = await parseJsonBody(req);
+      const result = ingestEnterpriseCloudSinkBatch({ batch: body });
+      sendJson(res, result.statusCode || 200, result);
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/cloud' || pathname === '/portal' || pathname === '/cloud.html')) {
+      const html = fs.existsSync(CLOUD_PORTAL_PAGE_PATH)
+        ? fs.readFileSync(CLOUD_PORTAL_PAGE_PATH, 'utf8')
+        : '<h1>ThumbGate Cloud Portal</h1>';
+      sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/install.sh' || pathname === '/install/macos.command' || pathname === '/install/linux.sh')) {
+      const script = buildMacAndLinuxInstallerScript({ apiBaseUrl: hostedConfig.appOrigin || 'https://thumbgate.ai' });
+      res.writeHead(200, {
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Type': 'text/x-shellscript; charset=utf-8',
+      });
+      res.end(isHeadRequest ? '' : script);
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/install.ps1' || pathname === '/install/windows.bat')) {
+      const script = buildWindowsInstallerScript({ apiBaseUrl: hostedConfig.appOrigin || 'https://thumbgate.ai' });
+      res.writeHead(200, {
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Type': 'text/plain; charset=utf-8',
+      });
+      res.end(isHeadRequest ? '' : script);
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/Formula/thumbgate.rb' || pathname === '/install/homebrew.rb')) {
+      const formula = buildHomebrewFormulaRuby({ version: '1.40.0', apiBaseUrl: hostedConfig.appOrigin || 'https://thumbgate.ai' });
+      res.writeHead(200, {
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Type': 'text/plain; charset=utf-8',
+      });
+      res.end(isHeadRequest ? '' : formula);
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/sso/authorize') {
+      const sso = startSsoAuthorizationFlow({
+        provider: parsed.searchParams.get('provider') || 'github',
+        email: parsed.searchParams.get('email') || '',
+        cliPort: parsed.searchParams.get('cli_port') || parsed.searchParams.get('cliPort') || '',
+        redirectUri: parsed.searchParams.get('redirect_uri') || '',
+        appOrigin: hostedConfig.appOrigin || 'https://thumbgate.ai',
+      });
+      res.writeHead(302, {
+        'X-Content-Type-Options': 'nosniff',
+        Location: sso.redirectUrl,
+        'Cache-Control': 'no-store',
+      });
+      res.end();
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/portal/session') {
+      const session = getCloudCustomerPortalSession({
+        apiKey: parsed.searchParams.get('apiKey') || extractBearerToken(req),
+        email: parsed.searchParams.get('email') || '',
+        tierId: parsed.searchParams.get('tierId') || '',
+      });
+      sendJson(res, 200, session, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/portal/demo-intercept') {
+      const body = await parseJsonBody(req);
+      const tenantKey = body.apiKey || body.email || 'tg_indie_portal_demo';
+      const interceptResult = await interceptAgentRequest({
+        tenantKey,
+        tierId: 'cloud_indie',
+        sessionId: 'portal_demo_session',
+        agentId: 'claude_code_agent',
+        toolCall: { name: 'bash', arguments: { cmd: 'npm test' } },
+        messages: [
+          { role: 'system', content: 'You are an autonomous coding agent running in a strict verification loop.' },
+          { role: 'system', content: 'You are an autonomous coding agent running in a strict verification loop.' },
+          { role: 'user', content: 'Fix failing test suite.' },
+        ],
+      });
+      const session = getCloudCustomerPortalSession({ apiKey: tenantKey, email: body.email || 'demo@thumbgate.ai' });
+      sendJson(res, 200, { ok: true, interceptResult, session });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/portal/subscription') {
+      const body = await parseJsonBody(req);
+      const sub = manageCloudSubscription({
+        tenantKey: body.tenantKey || extractBearerToken(req) || 'demo_customer',
+        action: body.action || 'status',
+        targetTierId: body.targetTierId || 'cloud_startup',
+        customerEmail: body.customerEmail || '',
+        appOrigin: hostedConfig.appOrigin || 'https://thumbgate.ai',
+      });
+      sendJson(res, 200, sub);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/portal/feedback') {
+      const body = await parseJsonBody(req);
+      const fb = submitCloudPortalFeedbackAndFeatureRequest(body);
+      sendJson(res, fb.statusCode || 201, fb);
+      return;
+    }
+
 
     // Catch non-API GET requests that didn't match any public page route above.
     // Without this, /about, /docs, /demo etc. fall through to the API auth gate
@@ -9409,6 +9685,25 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     }
 
     try {
+      if (req.method === 'POST' && (pathname === '/v1/cloud/intercept' || pathname === '/v1/firewall/intercept')) {
+        const body = await parseJsonBody(req);
+        const interceptResult = await interceptAgentRequest({
+          tenantKey: _token || requestDataIdentity.customerHash || body.tenantKey || 'authenticated_user',
+          tierId: body.tierId || 'cloud_indie',
+          sessionId: body.sessionId,
+          agentId: body.agentId,
+          provider: body.provider,
+          model: body.model,
+          toolCall: body.toolCall,
+          messages: body.messages,
+          toolOutput: body.toolOutput,
+          maxLoopRepeats: body.maxLoopRepeats,
+          webhookUrl: body.webhookUrl,
+        });
+        sendJson(res, 200, interceptResult);
+        return;
+      }
+
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
         const stats = shouldAggregateFeedback()
           ? computeAggregateFeedbackStats({ feedbackDir: requestFeedbackPaths.FEEDBACK_DIR })

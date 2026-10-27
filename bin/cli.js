@@ -1,5 +1,31 @@
 #!/usr/bin/env node
-// thumbgate CLI entrypoint
+/**
+ * thumbgate CLI
+ *
+ * Usage:
+ *   npx thumbgate init          # scaffold .thumbgate/ config + .mcp.json
+ *   npx thumbgate init --wire-hooks          # wire hooks only (auto-detect agent)
+ *   npx thumbgate init --agent claude-code   # scaffold + wire hooks for specific agent
+ *   npx thumbgate gate-check    # PreToolUse hook: pipe tool JSON via stdin, get verdict
+ *   npx thumbgate capture       # capture feedback
+ *   npx thumbgate import-doc    # import a local policy/runbook document and propose gates
+ *   npx thumbgate export-dpo    # export DPO training pairs
+ *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
+ *   npx thumbgate eval --from-feedback # turn feedback into reusable prompt evals
+ *   npx thumbgate code-graph-guardrails # map code-graph signals to pre-action checks
+ *   npx thumbgate proxy-pointer-rag-guardrails # map visual document RAG signals to gates
+ *   npx thumbgate rag-precision-guardrails # map retrieval tuning regressions to gates
+ *   npx thumbgate long-running-agent-context-guardrails # map structured-memory gaps to gates
+ *   npx thumbgate reasoning-efficiency-guardrails # map reasoning compression signals to gates
+ *   npx thumbgate deepseek-v4-runtime-guardrails # map sparse-attention runtime signals to gates
+ *   npx thumbgate upstream-contributions # rank upstream repo issues for trust-building PRs
+ *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
+ *   npx thumbgate background-governance  # background-agent run report + risk check
+ *   npx thumbgate cfo           # local operational billing summary
+ *   npx thumbgate pro           # solo dashboard + exports side lane
+ *   npx thumbgate diagnostic    # team workflow diagnostic intake + checkout path
+ *   npx thumbgate audit <file>  # audit an agent transcript for repeat-mistake token waste
+ */
 
 'use strict';
 
@@ -3418,18 +3444,21 @@ function cleanup() {
 
 function serve() {
   try {
-    const { repairCodexHooks } = require(path.join(PKG_ROOT, 'scripts', 'codex-self-heal'));
+    const { repairCodexHooks, repairProjectMcpConfigs } = require(path.join(PKG_ROOT, 'scripts', 'codex-self-heal'));
     repairCodexHooks();
+    repairProjectMcpConfigs();
   } catch (_) { /* self-heal is best-effort */ }
   // Start MCP server over stdio
   const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
   const { startStdioServer } = require(mcpServer);
-  startStdioServer();
-  // Start watcher as a background daemon alongside MCP server
-  try {
-    const { watch } = require(path.join(PKG_ROOT, 'scripts', 'jsonl-watcher'));
-    watch();
-  } catch (_) { /* watcher is non-critical */ }
+  const lockInfo = startStdioServer();
+  // Start watcher only in the primary session to avoid N concurrent pollers fighting over .watcher-offset
+  if (!lockInfo || !lockInfo.isConcurrentSession) {
+    try {
+      const { watch } = require(path.join(PKG_ROOT, 'scripts', 'jsonl-watcher'));
+      watch();
+    } catch (_) { /* watcher is non-critical */ }
+  }
 }
 
 function install() {
@@ -5472,20 +5501,6 @@ switch (COMMAND) {
     }
     break;
   }
-  case 'dream':
-  case 'dream-mode': {
-    // ThumbGate Dream Mode (Anthropic REM memory consolidation, read-only on source code)
-    const { dreamCmd } = require(path.join(PKG_ROOT, 'scripts', 'thumbgate-dream'));
-    dreamCmd();
-    break;
-  }
-  case 'cuda-gate':
-  case 'cuda-gate-batch': {
-    // CUDA-inspired parallel PreToolUse gate evaluation
-    const { cudaGateBatchCmd } = require(path.join(PKG_ROOT, 'scripts', 'cuda-gate-batch'));
-    cudaGateBatchCmd();
-    break;
-  }
   case 'start-api':
     startApi();
     break;
@@ -5498,7 +5513,18 @@ switch (COMMAND) {
     compact();
     break;
   case 'subscribe': {
-    // Non-interactive installer email subscription (/v1/marketing/install-email)
+    // Capture an installer's email so we can send the 5-minute setup
+    // guide + weekly tips. Drops to /v1/marketing/install-email on the
+    // hosted endpoint; the server fires sendNewsletterWelcomeEmail via
+    // Resend and persists the address for follow-up.
+    //
+    // Usage:
+    //   npx thumbgate subscribe you@company.com
+    //   npx thumbgate subscribe --email=you@company.com
+    //
+    // Never prompts interactively — postinstall must stay non-interactive
+    // for CI safety. This is the deliberate opt-in path the banner points
+    // at; if the operator runs it, they want the email.
     const args = process.argv.slice(3);
     let email = '';
     for (const arg of args) {
@@ -5564,6 +5590,25 @@ switch (COMMAND) {
     });
     req.write(payload);
     req.end();
+    break;
+  }
+  case 'login':
+  case 'sso': {
+    const args = parseArgs(process.argv.slice(3));
+    const provider = args.provider || 'github';
+    const apiBaseUrl = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai';
+    const ssoUrl = `${apiBaseUrl}/v1/cloud/sso/authorize?provider=${encodeURIComponent(provider)}`;
+    console.log(`\n🔐 ThumbGate 1-Click Cloud SSO (${provider.toUpperCase()})`);
+    console.log(`  Open in browser: ${ssoUrl}`);
+    console.log(`  Or visit:        ${apiBaseUrl}/cloud\n`);
+    if (!args['no-open'] && process.env.NODE_ENV !== 'test') {
+      try {
+        const openCmd = process.platform === 'darwin'
+          ? 'open'
+          : (process.platform === 'win32' ? 'start' : 'xdg-open');
+        require('node:child_process').spawn(openCmd, [ssoUrl], { detached: true, stdio: 'ignore' }).unref();
+      } catch { /* ignore headless browser launch errors */ }
+    }
     break;
   }
   case 'checkin': {

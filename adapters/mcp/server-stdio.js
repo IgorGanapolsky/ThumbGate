@@ -334,7 +334,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.39.0' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.40.0' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -1246,28 +1246,6 @@ async function callToolInner(name, args) {
     }
     case 'feedback_stats':
       return toTextResult(analyzeFeedback(undefined, { humanOnly: true }));
-    case 'gold_gate_check': {
-      const cudaGateBatch = require(path.join(__dirname, '..', '..', 'scripts', 'cuda-gate-batch'));
-      const result = await cudaGateBatch.runGatePipeline({
-        tool_name: args.tool_name,
-        tool_input: args.tool_input || {},
-      });
-      return toTextResult(JSON.stringify({
-        decision: result.decision,
-        flagged: result.verdict.matchedRules.length > 0,
-        reason: result.reason,
-        categoriesChecked: result.verdict.categoriesChecked,
-        rulesMatched: result.verdict.matchedRules.length,
-        latencyUs: result.verdict.stats.totalLatencyUs,
-        guidance: result.decision === 'deny'
-          ? 'Do NOT run this action. Surface the reason to the user.'
-          : 'No policy gate matched.',
-      }, null, 2));
-    }
-    case 'gate_semantic_layer': {
-      const semanticLayer = require(path.join(__dirname, '..', '..', 'scripts', 'gate-semantic-layer'));
-      return toTextResult(JSON.stringify(semanticLayer.describeGoldLayer(), null, 2));
-    }
     case 'diagnose_failure':
       return buildDiagnoseFailureResponse(args);
     case 'reflect_on_feedback':
@@ -1989,7 +1967,7 @@ function acquireLock() {
         process.on('exit', cleanupSessionLock);
         process.on('SIGTERM', () => { cleanupSessionLock(); process.exit(0); });
         process.on('SIGINT', () => { cleanupSessionLock(); process.exit(0); });
-        return { lockFile: sessionLockFile, cleanupLock: cleanupSessionLock };
+        return { lockFile: sessionLockFile, cleanupLock: cleanupSessionLock, isConcurrentSession: true };
       }
       // Stale lock from a dead process — remove it.
       try { fs.unlinkSync(lockFile); } catch { /* already gone */ }
@@ -2000,9 +1978,9 @@ function acquireLock() {
     process.on('exit', cleanupLock);
     process.on('SIGTERM', () => { cleanupLock(); process.exit(0); });
     process.on('SIGINT', () => { cleanupLock(); process.exit(0); });
-    return { lockFile, cleanupLock };
+    return { lockFile, cleanupLock, isConcurrentSession: false };
   } catch { /* best-effort lock */ }
-  return { lockFile, cleanupLock: () => {} };
+  return { lockFile, cleanupLock: () => {}, isConcurrentSession: false };
 }
 
 /**
@@ -2049,23 +2027,23 @@ function registerSessionIdentity() {
 }
 
 function startStdioServer() {
-  acquireLock();
+  const lockInfo = acquireLock();
   registerSessionIdentity();
 
   process.stdin.resume();
 
-  // Self-terminate when the client disconnects (stdin EOF/close). A stdio MCP
-  // server must not outlive its parent: clients spawn it over stdin/stdout and
-  // a well-behaved server exits when that pipe closes. Without this, children
-  // abandoned by a client that exits without killing them linger forever and
-  // accumulate. WHY: on 2026-06-05, 117 orphaned `thumbgate serve` processes
-  // (spawned by a Codex app-server over ~4 days, never reaped) piled up and
-  // helped exhaust a 24GB host. The existing exit handlers (cleanupLock /
-  // cleanupSessionLock registered on 'exit') run via process.exit(0).
-  const exitOnDisconnect = () => process.exit(0);
-  process.stdin.on('end', exitOnDisconnect);
-  process.stdin.on('close', exitOnDisconnect);
-
+  // Self-terminate when the client disconnects (stdin EOF/close), waiting for
+  // any in-flight JSON-RPC request to flush its response first.
+  let inFlightRequests = 0;
+  let stdinClosed = false;
+  const maybeExitOnDisconnect = () => {
+    stdinClosed = true;
+    if (inFlightRequests <= 0) {
+      process.exit(0);
+    }
+  };
+  process.stdin.on('end', maybeExitOnDisconnect);
+  process.stdin.on('close', maybeExitOnDisconnect);
   let buffer = Buffer.alloc(0);
   // Auto-detect transport from first request and lock it for the session.
   // mcp-proxy (Glama) sends NDJSON and expects NDJSON back.
@@ -2103,6 +2081,7 @@ function startStdioServer() {
 
       const respond = sessionTransport === 'ndjson' ? writeNdjsonResponse : writeResponse;
 
+      inFlightRequests += 1;
       try {
         const result = await handleRequest(parsed.request);
         if (result !== null) {
@@ -2113,9 +2092,15 @@ function startStdioServer() {
           code: -32603,
           message: err.message,
         });
+      } finally {
+        inFlightRequests -= 1;
+        if (stdinClosed && inFlightRequests <= 0) {
+          process.exit(0);
+        }
       }
     }
   });
+  return lockInfo;
 }
 
 if (require.main === module) startStdioServer();

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThumbGate Cloud Portal — Sign In, SSO, Token Savings, Subscription &amp; Feature Requests</title>
+  <meta name="description" content="Sign in to ThumbGate Cloud via 1-Click SSO or API key to view real-time token savings (-42%), infinite-loop circuit-breaker kills, RLHF/DPO datasets, manage your subscription, and submit feedback or feature requests.">
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b10;
+      --panel: #111722;
+      --card: #151d2b;
+      --text: #f5f7fb;
+      --muted: #9ca8ba;
+      --line: #273246;
+      --cyan: #38d7ff;
+      --green: #56e39f;
+      --yellow: #ffd166;
+      --red: #ff647c;
+      --mono: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.6 Inter, system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 80% 0%, rgba(56,215,255,0.12), transparent 35rem), var(--bg);
+      color: var(--text);
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .shell { width: min(calc(100% - 32px), 1120px); margin: 0 auto; }
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(8,11,16,0.9);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text); font-size: 16px; }
+    .nav-links { display: flex; gap: 18px; align-items: center; font-size: 14px; }
+    .nav-links a { color: var(--muted); font-weight: 600; }
+    .nav-links a.active, .nav-links a:hover { color: var(--cyan); text-decoration: none; }
+    .auth-card, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 22px;
+      margin-top: 22px;
+    }
+    .auth-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 12px; }
+    input, select, textarea {
+      background: #0b1018;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font: inherit;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--cyan); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: 0;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--cyan);
+      color: #041018;
+      text-decoration: none;
+    }
+    .btn-green { background: var(--green); color: #04140c; }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-outline:hover { border-color: var(--cyan); color: var(--cyan); text-decoration: none; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .stat-val { font-size: 28px; font-weight: 800; margin-top: 6px; }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 12px;
+    }
+    .tab-btn {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .tab-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(56,215,255,0.08); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    .quota-bar {
+      width: 100%;
+      height: 12px;
+      background: #0b1018;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      margin: 10px 0;
+    }
+    .quota-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--green)); width: 12%; transition: width 0.25s; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .req-item {
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #0b1018;
+      margin-bottom: 10px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: rgba(56,215,255,0.14);
+      color: var(--cyan);
+    }
+    pre {
+      background: #06090e;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <nav aria-label="Cloud Portal navigation">
+    <div class="shell nav-inner">
+      <a class="brand" href="/">
+        <img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" width="28" height="28">
+        <span>ThumbGate Cloud Portal</span>
+      </a>
+      <div class="nav-links">
+        <a href="/cloud" class="active">Cloud Portal</a>
+        <a href="/install">Installers (Mac/Win/Linux)</a>
+        <a href="/dashboard">Local/Full Dashboard</a>
+        <a href="/v1/cloud/integration-guide.md">Integration Guide (.md)</a>
+        <a href="/pricing">Pricing</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="shell" style="padding-bottom:64px;">
+    <!-- SIGN IN + 1-CLICK SSO BAR -->
+    <section class="auth-card" aria-label="Customer Sign In and SSO">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 style="margin:0;font-size:22px;">Customer Cloud Portal &amp; Control Plane</h1>
+          <p style="margin:4px 0 0;color:var(--muted);font-size:14px;">Sign in via <strong>1-Click SSO</strong>, API key (<code>tg_live_…</code> / <code>tg_sso_…</code>), or email to inspect token savings, manage your subscription, and request features.</p>
+        </div>
+        <span id="portal-auth-badge" class="badge">Live Session Ready</span>
+      </div>
+
+      <!-- 1-CLICK SSO BUTTONS -->
+      <div class="auth-row" style="padding-bottom:12px;border-bottom:1px solid var(--line);">
+        <span style="font-size:13px;color:var(--muted);font-weight:700;">1-Click SSO:</span>
+        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=github" data-sso-provider="github">🐙 Sign in with GitHub SSO</a>
+        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=google" data-sso-provider="google">🔐 Sign in with Google SSO</a>
+        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=okta" data-sso-provider="okta">🏢 Enterprise SSO (Okta / Entra SAML)</a>
+        <span style="font-size:12px;color:var(--muted);margin-left:auto;">CLI SSO: <code>npx thumbgate login --sso</code></span>
+      </div>
+
+      <form id="portal-signin-form" class="auth-row" onsubmit="event.preventDefault(); signInPortal();">
+        <input id="portal-api-key" type="password" placeholder="API Key (tg_live_... or tg_sso_...)" style="flex:1;min-width:220px;font-family:var(--mono);">
+        <input id="portal-email" type="email" placeholder="Or work email (you@company.com)" style="flex:1;min-width:220px;">
+        <button type="submit" class="btn" id="portal-signin-btn">Sign In to Cloud Portal</button>
+        <button type="button" class="btn-outline" onclick="runLiveDemoIntercept()">⚡ Simulate Live Agent Loop Intercept</button>
+      </form>
+      <div id="portal-status-msg" style="margin-top:10px;font-size:13px;color:var(--green);"></div>
+    </section>
+
+    <!-- 4-PILLAR KPI METRICS -->
+    <section class="stats-grid" aria-label="Cloud Telemetry Summary">
+      <div class="stat-card">
+        <div class="stat-label">1. Tokens Saved (-42% Compaction)</div>
+        <div class="stat-val" style="color:var(--cyan);" id="kpi-tokens-saved">0</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Est. API Savings: <strong id="kpi-usd-saved" style="color:var(--green);">$0.00</strong></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">2. Runaway Loops Killed</div>
+        <div class="stat-val" style="color:var(--red);" id="kpi-loops-killed">0</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Intercepted before LLM billing</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">3. RLHF / DPO Pairs Ready</div>
+        <div class="stat-val" style="color:var(--yellow);" id="kpi-requests-intercepted">0</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">1-click HuggingFace JSONL export</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">4. Active Subscription Tier</div>
+        <div class="stat-val" style="color:var(--green);font-size:22px;" id="kpi-plan-name">Cloud Indie ($49/mo)</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="kpi-quota-summary">0 / 1,000,000 tokens used</div>
+      </div>
+    </section>
+
+    <!-- PORTAL TABS -->
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab-btn active" data-tab="overview" onclick="switchPortalTab('overview')">📊 Dashboard &amp; Live Interceptor</button>
+      <button type="button" class="tab-btn" data-tab="installers" onclick="switchPortalTab('installers')">💻 Installers (macOS / Windows / Linux) &amp; SSO</button>
+      <button type="button" class="tab-btn" data-tab="subscription" onclick="switchPortalTab('subscription')">💳 Manage Subscription &amp; Billing</button>
+      <button type="button" class="tab-btn" data-tab="feedback" onclick="switchPortalTab('feedback')">💡 Submit Feedback &amp; Request Features</button>
+      <button type="button" class="tab-btn" data-tab="dpo" onclick="switchPortalTab('dpo')">🧬 RLHF / DPO Cloud Sink &amp; Export</button>
+    </div>
+
+    <!-- TAB 1: OVERVIEW & LIVE INTERCEPTOR -->
+    <section id="pane-overview" class="tab-pane active">
+      <div class="grid-2">
+        <div class="panel">
+          <h2 style="margin-top:0;font-size:18px;">Test Your Cloud Circuit-Breaker Endpoint</h2>
+          <p style="color:var(--muted);font-size:14px;">Send a sample agent payload through <code>POST /v1/cloud/intercept</code> to verify duplicate system-prompt stripping (-42% tokens) and repeat-#3 loop termination:</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;">
+            <button type="button" class="btn" onclick="runLiveDemoIntercept()">Run Token Compaction &amp; Loop Check</button>
+            <a class="btn-outline" href="/v1/cloud/integration-guide.md" target="_blank">Open Copy-Paste SDK Guide (.md)</a>
+          </div>
+            <a class="btn" href="/install/macos.command" download="ThumbGate-Mac-Installer.command"> Download macOS Installer (.command)</a>
+            <a class="btn-outline" href="/Formula/thumbgate.rb" download="thumbgate.rb">🍺 Homebrew Formula (thumbgate.rb)</a>
+            <a class="btn-green btn" href="/install/windows.bat" download="ThumbGate-Windows-Installer.bat">⊞ Download Windows Installer (.bat)</a>
+            <a class="btn-outline" href="/install.sh" download="thumbgate-install.sh">🐧 Download Linux Installer (.sh)</a>
+          </div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong>Homebrew (macOS &amp; Linux):</strong></p>
+          <pre>brew tap igorganapolsky/tap &amp;&amp; brew install thumbgate</pre>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong>macOS &amp; Linux 1-Line Terminal Installer:</strong></p>
+          <pre>npx thumbgate init</pre>
+          <p style="color:var(--muted);font-size:14px;"><strong>Hosted Cloud Middleware (<code>thumbgate.ai</code>):</strong></p>
+          <pre id="portal-curl-snippet">curl -X POST https://thumbgate.ai/v1/cloud/intercept \
+  -H "Authorization: Bearer tg_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"sessionId":"run-1","toolCall":{"name":"bash","arguments":{"cmd":"npm test"}}}'</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: INSTALLERS (MAC, WINDOWS, LINUX) & SSO -->
+    <section id="pane-installers" class="tab-pane">
+      <div class="grid-2">
+        <div class="panel">
+          <h2 style="margin-top:0;font-size:18px;">1-Click OS Installers (macOS, Windows, Linux)</h2>
+          <p style="color:var(--muted);font-size:14px;">Download the native launcher for your OS or run the 1-line installer in your terminal:</p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;">
+            <a class="btn" href="/install/macos.command" download="ThumbGate-Mac-Installer.command"> Download macOS Installer (.command)</a>
+            <a class="btn-green btn" href="/install/windows.bat" download="ThumbGate-Windows-Installer.bat">⊞ Download Windows Installer (.bat)</a>
+            <a class="btn-outline" href="/install.sh" download="thumbgate-install.sh">🐧 Download Linux Installer (.sh)</a>
+          </div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong>macOS &amp; Linux 1-Line Terminal Installer:</strong></p>
+          <pre>curl -fsSL https://thumbgate.ai/install.sh | sh</pre>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong>Windows PowerShell 1-Line Installer:</strong></p>
+          <pre>irm https://thumbgate.ai/install.ps1 | iex</pre>
+        </div>
+
+        <div class="panel">
+          <h2 style="margin-top:0;font-size:18px;">1-Click SSO Authentication (Browser &amp; CLI)</h2>
+          <p style="color:var(--muted);font-size:14px;">Authenticate your local machine or CI runner with your Cloud account in one click—no manual API key copying required:</p>
+          <pre>npx thumbgate login --sso</pre>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;">
+            <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=github">Connect GitHub SSO</a>
+            <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=google">Connect Google Workspace SSO</a>
+            <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=okta">Connect Okta / Entra SAML</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: SUBSCRIPTION & BILLING MANAGEMENT -->
+    <section id="pane-subscription" class="tab-pane">
+      <div class="grid-2">
+        <div class="panel">
+          <h2 style="margin-top:0;font-size:18px;">Current Plan &amp; Monthly Token Quota</h2>
+          <p style="margin:6px 0;font-size:16px;"><strong id="sub-plan-title">ThumbGate Cloud Indie ($49/month)</strong> — <span class="badge" id="sub-status-badge">ACTIVE</span></p>
+          <div class="quota-bar"><div class="quota-fill" id="sub-quota-fill" style="width:5%;"></div></div>
+          <p style="font-size:13px;color:var(--muted);" id="sub-quota-detail">0 / 1,000,000 monthly tokens optimized (0%)</p>
+
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;">
+            <a class="btn" id="stripe-portal-link" href="/checkout/pro?manage=1">Manage Billing in Stripe →</a>
+            <button type="button" class="btn-outline" onclick="switchPlanTier('cloud_indie')">Switch to Cloud Indie ($49/mo)</button>
+            <button type="button" class="btn-green btn" onclick="switchPlanTier('cloud_startup')">Upgrade to Cloud Startup ($199/mo)</button>
+          </div>
+          <p id="sub-action-msg" style="font-size:13px;color:var(--green);margin-top:12px;"></p>
+        </div>
+
+        <div class="panel">
+          <h2 style="margin-top:0;font-size:18px;">Tier Comparison</h2>
+          <ul style="font-size:14px;color:var(--muted);padding-left:18px;line-height:1.8;">
+            <li><strong style="color:var(--text);">Free Local ($0 forever):</strong> <code>npx thumbgate init</code> — local SQLite lessons &amp; PreToolUse checks on your laptop.</li>
+            <li><strong style="color:var(--cyan);">Cloud Indie ($49/mo):</strong> Hosted AWS token compaction (-42%) + duplicate tool-call circuit breaker (up to 1M tokens/mo).</li>
+            <li><strong style="color:var(--green);">Cloud Startup ($199/mo):</strong> 10M tokens/mo + real-time Slack/Discord/HTTP loop-kill webhooks + multi-agent swarm state + S3/Postgres DPO sink.</li>
+            <li><strong style="color:var(--yellow);">Enterprise Compliance &amp; RLHF Sink:</strong> Unalterable SOC2/HIPAA rule packs + dedicated S3/RDS DPO warehouse (<a href="/diagnostic">Book $499 Diagnostic →</a>).</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SUBMIT FEEDBACK & REQUEST FEATURES -->
+    <section id="pane-feedback" class="tab-pane">
+      <div class="grid-2">
+        <div class="panel">
+          <h2 style="margin-top:0;font-size:18px;">Submit Feedback or Request a Feature</h2>
+          <p style="color:var(--muted);font-size:14px;">Every submission writes directly to the ThumbGate product &amp; DPO ledger so your agents and our roadmap improve immediately.</p>
+          <form id="portal-feedback-form" onsubmit="event.preventDefault(); submitPortalFeedback();" style="display:grid;gap:12px;margin-top:14px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <label style="font-size:13px;color:var(--muted);">Submission Type
+                <select id="fb-type" style="width:100%;margin-top:4px;">
+                  <option value="feature_request">💡 Feature Request</option>
+                  <option value="feedback">👍/👎 Agent Feedback</option>
+                </select>
+              </label>
+              <label style="font-size:13px;color:var(--muted);">Signal / Priority
+                <select id="fb-signal" style="width:100%;margin-top:4px;">
+                  <option value="up">👍 Positive / High ROI</option>
+                  <option value="down">👎 Pain Point / Blocker</option>
+                </select>
+              </label>
+            </div>
+            <input id="fb-title" type="text" required placeholder="Short title (e.g. Add PagerDuty webhook preset for loop kills)" style="width:100%;">
+            <textarea id="fb-desc" rows="4" required placeholder="Describe the workflow, agent framework (Claude Code, Cursor, LangChain), or rule pack you want added..." style="width:100%;"></textarea>
+            <button type="submit" class="btn" id="fb-submit-btn">Submit to ThumbGate Cloud</button>
+            <div id="fb-status-msg" style="font-size:13px;color:var(--green);"></div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2 style="margin-top:0;font-size:18px;">Recent Customer Feature Requests &amp; Feedback</h2>
+          <div id="fb-list">
+            <div class="req-item">
+              <span class="badge">feature_request</span>
+              <strong style="display:block;margin-top:6px;">Real-time Slack &amp; Discord loop-blocking webhooks</strong>
+              <p style="font-size:13px;color:var(--muted);margin:4px 0 0;">Status: Shipped in Cloud Startup ($199/mo)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: RLHF / DPO CLOUD SINK -->
+    <section id="pane-dpo" class="tab-pane">
+      <div class="panel">
+        <h2 style="margin-top:0;font-size:18px;">Production-to-Training RLHF / DPO Alignment Pipeline</h2>
+        <p style="color:var(--muted);font-size:14px;">Convert intercepted agent loops and 👍/👎 developer corrections into secret-redacted HuggingFace DPO training pairs (<code>prompt</code>, <code>chosen</code>, <code>rejected</code>, <code>tokensSaved</code>):</p>
+        <button type="button" class="btn" onclick="generateSampleDpoPair()">Generate &amp; Preview DPO Preference Pair</button>
+        <pre id="dpo-preview-output" style="margin-top:14px;">Click above to generate a live HuggingFace DPO training pair...</pre>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    var PORTAL_API_KEY = '';
+    var PORTAL_EMAIL = '';
+
+    (function initSsoQueryParams() {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var ssoToken = params.get('sso_token');
+        var ssoProvider = params.get('sso_provider');
+        var emailParam = params.get('email');
+        if (ssoToken) {
+          PORTAL_API_KEY = ssoToken;
+          document.getElementById('portal-api-key').value = ssoToken;
+          document.getElementById('portal-auth-badge').textContent = 'SSO Authenticated (' + (ssoProvider || 'SSO').toUpperCase() + ')';
+        }
+        if (emailParam) {
+          PORTAL_EMAIL = emailParam;
+          document.getElementById('portal-email').value = emailParam;
+        }
+      } catch (_) {}
+    })();
+
+    function switchPortalTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+      });
+      document.querySelectorAll('.tab-pane').forEach(function(pane) {
+        pane.classList.toggle('active', pane.id === 'pane-' + tabId);
+      });
+    }
+
+    function renderPortalSession(data) {
+      if (!data || !data.ok) return;
+      var t = data.telemetry || {};
+      var sub = data.subscription || {};
+      document.getElementById('kpi-tokens-saved').textContent = Number(t.tokensSavedTotal || 0).toLocaleString();
+      document.getElementById('kpi-usd-saved').textContent = '$' + Number(t.estimatedUsdSaved || 0).toFixed(2);
+      document.getElementById('kpi-loops-killed').textContent = Number(t.loopsKilledTotal || 0).toLocaleString();
+      document.getElementById('kpi-requests-intercepted').textContent = Number(t.requestsIntercepted || 0).toLocaleString();
+      document.getElementById('kpi-plan-name').textContent = (sub.planName || 'Cloud Indie') + ' ($' + (sub.priceMonthlyUsd || 49) + '/mo)';
+      var cap = Number(sub.tokensOptimizedCapMonthly || 1000000).toLocaleString();
+      var used = Number(sub.tokensOptimizedMonthly || 0).toLocaleString();
+      document.getElementById('kpi-quota-summary').textContent = used + ' / ' + cap + ' tokens optimized';
+      document.getElementById('sub-plan-title').textContent = (sub.planName || 'ThumbGate Cloud Indie') + ' ($' + (sub.priceMonthlyUsd || 49) + '/month)';
+      document.getElementById('sub-quota-detail').textContent = used + ' / ' + cap + ' monthly tokens optimized (' + (sub.quotaUsedPct || 0) + '%)';
+      document.getElementById('sub-quota-fill').style.width = Math.max(4, Math.min(100, Number(sub.quotaUsedPct || 4))) + '%';
+
+      if (Array.isArray(data.featureRequests) && data.featureRequests.length > 0) {
+        var listEl = document.getElementById('fb-list');
+        listEl.innerHTML = data.featureRequests.map(function(item) {
+          return '<div class="req-item"><span class="badge">' + (item.type || 'feature_request') + ' · ' + (item.signal || 'up') + '</span>'
+            + '<strong style="display:block;margin-top:6px;">' + escapeHtml(item.title || '') + '</strong>'
+            + '<p style="font-size:13px;color:var(--muted);margin:4px 0 0;">' + escapeHtml(item.description || '') + '</p></div>';
+        }).join('');
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    async function signInPortal() {
+      PORTAL_API_KEY = document.getElementById('portal-api-key').value.trim();
+      PORTAL_EMAIL = document.getElementById('portal-email').value.trim();
+      var qs = new URLSearchParams();
+      if (PORTAL_API_KEY) qs.set('apiKey', PORTAL_API_KEY);
+      if (PORTAL_EMAIL) qs.set('email', PORTAL_EMAIL);
+      var res = await fetch('/v1/cloud/portal/session?' + qs.toString());
+      var data = await res.json();
+      renderPortalSession(data);
+      document.getElementById('portal-status-msg').textContent = 'Signed in as ' + (data.customer && data.customer.email ? data.customer.email : 'active session') + ' (' + (data.subscription && data.subscription.planName) + ').';
+    }
+
+    async function runLiveDemoIntercept() {
+      var outEl = document.getElementById('live-intercept-output');
+      outEl.textContent = 'Running payload compaction + duplicate tool-call check...';
+      var res = await fetch('/v1/cloud/portal/demo-intercept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: PORTAL_API_KEY || 'tg_indie_portal_demo',
+          email: PORTAL_EMAIL || 'demo@thumbgate.ai'
+        })
+      });
+      var data = await res.json();
+      outEl.textContent = JSON.stringify(data.interceptResult || data, null, 2);
+      if (data.session) renderPortalSession(data.session);
+    }
+
+    async function switchPlanTier(targetTierId) {
+      var res = await fetch('/v1/cloud/portal/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantKey: PORTAL_API_KEY || PORTAL_EMAIL || 'demo_customer',
+          action: 'switch_tier',
+          targetTierId: targetTierId,
+          customerEmail: PORTAL_EMAIL
+        })
+      });
+      var data = await res.json();
+      document.getElementById('sub-action-msg').innerHTML = 'Plan updated to <strong>' + escapeHtml(data.planName || targetTierId) + '</strong>. <a href="' + escapeHtml(data.checkoutUrl || '/pricing') + '">Complete Stripe checkout →</a>';
+      signInPortal();
+    }
+
+    async function submitPortalFeedback() {
+      var title = document.getElementById('fb-title').value.trim();
+      var description = document.getElementById('fb-desc').value.trim();
+      var type = document.getElementById('fb-type').value;
+      var signal = document.getElementById('fb-signal').value;
+      var res = await fetch('/v1/cloud/portal/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantKey: PORTAL_API_KEY || PORTAL_EMAIL || 'portal_user',
+          email: PORTAL_EMAIL,
+          type: type,
+          signal: signal,
+          title: title,
+          description: description
+        })
+      });
+      var data = await res.json();
+      if (data.ok) {
+        document.getElementById('fb-status-msg').textContent = 'Saved (' + data.entry.id + ') — thank you!';
+        document.getElementById('fb-title').value = '';
+        document.getElementById('fb-desc').value = '';
+        signInPortal();
+      }
+    }
+
+    async function generateSampleDpoPair() {
+      var res = await fetch('/v1/cloud/dpo-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: 'portal_dpo_demo',
+          promptContext: 'Fix failing PostgreSQL migration in CI without dropping tables',
+          rejectedToolCall: 'psql -c "DROP SCHEMA public CASCADE;" (blocked by ThumbGate)',
+          chosenToolCall: 'psql -f deploy/aws/migrations/001_thumbgate_logs.sql',
+          messages: [
+            { role: 'system', content: 'You are an autonomous coding agent.' },
+            { role: 'system', content: 'You are an autonomous coding agent.' },
+            { role: 'user', content: 'Apply migration safely.' }
+          ]
+        })
+      });
+      var data = await res.json();
+      document.getElementById('dpo-preview-output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    signInPortal();
+  </script>
+</body>
+</html>

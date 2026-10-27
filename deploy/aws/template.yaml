@@ -1,0 +1,177 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ThumbGate Cloud SaaS (thumbgate.ai) — 5-Layer Edge-to-Cloud Token Optimization,
+  Loop Circuit-Breaker & RLHF/DPO Sink Stack.
+  Provisions API Gateway HTTP API, SQS Ingestion & Webhook Queues, Node.js 20 Edge
+  Interceptor Lambda, Python 3.12 SQS Log-Parser/DPO Worker Lambda, S3 DPO Data
+  Warehouse, and DynamoDB Free-Tier Operational Store ($0.00/mo idle cost).
+
+Parameters:
+  DatabaseUrl:
+    Type: String
+    Default: ""
+    Description: Optional PostgreSQL 15+ connection string (leave blank for $0 AWS Always-Free DynamoDB + S3 mode).
+
+Globals:
+  Function:
+    Architectures:
+      - arm64
+    MemorySize: 256
+    Timeout: 10
+    Environment:
+      Variables:
+        NODE_ENV: production
+        THUMBGATE_PUBLIC_APP_ORIGIN: https://thumbgate.ai
+        THUMBGATE_USAGE_TABLE: !Ref ThumbGateUsageTable
+        THUMBGATE_WEBHOOK_QUEUE_URL: !Ref LoopAlertWebhookQueue
+        THUMBGATE_SINK_QUEUE_URL: !Ref TelemetryIngestQueue
+        DPO_S3_BUCKET: !Ref ThumbGateDpoWarehouseBucket
+        DATABASE_URL: !Ref DatabaseUrl
+
+Resources:
+  ThumbGateHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      CorsConfiguration:
+        AllowOrigins:
+          - https://thumbgate.ai
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Authorization
+          - Content-Type
+          - X-ThumbGate-Signature
+
+  ThumbGateInterceptorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs20.x
+      CodeUri: ../../
+      Handler: src/aws-lambda-handler.handler
+      Description: Intercepts agent tool/LLM calls, kills duplicate loops, compacts token payloads, and ingests edge batches.
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ThumbGateUsageTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt LoopAlertWebhookQueue.QueueName
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt TelemetryIngestQueue.QueueName
+      Events:
+        InterceptRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ThumbGateHttpApi
+            Path: /v1/cloud/intercept
+            Method: POST
+        SinkIngestRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ThumbGateHttpApi
+            Path: /v1/cloud/sink/ingest
+            Method: POST
+        PositioningRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ThumbGateHttpApi
+            Path: /v1/cloud/positioning
+            Method: GET
+        CiTrailRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ThumbGateHttpApi
+            Path: /v1/cloud/ci-trail-eval
+            Method: POST
+        DpoSyncRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ThumbGateHttpApi
+            Path: /v1/cloud/dpo-sync
+            Method: POST
+        GuideRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ThumbGateHttpApi
+            Path: /v1/cloud/integration-guide.md
+            Method: GET
+        CalculatorRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ThumbGateHttpApi
+            Path: /v1/cloud/calculator
+            Method: GET
+
+  ThumbGateSqsIngestWorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.12
+      CodeUri: ./
+      Handler: sqs_ingest_worker.lambda_handler
+      Description: Consumes SQS telemetry micro-batches, scrubs secrets, writes operational metrics, and streams DPO pairs to S3.
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref ThumbGateDpoWarehouseBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ThumbGateUsageTable
+      Events:
+        SqsBatchTrigger:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt TelemetryIngestQueue.Arn
+            BatchSize: 25
+            MaximumBatchingWindowInSeconds: 30
+
+  TelemetryIngestQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: thumbgate-telemetry-ingest-queue
+      VisibilityTimeout: 60
+      MessageRetentionPeriod: 345600
+
+  LoopAlertWebhookQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: thumbgate-loop-alert-webhooks
+      VisibilityTimeout: 30
+      MessageRetentionPeriod: 86400
+
+  ThumbGateUsageTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: thumbgate-cloud-usage
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  ThumbGateDpoWarehouseBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "thumbgate-dpo-warehouse-${AWS::AccountId}-${AWS::Region}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+Outputs:
+  ThumbGateCloudApiUrl:
+    Description: Hosted HTTP API endpoint for ThumbGate Cloud SaaS
+    Value: !Sub "https://${ThumbGateHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  ThumbGateDpoBucketName:
+    Description: S3 Bucket storing partitioned RLHF/DPO preference datasets
+    Value: !Ref ThumbGateDpoWarehouseBucket

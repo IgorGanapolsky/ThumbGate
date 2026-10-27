@@ -139,7 +139,7 @@ __GA_BOOTSTRAP__
       <a class="btn-secondary" href="/diagnostic?utm_source=install_page&utm_medium=owned_page&utm_campaign=marketplace_distribution">Harden one workflow</a>
     </div>
     <div class="proof-strip" aria-label="Verified live distribution surfaces">
-      <div class="proof"><strong>npm</strong><span>thumbgate@1.39.0</span></div>
+      <div class="proof"><strong>npm</strong><span>thumbgate@1.40.0</span></div>
       <div class="proof"><strong>VS Code</strong><span>Marketplace version live</span></div>
       <div class="proof"><strong>Open VSX</strong><span>Antigravity-compatible path</span></div>
       <div class="proof"><strong>MCP Registry</strong><span>1.27.20 is latest</span></div>
@@ -147,16 +147,34 @@ __GA_BOOTSTRAP__
     </div>
   </div>
 </header>
+<section id="os-installers">
+  <div class="container">
+    <h2>1-Click OS Installers (macOS, Windows, Linux) &amp; Browser SSO</h2>
+    <p class="section-lede">Install ThumbGate in one click or one terminal line, then sign in with 1-Click SSO (GitHub, Google, or Okta/Entra SAML) without copying API keys manually.</p>
+    <div class="actions" style="margin-bottom:18px;">
+      <a class="btn-primary" href="/install/macos.command" download="ThumbGate-Mac-Installer.command"> Download for macOS (.command)</a>
+      <a class="btn-secondary" href="/Formula/thumbgate.rb" download="thumbgate.rb">🍺 Homebrew Formula (.rb)</a>
+      <a class="btn-secondary" href="/install/windows.bat" download="ThumbGate-Windows-Installer.bat">⊞ Download for Windows (.bat)</a>
+      <a class="btn-secondary" href="/install.sh" download="thumbgate-install.sh">🐧 Download for Linux (.sh)</a>
+      <a class="btn-secondary" href="/cloud">🔐 Open Cloud Portal &amp; 1-Click SSO →</a>
+    </div>
+    <div class="grid">
+      <article class="card"><h3>Homebrew (macOS &amp; Linux)</h3><p>Install ThumbGate globally via Homebrew and link the CLI binary automatically.</p><pre><code>brew tap igorganapolsky/tap &amp;&amp; brew install thumbgate</code></pre></article>
+      <article class="card"><h3>macOS &amp; Linux 1-Line Installer</h3><p>Installs the MIT-free local CLI, wires agent hooks, and prints the Cloud SSO link.</p><pre><code>curl -fsSL https://thumbgate.ai/install.sh | sh</code></pre></article>
+      <article class="card"><h3>Cloud Customer Portal</h3><p>View live token savings (-42%), killed loops, manage your Stripe subscription, and request features.</p><p><a href="/cloud">Sign in at thumbgate.ai/cloud →</a></p></article>
+    </div>
+  </div>
+</section>
 <section id="install">
   <div class="container">
     <h2>Choose the install path that matches your agent.</h2>
     <p class="section-lede">Use the local CLI path for immediate enforcement. Use marketplace installs where your editor supports them. Use the diagnostic path when you need a human-reviewed gate map for one risky workflow. New install: <a href="/guides/progressive-wiring">prove the pipe first</a> (doctor green, empty dashboard OK) before expecting a gate to fire.</p>
     <div class="grid">
-      <article class="card"><h3>CLI and MCP-compatible agents</h3><p>Fastest path for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and local MCP-compatible agents.</p><pre><code>npx -y thumbgate@1.39.0 doctor
-npx -y thumbgate@1.39.0 doctor --fix</code></pre></article>
-      <article class="card"><h3>Claude Desktop</h3><p>Use the npm-backed MCP server today. The Claude Desktop `.mcpb` directory submission packet is prepared separately.</p><pre><code>claude mcp add thumbgate -- npx --yes --package thumbgate@1.39.0 thumbgate serve</code></pre></article>
-      <article class="card"><h3>Cursor</h3><p>The public Cursor Marketplace listing is not live yet. Use the CLI wiring while the dashboard submission is resolved.</p><pre><code>npx -y thumbgate@1.39.0 init --agent cursor</code></pre></article>
-      <article class="card"><h3>Codex</h3><p>Use the local adapter now. Public Codex self-serve plugin publishing is not open yet, so the GitHub Release asset is the distribution proof.</p><pre><code>npx -y thumbgate@1.39.0 init --agent codex</code></pre></article>
+      <article class="card"><h3>CLI and MCP-compatible agents</h3><p>Fastest path for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and local MCP-compatible agents.</p><pre><code>npx -y thumbgate@1.40.0 doctor
+npx -y thumbgate@1.40.0 doctor --fix</code></pre></article>
+      <article class="card"><h3>Claude Desktop</h3><p>Use the npm-backed MCP server today. The Claude Desktop `.mcpb` directory submission packet is prepared separately.</p><pre><code>claude mcp add thumbgate -- npx --yes --package thumbgate@1.40.0 thumbgate serve</code></pre></article>
+      <article class="card"><h3>Cursor</h3><p>The public Cursor Marketplace listing is not live yet. Use the CLI wiring while the dashboard submission is resolved.</p><pre><code>npx -y thumbgate@1.40.0 init --agent cursor</code></pre></article>
+      <article class="card"><h3>Codex</h3><p>Use the local adapter now. Public Codex self-serve plugin publishing is not open yet, so the GitHub Release asset is the distribution proof.</p><pre><code>npx -y thumbgate@1.40.0 init --agent codex</code></pre></article>
     </div>
   </div>
 </section>
@@ -165,7 +183,7 @@ npx -y thumbgate@1.39.0 doctor --fix</code></pre></article>
     <h2>Verified public surfaces.</h2>
     <p class="section-lede">These are the surfaces safe to claim in public copy right now. Pending surfaces are listed so buyers do not get sent to dead marketplace pages.</p>
     <div class="status-list">
-      <div class="status"><span class="badge live">LIVE</span><div><strong><a href="https://www.npmjs.com/package/thumbgate">npm package</a></strong><span>`thumbgate@1.39.0` is the canonical runtime install.</span></div></div>
+      <div class="status"><span class="badge live">LIVE</span><div><strong><a href="https://www.npmjs.com/package/thumbgate">npm package</a></strong><span>`thumbgate@1.40.0` is the canonical runtime install.</span></div></div>
       <div class="status"><span class="badge live">LIVE</span><div><strong><a href="https://marketplace.visualstudio.com/items?itemName=igorganapolsky.thumbgate">VS Code Marketplace</a></strong><span>Marketplace version-list API includes `1.27.20`.</span></div></div>
       <div class="status"><span class="badge live">LIVE</span><div><strong><a href="https://open-vsx.org/extension/igorganapolsky/thumbgate">Open VSX</a></strong><span>Public registry latest version is `1.27.20`; use this path for VS Code-compatible IDEs that consume Open VSX.</span></div></div>
       <div class="status"><span class="badge live">LIVE</span><div><strong><a href="https://registry.modelcontextprotocol.io/v0/servers?search=thumbgate">MCP Registry</a></strong><span>Public search returns `io.github.IgorGanapolsky/thumbgate` version `1.27.20` as latest.</span></div></div>
