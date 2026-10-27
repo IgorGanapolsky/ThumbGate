@@ -184,72 +184,60 @@ function normalizeMessageContent(msg) {
   return raw.replace(/\s+/g, ' ').trim();
 }
 
+function processMessageTurnForCompaction(msg, idx, total, maxChars, state) {
+  if (!msg || typeof msg !== 'object') return;
+  const role = String(msg.role || 'user');
+  const normalized = normalizeMessageContent(msg);
+  if (role === 'system') {
+    if (state.seenSystemPrompts.has(normalized)) {
+      state.duplicateTurnsRemoved += 1;
+    } else {
+      state.seenSystemPrompts.add(normalized);
+      state.compactedMessages.push({ ...msg, content: normalized });
+    }
+    return;
+  }
+  const contentHash = crypto.createHash('sha1').update(`${role}:${normalized}`).digest('hex').slice(0, 12);
+  if (state.seenContentHashes.has(contentHash)) {
+    state.duplicateTurnsRemoved += 1;
+    return;
+  }
+  state.seenContentHashes.set(contentHash, idx);
+  const shouldTruncate = idx !== total - 1 && normalized.length > maxChars;
+  const finalContent = shouldTruncate ? truncateMiddle(normalized, maxChars) : normalized;
+  if (shouldTruncate) state.truncatedBlocks += 1;
+  state.compactedMessages.push({ ...msg, content: finalContent });
+}
+
 function compactTokenPayload({ messages = [], toolOutput = null, maxToolOutputChars = 1200 } = {}) {
   const safeMessages = Array.isArray(messages) ? messages : [];
-  const toolTokens = toolOutput ? estimateTokenCount(toolOutput) : 0;
-  const originalTokens = estimateTokenCount(safeMessages) + toolTokens;
-
-  const seenSystemPrompts = new Set();
-  const seenContentHashes = new Map();
-  const compactedMessages = [];
-  let duplicateTurnsRemoved = 0;
-  let truncatedBlocks = 0;
-
-  const total = safeMessages.length;
-  for (let i = 0; i < total; i++) {
-    const msg = safeMessages[i];
-    if (!msg || typeof msg !== 'object') continue;
-    const role = String(msg.role || 'user');
-    const normalized = normalizeMessageContent(msg);
-
-    if (role === 'system') {
-      if (seenSystemPrompts.has(normalized)) {
-        duplicateTurnsRemoved += 1;
-      } else {
-        seenSystemPrompts.add(normalized);
-        compactedMessages.push({ ...msg, content: normalized });
-      }
-      continue;
-    }
-
-    const contentHash = crypto.createHash('sha1').update(`${role}:${normalized}`).digest('hex').slice(0, 12);
-    if (seenContentHashes.has(contentHash)) {
-      duplicateTurnsRemoved += 1;
-      continue;
-    }
-    seenContentHashes.set(contentHash, i);
-
-    const isLastTurn = i === total - 1;
-    let finalContent = normalized;
-    if (!isLastTurn && finalContent.length > maxToolOutputChars) {
-      finalContent = truncateMiddle(finalContent, maxToolOutputChars);
-      truncatedBlocks += 1;
-    }
-    compactedMessages.push({ ...msg, content: finalContent });
+  const originalTokens = estimateTokenCount(safeMessages) + (toolOutput ? estimateTokenCount(toolOutput) : 0);
+  const state = {
+    seenSystemPrompts: new Set(),
+    seenContentHashes: new Map(),
+    compactedMessages: [],
+    duplicateTurnsRemoved: 0,
+    truncatedBlocks: 0,
+  };
+  for (let i = 0; i < safeMessages.length; i++) {
+    processMessageTurnForCompaction(safeMessages[i], i, safeMessages.length, maxToolOutputChars, state);
   }
-
-  let compactedToolOutput = toolOutput;
-  if (typeof toolOutput === 'string' && toolOutput.length > maxToolOutputChars) {
-    compactedToolOutput = truncateMiddle(toolOutput, maxToolOutputChars);
-    truncatedBlocks += 1;
-  }
-
+  const truncateTool = typeof toolOutput === 'string' && toolOutput.length > maxToolOutputChars;
+  const compactedToolOutput = truncateTool ? truncateMiddle(toolOutput, maxToolOutputChars) : toolOutput;
+  if (truncateTool) state.truncatedBlocks += 1;
   const outToolTokens = compactedToolOutput ? estimateTokenCount(compactedToolOutput) : 0;
-  const optimizedTokens = estimateTokenCount(compactedMessages) + outToolTokens;
+  const optimizedTokens = estimateTokenCount(state.compactedMessages) + outToolTokens;
   const tokensSaved = Math.max(0, originalTokens - optimizedTokens);
-  const reductionPct = originalTokens > 0
-    ? Number(((tokensSaved / originalTokens) * 100).toFixed(1))
-    : 0;
-
+  const reductionPct = originalTokens > 0 ? Number(((tokensSaved / originalTokens) * 100).toFixed(1)) : 0;
   return {
-    compactedMessages,
+    compactedMessages: state.compactedMessages,
     compactedToolOutput,
     originalTokens,
     optimizedTokens,
     tokensSaved,
     reductionPct,
-    duplicateTurnsRemoved,
-    truncatedBlocks,
+    duplicateTurnsRemoved: state.duplicateTurnsRemoved,
+    truncatedBlocks: state.truncatedBlocks,
   };
 }
 
