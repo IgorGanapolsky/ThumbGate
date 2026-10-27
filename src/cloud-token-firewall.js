@@ -81,7 +81,7 @@ const CLOUD_SAAS_TIERS = Object.freeze({
   }),
   cloud_indie: Object.freeze({
     id: 'cloud_indie',
-    name: 'ThumbGate Team & Cloud Indie ($49/mo)',
+    name: 'Cloud Indie',
     priceMonthlyUsd: 49,
     pricePerSeatMonthlyUsd: 29,
     tokensOptimizedCapMonthly: 1_000_000,
@@ -95,7 +95,7 @@ const CLOUD_SAAS_TIERS = Object.freeze({
   }),
   cloud_startup: Object.freeze({
     id: 'cloud_startup',
-    name: 'ThumbGate Team & Startup Swarm ($199/mo)',
+    name: 'Cloud Startup',
     priceMonthlyUsd: 199,
     pricePerSeatMonthlyUsd: 49,
     tokensOptimizedCapMonthly: 10_000_000,

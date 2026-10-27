@@ -3,292 +3,679 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThumbGate Cloud Portal — Sign In, SSO, Token Savings, Subscription &amp; Feature Requests</title>
-  <meta name="description" content="Sign in to ThumbGate Cloud via 1-Click SSO or API key to view real-time token savings (-42%), infinite-loop circuit-breaker kills, RLHF/DPO datasets, manage your subscription, and submit feedback or feature requests.">
+  <title>ThumbGate Cloud — Customer Cloud Portal &amp; Control Plane</title>
+  <meta name="description" content="ThumbGate Cloud Control Plane — manage B2B team policy sync, curated threat packs (AWS, SOC2, Git/DB), token compaction, loop circuit-breaker telemetry, 1-click SSO, and billing.">
   <link rel="icon" type="image/png" href="/thumbgate-icon.png">
   <style>
     :root {
       color-scheme: dark;
       --bg: #080b10;
-      --panel: #111722;
-      --card: #151d2b;
+      --panel: #101620;
+      --panel-elevated: #151d2a;
       --text: #f5f7fb;
-      --muted: #9ca8ba;
-      --line: #273246;
+      --muted: #b4c0d3;
+      --line: #243044;
       --cyan: #38d7ff;
       --green: #56e39f;
       --yellow: #ffd166;
       --red: #ff647c;
-      --mono: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font: 15px/1.6 Inter, system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at 80% 0%, rgba(56,215,255,0.12), transparent 35rem), var(--bg);
+      background: var(--bg);
       color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
     a { color: var(--cyan); text-decoration: none; }
     a:hover { text-decoration: underline; }
-    .shell { width: min(calc(100% - 32px), 1120px); margin: 0 auto; }
-    nav {
+    .shell { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* Top App Header */
+    .top-bar {
       position: sticky;
       top: 0;
-      z-index: 20;
-      background: rgba(8,11,16,0.9);
-      backdrop-filter: blur(14px);
+      z-index: 30;
       border-bottom: 1px solid var(--line);
+      background: rgba(8, 11, 16, 0.92);
+      backdrop-filter: blur(14px);
     }
-    .nav-inner { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-    .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; color: var(--text); font-size: 16px; }
-    .nav-links { display: flex; gap: 18px; align-items: center; font-size: 14px; }
-    .nav-links a { color: var(--muted); font-weight: 600; }
-    .nav-links a.active, .nav-links a:hover { color: var(--cyan); text-decoration: none; }
-    .auth-card, .panel {
+    .top-bar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 62px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      font-weight: 800;
+      font-size: 15px;
+      text-decoration: none;
+    }
+    .brand:hover { text-decoration: none; }
+    .brand-pill {
+      font-size: 11px;
+      font-family: var(--mono);
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(56, 215, 255, 0.12);
+      border: 1px solid rgba(56, 215, 255, 0.35);
+      color: var(--cyan);
+      font-weight: 700;
+    }
+
+    /* Command Palette Trigger (Cmd+K) */
+    .cmdk-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 22px;
-      margin-top: 22px;
-    }
-    .auth-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 12px; }
-    input, select, textarea {
-      background: #0b1018;
-      border: 1px solid var(--line);
+      color: var(--muted);
+      padding: 6px 12px;
       border-radius: 8px;
-      padding: 10px 14px;
-      color: var(--text);
-      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      min-width: 230px;
+      justify-content: space-between;
+      transition: border-color 0.15s;
     }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--cyan); }
+    .cmdk-trigger:hover { border-color: var(--cyan); color: var(--text); }
+    .kbd {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    /* Right Account Session Pill */
+    .account-cluster {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .session-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(86, 227, 159, 0.1);
+      border: 1px solid rgba(86, 227, 159, 0.32);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+
+    /* Buttons & Inputs */
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 10px 18px;
+      gap: 8px;
+      padding: 9px 15px;
       border-radius: 8px;
-      border: 0;
+      border: 1px solid transparent;
       font-weight: 700;
+      font-size: 13px;
       cursor: pointer;
-      background: var(--cyan);
-      color: #041018;
       text-decoration: none;
+      background: var(--cyan);
+      color: #041016;
+      white-space: nowrap;
+      transition: opacity 0.15s, border-color 0.15s;
     }
-    .btn-green { background: var(--green); color: #04140c; }
+    .btn:hover { opacity: 0.92; text-decoration: none; }
+    .btn-green { background: var(--green); color: #04140d; }
     .btn-outline {
-      background: transparent;
-      border: 1px solid var(--line);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--panel-elevated);
       color: var(--text);
-      padding: 10px 16px;
+      border: 1px solid var(--line);
+      padding: 8px 13px;
       border-radius: 8px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       text-decoration: none;
+      white-space: nowrap;
     }
-    .btn-outline:hover { border-color: var(--cyan); color: var(--cyan); text-decoration: none; }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 16px;
-      margin-top: 20px;
-    }
-    .stat-card {
-      background: var(--card);
+    .btn-outline:hover { border-color: var(--cyan); text-decoration: none; }
+    .icon-svg { width: 15px; height: 15px; flex-shrink: 0; vertical-align: -2px; }
+
+    input, select, textarea {
+      background: #0b0f17;
       border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 18px;
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
     }
-    .stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
-    .stat-val { font-size: 28px; font-weight: 800; margin-top: 6px; }
-    .tabs {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 24px;
-      border-bottom: 1px solid var(--line);
-      padding-bottom: 12px;
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--cyan);
     }
-    .tab-btn {
+
+    /* Collapsible Auth Drawer (Hidden by Default When Viewing Session) */
+    .auth-drawer {
+      margin-top: 16px;
       background: var(--panel);
       border: 1px solid var(--line);
-      color: var(--muted);
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-weight: 700;
-      cursor: pointer;
+      border-radius: 12px;
+      padding: 18px 20px;
+      display: none;
     }
-    .tab-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(56,215,255,0.08); }
-    .tab-pane { display: none; }
-    .tab-pane.active { display: block; }
-    .quota-bar {
+    .auth-drawer.open { display: block; }
+    .auth-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+
+    /* Subheader Strip */
+    .workspace-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 20px 0 14px;
+    }
+    .workspace-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+    .workspace-subtitle {
+      margin: 2px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* 4-Card KPI Telemetry Grid (Unnumbered, Balanced Heights, Quota Bar) */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 6px 0 20px;
+    }
+    @media (max-width: 960px) {
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 118px;
+    }
+    .stat-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .stat-val {
+      font-size: 26px;
+      font-weight: 800;
+      margin: 8px 0 4px;
+      font-family: var(--mono);
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stat-plan-val {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 8px 0 6px;
+      color: var(--green);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stat-foot {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .quota-track {
       width: 100%;
-      height: 12px;
-      background: #0b1018;
+      height: 6px;
+      background: #080b10;
       border-radius: 999px;
       overflow: hidden;
       border: 1px solid var(--line);
-      margin: 10px 0;
+      margin: 4px 0 6px;
     }
-    .quota-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--green)); width: 12%; transition: width 0.25s; }
-    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-    .req-item {
-      padding: 14px;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      background: #0b1018;
-      margin-bottom: 10px;
+    .quota-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan), var(--green));
+      width: 2%;
+      transition: width 0.3s ease;
     }
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      background: rgba(56,215,255,0.14);
+
+    /* Unified Single-Row Navigation Rail */
+    .nav-rail {
+      display: flex;
+      gap: 6px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+      padding: 8px 13px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .tab-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.03); }
+    .tab-btn.active {
+      background: rgba(56, 215, 255, 0.12);
       color: var(--cyan);
+      border-color: rgba(56, 215, 255, 0.35);
+    }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* Content Panels & Grids */
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    @media (max-width: 900px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .panel-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
     }
     pre {
       background: #06090e;
       border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: #d8e2f0;
+      margin: 8px 0;
+    }
+
+    /* Interactive Threat Pack Toggle Cards */
+    .pack-card {
+      background: #0b1018;
+      border: 1px solid var(--line);
       border-radius: 10px;
       padding: 14px;
-      overflow-x: auto;
-      font-family: var(--mono);
-      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
     }
+    .pack-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--green);
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle-label input { width: 15px; height: 15px; accent-color: var(--green); cursor: pointer; }
+
+    /* Command Palette Modal */
+    .cmdk-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 7, 11, 0.78);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 12vh;
+    }
+    .cmdk-backdrop.open { display: flex; }
+    .cmdk-modal {
+      width: min(560px, calc(100% - 32px));
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65);
+      overflow: hidden;
+    }
+    .cmdk-input {
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      padding: 14px 16px;
+      font-size: 14px;
+      background: #0b1018;
+    }
+    .cmdk-list {
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .cmdk-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: transparent;
+      border: 0;
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .cmdk-item:hover { background: rgba(56, 215, 255, 0.12); color: var(--cyan); }
   </style>
 </head>
 <body>
-  <nav aria-label="Cloud Portal navigation">
-    <div class="shell nav-inner">
-      <a class="brand" href="/">
-        <img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" width="28" height="28">
-        <span>ThumbGate Cloud Portal</span>
-      </a>
-      <div class="nav-links">
-        <a href="/cloud" class="active">Cloud Portal</a>
-        <a href="/install">Installers (Mac/Win/Linux)</a>
-        <a href="/dashboard">Local/Full Dashboard</a>
-        <a href="/v1/cloud/integration-guide.md">Integration Guide (.md)</a>
-        <a href="/pricing">Pricing</a>
+  <!-- TOP APP BAR -->
+  <header class="top-bar" aria-label="Cloud Portal navigation">
+    <div class="shell top-bar-inner">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <a href="/" class="brand">
+          <img src="/thumbgate-icon.png" alt="" width="24" height="24" style="border-radius:6px;">
+          <span>ThumbGate Cloud</span>
+          <span class="brand-pill">v1.40.0</span>
+        </a>
+        <button type="button" class="cmdk-trigger" onclick="toggleCommandPalette(true)" aria-label="Open Command Palette">
+          <span style="display:inline-flex;align-items:center;gap:7px;">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <span>Quick actions &amp; search…</span>
+          </span>
+          <span class="kbd">⌘K</span>
+        </button>
+      </div>
+
+      <div class="account-cluster">
+        <span id="portal-auth-badge" class="session-pill">
+          <span class="status-dot"></span>
+          <span id="portal-session-label">Demo Session · customer@thumbgate.ai</span>
+        </span>
+        <button type="button" class="btn-outline" id="toggle-auth-drawer-btn" onclick="toggleAuthDrawer()">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          <span>Sign In / Switch Account</span>
+        </button>
+        <a href="/pricing" class="btn-outline">Pricing</a>
       </div>
     </div>
-  </nav>
+  </header>
 
   <main class="shell" style="padding-bottom:64px;">
-    <!-- SIGN IN + 1-CLICK SSO BAR -->
-    <section class="auth-card" aria-label="Customer Sign In and SSO">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+    <!-- COLLAPSIBLE SIGN-IN & SSO DRAWER (Collapsed by default so Control Plane owns the top of the screen) -->
+    <section id="portal-auth-drawer" class="auth-drawer" aria-label="Customer Sign In and SSO">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
         <div>
-          <h1 style="margin:0;font-size:22px;">Customer Cloud Portal &amp; Control Plane</h1>
-          <p style="margin:4px 0 0;color:var(--muted);font-size:14px;">Sign in via <strong>1-Click SSO</strong>, API key (<code>tg_live_…</code> / <code>tg_sso_…</code>), or email to inspect token savings, manage your subscription, and request features.</p>
+          <strong style="font-size:15px;">Sign In or Claim Your Cloud Workspace</strong>
+          <p style="margin:2px 0 0;color:var(--muted);font-size:13px;">Authenticate with 1-Click OAuth/SAML SSO, an API key (<code>tg_live_…</code>), or your work email.</p>
         </div>
-        <span id="portal-auth-badge" class="badge">Live Session Ready</span>
+        <button type="button" class="btn-outline" onclick="toggleAuthDrawer(false)" style="padding:5px 10px;font-size:12px;">Close</button>
       </div>
 
-      <!-- 1-CLICK SSO BUTTONS -->
       <div class="auth-row" style="padding-bottom:12px;border-bottom:1px solid var(--line);">
-        <span style="font-size:13px;color:var(--muted);font-weight:700;">1-Click SSO:</span>
-        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=github" data-sso-provider="github">🐙 Sign in with GitHub SSO</a>
-        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=google" data-sso-provider="google">🔐 Sign in with Google SSO</a>
-        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=okta" data-sso-provider="okta">🏢 Enterprise SSO (Okta / Entra SAML)</a>
+        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=github" data-sso-provider="github">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.4 7.86 10.93.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.38-3.88-1.38-.52-1.33-1.28-1.68-1.28-1.68-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11.05 11.05 0 0 1 5.78 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.59.24 2.76.12 3.05.74.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+          <span>Sign in with GitHub SSO</span>
+        </a>
+        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=google" data-sso-provider="google">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+          <span>Sign in with Google SSO</span>
+        </a>
+        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=okta" data-sso-provider="okta">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Enterprise SSO (Okta / Entra SAML)</span>
+        </a>
         <span style="font-size:12px;color:var(--muted);margin-left:auto;">CLI SSO: <code>npx thumbgate login --sso</code></span>
       </div>
 
       <form id="portal-signin-form" class="auth-row" onsubmit="event.preventDefault(); signInPortal();">
-        <input id="portal-api-key" type="password" placeholder="API Key (tg_live_... or tg_sso_...)" style="flex:1;min-width:220px;font-family:var(--mono);">
-        <input id="portal-email" type="email" placeholder="Or work email (you@company.com)" style="flex:1;min-width:220px;">
+        <input id="portal-api-key" type="password" placeholder="API Key (tg_live_... or tg_sso_...)" style="flex:1;min-width:240px;font-family:var(--mono);">
+        <input id="portal-email" type="email" placeholder="Work email (you@company.com)" style="flex:1;min-width:220px;">
         <button type="submit" class="btn" id="portal-signin-btn">Sign In to Cloud Portal</button>
-        <button type="button" class="btn-outline" onclick="runLiveDemoIntercept()">⚡ Simulate Live Agent Loop Intercept</button>
       </form>
-      <div id="portal-status-msg" style="margin-top:10px;font-size:13px;color:var(--green);"></div>
-      <div id="portal-user-url-bar" style="margin-top:8px;font-size:13px;color:var(--muted);">Your Individual Cloud Dashboard URL: <a id="portal-personal-url" href="/cloud/u/demo" style="font-family:var(--mono);font-weight:700;">https://thumbgate.ai/cloud/u/demo</a></div>
     </section>
 
-    <!-- 4-PILLAR KPI METRICS -->
-    <section class="stats-grid" aria-label="Cloud Telemetry Summary">
-      <div class="stat-card">
-        <div class="stat-label">1. Tokens Saved (-42% Compaction)</div>
-        <div class="stat-val" style="color:var(--cyan);" id="kpi-tokens-saved">0</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Est. API Savings: <strong id="kpi-usd-saved" style="color:var(--green);">$0.00</strong></div>
+    <!-- WORKSPACE HEADER -->
+    <div class="workspace-header">
+      <div>
+        <h1 class="workspace-title">Customer Cloud Portal &amp; Control Plane</h1>
+        <div id="portal-user-url-bar" class="workspace-subtitle">
+          Your Individual Cloud Dashboard URL:
+          <a id="portal-personal-url" href="/cloud/u/demo" style="font-family:var(--mono);font-weight:700;">https://thumbgate.ai/cloud/u/demo</a>
+          <span id="portal-status-msg" style="margin-left:10px;color:var(--green);font-weight:600;"></span>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">2. Runaway Loops Killed</div>
-        <div class="stat-val" style="color:var(--red);" id="kpi-loops-killed">0</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px;">Intercepted before LLM billing</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="button" class="btn" onclick="runLiveDemoIntercept()">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span>Simulate Live Agent Loop Intercept</span>
+        </button>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">3. RLHF / DPO Pairs Ready</div>
-        <div class="stat-val" style="color:var(--yellow);" id="kpi-requests-intercepted">0</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px;">1-click HuggingFace JSONL export</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">4. Active Subscription Tier</div>
-        <div class="stat-val" style="color:var(--green);font-size:22px;" id="kpi-plan-name">Cloud Indie ($49/mo)</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="kpi-quota-summary">0 / 1,000,000 tokens used</div>
-      </div>
-    </section>
-
-    <!-- PORTAL TABS -->
-    <div class="tabs" role="tablist">
-      <button type="button" class="tab-btn active" data-tab="overview" onclick="switchPortalTab('overview')">📊 Dashboard &amp; Live Interceptor</button>
-      <button type="button" class="tab-btn" data-tab="installers" onclick="switchPortalTab('installers')">💻 Installers (macOS / Windows / Linux) &amp; SSO</button>
-      <button type="button" class="tab-btn" data-tab="subscription" onclick="switchPortalTab('subscription')">💳 Manage Subscription &amp; Billing</button>
-      <button type="button" class="tab-btn" data-tab="feedback" onclick="switchPortalTab('feedback')">💡 Submit Feedback &amp; Request Features</button>
-      <button type="button" class="tab-btn" data-tab="dpo" onclick="switchPortalTab('dpo')">🧬 RLHF / DPO Cloud Sink &amp; Export</button>
-      <button type="button" class="tab-btn" data-tab="bdm" onclick="switchPortalTab('bdm')">💰 Partner 15% BDM &amp; Team ROI</button>
     </div>
 
-    <!-- TAB 1: OVERVIEW & LIVE INTERCEPTOR -->
+    <!-- 4-CARD KPI TELEMETRY GRID (Unnumbered, Balanced, With Quota Bar & Empty-State Guidance) -->
+    <section class="stats-grid" aria-label="Cloud Telemetry Summary">
+      <div class="stat-card">
+        <div class="stat-label">
+          <span>Tokens Saved (-42% Compaction)</span>
+          <svg class="icon-svg" style="color:var(--cyan);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="stat-val" style="color:var(--cyan);" id="kpi-tokens-saved">0</div>
+        <div class="stat-foot" id="kpi-tokens-hint">Est. API Savings: <strong id="kpi-usd-saved" style="color:var(--green);">$0.00</strong> · Run simulation to test</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">
+          <span>Runaway Loops Killed</span>
+          <svg class="icon-svg" style="color:var(--red);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        </div>
+        <div class="stat-val" style="color:var(--red);" id="kpi-loops-killed">0</div>
+        <div class="stat-foot">Terminated on repeat #3 before LLM billing</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">
+          <span>Preference &amp; DPO Pairs Ready</span>
+          <svg class="icon-svg" style="color:var(--yellow);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <div class="stat-val" style="color:var(--yellow);" id="kpi-requests-intercepted">0</div>
+        <div class="stat-foot">Secret-redacted HuggingFace JSONL</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">
+          <span>Active Plan &amp; Monthly Quota</span>
+          <svg class="icon-svg" style="color:var(--green);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="stat-plan-val" id="kpi-plan-name">Cloud Indie · $49/mo</div>
+        <div>
+          <div class="quota-track" aria-hidden="true"><div id="kpi-quota-bar" class="quota-fill" style="width:2%;"></div></div>
+          <div class="stat-foot" id="kpi-quota-summary">0 / 1,000,000 tokens optimized</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- UNIFIED SINGLE-ROW NAVIGATION RAIL (SVG Icons, No Wrapping, Clean Product Labels) -->
+    <nav class="nav-rail" role="tablist" aria-label="Control Plane sections">
+      <button type="button" class="tab-btn active" data-tab="overview" onclick="switchPortalTab('overview')">
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Control Plane &amp; Threat Packs</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="installers" onclick="switchPortalTab('installers')">
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        <span>Installers &amp; CLI Setup</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="subscription" onclick="switchPortalTab('subscription')">
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        <span>Manage Subscription &amp; Billing</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="feedback" onclick="switchPortalTab('feedback')">
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Submit Feedback &amp; Request Features</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="dpo" onclick="switchPortalTab('dpo')">
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        <span>DPO Cloud Sink &amp; Export</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="bdm" onclick="switchPortalTab('bdm')">
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span>Team ROI &amp; Partner BDM</span>
+      </button>
+    </nav>
+
+    <!-- TAB 1: CONTROL PLANE, THREAT PACK TOGGLES & LIVE INTERCEPTOR -->
     <section id="pane-overview" class="tab-pane active">
+      <!-- Interactive Threat Pack Policy Controls -->
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Team Policy Sync &amp; Curated Threat Packs</h2>
+            <p style="color:var(--muted);font-size:13px;margin:2px 0 0;">Toggle the threat packs enforced across your team's IDEs (<code>Claude Code</code>, <code>Cursor</code>, <code>Codex</code>) and GitHub Actions CI:</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span id="policy-sync-badge" class="session-pill">59 Active Rules Synced</span>
+            <button type="button" class="btn-outline" onclick="syncThreatPackPolicy()">Sync Policy Now</button>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="pack-card">
+            <div class="pack-top">
+              <div>
+                <div style="font-weight:700;font-size:14px;">AWS Production Safeguards</div>
+                <div style="font-size:12px;color:var(--cyan);font-family:var(--mono);">18 Auto-Updating Rules</div>
+              </div>
+              <label class="toggle-label">
+                <input type="checkbox" id="pack-aws" value="aws-production-safeguards" checked onchange="syncThreatPackPolicy()">
+                <span>Enabled</span>
+              </label>
+            </div>
+            <div style="font-size:12px;color:var(--muted);">Blocks <code>aws s3 rb --force</code>, <code>rds delete-db-instance</code>, unauthorized IAM keys, and NAT Gateway traps.</div>
+          </div>
+
+          <div class="pack-card">
+            <div class="pack-top">
+              <div>
+                <div style="font-weight:700;font-size:14px;">SOC2 Secret Leak Prevention</div>
+                <div style="font-size:12px;color:var(--green);font-family:var(--mono);">24 Auto-Updating Rules</div>
+              </div>
+              <label class="toggle-label">
+                <input type="checkbox" id="pack-soc2" value="soc2-secret-leak-prevention" checked onchange="syncThreatPackPolicy()">
+                <span>Enabled</span>
+              </label>
+            </div>
+            <div style="font-size:12px;color:var(--muted);">Blocks outbound <code>$GITHUB_TOKEN</code>, <code>~/.aws/credentials</code>, <code>.env.production</code>, and gate-bypass attempts.</div>
+          </div>
+
+          <div class="pack-card">
+            <div class="pack-top">
+              <div>
+                <div style="font-weight:700;font-size:14px;">Destructive Git &amp; DB Protection</div>
+                <div style="font-size:12px;color:var(--yellow);font-family:var(--mono);">16 Auto-Updating Rules</div>
+              </div>
+              <label class="toggle-label">
+                <input type="checkbox" id="pack-git" value="destructive-git-and-db-blocks" checked onchange="syncThreatPackPolicy()">
+                <span>Enabled</span>
+              </label>
+            </div>
+            <div style="font-size:12px;color:var(--muted);">Blocks <code>git push --force origin main</code>, <code>DROP TABLE</code>, <code>TRUNCATE prod_*</code>, and recursive deletions.</div>
+          </div>
+        </div>
+      </div>
+
       <div class="grid-2">
         <div class="panel">
-          <h2 style="margin-top:0;font-size:18px;">Test Your Cloud Circuit-Breaker Endpoint</h2>
-          <p style="color:var(--muted);font-size:14px;">Send a sample agent payload through <code>POST /v1/cloud/intercept</code> to verify duplicate system-prompt stripping (-42% tokens) and repeat-#3 loop termination:</p>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;">
-            <button type="button" class="btn" onclick="runLiveDemoIntercept()">Run Token Compaction &amp; Loop Check</button>
-            <a class="btn-outline" href="/v1/cloud/integration-guide.md" target="_blank">Open Copy-Paste SDK Guide (.md)</a>
+          <div class="panel-header">
+            <h2 class="panel-title">Live Endpoint Inspector (<code>POST /v1/cloud/intercept</code>)</h2>
+            <button type="button" class="btn" onclick="runLiveDemoIntercept()">Run Compaction &amp; Loop Check</button>
           </div>
-          <pre id="live-intercept-output">Click "Run Token Compaction &amp; Loop Check" to inspect live response...</pre>
+          <p style="color:var(--muted);font-size:13px;margin:0 0 10px;">Send a sample agent payload to verify duplicate system-prompt compaction (-42% tokens) and repeat-#3 loop termination:</p>
+          <pre id="live-intercept-output">Ready — click "Run Compaction &amp; Loop Check" or "Simulate Live Agent Loop Intercept" to inspect live telemetry.</pre>
         </div>
 
         <div class="panel">
-          <h2 style="margin-top:0;font-size:18px;">Quick Drop-In Setup (Homebrew / Python / TypeScript / CLI)</h2>
-          <p style="color:var(--muted);font-size:14px;"><strong>Free Local CLI (MIT forever):</strong></p>
+          <div class="panel-header">
+            <h2 class="panel-title">Quick Setup (CLI, Homebrew &amp; HTTP Middleware)</h2>
+            <a class="btn-outline" href="/v1/cloud/integration-guide.md" target="_blank" style="padding:5px 10px;font-size:12px;">Copy SDK Guide</a>
+          </div>
+          <p style="color:var(--muted);font-size:13px;margin:0 0 6px;"><strong>1. Local CLI &amp; PreToolUse Hook (MIT Free Forever):</strong></p>
           <pre>brew tap igorganapolsky/tap &amp;&amp; brew install thumbgate
 npx thumbgate init</pre>
-          <p style="color:var(--muted);font-size:14px;"><strong>Hosted Cloud Middleware (<code>thumbgate.ai</code>):</strong></p>
+          <p style="color:var(--muted);font-size:13px;margin:10px 0 6px;"><strong>2. Cloud Middleware Endpoint:</strong></p>
           <pre id="portal-curl-snippet">curl -X POST https://thumbgate.ai/v1/cloud/intercept \
   -H "Authorization: Bearer tg_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"sessionId":"run-1","toolCall":{"name":"bash","arguments":{"cmd":"npm test"}}}'</pre>
-        </div>
-      </div>
-      <div class="panel" style="margin-top:16px;">
-        <h2 style="margin-top:0;font-size:18px;">🛡️ Cloudflare for AI Coding Agents — B2B Team Policy Sync &amp; Curated Threat Packs</h2>
-        <p style="color:var(--muted);font-size:14px;margin:4px 0 12px;">When your Senior Architect or Security Lead enables a Curated Threat Pack or blocks a bad agent pattern, rules sync automatically to every developer's IDE (<code>Claude Code</code>, <code>Cursor</code>, <code>Codex</code>) and <strong>GitHub Actions CI</strong> in &lt;0.5ms — with zero-click automatic failure capture:</p>
-        <div class="stats-grid" style="margin:0;">
-          <div class="stat-card">
-            <div class="stat-label" style="color:var(--cyan);">Pack 1 · 18 Auto-Updating Rules</div>
-            <div style="font-weight:700;margin:4px 0;">AWS Production Safeguards</div>
-            <div style="font-size:12px;color:var(--muted);">Blocks <code>aws s3 rb --force</code>, <code>rds delete-db-instance</code>, unauthorized IAM keys &amp; NAT Gateway traps.</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label" style="color:var(--green);">Pack 2 · 24 Auto-Updating Rules</div>
-            <div style="font-weight:700;margin:4px 0;">SOC2 Secret Leak Prevention</div>
-            <div style="font-size:12px;color:var(--muted);">Blocks outbound <code>$GITHUB_TOKEN</code>, <code>~/.aws/credentials</code>, <code>.env.production</code> &amp; gate-bypass attempts.</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label" style="color:var(--yellow);">Pack 3 · 16 Auto-Updating Rules</div>
-            <div style="font-weight:700;margin:4px 0;">Destructive Git &amp; DB Blocks</div>
-            <div style="font-size:12px;color:var(--muted);">Blocks <code>git push --force origin main</code>, <code>DROP TABLE</code>, <code>TRUNCATE prod_*</code> &amp; recursive deletions.</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label" style="color:var(--green);">Live Sync &amp; <code>skill-up</code> Eval</div>
-            <div style="font-weight:700;margin:4px 0;"><code>/v1/cloud/policy-sync</code> · <code>/v1/cloud/skill-up/eval</code></div>
-            <div style="font-size:12px;color:var(--muted);">59 rules synced across IDE + CI + Alibaba <code>skill-up</code> (<code>v1alpha1</code>) Multi-Judge (<code>all_required</code>) &amp; Observation-to-Case loop.</div>
-          </div>
         </div>
       </div>
     </section>
@@ -297,25 +684,25 @@ npx thumbgate init</pre>
     <section id="pane-installers" class="tab-pane">
       <div class="grid-2">
         <div class="panel">
-          <h2 style="margin-top:0;font-size:18px;">1-Click OS Installers (macOS, Windows, Linux)</h2>
-          <p style="color:var(--muted);font-size:14px;">Download the native launcher for your OS or run the 1-line installer in your terminal:</p>
+          <h2 class="panel-title" style="margin-bottom:8px;">Cross-Platform OS Installers (macOS, Windows, Linux)</h2>
+          <p style="color:var(--muted);font-size:13px;">Download the launcher for your operating system or run the one-line terminal command:</p>
           <div style="display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;">
-            <a class="btn" href="/install/macos.command" download="ThumbGate-Mac-Installer.command"> Download macOS Installer (.command)</a>
-            <a class="btn-outline" href="/Formula/thumbgate.rb" download="thumbgate.rb">🍺 Homebrew Formula (thumbgate.rb)</a>
-            <a class="btn-green btn" href="/install/windows.bat" download="ThumbGate-Windows-Installer.bat">⊞ Download Windows Installer (.bat)</a>
-            <a class="btn-outline" href="/install.sh" download="thumbgate-install.sh">🐧 Download Linux Installer (.sh)</a>
+            <a class="btn" href="/install/macos.command" download="ThumbGate-Mac-Installer.command">Download macOS (.command)</a>
+            <a class="btn-outline" href="/Formula/thumbgate.rb" download="thumbgate.rb">Homebrew Formula (thumbgate.rb)</a>
+            <a class="btn-green btn" href="/install/windows.bat" download="ThumbGate-Windows-Installer.bat">Download Windows (.bat)</a>
+            <a class="btn-outline" href="/install.sh" download="thumbgate-install.sh">Download Linux (.sh)</a>
           </div>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong>Homebrew (macOS &amp; Linux):</strong></p>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:4px;"><strong>Homebrew (macOS &amp; Linux):</strong></p>
           <pre>brew tap igorganapolsky/tap &amp;&amp; brew install thumbgate</pre>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong>macOS &amp; Linux 1-Line Terminal Installer:</strong></p>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:4px;"><strong>macOS &amp; Linux Terminal Installer:</strong></p>
           <pre>curl -fsSL https://thumbgate.ai/install.sh | sh</pre>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong>Windows PowerShell 1-Line Installer:</strong></p>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:4px;"><strong>Windows PowerShell Installer:</strong></p>
           <pre>irm https://thumbgate.ai/install.ps1 | iex</pre>
         </div>
 
         <div class="panel">
-          <h2 style="margin-top:0;font-size:18px;">1-Click SSO Authentication (Browser &amp; CLI)</h2>
-          <p style="color:var(--muted);font-size:14px;">Authenticate your local machine or CI runner with your Cloud account in one click—no manual API key copying required:</p>
+          <h2 class="panel-title" style="margin-bottom:8px;">1-Click SSO Authentication (Browser &amp; CLI)</h2>
+          <p style="color:var(--muted);font-size:13px;">Link your local IDE or CI runner with your Cloud workspace in one command:</p>
           <pre>npx thumbgate login --sso</pre>
           <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;">
             <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=github">Connect GitHub SSO</a>
@@ -326,71 +713,77 @@ npx thumbgate init</pre>
       </div>
     </section>
 
-    <!-- TAB 3: SUBSCRIPTION & BILLING MANAGEMENT -->
+    <!-- TAB 3: MANAGE SUBSCRIPTION & BILLING -->
     <section id="pane-subscription" class="tab-pane">
-      <div class="grid-2">
-        <div class="panel">
-          <h2 style="margin-top:0;font-size:18px;">Current Plan &amp; Monthly Token Quota</h2>
-          <p style="margin:6px 0;font-size:16px;"><strong id="sub-plan-title">ThumbGate Cloud Indie ($49/month)</strong> — <span class="badge" id="sub-status-badge">ACTIVE</span></p>
-          <div class="quota-bar"><div class="quota-fill" id="sub-quota-fill" style="width:5%;"></div></div>
-          <p style="font-size:13px;color:var(--muted);" id="sub-quota-detail">0 / 1,000,000 monthly tokens optimized (0%)</p>
-
-          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;">
-            <a class="btn" id="stripe-portal-link" href="/checkout/pro?manage=1">Manage Billing in Stripe →</a>
-            <button type="button" class="btn-outline" onclick="switchPlanTier('cloud_indie')">Switch to Cloud Indie ($49/mo)</button>
-            <button type="button" class="btn-green btn" onclick="switchPlanTier('cloud_startup')">Upgrade to Cloud Startup ($199/mo)</button>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Current Plan: <span id="sub-current-plan" style="color:var(--green);">Cloud Indie · $49/mo</span></h2>
+            <p style="color:var(--muted);font-size:13px;margin:2px 0 0;" id="sub-quota-detail">Monthly optimization cap: 1,000,000 tokens/mo · Status: Active</p>
           </div>
-          <p id="sub-action-msg" style="font-size:13px;color:var(--green);margin-top:12px;"></p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button type="button" class="btn-outline" onclick="switchTierInPortal('cloud_indie')">Switch to Cloud Indie ($49/mo)</button>
+            <button type="button" class="btn" onclick="switchTierInPortal('cloud_startup')">Upgrade to Cloud Startup ($199/mo)</button>
+            <a class="btn-outline" href="/checkout/pro?manage=1">Stripe Billing Portal</a>
+          </div>
         </div>
+      </div>
 
+      <div class="grid-3">
         <div class="panel">
-          <h2 style="margin-top:0;font-size:18px;">Tier Comparison</h2>
-          <ul style="font-size:14px;color:var(--muted);padding-left:18px;line-height:1.8;">
-            <li><strong style="color:var(--text);">Free Local ($0 forever):</strong> <code>npx thumbgate init</code> — local SQLite lessons &amp; PreToolUse checks on your laptop.</li>
-            <li><strong style="color:var(--cyan);">Cloud Indie ($49/mo):</strong> Hosted AWS token compaction (-42%) + duplicate tool-call circuit breaker (up to 1M tokens/mo).</li>
-            <li><strong style="color:var(--green);">Cloud Startup ($199/mo):</strong> 10M tokens/mo + real-time Slack/Discord/HTTP loop-kill webhooks + multi-agent swarm state + S3/Postgres DPO sink.</li>
-            <li><strong style="color:var(--yellow);">Enterprise Compliance &amp; RLHF Sink:</strong> Unalterable SOC2/HIPAA rule packs + dedicated S3/RDS DPO warehouse (<a href="/diagnostic">Book $499 Diagnostic →</a>).</li>
-          </ul>
+          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;">Open-Source MIT</div>
+          <div style="font-size:26px;font-weight:800;margin:6px 0;">$0<span style="font-size:13px;color:var(--muted);">/forever</span></div>
+          <p style="font-size:13px;color:var(--muted);">Local SQLite + PreToolUse firewall for solo developers.</p>
+          <pre>npx thumbgate init</pre>
+        </div>
+        <div class="panel" style="border-color:rgba(56,215,255,0.45);">
+          <div style="font-size:11px;font-weight:800;color:var(--cyan);text-transform:uppercase;">Cloud Indie</div>
+          <div style="font-size:26px;font-weight:800;margin:6px 0;">$49<span style="font-size:13px;color:var(--muted);">/month</span></div>
+          <p style="font-size:13px;color:var(--muted);">1M tokens optimized/mo, 59 Threat Pack rules, and -42% prompt compaction.</p>
+          <a class="btn" href="/go/cloud-indie" style="width:100%;">Select Cloud Indie — $49/mo</a>
+        </div>
+        <div class="panel" style="border-color:rgba(86,227,159,0.45);">
+          <div style="font-size:11px;font-weight:800;color:var(--green);text-transform:uppercase;">Cloud Startup &amp; Team</div>
+          <div style="font-size:26px;font-weight:800;margin:6px 0;">$199<span style="font-size:13px;color:var(--muted);">/month</span></div>
+          <p style="font-size:13px;color:var(--muted);">10M tokens/mo, IDE + GitHub Actions CI policy sync, 1-Click SSO, and real-time loop webhooks.</p>
+          <a class="btn btn-green" href="/go/cloud-startup" style="width:100%;">Select Cloud Startup — $199/mo</a>
         </div>
       </div>
     </section>
 
-    <!-- TAB 4: SUBMIT FEEDBACK & REQUEST FEATURES -->
+    <!-- TAB 4: FEEDBACK & FEATURE REQUESTS -->
     <section id="pane-feedback" class="tab-pane">
       <div class="grid-2">
         <div class="panel">
-          <h2 style="margin-top:0;font-size:18px;">Submit Feedback or Request a Feature</h2>
-          <p style="color:var(--muted);font-size:14px;">Every submission writes directly to the ThumbGate product &amp; DPO ledger so your agents and our roadmap improve immediately.</p>
-          <form id="portal-feedback-form" onsubmit="event.preventDefault(); submitPortalFeedback();" style="display:grid;gap:12px;margin-top:14px;">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-              <label style="font-size:13px;color:var(--muted);">Submission Type
-                <select id="fb-type" style="width:100%;margin-top:4px;">
-                  <option value="feature_request">💡 Feature Request</option>
-                  <option value="feedback">👍/👎 Agent Feedback</option>
-                </select>
-              </label>
-              <label style="font-size:13px;color:var(--muted);">Signal / Priority
-                <select id="fb-signal" style="width:100%;margin-top:4px;">
-                  <option value="up">👍 Positive / High ROI</option>
-                  <option value="down">👎 Pain Point / Blocker</option>
-                </select>
-              </label>
+          <h2 class="panel-title" style="margin-bottom:8px;">Submit Feedback &amp; Request Features</h2>
+          <p style="color:var(--muted);font-size:13px;">Request a new rule pack, webhook integration, or report an issue directly to the engineering roadmap:</p>
+          <form id="portal-feedback-form" onsubmit="event.preventDefault(); submitPortalFeedback();" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <select id="fb-type" style="flex:1;">
+                <option value="feature_request">Feature Request</option>
+                <option value="feedback">Product Feedback</option>
+              </select>
+              <select id="fb-signal" style="flex:1;">
+                <option value="up">Positive / Upvote</option>
+                <option value="down">Issue / Friction</option>
+              </select>
+              <select id="fb-priority" style="flex:1;">
+                <option value="normal">Priority: Normal</option>
+                <option value="high">Priority: High</option>
+                <option value="critical">Priority: Critical</option>
+              </select>
             </div>
-            <input id="fb-title" type="text" required placeholder="Short title (e.g. Add PagerDuty webhook preset for loop kills)" style="width:100%;">
-            <textarea id="fb-desc" rows="4" required placeholder="Describe the workflow, agent framework (Claude Code, Cursor, LangChain), or rule pack you want added..." style="width:100%;"></textarea>
-            <button type="submit" class="btn" id="fb-submit-btn">Submit to ThumbGate Cloud</button>
-            <div id="fb-status-msg" style="font-size:13px;color:var(--green);"></div>
+            <input id="fb-title" type="text" required placeholder="Short title (e.g., Add PagerDuty webhook when loop breaker trips)">
+            <textarea id="fb-desc" rows="4" placeholder="Describe the workflow, agent framework (Claude Code, Cursor, Codex), and expected behavior..."></textarea>
+            <button type="submit" class="btn">Submit to Engineering Roadmap</button>
           </form>
+          <div id="fb-status-msg" style="margin-top:10px;font-size:13px;color:var(--green);"></div>
         </div>
 
         <div class="panel">
-          <h2 style="margin-top:0;font-size:18px;">Recent Customer Feature Requests &amp; Feedback</h2>
-          <div id="fb-list">
-            <div class="req-item">
-              <span class="badge">feature_request</span>
-              <strong style="display:block;margin-top:6px;">Real-time Slack &amp; Discord loop-blocking webhooks</strong>
-              <p style="font-size:13px;color:var(--muted);margin:4px 0 0;">Status: Shipped in Cloud Startup ($199/mo)</p>
-            </div>
+          <h2 class="panel-title" style="margin-bottom:8px;">Recent Customer Feature Queue</h2>
+          <div id="fb-list" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+            <div style="color:var(--muted);font-size:13px;">Loading recent feature requests…</div>
           </div>
         </div>
       </div>
@@ -399,186 +792,331 @@ npx thumbgate init</pre>
     <!-- TAB 5: RLHF / DPO CLOUD SINK -->
     <section id="pane-dpo" class="tab-pane">
       <div class="panel">
-        <h2 style="margin-top:0;font-size:18px;">Production-to-Training RLHF / DPO Alignment Pipeline</h2>
-        <p style="color:var(--muted);font-size:14px;">Convert intercepted agent loops and 👍/👎 developer corrections into secret-redacted HuggingFace DPO training pairs (<code>prompt</code>, <code>chosen</code>, <code>rejected</code>, <code>tokensSaved</code>):</p>
-        <button type="button" class="btn" onclick="generateSampleDpoPair()">Generate &amp; Preview DPO Preference Pair</button>
-        <pre id="dpo-preview-output" style="margin-top:14px;">Click above to generate a live HuggingFace DPO training pair...</pre>
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Production-to-Training RLHF / DPO Alignment Pipeline</h2>
+            <p style="color:var(--muted);font-size:13px;margin:2px 0 0;">Convert intercepted agent loops and developer corrections into secret-redacted HuggingFace DPO training pairs (<code>{prompt, chosen, rejected}</code>):</p>
+          </div>
+          <button type="button" class="btn" onclick="generateSampleDpoPair()">Generate Sample DPO Pair</button>
+        </div>
+        <pre id="dpo-preview-output">Click "Generate Sample DPO Pair" to preview a secret-redacted HuggingFace DPO JSONL record…</pre>
       </div>
     </section>
 
-    <!-- TAB 6: PARTNER 15% BDM DEAL REGISTRATION & TEAM ROI CALCULATOR -->
+    <!-- TAB 6: TEAM ROI & PARTNER BDM -->
     <section id="pane-bdm" class="tab-pane">
       <div class="grid-2">
         <div class="panel">
-          <h2 style="margin-top:0;font-size:18px;">Commission-Only BDM Deal Registration (15% of Collected Cash)</h2>
-          <p style="color:var(--muted);font-size:14px;">Worldwide freelance partner program ($0 base salary, non-exclusive). Register a prospect before pitching to lock 12-month attribution and earn <strong>15% within 14 days of collected client payment</strong> (clawback on refund/non-payment):</p>
-          <form onsubmit="event.preventDefault(); registerBdmDeal();" style="display:grid;gap:10px;margin-top:12px;">
-            <input id="bdm-email" type="email" required placeholder="Your BDM email (partner@agency.com)">
-            <input id="bdm-company" type="text" required placeholder="Prospect company name (e.g. Acme AI Corp)">
-            <input id="bdm-domain" type="text" required placeholder="Prospect domain (e.g. acme.ai)">
-            <input id="bdm-value" type="number" min="49" step="50" value="2500" required placeholder="Estimated deal value ($ USD)">
-            <button type="submit" class="btn">Lock 12-Month Attribution &amp; Register Deal</button>
-          </form>
-          <pre id="bdm-deal-output" style="margin-top:12px;">Register a prospect above to generate a 12-month attribution receipt...</pre>
+          <h2 class="panel-title" style="margin-bottom:8px;">Interactive Engineering &amp; Token ROI Calculator</h2>
+          <p style="color:var(--muted);font-size:13px;">Estimate monthly engineering hours recovered + 42% token compaction savings:</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;">
+            <label style="font-size:12px;color:var(--muted);">Engineering Team Size
+              <input id="roi-team-size" type="number" min="1" max="500" value="10" style="width:100%;margin-top:4px;" oninput="recalcTeamRoi()">
+            </label>
+            <label style="font-size:12px;color:var(--muted);">Wasted Hrs/Week per Dev
+              <input id="roi-wasted-hrs" type="number" min="1" max="40" value="8" style="width:100%;margin-top:4px;" oninput="recalcTeamRoi()">
+            </label>
+            <label style="font-size:12px;color:var(--muted);">Hourly Engineer Cost ($)
+              <input id="roi-hourly-cost" type="number" min="20" max="500" value="75" style="width:100%;margin-top:4px;" oninput="recalcTeamRoi()">
+            </label>
+            <label style="font-size:12px;color:var(--muted);">Monthly LLM API Spend ($)
+              <input id="roi-llm-spend" type="number" min="50" max="100000" value="500" style="width:100%;margin-top:4px;" oninput="recalcTeamRoi()">
+            </label>
+          </div>
+          <pre id="team-roi-output">Calculating ROI…</pre>
         </div>
 
         <div class="panel">
-          <h2 style="margin-top:0;font-size:18px;">Chapter 00 → 06 Build Ladder &amp; Team ROI Calculator</h2>
-          <p style="color:var(--muted);font-size:14px;">Combine 80% loop-triage automation savings + 42% LLM token compaction across your engineering team:</p>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;">
-            <label style="font-size:13px;color:var(--muted);">Team Size (Devs)
-              <input id="roi-team-size" type="number" min="1" max="500" value="10" style="width:100%;margin-top:4px;">
-            </label>
-            <label style="font-size:13px;color:var(--muted);">Loop-Triage Hrs/Wk
-              <input id="roi-hours-wk" type="number" min="1" max="40" value="8" style="width:100%;margin-top:4px;">
-            </label>
-          </div>
-          <button type="button" class="btn-green btn" onclick="calculateTeamRoi()">Calculate Team + Token ROI</button>
-          <pre id="team-roi-output" style="margin-top:12px;">Click above to calculate monthly &amp; annual savings + payback window...</pre>
+          <h2 class="panel-title" style="margin-bottom:8px;">Partner Deal Registration (15% Commission · $0 Base)</h2>
+          <p style="color:var(--muted);font-size:13px;">Register a prospect domain to lock 12-month attribution. Pays 15% of net collected cash within 14 days (auto-reversed on refunds):</p>
+          <form onsubmit="event.preventDefault(); registerBdmDeal();" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+            <input id="bdm-email" type="email" required placeholder="Your partner email (you@agency.com)">
+            <input id="bdm-company" type="text" required placeholder="Prospect company name (e.g., Acme Corp)">
+            <input id="bdm-domain" type="text" required placeholder="Prospect domain (e.g., acme.com)">
+            <input id="bdm-value" type="number" min="49" max="100000" value="499" placeholder="Estimated deal value ($)">
+            <button type="submit" class="btn btn-green">Register Prospect &amp; Lock 12-Month Attribution</button>
+          </form>
+          <pre id="bdm-deal-output" style="margin-top:10px;">Submit a prospect above to generate a signed 12-month attribution receipt…</pre>
         </div>
       </div>
     </section>
   </main>
 
+  <!-- COMMAND PALETTE MODAL (Cmd+K / Ctrl+K) -->
+  <div id="cmdk-backdrop" class="cmdk-backdrop" onclick="if(event.target===this)toggleCommandPalette(false)">
+    <div class="cmdk-modal" role="dialog" aria-modal="true" aria-label="Command Palette">
+      <input id="cmdk-search" class="cmdk-input" type="text" placeholder="Type a command or search (Esc to close)…" oninput="filterCmdk(this.value)">
+      <div id="cmdk-list" class="cmdk-list">
+        <button type="button" class="cmdk-item" onclick="toggleCommandPalette(false);runLiveDemoIntercept()">
+          <span>Simulate Live Agent Loop Intercept (-42% tokens)</span>
+          <span class="kbd">Run</span>
+        </button>
+        <button type="button" class="cmdk-item" onclick="toggleCommandPalette(false);syncThreatPackPolicy()">
+          <span>Sync Team Policy &amp; Curated Threat Packs (59 rules)</span>
+          <span class="kbd">Sync</span>
+        </button>
+        <button type="button" class="cmdk-item" onclick="toggleCommandPalette(false);toggleAuthDrawer(true)">
+          <span>Sign In / Switch Account (GitHub, Google, Okta SSO)</span>
+          <span class="kbd">Auth</span>
+        </button>
+        <button type="button" class="cmdk-item" onclick="toggleCommandPalette(false);switchPortalTab('installers')">
+          <span>Open Installers &amp; CLI Setup (macOS, Windows, Linux, Homebrew)</span>
+          <span class="kbd">Tab</span>
+        </button>
+        <button type="button" class="cmdk-item" onclick="toggleCommandPalette(false);switchPortalTab('subscription')">
+          <span>Manage Subscription &amp; Billing ($49 / $199)</span>
+          <span class="kbd">Billing</span>
+        </button>
+        <button type="button" class="cmdk-item" onclick="toggleCommandPalette(false);switchPortalTab('dpo');generateSampleDpoPair()">
+          <span>Generate &amp; Export HuggingFace DPO Training Pair</span>
+          <span class="kbd">DPO</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     var PORTAL_API_KEY = '';
     var PORTAL_EMAIL = '';
 
-    (function initSsoQueryParams() {
+    function formatCleanPlanLabel(planName, priceMonthlyUsd) {
+      var raw = String(planName || 'Cloud Indie')
+        .replace(/^ThumbGate\s+(?:Team\s*&\s*)?/i, '')
+        .replace(/\s*\(\$?\d+(?:\.\d+)?\/mo\)/gi, '')
+        .trim();
+      var price = Number(priceMonthlyUsd) || 49;
+      return raw + ' · $' + price + '/mo';
+    }
+
+    function toggleAuthDrawer(forceState) {
+      var drawer = document.getElementById('portal-auth-drawer');
+      if (!drawer) return;
+      var next = typeof forceState === 'boolean' ? forceState : !drawer.classList.contains('open');
+      drawer.classList.toggle('open', next);
+      if (next) {
+        var input = document.getElementById('portal-api-key');
+        if (input) input.focus();
+      }
+    }
+
+    function toggleCommandPalette(forceState) {
+      var modal = document.getElementById('cmdk-backdrop');
+      if (!modal) return;
+      var next = typeof forceState === 'boolean' ? forceState : !modal.classList.contains('open');
+      modal.classList.toggle('open', next);
+      if (next) {
+        var input = document.getElementById('cmdk-search');
+        if (input) {
+          input.value = '';
+          filterCmdk('');
+          input.focus();
+        }
+      }
+    }
+
+    function filterCmdk(q) {
+      var term = String(q || '').toLowerCase();
+      var items = document.querySelectorAll('#cmdk-list .cmdk-item');
+      for (var i = 0; i < items.length; i++) {
+        var txt = (items[i].textContent || '').toLowerCase();
+        items[i].style.display = txt.indexOf(term) !== -1 ? 'flex' : 'none';
+      }
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        toggleCommandPalette();
+      } else if (e.key === 'Escape') {
+        toggleCommandPalette(false);
+      }
+    });
+
+    function switchPortalTab(tabId) {
+      var btns = document.querySelectorAll('.tab-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('active', btns[i].getAttribute('data-tab') === tabId);
+      }
+      var panes = document.querySelectorAll('.tab-pane');
+      for (var j = 0; j < panes.length; j++) {
+        panes[j].classList.toggle('active', panes[j].id === 'pane-' + tabId);
+      }
+    }
+
+    function initSsoQueryParams() {
       try {
         var pathMatch = window.location.pathname.match(/^\/(?:cloud\/u|u)\/([a-zA-Z0-9._-]+)$/);
         if (pathMatch && pathMatch[1]) {
-          PORTAL_API_KEY = decodeURIComponent(pathMatch[1]);
-          document.getElementById('portal-api-key').value = PORTAL_API_KEY;
+          PORTAL_EMAIL = decodeURIComponent(pathMatch[1]);
+          document.getElementById('portal-email').value = PORTAL_EMAIL;
         }
         var params = new URLSearchParams(window.location.search);
         var ssoToken = params.get('sso_token');
-        var ssoProvider = params.get('sso_provider');
         var emailParam = params.get('email');
         if (ssoToken) {
           PORTAL_API_KEY = ssoToken;
           document.getElementById('portal-api-key').value = ssoToken;
-          document.getElementById('portal-auth-badge').textContent = 'SSO Authenticated (' + (ssoProvider || 'SSO').toUpperCase() + ')';
         }
         if (emailParam) {
           PORTAL_EMAIL = emailParam;
           document.getElementById('portal-email').value = emailParam;
         }
-      } catch (_) {}
-    })();
-
-    function switchPortalTab(tabId) {
-      document.querySelectorAll('.tab-btn').forEach(function(btn) {
-        btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
-      });
-      document.querySelectorAll('.tab-pane').forEach(function(pane) {
-        pane.classList.toggle('active', pane.id === 'pane-' + tabId);
-      });
+      } catch (e) {}
     }
 
-    function renderPortalSession(data) {
-      if (!data || !data.ok) return;
-      var t = data.telemetry || {};
-      var sub = data.subscription || {};
-      document.getElementById('kpi-tokens-saved').textContent = Number(t.tokensSavedTotal || 0).toLocaleString();
-      document.getElementById('kpi-usd-saved').textContent = '$' + Number(t.estimatedUsdSaved || 0).toFixed(2);
-      document.getElementById('kpi-loops-killed').textContent = Number(t.loopsKilledTotal || 0).toLocaleString();
-      document.getElementById('kpi-requests-intercepted').textContent = Number(t.requestsIntercepted || 0).toLocaleString();
-      document.getElementById('kpi-plan-name').textContent = (sub.planName || 'Cloud Indie') + ' ($' + (sub.priceMonthlyUsd || 49) + '/mo)';
-      var cap = Number(sub.tokensOptimizedCapMonthly || 1000000).toLocaleString();
-      var used = Number(sub.tokensOptimizedMonthly || 0).toLocaleString();
-      document.getElementById('kpi-quota-summary').textContent = used + ' / ' + cap + ' tokens optimized';
-      document.getElementById('sub-plan-title').textContent = (sub.planName || 'ThumbGate Cloud Indie') + ' ($' + (sub.priceMonthlyUsd || 49) + '/month)';
-      document.getElementById('sub-quota-detail').textContent = used + ' / ' + cap + ' monthly tokens optimized (' + (sub.quotaUsedPct || 0) + '%)';
-      document.getElementById('sub-quota-fill').style.width = Math.max(4, Math.min(100, Number(sub.quotaUsedPct || 4))) + '%';
-      var slug = encodeURIComponent((PORTAL_EMAIL || PORTAL_API_KEY || 'demo').replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 32));
+    function renderPortalSession(s) {
+      if (!s || !s.ok) return;
+      var tokensSaved = Number(s.telemetry.tokensSavedTotal || 0);
+      var loopsKilled = Number(s.telemetry.loopsKilledTotal || 0);
+      var reqs = Number(s.telemetry.requestsIntercepted || 0);
+      var cap = Number(s.subscription.tokensOptimizedCapMonthly || 1000000);
+      var used = Number(s.subscription.tokensOptimizedMonthly || 0);
+      var pct = Math.max(2, Math.min(100, Number(s.subscription.quotaUsedPct || 0)));
+
+      document.getElementById('kpi-tokens-saved').textContent = tokensSaved.toLocaleString();
+      document.getElementById('kpi-usd-saved').textContent = '$' + Number(s.telemetry.estimatedUsdSaved || 0).toFixed(2);
+      document.getElementById('kpi-loops-killed').textContent = loopsKilled.toLocaleString();
+      document.getElementById('kpi-requests-intercepted').textContent = reqs.toLocaleString();
+
+      var cleanPlan = formatCleanPlanLabel(s.customer.planName, s.customer.priceMonthlyUsd);
+      document.getElementById('kpi-plan-name').textContent = cleanPlan;
+      document.getElementById('kpi-quota-summary').textContent =
+        used.toLocaleString() + ' / ' + cap.toLocaleString() + ' tokens optimized (' + Number(s.subscription.quotaUsedPct || 0) + '%)';
+      var barEl = document.getElementById('kpi-quota-bar');
+      if (barEl) barEl.style.width = pct + '%';
+
+      document.getElementById('sub-current-plan').textContent = cleanPlan;
+      document.getElementById('sub-quota-detail').textContent =
+        'Monthly optimization cap: ' + cap.toLocaleString() + ' tokens/mo · Status: ' + s.customer.status;
+
+      var sessionLabel = document.getElementById('portal-session-label');
+      if (sessionLabel) {
+        sessionLabel.textContent = (s.authenticated ? 'Signed in · ' : 'Demo Session · ') + s.customer.email;
+      }
+
+      var slug = encodeURIComponent((PORTAL_EMAIL || PORTAL_API_KEY || s.customer.email || 'demo').replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 32));
       var urlEl = document.getElementById('portal-personal-url');
       if (urlEl) {
         urlEl.href = '/cloud/u/' + slug;
         urlEl.textContent = window.location.origin + '/cloud/u/' + slug;
       }
 
-      if (Array.isArray(data.featureRequests) && data.featureRequests.length > 0) {
+      if (Array.isArray(s.featureRequests)) {
         var listEl = document.getElementById('fb-list');
-        listEl.innerHTML = data.featureRequests.map(function(item) {
-          return '<div class="req-item"><span class="badge">' + (item.type || 'feature_request') + ' · ' + (item.signal || 'up') + '</span>'
-            + '<strong style="display:block;margin-top:6px;">' + escapeHtml(item.title || '') + '</strong>'
-            + '<p style="font-size:13px;color:var(--muted);margin:4px 0 0;">' + escapeHtml(item.description || '') + '</p></div>';
-        }).join('');
+        if (s.featureRequests.length === 0) {
+          listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;">No feature requests yet — submit one on the left.</div>';
+        } else {
+          listEl.innerHTML = s.featureRequests.map(function(item) {
+            return '<div style="padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#0a0e15;">' +
+              '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);">' +
+              '<span><strong>' + escapeHtml(item.type) + '</strong> · Priority: ' + escapeHtml(item.priority) + '</span>' +
+              '<span>Status: <strong style="color:var(--cyan);">' + escapeHtml(item.status) + '</strong></span></div>' +
+              '<div style="font-weight:700;margin-top:4px;">' + escapeHtml(item.title) + '</div>' +
+              '<div style="font-size:13px;color:var(--muted);margin-top:2px;">' + escapeHtml(item.description) + '</div></div>';
+          }).join('');
+        }
       }
     }
 
     function escapeHtml(str) {
-      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      return String(str || '').replace(/[&<>"']/g, function(c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
     }
 
-    async function signInPortal() {
-      PORTAL_API_KEY = document.getElementById('portal-api-key').value.trim();
-      PORTAL_EMAIL = document.getElementById('portal-email').value.trim();
+    async function loadPortalSession() {
       var qs = new URLSearchParams();
       if (PORTAL_API_KEY) qs.set('apiKey', PORTAL_API_KEY);
       if (PORTAL_EMAIL) qs.set('email', PORTAL_EMAIL);
       var res = await fetch('/v1/cloud/portal/session?' + qs.toString());
       var data = await res.json();
       renderPortalSession(data);
-      document.getElementById('portal-status-msg').textContent = 'Signed in as ' + (data.customer && data.customer.email ? data.customer.email : 'active session') + ' (' + (data.subscription && data.subscription.planName) + ').';
+    }
+
+    async function signInPortal() {
+      PORTAL_API_KEY = document.getElementById('portal-api-key').value.trim();
+      PORTAL_EMAIL = document.getElementById('portal-email').value.trim();
+      await loadPortalSession();
+      toggleAuthDrawer(false);
+      document.getElementById('portal-status-msg').textContent = 'Session active (' + (PORTAL_EMAIL || PORTAL_API_KEY || 'demo') + ')';
+    }
+
+    async function syncThreatPackPolicy() {
+      var ids = [];
+      if (document.getElementById('pack-aws')?.checked) ids.push('aws-production-safeguards');
+      if (document.getElementById('pack-soc2')?.checked) ids.push('soc2-secret-leak-prevention');
+      if (document.getElementById('pack-git')?.checked) ids.push('destructive-git-and-db-blocks');
+      var res = await fetch('/v1/cloud/policy-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orgId: PORTAL_API_KEY || PORTAL_EMAIL || 'org_default',
+          enabledPackIds: ids,
+          updatedBy: PORTAL_EMAIL || 'customer@thumbgate.ai',
+        }),
+      });
+      var data = await res.json();
+      var badge = document.getElementById('policy-sync-badge');
+      if (badge && data.ok) {
+        badge.textContent = data.totalRulesSynced + ' Active Rules Synced';
+      }
     }
 
     async function runLiveDemoIntercept() {
-      var outEl = document.getElementById('live-intercept-output');
-      outEl.textContent = 'Running payload compaction + duplicate tool-call check...';
+      var out = document.getElementById('live-intercept-output');
+      out.textContent = 'Running live token compaction & loop circuit-breaker check…';
       var res = await fetch('/v1/cloud/portal/demo-intercept', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           apiKey: PORTAL_API_KEY || 'tg_indie_portal_demo',
-          email: PORTAL_EMAIL || 'demo@thumbgate.ai'
-        })
+          email: PORTAL_EMAIL || 'demo@thumbgate.ai',
+        }),
       });
       var data = await res.json();
-      outEl.textContent = JSON.stringify(data.interceptResult || data, null, 2);
+      out.textContent = JSON.stringify(data.interceptResult, null, 2);
       if (data.session) renderPortalSession(data.session);
     }
 
-    async function switchPlanTier(targetTierId) {
+    async function switchTierInPortal(targetTierId) {
       var res = await fetch('/v1/cloud/portal/subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tenantKey: PORTAL_API_KEY || PORTAL_EMAIL || 'demo_customer',
+          tenantKey: PORTAL_API_KEY || PORTAL_EMAIL || 'tg_indie_portal_demo',
           action: 'switch_tier',
           targetTierId: targetTierId,
-          customerEmail: PORTAL_EMAIL
-        })
-      });
-      var data = await res.json();
-      document.getElementById('sub-action-msg').innerHTML = 'Plan updated to <strong>' + escapeHtml(data.planName || targetTierId) + '</strong>. <a href="' + escapeHtml(data.checkoutUrl || '/pricing') + '">Complete Stripe checkout →</a>';
-      signInPortal();
-    }
-
-    async function submitPortalFeedback() {
-      var title = document.getElementById('fb-title').value.trim();
-      var description = document.getElementById('fb-desc').value.trim();
-      var type = document.getElementById('fb-type').value;
-      var signal = document.getElementById('fb-signal').value;
-      var res = await fetch('/v1/cloud/portal/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenantKey: PORTAL_API_KEY || PORTAL_EMAIL || 'portal_user',
-          email: PORTAL_EMAIL,
-          type: type,
-          signal: signal,
-          title: title,
-          description: description
-        })
+          customerEmail: PORTAL_EMAIL || 'customer@thumbgate.ai',
+        }),
       });
       var data = await res.json();
       if (data.ok) {
-        document.getElementById('fb-status-msg').textContent = 'Saved (' + data.entry.id + ') — thank you!';
+        await loadPortalSession();
+        document.getElementById('portal-status-msg').textContent = 'Switched plan to ' + formatCleanPlanLabel(data.planName, data.priceMonthlyUsd);
+      }
+    }
+
+    async function submitPortalFeedback() {
+      var payload = {
+        tenantKey: PORTAL_API_KEY || PORTAL_EMAIL || 'tg_indie_portal_demo',
+        email: PORTAL_EMAIL || 'customer@thumbgate.ai',
+        type: document.getElementById('fb-type').value,
+        signal: document.getElementById('fb-signal').value,
+        priority: document.getElementById('fb-priority').value,
+        title: document.getElementById('fb-title').value,
+        description: document.getElementById('fb-desc').value,
+      };
+      var res = await fetch('/v1/cloud/portal/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      var data = await res.json();
+      if (data.ok) {
         document.getElementById('fb-title').value = '';
         document.getElementById('fb-desc').value = '';
-        signInPortal();
+        document.getElementById('fb-status-msg').textContent = 'Saved (' + data.entry.id + ') — added to roadmap queue.';
+        await loadPortalSession();
       }
     }
 
@@ -589,17 +1127,30 @@ npx thumbgate init</pre>
         body: JSON.stringify({
           sessionId: 'portal_dpo_demo',
           promptContext: 'Fix failing PostgreSQL migration in CI without dropping tables',
-          rejectedToolCall: 'psql -c "DROP SCHEMA public CASCADE;" (blocked by ThumbGate)',
-          chosenToolCall: 'psql -f deploy/aws/migrations/001_thumbgate_logs.sql',
+          rejectedToolCall: 'psql -c "DROP SCHEMA public CASCADE;" (repeated 3x)',
+          chosenToolCall: 'npx prisma migrate resolve --applied 20261027_init',
           messages: [
             { role: 'system', content: 'You are an autonomous coding agent.' },
             { role: 'system', content: 'You are an autonomous coding agent.' },
-            { role: 'user', content: 'Apply migration safely.' }
-          ]
-        })
+            { role: 'user', content: 'Apply migration safely.' },
+          ],
+        }),
       });
       var data = await res.json();
       document.getElementById('dpo-preview-output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function recalcTeamRoi() {
+      var teamSize = document.getElementById('roi-team-size').value || 10;
+      var wasted = document.getElementById('roi-wasted-hrs').value || 8;
+      var cost = document.getElementById('roi-hourly-cost').value || 75;
+      var llm = document.getElementById('roi-llm-spend').value || 500;
+      var res = await fetch('/v1/cloud/roi-calculator?teamSize=' + encodeURIComponent(teamSize) +
+        '&wastedHoursPerWeekPerDev=' + encodeURIComponent(wasted) +
+        '&hourlyEngineerCostUsd=' + encodeURIComponent(cost) +
+        '&monthlyLlmApiSpendUsd=' + encodeURIComponent(llm));
+      var data = await res.json();
+      document.getElementById('team-roi-output').textContent = JSON.stringify(data.outputs, null, 2);
     }
 
     async function registerBdmDeal() {
@@ -607,25 +1158,19 @@ npx thumbgate init</pre>
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          bdmEmail: document.getElementById('bdm-email').value.trim(),
-          prospectCompany: document.getElementById('bdm-company').value.trim(),
-          prospectDomain: document.getElementById('bdm-domain').value.trim(),
-          estimatedDealValueUsd: Number(document.getElementById('bdm-value').value || 2500)
-        })
+          bdmEmail: document.getElementById('bdm-email').value,
+          prospectCompany: document.getElementById('bdm-company').value,
+          prospectDomain: document.getElementById('bdm-domain').value,
+          estimatedDealValueUsd: Number(document.getElementById('bdm-value').value) || 499,
+        }),
       });
       var data = await res.json();
       document.getElementById('bdm-deal-output').textContent = JSON.stringify(data, null, 2);
     }
 
-    async function calculateTeamRoi() {
-      var teamSize = document.getElementById('roi-team-size').value || 10;
-      var hrs = document.getElementById('roi-hours-wk').value || 8;
-      var res = await fetch('/v1/cloud/roi-calculator?teamSize=' + encodeURIComponent(teamSize) + '&wastedHoursPerWeekPerDev=' + encodeURIComponent(hrs));
-      var data = await res.json();
-      document.getElementById('team-roi-output').textContent = JSON.stringify(data, null, 2);
-    }
-
-    signInPortal();
+    initSsoQueryParams();
+    loadPortalSession();
+    recalcTeamRoi();
   </script>
 </body>
 </html>
