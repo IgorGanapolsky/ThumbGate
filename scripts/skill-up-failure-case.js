@@ -7,7 +7,7 @@ const SOURCE_POST = 'https://x.com/DanKornas/status/2113860880592966054';
 const REPO_ROOT = path.resolve(__dirname, '..');
 
 function isEmailLocalChar(ch) {
-  const code = ch.charCodeAt(0);
+  const code = ch.codePointAt(0);
   return (code >= 48 && code <= 57)
     || (code >= 65 && code <= 90)
     || (code >= 97 && code <= 122)
@@ -15,7 +15,7 @@ function isEmailLocalChar(ch) {
 }
 
 function isEmailDomainChar(ch) {
-  const code = ch.charCodeAt(0);
+  const code = ch.codePointAt(0);
   return (code >= 48 && code <= 57)
     || (code >= 65 && code <= 90)
     || (code >= 97 && code <= 122)
@@ -23,7 +23,7 @@ function isEmailDomainChar(ch) {
 }
 
 function isEmailAlpha(ch) {
-  const code = ch.charCodeAt(0);
+  const code = ch.codePointAt(0);
   return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
 }
 
@@ -261,10 +261,16 @@ function passRate(rows) {
   return { rate: passes / rows.length, ids };
 }
 
+function compareCaseIds(left, right) {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
+}
+
 function sameIds(left, right) {
   if (left.ids.length !== right.ids.length) return false;
-  const a = [...left.ids].sort();
-  const b = [...right.ids].sort();
+  const a = [...left.ids].sort(compareCaseIds);
+  const b = [...right.ids].sort(compareCaseIds);
   return a.every((id, index) => id === b[index]);
 }
 
