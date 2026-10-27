@@ -20,6 +20,7 @@ To keep root `AGENTS.md` well below the **3,000-word adherence ceiling** (`evalu
 | **Salt Code Policy Honesty** | `npx thumbgate salt-code-policy-honesty --map-only --json` | [`salt-code-policy-honesty.md`](./salt-code-policy-honesty.md) |
 | **RRSI Harness Regularizer** | `node scripts/rrsi-doctor.js --json` | [`rrsi-harness-regularization.md`](./rrsi-harness-regularization.md) |
 | **Harness Evolution Ceiling** | `npx thumbgate harness-ceiling --json` | [`harness-evolution-ceiling.md`](./harness-evolution-ceiling.md) |
+| **Harness Ceiling Diagnostics** | `node scripts/harness-ceiling-diagnostics.js --map-only` | [`harness-ceiling-weight-training.md`](./harness-ceiling-weight-training.md) |
 | **Decisive-Step Evaluator** | `npx thumbgate decisive-step --json` | [`decisive-step-evaluator.md`](./decisive-step-evaluator.md) |
 | **Mintlify Knowledge Freshness** | `npx thumbgate mintlify-knowledge-honesty --map-only --json` | [`mintlify-knowledge-honesty.md`](./mintlify-knowledge-honesty.md) |
 | **Fiddler Control Plane TCO** | `npx thumbgate fiddler-control-plane-honesty --map-only --json` | [`fiddler-control-plane-honesty.md`](./fiddler-control-plane-honesty.md) |

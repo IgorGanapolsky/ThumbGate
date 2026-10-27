@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Restore the fail-closed harness ceiling diagnostics beside the merged evolution-ceiling doctor. A supplied trace is classified F1 evidence, F2 friction, F3 execution, then a delivered healthy plan, then F4 content. An undelivered row is not F4. A bare run without `--trace` or `--map-only` exits non-zero. The diagnostics script does not run a training job. Packaged additions are `scripts/harness-ceiling-diagnostics.js` and `.agents/skills/harness-ceiling-diagnostics/`. Measured `npm pack --dry-run` is 637 files and 9,558,265 bytes unpacked, under the 638-file and 9.85 MB ceilings.
+
 ## 1.39.0
 
 ### Minor Changes
