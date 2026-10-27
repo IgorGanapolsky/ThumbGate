@@ -68,7 +68,7 @@ test('homepage exposes both Pro $19/mo and Enterprise $499 offers', () => {
   assert.match(landingPage, /Start Pro — \$19\/mo/);
   assert.match(landingPage, /Get Started — \$499 Diagnostic/);
   assert.match(landingPage, /Pro · \$19\/mo/);
-  assert.match(landingPage, /Get Started · \$499/);
+  assert.match(landingPage, /Team Setup · \$499/);
 });
 
 test('visible text filtering consumes the complete script and style end tags', () => {
@@ -108,8 +108,8 @@ test('hero names both paid paths and the self-improving product outcome', () => 
 
   assert.match(landingPage, /Stop AI agent mistakes before they cost you/i);
   assert.match(landingPage, /ThumbGate — Stop AI agent mistakes before they cost you/i);
-  assert.match(hero, /<h1>Stop AI agent mistakes before they cost you\.<\/h1>/i);
-  assert.match(hero, /Not a prompt · Not a postmortem/i);
+  assert.match(hero, /<h1>Cloudflare for AI Coding Agents\.<\/h1>/i);
+  assert.match(hero, /B2B Team Policy Sync · 59 Curated Threat Rules/i);
   assert.match(hero, /tool-call boundary/i);
   assert.match(hero, /Pro at \$19\/mo/);
   assert.match(hero, /\$499 Diagnostic/);
@@ -158,7 +158,7 @@ test('homepage explains the product with one four-stage self-improving loop', ()
 });
 
 test('paid wedge includes managed implementation, regression, and rollout proof', () => {
-  assert.match(landingPage, /Get Started · \$499/);
+  assert.match(landingPage, /Team Setup · \$499/);
   assert.match(landingPage, /Get Started — \$499 Diagnostic/);
   assert.match(landingPage, /One configured local gate \+ regression test|One configured local gate and its regression test/);
   assert.match(landingPage, /Rollout and rollback proof within two business days/);
