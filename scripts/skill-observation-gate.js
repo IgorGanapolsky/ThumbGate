@@ -339,10 +339,145 @@ function safeOutPath(cwd, out) {
   if (typeof out !== 'string' || out === '' || path.isAbsolute(out) || out.split(/[/\\]/).includes('..')) {
     return null;
   }
-  const base = path.resolve(cwd);
-  const target = path.resolve(base, out);
-  if (target !== base && !target.startsWith(base + path.sep)) return null;
+  let baseReal;
+  try {
+    baseReal = fs.realpathSync(path.resolve(cwd));
+  } catch {
+    return null;
+  }
+  const lexical = path.resolve(baseReal, out);
+  if (!insideRoot(baseReal, lexical)) return null;
+
+  const missing = [];
+  let cursor = lexical;
+  while (true) {
+    try {
+      fs.lstatSync(cursor);
+      break;
+    } catch {
+      if (cursor === baseReal || cursor === path.dirname(cursor)) return null;
+      missing.push(path.basename(cursor));
+      cursor = path.dirname(cursor);
+    }
+  }
+
+  let anchorReal;
+  try {
+    anchorReal = fs.realpathSync(cursor);
+  } catch {
+    return null;
+  }
+  if (!insideRoot(baseReal, anchorReal)) return null;
+  if (missing.length > 0) {
+    let anchorStat;
+    try {
+      anchorStat = fs.statSync(anchorReal);
+    } catch {
+      return null;
+    }
+    if (!anchorStat.isDirectory()) return null;
+  }
+
+  const target = missing.length === 0 ? anchorReal : path.resolve(anchorReal, ...missing.reverse());
+  if (!insideRoot(baseReal, target)) return null;
+  if (missing.length === 0) return target;
+  try {
+    if (fs.lstatSync(target)) {
+      const destinationReal = fs.realpathSync(target);
+      if (!insideRoot(baseReal, destinationReal)) return null;
+      return destinationReal;
+    }
+  } catch {
+    return target;
+  }
   return target;
+}
+
+function loadWorkspaceSkill(cwd, workspaceArg) {
+  if (typeof workspaceArg !== 'string' || workspaceArg === '') {
+    return {
+      ok: false,
+      code: 'workspace_required',
+      message: 'judge needs --workspace pointing at a directory that contains SKILL.md.',
+    };
+  }
+  const root = path.resolve(cwd, workspaceArg);
+  let rootStat;
+  try {
+    rootStat = fs.statSync(root);
+  } catch {
+    return {
+      ok: false,
+      code: 'workspace_missing',
+      message: 'The workspace directory does not exist.',
+    };
+  }
+  if (!rootStat.isDirectory()) {
+    return {
+      ok: false,
+      code: 'workspace_missing',
+      message: 'The workspace path is not a directory.',
+    };
+  }
+  let rootReal;
+  try {
+    rootReal = fs.realpathSync(root);
+  } catch {
+    return {
+      ok: false,
+      code: 'workspace_missing',
+      message: 'The workspace directory does not exist.',
+    };
+  }
+  const skillFile = path.join(root, 'SKILL.md');
+  try {
+    fs.lstatSync(skillFile);
+  } catch {
+    return {
+      ok: false,
+      code: 'skill_missing',
+      message: 'The workspace has no SKILL.md file.',
+    };
+  }
+  let skillReal;
+  try {
+    skillReal = fs.realpathSync(skillFile);
+  } catch {
+    return {
+      ok: false,
+      code: 'skill_missing',
+      message: 'The workspace has no SKILL.md file.',
+    };
+  }
+  if (!insideRoot(rootReal, skillReal)) {
+    return {
+      ok: false,
+      code: 'skill_refused',
+      message: 'SKILL.md resolves outside the workspace.',
+    };
+  }
+  let skillStat;
+  try {
+    skillStat = fs.statSync(skillReal);
+  } catch {
+    return {
+      ok: false,
+      code: 'skill_missing',
+      message: 'The workspace has no SKILL.md file.',
+    };
+  }
+  if (!skillStat.isFile()) {
+    return {
+      ok: false,
+      code: 'skill_missing',
+      message: 'The workspace has no SKILL.md file.',
+    };
+  }
+  return {
+    ok: true,
+    root: rootReal,
+    skillText: fs.readFileSync(skillReal, 'utf8'),
+  };
 }
 
 function printJson(value) {
@@ -361,6 +496,10 @@ function usage() {
 
 function main(argv, stdin, cwd) {
   const args = argv.slice(2);
+  if (args.includes('--help') || args.includes('-h')) {
+    usage();
+    return 0;
+  }
   if (args.includes('--map-only') || args[0] === '--map-only') {
     printJson(ideaMap());
     return 0;
@@ -404,16 +543,21 @@ function main(argv, stdin, cwd) {
       return 2;
     }
     const workspaceFlag = args.indexOf('--workspace');
-    const workspace = { skillText: '', files: Object.create(null) };
-    if (workspaceFlag !== -1 && args[workspaceFlag + 1]) {
-      const root = path.resolve(cwd, args[workspaceFlag + 1]);
-      workspace.root = root;
-      const skillFile = path.join(root, 'SKILL.md');
-      if (fs.existsSync(skillFile) && fs.statSync(skillFile).isFile()) {
-        workspace.skillText = fs.readFileSync(skillFile, 'utf8');
-      }
+    const loaded = loadWorkspaceSkill(cwd, workspaceFlag === -1 ? null : args[workspaceFlag + 1]);
+    if (!loaded.ok) {
+      printJson({
+        verdict: 'FAIL',
+        code: loaded.code,
+        message: loaded.message,
+        failureCheckedFirst: true,
+      });
+      return 1;
     }
-    const result = judgeCase(testCase, workspace);
+    const result = judgeCase(testCase, {
+      skillText: loaded.skillText,
+      files: Object.create(null),
+      root: loaded.root,
+    });
     printJson(result);
     return result.verdict === 'PASS' ? 0 : 1;
   }
@@ -455,7 +599,13 @@ module.exports = {
   main,
 };
 
+function skipsStdin(argv) {
+  const args = argv.slice(2);
+  if (args.includes('--help') || args.includes('-h') || args.includes('--map-only')) return true;
+  return args[0] !== 'admit';
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
-  const stdin = fs.readFileSync(0, 'utf8');
+  const stdin = skipsStdin(process.argv) ? '' : fs.readFileSync(0, 'utf8');
   process.exit(main(process.argv, stdin, process.cwd()));
 }

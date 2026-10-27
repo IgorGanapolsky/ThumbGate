@@ -39,7 +39,7 @@ node scripts/skill-observation-gate.js compare baseline.json candidate.json
 npm run test:skill-observation-gate
 ```
 
-`admit` reads one JSON object from stdin. A refused observation writes no file.
+`admit` reads one JSON object from stdin. `judge`, `compare`, `--map-only`, and `--help` return without reading stdin. A refused observation writes no file. `judge` fails when `--workspace` is missing, is not a directory, has no `SKILL.md`, or when that file resolves outside the workspace. `--out` is refused when the resolved path, including through a symlink, leaves the working directory.
 `compare` exits 0 on accept and 1 on `keep_original`.
 
 Code as truth: scripts/skill-observation-gate.js

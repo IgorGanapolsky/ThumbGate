@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 
 const gate = require('../scripts/skill-observation-gate');
 
@@ -312,4 +312,124 @@ test('cli map, admit, judge, and compare exit codes match the decision', () => {
   const accepted = runCli(['compare', baseline, candidate]);
   assert.equal(accepted.status, 0);
   assert.equal(runCli(['compare']).status, 2);
+});
+
+function runWithOpenStdin(args, cwd) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [SCRIPT, ...args], {
+      cwd: cwd || path.dirname(SCRIPT),
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+    }, 2000);
+    child.on('close', (status) => {
+      clearTimeout(timer);
+      resolve({ status, stdout, stderr });
+    });
+  });
+}
+
+test('map-only, judge, and compare finish while stdin is still open', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-observation-open-'));
+  fs.writeFileSync(path.join(dir, 'SKILL.md'), 'approved\n');
+  const caseFile = path.join(dir, 'case.json');
+  fs.writeFileSync(caseFile, JSON.stringify(approvedObservation().case));
+  const baseline = path.join(dir, 'base.json');
+  const candidate = path.join(dir, 'next.json');
+  fs.writeFileSync(baseline, JSON.stringify({ cases: [{ id: 'a', verdict: 'PASS' }] }));
+  fs.writeFileSync(candidate, JSON.stringify({ cases: [{ id: 'a', verdict: 'PASS' }] }));
+
+  const mapped = await runWithOpenStdin(['--map-only'], dir);
+  assert.equal(mapped.status, 0);
+  assert.equal(JSON.parse(mapped.stdout).notOurMeasurement, true);
+
+  const help = await runWithOpenStdin(['--help'], dir);
+  assert.equal(help.status, 0);
+  assert.match(help.stderr, /Usage:/);
+
+  const judged = await runWithOpenStdin(['judge', '--case', caseFile, '--workspace', dir], dir);
+  assert.equal(judged.status, 0);
+  assert.equal(JSON.parse(judged.stdout).verdict, 'PASS');
+
+  const compared = await runWithOpenStdin(['compare', baseline, candidate], dir);
+  assert.equal(compared.status, 0);
+  assert.equal(JSON.parse(compared.stdout).decision, 'accept');
+
+  const unknown = await runWithOpenStdin(['nope'], dir);
+  assert.equal(unknown.status, 2);
+});
+
+test('judge does not pass a missing workspace or a missing skill file', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-observation-missing-'));
+  const caseFile = path.join(dir, 'case.json');
+  fs.writeFileSync(caseFile, JSON.stringify({
+    id: 'absence',
+    judge: { failure: [], success: [{ skill_not_contains: 'unsafe' }] },
+  }));
+
+  const omitted = runCli(['judge', '--case', caseFile], { cwd: dir });
+  assert.equal(omitted.status, 1);
+  assert.equal(JSON.parse(omitted.stdout).verdict, 'FAIL');
+  assert.equal(JSON.parse(omitted.stdout).code, 'workspace_required');
+
+  const missingDir = runCli(['judge', '--case', caseFile, '--workspace', path.join(dir, 'gone')], { cwd: dir });
+  assert.equal(missingDir.status, 1);
+  assert.equal(JSON.parse(missingDir.stdout).verdict, 'FAIL');
+  assert.equal(JSON.parse(missingDir.stdout).code, 'workspace_missing');
+
+  const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-observation-empty-'));
+  const noSkill = runCli(['judge', '--case', caseFile, '--workspace', empty], { cwd: dir });
+  assert.equal(noSkill.status, 1);
+  assert.equal(JSON.parse(noSkill.stdout).verdict, 'FAIL');
+  assert.equal(JSON.parse(noSkill.stdout).code, 'skill_missing');
+
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-observation-skill-out-'));
+  fs.writeFileSync(path.join(outside, 'SKILL.md'), 'local gate only\n');
+  const linkedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-observation-skill-link-'));
+  fs.symlinkSync(path.join(outside, 'SKILL.md'), path.join(linkedRoot, 'SKILL.md'));
+  const leaked = runCli(['judge', '--case', caseFile, '--workspace', linkedRoot], { cwd: dir });
+  assert.equal(leaked.status, 1);
+  assert.equal(JSON.parse(leaked.stdout).verdict, 'FAIL');
+  assert.equal(JSON.parse(leaked.stdout).code, 'skill_refused');
+});
+
+test('admit refuses an output path that resolves outside the working directory', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-observation-out-'));
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-observation-escaped-'));
+  fs.symlinkSync(outside, path.join(dir, 'linked'));
+  const escaped = runCli(['admit', '--out', 'linked/case.json'], {
+    cwd: dir,
+    input: JSON.stringify(approvedObservation()),
+  });
+  assert.equal(escaped.status, 2);
+  assert.equal(JSON.parse(escaped.stdout).code, 'out_refused');
+  assert.equal(fs.existsSync(path.join(outside, 'case.json')), false);
+
+  const outsideFile = path.join(outside, 'kept.json');
+  fs.writeFileSync(outsideFile, 'keep\n');
+  fs.symlinkSync(outsideFile, path.join(dir, 'escaped.json'));
+  const throughFile = runCli(['admit', '--out', 'escaped.json'], {
+    cwd: dir,
+    input: JSON.stringify(approvedObservation()),
+  });
+  assert.equal(throughFile.status, 2);
+  assert.equal(JSON.parse(throughFile.stdout).code, 'out_refused');
+  assert.equal(fs.readFileSync(outsideFile, 'utf8'), 'keep\n');
+
+  const realDir = path.join(dir, 'real');
+  fs.mkdirSync(realDir);
+  fs.symlinkSync(realDir, path.join(dir, 'alias'));
+  const inside = runCli(['admit', '--out', 'alias/case.json'], {
+    cwd: dir,
+    input: JSON.stringify(approvedObservation()),
+  });
+  assert.equal(inside.status, 0);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(realDir, 'case.json'), 'utf8')).id, 'names-approval');
 });
