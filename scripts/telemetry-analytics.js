@@ -20,6 +20,7 @@ const MARKETING_CLICK_EVENT_TYPES = new Set([
   'cta_click',
   'checkout_start',
   'checkout_bootstrap',
+  'pro_checkout_direct_stripe',
   'diagnostic_checkout_confirmed',
   'checkout_interstitial_cta_clicked',
   'chatgpt_gpt_open',
@@ -36,6 +37,7 @@ const MARKETING_CLICK_EVENT_TYPES = new Set([
 const CHECKOUT_START_EVENT_TYPES = new Set([
   'checkout_start',
   'checkout_bootstrap',
+  'pro_checkout_direct_stripe',
   // A diagnostic buyer has submitted a valid receipt email and the server is
   // issuing the external Payment Link redirect. This is stronger than a CTA
   // click and is the service equivalent of the Pro checkout bootstrap.
@@ -977,7 +979,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
 
       if ((entry.eventType || entry.event) === 'checkout_interstitial_cta_clicked') {
         checkoutInterstitialClicks += 1;
-        if (entry.ctaId === 'pro_checkout_confirmed') {
+        if (entry.ctaId === 'pro_checkout_confirmed' || entry.ctaId === 'pro_checkout_direct_stripe') {
           checkoutInterstitialProConfirms += 1;
         } else if (entry.ctaId === 'workflow_sprint_intake') {
           checkoutInterstitialWorkflowIntakeClicks += 1;

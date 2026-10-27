@@ -2809,7 +2809,7 @@ h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:70
 p{color:#cbd5e1;margin:8px 0}form{margin:0}
 input[type=email]{width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid #374151;border-radius:8px;background:#111827;color:#fff;font-size:15px;margin:16px 0 0;outline:none}
 input[type=email]:focus{border-color:#22d3ee}input[type=email]::placeholder{color:#64748b}
-button.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%}
+button.primary,a.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%;box-sizing:border-box}
 a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}
 .trust,.objection-box{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}
 .trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}
@@ -2834,7 +2834,7 @@ ${hiddenInputs}
 <p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
-<a class="secondary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">Skip form — open Stripe checkout directly →</a>
+<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">Skip form — open Stripe checkout directly →</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
 <p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages. Email path keeps receipts attributable; skip uses a same-origin hop that bot-deflects crawlers.</p>
 <div class="objection-box" aria-label="Checkout feedback">
@@ -2913,6 +2913,18 @@ ${hiddenInputs}
     emailInput.addEventListener('input', updateSkipLink);
     emailInput.addEventListener('change', updateSkipLink);
     updateSkipLink();
+  }
+  if (skipLink) {
+    skipLink.addEventListener('click', function(){
+      submitted = true;
+      var email = emailInput ? emailInput.value.trim() : null;
+      sendTelemetry('checkout_interstitial_cta_clicked', {
+        ctaId: 'pro_checkout_direct_stripe',
+        ctaPlacement: 'checkout_interstitial',
+        customerEmail: email || null
+      });
+      try { window.plausible && window.plausible('Checkout Pro Direct Stripe Clicked', { props: { page:'/checkout/pro', source:'interstitial_skip' } }); } catch(_) {}
+    });
   }
   document.querySelector('form').addEventListener('submit', function(){
     submitted = true;
