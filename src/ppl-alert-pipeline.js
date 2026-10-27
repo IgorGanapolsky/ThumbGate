@@ -76,12 +76,26 @@ class PPLPipeline {
     return { type: 'stats', aggs, byField };
   }
 
+  static _isSafeIdentifier(name) {
+    if (typeof name !== 'string' || !name || name.length > 128) return false;
+    if (!/^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(name)) return false;
+    const parts = name.split('.');
+    return !parts.some((p) => p === '__proto__' || p === 'constructor' || p === 'prototype');
+  }
+
   static _parseEval(rest) {
+    if (typeof rest !== 'string' || rest.length > 256) {
+      throw new Error('Eval expression exceeds maximum safe length');
+    }
     const eqIndex = rest.indexOf('=');
     if (eqIndex === -1) {
       throw new Error(`Invalid eval syntax: ${rest}`);
     }
-    return { type: 'eval', target: rest.slice(0, eqIndex).trim(), expr: rest.slice(eqIndex + 1).trim() };
+    const target = rest.slice(0, eqIndex).trim();
+    if (!PPLPipeline._isSafeIdentifier(target) || target.includes('.')) {
+      throw new Error(`Unsafe eval target identifier: ${target}`);
+    }
+    return { type: 'eval', target, expr: rest.slice(eqIndex + 1).trim() };
   }
 
   execute(records = []) {
@@ -145,25 +159,35 @@ class PPLPipeline {
   }
 
   static _execEval(record, stage) {
-    const res = { ...record };
-    const exprTokens = /^([a-z0-9_.]+)\s*([+\-*/><=!]+)\s*([\s\S]+)$/i.exec(stage.expr);
+    const res = Object.assign(Object.create(null), record);
+    if (!PPLPipeline._isSafeIdentifier(stage.target) || stage.target.includes('.')) {
+      return { ...res };
+    }
+    const safeExpr = String(stage.expr || '').slice(0, 256).trim();
+    const exprTokens = /^([a-z0-9_.]+)\s*(==|!=|>=|<=|>|<|\+|-|\*|\/)\s*([^\s;()]+)$/i.exec(safeExpr);
     if (exprTokens) {
       const [, left, op, right] = exprTokens;
+      if (!PPLPipeline._isSafeIdentifier(left)) {
+        return { ...res };
+      }
       const leftVal = PPLPipeline._getProp(record, left);
       let rightVal = right.trim().replace(/^['"]|['"]$/g, '');
-      if (!Number.isNaN(Number(rightVal))) rightVal = Number(rightVal);
+      if (!Number.isNaN(Number(rightVal)) && rightVal !== '') rightVal = Number(rightVal);
 
       if (op === '>') res[stage.target] = Number(leftVal) > Number(rightVal);
       else if (op === '>=') res[stage.target] = Number(leftVal) >= Number(rightVal);
       else if (op === '<') res[stage.target] = Number(leftVal) < Number(rightVal);
       else if (op === '<=') res[stage.target] = Number(leftVal) <= Number(rightVal);
       else if (op === '==') res[stage.target] = leftVal === rightVal;
+      else if (op === '!=') res[stage.target] = leftVal !== rightVal;
       else if (op === '+') res[stage.target] = Number(leftVal) + Number(rightVal);
       else if (op === '-') res[stage.target] = Number(leftVal) - Number(rightVal);
+      else if (op === '*') res[stage.target] = Number(leftVal) * Number(rightVal);
+      else if (op === '/') res[stage.target] = Number(rightVal) !== 0 ? Number(leftVal) / Number(rightVal) : null;
     } else {
-      res[stage.target] = stage.expr;
+      res[stage.target] = safeExpr.replace(/^['"]|['"]$/g, '');
     }
-    return res;
+    return { ...res };
   }
 
   static _execStats(records, stage) {
@@ -226,11 +250,11 @@ class PPLPipeline {
   }
 
   static _getProp(obj, pathStr) {
-    if (!obj || !pathStr) return undefined;
+    if (!obj || !PPLPipeline._isSafeIdentifier(pathStr)) return undefined;
     const parts = pathStr.split('.');
     let cur = obj;
     for (const p of parts) {
-      if (cur == null) return undefined;
+      if (cur == null || !Object.prototype.hasOwnProperty.call(cur, p)) return undefined;
       cur = cur[p];
     }
     return cur;

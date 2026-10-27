@@ -31,11 +31,13 @@ const {
   buildSkillsShWellKnownDiscoveryIndex,
   evaluateHerdrOmpPoolsideGitButlerSwarmGate,
   evaluateBrowserOsNeoProductivityGate,
+  evaluateRadwareAgenticApiRiskFirewall,
   resetCloudFirewallStateForTests,
 } = require('../src/cloud-token-firewall');
+const { PPLPipeline } = require('../src/ppl-alert-pipeline');
 const { handler: lambdaHandler } = require('../src/aws-lambda-handler');
 const { repairProjectMcpConfigs } = require('../scripts/codex-self-heal');
-const { startServer } = require('../src/api/server');
+const { startServer, __test__: serverTest } = require('../src/api/server');
 
 test('compactTokenPayload strips duplicate system prompts, repeated turns, and bloated tool logs (>=42% reduction)', () => {
   const repeatedSys = 'You are an autonomous coding agent running in a strict verification loop. Follow all repository rules and never skip tests.';
@@ -396,6 +398,7 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
     ['/v1/cloud/skill-up/observation', { observationId: 'obs_1', attribution: 'explicit', approvedByMaintainer: true }],
     ['/v1/cloud/swarm/herdr-gitbutler', { workerCount: 4, requiresSharedLiveDevServerOrRuntime: true }],
     ['/v1/cloud/browseros-neo/gate', { cdpEndpoint: 'http://127.0.0.1:9111', snapshotFormat: 'accessibility_tree_ref_ids' }],
+    ['/v1/cloud/radware-agent-risk/gate', { securesLocalDeveloperAgents: true, securesApiGatewayPerimeter: true }],
     ['/v1/cloud/intercept', { sessionId: 's1', messages: [{ role: 'user', content: 'hi' }] }],
   ]) {
     const r = await lambdaHandler({
@@ -472,6 +475,34 @@ test('syncTeamPolicyAndThreatPacks and evaluateRachelWoodsCraftAndPlaybookMiddle
   });
   assert.equal(neoBad.ok, false);
   assert.equal(neoBad.blockers.length, 5);
+
+  const radwareGood = evaluateRadwareAgenticApiRiskFirewall();
+  assert.equal(radwareGood.ok, true);
+  assert.equal(radwareGood.monetization.outboundCashSpendUsd, 0);
+  assert.equal(radwareGood.monetization.giftCardInflowUsd, 50);
+
+  const radwareBad = evaluateRadwareAgenticApiRiskFirewall({
+    securesLocalDeveloperAgents: false,
+    intentBasedBehavioralProtection: false,
+    agentScopes: ['admin', '*'],
+    blocksIndirectPromptInjectionAndJailbreaks: false,
+    outboundCashSpendUsd: 10,
+  });
+  assert.equal(radwareBad.ok, false);
+  assert.equal(radwareBad.blockers.length, 5);
+
+  assert.equal(serverTest.normalizeTrackedLinkSlug('  Pro-Direct!! '), 'pro-direct');
+  assert.equal(serverTest.normalizeTrackedLinkSlug(null), '');
+  assert.equal(serverTest.normalizeCheckoutCustomerEmail('  Buyer@Acme.io '), 'buyer@acme.io');
+  assert.equal(serverTest.normalizeCheckoutCustomerEmail('buyer@bad..acme.io'), null);
+
+  const ppl = PPLPipeline.parse('eval total = latency * 2 | eval ratio = total / 4 | eval diff = ratio != 0');
+  const pplOut = ppl.execute([{ latency: 10 }]);
+  assert.equal(pplOut[0].total, 20);
+  assert.equal(pplOut[0].ratio, 5);
+  assert.equal(pplOut[0].diff, true);
+  assert.throws(() => PPLPipeline.parse('eval __proto__ = 1'), /Unsafe eval target identifier/);
+  assert.equal(PPLPipeline._getProp({ a: 1 }, 'constructor.prototype'), undefined);
 });
 
 test('Python AWS Lambda SQS worker (deploy/aws/sqs_ingest_worker.py) and PostgreSQL migration work cleanly', () => {
@@ -795,6 +826,15 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     assert.equal(neoRes.status, 200);
     const neoJson = await neoRes.json();
     assert.equal(neoJson.ok, true);
+
+    const radwareRes = await fetch(`${origin}/v1/cloud/radware-agent-risk/gate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ securesLocalDeveloperAgents: true }),
+    });
+    assert.equal(radwareRes.status, 200);
+    const radwareJson = await radwareRes.json();
+    assert.equal(radwareJson.ok, true);
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.match(homeHtml, /Start Cloud Indie/);
     assert.match(homeHtml, /Start Cloud Startup/);

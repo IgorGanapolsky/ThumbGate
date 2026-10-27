@@ -1783,6 +1783,51 @@ function evaluateBrowserOsNeoProductivityGate({
   };
 }
 
+function evaluateRadwareAgenticApiRiskFirewall({
+  securesLocalDeveloperAgents = true,
+  securesApiGatewayPerimeter = true,
+  intentBasedBehavioralProtection = true,
+  blocksOverPrivilegedWildcardScopes = true,
+  blocksIndirectPromptInjectionAndJailbreaks = true,
+  agentScopes = ['read:repo', 'write:branch'],
+  outboundCashSpendUsd = 0,
+  giftCardInflowUsd = 50,
+  partnerCommissionPct = 15,
+  managedSetupOfferUsd = 499,
+} = {}) {
+  const blockers = [];
+  if (!securesLocalDeveloperAgents || !securesApiGatewayPerimeter) {
+    blockers.push('require_dual_layer_local_pretooluse_and_api_perimeter_protection');
+  }
+  if (!intentBasedBehavioralProtection) {
+    blockers.push('require_intent_based_behavioral_multi_step_and_cross_agent_protection');
+  }
+  const scopes = Array.isArray(agentScopes) ? agentScopes : [];
+  const hasWildcardOrAdmin = scopes.some((s) => /^(\*|admin|root|all)$/i.test(String(s).trim()));
+  if (!blocksOverPrivilegedWildcardScopes || hasWildcardOrAdmin) {
+    blockers.push('block_over_privileged_agent_wildcard_or_admin_scopes');
+  }
+  if (!blocksIndirectPromptInjectionAndJailbreaks) {
+    blockers.push('require_prompt_level_llm_firewall_against_indirect_injection_and_jailbreaks');
+  }
+  if (Number(outboundCashSpendUsd) > 0) {
+    blockers.push('zero_outbound_spend_mandate_violated');
+  }
+
+  return {
+    ok: blockers.length === 0,
+    partner: 'Radware (www.radware.com — James Council, Cybersecurity Risk Advisor)',
+    architecture: 'dual_layer_local_pretooluse_plus_radware_api_llm_firewall',
+    monetization: {
+      outboundCashSpendUsd: 0,
+      giftCardInflowUsd: Number(giftCardInflowUsd) || 50,
+      managedSetupOfferUsd: Number(managedSetupOfferUsd) || 499,
+      partnerCommissionPct: Number(partnerCommissionPct) || 15,
+    },
+    blockers,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -1830,6 +1875,7 @@ module.exports = {
   buildSkillsShWellKnownDiscoveryIndex,
   evaluateHerdrOmpPoolsideGitButlerSwarmGate,
   evaluateBrowserOsNeoProductivityGate,
+  evaluateRadwareAgenticApiRiskFirewall,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };
