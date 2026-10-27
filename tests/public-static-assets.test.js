@@ -119,7 +119,7 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /Buy the \$499 enterprise gate/);
+  assert.match(html, /Buy the \$499 diagnostic/);
   assert.match(html, /\/checkout\/pro/);
   assert.match(html, /Start Pro — \$19\/mo/);
   assert.doesNotMatch(html, /\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
@@ -131,7 +131,7 @@ test('landing page presents Pro self-serve and fixed-price managed offer clearly
   assert.equal(res.status, 200);
   const html = await res.text();
 
-  assert.match(html, /Enterprise Workflow Gate/);
+  assert.match(html, /What the \$499 diagnostic buys/);
   assert.match(html, /One configured local gate and its regression test/);
   assert.match(html, /Rollout and rollback proof within two business days/);
   assert.match(html, /one supported local workflow/i);

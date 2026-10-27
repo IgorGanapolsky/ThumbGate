@@ -21,11 +21,13 @@ test('README keeps the enterprise story tied to control-plane language and proof
   assert.match(readme, /exact `main` merge commit/i);
 });
 
-test('public landing page exposes the enterprise entry offer without broader architecture', () => {
+test('public landing page names the $499 diagnostic and refuses the enterprise label', () => {
   const landing = read(path.join('public', 'index.html'));
 
-  assert.match(landing, /Enterprise Workflow Gate/i);
-  assert.match(landing, /\$499 enterprise entry offer/i);
+  assert.match(landing, /Diagnostic Gate/);
+  assert.match(landing, /What the \$499 diagnostic buys/);
+  assert.doesNotMatch(landing, /Enterprise Workflow Gate/i);
+  assert.doesNotMatch(landing, /\$499 enterprise entry offer/i);
   assert.match(landing, /one supported local workflow/i);
   assert.match(landing, /regression test/i);
   assert.match(landing, /rollout and rollback proof/i);

@@ -9,7 +9,7 @@ test.describe('/ dual-offer conversion path', () => {
   test('renders Pro $19/mo and Enterprise $499 offers plus the enforcement loop', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.locator('.hero h1')).toHaveText('Stop AI agent mistakes before they cost you.');
+    await expect(page.locator('.hero h1')).toHaveText('Block the agent action before it runs.');
     await expect(page.locator('[data-primary-checkout]')).toBeVisible();
     await expect(page.locator('[data-primary-checkout] .price')).toContainText('$499');
     await expect(page.locator('[data-primary-checkout]')).toContainText('Diagnostic Gate');

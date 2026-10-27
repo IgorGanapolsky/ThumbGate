@@ -904,10 +904,10 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /ThumbGate/);
-  assert.match(body, /Stop AI agent mistakes before they cost you/i);
-  assert.match(body, /Enterprise Workflow Gate/i);
+  assert.match(body, /Block the agent action before it runs/i);
+  assert.match(body, /What the \$499 diagnostic buys/i);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(body, /Buy the \$499 enterprise gate/i);
+  assert.match(body, /Buy the \$499 diagnostic/i);
   assert.match(body, /Start Pro — \$19\/mo/i);
   assert.match(body, /\/checkout\/pro/);
   assert.match(body, /One configured local gate and its regression test/i);

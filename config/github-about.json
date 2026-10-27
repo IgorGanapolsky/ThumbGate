@@ -23,5 +23,5 @@
     "thompson-sampling",
     "self-improving-agents"
   ],
-  "metaDescription": "Stop AI agent mistakes before they cost you. Self-serve is $19/mo; the $499 Diagnostic installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days."
+  "metaDescription": "A detected secret is denied by default. Force-push to main is allowed until strict mode is on. Pro is $19/mo. The $499 Diagnostic installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days."
 }
