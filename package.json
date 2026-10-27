@@ -393,6 +393,7 @@
     "scripts/skill-generator.js",
     "scripts/skill-packs.js",
     "scripts/skill-rag-router.js",
+    "scripts/skill-up-failure-case.js",
     "scripts/slo-alert-engine.js",
     "scripts/slow-loop.js",
     "scripts/solver-parity.js",

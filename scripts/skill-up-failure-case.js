@@ -6,9 +6,89 @@ const path = require('node:path');
 const SOURCE_POST = 'https://x.com/DanKornas/status/2113860880592966054';
 const REPO_ROOT = path.resolve(__dirname, '..');
 
+function isEmailLocalChar(ch) {
+  const code = ch.charCodeAt(0);
+  return (code >= 48 && code <= 57)
+    || (code >= 65 && code <= 90)
+    || (code >= 97 && code <= 122)
+    || ch === '.' || ch === '_' || ch === '%' || ch === '+' || ch === '-';
+}
+
+function isEmailDomainChar(ch) {
+  const code = ch.charCodeAt(0);
+  return (code >= 48 && code <= 57)
+    || (code >= 65 && code <= 90)
+    || (code >= 97 && code <= 122)
+    || ch === '-';
+}
+
+function isEmailAlpha(ch) {
+  const code = ch.charCodeAt(0);
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+}
+
+function redactEmails(text) {
+  let out = '';
+  let i = 0;
+  while (i < text.length) {
+    const at = text.indexOf('@', i);
+    if (at < 0) {
+      out += text.slice(i);
+      break;
+    }
+    let start = at;
+    let localLen = 0;
+    while (start > i && localLen < 64 && isEmailLocalChar(text[start - 1])) {
+      start -= 1;
+      localLen += 1;
+    }
+    const localTooLong = start > i && isEmailLocalChar(text[start - 1]);
+    let end = at + 1;
+    let labels = 0;
+    let lastAlpha = 0;
+    let domainOk = localLen > 0 && !localTooLong;
+    while (domainOk) {
+      const labelStart = end;
+      let labelLen = 0;
+      while (end < text.length && labelLen < 63 && isEmailDomainChar(text[end])) {
+        end += 1;
+        labelLen += 1;
+      }
+      if (labelLen === 0 || (end < text.length && isEmailDomainChar(text[end]))) {
+        domainOk = false;
+        break;
+      }
+      labels += 1;
+      let alphaOnly = true;
+      let alpha = 0;
+      for (let k = labelStart; k < end; k += 1) {
+        if (!isEmailAlpha(text[k])) {
+          alphaOnly = false;
+          break;
+        }
+        alpha += 1;
+      }
+      lastAlpha = alphaOnly ? alpha : 0;
+      if (end + 1 < text.length && text[end] === '.' && isEmailDomainChar(text[end + 1])) {
+        end += 1;
+        continue;
+      }
+      break;
+    }
+    if (!domainOk || labels < 2 || lastAlpha < 2 || lastAlpha > 24) {
+      out += text.slice(i, at + 1);
+      i = at + 1;
+      continue;
+    }
+    out += text.slice(i, start);
+    out += '[redacted-email]';
+    i = end;
+  }
+  return out;
+}
+
 function redact(text) {
-  return String(text ?? '')
-    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[redacted-email]')
+  return redactEmails(String(text ?? ''))
     .replace(/\b(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{8,}\b/g, '[redacted]')
     .replace(/\bgh[pousr]_[A-Za-z0-9]{20,}\b/g, '[redacted]')
     .replace(/\bgithub_pat_[A-Za-z0-9_]{20,}\b/g, '[redacted]')
