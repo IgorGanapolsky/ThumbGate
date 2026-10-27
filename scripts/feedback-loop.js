@@ -1490,6 +1490,11 @@ function captureFeedback(params) {
       diagnosis: storedDiagnosis,
     };
   }
+  try {
+    feedbackEvent = require('./skill-up-failure-case').attachReproducibleCase(feedbackEvent, {
+      feedbackDir: FEEDBACK_DIR,
+    });
+  } catch { /* a case file must not block feedback capture */ }
   const historyEntries = readJSONL(FEEDBACK_LOG_PATH).slice(-SEQUENCE_WINDOW);
 
   const summary = loadSummary();
