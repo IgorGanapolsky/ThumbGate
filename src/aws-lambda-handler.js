@@ -114,6 +114,29 @@ async function handler(event = {}) {
     };
   }
 
+  if (method === 'POST' && rawPath === '/v1/cloud/portal/demo-intercept') {
+    const body = event.body ? JSON.parse(event.body) : {};
+    const tenantKey = body.apiKey || body.email || 'tg_indie_portal_demo';
+    const interceptResult = await interceptAgentRequest({
+      tenantKey,
+      tierId: 'cloud_indie',
+      sessionId: 'portal_demo_session',
+      agentId: 'claude_code_agent',
+      toolCall: { name: 'bash', arguments: { cmd: 'npm test' } },
+      messages: [
+        { role: 'system', content: 'You are an autonomous coding agent running in a strict verification loop.' },
+        { role: 'system', content: 'You are an autonomous coding agent running in a strict verification loop.' },
+        { role: 'user', content: 'Fix failing test suite.' },
+      ],
+    });
+    const session = getCloudCustomerPortalSession({ apiKey: tenantKey, email: body.email || 'demo@thumbgate.ai' });
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({ ok: true, interceptResult, session }),
+    };
+  }
+
   if (method === 'POST' && rawPath === '/v1/cloud/portal/subscription') {
     const body = event.body ? JSON.parse(event.body) : {};
     const sub = manageCloudSubscription({

@@ -248,15 +248,14 @@
             <button type="button" class="btn" onclick="runLiveDemoIntercept()">Run Token Compaction &amp; Loop Check</button>
             <a class="btn-outline" href="/v1/cloud/integration-guide.md" target="_blank">Open Copy-Paste SDK Guide (.md)</a>
           </div>
-            <a class="btn" href="/install/macos.command" download="ThumbGate-Mac-Installer.command"> Download macOS Installer (.command)</a>
-            <a class="btn-outline" href="/Formula/thumbgate.rb" download="thumbgate.rb">🍺 Homebrew Formula (thumbgate.rb)</a>
-            <a class="btn-green btn" href="/install/windows.bat" download="ThumbGate-Windows-Installer.bat">⊞ Download Windows Installer (.bat)</a>
-            <a class="btn-outline" href="/install.sh" download="thumbgate-install.sh">🐧 Download Linux Installer (.sh)</a>
-          </div>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong>Homebrew (macOS &amp; Linux):</strong></p>
-          <pre>brew tap igorganapolsky/tap &amp;&amp; brew install thumbgate</pre>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong>macOS &amp; Linux 1-Line Terminal Installer:</strong></p>
-          <pre>npx thumbgate init</pre>
+          <pre id="live-intercept-output">Click "Run Token Compaction &amp; Loop Check" to inspect live response...</pre>
+        </div>
+
+        <div class="panel">
+          <h2 style="margin-top:0;font-size:18px;">Quick Drop-In Setup (Homebrew / Python / TypeScript / CLI)</h2>
+          <p style="color:var(--muted);font-size:14px;"><strong>Free Local CLI (MIT forever):</strong></p>
+          <pre>brew tap igorganapolsky/tap &amp;&amp; brew install thumbgate
+npx thumbgate init</pre>
           <p style="color:var(--muted);font-size:14px;"><strong>Hosted Cloud Middleware (<code>thumbgate.ai</code>):</strong></p>
           <pre id="portal-curl-snippet">curl -X POST https://thumbgate.ai/v1/cloud/intercept \
   -H "Authorization: Bearer tg_live_YOUR_KEY" \
@@ -274,9 +273,12 @@
           <p style="color:var(--muted);font-size:14px;">Download the native launcher for your OS or run the 1-line installer in your terminal:</p>
           <div style="display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;">
             <a class="btn" href="/install/macos.command" download="ThumbGate-Mac-Installer.command"> Download macOS Installer (.command)</a>
+            <a class="btn-outline" href="/Formula/thumbgate.rb" download="thumbgate.rb">🍺 Homebrew Formula (thumbgate.rb)</a>
             <a class="btn-green btn" href="/install/windows.bat" download="ThumbGate-Windows-Installer.bat">⊞ Download Windows Installer (.bat)</a>
             <a class="btn-outline" href="/install.sh" download="thumbgate-install.sh">🐧 Download Linux Installer (.sh)</a>
           </div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong>Homebrew (macOS &amp; Linux):</strong></p>
+          <pre>brew tap igorganapolsky/tap &amp;&amp; brew install thumbgate</pre>
           <p style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong>macOS &amp; Linux 1-Line Terminal Installer:</strong></p>
           <pre>curl -fsSL https://thumbgate.ai/install.sh | sh</pre>
           <p style="font-size:13px;color:var(--muted);margin-bottom:6px;"><strong>Windows PowerShell 1-Line Installer:</strong></p>

@@ -293,9 +293,14 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     assert.equal(cloudHtmlRes.status, 200);
     const cloudHtml = await cloudHtmlRes.text();
     assert.match(cloudHtml, /Customer Cloud Portal &amp; Control Plane/);
+    assert.match(cloudHtml, /id="live-intercept-output"/);
     assert.match(cloudHtml, /Sign in with GitHub SSO/);
     assert.match(cloudHtml, /Manage Subscription &amp; Billing/);
     assert.match(cloudHtml, /Submit Feedback &amp; Request Features/);
+
+    const portalAliasRes = await fetch(`${origin}/portal`);
+    assert.equal(portalAliasRes.status, 200);
+    assert.match(await portalAliasRes.text(), /Customer Cloud Portal &amp; Control Plane/);
 
     const shRes = await fetch(`${origin}/install.sh`);
     assert.equal(shRes.status, 200);
@@ -303,17 +308,36 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     assert.match(shText, /ThumbGate 1-Click Installer for macOS & Linux/);
     assert.match(shText, /npx --yes thumbgate@latest init/);
 
+    const macCmdRes = await fetch(`${origin}/install/macos.command`);
+    assert.equal(macCmdRes.status, 200);
+    assert.match(await macCmdRes.text(), /ThumbGate 1-Click Installer for macOS & Linux/);
+
     const ps1Res = await fetch(`${origin}/install.ps1`);
     assert.equal(ps1Res.status, 200);
     const ps1Text = await ps1Res.text();
     assert.match(ps1Text, /ThumbGate 1-Click Installer for Windows/);
     assert.match(ps1Text, /winget install OpenJS\.NodeJS\.LTS/);
 
+    const winBatRes = await fetch(`${origin}/install/windows.bat`);
+    assert.equal(winBatRes.status, 200);
+    assert.match(await winBatRes.text(), /ThumbGate 1-Click Installer for Windows/);
+
     const brewRes = await fetch(`${origin}/Formula/thumbgate.rb`);
     assert.equal(brewRes.status, 200);
     const brewText = await brewRes.text();
     assert.match(brewText, /class Thumbgate < Formula/);
     assert.match(brewText, /thumbgate-1\.40\.0\.tgz/);
+
+    const demoInterceptRes = await fetch(`${origin}/v1/cloud/portal/demo-intercept`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: 'tg_indie_portal_demo', email: 'demo@thumbgate.ai' }),
+    });
+    assert.equal(demoInterceptRes.status, 200);
+    const demoInterceptJson = await demoInterceptRes.json();
+    assert.equal(demoInterceptJson.ok, true);
+    assert.equal(demoInterceptJson.interceptResult.decision, 'ALLOW');
+
     const ssoRes = await fetch(`${origin}/v1/cloud/sso/authorize?provider=github&email=founder%40startup.io`, { redirect: 'manual' });
     assert.equal(ssoRes.status, 302);
     const ssoLocation = ssoRes.headers.get('location') || '';
