@@ -46,17 +46,33 @@ test.describe('/ dual-offer conversion path', () => {
     await expect(panel).toBeHidden();
   });
 
-  test('Pro nav goes to checkout; Enterprise nav returns to managed form', async ({ page }) => {
-    await page.goto('/');
+  test('Install free nav reaches the install line; paid CTAs stay below', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    await expect(page.locator('nav [data-cta-id="nav_pro_buy"]')).toHaveAttribute('href', /\/checkout\/pro/);
-    await page.locator('nav [data-cta-id="nav_diagnostic_buy"]').click();
-    await expect(page).toHaveURL(/#enterprise-gate$/);
-    await expect(page.locator('[data-primary-checkout]')).toBeVisible();
+    await expect(page.locator('nav [data-cta-id="nav_pro_buy"]')).toHaveCount(0);
+    await expect(page.locator('nav [data-cta-id="nav_diagnostic_buy"]')).toHaveCount(0);
+
+    const install = page.locator('nav a.nav-buy');
+    await expect(install).toHaveCount(1);
+    await expect(install).toHaveClass(/nav-buy/);
+    await expect(install).toHaveAttribute('href', '#install');
+    await expect(install).toHaveText('Install free');
+    await install.click();
+    await expect(page).toHaveURL(/\/#install$/);
+    await expect(page.locator('#install')).toBeVisible();
+
+    const pro = page.locator('.final [data-cta-id="final_pro_buy"]');
+    await expect(pro).toHaveAttribute('href', /\/checkout\/pro/);
+    await expect(pro).toHaveText('Start Pro — $19/mo');
 
     await page.locator('.final [data-cta-id="final_diagnostic_buy"]').click();
     await expect(page).toHaveURL(/#enterprise-gate$/);
+    await expect(page.locator('[data-primary-checkout]')).toBeVisible();
     await expect(page.locator('form[action="/go/diagnostic-pay"]')).toHaveCount(1);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator('nav a.nav-buy')).toBeVisible();
+    await expect(page.locator('nav a[href="#how-it-works"]')).toBeHidden();
   });
 
   test('valid buyer email posts directly to the canonical $499 checkout route', async ({ page }) => {
