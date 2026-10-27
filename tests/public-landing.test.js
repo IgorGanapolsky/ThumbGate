@@ -83,6 +83,25 @@ test('homepage keeps conversion noise off while offering both paid paths', () =>
   assert.match(landingPage, /<body data-revenue-assist="off">/);
 });
 
+test('homepage names the installers that ship', () => {
+  const installPage = fs.readFileSync(path.join(__dirname, '..', 'public', 'install.html'), 'utf8');
+  assert.match(landingPage, /aria-label="Install ThumbGate"/);
+  assert.match(landingPage, /title="npx -y thumbgate@1\.39\.0 init --agent claude">Claude</);
+  assert.match(landingPage, /href="\/install" title="[^"]*init --agent cursor[^"]*">Cursor</);
+  assert.match(landingPage, /marketplace\.visualstudio\.com\/items\?itemName=igorganapolsky\.thumbgate/);
+  assert.match(landingPage, /title="npx -y thumbgate@1\.39\.0 init --agent codex">Codex</);
+  assert.match(landingPage, /href="\/install#grok" title="grok mcp add thumbgate -- npx -y thumbgate mcp">Grok</);
+  assert.match(landingPage, /href="\/install#hermes" title="[^"]*hermes-gate">Hermes</);
+  assert.match(landingPage, /Cursor Marketplace listing is not live/);
+  assert.doesNotMatch(landingPage, /Muse/);
+  assert.match(installPage, /init --agent claude/);
+  assert.match(installPage, /The public Cursor Marketplace listing is not live/);
+  assert.match(installPage, /hermes-gate/);
+  assert.match(installPage, /grok mcp add thumbgate/);
+  assert.match(installPage, /id="grok"/);
+  assert.match(installPage, /id="hermes"/);
+});
+
 test('homepage stays human-scannable instead of becoming a product monorepo', () => {
   const visibleText = visibleBodyText(landingPage);
   const words = visibleText.split(/\s+/).filter(Boolean);

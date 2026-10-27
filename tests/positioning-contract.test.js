@@ -242,7 +242,7 @@ test('public landing copy stays vendor-neutral while offering Pro and Enterprise
   assert.match(landingPage, /Managed AI Agent Workflow Gate/i);
   assert.match(landingPage, /\$499/);
   assert.match(landingPage, /Pro · \$19\/mo/);
-  assert.match(landingPage, /\/checkout\/pro/);
+  assert.match(landingPage, /\/go\/pro-direct/);
   assert.doesNotMatch(landingPage, /Enterprise pilot|\/enterprise/i);
   assert.doesNotMatch(landingPage, /auto-detects supported local agent installs/i);
   assert.doesNotMatch(landingPage, /claude --mcp thumbgate/i);
