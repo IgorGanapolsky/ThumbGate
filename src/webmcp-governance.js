@@ -20,6 +20,17 @@
 const READ_VOCAB_RE = /(?:^|_)(?:get|list|read|search|fetch|describe|check|status)(?:_|$)/i;
 const MUTATION_VOCAB_RE = /(?:^|_)(?:create|update|delete|submit|send|post|book|buy|pay|purchase|subscribe|cancel|upgrade)(?:_|$)/i;
 const COMMERCE_VOCAB_RE = /\b(?:checkout|pay|payment|purchase|buy|subscribe|subscription|billing|upgrade|order|invoice)\b/i;
+const SCHEMA_WARN_BYTES = 1024;
+const SCHEMA_BLOCK_BYTES = 262144;
+
+function inputSchemaBytes(inputSchema) {
+  if (inputSchema == null) return { bytes: 0, serializable: true };
+  try {
+    return { bytes: Buffer.byteLength(JSON.stringify(inputSchema), 'utf8'), serializable: true };
+  } catch {
+    return { bytes: null, serializable: false };
+  }
+}
 
 function toolText(tool) {
   return `${String(tool?.name || '')} ${String(tool?.description || '')}`;
@@ -55,6 +66,15 @@ function validateToolDeclaration(tool) {
   }
   if (tool.inputSchema != null && typeof tool.inputSchema !== 'object') {
     add('block', 'invalid_input_schema', 'inputSchema must be a JSON Schema object when present.');
+  } else if (tool.inputSchema != null) {
+    const measured = inputSchemaBytes(tool.inputSchema);
+    if (!measured.serializable) {
+      add('block', 'schema_unserializable', `"${name}" inputSchema cannot be serialized to JSON.`);
+    } else if (measured.bytes > SCHEMA_BLOCK_BYTES) {
+      add('block', 'schema_over_256kib', `"${name}" inputSchema is ${measured.bytes} bytes. A single tool schema over ${SCHEMA_BLOCK_BYTES} bytes is rejected.`);
+    } else if (measured.bytes > SCHEMA_WARN_BYTES) {
+      add('warn', 'schema_over_1kb', `"${name}" inputSchema is ${measured.bytes} bytes. Keep a single tool schema at or under ${SCHEMA_WARN_BYTES} bytes.`);
+    }
   }
 
   const annotations = tool.annotations || {};
@@ -62,13 +82,21 @@ function validateToolDeclaration(tool) {
   const isReadNamed = READ_VOCAB_RE.test(name);
   const isMutationNamed = MUTATION_VOCAB_RE.test(name);
   const commerceShaped = isCommerceShaped(name);
+  const hasSideEffectAnnotation = typeof annotations.readOnlyHint === 'boolean'
+    || typeof annotations.destructiveHint === 'boolean';
 
   // Truthful side-effect hints: the annotation must match what the name says.
+  if (!hasSideEffectAnnotation) {
+    add('warn', 'missing_side_effect_annotation', `"${name}" declares neither annotations.readOnlyHint nor annotations.destructiveHint as a boolean.`);
+  }
   if (isReadNamed && !isMutationNamed && !readOnly) {
     add('warn', 'read_tool_without_readonly_hint', `"${name}" reads by name but does not declare annotations.readOnlyHint: true.`);
   }
   if (isMutationNamed && readOnly) {
     add('block', 'untruthful_readonly_hint', `"${name}" mutates by name but claims readOnlyHint: true — untruthful side-effect hint.`);
+  }
+  if (isMutationNamed && annotations.destructiveHint !== true) {
+    add('warn', 'mutation_without_destructive_hint', `"${name}" mutates by name but annotations.destructiveHint is not true.`);
   }
 
   // Commerce-shaped tools never run agent-side without a human step, and a

@@ -28,6 +28,60 @@ test('a truthful read-only tool validates clean', () => {
   assert.deepEqual(verdict.findings, []);
 });
 
+test('a tool with no side-effect boolean warns, and a mutation without destructiveHint warns', () => {
+  const plain = validateToolDeclaration({
+    name: 'thumbgate_explain_plan',
+    description: 'Explain the plan in words for a person.',
+    inputSchema: { type: 'object', properties: {} },
+    annotations: { humanConfirmationHint: false },
+  });
+  assert.equal(plain.ok, true);
+  assert.ok(plain.findings.some((f) => f.code === 'missing_side_effect_annotation'));
+
+  const mutating = validateToolDeclaration({
+    name: 'create_note',
+    description: 'Create a note in the local ledger.',
+    inputSchema: { type: 'object', properties: {} },
+    annotations: { readOnlyHint: false },
+  });
+  assert.equal(mutating.ok, true);
+  assert.ok(mutating.findings.some((f) => f.code === 'mutation_without_destructive_hint'));
+  assert.equal(mutating.findings.some((f) => f.code === 'missing_side_effect_annotation'), false);
+
+  const marked = validateToolDeclaration({
+    name: 'create_note',
+    description: 'Create a note in the local ledger.',
+    inputSchema: { type: 'object', properties: {} },
+    annotations: { destructiveHint: true },
+  });
+  assert.equal(marked.ok, true);
+  assert.deepEqual(marked.findings, []);
+});
+
+test('inputSchema over 1024 bytes warns, over 262144 bytes blocks, and a circular schema does not throw', () => {
+  const schemaOf = (n) => ({ type: 'object', properties: { note: { type: 'string', description: 'x'.repeat(n) } } });
+  const over = schemaOf(1200);
+  const overBytes = Buffer.byteLength(JSON.stringify(over));
+  assert.ok(overBytes > 1024 && overBytes <= 262144);
+  const warned = validateToolDeclaration(readTool({ inputSchema: over }));
+  assert.equal(warned.ok, true);
+  assert.ok(warned.findings.some((f) => f.code === 'schema_over_1kb'));
+  assert.equal(warned.findings.some((f) => f.code === 'schema_over_256kib'), false);
+
+  const huge = schemaOf(262144);
+  assert.ok(Buffer.byteLength(JSON.stringify(huge)) > 262144);
+  const blocked = validateToolDeclaration(readTool({ inputSchema: huge }));
+  assert.equal(blocked.ok, false);
+  assert.ok(blocked.findings.some((f) => f.code === 'schema_over_256kib'));
+  assert.equal(blocked.findings.some((f) => f.code === 'schema_over_1kb'), false);
+
+  const circular = { type: 'object' };
+  circular.self = circular;
+  const unserializable = validateToolDeclaration(readTool({ inputSchema: circular }));
+  assert.equal(unserializable.ok, false);
+  assert.ok(unserializable.findings.some((f) => f.code === 'schema_unserializable'));
+});
+
 test('missing name or description blocks', () => {
   assert.equal(validateToolDeclaration({ description: 'long enough description' }).ok, false);
   assert.equal(validateToolDeclaration({ name: 'get_x', description: 'short' }).ok, false);
