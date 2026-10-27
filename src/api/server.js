@@ -2924,7 +2924,7 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
 <h1>Start ThumbGate Pro</h1>
 <div class="price">$19<small>/mo</small></div>
-<p>The npm package runs your gates locally. <strong>Pro &amp; Cloud</strong> add Curated Threat Packs (AWS, SOC2, Git/DB), centralized Team Policy Sync across every developer IDE and CI pipeline, 1-Click SSO (<a href="/cloud" style="display:inline;color:#22d3ee;">/cloud</a>), and zero-click failure &amp; loop circuit-breaking.</p>
+<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance — plus Curated Threat Packs (AWS, SOC2, Git/DB) and 1-Click SSO (<a href="/cloud" style="display:inline;color:#22d3ee;">/cloud</a>).</p>
 <form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
