@@ -203,6 +203,7 @@
         <button type="button" class="btn-outline" onclick="runLiveDemoIntercept()">⚡ Simulate Live Agent Loop Intercept</button>
       </form>
       <div id="portal-status-msg" style="margin-top:10px;font-size:13px;color:var(--green);"></div>
+      <div id="portal-user-url-bar" style="margin-top:8px;font-size:13px;color:var(--muted);">Your Individual Cloud Dashboard URL: <a id="portal-personal-url" href="/cloud/u/demo" style="font-family:var(--mono);font-weight:700;">https://thumbgate.ai/cloud/u/demo</a></div>
     </section>
 
     <!-- 4-PILLAR KPI METRICS -->
@@ -385,6 +386,11 @@ npx thumbgate init</pre>
 
     (function initSsoQueryParams() {
       try {
+        var pathMatch = window.location.pathname.match(/^\/(?:cloud\/u|u)\/([a-zA-Z0-9._-]+)$/);
+        if (pathMatch && pathMatch[1]) {
+          PORTAL_API_KEY = decodeURIComponent(pathMatch[1]);
+          document.getElementById('portal-api-key').value = PORTAL_API_KEY;
+        }
         var params = new URLSearchParams(window.location.search);
         var ssoToken = params.get('sso_token');
         var ssoProvider = params.get('sso_provider');
@@ -425,6 +431,12 @@ npx thumbgate init</pre>
       document.getElementById('sub-plan-title').textContent = (sub.planName || 'ThumbGate Cloud Indie') + ' ($' + (sub.priceMonthlyUsd || 49) + '/month)';
       document.getElementById('sub-quota-detail').textContent = used + ' / ' + cap + ' monthly tokens optimized (' + (sub.quotaUsedPct || 0) + '%)';
       document.getElementById('sub-quota-fill').style.width = Math.max(4, Math.min(100, Number(sub.quotaUsedPct || 4))) + '%';
+      var slug = encodeURIComponent((PORTAL_EMAIL || PORTAL_API_KEY || 'demo').replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 32));
+      var urlEl = document.getElementById('portal-personal-url');
+      if (urlEl) {
+        urlEl.href = '/cloud/u/' + slug;
+        urlEl.textContent = window.location.origin + '/cloud/u/' + slug;
+      }
 
       if (Array.isArray(data.featureRequests) && data.featureRequests.length > 0) {
         var listEl = document.getElementById('fb-list');

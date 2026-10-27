@@ -51,7 +51,12 @@ async function handler(event = {}) {
     };
   }
 
-  if (method === 'GET' && (rawPath === '/cloud' || rawPath === '/portal' || rawPath === '/cloud.html')) {
+  if (method === 'GET' && (
+    rawPath === '/cloud'
+    || rawPath === '/portal'
+    || rawPath === '/cloud.html'
+    || /^\/(?:cloud\/u|u)\/[a-zA-Z0-9._-]+$/.test(rawPath)
+  )) {
     const html = fs.existsSync(CLOUD_PORTAL_HTML_PATH)
       ? fs.readFileSync(CLOUD_PORTAL_HTML_PATH, 'utf8')
       : '<h1>ThumbGate Cloud Portal</h1>';

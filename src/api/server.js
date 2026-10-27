@@ -9533,8 +9533,12 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       sendJson(res, result.statusCode || 200, result);
       return;
     }
-
-    if (isGetLikeRequest && (pathname === '/cloud' || pathname === '/portal' || pathname === '/cloud.html')) {
+    if (isGetLikeRequest && (
+      pathname === '/cloud'
+      || pathname === '/portal'
+      || pathname === '/cloud.html'
+      || /^\/(?:cloud\/u|u)\/[a-zA-Z0-9._-]+$/.test(pathname)
+    )) {
       const html = fs.existsSync(CLOUD_PORTAL_PAGE_PATH)
         ? fs.readFileSync(CLOUD_PORTAL_PAGE_PATH, 'utf8')
         : '<h1>ThumbGate Cloud Portal</h1>';

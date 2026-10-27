@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.40.0
+
+### Minor Changes
+
+- 3804eea: Add unified 3-tier agentic graph RAG, decisive DPO distiller, and Spotify Confidence MCP pre-action governance diode.
+- Ship ThumbGate Cloud Customer Portal (`/cloud`, `/portal`, and individual per-user `/cloud/u/:userId` dashboards), 1-Click SSO (`GitHub`, `Google`, `Okta`), Homebrew formula (`Formula/thumbgate.rb`) & macOS/Windows/Linux installers, and the 5-layer Edge-to-Cloud RLHF/DPO sink.
+- 065cb9c: Add Dream Mode memory consolidation engine (Anthropic Auto Dream inspired) and CUDA-inspired parallel gate batch evaluation. Dream Mode provides 4-phase memory consolidation (orientation → gather signal → consolidation → prune & index) with read-only safety boundary and dual-gate triggering (24h + 5 sessions). CUDA Gate Batch maps the CUDA thread/memory hierarchy (grid → blocks → threads, global/shared/thread-local memory) onto ThumbGate's PreToolUse gate pipeline for sub-0.5ms parallel evaluation with hot-cache acceleration.
+- 065cb9c: Add Shreya Shankar & Tristan Handy (dbt Labs / Data Agent Bench) data-agent semantic layer, SQL pushdown, Criteria Drift row-by-row calibration, and AI SQL token-burn guardrails.
+
+### Patch Changes
+
+- af1323a: Add Zero-Cost Antigravity (`agy`) GitHub Issue Mailbox & Forensic Domain Alias Governance (`evaluateAntigravityZeroCostMailboxAndDomainGovernance`) and InfoWorld Anti-Pareto-Trap Model Routing Switchyard Guard (`evaluateModelRoutingParetoTrapGuard`).
+- 2eacd4d: feat: add EGM self-improvement hooks
+- 076a352: fix(mcp): add email-triage MCP server
+
 ## 1.39.0
 
 ### Minor Changes

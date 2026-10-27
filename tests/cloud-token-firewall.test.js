@@ -302,6 +302,9 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     assert.equal(portalAliasRes.status, 200);
     assert.match(await portalAliasRes.text(), /Customer Cloud Portal &amp; Control Plane/);
 
+    const userDashRes = await fetch(`${origin}/cloud/u/founder_123`);
+    assert.equal(userDashRes.status, 200);
+    assert.match(await userDashRes.text(), /Your Individual Cloud Dashboard URL/);
     const shRes = await fetch(`${origin}/install.sh`);
     assert.equal(shRes.status, 200);
     const shText = await shRes.text();
