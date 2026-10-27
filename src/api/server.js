@@ -6383,7 +6383,7 @@ function createApiServer() {
           }
         }
       }
-      serveTrackedLinkRedirect({
+      await serveTrackedLinkRedirect({
         req,
         res,
         parsed: trackedParsed,

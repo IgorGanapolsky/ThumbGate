@@ -713,6 +713,27 @@ curl -X POST https://thumbgate.ai/v1/cloud/intercept \
           </div>
         </div>
       </div>
+      <div class="panel" style="margin-top:16px;">
+        <h2 class="panel-title" style="margin-bottom:8px;">Native Plugins &amp; Adapters (Cursor · Claude · VS Code · Codex · Muse · Grok Bot · Hermes)</h2>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 12px;">Install the native plugin or MCP adapter for your coding agent harness in one command:</p>
+        <div class="grid-3">
+          <div class="pack-card">
+            <div style="font-weight:700;font-size:14px;color:var(--cyan);">Cursor · VS Code · Claude Code</div>
+            <pre style="margin:4px 0 0;">npx thumbgate init
+npx skills add https://thumbgate.ai</pre>
+          </div>
+          <div class="pack-card">
+            <div style="font-weight:700;font-size:14px;color:var(--green);">Codex · Muse · Grok Bot</div>
+            <pre style="margin:4px 0 0;">npx thumbgate mcp
+# Auto-wires .mcp.json &amp; .grok/skills</pre>
+          </div>
+          <div class="pack-card">
+            <div style="font-weight:700;font-size:14px;color:var(--yellow);">Hermes · Herdr · OMP · Poolside</div>
+            <pre style="margin:4px 0 0;">but agent setup &amp;&amp; herdr --session agents
+# Adapters: adapters/{hermes,herdr,poolside}</pre>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- TAB 3: MANAGE SUBSCRIPTION & BILLING -->
