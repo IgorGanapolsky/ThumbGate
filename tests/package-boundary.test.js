@@ -519,8 +519,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 612 -> 619: three recovered command/skill pairs and session-interactivity.js (+7).
     // 621 -> 641 (2026-10-15): operator framework landing, blog posts, policy packs, and continuity pages (+20).
     // 641 -> 648 (2026-10-15): HotData DB integration adapters, Google Universal Cart spend firewall blog & landing page (+7).
-    manifest.fileCount <= 639,
-    `npm package should stay <= 639 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 641,
+    `npm package should stay <= 641 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

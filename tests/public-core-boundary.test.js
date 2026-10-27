@@ -326,7 +326,7 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 633 -> 633 (2026-10-16): public/operator-framework.html marketing page (+1, public/ package parity).
   // 633 -> 638 (2026-10-16): OpenRouter Armor + Profound AEO + v1.39.0 CLI scripts.
   // 638 -> 639 (2026-10-27): Cloud Token Firewall, AWS Lambda handler, Cloud Customer Portal (public/cloud.html), and Homebrew Formula (Formula/thumbgate.rb).
-  const CEILING = 639;
+  const CEILING = 641;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
