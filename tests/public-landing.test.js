@@ -64,7 +64,7 @@ test('homepage exposes both Pro $19/mo and Enterprise $499 offers', () => {
   assert.match(landingPage, /method="POST"/);
   assert.match(landingPage, /name="customer_email"[^>]*required/);
   assert.match(landingPage, /name="plan_id" value="sprint_diagnostic"/);
-  assert.match(landingPage, /\/checkout\/pro/);
+  assert.match(landingPage, /\/go\/pro-direct/);
   assert.match(landingPage, /Start Pro — \$19\/mo/);
   assert.match(landingPage, /Get Started — \$499 Diagnostic/);
   assert.match(landingPage, /Pro · \$19\/mo/);
