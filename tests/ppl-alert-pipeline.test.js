@@ -61,4 +61,36 @@ test('PPLPipeline - filter, stats, eval and dedup', async (t) => {
     assert.equal(second.triggered, false);
     assert.equal(second.alerts.length, 0);
   });
+
+  await t.test('stores a non-matching eval expression as text', () => {
+    const expr = 'constructor.constructor("return process")()';
+    const pipe = PPLPipeline.parse(`eval note = ${expr}`);
+    const out = pipe.execute([{ id: 7, latency_ms: 10 }]);
+    assert.equal(out.length, 1);
+    assert.equal(out[0].id, 7);
+    assert.equal(out[0].latency_ms, 10);
+    assert.equal(out[0].note, expr);
+    assert.equal(typeof out[0].note, 'string');
+  });
+
+  await t.test('does not execute a multiply or divide tail', () => {
+    const multiplied = PPLPipeline._execEval(
+      { latency_ms: 4 },
+      { type: 'eval', target: 'scaled', expr: 'latency_ms * 3; process.exit(1)' },
+    );
+    assert.equal(Object.hasOwn(multiplied, 'scaled'), false);
+    assert.equal(multiplied.latency_ms, 4);
+
+    const divided = PPLPipeline._execEval(
+      { latency_ms: 4 },
+      { type: 'eval', target: 'scaled', expr: 'latency_ms / 2' },
+    );
+    assert.equal(Object.hasOwn(divided, 'scaled'), false);
+
+    const added = PPLPipeline._execEval(
+      { latency_ms: 4 },
+      { type: 'eval', target: 'next', expr: 'latency_ms + 1' },
+    );
+    assert.equal(added.next, 5);
+  });
 });
