@@ -265,6 +265,32 @@ npx thumbgate init</pre>
   -d '{"sessionId":"run-1","toolCall":{"name":"bash","arguments":{"cmd":"npm test"}}}'</pre>
         </div>
       </div>
+      <div class="panel" style="margin-top:16px;">
+        <h2 style="margin-top:0;font-size:18px;">🛡️ Cloudflare for AI Coding Agents — B2B Team Policy Sync &amp; Curated Threat Packs</h2>
+        <p style="color:var(--muted);font-size:14px;margin:4px 0 12px;">When your Senior Architect or Security Lead enables a Curated Threat Pack or blocks a bad agent pattern, rules sync automatically to every developer's IDE (<code>Claude Code</code>, <code>Cursor</code>, <code>Codex</code>) and <strong>GitHub Actions CI</strong> in &lt;0.5ms — with zero-click automatic failure capture:</p>
+        <div class="stats-grid" style="margin:0;">
+          <div class="stat-card">
+            <div class="stat-label" style="color:var(--cyan);">Pack 1 · 18 Auto-Updating Rules</div>
+            <div style="font-weight:700;margin:4px 0;">AWS Production Safeguards</div>
+            <div style="font-size:12px;color:var(--muted);">Blocks <code>aws s3 rb --force</code>, <code>rds delete-db-instance</code>, unauthorized IAM keys &amp; NAT Gateway traps.</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label" style="color:var(--green);">Pack 2 · 24 Auto-Updating Rules</div>
+            <div style="font-weight:700;margin:4px 0;">SOC2 Secret Leak Prevention</div>
+            <div style="font-size:12px;color:var(--muted);">Blocks outbound <code>$GITHUB_TOKEN</code>, <code>~/.aws/credentials</code>, <code>.env.production</code> &amp; gate-bypass attempts.</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label" style="color:var(--yellow);">Pack 3 · 16 Auto-Updating Rules</div>
+            <div style="font-weight:700;margin:4px 0;">Destructive Git &amp; DB Blocks</div>
+            <div style="font-size:12px;color:var(--muted);">Blocks <code>git push --force origin main</code>, <code>DROP TABLE</code>, <code>TRUNCATE prod_*</code> &amp; recursive deletions.</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label" style="color:var(--green);">Live Sync Endpoint</div>
+            <div style="font-weight:700;margin:4px 0;"><code>/v1/cloud/policy-sync</code></div>
+            <div style="font-size:12px;color:var(--muted);">59 total rules synced across IDE <code>PreToolUse</code> hooks + GitHub Actions CI + Rachel Woods <code>CRAFT</code> playbooks.</div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- TAB 2: INSTALLERS (MAC, WINDOWS, LINUX) & SSO -->

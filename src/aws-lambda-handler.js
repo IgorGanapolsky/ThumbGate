@@ -2,14 +2,12 @@
 
 /**
  * AWS Lambda HTTP API v2 Handler for ThumbGate Cloud SaaS (`thumbgate.ai`)
- *
- * Uses a flat, table-driven route dispatcher to keep Cognitive Complexity <= 8
- * and test coverage > 95%.
  */
 
 const fs = require('node:fs');
 const path = require('node:path');
 const {
+  CURATED_THREAT_PACKS,
   CLOUD_SAAS_TIERS,
   interceptAgentRequest,
   buildCloudIntegrationGuideMarkdown,
@@ -17,6 +15,7 @@ const {
   evaluateEntireCiTrailAndProjectSync,
   buildRlhfDpoTrainingPairFromInterception,
   buildFourPillarPositioningMatrix,
+  syncTeamPolicyAndThreatPacks,
   ingestEnterpriseCloudSinkBatch,
   getCloudCustomerPortalSession,
   manageCloudSubscription,
@@ -27,6 +26,7 @@ const {
   buildHomebrewFormulaRuby,
   registerCommissionOnlyBdmDeal,
   calculateIrashTechTeamAndTokenRoi,
+  evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
 } = require('./cloud-token-firewall');
 
 const CLOUD_PORTAL_HTML_PATH = path.resolve(__dirname, '../public/cloud.html');
@@ -89,6 +89,10 @@ const GET_ROUTE_HANDLERS = {
   },
   '/v1/cloud/portal/session': ({ query, token }) =>
     jsonResponse(200, getCloudCustomerPortalSession({ apiKey: query.apiKey || token, email: query.email || '', tierId: query.tierId || '' })),
+  '/v1/cloud/threat-packs': () =>
+    jsonResponse(200, { ok: true, packs: CURATED_THREAT_PACKS }),
+  '/v1/cloud/policy-sync': ({ query, token }) =>
+    jsonResponse(200, syncTeamPolicyAndThreatPacks({ orgId: query.orgId || token || 'org_default' })),
   '/v1/cloud/positioning': () =>
     jsonResponse(200, buildFourPillarPositioningMatrix()),
   '/v1/cloud/roi-calculator': ({ query }) =>
@@ -134,6 +138,10 @@ async function handlePostRoute(rawPath, body, token, appOrigin) {
       const fb = submitCloudPortalFeedbackAndFeatureRequest(body);
       return jsonResponse(fb.statusCode || 201, fb);
     }
+    case '/v1/cloud/policy-sync':
+      return jsonResponse(200, syncTeamPolicyAndThreatPacks({ ...body, action: 'update' }));
+    case '/v1/cloud/playbook/craft':
+      return jsonResponse(200, evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate(body));
     case '/v1/cloud/bdm/register-deal': {
       const deal = registerCommissionOnlyBdmDeal(body);
       return jsonResponse(deal.statusCode || 201, deal);

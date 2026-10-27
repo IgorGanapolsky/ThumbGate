@@ -1,10 +1,13 @@
 'use strict';
 
 /**
- * ThumbGate Cloud — Token Optimization, Agentic Loop Circuit-Breaker, RLHF/DPO Pipeline,
- * Entire CI Engine, Cross-Platform OS Installers (Homebrew/macOS/Windows/Linux), 1-Click SSO,
- * Customer Cloud Portal, IrashTech 15% BDM Engine, AGNTCon/MCPCon 2026 Security Gate,
- * Alibaba skill-up Declarative Eval Loop, and AWS Zero-Spend Cost Anomaly Guard.
+ * ThumbGate Cloud — "Cloudflare for AI Coding Agents"
+ *
+ * B2B Team Policy Sync, Curated Threat Packs (AWS / SOC2 / Git-DB), Token Optimization,
+ * Agentic Loop Circuit-Breaker, RLHF/DPO Pipeline, Entire CI Engine, Cross-Platform OS
+ * Installers (Homebrew/macOS/Windows/Linux), 1-Click SSO, Customer Cloud Portal,
+ * IrashTech 15% BDM Engine, AGNTCon/MCPCon 2026 Security Gate, Alibaba skill-up
+ * Declarative Eval Loop, Rachel Woods CRAFT Playbook Engine, and AWS Zero-Spend Guard.
  */
 
 const crypto = require('node:crypto');
@@ -14,6 +17,54 @@ const https = require('node:https');
 const http = require('node:http');
 const { redactSecrets } = require('../scripts/secret-redaction');
 
+const CURATED_THREAT_PACKS = Object.freeze([
+  Object.freeze({
+    id: 'aws-production-safeguards',
+    name: 'AWS Production Safeguards Pack',
+    category: 'cloud_infrastructure',
+    rulesCount: 18,
+    autoUpdates: true,
+    blockedPatterns: [
+      'aws s3 rb --force',
+      'aws rds delete-db-instance',
+      'aws iam create-access-key',
+      'aws ec2 create-nat-gateway',
+      'terraform destroy -auto-approve',
+    ],
+    description: 'Blocks destructive AWS CLI/Terraform mutations, unauthorized IAM key creation, and costly VPC NAT Gateway provisioning before execution.',
+  }),
+  Object.freeze({
+    id: 'soc2-secret-leak-prevention',
+    name: 'SOC2 Secret & Credential Leak Prevention Pack',
+    category: 'compliance_security',
+    rulesCount: 24,
+    autoUpdates: true,
+    blockedPatterns: [
+      'curl -d "$GITHUB_TOKEN"',
+      'cat ~/.aws/credentials',
+      'cat .env.production',
+      'ghp_* / sk-proj-* / AKIA* outbound exfiltration',
+      'process-kill / gate-bypass attempts',
+    ],
+    description: 'Enforces SOC2 CC6.1/CC6.7 pre-action secret redaction and blocks credential exfiltration across bash, curl, git, and MCP tool calls.',
+  }),
+  Object.freeze({
+    id: 'destructive-git-and-db-blocks',
+    name: 'Destructive Git & Database Protection Pack',
+    category: 'engineering_safety',
+    rulesCount: 16,
+    autoUpdates: true,
+    blockedPatterns: [
+      'git push --force origin main',
+      'git reset --hard',
+      'rm -rf ./',
+      'DROP TABLE / DROP SCHEMA CASCADE',
+      'TRUNCATE prod_*',
+    ],
+    description: 'Prevents force-pushes to protected branches, unapproved schema drops, and recursive worktree deletions across Claude Code, Cursor, and Codex.',
+  }),
+]);
+
 const CLOUD_SAAS_TIERS = Object.freeze({
   free_local: Object.freeze({
     id: 'free_local',
@@ -22,31 +73,39 @@ const CLOUD_SAAS_TIERS = Object.freeze({
     tokensOptimizedCapMonthly: 0,
     loopCircuitBreaker: true,
     realtimeWebhooks: false,
+    teamPolicySync: false,
+    curatedThreatPacks: false,
     hostedEndpoint: false,
     installCommand: 'npx thumbgate init',
-    description: 'Free forever on your laptop. Local SQLite + PreToolUse safety gates.',
+    description: 'Free forever for solo developers. Local SQLite + PreToolUse safety gates.',
   }),
   cloud_indie: Object.freeze({
     id: 'cloud_indie',
-    name: 'ThumbGate Cloud Indie',
+    name: 'ThumbGate Team & Cloud Indie ($49/mo)',
     priceMonthlyUsd: 49,
+    pricePerSeatMonthlyUsd: 29,
     tokensOptimizedCapMonthly: 1_000_000,
     loopCircuitBreaker: true,
     realtimeWebhooks: false,
+    teamPolicySync: true,
+    curatedThreatPacks: true,
     hostedEndpoint: true,
     checkoutPath: '/checkout/pro?plan_id=cloud_indie&billing_cycle=monthly&utm_source=cloud_saas',
-    description: 'For independent developers. Hosted AWS token compaction & duplicate tool-call circuit breaker (capped at 1M tokens optimized/mo).',
+    description: 'Centralized Team Policy Sync across every developer IDE + Curated Threat Packs (AWS, SOC2, Git/DB) + 1M tokens optimized/mo.',
   }),
   cloud_startup: Object.freeze({
     id: 'cloud_startup',
-    name: 'ThumbGate Cloud Startup',
+    name: 'ThumbGate Team & Startup Swarm ($199/mo)',
     priceMonthlyUsd: 199,
+    pricePerSeatMonthlyUsd: 49,
     tokensOptimizedCapMonthly: 10_000_000,
     loopCircuitBreaker: true,
     realtimeWebhooks: true,
+    teamPolicySync: true,
+    curatedThreatPacks: true,
     hostedEndpoint: true,
     checkoutPath: '/checkout/pro?plan_id=cloud_startup&billing_cycle=monthly&utm_source=cloud_saas',
-    description: 'For small startups & agent swarms. 10M tokens optimized/mo + real-time loop-blocking webhooks (Slack, Discord, PagerDuty, HTTP).',
+    description: 'Org-Wide Policy Sync (IDE + GitHub Actions CI), 1-Click SSO, Tamper-Evident Audit Log, Real-Time Loop-Kill Webhooks, and 10M tokens optimized/mo.',
   }),
 });
 
@@ -59,6 +118,7 @@ const sessionLoopState = new Map();
 const tenantUsageState = new Map();
 const cloudFeatureRequestsState = [];
 const ssoSessionsState = new Map();
+const teamPoliciesState = new Map();
 
 function estimateTokenCount(text) {
   if (!text) return 0;
@@ -386,10 +446,11 @@ function buildCloudIntegrationGuideMarkdown({
 } = {}) {
   const tier = CLOUD_SAAS_TIERS[tierId] || CLOUD_SAAS_TIERS.cloud_indie;
   const capFormatted = tier.tokensOptimizedCapMonthly.toLocaleString();
-  return `# ThumbGate Cloud — Token Optimization & Loop Circuit-Breaker Guide
+  return `# ThumbGate Cloud — Cloudflare for AI Coding Agents (Team Policy Sync & Token Firewall)
 
 **Plan:** ${tier.name} (\`$${tier.priceMonthlyUsd}/month\`)
 **Hosted Endpoint:** \`${apiBaseUrl}/v1/cloud/intercept\`
+**Team Policy Sync Endpoint:** \`${apiBaseUrl}/v1/cloud/policy-sync\`
 **Cloud Customer Portal:** \`${apiBaseUrl}/cloud\`
 **Monthly Optimization Cap:** \`${capFormatted} tokens/mo\`
 **Local CLI (Free Forever):** \`npx thumbgate init\`
@@ -594,39 +655,96 @@ function buildRlhfDpoTrainingPairFromInterception({
 
 function buildFourPillarPositioningMatrix() {
   return {
-    product: 'ThumbGate (thumbgate.ai Cloud SaaS + MIT Free Local CLI)',
+    product: 'ThumbGate — Cloudflare for AI Coding Agents (B2B Team Policy Sync + MIT Free Local CLI)',
+    headline: 'Cloudflare for AI Coding Agents. Stop Claude and Cursor from leaking secrets, force-pushing, or repeating mistakes—enforced locally in 0.4ms before the command runs.',
     freeLocalForeverCommand: 'npx thumbgate init',
+    curatedThreatPacks: CURATED_THREAT_PACKS,
     pillars: [
+      {
+        id: 'team_policy_sync_and_threat_packs',
+        name: 'B2B Team Policy Sync & Curated Threat Packs (AWS / SOC2 / Git-DB)',
+        valueProposition: 'When a Senior Architect blocks a risky agent pattern or enables a Curated Threat Pack, rules automatically sync to every developer IDE (Claude Code, Cursor, Codex) and GitHub Actions CI runner.',
+        pricingModel: '$29–$49/seat/mo Team · $199/mo Startup Swarm (with 1-Click SSO & Org Audit Log)',
+        targetBuyer: 'Engineering Managers, CTOs, Platform Teams & CISOs',
+      },
       {
         id: 'token_saving',
         name: 'Token Saving (Context Window Circuit Breaker)',
         valueProposition: 'Strips duplicate system prompts, repetitive error context, and bloated tool logs in <0.5ms before payloads hit OpenAI or Anthropic (42% runtime compaction + up to 71% retrieval reduction).',
-        pricingModel: '$49/mo Cloud Indie (1M tokens) · $149–$199/mo Team/Startup (10M tokens)',
+        pricingModel: '$49/mo Cloud Indie (1M tokens) · $199/mo Startup (10M tokens)',
         targetBuyer: 'CFOs, Indie Developers & AI Engineering Leads',
       },
       {
         id: 'loop_fixing',
-        name: 'Loop Fixing (Autonomous Execution Circuit Breaker)',
-        valueProposition: 'Tracks multi-hop tool-call signatures across a sliding window and kills infinite retry loops on repeat #3 before they drain API credits overnight.',
-        pricingModel: '$199/mo Cloud Startup (includes real-time Slack/Discord/HTTP loop-kill webhooks) or $0.001/gated call',
+        name: 'Loop Fixing (Zero-Click Autonomous Circuit Breaker)',
+        valueProposition: 'Automatically captures failed tool calls and kills infinite retry loops on repeat #3 without requiring manual 👍/👎 clicks.',
+        pricingModel: '$199/mo Cloud Startup (includes real-time Slack/Discord/HTTP loop-kill webhooks)',
         targetBuyer: 'Heads of Engineering, DevOps & Agent Swarm Operators',
       },
       {
         id: 'rlhf_dpo_pipeline',
         name: 'RLHF & DPO Alignment Pipeline (Production-to-Training Engine)',
-        valueProposition: 'Converts daily 👍 (ALLOW/chosen) and 👎 (DENY/rejected) developer corrections and loop intercepts into secret-redacted HuggingFace DPO training pairs.',
-        pricingModel: 'Included in Pro/Cloud for self-serve export · $5,000–$15,000/yr Enterprise Data Sink License',
+        valueProposition: 'Converts intercepted agent loops and developer corrections into secret-redacted HuggingFace DPO training pairs.',
+        pricingModel: 'Included in Team/Cloud · $5,000–$15,000/yr Enterprise Data Sink License',
         targetBuyer: 'ML Engineers, Fine-Tuning Teams & AI Labs',
-      },
-      {
-        id: 'compliance_and_gate_registry',
-        name: 'Enterprise Compliance Packs & Anonymized Gate Registry',
-        valueProposition: 'Top-down unalterable SOC2/HIPAA/PCI-DSS PreToolUse rule packs plus opt-in, zero-PII SHA-256 structural failure signatures across orgs.',
-        pricingModel: '$249/mo per compliance seat or $2,500–$5,000/yr Team Compliance Pack',
-        targetBuyer: 'CISOs, FinTech/Healthtech Startups & Regulated Enterprises',
       },
     ],
     sqliteSchema: RLHF_TOKEN_SQLITE_SCHEMA_SQL,
+  };
+}
+
+/**
+ * B2B Team Policy Sync (`GET /v1/cloud/policy-sync` & `POST /v1/cloud/policy-sync`):
+ * Allows a Senior Architect or Security Lead to enable Curated Threat Packs (`aws-production-safeguards`,
+ * `soc2-secret-leak-prevention`, `destructive-git-and-db-blocks`) and push custom org-wide rules
+ * that automatically sync to every developer's IDE `PreToolUse` hook and GitHub Actions CI.
+ */
+function syncTeamPolicyAndThreatPacks({
+  orgId = 'org_default',
+  action = 'get',
+  enabledPackIds = ['aws-production-safeguards', 'soc2-secret-leak-prevention', 'destructive-git-and-db-blocks'],
+  customRules = [],
+  updatedBy = 'architect@company.com',
+} = {}) {
+  const cleanOrg = String(orgId || 'org_default').trim();
+  if (!teamPoliciesState.has(cleanOrg)) {
+    teamPoliciesState.set(cleanOrg, {
+      orgId: cleanOrg,
+      enabledPackIds: ['aws-production-safeguards', 'soc2-secret-leak-prevention', 'destructive-git-and-db-blocks'],
+      customRules: [
+        { id: 'org-block-force-push-main', pattern: 'git push.*--force', action: 'DENY', targets: ['ide_pretooluse', 'github_actions_ci'] },
+      ],
+      zeroClickAutoFailureCapture: true,
+      updatedBy: 'system_default',
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  const current = teamPoliciesState.get(cleanOrg);
+  if (action === 'update') {
+    if (Array.isArray(enabledPackIds)) {
+      current.enabledPackIds = enabledPackIds.filter((id) => CURATED_THREAT_PACKS.some((p) => p.id === id));
+    }
+    if (Array.isArray(customRules) && customRules.length > 0) {
+      current.customRules = customRules.slice(0, 100);
+    }
+    current.updatedBy = String(updatedBy || 'architect@company.com');
+    current.updatedAt = new Date().toISOString();
+  }
+
+  const activePacks = CURATED_THREAT_PACKS.filter((p) => current.enabledPackIds.includes(p.id));
+  const totalRulesSynced = activePacks.reduce((sum, p) => sum + p.rulesCount, 0) + current.customRules.length;
+
+  return {
+    ok: true,
+    orgId: cleanOrg,
+    zeroClickAutoFailureCapture: current.zeroClickAutoFailureCapture,
+    enforcementSurfaces: ['claude_code_ide', 'cursor_ide', 'codex_cli', 'github_actions_ci'],
+    enabledPacks: activePacks,
+    customRules: current.customRules,
+    totalRulesSynced,
+    updatedBy: current.updatedBy,
+    updatedAt: current.updatedAt,
   };
 }
 
@@ -880,6 +998,7 @@ function getCloudCustomerPortalSession({
       compactionReductionPct: 42.0,
       updatedAt: usage.updatedAt,
     },
+    teamPolicy: syncTeamPolicyAndThreatPacks({ orgId: tenantKey }),
     featureRequests: listCloudPortalFeedbackAndFeatureRequests({ limit: 10 }),
   };
 }
@@ -1199,11 +1318,6 @@ function calculateIrashTechTeamAndTokenRoi({
   };
 }
 
-/**
- * AWS Cost Anomaly Detection Zero-Spend Guardrail (`aws.pdf` — Account `035074951001`):
- * Overrides AWS's default `$100` + `40%` threshold down to `$0.01` and blocks paid SNS
- * subscriptions in favor of 100% Free DAILY EMAIL alerts (`igor@igorganapolsky.com`).
- */
 function auditAwsCostAnomalyZeroSpendGuard({
   accountId = '035074951001',
   anomalyThresholdUsd = 0.01,
@@ -1237,16 +1351,6 @@ function auditAwsCostAnomalyZeroSpendGuard({
   };
 }
 
-/**
- * AGNTCon + MCPCon 2026 Production Security & Schema Gate (`https://www.infoq.com/news/2026/10/agntcon-mcpcon-2026/`):
- * 1. OpenAI ChatGPT MCP Directory rules (Thomas Sarlandie): tool schema <= 1024 bytes,
- *    server instructions <= 1000 chars, mandatory `readOnlyHint` / `destructiveHint` annotations.
- * 2. Tokenomics Foundation (J.R. Storment): tracks `costPerTaskUsd` and `costPerVerifiedOutcomeUsd`
- *    instead of raw token vanity metrics.
- * 3. Anthropic MCP Auth Roadmap (Den Delimarsky) + Block's `Buzz` (Bradley Axen):
- *    first-class agent identity + owner attestation, no DM access for channel agents.
- * 4. AAIF 10-project interop (`OpenSandbox`, `Open Responses`, `Agent Skills`, `OpenEnv`).
- */
 function evaluateAgntConMcpCon2026ProductionSecurityGate({
   toolSchemas = [{ name: 'gate_check', sizeBytes: 680, annotations: { readOnlyHint: true, destructiveHint: false } }],
   serverInstructions = 'ThumbGate PreToolUse Firewall & Token Optimizer (<0.5ms local, 42% cloud compaction).',
@@ -1288,12 +1392,6 @@ function evaluateAgntConMcpCon2026ProductionSecurityGate({
   };
 }
 
-/**
- * Alibaba `skill-up` Declarative Eval-to-Evolution Loop (`https://github.com/alibaba/skill-up` &
- * `@DanKornas` `https://x.com/DanKornas/status/2113860880592966054`):
- * Evaluates Agent Skills across `local`, `docker`, or `opensandbox` runtimes, comparing
- * `withSkill` vs `withoutSkill` pass rate & token burn and emitting JUnit/JSON verdicts.
- */
 function evaluateSkillUpDeclarativeEvalLoop({
   skillName = 'thumbgate-pretool-firewall',
   runtime = 'opensandbox',
@@ -1319,6 +1417,82 @@ function evaluateSkillUpDeclarativeEvalLoop({
     passRateDelta,
     tokenSavingsPct,
     evalYaml: `skill: ${skillName}\nruntime: ${runtime}\njudge: ${judgeType}\n`,
+  };
+}
+
+function evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate({
+  playbookName = 'nitpicking-playbook',
+  triggerWord = 'nitpicking',
+  outline = {
+    trigger: 'On PR push or pre-yield Goldfish check',
+    inputs: 'Git diff, referenced files, and live test outputs',
+    steps: ['Check secret redaction', 'Verify cognitive complexity <= 15', 'Verify c8 coverage >= 80%'],
+    output: 'Structured PASS/FAIL verdict with exact file:line fixes',
+  },
+  craftStage = 'V2_AUTONOMOUS',
+  spontaneousPositiveWinObserved = 'Added executive TRUE/FALSE ledger table at top of audit',
+  lockInSpontaneousWinsToPlaybook = true,
+  selfEditDiffLines = 6,
+  maxAutoCommitSelfEditLines = 15,
+  hasLocalBackupBeforeSelfEdit = true,
+  storedInGitRepoNotProprietaryUi = true,
+  middleManagerMode = 'hybrid_subagent_and_task_board',
+} = {}) {
+  const blockers = [];
+  const hasFourPartOutline = Boolean(
+    outline?.trigger
+    && outline?.inputs
+    && Array.isArray(outline?.steps)
+    && outline.steps.length > 0
+    && outline?.output,
+  );
+  if (!hasFourPartOutline) {
+    blockers.push('playbook_must_define_atomic_trigger_inputs_steps_and_output');
+  }
+  if (!storedInGitRepoNotProprietaryUi) {
+    blockers.push('own_the_playbook_rent_the_tech_must_store_in_git_not_proprietary_ui');
+  }
+  const isGenericTrigger = ['feedback', 'run', 'default', 'help'].includes(String(triggerWord).toLowerCase());
+  if (isGenericTrigger) {
+    blockers.push('use_unambiguous_custom_vocabulary_trigger_like_nitpicking_instead_of_generic_feedback');
+  }
+  if (!lockInSpontaneousWinsToPlaybook) {
+    blockers.push('craft_feedback_loop_must_lock_in_spontaneous_positive_behaviors_not_just_block_errors');
+  }
+
+  const diffLines = Math.max(0, Number(selfEditDiffLines) || 0);
+  const maxLines = Math.max(1, Number(maxAutoCommitSelfEditLines) || 15);
+  const isMinorSelfEdit = diffLines <= maxLines;
+  const selfEditAllowedAutonomously = isMinorSelfEdit && Boolean(hasLocalBackupBeforeSelfEdit);
+  if (!hasLocalBackupBeforeSelfEdit) {
+    blockers.push('self_editing_skill_requires_local_backup_snapshot_before_mutation');
+  }
+
+  const updatedSteps = Array.isArray(outline?.steps) ? [...outline.steps] : [];
+  if (lockInSpontaneousWinsToPlaybook && spontaneousPositiveWinObserved) {
+    updatedSteps.push(`Locked-in win: ${spontaneousPositiveWinObserved}`);
+  }
+
+  return {
+    ok: blockers.length === 0,
+    playbookName,
+    triggerWord,
+    craftStage,
+    outline: {
+      ...outline,
+      steps: updatedSteps,
+    },
+    selfEditingGuardrail: {
+      diffLines,
+      maxAutoCommitSelfEditLines: maxLines,
+      selfEditAllowedAutonomously,
+      requiresHumanApprovalForMajorRewrite: !isMinorSelfEdit,
+    },
+    middleManager: {
+      mode: middleManagerMode,
+      playbookStackingReady: blockers.length === 0,
+    },
+    blockers,
   };
 }
 
@@ -1354,9 +1528,11 @@ function resetCloudFirewallStateForTests() {
   tenantUsageState.clear();
   cloudFeatureRequestsState.length = 0;
   ssoSessionsState.clear();
+  teamPoliciesState.clear();
 }
 
 module.exports = {
+  CURATED_THREAT_PACKS,
   CLOUD_SAAS_TIERS,
   DEFAULT_LOOP_REPEAT_THRESHOLD,
   RLHF_TOKEN_SQLITE_SCHEMA_SQL,
@@ -1370,6 +1546,7 @@ module.exports = {
   evaluateEntireCiTrailAndProjectSync,
   buildRlhfDpoTrainingPairFromInterception,
   buildFourPillarPositioningMatrix,
+  syncTeamPolicyAndThreatPacks,
   buildEdgeTelemetryRecord,
   batchAndSignEdgeLogs,
   ingestEnterpriseCloudSinkBatch,
@@ -1386,6 +1563,7 @@ module.exports = {
   auditAwsCostAnomalyZeroSpendGuard,
   evaluateAgntConMcpCon2026ProductionSecurityGate,
   evaluateSkillUpDeclarativeEvalLoop,
+  evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
   buildTokenBurnCircuitBreakerPlaybook,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,

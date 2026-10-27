@@ -9,6 +9,7 @@ const os = require('node:os');
 const { execFileSync } = require('node:child_process');
 
 const {
+  CURATED_THREAT_PACKS,
   CLOUD_SAAS_TIERS,
   compactTokenPayload,
   interceptAgentRequest,
@@ -16,12 +17,14 @@ const {
   evaluateEntireCiTrailAndProjectSync,
   buildRlhfDpoTrainingPairFromInterception,
   buildFourPillarPositioningMatrix,
+  syncTeamPolicyAndThreatPacks,
   buildEdgeTelemetryRecord,
   batchAndSignEdgeLogs,
   ingestEnterpriseCloudSinkBatch,
   auditAwsCostAnomalyZeroSpendGuard,
   evaluateAgntConMcpCon2026ProductionSecurityGate,
   evaluateSkillUpDeclarativeEvalLoop,
+  evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
   buildTokenBurnCircuitBreakerPlaybook,
   resetCloudFirewallStateForTests,
 } = require('../src/cloud-token-firewall');
@@ -315,7 +318,7 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
   const optRes = await lambdaHandler({ httpMethod: 'OPTIONS', rawPath: '/v1/cloud/intercept' });
   assert.equal(optRes.statusCode, 204);
 
-  for (const p of ['/cloud', '/Formula/thumbgate.rb', '/install/homebrew.rb', '/install.sh', '/install/macos.command', '/install/linux.sh', '/install.ps1', '/install/windows.bat', '/v1/cloud/portal/session', '/v1/cloud/positioning', '/v1/cloud/roi-calculator', '/v1/cloud/calculator', '/v1/cloud/integration-guide.md', '/unknown-meta']) {
+  for (const p of ['/cloud', '/Formula/thumbgate.rb', '/install/homebrew.rb', '/install.sh', '/install/macos.command', '/install/linux.sh', '/install.ps1', '/install/windows.bat', '/v1/cloud/portal/session', '/v1/cloud/threat-packs', '/v1/cloud/policy-sync', '/v1/cloud/positioning', '/v1/cloud/roi-calculator', '/v1/cloud/calculator', '/v1/cloud/integration-guide.md', '/unknown-meta']) {
     const r = await lambdaHandler({ httpMethod: 'GET', rawPath: p, headers: { Authorization: 'Bearer tg_live_1' } });
     assert.equal(r.statusCode, 200, `Expected 200 on GET ${p}`);
   }
@@ -335,6 +338,8 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
     ['/v1/cloud/ci-trail-eval', { trailId: 't1' }],
     ['/v1/cloud/sink/ingest', { tenant_id: 't1', records: [] }],
     ['/v1/cloud/dpo-sync', { sessionId: 's1' }],
+    ['/v1/cloud/policy-sync', { orgId: 'org_1', enabledPackIds: ['aws-production-safeguards'], customRules: [{ id: 'r1', pattern: 'rm -rf' }] }],
+    ['/v1/cloud/playbook/craft', { playbookName: 'nitpicking-playbook', triggerWord: 'nitpicking' }],
     ['/v1/cloud/intercept', { sessionId: 's1', messages: [{ role: 'user', content: 'hi' }] }],
   ]) {
     const r = await lambdaHandler({
@@ -345,6 +350,28 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
     });
     assert.ok(r.statusCode === 200 || r.statusCode === 201, `Expected 200/201 on POST ${p}, got ${r.statusCode}`);
   }
+});
+
+test('syncTeamPolicyAndThreatPacks and evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate enforce B2B governance and CRAFT rules', () => {
+  assert.equal(CURATED_THREAT_PACKS.length, 3);
+  const syncRes = syncTeamPolicyAndThreatPacks({ orgId: 'org_test' });
+  assert.equal(syncRes.ok, true);
+  assert.equal(syncRes.totalRulesSynced, 59);
+
+  const craftGood = evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate();
+  assert.equal(craftGood.ok, true);
+
+  const craftBad = evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate({
+    triggerWord: 'feedback',
+    outline: { trigger: '', inputs: '', steps: [], output: '' },
+    storedInGitRepoNotProprietaryUi: false,
+    lockInSpontaneousWinsToPlaybook: false,
+    hasLocalBackupBeforeSelfEdit: false,
+    selfEditDiffLines: 50,
+  });
+  assert.equal(craftBad.ok, false);
+  assert.equal(craftBad.blockers.length, 5);
+  assert.equal(craftBad.selfEditingGuardrail.requiresHumanApprovalForMajorRewrite, true);
 });
 
 test('Python AWS Lambda SQS worker (deploy/aws/sqs_ingest_worker.py) and PostgreSQL migration work cleanly', () => {
@@ -564,6 +591,51 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     assert.equal(bdmJson.deal.commissionEarnedUsd, 150);
     assert.equal(bdmJson.deal.baseSalaryUsd, 0);
 
+
+    const packsRes = await fetch(`${origin}/v1/cloud/threat-packs`);
+    assert.equal(packsRes.status, 200);
+    const packsJson = await packsRes.json();
+    assert.equal(packsJson.ok, true);
+    assert.equal(packsJson.packs.length, 3);
+
+    const syncGetRes = await fetch(`${origin}/v1/cloud/policy-sync?orgId=org_acme`);
+    assert.equal(syncGetRes.status, 200);
+    const syncGetJson = await syncGetRes.json();
+    assert.equal(syncGetJson.ok, true);
+    assert.equal(syncGetJson.totalRulesSynced, 59);
+    assert.equal(syncGetJson.zeroClickAutoFailureCapture, true);
+
+    const syncPostRes = await fetch(`${origin}/v1/cloud/policy-sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orgId: 'org_acme',
+        enabledPackIds: ['aws-production-safeguards', 'soc2-secret-leak-prevention'],
+        customRules: [{ id: 'no-prod-drop', pattern: 'DROP DATABASE', action: 'DENY' }],
+        updatedBy: 'cto@acme.io',
+      }),
+    });
+    assert.equal(syncPostRes.status, 200);
+    const syncPostJson = await syncPostRes.json();
+    assert.equal(syncPostJson.ok, true);
+    assert.equal(syncPostJson.enabledPacks.length, 2);
+    assert.equal(syncPostJson.totalRulesSynced, 43);
+
+    const craftRes = await fetch(`${origin}/v1/cloud/playbook/craft`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        playbookName: 'nitpicking-playbook',
+        triggerWord: 'nitpicking',
+        selfEditDiffLines: 5,
+        hasLocalBackupBeforeSelfEdit: true,
+      }),
+    });
+    assert.equal(craftRes.status, 200);
+    const craftJson = await craftRes.json();
+    assert.equal(craftJson.ok, true);
+    assert.equal(craftJson.selfEditingGuardrail.selfEditAllowedAutonomously, true);
+    assert.equal(craftJson.middleManager.playbookStackingReady, true);
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.match(homeHtml, /Start Cloud Indie/);
     assert.match(homeHtml, /Start Cloud Startup/);

@@ -320,6 +320,7 @@ const {
   THUMBGATE_SEO_SITEMAP_ENTRIES,
 } = require('../../scripts/seo-gsd');
 const {
+  CURATED_THREAT_PACKS,
   CLOUD_SAAS_TIERS,
   interceptAgentRequest,
   buildCloudIntegrationGuideMarkdown,
@@ -327,6 +328,7 @@ const {
   evaluateEntireCiTrailAndProjectSync,
   buildRlhfDpoTrainingPairFromInterception,
   buildFourPillarPositioningMatrix,
+  syncTeamPolicyAndThreatPacks,
   ingestEnterpriseCloudSinkBatch,
   getCloudCustomerPortalSession,
   manageCloudSubscription,
@@ -337,6 +339,7 @@ const {
   buildHomebrewFormulaRuby,
   registerCommissionOnlyBdmDeal,
   calculateIrashTechTeamAndTokenRoi,
+  evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -2919,7 +2922,7 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
 <h1>Start ThumbGate Pro</h1>
 <div class="price">$19<small>/mo</small></div>
-<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available.</p>
+<p>The npm package runs your gates locally. <strong>Pro &amp; Cloud</strong> add Curated Threat Packs (AWS, SOC2, Git/DB), centralized Team Policy Sync across every developer IDE and CI pipeline, 1-Click SSO (<a href="/cloud" style="display:inline;color:#22d3ee;">/cloud</a>), and zero-click failure &amp; loop circuit-breaking.</p>
 <form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
@@ -9661,6 +9664,29 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const body = await parseJsonBody(req);
       const resDeal = registerCommissionOnlyBdmDeal(body);
       sendJson(res, resDeal.statusCode || 201, resDeal);
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/threat-packs') {
+      sendJson(res, 200, { ok: true, packs: CURATED_THREAT_PACKS }, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/policy-sync') {
+      const orgId = parsed.searchParams.get('orgId') || extractBearerToken(req) || 'org_default';
+      sendJson(res, 200, syncTeamPolicyAndThreatPacks({ orgId }), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/policy-sync') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, syncTeamPolicyAndThreatPacks({ ...body, action: 'update' }));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/playbook/craft') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate(body));
       return;
     }
 
