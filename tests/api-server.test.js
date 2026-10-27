@@ -1863,6 +1863,27 @@ test('tracked link router rejects unknown slugs instead of acting as an open red
   assert.ok(body.allowed.includes('pro'));
 });
 
+test('tracked link router lowercases and strips characters outside the slug alphabet', async () => {
+  const gptRes = await fetch(apiUrl('/go/GPT'), { redirect: 'manual' });
+  assert.equal(gptRes.status, 302);
+  assert.equal(gptRes.headers.get('x-thumbgate-link-slug'), 'gpt');
+  assert.equal(new URL(gptRes.headers.get('location')).host, 'chatgpt.com');
+
+  const proRes = await fetch(apiUrl('/go/Pro!'), { redirect: 'manual' });
+  assert.equal(proRes.status, 302);
+  assert.equal(proRes.headers.get('x-thumbgate-link-slug'), 'pro');
+  assert.equal(new URL(proRes.headers.get('location')).pathname, '/checkout/pro');
+
+  const encodedSpace = await fetch(apiUrl('/go/%20GPT'), { redirect: 'manual' });
+  assert.equal(encodedSpace.status, 404);
+
+  const stripped = await fetch(apiUrl('/go/!!!?url=https://evil.example'), { redirect: 'manual' });
+  assert.equal(stripped.status, 404);
+  const body = await stripped.json();
+  assert.equal(body.error, 'Tracked link not found');
+  assert.equal(stripped.headers.get('location'), null);
+});
+
 test('SEO comparison pages serve HTML, reuse journey cookies, and record page-specific search telemetry', async () => {
   const cookieHeader = [
     'thumbgate_visitor_id=visitor_compare',
