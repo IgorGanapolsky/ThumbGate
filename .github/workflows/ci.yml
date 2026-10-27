@@ -98,7 +98,7 @@ jobs:
 
       - name: Setup Python
         if: steps.ci-scope.outputs.mode == 'full'
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
@@ -247,6 +247,25 @@ jobs:
           if git diff --name-only "${MERGE_BASE}...${{ github.event.pull_request.head.sha }}" | grep -qE '^(package\.json|package-lock\.json)$'; then
             npm run test:public-package-parity
           fi
+
+      - name: Run fail-fast packaging, scope & metadata preflight
+        if: steps.ci-scope.outputs.mode == 'full'
+        # Fail in ~5s instead of 7m24s when bundle ratchets, version metadata,
+        # or scope boundaries drift on a full-mode PR.
+        env:
+          THUMBGATE_PUBLISH_STATE: unpublished
+          THUMBGATE_PUBLISHED_CLI_STATE: unavailable
+        run: |
+          node --test \
+            tests/test-suite-parity.test.js \
+            tests/public-package-parity.test.js \
+            tests/thumbgate-scope.test.js \
+            tests/version-metadata.test.js \
+            tests/public-landing.test.js \
+            tests/landing-page-claims.test.js \
+            tests/public-core-boundary.test.js \
+            tests/public-bundle-ratchet.test.js \
+            tests/package-boundary.test.js
 
       - name: Run tests
         if: steps.ci-scope.outputs.mode == 'full'
