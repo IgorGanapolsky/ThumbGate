@@ -1070,16 +1070,29 @@ next      decision recorded before execution</pre>
       }
     }
 
+    function getUrlAttribution() {
+      const p = new URLSearchParams(window.location.search);
+      return {
+        utmSource: p.get('utm_source') || p.get('source') || 'direct',
+        utmMedium: p.get('utm_medium') || p.get('medium') || 'website',
+        utmCampaign: p.get('utm_campaign') || p.get('campaign') || 'rally_style_gtm',
+        campaignVariant: p.get('utm_content') || p.get('variant') || p.get('ab_variant') || 'default',
+        creator: p.get('creator') || p.get('utm_source') || 'igor_ganapolsky',
+        offerCode: p.get('offer') || p.get('code') || 'standard',
+      };
+    }
+
     function sendFirstPartyTelemetry(eventName, props) {
       if (privacySignalOptOut()) return;
+      const attr = getUrlAttribution();
       const payload = JSON.stringify({
         event: eventName,
-        page: '/',
-        source: 'homepage',
+        page: window.location.pathname || '/',
+        source: attr.utmSource || 'homepage',
         visitorId: serverVisitorId || undefined,
         sessionId: serverSessionId || undefined,
         acquisitionId: serverAcquisitionId || undefined,
-        props: props || {},
+        props: Object.assign({}, attr, props || {}),
       });
       try {
         if (navigator.sendBeacon) {
@@ -1101,15 +1114,19 @@ next      decision recorded before execution</pre>
       window.gtag('event', eventName, params || {});
     }
 
-    function captureOfferInterest(ctaId, placement) {
+    function captureOfferInterest(ctaId, placement, linkEl) {
       if (privacySignalOptOut()) return;
-      const props = {
-        ctaId: ctaId || 'homepage_diagnostic_buy',
+      const cid = ctaId || 'homepage_diagnostic_buy';
+      const href = (linkEl && linkEl.getAttribute('href')) || '';
+      const isPro = cid.indexOf('pro') !== -1 || href.indexOf('plan=pro') !== -1 || href.indexOf('/checkout/pro') !== -1 || href.indexOf('/go/pro-direct') !== -1;
+      const attr = getUrlAttribution();
+      const props = Object.assign({}, attr, {
+        ctaId: cid,
         ctaPlacement: placement || 'homepage',
-        planId: 'sprint_diagnostic',
-        value: 499,
+        planId: isPro ? 'pro_monthly' : 'sprint_diagnostic',
+        value: isPro ? 19 : 499,
         currency: 'USD',
-      };
+      });
       window.plausible('diagnostic_offer_click', { props: props });
       sendFirstPartyTelemetry('cta_click', props);
       try {
@@ -1121,7 +1138,7 @@ next      decision recorded before execution</pre>
 
     document.querySelectorAll('[data-offer-link]').forEach(function (link) {
       link.addEventListener('click', function () {
-        captureOfferInterest(link.dataset.ctaId, 'page_anchor');
+        captureOfferInterest(link.dataset.ctaId, 'page_anchor', link);
       });
     });
 
