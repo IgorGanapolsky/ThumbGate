@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 
 const gate = require('../scripts/craft-playbook-gate');
 
@@ -36,6 +36,7 @@ function outline(overrides = {}) {
 function playbook(overrides = {}) {
   return {
     id: 'inbox-triage',
+    home: 'git',
     path: 'playbooks/inbox-triage.md',
     triggerKind: 'schedule',
     trigger: 'hourly',
@@ -285,6 +286,41 @@ test('a detail tweak is minor only with feedback, and an unchanged playbook is n
   assert.equal(unchanged.mayApply, false);
 });
 
+test('a self-edit cannot leave git even when the structural fields stay put', () => {
+  const before = playbook();
+  const moved = gate.evaluate(editDoc(
+    before,
+    playbook({ home: 'vendor-ui', path: '/tmp/inbox.json' }),
+    { feedbackRef: 'morning-review' },
+  ));
+  assert.equal(moved.ok, false);
+  assert.equal(moved.code, 'home_refused');
+  assert.equal(moved.mayApply, false);
+  assert.equal(moved.requiresApproval, false);
+  const absolute = gate.evaluate(editDoc(
+    before,
+    playbook({ path: '/tmp/inbox.json' }),
+    { feedbackRef: 'morning-review' },
+  ));
+  assert.equal(absolute.code, 'path_refused');
+  assert.equal(absolute.mayApply, false);
+  const approvedLeave = gate.evaluate(editDoc(
+    before,
+    playbook({ home: 'vendor-ui', trigger: 'daily' }),
+    { approved: true, approvedBy: 'igor', feedbackRef: 'morning-review' },
+  ));
+  assert.equal(approvedLeave.code, 'home_refused');
+  assert.equal(approvedLeave.mayApply, false);
+  const renamed = gate.evaluate(editDoc(
+    before,
+    playbook({ path: 'playbooks/inbox-triage-v2.md' }),
+    { feedbackRef: 'morning-review' },
+  ));
+  assert.equal(renamed.ok, true);
+  assert.equal(renamed.code, 'minor');
+  assert.equal(renamed.mayApply, true);
+});
+
 test('nitpicking is a distinct trigger word and a duplicate word collides', () => {
   const ready = gate.evaluate({
     kind: 'vocabulary',
@@ -367,4 +403,36 @@ test('the command reads stdin, exits by verdict, and does not write', () => {
   const mismatch = runCli(['craft'], JSON.stringify(outline()));
   assert.equal(mismatch.status, 2);
   assert.match(mismatch.stderr, /does not match kind/);
+});
+
+function runWithOpenStdin(args) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [SCRIPT, ...args], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+    }, 2000);
+    child.on('close', (status) => {
+      clearTimeout(timer);
+      resolve({ status, stdout, stderr });
+    });
+  });
+}
+
+test('help and map-only finish while stdin is still open', async () => {
+  const help = await runWithOpenStdin(['--help']);
+  assert.equal(help.status, 0);
+  assert.match(help.stderr, /Usage:/);
+  const short = await runWithOpenStdin(['-h']);
+  assert.equal(short.status, 0);
+  const mapped = await runWithOpenStdin(['--map-only']);
+  assert.equal(mapped.status, 0);
+  assert.equal(JSON.parse(mapped.stdout).notOurMeasurement, true);
 });

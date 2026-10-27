@@ -163,19 +163,25 @@ function evaluateOutline(doc) {
   }
   const word = checkTriggerWord(doc.triggerWord);
   if (!word.ok) return hold('outline', word.code, word.message);
+  const stored = storageHold('outline', doc);
+  if (stored) return stored;
+  return accept('outline', 'outline_ready', 'accept', 'The outline is one deliverable stored in git.');
+}
+
+function storageHold(kind, doc) {
   if (doc.home == null || doc.home === '') {
-    return hold('outline', 'home_required', 'An outline needs a home. ThumbGate stores playbooks in git.');
+    return hold(kind, 'home_required', 'An outline needs a home. ThumbGate stores playbooks in git.');
   }
   if (doc.home !== 'git' || REFUSED_HOMES.has(doc.home)) {
-    return hold('outline', 'home_refused', 'The playbook home is git. A vendor chat UI is not the source of truth.');
+    return hold(kind, 'home_refused', 'The playbook home is git. A vendor chat UI is not the source of truth.');
   }
   if (doc.path == null || doc.path === '') {
-    return hold('outline', 'path_required', 'An outline needs a relative path inside the repo.');
+    return hold(kind, 'path_required', 'An outline needs a relative path inside the repo.');
   }
   if (typeof doc.path !== 'string' || doc.path.split(/[/\\]/).includes('..') || !PLAYBOOK_PATH.test(doc.path)) {
-    return hold('outline', 'path_refused', 'The path must be a relative .md or .json file inside the repo.');
+    return hold(kind, 'path_refused', 'The path must be a relative .md or .json file inside the repo.');
   }
-  return accept('outline', 'outline_ready', 'accept', 'The outline is one deliverable stored in git.');
+  return null;
 }
 
 function stagesAreOrdered(stages) {
@@ -334,6 +340,8 @@ function evaluateEdit(doc) {
   }
   const wins = claimedWinsInSteps(doc, doc.after);
   if (wins) return wins;
+  const stored = storageHold('edit', doc.after);
+  if (stored) return stored;
   if (isMajor(doc.before, doc.after)) {
     if (doc.approved !== true || !nonEmptyString(doc.approvedBy)) {
       return hold(
@@ -531,7 +539,12 @@ module.exports = {
   main,
 };
 
+function skipsStdin(argv) {
+  const args = argv.slice(2);
+  return args.includes('--help') || args.includes('-h') || args.includes('--map-only');
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
-  const stdin = fs.readFileSync(0, 'utf8');
+  const stdin = skipsStdin(process.argv) ? '' : fs.readFileSync(0, 'utf8');
   process.exit(main(process.argv, stdin));
 }

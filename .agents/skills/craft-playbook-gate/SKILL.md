@@ -39,11 +39,13 @@ npm run craft:playbook
 npm run test:craft-playbook-gate
 ```
 
-The command reads one JSON object from stdin. It writes nothing. Exit 0 is
-accept. Exit 1 is a hold. A minor detail tweak may be applied later only when
-the backup hash matches and `feedbackRef` names the review. Changing the
+`--help` and `--map-only` print and exit without reading stdin. Any other
+command reads one JSON object from stdin. The command writes nothing. Exit 0
+is accept. Exit 1 is a hold. A minor detail tweak may be applied later only
+when the backup hash matches and `feedbackRef` names the review. Changing the
 trigger, a step id, an escalation flag, or the escalation text stays held
-until a person approves it.
+until a person approves it. Moving the playbook out of git, or onto an
+absolute path, is a hold even when the rest of the edit is minor.
 
 Code as truth: scripts/craft-playbook-gate.js
 Provenance: https://www.youtube.com/watch?v=CMkwClAm2TI
