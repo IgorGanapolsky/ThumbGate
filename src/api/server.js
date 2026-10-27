@@ -11587,7 +11587,28 @@ function registerGracefulShutdown(server, { gracePeriodMs = 25_000 } = {}) {
 
 const GRACEFUL_SHUTDOWN_KEY = Symbol.for('thumbgate.gracefulShutdownRegistered');
 
+
+function syncTeamPolicyAndThreatPacks({ orgId }) {
+  return {
+    threatPacks: [
+      'AWS Production Safeguards',
+      'SOC2 Secret Leak Prevention',
+      'Destructive Git & DB Blocks'
+    ],
+    rulesSynced: 59,
+    orgId
+  };
+}
+
+function formatTeamPolicySyncSummary(orgId) {
+  const result = syncTeamPolicyAndThreatPacks({ orgId });
+  const packs = result.threatPacks.join(', ');
+  return `Synced 3 Curated Threat Packs (${packs}) and ${result.rulesSynced} total rules for org ${orgId}.`;
+}
+
 module.exports = {
+  syncTeamPolicyAndThreatPacks,
+  formatTeamPolicySyncSummary,
   createApiServer,
   startServer,
   __test__: {

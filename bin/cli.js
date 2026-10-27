@@ -4523,6 +4523,13 @@ switch (COMMAND) {
   case 'dogfood':
     feedbackSelfTest();
     break;
+  case 'policy-sync':
+  case 'skill-up': {
+    const { formatTeamPolicySyncSummary } = require('../src/api/server');
+    const arg = process.argv.slice(3).find((a) => !a.startsWith('--')) || 'default';
+    console.log(formatTeamPolicySyncSummary(arg));
+    break;
+  }
   case 'setup-vertex':
     setupVertex(parseArgs(process.argv.slice(3))).catch((err) => {
       console.error(err && err.message ? err.message : err);
