@@ -12,6 +12,7 @@
 ### Patch Changes
 
 - af1323a: Add Zero-Cost Antigravity (`agy`) GitHub Issue Mailbox & Forensic Domain Alias Governance (`evaluateAntigravityZeroCostMailboxAndDomainGovernance`) and InfoWorld Anti-Pareto-Trap Model Routing Switchyard Guard (`evaluateModelRoutingParetoTrapGuard`).
+- e726076: Ignore the non-required Entire Gates check when deciding whether a pull request can enter the Trunk queue.
 - 2eacd4d: feat: add EGM self-improvement hooks
 - 076a352: fix(mcp): add email-triage MCP server
 
