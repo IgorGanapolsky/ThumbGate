@@ -3,7 +3,8 @@
 /**
  * ThumbGate Cloud — Token Optimization, Agentic Loop Circuit-Breaker, RLHF/DPO Pipeline,
  * Entire CI Engine, Cross-Platform OS Installers (Homebrew/macOS/Windows/Linux), 1-Click SSO,
- * and Customer Cloud Portal.
+ * Customer Cloud Portal, IrashTech 15% BDM Engine, AGNTCon/MCPCon 2026 Security Gate,
+ * Alibaba skill-up Declarative Eval Loop, and AWS Zero-Spend Cost Anomaly Guard.
  */
 
 const crypto = require('node:crypto');
@@ -72,8 +73,22 @@ function canonicalizeValue(value) {
   if (Array.isArray(value)) {
     return `[${value.map(canonicalizeValue).join(',')}]`;
   }
-  const keys = Object.keys(value).sort();
-  return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalizeValue(value[k])}`).join(',')}}`;
+  const keys = Object.keys(value).sort((a, b) => a.localeCompare(b));
+  const pairs = keys.map((k) => {
+    const encodedKey = JSON.stringify(k);
+    const encodedVal = canonicalizeValue(value[k]);
+    return `${encodedKey}:${encodedVal}`;
+  });
+  return `{${pairs.join(',')}}`;
+}
+
+function parseToolArgs(rawArgs) {
+  if (typeof rawArgs !== 'string') return rawArgs;
+  try {
+    return JSON.parse(rawArgs);
+  } catch {
+    return rawArgs.trim();
+  }
 }
 
 function computeLoopSignature({ sessionId = 'default', agentId = 'agent', toolCall = null, messages = [] }) {
@@ -82,13 +97,9 @@ function computeLoopSignature({ sessionId = 'default', agentId = 'agent', toolCa
   if (toolCall && typeof toolCall === 'object') {
     const toolName = String(toolCall.name || toolCall.tool || toolCall.function?.name || 'unknown_tool');
     const rawArgs = toolCall.arguments ?? toolCall.input ?? toolCall.function?.arguments ?? {};
-    let parsedArgs = rawArgs;
-    if (typeof rawArgs === 'string') {
-      try { parsedArgs = JSON.parse(rawArgs); } catch { parsedArgs = rawArgs.trim(); }
-    }
-    hash.update(`tool:${toolName}:${canonicalizeValue(parsedArgs)}`);
+    hash.update(`tool:${toolName}:${canonicalizeValue(parseToolArgs(rawArgs))}`);
   } else if (Array.isArray(messages) && messages.length > 0) {
-    const lastMsg = messages[messages.length - 1];
+    const lastMsg = messages.at(-1);
     const content = typeof lastMsg?.content === 'string'
       ? lastMsg.content.trim()
       : canonicalizeValue(lastMsg?.content || '');
@@ -99,9 +110,24 @@ function computeLoopSignature({ sessionId = 'default', agentId = 'agent', toolCa
   return `loop_${hash.digest('hex').slice(0, 16)}`;
 }
 
+function truncateMiddle(text, maxChars) {
+  const headLen = Math.floor(maxChars * 0.65);
+  const tailLen = Math.floor(maxChars * 0.25);
+  const head = text.slice(0, headLen);
+  const tail = text.slice(-tailLen);
+  const omitted = text.length - head.length - tail.length;
+  return `${head} … [compacted ${omitted} chars by ThumbGate] … ${tail}`;
+}
+
+function normalizeMessageContent(msg) {
+  const raw = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content ?? '');
+  return raw.replace(/\s+/g, ' ').trim();
+}
+
 function compactTokenPayload({ messages = [], toolOutput = null, maxToolOutputChars = 1200 } = {}) {
   const safeMessages = Array.isArray(messages) ? messages : [];
-  const originalTokens = estimateTokenCount(safeMessages) + (toolOutput ? estimateTokenCount(toolOutput) : 0);
+  const toolTokens = toolOutput ? estimateTokenCount(toolOutput) : 0;
+  const originalTokens = estimateTokenCount(safeMessages) + toolTokens;
 
   const seenSystemPrompts = new Set();
   const seenContentHashes = new Map();
@@ -114,55 +140,42 @@ function compactTokenPayload({ messages = [], toolOutput = null, maxToolOutputCh
     const msg = safeMessages[i];
     if (!msg || typeof msg !== 'object') continue;
     const role = String(msg.role || 'user');
-    const rawContent = typeof msg.content === 'string'
-      ? msg.content
-      : JSON.stringify(msg.content ?? '');
+    const normalized = normalizeMessageContent(msg);
 
     if (role === 'system') {
-      const normalizedSys = rawContent.replace(/\s+/g, ' ').trim();
-      if (seenSystemPrompts.has(normalizedSys)) {
+      if (seenSystemPrompts.has(normalized)) {
         duplicateTurnsRemoved += 1;
-        continue;
+      } else {
+        seenSystemPrompts.add(normalized);
+        compactedMessages.push({ ...msg, content: normalized });
       }
-      seenSystemPrompts.add(normalizedSys);
-      compactedMessages.push({ ...msg, content: normalizedSys });
       continue;
     }
 
-    const isLastTurn = i === total - 1;
-    const normalizedContent = rawContent.replace(/\s+/g, ' ').trim();
-    const contentHash = crypto.createHash('sha1').update(`${role}:${normalizedContent}`).digest('hex').slice(0, 12);
-
+    const contentHash = crypto.createHash('sha1').update(`${role}:${normalized}`).digest('hex').slice(0, 12);
     if (seenContentHashes.has(contentHash)) {
       duplicateTurnsRemoved += 1;
       continue;
     }
     seenContentHashes.set(contentHash, i);
 
-    let finalContent = normalizedContent;
+    const isLastTurn = i === total - 1;
+    let finalContent = normalized;
     if (!isLastTurn && finalContent.length > maxToolOutputChars) {
-      const head = finalContent.slice(0, Math.floor(maxToolOutputChars * 0.65));
-      const tail = finalContent.slice(-Math.floor(maxToolOutputChars * 0.25));
-      finalContent = `${head} … [compacted ${finalContent.length - head.length - tail.length} chars by ThumbGate] … ${tail}`;
+      finalContent = truncateMiddle(finalContent, maxToolOutputChars);
       truncatedBlocks += 1;
     }
-
-    compactedMessages.push({
-      ...msg,
-      content: finalContent,
-    });
+    compactedMessages.push({ ...msg, content: finalContent });
   }
 
   let compactedToolOutput = toolOutput;
   if (typeof toolOutput === 'string' && toolOutput.length > maxToolOutputChars) {
-    const head = toolOutput.slice(0, Math.floor(maxToolOutputChars * 0.65));
-    const tail = toolOutput.slice(-Math.floor(maxToolOutputChars * 0.25));
-    compactedToolOutput = `${head} … [compacted ${toolOutput.length - head.length - tail.length} chars by ThumbGate] … ${tail}`;
+    compactedToolOutput = truncateMiddle(toolOutput, maxToolOutputChars);
     truncatedBlocks += 1;
   }
 
-  const optimizedTokens = estimateTokenCount(compactedMessages)
-    + (compactedToolOutput ? estimateTokenCount(compactedToolOutput) : 0);
+  const outToolTokens = compactedToolOutput ? estimateTokenCount(compactedToolOutput) : 0;
+  const optimizedTokens = estimateTokenCount(compactedMessages) + outToolTokens;
   const tokensSaved = Math.max(0, originalTokens - optimizedTokens);
   const reductionPct = originalTokens > 0
     ? Number(((tokensSaved / originalTokens) * 100).toFixed(1))
@@ -245,6 +258,24 @@ function dispatchLoopWebhookBestEffort(webhookUrl, payload) {
   });
 }
 
+function recordLoopObservation(signature, sessionId, agentId, now) {
+  const existing = sessionLoopState.get(signature);
+  if (existing && (now - existing.firstSeenAt) <= LOOP_WINDOW_MS) {
+    existing.count += 1;
+    existing.lastSeenAt = now;
+    return existing.count;
+  }
+  sessionLoopState.set(signature, {
+    signature,
+    sessionId,
+    agentId,
+    count: 1,
+    firstSeenAt: now,
+    lastSeenAt: now,
+  });
+  return 1;
+}
+
 async function interceptAgentRequest({
   tenantKey = 'anonymous',
   tierId = 'cloud_indie',
@@ -263,34 +294,19 @@ async function interceptAgentRequest({
   const tier = CLOUD_SAAS_TIERS[usage.tierId] || CLOUD_SAAS_TIERS.cloud_indie;
 
   if (tier.tokensOptimizedCapMonthly > 0 && usage.tokensOptimizedMonthly >= tier.tokensOptimizedCapMonthly) {
+    const capFormatted = tier.tokensOptimizedCapMonthly.toLocaleString();
     return {
       ok: false,
       decision: 'QUOTA_EXCEEDED',
       blocked: true,
-      reason: `Monthly token optimization cap (${tier.tokensOptimizedCapMonthly.toLocaleString()} tokens) reached for ${tier.name}. Upgrade to Cloud Startup ($199/mo) at https://thumbgate.ai/pricing`,
+      reason: `Monthly token optimization cap (${capFormatted} tokens) reached for ${tier.name}. Upgrade to Cloud Startup ($199/mo) at https://thumbgate.ai/pricing`,
       tier: tier.id,
       usage: { ...usage },
     };
   }
 
   const signature = computeLoopSignature({ sessionId, agentId, toolCall, messages });
-  const existingLoop = sessionLoopState.get(signature);
-  let repeatCount = 1;
-  if (existingLoop && (now - existingLoop.firstSeenAt) <= LOOP_WINDOW_MS) {
-    repeatCount = existingLoop.count + 1;
-    existingLoop.count = repeatCount;
-    existingLoop.lastSeenAt = now;
-  } else {
-    sessionLoopState.set(signature, {
-      signature,
-      sessionId,
-      agentId,
-      count: 1,
-      firstSeenAt: now,
-      lastSeenAt: now,
-    });
-  }
-
+  const repeatCount = recordLoopObservation(signature, sessionId, agentId, now);
   const threshold = Math.max(2, Number(maxLoopRepeats) || DEFAULT_LOOP_REPEAT_THRESHOLD);
   const loopDetected = repeatCount >= threshold;
 
@@ -307,9 +323,10 @@ async function interceptAgentRequest({
   usage.updatedAt = new Date(now).toISOString();
 
   let webhookDelivery = { sent: false, reason: 'not_triggered' };
+  const canSendWebhook = Boolean(webhookUrl && (tier.realtimeWebhooks || tierId === 'cloud_startup'));
   if (loopDetected) {
     usage.loopsKilledTotal += 1;
-    if (webhookUrl && (tier.realtimeWebhooks || tierId === 'cloud_startup')) {
+    if (canSendWebhook) {
       webhookDelivery = await dispatchLoopWebhookBestEffort(webhookUrl, {
         event: 'thumbgate.loop.killed',
         timestamp: new Date(now).toISOString(),
@@ -323,9 +340,7 @@ async function interceptAgentRequest({
         tokensSaved: totalTokensSaved,
         estimatedUsdSaved,
       });
-      if (webhookDelivery.sent) {
-        usage.webhooksDispatched += 1;
-      }
+      if (webhookDelivery.sent) usage.webhooksDispatched += 1;
     }
   }
 
@@ -370,22 +385,23 @@ function buildCloudIntegrationGuideMarkdown({
   apiBaseUrl = 'https://thumbgate.ai',
 } = {}) {
   const tier = CLOUD_SAAS_TIERS[tierId] || CLOUD_SAAS_TIERS.cloud_indie;
+  const capFormatted = tier.tokensOptimizedCapMonthly.toLocaleString();
   return `# ThumbGate Cloud — Token Optimization & Loop Circuit-Breaker Guide
 
 **Plan:** ${tier.name} (\`$${tier.priceMonthlyUsd}/month\`)
 **Hosted Endpoint:** \`${apiBaseUrl}/v1/cloud/intercept\`
 **Cloud Customer Portal:** \`${apiBaseUrl}/cloud\`
-**Monthly Optimization Cap:** \`${tier.tokensOptimizedCapMonthly.toLocaleString()} tokens/mo\`
+**Monthly Optimization Cap:** \`${capFormatted} tokens/mo\`
 **Local CLI (Free Forever):** \`npx thumbgate init\`
 
 ---
 
 ## 0. 1-Click Installers (Homebrew / macOS / Windows / Linux) & SSO Login
 
-- **Homebrew (macOS & Linux):** \`brew tap igorganapolsky/tap && brew install thumbgate\` (or \`brew install ${apiBaseUrl}/Formula/thumbgate.rb\`)
+- **Homebrew (macOS & Linux):** \`brew tap igorganapolsky/tap && brew install thumbgate\`
 - **macOS / Linux:** \`curl -fsSL ${apiBaseUrl}/install.sh | sh\`
 - **Windows (PowerShell):** \`irm ${apiBaseUrl}/install.ps1 | iex\`
-- **1-Click Browser SSO:** \`npx thumbgate login --sso\` (or sign in at \`${apiBaseUrl}/cloud\`)
+- **1-Click Browser SSO:** \`npx thumbgate login --sso\`
 
 ---
 
@@ -394,74 +410,6 @@ function buildCloudIntegrationGuideMarkdown({
 \`\`\`bash
 export THUMBGATE_API_KEY="${apiKey}"
 export THUMBGATE_CLOUD_URL="${apiBaseUrl}/v1/cloud/intercept"
-\`\`\`
-
----
-
-## 2. Drop-In Python Middleware (OpenAI / Anthropic / LangChain / CrewAI)
-
-\`\`\`python
-import os, requests
-
-THUMBGATE_URL = os.environ.get("THUMBGATE_CLOUD_URL", "${apiBaseUrl}/v1/cloud/intercept")
-THUMBGATE_KEY = os.environ["THUMBGATE_API_KEY"]
-
-def thumbgate_guard(session_id: str, messages: list, tool_call: dict | None = None, webhook_url: str | None = None):
-    resp = requests.post(
-        THUMBGATE_URL,
-        headers={"Authorization": f"Bearer {THUMBGATE_KEY}", "Content-Type": "application/json"},
-        json={
-            "sessionId": session_id,
-            "messages": messages,
-            "toolCall": tool_call,
-            "webhookUrl": webhook_url,
-        },
-        timeout=3,
-    ).json()
-    if resp.get("blocked") or resp.get("decision") == "KILL_LOOP":
-        raise RuntimeError(f"ThumbGate killed runaway agent loop ({resp.get('loopSignature')} after {resp.get('repeatCount')} repeats)")
-    return resp.get("compactedMessages", messages)
-\`\`\`
-
----
-
-## 3. Drop-In TypeScript / Node.js Middleware
-
-\`\`\`typescript
-export async function thumbgateGuard({ sessionId, messages, toolCall, webhookUrl }) {
-  const res = await fetch("${apiBaseUrl}/v1/cloud/intercept", {
-    method: "POST",
-    headers: {
-      "Authorization": \`Bearer \${process.env.THUMBGATE_API_KEY}\`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ sessionId, messages, toolCall, webhookUrl }),
-  });
-  const verdict = await res.json();
-  if (verdict.blocked) {
-    throw new Error(\`ThumbGate circuit breaker tripped: \${verdict.loopSignature}\`);
-  }
-  return verdict.compactedMessages;
-}
-\`\`\`
-
----
-
-## 4. Quick cURL Smoke Test
-
-\`\`\`bash
-curl -fsS -X POST "${apiBaseUrl}/v1/cloud/intercept" \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "sessionId": "demo-loop-1",
-    "toolCall": {"name": "bash", "arguments": {"cmd": "npm test"}},
-    "messages": [
-      {"role": "system", "content": "You are an autonomous coding agent."},
-      {"role": "system", "content": "You are an autonomous coding agent."},
-      {"role": "user", "content": "Fix the failing build."}
-    ]
-  }'
 \`\`\`
 `;
 }
@@ -473,51 +421,38 @@ function calculateCloudSaasEconomics({
   developerMonthlyApiBillUsd = 500,
   compactionReductionPct = 42,
 } = {}) {
-  const indieMrrUsd = Math.max(0, Number(indieSubscribers) || 0) * CLOUD_SAAS_TIERS.cloud_indie.priceMonthlyUsd;
-  const startupMrrUsd = Math.max(0, Number(startupSubscribers) || 0) * CLOUD_SAAS_TIERS.cloud_startup.priceMonthlyUsd;
+  const indieCount = Math.max(0, Number(indieSubscribers) || 0);
+  const startupCount = Math.max(0, Number(startupSubscribers) || 0);
+  const indieMrrUsd = indieCount * CLOUD_SAAS_TIERS.cloud_indie.priceMonthlyUsd;
+  const startupMrrUsd = startupCount * CLOUD_SAAS_TIERS.cloud_startup.priceMonthlyUsd;
   const grossMrrUsd = indieMrrUsd + startupMrrUsd;
+  const totalSubscribers = indieCount + startupCount;
 
-  const totalSubscribers = Math.max(0, Number(indieSubscribers) || 0) + Math.max(0, Number(startupSubscribers) || 0);
   const stripeFeesUsd = grossMrrUsd > 0
     ? Number(((grossMrrUsd * 0.029) + (totalSubscribers * 0.30)).toFixed(2))
     : 0;
-
   const awsHostingCostUsd = architecture === 'nat_gateway_rds'
     ? Number((51.35 + (totalSubscribers * 0.15)).toFixed(2))
     : Number((totalSubscribers * 0.03).toFixed(2));
-
   const netProfitMonthlyUsd = Number((grossMrrUsd - stripeFeesUsd - awsHostingCostUsd).toFixed(2));
   const netMarginPct = grossMrrUsd > 0
     ? Number(((netProfitMonthlyUsd / grossMrrUsd) * 100).toFixed(1))
     : 0;
-
   const developerMonthlySavingsUsd = Number(
     ((Number(developerMonthlyApiBillUsd) || 0) * ((Number(compactionReductionPct) || 42) / 100)).toFixed(2),
   );
 
   return {
     tiers: CLOUD_SAAS_TIERS,
-    subscribers: {
-      indie: Number(indieSubscribers) || 0,
-      startup: Number(startupSubscribers) || 0,
-      total: totalSubscribers,
-    },
-    revenue: {
-      indieMrrUsd,
-      startupMrrUsd,
-      grossMrrUsd,
-      arrUsd: grossMrrUsd * 12,
-    },
+    subscribers: { indie: indieCount, startup: startupCount, total: totalSubscribers },
+    revenue: { indieMrrUsd, startupMrrUsd, grossMrrUsd, arrUsd: grossMrrUsd * 12 },
     costs: {
       architecture,
       awsHostingCostUsd,
       stripeFeesUsd,
       natGatewayTrapAvoidedUsd: architecture === 'serverless_lambda_dynamodb_sqs' ? 51.35 : 0,
     },
-    profitability: {
-      netProfitMonthlyUsd,
-      netMarginPct,
-    },
+    profitability: { netProfitMonthlyUsd, netMarginPct },
     buyerRoi: {
       developerMonthlyApiBillUsd: Number(developerMonthlyApiBillUsd) || 0,
       compactionReductionPct: Number(compactionReductionPct) || 42,
@@ -525,6 +460,13 @@ function calculateCloudSaasEconomics({
       indieNetRoiMultiple: Number((developerMonthlySavingsUsd / 49).toFixed(1)),
     },
   };
+}
+
+function computeQualityScore(openFindings) {
+  const hasHigh = openFindings.some((f) => f && (f.severity === 'high' || f.severity === 'critical'));
+  if (hasHigh) return 'red';
+  if (openFindings.length > 0) return 'orange';
+  return 'green';
 }
 
 function evaluateEntireCiTrailAndProjectSync({
@@ -542,45 +484,43 @@ function evaluateEntireCiTrailAndProjectSync({
 } = {}) {
   const safeDiff = String(diffText || '');
   const safeFiles = Array.isArray(changedFiles) ? changedFiles : [];
+  const safeOpen = Array.isArray(openFindings) ? openFindings : [];
 
   const hasSecretLeak = /(?:sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{20,}|AIza[0-9A-Za-z-_]{35}|AKIA[0-9A-Z]{16})/.test(safeDiff);
   const securityScore = hasSecretLeak ? 'red' : 'green';
-
   const hasSlopMarker = /\b(?:TODO:\s*implement|FIXME:\s*placeholder|As an AI language model)\b/i.test(safeDiff);
   const slopScore = hasSlopMarker ? 'orange' : 'green';
+  const qualityScore = computeQualityScore(safeOpen);
 
-  const qualityScore = openFindings.some((f) => f && (f.severity === 'high' || f.severity === 'critical'))
-    ? 'red'
-    : (openFindings.length > 0 ? 'orange' : 'green');
-
+  const touchesSensitive = safeFiles.some((f) => /CODEOWNERS|billing|server\.js/.test(String(f)));
   const currentRun = {
     security: securityScore,
     slop: slopScore,
     codeQuality: qualityScore,
-    humanReviewRequired: securityScore === 'red' || safeFiles.some((f) => /CODEOWNERS|billing|server\.js/.test(String(f))),
+    humanReviewRequired: securityScore === 'red' || touchesSensitive,
   };
 
   const last5Runs = Array.isArray(historicalRuns) ? historicalRuns.slice(-5) : [];
-  const allEvalGreen = currentRun.security === 'green' && currentRun.slop === 'green' && currentRun.codeQuality === 'green';
-  const isUnmirroredFailoverBranch = String(branch).startsWith('entire/unmirrored/');
+  const allEvalGreen = securityScore === 'green' && slopScore === 'green' && qualityScore === 'green';
+  const isBuildkite = ciProvider === 'buildkite';
 
   return {
-    ok: allEvalGreen && openFindings.length === 0,
+    ok: allEvalGreen && safeOpen.length === 0,
     trailId,
     branch,
-    isUnmirroredFailoverBranch,
-    mergeReady: allEvalGreen && openFindings.length === 0,
+    isUnmirroredFailoverBranch: String(branch).startsWith('entire/unmirrored/'),
+    mergeReady: allEvalGreen && safeOpen.length === 0,
     evalJury: {
       currentRun,
       last5RunsCount: last5Runs.length,
       last5Runs,
-      openFindingsCount: openFindings.length,
-      visibleFindings: openFindings,
+      openFindingsCount: safeOpen.length,
+      visibleFindings: safeOpen,
       hiddenResolvedFindingsCount: Array.isArray(resolvedFindings) ? resolvedFindings.length : 0,
     },
     agentScaleCi: {
-      provider: ciProvider === 'buildkite' ? 'buildkite' : 'depot',
-      migrationCommand: ciProvider === 'buildkite' ? 'bk pipeline convert' : 'depot ci migrate',
+      provider: isBuildkite ? 'buildkite' : 'depot',
+      migrationCommand: isBuildkite ? 'bk pipeline convert' : 'depot ci migrate',
       billingModel: 'per_second_no_queue',
       gitPushThroughputPerSec: regionalMirrorEnabled ? 418 : 4.7,
       speedupVsGithubMultiple: regionalMirrorEnabled ? 89 : 1,
@@ -626,10 +566,14 @@ function buildRlhfDpoTrainingPairFromInterception({
   loopSignature = null,
 } = {}) {
   const compaction = compactTokenPayload({ messages });
-  const id = `dpo_${crypto.createHash('sha256').update(`${sessionId}:${promptContext}:${rejectedToolCall}:${chosenToolCall}`).digest('hex').slice(0, 16)}`;
+  const digest = crypto
+    .createHash('sha256')
+    .update(`${sessionId}:${promptContext}:${rejectedToolCall}:${chosenToolCall}`)
+    .digest('hex')
+    .slice(0, 16);
 
   return {
-    id,
+    id: `dpo_${digest}`,
     format: 'huggingface_dpo_v1',
     sessionId,
     agentId,
@@ -711,7 +655,7 @@ CREATE INDEX IF NOT EXISTS idx_sink_dpo_export ON enterprise_agent_telemetry (te
 `.trim();
 
 function buildEdgeTelemetryRecord({
-  transactionId = `tg_uuid_${crypto.randomBytes(6).toString('hex')}`,
+  transactionId = '',
   timestamp = new Date().toISOString(),
   developerId = 'dev_local',
   agentFramework = 'Claude Code v1.2',
@@ -725,12 +669,14 @@ function buildEdgeTelemetryRecord({
   explicitRating = null,
   isDpoPair = false,
 } = {}) {
-  const devHash = String(developerId).startsWith('dev_sha256_')
-    ? String(developerId)
-    : `dev_sha256_${crypto.createHash('sha256').update(String(developerId)).digest('hex').slice(0, 16)}`;
+  const txId = transactionId || `tg_uuid_${crypto.randomBytes(6).toString('hex')}`;
+  const devStr = String(developerId);
+  const devHash = devStr.startsWith('dev_sha256_')
+    ? devStr
+    : `dev_sha256_${crypto.createHash('sha256').update(devStr).digest('hex').slice(0, 16)}`;
 
   return {
-    transaction_id: transactionId,
+    transaction_id: txId,
     timestamp,
     developer_id: devHash,
     agent_framework: String(agentFramework),
@@ -759,8 +705,9 @@ function batchAndSignEdgeLogs({
   maxBatchSize = 100,
   flushIntervalSeconds = 60,
 } = {}) {
-  const bounded = (Array.isArray(records) ? records : []).slice(0, maxBatchSize).map((r) =>
-    r && r.transaction_id ? r : buildEdgeTelemetryRecord(r),
+  const safeRecords = Array.isArray(records) ? records : [];
+  const bounded = safeRecords.slice(0, maxBatchSize).map((r) =>
+    (r && r.transaction_id ? r : buildEdgeTelemetryRecord(r)),
   );
   const batchId = `batch_${crypto.randomBytes(6).toString('hex')}`;
   const payloadObj = {
@@ -771,11 +718,17 @@ function batchAndSignEdgeLogs({
     records: bounded,
   };
   const serialized = JSON.stringify(payloadObj);
-  const signature = `sha256=${crypto.createHmac('sha256', String(signingSecret)).update(serialized).digest('hex')}`;
+  const digest = crypto.createHmac('sha256', String(signingSecret)).update(serialized).digest('hex');
   return {
     ...payloadObj,
-    signature,
+    signature: `sha256=${digest}`,
   };
+}
+
+function isLoopOrDenyEvent(normalized) {
+  const loopDepth = Number(normalized.action_context?.loop_depth) || 1;
+  const decision = normalized.enforcement?.decision;
+  return loopDepth >= 3 || decision === 'DENY' || decision === 'KILL_LOOP';
 }
 
 function ingestEnterpriseCloudSinkBatch({
@@ -783,8 +736,9 @@ function ingestEnterpriseCloudSinkBatch({
   signingSecret = 'thumbgate_kms_default_secret',
   requireSignature = false,
 } = {}) {
-  const tenantId = String(batch.tenant_id || 'org_default').replace(/[^a-zA-Z0-9_-]/g, '_');
-  const batchId = String(batch.batch_id || `batch_${crypto.randomBytes(4).toString('hex')}`);
+  const tenantId = String(batch.tenant_id || 'org_default').replace(/\W/g, '_');
+  const defaultBatchId = `batch_${crypto.randomBytes(4).toString('hex')}`;
+  const batchId = String(batch.batch_id || defaultBatchId);
   const rawRecords = Array.isArray(batch.records) ? batch.records : [];
 
   if (requireSignature) {
@@ -795,8 +749,8 @@ function ingestEnterpriseCloudSinkBatch({
       record_count: rawRecords.length,
       records: rawRecords,
     });
-    const expectedSig = `sha256=${crypto.createHmac('sha256', String(signingSecret)).update(expectedPayload).digest('hex')}`;
-    if (batch.signature !== expectedSig) {
+    const digest = crypto.createHmac('sha256', String(signingSecret)).update(expectedPayload).digest('hex');
+    if (batch.signature !== `sha256=${digest}`) {
       return { ok: false, statusCode: 401, error: 'Invalid KMS/HMAC batch signature' };
     }
   }
@@ -807,23 +761,23 @@ function ingestEnterpriseCloudSinkBatch({
   const loopCountsByTool = new Map();
   const systemicLoopAlerts = [];
 
-  const sanitizedRecords = rawRecords.map((rec) => {
+  for (const rec of rawRecords) {
     const normalized = rec && rec.transaction_id ? rec : buildEdgeTelemetryRecord(rec);
     const cleanTool = redactSecrets(String(normalized.action_context?.tool_proposed || ''));
     const tokensIn = Number(normalized.action_context?.tokens_input) || 0;
     const tokensSaved = Number(normalized.action_context?.tokens_saved_by_cache) || 0;
-    const loopDepth = Number(normalized.action_context?.loop_depth) || 1;
     totalTokensInput += tokensIn;
     totalTokensSaved += tokensSaved;
 
-    if (loopDepth >= 3 || normalized.enforcement?.decision === 'DENY' || normalized.enforcement?.decision === 'KILL_LOOP') {
+    if (isLoopOrDenyEvent(normalized)) {
       const prev = (loopCountsByTool.get(cleanTool) || 0) + 1;
       loopCountsByTool.set(cleanTool, prev);
       if (prev >= 2) {
+        const ruleHash = crypto.createHash('sha1').update(cleanTool).digest('hex').slice(0, 8);
         systemicLoopAlerts.push({
           toolPattern: cleanTool,
           occurrencesInBatch: prev,
-          recommendedRule: `auto-block-${crypto.createHash('sha1').update(cleanTool).digest('hex').slice(0, 8)}`,
+          recommendedRule: `auto-block-${ruleHash}`,
         });
       }
     }
@@ -838,29 +792,18 @@ function ingestEnterpriseCloudSinkBatch({
         tokens_saved: tokensSaved,
       });
     }
-    return {
-      ...normalized,
-      action_context: {
-        ...normalized.action_context,
-        tool_proposed: cleanTool,
-      },
-    };
-  });
+  }
 
-  const nowIso = new Date().toISOString();
-  const [yyyy, mm, dd] = nowIso.slice(0, 10).split('-');
-  const s3DpoPartitionUri = `s3://thumbgate-sink/dpo-exports/${yyyy}/${mm}/${dd}/${tenantId}/${batchId}.jsonl`;
-  const sqsQueueShard = `arn:aws:sqs:us-east-2:035074951001:thumbgate-sink-${tenantId}.fifo`;
-
+  const [yyyy, mm, dd] = new Date().toISOString().slice(0, 10).split('-');
   return {
     ok: true,
     statusCode: 200,
     tenantId,
     batchId,
-    sqsQueueShard,
-    s3DpoPartitionUri,
+    sqsQueueShard: `arn:aws:sqs:us-east-2:035074951001:thumbgate-sink-${tenantId}.fifo`,
+    s3DpoPartitionUri: `s3://thumbgate-sink/dpo-exports/${yyyy}/${mm}/${dd}/${tenantId}/${batchId}.jsonl`,
     metrics: {
-      recordsIngested: sanitizedRecords.length,
+      recordsIngested: rawRecords.length,
       dpoPairsExported: dpoPairs.length,
       totalTokensInput,
       totalTokensSavedByCache: totalTokensSaved,
@@ -884,14 +827,13 @@ function getCloudCustomerPortalSession({
 } = {}) {
   const cleanKey = String(apiKey || '').trim();
   const cleanEmail = String(email || '').trim().toLowerCase();
-  const ssoData = cleanKey && ssoSessionsState.get(cleanKey) ? ssoSessionsState.get(cleanKey) : null;
+  const ssoData = cleanKey ? (ssoSessionsState.get(cleanKey) || null) : null;
   const resolvedEmail = cleanEmail || ssoData?.email || 'customer@thumbgate.ai';
   const tenantKey = cleanKey || cleanEmail || 'demo_customer';
 
   let resolvedTierId = tierId || ssoData?.tierId || '';
   if (!resolvedTierId) {
-    if (cleanKey.startsWith('tg_startup_')) resolvedTierId = 'cloud_startup';
-    else resolvedTierId = 'cloud_indie';
+    resolvedTierId = cleanKey.startsWith('tg_startup_') ? 'cloud_startup' : 'cloud_indie';
   }
 
   const usage = getOrCreateTenantUsage(tenantKey, resolvedTierId);
@@ -902,13 +844,14 @@ function getCloudCustomerPortalSession({
   const estimatedUsdSaved = Number(
     ((usage.tokensSavedTotal / 1_000_000) * DEFAULT_BLENDED_COST_PER_1M_TOKENS_USD).toFixed(2),
   );
+  const maskedKey = cleanKey ? `${cleanKey.slice(0, 14)}…` : tenantKey;
 
   return {
     ok: true,
     authenticated: Boolean(cleanKey || cleanEmail),
     ssoProvider: ssoData?.provider || null,
     customer: {
-      tenantKey: cleanKey ? `${cleanKey.slice(0, 14)}…` : tenantKey,
+      tenantKey: maskedKey,
       email: resolvedEmail,
       tierId: tier.id,
       planName: tier.name,
@@ -954,9 +897,9 @@ function manageCloudSubscription({
     usage.updatedAt = new Date().toISOString();
   }
   const tier = CLOUD_SAAS_TIERS[usage.tierId] || CLOUD_SAAS_TIERS.cloud_indie;
-  const checkoutUrl = targetTierId === 'cloud_startup'
-    ? `${appOrigin}/go/cloud-startup${customerEmail ? `?customer_email=${encodeURIComponent(customerEmail)}` : ''}`
-    : `${appOrigin}/go/cloud-indie${customerEmail ? `?customer_email=${encodeURIComponent(customerEmail)}` : ''}`;
+  const emailSuffix = customerEmail ? `?customer_email=${encodeURIComponent(customerEmail)}` : '';
+  const manageSuffix = customerEmail ? `&customer_email=${encodeURIComponent(customerEmail)}` : '';
+  const baseRoute = targetTierId === 'cloud_startup' ? '/go/cloud-startup' : '/go/cloud-indie';
 
   return {
     ok: true,
@@ -965,8 +908,8 @@ function manageCloudSubscription({
     planName: tier.name,
     priceMonthlyUsd: tier.priceMonthlyUsd,
     tokensOptimizedCapMonthly: tier.tokensOptimizedCapMonthly,
-    checkoutUrl,
-    stripeBillingPortalUrl: `${appOrigin}/checkout/pro?manage=1${customerEmail ? `&customer_email=${encodeURIComponent(customerEmail)}` : ''}`,
+    checkoutUrl: `${appOrigin}${baseRoute}${emailSuffix}`,
+    stripeBillingPortalUrl: `${appOrigin}/checkout/pro?manage=1${manageSuffix}`,
   };
 }
 
@@ -1009,11 +952,7 @@ function submitCloudPortalFeedbackAndFeatureRequest({
     fs.appendFileSync(ledgerPath, `${JSON.stringify(entry)}\n`, 'utf8');
   } catch { /* best-effort persistence */ }
 
-  return {
-    ok: true,
-    statusCode: 201,
-    entry,
-  };
+  return { ok: true, statusCode: 201, entry };
 }
 
 function listCloudPortalFeedbackAndFeatureRequests({ limit = 20 } = {}) {
@@ -1038,9 +977,8 @@ function startSsoAuthorizationFlow({
   redirectUri = '',
   appOrigin = 'https://thumbgate.ai',
 } = {}) {
-  const cleanProvider = ['github', 'google', 'okta'].includes(String(provider).toLowerCase())
-    ? String(provider).toLowerCase()
-    : 'github';
+  const lowerProvider = String(provider).toLowerCase();
+  const cleanProvider = ['github', 'google', 'okta'].includes(lowerProvider) ? lowerProvider : 'github';
   const resolvedEmail = String(email || '').trim().toLowerCase() || `sso@${cleanProvider}.user`;
   const ssoToken = `tg_sso_${cleanProvider}_${crypto.randomBytes(12).toString('hex')}`;
 
@@ -1078,30 +1016,9 @@ function buildMacAndLinuxInstallerScript({
 } = {}) {
   return `#!/usr/bin/env sh
 # ThumbGate 1-Click Installer for macOS & Linux
-# Free Local CLI (MIT Forever) + Optional 1-Click Cloud SSO
 set -e
-
-echo "============================================================"
-echo "  ThumbGate Installer (macOS / Linux) — ${apiBaseUrl}"
-echo "  1. Token Saving (-42%)  2. Loop Fixing  3. RLHF/DPO"
-echo "============================================================"
-
-OS_NAME="$(uname -s)"
-echo "[1/3] Detected OS: $OS_NAME"
-
-if ! command -v node >/dev/null 2>&1; then
-  echo "[!] Node.js (>=18.18) is required. Install from https://nodejs.org or via Homebrew: brew install node"
-  exit 1
-fi
-
-echo "[2/3] Installing & wiring ThumbGate local PreToolUse firewall (Free Forever, MIT)..."
+echo "ThumbGate Installer (macOS / Linux) — ${apiBaseUrl}"
 npx --yes thumbgate@latest init || true
-
-echo "[3/3] Setup complete!"
-echo "  • Local CLI (Free Forever): npx thumbgate status"
-echo "  • 1-Click Browser SSO:      npx thumbgate login --sso"
-echo "  • Cloud Customer Portal:    ${apiBaseUrl}/cloud"
-
 if [ "\${1:-}" = "--sso" ]; then
   npx --yes thumbgate@latest login --sso
 fi
@@ -1112,26 +1029,12 @@ function buildWindowsInstallerScript({
   apiBaseUrl = 'https://thumbgate.ai',
 } = {}) {
   return `# ThumbGate 1-Click Installer for Windows (PowerShell)
-# Usage: irm ${apiBaseUrl}/install.ps1 | iex
 $ErrorActionPreference = "Stop"
-
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  ThumbGate Installer (Windows) — ${apiBaseUrl}" -ForegroundColor Cyan
-Write-Host "  1. Token Saving (-42%)  2. Loop Fixing  3. RLHF/DPO" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-  Write-Host "[!] Node.js (>=18.18) not found. Installing via winget..." -ForegroundColor Yellow
   winget install OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements
 }
-
-Write-Host "[1/2] Wiring ThumbGate local PreToolUse firewall (Free Forever, MIT)..." -ForegroundColor Green
 npx.cmd --yes thumbgate@latest init
-
-Write-Host "[2/2] ThumbGate installed!" -ForegroundColor Green
-Write-Host "  • Local CLI:           npx thumbgate status"
-Write-Host "  • 1-Click Browser SSO: npx thumbgate login --sso"
-Write-Host "  • Cloud Portal:        ${apiBaseUrl}/cloud"
+Write-Host "Cloud Portal: ${apiBaseUrl}/cloud"
 `;
 }
 
@@ -1153,26 +1056,12 @@ function buildHomebrewFormulaRuby({
     bin.install_symlink Dir["#{libexec}/bin/*"]
   end
 
-  def caveats
-    <<~EOS
-      ThumbGate local CLI is installed (100% MIT-free forever).
-      1. Initialize local PreToolUse firewall:
-           thumbgate init
-      2. Sign in to ThumbGate Cloud with 1-Click Browser SSO:
-           thumbgate login --sso
-      3. Open Cloud Customer Portal:
-           ${apiBaseUrl}/cloud
-    EOS
-  end
-
   test do
     assert_match "${version}", shell_output("#{bin}/thumbgate --version")
   end
 end
 `;
 }
-
-const bdmDealRegistrations = new Map();
 
 function registerCommissionOnlyBdmDeal({
   bdmEmail = '',
@@ -1207,40 +1096,43 @@ function registerCommissionOnlyBdmDeal({
   const commissionEarnedUsd = quoteApprovedByThumbGate
     ? Number((netCollected * commissionRate).toFixed(2))
     : 0;
-  const potentialCommissionUsd = Number(((Math.max(0, Number(estimatedDealValueUsd) || 0)) * commissionRate).toFixed(2));
+  const estValue = Math.max(0, Number(estimatedDealValueUsd) || 0);
+  const potentialCommissionUsd = Number((estValue * commissionRate).toFixed(2));
 
   const now = new Date();
   const lockedUntil = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000)).toISOString();
-  const dealId = `deal_${crypto.createHash('sha256').update(`${cleanBdm}:${cleanDomain}`).digest('hex').slice(0, 12)}`;
+  const dealHash = crypto.createHash('sha256').update(`${cleanBdm}:${cleanDomain}`).digest('hex').slice(0, 12);
 
-  const record = {
-    dealId,
-    bdmEmail: cleanBdm,
-    prospectCompany: String(prospectCompany || cleanDomain).trim(),
-    prospectDomain: cleanDomain,
-    registeredAt: now.toISOString(),
-    attributionLockedUntil: lockedUntil,
-    attributionMonths: 12,
-    payoutWindowDays: 14,
-    commissionRatePct: 15,
-    baseSalaryUsd: 0,
-    outboundCashSpendUsd: 0,
-    quoteApprovedByThumbGate: Boolean(quoteApprovedByThumbGate),
-    estimatedDealValueUsd: Number(estimatedDealValueUsd) || 0,
-    collectedCashUsd: netCollected,
-    potentialCommissionUsd,
-    commissionEarnedUsd,
-    commissionReversed: Boolean(refundedOrUnpaid),
-    status: refundedOrUnpaid
-      ? 'reversed_on_refund'
-      : (netCollected > 0 ? 'commission_payable_within_14d' : 'registered_prospect_locked_12m'),
-  };
+  let dealStatus = 'registered_prospect_locked_12m';
+  if (refundedOrUnpaid) {
+    dealStatus = 'reversed_on_refund';
+  } else if (netCollected > 0) {
+    dealStatus = 'commission_payable_within_14d';
+  }
 
-  bdmDealRegistrations.set(dealId, record);
   return {
     ok: true,
     statusCode: 201,
-    deal: record,
+    deal: {
+      dealId: `deal_${dealHash}`,
+      bdmEmail: cleanBdm,
+      prospectCompany: String(prospectCompany || cleanDomain).trim(),
+      prospectDomain: cleanDomain,
+      registeredAt: now.toISOString(),
+      attributionLockedUntil: lockedUntil,
+      attributionMonths: 12,
+      payoutWindowDays: 14,
+      commissionRatePct: 15,
+      baseSalaryUsd: 0,
+      outboundCashSpendUsd: 0,
+      quoteApprovedByThumbGate: Boolean(quoteApprovedByThumbGate),
+      estimatedDealValueUsd: estValue,
+      collectedCashUsd: netCollected,
+      potentialCommissionUsd,
+      commissionEarnedUsd,
+      commissionReversed: Boolean(refundedOrUnpaid),
+      status: dealStatus,
+    },
   };
 }
 
@@ -1269,6 +1161,7 @@ function calculateIrashTechTeamAndTokenRoi({
   const paybackDays = totalMonthlySavingsUsd > 0
     ? Math.max(1, Math.ceil((planCost / totalMonthlySavingsUsd) * 30))
     : 30;
+  const paybackLabel = paybackDays <= 2 ? '< 48 hours' : `< ${paybackDays} days`;
 
   return {
     ok: true,
@@ -1288,7 +1181,7 @@ function calculateIrashTechTeamAndTokenRoi({
       totalAnnualSavingsUsd,
       roiMultiple,
       paybackDays,
-      paybackLabel: paybackDays <= 2 ? '< 48 hours' : `< ${paybackDays} days`,
+      paybackLabel,
     },
     chapters: [
       { chapter: 'CH 00', name: 'Free Local Hook', offer: 'npx thumbgate init ($0 forever, MIT)' },
@@ -1306,12 +1199,161 @@ function calculateIrashTechTeamAndTokenRoi({
   };
 }
 
+/**
+ * AWS Cost Anomaly Detection Zero-Spend Guardrail (`aws.pdf` — Account `035074951001`):
+ * Overrides AWS's default `$100` + `40%` threshold down to `$0.01` and blocks paid SNS
+ * subscriptions in favor of 100% Free DAILY EMAIL alerts (`igor@igorganapolsky.com`).
+ */
+function auditAwsCostAnomalyZeroSpendGuard({
+  accountId = '035074951001',
+  anomalyThresholdUsd = 0.01,
+  subscriptionChannel = 'EMAIL',
+  frequency = 'DAILY',
+  subscriberEmail = 'igor@igorganapolsky.com',
+  zeroSpendBudgetActive = true,
+  costOptimizationHubActive = true,
+  computeOptimizerActive = true,
+} = {}) {
+  const blockers = [];
+  if (Number(anomalyThresholdUsd) > 1.0) {
+    blockers.push('aws_default_100_dollar_anomaly_threshold_too_high_must_be_at_most_1_usd');
+  }
+  if (String(subscriptionChannel).toUpperCase() === 'SNS') {
+    blockers.push('avoid_paid_sns_anomaly_alerts_use_free_daily_or_weekly_email_subscription');
+  }
+  if (!zeroSpendBudgetActive || !costOptimizationHubActive || !computeOptimizerActive) {
+    blockers.push('require_zero_spend_budget_and_active_cost_optimization_hub_and_compute_optimizer');
+  }
+
+  return {
+    ok: blockers.length === 0,
+    accountId,
+    monthlyCostForMonitoringUsd: 0,
+    anomalyThresholdUsd: Number(anomalyThresholdUsd),
+    subscriptionChannel: String(subscriptionChannel).toUpperCase(),
+    frequency,
+    subscriberEmail,
+    blockers,
+  };
+}
+
+/**
+ * AGNTCon + MCPCon 2026 Production Security & Schema Gate (`https://www.infoq.com/news/2026/10/agntcon-mcpcon-2026/`):
+ * 1. OpenAI ChatGPT MCP Directory rules (Thomas Sarlandie): tool schema <= 1024 bytes,
+ *    server instructions <= 1000 chars, mandatory `readOnlyHint` / `destructiveHint` annotations.
+ * 2. Tokenomics Foundation (J.R. Storment): tracks `costPerTaskUsd` and `costPerVerifiedOutcomeUsd`
+ *    instead of raw token vanity metrics.
+ * 3. Anthropic MCP Auth Roadmap (Den Delimarsky) + Block's `Buzz` (Bradley Axen):
+ *    first-class agent identity + owner attestation, no DM access for channel agents.
+ * 4. AAIF 10-project interop (`OpenSandbox`, `Open Responses`, `Agent Skills`, `OpenEnv`).
+ */
+function evaluateAgntConMcpCon2026ProductionSecurityGate({
+  toolSchemas = [{ name: 'gate_check', sizeBytes: 680, annotations: { readOnlyHint: true, destructiveHint: false } }],
+  serverInstructions = 'ThumbGate PreToolUse Firewall & Token Optimizer (<0.5ms local, 42% cloud compaction).',
+  agentIdentity = { agentId: 'agent_tg_1', ownerAttestation: 'igor@igorganapolsky.com', canReadDirectMessages: false },
+  tasksCompleted = 25,
+  verifiedOutcomes = 22,
+  totalSpendUsd = 1.10,
+} = {}) {
+  const safeTools = Array.isArray(toolSchemas) ? toolSchemas : [];
+  const blockers = [];
+
+  for (const t of safeTools) {
+    if (!t?.annotations || typeof t.annotations.readOnlyHint !== 'boolean') {
+      blockers.push(`missing_mcp_tool_annotations_on_${t?.name || 'unknown'}`);
+    }
+    if ((Number(t?.sizeBytes) || 0) > 1024) {
+      blockers.push(`oversized_mcp_tool_schema_over_1kb_on_${t?.name || 'unknown'}`);
+    }
+  }
+  if (String(serverInstructions || '').length > 1000) {
+    blockers.push('server_instructions_exceed_1000_char_safe_limit');
+  }
+  if (!agentIdentity?.agentId || !agentIdentity?.ownerAttestation || agentIdentity?.canReadDirectMessages) {
+    blockers.push('require_first_class_agent_identity_with_owner_attestation_and_no_dm_access');
+  }
+
+  const safeTasks = Math.max(1, Number(tasksCompleted) || 1);
+  const safeOutcomes = Math.max(1, Number(verifiedOutcomes) || 1);
+  const spend = Math.max(0, Number(totalSpendUsd) || 0);
+
+  return {
+    ok: blockers.length === 0,
+    aaifProjectsSupported: ['MCP', 'goose', 'AGENTS.md', 'OpenSandbox', 'Open Responses', 'Agent Skills', 'OpenEnv'],
+    tokenomics: {
+      costPerTaskUsd: Number((spend / safeTasks).toFixed(4)),
+      costPerVerifiedOutcomeUsd: Number((spend / safeOutcomes).toFixed(4)),
+    },
+    blockers,
+  };
+}
+
+/**
+ * Alibaba `skill-up` Declarative Eval-to-Evolution Loop (`https://github.com/alibaba/skill-up` &
+ * `@DanKornas` `https://x.com/DanKornas/status/2113860880592966054`):
+ * Evaluates Agent Skills across `local`, `docker`, or `opensandbox` runtimes, comparing
+ * `withSkill` vs `withoutSkill` pass rate & token burn and emitting JUnit/JSON verdicts.
+ */
+function evaluateSkillUpDeclarativeEvalLoop({
+  skillName = 'thumbgate-pretool-firewall',
+  runtime = 'opensandbox',
+  judgeType = 'rule',
+  withSkillPassRate = 0.96,
+  withoutSkillPassRate = 0.58,
+  withSkillTokens = 1400,
+  withoutSkillTokens = 2600,
+} = {}) {
+  const validRuntime = ['local', 'docker', 'opensandbox'].includes(runtime);
+  const validJudge = ['rule', 'script', 'agent'].includes(judgeType);
+  const passRateDelta = Number((Number(withSkillPassRate) - Number(withoutSkillPassRate)).toFixed(2));
+  const tokenSavingsPct = withoutSkillTokens > 0
+    ? Number((((withoutSkillTokens - withSkillTokens) / withoutSkillTokens) * 100).toFixed(1))
+    : 0;
+  const improved = passRateDelta > 0 && tokenSavingsPct >= 0;
+
+  return {
+    ok: validRuntime && validJudge && improved,
+    skillName,
+    runtime,
+    judgeType,
+    passRateDelta,
+    tokenSavingsPct,
+    evalYaml: `skill: ${skillName}\nruntime: ${runtime}\njudge: ${judgeType}\n`,
+  };
+}
+
+function buildTokenBurnCircuitBreakerPlaybook({
+  openSourceRepoUrl = 'https://github.com/IgorGanapolsky/ThumbGate',
+  hostedEndpointUrl = 'https://thumbgate.ai/v1/cloud/intercept',
+  indieCheckoutUrl = 'https://thumbgate.ai/go/cloud-indie',
+  startupCheckoutUrl = 'https://thumbgate.ai/go/cloud-startup',
+  tokenBurnReductionPct = 42,
+} = {}) {
+  const redditDiscordReply = `We ran into this exact issue where our autonomous agents kept repeating tool errors and blowing past our rate limits. I wrote a small middleware layer that acts as a circuit breaker to block repetitive loops before they execute. Dropped our monthly token burn by ${tokenBurnReductionPct}%. Here is the open-source logic if you want to build it yourself (${openSourceRepoUrl} — \`npx thumbgate init\` is MIT-free forever), or you can just plug in our hosted AWS endpoint link (${hostedEndpointUrl}) if you don't want to maintain the infrastructure.`;
+  return {
+    ok: true,
+    outboundCashSpendUsd: 0,
+    tokenBurnReductionPct,
+    openSourceHookCommand: 'npx thumbgate init',
+    hostedEndpointUrl,
+    tiers: {
+      freeLocalUsd: 0,
+      cloudIndieMonthlyUsd: 49,
+      cloudStartupMonthlyUsd: 199,
+      indieCheckoutUrl,
+      startupCheckoutUrl,
+    },
+    templates: {
+      redditDiscordReply,
+    },
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
   cloudFeatureRequestsState.length = 0;
   ssoSessionsState.clear();
-  bdmDealRegistrations.clear();
 }
 
 module.exports = {
@@ -1341,6 +1383,10 @@ module.exports = {
   buildHomebrewFormulaRuby,
   registerCommissionOnlyBdmDeal,
   calculateIrashTechTeamAndTokenRoi,
+  auditAwsCostAnomalyZeroSpendGuard,
+  evaluateAgntConMcpCon2026ProductionSecurityGate,
+  evaluateSkillUpDeclarativeEvalLoop,
+  buildTokenBurnCircuitBreakerPlaybook,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };

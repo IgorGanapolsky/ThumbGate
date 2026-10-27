@@ -2,10 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   ThumbGate Cloud SaaS (thumbgate.ai) — 5-Layer Edge-to-Cloud Token Optimization,
-  Loop Circuit-Breaker & RLHF/DPO Sink Stack.
-  Provisions API Gateway HTTP API, SQS Ingestion & Webhook Queues, Node.js 20 Edge
-  Interceptor Lambda, Python 3.12 SQS Log-Parser/DPO Worker Lambda, S3 DPO Data
-  Warehouse, and DynamoDB Free-Tier Operational Store ($0.00/mo idle cost).
+  Loop Circuit-Breaker, RLHF/DPO Sink & $0.01 Zero-Spend Cost Anomaly Guard.
 
 Parameters:
   DatabaseUrl:
@@ -53,7 +50,7 @@ Resources:
       Runtime: nodejs20.x
       CodeUri: ../../
       Handler: src/aws-lambda-handler.handler
-      Description: Intercepts agent tool/LLM calls, kills duplicate loops, compacts token payloads, and ingests edge batches.
+      Description: Serves Cloud Portal, 1-Click SSO, OS Installers, Token Compaction, Loop Circuit Breaker & BDM Engine.
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ThumbGateUsageTable
@@ -62,6 +59,12 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt TelemetryIngestQueue.QueueName
       Events:
+        CloudPortalRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ThumbGateHttpApi
+            Path: /cloud
+            Method: GET
         InterceptRoute:
           Type: HttpApi
           Properties:
@@ -74,36 +77,6 @@ Resources:
             ApiId: !Ref ThumbGateHttpApi
             Path: /v1/cloud/sink/ingest
             Method: POST
-        PositioningRoute:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref ThumbGateHttpApi
-            Path: /v1/cloud/positioning
-            Method: GET
-        CiTrailRoute:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref ThumbGateHttpApi
-            Path: /v1/cloud/ci-trail-eval
-            Method: POST
-        DpoSyncRoute:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref ThumbGateHttpApi
-            Path: /v1/cloud/dpo-sync
-            Method: POST
-        GuideRoute:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref ThumbGateHttpApi
-            Path: /v1/cloud/integration-guide.md
-            Method: GET
-        CalculatorRoute:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref ThumbGateHttpApi
-            Path: /v1/cloud/calculator
-            Method: GET
 
   ThumbGateSqsIngestWorkerFunction:
     Type: AWS::Serverless::Function
@@ -111,7 +84,7 @@ Resources:
       Runtime: python3.12
       CodeUri: ./
       Handler: sqs_ingest_worker.lambda_handler
-      Description: Consumes SQS telemetry micro-batches, scrubs secrets, writes operational metrics, and streams DPO pairs to S3.
+      Description: Consumes SQS telemetry micro-batches, scrubs secrets, and streams DPO pairs to S3.
       Policies:
         - S3WritePolicy:
             BucketName: !Ref ThumbGateDpoWarehouseBucket
@@ -167,6 +140,26 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+
+  ThumbGateZeroSpendAnomalyMonitor:
+    Type: AWS::CE::AnomalyMonitor
+    Properties:
+      MonitorName: ThumbGate-Zero-Spend-Services-Monitor
+      MonitorType: DIMENSIONAL
+      MonitorDimension: SERVICE
+
+  ThumbGateZeroSpendAnomalySubscription:
+    Type: AWS::CE::AnomalySubscription
+    Properties:
+      SubscriptionName: ThumbGate-Zero-Spend-Daily-Email-Alert
+      Frequency: DAILY
+      MonitorArnList:
+        - !GetAtt ThumbGateZeroSpendAnomalyMonitor.MonitorArn
+      Subscribers:
+        - Type: EMAIL
+          Address: igor@igorganapolsky.com
+      ThresholdExpression: >
+        {"Dimensions":{"Key":"ANOMALY_TOTAL_IMPACT_ABSOLUTE","MatchOptions":["GREATER_THAN_OR_EQUAL"],"Values":["0.01"]}}
 
 Outputs:
   ThumbGateCloudApiUrl:

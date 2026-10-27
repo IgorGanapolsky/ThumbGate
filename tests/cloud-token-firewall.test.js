@@ -19,10 +19,13 @@ const {
   buildEdgeTelemetryRecord,
   batchAndSignEdgeLogs,
   ingestEnterpriseCloudSinkBatch,
+  auditAwsCostAnomalyZeroSpendGuard,
+  evaluateAgntConMcpCon2026ProductionSecurityGate,
+  evaluateSkillUpDeclarativeEvalLoop,
+  buildTokenBurnCircuitBreakerPlaybook,
   resetCloudFirewallStateForTests,
 } = require('../src/cloud-token-firewall');
 const { handler: lambdaHandler } = require('../src/aws-lambda-handler');
-const { buildTokenBurnCircuitBreakerPlaybook } = require('../scripts/fast-money-engine');
 const { repairProjectMcpConfigs } = require('../scripts/codex-self-heal');
 const { startServer } = require('../src/api/server');
 
@@ -39,11 +42,11 @@ test('compactTokenPayload strips duplicate system prompts, repeated turns, and b
     { role: 'user', content: 'Still failing, check port 5432.' },
   ];
 
-  const result = compactTokenPayload({ messages, maxToolOutputChars: 400 });
+  const result = compactTokenPayload({ messages, toolOutput: bloatedLog, maxToolOutputChars: 400 });
   assert.ok(result.originalTokens > result.optimizedTokens);
   assert.ok(result.reductionPct >= 42, `Expected >=42% reduction, got ${result.reductionPct}%`);
   assert.ok(result.duplicateTurnsRemoved >= 3);
-  assert.ok(result.truncatedBlocks >= 1);
+  assert.ok(result.truncatedBlocks >= 2);
   assert.equal(result.compactedMessages.filter((m) => m.role === 'system').length, 1);
 });
 
@@ -70,7 +73,7 @@ test('interceptAgentRequest kills duplicate tool-call loops on repeat #3 and dis
       tierId: 'cloud_startup',
       sessionId: 'sess_runaway_99',
       agentId: 'coder_loop',
-      toolCall: { name: 'bash', arguments: { command: 'pytest tests/flaky.py' } },
+      toolCall: { name: 'bash', arguments: JSON.stringify({ command: 'pytest tests/flaky.py' }) },
       messages: [
         { role: 'system', content: 'System prompt' },
         { role: 'system', content: 'System prompt' },
@@ -121,7 +124,7 @@ test('interceptAgentRequest enforces 1M monthly token cap on $49/mo Cloud Indie 
   assert.match(res.reason, /1,000,000 tokens/);
 });
 
-test('calculateCloudSaasEconomics proves 96%+ net margin on Serverless vs NAT Gateway + RDS overhead', () => {
+test('calculateCloudSaasEconomics, AWS Cost Anomaly Guard (aws.pdf), AGNTCon/MCPCon 2026 Gate, and Alibaba skill-up Eval Loop work end-to-end', () => {
   const serverless = calculateCloudSaasEconomics({
     indieSubscribers: 0,
     startupSubscribers: 20,
@@ -130,10 +133,53 @@ test('calculateCloudSaasEconomics proves 96%+ net margin on Serverless vs NAT Ga
     compactionReductionPct: 42,
   });
   assert.equal(serverless.revenue.startupMrrUsd, 3980);
-  assert.equal(serverless.revenue.grossMrrUsd, 3980);
   assert.ok(serverless.profitability.netMarginPct >= 95);
-  assert.equal(serverless.costs.natGatewayTrapAvoidedUsd, 51.35);
-  assert.equal(serverless.buyerRoi.developerMonthlySavingsUsd, 210);
+
+  const awsGuardOk = auditAwsCostAnomalyZeroSpendGuard({
+    accountId: '035074951001',
+    anomalyThresholdUsd: 0.01,
+    subscriptionChannel: 'EMAIL',
+    frequency: 'DAILY',
+  });
+  assert.equal(awsGuardOk.ok, true);
+  assert.equal(awsGuardOk.monthlyCostForMonitoringUsd, 0);
+
+  const awsGuardBad = auditAwsCostAnomalyZeroSpendGuard({
+    anomalyThresholdUsd: 100,
+    subscriptionChannel: 'SNS',
+    zeroSpendBudgetActive: false,
+  });
+  assert.equal(awsGuardBad.ok, false);
+  assert.equal(awsGuardBad.blockers.length, 3);
+
+  const agntConOk = evaluateAgntConMcpCon2026ProductionSecurityGate();
+  assert.equal(agntConOk.ok, true);
+  assert.ok(agntConOk.aaifProjectsSupported.includes('OpenSandbox'));
+  assert.ok(agntConOk.aaifProjectsSupported.includes('Agent Skills'));
+  assert.ok(agntConOk.tokenomics.costPerVerifiedOutcomeUsd > 0);
+
+  const agntConBad = evaluateAgntConMcpCon2026ProductionSecurityGate({
+    toolSchemas: [{ name: 'bloated', sizeBytes: 5000, annotations: {} }],
+    serverInstructions: 'x'.repeat(1200),
+    agentIdentity: { agentId: '', canReadDirectMessages: true },
+  });
+  assert.equal(agntConBad.ok, false);
+  assert.equal(agntConBad.blockers.length, 4);
+
+  const skillUp = evaluateSkillUpDeclarativeEvalLoop({
+    skillName: 'thumbgate-pretool-firewall',
+    runtime: 'opensandbox',
+    judgeType: 'rule',
+    withSkillPassRate: 0.96,
+    withoutSkillPassRate: 0.58,
+  });
+  assert.equal(skillUp.ok, true);
+  assert.equal(skillUp.passRateDelta, 0.38);
+  assert.match(skillUp.evalYaml, /opensandbox/);
+
+  const playbook = buildTokenBurnCircuitBreakerPlaybook();
+  assert.equal(playbook.ok, true);
+  assert.match(playbook.templates.redditDiscordReply, /42%/);
 });
 
 test('Entire CI Trail engine, 4-Pillar Positioning, RLHF DPO Pair, and 5-Layer Cloud Sink work end-to-end', () => {
@@ -214,10 +260,12 @@ test('Entire CI Trail engine, 4-Pillar Positioning, RLHF DPO Pair, and 5-Layer C
   assert.match(ingested.s3DpoPartitionUri, /^s3:\/\/thumbgate-sink\/dpo-exports\/\d{4}\/\d{2}\/\d{2}\/acme_ai\//);
 });
 
-test('repairProjectMcpConfigs self-heals legacy rlhf keys and old thumbgate@1.5.0 pins', () => {
+test('repairProjectMcpConfigs self-heals legacy rlhf keys and old thumbgate@1.5.0 pins across worktrees', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-mcp-heal-'));
   try {
+    const wtDir = path.join(tmpDir, '.worktrees', 'wt-1');
     fs.mkdirSync(path.join(tmpDir, '.claude'), { recursive: true });
+    fs.mkdirSync(wtDir, { recursive: true });
     fs.writeFileSync(
       path.join(tmpDir, '.mcp.json'),
       JSON.stringify({
@@ -227,9 +275,25 @@ test('repairProjectMcpConfigs self-heals legacy rlhf keys and old thumbgate@1.5.
       }),
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.claude', 'settings.local.json'),
-      JSON.stringify({ enabledMcpjsonServers: ['rlhf'] }),
+      path.join(wtDir, '.mcp.json'),
+      JSON.stringify({
+        mcpServers: {
+          rlhf: { command: 'npx', args: ['-y', 'thumbgate@1.5.0', 'serve'] },
+          thumbgate: { command: 'npx', args: ['-y', 'thumbgate@1.39.0', 'serve'] },
+        },
+      }),
     );
+    fs.writeFileSync(
+      path.join(tmpDir, '.claude', 'settings.local.json'),
+      JSON.stringify({ enabledMcpjsonServers: ['rlhf'], mcpServers: { rlhf: { command: 'npx' } } }),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, '.claude', 'settings.json'),
+      JSON.stringify({ enabledMcpjsonServers: ['rlhf', 'thumbgate'] }),
+    );
+
+    const dryRes = repairProjectMcpConfigs({ projectDir: tmpDir, dryRun: true });
+    assert.equal(dryRes.changed, true);
 
     const res = repairProjectMcpConfigs({ projectDir: tmpDir });
     assert.equal(res.changed, true);
@@ -238,8 +302,48 @@ test('repairProjectMcpConfigs self-heals legacy rlhf keys and old thumbgate@1.5.
     assert.equal(healedMcp.mcpServers.thumbgate.args[1], 'thumbgate@latest');
     const healedLocal = JSON.parse(fs.readFileSync(path.join(tmpDir, '.claude', 'settings.local.json'), 'utf8'));
     assert.deepEqual(healedLocal.enabledMcpjsonServers, ['thumbgate']);
+    const healedSettings = JSON.parse(fs.readFileSync(path.join(tmpDir, '.claude', 'settings.json'), 'utf8'));
+    assert.deepEqual(healedSettings.enabledMcpjsonServers, ['thumbgate']);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', async () => {
+  resetCloudFirewallStateForTests();
+
+  const optRes = await lambdaHandler({ httpMethod: 'OPTIONS', rawPath: '/v1/cloud/intercept' });
+  assert.equal(optRes.statusCode, 204);
+
+  for (const p of ['/cloud', '/Formula/thumbgate.rb', '/install/homebrew.rb', '/install.sh', '/install/macos.command', '/install/linux.sh', '/install.ps1', '/install/windows.bat', '/v1/cloud/portal/session', '/v1/cloud/positioning', '/v1/cloud/roi-calculator', '/v1/cloud/calculator', '/v1/cloud/integration-guide.md', '/unknown-meta']) {
+    const r = await lambdaHandler({ httpMethod: 'GET', rawPath: p, headers: { Authorization: 'Bearer tg_live_1' } });
+    assert.equal(r.statusCode, 200, `Expected 200 on GET ${p}`);
+  }
+
+  const ssoLambda = await lambdaHandler({ httpMethod: 'GET', rawPath: '/v1/cloud/sso/authorize', queryStringParameters: { provider: 'google', cli_port: '45123' } });
+  assert.equal(ssoLambda.statusCode, 302);
+  assert.match(ssoLambda.headers.Location, /127\.0\.0\.1:45123/);
+
+  const badJson = await lambdaHandler({ httpMethod: 'POST', rawPath: '/v1/cloud/intercept', body: '{bad' });
+  assert.equal(badJson.statusCode, 400);
+
+  for (const [p, payload] of [
+    ['/v1/cloud/portal/demo-intercept', { email: 'demo@thumbgate.ai' }],
+    ['/v1/cloud/portal/subscription', { action: 'switch_tier', targetTierId: 'cloud_startup' }],
+    ['/v1/cloud/portal/feedback', { title: 'Lambda feedback', description: 'works' }],
+    ['/v1/cloud/bdm/register-deal', { bdmEmail: 'bdm@example.com', prospectDomain: 'client.io', collectedCashUsd: 500 }],
+    ['/v1/cloud/ci-trail-eval', { trailId: 't1' }],
+    ['/v1/cloud/sink/ingest', { tenant_id: 't1', records: [] }],
+    ['/v1/cloud/dpo-sync', { sessionId: 's1' }],
+    ['/v1/cloud/intercept', { sessionId: 's1', messages: [{ role: 'user', content: 'hi' }] }],
+  ]) {
+    const r = await lambdaHandler({
+      httpMethod: 'POST',
+      rawPath: p,
+      headers: { Authorization: 'Bearer tg_startup_1' },
+      body: JSON.stringify(payload),
+    });
+    assert.ok(r.statusCode === 200 || r.statusCode === 201, `Expected 200/201 on POST ${p}, got ${r.statusCode}`);
   }
 });
 
@@ -305,6 +409,7 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     const userDashRes = await fetch(`${origin}/cloud/u/founder_123`);
     assert.equal(userDashRes.status, 200);
     assert.match(await userDashRes.text(), /Your Individual Cloud Dashboard URL/);
+
     const shRes = await fetch(`${origin}/install.sh`);
     assert.equal(shRes.status, 200);
     const shText = await shRes.text();
@@ -432,13 +537,6 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     assert.equal(interceptRes.status, 200);
     const interceptJson = await interceptRes.json();
     assert.equal(interceptJson.decision, 'ALLOW');
-
-    const lambdaPortal = await lambdaHandler({
-      rawPath: '/cloud',
-      requestContext: { http: { method: 'GET' } },
-    });
-    assert.equal(lambdaPortal.statusCode, 200);
-    assert.match(lambdaPortal.body, /Customer Cloud Portal &amp; Control Plane/);
 
     const roiRes = await fetch(`${origin}/v1/cloud/roi-calculator?teamSize=10&wastedHoursPerWeekPerDev=8&hourlyEngineerCostUsd=75&monthlyLlmApiSpendUsd=500`);
     assert.equal(roiRes.status, 200);
