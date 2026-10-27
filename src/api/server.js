@@ -2933,7 +2933,7 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
 <input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email" required>
-<p class="email-note">Enter your work email so your Pro license key and receipt are delivered immediately.</p>
+<p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
 <a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">→ Skip form — open Stripe checkout directly</a>
