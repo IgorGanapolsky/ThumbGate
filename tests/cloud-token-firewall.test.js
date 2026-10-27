@@ -1,4 +1,4 @@
-'use strict';
+'use strict'; // ThumbGate Cloud & Firewall Suite
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
