@@ -445,7 +445,7 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     assert.match(homeHtml, /Start Cloud Startup — \$199\/mo/);
     assert.match(homeHtml, /1\. Token Saving \(-42%\)/);
     assert.match(homeHtml, /2\. Loop Fixing/);
-    assert.match(homeHtml, /3\. RLHF &amp; DPO Pipeline/);
+    assert.match(homeHtml, /3\. DPO Alignment Pipeline/);
   } finally {
     if (prevApiKey === undefined) delete process.env.THUMBGATE_API_KEY;
     else process.env.THUMBGATE_API_KEY = prevApiKey;
