@@ -342,6 +342,9 @@ const {
   evaluateSkillUpDeclarativeEvalLoop,
   convertSkillObservationToCandidateCase,
   evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
+  getSkillsShWellKnownSkillMarkdown,
+  buildSkillsShWellKnownDiscoveryIndex,
+  evaluateHerdrOmpPoolsideGitButlerSwarmGate,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -9702,6 +9705,27 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const body = await parseJsonBody(req);
       const obs = convertSkillObservationToCandidateCase(body);
       sendJson(res, obs.statusCode || 200, obs);
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/.well-known/agent-skills/index.json' || pathname === '/.well-known/skills/index.json')) {
+      const appOrigin = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai';
+      sendJson(res, 200, buildSkillsShWellKnownDiscoveryIndex({ appOrigin }), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    const wellKnownMatch = isGetLikeRequest && pathname.match(/^\/\.well-known\/(?:agent-skills|skills)\/([a-z0-9-]+)\/SKILL\.md$/i);
+    if (wellKnownMatch) {
+      const md = getSkillsShWellKnownSkillMarkdown(wellKnownMatch[1]);
+      if (md) {
+        res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8' });
+        res.end(isHeadRequest ? undefined : md);
+        return;
+      }
+    }
+    if (req.method === 'POST' && pathname === '/v1/cloud/swarm/herdr-gitbutler') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, evaluateHerdrOmpPoolsideGitButlerSwarmGate(body));
       return;
     }
 

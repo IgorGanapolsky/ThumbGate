@@ -668,11 +668,13 @@
             <h2 class="panel-title">Quick Setup (CLI, Homebrew &amp; HTTP Middleware)</h2>
             <a class="btn-outline" href="/v1/cloud/integration-guide.md" target="_blank" style="padding:5px 10px;font-size:12px;">Copy SDK Guide</a>
           </div>
-          <p style="color:var(--muted);font-size:13px;margin:0 0 6px;"><strong>1. Local CLI &amp; PreToolUse Hook (MIT Free Forever):</strong></p>
-          <pre>brew tap igorganapolsky/tap &amp;&amp; brew install thumbgate
+          <p style="color:var(--muted);font-size:13px;margin:0 0 6px;"><strong>1. Agent Skills Directory (<code>skills.sh</code>) &amp; Local CLI (MIT Free):</strong></p>
+          <pre>npx skills add https://thumbgate.ai
+brew tap igorganapolsky/tap &amp;&amp; brew install thumbgate
 npx thumbgate init</pre>
-          <p style="color:var(--muted);font-size:13px;margin:10px 0 6px;"><strong>2. Cloud Middleware Endpoint:</strong></p>
-          <pre id="portal-curl-snippet">curl -X POST https://thumbgate.ai/v1/cloud/intercept \
+          <p style="color:var(--muted);font-size:13px;margin:10px 0 6px;"><strong>2. Herdr + OMP + Poolside + GitButler Swarm &amp; Cloud Endpoint:</strong></p>
+          <pre id="portal-curl-snippet">but agent setup &amp;&amp; herdr --session agents
+curl -X POST https://thumbgate.ai/v1/cloud/intercept \
   -H "Authorization: Bearer tg_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"sessionId":"run-1","toolCall":{"name":"bash","arguments":{"cmd":"npm test"}}}'</pre>

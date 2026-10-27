@@ -27,6 +27,9 @@ const {
   convertSkillObservationToCandidateCase,
   evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
   buildTokenBurnCircuitBreakerPlaybook,
+  getSkillsShWellKnownSkillMarkdown,
+  buildSkillsShWellKnownDiscoveryIndex,
+  evaluateHerdrOmpPoolsideGitButlerSwarmGate,
   resetCloudFirewallStateForTests,
 } = require('../src/cloud-token-firewall');
 const { handler: lambdaHandler } = require('../src/aws-lambda-handler');
@@ -366,7 +369,7 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
   const optRes = await lambdaHandler({ httpMethod: 'OPTIONS', rawPath: '/v1/cloud/intercept' });
   assert.equal(optRes.statusCode, 204);
 
-  for (const p of ['/cloud', '/Formula/thumbgate.rb', '/install/homebrew.rb', '/install.sh', '/install/macos.command', '/install/linux.sh', '/install.ps1', '/install/windows.bat', '/v1/cloud/portal/session', '/v1/cloud/threat-packs', '/v1/cloud/policy-sync', '/v1/cloud/positioning', '/v1/cloud/roi-calculator', '/v1/cloud/calculator', '/v1/cloud/integration-guide.md', '/unknown-meta']) {
+  for (const p of ['/cloud', '/.well-known/agent-skills/index.json', '/.well-known/skills/index.json', '/.well-known/agent-skills/thumbgate/SKILL.md', '/Formula/thumbgate.rb', '/install/homebrew.rb', '/install.sh', '/install/macos.command', '/install/linux.sh', '/install.ps1', '/install/windows.bat', '/v1/cloud/portal/session', '/v1/cloud/threat-packs', '/v1/cloud/policy-sync', '/v1/cloud/positioning', '/v1/cloud/roi-calculator', '/v1/cloud/calculator', '/v1/cloud/integration-guide.md', '/unknown-meta']) {
     const r = await lambdaHandler({ httpMethod: 'GET', rawPath: p, headers: { Authorization: 'Bearer tg_live_1' } });
     assert.equal(r.statusCode, 200, `Expected 200 on GET ${p}`);
   }
@@ -390,6 +393,7 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
     ['/v1/cloud/playbook/craft', { playbookName: 'nitpicking-playbook', triggerWord: 'nitpicking' }],
     ['/v1/cloud/skill-up/eval', { skillName: 'thumbgate-pretool-firewall', runtime: 'opensandbox', judgeType: 'rule_based' }],
     ['/v1/cloud/skill-up/observation', { observationId: 'obs_1', attribution: 'explicit', approvedByMaintainer: true }],
+    ['/v1/cloud/swarm/herdr-gitbutler', { workerCount: 4, requiresSharedLiveDevServerOrRuntime: true }],
     ['/v1/cloud/intercept', { sessionId: 's1', messages: [{ role: 'user', content: 'hi' }] }],
   ]) {
     const r = await lambdaHandler({
@@ -422,6 +426,38 @@ test('syncTeamPolicyAndThreatPacks and evaluateRachelWoodsCraftAndPlaybookMiddle
   assert.equal(craftBad.ok, false);
   assert.equal(craftBad.blockers.length, 5);
   assert.equal(craftBad.selfEditingGuardrail.requiresHumanApprovalForMajorRewrite, true);
+
+  const discovery = buildSkillsShWellKnownDiscoveryIndex();
+  assert.equal(discovery.$schema, 'https://schemas.agentskills.io/discovery/0.2.0/schema.json');
+  assert.equal(discovery.skills.length, 5);
+  assert.match(getSkillsShWellKnownSkillMarkdown('thumbgate'), /name: thumbgate/);
+  assert.equal(getSkillsShWellKnownSkillMarkdown('nonexistent'), null);
+
+  const swarmShared = evaluateHerdrOmpPoolsideGitButlerSwarmGate({
+    workerCount: 4,
+    requiresSharedLiveDevServerOrRuntime: true,
+  });
+  assert.equal(swarmShared.ok, true);
+  assert.equal(swarmShared.executionRouting.routingMode, 'gitbutler_shared_workspace');
+
+  const swarmIsolated = evaluateHerdrOmpPoolsideGitButlerSwarmGate({
+    workerCount: 6,
+    requiresSharedLiveDevServerOrRuntime: false,
+    remoteHost: 'vps.thumbgate.ai',
+  });
+  assert.equal(swarmIsolated.ok, true);
+  assert.equal(swarmIsolated.executionRouting.routingMode, 'herdr_worktree_isolation');
+  assert.match(swarmIsolated.workers.remoteAttachCommand, /herdr --remote vps\.thumbgate\.ai --session agents/);
+
+  const swarmBad = evaluateHerdrOmpPoolsideGitButlerSwarmGate({
+    captainWritesCode: true,
+    decisionsLedgerPath: 'wrong.md',
+    workerCount: 1,
+    requiresSharedLiveDevServerOrRuntime: true,
+    commitCommand: 'git commit -m "bad"',
+  });
+  assert.equal(swarmBad.ok, false);
+  assert.equal(swarmBad.blockers.length, 4);
 });
 
 test('Python AWS Lambda SQS worker (deploy/aws/sqs_ingest_worker.py) and PostgreSQL migration work cleanly', () => {
@@ -717,6 +753,25 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     const obsJson = await obsRes.json();
     assert.equal(obsJson.ok, true);
     assert.equal(obsJson.state, 'promoted_to_functional_test_case');
+
+    const wkIndexRes = await fetch(`${origin}/.well-known/agent-skills/index.json`);
+    assert.equal(wkIndexRes.status, 200);
+    const wkIndexJson = await wkIndexRes.json();
+    assert.equal(wkIndexJson.skills.length, 5);
+
+    const wkSkillRes = await fetch(`${origin}/.well-known/agent-skills/thumbgate/SKILL.md`);
+    assert.equal(wkSkillRes.status, 200);
+    assert.match(await wkSkillRes.text(), /name: thumbgate/);
+
+    const swarmRes = await fetch(`${origin}/v1/cloud/swarm/herdr-gitbutler`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workerCount: 5, requiresSharedLiveDevServerOrRuntime: true }),
+    });
+    assert.equal(swarmRes.status, 200);
+    const swarmJson = await swarmRes.json();
+    assert.equal(swarmJson.ok, true);
+    assert.equal(swarmJson.executionRouting.routingMode, 'gitbutler_shared_workspace');
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.match(homeHtml, /Start Cloud Indie/);
     assert.match(homeHtml, /Start Cloud Startup/);

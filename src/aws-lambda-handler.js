@@ -29,6 +29,9 @@ const {
   evaluateSkillUpDeclarativeEvalLoop,
   convertSkillObservationToCandidateCase,
   evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
+  getSkillsShWellKnownSkillMarkdown,
+  buildSkillsShWellKnownDiscoveryIndex,
+  evaluateHerdrOmpPoolsideGitButlerSwarmGate,
 } = require('./cloud-token-firewall');
 
 const CLOUD_PORTAL_HTML_PATH = path.resolve(__dirname, '../public/cloud.html');
@@ -65,6 +68,10 @@ function isPortalHtmlPath(rawPath) {
 }
 
 const GET_ROUTE_HANDLERS = {
+  '/.well-known/agent-skills/index.json': ({ appOrigin }) =>
+    jsonResponse(200, buildSkillsShWellKnownDiscoveryIndex({ appOrigin })),
+  '/.well-known/skills/index.json': ({ appOrigin }) =>
+    jsonResponse(200, buildSkillsShWellKnownDiscoveryIndex({ appOrigin })),
   '/Formula/thumbgate.rb': ({ appOrigin }) =>
     textResponse(200, 'text/plain; charset=utf-8', buildHomebrewFormulaRuby({ version: '1.40.0', apiBaseUrl: appOrigin })),
   '/install/homebrew.rb': ({ appOrigin }) =>
@@ -150,6 +157,8 @@ async function handlePostRoute(rawPath, body, token, appOrigin) {
       const obs = convertSkillObservationToCandidateCase(body);
       return jsonResponse(obs.statusCode || 200, obs);
     }
+    case '/v1/cloud/swarm/herdr-gitbutler':
+      return jsonResponse(200, evaluateHerdrOmpPoolsideGitButlerSwarmGate(body));
     case '/v1/cloud/bdm/register-deal': {
       const deal = registerCommissionOnlyBdmDeal(body);
       return jsonResponse(deal.statusCode || 201, deal);
@@ -202,6 +211,13 @@ async function handler(event = {}) {
       ? fs.readFileSync(CLOUD_PORTAL_HTML_PATH, 'utf8')
       : '<h1>ThumbGate Cloud Portal</h1>';
     return textResponse(200, 'text/html; charset=utf-8', html);
+  }
+
+  const wellKnownMatch = method === 'GET' && rawPath.match(/^\/\.well-known\/(?:agent-skills|skills)\/([a-z0-9-]+)\/SKILL\.md$/i);
+  if (wellKnownMatch) {
+    const md = getSkillsShWellKnownSkillMarkdown(wellKnownMatch[1]);
+    if (md) return textResponse(200, 'text/markdown; charset=utf-8', md);
+    return jsonResponse(404, { error: 'Skill not found' });
   }
 
   if (method === 'GET' && GET_ROUTE_HANDLERS[rawPath]) {

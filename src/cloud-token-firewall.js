@@ -1628,6 +1628,125 @@ function buildTokenBurnCircuitBreakerPlaybook({
   };
 }
 
+const SKILLS_SH_CATALOG = Object.freeze({
+  thumbgate: {
+    name: 'thumbgate',
+    description: 'Cloudflare for AI Coding Agents — PreToolUse firewall, 59 curated threat rules (AWS, SOC2, Git/DB), -42% token compaction, and repeat-#3 loop circuit breaker.',
+    body: '# ThumbGate — Cloudflare for AI Coding Agents\n\n## Install\n```bash\nnpx skills add https://thumbgate.ai\nnpx thumbgate init\n```\n\n## Capabilities\n- PreToolUse firewall (<0.5ms local + hosted `/v1/cloud/intercept`)\n- 59 auto-updating threat rules (`AWS`, `SOC2`, `Git/DB`) via `/v1/cloud/policy-sync`\n- Repeat-#3 infinite loop circuit breaker & -42% prompt compaction\n',
+  },
+  'thumbgate-policy-sync': {
+    name: 'thumbgate-policy-sync',
+    description: 'B2B Team Policy Sync & Curated Threat Packs (AWS Production Safeguards, SOC2 Secret Leak Prevention, Destructive Git & DB Blocks) across Claude Code, Cursor, Codex, and GitHub Actions CI.',
+    body: '# ThumbGate B2B Team Policy Sync\n\n## Endpoints\n- `GET /v1/cloud/threat-packs`\n- `GET /v1/cloud/policy-sync?orgId=<org>`\n- `POST /v1/cloud/policy-sync`\n',
+  },
+  'thumbgate-token-firewall': {
+    name: 'thumbgate-token-firewall',
+    description: 'Cloud Token Compactor (-42% prompt reduction) & Repeat-#3 Autonomous Loop Circuit Breaker with real-time webhooks and HuggingFace DPO export.',
+    body: '# ThumbGate Cloud Token Firewall\n\n## Endpoint\n- `POST https://thumbgate.ai/v1/cloud/intercept`\n- Portal: `https://thumbgate.ai/cloud`\n',
+  },
+  'thumbgate-skill-up-eval': {
+    name: 'thumbgate-skill-up-eval',
+    description: 'Declarative Skill Eval-to-Evolution Engine (v1alpha1 Multi-Judge all_required aggregation, expect gate short-circuiting, and Rachel Woods CRAFT Playbook gate).',
+    body: '# ThumbGate Skill-Up & CRAFT Eval Gate\n\n## Endpoints\n- `POST https://thumbgate.ai/v1/cloud/skill-up/eval`\n- `POST https://thumbgate.ai/v1/cloud/skill-up/observation`\n- `POST https://thumbgate.ai/v1/cloud/playbook/craft`\n',
+  },
+  'thumbgate-herdr-omp-gitbutler-swarm': {
+    name: 'thumbgate-herdr-omp-gitbutler-swarm',
+    description: 'Herdr + OMP + Poolside Laguna + GitButler (but) Multi-Agent Swarm Orchestrator (Captain .herd-swarm/decisions.md ledger, 3-8 OMP Laguna leaves, and GitButler virtual-branch vs Herdr --worktree routing).',
+    body: '# ThumbGate Herdr + OMP + Poolside + GitButler Swarm\n\n## Architecture\n- **Captain:** Manages `.herd-swarm/decisions.md`, decomposes specs, dictates merge order, and never writes code directly.\n- **Workers:** 3–8 OMP leaves powered by Poolside Laguna (`herdr --remote <host> --session agents`).\n- **Routing:** `herdr --worktree` for isolated modules; `but agent setup` + `but commit` virtual branches for shared live runtime.\n',
+  },
+});
+
+function getSkillsShWellKnownSkillMarkdown(skillName = 'thumbgate') {
+  const entry = SKILLS_SH_CATALOG[String(skillName || '').toLowerCase()];
+  if (!entry) return null;
+  return `---\nname: ${entry.name}\ndescription: ${entry.description}\n---\n\n${entry.body}`;
+}
+
+function buildSkillsShWellKnownDiscoveryIndex({
+  appOrigin = 'https://thumbgate.ai',
+} = {}) {
+  const cleanOrigin = String(appOrigin || 'https://thumbgate.ai').replace(/\/$/, '');
+  const skills = Object.values(SKILLS_SH_CATALOG).map((entry) => {
+    const md = getSkillsShWellKnownSkillMarkdown(entry.name);
+    const digest = crypto.createHash('sha256').update(md, 'utf8').digest('hex');
+    return {
+      name: entry.name,
+      type: 'skill-md',
+      description: entry.description,
+      url: `${cleanOrigin}/.well-known/agent-skills/${entry.name}/SKILL.md`,
+      digest: `sha256:${digest}`,
+    };
+  });
+  return {
+    $schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
+    skills,
+  };
+}
+
+function evaluateHerdrOmpPoolsideGitButlerSwarmGate({
+  captainWritesCode = false,
+  decisionsLedgerPath = '.herd-swarm/decisions.md',
+  workerCount = 4,
+  workerHarness = 'omp',
+  workerModel = 'poolside/laguna-s-2.1',
+  herdrSocketPath = '/Users/iganapolsky/.config/herdr/herdr.sock',
+  remoteHost = '',
+  requiresSharedLiveDevServerOrRuntime = true,
+  butAgentSetupCompleted = true,
+  commitCommand = 'but commit',
+  usesSpecificFileOrHunkIds = true,
+  firstClassConflictsNonBlocking = true,
+} = {}) {
+  const blockers = [];
+  if (captainWritesCode) {
+    blockers.push('captain_must_arbitrate_and_never_implement_code_directly');
+  }
+  if (String(decisionsLedgerPath).trim() !== '.herd-swarm/decisions.md') {
+    blockers.push('captain_must_maintain_shared_herd_swarm_decisions_md_ledger');
+  }
+  const workers = Number(workerCount) || 0;
+  if (workers < 3 || workers > 8) {
+    blockers.push('swarm_requires_3_to_8_omp_poolside_laguna_worker_leaves');
+  }
+  const sharedRuntime = Boolean(requiresSharedLiveDevServerOrRuntime);
+  const routingMode = sharedRuntime ? 'gitbutler_shared_workspace' : 'herdr_worktree_isolation';
+  if (sharedRuntime) {
+    const isButCommit = String(commitCommand).trim().startsWith('but commit');
+    if (!butAgentSetupCompleted || !isButCommit || !usesSpecificFileOrHunkIds) {
+      blockers.push('gitbutler_shared_workspace_requires_but_agent_setup_and_but_commit_with_file_or_hunk_ids');
+    }
+  }
+
+  const remoteAttachCommand = remoteHost
+    ? `herdr --remote ${remoteHost} --session agents`
+    : 'herdr --session agents';
+
+  return {
+    ok: blockers.length === 0,
+    architecture: 'herdr_omp_poolside_gitbutler_oct_2026',
+    captain: {
+      role: 'arbitrator_and_merge_sequencer',
+      captainWritesCode: Boolean(captainWritesCode),
+      decisionsLedgerPath,
+    },
+    workers: {
+      count: workers,
+      harness: workerHarness,
+      model: workerModel,
+      herdrSocketPath,
+      remoteAttachCommand,
+    },
+    executionRouting: {
+      requiresSharedLiveDevServerOrRuntime: sharedRuntime,
+      routingMode,
+      initCommand: sharedRuntime ? 'but agent setup' : 'herdr worktree create',
+      commitCommand: sharedRuntime ? commitCommand : 'git commit',
+      firstClassConflictsNonBlocking: Boolean(firstClassConflictsNonBlocking),
+    },
+    blockers,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -1671,6 +1790,9 @@ module.exports = {
   convertSkillObservationToCandidateCase,
   evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
   buildTokenBurnCircuitBreakerPlaybook,
+  getSkillsShWellKnownSkillMarkdown,
+  buildSkillsShWellKnownDiscoveryIndex,
+  evaluateHerdrOmpPoolsideGitButlerSwarmGate,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };
