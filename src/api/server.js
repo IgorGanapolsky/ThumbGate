@@ -339,6 +339,8 @@ const {
   buildHomebrewFormulaRuby,
   registerCommissionOnlyBdmDeal,
   calculateIrashTechTeamAndTokenRoi,
+  evaluateSkillUpDeclarativeEvalLoop,
+  convertSkillObservationToCandidateCase,
   evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
 } = require('../cloud-token-firewall');
 
@@ -9687,6 +9689,19 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     if (req.method === 'POST' && pathname === '/v1/cloud/playbook/craft') {
       const body = await parseJsonBody(req);
       sendJson(res, 200, evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate(body));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/skill-up/eval') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, evaluateSkillUpDeclarativeEvalLoop(body));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/skill-up/observation') {
+      const body = await parseJsonBody(req);
+      const obs = convertSkillObservationToCandidateCase(body);
+      sendJson(res, obs.statusCode || 200, obs);
       return;
     }
 

@@ -26,6 +26,8 @@ const {
   buildHomebrewFormulaRuby,
   registerCommissionOnlyBdmDeal,
   calculateIrashTechTeamAndTokenRoi,
+  evaluateSkillUpDeclarativeEvalLoop,
+  convertSkillObservationToCandidateCase,
   evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
 } = require('./cloud-token-firewall');
 
@@ -142,6 +144,12 @@ async function handlePostRoute(rawPath, body, token, appOrigin) {
       return jsonResponse(200, syncTeamPolicyAndThreatPacks({ ...body, action: 'update' }));
     case '/v1/cloud/playbook/craft':
       return jsonResponse(200, evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate(body));
+    case '/v1/cloud/skill-up/eval':
+      return jsonResponse(200, evaluateSkillUpDeclarativeEvalLoop(body));
+    case '/v1/cloud/skill-up/observation': {
+      const obs = convertSkillObservationToCandidateCase(body);
+      return jsonResponse(obs.statusCode || 200, obs);
+    }
     case '/v1/cloud/bdm/register-deal': {
       const deal = registerCommissionOnlyBdmDeal(body);
       return jsonResponse(deal.statusCode || 201, deal);

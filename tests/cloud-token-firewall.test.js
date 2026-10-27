@@ -24,6 +24,7 @@ const {
   auditAwsCostAnomalyZeroSpendGuard,
   evaluateAgntConMcpCon2026ProductionSecurityGate,
   evaluateSkillUpDeclarativeEvalLoop,
+  convertSkillObservationToCandidateCase,
   evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
   buildTokenBurnCircuitBreakerPlaybook,
   resetCloudFirewallStateForTests,
@@ -180,6 +181,53 @@ test('calculateCloudSaasEconomics, AWS Cost Anomaly Guard (aws.pdf), AGNTCon/MCP
   assert.equal(skillUp.passRateDelta, 0.38);
   assert.match(skillUp.evalYaml, /opensandbox/);
 
+  assert.equal(skillUp.evaluationJson.aggregation.strategy, 'all_required');
+  assert.equal(skillUp.evaluationJson.aggregation.status, 'PASS');
+  assert.equal(skillUp.evolutionAction, 'promote_candidate');
+
+  const skillUpExpectShortCircuit = evaluateSkillUpDeclarativeEvalLoop({
+    expectGatePassed: false,
+    judges: [{ id: 'j1', type: 'script', status: 'PASS' }, { id: 'j2', type: 'agent_judge', status: 'PASS' }],
+  });
+  assert.equal(skillUpExpectShortCircuit.ok, false);
+  assert.equal(skillUpExpectShortCircuit.evaluationJson.aggregation.status, 'FAIL');
+  assert.equal(skillUpExpectShortCircuit.evaluationJson.judge_results[0].status, 'SKIP');
+  assert.equal(skillUpExpectShortCircuit.gradingJson.pass_rate, 0);
+  assert.equal(skillUpExpectShortCircuit.evolutionAction, 'keep_original');
+
+  const skillUpJudgeFail = evaluateSkillUpDeclarativeEvalLoop({
+    expectGatePassed: true,
+    judges: [{ id: 'j1', type: 'script', status: 'FAIL' }, { id: 'j2', type: 'agent_judge', status: 'PASS' }],
+  });
+  assert.equal(skillUpJudgeFail.evaluationJson.aggregation.status, 'FAIL');
+  assert.equal(skillUpJudgeFail.gradingJson.pass_rate, 0.5);
+
+  const skillUpJudgeError = evaluateSkillUpDeclarativeEvalLoop({
+    expectGatePassed: true,
+    judges: [{ id: 'j1', type: 'script', status: 'ERROR' }],
+  });
+  assert.equal(skillUpJudgeError.evaluationJson.aggregation.status, 'ERROR');
+
+  const obsInferred = convertSkillObservationToCandidateCase({ attribution: 'inferred' });
+  assert.equal(obsInferred.ok, false);
+  assert.equal(obsInferred.statusCode, 400);
+
+  const obsPending = convertSkillObservationToCandidateCase({ attribution: 'explicit', approvedByMaintainer: false });
+  assert.equal(obsPending.statusCode, 202);
+  assert.equal(obsPending.state, 'candidate_pending_approval');
+
+  const obsRollback = convertSkillObservationToCandidateCase({ attribution: 'instrumented', approvedByMaintainer: true, suiteValidationPassed: false });
+  assert.equal(obsRollback.statusCode, 422);
+
+  const obsPromoted = convertSkillObservationToCandidateCase({
+    observationId: 'obs_sec_1',
+    attribution: 'explicit',
+    prompt: 'Block token leak ghp_1234567890abcdefghijklmnopqrstuvwx',
+    approvedByMaintainer: true,
+    suiteValidationPassed: true,
+  });
+  assert.equal(obsPromoted.statusCode, 201);
+  assert.ok(!obsPromoted.caseYaml.includes('ghp_1234567890'));
   const playbook = buildTokenBurnCircuitBreakerPlaybook();
   assert.equal(playbook.ok, true);
   assert.match(playbook.templates.redditDiscordReply, /42%/);
@@ -340,6 +388,8 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
     ['/v1/cloud/dpo-sync', { sessionId: 's1' }],
     ['/v1/cloud/policy-sync', { orgId: 'org_1', enabledPackIds: ['aws-production-safeguards'], customRules: [{ id: 'r1', pattern: 'rm -rf' }] }],
     ['/v1/cloud/playbook/craft', { playbookName: 'nitpicking-playbook', triggerWord: 'nitpicking' }],
+    ['/v1/cloud/skill-up/eval', { skillName: 'thumbgate-pretool-firewall', runtime: 'opensandbox', judgeType: 'rule_based' }],
+    ['/v1/cloud/skill-up/observation', { observationId: 'obs_1', attribution: 'explicit', approvedByMaintainer: true }],
     ['/v1/cloud/intercept', { sessionId: 's1', messages: [{ role: 'user', content: 'hi' }] }],
   ]) {
     const r = await lambdaHandler({
@@ -636,6 +686,37 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     assert.equal(craftJson.ok, true);
     assert.equal(craftJson.selfEditingGuardrail.selfEditAllowedAutonomously, true);
     assert.equal(craftJson.middleManager.playbookStackingReady, true);
+
+    const skillUpRes = await fetch(`${origin}/v1/cloud/skill-up/eval`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        skillName: 'thumbgate-pretool-firewall',
+        runtime: 'opensandbox',
+        judgeType: 'agent_judge',
+        evaluatedEngine: 'claude_code',
+        judgeEngine: 'codex',
+      }),
+    });
+    assert.equal(skillUpRes.status, 200);
+    const skillUpJson = await skillUpRes.json();
+    assert.equal(skillUpJson.ok, true);
+    assert.equal(skillUpJson.roles.independentJudgeSession, true);
+    assert.equal(skillUpJson.evolutionAction, 'promote_candidate');
+
+    const obsRes = await fetch(`${origin}/v1/cloud/skill-up/observation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        observationId: 'obs_live_1',
+        attribution: 'explicit',
+        approvedByMaintainer: true,
+      }),
+    });
+    assert.equal(obsRes.status, 201);
+    const obsJson = await obsRes.json();
+    assert.equal(obsJson.ok, true);
+    assert.equal(obsJson.state, 'promoted_to_functional_test_case');
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.match(homeHtml, /Start Cloud Indie/);
     assert.match(homeHtml, /Start Cloud Startup/);

@@ -1392,31 +1392,136 @@ function evaluateAgntConMcpCon2026ProductionSecurityGate({
   };
 }
 
+function aggregateMultiJudgeResults(judges, expectGatePassed) {
+  const judgeResults = judges.map((j, idx) => {
+    const id = String(j?.id || `judge_${idx + 1}`);
+    const type = String(j?.type || 'rule_based');
+    if (!expectGatePassed) {
+      return { id, type, status: 'SKIP', skipped: true, skipReason: 'expect_gate_failed', credit: 0 };
+    }
+    const status = String(j?.status || 'PASS').toUpperCase();
+    return { id, type, status, skipped: false, credit: status === 'PASS' ? 1 : 0 };
+  });
+  if (!expectGatePassed) {
+    return { strategy: 'all_required', status: 'FAIL', judgeResults, passFraction: 0 };
+  }
+  const hasErrorOrSkip = judgeResults.some((r) => r.status === 'ERROR' || r.status === 'SKIP');
+  const hasFail = judgeResults.some((r) => r.status === 'FAIL');
+  let status = 'PASS';
+  if (hasErrorOrSkip) status = 'ERROR';
+  else if (hasFail) status = 'FAIL';
+  const passedCount = judgeResults.filter((r) => r.status === 'PASS').length;
+  const passFraction = judgeResults.length > 0 ? Number((passedCount / judgeResults.length).toFixed(2)) : 1;
+  return { strategy: 'all_required', status, judgeResults, passFraction };
+}
+
 function evaluateSkillUpDeclarativeEvalLoop({
   skillName = 'thumbgate-pretool-firewall',
   runtime = 'opensandbox',
   judgeType = 'rule',
+  evaluatedEngine = 'claude_code',
+  judgeEngine = 'codex',
+  simulatorMode = 'autonomous',
+  maxTurns = 22,
+  expectGatePassed = true,
+  judges = [
+    { id: 'functional', type: 'script', status: 'PASS' },
+    { id: 'semantic', type: 'agent_judge', status: 'PASS' },
+  ],
   withSkillPassRate = 0.96,
   withoutSkillPassRate = 0.58,
   withSkillTokens = 1400,
   withoutSkillTokens = 2600,
 } = {}) {
-  const validRuntime = ['local', 'docker', 'opensandbox'].includes(runtime);
-  const validJudge = ['rule', 'script', 'agent'].includes(judgeType);
+  const validRuntime = ['none', 'local', 'docker', 'opensandbox'].includes(runtime);
+  const validJudge = ['rule', 'rule_based', 'script', 'agent', 'agent_judge'].includes(judgeType);
+  const validSim = ['autonomous', 'mixed', 'fixed'].includes(simulatorMode);
+  const aggregation = aggregateMultiJudgeResults(Array.isArray(judges) ? judges : [], Boolean(expectGatePassed));
   const passRateDelta = Number((Number(withSkillPassRate) - Number(withoutSkillPassRate)).toFixed(2));
   const tokenSavingsPct = withoutSkillTokens > 0
     ? Number((((withoutSkillTokens - withSkillTokens) / withoutSkillTokens) * 100).toFixed(1))
     : 0;
-  const improved = passRateDelta > 0 && tokenSavingsPct >= 0;
+  const improved = passRateDelta > 0 && tokenSavingsPct >= 0 && aggregation.status === 'PASS';
+  const evolutionAction = improved ? 'promote_candidate' : 'keep_original';
 
   return {
-    ok: validRuntime && validJudge && improved,
+    ok: validRuntime && validJudge && validSim && improved,
+    schemaVersion: 'v1alpha1',
     skillName,
     runtime,
     judgeType,
+    roles: {
+      evaluatedEngine,
+      judgeEngine,
+      independentJudgeSession: evaluatedEngine !== judgeEngine,
+      simulatorMode,
+      maxTurns: Math.max(1, Number(maxTurns) || 22),
+    },
+    evaluationJson: {
+      version: 1,
+      gates: { expectGatePassed: Boolean(expectGatePassed) },
+      judge_results: aggregation.judgeResults,
+      aggregation: { strategy: aggregation.strategy, status: aggregation.status },
+    },
+    gradingJson: {
+      pass_rate: aggregation.passFraction,
+      compatible_format: 'anthropic_evals_v1',
+    },
     passRateDelta,
     tokenSavingsPct,
-    evalYaml: `skill: ${skillName}\nruntime: ${runtime}\njudge: ${judgeType}\n`,
+    evolutionAction,
+    evalYaml: `schema_version: v1alpha1\nskill: ${skillName}\nruntime: ${runtime}\njudge: ${judgeType}\n`,
+  };
+}
+
+function convertSkillObservationToCandidateCase({
+  observationId = 'obs_default_1',
+  skillName = 'thumbgate-pretool-firewall',
+  attribution = 'explicit',
+  prompt = 'Use $thumbgate-pretool-firewall to block git push --force origin main',
+  expectedMustContain = ['DENY', 'git push --force'],
+  approvedByMaintainer = true,
+  suiteValidationPassed = true,
+} = {}) {
+  if (attribution !== 'explicit' && attribution !== 'instrumented') {
+    return {
+      ok: false,
+      statusCode: 400,
+      error: 'inferred_attribution_rejected_at_persistence_time',
+    };
+  }
+  const redactedPrompt = redactSecrets(String(prompt || ''));
+  if (!approvedByMaintainer) {
+    return {
+      ok: true,
+      statusCode: 202,
+      state: 'candidate_pending_approval',
+      observationId,
+      attribution,
+      redactedPrompt,
+    };
+  }
+  if (!suiteValidationPassed) {
+    return {
+      ok: false,
+      statusCode: 422,
+      state: 'rolled_back_on_validation_failure',
+      observationId,
+    };
+  }
+  const safeId = String(observationId).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const casePath = `evals/cases/${safeId}.yaml`;
+  const mustList = Array.isArray(expectedMustContain) ? expectedMustContain : ['DENY'];
+  return {
+    ok: true,
+    statusCode: 201,
+    state: 'promoted_to_functional_test_case',
+    observationId: safeId,
+    skillName,
+    attribution,
+    filePermissions: { dirMode: '0700', fileMode: '0600' },
+    casePath,
+    caseYaml: `id: ${safeId}\ntype: functional_test\ndescription: "Promoted from ${attribution} observation ${safeId}"\ninput:\n  prompt: ${JSON.stringify(redactedPrompt)}\nexpect:\n  must_contain: ${JSON.stringify(mustList)}\n`,
   };
 }
 
@@ -1563,6 +1668,7 @@ module.exports = {
   auditAwsCostAnomalyZeroSpendGuard,
   evaluateAgntConMcpCon2026ProductionSecurityGate,
   evaluateSkillUpDeclarativeEvalLoop,
+  convertSkillObservationToCandidateCase,
   evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
   buildTokenBurnCircuitBreakerPlaybook,
   getOrCreateTenantUsage,
