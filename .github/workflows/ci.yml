@@ -265,7 +265,8 @@ jobs:
             tests/landing-page-claims.test.js \
             tests/public-core-boundary.test.js \
             tests/public-bundle-ratchet.test.js \
-            tests/package-boundary.test.js
+            tests/package-boundary.test.js \
+            tests/llm-surface-consistency.test.js
 
       - name: Run tests
         if: steps.ci-scope.outputs.mode == 'full'

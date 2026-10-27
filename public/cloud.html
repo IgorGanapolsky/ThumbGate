@@ -237,6 +237,7 @@
       <button type="button" class="tab-btn" data-tab="subscription" onclick="switchPortalTab('subscription')">💳 Manage Subscription &amp; Billing</button>
       <button type="button" class="tab-btn" data-tab="feedback" onclick="switchPortalTab('feedback')">💡 Submit Feedback &amp; Request Features</button>
       <button type="button" class="tab-btn" data-tab="dpo" onclick="switchPortalTab('dpo')">🧬 RLHF / DPO Cloud Sink &amp; Export</button>
+      <button type="button" class="tab-btn" data-tab="bdm" onclick="switchPortalTab('bdm')">💰 Partner 15% BDM &amp; Team ROI</button>
     </div>
 
     <!-- TAB 1: OVERVIEW & LIVE INTERCEPTOR -->
@@ -376,6 +377,39 @@ npx thumbgate init</pre>
         <p style="color:var(--muted);font-size:14px;">Convert intercepted agent loops and 👍/👎 developer corrections into secret-redacted HuggingFace DPO training pairs (<code>prompt</code>, <code>chosen</code>, <code>rejected</code>, <code>tokensSaved</code>):</p>
         <button type="button" class="btn" onclick="generateSampleDpoPair()">Generate &amp; Preview DPO Preference Pair</button>
         <pre id="dpo-preview-output" style="margin-top:14px;">Click above to generate a live HuggingFace DPO training pair...</pre>
+      </div>
+    </section>
+
+    <!-- TAB 6: PARTNER 15% BDM DEAL REGISTRATION & TEAM ROI CALCULATOR -->
+    <section id="pane-bdm" class="tab-pane">
+      <div class="grid-2">
+        <div class="panel">
+          <h2 style="margin-top:0;font-size:18px;">Commission-Only BDM Deal Registration (15% of Collected Cash)</h2>
+          <p style="color:var(--muted);font-size:14px;">Worldwide freelance partner program ($0 base salary, non-exclusive). Register a prospect before pitching to lock 12-month attribution and earn <strong>15% within 14 days of collected client payment</strong> (clawback on refund/non-payment):</p>
+          <form onsubmit="event.preventDefault(); registerBdmDeal();" style="display:grid;gap:10px;margin-top:12px;">
+            <input id="bdm-email" type="email" required placeholder="Your BDM email (partner@agency.com)">
+            <input id="bdm-company" type="text" required placeholder="Prospect company name (e.g. Acme AI Corp)">
+            <input id="bdm-domain" type="text" required placeholder="Prospect domain (e.g. acme.ai)">
+            <input id="bdm-value" type="number" min="49" step="50" value="2500" required placeholder="Estimated deal value ($ USD)">
+            <button type="submit" class="btn">Lock 12-Month Attribution &amp; Register Deal</button>
+          </form>
+          <pre id="bdm-deal-output" style="margin-top:12px;">Register a prospect above to generate a 12-month attribution receipt...</pre>
+        </div>
+
+        <div class="panel">
+          <h2 style="margin-top:0;font-size:18px;">Chapter 00 → 06 Build Ladder &amp; Team ROI Calculator</h2>
+          <p style="color:var(--muted);font-size:14px;">Combine 80% loop-triage automation savings + 42% LLM token compaction across your engineering team:</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;">
+            <label style="font-size:13px;color:var(--muted);">Team Size (Devs)
+              <input id="roi-team-size" type="number" min="1" max="500" value="10" style="width:100%;margin-top:4px;">
+            </label>
+            <label style="font-size:13px;color:var(--muted);">Loop-Triage Hrs/Wk
+              <input id="roi-hours-wk" type="number" min="1" max="40" value="8" style="width:100%;margin-top:4px;">
+            </label>
+          </div>
+          <button type="button" class="btn-green btn" onclick="calculateTeamRoi()">Calculate Team + Token ROI</button>
+          <pre id="team-roi-output" style="margin-top:12px;">Click above to calculate monthly &amp; annual savings + payback window...</pre>
+        </div>
       </div>
     </section>
   </main>
@@ -540,6 +574,29 @@ npx thumbgate init</pre>
       });
       var data = await res.json();
       document.getElementById('dpo-preview-output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function registerBdmDeal() {
+      var res = await fetch('/v1/cloud/bdm/register-deal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bdmEmail: document.getElementById('bdm-email').value.trim(),
+          prospectCompany: document.getElementById('bdm-company').value.trim(),
+          prospectDomain: document.getElementById('bdm-domain').value.trim(),
+          estimatedDealValueUsd: Number(document.getElementById('bdm-value').value || 2500)
+        })
+      });
+      var data = await res.json();
+      document.getElementById('bdm-deal-output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function calculateTeamRoi() {
+      var teamSize = document.getElementById('roi-team-size').value || 10;
+      var hrs = document.getElementById('roi-hours-wk').value || 8;
+      var res = await fetch('/v1/cloud/roi-calculator?teamSize=' + encodeURIComponent(teamSize) + '&wastedHoursPerWeekPerDev=' + encodeURIComponent(hrs));
+      var data = await res.json();
+      document.getElementById('team-roi-output').textContent = JSON.stringify(data, null, 2);
     }
 
     signInPortal();

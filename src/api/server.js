@@ -335,6 +335,8 @@ const {
   buildMacAndLinuxInstallerScript,
   buildWindowsInstallerScript,
   buildHomebrewFormulaRuby,
+  registerCommissionOnlyBdmDeal,
+  calculateIrashTechTeamAndTokenRoi,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -9640,6 +9642,25 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const body = await parseJsonBody(req);
       const fb = submitCloudPortalFeedbackAndFeatureRequest(body);
       sendJson(res, fb.statusCode || 201, fb);
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/roi-calculator') {
+      const roi = calculateIrashTechTeamAndTokenRoi({
+        teamSize: parsed.searchParams.get('teamSize') ?? 10,
+        wastedHoursPerWeekPerDev: parsed.searchParams.get('wastedHoursPerWeekPerDev') ?? 8,
+        hourlyEngineerCostUsd: parsed.searchParams.get('hourlyEngineerCostUsd') ?? 75,
+        monthlyLlmApiSpendUsd: parsed.searchParams.get('monthlyLlmApiSpendUsd') ?? 500,
+        subscriptionCostMonthlyUsd: parsed.searchParams.get('subscriptionCostMonthlyUsd') ?? 199,
+      });
+      sendJson(res, 200, roi, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/bdm/register-deal') {
+      const body = await parseJsonBody(req);
+      const resDeal = registerCommissionOnlyBdmDeal(body);
+      sendJson(res, resDeal.statusCode || 201, resDeal);
       return;
     }
 

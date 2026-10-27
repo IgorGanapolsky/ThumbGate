@@ -781,13 +781,13 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
         <div class="section-kicker">AWS Cloud · Free Local</div>
         <p class="section-lede" style="margin:6px 0 12px;"><strong>1. Token Saving (-42%)</strong> · <strong>2. Loop Fixing</strong> · <strong>3. DPO Alignment Pipeline</strong></p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
-          <a class="button-pro" href="/go/cloud-indie?utm_source=website&amp;utm_medium=cloud_section&amp;utm_campaign=cloud_indie_49&amp;cta_id=cloud_indie_buy&amp;cta_placement=cloud_section&amp;plan_id=cloud_indie" data-offer-link data-cta-id="cloud_indie_buy">Start Cloud Indie — $49/mo</a>
-          <a class="button-primary" href="/go/cloud-startup?utm_source=website&amp;utm_medium=cloud_section&amp;utm_campaign=cloud_startup_199&amp;cta_id=cloud_startup_buy&amp;cta_placement=cloud_section&amp;plan_id=cloud_startup" data-offer-link data-cta-id="cloud_startup_buy" style="text-decoration:none;">Start Cloud Startup — $199/mo</a>
+          <a class="button-pro" href="/go/cloud-indie?utm_source=website&amp;utm_medium=cloud_section&amp;utm_campaign=cloud_indie_49&amp;cta_id=cloud_indie_buy&amp;cta_placement=cloud_section&amp;plan_id=cloud_indie" data-offer-link data-cta-id="cloud_indie_buy">Start Cloud Indie</a>
+          <a class="button-primary" href="/go/cloud-startup?utm_source=website&amp;utm_medium=cloud_section&amp;utm_campaign=cloud_startup_199&amp;cta_id=cloud_startup_buy&amp;cta_placement=cloud_section&amp;plan_id=cloud_startup" data-offer-link data-cta-id="cloud_startup_buy" style="text-decoration:none;">Start Cloud Startup</a>
           <a href="/cloud" style="color:var(--green);font-size:14px;font-weight:800;">Cloud Dashboard →</a>
           <a href="/v1/cloud/integration-guide.md" style="color:var(--cyan);font-size:14px;font-weight:700;">Guide →</a>
           <input id="calc-llm-spend" type="number" min="50" max="50000" step="50" value="500" aria-label="API Spend" style="width:90px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text);">
-          <span id="calc-monthly-savings" style="font-weight:800;color:var(--green);">$210.00/mo</span>
-          <span id="calc-net-roi" style="font-weight:800;color:var(--cyan);">+$161.00/mo (4.3x ROI)</span>
+          <span id="calc-monthly-savings" style="font-weight:800;color:var(--green);">$210 saved</span>
+          <span id="calc-net-roi" style="font-weight:800;color:var(--cyan);">4.3x ROI</span>
         </div>
         <script>
           (function(){
@@ -799,8 +799,8 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
               var spend = Math.max(0, parseFloat(input.value) || 0);
               var saved = spend * 0.42;
               var net = saved - 49;
-              savingsEl.textContent = '$' + saved.toFixed(2) + '/mo';
-              roiEl.textContent = (net >= 0 ? '+$' : '-$') + Math.abs(net).toFixed(2) + '/mo (' + (saved / 49).toFixed(1) + 'x ROI)';
+              savingsEl.textContent = '$' + saved.toFixed(0) + ' saved';
+              roiEl.textContent = (saved / 49).toFixed(1) + 'x ROI';
             });
           })();
         </script>

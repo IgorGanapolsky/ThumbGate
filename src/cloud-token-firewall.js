@@ -1172,11 +1172,146 @@ end
 `;
 }
 
+const bdmDealRegistrations = new Map();
+
+function registerCommissionOnlyBdmDeal({
+  bdmEmail = '',
+  prospectCompany = '',
+  prospectDomain = '',
+  estimatedDealValueUsd = 499,
+  collectedCashUsd = 0,
+  refundedOrUnpaid = false,
+  quoteApprovedByThumbGate = true,
+  baseSalaryUsd = 0,
+  outboundCashSpendUsd = 0,
+} = {}) {
+  if (Number(baseSalaryUsd) > 0 || Number(outboundCashSpendUsd) > 0) {
+    return {
+      ok: false,
+      statusCode: 400,
+      error: 'Zero Outbound Spend Mandate: BDM role is strictly commission-only ($0 base salary, $0 upfront spend).',
+    };
+  }
+  const cleanBdm = String(bdmEmail || '').trim().toLowerCase();
+  const cleanDomain = String(prospectDomain || prospectCompany || '').trim().toLowerCase();
+  if (!cleanBdm || !cleanDomain) {
+    return {
+      ok: false,
+      statusCode: 400,
+      error: 'bdmEmail and prospectDomain (or prospectCompany) are required to register a deal.',
+    };
+  }
+
+  const commissionRate = 0.15;
+  const netCollected = refundedOrUnpaid ? 0 : Math.max(0, Number(collectedCashUsd) || 0);
+  const commissionEarnedUsd = quoteApprovedByThumbGate
+    ? Number((netCollected * commissionRate).toFixed(2))
+    : 0;
+  const potentialCommissionUsd = Number(((Math.max(0, Number(estimatedDealValueUsd) || 0)) * commissionRate).toFixed(2));
+
+  const now = new Date();
+  const lockedUntil = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000)).toISOString();
+  const dealId = `deal_${crypto.createHash('sha256').update(`${cleanBdm}:${cleanDomain}`).digest('hex').slice(0, 12)}`;
+
+  const record = {
+    dealId,
+    bdmEmail: cleanBdm,
+    prospectCompany: String(prospectCompany || cleanDomain).trim(),
+    prospectDomain: cleanDomain,
+    registeredAt: now.toISOString(),
+    attributionLockedUntil: lockedUntil,
+    attributionMonths: 12,
+    payoutWindowDays: 14,
+    commissionRatePct: 15,
+    baseSalaryUsd: 0,
+    outboundCashSpendUsd: 0,
+    quoteApprovedByThumbGate: Boolean(quoteApprovedByThumbGate),
+    estimatedDealValueUsd: Number(estimatedDealValueUsd) || 0,
+    collectedCashUsd: netCollected,
+    potentialCommissionUsd,
+    commissionEarnedUsd,
+    commissionReversed: Boolean(refundedOrUnpaid),
+    status: refundedOrUnpaid
+      ? 'reversed_on_refund'
+      : (netCollected > 0 ? 'commission_payable_within_14d' : 'registered_prospect_locked_12m'),
+  };
+
+  bdmDealRegistrations.set(dealId, record);
+  return {
+    ok: true,
+    statusCode: 201,
+    deal: record,
+  };
+}
+
+function calculateIrashTechTeamAndTokenRoi({
+  teamSize = 10,
+  wastedHoursPerWeekPerDev = 8,
+  hourlyEngineerCostUsd = 75,
+  monthlyLlmApiSpendUsd = 500,
+  automationEfficiencyPct = 80,
+  tokenCompactionPct = 42,
+  subscriptionCostMonthlyUsd = 199,
+} = {}) {
+  const devs = Math.max(1, Number(teamSize) || 1);
+  const hrsWeek = Math.max(0, Number(wastedHoursPerWeekPerDev) || 0);
+  const rate = Math.max(0, Number(hourlyEngineerCostUsd) || 0);
+  const eff = Math.min(100, Math.max(0, Number(automationEfficiencyPct) || 80)) / 100;
+  const tokPct = Math.min(100, Math.max(0, Number(tokenCompactionPct) || 42)) / 100;
+
+  const hoursSavedMonthly = Number((devs * hrsWeek * 4.33 * eff).toFixed(1));
+  const engineeringTimeSavingsMonthlyUsd = Number((hoursSavedMonthly * rate).toFixed(2));
+  const tokenBurnSavingsMonthlyUsd = Number(((Number(monthlyLlmApiSpendUsd) || 0) * tokPct).toFixed(2));
+  const totalMonthlySavingsUsd = Number((engineeringTimeSavingsMonthlyUsd + tokenBurnSavingsMonthlyUsd).toFixed(2));
+  const totalAnnualSavingsUsd = Number((totalMonthlySavingsUsd * 12).toFixed(2));
+  const planCost = Math.max(1, Number(subscriptionCostMonthlyUsd) || 199);
+  const roiMultiple = Number((totalMonthlySavingsUsd / planCost).toFixed(1));
+  const paybackDays = totalMonthlySavingsUsd > 0
+    ? Math.max(1, Math.ceil((planCost / totalMonthlySavingsUsd) * 30))
+    : 30;
+
+  return {
+    ok: true,
+    inputs: {
+      teamSize: devs,
+      wastedHoursPerWeekPerDev: hrsWeek,
+      hourlyEngineerCostUsd: rate,
+      monthlyLlmApiSpendUsd: Number(monthlyLlmApiSpendUsd) || 0,
+      automationEfficiencyPct: eff * 100,
+      tokenCompactionPct: tokPct * 100,
+    },
+    outputs: {
+      hoursSavedMonthly,
+      engineeringTimeSavingsMonthlyUsd,
+      tokenBurnSavingsMonthlyUsd,
+      totalMonthlySavingsUsd,
+      totalAnnualSavingsUsd,
+      roiMultiple,
+      paybackDays,
+      paybackLabel: paybackDays <= 2 ? '< 48 hours' : `< ${paybackDays} days`,
+    },
+    chapters: [
+      { chapter: 'CH 00', name: 'Free Local Hook', offer: 'npx thumbgate init ($0 forever, MIT)' },
+      { chapter: 'CH 01–02', name: 'Solo Pro', offer: 'Personal Dashboard, Recall & DPO Export ($19/mo)' },
+      { chapter: 'CH 03–05', name: 'Cloud Indie & Startup', offer: 'Hosted AWS Token Compaction (-42%) & Loop-Kill Webhooks ($49–$199/mo)' },
+      { chapter: 'CH 06', name: 'Enterprise & Managed Sink', offer: '48hr Turnaround Managed Gate + S3/Postgres DPO Sink ($499–$2,500)' },
+    ],
+    pipelineStages: [
+      { stage: '01 Edge PreToolUse', detail: 'Claude · Cursor · Codex · Local SQLite', status: 'LIVE' },
+      { stage: '02 Token Compactor', detail: 'Strips duplicate prompts & logs (-42%)', status: 'LIVE' },
+      { stage: '03 Loop Circuit Breaker', detail: 'Kills repeat #3 tool-error storms', status: 'PROCESSING' },
+      { stage: '04 SQS + Lambda Scrub', detail: 'Redacts ghp_ / sk-proj- / Bearer secrets', status: 'LIVE' },
+      { stage: '05 S3 + Postgres DPO Sink', detail: 'Streams HuggingFace DPO JSONL partitions', status: 'LIVE' },
+    ],
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
   cloudFeatureRequestsState.length = 0;
   ssoSessionsState.clear();
+  bdmDealRegistrations.clear();
 }
 
 module.exports = {
@@ -1204,6 +1339,8 @@ module.exports = {
   buildMacAndLinuxInstallerScript,
   buildWindowsInstallerScript,
   buildHomebrewFormulaRuby,
+  registerCommissionOnlyBdmDeal,
+  calculateIrashTechTeamAndTokenRoi,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };

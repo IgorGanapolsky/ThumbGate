@@ -398,9 +398,17 @@ test('the recurring subscription prices agree with the canonical catalog', () =>
 
   // The Operator Framework page is the one surface that also sells the managed
   // retainer; its monthly amount is still read from the catalog, never typed in.
+  // The Cloud Portal page (public/cloud.html) sells the Cloud Indie ($49/mo) and
+  // Cloud Startup ($199/mo) tiers defined in src/cloud-token-firewall.js.
   const retainerDollars = wholeDollars(currentOffer('operator_managed_retainer'));
-  const extraMonthlyBySurface = { 'public/operator-framework.html': [retainerDollars] };
-
+  const { CLOUD_SAAS_TIERS } = require('../src/cloud-token-firewall');
+  const extraMonthlyBySurface = {
+    'public/operator-framework.html': [retainerDollars],
+    'public/cloud.html': [
+      CLOUD_SAAS_TIERS.cloud_indie.priceMonthlyUsd,
+      CLOUD_SAAS_TIERS.cloud_startup.priceMonthlyUsd,
+    ],
+  };
   for (const file of priceBearingSurfaces()) {
     const text = claimText(file);
     const allowedMonthly = [monthlyDollars, ...(extraMonthlyBySurface[file] || [])];

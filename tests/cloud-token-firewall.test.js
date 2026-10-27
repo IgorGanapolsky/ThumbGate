@@ -440,9 +440,35 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     assert.equal(lambdaPortal.statusCode, 200);
     assert.match(lambdaPortal.body, /Customer Cloud Portal &amp; Control Plane/);
 
+    const roiRes = await fetch(`${origin}/v1/cloud/roi-calculator?teamSize=10&wastedHoursPerWeekPerDev=8&hourlyEngineerCostUsd=75&monthlyLlmApiSpendUsd=500`);
+    assert.equal(roiRes.status, 200);
+    const roiJson = await roiRes.json();
+    assert.equal(roiJson.ok, true);
+    assert.ok(roiJson.outputs.totalMonthlySavingsUsd > 10000);
+    assert.equal(roiJson.chapters.length, 4);
+    assert.equal(roiJson.pipelineStages.length, 5);
+
+    const bdmRes = await fetch(`${origin}/v1/cloud/bdm/register-deal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bdmEmail: 'partner@globalbdm.io',
+        prospectCompany: 'GrowthWave AI',
+        prospectDomain: 'growthwave.ai',
+        estimatedDealValueUsd: 2500,
+        collectedCashUsd: 1000,
+      }),
+    });
+    assert.equal(bdmRes.status, 201);
+    const bdmJson = await bdmRes.json();
+    assert.equal(bdmJson.ok, true);
+    assert.equal(bdmJson.deal.commissionRatePct, 15);
+    assert.equal(bdmJson.deal.commissionEarnedUsd, 150);
+    assert.equal(bdmJson.deal.baseSalaryUsd, 0);
+
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
-    assert.match(homeHtml, /Start Cloud Indie — \$49\/mo/);
-    assert.match(homeHtml, /Start Cloud Startup — \$199\/mo/);
+    assert.match(homeHtml, /Start Cloud Indie/);
+    assert.match(homeHtml, /Start Cloud Startup/);
     assert.match(homeHtml, /1\. Token Saving \(-42%\)/);
     assert.match(homeHtml, /2\. Loop Fixing/);
     assert.match(homeHtml, /3\. DPO Alignment Pipeline/);

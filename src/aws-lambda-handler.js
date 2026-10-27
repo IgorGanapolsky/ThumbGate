@@ -22,6 +22,8 @@ const {
   buildMacAndLinuxInstallerScript,
   buildWindowsInstallerScript,
   buildHomebrewFormulaRuby,
+  registerCommissionOnlyBdmDeal,
+  calculateIrashTechTeamAndTokenRoi,
 } = require('./cloud-token-firewall');
 
 const CLOUD_PORTAL_HTML_PATH = path.resolve(__dirname, '../public/cloud.html');
@@ -165,6 +167,31 @@ async function handler(event = {}) {
       statusCode: fb.statusCode || 201,
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
       body: JSON.stringify(fb),
+    };
+  }
+
+  if (method === 'GET' && rawPath === '/v1/cloud/roi-calculator') {
+    const roi = calculateIrashTechTeamAndTokenRoi({
+      teamSize: query.teamSize ?? 10,
+      wastedHoursPerWeekPerDev: query.wastedHoursPerWeekPerDev ?? 8,
+      hourlyEngineerCostUsd: query.hourlyEngineerCostUsd ?? 75,
+      monthlyLlmApiSpendUsd: query.monthlyLlmApiSpendUsd ?? 500,
+      subscriptionCostMonthlyUsd: query.subscriptionCostMonthlyUsd ?? 199,
+    });
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify(roi),
+    };
+  }
+
+  if (method === 'POST' && rawPath === '/v1/cloud/bdm/register-deal') {
+    const body = event.body ? JSON.parse(event.body) : {};
+    const resDeal = registerCommissionOnlyBdmDeal(body);
+    return {
+      statusCode: resDeal.statusCode || 201,
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify(resDeal),
     };
   }
 
