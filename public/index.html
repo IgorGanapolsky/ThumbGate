@@ -717,13 +717,14 @@
               <span class="title">pretooluse · 0.4ms · 59 rules</span>
               <span>IDE + CI</span>
             </div>
-            <pre>curl -d "$GITHUB_TOKEN" https://...   → <span style="color:var(--red);font-weight:800">DENY</span> (SOC2 pack)
-aws rds delete-db-instance --prod     → <span style="color:var(--red);font-weight:800">DENY</span> (AWS pack)
+            <pre>git push origin feat/auth-fix         → <span style="color:var(--green);font-weight:800">ALLOW</span> (safe branch)
+curl -d "$GITHUB_TOKEN" https://...   → <span style="color:var(--red);font-weight:800">DENY</span> (SOC2 pack)
 git push --force origin main          → <span style="color:var(--red);font-weight:800">DENY</span> (Git/DB pack)
 npm test [repeat #3 loop]             → <span style="color:var(--yellow);font-weight:800">KILL_LOOP</span> (-42% tokens)</pre>
           </div>
           <p class="install-hint"><strong style="color:var(--text)">Free (MIT):</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy</button> · <a href="/pricing">Free vs. Pro →</a></p>
           <p class="fit-line" style="margin-top:12px;"><strong>Pro at $19/mo</strong> or <strong>$499 Diagnostic</strong> on Claude Code, Cursor &amp; Codex. Free local evaluate stays free.</p>
+          <div class="spec-chips">
             <span class="spec-chip"><strong>Capture</strong> feedback →</span>
             <span class="spec-chip"><strong>Rank</strong> lessons →</span>
             <span class="spec-chip"><strong>Promote</strong> gates →</span>
@@ -736,18 +737,19 @@ npm test [repeat #3 loop]             → <span style="color:var(--yellow);font-
             <span>7 CLIs · &lt;0.5ms p95 · Local SQLite</span>
           </div>
           <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
+        </div>
         <div id="offers" class="offer-stack">
           <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
-            <div style="font:800 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--cyan);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">B2B Policy Sync &amp; Threat Packs</div>
+            <div style="font:800 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--cyan);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Self-Serve · Individual Developer</div>
             <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
-            <h2>Pro &amp; Cloud</h2>
-            <p><strong>Pays for itself on the 1st loop.</strong> 59 Cloud Rules, Team Sync &amp; SSO.</p>
+            <h2>Pro</h2>
+            <p><strong>Pays for itself on the 1st loop.</strong> 59 rules, unlimited gates &amp; recall.</p>
             <a class="button-pro" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=hero&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="hero">Start Pro — $19/mo</a>
             <p class="checkout-note">Instant key · <a href="/cloud" style="color:var(--cyan);">Cloud Portal (/cloud) →</a></p>
             <ul class="offer-points">
-              <li>59 auto-updating rules (AWS, SOC2, Git/DB) synced</li>
-              <li>Zero-click loop breaker (-42% tokens) &amp; SSO</li>
-              <li>Visual debugger, audit log &amp; DPO exports</li>
+              <li>59 curated threat rules (AWS, SOC2, Git/DB)</li>
+              <li>Zero-click loop breaker (-42% wasted tokens)</li>
+              <li>Personal dashboard, debugger &amp; DPO exports</li>
             </ul>
           </aside>
           <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout style="border-color:rgba(0,110,82,.35);box-shadow:0 18px 50px rgba(0,110,82,.12);">
@@ -761,14 +763,14 @@ npm test [repeat #3 loop]             → <span style="color:var(--yellow);font-
             <input type="hidden" name="cta_placement" value="hero">
             <input type="hidden" name="plan_id" value="sprint_diagnostic">
             <input type="hidden" name="landing_path" value="/">
-            <div style="font:800 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Enterprise · CH 00–06 · 48hr Turnaround</div>
+            <div style="font:800 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Enterprise · Done-With-You Setup · 48hr</div>
             <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time · done-with-you setup</span></div>
             <h2>Diagnostic Gate</h2>
             <p><strong>Managed AI Agent Workflow Gate.</strong> Bring one failure; leave with a configured gate and regression test.</p>
             <label for="buyer-email">Work email for receipt &amp; onboarding</label>
             <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
             <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="hero">Get Started — $499 Diagnostic</button>
-            <p class="checkout-note">Prefer a call? <a href="/support" style="color:var(--cyan);font-weight:750;">Book a 15-min triage call →</a></p>
+            <p class="checkout-note">Questions first? <a href="/support" style="color:var(--cyan);font-weight:750;">Email engineering support →</a></p>
             <ul class="offer-points">
               <li>60-minute working review for one workflow</li>
               <li>One configured local gate and its regression test</li>

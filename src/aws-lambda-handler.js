@@ -32,6 +32,7 @@ const {
   getSkillsShWellKnownSkillMarkdown,
   buildSkillsShWellKnownDiscoveryIndex,
   evaluateHerdrOmpPoolsideGitButlerSwarmGate,
+  evaluateBrowserOsNeoProductivityGate,
 } = require('./cloud-token-firewall');
 
 const CLOUD_PORTAL_HTML_PATH = path.resolve(__dirname, '../public/cloud.html');
@@ -159,6 +160,8 @@ async function handlePostRoute(rawPath, body, token, appOrigin) {
     }
     case '/v1/cloud/swarm/herdr-gitbutler':
       return jsonResponse(200, evaluateHerdrOmpPoolsideGitButlerSwarmGate(body));
+    case '/v1/cloud/browseros-neo/gate':
+      return jsonResponse(200, evaluateBrowserOsNeoProductivityGate(body));
     case '/v1/cloud/bdm/register-deal': {
       const deal = registerCommissionOnlyBdmDeal(body);
       return jsonResponse(deal.statusCode || 201, deal);

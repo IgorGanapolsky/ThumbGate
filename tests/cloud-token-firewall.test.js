@@ -30,6 +30,7 @@ const {
   getSkillsShWellKnownSkillMarkdown,
   buildSkillsShWellKnownDiscoveryIndex,
   evaluateHerdrOmpPoolsideGitButlerSwarmGate,
+  evaluateBrowserOsNeoProductivityGate,
   resetCloudFirewallStateForTests,
 } = require('../src/cloud-token-firewall');
 const { handler: lambdaHandler } = require('../src/aws-lambda-handler');
@@ -394,6 +395,7 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
     ['/v1/cloud/skill-up/eval', { skillName: 'thumbgate-pretool-firewall', runtime: 'opensandbox', judgeType: 'rule_based' }],
     ['/v1/cloud/skill-up/observation', { observationId: 'obs_1', attribution: 'explicit', approvedByMaintainer: true }],
     ['/v1/cloud/swarm/herdr-gitbutler', { workerCount: 4, requiresSharedLiveDevServerOrRuntime: true }],
+    ['/v1/cloud/browseros-neo/gate', { cdpEndpoint: 'http://127.0.0.1:9111', snapshotFormat: 'accessibility_tree_ref_ids' }],
     ['/v1/cloud/intercept', { sessionId: 's1', messages: [{ role: 'user', content: 'hi' }] }],
   ]) {
     const r = await lambdaHandler({
@@ -458,6 +460,18 @@ test('syncTeamPolicyAndThreatPacks and evaluateRachelWoodsCraftAndPlaybookMiddle
   });
   assert.equal(swarmBad.ok, false);
   assert.equal(swarmBad.blockers.length, 4);
+
+  const neoGood = evaluateBrowserOsNeoProductivityGate();
+  assert.equal(neoGood.ok, true);
+  const neoBad = evaluateBrowserOsNeoProductivityGate({
+    usesHeadlessPlaywrightInsteadOfBrowserOsNeo: true,
+    snapshotFormat: 'viewport_screenshot',
+    tabIsolationPerSubagent: false,
+    untrustedContentBarrierEnabled: false,
+    localReplayDir: '/tmp/wrong',
+  });
+  assert.equal(neoBad.ok, false);
+  assert.equal(neoBad.blockers.length, 5);
 });
 
 test('Python AWS Lambda SQS worker (deploy/aws/sqs_ingest_worker.py) and PostgreSQL migration work cleanly', () => {
@@ -772,6 +786,15 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     const swarmJson = await swarmRes.json();
     assert.equal(swarmJson.ok, true);
     assert.equal(swarmJson.executionRouting.routingMode, 'gitbutler_shared_workspace');
+
+    const neoRes = await fetch(`${origin}/v1/cloud/browseros-neo/gate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ snapshotFormat: 'accessibility_tree_ref_ids' }),
+    });
+    assert.equal(neoRes.status, 200);
+    const neoJson = await neoRes.json();
+    assert.equal(neoJson.ok, true);
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.match(homeHtml, /Start Cloud Indie/);
     assert.match(homeHtml, /Start Cloud Startup/);

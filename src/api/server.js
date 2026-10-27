@@ -345,6 +345,7 @@ const {
   getSkillsShWellKnownSkillMarkdown,
   buildSkillsShWellKnownDiscoveryIndex,
   evaluateHerdrOmpPoolsideGitButlerSwarmGate,
+  evaluateBrowserOsNeoProductivityGate,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -2932,7 +2933,7 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
 <input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email" required>
-<p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
+<p class="email-note">Enter your work email so your Pro license key and receipt are delivered immediately.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
 <a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">→ Skip form — open Stripe checkout directly</a>
@@ -2941,7 +2942,7 @@ ${hiddenInputs}
 <a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Prefer one-time (no subscription)? Production Rule-Pack Kit — $49 →</a>
 <a class="secondary" data-i="pro_checkout_annual_149" rel="nofollow" href="/go/pro-annual?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_annual_149&amp;cta_id=pro_checkout_annual_149&amp;cta_placement=checkout_interstitial">Annual billing (save 35%)? ThumbGate Pro — $149/yr →</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
-<p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages. Email path keeps receipts attributable; skip uses a same-origin hop that bot-deflects crawlers.</p>
+<p class="choice-note">Cancel anytime. 7-day refund, no questions.</p>
 <div class="objection-box" aria-label="Checkout feedback">
 <strong>Not buying today?</strong>
 <p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
@@ -3258,7 +3259,7 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
   };
 }
 
-function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadRequest, slug }) {
+async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadRequest, slug }) {
   const target = getTrackedLinkTarget(slug);
   if (!target) {
     sendJson(res, 404, {
@@ -3327,6 +3328,45 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
     });
     res.end();
     return;
+  }
+  if (
+    (target.slug === 'pro-direct' || target.slug === 'pro-annual')
+    && process.env.STRIPE_SECRET_KEY
+    && !process.env.NODE_TEST_CONTEXT
+    && !isHeadRequest
+  ) {
+    try {
+      const billingCycle = target.slug === 'pro-annual' ? 'annual' : 'monthly';
+      const customerEmail = normalizeCheckoutCustomerEmail(parsed.searchParams.get('customer_email')) || undefined;
+      const traceId = createJourneyId('checkout');
+      const bootstrapBody = buildCheckoutBootstrapBody(parsed, req, journeyState);
+      bootstrapBody.planId = 'pro';
+      bootstrapBody.billingCycle = billingCycle;
+      const analyticsMetadata = buildCheckoutAttributionMetadata(bootstrapBody, req, traceId);
+      const sessionResult = await createCheckoutSession({
+        successUrl: buildCheckoutFallbackUrl(buildHostedSuccessUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
+        cancelUrl: buildCheckoutFallbackUrl(buildHostedCancelUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
+        customerEmail,
+        installId: bootstrapBody.installId,
+        traceId,
+        metadata: analyticsMetadata,
+        appOrigin: hostedConfig.appOrigin,
+      });
+      if (sessionResult && sessionResult.url) {
+        res.writeHead(302, {
+          ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+          'Cache-Control': 'no-store',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'X-Robots-Tag': 'noindex,nofollow',
+          'X-ThumbGate-Link-Slug': target.slug,
+          Location: sessionResult.url,
+        });
+        res.end();
+        return;
+      }
+    } catch (_) {
+      // Fall back to static Payment Link if dynamic session creation fails
+    }
   }
   const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
   const attribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl);
@@ -9726,6 +9766,12 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     if (req.method === 'POST' && pathname === '/v1/cloud/swarm/herdr-gitbutler') {
       const body = await parseJsonBody(req);
       sendJson(res, 200, evaluateHerdrOmpPoolsideGitButlerSwarmGate(body));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/browseros-neo/gate') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, evaluateBrowserOsNeoProductivityGate(body));
       return;
     }
 

@@ -1747,6 +1747,42 @@ function evaluateHerdrOmpPoolsideGitButlerSwarmGate({
   };
 }
 
+function evaluateBrowserOsNeoProductivityGate({
+  usesHeadlessPlaywrightInsteadOfBrowserOsNeo = false,
+  cdpEndpoint = 'http://127.0.0.1:9111',
+  snapshotFormat = 'accessibility_tree_ref_ids',
+  tabIsolationPerSubagent = true,
+  untrustedContentBarrierEnabled = true,
+  localReplayDir = '~/.browserclaw/',
+} = {}) {
+  const blockers = [];
+  if (usesHeadlessPlaywrightInsteadOfBrowserOsNeo) {
+    blockers.push('never_use_headless_playwright_when_browseros_neo_cdp_is_active');
+  }
+  if (snapshotFormat !== 'accessibility_tree_ref_ids') {
+    blockers.push('use_compact_accessibility_tree_ref_ids_instead_of_multi_mb_screenshots');
+  }
+  if (!tabIsolationPerSubagent) {
+    blockers.push('require_isolated_sandboxed_tabs_per_subagent_to_prevent_tab_collisions');
+  }
+  if (!untrustedContentBarrierEnabled) {
+    blockers.push('require_untrusted_content_encapsulation_barrier_for_prompt_injection_defense');
+  }
+  if (!String(localReplayDir || '').includes('.browserclaw')) {
+    blockers.push('require_local_scrubbable_replays_in_browserclaw_for_deterministic_recovery');
+  }
+
+  return {
+    ok: blockers.length === 0,
+    cdpEndpoint,
+    snapshotFormat,
+    tabIsolationPerSubagent: Boolean(tabIsolationPerSubagent),
+    untrustedContentBarrierEnabled: Boolean(untrustedContentBarrierEnabled),
+    localReplayDir,
+    blockers,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -1793,6 +1829,7 @@ module.exports = {
   getSkillsShWellKnownSkillMarkdown,
   buildSkillsShWellKnownDiscoveryIndex,
   evaluateHerdrOmpPoolsideGitButlerSwarmGate,
+  evaluateBrowserOsNeoProductivityGate,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };
