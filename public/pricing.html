@@ -63,6 +63,14 @@
     .value-factor span { color:var(--muted); font-size:.83rem; }
     .value-operator { display:grid; place-items:center; color:var(--green); font-size:1.7rem; font-weight:900; }
     .value-result { border-color:var(--green); background:#e9f3ee; }
+    .value-factor input { width:100%; margin-top:10px; border:1px solid #aaa89f; border-radius:9px; background:#fff; padding:10px 12px; font:inherit; }
+    .chapter-rail { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; margin:22px 0 0; padding:0; list-style:none; }
+    .chapter-rail li { border:1px solid var(--line); border-radius:12px; background:var(--card); padding:12px; font-size:.84rem; }
+    .chapter-rail span { display:block; color:var(--green); font-weight:900; }
+    .exposure-result { margin:18px 0 0; font-size:1.15rem; font-weight:800; }
+    .exposure-note { margin:8px 0 0; color:var(--muted); font-size:.86rem; }
+    #exposure-cta { width:auto; margin-top:14px; }
+    #exposure-cta[hidden] { display:none; }
     .segment-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:28px; }
     .segment-card { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:14px; background:var(--card); padding:22px; }
     .segment-card.recommended { border:2px solid var(--green); }
@@ -78,7 +86,7 @@
     footer { border-top:1px solid var(--line); padding:28px 0; color:var(--muted); font-size:.85rem; }
     .footer-inner { display:flex; justify-content:space-between; gap:24px; }
     .footer-links { display:flex; gap:18px; }
-    @media (max-width:820px) { .hero,.steps,.fit,.segment-grid { grid-template-columns:1fr; } .value-equation { grid-template-columns:1fr; } .value-operator { min-height:24px; } .hero { gap:34px; } .nav-links a:not(.nav-buy) { display:none; } }
+    @media (max-width:820px) { .hero,.steps,.fit,.segment-grid,.chapter-rail { grid-template-columns:1fr; } .value-equation { grid-template-columns:1fr; } .value-operator { min-height:24px; } .hero { gap:34px; } .nav-links a:not(.nav-buy) { display:none; } }
   </style>
   <script type="application/ld+json">
   {
@@ -140,6 +148,11 @@
         "@type": "Question",
         "name": "What happens if the workflow is not a fit?",
         "acceptedAnswer": { "@type": "Answer", "text": "If the failure cannot be reduced to a supported ThumbGate gate, the payment is refunded instead of turning into an open-ended consulting upsell." }
+      },
+      {
+        "@type": "Question",
+        "name": "How is the exposure number calculated?",
+        "acceptedAnswer": { "@type": "Answer", "text": "It multiplies the repeat incidents, recovery hours, and loaded hourly cost you type. Downstream impact is not included. ThumbGate does not claim a universal savings number." }
       }
     ]
   }
@@ -186,14 +199,14 @@
         <aside class="pro-card" id="pro" aria-label="ThumbGate Pro">
           <div class="eyebrow">Self-serve · Individual developers</div>
           <div class="price">$19<span style="font-size:1rem;font-weight:700">/mo</span></div>
-          <p class="price-note">Or $149/yr. You earned a clean repo without babysitting repeat agent mistakes: includes hosted state sync, multi-agent adapter coverage (Claude Code, Cursor, Codex, Gemini, Git, AWS), priority support, visual gate debugger, and DPO exports. Cancel anytime.</p>
+          <p class="price-note">Or $149/yr. You install the local gate yourself. Pro adds hosted recall, adapter coverage (Claude Code, Cursor, Codex, Gemini, Git, AWS), priority support, the visual gate debugger, and DPO export. Cancel anytime.</p>
           <a class="button" href="/checkout/pro?utm_source=pricing&amp;utm_medium=card&amp;utm_campaign=value_packaging_v1&amp;cta_id=pricing_pro_buy&amp;plan_id=pro" data-offer-link data-cta-id="pricing_pro_buy" data-plan-id="pro" data-value="19" data-segment="solo_operator" style="width:100%;box-sizing:border-box">Start Pro</a>
           <p class="fine">Hosted checkout. Free local evaluate remains free after you subscribe.</p>
         </aside>
         <aside class="card" id="enterprise-gate" style="border-color:var(--green);box-shadow:0 18px 50px rgba(0,110,82,.12);">
           <div class="eyebrow">Done-with-you setup · 1 workflow</div>
           <div class="price">$499</div>
-          <p class="price-note">Diagnostic gate for the chronic agent failure you meant to lock down last sprint. Fixed price. One supported local workflow wired with regression proof in 2 business days after access and agreed materials are available. No subscription.</p>
+          <p class="price-note">We take one repeated miss from review through a configured gate and one regression. Fixed price. One supported local workflow, with proof in 2 business days after access and agreed materials are available. No subscription.</p>
           <form action="/go/diagnostic-pay" method="POST" data-primary-checkout>
             <label for="pricing-email">Work email for the receipt and scheduling</label>
             <input id="pricing-email" name="customer_email" type="email" autocomplete="email" placeholder="you@company.com" required>
@@ -217,15 +230,32 @@
       <div class="eyebrow">Price from your exposure</div>
       <h2>Value is the recovery work the next repeat does not create.</h2>
       <p class="section-lede">Use your own incident history. ThumbGate does not claim a universal savings number.</p>
-      <div class="value-equation" role="img" aria-label="Repeat incidents multiplied by recovery hours and loaded hourly cost, plus downstream impact, equals avoidable recovery exposure">
-        <div class="value-factor"><strong>Repeat incidents</strong><span>per quarter</span></div>
-        <div class="value-operator">×</div>
-        <div class="value-factor"><strong>Recovery hours</strong><span>diagnosis, repair, review</span></div>
-        <div class="value-operator">×</div>
-        <div class="value-factor"><strong>Loaded hourly cost</strong><span>the people pulled into recovery</span></div>
-        <div class="value-operator">+</div>
-        <div class="value-factor value-result"><strong>Downstream impact</strong><span>delay, incident response, audit evidence</span></div>
-      </div>
+      <ol class="chapter-rail" aria-label="From an unchecked tool call to one regression">
+        <li><span>00</span>No check on the tool call</li>
+        <li><span>01</span>Capture the miss</li>
+        <li><span>02</span>Keep the lesson locally</li>
+        <li><span>03</span>Write the prevention rule</li>
+        <li><span>04</span>Block or warn at the tool call</li>
+        <li><span>05</span>Prove it with one regression</li>
+      </ol>
+      <form id="exposure-calculator" class="value-equation" aria-label="Repeat incidents multiplied by recovery hours and loaded hourly cost. Downstream impact stays outside the multiplication.">
+        <label class="value-factor" for="exposure-incidents"><strong>Repeat incidents</strong><span>per quarter</span>
+          <input id="exposure-incidents" name="incidents" type="number" inputmode="numeric" min="0" max="10000" step="1" placeholder="0">
+        </label>
+        <div class="value-operator" aria-hidden="true">×</div>
+        <label class="value-factor" for="exposure-hours"><strong>Recovery hours</strong><span>diagnosis, repair, review</span>
+          <input id="exposure-hours" name="hours" type="number" inputmode="decimal" min="0" max="1000" step="0.5" placeholder="0">
+        </label>
+        <div class="value-operator" aria-hidden="true">×</div>
+        <label class="value-factor" for="exposure-rate"><strong>Loaded hourly cost</strong><span>the people pulled into recovery</span>
+          <input id="exposure-rate" name="rate" type="number" inputmode="decimal" min="0" max="2000" step="1" placeholder="0">
+        </label>
+        <div class="value-operator" aria-hidden="true">+</div>
+        <div class="value-factor value-result"><strong>Downstream impact</strong><span>delay, incident response, audit evidence. Not in the number.</span></div>
+      </form>
+      <p id="exposure-result" class="exposure-result" aria-live="polite">Enter last quarter. This multiplies those three numbers. It is not a ThumbGate savings measurement.</p>
+      <p id="exposure-note" class="exposure-note">Free local install covers the gate on your machine. Pro adds hosted recall. The $499 diagnostic is us doing the review, the gate, and the regression for one workflow.</p>
+      <a id="exposure-cta" class="button" hidden href="#enterprise-gate" data-offer-link data-cta-id="pricing_exposure_diagnostic" data-plan-id="sprint_diagnostic" data-value="499" data-segment="workflow_team">Continue to the $499 diagnostic</a>
     </section>
 
     <section id="segments">
@@ -325,6 +355,7 @@
       <div class="faq">
         <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What does the $499 managed gate include?</button><div class="faq-a">A 60-minute workflow review, one configured local pre-action gate, one regression test, and rollout and rollback proof within two business days for one supported workflow.</div></div>
         <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">What happens if the workflow is not a fit?</button><div class="faq-a">If the failure cannot be reduced to a supported ThumbGate gate, the payment is refunded instead of turning into an open-ended consulting upsell.</div></div>
+        <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false">How is the exposure number calculated?</button><div class="faq-a">It multiplies the repeat incidents, recovery hours, and loaded hourly cost you type. Downstream impact is not included. ThumbGate does not claim a universal savings number.</div></div>
       </div>
     </section>
   </main>
@@ -420,6 +451,57 @@
         button.setAttribute('aria-expanded', String(open));
       });
     });
+
+    const exposureForm = document.querySelector('#exposure-calculator');
+    const exposureResult = document.querySelector('#exposure-result');
+    const exposureCta = document.querySelector('#exposure-cta');
+    const proCheckout = '/checkout/pro?utm_source=pricing&utm_medium=exposure&utm_campaign=value_packaging_v1&cta_id=pricing_exposure_pro&plan_id=pro';
+
+    function typedExposure() {
+      if (!exposureForm) return null;
+      const incidents = Number(exposureForm.elements.incidents.value);
+      const hours = Number(exposureForm.elements.hours.value);
+      const rate = Number(exposureForm.elements.rate.value);
+      const values = [incidents, hours, rate];
+      if (values.some(function (n) { return !Number.isFinite(n) || n < 0; })) return null;
+      if (values.some(function (n) { return n === 0; })) return 0;
+      const total = incidents * hours * rate;
+      return Number.isFinite(total) ? total : null;
+    }
+
+    function renderExposure() {
+      if (!exposureResult || !exposureCta) return;
+      const total = typedExposure();
+      if (total === null || total === 0) {
+        exposureResult.textContent = 'Enter last quarter. This multiplies those three numbers. It is not a ThumbGate savings measurement.';
+        exposureCta.hidden = true;
+        return;
+      }
+      const shown = total.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+      if (total >= 499) {
+        exposureResult.textContent = shown + ' of recovery work in the numbers you typed. The diagnostic is $499 once, for one workflow.';
+        exposureCta.hidden = false;
+        exposureCta.href = '#enterprise-gate';
+        exposureCta.textContent = 'Continue to the $499 diagnostic';
+        exposureCta.dataset.ctaId = 'pricing_exposure_diagnostic';
+        exposureCta.dataset.planId = 'sprint_diagnostic';
+        exposureCta.dataset.value = '499';
+        exposureCta.dataset.segment = 'workflow_team';
+        return;
+      }
+      exposureResult.textContent = shown + ' of recovery work in the numbers you typed. That is under the $499 diagnostic. Pro is $19 a month for hosted recall on the local gate.';
+      exposureCta.hidden = false;
+      exposureCta.href = proCheckout;
+      exposureCta.textContent = 'Start Pro — $19/mo';
+      exposureCta.dataset.ctaId = 'pricing_exposure_pro';
+      exposureCta.dataset.planId = 'pro';
+      exposureCta.dataset.value = '19';
+      exposureCta.dataset.segment = 'solo_operator';
+    }
+
+    if (exposureForm) {
+      exposureForm.addEventListener('input', renderExposure);
+    }
 
     sendFirstPartyTelemetry('pricing_page_view', { landingPath: '/pricing', experimentId: 'value_packaging_v1' });
   </script>
