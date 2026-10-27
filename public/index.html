@@ -560,29 +560,30 @@
       .checkout-card, .pro-card { padding: 22px 18px; }
     }
 
-    /* Visual-first conversion: thumbs + diagrams */
+    /* Visual-first conversion: vector thumbs + diagrams */
     .hero-thumbs {
       display: flex;
       align-items: center;
       justify-content: flex-start;
-      gap: 14px;
-      margin: 0 0 18px;
-      font-size: clamp(42px, 6vw, 64px);
+      gap: 12px;
+      margin: 10px 0 16px;
       line-height: 1;
-      filter: drop-shadow(0 0 28px rgba(34, 211, 238, 0.28));
+      filter: drop-shadow(0 0 22px rgba(34, 211, 238, 0.22));
     }
     .hero-thumbs span {
       display: inline-flex;
-      width: 1.15em;
-      height: 1.15em;
+      width: 44px;
+      height: 44px;
       align-items: center;
       justify-content: center;
-      border-radius: 22%;
-      background: rgba(17, 23, 34, 0.9);
+      border-radius: 12px;
+      background: rgba(17, 23, 34, 0.92);
       border: 1px solid rgba(39, 50, 70, 0.9);
     }
-    .hero-thumbs .up { border-color: rgba(86, 227, 159, 0.55); box-shadow: 0 0 0 1px rgba(86, 227, 159, 0.12); }
-    .hero-thumbs .down { border-color: rgba(255, 100, 124, 0.55); box-shadow: 0 0 0 1px rgba(255, 100, 124, 0.12); }
+    .hero-thumbs .up { border-color: rgba(86, 227, 159, 0.55); box-shadow: 0 0 0 1px rgba(86, 227, 159, 0.14); }
+    .hero-thumbs .down { border-color: rgba(255, 100, 124, 0.55); box-shadow: 0 0 0 1px rgba(255, 100, 124, 0.14); }
+    .spec-chip { text-decoration: none; transition: border-color 0.15s, background 0.15s; }
+    .spec-chip:hover { border-color: rgba(56, 215, 255, 0.65); background: rgba(24, 34, 50, 0.92); }
     .hero-visual {
       margin: 22px 0 0;
       border: 1px solid rgba(56, 215, 255, 0.22);
@@ -695,6 +696,7 @@
         <a href="#how-it-works">How it works</a>
         <a href="#offers">Pricing</a>
         <a href="#proof">Proof</a>
+        <a href="/cloud" data-cta-id="nav_cloud_dashboard" style="color:var(--cyan);font-weight:800;">Cloud Portal</a>
         <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_nav&amp;utm_campaign=rally_style_gtm&amp;cta_id=nav_pro_buy&amp;cta_placement=nav&amp;plan_id=pro" data-offer-link data-cta-id="nav_pro_buy">Pro · $19/mo</a>
         <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="nav_diagnostic_buy">Get Started · $499</a>
       </div>
@@ -706,26 +708,31 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div class="hero-copy">
-          <div class="eyebrow">Pre-action firewall · &lt;0.5ms local · Not a prompt · Not a postmortem</div>
-          <div class="hero-thumbs" aria-hidden="true"><span class="up">👍</span><span class="down">👎</span></div>
+          <div class="eyebrow">For 5–25 dev SaaS teams · Not a prompt · Not a postmortem</div>
+          <div class="hero-thumbs" data-thumbs="👍👎" aria-hidden="true">
+            <span class="up"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>
+            <span class="down"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>
+          </div>
           <h1>Stop AI agent mistakes before they cost you.</h1>
-          <p class="hero-lede">Autonomous agents write, send, deploy, and install packages at inference speed — where breakout takes 27 seconds. Strip human-equivalent credentials and enforce hard allow/deny in <strong>&lt;0.5ms at the tool-call boundary</strong>, before execution.</p>
+          <p class="hero-lede"><strong>Stop dangerous AI-agent commands before they run.</strong> Check supported calls at the <strong>tool-call boundary</strong> against rules you control. Reproduce risky actions safely and verify your rule blocks them.</p>
           <div class="hero-terminal" aria-label="Live pre-action interception demo">
             <div class="terminal-chrome" aria-hidden="true">
               <div class="dots"><span></span><span></span><span></span></div>
-              <span class="title">pretooluse · 0.4ms</span>
-              <span>local</span>
+              <span class="title">pretooluse · reproducible test</span>
+              <span>local + CI</span>
             </div>
-            <pre>curl -d "$GITHUB_TOKEN" https://...   → <span style="color:var(--red);font-weight:800">DENY</span> (secret leak)
-git push --force origin main          → <span style="color:var(--red);font-weight:800">DENY</span> (strict gate)
-rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);font-weight:800">DENY</span> (from 👎 rule)</pre>
+            <pre>git push --force origin main          → <span style="color:var(--red);font-weight:800">DENY</span> (protected branch)
+curl -d "$DUMMY_TOKEN" https://...    → <span style="color:var(--red);font-weight:800">DENY</span> (credential upload)
+psql $TEST_DB -c "DROP TABLE users"   → <span style="color:var(--red);font-weight:800">DENY</span> (disposable DB)
+git push origin feat/safe-branch      → <span style="color:var(--green);font-weight:800">ALLOW</span> (normal work succeeds)</pre>
           </div>
-          <p class="install-hint"><strong style="color:var(--text)">Free (MIT):</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy</button> · <a href="/pricing">Free vs. Pro →</a></p>
-          <p class="fit-line" style="margin-top:12px;"><strong>Pro at $19/mo</strong> or <strong>$499 Diagnostic</strong> on Claude Code, Cursor, Codex, or similar agents. Free local evaluate stays free.</p>
-            <span class="spec-chip"><strong>Capture</strong> feedback</span>
-            <span class="spec-chip"><strong>Rank</strong> lessons</span>
-            <span class="spec-chip"><strong>Promote</strong> gates</span>
-            <span class="spec-chip"><strong>Block</strong> next action</span>
+          <p class="install-hint"><strong style="color:var(--text)">Install free:</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy</button> · <a href="#how-it-works">Watch a 60-second demo ↓</a> · <a href="/pricing">Free vs. Pro →</a></p>
+          <p class="fit-line" style="margin-top:12px;"><strong>Pro at $19/mo</strong> or <strong>$499 Diagnostic</strong> (<strong>Agent Safety Setup</strong>) on Claude Code, Cursor, Codex, or similar agents. Free local evaluate stays free.</p>
+          <div class="spec-chips" aria-label="Four-stage self-improving loop">
+            <a class="spec-chip" href="#how-it-works"><strong>1. Capture</strong> feedback →</a>
+            <a class="spec-chip" href="#how-it-works"><strong>2. Rank</strong> lessons →</a>
+            <a class="spec-chip" href="#how-it-works"><strong>3. Promote</strong> gates →</a>
+            <a class="spec-chip" href="#how-it-works"><strong>4. Block</strong> next action ↓</a>
           </div>
           <figure class="hero-visual">
             <img src="/assets/diagrams/hero-thumbs.svg" width="640" height="360" alt="ThumbGate: thumbs up and thumbs down become a pre-action gate that can ALLOW, WARN, or DENY before the tool call runs" loading="eager" decoding="async">
@@ -734,17 +741,19 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
             <span>7 CLIs · &lt;0.5ms p95 · Local SQLite</span>
           </div>
           <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
+        </div>
         <div id="offers" class="offer-stack">
           <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
+            <div style="font:800 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--cyan);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Self-Service · Individual Dev</div>
             <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
             <h2>Pro</h2>
-            <p><strong>Self-serve for developers.</strong> Unlimited gates, visual debugger, recall, and DPO exports.</p>
+            <p><strong>Keep protections maintained.</strong> Unlimited gates, debugger, recall, and DPO exports.</p>
             <a class="button-pro" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=hero&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="hero">Start Pro — $19/mo</a>
-            <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
+            <p class="checkout-note">Instant key · cancel anytime · <a href="/cloud" style="color:var(--cyan);">Cloud Portal →</a></p>
             <ul class="offer-points">
-              <li>Unlimited gates + rule packs (Claude, Cursor, Git, AWS)</li>
-              <li>Visual gate debugger, dashboard &amp; multi-hop recall</li>
-              <li>1-click DPO &amp; HuggingFace exports from 👍/👎</li>
+              <li>Maintained rule packs (Claude Code, Cursor, Git, AWS)</li>
+              <li>Visual debugger, personal recall &amp; loop-breaker</li>
+              <li>Reproducible checks &amp; 1-click DPO exports</li>
             </ul>
           </aside>
           <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout style="border-color:rgba(0,110,82,.35);box-shadow:0 18px 50px rgba(0,110,82,.12);">
@@ -758,9 +767,10 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
             <input type="hidden" name="cta_placement" value="hero">
             <input type="hidden" name="plan_id" value="sprint_diagnostic">
             <input type="hidden" name="landing_path" value="/">
+            <div style="font:800 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">5–25 Dev SaaS Teams · 48hr Turnaround</div>
             <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time · done-with-you setup</span></div>
-            <h2>Diagnostic Gate</h2>
-            <p><strong>Managed AI Agent Workflow Gate.</strong> Bring one failure; leave with a configured gate and regression test.</p>
+            <h2>Agent Safety Setup · Diagnostic Gate</h2>
+            <p><strong>Managed AI Agent Workflow Gate.</strong> Bring one risky workflow; get a configured protection, verification test, and rollout steps.</p>
             <label for="buyer-email">Work email for receipt &amp; onboarding</label>
             <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
             <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="hero">Get Started — $499 Diagnostic</button>
@@ -794,7 +804,7 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
       <div class="shell">
         <div class="section-kicker">Self-improving product loop</div>
         <h2 class="section-title">Pre-action checks—and the systems that refine them.</h2>
-        <p class="section-lede">Corrections become local lessons; repeated negatives become gates; the next action is checked before execution. <strong style="color:var(--text)">Click a step</strong> for the under-the-hood demo.</p>
+        <p class="section-lede">Corrections become local lessons; repeated negatives become gates; the next action is checked before execution. <strong style="color:var(--text)">Click a step</strong> for the demo.</p>
         <figure class="diagram-frame" style="margin-top:28px">
           <img src="/assets/diagrams/self-improving-thumbs-loop.svg" width="1100" height="420" alt="Self-improving ThumbGate loop: thumbs up or thumbs down become a local lesson, then a prevention rule, then ALLOW WARN or DENY on the next tool call. The loop closes under your control without retraining the model." loading="lazy" decoding="async">
         </figure>
@@ -809,21 +819,21 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
             <span class="loop-number">1</span>
             <div class="thumb-icon" aria-hidden="true">👍👎</div>
             <h3>Capture feedback</h3>
-            <p>Record explicit 👍 or 👎 with the action and outcome context.</p>
+            <p>Record explicit 👍 or 👎 with action context.</p>
             <span class="loop-hint">Under the hood ↓</span>
           </div>
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-2" data-loop-step="2" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">2</span>
             <div class="thumb-icon" aria-hidden="true">🧠</div>
             <h3>Remember locally</h3>
-            <p>Store a reviewable lesson that survives sessions without writing into model weights.</p>
+            <p>Store a reviewable lesson across sessions without touching weights.</p>
             <span class="loop-hint">Under the hood ↓</span>
           </div>
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-3" data-loop-step="3" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">3</span>
             <div class="thumb-icon" aria-hidden="true">📈</div>
             <h3>Rank and refine</h3>
-            <p>Re-rank lessons for the action. Repeated negatives can promote to blocking gates; stale gates expire.</p>
+            <p>Re-rank lessons; repeated negatives promote to gates; stale gates expire.</p>
             <span class="loop-hint">Under the hood ↓</span>
           </div>
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-4" data-loop-step="4" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
@@ -879,30 +889,30 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
     <section id="deliverables">
       <div class="shell">
         <div class="section-kicker">What the $499 enterprise gate buys</div>
-        <h2 class="section-title">A managed gate for one painful workflow.</h2>
+        <h2 class="section-title">Agent Safety Setup for one workflow.</h2>
         <p class="section-lede">Enterprise entry for one workflow—not an org-wide platform license.</p>
         <div class="deliverables">
           <article class="deliverable">
             <h3>Failure map</h3>
-            <p>The exact risky action, trigger, accountable owner, current safeguard, and missing proof.</p>
+            <p>Risky action, trigger, owner, and missing proof.</p>
           </article>
           <article class="deliverable">
             <h3>Configured gate</h3>
-            <p>One supported local rule wired to deny, warn, or require a human before execution.</p>
+            <p>Local rule wired to deny or warn.</p>
           </article>
           <article class="deliverable">
             <h3>Regression and rollout proof</h3>
-            <p>The working test, rollout check, rollback boundary, and evidence receipt for the installed gate.</p>
+            <p>Test, rollout, rollback, and receipt.</p>
           </article>
         </div>
-        <div class="boundary"><strong>Boundary:</strong> the offer covers one supported local workflow. Multi-system implementation, legal or compliance certification, guaranteed savings, and hosted team features require separate scope. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
+        <div class="boundary"><strong>Boundary:</strong> one supported local workflow. Multi-system implementation, compliance certification, and hosted team features require separate scope. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
       </div>
     </section>
 
     <section id="proof">
       <div class="shell">
-        <div class="section-kicker">What “stop” honestly means</div>
-        <h2 class="section-title">Hard deny where configured. Honest warning everywhere else.</h2>
+        <div class="section-kicker">Reproducible verification</div>
+        <h2 class="section-title">Hard deny where configured. Normal work succeeds.</h2>
         <div class="proof-grid">
           <div class="terminal" aria-label="Illustrative strict-mode ThumbGate deny decision">
             <div class="terminal-chrome" aria-hidden="true">
@@ -916,16 +926,16 @@ rule      protect-main
 source    core protection · strict mode
 decision  <span class="red">DENY</span>
 reason    force-push to protected branch
-next      decision recorded before execution</pre>
+verify    git push origin feat/safe → <span class="green">ALLOW</span></pre>
             <div class="terminal-status" aria-hidden="true">
               <span>reviewable decision</span>
               <span><span class="accent">under your control</span> · local lesson store</span>
             </div>
           </div>
           <div class="proof-copy">
-            <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don’t learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default (process-kill/environment-override self-disable floors). Matching destructive actions warn by default and deny in strict mode (managed strict-mode example—not a claim that every free install blocks every risky command automatically).</p>
-            <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
-            <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">Cases</a></p>
+            <p><strong>Why beyond native hooks?</strong> Claude Code and Cursor include native hooks; ThumbGate keeps rules configured, maintained, and verified across tools. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn by default and deny in strict mode (not a claim that every free install blocks every risky command automatically).</p>
+            <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence →</a>
+            <p style="margin-top:8px;font-size:14px;"><a href="/guides/stop-repeated-ai-agent-mistakes">Block force-push</a> · <a href="/guides/ai-agent-pre-action-approval-gates">Test active hook</a> · <a href="/guides/cursor-agent-guardrails">Verify across tools</a> · <a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">Cases</a></p>
           </div>
       </div>
     </section>
@@ -961,9 +971,9 @@ next      decision recorded before execution</pre>
 
     <section class="final">
       <div class="shell">
-        <div class="section-kicker">Start free today</div>
-        <h2 class="section-title">Block the mistake your agent made last week.</h2>
-        <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), upgrade to <strong style="color:var(--text)">Pro ($19/mo)</strong> for unlimited gates, or book a <strong style="color:var(--text)">$499 setup</strong>.</p>
+        <div class="section-kicker">Start free</div>
+        <h2 class="section-title">Keep your agent protections working—and verify them.</h2>
+        <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), upgrade to <strong style="color:var(--text)">Pro ($19/mo)</strong>, or book <strong style="color:var(--text)">Agent Safety Setup ($499)</strong>.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
           <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_final&amp;utm_campaign=pro_self_serve&amp;cta_id=final_pro_buy&amp;cta_placement=final&amp;plan_id=pro" data-offer-link data-cta-id="final_pro_buy">Start Pro — $19/mo</a>
           <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>

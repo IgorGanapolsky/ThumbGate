@@ -215,7 +215,11 @@ test('homepage preserves brand, version, repository, and deployment placeholders
 
 test('homepage features thumbs branding and self-improving diagrams above the fold story', () => {
   assert.match(landingPage, /class="hero-thumbs"/);
-  assert.match(landingPage, /class="hero-thumbs"[\s\S]{0,120}👍[\s\S]{0,80}👎/);
+  assert.match(landingPage, /class="hero-thumbs"[\s\S]{0,120}(?:data-thumbs="👍👎"|<svg)/);
+  assert.match(landingPage, /Stop dangerous AI-agent commands before they run/i);
+  assert.match(landingPage, /Agent Safety Setup/i);
+  assert.match(landingPage, /Watch a 60-second demo/i);
+  assert.match(landingPage, /normal work succeeds/i);
   assert.match(landingPage, /\/assets\/diagrams\/hero-thumbs\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/before-after\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/loop\.svg/);
