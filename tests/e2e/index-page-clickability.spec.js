@@ -15,7 +15,7 @@ test.describe('/ dual-offer conversion path', () => {
     await expect(page.locator('[data-primary-checkout]')).toContainText('Diagnostic Gate');
     await expect(page.locator('[data-primary-checkout]')).toContainText('Get Started — $499 Diagnostic');
     await expect(page.getByRole('link', { name: 'Start Pro — $19/mo' }).first()).toBeVisible();
-    await expect(page.locator('a[href*="/checkout/pro"]')).not.toHaveCount(0);
+    await expect(page.locator('a[href*="/go/pro-direct"]')).not.toHaveCount(0);
     await expect(page.locator('.loop-step')).toHaveCount(4);
     await expect(page.locator('.decision')).toHaveText(['ALLOW', 'WARN', 'DENY']);
     await expect(page.locator('#workflow-sprint-intake[data-legacy-intake-alias]')).toHaveCount(1);
@@ -49,7 +49,7 @@ test.describe('/ dual-offer conversion path', () => {
   test('Pro nav goes to checkout; Enterprise nav returns to managed form', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.locator('nav [data-cta-id="nav_pro_buy"]')).toHaveAttribute('href', /\/checkout\/pro/);
+    await expect(page.locator('nav [data-cta-id="nav_pro_buy"]')).toHaveAttribute('href', /\/go\/pro-direct/);
     await page.locator('nav [data-cta-id="nav_diagnostic_buy"]').click();
     await expect(page).toHaveURL(/#enterprise-gate$/);
     await expect(page.locator('[data-primary-checkout]')).toBeVisible();

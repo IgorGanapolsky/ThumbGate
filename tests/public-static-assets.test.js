@@ -120,7 +120,7 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(html, /Buy the \$499 enterprise gate/);
-  assert.match(html, /\/checkout\/pro/);
+  assert.match(html, /\/go\/pro-direct/);
   assert.match(html, /Start Pro — \$19\/mo/);
   assert.doesNotMatch(html, /\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
   assert.match(html, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
@@ -137,7 +137,7 @@ test('landing page presents Pro self-serve and fixed-price managed offer clearly
   assert.match(html, /one supported local workflow/i);
   assert.match(html, /\$19/);
   assert.match(html, /\$149/);
-  assert.match(html, /\/checkout\/pro/);
+  assert.match(html, /\/go\/pro-direct/);
   assert.doesNotMatch(html, /\$1,500|\$3,000|\$10,000|\$15,000/);
 });
 
@@ -259,6 +259,10 @@ test('GET /install serves the verified distribution and buyer path page', async 
     assert.match(html, /Open VSX/);
     assert.match(html, /MCP Registry/);
     assert.match(html, /Cursor public Marketplace/);
+    assert.match(html, /id="grok"/);
+    assert.match(html, /id="hermes"/);
+    assert.match(html, /grok mcp add thumbgate/);
+    assert.match(html, /hermes-gate/);
     assert.match(html, /\/diagnostic\?utm_source=install_page/);
     assert.match(html, /Managed AI Agent Workflow Gate/);
   }

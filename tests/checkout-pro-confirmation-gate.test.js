@@ -92,6 +92,17 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     assert.match(body, /skipLink\.addEventListener\('click'/);
     assert.match(body, /\/go\/pro-direct/);
     assert.doesNotMatch(body, /buy\.stripe\.com\//);
+    const directAt = body.indexOf('data-i="pro_checkout_direct_stripe"');
+    const formAt = body.indexOf('<form action="/checkout/pro"');
+    assert.ok(directAt > -1 && directAt < formAt, 'direct Stripe link must render before the email form');
+    assert.match(body, /<a class="primary"[^>]*data-i="pro_checkout_direct_stripe"/);
+    assert.match(body, /a\.primary\{[^}]*background:#22d3ee/);
+    assert.match(body, /skipLink\.addEventListener\('click'/);
+    assert.doesNotMatch(body, /\/\^\[\^s@\]\+/);
+    const literal = body.match(/\/\^\[\^\\s@\]\+@\[\^\\s@\]\+\\\.\[\^\\s@\]\+\$\//);
+    assert.ok(literal, 'served email regex must keep \\\\s and \\\\.');
+    const emailPattern = new RegExp(literal[0].slice(1, -1));
+    assert.equal(emailPattern.test('boss@example.com'), true);
     assert.match(body, /hosted team sync and a hosted org dashboard are not generally available/i);
     assert.doesNotMatch(body, /Shared hosted lessons and org dashboards are Enterprise/i);
     assert.doesNotMatch(body, /<form action="https:\/\/buy\.stripe\.com\//);

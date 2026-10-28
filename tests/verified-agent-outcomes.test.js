@@ -90,6 +90,54 @@ test('task outcomes fail closed without verification evidence', () => {
   assert.ok(receipt.workingReasons.includes('unsupported_claim'));
 });
 
+test('a worker cannot store its own completion as completed', () => {
+  const kept = normalizeTaskOutcome(verifiedReceipt());
+  assert.equal(kept.status, 'completed');
+  assert.equal(kept.working, true);
+  assert.equal(kept.metadata.oneShotGoal, undefined);
+
+  const self = verifiedReceipt({
+    taskId: 'self-confirm',
+    idempotencyKey: 'self-confirm',
+    workerId: 'worker',
+    verification: {
+      performed: true,
+      passed: true,
+      verifier: 'Worker',
+      evidence: ['4 tests passed'],
+      unsupportedClaims: 0,
+    },
+  });
+  const receipt = normalizeTaskOutcome(self);
+  assert.equal(receipt.status, 'failed');
+  assert.equal(receipt.working, false);
+  assert.equal(receipt.metadata.oneShotGoal.done, false);
+  assert.notEqual(receipt.metadata.oneShotGoal.reason, 'owner_confirmed');
+
+  const feedbackDir = tempFeedbackDir();
+  try {
+    const recorded = recordTaskOutcome(self, { feedbackDir, recordTrace: false });
+    assert.equal(recorded.recorded, true);
+    assert.equal(recorded.receipt.status, 'failed');
+    assert.equal(recorded.receipt.working, false);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('a budget-exhausted completion is not stored as completed', () => {
+  const receipt = normalizeTaskOutcome(verifiedReceipt({
+    taskId: 'out-of-budget',
+    idempotencyKey: 'out-of-budget',
+    budgetExhausted: true,
+  }));
+  assert.equal(receipt.status, 'failed');
+  assert.equal(receipt.working, false);
+  assert.equal(receipt.metadata.oneShotGoal.reason, 'budget_exhausted');
+  assert.equal(receipt.metadata.oneShotGoal.status, 'out_of_budget');
+  assert.equal(receipt.metadata.oneShotGoal.done, false);
+});
+
 test('task outcomes are idempotent and reject conflicting duplicate writes', () => {
   const feedbackDir = tempFeedbackDir();
   try {

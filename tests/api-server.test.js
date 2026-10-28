@@ -909,7 +909,7 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(body, /Buy the \$499 enterprise gate/i);
   assert.match(body, /Start Pro — \$19\/mo/i);
-  assert.match(body, /\/checkout\/pro/);
+  assert.match(body, /\/go\/pro-direct/);
   assert.match(body, /One configured local gate and its regression test/i);
   assert.match(body, /warn by default/i);
   assert.match(body, /strict mode/i);
