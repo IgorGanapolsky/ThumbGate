@@ -152,11 +152,14 @@ __GA_BOOTSTRAP__
     <h2>Choose the install path that matches your agent.</h2>
     <p class="section-lede">Use the local CLI path for immediate enforcement. Use marketplace installs where your editor supports them. Use the diagnostic path when you need a human-reviewed gate map for one risky workflow. New install: <a href="/guides/progressive-wiring">prove the pipe first</a> (doctor green, empty dashboard OK) before expecting a gate to fire.</p>
     <div class="grid">
-      <article class="card"><h3>CLI and MCP-compatible agents</h3><p>Fastest path for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and local MCP-compatible agents.</p><pre><code>npx -y thumbgate@1.39.0 doctor
+      <article class="card"><h3>CLI and MCP-compatible agents</h3><p>Fastest path for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and local MCP-compatible agents.</p><pre><code>npx -y thumbgate@1.39.0 init --agent claude
+npx -y thumbgate@1.39.0 doctor
 npx -y thumbgate@1.39.0 doctor --fix</code></pre></article>
       <article class="card"><h3>Claude Desktop</h3><p>Use the npm-backed MCP server today. The Claude Desktop `.mcpb` directory submission packet is prepared separately.</p><pre><code>claude mcp add thumbgate -- npx --yes --package thumbgate@1.39.0 thumbgate serve</code></pre></article>
       <article class="card"><h3>Cursor</h3><p>The public Cursor Marketplace listing is not live yet. Use the CLI wiring while the dashboard submission is resolved.</p><pre><code>npx -y thumbgate@1.39.0 init --agent cursor</code></pre></article>
       <article class="card"><h3>Codex</h3><p>Use the local adapter now. Public Codex self-serve plugin publishing is not open yet, so the GitHub Release asset is the distribution proof.</p><pre><code>npx -y thumbgate@1.39.0 init --agent codex</code></pre></article>
+      <article class="card" id="grok"><h3>Grok</h3><p>Grok Build CLI. There is no Grok store listing. This command adds the npm server. <code>npx thumbgate init</code> also writes the Claude-style config Grok reads.</p><pre><code>grok mcp add thumbgate -- npx -y thumbgate mcp</code></pre></article>
+      <article class="card" id="hermes"><h3>Hermes</h3><p>Local hook for Nous Research Hermes. Merge <code>adapters/hermes/config.yaml</code> into <code>~/.hermes/config.yaml</code>. There is no Hermes directory listing.</p><pre><code>npx --yes --package thumbgate thumbgate hermes-gate</code></pre></article>
     </div>
   </div>
 </section>
@@ -173,6 +176,8 @@ npx -y thumbgate@1.39.0 doctor --fix</code></pre></article>
       <div class="status"><span class="badge pending">PENDING</span><div><strong>Claude Desktop directory</strong><span>Official MCPB form is reachable; submission needs account/email/file-upload approval.</span></div></div>
       <div class="status"><span class="badge blocked">BLOCKED</span><div><strong>Cursor public Marketplace</strong><span>Public listing returns "Marketplace Plugin Not Found"; dashboard requires sign-in to inspect or resubmit.</span></div></div>
       <div class="status"><span class="badge pending">PENDING</span><div><strong>Codex public directory</strong><span>OpenAI docs say public plugin publishing and self-serve management are coming soon.</span></div></div>
+      <div class="status"><span class="badge live">LIVE</span><div><strong>Hermes local hook</strong><span><code>thumbgate hermes-gate</code> is a shipped CLI command. Wire it from <code>adapters/hermes/config.yaml</code>. No public Hermes directory.</span></div></div>
+      <div class="status"><span class="badge pending">PENDING</span><div><strong>Grok Build live confirmation</strong><span>The CLI command is published. A signed-in Grok Build session has not confirmed it end to end. No Grok store listing.</span></div></div>
     </div>
   </div>
 </section>
