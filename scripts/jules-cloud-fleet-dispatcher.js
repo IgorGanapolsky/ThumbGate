@@ -208,7 +208,7 @@ async function scanAndProcessJulesEmailsViaCdp({
   const cdpTimeoutMs = Math.max(15000, 6000 * maxEmails + 5000);
 
   const cdpResult = await new Promise((resolve) => {
-    const ws = new WebSocketImpl(gmailTab.webSocketDebugUrl);
+    const ws = new WebSocketImpl(gmailTab.webSocketDebuggerUrl);
     const timer = setTimeout(() => {
       try { ws.close(); } catch (_) {}
       resolve({ error: 'cdp_timeout' });
