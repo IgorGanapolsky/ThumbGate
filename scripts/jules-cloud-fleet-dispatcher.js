@@ -15,6 +15,10 @@
  *      (via `:sendMessage`) sessions without sending duplicate prompts after plan approval.
  *   5. Dispatches parallel Google Jules cloud coding sessions with `requirePlanApproval: false`,
  *      `automationMode: "AUTO_CREATE_PR"`, and ThumbGate's mandatory pre-commit/parity instructions.
+ *   6. Reads Jules proactive-suggestion emails from Gmail via BrowserOS Neo CDP, parses ALL
+ *      suggestions across every repo (ThumbGate, trading, dayglass, ...), dispatches cloud
+ *      sessions for each, and deletes the email immediately after extraction + dispatch —
+ *      keeping the inbox at zero unread Jules messages.
  */
 
 const { execFileSync } = require('node:child_process');
@@ -148,26 +152,252 @@ async function dispatchThumbGateJulesSession({ title, taskInstructions, starting
     ...options,
   });
 }
+function parseJulesEmailSuggestions(emailText = '') {
+  const text = String(emailText || '');
+  const repoRegex = /IgorGanapolsky\/([A-Za-z0-9._-]+)\n([\s\S]*?)(?=IgorGanapolsky\/|©\s*202\d\s*Google|This message was sent to|$)/g;
+  const byRepo = new Map();
+  let match;
+  while ((match = repoRegex.exec(text)) !== null) {
+    const repoName = match[1].trim();
+    const block = match[2]
+      .replace(/Review code[\s\S]*$/i, '')
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && !/^\+\s*\d+\s+other improvements/i.test(l));
+    if (!byRepo.has(repoName)) {
+      byRepo.set(repoName, []);
+    }
+    if (block.length > 0) {
+      byRepo.get(repoName).push(block.slice(0, 8).join(' — '));
+    }
+  }
+  return Array.from(byRepo.entries()).map(([repoName, items]) => ({
+    repoName,
+    source: `sources/github/IgorGanapolsky/${repoName}`,
+    findingsSummary: items.join('\n'),
+  }));
+}
+
+async function scanAndProcessJulesEmailsViaCdp({
+  cdpOrigin = process.env.BROWSEROS_CDP_ORIGIN || 'http://127.0.0.1:9111',
+  apiKey = resolveJulesApiKey(),
+  fetchImpl = globalThis.fetch,
+  WebSocketImpl = globalThis.WebSocket,
+  maxEmails = 20,
+} = {}) {
+  if (typeof fetchImpl !== 'function' || typeof WebSocketImpl !== 'function') {
+    return { scanned: false, reason: 'missing_fetch_or_websocket', processedEmails: 0, dispatchedSessions: [] };
+  }
+  let tabs = [];
+  try {
+    const listRes = await fetchImpl(`${cdpOrigin}/json/list`);
+    if (!listRes.ok) return { scanned: false, reason: `cdp_http_${listRes.status}`, processedEmails: 0, dispatchedSessions: [] };
+    tabs = await listRes.json();
+  } catch (err) {
+    return { scanned: false, reason: `cdp_unreachable:${err.message}`, processedEmails: 0, dispatchedSessions: [] };
+  }
+
+  const gmailTab = (Array.isArray(tabs) ? tabs : []).find(
+    (t) => t && t.type === 'page' && String(t.url || '').includes('mail.google.com') && t.webSocketDebuggerUrl
+  );
+  if (!gmailTab) {
+    return { scanned: true, reason: 'no_gmail_tab_open', processedEmails: 0, dispatchedSessions: [] };
+  }
+
+  // CDP timeout scales with number of emails being processed (each ~6s of browser wait).
+  const cdpTimeoutMs = Math.max(15000, 6000 * maxEmails + 5000);
+
+  const cdpResult = await new Promise((resolve) => {
+    const ws = new WebSocketImpl(gmailTab.webSocketDebuggerUrl);
+    const timer = setTimeout(() => {
+      try { ws.close(); } catch (_) {}
+      resolve({ error: 'cdp_timeout' });
+    }, cdpTimeoutMs);
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        id: 1,
+        method: 'Runtime.evaluate',
+        params: {
+          expression: `(async () => {
+            if (!location.hash.startsWith('#inbox')) {
+              location.hash = '#inbox';
+              await new Promise(r => setTimeout(r, 2000));
+            }
+            const results = [];
+            const maxIter = ${Number(maxEmails) || 20};
+            for (let i = 0; i < maxIter; i++) {
+              const rows = Array.from(document.querySelectorAll('tr.zA'));
+              const julesRow = rows.find(r => /\\bJules\\b|jules-noreply@google\\.com|improvements for your repos/i.test(r.innerText || ''));
+              if (!julesRow) break;
+              julesRow.click();
+              await new Promise(r => setTimeout(r, 2200));
+              const expandAll = document.querySelector('[aria-label="Expand all"]');
+              if (expandAll) { expandAll.click(); await new Promise(r => setTimeout(r, 1200)); }
+              for (const c of Array.from(document.querySelectorAll('.kv, .kQ'))) {
+                try { c.click(); } catch (_) {}
+              }
+              await new Promise(r => setTimeout(r, 1000));
+              const main = document.querySelector('[role="main"]') || document.body;
+              const text = (main.innerText || '').slice(0, 12000);
+              const delBtn = Array.from(document.querySelectorAll('[aria-label="Delete"]')).find(el => el.offsetParent !== null);
+              let deleted = false;
+              if (delBtn) {
+                delBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                delBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                delBtn.click();
+                deleted = true;
+                await new Promise(r => setTimeout(r, 1500));
+              }
+              // Navigate back to inbox for next iteration
+              location.hash = '#inbox';
+              await new Promise(r => setTimeout(r, 1200));
+              results.push({ foundJulesEmail: true, deleted, text });
+            }
+            if (results.length === 0) {
+              return { foundJulesEmail: false, processedCount: 0, results: [] };
+            }
+            return { foundJulesEmail: true, processedCount: results.length, results };
+          })()`,
+          returnByValue: true,
+          awaitPromise: true,
+        },
+      }));
+    };
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(typeof event.data === 'string' ? event.data : String(event.data));
+        if (msg.id === 1) {
+          clearTimeout(timer);
+          ws.close();
+          resolve(msg.result?.result?.value || { foundJulesEmail: false });
+        }
+      } catch (_) {}
+    };
+    ws.onerror = (err) => {
+      clearTimeout(timer);
+      resolve({ error: String(err && err.message ? err.message : err) });
+    };
+  });
+
+  if (!cdpResult || !cdpResult.foundJulesEmail) {
+    return {
+      scanned: true,
+      processedEmails: 0,
+      emailDeleted: false,
+      dispatchedSessions: [],
+    };
+  }
+
+  const dispatchedSessions = [];
+  const allParsedRepos = [];
+  const allDeleted = [];
+
+  for (const emailResult of (cdpResult.results || [])) {
+    const parsedSuggestions = parseJulesEmailSuggestions(emailResult.text);
+    allDeleted.push(emailResult.deleted);
+    for (const item of parsedSuggestions) {
+      allParsedRepos.push(item.repoName);
+      if (!apiKey) continue;
+      const title = `fix(${item.repoName.toLowerCase()}): address proactive Jules email code health & test improvements`;
+      const prompt = item.repoName === 'ThumbGate'
+        ? buildHardenedThumbGateJulesPrompt({
+            title,
+            taskInstructions: `Address the proactive Jules email findings for ${item.repoName}:\n${item.findingsSummary}`,
+          })
+        : `Address the proactive Jules email findings for IgorGanapolsky/${item.repoName}:\n${item.findingsSummary}\nRun the repository test suite and auto-create a PR without pausing for questions.`;
+      try {
+        const created = await julesRequest('/sessions', {
+          method: 'POST',
+          apiKey,
+          fetchImpl,
+          body: {
+            title,
+            prompt,
+            sourceContext: {
+              source: item.source,
+              githubRepoContext: { startingBranch: 'main' },
+            },
+            requirePlanApproval: false,
+            automationMode: 'AUTO_CREATE_PR',
+          },
+        });
+        dispatchedSessions.push({
+          repoName: item.repoName,
+          name: created.name,
+          url: created.url,
+        });
+      } catch (err) {
+        dispatchedSessions.push({
+          repoName: item.repoName,
+          error: err.message,
+        });
+      }
+    }
+  }
+
+  return {
+    scanned: true,
+    processedEmails: cdpResult.results.length,
+    emailDeleted: allDeleted.length > 0 && allDeleted.every(Boolean),
+    parsedRepos: allParsedRepos,
+    dispatchedSessions,
+  };
+}
+
+async function runJules24x7DriverCycle({
+  apiKey = resolveJulesApiKey(),
+  fetchImpl = globalThis.fetch,
+  WebSocketImpl = globalThis.WebSocket,
+  maxEmails = 20,
+} = {}) {
+  const unblocked = [];
+  let activeSessions = [];
+  if (apiKey) {
+    const list = await julesRequest('/sessions?pageSize=25', { apiKey, fetchImpl });
+    activeSessions = list.sessions || [];
+    for (const s of activeSessions) {
+      if (s.state === 'AWAITING_PLAN_APPROVAL' || s.state === 'AWAITING_USER_FEEDBACK') {
+        try {
+          await unblockWaitingJulesSession(s.name, undefined, { sessionState: s.state, apiKey, fetchImpl });
+          unblocked.push({ name: s.name, title: s.title, prevState: s.state });
+        } catch (err) {
+          unblocked.push({ name: s.name, error: err.message });
+        }
+      }
+    }
+  }
+
+  const emailScan = await scanAndProcessJulesEmailsViaCdp({
+    apiKey,
+    fetchImpl,
+    WebSocketImpl,
+    maxEmails,
+  });
+
+  return {
+    timestamp: new Date().toISOString(),
+    activeKey: Boolean(apiKey),
+    totalListed: activeSessions.length,
+    byState: activeSessions.reduce((acc, s) => {
+      acc[s.state] = (acc[s.state] || 0) + 1;
+      return acc;
+    }, {}),
+    unblocked,
+    emailScan,
+  };
+}
 
 if (require.main === module) {
+  // Parse --max-emails flag (default 20)
+  let maxEmails = 20;
+  const idx = process.argv.indexOf('--max-emails');
+  if (idx !== -1 && process.argv[idx + 1]) {
+    const parsed = parseInt(process.argv[idx + 1], 10);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= 50) maxEmails = parsed;
+  }
   (async () => {
-    const apiKey = resolveJulesApiKey();
-    const list = await julesRequest('/sessions?pageSize=15', { apiKey });
-    const sessions = list.sessions || [];
-    console.log(JSON.stringify({
-      activeKey: Boolean(apiKey),
-      totalListed: sessions.length,
-      byState: sessions.reduce((acc, s) => {
-        acc[s.state] = (acc[s.state] || 0) + 1;
-        return acc;
-      }, {}),
-      thumbGateSessions: sessions.filter((s) => s.sourceContext?.source === THUMBGATE_SOURCE).map((s) => ({
-        name: s.name,
-        title: s.title,
-        state: s.state,
-        url: s.url,
-      })),
-    }, null, 2));
+    const cycle = await runJules24x7DriverCycle({ maxEmails });
+    console.log(JSON.stringify(cycle, null, 2));
   })().catch((err) => {
     console.error(err.message);
     process.exit(1);
@@ -186,4 +416,7 @@ module.exports = {
   julesRequest,
   unblockWaitingJulesSession,
   dispatchThumbGateJulesSession,
+  parseJulesEmailSuggestions,
+  scanAndProcessJulesEmailsViaCdp,
+  runJules24x7DriverCycle,
 };
