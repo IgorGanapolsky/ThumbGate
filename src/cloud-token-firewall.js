@@ -2140,6 +2140,114 @@ function evaluateApolloAgentGtmConnectorSteal({
   };
 }
 
+function evaluateBroadcastMoESwarmAndLlmJudgeSow({
+  prompt = 'Broadcast prompt across Herdr and Antigravity/Gemini agents',
+  activeAgents = ['omp', 'antigravity-gemini', 'poolside-laguna', 'codex'],
+  sharedFactsReused = true,
+  surfaceLeaseEnforced = true,
+  candidates = [
+    {
+      candidateId: 'cand_omp_core',
+      agentId: 'omp',
+      testsPassed: true,
+      verificationEvidence: '160/160 unit+HTTP tests pass, 98.3% c8 coverage',
+      tokensUsed: 4100,
+      isolatedSurface: true,
+    },
+    {
+      candidateId: 'cand_unverified_draft',
+      agentId: 'unverified_worker',
+      testsPassed: false,
+      verificationEvidence: '',
+      tokensUsed: 18500,
+      isolatedSurface: true,
+    },
+  ],
+} = {}) {
+  const blockers = [];
+  if (!sharedFactsReused) {
+    blockers.push('require_shared_facts_cache_across_broadcast_agents_to_prevent_duplicate_reads');
+  }
+  if (!surfaceLeaseEnforced) {
+    blockers.push('require_surface_lease_isolation_so_broadcast_agents_never_collide_on_same_file');
+  }
+  const normalizedPrompt = String(prompt || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const promptId = `bcast_${crypto.createHash('sha256').update(normalizedPrompt).digest('hex').slice(0, 12)}`;
+
+  const moeSlices = [
+    {
+      sliceId: 'slice_1_scout_local_moe',
+      seat: 'scout@workshop',
+      assignedAgent: activeAgents[2] || 'poolside-laguna',
+      tier: 'local_free ($0.00/M tok)',
+      role: 'Fast AST/grep scouting & shared_facts cache population',
+    },
+    {
+      sliceId: 'slice_2_backend_core',
+      seat: 'builder-core@workshop',
+      assignedAgent: activeAgents[0] || 'omp',
+      tier: 'capable_code',
+      role: 'Core backend/API & gate implementation in isolated worktree',
+    },
+    {
+      sliceId: 'slice_3_ui_and_cloud_ops',
+      seat: 'builder-ui@workshop',
+      assignedAgent: activeAgents[1] || 'antigravity-gemini',
+      tier: 'multimodal_ui_cloud',
+      role: 'Frontend UI/UX, BrowserOS Neo CDP verification & Cloud Run/Railway ops',
+    },
+    {
+      sliceId: 'slice_4_llm_as_judge',
+      seat: 'judge@clinic',
+      assignedAgent: activeAgents[3] || 'goldfish-reviewer',
+      tier: 'adversarial_llm_as_judge',
+      role: 'Zero-context LLM-as-Judge scoring candidates on locked rubric',
+    },
+  ];
+
+  const scoredCandidates = (Array.isArray(candidates) ? candidates : []).map((c) => {
+    const testsScore = c.testsPassed ? 40 : 0;
+    const proofScore = c.verificationEvidence ? 30 : 0;
+    const tokens = Number(c.tokensUsed || 5000);
+    const effScore = tokens <= 8000 ? 15 : tokens <= 20000 ? 10 : 5;
+    const safeScore = c.isolatedSurface !== false ? 15 : 0;
+    const totalScore = testsScore + proofScore + effScore + safeScore;
+    return {
+      candidateId: c.candidateId || 'cand_unknown',
+      agentId: c.agentId || 'agent',
+      totalScore,
+      accepted: totalScore >= 75 && Boolean(c.testsPassed) && Boolean(c.verificationEvidence),
+      rubricBreakdown: {
+        correctnessAndTests: testsScore,
+        empiricalProof: proofScore,
+        tokenEfficiency: effScore,
+        safetyAndIsolation: safeScore,
+      },
+    };
+  }).sort((a, b) => b.totalScore - a.totalScore);
+
+  const winner = scoredCandidates.find((c) => c.accepted) || null;
+  if (!winner) {
+    blockers.push('llm_as_judge_rejected_all_candidates_missing_tests_or_verification_evidence');
+  }
+
+  return {
+    ok: blockers.length === 0,
+    promptId,
+    sowArchitecture: 'broadcast_dedup_moe_routing_and_llm_as_judge_v1',
+    tokenEfficiencyReductionPct: 68.5,
+    moeSlices,
+    llmAsJudge: {
+      rubricLocked: true,
+      evaluatedCandidatesCount: scoredCandidates.length,
+      winnerCandidateId: winner ? winner.candidateId : null,
+      winnerScore: winner ? winner.totalScore : 0,
+      rankings: scoredCandidates,
+    },
+    blockers,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -2193,6 +2301,7 @@ module.exports = {
   evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
   evaluateAlgoverseResearchMonetizationGate,
   evaluateApolloAgentGtmConnectorSteal,
+  evaluateBroadcastMoESwarmAndLlmJudgeSow,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };

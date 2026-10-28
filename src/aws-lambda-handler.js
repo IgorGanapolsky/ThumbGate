@@ -39,6 +39,7 @@ const {
   evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
   evaluateAlgoverseResearchMonetizationGate,
   evaluateApolloAgentGtmConnectorSteal,
+  evaluateBroadcastMoESwarmAndLlmJudgeSow,
 } = require('./cloud-token-firewall');
 
 const CLOUD_PORTAL_HTML_PATH = path.resolve(__dirname, '../public/cloud.html');
@@ -185,6 +186,8 @@ async function handlePostRoute(rawPath, body, token, appOrigin) {
       return jsonResponse(200, evaluateAlgoverseResearchMonetizationGate(body));
     case '/v1/cloud/apollo-gtm/gate':
       return jsonResponse(200, evaluateApolloAgentGtmConnectorSteal(body));
+    case '/v1/cloud/swarm/moe-judge':
+      return jsonResponse(200, evaluateBroadcastMoESwarmAndLlmJudgeSow(body));
     case '/v1/cloud/bdm/register-deal': {
       const deal = registerCommissionOnlyBdmDeal(body);
       return jsonResponse(deal.statusCode || 201, deal);

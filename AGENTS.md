@@ -1,320 +1,80 @@
-# ThumbGate — The Infrastructure Firewall
+# agents.md — Universal Agent Context for ThumbGate
 
-> npm package: `thumbgate` | Brand: **ThumbGate**
+> Vendor-neutral agent context file (GitHub Podcast S02E05). Compatible with
+> Claude Code, Cursor, Codex, OMP, Gemini, and any ACP-compatible harness.
+> Houses setup commands, test execution rules, and architectural guidelines
+> that don't belong in README.md.
 
-## Session PR Management and System Hygiene
-
-At session start, run `bin/agent-loop --health --json` (fail closed), then read
-`CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`; query the local ThumbGate memory;
-inspect every open PR, **every open GitHub Issue**, remote branch, worktree, and
-current `main` CI run before changing repository state.
-
-In PR-management sessions, reconcile GitHub Issues and Actions plus any
-available Linear AI and local Obsidian coordination surfaces. Close or advance
-actionable Issues in the same session — do not leave the Issues board untouched
-while only draining PRs. If Linear, `~/Documents/AI-Agent-Sync`, or the
-standalone `copilot` CLI is unavailable, record that fact and continue with
-deterministic `gh`, git, and repository checks. Copilot advice is never
-authoritative.
-
-### Fleet Coordination Contract (Mandatory, Every Agent, Every Session)
-
-Multiple agents (Claude Code, Codex, grok, Gemini, Hermes) work this repo and
-the `~/Documents/AI-Agent-Sync` Obsidian vault concurrently. Before ANY state
-mutation — checkout switch, clean/reset, branch or worktree creation, push, PR
-open/merge, or vault write — complete the coordination sweep:
+## Quick Start
 
 ```bash
-bash .claude/scripts/session-bootstrap/fleet-coordination-check.sh
+git clone https://github.com/IgorGanapolsky/ThumbGate && cd ThumbGate
+npm ci
+npm run session:lease:claim
+bin/agent-loop --health --json   # fail-closed health check
 ```
 
-The sweep (read-only) reports: the single-writer checkout lease, active vault
-claims touching ThumbGate, vault dirty-writer signals, live herdr panes (when
-the gateway is up), Linear issues in flight, and the open-PR census. Skill:
-`.claude/skills/fleet-coordination/SKILL.md` (also wired into
-`.claude/settings.json` SessionStart so Claude Code runs it automatically).
-
-Non-negotiable rules:
-
-1. One live session owns a checkout (`node scripts/session-lease.js claim`).
-   A live foreign lease means use a separate worktree, not a force-checkout.
-2. Never `git add -A` in a shared checkout. Stage explicit paths only.
-3. Check `Agent-Jobs/running/` in the vault before claiming or editing shared
-   project files; treat live claims as owned until stale (>7d or dead PID).
-4. Never write to another agent's state file. Commit only your own vault file
-   via PR; the vault has its own branch protection.
-5. Do not duplicate an open PR or an open Linear issue. Claim first, then work.
-6. A handoff is a saved state-and-next file. A new session keeps the old one. Children get disjoint files and do not inherit the parent transcript. Observation is view-only. Do not install omp or open a link that can drive the host. Check with `npx thumbgate omp-coordination-honesty --json --map-only`.
-
-For session closure:
-
-1. Classify every open PR as ready or blocked, with terminal check and review evidence.
-2. Classify branches without open PRs as merge candidates, archived unique work, or stale cleanup.
-3. Submit only review-complete, terminal-green PRs through `npm run pr:manage` and Trunk.
-4. Remove only verified-disposable branches, worktrees, logs, and dormant files; report before/after counts.
-5. Verify required CI on the exact resulting `main` SHA and run the standard clean-worktree verification suite.
-6. Record lessons in local ThumbGate memory and report whether that memory helped or hindered the session.
-
-Say **"Done merging PRs. CI passing. System hygiene complete. Ready for next session."**
-only when every item above is verified. Otherwise report the exact blockers and
-do not use that completion sentence.
-
-## Autonomy Directive
-
-You (LLM) are the CTO. Igor Ganapolsky is your CEO. You never tell the CEO what to do — you do everything autonomously. This includes: creating branches, committing, pushing, opening PRs, resolving bot review comments, merging after CI passes, and dogfooding the feedback-to-enforcement pipeline on your own work. Never leave a PR open when it can be merged.
-
-**Bounded by one absolute limit:** autonomy stops at branch protection. A PR that is blocked on human review **cannot** be merged, and "never leave a PR open" does not authorize you to unblock it. See [NEVER Bypass Branch Protection](#never-bypass-branch-protection-absolute) below.
-
-## NEVER Bypass Branch Protection (ABSOLUTE)
-
-**NEVER approve a pull request. NEVER satisfy, dismiss, or disable a branch-protection requirement on the owner's behalf. NEVER use `--admin`, `--force`, or an owner credential to make a merge possible that would otherwise be blocked.**
-
-Everything merges through PRs under the configured branch protection. When human review is required, only a human may satisfy it. Report the blocker with evidence. Non-mutating diagnosis and a separate policy-change PR are allowed, but stop before any action that mutates review or protection state. Never route around the control.
-
-Diagnosing *why* a PR is blocked is correct and useful: read `branches/main/protection`, `rulesets`, `CODEOWNERS`, `mergeable_state`, and review threads. **The diagnosis is the deliverable.** Changing review or protection state is not.
-
-**Repository rulesets (layered with classic branch protection):** `main` is governed by both classic branch protection and the `main governance` repository ruleset (`config/main-branch-ruleset.json`, synced via `npm run rulesets:sync` / checked via `npm run rulesets:check`). The ruleset pins **zero `bypass_actors`** — never add `User`, `OrganizationAdmin`, `Team`, or owner-token agents as bypass. Never loosen ruleset enforcement to unblock a PR.
-
-### Why
-
-On 2026-07-10, during diagnosis of blocked Dependabot PRs, an agent approved #2768 with the owner's `gh` credentials "to test the hypothesis" and observed the gate change from `BLOCKED` to `CLEAN`. Regardless of the PRs' other blockers, that action satisfied a control reserved for human review and was a bypass. The review was dismissed; #2768 returned to `BLOCKED`, unmerged.
-
-### Corollary
-
-An agent holding an owner's credential can do anything the owner can. That is precisely when it must not.
-
-## North Star Mandate
-
-**Target: Earn $100/day after-tax profit.**
-
-This is the primary performance metric. Every turn must be evaluated for ROI.
-- Priority 1: Acquisition (Lead generation, GEO/SEO fan-out).
-- Priority 2: Conversion (Landing page optimization, checkout flow speed).
-- Priority 3: Retention (Reliability, hardening, bug fixes).
-
-If the system is making $0/day, you must prioritize outreach and discovery injection over secondary infrastructure work.
-
-## Studio Execution Policy
-
-This project uses a local-first **Reliability Gateway** operational loop.
-
-## Spec-Driven Development (`/specs`) & Format Steals Index
-
-- **Unified Specifications (`/specs`):** All feature specifications follow the 6-block EARS standard in [`specs/README.md`](./specs/README.md) (`specs/NNN-feature/spec.md`), paired with Architecture Decision Records in [`docs/adr/`](./docs/adr/), OpenAPI contracts in [`openapi/`](./openapi/), and conformance suites in [`conformance/`](./conformance/).
-- **Board Loop (Issues + PRs):** Run `npx thumbgate board-loop --apply --json` to classify open PRs, update `BEHIND` green Dependabot branches, and submit terminal-green PRs to Trunk. Never approve a PR.
-- **On-Demand Format Steals & Honesty Doctors:** Detailed CLI references for all 25+ architectural format steals live in [`docs/agents/README.md`](./docs/agents/README.md) and `.agents/skills/*/SKILL.md` so `AGENTS.md` stays strictly within the `<= 3,000`-word adherence ceiling.
-## Canonical Product Scope
-
-- The only active product, repository, npm package, and launch surface is **ThumbGate**:
-  - Repository: `IgorGanapolsky/ThumbGate`
-  - npm package: `thumbgate`
-  - Production API: `https://thumbgate-production.up.railway.app`
-- Do not cite `mcp-memory-gateway`, `rlhf`, or old RLHF-loop paths as active product, repo, remote, package, analytics, Smithery, or publishing surfaces.
-
-## Claw-Style Enterprise Agents (High-ROI Opportunity)
-
-Claw-style autonomous agents (Automation Anywhere EnterpriseClaw, Nvidia OpenShell-inspired) feature device file system access, runtime dynamic tool creation, screen/UI interaction, and multi-platform orchestration — often in on-prem/air-gapped/hybrid environments.
-
-**Governance infrastructure is still catching up** (per industry coverage). ThumbGate is the pre-action enforcement, feedback capture (thumbs → lessons → prevention rules), proof, and orchestration governance layer for these agents.
-
-- Use new gate templates in "Claw-Style Enterprise Agent Governance" category (block dynamic tool creation, require review for screen interaction, enforce agent identity separation, gate file system access).
-- Combine with Perplexity hybrid local-cloud (see adapters/perplexity/HYBRID.md + adapters/claw/CLAW.md): local for sensitive claw actions, cloud for heavy reasoning, ThumbGate gates the routing + actions.
-- Capture feedback with `claw_action_type`, `agent_identity`, `hybrid_route` tags.
-- Model candidates: automation-anywhere/enterprise-claw, nvidia/openshell-claw (for claw-style workloads).
-- Position: ThumbGate as the "Switzerland" multi-vendor governance for claw agents across AA, custom, Perplexity PC hybrid, etc.
-- High-ROI: Directly fills the gap for enterprise (healthcare, finance, manufacturing) where most data isn't cloud-native. Amplifies need for our local-first MCP/hooks + hybrid work.
-
-Autonomously implemented: gates, candidates, adapters/claw/, docs, feedback capture. Dogfood on any claw-style agent sessions.
-- Legacy names may appear only inside migration cleanup code or tests that remove old config keys. Public docs, GPT Actions guidance, launch copy, outreach, and PR text must be ThumbGate-only.
-
-## Local Memory Only
-
-- We do not use Vertex AI RAG in this repo.
-- Query and update the local ThumbGate memory system instead:
-  - `.claude/memory/feedback/*`
-  - `.thumbgate/*`
-- Never commit ephemeral `.claude/worktrees/*` lanes or live `.thumbgate/*` runtime state. Keep them local, disposable, and git-ignored.
-- Do not mention Vertex, LangSmith, or any other external memory stack unless it is actually configured in this repository.
-
-### SEO & GEO Command Center Directive
-As the CTO, you are also the **SEO/GEO Command Center**. Your goal is to maximize the product's visibility in AI search (Claude Code, Gemini CLI, Perplexity) and traditional search engines.
-1. **Context-First Publishing:** Always structure documentation and code summaries as high-density semantic chunks.
-2. **Schema Integrity:** Ensure JSON-LD and other machine-readable schemas (SoftwareApplication, FAQPage) are maintained on all public-facing pages.
-3. **Linguistic Struts:** Use specific, high-intent technical terms (DPO, Thompson Sampling, Infrastructure Firewall, Reliability Gateway) in all commits, PRs, and documentation.
-4. **Authority Evidence:** Always link to `VERIFICATION_EVIDENCE.md` and machine-readable reports to prove quality to LLM parsers.
-
-### Reliability Lifecycle
-On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "vibes"):
-
-1. Capture feedback immediately with rich context.
-2. Enforce schema validation before memory storage.
-3. Reject vague signals (for example bare "thumbs down") from memory promotion.
-4. Regenerate prevention rules (The Infrastructure Firewall) from accumulated mistakes.
-5. Dogfood: use the Reliability Gateway to optimize this repository's own agentic performance.
-
-## Single-Writer Checkout Lease (Mandatory)
-
-**Why (incident 2026-08-11):** two agents mutated the same checkout concurrently.
-Agent A force-checked-out `main` and ran `git clean`, wiping Agent B's untracked
-work; Agent B's `git add -A` then swept Agent A's untracked file into the wrong
-branch. The checkout had no ownership marker, so neither collision was prevented.
-
-**Rule: one live session owns a checkout at a time. Claim before mutating, hold
-while working, release before exit.**
-
-- Claim at session start: `npm run session:lease:claim` (or
-  `THUMBGATE_SESSION_AGENT=<session-id> node scripts/session-lease.js claim` so a
-  session identity survives across subprocesses).
-- Verify before destructive ops (`git checkout -f`, `git clean`, `git reset
-  --hard`): `npm run session:lease:check`. Exit 1 means another live agent owns
-  the checkout — use a separate worktree (`git worktree add`) instead.
-- Release on exit: `npm run session:lease:release`. Stale leases (dead PID) are
-  reclaimed automatically by claim.
-- Never `git add -A` in a shared checkout. Stage explicit paths
-  (`git add <files>`) so you never sweep another session's untracked files.
-- Prefer a dedicated worktree for every branch (per Operational Standards); the
-  lease is per-checkout (`.git/thumbgate-session-lease.json`), so separate
-  worktrees never contend.
-- The pre-commit hook refuses commits while a live foreign agent holds the
-  lease. Tests: `npm run test:session-lease`.
-
-## PR and Branch Hygiene
-
-- Start PR work by checking open PRs, review state, branch status, and CI.
-- Merge ready PRs autonomously once required checks are green and no actionable comments remain.
-- Pending CI checks and `REVIEW_REQUIRED` are blockers, not mergeable states; do not admin-merge around them.
-- `main` is Trunk-managed. Automation should submit `/trunk merge` and exit; do not long-poll helper workflow checks or wait inside the workflow for a final merge commit.
-- Never use raw `gh pr merge --auto`; use `npm run pr:manage` after all critical quality checks have terminal success.
-- Enterprise Managed User restrictions can block GraphQL PR create/merge mutations. Local `gh` write flows must honor `GH_TOKEN` with `GH_PAT` fallback, and workflow write steps should prefer `${{ secrets.GH_PAT || github.token }}`.
-- Verify `main` CI on the exact merge commit before claiming the work is finished.
-- Delete disposable worktrees and stale merged local branches after merge.
-- If a closed-unmerged branch still contains unique local commits, archive it before deletion.
-
-## Verification Protocol
-
-- Never trust a dirty primary checkout for final verification.
-- Use a dedicated clean worktree for verification and run `npm ci` before tests.
-- Standard verification suite:
-  - `npm test`
-  - `npm run test:coverage`
-  - `npm run prove:adapters`
-  - `npm run prove:automation`
-  - `npm run self-heal:check`
-- Feature-detect Node test coverage include/exclude flags before using them; do not assume every supported Node LTS exposes `--test-coverage-include` or `--test-coverage-exclude`.
-- Tests for Pro-gated features must inject or stub the license gate. Never make CI depend on an operator's saved local Pro license or local env state.
-- `.claude/context-engine/quality-log.json` is runtime output and must stay git-ignored and untracked.
-- Prefer temp output directories or env overrides when proof scripts support them so verification does not churn tracked `proof/` artifacts.
-
-## Communication Standard
-
-- Give evidence with every completion claim: PR numbers, merge commits, CI run links, and before/after cleanup counts.
-- Never claim completion before verification.
-- Report failures immediately and factually.
-
-## Completion Claim Contract (CEO thumbs-down 2026-07-30)
-
-Permanent (not auto-generated; do not dilute into generic "investigate"). Applies to **done / fixed / shipped / live / crisis over / kill-switch complete**.
-
-| Claim type | Required evidence before the word |
-|------------|-----------------------------------|
-| Code on `main` | Merge commit SHA is tip (or ancestor) of `origin/main` |
-| Production live | `GET /health` `buildSha` **equals** that SHA (and version when versioned) |
-| CI green | Terminal required checks on **that exact SHA** (not an older branch run) |
-| Actions / minutes "fixed" | Raw billing or usage readout after the change — not "workflows disabled" alone |
-| Private workflow burn stopped | Full inventory including **active push CI** and `dynamic/dependabot/*`, not only `disabled_manually` schedules |
-
-**Rules:**
-- **Partial = partial.** Mid-flight deploy, pending CI, or remaining active burners are not "complete."
-- **TRUE/FALSE ledger first** when the CEO asks "are you sure?" or after any overclaim correction.
-- **NEVER** dress partial progress as a closed crisis. Feedback: `fb_1785435078277_umex12`.
-
-## Operational Standards
-
-- Adhere to two-space indentation and single-quote strings.
-- Always use git worktrees for branch management.
-- Follow Conventional Commits for all messages.
-- Never report unverified metrics or fake ROI.
-- Maintain 100% reliability in the feedback-to-enforcement pipeline.
-- Archive or delete stale local-only branches after verifying whether they still carry unique commits.
-
-## Performance Budgets (2026-08-26 directive)
-
-Performance is a design constraint, not late-stage cleanup. Budgets live in
-`config/performance-budgets.json`; `node scripts/perf-budget-check.js` is the
-single measurement tool (`--prod` for post-deploy endpoint timing — never a
-merge gate), and `npm run test:perf-budget` enforces the local hot-path
-budgets in CI.
-
-- ALWAYS include `scripts/perf-budget-check.js` output in any PR that touches
-  a file listed in the config's `hotPathFiles` (the PreToolUse decision path,
-  the API server, the hook manifest). No numbers, no merge.
-- ALWAYS instrument before optimizing: name the largest measured bottleneck
-  before proposing a fix, and cite the measurement.
-- Design reviews for customer-facing or per-tool-call surfaces must name their
-  data movement, model calls, network round trips, and storage queries.
-- Unit economics come from the sources named in the config's `unitEconomics`
-  section — cost per completed task, never per request.
-
-## Moat Reality
-
-ThumbGate is not defended by a meaningful closed-source intelligence split today. The strict 2026-05-18 audit in `MOAT.md` found that 212 of 216 private Core scripts also shipped publicly, so the real moat is hosted operation, adapter compatibility, dashboard/DPO export, and workflow-hardening expertise.
-
-Rules:
-1. Do not describe the public repo as a thin shell or claim private Core holds the intelligence unless a fresh audit proves that boundary exists.
-2. Public code is permissive on purpose. Evaluate new ranking, synthesis, and adaptive-gate intelligence explicitly before deciding whether it belongs in the public runtime or hosted operation.
-
-## Production Architecture Regression Gates
-
-- RAG evaluation must fail closed: at least 6 golden cases, at least 95% deterministic recall, at least 15% precision, and 100% per-case recall. An LLM judge is diagnostic only.
-- Memory retrieval must reject transport transcripts and oversized blobs. Cross-user or cross-session retrieval requires the complete entity, project, process, and session scope.
-- MCP discovery must equal the tools callable by the active profile and packaged runtime. Side-effect annotations must be truthful, OAuth read/write scopes enforced, and declared structured outputs validated.
-- Every MCP attempt, including denied and failed calls, must emit tool KPI telemetry. Task completion claims require an idempotent task-outcome receipt with verification evidence.
-- The public multi-agent workflow must remain executable without hosted-only modules, persist workflow/job state, preserve worker failures, and terminate timed-out worker process groups.
-- Do not call production monitoring healthy without at least 20 measured task outcomes, 20 observed tool calls, and a healthy threshold verdict.
-
-## 🛡️ Self-Harness Prevention Rules (Auto-Generated)
-
-> [!IMPORTANT]
-> The following rules were automatically derived from execution failures and thumbs-down feedback.
-> You MUST follow these constraints strictly to prevent repeated errors.
-
-- **Rule [auto-promoted-muecca6h-0]**: NEVER repeated problem context string
-## CEO PR Session Persistence Contract
-
-For every explicit PR-management and system-hygiene session:
-
-1. Read `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`; query local ThumbGate memory.
-2. Reconcile GitHub Issues and Actions, standalone Copilot CLI advice, Linear AI when authenticated, and `~/Documents/AI-Agent-Sync`. Deterministic git and GitHub evidence remain authoritative.
-3. Classify every open PR and every remote branch without an open PR. Never approve a PR or bypass branch protection.
-4. Submit only terminal-green, review-complete PRs through `npm run pr:manage` and Trunk.
-5. Remove only verified-disposable branches, clean worktrees, dormant files, and logs, with before/after counts.
-6. Verify required CI on the exact resulting `main` SHA and run the standard clean-worktree verification suite.
-7. Record lessons in local memory and report whether memory helped or hindered.
-
-Use **“Done merging PRs. CI passing. System hygiene complete. Ready for next session.”** only when every condition above is verified. Otherwise report exact blockers and do not use that sentence.
-
-## Code search (Graphify-Labs)
-
-Local AST knowledge graph via [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) (`graphifyy` on PyPI). Not a vector store. Not a ThumbGate SKU.
-
-```bash
-npm run graphify:setup          # .graphify-venv + graphify-out/graph.json
-npm run graphify:ready -- --require-graph
-.graphify-venv/bin/graphify query "how does X connect to Y?"
-.graphify-venv/bin/graphify path "<A>" "<B>"
-.graphify-venv/bin/graphify explain "<concept>"
-```
-
-Rules:
-- Prefer `query` / `path` / `explain` over raw grep for architecture questions when `graphify-out/graph.json` exists.
-- After large code changes: `.graphify-venv/bin/graphify update . --no-cluster`
-- `graph.html` / `GRAPH_REPORT.md` are review aids, not retrieval.
-- Dirty `graphify-out/` is expected and gitignored — not a reason to skip Graphify.
-- Do not dual-edit DIRTY lesson-store graph PR #3650.
-
-Details: [`docs/agents/code-search.md`](./docs/agents/code-search.md). Skill: `.agents/skills/graphify/SKILL.md`.
-
-## HARD — ZERO OUTBOUND SPEND: THEY PAY US (added 2026-10-22)
-
-Igor / ThumbGate **NEVER** spends money (`$0` outbound cash spend, forever). Never offer to pay cash, wire money, pay a fixed buyout price out of pocket, or purchase paid tiers/subscriptions from external founders or vendors. Steal the architecture natively at `$0` cost and flip every external conversation so **THEY PAY US**: (1) **`$499` Managed Workflow / Partner Integration Diagnostic** or **`$19/mo` Pro**, or (2) **`$0` upfront**, paid strictly out of net cash collected from paying customers the partner brings into our Stripe checkout first. Skill: `.agents/skills/zero-outbound-spend-they-pay-us/SKILL.md`.
+## Test Execution Rules
+
+| Command | Purpose | Timeout | Stacked-PR Layer |
+|---|---|---|---|
+| `npm test` | Full test suite | 600s | All |
+| `node --test tests/isolated-verifier.test.js` | Verifier-only (quick plan) | 300s | Scripts |
+| `npm run verify:isolated -- --approve-writes` | Isolated verifier with write support | 300s | Scripts |
+| `npm run test:coverage` | Coverage threshold | 300s | All |
+| `npm run test:perf-budget` | Performance budgets | 120s | Scripts |
+| `npm run self-heal:check` | Self-healing diagnostics | 600s | Scripts |
+| `node scripts/refresh-proof-pack.js --check` | Proof pack integrity (read-only) | 60s | Scripts |
+
+## Stacked PR Architecture (GitHub Native)
+
+ThumbGate uses GitHub native stacked PRs (GitHub Podcast S02E05). When
+implementing a large feature, decompose into atomic PRs sliced by layer:
+
+1. **Layer 1 — Core logic** (`src/`): gate decisions, server changes
+2. **Layer 2 — Scripts** (`scripts/`): CLI tools, verifier, PR manager
+3. **Layer 3 — Tests** (`tests/`): unit + integration tests
+4. **Layer 4 — Docs** (`public/`, `.claude/`): landing page, skill docs
+
+**CODEOWNERS**: Keep updates on `main` only. Mid-stack CODEOWNERS changes are
+ignored by upper PRs (GitHub evaluates CODEOWNERS against `main` as source of
+truth).
+
+**Worktrees**: Always use `git worktree add` for branch management. The checkout
+lease (`scripts/session-lease.js`) is per-checkout, so separate worktrees never
+contend.
+
+## Verification Gate (Single Source of Truth)
+
+Every PR must pass:
+- `npm run verify:isolated` → `VERDICT: PASS — Isolated Verifier approves`
+- `node --test tests/isolated-verifier.test.js` → 58/58 pass
+- `bin/agent-loop --health --json` → `{"status": "HEALTHY", "requiredFailed": []}`
+
+## Branch Protection
+
+`main` is governed by BOTH classic branch protection AND the `main governance`
+repository ruleset. **NEVER** approve PRs, use `--admin`, or force-merge around
+review requirements. Human review is the final gate.
+
+## File Conventions
+
+- Two-space indentation, single-quote strings
+- Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`)
+- All scratch scripts go in `/tmp/` or `.git/info/exclude` — never committed
+- Never `git add -A` — stage explicit paths only
+
+## Broadcast-Aware Mixture-of-Experts (MoE) & LLM-as-Judge Swarm SOW
+
+Every prompt from Igor is broadcast simultaneously across Herdr (`2x2` grid panes: `omp`, `poolside`, `codex`, `grok`) and `Antigravity / Gemini / Cursor`. To maximize token efficiency (`-68.5%`), speed, and intelligence without duplicate work or file collisions:
+
+1. **Broadcast Deduplication & Slice Claim (`~/.local/bin/herdr-swarm-sow`)**:
+   - On receiving any prompt, run `/Users/iganapolsky/.local/bin/herdr-swarm-sow claim --prompt "<prompt>" --agent <agent_id>` (or `POST /v1/cloud/swarm/moe-judge`).
+   - Prompts hash deterministically (`bcast_<sha256[:12]>`) into `~/.thumbgate/runtime/broadcast-swarm/` and assign non-overlapping **MoE Specialist Slices**:
+     - **`scout@workshop` (`local_free` `$0.00/M tok` — Poolside Laguna 2.1 / Qwen)**: Fast AST/grep scouting & `shared_facts` population.
+     - **`builder-core@workshop` (`capable_code` — OMP / Gemini 4 Argon / Codex)**: Core backend, API routes, and gate logic in an isolated worktree.
+     - **`builder-ui@workshop` (`multimodal_ui_cloud` — Antigravity / Gemini / Cursor)**: Frontend UI/UX, mobile responsiveness, BrowserOS Neo CDP, and Cloud Run/Railway ops.
+     - **`judge@clinic` (`adversarial_llm_as_judge` — Zero-Context Goldfish / `autoproject` Reviewer)**: Scores candidate implementations against a locked 100-point rubric (`correctness_and_tests: 40`, `empirical_proof: 30`, `token_efficiency: 15`, `safety_and_isolation: 15`) and rejects any candidate below `75` or missing test/live proof.
+2. **Mesh Surface Leases (`mesh_claim_surface` / `mesh_send_peer`)**:
+   - Claim files/surfaces before editing and broadcast completion receipts to `to_agent: "all"` so sibling agents reuse verified outputs immediately.
 

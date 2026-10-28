@@ -37,6 +37,7 @@ const {
   evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
   evaluateAlgoverseResearchMonetizationGate,
   evaluateApolloAgentGtmConnectorSteal,
+  evaluateBroadcastMoESwarmAndLlmJudgeSow,
   resetCloudFirewallStateForTests,
 } = require('../src/cloud-token-firewall');
 const { parseJulesEmailSuggestions } = require('../scripts/jules-cloud-fleet-dispatcher');
@@ -415,6 +416,7 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
     ['/v1/cloud/gcp-ai-ultra/gate', { awsAccountState: 'PENDING_ACTIVATION', awsOutstandingBalanceUsd: 0 }],
     ['/v1/cloud/algoverse/gate', { outboundCashSpendUsd: 0, researchProfileUpdated: true }],
     ['/v1/cloud/apollo-gtm/gate', { showFreePreviewFirst: true, creditsSpentBeforeApproval: 0 }],
+    ['/v1/cloud/swarm/moe-judge', { prompt: 'ship feature', sharedFactsReused: true }],
     ['/v1/cloud/intercept', { sessionId: 's1', messages: [{ role: 'user', content: 'hi' }] }],
   ]) {
     const r = await lambdaHandler({
@@ -609,6 +611,20 @@ test('syncTeamPolicyAndThreatPacks and evaluateRachelWoodsCraftAndPlaybookMiddle
   });
   assert.equal(apolloBad.ok, false);
   assert.equal(apolloBad.blockers.length, 3);
+
+  const moeGood = evaluateBroadcastMoESwarmAndLlmJudgeSow();
+  assert.equal(moeGood.ok, true);
+  assert.equal(moeGood.moeSlices.length, 4);
+  assert.equal(moeGood.llmAsJudge.winnerCandidateId, 'cand_omp_core');
+  assert.equal(moeGood.llmAsJudge.winnerScore, 100);
+
+  const moeBad = evaluateBroadcastMoESwarmAndLlmJudgeSow({
+    sharedFactsReused: false,
+    surfaceLeaseEnforced: false,
+    candidates: [{ candidateId: 'c_bad', testsPassed: false, verificationEvidence: '' }],
+  });
+  assert.equal(moeBad.ok, false);
+  assert.equal(moeBad.blockers.length, 3);
 });
 
 test('Python AWS Lambda SQS worker (deploy/aws/sqs_ingest_worker.py) and PostgreSQL migration work cleanly', () => {
@@ -992,6 +1008,16 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     assert.equal(appleSsoData.provider, 'apple');
     assert.equal(appleSsoData.email, 'mobile@icloud.com');
     assert.equal(appleSsoData.session.authenticated, true);
+
+    const moeHttp = await fetch(`${origin}/v1/cloud/swarm/moe-judge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: 'broadcast test' }),
+    });
+    assert.equal(moeHttp.status, 200);
+    const moeData = await moeHttp.json();
+    assert.equal(moeData.ok, true);
+    assert.equal(moeData.llmAsJudge.winnerCandidateId, 'cand_omp_core');
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.match(homeHtml, /Start Cloud Indie/);
     assert.match(homeHtml, /Start Cloud Startup/);
