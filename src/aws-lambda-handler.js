@@ -37,6 +37,8 @@ const {
   buildOneShotWellKnownReceiptsManifest,
   evaluateOneShotAgentGatewayAndSignedReceiptSteal,
   evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
+  evaluateAlgoverseResearchMonetizationGate,
+  evaluateApolloAgentGtmConnectorSteal,
 } = require('./cloud-token-firewall');
 
 const CLOUD_PORTAL_HTML_PATH = path.resolve(__dirname, '../public/cloud.html');
@@ -176,6 +178,10 @@ async function handlePostRoute(rawPath, body, token, appOrigin) {
       return jsonResponse(200, evaluateOneShotAgentGatewayAndSignedReceiptSteal(body));
     case '/v1/cloud/gcp-ai-ultra/gate':
       return jsonResponse(200, evaluateGoogleCloudSaasAndAiUltraCreditsFallback(body));
+    case '/v1/cloud/algoverse/gate':
+      return jsonResponse(200, evaluateAlgoverseResearchMonetizationGate(body));
+    case '/v1/cloud/apollo-gtm/gate':
+      return jsonResponse(200, evaluateApolloAgentGtmConnectorSteal(body));
     case '/v1/cloud/bdm/register-deal': {
       const deal = registerCommissionOnlyBdmDeal(body);
       return jsonResponse(deal.statusCode || 201, deal);

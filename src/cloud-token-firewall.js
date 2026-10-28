@@ -2043,6 +2043,89 @@ function evaluateGoogleCloudSaasAndAiUltraCreditsFallback({
   };
 }
 
+function evaluateAlgoverseResearchMonetizationGate({
+  tuitionQuoteUsd = 4325,
+  depositQuoteUsd = 50,
+  outboundCashSpendUsd = 0,
+  partnerRevSharePct = 50,
+  targetConferences = ['ICML 2027', 'COLM 2027', 'NeurIPS 2027'],
+  researchProfileUpdated = true,
+  partnerFlipEmailSentTo = 'admissions@algoverse.us',
+} = {}) {
+  const blockers = [];
+  if (Number(outboundCashSpendUsd) > 0) {
+    blockers.push('block_outbound_tuition_or_deposit_spend_enforce_zero_outbound_mandate');
+  }
+  if (!researchProfileUpdated) {
+    blockers.push('require_algoverse_research_profile_updated_with_thumbgate_benchmark');
+  }
+  return {
+    ok: blockers.length === 0,
+    monetizationMode: 'zero_spend_cohort_partner_flip_and_icml_benchmark',
+    tuitionAvoidedUsd: Number(tuitionQuoteUsd) + Number(depositQuoteUsd),
+    outboundCashSpendUsd: Number(outboundCashSpendUsd),
+    partnerRevSharePct: Number(partnerRevSharePct),
+    targetConferences,
+    partnerAttributionUrl: 'https://thumbgate.ai/?utm_source=algoverse&utm_medium=partner',
+    partnerFlipEmailSentTo,
+    cohortOffers: [
+      { tier: 'Pro', priceUsd: 19, algoverseCutUsd: 9.5 },
+      { tier: 'Cloud Indie (1M tokens + Loop Breaker)', priceUsd: 49, algoverseCutUsd: 24.5 },
+      { tier: 'Cloud Startup (10M tokens + Webhooks)', priceUsd: 199, algoverseCutUsd: 99.5 },
+      { tier: 'Managed Workflow Gate Setup', priceUsd: 499, algoverseCutUsd: 249.5 },
+    ],
+    blockers,
+  };
+}
+
+function evaluateApolloAgentGtmConnectorSteal({
+  plainEnglishPrompt = "Use ThumbGate's agent to find 10 high-intent engineering teams or workflow failures matching our ICP and a reason each one fits. Show me a free preview first, and don't spend any credits or save anything.",
+  previewCount = 10,
+  showFreePreviewFirst = true,
+  creditsSpentBeforeApproval = 0,
+  waitsForApprovalBeforeSpend = true,
+  outboundCashSpendUsd = 0,
+} = {}) {
+  const blockers = [];
+  if (!showFreePreviewFirst || Number(creditsSpentBeforeApproval) > 0) {
+    blockers.push('require_zero_credit_free_preview_before_any_spend_or_mutation');
+  }
+  if (!waitsForApprovalBeforeSpend) {
+    blockers.push('require_explicit_cost_quote_and_human_approval_before_credit_spend');
+  }
+  if (Number(outboundCashSpendUsd) > 0) {
+    blockers.push('enforce_zero_outbound_cash_spend');
+  }
+  const count = Math.min(10, Math.max(1, Number(previewCount) || 10));
+  const previewLeads = Array.from({ length: count }, (_, idx) => ({
+    rank: idx + 1,
+    segment: idx % 2 === 0 ? 'AI Agent Platform / Coding Harness Team' : 'Enterprise AppSec & FinOps Lead',
+    reasonFitsIcp: idx % 2 === 0
+      ? 'Runs multi-turn Claude Code / Cursor / Codex agents that hit repetitive tool loops and need <0.5ms loop-kill + 42% token compaction.'
+      : 'Needs pre-action secret-exfiltration DENY gates and offline-verifiable signed action receipts (/.well-known/thumbgate-receipts.json).',
+    recommendedOffer: idx % 2 === 0 ? '$199/mo Cloud Startup' : '$499 Managed Workflow Gate',
+  }));
+  return {
+    ok: blockers.length === 0,
+    stolenFrom: 'Apollo for Builders (apollo.pdf — Connect any agent to Apollo for smarter GTM)',
+    copyableAgentPrompt: plainEnglishPrompt,
+    freePreview: {
+      showFreePreviewFirst: Boolean(showFreePreviewFirst),
+      creditsSpent: Number(creditsSpentBeforeApproval),
+      waitsForApprovalBeforeSpend: Boolean(waitsForApprovalBeforeSpend),
+      previewCount: previewLeads.length,
+      leads: previewLeads,
+    },
+    upgradeCta: {
+      headline: 'Love what you see? Upgrade to Pro ($19/mo) or Cloud Indie ($49/mo) to enforce all 59 threat rules and export DPO pairs.',
+      proDirectUrl: 'https://thumbgate.ai/go/pro-direct',
+      cloudIndieUrl: 'https://thumbgate.ai/go/cloud-indie',
+      diagnosticUrl: 'https://thumbgate.ai/#buy',
+    },
+    blockers,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -2094,6 +2177,8 @@ module.exports = {
   buildOneShotWellKnownReceiptsManifest,
   evaluateOneShotAgentGatewayAndSignedReceiptSteal,
   evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
+  evaluateAlgoverseResearchMonetizationGate,
+  evaluateApolloAgentGtmConnectorSteal,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };

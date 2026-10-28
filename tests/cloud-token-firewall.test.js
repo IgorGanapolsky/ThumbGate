@@ -35,6 +35,8 @@ const {
   buildOneShotWellKnownReceiptsManifest,
   evaluateOneShotAgentGatewayAndSignedReceiptSteal,
   evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
+  evaluateAlgoverseResearchMonetizationGate,
+  evaluateApolloAgentGtmConnectorSteal,
   resetCloudFirewallStateForTests,
 } = require('../src/cloud-token-firewall');
 const { parseJulesEmailSuggestions } = require('../scripts/jules-cloud-fleet-dispatcher');
@@ -406,6 +408,8 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
     ['/v1/cloud/radware-agent-risk/gate', { securesLocalDeveloperAgents: true, securesApiGatewayPerimeter: true }],
     ['/v1/cloud/oneshot/gate', { agentId: 'agent_1', action: 'git.push' }],
     ['/v1/cloud/gcp-ai-ultra/gate', { awsAccountState: 'PENDING_ACTIVATION', awsOutstandingBalanceUsd: 0 }],
+    ['/v1/cloud/algoverse/gate', { outboundCashSpendUsd: 0, researchProfileUpdated: true }],
+    ['/v1/cloud/apollo-gtm/gate', { showFreePreviewFirst: true, creditsSpentBeforeApproval: 0 }],
     ['/v1/cloud/intercept', { sessionId: 's1', messages: [{ role: 'user', content: 'hi' }] }],
   ]) {
     const r = await lambdaHandler({
@@ -574,6 +578,32 @@ test('syncTeamPolicyAndThreatPacks and evaluateRachelWoodsCraftAndPlaybookMiddle
   } finally {
     fs.rmSync(tmpSearchDir, { recursive: true, force: true });
   }
+
+  const algoverseGood = evaluateAlgoverseResearchMonetizationGate();
+  assert.equal(algoverseGood.ok, true);
+  assert.equal(algoverseGood.tuitionAvoidedUsd, 4375);
+  assert.equal(algoverseGood.partnerRevSharePct, 50);
+
+  const algoverseBad = evaluateAlgoverseResearchMonetizationGate({
+    outboundCashSpendUsd: 50,
+    researchProfileUpdated: false,
+  });
+  assert.equal(algoverseBad.ok, false);
+  assert.equal(algoverseBad.blockers.length, 2);
+
+  const apolloGood = evaluateApolloAgentGtmConnectorSteal();
+  assert.equal(apolloGood.ok, true);
+  assert.equal(apolloGood.freePreview.previewCount, 10);
+  assert.equal(apolloGood.freePreview.creditsSpent, 0);
+
+  const apolloBad = evaluateApolloAgentGtmConnectorSteal({
+    showFreePreviewFirst: false,
+    creditsSpentBeforeApproval: 5,
+    waitsForApprovalBeforeSpend: false,
+    outboundCashSpendUsd: 10,
+  });
+  assert.equal(apolloBad.ok, false);
+  assert.equal(apolloBad.blockers.length, 3);
 });
 
 test('Python AWS Lambda SQS worker (deploy/aws/sqs_ingest_worker.py) and PostgreSQL migration work cleanly', () => {
@@ -931,6 +961,25 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     const gcpJson = await gcpRes.json();
     assert.equal(gcpJson.ok, true);
     assert.equal(gcpJson.googleCloudCredits.availablePoolCreditsUsd, 390);
+
+    const algoRes = await fetch(`${origin}/v1/cloud/algoverse/gate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ outboundCashSpendUsd: 0 }),
+    });
+    assert.equal(algoRes.status, 200);
+    const algoJson = await algoRes.json();
+    assert.equal(algoJson.ok, true);
+
+    const apolloRes = await fetch(`${origin}/v1/cloud/apollo-gtm/gate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ showFreePreviewFirst: true }),
+    });
+    assert.equal(apolloRes.status, 200);
+    const apolloJson = await apolloRes.json();
+    assert.equal(apolloJson.ok, true);
+    assert.equal(apolloJson.freePreview.previewCount, 10);
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.match(homeHtml, /Start Cloud Indie/);
     assert.match(homeHtml, /Start Cloud Startup/);

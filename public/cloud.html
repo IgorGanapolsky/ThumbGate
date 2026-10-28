@@ -835,6 +835,16 @@ npx skills add https://thumbgate.ai</pre>
         <pre>npx thumbgate verify-receipt &lt;receipt.json&gt;
 # Public manifest: https://thumbgate.ai/.well-known/thumbgate-receipts.json</pre>
       </div>
+      <div class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">See It for Yourself — Paste This Zero-Credit Preview Prompt Into Your Agent</h2>
+            <p style="color:var(--muted);font-size:13px;margin:2px 0 0;">Hand an entire workflow-hardening &amp; token-audit job to ThumbGate’s MCP agent. Shows a free preview first and spends <code>0</code> credits:</p>
+          </div>
+          <button type="button" class="btn-outline" onclick="navigator.clipboard.writeText(document.getElementById('apollo-agent-prompt').innerText)">Copy Prompt</button>
+        </div>
+        <pre id="apollo-agent-prompt">Use ThumbGate's agent (npx thumbgate init) to find the top 10 repeated tool-call loops, secret-leak risks, and token-waste hotspots in my repo and a reason each one fits. Show me a free preview first, and don't spend any credits or mutate any files.</pre>
+      </div>
     </section>
 
     <!-- TAB 6: TEAM ROI & PARTNER BDM -->
