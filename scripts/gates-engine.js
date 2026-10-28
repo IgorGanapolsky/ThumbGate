@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const { execFileSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 const { loadOptionalModule } = require('./private-core-boundary');
 
 const { isProTier, isInTrialPeriod, FREE_TIER_MAX_GATES, FREE_TIER_DAILY_BLOCKS, todayKey } = require('./rate-limiter');
@@ -197,6 +197,9 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   // separately authenticated admin override bound to the exact action digest
   // authorizes one retry (AGENT-259 / District Cyber 2026-08-04).
   'outbound-email-send',
+  'swarm-claim-exit-3-write-after-loss',
+  'teams-single-reply-per-message',
+  'az-repos-pr-publish-requires-cross-review',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -221,6 +224,9 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'oneshot-goal-done',
   // Never daily-cap discount a denied autonomous email send (same class as force-push).
   'outbound-email-send',
+  'swarm-claim-exit-3-write-after-loss',
+  'teams-single-reply-per-message',
+  'az-repos-pr-publish-requires-cross-review',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
@@ -4088,6 +4094,530 @@ function evaluateSecretGuard(input = {}) {
   return result;
 }
 
+const SWARM_CLAIM_LOST_ACTION = 'swarm_claim_lost_exit_3';
+const SWARM_CLAIM_SCRIPT_PATTERN = /\bswarm-claim\.py\b/i;
+const SWARM_LOSS_GATE = 'swarm-claim-exit-3-write-after-loss';
+const TEAMS_REPLY_GATE = 'teams-single-reply-per-message';
+const AZ_PUBLISH_GATE = 'az-repos-pr-publish-requires-cross-review';
+const SWARM_LOSS_EDIT_TOOLS = new Set([
+  'edit',
+  'write',
+  'multiedit',
+  'notebookedit',
+  'strreplace',
+  'search_replace',
+  'applypatch',
+  'apply_patch',
+]);
+const SWARM_LOSS_SHELL_PATTERN = /\b(?:git(?:\s+-C\s+\S+)?\s+(?:commit|push)|but\s+(?:commit|push))\b/i;
+const AZ_PR_UPDATE_PATTERN = /\baz\s+repos\s+pr\s+update\b/i;
+const AZ_DRAFT_FLAG_PATTERN = /(?:^|\s)(--is-draft|--draft)(?:=|\s+)(\S+)/i;
+const AZ_PUBLISH_VALUES = new Set(['false', '0', 'no']);
+const TEAMS_POINT_STOPWORDS = new Set([
+  'this', 'that', 'with', 'from', 'your', 'have', 'will', 'just', 'about',
+  'they', 'them', 'were', 'been', 'into', 'over', 'same', 'send',
+]);
+const EXPLICIT_EXIT_KEYS = ['exitCode', 'exit_code', 'swarmClaimExitCode'];
+const SESSION_SCOPE_KEYS = ['session_id', 'sessionId', 'conversation_id', 'conversationId'];
+const AGENT_SCOPE_KEYS = ['agent_id', 'agentId'];
+
+function commandText(toolInput) {
+  if (!toolInput || typeof toolInput !== 'object') return '';
+  if (typeof toolInput.command === 'string') return toolInput.command;
+  if (typeof toolInput.cmd === 'string') return toolInput.cmd;
+  return '';
+}
+
+function firstScopeValue(source, keys) {
+  if (!source || typeof source !== 'object') return '';
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  }
+  return '';
+}
+
+function swarmLossScopeToken(source) {
+  if (!source || typeof source !== 'object') return '';
+  const session = firstScopeValue(source, SESSION_SCOPE_KEYS)
+    || firstScopeValue(source.tool_input, SESSION_SCOPE_KEYS)
+    || firstScopeValue(source.toolInput, SESSION_SCOPE_KEYS);
+  if (session) return `session:${session}`;
+  const agent = firstScopeValue(source, AGENT_SCOPE_KEYS);
+  return agent ? `agent:${agent}` : '';
+}
+
+function swarmLossActionId(scopeToken) {
+  const token = String(scopeToken || '').trim();
+  if (!token) return '';
+  const hash = crypto.createHash('sha256').update(token).digest('hex').slice(0, 16);
+  const prefix = token.replace(/[^A-Za-z0-9._:-]/g, '_').slice(0, 64);
+  return `${SWARM_CLAIM_LOST_ACTION}:${prefix}:${hash}`;
+}
+
+function repeatedMistakeView(input = {}) {
+  const lossScopeToken = swarmLossScopeToken(input);
+  const named = input.tool_name || input.toolName;
+  if (named) {
+    const toolInput = (input.tool_input && typeof input.tool_input === 'object' && input.tool_input)
+      || (input.toolInput && typeof input.toolInput === 'object' && input.toolInput)
+      || {};
+    return {
+      toolName: String(named),
+      toolInput,
+      command: commandText(toolInput),
+      lossScopeToken,
+    };
+  }
+  if (typeof input.command === 'string') {
+    return {
+      toolName: 'Bash',
+      toolInput: { command: input.command },
+      command: input.command,
+      lossScopeToken,
+    };
+  }
+  return { toolName: '', toolInput: {}, command: '', lossScopeToken };
+}
+
+function isSwarmClaimCommand(command) {
+  return SWARM_CLAIM_SCRIPT_PATTERN.test(String(command || ''));
+}
+
+function swarmLossMessage(blocked) {
+  return `Denied ${blocked}: swarm-claim.py exited 3. Stop editing, committing, and pushing.`;
+}
+
+function denyRepeatedMistake(view, result) {
+  try {
+    return recordStructuralGateBlock(view.toolName, view.toolInput, result);
+  } catch (_) {
+    return result;
+  }
+}
+
+function isSwarmLossWrite(view) {
+  const tool = String(view.toolName || '').toLowerCase();
+  if (SWARM_LOSS_EDIT_TOOLS.has(tool)) return true;
+  if (!view.command) return false;
+  return SWARM_LOSS_SHELL_PATTERN.test(view.command);
+}
+
+function blockedCommandLabel(view) {
+  const match = String(view.command || '').match(SWARM_LOSS_SHELL_PATTERN);
+  if (match) return match[0];
+  return view.toolName || 'edit';
+}
+
+function evaluateSwarmClaimLostWriteGate(view) {
+  const actionId = swarmLossActionId(view.lossScopeToken);
+  if (!actionId || !hasAction(actionId)) return null;
+  if (isSwarmClaimCommand(view.command) && !SWARM_LOSS_SHELL_PATTERN.test(view.command)) return null;
+  if (!isSwarmLossWrite(view)) return null;
+  return denyRepeatedMistake(view, {
+    decision: 'deny',
+    gate: SWARM_LOSS_GATE,
+    endTurn: true,
+    severity: 'critical',
+    message: swarmLossMessage(blockedCommandLabel(view)),
+  });
+}
+
+function numericExit(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && /^-?\d+$/.test(value.trim())) return Number(value.trim());
+  return undefined;
+}
+
+function explicitExitPresent(source) {
+  if (!source || typeof source !== 'object') return false;
+  return EXPLICIT_EXIT_KEYS.some((key) => Object.prototype.hasOwnProperty.call(source, key));
+}
+
+function readExplicitExit(source) {
+  for (const key of EXPLICIT_EXIT_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
+    return numericExit(source[key]);
+  }
+  return undefined;
+}
+
+function firstExplicitExit(event) {
+  const sources = [event];
+  if (event && typeof event === 'object') {
+    sources.push(event.tool_response, event.tool_output, event.toolOutput);
+  }
+  for (const source of sources) {
+    if (!explicitExitPresent(source)) continue;
+    return { present: true, code: readExplicitExit(source) };
+  }
+  return { present: false, code: undefined };
+}
+
+function stdoutText(event) {
+  if (!event || typeof event !== 'object') return '';
+  const chunks = [];
+  const push = (value) => {
+    if (typeof value === 'string' && value) chunks.push(value);
+  };
+  push(event.output);
+  push(event.stdout);
+  push(event.tool_response);
+  push(event.tool_output);
+  const objects = [event.tool_response, event.tool_output, event.toolOutput];
+  for (const obj of objects) {
+    if (!obj || typeof obj !== 'object') continue;
+    push(obj.stdout);
+    push(obj.output);
+  }
+  return chunks.join('\n');
+}
+
+function lastJsonObject(text) {
+  if (typeof text !== 'string') return null;
+  const slice = text.slice(-8000);
+  const close = slice.lastIndexOf('}');
+  if (close === -1) return null;
+  for (let open = 0; open <= close; open += 1) {
+    if (slice[open] !== '{') continue;
+    try {
+      const parsed = JSON.parse(slice.slice(open, close + 1));
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+    } catch (_) {
+      // Keep walking until the object that ends at the last close parses.
+    }
+  }
+  return null;
+}
+
+function eventCommand(event) {
+  if (!event || typeof event !== 'object') return '';
+  if (typeof event.command === 'string' && event.command.trim()) return event.command;
+  return commandText(event.tool_input || event.toolInput);
+}
+
+function failureReportedExit(event) {
+  if (!event || typeof event !== 'object') return { present: false, code: undefined };
+  if (event.is_interrupt === true) return { present: true, code: undefined };
+  const error = typeof event.error === 'string' ? event.error : '';
+  const match = error.match(/^\s*Exit code (-?\d+)\b/);
+  if (!match) return { present: false, code: undefined };
+  return { present: true, code: Number(match[1]) };
+}
+
+function claimAgentName(event) {
+  const errorText = event && typeof event.error === 'string' ? event.error : '';
+  const parsed = lastJsonObject(`${stdoutText(event)}\n${errorText}`);
+  if (parsed && typeof parsed.agent === 'string' && parsed.agent.trim()) return parsed.agent.trim();
+  const flagged = String(eventCommand(event)).match(/--agent(?:=|\s+)(['"]?)([^'"\s]+)\1/);
+  return flagged ? flagged[2] : '';
+}
+
+function observeHookEventName(event) {
+  const name = String((event && (event.hook_event_name || event.hookEventName)) || '');
+  return name === 'PostToolUseFailure' ? 'PostToolUseFailure' : 'PostToolUse';
+}
+
+function resolveObservedExit(event) {
+  const explicit = firstExplicitExit(event);
+  if (explicit.present) return explicit.code;
+  const failed = failureReportedExit(event);
+  if (failed.present) return failed.code;
+  const response = event && (event.tool_response || event.tool_output || event.toolOutput);
+  if (response && typeof response === 'object' && !Array.isArray(response)) {
+    const direct = numericExit(response.exit);
+    if (typeof direct === 'number') return direct;
+  }
+  const parsed = lastJsonObject(stdoutText(event));
+  if (!parsed || !Object.prototype.hasOwnProperty.call(parsed, 'exit')) return undefined;
+  return numericExit(parsed.exit);
+}
+
+function observeSwarmClaimResult(event = {}) {
+  const command = eventCommand(event);
+  if (!isSwarmClaimCommand(command)) return null;
+  if (resolveObservedExit(event) !== 3) return null;
+  const actionId = swarmLossActionId(swarmLossScopeToken(event));
+  if (actionId) {
+    try {
+      trackAction(actionId, {
+        command: command.slice(0, 240),
+        exitCode: 3,
+        agent: claimAgentName(event),
+      });
+    } catch (_) {
+      // The turn still ends. A failed write leaves the next edit unarmed.
+    }
+  }
+  return {
+    decision: 'deny',
+    gate: SWARM_LOSS_GATE,
+    endTurn: true,
+    severity: 'critical',
+    hookEventName: observeHookEventName(event),
+    message: swarmLossMessage('swarm-claim.py'),
+  };
+}
+
+function formatObserveStop(result) {
+  const reason = `[GATE:${result.gate}] ${result.message}`;
+  return JSON.stringify({
+    continue: false,
+    stopReason: reason,
+    hookSpecificOutput: {
+      hookEventName: result.hookEventName || 'PostToolUse',
+      permissionDecision: 'deny',
+      permissionDecisionReason: reason,
+      continue: false,
+    },
+  });
+}
+
+function isTeamsSendTool(toolName) {
+  const name = String(toolName || '').toLowerCase();
+  if (!name.includes('teams')) return false;
+  if (name.includes('gmail')) return false;
+  return /send|reply|post_message/.test(name);
+}
+
+function firstStringField(toolInput, keys) {
+  for (const key of keys) {
+    const value = toolInput[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  }
+  return '';
+}
+
+function teamsTarget(toolInput) {
+  return firstStringField(toolInput, [
+    'recipient', 'to', 'user', 'person', 'chat', 'channel', 'chat_id', 'chatId',
+  ]);
+}
+
+function teamsMessageId(toolInput) {
+  return firstStringField(toolInput, [
+    'messageId', 'message_id', 'replyToId', 'reply_to_id', 'threadId',
+  ]);
+}
+
+function teamsText(toolInput) {
+  return firstStringField(toolInput, ['text', 'message', 'content', 'body']);
+}
+
+function teamsPointKey(text) {
+  const normalized = String(text || '')
+    .toLowerCase()
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const tokens = normalized
+    .split(' ')
+    .filter((token) => token.length >= 4 && !TEAMS_POINT_STOPWORDS.has(token));
+  if (tokens.length > 0) return tokens.join(' ');
+  if (normalized.length >= 12) return normalized;
+  return '';
+}
+
+function teamsReplyKeys(view) {
+  const input = view.toolInput || {};
+  const target = teamsTarget(input);
+  const messageId = teamsMessageId(input);
+  const point = teamsPointKey(teamsText(input));
+  return {
+    target,
+    messageId,
+    messageKey: messageId ? `teams_reply_msg:${messageId}` : '',
+    pointKey: target && point ? `teams_reply_point:${target.toLowerCase()}:${point}` : '',
+  };
+}
+
+function teamsDeliveryFailed(event) {
+  if (!event || typeof event !== 'object') return false;
+  const name = String(event.hook_event_name || event.hookEventName || '');
+  if (name === 'PostToolUseFailure') return true;
+  if (event.is_interrupt === true) return true;
+  if (typeof event.error === 'string' && event.error.trim()) return true;
+  const explicit = firstExplicitExit(event);
+  return explicit.present && explicit.code !== 0;
+}
+
+function evaluateTeamsSingleReplyGate(view) {
+  if (!isTeamsSendTool(view.toolName)) return null;
+  const keys = teamsReplyKeys(view);
+  if ((keys.messageKey && hasAction(keys.messageKey)) || (keys.pointKey && hasAction(keys.pointKey))) {
+    return denyRepeatedMistake(view, {
+      decision: 'deny',
+      gate: TEAMS_REPLY_GATE,
+      severity: 'critical',
+      message: `Denied second Teams send (${view.toolName}) to ${keys.target || keys.messageId} on the same point.`,
+    });
+  }
+  return null;
+}
+
+function observeTeamsSendResult(event = {}) {
+  const view = repeatedMistakeView(event);
+  if (!isTeamsSendTool(view.toolName)) return null;
+  if (teamsDeliveryFailed(event)) return null;
+  const keys = teamsReplyKeys(view);
+  if (!keys.messageKey && !keys.pointKey) return null;
+  try {
+    if (keys.messageKey) trackAction(keys.messageKey, { target: keys.target, confirmed: true });
+    if (keys.pointKey) trackAction(keys.pointKey, { target: keys.target, confirmed: true });
+  } catch (_) {
+    // A missed receipt can be sent again. A false receipt cannot.
+  }
+  return null;
+}
+
+function azDraftPublish(command) {
+  if (!AZ_PR_UPDATE_PATTERN.test(String(command || ''))) return null;
+  const match = String(command || '').match(AZ_DRAFT_FLAG_PATTERN);
+  if (!match) return null;
+  const value = match[2].replace(/^['"]|['"]$/g, '').toLowerCase();
+  if (!AZ_PUBLISH_VALUES.has(value)) return null;
+  return { flag: match[1], value };
+}
+
+function azPrId(command) {
+  const flagged = String(command || '').match(/(?:^|\s)--id(?:=|\s+)(\d+)/i);
+  if (flagged) return flagged[1];
+  const positional = String(command || '').match(/\baz\s+repos\s+pr\s+update\s+(\d+)\b/i);
+  return positional ? positional[1] : '';
+}
+
+function queryAz(args) {
+  const result = spawnSync('az', args, {
+    encoding: 'utf8',
+    timeout: 8000,
+    windowsHide: true,
+  });
+  if (!result || result.error || result.status !== 0 || !result.stdout) return null;
+  try {
+    return JSON.parse(result.stdout);
+  } catch (_) {
+    return null;
+  }
+}
+
+function organizationFromPr(pr) {
+  const url = String((pr && (pr.url || pr.remoteUrl)) || '');
+  const match = url.match(/https:\/\/dev\.azure\.com\/([A-Za-z0-9-]+)\//);
+  return match ? match[1] : '';
+}
+
+function personName(person) {
+  if (!person || typeof person !== 'object') return '';
+  return String(person.uniqueName || person.displayName || '').trim();
+}
+
+function isSystemCommentType(commentType) {
+  if (commentType === 2 || commentType === 3) return true;
+  const text = String(commentType == null ? '' : commentType).trim().toLowerCase();
+  return text === 'system' || text === '2' || text === '3';
+}
+
+function isOtherPersonReviewComment(comment, creator) {
+  if (!comment || typeof comment !== 'object') return false;
+  if (isSystemCommentType(comment.commentType)) return false;
+  if (!String(comment.content || '').trim()) return false;
+  const author = personName(comment.author);
+  if (!author) return false;
+  if (creator && author.toLowerCase() === creator.toLowerCase()) return false;
+  return true;
+}
+
+function threadComments(threadsPayload) {
+  if (!threadsPayload) return [];
+  const threads = Array.isArray(threadsPayload)
+    ? threadsPayload
+    : (Array.isArray(threadsPayload.value) ? threadsPayload.value : []);
+  const comments = [];
+  for (const thread of threads) {
+    if (thread && Array.isArray(thread.comments)) comments.push(...thread.comments);
+  }
+  return comments;
+}
+
+function hasOtherPersonReviewComment(pr, threadsPayload) {
+  const creator = personName(pr && pr.createdBy);
+  return threadComments(threadsPayload).some((comment) => isOtherPersonReviewComment(comment, creator));
+}
+
+function queryAzCrossReview(prId) {
+  const pr = queryAz(['repos', 'pr', 'show', '--id', String(prId), '--output', 'json']);
+  if (!pr || typeof pr !== 'object') return false;
+  const repository = pr.repository && typeof pr.repository === 'object' ? pr.repository : null;
+  const project = repository && repository.project && repository.project.name;
+  const repositoryId = repository && repository.id;
+  if (!project || !repositoryId) return false;
+  const args = [
+    'devops', 'invoke',
+    '--area', 'git',
+    '--resource', 'pullRequestThreads',
+    '--api-version', '7.1',
+    '--http-method', 'GET',
+    '--output', 'json',
+    '--route-parameters',
+    `project=${project}`,
+    `repositoryId=${repositoryId}`,
+    `pullRequestId=${prId}`,
+  ];
+  const org = organizationFromPr(pr);
+  if (org) args.push('--organization', `https://dev.azure.com/${org}`);
+  const threads = queryAz(args);
+  if (!threads) return false;
+  return hasOtherPersonReviewComment(pr, threads);
+}
+
+let crossReviewLookup = queryAzCrossReview;
+
+function setCrossReviewLookup(fn) {
+  crossReviewLookup = typeof fn === 'function' ? fn : queryAzCrossReview;
+}
+
+function azDeny(view, message) {
+  return denyRepeatedMistake(view, {
+    decision: 'deny',
+    gate: AZ_PUBLISH_GATE,
+    severity: 'critical',
+    message,
+  });
+}
+
+function evaluateAzReposPrPublishGate(view) {
+  const publish = azDraftPublish(view.command);
+  if (!publish) return null;
+  const prId = azPrId(view.command);
+  const shown = `${publish.flag} ${publish.value}`;
+  if (!prId) {
+    return azDeny(
+      view,
+      `Denied \`${String(view.command || '').trim()}\`: the pull request id could not be parsed, so a review comment from the other person is not proven.`
+    );
+  }
+  let reviewed = false;
+  try {
+    reviewed = crossReviewLookup(prId, view.command) === true;
+  } catch (_) {
+    reviewed = false;
+  }
+  if (reviewed) return null;
+  return azDeny(
+    view,
+    `Denied \`az repos pr update ${shown}\` on PR #${prId}: a review comment from the other person does not exist yet. psn-skills auto-merges a non-draft once checks pass.`
+  );
+}
+
+function evaluateRepeatedMistakeGates(input = {}) {
+  const view = repeatedMistakeView(input);
+  return evaluateSwarmClaimLostWriteGate(view)
+    || evaluateTeamsSingleReplyGate(view)
+    || evaluateAzReposPrPublishGate(view);
+}
+
 function evaluateUnconditionalHardFloor(input = {}, options = {}) {
   const secretGuard = evaluateSecretGuard(input);
   if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
@@ -4100,8 +4630,11 @@ function evaluateUnconditionalHardFloor(input = {}, options = {}) {
   const financialHardFloor = evaluateFinancialHardFloor(input, false, options);
   if (financialHardFloor) return { hardFloor: financialHardFloor, securityScan };
 
+  const selfProtect = evaluateSelfProtectHardFloor(input);
+  if (selfProtect) return { hardFloor: selfProtect, securityScan };
+
   return {
-    hardFloor: evaluateSelfProtectHardFloor(input),
+    hardFloor: evaluateRepeatedMistakeGates(input),
     securityScan,
   };
 }
@@ -4248,14 +4781,19 @@ function formatOutput(result, behavioralContext) {
     const reminder = behavioralContext ? buildReminderOutput(behavioralContext) : {};
     const reminderSuffix = behavioralContext ? `\n\nSystem reminder:\n${behavioralContext}` : '';
     const proCta = result.gate === 'financial-control' ? '' : (buildBlockActionProCta() || '');
-    return JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: 'PreToolUse',
-        ...reminder,
-        permissionDecision: 'deny',
-        permissionDecisionReason: `[GATE:${result.gate}] ${result.message}${reasoningSuffix}${reminderSuffix}${proCta}`,
-      },
-    });
+    const hookSpecificOutput = {
+      hookEventName: 'PreToolUse',
+      ...reminder,
+      permissionDecision: 'deny',
+      permissionDecisionReason: `[GATE:${result.gate}] ${result.message}${reasoningSuffix}${reminderSuffix}${proCta}`,
+    };
+    const payload = { hookSpecificOutput };
+    if (result.endTurn) {
+      payload.continue = false;
+      payload.stopReason = `[GATE:${result.gate}] ${result.message}`;
+      hookSpecificOutput.continue = false;
+    }
+    return JSON.stringify(payload);
   }
 
   if (result.decision === 'approve') {
@@ -5148,6 +5686,11 @@ module.exports = {
   hasAction,
   listSessionActions,
   clearSessionActions,
+  observeSwarmClaimResult,
+  observeTeamsSendResult,
+  evaluateRepeatedMistakeGates,
+  setCrossReviewLookup,
+  formatObserveStop,
   loadClaimGates,
   registerClaimGate,
   normalizeGoalContract,
