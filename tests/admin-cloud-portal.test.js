@@ -244,6 +244,14 @@ test('POST /admin/login sets HttpOnly session cookie and unlocks real-time sign-
     const repeatLastWeekAns = await askDf('how much money we made in the last week?', 'test-session-distinct');
     assert.notEqual(repeatLastWeekAns.answer, lastWeekAns.answer);
     assert.match(repeatLastWeekAns.answer, /Granular Ledger Drill-Down/);
+
+    // 10. Ask Dialogflow about Nanbeige4.3-33B architectural steal (preserve_thinking + 33B->3B distillation)
+    const nanbeigeAns = await askDf('How did we steal Nanbeige4.3-33B preserve_thinking and 33B->3B distillation?');
+    assert.equal(nanbeigeAns.intent, 'admin.herdr_swarm');
+    assert.equal(nanbeigeAns.subIntent, 'nanbeige_agentic_steal');
+    assert.match(nanbeigeAns.answer, /Nanbeige4\.3-33B Architectural Steal is LIVE/);
+    assert.match(nanbeigeAns.answer, /preserve_thinking=true/);
+    assert.match(nanbeigeAns.answer, /33B Teacher -> 3B Student Distillation/);
   } finally {
     await close();
   }
@@ -253,6 +261,7 @@ test('Herdr MoE Swarm deduplicates identical broadcast prompts across agents and
   const {
     generateSwarmSow,
     evaluateSwarmCandidatesWithJudge,
+    distillTeacherTrajectoryToStudentGate,
   } = require('../src/herdr-moe-swarm');
   const tmpSwarmDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-herdr-swarm-test-'));
   try {
@@ -267,6 +276,9 @@ test('Herdr MoE Swarm deduplicates identical broadcast prompts across agents and
     assert.equal(sow1.deduplicationStatus, 'ELECTED_PRIMARY_SOW_ROUTER');
     assert.equal(sow1.assignedSeatId, 'architect@herdr');
     assert.ok(sow1.tokenEfficiency.tokenSavingsPct >= 70);
+    assert.equal(sow1.nanbeigeSteal.activePolicy.preserve_thinking, true);
+    assert.equal(sow1.nanbeigeSteal.activePolicy.enable_thinking, true);
+    assert.equal(sow1.nanbeigeSteal.maxContextTokens, 524288);
 
     const sow2 = generateSwarmSow({
       prompt: broadcastPrompt,
@@ -310,6 +322,11 @@ test('Herdr MoE Swarm deduplicates identical broadcast prompts across agents and
 
     assert.equal(evaluation.winner.agent, 'antigravity');
     assert.ok(evaluation.winner.finalScore > evaluation.rankings[1].finalScore);
+
+    const distilled = distillTeacherTrajectoryToStudentGate(evaluation, broadcastPrompt);
+    assert.equal(distilled.distilled, true);
+    assert.equal(distilled.studentTarget, 'thumbgate-local-3b-gate');
+    assert.equal(distilled.teacherAgent, 'antigravity');
   } finally {
     fs.rmSync(tmpSwarmDir, { recursive: true, force: true });
   }
