@@ -70,17 +70,17 @@ for (const rel of tracked()) {
     continue;
   }
   scanned++;
-  if (src.includes('eval(')) continue; // identifiers may be referenced dynamically
+  if (/\beval\s*\(/.test(src)) continue; // identifiers may be referenced dynamically
 
   const lines = src.split('\n');
   const names = [];
   lines.forEach((line, i) => {
-    const s = SINGLE.exec(line);
+    const s = line.match(SINGLE);
     if (s) {
       names.push({ name: s[1], line: i + 1 });
       return;
     }
-    const d = DESTRUCT.exec(line);
+    const d = line.match(DESTRUCT);
     if (d) {
       d[1]
         .split(',')
