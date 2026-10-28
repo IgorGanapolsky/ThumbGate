@@ -30,6 +30,22 @@ const {
   normalizeFeedbackText,
 } = require('./feedback-quality');
 
+const IMPERATIVE_CLAUSE_RE = /^(?:always|never|do\s+not|don'?t|make\s+sure|ensure|run|check|read|verify|search|ask|use|send|wait|confirm|test|probe|stop|avoid|keep|prefer|draft|look|first|only|reply)\b/i;
+const MODAL_CLAUSE_RE = /\b(?:should|must|instead|next\s+time)\b/i;
+const MIN_RULE_LENGTH = 12;
+
+// Pull the corrective instruction out of free text such as
+// "skipped tests before claiming success; run the tests before replying".
+function inferRuleFromText(text) {
+  const clauses = String(text || '')
+    .split(/[.;!?\n]+|\s+[—–-]\s+/)
+    .map((clause) => clause.trim().replace(/^[^a-z0-9]+/i, ''))
+    .filter((clause) => clause.length >= MIN_RULE_LENGTH);
+  return clauses.find((clause) => IMPERATIVE_CLAUSE_RE.test(clause))
+    || clauses.find((clause) => MODAL_CLAUSE_RE.test(clause))
+    || null;
+}
+
 const INFERRED_TAG_RULES = [
   { tag: 'claw-style', keywords: ['claw', 'enterprise-claw', 'openshell', 'dynamic-tool', 'screen-interaction', 'computer-use'] },
   { tag: 'hybrid-inference', keywords: ['hybrid', 'cloud-escalation', 'local-route', 'hybrid-route', 'perplexity-pc'] },
@@ -209,10 +225,21 @@ function resolveFeedbackAction(params) {
         : 'Negative feedback is too vague to promote — describe what failed in one sentence';
       return { type: 'no-action', reason };
     }
+    // A mistake with no rule cannot change the next run; it only adds noise to
+    // retrieval. Repair from an imperative clause the user already wrote, else refuse.
+    const rule = normalizeFeedbackText(whatToChange)
+      ? whatToChange
+      : inferRuleFromText(whatWentWrong) || inferRuleFromText(context);
+    if (!rule) {
+      return {
+        type: 'no-action',
+        reason: 'Negative feedback has no whatToChange — say what to do differently next time so the lesson has a rule',
+      };
+    }
 
     const content = [
       whatWentWrong ? `What went wrong: ${whatWentWrong}` : `Context: ${context}`,
-      whatToChange ? `How to avoid: ${whatToChange}` : 'Action needed: investigate and prevent recurrence',
+      `How to avoid: ${rule}`,
       reasoning ? `Reasoning: ${reasoning}` : null,
       visualEvidence ? `Visual Evidence: ${visualEvidence}` : null,
     ].filter(Boolean).join('\n');

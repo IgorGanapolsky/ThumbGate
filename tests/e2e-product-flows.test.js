@@ -652,6 +652,7 @@ test('E2E: contradictory feedback drives uncertainty through the MCP tool surfac
   captureFeedback({
     signal: 'down',
     context: 'The user now says spaces are required and tabs are no longer acceptable.',
+    whatToChange: 'Indent with spaces in this project, not tabs.',
     tags: ['formatting', 'e2e'],
   });
   captureFeedback({

@@ -156,6 +156,49 @@ function resolveProjectDir(options = {}) {
   return normalizeDir(options.cwd || env.PWD || PROJECT_ROOT) || PROJECT_ROOT;
 }
 
+// Resolve the main checkout that owns `startDir`, so every git worktree of a
+// repo shares one project identity. Reads `.git` files directly instead of
+// spawning git, because this runs inside per-prompt hooks.
+function resolveGitCommonRoot(startDir) {
+  let dir = normalizeDir(startDir);
+  while (dir) {
+    const dotGit = path.join(dir, '.git');
+    let stat = null;
+    try { stat = fs.statSync(dotGit); } catch { /* keep walking */ }
+    if (stat && stat.isDirectory()) return dir;
+    if (stat && stat.isFile()) {
+      try {
+        const match = /^gitdir:\s*(.+)$/m.exec(fs.readFileSync(dotGit, 'utf8'));
+        if (!match) return dir;
+        const gitDir = path.resolve(dir, match[1].trim());
+        const commonFile = path.join(gitDir, 'commondir');
+        const commonDir = fs.existsSync(commonFile)
+          ? path.resolve(gitDir, fs.readFileSync(commonFile, 'utf8').trim())
+          : gitDir;
+        return path.basename(commonDir) === '.git' ? path.dirname(commonDir) : dir;
+      } catch {
+        return dir;
+      }
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+  return null;
+}
+
+function resolveProjectIdentity(options = {}) {
+  const cwd = normalizeDir(options.cwd);
+  if (!cwd || isTransientProjectDir(cwd, options)) return null;
+  const root = resolveGitCommonRoot(cwd) || cwd;
+  if (isTransientProjectDir(root, options)) return null;
+  return { projectDir: root, projectId: path.basename(root) };
+}
+
+function getGlobalTierDir(options = {}) {
+  return path.join(getHomeDir(options), '.thumbgate', 'global');
+}
+
 function getProjectName(cwd = process.cwd()) {
   return path.basename(cwd || PROJECT_ROOT) || 'default';
 }
@@ -279,6 +322,7 @@ module.exports = {
   getActiveProjectStatePath,
   getFeedbackPaths,
   getGlobalFeedbackDir,
+  getGlobalTierDir,
   getHomeDir,
   getLegacyFeedbackDir,
   getFallbackFeedbackDir,
@@ -289,7 +333,9 @@ module.exports = {
   readActiveProjectState,
   listFallbackFeedbackDirs,
   listFeedbackArtifactPaths,
+  resolveGitCommonRoot,
   resolveProjectDir,
+  resolveProjectIdentity,
   resolveFallbackArtifactPath,
   resolveFeedbackDir,
   writeActiveProjectState,
