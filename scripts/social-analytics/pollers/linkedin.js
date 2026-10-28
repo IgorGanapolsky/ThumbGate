@@ -250,12 +250,12 @@ async function pollLinkedIn(db) {
     console.warn('[linkedin] To read posts, re-authorize with r_member_social scope.');
   }
 
-  for (const post of posts) {
+  const postTasks = posts.map(async (post) => {
     // Post URN is at post.id for the Posts API (urn:li:share:... or urn:li:ugcPost:...).
     const postUrn = post.id ?? post.urn ?? '';
     if (!postUrn) {
       console.warn('[linkedin] Post missing id/urn, skipping');
-      continue;
+      return;
     }
 
     const analytics = await fetchPostAnalytics(token, postUrn);
@@ -296,7 +296,9 @@ async function pollLinkedIn(db) {
 
     upsertMetric(db, record);
     console.log(`[linkedin] Upserted metric for post ${postUrn} (${contentType})`);
-  }
+  });
+
+  await Promise.all(postTasks);
 
   // Follower / connection snapshot.
   try {
