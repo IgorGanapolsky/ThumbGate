@@ -145,50 +145,52 @@ async function pollThreads(db) {
   const posts = await fetchThreadsPosts(token, userId);
   console.log(`[threads] Got ${posts.length} thread posts`);
 
-  for (const post of posts) {
-    const postId = post.id;
+  await Promise.all(
+    posts.map(async (post) => {
+      const postId = post.id;
 
-    // Fetch per-post insights (best-effort; not all post types support all metrics).
-    const insights = await fetchThreadsInsights(token, postId);
+      // Fetch per-post insights (best-effort; not all post types support all metrics).
+      const insights = await fetchThreadsInsights(token, postId);
 
-    // Threads API returns likes/replies/reposts/quotes both on the post object
-    // and via insights. Prefer insights values when available; fall back to
-    // the top-level fields returned by the posts endpoint.
-    const likes = insights.likes ?? post.likes ?? 0;
-    const replies = insights.replies ?? post.replies ?? 0;
-    const reposts = insights.reposts ?? post.reposts ?? 0;
-    const quotes = insights.quotes ?? post.quotes ?? 0;
-    const views = insights.views ?? 0;
+      // Threads API returns likes/replies/reposts/quotes both on the post object
+      // and via insights. Prefer insights values when available; fall back to
+      // the top-level fields returned by the posts endpoint.
+      const likes = insights.likes ?? post.likes ?? 0;
+      const replies = insights.replies ?? post.replies ?? 0;
+      const reposts = insights.reposts ?? post.reposts ?? 0;
+      const quotes = insights.quotes ?? post.quotes ?? 0;
+      const views = insights.views ?? 0;
 
-    const raw = {
-      platform: 'threads',
-      content_type: 'thread',
-      post_id: postId,
-      post_url: post.permalink ?? null,
-      published_at: post.timestamp ?? null,
-      metric_date: today,
-      impressions: views,
-      reach: 0,
-      likes: likes,
-      comments: replies,
-      shares: reposts + quotes,
-      saves: 0,
-      clicks: 0,
-      video_views: 0,
-      followers_delta: 0,
-      fetched_at: fetchedAt,
-      extra_json: JSON.stringify({
-        media_type: post.media_type ?? null,
-        is_reply: post.is_reply ?? false,
-        text_snippet: (post.text ?? '').slice(0, 120),
-        reposts,
-        quotes,
-      }),
-    };
+      const raw = {
+        platform: 'threads',
+        content_type: 'thread',
+        post_id: postId,
+        post_url: post.permalink ?? null,
+        published_at: post.timestamp ?? null,
+        metric_date: today,
+        impressions: views,
+        reach: 0,
+        likes: likes,
+        comments: replies,
+        shares: reposts + quotes,
+        saves: 0,
+        clicks: 0,
+        video_views: 0,
+        followers_delta: 0,
+        fetched_at: fetchedAt,
+        extra_json: JSON.stringify({
+          media_type: post.media_type ?? null,
+          is_reply: post.is_reply ?? false,
+          text_snippet: (post.text ?? '').slice(0, 120),
+          reposts,
+          quotes,
+        }),
+      };
 
-    upsertMetric(db, raw);
-    console.log(`[threads] Upserted metric for post ${postId}`);
-  }
+      upsertMetric(db, raw);
+      console.log(`[threads] Upserted metric for post ${postId}`);
+    })
+  );
 
   // Fetch profile for follower snapshot.
   try {
