@@ -100,21 +100,40 @@ async function main() {
   const threads = {};
   let requestCount = 0;
 
+  const tasks = [];
   for (const sub of SUBREDDITS) {
     for (const keyword of KEYWORDS) {
-      if (requestCount > 0) await new Promise(r => setTimeout(r, DELAY));
+      tasks.push({ sub, keyword });
+    }
+  }
 
-      console.log(`  Searching r/${sub} for "${keyword}"...`);
-      const results = await searchSubreddit(sub, keyword);
+  const MAX_CONCURRENT = 5;
+  const inFlight = new Set();
 
+  for (const task of tasks) {
+    if (requestCount > 0) await new Promise(r => setTimeout(r, DELAY));
+
+    while (inFlight.size >= MAX_CONCURRENT) {
+      await Promise.race(inFlight);
+    }
+
+    requestCount++;
+    console.log(`  Searching r/${task.sub} for "${task.keyword}"...`);
+
+    const p = searchSubreddit(task.sub, task.keyword).then(results => {
       results.forEach(thread => {
         if (!threads[thread.id]) {
           threads[thread.id] = thread;
         }
       });
-      requestCount++;
-    }
+    }).catch(console.error).finally(() => {
+      inFlight.delete(p);
+    });
+
+    inFlight.add(p);
   }
+
+  await Promise.all(inFlight);
 
   const sorted = Object.values(threads)
     .sort((a, b) => scoreThread(b) - scoreThread(a))
