@@ -133,6 +133,13 @@ test('POST /admin/login sets HttpOnly session cookie and unlocks real-time sign-
     assert.match(portalHtml, /cus_test_acme/);
     assert.match(portalHtml, /founder@acme\.dev/);
     assert.match(portalHtml, /\$390\.00/);
+    assert.match(portalHtml, /data-kpi-card="profit"/);
+    assert.match(portalHtml, /data-kpi-card="signups"/);
+    assert.match(portalHtml, /data-kpi-card="customers"/);
+    assert.match(portalHtml, /data-kpi-card="visitors"/);
+    assert.match(portalHtml, /data-kpi-card="gcp-spend"/);
+    assert.match(portalHtml, /id="kpi-drilldown-drawer"/);
+    assert.match(portalHtml, /class="clickable-row"/);
 
     const rtRes = await fetch(`${baseUrl}/v1/admin/realtime`, {
       headers: { Cookie: cookiePair },

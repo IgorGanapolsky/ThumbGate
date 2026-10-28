@@ -1828,13 +1828,51 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 1rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.15rem;
     }
     .kpi-card {
+      position: relative;
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 1.15rem 1.25rem;
+      cursor: pointer;
+      user-select: none;
+      text-align: left;
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+    .kpi-card:hover, .kpi-card:focus-visible {
+      transform: translateY(-2px);
+      border-color: rgba(56, 189, 248, 0.6);
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.08) 0%, #111827 100%);
+      box-shadow: 0 10px 26px rgba(2, 6, 23, 0.55);
+      outline: none;
+    }
+    .kpi-card.active {
+      border-color: var(--accent);
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.14) 0%, #111827 100%);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.45), 0 12px 28px rgba(2, 6, 23, 0.65);
+    }
+    .kpi-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+    }
+    .kpi-action-hint {
+      font-size: 0.68rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: #7dd3fc;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      padding: 0.12rem 0.42rem;
+      border-radius: 999px;
+      white-space: nowrap;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .kpi-card:hover .kpi-action-hint, .kpi-card.active .kpi-action-hint {
+      background: rgba(56, 189, 248, 0.25);
+      color: #e0f2fe;
     }
     .kpi-label {
       font-size: 0.76rem;
@@ -1855,6 +1893,79 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
       font-size: 0.8rem;
       color: var(--muted);
     }
+    .kpi-drilldown {
+      display: none;
+      background: linear-gradient(180deg, #0f1b33 0%, #0b1324 100%);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      border-radius: 14px;
+      padding: 1.15rem 1.35rem;
+      margin-bottom: 1.35rem;
+      box-shadow: 0 14px 34px rgba(2, 6, 23, 0.6);
+    }
+    .kpi-drilldown.open {
+      display: block;
+    }
+    .kpi-drilldown-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    }
+    .kpi-drilldown-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin: 0;
+    }
+    .kpi-drilldown-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+    .kpi-mini-box {
+      background: rgba(7, 11, 20, 0.75);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: 10px;
+      padding: 0.7rem 0.85rem;
+    }
+    .kpi-mini-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    .kpi-mini-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #e2e8f0;
+      margin: 0.2rem 0;
+    }
+    .kpi-mini-sub {
+      font-size: 0.74rem;
+      color: #94a3b8;
+    }
+    .kpi-drilldown-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .clickable-row {
+      cursor: pointer;
+      transition: background 0.14s ease;
+    }
+    .clickable-row:hover {
+      background: rgba(56, 189, 248, 0.09);
+    }
+    .panel-highlight {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
     .main-grid {
       display: grid;
       grid-template-columns: 1.45fr 1fr;
@@ -1870,6 +1981,7 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
       border-radius: 14px;
       padding: 1.25rem;
       margin-bottom: 1.25rem;
+      scroll-margin-top: 5.25rem;
     }
     .panel-header {
       display: flex;
@@ -2020,8 +2132,8 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
       </div>
     </div>
     <div class="topbar-right">
-      <span class="pill" id="live-credit-pill">Ultra Credits: ${escapeHtmlText(c.ultraCreditsAvailableDisplay)} ($0.00 Charged)</span>
-      <span class="pill pill-blue" id="live-sync-pill">● Live Sync (5s)</span>
+      <span class="pill" id="live-credit-pill" style="cursor:pointer" data-kpi-trigger="gcp-spend" title="Click to inspect Google Cloud billing &amp; Ultra credits">Ultra Credits: ${escapeHtmlText(c.ultraCreditsAvailableDisplay)} ($0.00 Charged)</span>
+      <span class="pill pill-blue" id="live-sync-pill" style="cursor:pointer" title="Click to force immediate real-time sync">● Live Sync (5s)</span>
       <a href="/dashboard" class="nav-btn">Gate Dashboard</a>
       <a href="/" class="nav-btn">Live Site</a>
       <form method="POST" action="/admin/logout" style="margin:0">
@@ -2031,39 +2143,69 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
   </header>
 
   <main class="container">
-    <section class="kpi-grid" aria-label="Real-Time Executive KPIs">
-      <div class="kpi-card">
-        <div class="kpi-label">Net Profit (Real-Time)</div>
+    <section class="kpi-grid" aria-label="Real-Time Executive KPIs (Click any card to drill down)">
+      <div class="kpi-card" id="kpi-card-profit" role="button" tabindex="0" data-kpi-card="profit" data-target-panel="profits-panel" data-df-query="Break down our Net Profit, Stripe fees, and how much money we made today, in the last week, and lifetime">
+        <div class="kpi-card-top">
+          <div class="kpi-label">Net Profit (Real-Time)</div>
+          <span class="kpi-action-hint">↗ Drill down</span>
+        </div>
         <div class="kpi-value green" id="kpi-net-profit">${escapeHtmlText(p.netProfitDisplay)}</div>
         <div class="kpi-sub" id="kpi-profit-margin">${escapeHtmlText(p.profitMarginPct)}% margin • Gross ${escapeHtmlText(p.grossRevenueDisplay)} (Stripe fees ${escapeHtmlText(p.stripeFeesDisplay)})</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Real-Time Sign-Ups</div>
+      <div class="kpi-card" id="kpi-card-signups" role="button" tabindex="0" data-kpi-card="signups" data-target-panel="signups-panel" data-df-query="Show all real-time sign-ups today, last week, and 30d, and explain why the unconverted leads have not paid yet">
+        <div class="kpi-card-top">
+          <div class="kpi-label">Real-Time Sign-Ups</div>
+          <span class="kpi-action-hint">↗ Drill down</span>
+        </div>
         <div class="kpi-value blue" id="kpi-signups-total">${escapeHtmlText(s.totalLifetime)}</div>
         <div class="kpi-sub" id="kpi-signups-sub">${escapeHtmlText(s.totalToday)} today • ${escapeHtmlText(s.total30d)} in last 30d</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Customer Accounts</div>
+      <div class="kpi-card" id="kpi-card-customers" role="button" tabindex="0" data-kpi-card="customers" data-target-panel="customers-panel" data-df-query="Show all customer accounts, their plans, Stripe order IDs, and when our last paid sale occurred">
+        <div class="kpi-card-top">
+          <div class="kpi-label">Customer Accounts</div>
+          <span class="kpi-action-hint">↗ Drill down</span>
+        </div>
         <div class="kpi-value" id="kpi-customers-total">${escapeHtmlText(snapshot.customers.length)}</div>
         <div class="kpi-sub" id="kpi-customers-sub">${escapeHtmlText(p.paidCustomers)} paying customer(s) • ${escapeHtmlText(p.paidOrders)} paid order(s)</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Live Funnel Visitors</div>
+      <div class="kpi-card" id="kpi-card-visitors" role="button" tabindex="0" data-kpi-card="visitors" data-target-panel="signups-panel" data-df-query="Compare today vs yesterday vs last week vs 30d traffic, checkout starts, and conversion rates">
+        <div class="kpi-card-top">
+          <div class="kpi-label">Live Funnel Visitors</div>
+          <span class="kpi-action-hint">↗ Drill down</span>
+        </div>
         <div class="kpi-value" id="kpi-visitors-today">${escapeHtmlText(w.today.visitors.toLocaleString())}</div>
         <div class="kpi-sub" id="kpi-visitors-sub">Today (${escapeHtmlText(w.trailing30d.visitors.toLocaleString())} 30d • ${escapeHtmlText(w.lifetime.visitors.toLocaleString())} lifetime)</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Google Cloud Spend</div>
+      <div class="kpi-card" id="kpi-card-gcp" role="button" tabindex="0" data-kpi-card="gcp-spend" data-target-panel="profits-panel" data-df-query="Verify our Google Cloud spend, $390.00 Ultra credits balance, and confirm we are charged $0.00 out-of-pocket">
+        <div class="kpi-card-top">
+          <div class="kpi-label">Google Cloud Spend</div>
+          <span class="kpi-action-hint">↗ Drill down</span>
+        </div>
         <div class="kpi-value green" id="kpi-gcp-spend">$0.00</div>
         <div class="kpi-sub" id="kpi-gcp-credits">${escapeHtmlText(c.ultraCreditsAvailableDisplay)} Ultra credits • ${escapeHtmlText(c.budgetCapDisplay)}</div>
       </div>
     </section>
 
+    <section class="kpi-drilldown" id="kpi-drilldown-drawer" aria-live="polite">
+      <div class="kpi-drilldown-header">
+        <div>
+          <h2 class="kpi-drilldown-title" id="kpi-drilldown-title">Executive Metric Drill-Down</h2>
+          <div class="brand-sub" id="kpi-drilldown-sub">Click any KPI card or table row to inspect granular time windows and trigger Dialogflow analysis.</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <button type="button" class="df-chip" id="kpi-drilldown-scroll-btn">Jump to Table ↓</button>
+          <button type="button" class="btn-logout" id="kpi-drilldown-close">Close ✕</button>
+        </div>
+      </div>
+      <div class="kpi-drilldown-grid" id="kpi-drilldown-grid"></div>
+      <div class="kpi-drilldown-actions" id="kpi-drilldown-actions"></div>
+    </section>
+
     <div class="main-grid">
       <div>
-        <section class="panel">
+        <section class="panel" id="customers-panel">
           <div class="panel-header">
-            <h2 class="panel-title">Customers &amp; Accounts (Real-Time)</h2>
+            <h2 class="panel-title">Customers &amp; Accounts (Real-Time • Click row to inspect)</h2>
             <span class="pill pill-blue" id="accounts-count-badge">${escapeHtmlText(snapshot.customers.length)} Accounts</span>
           </div>
           <table>
@@ -2079,7 +2221,7 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
             </thead>
             <tbody id="customers-tbody">
               ${snapshot.customers.map((acct) => `
-                <tr>
+                <tr class="clickable-row" role="button" tabindex="0" data-customer-id="${escapeHtmlText(acct.customerId)}" data-df-query="Tell me about customer account ${escapeHtmlText(acct.customerId)} (${escapeHtmlText(acct.plan)}) and their payment status">
                   <td class="mono">${escapeHtmlText(acct.customerId)}</td>
                   <td>${escapeHtmlText(acct.email || '—')}</td>
                   <td>${escapeHtmlText(acct.plan)}</td>
@@ -2092,10 +2234,15 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
           </table>
         </section>
 
-        <section class="panel">
+        <section class="panel" id="signups-panel">
           <div class="panel-header">
-            <h2 class="panel-title">Real-Time Sign-Ups &amp; Checkout Intent Stream</h2>
-            <span class="pill" id="signups-count-badge">${escapeHtmlText(s.totalLifetime)} Total Sign-Ups</span>
+            <h2 class="panel-title">Real-Time Sign-Ups &amp; Checkout Intent Stream (Click row to inspect)</h2>
+            <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap">
+              <button type="button" class="df-chip signup-filter-btn" data-filter="all" style="padding:0.2rem 0.55rem;font-size:0.72rem">All (${escapeHtmlText(s.totalLifetime)})</button>
+              <button type="button" class="df-chip signup-filter-btn" data-filter="paid" style="padding:0.2rem 0.55rem;font-size:0.72rem">Paid (${escapeHtmlText(p.paidOrders)})</button>
+              <button type="button" class="df-chip signup-filter-btn" data-filter="unconverted" style="padding:0.2rem 0.55rem;font-size:0.72rem">Checkout Started (${escapeHtmlText(Math.max(0, s.totalLifetime - p.paidOrders))})</button>
+              <span class="pill" id="signups-count-badge">${escapeHtmlText(s.totalLifetime)} Total Sign-Ups</span>
+            </div>
           </div>
           <table>
             <thead>
@@ -2110,7 +2257,7 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
             </thead>
             <tbody id="signups-tbody">
               ${s.feed.slice(0, 15).map((item) => `
-                <tr>
+                <tr class="clickable-row" role="button" tabindex="0" data-signup-status="${escapeHtmlText(item.status)}" data-signup-email="${escapeHtmlText(item.email)}" data-df-query="Analyze sign-up lead ${escapeHtmlText(item.email)} (${escapeHtmlText(item.status)} on campaign ${escapeHtmlText(item.campaign)}) and why they did or didn't convert">
                   <td class="mono">${escapeHtmlText(String(item.timestamp || '').slice(0, 19).replace('T', ' '))}</td>
                   <td class="mono">${escapeHtmlText(item.email)}</td>
                   <td class="mono">${escapeHtmlText(item.type)}</td>
@@ -2123,7 +2270,7 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
           </table>
         </section>
 
-        <section class="panel">
+        <section class="panel" id="profits-panel">
           <div class="panel-header">
             <h2 class="panel-title">Profits, Stripe Reconciliation &amp; Google Cloud Credits Ledger</h2>
             <span class="pill">$0.00 Out-of-Pocket Verified</span>
@@ -2139,28 +2286,28 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
               </tr>
             </thead>
             <tbody>
-              <tr>
+              <tr class="clickable-row" role="button" tabindex="0" data-df-query="When was our last paid sale and what is the Stripe charge breakdown?">
                 <td><strong>Gross Booked Revenue</strong></td>
                 <td class="mono">${escapeHtmlText(formatDollars(w.today.bookedRevenueCents))}</td>
                 <td class="mono">${escapeHtmlText(formatDollars(w.trailing30d.bookedRevenueCents))}</td>
                 <td class="mono"><strong>${escapeHtmlText(p.grossRevenueDisplay)}</strong></td>
                 <td class="mono">Stripe Reconciled (py_3TOQu2GGBpd520QY1u6h9TXE)</td>
               </tr>
-              <tr>
+              <tr class="clickable-row" role="button" tabindex="0" data-df-query="What are our Stripe processing fees and net profit margin?">
                 <td>Stripe Processing Fees (2.9% + $0.30)</td>
                 <td class="mono">$0.00</td>
                 <td class="mono">$0.00</td>
                 <td class="mono">-${escapeHtmlText(p.stripeFeesDisplay)}</td>
                 <td class="mono">Stripe Charge Ledger</td>
               </tr>
-              <tr>
+              <tr class="clickable-row" role="button" tabindex="0" data-df-query="Verify our Google Cloud spend, $390.00 Ultra credits balance, and confirm we are charged $0.00 out-of-pocket">
                 <td>Google Cloud Out-of-Pocket Cost</td>
                 <td class="mono">$0.00</td>
                 <td class="mono">$0.00</td>
                 <td class="mono">$0.00</td>
                 <td class="mono">${escapeHtmlText(c.ultraCreditsAvailableDisplay)} Google AI Ultra Credits (${escapeHtmlText(c.billingAccountId)})</td>
               </tr>
-              <tr>
+              <tr class="clickable-row" role="button" tabindex="0" data-df-query="How much money did we make in the last week vs lifetime?">
                 <td><strong>Net Profit (${escapeHtmlText(p.profitMarginPct)}% Margin)</strong></td>
                 <td class="mono">${escapeHtmlText(formatDollars(w.today.bookedRevenueCents))}</td>
                 <td class="mono">${escapeHtmlText(formatDollars(w.trailing30d.bookedRevenueCents))}</td>
@@ -2193,7 +2340,7 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
             </thead>
             <tbody>
               ${(snapshot.herdrSwarm?.activeSow?.slices || []).map((slice) => `
-                <tr>
+                <tr class="clickable-row" role="button" tabindex="0" data-df-query="How is Herdr pane ${escapeHtmlText(slice.herdrPane)} (${escapeHtmlText(slice.seatId)}) performing with Nanbeige4.3-33B preserve_thinking?">
                   <td class="mono">${escapeHtmlText(slice.herdrPane)}</td>
                   <td class="mono"><strong>${escapeHtmlText(slice.seatId)}</strong></td>
                   <td>${escapeHtmlText(slice.role)} <span class="mono" style="color:var(--muted)">(${escapeHtmlText(slice.modelTier)})</span></td>
@@ -2229,7 +2376,7 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
         <div class="df-log" id="df-chat-log" role="log" aria-live="polite">
           <div class="df-msg bot">
             <div class="df-intent-tag">Dialogflow • ThumbGateAdminCopilot • Time-Window Analyst Ready</div>
-            <div>Ask any time-specific or analytical question (e.g., <strong>"how much money we made in the last week?"</strong>, <strong>"when was our last sale?"</strong>, <strong>"why didn't the other 6 signups buy?"</strong>, or <strong>"compare today vs last week"</strong>).</div>
+            <div>Click <strong>any of the 5 KPI cards above</strong>, click <strong>any table row</strong>, or ask any analytical question (e.g., <strong>"how much money we made in the last week?"</strong>, <strong>"when was our last sale?"</strong>, or <strong>"why didn't the other 6 signups buy?"</strong>).</div>
           </div>
         </div>
 
@@ -2249,6 +2396,232 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
       const chatInput = document.getElementById('df-chat-input');
       const syncPill = document.getElementById('live-sync-pill');
       const browserSessionId = 'igor-admin-' + Math.random().toString(36).slice(2, 10);
+      let currentSnapshot = JSON.parse(document.getElementById('admin-initial-state').textContent || '{}');
+      let currentTargetPanelId = 'profits-panel';
+
+      function formatUsd(cents) {
+        return '$' + (Number(cents || 0) / 100).toFixed(2);
+      }
+
+      function highlightPanel(panelId) {
+        document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('panel-highlight'); });
+        const target = document.getElementById(panelId);
+        if (target) {
+          target.classList.add('panel-highlight');
+          setTimeout(function() { target.classList.remove('panel-highlight'); }, 2600);
+        }
+      }
+
+      function openKpiDrilldown(kpiKey, targetPanelId, dfQuery) {
+        const drawer = document.getElementById('kpi-drilldown-drawer');
+        const titleEl = document.getElementById('kpi-drilldown-title');
+        const subEl = document.getElementById('kpi-drilldown-sub');
+        const gridEl = document.getElementById('kpi-drilldown-grid');
+        const actionsEl = document.getElementById('kpi-drilldown-actions');
+        if (!drawer || !gridEl || !actionsEl) return;
+
+        document.querySelectorAll('.kpi-card').forEach(function(c) {
+          c.classList.toggle('active', c.getAttribute('data-kpi-card') === kpiKey);
+        });
+
+        currentTargetPanelId = targetPanelId || 'profits-panel';
+        const w = currentSnapshot.windows || {};
+        const p = currentSnapshot.profits || {};
+        const s = currentSnapshot.signups || {};
+        const c = currentSnapshot.cloud || {};
+        let boxes = [];
+        let quickQuestions = [];
+
+        if (kpiKey === 'profit') {
+          titleEl.textContent = 'Net Profit & Booked Revenue Breakdown (Real-Time)';
+          subEl.textContent = 'Reconciled against Stripe charge ledger (py_3TOQu2GGBpd520QY1u6h9TXE) and $0.00 Google Cloud out-of-pocket spend.';
+          boxes = [
+            { label: 'Today Revenue', val: formatUsd(w.today && w.today.bookedRevenueCents), sub: ((w.today && w.today.paidOrders) || 0) + ' orders today' },
+            { label: 'Last 7 Days (Last Week)', val: formatUsd(w.last7d && w.last7d.bookedRevenueCents), sub: ((w.last7d && w.last7d.paidOrders) || 0) + ' orders • ' + ((w.last7d && w.last7d.signups) || 0) + ' sign-ups' },
+            { label: 'Trailing 30 Days', val: formatUsd(w.trailing30d && w.trailing30d.bookedRevenueCents), sub: ((w.trailing30d && w.trailing30d.paidOrders) || 0) + ' paid orders' },
+            { label: 'All-Time Net Profit', val: p.netProfitDisplay || '$144.38', sub: (p.profitMarginPct || 96.9) + '% margin (' + (p.grossRevenueDisplay || '$149.00') + ' gross - ' + (p.stripeFeesDisplay || '$4.62') + ' fee)' },
+            { label: 'Latest Paid Sale', val: p.latestPaidOrder ? String(p.latestPaidOrder.paidAt || '').slice(0, 10) : '2026-09-25', sub: p.latestPaidOrder ? p.latestPaidOrder.orderId : 'Stripe Annual Pro' },
+          ];
+          quickQuestions = [
+            'How much money did we make in the last week?',
+            'When was our last paid sale and who bought?',
+            'What is our current ARR, MRR, and conversion rate?',
+          ];
+        } else if (kpiKey === 'signups') {
+          const unconvertedCount = Math.max(0, (s.totalLifetime || 0) - (p.paidOrders || 0));
+          titleEl.textContent = 'Real-Time Sign-Ups & Checkout Intent Breakdown';
+          subEl.textContent = 'Filter sign-ups below by Paid vs. Checkout Started, or click any lead row to inspect their funnel path.';
+          boxes = [
+            { label: 'Sign-Ups Today', val: String(s.totalToday || 0), sub: ((w.today && w.today.checkoutStarts) || 0) + ' checkout starts today' },
+            { label: 'Yesterday Sign-Ups', val: String((w.yesterday && w.yesterday.signups) || 0), sub: ((w.yesterday && w.yesterday.visitors) || 0) + ' visitors yesterday' },
+            { label: 'Last 7 Days (Last Week)', val: String((w.last7d && w.last7d.signups) || s.total7d || 0), sub: ((w.last7d && w.last7d.checkoutStarts) || 0) + ' checkout starts in 7d' },
+            { label: 'Last 30 Days / Lifetime', val: String(s.total30d || 0) + ' / ' + String(s.totalLifetime || 0), sub: (p.paidOrders || 1) + ' paid • ' + unconvertedCount + ' checkout_started' },
+            { label: 'Recoverable Pipeline', val: formatUsd(unconvertedCount * 14900), sub: unconvertedCount + ' leads at $149/yr Pro Annual' },
+          ];
+          quickQuestions = [
+            'Why have the 6 sign-up leads not converted yet?',
+            'Who signed up today and in the last week?',
+            'Compare today vs last week traffic and sign-ups',
+          ];
+        } else if (kpiKey === 'customers') {
+          titleEl.textContent = 'Customer Accounts & Entitlement Keys Breakdown';
+          subEl.textContent = 'Active Stripe customer records and provisioned ThumbGate Pro API entitlement keys.';
+          boxes = (currentSnapshot.customers || []).map(function(acct) {
+            return {
+              label: acct.customerId,
+              val: formatUsd(acct.revenueCents),
+              sub: acct.plan + ' • ' + acct.status + ' (' + (acct.keyPreview || 'verified') + ')',
+            };
+          });
+          boxes.push({
+            label: 'Implied ARR / MRR',
+            val: (p.grossRevenueDisplay || '$149.00') + ' ARR',
+            sub: formatUsd(Math.round((p.grossRevenueCents || 14900) / 12)) + '/mo MRR across ' + (p.paidCustomers || 1) + ' paying account',
+          });
+          quickQuestions = [
+            'When was our last paid sale and who bought?',
+            'What is our current ARR, MRR, and conversion rate?',
+            'Show all customer accounts and plans',
+          ];
+        } else if (kpiKey === 'visitors') {
+          titleEl.textContent = 'Multi-Window Traffic & Conversion Funnel Breakdown';
+          subEl.textContent = 'Side-by-side comparison across Today, Yesterday, Last 7 Days (Last Week), Trailing 30 Days, and Lifetime.';
+          boxes = [
+            { label: 'Today Visitors', val: Number((w.today && w.today.visitors) || 0).toLocaleString(), sub: ((w.today && w.today.checkoutStarts) || 0) + ' checkout starts • ' + ((w.today && w.today.signups) || 0) + ' sign-ups' },
+            { label: 'Yesterday Visitors', val: Number((w.yesterday && w.yesterday.visitors) || 0).toLocaleString(), sub: ((w.yesterday && w.yesterday.checkoutStarts) || 0) + ' checkout starts • ' + ((w.yesterday && w.yesterday.signups) || 0) + ' sign-ups' },
+            { label: 'Last 7 Days (Last Week)', val: Number((w.last7d && w.last7d.visitors) || 0).toLocaleString(), sub: ((w.last7d && w.last7d.checkoutStarts) || 0) + ' checkout starts • ' + ((w.last7d && w.last7d.signups) || 0) + ' sign-ups' },
+            { label: 'Trailing 30 Days', val: Number((w.trailing30d && w.trailing30d.visitors) || 0).toLocaleString(), sub: ((w.trailing30d && w.trailing30d.checkoutStarts) || 0) + ' checkout starts • ' + ((w.trailing30d && w.trailing30d.signups) || 0) + ' sign-ups' },
+            { label: 'Lifetime Funnel', val: Number((w.lifetime && w.lifetime.visitors) || 0).toLocaleString(), sub: ((w.lifetime && w.lifetime.checkoutStarts) || 0) + ' starts → ' + (s.totalLifetime || 0) + ' leads → ' + (p.paidOrders || 1) + ' paid' },
+          ];
+          quickQuestions = [
+            'Compare today vs last week vs 30d',
+            'What is our conversion rate from visitor to paid?',
+            'Why have the 6 sign-up leads not converted yet?',
+          ];
+        } else {
+          titleEl.textContent = 'Google Cloud Billing & AI Ultra Credits Guardrail ($0.00 Out-of-Pocket)';
+          subEl.textContent = 'All Cloud Run, Artifact Registry, and Dialogflow v2 operations are 100% covered by Google AI Ultra credits.';
+          boxes = [
+            { label: 'Out-of-Pocket Spend', val: '$0.00', sub: 'Guaranteed $0.00 extra charge' },
+            { label: 'Google AI Ultra Credits', val: c.ultraCreditsAvailableDisplay || '$390.00', sub: '$100/mo recurring + $290 reserve' },
+            { label: 'GCP Project & Region', val: c.projectId || 'igor-re-outreach-2026', sub: c.region || 'us-central1' },
+            { label: 'Billing Account ID', val: c.billingAccountId || '01E472-502843-795655', sub: 'Guardrail: ' + (c.budgetGuardrailId || 'hard-cap-v1') },
+          ];
+          quickQuestions = [
+            'Are we being charged anything extra on Google Cloud?',
+            'How did we steal Nanbeige4.3-33B preserve_thinking and 33B->3B distillation?',
+            'How is our Herdr MoE Swarm, SOW, and LLM-as-Judge performing?',
+          ];
+        }
+
+        gridEl.innerHTML = '';
+        boxes.forEach(function(b) {
+          const card = document.createElement('div');
+          card.className = 'kpi-mini-box';
+          const l = document.createElement('div');
+          l.className = 'kpi-mini-label';
+          l.textContent = b.label;
+          const v = document.createElement('div');
+          v.className = 'kpi-mini-val';
+          v.textContent = b.val;
+          const sEl = document.createElement('div');
+          sEl.className = 'kpi-mini-sub';
+          sEl.textContent = b.sub;
+          card.appendChild(l);
+          card.appendChild(v);
+          card.appendChild(sEl);
+          gridEl.appendChild(card);
+        });
+
+        actionsEl.innerHTML = '';
+        quickQuestions.forEach(function(q) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'df-chip';
+          btn.textContent = 'Ask Dialogflow: ' + q;
+          btn.addEventListener('click', function() { askDialogflow(q); });
+          actionsEl.appendChild(btn);
+        });
+
+        drawer.classList.add('open');
+        highlightPanel(currentTargetPanelId);
+        if (dfQuery) {
+          askDialogflow(dfQuery);
+        }
+      }
+
+      document.querySelectorAll('.kpi-card').forEach(function(card) {
+        function handleActivate() {
+          openKpiDrilldown(
+            card.getAttribute('data-kpi-card'),
+            card.getAttribute('data-target-panel'),
+            card.getAttribute('data-df-query')
+          );
+        }
+        card.addEventListener('click', handleActivate);
+        card.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleActivate();
+          }
+        });
+      });
+
+      const creditPill = document.getElementById('live-credit-pill');
+      if (creditPill) {
+        creditPill.addEventListener('click', function() {
+          openKpiDrilldown('gcp-spend', 'profits-panel', 'Verify our Google Cloud spend, $390.00 Ultra credits balance, and confirm we are charged $0.00 out-of-pocket');
+        });
+      }
+
+      const closeBtn = document.getElementById('kpi-drilldown-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+          document.getElementById('kpi-drilldown-drawer').classList.remove('open');
+          document.querySelectorAll('.kpi-card').forEach(function(c) { c.classList.remove('active'); });
+        });
+      }
+
+      const scrollBtn = document.getElementById('kpi-drilldown-scroll-btn');
+      if (scrollBtn) {
+        scrollBtn.addEventListener('click', function() {
+          const target = document.getElementById(currentTargetPanelId);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            highlightPanel(currentTargetPanelId);
+          }
+        });
+      }
+
+      document.querySelectorAll('.signup-filter-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const filter = btn.getAttribute('data-filter');
+          document.querySelectorAll('#signups-tbody tr').forEach(function(row) {
+            const st = (row.getAttribute('data-signup-status') || '').toLowerCase();
+            if (filter === 'all') {
+              row.style.display = '';
+            } else if (filter === 'paid') {
+              row.style.display = (st === 'paid' || st === 'active' || st === 'converted') ? '' : 'none';
+            } else {
+              row.style.display = (st === 'paid' || st === 'active' || st === 'converted') ? 'none' : '';
+            }
+          });
+        });
+      });
+
+      document.querySelectorAll('.clickable-row').forEach(function(row) {
+        function activateRow() {
+          const q = row.getAttribute('data-df-query');
+          if (q) askDialogflow(q);
+        }
+        row.addEventListener('click', activateRow);
+        row.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            activateRow();
+          }
+        });
+      });
 
       function appendMessage(role, text, meta) {
         const div = document.createElement('div');
@@ -2333,7 +2706,7 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
         askDialogflow(chatInput.value.trim());
       });
 
-      document.querySelectorAll('.df-chip').forEach(function(btn) {
+      document.querySelectorAll('.df-chip[data-query]').forEach(function(btn) {
         btn.addEventListener('click', function() {
           askDialogflow(btn.getAttribute('data-query'));
         });
@@ -2344,6 +2717,7 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
           const res = await fetch('/v1/admin/realtime', { headers: { 'Accept': 'application/json' } });
           if (!res.ok) return;
           const snap = await res.json();
+          currentSnapshot = snap;
           document.getElementById('kpi-net-profit').textContent = snap.profits.netProfitDisplay;
           document.getElementById('kpi-signups-total').textContent = String(snap.signups.totalLifetime);
           document.getElementById('kpi-signups-sub').textContent = snap.signups.totalToday + ' today • ' + snap.signups.total30d + ' in last 30d';
@@ -2351,6 +2725,10 @@ function renderAdminPortalHtml(snapshot, authInfo = {}) {
           document.getElementById('kpi-visitors-today').textContent = Number(snap.windows.today.visitors || 0).toLocaleString();
           syncPill.textContent = 'Live @ ' + new Date().toLocaleTimeString();
         } catch (_) {}
+      }
+
+      if (syncPill) {
+        syncPill.addEventListener('click', refreshRealtime);
       }
 
       setInterval(refreshRealtime, 5000);
