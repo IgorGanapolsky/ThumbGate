@@ -23,6 +23,18 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Shell|bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/bin/cli.js", "observe-tool-result"]
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [

@@ -3553,6 +3553,23 @@ function cacheUpdate() {
   updateCacheFromEvent(payload ? JSON.parse(payload) : {});
 }
 
+function observeToolResult() {
+  try {
+    const payload = readStdinText();
+    const input = payload ? JSON.parse(payload) : {};
+    const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+    const result = gatesEngine.observeSwarmClaimResult(input);
+    if (!result) {
+      process.stdout.write('{}\n');
+      return;
+    }
+    process.stdout.write(`${gatesEngine.formatObserveStop(result)}\n`);
+  } catch (err) {
+    process.stderr.write(`observe-tool-result error: ${err.message}\n`);
+    process.stdout.write('{}\n');
+  }
+}
+
 function statuslineRender() {
   syncActiveProjectContext();
   try {
@@ -4039,6 +4056,7 @@ function help() {
   console.log('  statusline-render     Render ThumbGate Claude status line');
   console.log('  hook-auto-capture     Process Claude UserPromptSubmit inline feedback');
   console.log('  claim-stop-check      Recheck configured factual claims before Claude stops');
+  console.log('  observe-tool-result   Record swarm-claim.py exit 3 and end the turn');
   console.log('  session-start         Refresh local ThumbGate session cache');
   console.log('');
 
@@ -4532,6 +4550,9 @@ switch (COMMAND) {
     break;
   case 'claim-stop-check':
     claimStopCheckCmd();
+    break;
+  case 'observe-tool-result':
+    observeToolResult();
     break;
   case 'session-start':
     sessionStart();
