@@ -22,6 +22,9 @@
  */
 
 const { execFileSync } = require('node:child_process');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const JULES_API_ORIGIN = 'https://jules.googleapis.com';
 const JULES_API_BASE = `${JULES_API_ORIGIN}/v1alpha`;
@@ -32,14 +35,33 @@ function resolveJulesApiKey(env = process.env) {
   if (env.JULES_API_KEY && String(env.JULES_API_KEY).trim()) {
     return String(env.JULES_API_KEY).trim();
   }
-  try {
-    return execFileSync(MACOS_SECURITY_BIN, ['find-generic-password', '-s', 'JULES_API_KEY', '-w'], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-  } catch (_) {
-    return '';
+  const cacheFile = path.join(os.homedir(), '.config', 'jules', 'api_key');
+  const loginKeychain = path.join(os.homedir(), 'Library', 'Keychains', 'login.keychain-db');
+  for (const args of [
+    ['find-generic-password', '-s', 'JULES_API_KEY', '-w'],
+    ['find-generic-password', '-s', 'JULES_API_KEY', '-w', loginKeychain],
+  ]) {
+    try {
+      const val = execFileSync(MACOS_SECURITY_BIN, args, {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+      if (val) {
+        try {
+          fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
+          fs.writeFileSync(cacheFile, `${val}\n`, { mode: 0o600 });
+        } catch (_) {}
+        return val;
+      }
+    } catch (_) {}
   }
+  if (env === process.env && fs.existsSync(cacheFile)) {
+    try {
+      const cached = fs.readFileSync(cacheFile, 'utf8').trim();
+      if (cached) return cached;
+    } catch (_) {}
+  }
+  return '';
 }
 
 function buildHardenedThumbGateJulesPrompt({ title, taskInstructions }) {
@@ -221,37 +243,89 @@ async function scanAndProcessJulesEmailsViaCdp({
           expression: `(async () => {
             if (!location.hash.startsWith('#inbox')) {
               location.hash = '#inbox';
-              await new Promise(r => setTimeout(r, 2000));
+              await new Promise(r => setTimeout(r, 2500));
             }
+            const visRows = () => Array.from(document.querySelectorAll('tr.zA')).filter(r => r.offsetParent !== null);
             const results = [];
             const maxIter = ${Number(maxEmails) || 20};
+            const targetRegex = /\\bJules\\b|jules-noreply@google\\.com|improvements for your repos|\\bFo\\b|Fo for Igor|fo@wajo\\.ai|\\bBoardy\\b|boardy@boardy\\.ai|\\bThumbgate\\b|Argus Launchpad|Cross-request KV cache|Arbitrage Business Strategy/i;
+
             for (let i = 0; i < maxIter; i++) {
-              const rows = Array.from(document.querySelectorAll('tr.zA'));
-              const julesRow = rows.find(r => /\\bJules\\b|jules-noreply@google\\.com|improvements for your repos/i.test(r.innerText || ''));
-              if (!julesRow) break;
-              julesRow.click();
+              if (location.hash !== '#inbox') {
+                location.hash = '#inbox';
+                await new Promise(r => setTimeout(r, 2000));
+              }
+              const rows = visRows();
+              const targetRow = rows.find(r => targetRegex.test(r.innerText || ''));
+              if (!targetRow) break;
+              const rowSnippet = (targetRow.innerText || '').replace(/\\s+/g, ' ').trim().slice(0, 240);
+              const isJules = /\\bJules\\b|jules-noreply@google\\.com|improvements for your repos/i.test(rowSnippet);
+              const isFo = /\\bFo\\b|Fo for Igor|fo@wajo\\.ai/i.test(rowSnippet);
+              const isBoardy = /\\bBoardy\\b|boardy@boardy\\.ai/i.test(rowSnippet);
+              const category = isJules ? 'jules' : isFo ? 'fo' : isBoardy ? 'boardy' : 'thumbgate_note';
+
+              targetRow.click();
               await new Promise(r => setTimeout(r, 2200));
               const expandAll = document.querySelector('[aria-label="Expand all"]');
-              if (expandAll) { expandAll.click(); await new Promise(r => setTimeout(r, 1200)); }
+              if (expandAll) { expandAll.click(); await new Promise(r => setTimeout(r, 1000)); }
               for (const c of Array.from(document.querySelectorAll('.kv, .kQ'))) {
                 try { c.click(); } catch (_) {}
               }
-              await new Promise(r => setTimeout(r, 1000));
+              await new Promise(r => setTimeout(r, 800));
               const main = document.querySelector('[role="main"]') || document.body;
               const text = (main.innerText || '').slice(0, 12000);
-              const delBtn = Array.from(document.querySelectorAll('[aria-label="Delete"]')).find(el => el.offsetParent !== null);
-              let deleted = false;
-              if (delBtn) {
-                delBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-                delBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
-                delBtn.click();
-                deleted = true;
-                await new Promise(r => setTimeout(r, 1500));
+
+              let replied = false;
+              if (isFo || isBoardy) {
+                const replyBtns = Array.from(document.querySelectorAll('[role="button"], span[role="link"]')).filter(
+                  el => el.offsetParent !== null && /^Reply$/i.test((el.innerText || el.getAttribute('aria-label') || '').trim())
+                );
+                if (replyBtns.length > 0) {
+                  replyBtns[replyBtns.length - 1].click();
+                  await new Promise(r => setTimeout(r, 1400));
+                  const box = Array.from(document.querySelectorAll('div[aria-label="Message Body"][contenteditable="true"], div[role="textbox"][contenteditable="true"]')).filter(el => el.offsetParent !== null).pop();
+                  if (box) {
+                    box.focus();
+                    const replyMsg = isFo
+                      ? "Hi Fo,\\n\\nYes, please go ahead and execute all of these and send the output over here.\\n\\nThanks, Igor"
+                      : "Hi Boardy,\\n\\nYes, please go ahead and send the full draft and next steps over here.\\n\\nThanks, Igor";
+                    box.innerText = replyMsg;
+                    box.dispatchEvent(new Event('input', { bubbles: true }));
+                    await new Promise(r => setTimeout(r, 500));
+                    const sendBtn = Array.from(document.querySelectorAll('div[role="button"][aria-label^="Send"]')).filter(el => el.offsetParent !== null).pop();
+                    if (sendBtn) {
+                      sendBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                      sendBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                      sendBtn.click();
+                      replied = true;
+                      await new Promise(r => setTimeout(r, 2000));
+                    }
+                  }
+                }
               }
-              // Navigate back to inbox for next iteration
+
+              // Return to #inbox and delete via visible row checkbox + toolbar Delete button (reliable in both thread & list views)
               location.hash = '#inbox';
-              await new Promise(r => setTimeout(r, 1200));
-              results.push({ foundJulesEmail: true, deleted, text });
+              await new Promise(r => setTimeout(r, 1800));
+              let deleted = false;
+              const rowAgain = visRows().find(r => (r.innerText || '').replace(/\\s+/g, ' ').trim().slice(0, 80) === rowSnippet.slice(0, 80))
+                || visRows().find(r => targetRegex.test(r.innerText || ''));
+              if (rowAgain) {
+                const cb = rowAgain.querySelector('[role="checkbox"]');
+                if (cb && cb.getAttribute('aria-checked') !== 'true') {
+                  cb.click();
+                  await new Promise(r => setTimeout(r, 400));
+                }
+                const delBtn = Array.from(document.querySelectorAll('[aria-label="Delete"][role="button"], div[act="10"]')).find(el => el.offsetParent !== null);
+                if (delBtn) {
+                  delBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                  delBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                  delBtn.click();
+                  deleted = true;
+                  await new Promise(r => setTimeout(r, 1800));
+                }
+              }
+              results.push({ foundJulesEmail: true, category, snippet: rowSnippet.slice(0, 120), replied, deleted, text: isJules ? text : text.slice(0, 600) });
             }
             if (results.length === 0) {
               return { foundJulesEmail: false, processedCount: 0, results: [] };
