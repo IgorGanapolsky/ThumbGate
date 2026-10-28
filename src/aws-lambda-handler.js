@@ -40,6 +40,8 @@ const {
   evaluateAlgoverseResearchMonetizationGate,
   evaluateApolloAgentGtmConnectorSteal,
   evaluateBroadcastMoESwarmAndLlmJudgeSow,
+  evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
+  evaluateCoderLegionSyndicationAndMonetizationGate,
 } = require('./cloud-token-firewall');
 
 const CLOUD_PORTAL_HTML_PATH = path.resolve(__dirname, '../public/cloud.html');
@@ -74,6 +76,23 @@ function isPortalHtmlPath(rawPath) {
     || rawPath === '/cloud.html'
     || /^\/(?:cloud\/u|u)\/[a-zA-Z0-9._-]+$/.test(rawPath);
 }
+
+const CLOUD_EVAL_HANDLERS = {
+  '/v1/cloud/playbook/craft': evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
+  '/v1/cloud/skill-up/eval': evaluateSkillUpDeclarativeEvalLoop,
+  '/v1/cloud/swarm/herdr-gitbutler': evaluateHerdrOmpPoolsideGitButlerSwarmGate,
+  '/v1/cloud/browseros-neo/gate': evaluateBrowserOsNeoProductivityGate,
+  '/v1/cloud/radware-agent-risk/gate': evaluateRadwareAgenticApiRiskFirewall,
+  '/v1/cloud/oneshot/gate': evaluateOneShotAgentGatewayAndSignedReceiptSteal,
+  '/v1/cloud/gcp-ai-ultra/gate': evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
+  '/v1/cloud/algoverse/gate': evaluateAlgoverseResearchMonetizationGate,
+  '/v1/cloud/apollo-gtm/gate': evaluateApolloAgentGtmConnectorSteal,
+  '/v1/cloud/swarm/moe-judge': evaluateBroadcastMoESwarmAndLlmJudgeSow,
+  '/v1/cloud/merx-agentshield/gate': evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
+  '/v1/cloud/coderlegion/gate': evaluateCoderLegionSyndicationAndMonetizationGate,
+  '/v1/cloud/ci-trail-eval': evaluateEntireCiTrailAndProjectSync,
+  '/v1/cloud/dpo-sync': buildRlhfDpoTrainingPairFromInterception,
+};
 
 const GET_ROUTE_HANDLERS = {
   '/.well-known/agent-skills/index.json': ({ appOrigin }) =>
@@ -164,42 +183,18 @@ async function handlePostRoute(rawPath, body, token, appOrigin) {
     }
     case '/v1/cloud/policy-sync':
       return jsonResponse(200, syncTeamPolicyAndThreatPacks({ ...body, action: 'update' }));
-    case '/v1/cloud/playbook/craft':
-      return jsonResponse(200, evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate(body));
-    case '/v1/cloud/skill-up/eval':
-      return jsonResponse(200, evaluateSkillUpDeclarativeEvalLoop(body));
     case '/v1/cloud/skill-up/observation': {
       const obs = convertSkillObservationToCandidateCase(body);
       return jsonResponse(obs.statusCode || 200, obs);
     }
-    case '/v1/cloud/swarm/herdr-gitbutler':
-      return jsonResponse(200, evaluateHerdrOmpPoolsideGitButlerSwarmGate(body));
-    case '/v1/cloud/browseros-neo/gate':
-      return jsonResponse(200, evaluateBrowserOsNeoProductivityGate(body));
-    case '/v1/cloud/radware-agent-risk/gate':
-      return jsonResponse(200, evaluateRadwareAgenticApiRiskFirewall(body));
-    case '/v1/cloud/oneshot/gate':
-      return jsonResponse(200, evaluateOneShotAgentGatewayAndSignedReceiptSteal(body));
-    case '/v1/cloud/gcp-ai-ultra/gate':
-      return jsonResponse(200, evaluateGoogleCloudSaasAndAiUltraCreditsFallback(body));
-    case '/v1/cloud/algoverse/gate':
-      return jsonResponse(200, evaluateAlgoverseResearchMonetizationGate(body));
-    case '/v1/cloud/apollo-gtm/gate':
-      return jsonResponse(200, evaluateApolloAgentGtmConnectorSteal(body));
-    case '/v1/cloud/swarm/moe-judge':
-      return jsonResponse(200, evaluateBroadcastMoESwarmAndLlmJudgeSow(body));
     case '/v1/cloud/bdm/register-deal': {
       const deal = registerCommissionOnlyBdmDeal(body);
       return jsonResponse(deal.statusCode || 201, deal);
     }
-    case '/v1/cloud/ci-trail-eval':
-      return jsonResponse(200, evaluateEntireCiTrailAndProjectSync(body));
     case '/v1/cloud/sink/ingest': {
       const res = ingestEnterpriseCloudSinkBatch({ batch: body });
       return jsonResponse(res.statusCode || 200, res);
     }
-    case '/v1/cloud/dpo-sync':
-      return jsonResponse(200, buildRlhfDpoTrainingPairFromInterception(body));
     case '/v1/cloud/intercept':
     case '/v1/firewall/intercept': {
       const defaultTier = token.startsWith('tg_startup_') ? 'cloud_startup' : 'cloud_indie';
@@ -211,6 +206,9 @@ async function handlePostRoute(rawPath, body, token, appOrigin) {
       return jsonResponse(200, res);
     }
     default:
+      if (CLOUD_EVAL_HANDLERS[rawPath]) {
+        return jsonResponse(200, CLOUD_EVAL_HANDLERS[rawPath](body));
+      }
       return null;
   }
 }

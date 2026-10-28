@@ -353,6 +353,8 @@ const {
   evaluateAlgoverseResearchMonetizationGate,
   evaluateApolloAgentGtmConnectorSteal,
   evaluateBroadcastMoESwarmAndLlmJudgeSow,
+  evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
+  evaluateCoderLegionSyndicationAndMonetizationGate,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -9806,51 +9808,21 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         return;
       }
     }
-    if (req.method === 'POST' && pathname === '/v1/cloud/swarm/herdr-gitbutler') {
-      const body = await parseJsonBody(req);
-      sendJson(res, 200, evaluateHerdrOmpPoolsideGitButlerSwarmGate(body));
-      return;
-    }
-
-    if (req.method === 'POST' && pathname === '/v1/cloud/browseros-neo/gate') {
-      const body = await parseJsonBody(req);
-      sendJson(res, 200, evaluateBrowserOsNeoProductivityGate(body));
-      return;
-    }
-
-    if (req.method === 'POST' && pathname === '/v1/cloud/radware-agent-risk/gate') {
-      const body = await parseJsonBody(req);
-      sendJson(res, 200, evaluateRadwareAgenticApiRiskFirewall(body));
-      return;
-    }
-
-    if (req.method === 'POST' && pathname === '/v1/cloud/oneshot/gate') {
-      const body = await parseJsonBody(req);
-      sendJson(res, 200, evaluateOneShotAgentGatewayAndSignedReceiptSteal(body));
-      return;
-    }
-
-    if (req.method === 'POST' && pathname === '/v1/cloud/gcp-ai-ultra/gate') {
-      const body = await parseJsonBody(req);
-      sendJson(res, 200, evaluateGoogleCloudSaasAndAiUltraCreditsFallback(body));
-      return;
-    }
-
-    if (req.method === 'POST' && pathname === '/v1/cloud/algoverse/gate') {
-      const body = await parseJsonBody(req);
-      sendJson(res, 200, evaluateAlgoverseResearchMonetizationGate(body));
-      return;
-    }
-
-    if (req.method === 'POST' && pathname === '/v1/cloud/apollo-gtm/gate') {
-      const body = await parseJsonBody(req);
-      sendJson(res, 200, evaluateApolloAgentGtmConnectorSteal(body));
-      return;
-    }
-
-    if (req.method === 'POST' && pathname === '/v1/cloud/swarm/moe-judge') {
-      const body = await parseJsonBody(req);
-      sendJson(res, 200, evaluateBroadcastMoESwarmAndLlmJudgeSow(body));
+    const cloudEvalRoutes = {
+      '/v1/cloud/swarm/herdr-gitbutler': evaluateHerdrOmpPoolsideGitButlerSwarmGate,
+      '/v1/cloud/browseros-neo/gate': evaluateBrowserOsNeoProductivityGate,
+      '/v1/cloud/radware-agent-risk/gate': evaluateRadwareAgenticApiRiskFirewall,
+      '/v1/cloud/oneshot/gate': evaluateOneShotAgentGatewayAndSignedReceiptSteal,
+      '/v1/cloud/gcp-ai-ultra/gate': evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
+      '/v1/cloud/algoverse/gate': evaluateAlgoverseResearchMonetizationGate,
+      '/v1/cloud/apollo-gtm/gate': evaluateApolloAgentGtmConnectorSteal,
+      '/v1/cloud/swarm/moe-judge': evaluateBroadcastMoESwarmAndLlmJudgeSow,
+      '/v1/cloud/merx-agentshield/gate': evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
+      '/v1/cloud/coderlegion/gate': evaluateCoderLegionSyndicationAndMonetizationGate,
+    };
+    if (cloudEvalRoutes[pathname] && (isGetLikeRequest || req.method === 'POST')) {
+      const body = req.method === 'POST' ? await parseJsonBody(req) : Object.fromEntries(parsed.searchParams.entries());
+      sendJson(res, 200, cloudEvalRoutes[pathname](body), {}, { headOnly: isHeadRequest });
       return;
     }
 

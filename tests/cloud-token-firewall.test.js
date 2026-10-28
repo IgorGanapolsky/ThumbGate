@@ -38,6 +38,8 @@ const {
   evaluateAlgoverseResearchMonetizationGate,
   evaluateApolloAgentGtmConnectorSteal,
   evaluateBroadcastMoESwarmAndLlmJudgeSow,
+  evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
+  evaluateCoderLegionSyndicationAndMonetizationGate,
   resetCloudFirewallStateForTests,
 } = require('../src/cloud-token-firewall');
 const { parseJulesEmailSuggestions } = require('../scripts/jules-cloud-fleet-dispatcher');
@@ -417,6 +419,8 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
     ['/v1/cloud/algoverse/gate', { outboundCashSpendUsd: 0, researchProfileUpdated: true }],
     ['/v1/cloud/apollo-gtm/gate', { showFreePreviewFirst: true, creditsSpentBeforeApproval: 0 }],
     ['/v1/cloud/swarm/moe-judge', { prompt: 'ship feature', sharedFactsReused: true }],
+    ['/v1/cloud/merx-agentshield/gate', { auditGrade: 'A+' }],
+    ['/v1/cloud/coderlegion/gate', { partnerRevSharePct: 50 }],
     ['/v1/cloud/intercept', { sessionId: 's1', messages: [{ role: 'user', content: 'hi' }] }],
   ]) {
     const r = await lambdaHandler({
@@ -625,6 +629,29 @@ test('syncTeamPolicyAndThreatPacks and evaluateRachelWoodsCraftAndPlaybookMiddle
   });
   assert.equal(moeBad.ok, false);
   assert.equal(moeBad.blockers.length, 3);
+
+  const merxGood = evaluateMerxAgentShieldAPlusAuditAndPartnerGate();
+  assert.equal(merxGood.ok, true);
+  assert.equal(merxGood.grade, 'A+');
+  assert.equal(merxGood.status, 'VERIFIED_SAFE');
+
+  const merxBad = evaluateMerxAgentShieldAPlusAuditAndPartnerGate({
+    promptInjections: 1,
+    outboundCashSpendUsd: 10,
+  });
+  assert.equal(merxBad.ok, false);
+  assert.equal(merxBad.blockers.length, 2);
+
+  const legionGood = evaluateCoderLegionSyndicationAndMonetizationGate();
+  assert.equal(legionGood.ok, true);
+  assert.equal(legionGood.partnerRevSharePct, 50);
+
+  const legionBad = evaluateCoderLegionSyndicationAndMonetizationGate({
+    storyUrl: 'http://bad',
+    outboundCashSpendUsd: 5,
+  });
+  assert.equal(legionBad.ok, false);
+  assert.equal(legionBad.blockers.length, 2);
 });
 
 test('Python AWS Lambda SQS worker (deploy/aws/sqs_ingest_worker.py) and PostgreSQL migration work cleanly', () => {
@@ -1018,6 +1045,16 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     const moeData = await moeHttp.json();
     assert.equal(moeData.ok, true);
     assert.equal(moeData.llmAsJudge.winnerCandidateId, 'cand_omp_core');
+
+    const merxGetRes = await fetch(`${origin}/v1/cloud/merx-agentshield/gate`);
+    assert.equal(merxGetRes.status, 200);
+    const merxGetJson = await merxGetRes.json();
+    assert.equal(merxGetJson.grade, 'A+');
+
+    const legionGetRes = await fetch(`${origin}/v1/cloud/coderlegion/gate`);
+    assert.equal(legionGetRes.status, 200);
+    const legionGetJson = await legionGetRes.json();
+    assert.equal(legionGetJson.ok, true);
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.match(homeHtml, /Start Cloud Indie/);
     assert.match(homeHtml, /Start Cloud Startup/);

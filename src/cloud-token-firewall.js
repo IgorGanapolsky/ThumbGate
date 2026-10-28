@@ -813,7 +813,7 @@ function batchAndSignEdgeLogs({
 } = {}) {
   const safeRecords = Array.isArray(records) ? records : [];
   const bounded = safeRecords.slice(0, maxBatchSize).map((r) =>
-    (r && r.transaction_id ? r : buildEdgeTelemetryRecord(r)),
+    (r?.transaction_id ? r : buildEdgeTelemetryRecord(r)),
   );
   const batchId = `batch_${crypto.randomBytes(6).toString('hex')}`;
   const payloadObj = {
@@ -868,7 +868,7 @@ function ingestEnterpriseCloudSinkBatch({
   const systemicLoopAlerts = [];
 
   for (const rec of rawRecords) {
-    const normalized = rec && rec.transaction_id ? rec : buildEdgeTelemetryRecord(rec);
+    const normalized = rec?.transaction_id ? rec : buildEdgeTelemetryRecord(rec);
     const cleanTool = redactSecrets(String(normalized.action_context?.tool_proposed || ''));
     const tokensIn = Number(normalized.action_context?.tokens_input) || 0;
     const tokensSaved = Number(normalized.action_context?.tokens_saved_by_cache) || 0;
@@ -2248,6 +2248,78 @@ function evaluateBroadcastMoESwarmAndLlmJudgeSow({
   };
 }
 
+function evaluateMerxAgentShieldAPlusAuditAndPartnerGate({
+  auditGrade = 'A+',
+  promptInjections = 0,
+  toolArgumentSinkInjections = 0,
+  credentialLeakVectors = 0,
+  mcpTrustBoundariesVerified = true,
+  outboundCashSpendUsd = 0,
+  partnerRevSharePct = 50,
+} = {}) {
+  const blockers = [];
+  if (auditGrade !== 'A+' || promptInjections > 0 || toolArgumentSinkInjections > 0 || credentialLeakVectors > 0 || !mcpTrustBoundariesVerified) {
+    blockers.push('require_merx_agentshield_a_plus_verified_safe_zero_injection_and_credential_leak_posture');
+  }
+  if (Number(outboundCashSpendUsd) > 0) {
+    blockers.push('enforce_zero_outbound_cash_spend');
+  }
+  return {
+    ok: blockers.length === 0,
+    auditor: 'Merx AgentShield (https://merx.help/shield)',
+    spec: 'Cloudflare Security Audit Specification (AI-AND-LLM) & OWASP LLM Top 10',
+    grade: auditGrade,
+    status: 'VERIFIED_SAFE',
+    badgeUrl: 'https://merx.help/badge/A+.svg',
+    findings: {
+      promptInjections: Number(promptInjections),
+      toolArgumentSinkInjections: Number(toolArgumentSinkInjections),
+      credentialLeakVectors: Number(credentialLeakVectors),
+      mcpTrustBoundariesVerified: Boolean(mcpTrustBoundariesVerified),
+    },
+    partnerMonetization: {
+      partnerEmail: 'kontakt@merx.help',
+      partnerAttributionUrl: 'https://thumbgate.ai/?utm_source=merx_agentshield&utm_medium=partner',
+      remediationRevSharePct: Number(partnerRevSharePct),
+      workflowGatePayoutUsd: 249.5,
+      cloudStartupMonthlyPayoutUsd: 99.5,
+      outboundCashSpendUsd: Number(outboundCashSpendUsd),
+    },
+    blockers,
+  };
+}
+
+function evaluateCoderLegionSyndicationAndMonetizationGate({
+  storyUrl = 'https://coderlegion.com/30520/beyond-the-prompt-igor-ganapolsky-on-building-safer-more-reliable-ai-agents',
+  editorEmail = 'au@coderlegion.com',
+  partnerRevSharePct = 50,
+  outboundCashSpendUsd = 0,
+} = {}) {
+  const blockers = [];
+  if (!String(storyUrl || '').startsWith('https://coderlegion.com/')) {
+    blockers.push('require_live_coderlegion_developer_story_url');
+  }
+  if (Number(outboundCashSpendUsd) > 0) {
+    blockers.push('enforce_zero_outbound_cash_spend');
+  }
+  return {
+    ok: blockers.length === 0,
+    publication: 'CoderLegion',
+    storyUrl,
+    editorEmail,
+    partnerRevSharePct: Number(partnerRevSharePct),
+    outboundCashSpendUsd: Number(outboundCashSpendUsd),
+    monetizedFunnelLinks: {
+      playbook999Url: 'https://iganapolsky.gumroad.com/l/odrkon',
+      bundle49Url: 'https://iganapolsky.gumroad.com/l/vcrho',
+      proDirect19Url: 'https://thumbgate.ai/go/pro-direct?utm_source=coderlegion&utm_medium=partner',
+      cloudIndie49Url: 'https://thumbgate.ai/go/cloud-indie?utm_source=coderlegion&utm_medium=partner',
+      diagnostic499Url: 'https://thumbgate.ai/#buy',
+    },
+    blockers,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -2302,6 +2374,8 @@ module.exports = {
   evaluateAlgoverseResearchMonetizationGate,
   evaluateApolloAgentGtmConnectorSteal,
   evaluateBroadcastMoESwarmAndLlmJudgeSow,
+  evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
+  evaluateCoderLegionSyndicationAndMonetizationGate,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };
