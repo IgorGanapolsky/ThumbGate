@@ -18,7 +18,7 @@ REGION="${CLOUD_RUN_REGION:-us-central1}"
 : "${THUMBGATE_PUBLIC_APP_ORIGIN:?THUMBGATE_PUBLIC_APP_ORIGIN is required}"
 : "${THUMBGATE_BILLING_API_BASE_URL:?THUMBGATE_BILLING_API_BASE_URL is required}"
 
-THUMBGATE_FEEDBACK_DIR="${THUMBGATE_FEEDBACK_DIR:-/data/feedback}"
+THUMBGATE_FEEDBACK_DIR="${THUMBGATE_FEEDBACK_DIR:-/tmp/thumbgate-feedback}"
 THUMBGATE_GA_MEASUREMENT_ID="${THUMBGATE_GA_MEASUREMENT_ID:-}"
 THUMBGATE_GOOGLE_SITE_VERIFICATION="${THUMBGATE_GOOGLE_SITE_VERIFICATION:-}"
 
@@ -35,7 +35,7 @@ node scripts/deploy-policy.js --profiles=runtime,billing
 
 echo "🚀 Deploying Agentic Control Plane to $REGION (project: $PROJECT_ID, free-tier bounded)..."
 
-"$GCLOUD_BIN" services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com --project "$PROJECT_ID"
+"$GCLOUD_BIN" services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com dialogflow.googleapis.com --project "$PROJECT_ID"
 "$GCLOUD_BIN" builds submit --project "$PROJECT_ID" --tag "gcr.io/$PROJECT_ID/$SERVICE_NAME"
 "$GCLOUD_BIN" run deploy "$SERVICE_NAME" \
   --project "$PROJECT_ID" \
@@ -48,6 +48,9 @@ echo "🚀 Deploying Agentic Control Plane to $REGION (project: $PROJECT_ID, fre
   --memory=512Mi \
   --cpu=1 \
   --set-env-vars \
+HOME=/tmp,\
+GOOGLE_CLOUD_PROJECT="$PROJECT_ID",\
+GOOGLE_CLOUD_REGION="$REGION",\
 THUMBGATE_API_KEY="$THUMBGATE_API_KEY",\
 STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY",\
 STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET",\

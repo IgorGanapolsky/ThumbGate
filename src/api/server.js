@@ -20,6 +20,18 @@ const {
   getSecurityQuestionnaire,
   renderSecurityOverviewHtml,
 } = require('../security-questionnaire');
+const {
+  createAdminSessionToken,
+  verifyAdminRequest,
+  buildAdminCookieHeader,
+  buildClearAdminCookieHeader,
+  buildAdminRealtimeSnapshot,
+  classifyAdminDialogflowIntent,
+  fulfillAdminDialogflowIntent,
+  askAdminDialogflow,
+  renderAdminLoginHtml,
+  renderAdminPortalHtml,
+} = require('../admin-cloud-portal');
 
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
 const POSTHOG_INGEST_HOST = 'us.i.posthog.com';
@@ -9373,6 +9385,167 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           detail: err.message || 'An unexpected error occurred.',
         }, getPublicBillingHeaders(requestedTraceId));
       }
+      return;
+    }
+
+    // --- Google Cloud Executive Admin Portal & Dialogflow Command Center ---
+    if (isGetLikeRequest && (pathname === '/admin' || pathname === '/admin/' || pathname === '/admin/login')) {
+      const auth = verifyAdminRequest(req, { expectedApiKey, expectedOperatorKey });
+      if (!auth.authenticated || pathname === '/admin/login') {
+        sendHtml(
+          res,
+          auth.authenticated ? 200 : 401,
+          renderAdminLoginHtml({}),
+          { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' },
+          { headOnly: isHeadRequest }
+        );
+        return;
+      }
+      const snapshot = await buildAdminRealtimeSnapshot({ feedbackDir: requestFeedbackDir });
+      sendHtml(
+        res,
+        200,
+        renderAdminPortalHtml(snapshot, auth),
+        { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' },
+        { headOnly: isHeadRequest }
+      );
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/admin/login') {
+      const contentType = String(req.headers['content-type'] || '').toLowerCase();
+      const body = contentType.includes('application/json')
+        ? await parseJsonBody(req, 16 * 1024)
+        : await parseFormBody(req, 16 * 1024);
+      const candidateKey = String(body.apiKey || body.password || body.key || '').trim();
+      const email = String(body.email || 'iganapolsky@gmail.com').trim() || 'iganapolsky@gmail.com';
+      const validAdmin = Boolean(expectedApiKey && safeKeyEqual(candidateKey, expectedApiKey));
+      const validOperator = Boolean(expectedOperatorKey && safeKeyEqual(candidateKey, expectedOperatorKey));
+
+      if (!validAdmin && !validOperator) {
+        if (contentType.includes('application/json')) {
+          sendJson(res, 401, { ok: false, error: 'Invalid admin or operator key.' });
+        } else {
+          sendHtml(
+            res,
+            401,
+            renderAdminLoginHtml({ error: 'Invalid admin or operator key. Please try again.', email }),
+            { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' }
+          );
+        }
+        return;
+      }
+
+      const secret = String(
+        process.env.THUMBGATE_ADMIN_SESSION_SECRET
+          || expectedApiKey
+          || expectedOperatorKey
+          || 'thumbgate-local-dev-session-secret'
+      ).trim();
+      const role = validAdmin ? 'admin' : 'operator';
+      const token = createAdminSessionToken({ email, role, secret });
+      const isHttps = String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https';
+      const cookieHeader = buildAdminCookieHeader(token, { secure: isHttps });
+
+      if (contentType.includes('application/json')) {
+        sendJson(res, 200, { ok: true, email, role, redirect: '/admin' }, {
+          'Set-Cookie': cookieHeader,
+          'Cache-Control': 'private, no-store',
+        });
+      } else {
+        res.writeHead(303, {
+          Location: '/admin',
+          'Set-Cookie': cookieHeader,
+          'Cache-Control': 'private, no-store',
+        });
+        res.end();
+      }
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/admin/logout') {
+      const isHttps = String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https';
+      res.writeHead(303, {
+        Location: '/admin',
+        'Set-Cookie': buildClearAdminCookieHeader({ secure: isHttps }),
+        'Cache-Control': 'private, no-store',
+      });
+      res.end();
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/v1/admin/realtime') {
+      const auth = verifyAdminRequest(req, { expectedApiKey, expectedOperatorKey });
+      if (!auth.authenticated) {
+        sendProblem(res, {
+          type: PROBLEM_TYPES.UNAUTHORIZED,
+          title: 'Unauthorized',
+          status: 401,
+          detail: 'Admin session or API key required.',
+        });
+        return;
+      }
+      const snapshot = await buildAdminRealtimeSnapshot({ feedbackDir: requestFeedbackDir });
+      sendJson(res, 200, snapshot, { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/admin/dialogflow') {
+      const auth = verifyAdminRequest(req, { expectedApiKey, expectedOperatorKey });
+      if (!auth.authenticated) {
+        sendProblem(res, {
+          type: PROBLEM_TYPES.UNAUTHORIZED,
+          title: 'Unauthorized',
+          status: 401,
+          detail: 'Admin session or API key required.',
+        });
+        return;
+      }
+      const body = await parseJsonBody(req, 16 * 1024);
+      const query = body.query || body.prompt || body.message || body.text;
+      const result = await askAdminDialogflow({
+        query,
+        sessionId: body.sessionId || 'tg-admin-web',
+        feedbackDir: requestFeedbackDir,
+      });
+      sendJson(res, 200, result, { 'Cache-Control': 'private, no-store' });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/admin/dialogflow-webhook') {
+      const webhookSecret = String(process.env.THUMBGATE_DIALOGFLOW_WEBHOOK_SECRET || '').trim();
+      const presentedWebhookSecret = String(req.headers['x-thumbgate-dialogflow-secret'] || '').trim();
+      const auth = verifyAdminRequest(req, { expectedApiKey, expectedOperatorKey });
+      const webhookAuthed = webhookSecret
+        ? safeKeyEqual(presentedWebhookSecret, webhookSecret) || auth.authenticated
+        : auth.authenticated;
+      if (!webhookAuthed) {
+        sendProblem(res, {
+          type: PROBLEM_TYPES.UNAUTHORIZED,
+          title: 'Unauthorized',
+          status: 401,
+          detail: 'Valid Dialogflow webhook secret or admin authentication required.',
+        });
+        return;
+      }
+      const body = await parseJsonBody(req, 64 * 1024);
+      const queryText = body?.queryResult?.queryText || body?.text || body?.query || 'overview';
+      const intentDisplayName = body?.queryResult?.intent?.displayName || body?.fulfillmentInfo?.tag || '';
+      const snapshot = await buildAdminRealtimeSnapshot({ feedbackDir: requestFeedbackDir });
+      const resolvedIntent = classifyAdminDialogflowIntent(queryText, intentDisplayName);
+      const fulfilled = fulfillAdminDialogflowIntent(resolvedIntent, queryText, snapshot);
+      sendJson(res, 200, {
+        fulfillmentText: fulfilled.answer,
+        fulfillmentMessages: [{ text: { text: [fulfilled.answer] } }],
+        fulfillment_response: {
+          messages: [{ text: { text: [fulfilled.answer] } }],
+        },
+        payload: {
+          intent: fulfilled.intent,
+          cards: fulfilled.cards,
+          generatedAt: snapshot.generatedAt,
+        },
+      });
       return;
     }
 
