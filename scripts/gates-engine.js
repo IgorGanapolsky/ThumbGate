@@ -190,6 +190,9 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   // applyEnforcementPosture, never demote spend blocks to warn-by-default.
   // Apollo $588 incident class (2026-08).
   'financial-control',
+  // Quote reserve and done-check. Sidecar must not turn these denies into warnings.
+  'oneshot-control',
+  'oneshot-goal-done',
   // Outbound email: irreversible delivery. Keep the hard gate intact until a
   // separately authenticated admin override bound to the exact action digest
   // authorizes one retry (AGENT-259 / District Cyber 2026-08-04).
@@ -214,6 +217,8 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'git-clean-force',
   'rm-rf-home-or-root',
   'financial-control',
+  'oneshot-control',
+  'oneshot-goal-done',
   // Never daily-cap discount a denied autonomous email send (same class as force-push).
   'outbound-email-send',
 ]);
@@ -4647,7 +4652,55 @@ function canonicalRetryInput(toolName, toolInput) {
   return { ...toolInput, command: canonical, originalCommand: original };
 }
 
+function oneShotPayloadNeedsControl(toolName, toolInput) {
+  if (!toolInput || typeof toolInput !== 'object' || Array.isArray(toolInput)) return false;
+  const name = String(toolName || '');
+  const status = typeof toolInput.status === 'string' ? toolInput.status.trim().toLowerCase() : '';
+  if ((name === 'record_task_outcome' || name === 'verify_claim') && (status === 'completed' || status === 'done')) {
+    return true;
+  }
+  if (toolInput.modelSaysDone === true || toolInput.goalDone === true) return true;
+  const flag = (value) => value === true || value === 1 || value === 'true';
+  if (flag(toolInput.budgetExhausted) || flag(toolInput.uncapped) || flag(toolInput.irreversible) || flag(toolInput.approvalRequired)) {
+    return true;
+  }
+  return Object.prototype.hasOwnProperty.call(toolInput, 'quotedUsd');
+}
+
+function oneshotUnreadableDeny() {
+  const message = 'ThumbGate could not read the OneShot control. The call is held. [oneshot-control]';
+  return {
+    decision: 'deny',
+    gate: 'oneshot-control',
+    ruleId: 'control_unreadable',
+    reason: message,
+    message,
+    severity: 'high',
+  };
+}
+
+function applyOneShotPretool(toolName, toolInput) {
+  let mod = null;
+  try {
+    mod = require('./action-receipts');
+  } catch {
+    mod = null;
+  }
+  const needs = mod && typeof mod.oneShotPayloadNeedsControl === 'function'
+    ? mod.oneShotPayloadNeedsControl(toolName, toolInput)
+    : oneShotPayloadNeedsControl(toolName, toolInput);
+  if (!needs) return null;
+  if (!mod || typeof mod.evaluateOneShotPretool !== 'function') return oneshotUnreadableDeny();
+  try {
+    return mod.evaluateOneShotPretool(toolName, toolInput);
+  } catch {
+    return oneshotUnreadableDeny();
+  }
+}
+
 async function evaluateGatesAsync(toolName, toolInput, configPath) {
+  const oneshot = applyOneShotPretool(toolName, toolInput);
+  if (oneshot) return oneshot;
   const direct = await evaluateGatesAsyncInner(toolName, toolInput, configPath);
   if (direct) return direct;
   const retry = canonicalRetryInput(toolName, toolInput);
@@ -4656,6 +4709,8 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 }
 
 function evaluateGates(toolName, toolInput, configPath) {
+  const oneshot = applyOneShotPretool(toolName, toolInput);
+  if (oneshot) return oneshot;
   const direct = evaluateGatesInner(toolName, toolInput, configPath);
   if (direct) return direct;
   const retry = canonicalRetryInput(toolName, toolInput);

@@ -64,6 +64,7 @@ function normalizeTaskOutcome(input = {}, now = new Date()) {
   };
 
   removeUndefined(receipt);
+  downgradeUnconfirmedCompletion(input, receipt);
   const verdict = evaluateWorkingVerdict(receipt);
   receipt.working = verdict.working;
   receipt.workingReasons = verdict.reasons;
@@ -86,6 +87,34 @@ function normalizeTaskOutcome(input = {}, now = new Date()) {
     excludeSignal: !isExplicitSignal,
   });
   return receipt;
+}
+
+function downgradeUnconfirmedCompletion(input, receipt) {
+  const exhausted = input.budgetExhausted === true
+    || input.budgetExhausted === 1
+    || input.budgetExhausted === 'true';
+  if (input.status !== 'completed' && !exhausted) return;
+  let goal;
+  try {
+    const { evaluateOneShotGoalDone, oneShotLiveGoalInput } = require('./action-receipts');
+    goal = evaluateOneShotGoalDone(oneShotLiveGoalInput(input));
+  } catch {
+    goal = { status: 'failed', done: false, reason: 'control_unreadable' };
+  }
+  if (!goal || goal.done) return;
+  // A receipt that is already not working keeps its status. Flipping it
+  // to failed turns verification_failed into status_failed. A completion
+  // that would otherwise count, or one whose budget is gone, does not.
+  if (!exhausted && goal.reason !== 'control_unreadable' && !evaluateWorkingVerdict(receipt).working) {
+    return;
+  }
+  receipt.status = 'failed';
+  if (!isPlainObject(receipt.metadata)) receipt.metadata = {};
+  receipt.metadata.oneShotGoal = {
+    status: goal.status,
+    reason: goal.reason,
+    done: false,
+  };
 }
 
 function evaluateWorkingVerdict(receipt = {}) {
