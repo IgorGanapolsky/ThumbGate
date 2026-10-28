@@ -139,6 +139,15 @@ test('POST /admin/login sets HttpOnly session cookie and unlocks real-time sign-
     assert.match(portalHtml, /data-kpi-card="visitors"/);
     assert.match(portalHtml, /data-kpi-card="gcp-spend"/);
     assert.match(portalHtml, /id="kpi-drilldown-drawer"/);
+    assert.match(portalHtml, /id="kpi-drilldown-chart"/);
+    assert.match(portalHtml, /id="kpi-attest-profit"/);
+    assert.match(portalHtml, /id="kpi-attest-signups"/);
+    assert.match(portalHtml, /id="kpi-attest-customers"/);
+    assert.match(portalHtml, /id="kpi-attest-visitors"/);
+    assert.match(portalHtml, /id="kpi-attest-gcp"/);
+    assert.match(portalHtml, /class="live-attest-ts"/);
+    assert.match(portalHtml, /tg_df_chat_history_v1/);
+    assert.match(portalHtml, /id="df-clear-btn"/);
     assert.match(portalHtml, /class="clickable-row"/);
 
     const rtRes = await fetch(`${baseUrl}/v1/admin/realtime`, {
@@ -150,6 +159,9 @@ test('POST /admin/login sets HttpOnly session cookie and unlocks real-time sign-
     assert.equal(snap.cloud.ultraCreditsAvailableDisplay, '$390.00');
     assert.ok(snap.customers.some((c) => c.customerId === 'cus_test_acme'));
     assert.ok(snap.signups.feed.some((s) => s.email === 'founder@acme.dev'));
+    assert.equal(snap.openui.status, 'ready');
+    assert.equal(snap.openui.repairClean, true);
+    assert.equal(snap.openui.rootPresent, true);
 
     // Ask Dialogflow about profits
     const dfProfitRes = await fetch(`${baseUrl}/v1/admin/dialogflow`, {
@@ -165,6 +177,9 @@ test('POST /admin/login sets HttpOnly session cookie and unlocks real-time sign-
     assert.equal(dfProfit.ok, true);
     assert.equal(dfProfit.intent, 'admin.profits');
     assert.match(dfProfit.answer, /Net Profit is/);
+    assert.equal(dfProfit.openui.status, 'ready');
+    assert.equal(dfProfit.openui.repairClean, true);
+    assert.ok(Array.isArray(dfProfit.openui.chartBars) && dfProfit.openui.chartBars.length >= 3);
 
     // Webhook fulfillment endpoint for Google Cloud Dialogflow ES/CX
     const webhookRes = await fetch(`${baseUrl}/v1/admin/dialogflow-webhook`, {
