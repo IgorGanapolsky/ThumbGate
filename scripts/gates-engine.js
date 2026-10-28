@@ -4118,6 +4118,8 @@ const TEAMS_POINT_STOPWORDS = new Set([
   'they', 'them', 'were', 'been', 'into', 'over', 'same', 'send',
 ]);
 const EXPLICIT_EXIT_KEYS = ['exitCode', 'exit_code', 'swarmClaimExitCode'];
+const SESSION_SCOPE_KEYS = ['session_id', 'sessionId', 'conversation_id', 'conversationId'];
+const AGENT_SCOPE_KEYS = ['agent_id', 'agentId'];
 
 function commandText(toolInput) {
   if (!toolInput || typeof toolInput !== 'object') return '';
@@ -4126,7 +4128,36 @@ function commandText(toolInput) {
   return '';
 }
 
+function firstScopeValue(source, keys) {
+  if (!source || typeof source !== 'object') return '';
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  }
+  return '';
+}
+
+function swarmLossScopeToken(source) {
+  if (!source || typeof source !== 'object') return '';
+  const session = firstScopeValue(source, SESSION_SCOPE_KEYS)
+    || firstScopeValue(source.tool_input, SESSION_SCOPE_KEYS)
+    || firstScopeValue(source.toolInput, SESSION_SCOPE_KEYS);
+  if (session) return `session:${session}`;
+  const agent = firstScopeValue(source, AGENT_SCOPE_KEYS);
+  return agent ? `agent:${agent}` : '';
+}
+
+function swarmLossActionId(scopeToken) {
+  const token = String(scopeToken || '').trim();
+  if (!token) return '';
+  const hash = crypto.createHash('sha256').update(token).digest('hex').slice(0, 16);
+  const prefix = token.replace(/[^A-Za-z0-9._:-]/g, '_').slice(0, 64);
+  return `${SWARM_CLAIM_LOST_ACTION}:${prefix}:${hash}`;
+}
+
 function repeatedMistakeView(input = {}) {
+  const lossScopeToken = swarmLossScopeToken(input);
   const named = input.tool_name || input.toolName;
   if (named) {
     const toolInput = (input.tool_input && typeof input.tool_input === 'object' && input.tool_input)
@@ -4136,6 +4167,7 @@ function repeatedMistakeView(input = {}) {
       toolName: String(named),
       toolInput,
       command: commandText(toolInput),
+      lossScopeToken,
     };
   }
   if (typeof input.command === 'string') {
@@ -4143,9 +4175,10 @@ function repeatedMistakeView(input = {}) {
       toolName: 'Bash',
       toolInput: { command: input.command },
       command: input.command,
+      lossScopeToken,
     };
   }
-  return { toolName: '', toolInput: {}, command: '' };
+  return { toolName: '', toolInput: {}, command: '', lossScopeToken };
 }
 
 function isSwarmClaimCommand(command) {
@@ -4178,7 +4211,8 @@ function blockedCommandLabel(view) {
 }
 
 function evaluateSwarmClaimLostWriteGate(view) {
-  if (!hasAction(SWARM_CLAIM_LOST_ACTION)) return null;
+  const actionId = swarmLossActionId(view.lossScopeToken);
+  if (!actionId || !hasAction(actionId)) return null;
   if (isSwarmClaimCommand(view.command) && !SWARM_LOSS_SHELL_PATTERN.test(view.command)) return null;
   if (!isSwarmLossWrite(view)) return null;
   return denyRepeatedMistake(view, {
@@ -4263,9 +4297,33 @@ function eventCommand(event) {
   return commandText(event.tool_input || event.toolInput);
 }
 
+function failureReportedExit(event) {
+  if (!event || typeof event !== 'object') return { present: false, code: undefined };
+  if (event.is_interrupt === true) return { present: true, code: undefined };
+  const error = typeof event.error === 'string' ? event.error : '';
+  const match = error.match(/^\s*Exit code (-?\d+)\b/);
+  if (!match) return { present: false, code: undefined };
+  return { present: true, code: Number(match[1]) };
+}
+
+function claimAgentName(event) {
+  const errorText = event && typeof event.error === 'string' ? event.error : '';
+  const parsed = lastJsonObject(`${stdoutText(event)}\n${errorText}`);
+  if (parsed && typeof parsed.agent === 'string' && parsed.agent.trim()) return parsed.agent.trim();
+  const flagged = String(eventCommand(event)).match(/--agent(?:=|\s+)(['"]?)([^'"\s]+)\1/);
+  return flagged ? flagged[2] : '';
+}
+
+function observeHookEventName(event) {
+  const name = String((event && (event.hook_event_name || event.hookEventName)) || '');
+  return name === 'PostToolUseFailure' ? 'PostToolUseFailure' : 'PostToolUse';
+}
+
 function resolveObservedExit(event) {
   const explicit = firstExplicitExit(event);
   if (explicit.present) return explicit.code;
+  const failed = failureReportedExit(event);
+  if (failed.present) return failed.code;
   const response = event && (event.tool_response || event.tool_output || event.toolOutput);
   if (response && typeof response === 'object' && !Array.isArray(response)) {
     const direct = numericExit(response.exit);
@@ -4280,16 +4338,24 @@ function observeSwarmClaimResult(event = {}) {
   const command = eventCommand(event);
   if (!isSwarmClaimCommand(command)) return null;
   if (resolveObservedExit(event) !== 3) return null;
-  try {
-    trackAction(SWARM_CLAIM_LOST_ACTION, { command: command.slice(0, 240), exitCode: 3 });
-  } catch (_) {
-    // The turn still ends. A failed write leaves the next edit unarmed.
+  const actionId = swarmLossActionId(swarmLossScopeToken(event));
+  if (actionId) {
+    try {
+      trackAction(actionId, {
+        command: command.slice(0, 240),
+        exitCode: 3,
+        agent: claimAgentName(event),
+      });
+    } catch (_) {
+      // The turn still ends. A failed write leaves the next edit unarmed.
+    }
   }
   return {
     decision: 'deny',
     gate: SWARM_LOSS_GATE,
     endTurn: true,
     severity: 'critical',
+    hookEventName: observeHookEventName(event),
     message: swarmLossMessage('swarm-claim.py'),
   };
 }
@@ -4300,7 +4366,7 @@ function formatObserveStop(result) {
     continue: false,
     stopReason: reason,
     hookSpecificOutput: {
-      hookEventName: 'PostToolUse',
+      hookEventName: result.hookEventName || 'PostToolUse',
       permissionDecision: 'deny',
       permissionDecisionReason: reason,
       continue: false,
@@ -4354,24 +4420,55 @@ function teamsPointKey(text) {
   return '';
 }
 
-function evaluateTeamsSingleReplyGate(view) {
-  if (!isTeamsSendTool(view.toolName)) return null;
+function teamsReplyKeys(view) {
   const input = view.toolInput || {};
   const target = teamsTarget(input);
   const messageId = teamsMessageId(input);
   const point = teamsPointKey(teamsText(input));
-  const messageKey = messageId ? `teams_reply_msg:${messageId}` : '';
-  const pointKey = target && point ? `teams_reply_point:${target.toLowerCase()}:${point}` : '';
-  if ((messageKey && hasAction(messageKey)) || (pointKey && hasAction(pointKey))) {
+  return {
+    target,
+    messageId,
+    messageKey: messageId ? `teams_reply_msg:${messageId}` : '',
+    pointKey: target && point ? `teams_reply_point:${target.toLowerCase()}:${point}` : '',
+  };
+}
+
+function teamsDeliveryFailed(event) {
+  if (!event || typeof event !== 'object') return false;
+  const name = String(event.hook_event_name || event.hookEventName || '');
+  if (name === 'PostToolUseFailure') return true;
+  if (event.is_interrupt === true) return true;
+  if (typeof event.error === 'string' && event.error.trim()) return true;
+  const explicit = firstExplicitExit(event);
+  return explicit.present && explicit.code !== 0;
+}
+
+function evaluateTeamsSingleReplyGate(view) {
+  if (!isTeamsSendTool(view.toolName)) return null;
+  const keys = teamsReplyKeys(view);
+  if ((keys.messageKey && hasAction(keys.messageKey)) || (keys.pointKey && hasAction(keys.pointKey))) {
     return denyRepeatedMistake(view, {
       decision: 'deny',
       gate: TEAMS_REPLY_GATE,
       severity: 'critical',
-      message: `Denied second Teams send (${view.toolName}) to ${target || messageId} on the same point.`,
+      message: `Denied second Teams send (${view.toolName}) to ${keys.target || keys.messageId} on the same point.`,
     });
   }
-  if (messageKey) trackAction(messageKey, { target });
-  if (pointKey) trackAction(pointKey, { target });
+  return null;
+}
+
+function observeTeamsSendResult(event = {}) {
+  const view = repeatedMistakeView(event);
+  if (!isTeamsSendTool(view.toolName)) return null;
+  if (teamsDeliveryFailed(event)) return null;
+  const keys = teamsReplyKeys(view);
+  if (!keys.messageKey && !keys.pointKey) return null;
+  try {
+    if (keys.messageKey) trackAction(keys.messageKey, { target: keys.target, confirmed: true });
+    if (keys.pointKey) trackAction(keys.pointKey, { target: keys.target, confirmed: true });
+  } catch (_) {
+    // A missed receipt can be sent again. A false receipt cannot.
+  }
   return null;
 }
 
@@ -5590,6 +5687,7 @@ module.exports = {
   listSessionActions,
   clearSessionActions,
   observeSwarmClaimResult,
+  observeTeamsSendResult,
   evaluateRepeatedMistakeGates,
   setCrossReviewLookup,
   formatObserveStop,

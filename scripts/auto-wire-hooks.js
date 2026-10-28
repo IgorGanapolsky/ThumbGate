@@ -36,6 +36,12 @@ function getHome() {
   return process.env.HOME || process.env.USERPROFILE || '';
 }
 
+// Bash|Shell stays an exact alternative. The teams clause is a regex so a
+// successful Teams send is observed on PostToolUse, and the same matcher
+// watches PostToolUseFailure because a non-zero shell exit never arrives
+// on PostToolUse.
+const OBSERVE_TOOL_MATCHER = '^(?:Bash|Shell|bash)$|teams.*(send|reply|post_message)';
+
 // --- Hook definitions ---
 const CLAUDE_HOOKS = {
   PreToolUse: {
@@ -52,11 +58,16 @@ const CLAUDE_HOOKS = {
       legacyPattern: /(hook-thumbgate-cache-updater|cache-update\b)/,
     },
     {
-      matcher: 'Bash|Shell|bash',
+      matcher: OBSERVE_TOOL_MATCHER,
       hooks: [{ type: 'command', command: observeToolResultHookCommand() }],
       legacyPattern: /observe-tool-result\b/,
     },
   ],
+  PostToolUseFailure: {
+    matcher: OBSERVE_TOOL_MATCHER,
+    hooks: [{ type: 'command', command: observeToolResultHookCommand() }],
+    legacyPattern: /observe-tool-result\b/,
+  },
   SessionStart: {
     hooks: [{ type: 'command', command: sessionStartHookCommand() }],
   },
@@ -80,7 +91,7 @@ const CODEX_HOOKS = {
       legacyPattern: /(hook-thumbgate-cache-updater|cache-update\b)/,
     },
     {
-      matcher: 'Bash|Shell|bash',
+      matcher: OBSERVE_TOOL_MATCHER,
       hooks: [{ type: 'command', command: codexObserveToolResultHookCommand() }],
       legacyPattern: /observe-tool-result\b/,
     },

@@ -3558,6 +3558,7 @@ function observeToolResult() {
     const payload = readStdinText();
     const input = payload ? JSON.parse(payload) : {};
     const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+    gatesEngine.observeTeamsSendResult(input);
     const result = gatesEngine.observeSwarmClaimResult(input);
     if (!result) {
       process.stdout.write('{}\n');
@@ -4056,7 +4057,7 @@ function help() {
   console.log('  statusline-render     Render ThumbGate Claude status line');
   console.log('  hook-auto-capture     Process Claude UserPromptSubmit inline feedback');
   console.log('  claim-stop-check      Recheck configured factual claims before Claude stops');
-  console.log('  observe-tool-result   Record swarm-claim.py exit 3 and end the turn');
+  console.log('  observe-tool-result   Record swarm-claim.py exit 3, including a failed shell, and a Teams send that succeeded');
   console.log('  session-start         Refresh local ThumbGate session cache');
   console.log('');
 

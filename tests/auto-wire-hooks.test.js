@@ -181,7 +181,7 @@ describe('auto-wire-hooks', () => {
       try {
         const result = wireClaudeHooks({ settingsPath, sharedSettingsPath });
         assert.equal(result.changed, true);
-        assert.equal(result.added.length, 7);
+        assert.equal(result.added.length, 8);
 
         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
         assert.ok(settings.hooks.PreToolUse, 'PreToolUse should exist');
@@ -202,8 +202,11 @@ describe('auto-wire-hooks', () => {
         const postToolEntry = settings.hooks.PostToolUse[0];
         assert.equal(postToolEntry.hooks[0].command, require('../scripts/hook-runtime').cacheUpdateHookCommand());
         assert.equal(settings.hooks.PostToolUse.length, 2);
-        assert.equal(settings.hooks.PostToolUse[1].matcher, 'Bash|Shell|bash');
+        assert.equal(settings.hooks.PostToolUse[1].matcher, '^(?:Bash|Shell|bash)$|teams.*(send|reply|post_message)');
         assert.match(settings.hooks.PostToolUse[1].hooks[0].command, /observe-tool-result/);
+        assert.equal(settings.hooks.PostToolUseFailure.length, 1);
+        assert.equal(settings.hooks.PostToolUseFailure[0].matcher, settings.hooks.PostToolUse[1].matcher);
+        assert.match(settings.hooks.PostToolUseFailure[0].hooks[0].command, /observe-tool-result/);
 
         const sessionEntry = settings.hooks.SessionStart[0];
         assert.equal(sessionEntry.hooks[0].command, sessionStartHookCommand());
@@ -256,7 +259,7 @@ describe('auto-wire-hooks', () => {
       try {
         const result1 = wireClaudeHooks({ settingsPath, sharedSettingsPath });
         assert.equal(result1.changed, true);
-        assert.equal(result1.added.length, 7);
+        assert.equal(result1.added.length, 8);
 
         const result2 = wireClaudeHooks({ settingsPath, sharedSettingsPath });
         assert.equal(result2.changed, false);
@@ -268,6 +271,7 @@ describe('auto-wire-hooks', () => {
         assert.equal(settings.hooks.UserPromptSubmit.length, 1);
         assert.equal(settings.hooks.PostToolUse.length, 2);
         assert.match(settings.hooks.PostToolUse[1].hooks[0].command, /observe-tool-result/);
+        assert.equal(settings.hooks.PostToolUseFailure.length, 1);
         assert.equal(settings.hooks.SessionStart.length, 1);
         assert.equal(settings.hooks.Stop.length, 1);
         assert.ok(settings.statusLine);
@@ -284,7 +288,7 @@ describe('auto-wire-hooks', () => {
       try {
         const result = wireClaudeHooks({ settingsPath, sharedSettingsPath, dryRun: true });
         assert.equal(result.changed, true);
-        assert.equal(result.added.length, 7);
+        assert.equal(result.added.length, 8);
         assert.equal(fs.existsSync(settingsPath), false);
         assert.equal(fs.existsSync(sharedSettingsPath), false);
       } finally {
@@ -337,6 +341,7 @@ describe('auto-wire-hooks', () => {
         assert.equal(config.hooks.PostToolUse[0].hooks[0].command, require('../scripts/hook-runtime').codexCacheUpdateHookCommand());
         assert.equal(config.hooks.PostToolUse.length, 2);
         assert.match(config.hooks.PostToolUse[1].hooks[0].command, /observe-tool-result/);
+        assert.equal(config.hooks.PostToolUseFailure, undefined);
         assert.equal(config.hooks.SessionStart[0].hooks[0].command, require('../scripts/hook-runtime').codexSessionStartHookCommand());
         assert.equal(config.statusLine.command, require('../scripts/hook-runtime').codexStatuslineCommand());
         const toml = fs.readFileSync(path.join(tmpDir, '.codex', 'config.toml'), 'utf8');
