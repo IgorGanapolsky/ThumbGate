@@ -9666,6 +9666,10 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         redirectUri: parsed.searchParams.get('redirect_uri') || '',
         appOrigin: hostedConfig.appOrigin || 'https://thumbgate.ai',
       });
+      if (parsed.searchParams.get('format') === 'json' || String(req.headers.accept || '').includes('application/json')) {
+        sendJson(res, 200, sso, {}, { headOnly: isHeadRequest });
+        return;
+      }
       res.writeHead(302, {
         'X-Content-Type-Options': 'nosniff',
         Location: sso.redirectUrl,

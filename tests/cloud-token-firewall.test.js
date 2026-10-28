@@ -388,6 +388,11 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
   assert.equal(ssoLambda.statusCode, 302);
   assert.match(ssoLambda.headers.Location, /127\.0\.0\.1:45123/);
 
+  const ssoAppleJson = await lambdaHandler({ httpMethod: 'GET', rawPath: '/v1/cloud/sso/authorize', queryStringParameters: { provider: 'apple', email: 'user@icloud.com', format: 'json' } });
+  assert.equal(ssoAppleJson.statusCode, 200);
+  const appleParsed = JSON.parse(ssoAppleJson.body);
+  assert.equal(appleParsed.provider, 'apple');
+  assert.match(appleParsed.ssoToken, /^tg_sso_apple_/);
   const badJson = await lambdaHandler({ httpMethod: 'POST', rawPath: '/v1/cloud/intercept', body: '{bad' });
   assert.equal(badJson.statusCode, 400);
 
@@ -980,6 +985,13 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     const apolloJson = await apolloRes.json();
     assert.equal(apolloJson.ok, true);
     assert.equal(apolloJson.freePreview.previewCount, 10);
+
+    const appleSsoHttp = await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple&email=mobile@icloud.com&format=json`);
+    assert.equal(appleSsoHttp.status, 200);
+    const appleSsoData = await appleSsoHttp.json();
+    assert.equal(appleSsoData.provider, 'apple');
+    assert.equal(appleSsoData.email, 'mobile@icloud.com');
+    assert.equal(appleSsoData.session.authenticated, true);
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.match(homeHtml, /Start Cloud Indie/);
     assert.match(homeHtml, /Start Cloud Startup/);

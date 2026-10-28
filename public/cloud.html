@@ -2,10 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#080b10">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ThumbGate Cloud">
   <title>ThumbGate Cloud — Customer Cloud Portal &amp; Control Plane</title>
   <meta name="description" content="ThumbGate Cloud Control Plane — manage B2B team policy sync, curated threat packs (AWS, SOC2, Git/DB), token compaction, loop circuit-breaker telemetry, 1-click SSO, and billing.">
   <link rel="icon" type="image/png" href="/thumbgate-icon.png">
+  <link rel="apple-touch-icon" href="/thumbgate-icon.png">
   <style>
     :root {
       color-scheme: dark;
@@ -436,6 +441,78 @@
       cursor: pointer;
     }
     .cmdk-item:hover { background: rgba(56, 215, 255, 0.12); color: var(--cyan); }
+    /* SSO Banner & Interactive Modal */
+    .sso-toast-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: rgba(86, 227, 159, 0.12);
+      border: 1px solid rgba(86, 227, 159, 0.45);
+      color: var(--text);
+      font-size: 13px;
+    }
+    .sso-toast-banner.visible { display: flex; }
+
+    /* Mobile-First Responsive & Touch-Friendly Ergonomics (iOS/Android >=44px targets, no zoom on input focus) */
+    .mobile-bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 90;
+      background: rgba(8, 11, 16, 0.96);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--line);
+      padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+      justify-content: space-around;
+      gap: 4px;
+    }
+    .mobile-nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      min-height: 44px;
+      background: transparent;
+      border: 0;
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 2px;
+    }
+    .mobile-nav-btn.active { color: var(--cyan); background: rgba(56, 215, 255, 0.1); }
+    @media (max-width: 768px) {
+      body { padding-bottom: 76px; overflow-x: hidden; }
+      .shell { padding: 0 14px; }
+      .top-bar-inner { gap: 10px; padding: 8px 0; }
+      .cmdk-trigger { min-width: 0; flex: 1; padding: 8px 10px; }
+      .cmdk-trigger .kbd { display: none; }
+      .account-cluster { width: 100%; justify-content: space-between; gap: 8px; }
+      .btn, .btn-outline, .tab-btn { min-height: 44px; font-size: 14px; }
+      input, select, textarea { min-height: 44px; font-size: 16px; }
+      .auth-row > a.btn-outline, .auth-row > button.btn-outline, .auth-row > button.btn {
+        flex: 1 1 calc(50% - 6px);
+        min-width: 140px;
+      }
+      .workspace-header { flex-direction: column; align-items: stretch; }
+      .workspace-header .btn { width: 100%; }
+      .mobile-bottom-nav { display: flex; }
+    }
+    @media (max-width: 480px) {
+      .auth-row > a.btn-outline, .auth-row > button.btn-outline, .auth-row > button.btn {
+        flex: 1 1 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -483,27 +560,40 @@
       </div>
 
       <div class="auth-row" style="padding-bottom:12px;border-bottom:1px solid var(--line);">
-        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=github" data-sso-provider="github">
+        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=apple" data-sso-provider="apple" onclick="return handleSsoClick(event, 'apple')" style="background:#fff;color:#000;border-color:#fff;font-weight:700;">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+          <span>Sign in with Apple</span>
+        </a>
+        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=google" data-sso-provider="google" onclick="return handleSsoClick(event, 'google')">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M21.35 11.1h-9.17v2.73h6.51c-.33 1.81-1.5 3.34-3.2 4.37v3.62h5.18c3.03-2.79 4.78-6.9 4.78-11.72 0-.8-.08-1.57-.23-2.3z" fill="#4285F4"/><path d="M12.18 22c4.32 0 7.95-1.43 10.6-3.88l-5.18-3.62c-1.43.96-3.26 1.53-5.42 1.53-4.17 0-7.7-2.81-8.96-6.6H-2.1v3.73C.54 18.41 5.93 22 12.18 22z" fill="#34A853"/><path d="M3.22 13.43A9.55 9.55 0 0 1 2.72 10c0-1.19.21-2.35.5-3.43V2.84H-2.1A15.98 15.98 0 0 0-3.82 10c0 2.58.62 5.02 1.72 7.16l5.32-3.73z" fill="#FBBC05"/><path d="M12.18 3.97c2.35 0 4.46.81 6.12 2.4l4.59-4.59C20.12-.79 16.5 0 12.18 0 5.93 0 .54 3.59-2.1 8.84l5.32 3.73c1.26-3.79 4.79-6.6 8.96-6.6z" fill="#EA4335"/></svg>
+          <span>Sign in with Google SSO</span>
+        </a>
+        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=github" data-sso-provider="github" onclick="return handleSsoClick(event, 'github')">
           <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.4 7.86 10.93.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.38-3.88-1.38-.52-1.33-1.28-1.68-1.28-1.68-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11.05 11.05 0 0 1 5.78 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.59.24 2.76.12 3.05.74.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
           <span>Sign in with GitHub SSO</span>
         </a>
-        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=google" data-sso-provider="google">
-          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
-          <span>Sign in with Google SSO</span>
-        </a>
-        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=okta" data-sso-provider="okta">
+        <a class="btn-outline" href="/v1/cloud/sso/authorize?provider=okta" data-sso-provider="okta" onclick="return handleSsoClick(event, 'okta')">
           <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           <span>Enterprise SSO (Okta / Entra SAML)</span>
         </a>
         <span style="font-size:12px;color:var(--muted);margin-left:auto;">CLI SSO: <code>npx thumbgate login --sso</code></span>
       </div>
-
       <form id="portal-signin-form" class="auth-row" onsubmit="event.preventDefault(); signInPortal();">
         <input id="portal-api-key" type="password" placeholder="API Key (tg_live_... or tg_sso_...)" style="flex:1;min-width:240px;font-family:var(--mono);">
         <input id="portal-email" type="email" placeholder="Work email (you@company.com)" style="flex:1;min-width:220px;">
         <button type="submit" class="btn" id="portal-signin-btn">Sign In to Cloud Portal</button>
       </form>
     </section>
+    <div id="sso-toast-banner" class="sso-toast-banner" role="status" aria-live="polite">
+      <div>
+        <strong style="color:var(--green);" id="sso-toast-title">✓ Signed in via SSO</strong>
+        <span id="sso-toast-detail" style="margin-left:8px;color:var(--muted);"></span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button type="button" class="btn-outline" style="padding:5px 10px;font-size:12px;" onclick="copyActiveSsoKey()">Copy API Key</button>
+        <button type="button" class="btn-outline" style="padding:5px 10px;font-size:12px;" onclick="document.getElementById('sso-toast-banner').classList.remove('visible')">Dismiss</button>
+      </div>
+    </div>
 
     <!-- WORKSPACE HEADER -->
     <div class="workspace-header">
@@ -981,10 +1071,87 @@ npx skills add https://thumbgate.ai</pre>
       for (var i = 0; i < btns.length; i++) {
         btns[i].classList.toggle('active', btns[i].getAttribute('data-tab') === tabId);
       }
+      var mBtns = document.querySelectorAll('.mobile-nav-btn');
+      for (var k = 0; k < mBtns.length; k++) {
+        mBtns[k].classList.toggle('active', mBtns[k].getAttribute('data-mobile-tab') === tabId);
+      }
       var panes = document.querySelectorAll('.tab-pane');
       for (var j = 0; j < panes.length; j++) {
         panes[j].classList.toggle('active', panes[j].id === 'pane-' + tabId);
       }
+    }
+
+    function showSsoToast(provider, email, token) {
+      var banner = document.getElementById('sso-toast-banner');
+      var titleEl = document.getElementById('sso-toast-title');
+      var detailEl = document.getElementById('sso-toast-detail');
+      if (!banner || !titleEl || !detailEl) return;
+      var pLabel = String(provider || 'SSO').toUpperCase();
+      if (pLabel === 'APPLE') pLabel = 'Apple ID';
+      else if (pLabel === 'GOOGLE') pLabel = 'Google Workspace';
+      else if (pLabel === 'GITHUB') pLabel = 'GitHub';
+      titleEl.textContent = '✓ Signed in with ' + pLabel + ' SSO (' + email + ')';
+      detailEl.innerHTML = 'Provisioned token: <code>' + escapeHtml((token || '').slice(0, 22)) + '…</code>';
+      banner.classList.add('visible');
+      var statusEl = document.getElementById('portal-status-msg');
+      if (statusEl) {
+        statusEl.textContent = '✓ ' + pLabel + ' SSO active (' + email + ')';
+      }
+    }
+
+    function copyActiveSsoKey() {
+      if (!PORTAL_API_KEY) return;
+      try {
+        navigator.clipboard.writeText(PORTAL_API_KEY);
+        var titleEl = document.getElementById('sso-toast-title');
+        if (titleEl) titleEl.textContent = '✓ Copied API Key to clipboard!';
+      } catch (e) {}
+    }
+
+    function handleSsoClick(ev, provider) {
+      if (ev && (ev.metaKey || ev.ctrlKey || ev.shiftKey)) return true;
+      if (ev) ev.preventDefault();
+      var emailInput = document.getElementById('portal-email');
+      var currentEmail = (emailInput && emailInput.value.trim()) || PORTAL_EMAIL || '';
+      var defaultProviderEmail = provider === 'apple'
+        ? 'iganapolsky@icloud.com'
+        : provider === 'google'
+          ? 'iganapolsky@gmail.com'
+          : provider === 'github'
+            ? 'igorganapolsky@github.com'
+            : 'igor@company.com';
+      var chosenEmail = currentEmail || defaultProviderEmail;
+      if (emailInput) emailInput.value = chosenEmail;
+      fetch('/v1/cloud/sso/authorize?provider=' + encodeURIComponent(provider) + '&email=' + encodeURIComponent(chosenEmail) + '&format=json', {
+        headers: { 'Accept': 'application/json' }
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (!data || !data.ok) {
+            window.location.href = '/v1/cloud/sso/authorize?provider=' + encodeURIComponent(provider) + '&email=' + encodeURIComponent(chosenEmail);
+            return;
+          }
+          PORTAL_API_KEY = data.ssoToken;
+          PORTAL_EMAIL = data.email;
+          document.getElementById('portal-api-key').value = data.ssoToken;
+          document.getElementById('portal-email').value = data.email;
+          try {
+            localStorage.setItem('tg_cloud_sso_token', data.ssoToken);
+            localStorage.setItem('tg_cloud_sso_email', data.email);
+            localStorage.setItem('tg_cloud_sso_provider', data.provider);
+          } catch (e) {}
+          if (data.session) renderPortalSession(data.session);
+          else loadPortalSession();
+          toggleAuthDrawer(false);
+          showSsoToast(data.provider, data.email, data.ssoToken);
+          try {
+            window.history.replaceState(null, '', '/cloud?sso_provider=' + encodeURIComponent(data.provider) + '&email=' + encodeURIComponent(data.email));
+          } catch (e) {}
+        })
+        .catch(function() {
+          window.location.href = '/v1/cloud/sso/authorize?provider=' + encodeURIComponent(provider) + '&email=' + encodeURIComponent(chosenEmail);
+        });
+      return false;
     }
 
     function initSsoQueryParams() {
@@ -995,19 +1162,24 @@ npx skills add https://thumbgate.ai</pre>
           document.getElementById('portal-email').value = PORTAL_EMAIL;
         }
         var params = new URLSearchParams(window.location.search);
-        var ssoToken = params.get('sso_token');
-        var emailParam = params.get('email');
+        var ssoToken = params.get('sso_token') || localStorage.getItem('tg_cloud_sso_token') || '';
+        var ssoProvider = params.get('sso_provider') || localStorage.getItem('tg_cloud_sso_provider') || '';
+        var emailParam = params.get('email') || localStorage.getItem('tg_cloud_sso_email') || '';
         if (ssoToken) {
           PORTAL_API_KEY = ssoToken;
           document.getElementById('portal-api-key').value = ssoToken;
+          try { localStorage.setItem('tg_cloud_sso_token', ssoToken); } catch (e) {}
         }
         if (emailParam) {
           PORTAL_EMAIL = emailParam;
           document.getElementById('portal-email').value = emailParam;
+          try { localStorage.setItem('tg_cloud_sso_email', emailParam); } catch (e) {}
+        }
+        if (ssoToken && (params.get('sso_token') || ssoProvider)) {
+          showSsoToast(ssoProvider || 'SSO', emailParam || 'authenticated', ssoToken);
         }
       } catch (e) {}
     }
-
     function renderPortalSession(s) {
       if (!s || !s.ok) return;
       var tokensSaved = Number(s.telemetry.tokensSavedTotal || 0);
@@ -1216,5 +1388,27 @@ npx skills add https://thumbgate.ai</pre>
     loadPortalSession();
     recalcTeamRoi();
   </script>
+  <nav class="mobile-bottom-nav" aria-label="Mobile Bottom Navigation">
+    <button type="button" class="mobile-nav-btn active" data-mobile-tab="control" onclick="switchPortalTab('control')">
+      <span>🛡️</span>
+      <span>Control</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-mobile-tab="installers" onclick="switchPortalTab('installers')">
+      <span>⚡</span>
+      <span>Install</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-mobile-tab="subscription" onclick="switchPortalTab('subscription')">
+      <span>💳</span>
+      <span>Billing</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" data-mobile-tab="dpo" onclick="switchPortalTab('dpo')">
+      <span>🧬</span>
+      <span>DPO</span>
+    </button>
+    <button type="button" class="mobile-nav-btn" onclick="toggleAuthDrawer(true)">
+      <span>🔑</span>
+      <span>SSO</span>
+    </button>
+  </nav>
 </body>
 </html>

@@ -2,12 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#080b10">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="generator" content="ThumbGate">
   <meta name="author" content="Igor Ganapolsky">
   <meta name="thumbgate-version" content="1.40.0">
   __GOOGLE_SITE_VERIFICATION_META__
   <link rel="icon" type="image/png" href="/thumbgate-icon.png">
+  <link rel="apple-touch-icon" href="/thumbgate-icon.png">
   <link rel="canonical" href="__APP_ORIGIN__/">
   <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
   <meta property="og:image" content="https://thumbgate.ai/og.png">
@@ -759,6 +763,14 @@
     }
     @media (max-width: 900px) {
       .cloud-showcase-grid, .plugin-tile-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      body { overflow-x: hidden; }
+      .shell { width: calc(100% - 28px); }
+      .nav-inner { flex-wrap: wrap; gap: 10px; padding: 10px 0; }
+      .nav-links { width: 100%; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+      .nav-buy, .nav-enterprise, .button-primary, .button-pro, .plugin-pill { min-height: 44px; }
+      input, select, textarea { font-size: 16px; min-height: 44px; }
     }
   </style>
   <!-- WebMCP-ready: read-only agent tools via document.modelContext -->

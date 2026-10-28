@@ -105,6 +105,9 @@ const GET_ROUTE_HANDLERS = {
       redirectUri: query.redirect_uri || '',
       appOrigin,
     });
+    if (query.format === 'json') {
+      return jsonResponse(200, sso);
+    }
     return { statusCode: 302, headers: { Location: sso.redirectUrl, 'Cache-Control': 'no-store' }, body: '' };
   },
   '/v1/cloud/portal/session': ({ query, token }) =>
