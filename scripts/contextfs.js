@@ -1177,13 +1177,22 @@ function writeSessionHandoff({ project, branch, lastTask, nextStep, blockers, op
 
   let gitContext = {};
   try {
-    const { execSync } = require('child_process');
+    const { execFileSync } = require('child_process');
     const cwd = process.cwd();
+    const execOpts = { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] };
+
+    let modifiedFiles = [];
+    try {
+      modifiedFiles = execFileSync('git', ['diff', '--name-only', 'HEAD~1'], execOpts).trim().split('\n').filter(Boolean);
+    } catch (e) {
+      modifiedFiles = [];
+    }
+
     gitContext = {
-      branch: branch || execSync('git rev-parse --abbrev-ref HEAD', { cwd, encoding: 'utf8' }).trim(),
-      lastCommits: execSync('git log --oneline -5', { cwd, encoding: 'utf8' }).trim().split('\n'),
-      modifiedFiles: execSync('git diff --name-only HEAD~1 2>/dev/null || echo ""', { cwd, encoding: 'utf8' }).trim().split('\n').filter(Boolean),
-      status: execSync('git status --short', { cwd, encoding: 'utf8' }).trim().split('\n').filter(Boolean),
+      branch: branch || execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], execOpts).trim(),
+      lastCommits: execFileSync('git', ['log', '--oneline', '-5'], execOpts).trim().split('\n').filter(Boolean),
+      modifiedFiles,
+      status: execFileSync('git', ['status', '--short'], execOpts).trim().split('\n').filter(Boolean),
     };
   } catch (_) {
     gitContext = { branch: branch || 'unknown', lastCommits: [], modifiedFiles: [], status: [] };
@@ -1221,8 +1230,8 @@ function writeSessionHandoff({ project, branch, lastTask, nextStep, blockers, op
       fs.writeFileSync(mdPrimerPath, md);
       
       // Trigger full memory refresh (Layer 3, 4, 5)
-      const { execSync } = require('child_process');
-      execSync('./bin/memory.sh', { stdio: 'ignore' });
+      const { execFileSync } = require('child_process');
+      execFileSync('bash', ['./bin/memory.sh'], { stdio: 'ignore' });
     } catch (e) {
       console.error('Warning: Failed to sync to primer.md:', e.message);
     }
