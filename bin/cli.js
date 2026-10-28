@@ -2891,6 +2891,26 @@ function apolloGtmPreview() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function qwenworkPolicyGroup() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildQwenWorkPolicyGroupReport,
+    formatQwenWorkPolicyGroupReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'qwenwork-policy-group'));
+  const truthy = (value) => value === true || /^(1|true|yes|on)$/i.test(String(value || '').trim());
+  const report = buildQwenWorkPolicyGroupReport({
+    mapOnly: truthy(args['map-only']),
+    claim: args.claim || '',
+    policyJson: args['policy-json'] || '',
+    actionJson: args['action-json'] || '',
+    policyPath: args.policy || '',
+    actionPath: args.action || '',
+  });
+  if (truthy(args.json)) console.log(JSON.stringify(report, null, 2));
+  else process.stdout.write(formatQwenWorkPolicyGroupReport(report));
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function deeppatternDisciplineHonestyDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -4103,6 +4123,7 @@ function help() {
   console.log('  salt-code-policy-honesty 40-policy taxonomy + context vs PreToolUse diode (Salt Code FORMAT)');
   console.log('  infoq-architect-honesty Code-as-truth, typed host, lease, time-in-queue (InfoQ FORMAT)');
   console.log('  apollo-gtm-preview    Free ICP preview, cost quote that waits, maps or directory label (Apollo FORMAT)');
+  console.log('  qwenwork-policy-group Org policy group at the action (QwenWork FORMAT; not seats or DingTalk)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  omp-coordination-honesty   Named-model session handoff on the checkout lease (omp FORMAT; does not install omp)');
   console.log('  saas-moat-honesty     8-moat diagnostic, Ed25519 entitlement audit, and cross-customer signature loop (Walling FORMAT)');
@@ -4238,6 +4259,7 @@ const SUBCOMMAND_HELP = {
   'salt-code-policy-honesty': 'Usage: npx thumbgate salt-code-policy-honesty [--inspect-code=...] [--inspect-api=...] [--inspect-mcp=...] [--strict] [--json] [--map-only]\n\nSalt Code FORMAT steal: 40-policy taxonomy, active PreToolUse vs context injection, OpenAPI query secret diode. Does not connect to mcp.getsaltcode.com.',
   'infoq-architect-honesty': 'Usage: npx thumbgate infoq-architect-honesty [--claim="..."] [--host=javascript] [--queue=path.json] [--max-age-ms=N] [--json] [--map-only]\n\nInfoQ September 2026 FORMAT: code-as-truth, typed host, existing lease, time-in-queue. Does not register for InfoQ or install Vortex.',
   'apollo-gtm-preview': 'Usage: npx thumbgate apollo-gtm-preview [--claim="..."] [--policy=path.json] [--action=path.json] [--json] [--map-only]\n\nApollo 2026-10-28 FORMAT: free ICP preview, cost quote that waits, maps or directory label. Does not call Apollo, spend a credit, save a lead, or grab an email.',
+  'qwenwork-policy-group': 'Usage: npx thumbgate qwenwork-policy-group [--claim="..."] [--policy=path.json] [--action=path.json] [--json] [--map-only]\n\nQwenWork Enterprise Premium FORMAT: one org policy group at the action. Does not buy seats, call Alibaba Cloud, or install DingTalk, WeCom, or Feishu.',
   'board-loop': 'Usage: npx thumbgate board-loop [--apply] [--json] [--max-update-branch=1] [--max-pr-manage=1] [--max-comments=4] [--skip-pr=N]\n\nClassify Issues+PR wall: update-branch BEHIND green Dependabot, pr:manage READY, comment DIRTY/ECI. Never approve.',
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
   'omp-coordination-honesty': 'Usage: npx thumbgate omp-coordination-honesty [--claim="..."] [--handoff=path] [--json] [--map-only] [--strict]\n\nMap omp session/subagent/collab FORMAT onto the checkout lease. Does not install omp.',
@@ -5108,6 +5130,9 @@ switch (COMMAND) {
   case 'apollo-gtm':
   case 'gtm-preview':
     apolloGtmPreview();
+    break;
+  case 'qwenwork-policy-group':
+    qwenworkPolicyGroup();
     break;
   case 'workspace-search-route':
   case 'zg-search-route':

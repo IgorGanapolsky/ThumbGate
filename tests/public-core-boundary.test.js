@@ -327,7 +327,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 633 -> 638 (2026-10-16): OpenRouter Armor + Profound AEO + v1.39.0 CLI scripts.
   // 638 -> 639 (2026-10-28): scripts/apollo-gtm-preview.js + apollo-gtm-preview-honesty-not-clone skill.
   //   Measured npm pack --dry-run entryCount 639.
-  const CEILING = 639;
+  // 638 -> 639 (2026-10-28): scripts/qwenwork-policy-group.js + qwenwork-policy-group-honesty-not-clone skill.
+  // 639 -> 641 (2026-10-28): both packed together (apollo preview script + skill on top of the qwenwork pair).
+  //   Measured npm pack --dry-run entryCount 641.
+  const CEILING = 641;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
