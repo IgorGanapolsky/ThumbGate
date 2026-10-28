@@ -325,7 +325,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 625 -> 633 (2026-10-13): restored .agents/skills/deeppattern-discipline-honesty-not-clone/ in package.json files (+1)
   // 633 -> 633 (2026-10-16): public/operator-framework.html marketing page (+1, public/ package parity).
   // 633 -> 638 (2026-10-16): OpenRouter Armor + Profound AEO + v1.39.0 CLI scripts.
-  const CEILING = 638;
+  // 638 -> 639 (2026-10-28): scripts/apollo-gtm-preview.js + apollo-gtm-preview-honesty-not-clone skill.
+  //   Measured npm pack --dry-run entryCount 639.
+  const CEILING = 639;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
