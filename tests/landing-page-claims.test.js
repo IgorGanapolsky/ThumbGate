@@ -15,7 +15,7 @@ test('homepage commercial contract offers Pro $19/mo and Diagnostic $499', () =>
   assert.match(HOME_HTML, /\$499 Diagnostic/i);
   assert.match(HOME_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(HOME_HTML, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.match(HOME_HTML, /\/checkout\/pro/);
+  assert.match(HOME_HTML, /\/go\/pro-direct/);
   assert.match(HOME_HTML, /Start Pro — \$19\/mo/);
   assert.match(HOME_HTML, /Pro · \$19\/mo/);
   assert.doesNotMatch(HOME_HTML, /href="[^"]*workflow-sprint-intake|\/go\/sprint/i);
@@ -53,7 +53,7 @@ test('Pro detail stays code-backed and is linked from primary cash paths', () =>
   assert.match(PRO_HTML, /DPO/i);
   assert.match(server, /'\/v1\/dpo\/export'/);
   assert.ok(pkg.files.includes('public/dashboard.html'));
-  assert.match(HOME_HTML, /\/checkout\/pro/i);
+  assert.match(HOME_HTML, /\/go\/pro-direct/i);
   assert.match(PRICING_HTML, /\/checkout\/pro/i);
 });
 
