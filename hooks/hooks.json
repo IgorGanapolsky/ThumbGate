@@ -23,6 +23,30 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "^(?:Bash|Shell|bash)$|teams.*(send|reply|post_message)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/bin/cli.js", "observe-tool-result"]
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "^(?:Bash|Shell|bash)$|teams.*(send|reply|post_message)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/bin/cli.js", "observe-tool-result"]
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [
