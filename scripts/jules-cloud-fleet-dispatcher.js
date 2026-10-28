@@ -219,9 +219,21 @@ async function scanAndProcessJulesEmailsViaCdp({
     return { scanned: false, reason: `cdp_unreachable:${err.message}`, processedEmails: 0, dispatchedSessions: [] };
   }
 
-  const gmailTab = (Array.isArray(tabs) ? tabs : []).find(
-    (t) => t && t.type === 'page' && String(t.url || '').includes('mail.google.com') && t.webSocketDebuggerUrl
+  let gmailTab = (Array.isArray(tabs) ? tabs : []).find(
+    (t) => t && t.type === 'page' && String(t.url || '').includes('mail.google.com') && /^wss?:\/\//i.test(String(t.webSocketDebuggerUrl || ''))
   );
+  if (!gmailTab && fetchImpl === globalThis.fetch) {
+    try {
+      const newRes = await fetchImpl(`${cdpOrigin}/json/new?https://mail.google.com/mail/u/0/%23inbox`, { method: 'PUT' });
+      if (newRes.ok) {
+        const created = await newRes.json();
+        if (created && /^wss?:\/\//i.test(String(created.webSocketDebuggerUrl || ''))) {
+          await new Promise((r) => setTimeout(r, 4000));
+          gmailTab = created;
+        }
+      }
+    } catch (_) {}
+  }
   if (!gmailTab) {
     return { scanned: true, reason: 'no_gmail_tab_open', processedEmails: 0, dispatchedSessions: [] };
   }
@@ -230,7 +242,13 @@ async function scanAndProcessJulesEmailsViaCdp({
   const cdpTimeoutMs = Math.max(15000, 6000 * maxEmails + 5000);
 
   const cdpResult = await new Promise((resolve) => {
-    const ws = new WebSocketImpl(gmailTab.webSocketDebuggerUrl);
+    let ws;
+    try {
+      ws = new WebSocketImpl(gmailTab.webSocketDebuggerUrl);
+    } catch (err) {
+      resolve({ error: `invalid_ws_url:${err.message}` });
+      return;
+    }
     const timer = setTimeout(() => {
       try { ws.close(); } catch (_) {}
       resolve({ error: 'cdp_timeout' });
@@ -244,11 +262,17 @@ async function scanAndProcessJulesEmailsViaCdp({
             if (!location.hash.startsWith('#inbox')) {
               location.hash = '#inbox';
               await new Promise(r => setTimeout(r, 2500));
+            } else {
+              const refreshBtn = Array.from(document.querySelectorAll('div[role="button"][aria-label="Refresh"], [data-tooltip="Refresh"], div[act="20"]')).find(el => el.offsetParent !== null);
+              if (refreshBtn) {
+                try { refreshBtn.click(); await new Promise(r => setTimeout(r, 1500)); } catch (_) {}
+              }
             }
             const visRows = () => Array.from(document.querySelectorAll('tr.zA')).filter(r => r.offsetParent !== null);
             const results = [];
             const maxIter = ${Number(maxEmails) || 20};
-            const targetRegex = /\\bJules\\b|jules-noreply@google\\.com|improvements for your repos|\\bFo\\b|Fo for Igor|fo@wajo\\.ai|\\bBoardy\\b|boardy@boardy\\.ai|\\bThumbgate\\b|Argus Launchpad|Cross-request KV cache|Arbitrage Business Strategy/i;
+            // Only scan Jules repo-suggestion emails via CDP; Fo/Boardy/Merx/CoderLegion are handled via verified IMAP+SMTP in fo-thumbgate-inbox-cron.py
+            const targetRegex = /\\bJules\\b|jules-noreply@google\\.com|improvements for your repos|\\bThumbgate\\b|Argus Launchpad|Cross-request KV cache|Arbitrage Business Strategy/i;
 
             for (let i = 0; i < maxIter; i++) {
               if (location.hash !== '#inbox') {
@@ -260,9 +284,7 @@ async function scanAndProcessJulesEmailsViaCdp({
               if (!targetRow) break;
               const rowSnippet = (targetRow.innerText || '').replace(/\\s+/g, ' ').trim().slice(0, 240);
               const isJules = /\\bJules\\b|jules-noreply@google\\.com|improvements for your repos/i.test(rowSnippet);
-              const isFo = /\\bFo\\b|Fo for Igor|fo@wajo\\.ai/i.test(rowSnippet);
-              const isBoardy = /\\bBoardy\\b|boardy@boardy\\.ai/i.test(rowSnippet);
-              const category = isJules ? 'jules' : isFo ? 'fo' : isBoardy ? 'boardy' : 'thumbgate_note';
+              const category = isJules ? 'jules' : 'thumbgate_note';
 
               targetRow.click();
               await new Promise(r => setTimeout(r, 2200));
@@ -274,36 +296,7 @@ async function scanAndProcessJulesEmailsViaCdp({
               await new Promise(r => setTimeout(r, 800));
               const main = document.querySelector('[role="main"]') || document.body;
               const text = (main.innerText || '').slice(0, 12000);
-
-              let replied = false;
-              if (isFo || isBoardy) {
-                const replyBtns = Array.from(document.querySelectorAll('[role="button"], span[role="link"]')).filter(
-                  el => el.offsetParent !== null && /^Reply$/i.test((el.innerText || el.getAttribute('aria-label') || '').trim())
-                );
-                if (replyBtns.length > 0) {
-                  replyBtns[replyBtns.length - 1].click();
-                  await new Promise(r => setTimeout(r, 1400));
-                  const box = Array.from(document.querySelectorAll('div[aria-label="Message Body"][contenteditable="true"], div[role="textbox"][contenteditable="true"]')).filter(el => el.offsetParent !== null).pop();
-                  if (box) {
-                    box.focus();
-                    const replyMsg = isFo
-                      ? "Hi Fo,\\n\\nYes, please go ahead and execute all of these and send the output over here.\\n\\nThanks, Igor"
-                      : "Hi Boardy,\\n\\nYes, please go ahead and send the full draft and next steps over here.\\n\\nThanks, Igor";
-                    box.innerText = replyMsg;
-                    box.dispatchEvent(new Event('input', { bubbles: true }));
-                    await new Promise(r => setTimeout(r, 500));
-                    const sendBtn = Array.from(document.querySelectorAll('div[role="button"][aria-label^="Send"]')).filter(el => el.offsetParent !== null).pop();
-                    if (sendBtn) {
-                      sendBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-                      sendBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
-                      sendBtn.click();
-                      replied = true;
-                      await new Promise(r => setTimeout(r, 2000));
-                    }
-                  }
-                }
-              }
-
+              const replied = false;
               // Return to #inbox and delete via visible row checkbox + toolbar Delete button (reliable in both thread & list views)
               location.hash = '#inbox';
               await new Promise(r => setTimeout(r, 1800));
@@ -370,6 +363,7 @@ async function scanAndProcessJulesEmailsViaCdp({
     const parsedSuggestions = parseJulesEmailSuggestions(emailResult.text);
     allDeleted.push(emailResult.deleted);
     for (const item of parsedSuggestions) {
+      if (/^dayglass(?:-mac)?$/i.test(item.repoName)) continue;
       allParsedRepos.push(item.repoName);
       if (!apiKey) continue;
       const title = `fix(${item.repoName.toLowerCase()}): address proactive Jules email code health & test improvements`;
@@ -447,6 +441,21 @@ async function runJules24x7DriverCycle({
     WebSocketImpl,
     maxEmails,
   });
+  // Also trigger the verified IMAP+SMTP Fo/Boardy/ThumbGate inbox monitor on every 1-minute cycle
+  let imapMonitorStatus = 'skipped';
+  const imapScript = path.join(os.homedir(), '.local', 'bin', 'fo-thumbgate-inbox-cron.py');
+  if (fs.existsSync(imapScript)) {
+    try {
+      execFileSync('/usr/bin/python3', [imapScript], {
+        encoding: 'utf8',
+        timeout: 25000,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      imapMonitorStatus = 'ok';
+    } catch (err) {
+      imapMonitorStatus = `error:${err.message.slice(0, 120)}`;
+    }
+  }
 
   return {
     timestamp: new Date().toISOString(),

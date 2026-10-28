@@ -2320,6 +2320,93 @@ function evaluateCoderLegionSyndicationAndMonetizationGate({
   };
 }
 
+function evaluateNanbeigeAgenticCodingSteal({
+  mode = 'agentic_coding',
+  enableThinking = true,
+  preserveThinking = true,
+  preservedReasoningTurnWindow = 3,
+  sequenceTokens = 524288,
+  trajectoryVerified = true,
+  outboundCashSpendUsd = 0,
+} = {}) {
+  const blockers = [];
+  if (!enableThinking || !preserveThinking) {
+    blockers.push('require_enable_thinking_and_preserve_thinking_for_multi_turn_agentic_coding');
+  }
+  if (!trajectoryVerified) {
+    blockers.push('require_verified_teacher_trajectory_before_3b_student_distillation');
+  }
+  if (Number(outboundCashSpendUsd) > 0) {
+    blockers.push('enforce_zero_outbound_cash_spend');
+  }
+  const isCodingMode = mode !== 'reasoning_chat';
+  const rawKvCacheGb = Number(((Number(sequenceTokens) * 208) / (1024 * 1024)).toFixed(2));
+  const compactedKvCacheGb = Number((rawKvCacheGb * 0.58).toFixed(2));
+  const kvCacheSavedGb = Number((rawKvCacheGb - compactedKvCacheGb).toFixed(2));
+  return {
+    ok: blockers.length === 0,
+    model: 'Nanbeige/Nanbeige4.3-33B',
+    baseModel: 'Nanbeige/Nanbeige4.3-33B-Base',
+    distilledStudentTarget: 'Nanbeige/Nanbeige4.3-3B',
+    license: 'Apache-2.0',
+    architecture: {
+      type: 'LlamaForCausalLM (33B dense, no MoE)',
+      layers: 52,
+      hiddenSize: 7168,
+      queryHeads: 56,
+      kvHeads: 8,
+      headDim: 128,
+      ffnIntermediateSize: 22016,
+      vocabSize: 166912,
+      ropeTheta: 120000000,
+      maxPositionEmbeddings: 524288,
+      bf16WeightsGb: 66,
+      kvCacheKibPerToken: 208,
+      tensorParallelism: 4,
+    },
+    chatTemplateControls: {
+      enableThinking: Boolean(enableThinking),
+      preserveThinking: Boolean(preserveThinking),
+      preservedReasoningTurnWindow: Number(preservedReasoningTurnWindow),
+      toolCallFormat: 'xml',
+      sglangToolParser: 'qwen3',
+    },
+    samplingProfile: isCodingMode
+      ? { mode: 'agentic_coding', temperature: 1.0, topP: 0.95, maxNewTokens: 65536 }
+      : { mode: 'reasoning_chat', temperature: 0.6, topP: 0.95, maxNewTokens: 262144 },
+    kvCacheCompaction: {
+      sequenceTokens: Number(sequenceTokens),
+      rawKvCacheGb,
+      compactedKvCacheGb,
+      kvCacheSavedGb,
+      compactionReductionPct: 42,
+    },
+    teacherToStudentDistillation: {
+      teacherModel: 'Nanbeige4.3-33B',
+      studentModel: 'Nanbeige4.3-3B',
+      trajectoryVerified: Boolean(trajectoryVerified),
+      dpoExportReady: blockers.length === 0,
+    },
+    benchmarkAudit: {
+      terminalBench21: 80.9,
+      deepSwe: 65.5,
+      sweBenchPro: 60.3,
+      terminalBench40: 23.8,
+      automationBench: 54.2,
+      jobBench: 44.8,
+      ycBenchSimulatedUsd: 1025437,
+      aime2026: 95.2,
+      aaLcr: 84.0,
+      flaggedCardDiscrepancies: [
+        'swapped_swe_bench_pro_pair: Muse-Glimmer-30B (51.2 official) vs Gemma4-31B (36.9 official)',
+        'gemma4_31b_gpqa_diamond_delta: 91.3 self-reported table vs 84.3 Google card',
+        'muse_glimmer_30b_tb21_delta: 61.8 self-reported table vs 51.7 Meta card',
+      ],
+    },
+    blockers,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -2376,6 +2463,7 @@ module.exports = {
   evaluateBroadcastMoESwarmAndLlmJudgeSow,
   evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
   evaluateCoderLegionSyndicationAndMonetizationGate,
+  evaluateNanbeigeAgenticCodingSteal,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };

@@ -355,6 +355,7 @@ const {
   evaluateBroadcastMoESwarmAndLlmJudgeSow,
   evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
   evaluateCoderLegionSyndicationAndMonetizationGate,
+  evaluateNanbeigeAgenticCodingSteal,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -9819,6 +9820,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       '/v1/cloud/swarm/moe-judge': evaluateBroadcastMoESwarmAndLlmJudgeSow,
       '/v1/cloud/merx-agentshield/gate': evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
       '/v1/cloud/coderlegion/gate': evaluateCoderLegionSyndicationAndMonetizationGate,
+      '/v1/cloud/nanbeige/gate': evaluateNanbeigeAgenticCodingSteal,
     };
     if (cloudEvalRoutes[pathname] && (isGetLikeRequest || req.method === 'POST')) {
       const body = req.method === 'POST' ? await parseJsonBody(req) : Object.fromEntries(parsed.searchParams.entries());

@@ -42,6 +42,7 @@ const {
   evaluateBroadcastMoESwarmAndLlmJudgeSow,
   evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
   evaluateCoderLegionSyndicationAndMonetizationGate,
+  evaluateNanbeigeAgenticCodingSteal,
 } = require('./cloud-token-firewall');
 
 const CLOUD_PORTAL_HTML_PATH = path.resolve(__dirname, '../public/cloud.html');
@@ -90,6 +91,7 @@ const CLOUD_EVAL_HANDLERS = {
   '/v1/cloud/swarm/moe-judge': evaluateBroadcastMoESwarmAndLlmJudgeSow,
   '/v1/cloud/merx-agentshield/gate': evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
   '/v1/cloud/coderlegion/gate': evaluateCoderLegionSyndicationAndMonetizationGate,
+  '/v1/cloud/nanbeige/gate': evaluateNanbeigeAgenticCodingSteal,
   '/v1/cloud/ci-trail-eval': evaluateEntireCiTrailAndProjectSync,
   '/v1/cloud/dpo-sync': buildRlhfDpoTrainingPairFromInterception,
 };

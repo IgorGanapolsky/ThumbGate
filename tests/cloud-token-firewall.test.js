@@ -40,6 +40,7 @@ const {
   evaluateBroadcastMoESwarmAndLlmJudgeSow,
   evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
   evaluateCoderLegionSyndicationAndMonetizationGate,
+  evaluateNanbeigeAgenticCodingSteal,
   resetCloudFirewallStateForTests,
 } = require('../src/cloud-token-firewall');
 const { parseJulesEmailSuggestions } = require('../scripts/jules-cloud-fleet-dispatcher');
@@ -421,6 +422,7 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
     ['/v1/cloud/swarm/moe-judge', { prompt: 'ship feature', sharedFactsReused: true }],
     ['/v1/cloud/merx-agentshield/gate', { auditGrade: 'A+' }],
     ['/v1/cloud/coderlegion/gate', { partnerRevSharePct: 50 }],
+    ['/v1/cloud/nanbeige/gate', { mode: 'agentic_coding', enableThinking: true, preserveThinking: true }],
     ['/v1/cloud/intercept', { sessionId: 's1', messages: [{ role: 'user', content: 'hi' }] }],
   ]) {
     const r = await lambdaHandler({
@@ -652,6 +654,19 @@ test('syncTeamPolicyAndThreatPacks and evaluateRachelWoodsCraftAndPlaybookMiddle
   });
   assert.equal(legionBad.ok, false);
   assert.equal(legionBad.blockers.length, 2);
+
+  const nanbeigeGood = evaluateNanbeigeAgenticCodingSteal();
+  assert.equal(nanbeigeGood.ok, true);
+  assert.equal(nanbeigeGood.benchmarkAudit.terminalBench21, 80.9);
+  assert.equal(nanbeigeGood.kvCacheCompaction.kvCacheSavedGb > 40, true);
+
+  const nanbeigeBad = evaluateNanbeigeAgenticCodingSteal({
+    preserveThinking: false,
+    trajectoryVerified: false,
+    outboundCashSpendUsd: 5,
+  });
+  assert.equal(nanbeigeBad.ok, false);
+  assert.equal(nanbeigeBad.blockers.length, 3);
 });
 
 test('Python AWS Lambda SQS worker (deploy/aws/sqs_ingest_worker.py) and PostgreSQL migration work cleanly', () => {
@@ -1055,6 +1070,11 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     assert.equal(legionGetRes.status, 200);
     const legionGetJson = await legionGetRes.json();
     assert.equal(legionGetJson.ok, true);
+    const nanbeigeGetRes = await fetch(`${origin}/v1/cloud/nanbeige/gate`);
+    assert.equal(nanbeigeGetRes.status, 200);
+    const nanbeigeGetJson = await nanbeigeGetRes.json();
+    assert.equal(nanbeigeGetJson.ok, true);
+    assert.equal(nanbeigeGetJson.model, 'Nanbeige/Nanbeige4.3-33B');
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.match(homeHtml, /Start Cloud Indie/);
     assert.match(homeHtml, /Start Cloud Startup/);
