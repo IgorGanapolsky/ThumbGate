@@ -30,6 +30,15 @@ test('GitFastCache: resolveGitBinary returns an absolute executable path', () =>
   assert.ok(FIXED_GIT_BIN_CANDIDATES.some((c) => c === bin) || bin.startsWith('/'));
 });
 
+test('GitFastCache: handles fs.realpathSync errors by falling back', () => {
+  const repo = createTempGitRepo('fast-cache-repo-error-');
+  const cache = new GitFastCache();
+
+  const nonExistentDir = path.join(repo, 'does-not-exist');
+  const root = cache.findRepoRoot(nonExistentDir);
+  assert.equal(fs.realpathSync(root), fs.realpathSync(repo));
+});
+
 test('GitFastCache: resolves repository root accurately', () => {
   const repo = createTempGitRepo('fast-cache-repo-');
   const cache = new GitFastCache();
