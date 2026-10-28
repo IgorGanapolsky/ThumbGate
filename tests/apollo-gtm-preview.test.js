@@ -98,6 +98,18 @@ test('an ICP check allows a reason and denies an email', () => {
     reason: 'matches',
     email: 'a@b.example',
   }).reason, 'email-on-preview');
+  assert.equal(decide({
+    point: 'icp.check',
+    reason: 'fits',
+    creditsSpent: 1,
+    fetch: true,
+    enroll: true,
+  }).reason, 'sequence-stays-outside');
+  assert.equal(decide({
+    point: 'icp.check',
+    reason: 'fits',
+    creditsSpent: 1,
+  }).reason, 'credits-before-preview');
 });
 
 test('a cost quote waits, and a credit spend stays outside', () => {
@@ -124,6 +136,14 @@ test('a cost quote waits, and a credit spend stays outside', () => {
     costShown: true,
     approved: true,
   }).reason, 'quote-waits');
+  assert.equal(decide({
+    point: 'cost.quote',
+    costCredits: 4,
+    costShown: true,
+    approved: false,
+    creditsSpent: 0,
+    saved: true,
+  }).reason, 'preview-does-not-save');
 
   assert.equal(decide({
     point: 'credit.spend',
@@ -159,6 +179,11 @@ test('a source label allows and a fetch denies', () => {
   assert.equal(decide({ point: 'source.name', source: 'maps', fetch: false }).decision, 'allow');
   assert.equal(decide({ point: 'source.name', source: 'directory' }).decision, 'allow');
   assert.equal(decide({ point: 'source.name', source: 'maps', fetch: true }).reason, 'no-fetch');
+  assert.equal(decide({
+    point: 'source.name',
+    source: 'maps',
+    creditsSpent: 1,
+  }).reason, 'credits-before-preview');
   assert.equal(decide({ point: 'source.name', source: 'web' }).reason, 'unknown-source');
   assert.equal(decide(
     { point: 'source.name', source: 'stated' },
@@ -205,6 +230,35 @@ test('the module does not open a network or carry a URL', () => {
   // treats includes() on a hostname as a URL allowlist.
   const vendorHost = 'apollo.' + 'io';
   assert.equal(src.split(vendorHost).length, 1);
+});
+
+test('supplied null, false, or zero JSON fails closed', () => {
+  const nulled = buildApolloGtmPreviewReport({
+    policyJson: 'null',
+    actionJson: 'null',
+  });
+  assert.equal(nulled.status, 'fail');
+  assert.equal(nulled.evaluation.reason, 'missing-policy');
+
+  const falsy = buildApolloGtmPreviewReport({
+    policyJson: 'false',
+    actionJson: '0',
+  });
+  assert.equal(falsy.status, 'fail');
+  assert.equal(falsy.evaluation.reason, 'missing-policy');
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'apollo-gtm-null-'));
+  const policyPath = path.join(dir, 'policy.json');
+  const actionPath = path.join(dir, 'action.json');
+  fs.writeFileSync(policyPath, 'null');
+  fs.writeFileSync(actionPath, 'null');
+  const files = buildApolloGtmPreviewReport({ policyPath, actionPath });
+  assert.equal(files.status, 'fail');
+  assert.equal(files.evaluation.reason, 'missing-policy');
+
+  const claimOnly = buildApolloGtmPreviewReport({ claim: 'preview stays free' });
+  assert.equal(claimOnly.status, 'ready');
+  assert.equal(claimOnly.evaluation, null);
 });
 
 test('the CLI map is ready and a bad policy file exits 1', () => {

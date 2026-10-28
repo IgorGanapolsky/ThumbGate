@@ -33,4 +33,4 @@ npx thumbgate apollo-gtm-preview --json --policy=policy.json --action=action.jso
 npm run test:apollo-gtm-preview
 ```
 
-`policy.org` and `policy.icp` are required. `previewLimit` defaults to 10 and cannot exceed 10. The hosted cloud gate is a different surface. This doctor does not add a route.
+`policy.org` and `policy.icp` are required. `previewLimit` defaults to 10 and cannot exceed 10. On `preview.list`, `icp.check`, `cost.quote`, and `source.name`, a saved lead, an enrollment, a fetch, or a non-zero `creditsSpent` denies before the point-specific check. A policy or action that is present as `null`, `false`, or `0` fails closed. The hosted cloud gate is a different surface. This doctor does not add a route.

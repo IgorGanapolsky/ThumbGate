@@ -126,6 +126,14 @@ function creditsAreFree(action) {
   return action.creditsSpent === 0;
 }
 
+function sideEffectReason(action) {
+  if (action.saved) return 'preview-does-not-save';
+  if (action.enroll === true) return 'sequence-stays-outside';
+  if (action.fetch === true) return 'no-fetch';
+  if (!creditsAreFree(action)) return 'credits-before-preview';
+  return '';
+}
+
 function leadReason(lead) {
   if (!lead || typeof lead !== 'object' || Array.isArray(lead)) return 'missing-lead';
   const label = String(lead.label || '').trim();
@@ -185,6 +193,10 @@ function evaluateApolloGtmPreview(policy, action) {
   if (!ACTION_POINTS.includes(point)) return deny(point, 'unknown-action');
   if (!String(policy.org || '').trim()) return deny(point, 'missing-org');
   if (!String(policy.icp || '').trim()) return deny(point, 'missing-icp');
+  if (point === 'preview.list' || point === 'icp.check' || point === 'cost.quote' || point === 'source.name') {
+    const side = sideEffectReason(action);
+    if (side) return deny(point, side);
+  }
 
   if (point === 'preview.list') return evaluatePreview(policy, action);
   if (point === 'icp.check') {
@@ -228,27 +240,33 @@ function triggeredRefusals(text) {
 }
 
 function parseJson(value, label, findings) {
-  if (value == null || value === '') return null;
+  if (value == null || value === '') return { present: false, value: null };
   try {
-    return JSON.parse(value);
+    return { present: true, value: JSON.parse(value) };
   } catch {
     findings.push({ gateId: 'apollo-gtm-preview', severity: 'fail', message: `${label} is not JSON` });
-    return null;
+    return { present: true, value: null };
   }
 }
 
 function readJsonFile(filePath, label, findings) {
-  if (!filePath) return null;
+  if (!filePath) return { present: false, value: null };
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return { present: true, value: JSON.parse(fs.readFileSync(filePath, 'utf8')) };
   } catch {
     findings.push({
       gateId: 'apollo-gtm-preview',
       severity: 'fail',
       message: `${label} is not readable JSON`,
     });
-    return null;
+    return { present: true, value: null };
   }
+}
+
+function pickSide(direct, parsed, fromFile) {
+  if (direct !== undefined) return { present: true, value: direct };
+  if (parsed.present) return parsed;
+  return fromFile;
 }
 
 function buildApolloGtmPreviewReport(options = {}) {
@@ -263,14 +281,18 @@ function buildApolloGtmPreviewReport(options = {}) {
 
   let evaluation = null;
   if (!mapOnly) {
-    const policy = options.policy
-      || parseJson(options.policyJson, 'policy', findings)
-      || readJsonFile(options.policyPath, 'policy', findings);
-    const action = options.action
-      || parseJson(options.actionJson, 'action', findings)
-      || readJsonFile(options.actionPath, 'action', findings);
-    if (policy || action) {
-      evaluation = evaluateApolloGtmPreview(policy, action);
+    const policyPick = pickSide(
+      options.policy,
+      parseJson(options.policyJson, 'policy', findings),
+      readJsonFile(options.policyPath, 'policy', findings),
+    );
+    const actionPick = pickSide(
+      options.action,
+      parseJson(options.actionJson, 'action', findings),
+      readJsonFile(options.actionPath, 'action', findings),
+    );
+    if (policyPick.present || actionPick.present) {
+      evaluation = evaluateApolloGtmPreview(policyPick.value, actionPick.value);
       if (evaluation.decision !== 'allow') {
         findings.push({
           gateId: 'apollo-gtm-preview',
