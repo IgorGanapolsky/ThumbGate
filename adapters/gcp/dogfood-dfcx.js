@@ -10,7 +10,8 @@
 //
 // What it proves end-to-end, locally:
 //   * benign fulfillment -> ALLOWED (the customer's fulfillment would run)
-//   * a same-session REPEAT of a risky action -> BLOCKED before the side-effect
+//   * a refund with no external validation receipt -> BLOCKED before the side-effect
+//   * the same refund after a validation receipt -> ALLOWED once, then BLOCKED as a repeat
 //   * the caller-facing message stays generic; the reason goes to params/logs
 //
 // (Policy gates for specific tags — "block process-refund over $X without
@@ -42,8 +43,9 @@ async function main() {
 
   const scenarios = [
     { label: 'benign balance lookup', req: dfcx('lookup-balance', { account_id: 'A-100' }) },
-    { label: 'process-refund (1st attempt)', req: dfcx('process-refund', { account_id: 'A-200', amount: 500 }) },
-    { label: 'process-refund (SAME, repeat)', req: dfcx('process-refund', { account_id: 'A-200', amount: 500 }) },
+    { label: 'refund without a validation receipt', req: dfcx('process-refund', { account_id: 'A-200', amount: 500 }) },
+    { label: 'refund after external validation', req: dfcx('process-refund', { account_id: 'A-200', amount: 500, external_validation_id: 'crm-8841' }) },
+    { label: 'refund after external validation (repeat)', req: dfcx('process-refund', { account_id: 'A-200', amount: 500, external_validation_id: 'crm-8841' }) },
   ];
 
   const rows = [];

@@ -15,12 +15,23 @@ Dialogflow CX  ──►  ThumbGate gate  ──►  [allowed]  your existing fu
 
 It does **not** call any Google API, mutate Playbooks, or replace your fulfillment. It decides whether your fulfillment is allowed to run, and records each action for repeat detection.
 
+## Conversational Agents controls
+
+The gate encodes the October 2026 console split between deterministic flows and generative playbooks:
+
+- Playbooks use `gemini-2.5-flash`. Voice and rewriter lanes use `gemini-2.5-flash-lite`. A playbook cannot select another model.
+- Vertex AI Search is allowed only on a page whose name is an informational handling page. Follow-up targets stay on that page. A data store on the agent root is rejected.
+- Tags such as `process-refund` and `confirm-appointment` run only when the webhook body carries `external_validation_id` or `thumbgate_external_validated: true`. Playbook text is not a receipt.
+- Banned-phrase policy must enable full match and partial match together. A phrase defaults to full match unless it sets `match: "partial"`.
+- Standard intents need 20 to 50 training phrases, mixed capitalization, and no single keyword in 80% or more of the phrases. Auto-generated phrases that disagree with a manual entity annotation are rejected.
+- `createSessionClientPool` builds one SessionsClient for the process and reuses it on every `detectIntent`. Load plans ramp at most 2x per step, hold each step for at least 30 seconds, and run only against a test double.
+
 ## Components
 
 | File | Purpose |
 |---|---|
 | `dfcx-webhook-gate.js` | Core: maps a DFCX `WebhookRequest` → ThumbGate action, runs `evaluateGates` + repeat detection, returns allow/block. Pure + testable. |
-| `server.js` | Cloud Run / Functions entrypoint — a drop-in **proxy** that forwards allowed turns to `THUMBGATE_DFCX_FULFILLMENT_URL`. |
+| `server.js` | Cloud Run / Functions entrypoint — a drop-in **proxy** that forwards allowed turns to `THUMBGATE_DFCX_FULFILLMENT_URL` and retries HTTP 503 with exponential backoff. |
 | `vertex-scorer.js` | Optional: runs ThumbGate scoring prompts on **Gemini / Vertex AI inside the customer tenant** (REST, no SDK). |
 | `Dockerfile` | Slim Cloud Run container. |
 
@@ -30,6 +41,7 @@ It does **not** call any Google API, mutate Playbooks, or replace your fulfillme
 |---|---|
 | `THUMBGATE_DFCX_FULFILLMENT_URL` | Your existing fulfillment webhook. Allowed turns are forwarded here. |
 | `THUMBGATE_DFCX_BLOCK_MESSAGE` | Optional caller-facing message shown on block. |
+| `THUMBGATE_DFCX_WEBHOOK_MAX_ATTEMPTS` | Fulfillment retries on HTTP 503. Default 3, capped at 5. |
 | `PORT` | Set by Cloud Run (default 8080). |
 | `GEMINI_API_KEY` *or* `GOOGLE_VERTEX_PROJECT` + `GOOGLE_VERTEX_LOCATION` + `GOOGLE_VERTEX_TOKEN` | Optional — enable Gemini/Vertex scoring in-tenant. |
 

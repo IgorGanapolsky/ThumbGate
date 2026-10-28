@@ -263,6 +263,7 @@ const {
 } = require('../../scripts/feedback-aggregate');
 const {
   guardDfcxWebhook,
+  conversationalAgentsPolicy,
 } = require('../../adapters/gcp/dfcx-webhook-gate');
 const {
   buildDashboardRenderSpec,
@@ -2144,6 +2145,7 @@ function buildEnterpriseDataChatStatus(env = process.env) {
       verification: dfcxAgentId && dfcxLocation
         ? 'Agent metadata is present in env; verify via REST/console before production claims.'
         : 'No live DFCX agent env configured. Use REST/console/deployed webhook evidence before claiming a live agent.',
+      conversationalAgents: conversationalAgentsPolicy(env),
     },
     chat: {
       available: true,

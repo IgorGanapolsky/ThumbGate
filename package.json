@@ -779,7 +779,7 @@
     "test:sync-telemetry": "node --test tests/sync-telemetry-from-prod.test.js",
     "test:check-congruence": "node --test tests/check-congruence.test.js",
     "test:tool-registry": "node --test tests/tool-registry.test.js",
-    "test:dfcx-gate": "node --test tests/dfcx-webhook-gate.test.js",
+    "test:dfcx-gate": "node --test tests/dfcx-webhook-gate.test.js tests/dfcx-conversational-agents.test.js",
     "test:dfcx-gate-server": "node --test tests/dfcx-gate-server.test.js",
     "test:vertex-scorer": "node --test tests/vertex-scorer.test.js",
     "test:repeat-metric": "node --test tests/repeat-metric.test.js",

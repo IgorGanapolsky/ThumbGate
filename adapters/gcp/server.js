@@ -22,22 +22,70 @@
 
 const http = require('http');
 const path = require('path');
-const { createHttpHandler } = require('./dfcx-webhook-gate');
+const { createHttpHandler, postWebhookWithBackoff } = require('./dfcx-webhook-gate');
 
 const UPSTREAM = process.env.THUMBGATE_DFCX_FULFILLMENT_URL || '';
 
+function fulfillmentUnavailable(attempts) {
+  const parameters = {
+    thumbgate_fulfillment_status: 503,
+    thumbgate_fulfillment_attempts: attempts,
+  };
+  return {
+    fulfillment_response: {
+      messages: [{ text: { text: ['The request could not be completed because the fulfillment service was unavailable. Nothing was changed.'] } }],
+    },
+    fulfillmentResponse: {
+      messages: [{ text: { text: ['The request could not be completed because the fulfillment service was unavailable. Nothing was changed.'] } }],
+    },
+    session_info: { parameters },
+    sessionInfo: { parameters },
+  };
+}
+
 // fulfill: forward an allowed request to the customer's real fulfillment webhook.
-async function forwardFulfillment(reqBody) {
-  if (!UPSTREAM) {
-    // No upstream configured — nothing to fulfill; return an empty (no side-effect) response.
+// 503 and dropped connections retry with exponential backoff. Dialogflow does not.
+async function forwardFulfillment(reqBody, opts = {}) {
+  const url = Object.prototype.hasOwnProperty.call(opts, 'url') ? opts.url : UPSTREAM;
+  if (!url) {
     return { fulfillment_response: { messages: [] } };
   }
-  const res = await fetch(UPSTREAM, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(reqBody),
-  });
-  const text = await res.text();
+  const env = opts.env || process.env;
+  const fromEnv = Number(env.THUMBGATE_DFCX_WEBHOOK_MAX_ATTEMPTS);
+  const requested = opts.maxAttempts != null
+    ? opts.maxAttempts
+    : (Number.isFinite(fromEnv) && fromEnv >= 1 ? Math.floor(fromEnv) : 3);
+  const maxAttempts = Math.min(5, Math.max(1, requested));
+  const fetchImpl = opts.fetchImpl || fetch;
+  let delivered;
+  try {
+    delivered = await postWebhookWithBackoff(fetchImpl, url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(reqBody),
+    }, {
+      maxAttempts,
+      baseDelayMs: opts.baseDelayMs != null ? opts.baseDelayMs : 100,
+      sleep: opts.sleep,
+      random: opts.random,
+    });
+  } catch (err) {
+    return fulfillmentUnavailable(err && err.attempts ? err.attempts : maxAttempts);
+  }
+  if (delivered.attempts > 1) {
+    try {
+      console.log(JSON.stringify({
+        component: 'thumbgate-dfcx-gate',
+        event: 'fulfillment-retry',
+        attempts: delivered.attempts,
+        status: delivered.response && delivered.response.status,
+      }));
+    } catch (_) { /* logging must never break the turn */ }
+  }
+  if (!delivered.response || delivered.response.status === 503) {
+    return fulfillmentUnavailable(delivered.attempts);
+  }
+  const text = await delivered.response.text();
   try { return JSON.parse(text); } catch (_) { return { fulfillment_response: { messages: [] } }; }
 }
 

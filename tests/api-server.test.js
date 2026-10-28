@@ -4928,6 +4928,9 @@ test('enterprise data chat status reports local-first chat and optional Google a
   assert.equal(status.dfcx.fulfillmentProxyConfigured, true);
   assert.equal(status.dfcx.gcloudCxCommandSupported, false);
   assert.match(status.dfcx.apiSurface, /projects\.locations\.agents/);
+  assert.equal(status.dfcx.conversationalAgents.playbookModel, 'gemini-2.5-flash');
+  assert.equal(status.dfcx.conversationalAgents.voiceModel, 'gemini-2.5-flash-lite');
+  assert.equal(status.dfcx.conversationalAgents.transactions, 'external-validation-required');
   assert.equal(status.chat.providerRequired, false);
   assert.equal(status.chat.localLlmEndpointConfigured, true);
   assert.match(status.chat.source, /LanceDB/i);
