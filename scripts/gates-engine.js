@@ -194,6 +194,9 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   // separately authenticated admin override bound to the exact action digest
   // authorizes one retry (AGENT-259 / District Cyber 2026-08-04).
   'outbound-email-send',
+  'swarm-claim-exit-3-write-after-loss',
+  'teams-single-reply-per-message',
+  'az-repos-pr-publish-requires-cross-review',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -216,6 +219,9 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'financial-control',
   // Never daily-cap discount a denied autonomous email send (same class as force-push).
   'outbound-email-send',
+  'swarm-claim-exit-3-write-after-loss',
+  'teams-single-reply-per-message',
+  'az-repos-pr-publish-requires-cross-review',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
@@ -2396,6 +2402,221 @@ function recordStructuralGateBlock(toolName, toolInput, result) {
   return result;
 }
 
+// -----------------------------------------------------------------------------
+// Three Concrete Repeated Team Mistakes (Oct 2026 ECI / PSN / Swarm Gates):
+//   1. swarm-claim-exit-3-write-after-loss:
+//      When swarm-claim.py (or claim-gate.py) exits 3, record it as a thumbs-down
+//      and deny the next edit, commit, or push (with endTurn: true / continue: false).
+//   2. teams-single-reply-per-message:
+//      One reply per Teams message / recipient point (e.g. second send to Damon
+//      on the same point or message gets denied).
+//   3. az-repos-pr-publish-requires-cross-review:
+//      Deny `az repos pr update` that publishes a draft (`--is-draft false`)
+//      until a review comment from the other person exists.
+// -----------------------------------------------------------------------------
+const SWARM_CLAIM_EXIT_3_ACTION = 'swarm_claim_lost_exit_3';
+const SWARM_CLAIM_SCRIPT_PATTERN = /\b(?:swarm-claim\.py|claim-gate\.py)\b/i;
+const SWARM_LOST_MUTATION_TOOLS = new Set([
+  'Edit',
+  'Write',
+  'MultiEdit',
+  'NotebookEdit',
+  'ast_edit',
+  'edit',
+  'write',
+]);
+const SWARM_LOST_BASH_WRITE_PATTERN = /\b(?:git\s+(?:add|commit|push|am|apply|cherry-pick|merge|rebase)|but\s+(?:commit|push|amend|squash|move)|gh\s+pr\s+(?:create|merge|ready|edit)|az\s+repos\s+pr\s+(?:create|update))\b/i;
+
+function recordSwarmClaimExit(command, exitCode, metadata = {}) {
+  const cmd = String(command || '');
+  const code = Number(exitCode);
+  if (!SWARM_CLAIM_SCRIPT_PATTERN.test(cmd) || code !== 3) {
+    return null;
+  }
+  const payload = {
+    command: cmd.slice(0, 240),
+    exitCode: 3,
+    recordedAt: new Date().toISOString(),
+    ...metadata,
+  };
+  trackAction(SWARM_CLAIM_EXIT_3_ACTION, payload);
+  const auditRecord = recordAuditEvent({
+    toolName: 'Bash',
+    toolInput: { command: cmd, exitCode: 3 },
+    decision: 'deny',
+    gateId: 'swarm-claim-exit-3-write-after-loss',
+    message: 'swarm-claim.py exited 3 (claim held by another agent); recorded as thumbs-down and armed write/commit/push block.',
+    severity: 'critical',
+    source: 'gates-engine',
+  });
+  auditToFeedback(auditRecord);
+  return payload;
+}
+
+function isWriteCommitOrPushAction(toolName, toolInput = {}) {
+  const bare = bareToolName(toolName);
+  if (SWARM_LOST_MUTATION_TOOLS.has(toolName) || SWARM_LOST_MUTATION_TOOLS.has(bare)) {
+    return true;
+  }
+  if (toolName !== 'Bash' && bare !== 'bash') return false;
+  const command = String(toolInput.command || '');
+  if (!command) return false;
+  return SWARM_LOST_BASH_WRITE_PATTERN.test(command) || SHELL_FILE_MUTATION_PATTERN.test(command);
+}
+
+function evaluateSwarmClaimLostWriteGate(toolName, toolInput = {}) {
+  const command = String(toolInput.command || '');
+  const explicitExit = Number(
+    toolInput.exitCode ?? toolInput.exit_code ?? toolInput.swarmClaimExitCode ?? process.env.THUMBGATE_SWARM_CLAIM_EXIT
+  );
+  if (SWARM_CLAIM_SCRIPT_PATTERN.test(command) && explicitExit === 3) {
+    recordSwarmClaimExit(command, 3);
+    return {
+      decision: 'deny',
+      gate: 'swarm-claim-exit-3-write-after-loss',
+      action: 'block',
+      endTurn: true,
+      severity: 'critical',
+      message: 'swarm-claim.py exited 3 (story claim held by another agent). Recorded as thumbs-down; ending turn to stop token leak.',
+    };
+  }
+
+  const claimLostActive = hasAction(SWARM_CLAIM_EXIT_3_ACTION) || explicitExit === 3;
+  if (!claimLostActive) return null;
+  if (!isWriteCommitOrPushAction(toolName, toolInput)) return null;
+
+  return {
+    decision: 'deny',
+    gate: 'swarm-claim-exit-3-write-after-loss',
+    action: 'block',
+    endTurn: true,
+    severity: 'critical',
+    message: 'Denied edit/commit/push (`' + (command ? command.slice(0, 120) : toolName) + '`): `swarm-claim.py` exited 3 because another agent holds the story claim. Stop writing and end the turn.',
+  };
+}
+
+const TEAMS_SEND_TOOL_PATTERN = /^(?:mcp__)?(?:teams|ms[_-]?teams)(?:__|_|:|\.)?(?:send|reply|post|message|chat|dm)|^(?:teams_send_message|teams_reply|reply_to_teams_message|send_teams_message)$/i;
+const TEAMS_SEND_BASH_PATTERN = /\b(?:teams-mcp-stdio|teams-cli|send[-_]teams|graph\.microsoft\.com\/[^\s'"]*\/(?:messages|reply))\b/i;
+const TEAMS_POINT_STOPWORDS = new Set([
+  'the', 'and', 'for', 'that', 'this', 'with', 'from', 'have', 'has', 'had',
+  'are', 'was', 'were', 'will', 'would', 'could', 'should', 'just', 'about',
+  'into', 'your', 'our', 'please', 'thanks', 'thank', 'hello', 'hey', 'hi',
+]);
+
+function normalizeTeamsPointKey(text = '') {
+  const tokens = String(text || '')
+    .toLowerCase()
+    .replace(/https?:\/\/\S+/g, ' ')
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 4 && !TEAMS_POINT_STOPWORDS.has(t));
+  if (tokens.length === 0) return 'general';
+  return Array.from(new Set(tokens)).slice(0, 5).sort().join('_');
+}
+
+function evaluateTeamsSingleReplyGate(toolName, toolInput = {}) {
+  const bare = bareToolName(toolName);
+  const command = String(toolInput.command || '');
+  const isTeamsTool = TEAMS_SEND_TOOL_PATTERN.test(toolName) || TEAMS_SEND_TOOL_PATTERN.test(bare);
+  const isTeamsBash = (toolName === 'Bash' || bare === 'bash') && TEAMS_SEND_BASH_PATTERN.test(command);
+  if (!isTeamsTool && !isTeamsBash) return null;
+
+  let recipient = String(
+    toolInput.recipient || toolInput.to || toolInput.user || toolInput.person || toolInput.chat || toolInput.channel || ''
+  ).trim();
+  if (!recipient && command) {
+    const toMatch = command.match(/(?:--(?:to|recipient|user|person)\s+|@)([A-Za-z0-9._-]+)/i)
+      || command.match(/\bto\s+(damon|[A-Z][a-z]+)\b/i);
+    if (toMatch) recipient = toMatch[1];
+  }
+  const bodyText = String(
+    toolInput.point || toolInput.topic || toolInput.subject || toolInput.message || toolInput.text || toolInput.body || command || ''
+  ).trim();
+  if (!recipient && /\bdamon\b/i.test(bodyText)) {
+    recipient = 'Damon';
+  }
+
+  let messageId = String(
+    toolInput.messageId || toolInput.message_id || toolInput.replyToId || toolInput.reply_to_id || toolInput.threadId || toolInput.thread_id || ''
+  ).trim();
+  if (!messageId && command) {
+    const msgMatch = command.match(/--(?:message-id|reply-to|thread-id)\s+([A-Za-z0-9._:-]+)/i);
+    if (msgMatch) messageId = msgMatch[1];
+  }
+
+  const recipientKey = recipient.toLowerCase().replace(/[^a-z0-9@._-]+/g, '');
+  const explicitPoint = String(toolInput.point || toolInput.topic || toolInput.subject || '').trim();
+  const pointKey = explicitPoint
+    ? explicitPoint.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+    : normalizeTeamsPointKey(bodyText);
+
+  const msgActionKey = messageId ? `teams_reply_msg:${messageId}` : null;
+  const pointActionKey = recipientKey ? `teams_reply_point:${recipientKey}:${pointKey}` : null;
+  const recipientActionKey = recipientKey && !messageId ? `teams_reply_recipient:${recipientKey}` : null;
+
+  if (msgActionKey && hasAction(msgActionKey)) {
+    return {
+      decision: 'deny',
+      gate: 'teams-single-reply-per-message',
+      action: 'block',
+      severity: 'critical',
+      message: `Denied Teams send: a reply to message \`${messageId}\` was already sent in this session (one reply per Teams message).`,
+    };
+  }
+  if ((pointActionKey && hasAction(pointActionKey)) || (recipientActionKey && hasAction(recipientActionKey))) {
+    const targetLabel = recipient || recipientKey || 'recipient';
+    return {
+      decision: 'deny',
+      gate: 'teams-single-reply-per-message',
+      action: 'block',
+      severity: 'critical',
+      message: `Denied second Teams message to ${targetLabel} on the same point: only one reply per Teams message/point is allowed.`,
+    };
+  }
+
+  if (msgActionKey) trackAction(msgActionKey, { recipient: recipientKey, messageId });
+  if (pointActionKey) trackAction(pointActionKey, { recipient: recipientKey, pointKey });
+  if (recipientActionKey) trackAction(recipientActionKey, { recipient: recipientKey, pointKey });
+  return null;
+}
+
+const AZ_REPOS_PR_UPDATE_PATTERN = /\baz\s+repos\s+pr\s+update\b/i;
+const AZ_PR_PUBLISH_DRAFT_FALSE_PATTERN = /(?:--is-draft(?:=|\s+)(?:false|0|no)\b|--draft(?:=|\s+)(?:false|0|no)\b)/i;
+
+function evaluateAzReposPrDraftPublishGate(toolName, toolInput = {}) {
+  const bare = bareToolName(toolName);
+  if (toolName !== 'Bash' && bare !== 'bash') return null;
+  const command = String(toolInput.command || '');
+  if (!AZ_REPOS_PR_UPDATE_PATTERN.test(command) || !AZ_PR_PUBLISH_DRAFT_FALSE_PATTERN.test(command)) {
+    return null;
+  }
+
+  const prIdMatch = command.match(/--(?:id|pr-id)(?:=|\s+)(\d+)\b/i);
+  const prId = prIdMatch ? prIdMatch[1] : null;
+
+  const crossReviewVerified = Boolean(
+    hasAction('cross_review_comment_verified')
+    || (prId && hasAction(`cross_review_comment_verified:${prId}`))
+    || isConditionSatisfied('cross_review_comment_verified')
+    || toolInput.crossReviewCommentExists === true
+    || toolInput.otherPersonReviewed === true
+  );
+  if (crossReviewVerified) return null;
+
+  return {
+    decision: 'deny',
+    gate: 'az-repos-pr-publish-requires-cross-review',
+    action: 'block',
+    severity: 'critical',
+    message: 'Denied `az repos pr update --is-draft false`' + (prId ? ` on PR #${prId}` : '') + ': a PR cannot leave draft before a review comment from the other person exists (`psn-skills` auto-merges non-draft PRs once checks pass).',
+  };
+}
+
+function evaluateRepeatedTeamMistakesGate(toolName, toolInput = {}) {
+  return evaluateSwarmClaimLostWriteGate(toolName, toolInput)
+    || evaluateTeamsSingleReplyGate(toolName, toolInput)
+    || evaluateAzReposPrDraftPublishGate(toolName, toolInput);
+}
+
 /**
  * Resolve catastrophic declarative gates before the ordinary first-match loop.
  *
@@ -2767,6 +2988,9 @@ function buildMatchSurfaces(toolName, toolInput = {}) {
 }
 
 function matchGate(gate, toolName, toolInput = {}) {
+  if (gate && gate.id === 'outbound-email-send' && TEAMS_SEND_TOOL_PATTERN.test(String(toolName || ''))) {
+    return { matched: false, matchText: String(toolName || ''), affectedFiles: [] };
+  }
   // Primary text for audit/reasoning: prefer command, then tool name (MCP).
   const matchSurfaces = buildMatchSurfaces(toolName, toolInput);
   let matchText = matchSurfaces[0] || String(toolName || '');
@@ -3336,6 +3560,10 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   if (stealthMemoryInjectionGate) {
     return recordStructuralGateBlock(toolName, toolInput, stealthMemoryInjectionGate);
   }
+  const repeatedTeamMistakesGate = evaluateRepeatedTeamMistakesGate(toolName, toolInput);
+  if (repeatedTeamMistakesGate) {
+    return recordStructuralGateBlock(toolName, toolInput, repeatedTeamMistakesGate);
+  }
   if (isBreakGlassSettingsRecoveryAction(toolName, toolInput)) {
     recordAuditEvent({
       toolName,
@@ -3680,6 +3908,10 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
   const stealthMemoryInjectionGate = evaluateStealthMemoryInjection(toolName, toolInput);
   if (stealthMemoryInjectionGate) {
     return recordStructuralGateBlock(toolName, toolInput, stealthMemoryInjectionGate);
+  }
+  const repeatedTeamMistakesGate = evaluateRepeatedTeamMistakesGate(toolName, toolInput);
+  if (repeatedTeamMistakesGate) {
+    return recordStructuralGateBlock(toolName, toolInput, repeatedTeamMistakesGate);
   }
   if (isBreakGlassSettingsRecoveryAction(toolName, toolInput)) {
     recordAuditEvent({
@@ -4244,10 +4476,12 @@ function formatOutput(result, behavioralContext) {
     const reminderSuffix = behavioralContext ? `\n\nSystem reminder:\n${behavioralContext}` : '';
     const proCta = result.gate === 'financial-control' ? '' : (buildBlockActionProCta() || '');
     return JSON.stringify({
+      ...(result.endTurn ? { continue: false, stopReason: `[GATE:${result.gate}] ${result.message}` } : {}),
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
         ...reminder,
         permissionDecision: 'deny',
+        ...(result.endTurn ? { continue: false } : {}),
         permissionDecisionReason: `[GATE:${result.gate}] ${result.message}${reasoningSuffix}${reminderSuffix}${proCta}`,
       },
     });
@@ -5138,6 +5372,12 @@ module.exports = {
   isBreakGlassSettingsRecoveryAction,
   PR_THREAD_RESOLUTION_ACTION,
   HELPER_BYPASS_ACTION,
+  SWARM_CLAIM_EXIT_3_ACTION,
+  recordSwarmClaimExit,
+  evaluateSwarmClaimLostWriteGate,
+  evaluateTeamsSingleReplyGate,
+  evaluateAzReposPrDraftPublishGate,
+  evaluateRepeatedTeamMistakesGate,
   buildBlockActionProCta,
   applyDailyBlockCap,
   getTodayBlockCount,

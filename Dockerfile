@@ -42,7 +42,7 @@ COPY assets/ ./assets/
 COPY src/ ./src/
 COPY config/ ./config/
 COPY adapters/ ./adapters/
-COPY openapi/ ./openapi/
+COPY specs/ ./specs/
 COPY public/ ./public/
 COPY .well-known/ ./.well-known/
 

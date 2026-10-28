@@ -22,21 +22,45 @@
 
 const http = require('http');
 const path = require('path');
-const { createHttpHandler } = require('./dfcx-webhook-gate');
+const {
+  createHttpHandler,
+  fetchWithExponentialBackoff,
+  createDfcxTestDouble,
+} = require('./dfcx-webhook-gate');
 
 const UPSTREAM = process.env.THUMBGATE_DFCX_FULFILLMENT_URL || '';
+const defaultTestDouble = createDfcxTestDouble();
 
-// fulfill: forward an allowed request to the customer's real fulfillment webhook.
-async function forwardFulfillment(reqBody) {
-  if (!UPSTREAM) {
+// fulfill: forward an allowed request to the customer's real fulfillment webhook
+// with exponential backoff retry on temporary 503 Service Unavailable errors.
+async function forwardFulfillment(reqBody, opts = {}) {
+  if (opts.testDouble || process.env.THUMBGATE_DFCX_TEST_DOUBLE === '1') {
+    return defaultTestDouble.fulfill(reqBody);
+  }
+  const upstreamUrl = opts.upstreamUrl !== undefined ? opts.upstreamUrl : UPSTREAM;
+  if (!upstreamUrl) {
     // No upstream configured — nothing to fulfill; return an empty (no side-effect) response.
     return { fulfillment_response: { messages: [] } };
   }
-  const res = await fetch(UPSTREAM, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(reqBody),
-  });
+  const res = await fetchWithExponentialBackoff(
+    upstreamUrl,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(reqBody),
+    },
+    {
+      fetchImpl: opts.fetchImpl,
+      maxRetries: opts.maxRetries != null
+        ? opts.maxRetries
+        : (Number(process.env.THUMBGATE_DFCX_WEBHOOK_MAX_RETRIES) || 3),
+      baseDelayMs: opts.baseDelayMs != null
+        ? opts.baseDelayMs
+        : (Number(process.env.THUMBGATE_DFCX_WEBHOOK_RETRY_BASE_MS) || 100),
+      sleepImpl: opts.sleepImpl,
+      onRetry: opts.onRetry,
+    },
+  );
   const text = await res.text();
   try { return JSON.parse(text); } catch (_) { return { fulfillment_response: { messages: [] } }; }
 }

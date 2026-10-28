@@ -34,4 +34,14 @@ describe('belief-update', () => {
   it('shouldPrune returns false for healthy belief', () => {
     assert.strictEqual(shouldPrune({ priorProbability: 0.7, uncertainty: 0.3, observations: 5 }), false);
   });
+
+  it('shouldPrune preserves lessons with concrete entities even when tag-level uncertainty is high', () => {
+    assert.strictEqual(
+      shouldPrune(
+        { priorProbability: 0.5, uncertainty: 0.85, observations: 6 },
+        { hasConcreteEntities: true },
+      ),
+      false,
+    );
+  });
 });

@@ -43,9 +43,20 @@ function updateBelief(belief, likelihood) {
  * @param {object} bayesian - Bayesian metadata
  * @returns {boolean} True if memory should be pruned
  */
-function shouldPrune(bayesian) {
+function shouldPrune(bayesian, opts = {}) {
   const ENTROPY_THRESHOLD = 0.7;
   const OBSERVATION_FLOOR = 3;
+  const hasConcreteEntities = Boolean(
+    (opts && opts.hasConcreteEntities)
+    || (bayesian && bayesian.hasConcreteEntities)
+    || Number((opts && opts.specificityScore) || (bayesian && bayesian.specificityScore) || 0) >= 0.25
+  );
+
+  // Never entropy-prune lessons that carry concrete domain entities (e.g. Jira
+  // customfield_*, ticket keys, double-post rules, CLI flags, or file paths).
+  if (hasConcreteEntities) {
+    return Boolean(bayesian && bayesian.priorProbability < 0.1);
+  }
 
   // Prune if high uncertainty after enough observations
   if (bayesian.observations >= OBSERVATION_FLOOR && bayesian.uncertainty > ENTROPY_THRESHOLD) {
