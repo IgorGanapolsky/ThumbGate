@@ -347,6 +347,8 @@ const {
   evaluateHerdrOmpPoolsideGitButlerSwarmGate,
   evaluateBrowserOsNeoProductivityGate,
   evaluateRadwareAgenticApiRiskFirewall,
+  buildOneShotWellKnownReceiptsManifest,
+  evaluateOneShotAgentGatewayAndSignedReceiptSteal,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -9755,6 +9757,12 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
+    if (isGetLikeRequest && (pathname === '/.well-known/thumbgate-receipts.json' || pathname === '/.well-known/oneshot-receipts.json')) {
+      const appOrigin = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai';
+      sendJson(res, 200, buildOneShotWellKnownReceiptsManifest({ appOrigin }), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
     const wellKnownMatch = isGetLikeRequest && pathname.match(/^\/\.well-known\/(?:agent-skills|skills)\/([a-z0-9-]+)\/SKILL\.md$/i);
     if (wellKnownMatch) {
       const md = getSkillsShWellKnownSkillMarkdown(wellKnownMatch[1]);
@@ -9779,6 +9787,12 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     if (req.method === 'POST' && pathname === '/v1/cloud/radware-agent-risk/gate') {
       const body = await parseJsonBody(req);
       sendJson(res, 200, evaluateRadwareAgenticApiRiskFirewall(body));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/oneshot/gate') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, evaluateOneShotAgentGatewayAndSignedReceiptSteal(body));
       return;
     }
 

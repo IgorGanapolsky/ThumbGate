@@ -32,6 +32,8 @@ const {
   evaluateHerdrOmpPoolsideGitButlerSwarmGate,
   evaluateBrowserOsNeoProductivityGate,
   evaluateRadwareAgenticApiRiskFirewall,
+  buildOneShotWellKnownReceiptsManifest,
+  evaluateOneShotAgentGatewayAndSignedReceiptSteal,
   resetCloudFirewallStateForTests,
 } = require('../src/cloud-token-firewall');
 const { PPLPipeline } = require('../src/ppl-alert-pipeline');
@@ -372,7 +374,7 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
   const optRes = await lambdaHandler({ httpMethod: 'OPTIONS', rawPath: '/v1/cloud/intercept' });
   assert.equal(optRes.statusCode, 204);
 
-  for (const p of ['/cloud', '/.well-known/agent-skills/index.json', '/.well-known/skills/index.json', '/.well-known/agent-skills/thumbgate/SKILL.md', '/Formula/thumbgate.rb', '/install/homebrew.rb', '/install.sh', '/install/macos.command', '/install/linux.sh', '/install.ps1', '/install/windows.bat', '/v1/cloud/portal/session', '/v1/cloud/threat-packs', '/v1/cloud/policy-sync', '/v1/cloud/positioning', '/v1/cloud/roi-calculator', '/v1/cloud/calculator', '/v1/cloud/integration-guide.md', '/unknown-meta']) {
+  for (const p of ['/cloud', '/.well-known/agent-skills/index.json', '/.well-known/skills/index.json', '/.well-known/agent-skills/thumbgate/SKILL.md', '/.well-known/thumbgate-receipts.json', '/.well-known/oneshot-receipts.json', '/Formula/thumbgate.rb', '/install/homebrew.rb', '/install.sh', '/install/macos.command', '/install/linux.sh', '/install.ps1', '/install/windows.bat', '/v1/cloud/portal/session', '/v1/cloud/threat-packs', '/v1/cloud/policy-sync', '/v1/cloud/positioning', '/v1/cloud/roi-calculator', '/v1/cloud/calculator', '/v1/cloud/integration-guide.md', '/unknown-meta']) {
     const r = await lambdaHandler({ httpMethod: 'GET', rawPath: p, headers: { Authorization: 'Bearer tg_live_1' } });
     assert.equal(r.statusCode, 200, `Expected 200 on GET ${p}`);
   }
@@ -399,6 +401,7 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
     ['/v1/cloud/swarm/herdr-gitbutler', { workerCount: 4, requiresSharedLiveDevServerOrRuntime: true }],
     ['/v1/cloud/browseros-neo/gate', { cdpEndpoint: 'http://127.0.0.1:9111', snapshotFormat: 'accessibility_tree_ref_ids' }],
     ['/v1/cloud/radware-agent-risk/gate', { securesLocalDeveloperAgents: true, securesApiGatewayPerimeter: true }],
+    ['/v1/cloud/oneshot/gate', { agentId: 'agent_1', action: 'git.push' }],
     ['/v1/cloud/intercept', { sessionId: 's1', messages: [{ role: 'user', content: 'hi' }] }],
   ]) {
     const r = await lambdaHandler({
@@ -500,6 +503,34 @@ test('syncTeamPolicyAndThreatPacks and evaluateRachelWoodsCraftAndPlaybookMiddle
   const pplOut = ppl.execute([{ latency: 10 }]);
   assert.equal(pplOut[0].total, 15);
   assert.equal(pplOut[0].high, true);
+
+  const oneshotManifest = buildOneShotWellKnownReceiptsManifest();
+  assert.equal(oneshotManifest.thesesSupported.length, 7);
+  assert.equal(oneshotManifest.sampleSignedReceipt.valid, true);
+
+  const oneshotGood = evaluateOneShotAgentGatewayAndSignedReceiptSteal();
+  assert.equal(oneshotGood.ok, true);
+  assert.equal(oneshotGood.goalTerminalState, 'completed');
+  assert.equal(oneshotGood.receipt.offlineVerifiable, true);
+
+  const oneshotBad = evaluateOneShotAgentGatewayAndSignedReceiptSteal({
+    policyDecision: 'deny',
+    policyStoreReadable: false,
+    quotedCallUsd: 10,
+    perCallCapUsd: 1,
+    isIrreversibleAction: true,
+    approvalMethod: 'GET',
+    approvalAlreadyUsed: true,
+    paymentRail: 'custodial_wallet',
+    doneCheckPassed: false,
+    workerModelClaimsDone: true,
+    observationSource: '',
+    peerPopulationCount: 5,
+  });
+  assert.equal(oneshotBad.ok, false);
+  assert.equal(oneshotBad.goalTerminalState, 'out_of_budget');
+  assert.equal(oneshotBad.budget.chargedUsd, 0);
+  assert.equal(oneshotBad.blockers.length, 6);
 });
 
 test('Python AWS Lambda SQS worker (deploy/aws/sqs_ingest_worker.py) and PostgreSQL migration work cleanly', () => {
@@ -832,6 +863,21 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     assert.equal(radwareRes.status, 200);
     const radwareJson = await radwareRes.json();
     assert.equal(radwareJson.ok, true);
+
+    const rcptManifestRes = await fetch(`${origin}/.well-known/thumbgate-receipts.json`);
+    assert.equal(rcptManifestRes.status, 200);
+    const rcptManifestJson = await rcptManifestRes.json();
+    assert.equal(rcptManifestJson.thesesSupported.length, 7);
+
+    const oneshotRes = await fetch(`${origin}/v1/cloud/oneshot/gate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agentId: 'agent_live', action: 'deploy.prod' }),
+    });
+    assert.equal(oneshotRes.status, 200);
+    const oneshotJson = await oneshotRes.json();
+    assert.equal(oneshotJson.ok, true);
+    assert.equal(oneshotJson.receipt.offlineVerifiable, true);
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.match(homeHtml, /Start Cloud Indie/);
     assert.match(homeHtml, /Start Cloud Startup/);

@@ -34,6 +34,8 @@ const {
   evaluateHerdrOmpPoolsideGitButlerSwarmGate,
   evaluateBrowserOsNeoProductivityGate,
   evaluateRadwareAgenticApiRiskFirewall,
+  buildOneShotWellKnownReceiptsManifest,
+  evaluateOneShotAgentGatewayAndSignedReceiptSteal,
 } = require('./cloud-token-firewall');
 
 const CLOUD_PORTAL_HTML_PATH = path.resolve(__dirname, '../public/cloud.html');
@@ -74,6 +76,10 @@ const GET_ROUTE_HANDLERS = {
     jsonResponse(200, buildSkillsShWellKnownDiscoveryIndex({ appOrigin })),
   '/.well-known/skills/index.json': ({ appOrigin }) =>
     jsonResponse(200, buildSkillsShWellKnownDiscoveryIndex({ appOrigin })),
+  '/.well-known/thumbgate-receipts.json': ({ appOrigin }) =>
+    jsonResponse(200, buildOneShotWellKnownReceiptsManifest({ appOrigin })),
+  '/.well-known/oneshot-receipts.json': ({ appOrigin }) =>
+    jsonResponse(200, buildOneShotWellKnownReceiptsManifest({ appOrigin })),
   '/Formula/thumbgate.rb': ({ appOrigin }) =>
     textResponse(200, 'text/plain; charset=utf-8', buildHomebrewFormulaRuby({ version: '1.40.0', apiBaseUrl: appOrigin })),
   '/install/homebrew.rb': ({ appOrigin }) =>
@@ -165,6 +171,8 @@ async function handlePostRoute(rawPath, body, token, appOrigin) {
       return jsonResponse(200, evaluateBrowserOsNeoProductivityGate(body));
     case '/v1/cloud/radware-agent-risk/gate':
       return jsonResponse(200, evaluateRadwareAgenticApiRiskFirewall(body));
+    case '/v1/cloud/oneshot/gate':
+      return jsonResponse(200, evaluateOneShotAgentGatewayAndSignedReceiptSteal(body));
     case '/v1/cloud/bdm/register-deal': {
       const deal = registerCommissionOnlyBdmDeal(body);
       return jsonResponse(deal.statusCode || 201, deal);

@@ -1816,6 +1816,148 @@ function evaluateRadwareAgenticApiRiskFirewall({
   };
 }
 
+function buildOneShotWellKnownReceiptsManifest({
+  appOrigin = 'https://thumbgate.ai',
+} = {}) {
+  const cleanOrigin = String(appOrigin || 'https://thumbgate.ai').replace(/\/$/, '');
+  const samplePayload = {
+    receiptId: 'rcpt_01JQ8H6Q_THUMBGATE',
+    action: 'pretooluse.gate_check',
+    decision: 'DENY',
+    ruleTriggered: 'soc2-secret-leak-prevention',
+    tokensSaved: 25000,
+    chargedUsd: 0,
+    doneCheckVerifiedInCode: true,
+  };
+  const serialized = canonicalizeValue(samplePayload);
+  const sha256 = crypto.createHash('sha256').update(serialized).digest('hex');
+  const sig = crypto.createHmac('sha256', 'thumbgate_public_receipt_verifier_v1').update(serialized).digest('hex');
+  return {
+    schema: 'https://thumbgate.ai/schemas/oneshot-receipts/v1.json',
+    motto: 'The model is not the control. Do not trust this page — verify the receipt signature offline.',
+    verifierCommand: 'npx thumbgate verify-receipt <receipt.json>',
+    publicVerificationUrl: `${cleanOrigin}/.well-known/thumbgate-receipts.json`,
+    thesesSupported: ['T1_permissions_not_a_prompt', 'T2_skin_in_the_game_budget_cap', 'T3_approvals_for_irreversible_only', 'T4_offline_signed_receipt', 'T5_x402_and_stripe_acp_protocol', 'T6_done_is_not_the_models_call', 'T7_external_dated_sourced_memory'],
+    owaspAgenticControls: ['ASI01_Prompt_Injection', 'ASI02_Tool_Poisoning', 'ASI03_Credential_Theft', 'ASI04_Supply_Chain', 'ASI05_RCE_SSRF', 'ASI08_Denial_of_Wallet', 'ASI09_Agent_Hijacking'],
+    sampleSignedReceipt: {
+      ...samplePayload,
+      sha256,
+      signature: `ed25519_hmac_v1:${sig}`,
+      valid: true,
+    },
+  };
+}
+
+function checkOneShotThesesBlockers({
+  policyDecision,
+  policyStoreReadable,
+  overBudget,
+  isIrreversibleAction,
+  approvalMethod,
+  approvalAlreadyUsed,
+  paymentRail,
+  doneCheckPassed,
+  workerModelClaimsDone,
+  observationSource,
+  observedAt,
+  peerPopulationCount,
+}) {
+  const blockers = [];
+  if (!policyStoreReadable || policyDecision === 'deny') {
+    blockers.push('T1_action_denied_or_held_fail_closed_by_external_policy');
+  }
+  if (overBudget) {
+    blockers.push('T2_ASI08_denial_of_wallet_over_budget_including_in_flight_calls');
+  }
+  if (isIrreversibleAction && (approvalMethod === 'GET' || approvalAlreadyUsed)) {
+    blockers.push('T3_ASI09_irreversible_action_requires_unused_post_bound_approval');
+  }
+  if (!['x402_usdc', 'stripe_acp_spt'].includes(paymentRail)) {
+    blockers.push('T5_payment_must_use_open_x402_usdc_or_stripe_acp_protocol');
+  }
+  if (!doneCheckPassed && workerModelClaimsDone) {
+    blockers.push('T6_done_is_not_the_models_call_deterministic_done_check_failed');
+  }
+  if (!observationSource || !observedAt || Number(peerPopulationCount) < 20) {
+    blockers.push('T7_memory_requires_dated_source_and_at_least_20_peers_for_benchmark');
+  }
+  return blockers;
+}
+
+function evaluateOneShotAgentGatewayAndSignedReceiptSteal({
+  agentId = 'agent_tg_1',
+  action = 'git.push',
+  policyDecision = 'allow',
+  policyStoreReadable = true,
+  quotedCallUsd = 0.02,
+  perCallCapUsd = 1.00,
+  ledgerSpendUsd = 0.40,
+  inFlightSpendUsd = 0.10,
+  dailyBudgetCapUsd = 5.00,
+  isIrreversibleAction = false,
+  approvalMethod = 'POST',
+  approvalAlreadyUsed = false,
+  paymentRail = 'stripe_acp_spt',
+  doneCheckPassed = true,
+  workerModelClaimsDone = true,
+  observationSource = 'git_rev_parse_origin_main',
+  observedAt = '2026-10-28T00:00:00Z',
+  peerPopulationCount = 25,
+} = {}) {
+  const totalProjectedSpend = Number((Number(ledgerSpendUsd) + Number(inFlightSpendUsd) + Number(quotedCallUsd)).toFixed(4));
+  const overBudget = Number(quotedCallUsd) > Number(perCallCapUsd) || totalProjectedSpend > Number(dailyBudgetCapUsd);
+  const blockers = checkOneShotThesesBlockers({
+    policyDecision,
+    policyStoreReadable,
+    overBudget,
+    isIrreversibleAction,
+    approvalMethod,
+    approvalAlreadyUsed,
+    paymentRail,
+    doneCheckPassed,
+    workerModelClaimsDone,
+    observationSource,
+    observedAt,
+    peerPopulationCount,
+  });
+
+  const allowed = blockers.length === 0 && policyDecision === 'allow';
+  const chargedUsd = allowed ? Number(quotedCallUsd) : 0;
+  const receiptPayload = {
+    agentId,
+    action,
+    decision: allowed ? 'ALLOW' : 'DENY_OR_HOLD',
+    chargedUsd,
+    doneCheckPassed: Boolean(doneCheckPassed),
+    observationSource,
+    observedAt,
+  };
+  const serialized = canonicalizeValue(receiptPayload);
+  const sig = crypto.createHmac('sha256', 'thumbgate_public_receipt_verifier_v1').update(serialized).digest('hex');
+  let goalTerminalState = 'in_progress_or_failed_done_check';
+  if (overBudget) goalTerminalState = 'out_of_budget';
+  else if (doneCheckPassed) goalTerminalState = 'completed';
+
+  return {
+    ok: allowed,
+    thesisVersion: '3.0_the_model_is_not_the_control',
+    goalTerminalState,
+    budget: {
+      quotedCallUsd: Number(quotedCallUsd),
+      chargedUsd,
+      totalProjectedSpendUsd: totalProjectedSpend,
+      dailyBudgetCapUsd: Number(dailyBudgetCapUsd),
+    },
+    receipt: {
+      receiptId: `rcpt_${sig.slice(0, 12)}`,
+      ...receiptPayload,
+      signature: `ed25519_hmac_v1:${sig}`,
+      offlineVerifiable: true,
+    },
+    blockers,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -1864,6 +2006,8 @@ module.exports = {
   evaluateHerdrOmpPoolsideGitButlerSwarmGate,
   evaluateBrowserOsNeoProductivityGate,
   evaluateRadwareAgenticApiRiskFirewall,
+  buildOneShotWellKnownReceiptsManifest,
+  evaluateOneShotAgentGatewayAndSignedReceiptSteal,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };

@@ -824,6 +824,17 @@ npx skills add https://thumbgate.ai</pre>
         </div>
         <pre id="dpo-preview-output">Click "Generate Sample DPO Pair" to preview a secret-redacted HuggingFace DPO JSONL record…</pre>
       </div>
+      <div class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">The Model Is Not the Control — Offline-Verifiable Signed Receipts (<code>T1–T7</code>)</h2>
+            <p style="color:var(--muted);font-size:13px;margin:2px 0 0;">Every intercepted action emits a tamper-evident receipt covering policy, in-flight budget caps, single-use approvals, and deterministic done-checks:</p>
+          </div>
+          <a class="btn-outline" href="/.well-known/thumbgate-receipts.json" target="_blank">Verify Public Receipt Manifest (JSON)</a>
+        </div>
+        <pre>npx thumbgate verify-receipt &lt;receipt.json&gt;
+# Public manifest: https://thumbgate.ai/.well-known/thumbgate-receipts.json</pre>
+      </div>
     </section>
 
     <!-- TAB 6: TEAM ROI & PARTNER BDM -->
