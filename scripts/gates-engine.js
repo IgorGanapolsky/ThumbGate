@@ -190,6 +190,9 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   // applyEnforcementPosture, never demote spend blocks to warn-by-default.
   // Apollo $588 incident class (2026-08).
   'financial-control',
+  // Quote reserve and done-check. Sidecar must not turn these denies into warnings.
+  'oneshot-control',
+  'oneshot-goal-done',
   // Outbound email: irreversible delivery. Keep the hard gate intact until a
   // separately authenticated admin override bound to the exact action digest
   // authorizes one retry (AGENT-259 / District Cyber 2026-08-04).
@@ -214,6 +217,8 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'git-clean-force',
   'rm-rf-home-or-root',
   'financial-control',
+  'oneshot-control',
+  'oneshot-goal-done',
   // Never daily-cap discount a denied autonomous email send (same class as force-push).
   'outbound-email-send',
 ]);

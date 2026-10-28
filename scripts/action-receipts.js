@@ -719,8 +719,6 @@ function oneShotLiveGoalInput(input = {}) {
       || status === 'done',
     workerId: oneShotId(input.workerId) || 'worker',
     confirmerId: '',
-    runStartedAt: input.runStartedAt,
-    check: input.check,
     verification: input.verification,
   };
   const verification = input.verification;
@@ -740,6 +738,46 @@ function oneShotLiveGoalInput(input = {}) {
     return goalInput;
   }
   return goalInput;
+}
+
+const ONESHOT_CONTROL_KEYS = new Set([
+  'toolName',
+  'toolInput',
+  'quotedUsd',
+  'idempotencyKey',
+  'cashCapUsd',
+  'ledgerReadable',
+  'uncapped',
+  'irreversible',
+  'approvalRequired',
+  'approval',
+  'perCallCapUsd',
+  'dailyCapUsd',
+  'spentTodayUsd',
+  'inFlightUsd',
+  'chargedKeys',
+  'inFlightKeys',
+  'now',
+  'budgetExhausted',
+  'modelSaysDone',
+  'goalDone',
+  'status',
+  'workerId',
+  'confirmerId',
+  'runStartedAt',
+  'check',
+  'verification',
+]);
+
+function oneShotActionBody(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return input;
+  if (input.toolInput && typeof input.toolInput === 'object') return input.toolInput;
+  const body = {};
+  for (const key of Object.keys(input)) {
+    if (ONESHOT_CONTROL_KEYS.has(key)) continue;
+    body[key] = input[key];
+  }
+  return body;
 }
 
 function oneShotHookDeny(gate, detail) {
@@ -769,7 +807,7 @@ function evaluateOneShotPretool(toolName, toolInput) {
     const control = evaluateOneShotControl({
       ...input,
       toolName: typeof input.toolName === 'string' && input.toolName ? input.toolName : toolName,
-      toolInput: input.toolInput && typeof input.toolInput === 'object' ? input.toolInput : input,
+      toolInput: oneShotActionBody(input),
       cashCapUsd: 0,
     });
     if (control.verdict !== 'allow') return oneShotHookDeny('oneshot-control', control);

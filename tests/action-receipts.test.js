@@ -29,6 +29,7 @@ const {
   evaluateOneShotControl,
   evaluateOneShotGoalDone,
   evaluateOneShotPretool,
+  oneShotLiveGoalInput,
 } = require('../scripts/action-receipts');
 const { createDurableGrantStore, createMemoryGrantStore, evaluateHarnessGrant } = require('../scripts/human-escalation');
 
@@ -751,7 +752,29 @@ test('OneShot pretool ignores a payload cash cap and a typed owner', () => {
   });
   assert.equal(forgedCheck.decision, 'deny');
   assert.equal(forgedCheck.gate, 'oneshot-goal-done');
-  assert.equal(forgedCheck.ruleId, 'evidence_missing');
+  assert.equal(forgedCheck.ruleId, 'model_done_ignored');
+
+  const live = oneShotLiveGoalInput({
+    status: 'completed',
+    check: { writtenAt: 0, passed: true },
+    runStartedAt: 1,
+    workerId: 'worker',
+  });
+  assert.equal(live.check, undefined);
+  assert.equal(live.runStartedAt, undefined);
+  assert.equal(evaluateOneShotGoalDone(live).reason, 'model_done_ignored');
+
+  const failedLive = oneShotLiveGoalInput({
+    status: 'completed',
+    check: { passed: false, missing: ['tests'] },
+    verification: {
+      performed: true,
+      passed: true,
+      verifier: 'node-test',
+      evidence: ['4 tests passed'],
+    },
+  });
+  assert.deepEqual(failedLive.check, { passed: false, missing: ['tests'] });
 
   const selfVerified = evaluateOneShotPretool('record_task_outcome', {
     status: 'completed',
@@ -807,4 +830,78 @@ test('OneShot control runs from evaluateGates before the inner gate', async () =
     ledgerReadable: true,
   });
   assert.equal(asyncQuoted && asyncQuoted.gate, 'oneshot-control');
+});
+
+test('OneShot pretool binds a flat approval to the action, not the wrapper', () => {
+  const action = { path: 'real.json' };
+  const actionHash = hashOneShotAction({
+    toolName: 'Read',
+    toolInput: action,
+    quotedUsd: 0,
+    idempotencyKey: 'k',
+  });
+  const flat = {
+    path: 'real.json',
+    quotedUsd: 0,
+    ledgerReadable: true,
+    irreversible: true,
+    idempotencyKey: 'k',
+    now: 1_000,
+    cashCapUsd: 50,
+    approval: { actionHash, used: false, expiresAt: 5_000 },
+  };
+  assert.equal(evaluateOneShotPretool('Read', flat), null);
+
+  const mismatched = evaluateOneShotPretool('Read', {
+    ...flat,
+    approval: { actionHash: 'other', used: false, expiresAt: 5_000 },
+  });
+  assert.equal(mismatched.decision, 'deny');
+  assert.equal(mismatched.gate, 'oneshot-control');
+  assert.equal(mismatched.ruleId, 'approval_action_mismatch');
+
+  const nestedHash = hashOneShotAction({
+    toolName: 'Read',
+    toolInput: { path: 'nested.json' },
+    quotedUsd: 0,
+    idempotencyKey: 'k',
+  });
+  const nested = evaluateOneShotPretool('Read', {
+    ...flat,
+    path: 'wrapper.json',
+    toolInput: { path: 'nested.json' },
+    approval: { actionHash: nestedHash, used: false, expiresAt: 5_000 },
+  });
+  assert.equal(nested, null);
+});
+
+test('OneShot deny stays a deny under sidecar and the daily block cap', () => {
+  const { run, applyDailyBlockCap } = require('../scripts/gates-engine');
+  assert.equal(applyDailyBlockCap({ decision: 'deny', gate: 'oneshot-control', message: 'held' }), null);
+  assert.equal(applyDailyBlockCap({ decision: 'deny', gate: 'oneshot-goal-done', message: 'held' }), null);
+
+  const previousMode = process.env.THUMBGATE_GOVERNANCE_MODE;
+  const previousStrict = process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  process.env.THUMBGATE_GOVERNANCE_MODE = 'simulation';
+  delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  try {
+    const quoted = JSON.parse(run({
+      tool_name: 'Read',
+      tool_input: { file_path: 'package.json', quotedUsd: 1, ledgerReadable: true },
+    }));
+    assert.equal(quoted.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(quoted.hookSpecificOutput.permissionDecisionReason, /\[oneshot-control\]/);
+
+    const done = JSON.parse(run({
+      tool_name: 'record_task_outcome',
+      tool_input: { status: 'completed', workerId: 'worker', confirmerId: 'owner' },
+    }));
+    assert.equal(done.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(done.hookSpecificOutput.permissionDecisionReason, /\[oneshot-goal-done\]/);
+  } finally {
+    if (previousMode == null) delete process.env.THUMBGATE_GOVERNANCE_MODE;
+    else process.env.THUMBGATE_GOVERNANCE_MODE = previousMode;
+    if (previousStrict == null) delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+    else process.env.THUMBGATE_STRICT_ENFORCEMENT = previousStrict;
+  }
 });
