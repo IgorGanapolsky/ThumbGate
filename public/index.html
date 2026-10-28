@@ -156,7 +156,7 @@
       --bg: #080b10;
       --panel: #111722;
       --text: #f5f7fb;
-      --muted: #9ca8ba;
+      --muted: #b8c4d4;
       --line: #273246;
       --cyan: #38d7ff;
       --green: #56e39f;
@@ -166,6 +166,7 @@
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
+    section, .faq-item, #offers, #enterprise-gate { scroll-margin-top: 92px; }
     body {
       margin: 0;
       color: var(--text);
@@ -181,18 +182,41 @@
     .site-nav {
       position: sticky;
       top: 0;
-      z-index: 20;
-      border-bottom: 1px solid rgba(39, 50, 70, 0.75);
-      background: rgba(8, 11, 16, 0.88);
-      backdrop-filter: blur(16px);
+      z-index: 50;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(8, 11, 16, 0.86);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.72);
+    }
+    .site-nav::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -14px;
+      height: 14px;
+      background: linear-gradient(180deg, rgba(8, 11, 16, 0.42), transparent);
+      pointer-events: none;
     }
     .nav-inner { min-height: 70px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
     .nav-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 850; }
     .nav-logo img { width: 31px; height: 31px; }
     .logo-text { letter-spacing: -0.02em; }
-    .nav-links { display: flex; align-items: center; gap: 24px; }
-    .nav-links > a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 700; }
+    .nav-links { display: flex; align-items: center; gap: 22px; }
+    .nav-links > a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 700; transition: color 0.15s ease; }
     .nav-links > a:hover { color: var(--text); }
+    .nav-cta-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+    .site-nav.is-bottom-visible .nav-cta-group {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+    }
     .nav-buy, .button-primary, .button-pro {
       display: inline-flex;
       align-items: center;
@@ -203,36 +227,42 @@
       padding: 0 20px;
       color: #06130d !important;
       background: var(--green);
-      box-shadow: 0 12px 35px rgba(86, 227, 159, 0.2);
+      box-shadow: 0 12px 35px rgba(86, 227, 159, 0.22);
       font-weight: 850 !important;
       text-decoration: none;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    }
+    .nav-buy:hover, .button-primary:hover, .button-pro:hover {
+      filter: brightness(1.06);
+      box-shadow: 0 14px 38px rgba(86, 227, 159, 0.32);
     }
     .nav-enterprise {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 40px;
-      border: 1px solid rgba(86, 227, 159, 0.45);
+      min-height: 46px;
+      border: 1px solid rgba(86, 227, 159, 0.48);
       border-radius: 10px;
-      padding: 0 14px;
+      padding: 0 16px;
       color: var(--green) !important;
       background: rgba(86, 227, 159, 0.08);
       font-weight: 800 !important;
       font-size: 13px !important;
       text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
-    .nav-enterprise:hover { background: rgba(86, 227, 159, 0.14); color: var(--text) !important; }
+    .nav-enterprise:hover { background: rgba(86, 227, 159, 0.16); border-color: rgba(86, 227, 159, 0.72); color: var(--text) !important; }
     .offer-stack { display: grid; gap: 14px; }
     .pro-card {
       padding: 22px 24px;
-      border: 1px solid rgba(56, 215, 255, 0.35);
+      border: 1px solid rgba(86, 227, 159, 0.35);
       border-radius: 16px;
       background: linear-gradient(160deg, rgba(18, 28, 40, 0.98), rgba(12, 16, 24, 0.98));
     }
-    .pro-card .price strong { color: var(--cyan); }
+    .pro-card .price strong { color: var(--green); }
     .pro-card h2 { margin: 0 0 6px; font-size: 20px; }
     .pro-card > p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
-    .pro-card .button-pro { width: 100%; min-height: 48px; background: var(--cyan); color: #041016 !important; box-shadow: 0 12px 35px rgba(56, 215, 255, 0.18); }
+    .pro-card .button-pro { width: 100%; min-height: 48px; background: var(--green); color: #06130d !important; box-shadow: 0 12px 35px rgba(86, 227, 159, 0.22); }
     .pro-card .checkout-note { margin: 10px 0 0 !important; color: var(--muted) !important; font-size: 12px; text-align: center; }
     .offer-points { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
     .offer-points li {
@@ -250,9 +280,23 @@
       font-weight: 900;
     }
     .checkout-card .button-primary { width: 100%; }
-    .hero { padding: clamp(72px, 10vw, 128px) 0 72px; }
+    .hero { padding: clamp(64px, 8vw, 108px) 0 68px; }
     .hero-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr); gap: clamp(42px, 7vw, 88px); align-items: center; }
-    .eyebrow, .section-kicker { color: var(--green); font: 800 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.13em; text-transform: uppercase; }
+    .eyebrow, .section-kicker { color: var(--green); font: 800 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.11em; text-transform: uppercase; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
+      max-width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+      letter-spacing: 0.06em;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(86, 227, 159, 0.09);
+      border: 1px solid rgba(86, 227, 159, 0.28);
+    }
+    .eyebrow::-webkit-scrollbar { display: none; }
     h1 { max-width: 760px; margin: 18px 0; font-size: clamp(46px, 7vw, 78px); line-height: 0.98; letter-spacing: -0.055em; }
     .hero-lede { max-width: 650px; margin: 0 0 24px; color: #c5ceda; font-size: clamp(18px, 2vw, 22px); line-height: 1.5; }
     .fit-line { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
@@ -541,17 +585,129 @@
     .faq-item.open .faq-a { display: block; }
     .final { text-align: center; }
     .final .section-title, .final .section-lede { margin-left: auto; margin-right: auto; }
-    .final .nav-buy { margin-top: 26px; }
-    footer { padding: 32px 0 46px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
-    .footer-inner { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 18px; }
-    .footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
-    .footer-links a { color: var(--muted); }
+    .final-cli-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 22px auto 0;
+    }
+    .cli-copy-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 46px;
+      padding: 6px 8px 6px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(56, 215, 255, 0.35);
+      background: rgba(9, 13, 20, 0.92);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      font: 700 14px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .cli-copy-pill .cli-prompt { color: var(--green); user-select: none; font-weight: 900; }
+    .cli-copy-pill code { color: var(--text); font-weight: 750; letter-spacing: -0.01em; }
+    .cli-copy-pill .cli-copy-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(86, 227, 159, 0.45);
+      background: rgba(86, 227, 159, 0.14);
+      color: var(--green);
+      font: 800 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .cli-copy-pill .cli-copy-btn:hover {
+      background: var(--green);
+      color: #06130d;
+      border-color: var(--green);
+    }
+    .final-cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .final-cta-row .nav-buy,
+    .final-cta-row .nav-enterprise {
+      margin: 0 !important;
+      min-height: 48px;
+      height: 48px;
+      padding: 0 22px;
+      font-size: 15px !important;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    footer {
+      padding: 48px 0 56px;
+      border-top: 1px solid var(--line);
+      background: rgba(6, 9, 14, 0.72);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.35fr repeat(3, minmax(150px, 1fr));
+      gap: 32px;
+      align-items: start;
+    }
+    .footer-brand {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .footer-brand-title {
+      color: var(--text);
+      font-weight: 850;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+    }
+    .footer-brand-sub {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      max-width: 290px;
+    }
+    .footer-col {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .footer-col-title {
+      color: var(--text);
+      font: 800 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .footer-col a {
+      color: var(--muted);
+      text-decoration: none;
+      line-height: 1.4;
+      transition: color 0.15s ease;
+    }
+    .footer-col a:hover {
+      color: var(--text);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+    .footer-col a code {
+      color: var(--cyan);
+      font: 700 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
     @media (max-width: 840px) {
-      .nav-links > a:not(.nav-buy):not(.nav-enterprise) { display: none; }
+      .nav-links > a { display: none; }
       .nav-links { gap: 10px; }
       .hero-grid, .proof-grid { grid-template-columns: 1fr; }
       .loop, .deliverables { grid-template-columns: 1fr; }
       .loop-step:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -28px; transform: translateX(50%); }
+      .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
     }
     @media (max-width: 520px) {
       .shell { width: min(calc(100% - 24px), var(--max)); }
@@ -560,30 +716,36 @@
       .hero { padding-top: 62px; }
       h1 { font-size: 46px; }
       .checkout-card, .pro-card { padding: 22px 18px; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .final-cta-row .nav-buy, .final-cta-row .nav-enterprise { width: 100%; }
     }
 
     /* Visual-first conversion: vector thumbs + diagrams */
     .hero-thumbs {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: flex-start;
-      gap: 12px;
-      margin: 10px 0 16px;
+      gap: 10px;
+      margin: 12px 0 16px;
       line-height: 1;
-      filter: drop-shadow(0 0 22px rgba(34, 211, 238, 0.22));
+      filter: drop-shadow(0 0 22px rgba(34, 211, 238, 0.18));
     }
     .hero-thumbs span {
       display: inline-flex;
-      width: 44px;
-      height: 44px;
+      height: 36px;
+      padding: 0 12px;
+      gap: 8px;
       align-items: center;
       justify-content: center;
-      border-radius: 12px;
-      background: rgba(17, 23, 34, 0.92);
+      border-radius: 10px;
+      background: rgba(17, 23, 34, 0.94);
       border: 1px solid rgba(39, 50, 70, 0.9);
+      font: 800 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.02em;
     }
-    .hero-thumbs .up { border-color: rgba(86, 227, 159, 0.55); box-shadow: 0 0 0 1px rgba(86, 227, 159, 0.14); }
-    .hero-thumbs .down { border-color: rgba(255, 100, 124, 0.55); box-shadow: 0 0 0 1px rgba(255, 100, 124, 0.14); }
+    .hero-thumbs .up { color: var(--green); border-color: rgba(86, 227, 159, 0.55); box-shadow: 0 0 0 1px rgba(86, 227, 159, 0.14); }
+    .hero-thumbs .down { color: var(--red); border-color: rgba(255, 100, 124, 0.55); box-shadow: 0 0 0 1px rgba(255, 100, 124, 0.14); }
     .spec-chip { text-decoration: none; transition: border-color 0.15s, background 0.15s; }
     .spec-chip:hover { border-color: rgba(56, 215, 255, 0.65); background: rgba(24, 34, 50, 0.92); }
     .hero-visual {
@@ -599,7 +761,8 @@
       width: 100%;
       height: auto;
     }
-    .diagram-strip { padding: 56px 0 12px; }
+    .diagram-strip { padding: 48px 0 0; }
+    #before-after + #how-it-works { border-top: 0; padding-top: 44px; }
     .diagram-frame {
       margin: 28px 0 0;
       min-width: 0;
@@ -699,8 +862,10 @@
         <a href="#offers">Pricing</a>
         <a href="#proof">Proof</a>
         <a href="/cloud" data-cta-id="nav_cloud_dashboard" style="color:var(--cyan);font-weight:800;">Cloud Portal</a>
-        <a class="nav-buy" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_nav&amp;utm_campaign=rally_style_gtm&amp;cta_id=nav_pro_buy&amp;cta_placement=nav&amp;plan_id=pro" data-offer-link data-cta-id="nav_pro_buy">Pro · $19/mo</a>
-        <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="nav_diagnostic_buy">Get Started · $499</a>
+        <div class="nav-cta-group">
+          <a class="nav-buy" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_nav&amp;utm_campaign=rally_style_gtm&amp;cta_id=nav_pro_buy&amp;cta_placement=nav&amp;plan_id=pro" data-offer-link data-cta-id="nav_pro_buy">Pro · $19/mo</a>
+          <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="nav_diagnostic_buy">Get Started · $499</a>
+        </div>
       </div>
     </div>
   </nav>
@@ -712,8 +877,8 @@
         <div class="hero-copy">
           <div class="eyebrow">For 5–25 dev SaaS teams · Not a prompt · Not a postmortem</div>
           <div class="hero-thumbs" data-thumbs="👍👎" aria-hidden="true">
-            <span class="up"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>
-            <span class="down"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>
+            <span class="up"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>ALLOW safe</span>
+            <span class="down"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>DENY risky</span>
           </div>
           <h1>Stop AI agent mistakes before they cost you.</h1>
           <p class="hero-lede"><strong>Stop dangerous AI-agent commands before they run.</strong> Check supported calls at the <strong>tool-call boundary</strong> against rules you control. Reproduce risky actions safely with test-backed verification evidence.</p>
@@ -754,7 +919,7 @@ git push origin feat/safe-branch      → <span style="color:var(--green);font-w
         </div>
         <div id="offers" class="offer-stack">
           <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
-            <div style="font:800 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--cyan);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Self-Service · Individual Dev</div>
+            <div style="font:800 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Self-Service · Individual Dev</div>
             <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
             <h2>Pro</h2>
             <p><strong>Keep protections maintained.</strong> Unlimited gates, visual debugger, recall, and DPO exports.</p>
@@ -827,28 +992,28 @@ git push origin feat/safe-branch      → <span style="color:var(--green);font-w
                auto-close <button> around <h3>/<div>, which broke click targets. -->
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-1" data-loop-step="1" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">1</span>
-            <div class="thumb-icon" aria-hidden="true">👍👎</div>
+            <div class="thumb-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></div>
             <h3>Capture feedback</h3>
             <p>Record explicit 👍 or 👎 with action context.</p>
             <span class="loop-hint">Under the hood ↓</span>
           </div>
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-2" data-loop-step="2" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">2</span>
-            <div class="thumb-icon" aria-hidden="true">🧠</div>
+            <div class="thumb-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
             <h3>Remember locally</h3>
             <p>Store a reviewable lesson across sessions without touching weights.</p>
             <span class="loop-hint">Under the hood ↓</span>
           </div>
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-3" data-loop-step="3" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">3</span>
-            <div class="thumb-icon" aria-hidden="true">📈</div>
+            <div class="thumb-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
             <h3>Rank and refine</h3>
             <p>Re-rank lessons; repeated negatives promote to gates; stale gates expire.</p>
             <span class="loop-hint">Under the hood ↓</span>
           </div>
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-4" data-loop-step="4" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">4</span>
-            <div class="thumb-icon" aria-hidden="true">🛡️</div>
+            <div class="thumb-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
             <h3>Gate the next action</h3>
             <p>The action is allowed, warned, or denied before the tool proceeds.</p>
             <div class="decisions" aria-label="Possible decisions">
@@ -984,22 +1149,41 @@ verify    git push origin feat/safe → <span class="green">ALLOW</span></pre>
         <div class="section-kicker">Start free</div>
         <h2 class="section-title">Keep your agent protections working—and verify them.</h2>
         <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), upgrade to <strong style="color:var(--text)">Pro ($19/mo)</strong>, or book <strong style="color:var(--text)">Agent Safety Setup ($499)</strong>.</p>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
+        <div class="final-cli-wrap">
+          <div class="cli-copy-pill" role="region" aria-label="Install free MIT CLI">
+            <span class="cli-prompt" aria-hidden="true">$</span>
+            <code>npx thumbgate init</code>
+            <button type="button" class="cli-copy-btn" data-copy-install data-cta-id="final_install_copy">Copy</button>
+          </div>
+        </div>
+        <div class="final-cta-row">
           <a class="nav-buy" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_final&amp;utm_campaign=pro_self_serve&amp;cta_id=final_pro_buy&amp;cta_placement=final&amp;plan_id=pro" data-offer-link data-cta-id="final_pro_buy">Start Pro — $19/mo</a>
-          <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>
+          <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">Get Started · $499</a>
         </div>
       </div>
     </section>
   </main>
 
   <footer>
-    <div class="shell footer-inner">
-      <span>ThumbGate · MIT License · npm v1.39.0</span>
-      <div class="footer-links">
-        <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
-        <a href="/guide">Technical setup</a>
+    <div class="shell footer-grid">
+      <div class="footer-brand">
+        <span class="footer-brand-title">ThumbGate · MIT License · npm v1.39.0</span>
+      </div>
+      <div class="footer-col" role="navigation" aria-label="Product">
+        <div class="footer-col-title">Product</div>
         <a href="/dashboard#insights">Live enforcement dashboard</a>
         <a href="#thumbgate-dashboard-command"><code>thumbgate-dashboard</code> command</a>
+        <a href="/guide">Technical setup</a>
+        <a href="/support">Support</a>
+      </div>
+      <div class="footer-col" role="navigation" aria-label="Resources">
+        <div class="footer-col-title">Resources</div>
+        <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+        <a href="/learn">Browse the guide library</a>
+        <a href="/llm-context.md">Machine-readable context</a>
+      </div>
+      <div class="footer-col" role="navigation" aria-label="Legal and Trust">
+        <div class="footer-col-title">Legal &amp; Trust</div>
         <a href="/terms">Terms</a>
         <a href="/privacy">Privacy</a>
         <!-- CCPA/CPRA Civil Code 1798.135(a): the opt-out link must be reachable
@@ -1008,9 +1192,6 @@ verify    git push origin feat/safe → <span class="green">ALLOW</span></pre>
         <a href="/security">Security</a>
         <a href="/trust">Trust</a>
         <a href="/legal">Legal</a>
-        <a href="/support">Support</a>
-        <a href="/learn">Browse the guide library</a>
-        <a href="/llm-context.md">Machine-readable context</a>
       </div>
     </div>
   </footer>
@@ -1395,6 +1576,16 @@ verify    git push origin feat/safe → <span class="green">ALLOW</span></pre>
         } else { fallback(); }
       });
     });
+    var nav = document.querySelector('.site-nav');
+    var finalSec = document.querySelector('.final');
+    if (nav && finalSec && typeof IntersectionObserver === 'function') {
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          nav.classList.toggle('is-bottom-visible', entry.isIntersecting);
+        });
+      }, { threshold: 0.15 });
+      obs.observe(finalSec);
+    }
   })();
 </script>
 </body>

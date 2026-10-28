@@ -212,6 +212,38 @@ test('POST /admin/login sets HttpOnly session cookie and unlocks real-time sign-
       const authedHtml = await authedPortal.text();
       assert.match(authedHtml, /Google SSO|Apple ID SSO|GitHub SSO/);
     }
+
+    // 9. Dialogflow answers time-windowed and analytical questions distinctly and never repeats itself
+    const askDf = async (query, sessionId = 'test-session-distinct') => {
+      const res = await fetch(`${baseUrl}/v1/admin/dialogflow`, {
+        method: 'POST',
+        headers: { Cookie: cookiePair, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, sessionId }),
+      });
+      assert.equal(res.status, 200);
+      return res.json();
+    };
+
+    const lastWeekAns = await askDf('how much money we made in the last week?');
+    assert.equal(lastWeekAns.subIntent, 'profits_last_7d');
+    assert.equal(lastWeekAns.timeWindow, 'last_7d');
+    assert.match(lastWeekAns.answer, /In last 7 days \(last week\), we made/i);
+    assert.notEqual(lastWeekAns.answer, dfProfit.answer);
+
+    const whenSaleAns = await askDf('when was our last sale?');
+    assert.equal(whenSaleAns.subIntent, 'latest_order_timing');
+    assert.match(whenSaleAns.answer, /Our most recent paid sale was on/);
+    assert.notEqual(whenSaleAns.answer, lastWeekAns.answer);
+
+    const whyDropAns = await askDf('why didn\'t the other leads buy?');
+    assert.equal(whyDropAns.subIntent, 'why_drop_off');
+    assert.match(whyDropAns.answer, /Lead-to-Paid Conversion Rate/);
+    assert.notEqual(whyDropAns.answer, whenSaleAns.answer);
+
+    // Asking the exact same question a second time in the same session appends a granular drill-down
+    const repeatLastWeekAns = await askDf('how much money we made in the last week?', 'test-session-distinct');
+    assert.notEqual(repeatLastWeekAns.answer, lastWeekAns.answer);
+    assert.match(repeatLastWeekAns.answer, /Granular Ledger Drill-Down/);
   } finally {
     await close();
   }
