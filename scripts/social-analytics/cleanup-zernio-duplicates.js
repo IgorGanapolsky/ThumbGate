@@ -196,15 +196,31 @@ async function cleanupZernioDuplicates(options = {}, api = {}) {
   const deleted = [];
   const errors = [];
   if (!resolved.dryRun) {
-    for (const candidate of deletions) {
-      try {
-        const result = await zernio.deletePost(candidate.post.id);
-        deleted.push({ ...candidate, result });
-      } catch (error) {
-        errors.push({
-          ...candidate,
-          error: error?.message ? error.message : String(error),
-        });
+    const CHUNK_SIZE = 15;
+    for (let i = 0; i < deletions.length; i += CHUNK_SIZE) {
+      const chunk = deletions.slice(i, i + CHUNK_SIZE);
+      const results = await Promise.all(
+        chunk.map(async (candidate) => {
+          try {
+            const result = await zernio.deletePost(candidate.post.id);
+            return { success: true, data: { ...candidate, result } };
+          } catch (error) {
+            return {
+              success: false,
+              data: {
+                ...candidate,
+                error: error?.message ? error.message : String(error),
+              },
+            };
+          }
+        })
+      );
+      for (const res of results) {
+        if (res.success) {
+          deleted.push(res.data);
+        } else {
+          errors.push(res.data);
+        }
       }
     }
   }
