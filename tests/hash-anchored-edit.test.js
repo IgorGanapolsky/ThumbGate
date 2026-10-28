@@ -48,3 +48,21 @@ test('HashAnchoredEdit: detects drift when concurrent session modified lines', (
   assert.equal(result.allowed, false);
   assert.equal(result.reason, 'target_content_drift');
 });
+
+test('HashAnchoredEdit: handles file read errors gracefully', (t) => {
+  const tmpFile = path.join(os.tmpdir(), `hash-read-error-${Date.now()}.js`);
+  fs.writeFileSync(tmpFile, 'const test = 1;\n');
+
+  t.mock.method(fs, 'readFileSync', () => {
+    throw new Error('Mock read error');
+  });
+
+  const result = evaluateHashAnchoredEdit({
+    filePath: tmpFile,
+    targetContent: 'const test = 1;',
+  });
+
+  assert.equal(result.allowed, false);
+  assert.equal(result.reason, 'file_read_error');
+  assert.match(result.message, /Failed to read .*: Mock read error/);
+});
