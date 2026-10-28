@@ -230,20 +230,31 @@ function getHostedHermes(requestDataIdentity) {
   return entry;
 }
 
-function resolveHermesApproverId(req, humanReviewerConfig, requestDataIdentity) {
-  if (humanReviewerConfig?.key && humanReviewerConfig?.id) {
-    const header = req.headers['x-thumbgate-human-reviewer-key'];
-    const presented = Array.isArray(header) ? header[0] : header;
-    if (safeKeyEqual(presented, humanReviewerConfig.key)) {
-      return humanReviewerConfig.id;
-    }
+function extractHumanReviewerId(req, config) {
+  if (!config?.key || !config?.id) return null;
+
+  const header = req.headers['x-thumbgate-human-reviewer-key'];
+  const presented = Array.isArray(header) ? header[0] : header;
+
+  if (safeKeyEqual(presented, config.key)) {
+    return config.id;
   }
-  if (requestDataIdentity?.accessContext?.principalId) {
-    return requestDataIdentity.accessContext.principalId;
-  }
-  const role = resolveKeyRole(extractApiKey(req));
-  if (role) return `thumbgate:${role}`;
   return null;
+}
+
+function resolveHermesApproverId(req, humanReviewerConfig, requestDataIdentity) {
+  const humanReviewerId = extractHumanReviewerId(req, humanReviewerConfig);
+  if (humanReviewerId) {
+    return humanReviewerId;
+  }
+
+  const principalId = requestDataIdentity?.accessContext?.principalId;
+  if (principalId) {
+    return principalId;
+  }
+
+  const role = resolveKeyRole(extractApiKey(req));
+  return role ? `thumbgate:${role}` : null;
 }
 const {
   generateDashboard,
