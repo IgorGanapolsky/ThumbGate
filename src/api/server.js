@@ -3336,9 +3336,9 @@ function sendHtml(res, statusCode, html, extraHeaders = {}, options = {}) {
   res.end(headOnly ? '' : html);
 }
 
-function getPublicBillingHeaders(traceId = '') {
+function getPublicBillingHeaders(appOrigin, traceId = '') {
   const headers = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': appOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-ThumbGate-Trace-Id',
     'Access-Control-Expose-Headers': 'X-ThumbGate-Trace-Id',
@@ -3349,9 +3349,9 @@ function getPublicBillingHeaders(traceId = '') {
   return headers;
 }
 
-function sendPublicBillingPreflight(res) {
+function sendPublicBillingPreflight(res, appOrigin) {
   res.writeHead(204, {
-    ...getPublicBillingHeaders(),
+    ...getPublicBillingHeaders(appOrigin),
     'Access-Control-Max-Age': '86400',
     'Content-Length': '0',
   });
@@ -8405,7 +8405,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       // the CLI gets the right CORS headers if it ever hits the proxy
       // path; in practice CLI hits the server directly so this is mostly
       // defense-in-depth.
-      sendPublicBillingPreflight(res);
+      sendPublicBillingPreflight(res, hostedConfig.appOrigin);
       return;
     }
 
@@ -8535,12 +8535,12 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     }
 
     if (req.method === 'OPTIONS' && pathname === '/v1/intake/workflow-sprint') {
-      sendPublicBillingPreflight(res);
+      sendPublicBillingPreflight(res, hostedConfig.appOrigin);
       return;
     }
 
     if (req.method === 'OPTIONS' && pathname === '/v1/intake/broker-audit') {
-      sendPublicBillingPreflight(res);
+      sendPublicBillingPreflight(res, hostedConfig.appOrigin);
       return;
     }
 
@@ -8617,7 +8617,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           offer: lead.offer,
           nextStep: 'deliver_1_page_pdf',
         }, {
-          ...getPublicBillingHeaders(lead.attribution.traceId),
+          ...getPublicBillingHeaders(hostedConfig.appOrigin, lead.attribution.traceId),
           ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
         });
       } catch (err) {
@@ -8658,7 +8658,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
           status: err.statusCode || 500,
           detail: err.message || 'Unable to capture broker audit request.',
-        }, getPublicBillingHeaders(traceId));
+        }, getPublicBillingHeaders(hostedConfig.appOrigin, traceId));
       }
       return;
     }
@@ -8772,7 +8772,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           proofPackUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
           sprintBriefUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md',
         }, {
-          ...getPublicBillingHeaders(lead.attribution.traceId),
+          ...getPublicBillingHeaders(hostedConfig.appOrigin, lead.attribution.traceId),
           ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
         });
       } catch (err) {
@@ -8820,7 +8820,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
           status: err.statusCode || 500,
           detail: err.message || 'Unable to capture workflow sprint intake.',
-        }, getPublicBillingHeaders(traceId));
+        }, getPublicBillingHeaders(hostedConfig.appOrigin, traceId));
       }
       return;
     }
@@ -9268,7 +9268,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     }
 
     if (req.method === 'OPTIONS' && (pathname === '/v1/billing/checkout' || pathname === '/v1/billing/session')) {
-      sendPublicBillingPreflight(res);
+      sendPublicBillingPreflight(res, hostedConfig.appOrigin);
       return;
     }
 
@@ -9277,7 +9277,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       try {
         const body = await parseJsonBody(req);
         const traceId = body.traceId || createTraceId('checkout');
-        const responseHeaders = getPublicBillingHeaders(traceId);
+        const responseHeaders = getPublicBillingHeaders(hostedConfig.appOrigin, traceId);
         const analyticsMetadata = buildCheckoutAttributionMetadata(body, req, traceId);
         const offerSummary = resolveCheckoutOfferSummary(analyticsMetadata);
         
@@ -9313,7 +9313,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
           status: err.statusCode || 500,
           detail: err.message || 'An unexpected error occurred.',
-        }, getPublicBillingHeaders(fallbackTraceId));
+        }, getPublicBillingHeaders(hostedConfig.appOrigin, fallbackTraceId));
       }
       return;
     }
@@ -9351,7 +9351,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             env: `THUMBGATE_API_KEY=${result.apiKey || ''}\nTHUMBGATE_API_BASE_URL=${hostedConfig.billingApiBaseUrl}`,
             curl: `curl -X POST ${hostedConfig.billingApiBaseUrl}/v1/feedback/capture \\\n  -H 'Authorization: Bearer ${result.apiKey || ''}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{"signal":"down","context":"example","whatWentWrong":"example","whatToChange":"example"}'`,
           } : nextSteps,
-        }, getPublicBillingHeaders(resolvedTraceId));
+        }, getPublicBillingHeaders(hostedConfig.appOrigin, resolvedTraceId));
       } catch (err) {
         const requestedTraceId = parsed.searchParams.get('traceId') || '';
         sendProblem(res, {
@@ -9359,7 +9359,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
           status: err.statusCode || 500,
           detail: err.message || 'An unexpected error occurred.',
-        }, getPublicBillingHeaders(requestedTraceId));
+        }, getPublicBillingHeaders(hostedConfig.appOrigin, requestedTraceId));
       }
       return;
     }
