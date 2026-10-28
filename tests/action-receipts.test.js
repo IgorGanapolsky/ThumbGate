@@ -28,6 +28,7 @@ const {
   hashOneShotAction,
   evaluateOneShotControl,
   evaluateOneShotGoalDone,
+  evaluateOneShotPretool,
 } = require('../scripts/action-receipts');
 const { createDurableGrantStore, createMemoryGrantStore, evaluateHarnessGrant } = require('../scripts/human-escalation');
 
@@ -550,4 +551,198 @@ test('OneShot done-check ignores the worker and budget exhaustion', () => {
   });
   assert.equal(byOwner.status, 'done');
   assert.equal(byOwner.reason, 'owner_confirmed');
+});
+
+test('OneShot cents ceil the quote and floor the cap', () => {
+  const over = evaluateOneShotControl(withinCap({
+    cashCapUsd: 10,
+    perCallCapUsd: 10,
+    dailyCapUsd: 10,
+    quotedUsd: 10.004,
+  }));
+  assert.equal(over.verdict, 'deny');
+  assert.equal(over.reason, 'over_per_call_cap');
+
+  const dust = evaluateOneShotControl(withinCap({
+    cashCapUsd: 0.01,
+    perCallCapUsd: 0.01,
+    dailyCapUsd: 0.01,
+    quotedUsd: 0.014,
+  }));
+  assert.equal(dust.verdict, 'deny');
+  assert.equal(dust.reason, 'over_per_call_cap');
+
+  const tiny = evaluateOneShotControl(withinCap({
+    cashCapUsd: 0.001,
+    perCallCapUsd: 0.001,
+    dailyCapUsd: 1,
+    quotedUsd: 0.014,
+  }));
+  assert.equal(tiny.verdict, 'deny');
+  assert.equal(tiny.reason, 'over_per_call_cap');
+
+  const summed = evaluateOneShotControl(withinCap({
+    cashCapUsd: 3,
+    perCallCapUsd: 3,
+    dailyCapUsd: 3,
+    quotedUsd: 1.004,
+    spentTodayUsd: 1.004,
+    inFlightUsd: 1.004,
+  }));
+  assert.equal(summed.verdict, 'deny');
+  assert.equal(summed.reason, 'over_daily_cap');
+});
+
+test('OneShot blank idempotency keys do not match a charged blank key', () => {
+  const blank = evaluateOneShotControl(withinCap({
+    idempotencyKey: '   ',
+    chargedKeys: ['   '],
+  }));
+  assert.equal(blank.verdict, 'hold');
+  assert.equal(blank.reason, 'idempotency_unreadable');
+});
+
+test('OneShot approval flags and action hashes are exact', () => {
+  for (const uncapped of [1, 'true']) {
+    const refused = evaluateOneShotControl(withinCap({ uncapped, ledgerReadable: false }));
+    assert.equal(refused.verdict, 'deny');
+    assert.equal(refused.reason, 'uncapped_refused');
+  }
+
+  const call = withinCap({ irreversible: 'true', now: 1_000 });
+  assert.equal(evaluateOneShotControl(call).reason, 'approval_required');
+
+  const actionHash = hashOneShotAction(call);
+  const replayed = evaluateOneShotControl({
+    ...call,
+    approval: { actionHash, used: 1, expiresAt: 5_000 },
+  });
+  assert.equal(replayed.verdict, 'deny');
+  assert.equal(replayed.reason, 'approval_replay');
+
+  const plain = withinCap({ irreversible: true, now: 1_000 });
+  const stillOpen = evaluateOneShotControl({
+    ...plain,
+    approval: { actionHash: hashOneShotAction(plain), used: false },
+  });
+  assert.equal(stillOpen.verdict, 'allow');
+
+  const dated = evaluateOneShotControl(withinCap({
+    toolInput: new Date(0),
+    irreversible: true,
+    now: 1_000,
+    approval: {
+      actionHash: hashOneShotAction(withinCap({ toolInput: {} })),
+      used: false,
+      expiresAt: 5_000,
+    },
+  }));
+  assert.equal(dated.verdict, 'hold');
+  assert.equal(dated.reason, 'action_unreadable');
+
+  const mapped = evaluateOneShotControl(withinCap({ toolInput: new Map() }));
+  assert.equal(mapped.verdict, 'hold');
+  assert.equal(mapped.reason, 'action_unreadable');
+});
+
+test('OneShot failed checks stay failed and identities fold case', () => {
+  const undated = evaluateOneShotGoalDone({
+    workerId: 'worker',
+    confirmerId: 'owner',
+    check: { passed: false },
+  });
+  assert.equal(undated.done, false);
+  assert.equal(undated.reason, 'check_failed');
+
+  const lateFail = evaluateOneShotGoalDone({
+    workerId: 'worker',
+    confirmerId: 'owner',
+    runStartedAt: 50,
+    check: { writtenAt: 100, passed: false },
+  });
+  assert.equal(lateFail.done, false);
+  assert.equal(lateFail.reason, 'check_failed');
+
+  const exhausted = evaluateOneShotGoalDone({
+    budgetExhausted: 1,
+    confirmerId: 'owner',
+    workerId: 'worker',
+    check: { writtenAt: 1, passed: true },
+    runStartedAt: 2,
+  });
+  assert.equal(exhausted.done, false);
+  assert.equal(exhausted.status, 'out_of_budget');
+
+  const folded = evaluateOneShotGoalDone({
+    workerId: 'worker',
+    confirmerId: 'Worker',
+  });
+  assert.equal(folded.done, false);
+  assert.equal(folded.reason, 'worker_cannot_confirm');
+});
+
+test('OneShot per-call cap is this quote and in-flight counts against the day', () => {
+  const verdict = evaluateOneShotControl(withinCap({
+    perCallCapUsd: 5,
+    inFlightUsd: 5,
+    quotedUsd: 5,
+    dailyCapUsd: 100,
+    cashCapUsd: 100,
+  }));
+  assert.equal(verdict.verdict, 'allow');
+  assert.equal(verdict.reservedUsd, 5);
+});
+
+test('OneShot pretool ignores a payload cash cap and a typed owner', () => {
+  const raised = evaluateOneShotPretool('Read', {
+    file_path: 'package.json',
+    quotedUsd: 0.01,
+    ledgerReadable: true,
+    cashCapUsd: 1000,
+  });
+  assert.equal(raised.decision, 'deny');
+  assert.equal(raised.gate, 'oneshot-control');
+  assert.equal(raised.ruleId, 'over_per_call_cap');
+
+  assert.equal(evaluateOneShotPretool('Read', { file_path: 'package.json' }), null);
+
+  const done = evaluateOneShotPretool('record_task_outcome', {
+    status: 'completed',
+    workerId: 'worker',
+    confirmerId: 'owner',
+    modelSaysDone: true,
+  });
+  assert.equal(done.decision, 'deny');
+  assert.equal(done.gate, 'oneshot-goal-done');
+  assert.notEqual(done.ruleId, 'owner_confirmed');
+});
+
+test('OneShot control runs from evaluateGates before the inner gate', async () => {
+  const { evaluateGates, evaluateGatesAsync } = require('../scripts/gates-engine');
+  const quoted = evaluateGates('Read', {
+    file_path: 'package.json',
+    quotedUsd: 1,
+    ledgerReadable: true,
+    cashCapUsd: 1000,
+  });
+  assert.equal(quoted && quoted.decision, 'deny');
+  assert.equal(quoted.gate, 'oneshot-control');
+
+  const plain = evaluateGates('Read', { file_path: 'package.json' });
+  assert.notEqual(plain && plain.gate, 'oneshot-control');
+
+  const done = evaluateGates('record_task_outcome', {
+    status: 'completed',
+    workerId: 'worker',
+    confirmerId: 'owner',
+  });
+  assert.equal(done && done.decision, 'deny');
+  assert.equal(done.gate, 'oneshot-goal-done');
+
+  const asyncQuoted = await evaluateGatesAsync('Read', {
+    file_path: 'package.json',
+    quotedUsd: 1,
+    ledgerReadable: true,
+  });
+  assert.equal(asyncQuoted && asyncQuoted.gate, 'oneshot-control');
 });

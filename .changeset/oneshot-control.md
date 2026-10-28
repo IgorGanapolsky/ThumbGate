@@ -2,4 +2,4 @@
 "thumbgate": patch
 ---
 
-Reserve a quoted action against per-call and daily caps before any side effect, and refuse to mark a goal done because the worker said so. The default cash cap stays $0.
+Run the quote and done-check on the spend hook, the pre-tool gate, and the task-outcome ledger. A worker cannot mark its own goal done, and the agent cash cap stays $0.

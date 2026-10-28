@@ -4647,7 +4647,55 @@ function canonicalRetryInput(toolName, toolInput) {
   return { ...toolInput, command: canonical, originalCommand: original };
 }
 
+function oneShotPayloadNeedsControl(toolName, toolInput) {
+  if (!toolInput || typeof toolInput !== 'object' || Array.isArray(toolInput)) return false;
+  const name = String(toolName || '');
+  const status = typeof toolInput.status === 'string' ? toolInput.status.trim().toLowerCase() : '';
+  if ((name === 'record_task_outcome' || name === 'verify_claim') && (status === 'completed' || status === 'done')) {
+    return true;
+  }
+  if (toolInput.modelSaysDone === true || toolInput.goalDone === true) return true;
+  const flag = (value) => value === true || value === 1 || value === 'true';
+  if (flag(toolInput.budgetExhausted) || flag(toolInput.uncapped) || flag(toolInput.irreversible) || flag(toolInput.approvalRequired)) {
+    return true;
+  }
+  return Object.prototype.hasOwnProperty.call(toolInput, 'quotedUsd');
+}
+
+function oneshotUnreadableDeny() {
+  const message = 'ThumbGate could not read the OneShot control. The call is held. [oneshot-control]';
+  return {
+    decision: 'deny',
+    gate: 'oneshot-control',
+    ruleId: 'control_unreadable',
+    reason: message,
+    message,
+    severity: 'high',
+  };
+}
+
+function applyOneShotPretool(toolName, toolInput) {
+  let mod = null;
+  try {
+    mod = require('./action-receipts');
+  } catch {
+    mod = null;
+  }
+  const needs = mod && typeof mod.oneShotPayloadNeedsControl === 'function'
+    ? mod.oneShotPayloadNeedsControl(toolName, toolInput)
+    : oneShotPayloadNeedsControl(toolName, toolInput);
+  if (!needs) return null;
+  if (!mod || typeof mod.evaluateOneShotPretool !== 'function') return oneshotUnreadableDeny();
+  try {
+    return mod.evaluateOneShotPretool(toolName, toolInput);
+  } catch {
+    return oneshotUnreadableDeny();
+  }
+}
+
 async function evaluateGatesAsync(toolName, toolInput, configPath) {
+  const oneshot = applyOneShotPretool(toolName, toolInput);
+  if (oneshot) return oneshot;
   const direct = await evaluateGatesAsyncInner(toolName, toolInput, configPath);
   if (direct) return direct;
   const retry = canonicalRetryInput(toolName, toolInput);
@@ -4656,6 +4704,8 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 }
 
 function evaluateGates(toolName, toolInput, configPath) {
+  const oneshot = applyOneShotPretool(toolName, toolInput);
+  if (oneshot) return oneshot;
   const direct = evaluateGatesInner(toolName, toolInput, configPath);
   if (direct) return direct;
   const retry = canonicalRetryInput(toolName, toolInput);
