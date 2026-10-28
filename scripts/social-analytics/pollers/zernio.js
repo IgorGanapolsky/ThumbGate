@@ -130,29 +130,36 @@ async function pollZernio(db) {
         .map((m) => m.postId || m.id || m.platformPostId)
         .filter(Boolean);
 
-      for (const postId of postIds) {
-        try {
-          const postResponse = await fetchPostAnalytics(postId);
-          const postData = postResponse.data ?? postResponse;
-
-          if (!postData || typeof postData !== 'object') continue;
-
-          const enrichedPost = {
-            accountId,
-            platform: postData.platform || platform,
-            ...postData,
-          };
-
+      // Batch fetch post analytics to avoid N+1 problem
+      const batchSize = 15;
+      for (let i = 0; i < postIds.length; i += batchSize) {
+        const batch = postIds.slice(i, i + batchSize);
+        const fetchPromises = batch.map(async (postId) => {
           try {
-            const normalized = normalizeZernioMetric(enrichedPost);
-            upsertMetric(db, normalized);
-            console.log(`[zernio:poller] Upserted post analytics for post ${normalized.post_id}`);
-          } catch (normErr) {
-            console.warn(`[zernio:poller] Post analytics normalization error for post ${postId}: ${normErr.message}`);
+            const postResponse = await fetchPostAnalytics(postId);
+            const postData = postResponse.data ?? postResponse;
+
+            if (!postData || typeof postData !== 'object') return;
+
+            const enrichedPost = {
+              accountId,
+              platform: postData.platform || platform,
+              ...postData,
+            };
+
+            try {
+              const normalized = normalizeZernioMetric(enrichedPost);
+              upsertMetric(db, normalized);
+              console.log(`[zernio:poller] Upserted post analytics for post ${normalized.post_id}`);
+            } catch (normErr) {
+              console.warn(`[zernio:poller] Post analytics normalization error for post ${postId}: ${normErr.message}`);
+            }
+          } catch (postErr) {
+            console.warn(`[zernio:poller] Post analytics fetch error for post ${postId}: ${postErr.message}`);
           }
-        } catch (postErr) {
-          console.warn(`[zernio:poller] Post analytics fetch error for post ${postId}: ${postErr.message}`);
-        }
+        });
+
+        await Promise.all(fetchPromises);
       }
     } catch (err) {
       console.error(`[zernio:poller] Failed to poll account ${accountId}: ${err.message}`);
