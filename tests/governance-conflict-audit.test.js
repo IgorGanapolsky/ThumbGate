@@ -711,7 +711,7 @@ test('D5 negative: a symbol mentioned only in a COMMENT is still reported uncall
       'module.exports = { GhostClass };',
     ].join('\n'),
     'src/ghost.js': "'use strict';\nclass GhostClass {}\nmodule.exports = { GhostClass };\n",
-    'scripts/docs.js': "'use strict';\n// TODO: wire GhostClass into the pipeline one day\nmodule.exports = {};\n",
+    'scripts/docs.js': "'use strict';\n// A comment mentioning GhostClass\nmodule.exports = {};\n",
   });
 
   const d5 = auditZeroCallSites({
