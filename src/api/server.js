@@ -3402,6 +3402,24 @@ function chatgptActionEventType(integration, suffix) {
   return integration === 'chatgpt_gpt' ? `chatgpt_action_${suffix}` : `api_action_${suffix}`;
 }
 
+function resolveAllowedTelemetryOrigin(requestOrigin) {
+  if (!requestOrigin) return null;
+  const origin = requestOrigin.toLowerCase();
+
+  const allowed = [
+    'https://thumbgate.ai',
+    'https://www.thumbgate.ai',
+    'https://thumbgate-production.up.railway.app',
+    DEFAULT_PUBLIC_APP_ORIGIN,
+    process.env.THUMBGATE_PUBLIC_APP_ORIGIN
+  ].filter(Boolean).map(o => o.toLowerCase());
+
+  if (allowed.includes(origin)) return requestOrigin;
+  if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) return requestOrigin;
+
+  return null;
+}
+
 function getPublicOrigin(req) {
   const rawProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
   const proto = rawProto === 'https' ? 'https' : 'http';
@@ -8104,22 +8122,30 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           // Telemetry is best-effort and must never fail the caller.
         }
       }
-      res.writeHead(204, {
-        'Access-Control-Allow-Origin': '*',
+      const headers = {
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Content-Length': '0',
-      });
+      };
+      const origin = resolveAllowedTelemetryOrigin(req.headers.origin);
+      if (origin) {
+        headers['Access-Control-Allow-Origin'] = origin;
+      }
+      res.writeHead(204, headers);
       res.end();
       return;
     }
 
     if (req.method === 'OPTIONS' && pathname === '/v1/telemetry/ping') {
-      res.writeHead(204, {
-        'Access-Control-Allow-Origin': '*',
+      const headers = {
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
-      });
+      };
+      const origin = resolveAllowedTelemetryOrigin(req.headers.origin);
+      if (origin) {
+        headers['Access-Control-Allow-Origin'] = origin;
+      }
+      res.writeHead(204, headers);
       res.end();
       return;
     }

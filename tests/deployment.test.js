@@ -202,11 +202,11 @@ test('POST /v1/telemetry/ping returns 204 without auth', async () => {
   const payload = JSON.stringify({ installId: 'test-install-123', version: '0.7.0', platform: 'darwin', nodeVersion: 'v20.0.0' });
   const res = await fetch(deployUrl('/v1/telemetry/ping'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', origin: 'https://thumbgate.ai' },
     body: payload,
   });
   assert.strictEqual(res.status, 204, 'Telemetry ping should return 204');
-  assert.equal(res.headers.get('access-control-allow-origin'), '*');
+  assert.equal(res.headers.get('access-control-allow-origin'), 'https://thumbgate.ai');
 
   const telemetryPath = path.join(tmpFeedbackDir, 'telemetry-pings.jsonl');
   assert.equal(fs.existsSync(telemetryPath), true);
@@ -221,13 +221,13 @@ test('OPTIONS /v1/telemetry/ping returns CORS headers without auth', async () =>
   const res = await fetch(deployUrl('/v1/telemetry/ping'), {
     method: 'OPTIONS',
     headers: {
-      origin: 'https://app.example.com',
+      origin: 'https://thumbgate.ai',
       'access-control-request-method': 'POST',
       'access-control-request-headers': 'content-type',
     },
   });
   assert.equal(res.status, 204);
-  assert.equal(res.headers.get('access-control-allow-origin'), '*');
+  assert.equal(res.headers.get('access-control-allow-origin'), 'https://thumbgate.ai');
   assert.match(String(res.headers.get('access-control-allow-methods')), /POST/);
 });
 
