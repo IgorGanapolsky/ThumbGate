@@ -3715,9 +3715,14 @@ function resolveLocalPageBootstrap(req, expectedApiKey) {
     : forwardedHost || req.headers.host || '';
   const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
   const devOverride = expectedApiKey === null && isLoopbackHost(hostHeader);
-  const bootstrapActive = localProBootstrap || devOverride;
+  const adminSessionAuth = Boolean(expectedApiKey) && verifyAdminRequest(req, {
+    expectedApiKey,
+    expectedOperatorKey: process.env.THUMBGATE_OPERATOR_KEY || '',
+  });
+  const adminBootstrap = Boolean(adminSessionAuth && adminSessionAuth.authenticated && adminSessionAuth.method === 'cookie');
+  const bootstrapActive = localProBootstrap || devOverride || adminBootstrap;
   let bootstrapKey = '';
-  if (localProBootstrap) {
+  if (localProBootstrap || adminBootstrap) {
     bootstrapKey = expectedApiKey;
   } else if (devOverride) {
     bootstrapKey = process.env.THUMBGATE_API_KEY || 'dev-override';

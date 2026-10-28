@@ -177,7 +177,90 @@ test('POST /admin/login sets HttpOnly session cookie and unlocks real-time sign-
     const webhookData = await webhookRes.json();
     assert.match(webhookData.fulfillmentText, /Real-Time Sign-Ups:/);
     assert.equal(webhookData.payload.intent, 'admin.signups');
+
+    // 7. Ask Dialogflow about Herdr MoE Swarm & LLM-as-Judge
+    const swarmRes = await fetch(`${baseUrl}/v1/admin/dialogflow`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: cookiePair,
+      },
+      body: JSON.stringify({ query: 'How is our Herdr MoE Swarm, SOW, and LLM-as-Judge performing?' }),
+    });
+    assert.equal(swarmRes.status, 200);
+    const swarmData = await swarmRes.json();
+    assert.equal(swarmData.ok, true);
+    assert.equal(swarmData.intent, 'admin.herdr_swarm');
+    assert.match(swarmData.answer, /Herdr 2x2 MoE Swarm SOW/);
+    assert.match(swarmData.answer, /Broadcast Prompt Deduplication/);
   } finally {
     await close();
   }
 });
+
+test('Herdr MoE Swarm deduplicates identical broadcast prompts across agents and ranks candidates via LLM-as-Judge', () => {
+  const {
+    generateSwarmSow,
+    evaluateSwarmCandidatesWithJudge,
+  } = require('../src/herdr-moe-swarm');
+  const tmpSwarmDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-herdr-swarm-test-'));
+  try {
+    const broadcastPrompt = 'new SOWs for our project work: multiple agents coordinating in a swarm inside of herdr with LLM-as-Judge and Mixture-of-Experts';
+
+    const sow1 = generateSwarmSow({
+      prompt: broadcastPrompt,
+      callingAgent: 'omp',
+      workspaceId: 'w3',
+      stateDir: tmpSwarmDir,
+    });
+    assert.equal(sow1.deduplicationStatus, 'ELECTED_PRIMARY_SOW_ROUTER');
+    assert.equal(sow1.assignedSeatId, 'architect@herdr');
+    assert.ok(sow1.tokenEfficiency.tokenSavingsPct >= 70);
+
+    const sow2 = generateSwarmSow({
+      prompt: broadcastPrompt,
+      callingAgent: 'antigravity',
+      workspaceId: 'w3',
+      stateDir: tmpSwarmDir,
+    });
+    assert.equal(sow2.sowId, sow1.sowId);
+    assert.equal(sow2.deduplicationStatus, 'JOINED_EXISTING_SWARM_SOW');
+    assert.equal(sow2.assignedSeatId, 'builder@herdr');
+
+    const sow3 = generateSwarmSow({
+      prompt: broadcastPrompt,
+      callingAgent: 'gemini',
+      workspaceId: 'w3',
+      stateDir: tmpSwarmDir,
+    });
+    assert.equal(sow3.sowId, sow1.sowId);
+    assert.equal(sow3.assignedSeatId, 'verifier@herdr');
+
+    const evaluation = evaluateSwarmCandidatesWithJudge([
+      {
+        agent: 'antigravity',
+        seatId: 'builder@herdr',
+        tokensUsed: 3200,
+        latencyMs: 1100,
+        filesModified: ['src/admin-cloud-portal.js'],
+        testsPassed: true,
+        output: 'Verified implementation with commit sha and passing test suite.',
+      },
+      {
+        agent: 'unverified-agent',
+        seatId: 'verifier@herdr',
+        tokensUsed: 9500,
+        latencyMs: 4200,
+        filesModified: ['tests/broken.test.js'],
+        testsPassed: false,
+        output: 'Done and shipped.',
+      },
+    ]);
+
+    assert.equal(evaluation.winner.agent, 'antigravity');
+    assert.ok(evaluation.winner.finalScore > evaluation.rankings[1].finalScore);
+  } finally {
+    fs.rmSync(tmpSwarmDir, { recursive: true, force: true });
+  }
+});
+

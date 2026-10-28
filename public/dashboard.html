@@ -44,15 +44,15 @@
   }
   html { scroll-behavior: smooth; }
   body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
-  .container { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 
   /* NAV */
-  nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
-  nav .container { display: flex; justify-content: space-between; align-items: center; }
-  .nav-logo { font-weight: 700; font-size: 15px; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
-  .nav-logo .logo-mark { width: 28px; height: 28px; display: block; }
-  .nav-links { display: flex; gap: 16px; align-items: center; }
-  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; }
+  nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
+  nav .container { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: nowrap; }
+  .nav-logo { font-weight: 700; font-size: 15px; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; flex-shrink: 0; }
+  .nav-logo .logo-mark { width: 28px; height: 28px; display: block; flex-shrink: 0; }
+  .nav-links { display: flex; gap: 20px; align-items: center; flex-wrap: nowrap; white-space: nowrap; }
+  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 500; white-space: nowrap; transition: color 0.15s; }
   .nav-links a:hover { color: var(--text); }
 
   /* AUTH */
@@ -165,16 +165,16 @@
   .export-btn:hover { border-color: var(--cyan); color: var(--cyan); }
 
   /* TABS */
-  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
-  .tab { padding: 12px 20px; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; overflow-x: auto; white-space: nowrap; scrollbar-width: thin; }
+  .tab { padding: 12px 18px; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; flex-shrink: 0; }
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  .btn-outline { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+  .btn-outline { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
   .btn-outline:hover { background: var(--cyan-dim); }
-  .demo-badge { background: var(--cyan-dim); color: var(--cyan); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; margin-left: 10px; }
+  .demo-badge { background: var(--cyan-dim); color: var(--cyan); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.28); white-space: nowrap; flex-shrink: 0; }
   .demo-banner { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
   .demo-banner a { color: var(--cyan); text-decoration: none; font-weight: 600; }
   .demo-banner a:hover { text-decoration: underline; }
@@ -290,9 +290,12 @@
 
 <nav>
   <div class="container">
-    <a href="/" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate Dashboard</span></a>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:nowrap;min-width:0;">
+      <a href="/" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate Dashboard</span></a>
+    </div>
     <div class="nav-links">
-      <a href="/dashboard" class="active" style="color:var(--cyan);">Dashboard</a>
+      <a href="/admin" style="color:var(--green);font-weight:700;">Admin &amp; Dialogflow</a>
+      <a href="/dashboard" class="active" style="color:var(--cyan);font-weight:600;">Dashboard</a>
       <a href="/lessons">Lessons</a>
       <a href="/">Landing Page</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
@@ -2271,7 +2274,7 @@ function loadDemo() {
   // Demo badge in nav
   var logo = document.querySelector('.nav-logo');
   if (!document.getElementById('demoBadge')) {
-    logo.insertAdjacentHTML('afterend', '<span class="demo-badge" id="demoBadge">Demo Mode — Jamie M., Partner · Litigation Intake</span>');
+    logo.insertAdjacentHTML('afterend', '<span class="demo-badge" id="demoBadge">Demo Mode</span>');
   }
   // Stats
   document.getElementById('statTotal').textContent = '184';
@@ -2285,12 +2288,12 @@ function loadDemo() {
   if (tEl) tEl.textContent = demoSavings.tokensSavedDisplay;
   if (dEl) dEl.textContent = '≈ ' + demoSavings.dollarsSavedDisplay + ' saved';
   renderTopBlockedGates([
-    { name: 'gate:block-unauthorized-practice', blocked: 34 },
-    { name: 'gate:require-conflict-clearance', blocked: 22 },
-    { name: 'gate:block-privileged-egress', blocked: 17 },
-    { name: 'gate:require-approved-disclaimer', blocked: 11 },
-    { name: 'gate:restrict-model-endpoint', blocked: 6 },
-    { name: 'gate:require-attorney-review', blocked: 3 },
+    { name: 'gate:block-force-push-main', blocked: 34 },
+    { name: 'gate:block-secret-egress', blocked: 22 },
+    { name: 'gate:require-test-verification', blocked: 17 },
+    { name: 'gate:block-destructive-rm', blocked: 11 },
+    { name: 'gate:restrict-unpinned-installs', blocked: 6 },
+    { name: 'gate:require-branch-lease', blocked: 3 },
   ]);
   renderReviewDelta({
     hasBaseline: true,
@@ -2302,34 +2305,26 @@ function loadDemo() {
     lessonsAdded: 3,
     blocksAdded: 7,
     warnsAdded: 2,
-    headline: 'Since your last review: 8 intake events · 5 blocked · 3 lessons · 7 gate enforcements.',
+    headline: 'Since your last review: 8 agent tool events · 5 blocked · 3 lessons · 7 gate enforcements.',
     latestFeedback: {
-      title: 'Intake agent provided jurisdictional recommendation without attorney review',
+      title: 'Agent attempted git push --force to protected main branch',
       timestamp: '2026-05-25T14:20:00Z'
     },
     latestLesson: {
-      title: 'BLOCKED: Advice-shaped response detected — routed to attorney review queue',
+      title: 'BLOCKED: Destructive git force-push intercepted in PreToolUse (<1ms)',
       timestamp: '2026-05-24T11:10:00Z'
     }
   });
   document.getElementById('reviewCheckpointBtn').disabled = true;
   document.getElementById('reviewCheckpointBtn').textContent = 'Connect to save your own review checkpoint';
-  // Sample memories — legal AI intake scenarios for law firm pilot demo
+  // Sample memories — AI coding agent pre-execution firewall scenarios
   var demoResults = [
-    { signal: 'down', title: 'Intake agent provided outcome prediction to prospect', context: 'Prospect asked about wrongful termination in Florida. Agent said "you likely have a strong case." ThumbGate blocked the advice-shaped response before delivery under ABA Rule 5.5.', tags: ['upl-risk', 'aba-rule-5.5', 'auto-blocked', 'critical'], timestamp: '2026-05-25T14:20:00Z' },
-    { signal: 'up', title: 'Conflict pre-check stopped intake before facts collected', context: 'Adverse party matched the synthetic conflict list. ThumbGate halted intake before privileged facts were disclosed, preventing a Rule 1.7/1.9 conflict issue.', tags: ['conflict-check', 'aba-rule-1.7', 'aba-rule-1.9', 'prevention'], timestamp: '2026-05-25T11:45:00Z' },
-    { signal: 'down', title: 'Agent attempted to send case summary to external CRM', context: 'Agent tried to push matter IDs and consultation notes to an external CRM. ThumbGate blocked the outbound call for privileged-content markers.', tags: ['privilege-egress', 'aba-rule-1.6', 'auto-blocked', 'critical'], timestamp: '2026-05-24T16:30:00Z' },
-    { signal: 'up', title: 'Safe handoff collected neutral facts only', context: 'After a UPL block, the agent pivoted to neutral routing facts: name, contact, practice area, and callback time. No legal conclusion was delivered.', tags: ['safe-handoff', 'compliant-response', 'aba-rule-5.5', 'metric:ROI'], timestamp: '2026-05-24T11:10:00Z' },
-    { signal: 'down', title: 'Agent made jurisdictional recommendation without review', context: 'Prospect asked where to file. Agent gave a venue recommendation. ThumbGate blocked it because jurisdiction guidance requires attorney supervision.', tags: ['upl-risk', 'jurisdiction', 'aba-rule-5.5', 'auto-blocked'], timestamp: '2026-05-23T15:20:00Z' },
-    { signal: 'up', title: 'Audit export preserved full decision chain', context: 'Export showed matched rule, proposed reply, deny decision, attorney-review route, and UTC timestamp. Compliance can replay the decision.', tags: ['audit-trail', 'compliance', 'aba-opinion-512', 'metric:ROI'], timestamp: '2026-05-23T09:00:00Z' },
-    { signal: 'down', title: 'Response missing firm-approved disclaimer', context: 'Agent drafted a prospect reply without the required non-engagement disclaimer. ThumbGate blocked delivery until approved text was added.', tags: ['disclaimer-missing', 'non-engagement', 'aba-rule-5.5', 'auto-blocked'], timestamp: '2026-05-22T14:45:00Z' },
-    { signal: 'up', title: 'Model endpoint restricted to approved provider', context: 'Agent tried a consumer model endpoint. ThumbGate enforced the allowlist and rerouted to the firm-approved Azure OpenAI endpoint.', tags: ['model-governance', 'data-handling', 'aba-opinion-512', 'prevention'], timestamp: '2026-05-22T10:30:00Z' },
-    { signal: 'down', title: 'Agent disclosed opposing counsel information to prospect', context: 'Agent referenced opposing-counsel information from another matter. ThumbGate blocked the cross-matter leak under Rule 1.6.', tags: ['privilege-egress', 'cross-matter', 'aba-rule-1.6', 'critical'], timestamp: '2026-05-21T16:15:00Z' },
-    { signal: 'up', title: 'Conflict check cleared — intake proceeded safely', context: 'Adverse party cleared the synthetic fixture. ThumbGate allowed intake and logged timestamp plus rule version.', tags: ['conflict-check', 'cleared', 'aba-rule-1.7', 'compliant-response'], timestamp: '2026-05-21T11:00:00Z' },
-    { signal: 'down', title: 'Intake agent attempted to schedule consultation directly', context: 'Agent tried to book a consultation without attorney review. ThumbGate blocked the routing action pending supervisor approval.', tags: ['routing-governance', 'attorney-review', 'auto-blocked'], timestamp: '2026-05-20T13:30:00Z' },
-    { signal: 'up', title: 'Egress rerouted to in-tenant system successfully', context: 'Agent needed to store intake notes. ThumbGate rerouted the write to the firm tenant, keeping privileged content inside the boundary.', tags: ['privilege-egress', 'in-tenant-reroute', 'aba-rule-1.6', 'metric:ROI'], timestamp: '2026-05-20T09:45:00Z' },
-    { signal: 'up', title: 'DPO export identified systematic UPL pattern', context: 'Exported 34 blocked intake pairs. 76% were outcome predictions after "do I have a case?" prompts, driving revised intake scripts.', tags: ['dpo-export', 'upl-pattern', 'prevention', 'metric:ROI'], timestamp: '2026-05-19T14:00:00Z' },
-    { signal: 'down', title: 'Agent used non-approved model for privilege-sensitive query', context: 'Privileged intake query was routed to an endpoint without enterprise DPA. ThumbGate blocked and logged it for security review.', tags: ['model-governance', 'privilege-risk', 'aba-opinion-512', 'auto-blocked'], timestamp: '2026-05-18T11:20:00Z' }
+    { signal: 'down', title: 'Agent attempted git push --force to origin/main', context: 'Claude Code attempted to overwrite remote history after a rebase conflict. ThumbGate intercepted the Bash tool call in PreToolUse (<0.5ms) before execution.', tags: ['git-safety', 'force-push', 'auto-blocked', 'critical'], timestamp: '2026-05-25T14:20:00Z' },
+    { signal: 'up', title: 'Pre-push verification gate enforced test suite pass', context: 'Agent ran unit tests and verified exit 0 before pushing branch commits.', tags: ['verification', 'ci-gate', 'prevention'], timestamp: '2026-05-25T11:45:00Z' },
+    { signal: 'down', title: 'Agent attempted to curl .env credentials to external webhook', context: 'Agent tried to debug an auth error by echoing environment variables into an outbound HTTP request. ThumbGate blocked the secret egress.', tags: ['secret-egress', 'dlp', 'auto-blocked', 'critical'], timestamp: '2026-05-24T16:30:00Z' },
+    { signal: 'up', title: 'Isolated worktree lease prevented multi-agent collision', context: 'Cursor and Claude Code worked in separate git worktrees with zero file lock contention.', tags: ['worktree-lease', 'multi-agent', 'metric:ROI'], timestamp: '2026-05-24T11:10:00Z' },
+    { signal: 'down', title: 'Agent attempted rm -rf on workspace parent directory', context: 'Malformed path cleanup variable expanded to project root. ThumbGate blocked the destructive shell command.', tags: ['filesystem-safety', 'rm-rf', 'auto-blocked'], timestamp: '2026-05-23T15:20:00Z' },
+    { signal: 'up', title: 'Signed HMAC receipt recorded for production deploy', context: 'Every approved tool call and verification check was logged with SHA-256 evidence.', tags: ['audit-trail', 'receipts', 'metric:ROI'], timestamp: '2026-05-23T09:00:00Z' }
   ];
   isDemo = true;
   demoData = demoResults;
@@ -2343,14 +2338,14 @@ function loadDemo() {
     'style="flex:none;background:#b85c2d;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;white-space:nowrap;">Go Pro — $19/mo</a>' +
     '</div>';
   document.getElementById('searchResults').innerHTML = upgradeBanner + teaserHtml;
-  // Sample gates — legal AI intake enforcement
+  // Sample gates — pre-execution AI agent enforcement
   var demoGates = [
-    { name: 'block-unauthorized-practice', pattern: 'Block advice-shaped intake replies from non-attorney agents (ABA Rule 5.5)', action: 'block' },
-    { name: 'require-conflict-clearance', pattern: 'Require adverse-party clearance before facts or scheduling (Rules 1.7/1.9/1.10)', action: 'block' },
-    { name: 'block-privileged-egress', pattern: 'Block outbound calls with matter IDs or attorney-client markers (Rule 1.6)', action: 'block' },
-    { name: 'require-approved-disclaimer', pattern: 'Require firm-approved non-engagement disclaimer before delivery', action: 'block' },
-    { name: 'restrict-model-endpoint', pattern: 'Allow only enterprise-approved model endpoints (ABA Opinion 512)', action: 'block' },
-    { name: 'require-attorney-review', pattern: 'Route case assignment and scheduling through attorney review', action: 'warn' }
+    { name: 'block-force-push-main', pattern: 'Block git push --force and --no-verify to main/master branches', action: 'block' },
+    { name: 'block-secret-egress', pattern: 'Block outbound curl/fetch calls containing API keys, .env, or bearer tokens', action: 'block' },
+    { name: 'require-test-verification', pattern: 'Require passing test receipt before claiming task completion', action: 'block' },
+    { name: 'block-destructive-rm', pattern: 'Block rm -rf, git reset --hard, and drop table commands', action: 'block' },
+    { name: 'restrict-unpinned-installs', pattern: 'Block curl | bash and unpinned package installs in PreToolUse', action: 'block' },
+    { name: 'require-branch-lease', pattern: 'Warn when editing shared checkout without active worktree lease', action: 'warn' }
   ];
   document.getElementById('gatesList').innerHTML = demoGates.map(function(g) {
     return '<div class="gate-card"><div><div class="gate-name">' + escHtml(g.name) + '</div>' +
