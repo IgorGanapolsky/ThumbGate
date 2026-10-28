@@ -241,11 +241,9 @@ async function publishCarousel({ imageUrls, caption, token, userId }) {
 
   // Step 1: Create child containers.
   console.log(`[instagram:publisher] Starting carousel publish — ${imageUrls.length} images`);
-  const childIds = [];
-  for (const imageUrl of imageUrls) {
-    const childId = await createCarouselChild(resolvedToken, resolvedUserId, imageUrl, false);
-    childIds.push(childId);
-  }
+  const childIds = await Promise.all(
+    imageUrls.map((imageUrl) => createCarouselChild(resolvedToken, resolvedUserId, imageUrl, false))
+  );
 
   // Step 2: Poll each child until FINISHED.
   console.log('[instagram:publisher] Polling child containers…');
