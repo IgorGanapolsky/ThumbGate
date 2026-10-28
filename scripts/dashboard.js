@@ -1801,8 +1801,12 @@ function resolveTeamWindowHours(analyticsWindow) {
 // Full dashboard data
 // ---------------------------------------------------------------------------
 
-function collectAllFeedbackEntries(feedbackDir) {
-  if (shouldAggregateFeedback()) {
+function collectAllFeedbackEntries(feedbackDir, options = {}) {
+  const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
+  const isGlobalRoot = Boolean(
+    feedbackDir && path.resolve(feedbackDir) === path.resolve(homeThumbgate)
+  );
+  if (!options.projectIsolated && (isGlobalRoot || process.env.THUMBGATE_AGGREGATE_FEEDBACK === '1') && shouldAggregateFeedback()) {
     return collectAggregateLogEntries('feedback-log.jsonl', {
       feedbackDir,
       maxLines: DEFAULT_JSONL_MAX_ENTRIES,
@@ -1840,7 +1844,6 @@ function collectAllFeedbackEntries(feedbackDir) {
   // Also check the project root's .thumbgate if feedbackDir is global
   // The MCP server often resolves to PROJECT_ROOT/.thumbgate for project-scoped feedback
   // Skip this merge when feedbackDir is a temp/test directory (not ~/.thumbgate)
-  const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
   const projectLocalDir = path.join(PROJECT_ROOT, '.thumbgate');
   if (
     path.resolve(feedbackDir) === path.resolve(homeThumbgate) &&

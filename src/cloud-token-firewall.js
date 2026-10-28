@@ -1958,6 +1958,43 @@ function evaluateOneShotAgentGatewayAndSignedReceiptSteal({
   };
 }
 
+function evaluateGoogleCloudSaasAndAiUltraCreditsFallback({
+  awsAccountState = 'PENDING_ACTIVATION',
+  awsOutstandingBalanceUsd = 0,
+  googleAiUltraMonthlySubscriptionUsd = 200,
+  unclaimedGoogleDeveloperProgramCreditsUsd = 390,
+  recurringMonthlyGcpGenAiCreditsUsd = 100,
+  extraOutOfPocketCloudSpendUsd = 0,
+} = {}) {
+  const blockers = [];
+  if (Number(awsOutstandingBalanceUsd) > 0) {
+    blockers.push('reject_false_aws_outstanding_balance_on_new_account');
+  }
+  if (Number(extraOutOfPocketCloudSpendUsd) > 0) {
+    blockers.push('enforce_zero_extra_out_of_pocket_cloud_spend_using_ai_ultra_credits');
+  }
+  const useGoogleCloudRunFallback = String(awsAccountState).toUpperCase() !== 'ACTIVE';
+  return {
+    ok: blockers.length === 0,
+    activeSaasCloudProvider: useGoogleCloudRunFallback ? 'google_cloud_run_and_railway' : 'aws_lambda_and_railway',
+    awsStatus: {
+      accountId: '035074951001',
+      accountState: awsAccountState,
+      outstandingBalanceUsd: Number(awsOutstandingBalanceUsd),
+      supportCasesUpdated: ['179312442500249', '179209403200224'],
+    },
+    googleCloudCredits: {
+      googleAiUltraPlanUsd: Number(googleAiUltraMonthlySubscriptionUsd),
+      availablePoolCreditsUsd: Number(unclaimedGoogleDeveloperProgramCreditsUsd),
+      monthlyRecurringCreditsUsd: Number(recurringMonthlyGcpGenAiCreditsUsd),
+      claimUrl: 'https://me.developers.google.com/benefits',
+      cloudRunDeployCommand: 'gcloud run deploy thumbgate-cloud --source . --region us-central1 --allow-unauthenticated --min-instances 0',
+      extraOutOfPocketCloudSpendUsd: Number(extraOutOfPocketCloudSpendUsd),
+    },
+    blockers,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -2008,6 +2045,7 @@ module.exports = {
   evaluateRadwareAgenticApiRiskFirewall,
   buildOneShotWellKnownReceiptsManifest,
   evaluateOneShotAgentGatewayAndSignedReceiptSteal,
+  evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };

@@ -676,6 +676,88 @@
       .visual-pair { grid-template-columns: 1fr; }
       .hero-thumbs { justify-content: center; }
     }
+    .plugin-pill-dock {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(56, 215, 255, 0.22);
+      background: linear-gradient(135deg, rgba(17, 23, 34, 0.92), rgba(11, 16, 24, 0.96));
+    }
+    .plugin-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: border-color 0.15s, transform 0.12s, background 0.15s;
+    }
+    .plugin-pill::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+    .plugin-pill:hover {
+      border-color: var(--cyan);
+      background: rgba(56, 215, 255, 0.1);
+      transform: translateY(-1px);
+    }
+    .cloud-showcase-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 18px;
+      margin-top: 14px;
+      align-items: stretch;
+    }
+    .cloud-showcase-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .plugin-tile-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 12px 0;
+    }
+    .plugin-tile {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(8, 11, 16, 0.75);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .plugin-tile:hover {
+      border-color: var(--cyan);
+      background: rgba(56, 215, 255, 0.07);
+    }
+    .plugin-tile small {
+      font: 500 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--muted);
+    }
+    @media (max-width: 900px) {
+      .cloud-showcase-grid, .plugin-tile-grid { grid-template-columns: 1fr; }
+    }
   </style>
   <!-- WebMCP-ready: read-only agent tools via document.modelContext -->
   <!-- WebMCP origin trial: token below covers https://thumbgate.app (subdomains, third-party), expires 2026-11-17.
@@ -733,8 +815,14 @@ npm test [repeat #3 loop]             → <span style="color:var(--yellow);font-
           <figure class="hero-visual">
             <img src="/assets/diagrams/hero-thumbs.svg" width="640" height="360" alt="ThumbGate: thumbs up and thumbs down become a pre-action gate that can ALLOW, WARN, or DENY before the tool call runs" loading="eager" decoding="async">
           </figure>
-          <div class="trust-strip" aria-label="Verified engineering proof">
-            <span>Plugins &amp; Installers: Cursor · Claude · VSCode · Codex · Muse · Grok Bot · Hermes · &lt;0.5ms p95 · Local SQLite</span>
+          <div class="plugin-pill-dock" aria-label="Native Agent and IDE Plugins">
+            <a class="plugin-pill" href="/cloud">Cursor</a>
+            <a class="plugin-pill" href="/cloud">Claude</a>
+            <a class="plugin-pill" href="/cloud">VSCode</a>
+            <a class="plugin-pill" href="/cloud">Codex</a>
+            <a class="plugin-pill" href="/cloud">Muse</a>
+            <a class="plugin-pill" href="/cloud">Grok Bot</a>
+            <a class="plugin-pill" href="/cloud">Hermes</a>
           </div>
           <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
         </div>
@@ -783,16 +871,32 @@ npm test [repeat #3 loop]             → <span style="color:var(--yellow);font-
 
     <section id="cloud-saas" aria-label="ThumbGate Cloud SaaS" style="padding:36px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#0b1018;">
       <div class="shell">
-        <div class="section-kicker">AWS Cloud</div>
-        <p class="section-lede" style="margin:6px 0 12px;"><strong>1. Token Saving (-42%)</strong> · <strong>2. Loop Fixing</strong> · <strong>3. DPO Alignment Pipeline</strong></p>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
-          <a class="button-pro" href="/go/cloud-indie?utm_source=website&amp;utm_medium=cloud_section&amp;utm_campaign=cloud_indie_49&amp;cta_id=cloud_indie_buy&amp;cta_placement=cloud_section&amp;plan_id=cloud_indie" data-offer-link data-cta-id="cloud_indie_buy">Start Cloud Indie</a>
-          <a class="button-primary" href="/go/cloud-startup?utm_source=website&amp;utm_medium=cloud_section&amp;utm_campaign=cloud_startup_199&amp;cta_id=cloud_startup_buy&amp;cta_placement=cloud_section&amp;plan_id=cloud_startup" data-offer-link data-cta-id="cloud_startup_buy" style="text-decoration:none;">Start Cloud Startup</a>
-          <a href="/cloud" style="color:var(--green);font-size:14px;font-weight:800;">Installers &amp; Portal</a>
-          <a href="/Formula/thumbgate.rb" style="color:var(--cyan);font-size:14px;font-weight:700;">Homebrew</a>
-          <input id="calc-llm-spend" type="number" min="50" max="50000" step="50" value="500" aria-label="API Spend" style="width:90px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text);">
-          <span id="calc-monthly-savings" style="font-weight:800;color:var(--green);">$210</span>
-          <span id="calc-net-roi" style="font-weight:800;color:var(--cyan);">4.3x</span>
+        <div class="section-kicker">Cloud &amp; Native Plugins</div>
+        <p class="section-lede" style="margin:6px 0 4px;"><strong>1. Token Saving (-42%)</strong> · <strong>2. Loop Fixing</strong> · <strong>3. DPO Alignment Pipeline</strong></p>
+        <div class="cloud-showcase-grid">
+          <div class="cloud-showcase-card">
+            <div class="plugin-tile-grid">
+              <a class="plugin-tile" href="/cloud"><span>Cursor · VSCode</span><small>npx thumbgate init</small></a>
+              <a class="plugin-tile" href="/cloud"><span>Claude · Codex</span><small>npx skills add</small></a>
+              <a class="plugin-tile" href="/Formula/thumbgate.rb"><span>Muse · Grok · Hermes</span><small>Homebrew</small></a>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+              <a class="button-pro" href="/cloud" style="padding:8px 14px;font-size:13px;">Installers &amp; Portal →</a>
+              <a href="/Formula/thumbgate.rb" style="color:var(--cyan);font-size:13px;font-weight:700;">Homebrew</a>
+            </div>
+          </div>
+          <div class="cloud-showcase-card" style="display:flex;flex-direction:column;justify-content:space-between;gap:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+              <label for="calc-llm-spend" style="font-size:12px;color:var(--muted);font-weight:700;">Spend</label>
+              <input id="calc-llm-spend" type="number" min="50" max="50000" step="50" value="500" aria-label="API Spend" style="width:96px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font-weight:700;">
+              <span id="calc-monthly-savings" style="font-weight:800;color:var(--green);font-size:16px;">$210</span>
+              <span id="calc-net-roi" style="font-weight:800;color:var(--cyan);font-size:15px;">4.3x</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+              <a class="button-pro" href="/go/cloud-indie?utm_source=website&amp;utm_medium=cloud_section&amp;utm_campaign=cloud_indie_49&amp;cta_id=cloud_indie_buy&amp;cta_placement=cloud_section&amp;plan_id=cloud_indie" data-offer-link data-cta-id="cloud_indie_buy" style="flex:1;text-align:center;">Start Cloud Indie</a>
+              <a class="button-primary" href="/go/cloud-startup?utm_source=website&amp;utm_medium=cloud_section&amp;utm_campaign=cloud_startup_199&amp;cta_id=cloud_startup_buy&amp;cta_placement=cloud_section&amp;plan_id=cloud_startup" data-offer-link data-cta-id="cloud_startup_buy" style="flex:1;text-align:center;text-decoration:none;">Start Cloud Startup</a>
+            </div>
+          </div>
         </div>
         <script>
           (function(){
@@ -803,7 +907,6 @@ npm test [repeat #3 loop]             → <span style="color:var(--yellow);font-
             input.addEventListener('input', function() {
               var spend = Math.max(0, parseFloat(input.value) || 0);
               var saved = spend * 0.42;
-              var net = saved - 49;
               savingsEl.textContent = '$' + saved.toFixed(0) + ' saved';
               roiEl.textContent = (saved / 49).toFixed(1) + 'x ROI';
             });

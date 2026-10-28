@@ -34,8 +34,11 @@ const {
   evaluateRadwareAgenticApiRiskFirewall,
   buildOneShotWellKnownReceiptsManifest,
   evaluateOneShotAgentGatewayAndSignedReceiptSteal,
+  evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
   resetCloudFirewallStateForTests,
 } = require('../src/cloud-token-firewall');
+const { parseJulesEmailSuggestions } = require('../scripts/jules-cloud-fleet-dispatcher');
+const { searchThumbgate } = require('../scripts/thumbgate-search');
 const { PPLPipeline } = require('../src/ppl-alert-pipeline');
 const { handler: lambdaHandler } = require('../src/aws-lambda-handler');
 const { repairProjectMcpConfigs } = require('../scripts/codex-self-heal');
@@ -402,6 +405,7 @@ test('AWS Lambda handler routes all GET, POST, and OPTIONS requests cleanly', as
     ['/v1/cloud/browseros-neo/gate', { cdpEndpoint: 'http://127.0.0.1:9111', snapshotFormat: 'accessibility_tree_ref_ids' }],
     ['/v1/cloud/radware-agent-risk/gate', { securesLocalDeveloperAgents: true, securesApiGatewayPerimeter: true }],
     ['/v1/cloud/oneshot/gate', { agentId: 'agent_1', action: 'git.push' }],
+    ['/v1/cloud/gcp-ai-ultra/gate', { awsAccountState: 'PENDING_ACTIVATION', awsOutstandingBalanceUsd: 0 }],
     ['/v1/cloud/intercept', { sessionId: 's1', messages: [{ role: 'user', content: 'hi' }] }],
   ]) {
     const r = await lambdaHandler({
@@ -531,6 +535,45 @@ test('syncTeamPolicyAndThreatPacks and evaluateRachelWoodsCraftAndPlaybookMiddle
   assert.equal(oneshotBad.goalTerminalState, 'out_of_budget');
   assert.equal(oneshotBad.budget.chargedUsd, 0);
   assert.equal(oneshotBad.blockers.length, 6);
+
+  const gcpGood = evaluateGoogleCloudSaasAndAiUltraCreditsFallback();
+  assert.equal(gcpGood.ok, true);
+  assert.equal(gcpGood.activeSaasCloudProvider, 'google_cloud_run_and_railway');
+  assert.equal(gcpGood.googleCloudCredits.availablePoolCreditsUsd, 390);
+
+  const gcpBad = evaluateGoogleCloudSaasAndAiUltraCreditsFallback({
+    awsOutstandingBalanceUsd: 50,
+    extraOutOfPocketCloudSpendUsd: 10,
+  });
+  assert.equal(gcpBad.ok, false);
+  assert.equal(gcpBad.blockers.length, 2);
+
+  const parsedJules = parseJulesEmailSuggestions(
+    'IgorGanapolsky/ThumbGate\nComplex function: buildEnterpriseChatAnswer\nsrc/api/server.js:2,454\nReview code\nIgorGanapolsky/trading\nternary evaluated division first\nsrc/execution/alpaca_executor.py:306\nReview code'
+  );
+  assert.equal(parsedJules.length, 2);
+  assert.equal(parsedJules[0].repoName, 'ThumbGate');
+  assert.equal(parsedJules[1].repoName, 'trading');
+
+  // Verify newest-first ordering in searchThumbgate wildcard queries within the same 24h bucket
+  const tmpSearchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-signal-order-'));
+  try {
+    const nowMs = Date.now();
+    const olderIso = new Date(nowMs - 600_000).toISOString();
+    const newerIso = new Date(nowMs - 10_000).toISOString();
+    fs.writeFileSync(
+      path.join(tmpSearchDir, 'feedback-log.jsonl'),
+      [
+        JSON.stringify({ id: 'fb_older', signal: 'positive', context: 'Older signal', timestamp: olderIso }),
+        JSON.stringify({ id: 'fb_newer', signal: 'positive', context: 'Newer signal', timestamp: newerIso }),
+      ].join('\n') + '\n'
+    );
+    const searchRes = searchThumbgate({ query: '*', source: 'feedback', signal: 'up', limit: 10, feedbackDir: tmpSearchDir });
+    assert.equal(searchRes.results[0].id, 'fb_newer');
+    assert.equal(searchRes.results[1].id, 'fb_older');
+  } finally {
+    fs.rmSync(tmpSearchDir, { recursive: true, force: true });
+  }
 });
 
 test('Python AWS Lambda SQS worker (deploy/aws/sqs_ingest_worker.py) and PostgreSQL migration work cleanly', () => {
@@ -878,6 +921,16 @@ test('HTTP server exposes /cloud portal, /install.sh, /install.ps1, 1-click SSO,
     const oneshotJson = await oneshotRes.json();
     assert.equal(oneshotJson.ok, true);
     assert.equal(oneshotJson.receipt.offlineVerifiable, true);
+
+    const gcpRes = await fetch(`${origin}/v1/cloud/gcp-ai-ultra/gate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ awsAccountState: 'PENDING_ACTIVATION' }),
+    });
+    assert.equal(gcpRes.status, 200);
+    const gcpJson = await gcpRes.json();
+    assert.equal(gcpJson.ok, true);
+    assert.equal(gcpJson.googleCloudCredits.availablePoolCreditsUsd, 390);
     const homeHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
     assert.match(homeHtml, /Start Cloud Indie/);
     assert.match(homeHtml, /Start Cloud Startup/);

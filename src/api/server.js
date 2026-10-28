@@ -349,6 +349,7 @@ const {
   evaluateRadwareAgenticApiRiskFirewall,
   buildOneShotWellKnownReceiptsManifest,
   evaluateOneShotAgentGatewayAndSignedReceiptSteal,
+  evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -2153,10 +2154,25 @@ function parseNonNegativeInteger(value, fallback) {
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
+function getFeedbackDirFingerprint(feedbackDir) {
+  if (!feedbackDir || !fs.existsSync(feedbackDir)) return '';
+  const files = ['feedback-log.jsonl', 'memory-log.jsonl', 'audit.jsonl', 'prevention-rules.md'];
+  const parts = [];
+  for (const name of files) {
+    try {
+      const st = fs.statSync(path.join(feedbackDir, name));
+      parts.push(`${name}:${st.size}:${Math.trunc(st.mtimeMs)}`);
+    } catch {
+      // file absent
+    }
+  }
+  return parts.length > 0 ? `#${parts.join('|')}` : '';
+}
+
 function buildLiveDashboardCacheKey(parsed, feedbackDir) {
   const query = new URLSearchParams(parsed.searchParams);
   query.sort();
-  return `${path.resolve(feedbackDir)}?${query.toString()}`;
+  return `${path.resolve(feedbackDir)}?${query.toString()}${getFeedbackDirFingerprint(feedbackDir)}`;
 }
 
 async function loadCachedLiveDashboardData(parsed, feedbackDir, options = {}) {
@@ -2329,7 +2345,9 @@ function bestFeedbackDescription(row) {
 function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opts = {}) {
   try {
     if (!feedbackDir) return [];
-    const rows = shouldAggregateFeedback()
+    const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
+    const isGlobalFeedbackRoot = path.resolve(feedbackDir) === path.resolve(homeThumbgate);
+    const rows = (isGlobalFeedbackRoot && shouldAggregateFeedback())
       ? collectAggregateLogEntries('feedback-log.jsonl', {
           feedbackDir,
           maxLines: 20_000,
@@ -9796,6 +9814,12 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
+    if (req.method === 'POST' && pathname === '/v1/cloud/gcp-ai-ultra/gate') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, evaluateGoogleCloudSaasAndAiUltraCreditsFallback(body));
+      return;
+    }
+
 
     // Catch non-API GET requests that didn't match any public page route above.
     // Without this, /about, /docs, /demo etc. fall through to the API auth gate
@@ -9862,9 +9886,19 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
 
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
-        const stats = shouldAggregateFeedback()
+        const activeProjectDir = resolveRequestProjectDir(req, parsed);
+        const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
+        const isGlobalFeedbackRoot = path.resolve(requestFeedbackPaths.FEEDBACK_DIR) === path.resolve(homeThumbgate);
+        const useMachineWideAggregate = !getEffectiveRequestedProjectSelection(req, parsed)
+          && isGlobalFeedbackRoot
+          && process.env.THUMBGATE_AGGREGATE_FEEDBACK === '1'
+          && shouldAggregateFeedback();
+        const stats = useMachineWideAggregate
           ? computeAggregateFeedbackStats({ feedbackDir: requestFeedbackPaths.FEEDBACK_DIR })
           : analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH, { humanOnly: true });
+        stats.projectDir = activeProjectDir;
+        stats.projectName = path.basename(activeProjectDir || '') || 'default';
+        stats.feedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
         try {
           const { getStatuslineMeta } = require('../../scripts/statusline-meta');
           const meta = getStatuslineMeta({ env: process.env });
@@ -10086,13 +10120,29 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         };
         eventBus.on('broadcast', onEvent);
 
+        // Watch the active project's feedback directory so signals written by
+        // external processes (MCP server-stdio, CLI hooks, JSONL watchers) push
+        // to connected /dashboard and /lessons tabs in real time (<350ms).
+        let lastFingerprint = getFeedbackDirFingerprint(requestFeedbackDir);
+        const filePoll = setInterval(() => {
+          const nextFingerprint = getFeedbackDirFingerprint(requestFeedbackDir);
+          if (nextFingerprint !== lastFingerprint) {
+            lastFingerprint = nextFingerprint;
+            liveDashboardCache.clear();
+            safeWrite(`event: feedback\ndata: ${JSON.stringify({ type: 'feedback', feedbackDir: requestFeedbackDir, ts: Date.now() })}\n\n`);
+          }
+        }, 350);
+        if (typeof filePoll.unref === 'function') filePoll.unref();
+
         // Heartbeat every 25s keeps proxies (Railway, CDNs) from idle-closing
         // the connection. Clients ignore comment frames per the SSE spec.
         const heartbeat = setInterval(() => {
           safeWrite(':ping\n\n');
         }, 25_000);
+        if (typeof heartbeat.unref === 'function') heartbeat.unref();
 
         const cleanup = () => {
+          clearInterval(filePoll);
           clearInterval(heartbeat);
           eventBus.removeListener('broadcast', onEvent);
         };

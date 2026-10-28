@@ -291,7 +291,9 @@
 <nav>
   <div class="container">
     <a href="/" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate Dashboard</span></a>
+    <span id="activeProjectBadge" class="scope-pill" style="display:none;text-transform:none;font-family:var(--mono);font-size:12px;" title="Dedicated project dashboard scope"></span>
     <div class="nav-links">
+      <span id="liveSyncBadge" style="font-size:11px;color:var(--green);font-family:var(--mono);">● Live</span>
       <a href="/dashboard" class="active" style="color:var(--cyan);">Dashboard</a>
       <a href="/cloud">Cloud Portal &amp; SSO</a>
       <a href="/install">Installers (Mac/Win/Linux)</a>
@@ -868,6 +870,21 @@ try {
   ACTIVE_PROJECT_DIR = urlParams.get('project') || '';
 } catch (e) {}
 
+function updateProjectBadge(projectDir, projectName) {
+  var dir = projectDir || ACTIVE_PROJECT_DIR || '';
+  if (dir && !ACTIVE_PROJECT_DIR) {
+    ACTIVE_PROJECT_DIR = dir;
+  }
+  var badge = document.getElementById('activeProjectBadge');
+  if (badge && dir) {
+    var name = projectName || dir.split('/').filter(Boolean).pop() || dir;
+    badge.textContent = '📁 Project: ' + name;
+    badge.title = 'Dedicated dashboard for ' + dir;
+    badge.style.display = 'inline-flex';
+  }
+  preserveProjectQueryParams();
+}
+
 function preserveProjectQueryParams() {
   if (!ACTIVE_PROJECT_DIR) return;
   var links = document.querySelectorAll('a[href^="/dashboard"], a[href^="/lessons"], a[href="/"]');
@@ -880,6 +897,11 @@ function preserveProjectQueryParams() {
   });
 }
 
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', function() {
+    updateProjectBadge(ACTIVE_PROJECT_DIR);
+  });
+}
 function getHeaders() {
   var headers = { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
   if (ACTIVE_PROJECT_DIR) {
@@ -1100,18 +1122,20 @@ async function connect(options) {
       document.getElementById('demoBtn').style.display = 'none';
       document.getElementById('authHelp').textContent = isEnterprise ? localEnterpriseActiveMessage : localProActiveMessage;
     }
+    updateProjectBadge(data.projectDir, data.projectName);
     renderStats(data);
     setSelectedCard('all');
+    refreshActiveFeedInPlace();
     var deepLinkedTab = getDeepLinkTab();
     if (deepLinkedTab && deepLinkedTab !== 'search') {
       switchTab(deepLinkedTab);
     } else {
-      scheduleDashboardHydration(10000);
+      scheduleDashboardHydration(200);
     }
-    // Open a live-events stream so feedback/rule-regen events surface
-    // without a manual refresh. Non-fatal: if the browser doesn't support
-    // ReadableStream over fetch (very old), we simply stay on the polled path.
+    // Open a live-events stream + fast background sync so feedback/rule-regen
+    // events surface in real time without a manual refresh.
     subscribeToLiveEvents();
+    startRealtimeDashboardLoop();
   } catch (e) {
     status.className = 'auth-status err';
     status.textContent = '✗ ' + e.message;
@@ -1333,6 +1357,7 @@ function highlightText(text) {
 
 function selectCard(el, action) {
   currentHighlightTerms = [];
+  __selectedSignalFilter = action || 'all';
   setSelectedCard(action);
 
   if (action === 'gates') {
@@ -1348,13 +1373,17 @@ function selectCard(el, action) {
     container.innerHTML = results.length ? results.map(renderResult).join('') : '<div class="empty">No ' + action + ' feedback in demo</div>';
     return;
   }
-  // Live mode: search by signal filter
+  // Live mode: search by signal filter (sorted newest-first)
   var signalParam = action === 'all' ? '' : '&signal=' + action;
   container.innerHTML = '<div class="loading">Loading...</div>';
   fetch('/v1/search?q=*&limit=50' + signalParam, { method: 'GET', headers: getHeaders() })
     .then(function(res) { return res.json(); })
     .then(function(data) {
-      var items = data.results || [];
+      var items = (data.results || []).slice().sort(function(a, b) {
+        var ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+        var tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0);
+      });
       container.innerHTML = items.length ? items.map(renderResult).join('') : '<div class="empty">No ' + (action === 'all' ? '' : action + ' ') + 'feedback found</div>';
     })
     .catch(function(e) { setMessageState(container, 'empty', 'Error: ' + (e && e.message ? e.message : 'Unable to load feedback')); });
@@ -1500,6 +1529,9 @@ function scheduleDashboardHydration(delayMs) {
 // header. On any event we re-fetch the stats/dashboard summary — cheap, and
 // avoids having to duplicate rendering logic per event type.
 var __liveEventsController = null;
+var __realtimeLoopTimer = null;
+var __selectedSignalFilter = 'all';
+
 async function subscribeToLiveEvents() {
   if (__liveEventsController) {
     try { __liveEventsController.abort(); } catch (_) { /* already aborted */ }
@@ -1508,8 +1540,9 @@ async function subscribeToLiveEvents() {
   var controller = new AbortController();
   __liveEventsController = controller;
   try {
-    var res = await fetch('/v1/events', {
-      headers: { 'Authorization': 'Bearer ' + API_KEY },
+    var eventsUrl = '/v1/events' + (ACTIVE_PROJECT_DIR ? '?project=' + encodeURIComponent(ACTIVE_PROJECT_DIR) : '');
+    var res = await fetch(eventsUrl, {
+      headers: getHeaders(),
       signal: controller.signal,
     });
     if (!res.ok || !res.body || !res.body.getReader) return;
@@ -1527,8 +1560,22 @@ async function subscribeToLiveEvents() {
       }
     }
   } catch (e) {
-    // AbortError fires on logout/reconnect — not worth surfacing to the user.
+    // Reconnect automatically after transient close unless explicitly disconnected
   }
+  if (API_KEY && !isDemo && __liveEventsController === controller) {
+    setTimeout(function() {
+      if (API_KEY && !isDemo) subscribeToLiveEvents();
+    }, 1500);
+  }
+}
+
+function startRealtimeDashboardLoop() {
+  if (__realtimeLoopTimer) clearInterval(__realtimeLoopTimer);
+  __realtimeLoopTimer = setInterval(function() {
+    if (!API_KEY || isDemo) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
+    refreshStatsOnly();
+  }, 2500);
 }
 
 function handleLiveEventFrame(frame) {
@@ -1548,21 +1595,49 @@ function handleLiveEventFrame(frame) {
 }
 
 function onLiveEvent(eventName, payload) {
-  // All events currently boil down to "something changed, re-pull summary".
-  // When we add richer partial updates we can branch on eventName here.
   if (eventName === 'connected') return;
-  refreshStatsOnly();
+  refreshStatsOnly(true);
 }
 
-async function refreshStatsOnly() {
+async function refreshActiveFeedInPlace() {
+  if (!API_KEY || isDemo) return;
+  var qInput = document.getElementById('searchQuery');
+  if (qInput && qInput.value.trim()) return;
+  var container = document.getElementById('searchResults');
+  if (!container) return;
+  var selectedCard = document.querySelector('.stat-card.selected');
+  var action = (selectedCard && selectedCard.dataset && selectedCard.dataset.cardAction) || __selectedSignalFilter || 'all';
+  if (action === 'gates') return;
+  var signalParam = action === 'all' ? '' : '&signal=' + encodeURIComponent(action);
+  try {
+    var res = await fetch('/v1/search?q=*&limit=50' + signalParam, { method: 'GET', headers: getHeaders() });
+    if (!res.ok) return;
+    var data = await res.json();
+    var items = (data.results || []).slice().sort(function(a, b) {
+      var ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+      var tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+      return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0);
+    });
+    if (items.length) {
+      container.innerHTML = items.map(renderResult).join('');
+    }
+  } catch (_) {}
+}
+
+async function refreshStatsOnly(forceFullDashboard) {
   try {
     var res = await fetch('/v1/feedback/stats', { headers: getHeaders() });
     if (!res.ok) return;
     var data = await res.json();
+    updateProjectBadge(data.projectDir, data.projectName);
     renderStats(data);
+    refreshActiveFeedInPlace();
+    if (forceFullDashboard) {
+      dashboardDataPromise = null;
+      loadGates();
+    }
   } catch (_) { /* ignore transient errors */ }
 }
-
 function formatReviewTimestamp(value) {
   if (!value) return 'Not reviewed yet';
   var date = new Date(value);

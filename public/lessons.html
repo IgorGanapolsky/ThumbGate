@@ -212,7 +212,9 @@
 <nav>
   <div class="container">
     <a href="/dashboard" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+    <span id="activeProjectBadge" style="display:none;align-items:center;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;font-family:var(--mono);background:var(--cyan-dim);color:var(--cyan);" title="Dedicated project lessons scope"></span>
     <div class="nav-links">
+      <span id="liveSyncBadge" style="font-size:11px;color:var(--green);font-family:var(--mono);">● Live</span>
       <a href="/dashboard">Dashboard</a>
       <a href="/lessons" class="active">Lessons</a>
       <a href="/">Landing Page</a>
@@ -391,6 +393,21 @@ try {
   ACTIVE_PROJECT_DIR = urlParams.get('project') || '';
 } catch (e) {}
 
+function updateProjectBadge(projectDir, projectName) {
+  var dir = projectDir || ACTIVE_PROJECT_DIR || '';
+  if (dir && !ACTIVE_PROJECT_DIR) {
+    ACTIVE_PROJECT_DIR = dir;
+  }
+  var badge = document.getElementById('activeProjectBadge');
+  if (badge && dir) {
+    var name = projectName || dir.split('/').filter(Boolean).pop() || dir;
+    badge.textContent = '📁 Project: ' + name;
+    badge.title = 'Dedicated lessons for ' + dir;
+    badge.style.display = 'inline-flex';
+  }
+  preserveProjectQueryParams();
+}
+
 function preserveProjectQueryParams() {
   if (!ACTIVE_PROJECT_DIR) return;
   var links = document.querySelectorAll('a[href^="/dashboard"], a[href^="/lessons"], a[href="/"]');
@@ -403,8 +420,9 @@ function preserveProjectQueryParams() {
   });
 }
 
-window.addEventListener('DOMContentLoaded', preserveProjectQueryParams);
-
+window.addEventListener('DOMContentLoaded', function() {
+  updateProjectBadge(ACTIVE_PROJECT_DIR);
+});
 function getHeaders() {
   var headers = { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
   if (ACTIVE_PROJECT_DIR) {
@@ -926,7 +944,7 @@ function mapLiveRules(payload) {
 }
 
 function mapTimelineItems(payload, lessonMap) {
-  return (payload.results || []).map(function(entry) {
+  return (payload.results || []).map(function(entry, idx) {
     var linkedLesson = lessonMap.get(entry.id) || null;
     var timestamp = entry.timestamp || null;
     var rawContext = entry.context || entry.title || '';
@@ -937,8 +955,16 @@ function mapTimelineItems(payload, lessonMap) {
       timestamp: timestamp,
       dayKey: toDayKey(timestamp),
       learned: linkedLesson ? cleanLiveTitle(linkedLesson.title, rawContext) : '',
-      feedbackId: entry.id || ''
+      feedbackId: entry.id || '',
+      _idx: idx
     };
+  }).sort(function(a, b) {
+    var ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+    var tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+    var safeTa = Number.isFinite(ta) ? ta : 0;
+    var safeTb = Number.isFinite(tb) ? tb : 0;
+    if (safeTb !== safeTa) return safeTb - safeTa;
+    return (a._idx || 0) - (b._idx || 0);
   });
 }
 
@@ -1004,7 +1030,7 @@ function loadDemo() {
   document.getElementById('proBadge').style.display = 'block';
 }
 
-async function loadLive() {
+async function loadLive(preserveFilters) {
   if (!hasBootstrapKey()) {
     loadDemo();
     return;
@@ -1014,7 +1040,7 @@ async function loadLive() {
     const responses = await Promise.all([
       fetch('/v1/feedback/stats', { headers: getHeaders() }),
       fetch('/v1/lessons/search?limit=50', { headers: getHeaders() }),
-      fetch('/v1/search?q=*&limit=40&source=feedback', { headers: getHeaders() }),
+      fetch('/v1/search?q=*&limit=50&source=feedback', { headers: getHeaders() }),
       fetch('/v1/dashboard', { headers: getHeaders() })
     ]);
     if (responses.some(function(res) { return !res.ok; })) {
@@ -1026,13 +1052,17 @@ async function loadLive() {
     const feedbackPayload = await responses[2].json();
     dashboardSnapshot = await responses[3].json();
 
+    updateProjectBadge(stats.projectDir, stats.projectName);
+
     allRules = mapLiveRules(lessonsPayload);
     var lessonMap = new Map(allRules
       .filter(function(rule) { return rule.sourceFeedbackId; })
       .map(function(rule) { return [rule.sourceFeedbackId, rule]; }));
     allTimeline = mapTimelineItems(feedbackPayload, lessonMap);
-    activeTimelineSignal = 'all';
-    activeTimelineDay = null;
+    if (!preserveFilters) {
+      activeTimelineSignal = 'all';
+      activeTimelineDay = null;
+    }
 
     document.getElementById('statRules').textContent = allRules.length;
     document.getElementById('statCritical').textContent = allRules.filter(function(r) { return r.severity === 'critical'; }).length;
@@ -1040,8 +1070,13 @@ async function loadLive() {
     document.getElementById('statTrend').textContent = ((stats.recentRate || stats.approvalRate || 0) * 100).toFixed(1) + '%';
     document.getElementById('statTrendSub').textContent = 'Live approval rate';
 
-    renderRules(allRules);
-    renderTimeline(allTimeline);
+    var qEl = document.getElementById('ruleSearch');
+    if (qEl && qEl.value.trim()) {
+      searchRules();
+    } else {
+      renderRules(allRules);
+    }
+    renderTimeline(getFilteredTimelineItems());
     renderInsights(dashboardSnapshot);
     renderImprovementMetrics(stats, dashboardSnapshot);
     var isEnterprise = API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
@@ -1050,12 +1085,61 @@ async function loadLive() {
     }
     const tierName = isEnterprise ? 'Enterprise' : 'Pro';
     document.getElementById('proBadge').style.display = 'none';
-    setMode('Local ' + tierName + ' connected — this lessons view is reading your live rules, feedback timeline, and insights.', false);
+    setMode('Local ' + tierName + ' connected — real-time auto-update active (' + (stats.projectName || 'project') + ').', false);
+    preserveProjectQueryParams();
+    subscribeToLessonsLiveEvents();
+    startLessonsRealtimeLoop();
   } catch (_err) {
-    loadDemo();
+    if (!preserveFilters) loadDemo();
   }
 }
 
+var __lessonsEventsController = null;
+var __lessonsRealtimeTimer = null;
+
+async function subscribeToLessonsLiveEvents() {
+  if (__lessonsEventsController || !API_KEY || isDemo) return;
+  if (typeof AbortController === 'undefined' || !window.fetch) return;
+  var controller = new AbortController();
+  __lessonsEventsController = controller;
+  try {
+    var eventsUrl = '/v1/events' + (ACTIVE_PROJECT_DIR ? '?project=' + encodeURIComponent(ACTIVE_PROJECT_DIR) : '');
+    var res = await fetch(eventsUrl, { headers: getHeaders(), signal: controller.signal });
+    if (!res.ok || !res.body || !res.body.getReader) {
+      __lessonsEventsController = null;
+      return;
+    }
+    var reader = res.body.getReader();
+    var decoder = new TextDecoder('utf-8');
+    var buffer = '';
+    while (true) {
+      var chunk = await reader.read();
+      if (chunk.done) break;
+      buffer += decoder.decode(chunk.value, { stream: true });
+      var frames = buffer.split('\n\n');
+      buffer = frames.pop() || '';
+      for (var i = 0; i < frames.length; i++) {
+        var f = frames[i];
+        if (f && f.charAt(0) !== ':' && f.indexOf('event: connected') === -1) {
+          loadLive(true);
+        }
+      }
+    }
+  } catch (_) {}
+  __lessonsEventsController = null;
+  if (API_KEY && !isDemo) {
+    setTimeout(subscribeToLessonsLiveEvents, 1500);
+  }
+}
+
+function startLessonsRealtimeLoop() {
+  if (__lessonsRealtimeTimer) return;
+  __lessonsRealtimeTimer = setInterval(function() {
+    if (!API_KEY || isDemo) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
+    loadLive(true);
+  }, 2500);
+}
 loadLive().then(function() {
   // Handle ?signal= query param from dashboard stat-card navigation.
   // Vocabulary: 'up' | 'down' | 'all' (canonical). Also accepts the legacy
@@ -1184,7 +1268,6 @@ async function submitFeedback() {
   btn.disabled = false; btn.textContent = 'Submit';
 }
 </script>
-<script src="/js/buyer-intent.js"></script>
 
 </body>
 </html>
