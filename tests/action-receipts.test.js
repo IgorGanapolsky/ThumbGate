@@ -25,6 +25,9 @@ const {
   buildReceiptContextEntries,
   getReceiptsPath,
   verifyReceiptSignature,
+  hashOneShotAction,
+  evaluateOneShotControl,
+  evaluateOneShotGoalDone,
 } = require('../scripts/action-receipts');
 const { createDurableGrantStore, createMemoryGrantStore, evaluateHarnessGrant } = require('../scripts/human-escalation');
 
@@ -300,4 +303,251 @@ test('reconstructModelVisibleFacts fails closed on tampered receipts', () => {
   assert.equal(reconstructed.ok, false);
   assert.equal(reconstructed.failClosed, true);
   assert.equal(reconstructed.reason, 'unauthenticated_receipt');
+});
+
+function withinCap(overrides = {}) {
+  return {
+    ledgerReadable: true,
+    cashCapUsd: 10,
+    quotedUsd: 2,
+    toolName: 'send',
+    toolInput: { to: 'a', amount: 2 },
+    idempotencyKey: 'key-1',
+    ...overrides,
+  };
+}
+
+test('OneShot control defaults the cash cap to $0 and never charges', () => {
+  const denied = evaluateOneShotControl({
+    ledgerReadable: true,
+    quotedUsd: 0.01,
+    toolName: 'checkout',
+    toolInput: { sku: 'pro' },
+    modelVerdict: 'allow',
+  });
+  assert.equal(denied.verdict, 'deny');
+  assert.equal(denied.reason, 'over_per_call_cap');
+  assert.equal(denied.charged, false);
+  assert.equal(denied.reservedUsd, 0);
+
+  const free = evaluateOneShotControl({
+    ledgerReadable: true,
+    quotedUsd: 0,
+    toolName: 'read',
+    toolInput: { path: 'a' },
+    modelVerdict: 'deny',
+  });
+  assert.equal(free.verdict, 'allow');
+  assert.equal(free.reason, 'within_cap');
+  assert.equal(free.charged, false);
+  assert.equal(free.reservedUsd, 0);
+});
+
+test('OneShot control holds without a readable ledger or a finite quote', () => {
+  const unread = evaluateOneShotControl(withinCap({ ledgerReadable: false }));
+  assert.equal(unread.verdict, 'hold');
+  assert.equal(unread.reason, 'ledger_unreadable');
+  assert.equal(unread.charged, false);
+
+  for (const quotedUsd of [undefined, null, Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+    const held = evaluateOneShotControl(withinCap({ quotedUsd }));
+    assert.equal(held.verdict, 'hold', String(quotedUsd));
+    assert.equal(held.reason, 'quote_required');
+  }
+
+  const badCap = evaluateOneShotControl(withinCap({ cashCapUsd: Number.NaN }));
+  assert.equal(badCap.verdict, 'hold');
+  assert.equal(badCap.reason, 'cap_unreadable');
+});
+
+test('OneShot control holds an unhashable action and cannot be raised above the cash cap', () => {
+  const cycle = {};
+  cycle.self = cycle;
+  const held = evaluateOneShotControl({
+    ledgerReadable: true,
+    quotedUsd: 0,
+    cashCapUsd: 10,
+    toolName: 'send',
+    toolInput: cycle,
+  });
+  assert.equal(held.verdict, 'hold');
+  assert.equal(held.reason, 'action_unreadable');
+  assert.equal(held.charged, false);
+
+  const raised = evaluateOneShotControl(withinCap({
+    cashCapUsd: 10,
+    perCallCapUsd: 1e9,
+    dailyCapUsd: 1e9,
+    quotedUsd: 11,
+  }));
+  assert.equal(raised.verdict, 'deny');
+  assert.equal(raised.reason, 'over_per_call_cap');
+  assert.equal(raised.charged, false);
+});
+
+test('OneShot control refuses an uncapped agent instead of failing open', () => {
+  const refused = evaluateOneShotControl(withinCap({
+    uncapped: true,
+    ledgerReadable: false,
+    cashCapUsd: 1000,
+  }));
+  assert.equal(refused.verdict, 'deny');
+  assert.equal(refused.reason, 'uncapped_refused');
+  assert.equal(refused.charged, false);
+});
+
+test('OneShot control counts in-flight spend and refuses a replay of the same key', () => {
+  const overDaily = evaluateOneShotControl(withinCap({
+    quotedUsd: 0.8,
+    spentTodayUsd: 0.1,
+    inFlightUsd: 0.2,
+    dailyCapUsd: 1,
+    perCallCapUsd: 1,
+    cashCapUsd: 1,
+  }));
+  assert.equal(overDaily.verdict, 'deny');
+  assert.equal(overDaily.reason, 'over_daily_cap');
+  assert.equal(overDaily.charged, false);
+
+  const atCap = evaluateOneShotControl(withinCap({
+    quotedUsd: 0.7,
+    spentTodayUsd: 0.1,
+    inFlightUsd: 0.2,
+    dailyCapUsd: 1,
+    perCallCapUsd: 1,
+    cashCapUsd: 1,
+  }));
+  assert.equal(atCap.verdict, 'allow');
+  assert.equal(atCap.reservedUsd, 0.7);
+  assert.equal(atCap.charged, false);
+
+  const replay = evaluateOneShotControl(withinCap({
+    idempotencyKey: ' key-1 ',
+    chargedKeys: ['key-1'],
+  }));
+  assert.equal(replay.verdict, 'deny');
+  assert.equal(replay.reason, 'idempotent_replay');
+
+  const inFlightKey = evaluateOneShotControl(withinCap({
+    inFlightKeys: ['key-1'],
+  }));
+  assert.equal(inFlightKey.verdict, 'hold');
+  assert.equal(inFlightKey.reason, 'idempotency_in_flight');
+
+  const numericKey = evaluateOneShotControl(withinCap({ idempotencyKey: 1 }));
+  assert.equal(numericKey.verdict, 'hold');
+  assert.equal(numericKey.reason, 'idempotency_unreadable');
+
+  const badLedger = evaluateOneShotControl(withinCap({ chargedKeys: 'key-1' }));
+  assert.equal(badLedger.verdict, 'hold');
+  assert.equal(badLedger.reason, 'ledger_unreadable');
+});
+
+test('OneShot control binds approval to one exact unused call', () => {
+  const call = withinCap({ irreversible: true, now: 1_000 });
+  const actionHash = hashOneShotAction(call);
+  const missing = evaluateOneShotControl(call);
+  assert.equal(missing.verdict, 'hold');
+  assert.equal(missing.reason, 'approval_required');
+
+  const mismatch = evaluateOneShotControl({
+    ...call,
+    approval: { actionHash: 'other', used: false, expiresAt: 5_000 },
+  });
+  assert.equal(mismatch.verdict, 'deny');
+  assert.equal(mismatch.reason, 'approval_action_mismatch');
+
+  const replayed = evaluateOneShotControl({
+    ...call,
+    approval: { actionHash, used: true, expiresAt: 5_000 },
+  });
+  assert.equal(replayed.verdict, 'deny');
+  assert.equal(replayed.reason, 'approval_replay');
+
+  const expired = evaluateOneShotControl({
+    ...call,
+    approval: { actionHash, used: false, expiresAt: 1_000 },
+  });
+  assert.equal(expired.verdict, 'deny');
+  assert.equal(expired.reason, 'approval_expired');
+
+  const allowed = evaluateOneShotControl({
+    ...call,
+    modelVerdict: 'deny',
+    approval: { actionHash, used: false, expiresAt: 1_001 },
+  });
+  assert.equal(allowed.verdict, 'allow');
+  assert.equal(allowed.reason, 'within_cap');
+  assert.equal(allowed.actionHash, actionHash);
+  assert.equal(allowed.charged, false);
+  assert.equal(allowed.reservedUsd, 2);
+});
+
+test('OneShot done-check ignores the worker and budget exhaustion', () => {
+  const exhausted = evaluateOneShotGoalDone({
+    budgetExhausted: true,
+    modelSaysDone: true,
+    workerId: 'worker',
+    confirmerId: 'owner',
+    runStartedAt: 100,
+    check: { writtenAt: 50, passed: true },
+  });
+  assert.equal(exhausted.status, 'out_of_budget');
+  assert.equal(exhausted.done, false);
+
+  const worker = evaluateOneShotGoalDone({
+    modelSaysDone: true,
+    workerId: 'worker',
+    confirmerId: ' worker ',
+    runStartedAt: 100,
+  });
+  assert.equal(worker.status, 'waiting_owner');
+  assert.equal(worker.reason, 'worker_cannot_confirm');
+  assert.equal(worker.done, false);
+
+  const modelOnly = evaluateOneShotGoalDone({
+    modelSaysDone: true,
+    workerId: 'worker',
+    runStartedAt: 100,
+  });
+  assert.equal(modelOnly.status, 'waiting_owner');
+  assert.equal(modelOnly.reason, 'model_done_ignored');
+  assert.equal(modelOnly.done, false);
+
+  const lateCheck = evaluateOneShotGoalDone({
+    modelSaysDone: true,
+    runStartedAt: 100,
+    check: { writtenAt: 100, passed: true },
+  });
+  assert.equal(lateCheck.done, false);
+  assert.equal(lateCheck.status, 'waiting_owner');
+
+  const failed = evaluateOneShotGoalDone({
+    modelSaysDone: true,
+    workerId: 'worker',
+    confirmerId: 'owner',
+    runStartedAt: 100,
+    check: { writtenAt: 40, passed: false, missing: ['tests_green'] },
+  });
+  assert.equal(failed.status, 'failed');
+  assert.deepEqual(failed.missing, ['tests_green']);
+  assert.equal(failed.done, false);
+
+  const byCheck = evaluateOneShotGoalDone({
+    modelSaysDone: false,
+    workerId: 'worker',
+    confirmerId: 'worker',
+    runStartedAt: 100,
+    check: { writtenAt: 40, passed: true },
+  });
+  assert.equal(byCheck.status, 'done');
+  assert.equal(byCheck.reason, 'check_confirmed');
+
+  const byOwner = evaluateOneShotGoalDone({
+    workerId: 'worker',
+    confirmerId: 'owner',
+    runStartedAt: 100,
+  });
+  assert.equal(byOwner.status, 'done');
+  assert.equal(byOwner.reason, 'owner_confirmed');
 });

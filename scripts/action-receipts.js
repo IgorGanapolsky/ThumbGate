@@ -432,6 +432,216 @@ function reconstructModelVisibleFacts(actionId, options = {}) {
   };
 }
 
+/**
+ * OneShot FORMAT (oneshotagent.com/thesis, 2026-10-04): the model is not the
+ * control. These functions quote and reserve before a side effect, and they
+ * refuse a worker's own "done". They do not move money and they do not open
+ * ThumbGate's $0 agent spend wall. An omitted cash cap is $0.
+ */
+function canonicalOneShotValue(value, seen = new Set()) {
+  if (value === null || typeof value !== 'object') {
+    if (typeof value === 'bigint' || typeof value === 'function' || typeof value === 'symbol') {
+      throw new TypeError('unhashable');
+    }
+    const encoded = JSON.stringify(value === undefined ? null : value);
+    if (typeof encoded !== 'string') throw new TypeError('unhashable');
+    return encoded;
+  }
+  if (seen.has(value)) throw new TypeError('cycle');
+  seen.add(value);
+  try {
+    if (Array.isArray(value)) {
+      return `[${value.map((entry) => canonicalOneShotValue(entry, seen)).join(',')}]`;
+    }
+    const keys = Object.keys(value).sort();
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalOneShotValue(value[key], seen)}`).join(',')}}`;
+  } finally {
+    seen.delete(value);
+  }
+}
+
+function oneShotCents(usd) {
+  if (typeof usd !== 'number' || !Number.isFinite(usd) || usd < 0) return null;
+  const cents = Math.round(usd * 100);
+  if (usd > 0 && cents <= 0) return 1;
+  return cents;
+}
+
+function hashOneShotAction({ toolName, toolInput, quotedUsd, idempotencyKey } = {}) {
+  const quoteField = typeof quotedUsd === 'number' && Number.isFinite(quotedUsd)
+    ? String(quotedUsd)
+    : '';
+  const payload = [
+    encodeCanonicalField(toolName),
+    encodeCanonicalField(canonicalOneShotValue(toolInput)),
+    encodeCanonicalField(quoteField),
+    encodeCanonicalField(idempotencyKey),
+  ].join('|');
+  return crypto.createHash('sha256').update(payload).digest('hex');
+}
+
+function oneShotDecision(verdict, reason, extra = {}) {
+  return {
+    actionHash: '',
+    reservedUsd: 0,
+    ...extra,
+    verdict,
+    reason,
+    charged: false,
+  };
+}
+
+function clampCapToCeiling(value, ceiling) {
+  if (value == null) return ceiling;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return null;
+  return Math.min(value, ceiling);
+}
+
+function nonNegativeUsd(value) {
+  if (value == null) return 0;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return null;
+  return value;
+}
+
+function evaluateOneShotControl(input = {}) {
+  let actionHash = '';
+  try {
+    actionHash = hashOneShotAction(input);
+  } catch {
+    return oneShotDecision('hold', 'action_unreadable', { actionHash: '' });
+  }
+  const base = { actionHash };
+
+  if (input.uncapped === true) {
+    return oneShotDecision('deny', 'uncapped_refused', base);
+  }
+
+  const rawCap = input.cashCapUsd;
+  if (rawCap != null && (typeof rawCap !== 'number' || !Number.isFinite(rawCap) || rawCap < 0)) {
+    return oneShotDecision('hold', 'cap_unreadable', base);
+  }
+  const agentCeilingUsd = rawCap == null ? 0 : rawCap;
+
+  if (input.ledgerReadable !== true) {
+    return oneShotDecision('hold', 'ledger_unreadable', base);
+  }
+
+  const quote = input.quotedUsd;
+  if (typeof quote !== 'number' || !Number.isFinite(quote) || quote < 0) {
+    return oneShotDecision('hold', 'quote_required', base);
+  }
+
+  if (input.idempotencyKey != null && input.idempotencyKey !== '' && typeof input.idempotencyKey !== 'string') {
+    return oneShotDecision('hold', 'idempotency_unreadable', base);
+  }
+  const key = typeof input.idempotencyKey === 'string' ? input.idempotencyKey.trim() : '';
+  if (input.chargedKeys != null && !Array.isArray(input.chargedKeys)) {
+    return oneShotDecision('hold', 'ledger_unreadable', base);
+  }
+  if (input.inFlightKeys != null && !Array.isArray(input.inFlightKeys)) {
+    return oneShotDecision('hold', 'ledger_unreadable', base);
+  }
+  const sameKey = (list) => Array.isArray(list) && list.some((entry) => typeof entry === 'string' && entry.trim() === key);
+  if (key && sameKey(input.chargedKeys)) {
+    return oneShotDecision('deny', 'idempotent_replay', base);
+  }
+  if (key && sameKey(input.inFlightKeys)) {
+    return oneShotDecision('hold', 'idempotency_in_flight', base);
+  }
+
+  const perCallUsd = clampCapToCeiling(input.perCallCapUsd, agentCeilingUsd);
+  const dailyUsd = clampCapToCeiling(input.dailyCapUsd, agentCeilingUsd);
+  const spentUsd = nonNegativeUsd(input.spentTodayUsd);
+  const inFlightUsd = nonNegativeUsd(input.inFlightUsd);
+  if (spentUsd == null || inFlightUsd == null) {
+    return oneShotDecision('hold', 'ledger_unreadable', base);
+  }
+  if (perCallUsd == null || dailyUsd == null) {
+    return oneShotDecision('hold', 'cap_unreadable', base);
+  }
+
+  const quoteCents = oneShotCents(quote);
+  const perCallCents = oneShotCents(perCallUsd);
+  const dailyCents = oneShotCents(dailyUsd);
+  const spentCents = oneShotCents(spentUsd);
+  const inFlightCents = oneShotCents(inFlightUsd);
+  if ([quoteCents, perCallCents, dailyCents, spentCents, inFlightCents].some((cents) => cents == null)) {
+    return oneShotDecision('hold', 'cap_unreadable', base);
+  }
+
+  if (quoteCents > perCallCents) {
+    return oneShotDecision('deny', 'over_per_call_cap', base);
+  }
+  if (spentCents + inFlightCents + quoteCents > dailyCents) {
+    return oneShotDecision('deny', 'over_daily_cap', base);
+  }
+
+  if (input.irreversible === true || input.approvalRequired === true) {
+    const approval = input.approval;
+    if (!approval || typeof approval !== 'object') {
+      return oneShotDecision('hold', 'approval_required', base);
+    }
+    if (approval.used === true) {
+      return oneShotDecision('deny', 'approval_replay', base);
+    }
+    if (approval.expiresAt != null) {
+      const expiresAt = Number(approval.expiresAt);
+      const now = Number(input.now != null ? input.now : Date.now());
+      if (!Number.isFinite(expiresAt) || !Number.isFinite(now) || expiresAt <= now) {
+        return oneShotDecision('deny', 'approval_expired', base);
+      }
+    }
+    if (approval.actionHash !== actionHash) {
+      return oneShotDecision('deny', 'approval_action_mismatch', base);
+    }
+  }
+
+  return oneShotDecision('allow', 'within_cap', { ...base, reservedUsd: quote });
+}
+
+function evaluateOneShotGoalDone(input = {}) {
+  if (input.budgetExhausted === true) {
+    return { status: 'out_of_budget', done: false, reason: 'budget_exhausted', missing: [] };
+  }
+
+  const runStartedAt = input.runStartedAt;
+  const check = input.check;
+  const checkWrittenBeforeRun = Boolean(check)
+    && typeof check === 'object'
+    && typeof check.writtenAt === 'number'
+    && Number.isFinite(check.writtenAt)
+    && typeof runStartedAt === 'number'
+    && Number.isFinite(runStartedAt)
+    && check.writtenAt < runStartedAt;
+
+  if (checkWrittenBeforeRun && check.passed === false) {
+    const missing = Array.isArray(check.missing) && check.missing.length > 0
+      ? check.missing.slice()
+      : ['check_failed'];
+    return { status: 'failed', done: false, reason: 'check_failed', missing };
+  }
+
+  if (checkWrittenBeforeRun && check.passed === true) {
+    return { status: 'done', done: true, reason: 'check_confirmed', missing: [] };
+  }
+
+  const workerId = typeof input.workerId === 'string' ? input.workerId.trim() : '';
+  const confirmerId = typeof input.confirmerId === 'string' ? input.confirmerId.trim() : '';
+  if (workerId && confirmerId && confirmerId === workerId) {
+    return { status: 'waiting_owner', done: false, reason: 'worker_cannot_confirm', missing: [] };
+  }
+  if (workerId && confirmerId && confirmerId !== workerId) {
+    return { status: 'done', done: true, reason: 'owner_confirmed', missing: [] };
+  }
+
+  return {
+    status: 'waiting_owner',
+    done: false,
+    reason: input.modelSaysDone === true ? 'model_done_ignored' : 'check_missing',
+    missing: [],
+  };
+}
+
 module.exports = {
   RECEIPTS_FILE,
   getReceiptsPath,
@@ -447,6 +657,9 @@ module.exports = {
   resolveReceiptSigningKey,
   signReceiptDigest,
   verifyReceiptSignature,
+  hashOneShotAction,
+  evaluateOneShotControl,
+  evaluateOneShotGoalDone,
   // exposed for testing / reuse
   summarizeInput,
   summarizeOutcome,
