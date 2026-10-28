@@ -160,7 +160,7 @@
       --bg: #080b10;
       --panel: #111722;
       --text: #f5f7fb;
-      --muted: #9ca8ba;
+      --muted: #b8c4d6;
       --line: #273246;
       --cyan: #38d7ff;
       --green: #56e39f;
@@ -182,13 +182,22 @@
     button, input { font: inherit; }
     button { cursor: pointer; }
     .shell { width: min(calc(100% - 40px), var(--max)); margin: 0 auto; }
+    section, .faq-item, [id] { scroll-margin-top: 88px; }
     .site-nav {
       position: sticky;
       top: 0;
-      z-index: 20;
-      border-bottom: 1px solid rgba(39, 50, 70, 0.75);
-      background: rgba(8, 11, 16, 0.88);
-      backdrop-filter: blur(16px);
+      z-index: 50;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(8, 11, 16, 0.94);
+      backdrop-filter: blur(22px) saturate(160%);
+      -webkit-backdrop-filter: blur(22px) saturate(160%);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    }
+    body.final-in-view .site-nav .nav-buy,
+    body.final-in-view .site-nav .nav-enterprise {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
     }
     .nav-inner { min-height: 70px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
     .nav-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 850; }
@@ -215,17 +224,18 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 40px;
-      border: 1px solid rgba(86, 227, 159, 0.45);
+      min-height: 46px;
+      border: 1px solid rgba(86, 227, 159, 0.5);
       border-radius: 10px;
-      padding: 0 14px;
+      padding: 0 20px;
       color: var(--green) !important;
       background: rgba(86, 227, 159, 0.08);
       font-weight: 800 !important;
-      font-size: 13px !important;
+      font-size: 14px !important;
       text-decoration: none;
+      transition: background 0.15s, border-color 0.15s, opacity 0.2s;
     }
-    .nav-enterprise:hover { background: rgba(86, 227, 159, 0.14); color: var(--text) !important; }
+    .nav-enterprise:hover { background: rgba(86, 227, 159, 0.16); color: var(--text) !important; }
     .offer-stack { display: grid; gap: 14px; }
     .pro-card {
       padding: 22px 24px;
@@ -236,7 +246,7 @@
     .pro-card .price strong { color: var(--cyan); }
     .pro-card h2 { margin: 0 0 6px; font-size: 20px; }
     .pro-card > p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
-    .pro-card .button-pro { width: 100%; min-height: 48px; background: var(--cyan); color: #041016 !important; box-shadow: 0 12px 35px rgba(56, 215, 255, 0.18); }
+    .pro-card .button-pro { width: 100%; min-height: 48px; background: var(--green); color: #06130d !important; box-shadow: 0 12px 35px rgba(86, 227, 159, 0.22); }
     .pro-card .checkout-note { margin: 10px 0 0 !important; color: var(--muted) !important; font-size: 12px; text-align: center; }
     .offer-points { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
     .offer-points li {
@@ -545,11 +555,50 @@
     .faq-item.open .faq-a { display: block; }
     .final { text-align: center; }
     .final .section-title, .final .section-lede { margin-left: auto; margin-right: auto; }
-    .final .nav-buy { margin-top: 26px; }
-    footer { padding: 32px 0 46px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
-    .footer-inner { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 18px; }
-    .footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
-    .footer-links a { color: var(--muted); }
+    .final-cli-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 20px auto 0;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(56, 215, 255, 0.35);
+      background: #0b1018;
+      font: 700 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--cyan);
+    }
+    .final-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      justify-content: center;
+      align-items: center;
+      margin-top: 18px;
+    }
+    .final-actions .nav-buy, .final-actions .nav-enterprise {
+      margin-top: 0;
+      min-height: 48px;
+      padding: 0 24px;
+      font-size: 15px !important;
+    }
+    footer { padding: 44px 0 56px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: var(--muted); font-size: 13px; background: #06090e; }
+    .footer-inner { display: grid; grid-template-columns: 240px 1fr; gap: 32px; align-items: start; }
+    .footer-links {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(160px, 1fr));
+      gap: 10px 24px;
+    }
+    .footer-links a {
+      color: var(--muted);
+      text-decoration: none;
+      padding: 3px 0;
+      transition: color 0.15s;
+    }
+    .footer-links a:hover { color: var(--cyan); text-decoration: underline; }
+    @media (max-width: 760px) {
+      .footer-inner { grid-template-columns: 1fr; gap: 20px; }
+      .footer-links { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+    }
     @media (max-width: 840px) {
       .nav-links > a:not(.nav-buy):not(.nav-enterprise) { display: none; }
       .nav-links { gap: 10px; }
@@ -1118,12 +1167,17 @@ next      decision recorded before execution</pre>
       <div class="shell">
         <div class="section-kicker">Start free</div>
         <h2 class="section-title">Block last week’s agent mistake.</h2>
-        <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), upgrade to <strong style="color:var(--text)">Pro ($19/mo)</strong>, or book a <strong style="color:var(--text)">$499 setup</strong>.</p>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
+        <p class="section-lede">MIT free locally, <strong style="color:var(--text)">Pro ($19/mo)</strong>, or book a <strong style="color:var(--text)">$499 setup</strong>.</p>
+        <div>
+          <div class="final-cli-pill">
+            <code>npx thumbgate init</code>
+            <button type="button" class="copy-cmd" data-copy-install data-cta-id="final_install_copy">Copy</button>
+          </div>
+        </div>
+        <div class="final-actions">
           <a class="nav-buy" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_final&amp;utm_campaign=pro_self_serve&amp;cta_id=final_pro_buy&amp;cta_placement=final&amp;plan_id=pro" data-offer-link data-cta-id="final_pro_buy">Start Pro — $19/mo</a>
           <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>
         </div>
-      </div>
     </section>
   </main>
 
@@ -1549,6 +1603,15 @@ next      decision recorded before execution</pre>
         } else { fallback(); }
       });
     });
+    var finalSection = document.querySelector('section.final');
+    if (finalSection && typeof IntersectionObserver === 'function') {
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          document.body.classList.toggle('final-in-view', entry.isIntersecting);
+        });
+      }, { threshold: 0.25 });
+      obs.observe(finalSection);
+    }
   })();
 </script>
 </body>
