@@ -21,6 +21,8 @@ const {
   renderSecurityOverviewHtml,
 } = require('../security-questionnaire');
 const {
+  resolveSsoAuthorization,
+  sanitizeSsoRedirect,
   createAdminSessionToken,
   verifyAdminRequest,
   buildAdminCookieHeader,
@@ -9394,13 +9396,45 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     }
 
     // --- Google Cloud Executive Admin Portal & Dialogflow Command Center ---
+    if ((isGetLikeRequest || req.method === 'POST') && pathname.startsWith('/admin/sso/')) {
+      const ssoParts = pathname.slice('/admin/sso/'.length).split('/').filter(Boolean);
+      const provider = ssoParts[0] || '';
+      const redirectTarget = parsed.searchParams.get('redirect') || '/admin';
+      const ssoResult = resolveSsoAuthorization({
+        provider,
+        redirectTarget,
+        expectedApiKey,
+        expectedOperatorKey,
+      });
+      if (!ssoResult.ok) {
+        sendHtml(
+          res,
+          ssoResult.statusCode || 400,
+          renderAdminLoginHtml({ error: ssoResult.error, redirect: redirectTarget }),
+          { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' },
+          { headOnly: isHeadRequest }
+        );
+        return;
+      }
+      const isHttps = String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https';
+      const cookieHeader = buildAdminCookieHeader(ssoResult.token, { secure: isHttps });
+      res.writeHead(303, {
+        Location: ssoResult.redirectLocation,
+        'Set-Cookie': cookieHeader,
+        'Cache-Control': 'private, no-store',
+      });
+      res.end();
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/admin' || pathname === '/admin/' || pathname === '/admin/login')) {
       const auth = verifyAdminRequest(req, { expectedApiKey, expectedOperatorKey });
+      const redirectTarget = parsed.searchParams.get('redirect') || '/admin';
       if (!auth.authenticated || pathname === '/admin/login') {
         sendHtml(
           res,
           auth.authenticated ? 200 : 401,
-          renderAdminLoginHtml({}),
+          renderAdminLoginHtml({ redirect: redirectTarget }),
           { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' },
           { headOnly: isHeadRequest }
         );
@@ -9468,10 +9502,11 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
-    if (req.method === 'POST' && pathname === '/admin/logout') {
+    if ((req.method === 'POST' || isGetLikeRequest) && pathname === '/admin/logout') {
       const isHttps = String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https';
+      const redirectAfterLogout = sanitizeSsoRedirect(parsed.searchParams.get('redirect') || '/admin');
       res.writeHead(303, {
-        Location: '/admin',
+        Location: redirectAfterLogout,
         'Set-Cookie': buildClearAdminCookieHeader({ secure: isHttps }),
         'Cache-Control': 'private, no-store',
       });

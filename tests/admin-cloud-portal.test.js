@@ -193,6 +193,25 @@ test('POST /admin/login sets HttpOnly session cookie and unlocks real-time sign-
     assert.equal(swarmData.intent, 'admin.herdr_swarm');
     assert.match(swarmData.answer, /Herdr 2x2 MoE Swarm SOW/);
     assert.match(swarmData.answer, /Broadcast Prompt Deduplication/);
+
+    // 8. 1-Click SSO (Google, Apple, GitHub) signs in and redirects with HttpOnly session cookie
+    for (const provider of ['google', 'apple', 'github']) {
+      const ssoRes = await fetch(`${baseUrl}/admin/sso/${provider}?redirect=/dashboard`, {
+        redirect: 'manual',
+      });
+      assert.equal(ssoRes.status, 303);
+      assert.equal(ssoRes.headers.get('location'), '/dashboard');
+      const ssoSetCookie = ssoRes.headers.get('set-cookie');
+      assert.ok(ssoSetCookie && ssoSetCookie.includes('tg_admin_session='));
+      const ssoCookiePair = ssoSetCookie.split(';')[0];
+
+      const authedPortal = await fetch(`${baseUrl}/admin`, {
+        headers: { Cookie: ssoCookiePair },
+      });
+      assert.equal(authedPortal.status, 200);
+      const authedHtml = await authedPortal.text();
+      assert.match(authedHtml, /Google SSO|Apple ID SSO|GitHub SSO/);
+    }
   } finally {
     await close();
   }
