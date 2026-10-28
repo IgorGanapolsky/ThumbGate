@@ -270,6 +270,8 @@
       font: 750 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
     }
     .spec-chip strong { color: var(--cyan); font-weight: 850; }
+    a.spec-chip { color: #d7e6f3; text-decoration: none; }
+    a.spec-chip:hover { border-color: var(--cyan); }
     .proof-link { color: var(--cyan); font-weight: 750; text-decoration: none; }
     .proof-link:hover { text-decoration: underline; }
     .install-hint {
@@ -777,8 +779,7 @@
         <a href="#how-it-works">How it works</a>
         <a href="#offers">Pricing</a>
         <a href="#proof">Proof</a>
-        <a href="/cloud" data-cta-id="nav_cloud_dashboard" style="color:var(--cyan);font-weight:800;">Cloud Portal</a>
-        <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_nav&amp;utm_campaign=rally_style_gtm&amp;cta_id=nav_pro_buy&amp;cta_placement=nav&amp;plan_id=pro" data-offer-link data-cta-id="nav_pro_buy">Pro · $19/mo</a>
+        <a class="nav-buy" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_nav&amp;utm_campaign=rally_style_gtm&amp;cta_id=nav_pro_buy&amp;cta_placement=nav&amp;plan_id=pro" data-offer-link data-cta-id="nav_pro_buy">Pro · $19/mo</a>
         <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="nav_diagnostic_buy">Team Setup · $499</a>
       </div>
     </div>
@@ -806,23 +807,25 @@ npm test [repeat #3 loop]             → <span style="color:var(--yellow);font-
           </div>
           <p class="install-hint"><strong style="color:var(--text)">Free (MIT):</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy</button> · <a href="/pricing">Free vs. Pro →</a></p>
           <p class="fit-line" style="margin-top:12px;"><strong>Pro at $19/mo</strong> or <strong>$499 Diagnostic</strong> on Claude Code, Cursor, Codex, or similar agents. Free local evaluate stays free.</p>
+          <nav class="plugin-pill-dock" aria-label="Install ThumbGate">
+            <a class="plugin-pill" href="/install" title="npx -y thumbgate@1.40.0 init --agent claude">Claude</a>
+            <a class="plugin-pill" href="/install" title="npx -y thumbgate@1.40.0 init --agent cursor. Cursor Marketplace listing is not live">Cursor</a>
+            <a class="plugin-pill" href="https://marketplace.visualstudio.com/items?itemName=igorganapolsky.thumbgate" rel="noopener" title="VS Code Marketplace 1.27.20">VS Code</a>
+            <a class="plugin-pill" href="/install" title="npx -y thumbgate@1.40.0 init --agent codex">Codex</a>
+            <a class="plugin-pill" href="/install#grok" title="grok mcp add thumbgate -- npx -y thumbgate mcp">Grok</a>
+            <a class="plugin-pill" href="/install#hermes" title="npx --yes --package thumbgate thumbgate hermes-gate">Hermes</a>
+          </nav>
           <div class="spec-chips">
-            <span class="spec-chip"><strong>Capture</strong> feedback →</span>
-            <span class="spec-chip"><strong>Rank</strong> lessons →</span>
-            <span class="spec-chip"><strong>Promote</strong> gates →</span>
+            <span class="spec-chip"><strong>Capture</strong> feedback</span>
+            <span class="spec-chip"><strong>Rank</strong> lessons</span>
+            <span class="spec-chip"><strong>Promote</strong> gates</span>
             <span class="spec-chip"><strong>Block</strong> next action</span>
           </div>
           <figure class="hero-visual">
             <img src="/assets/diagrams/hero-thumbs.svg" width="640" height="360" alt="ThumbGate: thumbs up and thumbs down become a pre-action gate that can ALLOW, WARN, or DENY before the tool call runs" loading="eager" decoding="async">
           </figure>
-          <div class="plugin-pill-dock" aria-label="Native Agent and IDE Plugins">
-            <a class="plugin-pill" href="/cloud">Cursor</a>
-            <a class="plugin-pill" href="/cloud">Claude</a>
-            <a class="plugin-pill" href="/cloud">VSCode</a>
-            <a class="plugin-pill" href="/cloud">Codex</a>
-            <a class="plugin-pill" href="/cloud">Muse</a>
-            <a class="plugin-pill" href="/cloud">Grok Bot</a>
-            <a class="plugin-pill" href="/cloud">Hermes</a>
+          <div class="trust-strip" aria-label="Verified engineering proof">
+            <span>7 CLIs · &lt;0.5ms p95</span>
           </div>
           <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
         </div>
@@ -832,7 +835,7 @@ npm test [repeat #3 loop]             → <span style="color:var(--yellow);font-
             <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
             <h2>Pro</h2>
             <p><strong>Pays for itself on 1st loop.</strong> 59 rules &amp; recall.</p>
-            <a class="button-pro" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=hero&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="hero">Start Pro — $19/mo</a>
+            <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=hero&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="hero">Start Pro — $19/mo</a>
             <p class="checkout-note">Instant key · <a href="/cloud" style="color:var(--cyan);">Cloud Portal (/cloud) →</a></p>
             <ul class="offer-points">
               <li>59 curated threat rules (AWS, SOC2, Git/DB)</li>
@@ -878,7 +881,7 @@ npm test [repeat #3 loop]             → <span style="color:var(--yellow);font-
             <div class="plugin-tile-grid">
               <a class="plugin-tile" href="/cloud"><span>Cursor · VSCode</span><small>npx thumbgate init</small></a>
               <a class="plugin-tile" href="/cloud"><span>Claude · Codex</span><small>npx skills add</small></a>
-              <a class="plugin-tile" href="/Formula/thumbgate.rb"><span>Muse · Grok · Hermes</span><small>Homebrew</small></a>
+              <a class="plugin-tile" href="/Formula/thumbgate.rb"><span>Grok · Hermes · Brew</span><small>Homebrew</small></a>
             </div>
             <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px;">
               <a class="button-pro" href="/cloud" style="padding:8px 14px;font-size:13px;">Installers &amp; Portal →</a>
@@ -1105,7 +1108,7 @@ next      decision recorded before execution</pre>
         <h2 class="section-title">Block last week’s agent mistake.</h2>
         <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), upgrade to <strong style="color:var(--text)">Pro ($19/mo)</strong>, or book a <strong style="color:var(--text)">$499 setup</strong>.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
-          <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_final&amp;utm_campaign=pro_self_serve&amp;cta_id=final_pro_buy&amp;cta_placement=final&amp;plan_id=pro" data-offer-link data-cta-id="final_pro_buy">Start Pro — $19/mo</a>
+          <a class="nav-buy" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_final&amp;utm_campaign=pro_self_serve&amp;cta_id=final_pro_buy&amp;cta_placement=final&amp;plan_id=pro" data-offer-link data-cta-id="final_pro_buy">Start Pro — $19/mo</a>
           <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>
         </div>
       </div>

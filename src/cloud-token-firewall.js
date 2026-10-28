@@ -1923,7 +1923,12 @@ function evaluateOneShotAgentGatewayAndSignedReceiptSteal({
 
   const allowed = blockers.length === 0 && policyDecision === 'allow';
   const chargedUsd = allowed ? Number(quotedCallUsd) : 0;
+  const rulesetHash = `sha256:${crypto.createHash('sha256').update(`thumbgate-oneshot-ruleset-v1.40.0:${action}`).digest('hex').slice(0, 16)}`;
+  const gateDecisionId = `gdec_${crypto.createHash('sha256').update(`${agentId}:${action}:${allowed ? 'ALLOW' : 'DENY_OR_HOLD'}:${observedAt}`).digest('hex').slice(0, 12)}`;
   const receiptPayload = {
+    gate_decision_id: gateDecisionId,
+    policy_version: '1.40.0',
+    ruleset_hash: rulesetHash,
     agentId,
     action,
     decision: allowed ? 'ALLOW' : 'DENY_OR_HOLD',
@@ -1942,6 +1947,7 @@ function evaluateOneShotAgentGatewayAndSignedReceiptSteal({
     ok: allowed,
     thesisVersion: '3.0_the_model_is_not_the_control',
     goalTerminalState,
+    gateDecisionId,
     budget: {
       quotedCallUsd: Number(quotedCallUsd),
       chargedUsd,

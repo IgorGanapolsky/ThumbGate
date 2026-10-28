@@ -64,7 +64,7 @@ test('homepage exposes both Pro $19/mo and Enterprise $499 offers', () => {
   assert.match(landingPage, /method="POST"/);
   assert.match(landingPage, /name="customer_email"[^>]*required/);
   assert.match(landingPage, /name="plan_id" value="sprint_diagnostic"/);
-  assert.match(landingPage, /\/checkout\/pro/);
+  assert.match(landingPage, /\/go\/pro-direct/);
   assert.match(landingPage, /Start Pro — \$19\/mo/);
   assert.match(landingPage, /Get Started — \$499 Diagnostic/);
   assert.match(landingPage, /Pro · \$19\/mo/);
@@ -81,6 +81,25 @@ test('homepage keeps conversion noise off while offering both paid paths', () =>
   assert.doesNotMatch(landingPage, /Enterprise pilot|newsletter/i);
   assert.doesNotMatch(landingPage, /offer-router|sticky-cta|buyer-intent\.js|revenue-assist-panel/i);
   assert.match(landingPage, /<body data-revenue-assist="off">/);
+});
+
+test('homepage names the installers that ship', () => {
+  const installPage = fs.readFileSync(path.join(__dirname, '..', 'public', 'install.html'), 'utf8');
+  assert.match(landingPage, /aria-label="Install ThumbGate"/);
+  assert.match(landingPage, /title="npx -y thumbgate@1\.(?:39|40)\.0 init --agent claude">Claude</);
+  assert.match(landingPage, /href="\/install" title="[^"]*init --agent cursor[^"]*">Cursor</);
+  assert.match(landingPage, /marketplace\.visualstudio\.com\/items\?itemName=igorganapolsky\.thumbgate/);
+  assert.match(landingPage, /title="npx -y thumbgate@1\.(?:39|40)\.0 init --agent codex">Codex</);
+  assert.match(landingPage, /href="\/install#grok" title="grok mcp add thumbgate -- npx -y thumbgate mcp">Grok</);
+  assert.match(landingPage, /href="\/install#hermes" title="[^"]*hermes-gate">Hermes</);
+  assert.match(landingPage, /Cursor Marketplace listing is not live/);
+  assert.doesNotMatch(landingPage, /Muse/);
+  assert.match(installPage, /init --agent claude/);
+  assert.match(installPage, /The public Cursor Marketplace listing is not live/);
+  assert.match(installPage, /hermes-gate/);
+  assert.match(installPage, /grok mcp add thumbgate/);
+  assert.match(installPage, /id="grok"/);
+  assert.match(installPage, /id="hermes"/);
 });
 
 test('homepage stays human-scannable instead of becoming a product monorepo', () => {
