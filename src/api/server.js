@@ -5953,7 +5953,7 @@ function createApiServer() {
           res.writeHead(proxyRes.statusCode, {
             'Content-Type': 'application/javascript; charset=utf-8',
             'Cache-Control': 'public, max-age=86400',
-            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Origin': publicOrigin,
           });
           res.end(body);
         });
@@ -6188,7 +6188,7 @@ function createApiServer() {
           const rChunks = [];
           proxyRes.on('data', (c) => rChunks.push(c));
           proxyRes.on('end', () => {
-            res.writeHead(proxyRes.statusCode, { 'Access-Control-Allow-Origin': '*' });
+            res.writeHead(proxyRes.statusCode, { 'Access-Control-Allow-Origin': publicOrigin });
             res.end(Buffer.concat(rChunks));
           });
         });
