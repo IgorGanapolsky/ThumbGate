@@ -2838,6 +2838,31 @@ function ciGhaBuildkitePatternsDoctor() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function broadcastSwarmSow() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildBroadcastSwarmSowReport,
+    formatBroadcastSwarmSowReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'broadcast-swarm-sow'));
+  const truthy = (value) => value === true || /^(1|true|yes|on)$/i.test(String(value || '').trim());
+  const report = buildBroadcastSwarmSowReport({
+    mapOnly: truthy(args['map-only']),
+    claim: args.claim || '',
+    command: args.command || '',
+    policyJson: args['policy-json'] || '',
+    actionJson: args['action-json'] || '',
+    policyPath: args.policy || '',
+    actionPath: args.action || '',
+  });
+  if (truthy(args.json)) console.log(JSON.stringify(report, null, 2));
+  else process.stdout.write(formatBroadcastSwarmSowReport(report));
+  if (truthy(args.strict) && report.status !== 'ready') {
+    process.exitCode = 1;
+    return;
+  }
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function infoqArchitectHonesty() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -5071,6 +5096,10 @@ switch (COMMAND) {
   case 'salt-code':
   case 'saltcode':
     saltCodePolicyHonestyDoctor();
+    break;
+  case 'broadcast-swarm-sow':
+  case 'swarm-sow':
+    broadcastSwarmSow();
     break;
   case 'infoq-architect-honesty':
   case 'infoq-architects':
