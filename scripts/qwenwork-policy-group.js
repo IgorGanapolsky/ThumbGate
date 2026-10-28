@@ -138,17 +138,15 @@ function allow(point, policy, action) {
 
 function deviceGate(policy, action) {
   const trusted = listed(policy, 'trustedDevices');
-  if (trusted.length === 0) return '';
   const device = String(action.device || '');
-  if (!device || !trusted.includes(device)) return 'untrusted-device';
+  if (trusted.length === 0 || !device || !trusted.includes(device)) return 'untrusted-device';
   return '';
 }
 
 function networkGate(policy, action) {
   const trusted = listed(policy, 'trustedNetworks');
   const network = String(action.network || '');
-  if (trusted.length === 0) return network ? 'untrusted-network' : '';
-  if (!network || !trusted.includes(network)) return 'untrusted-network';
+  if (trusted.length === 0 || !network || !trusted.includes(network)) return 'untrusted-network';
   return '';
 }
 
@@ -239,6 +237,8 @@ function evaluatePolicyGroup(policy, action) {
     if (!channel || !listed(policy, 'imChannels').includes(channel)) {
       return deny(point, 'unknown-im-channel', policy, action);
     }
+    const deviceReason = deviceGate(policy, action);
+    if (deviceReason) return deny(point, deviceReason, policy, action);
     const networkReason = networkGate(policy, action);
     if (networkReason) return deny(point, networkReason, policy, action);
     return allow(point, policy, action);

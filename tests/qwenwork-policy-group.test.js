@@ -152,6 +152,25 @@ test('untrusted device and network deny, and a named network with an empty list 
     device: 'laptop-1',
     network: 'cafe',
   }).reason, 'untrusted-network');
+  assert.equal(evaluatePolicyGroup(openNetwork, {
+    point: 'model.invoke',
+    model: 'local-gate',
+    device: 'laptop-1',
+  }).reason, 'untrusted-network');
+
+  const openDevices = { ...POLICY, trustedDevices: [] };
+  assert.equal(evaluatePolicyGroup(openDevices, {
+    point: 'model.invoke',
+    model: 'local-gate',
+    device: 'attacker',
+    network: 'office',
+  }).reason, 'untrusted-device');
+  assert.equal(evaluatePolicyGroup(POLICY, {
+    point: 'im.send',
+    channel: 'internal',
+    device: 'phone',
+    network: 'office',
+  }).reason, 'untrusted-device');
 });
 
 test('brand.apply allows a label and denies a clone', () => {
