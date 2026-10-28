@@ -636,6 +636,14 @@ function evaluateOneShotGoalDone(input = {}) {
     && check.writtenAt < runStartedAt;
 
   if (checkWrittenBeforeRun && check.passed === true) {
+    if (!oneShotEvidenceBacked(input)) {
+      return {
+        status: 'waiting_owner',
+        done: false,
+        reason: 'evidence_missing',
+        missing: ['verification_evidence'],
+      };
+    }
     return { status: 'done', done: true, reason: 'check_confirmed', missing: [] };
   }
 
@@ -645,6 +653,14 @@ function evaluateOneShotGoalDone(input = {}) {
     return { status: 'waiting_owner', done: false, reason: 'worker_cannot_confirm', missing: [] };
   }
   if (workerId && confirmerId && confirmerId !== workerId) {
+    if (!oneShotEvidenceBacked(input)) {
+      return {
+        status: 'waiting_owner',
+        done: false,
+        reason: 'evidence_missing',
+        missing: ['verification_evidence'],
+      };
+    }
     return { status: 'done', done: true, reason: 'owner_confirmed', missing: [] };
   }
 
@@ -705,6 +721,7 @@ function oneShotLiveGoalInput(input = {}) {
     confirmerId: '',
     runStartedAt: input.runStartedAt,
     check: input.check,
+    verification: input.verification,
   };
   const verification = input.verification;
   const verificationFailed = Boolean(verification)

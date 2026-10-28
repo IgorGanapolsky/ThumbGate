@@ -541,16 +541,43 @@ test('OneShot done-check ignores the worker and budget exhaustion', () => {
     runStartedAt: 100,
     check: { writtenAt: 40, passed: true },
   });
-  assert.equal(byCheck.status, 'done');
-  assert.equal(byCheck.reason, 'check_confirmed');
+  assert.equal(byCheck.status, 'waiting_owner');
+  assert.equal(byCheck.done, false);
+  assert.equal(byCheck.reason, 'evidence_missing');
+  assert.deepEqual(byCheck.missing, ['verification_evidence']);
 
   const byOwner = evaluateOneShotGoalDone({
     workerId: 'worker',
     confirmerId: 'owner',
     runStartedAt: 100,
   });
-  assert.equal(byOwner.status, 'done');
-  assert.equal(byOwner.reason, 'owner_confirmed');
+  assert.equal(byOwner.status, 'waiting_owner');
+  assert.equal(byOwner.done, false);
+  assert.equal(byOwner.reason, 'evidence_missing');
+
+  const evidence = {
+    performed: true,
+    passed: true,
+    verifier: 'node-test',
+    evidence: ['4 tests passed'],
+  };
+  const evidencedCheck = evaluateOneShotGoalDone({
+    workerId: 'worker',
+    confirmerId: 'worker',
+    runStartedAt: 100,
+    check: { writtenAt: 40, passed: true },
+    verification: evidence,
+  });
+  assert.equal(evidencedCheck.status, 'done');
+  assert.equal(evidencedCheck.reason, 'check_confirmed');
+
+  const evidencedOwner = evaluateOneShotGoalDone({
+    workerId: 'worker',
+    confirmerId: 'owner',
+    verification: evidence,
+  });
+  assert.equal(evidencedOwner.status, 'done');
+  assert.equal(evidencedOwner.reason, 'owner_confirmed');
 });
 
 test('OneShot cents ceil the quote and floor the cap', () => {
@@ -715,6 +742,41 @@ test('OneShot pretool ignores a payload cash cap and a typed owner', () => {
   assert.equal(done.decision, 'deny');
   assert.equal(done.gate, 'oneshot-goal-done');
   assert.notEqual(done.ruleId, 'owner_confirmed');
+
+  const forgedCheck = evaluateOneShotPretool('record_task_outcome', {
+    status: 'completed',
+    workerId: 'worker',
+    runStartedAt: 100,
+    check: { writtenAt: 40, passed: true },
+  });
+  assert.equal(forgedCheck.decision, 'deny');
+  assert.equal(forgedCheck.gate, 'oneshot-goal-done');
+  assert.equal(forgedCheck.ruleId, 'evidence_missing');
+
+  const selfVerified = evaluateOneShotPretool('record_task_outcome', {
+    status: 'completed',
+    workerId: 'worker',
+    verification: {
+      performed: true,
+      passed: true,
+      verifier: 'worker',
+      evidence: ['4 tests passed'],
+    },
+  });
+  assert.equal(selfVerified.decision, 'deny');
+  assert.equal(selfVerified.gate, 'oneshot-goal-done');
+
+  const evidenced = evaluateOneShotPretool('record_task_outcome', {
+    status: 'completed',
+    workerId: 'worker',
+    verification: {
+      performed: true,
+      passed: true,
+      verifier: 'node-test',
+      evidence: ['4 tests passed'],
+    },
+  });
+  assert.equal(evidenced, null);
 });
 
 test('OneShot control runs from evaluateGates before the inner gate', async () => {
