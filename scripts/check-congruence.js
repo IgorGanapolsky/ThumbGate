@@ -357,7 +357,7 @@ async function main() {
   );
   check(
     /\$(?:499|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__)/.test(landingHtml)
-      && /Managed AI Agent Workflow Gate/i.test(landingHtml),
+      && /Setup Sprint/i.test(landingHtml),
     'public/index.html must expose the $499 managed gate offer'
   );
   check(

@@ -23,7 +23,7 @@
     },
     {
       "route": "/diagnostic",
-      "sentinel": "Enterprise Workflow Gate",
+      "sentinel": "Exactly what the $499 Setup Sprint includes",
       "description": "Managed gate checkout and fit-check page for high-intent warm traffic"
     },
     {

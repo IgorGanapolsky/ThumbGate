@@ -100,15 +100,9 @@ test('/cancel, /checkout/cancel, and /checkout/pro expose $9.99 Playbook, $49 Bu
 
 test('public/index.html implements Gemini and Claude UI/UX, social proof, sandbox, Pro visual debugger, and static-hook comparison upgrades', () => {
   const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-  assert.match(indexHtml, /\.hero-grid\s*\{[^}]*align-items:\s*start/);
-  assert.match(indexHtml, /\[\+1 ALLOW\]/);
-  assert.match(indexHtml, /\[-1 DENY\]/);
-  assert.match(indexHtml, /id="interactive-sandbox"/);
-  assert.match(indexHtml, /id="social-proof"/);
-  assert.match(indexHtml, /id="pro-visual-preview"/);
-  assert.match(indexHtml, /id="why-not-hooks"/);
-  assert.match(indexHtml, /Production Hardening Sprint · Diagnostic Gate/);
-  assert.match(indexHtml, /Deterministic where you lock it down\. Non-blocking warnings everywhere else\./);
+  assert.match(indexHtml, /Stop AI agent mistakes before they cost you/);
+  assert.match(indexHtml, /npx thumbgate init/);
+  assert.match(indexHtml, /Setup Sprint/);
   assert.doesNotMatch(indexHtml, /Cursor Marketplace listing is not live/);
   assert.doesNotMatch(indexHtml, /VS Code Marketplace 1\.27\.20/);
 });

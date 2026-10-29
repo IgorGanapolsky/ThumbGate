@@ -263,7 +263,6 @@ const {
 } = require('../../scripts/feedback-aggregate');
 const {
   guardDfcxWebhook,
-  resolveDialogflowModel,
 } = require('../../adapters/gcp/dfcx-webhook-gate');
 const {
   buildDashboardRenderSpec,
@@ -2275,25 +2274,12 @@ function buildEnterpriseDataChatStatus(env = process.env) {
     },
     dfcx: {
       apiSurface: 'Dialogflow CX REST API: projects.locations.agents',
-      consoleArchitecture: 'Google Conversational Agents Console (Flows + Playbooks)',
       liveAgentConfigured: Boolean(dfcxAgentId && dfcxLocation),
       agentId: dfcxAgentId,
       location: dfcxLocation,
       fulfillmentProxyConfigured: Boolean(dfcxFulfillmentUrl),
       fulfillmentUrlConfigured: Boolean(dfcxFulfillmentUrl),
       gcloudCxCommandSupported: false,
-      models: {
-        playbookDefault: resolveDialogflowModel({ task: 'playbook' }, env),
-        voiceAndRewriterDefault: resolveDialogflowModel({ task: 'rewriter' }, env),
-      },
-      governance: {
-        wrapperPageIsolation: true,
-        authorizationRuleEnforced: true,
-        bannedPhraseFullMatchDefault: true,
-        intentDensityTarget: '20-50',
-        sessionsClientRecycling: true,
-        webhookRetryBackoff503: true,
-      },
       verification: dfcxAgentId && dfcxLocation
         ? 'Agent metadata is present in env; verify via REST/console before production claims.'
         : 'No live DFCX agent env configured. Use REST/console/deployed webhook evidence before claiming a live agent.',
