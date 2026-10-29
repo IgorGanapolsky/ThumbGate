@@ -12,8 +12,8 @@ test.describe('/ dual-offer conversion path', () => {
     await expect(page.locator('.hero h1')).toHaveText('Stop AI agent mistakes before they cost you.');
     await expect(page.locator('[data-primary-checkout]')).toBeVisible();
     await expect(page.locator('[data-primary-checkout] .price')).toContainText('$499');
-    await expect(page.locator('[data-primary-checkout]')).toContainText('Diagnostic Gate');
-    await expect(page.locator('[data-primary-checkout]')).toContainText('Get Started — $499 Diagnostic');
+    await expect(page.locator('[data-primary-checkout]')).toContainText('Setup Sprint');
+    await expect(page.locator('[data-primary-checkout]')).toContainText('Book the $499 setup');
     await expect(page.getByRole('link', { name: 'Start Pro — $19/mo' }).first()).toBeVisible();
     await expect(page.locator('a[href*="/go/pro-direct"]')).not.toHaveCount(0);
     await expect(page.locator('.loop-step')).toHaveCount(4);
@@ -46,13 +46,13 @@ test.describe('/ dual-offer conversion path', () => {
     await expect(panel).toBeHidden();
   });
 
-  test('Pro nav goes to checkout; Enterprise nav returns to managed form', async ({ page }) => {
+  test('Install free is the nav button; the setup link returns to the form', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.locator('nav [data-cta-id="nav_pro_buy"]')).toHaveAttribute('href', /\/go\/pro-direct/);
-    await page.locator('nav [data-cta-id="nav_diagnostic_buy"]').click();
-    await expect(page).toHaveURL(/#enterprise-gate$/);
-    await expect(page.locator('[data-primary-checkout]')).toBeVisible();
+    await expect(page.locator('nav [data-cta-id="nav_install_free"]')).toHaveAttribute('href', '#install');
+    await page.locator('nav [data-cta-id="nav_install_free"]').click();
+    await expect(page).toHaveURL(/#install$/);
+    await expect(page.locator('#install')).toBeVisible();
 
     await page.locator('.final [data-cta-id="final_diagnostic_buy"]').click();
     await expect(page).toHaveURL(/#enterprise-gate$/);

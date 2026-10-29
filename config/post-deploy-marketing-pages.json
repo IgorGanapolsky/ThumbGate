@@ -23,7 +23,7 @@
     },
     {
       "route": "/diagnostic",
-      "sentinel": "Enterprise Workflow Gate",
+      "sentinel": "Setup Sprint",
       "description": "Managed gate checkout and fit-check page for high-intent warm traffic"
     },
     {
