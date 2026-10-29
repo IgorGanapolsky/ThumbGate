@@ -1,8 +1,12 @@
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
+
 const { evaluateConfidenceAction } = require('./spotify-confidence-diode');
 
 const GATE = 'confidence-active-flag';
+const MAX_EDIT_FILE_BYTES = 1024 * 1024;
 const EDIT_TOOLS = new Set(['edit', 'write', 'search_replace', 'multiedit', 'strreplace']);
 const WRAPPERS = new Set(['sudo', 'command', 'exec', 'nohup', 'nice', 'time', 'env']);
 const SHELLS = new Set(['bash', 'sh', 'zsh', 'dash', 'ash']);
@@ -176,9 +180,16 @@ function commandWords(part) {
   return words.slice(i);
 }
 
-function commandBin(part) {
+function isConfidenceCommand(part) {
   const words = commandWords(part);
-  return words.length ? words[0].split('/').pop() : '';
+  if (!words.length) return false;
+  const bin = words[0].split('/').pop();
+  if (BENIGN.has(bin)) return false;
+  if (bin === 'confidence') return true;
+  if (bin === 'npx' || bin === 'npm') {
+    return words.some((word) => word.includes('@spotify-confidence'));
+  }
+  return words[0].includes('@spotify-confidence');
 }
 
 function flagArgument(words, name) {
@@ -216,7 +227,7 @@ function commandBodies(command) {
       if (code) bodies.push(code);
       continue;
     }
-    if (bin === 'confidence' || /@spotify-confidence/.test(part)) bodies.push(part);
+    if (isConfidenceCommand(part)) bodies.push(part);
   }
   return bodies;
 }
@@ -228,7 +239,29 @@ function editsOf(toolInput) {
     text: String(edit.new_string ?? edit.newString ?? edit.contents ?? edit.content ?? ''),
     oldText: String(edit.old_string ?? edit.oldString ?? ''),
     filePath: String(edit.file_path ?? edit.filePath ?? edit.path ?? input.file_path ?? input.filePath ?? input.path ?? ''),
+    replaceAll: Boolean(edit.replace_all ?? edit.replaceAll ?? input.replace_all ?? input.replaceAll),
   })).filter((edit) => edit.text);
+}
+
+function readOriginal(filePath) {
+  if (!filePath) return null;
+  try {
+    const resolved = path.resolve(filePath);
+    const stat = fs.statSync(resolved);
+    if (!stat.isFile() || stat.size > MAX_EDIT_FILE_BYTES) return null;
+    return fs.readFileSync(resolved, 'utf8');
+  } catch (_) {
+    return null;
+  }
+}
+
+function propose(original, oldText, newText, replaceAll) {
+  if (!original || !oldText || !original.includes(oldText)) return null;
+  const parts = original.split(oldText);
+  const count = parts.length - 1;
+  if (count > 1 && !replaceAll) return null;
+  if (replaceAll) return parts.join(newText);
+  return original.replace(oldText, newText);
 }
 
 function failOpen(text, filePath) {
@@ -332,11 +365,7 @@ function managedCanon(text) {
 }
 
 function explicitRolloutPercent(command) {
-  if (!/\bconfidence\b/.test(command) && !/@spotify-confidence\b/.test(command)) return null;
-  const parts = splitTopLevel(command).filter((part) => {
-    const bin = commandBin(part);
-    return bin === 'confidence' || /@spotify-confidence/.test(part);
-  });
+  const parts = splitTopLevel(command).filter(isConfidenceCommand);
   for (const part of parts) {
     const match = part.match(/(?:--percent(?:=|\s+)|--rollout(?:=|\s+)|set\s+)(\d{1,3})\b/);
     if (match) return Number(match[1]);
@@ -398,7 +427,12 @@ function evaluateConfidenceActiveFlag(view = {}) {
     for (const text of commandBodies(command)) bodies.push({ text, oldText: '', filePath: '' });
   }
   for (const body of bodies) {
-    const result = judge(body);
+    const original = readOriginal(body.filePath);
+    const proposed = propose(original, body.oldText, body.text, body.replaceAll);
+    const judged = proposed == null
+      ? body
+      : { text: proposed, oldText: original, filePath: body.filePath };
+    const result = judge(judged);
     if (result) return result;
   }
   return null;

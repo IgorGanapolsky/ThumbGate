@@ -502,6 +502,7 @@
     "scripts/strands-harness-doctor.js",
     ".agents/skills/aws-strands-harness-not-clone/",
     "skills/aws-strands-harness-not-clone/",
+    "scripts/spotify-confidence-diode.js",
     "scripts/confidence-active-flag.js",
     "scripts/tailscale-october-access.js",
     "scripts/tailscale-p2p-doctor.js",

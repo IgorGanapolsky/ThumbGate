@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
@@ -137,6 +140,30 @@ test('sudo and a shell -c still count, and a rollout above 10% uses the existing
   assert.equal(reason(bash('confidence rollout set --percent 50')), 'rollout_ceiling');
   assert.equal(reason(bash('confidence rollout set --percent 10')), null);
   assert.equal(reason(bash("rg 'confidence rollout set --percent 50' docs")), null);
+  assert.equal(reason(bash('npx @spotify-confidence/cli rollout set --percent 50')), 'rollout_ceiling');
+  assert.equal(reason(bash('npx @spotify-confidence/cli rollout set --percent 10')), null);
+  assert.equal(
+    reason(bash("rg 'npx @spotify-confidence/cli rollout set --percent 50' docs")),
+    null,
+  );
+});
+
+test('a partial edit is judged on the file after the replacement', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-confidence-'));
+  const flagFile = path.join(dir, 'navbar.json');
+  const clientFile = path.join(dir, 'checkout.js');
+  fs.writeFileSync(flagFile, `${JSON.stringify({
+    rules: [{ managedBy: 'ROLLOUT', assignmentSpec: { percent: 10, variant: 'enabled' }, description: 'canary' }],
+  })}\n`);
+  fs.writeFileSync(clientFile, 'confidence.getBooleanFlag("new-navbar", false);\n');
+  try {
+    assert.equal(reason(edit(flagFile, '"percent":10', '"percent":50')), 'managed_rule_rewrite');
+    assert.equal(reason(edit(flagFile, 'canary', 'note')), null);
+    assert.equal(reason(edit(clientFile, 'false', 'true')), 'fail_open_default');
+    assert.equal(reason(edit(clientFile, 'new-navbar', 'new-checkout')), null);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('runHardFloor denies the enabled client fallback', () => {

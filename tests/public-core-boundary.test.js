@@ -328,7 +328,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 638 -> 639 (2026-10-28): scripts/qwenwork-policy-group.js + qwenwork-policy-group-honesty-not-clone skill.
   // 639 -> 640 (2026-10-29): scripts/tailscale-october-access.js, a public pre-tool gate.
   // 640 -> 641 (2026-10-29): scripts/confidence-active-flag.js, a public pre-tool gate.
-  const CEILING = 641;
+  // 641 -> 642 (2026-10-29): scripts/spotify-confidence-diode.js, required by that gate. Measured pack 642.
+  const CEILING = 642;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
