@@ -326,8 +326,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 633 -> 633 (2026-10-16): public/operator-framework.html marketing page (+1, public/ package parity).
   // 633 -> 638 (2026-10-16): OpenRouter Armor + Profound AEO + v1.39.0 CLI scripts.
   // 638 -> 639 (2026-10-28): scripts/qwenwork-policy-group.js + qwenwork-policy-group-honesty-not-clone skill.
-  // 639 -> 640 (2026-10-29): scripts/mabl-failure-honesty.js, a public pre-tool gate.
-  const CEILING = 640;
+  // 639 -> 640 (2026-10-29): scripts/tailscale-october-access.js, a public pre-tool gate.
+  // 640 -> 641 (2026-10-29): scripts/mabl-failure-honesty.js, a public pre-tool gate.
+  const CEILING = 641;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

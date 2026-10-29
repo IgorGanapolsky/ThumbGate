@@ -52,7 +52,7 @@ function visibleFaqAnswers(html) {
   ]));
 }
 
-test('homepage exposes both Pro $19/mo and Enterprise $499 offers', () => {
+test('homepage exposes Pro $19/mo and the $499 Setup Sprint', () => {
   const visibleText = visibleBodyText(landingPage);
   const prices = [...visibleText.matchAll(/\$\d[\d,]*/g)].map((match) => match[0]);
   const uniquePrices = [...new Set(prices)];
@@ -66,9 +66,9 @@ test('homepage exposes both Pro $19/mo and Enterprise $499 offers', () => {
   assert.match(landingPage, /name="plan_id" value="sprint_diagnostic"/);
   assert.match(landingPage, /\/go\/pro-direct/);
   assert.match(landingPage, /Start Pro — \$19\/mo/);
-  assert.match(landingPage, /Get Started — \$499 Diagnostic/);
-  assert.match(landingPage, /Pro · \$19\/mo/);
-  assert.match(landingPage, /Get Started · \$499/);
+  assert.match(landingPage, /Book the \$499 setup/);
+  assert.match(landingPage, /data-cta-id="nav_install_free"[^>]*>Install free</);
+  assert.match(landingPage, /See the \$499 setup/);
 });
 
 test('visible text filtering consumes the complete script and style end tags', () => {
@@ -86,13 +86,14 @@ test('homepage keeps conversion noise off while offering both paid paths', () =>
 test('homepage names the installers that ship', () => {
   const installPage = fs.readFileSync(path.join(__dirname, '..', 'public', 'install.html'), 'utf8');
   assert.match(landingPage, /aria-label="Install ThumbGate"/);
-  assert.match(landingPage, /title="npx -y thumbgate@1\.39\.0 init --agent claude">Claude</);
+  assert.match(landingPage, /title="npx thumbgate init --agent claude">Claude</);
   assert.match(landingPage, /href="\/install" title="[^"]*init --agent cursor[^"]*">Cursor</);
   assert.match(landingPage, /marketplace\.visualstudio\.com\/items\?itemName=igorganapolsky\.thumbgate/);
-  assert.match(landingPage, /title="npx -y thumbgate@1\.39\.0 init --agent codex">Codex</);
+  assert.match(landingPage, /title="npx thumbgate init --agent codex">Codex</);
   assert.match(landingPage, /href="\/install#grok" title="grok mcp add thumbgate -- npx -y thumbgate mcp">Grok</);
   assert.match(landingPage, /href="\/install#hermes" title="[^"]*hermes-gate">Hermes</);
-  assert.match(landingPage, /Cursor Marketplace listing is not live/);
+  assert.doesNotMatch(landingPage, /Cursor Marketplace listing is not live/);
+  assert.doesNotMatch(landingPage, /thumbgate@1\.39\.0 init/);
   assert.doesNotMatch(landingPage, /Muse/);
   assert.match(installPage, /init --agent claude/);
   assert.match(installPage, /The public Cursor Marketplace listing is not live/);
@@ -118,7 +119,7 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   }
 });
 
-test('hero names both paid paths and the self-improving product outcome', () => {
+test('hero shows the blocked mistake and one free install, with price below it', () => {
   const hero = landingPage.slice(
     landingPage.indexOf('<!-- HERO -->'),
     landingPage.indexOf('</section>', landingPage.indexOf('<!-- HERO -->'))
@@ -129,17 +130,16 @@ test('hero names both paid paths and the self-improving product outcome', () => 
   assert.match(landingPage, /ThumbGate — Stop AI agent mistakes before they cost you/i);
   assert.match(hero, /<h1>Stop AI agent mistakes before they cost you\.<\/h1>/i);
   assert.match(hero, /Not a prompt · Not a postmortem/i);
+  assert.match(hero, /learn from your thumbs/i);
   assert.match(hero, /tool-call boundary/i);
-  assert.match(hero, /Pro at \$19\/mo/);
-  assert.match(hero, /\$499 Diagnostic/);
-  assert.match(hero, /Diagnostic Gate/);
-  assert.match(hero, /Rank[\s\S]*lessons/i);
-  assert.match(hero, /Promote[\s\S]*gates/i);
   assert.match(hero, /npx thumbgate init/);
-  assert.match(hero, /thumbgate-dashboard/);
-  assert.match(hero, /\/thumbgate-dashboard/);
-  assert.match(hero, /npx thumbgate dashboard --open/);
-  assert.match(hero, /id="thumbgate-dashboard-command"/);
+  assert.doesNotMatch(hero, /id="offers"|Start Pro|Setup Sprint/);
+  assert.match(landingPage, /id="thumbgate-dashboard-command"/);
+  assert.match(landingPage, /thumbgate-dashboard/);
+  assert.match(landingPage, /\/thumbgate-dashboard/);
+  assert.match(landingPage, /npx thumbgate dashboard --open/);
+  assert.match(landingPage, /Static hook[\s\S]*Sandbox[\s\S]*ThumbGate/);
+  assert.match(landingPage, /Learns from thumbs/);
   assert.ok(lede.split(/\s+/).length <= 40, `hero lede is ${lede.split(/\s+/).length} words`);
 });
 
@@ -177,8 +177,8 @@ test('homepage explains the product with one four-stage self-improving loop', ()
 });
 
 test('paid wedge includes managed implementation, regression, and rollout proof', () => {
-  assert.match(landingPage, /Get Started · \$499/);
-  assert.match(landingPage, /Get Started — \$499 Diagnostic/);
+  assert.match(landingPage, /Setup Sprint/);
+  assert.match(landingPage, /Book the \$499 setup/);
   assert.match(landingPage, /One configured local gate \+ regression test|One configured local gate and its regression test/);
   assert.match(landingPage, /Rollout and rollback proof within two business days/);
   assert.match(landingPage, /If the workflow cannot be reduced to one supported gate, the order is refunded/);
@@ -233,8 +233,21 @@ test('homepage preserves brand, version, repository, and deployment placeholders
 });
 
 test('homepage features thumbs branding and self-improving diagrams above the fold story', () => {
+  const heroSvg = fs.readFileSync(path.join(__dirname, '..', 'public/assets/diagrams/hero-thumbs.svg'), 'utf8');
   assert.match(landingPage, /class="hero-thumbs"/);
-  assert.match(landingPage, /class="hero-thumbs"[\s\S]{0,120}👍[\s\S]{0,80}👎/);
+  assert.match(landingPage, /id="thumb-glyph"/);
+  assert.match(landingPage, /class="hero-thumb-up"/);
+  assert.match(landingPage, /id="hero-thumb-down"/);
+  assert.match(landingPage, /Already denied on every install/);
+  assert.match(landingPage, /This stays a warning\. Deny needs strict mode/);
+  assert.match(landingPage, /3 negatives, then strict mode/);
+  assert.match(landingPage, /data-cta-placement="offers"/);
+  assert.match(landingPage, /name="cta_placement" value="offers"/);
+  assert.match(landingPage, /scroll-margin-top: 92px/);
+  assert.doesNotMatch(landingPage, /0\.4ms/);
+  assert.match(heroSvg, /\+1 ALLOW/);
+  assert.match(heroSvg, /-1 DENY/);
+  assert.doesNotMatch(heroSvg, /👍|👎/);
   assert.match(landingPage, /\/assets\/diagrams\/hero-thumbs\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/before-after\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/loop\.svg/);
@@ -248,4 +261,5 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   const heroBlock = landingPage.slice(heroStart, howStart);
   assert.ok(heroBlock.includes('hero-thumbs.svg'), 'hero diagram must appear before how-it-works');
   assert.ok(heroBlock.includes('class="hero-thumbs"'), 'big thumbs must appear in hero');
+  assert.doesNotMatch(heroBlock, /👍|👎/, 'hero art uses vector thumbs, not stock emoji');
 });
