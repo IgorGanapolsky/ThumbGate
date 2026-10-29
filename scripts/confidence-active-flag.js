@@ -264,14 +264,19 @@ function propose(original, oldText, newText, replaceAll) {
   return original.replace(oldText, newText);
 }
 
-function failOpen(text, filePath) {
-  if (/getBooleanFlag\s*\(\s*(['"])[^'"]+\1\s*,\s*true\s*\)/.test(text)) return true;
-  if (/resolveFlag\s*\(\s*(['"])[^'"]+\1\s*,\s*true\s*\)/.test(text)) return true;
-  if (/resolveFlag\s*\(\s*(['"])[^'"]+\1\s*,\s*(['"])enabled\2\s*\)/.test(text)) return true;
+function patternCount(text, expression) {
+  return (String(text || '').match(expression) || []).length;
+}
+
+function failOpenCount(text, filePath) {
+  let count = patternCount(text, /getBooleanFlag\s*\(\s*(['"])[^'"]+\1\s*,\s*true\s*\)/g);
+  count += patternCount(text, /resolveFlag\s*\(\s*(['"])[^'"]+\1\s*,\s*true\s*\)/g);
+  count += patternCount(text, /resolveFlag\s*\(\s*(['"])[^'"]+\1\s*,\s*(['"])enabled\2\s*\)/g);
   const confidenceContext = /"state"\s*:\s*"ACTIVE"/.test(text)
     || /confidence/i.test(filePath)
     || /[/\\]flags[/\\]/i.test(filePath);
-  return confidenceContext && /"defaultValue"\s*:\s*true\b/.test(text);
+  if (confidenceContext) count += patternCount(text, /"defaultValue"\s*:\s*true\b/g);
+  return count;
 }
 
 function isBadKey(key) {
@@ -280,14 +285,15 @@ function isBadKey(key) {
   return /^[A-Z][A-Z0-9]+-\d+$/.test(bare);
 }
 
-function badFlagKey(text) {
-  const created = text.match(/\bflags?\s+create\s+([A-Za-z0-9_.:/-]+)/);
-  if (created && isBadKey(created[1])) return created[1];
-  const keyed = text.matchAll(/"(?:flagKey|flag_key)"\s*:\s*"([^"]+)"/g);
-  for (const match of keyed) {
-    if (isBadKey(match[1])) return match[1];
+function badFlagKeys(text) {
+  const keys = [];
+  for (const match of String(text || '').matchAll(/\bflags?\s+create\s+([A-Za-z0-9_.:/-]+)/g)) {
+    if (isBadKey(match[1])) keys.push(match[1]);
   }
-  return '';
+  for (const match of String(text || '').matchAll(/"(?:flagKey|flag_key)"\s*:\s*"([^"]+)"/g)) {
+    if (isBadKey(match[1])) keys.push(match[1]);
+  }
+  return keys;
 }
 
 function rulePercent(rule) {
@@ -365,33 +371,36 @@ function managedCanon(text) {
 }
 
 function explicitRolloutPercent(command) {
-  const parts = splitTopLevel(command).filter(isConfidenceCommand);
-  for (const part of parts) {
+  let highest = null;
+  for (const part of splitTopLevel(command).filter(isConfidenceCommand)) {
     const match = part.match(/(?:--percent(?:=|\s+)|--rollout(?:=|\s+)|set\s+)(\d{1,3})\b/);
-    if (match) return Number(match[1]);
+    if (!match) continue;
+    const value = Number(match[1]);
+    if (highest === null || value > highest) highest = value;
   }
-  return null;
+  return highest;
 }
 
 function judge(body) {
   const text = stripComments(String(body.text || ''));
   const oldText = stripComments(String(body.oldText || ''));
   const filePath = String(body.filePath || '');
-  if (failOpen(text, filePath)) {
+  if (failOpenCount(text, filePath) > failOpenCount(oldText, filePath)) {
     return deny(
       'fail_open_default',
       'Denied a client fallback of enabled. When no rule matches, the client uses its compiled default, so the feature would be on.'
     );
   }
-  const key = badFlagKey(text);
-  if (key) {
+  const keys = badFlagKeys(text);
+  if (keys.length > badFlagKeys(oldText).length) {
     return deny(
       'config_in_flag_key',
-      `Denied flag key '${key}'. The key is permanent in code. Use a behavior name such as new-navbar.`
+      `Denied flag key '${keys[0]}'. The key is permanent in code. Use a behavior name such as new-navbar.`
     );
   }
   const rules = extractRules(text);
-  if (rules && catchAllBeforeSubset(rules)) {
+  const previousRules = extractRules(oldText);
+  if (rules && catchAllBeforeSubset(rules) && !(previousRules && catchAllBeforeSubset(previousRules))) {
     return deny(
       'catch_all_before_subset',
       'Denied a rule that matches every user above a narrower rule. The first match wins, so the later rule never runs.'
@@ -415,8 +424,9 @@ function evaluateConfidenceActiveFlag(view = {}) {
   const bodies = [];
   if (EDIT_TOOLS.has(tool)) bodies.push(...editsOf(toolInput));
   if (command) {
-    const rollout = explicitRolloutPercent(command);
-    if (rollout !== null) {
+    for (const source of [command, ...commandBodies(command)]) {
+      const rollout = explicitRolloutPercent(source);
+      if (rollout === null) continue;
       const diode = evaluateConfidenceAction({
         tool: 'set_rollout',
         flag: 'flag',
@@ -429,9 +439,9 @@ function evaluateConfidenceActiveFlag(view = {}) {
   for (const body of bodies) {
     const original = readOriginal(body.filePath);
     const proposed = propose(original, body.oldText, body.text, body.replaceAll);
-    const judged = proposed == null
-      ? body
-      : { text: proposed, oldText: original, filePath: body.filePath };
+    let judged = body;
+    if (proposed != null) judged = { text: proposed, oldText: original, filePath: body.filePath };
+    else if (!body.oldText && original) judged = { ...body, oldText: original };
     const result = judge(judged);
     if (result) return result;
   }

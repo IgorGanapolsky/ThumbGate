@@ -166,6 +166,61 @@ test('a partial edit is judged on the file after the replacement', () => {
   }
 });
 
+test('the highest rollout in a chain or a shell -c still hits the ceiling', () => {
+  assert.equal(
+    reason(bash('confidence rollout set --percent 5 && confidence rollout set --percent 50')),
+    'rollout_ceiling',
+  );
+  assert.equal(
+    reason(bash("bash -c 'confidence rollout set --percent 50'")),
+    'rollout_ceiling',
+  );
+  assert.equal(
+    reason(bash('confidence rollout set --percent 5 && confidence rollout set --percent 10')),
+    null,
+  );
+});
+
+test('a full-file write that keeps the rollout assignment is allowed', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-confidence-write-'));
+  const flagFile = path.join(dir, 'navbar.json');
+  const kept = `${JSON.stringify({
+    rules: [{ managedBy: 'ROLLOUT', assignmentSpec: { percent: 10, variant: 'enabled' }, description: 'canary' }],
+  })}\n`;
+  const changed = kept.replace('"percent":10', '"percent":40');
+  fs.writeFileSync(flagFile, kept);
+  try {
+    assert.equal(reason({
+      toolName: 'Write',
+      toolInput: { file_path: flagFile, contents: kept },
+      command: '',
+    }), null);
+    assert.equal(reason({
+      toolName: 'Write',
+      toolInput: { file_path: flagFile, contents: changed },
+      command: '',
+    }), 'managed_rule_rewrite');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('an edit of this test file does not deny a fixture that is already there', () => {
+  const file = __filename;
+  assert.equal(
+    reason(edit(file, 'search text, echo, and comments are not flag writes', 'search text, echo, and comments are not flag writes')),
+    null,
+  );
+  assert.equal(
+    reason(edit(
+      file,
+      'search text, echo, and comments are not flag writes',
+      'search text, echo, and comments are not flag writes\nconfidence.getBooleanFlag("new-navbar", true);',
+    )),
+    'fail_open_default',
+  );
+});
+
 test('runHardFloor denies the enabled client fallback', () => {
   const body = JSON.parse(gates.runHardFloor({
     tool_name: 'Edit',
