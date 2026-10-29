@@ -1093,7 +1093,7 @@
     "test:workflow-gate-checkpoint": "node --test tests/workflow-gate-checkpoint.test.js tests/autonomous-workflow.test.js",
     "workflow:autonomous": "node scripts/autonomous-workflow.js",
     "test:lesson-export-import": "node --test tests/lesson-export-import.test.js",
-    "test:landing-page-claims": "node --test tests/landing-page-claims.test.js",
+    "test:landing-page-claims": "node --test tests/landing-page-claims.test.js tests/checkout-downsells-and-email-steal.test.js",
     "test:competitive-positioning-marketing": "node --test tests/competitive-positioning-marketing.test.js tests/knowledge-graph-guardrails.test.js tests/supply-chain-guardrails.test.js tests/saas-moat-honesty.test.js",
     "test:medium-weekly": "node --test tests/medium-weekly.test.js",
     "test:dashboard-deeplink-e2e": "node --test tests/dashboard-deeplink-e2e.test.js",
