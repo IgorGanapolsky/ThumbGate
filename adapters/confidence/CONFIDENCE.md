@@ -73,6 +73,17 @@ flowchart TD
 
 ---
 
+## ACTIVE flag list
+
+The flags list filtered to `state=ACTIVE` is the live inventory. `confidence-active-flag` runs on the pre-tool hard floor and denies a write the rollout diode does not see:
+
+- a client fallback of `true` or `enabled` (no matching rule uses that compiled default)
+- a rule that matches every user placed above a narrower rule (first match wins)
+- a hand edit of a rollout or A/B `assignmentSpec`
+- a flag key ending in `-enabled` or `-disabled`, or a ticket id such as `JIRA-440`
+
+A `confidence` rollout percent above 10 still uses `evaluateConfidenceAction`.
+
 ## Quickstart
 
 ```bash

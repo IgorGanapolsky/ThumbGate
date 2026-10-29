@@ -200,6 +200,7 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'swarm-claim-exit-3-write-after-loss',
   'teams-single-reply-per-message',
   'az-repos-pr-publish-requires-cross-review',
+  'confidence-active-flag',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -227,6 +228,7 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'swarm-claim-exit-3-write-after-loss',
   'teams-single-reply-per-message',
   'az-repos-pr-publish-requires-cross-review',
+  'confidence-active-flag',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
@@ -4633,8 +4635,14 @@ function evaluateUnconditionalHardFloor(input = {}, options = {}) {
   const selfProtect = evaluateSelfProtectHardFloor(input);
   if (selfProtect) return { hardFloor: selfProtect, securityScan };
 
+  const repeated = evaluateRepeatedMistakeGates(input);
+  if (repeated) return { hardFloor: repeated, securityScan };
+
+  const view = repeatedMistakeView(input);
+  const { evaluateConfidenceActiveFlag } = require('./confidence-active-flag');
+  const activeFlag = evaluateConfidenceActiveFlag(view);
   return {
-    hardFloor: evaluateRepeatedMistakeGates(input),
+    hardFloor: activeFlag ? denyRepeatedMistake(view, activeFlag) : null,
     securityScan,
   };
 }
