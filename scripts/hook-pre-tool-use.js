@@ -574,6 +574,16 @@ function main() {
     }
   }
 
+  try {
+    const { evaluateA2uiFastUiPretool } = require('./a2ui-fast-ui-gate');
+    const a2ui = evaluateA2uiFastUiPretool({ toolName, toolInput: effectiveInput });
+    if (a2ui && a2ui.ok === false) {
+      return block(`a2ui-fast-ui: ${(a2ui.blockers || []).join('; ')}`);
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const actionContext = extractActionContext(toolName, effectiveInput);
   const lessons = retrieveLessons(toolName, actionContext);
 
