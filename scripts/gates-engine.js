@@ -187,6 +187,7 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'security-vuln-scan',
   'slopsquat-guard',
   'tailscale-october-access',
+  'gitlab-sdlc-prompts',
   // Money path: even if a refactor later routes financial denials through
   // applyEnforcementPosture, never demote spend blocks to warn-by-default.
   // Apollo $588 incident class (2026-08).
@@ -221,6 +222,7 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'git-clean-force',
   'rm-rf-home-or-root',
   'tailscale-october-access',
+  'gitlab-sdlc-prompts',
   'financial-control',
   'oneshot-control',
   'oneshot-goal-done',
@@ -4641,8 +4643,12 @@ function evaluateUnconditionalHardFloor(input = {}, options = {}) {
   const view = repeatedMistakeView(input);
   const { evaluateTailscaleOctoberAccess } = require('./tailscale-october-access');
   const october = evaluateTailscaleOctoberAccess(view);
+  if (october) return { hardFloor: denyRepeatedMistake(view, october), securityScan };
+
+  const { evaluateGitLabSdlcPrompts } = require('./gitlab-sdlc-prompts');
+  const sdlc = evaluateGitLabSdlcPrompts(view);
   return {
-    hardFloor: october ? denyRepeatedMistake(view, october) : null,
+    hardFloor: sdlc ? denyRepeatedMistake(view, sdlc) : null,
     securityScan,
   };
 }
