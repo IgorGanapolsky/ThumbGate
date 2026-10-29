@@ -360,7 +360,7 @@ function managedCanon(text) {
   return list
     .filter((rule) => rule && MANAGED.test(String(rule.managedBy || rule.managed_by || '')))
     .map((rule) => JSON.stringify(rule.assignmentSpec ?? null))
-    .sort()
+    .sort((left, right) => left.localeCompare(right))
     .join('|');
 }
 
