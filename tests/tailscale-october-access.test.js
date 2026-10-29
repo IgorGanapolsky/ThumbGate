@@ -78,6 +78,53 @@ test('a shell comment does not carry a funnel or a password', () => {
   );
 });
 
+test('a quoted hash does not hide a later funnel or password', () => {
+  const funnel = "printf '%s\\n' '#'; tailscale funnel 443";
+  assert.equal(evaluateTailscaleOctoberAccess(bash(funnel)).failureReason, 'public_agent_node');
+  assert.equal(
+    evaluateTailscaleOctoberAccess(bash('echo "keep # this"; tailscale funnel 443')).failureReason,
+    'public_agent_node',
+  );
+  assert.equal(
+    evaluateTailscaleOctoberAccess(bash("printf '%s\\n' '#'; PGPASSWORD=pg-local-pass psql -c \"SELECT 1\"")).failureReason,
+    'shared_db_password',
+  );
+  const body = JSON.parse(gates.runHardFloor({ tool_name: 'Bash', tool_input: { command: funnel } }));
+  assert.equal(body.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(body.hookSpecificOutput.permissionDecisionReason, /\[GATE:tailscale-october-access\]/);
+});
+
+test('search text is not a tailscale invocation', () => {
+  assert.equal(evaluateTailscaleOctoberAccess(bash("rg 'tailscale funnel' scripts tests")), null);
+  assert.equal(evaluateTailscaleOctoberAccess(bash('rg "tailscale ssh" scripts')), null);
+  assert.equal(evaluateTailscaleOctoberAccess(bash("rg 'tailscale up --ssh' scripts")), null);
+  assert.equal(evaluateTailscaleOctoberAccess(bash("rg '$(tailscale funnel)' scripts")), null);
+  assert.equal(evaluateTailscaleOctoberAccess(bash("echo '$(tailscale funnel 443)'")), null);
+  assert.equal(
+    evaluateTailscaleOctoberAccess(bash('echo "$(tailscale funnel 443)"')).failureReason,
+    'public_agent_node',
+  );
+});
+
+test('a wrapper, a nested shell, and a substitution still count as the executable', () => {
+  assert.equal(
+    evaluateTailscaleOctoberAccess(bash('sudo -u root tailscale funnel 443')).failureReason,
+    'public_agent_node',
+  );
+  assert.equal(
+    evaluateTailscaleOctoberAccess(bash("bash -lc 'tailscale funnel 443'")).failureReason,
+    'public_agent_node',
+  );
+  assert.equal(
+    evaluateTailscaleOctoberAccess(bash('echo $(tailscale funnel 443)')).failureReason,
+    'public_agent_node',
+  );
+  assert.equal(
+    evaluateTailscaleOctoberAccess(bash("eval 'tailscale ssh root@db'")).failureReason,
+    'tailscale_ssh',
+  );
+});
+
 test('an accept grant without a name and expiry is denied', () => {
   const result = evaluateTailscaleOctoberAccess({
     toolName: 'Edit',
