@@ -201,6 +201,7 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'swarm-claim-exit-3-write-after-loss',
   'teams-single-reply-per-message',
   'az-repos-pr-publish-requires-cross-review',
+  'mabl-failure-honesty',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -229,6 +230,7 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'swarm-claim-exit-3-write-after-loss',
   'teams-single-reply-per-message',
   'az-repos-pr-publish-requires-cross-review',
+  'mabl-failure-honesty',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
@@ -4613,11 +4615,19 @@ function evaluateAzReposPrPublishGate(view) {
   );
 }
 
+function evaluateMablFailureHonestyGate(view) {
+  const { evaluateMablFailureHonesty } = require('./mabl-failure-honesty');
+  const result = evaluateMablFailureHonesty(view);
+  if (!result) return null;
+  return denyRepeatedMistake(view, result);
+}
+
 function evaluateRepeatedMistakeGates(input = {}) {
   const view = repeatedMistakeView(input);
   return evaluateSwarmClaimLostWriteGate(view)
     || evaluateTeamsSingleReplyGate(view)
-    || evaluateAzReposPrPublishGate(view);
+    || evaluateAzReposPrPublishGate(view)
+    || evaluateMablFailureHonestyGate(view);
 }
 
 function evaluateUnconditionalHardFloor(input = {}, options = {}) {
