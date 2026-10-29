@@ -172,6 +172,15 @@ test('a shell comment that mentions git push does not make a test loop a retry',
   );
 });
 
+test('a push after the loop runs once, and a quoted hash does not hide a forced green', () => {
+  assert.equal(
+    evaluateMablFailureHonesty(bash('for f in tests/*.js; do node --check "$f"; done && git push origin feature')),
+    null,
+  );
+  const hidden = evaluateMablFailureHonesty(bash('printf "%s\\n" "# tests"; npm test || true'));
+  assert.equal(hidden && hidden.failureReason, 'forced_green');
+});
+
 test('the repeated-mistake hard floor denies the weakened assertion', () => {
   const input = {
     tool_name: 'Edit',

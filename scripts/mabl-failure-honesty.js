@@ -18,7 +18,6 @@ const ASSERTION_RE = /\bassert\s*(?:\(|\.)|\bexpect\s*\(|(?:^|[\n;])\s*assert\s+
 const SKIP_RE = /\b(?:it|test|describe)\.skip\b|\bxit\s*\(/g;
 const TEST_COMMAND_RE = /\b(?:npm\s+(?:run\s+)?test|node\s+--test|pytest)\b/;
 const FORCED_GREEN_RE = /\|\|\s*(?:\/bin\/true|true|exit\s+0)\b|\|\|\s*:/;
-const RETRY_WRAPPER_RE = /\bfor\s+(?:\(\(|\S+\s+in\b)|\b(?:while|until)\b|(?:^|[;&|`(])\s*retry\b/;
 const NON_RETRIABLE = [
   /\bgit\s+(?:-C\s+\S+\s+)?push\b/i,
   /\bgh\s+pr\s+merge\b/i,
@@ -113,7 +112,126 @@ function shellCommand(view) {
 }
 
 function stripShellComments(command) {
-  return String(command || '').replace(/#[^\n]*/g, ' ');
+  const text = String(command || '');
+  let out = '';
+  let quote = '';
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    if (quote) {
+      out += c;
+      if (c === '\\' && quote !== "'") {
+        out += text[i + 1] || '';
+        i += 1;
+      } else if (c === quote) quote = '';
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      quote = c;
+      out += c;
+      continue;
+    }
+    if (c === '#' && (i === 0 || /[\s;&|()]/.test(text[i - 1]))) {
+      while (i < text.length && text[i] !== '\n') i += 1;
+      continue;
+    }
+    out += c;
+  }
+  return out;
+}
+
+function isWordChar(c) {
+  return /[A-Za-z0-9_]/.test(c || '');
+}
+
+function wordAt(text, index, word) {
+  if (text.slice(index, index + word.length) !== word) return false;
+  const before = index === 0 || !isWordChar(text[index - 1]);
+  const after = index + word.length >= text.length || !isWordChar(text[index + word.length]);
+  return before && after;
+}
+
+function skipQuoted(text, index) {
+  const quote = text[index];
+  let i = index + 1;
+  while (i < text.length) {
+    if (text[i] === '\\' && quote !== "'") {
+      i += 2;
+      continue;
+    }
+    if (text[i] === quote) return i;
+    i += 1;
+  }
+  return text.length - 1;
+}
+
+function endOfDoDone(text, from) {
+  let doAt = -1;
+  for (let i = from; i < text.length; i += 1) {
+    const c = text[i];
+    if (c === '"' || c === "'" || c === '`') {
+      i = skipQuoted(text, i);
+      continue;
+    }
+    if (wordAt(text, i, 'do')) {
+      doAt = i + 2;
+      break;
+    }
+  }
+  if (doAt < 0) return -1;
+  let depth = 1;
+  for (let i = doAt; i < text.length; i += 1) {
+    const c = text[i];
+    if (c === '"' || c === "'" || c === '`') {
+      i = skipQuoted(text, i);
+      continue;
+    }
+    if (wordAt(text, i, 'do')) {
+      depth += 1;
+      i += 1;
+      continue;
+    }
+    if (wordAt(text, i, 'done')) {
+      depth -= 1;
+      if (depth === 0) return i + 4;
+      i += 3;
+    }
+  }
+  return text.length;
+}
+
+function endOfSimple(text, from) {
+  let i = from;
+  while (i < text.length) {
+    const c = text[i];
+    if (c === '"' || c === "'" || c === '`') {
+      i = skipQuoted(text, i) + 1;
+      continue;
+    }
+    const two = text.slice(i, i + 2);
+    if (two === '&&' || two === '||' || c === ';' || c === '|' || c === '\n') break;
+    i += 1;
+  }
+  return i;
+}
+
+function loopRegions(command) {
+  const regions = [];
+  for (let i = 0; i < command.length; i += 1) {
+    const c = command[i];
+    if (c === '"' || c === "'" || c === '`') {
+      i = skipQuoted(command, i);
+      continue;
+    }
+    if (wordAt(command, i, 'for') || wordAt(command, i, 'while') || wordAt(command, i, 'until')) {
+      const end = endOfDoDone(command, i);
+      if (end > i) regions.push(command.slice(i, end));
+      continue;
+    }
+    if (wordAt(command, i, 'retry')) {
+      regions.push(command.slice(i, endOfSimple(command, i + 5)));
+    }
+  }
+  return regions;
 }
 
 function shellDeny(command) {
@@ -124,14 +242,16 @@ function shellDeny(command) {
       'Denied test command: `|| true`, `|| :`, or `|| exit 0` forces the suite green. A pass after ignoring the failure is not a product pass.',
     );
   }
-  if (!RETRY_WRAPPER_RE.test(body)) return null;
-  const hit = NON_RETRIABLE.find((pattern) => pattern.test(body));
-  if (!hit) return null;
-  const shown = body.match(hit);
-  return deny(
-    'retry_changes_meaning',
-    `Denied retry of \`${shown ? shown[0] : 'that command'}\`: repeating publish, login, checkout, reset, or clean changes the meaning of the step. Run it once.`,
-  );
+  for (const region of loopRegions(body)) {
+    const hit = NON_RETRIABLE.find((pattern) => pattern.test(region));
+    if (!hit) continue;
+    const shown = region.match(hit);
+    return deny(
+      'retry_changes_meaning',
+      `Denied retry of \`${shown ? shown[0] : 'that command'}\`: repeating publish, login, checkout, reset, or clean changes the meaning of the step. Run it once.`,
+    );
+  }
+  return null;
 }
 
 function evaluateMablFailureHonesty(view = {}) {
