@@ -574,6 +574,16 @@ function main() {
     }
   }
 
+  try {
+    const { evaluateEmailStrategyPretool } = require('./email-strategy-pretool');
+    const strategy = evaluateEmailStrategyPretool({ toolName, toolInput: effectiveInput });
+    if (strategy && strategy.ok === false) {
+      return block(`email-strategy: ${(strategy.blockers || []).join('; ')}`);
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const actionContext = extractActionContext(toolName, effectiveInput);
   const lessons = retrieveLessons(toolName, actionContext);
 
