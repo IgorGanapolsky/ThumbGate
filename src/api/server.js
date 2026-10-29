@@ -361,6 +361,14 @@ const {
   evaluateGoogleA2uiSwappableInferenceSteal,
   evaluateXArticleMonetizationAndPromotionSteal,
   evaluateHermesJarvisObsidianMemorySteal,
+  applyScurgeryNamedPolicyBlock,
+  removeScurgeryNamedPolicyBlock,
+  evaluateTailscaleOct2026NewsletterSteal,
+  validateConfidenceFlagHygiene,
+  createOrUpdateConfidenceFlag,
+  resolveAndApplyConfidenceFlag,
+  listConfidenceFlags,
+  evaluateSpotifyConfidenceFlagsAndShadowSteal,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -9727,20 +9735,26 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
     if (req.method === 'POST' && pathname === '/v1/cloud/portal/demo-intercept') {
       const body = await parseJsonBody(req);
-      const tenantKey = body.apiKey || body.email || 'tg_indie_portal_demo';
+      const tenantKey = String(body.apiKey || body.email || extractBearerToken(req) || '').trim();
+      if (!tenantKey) {
+        sendJson(res, 401, { ok: false, error: 'authenticated_api_key_or_email_required' });
+        return;
+      }
       const interceptResult = await interceptAgentRequest({
         tenantKey,
-        tierId: 'cloud_indie',
-        sessionId: 'portal_demo_session',
-        agentId: 'claude_code_agent',
-        toolCall: { name: 'bash', arguments: { cmd: 'npm test' } },
-        messages: [
-          { role: 'system', content: 'You are an autonomous coding agent running in a strict verification loop.' },
-          { role: 'system', content: 'You are an autonomous coding agent running in a strict verification loop.' },
-          { role: 'user', content: 'Fix failing test suite.' },
-        ],
+        tierId: body.tierId || 'cloud_indie',
+        sessionId: body.sessionId || `session_${Date.now()}`,
+        agentId: body.agentId || 'claude_code_agent',
+        toolCall: body.toolCall || { name: 'bash', arguments: { cmd: 'npm test' } },
+        messages: Array.isArray(body.messages) && body.messages.length > 0
+          ? body.messages
+          : [
+              { role: 'system', content: 'You are an autonomous coding agent running in a strict verification loop.' },
+              { role: 'system', content: 'You are an autonomous coding agent running in a strict verification loop.' },
+              { role: 'user', content: 'Fix failing test suite.' },
+            ],
       });
-      const session = getCloudCustomerPortalSession({ apiKey: tenantKey, email: body.email || 'demo@thumbgate.ai' });
+      const session = getCloudCustomerPortalSession({ apiKey: body.apiKey || '', email: body.email || '' });
       sendJson(res, 200, { ok: true, interceptResult, session });
       return;
     }
@@ -9748,13 +9762,13 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     if (req.method === 'POST' && pathname === '/v1/cloud/portal/subscription') {
       const body = await parseJsonBody(req);
       const sub = manageCloudSubscription({
-        tenantKey: body.tenantKey || extractBearerToken(req) || 'demo_customer',
+        tenantKey: body.tenantKey || extractBearerToken(req) || '',
         action: body.action || 'status',
         targetTierId: body.targetTierId || 'cloud_startup',
         customerEmail: body.customerEmail || '',
         appOrigin: hostedConfig.appOrigin || 'https://thumbgate.ai',
       });
-      sendJson(res, 200, sub);
+      sendJson(res, sub.statusCode || 200, sub);
       return;
     }
 
@@ -9820,6 +9834,36 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
+    if (req.method === 'POST' && pathname === '/v1/cloud/scurgery') {
+      const body = await parseJsonBody(req);
+      const out = body.action === 'remove'
+        ? removeScurgeryNamedPolicyBlock(body)
+        : applyScurgeryNamedPolicyBlock(body);
+      sendJson(res, 200, out);
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/confidence/flags') {
+      const state = parsed.searchParams.get('state') || 'ACTIVE';
+      const owner = parsed.searchParams.get('owner') || '';
+      sendJson(res, 200, listConfidenceFlags({ state, owner }), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/confidence/flags') {
+      const body = await parseJsonBody(req);
+      const flagRes = createOrUpdateConfidenceFlag(body);
+      sendJson(res, flagRes.statusCode || 200, flagRes);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/confidence/resolve') {
+      const body = await parseJsonBody(req);
+      const resolved = resolveAndApplyConfidenceFlag(body);
+      sendJson(res, 200, resolved);
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/.well-known/agent-skills/index.json' || pathname === '/.well-known/skills/index.json')) {
       const appOrigin = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai';
       sendJson(res, 200, buildSkillsShWellKnownDiscoveryIndex({ appOrigin }), {}, { headOnly: isHeadRequest });
@@ -9857,6 +9901,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       '/v1/cloud/google-a2ui/gate': evaluateGoogleA2uiSwappableInferenceSteal,
       '/v1/cloud/x-articles-monetization/gate': evaluateXArticleMonetizationAndPromotionSteal,
       '/v1/cloud/hermes-obsidian-memory/gate': evaluateHermesJarvisObsidianMemorySteal,
+      '/v1/cloud/tailscale-oct2026/gate': evaluateTailscaleOct2026NewsletterSteal,
+      '/v1/cloud/spotify-confidence/gate': evaluateSpotifyConfidenceFlagsAndShadowSteal,
     };
     if (cloudEvalRoutes[pathname] && (isGetLikeRequest || req.method === 'POST')) {
       const body = req.method === 'POST' ? await parseJsonBody(req) : Object.fromEntries(parsed.searchParams.entries());

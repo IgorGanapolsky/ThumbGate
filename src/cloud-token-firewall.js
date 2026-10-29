@@ -241,7 +241,52 @@ function compactTokenPayload({ messages = [], toolOutput = null, maxToolOutputCh
   };
 }
 
+function getCloudStateDir() {
+  return process.env.THUMBGATE_FEEDBACK_DIR || path.resolve(__dirname, '../.thumbgate');
+}
+
+let cloudStateLoadedFromDisk = false;
+function loadPersistentCloudState() {
+  if (cloudStateLoadedFromDisk) return;
+  cloudStateLoadedFromDisk = true;
+  const dir = getCloudStateDir();
+  try {
+    const usageFile = path.join(dir, 'cloud-tenant-usage.json');
+    if (fs.existsSync(usageFile)) {
+      const parsed = JSON.parse(fs.readFileSync(usageFile, 'utf8'));
+      for (const [k, v] of Object.entries(parsed || {})) {
+        if (v && typeof v === 'object') tenantUsageState.set(k, v);
+      }
+    }
+    const ssoFile = path.join(dir, 'cloud-sso-sessions.json');
+    if (fs.existsSync(ssoFile)) {
+      const parsed = JSON.parse(fs.readFileSync(ssoFile, 'utf8'));
+      for (const [k, v] of Object.entries(parsed || {})) {
+        if (v && typeof v === 'object') ssoSessionsState.set(k, v);
+      }
+    }
+  } catch { /* ignore corrupt or missing state */ }
+}
+
+function savePersistentCloudState() {
+  const dir = getCloudStateDir();
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, 'cloud-tenant-usage.json'),
+      JSON.stringify(Object.fromEntries(tenantUsageState.entries()), null, 2),
+      'utf8',
+    );
+    fs.writeFileSync(
+      path.join(dir, 'cloud-sso-sessions.json'),
+      JSON.stringify(Object.fromEntries(ssoSessionsState.entries()), null, 2),
+      'utf8',
+    );
+  } catch { /* best-effort disk write */ }
+}
+
 function getOrCreateTenantUsage(tenantKey = 'anonymous', tierId = 'cloud_indie') {
+  loadPersistentCloudState();
   const resolvedTier = CLOUD_SAAS_TIERS[tierId] || CLOUD_SAAS_TIERS.cloud_indie;
   if (!tenantUsageState.has(tenantKey)) {
     tenantUsageState.set(tenantKey, {
@@ -254,10 +299,12 @@ function getOrCreateTenantUsage(tenantKey = 'anonymous', tierId = 'cloud_indie')
       webhooksDispatched: 0,
       updatedAt: new Date().toISOString(),
     });
+    savePersistentCloudState();
   }
   const entry = tenantUsageState.get(tenantKey);
-  if (tierId && CLOUD_SAAS_TIERS[tierId]) {
+  if (tierId && CLOUD_SAAS_TIERS[tierId] && entry.tierId !== tierId) {
     entry.tierId = tierId;
+    savePersistentCloudState();
   }
   return entry;
 }
@@ -391,6 +438,7 @@ async function interceptAgentRequest({
       if (webhookDelivery.sent) usage.webhooksDispatched += 1;
     }
   }
+  savePersistentCloudState();
 
   return {
     ok: !loopDetected,
@@ -931,30 +979,45 @@ function getCloudCustomerPortalSession({
   email = '',
   tierId = '',
 } = {}) {
+  loadPersistentCloudState();
   const cleanKey = String(apiKey || '').trim();
   const cleanEmail = String(email || '').trim().toLowerCase();
   const ssoData = cleanKey ? (ssoSessionsState.get(cleanKey) || null) : null;
-  const resolvedEmail = cleanEmail || ssoData?.email || 'customer@thumbgate.ai';
-  const tenantKey = cleanKey || cleanEmail || 'demo_customer';
+  const isAuthenticated = Boolean(ssoData || cleanKey.startsWith('tg_') || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail));
+  const resolvedEmail = cleanEmail || ssoData?.email || null;
+  const tenantKey = cleanKey || resolvedEmail || 'unauthenticated';
 
   let resolvedTierId = tierId || ssoData?.tierId || '';
   if (!resolvedTierId) {
-    resolvedTierId = cleanKey.startsWith('tg_startup_') ? 'cloud_startup' : 'cloud_indie';
+    if (cleanKey.startsWith('tg_startup_')) resolvedTierId = 'cloud_startup';
+    else if (isAuthenticated) resolvedTierId = 'cloud_indie';
+    else resolvedTierId = 'free_local';
   }
 
-  const usage = getOrCreateTenantUsage(tenantKey, resolvedTierId);
-  const tier = CLOUD_SAAS_TIERS[usage.tierId] || CLOUD_SAAS_TIERS.cloud_indie;
+  const usage = isAuthenticated
+    ? getOrCreateTenantUsage(tenantKey, resolvedTierId)
+    : {
+        tenantKey: 'unauthenticated',
+        tierId: 'free_local',
+        tokensOptimizedMonthly: 0,
+        tokensSavedTotal: 0,
+        loopsKilledTotal: 0,
+        requestsIntercepted: 0,
+        webhooksDispatched: 0,
+        updatedAt: new Date().toISOString(),
+      };
+  const tier = CLOUD_SAAS_TIERS[usage.tierId] || CLOUD_SAAS_TIERS.free_local;
   const quotaUsedPct = tier.tokensOptimizedCapMonthly > 0
     ? Number(Math.min(100, (usage.tokensOptimizedMonthly / tier.tokensOptimizedCapMonthly) * 100).toFixed(1))
     : 0;
   const estimatedUsdSaved = Number(
     ((usage.tokensSavedTotal / 1_000_000) * DEFAULT_BLENDED_COST_PER_1M_TOKENS_USD).toFixed(2),
   );
-  const maskedKey = cleanKey ? `${cleanKey.slice(0, 14)}…` : tenantKey;
+  const maskedKey = cleanKey ? `${cleanKey.slice(0, 14)}…` : (resolvedEmail || 'unauthenticated');
 
   return {
     ok: true,
-    authenticated: Boolean(cleanKey || cleanEmail),
+    authenticated: isAuthenticated,
     ssoProvider: ssoData?.provider || null,
     customer: {
       tenantKey: maskedKey,
@@ -962,7 +1025,7 @@ function getCloudCustomerPortalSession({
       tierId: tier.id,
       planName: tier.name,
       priceMonthlyUsd: tier.priceMonthlyUsd,
-      status: 'active',
+      status: isAuthenticated ? 'active' : 'unauthenticated',
     },
     subscription: {
       tierId: tier.id,
@@ -983,7 +1046,9 @@ function getCloudCustomerPortalSession({
       requestsIntercepted: usage.requestsIntercepted,
       webhooksDispatched: usage.webhooksDispatched,
       estimatedUsdSaved,
-      compactionReductionPct: 42.0,
+      compactionReductionPct: usage.tokensOptimizedMonthly > 0
+        ? Number(((usage.tokensSavedTotal / usage.tokensOptimizedMonthly) * 100).toFixed(1))
+        : 0,
       updatedAt: usage.updatedAt,
     },
     teamPolicy: syncTeamPolicyAndThreatPacks({ orgId: tenantKey }),
@@ -992,16 +1057,26 @@ function getCloudCustomerPortalSession({
 }
 
 function manageCloudSubscription({
-  tenantKey = 'anonymous',
+  tenantKey = '',
   action = 'status',
   targetTierId = 'cloud_startup',
   customerEmail = '',
   appOrigin = 'https://thumbgate.ai',
 } = {}) {
-  const usage = getOrCreateTenantUsage(tenantKey, targetTierId);
+  loadPersistentCloudState();
+  const cleanTenant = String(tenantKey || customerEmail || '').trim();
+  if (!cleanTenant) {
+    return {
+      ok: false,
+      statusCode: 401,
+      error: 'authenticated_tenant_or_email_required',
+    };
+  }
+  const usage = getOrCreateTenantUsage(cleanTenant, targetTierId);
   if (action === 'switch_tier' && CLOUD_SAAS_TIERS[targetTierId]) {
     usage.tierId = targetTierId;
     usage.updatedAt = new Date().toISOString();
+    savePersistentCloudState();
   }
   const tier = CLOUD_SAAS_TIERS[usage.tierId] || CLOUD_SAAS_TIERS.cloud_indie;
   const emailSuffix = customerEmail ? `?customer_email=${encodeURIComponent(customerEmail)}` : '';
@@ -1077,6 +1152,23 @@ function listCloudPortalFeedbackAndFeatureRequests({ limit = 20 } = {}) {
   return [];
 }
 
+function buildRealOauthAuthorizeUrl(provider, stateNonce, callbackUrl) {
+  if (provider === 'github' && process.env.GITHUB_CLIENT_ID) {
+    return `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(process.env.GITHUB_CLIENT_ID)}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=read:user%20user:email&state=${encodeURIComponent(stateNonce)}`;
+  }
+  if (provider === 'google' && process.env.GOOGLE_CLIENT_ID) {
+    return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(process.env.GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(stateNonce)}`;
+  }
+  if (provider === 'apple' && process.env.APPLE_CLIENT_ID) {
+    return `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.APPLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=name%20email&response_mode=form_post&state=${encodeURIComponent(stateNonce)}`;
+  }
+  if (provider === 'okta' && process.env.OKTA_ISSUER_URL && process.env.OKTA_CLIENT_ID) {
+    const issuer = String(process.env.OKTA_ISSUER_URL).replace(/\/+$/, '');
+    return `${issuer}/v1/authorize?client_id=${encodeURIComponent(process.env.OKTA_CLIENT_ID)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(stateNonce)}`;
+  }
+  return null;
+}
+
 function startSsoAuthorizationFlow({
   provider = 'github',
   email = '',
@@ -1084,51 +1176,72 @@ function startSsoAuthorizationFlow({
   redirectUri = '',
   appOrigin = 'https://thumbgate.ai',
 } = {}) {
+  loadPersistentCloudState();
   const lowerProvider = String(provider).toLowerCase();
   const cleanProvider = ['github', 'google', 'apple', 'okta'].includes(lowerProvider) ? lowerProvider : 'github';
-  const defaultEmails = {
-    google: 'user@gmail.com',
-    apple: 'user@icloud.com',
-    github: 'developer@github.user',
-    okta: 'engineer@enterprise.sso',
-  };
-  const resolvedEmail = String(email || '').trim().toLowerCase() || defaultEmails[cleanProvider] || `sso@${cleanProvider}.user`;
-  const ssoToken = `tg_sso_${cleanProvider}_${crypto.randomBytes(12).toString('hex')}`;
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const callbackUrl = `${appOrigin}/v1/cloud/sso/callback?provider=${encodeURIComponent(cleanProvider)}`;
+  const stateNonce = `st_${crypto.randomBytes(12).toString('hex')}`;
+
+  // 1. If real OAuth 2.0 / OIDC client credentials are configured, redirect to the real IdP:
+  const realIdpUrl = buildRealOauthAuthorizeUrl(cleanProvider, stateNonce, callbackUrl);
+  if (realIdpUrl && !cleanEmail) {
+    return {
+      ok: true,
+      mode: 'oauth_redirect',
+      provider: cleanProvider,
+      state: stateNonce,
+      redirectUrl: realIdpUrl,
+    };
+  }
+
+  // 2. Zero-mock rule: never invent user@gmail.com or developer@github.user. Require a real email address.
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    return {
+      ok: false,
+      statusCode: 400,
+      provider: cleanProvider,
+      error: 'real_email_or_oauth_client_id_required',
+      message: `Provide a real work email or configure ${cleanProvider.toUpperCase()}_CLIENT_ID for OAuth redirect.`,
+      redirectUrl: `${appOrigin}/cloud?auth_error=email_required&provider=${encodeURIComponent(cleanProvider)}`,
+    };
+  }
+
+  const signingSecret = process.env.THUMBGATE_API_KEY || process.env.THUMBGATE_OPERATOR_KEY || 'thumbgate_local_hmac_key';
+  const hmacHex = crypto.createHmac('sha256', signingSecret).update(`${cleanProvider}:${cleanEmail}`).digest('hex').slice(0, 24);
+  const ssoToken = `tg_sso_${cleanProvider}_${hmacHex}`;
 
   ssoSessionsState.set(ssoToken, {
     token: ssoToken,
     provider: cleanProvider,
-    email: resolvedEmail,
+    email: cleanEmail,
     tierId: 'cloud_indie',
     createdAt: new Date().toISOString(),
   });
-  const usage = getOrCreateTenantUsage(ssoToken, 'cloud_indie');
-  if (usage.requestsIntercepted === 0) {
-    usage.requestsIntercepted = 1;
-    usage.tokensOptimizedMonthly = 1420;
-    usage.tokensSavedTotal = 600;
-    usage.updatedAt = new Date().toISOString();
-  }
+  // Initialize real 0-state persistent tenant record (never seed fake 1420 tokens)
+  getOrCreateTenantUsage(ssoToken, 'cloud_indie');
+  savePersistentCloudState();
 
-  let targetUrl = `${appOrigin}/cloud?sso_token=${encodeURIComponent(ssoToken)}&sso_provider=${encodeURIComponent(cleanProvider)}&email=${encodeURIComponent(resolvedEmail)}`;
+  let targetUrl = `${appOrigin}/cloud?sso_token=${encodeURIComponent(ssoToken)}&sso_provider=${encodeURIComponent(cleanProvider)}&email=${encodeURIComponent(cleanEmail)}`;
   const portNum = Number(cliPort);
   if (Number.isInteger(portNum) && portNum >= 1024 && portNum <= 65535) {
-    targetUrl = `http://127.0.0.1:${portNum}/callback?token=${encodeURIComponent(ssoToken)}&provider=${encodeURIComponent(cleanProvider)}&email=${encodeURIComponent(resolvedEmail)}`;
+    targetUrl = `http://127.0.0.1:${portNum}/callback?token=${encodeURIComponent(ssoToken)}&provider=${encodeURIComponent(cleanProvider)}&email=${encodeURIComponent(cleanEmail)}`;
   } else if (redirectUri && /^https?:\/\//i.test(String(redirectUri))) {
     const u = new URL(redirectUri);
     u.searchParams.set('sso_token', ssoToken);
     u.searchParams.set('sso_provider', cleanProvider);
-    u.searchParams.set('email', resolvedEmail);
+    u.searchParams.set('email', cleanEmail);
     targetUrl = u.toString();
   }
 
   return {
     ok: true,
+    mode: 'hmac_verified_session',
     provider: cleanProvider,
     ssoToken,
-    email: resolvedEmail,
+    email: cleanEmail,
     redirectUrl: targetUrl,
-    session: getCloudCustomerPortalSession({ apiKey: ssoToken, email: resolvedEmail }),
+    session: getCloudCustomerPortalSession({ apiKey: ssoToken, email: cleanEmail }),
   };
 }
 
@@ -3019,12 +3132,434 @@ function evaluateHermesJarvisObsidianMemorySteal({
   };
 }
 
+/**
+ * Tailscale October 2026 Newsletter Steal (Oct 29, 2026 — /Users/iganapolsky/Downloads/tailscale.pdf):
+ *   1. `scurgery` byte-identical named policy block injector & remover (SHA-256 verified).
+ *   2. Tailworm (`Tailscale v1.104.4`) architectural vulnerability-class SSH safeguard (blocks SSH_AUTH_SOCK forwarding).
+ *   3. Identity-scoped zero-password AWS Database access (support read-only by default; on-call elevation required for writes/DDL).
+ *   4. MagicRoute multi-connector sticky backend selection (health + latency + location without flapping).
+ *   5. Personal AI Agent Node Guardrails (`Meta Muse on Tailscale` refereeing SSH sessions with zero open-web exposure).
+ *   6. `swe-mux` side-by-side coding agent multiplexer over private Tailnet (`Claude Code`, `Codex`, `Codex Cloud`).
+ *   7. Forrester TEI `213% ROI` benchmark.
+ */
+function buildScurgeryMarkers(blockName) {
+  const cleanName = String(blockName || 'default').trim().replace(/[^a-zA-Z0-9._-]/g, '-');
+  return {
+    cleanName,
+    beginMarker: `// BEGIN THUMBGATE SCURGERY BLOCK [${cleanName}]`,
+    endMarker: `// END THUMBGATE SCURGERY BLOCK [${cleanName}]`,
+  };
+}
+
+function applyScurgeryNamedPolicyBlock({
+  content = '',
+  blockName = 'oncall-db-elevation',
+  blockBody = '',
+} = {}) {
+  const original = String(content);
+  const sha256Before = crypto.createHash('sha256').update(original, 'utf8').digest('hex');
+  const { cleanName, beginMarker, endMarker } = buildScurgeryMarkers(blockName);
+
+  // If block already exists, remove it first so re-applying is idempotent
+  const cleaned = removeScurgeryNamedPolicyBlock({ content: original, blockName: cleanName }).content;
+  const blockSection = `${beginMarker}\n${String(blockBody).replace(/\r?\n$/, '')}\n${endMarker}\n`;
+  const updated = `${cleaned}${blockSection}`;
+  const sha256AfterApply = crypto.createHash('sha256').update(updated, 'utf8').digest('hex');
+
+  return {
+    ok: true,
+    blockName: cleanName,
+    sha256Before,
+    sha256AfterApply,
+    content: updated,
+  };
+}
+
+function removeScurgeryNamedPolicyBlock({
+  content = '',
+  blockName = 'oncall-db-elevation',
+} = {}) {
+  const current = String(content);
+  const { cleanName, beginMarker, endMarker } = buildScurgeryMarkers(blockName);
+  const escapedBegin = beginMarker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedEnd = endMarker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`${escapedBegin}\\n[\\s\\S]*?\\n${escapedEnd}\\n?`, 'g');
+  const removed = current.replace(pattern, '');
+  const sha256AfterRemoval = crypto.createHash('sha256').update(removed, 'utf8').digest('hex');
+
+  return {
+    ok: true,
+    blockName: cleanName,
+    blockRemoved: removed !== current,
+    sha256AfterRemoval,
+    content: removed,
+  };
+}
+
+function selectStickyMagicRouteConnector(connectors = [], previousConnectorId = '') {
+  const healthy = (Array.isArray(connectors) ? connectors : []).filter((c) => c && c.healthy !== false);
+  if (healthy.length === 0) return null;
+  const sorted = [...healthy].sort((a, b) => (Number(a.latencyMs) || 999) - (Number(b.latencyMs) || 999));
+  const best = sorted[0];
+  if (previousConnectorId) {
+    const prev = healthy.find((c) => c.id === previousConnectorId);
+    // Stick with the current healthy connector unless another is >25ms faster (prevents flapping)
+    if (prev && ((Number(prev.latencyMs) || 0) - (Number(best.latencyMs) || 0) <= 25)) {
+      return { ...prev, stickyRetained: true };
+    }
+  }
+  return { ...best, stickyRetained: best.id === previousConnectorId };
+}
+
+function evaluateTailscaleOct2026NewsletterSteal({
+  tailscaleVersion = '1.104.4',
+  sshAgentForwardingRequested = false,
+  dbRole = 'support_readonly',
+  onCallWriteElevated = false,
+  identityVerified = true,
+  staticDbPasswordInEnv = false,
+  sqlStatement = 'SELECT id, status FROM agent_gate_events LIMIT 10;',
+  connectors = [
+    { id: 'conn-us-east-primary', region: 'us-east-2', healthy: true, latencyMs: 14 },
+    { id: 'conn-us-west-backup', region: 'us-west-2', healthy: true, latencyMs: 48 },
+  ],
+  previousConnectorId = 'conn-us-east-primary',
+  agentNodeIdentity = 'tag:muse-agent-node',
+  openWebPortExposed = false,
+  sshSessionRefereed = true,
+  sweMuxAgents = ['claude-code', 'codex', 'codex-cloud'],
+  policyDocument = '{\n  "acls": [{"action": "accept", "src": ["autogroup:member"], "dst": ["*:*"]}]\n}\n',
+} = {}) {
+  const blockers = [];
+
+  // 1. Tailworm (Tailscale v1.104.4) vulnerability-class SSH safeguard
+  if (sshAgentForwardingRequested) {
+    blockers.push('tailworm_class_safeguard_blocks_unscoped_ssh_agent_forwarding');
+  }
+
+  // 2. Who can write to your AWS database? Zero static DB passwords + read-only vs on-call write elevation
+  if (staticDbPasswordInEnv) {
+    blockers.push('aws_db_zero_static_passwords_violation');
+  }
+  const isMutatingSql = /^\s*(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|GRANT|REVOKE|CREATE)\b/i.test(String(sqlStatement || ''));
+  if (isMutatingSql && (!identityVerified || (dbRole === 'support_readonly' && !onCallWriteElevated))) {
+    blockers.push('aws_db_write_denied_requires_identity_scoped_oncall_elevation');
+  }
+
+  // 3. MagicRoute sticky connector selection
+  const selectedConnector = selectStickyMagicRouteConnector(connectors, previousConnectorId);
+  if (!selectedConnector) {
+    blockers.push('magicroute_no_healthy_connectors_available');
+  }
+
+  // 4. Meta Muse personal AI agent node guardrails
+  if (!String(agentNodeIdentity || '').startsWith('tag:') || openWebPortExposed || !sshSessionRefereed) {
+    blockers.push('personal_ai_agent_requires_scoped_tailnet_tag_zero_public_ports_and_ssh_referee');
+  }
+
+  // 5. scurgery byte-identical round-trip proof
+  const scurgeryApplied = applyScurgeryNamedPolicyBlock({
+    content: policyDocument,
+    blockName: 'temp-oncall-db-write',
+    blockBody: '// temporary on-call elevation rule',
+  });
+  const scurgeryRemoved = removeScurgeryNamedPolicyBlock({
+    content: scurgeryApplied.content,
+    blockName: 'temp-oncall-db-write',
+  });
+  const byteIdenticalVerified = scurgeryApplied.sha256Before === scurgeryRemoved.sha256AfterRemoval
+    && policyDocument === scurgeryRemoved.content;
+  if (!byteIdenticalVerified) {
+    blockers.push('scurgery_policy_block_removal_not_byte_identical');
+  }
+
+  return {
+    ok: blockers.length === 0,
+    decision: blockers.length === 0 ? 'ALLOW' : 'DENY',
+    sourceNewsletter: 'Tailscale October Newsletter (2026-10-29)',
+    tailwormSafeguard: {
+      minimumSafeVersion: '1.104.4',
+      observedVersion: tailscaleVersion,
+      classSafeguardActive: !sshAgentForwardingRequested,
+    },
+    awsDatabaseIdentityGate: {
+      dbRole,
+      identityVerified: Boolean(identityVerified),
+      onCallWriteElevated: Boolean(onCallWriteElevated),
+      isMutatingSql,
+      staticDbPasswordInEnv: Boolean(staticDbPasswordInEnv),
+      allowed: !(isMutatingSql && (!identityVerified || (dbRole === 'support_readonly' && !onCallWriteElevated))) && !staticDbPasswordInEnv,
+    },
+    magicRoute: {
+      selectedConnector,
+      candidateCount: Array.isArray(connectors) ? connectors.length : 0,
+    },
+    museAgentGuardrails: {
+      agentNodeIdentity,
+      openWebPortExposed: Boolean(openWebPortExposed),
+      sshSessionRefereed: Boolean(sshSessionRefereed),
+    },
+    sweMux: {
+      activeCodingAgents: sweMuxAgents,
+      privateTailnetMobileAccess: true,
+      codexCloudTailscaleSupported: sweMuxAgents.includes('codex-cloud'),
+    },
+    scurgery: {
+      byteIdenticalVerified,
+      sha256Before: scurgeryApplied.sha256Before,
+      sha256AfterApply: scurgeryApplied.sha256AfterApply,
+      sha256AfterRemoval: scurgeryRemoved.sha256AfterRemoval,
+    },
+    forresterTeiRoiPct: 213,
+    blockers,
+  };
+}
+
+/**
+ * Spotify Confidence Steal (https://app.confidence.spotify.com/flags?state=ACTIVE &
+ * Johan Söderholm "Ship code without shipping the change", Oct 29, 2026):
+ *   1. Separate deploying code from releasing changes; same flag powers rollout or A/B test with zero re-instrumentation.
+ *   2. Best Practice 1: Name flags after behaviour (`new-checkout-flow`), NEVER after tickets (`JIRA-1234`, `GH-4693`, `DIST03-1813`).
+ *   3. Best Practice 2: Give every flag an explicit `owner` and `plannedRemovalDate`.
+ *   4. Best Practice 3: Default to `"off"` — every flag must fail safe (`defaultVariant === 'off'`).
+ *   5. Track `Last resolved` (code evaluation count & timestamp) separately from `Last applied` (real exposure count & timestamp).
+ *   6. Built-in `Cleanup` detector for stale flags (past `plannedRemovalDate` or `0` resolutions) + `Offline shadow experiment` gate.
+ */
+const confidenceFlagsState = new Map();
+let confidenceFlagsDiskLoaded = false;
+
+function getConfidenceFlagsPath() {
+  const dir = process.env.THUMBGATE_FEEDBACK_DIR || path.resolve(__dirname, '../.thumbgate');
+  return path.join(dir, 'cloud-confidence-flags.json');
+}
+
+function loadConfidenceFlagsState() {
+  if (confidenceFlagsDiskLoaded) return;
+  confidenceFlagsDiskLoaded = true;
+  try {
+    const p = getConfidenceFlagsPath();
+    if (fs.existsSync(p)) {
+      const parsed = JSON.parse(fs.readFileSync(p, 'utf8'));
+      if (parsed && typeof parsed === 'object') {
+        for (const [k, v] of Object.entries(parsed)) {
+          confidenceFlagsState.set(k, v);
+        }
+      }
+    }
+  } catch { /* ignore */ }
+}
+
+function saveConfidenceFlagsState() {
+  try {
+    const p = getConfidenceFlagsPath();
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, JSON.stringify(Object.fromEntries(confidenceFlagsState.entries()), null, 2), 'utf8');
+  } catch { /* ignore */ }
+}
+
+function validateConfidenceFlagHygiene({
+  name = '',
+  owner = '',
+  plannedRemovalDate = '',
+  defaultVariant = 'off',
+} = {}) {
+  const cleanName = String(name || '').trim();
+  const cleanOwner = String(owner || '').trim();
+  const cleanRemoval = String(plannedRemovalDate || '').trim();
+  const cleanDefault = String(defaultVariant || '').trim().toLowerCase();
+  const blockers = [];
+
+  // Reject ticket-style names (JIRA-1234, GH-4693, DIST03-1813, ISSUE-99, PR-42, etc.)
+  const ticketPattern = /^(?:jira|gh|pr|issue|ticket|bug|dist\d*|itapp\d*|comply|sec)[-_]\d+/i;
+  if (!cleanName || ticketPattern.test(cleanName) || /\b[A-Z]{2,10}-\d+\b/.test(cleanName) || !/^[a-z][a-z0-9-]{2,63}$/.test(cleanName)) {
+    blockers.push('flag_must_be_named_after_behaviour_kebab_case_not_ticket_id');
+  }
+  if (!cleanOwner) {
+    blockers.push('flag_requires_explicit_owner');
+  }
+  const removalTs = Date.parse(cleanRemoval);
+  if (!cleanRemoval || Number.isNaN(removalTs)) {
+    blockers.push('flag_requires_valid_planned_removal_date');
+  }
+  if (cleanDefault !== 'off') {
+    blockers.push('flag_must_default_to_off_to_fail_safe');
+  }
+
+  return {
+    ok: blockers.length === 0,
+    name: cleanName,
+    owner: cleanOwner,
+    plannedRemovalDate: cleanRemoval,
+    defaultVariant: cleanDefault,
+    blockers,
+  };
+}
+
+function createOrUpdateConfidenceFlag({
+  name = '',
+  owner = '',
+  plannedRemovalDate = '',
+  defaultVariant = 'off',
+  variants = ['off', 'on'],
+  rulesEnabled = 1,
+  rulesTotal = 1,
+  rolloutPct = 50,
+  surface = 'pretooluse_firewall',
+  state = 'ACTIVE',
+} = {}) {
+  loadConfidenceFlagsState();
+  const hygiene = validateConfidenceFlagHygiene({ name, owner, plannedRemovalDate, defaultVariant });
+  if (!hygiene.ok) {
+    return {
+      ok: false,
+      statusCode: 400,
+      error: 'confidence_flag_hygiene_failed',
+      blockers: hygiene.blockers,
+    };
+  }
+  const existing = confidenceFlagsState.get(hygiene.name);
+  const nowIso = new Date().toISOString();
+  const record = {
+    name: hygiene.name,
+    owner: hygiene.owner,
+    plannedRemovalDate: hygiene.plannedRemovalDate,
+    defaultVariant: hygiene.defaultVariant,
+    variants: Array.isArray(variants) && variants.length >= 2 ? variants : ['off', 'on'],
+    rulesEnabled: Math.max(0, Number(rulesEnabled) || 1),
+    rulesTotal: Math.max(1, Number(rulesTotal) || 1),
+    rolloutPct: Math.min(100, Math.max(0, Number(rolloutPct) ?? 50)),
+    surface: String(surface || 'pretooluse_firewall'),
+    state: state === 'ARCHIVED' ? 'ARCHIVED' : 'ACTIVE',
+    createdAt: existing?.createdAt || nowIso,
+    updatedAt: nowIso,
+    lastResolvedAt: existing?.lastResolvedAt || null,
+    resolvedTotalCount: existing?.resolvedTotalCount || 0,
+    lastAppliedAt: existing?.lastAppliedAt || null,
+    appliedTotalCount: existing?.appliedTotalCount || 0,
+  };
+  confidenceFlagsState.set(hygiene.name, record);
+  saveConfidenceFlagsState();
+  return { ok: true, statusCode: existing ? 200 : 201, flag: record };
+}
+
+function resolveAndApplyConfidenceFlag({
+  name = '',
+  entityId = '',
+  applyExposure = true,
+} = {}) {
+  loadConfidenceFlagsState();
+  const cleanName = String(name || '').trim();
+  const flag = confidenceFlagsState.get(cleanName);
+  if (!flag || flag.state !== 'ACTIVE') {
+    return {
+      ok: true,
+      name: cleanName,
+      variant: 'off',
+      reason: 'FLAG_NOT_FOUND_OR_INACTIVE_FAIL_SAFE_OFF',
+      resolvedTotalCount: 0,
+      appliedTotalCount: 0,
+    };
+  }
+  const cleanEntity = String(entityId || 'anonymous').trim();
+  const digest = crypto.createHash('sha256').update(`${cleanName}:${cleanEntity}`).digest();
+  const bucket = digest.readUInt32BE(0) % 100;
+  const nonOffVariant = flag.variants.find((v) => v !== 'off') || 'on';
+  const assignedVariant = (flag.rulesEnabled > 0 && bucket < flag.rolloutPct)
+    ? nonOffVariant
+    : flag.defaultVariant;
+
+  const nowIso = new Date().toISOString();
+  flag.lastResolvedAt = nowIso;
+  flag.resolvedTotalCount = (Number(flag.resolvedTotalCount) || 0) + 1;
+  if (applyExposure) {
+    flag.lastAppliedAt = nowIso;
+    flag.appliedTotalCount = (Number(flag.appliedTotalCount) || 0) + 1;
+  }
+  saveConfidenceFlagsState();
+
+  return {
+    ok: true,
+    name: flag.name,
+    entityId: cleanEntity,
+    bucket,
+    variant: assignedVariant,
+    lastResolvedAt: flag.lastResolvedAt,
+    resolvedTotalCount: flag.resolvedTotalCount,
+    lastAppliedAt: flag.lastAppliedAt,
+    appliedTotalCount: flag.appliedTotalCount,
+  };
+}
+
+function listConfidenceFlags({ state = 'ACTIVE', owner = '', nowIso = new Date().toISOString() } = {}) {
+  loadConfidenceFlagsState();
+  const nowTs = Date.parse(nowIso) || Date.now();
+  const all = Array.from(confidenceFlagsState.values());
+  const filtered = all.filter((f) => {
+    if (state && f.state !== state) return false;
+    if (owner && f.owner !== owner) return false;
+    return true;
+  });
+  const cleanupCandidates = filtered.filter((f) => {
+    const removalTs = Date.parse(f.plannedRemovalDate);
+    return (!Number.isNaN(removalTs) && removalTs <= nowTs) || (f.resolvedTotalCount === 0 && f.appliedTotalCount === 0);
+  });
+  return {
+    ok: true,
+    stateFilter: state,
+    totalFlags: filtered.length,
+    cleanupCandidatesCount: cleanupCandidates.length,
+    cleanupCandidates: cleanupCandidates.map((c) => c.name),
+    flags: filtered,
+  };
+}
+
+function evaluateSpotifyConfidenceFlagsAndShadowSteal({
+  flagCandidate = {
+    name: 'new-checkout-flow',
+    owner: 'igor@igorganapolsky.com',
+    plannedRemovalDate: '2026-12-01',
+    defaultVariant: 'off',
+  },
+  shadowExperiment = {
+    controlErrorRate: 0.01,
+    treatmentErrorRate: 0.008,
+    controlP95LatencyMs: 0.45,
+    treatmentP95LatencyMs: 0.42,
+  },
+} = {}) {
+  const hygiene = validateConfidenceFlagHygiene(flagCandidate);
+  const blockers = [...hygiene.blockers];
+  const errRegressed = Number(shadowExperiment?.treatmentErrorRate) > Number(shadowExperiment?.controlErrorRate) * 1.1;
+  const latRegressed = Number(shadowExperiment?.treatmentP95LatencyMs) > 0.5;
+  if (errRegressed) blockers.push('offline_shadow_experiment_error_rate_regressed');
+  if (latRegressed) blockers.push('offline_shadow_experiment_exceeded_0_5ms_p95_budget');
+
+  return {
+    ok: blockers.length === 0,
+    sourceUrl: 'https://app.confidence.spotify.com/flags?state=ACTIVE',
+    emailAuthor: 'Johan Söderholm (Spotify Confidence)',
+    emailHeadline: 'Ship code without shipping the change',
+    hygiene,
+    offlineShadowExperiment: {
+      passed: !errRegressed && !latRegressed,
+      controlErrorRate: shadowExperiment?.controlErrorRate,
+      treatmentErrorRate: shadowExperiment?.treatmentErrorRate,
+      controlP95LatencyMs: shadowExperiment?.controlP95LatencyMs,
+      treatmentP95LatencyMs: shadowExperiment?.treatmentP95LatencyMs,
+    },
+    blockers,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
   cloudFeatureRequestsState.length = 0;
   ssoSessionsState.clear();
   teamPoliciesState.clear();
+  confidenceFlagsState.clear();
+  cloudStateLoadedFromDisk = false;
+  confidenceFlagsDiskLoaded = false;
 }
 
 module.exports = {
@@ -3091,6 +3626,15 @@ module.exports = {
   evaluateGoogleA2uiSwappableInferenceSteal,
   evaluateXArticleMonetizationAndPromotionSteal,
   evaluateHermesJarvisObsidianMemorySteal,
+  applyScurgeryNamedPolicyBlock,
+  removeScurgeryNamedPolicyBlock,
+  evaluateTailscaleOct2026NewsletterSteal,
+  validateConfidenceFlagHygiene,
+  createOrUpdateConfidenceFlag,
+  resolveAndApplyConfidenceFlag,
+  listConfidenceFlags,
+  evaluateSpotifyConfidenceFlagsAndShadowSteal,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };
+
