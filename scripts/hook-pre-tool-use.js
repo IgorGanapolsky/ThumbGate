@@ -574,6 +574,16 @@ function main() {
     }
   }
 
+  try {
+    const { evaluateConfusedAgentPretool } = require('./confused-agent-gate');
+    const confusedAgent = evaluateConfusedAgentPretool({ toolName, toolInput: effectiveInput });
+    if (confusedAgent && confusedAgent.ok === false) {
+      return block(`confused-agent: ${(confusedAgent.blockers || []).join('; ')}`);
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const actionContext = extractActionContext(toolName, effectiveInput);
   const lessons = retrieveLessons(toolName, actionContext);
 
