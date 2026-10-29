@@ -89,5 +89,5 @@ test('GET /diagnostic still checkout-ready after Oceans blocks', async () => {
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(html, /data-oceans-pain/);
   assert.match(html, /data-oceans-process/);
-  assert.match(html, /Buy the \$499 enterprise gate/);
+  assert.match(html, /Book the \$499 setup/);
 });

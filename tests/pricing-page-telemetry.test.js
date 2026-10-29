@@ -28,7 +28,7 @@ test('pricing page emits first-party telemetry for views and buyer actions', () 
 
 test('pricing exposes Pro self-serve and direct $499 managed-gate checkout', () => {
   assert.match(pricingHtml, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(pricingHtml, /Get Started — \$499 Diagnostic/);
+  assert.match(pricingHtml, /Book the \$499 setup/);
   assert.match(pricingHtml, /name="customer_email"[^>]*required/);
   assert.match(pricingHtml, /"name": "ThumbGate Managed Workflow Diagnostic"/);
   assert.match(pricingHtml, /"price": "499"/);
