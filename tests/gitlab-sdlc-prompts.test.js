@@ -2,6 +2,8 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { evaluateGitLabSdlcPrompts } = require('../scripts/gitlab-sdlc-prompts');
 const gates = require('../scripts/gates-engine');
 
@@ -116,6 +118,50 @@ test('a pipeline rerun that pastes the error needs a cause, and a bare rerun is 
       "echo '$(gh run rerun 12345 --log \"Error: exit code 1\")'",
     )),
     null,
+  );
+});
+
+test('a quoted fixture, a redirected printf, and a sentence comment stay on the action', () => {
+  const own = fs.readFileSync(path.join(__dirname, 'gitlab-sdlc-prompts.test.js'), 'utf8');
+  assert.equal(
+    evaluateGitLabSdlcPrompts(edit('tests/gitlab-sdlc-prompts.test.js', own)),
+    null,
+  );
+  assert.equal(
+    evaluateGitLabSdlcPrompts(edit(
+      'docs/gitlab.md',
+      'Example of the deny:\n```\nNo breaking changes.\nDROP TABLE sessions;\n```\n',
+    )),
+    null,
+  );
+  assert.equal(
+    evaluateGitLabSdlcPrompts(edit(
+      'docs/gitlab.md',
+      'No breaking changes.\nDROP TABLE sessions;',
+    )).failureReason,
+    'breaking_change_hidden',
+  );
+  assert.equal(
+    evaluateGitLabSdlcPrompts(bash(
+      "printf '%s\\n' 'No breaking changes.' 'DROP TABLE sessions;' > CHANGELOG.md",
+    )).failureReason,
+    'breaking_change_hidden',
+  );
+  assert.equal(
+    evaluateGitLabSdlcPrompts(bash("printf '%s\\n' 'No breaking changes.'")),
+    null,
+  );
+  assert.equal(
+    evaluateGitLabSdlcPrompts(bash(
+      "glab api --method PUT projects/1/vulnerabilities/9/dismiss -f dismissal_reason=false_positive --comment='This is only reachable in isolated test fixtures.'",
+    )),
+    null,
+  );
+  assert.equal(
+    evaluateGitLabSdlcPrompts(bash(
+      "glab api --method PUT projects/1/vulnerabilities/9/dismiss -f dismissal_reason=false_positive --comment='short'",
+    )).failureReason,
+    'finding_dismissed',
   );
 });
 

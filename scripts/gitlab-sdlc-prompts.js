@@ -28,7 +28,8 @@ const SCHEMA_DROP_RE = /\bDROP\s+(?:COLUMN|TABLE)\b|\bALTER\s+TABLE\b[^;\n]{0,12
 const REMOVED_EXPORT_RE = /(?:^|\n)-\s*export\s+(?:async\s+)?(?:function|class|const|let|var|type|interface)\s+\w+/;
 const REMOVED_CONFIG_RE = /(?:^|[\n'"])-\s*(?:[A-Z][A-Z0-9_]{2,}|[a-z][\w-]{2,})\s*[:=]/;
 const DISMISS_RE = /dismissal_reason\s*[=:]\s*['"]?false[_ -]?positive|\b(?:glab|gitlab)\b[\s\S]{0,240}\bdismiss\b[\s\S]{0,240}false[_ -]?positive/i;
-const DISMISS_REASON_RE = /(?:--comment(?:=|\s+)|"comment"\s*:\s*"|comment\s*[:=]\s*['"]?)\S{8,}/i;
+const COMMENT_RE = /--comment(?:=|\s+)|"comment"\s*:\s*|comment\s*[:=]\s*/gi;
+const WRITER = new Set(['echo', 'printf', 'cat', 'head', 'tail']);
 const CASE_LABELS = [
   /\bedge cases?\b/i,
   /\berror conditions?\b/i,
@@ -173,8 +174,43 @@ function breakingDeny(text) {
   );
 }
 
+function commentBodies(text) {
+  const bodies = [];
+  const pattern = new RegExp(COMMENT_RE.source, 'gi');
+  for (let match = pattern.exec(text); match; match = pattern.exec(text)) {
+    let i = match.index + match[0].length;
+    while (text[i] === ' ') i += 1;
+    const quote = text[i];
+    let body = '';
+    if (quote === "'" || quote === '"') {
+      i += 1;
+      while (i < text.length && text[i] !== quote) {
+        if (text[i] === '\\' && quote === '"') {
+          body += text[i + 1] || '';
+          i += 2;
+          continue;
+        }
+        body += text[i];
+        i += 1;
+      }
+    } else {
+      while (i < text.length && !/\s/.test(text[i])) {
+        body += text[i];
+        i += 1;
+      }
+    }
+    bodies.push(body);
+    pattern.lastIndex = i;
+  }
+  return bodies;
+}
+
+function hasDismissReason(text) {
+  return commentBodies(text).some((body) => body.replace(/\s/g, '').length >= 8);
+}
+
 function dismissDeny(text) {
-  if (!DISMISS_RE.test(text) || DISMISS_REASON_RE.test(text)) return null;
+  if (!DISMISS_RE.test(text) || hasDismissReason(text)) return null;
   return deny(
     'finding_dismissed',
     'Denied a false-positive dismissal with no comment. Name the reason before closing the finding.',
@@ -205,11 +241,53 @@ function rerunDeny(text) {
   );
 }
 
+function stripQuoted(text) {
+  let out = '';
+  let quote = '';
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    if (quote) {
+      if (c === '\\' && quote !== "'") {
+        i += 1;
+        continue;
+      }
+      if (c === quote) quote = '';
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      quote = c;
+      out += ' ';
+      continue;
+    }
+    out += c;
+  }
+  return out;
+}
+
+function isDocPath(filePath) {
+  const normalized = String(filePath || '').replace(/\\/g, '/');
+  return /\.(?:md|markdown|txt)$/i.test(normalized) || /(?:^|\/)docs?\//i.test(normalized);
+}
+
+function deliveryText(text, filePath) {
+  if (isTestPath(filePath)) return stripQuoted(text);
+  if (!isDocPath(filePath)) return text;
+  return stripQuoted(String(text).replace(/```[\s\S]*?```/g, ' ').replace(/`[^`\n]*`/g, ' '));
+}
+
 function judgeText(text, filePath) {
   return breakingDeny(text)
     || dismissDeny(text)
     || happyPathDeny(text, filePath)
     || rerunDeny(text);
+}
+
+function judgeEdit(text, filePath) {
+  const surface = deliveryText(text, filePath);
+  return breakingDeny(surface)
+    || dismissDeny(surface)
+    || happyPathDeny(text, filePath)
+    || rerunDeny(surface);
 }
 
 function editsOf(toolInput) {
@@ -241,6 +319,29 @@ function testPathFrom(command) {
   return match ? match[0] : '';
 }
 
+function writesAFile(part) {
+  let quote = '';
+  for (let i = 0; i < part.length; i += 1) {
+    const c = part[i];
+    if (quote) {
+      if (c === '\\' && quote !== "'") i += 1;
+      else if (c === quote) quote = '';
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      continue;
+    }
+    if (c !== '>' || part[i - 1] === '2') continue;
+    let j = i + 1;
+    while (part[j] === '>') j += 1;
+    while (part[j] === ' ') j += 1;
+    const target = part.slice(j).match(/^(\S+)/);
+    if (target && target[1] !== '/dev/null') return true;
+  }
+  return false;
+}
+
 function shellDeny(command, depth = 0) {
   if (depth > 4 || !String(command || '').trim()) return null;
   const stripped = stripShellComments(command);
@@ -249,7 +350,14 @@ function shellDeny(command, depth = 0) {
       const nestedHit = shellDeny(nested, depth + 1);
       if (nestedHit) return nestedHit;
     }
-    if (BENIGN.has(firstExecutable(part))) continue;
+    const bin = firstExecutable(part);
+    if (BENIGN.has(bin)) {
+      if (WRITER.has(bin) && writesAFile(part)) {
+        const written = judgeText(part, testPathFrom(part));
+        if (written) return written;
+      }
+      continue;
+    }
     const hit = judgeText(part, testPathFrom(part));
     if (hit) return hit;
   }
@@ -275,7 +383,7 @@ function evaluateGitLabSdlcPrompts(view = {}) {
   if (EDIT_TOOLS.has(tool)) {
     const toolInput = view.toolInput && typeof view.toolInput === 'object' ? view.toolInput : {};
     for (const edit of editsOf(toolInput)) {
-      const hit = judgeText(edit.text, edit.filePath);
+      const hit = judgeEdit(edit.text, edit.filePath);
       if (hit) return hit;
     }
     return null;
