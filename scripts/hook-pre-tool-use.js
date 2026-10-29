@@ -574,6 +574,16 @@ function main() {
     }
   }
 
+  try {
+    const { evaluateSharedVaultMemoryPretool } = require('./hermes-vault-memory-gate');
+    const sharedVault = evaluateSharedVaultMemoryPretool({ toolName, toolInput: effectiveInput });
+    if (sharedVault && sharedVault.ok === false) {
+      return block(`hermes-vault-memory: ${(sharedVault.blockers || []).join('; ')}`);
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const actionContext = extractActionContext(toolName, effectiveInput);
   const lessons = retrieveLessons(toolName, actionContext);
 
