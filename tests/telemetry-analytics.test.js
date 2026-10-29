@@ -750,6 +750,35 @@ test('getTelemetryAnalytics counts one Pay hop when the beacon and the Stripe re
   assert.equal(analytics.ctas.checkoutStarts, 1);
   assert.equal(analytics.ctas.totalClicks, 1);
   assert.equal(analytics.ctas.byId.pro_checkout_direct_stripe, 1);
+  assert.equal(analytics.qualified.ctaClicks, 1);
+  assert.equal(analytics.qualified.checkoutStarts, 1);
+});
+
+test('getTelemetryAnalytics counts a homepage Pay hop as a checkout start only', () => {
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'pro_checkout_direct_stripe',
+    clientType: 'web',
+    acquisitionId: 'acq_home_1',
+    visitorId: 'visitor_home_1',
+    sessionId: 'session_home_1',
+    source: 'website',
+    utmSource: 'website',
+    utmMedium: 'homepage_hero',
+    utmCampaign: 'rally_style_gtm',
+    ctaId: 'homepage_pro_buy',
+    ctaPlacement: 'hero',
+    page: '/go/pro-direct',
+  });
+
+  const analytics = getTelemetryAnalytics(tmpDir);
+  assert.equal(analytics.ctas.checkoutInterstitialViews, 0);
+  assert.equal(analytics.ctas.checkoutInterstitialClicks, 0);
+  assert.equal(analytics.ctas.checkoutInterstitialProConfirms, 0);
+  assert.equal(analytics.ctas.checkoutStarts, 1);
+  assert.equal(analytics.ctas.totalClicks, 1);
+  assert.equal(analytics.ctas.byId.homepage_pro_buy, 1);
+  assert.equal(analytics.qualified.ctaClicks, 1);
+  assert.equal(analytics.qualified.checkoutStarts, 1);
 });
 
 test('getTelemetryAnalytics exposes the first-party marketing conversion funnel', () => {

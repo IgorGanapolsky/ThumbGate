@@ -114,6 +114,11 @@ function isDirectStripeBeacon(entry) {
     && entry.ctaId === 'pro_checkout_direct_stripe';
 }
 
+function isInterstitialPayHop(entry) {
+  return (entry.eventType || entry.event) === 'pro_checkout_direct_stripe'
+    && entry.ctaPlacement === 'checkout_interstitial';
+}
+
 function getTelemetryPath(feedbackDir) {
   return path.join(feedbackDir, TELEMETRY_FILE_NAME);
 }
@@ -751,7 +756,7 @@ function summarizeExternalTrafficQuality(events) {
       incrementCounter(pageViewsByTrafficChannel, entry.trafficChannel);
     }
 
-    if (isMarketingClickEvent(eventType)) {
+    if (isMarketingClickEvent(eventType) && !isDirectStripeBeacon(entry)) {
       externalCtaClicks += 1;
     }
 
@@ -999,7 +1004,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         }
       }
 
-      if ((entry.eventType || entry.event) === 'pro_checkout_direct_stripe') {
+      if (isInterstitialPayHop(entry)) {
         checkoutInterstitialClicks += 1;
         checkoutInterstitialProConfirms += 1;
       }
