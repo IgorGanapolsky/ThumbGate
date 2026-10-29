@@ -574,6 +574,16 @@ function main() {
     }
   }
 
+  try {
+    const { evaluateSupabaseAgentNativePretool } = require('./supabase-agent-native-gate');
+    const supabaseAgent = evaluateSupabaseAgentNativePretool({ toolName, toolInput: effectiveInput });
+    if (supabaseAgent && supabaseAgent.ok === false) {
+      return block(`supabase-agent-native: ${(supabaseAgent.blockers || []).join('; ')}`);
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const actionContext = extractActionContext(toolName, effectiveInput);
   const lessons = retrieveLessons(toolName, actionContext);
 
