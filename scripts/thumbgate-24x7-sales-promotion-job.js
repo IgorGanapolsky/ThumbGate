@@ -470,7 +470,8 @@ async function runSalesPromotion24x7Cycle({
 
   // 6. Fail-Closed Email Intelligence & Strategy Steal Engine (Read -> Synthesize -> Steal -> Apply before Archive)
   let emailIntelligenceSteals = { totalEmailsSynthesized: 9, failClosedDeleteGuardActive: true };
-  if (!Array.isArray(messages)) {
+  const inboxMessages = inboxReport.threads;
+  if (!Array.isArray(inboxMessages) || inboxMessages.length === 0) {
     try {
       const { runEmailStealEngine } = require('./thumbgate-email-steal-engine');
       const stealRes = runEmailStealEngine();

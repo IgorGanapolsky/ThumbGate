@@ -20,20 +20,6 @@ const {
   getSecurityQuestionnaire,
   renderSecurityOverviewHtml,
 } = require('../security-questionnaire');
-const {
-  resolveSsoAuthorization,
-  sanitizeSsoRedirect,
-  createAdminSessionToken,
-  verifyAdminRequest,
-  buildAdminCookieHeader,
-  buildClearAdminCookieHeader,
-  buildAdminRealtimeSnapshot,
-  classifyAdminDialogflowIntent,
-  fulfillAdminDialogflowIntent,
-  askAdminDialogflow,
-  renderAdminLoginHtml,
-  renderAdminPortalHtml,
-} = require('../admin-cloud-portal');
 
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
 const POSTHOG_INGEST_HOST = 'us.i.posthog.com';
@@ -277,6 +263,7 @@ const {
 } = require('../../scripts/feedback-aggregate');
 const {
   guardDfcxWebhook,
+  resolveDialogflowModel,
 } = require('../../adapters/gcp/dfcx-webhook-gate');
 const {
   buildDashboardRenderSpec,
@@ -333,6 +320,50 @@ const {
   renderSeoPageHtml,
   THUMBGATE_SEO_SITEMAP_ENTRIES,
 } = require('../../scripts/seo-gsd');
+const {
+  CURATED_THREAT_PACKS,
+  CLOUD_SAAS_TIERS,
+  interceptAgentRequest,
+  buildCloudIntegrationGuideMarkdown,
+  calculateCloudSaasEconomics,
+  evaluateEntireCiTrailAndProjectSync,
+  buildRlhfDpoTrainingPairFromInterception,
+  buildFourPillarPositioningMatrix,
+  syncTeamPolicyAndThreatPacks,
+  ingestEnterpriseCloudSinkBatch,
+  getCloudCustomerPortalSession,
+  manageCloudSubscription,
+  submitCloudPortalFeedbackAndFeatureRequest,
+  startSsoAuthorizationFlow,
+  buildMacAndLinuxInstallerScript,
+  buildWindowsInstallerScript,
+  buildHomebrewFormulaRuby,
+  registerCommissionOnlyBdmDeal,
+  calculateIrashTechTeamAndTokenRoi,
+  evaluateSkillUpDeclarativeEvalLoop,
+  convertSkillObservationToCandidateCase,
+  evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate,
+  getSkillsShWellKnownSkillMarkdown,
+  buildSkillsShWellKnownDiscoveryIndex,
+  evaluateHerdrOmpPoolsideGitButlerSwarmGate,
+  evaluateBrowserOsNeoProductivityGate,
+  evaluateRadwareAgenticApiRiskFirewall,
+  buildOneShotWellKnownReceiptsManifest,
+  evaluateOneShotAgentGatewayAndSignedReceiptSteal,
+  evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
+  evaluateAlgoverseResearchMonetizationGate,
+  evaluateApolloAgentGtmConnectorSteal,
+  evaluateBroadcastMoESwarmAndLlmJudgeSow,
+  evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
+  evaluateCoderLegionSyndicationAndMonetizationGate,
+  evaluateNanbeigeAgenticCodingSteal,
+  evaluateGitHubUniverse2026StackSteal,
+  evaluateGoogleA2uiSwappableInferenceSteal,
+  evaluateXArticleMonetizationAndPromotionSteal,
+  evaluateHermesJarvisObsidianMemorySteal,
+} = require('../cloud-token-firewall');
+
+const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
 
 const LANDING_PAGE_PATH = path.resolve(__dirname, '../../public/index.html');
 const PRO_PAGE_PATH = path.resolve(__dirname, '../../public/pro.html');
@@ -582,6 +613,78 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     },
     allowCustomerEmail: true,
     prefillStripeEmail: true,
+  },
+  'pro-annual': {
+    path: '/checkout/pro?plan_id=pro&billing_cycle=annual',
+    ctaId: 'pro_checkout_annual_149',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'pro_annual_149',
+      plan_id: 'pro',
+      billing_cycle: 'annual',
+    },
+    allowCustomerEmail: true,
+  },
+  'bundle-49': {
+    fallbackHref: 'https://iganapolsky.gumroad.com/l/vcrho',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_bundle_49',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'bundle_49',
+      plan_id: 'bundle_49',
+      billing_cycle: 'one_time',
+    },
+  },
+  'playbook-10': {
+    fallbackHref: 'https://iganapolsky.gumroad.com/l/odrkon',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_playbook_10',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'playbook_10',
+      plan_id: 'playbook_10',
+      billing_cycle: 'one_time',
+    },
+  },
+  'cloud-indie': {
+    path: '/checkout/pro?plan_id=cloud_indie&billing_cycle=monthly',
+    ctaId: 'cloud_indie_49',
+    ctaPlacement: 'cloud_saas',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'cloud_saas',
+      utm_campaign: 'cloud_indie_49',
+      plan_id: 'cloud_indie',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+  },
+  'cloud-startup': {
+    path: '/checkout/pro?plan_id=cloud_startup&billing_cycle=monthly',
+    ctaId: 'cloud_startup_199',
+    ctaPlacement: 'cloud_saas',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'cloud_saas',
+      utm_campaign: 'cloud_startup_199',
+      plan_id: 'cloud_startup',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
   },
   // Operator Framework offers (/operator-framework). Same-origin hop keeps
   // buy.stripe.com out of public HTML; bots are deflected to the page.
@@ -2062,10 +2165,25 @@ function parseNonNegativeInteger(value, fallback) {
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
+function getFeedbackDirFingerprint(feedbackDir) {
+  if (!feedbackDir || !fs.existsSync(feedbackDir)) return '';
+  const files = ['feedback-log.jsonl', 'memory-log.jsonl', 'audit.jsonl', 'prevention-rules.md'];
+  const parts = [];
+  for (const name of files) {
+    try {
+      const st = fs.statSync(path.join(feedbackDir, name));
+      parts.push(`${name}:${st.size}:${Math.trunc(st.mtimeMs)}`);
+    } catch {
+      // file absent
+    }
+  }
+  return parts.length > 0 ? `#${parts.join('|')}` : '';
+}
+
 function buildLiveDashboardCacheKey(parsed, feedbackDir) {
   const query = new URLSearchParams(parsed.searchParams);
   query.sort();
-  return `${path.resolve(feedbackDir)}?${query.toString()}`;
+  return `${path.resolve(feedbackDir)}?${query.toString()}${getFeedbackDirFingerprint(feedbackDir)}`;
 }
 
 async function loadCachedLiveDashboardData(parsed, feedbackDir, options = {}) {
@@ -2149,12 +2267,25 @@ function buildEnterpriseDataChatStatus(env = process.env) {
     },
     dfcx: {
       apiSurface: 'Dialogflow CX REST API: projects.locations.agents',
+      consoleArchitecture: 'Google Conversational Agents Console (Flows + Playbooks)',
       liveAgentConfigured: Boolean(dfcxAgentId && dfcxLocation),
       agentId: dfcxAgentId,
       location: dfcxLocation,
       fulfillmentProxyConfigured: Boolean(dfcxFulfillmentUrl),
       fulfillmentUrlConfigured: Boolean(dfcxFulfillmentUrl),
       gcloudCxCommandSupported: false,
+      models: {
+        playbookDefault: resolveDialogflowModel({ task: 'playbook' }, env),
+        voiceAndRewriterDefault: resolveDialogflowModel({ task: 'rewriter' }, env),
+      },
+      governance: {
+        wrapperPageIsolation: true,
+        authorizationRuleEnforced: true,
+        bannedPhraseFullMatchDefault: true,
+        intentDensityTarget: '20-50',
+        sessionsClientRecycling: true,
+        webhookRetryBackoff503: true,
+      },
       verification: dfcxAgentId && dfcxLocation
         ? 'Agent metadata is present in env; verify via REST/console before production claims.'
         : 'No live DFCX agent env configured. Use REST/console/deployed webhook evidence before claiming a live agent.',
@@ -2238,7 +2369,9 @@ function bestFeedbackDescription(row) {
 function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opts = {}) {
   try {
     if (!feedbackDir) return [];
-    const rows = shouldAggregateFeedback()
+    const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
+    const isGlobalFeedbackRoot = path.resolve(feedbackDir) === path.resolve(homeThumbgate);
+    const rows = (isGlobalFeedbackRoot && shouldAggregateFeedback())
       ? collectAggregateLogEntries('feedback-log.jsonl', {
           feedbackDir,
           maxLines: 20_000,
@@ -2806,6 +2939,15 @@ function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = 
   const hiddenInputs = includeHiddenAttribution
     ? buildCheckoutHiddenAttributionInputs(parsed)
     : '';
+  const requestedPlanId = String(parsed?.searchParams?.get('plan_id') || 'pro').toLowerCase();
+  const requestedCycle = String(parsed?.searchParams?.get('billing_cycle') || 'monthly').toLowerCase();
+  const planDisplay = requestedPlanId === 'cloud_indie'
+    ? { title: 'Start ThumbGate Cloud Indie', price: '$49', unit: '/mo', directHref: '/go/pro-direct?plan_id=cloud_indie&billing_cycle=monthly', ctaLabel: 'Pay $49/mo with Stripe →' }
+    : requestedPlanId === 'cloud_startup'
+      ? { title: 'Start ThumbGate Cloud Startup', price: '$199', unit: '/mo', directHref: '/go/pro-direct?plan_id=cloud_startup&billing_cycle=monthly', ctaLabel: 'Pay $199/mo with Stripe →' }
+      : requestedCycle === 'annual'
+        ? { title: 'Start ThumbGate Pro Annual', price: '$149', unit: '/yr', directHref: '/go/pro-direct?plan_id=pro&billing_cycle=annual', ctaLabel: 'Pay $149/yr with Stripe →' }
+        : { title: 'Start ThumbGate Pro', price: '$19', unit: '/mo', directHref: '/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial', ctaLabel: 'Pay $19/mo with Stripe →' };
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -2838,10 +2980,10 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <body>
 <main>
 <div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
-<h1>Start ThumbGate Pro</h1>
-<div class="price">$19<small>/mo</small></div>
+<h1>${planDisplay.title}</h1>
+<div class="price">${planDisplay.price}<small>${planDisplay.unit}</small></div>
 <p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available.</p>
-<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">Pay $19/mo with Stripe →</a>
+<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="${planDisplay.directHref}">${planDisplay.ctaLabel}</a>
 <form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
@@ -2849,8 +2991,13 @@ ${hiddenInputs}
 <p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
 <button type="submit" class="primary">Email a receipt, then pay →</button>
 </form>
+<a class="secondary" data-i="cloud_indie_49" rel="nofollow" href="/go/cloud-indie?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=cloud_indie_49&amp;cta_id=cloud_indie_49&amp;cta_placement=checkout_interstitial">Cloud Indie (AWS Token Optimizer · 1M tokens/mo) — $49/mo →</a>
+<a class="secondary" data-i="cloud_startup_199" rel="nofollow" href="/go/cloud-startup?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=cloud_startup_199&amp;cta_id=cloud_startup_199&amp;cta_placement=checkout_interstitial">Cloud Startup (10M tokens/mo + Loop-Kill Webhooks) — $199/mo →</a>
+<a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Prefer one-time (no subscription)? Production Rule-Pack Kit — $49 →</a>
+<a class="secondary" data-i="pro_checkout_playbook_999" rel="nofollow" href="/go/playbook-999?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=playbook_999&amp;cta_id=pro_checkout_playbook_999&amp;cta_placement=checkout_interstitial">Just want the 2026 Agent FinOps &amp; Cost Playbook (One-Time)? — $9.99 →</a>
+<a class="secondary" data-i="pro_checkout_annual_149" rel="nofollow" href="/go/pro-annual?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_annual_149&amp;cta_id=pro_checkout_annual_149&amp;cta_placement=checkout_interstitial">Annual billing (save 35%)? ThumbGate Pro — $149/yr →</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
-<p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages. Email path keeps receipts attributable; skip uses a same-origin hop that bot-deflects crawlers.</p>
+<p class="choice-note">Cancel anytime. 7-day refund, no questions.</p>
 <div class="objection-box" aria-label="Checkout feedback">
 <strong>Not buying today?</strong>
 <p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
@@ -2931,13 +3078,10 @@ ${hiddenInputs}
   if (skipLink) {
     skipLink.addEventListener('click', function(){
       submitted = true;
-      var email = emailInput ? emailInput.value.trim() : null;
       sendTelemetry('checkout_interstitial_cta_clicked', {
         ctaId: 'pro_checkout_direct_stripe',
-        ctaPlacement: 'checkout_interstitial',
-        customerEmail: email || null
+        ctaPlacement: 'checkout_interstitial'
       });
-      try { window.plausible && window.plausible('Checkout Pro Direct Stripe Clicked', { props: { page:'/checkout/pro', source:'interstitial_skip' } }); } catch(_) {}
     });
   }
   document.querySelector('form').addEventListener('submit', function(){
@@ -3179,7 +3323,7 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
   };
 }
 
-function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadRequest, slug }) {
+async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadRequest, slug }) {
   const target = getTrackedLinkTarget(slug);
   if (!target) {
     sendJson(res, 404, {
@@ -3248,6 +3392,45 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
     });
     res.end();
     return;
+  }
+  if (
+    (target.slug === 'pro-direct' || target.slug === 'pro-annual')
+    && process.env.STRIPE_SECRET_KEY
+    && !process.env.NODE_TEST_CONTEXT
+    && !isHeadRequest
+  ) {
+    try {
+      const billingCycle = target.slug === 'pro-annual' ? 'annual' : 'monthly';
+      const customerEmail = normalizeCheckoutCustomerEmail(parsed.searchParams.get('customer_email')) || undefined;
+      const traceId = createJourneyId('checkout');
+      const bootstrapBody = buildCheckoutBootstrapBody(parsed, req, journeyState);
+      bootstrapBody.planId = 'pro';
+      bootstrapBody.billingCycle = billingCycle;
+      const analyticsMetadata = buildCheckoutAttributionMetadata(bootstrapBody, req, traceId);
+      const sessionResult = await createCheckoutSession({
+        successUrl: buildCheckoutFallbackUrl(buildHostedSuccessUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
+        cancelUrl: buildCheckoutFallbackUrl(buildHostedCancelUrl(hostedConfig.appOrigin, traceId), analyticsMetadata),
+        customerEmail,
+        installId: bootstrapBody.installId,
+        traceId,
+        metadata: analyticsMetadata,
+        appOrigin: hostedConfig.appOrigin,
+      });
+      if (sessionResult && sessionResult.url) {
+        res.writeHead(302, {
+          ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
+          'Cache-Control': 'no-store',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'X-Robots-Tag': 'noindex,nofollow',
+          'X-ThumbGate-Link-Slug': target.slug,
+          Location: sessionResult.url,
+        });
+        res.end();
+        return;
+      }
+    } catch (_) {
+      // Fall back to static Payment Link if dynamic session creation fails
+    }
   }
   const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
   const attribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl);
@@ -3717,14 +3900,9 @@ function resolveLocalPageBootstrap(req, expectedApiKey) {
     : forwardedHost || req.headers.host || '';
   const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
   const devOverride = expectedApiKey === null && isLoopbackHost(hostHeader);
-  const adminSessionAuth = Boolean(expectedApiKey) && verifyAdminRequest(req, {
-    expectedApiKey,
-    expectedOperatorKey: process.env.THUMBGATE_OPERATOR_KEY || '',
-  });
-  const adminBootstrap = Boolean(adminSessionAuth && adminSessionAuth.authenticated && adminSessionAuth.method === 'cookie');
-  const bootstrapActive = localProBootstrap || devOverride || adminBootstrap;
+  const bootstrapActive = localProBootstrap || devOverride;
   let bootstrapKey = '';
-  if (localProBootstrap || adminBootstrap) {
+  if (localProBootstrap) {
     bootstrapKey = expectedApiKey;
   } else if (devOverride) {
     bootstrapKey = process.env.THUMBGATE_API_KEY || 'dev-override';
@@ -4035,7 +4213,16 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   techParts.push(`<tr><td class="label">Feedback Event ID</td><td><code>${esc(feedbackEventId || lessonId)}</code></td></tr>`);
   if (memoryRecordId) techParts.push(`<tr><td class="label">Memory Record ID</td><td><code>${esc(memoryRecordId)}</code></td></tr>`);
   techParts.push(`<tr><td class="label">Promoted to Memory</td><td>${promotedToMemory ? '<span style="color:var(--green)">✓ Yes</span>' : '<span style="color:var(--text-muted)">✗ No</span>'}</td></tr>`);
-  if (failureType) techParts.push(`<tr><td class="label">Failure Type</td><td><span style="color:${failureType === 'decision' ? 'var(--yellow)' : 'var(--purple)'};font-weight:600">${esc(failureType)}</span> <span style="color:var(--text-muted);font-size:11px">${failureType === 'decision' ? '(wrong tool/action chosen)' : '(right tool, bad params/output)'}</span></td></tr>`);
+  if (failureType) {
+    const failureMeta = {
+      decision: { color: 'var(--yellow)', label: 'Wrong tool/action chosen' },
+      execution: { color: 'var(--purple)', label: 'Right tool, bad params/output' },
+      verification: { color: 'var(--red)', label: 'Verification guard triggered' },
+      environmental: { color: 'var(--orange)', label: 'Environmental noise/flakiness' },
+      app_change: { color: 'var(--cyan)', label: 'Expected application behavior change' },
+    }[failureType] || { color: 'var(--text-muted)', label: failureType };
+    techParts.push(`<tr><td class="label">Failure Type</td><td><span style="color:${failureMeta.color};font-weight:600">${esc(failureType)}</span> <span style="color:var(--text-muted);font-size:11px">(${esc(failureMeta.label)})</span></td></tr>`);
+  }
   if (skill) techParts.push(`<tr><td class="label">Skill</td><td><code>${esc(skill)}</code></td></tr>`);
   if (source) techParts.push(`<tr><td class="label">Source</td><td>${esc(source)}</td></tr>`);
   if (relatedFeedbackId) techParts.push(`<tr><td class="label">Related Feedback</td><td><a href="/lessons/${esc(relatedFeedbackId)}" style="color:var(--cyan)">${esc(relatedFeedbackId)}</a></td></tr>`);
@@ -4087,7 +4274,7 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #141414; --border: #222225;
   --text: #e8e8ec; --text-muted: #8b8b96; --cyan: #22d3ee;
   --cyan-dim: rgba(34,211,238,0.12); --green: #4ade80; --red: #f87171;
-  --yellow: #fbbf24; --purple: #a78bfa;
+  --yellow: #fbbf24; --purple: #a78bfa; --orange: #f97316;
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
   --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
 }
@@ -4900,18 +5087,22 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 function renderCheckoutCancelledPage(runtimeConfig) {
   const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
+  const playbookUrl = escapeHtmlAttribute(new URL('/go/playbook-999?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=playbook_999', runtimeConfig.appOrigin).toString());
+  const bundle49Url = escapeHtmlAttribute(new URL('/go/bundle-49?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=bundle_49', runtimeConfig.appOrigin).toString());
   const diagnosticUrl = escapeHtmlAttribute(new URL('/diagnostic', runtimeConfig.appOrigin).toString());
   const workflowSprintUrl = escapeHtmlAttribute(new URL('/go/sprint', runtimeConfig.appOrigin).toString());
   const workflowSprintIntakeUrl = escapeHtmlAttribute(new URL('/#workflow-sprint-intake', runtimeConfig.appOrigin).toString());
   const recoveryOfferLinks = [
+    `<a href="${playbookUrl}" data-recovery-offer="playbook_999" data-offer-price="9.99">Buy $9.99 Playbook (One-Time, No Subscription)</a>`,
+    `<a href="${bundle49Url}" data-recovery-offer="bundle_49" data-offer-price="49">Buy $49 Production Bundle (One-Time Expense)</a>`,
     `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
     `<a href="${diagnosticUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Review $${sprintDiagnosticPriceDollars} diagnostic</a>`,
     `<a href="${workflowSprintUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Scope $${workflowSprintPriceDollars} sprint</a>`,
   ].join('\n        ');
   const recoveryOfferCard = recoveryOfferLinks
     ? `<div class="card recovery-card">
-      <h2>Need help deciding?</h2>
-      <p>If Pro is not the right next step, start smaller or send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
+      <h2>Prefer a one-time purchase (no recurring subscription)?</h2>
+      <p>Grab the $9.99 FinOps Playbook or the $49 Corporate-Expensable Production Rule-Pack Bundle with zero recurring billing, or send your workflow first for a $499 diagnostic.</p>
       <div class="actions">
         ${recoveryOfferLinks}
       </div>
@@ -5033,7 +5224,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       </div>
       <div class="actions">
         <button type="button" id="submit-reason">Send feedback</button>
-        <a id="retry-checkout" href="/checkout/pro" class="secondary" data-recovery-offer="pro_pay_now_retry" data-offer-price="19">Restart $19 Pro checkout</a>
+        <a id="retry-checkout" href="/go/pro-direct" class="secondary" data-recovery-offer="pro_pay_now_retry" data-offer-price="19">Restart $19 Pro checkout (Direct Stripe →)</a>
         <a href="${runtimeConfig.appOrigin}" class="secondary">Return to Context Gateway</a>
       </div>
       <p class="note" id="status">No feedback sent yet.</p>
@@ -6259,7 +6450,7 @@ function createApiServer() {
           }
         }
       }
-      serveTrackedLinkRedirect({
+      await serveTrackedLinkRedirect({
         req,
         res,
         parsed: trackedParsed,
@@ -7177,6 +7368,19 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/install.md') {
+      try {
+        const installMdPath = path.join(PUBLIC_DIR, 'install.md');
+        const body = fs.readFileSync(installMdPath, 'utf-8');
+        res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });
+        if (!isHeadRequest) res.end(body);
+        else res.end();
+      } catch {
+        sendJson(res, 404, { error: 'install.md not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/learn/learn.css') {
       try {
         const cssPath = path.join(LEARN_DIR, 'learn.css');
@@ -7713,7 +7917,7 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/cancel') {
+    if (isGetLikeRequest && (pathname === '/cancel' || pathname === '/checkout/cancel')) {
       if (isHeadRequest) {
         sendHtml(res, 200, renderCheckoutCancelledPage(hostedConfig), {}, {
           headOnly: true,
@@ -9381,6 +9585,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           nextSteps: result.apiKey ? {
             env: `THUMBGATE_API_KEY=${result.apiKey || ''}\nTHUMBGATE_API_BASE_URL=${hostedConfig.billingApiBaseUrl}`,
             curl: `curl -X POST ${hostedConfig.billingApiBaseUrl}/v1/feedback/capture \\\n  -H 'Authorization: Bearer ${result.apiKey || ''}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{"signal":"down","context":"example","whatWentWrong":"example","whatToChange":"example"}'`,
+            cloudInterceptCurl: `curl -X POST ${hostedConfig.billingApiBaseUrl}/v1/cloud/intercept \\\n  -H 'Authorization: Bearer ${result.apiKey || ''}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{"sessionId":"agent-run-1","toolCall":{"name":"bash","arguments":{"cmd":"npm test"}},"messages":[{"role":"user","content":"Fix failing test"}]}'`,
+            integrationGuideUrl: `${hostedConfig.billingApiBaseUrl}/v1/cloud/integration-guide.md?apiKey=${encodeURIComponent(result.apiKey || '')}`,
           } : nextSteps,
         }, getPublicBillingHeaders(resolvedTraceId));
       } catch (err) {
@@ -9395,199 +9601,269 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
-    // --- Google Cloud Executive Admin Portal & Dialogflow Command Center ---
-    if ((isGetLikeRequest || req.method === 'POST') && pathname.startsWith('/admin/sso/')) {
-      const ssoParts = pathname.slice('/admin/sso/'.length).split('/').filter(Boolean);
-      const provider = ssoParts[0] || '';
-      const redirectTarget = parsed.searchParams.get('redirect') || '/admin';
-      const ssoResult = resolveSsoAuthorization({
-        provider,
-        redirectTarget,
-        expectedApiKey,
-        expectedOperatorKey,
+    if (isGetLikeRequest && pathname === '/v1/cloud/calculator') {
+      const economics = calculateCloudSaasEconomics({
+        indieSubscribers: parsed.searchParams.get('indieSubscribers') ?? 15,
+        startupSubscribers: parsed.searchParams.get('startupSubscribers') ?? 20,
+        architecture: parsed.searchParams.get('architecture') || 'serverless_lambda_dynamodb_sqs',
+        developerMonthlyApiBillUsd: parsed.searchParams.get('developerMonthlyApiBillUsd') ?? 500,
+        compactionReductionPct: parsed.searchParams.get('compactionReductionPct') ?? 42,
       });
-      if (!ssoResult.ok) {
-        sendHtml(
-          res,
-          ssoResult.statusCode || 400,
-          renderAdminLoginHtml({ error: ssoResult.error, redirect: redirectTarget }),
-          { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' },
-          { headOnly: isHeadRequest }
-        );
-        return;
-      }
-      const isHttps = String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https';
-      const cookieHeader = buildAdminCookieHeader(ssoResult.token, { secure: isHttps });
-      res.writeHead(303, {
-        Location: ssoResult.redirectLocation,
-        'Set-Cookie': cookieHeader,
-        'Cache-Control': 'private, no-store',
+      sendJson(res, 200, economics, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/integration-guide.md') {
+      const apiKeyParam = parsed.searchParams.get('apiKey') || extractBearerToken(req) || 'tg_live_YOUR_API_KEY';
+      const tierParam = parsed.searchParams.get('tier') || 'cloud_indie';
+      const guideMd = buildCloudIntegrationGuideMarkdown({
+        apiKey: apiKeyParam,
+        tierId: tierParam,
+        apiBaseUrl: hostedConfig.billingApiBaseUrl || 'https://thumbgate.ai',
       });
-      res.end();
+      res.writeHead(200, {
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Type': 'text/markdown; charset=utf-8',
+      });
+      res.end(isHeadRequest ? '' : guideMd);
       return;
     }
 
-    if (isGetLikeRequest && (pathname === '/admin' || pathname === '/admin/' || pathname === '/admin/login')) {
-      const auth = verifyAdminRequest(req, { expectedApiKey, expectedOperatorKey });
-      const redirectTarget = parsed.searchParams.get('redirect') || '/admin';
-      if (!auth.authenticated || pathname === '/admin/login') {
-        sendHtml(
-          res,
-          auth.authenticated ? 200 : 401,
-          renderAdminLoginHtml({ redirect: redirectTarget }),
-          { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' },
-          { headOnly: isHeadRequest }
-        );
+    if (isGetLikeRequest && pathname === '/v1/cloud/positioning') {
+      sendJson(res, 200, buildFourPillarPositioningMatrix(), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/ci-trail-eval') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, evaluateEntireCiTrailAndProjectSync(body));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/dpo-sync') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, buildRlhfDpoTrainingPairFromInterception(body));
+      return;
+    }
+    if (req.method === 'POST' && pathname === '/v1/cloud/sink/ingest') {
+      const body = await parseJsonBody(req);
+      const result = ingestEnterpriseCloudSinkBatch({ batch: body });
+      sendJson(res, result.statusCode || 200, result);
+      return;
+    }
+    if (isGetLikeRequest && (
+      pathname === '/cloud'
+      || pathname === '/portal'
+      || pathname === '/cloud.html'
+      || /^\/(?:cloud\/u|u)\/[a-zA-Z0-9._-]+$/.test(pathname)
+    )) {
+      const html = fs.existsSync(CLOUD_PORTAL_PAGE_PATH)
+        ? fs.readFileSync(CLOUD_PORTAL_PAGE_PATH, 'utf8')
+        : '<h1>ThumbGate Cloud Portal</h1>';
+      sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/install.sh' || pathname === '/install/macos.command' || pathname === '/install/linux.sh')) {
+      const script = buildMacAndLinuxInstallerScript({ apiBaseUrl: hostedConfig.appOrigin || 'https://thumbgate.ai' });
+      res.writeHead(200, {
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Type': 'text/x-shellscript; charset=utf-8',
+      });
+      res.end(isHeadRequest ? '' : script);
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/install.ps1' || pathname === '/install/windows.bat')) {
+      const script = buildWindowsInstallerScript({ apiBaseUrl: hostedConfig.appOrigin || 'https://thumbgate.ai' });
+      res.writeHead(200, {
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Type': 'text/plain; charset=utf-8',
+      });
+      res.end(isHeadRequest ? '' : script);
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/Formula/thumbgate.rb' || pathname === '/install/homebrew.rb')) {
+      const formula = buildHomebrewFormulaRuby({ version: '1.40.0', apiBaseUrl: hostedConfig.appOrigin || 'https://thumbgate.ai' });
+      res.writeHead(200, {
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Type': 'text/plain; charset=utf-8',
+      });
+      res.end(isHeadRequest ? '' : formula);
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/sso/authorize') {
+      const sso = startSsoAuthorizationFlow({
+        provider: parsed.searchParams.get('provider') || 'github',
+        email: parsed.searchParams.get('email') || '',
+        cliPort: parsed.searchParams.get('cli_port') || parsed.searchParams.get('cliPort') || '',
+        redirectUri: parsed.searchParams.get('redirect_uri') || '',
+        appOrigin: hostedConfig.appOrigin || 'https://thumbgate.ai',
+      });
+      if (parsed.searchParams.get('format') === 'json' || String(req.headers.accept || '').includes('application/json')) {
+        sendJson(res, 200, sso, {}, { headOnly: isHeadRequest });
         return;
       }
-      const snapshot = await buildAdminRealtimeSnapshot({ feedbackDir: requestFeedbackDir });
-      sendHtml(
-        res,
-        200,
-        renderAdminPortalHtml(snapshot, auth),
-        { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' },
-        { headOnly: isHeadRequest }
-      );
-      return;
-    }
-
-    if (req.method === 'POST' && pathname === '/admin/login') {
-      const contentType = String(req.headers['content-type'] || '').toLowerCase();
-      const body = contentType.includes('application/json')
-        ? await parseJsonBody(req, 16 * 1024)
-        : await parseFormBody(req, 16 * 1024);
-      const candidateKey = String(body.apiKey || body.password || body.key || '').trim();
-      const email = String(body.email || 'iganapolsky@gmail.com').trim() || 'iganapolsky@gmail.com';
-      const validAdmin = Boolean(expectedApiKey && safeKeyEqual(candidateKey, expectedApiKey));
-      const validOperator = Boolean(expectedOperatorKey && safeKeyEqual(candidateKey, expectedOperatorKey));
-
-      if (!validAdmin && !validOperator) {
-        if (contentType.includes('application/json')) {
-          sendJson(res, 401, { ok: false, error: 'Invalid admin or operator key.' });
-        } else {
-          sendHtml(
-            res,
-            401,
-            renderAdminLoginHtml({ error: 'Invalid admin or operator key. Please try again.', email }),
-            { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' }
-          );
-        }
-        return;
-      }
-
-      const secret = String(
-        process.env.THUMBGATE_ADMIN_SESSION_SECRET
-          || expectedApiKey
-          || expectedOperatorKey
-          || 'thumbgate-local-dev-session-secret'
-      ).trim();
-      const role = validAdmin ? 'admin' : 'operator';
-      const token = createAdminSessionToken({ email, role, secret });
-      const isHttps = String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https';
-      const cookieHeader = buildAdminCookieHeader(token, { secure: isHttps });
-
-      if (contentType.includes('application/json')) {
-        sendJson(res, 200, { ok: true, email, role, redirect: '/admin' }, {
-          'Set-Cookie': cookieHeader,
-          'Cache-Control': 'private, no-store',
-        });
-      } else {
-        res.writeHead(303, {
-          Location: '/admin',
-          'Set-Cookie': cookieHeader,
-          'Cache-Control': 'private, no-store',
-        });
-        res.end();
-      }
-      return;
-    }
-
-    if ((req.method === 'POST' || isGetLikeRequest) && pathname === '/admin/logout') {
-      const isHttps = String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https';
-      const redirectAfterLogout = sanitizeSsoRedirect(parsed.searchParams.get('redirect') || '/admin');
-      res.writeHead(303, {
-        Location: redirectAfterLogout,
-        'Set-Cookie': buildClearAdminCookieHeader({ secure: isHttps }),
-        'Cache-Control': 'private, no-store',
+      res.writeHead(302, {
+        'X-Content-Type-Options': 'nosniff',
+        Location: sso.redirectUrl,
+        'Cache-Control': 'no-store',
       });
       res.end();
       return;
     }
 
-    if (req.method === 'GET' && pathname === '/v1/admin/realtime') {
-      const auth = verifyAdminRequest(req, { expectedApiKey, expectedOperatorKey });
-      if (!auth.authenticated) {
-        sendProblem(res, {
-          type: PROBLEM_TYPES.UNAUTHORIZED,
-          title: 'Unauthorized',
-          status: 401,
-          detail: 'Admin session or API key required.',
-        });
-        return;
-      }
-      const snapshot = await buildAdminRealtimeSnapshot({ feedbackDir: requestFeedbackDir });
-      sendJson(res, 200, snapshot, { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' });
+    if (isGetLikeRequest && pathname === '/v1/cloud/portal/session') {
+      const session = getCloudCustomerPortalSession({
+        apiKey: parsed.searchParams.get('apiKey') || extractBearerToken(req),
+        email: parsed.searchParams.get('email') || '',
+        tierId: parsed.searchParams.get('tierId') || '',
+      });
+      sendJson(res, 200, session, {}, { headOnly: isHeadRequest });
       return;
     }
 
-    if (req.method === 'POST' && pathname === '/v1/admin/dialogflow') {
-      const auth = verifyAdminRequest(req, { expectedApiKey, expectedOperatorKey });
-      if (!auth.authenticated) {
-        sendProblem(res, {
-          type: PROBLEM_TYPES.UNAUTHORIZED,
-          title: 'Unauthorized',
-          status: 401,
-          detail: 'Admin session or API key required.',
-        });
-        return;
-      }
-      const body = await parseJsonBody(req, 16 * 1024);
-      const query = body.query || body.prompt || body.message || body.text;
-      const result = await askAdminDialogflow({
-        query,
-        sessionId: body.sessionId || 'tg-admin-web',
-        feedbackDir: requestFeedbackDir,
+    if (req.method === 'POST' && pathname === '/v1/cloud/portal/demo-intercept') {
+      const body = await parseJsonBody(req);
+      const tenantKey = body.apiKey || body.email || 'tg_indie_portal_demo';
+      const interceptResult = await interceptAgentRequest({
+        tenantKey,
+        tierId: 'cloud_indie',
+        sessionId: 'portal_demo_session',
+        agentId: 'claude_code_agent',
+        toolCall: { name: 'bash', arguments: { cmd: 'npm test' } },
+        messages: [
+          { role: 'system', content: 'You are an autonomous coding agent running in a strict verification loop.' },
+          { role: 'system', content: 'You are an autonomous coding agent running in a strict verification loop.' },
+          { role: 'user', content: 'Fix failing test suite.' },
+        ],
       });
-      sendJson(res, 200, result, { 'Cache-Control': 'private, no-store' });
+      const session = getCloudCustomerPortalSession({ apiKey: tenantKey, email: body.email || 'demo@thumbgate.ai' });
+      sendJson(res, 200, { ok: true, interceptResult, session });
       return;
     }
 
-    if (req.method === 'POST' && pathname === '/v1/admin/dialogflow-webhook') {
-      const webhookSecret = String(process.env.THUMBGATE_DIALOGFLOW_WEBHOOK_SECRET || '').trim();
-      const presentedWebhookSecret = String(req.headers['x-thumbgate-dialogflow-secret'] || '').trim();
-      const auth = verifyAdminRequest(req, { expectedApiKey, expectedOperatorKey });
-      const webhookAuthed = webhookSecret
-        ? safeKeyEqual(presentedWebhookSecret, webhookSecret) || auth.authenticated
-        : auth.authenticated;
-      if (!webhookAuthed) {
-        sendProblem(res, {
-          type: PROBLEM_TYPES.UNAUTHORIZED,
-          title: 'Unauthorized',
-          status: 401,
-          detail: 'Valid Dialogflow webhook secret or admin authentication required.',
-        });
-        return;
-      }
-      const body = await parseJsonBody(req, 64 * 1024);
-      const queryText = body?.queryResult?.queryText || body?.text || body?.query || 'overview';
-      const intentDisplayName = body?.queryResult?.intent?.displayName || body?.fulfillmentInfo?.tag || '';
-      const snapshot = await buildAdminRealtimeSnapshot({ feedbackDir: requestFeedbackDir });
-      const resolvedIntent = classifyAdminDialogflowIntent(queryText, intentDisplayName);
-      const fulfilled = fulfillAdminDialogflowIntent(resolvedIntent, queryText, snapshot);
-      sendJson(res, 200, {
-        fulfillmentText: fulfilled.answer,
-        fulfillmentMessages: [{ text: { text: [fulfilled.answer] } }],
-        fulfillment_response: {
-          messages: [{ text: { text: [fulfilled.answer] } }],
-        },
-        payload: {
-          intent: fulfilled.intent,
-          cards: fulfilled.cards,
-          generatedAt: snapshot.generatedAt,
-        },
+    if (req.method === 'POST' && pathname === '/v1/cloud/portal/subscription') {
+      const body = await parseJsonBody(req);
+      const sub = manageCloudSubscription({
+        tenantKey: body.tenantKey || extractBearerToken(req) || 'demo_customer',
+        action: body.action || 'status',
+        targetTierId: body.targetTierId || 'cloud_startup',
+        customerEmail: body.customerEmail || '',
+        appOrigin: hostedConfig.appOrigin || 'https://thumbgate.ai',
       });
+      sendJson(res, 200, sub);
       return;
     }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/portal/feedback') {
+      const body = await parseJsonBody(req);
+      const fb = submitCloudPortalFeedbackAndFeatureRequest(body);
+      sendJson(res, fb.statusCode || 201, fb);
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/roi-calculator') {
+      const roi = calculateIrashTechTeamAndTokenRoi({
+        teamSize: parsed.searchParams.get('teamSize') ?? 10,
+        wastedHoursPerWeekPerDev: parsed.searchParams.get('wastedHoursPerWeekPerDev') ?? 8,
+        hourlyEngineerCostUsd: parsed.searchParams.get('hourlyEngineerCostUsd') ?? 75,
+        monthlyLlmApiSpendUsd: parsed.searchParams.get('monthlyLlmApiSpendUsd') ?? 500,
+        subscriptionCostMonthlyUsd: parsed.searchParams.get('subscriptionCostMonthlyUsd') ?? 199,
+      });
+      sendJson(res, 200, roi, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/bdm/register-deal') {
+      const body = await parseJsonBody(req);
+      const resDeal = registerCommissionOnlyBdmDeal(body);
+      sendJson(res, resDeal.statusCode || 201, resDeal);
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/threat-packs') {
+      sendJson(res, 200, { ok: true, packs: CURATED_THREAT_PACKS }, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/v1/cloud/policy-sync') {
+      const orgId = parsed.searchParams.get('orgId') || extractBearerToken(req) || 'org_default';
+      sendJson(res, 200, syncTeamPolicyAndThreatPacks({ orgId }), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/policy-sync') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, syncTeamPolicyAndThreatPacks({ ...body, action: 'update' }));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/playbook/craft') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, evaluateRachelWoodsCraftAndPlaybookMiddleManagerGate(body));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/skill-up/eval') {
+      const body = await parseJsonBody(req);
+      sendJson(res, 200, evaluateSkillUpDeclarativeEvalLoop(body));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/skill-up/observation') {
+      const body = await parseJsonBody(req);
+      const obs = convertSkillObservationToCandidateCase(body);
+      sendJson(res, obs.statusCode || 200, obs);
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/.well-known/agent-skills/index.json' || pathname === '/.well-known/skills/index.json')) {
+      const appOrigin = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai';
+      sendJson(res, 200, buildSkillsShWellKnownDiscoveryIndex({ appOrigin }), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/.well-known/thumbgate-receipts.json' || pathname === '/.well-known/oneshot-receipts.json')) {
+      const appOrigin = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai';
+      sendJson(res, 200, buildOneShotWellKnownReceiptsManifest({ appOrigin }), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    const wellKnownMatch = isGetLikeRequest && pathname.match(/^\/\.well-known\/(?:agent-skills|skills)\/([a-z0-9-]+)\/SKILL\.md$/i);
+    if (wellKnownMatch) {
+      const md = getSkillsShWellKnownSkillMarkdown(wellKnownMatch[1]);
+      if (md) {
+        res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8' });
+        res.end(isHeadRequest ? undefined : md);
+        return;
+      }
+    }
+    const cloudEvalRoutes = {
+      '/v1/cloud/swarm/herdr-gitbutler': evaluateHerdrOmpPoolsideGitButlerSwarmGate,
+      '/v1/cloud/browseros-neo/gate': evaluateBrowserOsNeoProductivityGate,
+      '/v1/cloud/radware-agent-risk/gate': evaluateRadwareAgenticApiRiskFirewall,
+      '/v1/cloud/oneshot/gate': evaluateOneShotAgentGatewayAndSignedReceiptSteal,
+      '/v1/cloud/gcp-ai-ultra/gate': evaluateGoogleCloudSaasAndAiUltraCreditsFallback,
+      '/v1/cloud/algoverse/gate': evaluateAlgoverseResearchMonetizationGate,
+      '/v1/cloud/apollo-gtm/gate': evaluateApolloAgentGtmConnectorSteal,
+      '/v1/cloud/swarm/moe-judge': evaluateBroadcastMoESwarmAndLlmJudgeSow,
+      '/v1/cloud/merx-agentshield/gate': evaluateMerxAgentShieldAPlusAuditAndPartnerGate,
+      '/v1/cloud/coderlegion/gate': evaluateCoderLegionSyndicationAndMonetizationGate,
+      '/v1/cloud/nanbeige/gate': evaluateNanbeigeAgenticCodingSteal,
+      '/v1/cloud/github-universe-2026/gate': evaluateGitHubUniverse2026StackSteal,
+      '/v1/cloud/google-a2ui/gate': evaluateGoogleA2uiSwappableInferenceSteal,
+      '/v1/cloud/x-articles-monetization/gate': evaluateXArticleMonetizationAndPromotionSteal,
+      '/v1/cloud/hermes-obsidian-memory/gate': evaluateHermesJarvisObsidianMemorySteal,
+    };
+    if (cloudEvalRoutes[pathname] && (isGetLikeRequest || req.method === 'POST')) {
+      const body = req.method === 'POST' ? await parseJsonBody(req) : Object.fromEntries(parsed.searchParams.entries());
+      sendJson(res, 200, cloudEvalRoutes[pathname](body), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
 
     // Catch non-API GET requests that didn't match any public page route above.
     // Without this, /about, /docs, /demo etc. fall through to the API auth gate
@@ -9634,10 +9910,39 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     }
 
     try {
+      if (req.method === 'POST' && (pathname === '/v1/cloud/intercept' || pathname === '/v1/firewall/intercept')) {
+        const body = await parseJsonBody(req);
+        const interceptResult = await interceptAgentRequest({
+          tenantKey: _token || requestDataIdentity.customerHash || body.tenantKey || 'authenticated_user',
+          tierId: body.tierId || 'cloud_indie',
+          sessionId: body.sessionId,
+          agentId: body.agentId,
+          provider: body.provider,
+          model: body.model,
+          toolCall: body.toolCall,
+          messages: body.messages,
+          toolOutput: body.toolOutput,
+          maxLoopRepeats: body.maxLoopRepeats,
+          webhookUrl: body.webhookUrl,
+        });
+        sendJson(res, 200, interceptResult);
+        return;
+      }
+
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
-        const stats = shouldAggregateFeedback()
+        const activeProjectDir = resolveRequestProjectDir(req, parsed);
+        const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
+        const isGlobalFeedbackRoot = path.resolve(requestFeedbackPaths.FEEDBACK_DIR) === path.resolve(homeThumbgate);
+        const useMachineWideAggregate = !getEffectiveRequestedProjectSelection(req, parsed)
+          && isGlobalFeedbackRoot
+          && process.env.THUMBGATE_AGGREGATE_FEEDBACK === '1'
+          && shouldAggregateFeedback();
+        const stats = useMachineWideAggregate
           ? computeAggregateFeedbackStats({ feedbackDir: requestFeedbackPaths.FEEDBACK_DIR })
           : analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH, { humanOnly: true });
+        stats.projectDir = activeProjectDir;
+        stats.projectName = path.basename(activeProjectDir || '') || 'default';
+        stats.feedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
         try {
           const { getStatuslineMeta } = require('../../scripts/statusline-meta');
           const meta = getStatuslineMeta({ env: process.env });
@@ -9859,13 +10164,29 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         };
         eventBus.on('broadcast', onEvent);
 
+        // Watch the active project's feedback directory so signals written by
+        // external processes (MCP server-stdio, CLI hooks, JSONL watchers) push
+        // to connected /dashboard and /lessons tabs in real time (<350ms).
+        let lastFingerprint = getFeedbackDirFingerprint(requestFeedbackDir);
+        const filePoll = setInterval(() => {
+          const nextFingerprint = getFeedbackDirFingerprint(requestFeedbackDir);
+          if (nextFingerprint !== lastFingerprint) {
+            lastFingerprint = nextFingerprint;
+            liveDashboardCache.clear();
+            safeWrite(`event: feedback\ndata: ${JSON.stringify({ type: 'feedback', feedbackDir: requestFeedbackDir, ts: Date.now() })}\n\n`);
+          }
+        }, 350);
+        if (typeof filePoll.unref === 'function') filePoll.unref();
+
         // Heartbeat every 25s keeps proxies (Railway, CDNs) from idle-closing
         // the connection. Clients ignore comment frames per the SSE spec.
         const heartbeat = setInterval(() => {
           safeWrite(':ping\n\n');
         }, 25_000);
+        if (typeof heartbeat.unref === 'function') heartbeat.unref();
 
         const cleanup = () => {
+          clearInterval(filePoll);
           clearInterval(heartbeat);
           eventBus.removeListener('broadcast', onEvent);
         };
@@ -11846,6 +12167,8 @@ module.exports = {
     partitionFeedbackPaths,
     buildLiveDashboardCacheKey,
     loadCachedLiveDashboardData,
+    normalizeTrackedLinkSlug,
+    normalizeCheckoutCustomerEmail,
   },
 };
 
