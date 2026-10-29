@@ -96,6 +96,10 @@ function claimStopHookCommand() {
   return buildPortableHookCommand('claim-stop-check');
 }
 
+function observeToolResultHookCommand() {
+  return buildPortableHookCommand('observe-tool-result');
+}
+
 function statuslineCommand() {
   return buildPortableHookCommand('statusline-render');
 }
@@ -116,6 +120,10 @@ function codexCacheUpdateHookCommand() {
   return buildCodexPortableHookCommand('cache-update');
 }
 
+function codexObserveToolResultHookCommand() {
+  return buildCodexPortableHookCommand('observe-tool-result');
+}
+
 function codexStatuslineCommand() {
   return buildCodexPortableHookCommand('statusline-render');
 }
@@ -125,6 +133,8 @@ module.exports = {
   buildCodexPortableHookCommand,
   cacheUpdateHookCommand,
   claimStopHookCommand,
+  codexObserveToolResultHookCommand,
+  observeToolResultHookCommand,
   codexCacheUpdateHookCommand,
   codexPreToolHookCommand,
   codexSessionStartHookCommand,

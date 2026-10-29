@@ -2866,6 +2866,26 @@ function infoqArchitectHonesty() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function qwenworkPolicyGroup() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildQwenWorkPolicyGroupReport,
+    formatQwenWorkPolicyGroupReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'qwenwork-policy-group'));
+  const truthy = (value) => value === true || /^(1|true|yes|on)$/i.test(String(value || '').trim());
+  const report = buildQwenWorkPolicyGroupReport({
+    mapOnly: truthy(args['map-only']),
+    claim: args.claim || '',
+    policyJson: args['policy-json'] || '',
+    actionJson: args['action-json'] || '',
+    policyPath: args.policy || '',
+    actionPath: args.action || '',
+  });
+  if (truthy(args.json)) console.log(JSON.stringify(report, null, 2));
+  else process.stdout.write(formatQwenWorkPolicyGroupReport(report));
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function deeppatternDisciplineHonestyDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3533,6 +3553,24 @@ function cacheUpdate() {
   updateCacheFromEvent(payload ? JSON.parse(payload) : {});
 }
 
+function observeToolResult() {
+  try {
+    const payload = readStdinText();
+    const input = payload ? JSON.parse(payload) : {};
+    const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+    gatesEngine.observeTeamsSendResult(input);
+    const result = gatesEngine.observeSwarmClaimResult(input);
+    if (!result) {
+      process.stdout.write('{}\n');
+      return;
+    }
+    process.stdout.write(`${gatesEngine.formatObserveStop(result)}\n`);
+  } catch (err) {
+    process.stderr.write(`observe-tool-result error: ${err.message}\n`);
+    process.stdout.write('{}\n');
+  }
+}
+
 function statuslineRender() {
   syncActiveProjectContext();
   try {
@@ -4019,6 +4057,7 @@ function help() {
   console.log('  statusline-render     Render ThumbGate Claude status line');
   console.log('  hook-auto-capture     Process Claude UserPromptSubmit inline feedback');
   console.log('  claim-stop-check      Recheck configured factual claims before Claude stops');
+  console.log('  observe-tool-result   Record swarm-claim.py exit 3, including a failed shell, and a Teams send that succeeded');
   console.log('  session-start         Refresh local ThumbGate session cache');
   console.log('');
 
@@ -4077,6 +4116,7 @@ function help() {
   console.log('  deeppattern-discipline-honesty Layer-check + evidence-closeout (DeepPattern FORMAT; not AQG/DE)');
   console.log('  salt-code-policy-honesty 40-policy taxonomy + context vs PreToolUse diode (Salt Code FORMAT)');
   console.log('  infoq-architect-honesty Code-as-truth, typed host, lease, time-in-queue (InfoQ FORMAT)');
+  console.log('  qwenwork-policy-group Org policy group at the action (QwenWork FORMAT; not seats or DingTalk)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  omp-coordination-honesty   Named-model session handoff on the checkout lease (omp FORMAT; does not install omp)');
   console.log('  saas-moat-honesty     8-moat diagnostic, Ed25519 entitlement audit, and cross-customer signature loop (Walling FORMAT)');
@@ -4211,6 +4251,7 @@ const SUBCOMMAND_HELP = {
   'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',
   'salt-code-policy-honesty': 'Usage: npx thumbgate salt-code-policy-honesty [--inspect-code=...] [--inspect-api=...] [--inspect-mcp=...] [--strict] [--json] [--map-only]\n\nSalt Code FORMAT steal: 40-policy taxonomy, active PreToolUse vs context injection, OpenAPI query secret diode. Does not connect to mcp.getsaltcode.com.',
   'infoq-architect-honesty': 'Usage: npx thumbgate infoq-architect-honesty [--claim="..."] [--host=javascript] [--queue=path.json] [--max-age-ms=N] [--json] [--map-only]\n\nInfoQ September 2026 FORMAT: code-as-truth, typed host, existing lease, time-in-queue. Does not register for InfoQ or install Vortex.',
+  'qwenwork-policy-group': 'Usage: npx thumbgate qwenwork-policy-group [--claim="..."] [--policy=path.json] [--action=path.json] [--json] [--map-only]\n\nQwenWork Enterprise Premium FORMAT: one org policy group at the action. Does not buy seats, call Alibaba Cloud, or install DingTalk, WeCom, or Feishu.',
   'board-loop': 'Usage: npx thumbgate board-loop [--apply] [--json] [--max-update-branch=1] [--max-pr-manage=1] [--max-comments=4] [--skip-pr=N]\n\nClassify Issues+PR wall: update-branch BEHIND green Dependabot, pr:manage READY, comment DIRTY/ECI. Never approve.',
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
   'omp-coordination-honesty': 'Usage: npx thumbgate omp-coordination-honesty [--claim="..."] [--handoff=path] [--json] [--map-only] [--strict]\n\nMap omp session/subagent/collab FORMAT onto the checkout lease. Does not install omp.',
@@ -4510,6 +4551,9 @@ switch (COMMAND) {
     break;
   case 'claim-stop-check':
     claimStopCheckCmd();
+    break;
+  case 'observe-tool-result':
+    observeToolResult();
     break;
   case 'session-start':
     sessionStart();
@@ -5076,6 +5120,9 @@ switch (COMMAND) {
   case 'infoq-architects':
   case 'architect-honesty':
     infoqArchitectHonesty();
+    break;
+  case 'qwenwork-policy-group':
+    qwenworkPolicyGroup();
     break;
   case 'workspace-search-route':
   case 'zg-search-route':
