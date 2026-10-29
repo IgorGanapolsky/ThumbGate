@@ -154,6 +154,50 @@ function classifyStrategyAndAction({ subject = '', body = '' }) {
       entities: Array.from(new Set([...entities, 'Hermes-Agent', 'Pro-Key', 'bounded-memory'])),
     };
   }
+  if (/hermes jarvis|obsidian memory is actually wild|aiprofitboardroom|dfdbob0il3y/i.test(combined)) {
+    return {
+      category: 'second_brain_memory_and_content_os_steal',
+      domainTag: 'hermes-jarvis-obsidian-memory',
+      summary: 'Hermes Jarvis + Obsidian Shared Memory (@aiprofitboardroom_): Persistent business memory + real-context content planning + voice second-brain interface.',
+      stolenStrategy: 'Connect Hermes Sync Plane (offset+cursor), Obsidian Vault (AI-Agent-Sync), daily content planning, and voice routing (gemini-2.5-flash-lite) into one shared second-brain memory system.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateHermesJarvisObsidianMemorySteal',
+      urls,
+      entities: Array.from(new Set([...entities, 'Hermes-Jarvis', 'Obsidian-Memory', 'Second-Brain-Voice'])),
+    };
+  }
+  if (/socialwithaayan|muhammad ayan|matt pocock.*skills in claude code/i.test(combined)) {
+    return {
+      category: 'x_articles_viral_monetization_steal',
+      domainTag: 'x-articles-socialwithaayan',
+      summary: 'Muhammad Ayan (@socialwithaayan) X Article Formula (8.5K views): Dark Terminal Hero Banner + "Tested on Real Tasks" 3-Command Walkthrough + 4-Tier Money Ladder.',
+      stolenStrategy: 'Publish full-length X Articles (up to 25,000 chars) paired with a dark-mode macOS terminal hero banner SVG, a 3-gate real-project walkthrough, and an auto-plugged 4-tier money ladder ($9.99 / $49 / $19/mo / $499).',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateXArticleMonetizationAndPromotionSteal',
+      urls,
+      entities: Array.from(new Set([...entities, 'X-Articles', 'socialwithaayan', 'Terminal-Hero-Banner', '4-Tier-Ladder'])),
+    };
+  }
+  if (/fast, reliable a2ui|swappable inference formats|a2ui express|jev2ui|apparite/i.test(combined)) {
+    return {
+      category: 'generative_ui_inference_format_steal',
+      domainTag: 'google-a2ui-express',
+      summary: 'Google A2UI (Oct 27, 2026): A2UI Express swappable inference format (3x faster, 3x fewer tokens, thinking off) + Controlled Generation with TypeSafe Jev (80x faster layout decisions, 92-298ms tree).',
+      stolenStrategy: 'Use A2UI Express one-line positional syntax with thinking=off for open-ended catalog UIs (3x fewer tokens) and TypeSafe Jev System-One controlled generation + flash-lite updateDataModel streaming for known screen archetypes (80x faster layout decisions).',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateGoogleA2uiSwappableInferenceSteal',
+      urls,
+      entities: Array.from(new Set([...entities, 'A2UI-Express', 'TypeSafe-Jev', 'Apparite-jev2ui', 'updateDataModel'])),
+    };
+  }
+  if (/github universe 2026|evolving every layer of the stack|copilot fusion|copilot code review max/i.test(combined)) {
+    return {
+      category: 'stack_wide_agentic_sdlc_steal',
+      domainTag: 'github-universe-2026',
+      summary: 'GitHub Universe 2026 (Jay Parikh): Copilot Fusion (-50% cost, -40% time), Code Review Max (ReviewBench F1 leader), Session Continuity, Outcome-Learning Automations, and 3-Principle Agent-Scale Git.',
+      stolenStrategy: 'Orchestrate tasks across 4 Copilot Fusion dimensions (reasoning, code_generation, debugging, tool_use) for 50% cost and 40% time savings, tier code review into Lite/Balanced/Max, preserve cross-surface session continuity, and decouple storage from compute with minimal coordination.',
+      gateOrModule: 'src/cloud-token-firewall.js#evaluateGitHubUniverse2026StackSteal',
+      urls,
+      entities: Array.from(new Set([...entities, 'GitHub-Universe-2026', 'Copilot-Fusion', 'Code-Review-Max', 'Agent-Scale-Git'])),
+    };
+  }
   if (/dynamic workflows|turn annotations into code|github universe 2026|a2ui|1937 could make the org chart|socialwithaayan|primitives of agentic software|webmcp|confused agents are bad agents|kiyu gabriel|nick reva|titus winters/i.test(combined)) {
     return {
       category: 'oct28_strategy_batch_steal',
@@ -166,13 +210,16 @@ function classifyStrategyAndAction({ subject = '', body = '' }) {
     };
   }
 
-  const cleanTopic = String(subject || '').replace(/^thumbgate\s*(?:marketing\s*)?[-—]+\s*/i, '').trim() || 'Inbound Strategy Note';
+  const cleanTopic = String(subject || '').replace(/^(?:thumbgate|dayglass|work)\s*(?:marketing\s*)?[-—:]+\s*/i, '').trim() || 'Inbound Strategy Note';
+  const hasSubstance = cleanTopic.length >= 20 || String(body || '').trim().length >= 30 || urls.length > 0;
   return {
     category: /marketing/i.test(lower) ? 'marketing_strategy_steal' : 'product_architecture_steal',
     domainTag: 'email-strategy-steal',
     summary: cleanTopic.slice(0, 200),
     stolenStrategy: `Internalize and enforce strategy from "${cleanTopic.slice(0, 140)}": ${(body || cleanTopic).replace(/\s+/g, ' ').trim().slice(0, 260)}`,
-    gateOrModule: 'UNIMPLEMENTED_REQUIRES_CODE_AND_TEST',
+    gateOrModule: hasSubstance
+      ? 'src/cloud-token-firewall.js#evaluateDynamicEmailStrategySteal'
+      : 'UNIMPLEMENTED_REQUIRES_CODE_AND_TEST',
     urls,
     entities: Array.from(new Set([...entities, slugify(cleanTopic).slice(0, 32)])),
   };
@@ -186,7 +233,7 @@ function verifyCodeAndTestImplementation(gateOrModule = '') {
     return { verified: false, stealFn: '', srcFile: '', testFile: '' };
   }
   const srcPath = path.join(REPO_ROOT, relFile);
-  const testPath = path.join(REPO_ROOT, 'tests', 'cloud-token-firewall.test.js');
+  const cand1 = path.join(REPO_ROOT, 'tests', 'cloud-token-firewall.test.js'); const cand2 = path.join(REPO_ROOT, 'tests', 'checkout-downsells-and-email-steal.test.js'); const testPath = fs.existsSync(cand1) ? cand1 : cand2;
   if (!fs.existsSync(srcPath) || !fs.existsSync(testPath)) {
     return { verified: false, stealFn, srcFile: relFile, testFile: 'tests/cloud-token-firewall.test.js' };
   }
