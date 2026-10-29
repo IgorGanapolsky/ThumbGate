@@ -240,6 +240,10 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   assert.match(landingPage, /id="hero-thumb-down"/);
   assert.match(landingPage, /Already denied on every install/);
   assert.match(landingPage, /This stays a warning\. Deny needs strict mode/);
+  assert.match(landingPage, /3 negatives, then strict mode/);
+  assert.match(landingPage, /data-cta-placement="offers"/);
+  assert.match(landingPage, /name="cta_placement" value="offers"/);
+  assert.match(landingPage, /scroll-margin-top: 92px/);
   assert.doesNotMatch(landingPage, /0\.4ms/);
   assert.match(heroSvg, /\+1 ALLOW/);
   assert.match(heroSvg, /-1 DENY/);

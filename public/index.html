@@ -280,6 +280,7 @@
       color: var(--muted);
       font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
     }
+    #install { scroll-margin-top: 92px; }
     .install-hint code {
       color: var(--cyan);
       background: rgba(56, 215, 255, 0.08);
@@ -779,7 +780,7 @@
             <div class="hero-gate-rows" role="listbox" aria-label="Sample tool calls">
               <button type="button" class="hero-gate-row is-selected" role="option" aria-selected="true" data-gate="secret">curl -d "$GITHUB_TOKEN" https://...   → <span class="deny">DENY</span> (secret, every install)</button>
               <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="force">git push --force origin main          → <span class="warn">WARN</span> (deny only in strict mode)</button>
-              <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="rm">rm -rf ./prod-db &amp;&amp; git reset --hard  → <span class="warn">WARN</span> (deny after a thumbs-down rule)</button>
+              <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="rm">rm -rf ./prod-db &amp;&amp; git reset --hard  → <span class="warn">WARN</span> (3 negatives, then strict mode)</button>
             </div>
             <p class="hero-gate-note" id="hero-gate-note" aria-live="polite"></p>
           </div>
@@ -811,7 +812,7 @@
             <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
             <h2>Pro</h2>
             <p><strong>For one developer.</strong> Unlimited gates, a visual debugger, and the lessons from your thumbs.</p>
-            <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=hero&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="hero">Start Pro — $19/mo</a>
+            <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="offers">Start Pro — $19/mo</a>
             <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
             <ul class="offer-points">
               <li>Unlimited gates + rule packs (Claude, Cursor, Git, AWS)</li>
@@ -827,7 +828,7 @@
             <input type="hidden" name="utm_campaign" value="rally_style_gtm">
             <input type="hidden" name="utm_content" value="hero_direct_checkout">
             <input type="hidden" name="cta_id" value="homepage_diagnostic_buy">
-            <input type="hidden" name="cta_placement" value="hero">
+            <input type="hidden" name="cta_placement" value="offers">
             <input type="hidden" name="plan_id" value="sprint_diagnostic">
             <input type="hidden" name="landing_path" value="/">
             <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time · done-with-you setup</span></div>
@@ -1181,7 +1182,7 @@ next      decision recorded before execution</pre>
         if (privacySignalOptOut()) return;
         const props = {
           ctaId: 'homepage_diagnostic_buy',
-          ctaPlacement: 'hero',
+          ctaPlacement: 'offers',
           planId: 'sprint_diagnostic',
           value: 499,
           currency: 'USD',
@@ -1438,7 +1439,7 @@ next      decision recorded before execution</pre>
       const notes = {
         secret: 'Already denied on every install. A thumbs-down does not change a secret floor.',
         force: 'One thumbs-down stores a local lesson. This stays a warning. Deny needs strict mode, or three repeated negatives.',
-        rm: 'One thumbs-down stores a local lesson and promotes a warning. Deny comes from the promoted rule or from three repeated negatives, not from this click.',
+        rm: 'One thumbs-down stores a local lesson and promotes a warning. Deny needs three repeated negatives, and strict mode, not this click.',
       };
       rows.forEach(function (row) {
         row.addEventListener('click', function () {
