@@ -584,14 +584,14 @@ test('/diagnostic serves the managed workflow gate checkout and fit page', async
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
-  assert.match(html, /Enterprise Workflow Gate/);
+  assert.match(html, /Setup Sprint/);
   assert.match(html, /Submit for fit check/);
   assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
   assert.match(html, /name="planId" value="diagnostic"/);
   assert.match(html, /name="ctaId" value="diagnostic_page_intake"/);
   assert.match(html, /workflow_sprint_intake_submit_attempted/);
-  assert.match(html, /Buy the \$499 enterprise gate/);
-  assert.match(html, /Exactly what the \$499 Enterprise Workflow Gate includes/);
+  assert.match(html, /Book the \$499 setup/);
+  assert.match(html, /Exactly what the \$499 Setup Sprint includes/);
   assert.match(html, /one 60-minute working review/i);
   assert.match(html, /one configured local gate and regression test/i);
   assert.match(html, /rollout and rollback proof within two business days/i);
@@ -611,7 +611,7 @@ test('/workflow-hardening-sprint and diagnostic aliases serve the focused diagno
     assert.equal(res.status, 200, `${route} should render`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Enterprise Workflow Gate/);
+    assert.match(html, /Setup Sprint/);
     assert.match(html, /<link rel="canonical" href="https:\/\/app\.example\.com\/diagnostic"/);
   }
 });
@@ -905,9 +905,9 @@ test('root serves the landing page by default', async () => {
   const body = await res.text();
   assert.match(body, /ThumbGate/);
   assert.match(body, /Stop AI agent mistakes before they cost you/i);
-  assert.match(body, /Enterprise Workflow Gate/i);
+  assert.match(body, /Setup Sprint/i);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(body, /Buy the \$499 enterprise gate/i);
+  assert.match(body, /Book the \$499 setup/i);
   assert.match(body, /Start Pro — \$19\/mo/i);
   assert.match(body, /\/go\/pro-direct/);
   assert.match(body, /One configured local gate and its regression test/i);

@@ -275,7 +275,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, new RegExp(CURRENT_REPOSITORY_URL.replaceAll('.', '\\.')));
   assert.match(publicLanding, /thumbgate/i);
   assert.match(publicLanding, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.match(publicLanding, /Managed AI Agent Workflow Gate/);
+  assert.match(publicLanding, /Setup Sprint/);
   assert.match(publicLanding, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(publicLanding, /\$19/);
   assert.match(publicLanding, /\$149/);
