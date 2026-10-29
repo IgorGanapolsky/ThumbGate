@@ -574,6 +574,16 @@ function main() {
     }
   }
 
+  try {
+    const { evaluateUniverseDeliveryPretool } = require('./universe-2026-delivery-gate');
+    const universe = evaluateUniverseDeliveryPretool({ toolName, toolInput: effectiveInput });
+    if (universe && universe.ok === false) {
+      return block(`universe-2026: ${(universe.blockers || []).join('; ')}`);
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const actionContext = extractActionContext(toolName, effectiveInput);
   const lessons = retrieveLessons(toolName, actionContext);
 
