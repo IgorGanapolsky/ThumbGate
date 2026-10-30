@@ -118,6 +118,10 @@ test('history rotation does not re-import previously synced signals', () => {
 
   const first = syncClaudeHistoryFeedback({ feedbackDir, projectDir, historyPath });
   assert.equal(first.importedCount, 2);
+  const imported = fs.readFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+  assert.equal(imported[0].whatWentWrong, 'that deploy claim was wrong');
+  assert.notEqual(imported[0].whatWentWrong, imported[0].submittedContext);
+  assert.equal(imported[1].whatWorked, 'the fix landed cleanly this time');
 
   // Simulate rotation: the file is rewritten SMALLER than the recorded size,
   // containing the same old prompts. Pre-fix, the offset reset to 0 and both

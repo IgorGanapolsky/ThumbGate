@@ -9,7 +9,7 @@ const {
   getFeedbackPaths,
   readJSONL,
 } = require('./feedback-loop');
-const { detectFeedbackSignal, normalizeFeedbackText } = require('./feedback-quality');
+const { detectFeedbackSignal, normalizeFeedbackText, reactionLessonLine } = require('./feedback-quality');
 const {
   resolveFeedbackDir,
   resolveProjectDir,
@@ -296,11 +296,13 @@ function syncClaudeHistoryFeedback(options = {}) {
         timestamp: candidate.timestampMs,
         source: 'claude-history',
       });
+      const lesson = reactionLessonLine(candidate.promptText);
       const captureResult = captureFeedback({
         signal: candidate.signal,
         context: candidate.promptText,
-        whatWentWrong: candidate.signal === 'down' ? candidate.promptText : undefined,
-        whatWorked: candidate.signal === 'up' ? candidate.promptText : undefined,
+        whatWentWrong: candidate.signal === 'down' ? lesson || undefined : undefined,
+        whatToChange: candidate.signal === 'down' ? lesson || undefined : undefined,
+        whatWorked: candidate.signal === 'up' ? lesson || undefined : undefined,
         tags: ['claude-history-sync', 'auto-capture-fallback'],
         sourceEvent,
         reviewOrigin: 'human',
