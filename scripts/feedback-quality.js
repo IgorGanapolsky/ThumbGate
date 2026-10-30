@@ -14,6 +14,7 @@ const GENERIC_PHRASE_RULES = {
     /^good work$/,
     /^nice work$/,
     /^perfect$/,
+    /^great$/,
     /^approved$/,
     /^lgtm$/,
   ],
@@ -102,10 +103,13 @@ function detectFeedbackSignal(value) {
   const raw = String(value || '');
   const leading = raw.trimStart();
   if (/^["'`]/.test(leading)) return null;
-  if (/^👎(?:🏻|🏼|🏽|🏾|🏿)?/u.test(leading)) return { signal: 'down', confidence: 'emoji', match: '👎' };
-  if (/^👍(?:🏻|🏼|🏽|🏾|🏿)?/u.test(leading)) return { signal: 'up', confidence: 'emoji', match: '👍' };
 
-  const normalized = normalizeFeedbackText(raw);
+  // "yes, thumbs down, …" is still a reaction. "Yes, fix it" is a reply.
+  const rawLine = leading.replace(/\s+/g, ' ').trim();
+  const rawReaction = rawLine.replace(/^(?:yes|yep|yeah|ok|okay|sure)\s*,\s*/i, '');
+  if (/^👎(?:🏻|🏼|🏽|🏾|🏿)?/u.test(rawReaction)) return { signal: 'down', confidence: 'emoji', match: '👎' };
+  if (/^👍(?:🏻|🏼|🏽|🏾|🏿)?/u.test(rawReaction)) return { signal: 'up', confidence: 'emoji', match: '👍' };
+  const normalized = normalizeFeedbackText(rawReaction);
   if (!normalized) return null;
 
   const exactDown = [
@@ -116,7 +120,6 @@ function detectFeedbackSignal(value) {
     /^that was wrong\b/,
     /^that was bad\b/,
     /^this is wrong\b/,
-    /^th(?:is|at) (?:response|answer) (?:is|was) (?:inadequate|wrong|bad|incorrect)\b/,
     /^that did(?: not|n t) work\b/,
     /^that does(?: not|n t) work\b/,
   ];
@@ -144,6 +147,17 @@ function detectFeedbackSignal(value) {
     return { signal: 'up', confidence: 'exact', match: normalized };
   }
 
+  // Bare "bad" and "great" are reactions. A following word is a reaction only
+  // when a comma, colon, or dash introduces one lesson clause. "great documentation"
+  // is an ordinary sentence. Punctuation is checked on the raw text because
+  // normalization removes it.
+  if (normalized === 'bad' || /^bad\s*[,:\-—]\s+\S/i.test(rawReaction)) {
+    return { signal: 'down', confidence: 'exact', match: normalized };
+  }
+  if (normalized === 'great' || /^great\s*[,:\-—]\s+\S/i.test(rawReaction)) {
+    return { signal: 'up', confidence: 'exact', match: normalized };
+  }
+
   const words = normalized.split(/\s+/).filter(Boolean);
   if (!isNearThumbToken(words[0])) return null;
   if (isNearDownToken(words[1])) {
@@ -156,8 +170,30 @@ function detectFeedbackSignal(value) {
   return null;
 }
 
+const LEADING_REACTION = /^(?:(?:yes|yep|yeah|ok|okay|sure)\s*,\s*)?(?:👎|👍)(?:\u{1F3FB}|\u{1F3FC}|\u{1F3FD}|\u{1F3FE}|\u{1F3FF})?\s*|^(?:(?:yes|yep|yeah|ok|okay|sure)\s*,\s*)?(?:thum\w{0,3}\s+(?:up|down|don)|thumbs?(?:up|down)|that\s+failed|it\s+failed|that\s+was\s+wrong|that\s+was\s+bad|this\s+is\s+wrong|that\s+did(?:\s+not|n'?t)\s+work|that\s+does(?:\s+not|n'?t)\s+work|that\s+worked|it\s+worked|looks\s+good|good\s+job|good\s+work|nice\s+work|perfect|lgtm|great\s+job|great\s+work|well\s+done|nicely\s+done|bad|great)\b[\s:;,\-—]*/iu;
+
+function reactionLessonLine(value) {
+  const detected = detectFeedbackSignal(value);
+  if (!detected) return null;
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  let rest = text.replace(LEADING_REACTION, '').trim();
+  if (rest === text && detected.confidence === 'fuzzy') {
+    rest = text.split(/\s+/).slice(2).join(' ').trim();
+  }
+  rest = rest.replace(/^[\s:;,\-—]+/, '').trim();
+  if (!rest || rest === text) return null;
+  const lesson = rest.split(/\r?\n/)[0].trim();
+  if (!lesson) return null;
+  if (isGenericFeedbackText(lesson, detected.signal === 'down' ? 'negative' : 'positive')) return null;
+  if (lesson.length > 180) return `${lesson.slice(0, 177).trim()}...`;
+  return lesson;
+}
+
 function isGenericFeedbackText(value, signal) {
-  const normalized = normalizeFeedbackText(value);
+  // "yes, thumbs down" is the same empty reaction as "thumbs down". The
+  // acknowledgement prefix must not make it look specific enough to promote.
+  const normalized = normalizeFeedbackText(value)
+    .replace(/^(?:yes|yep|yeah|ok|okay|sure)\s+/, '');
   if (!normalized) return false;
   const rules = GENERIC_PHRASE_RULES[signal] || [];
   return rules.some((pattern) => pattern.test(normalized));
@@ -278,6 +314,7 @@ function buildClarificationMessage(params = {}) {
 module.exports = {
   GENERIC_PHRASE_RULES,
   detectFeedbackSignal,
+  reactionLessonLine,
   normalizeFeedbackSignal,
   normalizeFeedbackText,
   isGenericFeedbackText,

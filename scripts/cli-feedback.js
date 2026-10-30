@@ -43,7 +43,7 @@ const RST = '\x1b[0m';
  * @param {Object} [opts.sourceEvent] - Hashed source identity for idempotent hook capture
  * @returns {Object} Result with feedback + lesson + stats
  */
-function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, whatWorked, sourceEvent } = {}) {
+function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, whatWorked, whatToChange, sourceEvent } = {}) {
   const isDown = signal === 'down' || signal === 'negative';
 
   // 1. Capture the feedback
@@ -53,6 +53,7 @@ function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, wh
       signal: isDown ? 'down' : 'up',
       context: context || (isDown ? 'Thumbs down from CLI' : 'Thumbs up from CLI'),
       whatWentWrong: whatWentWrong || undefined,
+      whatToChange: whatToChange || undefined,
       whatWorked: whatWorked || undefined,
       chatHistory,
       sourceEvent,

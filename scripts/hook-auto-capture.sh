@@ -26,9 +26,6 @@ THUMBGATE_CONVERSATION_TEXT="$PROMPT" node -e "
   });
 " "$SCRIPT_DIR/feedback-history-distiller.js" 2>/dev/null || true
 
-# Normalize to lowercase for matching
-LOWER=$(echo "$PROMPT" | tr '[:upper:]' '[:lower:]')
-
 if [ -f "$PROMPT_GUARD" ]; then
   GUARD_RESULT=$(node "$PROMPT_GUARD" 2>/dev/null || true)
   if [ -n "$GUARD_RESULT" ]; then
@@ -39,9 +36,20 @@ fi
 
 capture_and_report() {
   local SIGNAL="$1"
+  local LESSON="$2"
+  local -a EXTRA=()
+  if [ -n "$LESSON" ]; then
+    if [ "$SIGNAL" = "up" ]; then
+      EXTRA+=(--what-worked="$LESSON")
+    else
+      EXTRA+=(--what-went-wrong="$LESSON" --what-to-change="$LESSON")
+    fi
+  fi
 
-  # Capture feedback (verbose output already shows IDs, signal, storage)
-  node "$CAPTURE" --feedback="$SIGNAL" --context="$PROMPT" --tags="auto-capture,hook"
+  # Capture feedback (verbose output already shows IDs, signal, storage).
+  # The lesson is one line. The raw prompt stays in context and is not copied
+  # into the lesson fields.
+  node "$CAPTURE" --feedback="$SIGNAL" --context="$PROMPT" --tags="auto-capture,hook" "${EXTRA[@]}"
   local CAPTURE_STATUS=$?
 
   if [ "$CAPTURE_STATUS" -eq 2 ]; then
@@ -87,14 +95,23 @@ capture_and_report() {
   " 2>/dev/null
 }
 
-# Check for thumbs up signals
-if echo "$LOWER" | grep -qE '(thumbs? ?up|that worked|looks good|nice work|perfect|good job)'; then
-  capture_and_report "up"
+# A reaction is a short opener (thumbs up, 👍, bad, great, and the same
+# family), optionally followed by one lesson line. A sentence that merely
+# contains those words is a reply, not a rating. "fix this" is a work order.
+DECISION="$(THUMBGATE_REACTION_PROMPT="$PROMPT" node -e '
+const { detectFeedbackSignal, reactionLessonLine } = require(process.argv[1]);
+const prompt = process.env.THUMBGATE_REACTION_PROMPT || "";
+const detected = detectFeedbackSignal(prompt);
+if (!detected) process.exit(0);
+const lesson = reactionLessonLine(prompt) || "";
+process.stdout.write(detected.signal + "\n" + lesson);
+' "$SCRIPT_DIR/feedback-quality.js" 2>/dev/null || true)"
+
+if [ -z "$DECISION" ]; then
   exit 0
 fi
 
-# Check for thumbs down signals
-if echo "$LOWER" | grep -qE '(thumbs? ?down|that failed|that was wrong|fix this)'; then
-  capture_and_report "down"
-  exit 0
-fi
+SIGNAL=$(printf '%s\n' "$DECISION" | head -n 1)
+LESSON=$(printf '%s\n' "$DECISION" | tail -n +2)
+capture_and_report "$SIGNAL" "$LESSON"
+exit 0

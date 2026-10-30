@@ -3602,7 +3602,7 @@ function hookAutoCapture() {
     || promptEnvelope.prompt;
   const { evaluatePromptGuard } = require(path.join(PKG_ROOT, 'scripts', 'prompt-guard'));
   const { processInlineFeedback, formatCliOutput } = require(path.join(PKG_ROOT, 'scripts', 'cli-feedback'));
-  const { detectFeedbackSignal, isGenericFeedbackText } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
+  const { detectFeedbackSignal, reactionLessonLine } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
   const { loadOptionalModule } = require(path.join(PKG_ROOT, 'scripts', 'private-core-boundary'));
   const { recordConversationEntry, readRecentConversationWindow } = loadOptionalModule(
     path.join(PKG_ROOT, 'scripts', 'feedback-history-distiller'),
@@ -3639,8 +3639,7 @@ function hookAutoCapture() {
     role: entry.author === 'assistant' ? 'assistant' : 'user',
     content: entry.text || '',
   }));
-  const normalizedSignal = signal === 'down' ? 'negative' : 'positive';
-  const genericFeedback = isGenericFeedbackText(prompt, normalizedSignal);
+  const lesson = reactionLessonLine(prompt);
   const { buildFeedbackSourceIdentity } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const sourceEvent = buildFeedbackSourceIdentity({
     signal,
@@ -3655,8 +3654,9 @@ function hookAutoCapture() {
     signal,
     context: prompt,
     chatHistory,
-    whatWentWrong: signal === 'down' && !genericFeedback ? prompt : undefined,
-    whatWorked: signal === 'up' && !genericFeedback ? prompt : undefined,
+    whatWentWrong: signal === 'down' ? lesson || undefined : undefined,
+    whatToChange: signal === 'down' ? lesson || undefined : undefined,
+    whatWorked: signal === 'up' ? lesson || undefined : undefined,
     sourceEvent,
   });
   if (!result.feedbackResult || !result.feedbackResult.duplicate) {
