@@ -13,6 +13,7 @@ const {
   assessFeedbackActionability,
   buildClarificationMessage,
 } = require('../scripts/feedback-quality');
+const { captureFeedback } = require('../scripts/feedback-loop');
 
 test('GENERIC_PHRASE_RULES has positive and negative lists', () => {
   assert.ok(Array.isArray(GENERIC_PHRASE_RULES.positive));
@@ -37,6 +38,61 @@ test('isGenericFeedbackText detects bare negative phrases', () => {
 test('isGenericFeedbackText rejects detailed feedback', () => {
   assert.equal(isGenericFeedbackText('The API call failed because the token expired', 'negative'), false);
   assert.equal(isGenericFeedbackText('Great fix for the race condition in the auth flow', 'positive'), false);
+  assert.equal(isGenericFeedbackText('yes, thumbs down, that broke it', 'negative'), false);
+});
+
+test('isGenericFeedbackText treats a prefixed bare reaction as empty', () => {
+  assert.equal(isGenericFeedbackText('yes, thumbs down', 'negative'), true);
+  assert.equal(isGenericFeedbackText('yes, great', 'positive'), true);
+  assert.equal(isGenericFeedbackText('ok, bad', 'negative'), true);
+  assert.equal(assessFeedbackActionability({
+    signal: 'negative',
+    context: 'yes, thumbs down',
+  }).promotable, false);
+  assert.equal(assessFeedbackActionability({
+    signal: 'positive',
+    context: 'yes, great',
+  }).promotable, false);
+});
+
+test('capture keeps a prefixed bare reaction and does not promote it', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-prefixed-bare-'));
+  const previous = process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.THUMBGATE_FEEDBACK_DIR = dir;
+  try {
+    const down = captureFeedback({
+      signal: 'down',
+      context: 'yes, thumbs down',
+      reviewOrigin: 'human',
+    });
+    assert.equal(down.promoted, false);
+    assert.equal(down.feedbackEvent.actionType, 'no-action');
+    assert.equal(down.feedbackEvent.context, 'yes, thumbs down');
+
+    const up = captureFeedback({
+      signal: 'up',
+      context: 'yes, great',
+      reviewOrigin: 'human',
+    });
+    assert.equal(up.promoted, false);
+    assert.equal(up.feedbackEvent.actionType, 'no-action');
+
+    const detailed = captureFeedback({
+      signal: 'down',
+      context: 'yes, thumbs down, that broke it',
+      whatWentWrong: 'that broke it',
+      whatToChange: 'that broke it',
+      reviewOrigin: 'human',
+    });
+    assert.equal(detailed.promoted, true);
+    assert.equal(detailed.feedbackEvent.actionType, 'store-mistake');
+    assert.equal(detailed.feedbackEvent.whatWentWrong, 'that broke it');
+    assert.doesNotMatch(detailed.memory?.title || '', /^MISTAKE: yes, thumbs down$/);
+  } finally {
+    if (previous === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = previous;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('detectFeedbackSignal accepts explicit standalone and leading signals', () => {

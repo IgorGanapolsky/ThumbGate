@@ -190,7 +190,10 @@ function reactionLessonLine(value) {
 }
 
 function isGenericFeedbackText(value, signal) {
-  const normalized = normalizeFeedbackText(value);
+  // "yes, thumbs down" is the same empty reaction as "thumbs down". The
+  // acknowledgement prefix must not make it look specific enough to promote.
+  const normalized = normalizeFeedbackText(value)
+    .replace(/^(?:yes|yep|yeah|ok|okay|sure)\s+/, '');
   if (!normalized) return false;
   const rules = GENERIC_PHRASE_RULES[signal] || [];
   return rules.some((pattern) => pattern.test(normalized));
