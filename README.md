@@ -292,6 +292,11 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 
 Every Changeset is tied to the exact `main` merge commit and generates Verification Evidence for Release Confidence.
 
+
+## Cloud & model infrastructure
+
+- **Local Pre-Action Firewall & MCP Runtime**: Sub-`0.5ms` local `PreToolUse` enforcement (`npx thumbgate init`) across Claude Code, Cursor, Codex, and Gemini CLI; `TencentDB Agent Memory` record normalization into blocking SQL safety candidates is covered in `tests/memory-provider-enforcement-bridge.test.js`, and outer-harness context-budget checks inspired by Tencent Hunyuan `Hy-Memory-30B-A3B` research are validated in `scripts/rrsi-doctor.js`.
+- **Companion Benchmark & Technical Case Study**: External evaluation of [Tencent Cloud](https://www.tencentcloud.com/) Lighthouse / CVM (`SA5` / `SA9` AMD Turin-Dense `3.4 GHz` all-core turbo in `ap-hongkong` & `ap-singapore`) and the `Hy-Memory-30B-A3B` surgical state-patching pattern is published in our companion `hermes-eval` benchmark repository (`docs/TENCENT-CLOUD-SA9-HUNYUAN-CASE-STUDY.md` and `scripts/tencent_sa9_hunyuan_benchmark.py`).
 ---
 
 ## Integrations (compact)
@@ -331,7 +336,7 @@ Full index: **[docs/INDEX.md](docs/INDEX.md)**
 
 ## Who builds this
 
-**Igor Ganapolsky** — payments (Stripe/Connect), AI agent guardrails/MCP, Android + backends. Small number of contract slots: **$120–150/hr, 1099, remote US**. [LinkedIn](https://www.linkedin.com/in/igor-ganapolsky-859317343/) · [thumbgate.ai](https://thumbgate.ai)
+**Igor Ganapolsky** — payments (Stripe/Connect), AI agent guardrails/MCP, Android + backends. Small number of contract slots: **$120–150/hr, 1099, remote US**. [LinkedIn](https://www.linkedin.com/in/igor-ganapolsky-664324431/) · [thumbgate.ai](https://thumbgate.ai)
 
 ## License
 
