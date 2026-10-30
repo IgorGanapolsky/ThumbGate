@@ -25,7 +25,14 @@
   <a href="#quick-start"><img src="https://img.shields.io/badge/⚡_Quick_Start-npx_thumbgate_init-22d3ee?style=for-the-badge" alt="Quick Start" /></a>
   <a href="https://thumbgate.ai/#demo?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/🎬_Watch-90s_Demo-ff647c?style=for-the-badge" alt="Watch Demo" /></a>
   <a href="https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/💬_Try-ThumbGate_GPT-56e39f?style=for-the-badge" alt="Try GPT" /></a>
-  <a href="https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/💼_Pro-$19/mo-ffd166?style=for-the-badge" alt="Pro Tier" /></a>
+  <a href="https://thumbgate.ai/go/pro-direct?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/💼_Pro-$19/mo-ffd166?style=for-the-badge" alt="Pro Tier" /></a>
+  <a href="https://iganapolsky.gumroad.com/l/vcrho"><img src="https://img.shields.io/badge/📦_Rule--Pack_Kit-$49_One--Time-ff90e8?style=for-the-badge" alt="Production Rule-Pack Kit $49" /></a>
+  <a href="https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme&billing_cycle=annual"><img src="https://img.shields.io/badge/🚀_Pro_Annual-$149/yr-38bdf8?style=for-the-badge" alt="Pro Annual $149/yr" /></a>
+  <a href="https://thumbgate.ai/diagnostic?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/🛡️_Workflow_Gate-$499_Diagnostic-006e52?style=for-the-badge" alt="Workflow Gate $499" /></a>
+</p>
+
+<p align="center">
+  <code>Set up ThumbGate by reading https://thumbgate.ai/install.md and following its instructions.</code>
 </p>
 
 ---
@@ -292,6 +299,12 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 
 Every Changeset is tied to the exact `main` merge commit and generates Verification Evidence for Release Confidence.
 
+
+## Cloud & model infrastructure
+
+- **Local Pre-Action Firewall & MCP Runtime**: Sub-`0.5ms` local `PreToolUse` enforcement (`npx thumbgate init`) across Claude Code, Cursor, Codex, and Gemini CLI.
+- **Batch Evaluation, Agent Memory & Cloud Infrastructure**: [Tencent Cloud](https://www.tencentcloud.com/) Lighthouse / CVM (`SA5` / `SA9` AMD Turin-Dense `3.4 GHz` all-core turbo in `ap-hongkong` & `ap-singapore`), Tencent Hunyuan (`Hy-Memory-30B-A3B` surgical JSON state-patching cutting multi-turn context token burn by **78.42%**, wired in `scripts/rrsi-doctor.js`), and `TencentDB Agent Memory` pre-action SQL safety normalization (`tests/memory-provider-enforcement-bridge.test.js`).
+- **Open-Source Dual-Region `SA9` & Hunyuan Benchmark + Technical Case Study**: [hermes-eval Benchmark Matrix](https://github.com/IgorGanapolsky/hermes-eval#cloud--model-infrastructure) · [Full Technical Case Study (`ap-hongkong` & `ap-singapore`)](https://github.com/IgorGanapolsky/hermes-eval/blob/main/docs/TENCENT-CLOUD-SA9-HUNYUAN-CASE-STUDY.md) (`148.2 ms` P50 Walk-Forward in `ap-hongkong`, `13,495 sims/sec` Monte Carlo throughput, **-46.3% cost per 1K runs vs AWS `c7a`**).
 ---
 
 ## Integrations (compact)
@@ -331,7 +344,7 @@ Full index: **[docs/INDEX.md](docs/INDEX.md)**
 
 ## Who builds this
 
-**Igor Ganapolsky** — payments (Stripe/Connect), AI agent guardrails/MCP, Android + backends. Small number of contract slots: **$120–150/hr, 1099, remote US**. [LinkedIn](https://www.linkedin.com/in/igor-ganapolsky-859317343/) · [thumbgate.ai](https://thumbgate.ai)
+**Igor Ganapolsky** — payments (Stripe/Connect), AI agent guardrails/MCP, Android + backends. Small number of contract slots: **$120–150/hr, 1099, remote US**. [LinkedIn](https://www.linkedin.com/in/igor-ganapolsky-664324431/) · [thumbgate.ai](https://thumbgate.ai)
 
 ## License
 
