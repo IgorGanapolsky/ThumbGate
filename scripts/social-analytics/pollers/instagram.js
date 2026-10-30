@@ -155,42 +155,49 @@ async function pollInstagram(db) {
   const mediaItems = await fetchInstagramMedia(token, userId);
   console.log(`[instagram] Got ${mediaItems.length} media items`);
 
-  for (const item of mediaItems) {
-    const mediaId = item.id;
+  const CHUNK_SIZE = 15;
+  for (let i = 0; i < mediaItems.length; i += CHUNK_SIZE) {
+    const chunk = mediaItems.slice(i, i + CHUNK_SIZE);
 
-    // Fetch per-post insights (best-effort; some types may not support all).
-    const insights = await fetchMediaInsights(token, mediaId);
+    await Promise.all(
+      chunk.map(async (item) => {
+        const mediaId = item.id;
 
-    const rawContentType = MEDIA_TYPE_MAP[item.media_type] ?? 'image';
+        // Fetch per-post insights (best-effort; some types may not support all).
+        const insights = await fetchMediaInsights(token, mediaId);
 
-    // Build a raw record compatible with the normalizer contract.
-    const raw = {
-      platform: 'instagram',
-      content_type: rawContentType,
-      post_id: mediaId,
-      post_url: item.permalink ?? null,
-      published_at: item.timestamp ?? null,
-      metric_date: today,
-      impressions: insights.impressions ?? 0,
-      reach: insights.reach ?? 0,
-      likes: item.like_count ?? 0,
-      comments: item.comments_count ?? 0,
-      shares: insights.shares ?? 0,
-      saves: insights.saved ?? 0,
-      clicks: 0,
-      video_views: 0,
-      followers_delta: 0,
-      fetched_at: fetchedAt,
-      extra_json: {
-        media_type: item.media_type,
-        caption_snippet: (item.caption ?? '').slice(0, 120),
-        children_count: item.children?.data?.length ?? null,
-      },
-    };
+        const rawContentType = MEDIA_TYPE_MAP[item.media_type] ?? 'image';
 
-    const normalised = normalize(raw);
-    upsertMetric(db, normalised);
-    console.log(`[instagram] Upserted metric for post ${mediaId} (${rawContentType})`);
+        // Build a raw record compatible with the normalizer contract.
+        const raw = {
+          platform: 'instagram',
+          content_type: rawContentType,
+          post_id: mediaId,
+          post_url: item.permalink ?? null,
+          published_at: item.timestamp ?? null,
+          metric_date: today,
+          impressions: insights.impressions ?? 0,
+          reach: insights.reach ?? 0,
+          likes: item.like_count ?? 0,
+          comments: item.comments_count ?? 0,
+          shares: insights.shares ?? 0,
+          saves: insights.saved ?? 0,
+          clicks: 0,
+          video_views: 0,
+          followers_delta: 0,
+          fetched_at: fetchedAt,
+          extra_json: {
+            media_type: item.media_type,
+            caption_snippet: (item.caption ?? '').slice(0, 120),
+            children_count: item.children?.data?.length ?? null,
+          },
+        };
+
+        const normalised = normalize(raw);
+        upsertMetric(db, normalised);
+        console.log(`[instagram] Upserted metric for post ${mediaId} (${rawContentType})`);
+      })
+    );
   }
 
   // Fetch account-level follower count for today's snapshot.
