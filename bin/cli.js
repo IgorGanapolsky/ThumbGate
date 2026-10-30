@@ -1353,6 +1353,11 @@ function capture() {
     whatToChange = `avoid: ${context}`;
   }
 
+  if (normalized === 'up') {
+    console.error('A thumbs-up has to be a Cursor reaction. This command cannot record one.');
+    process.exit(1);
+  }
+
   const result = captureFeedback({
     signal: normalized,
     context: context,
@@ -1446,6 +1451,10 @@ function feedbackSelfTest() {
 
   if (normalized !== 'up' && normalized !== 'down') {
     console.error('feedback-self-test needs --feedback=up|down when overriding the default.');
+    process.exit(1);
+  }
+  if (normalized === 'up') {
+    console.error('A thumbs-up has to be a Cursor reaction. This command cannot record one.');
     process.exit(1);
   }
 
@@ -3586,20 +3595,44 @@ function statuslineRender() {
   process.stdout.write(output);
 }
 
+function readCursorSubmitPayload(rawStdin) {
+  const trimmed = String(rawStdin || '').trim();
+  if (!trimmed.startsWith('{')) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+  const conversationId = String(parsed.conversation_id || parsed.conversationId || '').trim();
+  const generationId = String(parsed.generation_id || parsed.generationId || '').trim();
+  if (!conversationId || !generationId) return null;
+  return {
+    conversationId,
+    generationId,
+    prompt: typeof parsed.prompt === 'string' ? parsed.prompt.trim() : '',
+  };
+}
+
 function hookAutoCapture() {
   syncActiveProjectContext();
   const { extractPromptEnvelope } = require(path.join(PKG_ROOT, 'scripts', 'feedback-sanitizer'));
   const rawStdin = readStdinText();
   const promptEnvelope = extractPromptEnvelope(rawStdin);
+  const cursorHook = readCursorSubmitPayload(rawStdin);
   // stdin on a UserPromptSubmit hook is the JSON payload
   // {session_id, transcript_path, cwd, prompt, ...}. Persist ONLY the human
   // `.prompt` field — never the whole stdin object — so session metadata blobs
-  // can't be promoted as lessons.
-  const prompt = process.env.CLAUDE_USER_PROMPT
+  // can't be promoted as lessons. A Cursor reaction is the beforeSubmitPrompt
+  // payload (conversation_id + generation_id). Env vars must not replace it
+  // or invent a thumbs-up.
+  const envPrompt = process.env.CLAUDE_USER_PROMPT
     || process.env.THUMBGATE_USER_PROMPT
     || process.env.CODEX_USER_PROMPT
     || process.env.USER_PROMPT
-    || promptEnvelope.prompt;
+    || '';
+  const prompt = cursorHook ? cursorHook.prompt : (promptEnvelope.prompt || envPrompt);
   const { evaluatePromptGuard } = require(path.join(PKG_ROOT, 'scripts', 'prompt-guard'));
   const { processInlineFeedback, formatCliOutput } = require(path.join(PKG_ROOT, 'scripts', 'cli-feedback'));
   const { detectFeedbackSignal, isGenericFeedbackText } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
@@ -3624,7 +3657,7 @@ function hookAutoCapture() {
   }
 
   const detected = detectFeedbackSignal(prompt);
-  if (!detected) {
+  if (!detected || (detected.signal === 'up' && !cursorHook)) {
     recordConversationEntry({
       author: 'user',
       text: prompt,
@@ -3645,11 +3678,13 @@ function hookAutoCapture() {
   const sourceEvent = buildFeedbackSourceIdentity({
     signal,
     promptText: prompt,
-    sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID,
-    promptId: promptEnvelope.promptId,
+    sessionId: (cursorHook && signal === 'up' && cursorHook.conversationId)
+      || promptEnvelope.sessionId
+      || process.env.CLAUDE_SESSION_ID,
+    promptId: promptEnvelope.promptId || (cursorHook && signal === 'up' && cursorHook.generationId) || undefined,
     projectDir: promptEnvelope.projectDir || CWD,
     timestamp: promptEnvelope.timestamp,
-    source: 'claude-user-prompt',
+    source: cursorHook && signal === 'up' ? 'cursor-reaction' : 'claude-user-prompt',
   });
   const result = processInlineFeedback({
     signal,

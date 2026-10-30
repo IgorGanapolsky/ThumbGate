@@ -55,6 +55,8 @@ function runPromptHook(payload, feedbackDir) {
 
 function feedbackEnvelope(overrides = {}) {
   return {
+    conversation_id: 'conv-idempotency',
+    generation_id: 'gen-idempotency',
     session_id: 'session-idempotency',
     prompt_id: 'prompt-idempotency',
     cwd: ROOT,

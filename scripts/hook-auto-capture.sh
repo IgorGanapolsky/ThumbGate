@@ -87,9 +87,10 @@ capture_and_report() {
   " 2>/dev/null
 }
 
-# Check for thumbs up signals
+# A thumbs-up is a Cursor reaction (conversation_id + generation_id on
+# `thumbgate hook-auto-capture` stdin). This env prompt is not that reaction,
+# so it must not be stored as one.
 if echo "$LOWER" | grep -qE '(thumbs? ?up|that worked|looks good|nice work|perfect|good job)'; then
-  capture_and_report "up"
   exit 0
 fi
 

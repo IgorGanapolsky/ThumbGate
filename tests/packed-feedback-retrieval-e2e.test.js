@@ -61,6 +61,8 @@ test('packed npm artifact captures bare feedback and retrieves the Ashby lesson'
     },
     input: JSON.stringify({
       hook_event_name: 'UserPromptSubmit',
+      conversation_id: 'conv-packed',
+      generation_id: 'gen-packed',
       session_id: 'packed-session',
       prompt_id: 'packed-prompt',
       cwd: tempRoot,

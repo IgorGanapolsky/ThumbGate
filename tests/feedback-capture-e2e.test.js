@@ -43,7 +43,13 @@ test('UserPromptSubmit thumbs up is durably stored and acknowledged in the same 
   const feedbackDir = makeFeedbackDir();
   t.after(() => fs.rmSync(feedbackDir, { recursive: true, force: true }));
   const result = runHook(feedbackDir, {
-    hook_event_name: 'UserPromptSubmit', session_id: 'session-up', prompt_id: 'prompt-up', cwd: ROOT, prompt: '👍',
+    hook_event_name: 'UserPromptSubmit',
+    conversation_id: 'conv-up',
+    generation_id: 'gen-up',
+    session_id: 'session-up',
+    prompt_id: 'prompt-up',
+    cwd: ROOT,
+    prompt: '👍',
   });
 
   assert.equal(result.status, 0, result.stderr);
@@ -86,6 +92,8 @@ test('duplicate hook delivery links to the original feedback instead of storing 
   t.after(() => fs.rmSync(feedbackDir, { recursive: true, force: true }));
   const payload = {
     hook_event_name: 'UserPromptSubmit',
+    conversation_id: 'conv-dupe',
+    generation_id: 'gen-dupe',
     session_id: 'session-dupe',
     prompt_id: 'prompt-dupe',
     cwd: ROOT,
@@ -110,6 +118,8 @@ test('duplicate bare emoji delivery reuses one privacy-safe feedback event', (t)
   t.after(() => fs.rmSync(feedbackDir, { recursive: true, force: true }));
   const payload = {
     hook_event_name: 'UserPromptSubmit',
+    conversation_id: 'conv-bare-dupe',
+    generation_id: 'gen-bare-dupe',
     session_id: 'session-bare-dupe',
     prompt_id: 'prompt-bare-dupe',
     cwd: ROOT,

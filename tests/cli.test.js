@@ -800,10 +800,15 @@ describe('bin/cli.js', () => {
   test('hook-auto-capture records the user prompt and refreshes statusline counts', () => {
     const feedbackDir = makeTmpDir();
     const result = runCliSync(['hook-auto-capture'], {
+      input: JSON.stringify({
+        conversation_id: 'conv-cursor-review',
+        generation_id: 'gen-cursor-review',
+        prompt: 'thumbs up Thorough PR review',
+      }),
       env: {
         ...process.env,
         THUMBGATE_FEEDBACK_DIR: feedbackDir,
-        CLAUDE_USER_PROMPT: 'thumbs up Thorough PR review',
+        THUMBGATE_USER_PROMPT: 'thumbs up injected by a script',
         THUMBGATE_NO_NUDGE: '1',
       },
     });
@@ -817,6 +822,13 @@ describe('bin/cli.js', () => {
     const cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
     assert.equal(cache.thumbs_up, '1');
     assert.equal(cache.total_feedback, '1');
+    const feedbackRows = fs.readFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), 'utf8')
+      .trim()
+      .split(/\r?\n/)
+      .map((line) => JSON.parse(line));
+    assert.match(feedbackRows[0].context, /Thorough PR review/);
+    assert.doesNotMatch(feedbackRows[0].context, /injected by a script/);
+    assert.equal(feedbackRows[0].sourceEvent.source, 'cursor-reaction');
 
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
@@ -852,10 +864,15 @@ describe('bin/cli.js', () => {
     })}\n`);
 
     const result = runCliSync(['hook-auto-capture'], {
+      input: JSON.stringify({
+        conversation_id: 'conv-cursor-bare',
+        generation_id: 'gen-cursor-bare',
+        prompt: 'thumbs up',
+      }),
       env: {
         ...process.env,
         THUMBGATE_FEEDBACK_DIR: feedbackDir,
-        CODEX_USER_PROMPT: 'thumbs up',
+        CODEX_USER_PROMPT: 'thumbs up injected by a script',
         THUMBGATE_NO_NUDGE: '1',
       },
     });
@@ -877,10 +894,15 @@ describe('bin/cli.js', () => {
   test('hook-auto-capture records typo variants from alternate prompt env', () => {
     const feedbackDir = makeTmpDir();
     const result = runCliSync(['hook-auto-capture'], {
+      input: JSON.stringify({
+        conversation_id: 'conv-cursor-typo',
+        generation_id: 'gen-cursor-typo',
+        prompt: 'thumbss up evidence-backed verification was clear',
+      }),
       env: {
         ...process.env,
         THUMBGATE_FEEDBACK_DIR: feedbackDir,
-        CODEX_USER_PROMPT: 'thumbss up evidence-backed verification was clear',
+        CODEX_USER_PROMPT: 'thumbss up injected by a script',
         THUMBGATE_NO_NUDGE: '1',
       },
     });
@@ -924,13 +946,40 @@ describe('bin/cli.js', () => {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
-  test('hook-auto-capture acknowledges a bare thumbs signal without inventing a reusable memory', () => {
+  test('hook-auto-capture ignores a thumbs up injected by an environment variable', () => {
     const feedbackDir = makeTmpDir();
     const result = runCliSync(['hook-auto-capture'], {
+      input: JSON.stringify({
+        conversation_id: 'conv-cursor-real-prompt',
+        generation_id: 'gen-cursor-real-prompt',
+        prompt: 'Ship the verification note',
+      }),
       env: {
         ...process.env,
         THUMBGATE_FEEDBACK_DIR: feedbackDir,
         CLAUDE_USER_PROMPT: 'thumbs up',
+        THUMBGATE_USER_PROMPT: 'thumbs up',
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.equal(result.status, 0, `hook-auto-capture failed:\n${result.stderr}`);
+    assert.doesNotMatch(result.stdout, /Thumbs up recorded/);
+    assert.equal(fs.existsSync(path.join(feedbackDir, 'feedback-log.jsonl')), false);
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
+  test('hook-auto-capture acknowledges a bare thumbs signal without inventing a reusable memory', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync(['hook-auto-capture'], {
+      input: JSON.stringify({
+        conversation_id: 'conv-cursor-bare-ack',
+        generation_id: 'gen-cursor-bare-ack',
+        prompt: 'thumbs up',
+      }),
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
         THUMBGATE_NO_NUDGE: '1',
       },
     });
@@ -2802,15 +2851,22 @@ describe('bin/cli.js', () => {
     assert.equal(result.stdout.trim(), PKG_VERSION);
   });
 
-  test('capture --feedback=up routes to full engine', () => {
+  test('capture --feedback=up refuses a scripted thumbs-up', () => {
     const isolatedDir = makeTmpDir();
+    const feedbackDir = makeTmpDir();
     const result = runCliSync(['capture', '--feedback=up', '--context=cli test verification'], {
       cwd: isolatedDir,
-      env: { ...process.env, THUMBGATE_NO_RATE_LIMIT: '1' },
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_NO_RATE_LIMIT: '1',
+      },
     });
+    assert.equal(result.status, 1, `scripted thumbs-up should be refused:\n${result.stdout}`);
+    assert.match(result.stderr, /Cursor reaction/);
+    assert.equal(fs.existsSync(path.join(feedbackDir, 'feedback-log.jsonl')), false);
     fs.rmSync(isolatedDir, { recursive: true, force: true });
-    // Exit 0 (promoted) or 2 (signal logged only) are both valid
-    assert.notEqual(result.status, 1, `capture should not exit 1:\n${result.stderr}`);
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
   test('capture --feedback=down routes to full engine', () => {
