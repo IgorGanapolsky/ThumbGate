@@ -583,20 +583,18 @@ function clampTtlMs(value, fallbackMs) {
 // Default lease when a caller asks for one without saying how long. clampTtlMs floors at 60s.
 const TASK_SCOPE_LEASE_MS = 15 * 60 * 1000;
 
+function isValidTaskScopeDeadline(deadline) {
+  return typeof deadline === 'number' && Number.isFinite(new Date(deadline).getTime());
+}
+
 /**
- * A task scope with no `expiresAt` is permanent — that is the historical contract and every
- * existing scope on disk has it. Only a scope that explicitly took a lease can expire.
+ * Legacy permanent scopes have neither a lease nor a deadline. Invalid lease metadata
+ * must revoke authority rather than silently turn a leased scope into a permanent one.
  */
 function isTaskScopeExpired(taskScope, nowMs = Date.now()) {
   if (!taskScope || typeof taskScope !== 'object') return false;
-  // `expiresAt: null` means permanent, and it MUST be checked before the numeric coercion:
-  // Number(null) is 0, not NaN, so a null deadline would otherwise read as "expired in 1970".
-  // Combined with fail-closed enforcement that would revoke authority from every permanent
-  // scope the moment this shipped. Caught by tests/task-scope-lease.test.js.
-  if (taskScope.expiresAt == null) return false;
-  const deadline = Number(taskScope.expiresAt);
-  if (!Number.isFinite(deadline)) return false;
-  return nowMs >= deadline;
+  if (taskScope.expiresAt == null) return taskScope.leaseMs != null;
+  return !isValidTaskScopeDeadline(taskScope.expiresAt) || nowMs >= taskScope.expiresAt;
 }
 
 function currentScopeSessionId(explicitSessionId = null) {
@@ -2511,7 +2509,7 @@ function buildTaskScopeViolation(taskScope, affectedFiles, nowMs = Date.now()) {
       outsideFiles: affectedFiles.slice(),
       allowedPaths: Array.isArray(taskScope.allowedPaths) ? taskScope.allowedPaths.slice() : [],
       summary: taskScope.summary || null,
-      expiresAt: taskScope.expiresAt || null,
+      expiresAt: taskScope.expiresAt ?? null,
     };
   }
   if (!taskScope || !Array.isArray(taskScope.allowedPaths) || taskScope.allowedPaths.length === 0) {
@@ -2587,8 +2585,10 @@ function buildGateMessage(gate, matchDetails) {
   if (matchDetails && matchDetails.taskScopeViolation) {
     const violation = matchDetails.taskScopeViolation;
     if (violation.reasonCode === 'expired_task_scope') {
-      const lapsed = violation.expiresAt ? new Date(violation.expiresAt).toISOString() : 'unknown time';
-      return `The task-scope lease expired at ${lapsed}, so its authority no longer applies. `
+      const deadlineStatus = isValidTaskScopeDeadline(violation.expiresAt)
+        ? `expired at ${new Date(violation.expiresAt).toISOString()}`
+        : 'has an invalid deadline';
+      return `The task-scope lease ${deadlineStatus}, so its authority no longer applies. `
         + `Renew it with set_task_scope (allowed paths were: ${formatFileList(violation.allowedPaths)}).`;
     }
     if (violation.reasonCode === 'missing_task_scope') {

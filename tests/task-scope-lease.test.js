@@ -317,7 +317,7 @@ test('governanceMode sidecar/simulation/live: ordinary denials vs hard floors', 
 // broken in the path a user reaches. A truth table is the only honest proof — "it denies"
 // means nothing without "and it still permits the things it should".
 
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 
 function withRealRepo(run) {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-lease-e2e-'));
@@ -379,6 +379,103 @@ test('e2e: an expired lease DENIES an in-scope edit, even in warn-by-default pos
     assert.strictEqual(verdict.decision, 'deny',
       `expired lease was downgraded to "${verdict.decision}" — the fail-closed guarantee does not survive the real path`);
     assert.strictEqual(verdict.gate, gatesEngine.TASK_SCOPE_LEASE_EXPIRED_GATE_ID);
+  });
+});
+
+const malformedDeadlines = [
+  ['missing', undefined],
+  ['null', null],
+  ['nonnumeric string', 'not-a-date'],
+  ['numeric string', String(Date.now() + 60_000)],
+  ['object', {}],
+  ['array', [Date.now() + 60_000]],
+  ['boolean', true],
+  ['outside date range', 9e15],
+];
+
+for (const mode of ['sidecar', 'simulation', 'live']) {
+  for (const [label, deadline] of malformedDeadlines) {
+    test(`e2e: ${mode} denies a leased scope with ${label} deadline`, async () => {
+      const previousMode = process.env.THUMBGATE_GOVERNANCE_MODE;
+      process.env.THUMBGATE_GOVERNANCE_MODE = mode;
+      try {
+        await withRealRepo(async (repo) => {
+          setTaskScope({ allowedPaths: ['src/**'], repoPath: repo, ttlMs: 90_000 });
+          rewriteScope((scope) => { scope.expiresAt = deadline; });
+
+          const verdict = await editInScope(repo);
+          assert.ok(verdict, 'malformed lease permitted an in-scope edit');
+          assert.equal(verdict.decision, 'deny');
+          assert.equal(verdict.gate, gatesEngine.TASK_SCOPE_LEASE_EXPIRED_GATE_ID);
+          assert.match(verdict.message, /invalid deadline/);
+          assert.equal(getScopeState().taskScope.expired, true);
+          assert.deepEqual(getScopeState().taskScope.allowedPaths, ['src/**']);
+          assert.equal(gatesEngine.applyDailyBlockCap(verdict), null);
+        });
+      } finally {
+        if (previousMode === undefined) delete process.env.THUMBGATE_GOVERNANCE_MODE;
+        else process.env.THUMBGATE_GOVERNANCE_MODE = previousMode;
+      }
+    });
+  }
+}
+
+test('e2e: explicit renewal restores a malformed lease without widening its paths', async () => {
+  await withRealRepo(async (repo) => {
+    setTaskScope({ allowedPaths: ['src/**'], repoPath: repo, ttlMs: 90_000 });
+    rewriteScope((scope) => { scope.expiresAt = 'not-a-date'; });
+    const denied = await editInScope(repo);
+    assert.ok(denied, 'malformed lease permitted an in-scope edit');
+    assert.equal(denied.decision, 'deny');
+
+    const renewed = setTaskScope({ allowedPaths: ['src/**'], repoPath: repo, ttlMs: 90_000 });
+    assert.equal(await editInScope(repo), null);
+    assert.equal(
+      gatesEngine.buildTaskScopeViolation(renewed, ['infra/deploy.tf']).reasonCode,
+      'outside_declared_scope',
+    );
+  });
+});
+
+test('hook CLI denies malformed lease state and permits valid or permanent scopes', async () => {
+  await withRealRepo(async (repo) => {
+    const stateDir = path.dirname(gatesEngine.GOVERNANCE_STATE_PATH);
+    const hookInput = JSON.stringify({
+      tool_name: 'Edit',
+      tool_input: {
+        file_path: path.join(repo, 'src', 'app.js'),
+        old_string: 'code',
+        new_string: 'changed',
+        cwd: repo,
+      },
+    });
+    for (const mode of ['malformed', 'valid', 'permanent']) {
+      setTaskScope({
+        allowedPaths: ['src/**'],
+        repoPath: repo,
+        ...(mode === 'permanent' ? {} : { ttlMs: 90_000 }),
+      });
+      if (mode === 'malformed') rewriteScope((scope) => { scope.expiresAt = 'not-a-date'; });
+      fs.copyFileSync(gatesEngine.GOVERNANCE_STATE_PATH, path.join(stateDir, 'governance-state.json'));
+
+      const result = spawnSync(process.execPath, [path.join(__dirname, '../scripts/gates-engine.js')], {
+        cwd: repo,
+        input: hookInput,
+        encoding: 'utf8',
+        timeout: 30_000,
+        env: { ...process.env, THUMBGATE_STATE_DIR: stateDir, THUMBGATE_GOVERNANCE_MODE: 'sidecar' },
+      });
+      assert.equal(result.status, 0, result.stderr);
+      assert.doesNotMatch(result.stderr, /gates-engine error:/);
+      const output = JSON.parse(result.stdout);
+      if (mode === 'malformed') {
+        assert.equal(output.hookSpecificOutput?.permissionDecision, 'deny');
+        assert.match(output.hookSpecificOutput.permissionDecisionReason, /task-scope-lease-expired/);
+        assert.match(output.hookSpecificOutput.permissionDecisionReason, /invalid deadline/);
+      } else {
+        assert.equal(output.hookSpecificOutput?.permissionDecision, undefined);
+      }
+    }
   });
 });
 
