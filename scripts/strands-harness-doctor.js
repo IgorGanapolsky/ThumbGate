@@ -29,7 +29,7 @@ const path = require('node:path');
 const STRANDS_DEFAULTS = Object.freeze({
   maxOutputLines: 350,
   maxOutputBytes: 16 * 1024, // 16 KB
-  compactionThresholdPct: 0.75, // Trigger compaction at 75% context window utilization
+  compactionThresholdPct: 0.75, // 75% of the window, or 30,000 tokens left, whichever comes first
   terminalBenchSavingsBenchmarkPct: 0.77, // 77% cheaper on Terminal-Bench 2.1 ($56.29 vs $248.05)
   overallCostSavingsBenchmarkPct: 0.45,   // 45% cheaper across ALFWorld, GAIA, WebShop, etc.
 });
@@ -110,11 +110,16 @@ function evaluateCompactionThreshold({
   pinnedRules = [],
 } = {}) {
   const utilization = maxWindowTokens > 0 ? currentTokens / maxWindowTokens : 0;
-  const shouldCompact = utilization >= thresholdPct;
+  const remainingTokens = maxWindowTokens - currentTokens;
+  const fractionHit = utilization >= thresholdPct;
+  const remainingHit = maxWindowTokens > 30000 && remainingTokens <= 30000 && remainingTokens >= 0;
+  const shouldCompact = fractionHit || remainingHit;
 
   return {
     utilization: Number((utilization * 100).toFixed(2)),
     thresholdPct: Number((thresholdPct * 100).toFixed(2)),
+    remainingTokens,
+    trigger: fractionHit ? 'fraction' : (remainingHit ? 'remaining_tokens' : 'none'),
     shouldCompact,
     pinnedRulesPreserved: Array.isArray(pinnedRules) && pinnedRules.length > 0,
     pinnedRuleCount: Array.isArray(pinnedRules) ? pinnedRules.length : 0,
