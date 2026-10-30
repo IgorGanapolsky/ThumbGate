@@ -1155,136 +1155,144 @@ function getContextFootprintReport(hostedConfig) {
   });
 }
 
+const MCP_SKILL_MANIFESTS_DATA = [
+  {
+    name: 'thumbgate',
+    title: 'ThumbGate Pre-Action Gates',
+    description: 'Capture feedback, recall lessons, generate rules, and block repeated agent mistakes before tool execution.',
+    triggers: ['thumbgate', 'pre-action gates', 'prevent repeated AI mistakes', 'agent feedback', 'PreToolUse hooks'],
+    recommendedFlow: [
+      'Recall lessons before risky work.',
+      'Plan high-risk actions with checkpoints.',
+      'Capture concrete thumbs-down/up feedback.',
+      'Inspect prevention_rules after repeats.',
+    ],
+    installCommand: 'npx thumbgate init',
+    contextUrlPath: '/llm-context.md',
+  },
+  {
+    name: 'workflow-hardening-sprint',
+    title: 'Workflow Hardening Sprint',
+    description: 'Turn one repeated agent failure into an enforced gate with proof and rollout evidence.',
+    triggers: ['workflow hardening', 'team rollout', 'agent governance', 'approval boundary', 'audit trail'],
+    recommendedFlow: [
+      'Pick one costly repeated failure.',
+      'Import the policy or runbook.',
+      'Ship the gate with dashboard proof.',
+    ],
+    intakeUrlPath: '/#workflow-sprint-intake',
+  },
+  {
+    name: 'visual-proof-retrieval',
+    title: 'Visual Proof Retrieval',
+    description: 'Use screenshots, PDF pages, dashboard captures, and proof artifacts as searchable evidence for agent-governance claims.',
+    triggers: ['visual document retrieval', 'multimodal embeddings', 'screenshots', 'PDF evidence', 'proof artifacts'],
+    recommendedFlow: [
+      'Plan the corpus and Matryoshka dimension budget.',
+      'Baseline text-only retrieval before finetuning.',
+      'Evaluate NDCG@10 on visual hard negatives.',
+      'Require artifact links before using retrieved evidence in claims.',
+    ],
+    contextUrlPath: '/llm-context.md',
+  },
+  {
+    name: 'context-footprint-optimizer',
+    title: 'Context Footprint Optimizer',
+    description: 'Measure MCP schema payloads and feedback-context packs before spending model context on them.',
+    triggers: ['context compression', 'token savings', 'progressive discovery', 'MCP schema loading', 'context budget'],
+    recommendedFlow: [
+      'Measure full schema or memory payload footprint.',
+      'Load the slim index first, then fetch only selected tool schemas.',
+      'Compact feedback context with anchors for proof-critical lessons.',
+      'Record estimated token savings next to the workflow evidence.',
+    ],
+    contextUrlPath: '/llm-context.md',
+    footprintUrlPath: '/.well-known/mcp/footprint.json',
+  },
+  {
+    name: 'agent-design-governance',
+    title: 'Agent Design Governance',
+    description: 'Decide when to stay single-agent, when to split into manager or handoff patterns, and which eval/tool safeguards are required first.',
+    triggers: ['agent architecture', 'multi-agent', 'tool overload', 'agent evals', 'agent instructions'],
+    recommendedFlow: [
+      'Start with a single agent plus clear tools and instructions.',
+      'Split only when instruction complexity or tool overload is measured.',
+      'Require baseline evals before adding autonomy or subagents.',
+      'Classify tool risk before allowing writes, money movement, production changes, or outbound actions.',
+    ],
+    contextUrlPath: '/llm-context.md',
+  },
+  {
+    name: 'proactive-agent-eval-guardrails',
+    title: 'Proactive Agent Eval Guardrails',
+    description: 'Require state-machine modeling, active user simulation, goal inference, intervention timing, and multi-app orchestration proof before proactive agents write or interrupt users.',
+    triggers: ['proactive agents', 'PARE', 'active user simulation', 'intervention timing', 'multi-app orchestration'],
+    recommendedFlow: [
+      'Model each app as states, actions, and valid transitions.',
+      'Simulate active users before enabling anticipatory interventions.',
+      'Grade goal inference separately from intervention timing.',
+      'Block multi-app proactive writes until rollback and orchestration evidence exists.',
+    ],
+    contextUrlPath: '/llm-context.md',
+  },
+  {
+    name: 'reward-hacking-guardrails',
+    title: 'Reward Hacking Guardrails',
+    description: 'Catch proxy-optimization failures such as unsupported completion claims, sycophancy, verbosity-as-proof, benchmark overfitting, and evaluator manipulation.',
+    triggers: ['reward hacking', 'benchmark overfitting', 'unsupported claims', 'sycophancy', 'verifier theater'],
+    recommendedFlow: [
+      'Inspect candidate claims for completion, safety, test, or deployment language.',
+      'Require proof artifacts before accepting done, fixed, safe, or ready-to-merge claims.',
+      'Map every proxy metric to the real user objective.',
+      'Require holdout or regression proof before treating benchmark gains as product gains.',
+    ],
+    contextUrlPath: '/llm-context.md',
+  },
+  {
+    name: 'oss-pr-opportunity-scout',
+    title: 'OSS PR Opportunity Scout',
+    description: 'Find upstream GitHub repositories ThumbGate actually depends on, then rank issue, bounty, and proof-backed PR opportunities without spam.',
+    triggers: ['GitHub issues', 'bug bounty', 'upstream PR', 'open source promotion', 'maintainer outreach'],
+    recommendedFlow: [
+      'Map package dependencies to upstream repositories.',
+      'Search only maintainer-visible issues, help-wanted labels, regressions, and bounty surfaces.',
+      'Reproduce locally before claiming a fix.',
+      'Open one focused PR with tests, proof, and transparent ThumbGate context only when relevant.',
+    ],
+    contextUrlPath: '/llm-context.md',
+  },
+  {
+    name: 'chatgpt-ads-readiness-pack',
+    title: 'ChatGPT Ads Readiness Pack',
+    description: 'Prepare ThumbGate intent clusters, proof-backed copy, landing routes, and measurement before ChatGPT Ads Manager becomes broadly self-serve.',
+    triggers: ['ChatGPT ads', 'AI ads', 'paid AI search', 'Ads Manager', 'agent governance advertising'],
+    recommendedFlow: [
+      'Submit advertiser interest when eligible.',
+      'Cluster high-intent conversational queries around agent governance and repeated workflow failures.',
+      'Route self-serve intent to the guide and team pain to Workflow Hardening Sprint intake.',
+      'Block unsupported ad and landing-page claims before spend scales.',
+    ],
+    contextUrlPath: '/llm-context.md',
+  },
+];
+
 function getMcpSkillManifests(hostedConfig) {
-  return [
-    {
-      name: 'thumbgate',
-      title: 'ThumbGate Pre-Action Gates',
-      description: 'Capture feedback, recall lessons, generate rules, and block repeated agent mistakes before tool execution.',
-      triggers: ['thumbgate', 'pre-action gates', 'prevent repeated AI mistakes', 'agent feedback', 'PreToolUse hooks'],
-      recommendedFlow: [
-        'Recall lessons before risky work.',
-        'Plan high-risk actions with checkpoints.',
-        'Capture concrete thumbs-down/up feedback.',
-        'Inspect prevention_rules after repeats.',
-      ],
-      installCommand: 'npx thumbgate init',
-      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
-      proofUrl: VERIFICATION_EVIDENCE_URL,
-    },
-    {
-      name: 'workflow-hardening-sprint',
-      title: 'Workflow Hardening Sprint',
-      description: 'Turn one repeated agent failure into an enforced gate with proof and rollout evidence.',
-      triggers: ['workflow hardening', 'team rollout', 'agent governance', 'approval boundary', 'audit trail'],
-      recommendedFlow: [
-        'Pick one costly repeated failure.',
-        'Import the policy or runbook.',
-        'Ship the gate with dashboard proof.',
-      ],
-      intakeUrl: buildPublicUrl(hostedConfig, '/#workflow-sprint-intake'),
-      proofUrl: VERIFICATION_EVIDENCE_URL,
-    },
-    {
-      name: 'visual-proof-retrieval',
-      title: 'Visual Proof Retrieval',
-      description: 'Use screenshots, PDF pages, dashboard captures, and proof artifacts as searchable evidence for agent-governance claims.',
-      triggers: ['visual document retrieval', 'multimodal embeddings', 'screenshots', 'PDF evidence', 'proof artifacts'],
-      recommendedFlow: [
-        'Plan the corpus and Matryoshka dimension budget.',
-        'Baseline text-only retrieval before finetuning.',
-        'Evaluate NDCG@10 on visual hard negatives.',
-        'Require artifact links before using retrieved evidence in claims.',
-      ],
-      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
-      proofUrl: VERIFICATION_EVIDENCE_URL,
-    },
-    {
-      name: 'context-footprint-optimizer',
-      title: 'Context Footprint Optimizer',
-      description: 'Measure MCP schema payloads and feedback-context packs before spending model context on them.',
-      triggers: ['context compression', 'token savings', 'progressive discovery', 'MCP schema loading', 'context budget'],
-      recommendedFlow: [
-        'Measure full schema or memory payload footprint.',
-        'Load the slim index first, then fetch only selected tool schemas.',
-        'Compact feedback context with anchors for proof-critical lessons.',
-        'Record estimated token savings next to the workflow evidence.',
-      ],
-      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
-      footprintUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/footprint.json'),
-      proofUrl: VERIFICATION_EVIDENCE_URL,
-    },
-    {
-      name: 'agent-design-governance',
-      title: 'Agent Design Governance',
-      description: 'Decide when to stay single-agent, when to split into manager or handoff patterns, and which eval/tool safeguards are required first.',
-      triggers: ['agent architecture', 'multi-agent', 'tool overload', 'agent evals', 'agent instructions'],
-      recommendedFlow: [
-        'Start with a single agent plus clear tools and instructions.',
-        'Split only when instruction complexity or tool overload is measured.',
-        'Require baseline evals before adding autonomy or subagents.',
-        'Classify tool risk before allowing writes, money movement, production changes, or outbound actions.',
-      ],
-      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
-      proofUrl: VERIFICATION_EVIDENCE_URL,
-    },
-    {
-      name: 'proactive-agent-eval-guardrails',
-      title: 'Proactive Agent Eval Guardrails',
-      description: 'Require state-machine modeling, active user simulation, goal inference, intervention timing, and multi-app orchestration proof before proactive agents write or interrupt users.',
-      triggers: ['proactive agents', 'PARE', 'active user simulation', 'intervention timing', 'multi-app orchestration'],
-      recommendedFlow: [
-        'Model each app as states, actions, and valid transitions.',
-        'Simulate active users before enabling anticipatory interventions.',
-        'Grade goal inference separately from intervention timing.',
-        'Block multi-app proactive writes until rollback and orchestration evidence exists.',
-      ],
-      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
-      proofUrl: VERIFICATION_EVIDENCE_URL,
-    },
-    {
-      name: 'reward-hacking-guardrails',
-      title: 'Reward Hacking Guardrails',
-      description: 'Catch proxy-optimization failures such as unsupported completion claims, sycophancy, verbosity-as-proof, benchmark overfitting, and evaluator manipulation.',
-      triggers: ['reward hacking', 'benchmark overfitting', 'unsupported claims', 'sycophancy', 'verifier theater'],
-      recommendedFlow: [
-        'Inspect candidate claims for completion, safety, test, or deployment language.',
-        'Require proof artifacts before accepting done, fixed, safe, or ready-to-merge claims.',
-        'Map every proxy metric to the real user objective.',
-        'Require holdout or regression proof before treating benchmark gains as product gains.',
-      ],
-      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
-      proofUrl: VERIFICATION_EVIDENCE_URL,
-    },
-    {
-      name: 'oss-pr-opportunity-scout',
-      title: 'OSS PR Opportunity Scout',
-      description: 'Find upstream GitHub repositories ThumbGate actually depends on, then rank issue, bounty, and proof-backed PR opportunities without spam.',
-      triggers: ['GitHub issues', 'bug bounty', 'upstream PR', 'open source promotion', 'maintainer outreach'],
-      recommendedFlow: [
-        'Map package dependencies to upstream repositories.',
-        'Search only maintainer-visible issues, help-wanted labels, regressions, and bounty surfaces.',
-        'Reproduce locally before claiming a fix.',
-        'Open one focused PR with tests, proof, and transparent ThumbGate context only when relevant.',
-      ],
-      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
-      proofUrl: VERIFICATION_EVIDENCE_URL,
-    },
-    {
-      name: 'chatgpt-ads-readiness-pack',
-      title: 'ChatGPT Ads Readiness Pack',
-      description: 'Prepare ThumbGate intent clusters, proof-backed copy, landing routes, and measurement before ChatGPT Ads Manager becomes broadly self-serve.',
-      triggers: ['ChatGPT ads', 'AI ads', 'paid AI search', 'Ads Manager', 'agent governance advertising'],
-      recommendedFlow: [
-        'Submit advertiser interest when eligible.',
-        'Cluster high-intent conversational queries around agent governance and repeated workflow failures.',
-        'Route self-serve intent to the guide and team pain to Workflow Hardening Sprint intake.',
-        'Block unsupported ad and landing-page claims before spend scales.',
-      ],
-      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
-      proofUrl: VERIFICATION_EVIDENCE_URL,
-    },
-  ];
+  return MCP_SKILL_MANIFESTS_DATA.map((skill) => {
+    const manifest = { ...skill, proofUrl: VERIFICATION_EVIDENCE_URL };
+    if (manifest.contextUrlPath) {
+      manifest.contextUrl = buildPublicUrl(hostedConfig, manifest.contextUrlPath);
+      delete manifest.contextUrlPath;
+    }
+    if (manifest.intakeUrlPath) {
+      manifest.intakeUrl = buildPublicUrl(hostedConfig, manifest.intakeUrlPath);
+      delete manifest.intakeUrlPath;
+    }
+    if (manifest.footprintUrlPath) {
+      manifest.footprintUrl = buildPublicUrl(hostedConfig, manifest.footprintUrlPath);
+      delete manifest.footprintUrlPath;
+    }
+    return manifest;
+  });
 }
 
 function getMcpApplications(hostedConfig) {
