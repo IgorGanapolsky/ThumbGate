@@ -2852,6 +2852,7 @@ function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = 
   const hiddenInputs = includeHiddenAttribution
     ? buildCheckoutHiddenAttributionInputs(parsed)
     : '';
+  const skipEmailPattern = String.raw`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`;
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -2964,7 +2965,7 @@ ${hiddenInputs}
     try {
       var u = new URL(skipLink.href, window.location.origin);
       var email = emailInput ? emailInput.value.trim() : '';
-      if (email && email.length <= 320 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+      if (email && email.length <= 320 && ${skipEmailPattern}.test(email)) {
         u.searchParams.set('customer_email', email);
       } else {
         u.searchParams.delete('customer_email');
