@@ -32,6 +32,9 @@ const MARKETING_CLICK_EVENT_TYPES = new Set([
   'demo_click',
   'github_repo_click',
   'community_landing_redirect',
+  // Human /go/pro-direct hop. The browser beacon for the same tap is ignored
+  // below so one Pay click is one click.
+  'pro_checkout_direct_stripe',
 ]);
 const CHECKOUT_START_EVENT_TYPES = new Set([
   'checkout_start',
@@ -40,6 +43,7 @@ const CHECKOUT_START_EVENT_TYPES = new Set([
   // issuing the external Payment Link redirect. This is stronger than a CTA
   // click and is the service equivalent of the Pro checkout bootstrap.
   'diagnostic_checkout_confirmed',
+  'pro_checkout_direct_stripe',
 ]);
 
 function shouldIncludeLegacyTelemetry() {
@@ -103,6 +107,16 @@ function isMarketingClickEvent(eventType) {
 
 function isCheckoutStartEvent(eventType) {
   return CHECKOUT_START_EVENT_TYPES.has(String(eventType || '').toLowerCase());
+}
+
+function isDirectStripeBeacon(entry) {
+  return (entry.eventType || entry.event) === 'checkout_interstitial_cta_clicked'
+    && entry.ctaId === 'pro_checkout_direct_stripe';
+}
+
+function isInterstitialPayHop(entry) {
+  return (entry.eventType || entry.event) === 'pro_checkout_direct_stripe'
+    && entry.ctaPlacement === 'checkout_interstitial';
 }
 
 function getTelemetryPath(feedbackDir) {
@@ -742,7 +756,7 @@ function summarizeExternalTrafficQuality(events) {
       incrementCounter(pageViewsByTrafficChannel, entry.trafficChannel);
     }
 
-    if (isMarketingClickEvent(eventType)) {
+    if (isMarketingClickEvent(eventType) && !isDirectStripeBeacon(entry)) {
       externalCtaClicks += 1;
     }
 
@@ -952,7 +966,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         if (entry.attributionTagged) attributedPageViews += 1;
       }
 
-      if (isMarketingClickEvent(entry.eventType || entry.event)) {
+      if (isMarketingClickEvent(entry.eventType || entry.event) && !isDirectStripeBeacon(entry)) {
         ctaClicks += 1;
         incrementCounter(ctaClicksBySource, entry.source);
         incrementCounter(ctaClicksByCampaign, entry.utmCampaign);
@@ -975,7 +989,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         checkoutBotDeflections += 1;
       }
 
-      if ((entry.eventType || entry.event) === 'checkout_interstitial_cta_clicked') {
+      if ((entry.eventType || entry.event) === 'checkout_interstitial_cta_clicked' && !isDirectStripeBeacon(entry)) {
         checkoutInterstitialClicks += 1;
         if (entry.ctaId === 'pro_checkout_confirmed') {
           checkoutInterstitialProConfirms += 1;
@@ -988,6 +1002,11 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         } else if (entry.ctaId === 'workflow_sprint_checkout') {
           checkoutInterstitialWorkflowSprintCheckoutClicks += 1;
         }
+      }
+
+      if (isInterstitialPayHop(entry)) {
+        checkoutInterstitialClicks += 1;
+        checkoutInterstitialProConfirms += 1;
       }
 
       if (isCheckoutStartEvent(entry.eventType || entry.event)) {
