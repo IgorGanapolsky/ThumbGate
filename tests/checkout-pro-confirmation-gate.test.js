@@ -89,6 +89,11 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     assert.match(body, /name="customer_email"[^>]*required/);
     assert.match(body, /pro_checkout_direct_stripe/);
     assert.match(body, /\/go\/pro-direct/);
+    assert.match(body, /Pay \$19\/mo with Stripe/);
+    assert.match(body, /<button type="submit" class="secondary">Email a receipt, then pay/);
+    assert.match(body, /attributable buyer intent/);
+    assert.match(body, /Cancel anytime\. 7-day refund, no questions\./);
+    assert.doesNotMatch(body, /bot-deflects/);
     assert.doesNotMatch(body, /buy\.stripe\.com\//);
     const directAt = body.indexOf('data-i="pro_checkout_direct_stripe"');
     const formAt = body.indexOf('<form action="/checkout/pro"');
