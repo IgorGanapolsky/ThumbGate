@@ -18,6 +18,8 @@ The first version of this skill (written same day) referenced an env var named `
 
 **Before claiming any revenue, visitor, conversion, or funnel number, you MUST run `node scripts/revenue-status.js` and quote its output. If no credentials are configured, say so — do not fall back to planning docs.**
 
+Customer money is the Today and 30d `paidOrders` and `bookedRevenue` lines. Do not quote the Lifetime ledger as money made. That ledger includes the owner's own test purchase. When the Lifetime line says `customerRevenue withheld`, that phrase is the answer. Do not recover the withheld amount from `--json`, Stripe, memory, or an older report.
+
 ## Canonical command
 
 ```bash
@@ -31,8 +33,9 @@ Reads credentials in this exact priority order (same as `scripts/operational-sum
 3. `$THUMBGATE_API_KEY` — full admin, only when operator unavailable
 
 Output sections (quote these directly, never paraphrase):
-- `Source:` — `hosted-billing-summary` (live) vs `local-fallback` (no creds)
-- `Today / 30d / Lifetime:` — visitors, pageViews, checkoutStarts, paidOrders, bookedRevenue
+- `Source:` — `hosted-http-api` on a successful live audit, or `local-fallback` when no creds
+- `Today / 30d:` — visitors, pageViews, checkoutStarts, paidOrders, bookedRevenue
+- `Lifetime:` — traffic counts, plus either verified `customerBooked` or `customerRevenue withheld`. The withheld ledger is not customer revenue.
 - `30d attribution coverage` — channel telemetry quality
 - `Gaps:` — exact phrases describing what's missing
 
@@ -73,7 +76,7 @@ Note the var is `STRIPE_SECRET_KEY` (matches `src/api/server.js:2597`), not `STR
 
 | Source | Truth? | Notes |
 |--------|--------|-------|
-| `scripts/revenue-status.js` output where `Source: hosted-billing-summary` | YES | Backed by Stripe-reconciled ledger |
+| `scripts/revenue-status.js` output where `Source: hosted-http-api` | YES | Backed by Stripe-reconciled ledger. Quote Today and 30d booked totals. Do not quote a withheld Lifetime ledger. |
 | `scripts/revenue-status.js` output where `Source: local-fallback` | NO | Means no key configured; numbers are zero-state local |
 | Stripe API `/v1/charges` | YES | Cross-check only |
 | `reports/gtm/*/operator-close-packet.md` numbers labeled "revenue plan" | NO | These are forecasts |
@@ -116,7 +119,7 @@ npm run revenue:truth     # or: bash bin/revenue-truth.sh
 
 The wrapper handles three branches:
 
-1. **Operator key configured AND fresh.** Runs the canonical pipeline. Output starts with `Source: hosted-billing-summary`.
+1. **Operator key configured AND fresh.** Runs the canonical pipeline. Output starts with `Source: hosted-http-api`.
 2. **Operator key configured but STALE** (env var or `~/.config/thumbgate/operator.json` exists but no longer authenticates against Railway after a rotation). Runs the pipeline, then prints a loud `WARNING — configured operator key authenticated against the LOCAL fallback` block with the exact fix command. This is what you want to see when describing the 401 to the CEO instead of guessing.
 3. **No operator key AND shell looks like a cloud session** (`$CI`, `$CODESPACES`, `$GITHUB_ACTIONS`, `$CLAUDE_CODE_REMOTE`, or `/home/user/...` Linux container path). Prints a one-paragraph "revenue truth is local-only by design, run from your laptop, do NOT paste the key here" message and exits `0`. This is the **expected** posture for cloud sessions — not a bug, not a blocker, not something to keep reporting back to the CEO.
 

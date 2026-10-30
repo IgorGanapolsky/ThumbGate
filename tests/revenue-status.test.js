@@ -16,6 +16,7 @@ const {
   normalizeWorkflowIntakeQueue,
   buildDiagnosis,
   formatReport,
+  reportForJsonPrint,
   resolveExternalCustomerAudit,
   getHostedAuditViaHttp,
   generateRevenueStatusReport,
@@ -465,6 +466,10 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
                   checkoutInterstitialDiagnosticCheckoutClicks: 2,
                   checkoutInterstitialWorkflowSprintCheckoutClicks: 1,
                   checkoutBotDeflections: 7,
+                  checkoutStartsByCampaignVariant: {
+                    unknown: 8,
+                    workflow_team: 1,
+                  },
                 },
                 signups: {
                   uniqueLeads: 6,
@@ -546,9 +551,10 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
 
   const formatted = formatReport(report);
   assert.match(formatted, /Source: hosted-via-railway-env/);
-  assert.match(formatted, /Today: visitors 6, pageViews 4, checkoutStarts 2.*checkoutIntent views 3, clicks 2, stripeConfirms 1, intakeClicks 1, teamPathClicks 0, diagnosticClicks 1, sprintCheckoutClicks 0, botDeflections 4/);
+  assert.match(formatted, /Today: visitors 6, pageViews 4, checkoutStarts 2.*checkoutIntent views 3, clicks 2, payClicks 1, intakeClicks 1, teamPathClicks 0, diagnosticClicks 1, sprintCheckoutClicks 0, botDeflections 4/);
+  assert.doesNotMatch(formatted, /stripeConfirms/);
   assert.match(formatted, /30d: visitors 21, pageViews 15, checkoutStarts 9, paidOrders 2, bookedRevenue \$20.00/);
-  assert.match(formatted, /30d: .*checkoutIntent views 12, clicks 5, stripeConfirms 3, intakeClicks 1, teamPathClicks 1, diagnosticClicks 2, sprintCheckoutClicks 1, botDeflections 7/);
+  assert.match(formatted, /30d: .*checkoutIntent views 12, clicks 5, payClicks 3, intakeClicks 1, teamPathClicks 1, diagnosticClicks 2, sprintCheckoutClicks 1, botDeflections 7, checkoutVariants unknown 8, workflow_team 1/);
 });
 
 test('getHostedAuditViaHttp prefers one batched summary and strips intake identities', async () => {
@@ -735,6 +741,143 @@ test('formatReport exposes intake counts while withholding contact details', () 
   assert.match(formatted, /Operator intake queue: eligible 5, discovery-ready 4, close-ready 1, new 4, qualified 1/);
   assert.match(formatted, /contact details withheld/);
   assert.doesNotMatch(formatted, /private@example.com/);
+});
+
+function revenueStatusFixture({ lifetimeRevenue, diagnosis = {}, externalCustomerAudit = null }) {
+  return {
+    generatedAt: '2026-10-30T17:05:13.848Z',
+    source: 'hosted-http-api',
+    diagnosis: {
+      primaryIssue: 'conversion_or_pricing_gap',
+      trackingImplemented: true,
+      telemetryIngressWorking: true,
+      hostedSummaryWorking: true,
+      hostedTrafficObserved: true,
+      hostedRevenueObserved: false,
+      externalCustomerRevenueObserved: false,
+      ownerTestRevenueOnly: false,
+      hostedAuditMethod: 'hosted-http-api',
+      runtimePresenceKnown: false,
+      gaps: [],
+      ...diagnosis,
+    },
+    publicProbe: {
+      health: { status: 200, version: '1.39.0' },
+      telemetryPing: { status: 204 },
+    },
+    hostedAudit: {
+      runtimePresence: {},
+      externalCustomerAudit,
+      summaries: {
+        today: {
+          trafficMetrics: { visitors: 1, pageViews: 1, checkoutStarts: 0 },
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          dataQuality: { attributionCoverage: 1, telemetryCoverage: 1 },
+        },
+        '30d': {
+          trafficMetrics: { visitors: 2, pageViews: 2, checkoutStarts: 1 },
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          dataQuality: { attributionCoverage: 1, telemetryCoverage: 1 },
+        },
+        lifetime: {
+          trafficMetrics: { visitors: 9, pageViews: 8, checkoutStarts: 4 },
+          revenue: lifetimeRevenue,
+          dataQuality: { attributionCoverage: 1, telemetryCoverage: 1 },
+        },
+      },
+    },
+  };
+}
+
+test('formatReport withholds the lifetime ledger when the owner audit is unavailable', () => {
+  const report = revenueStatusFixture({
+    lifetimeRevenue: { paidOrders: 3, bookedRevenueCents: 8000 },
+  });
+  const formatted = formatReport(report);
+  assert.match(formatted, /Today: visitors 1, pageViews 1, checkoutStarts 0, paidOrders 0, bookedRevenue \$0\.00/);
+  assert.match(formatted, /30d: visitors 2, pageViews 2, checkoutStarts 1, paidOrders 0, bookedRevenue \$0\.00/);
+  const lifetimeLine = formatted.split('\n').find((line) => line.startsWith('Lifetime:'));
+  assert.match(lifetimeLine, /visitors 9, pageViews 8, checkoutStarts 4, customerRevenue withheld \(owner audit unavailable\)/);
+  assert.doesNotMatch(lifetimeLine, /paidOrders|bookedRevenue|\$80\.00/);
+  const printed = reportForJsonPrint(report);
+  assert.equal(printed.hostedAudit.summaries.lifetime.revenue.withheld, 'owner audit unavailable');
+  assert.equal(printed.hostedAudit.summaries.lifetime.revenue.bookedRevenueCents, undefined);
+  assert.equal(report.hostedAudit.summaries.lifetime.revenue.bookedRevenueCents, 8000);
+});
+
+test('formatReport withholds the lifetime ledger and owner amounts when the audit is owner-test only', () => {
+  const report = revenueStatusFixture({
+    lifetimeRevenue: { paidOrders: 2, bookedRevenueCents: 11100 },
+    diagnosis: { ownerTestRevenueOnly: true },
+    externalCustomerAudit: {
+      configured: true,
+      charges: {
+        owner: { chargeCount: 2, netCents: 11100 },
+        external: { chargeCount: 0, uniqueCustomerCount: 0, netCents: 0 },
+      },
+      subscriptions: { activeOwner: 1, activeExternal: 0, mrrExternalCents: 0 },
+    },
+  });
+  const formatted = formatReport(report);
+  const lifetimeLine = formatted.split('\n').find((line) => line.startsWith('Lifetime:'));
+  const ownerLine = formatted.split('\n').find((line) => line.startsWith('Owner/test filtered:'));
+  assert.match(lifetimeLine, /customerRevenue withheld \(owner test ledger\)/);
+  assert.doesNotMatch(lifetimeLine, /paidOrders|bookedRevenue|\$111\.00/);
+  assert.equal(ownerLine, 'Owner/test filtered: 2 charge(s), active owner subscriptions 1');
+  assert.doesNotMatch(ownerLine, /\$/);
+  assert.equal(reportForJsonPrint(report).hostedAudit.summaries.lifetime.revenue.withheld, 'owner test ledger');
+});
+
+test('formatReport prints verified external customer revenue on the lifetime line', () => {
+  const report = revenueStatusFixture({
+    lifetimeRevenue: { paidOrders: 4, bookedRevenueCents: 8000 },
+    externalCustomerAudit: {
+      configured: true,
+      productAttribution: {
+        verified: true,
+        thumbgate: {
+          uniquePayingCustomerCount: 1,
+          netRevenueCents: 2500,
+        },
+      },
+      charges: {
+        owner: { chargeCount: 2, netCents: 11100 },
+        external: { chargeCount: 1, uniqueCustomerCount: 1, netCents: 2500 },
+      },
+      subscriptions: { activeOwner: 0, activeExternal: 1, mrrExternalCents: 0 },
+    },
+  });
+  const formatted = formatReport(report);
+  const lifetimeLine = formatted.split('\n').find((line) => line.startsWith('Lifetime:'));
+  assert.match(lifetimeLine, /customerOrders 1, customerBooked \$25\.00/);
+  assert.doesNotMatch(lifetimeLine, /paidOrders|bookedRevenue|\$80\.00|\$111\.00/);
+  assert.match(formatted, /30d: visitors 2, pageViews 2, checkoutStarts 1, paidOrders 0, bookedRevenue \$0\.00/);
+  assert.equal(reportForJsonPrint(report).hostedAudit.summaries.lifetime.revenue.bookedRevenueCents, 8000);
+});
+
+test('formatReport keeps verified customer revenue when the audit object is already normalized', () => {
+  const normalized = normalizeExternalCustomerAudit({
+    configured: true,
+    productAttribution: {
+      verified: true,
+      thumbgate: {
+        uniquePayingCustomerCount: 1,
+        netRevenueCents: 2500,
+      },
+    },
+    charges: {
+      owner: { chargeCount: 0, netCents: 0 },
+      external: { chargeCount: 1, uniqueCustomerCount: 1, netCents: 2500 },
+    },
+    subscriptions: { activeOwner: 0, activeExternal: 1, mrrExternalCents: 0 },
+  });
+  const report = revenueStatusFixture({
+    lifetimeRevenue: { paidOrders: 4, bookedRevenueCents: 8000 },
+    externalCustomerAudit: normalized,
+  });
+  const lifetimeLine = formatReport(report).split('\n').find((line) => line.startsWith('Lifetime:'));
+  assert.match(lifetimeLine, /customerOrders 1, customerBooked \$25\.00/);
+  assert.doesNotMatch(lifetimeLine, /\$80\.00/);
 });
 
 test('getHostedAuditViaHttp carries hosted runtime presence when exposed', async () => {

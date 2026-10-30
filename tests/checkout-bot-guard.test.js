@@ -595,5 +595,29 @@ describe('/checkout/pro bot guard', () => {
     assert.equal(res.status, 302);
     const loc = res.headers.get('location') || '';
     assert.match(loc, /buy\.stripe\.com\//);
+    const events = readFunnelEvents();
+    const payHop = events.find((entry) =>
+      entry.eventType === 'pro_checkout_direct_stripe' && entry.utmContent === 'skip_form'
+    );
+    assert.ok(payHop, 'expected the Pay hop to be logged');
+    assert.equal(payHop.utmCampaign, 'pro_upgrade');
+    assert.equal(payHop.campaignVariant, 'pro_upgrade');
+  });
+
+  it('keeps an explicit campaign variant on /go/pro-direct', async () => {
+    const res = await fetch(`${origin}/go/pro-direct?campaign_variant=workflow_team&utm_content=named_variant`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': BROWSER_UA,
+        accept: BROWSER_ACCEPT,
+      },
+    });
+    assert.equal(res.status, 302);
+    const events = readFunnelEvents();
+    const payHop = events.find((entry) =>
+      entry.eventType === 'pro_checkout_direct_stripe' && entry.utmContent === 'named_variant'
+    );
+    assert.ok(payHop, 'expected the named Pay hop to be logged');
+    assert.equal(payHop.campaignVariant, 'workflow_team');
   });
 });

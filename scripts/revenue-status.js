@@ -188,6 +188,9 @@ function normalizeExternalCustomerAudit(payload = null) {
       ownerEmails: Array.isArray(payload.ownerEmails) ? payload.ownerEmails : [],
     };
   }
+  if (!payload.productAttribution && typeof payload.productAttributionVerified === 'boolean') {
+    return payload;
+  }
 
   const charges = payload.charges || {};
   const subscriptions = payload.subscriptions || {};
@@ -368,28 +371,78 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   };
 }
 
-function formatWindowBlock(label, summary = {}) {
+function formatCountMap(map) {
+  return Object.entries(map || {})
+    .filter(([, count]) => Number(count) > 0)
+    .sort((left, right) => Number(right[1]) - Number(left[1]) || String(left[0]).localeCompare(String(right[0])))
+    .map(([key, count]) => `${key} ${count}`)
+    .join(', ');
+}
+
+function formatIntentSuffix(ctas = {}) {
+  const counts = [
+    ['checkoutIntent views', ctas.checkoutInterstitialViews],
+    ['clicks', ctas.checkoutInterstitialClicks],
+    ['payClicks', ctas.checkoutInterstitialProConfirms],
+    ['intakeClicks', ctas.checkoutInterstitialWorkflowIntakeClicks],
+    ['teamPathClicks', ctas.checkoutInterstitialTeamPathClicks],
+    ['diagnosticClicks', ctas.checkoutInterstitialDiagnosticCheckoutClicks],
+    ['sprintCheckoutClicks', ctas.checkoutInterstitialWorkflowSprintCheckoutClicks],
+    ['botDeflections', ctas.checkoutBotDeflections],
+  ].map(([label, value]) => [label, Number(value || 0)]);
+  const checkoutVariants = formatCountMap(ctas.checkoutStartsByCampaignVariant);
+  const hasIntent = counts.some(([, value]) => value) || checkoutVariants;
+  if (!hasIntent) return '';
+  const parts = counts.map(([label, value]) => `${label} ${value}`);
+  if (checkoutVariants) parts.push(`checkoutVariants ${checkoutVariants}`);
+  return `, ${parts.join(', ')}`;
+}
+
+function formatWindowBlock(label, summary = {}, options = {}) {
   const traffic = summary.trafficMetrics || {};
   const ctas = summary.ctas || {};
   const revenue = summary.revenue || {};
   const signups = summary.signups || {};
   const pipeline = summary.pipeline || {};
   const sprintLeads = pipeline.workflowSprintLeads || {};
-  const interstitialViews = Number(ctas.checkoutInterstitialViews || 0);
-  const interstitialClicks = Number(ctas.checkoutInterstitialClicks || 0);
-  const proConfirms = Number(ctas.checkoutInterstitialProConfirms || 0);
-  const workflowClicks = Number(ctas.checkoutInterstitialWorkflowIntakeClicks || 0);
-  const teamPathClicks = Number(ctas.checkoutInterstitialTeamPathClicks || 0);
-  const diagnosticClicks = Number(ctas.checkoutInterstitialDiagnosticCheckoutClicks || 0);
-  const sprintCheckoutClicks = Number(ctas.checkoutInterstitialWorkflowSprintCheckoutClicks || 0);
-  const botDeflections = Number(ctas.checkoutBotDeflections || 0);
-  const intentSuffix = interstitialViews || interstitialClicks || proConfirms || workflowClicks || teamPathClicks || diagnosticClicks || sprintCheckoutClicks || botDeflections
-    ? `, checkoutIntent views ${interstitialViews}, clicks ${interstitialClicks}, stripeConfirms ${proConfirms}, intakeClicks ${workflowClicks}, teamPathClicks ${teamPathClicks}, diagnosticClicks ${diagnosticClicks}, sprintCheckoutClicks ${sprintCheckoutClicks}, botDeflections ${botDeflections}`
-    : '';
+  const money = options.moneyLabel
+    || `paidOrders ${revenue.paidOrders || 0}, bookedRevenue ${centsToDollars(revenue.bookedRevenueCents || 0)}`;
 
   return [
-    `${label}: visitors ${traffic.visitors || 0}, pageViews ${traffic.pageViews || 0}, checkoutStarts ${traffic.checkoutStarts || 0}, paidOrders ${revenue.paidOrders || 0}, bookedRevenue ${centsToDollars(revenue.bookedRevenueCents || 0)}, sprintLeads ${sprintLeads.total || 0}, signups ${signups.uniqueLeads || 0}${intentSuffix}`,
+    `${label}: visitors ${traffic.visitors || 0}, pageViews ${traffic.pageViews || 0}, checkoutStarts ${traffic.checkoutStarts || 0}, ${money}, sprintLeads ${sprintLeads.total || 0}, signups ${signups.uniqueLeads || 0}${formatIntentSuffix(ctas)}`,
   ];
+}
+
+function lifetimeMoneyLabel(report, externalAudit) {
+  if (
+    externalAudit.configured
+    && externalAudit.productAttributionVerified
+    && !report.diagnosis?.ownerTestRevenueOnly
+  ) {
+    return `customerOrders ${externalAudit.externalCustomerCount}, customerBooked ${centsToDollars(externalAudit.externalNetRevenueCents)}`;
+  }
+
+  const reason = report.diagnosis?.ownerTestRevenueOnly
+    ? 'owner test ledger'
+    : 'owner audit unavailable';
+  return `customerRevenue withheld (${reason})`;
+}
+
+function reportForJsonPrint(report) {
+  const externalAudit = normalizeExternalCustomerAudit(report.hostedAudit?.externalCustomerAudit || null);
+  const verifiedCustomer = externalAudit.configured
+    && externalAudit.productAttributionVerified
+    && !report.diagnosis?.ownerTestRevenueOnly;
+  if (verifiedCustomer) return report;
+
+  const clone = JSON.parse(JSON.stringify(report));
+  const lifetime = clone.hostedAudit?.summaries?.lifetime;
+  if (lifetime) {
+    lifetime.revenue = {
+      withheld: report.diagnosis?.ownerTestRevenueOnly ? 'owner test ledger' : 'owner audit unavailable',
+    };
+  }
+  return clone;
 }
 
 function formatRuntimeState({ value, runtimePresenceKnown }) {
@@ -429,7 +482,9 @@ function formatReport(report) {
     '',
     ...formatWindowBlock('Today', report.hostedAudit.summaries.today),
     ...formatWindowBlock('30d', report.hostedAudit.summaries['30d']),
-    ...formatWindowBlock('Lifetime', report.hostedAudit.summaries.lifetime),
+    ...formatWindowBlock('Lifetime', report.hostedAudit.summaries.lifetime, {
+      moneyLabel: lifetimeMoneyLabel(report, externalAudit),
+    }),
   ];
 
   if (report.hostedAudit.intakeQueue) {
@@ -444,7 +499,7 @@ function formatReport(report) {
       `ThumbGate-attributed known non-owner identities: ${externalAudit.externalCustomerCount}, net revenue ${centsToDollars(externalAudit.externalNetRevenueCents)}, MRR ${centsToDollars(externalAudit.externalMrrCents)}, product attribution verified: ${externalAudit.productAttributionVerified}`,
       `ThumbGate-attributed windows (${externalAudit.revenueWindowTimeZone || 'unknown timezone'}): today gross ${centsToDollars(externalAudit.externalTodayGrossRevenueCents)}, today cohort net ${centsToDollars(externalAudit.externalTodayNetRevenueCents)}, trailing 30d gross ${centsToDollars(externalAudit.externalTrailing30DayGrossRevenueCents)}, trailing 30d cohort net ${centsToDollars(externalAudit.externalTrailing30DayNetRevenueCents)}, verified: ${externalAudit.windowAttributionVerified}`,
       `Account-wide known non-owner identities: ${externalAudit.accountWideExternalCustomerCount}, net revenue ${centsToDollars(externalAudit.accountWideExternalNetRevenueCents)}, MRR ${centsToDollars(externalAudit.accountWideExternalMrrCents)}`,
-      `Owner/test filtered: ${externalAudit.ownerChargeCount} charge(s), ${centsToDollars(externalAudit.ownerNetRevenueCents)} net, active owner subscriptions ${externalAudit.activeOwnerSubscriptions}`,
+      `Owner/test filtered: ${externalAudit.ownerChargeCount} charge(s), active owner subscriptions ${externalAudit.activeOwnerSubscriptions}`,
     );
   } else {
     lines.push(`External customer audit: unavailable (${externalAudit.gap})`);
@@ -1018,7 +1073,7 @@ async function main(argv = process.argv.slice(2)) {
   });
 
   if (options.json) {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify(reportForJsonPrint(report), null, 2)}\n`);
     return;
   }
 
@@ -1044,6 +1099,8 @@ module.exports = {
   fetchWithTimeout,
   buildDiagnosis,
   formatReport,
+  lifetimeMoneyLabel,
+  reportForJsonPrint,
   buildRailwayAuditSnippet,
   getExternalCustomerAuditViaRailway,
   resolveExternalCustomerAudit,

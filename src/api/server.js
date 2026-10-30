@@ -3190,6 +3190,9 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
     target.defaults?.utm_source,
     inferSource(referrerHost)
   );
+  const utmCampaign = normalizeCampaignId(
+    pickFirstText(params.get('utm_campaign'), target.defaults?.utm_campaign, 'first_party_redirect')
+  );
 
   return {
     eventType: target.eventType || 'cta_click',
@@ -3202,16 +3205,18 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
     source,
     utmSource: pickFirstText(params.get('utm_source'), source),
     utmMedium: pickFirstText(params.get('utm_medium'), target.defaults?.utm_medium, 'link_router'),
-    utmCampaign: normalizeCampaignId(
-      pickFirstText(params.get('utm_campaign'), target.defaults?.utm_campaign, 'first_party_redirect')
-    ),
+    utmCampaign,
     utmContent: pickFirstText(params.get('utm_content')),
     utmTerm: pickFirstText(params.get('utm_term')),
     creator: pickFirstText(params.get('creator'), params.get('creator_handle')),
     community: pickFirstText(params.get('community'), params.get('subreddit')),
     postId: pickFirstText(params.get('post_id')),
     commentId: pickFirstText(params.get('comment_id')),
-    campaignVariant: pickFirstText(params.get('campaign_variant'), target.defaults?.campaign_variant),
+    campaignVariant: pickFirstText(
+      params.get('campaign_variant'),
+      target.defaults?.campaign_variant,
+      utmCampaign
+    ),
     offerCode: pickFirstText(params.get('offer_code')),
     ctaId: pickFirstText(params.get('cta_id'), target.ctaId),
     ctaPlacement: pickFirstText(params.get('cta_placement'), target.ctaPlacement),
