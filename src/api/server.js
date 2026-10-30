@@ -2396,6 +2396,39 @@ function buildGatesSection({ ctx, intent, gates, gateStats }) {
   return { lines, sources: ['gate stats'] };
 }
 
+function buildTeamSection(team) {
+  return {
+    lines: [
+      'Team dashboard is available in this local Enterprise view.',
+      `Tracked agents: ${compactNumber(team.totalAgents || team.agentCount || 0)}; risky agents: ${compactNumber(team.riskyAgents || team.highRiskAgents || 0)}.`,
+    ],
+    sources: ['team dashboard'],
+  };
+}
+
+function buildCostSection(tokenSavings) {
+  return {
+    lines: [
+      `Estimated token savings: ${tokenSavings.dollarsSavedDisplay || '$0.00'} from ${compactNumber(tokenSavings.blockedCalls)} blocked calls.`,
+      'Google Cloud budget alerts are evidence for spend visibility; ThumbGate-side stop conditions must be verified separately before calling them a hard cap.',
+    ],
+    sources: ['token savings', 'budget posture'],
+  };
+}
+
+function buildCloudSection(status) {
+  const vertexLine = status.vertex.configured
+    ? `Vertex routing config is present for project ${status.vertex.projectId} (${status.vertex.location}).`
+    : 'Vertex routing config is not present in this server environment.';
+  const dfcxLine = status.dfcx.liveAgentConfigured
+    ? `DFCX env has agent ${status.dfcx.agentId} in ${status.dfcx.location}; verify it with REST/console before production claims.`
+    : 'No live DFCX agent is configured in env. Do not use the old alpha gcloud CX command group; verify agents with the Dialogflow CX REST API or console.';
+  return {
+    lines: [vertexLine, dfcxLine],
+    sources: ['enterprise cloud status'],
+  };
+}
+
 function buildEnterpriseChatSection(topic, dashboardData, status, ctx = {}) {
   const approval = dashboardData.approval || {};
   const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
@@ -2406,49 +2439,26 @@ function buildEnterpriseChatSection(topic, dashboardData, status, ctx = {}) {
   const intent = ctx.intent || { wantsList: false, windowMs: null, windowLabel: 'across all time' };
   const feedbackDir = ctx.feedbackDir || null;
 
-  if (topic === 'feedback') {
-    return buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline });
+  switch (topic) {
+    case 'feedback':
+      return buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline });
+    case 'gates':
+      return buildGatesSection({ ctx, intent, gates, gateStats });
+    case 'team':
+      return buildTeamSection(team);
+    case 'cost':
+      return buildCostSection(tokenSavings);
+    case 'cloud':
+      return buildCloudSection(status);
+    default:
+      return {
+        lines: [
+          'Ask about feedback, lessons, active gates, team rollout, token savings, or Vertex/DFCX readiness.',
+          `Current local snapshot: ${compactNumber(approval.total)} feedback events and ${gates.length || compactNumber(gateStats.totalGates)} active gates.`,
+        ],
+        sources: [],
+      };
   }
-  if (topic === 'gates') {
-    return buildGatesSection({ ctx, intent, gates, gateStats });
-  }
-  if (topic === 'team') {
-    return {
-      lines: [
-        'Team dashboard is available in this local Enterprise view.',
-        `Tracked agents: ${compactNumber(team.totalAgents || team.agentCount || 0)}; risky agents: ${compactNumber(team.riskyAgents || team.highRiskAgents || 0)}.`,
-      ],
-      sources: ['team dashboard'],
-    };
-  }
-  if (topic === 'cost') {
-    return {
-      lines: [
-        `Estimated token savings: ${tokenSavings.dollarsSavedDisplay || '$0.00'} from ${compactNumber(tokenSavings.blockedCalls)} blocked calls.`,
-        'Google Cloud budget alerts are evidence for spend visibility; ThumbGate-side stop conditions must be verified separately before calling them a hard cap.',
-      ],
-      sources: ['token savings', 'budget posture'],
-    };
-  }
-  if (topic === 'cloud') {
-    const vertexLine = status.vertex.configured
-      ? `Vertex routing config is present for project ${status.vertex.projectId} (${status.vertex.location}).`
-      : 'Vertex routing config is not present in this server environment.';
-    const dfcxLine = status.dfcx.liveAgentConfigured
-      ? `DFCX env has agent ${status.dfcx.agentId} in ${status.dfcx.location}; verify it with REST/console before production claims.`
-      : 'No live DFCX agent is configured in env. Do not use the old alpha gcloud CX command group; verify agents with the Dialogflow CX REST API or console.';
-    return {
-      lines: [vertexLine, dfcxLine],
-      sources: ['enterprise cloud status'],
-    };
-  }
-  return {
-    lines: [
-      'Ask about feedback, lessons, active gates, team rollout, token savings, or Vertex/DFCX readiness.',
-      `Current local snapshot: ${compactNumber(approval.total)} feedback events and ${gates.length || compactNumber(gateStats.totalGates)} active gates.`,
-    ],
-    sources: [],
-  };
 }
 
 function buildEnterpriseChatAnswer(prompt, dashboardData, status, opts = {}) {
@@ -2471,6 +2481,18 @@ function buildEnterpriseChatAnswer(prompt, dashboardData, status, opts = {}) {
   };
 }
 
+function formatLocalDashboardChatResponse(localChat, suffix) {
+  return {
+    ok: true,
+    answer: suffix ? `${localChat.answer} ${suffix}` : localChat.answer,
+    sources: (localChat.sources || []).map((title) => ({ title })),
+    topic: localChat.topic,
+    provider: 'local-data',
+    llm: 'none',
+    grounded: true,
+  };
+}
+
 // Answer the dashboard "Chat with your data" panel LOCALLY (deterministic, no
 // cloud/LLM) from this install's own per-project dashboard data. Returns true if
 // it sent a response; false if the local snapshot was unavailable (caller then
@@ -2484,53 +2506,32 @@ async function trySendLocalDashboardChat(res, parsed, feedbackDir, prompt, suffi
       buildEnterpriseDataChatStatus(),
       { feedbackDir },
     );
-    sendJson(res, 200, {
-      ok: true,
-      answer: suffix ? `${localChat.answer} ${suffix}` : localChat.answer,
-      sources: (localChat.sources || []).map((title) => ({ title })),
-      topic: localChat.topic,
-      provider: 'local-data',
-      llm: 'none',
-      grounded: true,
-    });
+    sendJson(res, 200, formatLocalDashboardChatResponse(localChat, suffix));
     return true;
   } catch {
     return false;
   }
 }
 
-async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
-  const normalizedPrompt = normalizeEnterpriseChatPrompt(prompt);
-  if (!normalizedPrompt) {
-    throw createHttpError(400, 'prompt is required');
-  }
-  const status = buildEnterpriseDataChatStatus();
-  if (containsUnsafeEnterpriseChatInput(normalizedPrompt)) {
-    return {
-      ok: false,
+function buildEnterpriseChatUnsafeResponse(status) {
+  return {
+    ok: false,
+    blocked: true,
+    answer: 'This prompt contains unsafe control characters and was blocked before data access.',
+    status,
+    dfcx: {
       blocked: true,
-      answer: 'This prompt contains unsafe control characters and was blocked before data access.',
-      status,
-      dfcx: {
-        blocked: true,
-        evaluation: {
-          allowed: false,
-          gate: 'enterprise-chat-unsafe-input',
-          severity: 'critical',
-        },
+      evaluation: {
+        allowed: false,
+        gate: 'enterprise-chat-unsafe-input',
+        severity: 'critical',
       },
-      sources: ['enterprise input guard'],
-    };
-  }
+    },
+    sources: ['enterprise input guard'],
+  };
+}
 
-  const dashboardResult = await buildLiveDashboardData(parsed, feedbackDir);
-  const dashboardData = dashboardResult.data;
-
-  // This guarded stats endpoint stays deterministic for API compatibility.
-  // The dashboard's real local/open-source chatbot turn goes through /v1/chat,
-  // which uses lesson retrieval + optional LanceDB vector search + the user's
-  // configured local or BYO model.
-  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status, { feedbackDir });
+async function verifyEnterpriseDfcxWebhook(chat, normalizedPrompt) {
   const dfcxRequest = {
     fulfillmentInfo: { tag: 'chat-with-data' },
     sessionInfo: {
@@ -2542,7 +2543,7 @@ async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
     },
     languageCode: 'en',
   };
-  const guarded = await guardDfcxWebhook(
+  return guardDfcxWebhook(
     dfcxRequest,
     async () => ({
       fulfillment_response: { messages: [{ text: { text: [chat.answer] } }] },
@@ -2550,6 +2551,27 @@ async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
     }),
     { blockOnRepeat: false },
   );
+}
+
+async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
+  const normalizedPrompt = normalizeEnterpriseChatPrompt(prompt);
+  if (!normalizedPrompt) {
+    throw createHttpError(400, 'prompt is required');
+  }
+  const status = buildEnterpriseDataChatStatus();
+  if (containsUnsafeEnterpriseChatInput(normalizedPrompt)) {
+    return buildEnterpriseChatUnsafeResponse(status);
+  }
+
+  const dashboardResult = await buildLiveDashboardData(parsed, feedbackDir);
+  const dashboardData = dashboardResult.data;
+
+  // This guarded stats endpoint stays deterministic for API compatibility.
+  // The dashboard's real local/open-source chatbot turn goes through /v1/chat,
+  // which uses lesson retrieval + optional LanceDB vector search + the user's
+  // configured local or BYO model.
+  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status, { feedbackDir });
+  const guarded = await verifyEnterpriseDfcxWebhook(chat, normalizedPrompt);
 
   return {
     ok: !guarded.blocked,
