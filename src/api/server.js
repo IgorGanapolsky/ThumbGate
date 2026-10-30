@@ -569,6 +569,66 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     allowCustomerEmail: true,
     prefillStripeEmail: true,
   },
+  'bundle-49': {
+    fallbackHref: 'https://iganapolsky.gumroad.com/l/vcrho',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_bundle_49',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'bundle_49',
+      plan_id: 'bundle_49',
+      billing_cycle: 'one_time',
+    },
+  },
+  'playbook-10': {
+    fallbackHref: 'https://iganapolsky.gumroad.com/l/odrkon',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_playbook_10',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'playbook_10',
+      plan_id: 'playbook_10',
+      billing_cycle: 'one_time',
+    },
+  },
+  'playbook-999': {
+    fallbackHref: 'https://iganapolsky.gumroad.com/l/odrkon',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_playbook_999',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'playbook_999',
+      plan_id: 'playbook_999',
+      billing_cycle: 'one_time',
+    },
+  },
+  'founding-100': {
+    fallbackHref: PRO_CHECKOUT_URL,
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_founding_100',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'pro_checkout_direct_stripe',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'founding_100',
+      plan_id: 'pro',
+      billing_cycle: 'annual',
+    },
+  },
   // Operator Framework offers (/operator-framework). Same-origin hop keeps
   // buy.stripe.com out of public HTML; bots are deflected to the page.
   'operator-diagnostic': {
@@ -2810,7 +2870,7 @@ p{color:#cbd5e1;margin:8px 0}form{margin:0}
 input[type=email]{width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid #374151;border-radius:8px;background:#111827;color:#fff;font-size:15px;margin:16px 0 0;outline:none}
 input[type=email]:focus{border-color:#22d3ee}input[type=email]::placeholder{color:#64748b}
 button.primary,a.primary{box-sizing:border-box;background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%}
-a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}
+a{display:block;text-decoration:none}a.secondary,button.secondary{box-sizing:border-box;display:block;width:100%;border:1px solid #374151;color:#cbd5e1;background:transparent;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px;cursor:pointer}
 .trust,.objection-box{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}
 .trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}
 .choice-note,.email-note,.objection-note{font-size:13px;color:#94a3b8;margin-top:10px}
@@ -2833,10 +2893,10 @@ ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
 <input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email" required>
 <p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
-<button type="submit" class="primary">Email a receipt, then pay →</button>
+<button type="submit" class="secondary">Email a receipt, then pay →</button>
 </form>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
-<p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages. Email path keeps receipts attributable; skip uses a same-origin hop that bot-deflects crawlers.</p>
+<p class="choice-note">Cancel anytime. 7-day refund, no questions.</p>
 <div class="objection-box" aria-label="Checkout feedback">
 <strong>Not buying today?</strong>
 <p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
@@ -4878,10 +4938,16 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 function renderCheckoutCancelledPage(runtimeConfig) {
   const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
+  const proDirectUrl = escapeHtmlAttribute(new URL('/go/pro-direct?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=pro_upgrade', runtimeConfig.appOrigin).toString());
+  const playbookUrl = escapeHtmlAttribute(new URL('/go/playbook-999?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=playbook_999', runtimeConfig.appOrigin).toString());
+  const bundle49Url = escapeHtmlAttribute(new URL('/go/bundle-49?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=bundle_49', runtimeConfig.appOrigin).toString());
   const diagnosticUrl = escapeHtmlAttribute(new URL('/diagnostic', runtimeConfig.appOrigin).toString());
   const workflowSprintUrl = escapeHtmlAttribute(new URL('/go/sprint', runtimeConfig.appOrigin).toString());
   const workflowSprintIntakeUrl = escapeHtmlAttribute(new URL('/#workflow-sprint-intake', runtimeConfig.appOrigin).toString());
   const recoveryOfferLinks = [
+    `<a href="${playbookUrl}" data-recovery-offer="playbook_999" data-offer-price="9.99">Buy $9.99 Playbook (One-Time, No Subscription)</a>`,
+    `<a href="${bundle49Url}" data-recovery-offer="bundle_49" data-offer-price="49">Buy $49 Production Bundle (One-Time Expense)</a>`,
+    `<a href="${proDirectUrl}" data-recovery-offer="pro_direct" data-offer-price="19">1-Click Stripe Pro ($19/mo)</a>`,
     `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
     `<a href="${diagnosticUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Review $${sprintDiagnosticPriceDollars} diagnostic</a>`,
     `<a href="${workflowSprintUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Scope $${workflowSprintPriceDollars} sprint</a>`,
