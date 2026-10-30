@@ -41,6 +41,7 @@ function createEnv(secret = 'worker-secret') {
     STRIPE_PRICE_ID: '',
     FREE_DAILY_LIMIT: '3',
     SANDBOX_SHARED_SECRET: secret,
+    ALLOWED_ORIGIN: '',
   } satisfies Env;
 
   return { env, memory };

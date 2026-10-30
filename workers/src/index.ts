@@ -24,7 +24,7 @@ export default {
 
     // CORS preflight
     if (request.method === 'OPTIONS') {
-      return corsResponse(new Response(null, { status: 204 }));
+      return corsResponse(request, new Response(null, { status: 204 }), env);
     }
 
     try {
@@ -81,17 +81,19 @@ export default {
           });
       }
 
-      return corsResponse(response);
+      return corsResponse(request, response, env);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Internal server error';
       console.error('Worker error:', message);
       return corsResponse(
+        request,
         problemResponse({
           type: PROBLEM_TYPES.INTERNAL,
           title: 'Internal Server Error',
           status: 500,
           detail: message,
         }),
+        env
       );
     }
   },
@@ -191,9 +193,19 @@ function jsonRpcError(
   return { jsonrpc: '2.0', id: id ?? 0, error: { code, message, ...(data ? { data } : {}) } };
 }
 
-function corsResponse(response: Response): Response {
+function corsResponse(request: Request, response: Response, env: Env): Response {
   const headers = new Headers(response.headers);
-  headers.set('Access-Control-Allow-Origin', '*');
+
+  const allowedOrigins = (env.ALLOWED_ORIGIN || '').split(',').map(o => o.trim()).filter(Boolean);
+  const origin = request.headers.get('Origin');
+
+  if (origin && allowedOrigins.includes(origin)) {
+    headers.set('Access-Control-Allow-Origin', origin);
+  } else if (allowedOrigins.length > 0) {
+    // If there is no match or no origin header, but we have allowed origins, don't set it
+    // or set it to 'null' to strictly disallow. Omitting the header is secure.
+  }
+
   headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-install-id');
   return new Response(response.body, {
