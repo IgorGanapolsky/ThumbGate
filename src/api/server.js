@@ -2895,6 +2895,9 @@ ${hiddenInputs}
 <p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
 <button type="submit" class="secondary">Email a receipt, then pay →</button>
 </form>
+<p class="choice-note">If a monthly plan is not the buy, these are one-time.</p>
+<a class="secondary" data-i="pro_checkout_playbook_999" rel="nofollow" href="/go/playbook-999?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=playbook_999&amp;cta_id=pro_checkout_playbook_999&amp;cta_placement=checkout_interstitial">Buy the $9.99 playbook, once</a>
+<a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Buy the $49 bundle, once</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
 <p class="choice-note">Cancel anytime. 7-day refund, no questions.</p>
 <div class="objection-box" aria-label="Checkout feedback">

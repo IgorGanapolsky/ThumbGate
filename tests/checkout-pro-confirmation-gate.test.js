@@ -90,6 +90,11 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     assert.match(body, /pro_checkout_direct_stripe/);
     assert.match(body, /\/go\/pro-direct/);
     assert.match(body, /Pay \$19\/mo with Stripe/);
+    assert.match(body, /\/go\/playbook-999\?/);
+    assert.match(body, /Buy the \$9\.99 playbook, once/);
+    assert.match(body, /\/go\/bundle-49\?/);
+    assert.match(body, /Buy the \$49 bundle, once/);
+    assert.doesNotMatch(body, /\$149\/yr/);
     assert.match(body, /<button type="submit" class="secondary">Email a receipt, then pay/);
     assert.match(body, /attributable buyer intent/);
     assert.match(body, /Cancel anytime\. 7-day refund, no questions\./);
