@@ -24,7 +24,7 @@ export default {
 
     // CORS preflight
     if (request.method === 'OPTIONS') {
-      return corsResponse(new Response(null, { status: 204 }));
+      return corsResponse(new Response(null, { status: 204 }), env);
     }
 
     try {
@@ -81,7 +81,7 @@ export default {
           });
       }
 
-      return corsResponse(response);
+      return corsResponse(response, env);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Internal server error';
       console.error('Worker error:', message);
@@ -92,6 +92,7 @@ export default {
           status: 500,
           detail: message,
         }),
+        env
       );
     }
   },
@@ -191,9 +192,9 @@ function jsonRpcError(
   return { jsonrpc: '2.0', id: id ?? 0, error: { code, message, ...(data ? { data } : {}) } };
 }
 
-function corsResponse(response: Response): Response {
+function corsResponse(response: Response, env: Env): Response {
   const headers = new Headers(response.headers);
-  headers.set('Access-Control-Allow-Origin', '*');
+  headers.set('Access-Control-Allow-Origin', env.ALLOWED_ORIGIN);
   headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-install-id');
   return new Response(response.body, {

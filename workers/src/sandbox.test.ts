@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import type { Env, SandboxDispatchEnvelope } from './types';
 import { handleSandboxExecute, verifySandboxSignature } from './sandbox';
+import index from './index';
 
 class MemoryKv {
   public readonly records = new Map<string, string>();
@@ -41,6 +42,7 @@ function createEnv(secret = 'worker-secret') {
     STRIPE_PRICE_ID: '',
     FREE_DAILY_LIMIT: '3',
     SANDBOX_SHARED_SECRET: secret,
+    ALLOWED_ORIGIN: '',
   } satisfies Env;
 
   return { env, memory };
@@ -123,4 +125,28 @@ test('handleSandboxExecute rejects an invalid signature', async () => {
 
   const response = await handleSandboxExecute(request, env);
   assert.equal(response.status, 401);
+});
+
+test('OPTIONS request returns correct CORS headers', async () => {
+  const { env } = createEnv();
+  env.ALLOWED_ORIGIN = 'https://thumbgate.app';
+  const request = new Request('https://worker.example.com/sandbox/execute', {
+    method: 'OPTIONS',
+  });
+
+  const response = await index.fetch(request, env);
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), 'https://thumbgate.app');
+});
+
+test('GET request returns correct CORS headers', async () => {
+  const { env } = createEnv();
+  env.ALLOWED_ORIGIN = 'https://thumbgate.app';
+  const request = new Request('https://worker.example.com/health', {
+    method: 'GET',
+  });
+
+  const response = await index.fetch(request, env);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), 'https://thumbgate.app');
 });

@@ -8,6 +8,7 @@ export interface Env {
   STRIPE_PRICE_ID: string;
   FREE_DAILY_LIMIT: string;
   SANDBOX_SHARED_SECRET: string;
+  ALLOWED_ORIGIN: string;
 }
 
 /** Subscription tier */
