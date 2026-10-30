@@ -188,6 +188,7 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'slopsquat-guard',
   'tailscale-october-access',
   'gitlab-sdlc-prompts',
+  'judgment-call-attribution',
   // Money path: even if a refactor later routes financial denials through
   // applyEnforcementPosture, never demote spend blocks to warn-by-default.
   // Apollo $588 incident class (2026-08).
@@ -224,6 +225,7 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'rm-rf-home-or-root',
   'tailscale-october-access',
   'gitlab-sdlc-prompts',
+  'judgment-call-attribution',
   'financial-control',
   'oneshot-control',
   'oneshot-goal-done',
@@ -4657,8 +4659,12 @@ function evaluateUnconditionalHardFloor(input = {}, options = {}) {
 
   const { evaluateGitLabSdlcPrompts } = require('./gitlab-sdlc-prompts');
   const sdlc = evaluateGitLabSdlcPrompts(view);
+  if (sdlc) return { hardFloor: denyRepeatedMistake(view, sdlc), securityScan };
+
+  const { evaluateJudgmentCallAttribution } = require('./judgment-call-attribution');
+  const judgment = evaluateJudgmentCallAttribution(view);
   return {
-    hardFloor: sdlc ? denyRepeatedMistake(view, sdlc) : null,
+    hardFloor: judgment ? denyRepeatedMistake(view, judgment) : null,
     securityScan,
   };
 }
