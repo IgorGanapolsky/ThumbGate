@@ -93,7 +93,27 @@ function stripComments(text) {
 }
 
 function withoutQuotes(text) {
-  return String(text || '').replace(/'(?:\\.|[^'])*'|"(?:\\.|[^"])*"|`(?:\\.|[^`])*`/g, '""');
+  const source = String(text || '');
+  let out = '';
+  let quote = '';
+  for (let i = 0; i < source.length; i += 1) {
+    const c = source[i];
+    if (quote) {
+      if (c === '\\' && quote !== "'") {
+        i += 1;
+        continue;
+      }
+      if (c === quote) quote = '';
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      quote = c;
+      out += '""';
+      continue;
+    }
+    out += c;
+  }
+  return out;
 }
 
 function refusalProse(line) {
