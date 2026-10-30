@@ -775,6 +775,10 @@ test('retrieve_lessons returns relevant lessons for the current tool context', a
   assert.equal(payload.length, 1);
   assert.equal(payload[0].signal, 'negative');
   assert.ok(payload[0].relevanceScore > 0);
+  // MCP clients reject a structuredContent that is not a JSON object.
+  assert.equal(Array.isArray(result.structuredContent), false);
+  assert.equal(typeof result.structuredContent, 'object');
+  assert.deepEqual(result.structuredContent.results, payload);
 });
 
 test('reflect_on_feedback returns a proposed rule from the conversation window', async () => {

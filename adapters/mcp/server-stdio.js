@@ -397,9 +397,12 @@ function toTextResult(payload) {
   const text = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
   return {
     content: [{ type: 'text', text }],
-    ...(payload !== null && typeof payload === 'object'
-      ? { structuredContent: payload }
-      : {}),
+    // MCP requires structuredContent to be a JSON object, so wrap array payloads.
+    ...(Array.isArray(payload)
+      ? { structuredContent: { results: payload } }
+      : payload !== null && typeof payload === 'object'
+        ? { structuredContent: payload }
+        : {}),
   };
 }
 
