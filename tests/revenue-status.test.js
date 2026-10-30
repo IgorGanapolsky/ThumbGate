@@ -465,6 +465,10 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
                   checkoutInterstitialDiagnosticCheckoutClicks: 2,
                   checkoutInterstitialWorkflowSprintCheckoutClicks: 1,
                   checkoutBotDeflections: 7,
+                  checkoutStartsByCampaignVariant: {
+                    unknown: 8,
+                    workflow_team: 1,
+                  },
                 },
                 signups: {
                   uniqueLeads: 6,
@@ -546,9 +550,10 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
 
   const formatted = formatReport(report);
   assert.match(formatted, /Source: hosted-via-railway-env/);
-  assert.match(formatted, /Today: visitors 6, pageViews 4, checkoutStarts 2.*checkoutIntent views 3, clicks 2, stripeConfirms 1, intakeClicks 1, teamPathClicks 0, diagnosticClicks 1, sprintCheckoutClicks 0, botDeflections 4/);
+  assert.match(formatted, /Today: visitors 6, pageViews 4, checkoutStarts 2.*checkoutIntent views 3, clicks 2, payClicks 1, intakeClicks 1, teamPathClicks 0, diagnosticClicks 1, sprintCheckoutClicks 0, botDeflections 4/);
+  assert.doesNotMatch(formatted, /stripeConfirms/);
   assert.match(formatted, /30d: visitors 21, pageViews 15, checkoutStarts 9, paidOrders 2, bookedRevenue \$20.00/);
-  assert.match(formatted, /30d: .*checkoutIntent views 12, clicks 5, stripeConfirms 3, intakeClicks 1, teamPathClicks 1, diagnosticClicks 2, sprintCheckoutClicks 1, botDeflections 7/);
+  assert.match(formatted, /30d: .*checkoutIntent views 12, clicks 5, payClicks 3, intakeClicks 1, teamPathClicks 1, diagnosticClicks 2, sprintCheckoutClicks 1, botDeflections 7, checkoutVariants unknown 8, workflow_team 1/);
 });
 
 test('getHostedAuditViaHttp prefers one batched summary and strips intake identities', async () => {

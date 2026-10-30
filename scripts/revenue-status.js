@@ -368,6 +368,14 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   };
 }
 
+function formatCountMap(map) {
+  return Object.entries(map || {})
+    .filter(([, count]) => Number(count) > 0)
+    .sort((left, right) => Number(right[1]) - Number(left[1]) || String(left[0]).localeCompare(String(right[0])))
+    .map(([key, count]) => `${key} ${count}`)
+    .join(', ');
+}
+
 function formatWindowBlock(label, summary = {}) {
   const traffic = summary.trafficMetrics || {};
   const ctas = summary.ctas || {};
@@ -377,14 +385,15 @@ function formatWindowBlock(label, summary = {}) {
   const sprintLeads = pipeline.workflowSprintLeads || {};
   const interstitialViews = Number(ctas.checkoutInterstitialViews || 0);
   const interstitialClicks = Number(ctas.checkoutInterstitialClicks || 0);
-  const proConfirms = Number(ctas.checkoutInterstitialProConfirms || 0);
+  const payClicks = Number(ctas.checkoutInterstitialProConfirms || 0);
   const workflowClicks = Number(ctas.checkoutInterstitialWorkflowIntakeClicks || 0);
   const teamPathClicks = Number(ctas.checkoutInterstitialTeamPathClicks || 0);
   const diagnosticClicks = Number(ctas.checkoutInterstitialDiagnosticCheckoutClicks || 0);
   const sprintCheckoutClicks = Number(ctas.checkoutInterstitialWorkflowSprintCheckoutClicks || 0);
   const botDeflections = Number(ctas.checkoutBotDeflections || 0);
-  const intentSuffix = interstitialViews || interstitialClicks || proConfirms || workflowClicks || teamPathClicks || diagnosticClicks || sprintCheckoutClicks || botDeflections
-    ? `, checkoutIntent views ${interstitialViews}, clicks ${interstitialClicks}, stripeConfirms ${proConfirms}, intakeClicks ${workflowClicks}, teamPathClicks ${teamPathClicks}, diagnosticClicks ${diagnosticClicks}, sprintCheckoutClicks ${sprintCheckoutClicks}, botDeflections ${botDeflections}`
+  const checkoutVariants = formatCountMap(ctas.checkoutStartsByCampaignVariant);
+  const intentSuffix = interstitialViews || interstitialClicks || payClicks || workflowClicks || teamPathClicks || diagnosticClicks || sprintCheckoutClicks || botDeflections || checkoutVariants
+    ? `, checkoutIntent views ${interstitialViews}, clicks ${interstitialClicks}, payClicks ${payClicks}, intakeClicks ${workflowClicks}, teamPathClicks ${teamPathClicks}, diagnosticClicks ${diagnosticClicks}, sprintCheckoutClicks ${sprintCheckoutClicks}, botDeflections ${botDeflections}${checkoutVariants ? `, checkoutVariants ${checkoutVariants}` : ''}`
     : '';
 
   return [
