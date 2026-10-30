@@ -1,6 +1,6 @@
 'use strict';
 
-// Paper Instruments mailed on 2026-10-29 that Ultramarine 1 Flash weights are on
+// Paper Instruments mailed on 2026-10-30 that Ultramarine 1 Flash weights are on
 // Hugging Face, that the existing API keeps working, and that Fireworks and
 // Baseten will also offer the model. The public card
 // (https://huggingface.co/paperinstruments/Ultramarine-1-Flash) says 320B total
@@ -60,17 +60,114 @@ function deny(failureReason, message) {
   };
 }
 
+function stripComments(text) {
+  let out = '';
+  let quote = '';
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    if (quote) {
+      out += c;
+      if (c === '\\' && quote !== "'") {
+        out += text[i + 1] || '';
+        i += 1;
+        continue;
+      }
+      if (c === quote) quote = '';
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      quote = c;
+      out += c;
+      continue;
+    }
+    const hashComment = c === '#' && (i === 0 || /[\s;&|()]/.test(text[i - 1]));
+    const slashComment = c === '/' && text[i + 1] === '/' && (i === 0 || /[\s;|&(=]/.test(text[i - 1]));
+    if (hashComment || slashComment) {
+      while (i < text.length && text[i] !== '\n') i += 1;
+      out += '\n';
+      continue;
+    }
+    out += c;
+  }
+  return out;
+}
+
+function withoutQuotes(text) {
+  return String(text || '').replace(/'(?:\\.|[^'])*'|"(?:\\.|[^"])*"|`(?:\\.|[^`])*`/g, '""');
+}
+
+function refusalProse(line) {
+  return /\b(?:do not|don't|does not|doesn't|never|must not)\b/i.test(withoutQuotes(line));
+}
+
 function actionable(text) {
-  return String(text || '')
+  return stripComments(String(text || ''))
     .split('\n')
-    .filter((line) => !/^\s*(?:#|\/\/)/.test(line))
-    .filter((line) => !/\b(?:do not|don't|does not|doesn't|never|must not)\b/i.test(line))
+    .map((line) => line.trim())
+    .filter((line) => line && !refusalProse(line))
     .join('\n');
 }
 
 function firstBin(command) {
   const word = String(command || '').trim().split(/\s+/)[0] || '';
   return word.split('/').pop();
+}
+
+function splitSegments(text) {
+  const parts = [];
+  let out = '';
+  let quote = '';
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    if (quote) {
+      out += c;
+      if (c === '\\' && quote !== "'") {
+        out += text[i + 1] || '';
+        i += 1;
+      } else if (c === quote) quote = '';
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      quote = c;
+      out += c;
+      continue;
+    }
+    const two = text.slice(i, i + 2);
+    if (two === '&&' || two === '||' || c === ';' || c === '|' || c === '\n') {
+      if (out.trim()) parts.push(out.trim());
+      out = '';
+      if (two === '&&' || two === '||') i += 1;
+      continue;
+    }
+    out += c;
+  }
+  if (out.trim()) parts.push(out.trim());
+  return parts;
+}
+
+function substitutions(segment) {
+  const found = [];
+  const pattern = /\$\(([^()]*)\)|`([^`]*)`/g;
+  let match = pattern.exec(segment);
+  while (match) {
+    found.push(match[1] || match[2] || '');
+    match = pattern.exec(segment);
+  }
+  return found;
+}
+
+function weightCommand(command, depth = 0) {
+  if (!command || depth > 4) return false;
+  const segments = splitSegments(stripComments(command));
+  for (const segment of segments) {
+    for (const nested of substitutions(segment)) {
+      if (weightCommand(nested, depth + 1)) return true;
+    }
+    const visible = segment.replace(/\$\([^()]*\)|`[^`]*`/g, ' ');
+    if (BENIGN.has(firstBin(visible))) continue;
+    if (weightHit(visible)) return true;
+  }
+  return false;
 }
 
 function editedPath(source) {
@@ -155,9 +252,15 @@ function evaluateUltramarineFlashWeightDrop(view = {}) {
   const tool = String(view.toolName || '').toLowerCase();
   const editing = EDIT_TOOLS.has(tool);
   const command = view.command || (view.toolInput && view.toolInput.command) || '';
-  const benignShell = !editing && BENIGN.has(firstBin(command));
 
-  if (!benignShell && weightHit(text)) {
+  if (!editing && weightCommand(command)) {
+    return deny(
+      'weight_vendor_refused',
+      'Denied: Ultramarine 1 Flash weights, Paper Office, and feather-train stay off ThumbGate. The Hugging Face card is a vendor publish, not a model we download or serve.',
+    );
+  }
+
+  if (editing && weightHit(text)) {
     return deny(
       'weight_vendor_refused',
       'Denied: Ultramarine 1 Flash weights, Paper Office, and feather-train stay off ThumbGate. The Hugging Face card is a vendor publish, not a model we download or serve.',
@@ -165,7 +268,7 @@ function evaluateUltramarineFlashWeightDrop(view = {}) {
   }
 
   if (!editing) return null;
-  if (!mentionsModel(text)) return null;
+  if (!mentionsModel(raw)) return null;
 
   if (ROUTE_RE.test(text)) {
     return deny(
