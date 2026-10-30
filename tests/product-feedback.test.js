@@ -33,6 +33,23 @@ test('composeChipFeedback lets a bug chip outrank a feature chip', () => {
   assert.deepEqual(result.reasonIds, ['solved-the-task', 'missed-the-mistake']);
 });
 
+test('composeChipFeedback rejects a detail that is not text', () => {
+  const result = pf.composeChipFeedback({
+    reasons: ['solved-the-task'],
+    details: { toString: null },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'details must be a string');
+});
+
+test('composeChipFeedback collapses spaced Other notes before the length check', () => {
+  const short = pf.composeChipFeedback({ reasons: ['other'], details: 'a    b' });
+  assert.equal(short.ok, false);
+  const filed = pf.composeChipFeedback({ reasons: ['other'], details: 'a    note' });
+  assert.equal(filed.ok, true);
+  assert.equal(filed.message, 'Other. a note');
+});
+
 test('composeChipFeedback requires a short detail when Other is the only reason', () => {
   const missing = pf.composeChipFeedback({ reasons: ['other'], details: 'no' });
   assert.equal(missing.ok, false);

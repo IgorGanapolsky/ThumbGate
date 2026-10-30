@@ -1166,7 +1166,7 @@ loadLive().then(function() {
       <button type="button" class="feedback-chip" data-reason="other" aria-pressed="false">+ Other</button>
     </div>
     <textarea id="feedbackText" placeholder="Share details (optional)" aria-label="Share details (optional)"></textarea>
-    <p class="feedback-note">This note goes to the ThumbGate team. Pick a reason. The detail line is optional.</p>
+    <p class="feedback-note">This note goes to the ThumbGate team. Pick a reason. The detail line is optional, unless Other is the only reason. Then it needs at least five characters.</p>
     <div class="feedback-actions">
       <button class="feedback-submit" id="feedbackSubmit" type="button" disabled onclick="submitFeedback()">Submit</button>
     </div>
@@ -1176,26 +1176,38 @@ loadLive().then(function() {
 </div>
 <script>
 var feedbackSubmitPending = false;
+var feedbackOpener = null;
 function selectedFeedbackReasons() {
   return Array.from(document.querySelectorAll('.feedback-chip[aria-pressed="true"]')).map(function(button) {
     return button.getAttribute('data-reason');
   });
 }
+function feedbackDetail() {
+  return document.getElementById('feedbackText').value.replace(/\s+/g, ' ').trim();
+}
+function feedbackFocusables() {
+  return Array.from(document.querySelectorAll('#feedbackPanel button, #feedbackPanel textarea')).filter(function(el) {
+    return !el.disabled;
+  });
+}
 function refreshFeedbackSubmit() {
   var ids = selectedFeedbackReasons();
-  var note = document.getElementById('feedbackText').value.trim();
+  var note = feedbackDetail();
   var ready = !feedbackSubmitPending
     && ids.length > 0
     && !(ids.length === 1 && ids[0] === 'other' && note.length < 5);
   document.getElementById('feedbackSubmit').disabled = !ready;
 }
 function openFeedback() {
+  feedbackOpener = document.activeElement;
   document.getElementById('feedbackWidget').classList.add('is-open');
   document.getElementById('feedbackResult').textContent = '';
-  document.querySelector('.feedback-chip').focus();
+  var firstChip = document.querySelector('.feedback-chip');
+  if (firstChip) firstChip.focus();
 }
 function closeFeedback() {
   document.getElementById('feedbackWidget').classList.remove('is-open');
+  if (feedbackOpener && typeof feedbackOpener.focus === 'function') feedbackOpener.focus();
 }
 document.getElementById('feedbackChips').addEventListener('click', function(event) {
   var button = event.target.closest('.feedback-chip');
@@ -1208,7 +1220,24 @@ document.getElementById('feedbackChips').addEventListener('click', function(even
 });
 document.getElementById('feedbackText').addEventListener('input', refreshFeedbackSubmit);
 document.addEventListener('keydown', function(event) {
-  if (event.key === 'Escape') closeFeedback();
+  var open = document.getElementById('feedbackWidget').classList.contains('is-open');
+  if (!open) return;
+  if (event.key === 'Escape') {
+    closeFeedback();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  var items = feedbackFocusables();
+  if (!items.length) return;
+  var first = items[0];
+  var last = items[items.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 });
 async function submitFeedback() {
   if (feedbackSubmitPending) return;
@@ -1216,7 +1245,7 @@ async function submitFeedback() {
   if (btn.disabled) return;
   feedbackSubmitPending = true;
   var reasons = selectedFeedbackReasons();
-  var details = document.getElementById('feedbackText').value.trim();
+  var details = feedbackDetail();
   btn.disabled = true;
   btn.textContent = 'Submitting...';
   var result = document.getElementById('feedbackResult');

@@ -19,6 +19,9 @@ const FEEDBACK_REASONS = [
 function composeChipFeedback({ reasons, details } = {}) {
   const wanted = new Set(Array.isArray(reasons) ? reasons : []);
   const selected = FEEDBACK_REASONS.filter((reason) => wanted.has(reason.id));
+  if (details != null && typeof details !== 'string') {
+    return { ok: false, reason: 'details must be a string' };
+  }
   const note = String(details || '').replace(/\s+/g, ' ').trim();
   if (selected.length === 0) return { ok: false, reason: 'pick a reason' };
   if (selected.length === 1 && selected[0].id === 'other' && note.length < 5) {

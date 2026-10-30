@@ -3179,6 +3179,14 @@ test('product feedback reason chips require a reason and keep the detail on the 
   delete process.env.GITHUB_TOKEN;
   delete process.env.GH_TOKEN;
   try {
+    const badDetail = await fetch(apiUrl('/api/feedback/submit'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reasons: ['solved-the-task'], details: { toString: null } }),
+    });
+    assert.equal(badDetail.status, 400);
+    assert.equal((await badDetail.json()).error, 'details must be a string');
+
     const empty = await fetch(apiUrl('/api/feedback/submit'), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
