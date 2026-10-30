@@ -3173,6 +3173,55 @@ test('product feedback endpoint logs local issue reports without auth', async ()
   }
 });
 
+test('product feedback reason chips require a reason and keep the detail on the same note', async () => {
+  const originalGithubToken = process.env.GITHUB_TOKEN;
+  const originalGhToken = process.env.GH_TOKEN;
+  delete process.env.GITHUB_TOKEN;
+  delete process.env.GH_TOKEN;
+  try {
+    const empty = await fetch(apiUrl('/api/feedback/submit'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reasons: [], details: 'this detail has no reason' }),
+    });
+    assert.equal(empty.status, 400);
+    assert.equal((await empty.json()).error, 'pick a reason');
+
+    const otherOnly = await fetch(apiUrl('/api/feedback/submit'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reasons: ['other'], details: 'no' }),
+    });
+    assert.equal(otherOnly.status, 400);
+    assert.equal((await otherOnly.json()).error, 'add a short detail for Other');
+
+    const filed = await fetch(apiUrl('/api/feedback/submit'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        reasons: ['blocked-the-wrong-thing', 'solved-the-task'],
+        details: 'it stopped a safe test command',
+      }),
+    });
+    assert.equal(filed.status, 200);
+    const body = await filed.json();
+    assert.equal(body.success, true);
+    assert.equal(body.issueNumber, null);
+
+    const entries = readJsonl(path.join(tmpFeedbackDir, 'user-feedback.jsonl'));
+    const latest = entries.at(-1);
+    assert.match(latest.title, /^\[Bug\]/);
+    assert.equal(latest.category, 'bug');
+    assert.match(latest.body, /Blocked the wrong thing/);
+    assert.match(latest.body, /it stopped a safe test command/);
+  } finally {
+    if (originalGithubToken === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = originalGithubToken;
+    if (originalGhToken === undefined) delete process.env.GH_TOKEN;
+    else process.env.GH_TOKEN = originalGhToken;
+  }
+});
+
 test('workflow sprint intake endpoint captures a contactable lead', async () => {
   const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
     method: 'POST',

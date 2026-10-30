@@ -22,3 +22,16 @@ test('lessons page uses defensible live-metric language', () => {
   assert.doesNotMatch(lessonsPage, /Mistakes Prevented/i);
   assert.doesNotMatch(lessonsPage, /Most Effective Rules/i);
 });
+
+test('lessons share-feedback dialog asks for a reason before submit', () => {
+  const { FEEDBACK_REASONS } = require('../scripts/product-feedback');
+  assert.match(lessonsPage, /id="feedbackTitle">Share feedback</);
+  assert.match(lessonsPage, /id="feedbackSubmit"[^>]*disabled/);
+  assert.match(lessonsPage, /placeholder="Share details \(optional\)"/);
+  assert.doesNotMatch(lessonsPage, /feedbackCategory/);
+  assert.doesNotMatch(lessonsPage, /Useful autonomy|Fast and efficient|Followed my instructions|Good code \/ output quality/);
+  for (const reason of FEEDBACK_REASONS) {
+    assert.match(lessonsPage, new RegExp(`data-reason="${reason.id}"`));
+    assert.match(lessonsPage, new RegExp(`\\+ ${reason.label}`));
+  }
+});
