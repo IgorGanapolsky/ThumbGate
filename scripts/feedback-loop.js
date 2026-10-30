@@ -49,6 +49,7 @@ const { getEffectiveSetting } = require('./evolution-state');
 const { ensureDir, readTextTail } = require('./fs-utils');
 const {
   buildFeedbackPathsFromDir,
+  getScopedFeedbackDir,
   getFeedbackPaths: resolveFeedbackPaths,
 } = require('./feedback-paths');
 const {
@@ -171,6 +172,7 @@ let _lessonDB = null;
 let _lessonDBPath = null;
 
 function resolveLessonDbPath() {
+  if (getScopedFeedbackDir()) return path.join(getScopedFeedbackDir(), 'lessons.sqlite');
   if (process.env.LESSON_DB_PATH) return process.env.LESSON_DB_PATH;
   if (process.env.THUMBGATE_FEEDBACK_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH) {
     return path.join(getFeedbackPaths().FEEDBACK_DIR, 'lessons.sqlite');
@@ -1283,6 +1285,9 @@ function inferLessonFromConversation(conversationWindow, signal) {
 }
 
 function captureFeedback(params) {
+  if (params.includeConversationContext === false) {
+    params = { ...params, chatHistory: undefined, messages: undefined, conversationWindow: undefined };
+  }
   const _captureStart = Date.now();
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
   const signal = normalizeSignal(params.signal);
@@ -1294,18 +1299,20 @@ function captureFeedback(params) {
   }
 
   const submittedContext = params.context || '';
-  const distillation = distillFeedbackHistory({
-    signal,
-    context: submittedContext,
-    whatWentWrong: params.whatWentWrong,
-    whatToChange: params.whatToChange,
-    whatWorked: params.whatWorked,
-    relatedFeedbackId: params.relatedFeedbackId,
-    chatHistory: params.chatHistory || params.messages,
-    allowLocalConversationFallback: params.allowLocalConversationFallback === true,
-    lastAction: params.lastAction,
-    feedbackDir: FEEDBACK_DIR,
-  });
+  const distillation = params.includeConversationContext === false
+    ? { inferredFields: {}, conversationWindow: [] }
+    : distillFeedbackHistory({
+      signal,
+      context: submittedContext,
+      whatWentWrong: params.whatWentWrong,
+      whatToChange: params.whatToChange,
+      whatWorked: params.whatWorked,
+      relatedFeedbackId: params.relatedFeedbackId,
+      chatHistory: params.chatHistory || params.messages,
+      allowLocalConversationFallback: params.allowLocalConversationFallback === true,
+      lastAction: params.lastAction,
+      feedbackDir: FEEDBACK_DIR,
+    });
 
   const shouldUseDistilledContext = !submittedContext || isGenericFeedbackText(submittedContext, signal);
   const context = shouldUseDistilledContext && distillation.inferredFields.context
@@ -1905,11 +1912,16 @@ function captureFeedback(params) {
   try {
     const toolName = feedbackEvent.toolName || feedbackEvent.tool_name || 'unknown';
     const toolInput = feedbackEvent.context || feedbackEvent.input || '';
-    recordAction(toolName, toolInput);
+    const attributionPaths = getScopedFeedbackDir() ? {
+      actionLogPath: path.join(FEEDBACK_DIR, 'action-log.jsonl'),
+      attributionsPath: path.join(FEEDBACK_DIR, 'feedback-attributions.jsonl'),
+      attributedFeedbackPath: path.join(FEEDBACK_DIR, 'attributed-feedback.jsonl'),
+    } : {};
+    recordAction(toolName, toolInput, attributionPaths);
     if (feedbackEvent.signal === 'negative') {
-      attributeFeedback('negative', feedbackEvent.context || '');
+      attributeFeedback('negative', feedbackEvent.context || '', attributionPaths);
     } else if (feedbackEvent.signal === 'positive') {
-      attributeFeedback('positive', feedbackEvent.context || '');
+      attributeFeedback('positive', feedbackEvent.context || '', attributionPaths);
     }
   } catch { /* attribution is non-blocking */ }
 

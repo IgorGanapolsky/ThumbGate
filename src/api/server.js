@@ -6,6 +6,7 @@ const path = require('path');
 const crypto = require('node:crypto');
 const { EventEmitter } = require('node:events');
 const pkg = require('../../package.json');
+const { normalizeQuickFeedback, renderQuickFeedback } = require('./quick-feedback');
 const {
   createUnavailableAsyncOperation,
   loadOptionalModule,
@@ -81,6 +82,7 @@ const {
 } = require('../../scripts/feedback-loop');
 const {
   readActiveProjectState,
+  runWithFeedbackDir,
   resolveProjectDir,
 } = require('../../scripts/feedback-paths');
 const {
@@ -6385,13 +6387,7 @@ function createApiServer() {
           return;
         }
         if (req.method === 'GET') {
-          sendHtml(res, 200, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>ThumbGate feedback</title></head>
-<body style="background:#0a0a0a;color:#fff;font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0">
-<form method="post" action="/feedback/quick?signal=${signal}" style="text-align:center;background:#141414;padding:40px;border-radius:16px">
-<div style="font-size:64px">${emoji}</div><h1>Record ${label.toLowerCase()} feedback?</h1>
-<p>This confirmation prevents previews and crawlers from recording feedback.</p>
-<button type="submit" style="padding:10px 20px;font-weight:700">Record ${emoji} feedback</button>
-</form></body></html>`);
+          sendHtml(res, 200, renderQuickFeedback(signal), { 'Cache-Control': 'no-store' });
           return;
         }
         if (!isAuthorized(req, expectedApiKey)) {
@@ -6412,7 +6408,7 @@ function createApiServer() {
         const opposite = signal === 'up' ? 'down' : 'up';
         const oppEmoji = signal === 'up' ? '👎' : '👍';
         const feedbackId = result.feedbackEvent?.id || 'saved';
-        const promoted = result.accepted ? 'Promoted to memory' : 'Stored';
+        const promoted = result.promoted === true ? 'Promoted to memory' : 'Stored without promotion';
         sendHtml(res, 200, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>ThumbGate — ${label} feedback</title>
 <style>
 body{background:#0a0a0a;color:#fff;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
@@ -9708,7 +9704,9 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         };
 
         const onEvent = (payload) => {
-          safeWrite(`event: ${payload.type}\ndata: ${JSON.stringify(payload)}\n\n`);
+          if (payload.type === 'feedback' && payload.dataPartition !== requestDataIdentity.partition) return;
+          const { dataPartition, ...event } = payload;
+          safeWrite(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
         };
         eventBus.on('broadcast', onEvent);
 
@@ -10318,22 +10316,23 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           });
           return;
         }
-        const body = await parseJsonBody(req);
-        // Auto-include conversation window when caller doesn't provide one
-        let chatHistory = Array.isArray(body.chatHistory) ? body.chatHistory : body.messages;
-        if (!chatHistory || chatHistory.length === 0) {
+        const body = normalizeQuickFeedback(await parseJsonBody(req));
+        let chatHistory = body.includeConversationContext === false ? [] : (Array.isArray(body.chatHistory) ? body.chatHistory : body.messages);
+        if (body.includeConversationContext !== false && (!chatHistory || chatHistory.length === 0)) {
           try {
             chatHistory = readRecentConversationWindow({
-              feedbackDir: getSafeDataDir(),
+              feedbackDir: requestSafeDataDir,
               limit: 10,
             });
           } catch { /* best-effort — conversation window is optional */ }
         }
-        const result = captureFeedback({
+        const result = runWithFeedbackDir(requestDataIdentity.partition ? requestFeedbackDir : null, () => captureFeedback({
           signal: body.signal,
           context: body.context || '',
           relatedFeedbackId: body.relatedFeedbackId,
           chatHistory,
+          includeConversationContext: body.includeConversationContext,
+          sourceEvent: body.sourceEvent,
           whatWentWrong: body.whatWentWrong,
           whatToChange: body.whatToChange,
           whatWorked: body.whatWorked,
@@ -10353,7 +10352,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
             }
             : undefined,
           reviewOrigin: 'human',
-        });
+        }));
         const actionIntegration = inferActionIntegration(body, req.headers);
         appendBestEffortTelemetry(requestFeedbackDir, {
           eventType: chatgptActionEventType(actionIntegration, 'capture_feedback'),
@@ -10372,9 +10371,10 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           // no evidence blobs).
           eventBus.emit('broadcast', {
             type: 'feedback',
+            dataPartition: requestDataIdentity.partition,
             signal: body.signal,
             tags: Array.isArray(body.tags) ? body.tags.slice(0, 8) : [],
-            feedbackId: result.feedbackId,
+            feedbackId: result.feedbackEvent?.id,
             promoted: Boolean(result.promoted),
             ts: Date.now(),
           });

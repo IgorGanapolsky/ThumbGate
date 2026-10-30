@@ -4,6 +4,8 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { AsyncLocalStorage } = require('node:async_hooks');
+const feedbackDirectoryScope = new AsyncLocalStorage();
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const HOME = process.env.HOME || process.env.USERPROFILE || os.homedir() || '';
@@ -215,7 +217,17 @@ function getGlobalFeedbackDir(options = {}) {
   return path.join(getHomeDir(options), '.thumbgate', 'projects', getProjectName(projectDir));
 }
 
+function getScopedFeedbackDir() {
+  return feedbackDirectoryScope.getStore();
+}
+
+function runWithFeedbackDir(feedbackDir, callback) {
+  if (!feedbackDir) return callback();
+  return feedbackDirectoryScope.run(path.resolve(feedbackDir), callback);
+}
+
 function resolveFeedbackDir(options = {}) {
+  if (!options.feedbackDir && getScopedFeedbackDir()) return getScopedFeedbackDir();
   const explicit = getExplicitFeedbackDir(options);
   if (explicit) return explicit;
 
@@ -292,5 +304,7 @@ module.exports = {
   resolveProjectDir,
   resolveFallbackArtifactPath,
   resolveFeedbackDir,
+  runWithFeedbackDir,
+  getScopedFeedbackDir,
   writeActiveProjectState,
 };

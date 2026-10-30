@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { resolveFeedbackDir } = require('./feedback-paths');
+const { resolveFeedbackDir, getScopedFeedbackDir } = require('./feedback-paths');
 const { ensureDir, readJsonl } = require('./fs-utils');
 const {
   retrieveHierarchicalDocuments,
@@ -25,6 +25,7 @@ function getFeedbackBaseDir() {
 }
 
 function getContextFsRoot() {
+  if (getScopedFeedbackDir()) return path.join(getScopedFeedbackDir(), 'contextfs');
   const feedbackDir = getFeedbackBaseDir();
   if (process.env.THUMBGATE_CONTEXTFS_DIR) return process.env.THUMBGATE_CONTEXTFS_DIR;
   return feedbackDir.endsWith('contextfs') ? feedbackDir : path.join(feedbackDir, 'contextfs');

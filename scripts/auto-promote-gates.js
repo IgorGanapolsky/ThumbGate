@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { resolveFeedbackDir } = require('./feedback-paths');
+const { resolveFeedbackDir, getScopedFeedbackDir } = require('./feedback-paths');
 
 const MAX_AUTO_GATES = 10;
 // 1+ failure auto-promotes to a warning gate. Cold buyers expect "one 👎 → blocked next time"
@@ -32,6 +32,7 @@ function getRuleTtlMs() {
 const NEG_SIGNALS = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
 
 function getFeedbackLogPath() {
+  if (getScopedFeedbackDir()) return path.join(getScopedFeedbackDir(), 'feedback-log.jsonl');
   if (process.env.THUMBGATE_FEEDBACK_DIR) {
     return path.join(process.env.THUMBGATE_FEEDBACK_DIR, 'feedback-log.jsonl');
   }

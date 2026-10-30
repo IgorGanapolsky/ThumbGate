@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add accessible quick-feedback reasons and optional details with authenticated capture, retry receipts, and request-scoped storage. Raise the public bundle ceiling from 642 to 643 for the new `src/api/quick-feedback.js` renderer and payload contract.
+
 ## 1.39.0
 
 ### Minor Changes

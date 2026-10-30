@@ -46,6 +46,21 @@ components:
         signal:
           type: string
           enum: [up, down, positive, negative]
+        includeConversationContext:
+          type: boolean
+          default: true
+          description: Set false to exclude automatic and supplied conversation history from capture.
+        reasonIds:
+          type: array
+          maxItems: 6
+          items:
+            type: string
+            enum: [solved-task, followed-instructions, output-quality, efficient, useful-autonomy, unresolved-task, missed-instructions, poor-output, inefficient, unwanted-autonomy, other]
+          description: Quick feedback metadata only. Requires up/down, submissionId and includeConversationContext false. Reasons must match the selected signal. Only the matching whatWorked or whatWentWrong detail is captured (maximum 4000 characters); other capture fields are not accepted with reasonIds.
+        submissionId:
+          type: string
+          pattern: '^[a-zA-Z0-9_-]{16,100}$'
+          description: Quick feedback retry identity. Requires reasonIds; identical normalized payloads reuse a receipt, while changed details or reasons create a new event.
         context:
           type: string
           description: One-sentence reason describing what worked or failed

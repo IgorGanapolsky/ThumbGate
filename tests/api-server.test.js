@@ -2470,8 +2470,8 @@ test('quick feedback GET renders a deliberate confirmation without recording fee
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.ok(html.includes('👍'), 'should show thumbs up emoji');
-  assert.ok(html.includes('Record positive feedback?'));
-  assert.match(html, /<form method="post" action="\/feedback\/quick\?signal=up"/);
+  assert.ok(html.includes('What worked well?'));
+  assert.match(html, /\/v1\/feedback\/capture/);
   assert.equal(readJsonl(feedbackLogPath).length, before);
 });
 
