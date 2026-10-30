@@ -1175,6 +1175,7 @@ loadLive().then(function() {
   <button class="feedback-toggle" type="button" onclick="openFeedback()">Feedback</button>
 </div>
 <script>
+var feedbackSubmitPending = false;
 function selectedFeedbackReasons() {
   return Array.from(document.querySelectorAll('.feedback-chip[aria-pressed="true"]')).map(function(button) {
     return button.getAttribute('data-reason');
@@ -1183,7 +1184,9 @@ function selectedFeedbackReasons() {
 function refreshFeedbackSubmit() {
   var ids = selectedFeedbackReasons();
   var note = document.getElementById('feedbackText').value.trim();
-  var ready = ids.length > 0 && !(ids.length === 1 && ids[0] === 'other' && note.length < 5);
+  var ready = !feedbackSubmitPending
+    && ids.length > 0
+    && !(ids.length === 1 && ids[0] === 'other' && note.length < 5);
   document.getElementById('feedbackSubmit').disabled = !ready;
 }
 function openFeedback() {
@@ -1208,8 +1211,10 @@ document.addEventListener('keydown', function(event) {
   if (event.key === 'Escape') closeFeedback();
 });
 async function submitFeedback() {
+  if (feedbackSubmitPending) return;
   var btn = document.getElementById('feedbackSubmit');
   if (btn.disabled) return;
+  feedbackSubmitPending = true;
   var reasons = selectedFeedbackReasons();
   var details = document.getElementById('feedbackText').value.trim();
   btn.disabled = true;
@@ -1249,9 +1254,11 @@ async function submitFeedback() {
     }
   } catch (e) {
     result.textContent = 'Network error. Try again.';
+  } finally {
+    feedbackSubmitPending = false;
+    btn.textContent = 'Submit';
+    refreshFeedbackSubmit();
   }
-  btn.textContent = 'Submit';
-  refreshFeedbackSubmit();
 }
 </script>
 <script src="/js/buyer-intent.js"></script>

@@ -34,4 +34,6 @@ test('lessons share-feedback dialog asks for a reason before submit', () => {
     assert.match(lessonsPage, new RegExp(`data-reason="${reason.id}"`));
     assert.match(lessonsPage, new RegExp(`\\+ ${reason.label}`));
   }
+  assert.match(lessonsPage, /var feedbackSubmitPending = false/);
+  assert.match(lessonsPage, /var ready = !feedbackSubmitPending/);
 });
