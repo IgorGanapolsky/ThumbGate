@@ -569,6 +569,66 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     allowCustomerEmail: true,
     prefillStripeEmail: true,
   },
+  'bundle-49': {
+    fallbackHref: 'https://iganapolsky.gumroad.com/l/vcrho',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_bundle_49',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'bundle_49',
+      plan_id: 'bundle_49',
+      billing_cycle: 'one_time',
+    },
+  },
+  'playbook-10': {
+    fallbackHref: 'https://iganapolsky.gumroad.com/l/odrkon',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_playbook_10',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'playbook_10',
+      plan_id: 'playbook_10',
+      billing_cycle: 'one_time',
+    },
+  },
+  'playbook-999': {
+    fallbackHref: 'https://iganapolsky.gumroad.com/l/odrkon',
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_playbook_999',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'playbook_999',
+      plan_id: 'playbook_999',
+      billing_cycle: 'one_time',
+    },
+  },
+  'founding-100': {
+    fallbackHref: PRO_CHECKOUT_URL,
+    external: true,
+    botDeflectPath: '/checkout/pro',
+    ctaId: 'pro_checkout_founding_100',
+    ctaPlacement: 'checkout_interstitial',
+    eventType: 'pro_checkout_direct_stripe',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_interstitial',
+      utm_campaign: 'founding_100',
+      plan_id: 'pro',
+      billing_cycle: 'annual',
+    },
+  },
   // Operator Framework offers (/operator-framework). Same-origin hop keeps
   // buy.stripe.com out of public HTML; bots are deflected to the page.
   'operator-diagnostic': {
@@ -4878,10 +4938,16 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 function renderCheckoutCancelledPage(runtimeConfig) {
   const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
+  const proDirectUrl = escapeHtmlAttribute(new URL('/go/pro-direct?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=pro_upgrade', runtimeConfig.appOrigin).toString());
+  const playbookUrl = escapeHtmlAttribute(new URL('/go/playbook-999?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=playbook_999', runtimeConfig.appOrigin).toString());
+  const bundle49Url = escapeHtmlAttribute(new URL('/go/bundle-49?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=bundle_49', runtimeConfig.appOrigin).toString());
   const diagnosticUrl = escapeHtmlAttribute(new URL('/diagnostic', runtimeConfig.appOrigin).toString());
   const workflowSprintUrl = escapeHtmlAttribute(new URL('/go/sprint', runtimeConfig.appOrigin).toString());
   const workflowSprintIntakeUrl = escapeHtmlAttribute(new URL('/#workflow-sprint-intake', runtimeConfig.appOrigin).toString());
   const recoveryOfferLinks = [
+    `<a href="${playbookUrl}" data-recovery-offer="playbook_999" data-offer-price="9.99">Buy $9.99 Playbook (One-Time, No Subscription)</a>`,
+    `<a href="${bundle49Url}" data-recovery-offer="bundle_49" data-offer-price="49">Buy $49 Production Bundle (One-Time Expense)</a>`,
+    `<a href="${proDirectUrl}" data-recovery-offer="pro_direct" data-offer-price="19">1-Click Stripe Pro ($19/mo)</a>`,
     `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
     `<a href="${diagnosticUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Review $${sprintDiagnosticPriceDollars} diagnostic</a>`,
     `<a href="${workflowSprintUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Scope $${workflowSprintPriceDollars} sprint</a>`,
