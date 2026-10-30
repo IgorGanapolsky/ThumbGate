@@ -7,6 +7,39 @@ const path = require('path');
 
 const { getFeedbackPaths } = require('./feedback-loop');
 
+const FEEDBACK_REASONS = [
+  { id: 'solved-the-task', label: 'Solved the task', category: 'feature' },
+  { id: 'followed-the-rules', label: 'Followed the repo rules', category: 'feature' },
+  { id: 'blocked-a-risky-command', label: 'Blocked a risky command', category: 'feature' },
+  { id: 'blocked-the-wrong-thing', label: 'Blocked the wrong thing', category: 'bug' },
+  { id: 'missed-the-mistake', label: 'Missed the mistake', category: 'bug' },
+  { id: 'other', label: 'Other', category: 'question' },
+];
+
+function composeChipFeedback({ reasons, details } = {}) {
+  const wanted = new Set(Array.isArray(reasons) ? reasons : []);
+  const selected = FEEDBACK_REASONS.filter((reason) => wanted.has(reason.id));
+  if (details != null && typeof details !== 'string') {
+    return { ok: false, reason: 'details must be a string' };
+  }
+  const note = String(details || '').replace(/\s+/g, ' ').trim();
+  if (selected.length === 0) return { ok: false, reason: 'pick a reason' };
+  if (selected.length === 1 && selected[0].id === 'other' && note.length < 5) {
+    return { ok: false, reason: 'add a short detail for Other' };
+  }
+  let category = 'question';
+  if (selected.some((reason) => reason.category === 'bug')) category = 'bug';
+  else if (selected.some((reason) => reason.category === 'feature')) category = 'feature';
+  const summary = selected.map((reason) => reason.label).join('. ');
+  const message = note ? `${summary}. ${note}` : `${summary}.`;
+  return {
+    ok: true,
+    category,
+    message,
+    reasonIds: selected.map((reason) => reason.id),
+  };
+}
+
 function buildProductIssueTitle(body, category = 'bug') {
   const prefix = category === 'feature'
     ? '[Feature] '
@@ -127,8 +160,10 @@ async function submitProductIssue({
 }
 
 module.exports = {
+  FEEDBACK_REASONS,
   appendProductFeedbackLog,
   buildProductIssueBody,
   buildProductIssueTitle,
+  composeChipFeedback,
   submitProductIssue,
 };

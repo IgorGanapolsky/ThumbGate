@@ -279,6 +279,7 @@ const {
 } = require('../../scripts/telemetry-analytics');
 const {
   buildProductIssueTitle,
+  composeChipFeedback,
   submitProductIssue,
 } = require('../../scripts/product-feedback');
 const {
@@ -6087,7 +6088,16 @@ function createApiServer() {
       req.on('end', async () => {
         try {
           const body = JSON.parse(Buffer.concat(chunks).toString());
-          const { category, message } = body;
+          let { category, message } = body;
+          if (Array.isArray(body.reasons)) {
+            const composed = composeChipFeedback({ reasons: body.reasons, details: body.details });
+            if (!composed.ok) {
+              sendJson(res, 400, { error: composed.reason });
+              return;
+            }
+            category = composed.category;
+            message = composed.message;
+          }
           if (!message || message.length < 5) {
             sendJson(res, 400, { error: 'message too short' });
             return;
