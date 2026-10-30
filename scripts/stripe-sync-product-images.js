@@ -113,12 +113,13 @@ async function run({ dryRun, stripeFactory, logger = console } = {}) {
     return { plan, updatedIds: [] };
   }
 
-  const updatedIds = [];
-  for (const entry of updates) {
-    await stripe.products.update(entry.productId, { images: entry.target });
-    logger.log(`  ✓ patched ${entry.productId}`);
-    updatedIds.push(entry.productId);
-  }
+  const updatedIds = await Promise.all(
+    updates.map(async (entry) => {
+      await stripe.products.update(entry.productId, { images: entry.target });
+      logger.log(`  ✓ patched ${entry.productId}`);
+      return entry.productId;
+    })
+  );
 
   logger.log(`\nDone. ${updates.length} product(s) updated.`);
   return { plan, updatedIds };
