@@ -2786,21 +2786,8 @@ function getOauthAuthorizeParamsFromForm(form, hostedConfig) {
   };
 }
 
-function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = {}) {
-  const plausibleDomain = escapeHtmlAttribute(resolvePlausibleDataDomain({ host: 'thumbgate.ai' }));
-  const includeHiddenAttribution = options.includeHiddenAttribution === true;
-  const hiddenInputs = includeHiddenAttribution
-    ? buildCheckoutHiddenAttributionInputs(parsed)
-    : '';
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Confirm - ThumbGate Pro</title>
-<script defer data-domain="${plausibleDomain}" src="https://plausible.io/js/script.tagged-events.js"></script>
-<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)};</script>
-<style>
+function getCheckoutIntentPageStyle() {
+  return `
 body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}
 main{max-width:520px;margin:8vh auto;padding:0 20px}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}
@@ -2819,39 +2806,11 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 .objection-grid button:hover,.objection-grid button:focus{border-color:#22d3ee;outline:none}
 .feedback-saved{display:none;color:#22d3ee;font-size:13px;margin-top:10px}
 .back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}
-</style>
-</head>
-<body>
-<main>
-<div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
-<h1>Start ThumbGate Pro</h1>
-<div class="price">$19<small>/mo</small></div>
-<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available.</p>
-<form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">
-${hiddenInputs}
-<input type="hidden" name="confirm" value="1">
-<input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email" required>
-<p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
-<button type="submit" class="primary">Pay $19/mo with Stripe →</button>
-</form>
-<a class="secondary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">Skip form — open Stripe checkout directly →</a>
-<a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
-<p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages. Email path keeps receipts attributable; skip uses a same-origin hop that bot-deflects crawlers.</p>
-<div class="objection-box" aria-label="Checkout feedback">
-<strong>Not buying today?</strong>
-<p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
-<div class="objection-grid">
-<button type="button" data-reason="price_unclear">Price or scope is unclear</button>
-<button type="button" data-reason="need_more_proof">Need more proof first</button>
-<button type="button" data-reason="need_team_plan">Need a team/workflow plan instead</button>
-<button type="button" data-reason="not_urgent">Not urgent right now</button>
-</div>
-<div class="feedback-saved" id="feedback-saved">Feedback saved.</div>
-</div>
-<div class="trust"><div class="trust-item">Personal recall and proof exports without free-tier caps</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div><div class="trust-item">Personal dashboard: gate stats, rule evidence, DPO export</div><div class="trust-item">Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available</div></div>
-<p class="back"><a href="/">← Back to thumbgate.ai</a></p>
-</main>
-<script>
+`;
+}
+
+function getCheckoutIntentPageScript() {
+  return `
 (function(){
   var params = new URLSearchParams(window.location.search);
   var submitted = false;
@@ -2901,7 +2860,7 @@ ${hiddenInputs}
     try {
       var u = new URL(skipLink.href, window.location.origin);
       var email = emailInput ? emailInput.value.trim() : '';
-      if (email && email.length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (email && email.length <= 320 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+\$/.test(email)) {
         u.searchParams.set('customer_email', email);
       } else {
         u.searchParams.delete('customer_email');
@@ -2944,7 +2903,56 @@ ${hiddenInputs}
     }
   });
 })();
-</script>
+`;
+}
+
+function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = {}) {
+  const plausibleDomain = escapeHtmlAttribute(resolvePlausibleDataDomain({ host: 'thumbgate.ai' }));
+  const includeHiddenAttribution = options.includeHiddenAttribution === true;
+  const hiddenInputs = includeHiddenAttribution
+    ? buildCheckoutHiddenAttributionInputs(parsed)
+    : '';
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Confirm - ThumbGate Pro</title>
+<script defer data-domain="${plausibleDomain}" src="https://plausible.io/js/script.tagged-events.js"></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)};</script>
+<style>\n${getCheckoutIntentPageStyle()}\n</style>
+</head>
+<body>
+<main>
+<div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
+<h1>Start ThumbGate Pro</h1>
+<div class="price">$19<small>/mo</small></div>
+<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available.</p>
+<form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">
+${hiddenInputs}
+<input type="hidden" name="confirm" value="1">
+<input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email" required>
+<p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
+<button type="submit" class="primary">Pay $19/mo with Stripe →</button>
+</form>
+<a class="secondary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">Skip form — open Stripe checkout directly →</a>
+<a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
+<p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages. Email path keeps receipts attributable; skip uses a same-origin hop that bot-deflects crawlers.</p>
+<div class="objection-box" aria-label="Checkout feedback">
+<strong>Not buying today?</strong>
+<p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
+<div class="objection-grid">
+<button type="button" data-reason="price_unclear">Price or scope is unclear</button>
+<button type="button" data-reason="need_more_proof">Need more proof first</button>
+<button type="button" data-reason="need_team_plan">Need a team/workflow plan instead</button>
+<button type="button" data-reason="not_urgent">Not urgent right now</button>
+</div>
+<div class="feedback-saved" id="feedback-saved">Feedback saved.</div>
+</div>
+<div class="trust"><div class="trust-item">Personal recall and proof exports without free-tier caps</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div><div class="trust-item">Personal dashboard: gate stats, rule evidence, DPO export</div><div class="trust-item">Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available</div></div>
+<p class="back"><a href="/">← Back to thumbgate.ai</a></p>
+</main>
+<script>\n${getCheckoutIntentPageScript()}\n</script>
 </body>
 </html>`;
 }
