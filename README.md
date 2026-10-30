@@ -296,7 +296,7 @@ Every Changeset is tied to the exact `main` merge commit and generates Verificat
 ## Cloud & model infrastructure
 
 - **Local Pre-Action Firewall & MCP Runtime**: Sub-`0.5ms` local `PreToolUse` enforcement (`npx thumbgate init`) across Claude Code, Cursor, Codex, and Gemini CLI; `TencentDB Agent Memory` record normalization into blocking SQL safety candidates is covered in `tests/memory-provider-enforcement-bridge.test.js`, and outer-harness context-budget checks inspired by Tencent Hunyuan `Hy-Memory-30B-A3B` research are validated in `scripts/rrsi-doctor.js`.
-- **Companion Benchmark & Technical Case Study (`hermes-eval`)**: External evaluation of [Tencent Cloud](https://www.tencentcloud.com/) Lighthouse / CVM (`SA5` / `SA9` AMD Turin-Dense `3.4 GHz` all-core turbo in `ap-hongkong` & `ap-singapore`) and the `Hy-Memory-30B-A3B` surgical state-patching pattern is published in [`hermes-eval#cloud--model-infrastructure`](https://github.com/IgorGanapolsky/hermes-eval#cloud--model-infrastructure) and [`TENCENT-CLOUD-SA9-HUNYUAN-CASE-STUDY.md`](https://github.com/IgorGanapolsky/hermes-eval/blob/main/docs/TENCENT-CLOUD-SA9-HUNYUAN-CASE-STUDY.md).
+- **Companion Benchmark & Technical Case Study**: External evaluation of [Tencent Cloud](https://www.tencentcloud.com/) Lighthouse / CVM (`SA5` / `SA9` AMD Turin-Dense `3.4 GHz` all-core turbo in `ap-hongkong` & `ap-singapore`) and the `Hy-Memory-30B-A3B` surgical state-patching pattern is published in our companion `hermes-eval` benchmark repository (`docs/TENCENT-CLOUD-SA9-HUNYUAN-CASE-STUDY.md` and `scripts/tencent_sa9_hunyuan_benchmark.py`).
 ---
 
 ## Integrations (compact)
