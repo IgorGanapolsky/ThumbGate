@@ -52,6 +52,15 @@ test('AWS Strands Harness: evaluateCompactionThreshold signals 75% trigger while
   assert.equal(needsCompaction.pinnedRulesPreserved, true);
   assert.equal(needsCompaction.pinnedRuleCount, 2);
   assert.equal(needsCompaction.status, 'compaction_recommended');
+
+  const byTokensLeft = evaluateCompactionThreshold({
+    currentTokens: 71000,
+    maxWindowTokens: 100000,
+    thresholdPct: 0.85,
+    pinnedRules: ['Keep the last decision'],
+  });
+  assert.equal(byTokensLeft.shouldCompact, true);
+  assert.equal(byTokensLeft.trigger, 'remaining_tokens');
 });
 
 test('AWS Strands Harness: simulateOverflowRecovery recovers in-loop without unhandled throw', () => {
