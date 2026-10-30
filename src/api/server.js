@@ -4404,6 +4404,62 @@ function isSeoAttributionSource(source) {
   return source === 'organic_search' || source === 'ai_search';
 }
 
+function recordDiscoveryFunnelEvent(journeyState, landingAttribution, extraTelemetry) {
+  try {
+    appendFunnelEvent({
+      stage: 'discovery',
+      event: 'landing_view',
+      installId: journeyState.visitorId || null,
+      traceId: journeyState.acquisitionId || null,
+      evidence: landingAttribution.landingPath || 'landing_view',
+      metadata: {
+        page: extraTelemetry.pageType || landingAttribution.page || 'landing',
+        utmSource: landingAttribution.utmSource || null,
+        utmMedium: landingAttribution.utmMedium || null,
+        utmCampaign: landingAttribution.utmCampaign || null,
+        utmContent: landingAttribution.utmContent || null,
+        utmTerm: landingAttribution.utmTerm || null,
+        referrerHost: landingAttribution.referrerHost || null,
+        sessionId: journeyState.sessionId || null,
+      },
+    });
+  } catch {
+    // Funnel ledger is best-effort on page render; telemetry-pings remains
+    // the authoritative observability path if the ledger write fails.
+  }
+}
+
+function recordSeoAttributionEvent(FEEDBACK_DIR, journeyState, landingAttribution, extraTelemetry, headers) {
+  if (isSeoAttributionSource(landingAttribution.source)) {
+    appendBestEffortTelemetry(FEEDBACK_DIR, {
+      eventType: 'seo_landing_view',
+      clientType: 'web',
+      visitorId: journeyState.visitorId,
+      sessionId: journeyState.sessionId,
+      acquisitionId: journeyState.acquisitionId,
+      source: landingAttribution.source,
+      utmSource: landingAttribution.utmSource,
+      utmMedium: landingAttribution.utmMedium,
+      utmCampaign: landingAttribution.utmCampaign,
+      utmContent: landingAttribution.utmContent,
+      utmTerm: landingAttribution.utmTerm,
+      creator: landingAttribution.creator,
+      community: landingAttribution.community,
+      postId: landingAttribution.postId,
+      commentId: landingAttribution.commentId,
+      campaignVariant: landingAttribution.campaignVariant,
+      offerCode: landingAttribution.offerCode,
+      landingPath: landingAttribution.landingPath,
+      page: landingAttribution.page,
+      referrer: landingAttribution.referrer,
+      referrerHost: landingAttribution.referrerHost,
+      seoSurface: landingAttribution.seoSurface || landingAttribution.source,
+      seoQuery: landingAttribution.seoQuery,
+      ...extraTelemetry,
+    }, headers, 'seo_landing_view');
+  }
+}
+
 function servePublicMarketingPage({
   req,
   res,
@@ -4439,57 +4495,8 @@ function servePublicMarketingPage({
     'landing_page_view'
   );
 
-  try {
-    appendFunnelEvent({
-      stage: 'discovery',
-      event: 'landing_view',
-      installId: journeyState.visitorId || null,
-      traceId: journeyState.acquisitionId || null,
-      evidence: landingAttribution.landingPath || 'landing_view',
-      metadata: {
-        page: extraTelemetry.pageType || landingAttribution.page || 'landing',
-        utmSource: landingAttribution.utmSource || null,
-        utmMedium: landingAttribution.utmMedium || null,
-        utmCampaign: landingAttribution.utmCampaign || null,
-        utmContent: landingAttribution.utmContent || null,
-        utmTerm: landingAttribution.utmTerm || null,
-        referrerHost: landingAttribution.referrerHost || null,
-        sessionId: journeyState.sessionId || null,
-      },
-    });
-  } catch {
-    // Funnel ledger is best-effort on page render; telemetry-pings remains
-    // the authoritative observability path if the ledger write fails.
-  }
-
-  if (isSeoAttributionSource(landingAttribution.source)) {
-    appendBestEffortTelemetry(FEEDBACK_DIR, {
-      eventType: 'seo_landing_view',
-      clientType: 'web',
-      visitorId: journeyState.visitorId,
-      sessionId: journeyState.sessionId,
-      acquisitionId: journeyState.acquisitionId,
-      source: landingAttribution.source,
-      utmSource: landingAttribution.utmSource,
-      utmMedium: landingAttribution.utmMedium,
-      utmCampaign: landingAttribution.utmCampaign,
-      utmContent: landingAttribution.utmContent,
-      utmTerm: landingAttribution.utmTerm,
-      creator: landingAttribution.creator,
-      community: landingAttribution.community,
-      postId: landingAttribution.postId,
-      commentId: landingAttribution.commentId,
-      campaignVariant: landingAttribution.campaignVariant,
-      offerCode: landingAttribution.offerCode,
-      landingPath: landingAttribution.landingPath,
-      page: landingAttribution.page,
-      referrer: landingAttribution.referrer,
-      referrerHost: landingAttribution.referrerHost,
-      seoSurface: landingAttribution.seoSurface || landingAttribution.source,
-      seoQuery: landingAttribution.seoQuery,
-      ...extraTelemetry,
-    }, req.headers, 'seo_landing_view');
-  }
+  recordDiscoveryFunnelEvent(journeyState, landingAttribution, extraTelemetry);
+  recordSeoAttributionEvent(FEEDBACK_DIR, journeyState, landingAttribution, extraTelemetry, req.headers);
 
   const requestHost = getSafePublicRequestHost(req);
   const html = renderHtml(hostedConfig, {
