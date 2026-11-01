@@ -32,6 +32,7 @@ const fs = require('node:fs');
 const {
   evaluateUniversalClaims,
 } = require('./universal-claim-evaluator');
+const { evaluateMoneySpeech } = require('./user-week-job-bench');
 
 // Lie-phrase patterns. These match common "claim of completion" wording
 // the agent emits without verification. Word-boundary anchored to avoid
@@ -303,6 +304,25 @@ function main() {
   });
   if (factualBlock) {
     process.stdout.write(`${JSON.stringify(factualBlock)}\n`);
+    return;
+  }
+
+  const moneySpeech = evaluateMoneySpeech(`${text}\n${toolUseSummary}`);
+  if (moneySpeech.verdict === 'hold') {
+    const reason = moneySpeech.issues.map((issue) => issue.reason).join(' ');
+    if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') {
+      process.stdout.write(`${JSON.stringify({
+        decision: 'block',
+        reason: `ThumbGate user-week bench: ${reason} Pay clicks are not paid orders. A done claim needs a receipt. Restate from a hosted source, or retract.`,
+      })}\n`);
+      return;
+    }
+    process.stdout.write([
+      '⚠️ ThumbGate user-week bench: previous turn treated a Pay click or an unreceipted dollar as booked money.',
+      `   ${reason}`,
+      '   Count people, not posts. A Pay click is not a paid order.',
+      '   Say paid orders and booked dollars only from a hosted source line in the same turn.',
+    ].join('\n') + '\n');
     return;
   }
 

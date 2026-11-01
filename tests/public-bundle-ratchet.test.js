@@ -274,6 +274,8 @@ const path = require('node:path');
 // 622 -> 625 (2026-10-13): scripts/decisive-step-evaluator.js + scripts/decisive-step-doctor.js + decisive-step-evaluator skill (+3).
 // 625 -> 633 (2026-10-13): restored .agents/skills/deeppattern-discipline-honesty-not-clone/ in package.json files (+1).
 // 633 -> 655 (2026-10-26): public/install.md, carousel assets, and src/mcp/email-triage-server (+22 headroom).
+// 2026-11-01: scripts/user-week-job-bench.js + .agents/skills/user-week-job-bench/
+//   measured npm pack entryCount 644, still under this ceiling, so the ceiling stays 655.
 const BASELINE_FILE_COUNT = 655;
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
