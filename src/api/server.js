@@ -7835,6 +7835,110 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && /^\/r\/[A-Za-z0-9_-]{1,48}$/.test(pathname)) {
+      const refCode = pathname.slice(3).trim();
+      const rawTo = String(parsed.searchParams.get('to') || '/go/pro-direct').trim();
+      const safeTo = /^\/[A-Za-z0-9/_-]*$/.test(rawTo) && !rawTo.startsWith('//') ? rawTo : '/go/pro-direct';
+      const destUrl = new URL(safeTo, hostedConfig.appOrigin);
+      destUrl.searchParams.set('utm_source', 'affiliate');
+      destUrl.searchParams.set('utm_medium', 'referral_link');
+      destUrl.searchParams.set('utm_campaign', 'partner_6mo_basket');
+      destUrl.searchParams.set('creator', refCode);
+      const { FEEDBACK_DIR } = getFeedbackPaths();
+      const journeyState = resolveJourneyState(req, parsed);
+      if (!isHeadRequest) {
+        appendBestEffortTelemetry(
+          FEEDBACK_DIR,
+          {
+            eventType: 'affiliate_referral_click',
+            clientType: 'web',
+            page: pathname,
+            creator: refCode,
+            destinationPath: safeTo,
+            attributionWindowDays: 180,
+            visitorId: journeyState.visitorId,
+            sessionId: journeyState.sessionId,
+            acquisitionId: journeyState.acquisitionId,
+          },
+          req.headers,
+          `affiliate_ref:${refCode}`
+        );
+      }
+      const refCookie = `tg_ref=${encodeURIComponent(refCode)}; Path=/; Max-Age=15552000; SameSite=Lax`;
+      res.writeHead(302, {
+        'Set-Cookie': [...journeyState.setCookieHeaders, refCookie],
+        'Cache-Control': 'no-store',
+        'X-Robots-Tag': 'noindex,nofollow',
+        Location: destUrl.toString(),
+      });
+      res.end();
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/affiliate') {
+      const rawCode = String(parsed.searchParams.get('code') || 'IGORG').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32) || 'IGORG';
+      const affiliateHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate Affiliate & Partner Program — Earn 50% of Every Bundle, Pro Sub & $499 Sprint</title>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #0d1117; color: #e6edf3; }
+    main { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
+    .pill { display: inline-block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #58a6ff; margin-bottom: 10px; }
+    h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.1; margin: 0 0 16px; }
+    p { font-size: 17px; line-height: 1.55; color: #8b949e; margin: 0 0 20px; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 14px; padding: 24px; margin-top: 22px; }
+    .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #21262d; font-size: 16px; }
+    .row:last-child { border-bottom: 0; }
+    .amt { color: #3fb950; font-weight: 700; }
+    .keep-box { border: 1px solid rgba(63, 185, 80, 0.4); background: rgba(63, 185, 80, 0.06); }
+    code, input { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; padding: 10px 14px; border-radius: 8px; font-family: monospace; font-size: 14px; width: 100%; box-sizing: border-box; }
+    .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    a.btn, button.btn { display: inline-flex; align-items: center; gap: 8px; background: #238636; color: #fff; text-decoration: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; border: 0; cursor: pointer; font-size: 14px; }
+    a.btn.secondary { background: #21262d; border: 1px solid #30363d; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="pill">Partner &amp; Creator Program</div>
+    <h1>Earn 50% of every Bundle, Pro sub, and $499 Sprint your referrals buy for 6 months</h1>
+    <p>Share your link: for 6 months after someone clicks it, you get 50% of everything they buy across the entire ThumbGate money ladder — not just the first click. No cap, paid via Stripe or USDC. And if they buy one of your own listed rule-packs, you keep 90% instead of 70%.</p>
+
+    <div class="card">
+      <div class="pill">ONE PERSON YOU BRING</div>
+      <div class="row"><span>Day 1: buys $49 Production Rule-Pack Bundle</span><span class="amt">+$24.50</span></div>
+      <div class="row"><span>Week 2: subscribes to ThumbGate Pro ($19/mo)</span><span class="amt">+$9.50/mo</span></div>
+      <div class="row"><span>Month 1: books $499 14-Day Agent Workflow Hardening Sprint</span><span class="amt">+$249.50</span></div>
+      <div class="row"><strong>Total 6-month payout from 1 engineering buyer</strong><span class="amt">+$331.00</span></div>
+    </div>
+
+    <div class="card keep-box">
+      <div class="pill" style="color:#3fb950">FOR YOUR OWN RULE-PACKS &amp; SKILLS</div>
+      <h2 style="margin:0 0 10px;font-size:22px;">Keep 90% instead of 70%</h2>
+      <p style="margin:0;">When someone signs up through your link (<code>?to=/go/bundle-49</code> or <code>?to=/go/pro-direct</code>) within 30 days, you keep 90% on your own listed packs and still earn 50% on any $499 Sprint or Pro upgrade they buy in their first 6 months.</p>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 12px;font-size:20px;">Your Instant Referral Link</h2>
+      <input id="ref-link" readonly value="${hostedConfig.appOrigin}/r/${rawCode}?to=/go/pro-direct" />
+      <div class="btns">
+        <button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('ref-link').value)">Copy Link</button>
+        <a class="btn secondary" target="_blank" rel="noopener" href="https://x.com/intent/tweet?text=${encodeURIComponent(`Hard-block secret leaks and recurring AI agent mistakes in <0.5ms with ThumbGate PreToolUse gates: ${hostedConfig.appOrigin}/r/${rawCode}?to=/go/pro-direct`)}">Share on X</a>
+        <a class="btn secondary" target="_blank" rel="noopener" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${hostedConfig.appOrigin}/r/${rawCode}?to=/go/pro-direct`)}">Share on LinkedIn</a>
+        <a class="btn secondary" href="/go/pro-direct">Test 1-Click Stripe Checkout →</a>
+      </div>
+      <p style="margin:18px 0 8px;font-size:13px;">Embed Badge (paste on your site, README, or docs):</p>
+      <code>&lt;a href="${hostedConfig.appOrigin}/r/${rawCode}?to=/go/pro-direct" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9999px;background:#1f6feb;color:#fff;font-weight:600;text-decoration:none"&gt;Protected by ThumbGate&lt;/a&gt;</code>
+    </div>
+  </main>
+</body>
+</html>`;
+      sendHtml(res, 200, affiliateHtml, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/.well-known/mcp.json') {
       sendJson(res, 200, getMcpDiscoveryManifest(hostedConfig), {}, {
         headOnly: isHeadRequest,

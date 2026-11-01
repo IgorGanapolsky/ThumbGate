@@ -3111,7 +3111,21 @@ async function getCheckoutSessionStatus(sessionId) {
         && session.payment_status === 'no_payment_required');
     const traceId = session.metadata?.traceId || null;
 
-    if (!isPaid) return { found: true, localMode: false, sessionId, paid: false, paymentStatus: session.payment_status, status: session.status };
+    if (!isPaid) {
+      const unpaidEmail = session.customer_details?.email || session.customer_email || null;
+      const recoveryUrl = session.after_expiration?.recovery?.url || null;
+      return {
+        found: true,
+        localMode: false,
+        sessionId,
+        paid: false,
+        paymentStatus: session.payment_status,
+        status: session.status,
+        ...(unpaidEmail ? { customerEmail: unpaidEmail } : {}),
+        ...(recoveryUrl ? { recoveryUrl } : {}),
+        ...(traceId ? { traceId } : {}),
+      };
+    }
 
     const installId = session.metadata?.installId || null;
     const customerEmail = session.customer_details?.email || session.customer_email || '';
@@ -3715,6 +3729,28 @@ async function handleWebhook(rawBody, signature) {
         action: 'payment_failed',
         sessionId: session.id || null,
         paymentStatus: session.payment_status || 'unpaid',
+      };
+    }
+    case 'checkout.session.expired': {
+      const session = event.data.object || {};
+      const expiredEmail = session.customer_details?.email || session.customer_email || null;
+      const recoveryUrl = session.after_expiration?.recovery?.url || null;
+      let recoveryResult = null;
+      try {
+        const { recoverCheckout } = require('./checkout-recovery');
+        recoveryResult = recoverCheckout({
+          ...session,
+          amount_total: Number(session.amount_total) > 0 ? Number(session.amount_total) : 1900,
+        }, { dryRun: true });
+      } catch (_) {}
+      return {
+        handled: true,
+        action: 'checkout_recovery_queued',
+        sessionId: session.id || null,
+        paymentStatus: session.payment_status || 'unpaid',
+        customerEmail: expiredEmail,
+        recoveryUrl,
+        recoveryVerdict: recoveryResult ? recoveryResult.verdict : null,
       };
     }
     case 'customer.subscription.deleted': {
