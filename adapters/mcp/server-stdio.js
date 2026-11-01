@@ -54,6 +54,9 @@ const {
   getActiveMcpProfile,
   getAllowedTools,
   assertToolAllowed,
+  activeScopedPackName,
+  applyScopedPack,
+  evaluateScopedConnectorPack,
 } = require('../../scripts/mcp-policy');
 const {
   evaluateGates,
@@ -272,7 +275,11 @@ function getToolCapability(toolName, options = {}) {
 }
 
 function getExposedTools(profileName = getActiveMcpProfile(), options = {}) {
-  const allowed = new Set(getAllowedTools(profileName));
+  const scoped = applyScopedPack(
+    getAllowedTools(profileName),
+    options.scopedPack || activeScopedPackName(),
+  );
+  const allowed = new Set(scoped.toolNames);
   return TOOLS.filter((tool) => allowed.has(tool.name) && getToolCapability(tool.name, options).available);
 }
 
@@ -613,7 +620,7 @@ function buildDiagnoseFailureResponse(args = {}) {
     }
   }
 
-  const allowedToolNames = getAllowedTools(requestedProfile);
+  const allowedToolNames = applyScopedPack(getAllowedTools(requestedProfile)).toolNames;
   const result = diagnoseFailure({
     step: args.step,
     context: args.context || '',
@@ -801,6 +808,13 @@ async function callTool(name, args = {}, options = {}) {
   });
   try {
     assertToolAllowed(name, activeProfile);
+    const packName = options.scopedPack || activeScopedPackName();
+    if (packName) {
+      const packDecision = evaluateScopedConnectorPack(packName, name);
+      if (packDecision.decision !== 'allow') {
+        throw new Error(`Tool '${name}' is not in scoped pack '${packName}' (${packDecision.reason}).`);
+      }
+    }
   } catch (error) {
     trace({
       success: false,

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "maxTools": 5,
+  "packs": {
+    "revenue-read": {
+      "outboundCashSpendUsd": 0,
+      "tools": [
+        "get_business_metrics",
+        "feedback_summary",
+        "gate_stats",
+        "verify_claim",
+        "recall"
+      ]
+    }
+  }
+}
