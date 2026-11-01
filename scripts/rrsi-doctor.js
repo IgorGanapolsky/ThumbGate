@@ -831,7 +831,26 @@ function evaluateVllmWideEpAndAgentxEconomics({
   tokensPerSecPerGpu = 954000,
   p90TpsPerUser = 196,
   lowLatencyB300Path = false,
+  probe = null,
 } = {}) {
+  if (probe && typeof probe === 'object') {
+    const { classifyObservedServingProbe } = require('./local-model-profile');
+    const observed = classifyObservedServingProbe(probe);
+    return {
+      allowed: false,
+      engine: observed.engineFamily,
+      wideEpEnabled: false,
+      eplbEnabled: false,
+      mtpNextN: null,
+      decodeParityVsDeepInferPct: null,
+      effectiveUserTps: null,
+      estimatedRevenuePerGpuHrUsd: null,
+      catalogOnly: false,
+      catalogNumbersAreMeasurements: false,
+      observed,
+      blockers: ['vendor_throughput_not_measured_on_this_server'],
+    };
+  }
   const blockers = [];
   if (isOnlineAgenticServing && String(engine).toLowerCase() === 'deepinfer_offline_only') {
     blockers.push('deepinfer_oss_lacks_online_kv_cache_and_pd_disaggregation_use_vllm');
@@ -853,6 +872,9 @@ function evaluateVllmWideEpAndAgentxEconomics({
     decodeParityVsDeepInferPct: 94,
     effectiveUserTps,
     estimatedRevenuePerGpuHrUsd,
+    catalogOnly: true,
+    catalogNumbersAreMeasurements: false,
+    observed: null,
     blockers,
   };
 }

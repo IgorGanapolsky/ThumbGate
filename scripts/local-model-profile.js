@@ -399,6 +399,112 @@ function writeModelFitReport(feedbackDir, options = {}) {
   return { reportPath, report };
 }
 
+function finiteNonNegative(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function ratioFromCounters(counters) {
+  if (!counters || typeof counters !== 'object') {
+    return { hits: null, misses: null, hitRate: null, measured: false };
+  }
+  const hits = finiteNonNegative(counters.hits);
+  const misses = finiteNonNegative(counters.misses);
+  if (hits == null || misses == null || hits + misses <= 0) {
+    return { hits, misses, hitRate: null, measured: false };
+  }
+  return {
+    hits,
+    misses,
+    hitRate: Number((hits / (hits + misses)).toFixed(4)),
+    measured: true,
+  };
+}
+
+function argvFlagValue(argv, flag) {
+  const index = argv.indexOf(flag);
+  if (index < 0) return null;
+  const raw = argv[index + 1];
+  if (raw == null || String(raw).startsWith('--')) return null;
+  return String(raw);
+}
+
+function classifyObservedServingProbe(probe) {
+  const source = probe && typeof probe === 'object' ? probe : {};
+  const health = source.health && typeof source.health === 'object' ? source.health : {};
+  const modelList = Array.isArray(source.models)
+    ? source.models
+    : (source.models && Array.isArray(source.models.data) ? source.models.data : []);
+  const firstModel = modelList[0] && typeof modelList[0] === 'object' ? modelList[0] : {};
+  const argv = Array.isArray(source.argv) ? source.argv.map((part) => String(part)) : [];
+  const versionStatus = Number(source.versionStatus);
+  const ownedBy = firstModel.owned_by ? String(firstModel.owned_by) : '';
+  const engineType = health.engine_type ? String(health.engine_type) : null;
+  const isVllmMlx = engineType === 'simple' || ownedBy === 'vllm-mlx' || argv.join(' ').includes('vllm-mlx');
+  const callerVersion = typeof source.stockVersion === 'string' ? source.stockVersion.trim() : '';
+  const stockVersion = !isVllmMlx && versionStatus === 200 && callerVersion ? callerVersion : null;
+  const modelId = health.model_name || firstModel.id || null;
+
+  let prefixEnabled = null;
+  if (argv.length > 0) prefixEnabled = argv.includes('--prefix-trie-cache');
+  if (health.prefix_trie_cache === true) prefixEnabled = true;
+  if (health.prefix_trie_cache === false) prefixEnabled = false;
+  const prefixSizeRaw = argvFlagValue(argv, '--prefix-trie-cache-size');
+  const prefixSize = prefixSizeRaw == null ? null : finiteNonNegative(prefixSizeRaw);
+
+  const cacheStats = source.cacheStats && typeof source.cacheStats === 'object' ? source.cacheStats : {};
+  const systemNode = cacheStats.engine_cache && cacheStats.engine_cache.system_kv_cache;
+  const systemKv = ratioFromCounters(systemNode && systemNode.counters);
+  const prefixNode = cacheStats.prefix_trie || cacheStats.prefixTrie || null;
+  const prefixHits = ratioFromCounters(prefixNode && (prefixNode.counters || prefixNode));
+  const connector = typeof health.kv_transfer_connector === 'string' ? health.kv_transfer_connector : null;
+  const kvCacheDtype = typeof health.kv_cache_dtype === 'string' && health.kv_cache_dtype.trim()
+    ? health.kv_cache_dtype.trim()
+    : null;
+
+  const refusedClaims = [];
+  if (!stockVersion) refusedClaims.push('stock-vllm-release');
+  if (connector !== 'NIXLConnector') refusedClaims.push('nixl-prefill-decode');
+  const continuousBatching = engineType === 'simple'
+    ? false
+    : (health.continuous_batching === true ? true : null);
+  if (continuousBatching !== true) refusedClaims.push('continuous-batching');
+  if (!kvCacheDtype) refusedClaims.push('nvfp4-kv');
+  refusedClaims.push('vendor-throughput');
+  if (!prefixHits.measured) refusedClaims.push('prefix-cache-hit-rate');
+
+  let engineFamily = 'unknown';
+  if (isVllmMlx) engineFamily = 'vllm-mlx';
+  else if (stockVersion) engineFamily = 'vllm';
+
+  return {
+    engineFamily,
+    stockVllm: Boolean(stockVersion),
+    vllmRelease: stockVersion,
+    modelId: modelId ? String(modelId) : null,
+    engineType,
+    modelLoaded: health.model_loaded === true,
+    continuousBatching,
+    kvCacheDtype,
+    prefixCache: {
+      enabled: prefixEnabled,
+      size: prefixSize,
+      hitRate: prefixHits.hitRate,
+      hitRateMeasured: prefixHits.measured,
+    },
+    systemKvCache: {
+      capacity: systemNode ? finiteNonNegative(systemNode.capacity) : null,
+      hits: systemKv.hits,
+      misses: systemKv.misses,
+      hitRate: systemKv.hitRate,
+      hitRateMeasured: systemKv.measured,
+    },
+    cacheStatsError: typeof cacheStats.error === 'string' ? cacheStats.error : null,
+    refusedClaims,
+    catalogNumbersAreMeasurements: false,
+  };
+}
+
 module.exports = {
   DEFAULT_EMBED_MODEL,
   DEFAULT_FEEDBACK_DIR,
@@ -412,6 +518,7 @@ module.exports = {
   VALID_MODEL_ROLES,
   detectHardware,
   detectInferenceBackend,
+  classifyObservedServingProbe,
   resolveEmbeddingProfile,
   resolveModelRole,
   buildModelFitReport,
