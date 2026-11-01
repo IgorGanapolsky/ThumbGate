@@ -224,6 +224,8 @@ function evaluateCrossHarnessInvariants(canonical, constraints = {}) {
     }
   }
 
+  applyOpenHandsFactoryConstraints(issues, constraints);
+
   const passed = issues.length === 0;
   const elapsed = performance.now() - start;
 
@@ -292,6 +294,214 @@ function calculateTransferScorecard(trajectory = []) {
   };
 }
 
+const OPENHANDS_FACTORY_ROLES = new Set(['triage', 'developer', 'reviewer', 'watchdog']);
+const OPENHANDS_BLOCKING_HOOK_EVENTS = new Set(['pre_tool_use', 'user_prompt_submit', 'stop']);
+
+function factoryPermissionNames(step) {
+  const names = new Set();
+  const raw = step.permissions || step.scopes;
+  if (Array.isArray(raw)) {
+    for (const item of raw) names.add(String(item));
+  } else if (raw && typeof raw === 'object') {
+    for (const [key, value] of Object.entries(raw)) {
+      if (value === true) names.add(String(key));
+    }
+  }
+  return names;
+}
+
+function factoryRecordsVendorDemo(step) {
+  return step.measuredOnTheirDemo === true
+    || step.demoMergeCount != null
+    || step.mergedPullRequestCount != null;
+}
+
+function watchdogMergeProofHolds(step) {
+  const actorId = step.actorId == null ? '' : String(step.actorId);
+  const authorId = step.authorId == null ? '' : String(step.authorId);
+  const reviewedSha = step.reviewedSha == null ? '' : String(step.reviewedSha);
+  const headSha = step.headSha == null ? '' : String(step.headSha);
+  return actorId !== ''
+    && authorId !== ''
+    && actorId !== authorId
+    && reviewedSha !== ''
+    && reviewedSha === headSha
+    && step.testsPassed === true
+    && step.reviewPassed === true;
+}
+
+function pushFactoryIssue(issues, rule, message) {
+  issues.push({ rule, severity: 'FATAL', message });
+}
+
+function watchdogReusesDeveloperToken(step) {
+  return Boolean(step.tokenId) && step.tokenId === step.developerTokenId;
+}
+
+function watchdogMergeAttempt(step, role) {
+  if (role !== 'watchdog') return false;
+  return step.action === 'merge' || step.canMerge === true || step.merging === true;
+}
+
+function collectRoleShapeIssues(step, role) {
+  const issues = [];
+  const canPush = step.canPush === true || factoryPermissionNames(step).has('contents:write');
+  if (!OPENHANDS_FACTORY_ROLES.has(role)) {
+    pushFactoryIssue(issues, 'OPENHANDS_UNKNOWN_ROLE', 'Factory role must be triage, developer, reviewer, or watchdog');
+  }
+  if (role === 'reviewer' && canPush) {
+    pushFactoryIssue(issues, 'OPENHANDS_REVIEWER_CANNOT_PUSH', 'Reviewer cannot push code');
+  }
+  if (role === 'developer' && (step.canMerge === true || step.action === 'merge')) {
+    pushFactoryIssue(issues, 'OPENHANDS_DEVELOPER_CANNOT_MERGE', 'Developer cannot merge');
+  }
+  if (role === 'watchdog' && step.startsAgent === true) {
+    pushFactoryIssue(issues, 'OPENHANDS_WATCHDOG_STARTS_NO_AGENT', 'Watchdog starts no agent');
+  }
+  if (role === 'watchdog' && watchdogReusesDeveloperToken(step)) {
+    pushFactoryIssue(issues, 'OPENHANDS_WATCHDOG_REUSES_AUTHOR_TOKEN', 'Watchdog must not reuse the developer token');
+  }
+  return issues;
+}
+
+function collectMergeIssues(step, role) {
+  const issues = [];
+  if (step.action === 'merge' && role !== 'watchdog') {
+    pushFactoryIssue(issues, 'OPENHANDS_ONLY_WATCHDOG_MERGES', 'Only the watchdog may merge');
+  } else if (step.canMerge === true && role !== 'watchdog' && role !== 'developer') {
+    pushFactoryIssue(issues, 'OPENHANDS_ONLY_WATCHDOG_MERGES', 'Only the watchdog may merge');
+  }
+  if (watchdogMergeAttempt(step, role) && !watchdogMergeProofHolds(step)) {
+    pushFactoryIssue(issues, 'OPENHANDS_WATCHDOG_MERGE_REFUSED', 'Watchdog merge needs a different actor, the reviewed head, passing tests, and a passing review');
+  }
+  return issues;
+}
+
+/**
+ * Decides whether one OpenHands software-factory step is allowed.
+ * Reviewer cannot push. Developer cannot merge. Watchdog starts no agent
+ * and merges only a different actor's exact reviewed head after tests and review pass.
+ *
+ * @param {Object} step
+ * @returns {Object}
+ */
+function evaluateOpenHandsFactoryStep(step = {}) {
+  const source = step || {};
+  const role = String(source.role || source.factoryRole || '').trim().toLowerCase();
+  const issues = collectRoleShapeIssues(source, role).concat(collectMergeIssues(source, role));
+  const spend = Number(source.outboundSpendUsd);
+  if (Number.isFinite(spend) && spend > 0) {
+    issues.push({
+      rule: 'OPENHANDS_OUTBOUND_SPEND',
+      severity: 'FATAL',
+      message: 'Factory step spends outbound cash'
+    });
+  }
+  if (factoryRecordsVendorDemo(source)) {
+    issues.push({
+      rule: 'OPENHANDS_VENDOR_DEMO_NOT_MEASUREMENT',
+      severity: 'FATAL',
+      message: 'A vendor demo count is not a ThumbGate measurement'
+    });
+  }
+  return {
+    allowed: issues.length === 0,
+    role: OPENHANDS_FACTORY_ROLES.has(role) ? role : null,
+    issues,
+    measuredOnTheirDemo: false
+  };
+}
+
+function factoryConstraintKeysPresent(constraints) {
+  if (!constraints || typeof constraints !== 'object') return false;
+  return Object.prototype.hasOwnProperty.call(constraints, 'factoryRole')
+    || Object.prototype.hasOwnProperty.call(constraints, 'reviewedSha')
+    || Object.prototype.hasOwnProperty.call(constraints, 'headSha');
+}
+
+function applyOpenHandsFactoryConstraints(issues, constraints) {
+  if (!factoryConstraintKeysPresent(constraints)) return;
+  const verdict = evaluateOpenHandsFactoryStep({
+    role: constraints.factoryRole,
+    canPush: constraints.canPush,
+    canMerge: constraints.canMerge,
+    startsAgent: constraints.startsAgent,
+    permissions: constraints.permissions,
+    action: constraints.action,
+    merging: constraints.merging,
+    actorId: constraints.actorId,
+    authorId: constraints.authorId,
+    reviewedSha: constraints.reviewedSha,
+    headSha: constraints.headSha,
+    testsPassed: constraints.testsPassed,
+    reviewPassed: constraints.reviewPassed,
+    outboundSpendUsd: constraints.outboundSpendUsd,
+    tokenId: constraints.tokenId,
+    developerTokenId: constraints.developerTokenId,
+    measuredOnTheirDemo: constraints.measuredOnTheirDemo,
+    demoMergeCount: constraints.demoMergeCount,
+    mergedPullRequestCount: constraints.mergedPullRequestCount
+  });
+  if (!verdict.allowed) {
+    for (const issue of verdict.issues) issues.push(issue);
+  }
+}
+
+function normalizeHookEvent(name) {
+  return String(name || '')
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[\s-]+/g, '_')
+    .toLowerCase();
+}
+
+/**
+ * Interprets one OpenHands lifecycle hook result.
+ * PascalCase and snake_case event names match. A background hook never blocks.
+ * PostToolUse, SessionStart, and SessionEnd never block. Stop stays denied
+ * until checksPassed is true. A JSON decision overrides the exit code.
+ *
+ * @param {Object} hook
+ * @returns {Object}
+ */
+function interpretOpenHandsHookResult(hook = {}) {
+  const source = hook || {};
+  const event = normalizeHookEvent(source.event || source.hookEvent || source.hook_event_name);
+  const exitCode = Number(source.exitCode ?? source.exit_code ?? 0);
+  const decision = String(source.decision || '').trim().toLowerCase();
+  const asyncHook = source.async === true;
+  const checksPassed = source.checksPassed === true || source.checks_passed === true;
+  const reasons = [];
+  const eventCanBlock = OPENHANDS_BLOCKING_HOOK_EVENTS.has(event);
+  let blocked = false;
+
+  if (asyncHook) {
+    if (decision === 'deny' || exitCode === 2) reasons.push('async_hook_cannot_block');
+  } else if (!eventCanBlock) {
+    if (decision === 'deny' || exitCode === 2) reasons.push('event_cannot_block');
+  } else if (event === 'stop' && !checksPassed) {
+    blocked = true;
+    reasons.push('stop_without_checks_passed');
+  } else if (decision === 'deny') {
+    blocked = true;
+    reasons.push('decision_deny');
+  } else if (decision === 'allow') {
+    blocked = false;
+  } else if (exitCode === 2) {
+    blocked = true;
+    reasons.push('exit_2');
+  }
+
+  return {
+    event,
+    blocked,
+    proceeds: blocked === false,
+    reasons,
+    asyncHook,
+    canBlock: eventCanBlock && asyncHook === false
+  };
+}
+
 module.exports = {
   HARNESS_CLAUDE_CODE,
   HARNESS_ANTIGRAVITY,
@@ -301,5 +511,7 @@ module.exports = {
   SUPPORTED_HARNESSES,
   normalizeToCanonicalAction,
   evaluateCrossHarnessInvariants,
-  calculateTransferScorecard
+  calculateTransferScorecard,
+  evaluateOpenHandsFactoryStep,
+  interpretOpenHandsHookResult
 };

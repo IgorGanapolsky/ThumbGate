@@ -9,7 +9,9 @@ const {
   HARNESS_OPENHANDS,
   normalizeToCanonicalAction,
   evaluateCrossHarnessInvariants,
-  calculateTransferScorecard
+  calculateTransferScorecard,
+  evaluateOpenHandsFactoryStep,
+  interpretOpenHandsHookResult
 } = require('../scripts/multi-harness-invariants');
 
 describe('Multi-Harness Invariants & Transfer Evaluation', () => {
@@ -209,6 +211,204 @@ describe('Multi-Harness Invariants & Transfer Evaluation', () => {
     assert.equal(singleHarness.totalActions, 1);
     assert.equal(singleHarness.harnessesObserved.length, 1);
     assert.ok(singleHarness.transferReward > 0);
+  });
+
+  test('allows the four factory roles and one exact-head watchdog merge', () => {
+    for (const role of ['triage', 'developer', 'reviewer']) {
+      const verdict = evaluateOpenHandsFactoryStep({ role, outboundSpendUsd: 0 });
+      assert.equal(verdict.allowed, true, role);
+      assert.equal(verdict.measuredOnTheirDemo, false);
+    }
+
+    const developerWrite = evaluateOpenHandsFactoryStep({
+      role: 'developer',
+      permissions: ['contents:write']
+    });
+    assert.equal(developerWrite.allowed, true);
+
+    const reviewerRead = evaluateOpenHandsFactoryStep({
+      role: 'reviewer',
+      permissions: { 'contents:read': true, 'pull_requests:write': true }
+    });
+    assert.equal(reviewerRead.allowed, true);
+
+    const merge = evaluateOpenHandsFactoryStep({
+      role: 'watchdog',
+      canMerge: true,
+      actorId: 'review-bot',
+      authorId: 'dev-bot',
+      reviewedSha: 'abc123',
+      headSha: 'abc123',
+      testsPassed: true,
+      reviewPassed: true,
+      startsAgent: false,
+      outboundSpendUsd: 0
+    });
+    assert.equal(merge.allowed, true);
+    assert.equal(merge.role, 'watchdog');
+    assert.equal(Object.hasOwn(merge, 'demoMergeCount'), false);
+  });
+
+  test('refuses a reviewer push, a developer merge, and a watchdog that starts work', () => {
+    const reviewerPush = evaluateOpenHandsFactoryStep({ role: 'reviewer', canPush: true });
+    assert.equal(reviewerPush.allowed, false);
+    assert.equal(reviewerPush.issues[0].rule, 'OPENHANDS_REVIEWER_CANNOT_PUSH');
+
+    const reviewerWrite = evaluateOpenHandsFactoryStep({
+      role: 'reviewer',
+      permissions: ['contents:write']
+    });
+    assert.equal(reviewerWrite.allowed, false);
+    assert.ok(reviewerWrite.issues.some((issue) => issue.rule === 'OPENHANDS_REVIEWER_CANNOT_PUSH'));
+
+    const developerMerge = evaluateOpenHandsFactoryStep({ role: 'developer', canMerge: true });
+    assert.equal(developerMerge.allowed, false);
+    assert.equal(developerMerge.issues[0].rule, 'OPENHANDS_DEVELOPER_CANNOT_MERGE');
+
+    const startsAgent = evaluateOpenHandsFactoryStep({ role: 'watchdog', startsAgent: true });
+    assert.equal(startsAgent.allowed, false);
+    assert.equal(startsAgent.issues[0].rule, 'OPENHANDS_WATCHDOG_STARTS_NO_AGENT');
+
+    const unknown = evaluateOpenHandsFactoryStep({ role: 'owner' });
+    assert.equal(unknown.allowed, false);
+    assert.equal(unknown.role, null);
+    assert.equal(unknown.issues[0].rule, 'OPENHANDS_UNKNOWN_ROLE');
+
+    const spend = evaluateOpenHandsFactoryStep({ role: 'triage', outboundSpendUsd: 1 });
+    assert.equal(spend.allowed, false);
+    assert.ok(spend.issues.some((issue) => issue.rule === 'OPENHANDS_OUTBOUND_SPEND'));
+  });
+
+  test('refuses a watchdog merge unless the actor, head, tests, and review all match', () => {
+    const sameActor = evaluateOpenHandsFactoryStep({
+      role: 'watchdog',
+      action: 'merge',
+      actorId: 'dev-bot',
+      authorId: 'dev-bot',
+      reviewedSha: 'abc123',
+      headSha: 'abc123',
+      testsPassed: true,
+      reviewPassed: true
+    });
+    assert.equal(sameActor.allowed, false);
+    assert.ok(sameActor.issues.some((issue) => issue.rule === 'OPENHANDS_WATCHDOG_MERGE_REFUSED'));
+
+    const movedHead = evaluateOpenHandsFactoryStep({
+      role: 'watchdog',
+      canMerge: true,
+      actorId: 'review-bot',
+      authorId: 'dev-bot',
+      reviewedSha: 'abc123',
+      headSha: 'def456',
+      testsPassed: true,
+      reviewPassed: true
+    });
+    assert.equal(movedHead.allowed, false);
+
+    const testsFailed = evaluateOpenHandsFactoryStep({
+      role: 'watchdog',
+      merging: true,
+      actorId: 'review-bot',
+      authorId: 'dev-bot',
+      reviewedSha: 'abc123',
+      headSha: 'abc123',
+      testsPassed: false,
+      reviewPassed: true
+    });
+    assert.equal(testsFailed.allowed, false);
+
+    const reusedToken = evaluateOpenHandsFactoryStep({
+      role: 'watchdog',
+      canMerge: true,
+      actorId: 'review-bot',
+      authorId: 'dev-bot',
+      reviewedSha: 'abc123',
+      headSha: 'abc123',
+      testsPassed: true,
+      reviewPassed: true,
+      tokenId: 'dev-token',
+      developerTokenId: 'dev-token'
+    });
+    assert.equal(reusedToken.allowed, false);
+    assert.ok(reusedToken.issues.some((issue) => issue.rule === 'OPENHANDS_WATCHDOG_REUSES_AUTHOR_TOKEN'));
+
+    const vendorDemo = evaluateOpenHandsFactoryStep({ role: 'watchdog', demoMergeCount: 6 });
+    assert.equal(vendorDemo.allowed, false);
+    assert.equal(vendorDemo.measuredOnTheirDemo, false);
+    assert.equal(JSON.stringify(vendorDemo).includes('6'), false);
+    assert.ok(vendorDemo.issues.some((issue) => issue.rule === 'OPENHANDS_VENDOR_DEMO_NOT_MEASUREMENT'));
+  });
+
+  test('applies factory rules only when the caller passes a factory constraint', () => {
+    const command = { domain: 'shell', operation: 'exec', target: 'gh pr merge 1' };
+    const plain = evaluateCrossHarnessInvariants(command);
+    assert.equal(plain.valid, true);
+
+    const developer = evaluateCrossHarnessInvariants(command, {
+      factoryRole: 'developer',
+      canMerge: true
+    });
+    assert.equal(developer.valid, false);
+    assert.ok(developer.issues.some((issue) => issue.rule === 'OPENHANDS_DEVELOPER_CANNOT_MERGE'));
+
+    const watchdog = evaluateCrossHarnessInvariants(command, {
+      factoryRole: 'watchdog',
+      canMerge: true,
+      actorId: 'review-bot',
+      authorId: 'dev-bot',
+      reviewedSha: 'abc123',
+      headSha: 'abc123',
+      testsPassed: true,
+      reviewPassed: true
+    });
+    assert.equal(watchdog.valid, true);
+  });
+
+  test('blocks a hook only when that event can block and the hook is not async', () => {
+    const exitBlock = interpretOpenHandsHookResult({ event: 'PreToolUse', exitCode: 2 });
+    assert.equal(exitBlock.event, 'pre_tool_use');
+    assert.equal(exitBlock.blocked, true);
+    assert.equal(exitBlock.reasons[0], 'exit_2');
+
+    const decisionDeny = interpretOpenHandsHookResult({ event: 'pre_tool_use', exitCode: 0, decision: 'deny' });
+    assert.equal(decisionDeny.blocked, true);
+    assert.equal(decisionDeny.reasons[0], 'decision_deny');
+
+    const decisionAllow = interpretOpenHandsHookResult({ event: 'pre_tool_use', exitCode: 2, decision: 'allow' });
+    assert.equal(decisionAllow.blocked, false);
+    assert.equal(decisionAllow.proceeds, true);
+
+    const otherExit = interpretOpenHandsHookResult({ event: 'UserPromptSubmit', exitCode: 1 });
+    assert.equal(otherExit.blocked, false);
+
+    const promptBlock = interpretOpenHandsHookResult({ event: 'user_prompt_submit', exit_code: 2 });
+    assert.equal(promptBlock.blocked, true);
+
+    const asyncDeny = interpretOpenHandsHookResult({ event: 'PreToolUse', async: true, exitCode: 2, decision: 'deny' });
+    assert.equal(asyncDeny.blocked, false);
+    assert.equal(asyncDeny.canBlock, false);
+    assert.equal(asyncDeny.reasons[0], 'async_hook_cannot_block');
+
+    for (const event of ['PostToolUse', 'post_tool_use', 'SessionStart', 'session_end']) {
+      const ignored = interpretOpenHandsHookResult({ event, exitCode: 2, decision: 'deny' });
+      assert.equal(ignored.blocked, false, event);
+      assert.equal(ignored.reasons[0], 'event_cannot_block');
+    }
+
+    const stopEarly = interpretOpenHandsHookResult({ event: 'Stop', exitCode: 0, checksPassed: false, decision: 'allow' });
+    assert.equal(stopEarly.blocked, true);
+    assert.equal(stopEarly.reasons[0], 'stop_without_checks_passed');
+
+    const stopSnake = interpretOpenHandsHookResult({ event: 'stop', exitCode: 0, checks_passed: false });
+    assert.equal(stopSnake.blocked, true);
+
+    const stopDone = interpretOpenHandsHookResult({ event: 'Stop', exitCode: 0, checksPassed: true });
+    assert.equal(stopDone.blocked, false);
+    assert.equal(stopDone.proceeds, true);
+
+    const stopDeny = interpretOpenHandsHookResult({ event: 'Stop', exitCode: 0, checksPassed: true, decision: 'deny' });
+    assert.equal(stopDeny.blocked, true);
+    assert.equal(stopDeny.reasons[0], 'decision_deny');
   });
 });
 
