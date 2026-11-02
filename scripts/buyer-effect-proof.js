@@ -247,6 +247,7 @@ async function run() {
       unknown: cases.filter((c) => c.result === 'UNKNOWN').length,
     },
     scopeNote: 'Supports only the cases and adapter executed here. Not proof of preventing every prompt injection, secret leak or unauthorized action. No revenue or savings effect measured.',
+    entitlements: 'Free tier observed during this run (intervention-policy features advisory-only, no paid license); governanceMode=sidecar. Paid or strict-tier behavior is not represented.',
     scopeCoverage: 'Case-level results only; broader mid-session scope-change coverage remains UNKNOWN (see E-repetition-scope). Documentation limitation observed, not fixed: the README blanket claim "hard-blocks detected secret leaks by default" is not justified on the Bash path - an inline secret literal (Anthropic key, GitHub PAT, and RSA PEM formats checked) inside a curl command is caught only as WARN by the deny-network-egress gate, not denied by the secret-exfiltration hard floor.',
     cases,
   };
