@@ -359,4 +359,15 @@ test('an open loop refuses a missing source, a second briefing, and another pric
   const leaked = assessOpenLoop(sourcedLoop({ source: `https://example.invalid/${secret}` }));
   assert.equal(leaked.reason, 'secret_present');
   assert.equal(JSON.stringify(leaked).includes(secret), false);
+
+  const oneLine = assessOpenLoop(sourcedLoop({ briefing: ['One line for the review.'] }));
+  assert.equal(oneLine.allow, true);
+  assert.equal(oneLine.briefing, 'One line for the review.');
+
+  let nested = secret;
+  for (let depth = 0; depth < 8; depth += 1) nested = [nested];
+  const buried = assessOpenLoop(sourcedLoop({ briefing: [nested] }));
+  assert.equal(buried.allow, false);
+  assert.equal(buried.reason, 'briefing_not_text');
+  assert.equal(JSON.stringify(buried).includes(secret), false);
 });

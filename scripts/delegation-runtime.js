@@ -1010,7 +1010,11 @@ function assessOpenLoop(input) {
   let briefing = null;
   if (typeof input.briefing === 'string') briefing = input.briefing.trim() || null;
   else if (Array.isArray(input.briefing) && input.briefing.length === 1) {
-    briefing = String(input.briefing[0] || '').trim() || null;
+    if (typeof input.briefing[0] !== 'string') return openLoopHold({ reason: 'briefing_not_text' });
+    briefing = input.briefing[0].trim() || null;
+  }
+  if (briefing && /\b(?:sk-[A-Za-z0-9]{8,}|ghp_[A-Za-z0-9]{8,}|rfl_[A-Za-z0-9]{8,})\b/.test(briefing)) {
+    return openLoopHold({ reason: 'secret_present' });
   }
   return { ...record, reason: 'open_loop', action: 'record', briefing };
 }
