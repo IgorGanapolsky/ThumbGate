@@ -31,6 +31,34 @@ test('lintPack accepts the gold agent pack', () => {
   assert.deepEqual(lintPack(pack, GOLD_CLOCK).filter((f) => f.severity === 'fail'), []);
 });
 
+test('claim citations resolve to unique source ids', () => {
+  const pack = JSON.parse(fs.readFileSync(GOLD, 'utf8'));
+  assert.deepEqual(lintPack(pack, GOLD_CLOCK).filter((f) => f.severity === 'fail'), []);
+
+  pack.claims[0].sourceIds = ['missing-source'];
+  assert.ok(lintPack(pack, GOLD_CLOCK).some((f) => f.id === 'claim_source_unknown'));
+
+  pack.claims[0].text = '';
+  assert.ok(lintPack(pack, GOLD_CLOCK).some((f) => f.id === 'claim_text_missing'));
+
+  pack.claims = [];
+  assert.ok(lintPack(pack, GOLD_CLOCK).some((f) => f.id === 'claims_invalid'));
+
+  pack.claims = [{ text: 'Auditable statement.', sourceIds: ['memory-log'] }];
+  pack.claims[0].sourceIds = [];
+  assert.ok(lintPack(pack, GOLD_CLOCK).some((f) => f.id === 'claim_sources_missing'));
+
+  pack.claims[0].sourceIds = ['memory-log'];
+  pack.sources.push({ id: 'memory-log', path: 'other-copy.jsonl' });
+  assert.ok(lintPack(pack, GOLD_CLOCK).some((f) => f.id === 'source_id_duplicated'));
+});
+
+test('claim citations remain optional for existing agent packs', () => {
+  const pack = JSON.parse(fs.readFileSync(GOLD, 'utf8'));
+  delete pack.claims;
+  assert.deepEqual(lintPack(pack, GOLD_CLOCK).filter((f) => f.severity === 'fail'), []);
+});
+
 test('lintPack fails human-consumer packs missing fields and wisdom_ai wrong-fit', () => {
   const pack = JSON.parse(fs.readFileSync(HUMAN, 'utf8'));
   const ids = lintPack(pack).map((f) => f.id);

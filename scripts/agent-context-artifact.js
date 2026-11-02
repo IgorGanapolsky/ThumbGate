@@ -105,6 +105,74 @@ function lintPack(pack = {}, options = {}) {
     }
   }
 
+  if (Object.hasOwn(pack, 'claims')) {
+    if (!Array.isArray(pack.claims) || pack.claims.length === 0) {
+      findings.push({
+        severity: 'fail',
+        id: 'claims_invalid',
+        message: 'claims must be a non-empty array when provided.',
+      });
+    } else {
+      const sourceIds = new Set();
+      const duplicateSourceIds = new Set();
+      for (const source of sources) {
+        const id = source && typeof source === 'object' && typeof source.id === 'string'
+          ? source.id.trim()
+          : '';
+        if (!id) continue;
+        if (sourceIds.has(id)) duplicateSourceIds.add(id);
+        sourceIds.add(id);
+      }
+
+      for (const id of duplicateSourceIds) {
+        findings.push({
+          severity: 'fail',
+          id: 'source_id_duplicated',
+          message: `Source id "${id}" is ambiguous; claims cannot cite it reliably.`,
+        });
+      }
+
+      pack.claims.forEach((claim, index) => {
+        const label = `Claim ${index + 1}`;
+        if (!claim || typeof claim !== 'object' || Array.isArray(claim)) {
+          findings.push({
+            severity: 'fail',
+            id: 'claim_invalid',
+            message: `${label} must be an object with text and sourceIds.`,
+          });
+          return;
+        }
+        if (typeof claim.text !== 'string' || !claim.text.trim()) {
+          findings.push({
+            severity: 'fail',
+            id: 'claim_text_missing',
+            message: `${label} needs non-empty text to make the claim auditable.`,
+          });
+        }
+
+        const citedIds = asList(claim.sourceIds)
+          .filter((id) => typeof id === 'string' && id.trim())
+          .map((id) => id.trim());
+        if (citedIds.length === 0) {
+          findings.push({
+            severity: 'fail',
+            id: 'claim_sources_missing',
+            message: `${label} needs at least one sourceIds entry.`,
+          });
+        }
+        for (const id of citedIds) {
+          if (!sourceIds.has(id)) {
+            findings.push({
+              severity: 'fail',
+              id: 'claim_source_unknown',
+              message: `${label} cites unknown source id "${id}".`,
+            });
+          }
+        }
+      });
+    }
+  }
+
   const freshness = pack.freshness && typeof pack.freshness === 'object' ? pack.freshness : {};
   const maxAgeHours = Number(freshness.maxAgeHours);
   const asOf = freshness.asOf ? Date.parse(String(freshness.asOf)) : NaN;

@@ -20,6 +20,26 @@ Does **not** clone Adaptive Context Engine, Palantir Foundry, or Snowflake Open 
 
 Complements six-block SKILL.md packs and ContextFS. Does not replace them.
 
+## Claim citations
+
+`claims` is an optional array for packs that need sentence-level provenance.
+Each claim has non-empty `text` and one or more `sourceIds`, each resolving to a
+unique `id` in `sources`. Unknown or ambiguous IDs fail validation; the doctor
+does not infer support or fabricate citations. Existing packs without `claims`
+remain valid. `freshness` describes the pack's `asOf` time and is not a
+per-source publication-date check.
+
+```json
+{
+  "claims": [
+    {
+      "text": "An auditable statement.",
+      "sourceIds": ["source-id"]
+    }
+  ]
+}
+```
+
 ## CLI
 
 ```bash

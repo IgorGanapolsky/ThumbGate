@@ -10,6 +10,12 @@
     { "id": "memory-log", "path": ".claude/memory/feedback/memory-log.jsonl" },
     { "id": "prevention-rules", "path": ".claude/memory/feedback/prevention-rules.md" }
   ],
+  "claims": [
+    {
+      "text": "PreToolUse context should use promoted, matchable lessons rather than the raw feedback log.",
+      "sourceIds": ["memory-log", "prevention-rules"]
+    }
+  ],
   "freshness": {
     "maxAgeHours": 24,
     "asOf": "2026-09-16T12:00:00Z"
