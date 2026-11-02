@@ -228,6 +228,30 @@ test('shouldEscalate returns escalation for two consecutive mini failures', () =
   assert.ok(r.reason.includes('consecutive'));
 });
 
+test('shouldEscalate does not apply mini failures when the current task routes to nano', () => {
+  const history = [
+    { tier: 'mini', success: false },
+    { tier: 'mini', success: false },
+  ];
+  const r = shouldEscalate({ type: 'classification' }, history);
+
+  assert.equal(r.escalate, false);
+  assert.equal(r.from, 'nano');
+  assert.equal(r.to, 'nano');
+});
+
+test('shouldEscalate does not report escalation when the current task is already frontier', () => {
+  const history = [
+    { tier: 'mini', success: false },
+    { tier: 'mini', success: false },
+  ];
+  const r = shouldEscalate({ type: 'architecture' }, history);
+
+  assert.equal(r.escalate, false);
+  assert.equal(r.from, 'frontier');
+  assert.equal(r.to, 'frontier');
+});
+
 test('shouldEscalate returns no escalation for single failure', () => {
   const task = { type: 'code-edit' };
   const history = [{ tier: 'mini', success: false }];

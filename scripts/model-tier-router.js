@@ -169,7 +169,7 @@ function shouldEscalate(task = {}, history = []) {
   }
 
   // 4. Two consecutive failures at mini tier
-  if (history.length >= 2) {
+  if (currentTier === 'mini' && history.length >= 2) {
     const lastTwo = history.slice(-2);
     if (lastTwo.every((h) => h.tier === 'mini' && !h.success)) {
       return {
