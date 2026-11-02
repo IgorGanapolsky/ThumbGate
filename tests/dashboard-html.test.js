@@ -196,13 +196,14 @@ test('dashboard and thumbgate.ai homepage provide SSO Login/Logout buttons and i
   assert.match(dashboard, /function createCustomerProject\(\)/);
   assert.match(dashboard, /never auto-load demo/);
 
-  assert.match(indexHtml, /id="homeSsoSignInBtn"/);
-  assert.match(indexHtml, /id="homeSsoLogoutBtn"/);
+  assert.match(dashboard, /id="navSsoLogoutBtn"[^>]*style="display:none;/);
+  assert.match(indexHtml, /id="homeSsoSignInBtn"[^>]*style="display:inline-flex;/);
+  assert.match(indexHtml, /id="homeSsoLogoutBtn"[^>]*style="display:none;/);
+  assert.match(indexHtml, /id="homeSsoBar"[^>]*style="display:none;/);
   assert.match(indexHtml, /id="homeProjectSelect"/);
   assert.match(indexHtml, /window\.tgHomeSsoLogin = async function/);
   assert.match(indexHtml, /window\.tgCreateHomeProject = async function/);
   assert.match(indexHtml, /window\.tgHomeLogout = async function/);
-
   const authRes = firewall.initiateEnterpriseSso({
     provider: 'google',
     email: 'customer-sso@thumbgate.ai',
