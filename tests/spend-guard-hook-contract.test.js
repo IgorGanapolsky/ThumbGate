@@ -327,3 +327,29 @@ test('read-only payment APIs and inert price prose remain allowed', () => {
     { decision: 'allow' },
   );
 });
+
+test('quoted side effects and bare done-claims deny in the hook after spend allows them', () => {
+  const quoted = { file_path: 'package.json', quotedUsd: 0.01, ledgerReadable: true };
+  assert.deepEqual(evaluateSpend('Read', quoted), { decision: 'allow' });
+  const held = runGuard({ tool_name: 'Read', tool_input: quoted });
+  assert.equal(held.code, 2);
+  assert.match(held.stdout, /"permissionDecision":"deny"/);
+  assert.match(held.stdout, /oneshot-control/);
+
+  const plain = runGuard({ tool_name: 'Read', tool_input: { file_path: 'package.json' } });
+  assert.equal(plain.code, 0);
+  assert.equal(plain.stdout, '');
+
+  const done = runGuard({
+    tool_name: 'record_task_outcome',
+    tool_input: {
+      status: 'completed',
+      workerId: 'worker',
+      confirmerId: 'owner',
+      modelSaysDone: true,
+    },
+  });
+  assert.equal(done.code, 2);
+  assert.match(done.stdout, /"permissionDecision":"deny"/);
+  assert.match(done.stdout, /oneshot-goal-done/);
+});

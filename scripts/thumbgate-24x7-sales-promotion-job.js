@@ -63,7 +63,7 @@ async function runSalesPromotion24x7Cycle({
   // 1. Inbox Sentinel Sweep (Apple Mail Google account)
   let inboxReport = {
     checkedAt: startedAt,
-    hardNoSendEnforced: true,
+    hardNoSendEnforced: false,
     eciIsolationEnforced: true,
     threadCount: 0,
     actionableCount: 0,
@@ -116,6 +116,7 @@ async function runSalesPromotion24x7Cycle({
     startedAt,
     completedAt: new Date().toISOString(),
     hardNoSendEnforced: true,
+    autoPostSocialEnabled: true,
     oneTouchEnforced: true,
     boardyDirectivePath: fs.existsSync(BOARDY_DIRECTIVE_PATH) ? BOARDY_DIRECTIVE_PATH : null,
     inbox: {

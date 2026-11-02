@@ -540,7 +540,13 @@ function main() {
   let hardFloorOutput;
   try {
     hardFloorOutput = runHardFloor(
-      { tool_name: toolName, tool_input: effectiveInput },
+      {
+        tool_name: toolName,
+        tool_input: effectiveInput,
+        session_id: input.session_id || input.sessionId || '',
+        agent_id: input.agent_id || input.agentId || '',
+        conversation_id: input.conversation_id || input.conversationId || '',
+      },
       getFinancialControlRuntimeOptions()
     );
   } catch (error) {
@@ -554,6 +560,10 @@ function main() {
       const parsed = JSON.parse(hardFloorOutput);
       const hook = parsed.hookSpecificOutput || {};
       if (hook.permissionDecision === 'deny') {
+        if (parsed.continue === false) {
+          process.stdout.write(hardFloorOutput.endsWith('\n') ? hardFloorOutput : `${hardFloorOutput}\n`);
+          process.exit(0);
+        }
         return block(hook.permissionDecisionReason || 'ThumbGate hard floor denied this action.');
       }
     } catch (err) {

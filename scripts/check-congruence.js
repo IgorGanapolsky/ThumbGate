@@ -357,11 +357,11 @@ async function main() {
   );
   check(
     /\$(?:499|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__)/.test(landingHtml)
-      && /Managed AI Agent Workflow Gate/i.test(landingHtml),
+      && /Setup Sprint/i.test(landingHtml),
     'public/index.html must expose the $499 managed gate offer'
   );
   check(
-    /\/checkout\/pro/i.test(landingHtml) && /\$19\/mo/i.test(landingHtml),
+    (/\/checkout\/pro/i.test(landingHtml) || /\/go\/pro-direct/i.test(landingHtml)) && /\$19\/mo/i.test(landingHtml),
     'public/index.html must expose self-serve Pro at $19/mo alongside the managed gate'
   );
   check(

@@ -584,14 +584,14 @@ test('/diagnostic serves the managed workflow gate checkout and fit page', async
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
-  assert.match(html, /Enterprise Workflow Gate/);
+  assert.match(html, /Setup Sprint/);
   assert.match(html, /Submit for fit check/);
   assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
   assert.match(html, /name="planId" value="diagnostic"/);
   assert.match(html, /name="ctaId" value="diagnostic_page_intake"/);
   assert.match(html, /workflow_sprint_intake_submit_attempted/);
-  assert.match(html, /Buy the \$499 enterprise gate/);
-  assert.match(html, /Exactly what the \$499 Enterprise Workflow Gate includes/);
+  assert.match(html, /Book the \$499 setup/);
+  assert.match(html, /Exactly what the \$499 Setup Sprint includes/);
   assert.match(html, /one 60-minute working review/i);
   assert.match(html, /one configured local gate and regression test/i);
   assert.match(html, /rollout and rollback proof within two business days/i);
@@ -611,7 +611,7 @@ test('/workflow-hardening-sprint and diagnostic aliases serve the focused diagno
     assert.equal(res.status, 200, `${route} should render`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Enterprise Workflow Gate/);
+    assert.match(html, /Setup Sprint/);
     assert.match(html, /<link rel="canonical" href="https:\/\/app\.example\.com\/diagnostic"/);
   }
 });
@@ -905,11 +905,11 @@ test('root serves the landing page by default', async () => {
   const body = await res.text();
   assert.match(body, /ThumbGate/);
   assert.match(body, /Stop AI agent mistakes before they cost you/i);
-  assert.match(body, /Enterprise Workflow Gate/i);
+  assert.match(body, /Setup Sprint/i);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(body, /Buy the \$499 enterprise gate/i);
+  assert.match(body, /Book the \$499 setup/i);
   assert.match(body, /Start Pro — \$19\/mo/i);
-  assert.match(body, /\/checkout\/pro/);
+  assert.match(body, /\/go\/pro-direct/);
   assert.match(body, /One configured local gate and its regression test/i);
   assert.match(body, /warn by default/i);
   assert.match(body, /strict mode/i);
@@ -1861,6 +1861,27 @@ test('tracked link router rejects unknown slugs instead of acting as an open red
   assert.equal(body.error, 'Tracked link not found');
   assert.ok(body.allowed.includes('gpt'));
   assert.ok(body.allowed.includes('pro'));
+});
+
+test('tracked link router lowercases and strips characters outside the slug alphabet', async () => {
+  const gptRes = await fetch(apiUrl('/go/GPT'), { redirect: 'manual' });
+  assert.equal(gptRes.status, 302);
+  assert.equal(gptRes.headers.get('x-thumbgate-link-slug'), 'gpt');
+  assert.equal(new URL(gptRes.headers.get('location')).host, 'chatgpt.com');
+
+  const proRes = await fetch(apiUrl('/go/Pro!'), { redirect: 'manual' });
+  assert.equal(proRes.status, 302);
+  assert.equal(proRes.headers.get('x-thumbgate-link-slug'), 'pro');
+  assert.equal(new URL(proRes.headers.get('location')).pathname, '/checkout/pro');
+
+  const encodedSpace = await fetch(apiUrl('/go/%20GPT'), { redirect: 'manual' });
+  assert.equal(encodedSpace.status, 404);
+
+  const stripped = await fetch(apiUrl('/go/!!!?url=https://evil.example'), { redirect: 'manual' });
+  assert.equal(stripped.status, 404);
+  const body = await stripped.json();
+  assert.equal(body.error, 'Tracked link not found');
+  assert.equal(stripped.headers.get('location'), null);
 });
 
 test('SEO comparison pages serve HTML, reuse journey cookies, and record page-specific search telemetry', async () => {
@@ -3144,6 +3165,63 @@ test('product feedback endpoint logs local issue reports without auth', async ()
     assert.match(latest.title, /^\[Feature\]/);
     assert.equal(latest.category, 'feature');
     assert.equal(latest.source, 'dashboard feedback widget');
+  } finally {
+    if (originalGithubToken === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = originalGithubToken;
+    if (originalGhToken === undefined) delete process.env.GH_TOKEN;
+    else process.env.GH_TOKEN = originalGhToken;
+  }
+});
+
+test('product feedback reason chips require a reason and keep the detail on the same note', async () => {
+  const originalGithubToken = process.env.GITHUB_TOKEN;
+  const originalGhToken = process.env.GH_TOKEN;
+  delete process.env.GITHUB_TOKEN;
+  delete process.env.GH_TOKEN;
+  try {
+    const badDetail = await fetch(apiUrl('/api/feedback/submit'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reasons: ['solved-the-task'], details: { toString: null } }),
+    });
+    assert.equal(badDetail.status, 400);
+    assert.equal((await badDetail.json()).error, 'details must be a string');
+
+    const empty = await fetch(apiUrl('/api/feedback/submit'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reasons: [], details: 'this detail has no reason' }),
+    });
+    assert.equal(empty.status, 400);
+    assert.equal((await empty.json()).error, 'pick a reason');
+
+    const otherOnly = await fetch(apiUrl('/api/feedback/submit'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reasons: ['other'], details: 'no' }),
+    });
+    assert.equal(otherOnly.status, 400);
+    assert.equal((await otherOnly.json()).error, 'add a short detail for Other');
+
+    const filed = await fetch(apiUrl('/api/feedback/submit'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        reasons: ['blocked-the-wrong-thing', 'solved-the-task'],
+        details: 'it stopped a safe test command',
+      }),
+    });
+    assert.equal(filed.status, 200);
+    const body = await filed.json();
+    assert.equal(body.success, true);
+    assert.equal(body.issueNumber, null);
+
+    const entries = readJsonl(path.join(tmpFeedbackDir, 'user-feedback.jsonl'));
+    const latest = entries.at(-1);
+    assert.match(latest.title, /^\[Bug\]/);
+    assert.equal(latest.category, 'bug');
+    assert.match(latest.body, /Blocked the wrong thing/);
+    assert.match(latest.body, /it stopped a safe test command/);
   } finally {
     if (originalGithubToken === undefined) delete process.env.GITHUB_TOKEN;
     else process.env.GITHUB_TOKEN = originalGithubToken;

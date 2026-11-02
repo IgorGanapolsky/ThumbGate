@@ -47,7 +47,7 @@ test.describe('/pricing dual-offer cash path', () => {
     });
     await page.goto('/pricing');
     await page.locator('#pricing-email').fill('buyer@example.com');
-    await page.getByRole('button', { name: 'Get Started — $499 Diagnostic' }).click();
+    await page.getByRole('button', { name: 'Book the $499 setup' }).click();
     await expect.poll(() => submitted).toContain('customer_email=buyer%40example.com');
     expect(submitted).toContain('plan_id=sprint_diagnostic');
     expect(submitted).toContain('utm_source=pricing');
@@ -65,7 +65,7 @@ test.describe('/pricing dual-offer cash path', () => {
     await page.locator('[data-cta-id="pricing_segment_enterprise"]').click();
     await expect(page.locator('#pricing-buyer-segment')).toHaveValue('regulated_team');
     await page.locator('#pricing-email').fill('buyer@example.com');
-    await page.getByRole('button', { name: 'Get Started — $499 Diagnostic' }).click();
+    await page.getByRole('button', { name: 'Book the $499 setup' }).click();
     await expect.poll(() => submitted).toContain('campaign_variant=regulated_team');
     expect(submitted).toContain('utm_campaign=value_packaging_v1');
   });
@@ -73,7 +73,7 @@ test.describe('/pricing dual-offer cash path', () => {
   test('browser validation blocks checkout without a valid email', async ({ page }) => {
     await page.goto('/pricing');
     await page.locator('#pricing-email').fill('not-an-email');
-    await page.getByRole('button', { name: 'Get Started — $499 Diagnostic' }).click();
+    await page.getByRole('button', { name: 'Book the $499 setup' }).click();
     await expect(page).toHaveURL(/\/pricing$/);
     await expect(page.locator('#pricing-email')).toHaveJSProperty('validity.valid', false);
   });

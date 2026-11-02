@@ -233,18 +233,26 @@ test('hooks.json is valid JSON with correct hooks object structure', () => {
     assert.ok(typeof hook.command === 'string', 'each hook must have a command string');
     assert.ok(typeof hook.matcher === 'string', 'each hook must have a matcher string');
   }
+  const matchers = hooks.hooks.beforeShellExecution.map((hook) => hook.matcher).join('|');
+  assert.match(matchers, /swarm-claim/);
+  assert.match(matchers, /az repos pr update/);
+  assert.ok(Array.isArray(hooks.hooks.afterShellExecution), 'afterShellExecution must record swarm-claim.py');
+  assert.match(hooks.hooks.afterShellExecution[0].matcher, /swarm-claim/);
 });
 
 test('scripts referenced in hooks.json exist and are executable', () => {
   const hooks = JSON.parse(fs.readFileSync(path.join(pluginDir, 'hooks/hooks.json'), 'utf-8'));
 
-  for (const hook of hooks.hooks.beforeShellExecution) {
-    const scriptPath = path.join(pluginDir, hook.command);
-    assert.equal(fs.existsSync(scriptPath), true, `script ${hook.command} must exist`);
+  const groups = Object.values(hooks.hooks).filter((value) => Array.isArray(value));
+  for (const group of groups) {
+    for (const hook of group) {
+      const scriptPath = path.join(pluginDir, hook.command);
+      assert.equal(fs.existsSync(scriptPath), true, `script ${hook.command} must exist`);
 
-    const stats = fs.statSync(scriptPath);
-    const isExecutable = (stats.mode & 0o111) !== 0;
-    assert.equal(isExecutable, true, `script ${hook.command} must be executable`);
+      const stats = fs.statSync(scriptPath);
+      const isExecutable = (stats.mode & 0o111) !== 0;
+      assert.equal(isExecutable, true, `script ${hook.command} must be executable`);
+    }
   }
 });
 

@@ -703,6 +703,84 @@ test('getTelemetryAnalytics summarizes checkout interstitial buyer choices', () 
   assert.equal(analytics.ctas.checkoutInterstitialWorkflowSprintCheckoutRate, 1);
 });
 
+test('getTelemetryAnalytics counts one Pay hop when the beacon and the Stripe redirect both land', () => {
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_interstitial_view',
+    clientType: 'web',
+    acquisitionId: 'acq_pay_1',
+    visitorId: 'visitor_pay_1',
+    sessionId: 'session_pay_1',
+    source: 'website',
+    utmSource: 'website',
+    utmCampaign: 'pro_upgrade',
+    ctaId: 'pro_checkout_direct_stripe',
+    page: '/checkout/pro',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_interstitial_cta_clicked',
+    clientType: 'web',
+    acquisitionId: 'acq_pay_1',
+    visitorId: 'visitor_pay_1',
+    sessionId: 'session_pay_1',
+    source: 'website',
+    utmSource: 'website',
+    utmCampaign: 'pro_upgrade',
+    ctaId: 'pro_checkout_direct_stripe',
+    ctaPlacement: 'checkout_interstitial',
+    page: '/checkout/pro',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'pro_checkout_direct_stripe',
+    clientType: 'web',
+    acquisitionId: 'acq_pay_1',
+    visitorId: 'visitor_pay_1',
+    sessionId: 'session_pay_1',
+    source: 'website',
+    utmSource: 'website',
+    utmCampaign: 'pro_upgrade',
+    ctaId: 'pro_checkout_direct_stripe',
+    ctaPlacement: 'checkout_interstitial',
+    page: '/go/pro-direct',
+  });
+
+  const analytics = getTelemetryAnalytics(tmpDir);
+  assert.equal(analytics.ctas.checkoutInterstitialViews, 1);
+  assert.equal(analytics.ctas.checkoutInterstitialClicks, 1);
+  assert.equal(analytics.ctas.checkoutInterstitialProConfirms, 1);
+  assert.equal(analytics.ctas.checkoutStarts, 1);
+  assert.equal(analytics.ctas.totalClicks, 1);
+  assert.equal(analytics.ctas.byId.pro_checkout_direct_stripe, 1);
+  assert.equal(analytics.qualified.ctaClicks, 1);
+  assert.equal(analytics.qualified.checkoutStarts, 1);
+});
+
+test('getTelemetryAnalytics counts a homepage Pay hop as a checkout start only', () => {
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'pro_checkout_direct_stripe',
+    clientType: 'web',
+    acquisitionId: 'acq_home_1',
+    visitorId: 'visitor_home_1',
+    sessionId: 'session_home_1',
+    source: 'website',
+    utmSource: 'website',
+    utmMedium: 'homepage_hero',
+    utmCampaign: 'rally_style_gtm',
+    ctaId: 'homepage_pro_buy',
+    ctaPlacement: 'hero',
+    page: '/go/pro-direct',
+  });
+
+  const analytics = getTelemetryAnalytics(tmpDir);
+  assert.equal(analytics.ctas.checkoutInterstitialViews, 0);
+  assert.equal(analytics.ctas.checkoutInterstitialClicks, 0);
+  assert.equal(analytics.ctas.checkoutInterstitialProConfirms, 0);
+  assert.equal(analytics.ctas.checkoutStarts, 1);
+  assert.equal(analytics.ctas.totalClicks, 1);
+  assert.equal(analytics.ctas.byId.homepage_pro_buy, 1);
+  assert.equal(analytics.qualified.ctaClicks, 1);
+  assert.equal(analytics.qualified.checkoutStarts, 1);
+});
+
 test('getTelemetryAnalytics exposes the first-party marketing conversion funnel', () => {
   appendTelemetryEvent(tmpDir, {
     eventType: 'landing_page_view',

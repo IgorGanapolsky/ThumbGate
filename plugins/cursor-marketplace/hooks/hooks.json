@@ -8,6 +8,16 @@
       {
         "command": "./scripts/gate-check.sh",
         "matcher": "@cursor/sdk|cursor-agent|autoCreatePR|create pull request|open PR"
+      },
+      {
+        "command": "./scripts/gate-check.sh",
+        "matcher": "swarm-claim\\.py|az repos pr update|git commit|but commit|but push"
+      }
+    ],
+    "afterShellExecution": [
+      {
+        "command": "./scripts/observe-tool-result.sh",
+        "matcher": "swarm-claim\\.py"
       }
     ]
   }

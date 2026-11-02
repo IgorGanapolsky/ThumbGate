@@ -19,6 +19,8 @@ const {
   cacheUpdateHookCommand,
   claimStopHookCommand,
   codexCacheUpdateHookCommand,
+  codexObserveToolResultHookCommand,
+  observeToolResultHookCommand,
   codexPreToolHookCommand,
   codexSessionStartHookCommand,
   codexStatuslineCommand,
@@ -34,6 +36,12 @@ function getHome() {
   return process.env.HOME || process.env.USERPROFILE || '';
 }
 
+// Bash|Shell stays an exact alternative. The teams clause is a regex so a
+// successful Teams send is observed on PostToolUse, and the same matcher
+// watches PostToolUseFailure because a non-zero shell exit never arrives
+// on PostToolUse.
+const OBSERVE_TOOL_MATCHER = '^(?:Bash|Shell|bash)$|teams.*(send|reply|post_message)';
+
 // --- Hook definitions ---
 const CLAUDE_HOOKS = {
   PreToolUse: {
@@ -43,9 +51,22 @@ const CLAUDE_HOOKS = {
   UserPromptSubmit: {
     hooks: [{ type: 'command', command: userPromptHookCommand() }],
   },
-  PostToolUse: {
-    matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
-    hooks: [{ type: 'command', command: cacheUpdateHookCommand() }],
+  PostToolUse: [
+    {
+      matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
+      hooks: [{ type: 'command', command: cacheUpdateHookCommand() }],
+      legacyPattern: /(hook-thumbgate-cache-updater|cache-update\b)/,
+    },
+    {
+      matcher: OBSERVE_TOOL_MATCHER,
+      hooks: [{ type: 'command', command: observeToolResultHookCommand() }],
+      legacyPattern: /observe-tool-result\b/,
+    },
+  ],
+  PostToolUseFailure: {
+    matcher: OBSERVE_TOOL_MATCHER,
+    hooks: [{ type: 'command', command: observeToolResultHookCommand() }],
+    legacyPattern: /observe-tool-result\b/,
   },
   SessionStart: {
     hooks: [{ type: 'command', command: sessionStartHookCommand() }],
@@ -63,10 +84,18 @@ const CODEX_HOOKS = {
   UserPromptSubmit: {
     hooks: [{ type: 'command', command: codexUserPromptHookCommand() }],
   },
-  PostToolUse: {
-    matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
-    hooks: [{ type: 'command', command: codexCacheUpdateHookCommand() }],
-  },
+  PostToolUse: [
+    {
+      matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
+      hooks: [{ type: 'command', command: codexCacheUpdateHookCommand() }],
+      legacyPattern: /(hook-thumbgate-cache-updater|cache-update\b)/,
+    },
+    {
+      matcher: OBSERVE_TOOL_MATCHER,
+      hooks: [{ type: 'command', command: codexObserveToolResultHookCommand() }],
+      legacyPattern: /observe-tool-result\b/,
+    },
+  ],
   SessionStart: {
     hooks: [{ type: 'command', command: codexSessionStartHookCommand() }],
   },
@@ -257,6 +286,10 @@ function pruneStaleFileHooks(hookArray, baseDir) {
   return { hooks, removedPaths };
 }
 
+function hookDefinitionList(hookDefOrList) {
+  return Array.isArray(hookDefOrList) ? hookDefOrList : [hookDefOrList];
+}
+
 function pruneLegacyHookEntries(hookArray, expectedCommand, legacyPattern) {
   if (!Array.isArray(hookArray)) {
     return { hooks: [], removed: false };
@@ -391,25 +424,28 @@ function wireClaudeHooks(options) {
     Stop: /(hook-stop-anti-claim\.js|claim-stop-check\b)/,
   };
 
-  for (const [lifecycle, hookDef] of Object.entries(CLAUDE_HOOKS)) {
-    const hookCommand = hookDef.hooks[0].command;
-    const pruned = pruneLegacyHookEntries(settings.hooks[lifecycle], hookCommand, legacyPatterns[lifecycle]);
-    settings.hooks[lifecycle] = pruned.hooks;
-    if (pruned.removed) {
-      added.push({ lifecycle, command: `${hookCommand} (replaced legacy ThumbGate hook)` });
-    }
+  for (const [lifecycle, hookDefOrList] of Object.entries(CLAUDE_HOOKS)) {
+    for (const hookDef of hookDefinitionList(hookDefOrList)) {
+      const hookCommand = hookDef.hooks[0].command;
+      const legacyPattern = hookDef.legacyPattern || legacyPatterns[lifecycle];
+      const pruned = pruneLegacyHookEntries(settings.hooks[lifecycle], hookCommand, legacyPattern);
+      settings.hooks[lifecycle] = pruned.hooks;
+      if (pruned.removed) {
+        added.push({ lifecycle, command: `${hookCommand} (replaced legacy ThumbGate hook)` });
+      }
 
-    if (hookAlreadyPresent(settings.hooks[lifecycle], hookCommand)) {
-      continue;
-    }
+      if (hookAlreadyPresent(settings.hooks[lifecycle], hookCommand)) {
+        continue;
+      }
 
-    settings.hooks[lifecycle] = settings.hooks[lifecycle] || [];
-    const entry = { hooks: hookDef.hooks };
-    if (hookDef.matcher) {
-      entry.matcher = hookDef.matcher;
+      settings.hooks[lifecycle] = settings.hooks[lifecycle] || [];
+      const entry = { hooks: hookDef.hooks };
+      if (hookDef.matcher) {
+        entry.matcher = hookDef.matcher;
+      }
+      settings.hooks[lifecycle].push(entry);
+      added.push({ lifecycle, command: hookCommand });
     }
-    settings.hooks[lifecycle].push(entry);
-    added.push({ lifecycle, command: hookCommand });
   }
 
   if (added.length === 0) {
@@ -564,8 +600,11 @@ function wireCodexHooks(options) {
     SessionStart: /(thumbgate_session_start\.sh|session-start\b)/,
   };
 
-  for (const [lifecycle, hookDef] of Object.entries(CODEX_HOOKS)) {
-    added.push(...upsertCodexHook(config.hooks, lifecycle, hookDef, legacyPatterns[lifecycle]));
+  for (const [lifecycle, hookDefOrList] of Object.entries(CODEX_HOOKS)) {
+    for (const hookDef of hookDefinitionList(hookDefOrList)) {
+      const legacyPattern = hookDef.legacyPattern || legacyPatterns[lifecycle];
+      added.push(...upsertCodexHook(config.hooks, lifecycle, hookDef, legacyPattern));
+    }
   }
 
   if (added.length === 0) {

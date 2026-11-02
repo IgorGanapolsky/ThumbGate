@@ -707,6 +707,17 @@ test('summarizeChecks ignores Vercel failures (not a required status context)', 
   assert.deepEqual(pending, []);
 });
 
+test('summarizeChecks ignores Entire Gates (not a required status context)', () => {
+  const { pending, failing } = summarizeChecks([
+    { name: 'test', bucket: 'pass' },
+    { name: 'CodeQL', bucket: 'pass' },
+    { name: 'Entire Gates', bucket: 'pending' },
+    { name: 'Entire Gates', bucket: 'fail' },
+  ]);
+  assert.deepEqual(pending, [], 'a non-required Entire check must not stall Trunk');
+  assert.deepEqual(failing, []);
+});
+
 test('a lookalike queue check remains a blocker', () => {
   const { pending, failing } = summarizeChecks([
     { name: 'Trunk Merge Queue (main) Security Scan', bucket: 'pending' },

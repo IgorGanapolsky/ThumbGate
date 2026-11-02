@@ -54,6 +54,8 @@ How it works:
 | Hook | Trigger | Description |
 |------|---------|-------------|
 | `beforeShellExecution` | `git push`, `rm -rf`, `npm publish`, `deploy` | Runs `scripts/gate-check.sh` to evaluate the command through ThumbGate `gate-check` before execution. |
+| `beforeShellExecution` | `swarm-claim.py`, `az repos pr update`, `git commit`, `but commit`, `but push` | Runs `scripts/gate-check.sh` before a losing agent's next commit or push, a second-risk draft publish, and the claim script itself. |
+| `afterShellExecution` | `swarm-claim.py` | Runs after the command finishes, including a non-zero exit. Exit 3 ends the turn and arms the next edit, commit, or push deny for that session only. |
 
 ### MCP Server
 

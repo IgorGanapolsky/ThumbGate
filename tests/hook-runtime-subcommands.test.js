@@ -9,6 +9,7 @@ const {
   userPromptHookCommand,
   sessionStartHookCommand,
   cacheUpdateHookCommand,
+  observeToolResultHookCommand,
   statuslineCommand,
 } = require('../scripts/hook-runtime');
 
@@ -26,6 +27,7 @@ const HOOKS = [
   ['userPromptHookCommand', userPromptHookCommand, 'hook-auto-capture'],
   ['sessionStartHookCommand', sessionStartHookCommand, 'session-start'],
   ['cacheUpdateHookCommand', cacheUpdateHookCommand, 'cache-update'],
+  ['observeToolResultHookCommand', observeToolResultHookCommand, 'observe-tool-result'],
 ];
 
 for (const [name, fn, expectedSubcommand] of HOOKS) {

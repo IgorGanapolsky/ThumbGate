@@ -119,8 +119,8 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /Buy the \$499 enterprise gate/);
-  assert.match(html, /\/checkout\/pro/);
+  assert.match(html, /Book the \$499 setup/);
+  assert.match(html, /\/go\/pro-direct/);
   assert.match(html, /Start Pro — \$19\/mo/);
   assert.doesNotMatch(html, /\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
   assert.match(html, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
@@ -131,13 +131,13 @@ test('landing page presents Pro self-serve and fixed-price managed offer clearly
   assert.equal(res.status, 200);
   const html = await res.text();
 
-  assert.match(html, /Enterprise Workflow Gate/);
+  assert.match(html, /Setup Sprint/);
   assert.match(html, /One configured local gate and its regression test/);
   assert.match(html, /Rollout and rollback proof within two business days/);
   assert.match(html, /one supported local workflow/i);
   assert.match(html, /\$19/);
   assert.match(html, /\$149/);
-  assert.match(html, /\/checkout\/pro/);
+  assert.match(html, /\/go\/pro-direct/);
   assert.doesNotMatch(html, /\$1,500|\$3,000|\$10,000|\$15,000/);
 });
 
@@ -196,13 +196,13 @@ test('GET /diagnostic serves the managed workflow gate checkout and fit page', a
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
-  assert.match(html, /Enterprise Workflow Gate/);
+  assert.match(html, /Setup Sprint/);
   assert.match(html, /Submit for fit check/);
   assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
   assert.match(html, /data-diagnostic-intake-form/);
   assert.match(html, /diagnostic_page_submit/);
-  assert.match(html, /Buy the \$499 enterprise gate/);
-  assert.match(html, /Exactly what the \$499 Enterprise Workflow Gate includes/);
+  assert.match(html, /Book the \$499 setup/);
+  assert.match(html, /Exactly what the \$499 Setup Sprint includes/);
   assert.match(html, /one 60-minute working review/i);
   assert.match(html, /one configured local gate and regression test/i);
   assert.match(html, /rollout and rollback proof within two business days/i);
@@ -239,7 +239,7 @@ test('workflow diagnostic aliases serve the focused diagnostic page', async () =
     assert.equal(res.status, 200, `${pathname} should render diagnostic page`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Enterprise Workflow Gate/);
+    assert.match(html, /Setup Sprint/);
     assert.match(html, /Submit for fit check/);
     assert.match(html, /<link rel="canonical" href="[^"]+\/diagnostic"/);
   }
@@ -259,6 +259,10 @@ test('GET /install serves the verified distribution and buyer path page', async 
     assert.match(html, /Open VSX/);
     assert.match(html, /MCP Registry/);
     assert.match(html, /Cursor public Marketplace/);
+    assert.match(html, /id="grok"/);
+    assert.match(html, /id="hermes"/);
+    assert.match(html, /grok mcp add thumbgate/);
+    assert.match(html, /hermes-gate/);
     assert.match(html, /\/diagnostic\?utm_source=install_page/);
     assert.match(html, /Managed AI Agent Workflow Gate/);
   }

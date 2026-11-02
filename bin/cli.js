@@ -1,31 +1,5 @@
 #!/usr/bin/env node
-/**
- * thumbgate CLI
- *
- * Usage:
- *   npx thumbgate init          # scaffold .thumbgate/ config + .mcp.json
- *   npx thumbgate init --wire-hooks          # wire hooks only (auto-detect agent)
- *   npx thumbgate init --agent claude-code   # scaffold + wire hooks for specific agent
- *   npx thumbgate gate-check    # PreToolUse hook: pipe tool JSON via stdin, get verdict
- *   npx thumbgate capture       # capture feedback
- *   npx thumbgate import-doc    # import a local policy/runbook document and propose gates
- *   npx thumbgate export-dpo    # export DPO training pairs
- *   npx thumbgate export-databricks   # export Databricks-ready analytics bundle
- *   npx thumbgate eval --from-feedback # turn feedback into reusable prompt evals
- *   npx thumbgate code-graph-guardrails # map code-graph signals to pre-action checks
- *   npx thumbgate proxy-pointer-rag-guardrails # map visual document RAG signals to gates
- *   npx thumbgate rag-precision-guardrails # map retrieval tuning regressions to gates
- *   npx thumbgate long-running-agent-context-guardrails # map structured-memory gaps to gates
- *   npx thumbgate reasoning-efficiency-guardrails # map reasoning compression signals to gates
- *   npx thumbgate deepseek-v4-runtime-guardrails # map sparse-attention runtime signals to gates
- *   npx thumbgate upstream-contributions # rank upstream repo issues for trust-building PRs
- *   npx thumbgate stats         # feedback analytics + Revenue-at-Risk
- *   npx thumbgate background-governance  # background-agent run report + risk check
- *   npx thumbgate cfo           # local operational billing summary
- *   npx thumbgate pro           # solo dashboard + exports side lane
- *   npx thumbgate diagnostic    # team workflow diagnostic intake + checkout path
- *   npx thumbgate audit <file>  # audit an agent transcript for repeat-mistake token waste
- */
+// thumbgate CLI entrypoint
 
 'use strict';
 
@@ -2892,6 +2866,26 @@ function infoqArchitectHonesty() {
   if (report.status === 'fail') process.exitCode = 1;
 }
 
+function qwenworkPolicyGroup() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    buildQwenWorkPolicyGroupReport,
+    formatQwenWorkPolicyGroupReport,
+  } = require(path.join(PKG_ROOT, 'scripts', 'qwenwork-policy-group'));
+  const truthy = (value) => value === true || /^(1|true|yes|on)$/i.test(String(value || '').trim());
+  const report = buildQwenWorkPolicyGroupReport({
+    mapOnly: truthy(args['map-only']),
+    claim: args.claim || '',
+    policyJson: args['policy-json'] || '',
+    actionJson: args['action-json'] || '',
+    policyPath: args.policy || '',
+    actionPath: args.action || '',
+  });
+  if (truthy(args.json)) console.log(JSON.stringify(report, null, 2));
+  else process.stdout.write(formatQwenWorkPolicyGroupReport(report));
+  if (report.status === 'fail') process.exitCode = 1;
+}
+
 function deeppatternDisciplineHonestyDoctor() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3559,6 +3553,24 @@ function cacheUpdate() {
   updateCacheFromEvent(payload ? JSON.parse(payload) : {});
 }
 
+function observeToolResult() {
+  try {
+    const payload = readStdinText();
+    const input = payload ? JSON.parse(payload) : {};
+    const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+    gatesEngine.observeTeamsSendResult(input);
+    const result = gatesEngine.observeSwarmClaimResult(input);
+    if (!result) {
+      process.stdout.write('{}\n');
+      return;
+    }
+    process.stdout.write(`${gatesEngine.formatObserveStop(result)}\n`);
+  } catch (err) {
+    process.stderr.write(`observe-tool-result error: ${err.message}\n`);
+    process.stdout.write('{}\n');
+  }
+}
+
 function statuslineRender() {
   syncActiveProjectContext();
   try {
@@ -4045,6 +4057,7 @@ function help() {
   console.log('  statusline-render     Render ThumbGate Claude status line');
   console.log('  hook-auto-capture     Process Claude UserPromptSubmit inline feedback');
   console.log('  claim-stop-check      Recheck configured factual claims before Claude stops');
+  console.log('  observe-tool-result   Record swarm-claim.py exit 3, including a failed shell, and a Teams send that succeeded');
   console.log('  session-start         Refresh local ThumbGate session cache');
   console.log('');
 
@@ -4103,6 +4116,7 @@ function help() {
   console.log('  deeppattern-discipline-honesty Layer-check + evidence-closeout (DeepPattern FORMAT; not AQG/DE)');
   console.log('  salt-code-policy-honesty 40-policy taxonomy + context vs PreToolUse diode (Salt Code FORMAT)');
   console.log('  infoq-architect-honesty Code-as-truth, typed host, lease, time-in-queue (InfoQ FORMAT)');
+  console.log('  qwenwork-policy-group Org policy group at the action (QwenWork FORMAT; not seats or DingTalk)');
   console.log('  colab-compute-honesty   Compute-unit honesty from Colab /signup (not a GPU SKU)');
   console.log('  omp-coordination-honesty   Named-model session handoff on the checkout lease (omp FORMAT; does not install omp)');
   console.log('  saas-moat-honesty     8-moat diagnostic, Ed25519 entitlement audit, and cross-customer signature loop (Walling FORMAT)');
@@ -4237,6 +4251,7 @@ const SUBCOMMAND_HELP = {
   'deeppattern-discipline-honesty': 'Usage: npx thumbgate deeppattern-discipline-honesty [--claim="..."] [--closeout=path.md] [--json] [--map-only]\n\nDeepPattern FORMAT steal: layer-check + evidence-closeout. Does not install AQG/Decision Engine.',
   'salt-code-policy-honesty': 'Usage: npx thumbgate salt-code-policy-honesty [--inspect-code=...] [--inspect-api=...] [--inspect-mcp=...] [--strict] [--json] [--map-only]\n\nSalt Code FORMAT steal: 40-policy taxonomy, active PreToolUse vs context injection, OpenAPI query secret diode. Does not connect to mcp.getsaltcode.com.',
   'infoq-architect-honesty': 'Usage: npx thumbgate infoq-architect-honesty [--claim="..."] [--host=javascript] [--queue=path.json] [--max-age-ms=N] [--json] [--map-only]\n\nInfoQ September 2026 FORMAT: code-as-truth, typed host, existing lease, time-in-queue. Does not register for InfoQ or install Vortex.',
+  'qwenwork-policy-group': 'Usage: npx thumbgate qwenwork-policy-group [--claim="..."] [--policy=path.json] [--action=path.json] [--json] [--map-only]\n\nQwenWork Enterprise Premium FORMAT: one org policy group at the action. Does not buy seats, call Alibaba Cloud, or install DingTalk, WeCom, or Feishu.',
   'board-loop': 'Usage: npx thumbgate board-loop [--apply] [--json] [--max-update-branch=1] [--max-pr-manage=1] [--max-comments=4] [--skip-pr=N]\n\nClassify Issues+PR wall: update-branch BEHIND green Dependabot, pr:manage READY, comment DIRTY/ECI. Never approve.',
   'colab-compute-honesty': 'Usage: npx thumbgate colab-compute-honesty [--claim="..."] [--plan-proof=proplus] [--json] [--map-only]\n\nColab /signup FORMAT steal: Compute Units ≠ dedicated GPU; Subscribe ≠ receipt. Does not buy Pro/Pro+.',
   'omp-coordination-honesty': 'Usage: npx thumbgate omp-coordination-honesty [--claim="..."] [--handoff=path] [--json] [--map-only] [--strict]\n\nMap omp session/subagent/collab FORMAT onto the checkout lease. Does not install omp.',
@@ -4536,6 +4551,9 @@ switch (COMMAND) {
     break;
   case 'claim-stop-check':
     claimStopCheckCmd();
+    break;
+  case 'observe-tool-result':
+    observeToolResult();
     break;
   case 'session-start':
     sessionStart();
@@ -5103,6 +5121,9 @@ switch (COMMAND) {
   case 'architect-honesty':
     infoqArchitectHonesty();
     break;
+  case 'qwenwork-policy-group':
+    qwenworkPolicyGroup();
+    break;
   case 'workspace-search-route':
   case 'zg-search-route':
   case 'zvec-grep-route':
@@ -5498,6 +5519,20 @@ switch (COMMAND) {
     }
     break;
   }
+  case 'dream':
+  case 'dream-mode': {
+    // ThumbGate Dream Mode (Anthropic REM memory consolidation, read-only on source code)
+    const { dreamCmd } = require(path.join(PKG_ROOT, 'scripts', 'thumbgate-dream'));
+    dreamCmd();
+    break;
+  }
+  case 'cuda-gate':
+  case 'cuda-gate-batch': {
+    // CUDA-inspired parallel PreToolUse gate evaluation
+    const { cudaGateBatchCmd } = require(path.join(PKG_ROOT, 'scripts', 'cuda-gate-batch'));
+    cudaGateBatchCmd();
+    break;
+  }
   case 'start-api':
     startApi();
     break;
@@ -5510,18 +5545,7 @@ switch (COMMAND) {
     compact();
     break;
   case 'subscribe': {
-    // Capture an installer's email so we can send the 5-minute setup
-    // guide + weekly tips. Drops to /v1/marketing/install-email on the
-    // hosted endpoint; the server fires sendNewsletterWelcomeEmail via
-    // Resend and persists the address for follow-up.
-    //
-    // Usage:
-    //   npx thumbgate subscribe you@company.com
-    //   npx thumbgate subscribe --email=you@company.com
-    //
-    // Never prompts interactively — postinstall must stay non-interactive
-    // for CI safety. This is the deliberate opt-in path the banner points
-    // at; if the operator runs it, they want the email.
+    // Non-interactive installer email subscription (/v1/marketing/install-email)
     const args = process.argv.slice(3);
     let email = '';
     for (const arg of args) {

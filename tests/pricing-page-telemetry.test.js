@@ -28,7 +28,7 @@ test('pricing page emits first-party telemetry for views and buyer actions', () 
 
 test('pricing exposes Pro self-serve and direct $499 managed-gate checkout', () => {
   assert.match(pricingHtml, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(pricingHtml, /Get Started — \$499 Diagnostic/);
+  assert.match(pricingHtml, /Book the \$499 setup/);
   assert.match(pricingHtml, /name="customer_email"[^>]*required/);
   assert.match(pricingHtml, /"name": "ThumbGate Managed Workflow Diagnostic"/);
   assert.match(pricingHtml, /"price": "499"/);
@@ -62,4 +62,20 @@ test('pricing segments buyers by value and keeps public fences explicit', () => 
   assert.match(pricingHtml, /Regulated or multi-workflow team/);
   assert.match(pricingHtml, /Hosted team features, SSO, and SIEM are not general availability/);
   assert.doesNotMatch(pricingHtml, /\$15k\+ loaded|Never reliable/);
+});
+
+test('exposure calculator multiplies buyer inputs and does not invent a savings rate', () => {
+  assert.match(pricingHtml, /id="exposure-calculator"/);
+  assert.match(pricingHtml, /id="exposure-incidents"/);
+  assert.match(pricingHtml, /id="exposure-hours"/);
+  assert.match(pricingHtml, /id="exposure-rate"/);
+  assert.match(pricingHtml, /incidents \* hours \* rate/);
+  assert.match(pricingHtml, /total >= 499/);
+  assert.match(pricingHtml, /It is not a ThumbGate savings measurement/);
+  assert.match(pricingHtml, /ThumbGate does not claim a universal savings number/);
+  assert.match(pricingHtml, /data-cta-id="pricing_exposure_diagnostic"/);
+  assert.match(pricingHtml, /pricing_exposure_pro/);
+  assert.match(pricingHtml, /No check on the tool call/);
+  assert.match(pricingHtml, /Prove it with one regression/);
+  assert.doesNotMatch(pricingHtml, /80%|120\+|IrashTech|Most Popular|blank to growth/i);
 });
