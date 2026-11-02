@@ -50,6 +50,10 @@ function resolveAuditAgentId() {
 const REGISTRY_FILENAME = 'agent-registry.jsonl';
 const OBSERVED_FILENAME = 'observed-agents.jsonl';
 const OBSERVED_COMPACT_BYTES = 512 * 1024;
+const DISPOSABLE_GRANT_FILENAME = 'disposable-task-grants.jsonl';
+const DISPOSABLE_GRANT_MAX_MS = 24 * 60 * 60 * 1000;
+const DISPOSABLE_TEXT_MAX = 2000;
+const DISPOSABLE_SCRATCH_MAX = 8000;
 
 function getRegistryPath() {
   return path.join(resolveFeedbackDir(), REGISTRY_FILENAME);
@@ -548,6 +552,357 @@ function tuneCacheThreshold(logPath) {
 }
 
 // ---------------------------------------------------------------------------
+// Disposable task grants
+//
+// A grant is authority for one task: named tools, named child roles, and a
+// caller-supplied deadline. Working notes live only on the active record.
+// Retirement rewrites that record down to the lesson (or an explicit discard)
+// and retires the agent id, so a later call under the same id is denied.
+// A child deadline is capped by the parent grant's remaining time.
+// ---------------------------------------------------------------------------
+
+function disposableGrantPath() {
+  return path.join(resolveFeedbackDir(), DISPOSABLE_GRANT_FILENAME);
+}
+
+function resolveNowMs(input) {
+  return Number.isFinite(input && input.nowMs) ? input.nowMs : Date.now();
+}
+
+function denyGrant(reason) {
+  return { ok: false, decision: 'deny', reason };
+}
+
+function normalizeNameList(values) {
+  if (!Array.isArray(values)) return null;
+  const out = [];
+  const seen = new Set();
+  for (const value of values) {
+    const name = String(value || '').trim();
+    if (!name || name.length > 80 || seen.has(name)) continue;
+    seen.add(name);
+    out.push(name);
+  }
+  return out;
+}
+
+function snapshotScratch(scratch) {
+  if (scratch == null) return { ok: true, scratch: {} };
+  if (typeof scratch !== 'object' || Array.isArray(scratch)) {
+    return { ok: false, reason: 'scratch_invalid' };
+  }
+  let encoded;
+  try {
+    encoded = JSON.stringify(scratch);
+  } catch {
+    return { ok: false, reason: 'scratch_invalid' };
+  }
+  if (encoded.length > DISPOSABLE_SCRATCH_MAX) return { ok: false, reason: 'scratch_too_large' };
+  return { ok: true, scratch: JSON.parse(encoded) };
+}
+
+function looksLikeTranscript(text) {
+  return (String(text).match(/^(?:user|assistant|system|human|tool)\s*:/gim) || []).length >= 3;
+}
+
+function readGrantLines() {
+  const grantPath = disposableGrantPath();
+  if (!fs.existsSync(grantPath)) return [];
+  return fs.readFileSync(grantPath, 'utf8').split('\n').filter((line) => line.trim());
+}
+
+function currentGrantMap() {
+  const byId = new Map();
+  for (const line of readGrantLines()) {
+    try {
+      const record = JSON.parse(line);
+      if (record && record.grantId) byId.set(record.grantId, record);
+    } catch {
+      // Keep the raw line on rewrite; a bad row never becomes authority.
+    }
+  }
+  return byId;
+}
+
+function currentGrant(grantId) {
+  const id = String(grantId || '').trim();
+  if (!id) return null;
+  return currentGrantMap().get(id) || null;
+}
+
+function viewGrant(record) {
+  if (!record) return null;
+  const view = { ...record };
+  delete view.scratch;
+  return view;
+}
+
+function appendGrant(record) {
+  const grantPath = disposableGrantPath();
+  ensureDir(path.dirname(grantPath));
+  fs.appendFileSync(grantPath, `${JSON.stringify(record)}\n`);
+}
+
+function replaceGrantRecords(replacements) {
+  const kept = [];
+  for (const line of readGrantLines()) {
+    let grantId = null;
+    try {
+      grantId = JSON.parse(line).grantId;
+    } catch {
+      kept.push(line);
+      continue;
+    }
+    if (!replacements.has(grantId)) kept.push(line);
+  }
+  for (const record of replacements.values()) kept.push(JSON.stringify(record));
+  const grantPath = disposableGrantPath();
+  ensureDir(path.dirname(grantPath));
+  fs.writeFileSync(grantPath, kept.length ? `${kept.join('\n')}\n` : '');
+}
+
+function ancestorGrants(parent) {
+  const chain = [];
+  const seen = new Set();
+  let cursor = parent;
+  while (cursor && cursor.grantId && !seen.has(cursor.grantId)) {
+    seen.add(cursor.grantId);
+    chain.push(cursor);
+    cursor = cursor.parentGrantId ? currentGrant(cursor.parentGrantId) : null;
+  }
+  return chain;
+}
+
+function resolveGrantExpiry(input, nowMs, parent) {
+  const parentCap = parent ? parent.expiresAtMs : null;
+  let expiresAtMs = null;
+  if (input.ttlMs != null) {
+    const ttlMs = Number(input.ttlMs);
+    if (!Number.isFinite(ttlMs) || ttlMs <= 0) return { error: 'ttl_required' };
+    if (ttlMs > DISPOSABLE_GRANT_MAX_MS && parentCap == null) return { error: 'ttl_too_long' };
+    expiresAtMs = nowMs + ttlMs;
+  } else if (input.expiresAtMs != null) {
+    expiresAtMs = Number(input.expiresAtMs);
+    if (!Number.isFinite(expiresAtMs)) return { error: 'ttl_required' };
+  } else if (parentCap != null) {
+    expiresAtMs = parentCap;
+  } else {
+    return { error: 'ttl_required' };
+  }
+  if (parentCap != null && expiresAtMs > parentCap) expiresAtMs = parentCap;
+  if (!(expiresAtMs > nowMs)) return { error: parent ? 'no_time_left' : 'expires_in_the_past' };
+  if (expiresAtMs - nowMs > DISPOSABLE_GRANT_MAX_MS) return { error: 'ttl_too_long' };
+  return { expiresAtMs };
+}
+
+function retiredGrantRecord(grant, nowMs, extracted) {
+  return {
+    grantId: grant.grantId,
+    agentId: grant.agentId,
+    taskId: grant.taskId,
+    parentGrantId: grant.parentGrantId || null,
+    role: grant.role || null,
+    allowedTools: grant.allowedTools,
+    allowedChildRoles: grant.allowedChildRoles,
+    status: 'retired',
+    createdAtMs: grant.createdAtMs,
+    expiresAtMs: grant.expiresAtMs,
+    retiredAtMs: nowMs,
+    extracted,
+  };
+}
+
+/**
+ * Equip one agent for one task. No deadline means no grant: authority here
+ * cannot be standing. Pass parentGrantId only for a child of a live grant.
+ */
+function issueDisposableTaskGrant(input = {}) {
+  const nowMs = resolveNowMs(input);
+  const agentId = String(input.agentId || '').trim();
+  const taskId = String(input.taskId || '').trim();
+  if (!agentId || !taskId) return denyGrant('agent_and_task_required');
+  const allowedTools = normalizeNameList(input.allowedTools);
+  if (!allowedTools || allowedTools.length === 0) return denyGrant('allowed_tools_required');
+  const allowedChildRoles = input.allowedChildRoles == null
+    ? []
+    : normalizeNameList(input.allowedChildRoles);
+  if (!allowedChildRoles) return denyGrant('child_roles_invalid');
+  const scratch = snapshotScratch(input.scratch);
+  if (!scratch.ok) return denyGrant(scratch.reason);
+
+  let parent = null;
+  let role = null;
+  if (input.parentGrantId) {
+    parent = currentGrant(input.parentGrantId);
+    if (!parent || parent.status !== 'active') return denyGrant('parent_not_active');
+    if (nowMs >= parent.expiresAtMs) return denyGrant('parent_expired');
+    role = String(input.role || '').trim();
+    if (!role || !parent.allowedChildRoles.includes(role)) return denyGrant('role_not_allowed');
+    if (allowedTools.some((tool) => !parent.allowedTools.includes(tool))) {
+      return denyGrant('child_tools_exceed_parent');
+    }
+    if (allowedChildRoles.some((childRole) => !parent.allowedChildRoles.includes(childRole))) {
+      return denyGrant('child_roles_exceed_parent');
+    }
+    const ancestors = ancestorGrants(parent);
+    if (ancestors.some((grant) => grant.agentId === agentId)) return denyGrant('shared_agent_id');
+  }
+
+  const expiry = resolveGrantExpiry(input, nowMs, parent);
+  if (expiry.error) return denyGrant(expiry.error);
+
+  const record = {
+    grantId: `grant_${crypto.randomUUID()}`,
+    agentId,
+    taskId,
+    parentGrantId: parent ? parent.grantId : null,
+    role,
+    allowedTools,
+    allowedChildRoles,
+    status: 'active',
+    createdAtMs: nowMs,
+    expiresAtMs: expiry.expiresAtMs,
+    scratch: scratch.scratch,
+    extracted: null,
+  };
+  appendGrant(record);
+  registerAgent({
+    agentId,
+    source: 'disposable-task-grant',
+    project: 'disposable-task',
+    metadata: { grantId: record.grantId, taskId },
+  });
+  return { ok: true, decision: 'allow', reason: 'issued', grant: viewGrant(record) };
+}
+
+function authorizeDisposableTool(input = {}) {
+  const nowMs = resolveNowMs(input);
+  const grant = currentGrant(input.grantId);
+  if (!grant) return denyGrant('unknown_grant');
+  if (grant.status === 'retired') return denyGrant('retired');
+  if (nowMs >= grant.expiresAtMs) return denyGrant('expired');
+  const tool = String(input.tool || '').trim();
+  if (!grant.allowedTools.includes(tool)) return denyGrant('tool_not_in_grant');
+  return {
+    ok: true,
+    decision: 'allow',
+    reason: 'in_grant',
+    expiresAtMs: grant.expiresAtMs,
+  };
+}
+
+function readDisposableWorkingScratch(grantId, nowMs = Date.now()) {
+  const when = Number.isFinite(nowMs) ? nowMs : Date.now();
+  const grant = currentGrant(grantId);
+  if (!grant || grant.status !== 'active' || when >= grant.expiresAtMs) return null;
+  return grant.scratch && typeof grant.scratch === 'object' ? { ...grant.scratch } : null;
+}
+
+function spawnDisposableChild(input = {}) {
+  const parent = currentGrant(input.parentGrantId);
+  const agentId = String(input.agentId || '').trim()
+    || (parent ? `${parent.agentId}:child:${crypto.randomUUID()}` : '');
+  return issueDisposableTaskGrant({
+    agentId,
+    taskId: input.taskId || (parent ? parent.taskId : ''),
+    allowedTools: input.allowedTools,
+    allowedChildRoles: input.allowedChildRoles,
+    ttlMs: input.ttlMs,
+    expiresAtMs: input.expiresAtMs,
+    nowMs: input.nowMs,
+    parentGrantId: input.parentGrantId,
+    role: input.role,
+    scratch: input.scratch,
+  });
+}
+
+function activeDescendantIds(rootGrantId, byId) {
+  const ids = [];
+  const stack = [rootGrantId];
+  const seen = new Set([rootGrantId]);
+  while (stack.length) {
+    const id = stack.pop();
+    for (const [grantId, record] of byId) {
+      if (record.parentGrantId !== id || seen.has(grantId)) continue;
+      seen.add(grantId);
+      if (record.status === 'active') ids.push(grantId);
+      stack.push(grantId);
+    }
+  }
+  return ids;
+}
+
+/**
+ * Keep the lesson, drop working notes, and retire this grant plus any child
+ * that has not already extracted its own lesson. A second call returns the
+ * lesson already stored.
+ */
+function extractAndRetireDisposableGrant(input = {}) {
+  const nowMs = resolveNowMs(input);
+  const grant = currentGrant(input.grantId);
+  if (!grant) return denyGrant('unknown_grant');
+  if (grant.status === 'retired') {
+    return {
+      ok: true,
+      decision: 'allow',
+      reason: 'already_retired',
+      extracted: grant.extracted || null,
+      grant: viewGrant(grant),
+    };
+  }
+
+  const discard = input.discard === true;
+  const lesson = String(input.lesson || '').trim();
+  const evidence = String(input.evidence || '').trim();
+  if (!discard && !lesson) return denyGrant('lesson_required');
+  if (lesson.length > DISPOSABLE_TEXT_MAX || evidence.length > DISPOSABLE_TEXT_MAX) {
+    return denyGrant('extract_too_long');
+  }
+  if (looksLikeTranscript(lesson) || looksLikeTranscript(evidence)) {
+    return denyGrant('transcript_not_a_lesson');
+  }
+
+  const extracted = {
+    lesson: lesson || null,
+    evidence: evidence || null,
+    discarded: discard && !lesson,
+    taskId: grant.taskId,
+    grantId: grant.grantId,
+    agentId: grant.agentId,
+    extractedAtMs: nowMs,
+  };
+  const replacements = new Map();
+  replacements.set(grant.grantId, retiredGrantRecord(grant, nowMs, extracted));
+  const agentIds = [grant.agentId];
+  for (const childId of activeDescendantIds(grant.grantId, currentGrantMap())) {
+    const child = currentGrant(childId);
+    if (!child || child.status !== 'active') continue;
+    replacements.set(child.grantId, retiredGrantRecord(child, nowMs, {
+      lesson: null,
+      evidence: null,
+      discarded: true,
+      reason: 'parent_retired',
+      taskId: child.taskId,
+      grantId: child.grantId,
+      agentId: child.agentId,
+      extractedAtMs: nowMs,
+    }));
+    agentIds.push(child.agentId);
+  }
+  replaceGrantRecords(replacements);
+  for (const agentId of agentIds) {
+    retireAgent(agentId, agentId === grant.agentId ? 'disposable_task_extracted' : 'parent_grant_retired');
+  }
+  return {
+    ok: true,
+    decision: 'allow',
+    reason: 'extracted',
+    extracted,
+    grant: viewGrant(replacements.get(grant.grantId)),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -559,6 +914,12 @@ module.exports = {
   recordAgentActivity,
   loadAgentRegistry,
   retireAgent,
+  issueDisposableTaskGrant,
+  authorizeDisposableTool,
+  readDisposableWorkingScratch,
+  spawnDisposableChild,
+  extractAndRetireDisposableGrant,
+  DISPOSABLE_GRANT_FILENAME,
   recordObservedAgent,
   loadObservedAgents,
   getRegistryPath,
