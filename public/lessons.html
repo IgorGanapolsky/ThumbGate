@@ -190,20 +190,30 @@
     .rule-meta { flex-direction: column; gap: 8px; }
   }
 
-  /* Feedback widget */
+  /* Feedback dialog: reason chips, optional note, submit stays off until a reason is chosen. */
   .feedback-widget { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
-  .feedback-toggle { background: var(--cyan); color: var(--bg); border: none; border-radius: 50px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(34,211,238,0.3); transition: transform 0.15s; }
-  .feedback-toggle:hover { transform: scale(1.05); }
-  .feedback-panel { display: none; position: absolute; bottom: 56px; right: 0; width: 340px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
-  .feedback-panel.open { display: block; }
-  .feedback-panel h3 { font-size: 15px; margin-bottom: 12px; }
-  .feedback-panel textarea { width: 100%; min-height: 80px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px; font-size: 13px; font-family: inherit; resize: vertical; }
-  .feedback-panel textarea:focus { outline: none; border-color: var(--cyan); }
-  .feedback-panel select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 8px 10px; font-size: 13px; margin: 8px 0; }
-  .feedback-submit { background: var(--cyan); color: var(--bg); border: none; border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 8px; }
-  .feedback-submit:hover { opacity: 0.85; }
-  .feedback-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-  .feedback-success { color: var(--green); font-size: 13px; text-align: center; padding: 12px 0; }
+  .feedback-toggle { background: var(--cyan); color: var(--bg); border: none; border-radius: 50px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(34,211,238,0.3); }
+  .feedback-backdrop { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.55); border: 0; padding: 0; }
+  .feedback-widget.is-open .feedback-backdrop { display: block; }
+  .feedback-panel { display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(440px, calc(100vw - 32px)); max-height: calc(100svh - 32px); overflow: auto; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: 0 22px 80px rgba(0,0,0,0.45); z-index: 1001; }
+  .feedback-widget.is-open .feedback-panel { display: block; }
+  .feedback-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .feedback-panel h3 { font-size: 18px; margin: 0; letter-spacing: -0.02em; }
+  .feedback-close { background: transparent; color: var(--text-muted); border: 0; font-size: 22px; line-height: 1; cursor: pointer; padding: 4px 8px; }
+  .feedback-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .feedback-chip { background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 999px; padding: 8px 12px; font-size: 13px; line-height: 18px; cursor: pointer; font-family: inherit; }
+  .feedback-chip[aria-pressed="true"] { background: rgba(34,211,238,0.16); border-color: var(--cyan); }
+  .feedback-chip:focus-visible, .feedback-close:focus-visible, .feedback-submit:focus-visible, .feedback-panel textarea:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  .feedback-panel textarea { width: 100%; min-height: 96px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); padding: 12px; font-size: 14px; font-family: inherit; resize: vertical; }
+  .feedback-note { color: var(--text-muted); font-size: 12px; line-height: 1.5; margin: 8px 0 14px; }
+  .feedback-actions { display: flex; justify-content: flex-end; }
+  .feedback-submit { background: var(--cyan); color: var(--bg); border: none; border-radius: 8px; padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .feedback-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+  .feedback-success { color: var(--green); font-size: 13px; margin-top: 12px; }
+  @media (max-width: 480px) {
+    .feedback-panel { padding: 16px; border-radius: 14px; }
+    .feedback-chip { padding: 10px 12px; }
+  }
 
 </style>
 </head>
@@ -1140,48 +1150,144 @@ loadLive().then(function() {
 });
 </script>
 
-<div class="feedback-widget">
-  <div class="feedback-panel" id="feedbackPanel">
-    <h3>Share feedback with ThumbGate team</h3>
-    <select id="feedbackCategory">
-      <option value="bug">Bug report</option>
-      <option value="feature">Feature request</option>
-      <option value="question">Question</option>
-    </select>
-    <textarea id="feedbackText" placeholder="What's on your mind? Be honest — we read every one."></textarea>
-    <button class="feedback-submit" id="feedbackSubmit" onclick="submitFeedback()">Submit</button>
-    <div id="feedbackResult"></div>
+<div class="feedback-widget" id="feedbackWidget">
+  <button class="feedback-backdrop" type="button" aria-label="Close feedback" onclick="closeFeedback()"></button>
+  <div class="feedback-panel" id="feedbackPanel" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+    <div class="feedback-head">
+      <h3 id="feedbackTitle">Share feedback</h3>
+      <button class="feedback-close" type="button" aria-label="Close" onclick="closeFeedback()">×</button>
+    </div>
+    <div class="feedback-chips" id="feedbackChips">
+      <button type="button" class="feedback-chip" data-reason="solved-the-task" aria-pressed="false">+ Solved the task</button>
+      <button type="button" class="feedback-chip" data-reason="followed-the-rules" aria-pressed="false">+ Followed the repo rules</button>
+      <button type="button" class="feedback-chip" data-reason="blocked-a-risky-command" aria-pressed="false">+ Blocked a risky command</button>
+      <button type="button" class="feedback-chip" data-reason="blocked-the-wrong-thing" aria-pressed="false">+ Blocked the wrong thing</button>
+      <button type="button" class="feedback-chip" data-reason="missed-the-mistake" aria-pressed="false">+ Missed the mistake</button>
+      <button type="button" class="feedback-chip" data-reason="other" aria-pressed="false">+ Other</button>
+    </div>
+    <textarea id="feedbackText" placeholder="Share details (optional)" aria-label="Share details (optional)"></textarea>
+    <p class="feedback-note">This note goes to the ThumbGate team. Pick a reason. The detail line is optional, unless Other is the only reason. Then it needs at least five characters.</p>
+    <div class="feedback-actions">
+      <button class="feedback-submit" id="feedbackSubmit" type="button" disabled onclick="submitFeedback()">Submit</button>
+    </div>
+    <div id="feedbackResult" role="status"></div>
   </div>
-  <button class="feedback-toggle" onclick="toggleFeedback()">💬 Feedback</button>
+  <button class="feedback-toggle" type="button" onclick="openFeedback()">Feedback</button>
 </div>
 <script>
-function toggleFeedback() {
-  document.getElementById('feedbackPanel').classList.toggle('open');
-  document.getElementById('feedbackResult').innerHTML = '';
+var feedbackSubmitPending = false;
+var feedbackOpener = null;
+function selectedFeedbackReasons() {
+  return Array.from(document.querySelectorAll('.feedback-chip[aria-pressed="true"]')).map(function(button) {
+    return button.getAttribute('data-reason');
+  });
 }
+function feedbackDetail() {
+  return document.getElementById('feedbackText').value.replace(/\s+/g, ' ').trim();
+}
+function feedbackFocusables() {
+  return Array.from(document.querySelectorAll('#feedbackPanel button, #feedbackPanel textarea')).filter(function(el) {
+    return !el.disabled;
+  });
+}
+function refreshFeedbackSubmit() {
+  var ids = selectedFeedbackReasons();
+  var note = feedbackDetail();
+  var ready = !feedbackSubmitPending
+    && ids.length > 0
+    && !(ids.length === 1 && ids[0] === 'other' && note.length < 5);
+  document.getElementById('feedbackSubmit').disabled = !ready;
+}
+function openFeedback() {
+  feedbackOpener = document.activeElement;
+  document.getElementById('feedbackWidget').classList.add('is-open');
+  document.getElementById('feedbackResult').textContent = '';
+  var firstChip = document.querySelector('.feedback-chip');
+  if (firstChip) firstChip.focus();
+}
+function closeFeedback() {
+  document.getElementById('feedbackWidget').classList.remove('is-open');
+  if (feedbackOpener && typeof feedbackOpener.focus === 'function') feedbackOpener.focus();
+}
+document.getElementById('feedbackChips').addEventListener('click', function(event) {
+  var button = event.target.closest('.feedback-chip');
+  if (!button) return;
+  var pressed = button.getAttribute('aria-pressed') === 'true';
+  button.setAttribute('aria-pressed', pressed ? 'false' : 'true');
+  var label = button.textContent.replace(/^\+\s*/, '').replace(/^✓\s*/, '');
+  button.textContent = pressed ? '+ ' + label : '✓ ' + label;
+  refreshFeedbackSubmit();
+});
+document.getElementById('feedbackText').addEventListener('input', refreshFeedbackSubmit);
+document.addEventListener('keydown', function(event) {
+  var open = document.getElementById('feedbackWidget').classList.contains('is-open');
+  if (!open) return;
+  if (event.key === 'Escape') {
+    closeFeedback();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  var items = feedbackFocusables();
+  if (!items.length) return;
+  var first = items[0];
+  var last = items[items.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
 async function submitFeedback() {
+  if (feedbackSubmitPending) return;
   var btn = document.getElementById('feedbackSubmit');
-  var text = document.getElementById('feedbackText').value.trim();
-  var category = document.getElementById('feedbackCategory').value;
-  if (!text) return;
-  btn.disabled = true; btn.textContent = 'Submitting...';
+  if (btn.disabled) return;
+  feedbackSubmitPending = true;
+  var reasons = selectedFeedbackReasons();
+  var details = feedbackDetail();
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+  var result = document.getElementById('feedbackResult');
   try {
     var res = await fetch('/api/feedback/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category: category, message: text })
+      body: JSON.stringify({ reasons: reasons, details: details })
     });
     var data = await res.json();
+    result.textContent = '';
     if (data.success) {
-      document.getElementById('feedbackResult').innerHTML = '<div class="feedback-success">Thanks! Filed as <a href="' + data.issueUrl + '" target="_blank" style="color:var(--cyan)">#' + data.issueNumber + '</a></div>';
+      var line = document.createElement('div');
+      line.className = 'feedback-success';
+      if (data.issueUrl && data.issueNumber) {
+        line.appendChild(document.createTextNode('Thanks. Filed as '));
+        var link = document.createElement('a');
+        link.href = data.issueUrl;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = '#' + data.issueNumber;
+        line.appendChild(link);
+      } else {
+        line.textContent = 'Thanks. Saved for the ThumbGate team.';
+      }
+      result.appendChild(line);
       document.getElementById('feedbackText').value = '';
+      document.querySelectorAll('.feedback-chip').forEach(function(button) {
+        button.setAttribute('aria-pressed', 'false');
+        var label = button.textContent.replace(/^✓\s*/, '').replace(/^\+\s*/, '');
+        button.textContent = '+ ' + label;
+      });
     } else {
-      document.getElementById('feedbackResult').innerHTML = '<div style="color:var(--red);font-size:13px">Failed: ' + (data.error || 'unknown') + '</div>';
+      result.textContent = data.error || 'Could not save that note.';
     }
   } catch (e) {
-    document.getElementById('feedbackResult').innerHTML = '<div style="color:var(--red);font-size:13px">Network error. Try again.</div>';
+    result.textContent = 'Network error. Try again.';
+  } finally {
+    feedbackSubmitPending = false;
+    btn.textContent = 'Submit';
+    refreshFeedbackSubmit();
   }
-  btn.disabled = false; btn.textContent = 'Submit';
 }
 </script>
 <script src="/js/buyer-intent.js"></script>
