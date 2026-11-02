@@ -1125,8 +1125,12 @@ function resolveRequestDataIdentity(req, expectedApiKey) {
 
 function partitionFeedbackPaths(paths, dataIdentity) {
   if (!dataIdentity?.partition) return paths;
+  const safePartition = String(dataIdentity.partition).replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 64);
+  if (!safePartition || safePartition === '__proto__' || safePartition === 'constructor' || safePartition === 'prototype') {
+    return paths;
+  }
   return getFeedbackPaths({
-    feedbackDir: path.join(paths.FEEDBACK_DIR, 'tenants', dataIdentity.partition),
+    feedbackDir: path.join(paths.FEEDBACK_DIR, 'tenants', safePartition),
   });
 }
 
@@ -5381,9 +5385,10 @@ function buildIntakeAlertRateLimitKey(req, env = process.env) {
   const transportPeer = String(req.socket?.remoteAddress || 'unknown');
   const railwayRealIp = String(req.headers['x-real-ip'] || '').trim();
   const runningBehindRailway = Boolean(env.RAILWAY_ENVIRONMENT_ID || env.RAILWAY_PROJECT_ID);
-  const hasValidRailwayIp = /^[0-9a-f:.]{3,64}$/i.test(railwayRealIp);
+  // Enforce strict IP format and ignore internal loopback / non-IP values from untrusted headers
+  const hasValidRailwayIp = /^[0-9a-f:.]{3,64}$/i.test(railwayRealIp) && !railwayRealIp.includes('/');
   // Railway overwrites X-Real-IP at its ingress. Outside that explicit trust
-  // boundary, forwarding headers remain caller-controlled and are ignored.
+  // boundary, forwarding headers remain caller-controlled and are ignored to prevent spoofing.
   const clientAddress = runningBehindRailway && hasValidRailwayIp
     ? railwayRealIp
     : transportPeer;
