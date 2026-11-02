@@ -383,12 +383,24 @@ function formatWindowBlock(label, summary = {}) {
   const diagnosticClicks = Number(ctas.checkoutInterstitialDiagnosticCheckoutClicks || 0);
   const sprintCheckoutClicks = Number(ctas.checkoutInterstitialWorkflowSprintCheckoutClicks || 0);
   const botDeflections = Number(ctas.checkoutBotDeflections || 0);
+  const successPageViews = Number(traffic.checkoutSuccessPageViews || 0);
+  const cancelPageViews = Number(traffic.checkoutCancelPageViews || 0);
+  const paidConfirmations = Number(traffic.checkoutPaidConfirmations || 0);
+  const checkoutApiFailures = Number(ctas.checkoutFailures || 0);
+  const quality = summary.dataQuality || {};
   const intentSuffix = interstitialViews || interstitialClicks || proConfirms || workflowClicks || teamPathClicks || diagnosticClicks || sprintCheckoutClicks || botDeflections
     ? `, checkoutIntent views ${interstitialViews}, clicks ${interstitialClicks}, stripeConfirms ${proConfirms}, intakeClicks ${workflowClicks}, teamPathClicks ${teamPathClicks}, diagnosticClicks ${diagnosticClicks}, sprintCheckoutClicks ${sprintCheckoutClicks}, botDeflections ${botDeflections}`
     : '';
+  const outcomeSuffix = `, successPageViews ${successPageViews}, cancelPageViews ${cancelPageViews}, paidConfirmations ${paidConfirmations}, checkoutApiFailures ${checkoutApiFailures}`;
+  let coverageSuffix = '';
+  if (quality.telemetryTruncated === true) {
+    coverageSuffix = `, funnelCoverage=partial oldestLoaded=${quality.telemetryOldestLoadedEventAt || 'unknown'}`;
+  } else if (quality.telemetryTruncated === false) {
+    coverageSuffix = ', funnelCoverage=complete';
+  }
 
   return [
-    `${label}: visitors ${traffic.visitors || 0}, pageViews ${traffic.pageViews || 0}, checkoutStarts ${traffic.checkoutStarts || 0}, paidOrders ${revenue.paidOrders || 0}, bookedRevenue ${centsToDollars(revenue.bookedRevenueCents || 0)}, sprintLeads ${sprintLeads.total || 0}, signups ${signups.uniqueLeads || 0}${intentSuffix}`,
+    `${label}: visitors ${traffic.visitors || 0}, pageViews ${traffic.pageViews || 0}, checkoutStarts ${traffic.checkoutStarts || 0}, paidOrders ${revenue.paidOrders || 0}, bookedRevenue ${centsToDollars(revenue.bookedRevenueCents || 0)}, sprintLeads ${sprintLeads.total || 0}, signups ${signups.uniqueLeads || 0}${intentSuffix}${outcomeSuffix}${coverageSuffix}`,
   ];
 }
 

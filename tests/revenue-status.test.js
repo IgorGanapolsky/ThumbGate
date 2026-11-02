@@ -551,6 +551,79 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
   assert.match(formatted, /30d: .*checkoutIntent views 12, clicks 5, stripeConfirms 3, intakeClicks 1, teamPathClicks 1, diagnosticClicks 2, sprintCheckoutClicks 1, botDeflections 7/);
 });
 
+test('formatReport names checkout outcomes and a partial funnel tail', () => {
+  const formatted = formatReport({
+    generatedAt: '2026-11-02T13:49:22.763Z',
+    source: 'hosted-http-api',
+    diagnosis: {
+      primaryIssue: 'conversion_or_pricing_gap',
+      trackingImplemented: true,
+      telemetryIngressWorking: true,
+      hostedSummaryWorking: true,
+      hostedTrafficObserved: true,
+      hostedRevenueObserved: false,
+      externalCustomerRevenueObserved: false,
+      hostedAuditMethod: 'hosted-http-api',
+      runtimePresenceKnown: true,
+      gaps: [],
+    },
+    publicProbe: {
+      health: { status: 200, version: '1.39.0' },
+      telemetryPing: { status: 204 },
+    },
+    hostedAudit: {
+      runtimePresence: {},
+      summaries: {
+        today: {
+          trafficMetrics: {
+            visitors: 275,
+            pageViews: 192,
+            checkoutStarts: 2,
+            checkoutSuccessPageViews: 0,
+            checkoutCancelPageViews: 8,
+            checkoutPaidConfirmations: 0,
+          },
+          ctas: { checkoutFailures: 0 },
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          signups: { uniqueLeads: 0 },
+          pipeline: { workflowSprintLeads: { total: 0 } },
+          dataQuality: {
+            telemetryTruncated: true,
+            telemetryOldestLoadedEventAt: '2026-10-27T00:00:00.000Z',
+            attributionCoverage: 1,
+            telemetryCoverage: 1,
+          },
+        },
+        '30d': {
+          trafficMetrics: {
+            visitors: 4134,
+            checkoutSuccessPageViews: 0,
+            checkoutCancelPageViews: 27,
+            checkoutPaidConfirmations: 0,
+          },
+          ctas: { checkoutFailures: 0 },
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          dataQuality: {
+            telemetryTruncated: false,
+            attributionCoverage: 1,
+            telemetryCoverage: 1,
+          },
+        },
+        lifetime: {
+          trafficMetrics: {},
+          ctas: {},
+          revenue: {},
+          dataQuality: { attributionCoverage: 0, telemetryCoverage: 0 },
+        },
+      },
+    },
+  });
+
+  assert.match(formatted, /Today: visitors 275, pageViews 192, checkoutStarts 2, paidOrders 0, bookedRevenue \$0\.00.*successPageViews 0, cancelPageViews 8, paidConfirmations 0, checkoutApiFailures 0, funnelCoverage=partial oldestLoaded=2026-10-27T00:00:00\.000Z/);
+  assert.match(formatted, /30d: visitors 4134.*successPageViews 0, cancelPageViews 27, paidConfirmations 0, checkoutApiFailures 0, funnelCoverage=complete/);
+  assert.doesNotMatch(formatted, /Lifetime:.*funnelCoverage/);
+});
+
 test('getHostedAuditViaHttp prefers one batched summary and strips intake identities', async () => {
   const requestedWindows = [];
   const hostedAudit = await getHostedAuditViaHttp({

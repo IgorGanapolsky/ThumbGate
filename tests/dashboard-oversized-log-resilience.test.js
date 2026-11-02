@@ -222,11 +222,12 @@ test('telemetry summary does not present a tail read as complete', (t) => {
   const dir = makeTempDir();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
-  const now = new Date().toISOString();
+  const early = '2026-10-01T00:00:00.000Z';
+  const late = '2026-11-02T12:00:00.000Z';
   const lines = [];
   for (let i = 0; i < 500; i += 1) {
     lines.push(JSON.stringify({
-      receivedAt: now,
+      receivedAt: i < 450 ? early : late,
       eventType: 'cta_click',
       clientType: 'web',
       page: `/p/${i}`,
@@ -240,6 +241,7 @@ test('telemetry summary does not present a tail read as complete', (t) => {
   const truncated = telemetry.getTelemetrySummary(dir, { window: '7d', telemetryTailBytes: 512 });
   assert.equal(truncated.window.truncated, true, 'truncation must be surfaced on the window');
   assert.equal(truncated.window.complete, false);
+  assert.equal(truncated.window.oldestLoadedEventAt, late);
   assert.equal(truncated.telemetrySource.truncated, true);
   assert.ok(truncated.telemetrySource.truncatedPaths.length > 0, 'the truncated file must be named');
 

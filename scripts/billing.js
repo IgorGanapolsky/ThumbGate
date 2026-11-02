@@ -2515,11 +2515,21 @@ function getBusinessAnalytics(options = {}) {
     attributionCoverage: telemetry.visitors ? telemetry.visitors.attributionCoverageRate || 0 : 0,
     amountKnownCoverage: paidOrders.length ? safeRate(amountKnownOrders, paidOrders.length) : 0,
     unreconciledPaidEvents,
+    telemetryTruncated: Boolean(telemetry.window && telemetry.window.truncated),
+    telemetryComplete: Boolean(telemetry.window && telemetry.window.complete === true),
+    telemetryOldestLoadedEventAt: telemetry.window ? telemetry.window.oldestLoadedEventAt || null : null,
+    telemetryTailBytes: telemetry.window ? telemetry.window.tailBytes ?? null : null,
   };
 
   return {
     generatedAt: new Date().toISOString(),
-    window: serializeAnalyticsWindow(analyticsWindow),
+    window: {
+      ...serializeAnalyticsWindow(analyticsWindow),
+      truncated: Boolean(telemetry.window && telemetry.window.truncated),
+      complete: Boolean(telemetry.window && telemetry.window.complete === true),
+      oldestLoadedEventAt: telemetry.window ? telemetry.window.oldestLoadedEventAt || null : null,
+      tailBytes: telemetry.window ? telemetry.window.tailBytes ?? null : null,
+    },
     coverage: {
       source: 'funnel_ledger+revenue_ledger+workflow_sprint_leads',
       tracksBookedRevenue: true,

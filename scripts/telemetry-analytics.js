@@ -826,6 +826,17 @@ function summarizeExternalTrafficQuality(events) {
   };
 }
 
+function earliestEventTimestamp(events) {
+  let oldest = null;
+  for (const entry of events || []) {
+    const stamp = entry && (entry.receivedAt || entry.timestamp);
+    if (!stamp) continue;
+    const text = String(stamp);
+    if (!oldest || text < oldest) oldest = text;
+  }
+  return oldest;
+}
+
 function getTelemetrySummary(feedbackDir, options = {}) {
   const analyticsWindow = resolveAnalyticsWindow(options);
   const telemetryLoadOptions = analyticsWindow.bounded
@@ -835,6 +846,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   // ("lifetime") window, so a large enough telemetry log is read as a tail.
   // Carry that fact through instead of presenting a tail as complete history.
   const telemetryRead = loadTelemetryEventsWithMeta(feedbackDir, telemetryLoadOptions);
+  const oldestLoadedEventAt = earliestEventTimestamp(telemetryRead.events);
   const events = filterEntriesForWindow(
     telemetryRead.events,
     analyticsWindow,
@@ -1197,6 +1209,8 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       // acquisition/conversion rates must check `complete`.
       truncated: telemetryRead.truncated,
       complete: !telemetryRead.truncated,
+      oldestLoadedEventAt,
+      tailBytes: Number(telemetryLoadOptions.maxBytes) || null,
     },
     telemetrySource: {
       truncated: telemetryRead.truncated,
