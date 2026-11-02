@@ -98,6 +98,11 @@ function resolveThumbgateStateDir() {
     return path.join(os.tmpdir(), 'thumbgate');
   }
 
+  // Test runs must not count as real blocks in the user's gate stats.
+  if (process.env.NODE_TEST_CONTEXT) {
+    return path.join(os.tmpdir(), `thumbgate-test-${process.pid}`);
+  }
+
   return path.join(process.env.HOME || os.tmpdir(), '.thumbgate');
 }
 

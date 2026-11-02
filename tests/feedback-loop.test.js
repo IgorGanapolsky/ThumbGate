@@ -1209,9 +1209,15 @@ test('inferLessonFromConversation: extracts file paths and error patterns', () =
   assert.ok(result.tags.includes('has-error-context'));
 });
 
-test('captureFeedback: conversationWindow enriches context and is stored', () => {
+test('captureFeedback: conversationWindow enriches context and is stored', (t) => {
   const tmpDir = makeTmpDir();
+  const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   process.env.THUMBGATE_DATA_DIR = tmpDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  t.after(() => {
+    if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
+  });
 
   const window = [
     { role: 'user', content: 'Fix the cart total calculation' },
