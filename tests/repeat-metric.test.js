@@ -166,6 +166,9 @@ test('mergeRepeatMetricIntoGateStats: preserves keys, adds repeat, no mutation',
   assert.deepStrictEqual(merged.byGate, { foo: { blocked: 1 } });
   assert.ok(merged.repeat, 'repeat sub-key added');
   assert.strictEqual(merged.repeat.repeatBlocksBeforeExecution, 1);
+  assert.strictEqual(merged.ledger.distinctBlocks, 4);
+  assert.strictEqual(merged.ledger.repeatBlocks, 1);
+  assert.strictEqual(merged.ledger.passesMeasured, true);
 
   // Original object must not be mutated.
   assert.deepStrictEqual(original, snapshot);
@@ -178,4 +181,6 @@ test('mergeRepeatMetricIntoGateStats: undefined input -> object with repeat', ()
   assert.ok(merged && typeof merged === 'object');
   assert.ok(merged.repeat);
   assert.strictEqual(merged.repeat.repeatBlocksBeforeExecution, 0);
+  assert.strictEqual(merged.ledger.passesMeasured, false);
+  assert.strictEqual(merged.ledger.distinctBlocks, 0);
 });

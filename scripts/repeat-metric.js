@@ -14,6 +14,7 @@
 // ---------------------------------------------------------------------------
 
 const gatesEngine = require('./gates-engine');
+const { describeEnforcementLedger } = require('./enforcement-ledger');
 
 /**
  * Derive a per-gate { firstBlocks, repeatBlocks } split from the raw stats.
@@ -123,11 +124,24 @@ function computeRepeatMetric() {
  * metric attached. The caller's file does not need to import any internals.
  *
  * @param {object} gateStatsObject
- * @returns {object} copy of gateStatsObject with `.repeat`
+ * @returns {object} copy of gateStatsObject with `.repeat` and `.ledger`
  */
 function mergeRepeatMetricIntoGateStats(gateStatsObject) {
   const base = gateStatsObject && typeof gateStatsObject === 'object' ? gateStatsObject : {};
-  return Object.assign({}, base, { repeat: computeRepeatMetric() });
+  const repeat = computeRepeatMetric();
+  let live = {};
+  try {
+    live = gatesEngine.loadStats() || {};
+  } catch (_) {
+    live = {};
+  }
+  const ledger = describeEnforcementLedger({
+    blocked: Number(base.blocked ?? live.blocked ?? repeat.totalBlocked ?? 0) || 0,
+    recurringBlocks: Number(live.recurringBlocks ?? base.recurringBlocks ?? repeat.recurringBlocks ?? 0) || 0,
+    passed: Number(base.passed ?? live.passed ?? 0) || 0,
+    dailyBlocks: base.dailyBlocks || live.dailyBlocks,
+  });
+  return Object.assign({}, base, { repeat, ledger });
 }
 
 module.exports = {

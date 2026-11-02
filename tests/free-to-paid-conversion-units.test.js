@@ -213,7 +213,7 @@ test('gates-engine.incrementTodayBlockCount writes today entry and prunes old da
   }
 });
 
-test('gates-engine.applyDailyBlockCap increments under-limit blocks and returns null', () => {
+test('gates-engine.applyDailyBlockCap leaves the daily ledger to recordStat', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-cap-'));
   const home = freshHome();
   const savedHome = process.env.HOME;
@@ -240,10 +240,14 @@ test('gates-engine.applyDailyBlockCap increments under-limit blocks and returns 
 
     const denyResult = { decision: 'deny', gate: 'g', message: 'm', severity: 'high', reasoning: [] };
     const result = ge.applyDailyBlockCap(denyResult);
-    assert.equal(result, null, 'under limit should return null and increment');
-    const stats = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
+    assert.equal(result, null, 'under limit should return null without writing the ledger');
+    const before = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
     const today = new Date().toISOString().slice(0, 10);
-    assert.equal(stats.dailyBlocks[today], 1, 'increment counter on under-limit block');
+    assert.equal(before.dailyBlocks[today], undefined, 'the cap must not write today');
+    ge.recordStat('g', 'block', null, { toolName: 'Bash', toolInput: { command: 'echo once' } });
+    const stats = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
+    assert.equal(stats.dailyBlocks[today], 1, 'recordStat writes today once');
+    assert.equal(stats.blocked, 1);
   } finally {
     if (savedHome != null) process.env.HOME = savedHome; else delete process.env.HOME;
     fs.rmSync(tmpDir, { recursive: true, force: true });

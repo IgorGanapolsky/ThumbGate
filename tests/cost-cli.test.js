@@ -89,6 +89,29 @@ test('renderHuman shows a friendly no-stats message when gate-stats.json missing
   assert.doesNotMatch(out, /Estimated \$ saved/);
 });
 
+test('renderHuman counts distinct blocks and does not call a zero pass count measured', () => {
+  const p = makeTempStatsFile({
+    blocked: 42,
+    recurringBlocks: 30,
+    passed: 0,
+    byGate: {},
+  });
+  const r = buildReport({ statsPath: p });
+  assert.equal(r.distinctBlocks, 12);
+  assert.equal(r.repeatBlocks, 30);
+  assert.equal(r.passesMeasured, false);
+  assert.equal(r.blocked, 42);
+  const out = renderHuman(r);
+  assert.match(out, /Distinct blocks\s*:\s*12/);
+  assert.match(out, /Repeat fires\s*:\s*30/);
+  assert.match(out, /Tool calls blocked\s*:\s*42/);
+  assert.match(out, /Allows recorded\s*:\s*not recorded/);
+  assert.doesNotMatch(out, /Tool calls passed/);
+  // Dollar model uses the 12 distinct events, not all 42 fires.
+  const full = buildReport({ statsPath: makeTempStatsFile({ blocked: 12, byGate: {} }) });
+  assert.equal(r.savings.tokensSavedTotal, full.savings.tokensSavedTotal);
+});
+
 test('top blocker is null when byGate is empty', () => {
   const p = makeTempStatsFile({ blocked: 0, byGate: {} });
   const r = buildReport({ statsPath: p });

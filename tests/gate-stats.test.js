@@ -117,6 +117,34 @@ test('formatStats: returns formatted string with all sections', () => {
   assert.ok(output.includes('~5.0 hours'));
 });
 
+test('formatStats: names distinct blocks and an unrecorded allow count', () => {
+  const output = formatStats({
+    totalGates: 1,
+    manualGates: 1,
+    autoPromotedGates: 0,
+    blockGates: 1,
+    warnGates: 0,
+    totalBlocked: 12,
+    totalWarned: 0,
+    topBlocked: null,
+    lastPromotion: null,
+    estimatedHoursSaved: '0.0',
+    gates: [],
+    ledger: {
+      distinctBlocks: 4,
+      repeatBlocks: 9,
+      eventBlocks: 13,
+      passesRecorded: 0,
+      passesMeasured: false,
+    },
+  });
+  assert.match(output, /Actions blocked: 12/);
+  assert.match(output, /Distinct blocks: 4/);
+  assert.match(output, /Repeat fires: 9/);
+  assert.match(output, /Event blocks: 13/);
+  assert.match(output, /Allows recorded: not recorded/);
+});
+
 test('formatStats: handles no top blocked gate', () => {
   const stats = {
     totalGates: 0,

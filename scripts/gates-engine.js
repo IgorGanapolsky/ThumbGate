@@ -1058,10 +1058,30 @@ function buildGateActionFingerprint(gateId, options = {}) {
   return actionFingerprint(parts);
 }
 
+function noteTodayBlock(stats) {
+  const today = todayKey();
+  if (!stats.dailyBlocks) stats.dailyBlocks = {};
+  // Clean old dates (keep only last 7 days to prevent unbounded growth).
+  // Prune before the insert so a second write of an existing day can drop
+  // the oldest key. Callers that need a count, including recordStat, share
+  // this one writer.
+  const keys = Object.keys(stats.dailyBlocks);
+  if (keys.length > 7) {
+    keys.sort();
+    for (const k of keys.slice(0, keys.length - 7)) {
+      delete stats.dailyBlocks[k];
+    }
+  }
+  stats.dailyBlocks[today] = (stats.dailyBlocks[today] || 0) + 1;
+  return stats.dailyBlocks[today];
+}
+
 function recordStat(gateId, action, gate, options = {}) {
   const stats = loadStats();
-  if (action === 'block') stats.blocked = (stats.blocked || 0) + 1;
-  else if (action === 'warn') stats.warned = (stats.warned || 0) + 1;
+  if (action === 'block') {
+    stats.blocked = (stats.blocked || 0) + 1;
+    noteTodayBlock(stats);
+  } else if (action === 'warn') stats.warned = (stats.warned || 0) + 1;
   else if (action === 'approve') stats.pendingApproval = (stats.pendingApproval || 0) + 1;
   else if (action === 'log') stats.logged = (stats.logged || 0) + 1;
   else stats.passed = (stats.passed || 0) + 1;
@@ -1125,19 +1145,9 @@ function getTodayBlockCount() {
 
 function incrementTodayBlockCount() {
   const stats = loadStats();
-  const today = todayKey();
-  if (!stats.dailyBlocks) stats.dailyBlocks = {};
-  // Clean old dates (keep only last 7 days to prevent unbounded growth)
-  const keys = Object.keys(stats.dailyBlocks);
-  if (keys.length > 7) {
-    keys.sort();
-    for (const k of keys.slice(0, keys.length - 7)) {
-      delete stats.dailyBlocks[k];
-    }
-  }
-  stats.dailyBlocks[today] = (stats.dailyBlocks[today] || 0) + 1;
+  const count = noteTodayBlock(stats);
   saveStats(stats);
-  return stats.dailyBlocks[today];
+  return count;
 }
 
 /**
@@ -1156,8 +1166,8 @@ function applyDailyBlockCap(denyResult) {
 
   const todayCount = getTodayBlockCount();
   if (todayCount < FREE_TIER_DAILY_BLOCKS) {
-    // Under limit: allow the block, increment counter
-    incrementTodayBlockCount();
+    // Under the cap the deny stands. recordStat writes today's key once,
+    // including for Pro, so this function must not write it again.
     return null;
   }
 

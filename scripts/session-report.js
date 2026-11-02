@@ -81,12 +81,17 @@ function buildSessionReport({ windowHours } = {}) {
 
   try {
     const { loadStats } = require('./gates-engine');
+    const { describeEnforcementLedger } = require('./enforcement-ledger');
     const stats = loadStats() || {};
+    const ledger = describeEnforcementLedger(stats);
     report.gates = {
       blocked: stats.blocked || 0,
       warned: stats.warned || 0,
       passed: stats.passed || 0,
       pendingApproval: stats.pendingApproval || 0,
+      distinctBlocks: ledger.distinctBlocks,
+      repeatBlocks: ledger.repeatBlocks,
+      passesMeasured: ledger.passesMeasured,
       topGates: topGates(stats.byGate || {}),
     };
   } catch (err) {

@@ -6,6 +6,7 @@ const path = require('path');
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { computeBayesErrorRate } = require('./bayes-optimal-gate');
 const { sequencePathFor } = require('./risk-scorer');
+const { describeEnforcementLedger } = require('./enforcement-ledger');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const MANUAL_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -90,7 +91,18 @@ function calculateStats() {
     calibration,
     firstTimeFixRate,
     gates: allGates,
+    ledger: readEnforcementLedger(),
   };
+}
+
+function readEnforcementLedger() {
+  try {
+    if (!fs.existsSync(STATS_PATH)) return null;
+    const data = JSON.parse(fs.readFileSync(STATS_PATH, 'utf8'));
+    return describeEnforcementLedger(data);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -205,6 +217,12 @@ function formatStats(stats) {
   const lines = [];
   lines.push('Gate Statistics');
   lines.push('─'.repeat(38));
+  if (stats.ledger) {
+    lines.push(`  Distinct blocks: ${stats.ledger.distinctBlocks}`);
+    lines.push(`  Repeat fires: ${stats.ledger.repeatBlocks}`);
+    lines.push(`  Event blocks: ${stats.ledger.eventBlocks}`);
+    lines.push(`  Allows recorded: ${stats.ledger.passesMeasured ? stats.ledger.passesRecorded : 'not recorded'}`);
+  }
   lines.push(`  Active gates: ${stats.totalGates} (${stats.manualGates} manual, ${stats.autoPromotedGates} auto-promoted)`);
   lines.push(`  Actions blocked: ${stats.totalBlocked}`);
   lines.push(`  Actions warned: ${stats.totalWarned}`);

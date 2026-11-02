@@ -2104,6 +2104,11 @@ function printDashboard(data) {
   console.log('\uD83D\uDEE1\uFE0F  Gate Enforcement');
   console.log(`  Active Gates     : ${gateStats.totalGates} (${gateStats.manualCount} manual, ${gateStats.autoCount} auto-promoted)`);
   console.log(`  Actions Blocked  : ${gateStats.blocked}`);
+  if (gateStats.ledger) {
+    console.log(`  Distinct blocks  : ${gateStats.ledger.distinctBlocks}`);
+    console.log(`  Repeat fires     : ${gateStats.ledger.repeatBlocks}`);
+    console.log(`  Allows recorded  : ${gateStats.ledger.passesMeasured ? gateStats.ledger.passesRecorded : 'not recorded'}`);
+  }
   console.log(`  Actions Warned   : ${gateStats.warned}`);
   if (gateStats.topBlocked) {
     console.log(`  Top Blocked      : ${gateStats.topBlocked} (${gateStats.topBlockedCount}\u00D7)`);

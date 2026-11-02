@@ -20,6 +20,7 @@ const {
   formatDollars,
   formatTokens,
 } = require('./token-savings');
+const { describeEnforcementLedger } = require('./enforcement-ledger');
 
 const DEFAULT_STATS_PATH = path.join(
   process.env.HOME || process.env.USERPROFILE || '/tmp',
@@ -58,17 +59,21 @@ function buildReport({ statsPath = DEFAULT_STATS_PATH, modelMix } = {}) {
   // note on PR #2281.
   const raw = readGateStats(statsPath);
   const stats = raw || { blocked: 0, warned: 0, passed: 0, byGate: {} };
-  const blockedCalls = Number(stats.blocked) || 0;
+  const ledger = describeEnforcementLedger(stats);
+  const blockedCalls = ledger.eventBlocks;
   const savings = computeTokenSavings({
-    blockedCalls,
+    blockedCalls: ledger.distinctBlocks,
     modelMix,
   });
   return {
     statsPath,
     statsExists: raw !== null,
     blocked: blockedCalls,
+    distinctBlocks: ledger.distinctBlocks,
+    repeatBlocks: ledger.repeatBlocks,
+    passesMeasured: ledger.passesMeasured,
     warned: Number(stats.warned) || 0,
-    passed: Number(stats.passed) || 0,
+    passed: ledger.passesRecorded,
     topGate: summarizeTopGate(stats.byGate),
     savings,
   };
@@ -91,9 +96,15 @@ function renderHuman(report) {
   }
 
   out.push('');
+  out.push(`  Distinct blocks    : ${Number(report.distinctBlocks || 0).toLocaleString()}`);
+  out.push(`  Repeat fires       : ${Number(report.repeatBlocks || 0).toLocaleString()}`);
   out.push(`  Tool calls blocked : ${report.blocked.toLocaleString()}`);
   out.push(`  Tool calls warned  : ${report.warned.toLocaleString()}`);
-  out.push(`  Tool calls passed  : ${report.passed.toLocaleString()}`);
+  if (report.passesMeasured) {
+    out.push(`  Allows recorded    : ${report.passed.toLocaleString()}`);
+  } else {
+    out.push('  Allows recorded    : not recorded');
+  }
   if (report.topGate) {
     out.push(`  Top blocker        : ${report.topGate.id} (${report.topGate.blocked} blocks)`);
   }
@@ -106,10 +117,10 @@ function renderHuman(report) {
   out.push(`  Estimated $ saved  : ${formatDollars(report.savings.dollarsSaved)}`);
   out.push('');
   out.push(
-    '  Methodology: conservative, 2k input + 600 output tokens per blocked call,',
+    '  Methodology: model of distinct block events, 2k input + 600 output tokens each. Not a receipt.',
   );
   out.push(
-    '  Sonnet-heavy mix (80/15/5). Override with `--mix` JSON flag.',
+    '  Repeat fires are left out of the dollar line. Sonnet-heavy mix (80/15/5). Override with `--mix` JSON flag.',
   );
   out.push('');
   return out.join('\n');
