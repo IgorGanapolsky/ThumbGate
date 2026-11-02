@@ -617,6 +617,9 @@ const TRACKED_LINK_QUERY_KEYS = new Set([
   'comment_id',
   'campaign_variant',
   'offer_code',
+  'ref',
+  'referred_by',
+  'inviter_id',
   'acquisition_id',
   'visitor_id',
   'session_id',
@@ -894,6 +897,24 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       utm_medium: 'diagnostic_confirmation',
       utm_campaign: 'sprint_diagnostic',
       plan_id: 'sprint_diagnostic',
+    },
+    allowCustomerEmail: true,
+  },
+  'diagnostic-direct': {
+    configUrlKey: 'sprintDiagnosticCheckoutUrl',
+    fallbackHref: SPRINT_DIAGNOSTIC_CHECKOUT_URL,
+    external: true,
+    botDeflectPath: '/diagnostic',
+    ctaId: 'go_diagnostic_direct',
+    ctaPlacement: 'link_router',
+    eventType: 'checkout_started',
+    prefillStripeEmail: true,
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'checkout_direct',
+      utm_campaign: 'sprint_diagnostic_499',
+      plan_id: 'sprint_diagnostic',
+      billing_cycle: 'one_time',
     },
     allowCustomerEmail: true,
   },
@@ -1978,8 +1999,15 @@ function buildCheckoutAttributionMetadata(body, req, traceId) {
     postId: pickFirstText(rawMetadata.postId, rawMetadata.post_id, body.postId, body.post_id),
     commentId: pickFirstText(rawMetadata.commentId, rawMetadata.comment_id, body.commentId, body.comment_id),
     campaignVariant: pickFirstText(rawMetadata.campaignVariant, rawMetadata.variant, body.campaignVariant, body.variant),
+    referredByVisitorId: pickFirstText(
+      rawMetadata.referredByVisitorId,
+      rawMetadata.ref,
+      rawMetadata.inviter_id,
+      body.referredByVisitorId,
+      body.ref,
+      body.inviter_id
+    ),
     offerCode: pickFirstText(rawMetadata.offerCode, rawMetadata.offer, rawMetadata.coupon, body.offerCode, body.offer, body.coupon),
-    referrer,
     referrerHost: pickFirstText(rawMetadata.referrerHost, body.referrerHost, parseReferrerHost(referrer)),
     landingPath: pickFirstText(rawMetadata.landingPath, body.landingPath, body.page),
     ctaId: pickFirstText(rawMetadata.ctaId, body.ctaId),
@@ -3082,13 +3110,17 @@ function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = 
     : '';
   const requestedPlanId = String(parsed?.searchParams?.get('plan_id') || 'pro').toLowerCase();
   const requestedCycle = String(parsed?.searchParams?.get('billing_cycle') || 'monthly').toLowerCase();
-  const planDisplay = requestedPlanId === 'cloud_indie'
-    ? { title: 'Start ThumbGate Cloud Indie', price: '$49', unit: '/mo', directHref: '/go/pro-direct?plan_id=cloud_indie&billing_cycle=monthly', ctaLabel: 'Pay $49/mo with Stripe →' }
-    : requestedPlanId === 'cloud_startup'
-      ? { title: 'Start ThumbGate Cloud Startup', price: '$199', unit: '/mo', directHref: '/go/pro-direct?plan_id=cloud_startup&billing_cycle=monthly', ctaLabel: 'Pay $199/mo with Stripe →' }
-      : requestedCycle === 'annual'
-        ? { title: 'Start ThumbGate Pro Annual', price: '$149', unit: '/yr', directHref: '/go/pro-direct?plan_id=pro&billing_cycle=annual', ctaLabel: 'Pay $149/yr with Stripe →' }
-        : { title: 'Start ThumbGate Pro', price: '$19', unit: '/mo', directHref: '/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial', ctaLabel: 'Pay $19/mo with Stripe →' };
+  const planDisplay = requestedPlanId === 'bundle_49'
+    ? { title: 'ThumbGate Production Rule-Pack & DPO/AKV Kit', price: '$49', unit: ' one-time (<$50 corp card)', directHref: '/go/bundle-49', ctaLabel: 'Pay $49 One-Time with Stripe →' }
+    : requestedPlanId === 'playbook_999'
+      ? { title: 'The 2026 AI Agent Infrastructure & Cost Playbook', price: '$9.99', unit: ' one-time', directHref: '/go/playbook-999', ctaLabel: 'Pay $9.99 One-Time with Stripe →' }
+      : requestedPlanId === 'cloud_indie'
+        ? { title: 'Start ThumbGate Cloud Indie', price: '$49', unit: '/mo', directHref: '/go/pro-direct?plan_id=cloud_indie&billing_cycle=monthly', ctaLabel: 'Pay $49/mo with Stripe →' }
+        : requestedPlanId === 'cloud_startup'
+          ? { title: 'Start ThumbGate Cloud Startup', price: '$199', unit: '/mo', directHref: '/go/pro-direct?plan_id=cloud_startup&billing_cycle=monthly', ctaLabel: 'Pay $199/mo with Stripe →' }
+          : requestedCycle === 'annual'
+            ? { title: 'Start ThumbGate Pro Annual', price: '$149', unit: '/yr', directHref: '/go/pro-direct?plan_id=pro&billing_cycle=annual', ctaLabel: 'Pay $149/yr with Stripe →' }
+            : { title: 'Start ThumbGate Pro', price: '$19', unit: '/mo', directHref: '/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial', ctaLabel: 'Pay $19/mo with Stripe →' };
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -3143,7 +3175,9 @@ ${hiddenInputs}
 <strong>Not buying today?</strong>
 <p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
 <div class="objection-grid">
+<button type="button" data-reason="subscription_fatigue_want_one_time">Want 1-time purchase (no subscription)</button>
 <button type="button" data-reason="price_unclear">Price or scope is unclear</button>
+<button type="button" data-reason="can_build_with_hooks">Can build with static hooks</button>
 <button type="button" data-reason="need_more_proof">Need more proof first</button>
 <button type="button" data-reason="need_team_plan">Need a team/workflow plan instead</button>
 <button type="button" data-reason="not_urgent">Not urgent right now</button>
@@ -3246,7 +3280,14 @@ ${hiddenInputs}
       });
       try { window.plausible && window.plausible('Checkout Pro Reason Not Buying', { props: { page:'/checkout/pro', reasonCode: reason } }); } catch(_) {}
       var saved = document.getElementById('feedback-saved');
-      if (saved) saved.style.display = 'block';
+      if (saved) {
+        saved.style.display = 'block';
+        if (reason === 'subscription_fatigue_want_one_time' || reason === 'price_unclear') {
+          saved.innerHTML = 'Feedback saved. Prefer zero recurring billing? Grab the <a href="/go/playbook-999" style="color:inherit;text-decoration:underline">$9.99 One-Time Playbook</a> or <a href="/go/bundle-49" style="color:inherit;text-decoration:underline">$49 One-Time Rule Bundle</a>.';
+        } else {
+          saved.textContent = 'Feedback saved (' + reason.replaceAll('_', ' ') + ').';
+        }
+      }
     });
   });
   window.addEventListener('pagehide', function(){
@@ -3286,8 +3327,8 @@ function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneySt
     postId: pickFirstText(params.get('post_id')),
     commentId: pickFirstText(params.get('comment_id')),
     campaignVariant: pickFirstText(params.get('campaign_variant')),
+    referredByVisitorId: pickFirstText(params.get('ref'), params.get('referred_by'), params.get('inviter_id')),
     offerCode: pickFirstText(params.get('offer_code')),
-    landingPath: pickFirstText(params.get('landing_path'), req.headers.referer ? '/' : '/'),
     referrerHost: pickFirstText(params.get('referrer_host')),
     ctaId: pickFirstText(params.get('cta_id'), 'pricing_pro'),
     ctaPlacement: pickFirstText(params.get('cta_placement'), 'pricing'),
@@ -3459,8 +3500,8 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
             : 'ab_one_time_49_bundle')
         : 'ab_direct_stripe_19'
     ),
+    referredByVisitorId: pickFirstText(params.get('ref'), params.get('referred_by'), params.get('inviter_id')),
     offerCode: pickFirstText(params.get('offer_code')),
-    ctaId: pickFirstText(params.get('cta_id'), target.ctaId),
     ctaPlacement: pickFirstText(params.get('cta_placement'), target.ctaPlacement),
     planId: pickFirstText(params.get('plan_id'), target.defaults?.plan_id),
     landingPath: pickFirstText(params.get('landing_path'), `/go/${target.slug}`),
@@ -3543,19 +3584,44 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
     return;
   }
   if (
-    (target.slug === 'pro-direct' || target.slug === 'pro-annual')
+    (target.slug === 'pro-direct'
+      || target.slug === 'pro-annual'
+      || target.slug === 'cloud-indie'
+      || target.slug === 'cloud-startup'
+      || target.slug === 'bundle-49'
+      || target.slug === 'playbook-999'
+      || target.slug === 'diagnostic-direct')
+    && String(parsed.searchParams.get('provider') || '').trim().toLowerCase() !== 'gumroad'
     && process.env.STRIPE_SECRET_KEY
     && !process.env.NODE_TEST_CONTEXT
     && !isHeadRequest
   ) {
     try {
+      const oneTimePackBySlug = {
+        'bundle-49': 'bundle_49',
+        'playbook-999': 'playbook_999',
+        'diagnostic-direct': 'sprint_diagnostic',
+      };
+      const packId = oneTimePackBySlug[target.slug] || null;
       const requestedCycle = String(parsed.searchParams.get('billing_cycle') || '').trim().toLowerCase();
-      const billingCycle = target.slug === 'pro-annual' || requestedCycle === 'annual' ? 'annual' : 'monthly';
+      const billingCycle = packId
+        ? 'one_time'
+        : (target.slug === 'pro-annual' || requestedCycle === 'annual' ? 'annual' : 'monthly');
+      const defaultPlanForSlug = packId
+        || (target.slug === 'cloud-indie'
+          ? 'cloud_indie'
+          : target.slug === 'cloud-startup'
+            ? 'cloud_startup'
+            : 'pro');
       const requestedPlan = String(parsed.searchParams.get('plan_id') || '').trim().toLowerCase();
       const customerEmail = normalizeCheckoutCustomerEmail(parsed.searchParams.get('customer_email')) || undefined;
       const traceId = createJourneyId('checkout');
       const bootstrapBody = buildCheckoutBootstrapBody(parsed, req, journeyState);
-      bootstrapBody.planId = ['pro', 'cloud_indie', 'cloud_startup', 'team'].includes(requestedPlan) ? requestedPlan : 'pro';
+      bootstrapBody.planId = packId
+        ? packId
+        : (['pro', 'cloud_indie', 'cloud_startup', 'team'].includes(requestedPlan)
+          ? requestedPlan
+          : defaultPlanForSlug);
       bootstrapBody.billingCycle = billingCycle;
       const analyticsMetadata = buildCheckoutAttributionMetadata(bootstrapBody, req, traceId);
       const sessionResult = await createCheckoutSession({
@@ -3564,10 +3630,19 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
         customerEmail,
         installId: bootstrapBody.installId,
         traceId,
+        packId,
         metadata: analyticsMetadata,
         appOrigin: hostedConfig.appOrigin,
       });
       if (sessionResult && sessionResult.url) {
+        const fallbackDest = buildTrackedLinkDestination(target, hostedConfig, parsed);
+        const attribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, fallbackDest);
+        appendBestEffortTelemetry(
+          FEEDBACK_DIR,
+          { ...attribution, stripeSessionId: sessionResult.sessionId, traceId },
+          req.headers,
+          `tracked_link_redirect:${target.slug}`
+        );
         res.writeHead(302, {
           ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
           'Cache-Control': 'no-store',
@@ -5381,7 +5456,9 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       <h2>What stopped you?</h2>
       <p>Pick the closest reason. This writes directly into the first-party telemetry stream so we can fix the real blocker instead of guessing.</p>
       <div class="reason-grid">
+        <button type="button" data-reason="subscription_fatigue_want_one_time">Want 1-time purchase (no subscription)</button>
         <button type="button" data-reason="too_expensive">Too expensive</button>
+        <button type="button" data-reason="can_build_with_hooks">Can build with static hooks</button>
         <button type="button" data-reason="not_ready">Just researching</button>
         <button type="button" data-reason="need_team_features">Need team workflow features</button>
         <button type="button" data-reason="need_more_proof">Need more proof or trust</button>
@@ -5481,7 +5558,9 @@ function renderCheckoutCancelledPage(runtimeConfig) {
               reasonCode: selectedReason || 'unspecified',
               reasonText: noteEl ? noteEl.value || null : null
             });
-            statusEl.textContent = 'Feedback saved: ' + selectedReason.replaceAll('_', ' ') + '.';
+            statusEl.textContent = (selectedReason === 'subscription_fatigue_want_one_time' || selectedReason === 'too_expensive')
+              ? 'Feedback saved: ' + selectedReason.replaceAll('_', ' ') + '. See the $9.99 Playbook and $49 One-Time Bundle below (zero recurring billing).'
+              : 'Feedback saved: ' + selectedReason.replaceAll('_', ' ') + '.';
           });
         });
 
@@ -8686,6 +8765,44 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       return;
     }
 
+    if (req.method === 'OPTIONS' && pathname === '/v1/feedback/roast') {
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      });
+      res.end();
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/feedback/roast') {
+      const { FEEDBACK_DIR: roastFeedbackDir } = getFeedbackPaths();
+      const { classifyBuyerCritique, CRITIQUE_REMEDIATION_MAP } = require('../../scripts/telemetry-analytics');
+      const body = await parseJsonBody(req, 16 * 1024);
+      const reasonCode = String(body.reasonCode || body.category || body.objection || 'roast_submission').trim();
+      const reasonDetail = String(body.reasonDetail || body.critique || body.roast || body.message || '').trim() || null;
+      const entry = appendTelemetryPing(roastFeedbackDir, {
+        ...body,
+        clientType: body.clientType || 'web',
+        eventType: 'buyer_critique',
+        reasonCode,
+        reasonDetail,
+      }, req.headers);
+      const category = classifyBuyerCritique(reasonCode, reasonDetail);
+      const remediation = CRITIQUE_REMEDIATION_MAP[category] || CRITIQUE_REMEDIATION_MAP.other_critique;
+      sendJson(res, 200, {
+        ok: true,
+        category,
+        reasonCode,
+        reasonDetail,
+        receivedAt: entry ? entry.receivedAt : new Date().toISOString(),
+        remediation,
+      }, {
+        'Access-Control-Allow-Origin': '*',
+      });
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/v1/metrics/real') {
       const bd = require('../../scripts/bot-detection');
       const { FEEDBACK_DIR: metricsDir } = getFeedbackPaths();
@@ -8748,7 +8865,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       // cli_search excluded: event name doesn't exist in production telemetry.
       const ACTIVE_EVENTS = new Set([
         'cli_capture', 'cli_recall', 'cli_stats',
-        'activation_first_rule_promoted',
+        'activation_first_rule_promoted', 'feedback_captured', 'buyer_critique',
       ]);
       const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
       const last30 = classified.filter(e => {
@@ -10236,7 +10353,9 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       try {
         const { evaluateViralMarketingScorecard } = require('../../scripts/viral-marketing-scorecard');
         const { buildLinkedInAndTikTokViralMonetizationPack } = require('../../scripts/fast-money-engine');
-        const scorecard = await evaluateViralMarketingScorecard({ seedIfNeeded: false });
+        const scorecard = await evaluateViralMarketingScorecard({
+          seedIfNeeded: parsed.searchParams.get('seed') !== '0',
+        });
         const viralPack = buildLinkedInAndTikTokViralMonetizationPack();
         sendJson(
           res,

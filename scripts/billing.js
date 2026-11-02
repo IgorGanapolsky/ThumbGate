@@ -72,6 +72,7 @@ const CONFIG = {
   PAYPAL_WEBHOOK_ID: process.env.THUMBGATE_PAYPAL_WEBHOOK_ID || '',
   PAYPAL_API_BASE_URL: process.env.THUMBGATE_PAYPAL_API_BASE_URL || 'https://api-m.paypal.com',
   GITHUB_MARKETPLACE_PLAN_PRICES_JSON: process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON || '',
+  GUMROAD_WEBHOOK_SECRET: process.env.THUMBGATE_GUMROAD_WEBHOOK_SECRET || '',
   STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || PRO_MONTHLY_PRICE_ID,
   STRIPE_PRICE_ID_PRO_MONTHLY: process.env.STRIPE_PRICE_ID_PRO_MONTHLY || PRO_MONTHLY_PRICE_ID,
   STRIPE_PRICE_ID_PRO_ANNUAL: process.env.STRIPE_PRICE_ID_PRO_ANNUAL || PRO_ANNUAL_PRICE_ID,
@@ -96,6 +97,11 @@ const CONFIG = {
       process.env.THUMBGATE_PAYPAL_WEBHOOK_LEDGER_PATH ||
       path.join(getFeedbackPaths().FEEDBACK_DIR, 'paypal-webhook-deliveries.jsonl');
   },
+  get GUMROAD_WEBHOOK_LEDGER_PATH() {
+    return process.env._TEST_GUMROAD_WEBHOOK_LEDGER_PATH ||
+      process.env.THUMBGATE_GUMROAD_WEBHOOK_LEDGER_PATH ||
+      path.join(getFeedbackPaths().FEEDBACK_DIR, 'gumroad-webhook-deliveries.jsonl');
+  },
   get LOCAL_CHECKOUT_SESSIONS_PATH() {
     return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'local-checkout-sessions.json');
   },
@@ -111,7 +117,32 @@ const CONFIG = {
   RESEND_API_KEY: process.env.RESEND_API_KEY || process.env.THUMBGATE_RESEND_API_KEY || '',
   TRIAL_EMAIL_FROM: process.env.THUMBGATE_TRIAL_EMAIL_FROM || process.env.RESEND_FROM_EMAIL || process.env.RESEND_FROM || 'onboarding@resend.dev',
   TRIAL_EMAIL_REPLY_TO: process.env.THUMBGATE_TRIAL_EMAIL_REPLY_TO || 'support@thumbgate.ai',
-  CREDIT_PACKS: {}
+  CREDIT_PACKS: {
+    bundle_49: {
+      id: 'bundle_49',
+      name: 'ThumbGate Production Rule-Pack & DPO/AKV Harness Kit (One-Time)',
+      description: '40 PreToolUse firewall gates, multi-agent configs, and DPO/AKV harness kit. One-time purchase under $50 corporate card threshold.',
+      currency: 'USD',
+      amountCents: 4900,
+      credits: 10000,
+    },
+    playbook_999: {
+      id: 'playbook_999',
+      name: 'The 2026 AI Agent Infrastructure & Cost Playbook (One-Time)',
+      description: 'Laguna 2.1 DFlash, AKV cache engineering, and PreToolUse firewall architecture guide.',
+      currency: 'USD',
+      amountCents: 999,
+      credits: 1000,
+    },
+    sprint_diagnostic: {
+      id: 'sprint_diagnostic',
+      name: 'ThumbGate 48-Hour CTO Workflow Hardening Diagnostic (One-Time)',
+      description: 'Done-with-you 60-minute working review, configured PreToolUse gate, and regression proof within 2 business days.',
+      currency: 'USD',
+      amountCents: 49900,
+      credits: 100000,
+    },
+  }
 };
 
 const DEFAULT_DIAGNOSTIC_PAYMENT_LINK_ID = 'plink_1TsO6lGGBpd520QYsFToXuRC';
@@ -471,7 +502,13 @@ function buildCheckoutProductData({ name, description, appOrigin, planId }) {
 }
 
 async function verifyActiveProductForPlan(stripe, planId) {
-  const expectedName = planId === 'team' ? 'ThumbGate Team' : 'ThumbGate Pro';
+  const expectedName = planId === 'team'
+    ? 'ThumbGate Team'
+    : planId === 'cloud_indie'
+      ? 'ThumbGate Cloud Indie'
+      : planId === 'cloud_startup'
+        ? 'ThumbGate Cloud Startup'
+        : 'ThumbGate Pro';
   let products;
   try {
     products = await stripe.products.list({ limit: 100 });
@@ -499,10 +536,30 @@ async function verifyActiveProductForPlan(stripe, planId) {
 
 function buildSubscriptionPriceData(checkoutSelection, appOrigin) {
   const isTeam = checkoutSelection.planId === 'team';
+  const isCloudIndie = checkoutSelection.planId === 'cloud_indie';
+  const isCloudStartup = checkoutSelection.planId === 'cloud_startup';
   const annual = checkoutSelection.billingCycle === 'annual';
   const unitAmount = isTeam
     ? TEAM_MONTHLY_PRICE_DOLLARS * 100
-    : (annual ? PRO_ANNUAL_PRICE_DOLLARS : PRO_MONTHLY_PRICE_DOLLARS) * 100;
+    : isCloudIndie
+      ? 4900
+      : isCloudStartup
+        ? 19900
+        : (annual ? PRO_ANNUAL_PRICE_DOLLARS : PRO_MONTHLY_PRICE_DOLLARS) * 100;
+  const productName = isTeam
+    ? 'ThumbGate Team'
+    : isCloudIndie
+      ? 'ThumbGate Cloud Indie'
+      : isCloudStartup
+        ? 'ThumbGate Cloud Startup'
+        : 'ThumbGate Pro';
+  const productDescription = isTeam
+    ? 'Shared Pre-Action Checks, team governance, and workflow hardening for AI coding agents.'
+    : isCloudIndie
+      ? 'AWS Cloud Token Optimizer (1M tokens/mo), Pre-Action Firewall, and hosted telemetry.'
+      : isCloudStartup
+        ? 'AWS Cloud Token Optimizer (10M tokens/mo), Loop-Kill Webhooks, and multi-project governance.'
+        : 'Local dashboard, DPO export, and Pre-Action Checks for AI coding agents.';
   return {
     currency: 'usd',
     unit_amount: unitAmount,
@@ -510,10 +567,8 @@ function buildSubscriptionPriceData(checkoutSelection, appOrigin) {
       interval: annual ? 'year' : 'month',
     },
     product_data: buildCheckoutProductData({
-      name: isTeam ? 'ThumbGate Team' : 'ThumbGate Pro',
-      description: isTeam
-        ? 'Shared Pre-Action Checks, team governance, and workflow hardening for AI coding agents.'
-        : 'Local dashboard, DPO export, and Pre-Action Checks for AI coding agents.',
+      name: productName,
+      description: productDescription,
       appOrigin,
       planId: isTeam ? 'team' : 'pro',
     }),
@@ -1659,6 +1714,29 @@ function resolveSubscriptionCheckoutSelection(checkoutMetadata = {}) {
       totalPriceDollars: TEAM_MONTHLY_PRICE_DOLLARS * seatCount,
     };
   }
+  if (planId === 'cloud_indie') {
+    return {
+      planId: 'cloud_indie',
+      billingCycle: 'monthly',
+      seatCount: 1,
+      quantity: 1,
+      priceId: process.env.STRIPE_PRICE_ID_CLOUD_INDIE || null,
+      unitPriceDollars: 49,
+      totalPriceDollars: 49,
+    };
+  }
+
+  if (planId === 'cloud_startup') {
+    return {
+      planId: 'cloud_startup',
+      billingCycle: 'monthly',
+      seatCount: 1,
+      quantity: 1,
+      priceId: process.env.STRIPE_PRICE_ID_CLOUD_STARTUP || null,
+      unitPriceDollars: 199,
+      totalPriceDollars: 199,
+    };
+  }
 
   if (billingCycle === 'annual') {
     return {
@@ -2531,6 +2609,7 @@ function getBusinessAnalytics(options = {}) {
       providerCoverage: {
         stripe: processorReconciledOrders > 0 ? 'booked_revenue+processor_reconciled' : 'booked_revenue',
         githubMarketplace: 'webhook_or_configured_plan_prices',
+        gumroad: 'webhook_reconciled',
       },
     },
     funnel: {
@@ -2655,6 +2734,12 @@ function getBusinessAnalytics(options = {}) {
     },
     trafficMetrics,
     ctas: telemetry.ctas || {},
+    buyerLoss: telemetry.buyerLoss || {},
+    behavior: telemetry.behavior || {},
+    viralLoop: telemetry.viralLoop || {},
+    abExperiments: telemetry.abExperiments || {},
+    critiqueLoop: telemetry.critiqueLoop || {},
+    trackedLinks: telemetry.trackedLinks || {},
     operatorGeneratedAcquisition,
     dataQuality,
     sourceDiagnostics,
@@ -2963,7 +3048,9 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
 function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null, appOrigin } = {}) {
   const pack = packId ? CONFIG.CREDIT_PACKS[packId] : null;
   const checkoutSelection = pack ? null : resolveSubscriptionCheckoutSelection(checkoutMetadata);
-  if (!pack && !checkoutSelection.priceId) {
+  const usesInlineTierPriceData = checkoutSelection
+    && (checkoutSelection.planId === 'cloud_indie' || checkoutSelection.planId === 'cloud_startup');
+  if (!pack && !usesInlineTierPriceData && !checkoutSelection.priceId) {
     throw new Error(`Stripe price ID is missing for ${checkoutSelection.planId} ${checkoutSelection.billingCycle} checkout.`);
   }
   const lineItems = pack
@@ -3111,7 +3198,21 @@ async function getCheckoutSessionStatus(sessionId) {
         && session.payment_status === 'no_payment_required');
     const traceId = session.metadata?.traceId || null;
 
-    if (!isPaid) return { found: true, localMode: false, sessionId, paid: false, paymentStatus: session.payment_status, status: session.status };
+    if (!isPaid) {
+      const unpaidEmail = session.customer_details?.email || session.customer_email || null;
+      const recoveryUrl = session.after_expiration?.recovery?.url || null;
+      return {
+        found: true,
+        localMode: false,
+        sessionId,
+        paid: false,
+        paymentStatus: session.payment_status,
+        status: session.status,
+        ...(unpaidEmail ? { customerEmail: unpaidEmail } : {}),
+        ...(recoveryUrl ? { recoveryUrl } : {}),
+        ...(traceId ? { traceId } : {}),
+      };
+    }
 
     const installId = session.metadata?.installId || null;
     const customerEmail = session.customer_details?.email || session.customer_email || '';
@@ -3717,6 +3818,28 @@ async function handleWebhook(rawBody, signature) {
         paymentStatus: session.payment_status || 'unpaid',
       };
     }
+    case 'checkout.session.expired': {
+      const session = event.data.object || {};
+      const expiredEmail = session.customer_details?.email || session.customer_email || null;
+      const recoveryUrl = session.after_expiration?.recovery?.url || null;
+      let recoveryResult = null;
+      try {
+        const { recoverCheckout } = require('./checkout-recovery');
+        recoveryResult = recoverCheckout({
+          ...session,
+          amount_total: Number(session.amount_total) > 0 ? Number(session.amount_total) : 1900,
+        }, { dryRun: true });
+      } catch (_) {}
+      return {
+        handled: true,
+        action: 'checkout_recovery_queued',
+        sessionId: session.id || null,
+        paymentStatus: session.payment_status || 'unpaid',
+        customerEmail: expiredEmail,
+        recoveryUrl,
+        recoveryVerdict: recoveryResult ? recoveryResult.verdict : null,
+      };
+    }
     case 'customer.subscription.deleted': {
       const sub = event.data.object;
       return {
@@ -4218,8 +4341,167 @@ function handleGithubWebhook(event, provenance = {}) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Gumroad webhook support (Ultramarine FORMAT steal — provider parity)
+// ---------------------------------------------------------------------------
+
+/**
+ * Verify Gumroad webhook signature using HMAC-SHA256.
+ * Gumroad sends `X-Gumroad-Signature` header = HMAC-SHA256(webhook_secret, raw_body).
+ */
+function verifyGumroadSignature(body, signature, secret) {
+  if (!signature || !secret) return { verified: false, reason: 'missing_signature_or_secret' };
+  const expected = crypto.createHmac('sha256', String(secret)).update(body).digest('hex');
+  const provided = normalizeText(signature);
+  if (!provided || provided.length < 8) return { verified: false, reason: 'invalid_signature_format' };
+  const cleanProvided = provided.replace(/^sha256=/, '');
+  return safeCompareHex(expected, cleanProvided)
+    ? { verified: true }
+    : { verified: false, reason: 'signature_mismatch' };
+}
+
+function loadGumroadWebhookLedger() {
+  return loadJsonlRecords(CONFIG.GUMROAD_WEBHOOK_LEDGER_PATH);
+}
+
+/**
+ * Record a Gumroad webhook delivery to the evidence ledger.
+ */
+function recordGumroadWebhookDelivery({
+  rawBody,
+  signature,
+  secret = CONFIG.GUMROAD_WEBHOOK_SECRET || process.env.THUMBGATE_GUMROAD_WEBHOOK_SECRET || '',
+  receivedAt = new Date().toISOString(),
+} = {}) {
+  const body = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody || '');
+  const verification = verifyGumroadSignature(body, signature, secret);
+  if (!verification.verified) return { verified: false, recorded: false, reason: verification.reason };
+
+  let event;
+  try {
+    event = JSON.parse(body.toString('utf-8'));
+  } catch {
+    return { verified: true, recorded: false, reason: 'invalid_gumroad_webhook_json' };
+  }
+
+  const eventType = normalizeText(event.type || event.event_type || event.eventType);
+  const eventId = normalizeText(event.id || event.sale_id || event.subscription_id || `gumroad_${Date.now()}`);
+  if (!eventType) return { verified: true, recorded: false, reason: 'missing_gumroad_event_type' };
+
+  const payloadSha256 = `sha256:${crypto.createHash('sha256').update(body).digest('hex')}`;
+  const lockPath = `${CONFIG.GUMROAD_WEBHOOK_LEDGER_PATH}.lock`;
+  let lockAcquired = false;
+  let ledger;
+  try {
+    acquireDirectoryLock(lockPath);
+    lockAcquired = true;
+    const ledgerResult = loadGumroadWebhookLedger();
+    if (!Array.isArray(ledgerResult)) {
+      return { verified: true, recorded: false, reason: 'gumroad_webhook_ledger_unreadable' };
+    }
+    ledger = ledgerResult;
+    const existing = ledger.rows.find((entry) =>
+      normalizeText(entry.eventId) === eventId ||
+      normalizeText(entry.payloadSha256) === payloadSha256
+    );
+    if (existing) {
+      return {
+        verified: true, recorded: true, duplicate: true,
+        eventId, eventType, payloadSha256,
+      };
+    }
+    const write = appendJsonlRecord(CONFIG.GUMROAD_WEBHOOK_LEDGER_PATH, {
+      schemaVersion: 1,
+      provider: 'gumroad',
+      receivedAt,
+      eventId,
+      eventType,
+      payloadSha256,
+      rawBodyBase64: body.toString('base64'),
+    });
+    if (!write.written) return { verified: true, recorded: false, reason: 'gumroad_webhook_ledger_write_failed' };
+  } catch {
+    return { verified: true, recorded: false, reason: 'gumroad_webhook_ledger_lock_failed' };
+  } finally {
+    if (lockAcquired) {
+      try { fs.rmSync(lockPath, { recursive: true, force: true }); } catch { /* ignore */ }
+    }
+  }
+  return {
+    verified: true, recorded: true, duplicate: false,
+    eventId, eventType, payloadSha256,
+  };
+}
+
+/**
+ * Handle a verified Gumroad webhook event — record revenue events for sales.
+ */
+function handleGumroadWebhook(event, provenance = {}) {
+  if (!event) return { handled: false, reason: 'missing_payload_data' };
+  const eventType = normalizeText(event.type || event.event_type || event.eventType);
+
+  switch (eventType) {
+    case 'sale.completed': {
+      const sale = event.sale || event;
+      const customerId = `gumroad_${sale.email || sale.customer?.id || sale.buyer_email || 'unknown'}`;
+      const orderId = normalizeText(sale.id || sale.sale_id || `gumroad_${Date.now()}`);
+      const rawAmount = sale.price || sale.amount || sale.subtotal || sale.charge_total || 0;
+      const currency = normalizeCurrency(sale.currency || 'USD');
+      const amountCents = Math.round(Number(rawAmount) * (currency === 'JPY' ? 1 : 100));
+      const revenueRecord = {
+        provider: 'gumroad',
+        event: 'gumroad_sale_completed',
+        status: 'paid',
+        customerId,
+        orderId,
+        evidence: orderId,
+        amountCents,
+        currency,
+        amountKnown: Number.isInteger(amountCents) && amountCents > 0,
+        attribution: { source: 'gumroad' },
+        metadata: {
+          ...sale,
+          gumroadSignatureVerified: provenance.verified === true,
+          gumroadEventId: normalizeText(provenance.eventId),
+          gumroadEventType: normalizeText(provenance.eventType),
+          gumroadPayloadSha256: normalizeText(provenance.payloadSha256),
+        },
+      };
+      if (!hasRevenueEventMatch(loadRevenueLedger(), revenueRecord)) {
+        appendRevenueEvent(revenueRecord);
+      }
+      return { handled: true, action: 'recorded_revenue', orderId };
+    }
+    case 'subscription.cancelled': {
+      const sub = event.subscription || event;
+      const customerId = `gumroad_${sub.email || sub.customer?.id || sub.buyer_email || 'unknown'}`;
+      const orderId = normalizeText(sub.id || sub.subscription_id || `gumroad_sub_${Date.now()}`);
+      if (!hasRevenueEventMatch(loadRevenueLedger(), {
+        provider: 'gumroad', event: 'gumroad_subscription_cancelled',
+        status: 'cancelled', customerId, orderId,
+      })) {
+        appendRevenueEvent({
+          provider: 'gumroad',
+          event: 'gumroad_subscription_cancelled',
+          status: 'cancelled',
+          customerId,
+          orderId,
+          evidence: orderId,
+          attribution: { source: 'gumroad' },
+          metadata: {
+            ...sub,
+            gumroadSignatureVerified: provenance.verified === true,
+          },
+        });
+      }
+      return { handled: true, action: 'recorded_cancellation', orderId };
+    }
+    default: return { handled: false, reason: `unhandled_gumroad_event:${eventType}` };
+  }
+}
+
 module.exports = {
-  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, verifyGumroadSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, recordGumroadWebhookDelivery, handleGithubWebhook, handleGumroadWebhook, loadGumroadWebhookLedger, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _buildTrialActivationEmail: buildTrialActivationEmail,
   _sendTrialActivationEmail: sendTrialActivationEmail,
@@ -4233,6 +4515,7 @@ module.exports = {
   _REVENUE_LEDGER_PATH: () => CONFIG.REVENUE_LEDGER_PATH,
   _GITHUB_MARKETPLACE_WEBHOOK_LEDGER_PATH: () => CONFIG.GITHUB_MARKETPLACE_WEBHOOK_LEDGER_PATH,
   _PAYPAL_WEBHOOK_LEDGER_PATH: () => CONFIG.PAYPAL_WEBHOOK_LEDGER_PATH,
+  _GUMROAD_WEBHOOK_LEDGER_PATH: () => CONFIG.GUMROAD_WEBHOOK_LEDGER_PATH,
   _LOCAL_CHECKOUT_SESSIONS_PATH: () => CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH,
   _TRIAL_EMAIL_LEDGER_PATH: () => CONFIG.TRIAL_EMAIL_LEDGER_PATH,
   _ORDER_EMAIL_LEDGER_PATH: () => CONFIG.ORDER_EMAIL_LEDGER_PATH,
