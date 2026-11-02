@@ -22,6 +22,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('node:crypto');
 const { getFeedbackPaths } = require('./feedback-paths');
+const { canonicalStringify } = require('./provider-receipt-contract');
 
 const RECEIPTS_FILE = 'action-receipts.jsonl';
 
@@ -39,9 +40,9 @@ function encodeCanonicalField(value) {
   return `${Buffer.byteLength(str, 'utf8')}:${str}`;
 }
 
-function computeCanonicalRequestDigest({ toolName, toolInput, target, idempotencyKey, recordedAt }) {
+function computeRequestDigest({ toolName, toolInput, target, idempotencyKey, recordedAt }, stringifyInput) {
   const toolInputCanonical = typeof toolInput === 'object' && toolInput !== null
-    ? JSON.stringify(toolInput)
+    ? stringifyInput(toolInput)
     : safeString(toolInput);
   const payload = [
     encodeCanonicalField(toolName),
@@ -51,6 +52,14 @@ function computeCanonicalRequestDigest({ toolName, toolInput, target, idempotenc
     encodeCanonicalField(recordedAt),
   ].join('|');
   return crypto.createHash('sha256').update(payload).digest('hex');
+}
+
+function computeCanonicalRequestDigest(params) {
+  return computeRequestDigest(params, canonicalStringify);
+}
+
+function computeLegacyRequestDigest({ toolName, toolInput, target, idempotencyKey, recordedAt }) {
+  return computeRequestDigest({ toolName, toolInput, target, idempotencyKey, recordedAt }, JSON.stringify);
 }
 
 function signReceiptDigest(requestDigest, signingKey) {
@@ -67,23 +76,30 @@ function verifyReceiptSignature(receipt, signingKey) {
   if (!key) return false;
 
   // Recompute digest from stored fields so tampered body fields cannot pass.
-  const recomputed = computeCanonicalRequestDigest({
+  const request = {
     toolName: receipt.toolName,
     toolInput: receipt.toolInput,
     target: receipt.target,
     idempotencyKey: receipt.idempotencyKey,
     recordedAt: receipt.recordedAt,
-  });
-  if (receipt.requestDigest && receipt.requestDigest !== recomputed) {
+  };
+  const recomputedDigests = [
+    computeCanonicalRequestDigest(request),
+    computeLegacyRequestDigest(request),
+  ];
+  const matchingDigests = receipt.requestDigest
+    ? recomputedDigests.filter((digest) => digest === receipt.requestDigest)
+    : recomputedDigests;
+  if (matchingDigests.length === 0) {
     return false;
   }
 
-  const expected = signReceiptDigest(recomputed, key);
   try {
     const sigBuf = Buffer.from(String(receipt.signature), 'hex');
-    const expBuf = Buffer.from(expected, 'hex');
-    if (sigBuf.length !== expBuf.length) return false;
-    return crypto.timingSafeEqual(sigBuf, expBuf);
+    return matchingDigests.some((digest) => {
+      const expBuf = Buffer.from(signReceiptDigest(digest, key), 'hex');
+      return sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
+    });
   } catch {
     return false;
   }

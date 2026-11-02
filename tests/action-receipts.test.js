@@ -5,6 +5,7 @@ process.env.THUMBGATE_RECEIPT_SIGNING_KEY = process.env.THUMBGATE_RECEIPT_SIGNIN
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -179,6 +180,74 @@ test('canonical digest avoids pipe-delimiter collisions', () => {
     recordedAt: 'ts',
   });
   assert.notEqual(a, b);
+});
+
+test('canonical action receipts replay across object key order and preserve legacy signatures', () => {
+  const common = {
+    toolName: 'synthetic_action',
+    target: 'synthetic://fixture',
+    idempotencyKey: 'synthetic-idem-1',
+    recordedAt: '2026-01-02T03:04:05.000Z',
+  };
+  const inputA = { operation: 'fixture', nested: { second: 2, first: 1 } };
+  const inputB = { nested: { first: 1, second: 2 }, operation: 'fixture' };
+  const first = recordReceipt({
+    ...common,
+    actionId: 'synthetic-replay-a',
+    toolInput: inputA,
+    outcome: { exitCode: 0, testOutcome: 'synthetic-pass' },
+  });
+  const second = recordReceipt({
+    ...common,
+    actionId: 'synthetic-replay-b',
+    toolInput: inputB,
+    outcome: { exitCode: 0, testOutcome: 'synthetic-pass' },
+  });
+
+  assert.equal(first.requestDigest, second.requestDigest);
+  assert.equal(first.signature, second.signature);
+
+  const replayedLine = fs.readFileSync(getReceiptsPath(), 'utf8')
+    .trim()
+    .split('\n')
+    .find((line) => JSON.parse(line).actionId === 'synthetic-replay-a');
+  assert.ok(replayedLine);
+  const replayed = JSON.parse(replayedLine);
+  assert.equal(verifyReceiptSignature(replayed), true);
+  assert.deepEqual(reconstructModelVisibleFacts('synthetic-replay-a'), {
+    ok: true,
+    facts: {
+      actionId: 'synthetic-replay-a',
+      toolName: common.toolName,
+      toolInput: inputA,
+      decision: 'allow',
+      principal: 'agent',
+      requestDigest: first.requestDigest,
+      recordedAt: common.recordedAt,
+      outcome: { diff: null, exitCode: 0, testOutcome: 'synthetic-pass', stateHash: null },
+    },
+  });
+
+  const legacyReceipt = {
+    ...first,
+    toolInput: inputB,
+  };
+  const legacyInput = JSON.stringify(legacyReceipt.toolInput);
+  const legacyFields = [
+    legacyReceipt.toolName,
+    legacyInput,
+    legacyReceipt.target,
+    legacyReceipt.idempotencyKey,
+    legacyReceipt.recordedAt,
+  ].map((value) => {
+    const text = value === null || value === undefined ? '' : String(value);
+    return `${Buffer.byteLength(text, 'utf8')}:${text}`;
+  });
+  legacyReceipt.requestDigest = crypto.createHash('sha256')
+    .update(legacyFields.join('|'))
+    .digest('hex');
+  legacyReceipt.signature = signReceiptDigest(legacyReceipt.requestDigest);
+  assert.equal(verifyReceiptSignature(legacyReceipt), true);
 });
 
 test('signReceiptDigest fails closed without signing key', () => {
