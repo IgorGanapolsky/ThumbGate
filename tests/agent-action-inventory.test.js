@@ -20,6 +20,7 @@ const {
   normalizeWindowDays,
   readJsonlSource,
   pairDeniesWithClears,
+  APPROVAL_REQUIRED_DECISION,
   SOURCE_STATUS,
   DEFAULT_WINDOW_DAYS,
   MAX_WINDOW_DAYS,
@@ -252,6 +253,10 @@ test('empty source: present-but-empty files report "empty", never a bare zero', 
   assert.equal(inv.agentAttribution.status, 'empty-source');
   assert.match(inv.agentAttribution.reason, /exists at/);
   assert.match(inv.agentAttribution.reason, /no parsable records/);
+  assert.equal(inv.approvalAttention.source.status, SOURCE_STATUS.EMPTY);
+  assert.equal(inv.approvalAttention.count, null);
+  assert.equal(inv.approvalAttention.items, null);
+  assert.equal(inv.approvalAttention.readOnly, true);
 });
 
 test('missing source: absent files report "missing" and are distinguishable from empty', (t) => {
@@ -266,6 +271,9 @@ test('missing source: absent files report "missing" and are distinguishable from
   });
   assert.equal(inv.agentAttribution.status, 'missing-source');
   assert.match(inv.agentAttribution.reason, /is not present at/);
+  assert.equal(inv.approvalAttention.source.status, SOURCE_STATUS.MISSING);
+  assert.equal(inv.approvalAttention.count, null);
+  assert.equal(inv.approvalAttention.items, null);
 
   // The whole point: empty and missing must not collapse into the same output.
   const emptyDir = makeDataDir(t);
@@ -340,6 +348,7 @@ test("decision 'approve' is a block, never a reversal", (t) => {
     // gates-engine writes this with requiresApproval:true and formatOutput renders
     // it to the harness as permissionDecision 'deny'. It is a HELD action.
     auditRecord({
+      id: 'approval-held',
       timestamp: hoursAgo(2),
       decision: 'approve',
       gateId: 'workflow-sentinel',
@@ -359,6 +368,19 @@ test("decision 'approve' is a block, never a reversal", (t) => {
 
   // It is surfaced on its own, and never silently folded into allow or deny.
   assert.equal(inv.approvalRequiredCount, 1);
+  assert.equal(inv.approvalAttention.count, 1);
+  assert.deepEqual(inv.approvalAttention.items[0], {
+    id: 'approval-held',
+    timestamp: inv.approvalAttention.items[0].timestamp,
+    toolName: 'Bash',
+    gateId: 'workflow-sentinel',
+    decision: APPROVAL_REQUIRED_DECISION,
+    source: 'gates-engine',
+    message: 'APPROVAL REQUIRED',
+    severity: 'critical',
+  });
+  assert.equal(inv.approvalAttention.readOnly, true);
+  assert.equal(inv.approvalAttention.scope.source, AUDIT);
   assert.equal(inv.allowCount, 0);
   assert.equal(inv.denyCount, 2);
   assert.equal(inv.toolCalls.Bash.approvalRequired, 1);
@@ -369,6 +391,57 @@ test("decision 'approve' is a block, never a reversal", (t) => {
 
   // And the method string states the exclusion, so the choice is auditable.
   assert.match(inv.falseDenyMethod, /"approve" is deliberately NOT counted/);
+});
+
+test('approval attention includes only explicit approval holds, not allow or deny activity', (t) => {
+  const dir = makeDataDir(t);
+  const heldAt = hoursAgo(2);
+  writeJsonl(dir, AUDIT, [
+    auditRecord({
+      id: 'approval-held',
+      timestamp: heldAt,
+      toolName: 'Write',
+      decision: APPROVAL_REQUIRED_DECISION,
+      gateId: 'human-review-gate',
+      message: 'APPROVAL REQUIRED',
+      source: 'gates-engine',
+      severity: 'high',
+      toolInput: { secret: 'must not be copied into attention view' },
+    }),
+    auditRecord({ id: 'ordinary-allow', decision: 'allow', gateId: 'human-review-gate' }),
+    auditRecord({ id: 'blocked-deny', decision: 'deny', gateId: 'human-review-gate' }),
+  ]);
+
+  const inv = buildInventory({ dataDir: dir, windowDays: 7 });
+
+  assert.equal(inv.approvalAttention.readOnly, true);
+  assert.deepEqual(inv.approvalAttention.scope, {
+    source: AUDIT,
+    decision: APPROVAL_REQUIRED_DECISION,
+    windowDays: 7,
+    windowFullyCovered: true,
+  });
+  assert.equal(inv.approvalAttention.source.status, SOURCE_STATUS.OK);
+  assert.match(inv.approvalAttention.source.path, /audit-trail\.jsonl$/);
+  assert.equal(inv.approvalAttention.count, 1);
+  assert.equal(inv.approvalAttention.items.length, 1);
+  assert.deepEqual(inv.approvalAttention.items[0], {
+    id: 'approval-held',
+    timestamp: heldAt,
+    toolName: 'Write',
+    gateId: 'human-review-gate',
+    decision: APPROVAL_REQUIRED_DECISION,
+    source: 'gates-engine',
+    message: 'APPROVAL REQUIRED',
+    severity: 'high',
+  });
+  assert.equal(inv.denyCount, 1);
+  assert.equal(inv.allowCount, 1);
+  const text = renderInventoryText(inv);
+  assert.match(text, /Human approval attention \(read-only; no actions executed\)/);
+  assert.match(text, /approval-held/);
+  assert.match(text, /source=gates-engine/);
+  assert.doesNotMatch(text, /ordinary-allow|blocked-deny/);
 });
 
 test("a plain 'allow' without the admin-override source is not a reversal", () => {

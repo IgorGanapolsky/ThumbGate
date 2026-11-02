@@ -576,6 +576,42 @@ function computeFalseDeny(auditSource, auditInWindow, windowDays) {
 }
 
 /**
+ * Create a read-only, provenance-preserving view of actions explicitly held
+ * for human approval. A deny is a different decision and never enters this
+ * view; missing or empty audit sources are not reported as a measured zero.
+ */
+function buildApprovalAttention(auditSource, auditInWindow, windowDays, windowFullyCovered) {
+  const records = auditSource.status === SOURCE_STATUS.OK
+    ? auditInWindow.filter((record) => record.decision === APPROVAL_REQUIRED_DECISION)
+    : null;
+
+  return {
+    readOnly: true,
+    scope: {
+      source: AUDIT_LOG_FILENAME,
+      decision: APPROVAL_REQUIRED_DECISION,
+      windowDays,
+      windowFullyCovered,
+    },
+    source: {
+      path: auditSource.path,
+      status: auditSource.status,
+    },
+    count: records === null ? null : records.length,
+    items: records === null ? null : records.map((record) => ({
+      id: record.id ?? null,
+      timestamp: record.timestamp ?? null,
+      toolName: record.toolName ?? null,
+      gateId: record.gateId ?? null,
+      decision: record.decision,
+      source: record.source ?? null,
+      message: record.message ?? null,
+      severity: record.severity ?? null,
+    })),
+  };
+}
+
+/**
  * Build the agent action inventory for one ThumbGate data directory.
  *
  * Read-only: opens files, writes nothing.
@@ -656,6 +692,15 @@ function buildInventory(opts = {}) {
     // records inside the requested window were dropped and every count below is
     // a partial view. null when the audit trail was not readable at all.
     windowFullyCovered: coversWindow(auditSource, sinceMs),
+
+    // This is a read-only view over explicit approval holds, not an action
+    // queue executor. Denials and routine allow events remain separate.
+    approvalAttention: buildApprovalAttention(
+      auditSource,
+      auditInWindow,
+      windowDays,
+      coversWindow(auditSource, sinceMs)
+    ),
 
     agents,
     agentAttribution: buildAgentAttribution(kpiSource, agents),
@@ -742,6 +787,28 @@ function renderInventoryText(inv) {
   }
   lines.push('');
 
+  lines.push('Human approval attention (read-only; no actions executed)');
+  lines.push(`  source: ${inv.approvalAttention.scope.source} (${inv.approvalAttention.source.status}) — ${inv.approvalAttention.source.path}`);
+  if (inv.approvalAttention.count === null) {
+    lines.push(`  not measured — audit trail is ${inv.approvalAttention.source.status}`);
+  } else if (inv.approvalAttention.items.length === 0) {
+    lines.push('  none observed in window');
+  } else {
+    for (const item of inv.approvalAttention.items.slice(0, 10)) {
+      const timestamp = item.timestamp || 'timestamp unavailable';
+      const tool = item.toolName || 'tool unavailable';
+      const gate = item.gateId || 'gate unavailable';
+      const id = item.id || 'id unavailable';
+      const source = item.source || 'source unavailable';
+      lines.push(`  ${timestamp}  ${tool}  ${gate}  [${id}]  source=${source}`);
+      if (item.message) lines.push(`    ${item.message}`);
+    }
+    if (inv.approvalAttention.items.length > 10) {
+      lines.push(`  ... and ${inv.approvalAttention.items.length - 10} more`);
+    }
+  }
+  lines.push('');
+
   lines.push('Agents');
   if (inv.agents.length === 0) {
     lines.push(`  none — ${inv.agentAttribution.status}: ${inv.agentAttribution.reason}`);
@@ -821,6 +888,7 @@ module.exports = {
   buildDenyReasonsByGate,
   buildTopGates,
   buildDaily,
+  buildApprovalAttention,
   coversWindow,
   isClearingRecord,
   SOURCE_STATUS,
