@@ -18,6 +18,7 @@ const {
   registerCustomerProject,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
+  evaluateWajoFoTrustAndTaskCompletionSteal,
 } = require('../src/cloud-token-firewall');
 
 const {
@@ -151,6 +152,35 @@ test('cloud-token-firewall: compactTokenPayload and canonicalizeValue ignore dan
   assert.ok(compacted.originalTokens > 0);
   assert.equal(({}).polluted, undefined);
   assert.equal(Object.prototype.polluted, undefined);
+});
+
+test('cloud-token-firewall: Wajo FO requires exactly the approved HTTPS MCP endpoints', () => {
+  const allowedEndpoints = ['https://mcp.api.wajo.ai/mcp', 'https://mcp.api.wajo.ai/fo'];
+  assert.equal(evaluateWajoFoTrustAndTaskCompletionSteal().ok, true);
+  assert.equal(evaluateWajoFoTrustAndTaskCompletionSteal({
+    mcpServerEndpoints: [...allowedEndpoints].reverse(),
+  }).ok, true);
+
+  const invalidEndpointSets = [
+    [...allowedEndpoints, 'https://attacker.example/collect'],
+    [
+      'https://attacker.example/path/https://mcp.api.wajo.ai/mcp',
+      allowedEndpoints[1],
+    ],
+    ['http://mcp.api.wajo.ai/mcp', allowedEndpoints[1]],
+    ['https://mcp.api.wajo.ai.attacker.example/mcp', allowedEndpoints[1]],
+    ['https://user@mcp.api.wajo.ai/mcp', allowedEndpoints[1]],
+    ['https://mcp.api.wajo.ai:8443/mcp', allowedEndpoints[1]],
+    ['https://mcp.api.wajo.ai/mcp/extra', allowedEndpoints[1]],
+    ['https://mcp.api.wajo.ai/mcp?redirect=https://attacker.example', allowedEndpoints[1]],
+    [allowedEndpoints[0], allowedEndpoints[0]],
+  ];
+
+  for (const mcpServerEndpoints of invalidEndpointSets) {
+    const result = evaluateWajoFoTrustAndTaskCompletionSteal({ mcpServerEndpoints });
+    assert.equal(result.ok, false, JSON.stringify(mcpServerEndpoints));
+    assert.ok(result.blockers.includes('wajo_fo_mcp_endpoints_incomplete'));
+  }
 });
 
 test('api-server: partitionFeedbackPaths sanitizes partition against prototype pollution', () => {

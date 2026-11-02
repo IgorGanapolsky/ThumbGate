@@ -4840,6 +4840,53 @@ function evaluateFoHermesCompressionEvictionLoopExemptionSteal({
   };
 }
 
+const REQUIRED_WAJO_FO_MCP_ENDPOINTS = Object.freeze([
+  'https://mcp.api.wajo.ai/mcp',
+  'https://mcp.api.wajo.ai/fo',
+]);
+
+function hasExactWajoFoMcpEndpoints(endpoints) {
+  if (!Array.isArray(endpoints) || endpoints.length !== REQUIRED_WAJO_FO_MCP_ENDPOINTS.length) {
+    return false;
+  }
+
+  const seenEndpoints = new Set();
+  for (const endpoint of endpoints) {
+    if (typeof endpoint !== 'string') {
+      return false;
+    }
+
+    let parsed;
+    try {
+      parsed = new URL(endpoint);
+    } catch {
+      return false;
+    }
+
+    const hasAllowedPath = parsed.pathname === '/mcp' || parsed.pathname === '/fo';
+    const isAllowedEndpoint = parsed.href === REQUIRED_WAJO_FO_MCP_ENDPOINTS[0]
+      || parsed.href === REQUIRED_WAJO_FO_MCP_ENDPOINTS[1];
+    if (
+      parsed.protocol !== 'https:'
+      || parsed.hostname !== 'mcp.api.wajo.ai'
+      || parsed.port !== ''
+      || parsed.username !== ''
+      || parsed.password !== ''
+      || !hasAllowedPath
+      || parsed.href !== endpoint
+      || !isAllowedEndpoint
+    ) {
+      return false;
+    }
+
+    seenEndpoints.add(parsed.href);
+  }
+
+  return seenEndpoints.size === REQUIRED_WAJO_FO_MCP_ENDPOINTS.length
+    && seenEndpoints.has(REQUIRED_WAJO_FO_MCP_ENDPOINTS[0])
+    && seenEndpoints.has(REQUIRED_WAJO_FO_MCP_ENDPOINTS[1]);
+}
+
 function evaluateWajoFoTrustAndTaskCompletionSteal({
   trustScorePct = 94,
   taskCompletionScorePct = 71,
@@ -4874,7 +4921,7 @@ function evaluateWajoFoTrustAndTaskCompletionSteal({
   if (!verifyIssueOpenBeforeDrafting) {
     blockers.push('wajo_fo_missing_live_open_issue_verification');
   }
-  if (!Array.isArray(mcpServerEndpoints) || !mcpServerEndpoints.includes('https://mcp.api.wajo.ai/mcp') || !mcpServerEndpoints.includes('https://mcp.api.wajo.ai/fo')) {
+  if (!hasExactWajoFoMcpEndpoints(mcpServerEndpoints)) {
     blockers.push('wajo_fo_mcp_endpoints_incomplete');
   }
   if (!scheduleOptimization || !scheduleOptimization.ok) {
