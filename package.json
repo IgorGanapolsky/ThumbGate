@@ -1240,7 +1240,7 @@
     "prove:memory-pyramid": "node scripts/prove-memory-pyramid-and-symbolic-canvas.js",
     "test:switchyard-router": "node --test tests/switchyard-router.test.js",
     "test:bulk-cloud-tier": "node --test tests/bulk-cloud-tier.test.js",
-    "test:session-lease": "node --test tests/session-lease.test.js",
+    "test:session-lease": "node --test tests/session-lease.test.js tests/herdr-agent-census.test.js",
     "test:compare-agoragentic": "node --test tests/compare-agoragentic.test.js",
     "session:lease": "node scripts/session-lease.js",
     "session:lease:claim": "node scripts/session-lease.js claim",

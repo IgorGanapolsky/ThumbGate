@@ -91,23 +91,20 @@ fi
 
 # 4) Live agents via herdr (if gateway up) ---------------------------------
 if command -v herdr >/dev/null 2>&1; then
-  if herdr status 2>/dev/null | grep -q 'status: running'; then
-    echo "--- Live agents (herdr) ---"
-    herdr agent list 2>/dev/null | python3 -c "
-import sys, json
-try:
-    d = json.load(sys.stdin)
-    agents = d.get('agents', d if isinstance(d, list) else [])
-    for a in agents:
-        cwd = a.get('cwd','')
-        print(f\"  {a.get('id','?')} state={a.get('state','?')} cwd={cwd} title={(a.get('terminal_title') or '')[:60]}\")
-except Exception as e:
-    print(f'  herdr census parse failed: {e}', file=sys.stderr)
-    raise SystemExit(1)
-" || herdr agent list 2>/dev/null | head -10
-  else
-    echo "herdr: gateway not running (no live pane view)"
-  fi
+  # Read the whole status first. grep -q under pipefail treats Herdr's
+  # early SIGPIPE as "gateway down" after it has already printed running.
+  herdr_status="$(herdr status 2>/dev/null || true)"
+  case "$herdr_status" in
+    *"status: running"*)
+      echo "--- Live agents (herdr) ---"
+      if ! herdr agent list 2>/dev/null | node "$REPO_ROOT/.claude/scripts/session-bootstrap/herdr-agent-census.js"; then
+        echo "  herdr census parse failed"
+      fi
+      ;;
+    *)
+      echo "herdr: gateway not running (no live pane view)"
+      ;;
+  esac
 fi
 
 # 5) Linear in-progress issues touching this repo --------------------------
