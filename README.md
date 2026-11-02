@@ -55,7 +55,7 @@ Lightweight visuals for how agents fail without a pre-action gate:
 
 
 
-It **hard-blocks detected secret leaks and two direct self-disable command classes by default** — commands that terminate the ThumbGate gate process or enable its bypass environment override. Other high-risk classes (`rm -rf`, force-push, fetch-and-run, direct guardrail edits) **warn and log by default**. Set `THUMBGATE_STRICT_ENFORCEMENT=1` for strict enforcement (warnings become hard denies).
+It **hard-blocks credential-file exfiltration (for example, a credentials file read piped to a network tool) and two direct self-disable command classes by default** — the self-disable classes are commands that terminate the ThumbGate gate process or enable its bypass environment override. Inline secret literals inside shell commands are caught only as **warnings** on the network-egress path by default, and other high-risk classes (`rm -rf`, force-push, fetch-and-run, direct guardrail edits) **warn and log by default**. Set `THUMBGATE_STRICT_ENFORCEMENT=1` for strict enforcement (warnings become hard denies).
 
 | Verdict | Default behavior |
 |---------|------------------|
