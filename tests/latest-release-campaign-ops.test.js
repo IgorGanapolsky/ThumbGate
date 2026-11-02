@@ -73,6 +73,34 @@ test('fallback publisher returns public receipts for LinkedIn and Reddit', async
   assert.match(result.published[1].url, /reddit\.com\/r\/AI_Agents/);
 });
 
+test('fallback publisher refuses a comment on someone else\'s Reddit thread', async () => {
+  let called = false;
+  const result = await publishLatestReleaseFallbacks({
+    platforms: ['reddit'],
+    redditParentId: 't3_someoneelse',
+  }, {
+    getRedditToken: async () => {
+      called = true;
+      return 'reddit-token';
+    },
+    submitRedditComment: async () => {
+      called = true;
+      return { id: 'nope' };
+    },
+  }, {
+    REDDIT_CLIENT_ID: 'client',
+    REDDIT_CLIENT_SECRET: 'secret',
+    REDDIT_PASSWORD: 'password',
+    REDDIT_USERNAME: 'user',
+  });
+
+  assert.equal(called, false);
+  assert.equal(result.published.length, 0);
+  assert.equal(result.errors.length, 1);
+  assert.equal(result.errors[0].platform, 'reddit');
+  assert.match(result.errors[0].error, /foreign-thread/);
+});
+
 test('fallback publisher isolates a failed channel and continues', async () => {
   const result = await publishLatestReleaseFallbacks({
     platforms: ['linkedin', 'reddit'],

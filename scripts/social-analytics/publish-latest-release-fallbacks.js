@@ -7,7 +7,11 @@ const {
   buildLatestReleaseUrl,
 } = require('./publish-thumbgate-launch');
 const { publishTextPost } = require('./publishers/linkedin');
-const { getRedditToken, submitComment } = require('./publishers/reddit');
+const {
+  assessRedditCommentTarget,
+  getRedditToken,
+  submitComment,
+} = require('./publishers/reddit');
 const qualityGate = require('../social-quality-gate');
 
 const DEFAULT_REDDIT_PARENT_ID = 't3_1uqwwus';
@@ -107,6 +111,15 @@ async function publishLinkedInFallback(content, api, env) {
 }
 
 async function publishRedditFallback(content, options, api, env) {
+  const parentId = options.redditParentId || DEFAULT_REDDIT_PARENT_ID;
+  const decision = assessRedditCommentTarget({
+    parentId,
+    relationship: 'invited-thread',
+  });
+  if (!decision.allowed) {
+    throw new Error(`Reddit comment refused: ${decision.reason}`);
+  }
+
   const gateResult = qualityGate.gatePost(content);
   if (!gateResult.allowed) throw new Error('Reddit quality gate blocked the release comment');
 
@@ -120,8 +133,9 @@ async function publishRedditFallback(content, options, api, env) {
     redditToken,
     env.REDDIT_USER_AGENT || `thumbgate/1.0 by ${env.REDDIT_USERNAME}`,
     {
-      parentId: options.redditParentId || DEFAULT_REDDIT_PARENT_ID,
+      parentId,
       text: content,
+      relationship: 'invited-thread',
     },
   );
   const url = buildRedditCommentUrl(redditResult, options.redditThreadUrl);
@@ -185,6 +199,7 @@ module.exports = {
   DEFAULT_REDDIT_THREAD_URL,
   buildLinkedInPostUrl,
   buildRedditCommentUrl,
+  assessRedditCommentTarget,
   buildRedditProjectThreadComment,
   isDirectRun,
   normalizeRedditPostUrl,

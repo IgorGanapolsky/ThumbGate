@@ -201,18 +201,38 @@ async function submitLinkPost(token, userAgent, { subreddit, title, url }) {
   return postData;
 }
 
+const INVITED_REDDIT_COMMENT_PARENTS = new Set(['t3_1uqwwus']);
+
+function assessRedditCommentTarget({ parentId, relationship, invitedParentIds } = {}) {
+  const id = String(parentId || '').trim();
+  if (!id) return { allowed: false, reason: 'missing-parent' };
+  if (relationship === 'own-post') return { allowed: true, reason: 'own-post' };
+  const invited = invitedParentIds
+    ? new Set(invitedParentIds)
+    : INVITED_REDDIT_COMMENT_PARENTS;
+  if (relationship === 'invited-thread' && invited.has(id)) {
+    return { allowed: true, reason: 'invited-thread' };
+  }
+  return { allowed: false, reason: 'foreign-thread' };
+}
+
 /**
  * Submit a comment or reply to an existing post or comment.
+ * A comment on someone else's thread is refused unless the parent is the
+ * invited weekly project-display thread. A follow-up on a post this call
+ * just created passes relationship "own-post".
  *
  * @param {string} token - Reddit OAuth2 access token
  * @param {string} userAgent - User-Agent header value
- * @param {{ parentId: string, text: string }} options
- *   parentId — fullname of the parent thing (e.g. "t3_abc123" for a post, "t1_xyz" for a comment)
+ * @param {{ parentId: string, text: string, relationship?: 'own-post'|'invited-thread' }} options
  * @returns {Promise<object>} Reddit API response data
  */
-async function submitComment(token, userAgent, { parentId, text }) {
+async function submitComment(token, userAgent, { parentId, text, relationship } = {}) {
+  const decision = assessRedditCommentTarget({ parentId, relationship });
+  if (!decision.allowed) {
+    throw new Error(`Reddit comment refused: ${decision.reason}`);
+  }
   if (!token) throw new Error('token is required');
-  if (!parentId) throw new Error('parentId is required');
   if (!text) throw new Error('text is required');
 
   const url = `${REDDIT_API_BASE}/api/comment`;
@@ -328,7 +348,11 @@ async function publishToReddit({ subreddit, title, text, url, token, followUpCom
       console.error('[reddit:publisher] Follow-up comment BLOCKED by quality gate');
     } else {
       try {
-        await submitComment(accessToken, userAgent, { parentId: postData.name, text: commentText });
+        await submitComment(accessToken, userAgent, {
+          parentId: postData.name,
+          text: commentText,
+          relationship: 'own-post',
+        });
         console.log('[reddit:publisher] Follow-up comment with trial CTA posted');
       } catch (err) {
         console.error('[reddit:publisher] Follow-up comment failed:', err.message);
@@ -340,6 +364,8 @@ async function publishToReddit({ subreddit, title, text, url, token, followUpCom
 }
 
 module.exports = {
+  INVITED_REDDIT_COMMENT_PARENTS,
+  assessRedditCommentTarget,
   getRedditToken,
   submitTextPost,
   submitLinkPost,
