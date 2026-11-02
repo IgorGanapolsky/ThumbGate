@@ -549,7 +549,7 @@
     .footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
     .footer-links a { color: var(--muted); }
     @media (max-width: 840px) {
-      .nav-links > a:not(.nav-buy):not(.nav-enterprise) { display: none; }
+      .nav-links > a:not(.nav-buy):not(.nav-enterprise):not(.nav-auth-btn) { display: none; }
       .nav-links { gap: 10px; }
       .hero-grid, .proof-grid, #offers .offer-stack { grid-template-columns: 1fr; }
       .compare { display: block; overflow-x: auto; }
@@ -748,10 +748,43 @@
         <a href="#how-it-works">How it works</a>
         <a href="#offers">Pricing</a>
         <a href="#proof">Proof</a>
+        <a href="/cloud" data-cta-id="nav_cloud_dashboard" style="color:var(--cyan);font-weight:800;">Cloud Portal</a>
+        <a href="/deploy-plan" data-cta-id="nav_deploy_plan" style="color:var(--green);font-weight:800;">Deploy Plan</a>
+        <span id="homeSsoBadge" style="display:none;font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);padding:5px 10px;border:1px solid rgba(86,227,159,0.35);border-radius:999px;background:rgba(86,227,159,0.08);"></span>
+        <a href="#homeSsoBar" id="homeSsoSignInBtn" class="nav-auth-btn" onclick="if(window.tgToggleHomeSso){window.tgToggleHomeSso(true);}" style="display:inline-flex;align-items:center;min-height:38px;padding:8px 14px;border-radius:8px;border:1px solid var(--cyan);background:var(--cyan);color:#06121a;font:800 13px/1 inherit;text-decoration:none;line-height:22px;">🔐 Log In</a>
+        <button type="button" id="homeSsoLogoutBtn" class="nav-auth-btn" onclick="window.tgHomeLogout()" style="display:inline-flex;align-items:center;min-height:38px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:rgba(255,107,107,0.1);color:#ff6b6b;font:800 13px/1 inherit;cursor:pointer;">Log Out</button>
         <a class="nav-buy" href="#install" data-cta-id="nav_install_free">Install free</a>
       </div>
     </div>
   </nav>
+  <div id="homeSsoBar" style="display:block;border-bottom:1px solid var(--line);background:rgba(12,17,26,0.96);padding:12px 0;">
+    <div class="shell" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div id="homeSsoLoginRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;justify-content:space-between;">
+        <span id="homeSsoPrompt" style="font-size:13px;font-weight:700;color:var(--text);">Customer SSO Log In / Log Out (view your individual projects on thumbgate.ai):</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <input type="email" id="homeSsoEmail" placeholder="work@company.com" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font-size:13px;width:210px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgHomeSsoLogin('google');}" />
+          <button type="button" onclick="window.tgHomeSsoLogin('apple')" style="min-height:36px;padding:0 12px;border-radius:8px;border:0;background:#f8fafc;color:#080b10;font:800 12px/1 inherit;cursor:pointer;"> Apple</button>
+          <button type="button" onclick="window.tgHomeSsoLogin('google')" style="min-height:36px;padding:0 12px;border-radius:8px;border:0;background:var(--cyan);color:#041016;font:800 12px/1 inherit;cursor:pointer;">G Google</button>
+          <button type="button" onclick="window.tgHomeSsoLogin('github')" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">GitHub</button>
+          <button type="button" onclick="window.tgHomeSsoLogin('okta')" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">Enterprise SSO</button>
+          <button type="button" onclick="window.tgHomeLogout()" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:transparent;color:#ff6b6b;font:700 12px/1 inherit;cursor:pointer;">Log Out</button>
+        </div>
+      </div>
+      <div id="homeProjectsRow" style="display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span id="homeSsoSessionText" style="font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);"></span>
+          <label for="homeProjectSelect" style="font-size:12px;color:var(--muted);font-weight:700;">📁 My Projects:</label>
+          <select id="homeProjectSelect" onchange="window.tgSwitchHomeProject(this.value)" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;"></select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <input type="text" id="homeNewProjectInput" placeholder="New project (e.g. api-prod)" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;width:185px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgCreateHomeProject();}" />
+          <button type="button" onclick="window.tgCreateHomeProject()" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.1);color:var(--cyan);font:800 12px/1 inherit;cursor:pointer;">+ Add Project</button>
+          <a id="homeOpenProjectLink" href="/dashboard" style="display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:8px;background:var(--green);color:#06130d;font:800 12px/1 inherit;text-decoration:none;">Open Project Dashboard →</a>
+          <button type="button" onclick="window.tgHomeLogout()" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:transparent;color:#ff6b6b;font:700 12px/1 inherit;cursor:pointer;">Log Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <main>
     <!-- HERO -->
@@ -1490,6 +1523,172 @@ next      decision recorded before execution</pre>
         } else { fallback(); }
       });
     });
+  })();
+</script>
+<script>
+  (function () {
+    var homeBar = document.getElementById('homeSsoBar');
+    var homeLoginRow = document.getElementById('homeSsoLoginRow');
+    var homeProjectsRow = document.getElementById('homeProjectsRow');
+    var homeSignInBtn = document.getElementById('homeSsoSignInBtn');
+    var homeLogoutBtn = document.getElementById('homeSsoLogoutBtn');
+    var homeBadge = document.getElementById('homeSsoBadge');
+    var homeEmailInput = document.getElementById('homeSsoEmail');
+    var homeProjectSelect = document.getElementById('homeProjectSelect');
+    var homeOpenLink = document.getElementById('homeOpenProjectLink');
+
+    window.tgToggleHomeSso = function (forceOpen) {
+      if (!homeBar) return;
+      var isHidden = homeBar.style.display === 'none' || !homeBar.style.display;
+      var nextOpen = typeof forceOpen === 'boolean' ? forceOpen : isHidden;
+      homeBar.style.display = nextOpen ? 'block' : 'none';
+      if (nextOpen && homeEmailInput && homeLoginRow && homeLoginRow.style.display !== 'none') {
+        homeEmailInput.focus();
+      }
+    };
+
+    window.tgSwitchHomeProject = function (slug) {
+      var clean = String(slug || 'default').trim() || 'default';
+      try { localStorage.setItem('tg_active_project', clean); } catch (e) {}
+      if (homeOpenLink) homeOpenLink.href = '/dashboard?project=' + encodeURIComponent(clean);
+    };
+
+    async function tgHydrateHomeProjects() {
+      var token = '';
+      var email = '';
+      var provider = '';
+      try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('sso_token')) {
+          localStorage.setItem('tg_cloud_sso_token', params.get('sso_token'));
+          if (params.get('email')) localStorage.setItem('tg_cloud_sso_email', params.get('email'));
+          if (params.get('sso_provider')) localStorage.setItem('tg_cloud_sso_provider', params.get('sso_provider'));
+        }
+        token = localStorage.getItem('tg_cloud_sso_token') || '';
+        email = localStorage.getItem('tg_cloud_sso_email') || '';
+        provider = localStorage.getItem('tg_cloud_sso_provider') || 'sso';
+      } catch (e) {}
+      if (!token) {
+        if (homeBar) homeBar.style.display = 'block';
+        if (homeSignInBtn) homeSignInBtn.style.display = 'inline-flex';
+        if (homeLogoutBtn) homeLogoutBtn.style.display = 'inline-flex';
+        if (homeBadge) homeBadge.style.display = 'none';
+        if (homeLoginRow) homeLoginRow.style.display = 'flex';
+        if (homeProjectsRow) homeProjectsRow.style.display = 'none';
+        return;
+      }
+      try {
+        var res = await fetch('/v1/projects', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!res.ok) throw new Error('expired');
+        var data = await res.json();
+        var resolvedEmail = data.email || email || 'authenticated';
+        var resolvedProvider = String(data.provider || provider || 'sso').toUpperCase();
+        if (homeBar) homeBar.style.display = 'block';
+        if (homeLoginRow) homeLoginRow.style.display = 'none';
+        if (homeProjectsRow) homeProjectsRow.style.display = 'flex';
+        if (homeSignInBtn) homeSignInBtn.style.display = 'none';
+        if (homeLogoutBtn) homeLogoutBtn.style.display = 'inline-block';
+        if (homeBadge) {
+          homeBadge.textContent = '🟢 ' + resolvedEmail;
+          homeBadge.style.display = 'inline-block';
+        }
+        var sessionTxt = document.getElementById('homeSsoSessionText');
+        if (sessionTxt) sessionTxt.textContent = '🟢 ' + resolvedProvider + ' SSO · ' + resolvedEmail;
+        var projects = Array.isArray(data.projects) ? data.projects : [];
+        var savedProj = '';
+        try { savedProj = localStorage.getItem('tg_active_project') || ''; } catch (e) {}
+        var activeSlug = savedProj || data.activeProjectSlug || (projects[0] && projects[0].slug) || 'default';
+        if (homeProjectSelect) {
+          homeProjectSelect.innerHTML = projects.map(function (p) {
+            var sel = p.slug === activeSlug ? ' selected' : '';
+            var sigs = typeof p.totalFeedback === 'number' ? ' (' + p.totalFeedback + ' signals)' : '';
+            return '<option value="' + p.slug + '"' + sel + '>' + (p.name || p.slug) + sigs + '</option>';
+          }).join('');
+        }
+        window.tgSwitchHomeProject(activeSlug);
+      } catch (e) {
+        try { localStorage.removeItem('tg_cloud_sso_token'); } catch (_) {}
+      }
+    }
+
+    window.tgHomeSsoLogin = async function (provider) {
+      var email = (homeEmailInput && homeEmailInput.value.trim()) || '';
+      if (!email) {
+        try { email = localStorage.getItem('tg_cloud_sso_email') || ''; } catch (e) {}
+      }
+      var promptEl = document.getElementById('homeSsoPrompt');
+      if ((!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) && typeof window.prompt === 'function') {
+        var prompted = window.prompt('Sign in with ' + String(provider || 'SSO').toUpperCase() + ' SSO — enter your email:', email || '');
+        if (prompted && prompted.trim()) {
+          email = prompted.trim();
+          if (homeEmailInput) homeEmailInput.value = email;
+        }
+      }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (homeEmailInput) homeEmailInput.focus();
+        if (promptEl) {
+          promptEl.style.color = '#ff6b6b';
+          promptEl.textContent = 'Enter your work email to sign in with ' + String(provider || 'SSO').toUpperCase() + ' SSO:';
+        }
+        return;
+      }
+      var res = await fetch('/v1/cloud/sso/authorize?provider=' + encodeURIComponent(provider) + '&email=' + encodeURIComponent(email) + '&redirect_uri=/&format=json', {
+        headers: { 'Accept': 'application/json' }
+      });
+      var data = await res.json();
+      if (data && data.mode === 'oauth_redirect' && data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+        return;
+      }
+      if (data && data.ok && data.ssoToken) {
+        try {
+          localStorage.setItem('tg_cloud_sso_token', data.ssoToken);
+          localStorage.setItem('tg_cloud_sso_email', data.email);
+          localStorage.setItem('tg_cloud_sso_provider', data.provider);
+        } catch (e) {}
+        await tgHydrateHomeProjects();
+      }
+    };
+
+    window.tgCreateHomeProject = async function () {
+      var inp = document.getElementById('homeNewProjectInput');
+      var name = (inp && inp.value.trim()) || '';
+      var token = '';
+      try { token = localStorage.getItem('tg_cloud_sso_token') || ''; } catch (e) {}
+      if (!name || !token) return;
+      var res = await fetch('/v1/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ name: name })
+      });
+      var data = await res.json();
+      if (data && data.ok && data.project) {
+        inp.value = '';
+        try { localStorage.setItem('tg_active_project', data.project.slug); } catch (e) {}
+        await tgHydrateHomeProjects();
+      }
+    };
+
+    window.tgHomeLogout = async function () {
+      var token = '';
+      try {
+        token = localStorage.getItem('tg_cloud_sso_token') || '';
+        localStorage.removeItem('tg_cloud_sso_token');
+        localStorage.removeItem('tg_cloud_sso_email');
+        localStorage.removeItem('tg_cloud_sso_provider');
+      } catch (e) {}
+      if (token) {
+        fetch('/v1/cloud/sso/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: token })
+        }).catch(function () {});
+      }
+      if (homeBar) homeBar.style.display = 'block';
+      await tgHydrateHomeProjects();
+    };
+
+    tgHydrateHomeProjects();
   })();
 </script>
 </body>
