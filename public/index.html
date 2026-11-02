@@ -751,40 +751,40 @@
         <a href="/cloud" data-cta-id="nav_cloud_dashboard" style="color:var(--cyan);font-weight:800;">Cloud Portal</a>
         <a href="/deploy-plan" data-cta-id="nav_deploy_plan" style="color:var(--green);font-weight:800;">Deploy Plan</a>
         <span id="homeSsoBadge" style="display:none;font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);padding:5px 10px;border:1px solid rgba(86,227,159,0.35);border-radius:999px;background:rgba(86,227,159,0.08);"></span>
-        <a href="#homeSsoBar" id="homeSsoSignInBtn" class="nav-auth-btn" onclick="if(window.tgToggleHomeSso){window.tgToggleHomeSso(true);}" style="display:inline-flex;align-items:center;min-height:38px;padding:8px 14px;border-radius:8px;border:1px solid var(--cyan);background:var(--cyan);color:#06121a;font:800 13px/1 inherit;text-decoration:none;line-height:22px;">🔐 Log In</a>
+        <button type="button" id="homeSsoSignInBtn" class="nav-auth-btn" onclick="if(window.tgToggleHomeSso){window.tgToggleHomeSso();}" style="display:inline-flex;align-items:center;min-height:38px;padding:8px 14px;border-radius:8px;border:1px solid var(--cyan);background:var(--cyan);color:#06121a;font:800 13px/1 inherit;text-decoration:none;line-height:22px;cursor:pointer;">🔐 Log In</button>
         <button type="button" id="homeSsoLogoutBtn" class="nav-auth-btn" onclick="window.tgHomeLogout()" style="display:none;align-items:center;min-height:38px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:rgba(255,107,107,0.1);color:#ff6b6b;font:800 13px/1 inherit;cursor:pointer;">Log Out</button>
         <a class="nav-buy" href="#install" data-cta-id="nav_install_free">Install free</a>
       </div>
     </div>
-  </nav>
-  <div id="homeSsoBar" style="display:none;border-bottom:1px solid var(--line);background:rgba(12,17,26,0.96);padding:12px 0;">
-    <div class="shell" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-      <div id="homeSsoLoginRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;justify-content:space-between;">
-        <span id="homeSsoPrompt" style="font-size:13px;font-weight:700;color:var(--text);">SSO Sign In:</span>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <input type="email" id="homeSsoEmail" placeholder="work@company.com" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font-size:13px;width:210px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgHomeSsoLogin('google');}" />
-          <button type="button" onclick="window.tgHomeSsoLogin('apple')" style="min-height:36px;padding:0 12px;border-radius:8px;border:0;background:#f8fafc;color:#080b10;font:800 12px/1 inherit;cursor:pointer;"> Apple</button>
-          <button type="button" onclick="window.tgHomeSsoLogin('google')" style="min-height:36px;padding:0 12px;border-radius:8px;border:0;background:var(--cyan);color:#041016;font:800 12px/1 inherit;cursor:pointer;">G Google</button>
-          <button type="button" onclick="window.tgHomeSsoLogin('github')" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">GitHub</button>
-          <button type="button" onclick="window.tgHomeSsoLogin('okta')" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">Enterprise SSO</button>
-          <button type="button" onclick="window.tgToggleHomeSso(false)" aria-label="Close SSO sign-in bar" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font:700 12px/1 inherit;cursor:pointer;">✕</button>
+    <div id="homeSsoBar" style="display:none;border-top:1px solid var(--line);background:rgba(12,17,26,0.98);padding:12px 0;">
+      <div class="shell" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div id="homeSsoLoginRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;justify-content:space-between;">
+          <span id="homeSsoPrompt" style="font-size:13px;font-weight:700;color:var(--text);">SSO Sign In (enter work email &amp; choose provider):</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input type="email" id="homeSsoEmail" placeholder="work@company.com" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--cyan);background:#080b10;color:var(--text);font-size:13px;width:220px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgHomeSsoLogin('google');}" />
+            <button type="button" onclick="window.tgHomeSsoLogin('apple')" style="min-height:36px;padding:0 12px;border-radius:8px;border:0;background:#f8fafc;color:#080b10;font:800 12px/1 inherit;cursor:pointer;"> Apple</button>
+            <button type="button" onclick="window.tgHomeSsoLogin('google')" style="min-height:36px;padding:0 12px;border-radius:8px;border:0;background:var(--cyan);color:#041016;font:800 12px/1 inherit;cursor:pointer;">G Google</button>
+            <button type="button" onclick="window.tgHomeSsoLogin('github')" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">GitHub</button>
+            <button type="button" onclick="window.tgHomeSsoLogin('okta')" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">Enterprise SSO</button>
+            <button type="button" onclick="window.tgToggleHomeSso(false)" aria-label="Close SSO sign-in bar" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font:700 12px/1 inherit;cursor:pointer;">✕</button>
+          </div>
         </div>
-      </div>
-      <div id="homeProjectsRow" style="display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%;">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <span id="homeSsoSessionText" style="font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);"></span>
-          <label for="homeProjectSelect" style="font-size:12px;color:var(--muted);font-weight:700;">📁 Projects:</label>
-          <select id="homeProjectSelect" onchange="window.tgSwitchHomeProject(this.value)" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;"></select>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <input type="text" id="homeNewProjectInput" placeholder="New project (e.g. api-prod)" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;width:185px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgCreateHomeProject();}" />
-          <button type="button" onclick="window.tgCreateHomeProject()" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.1);color:var(--cyan);font:800 12px/1 inherit;cursor:pointer;">+ Project</button>
-          <a id="homeOpenProjectLink" href="/dashboard" style="display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:8px;background:var(--green);color:#06130d;font:800 12px/1 inherit;text-decoration:none;">Dashboard →</a>
-          <button type="button" onclick="window.tgHomeLogout()" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:transparent;color:#ff6b6b;font:700 12px/1 inherit;cursor:pointer;">Log Out</button>
+        <div id="homeProjectsRow" style="display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span id="homeSsoSessionText" style="font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);"></span>
+            <label for="homeProjectSelect" style="font-size:12px;color:var(--muted);font-weight:700;">📁 Projects:</label>
+            <select id="homeProjectSelect" onchange="window.tgSwitchHomeProject(this.value)" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;"></select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="homeNewProjectInput" placeholder="New project (e.g. api-prod)" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;width:185px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgCreateHomeProject();}" />
+            <button type="button" onclick="window.tgCreateHomeProject()" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.1);color:var(--cyan);font:800 12px/1 inherit;cursor:pointer;">+ Project</button>
+            <a id="homeOpenProjectLink" href="/dashboard" style="display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:8px;background:var(--green);color:#06130d;font:800 12px/1 inherit;text-decoration:none;">Dashboard →</a>
+            <button type="button" onclick="window.tgHomeLogout()" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:transparent;color:#ff6b6b;font:700 12px/1 inherit;cursor:pointer;">Log Out</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </nav>
 
   <main>
     <!-- HERO -->
