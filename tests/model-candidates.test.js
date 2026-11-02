@@ -29,6 +29,12 @@ test('model candidate catalog includes Kimi K2.6 and Qwen3.6 variants', () => {
   assert.ok(ids.has('tinker/kimi-k2.6-128k'));
   assert.ok(ids.has('tinker/qwen3.6-35b-a3b'));
   assert.ok(ids.has('tinker/qwen3.6-27b'));
+  for (const candidate of catalog.candidates.filter((entry) => entry.gateway === 'tinker')) {
+    assert.equal(
+      candidate.notes,
+      'Catalog label. Training stays on the local lesson log. This id does not open a network call.',
+    );
+  }
   assert.ok(ids.has('self-hosted/deepseek-v4-flash-sglang'));
   assert.ok(ids.has('self-hosted/deepseek-v4-pro-sglang'));
   assert.ok(ids.has('research/fast-byte-latent-transformer'));

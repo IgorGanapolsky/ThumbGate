@@ -1028,9 +1028,22 @@ function satisfyCondition(conditionId, evidence, structuredReasoning, options = 
 // Stats tracking
 // ---------------------------------------------------------------------------
 
+function countOrZero(current) {
+  let value = current;
+  if (typeof value === 'string' && /^(0|[1-9]\d*)$/.test(value.trim())) {
+    value = Number(value);
+  }
+  if (typeof value === 'number' && Number.isInteger(value) && value >= 0) return value;
+  return 0;
+}
+
 function loadStats() {
   const stats = loadJSON(module.exports.STATS_PATH);
   if (Object.keys(stats).length === 0) return { blocked: 0, warned: 0, passed: 0, byGate: {} };
+  stats.blocked = countOrZero(stats.blocked);
+  stats.warned = countOrZero(stats.warned);
+  stats.passed = countOrZero(stats.passed);
+  stats.recurringBlocks = countOrZero(stats.recurringBlocks);
   return stats;
 }
 
@@ -1056,6 +1069,40 @@ function buildGateActionFingerprint(gateId, options = {}) {
     if (Array.isArray(toolInput.affectedFiles)) parts.push(...toolInput.affectedFiles);
   }
   return actionFingerprint(parts);
+}
+
+function nextIntegerCount(current) {
+  return countOrZero(current) + 1;
+}
+
+function assessTrainingRoute(input = {}) {
+  const raw = input && (input.baseUrl || input.url || input.endpoint || '');
+  const text = raw == null ? '' : String(raw).trim();
+  if (!text) {
+    return {
+      allowed: true,
+      route: 'local_lesson',
+      remoteCall: false,
+    };
+  }
+  let host = '';
+  try {
+    host = new URL(text).hostname.toLowerCase();
+  } catch {
+    return {
+      allowed: false,
+      route: 'refused',
+      reason: 'unreadable_trainer_url',
+      remoteCall: false,
+    };
+  }
+  return {
+    allowed: false,
+    route: 'refused',
+    reason: 'remote_trainer_refused',
+    host,
+    remoteCall: false,
+  };
 }
 
 function recordStat(gateId, action, gate, options = {}) {
@@ -1087,7 +1134,7 @@ function recordStat(gateId, action, gate, options = {}) {
       if (!stats.sessionFiredActions[sessionKey]) stats.sessionFiredActions[sessionKey] = {};
       if (!stats.sessionFiredActions[sessionKey][gateId]) stats.sessionFiredActions[sessionKey][gateId] = {};
       if (stats.sessionFiredActions[sessionKey][gateId][fingerprint]) {
-        stats.recurringBlocks = (stats.recurringBlocks || 0) + 1;
+        stats.recurringBlocks = nextIntegerCount(stats.recurringBlocks);
       } else {
         stats.sessionFiredActions[sessionKey][gateId][fingerprint] = true;
       }
@@ -5675,6 +5722,8 @@ module.exports = {
   loadStats,
   saveStats,
   recordStat,
+  nextIntegerCount,
+  assessTrainingRoute,
   evaluateSecretGuard,
   evaluateSecurityScan,
   buildSecretGuardResult,

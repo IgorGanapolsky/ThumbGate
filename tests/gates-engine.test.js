@@ -26,6 +26,7 @@ const {
   loadStats,
   saveStats,
   recordStat,
+  assessTrainingRoute,
   loadState,
   saveState,
   computeExecutableHash,
@@ -864,6 +865,42 @@ test('recordStat only counts repeats for the same sanitized action', () => {
   cleanupStateFiles();
 });
 
+test('recordStat stores 1 when a repeat count is unreadable text', () => {
+  cleanupStateFiles();
+  const action = {
+    toolName: 'Bash',
+    toolInput: { command: 'echo once' },
+  };
+  recordStat('secret-exfiltration', 'block', null, action);
+  const seeded = loadStats();
+  seeded.recurringBlocks = '[object Object]11111111111111111';
+  saveStats(seeded);
+  recordStat('secret-exfiltration', 'block', null, action);
+  const stats = loadStats();
+  assert.equal(stats.recurringBlocks, 1);
+  assert.equal(typeof stats.recurringBlocks, 'number');
+  cleanupStateFiles();
+});
+
+test('assessTrainingRoute keeps an empty target on the local lesson log', () => {
+  const local = assessTrainingRoute({});
+  assert.equal(local.allowed, true);
+  assert.equal(local.route, 'local_lesson');
+  assert.equal(local.remoteCall, false);
+
+  const remote = assessTrainingRoute({ baseUrl: 'https://api.thinkingmachines.ai/v1' });
+  assert.equal(remote.allowed, false);
+  assert.equal(remote.reason, 'remote_trainer_refused');
+  assert.equal(remote.host, 'api.thinkingmachines.ai');
+  assert.equal(remote.remoteCall, false);
+  assert.equal(Object.hasOwn(remote, 'baseUrl'), false);
+
+  const broken = assessTrainingRoute({ url: 'not a url' });
+  assert.equal(broken.allowed, false);
+  assert.equal(broken.reason, 'unreadable_trainer_url');
+  assert.equal(broken.remoteCall, false);
+});
+
 test('recordStat ignores hook transport-only payloads for repeat metrics', () => {
   cleanupStateFiles();
   recordStat('retrieval_entropy_high', 'warn', null, {
@@ -881,6 +918,22 @@ test('recordStat ignores hook transport-only payloads for repeat metrics', () =>
   const stats = loadStats();
   assert.equal(stats.warned, 2);
   assert.equal(stats.recurringBlocks || 0, 0);
+  cleanupStateFiles();
+});
+
+test('loadStats fills missing counters and drops unreadable repeat text', () => {
+  cleanupStateFiles();
+  fs.writeFileSync(gatesEngine.STATS_PATH, JSON.stringify({
+    passes: 39,
+    blocked: 28,
+    recurringBlocks: '[object Object]11111111111111111',
+  }));
+  const stats = loadStats();
+  assert.equal(stats.blocked, 28);
+  assert.equal(stats.warned, 0);
+  assert.equal(stats.passed, 0);
+  assert.equal(stats.recurringBlocks, 0);
+  assert.equal(stats.passes, 39);
   cleanupStateFiles();
 });
 

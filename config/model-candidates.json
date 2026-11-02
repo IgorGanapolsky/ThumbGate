@@ -355,7 +355,7 @@
         "multi-agent",
         "reliability"
       ],
-      "notes": "Tinker April 23, 2026 release. Good candidate when long-horizon coding matters more than ultra-low latency."
+      "notes": "Catalog label. Training stays on the local lesson log. This id does not open a network call."
     },
     {
       "id": "tinker/kimi-k2.6-128k",
@@ -372,7 +372,7 @@
         "reliability",
         "long-context"
       ],
-      "notes": "Highest-ROI Kimi candidate for long traces and multi-step review."
+      "notes": "Catalog label. Training stays on the local lesson log. This id does not open a network call."
     },
     {
       "id": "tinker/qwen3.6-35b-a3b",
@@ -389,7 +389,7 @@
         "reliability",
         "fast-inference"
       ],
-      "notes": "Best first Tinker candidate for ThumbGate pre-action gating and tool-risk classification."
+      "notes": "Catalog label. Training stays on the local lesson log. This id does not open a network call."
     },
     {
       "id": "tinker/qwen3.6-27b",
@@ -405,7 +405,7 @@
         "tool-use",
         "fast-inference"
       ],
-      "notes": "Cheapest Tinker candidate for the fast gate path; use when latency/cost matter most."
+      "notes": "Catalog label. Training stays on the local lesson log. This id does not open a network call."
     },
     {
       "id": "perplexity/hybrid-local-cloud",
