@@ -10232,6 +10232,30 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/v1/cloud/viral-analytics') {
+      try {
+        const { evaluateViralMarketingScorecard } = require('../../scripts/viral-marketing-scorecard');
+        const { buildLinkedInAndTikTokViralMonetizationPack } = require('../../scripts/fast-money-engine');
+        const scorecard = await evaluateViralMarketingScorecard({ seedIfNeeded: false });
+        const viralPack = buildLinkedInAndTikTokViralMonetizationPack();
+        sendJson(
+          res,
+          200,
+          {
+            ok: true,
+            generatedAt: new Date().toISOString(),
+            scorecard,
+            viralPack,
+          },
+          {},
+          { headOnly: isHeadRequest }
+        );
+      } catch (err) {
+        sendJson(res, 500, { ok: false, error: err.message || 'viral_analytics_failed' });
+      }
+      return;
+    }
+
     if (req.method === 'POST' && pathname === '/v1/cloud/bdm/register-deal') {
       const body = await parseJsonBody(req);
       const resDeal = registerCommissionOnlyBdmDeal(body);

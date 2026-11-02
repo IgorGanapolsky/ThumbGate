@@ -1154,16 +1154,52 @@ next      decision recorded before execution</pre>
       }
     }
 
+    const urlParams = (function () {
+      try { return new URLSearchParams(window.location.search); } catch (_) { return new URLSearchParams(); }
+    })();
+    const activeAbVariant = (function () {
+      try {
+        const fromUrl = urlParams.get('campaign_variant') || urlParams.get('variant');
+        if (fromUrl) {
+          localStorage.setItem('tg_ab_variant', fromUrl);
+          return fromUrl;
+        }
+        const saved = localStorage.getItem('tg_ab_variant');
+        if (saved) return saved;
+        const seed = String(serverVisitorId || Math.random());
+        let hash = 0;
+        for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+        const assigned = Math.abs(hash) % 2 === 0 ? 'variant_a_mistake_firewall' : 'variant_b_token_burn_42pct';
+        localStorage.setItem('tg_ab_variant', assigned);
+        return assigned;
+      } catch (_) {
+        return 'variant_a_mistake_firewall';
+      }
+    })();
+    window.tgAbVariant = activeAbVariant;
+
     function sendFirstPartyTelemetry(eventName, props) {
       if (privacySignalOptOut()) return;
+      const mergedProps = Object.assign({
+        campaignVariant: activeAbVariant,
+        utmSource: urlParams.get('utm_source') || undefined,
+        utmMedium: urlParams.get('utm_medium') || undefined,
+        utmCampaign: urlParams.get('utm_campaign') || undefined,
+        referredByVisitorId: urlParams.get('ref') || urlParams.get('referred_by') || undefined,
+      }, props || {});
       const payload = JSON.stringify({
         event: eventName,
         page: '/',
-        source: 'homepage',
+        source: urlParams.get('utm_source') || 'homepage',
+        utmSource: urlParams.get('utm_source') || undefined,
+        utmMedium: urlParams.get('utm_medium') || undefined,
+        utmCampaign: urlParams.get('utm_campaign') || undefined,
+        campaignVariant: activeAbVariant,
+        referredByVisitorId: urlParams.get('ref') || urlParams.get('referred_by') || undefined,
         visitorId: serverVisitorId || undefined,
         sessionId: serverSessionId || undefined,
         acquisitionId: serverAcquisitionId || undefined,
-        props: props || {},
+        props: mergedProps,
       });
       try {
         if (navigator.sendBeacon) {
@@ -1178,6 +1214,25 @@ next      decision recorded before execution</pre>
         }).catch(function () {});
       } catch (_) {}
     }
+
+    window.tgShareViralLink = function (channel) {
+      const targetChannel = String(channel || 'linkedin').toLowerCase();
+      const refId = encodeURIComponent(serverVisitorId || 'founder');
+      const shareUrl = 'https://thumbgate.ai/go/bundle-49?ref=' + refId +
+        '&utm_source=' + encodeURIComponent(targetChannel) +
+        '&utm_medium=viral_share&utm_campaign=nov2026_viral&campaign_variant=' + encodeURIComponent(activeAbVariant);
+      sendFirstPartyTelemetry('viral_share', {
+        shareChannel: targetChannel,
+        campaignVariant: activeAbVariant,
+        shareUrl: shareUrl,
+      });
+      if (targetChannel === 'linkedin') {
+        window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(shareUrl), '_blank', 'noopener');
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl).catch(function () {});
+      }
+      return shareUrl;
+    };
 
     function sendGa4Event(eventName, params) {
       if (privacySignalOptOut()) return;

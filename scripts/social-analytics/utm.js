@@ -15,7 +15,21 @@
  * @param {{ source: string, medium?: string, campaign: string, content?: string }} options
  * @returns {string} URL with UTM query parameters appended.
  */
-function buildUTMLink(baseUrl, { source, medium = 'social', campaign, content } = {}) {
+function buildUTMLink(baseUrl, {
+  source,
+  medium = 'social',
+  campaign,
+  content,
+  term,
+  creator,
+  community,
+  postId,
+  commentId,
+  campaignVariant,
+  offerCode,
+  experimentId,
+  ref,
+} = {}) {
   if (!baseUrl) throw new Error('buildUTMLink: baseUrl is required');
   if (!source) throw new Error('buildUTMLink: source is required');
   if (!campaign) throw new Error('buildUTMLink: campaign is required');
@@ -24,38 +38,48 @@ function buildUTMLink(baseUrl, { source, medium = 'social', campaign, content } 
   url.searchParams.set('utm_source', source);
   url.searchParams.set('utm_medium', medium);
   url.searchParams.set('utm_campaign', campaign);
-  if (content) {
-    url.searchParams.set('utm_content', content);
-  }
+  if (content) url.searchParams.set('utm_content', content);
+  if (term) url.searchParams.set('utm_term', term);
+  if (creator) url.searchParams.set('creator', creator);
+  if (community) url.searchParams.set('community', community);
+  if (postId) url.searchParams.set('post_id', postId);
+  if (commentId) url.searchParams.set('comment_id', commentId);
+  if (campaignVariant) url.searchParams.set('campaign_variant', campaignVariant);
+  if (offerCode) url.searchParams.set('offer_code', offerCode);
+  if (experimentId) url.searchParams.set('experiment_id', experimentId);
+  if (ref) url.searchParams.set('ref', ref);
   return url.toString();
 }
 
-/**
- * Returns a pre-built set of tracked links for each social platform.
- *
- * @param {string} baseUrl - The destination URL.
- * @param {string} campaign - The campaign name (e.g. 'launch-v2', 'spring-promo').
- * @returns {{
- *   instagram: string,
- *   tiktok: string,
- *   x: string,
- *   github: string,
- *   reddit: string,
- *   zernio: string,
- * }}
- */
-function buildSocialLinks(baseUrl, campaign) {
+function buildSocialLinks(baseUrl, campaign, extraOptions = {}) {
   if (!baseUrl) throw new Error('buildSocialLinks: baseUrl is required');
   if (!campaign) throw new Error('buildSocialLinks: campaign is required');
 
-  return {
-    instagram: buildUTMLink(baseUrl, { source: 'instagram', medium: 'social', campaign }),
-    tiktok: buildUTMLink(baseUrl, { source: 'tiktok', medium: 'social', campaign }),
-    x: buildUTMLink(baseUrl, { source: 'x', medium: 'social', campaign }),
-    github: buildUTMLink(baseUrl, { source: 'github', medium: 'social', campaign }),
-    reddit: buildUTMLink(baseUrl, { source: 'reddit', medium: 'social', campaign }),
-    zernio: buildUTMLink(baseUrl, { source: 'zernio', medium: 'social', campaign }),
-  };
+  const platforms = [
+    'instagram',
+    'tiktok',
+    'x',
+    'github',
+    'reddit',
+    'zernio',
+    'linkedin',
+    'bluesky',
+    'threads',
+    'hackernews',
+    'youtube',
+    'devto',
+    'substack',
+  ];
+  const result = {};
+  for (const platform of platforms) {
+    result[platform] = buildUTMLink(baseUrl, {
+      ...extraOptions,
+      source: platform,
+      medium: extraOptions.medium || 'social',
+      campaign,
+    });
+  }
+  return result;
 }
 
 /**
@@ -78,8 +102,9 @@ const TRACKABLE_DOMAINS = [
  * @param {{ source: string, medium?: string, campaign: string }} utmOptions
  * @returns {string} Text with trackable URLs replaced by UTM-tagged versions.
  */
-function tagUrlsInText(text, { source, medium = 'social', campaign }) {
+function tagUrlsInText(text, utmOptions = {}) {
   if (!text) return text;
+  const { source, medium = 'social', campaign } = utmOptions;
 
   // Match http(s) URLs
   const urlPattern = /https?:\/\/[^\s)"\]]+/g;
@@ -89,12 +114,51 @@ function tagUrlsInText(text, { source, medium = 'social', campaign }) {
     if (!isTrackable) return match;
 
     try {
-      return buildUTMLink(match, { source, medium, campaign });
+      return buildUTMLink(match, { ...utmOptions, source, medium, campaign });
     } catch {
       // If URL parsing fails, return the original
       return match;
     }
   });
+}
+
+function parseAndRepairInboundAttribution(urlOrSearch = '') {
+  const rawText = String(urlOrSearch || '').trim().replace(/&amp;/gi, '&');
+  if (!rawText) return {};
+  let queryString = rawText;
+  try {
+    if (/^https?:\/\//i.test(rawText)) {
+      queryString = new URL(rawText).search;
+    }
+  } catch (_) {}
+  const params = new URLSearchParams(queryString.startsWith('?') ? queryString.slice(1) : queryString);
+  const out = {};
+  const keys = [
+    ['utm_source', 'utmSource'],
+    ['utm_medium', 'utmMedium'],
+    ['utm_campaign', 'utmCampaign'],
+    ['utm_content', 'utmContent'],
+    ['utm_term', 'utmTerm'],
+    ['creator', 'creator'],
+    ['community', 'community'],
+    ['subreddit', 'community'],
+    ['post_id', 'postId'],
+    ['comment_id', 'commentId'],
+    ['campaign_variant', 'campaignVariant'],
+    ['variant', 'campaignVariant'],
+    ['offer_code', 'offerCode'],
+    ['experiment_id', 'experimentId'],
+    ['ref', 'referredByVisitorId'],
+    ['referred_by', 'referredByVisitorId'],
+    ['inviter_id', 'referredByVisitorId'],
+  ];
+  for (const [paramKey, fieldKey] of keys) {
+    const val = params.get(paramKey);
+    if (val && !out[fieldKey]) {
+      out[fieldKey] = String(val).replace(/\\+$/g, '').trim();
+    }
+  }
+  return out;
 }
 
 /**
@@ -116,6 +180,7 @@ async function shortenWithDub(longUrl) {
 module.exports = {
   buildUTMLink,
   buildSocialLinks,
+  parseAndRepairInboundAttribution,
   shortenWithDub,
   tagUrlsInText,
   TRACKABLE_DOMAINS,
