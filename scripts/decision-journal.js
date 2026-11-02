@@ -333,9 +333,166 @@ function computeDecisionMetrics(feedbackDir, options = {}) {
   };
 }
 
+const WEEKLY_PRICE_DOLLARS = new Set([19, 149, 499]);
+
+function weeklyBase(extra) {
+  return {
+    allow: false,
+    networkCall: false,
+    merge: false,
+    sent: false,
+    originStory: null,
+    waitlistUrl: null,
+    followUp: { text: '', sent: false },
+    ...extra,
+  };
+}
+
+function ownChildren(value) {
+  if (Array.isArray(value)) return value;
+  const children = [];
+  for (const key of Object.keys(value)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    children.push(value[key]);
+  }
+  return children;
+}
+
+function textBlob(value, depth, seen) {
+  if (value == null || depth > 5) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value !== 'object') return '';
+  if (seen.has(value)) return '';
+  seen.add(value);
+  return ownChildren(value)
+    .map((child) => textBlob(child, depth + 1, seen))
+    .filter(Boolean)
+    .join('\n');
+}
+
+function dollarAmounts(blob) {
+  const prices = [];
+  const pattern = /\$\s?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/g;
+  let match = pattern.exec(blob);
+  while (match) {
+    prices.push(Number(match[1].replace(/,/g, '')));
+    match = pattern.exec(blob);
+  }
+  return prices;
+}
+
+function nicheVerdict(value) {
+  if (value == null || String(value).trim() === '') return { ok: true, niche: null };
+  const niche = String(value).trim();
+  if (/\beveryone\b|\ball\s+(?:developers?|athletes?|users?|teams?|customers?|people)\b/i.test(niche)) {
+    return { ok: false };
+  }
+  return { ok: true, niche };
+}
+
+function publishedRef(shipped) {
+  if (!shipped || typeof shipped !== 'object' || Array.isArray(shipped)) return '';
+  if (shipped.published !== true) return '';
+  const ref = String(shipped.ref || shipped.commit || shipped.pr || '').trim();
+  if (!ref || /\b(?:plan|todo|idea|will ship|next week)\b/i.test(ref)) return '';
+  return ref;
+}
+
+function coachingNotes(source) {
+  if (source.scorecard && typeof source.scorecard === 'object') return ['scorecard', 'extra'];
+  const notes = [];
+  if (Array.isArray(source.insights)) {
+    for (const item of source.insights) {
+      const text = String(item || '').trim();
+      if (text) notes.push(text);
+    }
+  } else if (source.insights && typeof source.insights === 'object') {
+    return ['scorecard', 'extra'];
+  }
+  if (typeof source.insight === 'string' && source.insight.trim()) notes.push(source.insight.trim());
+  return notes;
+}
+
+function oneNext(value) {
+  if (typeof value !== 'string' || value.trim() === '') return { ok: false, reason: 'missing_next' };
+  if (/[\r\n]/.test(value)) return { ok: false, reason: 'next_is_one_line' };
+  return { ok: true, text: value.trim() };
+}
+
+function isMoneyKind(kind) {
+  return /revenue|booked|dollar|usd|charge|price/i.test(String(kind || ''));
+}
+
+function assessWeeklyShipRecord(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return weeklyBase({ reason: 'not_a_record' });
+  }
+  if (input.writeOriginStory === true) {
+    return weeklyBase({ reason: 'human_writes_origin' });
+  }
+  const niche = nicheVerdict(input.niche);
+  if (!niche.ok) return weeklyBase({ reason: 'broad_niche' });
+  const blob = textBlob(input, 0, new Set());
+  const prices = dollarAmounts(blob);
+  if (prices.some((amount) => !WEEKLY_PRICE_DOLLARS.has(amount))) {
+    return weeklyBase({ reason: 'forbidden_price', prices });
+  }
+  if (input.waitlistUrl || input.waitlist || /waitlist|\/go\/bundle-49|\/go\/pro-direct|overskill/i.test(blob)) {
+    return weeklyBase({ reason: 'waitlist_refused' });
+  }
+  if (input.assignTo || input.delegateTo || input.teamMember || input.assignee) {
+    return weeklyBase({ reason: 'no_team' });
+  }
+  const shipped = publishedRef(input.shipped);
+  if (!shipped) return weeklyBase({ reason: 'not_published' });
+  const number = input.number;
+  if (!number || typeof number !== 'object' || Array.isArray(number)) {
+    return weeklyBase({ reason: 'missing_number' });
+  }
+  if (typeof number.value !== 'number' || !Number.isFinite(number.value)) {
+    return weeklyBase({ reason: 'not_a_number' });
+  }
+  if (number.invented === true) return weeklyBase({ reason: 'invented_number' });
+  const source = typeof number.source === 'string' ? number.source.trim() : '';
+  if (!source) return weeklyBase({ reason: 'unsourced_number' });
+  if (isMoneyKind(number.kind) && WEEKLY_PRICE_DOLLARS.has(number.value)) {
+    return weeklyBase({ reason: 'price_is_not_revenue' });
+  }
+  const notes = coachingNotes(input);
+  if (notes.length > 1) return weeklyBase({ reason: 'too_many_insights' });
+  const next = oneNext(input.next);
+  if (!next.ok) return weeklyBase({ reason: next.reason });
+  const follow = input.followUp;
+  let draft = '';
+  if (typeof follow === 'string') draft = follow.trim();
+  else if (follow && typeof follow === 'object') {
+    draft = String(follow.text || follow.draft || '').trim();
+  }
+  return {
+    allow: true,
+    reason: 'weekly_ship',
+    shipped,
+    number: {
+      value: number.value,
+      source,
+      kind: typeof number.kind === 'string' && number.kind.trim() ? number.kind.trim() : null,
+    },
+    next: next.text,
+    niche: niche.niche,
+    insight: notes[0] || null,
+    followUp: { text: draft, sent: false },
+    networkCall: false,
+    merge: false,
+    sent: false,
+    originStory: null,
+    waitlistUrl: null,
+  };
+}
+
 module.exports = {
   DECISION_LOG_FILENAME,
   RESOLVED_OUTCOMES,
+  assessWeeklyShipRecord,
   buildActionId,
   collapseDecisionTimeline,
   computeDecisionMetrics,

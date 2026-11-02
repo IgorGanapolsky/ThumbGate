@@ -8,6 +8,7 @@ const assert = require('node:assert/strict');
 
 const {
   DECISION_LOG_FILENAME,
+  assessWeeklyShipRecord,
   collapseDecisionTimeline,
   computeDecisionMetrics,
   readDecisionLog,
@@ -240,4 +241,137 @@ test('computeDecisionMetrics summarizes fast-path, overrides, rollbacks, and lat
     assert.equal(metrics.medianLatencyMs, 180000);
     assert.ok(metrics.days.some((day) => day.evaluations > 0));
   });
+});
+
+function publishedWeek(extra = {}) {
+  return {
+    niche: 'people who run one coding agent in one repository',
+    shipped: { published: true, ref: 'commit:32f4e035' },
+    number: { value: 0, source: 'caller supplied paid order count', kind: 'paidOrders' },
+    next: 'Record the next published change the same way.',
+    ...extra,
+  };
+}
+
+test('weekly ship record counts a published change, a sourced number, and one next step', () => {
+  const result = assessWeeklyShipRecord(publishedWeek({
+    insight: 'Keep the weekly note to one change.',
+    followUp: { text: 'Draft only. Wait for a yes.', sent: true },
+    networkCall: true,
+    merge: true,
+  }));
+
+  assert.equal(result.allow, true);
+  assert.equal(result.reason, 'weekly_ship');
+  assert.equal(result.shipped, 'commit:32f4e035');
+  assert.deepEqual(result.number, {
+    value: 0,
+    source: 'caller supplied paid order count',
+    kind: 'paidOrders',
+  });
+  assert.equal(result.next, 'Record the next published change the same way.');
+  assert.equal(result.insight, 'Keep the weekly note to one change.');
+  assert.deepEqual(result.followUp, { text: 'Draft only. Wait for a yes.', sent: false });
+  assert.equal(result.sent, false);
+  assert.equal(result.networkCall, false);
+  assert.equal(result.merge, false);
+  assert.equal(result.originStory, null);
+  assert.equal(result.waitlistUrl, null);
+  assert.equal(JSON.stringify(result).includes('"sent":true'), false);
+});
+
+test('weekly ship record allows the three prices only as prices', () => {
+  const result = assessWeeklyShipRecord(publishedWeek({
+    next: 'Pro stays $19/month or $149/year. Setup Sprint is $499 once.',
+  }));
+  assert.equal(result.allow, true);
+  assert.equal(result.reason, 'weekly_ship');
+  assert.equal(result.number.value, 0);
+});
+
+test('weekly ship record refuses an unpublished plan, an unsourced count, and a scorecard', () => {
+  const unpublished = assessWeeklyShipRecord(publishedWeek({
+    shipped: { published: false, ref: 'plan to ship next week' },
+  }));
+  assert.equal(unpublished.allow, false);
+  assert.equal(unpublished.reason, 'not_published');
+
+  const unsourced = assessWeeklyShipRecord(publishedWeek({
+    number: { value: 12, kind: 'subscribers' },
+  }));
+  assert.equal(unsourced.reason, 'unsourced_number');
+
+  const invented = assessWeeklyShipRecord(publishedWeek({
+    number: { value: 12, source: 'notes', kind: 'users', invented: true },
+  }));
+  assert.equal(invented.reason, 'invented_number');
+
+  const scorecard = assessWeeklyShipRecord(publishedWeek({
+    insights: ['Cut one filler phrase.', 'Also fix the opening.'],
+  }));
+  assert.equal(scorecard.reason, 'too_many_insights');
+  assert.equal(JSON.stringify(scorecard).includes('filler'), false);
+
+  const card = assessWeeklyShipRecord(publishedWeek({
+    scorecard: { fillerWords: 3, missedCues: 2 },
+  }));
+  assert.equal(card.reason, 'too_many_insights');
+  assert.equal(JSON.stringify(card).includes('fillerWords'), false);
+});
+
+test('weekly ship record refuses a broad audience, a generated origin story, and another price', () => {
+  for (const niche of ['everyone', 'all developers', 'all athletes', 'all users', 'all teams']) {
+    assert.equal(assessWeeklyShipRecord(publishedWeek({ niche })).reason, 'broad_niche');
+  }
+
+  const story = 'A generated origin about adversity.';
+  const origin = assessWeeklyShipRecord(publishedWeek({
+    writeOriginStory: true,
+    originStory: story,
+  }));
+  assert.equal(origin.allow, false);
+  assert.equal(origin.reason, 'human_writes_origin');
+  assert.equal(origin.originStory, null);
+  assert.equal(JSON.stringify(origin).includes(story), false);
+
+  const bundle = assessWeeklyShipRecord(publishedWeek({ next: 'Sell the $49 bundle.' }));
+  assert.equal(bundle.reason, 'forbidden_price');
+  assert.ok(bundle.prices.includes(49));
+
+  const both = assessWeeklyShipRecord(publishedWeek({
+    next: 'Setup Sprint is $499 once, or the $49 bundle.',
+  }));
+  assert.equal(both.reason, 'forbidden_price');
+  assert.ok(both.prices.includes(499));
+  assert.ok(both.prices.includes(49));
+
+  const playbook = assessWeeklyShipRecord(publishedWeek({ next: 'Buy the $9.99 playbook.' }));
+  assert.equal(playbook.reason, 'forbidden_price');
+  assert.ok(playbook.prices.includes(9.99));
+
+  for (const value of [19, 149, 499]) {
+    const pricedAsRevenue = assessWeeklyShipRecord(publishedWeek({
+      number: { value, source: 'caller', kind: 'bookedRevenue' },
+    }));
+    assert.equal(pricedAsRevenue.reason, 'price_is_not_revenue');
+  }
+});
+
+test('weekly ship record keeps a follow-up as a draft and drops a waitlist or a teammate', () => {
+  const waiting = assessWeeklyShipRecord(publishedWeek({
+    waitlistUrl: 'https://example.invalid/waitlist-token',
+  }));
+  assert.equal(waiting.reason, 'waitlist_refused');
+  assert.equal(waiting.waitlistUrl, null);
+  assert.equal(JSON.stringify(waiting).includes('waitlist-token'), false);
+
+  const team = assessWeeklyShipRecord(publishedWeek({ assignTo: 'delegate-token-qa' }));
+  assert.equal(team.reason, 'no_team');
+  assert.equal(JSON.stringify(team).includes('delegate-token-qa'), false);
+
+  assert.equal(assessWeeklyShipRecord(null).reason, 'not_a_record');
+  assert.equal(assessWeeklyShipRecord(publishedWeek({ next: '' })).reason, 'missing_next');
+  assert.equal(assessWeeklyShipRecord(publishedWeek({
+    next: 'First line.\nSecond line.',
+  })).reason, 'next_is_one_line');
 });
