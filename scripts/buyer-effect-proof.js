@@ -14,7 +14,7 @@
  *   A. An allowed action executes and returns its result.
  *   B. In default (sidecar) mode, a documented warning case still executes -
  *      reported as WARNED, never counted as prevented.
- *   C. A hard-floor deny (secret exfiltration) never reaches the executor and
+ *   C. An actual denial (force push to main) never reaches the executor and
  *      leaves an independent sentinel unchanged.
  *   D. A completion claim with a missing or contradictory receipt is reported
  *      NOT VERIFIED.
@@ -130,7 +130,9 @@ async function run() {
     });
   }
 
-  // Case C - actual denial: hard-floor secret exfiltration.
+  // Case C - actual denial: force push to main (observed deny in default
+  // sidecar mode). NOTE: an inline secret literal in a curl command is NOT a
+  // deny on this path - see scopeCoverage in the summary.
   {
     const sentinel = path.join(sandbox, 'c-sentinel.txt');
     fs.writeFileSync(sentinel, 'untouched\n');
@@ -237,7 +239,7 @@ async function run() {
   const summary = {
     generatedAt: new Date().toISOString(),
     version: PACKAGE.version,
-    adapter: 'core-gates-engine (Claude PreToolUse hook path)',
+    adapter: 'core-gates-engine (in-process engine evaluation; Claude PreToolUse hook not executed; fake executor models the adapter contract)',
     mode,
     totals: {
       pass: cases.filter((c) => c.result === 'PASS').length,
@@ -245,6 +247,7 @@ async function run() {
       unknown: cases.filter((c) => c.result === 'UNKNOWN').length,
     },
     scopeNote: 'Supports only the cases and adapter executed here. Not proof of preventing every prompt injection, secret leak or unauthorized action. No revenue or savings effect measured.',
+    scopeCoverage: 'Case-level results only; broader mid-session scope-change coverage remains UNKNOWN (see E-repetition-scope). Documentation limitation observed, not fixed: the README blanket claim "hard-blocks detected secret leaks by default" is not justified on the Bash path - an inline secret literal (Anthropic key, GitHub PAT, and RSA PEM formats checked) inside a curl command is caught only as WARN by the deny-network-egress gate, not denied by the secret-exfiltration hard floor.',
     cases,
   };
   fs.rmSync(sandbox, { recursive: true, force: true });
