@@ -554,6 +554,7 @@
     "embeddinggemma:doctor": "node scripts/embeddinggemma-adapter.js",
     "test:embeddinggemma": "node --test tests/embeddinggemma-adapter.test.js",
     "test:canary": "node --test tests/gate-decision-canary.test.js",
+    "test:buyer-proof": "node --test tests/buyer-effect-proof.test.js",
     "postinstall": "node bin/postinstall.js || true",
     "start": "node src/api/server.js",
     "numbers:generate": "node scripts/generate-numbers-page.js",
