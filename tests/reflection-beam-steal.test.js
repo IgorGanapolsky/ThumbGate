@@ -8,6 +8,7 @@ const {
   buildBeamAndMirrorConfig,
   evaluateMirrorCliActionGate,
   filterVerifiedTracesForSelfDistillation,
+  assessServedEndpointEvidence,
 } = require('../scripts/reflection-beam-steal');
 
 test('BEAM_MODEL_SPEC & buildBeamAndMirrorConfig: exposes Beam-1.0-501B-A23B Apache-2.0 spec and ~/.mirror/mcp/thumbgate.json config', () => {
@@ -63,4 +64,82 @@ test('filterVerifiedTracesForSelfDistillation: keeps only verifier-passed, secre
   assert.equal(res.accepted[0].traceId, 't_good');
   assert.equal(res.accepted[0].loraReady, true);
   assert.equal(res.rejectedCount, 2);
+});
+
+const greenVerify = {
+  ran: true,
+  requestContractPassed: true,
+  responseContractPassed: true,
+  toolProtocolPassed: true,
+};
+
+test('a score waits for a green verify and the model id the endpoint serves', () => {
+  const secret = 'rfl_localtestsecret';
+  const skipped = assessServedEndpointEvidence({
+    claimedModelId: 'local-model',
+    servedModelId: 'local-model',
+    verify: { ran: false },
+    gradedScores: [1, 1],
+    claimedScore: 1,
+    artifacts: {
+      apiKey: secret,
+      note: 'probe',
+      meta: { token: secret, log: `bearer ${secret}` },
+      rows: [secret],
+    },
+  });
+  assert.equal(skipped.reason, 'verify_before_score');
+  assert.equal(skipped.score, null);
+  assert.equal(skipped.artifacts.note, 'probe');
+  assert.equal(Object.hasOwn(skipped.artifacts, 'apiKey'), false);
+  assert.equal(Object.hasOwn(skipped.artifacts.meta, 'token'), false);
+  assert.equal(skipped.artifacts.meta.log, '[redacted]');
+  assert.deepEqual(skipped.artifacts.rows, ['[redacted]']);
+  assert.equal(JSON.stringify(skipped).includes(secret), false);
+
+  const wrongName = assessServedEndpointEvidence({
+    claimedModelId: 'checkpoint-name',
+    servedModelId: 'local-model',
+    verify: greenVerify,
+    gradedScores: [1],
+  });
+  assert.equal(wrongName.reason, 'model_id_mismatch');
+  assert.equal(wrongName.score, null);
+});
+
+test('ungraded tasks count as zero, and no graded task means no score', () => {
+  const none = assessServedEndpointEvidence({
+    claimedModelId: 'local-model',
+    servedModelId: 'local-model',
+    verify: greenVerify,
+    gradedScores: [],
+    ungradedCount: 4,
+    claimedScore: 0,
+  });
+  assert.equal(none.reason, 'nothing_graded');
+  assert.equal(none.hasScore, false);
+  assert.equal(none.score, null);
+  assert.equal(none.conformancePassed, true);
+
+  const mixed = assessServedEndpointEvidence({
+    claimedModelId: 'local-model',
+    servedModelId: 'local-model',
+    verify: greenVerify,
+    gradedScores: [1, 0],
+    ungradedCount: 2,
+  });
+  assert.equal(mixed.decision, 'allow');
+  assert.equal(mixed.reason, 'ungraded_count_as_zero');
+  assert.equal(mixed.score, 0.25);
+
+  const inflated = assessServedEndpointEvidence({
+    claimedModelId: 'local-model',
+    servedModelId: 'local-model',
+    verify: greenVerify,
+    gradedScores: [1],
+    ungradedCount: 1,
+    claimedScore: 1,
+  });
+  assert.equal(inflated.reason, 'score_does_not_match_rows');
+  assert.equal(inflated.score, 0.5);
 });

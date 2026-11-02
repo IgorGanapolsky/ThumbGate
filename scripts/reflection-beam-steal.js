@@ -171,6 +171,145 @@ function filterVerifiedTracesForSelfDistillation(traces = [], { maxTokensBudget 
   };
 }
 
+const SECRET_FIELD = /api[_-]?key|authorization|secret|token|password/i;
+const SECRET_VALUE = /\b(?:sk-[A-Za-z0-9]{8,}|rfl_[A-Za-z0-9]{8,}|ghp_[A-Za-z0-9]{8,})\b/;
+
+function stripEndpointArtifacts(artifacts) {
+  const strippedSecretFields = [];
+  const seen = new WeakSet();
+
+  function walk(value, path, depth) {
+    if (typeof value === 'string' && SECRET_VALUE.test(value)) {
+      if (path) strippedSecretFields.push(path);
+      return '[redacted]';
+    }
+    if (!value || typeof value !== 'object') {
+      return value;
+    }
+    if (seen.has(value) || depth > 8) {
+      if (path) strippedSecretFields.push(path);
+      return Array.isArray(value) ? [] : {};
+    }
+    seen.add(value);
+    if (Array.isArray(value)) {
+      return value.map((item, index) => walk(item, `${path}[${index}]`, depth + 1));
+    }
+    const clean = Object.create(null);
+    for (const [key, child] of Object.entries(value)) {
+      const childPath = path ? `${path}.${key}` : key;
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype' || SECRET_FIELD.test(key)) {
+        strippedSecretFields.push(childPath);
+        continue;
+      }
+      clean[key] = walk(child, childPath, depth + 1);
+    }
+    return clean;
+  }
+
+  if (!artifacts || typeof artifacts !== 'object' || Array.isArray(artifacts)) {
+    return { artifacts: {}, strippedSecretFields };
+  }
+  return { artifacts: walk(artifacts, '', 0), strippedSecretFields };
+}
+
+/**
+ * A served-model score is evidence only after the endpoint's request, response,
+ * and tool-call checks have passed, and only for the model id that endpoint
+ * actually serves. An ungraded task counts as zero. No graded task means no score.
+ * The report never keeps an API key.
+ */
+function assessServedEndpointEvidence(input = {}) {
+  const { artifacts, strippedSecretFields } = stripEndpointArtifacts(input.artifacts);
+  const claimedModelId = String(input.claimedModelId || '').trim();
+  const servedModelId = String(input.servedModelId || '').trim();
+  const report = {
+    conformancePassed: false,
+    hasScore: false,
+    score: null,
+    gradedCount: 0,
+    ungradedCount: 0,
+    artifacts,
+    strippedSecretFields,
+  };
+  if (!claimedModelId || !servedModelId || claimedModelId !== servedModelId) {
+    return { ...report, ok: false, decision: 'deny', reason: 'model_id_mismatch' };
+  }
+  const verify = input.verify && typeof input.verify === 'object' ? input.verify : {};
+  const conformancePassed = verify.ran === true
+    && verify.requestContractPassed === true
+    && verify.responseContractPassed === true
+    && verify.toolProtocolPassed === true;
+  if (!conformancePassed) {
+    return { ...report, ok: false, decision: 'deny', reason: 'verify_before_score' };
+  }
+  if (!Array.isArray(input.gradedScores)) {
+    return {
+      ...report,
+      ok: false,
+      decision: 'deny',
+      reason: 'graded_scores_required',
+      conformancePassed: true,
+    };
+  }
+  const gradedScores = [];
+  for (const value of input.gradedScores) {
+    const score = Number(value);
+    if (!Number.isFinite(score) || score < 0 || score > 1) {
+      return {
+        ...report,
+        ok: false,
+        decision: 'deny',
+        reason: 'graded_score_invalid',
+        conformancePassed: true,
+      };
+    }
+    gradedScores.push(score);
+  }
+  const ungradedCount = input.ungradedCount == null ? 0 : Number(input.ungradedCount);
+  if (!Number.isInteger(ungradedCount) || ungradedCount < 0) {
+    return {
+      ...report,
+      ok: false,
+      decision: 'deny',
+      reason: 'ungraded_count_invalid',
+      conformancePassed: true,
+      gradedCount: gradedScores.length,
+    };
+  }
+  if (gradedScores.length === 0) {
+    return {
+      ...report,
+      ok: false,
+      decision: 'deny',
+      reason: 'nothing_graded',
+      conformancePassed: true,
+      gradedCount: 0,
+      ungradedCount,
+    };
+  }
+  const total = gradedScores.length + ungradedCount;
+  const sum = gradedScores.reduce((totalScore, score) => totalScore + score, 0);
+  const score = Number((sum / total).toFixed(4));
+  const claimedScore = input.claimedScore == null ? null : Number(input.claimedScore);
+  const base = {
+    ...report,
+    conformancePassed: true,
+    hasScore: true,
+    score,
+    gradedCount: gradedScores.length,
+    ungradedCount,
+  };
+  if (claimedScore != null && (!Number.isFinite(claimedScore) || Math.abs(claimedScore - score) > 0.0001)) {
+    return { ...base, ok: false, decision: 'deny', reason: 'score_does_not_match_rows' };
+  }
+  return {
+    ...base,
+    ok: true,
+    decision: 'allow',
+    reason: ungradedCount > 0 ? 'ungraded_count_as_zero' : 'verified',
+  };
+}
+
 if (require.main === module) {
   const cfg = buildBeamAndMirrorConfig();
   const gate = evaluateMirrorCliActionGate({
@@ -187,4 +326,5 @@ module.exports = {
   buildBeamAndMirrorConfig,
   evaluateMirrorCliActionGate,
   filterVerifiedTracesForSelfDistillation,
+  assessServedEndpointEvidence,
 };
