@@ -228,6 +228,49 @@ function hasProof(combined) {
   return PROOF_PATTERNS.some((p) => p.test(combined));
 }
 
+const FULL_FILE_CLAIM = /checked every line|read every line|reviewed every line|read the whole file|line by line|every line of|checked all \d+ lines/i;
+
+function claimedLineCount(text) {
+  const match = String(text || '').match(/checked all (\d+) lines/i);
+  if (!match) return null;
+  const count = Number(match[1]);
+  return Number.isInteger(count) && count > 0 ? count : null;
+}
+
+function toolUseCoversFullFile(toolUse, claimedCount) {
+  if (!toolUse || toolUse.type !== 'tool_use') return false;
+  const name = String(toolUse.name || '');
+  const input = toolUse.input && typeof toolUse.input === 'object' ? toolUse.input : {};
+  if (/^read$/i.test(name)) {
+    if (!(input.file_path || input.path || input.target_file)) return false;
+    const limit = Number(input.limit);
+    const capped = Number.isInteger(limit) && limit > 0;
+    if (!capped) return true;
+    if (claimedCount == null) return false;
+    return limit >= claimedCount;
+  }
+  if (/^(bash|shell)$/i.test(name)) {
+    const cmd = String(input.command || input.cmd || '');
+    if (/\bhead\b|\btail\b/.test(cmd)) return false;
+    if (/\bsed\s+-n\b/.test(cmd) && !/\bsed\s+-n\s+['"]?1,\s*\$p/.test(cmd)) return false;
+    return /(?:^|[;&|]\s*)(?:cat|nl)\s+\S+/.test(cmd);
+  }
+  return false;
+}
+
+function assessFullFileReview(text, toolUses) {
+  const claim = String(text || '').match(FULL_FILE_CLAIM);
+  if (!claim) return null;
+  const claimedCount = claimedLineCount(text);
+  const uses = Array.isArray(toolUses) ? toolUses : [];
+  const covered = uses.some((toolUse) => toolUseCoversFullFile(toolUse, claimedCount));
+  return {
+    claim: claim[0],
+    covered,
+    reason: covered ? 'uncapped_read' : 'full_file_claim_without_uncapped_read',
+  };
+}
+
 function readStdinSync() {
   try {
     return fs.readFileSync(0, 'utf8');
@@ -306,6 +349,26 @@ function main() {
     return;
   }
 
+  const toolUses = message && Array.isArray(message.content)
+    ? message.content.filter((block) => block && block.type === 'tool_use')
+    : [];
+  const fullFile = assessFullFileReview(text, toolUses);
+  if (fullFile && !fullFile.covered) {
+    if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') {
+      const reason = `ThumbGate full-file claim (strict): you said "${fullFile.claim}" without an uncapped read in the same turn. A line cap does not cover the rest of the file. Read it without a line cap, or retract the claim.`;
+      process.stdout.write(`${JSON.stringify({ decision: 'block', reason })}\n`);
+      return;
+    }
+    const reminder = [
+      '⚠️ ThumbGate full-file claim: previous turn said',
+      `   ("${fullFile.claim}") without an uncapped read in the same message.`,
+      '   A line-capped read does not cover the rest of the file.',
+      '   Read the file without a line cap, or retract the claim.',
+    ].join('\n');
+    process.stdout.write(`${reminder}\n`);
+    return;
+  }
+
   const claim = findClaim(text);
   if (!claim) return; // no completion claim made; silent
 
@@ -354,6 +417,7 @@ module.exports = {
   PROOF_PATTERNS,
   findClaim,
   hasProof,
+  assessFullFileReview,
   extractText,
   extractToolUseSummary,
   factualClaimBlock,

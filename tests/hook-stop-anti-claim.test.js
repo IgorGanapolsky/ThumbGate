@@ -16,6 +16,7 @@ const {
   PROOF_PATTERNS,
   findClaim,
   hasProof,
+  assessFullFileReview,
   extractText,
   extractToolUseSummary,
 } = require('../scripts/hook-stop-anti-claim');
@@ -368,6 +369,69 @@ test('extractText concatenates text blocks; extractToolUseSummary captures tool 
   const summary = extractToolUseSummary(message);
   assert.match(summary, /Bash: echo ok/);
   assert.match(summary, /Read: \/tmp\/x/);
+});
+
+test('cat covers a full-file claim and head does not', () => {
+  const claim = 'I read the whole file.';
+  const cat = assessFullFileReview(claim, [
+    { type: 'tool_use', name: 'Bash', input: { command: 'cat scripts/gates-engine.js' } },
+  ]);
+  assert.equal(cat.covered, true);
+  const head = assessFullFileReview(claim, [
+    { type: 'tool_use', name: 'Bash', input: { command: 'head -n 20 scripts/gates-engine.js' } },
+  ]);
+  assert.equal(head.covered, false);
+});
+
+test('a full-file claim is not proved by writing the word Read', () => {
+  const transcript = writeTranscript({
+    content: [
+      { type: 'text', text: 'I checked every line of gates-engine.js. Read(file_path: "scripts/gates-engine.js")' },
+    ],
+  });
+  const { stdout } = runHook(transcript);
+  assert.match(stdout, /full-file claim/i);
+  assert.match(stdout, /checked every line/i);
+});
+
+test('a full-file claim stays silent when the same turn read the file without a line cap', () => {
+  const transcript = writeTranscript({
+    content: [
+      { type: 'text', text: 'I checked every line of gates-engine.js.' },
+      { type: 'tool_use', name: 'Read', input: { file_path: 'scripts/gates-engine.js' } },
+    ],
+  });
+  const { stdout } = runHook(transcript);
+  assert.equal(stdout.trim(), '');
+});
+
+test('a line-capped read does not cover a full-file claim', () => {
+  const transcript = writeTranscript({
+    content: [
+      { type: 'text', text: 'I read every line of the file.' },
+      { type: 'tool_use', name: 'Read', input: { file_path: 'scripts/gates-engine.js', limit: 40 } },
+    ],
+  });
+  const { stdout } = runHook(transcript);
+  assert.match(stdout, /full-file claim/i);
+});
+
+test('a numbered line claim needs a read that reaches that count', () => {
+  const shortRead = writeTranscript({
+    content: [
+      { type: 'text', text: 'I checked all 400 lines.' },
+      { type: 'tool_use', name: 'Read', input: { file_path: 'scripts/gates-engine.js', limit: 40 } },
+    ],
+  });
+  assert.match(runHook(shortRead).stdout, /full-file claim/i);
+
+  const fullRead = writeTranscript({
+    content: [
+      { type: 'text', text: 'I checked all 400 lines.' },
+      { type: 'tool_use', name: 'Read', input: { file_path: 'scripts/gates-engine.js', limit: 400 } },
+    ],
+  });
+  assert.equal(runHook(fullRead).stdout.trim(), '');
 });
 
 test('CLAIM_PATTERNS and PROOF_PATTERNS are exported as arrays of RegExp', () => {

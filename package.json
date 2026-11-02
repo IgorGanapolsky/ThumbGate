@@ -877,7 +877,7 @@
     "test:webmcp": "node --test tests/webmcp-governance.test.js",
     "test:ideabrowser-connector": "node --test tests/ideabrowser-connector.test.js",
     "test:stealth-memory-injection": "node --test tests/stealth-memory-injection-gate.test.js",
-    "test:budget": "node --test tests/budget-guard.test.js tests/budget-enforcer.test.js tests/tokenomics-cost-guard.test.js tests/hook-no-budget-lockout.test.js",
+    "test:budget": "node --test tests/budget-guard.test.js tests/budget-enforcer.test.js tests/tokenomics-cost-guard.test.js tests/hook-no-budget-lockout.test.js tests/long-session-delete.test.js",
     "test:workers": "npm --prefix workers ci && npm --prefix workers test",
     "test:evoskill": "node --test tests/evoskill.test.js",
     "test:gates-hardening": "node --test tests/gates-hardening.test.js",

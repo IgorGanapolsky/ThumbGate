@@ -498,6 +498,95 @@ function findDominantTag(tags, lossMatrix) {
   return '(unknown)';
 }
 
+const LONG_SESSION_USER_TURNS = 20;
+const LONG_SESSION_SCAN_BYTES = 4 * 1024 * 1024;
+
+function isUserPromptEntry(entry) {
+  if (!entry || typeof entry !== 'object') return false;
+  const content = entry.message?.content;
+  if (typeof content === 'string') return content.trim().length > 0 && (entry.type === 'user' || entry.message?.role === 'user');
+  if (Array.isArray(content)) {
+    if (content.some((block) => block && block.type === 'tool_result')) return false;
+    return content.some((block) => block && block.type === 'text' && String(block.text || '').trim());
+  }
+  return false;
+}
+
+function userTurnsReachFloor(transcriptPath, floor = LONG_SESSION_USER_TURNS) {
+  if (!transcriptPath || typeof transcriptPath !== 'string') return false;
+  let fd;
+  try {
+    fd = fs.openSync(transcriptPath, 'r');
+  } catch {
+    return false;
+  }
+  const needed = Number.isInteger(floor) && floor > 0 ? floor : LONG_SESSION_USER_TURNS;
+  try {
+    const buf = Buffer.alloc(64 * 1024);
+    let leftover = '';
+    let count = 0;
+    let bytes = 0;
+    while (bytes < LONG_SESSION_SCAN_BYTES) {
+      const n = fs.readSync(fd, buf, 0, buf.length, null);
+      if (n <= 0) break;
+      bytes += n;
+      leftover += buf.toString('utf8', 0, n);
+      const lines = leftover.split('\n');
+      leftover = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.includes('"user"')) continue;
+        try {
+          if (isUserPromptEntry(JSON.parse(line))) count += 1;
+        } catch {
+          // A partial or non-JSON line is not a user turn.
+        }
+        if (count >= needed) return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  } finally {
+    try { fs.closeSync(fd); } catch { /* already closed */ }
+  }
+}
+
+function isDeletionCommand(command) {
+  const cmd = String(command || '');
+  if (!cmd.trim()) return false;
+  return /(?:^|[;&|`(]\s*)(?:sudo\s+)?rm\s+/.test(cmd)
+    || /(?:^|[;&|`(]\s*)unlink\s+/.test(cmd)
+    || /\bgit\s+clean\b/.test(cmd)
+    || /\bgit\s+reset\s+--hard\b/.test(cmd);
+}
+
+function assessLongSessionDeletion({
+  transcriptPath,
+  toolName,
+  toolInput,
+  externalVerification,
+} = {}) {
+  const name = String(toolName || '');
+  if (!/^(bash|shell|exec|run_command|terminal)$/i.test(name)) {
+    return { decision: 'allow', reason: 'not_a_shell' };
+  }
+  const command = toolInput && (toolInput.command || toolInput.cmd || '');
+  if (!isDeletionCommand(command)) {
+    return { decision: 'allow', reason: 'not_a_deletion' };
+  }
+  if (externalVerification === true) {
+    return { decision: 'allow', reason: 'external_verification_present' };
+  }
+  if (!userTurnsReachFloor(transcriptPath, LONG_SESSION_USER_TURNS)) {
+    return { decision: 'allow', reason: 'under_turn_floor' };
+  }
+  return {
+    decision: 'block',
+    reason: 'long_session_deletion_needs_verification',
+    message: 'ThumbGate long-session delete: this session already has 20 user turns. A delete stays blocked until a separate check passes external_verification on this call.',
+  };
+}
+
 const { selfProtectionTarget, evaluateSelfProtection } = require('./self-protection');
 const { finalizeFinancialAuthorization, runHardFloor } = require('./gates-engine');
 const {
@@ -510,6 +599,18 @@ function main() {
   const toolName = input.tool_name || input.toolName || process.env.CLAUDE_TOOL_NAME || '';
   const effectiveInput = resolveEffectiveInput(input.tool_input ?? input.toolInput ?? null);
   const economicAction = detectEconomicAction(toolName, effectiveInput);
+
+  try {
+    const longSessionDelete = assessLongSessionDeletion({
+      transcriptPath: input.transcript_path || process.env.CLAUDE_TRANSCRIPT_PATH,
+      toolName,
+      toolInput: effectiveInput,
+      externalVerification: input.external_verification === true,
+    });
+    if (longSessionDelete.decision === 'block') return block(longSessionDelete.message);
+  } catch (err) {
+    failOpen(err);
+  }
 
   // Legacy model-token spend tracking remains advisory because a stale
   // budget-state.json once blocked every Bash/Edit/Write call, including the
@@ -717,6 +818,10 @@ module.exports = {
   resolveEffectiveInput,
   maybeBlockOnRisk,
   maybeBlockViaBayesOptimal,
+  isUserPromptEntry,
+  userTurnsReachFloor,
+  isDeletionCommand,
+  assessLongSessionDeletion,
   isBayesOptimalEnabled,
   findDominantTag,
   resolveGitBinary,

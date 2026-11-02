@@ -44,6 +44,24 @@ const TIERS = {
 // this list are appended after, before the frontier fallback semantics apply.
 const TIER_ROUTING_ORDER = ['nano', 'mini', 'bulkCloud', 'frontier'];
 
+// A whole-turn acknowledgement. Anything after the word is a real request.
+const TRIVIAL_FOLLOW_UP = /^(?:thanks|thank you|thx|ty|ok|okay|k|got it|sounds good|cool|great|awesome|ack|roger)[.!?\s]*$/i;
+
+function isTrivialFollowUp(task = {}) {
+  if (task && task.type === 'acknowledgement') return true;
+  const text = String(task?.message ?? task?.text ?? task?.prompt ?? '').trim();
+  return TRIVIAL_FOLLOW_UP.test(text);
+}
+
+function trivialFollowUpRoute() {
+  return {
+    tier: 'nano',
+    reason: 'acknowledgement stays on the small tier and does not refill a larger context',
+    escalated: false,
+    remoteRefill: false,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Task classification → tier mapping
 // ---------------------------------------------------------------------------
@@ -64,6 +82,10 @@ function classifyTask(task = {}) {
   const config = loadConfig();
   const escalation = config.escalationRules;
   const archTags = escalation.architectureTags || [];
+
+  // A short acknowledgement must not refill the previous turn's context
+  // on a larger tier, even when that leftover context is over the threshold.
+  if (isTrivialFollowUp(task)) return trivialFollowUpRoute();
 
   // --- Escalation checks (override normal routing) ---
 
@@ -134,6 +156,15 @@ function shouldEscalate(task = {}, history = []) {
   const config = loadConfig();
   const rules = config.escalationRules;
   const archTags = rules.architectureTags || [];
+
+  if (isTrivialFollowUp(task)) {
+    return {
+      escalate: false,
+      from: 'nano',
+      to: 'nano',
+      reason: 'acknowledgement stays on the small tier and does not refill a larger context',
+    };
+  }
 
   const currentTier = classifyTask(task).tier;
 

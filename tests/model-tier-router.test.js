@@ -100,6 +100,28 @@ test('classifyTask escalates to frontier when context > 200k', () => {
   assert.ok(r.reason.includes('250000'));
 });
 
+test('classifyTask keeps a thank-you off the large tier when the leftover context is huge', () => {
+  const r = classifyTask({
+    type: 'architecture',
+    message: 'thank you',
+    contextTokens: 250000,
+    cacheExpired: true,
+  });
+  assert.equal(r.tier, 'nano');
+  assert.equal(r.escalated, false);
+  assert.equal(r.remoteRefill, false);
+});
+
+test('classifyTask still escalates a real request that merely starts with thanks', () => {
+  const r = classifyTask({
+    type: 'architecture',
+    message: 'thanks, redesign the gate around the ledger',
+    contextTokens: 250000,
+  });
+  assert.equal(r.tier, 'frontier');
+  assert.equal(r.escalated, true);
+});
+
 test('classifyTask escalates high risk + 2 retries to frontier', () => {
   const r = classifyTask({ type: 'code-edit', riskLevel: 'high', retryCount: 2 });
   assert.equal(r.tier, 'frontier');
@@ -243,6 +265,17 @@ test('shouldEscalate returns no escalation when last attempt succeeded', () => {
   ];
   const r = shouldEscalate(task, history);
   assert.equal(r.escalate, false);
+});
+
+test('shouldEscalate does not refill a large tier for a thank-you', () => {
+  const r = shouldEscalate({
+    type: 'code-edit',
+    message: 'ok',
+    contextTokens: 300000,
+    cacheExpired: true,
+  }, []);
+  assert.equal(r.escalate, false);
+  assert.equal(r.to, 'nano');
 });
 
 test('shouldEscalate detects context-based escalation', () => {
