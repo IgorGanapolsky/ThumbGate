@@ -369,6 +369,27 @@ function getStatusbarLessonData() {
 // 4. Structured IF/THEN Lesson Extraction (v0.9.4)
 // ---------------------------------------------------------------------------
 
+function extractConcreteEntities(text = '') {
+  const src = String(text || '');
+  if (!src) return [];
+  const found = new Set();
+  const patterns = [
+    /\b[A-Z]{2,10}-\d+\b/g,
+    /\bcustomfield_\d+\b/gi,
+    /\b(?:parent\s+epic|epic\s+link|story\s+points|jira\s+field)\b/gi,
+    /\b(?:double[- ]post(?:ing)?|duplicate\s+(?:post|comment|message|pr|issue)|claim[- ]gate|one\s+writer\s+per\s+story)\b/gi,
+    /(?:^|\s)(--[a-z0-9][a-z0-9-]*)/gi,
+  ];
+  for (const pat of patterns) {
+    const matches = src.match(pat) || [];
+    for (const m of matches) {
+      const clean = m.trim();
+      if (clean) found.add(clean);
+    }
+  }
+  return Array.from(found);
+}
+
 function inferStructuredLesson(conversationWindow, signal, context) {
   const normalizedWindow = Array.isArray(conversationWindow) ? conversationWindow : [];
   const userMessages = normalizedWindow.filter(m => m.role === 'user');
@@ -378,16 +399,34 @@ function inferStructuredLesson(conversationWindow, signal, context) {
   const filePaths = extractFilePaths(normalizedWindow);
   const toolCalls = extractToolCalls(normalizedWindow);
   const errorPatterns = extractErrors(normalizedWindow);
+  const allText = [
+    context || '',
+    ...normalizedWindow.map((m) => m.content || m.text || ''),
+  ].join('\n');
+  const concreteEntities = extractConcreteEntities(allText);
+  const specificityScore = Math.min(
+    1.0,
+    (concreteEntities.length * 0.25) + (filePaths.length * 0.15) + (toolCalls.length * 0.1),
+  );
 
   return {
     format: 'if-then-v1',
     trigger: extractTrigger(lastUser),
-    action: extractAction(lastAssistant, signal),
+    action: extractAction(lastAssistant, signal, lastUser, context, concreteEntities),
     signal,
     confidence: calculateConfidence(normalizedWindow, context),
     scope: inferScope(filePaths, toolCalls),
     examples: [{ userIntent: lastUser.slice(0, 300), assistantAction: lastAssistant.slice(0, 300), outcome: signal === 'positive' ? 'approved' : 'rejected' }],
-    metadata: { toolsUsed: toolCalls, filesInvolved: filePaths.slice(0, 10), errorPatterns: errorPatterns.slice(0, 5), conversationLength: normalizedWindow.length, inferredAt: new Date().toISOString() },
+    metadata: {
+      toolsUsed: toolCalls,
+      filesInvolved: filePaths.slice(0, 10),
+      errorPatterns: errorPatterns.slice(0, 5),
+      concreteEntities,
+      hasConcreteEntities: concreteEntities.length > 0,
+      specificityScore: Number(specificityScore.toFixed(2)),
+      conversationLength: normalizedWindow.length,
+      inferredAt: new Date().toISOString(),
+    },
   };
 }
 
@@ -420,10 +459,22 @@ function extractTrigger(userMsg) {
   return { condition: text.slice(0, 120).trim(), type: 'general' };
 }
 
-function extractAction(assistantMsg, signal) {
-  return signal === 'positive'
-    ? { type: 'do', description: `Repeat this approach: ${assistantMsg.slice(0, 200).trim()}` }
-    : { type: 'avoid', description: `Avoid this approach: ${assistantMsg.slice(0, 200).trim()}` };
+function extractAction(assistantMsg, signal, userMsg = '', feedbackContext = '', concreteEntities = []) {
+  const base = signal === 'positive'
+    ? `Repeat this approach: ${String(assistantMsg || '').slice(0, 200).trim()}`
+    : `Avoid this approach: ${String(assistantMsg || '').slice(0, 200).trim()}`;
+  const ruleHint = String(feedbackContext || '').trim()
+    || (/\b(?:don't|do not|never|must|always|require|double[- ]post|customfield_|claim[- ]gate)\b/i.test(String(userMsg || ''))
+      ? String(userMsg || '').slice(0, 160).trim()
+      : '');
+  const entitiesSuffix = Array.isArray(concreteEntities) && concreteEntities.length > 0
+    ? ` [Entities: ${concreteEntities.slice(0, 6).join(', ')}]`
+    : '';
+  const ruleSuffix = ruleHint ? ` [Rule: ${ruleHint}]` : '';
+  return {
+    type: signal === 'positive' ? 'do' : 'avoid',
+    description: `${base}${ruleSuffix}${entitiesSuffix}`,
+  };
 }
 
 function calculateConfidence(window, context) {
@@ -673,9 +724,8 @@ module.exports = {
   selectStatusbarLesson, getLessonKind, stripLessonPrefix,
   formatLessonTimestamp, buildStatusbarLessonLabel,
   inferStructuredLesson, inferStructuredLessonLLM,
-  extractTrigger, extractAction, extractToolCalls,
+  extractTrigger, extractAction, extractConcreteEntities, extractToolCalls,
   extractFilePaths, extractErrors, calculateConfidence, inferScope,
-  // Exported for prompt-shape regression tests.
   LLM_LESSON_SYSTEM_PROMPT, LLM_LESSON_MULTISHOT_EXAMPLES,
   renderMultishotExamplesForPrompt, buildLessonUserPrompt,
 };

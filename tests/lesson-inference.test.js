@@ -7,6 +7,7 @@ const {
   inferStructuredLesson,
   extractTrigger,
   extractAction,
+  extractConcreteEntities,
   extractToolCalls,
   extractFilePaths,
   extractErrors,
@@ -250,5 +251,20 @@ describe('inferScope', () => {
 
   it('returns project-level for 3+ files', () => {
     assert.equal(inferScope(['src/a.ts', 'src/b.ts', 'src/c.ts'], []), 'project-level');
+  });
+});
+
+describe('extractConcreteEntities & anti-generic lesson preservation', () => {
+  it('preserves Jira custom fields, ticket keys, double-post rules, and claim-gate constraints', () => {
+    const window = [
+      { role: 'assistant', content: 'Posted comment to PSN-1042 twice without parent epic.' },
+      { role: 'user', content: 'Never double-post on PSN-1042 and always include customfield_10014 parent epic via claim-gate.' },
+    ];
+    const rule = inferStructuredLesson(window, 'negative', 'Do not double-post; require Jira customfield_10014');
+    assert.equal(rule.metadata.hasConcreteEntities, true);
+    assert.ok(rule.metadata.concreteEntities.includes('PSN-1042'));
+    assert.ok(rule.metadata.concreteEntities.includes('customfield_10014'));
+    assert.ok(rule.action.description.includes('customfield_10014'));
+    assert.ok(rule.action.description.includes('double-post'));
   });
 });

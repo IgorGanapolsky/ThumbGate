@@ -8,7 +8,7 @@ const { validateToolContract } = require('./tool-contract-validator');
 
 const SCHEMA_VERSION = 'thumbgate-provider-execution-attestation-v1';
 const SCHEMA_PATH = path.join(__dirname, '..', 'config', 'schemas', 'provider-execution-attestation-v1.schema.json');
-const DEFAULT_VECTORS_PATH = path.join(__dirname, '..', 'conformance', 'provider-attestation', 'vectors.json');
+const DEFAULT_VECTORS_PATH = path.join(__dirname, '..', 'specs', 'conformance', 'provider-attestation', 'vectors.json');
 const SCHEMA = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
 
 // Strict RFC 3339 / ISO-8601 date-time with required timezone (Z or ±HH:MM).

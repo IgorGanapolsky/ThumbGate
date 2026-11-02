@@ -44,8 +44,19 @@ async function main() {
     { label: 'benign balance lookup', req: dfcx('lookup-balance', { account_id: 'A-100' }) },
     { label: 'process-refund (1st attempt)', req: dfcx('process-refund', { account_id: 'A-200', amount: 500 }) },
     { label: 'process-refund (SAME, repeat)', req: dfcx('process-refund', { account_id: 'A-200', amount: 500 }) },
+    {
+      label: 'RAG Wrapper Page transaction drift',
+      req: Object.assign(dfcx('confirm-appointment', { account_id: 'A-300', rag_wrapper_page_active: true }), {
+        pageInfo: { displayName: 'Informational Handling Page' },
+      }),
+    },
+    {
+      label: 'Playbook refund without external auth',
+      req: Object.assign(dfcx('process-refund', { account_id: 'A-400', amount: 150, source_mode: 'playbook' }), {
+        playbookInfo: { playbook: 'projects/demo/locations/us/agents/a/playbooks/support' },
+      }),
+    },
   ];
-
   const rows = [];
   for (const s of scenarios) {
     const before = sideEffects;

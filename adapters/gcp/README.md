@@ -63,6 +63,23 @@ curl -sS -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   "https://dialogflow.googleapis.com/v3/projects/PROJECT_ID/locations/LOCATION_ID/agents"
 ```
 
+
+## October 2026 Google Conversational Agents Console Best Practices
+
+`adapters/gcp` enforces Google's October 2026 hybrid Flow + Playbook architecture:
+
+1. **Generative LLM & Playbook Governance**
+   - **Model Isolation (`resolveDialogflowModel`)**: Defaults Playbooks to `gemini-2.5-flash` (`THUMBGATE_GEMINI_PLAYBOOK_MODEL`) and routes high-volume voice (`voice`, `telephony`, `audio`) and rewriter (`rewriter`, `rewrite`, `summarize`) tasks to `gemini-2.5-flash-lite` (`THUMBGATE_GEMINI_LITE_MODEL`).
+   - **Post-RAG Wrapper Page Pattern (`evaluateWrapperPageIsolation`, `buildPostRagWrapperPageConfig`)**: Rejects global Vertex AI Search data store bindings (`dataStoreScope: 'global'`) and blocks active RAG `Informational Handling Page` turns from drifting directly into transactional fulfillment before explicit post-RAG exit (`wrapper_page_exit_approved: true`).
+   - **The Authorization Rule (`evaluateAuthorizationRule`, `buildPlaybookInstructionSpec`)**: Blocks generative Playbook transactions (`process-refund`, `confirm-appointment`, `delete-account`, `transfer-funds`, `update-billing`) unless external webhook/API validation (`external_auth_verified: true`) is present.
+2. **Modern NLU & Training Orchestration**
+   - **Banned Phrase Tuning (`evaluateBannedPhrases`)**: Enforces the October 2026 **Full Match** word-boundary mode by default alongside legacy **Partial Match**, preventing false blocks on legitimate conversational inputs.
+   - **Intent Density & AI-Assisted Scaling Auditor (`auditIntentTrainingPhrases`)**: Verifies 20–50 distinct training phrases per standard intent, capitalization variety, absence of primary keyword intent bias (`<= 60%` repetition), and semantic consistency of manual entity annotations across AI-scaled/translated phrases.
+3. **Operational Infrastructure & Testing**
+   - **Client Instance Recycling (`createSessionsClientPool`)**: Reuses `SessionsClient` instances across the full application lifetime for `detectIntent` calls instead of spinning up a new client per user turn.
+   - **Load Test Ramp-Up & Test Doubles (`evaluateLoadTestRamp`, `createDfcxTestDouble`)**: Flags unannounced traffic spikes and provides zero-billing test doubles (`THUMBGATE_DFCX_TEST_DOUBLE=1`) to mock API footprints.
+   - **Webhook Resilience (`fetchWithExponentialBackoff`)**: Automatically retries temporary `503 Service Unavailable` (and `502`/`504`) upstream webhook errors with exponential backoff in `adapters/gcp/server.js`.
+
 ## What it does NOT do (yet)
 
 To be explicit, so nothing is oversold:

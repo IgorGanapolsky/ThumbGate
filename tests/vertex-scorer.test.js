@@ -5,7 +5,8 @@ const assert = require('node:assert/strict');
 const path = require('path');
 
 const {
-  geminiConfig, isConfigured, buildGeminiRequest, parseGeminiResponse, scoreWithGemini, DEFAULT_MODEL,
+  geminiConfig, isConfigured, buildGeminiRequest, parseGeminiResponse, scoreWithGemini,
+  DEFAULT_MODEL, DEFAULT_PLAYBOOK_MODEL, DEFAULT_VOICE_REWRITER_MODEL, resolveDialogflowModel,
 } = require(path.join(__dirname, '..', 'adapters', 'gcp', 'vertex-scorer'));
 
 test('geminiConfig: GEMINI_API_KEY selects the generative-language transport', () => {
@@ -83,4 +84,18 @@ test('scoreWithGemini: surfaces a non-ok HTTP error', async () => {
     () => scoreWithGemini('x', { env: { GEMINI_API_KEY: 'k' }, fetchImpl }),
     /failed: 403/,
   );
+});
+
+test('resolveDialogflowModel & geminiConfig: isolates gemini-2.5-flash for Playbooks and gemini-2.5-flash-lite for voice/rewriter', () => {
+  assert.equal(resolveDialogflowModel({ task: 'playbook' }, {}), DEFAULT_PLAYBOOK_MODEL);
+  assert.equal(resolveDialogflowModel({ task: 'rewriter' }, {}), DEFAULT_VOICE_REWRITER_MODEL);
+  assert.equal(resolveDialogflowModel({ channel: 'voice' }, {}), 'gemini-2.5-flash-lite');
+
+  const liteCfg = geminiConfig({ GEMINI_API_KEY: 'k123' }, { task: 'rewriter' });
+  assert.equal(liteCfg.model, 'gemini-2.5-flash-lite');
+  assert.match(liteCfg.url, /gemini-2\.5-flash-lite:generateContent$/);
+
+  const playbookCfg = geminiConfig({ GEMINI_API_KEY: 'k123' }, { task: 'playbook' });
+  assert.equal(playbookCfg.model, 'gemini-2.5-flash');
+  assert.match(playbookCfg.url, /gemini-2\.5-flash:generateContent$/);
 });

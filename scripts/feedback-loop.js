@@ -1675,7 +1675,12 @@ function captureFeedback(params) {
       memoryRecord.bayesian = updateBelief(similarMemory.bayesian, likelihood);
       memoryRecord.revisedFromId = similarMemory.id;
       
-      if (shouldPrune(memoryRecord.bayesian)) {
+      const hasConcrete = Boolean(
+        memoryRecord.structuredRule
+        && memoryRecord.structuredRule.metadata
+        && memoryRecord.structuredRule.metadata.hasConcreteEntities
+      );
+      if (shouldPrune(memoryRecord.bayesian, { hasConcreteEntities: hasConcrete })) {
         memoryRecord.pruned = true;
         memoryRecord.pruneReason = 'high_entropy_contradiction';
       }

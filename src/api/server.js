@@ -263,6 +263,7 @@ const {
 } = require('../../scripts/feedback-aggregate');
 const {
   guardDfcxWebhook,
+  resolveDialogflowModel,
 } = require('../../adapters/gcp/dfcx-webhook-gate');
 const {
   buildDashboardRenderSpec,
@@ -2135,12 +2136,25 @@ function buildEnterpriseDataChatStatus(env = process.env) {
     },
     dfcx: {
       apiSurface: 'Dialogflow CX REST API: projects.locations.agents',
+      consoleArchitecture: 'Google Conversational Agents Console (Flows + Playbooks)',
       liveAgentConfigured: Boolean(dfcxAgentId && dfcxLocation),
       agentId: dfcxAgentId,
       location: dfcxLocation,
       fulfillmentProxyConfigured: Boolean(dfcxFulfillmentUrl),
       fulfillmentUrlConfigured: Boolean(dfcxFulfillmentUrl),
       gcloudCxCommandSupported: false,
+      models: {
+        playbookDefault: resolveDialogflowModel({ task: 'playbook' }, env),
+        voiceAndRewriterDefault: resolveDialogflowModel({ task: 'rewriter' }, env),
+      },
+      governance: {
+        wrapperPageIsolation: true,
+        authorizationRuleEnforced: true,
+        bannedPhraseFullMatchDefault: true,
+        intentDensityTarget: '20-50',
+        sessionsClientRecycling: true,
+        webhookRetryBackoff503: true,
+      },
       verification: dfcxAgentId && dfcxLocation
         ? 'Agent metadata is present in env; verify via REST/console before production claims.'
         : 'No live DFCX agent env configured. Use REST/console/deployed webhook evidence before claiming a live agent.',
@@ -2792,6 +2806,15 @@ function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = 
   const hiddenInputs = includeHiddenAttribution
     ? buildCheckoutHiddenAttributionInputs(parsed)
     : '';
+  const requestedPlanId = String(parsed?.searchParams?.get('plan_id') || 'pro').toLowerCase();
+  const requestedCycle = String(parsed?.searchParams?.get('billing_cycle') || 'monthly').toLowerCase();
+  const planDisplay = requestedPlanId === 'cloud_indie'
+    ? { title: 'Start ThumbGate Cloud Indie', price: '$49', unit: '/mo', directHref: '/go/pro-direct?plan_id=cloud_indie&billing_cycle=monthly', ctaLabel: 'Pay $49/mo with Stripe →' }
+    : requestedPlanId === 'cloud_startup'
+      ? { title: 'Start ThumbGate Cloud Startup', price: '$199', unit: '/mo', directHref: '/go/pro-direct?plan_id=cloud_startup&billing_cycle=monthly', ctaLabel: 'Pay $199/mo with Stripe →' }
+      : requestedCycle === 'annual'
+        ? { title: 'Start ThumbGate Pro Annual', price: '$149', unit: '/yr', directHref: '/go/pro-direct?plan_id=pro&billing_cycle=annual', ctaLabel: 'Pay $149/yr with Stripe →' }
+        : { title: 'Start ThumbGate Pro', price: '$19', unit: '/mo', directHref: '/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial', ctaLabel: 'Pay $19/mo with Stripe →' };
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -2824,19 +2847,23 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <body>
 <main>
 <div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
-<h1>Start ThumbGate Pro</h1>
-<div class="price">$19<small>/mo</small></div>
+<h1>${planDisplay.title}</h1>
+<div class="price">${planDisplay.price}<small>${planDisplay.unit}</small></div>
 <p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available.</p>
+<a class="primary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="${planDisplay.directHref}">${planDisplay.ctaLabel}</a>
 <form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
 <input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email" required>
 <p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
-<button type="submit" class="primary">Pay $19/mo with Stripe →</button>
+<button type="submit" class="primary">Email a receipt, then pay →</button>
 </form>
-<a class="secondary" data-i="pro_checkout_direct_stripe" rel="nofollow" href="/go/pro-direct?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_upgrade&amp;utm_content=skip_form&amp;cta_id=pro_checkout_direct_stripe&amp;cta_placement=checkout_interstitial">Skip form — open Stripe checkout directly →</a>
+<a class="secondary" data-i="cloud_indie_49" rel="nofollow" href="/go/cloud-indie?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=cloud_indie_49&amp;cta_id=cloud_indie_49&amp;cta_placement=checkout_interstitial">Cloud Indie (AWS Token Optimizer · 1M tokens/mo) — $49/mo →</a>
+<a class="secondary" data-i="cloud_startup_199" rel="nofollow" href="/go/cloud-startup?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=cloud_startup_199&amp;cta_id=cloud_startup_199&amp;cta_placement=checkout_interstitial">Cloud Startup (10M tokens/mo + Loop-Kill Webhooks) — $199/mo →</a>
+<a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Prefer one-time (no subscription)? Production Rule-Pack Kit — $49 →</a>
+<a class="secondary" data-i="pro_checkout_annual_149" rel="nofollow" href="/go/pro-annual?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_annual_149&amp;cta_id=pro_checkout_annual_149&amp;cta_placement=checkout_interstitial">Annual billing (save 35%)? ThumbGate Pro — $149/yr →</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
-<p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages. Email path keeps receipts attributable; skip uses a same-origin hop that bot-deflects crawlers.</p>
+<p class="choice-note">Cancel anytime. 7-day refund, no questions.</p>
 <div class="objection-box" aria-label="Checkout feedback">
 <strong>Not buying today?</strong>
 <p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>

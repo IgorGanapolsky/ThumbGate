@@ -16,7 +16,7 @@ const gates = require(path.join(__dirname, '..', 'scripts', 'gates-engine'));
 gates.SESSION_ACTIONS_PATH = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tg-dfcx-srv-')), 'session-actions.json');
 if (typeof gates.clearSessionActions === 'function') { try { gates.clearSessionActions(); } catch (_) { /* ignore */ } }
 
-const { createServer } = require(path.join(__dirname, '..', 'adapters', 'gcp', 'server'));
+const { createServer, forwardFulfillment } = require(path.join(__dirname, '..', 'adapters', 'gcp', 'server'));
 
 function listen(server) {
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));
@@ -70,4 +70,31 @@ test('non-POST, non-health method is rejected with 405', async () => {
   } finally {
     await close(server);
   }
+});
+
+test('forwardFulfillment: retries temporary 503 Service Unavailable with exponential backoff', async () => {
+  let calls = 0;
+  const out = await forwardFulfillment(
+    { fulfillmentInfo: { tag: 'lookup-balance' } },
+    {
+      upstreamUrl: 'https://upstream.example.com/dfcx',
+      baseDelayMs: 1,
+      sleepImpl: async () => {},
+      fetchImpl: async () => {
+        calls += 1;
+        if (calls === 1) {
+          return { status: 503, ok: false, async text() { return 'Service Unavailable'; } };
+        }
+        return {
+          status: 200,
+          ok: true,
+          async text() {
+            return JSON.stringify({ fulfillment_response: { messages: [{ text: { text: ['recovered after 503'] } }] } });
+          },
+        };
+      },
+    },
+  );
+  assert.equal(calls, 2);
+  assert.equal(out.fulfillment_response.messages[0].text.text[0], 'recovered after 503');
 });

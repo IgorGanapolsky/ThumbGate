@@ -519,3 +519,80 @@ test('24/7 sales & promotion job writes partner offer markdown files and enforce
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('Three concrete repeated team mistakes: swarm-claim.py exit 3, Teams double-post to Damon, and az repos pr update --is-draft false', () => {
+  const gatesEngine = require('../scripts/gates-engine');
+  gatesEngine.clearSessionActions();
+
+  // 1) Losing agent that keeps writing after swarm-claim.py exits 3
+  const recorded = gatesEngine.recordSwarmClaimExit('python3 scripts/swarm-claim.py --story DIST03-1917', 3);
+  assert.ok(recorded);
+  assert.equal(recorded.exitCode, 3);
+
+  const editAfterLoss = evaluateGates('Edit', { file_path: 'src/index.js', new_string: 'x' }, CONFIG);
+  assert.ok(editAfterLoss);
+  assert.equal(editAfterLoss.decision, 'deny');
+  assert.equal(editAfterLoss.gate, 'swarm-claim-exit-3-write-after-loss');
+  assert.equal(editAfterLoss.endTurn, true);
+
+  const formatted = JSON.parse(gatesEngine.formatOutput(gatesEngine.applyEnforcementPosture(editAfterLoss)));
+  assert.equal(formatted.continue, false);
+  assert.equal(formatted.hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(formatted.hookSpecificOutput.continue, false);
+
+  const commitAfterLoss = evaluateGates('Bash', { command: 'but commit -b feat -m "wip" vp' }, CONFIG);
+  assert.ok(commitAfterLoss);
+  assert.equal(commitAfterLoss.decision, 'deny');
+  assert.equal(commitAfterLoss.gate, 'swarm-claim-exit-3-write-after-loss');
+
+  gatesEngine.clearSessionActions();
+
+  // 2) Second Teams message to Damon on the same point or message gets denied
+  const firstSend = evaluateGates(
+    'mcp__teams__send_message',
+    { recipient: 'Damon', messageId: 'msg-901', message: 'STAGE dual-write drift is 0 across 3 rows.' },
+    CONFIG,
+  );
+  assert.equal(firstSend, null, 'First Teams reply to Damon should be allowed');
+
+  const duplicateMessageIdSend = evaluateGates(
+    'mcp__teams__send_message',
+    { recipient: 'Damon', messageId: 'msg-901', message: 'Following up on the same message.' },
+    CONFIG,
+  );
+  assert.ok(duplicateMessageIdSend);
+  assert.equal(duplicateMessageIdSend.decision, 'deny');
+  assert.equal(duplicateMessageIdSend.gate, 'teams-single-reply-per-message');
+
+  const duplicatePointSend = evaluateGates(
+    'mcp__teams__send_message',
+    { recipient: 'Damon', messageId: 'msg-902', message: 'STAGE dual-write drift is 0 across 3 rows.' },
+    CONFIG,
+  );
+  assert.ok(duplicatePointSend);
+  assert.equal(duplicatePointSend.decision, 'deny');
+  assert.equal(duplicatePointSend.gate, 'teams-single-reply-per-message');
+
+  gatesEngine.clearSessionActions();
+
+  // 3) az repos pr update --is-draft false denied until cross-review comment exists
+  const prematurePublish = evaluateGates(
+    'Bash',
+    { command: 'az repos pr update --id 69 --is-draft false' },
+    CONFIG,
+  );
+  assert.ok(prematurePublish);
+  assert.equal(prematurePublish.decision, 'deny');
+  assert.equal(prematurePublish.gate, 'az-repos-pr-publish-requires-cross-review');
+
+  gatesEngine.trackAction('cross_review_comment_verified:69', { reviewer: 'cursor' });
+  const verifiedPublish = evaluateGates(
+    'Bash',
+    { command: 'az repos pr update --id 69 --is-draft false' },
+    CONFIG,
+  );
+  if (verifiedPublish && verifiedPublish.gate === 'az-repos-pr-publish-requires-cross-review') {
+    assert.fail('az repos pr update should pass once cross_review_comment_verified:69 is tracked');
+  }
+  gatesEngine.clearSessionActions();
+});

@@ -24,7 +24,7 @@ function normalize(content) {
 }
 
 test('chatgpt openapi includes all core API routes', () => {
-  const canonical = fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf-8');
+  const canonical = fs.readFileSync(path.join(root, 'specs/openapi/openapi.yaml'), 'utf-8');
   const adapter = fs.readFileSync(path.join(root, 'adapters/chatgpt/openapi.yaml'), 'utf-8');
 
   const requiredPaths = [
@@ -78,7 +78,7 @@ test('chatgpt openapi includes all core API routes', () => {
 });
 
 test('canonical openapi includes monetization and funnel analytics routes', () => {
-  const canonical = fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf-8');
+  const canonical = fs.readFileSync(path.join(root, 'specs/openapi/openapi.yaml'), 'utf-8');
   const monetizationRoutes = [
     '/v1/billing/checkout',
     '/v1/billing/usage',
@@ -106,14 +106,14 @@ test('canonical openapi includes monetization and funnel analytics routes', () =
 });
 
 test('canonical openapi.yaml exists and has more than 50 lines', () => {
-  const filePath = path.join(root, 'openapi/openapi.yaml');
+  const filePath = path.join(root, 'specs/openapi/openapi.yaml');
   assert.ok(fs.existsSync(filePath), 'canonical openapi.yaml must exist');
   const lines = fs.readFileSync(filePath, 'utf-8').split('\n');
   assert.ok(lines.length > 50, `expected >50 lines, got ${lines.length}`);
 });
 
 test('all core routes present in canonical openapi', () => {
-  const content = fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf-8');
+  const content = fs.readFileSync(path.join(root, 'specs/openapi/openapi.yaml'), 'utf-8');
   const coreRoutes = [
     '/v1/feedback/capture',
     '/v1/documents',
@@ -143,7 +143,7 @@ test('all core routes present in canonical openapi', () => {
 });
 
 test('chatgpt adapter preserves core endpoint parity with canonical openapi', () => {
-  const canonical = fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf-8');
+  const canonical = fs.readFileSync(path.join(root, 'specs/openapi/openapi.yaml'), 'utf-8');
   const adapter = fs.readFileSync(path.join(root, 'adapters/chatgpt/openapi.yaml'), 'utf-8');
   const coreRoutes = [
     '/v1/feedback/capture',
@@ -184,12 +184,12 @@ test('chatgpt adapter preserves core endpoint parity with canonical openapi', ()
 });
 
 test('openapi file contains version header', () => {
-  const content = fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf-8');
+  const content = fs.readFileSync(path.join(root, 'specs/openapi/openapi.yaml'), 'utf-8');
   assert.match(content, /^openapi:\s/, 'openapi.yaml must start with openapi: version header');
 });
 
 test('human escalation OpenAPI contracts bind decisions to reviewer authentication', () => {
-  for (const relativePath of ['openapi/openapi.yaml', 'adapters/chatgpt/openapi.yaml']) {
+  for (const relativePath of ['specs/openapi/openapi.yaml', 'adapters/chatgpt/openapi.yaml']) {
     const rawContent = fs.readFileSync(path.join(root, relativePath), 'utf-8');
     if (yaml && typeof yaml.load === 'function') {
       const document = yaml.load(rawContent);

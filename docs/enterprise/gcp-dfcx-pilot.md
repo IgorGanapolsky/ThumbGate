@@ -14,11 +14,11 @@ In a production DFCX agent, 30–40% of the work is webhook-based fulfillment (C
 
 ## What we deliver
 
-1. **DFCX webhook gate (Cloud Run / Cloud Functions, in your tenant).** A drop-in proxy in front of your existing fulfillment. Configured policy gates + automatic same-session repeat detection block risky turns before the side-effect runs.
-2. **Vertex / Gemini scoring (optional, in-tenant).** ThumbGate's risk/planning scoring runs on Gemini via Vertex — **no conversational data leaves your VPC**.
-3. **Feedback-to-rule workflow.** Thumbs-down / QA findings become **reviewed** prevention rules — *never* automatic production mutations. Human-in-the-loop by design.
-4. **Audit report + dashboard.** Blocked risky actions, repeat attempts prevented, and an estimated incident/cost-avoidance figure for the pilot window.
-5. **Production rollout plan.**
+1. **DFCX webhook gate (Cloud Run / Cloud Functions, in your tenant).** A drop-in proxy in front of your existing fulfillment with configured policy gates, same-session repeat detection, **Post-RAG Wrapper Page** transaction-drift blocking (`dfcx-rag-wrapper-page-isolation`), **Authorization Rule** external validation (`dfcx-authorization-rule-unverified`), Full-Match banned phrase tuning (`dfcx-banned-phrase`), and exponential backoff retry on `503 Service Unavailable`.
+2. **Vertex / Gemini 2.5 model isolation (in-tenant).** Playbook scoring defaults to `gemini-2.5-flash` while high-volume voice and rewriter tasks automatically route to `gemini-2.5-flash-lite` — **no conversational data leaves your VPC**.
+3. **NLU & Playbook readiness audit.** Validates 20–50 phrase intent density, keyword intent-bias caps, AI-assisted entity annotation consistency (`auditIntentTrainingPhrases`), `SessionsClient` instance recycling (`createSessionsClientPool`), and gradual load-test ramp profiles with zero-billing test doubles (`createDfcxTestDouble`).
+4. **Feedback-to-rule workflow.** Thumbs-down / QA findings become **reviewed** prevention rules — *never* automatic production mutations. Human-in-the-loop by design.
+5. **Audit report + rollout plan.** Blocked risky actions, repeat attempts prevented, and an estimated incident/cost-avoidance figure for the pilot window.
 
 ## Deployment pattern
 

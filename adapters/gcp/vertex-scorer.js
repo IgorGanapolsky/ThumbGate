@@ -18,10 +18,37 @@
 // -----------------------------------------------------------------------------
 
 const DEFAULT_MODEL = 'gemini-2.5-flash';
+const DEFAULT_PLAYBOOK_MODEL = 'gemini-2.5-flash';
+const DEFAULT_VOICE_REWRITER_MODEL = 'gemini-2.5-flash-lite';
+
+const VOICE_OR_REWRITER_TASKS = new Set([
+  'voice',
+  'telephony',
+  'audio',
+  'rewriter',
+  'rewrite',
+  'summarize',
+]);
+
+// October 2026 Google Conversational Agents Console Model Isolation:
+// - Default Playbooks to gemini-2.5-flash
+// - Prioritize gemini-2.5-flash-lite for high-volume voice and rewriter tasks
+//   to minimize latency and usage costs.
+function resolveDialogflowModel(opts = {}, env = process.env) {
+  if (opts && typeof opts.model === 'string' && opts.model.trim()) {
+    return opts.model.trim();
+  }
+  const task = String((opts && opts.task) || '').trim().toLowerCase();
+  const channel = String((opts && opts.channel) || '').trim().toLowerCase();
+  if (VOICE_OR_REWRITER_TASKS.has(task) || VOICE_OR_REWRITER_TASKS.has(channel)) {
+    return env.THUMBGATE_GEMINI_LITE_MODEL || DEFAULT_VOICE_REWRITER_MODEL;
+  }
+  return env.THUMBGATE_GEMINI_PLAYBOOK_MODEL || env.THUMBGATE_GEMINI_MODEL || DEFAULT_PLAYBOOK_MODEL;
+}
 
 // Resolve the transport + endpoint from env. Returns null when unconfigured.
-function geminiConfig(env = process.env) {
-  const model = env.THUMBGATE_GEMINI_MODEL || DEFAULT_MODEL;
+function geminiConfig(env = process.env, opts = {}) {
+  const model = resolveDialogflowModel(opts, env);
   if (env.GOOGLE_VERTEX_PROJECT && env.GOOGLE_VERTEX_LOCATION && env.GOOGLE_VERTEX_TOKEN) {
     const loc = env.GOOGLE_VERTEX_LOCATION;
     return {
@@ -71,7 +98,7 @@ function parseGeminiResponse(json) {
 // Returns { text, transport, model }. `opts.fetchImpl` / `opts.env` are injectable.
 async function scoreWithGemini(prompt, opts = {}) {
   const env = opts.env || process.env;
-  const cfg = geminiConfig(env);
+  const cfg = geminiConfig(env, opts);
   if (!cfg) {
     throw new Error('Gemini/Vertex not configured: set GEMINI_API_KEY or GOOGLE_VERTEX_PROJECT/LOCATION/TOKEN');
   }
@@ -93,6 +120,9 @@ async function scoreWithGemini(prompt, opts = {}) {
 
 module.exports = {
   DEFAULT_MODEL,
+  DEFAULT_PLAYBOOK_MODEL,
+  DEFAULT_VOICE_REWRITER_MODEL,
+  resolveDialogflowModel,
   geminiConfig,
   isConfigured,
   buildGeminiRequest,
