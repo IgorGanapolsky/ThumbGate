@@ -119,6 +119,52 @@ function buildStatsReceipt(stats = {}) {
   return lines.join('\n');
 }
 
+const HARNESS_PRICE_DOLLARS = new Set([
+  PRO_MONTHLY_PRICE_DOLLARS,
+  PRO_ANNUAL_PRICE_DOLLARS,
+  499,
+]);
+
+function assessHarnessOffer(text) {
+  if (typeof text !== 'string' || text.trim() === '') {
+    return { allow: false, reason: 'not_text' };
+  }
+  const body = text.trim();
+  if (/tax[-\s]?deed|\bbounticlaw\b|\bskool\b|real[-\s]?estate|\bparcel\b/i.test(body)) {
+    return { allow: false, reason: 'wrong_list' };
+  }
+  const prices = [];
+  const pricePattern = /\$\s?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/g;
+  let match = pricePattern.exec(body);
+  while (match) {
+    prices.push(Number(match[1].replace(/,/g, '')));
+    match = pricePattern.exec(body);
+  }
+  if (prices.some((amount) => !HARNESS_PRICE_DOLLARS.has(amount))) {
+    return { allow: false, reason: 'forbidden_price', prices };
+  }
+  if (/\d+(?:\.\d+)?\s*%|\b\d+(?:\.\d+)?\s*x\b|\bmargins?\b|\bjevons\b/i.test(body)) {
+    return { allow: false, reason: 'unmeasured_return' };
+  }
+  if (/\bfortune\b|\bcustomers?\b|\blogos?\b|\bspeed-?ups?\b|\bfaster\b|\btestimonials?\b/i.test(body)) {
+    return { allow: false, reason: 'unmeasured_claim' };
+  }
+  if (/\bour model\b|\bopen[- ]weights?\b|\bfine-?tun|\bpre-?train|\breinforcement learning\b|\bbeam\b|\bweights\b|\bmir\b/i.test(body)) {
+    return { allow: false, reason: 'model_is_not_the_product' };
+  }
+  const sellsHarness = /\bthumbgate\b/i.test(body)
+    && /known-bad tool call|tool call/i.test(body)
+    && /npx thumbgate init/.test(body)
+    && /\$19\/(?:month|mo)\b/.test(body)
+    && /\$149\/(?:year|yr)\b/.test(body)
+    && /\$499\b/.test(body)
+    && /setup sprint|one workflow|\$499 once/i.test(body);
+  if (!sellsHarness) {
+    return { allow: false, reason: 'not_the_harness', prices };
+  }
+  return { allow: true, reason: 'harness_offer', prices };
+}
+
 module.exports = {
   PRO_MONTHLY_PAYMENT_LINK,
   PRO_ANNUAL_PAYMENT_LINK,
@@ -139,4 +185,5 @@ module.exports = {
   buildCaptureReceipt,
   buildStatsReceipt,
   trackedProUrl,
+  assessHarnessOffer,
 };
