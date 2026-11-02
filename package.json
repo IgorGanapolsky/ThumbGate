@@ -1238,7 +1238,7 @@
     "prove:workos": "node scripts/prove-workos.js",
     "prove:herdr": "node --test tests/prove-herdr-adapter.test.js",
     "prove:memory-pyramid": "node scripts/prove-memory-pyramid-and-symbolic-canvas.js",
-    "test:switchyard-router": "node --test tests/switchyard-router.test.js",
+    "test:switchyard-router": "node --test tests/switchyard-router.test.js tests/cascade-route.test.js",
     "test:bulk-cloud-tier": "node --test tests/bulk-cloud-tier.test.js",
     "test:session-lease": "node --test tests/session-lease.test.js",
     "test:compare-agoragentic": "node --test tests/compare-agoragentic.test.js",

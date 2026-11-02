@@ -499,6 +499,104 @@ function runCli(argv = process.argv.slice(2)) {
   return report.ok ? 0 : 1;
 }
 
+const CASCADE_TIERS = ['local', 'mid', 'frontier'];
+
+function isSecretField(key) {
+  return /^(?:api[_-]?key|authorization|secret|token|password)$/i.test(String(key || ''));
+}
+
+function valueHasSecret(value, depth, seen) {
+  if (value == null || depth > 4) return false;
+  if (typeof value === 'string') {
+    return /\b(?:sk-[A-Za-z0-9]{8,}|rfl_[A-Za-z0-9]{8,}|ghp_[A-Za-z0-9]{8,})\b/.test(value);
+  }
+  if (typeof value !== 'object') return false;
+  if (seen.has(value)) return false;
+  seen.add(value);
+  for (const [key, child] of Object.entries(value)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    if (isSecretField(key) && child) return true;
+    if (valueHasSecret(child, depth + 1, seen)) return true;
+  }
+  return false;
+}
+
+function measuredSavings(before, after) {
+  if (!Number.isInteger(before) || !Number.isInteger(after) || before <= 0 || after < 0 || after > before) {
+    return null;
+  }
+  return Number((((before - after) / before) * 100).toFixed(1));
+}
+
+function stepUp(tier) {
+  if (tier === 'local') return { tier: 'mid', upgraded: true, reason: 'check_failed' };
+  if (tier === 'mid') return { tier: 'frontier', upgraded: true, reason: 'check_failed' };
+  return { tier: 'frontier', upgraded: false, reason: 'already_frontier' };
+}
+
+function planCascadeRoute(input = {}) {
+  const source = input && typeof input === 'object' ? input : {};
+  const taskClass = String(source.taskClass || '').trim().toLowerCase();
+  const known = taskClass === 'simple' || taskClass === 'standard' || taskClass === 'hard';
+  const current = CASCADE_TIERS.includes(source.tier) ? source.tier : null;
+  const secretPresent = source.secretPresent === true || valueHasSecret(source, 0, new Set());
+  const computed = measuredSavings(source.measuredInputTokensBefore, source.measuredInputTokensAfter);
+  const claimed = source.claimedSavingsPct;
+  let savingsPct = null;
+  let savingsClaim = 'none';
+  if (computed == null && claimed != null) {
+    savingsClaim = 'refused';
+  } else if (computed != null && claimed != null && !(Number.isFinite(Number(claimed)) && Math.abs(Number(claimed) - computed) <= 0.1)) {
+    savingsPct = computed;
+    savingsClaim = 'does_not_match_counts';
+  } else if (computed != null) {
+    savingsPct = computed;
+    savingsClaim = 'measured';
+  }
+  const report = {
+    networkCall: false,
+    merge: false,
+    savingsPct,
+    savingsClaim,
+    critique: null,
+  };
+  if (!known) {
+    return { ...report, allow: false, tier: 'local', upgraded: false, reason: 'unknown_task' };
+  }
+  if (secretPresent) {
+    return { ...report, allow: true, tier: 'local', upgraded: false, reason: 'secret_stays_local' };
+  }
+  if (source.checkPassed === true) {
+    return {
+      ...report,
+      allow: true,
+      tier: current || (taskClass === 'hard' ? 'mid' : 'local'),
+      upgraded: false,
+      reason: 'check_passed',
+    };
+  }
+  if (source.checkPassed === false) {
+    const next = stepUp(current || 'local');
+    const primary = String(source.primaryFamily || '').trim();
+    const second = String(source.secondFamily || '').trim();
+    return {
+      ...report,
+      allow: true,
+      tier: next.tier,
+      upgraded: next.upgraded,
+      reason: next.reason,
+      critique: second && second !== primary ? { family: second } : null,
+    };
+  }
+  return {
+    ...report,
+    allow: true,
+    tier: taskClass === 'hard' ? 'mid' : 'local',
+    upgraded: false,
+    reason: 'start_low',
+  };
+}
+
 module.exports = {
   DEFAULT_POOL,
   STEP_ROLE_HINTS,
@@ -516,4 +614,5 @@ module.exports = {
   evaluateDualCacheAndCompactionSwitch,
   buildDevinFusionHonestyReport,
   runCli,
+  planCascadeRoute,
 };
