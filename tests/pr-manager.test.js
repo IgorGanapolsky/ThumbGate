@@ -197,6 +197,26 @@ test('PR Manager - getPrStatus returns null when current branch has no PR', () =
   assert.equal(getPrStatus('', runner), null);
 });
 
+test('PR Manager - getPrStatus requests the PR author for traceable attribution', () => {
+  const calls = [];
+  const runner = (args) => {
+    calls.push(args);
+    return {
+      status: 0,
+      stdout: JSON.stringify({
+        number: 123,
+        author: { login: 'contributor' }
+      }),
+      stderr: ''
+    };
+  };
+
+  const result = getPrStatus('123', runner);
+
+  assert.ok(calls[0][calls[0].indexOf('--json') + 1].split(',').includes('author'));
+  assert.equal(result.author.login, 'contributor');
+});
+
 test('PR Manager - getPrStatus returns null when checkout is detached', () => {
   const runner = createRunner([
     {
@@ -614,6 +634,8 @@ test('PR Manager - managePrs reports the landed merge commit instead of the PR h
         number: 644,
         state: 'OPEN',
         title: 'Merge integrity hardening',
+        url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/644',
+        author: { login: 'contributor' },
         mergeable: 'MERGEABLE',
         mergeStateStatus: 'CLEAN',
         headRefOid: 'c5c695c5cb0065cd42f8d86e9f6686df7407ea09',
@@ -640,6 +662,8 @@ test('PR Manager - managePrs reports the landed merge commit instead of the PR h
         number: 644,
         state: 'MERGED',
         title: 'Merge integrity hardening',
+        url: 'https://github.com/IgorGanapolsky/ThumbGate/pull/644',
+        author: { login: 'contributor' },
         headRefOid: 'c5c695c5cb0065cd42f8d86e9f6686df7407ea09',
         mergeCommit: { oid: 'fd1aa82164c5a00c374493abea60a46d4f5446db' },
         mergedAt: '2026-04-08T22:50:17Z',
@@ -650,10 +674,16 @@ test('PR Manager - managePrs reports the landed merge commit instead of the PR h
   ]);
 
   const result = await managePrs('644', runner, { timeoutMs: 0, intervalMs: 0 });
+  const prReport = result.prs[0];
   const outcome = result.prs[0].outcome;
+  assert.equal(prReport.url, 'https://github.com/IgorGanapolsky/ThumbGate/pull/644');
+  assert.equal(prReport.author, 'contributor');
+  assert.equal(prReport.headRefOid, 'c5c695c5cb0065cd42f8d86e9f6686df7407ea09');
   assert.equal(outcome.mergeRequested, true);
   assert.equal(outcome.mergeFinalized, true);
   assert.equal(outcome.mergeCommit, 'fd1aa82164c5a00c374493abea60a46d4f5446db');
+  assert.equal(outcome.mergedAt, '2026-04-08T22:50:17Z');
+  assert.equal(outcome.mergedBy, 'app/trunk-io');
   assert.notEqual(outcome.mergeCommit, 'c5c695c5cb0065cd42f8d86e9f6686df7407ea09');
 });
 

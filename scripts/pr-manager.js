@@ -4,7 +4,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const PR_FIELDS = 'number,state,mergeable,mergeStateStatus,statusCheckRollup,reviewDecision,isDraft,title,url,headRefOid,baseRefName,mergeCommit,mergedAt,mergedBy';
+const PR_FIELDS = 'number,state,mergeable,mergeStateStatus,statusCheckRollup,reviewDecision,isDraft,title,url,author,headRefOid,baseRefName,mergeCommit,mergedAt,mergedBy';
 const PR_CHECK_FIELDS = 'bucket,name,state,workflow,link,event';
 const MERGE_QUALITY_CHECKS = JSON.parse(
   fs.readFileSync(path.join(__dirname, '..', 'config', 'merge-quality-checks.json'), 'utf8')
@@ -464,6 +464,12 @@ async function managePrs(prNumber = '', runner = runGh, options = {}) {
       if (mergeResult.mergeCommit) {
         outcome.mergeCommit = mergeResult.mergeCommit;
       }
+      if (mergeResult.mergedAt !== undefined) {
+        outcome.mergedAt = mergeResult.mergedAt;
+      }
+      if (mergeResult.mergedBy !== undefined) {
+        outcome.mergedBy = mergeResult.mergedBy;
+      }
       if (mergeResult.finalized !== undefined) {
         outcome.mergeFinalized = mergeResult.finalized;
       }
@@ -475,6 +481,9 @@ async function managePrs(prNumber = '', runner = runGh, options = {}) {
     results.push({
       number: pr.number,
       title: pr.title,
+      url: pr.url || null,
+      author: pr.author && pr.author.login ? pr.author.login : null,
+      headRefOid: pr.headRefOid || null,
       outcome,
     });
   }
