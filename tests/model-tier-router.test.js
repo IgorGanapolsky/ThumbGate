@@ -516,6 +516,53 @@ test('privacy-local execution cannot fall through to a configured cloud provider
   assert.equal(result.model, 'glm-z1-9b');
 });
 
+test('privacy-local execution uses the model served by a vLLM-compatible endpoint', async () => {
+  let observed;
+  const result = await executeRoutedGeneration({
+    type: 'classification',
+    privacyRoute: 'local',
+  }, {
+    userPrompt: 'private prompt',
+  }, {
+    env: {
+      THUMBGATE_PROVIDER_MODE: 'local',
+      THUMBGATE_LOCAL_MODEL_SERVER: 'vllm',
+      THUMBGATE_LOCAL_LLM_MODEL: 'Qwen/Qwen2.5-Coder-7B-Instruct',
+      THUMBGATE_LOCAL_MODEL_BASE_URL: 'http://127.0.0.1:8000/v1',
+    },
+    fetchImpl: async (url, options) => {
+      observed = { url, body: JSON.parse(options.body) };
+      return {
+        ok: true,
+        json: async () => ({ choices: [{ message: { content: 'local response' } }] }),
+      };
+    },
+  });
+
+  assert.equal(observed.url, 'http://127.0.0.1:8000/v1/chat/completions');
+  assert.equal(observed.body.model, 'Qwen/Qwen2.5-Coder-7B-Instruct');
+  assert.equal(result.model, 'Qwen/Qwen2.5-Coder-7B-Instruct');
+});
+
+test('local role-specific model override takes precedence over the endpoint model ID', () => {
+  const env = {
+    THUMBGATE_PROVIDER_MODE: 'local',
+    THUMBGATE_LOCAL_MODEL_FAMILY: 'vllm',
+    THUMBGATE_MODEL_ROLE_NORMAL: 'role-specific-model',
+    THUMBGATE_LOCAL_LLM_MODEL: 'served-model',
+  };
+  const plan = recommendExecutionPlan({ type: 'architecture' }, env);
+  const target = resolveGenerationTarget(
+    plan,
+    { type: 'architecture' },
+    config.tiers[plan.tier],
+    {},
+    env,
+  );
+
+  assert.equal(target.model, 'role-specific-model');
+});
+
 test('privacy-local execution fails closed without a local backend or with a cloud override', async () => {
   await assert.rejects(
     executeRoutedGeneration({ type: 'classification', privacyRoute: 'local' }, {}, {

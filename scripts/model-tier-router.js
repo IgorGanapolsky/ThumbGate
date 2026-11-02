@@ -405,6 +405,12 @@ function normalizeGenerationResult(result, fallback = {}) {
 
 function resolveLocalGenerationModel(env, plan) {
   const role = resolveModelRole('normal', env);
+  const roleOverride = String(env.THUMBGATE_MODEL_ROLE_NORMAL || '').trim();
+  if (roleOverride) return role.model;
+
+  const configuredLocalModel = String(env.THUMBGATE_LOCAL_LLM_MODEL || '').trim();
+  if (configuredLocalModel) return configuredLocalModel;
+
   if (role.provider === 'local') return role.model;
 
   const configuredModel = [

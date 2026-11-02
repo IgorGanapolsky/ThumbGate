@@ -58,7 +58,7 @@
         "tokenCap": 2000000,
         "requireReason": false
       },
-      "notes": "Self-hosted open-source tier. The runtime derives the served model from THUMBGATE_MODEL_ROLE_NORMAL, THUMBGATE_LOCAL_MODEL, THUMBGATE_MODEL_ID, or THUMBGATE_LOCAL_MODEL_FAMILY. Zero marginal API cost; no token budget enforcement needed."
+      "notes": "Self-hosted open-source tier. For OpenAI-compatible local endpoints, set THUMBGATE_LOCAL_LLM_MODEL to the model ID actually served; THUMBGATE_MODEL_ROLE_NORMAL takes precedence. vLLM and GLM role defaults remain available when no explicit served-model ID is set. Zero marginal API cost; no token budget enforcement needed."
     }
   },
   "escalationRules": {
