@@ -4949,17 +4949,17 @@ function renderCheckoutCancelledPage(runtimeConfig) {
   const workflowSprintUrl = escapeHtmlAttribute(new URL('/go/sprint', runtimeConfig.appOrigin).toString());
   const workflowSprintIntakeUrl = escapeHtmlAttribute(new URL('/#workflow-sprint-intake', runtimeConfig.appOrigin).toString());
   const recoveryOfferLinks = [
-    `<a href="${playbookUrl}" data-recovery-offer="playbook_999" data-offer-price="9.99">Buy $9.99 Playbook (One-Time, No Subscription)</a>`,
-    `<a href="${bundle49Url}" data-recovery-offer="bundle_49" data-offer-price="49">Buy $49 Production Bundle (One-Time Expense)</a>`,
-    `<a href="${proDirectUrl}" data-recovery-offer="pro_direct" data-offer-price="19">1-Click Stripe Pro ($19/mo)</a>`,
+    `<a href="${proDirectUrl}" data-recovery-offer="pro_direct" data-offer-price="19">Pay $19/mo</a>`,
     `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
     `<a href="${diagnosticUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Review $${sprintDiagnosticPriceDollars} diagnostic</a>`,
     `<a href="${workflowSprintUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Scope $${workflowSprintPriceDollars} sprint</a>`,
+    `<a class="secondary" href="${playbookUrl}" data-recovery-offer="playbook_999" data-offer-price="9.99">Buy $9.99 Playbook (One-Time, No Subscription)</a>`,
+    `<a class="secondary" href="${bundle49Url}" data-recovery-offer="bundle_49" data-offer-price="49">Buy $49 Production Bundle (One-Time Expense)</a>`,
   ].join('\n        ');
   const recoveryOfferCard = recoveryOfferLinks
     ? `<div class="card recovery-card">
       <h2>Need help deciding?</h2>
-      <p>If Pro is not the right next step, start smaller or send the workflow first. We can qualify the blocker, confirm the proof plan, and route you to the diagnostic or sprint only when the scope is real.</p>
+      <p>Pro is $19 a month. Send the workflow first if you want a look at one blocker before you pay. The diagnostic and the sprint stay available when the scope is real.</p>
       <div class="actions">
         ${recoveryOfferLinks}
       </div>
@@ -5063,7 +5063,10 @@ function renderCheckoutCancelledPage(runtimeConfig) {
 <body>
   <main>
     <h1>Checkout cancelled.</h1>
-    <p>No charge was made. You can return to the landing page and restart checkout whenever you are ready.</p>
+    <p>No charge was made. Pro is $19 a month. Pay again from here.</p>
+    <div class="actions">
+      <a id="pay-19" href="${proDirectUrl}" data-recovery-offer="pro_direct_retry" data-offer-price="19">Pay $19/mo</a>
+    </div>
     <div class="card">
       <h2>What stopped you?</h2>
       <p>Pick the closest reason. This writes directly into the first-party telemetry stream so we can fix the real blocker instead of guessing.</p>
@@ -5081,7 +5084,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       </div>
       <div class="actions">
         <button type="button" id="submit-reason">Send feedback</button>
-        <a id="retry-checkout" href="/checkout/pro" class="secondary" data-recovery-offer="pro_pay_now_retry" data-offer-price="19">Restart $19 Pro checkout</a>
+        <a id="retry-checkout" href="${proDirectUrl}" class="secondary" data-recovery-offer="pro_pay_now_retry" data-offer-price="19">Restart $19 Pro checkout</a>
         <a href="${runtimeConfig.appOrigin}" class="secondary">Return to Context Gateway</a>
       </div>
       <p class="note" id="status">No feedback sent yet.</p>
@@ -5144,7 +5147,11 @@ function renderCheckoutCancelledPage(runtimeConfig) {
           const value = params.get(key);
           if (value) retryUrl.searchParams.set(key, value);
         });
+        retryUrl.searchParams.set('utm_medium', 'checkout_cancel_recovery');
+        retryUrl.searchParams.set('cta_placement', 'checkout_cancel_recovery');
         retryLink.href = retryUrl.toString();
+        const payLink = document.getElementById('pay-19');
+        if (payLink) payLink.href = retryUrl.toString();
 
         if (workflowIntakeLink) {
           const intakeUrl = new URL(workflowIntakeLink.href, window.location.origin);

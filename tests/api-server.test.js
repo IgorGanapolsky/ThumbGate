@@ -2145,7 +2145,11 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /Review \$499 diagnostic/);
   assert.match(body, /Scope \$1500 sprint/);
   assert.match(body, /Restart \$19 Pro checkout/);
+  assert.match(body, /id="pay-19" href="https:\/\/app\.example\.com\/go\/pro-direct\?/);
+  assert.match(body, /id="retry-checkout" href="https:\/\/app\.example\.com\/go\/pro-direct\?/);
+  assert.ok(body.indexOf('>Pay $19/mo<') < body.indexOf('Buy $9.99 Playbook'));
   assert.match(body, /data-recovery-offer="pro_pay_now_retry"/);
+  assert.match(body, /data-recovery-offer="pro_direct_retry"/);
   assert.match(body, /data-recovery-offer="sprint_diagnostic"/);
   assert.match(body, /data-recovery-offer="workflow_sprint"/);
   assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//);
