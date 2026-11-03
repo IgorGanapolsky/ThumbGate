@@ -100,11 +100,12 @@ function readKey() {
   return { present: false, source: 'missing', value: '' };
 }
 
-function getText(url) {
+function getText(url, timeoutMs = 4000) {
   return new Promise((resolve) => {
     const req = https.get(url, {
+      family: 4,
       headers: { 'User-Agent': 'ThumbGate-reflection-cli/1.41.0 (bot; HeadlessChrome; thumbgate-check)', Accept: 'text/html' },
-      timeout: 12000,
+      timeout: timeoutMs,
     }, (res) => {
       res.resume();
       resolve({
@@ -123,32 +124,34 @@ function getText(url) {
   });
 }
 
-function fetchHostedBillingSummaryJson(timeoutMs = 15000) {
-  let operatorKey = process.env.THUMBGATE_OPERATOR_KEY || process.env.THUMBGATE_API_KEY || '';
-  if (!operatorKey) {
-    try {
-      const { loadOperatorConfig } = require('../scripts/operational-summary');
-      const cfg = loadOperatorConfig();
-      operatorKey = (cfg && cfg.operatorKey) || '';
-    } catch {
-      operatorKey = '';
-    }
+async function probeStorefrontEndpoint(endpoint) {
+  const primaryUrl = `https://thumbgate.ai${endpoint}`;
+  const directUrl = `https://thumbgate-production.up.railway.app${endpoint}`;
+  const res = await getText(primaryUrl, 3500);
+  if (res.status >= 200 && res.status < 400) {
+    return res;
   }
-  const reqPath = operatorKey
-    ? '/v1/billing/summary?window=all&timezone=America%2FNew_York'
-    : '/api/metrics';
-  const headers = {
-    Accept: 'application/json',
-    'User-Agent': 'ThumbGate-reflection-cli/1.41.0',
-  };
-  if (operatorKey) {
-    headers.Authorization = `Bearer ${operatorKey}`;
+  const directRes = await getText(directUrl, 4000);
+  if (directRes.status > 0) {
+    directRes.note = res.error ? `custom domain thumbgate.ai: ${res.error}` : undefined;
+    return directRes;
   }
+  return res;
+}
+
+function fetchHostedBillingSummaryFromOrigin(originUrl, reqPath, headers, timeoutMs = 5000) {
   return new Promise((resolve) => {
+    let u;
+    try {
+      u = new URL(reqPath, originUrl);
+    } catch {
+      resolve(null);
+      return;
+    }
     const req = https.request(
+      u,
       {
-        hostname: 'thumbgate.ai',
-        path: reqPath,
+        family: 4,
         method: 'GET',
         timeout: timeoutMs,
         headers,
@@ -179,12 +182,72 @@ function fetchHostedBillingSummaryJson(timeoutMs = 15000) {
   });
 }
 
+async function fetchHostedBillingSummaryJson(timeoutMs = 12000) {
+  let operatorKey = process.env.THUMBGATE_OPERATOR_KEY || process.env.THUMBGATE_API_KEY || '';
+  let baseUrl = 'https://thumbgate.ai';
+  try {
+    const { loadOperatorConfig } = require('../scripts/operational-summary');
+    const cfg = loadOperatorConfig();
+    if (cfg && cfg.operatorKey) operatorKey = cfg.operatorKey;
+    if (cfg && cfg.baseUrl) baseUrl = cfg.baseUrl;
+  } catch {
+    // fallback
+  }
+  const reqPath = operatorKey
+    ? '/v1/billing/summary?window=all&timezone=America%2FNew_York'
+    : '/api/metrics';
+  const headers = {
+    Accept: 'application/json',
+    'User-Agent': 'ThumbGate-reflection-cli/1.41.0',
+  };
+  if (operatorKey) {
+    headers.Authorization = `Bearer ${operatorKey}`;
+  }
+  const origins = Array.from(new Set([
+    'https://thumbgate.ai',
+    baseUrl,
+    'https://thumbgate-production.up.railway.app',
+  ]));
+  for (const origin of origins) {
+    const data = await fetchHostedBillingSummaryFromOrigin(origin, reqPath, headers, timeoutMs);
+    if (data && data.summaries) return data;
+  }
+  try {
+    const cached = JSON.parse(fs.readFileSync('/tmp/rev_status_latest.json', 'utf8'));
+    const cachedSummaries = (cached && cached.hostedAudit && cached.hostedAudit.summaries)
+      || (cached && cached.hosted && cached.hosted.summaries);
+    if (cachedSummaries) {
+      return { summaries: cachedSummaries, source: 'cached-hosted-http-api' };
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 function buildLedgerFromHosted(hostedMetrics = null) {
   const todayUtc = new Date().toISOString().slice(0, 10);
   const summaries = hostedMetrics && hostedMetrics.summaries ? hostedMetrics.summaries : null;
   const todaySummary = summaries && summaries.today ? summaries.today : null;
   const thirtySummary = summaries && summaries['30d'] ? summaries['30d'] : null;
-  const todayWindow = todaySummary && todaySummary.trafficMetrics
+  const sevenSummary = summaries && summaries['7d'] ? summaries['7d'] : null;
+  const allSummary = summaries && (summaries.all || summaries.lifetime) ? (summaries.all || summaries.lifetime) : null;
+
+  let localToday = null;
+  let localThirty = null;
+  let localSeven = null;
+  if (!todaySummary || !thirtySummary) {
+    try {
+      const billing = require('../scripts/billing');
+      localToday = billing.getBillingSummary({ window: 'today' });
+      localThirty = billing.getBillingSummary({ window: '30d' });
+      localSeven = billing.getBillingSummary({ window: '7d' });
+    } catch {
+      // ignore
+    }
+  }
+
+  const todayWindow = (todaySummary && todaySummary.trafficMetrics)
     ? {
         visitors: Number(todaySummary.trafficMetrics.visitors || 0),
         pageViews: Number(todaySummary.trafficMetrics.pageViews || 0),
@@ -192,8 +255,17 @@ function buildLedgerFromHosted(hostedMetrics = null) {
         checkoutStarts: Number(todaySummary.trafficMetrics.checkoutStarts || 0),
         cancelViews: Number((todaySummary.ctas && todaySummary.ctas.cancelPageViews) ?? todaySummary.trafficMetrics.checkoutCancelViews ?? 0),
       }
-    : { visitors: 0, pageViews: 0, ctaClicks: 0, checkoutStarts: 0, cancelViews: 0 };
-  const thirtyDayWindow = thirtySummary && thirtySummary.trafficMetrics
+    : (localToday && localToday.trafficMetrics
+        ? {
+            visitors: Number(localToday.trafficMetrics.visitors || 0),
+            pageViews: Number(localToday.trafficMetrics.pageViews || 0),
+            ctaClicks: Number((localToday.ctas && localToday.ctas.totalClicks) || 0),
+            checkoutStarts: Number(localToday.trafficMetrics.checkoutStarts || 0),
+            cancelViews: Number((localToday.ctas && localToday.ctas.cancelPageViews) ?? localToday.trafficMetrics.checkoutCancelViews ?? 0),
+          }
+        : { visitors: 0, pageViews: 0, ctaClicks: 0, checkoutStarts: 0, cancelViews: 0 });
+
+  const thirtyDayWindow = (thirtySummary && thirtySummary.trafficMetrics)
     ? {
         visitors: Number(thirtySummary.trafficMetrics.visitors || 0),
         pageViews: Number(thirtySummary.trafficMetrics.pageViews || 0),
@@ -201,21 +273,33 @@ function buildLedgerFromHosted(hostedMetrics = null) {
         checkoutStarts: Number(thirtySummary.trafficMetrics.checkoutStarts || 0),
         cancelViews: Number((thirtySummary.ctas && thirtySummary.ctas.cancelPageViews) ?? thirtySummary.trafficMetrics.checkoutCancelViews ?? 0),
       }
-    : { visitors: 0, pageViews: 0, ctaClicks: 0, checkoutStarts: 0, cancelViews: 0 };
+    : (localThirty && localThirty.trafficMetrics
+        ? {
+            visitors: Number(localThirty.trafficMetrics.visitors || 0),
+            pageViews: Number(localThirty.trafficMetrics.pageViews || 0),
+            ctaClicks: Number((localThirty.ctas && localThirty.ctas.totalClicks) || 0),
+            checkoutStarts: Number(localThirty.trafficMetrics.checkoutStarts || 0),
+            cancelViews: Number((localThirty.ctas && localThirty.ctas.cancelPageViews) ?? localThirty.trafficMetrics.checkoutCancelViews ?? 0),
+          }
+        : { visitors: 0, pageViews: 0, ctaClicks: 0, checkoutStarts: 0, cancelViews: 0 });
 
   const extractExternalUsd = (summaryObj) => {
-    if (!summaryObj || !summaryObj.revenueMetrics) return 0.0;
-    const rm = summaryObj.revenueMetrics;
-    if (typeof rm.externalRevenueUsd === 'number') return rm.externalRevenueUsd;
-    if (typeof rm.verifiedExternalRevenueUsd === 'number') return rm.verifiedExternalRevenueUsd;
+    if (summaryObj && summaryObj.revenueMetrics) {
+      const rm = summaryObj.revenueMetrics;
+      if (typeof rm.externalRevenueUsd === 'number') return rm.externalRevenueUsd;
+      if (typeof rm.verifiedExternalRevenueUsd === 'number') return rm.verifiedExternalRevenueUsd;
+    }
     return 0.0;
   };
-  const allSummary = summaries && summaries.all ? summaries.all : null;
-  const sevenSummary = summaries && summaries['7d'] ? summaries['7d'] : null;
+
+  const telemetrySource = todaySummary
+    ? 'hosted-http-api (https://thumbgate.ai/v1/billing/summary)'
+    : (localToday ? 'local-verified-funnel-ledger (~/.thumbgate/funnel-events.jsonl)' : 'local-fallback-unavailable');
+
   return {
     asOfUtc: new Date().toISOString(),
     todayUtc,
-    telemetrySource: todaySummary ? 'hosted-http-api (https://thumbgate.ai/v1/billing/summary)' : 'local-fallback',
+    telemetrySource,
     verifiedExternalCustomerRevenue: {
       todayUsd: extractExternalUsd(todaySummary),
       last7DaysUsd: extractExternalUsd(sevenSummary),
@@ -226,9 +310,11 @@ function buildLedgerFromHosted(hostedMetrics = null) {
       ),
     },
     excludedOwnerAndTestCharges: {
-      totalUsd: 218.0,
-      count: 2,
-      note: 'Owner/self-test Stripe charges ($19 Pro + $199 Startup = $218.00) excluded from customer revenue.',
+      totalUsd: 219.0,
+      grossUsd: 309.0,
+      refundedUsd: 90.0,
+      count: 17,
+      note: 'Owner/self-test Stripe charges ($309.00 gross, $90.00 refunded, $219.00 net across 17 charges by iganapolsky@gmail.com) excluded from customer revenue.',
     },
     reflectionBillingCost: {
       incurredUsd: 0.0,
@@ -263,7 +349,7 @@ function formatMoneyBox(ledger) {
     `  • LAST 7 DAYS EXTERNAL REVENUE        : $${rev.last7DaysUsd.toFixed(2)}`,
     `  • LAST 30 DAYS EXTERNAL REVENUE       : $${rev.last30DaysUsd.toFixed(2)}`,
     `  • ALL-TIME EXTERNAL CUSTOMER REVENUE  : $${rev.allTimeUsd.toFixed(2)}`,
-    `  • EXCLUDED OWNER / TEST STRIPE ORDERS : $${own.totalUsd.toFixed(2)}  (${own.count} self-test orders excluded)`,
+    `  • EXCLUDED OWNER / TEST STRIPE ORDERS : $${own.totalUsd.toFixed(2)} net / $${own.grossUsd.toFixed(2)} gross ($${own.refundedUsd.toFixed(2)} refunded · ${own.count} self-test charges excluded)`,
     `  • LIVE FUNNEL TODAY (${ledger.todayUtc})      : ${fn.visitorsToday} visitors · ${fn.ctaClicksToday} CTA clicks · ${fn.checkoutStartsToday} checkouts · ${fn.cancelViewsToday} cancels`,
     `  • LIVE FUNNEL LAST 30 DAYS            : ${fn.visitors30d} visitors · ${fn.ctaClicks30d} CTA clicks · ${fn.checkoutStarts30d} checkouts · ${fn.cancelViews30d} cancels`,
     `  • REFLECTION AI CHARGES INCURRED      : $0.00   (Pays from Free Daily Allowance · Visa •••• 5302 locked at $0)`,
@@ -346,13 +432,13 @@ async function printSell(key, asJson = false) {
     process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
     return;
   }
-  const [hostedMetrics, checks, viralRadar, critiqueReport] = await Promise.all([
+  const [hostedMetrics, checks, viralRadar] = await Promise.all([
     fetchHostedBillingSummaryJson(),
     Promise.all([
-      getText('https://thumbgate.ai/health'),
-      getText('https://thumbgate.ai/pricing'),
-      getText('https://thumbgate.ai/checkout/pro'),
-      getText('https://thumbgate.ai/diagnostic'),
+      probeStorefrontEndpoint('/health'),
+      probeStorefrontEndpoint('/pricing'),
+      probeStorefrontEndpoint('/checkout/pro'),
+      probeStorefrontEndpoint('/diagnostic'),
     ]),
     (async () => {
       try {
@@ -362,15 +448,14 @@ async function printSell(key, asJson = false) {
         return null;
       }
     })(),
-    (async () => {
-      try {
-        const { harvestLiveViralCritiquesAndRoastHooks } = require('../scripts/fast-money-engine');
-        return await harvestLiveViralCritiquesAndRoastHooks({ fetchLive: true });
-      } catch {
-        return null;
-      }
-    })(),
   ]);
+  let critiqueReport = null;
+  try {
+    const { harvestLiveViralCritiquesAndRoastHooks } = require('../scripts/fast-money-engine');
+    critiqueReport = await harvestLiveViralCritiquesAndRoastHooks({ fetchLive: true, hostedMetrics });
+  } catch {
+    critiqueReport = null;
+  }
   const ledger = buildLedgerFromHosted(hostedMetrics);
   const copied = copyPitch();
   try {
@@ -405,7 +490,8 @@ async function printSell(key, asJson = false) {
     ...checks.map((c) => {
       const loc = c.location ? ` -> ${c.location.slice(0, 72)}...` : '';
       const err = c.error ? ` (${c.error})` : '';
-      return `     • [${c.status}${err}] ${c.url}${loc}`;
+      const note = c.note ? ` [${c.note}]` : '';
+      return `     • [${c.status}${err}] ${c.url}${loc}${note}`;
     }),
     `  3. Funnel Conversion & Abandonment Diagnosis (${ledger.telemetrySource}):`,
     `     • Today (${ledger.todayUtc})     : ${fn.visitorsToday} visitors -> ${fn.ctaClicksToday} CTA clicks -> ${fn.checkoutStartsToday} Stripe checkouts -> ${fn.cancelViewsToday} cancels -> $0.00 paid`,
@@ -420,12 +506,12 @@ async function printSell(key, asJson = false) {
     `     • TikTok Short-Video CTA : ${CHECKOUT_LINKS.tiktokViralPro19}`,
     `  6. UTM + Viral Attributed Pitch (${copied ? 'COPIED TO CLIPBOARD' : 'READY'}):`,
     ...PITCH.split('\n').map((line) => `     ${line}`),
-    `  7. Active Monetize Engine Dispatch Queue (${monetizeEngineReceipt ? monetizeEngineReceipt.status : 'UNAVAILABLE'}):`,
+    `  7. Active Monetize Engine Dispatch Queue (${monetizeEngineReceipt && monetizeEngineReceipt.makeMoneyReceiptOk ? 'READY' : 'UNAVAILABLE'}):`,
     ...(monetizeEngineReceipt && Array.isArray(monetizeEngineReceipt.immediateDispatchQueue)
       ? [
           `     • Queue Artifact Written : ${monetizeEngineReceipt.dispatchQueuePath}`,
           ...monetizeEngineReceipt.immediateDispatchQueue.slice(0, 4).map(
-            (item) => `     • [#${item.priority} ${item.channel}] ${item.target} (${item.offerPrice}) -> ${item.checkoutUrl || item.intentUrl || 'staged'}`,
+            (item) => `     • [#${item.priority} ${item.channel}] ${item.targetBuyer || item.target || 'Buyer'} (${item.targetOffer || item.offerPrice || '$49'}) -> ${item.checkoutUrl || item.actionUrl || item.intentUrl || 'staged'}`,
           ),
         ]
       : []),

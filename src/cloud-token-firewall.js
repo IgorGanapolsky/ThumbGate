@@ -1450,6 +1450,16 @@ function authenticateCustomerAccount({
   };
 }
 
+function normalizeApiKeyString(raw) {
+  if (!raw) return null;
+  if (typeof raw === 'string') return raw.trim() || null;
+  if (typeof raw === 'object') {
+    const candidate = raw.key || raw.apiKey || '';
+    return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null;
+  }
+  return null;
+}
+
 function upsertCustomerAccountFromCheckout({
   email = '',
   apiKey = '',
@@ -1471,13 +1481,14 @@ function upsertCustomerAccountFromCheckout({
     repoUrl: '',
     createdAt: nowIso,
   };
+  const resolvedApiKey = normalizeApiKeyString(apiKey) || normalizeApiKeyString(existing?.apiKey) || null;
   const updated = {
     email: cleanEmail,
     name: existing?.name || cleanEmail.split('@')[0],
     passwordHash: password ? hashCustomerPassword(password) : (existing?.passwordHash || null),
     provider: existing?.provider && existing.provider !== 'unverified' ? existing.provider : 'stripe',
     tierId: tierId || existing?.tierId || 'pro',
-    apiKey: apiKey || existing?.apiKey || null,
+    apiKey: resolvedApiKey,
     stripeCustomerId: stripeCustomerId || existing?.stripeCustomerId || null,
     stripeSessionId: stripeSessionId || existing?.stripeSessionId || null,
     status: 'active',
@@ -1523,20 +1534,27 @@ function listAllCustomersAndAccounts({ keysByValue = {} } = {}) {
   const byEmail = new Map();
 
   for (const [email, acc] of customerAccountsState.entries()) {
+    const cleanKey = normalizeApiKeyString(acc.apiKey);
+    const isAdminEmail = /^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(email);
     byEmail.set(email, {
       email,
       name: acc.name || email.split('@')[0],
       registered: true,
       hasPassword: Boolean(acc.passwordHash),
       provider: acc.provider || 'password',
+      authMethod: acc.provider || 'password',
+      role: acc.role || (isAdminEmail ? 'admin' : 'customer'),
       tierId: acc.tierId || 'free',
       status: acc.status || 'active',
-      apiKey: acc.apiKey || null,
+      apiKey: cleanKey,
       stripeCustomerId: acc.stripeCustomerId || null,
       stripeSessionId: acc.stripeSessionId || null,
       projects: Array.isArray(acc.projects) ? acc.projects : [],
       activeSessions: 0,
+      activeSessionsCount: 0,
+      sessions: [],
       keys: [],
+      apiKeys: [],
       createdAt: acc.createdAt || null,
       lastLoginAt: acc.lastLoginAt || acc.updatedAt || null,
     });
@@ -1544,13 +1562,17 @@ function listAllCustomersAndAccounts({ keysByValue = {} } = {}) {
 
   for (const [keyVal, info] of Object.entries(keysByValue || {})) {
     if (!info || typeof info !== 'object') continue;
-    const email = String(info.email || 'unassigned@thumbgate.ai').trim().toLowerCase();
+    const rawCandidate = String(info.email || info.customerId || '').replace(/^stripe:/i, '').trim().toLowerCase();
+    const email = rawCandidate.includes('@') ? rawCandidate : 'unassigned@thumbgate.ai';
+    const isAdminEmail = /^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(email);
     const record = byEmail.get(email) || {
       email,
       name: email.split('@')[0],
       registered: false,
       hasPassword: false,
       provider: 'stripe_checkout',
+      authMethod: 'stripe_checkout',
+      role: isAdminEmail ? 'admin' : 'customer',
       tierId: info.tier || 'pro',
       status: info.active !== false ? 'active' : 'revoked',
       apiKey: keyVal,
@@ -1558,43 +1580,71 @@ function listAllCustomersAndAccounts({ keysByValue = {} } = {}) {
       stripeSessionId: info.stripeSessionId || null,
       projects: [],
       activeSessions: 0,
+      activeSessionsCount: 0,
+      sessions: [],
       keys: [],
+      apiKeys: [],
       createdAt: info.createdAt || null,
       lastLoginAt: null,
     };
-    record.keys.push({
+    const keyEntry = {
       keyPreview: `${keyVal.slice(0, 12)}...${keyVal.slice(-4)}`,
       keyFull: keyVal,
-      tier: info.tier || 'pro',
+      tier: info.tier || record.tierId || 'pro',
       active: info.active !== false,
       createdAt: info.createdAt || null,
-    });
+    };
+    if (!record.keys.some((k) => k.keyFull === keyVal)) {
+      record.keys.push(keyEntry);
+      record.apiKeys.push(keyEntry);
+    }
     if (!record.apiKey) record.apiKey = keyVal;
     if (info.tier && record.tierId === 'free') record.tierId = info.tier;
     byEmail.set(email, record);
   }
 
-  for (const [, sess] of ssoSessionsState.entries()) {
+  const sessionsList = [];
+  for (const [tokenKey, sess] of ssoSessionsState.entries()) {
     if (!sess || !sess.email) continue;
     const email = String(sess.email).trim().toLowerCase();
+    const isAdminEmail = /^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(email);
+    const cleanSessKey = normalizeApiKeyString(sess.apiKey);
     const record = byEmail.get(email) || {
       email,
       name: email.split('@')[0],
       registered: Boolean(sess.verifiedAccount),
       hasPassword: false,
       provider: sess.provider || 'sso',
+      authMethod: sess.provider || 'sso',
+      role: isAdminEmail ? 'admin' : 'customer',
       tierId: sess.tierId || 'free',
-      status: sess.status || 'unverified_session',
-      apiKey: sess.apiKey || null,
+      status: sess.status || 'active',
+      apiKey: cleanSessKey,
       stripeCustomerId: sess.customerId || null,
       stripeSessionId: null,
       projects: Array.isArray(sess.projects) ? sess.projects : [],
       activeSessions: 0,
+      activeSessionsCount: 0,
+      sessions: [],
       keys: [],
+      apiKeys: [],
       createdAt: sess.createdAt || null,
       lastLoginAt: sess.updatedAt || sess.createdAt || null,
     };
     record.activeSessions += 1;
+    record.activeSessionsCount = record.activeSessions;
+    const sessEntry = {
+      token: tokenKey,
+      tokenPreview: `${String(tokenKey).slice(0, 15)}...${String(tokenKey).slice(-4)}`,
+      email,
+      provider: sess.provider || record.provider || 'sso',
+      tierId: sess.tierId || record.tierId || 'free',
+      verifiedAccount: Boolean(sess.verifiedAccount),
+      createdAt: sess.createdAt || null,
+      updatedAt: sess.updatedAt || sess.createdAt || null,
+    };
+    record.sessions.push(sessEntry);
+    sessionsList.push(sessEntry);
     if ((!record.projects || record.projects.length === 0) && Array.isArray(sess.projects)) {
       record.projects = sess.projects;
     }
@@ -1602,25 +1652,50 @@ function listAllCustomersAndAccounts({ keysByValue = {} } = {}) {
   }
 
   const customers = Array.from(byEmail.values()).map((c) => {
-    const usage = c.apiKey ? tenantUsageState.get(c.apiKey) : null;
+    const cleanKey = normalizeApiKeyString(c.apiKey);
+    if (cleanKey && c.keys.length === 0) {
+      const fallbackKeyEntry = {
+        keyPreview: `${cleanKey.slice(0, 12)}...${cleanKey.slice(-4)}`,
+        keyFull: cleanKey,
+        tier: c.tierId || 'pro',
+        active: c.status !== 'suspended' && c.status !== 'revoked',
+        createdAt: c.createdAt || null,
+      };
+      c.keys.push(fallbackKeyEntry);
+      c.apiKeys.push(fallbackKeyEntry);
+    }
+    const usage = cleanKey ? tenantUsageState.get(cleanKey) : null;
     return {
       ...c,
+      apiKey: cleanKey,
+      authMethod: c.provider || c.authMethod || 'password',
+      activeSessionsCount: c.activeSessions || 0,
+      apiKeys: c.keys,
       projectCount: Array.isArray(c.projects) ? c.projects.length : 0,
       dailyEvaluationsUsed: usage?.dailyEvaluationsUsed || 0,
       totalTokensProtected: usage?.totalTokensProtected || 0,
     };
   }).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
+  const totalActiveKeys = customers.reduce(
+    (sum, c) => sum + (Array.isArray(c.keys) ? c.keys.filter((k) => k.active !== false).length : 0),
+    0,
+  ) || Object.values(keysByValue || {}).filter((k) => k && k.active !== false).length;
+
   return {
     ok: true,
     summary: {
       totalCustomers: customers.length,
+      totalAccounts: customers.length,
       registeredAccounts: customers.filter((c) => c.registered).length,
-      paidCustomers: customers.filter((c) => c.keys.length > 0 || ['pro', 'pro_paid', 'team', 'enterprise'].includes(c.tierId)).length,
+      paidCustomers: customers.filter((c) => c.keys.length > 0 || ['pro', 'pro_paid', 'cloud_indie', 'cloud_startup', 'team', 'enterprise'].includes(c.tierId)).length,
       activeSessions: ssoSessionsState.size,
-      totalProvisionedKeys: Object.keys(keysByValue || {}).length,
+      totalProvisionedKeys: Object.keys(keysByValue || {}).length || totalActiveKeys,
+      activeApiKeys: totalActiveKeys,
+      mrrDollars: 0,
     },
     customers,
+    sessions: sessionsList,
   };
 }
 
@@ -1630,6 +1705,9 @@ function manageCustomerAccountAdmin({
   name = '',
   password = '',
   tierId = 'pro',
+  role = '',
+  status = '',
+  token = '',
   workspaceName = '',
   apiKey = '',
 } = {}) {
@@ -1645,21 +1723,39 @@ function manageCustomerAccountAdmin({
       workspaceName,
       tierId,
       provider: 'admin_created',
-      apiKey,
+      apiKey: normalizeApiKeyString(apiKey) || '',
     });
   }
 
   if (cleanAction === 'purge_unverified_sessions') {
     let purged = 0;
-    for (const [token, sess] of ssoSessionsState.entries()) {
+    for (const [tok, sess] of ssoSessionsState.entries()) {
       const acc = sess?.email ? customerAccountsState.get(String(sess.email).toLowerCase()) : null;
       if (!sess?.verifiedAccount && !acc) {
-        ssoSessionsState.delete(token);
+        ssoSessionsState.delete(tok);
         purged += 1;
       }
     }
     savePersistentCloudState();
     return { ok: true, action: cleanAction, purgedSessions: purged };
+  }
+
+  if (cleanAction === 'revoke_session') {
+    let revoked = 0;
+    const cleanToken = String(token || '').trim();
+    if (cleanToken && ssoSessionsState.has(cleanToken)) {
+      ssoSessionsState.delete(cleanToken);
+      revoked += 1;
+    } else if (cleanEmail) {
+      for (const [tok, sess] of ssoSessionsState.entries()) {
+        if (String(sess?.email || '').toLowerCase() === cleanEmail) {
+          ssoSessionsState.delete(tok);
+          revoked += 1;
+        }
+      }
+    }
+    savePersistentCloudState();
+    return { ok: true, action: cleanAction, email: cleanEmail, token: cleanToken, revokedSessions: revoked };
   }
 
   if (!cleanEmail) {
@@ -1669,9 +1765,9 @@ function manageCustomerAccountAdmin({
   const acc = customerAccountsState.get(cleanEmail);
   if (cleanAction === 'delete_account') {
     const existed = customerAccountsState.delete(cleanEmail);
-    for (const [token, sess] of ssoSessionsState.entries()) {
+    for (const [tok, sess] of ssoSessionsState.entries()) {
       if (String(sess?.email || '').toLowerCase() === cleanEmail) {
-        ssoSessionsState.delete(token);
+        ssoSessionsState.delete(tok);
       }
     }
     savePersistentCloudState();
@@ -1684,7 +1780,7 @@ function manageCustomerAccountAdmin({
     passwordHash: null,
     provider: 'admin_managed',
     tierId: tierId || 'free',
-    apiKey: apiKey || null,
+    apiKey: normalizeApiKeyString(apiKey) || null,
     status: 'active',
     verified: true,
     projects: [
@@ -1700,22 +1796,37 @@ function manageCustomerAccountAdmin({
 
   if (cleanAction === 'suspend') {
     target.status = 'suspended';
-    for (const [token, sess] of ssoSessionsState.entries()) {
+    for (const [tok, sess] of ssoSessionsState.entries()) {
       if (String(sess?.email || '').toLowerCase() === cleanEmail) {
-        ssoSessionsState.delete(token);
+        ssoSessionsState.delete(tok);
       }
     }
   } else if (cleanAction === 'activate') {
     target.status = 'active';
   } else if (cleanAction === 'set_tier') {
     target.tierId = tierId || 'pro';
+    if (role) target.role = role;
+  } else if (cleanAction === 'update_account') {
+    if (status) {
+      target.status = status;
+      if (status === 'suspended') {
+        for (const [tok, sess] of ssoSessionsState.entries()) {
+          if (String(sess?.email || '').toLowerCase() === cleanEmail) {
+            ssoSessionsState.delete(tok);
+          }
+        }
+      }
+    }
+    if (tierId) target.tierId = tierId;
+    if (role) target.role = role;
+    if (name) target.name = name;
   } else if (cleanAction === 'reset_password') {
     if (!password || String(password).length < 6) {
       return { ok: false, statusCode: 400, error: 'weak_password', message: 'New password must be at least 6 characters.' };
     }
     target.passwordHash = hashCustomerPassword(password);
   } else if (cleanAction === 'attach_key') {
-    target.apiKey = apiKey || target.apiKey;
+    target.apiKey = normalizeApiKeyString(apiKey) || normalizeApiKeyString(target.apiKey);
     if (tierId) target.tierId = tierId;
   } else {
     return { ok: false, statusCode: 400, error: 'unknown_action', message: `Unsupported admin action: ${cleanAction}` };

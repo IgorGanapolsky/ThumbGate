@@ -10306,18 +10306,33 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
       if (isGetLikeRequest) {
         const keysStore = typeof loadKeyStore === 'function' ? loadKeyStore() : { keys: {} };
+        const revenueLedger = typeof loadRevenueLedger === 'function' ? loadRevenueLedger() : [];
+        const newsletterSubscribers = typeof loadNewsletterSubscribers === 'function' ? loadNewsletterSubscribers() : [];
         const overview = listAllCustomersAndAccounts({ keysByValue: keysStore?.keys || {} });
         const legacyReport = listAllCloudAccounts({
           apiKeysStore: keysStore,
-          revenueLedger: typeof loadRevenueLedger === 'function' ? loadRevenueLedger() : [],
-          newsletterSubscribers: typeof loadNewsletterSubscribers === 'function' ? loadNewsletterSubscribers() : [],
+          revenueLedger,
+          newsletterSubscribers,
         });
+        const mergedSummary = {
+          ...(legacyReport?.summary || {}),
+          ...(overview?.summary || {}),
+          totalAccounts: overview?.summary?.totalAccounts ?? overview?.summary?.totalCustomers ?? legacyReport?.summary?.totalAccounts ?? 0,
+          totalCustomers: overview?.summary?.totalCustomers ?? overview?.summary?.totalAccounts ?? legacyReport?.summary?.totalAccounts ?? 0,
+          registeredAccounts: overview?.summary?.registeredAccounts ?? 0,
+          activeSessions: overview?.summary?.activeSessions ?? 0,
+          activeApiKeys: overview?.summary?.activeApiKeys ?? legacyReport?.summary?.activeApiKeys ?? overview?.summary?.totalProvisionedKeys ?? 0,
+          totalProvisionedKeys: overview?.summary?.totalProvisionedKeys ?? legacyReport?.summary?.totalApiKeys ?? 0,
+          mrrDollars: overview?.summary?.mrrDollars ?? legacyReport?.summary?.mrrDollars ?? 0,
+        };
         sendJson(
           res,
           200,
           {
             ...legacyReport,
             ...overview,
+            summary: mergedSummary,
+            revenueOrders: Array.isArray(revenueLedger) ? revenueLedger.slice(-50).reverse() : [],
             adminEmail: ssoValidation?.email || 'igor@igorganapolsky.com',
           },
           {},
@@ -10331,22 +10346,54 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const cleanEmail = String(body.email).trim().toLowerCase();
         const tier = String(body.tierId || body.tier || 'pro').trim();
         const newKey = typeof provisionApiKey === 'function' ? provisionApiKey(cleanEmail, { tier }) : null;
+        const rawKeyStr = typeof newKey === 'object' && newKey ? String(newKey.key || newKey.apiKey || '') : String(newKey || '');
         const accountUpdate = upsertCustomerAccountFromCheckout({
           email: cleanEmail,
-          apiKey: newKey || '',
+          apiKey: rawKeyStr,
           tierId: tier,
         });
-        sendJson(res, 200, { ok: true, action, email: cleanEmail, apiKey: newKey, account: accountUpdate.account });
+        sendJson(res, 200, {
+          ok: true,
+          action,
+          email: cleanEmail,
+          apiKey: rawKeyStr || newKey,
+          keyResult: typeof newKey === 'object' && newKey ? newKey : { key: rawKeyStr },
+          account: accountUpdate.account,
+        });
         return;
       }
-      if (['create_account', 'upsert_account', 'purge_unverified_sessions', 'suspend', 'activate', 'set_tier', 'reset_password', 'attach_key', 'delete_account'].includes(action)) {
+      if (action === 'revoke_key' && (body.email || body.apiKey)) {
+        const cleanEmail = String(body.email || '').trim().toLowerCase();
+        if (cleanEmail && typeof disableCustomerKeys === 'function') {
+          disableCustomerKeys(cleanEmail);
+        }
+        sendJson(res, 200, { ok: true, action, email: cleanEmail });
+        return;
+      }
+      if (
+        [
+          'create_account',
+          'upsert_account',
+          'update_account',
+          'purge_unverified_sessions',
+          'revoke_session',
+          'suspend',
+          'activate',
+          'set_tier',
+          'reset_password',
+          'attach_key',
+          'delete_account',
+        ].includes(action)
+      ) {
         const managed = manageCustomerAccountAdmin(body);
         if (action === 'create_account' && managed.ok && body.email && typeof provisionApiKey === 'function') {
           const cleanEmail = String(body.email).trim().toLowerCase();
           const tier = String(body.tierId || 'pro').trim();
           const newKey = provisionApiKey(cleanEmail, { tier });
-          upsertCustomerAccountFromCheckout({ email: cleanEmail, apiKey: newKey || '', tierId: tier });
-          managed.apiKey = newKey;
+          const rawKeyStr = typeof newKey === 'object' && newKey ? String(newKey.key || newKey.apiKey || '') : String(newKey || '');
+          upsertCustomerAccountFromCheckout({ email: cleanEmail, apiKey: rawKeyStr, tierId: tier });
+          managed.apiKey = rawKeyStr || newKey;
+          managed.keyResult = typeof newKey === 'object' && newKey ? newKey : { key: rawKeyStr };
         }
         sendJson(res, managed.statusCode || (managed.ok ? 200 : 400), managed);
         return;

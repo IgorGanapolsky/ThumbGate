@@ -299,12 +299,41 @@ test('verified customer Sign Up, Log In credential checks, Checkout auto-account
   assert.equal(checkoutAcc.account.tierId, 'pro');
   assert.ok(checkoutAcc.ssoToken.startsWith('tg_sso_'));
 
-  // 6. Admin console lists all customers and supports account management
-  const adminOverview = firewall.listAllCustomersAndAccounts({ keysByValue: {} });
+  // 6. Admin console lists all customers, clickable KPI drill-downs, and supports account management
+  assert.match(adminHtml, /window\.tgAdminSelectKpiView\('all'\)/);
+  assert.match(adminHtml, /window\.tgAdminSelectKpiView\('registered'\)/);
+  assert.match(adminHtml, /window\.tgAdminSelectKpiView\('sessions'\)/);
+  assert.match(adminHtml, /window\.tgAdminSelectKpiView\('keys'\)/);
+  assert.match(adminHtml, /window\.tgAdminSelectKpiView\('mrr'\)/);
+  assert.match(adminHtml, /id="kpiDrilldownPanel"/);
+
+  const adminOverview = firewall.listAllCustomersAndAccounts({
+    keysByValue: {
+      tg_test_key_customerid_only: {
+        customerId: buyerEmail,
+        active: true,
+        tier: 'pro',
+      },
+    },
+  });
   assert.equal(adminOverview.ok, true);
   assert.ok(adminOverview.summary.totalCustomers >= 2);
+  assert.equal(adminOverview.summary.totalAccounts, adminOverview.summary.totalCustomers);
+  assert.ok(adminOverview.summary.activeApiKeys >= 1);
+  assert.ok(Array.isArray(adminOverview.sessions));
   assert.ok(adminOverview.customers.some((c) => c.email === testEmail));
-  assert.ok(adminOverview.customers.some((c) => c.email === buyerEmail));
+  const buyerRow = adminOverview.customers.find((c) => c.email === buyerEmail);
+  assert.ok(buyerRow);
+  assert.ok(Array.isArray(buyerRow.apiKeys) && buyerRow.apiKeys.length >= 1);
+
+  const tierUpdated = firewall.manageCustomerAccountAdmin({
+    action: 'update_account',
+    email: buyerEmail,
+    tierId: 'cloud_indie',
+    status: 'active',
+  });
+  assert.equal(tierUpdated.ok, true);
+  assert.equal(tierUpdated.account.tierId, 'cloud_indie');
 });
 
 test('Procedural Graph Engineering (Zachary Blumenfeld) 6-pillar workflow executes deterministically end-to-end', () => {
