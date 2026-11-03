@@ -233,9 +233,12 @@ test('verified customer Sign Up, Log In credential checks, Checkout auto-account
   const firewall = require('../src/cloud-token-firewall');
 
   assert.match(indexHtml, /id="homeSsoSignUpBtn"/);
-  assert.match(indexHtml, /href="\/admin"/);
+  assert.doesNotMatch(indexHtml, /href="\/admin"/);
   assert.match(indexHtml, /v2_verified_accounts/);
   assert.match(adminHtml, /ThumbGate.*Admin/);
+  assert.match(adminHtml, /id="adminLoginGate"/);
+  assert.match(adminHtml, /id="adminProtectedDashboard" style="display:none;"/);
+  assert.match(adminHtml, /\/v1\/admin\/login/);
   assert.match(adminHtml, /\/v1\/admin\/customers/);
 
   // 1. Unconfigured OAuth with requireVerifiedOauth must refuse instead of minting fake GOOGLE SSO

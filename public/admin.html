@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ThumbGate Admin — Customer &amp; Account Management</title>
+  <title>ThumbGate Founder Admin — Customer &amp; Account Management</title>
   <meta name="robots" content="noindex,nofollow">
   <link rel="icon" type="image/svg+xml" href="/assets/brand/thumbgate-mark.svg">
   <style>
@@ -62,6 +62,15 @@
       padding: 18px 20px;
       margin-bottom: 18px;
     }
+    .login-gate-wrap {
+      max-width: 480px;
+      margin: 64px auto;
+      background: var(--panel);
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      border-radius: 16px;
+      padding: 28px 26px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    }
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -78,7 +87,7 @@
     .kpi-val { font-size: 28px; font-weight: 800; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     input, select {
-      min-height: 38px;
+      min-height: 40px;
       padding: 0 12px;
       border-radius: 8px;
       border: 1px solid var(--line);
@@ -87,7 +96,7 @@
       font-size: 13px;
     }
     button {
-      min-height: 38px;
+      min-height: 40px;
       padding: 0 14px;
       border-radius: 8px;
       border: 1px solid transparent;
@@ -125,107 +134,128 @@
           <img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" width="28" height="28">
           <span>ThumbGate</span>
         </a>
-        <span class="badge-admin">Founder Admin Console</span>
+        <span class="badge-admin">🔒 Founder Admin Only</span>
       </div>
       <div class="nav-links">
         <a href="/">Home</a>
         <a href="/cloud">Cloud Portal</a>
         <a href="/dashboard">Dashboard</a>
-        <a href="/deploy-plan">Deploy Plan</a>
-        <span id="adminIdentityBadge" class="mono" style="color:var(--green);"></span>
+        <span id="adminIdentityBadge" class="mono" style="color:var(--amber);">🔒 Locked</span>
+        <button type="button" id="adminLogoutBtn" class="btn-red" style="display:none;min-height:32px;padding:0 12px;" onclick="window.tgAdminLogout()">Log Out</button>
       </div>
     </div>
   </header>
 
   <main class="shell">
-    <h1>Customer &amp; Account Management (`https://thumbgate.ai/admin`)</h1>
-    <p class="sub">Inspect all registered accounts, Stripe subscribers, provisioned license keys, and active sessions. Create, upgrade, reset passwords, suspend, or revoke any account in real time.</p>
-
     <div id="adminStatusBanner"></div>
 
-    <!-- Admin Authentication Card -->
-    <div class="card" id="adminAuthCard">
-      <div style="font-weight:800;font-size:14px;margin-bottom:10px;">🔐 Admin Authentication</div>
-      <div class="row">
-        <input type="email" id="adminEmailInput" placeholder="igor@igorganapolsky.com" value="igor@igorganapolsky.com" style="width:240px;">
-        <input type="password" id="adminSecretInput" placeholder="Admin API Key or Founder Password" style="width:290px;" onkeydown="if(event.key==='Enter'){window.tgAdminAuthenticate();}">
-        <button type="button" class="btn-cyan" onclick="window.tgAdminAuthenticate()">Unlock Admin Console →</button>
-        <button type="button" class="btn-amber" onclick="window.tgAdminPurgeUnverified()">Purge Unverified Legacy Sessions</button>
-        <button type="button" class="btn-ghost" onclick="window.tgAdminLoadCustomers()">↻ Refresh</button>
+    <!-- STRICT FOUNDER-ONLY LOGIN GATE (Visible by default; blocks all dashboard UI until authenticated) -->
+    <div id="adminLoginGate" class="login-gate-wrap">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:22px;">🔒</span>
+        <div style="font-weight:800;font-size:19px;">Founder Admin Login</div>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:8px;">
-        Sign in with your Founder Admin password or server <code>THUMBGATE_API_KEY</code> / <code>THUMBGATE_OPERATOR_KEY</code>. First sign-in with your admin key automatically provisions your Founder Admin account.
+      <p style="color:var(--muted);font-size:13px;margin:0 0 18px;">
+        Restricted exclusively to <strong>Igor Ganapolsky</strong> (<code>igor@igorganapolsky.com</code> / <code>iganapolsky@gmail.com</code>). Customer data and account management are hidden until verified.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label for="adminEmailInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Founder Email</label>
+          <input type="email" id="adminEmailInput" placeholder="igor@igorganapolsky.com" value="igor@igorganapolsky.com" style="width:100%;">
+        </div>
+        <div>
+          <label for="adminSecretInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Founder Password or Operator Key</label>
+          <input type="password" id="adminSecretInput" placeholder="Enter Founder Password or THUMBGATE_OPERATOR_KEY" style="width:100%;" onkeydown="if(event.key==='Enter'){window.tgAdminAuthenticate();}">
+        </div>
+        <button type="button" id="adminSignInBtn" class="btn-cyan" style="width:100%;font-size:13px;" onclick="window.tgAdminAuthenticate()">Sign In to Founder Admin →</button>
       </div>
-    </div>
-
-    <!-- KPIs -->
-    <div class="kpi-grid">
-      <div class="kpi">
-        <div class="kpi-label">Total Customer Records</div>
-        <div class="kpi-val" id="kpiTotalAccounts">—</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Registered Accounts</div>
-        <div class="kpi-val" id="kpiRegisteredAccounts" style="color:var(--cyan);">—</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Active Sessions</div>
-        <div class="kpi-val" id="kpiActiveSessions" style="color:var(--amber);">—</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Active License Keys</div>
-        <div class="kpi-val" id="kpiActiveKeys" style="color:var(--green);">—</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Verified MRR</div>
-        <div class="kpi-val" id="kpiMrrDollars" style="color:var(--green);">$0</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">
+        All login attempts from non-founder emails are rejected with <code>403 Forbidden (founder_only_access)</code>.
       </div>
     </div>
 
-    <!-- Create / Provision Customer Account -->
-    <div class="card">
-      <div style="font-weight:800;font-size:14px;margin-bottom:10px;">➕ Create Customer Account / Provision Access</div>
-      <div class="row">
-        <input type="email" id="newCustEmail" placeholder="customer@company.com" style="width:230px;">
-        <input type="text" id="newCustName" placeholder="Customer / Company Name" style="width:190px;">
-        <input type="password" id="newCustPassword" placeholder="Initial password (8+ chars)" style="width:200px;">
-        <select id="newCustTier">
-          <option value="pro">Pro ($19/mo)</option>
-          <option value="cloud_indie">Cloud Indie ($49/mo)</option>
-          <option value="cloud_startup">Cloud Startup ($199/mo)</option>
-          <option value="free_local">Free Local</option>
-        </select>
-        <select id="newCustRole">
-          <option value="customer">Customer</option>
-          <option value="admin">Admin</option>
-        </select>
-        <button type="button" class="btn-green" onclick="window.tgAdminCreateCustomer()">+ Create Account</button>
+    <!-- PROTECTED ADMIN DASHBOARD (Hidden until POST /v1/admin/login + GET /v1/admin/customers succeed) -->
+    <div id="adminProtectedDashboard" style="display:none;">
+      <div class="row" style="justify-content:space-between;margin-bottom:16px;">
+        <div>
+          <h1>Customer &amp; Account Management (`https://thumbgate.ai/admin`)</h1>
+          <p class="sub" style="margin-bottom:0;">Authenticated as Founder Admin. Inspect registered accounts, Stripe subscribers, provisioned license keys, and active sessions.</p>
+        </div>
+        <div class="row">
+          <button type="button" class="btn-amber" onclick="window.tgAdminPurgeUnverified()">Purge Unverified Legacy Sessions</button>
+          <button type="button" class="btn-ghost" onclick="window.tgAdminLoadCustomers()">↻ Refresh</button>
+        </div>
       </div>
-    </div>
 
-    <!-- Customers Table -->
-    <div class="card" style="overflow-x:auto;">
-      <div class="row" style="justify-content:space-between;margin-bottom:12px;">
-        <div style="font-weight:800;font-size:15px;">All Customers, Accounts &amp; Provisioned Keys</div>
-        <input type="search" id="custFilterInput" placeholder="Filter by email, tier, key, or status..." style="width:280px;" oninput="window.tgAdminRenderTable()">
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-label">Total Customer Records</div>
+          <div class="kpi-val" id="kpiTotalAccounts">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Registered Accounts</div>
+          <div class="kpi-val" id="kpiRegisteredAccounts" style="color:var(--cyan);">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Active Sessions</div>
+          <div class="kpi-val" id="kpiActiveSessions" style="color:var(--amber);">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Active License Keys</div>
+          <div class="kpi-val" id="kpiActiveKeys" style="color:var(--green);">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Verified MRR</div>
+          <div class="kpi-val" id="kpiMrrDollars" style="color:var(--green);">$0</div>
+        </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Customer / Email</th>
-            <th>Status &amp; Role</th>
-            <th>Plan / Tier</th>
-            <th>Auth Method</th>
-            <th>Provisioned Keys</th>
-            <th>Workspaces &amp; Sessions</th>
-            <th>Created / Last Login</th>
-            <th>Manage Account</th>
-          </tr>
-        </thead>
-        <tbody id="customersTableBody">
-          <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px;">Unlock Admin Console above to view and manage customer accounts.</td></tr>
-        </tbody>
-      </table>
+
+      <!-- Create / Provision Customer Account -->
+      <div class="card">
+        <div style="font-weight:800;font-size:14px;margin-bottom:10px;">➕ Create Customer Account / Provision Access</div>
+        <div class="row">
+          <input type="email" id="newCustEmail" placeholder="customer@company.com" style="width:230px;">
+          <input type="text" id="newCustName" placeholder="Customer / Company Name" style="width:190px;">
+          <input type="password" id="newCustPassword" placeholder="Initial password (8+ chars)" style="width:200px;">
+          <select id="newCustTier">
+            <option value="pro">Pro ($19/mo)</option>
+            <option value="cloud_indie">Cloud Indie ($49/mo)</option>
+            <option value="cloud_startup">Cloud Startup ($199/mo)</option>
+            <option value="free_local">Free Local</option>
+          </select>
+          <select id="newCustRole">
+            <option value="customer">Customer</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button type="button" class="btn-green" onclick="window.tgAdminCreateCustomer()">+ Create Account</button>
+        </div>
+      </div>
+
+      <!-- Customers Table -->
+      <div class="card" style="overflow-x:auto;">
+        <div class="row" style="justify-content:space-between;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:15px;">All Customers, Accounts &amp; Provisioned Keys</div>
+          <input type="search" id="custFilterInput" placeholder="Filter by email, tier, key, or status..." style="width:280px;" oninput="window.tgAdminRenderTable()">
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Customer / Email</th>
+              <th>Status &amp; Role</th>
+              <th>Plan / Tier</th>
+              <th>Auth Method</th>
+              <th>Provisioned Keys</th>
+              <th>Workspaces &amp; Sessions</th>
+              <th>Created / Last Login</th>
+              <th>Manage Account</th>
+            </tr>
+          </thead>
+          <tbody id="customersTableBody">
+            <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px;">Loading verified customer accounts...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </main>
 
@@ -233,6 +263,10 @@
     (function () {
       var allCustomers = [];
       var statusBanner = document.getElementById('adminStatusBanner');
+      var loginGate = document.getElementById('adminLoginGate');
+      var protectedDash = document.getElementById('adminProtectedDashboard');
+      var logoutBtn = document.getElementById('adminLogoutBtn');
+      var badge = document.getElementById('adminIdentityBadge');
 
       function showBanner(msg, ok) {
         if (!statusBanner) return;
@@ -243,67 +277,97 @@
         statusBanner.textContent = msg;
       }
 
+      function setUnlockedState(unlocked, emailText) {
+        if (loginGate) loginGate.style.display = unlocked ? 'none' : 'block';
+        if (protectedDash) protectedDash.style.display = unlocked ? 'block' : 'none';
+        if (logoutBtn) logoutBtn.style.display = unlocked ? 'inline-block' : 'none';
+        if (badge) {
+          badge.style.color = unlocked ? 'var(--green)' : 'var(--amber)';
+          badge.textContent = unlocked ? ('🟢 ' + (emailText || 'igor@igorganapolsky.com')) : '🔒 Locked';
+        }
+      }
+
       function getAdminToken() {
         try {
-          return sessionStorage.getItem('tg_admin_bearer') || localStorage.getItem('tg_cloud_sso_token') || '';
+          return sessionStorage.getItem('tg_admin_bearer') || localStorage.getItem('tg_admin_sso_token') || '';
         } catch (e) {
           return '';
         }
       }
 
+      window.tgAdminLogout = function () {
+        try {
+          sessionStorage.removeItem('tg_admin_bearer');
+          localStorage.removeItem('tg_admin_sso_token');
+          localStorage.removeItem('tg_admin_api_key');
+        } catch (e) {}
+        allCustomers = [];
+        setUnlockedState(false);
+        showBanner('Signed out of Founder Admin Console.', true);
+      };
+
       window.tgAdminAuthenticate = async function () {
-        var email = (document.getElementById('adminEmailInput').value || '').trim();
+        var email = (document.getElementById('adminEmailInput').value || '').trim().toLowerCase();
         var secret = (document.getElementById('adminSecretInput').value || '').trim();
-        if (!secret) {
-          showBanner('Enter your Admin API Key or Founder Password first.', false);
+        if (!email || !secret) {
+          showBanner('Enter both your Founder Email and Founder Password / Operator Key.', false);
           return;
         }
+
+        var loginRes = await fetch('/v1/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: secret })
+        }).catch(function () { return null; });
+
+        if (!loginRes) {
+          showBanner('Network error contacting /v1/admin/login.', false);
+          return;
+        }
+
+        var loginData = await loginRes.json().catch(function () { return {}; });
+        if (!loginRes.ok || !loginData || !loginData.ok) {
+          setUnlockedState(false);
+          showBanner((loginData && loginData.message) || 'Access denied (403/401). Restricted exclusively to Igor Ganapolsky.', false);
+          return;
+        }
+
+        var activeToken = loginData.ssoToken || secret;
         try {
-          sessionStorage.setItem('tg_admin_bearer', secret);
+          sessionStorage.setItem('tg_admin_bearer', activeToken);
+          localStorage.setItem('tg_admin_sso_token', activeToken);
+          localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
+          localStorage.setItem('tg_cloud_sso_token', activeToken);
+          localStorage.setItem('tg_cloud_sso_email', loginData.email || email);
+          localStorage.setItem('tg_cloud_sso_provider', 'admin');
         } catch (e) {}
 
-        // Also try /v1/cloud/auth/login so Founder Admin gets a verified session token
-        if (email) {
-          var loginRes = await fetch('/v1/cloud/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email, password: secret })
-          }).catch(function () { return null; });
-          if (loginRes && loginRes.ok) {
-            var loginData = await loginRes.json().catch(function () { return {}; });
-            if (loginData && loginData.ssoToken) {
-              try {
-                localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
-                localStorage.setItem('tg_cloud_sso_token', loginData.ssoToken);
-                localStorage.setItem('tg_cloud_sso_email', loginData.email);
-                localStorage.setItem('tg_cloud_sso_provider', loginData.provider || 'account');
-                sessionStorage.setItem('tg_admin_bearer', loginData.ssoToken);
-              } catch (e) {}
-            }
-          }
-        }
+        document.getElementById('adminSecretInput').value = '';
         await window.tgAdminLoadCustomers();
       };
 
       window.tgAdminLoadCustomers = async function () {
         var token = getAdminToken();
-        if (!token) return;
+        if (!token) {
+          setUnlockedState(false);
+          return;
+        }
         var res = await fetch('/v1/admin/customers', {
           headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
         });
         var data = await res.json().catch(function () { return {}; });
         if (!res.ok || !data || !data.ok) {
-          showBanner((data && data.message) || 'Admin authorization failed (403). Verify your Admin Key or Founder password.', false);
+          setUnlockedState(false);
+          showBanner((data && data.message) || 'Founder Admin login required (401/403).', false);
           return;
         }
-        showBanner('Connected to live Customer & Account store (' + (data.summary.totalAccounts || 0) + ' records).', true);
+        setUnlockedState(true, 'igor@igorganapolsky.com');
+        showBanner('Authenticated as Founder Admin — ' + (data.summary.totalAccounts || 0) + ' total records loaded.', true);
         document.getElementById('kpiTotalAccounts').textContent = String(data.summary.totalAccounts || 0);
         document.getElementById('kpiRegisteredAccounts').textContent = String(data.summary.registeredAccounts || 0);
         document.getElementById('kpiActiveSessions').textContent = String(data.summary.activeSessions || 0);
         document.getElementById('kpiActiveKeys').textContent = String(data.summary.activeApiKeys || 0);
         document.getElementById('kpiMrrDollars').textContent = '$' + String(data.summary.mrrDollars || 0);
-        var badge = document.getElementById('adminIdentityBadge');
-        if (badge) badge.textContent = '🟢 Admin Unlocked';
         allCustomers = Array.isArray(data.customers) ? data.customers : [];
         window.tgAdminRenderTable();
       };
@@ -350,7 +414,8 @@
       window.tgAdminAction = async function (action, email, extra) {
         var token = getAdminToken();
         if (!token) {
-          showBanner('Unlock Admin Console first.', false);
+          setUnlockedState(false);
+          showBanner('Sign in to Founder Admin first.', false);
           return;
         }
         var payload = Object.assign({ action: action, email: email }, extra || {});
@@ -399,6 +464,8 @@
 
       if (getAdminToken()) {
         window.tgAdminLoadCustomers();
+      } else {
+        setUnlockedState(false);
       }
     })();
   </script>

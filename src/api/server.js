@@ -344,6 +344,11 @@ const {
   manageCloudSubscription,
   submitCloudPortalFeedbackAndFeatureRequest,
   startSsoAuthorizationFlow,
+  registerCustomerAccount,
+  authenticateCustomerAccount,
+  upsertCustomerAccountFromCheckout,
+  listAllCustomersAndAccounts,
+  manageCustomerAccountAdmin,
   normalizeProjectSlug,
   validateSsoToken,
   revokeSsoToken,
@@ -10149,283 +10154,147 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     }
 
     if (isGetLikeRequest && (pathname === '/admin' || pathname === '/admin/' || pathname === '/admin.html' || pathname === '/admin/customers')) {
-      const adminHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ThumbGate Admin Console — Customers &amp; Account Management</title>
-  <style>
-    :root { --bg:#070a10; --panel:#0f1521; --border:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --accent:#22c55e; --warn:#f59e0b; --danger:#ef4444; --mono:'JetBrains Mono',ui-monospace,monospace; }
-    * { box-sizing:border-box; }
-    body { margin:0; background:var(--bg); color:var(--text); font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif; padding:24px; }
-    header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; padding-bottom:18px; border-bottom:1px solid var(--border); margin-bottom:24px; }
-    h1 { margin:0; font-size:1.35rem; display:flex; align-items:center; gap:10px; }
-    .badge { font-family:var(--mono); font-size:0.72rem; padding:3px 8px; border-radius:999px; font-weight:700; text-transform:uppercase; }
-    .badge-paid { background:rgba(34,197,94,0.18); color:#4ade80; border:1px solid rgba(34,197,94,0.45); }
-    .badge-preview { background:rgba(245,158,11,0.16); color:#fbbf24; border:1px solid rgba(245,158,11,0.45); }
-    .badge-disabled { background:rgba(239,68,68,0.16); color:#f87171; border:1px solid rgba(239,68,68,0.45); }
-    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:24px; }
-    .kpi { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
-    .kpi-label { font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
-    .kpi-val { font-family:var(--mono); font-size:1.45rem; font-weight:700; margin-top:6px; color:#f8fafc; }
-    .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:18px; margin-bottom:20px; }
-    .card h2 { margin:0 0 12px 0; font-size:1rem; }
-    .form-row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
-    input, select { background:#06090f; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:8px 11px; font-family:var(--mono); font-size:0.8rem; }
-    button, .btn { background:rgba(34,197,94,0.18); color:#4ade80; border:1px solid rgba(34,197,94,0.45); border-radius:6px; padding:7px 12px; font-family:var(--mono); font-size:0.76rem; font-weight:700; cursor:pointer; text-decoration:none; }
-    button.secondary, .btn.secondary { background:rgba(148,163,184,0.12); color:var(--text); border-color:var(--border); }
-    button.danger { background:rgba(239,68,68,0.16); color:#f87171; border-color:rgba(239,68,68,0.4); }
-    table { width:100%; border-collapse:collapse; font-size:0.82rem; }
-    th, td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--border); vertical-align:middle; }
-    th { color:var(--muted); font-family:var(--mono); font-size:0.72rem; text-transform:uppercase; }
-    code { font-family:var(--mono); font-size:0.75rem; color:#38bdf8; }
-    #adminToast { margin-top:10px; font-family:var(--mono); font-size:0.78rem; color:#4ade80; }
-  </style>
-</head>
-<body>
-  <header>
-    <div>
-      <h1>🛡️ ThumbGate Admin Console <span class="badge badge-paid">Customers &amp; Accounts</span></h1>
-      <div style="color:var(--muted);font-size:0.82rem;margin-top:4px;">Manage Stripe-paid customers, provisioned API keys, and Cloud Portal workspaces in one place.</div>
-    </div>
-    <div class="form-row">
-      <input id="adminKeyInput" type="password" placeholder="Admin / Operator Key (optional)" style="width:230px;" />
-      <button onclick="saveAdminKeyAndReload()" class="secondary">Unlock / Refresh</button>
-      <a href="/cloud" class="btn secondary">Cloud Portal</a>
-      <a href="/" class="btn secondary">Landing Page</a>
-    </div>
-  </header>
-
-  <div class="kpi-grid">
-    <div class="kpi"><div class="kpi-label">Total Accounts</div><div class="kpi-val" id="kpiTotal">0</div></div>
-    <div class="kpi"><div class="kpi-label">Verified Paid / Provisioned</div><div class="kpi-val" id="kpiVerified" style="color:#4ade80;">0</div></div>
-    <div class="kpi"><div class="kpi-label">Unverified Email Previews</div><div class="kpi-val" id="kpiPreview" style="color:#fbbf24;">0</div></div>
-    <div class="kpi"><div class="kpi-label">Active API License Keys</div><div class="kpi-val" id="kpiKeys">0</div></div>
-    <div class="kpi"><div class="kpi-label">Total Projects</div><div class="kpi-val" id="kpiProjects">0</div></div>
-    <div class="kpi"><div class="kpi-label">Newsletter Leads</div><div class="kpi-val" id="kpiLeads">0</div></div>
-  </div>
-
-  <div class="card">
-    <h2>+ Create / Provision Verified Customer Account &amp; License Key</h2>
-    <div class="form-row">
-      <input id="newEmail" type="email" placeholder="customer@company.com" style="min-width:240px;" />
-      <select id="newTier">
-        <option value="pro_paid">Pro Paid ($19/mo)</option>
-        <option value="cloud_indie">Cloud Indie ($49/mo)</option>
-        <option value="cloud_startup">Cloud Startup ($199/mo)</option>
-        <option value="enterprise">Enterprise</option>
-      </select>
-      <button onclick="createCustomerAccount()">+ Provision Account &amp; Mint Key</button>
-    </div>
-    <div id="adminToast"></div>
-  </div>
-
-  <div class="card" style="overflow-x:auto;">
-    <h2>All Customer Accounts &amp; Workspaces</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Customer / Email</th>
-          <th>Verification &amp; Source</th>
-          <th>Tier</th>
-          <th>Status</th>
-          <th>API License Key</th>
-          <th>Projects</th>
-          <th>Paid Orders</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="accountsTableBody">
-        <tr><td colspan="8" style="color:var(--muted);">Loading customer accounts...</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <script>
-    const savedAdminKey = localStorage.getItem('tg_admin_operator_key') || '';
-    const keyInput = document.getElementById('adminKeyInput');
-    if (savedAdminKey) keyInput.value = savedAdminKey;
-
-    function getHeaders() {
-      const k = (keyInput.value || localStorage.getItem('tg_admin_operator_key') || localStorage.getItem('tg_cloud_sso_token') || localStorage.getItem('tg_cloud_api_key') || '').trim();
-      const h = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-TG-Admin-UI': '1' };
-      if (k) h['Authorization'] = 'Bearer ' + k;
-      return h;
-    }
-
-    function saveAdminKeyAndReload() {
-      localStorage.setItem('tg_admin_operator_key', keyInput.value.trim());
-      loadCustomers();
-    }
-
-    function showToast(msg, isErr) {
-      const el = document.getElementById('adminToast');
-      el.style.color = isErr ? '#f87171' : '#4ade80';
-      el.textContent = msg;
-    }
-
-    async function loadCustomers() {
-      try {
-        const res = await fetch('/v1/admin/customers', { headers: getHeaders() });
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
-          showToast(data.message || data.error || 'Failed to load customers', true);
-          return;
-        }
-        const s = data.summary || {};
-        document.getElementById('kpiTotal').textContent = s.totalAccounts ?? 0;
-        document.getElementById('kpiVerified').textContent = s.verifiedPaidAccounts ?? 0;
-        document.getElementById('kpiPreview').textContent = s.workspacePreviewAccounts ?? 0;
-        document.getElementById('kpiKeys').textContent = s.activeApiKeys ?? 0;
-        document.getElementById('kpiProjects').textContent = s.totalProjects ?? 0;
-        document.getElementById('kpiLeads').textContent = s.newsletterSubscribersCount ?? 0;
-
-        const tbody = document.getElementById('accountsTableBody');
-        const rows = data.accounts || [];
-        if (rows.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" style="color:var(--muted);">No customer accounts provisioned yet. Use the form above to provision your first customer.</td></tr>';
-          return;
-        }
-        tbody.innerHTML = rows.map((a) => {
-          const isVerified = a.authVerification === 'stripe_paid_verified' || a.authVerification === 'admin_provisioned' || a.authVerification === 'api_key_verified';
-          const badgeClass = isVerified ? 'badge-paid' : 'badge-preview';
-          const badgeLabel = a.authVerification === 'stripe_paid_verified'
-            ? '✓ STRIPE PAID'
-            : a.authVerification === 'admin_provisioned'
-              ? '✓ ADMIN PROVISIONED'
-              : a.authVerification === 'api_key_verified'
-                ? '✓ API KEY VERIFIED'
-                : '⚠ EMAIL PREVIEW (NO OAUTH)';
-          const statusClass = a.status === 'disabled' ? 'badge-disabled' : 'badge-paid';
-          const projNames = (a.projects || []).map((p) => p.name || p.slug).join(', ') || 'default';
-          const identifier = a.email || a.customerId || a.accountId;
-          return '<tr>' +
-            '<td><strong>' + (a.email || a.customerId || 'unknown') + '</strong><br/><span style="color:var(--muted);font-size:0.72rem;">' + (a.customerId || '') + '</span></td>' +
-            '<td><span class="badge ' + badgeClass + '">' + badgeLabel + '</span><br/><span style="color:var(--muted);font-size:0.7rem;">via ' + (a.provider || 'workspace') + '</span></td>' +
-            '<td><code>' + (a.tierId || 'cloud_indie') + '</code></td>' +
-            '<td><span class="badge ' + statusClass + '">' + (a.status || 'active') + '</span></td>' +
-            '<td><code>' + (a.apiKey || '— none —') + '</code></td>' +
-            '<td>' + (a.projectsCount || 0) + ' <span style="color:var(--muted);font-size:0.72rem;">(' + projNames + ')</span></td>' +
-            '<td>' + (a.paidOrdersCount || 0) + (a.totalPaidCents ? ' ($' + (a.totalPaidCents / 100).toFixed(2) + ')' : '') + '</td>' +
-            '<td style="display:flex;gap:6px;flex-wrap:wrap;">' +
-              '<button class="secondary" onclick="adminAction(\\'rotate_key\\', \\'' + identifier + '\\', \\'' + (a.ssoToken || '') + '\\', \\'' + (a.apiKey || '') + '\\')">Mint/Rotate Key</button>' +
-              '<button class="secondary" onclick="adminChangeTier(\\'' + identifier + '\\', \\'' + (a.ssoToken || '') + '\\')">Tier</button>' +
-              (a.status === 'disabled'
-                ? '<button onclick="adminAction(\\'enable_account\\', \\'' + identifier + '\\', \\'' + (a.ssoToken || '') + '\\')">Enable</button>'
-                : '<button class="danger" onclick="adminAction(\\'disable_account\\', \\'' + identifier + '\\', \\'' + (a.ssoToken || '') + '\\')">Disable</button>') +
-              '<button class="danger" onclick="adminAction(\\'delete_account\\', \\'' + identifier + '\\', \\'' + (a.ssoToken || '') + '\\')">Delete</button>' +
-            '</td>' +
-          '</tr>';
-        }).join('');
-      } catch (err) {
-        showToast('Error loading customers: ' + err.message, true);
-      }
-    }
-
-    async function createCustomerAccount() {
-      const email = document.getElementById('newEmail').value.trim();
-      const tierId = document.getElementById('newTier').value;
-      if (!email) { showToast('Enter a customer email first.', true); return; }
-      const res = await fetch('/v1/admin/customers', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ action: 'create_account', email, tierId }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        showToast(data.message || data.error || 'Failed to provision account', true);
-        return;
-      }
-      showToast('Provisioned ' + data.email + ' (' + data.tierId + ') · Key: ' + (data.apiKey || 'ready'), false);
-      document.getElementById('newEmail').value = '';
-      loadCustomers();
-    }
-
-    async function adminAction(action, emailOrId, token, apiKey) {
-      const res = await fetch('/v1/admin/customers', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ action, email: emailOrId, customerId: emailOrId, token, apiKey }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        showToast(data.message || data.error || 'Action failed', true);
-        return;
-      }
-      showToast('Completed ' + action + ' for ' + emailOrId + (data.apiKey ? ' · Key: ' + data.apiKey : ''), false);
-      loadCustomers();
-    }
-
-    async function adminChangeTier(emailOrId, token) {
-      const tierId = window.prompt('Enter new tierId (pro_paid, cloud_indie, cloud_startup, enterprise):', 'pro_paid');
-      if (!tierId) return;
-      const res = await fetch('/v1/admin/customers', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ action: 'change_tier', email: emailOrId, customerId: emailOrId, token, tierId }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        showToast(data.message || data.error || 'Tier change failed', true);
-        return;
-      }
-      showToast('Updated tier for ' + emailOrId + ' -> ' + data.tierId, false);
-      loadCustomers();
-    }
-
-    loadCustomers();
-  </script>
-</body>
-</html>`;
+      const adminPagePath = path.join(PUBLIC_DIR, 'admin.html');
+      const adminHtml = fs.existsSync(adminPagePath)
+        ? fs.readFileSync(adminPagePath, 'utf8')
+        : '<h1>ThumbGate Founder Admin</h1>';
       sendHtml(res, 200, adminHtml, {}, { headOnly: isHeadRequest });
       return;
     }
 
-    if (pathname === '/v1/admin/customers' && (isGetLikeRequest || req.method === 'POST')) {
-      const explicitAdminTokens = [
+    if (req.method === 'POST' && pathname === '/v1/admin/login') {
+      const body = await parseJsonBody(req);
+      const cleanEmail = String(body.email || '').trim().toLowerCase();
+      const secret = String(body.password || body.adminKey || body.key || '').trim();
+      if (!/^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(cleanEmail)) {
+        sendJson(res, 403, {
+          ok: false,
+          error: 'founder_only_access',
+          message: 'Access denied: https://thumbgate.ai/admin is restricted exclusively to Igor Ganapolsky (igor@igorganapolsky.com).',
+        });
+        return;
+      }
+      const allowedTokens = [
         process.env.THUMBGATE_ADMIN_TOKEN,
         process.env.ADMIN_API_KEY,
+        expectedOperatorKey,
+        expectedApiKey,
       ]
         .map((v) => String(v || '').trim())
         .filter(Boolean);
+
+      const matchesServerToken = Boolean(secret && allowedTokens.includes(secret));
+      let authResult = null;
+      if (matchesServerToken) {
+        authResult = registerCustomerAccount({
+          email: cleanEmail,
+          password: secret,
+          name: 'Igor Ganapolsky (Founder Admin)',
+          tierId: 'enterprise',
+          provider: 'admin',
+        });
+      } else {
+        authResult = authenticateCustomerAccount({
+          email: cleanEmail,
+          password: secret,
+          apiKey: secret,
+        });
+      }
+
+      if (!authResult || !authResult.ok) {
+        sendJson(res, 401, {
+          ok: false,
+          error: 'invalid_admin_credentials',
+          message: 'Invalid Founder Admin password or Operator/API key.',
+        });
+        return;
+      }
+
+      manageCustomerAccountAdmin({ action: 'purge_unverified_sessions' });
+      sendJson(res, 200, {
+        ok: true,
+        email: cleanEmail,
+        adminToken: matchesServerToken ? secret : authResult.ssoToken,
+        ssoToken: authResult.ssoToken,
+      });
+      return;
+    }
+
+    if (pathname === '/v1/admin/customers' && (isGetLikeRequest || req.method === 'POST')) {
       const allowedTokens = [
-        ...explicitAdminTokens,
+        process.env.THUMBGATE_ADMIN_TOKEN,
+        process.env.ADMIN_API_KEY,
         expectedOperatorKey,
         expectedApiKey,
       ]
         .map((v) => String(v || '').trim())
         .filter(Boolean);
       const bearer = extractBearerToken(req);
-      const headerToken = String(req.headers['x-admin-token'] || req.headers['x-api-key'] || '').trim();
+      const headerToken = String(req.headers['x-admin-key'] || req.headers['x-admin-token'] || req.headers['x-api-key'] || '').trim();
       const queryToken = String(parsed.searchParams.get('admin_token') || '').trim();
       const supplied = bearer || headerToken || queryToken;
       const ssoValidation = supplied ? validateSsoToken(supplied) : null;
-      const isOwnerSso = Boolean(
+      const isVerifiedFounderSession = Boolean(
         ssoValidation?.valid &&
-          /^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(String(ssoValidation.email || ''))
+          /^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(String(ssoValidation.email || '')) &&
+          (ssoValidation.provider === 'admin' || ssoValidation.session?.verifiedAccount === true || ssoValidation.session?.authVerification === 'admin_provisioned')
       );
-      const isAdminUiSameOrigin =
-        explicitAdminTokens.length === 0 &&
-        (String(req.headers['x-tg-admin-ui'] || '') === '1' || isLoopbackHost(getRequestHostHeader(req)));
-      if (!isAdminUiSameOrigin && !isOwnerSso && (!supplied || !allowedTokens.includes(supplied))) {
+      const isValidAdminSecret = Boolean(supplied && allowedTokens.includes(supplied));
+      if (!isValidAdminSecret && !isVerifiedFounderSession) {
         sendJson(res, 401, {
           ok: false,
-          error: 'admin_auth_required',
-          message: 'Admin / Operator Key required. Enter your THUMBGATE_ADMIN_TOKEN, THUMBGATE_OPERATOR_KEY, or THUMBGATE_API_KEY in the Admin Console.',
+          error: 'admin_login_required',
+          message: 'Founder Admin login required. Sign in as igor@igorganapolsky.com with your Founder password or Operator/Admin Key.',
         });
         return;
       }
       if (isGetLikeRequest) {
-        const report = listAllCloudAccounts({
-          apiKeysStore: typeof loadKeyStore === 'function' ? loadKeyStore() : {},
+        const keysStore = typeof loadKeyStore === 'function' ? loadKeyStore() : { keys: {} };
+        const overview = listAllCustomersAndAccounts({ keysByValue: keysStore?.keys || {} });
+        const legacyReport = listAllCloudAccounts({
+          apiKeysStore: keysStore,
           revenueLedger: typeof loadRevenueLedger === 'function' ? loadRevenueLedger() : [],
           newsletterSubscribers: typeof loadNewsletterSubscribers === 'function' ? loadNewsletterSubscribers() : [],
         });
-        sendJson(res, 200, report, {}, { headOnly: isHeadRequest });
+        sendJson(
+          res,
+          200,
+          {
+            ...legacyReport,
+            ...overview,
+            adminEmail: ssoValidation?.email || 'igor@igorganapolsky.com',
+          },
+          {},
+          { headOnly: isHeadRequest },
+        );
         return;
       }
       const body = await parseJsonBody(req);
+      const action = String(body.action || '').trim().toLowerCase();
+      if (action === 'provision_key' && body.email) {
+        const cleanEmail = String(body.email).trim().toLowerCase();
+        const tier = String(body.tierId || body.tier || 'pro').trim();
+        const newKey = typeof provisionApiKey === 'function' ? provisionApiKey(cleanEmail, { tier }) : null;
+        const accountUpdate = upsertCustomerAccountFromCheckout({
+          email: cleanEmail,
+          apiKey: newKey || '',
+          tierId: tier,
+        });
+        sendJson(res, 200, { ok: true, action, email: cleanEmail, apiKey: newKey, account: accountUpdate.account });
+        return;
+      }
+      if (['create_account', 'upsert_account', 'purge_unverified_sessions', 'suspend', 'activate', 'set_tier', 'reset_password', 'attach_key', 'delete_account'].includes(action)) {
+        const managed = manageCustomerAccountAdmin(body);
+        if (action === 'create_account' && managed.ok && body.email && typeof provisionApiKey === 'function') {
+          const cleanEmail = String(body.email).trim().toLowerCase();
+          const tier = String(body.tierId || 'pro').trim();
+          const newKey = provisionApiKey(cleanEmail, { tier });
+          upsertCustomerAccountFromCheckout({ email: cleanEmail, apiKey: newKey || '', tierId: tier });
+          managed.apiKey = newKey;
+        }
+        sendJson(res, managed.statusCode || (managed.ok ? 200 : 400), managed);
+        return;
+      }
       const result = manageCloudCustomerAccount({
         ...body,
         billingHelpers: {
@@ -10470,15 +10339,17 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
     }
 
     if (isGetLikeRequest && pathname === '/v1/cloud/sso/authorize') {
+      const requireOauth = parsed.searchParams.get('require_oauth') === '1' || parsed.searchParams.get('require_oauth') === 'true';
       const sso = startSsoAuthorizationFlow({
         provider: parsed.searchParams.get('provider') || 'github',
         email: parsed.searchParams.get('email') || '',
         cliPort: parsed.searchParams.get('cli_port') || parsed.searchParams.get('cliPort') || '',
         redirectUri: parsed.searchParams.get('redirect_uri') || '',
         appOrigin: hostedConfig.appOrigin || 'https://thumbgate.ai',
+        requireVerifiedOauth: requireOauth,
       });
       if (parsed.searchParams.get('format') === 'json' || String(req.headers.accept || '').includes('application/json')) {
-        sendJson(res, 200, sso, {}, { headOnly: isHeadRequest });
+        sendJson(res, sso.statusCode || (sso.ok ? 200 : 400), sso, {}, { headOnly: isHeadRequest });
         return;
       }
       res.writeHead(302, {
@@ -10487,6 +10358,33 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         'Cache-Control': 'no-store',
       });
       res.end();
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/auth/signup') {
+      const body = await parseJsonBody(req);
+      const signup = registerCustomerAccount({
+        email: body.email || '',
+        password: body.password || '',
+        name: body.name || '',
+        workspaceName: body.workspaceName || body.projectName || '',
+        tierId: 'free',
+        provider: 'password',
+      });
+      sendJson(res, signup.statusCode || (signup.ok ? 201 : 400), signup);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/v1/cloud/auth/login') {
+      const body = await parseJsonBody(req);
+      const keysStore = typeof loadKeyStore === 'function' ? loadKeyStore() : { keys: {} };
+      const auth = authenticateCustomerAccount({
+        email: body.email || '',
+        password: body.password || '',
+        apiKey: body.apiKey || body.password || '',
+        keysByValue: keysStore?.keys || {},
+      });
+      sendJson(res, auth.statusCode || (auth.ok ? 200 : 401), auth);
       return;
     }
 
@@ -10646,6 +10544,31 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const resolved = resolveAndApplyConfidenceFlag(body);
       sendJson(res, 200, resolved);
       return;
+    }
+
+    // Zachary Blumenfeld Procedural Graph Engineering API (/v1/graph/*)
+    if (pathname.startsWith('/v1/graph/')) {
+      const graphEngine = require('../procedural-graph-engine');
+      if (isGetLikeRequest && pathname === '/v1/graph/governance') {
+        const graphId = parsed.searchParams.get('graphId') || undefined;
+        sendJson(res, 200, graphEngine.auditGraphGovernance({ graphId }), {}, { headOnly: isHeadRequest });
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/v1/graph/context') {
+        const body = await parseJsonBody(req);
+        sendJson(res, 200, graphEngine.ingestUnifiedContextNode(body || {}));
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/v1/graph/compile') {
+        const body = await parseJsonBody(req);
+        sendJson(res, 200, graphEngine.compileSkillToGraphYaml(body || {}));
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/v1/graph/execute') {
+        const body = await parseJsonBody(req);
+        sendJson(res, 200, graphEngine.executeProceduralGraph(body || {}));
+        return;
+      }
     }
 
     if (isGetLikeRequest && (pathname === '/.well-known/agent-skills/index.json' || pathname === '/.well-known/skills/index.json')) {
