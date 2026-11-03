@@ -832,6 +832,7 @@ async function runMakeMoneyAutonomousLoop({
     evaluateDrexMaxLocalDecisionEngine,
     evaluateOpenAiPandoGitBackendSteal,
     evaluateOakAndSparrowGatekeeperV2Steal,
+    evaluateVeloDbPersonalizeAndUnifiedAnalyticsSteal,
   } = require('../src/cloud-token-firewall');
   const stage11DrexMaxDecisionEngine = evaluateDrexMaxLocalDecisionEngine();
 
@@ -840,6 +841,9 @@ async function runMakeMoneyAutonomousLoop({
 
   // Stage 13: Oak & Sparrow Gatekeeper V2 + Standalone Policy Packs + Public AI Readiness Scanner + B2B CISO Cohort
   const stage13GatekeeperV2AndPolicyPacks = evaluateGatekeeperPolicyPacksAndReadinessScannerEngine();
+
+  // Stage 14: VeloDB Cloud /personalize 2-Step Zero-Card Onboarding + Unified SQL/Vector/Full-Text Engine (datascience.pdf)
+  const stage14VeloDbPersonalizeAndUnifiedAnalytics = evaluateVeloDbPersonalizeAndUnifiedAnalyticsSteal();
 
   const receipt = {
     ok:
@@ -853,7 +857,8 @@ async function runMakeMoneyAutonomousLoop({
       stage10DailySubstack.ok &&
       stage11DrexMaxDecisionEngine.ok &&
       stage12OpenAiPandoGitBackend.ok &&
-      stage13GatekeeperV2AndPolicyPacks.ok,
+      stage13GatekeeperV2AndPolicyPacks.ok &&
+      stage14VeloDbPersonalizeAndUnifiedAnalytics.ok,
     startedAt,
     completedAt: new Date().toISOString(),
     northStarDailyTargetUsd: 100,
@@ -923,6 +928,12 @@ async function runMakeMoneyAutonomousLoop({
         runtimeVerdict: stage13GatekeeperV2AndPolicyPacks.runtimeEvaluation.verdict,
         policyPacksCount: stage13GatekeeperV2AndPolicyPacks.policyPacksCatalog.products.length,
         curatedB2bCisoCohortCount: stage13GatekeeperV2AndPolicyPacks.leakedCisoCohort.curatedB2bTargetsCount,
+      },
+      stage14VeloDbPersonalizeAndUnifiedAnalytics: {
+        ok: stage14VeloDbPersonalizeAndUnifiedAnalytics.ok,
+        scenarioKey: stage14VeloDbPersonalizeAndUnifiedAnalytics.step1PersonalizeProfile.scenarioKey,
+        collapsedClusterSummary: stage14VeloDbPersonalizeAndUnifiedAnalytics.step2AutoProvisioning.collapsedClusterSummary,
+        autoSuspendPeriodMinutes: stage14VeloDbPersonalizeAndUnifiedAnalytics.step2AutoProvisioning.autoSuspendPeriodMinutes,
       },
     },
   };
@@ -2205,6 +2216,7 @@ const {
   evaluateDrexMaxLocalDecisionEngine,
   evaluateOpenAiPandoGitBackendSteal,
   evaluateOakAndSparrowGatekeeperV2Steal,
+  evaluateVeloDbPersonalizeAndUnifiedAnalyticsSteal,
 } = require('../src/cloud-token-firewall');
 
 module.exports = {
@@ -2235,4 +2247,5 @@ module.exports = {
   evaluateOpenAiPandoGitBackendSteal,
   evaluateOakAndSparrowGatekeeperV2Steal,
   evaluateGatekeeperPolicyPacksAndReadinessScannerEngine,
+  evaluateVeloDbPersonalizeAndUnifiedAnalyticsSteal,
 };

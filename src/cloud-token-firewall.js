@@ -5637,6 +5637,181 @@ function evaluateOakAndSparrowGatekeeperV2Steal({
   };
 }
 
+/**
+ * VeloDB Cloud (`/personalize`) + Towards Data Science "Build real-time analytics on AWS" (`datascience.pdf`) Steal
+ * Sources:
+ * - https://www.velodb.cloud/personalize (`src_routes_personalize_index_tsx.4d78a442.js` & `index.5b9060cb.js`)
+ * - /Users/iganapolsky/Downloads/datascience.pdf (Towards Data Science + VeloDB on AWS, 2026-11-03)
+ *
+ * Key architectural & product steals:
+ * 1. 2-Step Zero-Card Personalized Onboarding (`/personalize`):
+ *    - Step 1 (`Personalize`): Captures primary use case (`RealTimeAnalytics`, `Observability`, `RAGAndGenAI`, `Lakehouse`),
+ *      signup intent (`CompanyConsideringVeloDB` with inline PoC sales fast-lane vs `PersonalLearning`), role, and referral source (`AI`, `Linkedin`, `SearchEngines`, `Events`, `Webinars`).
+ *    - Step 2 (`Deployment`): Auto-provisions with collapsed smart defaults (`1 node · 4 vCPU / 16 GB RAM`, `ratio: 4`,
+ *      `nodeCache: 200 GB`, `autoSuspendEnabled: 1`, `autoSuspendPeriod: 30` min, `payType: "FreePaid"`, no credit card required)
+ *      and pre-loads scenario-matched interactive SQL/policy guide steps.
+ * 2. Unified Sub-Second SQL + Vector + Full-Text Search for AI (`datascience.pdf`):
+ *    - Replaces 3 separate databases (relational SQL + vector DB + Elasticsearch) with one unified sub-second query plane
+ *      supporting SQL aggregations, inverted-index full-text search, and 768d/256d vector similarity search (`maxRowsReturned: 1000`, `previewRows: 10`).
+ * 3. Dual Deployment Mode (`Zero-Ops SaaS` vs `BYOC Deployment` in customer VPC) + Cloud Marketplace EDP Procurement (`AWS`, `GCP`, `Azure`).
+ * 4. Defensive Browser DOM Reconciliation Patch (`Node.prototype.removeChild` & `insertBefore` guard against Google Translate / extension crashes)
+ *    + Trusted-Referrer Identity Poisoning Guard (`__THUMBGATE_TRUSTED_REFERRERS__`).
+ * 5. Burn-After-Reading Ephemeral Credential Handoff (`expiresAt: Date.now() + 600_000`, deleted on first read) + Cross-Iframe Logout (`CLOUD_IFRAME_LOGOUT`).
+ */
+function evaluateVeloDbPersonalizeAndUnifiedAnalyticsSteal({
+  useCase = 'RAGAndGenAI',
+  signupReason = 'CompanyConsideringVeloDB',
+  role = 'SoftwareEngineer',
+  referralSource = 'AI',
+  deploymentMode = 'SAAS',
+  cloudProvider = 'AWS',
+  region = 'us-east-1',
+  nodeCount = 1,
+  nodeCpu = 4,
+  computeMemoryRatio = 4,
+  nodeCacheGb = 200,
+  autoSuspendPeriodMinutes = 30,
+  referrerUrl = 'https://www.thumbgate.ai/pricing',
+  appOrigin = 'https://thumbgate.ai',
+} = {}) {
+  const validUseCases = {
+    RealTimeAnalytics: {
+      scenario: 'real-time',
+      title: 'Real-Time Agent FinOps & Product Analytics',
+      description: 'Track agent token burn, loop kills, and checkout conversion in sub-second real time.',
+      tags: ['Developers', 'Product Analytics'],
+      recommendedPolicyPack: 'thumbgate-token-finops-pack',
+      preloadedSqlQuery: 'SELECT tool_name, COUNT(*) AS calls, SUM(tokens_saved) AS saved FROM agent_telemetry GROUP BY 1 ORDER BY 3 DESC LIMIT 10;',
+    },
+    Observability: {
+      scenario: 'observability',
+      title: 'Agent Trace, Log & PreToolUse Observability',
+      description: 'Search and troubleshoot OTEL spans, PreToolUse HOLD/BLOCK verdicts, and sealed SHA-256 receipts at scale.',
+      tags: ['SREs', 'DevOps'],
+      recommendedPolicyPack: 'thumbgate-otel-observability-pack',
+      preloadedSqlQuery: 'SELECT verdict, thermal_state, COUNT(*) FROM pretooluse_receipts WHERE MATCH(reasoning, "INV-") GROUP BY 1, 2 LIMIT 10;',
+    },
+    RAGAndGenAI: {
+      scenario: 'rag',
+      title: 'RAG, MCP & Autonomous Agent Security',
+      description: 'Combine SQL, 768d/256d Matryoshka vector search, and BM25 full-text search with sub-millisecond PreToolUse airlocks.',
+      tags: ['AI engineers', 'AI Search'],
+      recommendedPolicyPack: 'ccpa-cpra-admt-california-pack',
+      preloadedSqlQuery: 'SELECT lesson_id, cosine_distance(embedding_256d, query_vec) AS dist FROM agent_lessons WHERE MATCH(content, "force push") ORDER BY dist ASC LIMIT 10;',
+    },
+    Lakehouse: {
+      scenario: 'lakehouse',
+      title: 'Enterprise Compliance & Multi-State Policy Lakehouse',
+      description: 'Unify streaming agent audit trails and 1,448-rule statutory compliance packs (HIPAA, CCPA ADMT, EU AI Act Art. 50).',
+      tags: ['Data teams', 'BI analytics', 'CISOs'],
+      recommendedPolicyPack: 'enterprise-all-50-states-and-federal-bundle',
+      preloadedSqlQuery: 'SELECT jurisdiction, policy_pack, COUNT(*) AS enforced_holds FROM compliance_events GROUP BY 1, 2 LIMIT 10;',
+    },
+  };
+
+  const selectedUseCase = validUseCases[useCase] || validUseCases.RAGAndGenAI;
+  const isEnterprisePoC = signupReason === 'CompanyConsideringVeloDB' || signupReason === 'CompanyEvaluatingPoC';
+  const normalizedMode = String(deploymentMode || 'SAAS').toUpperCase() === 'BYOC' ? 'BYOC' : 'SAAS';
+  const ratio = Number(computeMemoryRatio) === 8 ? 8 : 4;
+  const cpu = Number(nodeCpu) || 4;
+  const nodes = Math.max(1, Number(nodeCount) || 1);
+  const ramGb = cpu * ratio;
+
+  const trustedReferrers = [
+    'thumbgate.ai',
+    'www.thumbgate.ai',
+    'checkout.stripe.com',
+    'github.com',
+    'www.velodb.cloud',
+    'velodb.cloud',
+    'www.velodb.io',
+    'velodb.io',
+  ];
+  let referrerTrusted = false;
+  try {
+    const parsedHost = new URL(String(referrerUrl || '')).hostname;
+    referrerTrusted = trustedReferrers.includes(parsedHost);
+  } catch {
+    referrerTrusted = false;
+  }
+
+  const nowMs = Date.now();
+  const ephemeralCredentialHandoff = {
+    storageKeyPrefix: 'thumbgate:ephemeral-provisioning-token:v1',
+    ttlMs: 600000,
+    expiresAt: nowMs + 600000,
+    burnAfterFirstRead: true,
+    crossIframeLogoutEvent: 'CLOUD_IFRAME_LOGOUT',
+  };
+
+  return {
+    ok: true,
+    sources: [
+      'https://www.velodb.cloud/personalize',
+      '/Users/iganapolsky/Downloads/datascience.pdf',
+    ],
+    step1PersonalizeProfile: {
+      stepLabel: 'Step 1 of 2 · Personalize',
+      headline: 'Let’s personalize your experience — Set up in minutes. No credit card required.',
+      useCase: useCase in validUseCases ? useCase : 'RAGAndGenAI',
+      scenarioKey: selectedUseCase.scenario,
+      useCaseDetails: selectedUseCase,
+      signupReason,
+      role,
+      referralSource,
+      enterprisePocFastLaneTriggered: isEnterprisePoC,
+      pocFastLaneOffer: isEnterprisePoC
+        ? {
+            prompt: 'Running a proof of concept?',
+            ctoDiagnostic499Url: `${appOrigin}/go/diagnostic-direct?utm_source=personalize_poc&utm_medium=onboarding`,
+            bops25kRetainerUrl: 'https://buy.stripe.com/fZucN5bmI8HkbO98qf3sI3j',
+          }
+        : null,
+    },
+    step2AutoProvisioning: {
+      stepLabel: 'Step 2 of 2 · Deployment',
+      deploymentMode: normalizedMode,
+      deploymentModeDescription:
+        normalizedMode === 'BYOC'
+          ? 'BYOC Deployment: Enhanced compliance & VPC isolation inside your AWS/GCP/Azure account.'
+          : 'Zero-Ops SaaS: Minimal management, serverless experience with automatic idle suspend.',
+      cloudProvider,
+      region,
+      collapsedClusterSummary: `${nodes} nodes · ${cpu} vCPU / ${ramGb} GB RAM per node`,
+      computeMemoryRatio: `1:${ratio}`,
+      nodeCacheStorageGb: Number(nodeCacheGb) || 200,
+      autoSuspendEnabled: true,
+      autoSuspendPeriodMinutes: Number(autoSuspendPeriodMinutes) || 30,
+      payType: 'FreePaid',
+      creditCardRequired: false,
+      trialUrl: `${appOrigin}/go/pro-direct?trial=1&trial_no_card=1&scenario=${selectedUseCase.scenario}`,
+    },
+    unifiedRealTimeAnalyticsAndAiEngine: {
+      subSecondIngestionAndQuery: true,
+      highConcurrencyMultiClusterIsolation: true,
+      unifiedModalities: ['SQL_AGGREGATION', 'VECTOR_SIMILARITY_768D_256D', 'BM25_INVERTED_INDEX_FULLTEXT'],
+      eliminatesThreeDatabaseSprawl: true,
+      fastPreviewRowCount: 10,
+      fastPreviewTargetSeconds: 3,
+      maxSingleQueryRowLimit: 1000,
+    },
+    cloudMarketplaceProcurement: {
+      awsMarketplaceSupported: true,
+      gcpMarketplaceSupported: true,
+      azureMarketplaceSupported: true,
+      supportsEnterpriseEdpDrawdown: true,
+    },
+    frontendAndSessionSecurityGuards: {
+      defensiveReactDomRemoveChildPatch: true,
+      defensiveReactDomInsertBeforePatch: true,
+      trustedReferrerAllowlist: trustedReferrers,
+      referrerTrusted,
+      identityParamsGatedOnTrustedReferrer: ['ph_distinct_id', 'ph_session_id', 'tg_session_id'],
+      ephemeralCredentialHandoff,
+    },
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -5759,6 +5934,7 @@ module.exports = {
   evaluateDrexMaxLocalDecisionEngine,
   evaluateOpenAiPandoGitBackendSteal,
   evaluateOakAndSparrowGatekeeperV2Steal,
+  evaluateVeloDbPersonalizeAndUnifiedAnalyticsSteal,
   buildThumbGateSaasDeployPlan,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,

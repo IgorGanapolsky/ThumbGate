@@ -20,6 +20,29 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
+  <script>
+    (function () {
+      var origRemoveChild = Node.prototype.removeChild;
+      Node.prototype.removeChild = function (child) {
+        if (child && child.parentNode !== this) return child;
+        return origRemoveChild.call(this, child);
+      };
+      var origInsertBefore = Node.prototype.insertBefore;
+      Node.prototype.insertBefore = function (newNode, refNode) {
+        if (refNode && refNode.parentNode !== this) return this.appendChild(newNode);
+        return origInsertBefore.call(this, newNode, refNode);
+      };
+      window.__THUMBGATE_TRUSTED_REFERRERS__ = ['thumbgate.ai', 'www.thumbgate.ai', 'checkout.stripe.com', 'github.com'];
+      window.isThumbGateTrustedReferrer = function (refStr) {
+        if (!refStr) return false;
+        try {
+          return window.__THUMBGATE_TRUSTED_REFERRERS__.indexOf(new URL(refStr).hostname) !== -1;
+        } catch (e) {
+          return false;
+        }
+      };
+    })();
+  </script>
   __GA_BOOTSTRAP__
   <script type="application/ld+json">
   {

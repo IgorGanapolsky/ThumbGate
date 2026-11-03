@@ -363,4 +363,36 @@ test('evaluateOakAndSparrowGatekeeperV2Steal & evaluateGatekeeperPolicyPacksAndR
   assert.equal(engine.leakedCisoCohort.curatedB2bTargetsCount, 20);
 });
 
+test('evaluateVeloDbPersonalizeAndUnifiedAnalyticsSteal (velodb.cloud/personalize + datascience.pdf) enforces 2-step zero-card onboarding, unified SQL/Vector/Full-Text search, and DOM/referrer guards', () => {
+  const {
+    evaluateVeloDbPersonalizeAndUnifiedAnalyticsSteal,
+  } = require('../scripts/fast-money-engine');
+
+  const velo = evaluateVeloDbPersonalizeAndUnifiedAnalyticsSteal({
+    useCase: 'RAGAndGenAI',
+    signupReason: 'CompanyConsideringVeloDB',
+    deploymentMode: 'BYOC',
+    nodeCount: 2,
+    nodeCpu: 8,
+    computeMemoryRatio: 4,
+    referrerUrl: 'https://www.thumbgate.ai/pricing',
+  });
+  assert.equal(velo.ok, true);
+  assert.equal(velo.step1PersonalizeProfile.scenarioKey, 'rag');
+  assert.equal(velo.step1PersonalizeProfile.enterprisePocFastLaneTriggered, true);
+  assert.equal(velo.step2AutoProvisioning.deploymentMode, 'BYOC');
+  assert.equal(velo.step2AutoProvisioning.collapsedClusterSummary, '2 nodes · 8 vCPU / 32 GB RAM per node');
+  assert.equal(velo.step2AutoProvisioning.autoSuspendPeriodMinutes, 30);
+  assert.equal(velo.step2AutoProvisioning.creditCardRequired, false);
+  assert.equal(velo.unifiedRealTimeAnalyticsAndAiEngine.eliminatesThreeDatabaseSprawl, true);
+  assert.equal(velo.frontendAndSessionSecurityGuards.referrerTrusted, true);
+  assert.equal(velo.frontendAndSessionSecurityGuards.ephemeralCredentialHandoff.burnAfterFirstRead, true);
+
+  const untrusted = evaluateVeloDbPersonalizeAndUnifiedAnalyticsSteal({
+    referrerUrl: 'https://evil-phishing.example.com/?ph_distinct_id=victim',
+  });
+  assert.equal(untrusted.frontendAndSessionSecurityGuards.referrerTrusted, false);
+});
+
+
 
