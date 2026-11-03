@@ -210,6 +210,7 @@
     "scripts/buyer-paths.js",
     "scripts/chatgpt-ads-readiness-pack.js",
     "scripts/checkout-attribution-reference.js",
+    "scripts/checkout-recovery.js",
     "scripts/ci-gha-buildkite-patterns.js",
     "scripts/classifier-routing.js",
     "scripts/claude-feedback-sync.js",

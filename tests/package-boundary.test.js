@@ -519,8 +519,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 612 -> 619: three recovered command/skill pairs and session-interactivity.js (+7).
     // 621 -> 641 (2026-10-15): operator framework landing, blog posts, policy packs, and continuity pages (+20).
     // 641 -> 648 (2026-10-15): HotData DB integration adapters, Google Universal Cart spend firewall blog & landing page (+7).
-    manifest.fileCount <= 648,
-    `npm package should stay <= 648 files, got ${manifest.fileCount}`
+    // 648 -> 652 (2026-11-03): cloud/admin/deploy-plan pages, checkout-recovery, cloud-token-firewall, herjavec-closer, deslopify, procedural-graph.
+    manifest.fileCount <= 652,
+    `npm package should stay <= 652 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -774,8 +775,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 9.25 MB -> 9.35 MB (2026-10-15): Autotomy Dual-Lock doctor, skills, and docs. Local pack 9,293,036; CI slack.
   // Bumped 9.35 MB -> 9.40 MB (2026-10-15): HotData DB integration & Google Universal Cart firewall. Local pack 9,340,830; CI slack.
   // Bumped 9.40 MB -> 9.85 MB (2026-10-26): email-triage MCP server, Poolside/OpenUI/ICM/ARC-AGI-3 gates, and 4-tier checkout routes.
-  manifest.unpackedSize <= 9_850_000,
-  `npm package should stay <= 9.85 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 9.85 MB -> 10.50 MB (2026-11-03): cloud-token-firewall, herjavec-closer, deslopify, procedural-graph, and cloud/admin/deploy-plan HTML.
+  manifest.unpackedSize <= 10_500_000,
+  `npm package should stay <= 10.50 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {
