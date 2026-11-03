@@ -880,9 +880,149 @@ function summarizeDelegation(feedbackDir = null) {
   };
 }
 
+const OPEN_LOOP_STATUSES = new Set(['open', 'waiting', 'closed']);
+const EXTERNAL_LOOP_ACTIONS = new Set(['send', 'purchase', 'cancel', 'book', 'change_account', 'move_calendar']);
+const OPEN_LOOP_PRICE_DOLLARS = new Set([19, 149, 499]);
+
+function openLoopHold(extra) {
+  return {
+    allow: false,
+    networkCall: false,
+    executed: false,
+    sent: false,
+    purchased: false,
+    cancelled: false,
+    booked: false,
+    accountChanged: false,
+    boundary: false,
+    ...extra,
+  };
+}
+
+function openLoopChildren(value) {
+  if (Array.isArray(value)) return value;
+  const children = [];
+  for (const key of Object.keys(value)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    children.push(value[key]);
+  }
+  return children;
+}
+
+function openLoopText(value, depth, seen) {
+  if (value == null || depth > 5) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value !== 'object') return '';
+  if (seen.has(value)) return '';
+  seen.add(value);
+  return openLoopChildren(value)
+    .map((child) => openLoopText(child, depth + 1, seen))
+    .filter(Boolean)
+    .join('\n');
+}
+
+function openLoopPrices(blob) {
+  const prices = [];
+  const pattern = /\$\s?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/g;
+  let match = pattern.exec(blob);
+  while (match) {
+    prices.push(Number(match[1].replace(/,/g, '')));
+    match = pattern.exec(blob);
+  }
+  return prices;
+}
+
+function openLoopAction(input) {
+  const named = String(input.action || 'record').trim().toLowerCase();
+  const handoff = input.handoff;
+  if (handoff && typeof handoff === 'object') {
+    if (handoff.send === true) return 'send';
+    const nested = String(handoff.action || '').trim().toLowerCase();
+    if (EXTERNAL_LOOP_ACTIONS.has(nested)) return nested;
+  }
+  return named;
+}
+
+function assessOpenLoop(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return openLoopHold({ reason: 'not_a_record' });
+  }
+  if (input.securityBoundary === true || input.separateBoundary === true || input.boundary === true) {
+    return openLoopHold({ reason: 'not_a_boundary' });
+  }
+  if (input.duplicate === true || input.existing === true) {
+    return openLoopHold({ reason: 'duplicate' });
+  }
+  const task = typeof input.task === 'string' ? input.task.trim() : '';
+  if (!task) return openLoopHold({ reason: 'missing_task' });
+  const source = typeof input.source === 'string' ? input.source.trim() : '';
+  if (!source || /^(?:memory|guess|i think|unknown)$/i.test(source)) {
+    return openLoopHold({ reason: 'missing_source' });
+  }
+  const blob = openLoopText(input, 0, new Set());
+  if (/\b(?:sk-[A-Za-z0-9]{8,}|ghp_[A-Za-z0-9]{8,}|rfl_[A-Za-z0-9]{8,})\b/.test(blob)) {
+    return openLoopHold({ reason: 'secret_present' });
+  }
+  const prices = openLoopPrices(blob);
+  if (prices.some((amount) => !OPEN_LOOP_PRICE_DOLLARS.has(amount))) {
+    return openLoopHold({ reason: 'forbidden_price', prices });
+  }
+  if (Array.isArray(input.briefing) && input.briefing.length > 1) {
+    return openLoopHold({ reason: 'one_briefing' });
+  }
+  const nextRaw = input.next == null ? input.nextAction : input.next;
+  if (typeof nextRaw !== 'string' || nextRaw.trim() === '') {
+    return openLoopHold({ reason: 'missing_next' });
+  }
+  if (/[\r\n]/.test(nextRaw)) return openLoopHold({ reason: 'next_is_one_line' });
+  const status = typeof input.status === 'string' ? input.status.trim().toLowerCase() : '';
+  if (!OPEN_LOOP_STATUSES.has(status)) return openLoopHold({ reason: 'unknown_status' });
+  let due = null;
+  if (input.due != null && input.due !== '') {
+    if (typeof input.due !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(input.due.trim())) {
+      return openLoopHold({ reason: 'bad_due' });
+    }
+    due = input.due.trim();
+  }
+  const action = openLoopAction(input);
+  const record = {
+    allow: true,
+    networkCall: false,
+    executed: false,
+    sent: false,
+    purchased: false,
+    cancelled: false,
+    booked: false,
+    accountChanged: false,
+    boundary: false,
+    task,
+    source,
+    next: nextRaw.trim(),
+    status,
+    due,
+    role: typeof input.role === 'string' && input.role.trim() ? input.role.trim() : null,
+  };
+  if (EXTERNAL_LOOP_ACTIONS.has(action)) {
+    if (input.approved !== true) return openLoopHold({ reason: 'needs_approval', action });
+    return { ...record, reason: 'approved_not_executed', action };
+  }
+  if (action !== 'record') return openLoopHold({ reason: 'unknown_action' });
+  let briefing = null;
+  if (typeof input.briefing === 'string') briefing = input.briefing.trim() || null;
+  else if (Array.isArray(input.briefing) && input.briefing.length === 1) {
+    if (typeof input.briefing[0] !== 'string') return openLoopHold({ reason: 'briefing_not_text' });
+    briefing = input.briefing[0].trim() || null;
+  }
+  if (briefing && /\b(?:sk-[A-Za-z0-9]{8,}|ghp_[A-Za-z0-9]{8,}|rfl_[A-Za-z0-9]{8,})\b/.test(briefing)) {
+    return openLoopHold({ reason: 'secret_present' });
+  }
+  return { ...record, reason: 'open_loop', action: 'record', briefing };
+}
+
 module.exports = {
   DELEGATION_MODES,
   HANDOFF_OUTCOMES,
+  assessOpenLoop,
   normalizeDelegationMode,
   deriveSemanticPhases,
   buildTaskKey,

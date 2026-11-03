@@ -1211,7 +1211,6 @@ npx skills add https://thumbgate.ai</pre>
           document.getElementById('portal-api-key').value = data.ssoToken;
           document.getElementById('portal-email').value = data.email;
           try {
-            localStorage.setItem('tg_cloud_sso_token', data.ssoToken);
             localStorage.setItem('tg_cloud_sso_email', data.email);
             localStorage.setItem('tg_cloud_sso_provider', data.provider);
             localStorage.setItem('tg_cloud_auth_verification', data.authVerification || 'email_workspace_preview');
@@ -1245,7 +1244,6 @@ npx skills add https://thumbgate.ai</pre>
         if (ssoToken) {
           PORTAL_API_KEY = ssoToken;
           document.getElementById('portal-api-key').value = ssoToken;
-          try { localStorage.setItem('tg_cloud_sso_token', ssoToken); } catch (e) {}
         }
         if (emailParam) {
           PORTAL_EMAIL = emailParam;

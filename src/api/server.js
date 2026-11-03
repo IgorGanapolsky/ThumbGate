@@ -272,7 +272,6 @@ const {
 } = require('../../scripts/feedback-aggregate');
 const {
   guardDfcxWebhook,
-  resolveDialogflowModel,
 } = require('../../adapters/gcp/dfcx-webhook-gate');
 const {
   buildDashboardRenderSpec,
@@ -289,6 +288,7 @@ const {
 } = require('../../scripts/telemetry-analytics');
 const {
   buildProductIssueTitle,
+  composeChipFeedback,
   submitProductIssue,
 } = require('../../scripts/product-feedback');
 const {
@@ -393,6 +393,7 @@ const {
   evaluateGitLabTenAiPromptsAndNurtureSteal,
   evaluateFiddlerOct2026NewsletterSteal,
   buildThumbGateSaasDeployPlan,
+  evaluateDanKornasKanzoAgentKanbanSteal,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -2419,25 +2420,12 @@ function buildEnterpriseDataChatStatus(env = process.env) {
     },
     dfcx: {
       apiSurface: 'Dialogflow CX REST API: projects.locations.agents',
-      consoleArchitecture: 'Google Conversational Agents Console (Flows + Playbooks)',
       liveAgentConfigured: Boolean(dfcxAgentId && dfcxLocation),
       agentId: dfcxAgentId,
       location: dfcxLocation,
       fulfillmentProxyConfigured: Boolean(dfcxFulfillmentUrl),
       fulfillmentUrlConfigured: Boolean(dfcxFulfillmentUrl),
       gcloudCxCommandSupported: false,
-      models: {
-        playbookDefault: resolveDialogflowModel({ task: 'playbook' }, env),
-        voiceAndRewriterDefault: resolveDialogflowModel({ task: 'rewriter' }, env),
-      },
-      governance: {
-        wrapperPageIsolation: true,
-        authorizationRuleEnforced: true,
-        bannedPhraseFullMatchDefault: true,
-        intentDensityTarget: '20-50',
-        sessionsClientRecycling: true,
-        webhookRetryBackoff503: true,
-      },
       verification: dfcxAgentId && dfcxLocation
         ? 'Agent metadata is present in env; verify via REST/console before production claims.'
         : 'No live DFCX agent env configured. Use REST/console/deployed webhook evidence before claiming a live agent.',
@@ -6472,7 +6460,16 @@ function createApiServer() {
       req.on('end', async () => {
         try {
           const body = JSON.parse(Buffer.concat(chunks).toString());
-          const { category, message } = body;
+          let { category, message } = body;
+          if (Array.isArray(body.reasons)) {
+            const composed = composeChipFeedback({ reasons: body.reasons, details: body.details });
+            if (!composed.ok) {
+              sendJson(res, 400, { error: composed.reason });
+              return;
+            }
+            category = composed.category;
+            message = composed.message;
+          }
           if (!message || message.length < 5) {
             sendJson(res, 400, { error: 'message too short' });
             return;
@@ -10738,6 +10735,12 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const herjavec = require('../herjavec-closer-engine');
       const body = req.method === 'POST' ? await parseJsonBody(req) : {};
       sendJson(res, 200, herjavec.evaluateKanzoAgentBoardProcess(body || {}), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/cloud/kanzo-agent-kanban/gate') {
+      const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+      sendJson(res, 200, evaluateDanKornasKanzoAgentKanbanSteal(body || {}), {}, { headOnly: isHeadRequest });
       return;
     }
 

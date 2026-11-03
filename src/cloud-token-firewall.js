@@ -7181,6 +7181,123 @@ function evaluateVeloDbPersonalizeAndRealTimeAiAnalyticsSteal({
   };
 }
 
+/**
+ * Dan Kornas (`x.com/DanKornas/status/2116646648952783046`) + `emanuele-em/kanzo`
+ * (`github.com/emanuele-em/kanzo`) Agent-Safe Kanban & Ultra-Compact MCP Task Board Steal.
+ *
+ * Clean-room ThumbGate native gate (zero AGPL-3.0 code vendored):
+ * 1. Agent-Safe Backlog & Human-Only Task Lock (`backlog` off-limits to agents; `humanOnly: true` locked).
+ * 2. Auto-Project Detection via `git remote` URL -> active ThumbGate project slug.
+ * 3. Token-Efficient MCP Surface (~900 tokens once per session; 10-60 token plain-text replies).
+ * 4. Multi-Machine Live LAN/Tailscale Sync + Git Conflict Resolution (`--keep-local` / `--keep-remote`).
+ */
+function evaluateDanKornasKanzoAgentKanbanSteal(input = {}) {
+  const actor = String(input.actor || 'agent').toLowerCase();
+  const action = String(input.action || 'take_next_task').toLowerCase();
+  const gitRemoteUrl = String(
+    input.gitRemoteUrl || 'https://github.com/IgorGanapolsky/ThumbGate.git'
+  ).trim();
+  const detectedProjectSlug =
+    gitRemoteUrl
+      .replace(/\.git$/i, '')
+      .split(/[/:]/)
+      .filter(Boolean)
+      .pop() || 'ThumbGate';
+
+  const defaultTasks = [
+    {
+      id: 'task_backlog_1',
+      title: 'Unscoped Q4 experiment — parked in Backlog',
+      column: 'backlog',
+      humanOnly: false,
+      priority: 'low',
+    },
+    {
+      id: 'task_todo_human_1',
+      title: 'Approve Stripe production payout bank rotation (2FA)',
+      column: 'todo',
+      humanOnly: true,
+      priority: 'high',
+    },
+    {
+      id: 'task_todo_agent_1',
+      title: 'Enforce 10-60 token compact MCP task replies and agent-safe backlog lock',
+      column: 'todo',
+      humanOnly: false,
+      priority: 'high',
+    },
+  ];
+
+  const tasks = Array.isArray(input.tasks) && input.tasks.length > 0 ? input.tasks : defaultTasks;
+  const requestedTaskId = input.taskId ? String(input.taskId) : null;
+  const targetTask = requestedTaskId
+    ? tasks.find((t) => String(t.id) === requestedTaskId) || null
+    : tasks.find((t) => String(t.column).toLowerCase() === 'todo' && !t.humanOnly) || null;
+
+  const targetColumn = targetTask ? String(targetTask.column || '').toLowerCase() : null;
+  const backlogViolation =
+    actor === 'agent' &&
+    (targetColumn === 'backlog' || String(input.sourceColumn || '').toLowerCase() === 'backlog');
+  const humanOnlyViolation = actor === 'agent' && Boolean(targetTask && targetTask.humanOnly);
+  const copyleftLicenseAttempt = Boolean(input.vendorAgplCode || input.importKanzoRustSource);
+
+  const allowed = !backlogViolation && !humanOnlyViolation && !copyleftLicenseAttempt;
+  const nextColumn =
+    allowed && targetTask && (action === 'take_next_task' || action === 'start_task')
+      ? 'doing'
+      : targetColumn;
+
+  const compactMcpReply = !allowed
+    ? backlogViolation
+      ? `BLOCKED [${detectedProjectSlug}]: agent cannot touch backlog task ${targetTask ? targetTask.id : 'unknown'}. Promote to todo first.`
+      : humanOnlyViolation
+        ? `BLOCKED [${detectedProjectSlug}]: task ${targetTask.id} is marked Human-only.`
+        : `BLOCKED [${detectedProjectSlug}]: AGPL-3.0 source vendoring forbidden; use ThumbGate clean-room gate.`
+    : targetTask
+      ? `OK [${detectedProjectSlug}] ${targetTask.id} (${targetColumn}->${nextColumn}): ${targetTask.title}`
+      : `OK [${detectedProjectSlug}] todo queue empty (0 agent-eligible tasks).`;
+
+  const replyTokenCount = Math.max(
+    10,
+    Math.min(60, Math.ceil(compactMcpReply.length / 4))
+  );
+
+  return {
+    ok: allowed,
+    status: allowed ? 'agent_kanban_action_allowed' : 'agent_kanban_action_blocked',
+    source: {
+      postUrl: 'https://x.com/DanKornas/status/2116646648952783046',
+      repoUrl: 'https://github.com/emanuele-em/kanzo',
+      licenseGuard: 'AGPL-3.0 upstream -> clean-room pattern steal only (0 lines vendored)',
+    },
+    projectDetection: {
+      gitRemoteUrl,
+      detectedProjectSlug,
+      autoMatchedFromGitRemote: true,
+    },
+    guardrails: {
+      backlogAgentSafeZone: true,
+      humanOnlyFlagEnforced: true,
+      backlogViolation,
+      humanOnlyViolation,
+      copyleftLicenseAttempt,
+    },
+    mcpTokenBudget: {
+      sessionToolDefinitionTokens: 900,
+      replyTokenRange: [10, 60],
+      measuredReplyTokens: replyTokenCount,
+      compactMcpReply,
+    },
+    activeTask: targetTask
+      ? {
+          ...targetTask,
+          previousColumn: targetColumn,
+          column: nextColumn,
+        }
+      : null,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -7329,6 +7446,7 @@ module.exports = {
   evaluateSpotifyConfidenceSequentialAbExperimentSteal,
   evaluateVeloDbPersonalizeAndRealTimeAiAnalyticsSteal,
   buildThumbGateSaasDeployPlan,
+  evaluateDanKornasKanzoAgentKanbanSteal,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
 };

@@ -623,5 +623,27 @@ test('Deslopify 9 Habits, Herjavec Closer, YouSpot Pro, HarnessSQL, Zou Group Sh
   });
   assert.equal(kanzoHumanOnlyBlocked.ok, false);
   assert.equal(kanzoHumanOnlyBlocked.verdict, 'BLOCK_HUMAN_ONLY_TASK');
+
+  const firewall = require('../src/cloud-token-firewall');
+  const kanzoGate = firewall.evaluateDanKornasKanzoAgentKanbanSteal({
+    actor: 'agent',
+    action: 'take_next_task',
+    gitRemoteUrl: 'https://github.com/IgorGanapolsky/ThumbGate.git',
+  });
+  assert.equal(kanzoGate.ok, true);
+  assert.equal(kanzoGate.projectDetection.detectedProjectSlug, 'ThumbGate');
+  assert.equal(kanzoGate.activeTask.column, 'doing');
+  assert.equal(
+    firewall.evaluateDanKornasKanzoAgentKanbanSteal({ actor: 'agent', taskId: 'task_backlog_1' }).ok,
+    false
+  );
+  assert.equal(
+    firewall.evaluateDanKornasKanzoAgentKanbanSteal({ actor: 'agent', taskId: 'task_todo_human_1' }).ok,
+    false
+  );
+  assert.equal(
+    firewall.evaluateDanKornasKanzoAgentKanbanSteal({ actor: 'agent', vendorAgplCode: true }).ok,
+    false
+  );
 });
 

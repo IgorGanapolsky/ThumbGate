@@ -287,7 +287,9 @@
         }
       }
 
+      var currentAdminSessionHandle = '';
       function getAdminToken() {
+        if (currentAdminSessionHandle) return currentAdminSessionHandle;
         try {
           return sessionStorage.getItem('tg_admin_bearer') || localStorage.getItem('tg_admin_sso_token') || '';
         } catch (e) {
@@ -296,6 +298,7 @@
       }
 
       window.tgAdminLogout = function () {
+        currentAdminSessionHandle = '';
         try {
           sessionStorage.removeItem('tg_admin_bearer');
           localStorage.removeItem('tg_admin_sso_token');
@@ -332,12 +335,9 @@
           return;
         }
 
-        var activeToken = loginData.ssoToken || secret;
+        currentAdminSessionHandle = String(loginData.ssoToken || '');
         try {
-          sessionStorage.setItem('tg_admin_bearer', activeToken);
-          localStorage.setItem('tg_admin_sso_token', activeToken);
           localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
-          localStorage.setItem('tg_cloud_sso_token', activeToken);
           localStorage.setItem('tg_cloud_sso_email', loginData.email || email);
           localStorage.setItem('tg_cloud_sso_provider', 'admin');
         } catch (e) {}
@@ -392,7 +392,7 @@
           var projs = (c.projects || []).map(function (p) { return p.slug || p.name; }).join(', ') || 'default';
           var created = c.createdAt ? c.createdAt.slice(0, 16).replace('T', ' ') : '—';
           var lastLogin = c.lastLoginAt ? c.lastLoginAt.slice(0, 16).replace('T', ' ') : '—';
-          var safeIdent = String(ident).replace(/'/g, "\\'");
+          var safeIdent = String(ident).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
           return '<tr>' +
             '<td><div style="font-weight:800;">' + (c.email || c.name || ident) + '</div><div class="mono" style="color:var(--muted);">' + (c.stripeCustomerId || c.id || '') + '</div></td>' +
             '<td><span class="pill ' + statusClass + '">' + (c.status || 'active') + '</span> <span class="mono" style="color:var(--amber);">' + (c.role || 'customer') + '</span></td>' +

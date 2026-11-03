@@ -308,6 +308,14 @@ test('CI workflow stays test-only and leaves Railway deploys to the dedicated wo
   assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
 });
 
+test('CI Node 20 keeps better-sqlite3 on a release that still runs there', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+  assert.match(workflow, /node-version:\s*'20'/);
+  // 13.0.3 declares node >=22. Loading it on the CI Node 20 job
+  // segfaults inside feedback-loop and prompt-eval (exit 139).
+  assert.match(pkg.dependencies['better-sqlite3'], /^\^12\./);
+});
+
 test('CI workflow enforces and uploads prompt and task-outcome evaluation artifacts', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 

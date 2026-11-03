@@ -358,17 +358,17 @@ function serializeGraphToYaml(graphObj) {
     lines.push(`  - id: "${node.id}"`);
     lines.push(`    type: "${node.type}"`);
     lines.push(
-      `    label: "${String(node.label || '').replace(/"/g, '\\"')}"`
+      `    label: "${String(node.label || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
     );
     lines.push(`    deterministic: ${Boolean(node.deterministic)}`);
     if (node.script) {
       lines.push(
-        `    script: "${String(node.script).replace(/"/g, '\\"')}"`
+        `    script: "${String(node.script).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
       );
     }
     if (node.condition) {
       lines.push(
-        `    condition: "${String(node.condition).replace(/"/g, '\\"')}"`
+        `    condition: "${String(node.condition).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
       );
     }
     if (node.maxRetries !== undefined) {
