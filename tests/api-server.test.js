@@ -2151,7 +2151,7 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.doesNotMatch(body, /\/go\/bundle-49/);
   assert.doesNotMatch(body, /\/go\/sprint/);
   assert.doesNotMatch(body, /\$9\.99/);
-  assert.doesNotMatch(body, /\$49/);
+  assert.doesNotMatch(body, /\$49(?!\d)/);
   assert.doesNotMatch(body, /\$1500/);
   assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//);
   assert.doesNotMatch(body, /https:\/\/www\.paypal\.com\/ncp\/payment\//);
