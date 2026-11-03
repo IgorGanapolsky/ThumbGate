@@ -68,11 +68,9 @@ const BOT_PATTERNS = [
   /\bredditbot\b/i,
   /\bembedly\b/i,
   /\biframely\b/i,
-  // Generic bot/crawler/spider markers
-  /\bbot\b/i,
-  /\bcrawler\b/i,
+  // Generic bot/crawler/spider markers (including compound names like ElevenlabsCrawler, SolvedEarthPriceBot)
+  /[a-z0-9_-]*(?:bot|crawler|spider)\b/i,
   /\bcrawl\b/i,
-  /\bspider\b/i,
   /\brobot\b/i,
   /\bheadless(?:chrome|browser)?\b/i,
   /\bphantomjs\b/i,
@@ -83,6 +81,8 @@ const BOT_PATTERNS = [
   /\bcurl\//i,
   /\bwget\//i,
   /\bnode-fetch\b/i,
+  /\bnode$/i,
+  /\bnode\//i,
   /\bgot\s*\(/i,
   /\bpython-requests\b/i,
   /\bpython-urllib\b/i,
@@ -94,10 +94,14 @@ const BOT_PATTERNS = [
   /scrapy/i,
   /httpclient/i,
   /\bruby\b/i,
-  // API/test tools
+  // API/test tools & synthetic probes
   /\bpostman(?:runtime)?\b/i,
   /\binsomnia\b/i,
   /\bhttpie\b/i,
+  /protocolv1-gate/i,
+  /revenueauditor/i,
+  /shap-user/i,
+  /thumbgate-(?:check|cash-check|reflection|verification|analytics)/i,
   // Uptime/monitoring/security scanners
   /\buptimerobot\b/i,
   /\bbetteruptime\b/i,

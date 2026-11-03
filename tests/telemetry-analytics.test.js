@@ -1126,3 +1126,35 @@ test('getTelemetryAnalytics sanitizes &amp; query strings, classifies linkedin/t
   assert.equal(analytics90d.window.startLocalDate, '2026-08-05');
   assert.equal(analytics90d.window.endLocalDate, '2026-11-02');
 });
+
+test('classifyRequester catches compound bot UAs and getTelemetryAnalytics excludes bot /cancel probes from checkoutCancelPageViews', () => {
+  const { classifyRequester } = require('../scripts/bot-detection');
+  assert.equal(classifyRequester({ 'user-agent': 'ElevenlabsCrawler/1.0', accept: 'text/html' }).isBot, true);
+  assert.equal(classifyRequester({ 'user-agent': 'SolvedEarthPriceBot/2.0', accept: 'text/html' }).isBot, true);
+  assert.equal(classifyRequester({ 'user-agent': 'ProtocolV1-Gate/1.0', accept: 'text/html' }).isBot, true);
+  assert.equal(classifyRequester({ 'user-agent': 'Mozilla/5.0 RevenueAuditor/1.0', accept: 'text/html' }).isBot, true);
+
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_cancel_page_view',
+    clientType: 'web',
+    page: '/cancel',
+    visitorId: 'vis_probe_1',
+    sessionId: 'sess_probe_1',
+  }, {
+    'user-agent': 'ProtocolV1-Gate/1.0',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'checkout_cancel_page_view',
+    clientType: 'web',
+    page: '/cancel',
+    visitorId: 'vis_human_cancel_1',
+    sessionId: 'sess_human_cancel_1',
+    traceId: 'checkout_real_123',
+  }, {
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/130.0.0.0 Safari/537.36',
+  });
+
+  const analytics = getTelemetryAnalytics(tmpDir);
+  assert.equal(analytics.ctas.cancelPageViews, 1);
+});
+

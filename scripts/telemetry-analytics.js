@@ -506,6 +506,12 @@ function classifyTelemetryAudience(entry = {}, raw = {}) {
     'observer/',
     'uptimerobot',
     'pingdom',
+    'protocolv1-gate',
+    'revenueauditor',
+    'shap-user',
+    'thumbgate-check',
+    'thumbgate-cash-check',
+    'thumbgate-reflection',
   ])) {
     addAudienceReason(reasons, 'bot_or_automation_user_agent');
   }
@@ -1267,7 +1273,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       }
 
       if ((entry.eventType || entry.event) === 'checkout_cancel_page_view') {
-        checkoutCancelPageViews += 1;
+        if (!entry.isBotTraffic && entry.audience !== 'bot') {
+          checkoutCancelPageViews += 1;
+        }
       }
 
       if ((entry.eventType || entry.event) === 'checkout_paid_confirmed') {
