@@ -821,6 +821,22 @@ async function runMakeMoneyAutonomousLoop({
   // Stage 8: "This AI Assistant REMEMBERS Everything You Won't" (tSBx5l9VFwE) Workflow Engine
   const stage8RemembersEverything = evaluateRemembersEverythingWorkflowEngine();
 
+  // Stage 9: Nick's "Bops" $25,000 Custom 15-Bot SMB Agent System + $3,000/mo Retainer (67BmkptgTms)
+  const stage9BopsSmb25kSystem = evaluateBopsSmb25kCustomAgentSystemEngine();
+
+  // Stage 10: Daily Substack Newsletter + Note Monetization Generator
+  const stage10DailySubstack = generateDailySubstackMonetizationPack({ writeFiles: true });
+
+  // Stage 11: Nace AI Drex Max v1 Single-Forward-Pass 255-Way Local Decision Engine (0 generated tokens)
+  const {
+    evaluateDrexMaxLocalDecisionEngine,
+    evaluateOpenAiPandoGitBackendSteal,
+  } = require('../src/cloud-token-firewall');
+  const stage11DrexMaxDecisionEngine = evaluateDrexMaxLocalDecisionEngine();
+
+  // Stage 12: OpenAI Pando Git Backend Agent-Scale Branch & Packfile Engine
+  const stage12OpenAiPandoGitBackend = evaluateOpenAiPandoGitBackendSteal();
+
   const receipt = {
     ok:
       stage1Funnel.ok &&
@@ -828,7 +844,11 @@ async function runMakeMoneyAutonomousLoop({
       stage4OpenUi.ok &&
       stage6RecoveryGate.passes &&
       stage7IntelligenceComDealRoom.ok &&
-      stage8RemembersEverything.ok,
+      stage8RemembersEverything.ok &&
+      stage9BopsSmb25kSystem.ok &&
+      stage10DailySubstack.ok &&
+      stage11DrexMaxDecisionEngine.ok &&
+      stage12OpenAiPandoGitBackend.ok,
     startedAt,
     completedAt: new Date().toISOString(),
     northStarDailyTargetUsd: 100,
@@ -868,6 +888,30 @@ async function runMakeMoneyAutonomousLoop({
         northStarOneLiner: stage8RemembersEverything.productValidation.northStarOneLiner,
         threeLineWeeklyCadence: stage8RemembersEverything.productValidation.threeLineWeeklyCadence,
         singleWeeklyCoachingInsight: stage8RemembersEverything.salesAndMeetingWorkflows.singleWeeklyCoachingInsight,
+      },
+      stage9BopsSmb25kSystem: {
+        ok: stage9BopsSmb25kSystem.ok,
+        upfrontOwnershipPriceUsd: stage9BopsSmb25kSystem.commercialOffer.upfrontOwnershipPriceUsd,
+        monthlyRetainerUsd: stage9BopsSmb25kSystem.commercialOffer.monthlyRetainerUsd,
+        botCount: stage9BopsSmb25kSystem.agentStackProvisioning.botCount,
+        referralMultiplierK: stage9BopsSmb25kSystem.nicheAndAcquisition.referralMultiplierK,
+      },
+      stage10DailySubstack: {
+        ok: stage10DailySubstack.ok,
+        dateIso: stage10DailySubstack.dateIso,
+        title: stage10DailySubstack.title,
+        postPath: stage10DailySubstack.postPath,
+      },
+      stage11DrexMaxDecisionEngine: {
+        ok: stage11DrexMaxDecisionEngine.ok,
+        modelFamily: stage11DrexMaxDecisionEngine.modelFamily,
+        generatedTokens: stage11DrexMaxDecisionEngine.evaluation.generatedTokens,
+        decisionIndex04: stage11DrexMaxDecisionEngine.benchmarks.decisionIndex04,
+      },
+      stage12OpenAiPandoGitBackend: {
+        ok: stage12OpenAiPandoGitBackend.ok,
+        preToolDecision: stage12OpenAiPandoGitBackend.preToolDecision,
+        cacheHitRatePct: stage12OpenAiPandoGitBackend.pandoArchitecturePillars.packfileUriAndExpressRegionalCache.cacheHitRatePct,
       },
     },
   };
@@ -1582,6 +1626,197 @@ async function discoverLiveViralOpportunities({
     viralChannels,
   };
 }
+
+/**
+ * Nick's "Bops" $25,000 Custom 15-Bot SMB AI Agent System + $3,000/mo Retainer Engine
+ * Source: https://music.youtube.com/watch?v=67BmkptgTms (https://startup-ideas-pod.link/bops)
+ */
+function evaluateBopsSmb25kCustomAgentSystemEngine({
+  warmNetworkCallsTarget = 50,
+  targetNiches = ['dental_clinics', 'insurance_agencies', 'title_and_tax_deed_desks', 'promotional_products'],
+  freePilotFramedAnnualValueUsd = 50000,
+  requiredPeerIntroductionsPerPilot = 3,
+  screenShareWorkflowShadowing = true,
+  referenceArchitectures = ['GrokBot', 'Meta Muse', 'OpenAI Dots', 'Nick Bops'],
+  paperMcpUiVariantsCount = 4,
+  botCount = 15,
+  dedicatedInfra = {
+    virtualComputer: 'Orgo',
+    email: 'Agent Mail',
+    phone: 'Agent Phone',
+    connectors: 'Composio',
+    preToolUseFirewall: 'ThumbGate',
+  },
+  upfrontOwnershipPriceUsd = 25000,
+  paymentMilestonesUsd = [12500, 12500],
+  implementationDays = 30,
+  annualFrontDeskHireAnchorRangeUsd = [50000, 70000],
+  riskReversalIncentives = ['free_website_redesign', 'free_lead_magnets', '30_day_money_back_guarantee'],
+  monthlyRetainerUsd = 3000,
+  outboundCashSpendUsd = 0,
+} = {}) {
+  const issues = [];
+  if (Number(outboundCashSpendUsd) > 0) {
+    issues.push('outbound_cash_spend_must_remain_zero');
+  }
+  if (Number(warmNetworkCallsTarget) < 50) {
+    issues.push('warm_network_calls_below_50_target');
+  }
+  if (Number(requiredPeerIntroductionsPerPilot) < 3 || !screenShareWorkflowShadowing) {
+    issues.push('free_pilot_requires_recorded_case_study_3_peer_intros_and_workflow_shadowing');
+  }
+  if (Number(paperMcpUiVariantsCount) < 3) {
+    issues.push('paper_mcp_diverge_converge_requires_3_to_4_ui_variants');
+  }
+  if (
+    Number(botCount) < 15 ||
+    !dedicatedInfra ||
+    !dedicatedInfra.virtualComputer ||
+    !dedicatedInfra.email ||
+    !dedicatedInfra.phone ||
+    !dedicatedInfra.connectors ||
+    !dedicatedInfra.preToolUseFirewall
+  ) {
+    issues.push('agent_stack_requires_15_isolated_bots_with_dedicated_compute_mail_phone_composio_and_firewall');
+  }
+  const milestoneSum = Array.isArray(paymentMilestonesUsd)
+    ? paymentMilestonesUsd.reduce((acc, v) => acc + Number(v || 0), 0)
+    : 0;
+  if (Number(upfrontOwnershipPriceUsd) !== 25000 || milestoneSum !== 25000 || Number(monthlyRetainerUsd) !== 3000) {
+    issues.push('commercial_offer_requires_25k_split_ownership_and_3k_monthly_retainer');
+  }
+  if (!Array.isArray(riskReversalIncentives) || riskReversalIncentives.length < 3) {
+    issues.push('commercial_offer_missing_risk_reversal_stack');
+  }
+
+  return {
+    ok: issues.length === 0,
+    sourceUrl: 'https://music.youtube.com/watch?v=67BmkptgTms',
+    referenceRepoUrl: 'https://startup-ideas-pod.link/bops',
+    outboundCashSpendUsd: Number(outboundCashSpendUsd),
+    nicheAndAcquisition: {
+      warmNetworkCallsTarget: Number(warmNetworkCallsTarget),
+      targetNiches,
+      freePilotFramedAnnualValueUsd: Number(freePilotFramedAnnualValueUsd),
+      requiredDeliverablesFromPilot: ['recorded_case_study', '3_local_peer_introductions', 'screen_share_workflow_shadowing'],
+      referralMultiplierK: Number(requiredPeerIntroductionsPerPilot),
+      screenShareWorkflowShadowing: Boolean(screenShareWorkflowShadowing),
+      warmExecutivePitchScript:
+        'We are building a custom 15-agent back-office system ("Bops" architecture governed by ThumbGate fail-closed airlocks) that replaces $50,000-$70,000/yr of repetitive intake, invoice, and compliance work. We are taking 1 pilot partner in your vertical for free ($50,000/yr value) in exchange for a 30-minute screen-share workflow shadow, a recorded case study once live, and warm intros to 3 local industry peers.',
+    },
+    researchAndUiDesign: {
+      referenceArchitectures,
+      cleanShotSwipeFileActive: true,
+      paperMcpUiVariantsCount: Number(paperMcpUiVariantsCount),
+      convergedDashboardMode: 'single_15_bot_command_center',
+    },
+    agentStackProvisioning: {
+      botCount: Number(botCount),
+      iterativeBuildLoop: 'Claude Opus + ThumbGate PreToolUse Airlock',
+      dedicatedInfra,
+      deploymentTargets: ['Railway', 'Orgo', 'Fly.io', 'Vercel'],
+    },
+    commercialOffer: {
+      upfrontOwnershipPriceUsd: Number(upfrontOwnershipPriceUsd),
+      paymentMilestonesUsd,
+      implementationDays: Number(implementationDays),
+      annualFrontDeskHireAnchorRangeUsd,
+      riskReversalIncentives,
+      monthlyRetainerUsd: Number(monthlyRetainerUsd),
+      retainerCheckoutUrl: 'https://buy.stripe.com/fZucN5bmI8HkbO98qf3sI3j',
+      diagnosticEntryUrl: 'https://thumbgate.ai/go/diagnostic-direct?utm_source=bops_smb&utm_medium=direct&utm_campaign=bops_25k_system',
+    },
+    issues,
+  };
+}
+
+/**
+ * Daily Substack Newsletter + Note Monetization Generator
+ */
+function generateDailySubstackMonetizationPack({
+  dateIso = new Date().toISOString().slice(0, 10),
+  appOrigin = 'https://thumbgate.ai',
+  writeFiles = false,
+  outputDir = path.join(__dirname, '..', 'docs', 'substack-output'),
+} = {}) {
+  const bops = evaluateBopsSmb25kCustomAgentSystemEngine();
+  const title = `How to Build & Govern a $25,000 15-Bot AI System ("Bops" + Drex Max v1 Zero-Token Decisions + OpenAI Pando Git Scale)`;
+  const subtitle = `Why SMBs and engineering teams are replacing $60k/yr manual intake & token-burning loops with 15 isolated role-specific agents, single-forward-pass local decision heads, and per-branch Git coordination.`;
+  const trialUrl = `${appOrigin}/go/pro-direct?trial=1&trial_no_card=1&utm_source=substack&utm_medium=newsletter&utm_campaign=daily_substack_${dateIso}`;
+  const proUrl = `${appOrigin}/go/pro-direct?utm_source=substack&utm_medium=newsletter&utm_campaign=daily_substack_${dateIso}`;
+  const bundleUrl = `${appOrigin}/go/bundle-49?utm_source=substack&utm_medium=newsletter&utm_campaign=daily_substack_${dateIso}`;
+  const diagnosticUrl = `${appOrigin}/go/diagnostic-direct?utm_source=substack&utm_medium=newsletter&utm_campaign=daily_substack_${dateIso}`;
+  const retainerUrl = bops.commercialOffer.retainerCheckoutUrl;
+  const taxDeedUrl = 'https://buy.stripe.com/bJe28rduQ5v82dz6i73sJ0n';
+
+  const markdown = `# ${title}
+
+*${subtitle}*
+
+*Published by Igor Ganapolsky · ${dateIso}*
+
+Most teams adopt AI agents backwards: they give one giant generalist chat session raw shell access, dump every tool output into the parent context window, serialize Git ref locks across the entire repo, and wonder why their Anthropic/OpenAI bill spikes while the agent stalls or breaks production.
+
+Here is the three-layer architecture that actually works in production — combining **Nick's 15-Bot "Bops" SMB System**, **Nace AI Drex Max v1 Zero-Token Local Decisions**, **OpenAI Pando Per-Branch Git Scaling**, and **ThumbGate's Fail-Closed PreToolUse Airlock**:
+
+### 1. Isolate Every Agent's Compute, Identity, and Git Branch (Bops + OpenAI Pando Pattern)
+Instead of one bloated thread that re-summarizes every sub-agent's raw output on every turn:
+- **15 Role-Specific Agents ("Bops"):** Shadow real manual back-office workflows (invoice intake, statutory lien screening, PR triage, checkout recovery) and assign one narrow responsibility per bot.
+- **Dedicated Identity & Sandbox:** Give each bot its own isolated environment (Orgo / git worktree), dedicated email (Agent Mail), dedicated phone (Agent Phone), and scoped connectors (Composio / MCP).
+- **Per-Branch Independent Git Coordination (OpenAI Pando Pattern):** Coordinate ref updates per branch instead of locking the entire repository, advertise only \`main\` (\`trunk\`) with \`explicit-haves\` so feature packs stay under \`20 KiB\` (instead of \`>100 MiB\` multi-branch ref lists), and serve immutable packs via \`packfile-uri\` with \`>99%\` cache hits.
+
+### 2. Zero-Token Single-Forward-Pass Decisions (<0.05ms PreToolUse + Drex Max v1 255-Way Readout)
+Before any agent executes a shell command, mutates a CRM record, or sends an external message:
+- **ThumbGate PreToolUse Diode (\`0.041ms p95\`):** Deterministically intercepts secret leaks, force-pushes, and infinite retry loops locally before execution.
+- **Single-Forward-Pass Multi-Question Readout (\`nace-ai/drex-max-v1\` Pattern):** Evaluates state + batched typed questions (\`choice\`, \`noul\` yes/no gate, \`score\` rubric) in **one single forward pass with \`0\` generated output tokens** on local Apple Silicon (\`affine-q4\` 14 GB on 24 GB+ Macs via Kapitsa/MLX, or \`Q8_0\` 27 GB on 48 GB+ Macs).
+
+### 3. Choose Your Implementation Path Today
+Whether you are a solo builder, an engineering VP, or an SMB operator looking to automate back-office operations:
+
+1. **Free Open-Source CLI (MIT):** Run \`npx thumbgate init\` in your repo in 30 seconds.
+2. **ThumbGate Pro — 7-Day Free Trial (No Credit Card Required, then $19/mo or $149/yr):** [Start your 7-day free trial here](${trialUrl}) (or [unlock Pro directly](${proUrl})).
+3. **$49 Production Rule-Pack Bundle (One-Time Corporate-Expensable):** [Download the 8 Big-Tech PreToolUse Gates](${bundleUrl}).
+4. **$499 Enterprise Workflow Gate Diagnostic:** [Book your 48-hour architecture & token-burn audit](${diagnosticUrl}).
+5. **$25,000 Custom 15-Bot SMB Agent System ("Bops" Ownership Package) & $3,000/mo Orchestration Retainer:** Own a custom 15-bot back-office system outright in 30 days (anchored against a $50k–$70k/yr front-desk hire, with free website redesign, lead magnets, and 30-day money-back guarantee — or apply for our 1 free case-study pilot in exchange for 3 local peer intros): [Reserve the $3,000/mo Orchestration Retainer / Pilot Slot](${retainerUrl}).
+6. **South Florida Real-Estate Investors (Nov 12 Miami-Dade, Nov 18 Palm Beach, Nov 23 Broward Tax-Deed Sales):** [Get the $100 5-Folio F.S. § 197.552 Pre-Bid Statutory Diligence Packet](${taxDeedUrl}).
+`;
+
+  const substackNote = `We just shipped our ${dateIso} breakdown on combining a 15-bot role-isolated back-office system ("Bops" $25k architecture), Nace AI Drex Max v1 single-forward-pass 0-token local decisions, OpenAI Pando per-branch Git scaling, and ThumbGate's 0.041ms PreToolUse airlock.\n\nTry the local CLI free (\`npx thumbgate init\`), start a 7-day no-card Pro trial (${trialUrl}), or grab the $49 Production Rule-Pack (${bundleUrl}).`;
+
+  let postPath = null;
+  let latestJsonPath = null;
+  if (writeFiles) {
+    fs.mkdirSync(outputDir, { recursive: true });
+    postPath = path.join(outputDir, `${dateIso}-bops-25k-15bot-airlock.md`);
+    latestJsonPath = path.join(outputDir, 'latest-daily-substack.json');
+    fs.writeFileSync(postPath, markdown, 'utf8');
+    fs.writeFileSync(path.join(outputDir, 'latest-daily-substack.md'), markdown, 'utf8');
+    fs.writeFileSync(
+      latestJsonPath,
+      `${JSON.stringify({ dateIso, title, subtitle, trialUrl, proUrl, bundleUrl, diagnosticUrl, retainerUrl, taxDeedUrl, substackNote, postPath }, null, 2)}\n`,
+      'utf8',
+    );
+  }
+
+  return {
+    ok: true,
+    dateIso,
+    title,
+    subtitle,
+    markdown,
+    substackNote,
+    links: {
+      trialUrl,
+      proUrl,
+      bundleUrl,
+      diagnosticUrl,
+      retainerUrl,
+      taxDeedUrl,
+    },
+    postPath,
+    latestJsonPath,
+  };
+}
 if (require.main === module) {
   const args = process.argv.slice(2);
   if (args.includes('--partner-flip')) {
@@ -1695,6 +1930,11 @@ if (require.main === module) {
   process.exit(report.ok ? 0 : 1);
 }
 
+const {
+  evaluateDrexMaxLocalDecisionEngine,
+  evaluateOpenAiPandoGitBackendSteal,
+} = require('../src/cloud-token-firewall');
+
 module.exports = {
   TIER_LADDER,
   ALLOWLISTED_OPENUI_CATALOG,
@@ -1717,4 +1957,8 @@ module.exports = {
   buildLinkedInAndTikTokViralMonetizationPack,
   discoverLiveViralOpportunities,
   runReflectionMonetizeEngine,
+  evaluateBopsSmb25kCustomAgentSystemEngine,
+  generateDailySubstackMonetizationPack,
+  evaluateDrexMaxLocalDecisionEngine,
+  evaluateOpenAiPandoGitBackendSteal,
 };

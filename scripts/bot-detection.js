@@ -81,8 +81,6 @@ const BOT_PATTERNS = [
   /\bcurl\//i,
   /\bwget\//i,
   /\bnode-fetch\b/i,
-  /\bnode$/i,
-  /\bnode\//i,
   /\bgot\s*\(/i,
   /\bpython-requests\b/i,
   /\bpython-urllib\b/i,

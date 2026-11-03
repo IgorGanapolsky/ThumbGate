@@ -759,27 +759,27 @@
     <div id="homeSsoBar" style="display:none;border-top:1px solid var(--line);background:rgba(12,17,26,0.98);padding:12px 0;">
       <div class="shell" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <div id="homeSsoLoginRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;justify-content:space-between;">
-          <span id="homeSsoPrompt" style="font-size:13px;font-weight:700;color:var(--text);">SSO Sign In (enter work email &amp; choose provider):</span>
+          <span id="homeSsoPrompt" style="font-size:13px;font-weight:700;color:var(--text);">SSO Sign In:</span>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <input type="email" id="homeSsoEmail" placeholder="work@company.com" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--cyan);background:#080b10;color:var(--text);font-size:13px;width:220px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgHomeSsoLogin('google');}" />
             <button type="button" onclick="window.tgHomeSsoLogin('apple')" style="min-height:36px;padding:0 12px;border-radius:8px;border:0;background:#f8fafc;color:#080b10;font:800 12px/1 inherit;cursor:pointer;"> Apple</button>
             <button type="button" onclick="window.tgHomeSsoLogin('google')" style="min-height:36px;padding:0 12px;border-radius:8px;border:0;background:var(--cyan);color:#041016;font:800 12px/1 inherit;cursor:pointer;">G Google</button>
             <button type="button" onclick="window.tgHomeSsoLogin('github')" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">GitHub</button>
-            <button type="button" onclick="window.tgHomeSsoLogin('okta')" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">Enterprise SSO</button>
+            <button type="button" onclick="window.tgHomeSsoLogin('okta')" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">Okta</button>
             <button type="button" onclick="window.tgToggleHomeSso(false)" aria-label="Close SSO sign-in bar" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font:700 12px/1 inherit;cursor:pointer;">✕</button>
           </div>
         </div>
         <div id="homeProjectsRow" style="display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%;">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <span id="homeSsoSessionText" style="font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);"></span>
-            <label for="homeProjectSelect" style="font-size:12px;color:var(--muted);font-weight:700;">📁 Projects:</label>
+            <label for="homeProjectSelect" style="font-size:12px;color:var(--muted);font-weight:700;">Projects:</label>
             <select id="homeProjectSelect" onchange="window.tgSwitchHomeProject(this.value)" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;"></select>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <input type="text" id="homeNewProjectInput" placeholder="New project (e.g. api-prod)" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;width:185px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgCreateHomeProject();}" />
             <button type="button" onclick="window.tgCreateHomeProject()" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.1);color:var(--cyan);font:800 12px/1 inherit;cursor:pointer;">+ Project</button>
-            <a id="homeOpenProjectLink" href="/dashboard" style="display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:8px;background:var(--green);color:#06130d;font:800 12px/1 inherit;text-decoration:none;">Dashboard →</a>
-            <button type="button" onclick="window.tgHomeLogout()" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:transparent;color:#ff6b6b;font:700 12px/1 inherit;cursor:pointer;">Log Out</button>
+            <a id="homeOpenProjectLink" href="/dashboard" style="display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:8px;background:var(--green);color:#06130d;font:800 12px/1 inherit;text-decoration:none;">Dashboard</a>
+            <button type="button" onclick="window.tgHomeLogout()" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:transparent;color:#ff6b6b;font:700 12px/1 inherit;cursor:pointer;">Sign out</button>
           </div>
         </div>
       </div>
@@ -818,16 +818,6 @@
             <p class="hero-gate-note" id="hero-gate-note" aria-live="polite"></p>
           </div>
           <p class="install-hint" id="install"><strong style="color:var(--text)">Free (MIT):</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy</button></p>
-          <div class="hero-fast-checkout" style="display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 6px;align-items:center;">
-            <a href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=hero_fast_checkout&amp;cta_id=hero_pro_direct_19&amp;cta_placement=hero" data-offer-link data-revenue-cta data-cta-id="hero_pro_direct_19" data-cta-placement="hero" style="display:inline-flex;align-items:center;padding:10px 16px;border-radius:9px;background:var(--cyan);color:#041016;font:800 13.5px/1.2 inherit;text-decoration:none;">⚡ Start Pro — $19/mo (1-Click Stripe →)</a>
-            <a href="/go/bundle-49?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=hero_fast_checkout&amp;cta_id=hero_bundle_49&amp;cta_placement=hero" data-offer-link data-revenue-cta data-cta-id="hero_bundle_49" data-cta-placement="hero" style="display:inline-flex;align-items:center;padding:10px 14px;border-radius:9px;border:1px solid rgba(86,227,159,0.55);background:rgba(86,227,159,0.12);color:var(--green);font:800 13px/1.2 inherit;text-decoration:none;">📦 $49 1-Time Rule-Pack (&lt;$50 Corp Card →)</a>
-            <a href="/go/playbook-999?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=hero_fast_checkout&amp;cta_id=hero_playbook_999&amp;cta_placement=hero" data-offer-link data-revenue-cta data-cta-id="hero_playbook_999" data-cta-placement="hero" style="display:inline-flex;align-items:center;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:rgba(17,23,34,0.85);color:var(--text);font:700 12.5px/1.2 inherit;text-decoration:none;">📘 $9.99 Cost Playbook →</a>
-          </div>
-          <div class="hero-viral-strip" style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px;align-items:center;font-size:12px;color:var(--muted);">
-            <span>Earn 50% partner rev-share:</span>
-            <button type="button" onclick="if(window.tgShareViralLink){window.tgShareViralLink('linkedin');}" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(56,215,255,0.35);background:rgba(56,215,255,0.08);color:var(--cyan);font:700 11.5px/1.2 inherit;cursor:pointer;">Share on LinkedIn ↗</button>
-            <button type="button" onclick="if(window.tgShareViralLink){window.tgShareViralLink('tiktok');}" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(86,227,159,0.35);background:rgba(86,227,159,0.08);color:var(--green);font:700 11.5px/1.2 inherit;cursor:pointer;">Copy TikTok / Referral Link</button>
-          </div>
           <nav class="spec-chips" aria-label="Install ThumbGate" style="margin-top:14px">
             <a class="spec-chip" href="/install" title="npx thumbgate init --agent claude">Claude</a>
             <a class="spec-chip" href="/install" title="npx thumbgate init --agent cursor">Cursor</a>
@@ -852,14 +842,14 @@
         <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
         <div class="offer-stack">
           <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
-            <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
+            <div class="price"><strong>$19</strong><span>/mo · $149/yr</span></div>
             <h2>Pro</h2>
             <p><strong>For one developer.</strong> Unlimited gates, visual debugger, and lessons from your thumbs.</p>
             <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="offers">Start Pro — $19/mo</a>
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:12.5px;">
-              <a href="/go/bundle-49?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=bundle_49&amp;cta_id=offers_bundle_49&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_bundle_49" style="color:var(--green);font-weight:750;text-decoration:none;">📦 Prefer one-time? $49 Production Rule-Pack Kit →</a>
-              <a href="/go/pro-annual?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=pro_annual_149&amp;cta_id=offers_pro_annual_149&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_pro_annual_149" style="color:var(--cyan);font-weight:750;text-decoration:none;">Annual ($149/yr · save 35%) →</a>
-              <a href="/go/playbook-999?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=playbook_999&amp;cta_id=offers_playbook_999&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_playbook_999" style="color:var(--muted);font-weight:700;text-decoration:none;">📘 $9.99 Cost Playbook →</a>
+              <a href="/go/bundle-49?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=bundle_49&amp;cta_id=offers_bundle_49&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_bundle_49" style="color:var(--green);font-weight:750;text-decoration:none;">$49 Bundle</a>
+              <a href="/go/pro-annual?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=pro_annual_149&amp;cta_id=offers_pro_annual_149&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_pro_annual_149" style="color:var(--cyan);font-weight:750;text-decoration:none;">$149/yr</a>
+              <a href="/go/playbook-999?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=playbook_999&amp;cta_id=offers_playbook_999&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_playbook_999" style="color:var(--muted);font-weight:700;text-decoration:none;">$9.99 Playbook</a>
             </div>
             <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
             <ul class="offer-points">
@@ -885,7 +875,7 @@
             <label for="buyer-email">Work email for receipt &amp; onboarding</label>
             <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
             <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="offers">Book the $499 setup</button>
-            <p class="checkout-note" style="margin-top:8px;"><a href="/go/diagnostic-direct?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=sprint_diagnostic_499&amp;cta_id=offers_diagnostic_direct_499&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_diagnostic_direct_499" style="color:var(--green);font-weight:750;">⚡ 1-Tap $499 Stripe Checkout (Apple Pay / Link) →</a> · Prefer a call? <a href="/support" style="color:var(--cyan);font-weight:750;">Book a 15-min triage call →</a></p>
+            <p class="checkout-note" style="margin-top:8px;"><a href="/go/diagnostic-direct?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=sprint_diagnostic_499&amp;cta_id=offers_diagnostic_direct_499&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_diagnostic_direct_499" style="color:var(--green);font-weight:750;">$499 Stripe</a> · <a href="/support" style="color:var(--cyan);font-weight:750;">Call</a></p>
             <ul class="offer-points">
               <li>60-minute working review for one workflow</li>
               <li>One configured local gate and its regression test</li>
@@ -1181,7 +1171,7 @@ next      decision recorded before execution</pre>
         }
         const saved = localStorage.getItem('tg_ab_variant');
         if (saved) return saved;
-        const seed = String(serverVisitorId || Math.random());
+        const seed = String(serverVisitorId || Date.now());
         let hash = 0;
         for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
         const assigned = Math.abs(hash) % 2 === 0 ? 'variant_a_mistake_firewall' : 'variant_b_token_burn_42pct';

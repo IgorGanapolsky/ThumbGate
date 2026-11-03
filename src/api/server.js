@@ -268,7 +268,6 @@ const {
 } = require('../../scripts/feedback-aggregate');
 const {
   guardDfcxWebhook,
-  resolveDialogflowModel,
 } = require('../../adapters/gcp/dfcx-webhook-gate');
 const {
   buildDashboardRenderSpec,
@@ -285,6 +284,7 @@ const {
 } = require('../../scripts/telemetry-analytics');
 const {
   buildProductIssueTitle,
+  composeChipFeedback,
   submitProductIssue,
 } = require('../../scripts/product-feedback');
 const {
@@ -2013,6 +2013,7 @@ function buildCheckoutAttributionMetadata(body, req, traceId) {
       body.inviter_id
     ),
     offerCode: pickFirstText(rawMetadata.offerCode, rawMetadata.offer, rawMetadata.coupon, body.offerCode, body.offer, body.coupon),
+    referrer,
     referrerHost: pickFirstText(rawMetadata.referrerHost, body.referrerHost, parseReferrerHost(referrer)),
     landingPath: pickFirstText(rawMetadata.landingPath, body.landingPath, body.page),
     ctaId: pickFirstText(rawMetadata.ctaId, body.ctaId),
@@ -2020,11 +2021,13 @@ function buildCheckoutAttributionMetadata(body, req, traceId) {
     planId,
     billingCycle,
     seatCount,
-    ...(pickFirstText(rawMetadata.trial, body.trial) ? { trial: pickFirstText(rawMetadata.trial, body.trial) } : {}),
-    ...(pickFirstText(rawMetadata.trialDays, rawMetadata.trial_days, body.trialDays, body.trial_days)
+    ...(body && body._serverBootstrap === true && pickFirstText(rawMetadata.trial, body.trial)
+      ? { trial: pickFirstText(rawMetadata.trial, body.trial) }
+      : {}),
+    ...(body && body._serverBootstrap === true && pickFirstText(rawMetadata.trialDays, rawMetadata.trial_days, body.trialDays, body.trial_days)
       ? { trialDays: pickFirstText(rawMetadata.trialDays, rawMetadata.trial_days, body.trialDays, body.trial_days) }
       : {}),
-    ...(pickFirstText(rawMetadata.trialNoCard, rawMetadata.trial_no_card, body.trialNoCard, body.trial_no_card)
+    ...(body && body._serverBootstrap === true && pickFirstText(rawMetadata.trialNoCard, rawMetadata.trial_no_card, body.trialNoCard, body.trial_no_card)
       ? { trialNoCard: pickFirstText(rawMetadata.trialNoCard, rawMetadata.trial_no_card, body.trialNoCard, body.trial_no_card) }
       : {}),
   };
@@ -2455,18 +2458,6 @@ function buildEnterpriseDataChatStatus(env = process.env) {
       fulfillmentProxyConfigured: Boolean(dfcxFulfillmentUrl),
       fulfillmentUrlConfigured: Boolean(dfcxFulfillmentUrl),
       gcloudCxCommandSupported: false,
-      models: {
-        playbookDefault: resolveDialogflowModel({ task: 'playbook' }, env),
-        voiceAndRewriterDefault: resolveDialogflowModel({ task: 'rewriter' }, env),
-      },
-      governance: {
-        wrapperPageIsolation: true,
-        authorizationRuleEnforced: true,
-        bannedPhraseFullMatchDefault: true,
-        intentDensityTarget: '20-50',
-        sessionsClientRecycling: true,
-        webhookRetryBackoff503: true,
-      },
       verification: dfcxAgentId && dfcxLocation
         ? 'Agent metadata is present in env; verify via REST/console before production claims.'
         : 'No live DFCX agent env configured. Use REST/console/deployed webhook evidence before claiming a live agent.',
@@ -3345,6 +3336,7 @@ function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneySt
     planId,
     billingCycle,
     seatCount,
+    _serverBootstrap: true,
     ...(pickFirstText(params.get('trial')) ? { trial: pickFirstText(params.get('trial')) } : {}),
     ...(pickFirstText(params.get('trial_days'), params.get('trialPeriodDays')) ? { trialDays: pickFirstText(params.get('trial_days'), params.get('trialPeriodDays')) } : {}),
     ...(pickFirstText(params.get('trial_no_card'), params.get('trialNoCard')) ? { trialNoCard: pickFirstText(params.get('trial_no_card'), params.get('trialNoCard')) } : {}),
@@ -6539,7 +6531,16 @@ function createApiServer() {
       req.on('end', async () => {
         try {
           const body = JSON.parse(Buffer.concat(chunks).toString());
-          const { category, message } = body;
+          let { category, message } = body;
+          if (Array.isArray(body.reasons)) {
+            const composed = composeChipFeedback({ reasons: body.reasons, details: body.details });
+            if (!composed.ok) {
+              sendJson(res, 400, { error: composed.reason });
+              return;
+            }
+            category = composed.category;
+            message = composed.message;
+          }
           if (!message || message.length < 5) {
             sendJson(res, 400, { error: 'message too short' });
             return;
