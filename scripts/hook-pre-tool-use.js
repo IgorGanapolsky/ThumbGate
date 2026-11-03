@@ -509,6 +509,22 @@ function main() {
   const input = readStdinSync() || {};
   const toolName = input.tool_name || input.toolName || process.env.CLAUDE_TOOL_NAME || '';
   const effectiveInput = resolveEffectiveInput(input.tool_input ?? input.toolInput ?? null);
+
+  try {
+    const { decideSharedAction } = require('./airlock-decision');
+    const airlockDecision = decideSharedAction({
+      toolName,
+      toolInput: effectiveInput,
+      cwd: input.cwd || process.cwd(),
+      igorAsked: false,
+    });
+    if (airlockDecision && (airlockDecision.decision === 'block' || airlockDecision.decision === 'ask')) {
+      return block(airlockDecision.reason);
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const economicAction = detectEconomicAction(toolName, effectiveInput);
 
   // Legacy model-token spend tracking remains advisory because a stale
