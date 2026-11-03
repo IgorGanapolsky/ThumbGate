@@ -182,6 +182,58 @@ test('CLI --clone-jev exits 1', () => {
   assert.ok(report.findings.some((f) => f.id === 'jev_sku_clone'));
 });
 
+test('a closed yes-or-no returns both probabilities and they add to one', () => {
+  const blocked = buildTypesafeTypedQuestionsReport({
+    toolName: 'Bash',
+    command: 'git push --force origin main',
+  });
+  const hit = blocked.answers.destructive;
+  const miss = blocked.answers.secret_exfil;
+  assert.equal(hit.noul, 1);
+  assert.equal(hit.true, 1);
+  assert.equal(hit.false, 0);
+  assert.equal(hit.true + hit.false, 1);
+  assert.equal(hit.confidence, 1);
+  assert.equal(hit.chat, false);
+  assert.equal(miss.true, 0);
+  assert.equal(miss.false, 1);
+  assert.equal(miss.true + miss.false, 1);
+  assert.equal(blocked.structuredDecision, true);
+  assert.equal(blocked.chat, false);
+  assert.equal(blocked.codeOwnsRoute, true);
+
+  const review = buildTypesafeTypedQuestionsReport({
+    toolName: 'Bash',
+    command: 'git add -A',
+  });
+  const warn = review.answers.destructive;
+  assert.equal(warn.true, 0.55);
+  assert.equal(warn.false, 0.45);
+  assert.equal(Math.round((warn.true + warn.false) * 1e6) / 1e6, 1);
+});
+
+test('a chat question and --chat are refused without a sentence', () => {
+  const errors = validateQuestion('talk', {
+    type: 'chat',
+    instructions: 'Explain whether this push is safe.',
+  });
+  assert.ok(errors.some((e) => e.id === 'freeform_question'));
+
+  const result = spawnSync(process.execPath, [SCRIPT, '--json', '--chat'], { encoding: 'utf8' });
+  assert.equal(result.status, 1);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.ok, false);
+  assert.equal(report.chat, false);
+  assert.equal(report.structuredDecision, true);
+  assert.equal(Object.prototype.hasOwnProperty.call(report, 'reply'), false);
+  assert.ok(report.findings.some((f) => f.id === 'chat_refused'));
+  for (const answer of Object.values(report.answers)) {
+    if (answer && answer.type === 'noul' && answer.noul != null) {
+      assert.equal(Math.round((answer.true + answer.false) * 1e6) / 1e6, 1);
+    }
+  }
+});
+
 test('bin/cli.js typesafe-typed-questions is wired', () => {
   const result = spawnSync(process.execPath, [
     CLI,

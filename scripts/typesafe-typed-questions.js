@@ -223,6 +223,29 @@ function noulFromMatchers(blob, question, payload) {
   return { noul: 0, band: 'pass' };
 }
 
+function closedNoul(probability) {
+  if (probability == null || !Number.isFinite(Number(probability))) {
+    return { noul: null, true: null, false: null };
+  }
+  const yes = Math.round(Number(probability) * 1e6) / 1e6;
+  const no = Math.round((1 - yes) * 1e6) / 1e6;
+  return { noul: yes, true: yes, false: no };
+}
+
+function noulAnswer(result) {
+  const pair = closedNoul(result && result.noul);
+  return {
+    type: 'noul',
+    noul: pair.noul,
+    true: pair.true,
+    false: pair.false,
+    confidence: pair.noul == null ? null : 1,
+    chat: false,
+    band: result && result.band,
+    source: 'deterministic',
+  };
+}
+
 function actionForNoul(id, question) {
   if (HAZARD_ACTION[id]) return HAZARD_ACTION[id];
   const action = String((question && question.action) || '').toLowerCase();
@@ -377,23 +400,13 @@ function evaluateBattery({ battery, blob, flags, payload }) {
         result = { noul: null, band: 'unevaluated' };
       }
       nouls[id] = result.noul == null ? 0 : result.noul;
-      answers[id] = {
-        type: 'noul',
-        noul: result.noul,
-        band: result.band,
-        source: 'deterministic',
-      };
+      answers[id] = noulAnswer(result);
     }
   }
 
   if (flags.cloneJev || flags.useTypesafeApi || flags.llmAdjudicate || CLONE_RE.test(blob)) {
     nouls.clone_jev = 1;
-    answers.clone_jev = {
-      type: 'noul',
-      noul: 1,
-      band: 'action',
-      source: 'deterministic',
-    };
+    answers.clone_jev = noulAnswer({ noul: 1, band: 'action' });
   }
 
   const family = composeHazardFamily(nouls);
@@ -451,6 +464,7 @@ function normalizeOptions(raw = {}) {
     modelEmittedVerdict: raw['model-emitted-verdict'] || raw.modelEmittedVerdict || null,
     live: normalizeBoolean(raw.live),
     fanOutQuestions: normalizeBoolean(raw['fan-out-questions'] || raw.fanOutQuestions),
+    chat: normalizeBoolean(raw.chat),
     apiKey: Object.prototype.hasOwnProperty.call(raw, 'apiKey')
       ? raw.apiKey
       : (raw['api-key'] || undefined),
@@ -818,6 +832,14 @@ function buildFindings({
       message: 'Refused --llm-adjudicate. Issues #3690/#3687 stay parked. Deterministic typed questions only.',
     });
   }
+  if (flags.chat) {
+    findings.push({
+      id: 'chat_refused',
+      severity: 'fail',
+      gateId: 'require-typed-pretool-questions',
+      message: 'Refused --chat. Jev does not chat. A yes-or-no comes back as true and false probabilities, and code owns the route.',
+    });
+  }
   if (CLONE_RE.test(blob)) {
     findings.push({
       id: 'typesafe_clone_signal',
@@ -892,6 +914,7 @@ function buildTypesafeTypedQuestionsReport(rawOptions = {}) {
     llmAdjudicate: options.llmAdjudicate,
     modelEmittedVerdict: options.modelEmittedVerdict,
     fanOutQuestions: options.fanOutQuestions,
+    chat: options.chat,
   };
 
   const evaluated = options.mapOnly
@@ -967,6 +990,8 @@ function buildTypesafeTypedQuestionsReport(rawOptions = {}) {
     rootDir: options.rootDir,
     policy: options.policyName,
     codeOwnsRoute,
+    structuredDecision: true,
+    chat: false,
     clonedJev: Boolean(flags.cloneJev || flags.useTypesafeApi || CLONE_RE.test(blob)),
     llmAdjudicatorParked: true,
     map: options.mapOnly ? RAIL_MAP : undefined,
@@ -993,6 +1018,7 @@ function buildTypesafeTypedQuestionsReport(rawOptions = {}) {
     },
     recommendedGates: [...new Set(deduped.map((f) => f.gateId).filter(Boolean))],
     nextActions: [
+      'A closed yes-or-no returns true and false probabilities that add to one. Do not answer in a sentence.',
       'Ask independent noul/choice/score questions over the same PreToolUse state.',
       'Compose pass|review|block in code from those answers — never let a model emit the verdict.',
       'Treat confidence as a second axis: warn-level → review; high-stakes + severity ≥ 2 → block.',
@@ -1013,6 +1039,7 @@ function formatTypesafeTypedQuestionsReport(report) {
     `Route    : ${report.route}`,
     `Policy   : ${report.policy}`,
     `Code owns route : ${report.codeOwnsRoute}`,
+    `Structured: ${report.structuredDecision}  chat=${report.chat}`,
     `Questions: ${report.metrics.questionCount} (noul=${report.metrics.noulCount}, choice=${report.metrics.choiceCount}, score=${report.metrics.scoreCount})`,
     `Family   : ${report.metrics.hazardFamily}  severity=${report.metrics.severity}`,
     `Findings : ${report.summary.findingCount} (fail=${report.summary.failCount}, warn=${report.summary.warnCount})`,
@@ -1052,6 +1079,7 @@ function parseCliArgs(argv) {
     if (arg === '--llm-adjudicate') { options['llm-adjudicate'] = true; continue; }
     if (arg === '--live') { options.live = true; continue; }
     if (arg === '--fan-out-questions') { options['fan-out-questions'] = true; continue; }
+    if (arg === '--chat') { options.chat = true; continue; }
     if (arg === '--help' || arg === '-h') { options.help = true; continue; }
     const m = /^--([^=]+)(?:=(.*))?$/.exec(arg);
     if (!m) continue;
@@ -1076,6 +1104,7 @@ Flags:
   --live                   Shadow the battery against api.typesafe.ai; one POST, all questions
   --fan-out-questions      Always fail (cookbook: do not pay the document N times)
   --llm-adjudicate         Always fail (#3690/#3687 parked)
+  --chat                   Always fail (Jev does not chat; the answer stays structured)
   --model-emitted-verdict=V  Always fail (code must own route)
   --root=DIR               Repo root for relative paths
   --strict                 Exit 1 on fail/actionable
@@ -1108,6 +1137,8 @@ module.exports = {
   parseBattery,
   validateQuestion,
   noulFromMatchers,
+  closedNoul,
+  noulAnswer,
   actionForNoul,
   composeHazardFamily,
   composeSeverity,
