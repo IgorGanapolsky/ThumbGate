@@ -62,7 +62,7 @@ if (pkgDir) {
     try {
       const res = execFileSync(process.execPath, [path.join(pkgDir, 'bin', 'cli.js'), ...args], {
         input: payload ? JSON.stringify(payload) : '', encoding: 'utf8', cwd: proj,
-        env: { ...ENV, ...(env || {}) }, stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...ENV, ...(env || {}) }, stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { out: res, err: '' };
     } catch (e) {
