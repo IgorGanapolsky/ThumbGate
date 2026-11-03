@@ -663,7 +663,31 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     community: pickFirstText(raw.community, raw.subreddit),
     postId: pickFirstText(raw.postId, raw.post_id),
     commentId: pickFirstText(raw.commentId, raw.comment_id),
-    ctaId: pickFirstText(raw.ctaId),
+    ctaId: pickFirstText(raw.ctaId, (() => {
+      const slug = pickFirstText(
+        raw.linkSlug,
+        raw.destinationSlug,
+        String(raw.page || raw.landingPath || '').startsWith('/go/')
+          ? String(raw.page || raw.landingPath || '').slice(4).split(/[/?#]/)[0]
+          : null
+      );
+      if (!slug) return null;
+      const slugToCta = {
+        'pro-direct': 'pro_checkout_direct_stripe',
+        'pro-annual': 'pro_checkout_annual_149',
+        'bundle-49': 'pro_checkout_bundle_49',
+        'playbook-999': 'pro_checkout_playbook_999',
+        'playbook-10': 'pro_checkout_playbook_10',
+        'diagnostic-direct': 'sprint_diagnostic_checkout',
+        'diagnostic-pay': 'go_diagnostic_pay',
+        'cloud-indie': 'cloud_indie_49',
+        'cloud-startup': 'cloud_startup_199',
+        pro: 'go_pro',
+        gpt: 'go_gpt',
+        install: 'go_install',
+      };
+      return slugToCta[String(slug).toLowerCase()] || null;
+    })()),
     ctaPlacement: pickFirstText(raw.ctaPlacement),
     planId: pickFirstText(raw.planId),
     segment: pickFirstText(raw.segment, raw.buyerSegment, raw.campaignVariant, raw.variant),

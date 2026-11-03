@@ -1154,7 +1154,19 @@ test('classifyRequester catches compound bot UAs and getTelemetryAnalytics exclu
     'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/130.0.0.0 Safari/537.36',
   });
 
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'cta_click',
+    clientType: 'web',
+    page: '/go/bundle-49',
+    destinationSlug: 'bundle-49',
+    visitorId: 'vis_human_bundle_1',
+    sessionId: 'sess_human_bundle_1',
+  }, {
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/130.0.0.0 Safari/537.36',
+  });
+
   const analytics = getTelemetryAnalytics(tmpDir);
   assert.equal(analytics.ctas.cancelPageViews, 1);
+  assert.equal(analytics.ctas.byId.pro_checkout_bundle_49, 1);
+  assert.equal(analytics.ctas.byId.unknown, undefined);
 });
-

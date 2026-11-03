@@ -761,6 +761,7 @@ const TRACKED_LINK_TARGETS = Object.freeze({
   },
   'cloud-indie': {
     path: '/checkout/pro?plan_id=cloud_indie&billing_cycle=monthly',
+    botDeflectPath: '/checkout/pro?plan_id=cloud_indie&billing_cycle=monthly',
     ctaId: 'cloud_indie_49',
     ctaPlacement: 'cloud_saas',
     eventType: 'cta_click',
@@ -775,6 +776,7 @@ const TRACKED_LINK_TARGETS = Object.freeze({
   },
   'cloud-startup': {
     path: '/checkout/pro?plan_id=cloud_startup&billing_cycle=monthly',
+    botDeflectPath: '/checkout/pro?plan_id=cloud_startup&billing_cycle=monthly',
     ctaId: 'cloud_startup_199',
     ctaPlacement: 'cloud_saas',
     eventType: 'cta_click',
@@ -3508,6 +3510,7 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
     ),
     referredByVisitorId: pickFirstText(params.get('ref'), params.get('referred_by'), params.get('inviter_id')),
     offerCode: pickFirstText(params.get('offer_code')),
+    ctaId: pickFirstText(params.get('cta_id'), target.ctaId),
     ctaPlacement: pickFirstText(params.get('cta_placement'), target.ctaPlacement),
     planId: pickFirstText(params.get('plan_id'), target.defaults?.plan_id),
     landingPath: pickFirstText(params.get('landing_path'), `/go/${target.slug}`),
