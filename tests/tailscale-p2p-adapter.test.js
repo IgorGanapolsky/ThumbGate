@@ -160,3 +160,28 @@ test('tailscale-p2p: CLI runs cleanly with --json and --check flags', () => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
+test('tailscale-p2p: Oct 29 2026 Tailworm v1.104.4, MagicRoute stickiness, and scurgery byte-identical policy blocks', () => {
+  const {
+    evaluateTailwormSshSafeguard,
+    applyScurgeryNamedBlock,
+    removeScurgeryNamedBlock,
+    selectMagicRouteStickyBackend,
+  } = require('../scripts/tailscale-p2p-doctor');
+
+  assert.equal(evaluateTailwormSshSafeguard('1.104.4').status, 'PROTECTED');
+  assert.equal(evaluateTailwormSshSafeguard('1.104.3').status, 'VULNERABLE_UPGRADE_REQUIRED');
+
+  const originalPolicy = '{\n  "acls": [\n    {"action": "accept", "src": ["*"], "dst": ["*:*"]}\n  ]\n}\n';
+  const injected = applyScurgeryNamedBlock(originalPolicy, 'temp-oncall-db', '// temporary on-call rule');
+  assert.ok(injected.includes('# BEGIN-SCURGERY:temp-oncall-db'));
+  const restored = removeScurgeryNamedBlock(injected, 'temp-oncall-db');
+  assert.equal(restored, originalPolicy, 'scurgery removal must leave policy file 100% byte-identical');
+
+  const route = selectMagicRouteStickyBackend([
+    { id: 'eu-west', sameRegion: false, latencyMs: 90, healthy: true },
+    { id: 'us-central1', sameRegion: true, latencyMs: 15, healthy: true },
+  ], 'sess_123');
+  assert.equal(route.selectedBackendId, 'us-central1');
+  assert.equal(route.stickyConnector, true);
+});
+

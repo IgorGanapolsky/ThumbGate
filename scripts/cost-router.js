@@ -54,7 +54,7 @@ const TIER_DEFS = {
     latencyProfile: 'low-variability',
     leavesMachine: false,
     description: 'Runs on your own computer. Free. Never leaves the machine.',
-    models: ['gemma-3-1b-it-qat-MLX', 'llama-3-3-70b-MLX', 'qwen3-8b-MLX'],
+    models: ['gemma-3-1b-it-qat-MLX', 'llama-3-3-70b-MLX', 'qwen3-8b-MLX', 'poolside/Laguna-XS-2.1-NVFP4-mlx', 'poolside/Laguna-XS-2.1-DFlash'],
   },
   fastCloud: {
     name: 'fastCloud',
@@ -62,7 +62,7 @@ const TIER_DEFS = {
     latencyProfile: 'fast',
     leavesMachine: true,
     description: 'Cents per request. Routine sorting, drafting, classification.',
-    models: ['gpt-4o-mini', 'claude-3-5-haiku-20241022'],
+    models: ['gpt-4o-mini', 'claude-3-5-haiku-20241022', 'poolside/laguna-xs-2.1', 'dreamlabs/dream-1-flash'],
   },
   capable: {
     name: 'capable',
@@ -70,7 +70,7 @@ const TIER_DEFS = {
     latencyProfile: 'slower',
     leavesMachine: true,
     description: 'Dollars per request. Hard thinking, important writing, complex reasoning.',
-    models: ['claude-3-7-sonnet-20250219', 'o1-preview'],
+    models: ['claude-3-7-sonnet-20250219', 'o1-preview', 'poolside/laguna-s-2.1', 'dreamlabs/dream-1'],
   },
 };
 
@@ -432,6 +432,428 @@ function getSlippingDashboard() {
 }
 
 // ---------------------------------------------------------------------------
+// Escalation Router (stolen from NVIDIA NeMo Switchyard escalation router)
+// ---------------------------------------------------------------------------
+
+/**
+ * Escalation router: tries cheaper tier first, escalates on quality failure.
+ * Stolen from InfoWorld (Oct 2026) + NVIDIA NeMo Switchyard.
+ */
+async function routeWithEscalation(input) {
+  const initial = routeTask(input);
+  const chain = ['local', 'fastCloud', 'capable'];
+  const idx = chain.indexOf(initial.tier);
+
+  function escalate(reason) {
+    if (initial.tier === 'local' || idx < 0 || idx + 1 >= chain.length) {
+      return {
+        tier: initial.tier, model: initial.model, costUsd: initial.costUsd,
+        complexity: initial.complexity, escalated: false, escalationReason: null,
+        reason: initial.reason,
+      };
+    }
+    const nextTier = chain[idx + 1];
+    const r = routeTask({ ...input, task: input.task, tokens: input.tokens });
+    recordRoutingFailure({ task: input.task, failedTier: initial.tier, escalatedTo: nextTier, reason });
+    return {
+      tier: nextTier, model: r.model, costUsd: r.costUsd, complexity: r.complexity,
+      escalated: true, escalationReason: `Escalated from ${initial.tier} to ${nextTier} (${reason})`,
+      reason: r.reason,
+    };
+  }
+
+  if (!input.qualityCheck || initial.tier === 'local' || idx < 0) {
+    return {
+      tier: initial.tier, model: initial.model, costUsd: initial.costUsd,
+      complexity: initial.complexity, escalated: false, escalationReason: null,
+      reason: initial.reason,
+    };
+  }
+
+  try {
+    const passed = await input.qualityCheck(initial.tier);
+    if (!passed) return escalate('quality_check_failed');
+  } catch (e) {
+    return escalate(`quality_check_error: ${e.message}`);
+  }
+
+  return {
+    tier: initial.tier, model: initial.model, costUsd: initial.costUsd,
+    complexity: initial.complexity, escalated: false, escalationReason: null,
+    reason: initial.reason,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Pareto Trap Monitoring (stolen from InfoWorld: "the Pareto trap")
+// ---------------------------------------------------------------------------
+
+/**
+ * Pareto trap monitor: tracks routing failures to detect when cheaper models
+ * are failing above threshold. Stolen from InfoWorld "the Pareto trap".
+ */
+const DEFAULT_FAILURE_LOG = path.join(os.homedir(), '.thumbgate', 'routing-failures.json');
+
+function getFailureLogPath() {
+  return DEFAULT_FAILURE_LOG;
+}
+
+function loadFailureLog() {
+  const p = getFailureLogPath();
+  if (!fs.existsSync(p)) {
+    return [];
+  }
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
+function saveFailureLog(failures) {
+  const p = getFailureLogPath();
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, JSON.stringify(failures, null, 2));
+}
+
+function recordRoutingFailure(record) {
+  const failures = loadFailureLog();
+  failures.push({
+    ...record,
+    timestamp: new Date().toISOString(),
+  });
+  // Keep only last 1000 failures
+  if (failures.length > 1000) {
+    failures.splice(0, failures.length - 1000);
+  }
+  saveFailureLog(failures);
+  return failures;
+}
+
+/**
+ * Compute failure rate per tier over a time window.
+ * @param {object} opts - { window: '24h'|'7d'|'30d'|'all' }
+ * @returns {object} Failure rates and Pareto trap detection
+ */
+function getParetoTrapMetrics(opts = {}) {
+  const window = opts.window || '7d';
+  const failures = loadFailureLog();
+
+  const now = Date.now();
+  const windowMs = {
+    '24h': 24 * 3600 * 1000,
+    '7d': 7 * 24 * 3600 * 1000,
+    '30d': 30 * 24 * 3600 * 1000,
+    'all': Infinity,
+  }[window] || Infinity;
+
+  const recent = failures.filter((f) => now - new Date(f.timestamp).getTime() <= windowMs);
+
+  // Count failures per tier by total attempts (from budget log)
+  const budget = loadBudget();
+  const tierAttempts = { local: 0, fastCloud: 0, capable: 0 };
+  for (const req of budget.requests) {
+    if (req.tier && tierAttempts.hasOwnProperty(req.tier)) {
+      tierAttempts[req.tier]++;
+    }
+  }
+
+  const tierFailures = { local: 0, fastCloud: 0, capable: 0 };
+  for (const f of recent) {
+    if (f.failedTier && tierFailures.hasOwnProperty(f.failedTier)) {
+      tierFailures[f.failedTier]++;
+    }
+  }
+
+  const tierFailureRates = {};
+  let paretoTrapDetected = false;
+  for (const tier of Object.keys(tierAttempts)) {
+    const attempts = tierAttempts[tier] || 1; // avoid div by zero
+    const failures = tierFailures[tier] || 0;
+    const rate = (failures / attempts) * 100;
+    tierFailureRates[tier] = Number(rate.toFixed(2));
+    // Pareto trap: cheaper tiers failing more than 15%
+    if (tier !== 'capable' && rate > 15) {
+      paretoTrapDetected = true;
+    }
+  }
+
+  return {
+    window,
+    totalFailures: recent.length,
+    tierAttempts,
+    tierFailures,
+    tierFailureRates,
+    paretoTrapDetected,
+    recommendation: paretoTrapDetected
+      ? 'Increase routing complexity threshold — cheaper models failing above 15%'
+      : 'Routing thresholds appear healthy',
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Session-Level Cost Tracking (stolen from Not Diamond Code session optimization)
+// ---------------------------------------------------------------------------
+
+/**
+ * Session-level cost tracking with cache awareness.
+ * Stolen from Not Diamond Code session optimization (InfoWorld Oct 2026).
+ */
+function getSessionCostPath() {
+  return path.join(os.homedir(), '.thumbgate', 'session-cost-tracker.json');
+}
+
+function loadSessionCosts() {
+  const p = getSessionCostPath();
+  if (!fs.existsSync(p)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function saveSessionCosts(sessions) {
+  const p = getSessionCostPath();
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, JSON.stringify(sessions, null, 2));
+}
+
+/**
+ * Start/update a session tracker.
+ * @param {string} sessionId
+ * @param {object} opts - { cacheHits, cacheMisses, toolCalls, expectedDownstreamCost }
+ */
+function trackSessionCost(sessionId, opts = {}) {
+  const sessions = loadSessionCosts();
+  const now = Date.now();
+
+  if (!sessions[sessionId]) {
+    sessions[sessionId] = {
+      sessionId,
+      startedAt: new Date(now).toISOString(),
+      lastUpdated: new Date(now).toISOString(),
+      totalCostUsd: 0,
+      totalTokens: 0,
+      requests: 0,
+      cacheHits: 0,
+      cacheMisses: 0,
+      toolCalls: 0,
+      expectedDownstreamCostUsd: 0,
+      tierUsage: { local: 0, fastCloud: 0, capable: 0 },
+    };
+  }
+
+  const session = sessions[sessionId];
+  session.lastUpdated = new Date(now).toISOString();
+  session.cacheHits = (session.cacheHits || 0) + (opts.cacheHits || 0);
+  session.cacheMisses = (session.cacheMisses || 0) + (opts.cacheMisses || 0);
+  session.toolCalls = (session.toolCalls || 0) + (opts.toolCalls || 0);
+  session.expectedDownstreamCostUsd = (session.expectedDownstreamCostUsd || 0) + (opts.expectedDownstreamCost || 0);
+
+  sessions[sessionId] = session;
+  saveSessionCosts(sessions);
+  return session;
+}
+
+/**
+ * Record a routed request against a session.
+ * @param {string} sessionId
+ * @param {object} routingResult — output of routeTask()
+ * @param {number} tokens
+ */
+function recordSessionRequest(sessionId, routingResult, tokens) {
+  const sessions = loadSessionCosts();
+  if (!sessions[sessionId]) {
+    trackSessionCost(sessionId, {});
+  }
+  const session = sessions[sessionId];
+  session.totalCostUsd = Number((session.totalCostUsd + (routingResult.costUsd || 0)).toFixed(6));
+  session.totalTokens += tokens || 0;
+  session.requests++;
+  if (routingResult.tier && session.tierUsage.hasOwnProperty(routingResult.tier)) {
+    session.tierUsage[routingResult.tier]++;
+  }
+  session.lastUpdated = new Date().toISOString();
+  saveSessionCosts(sessions);
+  return session;
+}
+
+/**
+ * Get cache state summary for routing decisions.
+ * High cache hit ratio → cheaper tiers viable.
+ * Low cache hit ratio → consider capable tier for cache-warming.
+ */
+function getSessionCacheState(sessionId) {
+  const sessions = loadSessionCosts();
+  const session = sessions[sessionId];
+  if (!session) return null;
+
+  const totalAccesses = session.cacheHits + session.cacheMisses;
+  const cacheHitRatio = totalAccesses > 0 ? session.cacheHits / totalAccesses : 0;
+
+  return {
+    cacheHitRatio: Number((cacheHitRatio * 100).toFixed(1)),
+    cacheHits: session.cacheHits,
+    cacheMisses: session.cacheMisses,
+    costSaved: Number((session.cacheHits * 0.00015).toFixed(4)), // estimated at fastCloud rate
+    recommendation:
+      cacheHitRatio > 0.7
+        ? 'Cache healthy — cheaper tiers are cost-effective for similar tasks'
+        : cacheHitRatio > 0.4
+        ? 'Moderate cache — monitor for efficiency improvements'
+        : 'Low cache hit ratio — consider warming context or simplifying tasks',
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Stage-Aware Routing (stolen from NVIDIA NeMo Switchyard stage router)
+// ---------------------------------------------------------------------------
+
+/**
+ * Stage router: examines recent tool activity to decide capability needs.
+ * Stolen from NVIDIA NeMo Switchyard stage router.
+ */
+function stageAwareRoute(input, sessionContext = {}) {
+  const base = routeTask(input);
+
+  if (sessionContext.recentToolCalls && sessionContext.recentToolCalls.length > 0) {
+    const tools = sessionContext.recentToolCalls;
+    const complexityScore = analyzeToolActivity(tools);
+
+    // Escalate if tool activity is complex
+    if (complexityScore >= 15 && base.tier !== 'capable') {
+      const escalated = routeTask({ ...input, budgetUsd: input.budgetUsd });
+      const escalationChain = ['local', 'fastCloud', 'capable'];
+      const nextIdx = escalationChain.indexOf(base.tier) + 1;
+      if (nextIdx < escalationChain.length) {
+        const nextTier = escalationChain[nextIdx];
+        const forcedResult = { ...escalated, tier: nextTier, escalated: true, escalationReason: `Stage-aware: tool activity score ${complexityScore} >= 15, escalated from ${base.tier} to ${nextTier}` };
+        return {
+          ...forcedResult,
+          reason: base.reason + ` | Stage-aware: tool activity score ${complexityScore} > 15, escalated from ${base.tier} to ${nextTier}`,
+        };
+      }
+    }
+
+    // Downgrade if tool activity is simple
+    if (complexityScore < 5 && base.tier === 'capable') {
+      return {
+        ...base,
+        tier: 'fastCloud',
+        reason: base.reason + ` | Stage-aware: tool activity simple (score ${complexityScore}), downgraded from capable to fastCloud`,
+      };
+    }
+
+    // Inject cache state awareness
+    if (sessionContext.sessionId) {
+      const cacheState = getSessionCacheState(sessionContext.sessionId);
+      if (cacheState && cacheState.cacheHitRatio > 70) {
+        return {
+          ...base,
+          reason: base.reason + ` | Cache hit ratio ${cacheState.cacheHitRatio}% — cheaper tier viable`,
+        };
+      }
+    }
+  }
+
+  return base;
+}
+
+/**
+ * Analyze recent tool activity to compute a complexity score.
+ * @param {Array} toolCalls — array of {name, args, result}
+ * @returns {number} complexity score (0-50, higher = more complex)
+ */
+function analyzeToolActivity(toolCalls) {
+  let score = 0;
+  for (const call of toolCalls) {
+    const name = (call.name || call.tool || '').toLowerCase();
+    const args = call.args || call.arguments || {};
+
+    // File system operations
+    if (name.includes('shell') || name.includes('exec') || name.includes('bash')) {
+      score += 2;
+      const cmd = JSON.stringify(args || '').toLowerCase();
+      if (cmd.includes('install') || cmd.includes('deploy') || cmd.includes('build')) {
+        score += 5;
+      }
+    }
+    if (name.includes('read') || name.includes('grep')) {
+      score += 1;
+    }
+    if (name.includes('write') || name.includes('edit')) {
+      score += 3;
+      if (args.path && JSON.stringify(args).length > 500) {
+        score += 3;
+      }
+    }
+
+    // Network/API calls
+    if (name.includes('curl') || name.includes('fetch') || name.includes('request')) {
+      score += 2;
+    }
+
+    // Model calls
+    if (name.includes('model') || name.includes('llm') || name.includes('ask')) {
+      score += 4;
+    }
+
+    // Tool calls with large arguments
+    const argStr = JSON.stringify(args || '').length;
+    if (argStr > 10000) score += 5;
+    if (argStr > 50000) score += 10;
+  }
+
+  // Factor in number of tool calls (more = more complex session)
+  if (toolCalls.length > 10) score += 5;
+  if (toolCalls.length > 20) score += 10;
+
+  return Math.min(50, score);
+}
+
+// ---------------------------------------------------------------------------
+// Quality Evaluation (stolen from InfoWorld: "quality evaluation overhead")
+// ---------------------------------------------------------------------------
+
+/**
+ * Quality evaluation: tracks routing effectiveness and Pareto trap risk.
+ * Stolen from InfoWorld: "quality evaluation overhead and human review are
+ * indirect costs to track."
+ */
+function evaluateRoutingQuality(opts = {}) {
+  const failures = loadFailureLog();
+  const window = opts.window || '7d';
+  const now = Date.now();
+  const windowMs = {
+    '24h': 24 * 3600 * 1000,
+    '7d': 7 * 24 * 3600 * 1000,
+    '30d': 30 * 24 * 3600 * 1000,
+    'all': Infinity,
+  }[window] || Infinity;
+
+  const recent = failures.filter((f) => now - new Date(f.timestamp).getTime() <= windowMs);
+
+  const byTierAndReason = {};
+  for (const f of recent) {
+    const key = `${f.failedTier || 'unknown'}:${f.reason || 'unknown'}`;
+    if (!byTierAndReason[key]) byTierAndReason[key] = 0;
+    byTierAndReason[key]++;
+  }
+
+  return {
+    window,
+    totalRoutingFailures: recent.length,
+    failuresByTierAndReason: byTierAndReason,
+    paretoTrap: getParetoTrapMetrics({ window }),
+    qualityScore: recent.length === 0 ? 100 : Math.max(0, 100 - (recent.length / 10)),
+    recommendation: recent.length === 0
+      ? 'No routing failures detected — routing model is well-calibrated'
+      : `Review routing decisions: ${recent.length} failures in ${window} window`,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // CLI
 // ---------------------------------------------------------------------------
 
@@ -453,6 +875,64 @@ function parseArgs(argv) {
     }
   }
   return parsed;
+}
+
+/**
+ * GitHub Universe 2026 — Copilot Fusion 4-Dimension Multi-Model Router
+ * & 3-Tier Code Review Selector (Lite / Balanced / Max).
+ *
+ * Evaluates tasks across reasoning, code_generation, debugging, and tool_use,
+ * selecting the optimal model mix for -50% cost and -40% latency vs single-frontier routing.
+ */
+function routeCopilotFusionStyleTask({
+  task = '',
+  dimensions = null,
+  touchesSecurityOrBilling = false,
+  diffLines = 50,
+} = {}) {
+  const lower = String(task || '').toLowerCase();
+  const inferredDims = dimensions || {
+    reasoning: /\b(?:architect|design|security|invariant|tradeoff|deadlock|consensus|proof)\b/.test(lower),
+    code_generation: /\b(?:implement|create|build|add|write|feature|endpoint|component)\b/.test(lower),
+    debugging: /\b(?:fix|bug|error|crash|regression|failing|triage|investigate)\b/.test(lower),
+    tool_use: /\b(?:grep|glob|search|list|status|check|scan|fetch|poll)\b/.test(lower),
+  };
+
+  const executionPlan = [];
+  if (inferredDims.tool_use) {
+    executionPlan.push({ dimension: 'tool_use', tier: 'local', model: 'poolside/laguna-xs-2.1-mlx' });
+  }
+  if (inferredDims.code_generation || inferredDims.debugging) {
+    executionPlan.push({
+      dimension: inferredDims.debugging ? 'debugging' : 'code_generation',
+      tier: 'fastCloud',
+      model: 'gemini-2.5-flash',
+    });
+  }
+  if (inferredDims.reasoning || touchesSecurityOrBilling) {
+    executionPlan.push({ dimension: 'reasoning', tier: 'capable', model: 'gemini-4-argon' });
+  }
+  if (executionPlan.length === 0) {
+    executionPlan.push({ dimension: 'code_generation', tier: 'fastCloud', model: 'gemini-2.5-flash' });
+  }
+
+  const reviewTier = touchesSecurityOrBilling || Number(diffLines) > 400 || inferredDims.reasoning
+    ? 'max'
+    : (Number(diffLines) <= 40 && !inferredDims.debugging ? 'lite' : 'balanced');
+
+  return {
+    ok: true,
+    fusionMode: 'copilot-fusion-4d',
+    dimensions: inferredDims,
+    executionPlan,
+    primaryTier: executionPlan[executionPlan.length - 1].tier,
+    codeReviewTier: reviewTier,
+    benchmarkTargets: {
+      costReductionVsSingleFrontierPct: 50,
+      timeReductionPerTaskPct: 40,
+      aaCodingAgentIndexDeltaVsOpusMax: -2,
+    },
+  };
 }
 
 function main() {
@@ -527,15 +1007,78 @@ function main() {
       break;
     }
 
+    case 'route-with-escalation': {
+      const input = {
+        task: args.task || '',
+        tokens: parseInt(args.tokens || '1000', 10),
+        privileged: args.privileged === true,
+      };
+      routeWithEscalation(input).then((result) => {
+        console.log(JSON.stringify(result, null, 2));
+      }).catch((err) => {
+        console.error('Error:', err.message);
+        process.exitCode = 1;
+      });
+      break;
+    }
+
+    case 'pareto-trap': {
+      console.log(JSON.stringify(getParetoTrapMetrics({ window: args.window || '7d' }), null, 2));
+      break;
+    }
+
+    case 'session-cost': {
+      const sessionId = args['session-id'] || 'default';
+      const session = trackSessionCost(sessionId, {
+        cacheHits: parseInt(args['cache-hits'] || '0', 10),
+        cacheMisses: parseInt(args['cache-misses'] || '0', 10),
+        toolCalls: parseInt(args['tool-calls'] || '0', 10),
+        expectedDownstreamCost: parseFloat(args['expected-cost'] || '0'),
+      });
+      console.log(JSON.stringify(session, null, 2));
+      break;
+    }
+
+    case 'session-cache': {
+      const sessionId = args['session-id'] || 'default';
+      const cache = getSessionCacheState(sessionId);
+      console.log(JSON.stringify(cache, null, 2));
+      break;
+    }
+
+    case 'routing-quality': {
+      console.log(JSON.stringify(
+        evaluateRoutingQuality({ window: args.window || '7d' }), null, 2
+      ));
+      break;
+    }
+
+    case 'record-failure': {
+      recordRoutingFailure({
+        task: args.task || '',
+        failedTier: args['failed-tier'] || 'fastCloud',
+        escalatedTo: args['escalated-to'] || 'capable',
+        reason: args.reason || 'quality_check_failed',
+      });
+      console.log(JSON.stringify({ ok: true, message: 'Failure recorded for Pareto trap monitoring' }, null, 2));
+      break;
+    }
+
     default:
       console.error([
         'Usage:',
         '  node scripts/cost-router.js route --task "..." [--tokens 1500] [--privileged]',
+        '  node scripts/cost-router.js route-with-escalation --task "..." [--tokens 1500] [--privileged]',
         '  node scripts/cost-router.js audit-task --title "..." --minutes 30 --cost 0 --complexity 5 --frequency weekly',
         '  node scripts/cost-router.js status',
         '  node scripts/cost-router.js set-budget --monthly 5000',
         '  node scripts/cost-router.js dashboard',
         '  node scripts/cost-router.js log-request --task "..." --tier local --cost 0.01 --tokens 1000',
+        '  node scripts/cost-router.js pareto-trap [--window 7d]',
+        '  node scripts/cost-router.js session-cost --session-id <id> [--cache-hits 10] [--cache-misses 5] [--tool-calls 3] [--expected-cost 0.5]',
+        '  node scripts/cost-router.js session-cache --session-id <id>',
+        '  node scripts/cost-router.js routing-quality [--window 7d]',
+        '  node scripts/cost-router.js record-failure --task "..." --failed-tier fastCloud --escalated-to capable --reason quality_check_failed',
       ].join('\n'));
       process.exitCode = 1;
   }
@@ -547,6 +1090,7 @@ if (require.main === module) {
 
 module.exports = {
   routeTask,
+  routeWithEscalation,
   auditTask,
   getSlippingDashboard,
   loadBudget,
@@ -555,4 +1099,19 @@ module.exports = {
   classifyComplexity,
   isPrivileged,
   TIER_DEFS,
+  // Escalation + Pareto trap
+  recordRoutingFailure,
+  getParetoTrapMetrics,
+  // Session-level cost tracking
+  trackSessionCost,
+  recordSessionRequest,
+  getSessionCacheState,
+  loadSessionCosts,
+  saveSessionCosts,
+  // Stage-aware routing
+  stageAwareRoute,
+  analyzeToolActivity,
+  // Quality evaluation
+  evaluateRoutingQuality,
+  routeCopilotFusionStyleTask,
 };

@@ -1,0 +1,9 @@
+{
+  "id": "doc-only-change",
+  "goal": "Update README documentation only (no code changes)",
+  "expectedFiles": ["README.md"],
+  "expectedChecks": ["proof_pack_integrity"],
+  "expectedVerdict": "PASS",
+  "expectedSkippedChecks": ["unit_tests"],
+  "description": "Verifies that mabl's Test Impact Analysis steal works: when only docs change, unit_tests is skipped (TIA condition not met), but proof_pack_integrity still runs. This tests the change-aware gating pattern."
+}

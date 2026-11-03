@@ -8,7 +8,7 @@ const path = require('node:path');
 
 const DEFAULT_LABEL = 'com.thumbgate.reddit-monitor';
 const DEFAULT_INTERVAL_MINUTES = 15;
-const DEFAULT_TRACKED_THREADS = 'https://www.reddit.com/r/ClaudeCode/comments/1szi5qp/';
+const DEFAULT_TRACKED_THREADS = 'https://www.reddit.com/r/AI_Agents/comments/1xl5gw1/,https://www.reddit.com/r/ChatGPTCoding/comments/1xgqsts/,https://www.reddit.com/r/AI_Agents/comments/1xh2j3j/';
 const DEFAULT_REPO_DIR = path.resolve(__dirname, '..');
 const LAUNCHCTL = '/bin/launchctl';
 const LAUNCHCTL_ENV = Object.freeze({

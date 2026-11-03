@@ -148,3 +148,4 @@ graphify-out/
 !.hermes/skills/
 !.hermes/skills/**
 dist/
+.aider*

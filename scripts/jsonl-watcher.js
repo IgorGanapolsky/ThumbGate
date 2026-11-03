@@ -130,7 +130,7 @@ function watch(sourceFilter) {
   log(`[jsonl-watcher] Watching ${FEEDBACK_LOG_PATH}`);
   if (sourceFilter) log(`[jsonl-watcher] Filtering source: ${sourceFilter}`);
 
-  setInterval(() => {
+  const timer = setInterval(() => {
     try {
       const result = processNewEntries(FEEDBACK_DIR, FEEDBACK_LOG_PATH, sourceFilter);
       if (result.processed > 0) {
@@ -140,6 +140,10 @@ function watch(sourceFilter) {
       log(`[jsonl-watcher] Poll error (non-fatal): ${err.message}`);
     }
   }, POLL_INTERVAL_MS);
+  if (timer && typeof timer.unref === 'function') {
+    timer.unref();
+  }
+  return timer;
 }
 
 function once(sourceFilter) {

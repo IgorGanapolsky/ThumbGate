@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "description": "Declarative confusion-detection rules for ThumbGate PreToolUse gates. Inspired by Supabase co-founders' 'explicit agent guardrail skills' pattern. Agents operating with ambiguous context, conflicting data, or unclear tool boundaries produce measurable inconsistency. These rules detect confusion signals BEFORE the action executes (OLTP <5ms gate) and after (OLAP async review).",
+  "thresholds": {
+    "immediateBlock": 0.8,
+    "warnOnAmbiguity": 0.5,
+    "asyncReviewThreshold": 0.3,
+    "maxLatencyMs": 5
+  },
+  "rules": [
+    {
+      "id": "ambiguous_target_path",
+      "name": "Ambiguous target path",
+      "pattern": "edit|write|read|delete",
+      "detector": "ambiguousTargetPath",
+      "risk": 0.3,
+      "category": "unclear_tool_boundary",
+      "severity": "warn",
+      "description": "Tool input references multiple, contradictory, or wildcard paths without explicit disambiguation. Agent is unsure which file to modify."
+    },
+    {
+      "id": "conflicting_parallel_actions",
+      "name": "Conflicting parallel actions",
+      "pattern": "bash|shell|exec",
+      "detector": "conflictingParallelActions",
+      "risk": 0.9,
+      "category": "conflicting_data",
+      "severity": "block",
+      "description": "New action conflicts with a recently-staked claim on the same surface (e.g., two agents editing the same file)."
+    },
+    {
+      "id": "vague_command_intent",
+      "name": "Vague command intent",
+      "pattern": "bash|shell",
+      "detector": "vagueCommandIntent",
+      "risk": 0.4,
+      "category": "ambiguous_context",
+      "severity": "warn",
+      "description": "Bash command lacks clear intent — mixes read, write, and destructive operations in a single command pipeline."
+    },
+    {
+      "id": "contradictory_input_args",
+      "name": "Contradictory input arguments",
+      "pattern": "edit|write|read|bash|shell|fill",
+      "detector": "contradictoryInputArgs",
+      "risk": 0.6,
+      "category": "ambiguous_context",
+      "severity": "warn",
+      "description": "Tool input contains arguments that directly contradict each other (e.g., both clear=true and clear=false)."
+    },
+    {
+      "id": "missing_required_context",
+      "name": "Missing required context",
+      "pattern": "edit|write|bash|shell|fill",
+      "detector": "missingRequiredContext",
+      "risk": 0.5,
+      "category": "ambiguous_context",
+      "severity": "warn",
+      "description": "Tool input is missing fields required for safe execution."
+    },
+    {
+      "id": "destructive_pattern_mismatch",
+      "name": "Destructive pattern mismatch",
+      "pattern": "bash|shell",
+      "detector": "destructivePatternMismatch",
+      "risk": 0.7,
+      "category": "unclear_tool_boundary",
+      "severity": "warn",
+      "description": "Command mixes destructive operations with non-destructive ones without clear boundaries."
+    },
+    {
+      "id": "inconsistent_with_recent_history",
+      "name": "Inconsistent with recent history",
+      "pattern": ".*",
+      "detector": "inconsistentWithRecentHistory",
+      "risk": 0.4,
+      "category": "conflicting_data",
+      "severity": "warn",
+      "description": "Action contradicts recently-staked claims, lessons, or session actions."
+    }
+  ]
+}

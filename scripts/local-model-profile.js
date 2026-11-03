@@ -126,7 +126,504 @@ function normalizeSlug(value, fallback = '') {
 }
 
 function isSparseAttentionFamily(modelFamily) {
-  return modelFamily.startsWith('deepseek') || modelFamily.startsWith('glm');
+  return modelFamily.startsWith('deepseek')
+    || modelFamily.startsWith('glm')
+    || modelFamily.startsWith('mistral')
+    || modelFamily.startsWith('inkling');
+}
+
+const VLLM_V033_PROFILES = {
+  'deepseek-v4.1-flash-pd': {
+    id: 'deepseek-v4.1-flash-pd',
+    model: 'deepseek-ai/DeepSeek-V4.1-Flash',
+    vllmVersion: '0.33.0rc3',
+    pytorchVersion: '2.14',
+    minCudaVersion: '13.0',
+    modelRunner: 'v2',
+    attentionBackend: 'sparse-mla-cross-layer-kv',
+    kvCacheDtype: 'nvfp4',
+    kvMemoryReductionFactor: 4.0,
+    prefillDecodeDisaggregation: true,
+    expertParallelMode: 'wide-ep',
+    contextParallelMode: 'dcp-pcp',
+    specDecodeMethod: 'mtp-1',
+    kvTransferConnector: 'NIXLConnector',
+    pagedAttentionBlockSize: 16,
+    singleNodeThroughputMultiplier: 7.9,
+    peakTokensPerSecPerGpu: 954000,
+    p90TokensPerSecPerUser: 196,
+  },
+  'mistral-large-4-sparse-mla': {
+    id: 'mistral-large-4-sparse-mla',
+    model: 'mistralai/Mistral-Large-4-Instruct-2610',
+    vllmVersion: '0.33.0rc3',
+    pytorchVersion: '2.14',
+    minCudaVersion: '13.0',
+    modelRunner: 'v2',
+    attentionBackend: 'sparse-mla-cross-layer-kv',
+    kvCacheDtype: 'nvfp4',
+    kvMemoryReductionFactor: 4.0,
+    prefillDecodeDisaggregation: true,
+    expertParallelMode: 'none',
+    contextParallelMode: 'dcp-pcp',
+    specDecodeMethod: 'dspark',
+    kvTransferConnector: 'NIXLConnector',
+    pagedAttentionBlockSize: 16,
+    singleNodeThroughputMultiplier: 5.4,
+    peakTokensPerSecPerGpu: 612000,
+    p90TokensPerSecPerUser: 164,
+  },
+  'inkling-small-276b-moe': {
+    id: 'inkling-small-276b-moe',
+    model: 'thinkingmachines/Inkling-Small-276B-A12B',
+    vllmVersion: '0.33.0rc3',
+    pytorchVersion: '2.14',
+    minCudaVersion: '13.0',
+    modelRunner: 'v2',
+    totalParamsBillions: 276,
+    activeParamsBillions: 12,
+    maxContextTokens: 1000000,
+    modalities: ['text', 'image', 'audio'],
+    attentionBackend: 'flashinfer-paged',
+    kvCacheDtype: 'nvfp4',
+    kvMemoryReductionFactor: 4.0,
+    prefillDecodeDisaggregation: true,
+    expertParallelMode: 'wide-ep',
+    contextParallelMode: 'dcp-pcp',
+    specDecodeMethod: 'mtp-1',
+    kvTransferConnector: 'NIXLConnector',
+    pagedAttentionBlockSize: 16,
+    singleNodeThroughputMultiplier: 6.2,
+    peakTokensPerSecPerGpu: 740000,
+    p90TokensPerSecPerUser: 182,
+  },
+  'inkling-975b-moe': {
+    id: 'inkling-975b-moe',
+    model: 'thinkingmachines/Inkling-975B-A41B',
+    vllmVersion: '0.33.0rc3',
+    pytorchVersion: '2.14',
+    minCudaVersion: '13.0',
+    modelRunner: 'v2',
+    totalParamsBillions: 975,
+    activeParamsBillions: 41,
+    maxContextTokens: 1000000,
+    modalities: ['text', 'image', 'audio'],
+    attentionBackend: 'sparse-mla-cross-layer-kv',
+    kvCacheDtype: 'nvfp4',
+    kvMemoryReductionFactor: 4.0,
+    prefillDecodeDisaggregation: true,
+    expertParallelMode: 'wide-ep',
+    contextParallelMode: 'dcp-pcp',
+    specDecodeMethod: 'mtp-1',
+    kvTransferConnector: 'NIXLConnector',
+    pagedAttentionBlockSize: 16,
+    singleNodeThroughputMultiplier: 5.8,
+    peakTokensPerSecPerGpu: 680000,
+    p90TokensPerSecPerUser: 158,
+  },
+  'qwen2.5-coder-32b-nvfp4': {
+    id: 'qwen2.5-coder-32b-nvfp4',
+    model: 'Qwen/Qwen2.5-Coder-32B-Instruct',
+    vllmVersion: '0.33.0rc3',
+    pytorchVersion: '2.14',
+    minCudaVersion: '13.0',
+    modelRunner: 'v2',
+    attentionBackend: 'flashinfer-paged',
+    kvCacheDtype: 'nvfp4',
+    kvMemoryReductionFactor: 4.0,
+    prefillDecodeDisaggregation: false,
+    expertParallelMode: 'none',
+    contextParallelMode: 'none',
+    specDecodeMethod: 'suffix-ngram',
+    kvTransferConnector: 'local',
+    pagedAttentionBlockSize: 16,
+    singleNodeThroughputMultiplier: 3.2,
+    peakTokensPerSecPerGpu: 245000,
+    p90TokensPerSecPerUser: 142,
+  },
+};
+
+// Preserve VLLM_V032_PROFILES alias for backward compatibility across existing callers
+const VLLM_V032_PROFILES = VLLM_V033_PROFILES;
+
+function planTinkerPostTrainingAndDistillation(options = {}) {
+  const hiddenDim = Math.max(256, Number(options.hiddenDim || 4096));
+  const loraRank = Math.max(1, Number(options.loraRank || 32));
+  const fullFtLearningRate = Number(options.fullFtLearningRate || 1e-5);
+  // Schulman (2025) "LoRA Without Regret" (doi:10.64434/tml.20250929): optimal LoRA LR is 10x FullFT LR
+  const loraLearningRate = Number((fullFtLearningRate * 10).toFixed(6));
+  // FLOPs per weight matrix: (2*N^2 + 6*N*R) / (3*N^2)
+  const fullFtFlopsUnit = 3 * (hiddenDim ** 2);
+  const loraFlopsUnit = (2 * (hiddenDim ** 2)) + (6 * hiddenDim * loraRank);
+  const flopsRatioVsFullFt = Number((loraFlopsUnit / fullFtFlopsUnit).toFixed(4));
+
+  const batchInvariantKernels = options.batchInvariantKernels !== false;
+  // He (2025) "Defeating Nondeterminism in LLM Inference" (doi:10.64434/tml.20250910)
+  const samplerTrainerKlDivergence = batchInvariantKernels ? 0.0 : 0.0012;
+
+  return {
+    sourceUrl: 'https://thinkingmachines.ai/',
+    tinkerPrimitives: ['sample', 'forward_backward', 'optim_step', 'save_state'],
+    studentModel: options.studentModel || 'thinkingmachines/Inkling-Small-276B-A12B',
+    teacherModel: options.teacherModel || 'thinkingmachines/Inkling-975B-A41B',
+    loraWithoutRegret: {
+      doi: '10.64434/tml.20250929',
+      loraRank,
+      fullFtLearningRate,
+      loraLearningRate,
+      lrMultiplierVsFullFt: 10,
+      applyToMlpAndMoeLayers: true,
+      flopsRatioVsFullFt,
+      multiTenantPunicaReady: true,
+    },
+    onPolicyDistillationAndSdft: {
+      doi: '10.64434/tml.20251026',
+      method: 'on-policy-sdft-topk-logprobs',
+      topKLogprobs: Number(options.topKLogprobs || 20),
+      baseToolUseAccuracyPct: 42.9,
+      sftToolUseAccuracyPct: 63.2,
+      sdftToolUseAccuracyPct: 70.6,
+      upliftVsSftPctPoints: 7.4,
+      compoundingErrorMitigated: true,
+    },
+    batchInvariantDeterminism: {
+      doi: '10.64434/tml.20250910',
+      batchInvariantKernels,
+      invariantOps: ['rmsnorm', 'matmul', 'split_kv_attention'],
+      samplerTrainerKlDivergence,
+      trueOnPolicyRl: batchInvariantKernels && samplerTrainerKlDivergence === 0,
+    },
+    enterpriseBenchmarks: {
+      bridgewaterCostReductionFactor: 13.8,
+      bridgewaterErrorReductionPct: 30,
+      lightningRodEceReductionPct: 69,
+      lightningRodBrierErrorReductionPct: 27,
+    },
+    interactionModelSpec: {
+      mode: 'multi-stream-micro-turn',
+      groundingProperties: ['copresence', 'contemporality', 'simultaneity'],
+    },
+  };
+}
+
+function verifyVllmToolchainCompatibility({
+  cudaVersion = '13.0',
+  pytorchVersion = '2.14',
+  platform = 'cuda',
+  packageInstaller = 'uv',
+} = {}) {
+  const parseMajorMinor = (ver) => {
+    const [maj, min] = String(ver || '0.0').trim().split('.').map((x) => Number(x) || 0);
+    return maj + (min / 100);
+  };
+  const cudaNum = parseMajorMinor(cudaVersion);
+  const torchNum = parseMajorMinor(pytorchVersion);
+  const isCudaPlatform = String(platform || 'cuda').toLowerCase() === 'cuda';
+  const cudaSupported = !isCudaPlatform || cudaNum >= 13.0;
+  const pytorchSupported = torchNum >= 2.14;
+  const reasons = [];
+  if (!cudaSupported) {
+    reasons.push(`CUDA ${cudaVersion} is unsupported in vLLM v0.33.0rc3+ (CUDA 12.9 dropped; require CUDA 13.0-13.1).`);
+  }
+  if (!pytorchSupported) {
+    reasons.push(`PyTorch ${pytorchVersion} is below vLLM v0.33.0rc3 requirement (PyTorch >= 2.14).`);
+  }
+  return {
+    vllmVersion: '0.33.0rc3',
+    platform,
+    cudaVersion: String(cudaVersion),
+    pytorchVersion: String(pytorchVersion),
+    packageInstaller,
+    recommendedInstallCommand: 'uv pip install vllm --torch-backend auto',
+    cudaSupported,
+    pytorchSupported,
+    compatible: cudaSupported && pytorchSupported,
+    verdict: cudaSupported && pytorchSupported
+      ? 'PASS_VLLM_V033_TOOLCHAIN'
+      : (!cudaSupported ? 'FAIL_CUDA_12_9_DROPPED' : 'FAIL_PYTORCH_BELOW_2_14'),
+    reasons,
+  };
+}
+
+function alignPromptToPagedAttentionBlocks(tokenCount, blockSize = 16) {
+  const safeTokens = Math.max(1, Math.floor(Number(tokenCount) || 0));
+  const safeBlock = Math.max(1, Math.floor(Number(blockSize) || 16));
+  const fullBlocks = Math.floor(safeTokens / safeBlock);
+  const alignedTokens = Math.ceil(safeTokens / safeBlock) * safeBlock;
+  const paddingTokens = alignedTokens - safeTokens;
+  return {
+    inputTokens: safeTokens,
+    blockSize: safeBlock,
+    fullBlocks,
+    totalBlocks: alignedTokens / safeBlock,
+    alignedTokens,
+    paddingTokens,
+    prefixCacheAligned: paddingTokens === 0,
+  };
+}
+
+function verifySpeculativeDecodingSpeedup({
+  acceptLength = 3.2,
+  draftLength = 4,
+  draftCostRatio = 0.08,
+  claimedSpeedup = 2.4,
+} = {}) {
+  const al = Math.max(1, Number(acceptLength) || 1);
+  const d = Math.max(1, Math.floor(Number(draftLength) || 1));
+  const rho = Math.max(0, Number(draftCostRatio) || 0);
+  const claimed = Math.max(0, Number(claimedSpeedup) || 0);
+  const theoreticalCeiling = Number((al / (1 + rho * d)).toFixed(4));
+  const withinRooflineBound = claimed <= theoreticalCeiling + 1e-6;
+  return {
+    acceptLength: al,
+    draftLength: d,
+    draftCostRatio: rho,
+    claimedSpeedup: claimed,
+    theoreticalCeiling,
+    withinRooflineBound,
+    verdict: withinRooflineBound ? 'PASS_ROOFLINE_BOUND' : 'FAIL_EXCEEDS_AL_ROOFLINE',
+  };
+}
+
+function planHiSparseHostKvOffload({
+  gpuBaseTokens = 1970000,
+  hostPoolGib = 440,
+  crossLayerKvSharing = true,
+  singleNodeTp = true,
+  allReduceBackend = 'trtllm',
+} = {}) {
+  const safeGpuTokens = Math.max(1000, Math.floor(Number(gpuBaseTokens) || 1970000));
+  const safeHostGib = Math.max(0, Number(hostPoolGib) ?? 440);
+  const hiSparseEnabled = safeHostGib > 0;
+  const poolScale = safeHostGib / 440;
+  const kvSharingDeduplicationBonus = crossLayerKvSharing ? 1.143 : 1.0;
+  const startupAdmittedTokens = hiSparseEnabled
+    ? Math.round(safeGpuTokens * (1 + 3.4518 * poolScale * (crossLayerKvSharing ? 1.0 : 1 / 1.143)))
+    : safeGpuTokens;
+  const steadyStateMaxTokens = hiSparseEnabled
+    ? Math.round(safeGpuTokens * (1 + 4.7107 * poolScale * (crossLayerKvSharing ? 1.0 : 1 / 1.143)))
+    : safeGpuTokens;
+
+  const normalizedAllReduce = String(allReduceBackend || 'trtllm').trim().toLowerCase();
+  const mnnvlCrashRisk = Boolean(hiSparseEnabled && singleNodeTp && normalizedAllReduce === 'mnnvl');
+
+  return {
+    hiSparseEnabled,
+    kvConnector: hiSparseEnabled ? 'HiSparseConnector' : 'none',
+    hostPoolGib: safeHostGib,
+    crossLayerKvSharing,
+    kvSharingHostTokenBonusPct: crossLayerKvSharing ? 14.3 : 0,
+    kvSharingDeduplicationBonus,
+    gpuOnlyTokens: safeGpuTokens,
+    startupAdmittedTokens,
+    steadyStateMaxTokens,
+    startupCapacityMultiplier: Number((startupAdmittedTokens / safeGpuTokens).toFixed(2)),
+    steadyStateCapacityMultiplier: Number((steadyStateMaxTokens / safeGpuTokens).toFixed(2)),
+    singleNodeTp,
+    allReduceBackend: normalizedAllReduce,
+    requiredEnv: hiSparseEnabled && singleNodeTp
+      ? { VLLM_FLASHINFER_ALLREDUCE_BACKEND: 'trtllm' }
+      : {},
+    mnnvlCrashGuardStatus: mnnvlCrashRisk
+      ? 'FAIL_MNNVL_HISPARSE_CRASH_RISK_VLLM_64327'
+      : 'PASS_SAFE_ALLREDUCE_BACKEND',
+  };
+}
+
+function planDsparkSpeculativeDecoding({
+  temperature = 0,
+  numSpeculativeTokens = 3,
+  kvPrecision = 'nvfp4',
+  dcpSize = 1,
+  avgContextTokens = 8192,
+  separateDraftBlockPool = false,
+} = {}) {
+  const temp = Math.max(0, Number(temperature) || 0);
+  const specTokens = Math.max(1, Math.floor(Number(numSpeculativeTokens) || 3));
+  const dcp = Math.max(1, Math.floor(Number(dcpSize) || 1));
+  const contextTokens = Math.max(1, Math.floor(Number(avgContextTokens) || 8192));
+  const useProbabilisticDraftSampling = temp > 1.0;
+  const draftSampleMethod = useProbabilisticDraftSampling ? 'probabilistic' : 'greedy_or_standard';
+
+  const isNvfp4 = String(kvPrecision || 'nvfp4').toLowerCase().includes('nvfp4');
+  let expectedAcceptLength = isNvfp4 ? 2.93 : 2.90;
+  if (temp > 0 && temp <= 1.0) {
+    expectedAcceptLength = 2.80;
+  } else if (temp > 1.0) {
+    expectedAcceptLength = useProbabilisticDraftSampling ? 2.45 : 2.04;
+  }
+  if (dcp >= 8 && contextTokens >= 60000 && temp === 0) {
+    expectedAcceptLength = 2.85;
+  }
+
+  const baseC1TpotMs = dcp >= 8 ? 11.82 : (isNvfp4 ? 8.21 : 8.84);
+  const dsparkC1TpotMs = dcp >= 8
+    ? 5.22
+    : Number((baseC1TpotMs / (expectedAcceptLength / 1.05)).toFixed(2));
+
+  const dcpDraftBlockIdBind = dcp >= 8 && !separateDraftBlockPool && contextTokens >= 64000;
+  const effectiveKvCapacityMultiplier = dcpDraftBlockIdBind ? 0.69 : 1.0;
+
+  return {
+    method: 'dspark',
+    numSpeculativeTokens: specTokens,
+    temperature: temp,
+    draftSampleMethod,
+    losslessRejectionSampling: true,
+    expectedAcceptLength,
+    baseC1TpotMs,
+    dsparkC1TpotMs,
+    speedupMultiplier: Number((baseC1TpotMs / dsparkC1TpotMs).toFixed(2)),
+    dcpDraftWindowReplicatedMb: dcp > 1 ? 7 : 0,
+    effectiveKvCapacityMultiplier,
+    dcpCapacityBoundAbove99k: dcp >= 8 && !separateDraftBlockPool && contextTokens >= 99000,
+    speculativeConfigJson: JSON.stringify(
+      useProbabilisticDraftSampling
+        ? { method: 'dspark', num_speculative_tokens: specTokens, draft_sample_method: 'probabilistic' }
+        : { method: 'dspark', num_speculative_tokens: specTokens }
+    ),
+  };
+}
+
+/**
+ * Thinking Machines Lab ("Defeating Nondeterminism in LLM Inference"):
+ * Standard temperature=0 LLM serving is non-deterministic because dynamic batch sizes
+ * and chunked prefill + decode alter floating-point reduction orders in RMSNorm, Matmul,
+ * and Split-KV Attention. Enforcing batch-invariant reductions + Fixed-Split-KV size
+ * restores bitwise reproducibility and true on-policy RL (trainer-sampler KL = 0).
+ */
+function planBatchInvariantDeterministicInference({
+  enabled = true,
+  temperature = 0,
+  fixedSplitKvSize = 256,
+  canonicalKvLayout = true,
+  rmsnormStrategy = 'data-parallel-per-row',
+  matmulStrategy = 'fixed-tile-no-split-k',
+  optimizedAttentionKernel = true,
+  rlRolloutMode = false,
+  trainerMatchesSamplerPrecision = true,
+} = {}) {
+  const splitSize = Math.max(64, Math.floor(Number(fixedSplitKvSize || 256)));
+  const temp = Math.max(0, Number(temperature ?? 0));
+  const isBatchInvariant = Boolean(
+    enabled
+    && canonicalKvLayout
+    && rmsnormStrategy === 'data-parallel-per-row'
+    && matmulStrategy === 'fixed-tile-no-split-k'
+    && splitSize >= 64
+  );
+  const deterministicGreedy = isBatchInvariant && temp === 0;
+  const trainerSamplerBitwiseIdentical = Boolean(isBatchInvariant && trainerMatchesSamplerPrecision);
+  const klDivergenceTrainerVsSampler = trainerSamplerBitwiseIdentical ? 0 : (rlRolloutMode ? 0.0008 : 0.0003);
+  const latencyOverheadMultiplier = !enabled
+    ? 1.0
+    : (optimizedAttentionKernel ? 1.62 : 2.12);
+
+  return {
+    enabled: Boolean(enabled),
+    isBatchInvariant,
+    deterministicGreedy,
+    attentionReductionMode: 'fixed-split-kv',
+    fixedSplitKvSize: splitSize,
+    canonicalKvLayout: Boolean(canonicalKvLayout),
+    rmsnormStrategy,
+    matmulStrategy,
+    trainerSamplerBitwiseIdentical,
+    klDivergenceTrainerVsSampler,
+    trueOnPolicyRlReady: Boolean(rlRolloutMode ? trainerSamplerBitwiseIdentical : isBatchInvariant),
+    latencyOverheadMultiplier,
+    vllmBatchInvariantEnv: {
+      VLLM_BATCH_INVARIANT: enabled ? '1' : '0',
+      VLLM_ATTENTION_FIXED_SPLIT_KV_SIZE: String(splitSize),
+    },
+  };
+}
+
+function planVllmDisaggregatedServing(workload = {}, env = process.env) {
+  const promptTokens = Math.max(1, Math.floor(Number(workload.promptTokens || 4096)));
+  const maxOutputTokens = Math.max(1, Math.floor(Number(workload.maxOutputTokens || 256)));
+  const scopedToolCount = Math.max(0, Math.floor(Number(workload.scopedToolCount ?? 4)));
+  const profileId = workload.profileId || env.THUMBGATE_VLLM_PROFILE || 'deepseek-v4.1-flash-pd';
+  const profile = VLLM_V033_PROFILES[profileId] || VLLM_V033_PROFILES['deepseek-v4.1-flash-pd'];
+
+  const blockAlignment = alignPromptToPagedAttentionBlocks(promptTokens, profile.pagedAttentionBlockSize);
+  const disaggregateActive = Boolean(profile.prefillDecodeDisaggregation && promptTokens >= 2048);
+  const wideEpActive = profile.expertParallelMode === 'wide-ep' && disaggregateActive;
+  const dcpPcpActive = profile.contextParallelMode === 'dcp-pcp' && promptTokens >= 32768;
+  const prefillRoute = disaggregateActive ? 'vllm-prefill-pool-nixl' : 'vllm-unified-worker';
+  const decodeRoute = disaggregateActive ? 'vllm-decode-pool-low-latency' : 'vllm-unified-worker';
+
+  // Baseline FP16 KV cache ~0.5 MB per 1K tokens; NVFP4 reduces by 4x
+  const fp16KvMegabytes = Number(((promptTokens + maxOutputTokens) * 0.0005).toFixed(3));
+  const nvfp4KvMegabytes = Number((fp16KvMegabytes / profile.kvMemoryReductionFactor).toFixed(3));
+  const specDecodeCheck = verifySpeculativeDecodingSpeedup({
+    acceptLength: workload.acceptLength || 3.4,
+    draftLength: workload.draftLength || 4,
+    draftCostRatio: workload.draftCostRatio || 0.06,
+    claimedSpeedup: workload.claimedSpeedup || 2.6,
+  });
+  const toolchainCheck = verifyVllmToolchainCompatibility({
+    cudaVersion: workload.cudaVersion || env.THUMBGATE_VLLM_CUDA_VERSION || profile.minCudaVersion,
+    pytorchVersion: workload.pytorchVersion || env.THUMBGATE_VLLM_PYTORCH_VERSION || profile.pytorchVersion,
+    platform: workload.platform || 'cuda',
+  });
+
+  // Scoped <=4 tools keeps the immutable system+tool prefix compact for PagedAttention block reuse
+  const estimatedPrefixHitRate = scopedToolCount <= 4 ? 0.91 : 0.54;
+
+  return {
+    vllmVersion: profile.vllmVersion,
+    modelRunner: profile.modelRunner,
+    profileId: profile.id,
+    model: profile.model,
+    totalParamsBillions: profile.totalParamsBillions || null,
+    activeParamsBillions: profile.activeParamsBillions || null,
+    maxContextTokens: profile.maxContextTokens || null,
+    modalities: profile.modalities || ['text'],
+    attentionBackend: profile.attentionBackend,
+    kvCacheDtype: profile.kvCacheDtype,
+    kvMemoryReductionFactor: profile.kvMemoryReductionFactor,
+    fp16KvMegabytes,
+    nvfp4KvMegabytes,
+    disaggregateActive,
+    wideEpActive,
+    dcpPcpActive,
+    expertParallelMode: profile.expertParallelMode,
+    contextParallelMode: profile.contextParallelMode,
+    specDecodeMethod: profile.specDecodeMethod,
+    prefillRoute,
+    decodeRoute,
+    kvTransferConnector: profile.kvTransferConnector,
+    blockAlignment,
+    estimatedPrefixHitRate,
+    specDecodeCheck,
+    toolchainCheck,
+    dsparkPlan: planDsparkSpeculativeDecoding({
+      temperature: workload.temperature ?? 0,
+      numSpeculativeTokens: workload.draftLength || 3,
+      kvPrecision: profile.kvCacheDtype,
+      dcpSize: workload.dcpSize || (dcpPcpActive ? 8 : 1),
+      avgContextTokens: promptTokens,
+      separateDraftBlockPool: Boolean(workload.separateDraftBlockPool),
+    }),
+    hiSparsePlan: planHiSparseHostKvOffload({
+      gpuBaseTokens: workload.gpuBaseTokens || 1970000,
+      hostPoolGib: workload.hostPoolGib ?? 440,
+      crossLayerKvSharing: profile.attentionBackend.includes('cross-layer-kv'),
+      singleNodeTp: workload.singleNodeTp !== false,
+      allReduceBackend: workload.allReduceBackend || 'trtllm',
+    }),
+    batchInvariantPlan: planBatchInvariantDeterministicInference({
+      enabled: workload.batchInvariant !== false,
+      temperature: workload.temperature ?? 0,
+      fixedSplitKvSize: workload.fixedSplitKvSize || 256,
+      rlRolloutMode: Boolean(workload.rlRolloutMode),
+      trainerMatchesSamplerPrecision: workload.trainerMatchesSamplerPrecision !== false,
+    }),
+    singleNodeThroughputMultiplier: profile.singleNodeThroughputMultiplier,
+    peakTokensPerSecPerGpu: profile.peakTokensPerSecPerGpu,
+    p90TokensPerSecPerUser: profile.p90TokensPerSecPerUser,
+  };
 }
 
 function resolveProviderMode(env = process.env) {
@@ -158,6 +655,7 @@ function buildBackendLabel(providerMode, modelFamily) {
   if (providerMode === 'managed') return 'Managed API backend';
   if (modelFamily.startsWith('deepseek')) return 'Local DeepSeek sparse backend';
   if (modelFamily.startsWith('glm')) return 'Local GLM sparse backend';
+  if (modelFamily.startsWith('mistral')) return 'Local Mistral Sparse MLA backend';
   return 'Local dense backend';
 }
 
@@ -405,11 +903,21 @@ module.exports = {
   EMBEDDING_PROFILES,
   GLM_MODEL_ROLES,
   VLLM_MODEL_ROLES,
+  VLLM_V032_PROFILES,
+  VLLM_V033_PROFILES,
   INDEXCACHE_SERVER_ENGINES,
   LONG_CONTEXT_TAGS,
   LONG_CONTEXT_TASK_TYPES,
   MODEL_ROLES,
   VALID_MODEL_ROLES,
+  planTinkerPostTrainingAndDistillation,
+  verifyVllmToolchainCompatibility,
+  alignPromptToPagedAttentionBlocks,
+  verifySpeculativeDecodingSpeedup,
+  planHiSparseHostKvOffload,
+  planDsparkSpeculativeDecoding,
+  planBatchInvariantDeterministicInference,
+  planVllmDisaggregatedServing,
   detectHardware,
   detectInferenceBackend,
   resolveEmbeddingProfile,

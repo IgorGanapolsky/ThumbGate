@@ -61,11 +61,22 @@ function classifyStage(row) {
   const stage = String(row.stage || '').toLowerCase();
   const path = extractPath(row).toLowerCase();
   const cta = String(row.ctaId || row.cta_id || '').toLowerCase();
+  const audience = String(row.audience || '').toLowerCase();
 
+  if (audience === 'bot' || event === 'checkout_bot_deflected' || event === 'ops_live_audit_probe') {
+    return null;
+  }
   if (/purchase|paid|checkout\.session\.completed/.test(event) || stage === 'purchase') return 'purchase';
-  if (/stripe_redirect|stripe redirect|redirect started/.test(event) || stage === 'stripe_redirect') return 'stripe_redirect';
+  if (
+    /stripe_redirect|stripe redirect|redirect started|pro_checkout_direct_stripe|diagnostic_checkout_confirmed/.test(event)
+    || /\/go\/(pro-direct|diagnostic-pay|bundle-49|playbook-10)/.test(path)
+    || /pro_checkout_(direct_stripe|bundle_49|playbook_10)/.test(cta)
+    || stage === 'stripe_redirect'
+  ) {
+    return 'stripe_redirect';
+  }
   if (/email_submitted|email submitted|checkout_interstitial_cta_clicked/.test(event)) return 'email_submitted';
-  if (/checkout/.test(path) || /checkout.*view|checkout pro viewed/.test(event)) return 'checkout_viewed';
+  if (/checkout/.test(path) || /checkout.*view|checkout pro viewed|checkout_bootstrap/.test(event)) return 'checkout_viewed';
   if (/pricing/.test(path) || /pricing/.test(cta) || /pricing_cta/.test(event)) return 'pricing';
   if (/landing|page_view|landing_page_view|discovery/.test(event) || stage === 'discovery') return 'landing';
   return null;

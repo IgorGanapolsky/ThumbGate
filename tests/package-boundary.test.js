@@ -519,8 +519,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // 612 -> 619: three recovered command/skill pairs and session-interactivity.js (+7).
     // 621 -> 641 (2026-10-15): operator framework landing, blog posts, policy packs, and continuity pages (+20).
     // 641 -> 648 (2026-10-15): HotData DB integration adapters, Google Universal Cart spend firewall blog & landing page (+7).
-    manifest.fileCount <= 648,
-    `npm package should stay <= 648 files, got ${manifest.fileCount}`
+    // 648 -> 658 (2026-10-27): Cloud Token Firewall, AWS Lambda handler, Cloud Customer Portal (public/cloud.html), Homebrew formula (Formula/thumbgate.rb), and audit-privileges (+10).
+    manifest.fileCount <= 658,
+    `npm package should stay <= 658 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -773,9 +774,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // 2026-10-13: omp doctor + skill add 20,594 bytes. Clean pack (tracked files + those two) is 9,228,207. Cap stays 9.25 MB.
   // Bumped 9.25 MB -> 9.35 MB (2026-10-15): Autotomy Dual-Lock doctor, skills, and docs. Local pack 9,293,036; CI slack.
   // Bumped 9.35 MB -> 9.40 MB (2026-10-15): HotData DB integration & Google Universal Cart firewall. Local pack 9,340,830; CI slack.
-  // Bumped 9.40 MB -> 9.50 MB (2026-10-20): saas-moat-honesty, claude-routines, herdr-civilization, strands-decider, and launchvideo-honesty. Local pack 9,457,225; CI slack.
-  manifest.unpackedSize <= 9_500_000,
-  `npm package should stay <= 9.50 MB unpacked, got ${manifest.unpackedSize}`
+  // Bumped 9.40 MB -> 9.85 MB (2026-10-26): email-triage MCP server, Poolside/OpenUI/ICM/ARC-AGI-3 gates, and 4-tier checkout routes.
+  // Bumped 9.85 MB -> 10.25 MB (2026-10-29): src/cloud-token-firewall.js + public/cloud.html required by server.js runtime routes. Local pack 10,088,790; narrow headroom retained.
+  manifest.unpackedSize <= 10_250_000,
+  `npm package should stay <= 10.25 MB unpacked, got ${manifest.unpackedSize}`
 );
 
   for (const file of requiredRuntimeFiles) {

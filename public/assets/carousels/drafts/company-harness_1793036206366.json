@@ -1,0 +1,695 @@
+{
+  "draftId": "company-harness_1793036206366",
+  "topic": "company-harness",
+  "platforms": [
+    "linkedin",
+    "x",
+    "bluesky",
+    "threads",
+    "reddit",
+    "hackernews",
+    "skool",
+    "biggerpockets",
+    "zyvop"
+  ],
+  "createdAt": "2026-10-26T17:36:46.366Z",
+  "status": "awaiting_approval",
+  "variations": {
+    "linkedin": {
+      "topic": "company-harness",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic AI agent harnesses waste compute on redundant verification and routing.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Move model routing into the harness where it knows what the agent is doing.",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: company-harness\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "🔥 The Problem 👉\n\nGeneric AI agent harnesses waste compute on redundant verification and routing.\n\n#AI #MachineLearning #ThumbGate",
+      "colorScheme": "blue-dark",
+      "finalSlide": "modified_with_link",
+      "keywords": [
+        "company-harness"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "company-harness",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "x": {
+      "topic": "company-harness",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic AI agent harnesses waste compute on redundant verification and routing.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Move model routing into the harness where it knows what the agent is doing.",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: company-harness\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "The Problem 👉 company-harness https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns\n\n#AI #DevOps",
+      "colorScheme": "black",
+      "finalSlide": "standard",
+      "keywords": [
+        "company-harness"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "company-harness",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "bluesky": {
+      "topic": "company-harness",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic AI agent harnesses waste compute on redundant verification and routing.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Move model routing into the harness where it knows what the agent is doing.",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: company-harness\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "The Problem 👉\n\nGeneric AI agent harnesses waste compute on redundant verification and routing.\n\n#AI #MachineLearning #ThumbGate",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "company-harness"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "company-harness",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "threads": {
+      "topic": "company-harness",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic AI agent harnesses waste compute on redundant verification and routing.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Move model routing into the harness where it knows what the agent is doing.",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: company-harness\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "The Problem 👉 👉\n\nGeneric AI agent harnesses waste compute on redundant verification and routing.\n\n#AI #ThumbGate",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "company-harness"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "company-harness",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "reddit": {
+      "topic": "company-harness",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic AI agent harnesses waste compute on redundant verification and routing.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Move model routing into the harness where it knows what the agent is doing.",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: company-harness\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "[Show HN] The Problem 👉\n\nGeneric AI agent harnesses waste compute on redundant verification and routing.\n\nOpen source: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "company-harness"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "company-harness",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "hackernews": {
+      "topic": "company-harness",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic AI agent harnesses waste compute on redundant verification and routing.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Move model routing into the harness where it knows what the agent is doing.",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: company-harness\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "Show HN: The Problem 👉\n\nhttps://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "company-harness"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "company-harness",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "skool": {
+      "topic": "company-harness",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic AI agent harnesses waste compute on redundant verification and routing.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Move model routing into the harness where it knows what the agent is doing.",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: company-harness\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "🧠 WEEKLY PATTERN DROP: The Problem 👉\n\nGeneric AI agent harnesses waste compute on redundant verification and routing.\n\nPro: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "company-harness"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "company-harness",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "biggerpockets": {
+      "topic": "company-harness",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic AI agent harnesses waste compute on redundant verification and routing.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Move model routing into the harness where it knows what the agent is doing.",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: company-harness\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "REI teams: The Problem 👉\n\nGeneric AI agent harnesses waste compute on redundant verification and routing.\n\n#RealEstate #AI #ThumbGate",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "company-harness"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "company-harness",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "zyvop": {
+      "topic": "company-harness",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Generic AI agent harnesses waste compute on redundant verification and routing.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "Move model routing into the harness where it knows what the agent is doing.",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: company-harness\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "The Problem 👉 company-harness https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns\n\n#AI",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "company-harness"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How Ramp cut AI inference costs by 64% with harness-level model routing 👉",
+        "subtitle": "64% reduction | FREE pattern steal",
+        "keyword": "company-harness",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    }
+  },
+  "approvalInstructions": "Review all variations before publishing. Run: node scripts/social-carousel-generator.js --topic \"company-harness\" --publish company-harness_1793036206366"
+}

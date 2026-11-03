@@ -38,8 +38,8 @@ function getLessonBaseUrl() {
   return configuredOrigin || 'http://localhost:3456';
 }
 
-function getLessonsPath() { return path.join(getFeedbackDir(), LESSONS_FILE); }
-function getRecentLessonPath() { return path.join(getFeedbackDir(), RECENT_LESSON_FILE); }
+function getLessonsPath(feedbackDir) { return path.join(feedbackDir || getFeedbackDir(), LESSONS_FILE); }
+function getRecentLessonPath(feedbackDir) { return path.join(feedbackDir || getFeedbackDir(), RECENT_LESSON_FILE); }
 
 // ---------------------------------------------------------------------------
 // 1. Surrounding Message Context Extraction
@@ -120,7 +120,7 @@ function inferFromSurroundingMessages({ priorMessages = [], followingMessages = 
 /**
  * Create a lesson record with a stable link and store in the index.
  */
-function createLesson({ feedbackId, signal, inferredLesson, triggerMessage, priorSummary, confidence, tags = [], metadata = {} } = {}) {
+function createLesson({ feedbackId, signal, inferredLesson, triggerMessage, priorSummary, confidence, tags = [], feedbackDir, metadata = {} } = {}) {
   const lesson = {
     id: buildStableId('lesson'),
     feedbackId: feedbackId || null,
@@ -142,12 +142,12 @@ function createLesson({ feedbackId, signal, inferredLesson, triggerMessage, prio
   // have captured a pasted credential. See scripts/secret-redaction.js.
   const redactedLesson = redactSecretsDeep(lesson);
 
-  const lessonsPath = getLessonsPath();
+  const lessonsPath = getLessonsPath(feedbackDir);
   ensureParentDir(lessonsPath);
   fs.appendFileSync(lessonsPath, JSON.stringify(redactedLesson) + '\n');
 
   // Update recent lesson for statusbar
-  const recentPath = getRecentLessonPath();
+  const recentPath = getRecentLessonPath(feedbackDir);
   fs.writeFileSync(recentPath, JSON.stringify(redactedLesson, null, 2) + '\n');
 
   return redactedLesson;

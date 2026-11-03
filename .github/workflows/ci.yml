@@ -248,6 +248,26 @@ jobs:
             npm run test:public-package-parity
           fi
 
+      - name: Run fail-fast packaging, scope & metadata preflight
+        if: steps.ci-scope.outputs.mode == 'full'
+        # Fail in ~5s instead of 7m24s when bundle ratchets, version metadata,
+        # or scope boundaries drift on a full-mode PR.
+        env:
+          THUMBGATE_PUBLISH_STATE: unpublished
+          THUMBGATE_PUBLISHED_CLI_STATE: unavailable
+        run: |
+          node --test \
+            tests/test-suite-parity.test.js \
+            tests/public-package-parity.test.js \
+            tests/thumbgate-scope.test.js \
+            tests/version-metadata.test.js \
+            tests/public-landing.test.js \
+            tests/landing-page-claims.test.js \
+            tests/public-core-boundary.test.js \
+            tests/public-bundle-ratchet.test.js \
+            tests/package-boundary.test.js \
+            tests/llm-surface-consistency.test.js
+
       - name: Run tests
         if: steps.ci-scope.outputs.mode == 'full'
         # Hermetic suite: short-circuit the npm-registry publish probe in

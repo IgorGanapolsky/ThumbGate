@@ -159,6 +159,60 @@ function evaluatePamDiode(rootDir = process.cwd()) {
   };
 }
 
+const TAILWORM_SAFE_MIN_VERSION = '1.104.4';
+
+function compareSemver(a = '0.0.0', b = '0.0.0') {
+  const pa = String(a).replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = String(b).replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i += 1) {
+    if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+    if ((pa[i] || 0) < (pb[i] || 0)) return -1;
+  }
+  return 0;
+}
+
+function evaluateTailwormSshSafeguard(version = TAILWORM_SAFE_MIN_VERSION) {
+  const safe = compareSemver(version, TAILWORM_SAFE_MIN_VERSION) >= 0;
+  return {
+    advisory: 'Tailworm (Oct 2026 Tailscale SSH class-level safeguard)',
+    minimumSafeVersion: TAILWORM_SAFE_MIN_VERSION,
+    detectedVersion: String(version),
+    architecturalClassSafeguardsActive: safe,
+    status: safe ? 'PROTECTED' : 'VULNERABLE_UPGRADE_REQUIRED',
+  };
+}
+
+function applyScurgeryNamedBlock(originalContent, blockName, blockBody) {
+  const cleanName = String(blockName || 'default').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const markerStart = `# BEGIN-SCURGERY:${cleanName}\n`;
+  const markerEnd = `\n# END-SCURGERY:${cleanName}`;
+  const cleaned = removeScurgeryNamedBlock(originalContent, cleanName);
+  const sep = cleaned.length > 0 && !cleaned.endsWith('\n') ? '\n' : '';
+  return `${cleaned}${sep}${markerStart}${String(blockBody).replace(/\n$/, '')}${markerEnd}${originalContent.endsWith('\n') ? '\n' : ''}`;
+}
+
+function removeScurgeryNamedBlock(content, blockName) {
+  const cleanName = String(blockName || 'default').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const escaped = cleanName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(?:^|\\n)# BEGIN-SCURGERY:${escaped}\\n[\\s\\S]*?\\n# END-SCURGERY:${escaped}(?=\\n|$)`, 'g');
+  return String(content).replace(re, '');
+}
+
+function selectMagicRouteStickyBackend(backends = [], sessionKey = 'default') {
+  const healthy = (Array.isArray(backends) ? backends : []).filter((b) => b && b.healthy !== false);
+  if (healthy.length === 0) return null;
+  const scored = healthy.map((b) => ({
+    ...b,
+    score: (b.sameRegion ? 100 : 0) - Number(b.latencyMs || 50),
+  })).sort((a, b) => b.score - a.score || String(a.id).localeCompare(String(b.id)));
+  return {
+    selectedBackendId: scored[0].id,
+    stickySessionKey: String(sessionKey),
+    stickyConnector: true,
+    score: scored[0].score,
+  };
+}
+
 function evaluateDiagnostics(options = {}) {
   const rootDir = process.cwd();
   const tailscaleProbe = probeTailscale(options.fixture);
@@ -190,6 +244,13 @@ function evaluateDiagnostics(options = {}) {
       zeroTrustAccessEnforced: pamDiode.enforced,
       privilegedPatternsProtected: pamDiode.privilegedPatternsProtected,
       executionDiode: pamDiode.diodeStatus,
+    },
+    october2026Safeguards: {
+      tailwormSsh: evaluateTailwormSshSafeguard(TAILWORM_SAFE_MIN_VERSION),
+      magicRouteStickyConnector: true,
+      musePersonalAgentNodeGuardrails: true,
+      sweMuxMobileTailnetPanes: true,
+      scurgeryByteIdenticalPolicyBlocks: true,
     },
     recommendations: tailscaleProbe.ok ? [
       'Tailscale peer mesh active. Prevention rules sync automatically across all tailnet agent nodes.',
@@ -244,6 +305,11 @@ module.exports = {
   probeTailscale,
   countPreventionRules,
   evaluatePamDiode,
+  evaluateTailwormSshSafeguard,
+  applyScurgeryNamedBlock,
+  removeScurgeryNamedBlock,
+  selectMagicRouteStickyBackend,
+  TAILWORM_SAFE_MIN_VERSION,
   evaluateDiagnostics,
   main,
   resolveTailscaleBinary,

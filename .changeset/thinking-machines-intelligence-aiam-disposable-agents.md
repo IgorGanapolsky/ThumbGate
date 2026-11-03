@@ -1,0 +1,5 @@
+---
+"thumbgate": patch
+---
+
+Implement Thinking Machines Lab (`planBatchInvariantDeterministicInference`, `evaluateLoraWithoutRegretPlan`, `buildOnPolicyDistillationPlan`, `planInteractionModelSplit`), `intelligence.com` C[i] True Odds & Connector DealRoom monetization (`evaluateIntelligenceComDealRoomEngine`, `buildIntelligenceConnectorActivation`), AI:AM (`MdpamRtlw0Q`) 20-turn misalignment & `$40` expired-cache guardrails (`evaluateArenaTurnDepthAndProductionTrace`, `guardExpiredCacheTrivialTurn`, `auditOffensiveAgentAndCredentialSurface`, `planLiveMeetingAgentAndTokenEconomy`), Navveen Balani Disposable Agents (`Z78LjQn0u2E` `planDisposableAgentLifecycle`, `executeDisposableAgentGarbageCollectionAndRetire`), Reflection AI (`reflection.ai` `planDFlash2SpeculativeDecoding`, `validateBeamHarmonyConversation`, `auditToolCallingReasoningRewrite`, `planVerifierDrivenSelfDistillation`, `evaluateBeamVerifierConformance`), and telemetry bot filtering (`userAgent: "node"` on web + `Spawn-15m-Observer/1.0`).

@@ -22,6 +22,14 @@ describe('analytics-window', () => {
     assert.strictEqual(w.startLocalDate, w.endLocalDate);
   });
 
+  it('resolveAnalyticsWindow normalizes 90-day to 90d with 89-day inclusive lookback', () => {
+    const w = resolveAnalyticsWindow({ window: '90-day', now: '2026-11-02T12:00:00Z', timeZone: 'UTC' });
+    assert.strictEqual(w.window, '90d');
+    assert.strictEqual(w.bounded, true);
+    assert.strictEqual(w.startLocalDate, '2026-08-05');
+    assert.strictEqual(w.endLocalDate, '2026-11-02');
+  });
+
   it('resolveAnalyticsWindow throws on invalid window', () => {
     assert.throws(() => resolveAnalyticsWindow({ window: 'invalid' }), /Invalid analytics window/);
   });

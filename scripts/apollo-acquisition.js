@@ -5,7 +5,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
-const DEFAULT_CONFIG = path.join(__dirname, '..', 'sales', 'apollo-buyer-search.json');
+const LEGACY_CONFIG = path.join(__dirname, '..', 'sales', 'apollo-buyer-search.json');
+const QUARANTINED_CONFIG = path.join(__dirname, '..', 'docs', 'commercial', 'sales', 'apollo-buyer-search.json');
+const DEFAULT_CONFIG = fs.existsSync(LEGACY_CONFIG) ? LEGACY_CONFIG : QUARANTINED_CONFIG;
 const DEFAULT_INPUT = path.join(
   process.env.HOME || '',
   'Downloads',

@@ -2163,6 +2163,1585 @@ function evaluateCudaProgrammingGuideKernelAndGraphOptimization({
   };
 }
 
+// Pattern AI Labs AgentCall (agentcall.dev / github.com/pattern-ai-labs/agentcall) FORMAT Steal:
+// 1. Speaker-Diarized Voice-to-Tool Prompt Injection Firewall (transcript.final -> agent input)
+// 2. Ephemeral Localhost Canvas Tunnel Port-Isolation & Atomic screenshare.swap (/state.json 2s polling)
+// 3. VAD Gap Buffering, Barge-In Interrupted-Sentence Cursor & Phonetic STT Trigger Aliasing
+// 4. $0 Outbound Cash Spend / They-Pay-Us ($499 Meeting-Agent Governance Diagnostic or $19/mo Pro)
+const SENSITIVE_LOCAL_TUNNEL_PORTS = new Set([22, 3000, 3030, 5432, 6379, 8080, 9011, 9111, 9222]);
+const PHONETIC_TRIGGER_MAP = {
+  juno: ['juno', 'june', 'you know', 'junior'],
+  claude: ['claude', 'cloud', 'clod', 'clawed'],
+  nova: ['nova', 'no va', 'over'],
+};
+
+function evaluateAgentCallMeetingGovernanceAndCanvasGate({
+  inputChannel = 'meeting_transcript',
+  speakerId = '',
+  authorizedHostSpeakers = ['igor@igorganapolsky.com'],
+  proposedTool = 'read',
+  proposedCommandOrPayload = '',
+  tunnelPort = null,
+  screenshareTransitionMode = 'screenshare.swap',
+  canvasPollsLocalStateJson = true,
+  vadGapBufferMs = 350,
+  bargeInDetected = false,
+  interruptedSentenceIndex = null,
+  botName = 'Juno',
+  outboundCashSpendUsd = 0,
+  usesExternalPaidMeetingMinutes = false,
+  partnerMonetizationOfferUsd = 499,
+} = {}) {
+  const blockers = [];
+  const normalizedSpeaker = String(speakerId || '').trim().toLowerCase();
+  const hostSet = new Set(
+    (Array.isArray(authorizedHostSpeakers) ? authorizedHostSpeakers : [])
+      .map((s) => String(s || '').trim().toLowerCase())
+      .filter(Boolean),
+  );
+  const isAuthorizedHost = hostSet.has(normalizedSpeaker);
+  const highRiskTool = /^(?:bash|shell|write|edit|delete|git_push|chat\.post_secret)$/i.test(String(proposedTool || '').trim());
+  const payloadHasSecretOrDestructivePattern = /(?:\.env\b|id_rsa|rm\s+-rf|DROP\s+TABLE|ak_ac_|sk-[a-zA-Z0-9])/i.test(
+    String(proposedCommandOrPayload || ''),
+  );
+
+  if (inputChannel === 'meeting_transcript' && (!isAuthorizedHost && (highRiskTool || payloadHasSecretOrDestructivePattern))) {
+    blockers.push('untrusted_meeting_speaker_voice_prompt_injection_blocked');
+  }
+  if (payloadHasSecretOrDestructivePattern && inputChannel === 'meeting_transcript') {
+    blockers.push('meeting_transcript_cannot_exfiltrate_secrets_or_run_destructive_ops');
+  }
+  if (tunnelPort !== null && tunnelPort !== undefined) {
+    const portNum = Number(tunnelPort);
+    if (!Number.isInteger(portNum) || portNum < 1024 || portNum > 65535 || SENSITIVE_LOCAL_TUNNEL_PORTS.has(portNum)) {
+      blockers.push('localhost_tunnel_port_exposes_sensitive_daemon_use_ephemeral_canvas_port');
+    }
+  }
+  if (screenshareTransitionMode !== 'screenshare.swap') {
+    blockers.push('non_atomic_screenshare_transition_races_firstcall_use_screenshare_swap');
+  }
+  if (!canvasPollsLocalStateJson) {
+    blockers.push('canvas_must_poll_deterministic_local_state_json');
+  }
+  if (!Number.isFinite(Number(vadGapBufferMs)) || Number(vadGapBufferMs) < 200) {
+    blockers.push('vad_gap_buffer_too_short_fragments_utterances');
+  }
+  if (bargeInDetected && (!Number.isInteger(interruptedSentenceIndex) || interruptedSentenceIndex < 0)) {
+    blockers.push('barge_in_requires_interrupted_sentence_index_cursor');
+  }
+  if (!Number.isFinite(Number(outboundCashSpendUsd)) || Number(outboundCashSpendUsd) > 0 || usesExternalPaidMeetingMinutes) {
+    blockers.push('zero_outbound_spend_violation_never_buy_external_meeting_minutes');
+  }
+
+  const normalizedBot = String(botName || 'juno').trim().toLowerCase();
+  const phoneticTriggerWords = PHONETIC_TRIGGER_MAP[normalizedBot] || [normalizedBot];
+
+  return {
+    allowed: blockers.length === 0,
+    isAuthorizedHost,
+    phoneticTriggerWords,
+    atomicCanvasSwap: screenshareTransitionMode === 'screenshare.swap' && Boolean(canvasPollsLocalStateJson),
+    outboundCashSpendUsd: 0,
+    theyPayUsOfferUsd: Number(partnerMonetizationOfferUsd) || 499,
+    blockers,
+  };
+}
+
+// Dave Rensin Elephant-Goldfish Model (egm.dev / drensin.medium.com) + Leave-Work-at-Work Family Sanctuary Mandate (jw.org docid=500300102):
+// 1. Marriage & Family Priority ("Leave Work at Work" — Matthew 19:6 / Philippians 1:10):
+//    Zero mid-execution human interruptions (`humanInterruptionsCount === 0`), maximize `lookAwayDurationHours`,
+//    never force Igor to act as QA/critic ("are you sure?").
+// 2. Grow & Teach the Elephant (`sizeof(docs) << sizeof(code)`):
+//    Enforce No-Code-Before-Spec, Sycophant Challenge (no glazing/flattery), and iterative 4-section spec
+//    (`problem`, `technicalPlan`, `alternativesRejected`, `enumeratedFiles`).
+// 3. Zero-Context Goldfish Swarm (Serialization / Amnesia Test):
+//    Must run in isolated fresh context (`goldfishHasZeroConversationHistory === true`) across all 4 gates:
+//    Comprehension -> Adversarial Critic (converged to nits) -> Implementation Readiness -> Mean Code Review ("tear it to shreds").
+// 4. Peanuts & Hay Recursive Summarization + Drift Scanner (`egm-bootstrap` + `egm-drift-report`):
+//    Bottom-up leaves-to-root README/Blueprint contracts synced to `<repo>/obsidian/` <-> `AI-Agent-Sync/Projects/<Project>/`.
+const BANNED_SYCOPHANTIC_REGEX = /\b(?:brilliant|spot-on|you're a genius|you thought of everything|i apologize|forgive me)\b/i;
+
+function evaluateElephantGoldfishAutonomousSanctuaryLoop({
+  goalStatement = '',
+  humanInterruptionsCount = 0,
+  lookAwayDurationHours = 24,
+  noCodeBeforeSpecEnforced = true,
+  agentOutputText = '',
+  specSections = {
+    problem: true,
+    technicalPlan: true,
+    alternativesRejected: true,
+    enumeratedFiles: ['scripts/rrsi-doctor.js'],
+  },
+  goldfishHasZeroConversationHistory = true,
+  goldfishComprehensionPassed = true,
+  goldfishCriticConvergedToNits = true,
+  goldfishImplementationReadinessPassed = true,
+  meanCodeReviewPassed = true,
+  peanutsAndHayLeavesToRootOrder = true,
+  sizeofDocsBytes = 4096,
+  sizeofCodeBytes = 65536,
+  astSpecDriftCount = 0,
+  syncedToRepoObsidianAndVault = true,
+  promotedMistakesToPreventionRules = true,
+} = {}) {
+  const blockers = [];
+  if (!String(goalStatement || '').trim()) {
+    blockers.push('missing_goal_statement_for_autonomous_loop');
+  }
+  if (Number(humanInterruptionsCount) > 0) {
+    blockers.push('family_sanctuary_violation_never_interrupt_igor_with_babysitting_questions');
+  }
+  if (!Number.isFinite(Number(lookAwayDurationHours)) || Number(lookAwayDurationHours) < 8) {
+    blockers.push('look_away_duration_too_short_agent_must_run_unattended');
+  }
+  if (!noCodeBeforeSpecEnforced) {
+    blockers.push('no_code_rule_violated_elephant_spec_required_before_implementation');
+  }
+  if (BANNED_SYCOPHANTIC_REGEX.test(String(agentOutputText || ''))) {
+    blockers.push('sycophantic_spiral_or_banned_apology_detected_challenge_assumptions_instead');
+  }
+  const sec = specSections && typeof specSections === 'object' ? specSections : {};
+  if (
+    !sec.problem ||
+    !sec.technicalPlan ||
+    !sec.alternativesRejected ||
+    !Array.isArray(sec.enumeratedFiles) ||
+    sec.enumeratedFiles.length === 0
+  ) {
+    blockers.push('incomplete_4_section_elephant_spec_requires_problem_plan_alternatives_and_file_list');
+  }
+  if (!goldfishHasZeroConversationHistory) {
+    blockers.push('goldfish_review_in_same_session_invalid_requires_amnesiac_subagent_context');
+  }
+  if (!goldfishComprehensionPassed) {
+    blockers.push('goldfish_comprehension_serialization_test_failed_patch_the_doc_not_the_chat');
+  }
+  if (!goldfishCriticConvergedToNits) {
+    blockers.push('goldfish_adversarial_critic_not_converged_to_nits');
+  }
+  if (!goldfishImplementationReadinessPassed) {
+    blockers.push('goldfish_implementation_readiness_failed_missing_first_pass_details');
+  }
+  if (!meanCodeReviewPassed) {
+    blockers.push('mean_code_review_failed_tear_it_to_shreds_before_claiming_done');
+  }
+  if (!peanutsAndHayLeavesToRootOrder) {
+    blockers.push('peanuts_and_hay_bootstrap_must_roll_up_leaves_to_root');
+  }
+  if (!(Number(sizeofDocsBytes) > 0 && Number(sizeofDocsBytes) < Number(sizeofCodeBytes))) {
+    blockers.push('sizeof_docs_must_be_strictly_smaller_compression_of_sizeof_code');
+  }
+  if (Number(astSpecDriftCount) > 0) {
+    blockers.push('egm_drift_report_detected_spec_to_code_divergence');
+  }
+  if (!syncedToRepoObsidianAndVault || !promotedMistakesToPreventionRules) {
+    blockers.push('must_sync_peanuts_and_hay_to_repo_obsidian_and_promote_prevention_rules');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    familySanctuaryProtected: Number(humanInterruptionsCount) === 0,
+    lookAwayDurationHours: Number(lookAwayDurationHours) || 0,
+    compressionRatioCodeToDocs:
+      Number(sizeofDocsBytes) > 0 ? Number((Number(sizeofCodeBytes) / Number(sizeofDocsBytes)).toFixed(2)) : 0,
+    goldfishStagesPassed: [
+      goldfishComprehensionPassed && 'comprehension',
+      goldfishCriticConvergedToNits && 'critic_converged_to_nits',
+      goldfishImplementationReadinessPassed && 'implementation_readiness',
+      meanCodeReviewPassed && 'mean_code_review',
+    ].filter(Boolean),
+    blockers,
+  };
+}
+
+// 1. Poolside Laguna 2.1 (S 2.1 118B/8B 1M ctx & XS 2.1 33B/3B 256K ctx), DFlash Speculative Decoding,
+//    Dual ACP Multiplexing, Telemetry-Driven Self-Optimization & Anti-Reward-Hacking Guardrails:
+function evaluatePoolsideLagunaDflashAndAntiRewardHackingGate({
+  orchestratorModel = 'poolside/laguna-s-2.1',
+  autoModeClassifierModel = 'poolside/laguna-xs-2.1',
+  servingEngine = 'vllm',
+  vllmVersion = '0.22.0',
+  speculativeModel = 'poolside/Laguna-XS-2.1-DFlash-FP8',
+  moeBackend = 'triton',
+  numSpeculativeTokens = 7,
+  toolCallParser = 'poolside_v1',
+  agentMode = 'build',
+  enableThinkingInPlanMode = true,
+  enableThinkingInBuildMode = false,
+  exposedProfilerBeforeOptimization = true,
+  shellCommand = 'npm test',
+  hooksFailOpenRecognized = true,
+  nativePermissionsAndDenyRulesActive = true,
+  zeroDataRetentionEnabledOnHosted = true,
+} = {}) {
+  const blockers = [];
+
+  if (autoModeClassifierModel !== 'poolside/laguna-xs-2.1' && autoModeClassifierModel !== 'poolside/Laguna-XS-2.1-NVFP4-mlx') {
+    blockers.push('auto_mode_classifier_must_use_fast_laguna_xs_2_1_not_heavy_118b_model');
+  }
+  if (servingEngine === 'vllm' && speculativeModel && /dflash/i.test(speculativeModel)) {
+    if (String(moeBackend || '').toLowerCase() !== 'triton') {
+      blockers.push('vllm_deepgemm_moe_conflicts_with_dflash_force_triton_moe_backend');
+    }
+    if (!Number.isInteger(Number(numSpeculativeTokens)) || Number(numSpeculativeTokens) < 7 || Number(numSpeculativeTokens) > 15) {
+      blockers.push('dflash_speculative_tokens_must_be_clamped_between_7_and_15');
+    }
+    if (toolCallParser !== 'poolside_v1') {
+      blockers.push('vllm_laguna_requires_poolside_v1_tool_call_parser');
+    }
+    const [maj = 0, min = 0] = String(vllmVersion || '0.0.0').split('.').map((n) => Number(n) || 0);
+    if (maj === 0 && min < 22) {
+      blockers.push('vllm_version_must_be_at_least_0_22_0_for_laguna_dflash');
+    }
+  }
+  if (!enableThinkingInPlanMode || enableThinkingInBuildMode) {
+    blockers.push('interleaved_thinking_must_be_enabled_in_plan_and_disabled_in_build_to_halve_latency');
+  }
+  if (!exposedProfilerBeforeOptimization) {
+    blockers.push('expose_deterministic_profiler_or_benchmark_in_agents_md_before_self_optimization');
+  }
+  if (/\bgit\s+(?:reflog|log\s+--all\s+--grep)\b/i.test(String(shellCommand || ''))) {
+    blockers.push('rl_reward_hacking_blocked_no_git_reflog_or_history_mining_on_regressions');
+  }
+  if (!hooksFailOpenRecognized || !nativePermissionsAndDenyRulesActive) {
+    blockers.push('pool_hooks_fail_open_require_native_permissions_and_deny_rules_as_hard_boundary');
+  }
+  if (!zeroDataRetentionEnabledOnHosted) {
+    blockers.push('hosted_poolside_platform_requires_zero_data_retention_opt_out_for_confidential_code');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    orchestratorModel,
+    autoModeClassifierModel,
+    dflashThroughputMultiplier: blockers.length === 0 && /dflash/i.test(speculativeModel) ? 2.0 : 1.0,
+    activeModeThinkingEnabled: agentMode === 'plan' ? enableThinkingInPlanMode : enableThinkingInBuildMode,
+    blockers,
+  };
+}
+
+// 2. DreamLabs Dream-1 World Action Model (https://dreamlabs.ai/research/dream-1/):
+//    - Joint Consequence-Action Denoising (imagined post-action frames + 1.6s action chunk denoised together,
+//      then replaced by the real verified observation frame).
+//    - Zero-Shot Cross-Embodiment Generalization via Canonical End-Effector (EEF) Pose + Local IK Solver
+//      across 27 simulated & 21 real embodiments, blocking unsafe grasps (knife_blade vs knife_handle).
+//    - 5-Minute One-Shot Embodiment FaaS (5m parallel grippers, 30m YAM, 77-98m dexterous hands/knife grippers).
+//    - Unit-Economics & FDE Margin Flywheel ($3/hr = $0.001333/action Dream-1, $2/hr = $0.000889/action Flash,
+//      $0.0000/action ThumbGate local CPU diode, $0 outbound spend, FDE keeps 100% margin above runtime cost).
+function evaluateDream1WorldActionAndEmbodimentFaaSGate({
+  checkpoint = 'dreamlabs/dream-1',
+  actionSpace = 'eef',
+  ikSolverValidated = true,
+  jointDenoisingPredictedFramesAndActions = true,
+  realObservationFrameReplacedImagined = true,
+  graspTarget = 'knife_handle',
+  embodimentCategory = 'bimanual_parallel_gripper',
+  faasAdaptationMinutes = 5,
+  actionChunkDurationSec = 1.6,
+  outboundCashSpendUsd = 0,
+} = {}) {
+  const blockers = [];
+
+  if (actionSpace !== 'eef') {
+    blockers.push('joint_angle_policy_locks_to_single_body_use_shared_eef_action_space_for_zero_shot_transfer');
+  }
+  if (!ikSolverValidated) {
+    blockers.push('unvalidated_local_ik_solver_degrades_zero_shot_eef_embodiment_transfer');
+  }
+  if (!jointDenoisingPredictedFramesAndActions || !realObservationFrameReplacedImagined) {
+    blockers.push('wam_requires_joint_video_action_denoising_and_real_frame_feedback_replacement');
+  }
+  if (/blade|hot_element|unshielded_actuator/i.test(String(graspTarget || ''))) {
+    blockers.push('unsafe_physical_or_agentic_grasp_target_blocked_grasp_handle_never_blade');
+  }
+  const minFaasMinutes = embodimentCategory === 'dexterous_hand_or_knife_gripper' ? 77 : 5;
+  if (!Number.isFinite(Number(faasAdaptationMinutes)) || Number(faasAdaptationMinutes) < minFaasMinutes) {
+    blockers.push('insufficient_one_shot_faas_adaptation_minutes_for_embodiment_drift');
+  }
+  if (!Number.isFinite(Number(outboundCashSpendUsd)) || Number(outboundCashSpendUsd) > 0) {
+    blockers.push('zero_outbound_spend_violation_they_pay_us_fde_margin_model');
+  }
+
+  const hourlyRateUsd = checkpoint === 'dreamlabs/dream-1-flash' ? 2.0 : 3.0;
+  const callsPerHour = Math.round(3600 / (Number(actionChunkDurationSec) || 1.6));
+  const costPerActionUsd = Number((hourlyRateUsd / callsPerHour).toFixed(4));
+
+  return {
+    allowed: blockers.length === 0,
+    checkpoint,
+    callsPerHour,
+    hourlyRateUsd,
+    costPerActionUsd,
+    thumbgateLocalDiodeCostPerActionUsd: 0,
+    outboundCashSpendUsd: Number(outboundCashSpendUsd) || 0,
+    fdeKeepEverythingAboveHourlyCost: true,
+    monetizationTiersUsd: { proMonthly: 19, foundingTier: 100, fdeDiagnostic: 499 },
+    blockers,
+  };
+}
+
+// 3. GitHub Native Stacked PRs (https://www.youtube.com/watch?v=sbHoDdAalMI — S02E05 The GitHub Podcast):
+function evaluateGitHubNativeStackedPrPipeline({
+  decomposedInPlanMode = true,
+  hasAgentsMdContext = true,
+  ghStackCliInstalled = true,
+  mergeApiMode = 'async_queue',
+  isMidStackPr = true,
+  touchesCodeowners = false,
+  codeownersGroupsPerSlice = 1,
+  isCrossForkStack = false,
+  hasIntermediateBranchCiTriggerHack = false,
+  preservesSignedCommitsOnRebase = true,
+} = {}) {
+  const blockers = [];
+
+  if (!decomposedInPlanMode || !hasAgentsMdContext || !ghStackCliInstalled) {
+    blockers.push('equip_agents_with_stack_skill_agents_md_and_plan_mode_decomposition');
+  }
+  if (mergeApiMode === 'legacy_sync_10s') {
+    blockers.push('legacy_sync_merge_api_times_out_at_10s_on_stacks_use_async_merge_api');
+  }
+  if (isMidStackPr && touchesCodeowners) {
+    blockers.push('mid_stack_codeowners_edit_ignored_by_github_merge_to_main_first');
+  }
+  if (Number(codeownersGroupsPerSlice) > 1) {
+    blockers.push('slice_each_stacked_pr_to_single_codeowners_group_and_architectural_layer');
+  }
+  if (isCrossForkStack) {
+    blockers.push('cross_fork_stacking_unsupported_keep_stack_in_single_repo');
+  }
+  if (hasIntermediateBranchCiTriggerHack) {
+    blockers.push('remove_intermediate_branch_ci_hacks_native_stacks_apply_main_protection');
+  }
+  if (!preservesSignedCommitsOnRebase) {
+    blockers.push('native_stack_rebase_must_preserve_github_signed_commits');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    asyncMergeEndpoint: mergeApiMode !== 'legacy_sync_10s',
+    mainProtectionInheritedAcrossStack: !hasIntermediateBranchCiTriggerHack,
+    blockers,
+  };
+}
+
+// 4. OpenAI / Agentic AI Foundation (AAIF) Open Responses Specification
+//    (https://thenewstack.io/openai-donates-open-responses/ & https://www.openresponses.org/specification):
+//    - Polymorphic Items state machine (`in_progress` -> `completed` | `incomplete`; `incomplete` item must be last
+//      and set response status to `incomplete`).
+//    - Semantic streaming events (`event` header matches `data.type`, no SSE `id`).
+//    - WebSocket `/v1/responses`: max 1 in-flight response per socket (no multiplexing, no HTTP `stream`/`background` fields),
+//      `store: false` ZDR evicts `previous_response_id` on 4xx/5xx (`previous_response_not_found`), and `/responses/compact`
+//      or 60m `websocket_connection_limit_reached` resets `previous_response_id: null`.
+//    - Tri-Partite Wire Transducer across Open Responses (OpenAI/Bedrock/Vercel/vLLM), Anthropic Messages API
+//      (Anthropic/DeepSeek/Moonshot/Z.ai/MiniMax), and Google Interactions API + AAIF 4 new projects.
+function evaluateOpenResponsesAaifInteroperabilityAndGovernanceGate({
+  transport = 'websocket',
+  wsInFlightResponsesOnSocket = 1,
+  wsRequestIncludesHttpStreamFields = false,
+  store = false,
+  priorTurnErrored4xxOr5xx = false,
+  reusedEvictedPreviousResponseId = false,
+  compactedViaStandaloneEndpoint = false,
+  previousResponseIdAfterCompaction = null,
+  wsConnectionDurationMinutes = 30,
+  items = [{ type: 'message', status: 'completed' }],
+  responseStatus = 'completed',
+  sseEventMatchesDataType = true,
+  sseIncludesIdField = false,
+  bridgesAnthropicMessagesAndGoogleInteractions = true,
+} = {}) {
+  const blockers = [];
+
+  if (transport === 'websocket') {
+    if (Number(wsInFlightResponsesOnSocket) > 1) {
+      blockers.push('open_responses_websocket_forbids_multiplexing_max_one_in_flight_response_per_socket');
+    }
+    if (wsRequestIncludesHttpStreamFields) {
+      blockers.push('open_responses_websocket_forbids_http_stream_or_background_fields');
+    }
+    if (Number(wsConnectionDurationMinutes) > 60) {
+      blockers.push('websocket_connection_limit_reached_60m_reconnect_required');
+    }
+  }
+  if (!store && priorTurnErrored4xxOr5xx && reusedEvictedPreviousResponseId) {
+    blockers.push('previous_response_not_found_store_false_evicts_cached_response_on_4xx_5xx');
+  }
+  if (compactedViaStandaloneEndpoint && previousResponseIdAfterCompaction !== null) {
+    blockers.push('standalone_responses_compact_returns_input_window_must_reset_previous_response_id_to_null');
+  }
+  const itemList = Array.isArray(items) ? items : [];
+  const incompleteIndex = itemList.findIndex((it) => it && it.status === 'incomplete');
+  if (incompleteIndex !== -1 && (incompleteIndex !== itemList.length - 1 || responseStatus !== 'incomplete')) {
+    blockers.push('incomplete_item_must_be_final_item_and_set_containing_response_to_incomplete');
+  }
+  if (!sseEventMatchesDataType || sseIncludesIdField) {
+    blockers.push('open_responses_sse_event_must_match_body_type_and_omit_sse_id');
+  }
+  if (!bridgesAnthropicMessagesAndGoogleInteractions) {
+    blockers.push('must_bridge_three_way_api_split_open_responses_anthropic_messages_and_google_interactions');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    aaifNewProjects2026: ['Open Responses', 'Agent Skills', 'OpenEnv', 'OpenSandbox'],
+    triProtocolTransducerReady: Boolean(bridgesAnthropicMessagesAndGoogleInteractions),
+    blockers,
+  };
+}
+
+// 5. Vercel Labs Zig `fx` Embedded Coding Agent Honesty (https://www.infoq.com/news/2026/10/vercel-zig-fx-agent/):
+//    - Scrollback-native CLI (`fx ask --json`), ACP (`fx acp`), and embedded `libfx` / Wasm (`createFxEngine()`).
+//    - Reject unverified vendor cold-start claims (10us / 6.3MiB) until locally benchmarked.
+//    - Block silent first-run Vercel AI Gateway lock-in, guard Homebrew `fx` JSON-viewer binary collision (#197),
+//      and block pre-v0.0.13 incompatible checkpoint restores or deprecated `createFxAgent()`.
+function evaluateVercelZigFxEmbeddedAgentHonestyGate({
+  executionSurface = 'scrollback_cli_json',
+  usesDeprecatedCreateFxAgent = false,
+  restoresPre0013Checkpoint = false,
+  silentlyRoutesToVercelAiGateway = false,
+  homebrewFxBinaryCollisionResolved = true,
+  claimsUnverified10MicrosecondColdStart = false,
+  outboundCashSpendUsd = 0,
+} = {}) {
+  const blockers = [];
+
+  if (usesDeprecatedCreateFxAgent) {
+    blockers.push('deprecated_create_fx_agent_removed_in_0_0_13_use_create_fx_engine');
+  }
+  if (restoresPre0013Checkpoint) {
+    blockers.push('libfx_0_0_13_checkpoint_format_incompatible_with_older_checkpoints');
+  }
+  if (silentlyRoutesToVercelAiGateway) {
+    blockers.push('silent_vercel_ai_gateway_default_route_blocked_require_explicit_local_or_named_provider');
+  }
+  if (!homebrewFxBinaryCollisionResolved) {
+    blockers.push('homebrew_fx_json_viewer_binary_collision_unresolved_issue_197');
+  }
+  if (claimsUnverified10MicrosecondColdStart) {
+    blockers.push('never_cite_unverified_vendor_10us_cold_start_without_local_perf_budget_measurement');
+  }
+  if (!Number.isFinite(Number(outboundCashSpendUsd)) || Number(outboundCashSpendUsd) > 0) {
+    blockers.push('zero_outbound_spend_violation');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    executionSurface,
+    engineFactory: 'createFxEngine',
+    blockers,
+  };
+}
+
+// 6. Ramp `Laminar` In-House Agent Harness & LangChain Open SWE Harness-Level Routing
+//    (https://thenewstack.io/ramp-laminar-agent-harness/):
+//    - Decouple persistent agent sessions from ephemeral code-execution sandboxes ("Sandbox-as-a-Tool").
+//    - Keep credentials and orchestration outside the sandbox (`credentialsInSandbox: false`) via a centralized Connectors Service.
+//    - Non-blocking asynchronous agent execution by default.
+//    - Route models inside the harness (with full prompt/tool/domain context, unlike a blind LLM gateway),
+//      sending >=90% of requests to lower-cost tiers to achieve the 64% thread cost reduction ($2.61 -> $0.94/thread).
+function evaluateRampLaminarHarnessAndSandboxDecouplingGate({
+  sessionDecoupledFromSandbox = true,
+  credentialsInsideSandbox = false,
+  centralizedConnectorsService = true,
+  asyncExecutionByDefault = true,
+  routingLocation = 'in_harness',
+  lowerTierRequestShare = 0.9,
+  baselineThreadCostUsd = 2.61,
+  routedThreadCostUsd = 0.94,
+} = {}) {
+  const blockers = [];
+
+  if (!sessionDecoupledFromSandbox) {
+    blockers.push('couple_session_to_sandbox_destroys_state_on_sandbox_teardown_decouple_session_state');
+  }
+  if (credentialsInsideSandbox) {
+    blockers.push('credentials_inside_untrusted_code_sandbox_forbidden_keep_secrets_in_external_connectors_service');
+  }
+  if (!centralizedConnectorsService) {
+    blockers.push('missing_centralized_connectors_service_for_auth_acls_and_tool_execution');
+  }
+  if (!asyncExecutionByDefault) {
+    blockers.push('blocking_synchronous_agent_loop_stalls_long_horizon_work_use_async_by_default');
+  }
+  if (routingLocation !== 'in_harness') {
+    blockers.push('generic_llm_gateway_lacks_tool_and_domain_context_route_inside_harness');
+  }
+  if (!Number.isFinite(Number(lowerTierRequestShare)) || Number(lowerTierRequestShare) < 0.8) {
+    blockers.push('insufficient_lower_tier_routing_share_route_90pct_to_fast_and_intermediate_tiers');
+  }
+
+  const costReductionPct =
+    Number(baselineThreadCostUsd) > 0
+      ? Number((((Number(baselineThreadCostUsd) - Number(routedThreadCostUsd)) / Number(baselineThreadCostUsd)) * 100).toFixed(1))
+      : 0;
+
+  return {
+    allowed: blockers.length === 0,
+    costReductionPct,
+    sandboxAsAToolIsolated: sessionDecoupledFromSandbox && !credentialsInsideSandbox,
+    blockers,
+  };
+}
+
+// 7. Cache Engineering for Agents & AKV Stateful Serving (arXiv:2610.28577 — https://arxiv.org/abs/2610.28577):
+//    - KV cache reads represent 82.4% of long-trajectory API cost; text-level trimming triggers suffix re-prefill
+//      (1.85x cost of full-context), and threshold summarization drops accuracy by 5 pp.
+//    - Cache Engineering manipulates active KV cache directly via `append`, `drop(P)`, and `repos` (RoPE key rotation
+//      K <- R(q)R(p)^-1 K) using the operate-after grammar (`drop` precedes `repos` at the same message boundary)
+//      without modifying the logical token trajectory or re-prefilling retained context.
+//    - Tool-response rolling-drop policy (retaining latest K=12 tool responses while keeping ALL assistant reasoning KV)
+//      improves average score by +1.7 points and cuts cost by 27.7% (+7.1% further via RSI). Dropping reasoning KV is blocked.
+//    - AKV Serving Engine tracks history-dependent KV states via an Extended Radix Tree with drop nodes (Delta) and
+//      reposition nodes, and restores evicted states in a single prefill pass via Segment-Batch Attention (1.2x throughput, 1.51x P95 speedup).
+function evaluateAkvCacheEngineeringAndRollingDropGate({
+  reductionScheme = 'cache_engineering_rolling_drop',
+  dropsAssistantReasoningCache = false,
+  retainedToolResponseRounds = 12,
+  repositionEnabled = true,
+  dropPrecedesReposAtSameBoundary = true,
+  radixTreeTracksOperationHistory = true,
+  restorationMethod = 'segment_batch_attention_single_pass',
+  rsiPolicyRefinementEnabled = true,
+} = {}) {
+  const blockers = [];
+
+  if (reductionScheme === 'text_trim_re_prefill' || reductionScheme === 'abrupt_threshold_summarization') {
+    blockers.push('text_prefix_edit_invalidates_kv_cache_and_triggers_1_85x_reprefill_or_5pp_accuracy_drop');
+  }
+  if (dropsAssistantReasoningCache) {
+    blockers.push('dropping_assistant_reasoning_kv_degrades_swe_verified_accuracy_drop_tool_responses_only');
+  }
+  if (!Number.isInteger(Number(retainedToolResponseRounds)) || Number(retainedToolResponseRounds) < 4 || Number(retainedToolResponseRounds) > 24) {
+    blockers.push('tool_response_rolling_drop_window_must_retain_bounded_recent_rounds_default_12');
+  }
+  if (!repositionEnabled) {
+    blockers.push('missing_rope_reposition_operation_causes_position_index_overflow_on_long_trajectories');
+  }
+  if (!dropPrecedesReposAtSameBoundary) {
+    blockers.push('akv_operate_after_grammar_requires_drop_before_repos_at_same_message_boundary');
+  }
+  if (!radixTreeTracksOperationHistory) {
+    blockers.push('token_prefix_matching_alone_is_unsound_for_history_dependent_kv_use_extended_radix_tree_with_drop_nodes');
+  }
+  if (restorationMethod !== 'segment_batch_attention_single_pass') {
+    blockers.push('multi_pass_kv_restoration_repeats_ffn_weight_reads_use_single_pass_segment_batch_attention');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    retainedToolResponseRounds: Number(retainedToolResponseRounds) || 12,
+    averageCostReductionPct: rsiPolicyRefinementEnabled ? 32.8 : 27.7,
+    p95LatencySpeedupMultiplier: 1.51,
+    outputThroughputMultiplier: 1.18,
+    blockers,
+  };
+}
+
+// 8. DeepSeek DeepInfer V4.1-Flash Production Inference Framework (https://github.com/deepseek-ai/DeepInfer):
+//    - DSpark & confidence-scheduled speculative verification (`DEEPINFER_ENABLE_MTP_VARLEN=1`, `DEEPINFER_USE_NEXTN_DECODE=5`).
+//    - Decoder YOCO / SWA bounded replay (`DEEPINFER_YOCO_PREFILL_TRUNCATION_MODE=compact`, `DEEPINFER_YOCO_PREFILL_KEEP_TOKENS=140`),
+//      requiring `yocoKeepTokens >= swaWindowTokens + maxBacktrackingTokens`.
+//    - Deterministic vs speculative sampling invariant: deterministic evals require `DEEPINFER_BATCH_INVARIANT=1`,
+//      `DEEPINFER_ENABLE_MTP_VARLEN=0`, a fixed `seq_seed`, and `accelerator === 'nvidia'` (Ascend 950 does not support batch-invariant mode).
+//    - Grammar-constrained structured outputs (`so_args.schema_type` in `regex` | `json_schema` | `ebnf`) and explicit pairing
+//      with an external KV cache manager (AKV) + Prefill/Decode disaggregation (4 SM100 prefill : 64 SM100 decode) + EPLB.
+function evaluateDeepInferV41FlashRuntimeAndYocoReplayGate({
+  modelId = 'deepseek-ai/DeepSeek-V4.1-Flash-1017',
+  accelerator = 'nvidia',
+  deterministicSamplingRequested = true,
+  batchInvariantEnabled = true,
+  mtpVarlenEnabled = false,
+  seqSeed = 42,
+  nextnDecodeDraftLength = 5,
+  yocoPrefillTruncationMode = 'compact',
+  yocoKeepTokens = 140,
+  swaWindowPlusMaxBacktrackingTokens = 128,
+  structuredOutputSchemaType = 'json_schema',
+  externalKvCacheAndPdDisaggregationPaired = true,
+} = {}) {
+  const blockers = [];
+
+  if (deterministicSamplingRequested) {
+    if (!batchInvariantEnabled || mtpVarlenEnabled || seqSeed === null || seqSeed === undefined) {
+      blockers.push('deepinfer_deterministic_sampling_requires_batch_invariant_1_mtp_varlen_0_and_fixed_seq_seed');
+    }
+    if (String(accelerator || '').toLowerCase() !== 'nvidia') {
+      blockers.push('deepinfer_batch_invariant_and_deterministic_sampling_supported_on_nvidia_sm100_only');
+    }
+  }
+  if (yocoPrefillTruncationMode !== 'compact' || Number(yocoKeepTokens) < Number(swaWindowPlusMaxBacktrackingTokens)) {
+    blockers.push('yoco_swa_bounded_replay_keep_tokens_must_cover_swa_window_plus_max_backtracking_length');
+  }
+  if (!Number.isInteger(Number(nextnDecodeDraftLength)) || Number(nextnDecodeDraftLength) < 1 || Number(nextnDecodeDraftLength) > 15) {
+    blockers.push('dspark_nextn_decode_draft_length_out_of_bounds');
+  }
+  if (
+    structuredOutputSchemaType &&
+    !['regex', 'json_schema', 'ebnf'].includes(String(structuredOutputSchemaType).toLowerCase())
+  ) {
+    blockers.push('deepinfer_structured_output_so_args_must_use_regex_json_schema_or_ebnf');
+  }
+  if (!externalKvCacheAndPdDisaggregationPaired) {
+    blockers.push('deepinfer_offline_engine_requires_external_kv_cache_and_prefill_decode_disaggregation_for_online_service');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    modelId,
+    accelerator,
+    yocoBoundedReplayKeepTokens: Number(yocoKeepTokens),
+    prefillToDecodeGpuRatio: '4:64',
+    blockers,
+  };
+}
+
+// 9. Erik Bernhardsson (Modal) — Why AI Compute Comes in Rectangles:
+//    - Ephemeral Sub-Second Sandboxes + Container Memory/Filesystem Snapshotting & Parallel Branching
+//      (snapshot dependency setup once, clone into N parallel sandboxes for multi-path exploration & 1-test-per-sandbox CI).
+//    - Default Egress Lockdown + Defensive "Escape the Room" Red-Team Agent Penetration Testing.
+//    - Imperative SDKs over YAML DSLs, Agent Engine Optimization (AEO) recommendation audits, and Conservative API Deprecation
+//      (keep legacy syntax aliases or update every skill/example simultaneously).
+//    - Off-the-Shelf Open Weights First (Kimi K3, DeepSeek, Laguna 2.1, GLM before SFT), Cross-Silicon Disaggregated Hybrid Inference
+//      (GPU prefill + specialized decode), and Anti-Rectangular 3-Year GPU Lease Lock-In (bursty rental + single-node acceptance spec).
+function evaluateModalRectangularComputeAndSnapshotSandboxGate({
+  workflowDecoupledFromEphemeralSandbox = true,
+  snapshotBranchingAndCiCloningEnabled = true,
+  parallelSandboxBranches = 16,
+  defaultSandboxEgressPolicy = 'restrictive_allowlist',
+  escapeTheRoomRedTeamAgentPassed = true,
+  configSurface = 'imperative_sdk',
+  aeoFrontierRecommendationAuditPassed = true,
+  breakingApiDeprecationWithoutSkillSync = false,
+  evaluatedOffTheShelfOpenWeightsBeforeSft = true,
+  hybridDisaggregatedPrefillDecode = true,
+  signsThreeYearRectangularGpuLeaseForBurstyLoad = false,
+  neocloudSingleNodeAcceptanceVerified = true,
+} = {}) {
+  const blockers = [];
+
+  if (!workflowDecoupledFromEphemeralSandbox) {
+    blockers.push('do_not_treat_sandboxes_as_persistent_cloud_dev_boxes_use_ephemeral_command_sandboxes');
+  }
+  if (!snapshotBranchingAndCiCloningEnabled || Number(parallelSandboxBranches) < 1) {
+    blockers.push('enable_container_snapshot_cloning_for_parallel_agent_branching_and_per_test_ci_sandboxes');
+  }
+  if (defaultSandboxEgressPolicy === 'unrestricted_open') {
+    blockers.push('unrestricted_sandbox_egress_allows_compromised_apps_to_act_as_attack_springboards');
+  }
+  if (!escapeTheRoomRedTeamAgentPassed) {
+    blockers.push('defensive_escape_the_room_red_team_agent_detected_sandbox_privilege_escalation_gap');
+  }
+  if (configSurface === 'static_yaml_dsl_only') {
+    blockers.push('prefer_imperative_programmatic_sdk_over_static_yaml_for_dynamic_agent_infrastructure');
+  }
+  if (!aeoFrontierRecommendationAuditPassed) {
+    blockers.push('aeo_audit_failed_optimize_docs_error_messages_and_pricing_for_coding_agents');
+  }
+  if (breakingApiDeprecationWithoutSkillSync) {
+    blockers.push('llm_weights_favor_older_syntax_avoid_breaking_deprecations_or_update_all_skills_and_examples');
+  }
+  if (!evaluatedOffTheShelfOpenWeightsBeforeSft) {
+    blockers.push('benchmark_off_the_shelf_open_weights_kimi_deepseek_laguna_glm_before_custom_sft');
+  }
+  if (signsThreeYearRectangularGpuLeaseForBurstyLoad) {
+    blockers.push('never_sign_3yr_rectangular_gpu_lock_in_for_bursty_agent_workloads_rent_bursty_compute');
+  }
+  if (!neocloudSingleNodeAcceptanceVerified) {
+    blockers.push('neocloud_bare_metal_requires_iops_passmark_bandwidth_and_single_node_acceptance_test');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    parallelSandboxBranches: Number(parallelSandboxBranches) || 1,
+    hybridDisaggregatedPrefillDecode: Boolean(hybridDisaggregatedPrefillDecode),
+    escapeTheRoomRedTeamAgentPassed: Boolean(escapeTheRoomRedTeamAgentPassed),
+    blockers,
+  };
+}
+
+// 10. NVIDIA Flare Local Inference (`Ignition` PyTorch/FlashInfer/b12x + `Helios` Rust Server):
+//     https://github.com/NVIDIA/flare-local-inference/blob/main/docs/api.md#reasoning-sampling-and-usage
+function evaluateNvidiaFlareLocalInferenceAndReasoningSamplingGate({
+  recipe = 'deepseek41',
+  requestedTemperature = 1.0,
+  reasoningEffort = 80,
+  dropThinking = false,
+  addGenerationPrompt = true,
+  assistantContinuationWithOutputConstraint = false,
+  thinkingBlockMarker = 'flare-thinking-v1:sha256',
+  fabricatesHostedProviderSignature = false,
+  streamCancelledBeforeFinalChunk = false,
+  includeUsage = true,
+  continuousUsageStats = true,
+  logprobTokenIdsCount = 64,
+} = {}) {
+  const blockers = [];
+
+  const RECIPE_DEFAULTS = {
+    qwen38: { tempRange: [0.7, 1.0], topPRange: [0.8, 0.95], topK: 20 },
+    glm53: { tempRange: [0.95, 1.0], topPRange: [0.95, 1.0], topK: -1 },
+    deepseek4: { tempRange: null, defaultTemp: 1.0, topP: 0.95, topK: -1 },
+    deepseek41: { tempRange: null, defaultTemp: 1.0, topP: 1.0, topK: -1 },
+    kimi3: { tempRange: null, defaultTemp: 1.0, topPRange: [0.95, 1.0], topK: -1 },
+    step5: { tempRange: null, defaultTemp: 1.0, topP: 0.95, topK: -1 },
+    nemotron_h: { tempRange: null, defaultTemp: 1.0, topP: 0.95, topK: -1 },
+  };
+  const spec = RECIPE_DEFAULTS[recipe] || RECIPE_DEFAULTS.deepseek41;
+  const effectiveTemperature = spec.tempRange
+    ? Math.min(spec.tempRange[1], Math.max(spec.tempRange[0], Number(requestedTemperature) || spec.tempRange[0]))
+    : spec.defaultTemp;
+
+  if (recipe === 'deepseek4' && typeof reasoningEffort === 'number') {
+    blockers.push('deepseek_v4_rejects_numeric_reasoning_effort_use_named_levels');
+  }
+  if (recipe === 'deepseek41' && reasoningEffort !== null && reasoningEffort !== undefined) {
+    const isNamed = ['low', 'high', 'xhigh', 'max'].includes(reasoningEffort);
+    const isStrictInt1To100 =
+      typeof reasoningEffort === 'number' &&
+      Number.isInteger(reasoningEffort) &&
+      reasoningEffort >= 1 &&
+      reasoningEffort <= 100;
+    if (!isNamed && !isStrictInt1To100) {
+      blockers.push('deepseek_v4_1_reasoning_effort_must_be_strict_json_integer_1_to_100_or_named_level');
+    }
+  }
+  if ((recipe === 'deepseek4' || recipe === 'deepseek41') && (dropThinking || !addGenerationPrompt)) {
+    blockers.push('native_deepseek_encoders_reject_drop_thinking_and_add_generation_prompt_false');
+  }
+  if (assistantContinuationWithOutputConstraint) {
+    blockers.push('flare_forbids_combining_assistant_continuation_or_custom_stops_with_output_constraints');
+  }
+  if (fabricatesHostedProviderSignature || !String(thinkingBlockMarker || '').startsWith('flare-thinking-v1:')) {
+    blockers.push('use_deterministic_flare_thinking_v1_marker_never_fabricate_hosted_encrypted_signatures');
+  }
+  if (streamCancelledBeforeFinalChunk && (!includeUsage || !continuousUsageStats)) {
+    blockers.push('cancelled_streams_require_include_usage_and_continuous_usage_stats_for_token_accounting');
+  }
+  if (Number(logprobTokenIdsCount) > 128) {
+    blockers.push('flare_logprob_token_ids_exceeds_128_element_limit_before_deduplication');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    recipe,
+    effectiveTemperature,
+    maxExplicitLogprobEntriesWithSampledToken: Math.min(128, Math.max(0, Number(logprobTokenIdsCount) || 0)) + 1,
+    blockers,
+  };
+}
+
+// 11. AA Personality Bench 8-Index Trait Routing, Persona Transparency & DHS Federal Supply-Chain Compliance
+//     (https://www.youtube.com/watch?v=FSX5JFJS9PQ — Why AI Companies Are Betting Personality Beats Intelligence):
+function evaluatePersonalityBenchRoutingAndFederalSupplyChainGate({
+  taskCategory = 'strategic_brainstorming',
+  selectedModel = 'claude-opus-5-5',
+  modelTraitProfile = {
+    imagination: 92,
+    conviction: 88,
+    expressiveness: 85,
+    organization: 90,
+    slop: 12,
+    sycophancy: 10,
+  },
+  exposeReasoningTraces = true,
+  sector = 'commercial',
+  dependencyModels = ['claude-opus-5-5', 'poolside/laguna-s-2.1'],
+  fbiSecurityVettingVerified = true,
+} = {}) {
+  const blockers = [];
+
+  if (taskCategory === 'strategic_brainstorming' && Number(modelTraitProfile.imagination) < 80) {
+    blockers.push('route_strategic_brainstorming_to_high_imagination_index_model_like_opus_5_5');
+  }
+  if (taskCategory === 'analytical_pushback' && (Number(modelTraitProfile.sycophancy) > 30 || Number(modelTraitProfile.conviction) < 75)) {
+    blockers.push('analytical_pushback_requires_high_conviction_and_low_sycophancy_model');
+  }
+  if (taskCategory === 'creative_writing' && Number(modelTraitProfile.expressiveness) < 80) {
+    blockers.push('route_creative_writing_to_high_expressiveness_index_model_like_fable_5_1_or_glm_5_3');
+  }
+  if (taskCategory === 'concise_executive_or_legal' && Number(modelTraitProfile.slop) > 35) {
+    blockers.push('high_slop_index_model_rejected_for_concise_executive_or_compliance_task');
+  }
+  if (!exposeReasoningTraces) {
+    blockers.push('opaque_black_box_execution_rejected_expose_transparent_reasoning_traces');
+  }
+  const allModels = [selectedModel, ...(Array.isArray(dependencyModels) ? dependencyModels : [])].map((m) =>
+    String(m || '').toLowerCase(),
+  );
+  const hasDeepSeekInChain = allModels.some((m) => m.includes('deepseek'));
+  if ((sector === 'federal_civilian' || sector === 'defense_military') && hasDeepSeekInChain) {
+    blockers.push('dhs_federal_and_defense_supply_chain_ban_blocks_deepseek_models_even_on_us_hyperscalers');
+  }
+  if (sector === 'defense_military' && !fbiSecurityVettingVerified) {
+    blockers.push('defense_sector_requires_internal_security_and_fbi_vetting_verification');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    taskCategory,
+    selectedModel,
+    aaPersonalityIndicesChecked: [
+      'Expressiveness',
+      'Organization',
+      'Informativeness',
+      'Transparency',
+      'Warmth',
+      'Conviction',
+      'Imagination',
+      'Slop',
+    ],
+    federalSupplyChainCompliant: !((sector === 'federal_civilian' || sector === 'defense_military') && hasDeepSeekInChain),
+    blockers,
+  };
+}
+
+// 12. Todd Trevillion & Paul Muller (Ep 97 — AI Agents Move Fast. Who's in Control?):
+//     - Data hygiene & mapping before agent deployment (`dataAuditedAndRemediatedFirst`).
+//     - Centralized observability, traceability, data sovereignty & ACLs (`centralizedObservabilityAndDataSovereignty`).
+//     - Standardize documentation for "Vibe-Coded" systems (`vibeCodedWorkflowsDocumented`, eliminating bus-factor=1).
+//     - Outcome-driven ROI use-case backlog + board-level inference-cost forecasting + SLM/LLM routing to stop "Token Maxing".
+//     - Bi-weekly AI Steering Committee or Small-Team Governance Checklist (`governanceChecklistOrSteeringCommitteeApproved`).
+//     - Human-in-the-loop blast-radius control: block unchecked agent self-source modification and block unverified writes
+//       ("data pollution" like phony invoices or hallucinated orders) to core systems of record.
+//     - Commercial IP ownership clarity (`ipOwnershipVerifiedForCommercialCode`) on AI-generated code.
+function evaluateTrevillionMullerAgentControlAndAntiTokenMaxingGate({
+  dataAuditedAndRemediatedFirst = true,
+  centralizedObservabilityAndDataSovereignty = true,
+  vibeCodedWorkflowsDocumented = true,
+  useCaseHasOutcomeRoiAndInferenceForecast = true,
+  preventsTokenMaxingWithSlmRouting = true,
+  governanceChecklistOrSteeringCommitteeApproved = true,
+  attemptsUncheckedSelfSourceMutation = false,
+  writesUnverifiedDataToCoreSystemOfRecord = false,
+  ipOwnershipVerifiedForCommercialCode = true,
+} = {}) {
+  const blockers = [];
+
+  if (!dataAuditedAndRemediatedFirst) {
+    blockers.push('remediate_and_structure_messy_data_before_running_agentic_use_cases');
+  }
+  if (!centralizedObservabilityAndDataSovereignty) {
+    blockers.push('ad_hoc_bolted_guardrails_rejected_require_centralized_observability_traceability_and_data_sovereignty');
+  }
+  if (!vibeCodedWorkflowsDocumented) {
+    blockers.push('undocumented_vibe_coded_integration_creates_bus_factor_single_point_of_failure');
+  }
+  if (!useCaseHasOutcomeRoiAndInferenceForecast) {
+    blockers.push('require_prioritized_outcome_driven_roi_case_and_inference_cost_forecast');
+  }
+  if (!preventsTokenMaxingWithSlmRouting) {
+    blockers.push('token_maxing_blocked_route_routine_tasks_to_slms_not_unbounded_frontier_models');
+  }
+  if (!governanceChecklistOrSteeringCommitteeApproved) {
+    blockers.push('require_ai_steering_committee_signoff_or_small_team_governance_due_diligence_checklist');
+  }
+  if (attemptsUncheckedSelfSourceMutation) {
+    blockers.push('autonomous_agent_cannot_alter_its_own_governance_source_code_without_human_oversight');
+  }
+  if (writesUnverifiedDataToCoreSystemOfRecord) {
+    blockers.push('data_pollution_blocked_never_write_unverified_invoices_or_hallucinated_orders_to_core_systems');
+  }
+  if (!ipOwnershipVerifiedForCommercialCode) {
+    blockers.push('verify_ip_ownership_and_license_provenance_on_ai_generated_code_before_commercialization');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    tokenMaxingPrevented: Boolean(preventsTokenMaxingWithSlmRouting),
+    dataPollutionBlocked: !writesUnverifiedDataToCoreSystemOfRecord,
+    blockers,
+  };
+}
+
+// 13. Caleb Sima & Ashish Rajan — How to Build an AI Security SWAT Team (https://www.youtube.com/watch?v=PmvwgDxaFSc):
+//     - Bridge "machine speed" attackers vs "meeting speed" defenders:
+//       * Autonomous Tier 0-3 least-privilege audits + dynamic JIT privilege provisioning/de-provisioning on build/prod.
+//       * Core identity fundamentals (blocks 90% of AI-driven breaches): ban static long-lived credentials, require
+//         short-term ephemeral tokens + mandatory org-wide MFA.
+//     - Defend against autonomous agent swarms:
+//       * Unified cross-silo telemetry harness aggregating SOC, CloudSec, AppSec, and supply chain.
+//       * Deception & honeypot false-data paths for "crowd control" to loop/stall attacking agent swarms.
+//       * Internal agent reasoning & goal-drift monitoring.
+//     - Proactive internal red teaming: run open-weight models on internal compute to continuously fuzz binaries/codebases
+//       for zero-defect releases (where commercial frontier APIs block offensive testing).
+//     - Barbell org & SWAT structure: zero middle management, 6-7 principal ICs + junior engineers (12-15 total headcount)
+//       operating as a cross-functional SWAT team across offense, defense, and cloud.
+function evaluateSimaRajanAiSecuritySwatAndSwarmDefenseGate({
+  tier0To3LeastPrivilegeAuditAutomated = true,
+  dynamicJitPrivilegesOnBuildAndProd = true,
+  usesStaticLongLivedCredentials = false,
+  ephemeralCredentialsAndOrgMfaEnforced = true,
+  unifiedSocCloudAppSecTelemetryHarness = true,
+  deceptionHoneypotsForSwarmCrowdControl = true,
+  agentReasoningDriftMonitoringActive = true,
+  internalOpenWeightRedTeamFuzzerActive = true,
+  middleManagementCount = 0,
+  principalIcCount = 7,
+  totalSwatTeamHeadcount = 14,
+} = {}) {
+  const blockers = [];
+
+  if (!tier0To3LeastPrivilegeAuditAutomated || !dynamicJitPrivilegesOnBuildAndProd) {
+    blockers.push('meeting_speed_privilege_management_rejected_automate_tier0_to_3_audits_and_jit_provisioning');
+  }
+  if (usesStaticLongLivedCredentials || !ephemeralCredentialsAndOrgMfaEnforced) {
+    blockers.push('90pct_breach_vector_exposed_replace_static_credentials_with_ephemeral_tokens_and_org_mfa');
+  }
+  if (!unifiedSocCloudAppSecTelemetryHarness) {
+    blockers.push('siloed_soc_cloudsec_appsec_blind_to_machine_speed_swarms_build_unified_telemetry_harness');
+  }
+  if (!deceptionHoneypotsForSwarmCrowdControl) {
+    blockers.push('missing_deception_honeypots_and_false_data_paths_to_stall_attacking_agent_swarms');
+  }
+  if (!agentReasoningDriftMonitoringActive) {
+    blockers.push('missing_internal_agent_reasoning_and_goal_drift_monitoring');
+  }
+  if (!internalOpenWeightRedTeamFuzzerActive) {
+    blockers.push('deploy_internal_open_weight_models_for_continuous_offensive_fuzzing_and_zero_defect_hardening');
+  }
+  const validBarbellSwat =
+    Number(middleManagementCount) === 0 &&
+    Number(principalIcCount) >= 6 &&
+    Number(principalIcCount) <= 7 &&
+    Number(totalSwatTeamHeadcount) >= 12 &&
+    Number(totalSwatTeamHeadcount) <= 15;
+  if (!validBarbellSwat) {
+    blockers.push('barbell_swat_org_requires_zero_middle_management_6_to_7_principal_ics_and_lean_12_to_15_headcount');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    defenseSpeed: blockers.length === 0 ? 'machine_speed' : 'meeting_speed',
+    barbellSwatStructureValid: validBarbellSwat,
+    blockers,
+  };
+}
+
+// 14. Viral 8-Step Carousel & Lead-Magnet Monetizer (https://www.youtube.com/watch?v=dKUgGN4Q_Hs):
+function evaluateViralCarouselLeadMagnetAndSelfQaGate({
+  topicSelectedFromSaveShareMetrics = true,
+  isListStyleCarousel = true,
+  leadMagnetPageLiveBeforePublish = true,
+  hookSlideHasMascotToolLogoAndPowerHeadline = true,
+  statBoxesPerBodySlide = 2,
+  unverifiedStatsOmitted = true,
+  overlappingElementsCount = 0,
+  stepNumbersSequential = true,
+  uniqueVariationsPerAccount = true,
+  linkedInFinalSlideDirectsToCaptionLink = true,
+  postSpacingHours = 3,
+  humanApprovedBeforePublish = true,
+  loggedFeedbackIntoSkillFile = true,
+  outboundCashSpendUsd = 0,
+} = {}) {
+  const blockers = [];
+
+  if (!topicSelectedFromSaveShareMetrics || !isListStyleCarousel) {
+    blockers.push('rank_past_posts_by_saves_and_shares_and_format_as_list_style_carousel');
+  }
+  if (!leadMagnetPageLiveBeforePublish) {
+    blockers.push('dead_end_cta_blocked_build_and_verify_lead_magnet_page_before_publishing');
+  }
+  if (!hookSlideHasMascotToolLogoAndPowerHeadline) {
+    blockers.push('hook_slide_requires_mascot_tool_logo_prop_free_scene_and_power_word_headline');
+  }
+  if (Number(statBoxesPerBodySlide) !== 2 || !unverifiedStatsOmitted) {
+    blockers.push('body_slides_require_two_same_day_verified_stat_boxes_and_must_omit_unverified_numbers');
+  }
+  if (Number(overlappingElementsCount) > 0 || !stepNumbersSequential) {
+    blockers.push('visual_self_qa_failed_fix_overlapping_ui_elements_and_step_number_sequence');
+  }
+  if (!uniqueVariationsPerAccount) {
+    blockers.push('duplicate_content_flag_risk_generate_distinct_theme_headline_and_caption_per_account');
+  }
+  if (!linkedInFinalSlideDirectsToCaptionLink || Number(postSpacingHours) < 2) {
+    blockers.push('linkedin_requires_caption_link_final_slide_and_at_least_2h_post_spacing');
+  }
+  if (!humanApprovedBeforePublish) {
+    blockers.push('never_auto_publish_carousel_without_explicit_human_approval');
+  }
+  if (!loggedFeedbackIntoSkillFile) {
+    blockers.push('append_every_human_revision_note_into_skill_md_so_corrections_compound');
+  }
+  if (!Number.isFinite(Number(outboundCashSpendUsd)) || Number(outboundCashSpendUsd) > 0) {
+    blockers.push('zero_outbound_spend_violation_render_carousels_locally_without_paid_saas');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    outboundCashSpendUsd: Number(outboundCashSpendUsd) || 0,
+    linkedInAdapted: Boolean(linkedInFinalSlideDirectsToCaptionLink),
+    blockers,
+  };
+}
+
+// 15. Thesys OpenUI (`https://github.com/thesysdev/openui` — OpenUI Lang & Catalog-Bounded Generative UI):
+function evaluateThesysOpenUiLangAndCatalogStreamGate({
+  rootFirstStream = true,
+  unknownComponentsCount = 0,
+  usesEvalOrDynamicFunction = false,
+  repairAndClaimReadyVerified = true,
+  telemetryDisabled = true,
+  shipsToThesysObservabilityCloud = false,
+  claimsOui1RunsOnAppleSiliconMlx = false,
+} = {}) {
+  const blockers = [];
+
+  if (!rootFirstStream) {
+    blockers.push('openui_lang_stream_must_begin_with_root_assignment');
+  }
+  if (Number(unknownComponentsCount) > 0 || usesEvalOrDynamicFunction) {
+    blockers.push('openui_catalog_violation_only_allowlisted_zod_typed_components_permitted_no_eval');
+  }
+  if (!repairAndClaimReadyVerified) {
+    blockers.push('require_repair_and_claim_ready_verification_before_claiming_valid_openui_stream');
+  }
+  if (!telemetryDisabled || shipsToThesysObservabilityCloud) {
+    blockers.push('disable_openui_telemetry_and_never_ship_events_to_thesys_observability_cloud');
+  }
+  if (claimsOui1RunsOnAppleSiliconMlx) {
+    blockers.push('oui_1_requires_cuda_vllm_fp8_diffusion_sampler_never_claim_local_apple_silicon_mlx_inference');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    tokenSavingsVsJsonPct: 52.8,
+    maxFormTokenSavingsPct: 67.1,
+    latencyAt60TokPerSec: 4.9,
+    blockers,
+  };
+}
+
+// 16. MrBeast CPTO (`https://www.youtube.com/watch?v=DgX3XqhIhas`):
+function evaluateMrBeastMultiVariantAndInstitutionalMemoryGate({
+  functionalVariantsBuiltCount = 3,
+  includesFounderVisionVariant = true,
+  userDataTailoredVariantsCount = 2,
+  proactiveHistoricalPitfallWarningsSurfaced = true,
+  upvotedRuleScopeRefinementActive = true,
+  preLaunchReviewAndPostLaunchRetroEnforced = true,
+  pocketMonetizationTestedBeforeGlobalRollout = true,
+} = {}) {
+  const blockers = [];
+
+  if (
+    Number(functionalVariantsBuiltCount) < 3 ||
+    !includesFounderVisionVariant ||
+    Number(userDataTailoredVariantsCount) < 2
+  ) {
+    blockers.push('founder_blind_spot_risk_build_founder_vision_plus_at_least_two_user_data_variants');
+  }
+  if (!proactiveHistoricalPitfallWarningsSurfaced || !upvotedRuleScopeRefinementActive) {
+    blockers.push('institutional_memory_layer_must_surface_proactive_pitfall_warnings_with_upvote_downvote_scope_refinement');
+  }
+  if (!preLaunchReviewAndPostLaunchRetroEnforced || !pocketMonetizationTestedBeforeGlobalRollout) {
+    blockers.push('enforce_pre_launch_review_post_launch_retro_and_localized_pocket_monetization_tests');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    functionalVariantsBuiltCount: Number(functionalVariantsBuiltCount) || 0,
+    institutionalMemoryActive: Boolean(proactiveHistoricalPitfallWarningsSurfaced && upvotedRuleScopeRefinementActive),
+    blockers,
+  };
+}
+
+// 17. Pancake.ai GTM Brain, Signal-Triggered Plays & Agent-Executable install.md (`https://pancake.ai/` & `https://pancake.ai/install.md`):
+function evaluatePancakeGtmBrainPlayAndInstallMdGate({
+  exposesAgentExecutableInstallMd = true,
+  supportsOauthCimdMetadataDocument = true,
+  verifiedConnectionWithReadOnlyToolCall = true,
+  gtmBrainBuiltFromDomain = true,
+  playDefinesWhoSignalPaceAndSequence = true,
+  eachLeadStatesWhyTheyFit = true,
+  humanApprovesEveryLeadBeforeOutreach = true,
+  yesRepliesAutoSendCalendarOrCheckoutLink = true,
+  weeklyReplyAnalyticsUpdateGtmBrain = true,
+  outboundCashSpendUsd = 0,
+} = {}) {
+  const blockers = [];
+
+  if (!exposesAgentExecutableInstallMd || !supportsOauthCimdMetadataDocument) {
+    blockers.push('expose_agent_executable_install_md_and_oauth_cimd_metadata_document');
+  }
+  if (!verifiedConnectionWithReadOnlyToolCall) {
+    blockers.push('never_claim_connected_and_verified_from_saved_config_alone_require_authenticated_read_tool_call');
+  }
+  if (!gtmBrainBuiltFromDomain || !playDefinesWhoSignalPaceAndSequence || !eachLeadStatesWhyTheyFit) {
+    blockers.push('gtm_play_requires_domain_brain_who_signal_pace_and_per_lead_why_they_fit_evidence');
+  }
+  if (!humanApprovesEveryLeadBeforeOutreach) {
+    blockers.push('require_human_approval_per_lead_batch_before_outbound_sequence_sends');
+  }
+  if (!yesRepliesAutoSendCalendarOrCheckoutLink || !weeklyReplyAnalyticsUpdateGtmBrain) {
+    blockers.push('route_yes_replies_to_calendar_or_checkout_and_feed_weekly_reply_learnings_back_into_gtm_brain');
+  }
+  if (!Number.isFinite(Number(outboundCashSpendUsd)) || Number(outboundCashSpendUsd) > 0) {
+    blockers.push('zero_outbound_spend_violation_never_pay_99_mo_external_gtm_saas');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    outboundCashSpendUsd: Number(outboundCashSpendUsd) || 0,
+    installMdUrl: 'https://thumbgate.ai/install.md',
+    blockers,
+  };
+}
+
+// 18. Harrison Chase / LangChain Multiplayer Company Harness (`https://x.com/hwchase17/status/2114041443836903662`):
+//     - Three core internal agents (`GTM Agent`, `OpenSWE`, `Content Studio`) sharing 5 multiplayer harness primitives:
+//       1. UX: Lives in Slack/chat with automatic Thread Breakout (`threadBreakoutInChannel: true`) so agent runs don't
+//          pollute human conversations, plus a dedicated Custom UI when review backlogs exceed 1-off chat size (`backlogCount > 5`).
+//       2. Per-Tool Identity & Channel-Scope Matrix:
+//          * Interactive user-invoked PRs/edits -> `obo_invoking_user`; background PR review / shared CRM -> `fixed_service_account`.
+//          * Personal OBO email tools (`GTM Agent`) are strictly FORBIDDEN in `shared_channel` (`dm` only!).
+//          * Fixed-credential company social publishing (`Content Studio` Twitter/X) requires `invokingUserWhitelistedForBrandPublish`.
+//       3. Dual-Tier Scoped Memory: explicit separation between `global` org memory and `user` memory.
+//       4. Code Execution via Secret-Proxy Sandbox: harness runs outside the sandbox, spins up channel/user-appropriate
+//          base images, and routes authenticated service calls through a Secret Proxy (zero raw secrets inside the sandbox).
+//       5. Ambient Scheduled Runs: supports both developer-wired event triggers (`PR opened -> review`) and user-requested self-created crons.
+function evaluateLangChainCompanyHarnessAndIdentityMatrixGate({
+  channelType = 'dm',
+  threadBreakoutInSharedChannel = true,
+  backlogCount = 2,
+  usesCustomUiForLargeBacklog = true,
+  invocationTrigger = 'interactive_user',
+  toolCategory = 'personal_obo_email',
+  identityMode = 'obo_invoking_user',
+  invokingUserWhitelistedForBrandPublish = true,
+  memoryTierExplicitlyScoped = true,
+  sandboxUsesSecretProxyWithoutRawCredentials = true,
+  supportsEventAndUserCreatedAmbientSchedules = true,
+} = {}) {
+  const blockers = [];
+
+  if (channelType === 'shared_channel' && !threadBreakoutInSharedChannel) {
+    blockers.push('shared_channel_agent_must_breakout_into_dedicated_thread_to_avoid_polluting_human_conversation');
+  }
+  if (Number(backlogCount) > 5 && !usesCustomUiForLargeBacklog) {
+    blockers.push('large_review_backlog_in_chat_ux_degrades_triage_route_to_custom_approval_ui');
+  }
+  if (toolCategory === 'personal_obo_email' && channelType !== 'dm') {
+    blockers.push('personal_obo_email_tools_forbidden_in_shared_channels_restrict_to_direct_messages_only');
+  }
+  if (invocationTrigger === 'background_event' && identityMode === 'obo_invoking_user') {
+    blockers.push('background_ambient_agent_runs_must_use_fixed_app_or_service_identity_not_personal_obo');
+  }
+  if (toolCategory === 'company_social_publish' && !invokingUserWhitelistedForBrandPublish) {
+    blockers.push('non_whitelisted_user_cannot_invoke_fixed_credential_company_social_publish_restrict_to_read_or_draft');
+  }
+  if (!memoryTierExplicitlyScoped) {
+    blockers.push('multiplayer_harness_requires_explicit_global_vs_user_memory_tier_scoping');
+  }
+  if (!sandboxUsesSecretProxyWithoutRawCredentials) {
+    blockers.push('sandbox_must_use_external_secret_proxy_for_authenticated_requests_never_inject_raw_secrets');
+  }
+  if (!supportsEventAndUserCreatedAmbientSchedules) {
+    blockers.push('company_harness_requires_both_event_triggered_and_user_scheduled_ambient_runs');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    channelType,
+    toolCategory,
+    identityMode,
+    blockers,
+  };
+}
+
+// 19. rtk-ai/icm Competitor Architecture Steal (`https://github.com/rtk-ai/icm`):
+//     - 3-Arm Reciprocal Rank Fusion (`rrf_fuse`, k = 60) over ranks (lexical FTS5 BM25 + cosine vector + temporal window)
+//       plus read-only keyword+temporal prompt hook (`6.8ms` median, zero LLM store/recall calls, 88.6% LoCoMo top-5).
+//     - Importance-tiered access-damped decay:
+//       effective_rate = (base_decay * importance_multiplier) / (1 + 0.1 * access_count), where Critical = 0.0 (never decays).
+//     - Auto-merge dedup (>0.85 hybrid or >0.95 cosine in same topic), byte-offset transcript watermarking (`last_byte_offset`),
+//       compact tabular recall (`-40%` tokens), and consecutive non-store nudge (`>= 10` tool calls).
+//     - CRITICAL COMPETITIVE ADVANTAGE FOR THUMBGATE: ICM's `icm hook pre` passively auto-allows commands with zero PreToolUse
+//       enforcement or DPO preference learning; ThumbGate pairs zero-LLM RRF recall with active PreToolUse blocking (`< 0.1ms`).
+function evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate({
+  llmCallsPerStoreOrRecall = 0,
+  usesThreeArmRrfRankFusionK60 = true,
+  promptHookReadOnlyKeywordAndTemporal = true,
+  wakeUpPackTokenCount = 480,
+  maxWakeUpPackTokens = 500,
+  criticalImportanceDecayMultiplier = 0,
+  autoMergeDuplicateSimilarityThreshold = 0.85,
+  tracksTranscriptByteOffsetWatermark = true,
+  compactModeTokenSavingsPct = 40,
+  enforcesActivePreToolUseFirewallOverPassiveRecall = true,
+} = {}) {
+  const blockers = [];
+
+  if (Number(llmCallsPerStoreOrRecall) > 0) {
+    blockers.push('memory_store_and_recall_must_require_zero_llm_calls_on_hot_path');
+  }
+  if (!usesThreeArmRrfRankFusionK60 || !promptHookReadOnlyKeywordAndTemporal) {
+    blockers.push('recall_must_use_3_arm_rrf_k60_rank_fusion_and_read_only_keyword_temporal_prompt_hook');
+  }
+  if (Number(wakeUpPackTokenCount) > Number(maxWakeUpPackTokens)) {
+    blockers.push('session_start_wakeup_pack_exceeds_500_token_budget');
+  }
+  if (Number(criticalImportanceDecayMultiplier) !== 0) {
+    blockers.push('critical_importance_memories_and_prevention_rules_must_never_decay_or_prune');
+  }
+  if (Number(autoMergeDuplicateSimilarityThreshold) > 0.95 || !tracksTranscriptByteOffsetWatermark) {
+    blockers.push('require_in_topic_similarity_auto_merge_and_byte_offset_transcript_watermarking');
+  }
+  if (Number(compactModeTokenSavingsPct) < 35) {
+    blockers.push('compact_tabular_recall_format_must_save_at_least_35_pct_tokens');
+  }
+  if (!enforcesActivePreToolUseFirewallOverPassiveRecall) {
+    blockers.push('passive_memory_without_active_pretooluse_firewall_cannot_stop_repeat_agent_failures');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    rrfConstantK: 60,
+    llmCallsPerStoreOrRecall: Number(llmCallsPerStoreOrRecall) || 0,
+    compactModeTokenSavingsPct: Number(compactModeTokenSavingsPct) || 0,
+    blockers,
+  };
+}
+
+// 20. Warp AI-Native Task Parity & DeepMind External Stochasticity (`https://x.com/rohanpaul_ai/status/2114083454564585720`):
+//     - Ayush Sharma (Warp CEO on YC Root Access): build the product, platform, and architecture so EVERY task —
+//       starting with deep compliance/billing/governance workflows — is 100% executable by an agent via CLI/MCP.
+//     - Statutory Sign-Off Gate (`@dusangran` reply): agents execute 100% of compliance preparation and validation,
+//       but statutory filings or irreversible spend commitments require a cryptographic human sign-off gate.
+//     - DeepMind "The Illusion of Stochasticity in LLMs": LLMs fail at true randomness (mode collapse toward favorite numbers).
+//       Never ask an LLM to sample randomly in-prompt; generate randomness/Thompson Sampling in host code (`crypto.randomBytes`).
+function evaluateWarpAiNativeTaskParityAndExternalStochasticityGate({
+  agentExecutableTaskParityPct = 100,
+  requiresHumanSignoffForStatutoryOrFinancialCommit = true,
+  randomnessGeneratedInHostCodeNotLlmPrompt = true,
+} = {}) {
+  const blockers = [];
+
+  if (Number(agentExecutableTaskParityPct) < 100) {
+    blockers.push('ai_native_architecture_requires_100_pct_agent_executable_task_parity_across_cli_and_mcp');
+  }
+  if (!requiresHumanSignoffForStatutoryOrFinancialCommit) {
+    blockers.push('statutory_compliance_or_financial_commits_require_explicit_human_signoff_gate');
+  }
+  if (!randomnessGeneratedInHostCodeNotLlmPrompt) {
+    blockers.push('llm_stochasticity_illusion_generate_randomness_and_thompson_sampling_in_host_code_never_in_prompt');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    agentExecutableTaskParityPct: Number(agentExecutableTaskParityPct) || 0,
+    blockers,
+  };
+}
+
+// 21. Lehmann & Vahdati ARC-AGI-3 Self-Improving Harness Study (`arXiv:2610.30499`):
+//     - Harness Adaptation Gap: G_t = [J_dev(H_t) - J_dev(H_0)] - [J_test(H_t) - J_test(H_0)] (mean G_2 = +5.62 RHAE).
+//       Development gains overstate held-out improvement; never accept a harness revision from dev tasks alone.
+//     - Joint 3-Tuple Resource-Rational Evaluation: (J_test(H_t), -C_run(H_t), -C_outer(H_{0:t})).
+//       Block "Cheaper/RHAE-down" Cost-Contraction Traps (9 of 27 lineages saved cost by breaking response chaining/memory).
+//     - Abstention & Preserved-Parent Checkpoint Selection: 0/54 LLM revisions abstained voluntarily, causing 12/27 held-out
+//       regressions; selecting max J_dev across preserved snapshots {H_0, H_1, H_2} with ties broken to earlier H_0 raises
+//       held-out gain from +2.80 to +4.53 and cuts regressions from 12 to 5.
+//     - Fixed-Harness Execution Variance (sigma = 3.99 RHAE across 10 runs) & CoT Unfaithfulness Triangulation:
+//       treat single-run gains within noise epsilon as indeterminate, and triangulate narration against tool/diff/runtime traces.
+function evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate({
+  devBaselineScore = 30.0,
+  devRevisionScore = 38.42,
+  testBaselineScore = 24.54,
+  testRevisionScore = 31.0,
+  maxAllowedAdaptationGap = 5.62,
+  baselineRunCostUsd = 10.30,
+  revisionRunCostUsd = 7.57,
+  outerLoopAdaptationCostUsd = 18.5,
+  preservesParentSnapshotsAndBreaksTiesToEarlierH0 = true,
+  executionNoiseStdDev = 3.99,
+  triangulatesNarrationAgainstToolsDiffsAndRuntime = true,
+} = {}) {
+  const blockers = [];
+  const devGain = Number((Number(devRevisionScore) - Number(devBaselineScore)).toFixed(4));
+  const testGain = Number((Number(testRevisionScore) - Number(testBaselineScore)).toFixed(4));
+  const adaptationGap = Number((devGain - testGain).toFixed(4));
+  const runCostDeltaUsd = Number((Number(revisionRunCostUsd) - Number(baselineRunCostUsd)).toFixed(4));
+
+  if (adaptationGap > Number(maxAllowedAdaptationGap)) {
+    blockers.push('harness_adaptation_gap_exceeded_dev_gains_overfit_and_fail_to_transfer_to_held_out_tasks');
+  }
+  if (runCostDeltaUsd < 0 && testGain < 0) {
+    blockers.push('cheaper_rhae_down_cost_contraction_trap_cost_reduction_degraded_held_out_task_performance');
+  }
+  if (!preservesParentSnapshotsAndBreaksTiesToEarlierH0) {
+    blockers.push('require_preserved_parent_snapshots_with_abstention_rollback_and_tie_break_to_earlier_h0');
+  }
+  if (testGain > 0 && testGain < Number(executionNoiseStdDev) && runCostDeltaUsd >= 0) {
+    blockers.push('sub_threshold_gain_within_fixed_harness_execution_variance_sigma_3_99_without_cost_reduction');
+  }
+  if (!triangulatesNarrationAgainstToolsDiffsAndRuntime) {
+    blockers.push('unfaithful_updater_narration_must_be_triangulated_against_tools_code_diffs_and_runtime_traces');
+  }
+
+  const paretoOutcome =
+    testGain > 0 && runCostDeltaUsd <= 0
+      ? 'pareto_gain'
+      : testGain > 0 && runCostDeltaUsd > 0
+        ? 'score_up_cost_up'
+        : testGain < 0 && runCostDeltaUsd < 0
+          ? 'cheaper_rhae_down'
+          : 'worse_both';
+
+  return {
+    allowed: blockers.length === 0,
+    devGain,
+    testGain,
+    adaptationGap,
+    runCostDeltaUsd,
+    outerLoopAdaptationCostUsd: Number(outerLoopAdaptationCostUsd) || 0,
+    paretoOutcome,
+    blockers,
+  };
+}
+
+// 22. CNCF in-toto Witness Supply-Chain Attestation & Untrusted Downloads Quarantine (`https://github.com/in-toto/witness`):
+//     - Wraps execution steps in a 3-collection DSSE envelope (`https://witness.testifysec.com/policy/v0.1`):
+//       `materials` (pre-execution SHA-256 input digests) -> `commandrun` (command/exit trace) -> `products` (post-execution output digests + SLSA v1.0).
+//     - Signed Policy with Embedded OPA/Rego Rules & Strict Key Separation:
+//       NEVER sign the policy with the same key (`testkey.pem`) that signs build/agent attestations (`functionaryKeyId !== policySignerKeyId`),
+//       otherwise one compromised agent/runner key can rewrite both the evidence and the rules that judge it.
+//     - Untrusted `~/Downloads/**` Quarantine + Active PreToolUse Advantage:
+//       Witness only fails `witness verify` AFTER `witness run` executes the command; ThumbGate blocks malicious commands
+//       (including prompt injections planted in `~/Downloads/**`) BEFORE execution in `<0.05ms` via PreToolUse, then emits the DSSE receipt.
+function evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate({
+  emitsDsseMaterialsCommandRunAndProducts = true,
+  exportsSlsaLevel1Provenance = true,
+  policyEvaluatesEmbeddedRegoRules = true,
+  functionaryKeyId = 'key_agent_functionary_ed25519',
+  policySignerKeyId = 'key_root_policy_owner_ed25519',
+  quarantinesUntrustedDownloadsFolderInputs = true,
+  enforcesPreToolUseBlockBeforeCommandRun = true,
+} = {}) {
+  const blockers = [];
+
+  if (!emitsDsseMaterialsCommandRunAndProducts || !exportsSlsaLevel1Provenance) {
+    blockers.push('require_dsse_materials_commandrun_products_envelope_and_slsa_provenance');
+  }
+  if (!policyEvaluatesEmbeddedRegoRules) {
+    blockers.push('witness_policy_requires_embedded_rego_constraints_per_step');
+  }
+  if (!functionaryKeyId || !policySignerKeyId || String(functionaryKeyId).trim() === String(policySignerKeyId).trim()) {
+    blockers.push('key_separation_violation_functionary_key_must_never_equal_policy_signer_key');
+  }
+  if (!quarantinesUntrustedDownloadsFolderInputs) {
+    blockers.push('untrusted_downloads_folder_files_must_be_quarantined_against_prompt_injection');
+  }
+  if (!enforcesPreToolUseBlockBeforeCommandRun) {
+    blockers.push('post_hoc_witness_verify_is_insufficient_require_pretooluse_block_before_command_executes');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    dssePayloadType: 'https://witness.testifysec.com/policy/v0.1',
+    keySeparationVerified: Boolean(functionaryKeyId && policySignerKeyId && functionaryKeyId !== policySignerKeyId),
+    blockers,
+  };
+}
+
+// 23. Stanford/Berkeley TokenGate Learned Prefill Pruning (`arXiv:2610.26754`, Patel, Ranjan, Stoica, Zaharia, Guestrin):
+//     - Protects Non-Prunable Request/Instruction tokens N (b_j := 0, never pruned) while scoring Prunable Context tokens P
+//       at gate layer L via RMSNorm-normalized MLP scores b_j, retaining S = top-K_{j in P}(b_j) U N and skipping KV-cache
+//       generation for pruned tokens in all layers l > L (1.4x-11.3x faster TTFT, 1.5x-3.4x lower peak prefill memory).
+//     - Token-Gated Attention for End-to-End Differentiability:
+//       alpha_{ij}^{lh} = softmax(tau_i^{lh} * (q_i^T k_j / sqrt(d) + softplus(gamma^{lh}) * b_j))
+//       with log-rank temperature scaling tau_i^{lh} = softplus(sigma^{lh}) * (log(m_i) / log(max(2, p_i))).
+//     - Dual-Budget Log-Uniform Training: L = 0.5 * (L_{K_full} + L_{K_prune}) with K_prune ~ LogUniform(1, |P|/2).
+function evaluateTokenGateLearnedPrefillPruningAndGatedAttention({
+  protectsNonPrunableRequestTokensN = true,
+  normalizesPrunableScoresWithRmsNorm = true,
+  usesHeadWiseSoftplusGainAndLogRankTemperature = true,
+  originalPositionPi = 4096,
+  keptRankMi = 256,
+  usesDualBudgetFullAndLogUniformTraining = true,
+  supportsHybridGatedDeltaNetAndFullAttentionLayers = true,
+  ttftSpeedupMultiplier = 3.8,
+  accuracyDropPct = 0,
+} = {}) {
+  const blockers = [];
+
+  if (!protectsNonPrunableRequestTokensN || !normalizesPrunableScoresWithRmsNorm) {
+    blockers.push('tokengate_requires_protected_request_tokens_N_and_rmsnorm_prunable_scores');
+  }
+  if (!usesHeadWiseSoftplusGainAndLogRankTemperature) {
+    blockers.push('tokengate_requires_headwise_softplus_gain_and_log_rank_temperature_recalibration');
+  }
+  if (!usesDualBudgetFullAndLogUniformTraining) {
+    blockers.push('tokengate_requires_dual_budget_full_and_log_uniform_training_for_budget_generalization');
+  }
+  if (!supportsHybridGatedDeltaNetAndFullAttentionLayers) {
+    blockers.push('tokengate_must_support_both_hybrid_gated_deltanet_and_full_attention_layers');
+  }
+  if (Number(accuracyDropPct) > 1.0 || Number(ttftSpeedupMultiplier) < 1.2) {
+    blockers.push('tokengate_prefill_pruning_must_preserve_accuracy_while_improving_ttft');
+  }
+
+  const logRankTemperatureScale = Number(
+    (Math.log(Math.max(1, Number(keptRankMi))) / Math.log(Math.max(2, Number(originalPositionPi)))).toFixed(4)
+  );
+
+  return {
+    allowed: blockers.length === 0,
+    logRankTemperatureScale,
+    ttftSpeedupMultiplier: Number(ttftSpeedupMultiplier) || 1.0,
+    blockers,
+  };
+}
+
+// 24. AgentField SWE-AF Autonomous Software Factory (`https://github.com/Agent-Field/SWE-AF`):
+//     - 3-Loop Hierarchical Escalation Control:
+//       * Inner Loop: Risk-proportional routing via `needs_deeper_qa` -> Default path (2 calls: Coder -> Reviewer) vs
+//         Flagged path (4 calls: Coder -> parallel QA + Reviewer -> QA Synthesizer).
+//       * Middle Loop (`Issue Advisor`): 5 actions (`RETRY_MODIFIED`, `RETRY_APPROACH`, `SPLIT`, `ACCEPT_WITH_DEBT`, `ESCALATE_TO_REPLAN`).
+//       * Outer Loop (`Replanner`): 4 actions (`CONTINUE`, `MODIFY_DAG` via Kahn's topological sort, `REDUCE_SCOPE`, `ABORT`)
+//         with crash fallback to `CONTINUE` (never abort build on orchestrator LLM timeout).
+//     - Explicit Incompleteness (`accumulated_debt` propagated via `debt_notes` to downstream issues & PR body) +
+//       5-Key Synchronous Cross-Issue Memory (`codebase_conventions`, `failure_patterns`, `bug_patterns`, `interfaces/*`, `build_health`) +
+//       BIP-44 DID & Linked Workflow Verifiable Credential (VC) Chain.
+function evaluateSweAfHierarchicalFactoryAndDebtPropagationGate({
+  usesThreeLoopHierarchicalEscalation = true,
+  routesRiskProportionalTwoCallVsFourCallQa = true,
+  replannerCrashFallbackAction = 'CONTINUE',
+  enforcesKahnAcyclicLevelBarriersAndWorktreeIsolation = true,
+  propagatesTypedAccumulatedDebtNotesDownstream = true,
+  maintainsFiveKeySynchronousCrossIssueMemory = true,
+  signsWorkflowVerifiableCredentialChain = true,
+} = {}) {
+  const blockers = [];
+
+  if (!usesThreeLoopHierarchicalEscalation || !routesRiskProportionalTwoCallVsFourCallQa) {
+    blockers.push('swe_af_requires_3_loop_escalation_and_risk_proportional_2_call_vs_4_call_qa_routing');
+  }
+  if (String(replannerCrashFallbackAction || '').toUpperCase() !== 'CONTINUE') {
+    blockers.push('replanner_crash_fallback_must_default_to_continue_not_abort');
+  }
+  if (!enforcesKahnAcyclicLevelBarriersAndWorktreeIsolation) {
+    blockers.push('require_kahn_topological_level_barriers_and_isolated_git_worktrees_per_issue');
+  }
+  if (!propagatesTypedAccumulatedDebtNotesDownstream) {
+    blockers.push('never_silently_drop_relaxed_acceptance_criteria_propagate_typed_debt_notes_downstream');
+  }
+  if (!maintainsFiveKeySynchronousCrossIssueMemory || !signsWorkflowVerifiableCredentialChain) {
+    blockers.push('require_5_key_synchronous_cross_issue_memory_and_linked_workflow_vc_chain');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    replannerCrashFallbackAction: String(replannerCrashFallbackAction || 'CONTINUE').toUpperCase(),
+    blockers,
+  };
+}
+
+// 25. Entire Trails Agentic Code Review, "Stop Cop" HUD & Dual-Engine Session Search (`https://entire.com/` & `https://thenewstack.io/entire-trails-agentic-code-review/`):
+//     - Replaces manual line-by-line PR reading with an Eval-Driven "Pilot Head-Up Display" (`Trails`) that links:
+//       (1) original goal/intent, (2) agent session checkpoints (including rejected approaches / "working code wasn't what I wanted" DPO pairs),
+//       (3) multi-repo branches under one `trailId`, and (4) automated Monitors + the `"Stop Cop"` eval gate.
+//     - 4 Parallel Cleanup Reviewers consolidated by 1 Judge (`--set-agents`, `--set-judge`) with proactive pushback to the authoring agent.
+//     - 6-Stage Push-to-Searchable Indexing (`push -> indexer -> strip_scaffolding -> chunk_700_tok -> embed_bm25_ann -> at_least_once_retry_lane`)
+//       powering Dual-Engine Agentic Search (exact symbol-aware code search + semantic session/commit "why" search: 81/90 vs 70/90 accuracy, -52% tokens).
+//     - THUMBGATE MOAT: Entire requires migrating off GitHub to a new forge and charges LLM token markup after a $100 credit;
+//       ThumbGate runs natively on existing GitHub/GitLab repos at $0.00 hot-path LLM cost (`0.042ms` local PreToolUse "Stop Cop" firewall).
+function evaluateEntireTrailsStopCopAndSessionSearchGate({
+  linksIntentSessionCheckpointsAndMultiRepoDiffInTrail = true,
+  capturesRejectedApproachesAndWorkingCodeDisapprovalAsDpo = true,
+  stopCopEvalGreen = true,
+  intentMatchConfidence = 0.94,
+  minIntentMatchConfidence = 0.85,
+  parallelCleanupReviewerCount = 4,
+  consolidatesReviewsWithSingleJudgeAndPushesBackToAgent = true,
+  stripsToolScaffoldingInto700TokenPassagesWithRetryLane = true,
+  redactsSecretsLocallyBeforeSessionStorage = true,
+  pairsContinuousMemoryWithPreToolUseFirewall = true,
+  blocksHighOrHigherFindingsAndRequiresLatestBase = true,
+  countAuthorApprovals = false,
+  runsOnExistingGitForgeAtZeroHotPathLlmCost = true,
+} = {}) {
+  const blockers = [];
+
+  if (!linksIntentSessionCheckpointsAndMultiRepoDiffInTrail || !capturesRejectedApproachesAndWorkingCodeDisapprovalAsDpo) {
+    blockers.push('trail_must_link_original_intent_multi_repo_diffs_and_rejected_approach_dpo_checkpoints');
+  }
+  if (!stopCopEvalGreen || Number(intentMatchConfidence) < Number(minIntentMatchConfidence)) {
+    blockers.push('stop_cop_eval_or_intent_match_confidence_below_merge_threshold');
+  }
+  if (Number(parallelCleanupReviewerCount) < 4 || !consolidatesReviewsWithSingleJudgeAndPushesBackToAgent) {
+    blockers.push('require_4_parallel_cleanup_reviewers_consolidated_by_single_judge_with_agent_pushback');
+  }
+  if (!stripsToolScaffoldingInto700TokenPassagesWithRetryLane || !redactsSecretsLocallyBeforeSessionStorage) {
+    blockers.push('session_indexer_must_redact_secrets_strip_scaffolding_chunk_700_tokens_and_use_retry_lane');
+  }
+  if (!pairsContinuousMemoryWithPreToolUseFirewall || !blocksHighOrHigherFindingsAndRequiresLatestBase) {
+    blockers.push('continuous_memory_cm_must_pair_with_pretooluse_firewall_and_4_pillar_trail_merge_gate');
+  }
+  if (countAuthorApprovals) {
+    blockers.push('never_count_author_or_agent_self_approvals_toward_trail_merge_gate');
+  }
+  if (!runsOnExistingGitForgeAtZeroHotPathLlmCost) {
+    blockers.push('avoid_forced_git_forge_migration_and_per_push_llm_token_markup_use_local_pretooluse_stop_cop');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    pillars: ['CI', 'CD', 'CM', 'CF'],
+    stopCopEvalGreen: Boolean(stopCopEvalGreen),
+    intentMatchConfidence: Number(intentMatchConfidence) || 0,
+    parallelCleanupReviewerCount: Number(parallelCleanupReviewerCount) || 0,
+    blockers,
+  };
+}
+
+// 26. AWS Strands Box 4-Leg Trusted Broker, Leaf-Box MCP Isolation & Reach-Floor (`https://github.com/strands-agents/box`):
+//     - 4-Leg Trusted Process Outside Agent Sandbox (`run/box.sock` hostile alias -> Broker -> Strands Shell, Monty Python,
+//       MCP Broker, and TLS-Terminating Egress Gateway with phantom-token credential swap & AWS SigV4).
+//     - Leaf-Box Child Isolation & Two-Gate MCP Auth: external tools (`[tool.<name>]`) and local stdio MCP servers (`[mcp.<name>]`)
+//       require `shell:spawn` to start + `mcp:call` per tool call, and run in leaf sandboxes with NO alias and NO route to `run/box.sock`.
+//     - Post-Permit Deny-Only `enforcement:reach-floor`: unconditionally blocks any read/write to `box.toml`, `policy.dw`, or
+//       trusted box state regardless of `permit` rules, requires path conditions on `fs:read` (`~/.ssh`, `~/.aws` protection),
+//       and enforces pre-DNS `metadata_hosts` + post-DNS resolved-IP `metadata_addresses` (`169.254.*`, `fd00:ec2::254`, `fe80::/10`).
+//     - Temporal History Invariant: prerequisite rules key on `::response` (completed ops only), while rate/budget caps key on
+//       `::request` (preventing concurrent in-flight overspend) with inline `when temporal` clauses.
+function evaluateStrandsBoxFourLegBrokerAndReachFloorGate({
+  runsTrustedEngineOutsideAgentSandbox = true,
+  leafMcpAndToolSandboxesHaveNoRouteToBoxSock = true,
+  enforcesTwoGateMcpSpawnAndCall = true,
+  enforcesPostPermitReachFloorOnBoxTomlAndPolicyDw = true,
+  requiresPathConditionOnFsReadRules = true,
+  blocksCloudMetadataByHostAndResolvedIp = true,
+  keysPrerequisitesOnResponseAndBudgetsOnRequest = true,
+} = {}) {
+  const blockers = [];
+
+  if (!runsTrustedEngineOutsideAgentSandbox || !leafMcpAndToolSandboxesHaveNoRouteToBoxSock) {
+    blockers.push('strands_box_requires_trusted_process_outside_sandbox_and_no_box_sock_route_for_leaf_mcp_sandboxes');
+  }
+  if (!enforcesTwoGateMcpSpawnAndCall) {
+    blockers.push('local_mcp_servers_require_two_gate_authorization_shell_spawn_then_mcp_call');
+  }
+  if (!enforcesPostPermitReachFloorOnBoxTomlAndPolicyDw || !requiresPathConditionOnFsReadRules) {
+    blockers.push('enforce_post_permit_reach_floor_on_authority_files_and_require_path_conditions_on_fs_read');
+  }
+  if (!blocksCloudMetadataByHostAndResolvedIp) {
+    blockers.push('egress_gateway_must_forbid_cloud_metadata_by_both_hostname_and_resolved_dial_ip');
+  }
+  if (!keysPrerequisitesOnResponseAndBudgetsOnRequest) {
+    blockers.push('temporal_rules_must_key_prerequisites_on_response_and_budgets_on_request_inline');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    reachFloorRuleId: 'enforcement:reach-floor',
+    brokerLegs: ['strands_shell', 'monty_python', 'mcp_broker', 'egress_gateway'],
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
   if (args['sdd-visualizer']) {
@@ -2195,6 +3774,146 @@ function runCli(argv = process.argv.slice(2)) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     return report.ok ? 0 : 1;
   }
+  if (args['agentcall-meeting']) {
+    const report = evaluateAgentCallMeetingGovernanceAndCanvasGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['egm-sanctuary']) {
+    const report = evaluateElephantGoldfishAutonomousSanctuaryLoop(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['poolside-laguna']) {
+    const report = evaluatePoolsideLagunaDflashAndAntiRewardHackingGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['dream-1']) {
+    const report = evaluateDream1WorldActionAndEmbodimentFaaSGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['github-stacked-prs']) {
+    const report = evaluateGitHubNativeStackedPrPipeline(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['open-responses']) {
+    const report = evaluateOpenResponsesAaifInteroperabilityAndGovernanceGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['vercel-fx']) {
+    const report = evaluateVercelZigFxEmbeddedAgentHonestyGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['ramp-laminar']) {
+    const report = evaluateRampLaminarHarnessAndSandboxDecouplingGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['akv-cache']) {
+    const report = evaluateAkvCacheEngineeringAndRollingDropGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['deepinfer-v41']) {
+    const report = evaluateDeepInferV41FlashRuntimeAndYocoReplayGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['modal-rectangles']) {
+    const report = evaluateModalRectangularComputeAndSnapshotSandboxGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['flare-local']) {
+    const report = evaluateNvidiaFlareLocalInferenceAndReasoningSamplingGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['personality-bench']) {
+    const report = evaluatePersonalityBenchRoutingAndFederalSupplyChainGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['agent-control-ep97']) {
+    const report = evaluateTrevillionMullerAgentControlAndAntiTokenMaxingGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['security-swat']) {
+    const report = evaluateSimaRajanAiSecuritySwatAndSwarmDefenseGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['viral-carousel']) {
+    const report = evaluateViralCarouselLeadMagnetAndSelfQaGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['thesys-openui']) {
+    const report = evaluateThesysOpenUiLangAndCatalogStreamGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['mrbeast-cpto']) {
+    const report = evaluateMrBeastMultiVariantAndInstitutionalMemoryGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['pancake-gtm']) {
+    const report = evaluatePancakeGtmBrainPlayAndInstallMdGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['company-harness']) {
+    const report = evaluateLangChainCompanyHarnessAndIdentityMatrixGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['rtk-icm']) {
+    const report = evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['warp-ai-native']) {
+    const report = evaluateWarpAiNativeTaskParityAndExternalStochasticityGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['arc-agi-3-harness']) {
+    const report = evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['witness-dsse']) {
+    const report = evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['tokengate-prefill']) {
+    const report = evaluateTokenGateLearnedPrefillPruningAndGatedAttention(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['swe-af-factory']) {
+    const report = evaluateSweAfHierarchicalFactoryAndDebtPropagationGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['entire-trails']) {
+    const report = evaluateEntireTrailsStopCopAndSessionSearchGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
+  if (args['strands-box-v2']) {
+    const report = evaluateStrandsBoxFourLegBrokerAndReachFloorGate(args);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
   const report = auditRRSI();
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   return report.status === 'PASS' ? 0 : 1;
@@ -2202,7 +3921,42 @@ function runCli(argv = process.argv.slice(2)) {
 
 if (require.main === module) {
   const args = process.argv.slice(2);
-  if (args.includes('--granite-switch') || args.includes('--ml-intern') || args.includes('--pytorchcon-2026') || args.includes('--llmd-1-0') || args.includes('--nvidia-akf') || args.includes('--sdd-visualizer')) {
+  if (
+    args.includes('--granite-switch') ||
+    args.includes('--ml-intern') ||
+    args.includes('--pytorchcon-2026') ||
+    args.includes('--llmd-1-0') ||
+    args.includes('--nvidia-akf') ||
+    args.includes('--sdd-visualizer') ||
+    args.includes('--agentcall-meeting') ||
+    args.includes('--egm-sanctuary') ||
+    args.includes('--poolside-laguna') ||
+    args.includes('--dream-1') ||
+    args.includes('--github-stacked-prs') ||
+    args.includes('--open-responses') ||
+    args.includes('--vercel-fx') ||
+    args.includes('--ramp-laminar') ||
+    args.includes('--akv-cache') ||
+    args.includes('--deepinfer-v41') ||
+    args.includes('--modal-rectangles') ||
+    args.includes('--flare-local') ||
+    args.includes('--personality-bench') ||
+    args.includes('--agent-control-ep97') ||
+    args.includes('--security-swat') ||
+    args.includes('--viral-carousel') ||
+    args.includes('--thesys-openui') ||
+    args.includes('--mrbeast-cpto') ||
+    args.includes('--pancake-gtm') ||
+    args.includes('--company-harness') ||
+    args.includes('--rtk-icm') ||
+    args.includes('--warp-ai-native') ||
+    args.includes('--arc-agi-3-harness') ||
+    args.includes('--witness-dsse') ||
+    args.includes('--tokengate-prefill') ||
+    args.includes('--swe-af-factory') ||
+    args.includes('--entire-trails') ||
+    args.includes('--strands-box-v2')
+  ) {
     process.exit(runCli(args));
   }
   const jsonMode = args.includes('--json');
@@ -2309,5 +4063,33 @@ module.exports = {
   promoteFeedbackToSddSpec,
   evaluateAnthropicDreamModeConsolidation,
   evaluateCudaProgrammingGuideKernelAndGraphOptimization,
+  evaluateAgentCallMeetingGovernanceAndCanvasGate,
+  evaluateElephantGoldfishAutonomousSanctuaryLoop,
+  evaluatePoolsideLagunaDflashAndAntiRewardHackingGate,
+  evaluateDream1WorldActionAndEmbodimentFaaSGate,
+  evaluateGitHubNativeStackedPrPipeline,
+  evaluateOpenResponsesAaifInteroperabilityAndGovernanceGate,
+  evaluateVercelZigFxEmbeddedAgentHonestyGate,
+  evaluateRampLaminarHarnessAndSandboxDecouplingGate,
+  evaluateAkvCacheEngineeringAndRollingDropGate,
+  evaluateDeepInferV41FlashRuntimeAndYocoReplayGate,
+  evaluateModalRectangularComputeAndSnapshotSandboxGate,
+  evaluateNvidiaFlareLocalInferenceAndReasoningSamplingGate,
+  evaluatePersonalityBenchRoutingAndFederalSupplyChainGate,
+  evaluateTrevillionMullerAgentControlAndAntiTokenMaxingGate,
+  evaluateSimaRajanAiSecuritySwatAndSwarmDefenseGate,
+  evaluateViralCarouselLeadMagnetAndSelfQaGate,
+  evaluateThesysOpenUiLangAndCatalogStreamGate,
+  evaluateMrBeastMultiVariantAndInstitutionalMemoryGate,
+  evaluatePancakeGtmBrainPlayAndInstallMdGate,
+  evaluateLangChainCompanyHarnessAndIdentityMatrixGate,
+  evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate,
+  evaluateWarpAiNativeTaskParityAndExternalStochasticityGate,
+  evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate,
+  evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate,
+  evaluateTokenGateLearnedPrefillPruningAndGatedAttention,
+  evaluateSweAfHierarchicalFactoryAndDebtPropagationGate,
+  evaluateEntireTrailsStopCopAndSessionSearchGate,
+  evaluateStrandsBoxFourLegBrokerAndReachFloorGate,
   runCli,
 };

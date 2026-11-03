@@ -29,7 +29,8 @@ const path = require('node:path');
 const STRANDS_DEFAULTS = Object.freeze({
   maxOutputLines: 350,
   maxOutputBytes: 16 * 1024, // 16 KB
-  compactionThresholdPct: 0.75, // Trigger compaction at 75% context window utilization
+  compactionThresholdPct: 0.85, // Dual-trigger (Paper Instruments FORMAT steal): 85% context window OR 30,000 tokens remaining
+  compactionTokenFloor: 30000,  // Paper Instruments FORMAT steal: compaction trigger when tokens remaining drop below this
   terminalBenchSavingsBenchmarkPct: 0.77, // 77% cheaper on Terminal-Bench 2.1 ($56.29 vs $248.05)
   overallCostSavingsBenchmarkPct: 0.45,   // 45% cheaper across ALFWorld, GAIA, WebShop, etc.
 });
@@ -219,7 +220,7 @@ function runDoctor(options = {}) {
   let adapterConfig = {
     provider: 'bedrock',
     tokenShunt: { maxOutputLines: 350, maxOutputBytes: 16384 },
-    compaction: { thresholdPct: 0.75 },
+    compaction: { thresholdPct: 0.85, tokenFloor: 30000 }, // Paper Instruments: 85% OR 30k tokens remaining
     preActionDiode: { enabled: true },
   };
 

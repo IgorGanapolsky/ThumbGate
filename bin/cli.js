@@ -3444,18 +3444,21 @@ function cleanup() {
 
 function serve() {
   try {
-    const { repairCodexHooks } = require(path.join(PKG_ROOT, 'scripts', 'codex-self-heal'));
+    const { repairCodexHooks, repairProjectMcpConfigs } = require(path.join(PKG_ROOT, 'scripts', 'codex-self-heal'));
     repairCodexHooks();
+    repairProjectMcpConfigs();
   } catch (_) { /* self-heal is best-effort */ }
   // Start MCP server over stdio
   const mcpServer = path.join(PKG_ROOT, 'adapters', 'mcp', 'server-stdio.js');
   const { startStdioServer } = require(mcpServer);
-  startStdioServer();
-  // Start watcher as a background daemon alongside MCP server
-  try {
-    const { watch } = require(path.join(PKG_ROOT, 'scripts', 'jsonl-watcher'));
-    watch();
-  } catch (_) { /* watcher is non-critical */ }
+  const lockInfo = startStdioServer();
+  // Start watcher only in the primary session to avoid N concurrent pollers fighting over .watcher-offset
+  if (!lockInfo || !lockInfo.isConcurrentSession) {
+    try {
+      const { watch } = require(path.join(PKG_ROOT, 'scripts', 'jsonl-watcher'));
+      watch();
+    } catch (_) { /* watcher is non-critical */ }
+  }
 }
 
 function install() {
@@ -5587,6 +5590,25 @@ switch (COMMAND) {
     });
     req.write(payload);
     req.end();
+    break;
+  }
+  case 'login':
+  case 'sso': {
+    const args = parseArgs(process.argv.slice(3));
+    const provider = args.provider || 'github';
+    const apiBaseUrl = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai';
+    const ssoUrl = `${apiBaseUrl}/v1/cloud/sso/authorize?provider=${encodeURIComponent(provider)}`;
+    console.log(`\n🔐 ThumbGate 1-Click Cloud SSO (${provider.toUpperCase()})`);
+    console.log(`  Open in browser: ${ssoUrl}`);
+    console.log(`  Or visit:        ${apiBaseUrl}/cloud\n`);
+    if (!args['no-open'] && process.env.NODE_ENV !== 'test') {
+      try {
+        const openCmd = process.platform === 'darwin'
+          ? 'open'
+          : (process.platform === 'win32' ? 'start' : 'xdg-open');
+        require('node:child_process').spawn(openCmd, [ssoUrl], { detached: true, stdio: 'ignore' }).unref();
+      } catch { /* ignore headless browser launch errors */ }
+    }
     break;
   }
   case 'checkin': {

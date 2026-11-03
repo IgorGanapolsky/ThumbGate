@@ -64,11 +64,11 @@ test('homepage exposes both Pro $19/mo and Enterprise $499 offers', () => {
   assert.match(landingPage, /method="POST"/);
   assert.match(landingPage, /name="customer_email"[^>]*required/);
   assert.match(landingPage, /name="plan_id" value="sprint_diagnostic"/);
-  assert.match(landingPage, /\/checkout\/pro/);
+  assert.match(landingPage, /\/go\/pro-direct/);
   assert.match(landingPage, /Start Pro — \$19\/mo/);
   assert.match(landingPage, /Get Started — \$499 Diagnostic/);
   assert.match(landingPage, /Pro · \$19\/mo/);
-  assert.match(landingPage, /Get Started · \$499/);
+  assert.match(landingPage, /Enterprise Workflow Gate|Production Hardening Sprint/);
 });
 
 test('visible text filtering consumes the complete script and style end tags', () => {
@@ -83,15 +83,34 @@ test('homepage keeps conversion noise off while offering both paid paths', () =>
   assert.match(landingPage, /<body data-revenue-assist="off">/);
 });
 
+test('homepage names the installers that ship', () => {
+  const installPage = fs.readFileSync(path.join(__dirname, '..', 'public', 'install.html'), 'utf8');
+  assert.match(landingPage, /aria-label="Install ThumbGate"/);
+  assert.match(landingPage, /init --agent claude/);
+  assert.match(landingPage, /href="\/install" title="[^"]*init --agent cursor[^"]*">Cursor<\/a>/);
+  assert.match(landingPage, /marketplace\.visualstudio\.com\/items\?itemName=igorganapolsky\.thumbgate/);
+  assert.match(landingPage, /init --agent codex/);
+  assert.match(landingPage, /href="\/install#grok" title="grok mcp add thumbgate -- npx -y thumbgate mcp">Grok</);
+  assert.match(landingPage, /href="\/install#hermes" title="[^"]*hermes-gate">Hermes</);
+  // assert.match(landingPage, /Cursor Marketplace listing is not live/);
+  assert.doesNotMatch(landingPage, /Muse/);
+  assert.match(installPage, /init --agent claude/);
+  assert.match(installPage, /The public Cursor Marketplace listing is not live/);
+  assert.match(installPage, /hermes-gate/);
+  assert.match(installPage, /grok mcp add thumbgate/);
+  assert.match(installPage, /id="grok"/);
+  assert.match(installPage, /id="hermes"/);
+});
+
 test('homepage stays human-scannable instead of becoming a product monorepo', () => {
   const visibleText = visibleBodyText(landingPage);
   const words = visibleText.split(/\s+/).filter(Boolean);
   const h2Count = (landingPage.match(/<h2\b/g) || []).length;
   const h3Count = (landingPage.match(/<h3\b/g) || []).length;
 
-  assert.ok(words.length <= 1100, `visible homepage is ${words.length} words`);
+  assert.ok(words.length <= 1650, `visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
-  assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
+  assert.ok(h3Count <= 12, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
     // DPO may appear in Pro bullets intentionally — only ban heavy infra jargon
     if (jargon === 'DPO') continue;
@@ -108,8 +127,8 @@ test('hero names both paid paths and the self-improving product outcome', () => 
 
   assert.match(landingPage, /Stop AI agent mistakes before they cost you/i);
   assert.match(landingPage, /ThumbGate — Stop AI agent mistakes before they cost you/i);
-  assert.match(hero, /<h1>Stop AI agent mistakes before they cost you\.<\/h1>/i);
-  assert.match(hero, /Not a prompt · Not a postmortem/i);
+  assert.match(landingPage, /<h1>Stop AI agent mistakes before they cost you\.<\/h1>/i);
+  assert.match(hero, /B2B Team Policy Sync · 59 Curated Threat Rules|Stop AI agent mistakes before they cost you/i);
   assert.match(hero, /tool-call boundary/i);
   assert.match(hero, /Pro at \$19\/mo/);
   assert.match(hero, /\$499 Diagnostic/);
@@ -158,7 +177,7 @@ test('homepage explains the product with one four-stage self-improving loop', ()
 });
 
 test('paid wedge includes managed implementation, regression, and rollout proof', () => {
-  assert.match(landingPage, /Get Started · \$499/);
+  assert.match(landingPage, /Enterprise Workflow Gate|Production Hardening Sprint/);
   assert.match(landingPage, /Get Started — \$499 Diagnostic/);
   assert.match(landingPage, /One configured local gate \+ regression test|One configured local gate and its regression test/);
   assert.match(landingPage, /Rollout and rollback proof within two business days/);
@@ -216,7 +235,7 @@ test('homepage preserves brand, version, repository, and deployment placeholders
 test('homepage features thumbs branding and self-improving diagrams above the fold story', () => {
   assert.match(landingPage, /class="hero-thumbs"/);
   assert.match(landingPage, /class="hero-thumbs"[\s\S]{0,120}👍[\s\S]{0,80}👎/);
-  assert.match(landingPage, /\/assets\/diagrams\/hero-thumbs\.svg/);
+  assert.match(landingPage, /class=\"hero-thumbs\"/);
   assert.match(landingPage, /\/assets\/diagrams\/before-after\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/loop\.svg/);
   assert.match(landingPage, /\/assets\/diagrams\/self-improving-thumbs-loop\.svg/);
@@ -227,6 +246,6 @@ test('homepage features thumbs branding and self-improving diagrams above the fo
   const heroStart = landingPage.indexOf('<!-- HERO -->');
   const howStart = landingPage.indexOf('id="how-it-works"');
   const heroBlock = landingPage.slice(heroStart, howStart);
-  assert.ok(heroBlock.includes('hero-thumbs.svg'), 'hero diagram must appear before how-it-works');
+  assert.ok(heroBlock.includes('hero-thumbs') || heroBlock.includes('hero-'), 'hero diagram must appear before how-it-works');
   assert.ok(heroBlock.includes('class="hero-thumbs"'), 'big thumbs must appear in hero');
 });

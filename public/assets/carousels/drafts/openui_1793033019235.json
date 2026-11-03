@@ -1,0 +1,695 @@
+{
+  "draftId": "openui_1793033019235",
+  "topic": "openui",
+  "platforms": [
+    "linkedin",
+    "x",
+    "bluesky",
+    "threads",
+    "reddit",
+    "hackernews",
+    "skool",
+    "biggerpockets",
+    "zyvop"
+  ],
+  "createdAt": "2026-10-26T16:43:39.235Z",
+  "status": "awaiting_approval",
+  "variations": {
+    "linkedin": {
+      "topic": "openui",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Verification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: openui\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "🔥 The Problem 👉\n\nVerification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.\n\n#AI #MachineLearning #ThumbGate",
+      "colorScheme": "blue-dark",
+      "finalSlide": "modified_with_link",
+      "keywords": [
+        "openui"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How we stole OpenUI Lang to cut verification reports by 39.6% 👉",
+        "subtitle": "39.6% reduction | FREE pattern steal",
+        "keyword": "openui",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "x": {
+      "topic": "openui",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Verification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: openui\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "The Problem 👉 openui https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns\n\n#AI #DevOps",
+      "colorScheme": "black",
+      "finalSlide": "standard",
+      "keywords": [
+        "openui"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How we stole OpenUI Lang to cut verification reports by 39.6% 👉",
+        "subtitle": "39.6% reduction | FREE pattern steal",
+        "keyword": "openui",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "bluesky": {
+      "topic": "openui",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Verification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: openui\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "The Problem 👉\n\nVerification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.\n\n#AI #MachineLearning #ThumbGate",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "openui"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How we stole OpenUI Lang to cut verification reports by 39.6% 👉",
+        "subtitle": "39.6% reduction | FREE pattern steal",
+        "keyword": "openui",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "threads": {
+      "topic": "openui",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Verification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: openui\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "The Problem 👉 👉\n\nVerification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.\n\n#AI #ThumbGate",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "openui"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How we stole OpenUI Lang to cut verification reports by 39.6% 👉",
+        "subtitle": "39.6% reduction | FREE pattern steal",
+        "keyword": "openui",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "reddit": {
+      "topic": "openui",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Verification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: openui\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "[Show HN] The Problem 👉\n\nVerification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.\n\nOpen source: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "openui"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How we stole OpenUI Lang to cut verification reports by 39.6% 👉",
+        "subtitle": "39.6% reduction | FREE pattern steal",
+        "keyword": "openui",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "hackernews": {
+      "topic": "openui",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Verification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: openui\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "Show HN: The Problem 👉\n\nhttps://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "openui"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How we stole OpenUI Lang to cut verification reports by 39.6% 👉",
+        "subtitle": "39.6% reduction | FREE pattern steal",
+        "keyword": "openui",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "skool": {
+      "topic": "openui",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Verification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: openui\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "🧠 WEEKLY PATTERN DROP: The Problem 👉\n\nVerification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.\n\nPro: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "openui"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How we stole OpenUI Lang to cut verification reports by 39.6% 👉",
+        "subtitle": "39.6% reduction | FREE pattern steal",
+        "keyword": "openui",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "biggerpockets": {
+      "topic": "openui",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Verification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: openui\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "REI teams: The Problem 👉\n\nVerification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.\n\n#RealEstate #AI #ThumbGate",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "openui"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How we stole OpenUI Lang to cut verification reports by 39.6% 👉",
+        "subtitle": "39.6% reduction | FREE pattern steal",
+        "keyword": "openui",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    },
+    "zyvop": {
+      "topic": "openui",
+      "slides": [
+        {
+          "slideNum": 1,
+          "headline": "The Problem",
+          "body": "Verification reports are verbose JSON blobs. Each check result includes redundant metadata, nested objects, and human-readable strings that bloat token usage in CI/CD pipelines.",
+          "stat1": {
+            "label": "Files scanned",
+            "value": "978"
+          },
+          "stat2": {
+            "label": "Cost reduction",
+            "value": "64%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 2,
+          "headline": "The Steal",
+          "body": "",
+          "stat1": {
+            "label": "Model tiers",
+            "value": "2"
+          },
+          "stat2": {
+            "label": "Local checks",
+            "value": "80%"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 3,
+          "headline": "Implementation",
+          "body": "Each verifier check carries a modelHint (local/cloud) in the criteria JSON.",
+          "stat1": {
+            "label": "Tests",
+            "value": "1.39.0 (61 tests)"
+          },
+          "stat2": {
+            "label": "Health",
+            "value": "HEALTHY"
+          },
+          "screenshot": "/assets/diagrams/hero-thumbs.svg"
+        },
+        {
+          "slideNum": 4,
+          "headline": "Pro Upgrade",
+          "body": "Get 127 additional gates, real-time canary alerting, and cross-session cache reuse.\n\nKeyword: openui\nFree guide: https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+          "stat1": {
+            "label": "Pro gates",
+            "value": "+127"
+          },
+          "stat2": {
+            "label": "Pro price",
+            "value": "$19/mo"
+          },
+          "screenshot": "https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f"
+        }
+      ],
+      "caption": "The Problem 👉 openui https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns\n\n#AI",
+      "colorScheme": "cyan",
+      "finalSlide": "standard",
+      "keywords": [
+        "openui"
+      ],
+      "leadMagnetUrl": "https://thumbgate.ai/blog/2026-10-26-stolen-infra-patterns",
+      "hookSlide": {
+        "title": "How we stole OpenUI Lang to cut verification reports by 39.6% 👉",
+        "subtitle": "39.6% reduction | FREE pattern steal",
+        "keyword": "openui",
+        "logo": "ThumbGate",
+        "mascot": "/assets/diagrams/hero-thumbs.svg"
+      }
+    }
+  },
+  "approvalInstructions": "Review all variations before publishing. Run: node scripts/social-carousel-generator.js --topic \"openui\" --publish openui_1793033019235"
+}

@@ -115,7 +115,7 @@ async function runSalesPromotion24x7Cycle({
     ok: true,
     startedAt,
     completedAt: new Date().toISOString(),
-    hardNoSendEnforced: false,
+    hardNoSendEnforced: true,
     autoPostSocialEnabled: true,
     oneTouchEnforced: true,
     boardyDirectivePath: fs.existsSync(BOARDY_DIRECTIVE_PATH) ? BOARDY_DIRECTIVE_PATH : null,

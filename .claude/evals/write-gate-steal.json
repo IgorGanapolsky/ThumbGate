@@ -1,0 +1,19 @@
+{
+  "id": "write-gate-steal",
+  "goal": "Add write gate to Isolated Verifier (approve callback for write commands) + --approve-writes CLI flag",
+  "expectedFiles": [
+    "scripts/isolated-verifier.js",
+    "tests/isolated-verifier.test.js",
+    "config/verifier-criteria.json",
+    "package.json",
+    ".claude/skills/single-agent-loop-steal/SKILL.md"
+  ],
+  "expectedChecks": ["unit_tests", "proof_pack_integrity"],
+  "expectedVerdict": "PASS",
+  "rubric": {
+    "goal_alignment": 0.8,
+    "edge_case_coverage": 0.6,
+    "design_compliance": 0.8
+  },
+  "description": "Verifies that the write gate pattern from Anthropic's single-agent-loop-kit was correctly implemented: approveWrites callback in runCommand, fail-closed behavior, --approve-writes CLI flag, and passing tests."
+}

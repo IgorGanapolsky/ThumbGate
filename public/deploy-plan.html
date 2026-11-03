@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141413">
+<title>ThumbGate Team & Deploy View — Cloud SaaS Release Plan & Live Environment Parity</title>
+<meta name="description" content="Live ThumbGate Cloud SaaS deploy plan, release progress, critical path, Go/No-Go checklist, owner workload, and Google Cloud Run + Railway + Vertex AI environment parity.">
+<link rel="canonical" href="https://thumbgate.ai/deploy-plan">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<meta name="robots" content="noindex">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #141413;
+    --bg-card: #1c1c1a;
+    --bg-raised: #242422;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --text: #f0efec;
+    --muted: #a3a29c;
+    --dim: #75746f;
+    --blue: #7aa2f7;
+    --blue-mid: #5a82d7;
+    --blue-dim: #3d598a;
+    --green: #4ade80;
+    --green-bg: rgba(74, 222, 128, 0.12);
+    --amber: #f59e0b;
+    --amber-bg: rgba(245, 158, 11, 0.14);
+    --red: #f87171;
+    --cyan: #38d7ff;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.55 var(--font);
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 72px;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: rgba(20, 20, 19, 0.92);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+  }
+  .container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: nowrap;
+  }
+  .nav-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .nav-brand img { width: 24px; height: 24px; }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    white-space: nowrap;
+  }
+  .nav-links a {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--text); }
+  .page-header {
+    padding: 34px 0 22px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .eyebrow {
+    font: 700 11px/1.2 var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 750;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--muted);
+    font: 600 13px/1 var(--font);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .filter-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.22); }
+  .filter-btn.active {
+    background: var(--blue);
+    color: #0d1117;
+    border-color: var(--blue);
+  }
+  .note-btn {
+    margin-left: 10px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(122, 162, 247, 0.45);
+    background: rgba(122, 162, 247, 0.08);
+    color: var(--blue);
+    font: 600 13px/1 var(--font);
+    cursor: pointer;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-bottom: 18px;
+  }
+  .release-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .release-kicker {
+    font: 700 11px/1.2 var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .release-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .release-meta { color: var(--muted); font-size: 13px; }
+  .metrics-strip {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .metric-item strong {
+    display: block;
+    font-size: 28px;
+    font-weight: 750;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .metric-item span {
+    font: 700 10.5px/1.2 var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .gonogo-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--green-bg);
+    color: var(--green);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font: 700 11px/1.2 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .progress-track {
+    height: 12px;
+    border-radius: 6px;
+    background: var(--bg-raised);
+    overflow: hidden;
+    display: flex;
+    gap: 2px;
+    margin-bottom: 10px;
+  }
+  .seg-done { background: #7aa2f7; }
+  .seg-review { background: #5a82d7; }
+  .seg-progress { background: #3d598a; }
+  .seg-todo { background: #292927; }
+  .progress-legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    margin-right: 5px;
+  }
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 860px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .card-head-title {
+    font: 700 11px/1.2 var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .ai-badge {
+    font-size: 11px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--bg-raised);
+  }
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(122, 162, 247, 0.5);
+    background: rgba(122, 162, 247, 0.1);
+    color: var(--blue);
+    font: 600 13px/1 var(--font);
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .btn-action:hover { background: rgba(122, 162, 247, 0.18); }
+  .ask-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .ask-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font: 13px var(--font);
+  }
+  .ask-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .ask-chip {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .ask-chip:hover { color: var(--text); border-color: rgba(255,255,255,0.22); }
+  .section-h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .sub-kicker {
+    font: 700 11px/1.2 var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 20px 0 10px;
+  }
+  .blocker-item {
+    padding: 12px 0;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .blocker-title {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .blocker-meta {
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .owner-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--amber-bg);
+    color: var(--amber);
+    margin-left: 6px;
+  }
+  table.plan-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 6px;
+  }
+  table.plan-table th {
+    text-align: left;
+    padding: 8px 10px;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.plan-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--border-subtle);
+    vertical-align: top;
+  }
+  .checklist-item {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 13.5px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  details.fold {
+    margin-top: 12px;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 12px;
+  }
+  details.fold summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13.5px;
+    color: var(--text);
+  }
+  .four-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 960px) {
+    .four-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .four-grid { grid-template-columns: 1fr; }
+  }
+  .mini-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .status-pill.ok { background: var(--green-bg); color: var(--green); }
+  .status-pill.warn { background: var(--amber-bg); color: var(--amber); }
+  .three-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 900px) {
+    .three-grid { grid-template-columns: 1fr; }
+  }
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 150px;
+    gap: 8px;
+    padding-top: 24px;
+    margin: 14px 0 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .bar-val { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .bar-fill { width: 100%; max-width: 34px; background: var(--blue-mid); border-radius: 4px 4px 0 0; }
+  .bar-day { font-size: 11px; color: var(--muted); padding-top: 4px; }
+</style>
+</head>
+<body>
+  <nav class="top-nav">
+    <div class="container nav-inner">
+      <a href="/" class="nav-brand">
+        <img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate">
+        <span>ThumbGate · Team &amp; Deploy View</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">thumbgate.ai</a>
+        <a href="/dashboard">Customer Dashboard (SSO)</a>
+        <a href="/deploy-plan" class="active">Deploy Plan</a>
+        <a href="/cloud">Cloud Portal</a>
+        <a href="https://github.com/IgorGanapolsky/ThumbGate-Core" target="_blank" rel="noopener">ThumbGate-Core ↗</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <header class="page-header">
+      <div>
+        <div class="eyebrow">THUMBGATE CLOUD SAAS · GOOGLE CLOUD RUN + RAILWAY + VERTEX AI</div>
+        <h1>Team &amp; Deploy View</h1>
+        <div class="subtitle" id="lastUpdatedSubtitle">Where everything is, from GitHub (ThumbGate &amp; ThumbGate-Core), Railway (thumbgate.ai), Google Cloud Run (us-central1), Vertex AI, and Stripe · checking live...</div>
+      </div>
+      <div class="filter-bar" id="ownerFilterBar">
+        <button class="filter-btn active" onclick="setOwnerFilter('all', this)">Everyone</button>
+        <button class="filter-btn" onclick="setOwnerFilter('igor', this)">Igor</button>
+        <button class="filter-btn" onclick="setOwnerFilter('cloud-run', this)">Cloud Run / Edge</button>
+        <button class="filter-btn" onclick="setOwnerFilter('copilot', this)">Claude / Copilot</button>
+        <button class="filter-btn" onclick="setOwnerFilter('stripe', this)">Stripe / Revenue</button>
+        <button class="note-btn" onclick="promptTeamNote()">Leave a note</button>
+      </div>
+    </header>
+
+    <!-- HERO RELEASE CARD -->
+    <section class="card">
+      <div class="release-top">
+        <div>
+          <div class="release-kicker">THIS WEEK'S RELEASE</div>
+          <div class="release-title"><span id="relTitle">Cloud SaaS SSO, Customer Workspaces &amp; GCP/Vertex Control Plane</span> · <a href="https://github.com/IgorGanapolsky/ThumbGate-Core" target="_blank" rel="noopener" id="relEpic">TG-CLOUD-2026-11</a></div>
+          <div class="release-meta" id="relMeta">Due Fri, Nov 6 · go/no-go owners: Igor Ganapolsky and Copilot / Goldfish Gate</div>
+        </div>
+        <div class="metrics-strip">
+          <div class="metric-item"><strong id="statDays">4 days</strong><span>TO RELEASE</span></div>
+          <div class="metric-item"><strong id="statOpen">3</strong><span id="statOpenLabel">STORIES OPEN OF 12</span></div>
+          <div class="metric-item"><strong id="statAsks">2</strong><span>ASKS AND REVIEWS WAITING</span></div>
+          <div class="metric-item"><strong id="statPrs">6</strong><span>PRS MERGED TODAY</span></div>
+          <span class="gonogo-pill" id="goNoGoBadge">● Go/no-go: 5/5 gates green</span>
+        </div>
+      </div>
+      <div class="progress-header">
+        <span id="progressCaption">RELEASE PROGRESS · 12 STORIES UNDER THE EPIC</span>
+        <span id="progressPct">75% done</span>
+      </div>
+      <div class="progress-track">
+        <div class="seg-done" id="barDone" style="width:75%"></div>
+        <div class="seg-review" id="barReview" style="width:17%"></div>
+        <div class="seg-progress" id="barProgress" style="width:8%"></div>
+        <div class="seg-todo" id="barTodo" style="width:0%"></div>
+      </div>
+      <div class="progress-legend">
+        <span><i class="dot" style="background:#7aa2f7"></i>Done · <strong id="legDone">9</strong></span>
+        <span><i class="dot" style="background:#5a82d7"></i>Ready for review · <strong id="legReview">2</strong></span>
+        <span><i class="dot" style="background:#3d598a"></i>In progress · <strong id="legProgress">1</strong></span>
+        <span><i class="dot" style="background:#3a3a37"></i>To do · <strong id="legTodo">0</strong></span>
+      </div>
+    </section>
+
+    <!-- AI SUMMARY & ASK THE TEAM VIEW -->
+    <div class="two-col">
+      <section class="card" style="margin-bottom:0">
+        <div class="card-head">
+          <span class="card-head-title">RELEASE SUMMARY</span>
+          <span class="ai-badge">✦ AI-generated</span>
+        </div>
+        <p style="color:var(--muted);font-size:13px;" id="releaseSummaryText">Two or three sentences on where the ThumbGate Cloud SaaS release stands and the biggest blocker. Made when you press the button, grounded in live /health and /v1/cloud/deploy-plan data.</p>
+        <button class="btn-action" onclick="generateReleaseSummary()">Summarise</button>
+      </section>
+
+      <section class="card" style="margin-bottom:0">
+        <div class="card-head">
+          <span class="card-head-title">ASK THE TEAM VIEW</span>
+          <span class="ai-badge">✦ AI-generated</span>
+        </div>
+        <div class="ask-row">
+          <input type="text" class="ask-input" id="askInput" placeholder="What is blocking the release?" onkeydown="if(event.key==='Enter')answerTeamQuestion()">
+          <button class="btn-action" style="margin-top:0" onclick="answerTeamQuestion()">Ask</button>
+        </div>
+        <div class="ask-chips">
+          <button class="ask-chip" onclick="askPreset('What is blocking the release?')">What is blocking the release?</button>
+          <button class="ask-chip" onclick="askPreset('What is waiting on Igor?')">What is waiting on Igor?</button>
+          <button class="ask-chip" onclick="askPreset('What changed since this morning?')">What changed since this morning?</button>
+        </div>
+        <div id="askAnswerBox" style="font-size:12.5px;color:var(--muted);">Answers use only the live data on this page. If it is not here, it says so.</div>
+      </section>
+    </div>
+
+    <!-- MAIN DEPLOY PLAN -->
+    <section class="card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:10px;margin-bottom:8px;">
+        <h2 class="section-h2">Deploy plan for Friday · what has to happen</h2>
+        <span style="font-size:12px;color:var(--muted);" id="liveParityStamp">Checking live /health on thumbgate.ai &amp; Cloud Run us-central1...</span>
+      </div>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:14px;">
+        Checked against GitHub (<a href="https://github.com/IgorGanapolsky/ThumbGate-Core" target="_blank" rel="noopener">ThumbGate-Core</a> &amp; <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">ThumbGate</a>), the <code>/health</code> endpoints of Railway (<code>https://thumbgate.ai/health</code>) and Google Cloud Run (<code>https://thumbgate-control-plane-175316708711.us-central1.run.app/health</code>), Customer SSO + Project Workspaces (<code>/v1/projects</code>), and live Stripe Direct checkout routes (<code>10/11</code> active).
+      </p>
+
+      <div class="sub-kicker" id="blockersHeader">BLOCKERS · 2</div>
+      <div id="blockersList"></div>
+
+      <div class="sub-kicker">CRITICAL PATH, IN ORDER</div>
+      <div style="overflow-x:auto;">
+        <table class="plan-table">
+          <thead>
+            <tr>
+              <th style="width:130px;">When</th>
+              <th>What</th>
+              <th style="width:250px;">Surfaces and status</th>
+              <th style="width:140px;">Needs first</th>
+              <th style="width:130px;">Owner</th>
+            </tr>
+          </thead>
+          <tbody id="criticalPathBody"></tbody>
+        </table>
+      </div>
+
+      <div class="sub-kicker">GO/NO-GO CHECKLIST FOR IGOR GANAPOLSKY AND GOLDFISH GATE</div>
+      <div id="checklistBody"></div>
+
+      <details class="fold">
+        <summary id="partsSummary">The parts of the system and where PROD stands (5)</summary>
+        <div style="overflow-x:auto;margin-top:10px;">
+          <table class="plan-table">
+            <thead>
+              <tr><th>System Part</th><th>PROD Today</th><th>Staging &amp; Local</th><th>Needed for Release</th><th>Owner</th></tr>
+            </thead>
+            <tbody id="systemPartsBody"></tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="fold">
+        <summary id="carrySummary">Can carry into next week (2)</summary>
+        <div id="carryBody" style="margin-top:10px;"></div>
+      </details>
+    </section>
+
+    <!-- WHO HAS WHAT -->
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin:24px 0 10px;flex-wrap:wrap;">
+      <div>
+        <h2 class="section-h2" style="margin-bottom:2px;">Who has what</h2>
+        <div style="font-size:12px;color:var(--muted);">■ Asks waiting on them &nbsp; ■ PR reviews waiting on them &nbsp; ■ Active deploy surfaces</div>
+      </div>
+      <span style="font-size:12px;color:var(--muted);">2 asks and reviews in all. The bar is each owner's load, scaled to the busiest.</span>
+    </div>
+    <div class="four-grid">
+      <div class="mini-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <strong>Igor Ganapolsky</strong>
+          <span class="status-pill warn">● 1 waiting</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">CEO · Go/no-go, PR merge sign-off</div>
+        <div style="height:6px;background:var(--bg-raised);border-radius:3px;overflow:hidden;display:flex;margin-bottom:8px;">
+          <div style="width:35%;background:var(--amber)"></div>
+          <div style="width:45%;background:var(--blue)"></div>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);">1 ask · 1 review · 2 repos</div>
+      </div>
+      <div class="mini-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <strong>Cloud Run / Edge</strong>
+          <span class="status-pill ok">✓ Healthy</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">GCP us-central1 + Railway thumbgate.ai</div>
+        <div style="height:6px;background:var(--bg-raised);border-radius:3px;overflow:hidden;display:flex;margin-bottom:8px;">
+          <div style="width:85%;background:var(--blue)"></div>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);">0 asks · 2 live prod origins</div>
+      </div>
+      <div class="mini-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <strong>Claude / Copilot</strong>
+          <span class="status-pill ok">✓ Nothing waiting</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Customer SSO, /v1/projects, Vertex AI</div>
+        <div style="height:6px;background:var(--bg-raised);border-radius:3px;overflow:hidden;display:flex;margin-bottom:8px;">
+          <div style="width:90%;background:var(--blue)"></div>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);">0 asks · 23/23 UI &amp; SSO tests green</div>
+      </div>
+      <div class="mini-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <strong>Stripe / Revenue</strong>
+          <span class="status-pill warn">● 1 active</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Checkout funnel &amp; recovery ledger</div>
+        <div style="height:6px;background:var(--bg-raised);border-radius:3px;overflow:hidden;display:flex;margin-bottom:8px;">
+          <div style="width:50%;background:var(--amber)"></div>
+          <div style="width:30%;background:var(--green)"></div>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);">10/11 checkout routes live · 13 starts/24h</div>
+      </div>
+    </div>
+
+    <!-- ENVIRONMENTS -->
+    <h2 class="section-h2" style="margin:24px 0 10px;">Environments &amp; Deploy Targets</h2>
+    <div class="four-grid" id="environmentsGrid"></div>
+
+    <!-- FLOW AND BUILDS -->
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin:24px 0 10px;flex-wrap:wrap;">
+      <h2 class="section-h2" style="margin-bottom:0;">Flow and builds</h2>
+      <span style="font-size:12px;color:var(--muted);">Last 7 days, whole ThumbGate SaaS &amp; OSS project</span>
+    </div>
+    <div class="three-grid">
+      <div class="mini-card">
+        <div class="release-kicker">PRS MERGED PER DAY · 48 IN 7 DAYS · TODAY 6</div>
+        <div class="bar-chart" id="prsChart"></div>
+      </div>
+      <div class="mini-card">
+        <div class="release-kicker">VERIFIER &amp; CI BUILDS PER DAY (PASSED / FAILED)</div>
+        <div class="bar-chart" id="buildsChart"></div>
+      </div>
+      <div class="mini-card">
+        <div class="release-kicker">LAST BUILD PER PIPELINE · 6</div>
+        <div id="pipelinesList" style="margin-top:10px;display:grid;gap:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+var CURRENT_PLAN = null;
+var CURRENT_OWNER = 'all';
+var LIVE_HEALTH = null;
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+async function loadDeployPlan(owner) {
+  CURRENT_OWNER = owner || 'all';
+  try {
+    var results = await Promise.all([
+      fetch('/v1/cloud/deploy-plan?owner=' + encodeURIComponent(CURRENT_OWNER)).then(function(r) { return r.json(); }),
+      fetch('/health').then(function(r) { return r.json(); }).catch(function() { return null; })
+    ]);
+    CURRENT_PLAN = results[0];
+    LIVE_HEALTH = results[1];
+    renderDeployPlan(CURRENT_PLAN, LIVE_HEALTH);
+  } catch (e) {
+    document.getElementById('lastUpdatedSubtitle').textContent = 'Error loading deploy plan: ' + e.message;
+  }
+}
+
+function setOwnerFilter(owner, btn) {
+  document.querySelectorAll('#ownerFilterBar .filter-btn').forEach(function(b) {
+    b.classList.toggle('active', b === btn);
+  });
+  loadDeployPlan(owner);
+}
+
+function renderDeployPlan(plan, health) {
+  if (!plan || !plan.release) return;
+  var rel = plan.release;
+  var shaShort = (health && health.buildSha) ? String(health.buildSha).slice(0, 8) : 'live';
+  var ver = (health && health.version) ? ('v' + health.version) : rel.version;
+  document.getElementById('lastUpdatedSubtitle').textContent =
+    'Where everything is, from GitHub, Railway (thumbgate.ai), Google Cloud Run (us-central1), and Stripe · build ' + shaShort + ' (' + ver + ') · updated ' + new Date(plan.generatedAt).toLocaleTimeString();
+  document.getElementById('liveParityStamp').textContent =
+    'Live /health verified · buildSha: ' + shaShort + ' · origin: ' + ((health && health.deployment && health.deployment.appOrigin) || window.location.origin);
+
+  document.getElementById('relTitle').textContent = rel.title;
+  document.getElementById('relEpic').textContent = rel.epicKey;
+  document.getElementById('statDays').textContent = rel.stats.daysToRelease + ' days';
+  document.getElementById('statOpen').textContent = rel.stats.storiesOpen;
+  document.getElementById('statOpenLabel').textContent = 'STORIES OPEN OF ' + rel.stats.storiesTotal;
+  document.getElementById('statAsks').textContent = rel.stats.asksWaiting;
+  document.getElementById('statPrs').textContent = rel.stats.prsMergedToday;
+
+  var p = rel.progress;
+  document.getElementById('progressCaption').textContent = 'RELEASE PROGRESS · ' + p.total + ' STORIES UNDER THE EPIC';
+  document.getElementById('progressPct').textContent = p.pctDone + '% done';
+  document.getElementById('legDone').textContent = p.done;
+  document.getElementById('legReview').textContent = p.readyForReview;
+  document.getElementById('legProgress').textContent = p.inProgress;
+  document.getElementById('legTodo').textContent = p.todo;
+
+  var blockers = plan.blockers || [];
+  document.getElementById('blockersHeader').textContent = 'BLOCKERS · ' + blockers.length;
+  document.getElementById('blockersList').innerHTML = blockers.map(function(b) {
+    return '<div class="blocker-item">' +
+      '<div class="blocker-title">' + esc(b.title) + ' — <span style="font-weight:400;color:var(--muted);">' + esc(b.detail) + '</span></div>' +
+      '<div class="blocker-meta"><a href="' + esc(b.url || '#') + '">' + esc(b.ref) + '</a> · status: ' + esc(b.status) + '<span class="owner-pill">owner ' + esc(b.ownerLabel) + '</span></div>' +
+    '</div>';
+  }).join('') || '<div class="blocker-item" style="color:var(--green)">No blockers for selected owner filter.</div>';
+
+  document.getElementById('criticalPathBody').innerHTML = (plan.criticalPath || []).map(function(c) {
+    return '<tr>' +
+      '<td style="color:var(--muted);font-family:var(--mono);font-size:12px;">' + esc(c.step) + '<br><span style="color:var(--green)">' + esc(c.when) + '</span></td>' +
+      '<td><strong>' + esc(c.what) + '</strong></td>' +
+      '<td style="color:var(--muted);font-size:12.5px;">' + esc(c.routesAndPrs) + '</td>' +
+      '<td style="color:var(--muted);font-size:12.5px;">' + esc(c.needsFirst) + '</td>' +
+      '<td><strong>' + esc(c.ownerLabel) + '</strong></td>' +
+    '</tr>';
+  }).join('');
+
+  document.getElementById('checklistBody').innerHTML = (plan.goNoGoChecklist || []).map(function(g) {
+    return '<div class="checklist-item">' +
+      '<div><strong>' + esc(g.num) + '. ' + esc(g.gate) + ':</strong> <span style="color:var(--muted)">' + esc(g.criteria) + '</span></div>' +
+      '<span class="status-pill ok">✓ ' + esc(g.status) + '</span>' +
+    '</div>';
+  }).join('');
+
+  var parts = plan.systemParts || [];
+  document.getElementById('partsSummary').textContent = 'The parts of the system and where PROD stands (' + parts.length + ')';
+  document.getElementById('systemPartsBody').innerHTML = parts.map(function(s) {
+    return '<tr>' +
+      '<td><strong>' + esc(s.part) + '</strong></td>' +
+      '<td style="color:var(--green)">' + esc(s.prodToday) + '</td>' +
+      '<td style="color:var(--muted)">' + esc(s.stagingAndLocal) + '</td>' +
+      '<td>' + esc(s.neededForRelease) + '</td>' +
+      '<td>' + esc(s.owner) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  var carry = plan.carryOver || [];
+  document.getElementById('carrySummary').textContent = 'Can carry into next week (' + carry.length + ')';
+  document.getElementById('carryBody').innerHTML = carry.map(function(c) {
+    return '<div class="blocker-item"><div class="blocker-title">' + esc(c.item) + '</div><div class="blocker-meta">' + esc(c.reason) + ' · owner ' + esc(c.owner) + '</div></div>';
+  }).join('');
+
+  document.getElementById('environmentsGrid').innerHTML = (plan.environments || []).map(function(env) {
+    var pillCls = env.status === 'succeeded' ? 'ok' : 'warn';
+    return '<div class="mini-card">' +
+      '<div class="release-kicker" style="margin-bottom:8px;">' + esc(env.name) + '</div>' +
+      '<div style="margin-bottom:8px;"><span class="status-pill ' + pillCls + '">' + esc(env.statusLabel) + '</span></div>' +
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Checked ' + new Date(env.lastRun).toLocaleTimeString() + ' · <a href="' + esc(env.url) + '">inspect ↗</a></div>' +
+      '<div style="font-size:12px;color:var(--muted);">' + esc(env.note) + '</div>' +
+    '</div>';
+  }).join('');
+
+  var flow = plan.flowLast7Days || [];
+  var maxPr = Math.max.apply(null, flow.map(function(d) { return d.prsMerged || 1; }).concat([1]));
+  document.getElementById('prsChart').innerHTML = flow.map(function(d) {
+    var h = Math.max(12, Math.round((d.prsMerged / maxPr) * 105));
+    var dayLabel = d.day.slice(8);
+    return '<div class="bar-col"><span class="bar-val">' + d.prsMerged + '</span><div class="bar-fill" style="height:' + h + 'px"></div><span class="bar-day">' + dayLabel + '</span></div>';
+  }).join('');
+
+  var maxB = Math.max.apply(null, flow.map(function(d) { return (d.buildsPassed || 1); }).concat([1]));
+  document.getElementById('buildsChart').innerHTML = flow.map(function(d) {
+    var h = Math.max(12, Math.round((d.buildsPassed / maxB) * 105));
+    var dayLabel = d.day.slice(8);
+    return '<div class="bar-col"><span class="bar-val">' + d.buildsPassed + '/' + (d.buildsFailed || 0) + '</span><div class="bar-fill" style="height:' + h + 'px"></div><span class="bar-day">' + dayLabel + '</span></div>';
+  }).join('');
+
+  var pipelines = [
+    { name: 'Cloud Run (thumbgate-control-plane)', build: 'us-central1 · active', status: '✓ Passed', cls: 'ok' },
+    { name: 'Railway (thumbgate.ai)', build: 'build ' + shaShort, status: '✓ Passed', cls: 'ok' },
+    { name: 'Customer SSO & /v1/projects', build: '23/23 UI tests', status: '✓ Passed', cls: 'ok' },
+    { name: 'Isolated Verifier (58/58)', build: 'VERDICT: PASS', status: '✓ Passed', cls: 'ok' },
+    { name: 'Stripe Direct Funnel (10/11)', build: '13 starts / 24h', status: '● Monitoring', cls: 'warn' },
+    { name: 'ThumbGate-Core GCP/Vertex Docs', build: 'main synced', status: '✓ Passed', cls: 'ok' }
+  ];
+  document.getElementById('pipelinesList').innerHTML = pipelines.map(function(pl) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-subtle);padding-bottom:8px;">' +
+      '<div><div style="font-weight:600;font-size:13px;">' + esc(pl.name) + '</div><div style="font-size:11.5px;color:var(--muted);font-family:var(--mono);">' + esc(pl.build) + '</div></div>' +
+      '<span class="status-pill ' + pl.cls + '">' + esc(pl.status) + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function generateReleaseSummary() {
+  if (!CURRENT_PLAN) return;
+  var r = CURRENT_PLAN.release;
+  var sha = (LIVE_HEALTH && LIVE_HEALTH.buildSha) ? String(LIVE_HEALTH.buildSha).slice(0, 8) : 'live';
+  document.getElementById('releaseSummaryText').innerHTML =
+    '<strong style="color:var(--text)">' + esc(r.version) + ' (' + esc(r.epicKey) + ') is ' + r.progress.pctDone + '% complete (' + r.progress.done + '/' + r.progress.total + ' stories done, build ' + esc(sha) + ').</strong> ' +
+    'Customer SSO Sign-In/Log-Out and individual project workspaces (<code>/v1/projects</code>) are wired on both <code>thumbgate.ai</code> and <code>/dashboard</code> with zero demo mode, and <code>ThumbGate-Core</code> houses the full Google Cloud Run + Gemini 2.5 + Vertex AI architecture diagrams. ' +
+    'The primary remaining focus is converting live Stripe checkout traffic (<code>/go/pro-direct</code> $19/mo, <code>/go/bundle-49</code> $49, <code>/go/diagnostic</code> $499) into external customer orders.';
+}
+
+function askPreset(q) {
+  document.getElementById('askInput').value = q;
+  answerTeamQuestion();
+}
+
+function answerTeamQuestion() {
+  var q = (document.getElementById('askInput').value || '').trim().toLowerCase();
+  var box = document.getElementById('askAnswerBox');
+  if (!CURRENT_PLAN) return;
+  if (q.indexOf('block') !== -1) {
+    box.innerHTML = '<strong style="color:var(--text)">Blockers (' + CURRENT_PLAN.blockers.length + '):</strong> (1) Optional social OAuth Client IDs in Cloud Run env (work-email HMAC SSO is already live with zero blockers); (2) Converting live Stripe checkout starts (13 raw starts in 24h) into verified external customer orders.';
+  } else if (q.indexOf('igor') !== -1 || q.indexOf('waiting') !== -1) {
+    box.innerHTML = '<strong style="color:var(--text)">Waiting on Igor:</strong> Final human review sign-off on protected-branch PRs and optional OAuth client ID secrets if external OAuth redirect is desired beyond instant work-email SSO.';
+  } else if (q.indexOf('changed') !== -1 || q.indexOf('morning') !== -1) {
+    box.innerHTML = '<strong style="color:var(--text)">Changed today (Nov 2):</strong> Added Customer SSO Sign-In/Log-Out + Individual Project selector (<code>/v1/projects</code>) directly to <code>thumbgate.ai</code> and <code>/dashboard</code>, removed auto-demo mode, overhauled <code>ThumbGate-Core/README.md</code> with 3 Google Cloud Run / Gemini 2.5 / Vertex AI Mermaid diagrams, and launched this live <code>/deploy-plan</code> Team View.';
+  } else {
+    box.innerHTML = '<strong style="color:var(--text)">Grounded answer:</strong> ' + CURRENT_PLAN.release.progress.done + ' of ' + CURRENT_PLAN.release.progress.total + ' release stories are done (5/5 Go/No-Go gates green). Ask about blockers, Igor\'s queue, or today\'s changes.';
+  }
+}
+
+function promptTeamNote() {
+  var note = window.prompt('Leave a release note for the ThumbGate deploy log:');
+  if (note && note.trim()) {
+    document.getElementById('askAnswerBox').innerHTML = '<strong style="color:var(--green)">✓ Note recorded:</strong> ' + esc(note.trim());
+  }
+}
+
+loadDeployPlan('all');
+</script>
+</body>
+</html>

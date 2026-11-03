@@ -194,8 +194,8 @@ function searchFeedbackLog(queryText, limit = 5, options = {}) {
   const queryTokens = isWildcard ? [] : getSearchTokens(queryText);
 
   let scored = isWildcard
-    ? records.map((r) => ({ score: recencyScore(r.timestamp) || 0.01, record: r, matchedTokens: [] }))
-    : records.map((r) => scoreRecord(queryTokens, queryText, r));
+    ? records.map((r, idx) => ({ score: recencyScore(r.timestamp) || 0.01, record: r, matchedTokens: [], _idx: idx }))
+    : records.map((r, idx) => ({ ...scoreRecord(queryTokens, queryText, r), _idx: idx }));
 
   if (options.where) {
     scored = scored.filter((s) => {
@@ -211,7 +211,19 @@ function searchFeedbackLog(queryText, limit = 5, options = {}) {
 
   return scored
     .filter((s) => s.score > 0)
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => {
+      const ta = a.record.timestamp ? new Date(a.record.timestamp).getTime() : 0;
+      const tb = b.record.timestamp ? new Date(b.record.timestamp).getTime() : 0;
+      const safeTa = Number.isFinite(ta) ? ta : 0;
+      const safeTb = Number.isFinite(tb) ? tb : 0;
+      if (isWildcard) {
+        if (safeTb !== safeTa) return safeTb - safeTa;
+        return (b._idx || 0) - (a._idx || 0);
+      }
+      if (b.score !== a.score) return b.score - a.score;
+      if (safeTb !== safeTa) return safeTb - safeTa;
+      return (b._idx || 0) - (a._idx || 0);
+    })
     .slice(0, limit)
     .map((s) => ({
       ...s.record,
@@ -247,7 +259,12 @@ function searchContextFs(queryText, limit = 5, options = {}) {
   }
 
   return scored
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const ta = a.record.timestamp || a.record.createdAt ? new Date(a.record.timestamp || a.record.createdAt).getTime() : 0;
+      const tb = b.record.timestamp || b.record.createdAt ? new Date(b.record.timestamp || b.record.createdAt).getTime() : 0;
+      return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0);
+    })
     .slice(0, limit)
     .map((s) => ({
       ...s.record,

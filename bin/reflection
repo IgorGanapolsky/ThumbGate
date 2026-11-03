@@ -1,0 +1,214 @@
+#!/usr/bin/env node
+'use strict';
+
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const https = require('node:https');
+const { spawnSync } = require('node:child_process');
+
+const KEY_FILE = path.join(os.homedir(), '.mirror', 'reflection_api_key');
+const HARNESS_PRICE_DOLLARS = new Set([19, 149, 499]);
+
+const PITCH = [
+  'ThumbGate stops an AI coding agent before a known-bad tool call goes out.',
+  'Install free with: npx thumbgate init',
+  'Pro is $19/month or $149/year: https://thumbgate.ai/checkout/pro',
+  'Setup Sprint is $499 once for one workflow: https://thumbgate.ai/pricing',
+].join('\n');
+
+const OFFERS = [
+  { name: 'Pro', price: '$19/month', url: 'https://thumbgate.ai/checkout/pro' },
+  { name: 'Pro annual', price: '$149/year', url: 'https://thumbgate.ai/pricing' },
+  { name: 'Setup Sprint', price: '$499 once', url: 'https://thumbgate.ai/pricing' },
+];
+
+function assessHarnessOffer(text) {
+  if (typeof text !== 'string' || text.trim() === '') {
+    return { allow: false, reason: 'not_text' };
+  }
+  const body = text.trim();
+  if (/tax[-\s]?deed|\bbounticlaw\b|\bskool\b|real[-\s]?estate|\bparcel\b/i.test(body)) {
+    return { allow: false, reason: 'wrong_list' };
+  }
+  const prices = [];
+  const pricePattern = /\$\s?(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/g;
+  let match = pricePattern.exec(body);
+  while (match) {
+    prices.push(Number(match[1].replace(/,/g, '')));
+    match = pricePattern.exec(body);
+  }
+  if (prices.some((amount) => !HARNESS_PRICE_DOLLARS.has(amount))) {
+    return { allow: false, reason: 'forbidden_price', prices };
+  }
+  if (/\d+(?:\.\d+)?\s*%|\b\d+(?:\.\d+)?\s*x\b|\bmargins?\b|\bjevons\b/i.test(body)) {
+    return { allow: false, reason: 'unmeasured_return' };
+  }
+  if (/\bfortune\b|\bcustomers?\b|\blogos?\b|\bspeed-?ups?\b|\bfaster\b|\btestimonials?\b/i.test(body)) {
+    return { allow: false, reason: 'unmeasured_claim' };
+  }
+  if (/\bour model\b|\bopen[- ]weights?\b|\bfine-?tun|\bpre-?train|\breinforcement learning\b|\bbeam\b|\bweights\b|\bmir\b/i.test(body)) {
+    return { allow: false, reason: 'model_is_not_the_product' };
+  }
+  const sellsHarness = /\bthumbgate\b/i.test(body)
+    && /known-bad tool call|tool call/i.test(body)
+    && /npx thumbgate init/.test(body)
+    && /\$19\/(?:month|mo)\b/.test(body)
+    && /\$149\/(?:year|yr)\b/.test(body)
+    && /\$499\b/.test(body)
+    && /setup sprint|one workflow|\$499 once/i.test(body);
+  if (!sellsHarness) {
+    return { allow: false, reason: 'not_the_harness', prices };
+  }
+  return { allow: true, reason: 'harness_offer', prices };
+}
+
+function isUsableKey(value) {
+  const text = String(value || '').trim();
+  if (text.length < 24) return false;
+  if (/placeholder|your_key|todo|changeme|^test$|local-ollama/i.test(text)) return false;
+  return true;
+}
+
+function readKey() {
+  const fromEnv = String(process.env.REFLECTION_API_KEY || '').trim();
+  if (isUsableKey(fromEnv)) return { present: true, source: 'env', value: fromEnv };
+  try {
+    const fromFile = fs.readFileSync(KEY_FILE, 'utf8').trim();
+    if (isUsableKey(fromFile)) return { present: true, source: 'file', value: fromFile };
+  } catch {
+    // No key file.
+  }
+  return { present: false, source: 'missing', value: '' };
+}
+
+function getText(url) {
+  return new Promise((resolve) => {
+    const req = https.get(url, {
+      headers: { 'User-Agent': 'ThumbGate-reflection-cli', Accept: 'text/html' },
+      timeout: 12000,
+    }, (res) => {
+      res.resume();
+      resolve({ url, status: res.statusCode || 0 });
+    });
+    req.on('timeout', () => {
+      req.destroy();
+      resolve({ url, status: 0, error: 'timeout' });
+    });
+    req.on('error', (error) => {
+      resolve({ url, status: 0, error: error.code || 'error' });
+    });
+  });
+}
+
+function getModels(key) {
+  return new Promise((resolve) => {
+    const req = https.request({
+      host: 'api.reflection.ai',
+      path: '/openai/v1/models',
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        Accept: 'application/json',
+        'User-Agent': 'ThumbGate-reflection-cli',
+      },
+      timeout: 12000,
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        resolve({ status: res.statusCode || 0, body: Buffer.concat(chunks).toString('utf8') });
+      });
+    });
+    req.on('timeout', () => {
+      req.destroy();
+      resolve({ status: 0, error: 'timeout' });
+    });
+    req.on('error', (error) => {
+      resolve({ status: 0, error: error.code || 'error' });
+    });
+    req.end();
+  });
+}
+
+function copyPitch() {
+  const child = spawnSync('pbcopy', [], { input: PITCH, encoding: 'utf8', timeout: 3000 });
+  return child.status === 0;
+}
+
+async function printSell(key) {
+  const verdict = assessHarnessOffer(PITCH);
+  if (!verdict.allow) {
+    process.stderr.write(`reflection: pitch refused (${verdict.reason}). Nothing was copied or sent.\n`);
+    process.exit(2);
+  }
+  const checks = await Promise.all([
+    getText('https://thumbgate.ai/health'),
+    getText('https://thumbgate.ai/pricing'),
+    getText('https://thumbgate.ai/checkout/pro'),
+  ]);
+  const copied = copyPitch();
+  const lines = [
+    'reflection — ThumbGate',
+    'Sells ThumbGate. Does not load a tax-deed list, a Skool real-estate queue, or BountiClaw.',
+    'Nothing was emailed or posted.',
+    `api key: ${key.present ? `present (${key.source})` : 'missing'}`,
+    'public site:',
+    ...checks.map((check) => `  ${check.status}  ${check.url}`),
+    'offers:',
+    ...OFFERS.map((offer) => `  ${offer.name}  ${offer.price}  ${offer.url}`),
+    '',
+    'draft on the clipboard:',
+    `  ${copied ? 'copied' : 'not copied'}`,
+    '',
+    PITCH,
+  ];
+  process.stdout.write(`${lines.join('\n')}\n`);
+}
+
+async function printModels(key) {
+  if (!key.present || !key.value) {
+    process.stderr.write('reflection models: no API key. No request was sent.\n');
+    process.exit(2);
+  }
+  const result = await getModels(key.value);
+  if (result.error) {
+    process.stderr.write(`reflection models: ${result.error}\n`);
+    process.exit(1);
+  }
+  let ids = [];
+  let code = '';
+  try {
+    const parsed = JSON.parse(result.body || '{}');
+    ids = Array.isArray(parsed.data) ? parsed.data.map((row) => row.id).filter(Boolean) : [];
+    code = parsed.error && parsed.error.code ? String(parsed.error.code) : '';
+  } catch {
+    code = 'unreadable_response';
+  }
+  process.stdout.write(`${JSON.stringify({ status: result.status, errorCode: code || null, modelIds: ids })}\n`);
+  process.exit(result.status === 200 ? 0 : 1);
+}
+
+async function main() {
+  const sub = String(process.argv[2] || 'status').trim().toLowerCase();
+  const key = readKey();
+  if (sub === 'models') {
+    await printModels(key);
+    return;
+  }
+  if (sub === 'status' || sub === '--status' || sub === 'help' || sub === '--help' || sub === 'monetize' || sub === 'sell' || sub === 'outreach' || sub === '--outreach') {
+    await printSell(key);
+    return;
+  }
+  process.stderr.write(`reflection: "${sub}" is not a ThumbGate sale. Use reflection, reflection outreach, or reflection monetize.\n`);
+  process.exit(2);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
+  main().catch((error) => {
+    process.stderr.write(`reflection: ${error.message}\n`);
+    process.exit(1);
+  });
+}
+
+module.exports = { assessHarnessOffer, PITCH };

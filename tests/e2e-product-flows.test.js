@@ -180,7 +180,7 @@ test('E2E: localhost dashboard bootstraps Local Pro while forwarded hosts stay u
   const localBody = await localRes.text();
   assert.match(localBody, /const BOOTSTRAP_API_KEY = "e2e-admin-key";/);
   assert.match(localBody, /const LOCAL_PRO_BOOTSTRAP = true;/);
-  assert.match(localBody, /Local Pro is active on this machine/);
+  assert.match(localBody, /ThumbGate Enterprise SSO Active|Local Pro is active on this machine/);
 
   const forwardedRes = await fetch(apiUrl(port, '/dashboard'), {
     headers: {

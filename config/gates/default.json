@@ -598,5 +598,24 @@
       "message": "Freeze mode is active. Edits outside the frozen directory are blocked.",
       "severity": "high"
     }
+    ,
+    {
+      "id": "agentbeam-oct2026-supply-chain-block",
+      "layer": "Execution",
+      "toolNames": [
+        "Bash",
+        "Write",
+        "Edit"
+      ],
+      "pattern": "(?:litellm(?:==|@|>=|~=|:\\s*['\"]?)1\\.107\\.0|ovhcloud[-_\\s]+cli[^\\n]*0\\.1[1-5]\\.)",
+      "action": "block",
+      "message": "AgentBeam Oct 2026 Supply-Chain Block: LiteLLM 1.107.0 (pin 1.106.2, remove planted persistence, rotate keys) and OVHcloud CLI v0.11.0-v0.15.0 (use 0.16.0) carry active credential stealers.",
+      "severity": "critical",
+      "compliance": [
+        "NIST-SI-3",
+        "OWASP-A08",
+        "SOC2-CC6.8"
+      ]
+    }
   ]
 }

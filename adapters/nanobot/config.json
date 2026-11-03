@@ -1,0 +1,50 @@
+{
+  "agents": {
+    "defaults": {
+      "workspace": "~/.nanobot/workspace",
+      "model": "vllm-deepseek-v41-flash",
+      "provider": "vllm",
+      "maxTokens": 8192,
+      "contextWindowTokens": 65536,
+      "temperature": 0.1,
+      "maxToolIterations": 25
+    }
+  },
+  "providers": {
+    "vllm": {
+      "apiKey": "vllm-local",
+      "apiBase": "http://127.0.0.1:8000/v1"
+    },
+    "ollama": {
+      "apiKey": "ollama",
+      "apiBase": "http://127.0.0.1:11434/v1"
+    }
+  },
+  "tools": {
+    "restrictToWorkspace": false,
+    "mcpServers": {
+      "thumbgate": {
+        "type": "stdio",
+        "command": "node",
+        "args": [
+          "scripts/mcp-server.js"
+        ],
+        "toolTimeout": 30,
+        "enabledTools": [
+          "mcp__thumbgate_recall",
+          "mcp__thumbgate_gate_check",
+          "mcp__thumbgate_plan_context_footprint",
+          "mcp__thumbgate_verify_claim"
+        ]
+      }
+    }
+  },
+  "gateway": {
+    "host": "127.0.0.1",
+    "port": 18790,
+    "heartbeat": {
+      "enabled": true,
+      "intervalS": 1800
+    }
+  }
+}

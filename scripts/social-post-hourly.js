@@ -34,7 +34,7 @@ const {
 // Reddit EXCLUDED — engagement only via reply-monitor, not auto-posting.
 // Instagram EXCLUDED — requires media.
 // TikTok EXCLUDED — requires video.
-const TEXT_PLATFORMS = new Set(['linkedin', 'twitter']);
+const TEXT_PLATFORMS = new Set(['linkedin', 'x']);
 
 // 7 angles, one per day of the week (Monday=0 through Sunday=6)
 // Ratio: 2 educational, 2 product, 2 hot-take/community, 1 tip

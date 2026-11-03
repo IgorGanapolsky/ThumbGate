@@ -20,6 +20,8 @@ const path = require('node:path');
 
 const CONFIG_PATH = path.join(__dirname, '..', 'adapters', 'confidence', 'config.json');
 
+const TICKET_NAME_RE = /^(?:[a-z]{2,12}-\d+|jira-\d+|agent-\d+|psn-\d+|gh-\d+|issue-\d+|pr-\d+|ticket-\d+)$/i;
+
 const DIODES = Object.freeze([
   {
     id: 'gate:confidence:rollout_ceiling',
@@ -40,6 +42,36 @@ const DIODES = Object.freeze([
     id: 'gate:confidence:prevent_flag_deletion',
     description: 'Blocks flag deletion in production environments; flags must be archived first',
     category: 'destructive_action_protection',
+  },
+  {
+    id: 'gate:confidence:behavior_named_flag',
+    description: 'Name flags after the behaviour (new-checkout-flow), never the ticket (JIRA-1234)',
+    category: 'naming_hygiene',
+  },
+  {
+    id: 'gate:confidence:owner_and_removal_date_required',
+    description: 'Requires every flag to have an owner and a planned removal date for Cleanup sweeps',
+    category: 'lifecycle_governance',
+  },
+  {
+    id: 'gate:confidence:default_off_fail_safe',
+    description: 'Enforces default to "off" so every new flag fails safe (ship code without shipping the change)',
+    category: 'fail_safe_defaults',
+  },
+  {
+    id: 'gate:confidence:guardrail_metrics_required',
+    description: 'Requires guardrail metrics (crashes, latency, errors) attached before launching any gradual rollout',
+    category: 'rollout_guardrails',
+  },
+  {
+    id: 'gate:confidence:rollback_trigger_required',
+    description: 'Requires an explicit rollback trigger threshold decided before launching a rollout',
+    category: 'rollout_guardrails',
+  },
+  {
+    id: 'gate:confidence:gradual_step_start_small',
+    description: 'Enforces starting rollouts at 1-5% and ramping in steps before promoting the same flag to an A/B test',
+    category: 'rollout_guardrails',
   },
 ]);
 
@@ -108,6 +140,67 @@ function evaluateConfidenceAction(params = {}) {
     };
   }
 
+  // Diode 5: Name flags after behaviour, not ticket ('new-checkout-flow', not 'JIRA-1234')
+  if (TICKET_NAME_RE.test(flag.trim())) {
+    return {
+      decision: 'block',
+      gateId: 'gate:confidence:behavior_named_flag',
+      flag,
+      reason: `Blocked ticket-named flag '${flag}'. Name flags after the behaviour ('new-checkout-flow'), not the ticket ('JIRA-1234').`,
+    };
+  }
+
+  // Diode 6: Default to "off" (fail-safe invariant)
+  if (params.defaultEnabled === true || String(params.defaultVariant || '').toLowerCase() === 'on') {
+    return {
+      decision: 'block',
+      gateId: 'gate:confidence:default_off_fail_safe',
+      flag,
+      reason: `Blocked flag '${flag}' with default='on'. Feature flags must default to 'off' and fail safe so deploying code is separated from releasing it.`,
+    };
+  }
+
+  // Diode 7: Owner + Planned Removal Date required when lifecycle metadata is enforced
+  if (params.enforceLifecycleMetadata === true && (!params.owner || !params.plannedRemovalDate)) {
+    return {
+      decision: 'block',
+      gateId: 'gate:confidence:owner_and_removal_date_required',
+      flag,
+      reason: `Blocked flag '${flag}': every flag must have an owner and a planned removal date.`,
+    };
+  }
+
+  // Diode 8 (confidence.pdf Best Practice #1): Attach guardrail metrics (crashes, latency, errors) before launch
+  if (tool === 'launch_rollout' && (!Array.isArray(params.guardrailMetrics) || params.guardrailMetrics.length === 0)) {
+    return {
+      decision: 'block',
+      gateId: 'gate:confidence:guardrail_metrics_required',
+      flag,
+      reason: `Blocked launch_rollout on '${flag}': attach guardrail metrics (crashes, latency, errors) before starting a gradual rollout.`,
+    };
+  }
+
+  // Diode 9 (confidence.pdf Best Practice #2): Start small (1-5%) and increase in steps
+  if (tool === 'launch_rollout' && (rollout === null || rollout < 1 || rollout > 5)) {
+    return {
+      decision: 'block',
+      gateId: 'gate:confidence:gradual_step_start_small',
+      flag,
+      rolloutPercent: rollout,
+      reason: `Blocked launch_rollout on '${flag}' at ${rollout}%: initial gradual rollout step must start small (1-5%) and increase in steps.`,
+    };
+  }
+
+  // Diode 10 (confidence.pdf Best Practice #3): Decide rollback trigger before launch
+  if (tool === 'launch_rollout' && !params.rollbackTrigger) {
+    return {
+      decision: 'block',
+      gateId: 'gate:confidence:rollback_trigger_required',
+      flag,
+      reason: `Blocked launch_rollout on '${flag}': decide and attach an explicit rollbackTrigger before launching a rollout.`,
+    };
+  }
+
   return {
     decision: 'allow',
     flag,
@@ -159,6 +252,47 @@ function auditConfidenceDiodes() {
     message: delBlock.decision === 'block'
       ? 'Successfully blocked flag deletion in production'
       : 'Failed flag deletion protection check',
+  });
+
+  // Check 5: Ticket-named flag blocked ('JIRA-1234' vs 'new-checkout-flow')
+  const ticketBlock = evaluateConfidenceAction({ tool: 'create_flag', flag: 'JIRA-1234' });
+  checks.push({
+    id: 'behavior-named-flag-audit',
+    ok: ticketBlock.decision === 'block' && ticketBlock.gateId === 'gate:confidence:behavior_named_flag',
+    message: 'Successfully blocked ticket-named flag JIRA-1234 in favor of behaviour-named flags',
+  });
+
+  // Check 6: Default-off fail-safe invariant
+  const defaultOnBlock = evaluateConfidenceAction({ tool: 'create_flag', flag: 'new-checkout-flow', defaultVariant: 'on' });
+  checks.push({
+    id: 'default-off-failsafe-audit',
+    ok: defaultOnBlock.decision === 'block' && defaultOnBlock.gateId === 'gate:confidence:default_off_fail_safe',
+    message: 'Successfully enforced default="off" fail-safe invariant',
+  });
+
+  // Check 7: Gradual rollout guardrails + 1-5% start + rollback trigger (confidence.pdf)
+  const noGuardrailBlock = evaluateConfidenceAction({ tool: 'launch_rollout', flag: 'sticky-packet-cta', rolloutPercent: 5 });
+  const noRollbackBlock = evaluateConfidenceAction({
+    tool: 'launch_rollout',
+    flag: 'sticky-packet-cta',
+    rolloutPercent: 5,
+    guardrailMetrics: ['crash_rate', 'p95_latency_ms', 'error_rate'],
+  });
+  const validGradualLaunch = evaluateConfidenceAction({
+    tool: 'launch_rollout',
+    flag: 'sticky-packet-cta',
+    rolloutPercent: 2,
+    guardrailMetrics: ['crash_rate', 'p95_latency_ms', 'error_rate'],
+    rollbackTrigger: 'error_rate > 0.01 || p95_latency_ms > 800',
+  });
+  checks.push({
+    id: 'gradual-rollout-guardrails-audit',
+    ok:
+      noGuardrailBlock.decision === 'block' &&
+      noRollbackBlock.decision === 'block' &&
+      validGradualLaunch.decision === 'allow',
+    message:
+      'Successfully enforced pre-launch guardrail metrics, 1-5% initial step, and rollback trigger before gradual rollout',
   });
 
   const allPassed = checks.every((c) => c.ok);

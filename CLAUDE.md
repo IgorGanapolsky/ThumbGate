@@ -37,6 +37,24 @@ ThumbGate is the only active source of truth. Use `IgorGanapolsky/ThumbGate`, np
 
 Do not use `mcp-memory-gateway`, `rlhf`, old RLHF-loop paths, or similarly named local worktrees/remotes as active product context. Those strings are legacy migration aliases only when cleanup code or tests intentionally remove old config keys.
 
+## Prompt Tuning Format (Ultramarine FORMAT steal)
+
+From Paper Instruments' Ultramarine 1 Flash — applied at drafting time, not as a cleanup pass:
+
+> **Concision with completeness.** The balance that matters most in prose is
+> concision with completeness. Concision never comes at the cost of completeness.
+>
+> **Stopping rule.** Finish when the requested result is usable and the observable
+> requirements are satisfied. Once you judge the work complete, the next action
+> is the handoff. **YOU MUST NOT KEEP WORKING ON FINISHED WORK.**
+>
+> **No self-evaluation.** Never evaluate yourself. Do not produce summaries of
+> what you did, apologies, or meta-commentary.
+
+**Agent lean disclosure** (Anthropic FORMAT steal): when this agent's
+recommendation is influenced by another agent's prior analysis, cite the source
+agent explicitly. Do not present borrowed arguments as independent judgment.
+
 ## Claw-Style + Hybrid Enterprise Agents (Autonomous High-ROI Continuation)
 
 From recent analysis (Automation Anywhere EnterpriseClaw + Perplexity hybrid local-cloud at Computex 2026):
@@ -447,3 +465,10 @@ For every explicit PR-management and system-hygiene session:
 7. Record lessons in local memory and report whether memory helped or hindered.
 
 Use **“Done merging PRs. CI passing. System hygiene complete. Ready for next session.”** only when every condition above is verified. Otherwise report exact blockers and do not use that sentence.
+
+## Leave-Work-at-Work Family Sanctuary & Elephant-Goldfish Autonomous Loop (CEO Order 2026-10-25 — Permanent)
+
+Enforce `.agents/skills/elephant-goldfish-family-sanctuary/SKILL.md` and `evaluateElephantGoldfishAutonomousSanctuaryLoop` (`scripts/rrsi-doctor.js`) on every turn:
+- **Marriage Sanctuary First (`jw.org` docid=500300102):** Zero babysitting interruptions (`humanInterruptionsCount === 0`). Never make Igor act as your QA or ask *"are you sure?"*.
+- **Elephant Spec (`egm.dev`):** No code before the 4-section spec (`Problem`, `Technical Plan`, `Alternatives Rejected`, `Enumerated Files`); zero sycophancy or apologies; critique first.
+- **Goldfish Amnesia Swarm:** Stress-test every spec and implementation via zero-context Goldfish checks (`Comprehension` $\to$ `Adversarial Critic` $\to$ `Readiness` $\to$ `Mean Code & Runtime Review`) and sync `Peanuts & Hay` blueprints between `<repo>/obsidian/` and `~/Documents/AI-Agent-Sync/Projects/<Project>/`.

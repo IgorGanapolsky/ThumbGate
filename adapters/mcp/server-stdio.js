@@ -334,7 +334,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.39.0' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.40.0' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -398,7 +398,11 @@ function toTextResult(payload) {
   return {
     content: [{ type: 'text', text }],
     ...(payload !== null && typeof payload === 'object'
-      ? { structuredContent: payload }
+      ? {
+          structuredContent: Array.isArray(payload)
+            ? { items: payload, results: payload, count: payload.length }
+            : payload,
+        }
       : {}),
   };
 }
@@ -1100,7 +1104,7 @@ async function callToolInner(name, args) {
       }));
     }
     case 'feedback_summary':
-      return toTextResult(feedbackSummary(Number(args.recent || 20), { humanOnly: true }));
+      return toTextResult(feedbackSummary(Number(args.recent || 20), { humanOnly: Boolean(args.humanOnly) }));
     case 'search_lessons': {
       const module = loadPrivateMcpModule('lessonSearch');
       if (!module) return unavailablePrivateMcpFeature('search_lessons');
@@ -1116,7 +1120,6 @@ async function callToolInner(name, args) {
     case 'suggest_fix':
       return buildSuggestFixResponse(args);
     case 'retrieve_lessons': {
-      // Cross-encoder reranking: retrieve more candidates, then rerank for precision
       const { retrieveWithReranking } = loadOptionalModule(path.join(__dirname, '../../scripts/cross-encoder-reranker'), () => ({
         retrieveWithReranking: async (toolName, actionContext, options = {}) => retrieveRelevantLessons(
           toolName,
@@ -1124,20 +1127,29 @@ async function callToolInner(name, args) {
           { maxResults: options.maxResults || 5 },
         ),
       }));
+      const resolvedToolName = String(args.toolName || args.tool || args.query || 'general').trim() || 'general';
+      const resolvedContext = String(args.actionContext || args.query || args.context || '').trim();
       return toTextResult(await retrieveWithReranking(
-        args.toolName,
-        args.actionContext || '',
+        resolvedToolName,
+        resolvedContext,
         {
           candidateCount: 20,
           maxResults: Number(args.maxResults || 5),
-          scope: args.scope,
+          scope: args.scope && !Array.isArray(args.scope) ? args.scope : undefined,
           requireScope: args.requireScope === true,
           includeShared: args.includeShared !== false,
-          metadataFilters: args.filters,
+          metadataFilters: args.filters && !Array.isArray(args.filters) ? args.filters : undefined,
           queryRewrite: args.queryRewrite !== false,
           includeRetrievalMeta: args.includeRetrievalMeta === true,
         },
       ));
+    }
+    case 'retract_feedback': {
+      const { retractFeedback } = require('../../scripts/feedback-loop');
+      return toTextResult(retractFeedback({
+        id: args.id || args.feedbackId || args.memoryId,
+        matchText: args.matchText || args.match || args.query,
+      }));
     }
     case 'ai_component_inventory': {
       const {
@@ -1245,7 +1257,7 @@ async function callToolInner(name, args) {
       };
     }
     case 'feedback_stats':
-      return toTextResult(analyzeFeedback(undefined, { humanOnly: true }));
+      return toTextResult(analyzeFeedback(undefined, { humanOnly: Boolean(args.humanOnly) }));
     case 'diagnose_failure':
       return buildDiagnoseFailureResponse(args);
     case 'reflect_on_feedback':
@@ -1967,7 +1979,7 @@ function acquireLock() {
         process.on('exit', cleanupSessionLock);
         process.on('SIGTERM', () => { cleanupSessionLock(); process.exit(0); });
         process.on('SIGINT', () => { cleanupSessionLock(); process.exit(0); });
-        return { lockFile: sessionLockFile, cleanupLock: cleanupSessionLock };
+        return { lockFile: sessionLockFile, cleanupLock: cleanupSessionLock, isConcurrentSession: true };
       }
       // Stale lock from a dead process — remove it.
       try { fs.unlinkSync(lockFile); } catch { /* already gone */ }
@@ -1978,9 +1990,9 @@ function acquireLock() {
     process.on('exit', cleanupLock);
     process.on('SIGTERM', () => { cleanupLock(); process.exit(0); });
     process.on('SIGINT', () => { cleanupLock(); process.exit(0); });
-    return { lockFile, cleanupLock };
+    return { lockFile, cleanupLock, isConcurrentSession: false };
   } catch { /* best-effort lock */ }
-  return { lockFile, cleanupLock: () => {} };
+  return { lockFile, cleanupLock: () => {}, isConcurrentSession: false };
 }
 
 /**
@@ -2027,23 +2039,23 @@ function registerSessionIdentity() {
 }
 
 function startStdioServer() {
-  acquireLock();
+  const lockInfo = acquireLock();
   registerSessionIdentity();
 
   process.stdin.resume();
 
-  // Self-terminate when the client disconnects (stdin EOF/close). A stdio MCP
-  // server must not outlive its parent: clients spawn it over stdin/stdout and
-  // a well-behaved server exits when that pipe closes. Without this, children
-  // abandoned by a client that exits without killing them linger forever and
-  // accumulate. WHY: on 2026-06-05, 117 orphaned `thumbgate serve` processes
-  // (spawned by a Codex app-server over ~4 days, never reaped) piled up and
-  // helped exhaust a 24GB host. The existing exit handlers (cleanupLock /
-  // cleanupSessionLock registered on 'exit') run via process.exit(0).
-  const exitOnDisconnect = () => process.exit(0);
-  process.stdin.on('end', exitOnDisconnect);
-  process.stdin.on('close', exitOnDisconnect);
-
+  // Self-terminate when the client disconnects (stdin EOF/close), waiting for
+  // any in-flight JSON-RPC request to flush its response first.
+  let inFlightRequests = 0;
+  let stdinClosed = false;
+  const maybeExitOnDisconnect = () => {
+    stdinClosed = true;
+    if (inFlightRequests <= 0) {
+      process.exit(0);
+    }
+  };
+  process.stdin.on('end', maybeExitOnDisconnect);
+  process.stdin.on('close', maybeExitOnDisconnect);
   let buffer = Buffer.alloc(0);
   // Auto-detect transport from first request and lock it for the session.
   // mcp-proxy (Glama) sends NDJSON and expects NDJSON back.
@@ -2081,6 +2093,7 @@ function startStdioServer() {
 
       const respond = sessionTransport === 'ndjson' ? writeNdjsonResponse : writeResponse;
 
+      inFlightRequests += 1;
       try {
         const result = await handleRequest(parsed.request);
         if (result !== null) {
@@ -2091,9 +2104,15 @@ function startStdioServer() {
           code: -32603,
           message: err.message,
         });
+      } finally {
+        inFlightRequests -= 1;
+        if (stdinClosed && inFlightRequests <= 0) {
+          process.exit(0);
+        }
       }
     }
   });
+  return lockInfo;
 }
 
 if (require.main === module) startStdioServer();

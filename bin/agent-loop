@@ -108,9 +108,11 @@ function runHealthChecks({ injectFailure = null } = {}) {
 
   checks.push(checkRequiredFile('scripts/session-lease.js', 'checkout lease script missing'));
   checks.push(checkRequiredFile('scripts/thumbgate-spend-guard.js', 'spend-guard PreToolUse script missing'));
+  checks.push(checkRequiredFile('scripts/governance-check.js', 'governance checklist script missing (Muller/Trevillion steal)'));
   checks.push(checkRequiredFile('AGENTS.md', 'canonical agent directive missing'));
   checks.push(checkRequiredFile('CLAUDE.md', 'canonical Claude directive missing'));
   checks.push(checkRequiredFile('GEMINI.md', 'canonical Gemini directive missing'));
+  checks.push(checkRequiredFile('agents.md', 'vendor-neutral agent context missing (GitHub Podcast S02E05)'));
 
   // Optional warn-only surfaces
   const mcpJsonPath = path.join(ROOT, '.mcp.json');

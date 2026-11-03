@@ -43,8 +43,39 @@ test('classifies audit, example, and automation events away from external demand
 
   assert.equal(external.audience, 'external');
   assert.equal(external.isExternal, true);
-});
+  const scriptedWebNode = classifyTelemetryAudience({
+    eventType: 'landing_page_view',
+    clientType: 'web',
+    visitorId: 'visitor_script_1',
+    source: 'direct',
+    page: '/',
+    userAgent: 'node',
+  });
+  assert.equal(scriptedWebNode.audience, 'bot');
+  assert.equal(scriptedWebNode.isExternal, false);
+  assert.ok(scriptedWebNode.reasons.includes('bot_or_automation_user_agent'));
 
+  const spawnObserver = classifyTelemetryAudience({
+    eventType: 'landing_page_view',
+    clientType: 'web',
+    visitorId: 'visitor_observer_1',
+    source: 'direct',
+    page: '/',
+    userAgent: 'Spawn-15m-Observer/1.0',
+  });
+  assert.equal(spawnObserver.audience, 'bot');
+  assert.equal(spawnObserver.isExternal, false);
+
+  const cliNode = classifyTelemetryAudience({
+    eventType: 'cli_init',
+    clientType: 'cli',
+    installId: 'install_real_1',
+    source: 'cli',
+    userAgent: 'node',
+  });
+  assert.equal(cliNode.audience, 'external');
+  assert.equal(cliNode.isExternal, true);
+});
 test('reports qualified external traffic separately from raw polluted telemetry', () => {
   const tmpDir = makeTmpDir();
   const now = new Date().toISOString();

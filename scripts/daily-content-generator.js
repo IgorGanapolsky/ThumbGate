@@ -10,8 +10,8 @@ const fs = require('fs');
 const path = require('path');
 
 const DATE_STR = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-const DRAFTS_DIR = path.join(require('os').homedir(), 'Documents', 'AI-Agent-Sync', 'Email-Drafts');
-const CONTENT_FILE = path.join(require('os').homedir(), 'Documents', 'AI-Agent-Sync', 'content-source', 'daily-content-db.json');
+const DRAFTS_DIR = path.join(require('os').homedir(), 'Documents', 'AI-Agent-Sync', 'Projects', 'ThumbGate', 'Email-Drafts');
+const CONTENT_FILE = path.join(require('os').homedir(), 'Documents', 'AI-Agent-Sync', 'Projects', 'ThumbGate', 'content-source', 'daily-content-db.json');
 
 // Ensure directories exist
 fs.mkdirSync(DRAFTS_DIR, { recursive: true });
@@ -30,6 +30,15 @@ const THEMES = [
 ];
 
 // 10 platforms with platform-specific formats
+const FOUR_TIER_CTA_SHORT = 'Playbook ($9.99): https://iganapolsky.gumroad.com/l/odrkon | Production Kit ($49): https://iganapolsky.gumroad.com/l/vcrho | Pro ($19/mo): https://thumbgate.ai/go/pro-direct';
+const FOUR_TIER_CTA_FULL = [
+  '• Free CLI (MIT): npx thumbgate@latest init (https://github.com/IgorGanapolsky/ThumbGate)',
+  '• $9.99 Playbook (Laguna 2.1 DFlash + AKV Cache): https://iganapolsky.gumroad.com/l/odrkon',
+  '• $49 Complete Production Rule-Pack & DPO/AKV Kit (1-Time Expense): https://iganapolsky.gumroad.com/l/vcrho',
+  '• $19/mo or $149/yr ThumbGate Pro: https://thumbgate.ai/go/pro-direct',
+  '• $499 Workflow Hardening Diagnostic: https://thumbgate.ai/diagnostic',
+].join('\n');
+
 const PLATFORMS = [
   {
     id: 'linkedin',
@@ -37,7 +46,7 @@ const PLATFORMS = [
     format: 'professional-post',
     length: 'medium',
     style: 'business-insight-with-data',
-    cta: 'Read the full guide at https://iganapolsky.gumroad.com/l/yhdbza',
+    cta: FOUR_TIER_CTA_FULL,
   },
   {
     id: 'x',
@@ -45,7 +54,7 @@ const PLATFORMS = [
     format: 'thread-starter',
     length: 'short',
     style: 'hook-statement-data-point',
-    cta: 'https://iganapolsky.gumroad.com/l/yhdbza',
+    cta: FOUR_TIER_CTA_SHORT,
   },
   {
     id: 'skool',
@@ -53,7 +62,7 @@ const PLATFORMS = [
     format: 'community-post',
     length: 'medium',
     style: 'problem-solution-framework',
-    cta: 'Download the guide: https://iganapolsky.gumroad.com/l/yhdbza',
+    cta: FOUR_TIER_CTA_FULL,
   },
   {
     id: 'bigger_pockets',
@@ -61,7 +70,7 @@ const PLATFORMS = [
     format: 'investor-post',
     length: 'long',
     style: 'roi-calculation-case-study',
-    cta: 'Full analysis: https://iganapolsky.gumroad.com/l/yhdbza',
+    cta: FOUR_TIER_CTA_FULL,
   },
   {
     id: 'reddit',
@@ -69,7 +78,7 @@ const PLATFORMS = [
     format: 'discussion-post',
     length: 'medium',
     style: 'humbly-sharing-learnings',
-    cta: 'Guide I wrote: https://iganapolsky.gumroad.com/l/yhdbza',
+    cta: FOUR_TIER_CTA_FULL,
   },
   {
     id: 'zyvop',
@@ -77,7 +86,7 @@ const PLATFORMS = [
     format: 'founder-post',
     length: 'long',
     style: 'technical-deep-dive',
-    cta: 'Technical guide: https://iganapolsky.gumroad.com/l/yhdbza',
+    cta: FOUR_TIER_CTA_FULL,
   },
   {
     id: 'hn',
@@ -85,7 +94,7 @@ const PLATFORMS = [
     format: 'show-hn',
     length: 'medium',
     style: 'show-tell-improve',
-    cta: 'Show HN: https://iganapolsky.gumroad.com/l/yhdbza',
+    cta: FOUR_TIER_CTA_SHORT,
   },
   {
     id: 'bluesky',
@@ -93,7 +102,7 @@ const PLATFORMS = [
     format: 'bsky-post',
     length: 'short',
     style: 'bite-sized-insight',
-    cta: 'https://iganapolsky.gumroad.com/l/yhdbza',
+    cta: FOUR_TIER_CTA_SHORT,
   },
   {
     id: 'threads',
@@ -101,7 +110,7 @@ const PLATFORMS = [
     format: 'threads-post',
     length: 'short',
     style: 'trend-commentary',
-    cta: 'Guide link in bio: https://iganapolsky.gumroad.com/l/yhdbza',
+    cta: FOUR_TIER_CTA_SHORT,
   },
   {
     id: 'devto',
@@ -109,7 +118,15 @@ const PLATFORMS = [
     format: 'technical-article',
     length: 'long',
     style: 'code-first-tutorial',
-    cta: 'Full guide with patterns: https://iganapolsky.gumroad.com/l/yhdbza',
+    cta: FOUR_TIER_CTA_FULL,
+  },
+  {
+    id: 'stackoverflow',
+    name: 'Stack Overflow',
+    format: 'stackoverflow-qa',
+    length: 'long',
+    style: 'canonical-self-answered-qa',
+    cta: '*(Disclosure: I maintain [ThumbGate](https://github.com/IgorGanapolsky/ThumbGate), an MIT-licensed PreToolUse firewall (`npx thumbgate@latest init`); see the [architecture & rule reference](https://thumbgate.ai/guide?utm_source=stackoverflow&utm_medium=answer&utm_campaign=so_aeo_71611).)*',
   },
 ];
 
@@ -382,6 +399,9 @@ function generateContent(themeId, platform, pieceIndex) {
     case 'technical-article': // Dev.to
       content = `#ThumbGate\n\n## ${theme.name}\n\n${hook}\n\n### Pattern\n\n${pattern}\n\n### Data\n\n${dataPoint}\n\n### Implementation\n\nCode examples in Node.js. Works with ThumbGate v1.38+.\n\n${platform.cta}\n`;
       break;
+    case 'stackoverflow-qa': // Stack Overflow Self-Q&A (Moderator-Safe + AEO)
+      content = `## Question (Check "Answer your own question" on Stack Overflow)\n\n**Title:** How to enforce deterministic ${theme.name.toLowerCase()} in Claude Code, Cursor, and MCP agents before tool execution?\n\n**Tags:** \`[claude-code]\` \`[cursor]\` \`[model-context-protocol]\` \`[ai-agents]\`\n\n**Problem:**\n${hook}\n\nHow can we intercept and validate tool calls deterministically in \`<1ms\` before the side-effect executes?\n\n---\n\n## Answer\n\n**Root Cause & Invariant:** ${fact}\n\n### 1. Configure a PreToolUse Hook (\`.claude/settings.json\` / \`.cursor/hooks.json\`)\n\n\`\`\`bash\nnpx thumbgate@latest init\n\`\`\`\n\n### 2. Implementation Pattern\n\n- ${pattern}\n- **Measured Benchmark:** ${dataPoint}\n\n${platform.cta}\n`;
+      break;
     default:
       content = `#ThumbGate\n\n${hook}\n\n${fact}\n\n${platform.cta}\n`;
   }
@@ -417,12 +437,32 @@ ${content}`;
       results.push({ fileName, platform: platform.name, title });
     }
   }
-  
+
+  // Also generate the daily @socialwithaayan-style long-form X Article + terminal SVG banner
+  try {
+    const { composeXArticleFullGuide } = require('./social-analytics/publishers/x');
+    const articlePack = composeXArticleFullGuide();
+    const articleFileName = `${DATE_STR}-x-article-full-guide.md`;
+    const bannerFileName = `${DATE_STR}-x-article-terminal-hero.svg`;
+    fs.writeFileSync(path.join(DRAFTS_DIR, articleFileName), articlePack.articleMarkdown, 'utf8');
+    fs.writeFileSync(path.join(DRAFTS_DIR, bannerFileName), articlePack.bannerSvg, 'utf8');
+    results.push({ fileName: articleFileName, platform: 'X Article (Long-Form Guide)', title: articlePack.title });
+  } catch (_) {}
+
   return results;
 }
 
 // Run
-const results = generateToday();
-console.log(`✓ Generated ${results.length} daily content drafts`);
-results.forEach(r => console.log(`  ${r.platform}: ${r.fileName}`));
-console.log(`All drafts written to: ${DRAFTS_DIR}`);
+if (require.main === module) {
+  const results = generateToday();
+  console.log(`✓ Generated ${results.length} daily content drafts (including X Article + SVG hero)`);
+  results.forEach((r) => console.log(`  ${r.platform}: ${r.fileName}`));
+  console.log(`All drafts written to: ${DRAFTS_DIR}`);
+}
+
+module.exports = {
+  THEMES,
+  PLATFORMS,
+  generateContent,
+  generateToday,
+};

@@ -1,0 +1,16 @@
+{
+  "id": "mabl-budget-envelope",
+  "goal": "Steal Mastercard Agent Pay patterns: signed gate receipts and budget envelopes in the Isolated Verifier",
+  "expectedFiles": [
+    "scripts/isolated-verifier.js",
+    "config/verifier-criteria.json"
+  ],
+  "expectedChecks": ["unit_tests", "proof_pack_integrity"],
+  "expectedVerdict": "PASS",
+  "rubric": {
+    "goal_alignment": 0.8,
+    "edge_case_coverage": 0.6,
+    "design_compliance": 0.8
+  },
+  "description": "Verifies that Mastercard Agent Pay patterns were correctly stolen: signed receipt (SHA-256 voucher), budget envelope tracking (maxCommands/maxWallTimeMs), and quality score in the report."
+}

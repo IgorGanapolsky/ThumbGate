@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ThumbGate Founder Admin — Customer &amp; Account Management</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" type="image/svg+xml" href="/assets/brand/thumbgate-mark.svg">
+  <style>
+    :root {
+      --bg: #080b10;
+      --panel: #101622;
+      --panel-2: #151d2d;
+      --line: rgba(148, 163, 184, 0.18);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --cyan: #38d7ff;
+      --green: #56e39f;
+      --amber: #fbbf24;
+      --red: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      line-height: 1.5;
+    }
+    .shell { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+    header {
+      border-bottom: 1px solid var(--line);
+      background: rgba(16, 22, 34, 0.95);
+      padding: 14px 0;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .nav-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); font-weight: 800; font-size: 16px; }
+    .badge-admin {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(251, 191, 36, 0.14);
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      color: var(--amber);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .nav-links { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 700; }
+    .nav-links a:hover { color: var(--text); }
+    main { padding: 28px 0 64px; }
+    h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -0.02em; }
+    .sub { color: var(--muted); font-size: 14px; margin: 0 0 22px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 18px;
+    }
+    .login-gate-wrap {
+      max-width: 480px;
+      margin: 64px auto;
+      background: var(--panel);
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      border-radius: 16px;
+      padding: 28px 26px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
+    .kpi-val { font-size: 28px; font-weight: 800; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    input, select {
+      min-height: 40px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #06090e;
+      color: var(--text);
+      font-size: 13px;
+    }
+    button {
+      min-height: 40px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      font: 800 12px/1 inherit;
+      cursor: pointer;
+    }
+    .btn-cyan { background: var(--cyan); color: #041016; }
+    .btn-green { background: var(--green); color: #04140c; }
+    .btn-amber { background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.45); color: var(--amber); }
+    .btn-red { background: rgba(255, 107, 107, 0.14); border-color: rgba(255, 107, 107, 0.45); color: var(--red); }
+    .btn-ghost { background: var(--panel-2); border-color: var(--line); color: var(--text); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .pill-active { background: rgba(86, 227, 159, 0.14); color: var(--green); border: 1px solid rgba(86, 227, 159, 0.35); }
+    .pill-suspended { background: rgba(255, 107, 107, 0.14); color: var(--red); border: 1px solid rgba(255, 107, 107, 0.35); }
+    .pill-tier { background: rgba(56, 215, 255, 0.12); color: var(--cyan); border: 1px solid rgba(56, 215, 255, 0.3); }
+    #adminStatusBanner { display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-weight: 700; font-size: 13px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell nav-row">
+      <div class="row">
+        <a class="brand" href="/">
+          <img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" width="28" height="28">
+          <span>ThumbGate</span>
+        </a>
+        <span class="badge-admin">🔒 Founder Admin Only</span>
+      </div>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/cloud">Cloud Portal</a>
+        <a href="/dashboard">Dashboard</a>
+        <span id="adminIdentityBadge" class="mono" style="color:var(--amber);">🔒 Locked</span>
+        <button type="button" id="adminLogoutBtn" class="btn-red" style="display:none;min-height:32px;padding:0 12px;" onclick="window.tgAdminLogout()">Log Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <div id="adminStatusBanner"></div>
+
+    <!-- STRICT FOUNDER-ONLY LOGIN GATE (Visible by default; blocks all dashboard UI until authenticated) -->
+    <div id="adminLoginGate" class="login-gate-wrap">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:22px;">🔒</span>
+        <div style="font-weight:800;font-size:19px;">Founder Admin Login</div>
+      </div>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 18px;">
+        Restricted exclusively to <strong>Igor Ganapolsky</strong> (<code>igor@igorganapolsky.com</code> / <code>iganapolsky@gmail.com</code>). Customer data and account management are hidden until verified.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label for="adminEmailInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Founder Email</label>
+          <input type="email" id="adminEmailInput" placeholder="igor@igorganapolsky.com" value="igor@igorganapolsky.com" style="width:100%;">
+        </div>
+        <div>
+          <label for="adminSecretInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Founder Password or Operator Key</label>
+          <input type="password" id="adminSecretInput" placeholder="Enter Founder Password or THUMBGATE_OPERATOR_KEY" style="width:100%;" onkeydown="if(event.key==='Enter'){window.tgAdminAuthenticate();}">
+        </div>
+        <button type="button" id="adminSignInBtn" class="btn-cyan" style="width:100%;font-size:13px;" onclick="window.tgAdminAuthenticate()">Sign In to Founder Admin →</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">
+        All login attempts from non-founder emails are rejected with <code>403 Forbidden (founder_only_access)</code>.
+      </div>
+    </div>
+
+    <!-- PROTECTED ADMIN DASHBOARD (Hidden until POST /v1/admin/login + GET /v1/admin/customers succeed) -->
+    <div id="adminProtectedDashboard" style="display:none;">
+      <div class="row" style="justify-content:space-between;margin-bottom:16px;">
+        <div>
+          <h1>Customer &amp; Account Management (`https://thumbgate.ai/admin`)</h1>
+          <p class="sub" style="margin-bottom:0;">Authenticated as Founder Admin. Inspect registered accounts, Stripe subscribers, provisioned license keys, and active sessions.</p>
+        </div>
+        <div class="row">
+          <button type="button" class="btn-amber" onclick="window.tgAdminPurgeUnverified()">Purge Unverified Legacy Sessions</button>
+          <button type="button" class="btn-ghost" onclick="window.tgAdminLoadCustomers()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-label">Total Customer Records</div>
+          <div class="kpi-val" id="kpiTotalAccounts">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Registered Accounts</div>
+          <div class="kpi-val" id="kpiRegisteredAccounts" style="color:var(--cyan);">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Active Sessions</div>
+          <div class="kpi-val" id="kpiActiveSessions" style="color:var(--amber);">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Active License Keys</div>
+          <div class="kpi-val" id="kpiActiveKeys" style="color:var(--green);">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Verified MRR</div>
+          <div class="kpi-val" id="kpiMrrDollars" style="color:var(--green);">$0</div>
+        </div>
+      </div>
+
+      <!-- Create / Provision Customer Account -->
+      <div class="card">
+        <div style="font-weight:800;font-size:14px;margin-bottom:10px;">➕ Create Customer Account / Provision Access</div>
+        <div class="row">
+          <input type="email" id="newCustEmail" placeholder="customer@company.com" style="width:230px;">
+          <input type="text" id="newCustName" placeholder="Customer / Company Name" style="width:190px;">
+          <input type="password" id="newCustPassword" placeholder="Initial password (8+ chars)" style="width:200px;">
+          <select id="newCustTier">
+            <option value="pro">Pro ($19/mo)</option>
+            <option value="cloud_indie">Cloud Indie ($49/mo)</option>
+            <option value="cloud_startup">Cloud Startup ($199/mo)</option>
+            <option value="free_local">Free Local</option>
+          </select>
+          <select id="newCustRole">
+            <option value="customer">Customer</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button type="button" class="btn-green" onclick="window.tgAdminCreateCustomer()">+ Create Account</button>
+        </div>
+      </div>
+
+      <!-- Customers Table -->
+      <div class="card" style="overflow-x:auto;">
+        <div class="row" style="justify-content:space-between;margin-bottom:12px;">
+          <div style="font-weight:800;font-size:15px;">All Customers, Accounts &amp; Provisioned Keys</div>
+          <input type="search" id="custFilterInput" placeholder="Filter by email, tier, key, or status..." style="width:280px;" oninput="window.tgAdminRenderTable()">
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Customer / Email</th>
+              <th>Status &amp; Role</th>
+              <th>Plan / Tier</th>
+              <th>Auth Method</th>
+              <th>Provisioned Keys</th>
+              <th>Workspaces &amp; Sessions</th>
+              <th>Created / Last Login</th>
+              <th>Manage Account</th>
+            </tr>
+          </thead>
+          <tbody id="customersTableBody">
+            <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px;">Loading verified customer accounts...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var allCustomers = [];
+      var statusBanner = document.getElementById('adminStatusBanner');
+      var loginGate = document.getElementById('adminLoginGate');
+      var protectedDash = document.getElementById('adminProtectedDashboard');
+      var logoutBtn = document.getElementById('adminLogoutBtn');
+      var badge = document.getElementById('adminIdentityBadge');
+
+      function showBanner(msg, ok) {
+        if (!statusBanner) return;
+        statusBanner.style.display = 'block';
+        statusBanner.style.background = ok ? 'rgba(86,227,159,0.14)' : 'rgba(255,107,107,0.14)';
+        statusBanner.style.border = '1px solid ' + (ok ? 'rgba(86,227,159,0.45)' : 'rgba(255,107,107,0.45)');
+        statusBanner.style.color = ok ? 'var(--green)' : 'var(--red)';
+        statusBanner.textContent = msg;
+      }
+
+      function setUnlockedState(unlocked, emailText) {
+        if (loginGate) loginGate.style.display = unlocked ? 'none' : 'block';
+        if (protectedDash) protectedDash.style.display = unlocked ? 'block' : 'none';
+        if (logoutBtn) logoutBtn.style.display = unlocked ? 'inline-block' : 'none';
+        if (badge) {
+          badge.style.color = unlocked ? 'var(--green)' : 'var(--amber)';
+          badge.textContent = unlocked ? ('🟢 ' + (emailText || 'igor@igorganapolsky.com')) : '🔒 Locked';
+        }
+      }
+
+      function getAdminToken() {
+        try {
+          return sessionStorage.getItem('tg_admin_bearer') || localStorage.getItem('tg_admin_sso_token') || '';
+        } catch (e) {
+          return '';
+        }
+      }
+
+      window.tgAdminLogout = function () {
+        try {
+          sessionStorage.removeItem('tg_admin_bearer');
+          localStorage.removeItem('tg_admin_sso_token');
+          localStorage.removeItem('tg_admin_api_key');
+        } catch (e) {}
+        allCustomers = [];
+        setUnlockedState(false);
+        showBanner('Signed out of Founder Admin Console.', true);
+      };
+
+      window.tgAdminAuthenticate = async function () {
+        var email = (document.getElementById('adminEmailInput').value || '').trim().toLowerCase();
+        var secret = (document.getElementById('adminSecretInput').value || '').trim();
+        if (!email || !secret) {
+          showBanner('Enter both your Founder Email and Founder Password / Operator Key.', false);
+          return;
+        }
+
+        var loginRes = await fetch('/v1/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: secret })
+        }).catch(function () { return null; });
+
+        if (!loginRes) {
+          showBanner('Network error contacting /v1/admin/login.', false);
+          return;
+        }
+
+        var loginData = await loginRes.json().catch(function () { return {}; });
+        if (!loginRes.ok || !loginData || !loginData.ok) {
+          setUnlockedState(false);
+          showBanner((loginData && loginData.message) || 'Access denied (403/401). Restricted exclusively to Igor Ganapolsky.', false);
+          return;
+        }
+
+        var activeToken = loginData.ssoToken || secret;
+        try {
+          sessionStorage.setItem('tg_admin_bearer', activeToken);
+          localStorage.setItem('tg_admin_sso_token', activeToken);
+          localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
+          localStorage.setItem('tg_cloud_sso_token', activeToken);
+          localStorage.setItem('tg_cloud_sso_email', loginData.email || email);
+          localStorage.setItem('tg_cloud_sso_provider', 'admin');
+        } catch (e) {}
+
+        document.getElementById('adminSecretInput').value = '';
+        await window.tgAdminLoadCustomers();
+      };
+
+      window.tgAdminLoadCustomers = async function () {
+        var token = getAdminToken();
+        if (!token) {
+          setUnlockedState(false);
+          return;
+        }
+        var res = await fetch('/v1/admin/customers', {
+          headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+        });
+        var data = await res.json().catch(function () { return {}; });
+        if (!res.ok || !data || !data.ok) {
+          setUnlockedState(false);
+          showBanner((data && data.message) || 'Founder Admin login required (401/403).', false);
+          return;
+        }
+        setUnlockedState(true, 'igor@igorganapolsky.com');
+        showBanner('Authenticated as Founder Admin — ' + (data.summary.totalAccounts || 0) + ' total records loaded.', true);
+        document.getElementById('kpiTotalAccounts').textContent = String(data.summary.totalAccounts || 0);
+        document.getElementById('kpiRegisteredAccounts').textContent = String(data.summary.registeredAccounts || 0);
+        document.getElementById('kpiActiveSessions').textContent = String(data.summary.activeSessions || 0);
+        document.getElementById('kpiActiveKeys').textContent = String(data.summary.activeApiKeys || 0);
+        document.getElementById('kpiMrrDollars').textContent = '$' + String(data.summary.mrrDollars || 0);
+        allCustomers = Array.isArray(data.customers) ? data.customers : [];
+        window.tgAdminRenderTable();
+      };
+
+      window.tgAdminRenderTable = function () {
+        var tbody = document.getElementById('customersTableBody');
+        var q = ((document.getElementById('custFilterInput') && document.getElementById('custFilterInput').value) || '').toLowerCase().trim();
+        var filtered = allCustomers.filter(function (c) {
+          if (!q) return true;
+          return JSON.stringify(c).toLowerCase().includes(q);
+        });
+        if (filtered.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No customer accounts match filter.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = filtered.map(function (c) {
+          var ident = c.email || c.stripeCustomerId || c.id;
+          var statusClass = c.status === 'suspended' ? 'pill-suspended' : 'pill-active';
+          var keysHtml = (c.apiKeys || []).map(function (k) {
+            return '<div class="mono">' + k.keyPreview + (k.active ? ' <span style="color:var(--green)">(active)</span>' : ' <span style="color:var(--red)">(revoked)</span>') + '</div>';
+          }).join('') || '<span style="color:var(--muted)">None</span>';
+          var projs = (c.projects || []).map(function (p) { return p.slug || p.name; }).join(', ') || 'default';
+          var created = c.createdAt ? c.createdAt.slice(0, 16).replace('T', ' ') : '—';
+          var lastLogin = c.lastLoginAt ? c.lastLoginAt.slice(0, 16).replace('T', ' ') : '—';
+          var safeIdent = String(ident).replace(/'/g, "\\'");
+          return '<tr>' +
+            '<td><div style="font-weight:800;">' + (c.email || c.name || ident) + '</div><div class="mono" style="color:var(--muted);">' + (c.stripeCustomerId || c.id || '') + '</div></td>' +
+            '<td><span class="pill ' + statusClass + '">' + (c.status || 'active') + '</span> <span class="mono" style="color:var(--amber);">' + (c.role || 'customer') + '</span></td>' +
+            '<td><span class="pill pill-tier">' + (c.tierId || 'free') + '</span>' + (c.mrrDollars ? '<div class="mono" style="color:var(--green);margin-top:4px;">$' + c.mrrDollars + '/mo</div>' : '') + '</td>' +
+            '<td class="mono">' + (c.authMethod || 'none') + '<div style="color:var(--muted);">' + (c.hasPassword ? '🔒 password set' : 'no password') + '</div></td>' +
+            '<td>' + keysHtml + '</td>' +
+            '<td class="mono"><div>📁 ' + projs + '</div><div style="color:var(--muted);">' + (c.activeSessionsCount || 0) + ' active session(s)</div></td>' +
+            '<td class="mono" style="color:var(--muted);"><div>Created: ' + created + '</div><div>Login: ' + lastLogin + '</div></td>' +
+            '<td><div class="row" style="gap:6px;">' +
+              '<button type="button" class="btn-green" style="min-height:30px;padding:0 10px;" onclick="window.tgAdminAction(\'provision_key\',\'' + safeIdent + '\')">+ Key</button>' +
+              '<button type="button" class="btn-ghost" style="min-height:30px;padding:0 10px;" onclick="window.tgAdminPromptPassword(\'' + safeIdent + '\')">Reset PW</button>' +
+              '<button type="button" class="btn-amber" style="min-height:30px;padding:0 10px;" onclick="window.tgAdminToggleStatus(\'' + safeIdent + '\',\'' + (c.status || 'active') + '\')">' + (c.status === 'suspended' ? 'Activate' : 'Suspend') + '</button>' +
+              '<button type="button" class="btn-red" style="min-height:30px;padding:0 10px;" onclick="window.tgAdminAction(\'delete_account\',\'' + safeIdent + '\')">Delete</button>' +
+            '</div></td>' +
+          '</tr>';
+        }).join('');
+      };
+
+      window.tgAdminAction = async function (action, email, extra) {
+        var token = getAdminToken();
+        if (!token) {
+          setUnlockedState(false);
+          showBanner('Sign in to Founder Admin first.', false);
+          return;
+        }
+        var payload = Object.assign({ action: action, email: email }, extra || {});
+        var res = await fetch('/v1/admin/customers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify(payload)
+        });
+        var data = await res.json().catch(function () { return {}; });
+        if (!res.ok || !data || !data.ok) {
+          showBanner((data && data.message) || ('Action ' + action + ' failed.'), false);
+          return;
+        }
+        if (action === 'provision_key' && data.keyResult && data.keyResult.key) {
+          showBanner('Provisioned key for ' + email + ': ' + data.keyResult.key, true);
+        } else {
+          showBanner('Completed ' + action + ' for ' + (email || 'all sessions') + '.', true);
+        }
+        await window.tgAdminLoadCustomers();
+      };
+
+      window.tgAdminCreateCustomer = async function () {
+        var email = (document.getElementById('newCustEmail').value || '').trim();
+        var name = (document.getElementById('newCustName').value || '').trim();
+        var password = document.getElementById('newCustPassword').value || '';
+        var tierId = document.getElementById('newCustTier').value;
+        var role = document.getElementById('newCustRole').value;
+        await window.tgAdminAction('create_account', email, { name: name, password: password, tierId: tierId, role: role });
+        document.getElementById('newCustPassword').value = '';
+      };
+
+      window.tgAdminPromptPassword = async function (email) {
+        var pw = window.prompt('Enter new password (8+ characters) for ' + email + ':');
+        if (!pw) return;
+        await window.tgAdminAction('reset_password', email, { password: pw });
+      };
+
+      window.tgAdminToggleStatus = async function (email, currentStatus) {
+        var nextStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
+        await window.tgAdminAction('update_account', email, { status: nextStatus });
+      };
+
+      window.tgAdminPurgeUnverified = async function () {
+        await window.tgAdminAction('purge_unverified_sessions', '');
+      };
+
+      if (getAdminToken()) {
+        window.tgAdminLoadCustomers();
+      } else {
+        setUnlockedState(false);
+      }
+    })();
+  </script>
+</body>
+</html>

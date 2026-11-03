@@ -2007,6 +2007,7 @@ function captureFeedback(params) {
         inferredLesson: memoryRecord ? memoryRecord.title : (feedbackEvent.context || '').slice(0, 200),
         confidence: memoryRecord ? 70 : 40,
         tags: feedbackEvent.tags || [],
+        feedbackDir: FEEDBACK_DIR,
         metadata: {
           reviewOrigin: feedbackEvent.reviewOrigin,
         },
@@ -2288,8 +2289,17 @@ function analyzeFeedback(logPath, options = {}) {
       maxBytes: Number(options.maxBytes) > 0 ? Number(options.maxBytes) : 4 * 1024 * 1024,
     });
   const rawTotal = entries.length;
+  const isAutoHookOrSynthetic = (entry) => {
+    const tags = Array.isArray(entry?.tags) ? entry.tags : [];
+    const ctx = String(entry?.context || entry?.submittedContext || '');
+    return tags.includes('auto-hook') || ctx.startsWith('[unknown] Igor:');
+  };
+  const autoHookTotal = entries.filter(isAutoHookOrSynthetic).length;
   if (options.humanOnly) {
-    entries = entries.filter((entry) => normalizeReviewOrigin(entry.reviewOrigin) === 'human');
+    entries = entries.filter((entry) => (
+      normalizeReviewOrigin(entry.reviewOrigin) === 'human'
+      && (options.includeAutoHook === true || !isAutoHookOrSynthetic(entry))
+    ));
   }
   const fallback = getSQLiteFallback(useSQLite, entries);
   if (fallback) return fallback;
@@ -2807,6 +2817,68 @@ function compactMemories() {
   };
 }
 
+function retractFeedback({ id = '', matchText = '', feedbackDir = '' } = {}) {
+  const cleanId = String(id || '').trim();
+  const cleanMatch = String(matchText || '').trim().toLowerCase();
+  if (!cleanId && (!cleanMatch || cleanMatch.length < 4)) {
+    return { ok: false, error: 'Supply an id (fb_.../mem_...) or matchText (>=4 chars) to retract.' };
+  }
+  const defaultPaths = getFeedbackPaths();
+  const paths = feedbackDir ? buildFeedbackPathsFromDir(feedbackDir) : defaultPaths;
+  const removedFeedbackIds = [];
+  const removedMemoryIds = [];
+
+  if (fs.existsSync(paths.FEEDBACK_LOG_PATH)) {
+    const rawLines = fs.readFileSync(paths.FEEDBACK_LOG_PATH, 'utf8').split('\n').filter(Boolean);
+    const kept = [];
+    for (const line of rawLines) {
+      try {
+        const rec = JSON.parse(line);
+        const blob = `${rec.id || ''} ${rec.context || ''} ${rec.submittedContext || ''}`.toLowerCase();
+        if ((cleanId && rec.id === cleanId) || (cleanMatch && blob.includes(cleanMatch))) {
+          if (rec.id) removedFeedbackIds.push(rec.id);
+          continue;
+        }
+      } catch {
+        // keep unparseable line
+      }
+      kept.push(line);
+    }
+    if (removedFeedbackIds.length > 0) {
+      fs.writeFileSync(paths.FEEDBACK_LOG_PATH, kept.join('\n') + (kept.length ? '\n' : ''), 'utf8');
+    }
+  }
+
+  if (fs.existsSync(paths.MEMORY_LOG_PATH)) {
+    const rawLines = fs.readFileSync(paths.MEMORY_LOG_PATH, 'utf8').split('\n').filter(Boolean);
+    const kept = [];
+    for (const line of rawLines) {
+      try {
+        const rec = JSON.parse(line);
+        const blob = `${rec.id || ''} ${rec.title || ''} ${rec.content || ''}`.toLowerCase();
+        const linkedToRemovedFb = rec.feedbackId && removedFeedbackIds.includes(rec.feedbackId);
+        if (linkedToRemovedFb || (cleanId && rec.id === cleanId) || (cleanMatch && blob.includes(cleanMatch))) {
+          if (rec.id) removedMemoryIds.push(rec.id);
+          continue;
+        }
+      } catch {
+        // keep
+      }
+      kept.push(line);
+    }
+    if (removedMemoryIds.length > 0) {
+      fs.writeFileSync(paths.MEMORY_LOG_PATH, kept.join('\n') + (kept.length ? '\n' : ''), 'utf8');
+    }
+  }
+
+  return {
+    ok: true,
+    removedFeedbackIds,
+    removedMemoryIds,
+    totalRemoved: removedFeedbackIds.length + removedMemoryIds.length,
+  };
+}
+
 function buildCorrectiveActionsReminder(correctiveActions = []) {
   if (!Array.isArray(correctiveActions) || correctiveActions.length === 0) return null;
   const lines = correctiveActions
@@ -2827,6 +2899,7 @@ module.exports = {
   emitAnonymousFeedbackPing,
   buildFeedbackSourceIdentity,
   compactMemories,
+  retractFeedback,
   buildCorrectiveActionsReminder,
   analyzeFeedback,
   buildPreventionRules,

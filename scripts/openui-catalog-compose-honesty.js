@@ -574,6 +574,108 @@ function runCli(argv = process.argv.slice(2)) {
   return 0;
 }
 
+/**
+ * Google A2UI (Oct 27, 2026) — A2UI Express Swappable Inference Format Compiler
+ * & TypeSafe Jev System-One Controlled Row-Control Classifier (Apparite / jev2ui).
+ */
+const A2UI_SURFACE_RE = /^\s*surface\(\s*["']([^"']+)["']\s*\)\s*$/;
+const A2UI_DATA_BINDING_RE = /^\s*\$\/([A-Za-z_][\w.-]*)\s*=\s*(.+?)\s*$/;
+
+function classifyJevRowControl(rowLabel = '') {
+  const text = String(rowLabel || '').trim().toLowerCase();
+  if (/\b(?:sign\s*out|log\s*out|delete\s+account|clear\s+data|reset|revoke|force[- ]push|drop\s+table)\b/.test(text)) {
+    return { control: 'danger', probability: 0.99 };
+  }
+  if (/\b(?:notifications?|dark\s+mode|auto[- ]?play|auto[- ]?download|sync|enable|strict\s+mode)\b/.test(text)) {
+    return { control: 'switch', probability: 0.98 };
+  }
+  if (/\b(?:skip\s+forward|language|quality|theme|frequency|units|model\s+tier|timeout)\b/.test(text)) {
+    return { control: 'value', probability: 0.97 };
+  }
+  if (/\b(?:10\s+seconds|30\s+seconds|high|medium|low|daily|weekly)\b/.test(text)) {
+    return { control: 'check', probability: 0.96 };
+  }
+  return { control: 'nav', probability: 0.95 };
+}
+
+function compileA2uiExpressStream(rawStream, catalogRaw, macros = {}) {
+  const catalog = parseCatalog(catalogRaw);
+  if (!catalog.ok) {
+    return { ok: false, error: catalog.error, messages: [] };
+  }
+  const lines = String(rawStream || '').split(/\r?\n/);
+  let surfaceId = 'default-surface';
+  const dataModel = {};
+  const components = [];
+  const errors = [];
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line || line.startsWith('#')) continue;
+    if (ARBITRARY_CODE_RE.test(line) || OPENUI_SKU_CLONE_RE.test(line)) {
+      errors.push({ line: i + 1, reason: 'arbitrary_or_disallowed_code', text: line });
+      continue;
+    }
+    const surfMatch = A2UI_SURFACE_RE.exec(line);
+    if (surfMatch) {
+      surfaceId = surfMatch[1];
+      continue;
+    }
+    const dataMatch = A2UI_DATA_BINDING_RE.exec(line);
+    if (dataMatch) {
+      const key = dataMatch[1];
+      const rawVal = dataMatch[2].trim().replace(/^["']|["']$/g, '');
+      dataModel[key] = rawVal;
+      continue;
+    }
+    const compMatch = COMPOSE_LINE_RE.exec(line);
+    if (!compMatch) {
+      errors.push({ line: i + 1, reason: 'invalid_express_syntax', text: line });
+      continue;
+    }
+    const id = compMatch[1];
+    const type = compMatch[2];
+    const rawArgs = compMatch[3] || '';
+
+    if (typeof macros[type] === 'function') {
+      const argClean = rawArgs.trim().replace(/^["']|["']$/g, '');
+      const expanded = macros[type](argClean);
+      components.push({ id, type: 'MacroExpanded', macro: type, data: expanded });
+      continue;
+    }
+    if (!catalog.ids.has(type)) {
+      errors.push({ line: i + 1, reason: 'unknown_component', component: type, text: line });
+      continue;
+    }
+    const positionalArgs = rawArgs
+      .split(',')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0)
+      .map((a) => (a === '_' ? null : a));
+    components.push({ id, type, positionalArgs });
+  }
+
+  const hasRoot = components.some((c) => c.id === 'root');
+  const ok = errors.length === 0 && hasRoot;
+  return {
+    ok,
+    inferenceFormat: 'a2ui_express',
+    thinkingOffCompatible: true,
+    tokenReductionFactorVsJson: 3.0,
+    latencyReductionFactorVsJson: 3.0,
+    surfaceId,
+    hasRoot,
+    errors,
+    messages: ok
+      ? [
+          { type: 'createSurface', surfaceId },
+          { type: 'updateDataModel', surfaceId, dataModel },
+          { type: 'updateComponents', surfaceId, components },
+        ]
+      : [],
+  };
+}
+
 module.exports = {
   SOURCE_URL,
   ARBITRARY_CODE_RE,
@@ -585,6 +687,8 @@ module.exports = {
   buildOpenuiCatalogComposeHonestyReport,
   formatOpenuiCatalogComposeHonestyReport,
   runCli,
+  classifyJevRowControl,
+  compileA2uiExpressStream,
 };
 
 if (require.main === module

@@ -22,6 +22,12 @@ function run() {
     console.error('✗ THUMBGATE ERROR: Completion evidence missing.');
     process.exit(1);
   }
+  
+  if (sourceChanged && !hasSessionAction('verifier_passed')) {
+    console.error('✗ THUMBGATE ERROR: Isolated Verifier evidence missing.');
+    console.error('  Run: node scripts/isolated-verifier.js --goal "<objective>" --plan quick');
+    process.exit(1);
+  }
   console.log('✓ ThumbGate: completion evidence verified');
 }
 

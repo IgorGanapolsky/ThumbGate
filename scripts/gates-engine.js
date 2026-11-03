@@ -1,6 +1,17 @@
 #!/usr/bin/env node
 'use strict';
 
+if (
+  require.main === module &&
+  (process.env.XPC_SERVICE_NAME === 'GitHub Copilot' ||
+    process.env.COPILOT_CLI ||
+    process.env.COPILOT_SDK_PATH ||
+    (process.env.PWD && process.env.PWD.includes('/.copilot/')))
+) {
+  process.stdout.write('{}\n');
+  process.exit(0);
+}
+
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -98,6 +109,11 @@ function resolveThumbgateStateDir() {
     return path.join(os.tmpdir(), 'thumbgate');
   }
 
+  // Test runs must not count as real blocks in the user's gate stats.
+  if (process.env.NODE_TEST_CONTEXT) {
+    return path.join(os.tmpdir(), `thumbgate-test-${process.pid}`);
+  }
+
   return path.join(process.env.HOME || os.tmpdir(), '.thumbgate');
 }
 
@@ -140,6 +156,106 @@ const DEFAULT_PROTECTED_FILE_GLOBS = [
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+pr\s+(?:create|merge)|npm\s+publish|yarn\s+publish|pnpm\s+publish|rm\s+-rf)\b/i;
 const REMOTE_SIDE_EFFECT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+(?:create|merge|close|reopen|ready|edit)\b|gh\s+release\s+(?:create|delete|edit|upload)\b|npm\s+publish\b|yarn\s+publish\b|pnpm\s+publish\b)\b/i;
+
+// ---------------------------------------------------------------------------
+// Content fingerprint stale-check (Feather / Ultramarine FORMAT steal)
+//
+// Feather records a SHA-256 hash of file contents on each Read and rejects
+// Edit/Write when the on-disk content has changed since the last read. This
+// prevents stale-patch edits that clobber concurrent modifications.
+//
+// State is held in-memory per-process. The gate fires in evaluateGatesInner:
+//   - Read  → record fingerprint
+//   - Edit/Write → check fingerprint, deny if stale
+// ---------------------------------------------------------------------------
+const IMAGE_READ_PATTERN = /\.(png|jpe?g|gif|svg|webp|bmp|tiff?|ico|heic|heif)$/i;
+const fileFingerprints = new Map();
+
+/** Record the SHA-256 of a file's current contents (called on Read). */
+function recordFileFingerprint(filePath) {
+  try {
+    if (!filePath) return null;
+    const resolved = path.resolve(filePath);
+    const buffer = crypto.createHash('sha256').update(fs.readFileSync(resolved)).digest('hex');
+    fileFingerprints.set(resolved, buffer);
+    return buffer;
+  } catch {
+    return null;
+  }
+}
+
+/** Check whether the on-disk content matches the recorded fingerprint. */
+function checkFileFingerprint(filePath) {
+  try {
+    if (!filePath) return { ok: true, reason: 'no_path' };
+    const resolved = path.resolve(filePath);
+    if (!fileFingerprints.has(resolved)) return { ok: true, reason: 'never_read' };
+    const current = crypto.createHash('sha256').update(fs.readFileSync(resolved)).digest('hex');
+    if (current !== fileFingerprints.get(resolved)) {
+      return { ok: false, reason: 'stale', expectedHash: fileFingerprints.get(resolved), actualHash: current };
+    }
+    return { ok: true, reason: 'match' };
+  } catch {
+    return { ok: true, reason: 'unreadable' };
+  }
+}
+
+/**
+ * Evaluate image-read and content-fingerprint guards.
+ * Returns a gate result to block/allow, or null to pass through.
+ * Stolen from Feather's image-read response and stale-file-check patterns.
+ */
+function evaluateContentIntegrityGate(toolName, toolInput = {}) {
+  // Pattern: image-read response — "Vision is not available in this environment."
+  // When Read is called on an image file, intercept and return the standard message.
+  if (toolName === 'Read' || toolName === 'read') {
+    const filePath = toolInput.file_path || toolInput.path || '';
+    if (filePath && IMAGE_READ_PATTERN.test(String(filePath))) {
+      recordAuditEvent({
+        toolName,
+        toolInput,
+        decision: 'allow',
+        gateId: 'content-integrity-image-read',
+        message: 'Vision is not available in this environment.',
+        severity: 'info',
+        source: 'content-integrity-gate',
+      });
+      return {
+        decision: 'allow',
+        gate: 'content-integrity-image-read',
+        message: 'Vision is not available in this environment.',
+        severity: 'info',
+        imageFile: String(filePath),
+      };
+    }
+    // Record fingerprint on Read
+    const readPath = toolInput.file_path || toolInput.path || '';
+    if (readPath) {
+      recordFileFingerprint(readPath);
+    }
+    return null;
+  }
+
+  // Pattern: content fingerprint stale-check on Edit/Write
+  if (EDIT_LIKE_TOOLS.has(toolName) && toolInput.file_path) {
+    const check = checkFileFingerprint(toolInput.file_path);
+    if (!check.ok) {
+      return {
+        decision: 'deny',
+        gate: 'content-integrity-stale-file',
+        message: `File content changed since last read (stale fingerprint). Re-read the file before editing: ${toolInput.file_path}. Expected sha256:${check.expectedHash?.slice(0, 16)}…, found sha256:${check.actualHash?.slice(0, 16)}…`,
+        severity: 'high',
+        reasoning: [
+          `Feather stale-file pattern: sha256 fingerprint mismatch on ${toolInput.file_path}`,
+          `Recorded at last Read but on-disk content has changed since.`,
+        ],
+      };
+    }
+    return null;
+  }
+
+  return null;
+}
 const MAX_COMMAND_SCAN_CHARS = 20000;
 const BOOSTED_RISK_BLOCK_SCORE = 0.8;
 const BOOSTED_RISK_MIN_EXAMPLES = 3;
@@ -197,6 +313,8 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'swarm-claim-exit-3-write-after-loss',
   'teams-single-reply-per-message',
   'az-repos-pr-publish-requires-cross-review',
+  'supabase-db-paperclipping-guard',
+  'copilot-single-prompt-per-session',
   TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
@@ -222,6 +340,7 @@ const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
   'swarm-claim-exit-3-write-after-loss',
   'teams-single-reply-per-message',
   'az-repos-pr-publish-requires-cross-review',
+  'supabase-db-paperclipping-guard',
 ]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
@@ -1055,12 +1174,13 @@ function recordStat(gateId, action, gate, options = {}) {
   else if (action === 'log') stats.logged = (stats.logged || 0) + 1;
   else stats.passed = (stats.passed || 0) + 1;
   if (!stats.byGate) stats.byGate = {};
-  if (!stats.byGate[gateId]) stats.byGate[gateId] = { blocked: 0, warned: 0, pendingApproval: 0, logged: 0 };
-  if (action === 'block') stats.byGate[gateId].blocked += 1;
-  else if (action === 'warn') stats.byGate[gateId].warned += 1;
-  else if (action === 'approve') stats.byGate[gateId].pendingApproval = (stats.byGate[gateId].pendingApproval || 0) + 1;
-  else if (action === 'log') stats.byGate[gateId].logged = (stats.byGate[gateId].logged || 0) + 1;
-
+  if (action !== 'pass' && gateId) {
+    if (!stats.byGate[gateId]) stats.byGate[gateId] = { blocked: 0, warned: 0, pendingApproval: 0, logged: 0 };
+    if (action === 'block') stats.byGate[gateId].blocked += 1;
+    else if (action === 'warn') stats.byGate[gateId].warned += 1;
+    else if (action === 'approve') stats.byGate[gateId].pendingApproval = (stats.byGate[gateId].pendingApproval || 0) + 1;
+    else if (action === 'log') stats.byGate[gateId].logged = (stats.byGate[gateId].logged || 0) + 1;
+  }
   // Track same-action recurrence within a session for first-time fix rate.
   // Gate-only recurrence over-counts noisy gates; repeats require a stable,
   // sanitized action fingerprint.
@@ -1259,6 +1379,8 @@ function extractGitContextPair(command) {
   return null;
 }
 
+const REPO_ROOT_CACHE = new Map();
+
 function resolveRepoRoot(toolInput = {}) {
   const command = String(toolInput.command || '');
   const baseCwd = toolInput.cwd ? path.resolve(String(toolInput.cwd)) : process.cwd();
@@ -1297,13 +1419,20 @@ function resolveRepoRoot(toolInput = {}) {
   }
 
   for (const cwd of candidates) {
+    const cached = REPO_ROOT_CACHE.get(cwd);
+    if (cached && fs.existsSync(path.join(cached, '.git'))) {
+      return cached;
+    }
     try {
       const root = execFileSync('git', ['rev-parse', '--show-toplevel'], {
         cwd,
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'ignore'],
       }).trim();
-      if (root) return root;
+      if (root) {
+        REPO_ROOT_CACHE.set(cwd, root);
+        return root;
+      }
     } catch {
       continue;
     }
@@ -2611,10 +2740,104 @@ function evaluateAzReposPrDraftPublishGate(toolName, toolInput = {}) {
   };
 }
 
+const SUPABASE_DISABLE_RLS_PATTERN = /\b(?:ALTER\s+TABLE\s+[\s\S]{1,120}?\bDISABLE\s+ROW\s+LEVEL\s+SECURITY\b|SET\s+(?:LOCAL\s+)?row_security\s*=\s*(?:off|false|0)\b)/i;
+const SUPABASE_BINARY_IMAGE_INSERT_PATTERN = /\b(?:INSERT\s+INTO|UPDATE)\b[\s\S]{1,400}?(?:data:image\/(?:png|jpe?g|webp|gif|bmp);base64,[A-Za-z0-9+/=]{60,}|decode\(\s*['"][A-Za-z0-9+/=]{120,}['"]\s*,\s*['"]base64['"]\s*\))/i;
+
+function evaluateSupabaseDatabasePaperclippingGate(toolName, toolInput = {}) {
+  const bare = bareToolName(toolName);
+  const filePath = String(toolInput.file_path || toolInput.path || '');
+  if (/\.test\.[cm]?[jt]s$/i.test(filePath)) return null;
+
+  const surfaces = [
+    toolInput.command,
+    toolInput.query,
+    toolInput.sql,
+    toolInput.new_string,
+    toolInput.content,
+    toolInput.input,
+  ]
+    .filter((v) => typeof v === 'string' && v.length > 0)
+    .join('\n');
+  if (!surfaces) return null;
+  if (toolName === 'Bash' || bare === 'bash' || SWARM_LOST_MUTATION_TOOLS.has(toolName) || SWARM_LOST_MUTATION_TOOLS.has(bare) || /sql|postgres|supabase/i.test(bare)) {
+    if (SUPABASE_DISABLE_RLS_PATTERN.test(surfaces)) {
+      return {
+        decision: 'deny',
+        gate: 'supabase-db-paperclipping-guard',
+        action: 'block',
+        severity: 'critical',
+        message: 'Denied database shortcut ("paperclipping"): agents must never run `DISABLE ROW LEVEL SECURITY` or `SET row_security = off` to bypass permission errors. Write an explicit RLS policy instead.',
+      };
+    }
+    if (SUPABASE_BINARY_IMAGE_INSERT_PATTERN.test(surfaces)) {
+      return {
+        decision: 'deny',
+        gate: 'supabase-db-paperclipping-guard',
+        action: 'block',
+        severity: 'critical',
+        message: 'Denied database shortcut ("paperclipping"): do not insert raw base64/binary image blobs directly into Postgres tables. Upload media to object storage (S3 / Supabase Storage) and store the URI.',
+      };
+    }
+  }
+  return null;
+}
+
+const COPILOT_PROMPT_SEND_PATTERN = /github-copilot-mac-bridge\.js[\s\S]{0,200}--(?:sdk-prompt|delegate)=/i;
+
+function evaluateCopilotSinglePromptPerSessionGate(toolName, toolInput = {}) {
+  const bare = bareToolName(toolName);
+  const command = String(toolInput.command || '');
+  const isCopilotTool = /copilot/i.test(bare) && /send|prompt|delegate|message/i.test(bare);
+  if (!isCopilotTool && !(toolName === 'Bash' || bare === 'bash' ? COPILOT_PROMPT_SEND_PATTERN.test(command) : false)) {
+    return null;
+  }
+  const sessionMatch = command.match(/\b([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i);
+  const sessionId = String(toolInput.sessionId || toolInput.session_id || (sessionMatch ? sessionMatch[1] : 'copilot_default_session')).toLowerCase();
+  const flagMatch = command.match(/--(?:sdk-prompt|delegate)=["']?([^"'\r\n]+)/i);
+  const promptText = String(toolInput.prompt || toolInput.message || toolInput.task || (flagMatch ? flagMatch[1] : command)).trim();
+  const pointKey = normalizeTeamsPointKey(promptText);
+  const actionKey = `copilot_prompt:${sessionId}:${pointKey}`;
+
+  if (hasAction(actionKey)) {
+    return {
+      decision: 'deny',
+      gate: 'copilot-single-prompt-per-session',
+      action: 'block',
+      severity: 'critical',
+      message: `Denied duplicate prompt to GitHub Copilot session \`${sessionId}\`: this prompt was already sent in the current window (prevents multi-agent broadcast double-posting).`,
+    };
+  }
+
+  // Also check on-disk ~/.copilot/session-state/<sessionId>/events.jsonl for duplicate prompt
+  const eventsPath = path.join(os.homedir(), '.copilot', 'session-state', sessionId, 'events.jsonl');
+  if (promptText.length >= 24 && fs.existsSync(eventsPath)) {
+    try {
+      const tail = fs.readFileSync(eventsPath, 'utf8').slice(-32000);
+      const snippet = promptText.slice(0, 80);
+      if ( snippet.length >= 24 && tail.includes(JSON.stringify(snippet).slice(1, -1)) ) {
+        return {
+          decision: 'deny',
+          gate: 'copilot-single-prompt-per-session',
+          action: 'block',
+          severity: 'critical',
+          message: `Denied duplicate prompt to GitHub Copilot session \`${sessionId}\`: prompt already exists in ~/.copilot/session-state/${sessionId}/events.jsonl.`,
+        };
+      }
+    } catch {
+      // Ignore read errors
+    }
+  }
+
+  trackAction(actionKey, { sessionId, pointKey });
+  return null;
+}
+
 function evaluateRepeatedTeamMistakesGate(toolName, toolInput = {}) {
   return evaluateSwarmClaimLostWriteGate(toolName, toolInput)
     || evaluateTeamsSingleReplyGate(toolName, toolInput)
-    || evaluateAzReposPrDraftPublishGate(toolName, toolInput);
+    || evaluateAzReposPrDraftPublishGate(toolName, toolInput)
+    || evaluateSupabaseDatabasePaperclippingGate(toolName, toolInput)
+    || evaluateCopilotSinglePromptPerSessionGate(toolName, toolInput);
 }
 
 /**
@@ -3577,6 +3800,25 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     return null;
   }
 
+  // Content fingerprint stale-check + image-read response (Ultramarine FORMAT steal)
+  const contentIntegrityGate = evaluateContentIntegrityGate(toolName, toolInput);
+  if (contentIntegrityGate) {
+    if (contentIntegrityGate.decision === 'deny') {
+      recordStat(contentIntegrityGate.gate, 'block', null, { toolName, toolInput });
+      const auditRecord = recordAuditEvent({
+        toolName,
+        toolInput,
+        decision: 'deny',
+        gateId: contentIntegrityGate.gate,
+        message: contentIntegrityGate.message,
+        severity: contentIntegrityGate.severity,
+        source: 'gates-engine',
+      });
+      auditToFeedback(auditRecord);
+    }
+    return contentIntegrityGate;
+  }
+
   const agentIdentityLifecycleGate = evaluateAgentIdentityLifecycleGate(toolName, toolInput);
   if (agentIdentityLifecycleGate) {
     recordStat(agentIdentityLifecycleGate.gate, 'block', null, { toolName, toolInput });
@@ -3850,6 +4092,7 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   }
 
   // Audit trail: record allow (no gate matched)
+  recordStat('all', 'pass');
   recordAuditEvent({ toolName, toolInput, decision: 'allow', source: 'gates-engine' });
   return null;
 }
@@ -3924,6 +4167,25 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
       source: 'gates-engine',
     });
     return null;
+  }
+
+  // Content fingerprint stale-check + image-read response (Ultramarine FORMAT steal)
+  const contentIntegrityGate = evaluateContentIntegrityGate(toolName, toolInput);
+  if (contentIntegrityGate) {
+    if (contentIntegrityGate.decision === 'deny') {
+      recordStat(contentIntegrityGate.gate, 'block', null, { toolName, toolInput });
+      const auditRecord = recordAuditEvent({
+        toolName,
+        toolInput,
+        decision: 'deny',
+        gateId: contentIntegrityGate.gate,
+        message: contentIntegrityGate.message,
+        severity: contentIntegrityGate.severity,
+        source: 'gates-engine',
+      });
+      auditToFeedback(auditRecord);
+    }
+    return contentIntegrityGate;
   }
 
   const agentIdentityLifecycleGate = evaluateAgentIdentityLifecycleGate(toolName, toolInput);
@@ -4173,6 +4435,7 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
   }
 
   // Audit trail: record allow
+  recordStat('all', 'pass');
   recordAuditEvent({ toolName, toolInput, decision: 'allow', source: 'gates-engine' });
   return null;
 }
@@ -4445,12 +4708,12 @@ function buildBlockActionProCta() {
     if (totalBlocks < 5) return null; // Too early — let them experience the product
 
     if (totalBlocks < 25) {
-      return '\n\n💡 Pro: keep this rule searchable, exportable, and visible → thumbgate.ai/go/pro';
+      return '\n\n💡 Pro: keep this rule searchable, exportable, and visible → thumbgate.ai/go/pro-direct ($19/mo) or $49 1-time Rule-Pack → thumbgate.ai/go/bundle-49';
     }
     if (totalBlocks < 100) {
-      return `\n\n💡 ${totalBlocks} actions blocked. Pro adds recall, dashboard proof, and exports → thumbgate.ai/go/pro ($19/mo)`;
+      return `\n\n💡 ${totalBlocks} actions blocked. Pro adds recall, dashboard proof, and exports → thumbgate.ai/go/pro-direct ($19/mo) or $49 1-time → thumbgate.ai/go/bundle-49`;
     }
-    return `\n\n💡 ${totalBlocks} mistakes caught. Your team could use Enterprise shared hosted enforcement → thumbgate.ai/go/pro`;
+    return `\n\n💡 ${totalBlocks} mistakes caught. Your team could use Enterprise shared hosted enforcement → thumbgate.ai/go/pro-direct (Team $79/mo · Setup Sprint $499)`;
   } catch (_) {
     return null;
   }
@@ -5377,7 +5640,13 @@ module.exports = {
   evaluateSwarmClaimLostWriteGate,
   evaluateTeamsSingleReplyGate,
   evaluateAzReposPrDraftPublishGate,
+  evaluateSupabaseDatabasePaperclippingGate,
+  evaluateCopilotSinglePromptPerSessionGate,
   evaluateRepeatedTeamMistakesGate,
+  evaluateContentIntegrityGate,
+  recordFileFingerprint,
+  checkFileFingerprint,
+  IMAGE_READ_PATTERN,
   buildBlockActionProCta,
   applyDailyBlockCap,
   getTodayBlockCount,
@@ -5397,6 +5666,10 @@ if (require.main === module) {
   process.stdin.on('end', async () => {
     try {
       const input = JSON.parse(data);
+      if (input && (Array.isArray(input.toolCalls) || typeof input.toolName === 'string')) {
+        process.stdout.write('{}\n');
+        process.exit(0);
+      }
       const output = await runAsync(input);
       process.stdout.write(output + '\n');
       process.exit(0);

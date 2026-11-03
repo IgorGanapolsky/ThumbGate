@@ -159,11 +159,19 @@ async function getDocumentResultsAsync(query, limit, feedbackDir, options = {}) 
   return documents.map(mapDocumentResult);
 }
 
-function sortResults(results) {
+function sortResults(results, isWildcard = false) {
   return [...results].sort((left, right) => {
+    const leftTs = left.timestamp ? new Date(left.timestamp).getTime() : 0;
+    const rightTs = right.timestamp ? new Date(right.timestamp).getTime() : 0;
+    const safeLeftTs = Number.isFinite(leftTs) ? leftTs : 0;
+    const safeRightTs = Number.isFinite(rightTs) ? rightTs : 0;
+    if (isWildcard) {
+      if (safeRightTs !== safeLeftTs) return safeRightTs - safeLeftTs;
+    }
     if ((right.score || 0) !== (left.score || 0)) {
       return (right.score || 0) - (left.score || 0);
     }
+    if (safeRightTs !== safeLeftTs) return safeRightTs - safeLeftTs;
     return String(right.timestamp || '').localeCompare(String(left.timestamp || ''));
   });
 }
@@ -272,13 +280,14 @@ function searchThumbgate({
 
   const fetchLimit = Math.max(100, normalizedLimit * 5);
 
+  const isWildcard = trimmedQuery === '*' || trimmedQuery === '';
   let results = [];
   if (normalizedSource === 'feedback') {
     const raw = getFeedbackResults(trimmedQuery, fetchLimit, normalizedSignal, feedbackDir);
-    results = deduplicateResults(raw).slice(0, normalizedLimit);
+    results = deduplicateResults(sortResults(raw, isWildcard)).slice(0, normalizedLimit);
   } else if (normalizedSource === 'context') {
     const raw = getContextResults(trimmedQuery, fetchLimit, feedbackDir);
-    results = deduplicateResults(raw).slice(0, normalizedLimit);
+    results = deduplicateResults(sortResults(raw, isWildcard)).slice(0, normalizedLimit);
   } else if (normalizedSource === 'rules') {
     const raw = getRuleResults(trimmedQuery, fetchLimit, feedbackDir);
     results = deduplicateResults(raw).slice(0, normalizedLimit);
@@ -292,7 +301,7 @@ function searchThumbgate({
       ...getRuleResults(trimmedQuery, fetchLimit, feedbackDir),
       ...getDocumentResults(trimmedQuery, fetchLimit, feedbackDir, accessContext),
     ];
-    results = deduplicateResults(sortResults(combined)).slice(0, normalizedLimit);
+    results = deduplicateResults(sortResults(combined, isWildcard)).slice(0, normalizedLimit);
   }
 
   return {
@@ -339,13 +348,14 @@ async function searchThumbgateAsync({
       await getDocumentResultsAsync(trimmedQuery, fetchLimit, feedbackDir, documentOptions),
     ).slice(0, normalizedLimit);
   } else if (normalizedSource === 'all') {
+    const isWildcard = trimmedQuery === '*' || trimmedQuery === '';
     const combined = [
       ...getFeedbackResults(trimmedQuery, fetchLimit, normalizedSignal, feedbackDir),
       ...getContextResults(trimmedQuery, fetchLimit, feedbackDir),
       ...getRuleResults(trimmedQuery, fetchLimit, feedbackDir),
       ...await getDocumentResultsAsync(trimmedQuery, fetchLimit, feedbackDir, documentOptions),
     ];
-    results = deduplicateResults(sortResults(combined)).slice(0, normalizedLimit);
+    results = deduplicateResults(sortResults(combined, isWildcard)).slice(0, normalizedLimit);
   } else {
     return searchThumbgate({
       query: trimmedQuery,

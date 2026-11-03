@@ -1,0 +1,32 @@
+# ThumbGate x OpenHands Enterprise Adapter Configuration
+# Implements the 3-Axis Multi-Backend Matrix (Agent x Model x Runtime)
+# and 5-Dimension Agent Control Plane (Who / What Access / Where Execute / What Spend / What Change).
+
+[core]
+workspace_base = "./workspace"
+max_iterations = 30
+enable_default_condenser = true
+
+[llm]
+model = "openai/deepseek-ai/DeepSeek-V4.1-Flash"
+base_url = "http://127.0.0.1:8000/v1"
+api_key = "vllm-local"
+temperature = 0.1
+caching_prompt = true
+
+[sandbox]
+runtime_container_image = "ghcr.io/all-hands-ai/runtime:0.62-nikolaik"
+use_host_network = false
+timeout = 120
+
+[mcp]
+stdio_servers = [
+  { name = "thumbgate", command = "node", args = ["scripts/mcp-server.js"] }
+]
+
+[thumbgate_control_plane]
+who_allowed_identities = ["claude-code", "codex", "gemini-cli", "openhands", "nanobot", "hermes"]
+what_access_max_scoped_tools = 4
+where_execute_allowed_runtimes = ["local_vm", "cloud_sandbox", "enterprise_vpc"]
+what_spend_daily_budget_usd = 0.00
+what_change_pretooluse_diode = "fail-closed"

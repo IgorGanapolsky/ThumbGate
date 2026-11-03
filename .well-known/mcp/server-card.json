@@ -1,8 +1,29 @@
 {
   "name": "thumbgate",
-  "version": "1.39.0",
-  "description": "ThumbGate — 👍👎 feedback that teaches your AI agent. Thumbs down a mistake, it never happens again.",
+  "version": "1.40.0",
+  "description": "ThumbGate is the sub-0.5ms local PreToolUse firewall that blocks risky AI agent moves before they run. Not another agent platform — harden one workflow so it ships team-wide. Thumbs-down a mistake, it never happens again; every gate emits a tamper-evident SHA-256 execution receipt.",
   "homepage": "https://thumbgate.ai",
+  "categories": [
+    "security",
+    "observability",
+    "agent-governance",
+    "compliance",
+    "developer-tools"
+  ],
+  "keywords": [
+    "pre-action-checks",
+    "aidevs",
+    "claude-code",
+    "cursor",
+    "codex",
+    "ai-agents",
+    "agent-safety",
+    "guardrails",
+    "feedback-to-enforcement-pipeline",
+    "signed-execution-receipts",
+    "workflow-hardening",
+    "checkout-recovery"
+  ],
   "transport": "stdio",
   "discovery": {
     "manifestUrl": "https://thumbgate.ai/.well-known/mcp.json",

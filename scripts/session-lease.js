@@ -153,6 +153,30 @@ function agentId() {
   return process.env.THUMBGATE_SESSION_AGENT || `${os.hostname()}:${process.pid}`;
 }
 
+function fenceCounterPath(repoRoot) {
+  return `${leasePath(repoRoot)}.fence`;
+}
+
+function nextFencingToken(repoRoot) {
+  const file = fenceCounterPath(repoRoot);
+  let current = 0;
+  try {
+    if (fs.existsSync(file)) {
+      current = Number(fs.readFileSync(file, 'utf8').trim()) || 0;
+    }
+  } catch {
+    current = 0;
+  }
+  const next = current + 1;
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, `${next}\n`, 'utf8');
+  } catch {
+    // ignore read-only git dir in synthetic tests
+  }
+  return next;
+}
+
 function buildLeaseRecord(details = {}) {
   const explicitSession = hasExplicitSessionAgent();
   const ttlMs = details.ttlMs != null ? Number(details.ttlMs) : sessionTtlMs();
@@ -161,6 +185,7 @@ function buildLeaseRecord(details = {}) {
     pid: details.pid != null ? Number(details.pid) : resolveLeasePid(),
     host: os.hostname(),
     startedAt: details.startedAt || new Date().toISOString(),
+    fencingToken: Number.isInteger(details.fencingToken) && details.fencingToken > 0 ? details.fencingToken : 1,
     cwd: process.cwd(),
     user: process.env.USER || os.userInfo().username || null,
     command: (process.argv[1] || '').split(path.sep).pop() || null,
@@ -203,6 +228,7 @@ function claim(repoRoot, options = {}) {
         ...options,
         agent: existing.agent,
         startedAt: existing.startedAt,
+        fencingToken: existing.fencingToken || 1,
       });
       return { ok: true, alreadyHeld: true, lease };
     }
@@ -225,7 +251,8 @@ function claim(repoRoot, options = {}) {
     }
 
     try {
-      const lease = writeLease(repoRoot, options, { exclusive: true });
+      const fencingToken = options.fencingToken || nextFencingToken(repoRoot);
+      const lease = writeLease(repoRoot, { ...options, fencingToken }, { exclusive: true });
       return { ok: true, alreadyHeld: false, lease };
     } catch (error) {
       if (error && error.code === 'EEXIST') {
@@ -252,10 +279,27 @@ function claim(repoRoot, options = {}) {
   };
 }
 
-function check(repoRoot) {
+function check(repoRoot, options = {}) {
   const existing = readLease(repoRoot);
   if (!existing || existing.invalid) {
     return { ok: true, held: false, lease: null };
+  }
+  const suppliedTokenRaw =
+    options.fencingToken ?? options.expectedFencingToken ?? process.env.THUMBGATE_FENCING_TOKEN;
+  if (suppliedTokenRaw !== undefined && suppliedTokenRaw !== '') {
+    const suppliedToken = Number(suppliedTokenRaw);
+    const activeToken = Number(existing.fencingToken || 1);
+    if (!Number.isFinite(suppliedToken) || suppliedToken < activeToken) {
+      return {
+        ok: false,
+        code: 'STALE_FENCING_TOKEN',
+        held: true,
+        lease: existing,
+        suppliedFencingToken: suppliedToken,
+        activeFencingToken: activeToken,
+        message: `Stale fencing token ${suppliedToken} < active lease fencing token ${activeToken} (holder: ${existing.agent}).`,
+      };
+    }
   }
   if (existing.agent === agentId()) {
     return { ok: true, held: true, lease: existing, mine: true };
@@ -402,6 +446,7 @@ module.exports = {
   guard,
   isLeaseLive,
   leasePath,
+  nextFencingToken,
   pidAlive,
   readLease,
   release,

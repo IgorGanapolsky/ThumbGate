@@ -106,6 +106,8 @@ const ECONOMIC_ACTION_PATTERNS = [
   /\bsubscriptions?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
   /\btop[\s_-]*ups?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
   /\btransfers?\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
+  /\boutbound[\s_-]*(?:payments?|transfers?)\s+(?:attach|cancel|capture|confirm|create|detach|finalize|pay|refund|send|update)\b/i,
+  /\btreasury\s+(?:outbound[\s_-]*(?:payments?|transfers?)|financial[\s_-]*accounts?|credit[\s_-]*reversals?|debit[\s_-]*reversals?)\b/i,
   /\b(?:attach|cancel|capture|confirm|create|detach)\s+(?:a\s+)?(?:charge|invoice|payment|payment\s+method)\b/i,
   /\b(?:finalize|pay|refund|send|update)\s+(?:a\s+)?(?:charge|invoice|payment|payment\s+method)\b/i,
   /\b(?:attach|cancel|capture|confirm|create|detach)\s+(?:a\s+)?(?:payout|refund|subscription|top-?up|transfer)\b/i,
@@ -119,6 +121,7 @@ const ECONOMIC_URL_PATTERNS = [
   /(?:https?:\/\/)?(?:www\.)?checkout\.stripe\.com\b/i,
   /(?:https?:\/\/)?(?:www\.)?buy\.stripe\.com\b/i,
   /(?:https?:\/\/)?(?:www\.)?billing\.stripe\.com\b/i,
+  /(?:https?:\/\/)?(?:www\.)?dashboard\.stripe\.com\/[^\s"'`]*?(?:treasury|balances\?action=top-up|settlement)/i,
   /(?:https?:\/\/)?(?:www\.)?app\.apollo\.io\b[^\s"'`]*?(?:plans|upgrade|billing|checkout|subscription)/i,
   /(?:https?:\/\/)?(?:www\.)?apollo\.io\b[^\s"'`]*?(?:plans|upgrade|billing|checkout|subscription)/i,
 ];

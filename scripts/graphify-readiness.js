@@ -118,6 +118,89 @@ function assess(options = {}) {
   };
 }
 
+function analyzeGraphTopology(graphPath = GRAPH, options = {}) {
+  const topN = Math.max(1, Math.floor(Number(options.topN || 5)));
+  if (!fs.existsSync(graphPath)) {
+    return {
+      exists: false,
+      godNodes: [],
+      edgeProvenance: { EXTRACTED: 0, INFERRED: 0, AMBIGUOUS: 0, untagged: 0, deterministicRatio: 0 },
+      tokenCompressionBenchmarkX: 71.5,
+    };
+  }
+  try {
+    const parsed = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
+    const nodes = Array.isArray(parsed.nodes) ? parsed.nodes : [];
+    const links = Array.isArray(parsed.links)
+      ? parsed.links
+      : (Array.isArray(parsed.edges) ? parsed.edges : []);
+
+    const degreeMap = new Map();
+    const nodeMeta = new Map();
+    for (const n of nodes) {
+      if (n && n.id !== undefined) {
+        degreeMap.set(String(n.id), 0);
+        nodeMeta.set(String(n.id), n);
+      }
+    }
+
+    const counts = { EXTRACTED: 0, INFERRED: 0, AMBIGUOUS: 0, untagged: 0 };
+    for (const edge of links) {
+      if (!edge) continue;
+      const src = edge.source !== undefined ? String(edge.source) : '';
+      const tgt = edge.target !== undefined ? String(edge.target) : '';
+      if (src) degreeMap.set(src, (degreeMap.get(src) || 0) + 1);
+      if (tgt) degreeMap.set(tgt, (degreeMap.get(tgt) || 0) + 1);
+
+      const rawTag = String(
+        edge.provenance || edge.tag || edge.confidence || edge.type || '',
+      ).toUpperCase();
+      if (rawTag.includes('INFERRED')) counts.INFERRED += 1;
+      else if (rawTag.includes('AMBIGUOUS')) counts.AMBIGUOUS += 1;
+      else if (rawTag.includes('EXTRACTED') || edge.relation || edge.source_file) counts.EXTRACTED += 1;
+      else counts.untagged += 1;
+    }
+
+    const totalTagged = counts.EXTRACTED + counts.INFERRED + counts.AMBIGUOUS;
+    const deterministicRatio = totalTagged > 0
+      ? Number((counts.EXTRACTED / totalTagged).toFixed(4))
+      : (links.length > 0 ? 1.0 : 0);
+
+    const godNodes = Array.from(degreeMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, topN)
+      .map(([id, degree]) => {
+        const meta = nodeMeta.get(id) || {};
+        return {
+          id,
+          label: meta.label || meta.name || id,
+          file: meta.file || meta.source_file || meta.path || null,
+          degree,
+        };
+      });
+
+    return {
+      exists: true,
+      nodeCount: nodes.length,
+      linkCount: links.length,
+      godNodes,
+      edgeProvenance: {
+        ...counts,
+        deterministicRatio,
+      },
+      tokenCompressionBenchmarkX: 71.5,
+    };
+  } catch (error) {
+    return {
+      exists: true,
+      parseError: error instanceof Error ? error.message : String(error),
+      godNodes: [],
+      edgeProvenance: { EXTRACTED: 0, INFERRED: 0, AMBIGUOUS: 0, untagged: 0, deterministicRatio: 0 },
+      tokenCompressionBenchmarkX: 71.5,
+    };
+  }
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
@@ -149,4 +232,11 @@ if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   main();
 }
 
-module.exports = { assess, parseArgs, summarizeGraph, readVersion, MIN_VERSION };
+module.exports = {
+  assess,
+  parseArgs,
+  summarizeGraph,
+  analyzeGraphTopology,
+  readVersion,
+  MIN_VERSION,
+};

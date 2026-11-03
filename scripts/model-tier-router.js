@@ -687,6 +687,31 @@ function isCostRouteQwenEnabled(task = {}, env = process.env) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Minimal system prompt for local_free tier (Paper Instruments FORMAT steal)
+// ---------------------------------------------------------------------------
+
+/**
+ * 3-sentence system prompt for the local_free tier (Poolside Laguna XS).
+ * Stolen from Paper Instruments Ultramarine 1 Flash training config — concise,
+ * no fluff, zero self-evaluation. Injected at drafting time, not appended as
+ * a cleanup pass.
+ */
+const LOCAL_FREE_SYSTEM_PROMPT = [
+  'You are a coding agent that operates inside a sandboxed terminal on macOS.',
+  'Use tools precisely and stop as soon as the requested result is usable.',
+  'Never evaluate yourself or produce meta-commentary. Finish → handoff.',
+].join(' ');
+
+/**
+ * Retrieve the minimal system prompt for a given tier.
+ * (Paper Instruments FORMAT steal — 3-sentence training system prompt)
+ */
+function getSystemPromptForTier(tier) {
+  if (tier === 'local_free' || tier === 'nano') return LOCAL_FREE_SYSTEM_PROMPT;
+  return null; // higher tiers use their own full system prompt
+}
+
 module.exports = {
   isCostRouteQwenEnabled,
   TIERS,
@@ -705,11 +730,9 @@ module.exports = {
   createJsonlTelemetrySink,
   executeRoutedGeneration,
   evaluateRoutingHoldout,
+  LOCAL_FREE_SYSTEM_PROMPT,
+  getSystemPromptForTier,
 };
-
-// ---------------------------------------------------------------------------
-// CLI
-// ---------------------------------------------------------------------------
 
 if (require.main === module) {
   const taskType = process.argv[2] || 'code-edit';

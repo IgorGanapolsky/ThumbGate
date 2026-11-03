@@ -2,6 +2,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const fs = require('node:fs');
 const { spawnSync } = require('node:child_process');
 const {
   DEFAULT_PUBLIC_APP_ORIGIN,
@@ -187,6 +188,9 @@ function normalizeExternalCustomerAudit(payload = null) {
       gap: payload.gap || 'external customer audit is not configured',
       ownerEmails: Array.isArray(payload.ownerEmails) ? payload.ownerEmails : [],
     };
+  }
+  if (typeof payload.productAttributionVerified === 'boolean') {
+    return payload;
   }
 
   const charges = payload.charges || {};
@@ -383,8 +387,10 @@ function formatWindowBlock(label, summary = {}) {
   const diagnosticClicks = Number(ctas.checkoutInterstitialDiagnosticCheckoutClicks || 0);
   const sprintCheckoutClicks = Number(ctas.checkoutInterstitialWorkflowSprintCheckoutClicks || 0);
   const botDeflections = Number(ctas.checkoutBotDeflections || 0);
-  const intentSuffix = interstitialViews || interstitialClicks || proConfirms || workflowClicks || teamPathClicks || diagnosticClicks || sprintCheckoutClicks || botDeflections
-    ? `, checkoutIntent views ${interstitialViews}, clicks ${interstitialClicks}, stripeConfirms ${proConfirms}, intakeClicks ${workflowClicks}, teamPathClicks ${teamPathClicks}, diagnosticClicks ${diagnosticClicks}, sprintCheckoutClicks ${sprintCheckoutClicks}, botDeflections ${botDeflections}`
+  const cancelViews = Number(ctas.cancelPageViews ?? traffic.checkoutCancelPageViews ?? 0);
+  const cancelSuffix = cancelViews ? `, cancelPageViews ${cancelViews}` : '';
+  const intentSuffix = interstitialViews || interstitialClicks || proConfirms || workflowClicks || teamPathClicks || diagnosticClicks || sprintCheckoutClicks || botDeflections || cancelViews
+    ? `, checkoutIntent views ${interstitialViews}, clicks ${interstitialClicks}, stripeConfirms ${proConfirms}, intakeClicks ${workflowClicks}, teamPathClicks ${teamPathClicks}, diagnosticClicks ${diagnosticClicks}, sprintCheckoutClicks ${sprintCheckoutClicks}, botDeflections ${botDeflections}${cancelSuffix}`
     : '';
 
   return [
@@ -694,6 +700,103 @@ function getExternalCustomerAuditViaRailway({
   return normalizeExternalCustomerAudit(JSON.parse(stdout));
 }
 
+function getExternalCustomerAuditViaStripeCli({
+  runCommandFn = runCommand,
+  commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
+} = {}) {
+  const stripeBin = fs.existsSync('/opt/homebrew/bin/stripe') ? '/opt/homebrew/bin/stripe' : 'stripe';
+  const ownerEmails = [
+    'iganapolsky@gmail.com',
+    'igor.ganapolsky@gmail.com',
+  ];
+  const chargesRaw = requireCommandSuccess(
+    'stripe charges list',
+    runCommandFn(stripeBin, ['charges', 'list', '--live', '--limit', '100', '-e', 'data.customer'], {
+      timeout: commandTimeoutMs,
+    })
+  );
+  const subsRaw = requireCommandSuccess(
+    'stripe subscriptions list',
+    runCommandFn(stripeBin, ['subscriptions', 'list', '--status', 'all', '--live', '--limit', '100', '-e', 'data.customer'], {
+      timeout: commandTimeoutMs,
+    })
+  );
+  const charges = (JSON.parse(chargesRaw).data || []).filter((c) => c.status === 'succeeded' || c.paid === true);
+  const subs = (JSON.parse(subsRaw).data || []).filter((s) => s.status === 'active' || s.status === 'trialing');
+  const emailOf = (obj) => {
+    const raw = (obj?.customer && typeof obj.customer === 'object' ? obj.customer.email : null)
+      || obj?.billing_details?.email
+      || obj?.receipt_email
+      || '';
+    return String(raw).trim().toLowerCase();
+  };
+  const ownerCharges = charges.filter((c) => ownerEmails.includes(emailOf(c)));
+  const externalCharges = charges.filter((c) => {
+    const em = emailOf(c);
+    return em && !ownerEmails.includes(em);
+  });
+  const sumCharges = (rows) => {
+    const grossCents = rows.reduce((acc, r) => acc + Number(r.amount || 0), 0);
+    const refundedCents = rows.reduce((acc, r) => acc + Number(r.amount_refunded || 0), 0);
+    const netByEmail = new Map();
+    for (const r of rows) {
+      const em = emailOf(r);
+      if (!em) continue;
+      netByEmail.set(em, (netByEmail.get(em) || 0) + Number(r.amount || 0) - Number(r.amount_refunded || 0));
+    }
+    return {
+      chargeCount: rows.length,
+      uniqueCustomerCount: [...netByEmail.values()].filter((v) => v > 0).length,
+      grossCents,
+      refundedCents,
+      netCents: grossCents - refundedCents,
+    };
+  };
+  const activeSubs = subs.filter((s) => s.status === 'active');
+  const activeOwner = activeSubs.filter((s) => ownerEmails.includes(emailOf(s))).length;
+  const activeExternal = activeSubs.filter((s) => {
+    const em = emailOf(s);
+    return em && !ownerEmails.includes(em);
+  }).length;
+  const externalSummary = sumCharges(externalCharges);
+  const ownerSummary = sumCharges(ownerCharges);
+  return normalizeExternalCustomerAudit({
+    configured: true,
+    generatedAt: new Date().toISOString(),
+    ownerEmails,
+    charges: {
+      all: sumCharges(charges),
+      owner: ownerSummary,
+      external: externalSummary,
+    },
+    subscriptions: {
+      activeOrTrialing: subs.length,
+      activeExternal,
+      activeOwner,
+      mrrExternalCents: 0,
+    },
+    productAttribution: {
+      verified: externalSummary.netCents === 0,
+      gap: externalSummary.netCents === 0 ? null : 'Stripe CLI fallback requires session line-item reconciliation for non-zero external charges',
+      thumbgate: {
+        uniquePayingCustomerCount: 0,
+        netRevenueCents: 0,
+        activeSubscriptionCount: 0,
+        mrrCents: 0,
+        revenueWindows: {
+          verified: externalSummary.netCents === 0,
+          basis: 'stripe_charge_created_timestamp',
+          timeZone: 'America/New_York',
+          todayGrossRevenueCents: 0,
+          todayNetRevenueCents: 0,
+          trailing30DayGrossRevenueCents: 0,
+          trailing30DayNetRevenueCents: 0,
+        },
+      },
+    },
+  });
+}
+
 function resolveExternalCustomerAudit({
   repoVars = {},
   runCommandFn = runCommand,
@@ -715,6 +818,13 @@ function resolveExternalCustomerAudit({
       commandTimeoutMs,
     });
   } catch (error) {
+    if (runCommandFn === runCommand && String(error?.message || error).includes('railway')) {
+      try {
+        return getExternalCustomerAuditViaStripeCli({ runCommandFn, commandTimeoutMs });
+      } catch {
+        // Fall through to original error report if Stripe CLI is not logged in
+      }
+    }
     return normalizeExternalCustomerAudit({
       configured: false,
       gap: error?.message || String(error),

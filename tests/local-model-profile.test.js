@@ -227,3 +227,115 @@ test('resolveModelRole does not select VLLM_MODEL_ROLES from bare LOCAL_LLM_ENDP
   assert.notEqual(result.model, 'Qwen/Qwen2.5-Coder-32B-Instruct');
   assert.equal(result.model, 'qwen2.5:3b');
 });
+
+test('planHiSparseHostKvOffload computes 4.45x startup / 5.71x steady-state capacity and blocks single-node MNNVL crash (vllm#64327)', () => {
+  const { planHiSparseHostKvOffload } = require('../scripts/local-model-profile');
+  const safePlan = planHiSparseHostKvOffload({
+    gpuBaseTokens: 1970000,
+    hostPoolGib: 440,
+    crossLayerKvSharing: true,
+    singleNodeTp: true,
+    allReduceBackend: 'trtllm',
+  });
+  assert.equal(safePlan.hiSparseEnabled, true);
+  assert.equal(safePlan.kvConnector, 'HiSparseConnector');
+  assert.equal(safePlan.kvSharingHostTokenBonusPct, 14.3);
+  assert.equal(safePlan.startupCapacityMultiplier, 4.45);
+  assert.equal(safePlan.steadyStateCapacityMultiplier, 5.71);
+  assert.equal(safePlan.requiredEnv.VLLM_FLASHINFER_ALLREDUCE_BACKEND, 'trtllm');
+  assert.equal(safePlan.mnnvlCrashGuardStatus, 'PASS_SAFE_ALLREDUCE_BACKEND');
+
+  const crashRiskPlan = planHiSparseHostKvOffload({
+    gpuBaseTokens: 1970000,
+    hostPoolGib: 440,
+    crossLayerKvSharing: true,
+    singleNodeTp: true,
+    allReduceBackend: 'mnnvl',
+  });
+  assert.equal(crashRiskPlan.mnnvlCrashGuardStatus, 'FAIL_MNNVL_HISPARSE_CRASH_RISK_VLLM_64327');
+});
+
+test('planDsparkSpeculativeDecoding selects probabilistic draft sampling at T>1.0 and models DCP8 0.69x KV capacity bound', () => {
+  const { planDsparkSpeculativeDecoding } = require('../scripts/local-model-profile');
+  const greedy = planDsparkSpeculativeDecoding({
+    temperature: 0,
+    numSpeculativeTokens: 3,
+    kvPrecision: 'nvfp4',
+    dcpSize: 1,
+    avgContextTokens: 8192,
+  });
+  assert.equal(greedy.draftSampleMethod, 'greedy_or_standard');
+  assert.equal(greedy.expectedAcceptLength, 2.93);
+  assert.equal(greedy.effectiveKvCapacityMultiplier, 1.0);
+
+  const highTempDcp = planDsparkSpeculativeDecoding({
+    temperature: 1.5,
+    numSpeculativeTokens: 3,
+    kvPrecision: 'nvfp4',
+    dcpSize: 8,
+    avgContextTokens: 100000,
+    separateDraftBlockPool: false,
+  });
+  assert.equal(highTempDcp.draftSampleMethod, 'probabilistic');
+  assert.equal(highTempDcp.expectedAcceptLength, 2.45);
+  assert.equal(highTempDcp.dcpDraftWindowReplicatedMb, 7);
+  assert.equal(highTempDcp.effectiveKvCapacityMultiplier, 0.69);
+  assert.equal(highTempDcp.dcpCapacityBoundAbove99k, true);
+  assert.ok(highTempDcp.speculativeConfigJson.includes('"draft_sample_method":"probabilistic"'));
+});
+
+test('planBatchInvariantDeterministicInference enforces Fixed-Split-KV and KL=0 trainer-sampler identity (Thinking Machines Lab)', () => {
+  const { planBatchInvariantDeterministicInference } = require('../scripts/local-model-profile');
+  const { evaluateLoraWithoutRegretPlan } = require('../scripts/post-training-governance');
+  const {
+    buildOnPolicyDistillationPlan,
+    planInteractionModelSplit,
+  } = require('../scripts/student-consistent-training');
+
+  const invariant = planBatchInvariantDeterministicInference({
+    enabled: true,
+    temperature: 0,
+    fixedSplitKvSize: 256,
+    rlRolloutMode: true,
+    trainerMatchesSamplerPrecision: true,
+  });
+  assert.equal(invariant.isBatchInvariant, true);
+  assert.equal(invariant.deterministicGreedy, true);
+  assert.equal(invariant.attentionReductionMode, 'fixed-split-kv');
+  assert.equal(invariant.fixedSplitKvSize, 256);
+  assert.equal(invariant.trainerSamplerBitwiseIdentical, true);
+  assert.equal(invariant.klDivergenceTrainerVsSampler, 0);
+  assert.equal(invariant.trueOnPolicyRlReady, true);
+  assert.equal(invariant.vllmBatchInvariantEnv.VLLM_BATCH_INVARIANT, '1');
+
+  const loraGood = evaluateLoraWithoutRegretPlan({
+    mode: 'grpo',
+    rank: 8,
+    rlEpisodes: 2000,
+    fullFtLearningRate: 0.00002,
+  });
+  assert.equal(loraGood.decision, 'allow');
+  assert.equal(loraGood.hasMlpModules, true);
+  assert.equal(loraGood.lrRatioToFullFt, 10);
+  assert.equal(loraGood.flopsMultiplierVsFullFt, 0.667);
+
+  const loraAttentionOnly = evaluateLoraWithoutRegretPlan({
+    mode: 'sft',
+    rank: 4,
+    targetModules: ['q_proj', 'v_proj'],
+    loraLearningRate: 0.00002,
+    fullFtLearningRate: 0.00002,
+  });
+  assert.equal(loraAttentionOnly.decision, 'warn');
+  assert.ok(loraAttentionOnly.issues.includes('attention_only_lora_underperforms_include_mlp_or_moe'));
+  assert.ok(loraAttentionOnly.issues.includes('suboptimal_lora_lr_ratio_expected_10x_to_15x_full_ft'));
+
+  const distill = buildOnPolicyDistillationPlan({ sequenceLengthTokens: 2048 });
+  assert.equal(distill.method, 'on_policy_distillation_reverse_kl');
+  assert.equal(distill.requiresGroundTruthVerifier, false);
+  assert.equal(distill.supervisionDensityMultiplier, 2048);
+
+  const split = planInteractionModelSplit({ targetMicroTurnLatencyMs: 200 });
+  assert.equal(split.interactionLayer.targetTtftMs, 200);
+  assert.equal(split.backgroundLayer.maxScopedToolsPerWorker, 4);
+});

@@ -11,7 +11,8 @@
  *
  * Active channels (2026-04-20 onward): reddit, linkedin, threads, bluesky,
  * instagram, youtube. X/Twitter was dropped from the default distribution
- * loop on 2026-04-20; its publisher module was retired.
+ * loop on 2026-04-20; its publisher module was retired, then re-enabled on
+ * 2026-10-29 with the restored x.js publisher module (OAuth 2.0 user token).
  *
  * Post file format (markdown with metadata):
  *   # Reddit Post: r/cursor
@@ -45,6 +46,8 @@ function getPublisher(platform) {
     instagram: () => require('./social-analytics/publishers/instagram.js'),
     tiktok: () => require('./social-analytics/publishers/tiktok.js'),
     youtube: () => require('./social-analytics/publishers/youtube.js'),
+    x: () => require('./social-analytics/publishers/x.js'),
+    twitter: () => require('./social-analytics/publishers/x.js'),
   };
   const loader = publishers[platform];
   if (!loader) throw new Error(`Unknown platform: ${platform}`);
@@ -88,8 +91,7 @@ function parsePostFile(filePath) {
     tags: [],
   };
 
-  // Detect platform from header. X/Twitter was retired 2026-04-20 and is no
-  // longer mapped — any such header falls through to the default platform list.
+  // Detect platform from header.
   const header = lines[0] || '';
   if (/reddit/i.test(header)) result.platform = 'reddit';
   else if (/obsidian/i.test(header)) result.platform = 'reddit'; // Obsidian posts go to Reddit
@@ -101,6 +103,7 @@ function parsePostFile(filePath) {
   else if (/instagram/i.test(header)) result.platform = 'instagram';
   else if (/youtube/i.test(header)) result.platform = 'youtube';
   else if (/dev\.to/i.test(header)) result.platform = 'devto';
+  else if (/x\.com|twitter|^#?\s*x\s+post/i.test(header)) result.platform = 'x';
 
   // Extract subreddit
   const subLine = lines.find((l) => /^\*\*Subreddit:\*\*/i.test(l.trim()));
@@ -321,6 +324,27 @@ async function postToBluesky(parsed, dryRun) {
   });
 }
 
+/**
+ * Publish to X (Twitter) via direct API v2.
+ *
+ * Requires X_OAUTH2_USER_TOKEN (user-context Bearer token with tweet.write
+ * scope) or X_ACCESS_TOKEN / X_BEARER_TOKEN. App-only tokens cannot create posts.
+ *
+ * Content is truncated to 280 chars before dispatch.
+ */
+async function postToX(parsed, dryRun) {
+  const text = [parsed.title, parsed.body].filter(Boolean).join('\n\n').slice(0, 280);
+  if (!text) throw new Error('X post requires title or body');
+
+  if (dryRun) {
+    console.log(`[dry-run] X: "${text.slice(0, 100)}..." (${text.length} chars)`);
+    return { dryRun: true };
+  }
+
+  const xPub = getPublisher('x');
+  return xPub.publishPost({ text });
+}
+
 // ---------------------------------------------------------------------------
 // Main orchestrator
 // ---------------------------------------------------------------------------
@@ -334,6 +358,8 @@ const DISPATCHERS = {
   instagram: postToInstagram,
   threads: postToThreads,
   bluesky: postToBluesky,
+  x: postToX,
+  twitter: postToX,
 };
 
 async function postEverywhere(filePath, { platforms, dryRun, campaign = 'organic', deps = {} } = {}) {
@@ -353,8 +379,7 @@ async function postEverywhere(filePath, { platforms, dryRun, campaign = 'organic
   // Determine which platforms to post to.
   // Default excludes devto — high-volume Dev.to posting is counterproductive (0 engagement on 427 posts).
   // Use --platforms=devto explicitly for monthly cross-posts only.
-  // X/Twitter was removed from DEFAULT_PLATFORMS on 2026-04-20; current focus
-  // is Reddit, LinkedIn, Threads, Bluesky, Instagram, YouTube.
+  // X/Twitter re-enabled 2026-10-29 with direct API v2 publisher (x.js).
   const targetPlatforms = platforms || (parsed.platform ? [parsed.platform] : Array.from(DEFAULT_PLATFORMS));
 
   // Preserve original body/comment so each platform gets a fresh UTM tag
@@ -405,6 +430,7 @@ const DEFAULT_PLATFORMS = Object.freeze([
   'linkedin',
   'threads',
   'bluesky',
+  'x',
   'instagram',
   'youtube',
 ]);
@@ -437,7 +463,7 @@ if (require.main === module) {
   const campaign = getArg('--campaign') || 'organic';
 
   if (!filePath) {
-    console.error('Usage: node scripts/post-everywhere.js <post-file.md> [--dry-run] [--platforms=reddit,linkedin,threads,bluesky,instagram,youtube]');
+    console.error('Usage: node scripts/post-everywhere.js <post-file.md> [--dry-run] [--platforms=reddit,linkedin,threads,bluesky,x,instagram,youtube]');
     process.exit(1);
   }
 

@@ -5,7 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright-core');
 
-const DEFAULT_CDP_ENDPOINT = 'http://127.0.0.1:9222';
+const DEFAULT_CDP_ENDPOINT = 'http://127.0.0.1:9114';
+const FALLBACK_CDP_ENDPOINTS = ['http://127.0.0.1:9114', 'http://127.0.0.1:9222'];
 const DEFAULT_STATE_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reddit-browser-notification-state.json');
 const DEFAULT_EVENTS_FILE = path.resolve(__dirname, '..', '.thumbgate', 'reddit-browser-notifications.jsonl');
 const REDDIT_NOTIFICATIONS_URL = 'https://www.reddit.com/notifications';
@@ -147,21 +148,90 @@ function parseNotificationBlocks(bodyText) {
   return notifications;
 }
 
+async function readViaDirectCdpTab(endpoint, timeoutMs = 8000) {
+  const res = await fetch(`${endpoint.replace(/\/$/, '')}/json/list`, { signal: AbortSignal.timeout(3000) });
+  if (!res.ok) throw new Error(`CDP list status ${res.status}`);
+  const tabs = await res.json();
+  const notifTab = tabs.find((t) => t.type === 'page' && String(t.url || '').includes('reddit.com/notifications') && t.webSocketDebuggerUrl);
+  if (!notifTab) return null;
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(notifTab.webSocketDebuggerUrl);
+    const timer = setTimeout(() => {
+      try { ws.close(); } catch {}
+      reject(new Error('Direct CDP tab timeout'));
+    }, timeoutMs);
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        id: 1,
+        method: 'Runtime.evaluate',
+        params: { expression: 'document.body ? document.body.innerText : ""', returnByValue: true },
+      }));
+    };
+    ws.onerror = (err) => {
+      clearTimeout(timer);
+      reject(err);
+    };
+    ws.onmessage = (ev) => {
+      try {
+        const msg = JSON.parse(String(ev.data));
+        if (msg.id === 1) {
+          clearTimeout(timer);
+          ws.close();
+          resolve(String(msg.result?.result?.value || ''));
+        }
+      } catch (err) {
+        clearTimeout(timer);
+        ws.close();
+        reject(err);
+      }
+    };
+  });
+}
+
+async function connectFirstAvailableCdp(preferredEndpoint, timeoutMs = 15000) {
+  const candidates = Array.from(new Set([preferredEndpoint, ...FALLBACK_CDP_ENDPOINTS].filter(Boolean)));
+  let lastErr = null;
+  for (const endpoint of candidates) {
+    try {
+      const browser = await chromium.connectOverCDP(endpoint, { timeout: timeoutMs });
+      return browser;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error('No CDP endpoint reachable');
+}
+
 async function readRedditNotifications({
   cdpEndpoint = process.env.THUMBGATE_CHROME_CDP_ENDPOINT || DEFAULT_CDP_ENDPOINT,
   timeoutMs = Number(process.env.THUMBGATE_REDDIT_BROWSER_TIMEOUT_MS || 15000),
 } = {}) {
-  const browser = await chromium.connectOverCDP(cdpEndpoint);
+  const candidates = Array.from(new Set([cdpEndpoint, ...FALLBACK_CDP_ENDPOINTS].filter(Boolean)));
+  for (const endpoint of candidates) {
+    try {
+      const directText = await readViaDirectCdpTab(endpoint, timeoutMs);
+      if (directText) {
+        return parseNotificationBlocks(directText);
+      }
+    } catch {
+      // Fall through to Playwright connectOverCDP if direct tab read fails.
+    }
+  }
+  const browser = await connectFirstAvailableCdp(cdpEndpoint, timeoutMs);
   const context = browser.contexts()[0] || await browser.newContext();
-  const page = await context.newPage();
+  const existingPage = context.pages().find((p) => p.url().includes('reddit.com/notifications'));
+  const page = existingPage || await context.newPage();
   try {
-    await page.goto(REDDIT_NOTIFICATIONS_URL, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
-    await page.waitForTimeout(3000);
-    const bodyText = await page.locator('body').innerText({ timeout: timeoutMs });
+    if (!existingPage) {
+      await page.goto(REDDIT_NOTIFICATIONS_URL, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
+      await page.waitForTimeout(3000);
+    }
+    const bodyText = await page.locator('body').first().innerText({ timeout: timeoutMs });
     return parseNotificationBlocks(bodyText);
   } finally {
-    await page.close().catch(() => {});
-    await browser.close().catch(() => {});
+    if (!existingPage) {
+      await page.close().catch(() => {});
+    }
   }
 }
 

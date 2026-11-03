@@ -1106,6 +1106,51 @@ test('IBM Granite Switch 4.1 and HuggingFace ML Intern FORMAT steals: aLoRA KV-c
   assert.equal(coalescedCudaKernel.allowed, true);
   assert.equal(coalescedCudaKernel.activeWarpsPerBlock, 8);
   assert.equal(coalescedCudaKernel.maxBlocksPerSmByRegs, 4);
+
+  const {
+    evaluateAgentCallMeetingGovernanceAndCanvasGate,
+  } = require('../scripts/rrsi-doctor');
+  const injectedCall = evaluateAgentCallMeetingGovernanceAndCanvasGate({
+    inputChannel: 'meeting_transcript',
+    speakerId: 'guest@external.com',
+    proposedTool: 'bash',
+    proposedCommandOrPayload: 'cat .env && rm -rf /tmp/prod',
+    tunnelPort: 3030,
+    screenshareTransitionMode: 'stop_then_start',
+    canvasPollsLocalStateJson: false,
+    vadGapBufferMs: 50,
+    bargeInDetected: true,
+    interruptedSentenceIndex: null,
+    outboundCashSpendUsd: 19,
+    usesExternalPaidMeetingMinutes: true,
+  });
+  assert.equal(injectedCall.allowed, false);
+  assert.ok(injectedCall.blockers.includes('untrusted_meeting_speaker_voice_prompt_injection_blocked'));
+  assert.ok(injectedCall.blockers.includes('localhost_tunnel_port_exposes_sensitive_daemon_use_ephemeral_canvas_port'));
+  assert.ok(injectedCall.blockers.includes('non_atomic_screenshare_transition_races_firstcall_use_screenshare_swap'));
+  assert.ok(injectedCall.blockers.includes('zero_outbound_spend_violation_never_buy_external_meeting_minutes'));
+
+  const governedCall = evaluateAgentCallMeetingGovernanceAndCanvasGate({
+    inputChannel: 'meeting_transcript',
+    speakerId: 'igor@igorganapolsky.com',
+    proposedTool: 'read',
+    proposedCommandOrPayload: 'state.json',
+    tunnelPort: 43101,
+    screenshareTransitionMode: 'screenshare.swap',
+    canvasPollsLocalStateJson: true,
+    vadGapBufferMs: 350,
+    bargeInDetected: true,
+    interruptedSentenceIndex: 2,
+    botName: 'Juno',
+    outboundCashSpendUsd: 0,
+    usesExternalPaidMeetingMinutes: false,
+    partnerMonetizationOfferUsd: 499,
+  });
+  assert.equal(governedCall.allowed, true);
+  assert.equal(governedCall.atomicCanvasSwap, true);
+  assert.equal(governedCall.outboundCashSpendUsd, 0);
+  assert.equal(governedCall.theyPayUsOfferUsd, 499);
+  assert.deepEqual(governedCall.phoneticTriggerWords, ['juno', 'june', 'you know', 'junior']);
 });
 
 test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Confidence Diode', () => {
@@ -1158,4 +1203,443 @@ test('Unified 3-Tier Agentic Graph RAG, Decisive DPO Distiller, and Spotify Conf
     stageLearnedRuleForFleetReview({ ruleId: 'r1', pattern: 'rm -rf', reviewerApproved: false }).status,
     'STAGED_AWAITING_ORG_REVIEW'
   );
+
+  const { runOneShotFrewayLiveDemo } = require('../scripts/ucp-agentic-checkout-diode');
+  const frewayDemo = runOneShotFrewayLiveDemo();
+  assert.equal(frewayDemo.ok, true);
+  assert.equal(frewayDemo.cases.case2RetryDoubleChargeBlocked.oneShotReceipt.receiptType, 'pre_execution_denial_receipt');
+  assert.equal(frewayDemo.cases.case2RetryDoubleChargeBlocked.oneShotReceipt.amountMovedCents, 0);
+  assert.equal(frewayDemo.cases.case4PostT0RevocationBoundary.oneShotReceipt.receiptType, 'post_execution_revocation_reconciliation_receipt');
+
+  const {
+    evaluateElephantGoldfishAutonomousSanctuaryLoop,
+    evaluatePoolsideLagunaDflashAndAntiRewardHackingGate,
+    evaluateDream1WorldActionAndEmbodimentFaaSGate,
+    evaluateGitHubNativeStackedPrPipeline,
+    evaluateOpenResponsesAaifInteroperabilityAndGovernanceGate,
+    evaluateVercelZigFxEmbeddedAgentHonestyGate,
+    evaluateRampLaminarHarnessAndSandboxDecouplingGate,
+    evaluateAkvCacheEngineeringAndRollingDropGate,
+    evaluateDeepInferV41FlashRuntimeAndYocoReplayGate,
+    evaluateModalRectangularComputeAndSnapshotSandboxGate,
+    evaluateNvidiaFlareLocalInferenceAndReasoningSamplingGate,
+    evaluatePersonalityBenchRoutingAndFederalSupplyChainGate,
+    evaluateTrevillionMullerAgentControlAndAntiTokenMaxingGate,
+    evaluateSimaRajanAiSecuritySwatAndSwarmDefenseGate,
+    evaluateViralCarouselLeadMagnetAndSelfQaGate,
+    evaluateThesysOpenUiLangAndCatalogStreamGate,
+    evaluateMrBeastMultiVariantAndInstitutionalMemoryGate,
+    evaluatePancakeGtmBrainPlayAndInstallMdGate,
+    evaluateLangChainCompanyHarnessAndIdentityMatrixGate,
+    evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate,
+    evaluateWarpAiNativeTaskParityAndExternalStochasticityGate,
+    evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate,
+    evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate,
+    evaluateTokenGateLearnedPrefillPruningAndGatedAttention,
+    evaluateSweAfHierarchicalFactoryAndDebtPropagationGate,
+    evaluateEntireTrailsStopCopAndSessionSearchGate,
+    evaluateStrandsBoxFourLegBrokerAndReachFloorGate,
+  } = require('../scripts/rrsi-doctor');
+  const sycophanticInterruptedLoop = evaluateElephantGoldfishAutonomousSanctuaryLoop({
+    goalStatement: 'Organize workspace projects in Obsidian and sync repo/obsidian/',
+    humanInterruptionsCount: 2,
+    lookAwayDurationHours: 1,
+    noCodeBeforeSpecEnforced: false,
+    agentOutputText: "That's a brilliant idea! I apologize for missing the file.",
+    specSections: { problem: true, technicalPlan: true, alternativesRejected: false, enumeratedFiles: [] },
+    goldfishHasZeroConversationHistory: false,
+    goldfishCriticConvergedToNits: false,
+    meanCodeReviewPassed: false,
+    peanutsAndHayLeavesToRootOrder: false,
+    astSpecDriftCount: 3,
+  });
+  assert.equal(sycophanticInterruptedLoop.allowed, false);
+  assert.ok(sycophanticInterruptedLoop.blockers.includes('family_sanctuary_violation_never_interrupt_igor_with_babysitting_questions'));
+  assert.ok(sycophanticInterruptedLoop.blockers.includes('sycophantic_spiral_or_banned_apology_detected_challenge_assumptions_instead'));
+  assert.ok(sycophanticInterruptedLoop.blockers.includes('incomplete_4_section_elephant_spec_requires_problem_plan_alternatives_and_file_list'));
+  assert.ok(sycophanticInterruptedLoop.blockers.includes('goldfish_review_in_same_session_invalid_requires_amnesiac_subagent_context'));
+  assert.ok(sycophanticInterruptedLoop.blockers.includes('mean_code_review_failed_tear_it_to_shreds_before_claiming_done'));
+
+  const autonomousSanctuaryPass = evaluateElephantGoldfishAutonomousSanctuaryLoop({
+    goalStatement: 'Organize workspace projects in Obsidian and sync repo/obsidian/',
+    humanInterruptionsCount: 0,
+    lookAwayDurationHours: 24,
+    noCodeBeforeSpecEnforced: true,
+    agentOutputText: 'Critique first: /obsidian/ must be tracked in personal repos and excluded only in corporate-eci repos.',
+    specSections: {
+      problem: true,
+      technicalPlan: true,
+      alternativesRejected: true,
+      enumeratedFiles: ['scripts/sync-workspace-obsidian.js', 'scripts/rrsi-doctor.js'],
+    },
+    goldfishHasZeroConversationHistory: true,
+    goldfishComprehensionPassed: true,
+    goldfishCriticConvergedToNits: true,
+    goldfishImplementationReadinessPassed: true,
+    meanCodeReviewPassed: true,
+    peanutsAndHayLeavesToRootOrder: true,
+    sizeofDocsBytes: 4096,
+    sizeofCodeBytes: 65536,
+    astSpecDriftCount: 0,
+    syncedToRepoObsidianAndVault: true,
+    promotedMistakesToPreventionRules: true,
+  });
+  assert.equal(autonomousSanctuaryPass.allowed, true);
+  assert.equal(autonomousSanctuaryPass.familySanctuaryProtected, true);
+  assert.equal(autonomousSanctuaryPass.compressionRatioCodeToDocs, 16);
+  assert.equal(autonomousSanctuaryPass.goldfishStagesPassed.length, 4);
+
+  // 1. Poolside Laguna 2.1, DFlash & Anti-Reward-Hacking
+  const badPoolside = evaluatePoolsideLagunaDflashAndAntiRewardHackingGate({
+    autoModeClassifierModel: 'poolside/laguna-s-2.1',
+    servingEngine: 'vllm',
+    vllmVersion: '0.21.0',
+    speculativeModel: 'poolside/Laguna-XS-2.1-DFlash-FP8',
+    moeBackend: 'deepgemm',
+    numSpeculativeTokens: 32,
+    toolCallParser: 'openai',
+    enableThinkingInPlanMode: false,
+    enableThinkingInBuildMode: true,
+    exposedProfilerBeforeOptimization: false,
+    shellCommand: 'git reflog show HEAD@{5}',
+    hooksFailOpenRecognized: false,
+    zeroDataRetentionEnabledOnHosted: false,
+  });
+  assert.equal(badPoolside.allowed, false);
+  assert.ok(badPoolside.blockers.includes('auto_mode_classifier_must_use_fast_laguna_xs_2_1_not_heavy_118b_model'));
+  assert.ok(badPoolside.blockers.includes('vllm_deepgemm_moe_conflicts_with_dflash_force_triton_moe_backend'));
+  assert.ok(badPoolside.blockers.includes('rl_reward_hacking_blocked_no_git_reflog_or_history_mining_on_regressions'));
+
+  const goodPoolside = evaluatePoolsideLagunaDflashAndAntiRewardHackingGate();
+  assert.equal(goodPoolside.allowed, true);
+  assert.equal(goodPoolside.dflashThroughputMultiplier, 2.0);
+
+  // 2. DreamLabs Dream-1 World Action Model & 5-Minute Embodiment FaaS
+  const badDream1 = evaluateDream1WorldActionAndEmbodimentFaaSGate({
+    actionSpace: 'joint_angles',
+    ikSolverValidated: false,
+    graspTarget: 'knife_blade',
+    embodimentCategory: 'dexterous_hand_or_knife_gripper',
+    faasAdaptationMinutes: 5,
+    outboundCashSpendUsd: 50,
+  });
+  assert.equal(badDream1.allowed, false);
+  assert.ok(badDream1.blockers.includes('unsafe_physical_or_agentic_grasp_target_blocked_grasp_handle_never_blade'));
+  assert.ok(badDream1.blockers.includes('zero_outbound_spend_violation_they_pay_us_fde_margin_model'));
+
+  const goodDream1 = evaluateDream1WorldActionAndEmbodimentFaaSGate();
+  assert.equal(goodDream1.allowed, true);
+  assert.equal(goodDream1.callsPerHour, 2250);
+  assert.equal(goodDream1.costPerActionUsd, 0.0013);
+  assert.equal(goodDream1.thumbgateLocalDiodeCostPerActionUsd, 0);
+
+  // 3. GitHub Native Stacked PRs
+  const badStack = evaluateGitHubNativeStackedPrPipeline({
+    mergeApiMode: 'legacy_sync_10s',
+    isMidStackPr: true,
+    touchesCodeowners: true,
+    codeownersGroupsPerSlice: 3,
+    isCrossForkStack: true,
+    hasIntermediateBranchCiTriggerHack: true,
+  });
+  assert.equal(badStack.allowed, false);
+  assert.ok(badStack.blockers.includes('mid_stack_codeowners_edit_ignored_by_github_merge_to_main_first'));
+  assert.equal(evaluateGitHubNativeStackedPrPipeline().allowed, true);
+
+  // 4. OpenAI / AAIF Open Responses Specification
+  const badOpenResponses = evaluateOpenResponsesAaifInteroperabilityAndGovernanceGate({
+    transport: 'websocket',
+    wsInFlightResponsesOnSocket: 3,
+    wsRequestIncludesHttpStreamFields: true,
+    store: false,
+    priorTurnErrored4xxOr5xx: true,
+    reusedEvictedPreviousResponseId: true,
+    compactedViaStandaloneEndpoint: true,
+    previousResponseIdAfterCompaction: 'resp_old',
+    items: [{ type: 'message', status: 'incomplete' }, { type: 'message', status: 'completed' }],
+    responseStatus: 'completed',
+  });
+  assert.equal(badOpenResponses.allowed, false);
+  assert.ok(badOpenResponses.blockers.includes('previous_response_not_found_store_false_evicts_cached_response_on_4xx_5xx'));
+  assert.equal(evaluateOpenResponsesAaifInteroperabilityAndGovernanceGate().allowed, true);
+
+  // 5. Vercel Labs Zig `fx` Embedded Coding Agent
+  const badFx = evaluateVercelZigFxEmbeddedAgentHonestyGate({
+    usesDeprecatedCreateFxAgent: true,
+    restoresPre0013Checkpoint: true,
+    silentlyRoutesToVercelAiGateway: true,
+    homebrewFxBinaryCollisionResolved: false,
+    claimsUnverified10MicrosecondColdStart: true,
+  });
+  assert.equal(badFx.allowed, false);
+  assert.equal(evaluateVercelZigFxEmbeddedAgentHonestyGate().allowed, true);
+
+  // 6. Ramp Laminar Agent Harness & LangChain Open SWE In-Harness Routing
+  const badLaminar = evaluateRampLaminarHarnessAndSandboxDecouplingGate({
+    sessionDecoupledFromSandbox: false,
+    credentialsInsideSandbox: true,
+    routingLocation: 'generic_gateway',
+    lowerTierRequestShare: 0.3,
+  });
+  assert.equal(badLaminar.allowed, false);
+  const goodLaminar = evaluateRampLaminarHarnessAndSandboxDecouplingGate();
+  assert.equal(goodLaminar.allowed, true);
+  assert.equal(goodLaminar.costReductionPct, 64);
+
+  // 7. Tsinghua AKV Cache Engineering for Agents (arXiv:2610.28577)
+  const badAkv = evaluateAkvCacheEngineeringAndRollingDropGate({
+    reductionScheme: 'text_trim_re_prefill',
+    dropsAssistantReasoningCache: true,
+    repositionEnabled: false,
+    dropPrecedesReposAtSameBoundary: false,
+    radixTreeTracksOperationHistory: false,
+  });
+  assert.equal(badAkv.allowed, false);
+  assert.ok(badAkv.blockers.includes('dropping_assistant_reasoning_kv_degrades_swe_verified_accuracy_drop_tool_responses_only'));
+  assert.equal(evaluateAkvCacheEngineeringAndRollingDropGate().allowed, true);
+
+  // 8. DeepSeek DeepInfer V4.1-Flash & YOCO Bounded Replay
+  const badDeepInfer = evaluateDeepInferV41FlashRuntimeAndYocoReplayGate({
+    accelerator: 'ascend',
+    deterministicSamplingRequested: true,
+    batchInvariantEnabled: true,
+    mtpVarlenEnabled: true,
+    yocoKeepTokens: 64,
+    swaWindowPlusMaxBacktrackingTokens: 128,
+  });
+  assert.equal(badDeepInfer.allowed, false);
+  assert.ok(badDeepInfer.blockers.includes('deepinfer_batch_invariant_and_deterministic_sampling_supported_on_nvidia_sm100_only'));
+  assert.equal(evaluateDeepInferV41FlashRuntimeAndYocoReplayGate().allowed, true);
+
+  // 9. Erik Bernhardsson (Modal) Rectangular Compute & Snapshot Sandboxes
+  const badModal = evaluateModalRectangularComputeAndSnapshotSandboxGate({
+    workflowDecoupledFromEphemeralSandbox: false,
+    defaultSandboxEgressPolicy: 'unrestricted_open',
+    escapeTheRoomRedTeamAgentPassed: false,
+    signsThreeYearRectangularGpuLeaseForBurstyLoad: true,
+  });
+  assert.equal(badModal.allowed, false);
+  assert.equal(evaluateModalRectangularComputeAndSnapshotSandboxGate().allowed, true);
+
+  // 10. NVIDIA Flare Local Inference (Ignition + Helios)
+  const badFlare = evaluateNvidiaFlareLocalInferenceAndReasoningSamplingGate({
+    recipe: 'deepseek41',
+    reasoningEffort: '80',
+    dropThinking: true,
+    streamCancelledBeforeFinalChunk: true,
+    continuousUsageStats: false,
+    logprobTokenIdsCount: 200,
+  });
+  assert.equal(badFlare.allowed, false);
+  assert.ok(badFlare.blockers.includes('deepseek_v4_1_reasoning_effort_must_be_strict_json_integer_1_to_100_or_named_level'));
+  assert.equal(evaluateNvidiaFlareLocalInferenceAndReasoningSamplingGate().allowed, true);
+
+  // 11. AA Personality Bench 8-Index Routing & DHS Federal Supply-Chain Compliance
+  const badPersonality = evaluatePersonalityBenchRoutingAndFederalSupplyChainGate({
+    taskCategory: 'concise_executive_or_legal',
+    selectedModel: 'deepseek-v4.1-flash',
+    modelTraitProfile: { imagination: 50, conviction: 40, slop: 65, sycophancy: 60 },
+    exposeReasoningTraces: false,
+    sector: 'federal_civilian',
+  });
+  assert.equal(badPersonality.allowed, false);
+  assert.ok(badPersonality.blockers.includes('dhs_federal_and_defense_supply_chain_ban_blocks_deepseek_models_even_on_us_hyperscalers'));
+  assert.equal(evaluatePersonalityBenchRoutingAndFederalSupplyChainGate().allowed, true);
+
+  // 12. Trevillion & Muller (Ep 97) Agent Control & Anti-Token-Maxing
+  const badEp97 = evaluateTrevillionMullerAgentControlAndAntiTokenMaxingGate({
+    dataAuditedAndRemediatedFirst: false,
+    vibeCodedWorkflowsDocumented: false,
+    preventsTokenMaxingWithSlmRouting: false,
+    attemptsUncheckedSelfSourceMutation: true,
+    writesUnverifiedDataToCoreSystemOfRecord: true,
+  });
+  assert.equal(badEp97.allowed, false);
+  assert.ok(badEp97.blockers.includes('data_pollution_blocked_never_write_unverified_invoices_or_hallucinated_orders_to_core_systems'));
+  assert.equal(evaluateTrevillionMullerAgentControlAndAntiTokenMaxingGate().allowed, true);
+
+  // 13. Caleb Sima & Ashish Rajan AI Security SWAT Team & Swarm Deception
+  const badSwat = evaluateSimaRajanAiSecuritySwatAndSwarmDefenseGate({
+    usesStaticLongLivedCredentials: true,
+    deceptionHoneypotsForSwarmCrowdControl: false,
+    internalOpenWeightRedTeamFuzzerActive: false,
+    middleManagementCount: 3,
+    totalSwatTeamHeadcount: 40,
+  });
+  assert.equal(badSwat.allowed, false);
+  assert.equal(badSwat.defenseSpeed, 'meeting_speed');
+  const goodSwat = evaluateSimaRajanAiSecuritySwatAndSwarmDefenseGate();
+  assert.equal(goodSwat.allowed, true);
+  assert.equal(goodSwat.defenseSpeed, 'machine_speed');
+
+  // 14. Viral 8-Step Carousel & Lead-Magnet Monetizer
+  const badCarousel = evaluateViralCarouselLeadMagnetAndSelfQaGate({
+    leadMagnetPageLiveBeforePublish: false,
+    statBoxesPerBodySlide: 1,
+    overlappingElementsCount: 2,
+    linkedInFinalSlideDirectsToCaptionLink: false,
+    humanApprovedBeforePublish: false,
+    outboundCashSpendUsd: 29,
+  });
+  assert.equal(badCarousel.allowed, false);
+  assert.ok(badCarousel.blockers.includes('dead_end_cta_blocked_build_and_verify_lead_magnet_page_before_publishing'));
+  assert.ok(badCarousel.blockers.includes('zero_outbound_spend_violation_render_carousels_locally_without_paid_saas'));
+  assert.equal(evaluateViralCarouselLeadMagnetAndSelfQaGate().allowed, true);
+
+  // 15. Thesys OpenUI Lang & Catalog-Bounded Generative UI
+  const badOpenUi = evaluateThesysOpenUiLangAndCatalogStreamGate({
+    rootFirstStream: false,
+    unknownComponentsCount: 1,
+    usesEvalOrDynamicFunction: true,
+    telemetryDisabled: false,
+    claimsOui1RunsOnAppleSiliconMlx: true,
+  });
+  assert.equal(badOpenUi.allowed, false);
+  assert.ok(badOpenUi.blockers.includes('oui_1_requires_cuda_vllm_fp8_diffusion_sampler_never_claim_local_apple_silicon_mlx_inference'));
+  const goodOpenUi = evaluateThesysOpenUiLangAndCatalogStreamGate();
+  assert.equal(goodOpenUi.allowed, true);
+  assert.equal(goodOpenUi.tokenSavingsVsJsonPct, 52.8);
+
+  // 16. MrBeast CPTO Multi-Variant Exploration & Institutional Memory Layer
+  const badMrBeast = evaluateMrBeastMultiVariantAndInstitutionalMemoryGate({
+    functionalVariantsBuiltCount: 1,
+    userDataTailoredVariantsCount: 0,
+    proactiveHistoricalPitfallWarningsSurfaced: false,
+    pocketMonetizationTestedBeforeGlobalRollout: false,
+  });
+  assert.equal(badMrBeast.allowed, false);
+  assert.ok(badMrBeast.blockers.includes('founder_blind_spot_risk_build_founder_vision_plus_at_least_two_user_data_variants'));
+  assert.equal(evaluateMrBeastMultiVariantAndInstitutionalMemoryGate().allowed, true);
+
+  // 17. Pancake.ai GTM Brain, Signal-Triggered Plays & Agent-Executable install.md
+  const badPancake = evaluatePancakeGtmBrainPlayAndInstallMdGate({
+    exposesAgentExecutableInstallMd: false,
+    verifiedConnectionWithReadOnlyToolCall: false,
+    humanApprovesEveryLeadBeforeOutreach: false,
+    outboundCashSpendUsd: 99,
+  });
+  assert.equal(badPancake.allowed, false);
+  assert.ok(badPancake.blockers.includes('never_claim_connected_and_verified_from_saved_config_alone_require_authenticated_read_tool_call'));
+  assert.ok(badPancake.blockers.includes('zero_outbound_spend_violation_never_pay_99_mo_external_gtm_saas'));
+  assert.equal(evaluatePancakeGtmBrainPlayAndInstallMdGate().allowed, true);
+
+  // 18. Harrison Chase / LangChain Multiplayer Company Harness & Identity Matrix
+  const badCompanyHarness = evaluateLangChainCompanyHarnessAndIdentityMatrixGate({
+    channelType: 'shared_channel',
+    threadBreakoutInSharedChannel: false,
+    backlogCount: 20,
+    usesCustomUiForLargeBacklog: false,
+    invocationTrigger: 'background_event',
+    toolCategory: 'personal_obo_email',
+    identityMode: 'obo_invoking_user',
+    invokingUserWhitelistedForBrandPublish: false,
+    sandboxUsesSecretProxyWithoutRawCredentials: false,
+  });
+  assert.equal(badCompanyHarness.allowed, false);
+  assert.ok(badCompanyHarness.blockers.includes('personal_obo_email_tools_forbidden_in_shared_channels_restrict_to_direct_messages_only'));
+  assert.ok(badCompanyHarness.blockers.includes('background_ambient_agent_runs_must_use_fixed_app_or_service_identity_not_personal_obo'));
+  assert.equal(evaluateLangChainCompanyHarnessAndIdentityMatrixGate().allowed, true);
+
+  // 19. rtk-ai/icm Competitor Architecture Steal (3-arm RRF k=60, 0-LLM store/recall, PreToolUse edge)
+  const badIcm = evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate({
+    llmCallsPerStoreOrRecall: 2,
+    criticalImportanceDecayMultiplier: 1.0,
+    enforcesActivePreToolUseFirewallOverPassiveRecall: false,
+  });
+  assert.equal(badIcm.allowed, false);
+  assert.ok(badIcm.blockers.includes('memory_store_and_recall_must_require_zero_llm_calls_on_hot_path'));
+  assert.ok(badIcm.blockers.includes('critical_importance_memories_and_prevention_rules_must_never_decay_or_prune'));
+  assert.ok(badIcm.blockers.includes('passive_memory_without_active_pretooluse_firewall_cannot_stop_repeat_agent_failures'));
+  assert.equal(evaluateRtkIcmZeroLlmMemoryAndRrfRecallGate().allowed, true);
+
+  // 20. Warp AI-Native Task Parity & DeepMind External Stochasticity (@rohanpaul_ai 2114083454564585720)
+  const badWarp = evaluateWarpAiNativeTaskParityAndExternalStochasticityGate({
+    agentExecutableTaskParityPct: 60,
+    requiresHumanSignoffForStatutoryOrFinancialCommit: false,
+    randomnessGeneratedInHostCodeNotLlmPrompt: false,
+  });
+  assert.equal(badWarp.allowed, false);
+  assert.ok(badWarp.blockers.includes('ai_native_architecture_requires_100_pct_agent_executable_task_parity_across_cli_and_mcp'));
+  assert.ok(badWarp.blockers.includes('statutory_compliance_or_financial_commits_require_explicit_human_signoff_gate'));
+  assert.ok(badWarp.blockers.includes('llm_stochasticity_illusion_generate_randomness_and_thompson_sampling_in_host_code_never_in_prompt'));
+  assert.equal(evaluateWarpAiNativeTaskParityAndExternalStochasticityGate().allowed, true);
+
+  // 21. Lehmann & Vahdati ARC-AGI-3 Self-Improving Harness Study (arXiv:2610.30499)
+  const badArcHarness = evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate({
+    devBaselineScore: 37.64,
+    devRevisionScore: 56.37,
+    testBaselineScore: 43.95,
+    testRevisionScore: 21.99,
+    baselineRunCostUsd: 31.39,
+    revisionRunCostUsd: 7.18,
+    preservesParentSnapshotsAndBreaksTiesToEarlierH0: false,
+  });
+  assert.equal(badArcHarness.allowed, false);
+  assert.equal(badArcHarness.paretoOutcome, 'cheaper_rhae_down');
+  assert.ok(badArcHarness.blockers.includes('harness_adaptation_gap_exceeded_dev_gains_overfit_and_fail_to_transfer_to_held_out_tasks'));
+  assert.ok(badArcHarness.blockers.includes('cheaper_rhae_down_cost_contraction_trap_cost_reduction_degraded_held_out_task_performance'));
+  assert.equal(evaluateArcAgi3SelfImprovingHarnessAndAdaptationGapGate().allowed, true);
+
+  // 22. CNCF in-toto Witness Supply-Chain Attestation & Untrusted Downloads Quarantine
+  const badWitness = evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate({
+    functionaryKeyId: 'testkey.pem',
+    policySignerKeyId: 'testkey.pem',
+    quarantinesUntrustedDownloadsFolderInputs: false,
+    enforcesPreToolUseBlockBeforeCommandRun: false,
+  });
+  assert.equal(badWitness.allowed, false);
+  assert.ok(badWitness.blockers.includes('key_separation_violation_functionary_key_must_never_equal_policy_signer_key'));
+  assert.ok(badWitness.blockers.includes('untrusted_downloads_folder_files_must_be_quarantined_against_prompt_injection'));
+  assert.ok(badWitness.blockers.includes('post_hoc_witness_verify_is_insufficient_require_pretooluse_block_before_command_executes'));
+  assert.equal(evaluateWitnessSupplyChainDsseAndDownloadsQuarantineGate().allowed, true);
+
+  // 23. Stanford/Berkeley TokenGate Learned Prefill Pruning (arXiv:2610.26754)
+  const badTokenGate = evaluateTokenGateLearnedPrefillPruningAndGatedAttention({
+    protectsNonPrunableRequestTokensN: false,
+    usesHeadWiseSoftplusGainAndLogRankTemperature: false,
+    usesDualBudgetFullAndLogUniformTraining: false,
+  });
+  assert.equal(badTokenGate.allowed, false);
+  assert.ok(badTokenGate.blockers.includes('tokengate_requires_protected_request_tokens_N_and_rmsnorm_prunable_scores'));
+  assert.ok(badTokenGate.blockers.includes('tokengate_requires_headwise_softplus_gain_and_log_rank_temperature_recalibration'));
+  assert.equal(evaluateTokenGateLearnedPrefillPruningAndGatedAttention().allowed, true);
+
+  // 24. AgentField SWE-AF Autonomous Software Factory (3-loop escalation, debt propagation, DID/VC chain)
+  const badSweAf = evaluateSweAfHierarchicalFactoryAndDebtPropagationGate({
+    replannerCrashFallbackAction: 'ABORT',
+    propagatesTypedAccumulatedDebtNotesDownstream: false,
+    signsWorkflowVerifiableCredentialChain: false,
+  });
+  assert.equal(badSweAf.allowed, false);
+  assert.ok(badSweAf.blockers.includes('replanner_crash_fallback_must_default_to_continue_not_abort'));
+  assert.ok(badSweAf.blockers.includes('never_silently_drop_relaxed_acceptance_criteria_propagate_typed_debt_notes_downstream'));
+  assert.equal(evaluateSweAfHierarchicalFactoryAndDebtPropagationGate().allowed, true);
+
+  // 25. Entire Trails Agentic Code Review, "Stop Cop" HUD & Dual-Engine Session Search
+  const badEntire = evaluateEntireTrailsStopCopAndSessionSearchGate({
+    capturesRejectedApproachesAndWorkingCodeDisapprovalAsDpo: false,
+    stopCopEvalGreen: false,
+    parallelCleanupReviewerCount: 1,
+    countAuthorApprovals: true,
+    runsOnExistingGitForgeAtZeroHotPathLlmCost: false,
+  });
+  assert.equal(badEntire.allowed, false);
+  assert.ok(badEntire.blockers.includes('trail_must_link_original_intent_multi_repo_diffs_and_rejected_approach_dpo_checkpoints'));
+  assert.ok(badEntire.blockers.includes('stop_cop_eval_or_intent_match_confidence_below_merge_threshold'));
+  assert.ok(badEntire.blockers.includes('never_count_author_or_agent_self_approvals_toward_trail_merge_gate'));
+  assert.ok(badEntire.blockers.includes('avoid_forced_git_forge_migration_and_per_push_llm_token_markup_use_local_pretooluse_stop_cop'));
+  assert.equal(evaluateEntireTrailsStopCopAndSessionSearchGate().allowed, true);
+
+  // 26. AWS Strands Box 4-Leg Trusted Broker, Leaf-Box MCP Isolation & Reach-Floor
+  const badStrandsBox = evaluateStrandsBoxFourLegBrokerAndReachFloorGate({
+    leafMcpAndToolSandboxesHaveNoRouteToBoxSock: false,
+    enforcesPostPermitReachFloorOnBoxTomlAndPolicyDw: false,
+    blocksCloudMetadataByHostAndResolvedIp: false,
+    keysPrerequisitesOnResponseAndBudgetsOnRequest: false,
+  });
+  assert.equal(badStrandsBox.allowed, false);
+  assert.ok(badStrandsBox.blockers.includes('strands_box_requires_trusted_process_outside_sandbox_and_no_box_sock_route_for_leaf_mcp_sandboxes'));
+  assert.ok(badStrandsBox.blockers.includes('enforce_post_permit_reach_floor_on_authority_files_and_require_path_conditions_on_fs_read'));
+  assert.ok(badStrandsBox.blockers.includes('egress_gateway_must_forbid_cloud_metadata_by_both_hostname_and_resolved_dial_ip'));
+  assert.equal(evaluateStrandsBoxFourLegBrokerAndReachFloorGate().allowed, true);
 });

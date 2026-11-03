@@ -3,12 +3,12 @@
 /**
  * tests/post-everywhere-channels.test.js
  *
- * Pins the distribution channel focus set. On 2026-04-20 ThumbGate dropped
- * X/Twitter from the active posting loop and consolidated on six channels:
- * Reddit, LinkedIn, Threads, Bluesky, Instagram, YouTube.
+ * Pins the distribution channel focus set. X/Twitter was re-enabled on
+ * 2026-10-29 with the restored x.js publisher module (OAuth 2.0 user token).
+ * The active set is now: Reddit, LinkedIn, Threads, Bluesky, X, Instagram, YouTube.
  *
  * These tests keep the default list honest so that a drive-by refactor
- * cannot silently re-introduce X or drop one of the six focus channels
+ * cannot silently drop one of the focus channels or re-introduce X
  * without a corresponding test update.
  */
 
@@ -25,11 +25,12 @@ const FOCUS_CHANNELS = Object.freeze([
   'linkedin',
   'threads',
   'bluesky',
+  'x',
   'instagram',
   'youtube',
 ]);
 
-test('DEFAULT_PLATFORMS pins the six focus channels (no X, no drift)', () => {
+test('DEFAULT_PLATFORMS pins the seven focus channels (including X, no drift)', () => {
   assert.deepEqual(
     Array.from(DEFAULT_PLATFORMS),
     Array.from(FOCUS_CHANNELS),
@@ -38,14 +39,11 @@ test('DEFAULT_PLATFORMS pins the six focus channels (no X, no drift)', () => {
   );
 });
 
-test('DEFAULT_PLATFORMS does not contain X/Twitter aliases', () => {
-  for (const banned of ['x', 'twitter', 'X', 'Twitter']) {
-    assert.equal(
-      DEFAULT_PLATFORMS.includes(banned),
-      false,
-      `DEFAULT_PLATFORMS must not include "${banned}" — X was retired 2026-04-20`
-    );
-  }
+test('DEFAULT_PLATFORMS contains X/Twitter aliases', () => {
+  assert.ok(
+    DEFAULT_PLATFORMS.includes('x'),
+    'DEFAULT_PLATFORMS must include "x" — re-enabled 2026-10-29'
+  );
 });
 
 test('DISPATCHERS has a handler for every focus channel', () => {
@@ -58,16 +56,16 @@ test('DISPATCHERS has a handler for every focus channel', () => {
   }
 });
 
-test('DISPATCHERS does not expose an X/Twitter dispatcher', () => {
+test('DISPATCHERS exposes X/Twitter dispatchers (re-enabled 2026-10-29)', () => {
   assert.equal(
-    DISPATCHERS.x,
-    undefined,
-    'DISPATCHERS.x must be absent — X/Twitter was retired from active distribution 2026-04-20'
+    typeof DISPATCHERS.x,
+    'function',
+    'DISPATCHERS.x must exist — X/Twitter re-enabled 2026-10-29 with x.js publisher'
   );
   assert.equal(
-    DISPATCHERS.twitter,
-    undefined,
-    'DISPATCHERS.twitter must be absent'
+    typeof DISPATCHERS.twitter,
+    'function',
+    'DISPATCHERS.twitter must alias DISPATCHERS.x'
   );
 });
 
@@ -99,7 +97,7 @@ test('parsePostFile detects threads/bluesky/instagram/youtube platform headers',
   }
 });
 
-test('parsePostFile does not map X/Twitter headers to a platform', () => {
+test('parsePostFile maps X/Twitter headers to the x platform', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'post-everywhere-parse-x-'));
   try {
     const cases = [
@@ -109,13 +107,15 @@ test('parsePostFile does not map X/Twitter headers to a platform', () => {
     ];
     for (const header of cases) {
       const fp = path.join(tmp, 'x.md');
-      fs.writeFileSync(fp, `${header}\n**Title:** legacy\n**Body:** legacy\n`);
+      fs.writeFileSync(fp, `${header}\n**Title:** X re-enabled\n**Body:**\nX/Twitter is back in the rotation.\n`);
       const parsed = parsePostFile(fp);
       assert.equal(
         parsed.platform,
-        null,
-        `header "${header}" must NOT map to any platform (X/Twitter retired 2026-04-20)`
+        'x',
+        `header "${header}" must map to platform "x" (X/Twitter re-enabled 2026-10-29)`
       );
+      assert.equal(parsed.title, 'X re-enabled');
+      assert.equal(parsed.body, 'X/Twitter is back in the rotation.');
     }
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
@@ -164,6 +164,26 @@ test('Bluesky dispatcher truncates to 300 chars', async () => {
   const long = 'x'.repeat(1000);
   const result = await DISPATCHERS.bluesky({ title: 'B', body: long }, true);
   assert.deepEqual(result, { dryRun: true });
+});
+
+test('X dispatcher dry-run returns { dryRun: true }', async () => {
+  const result = await DISPATCHERS.x(
+    { title: 'X', body: 'A short X post.' },
+    true
+  );
+  assert.deepEqual(result, { dryRun: true });
+});
+
+test('X dispatcher rejects empty input', async () => {
+  await assert.rejects(
+    () => DISPATCHERS.x({ title: null, body: null }, true),
+    /X post requires title or body/
+  );
+});
+
+test('twitter alias dispatches to the same handler as x', () => {
+  assert.equal(DISPATCHERS.twitter, DISPATCHERS.x,
+    'twitter should alias x dispatcher');
 });
 
 // ---------------------------------------------------------------------------

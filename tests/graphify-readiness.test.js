@@ -374,6 +374,35 @@ describe('graphify readiness rail', () => {
       assert.equal(report.version, '0.9.53');
     });
   });
+
+  it('analyzeGraphTopology computes godNodes centrality and EXTRACTED vs INFERRED edge provenance', () => {
+    const { analyzeGraphTopology } = readiness;
+    withTempDir((dir) => {
+      const graphPath = path.join(dir, 'graph.json');
+      fs.writeFileSync(graphPath, JSON.stringify({
+        nodes: [
+          { id: 'server', label: 'src/api/server.js', file: 'src/api/server.js' },
+          { id: 'gates', label: 'scripts/gates-engine.js', file: 'scripts/gates-engine.js' },
+          { id: 'lease', label: 'scripts/session-lease.js', file: 'scripts/session-lease.js' },
+        ],
+        links: [
+          { source: 'server', target: 'gates', provenance: 'EXTRACTED' },
+          { source: 'server', target: 'lease', provenance: 'EXTRACTED' },
+          { source: 'gates', target: 'lease', provenance: 'INFERRED' },
+        ],
+      }));
+      const topo = analyzeGraphTopology(graphPath, { topN: 2 });
+      assert.equal(topo.exists, true);
+      assert.equal(topo.nodeCount, 3);
+      assert.equal(topo.linkCount, 3);
+      assert.equal(topo.godNodes.length, 2);
+      assert.equal(topo.godNodes[0].degree, 2);
+      assert.equal(topo.edgeProvenance.EXTRACTED, 2);
+      assert.equal(topo.edgeProvenance.INFERRED, 1);
+      assert.equal(topo.edgeProvenance.deterministicRatio, 0.6667);
+      assert.equal(topo.tokenCompressionBenchmarkX, 71.5);
+    });
+  });
 });
 
 function STALE_HOURS_MS() {

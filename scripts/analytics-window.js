@@ -73,6 +73,10 @@ function normalizeWindow(value) {
     case '30days':
     case '30-day':
       return '30d';
+    case '90':
+    case '90days':
+    case '90-day':
+      return '90d';
     default:
       return normalized;
   }
@@ -95,7 +99,7 @@ function resolveAnalyticsWindow(options = {}) {
   }
 
   const window = normalizeWindow(options.window);
-  if (!['lifetime', 'today', '7d', '30d'].includes(window)) {
+  if (!['lifetime', 'today', '7d', '30d', '90d'].includes(window)) {
     const err = new Error(`Invalid analytics window: ${window}`);
     err.code = 'invalid_window';
     throw err;
@@ -112,6 +116,8 @@ function resolveAnalyticsWindow(options = {}) {
     startLocalDate = shiftLocalDate(endLocalDate, -6);
   } else if (window === '30d') {
     startLocalDate = shiftLocalDate(endLocalDate, -29);
+  } else if (window === '90d') {
+    startLocalDate = shiftLocalDate(endLocalDate, -89);
   }
 
   return {

@@ -310,8 +310,10 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        toolName: { type: 'string', description: 'The tool being called (e.g., Bash, Edit, Read)' },
+        toolName: { type: 'string', description: 'The tool being called (e.g., Bash, Edit, Read). Defaults to "general" when omitted.' },
         actionContext: { type: 'string', description: 'Description of what the tool call is doing' },
+        query: { type: 'string', description: 'Optional natural-language query alias for actionContext' },
+        context: { type: 'string', description: 'Optional context alias for actionContext' },
         maxResults: { type: 'number', description: 'Max lessons to return (default 5)' },
         scope: MEMORY_SCOPE_SCHEMA,
         requireScope: { type: 'boolean', description: 'Fail closed unless a complete four-field scope is supplied.' },
@@ -331,7 +333,17 @@ const TOOLS = [
         queryRewrite: { type: 'boolean', description: 'Enable bounded deterministic synonym expansion when the original lexical match is weak. Defaults true.' },
         includeRetrievalMeta: { type: 'boolean', description: 'Include path provenance such as lexical/dense pools and query variants.' },
       },
-      required: ['toolName'],
+    },
+  }),
+  destructiveTool({
+    name: 'retract_feedback',
+    description: 'Delete/retract a misread or synthetic feedback entry (and its linked memory row) by id or substring match.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Exact feedback ID (fb_...) or memory ID (mem_...) to retract' },
+        matchText: { type: 'string', description: 'Substring match against context/content when ID is unknown' },
+      },
     },
   }),
   readOnlyTool({

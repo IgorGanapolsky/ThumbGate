@@ -1,0 +1,291 @@
+{
+  "$comment": "Independent scoring criteria for the Isolated Verifier step. The primary agent does NOT read this file during task execution — only the Verifier enforces these thresholds. This prevents the 'handoff tax' and 'collective delusion' failure modes identified in the MAST taxonomy (v2.0, 2026-05) and Anthropic's single-agent research (Oct 2026). Criteria are intentionally stricter than the CI merge-gate so the Verifier catches regressions the CI matrix misses.",
+  "version": 1,
+  "name": "Isolated Verifier Criteria",
+  "levels": {
+    "mechanical": {
+      "description": "Level 1 — deterministic, low-level correctness gates. These are the 'did it compile and run' checks.",
+      "minPassRatio": 1.0,
+      "checks": [
+        {
+          "id": "unit_tests",
+          "command": ["npm", "test"],
+          "timeoutMs": 600000,
+          "mustPass": true,
+          "writes": true,
+          "modelHint": "local",
+          "condition": "changed-files.match('src/|scripts/|tests/|hooks/|plugins/|adapters/|config/')"
+        },
+        {
+          "id": "coverage_threshold",
+          "command": ["npm", "run", "test:coverage"],
+          "timeoutMs": 300000,
+          "mustPass": true,
+          "writes": true,
+          "modelHint": "local"
+        },
+        {
+          "id": "perf_budgets",
+          "command": ["npm", "run", "test:perf-budget"],
+          "timeoutMs": 120000,
+          "mustPass": true,
+          "writes": true,
+          "modelHint": "local",
+          "condition": "changed-files.match('scripts/gates-engine.js|scripts/hybrid-feedback-context.js|scripts/feedback-loop.js|src/api/server.js|src/latency-budget.js|hooks/hooks.json')"
+        },
+        {
+          "id": "self_heal",
+          "command": ["npm", "run", "self-heal:check"],
+          "timeoutMs": 600000,
+          "mustPass": true,
+          "writes": true,
+          "modelHint": "local"
+        },
+        {
+          "id": "proof_pack_integrity",
+          "command": ["node", "scripts/refresh-proof-pack.js", "--check"],
+          "timeoutMs": 60000,
+          "mustPass": true,
+          "writes": false,
+          "modelHint": "local"
+        }
+      ],
+      "openWeightsModels": {
+        "description": "Steal from AA Personality Bench rubric (FSX5FJS9PQ): test open-weights models off the shelf using trait indices as routing rubric, not leaderboard.",
+        "models": {
+          "deepseek-7b-chat": {
+            "cost": "$0 (local)",
+            "personality": {
+              "expressiveness": 4, "organization": 9, "informativeness": 8,
+              "transparency": 7, "warmth": 3, "conviction": 8,
+              "imagination": 5, "slop": 2
+            },
+            "bestFor": ["code_gen", "reasoning", "security_review", "business_strategy", "debugging", "arch_review", "documentation", "test_generation", "data_analysis"],
+            "avoidFor": ["creative_writing", "brainstorming"]
+          },
+          "kimi-k3-16b": {
+            "cost": "$0 (local)",
+            "personality": {
+              "expressiveness": 7, "organization": 8, "informativeness": 9,
+              "transparency": 6, "warmth": 4, "conviction": 7,
+              "imagination": 8, "slop": 3
+            },
+            "bestFor": ["creative_writing", "brainstorming", "data_analysis"],
+            "avoidFor": ["security_pushback"]
+          },
+          "glm-4-9b-chat": {
+            "cost": "$0 (local)",
+            "personality": {
+              "expressiveness": 9, "organization": 7, "informativeness": 7,
+              "transparency": 8, "warmth": 6, "conviction": 5,
+              "imagination": 8, "slop": 4
+            },
+            "bestFor": ["creative_writing", "marketing_copy", "documentation"],
+            "avoidFor": ["security_review", "business_pushback"]
+          },
+          "qwen3-4b": {
+            "cost": "$0 (local)",
+            "personality": {
+              "expressiveness": 3, "organization": 8, "informativeness": 8,
+              "transparency": 9, "warmth": 5, "conviction": 8,
+              "imagination": 4, "slop": 1
+            },
+            "bestFor": ["security_review", "legal_compliance", "email_drafting"],
+            "avoidFor": ["creative_writing", "concise_output"]
+          },
+          "llama-3.3-70b": {
+            "cost": "$0.24/1M tokens",
+            "personality": {
+              "expressiveness": 6, "organization": 9, "informativeness": 8,
+              "transparency": 7, "warmth": 5, "conviction": 7,
+              "imagination": 6, "slop": 3
+            },
+            "bestFor": ["code_gen", "arch_review", "documentation", "data_analysis"],
+            "avoidFor": ["short_answers"]
+          }
+        },
+        "routing": {
+          "code_gen": "deepseek-7b-chat",
+          "reasoning": "deepseek-7b-chat",
+          "security_review": "qwen3-4b",
+          "creative_writing": "glm-4-9b-chat",
+          "business_strategy": "deepseek-7b-chat",
+          "legal_compliance": "qwen3-4b",
+          "debugging": "deepseek-7b-chat",
+          "arch_review": "deepseek-7b-chat",
+          "documentation": "deepseek-7b-chat",
+          "test_generation": "deepseek-7b-chat",
+          "email_drafting": "qwen3-4b",
+          "data_analysis": "deepseek-7b-chat"
+        },
+        "slopIndexFilter": {
+          "threshold": 3,
+          "modelsToAvoid": ["glm-4-9b-chat", "llama-3.3-70b"],
+          "for_tasks": ["concise_output", "security_review", "legal_compliance"]
+        }
+      }
+    },
+    "semantic": {
+      "description": "Level 2 — high-level objective alignment. These check 'does the output actually achieve the stated goal?' rather than just 'did the tests run'. This is the anti-MAST category-3 guard: independent verification against the original objective.",
+      "minPassRatio": 0.75,
+      "checks": [
+        {
+          "id": "goal_alignment",
+          "kind": "semantic",
+          "threshold": 0.8,
+          "mustPass": true,
+          "weight": 0.3
+        },
+        {
+          "id": "edge_case_coverage",
+          "kind": "semantic",
+          "threshold": 0.7,
+          "mustPass": true,
+          "weight": 0.25
+        },
+        {
+          "id": "regression_check",
+          "kind": "semantic",
+          "threshold": 1.0,
+          "mustPass": true,
+          "weight": 0.25
+        },
+        {
+          "id": "design_compliance",
+          "kind": "semantic",
+          "threshold": 0.8,
+          "mustPass": true,
+          "weight": 0.2
+        }
+      ]
+    }
+  },
+  "reviewTiers": {
+    "description": "Steal from GitHub Copilot code review tiers (Universe 2026): Lite, Balanced, Max. Each tier is a superset of the previous — Lite for fast everyday diffs, Balanced for normal development, Max for high-stakes changes requiring deep review. Mirrors GitHub's 'Lite and Balanced keep everyday reviews fast; Max provides a deeper look when a change needs it.'",
+    "default": "balanced",
+    "tiers": {
+      "lite": {
+        "description": "Fast everyday review — mechanical correctness gates only. Skip semantic checks to keep reviews fast.",
+        "runs": ["mechanical"],
+        "skip": ["semantic"],
+        "modelHintOverride": "local",
+        "maxWallTimeMs": 120000,
+        "useIf": "changes are small (< 100 LOC), low-risk, or the agent is in fast/single-file mode."
+      },
+      "balanced": {
+        "description": "Everyday development balance — mechanical + semantic checks with standard thresholds.",
+        "runs": ["mechanical", "semantic"],
+        "skip": [],
+        "modelHintOverride": null,
+        "maxWallTimeMs": 600000,
+        "useIf": "default for PRs with medium risk or multi-file changes."
+      },
+      "max": {
+        "description": "Deep review for high-stakes changes — mechanical + semantic + security + regression sweep at strictest thresholds.",
+        "runs": ["mechanical", "semantic", "security_audit", "regression_sweep"],
+        "skip": [],
+        "modelHintOverride": "cloud",
+        "maxWallTimeMs": 1800000,
+        "useIf": "changes touch security-sensitive paths, release-sensitive files, or have high regression risk.",
+        "extraChecks": {
+          "security_audit": {
+            "command": ["npm", "run", "security:audit"],
+            "timeoutMs": 300000,
+            "mustPass": true,
+            "writes": false,
+            "modelHint": "cloud"
+          },
+          "regression_sweep": {
+            "command": ["node", "scripts/verify-run.js"],
+            "timeoutMs": 600000,
+            "mustPass": true,
+            "writes": false,
+            "modelHint": "cloud"
+          }
+        }
+      }
+    }
+  },
+  "gradingRubric": {
+    "description": "Canonical 100-point rubric for multi-agent swarm grading. Single source of truth — no dual rubrics. Deleted herdr-swarm variant (40/25/20/15) permanently on 2026-10-29.",
+    "totalPoints": 100,
+    "criteria": {
+      "correctness_and_tests": { "weight": 0.40, "maxPoints": 40 },
+      "empirical_proof": { "weight": 0.30, "maxPoints": 30 },
+      "token_efficiency": { "weight": 0.15, "maxPoints": 15 },
+      "safety_and_isolation": { "weight": 0.15, "maxPoints": 15 }
+    },
+    "passingScore": 75,
+    "gradeMap": { "A+": "95-100", "A": "90-94", "B": "80-89", "C": "70-79", "F": "0-69" },
+    "syncAllowed": false,
+    "syncReason": "Grading does not mint a passing candidate — --sync permanently refused."
+  },
+  "semanticRubric": {
+    "goal_alignment": {
+      "1.0": "Changed files directly implement the stated goal; no unrelated changes.",
+      "0.8": "Changed files implement the core goal; minor tangential additions that don't distract.",
+      "0.6": "Changed files partially address the goal; significant portions missing.",
+      "0.4": "Changed files weakly relate to the goal; major gaps in implementation.",
+      "0.0": "Changed files do not address the stated goal at all."
+    },
+    "edge_case_coverage": {
+      "1.0": "Tests cover normal, boundary, and error-path cases for the new logic.",
+      "0.8": "Tests cover normal and boundary cases; error paths partially covered.",
+      "0.6": "Tests cover normal cases only; boundary and error paths missing.",
+      "0.4": "Tests cover some normal cases but miss critical paths.",
+      "0.0": "No tests exist for the new logic."
+    },
+    "regression_check": {
+      "1.0": "No existing tests regressed; all related test suites pass cleanly.",
+      "0.8": "No test failures but coverage dips slightly in touched areas.",
+      "0.6": "1-2 minor test failures in unrelated areas (pre-existing).",
+      "0.0": "New test failures or regressions in related areas."
+    },
+    "design_compliance": {
+      "1.0": "Implementation matches existing codebase patterns, conventions, and documented architecture.",
+      "0.8": "Implementation mostly matches patterns; one minor convention deviation.",
+      "0.6": "Implementation has notable pattern deviations but is internally consistent.",
+      "0.4": "Implementation diverges significantly from documented patterns.",
+      "0.0": "Implementation violates core architectural constraints or introduces anti-patterns."
+    }
+  },
+  "isolation": {
+    "description": "The Verifier runs in a separate process with its own temp directory for proof artifacts — never sharing memory or context with the primary agent that wrote the code. This enforces the 'separate verifier that only runs tests and reports results' pattern from Anthropic's single-agent research.",
+    "tempDirPrefix": "thumbgate-verifier-",
+    "isolateProofDir": true,
+    "isolateEnv": true
+  },
+  "budget": {
+    "description": "mabl-style Test Impact Analysis budget: cap total commands and wall-clock time across all mechanical checks. Skips remaining checks if exceeded (change-aware degradation).",
+    "maxCommands": 10,
+    "maxWallTimeMs": 600000
+  },
+  "qualityScore": {
+    "description": "Composite gate health score — mabl-style 'quality score' that surfaces verifier reliability before failures compound. Each must-pass check contributes equally; skips (via conditions or budget caps) reduce the score.",
+    "fields": ["mechanical_passed", "semantic_passed", "skipped_checks", "total_checks", "overall_verdict"]
+  },
+  "modelRouting": {
+    "description": "Ramp Laminar steal: harness-level model routing trims costs by assigning checks to local/fast models vs. cloud/capable models. modelHint on each check indicates the optimal tier. local = run on-device (no cloud cost), cloud = optional cloud offload for heavy semantic checks.",
+    "hints": {
+      "local": "Run on device using local resources (Laguna XS 2.1 / llama.cpp). No cloud cost.",
+      "cloud": "Route to hosted tier (Claude Opus / GPT-6) for heavy reasoning. Higher cost, higher accuracy."
+    },
+    "default": "local",
+    "personalityBench": {
+      "description": "AA Personality Bench (8 indices): Expressiveness, Organization, Informativeness, Transparency, Warmth, Conviction, Imagination, Slop. Route semantic checks to models matched by personality trait, not just raw intelligence. Analytical pushback checks need high Conviction + low Warmth; creative brainstorming needs high Imagination.",
+      "semanticCheckRouting": {
+        "goal_alignment": { "need": ["transparency", "conviction"], "avoid": ["warmth", "slop"] },
+        "edge_case_coverage": { "need": ["organization", "informativeness"], "avoid": ["slop"] },
+        "regression_check": { "need": ["conviction", "organization"], "avoid": ["warmth", "slop"] },
+        "design_compliance": { "need": ["transparency", "conviction"], "avoid": ["warmth", "slop"] }
+      }
+    }
+  },
+  "asyncExecution": {
+    "description": "Ramp Laminar + DeepInfer steal: 'Laminar lets agents keep working without waiting for every step to finish.' Independent mechanical checks with no inter-dependencies run in parallel when --parallel flag is set, reducing wall-clock latency. Budget caps (maxCommands, maxWallTimeMs) still apply globally. DeepInfer confidence-scheduled verification: when mechanical quality >= confidenceThreshold, skip non-critical semantic checks.",
+    "enabled": true,
+    "maxConcurrency": 5,
+    "confidenceThreshold": 0.9,
+    "independentChecks": ["unit_tests", "coverage_threshold", "perf_budgets", "self_heal", "proof_pack_integrity"]
+  }
+}

@@ -1,0 +1,45 @@
+name: Rollback Railway Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: 'Last known-good Git tag or commit SHA to roll back to (e.g. v1.39.0)'
+        required: true
+        default: 'v1.39.0'
+
+concurrency:
+  group: deploy-railway
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.target_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 20
+      - name: Verify rollback plan and target ref
+        run: |
+          node scripts/release-ops-control-plane.js --rollback --target="${{ inputs.target_ref }}"
+      - name: Install Railway CLI and redeploy target_ref
+        if: ${{ secrets.RAILWAY_API_TOKEN != '' || secrets.RAILWAY_TOKEN != '' }}
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
+          RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
+        run: |
+          npm install -g @railway/cli
+          railway up --ci --detach --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT_ID" ${RAILWAY_SERVICE:+--service "$RAILWAY_SERVICE"}
+      - name: Verify post-rollback health and checkout routes
+        run: |
+          curl -fsS https://thumbgate.ai/health
+          curl -sI https://thumbgate.ai/go/pro-direct | head -n 5
+          curl -sI https://thumbgate.ai/go/bundle-49 | head -n 5
+          curl -sI https://thumbgate.ai/go/playbook-999 | head -n 5

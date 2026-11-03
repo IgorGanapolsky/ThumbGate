@@ -77,6 +77,11 @@ The first-dollar motion therefore has one job: move a cold user from curiosity t
   - a named pilot agreement
 - If a lead wants "more info" but cannot name a workflow, push them back to the free path, guides, or Pro page instead of dragging the sales cycle.
 
+### Monthly
+
+- Operate the single channel. Report acquisition cost and conversion. **Stop what is not working.**
+- **Recover abandoned checkouts.** When a visitor starts the `$100` Pro checkout and bails, the recovery agent (`thumbgate recover-checkout`) runs a deterministic economics gate first — freebutter's walk-away rule: refuse to fire when recovery CAC ≥ contribution per sale. Only when the gate is `VERIFIED` does it queue a one-turn human-approved recovery message (no card needed until the workflow ships). Every attempt emits a signed receipt into `~/.thumbgate/checkout-recovery-ledger.jsonl`, so spend per recovered sale is a record, not an estimate.
+
 ## Required proof pack
 
 - [WORKFLOW_HARDENING_SPRINT.md](WORKFLOW_HARDENING_SPRINT.md)

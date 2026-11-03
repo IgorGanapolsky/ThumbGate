@@ -469,3 +469,31 @@ test('THUMBGATE_SESSION_PID is recorded as the durable lease holder', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('claim assigns a monotonic fencingToken and check rejects stale fencing tokens', () => {
+  const dir = makeSandbox();
+  try {
+    const first = lease.claim(dir);
+    assert.strictEqual(first.ok, true);
+    assert.strictEqual(first.lease.fencingToken, 1);
+
+    // Same-holder check with matching fencingToken passes
+    const validCheck = lease.check(dir, { expectedFencingToken: 1 });
+    assert.strictEqual(validCheck.ok, true);
+    assert.strictEqual(validCheck.held, true);
+
+    // Release and claim again increments fencingToken monotonically
+    lease.release(dir);
+    const second = lease.claim(dir);
+    assert.strictEqual(second.ok, true);
+    assert.strictEqual(second.lease.fencingToken, 2);
+
+    // Stale fencing token (1 < 2) is rejected fail-closed
+    const staleCheck = lease.check(dir, { expectedFencingToken: 1 });
+    assert.strictEqual(staleCheck.ok, false);
+    assert.strictEqual(staleCheck.code, 'STALE_FENCING_TOKEN');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+

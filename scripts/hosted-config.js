@@ -115,10 +115,14 @@ function buildHostedSuccessUrl(appOrigin, traceId) {
   return `${joinPublicUrl(appOrigin, '/success')}?session_id={CHECKOUT_SESSION_ID}${traceQuery}`;
 }
 
-function buildHostedCancelUrl(appOrigin, traceId) {
+function buildHostedCancelUrl(appOrigin, traceId, extraParams = {}) {
   const encodedTraceId = encodeURIComponent(String(traceId || ''));
-  const traceQuery = traceId ? `?trace_id=${encodedTraceId}` : '';
-  return `${joinPublicUrl(appOrigin, '/cancel')}${traceQuery}`;
+  const params = new URLSearchParams();
+  if (traceId) params.set('trace_id', encodedTraceId);
+  if (extraParams.source) params.set('cancel_source', String(extraParams.source));
+  const query = params.toString();
+  const qs = query ? `?${query}` : '';
+  return `${joinPublicUrl(appOrigin, '/cancel')}${qs}`;
 }
 
 function resolveHostedBillingConfig({ requestOrigin } = {}, env = process.env) {

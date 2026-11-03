@@ -306,8 +306,39 @@ function formatLessonsAsReminder(lessons, extras) {
   if (saferMove) {
     lines.push(`SAFER NEXT MOVE: ${saferMove}`);
   }
+  if (extras?.confusionWarning) {
+    lines.push('', extras.confusionWarning);
+  }
   lines.push('</system-reminder>');
   return lines.join('\n');
+}
+
+/**
+ * Collect recent session actions from the ThumbGate runtime history.
+ * This is the "declarative schema" equivalent of a session replay — stored
+ * as structured JSON so confusion detection can run without parsing
+ * historical migration-style action logs.
+ */
+function getSessionActions() {
+  try {
+    const dir = path.join(os.homedir(), '.thumbgate', 'session-history');
+    if (!fs.existsSync(dir)) return [];
+    const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
+    const recent = files
+      .map((f) => {
+        try {
+          return JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+        } catch {
+          return null;
+        }
+      })
+      .filter((f) => f !== null)
+      .slice(-20); // last 20 actions
+    return recent;
+  } catch (err) {
+    failOpen(err);
+    return [];
+  }
 }
 
 function summarizeActionRiskContext(toolName, toolInput, lessons) {
@@ -567,6 +598,35 @@ function main() {
   const actionContext = extractActionContext(toolName, effectiveInput);
   const lessons = retrieveLessons(toolName, actionContext);
 
+  // Confusion detection (stolen from Supabase agent guardrail skills pattern).
+  // Detects ambiguous context, conflicting data, and unclear tool boundaries
+  // BEFORE the action executes. This is the "OLTP" gate — must be <5ms.
+  // Runs in parallel with lesson retrieval for maximum latency overlap.
+  try {
+    const {
+      runConfusionPreCheck,
+      confusionMessage,
+    } = require('./confusion-detector');
+    const confusionResult = runConfusionPreCheck({
+      toolName,
+      toolInput: effectiveInput,
+      sessionActions: getSessionActions(),
+    });
+    if (confusionResult.decision === 'block') {
+      return block(confusionMessage(confusionResult));
+    }
+    // Inject warning as additional context if confusion was detected
+    if (confusionResult.signals.length > 0) {
+      return allowWithContext(formatLessonsAsReminder(lessons, {
+        toolName,
+        toolInput: effectiveInput,
+        confusionWarning: confusionMessage(confusionResult),
+      }));
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   try {
     const { evaluatePreToolUse } = require('./token-shunt-honesty');
     const shunt = evaluatePreToolUse({
@@ -711,6 +771,7 @@ module.exports = {
   findDominantTag,
   resolveGitBinary,
   isEntryPoint,
+  getSessionActions,
   main,
   VERIFICATION_MARKER,
 };

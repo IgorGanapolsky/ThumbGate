@@ -18,6 +18,7 @@ const {
   summarizeChecks,
   waitForMergeCommit,
   inspectRepositoryRulesets,
+  evaluateStackedPrGovernance,
 } = require('../scripts/pr-manager');
 
 function createRunner(results) {
@@ -800,4 +801,41 @@ test('inspectRepositoryRulesets handles API failure gracefully', () => {
   assert.equal(result.ok, false);
   assert.equal(result.count, 0);
   assert.equal(result.activeRulesets.length, 0);
+});
+
+test('evaluateStackedPrGovernance enforces GitHub native stacked PR rules (CODEOWNERS mid-stack, single-repo, async merge)', () => {
+  const blockedMidStack = evaluateStackedPrGovernance({
+    baseRefName: 'feat/layer-1-schema',
+    changedFiles: ['.github/CODEOWNERS', 'src/api/server.js'],
+    headRepoFullName: 'fork-user/ThumbGate',
+    baseRepoFullName: 'IgorGanapolsky/ThumbGate',
+    prBody: 'Do not merge until PR #4650 is merged',
+    mergeApiMode: 'legacy_sync_10s',
+    codeownersGroupsTouched: 3,
+    hasIntermediateBranchCiTriggerHack: true,
+    preservesSignedCommitsOnRebase: false,
+  });
+  assert.equal(blockedMidStack.allowed, false);
+  assert.equal(blockedMidStack.isMidStackPr, true);
+  assert.equal(blockedMidStack.touchesCodeowners, true);
+  assert.equal(blockedMidStack.convertToNativeGhStackRecommended, true);
+  assert.ok(blockedMidStack.blockers.includes('mid_stack_codeowners_edit_ignored_by_github_merge_to_main_first'));
+  assert.ok(blockedMidStack.blockers.includes('cross_fork_stacking_unsupported_keep_stack_within_single_repo'));
+  assert.ok(blockedMidStack.blockers.includes('legacy_sync_merge_endpoint_times_out_at_10s_on_stacks_use_async_merge_api'));
+
+  const cleanStackSlice = evaluateStackedPrGovernance({
+    baseRefName: 'feat/layer-1-schema',
+    changedFiles: ['scripts/pr-manager.js', 'tests/pr-manager.test.js'],
+    headRepoFullName: 'IgorGanapolsky/ThumbGate',
+    baseRepoFullName: 'IgorGanapolsky/ThumbGate',
+    prBody: 'Slice 2 of 3 in native gh stack',
+    mergeApiMode: 'async_queue',
+    codeownersGroupsTouched: 1,
+    hasIntermediateBranchCiTriggerHack: false,
+    preservesSignedCommitsOnRebase: true,
+  });
+  assert.equal(cleanStackSlice.allowed, true);
+  assert.equal(cleanStackSlice.isMidStackPr, true);
+  assert.equal(cleanStackSlice.touchesCodeowners, false);
+  assert.equal(cleanStackSlice.asyncMergeEndpoint, true);
 });
