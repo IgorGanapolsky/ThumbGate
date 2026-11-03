@@ -19,6 +19,21 @@ function run(args) {
   return spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8' });
 }
 
+function mentionsBuyStripeHost(text) {
+  return String(text).split(/\s+/).some((token) => {
+    const trimmed = token.replace(/^[^A-Za-z0-9]+/, '').replace(/[),.;]+$/g, '');
+    if (!trimmed) {
+      return false;
+    }
+    const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    try {
+      return new URL(candidate).hostname === 'buy.stripe.com';
+    } catch {
+      return false;
+    }
+  });
+}
+
 function receipt(action, enteredBy, authorizedBy) {
   return {
     action,
@@ -140,11 +155,19 @@ test('commands refuse their trial, refuse a model authorizer, and sell our check
   assert.match(sold.stdout, /ThumbGate Pro \$19 a month https:\/\/thumbgate\.ai\/go\/pro-direct/);
   assert.match(sold.stdout, /ThumbGate Pro \$149 a year https:\/\/thumbgate\.ai\/go\/pro-direct/);
   assert.match(sold.stdout, /ThumbGate Setup Sprint \$499 once https:\/\/thumbgate\.ai\/diagnostic/);
-  assert.equal(sold.stdout.includes('buy.stripe.com'), false);
+  assert.equal(mentionsBuyStripeHost(sold.stdout), false);
   assert.equal(sold.stdout.includes('oakandsparrow'), false);
 
   const usage = run([]);
   assert.equal(usage.status, 2);
+});
+
+test('a stripe buy host matches only that hostname', () => {
+  assert.equal(mentionsBuyStripeHost('pay at https://buy.stripe.com/pay'), true);
+  assert.equal(mentionsBuyStripeHost('pay at buy.stripe.com'), true);
+  assert.equal(mentionsBuyStripeHost('https://notbuy.stripe.com/pay'), false);
+  assert.equal(mentionsBuyStripeHost('https://buy.stripe.com.evil.example/pay'), false);
+  assert.equal(mentionsBuyStripeHost('https://thumbgate.ai/go/pro-direct'), false);
 });
 
 test('the script quotes none of their speed figures and does not call them', () => {
