@@ -2132,7 +2132,8 @@ test('cancel page serves retry message and records first-party telemetry', async
   assert.match(body, /Checkout cancelled\./);
   assert.match(body, /noindex,nofollow/);
   assert.match(body, /data-reason="too_expensive"/);
-  assert.match(body, /sendTelemetry\('checkout_cancelled'\)/);
+  assert.doesNotMatch(body, /sendTelemetry\('checkout_cancelled'\);/);
+  assert.match(body, /sendTelemetry\('checkout_cancelled', \{\s*reasonCode: selectedReason\s*\}\)/);
   assert.match(body, /sendTelemetry\('reason_not_buying'/);
   assert.match(body, /Send workflow first/);
   assert.match(body, /id="send-workflow-first"/);

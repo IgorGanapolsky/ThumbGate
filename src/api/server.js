@@ -5149,12 +5149,17 @@ function renderCheckoutCancelledPage(runtimeConfig) {
           workflowIntakeLink.href = intakeUrl.toString();
         }
 
-        sendTelemetry('checkout_cancelled');
+        let cancellationRecorded = false;
 
         document.querySelectorAll('[data-reason]').forEach(function (button) {
           button.addEventListener('click', function () {
             selectedReason = button.getAttribute('data-reason');
             statusEl.textContent = 'Selected reason: ' + selectedReason.replaceAll('_', ' ') + '.';
+            if (cancellationRecorded) return;
+            cancellationRecorded = true;
+            sendTelemetry('checkout_cancelled', {
+              reasonCode: selectedReason
+            });
           });
         });
 
