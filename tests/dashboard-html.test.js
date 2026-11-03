@@ -590,6 +590,16 @@ test('Deslopify 9 Habits, Herjavec Closer, YouSpot Pro, HarnessSQL, Zou Group Sh
   assert.equal(dataBot.ok, true);
   assert.equal(dataBot.botHealthAudit.archetypeClassification, 'BROAD_AND_STICKY');
   assert.equal(dataBot.botHealthAudit.meets60PctEmbeddedRule, true);
+
+  // 11. Gartner 90/10 Open-Weight Agentic Harness Router (20x guarded vs ~5.7x unguarded savings + 90% M&A perimeter retention)
+  const gartnerGuarded = herjavec.evaluateGartnerOpenModelHarnessRouter({ thumbgateGuardrailsEnabled: true });
+  assert.equal(gartnerGuarded.ok, true);
+  assert.equal(gartnerGuarded.workflowRoutingSummary.routineSharePct, 90);
+  assert.equal(gartnerGuarded.workflowRoutingSummary.routineStepCostReductionMultiple, 20);
+  assert.equal(gartnerGuarded.maValuationPerimeterMoat.workflowHistoryRetainedInPerimeterPct, 90);
+
+  const gartnerUnguarded = herjavec.evaluateGartnerOpenModelHarnessRouter({ thumbgateGuardrailsEnabled: false });
+  assert.equal(gartnerUnguarded.workflowRoutingSummary.routineStepCostReductionMultiple, 5.71);
 });
 
 

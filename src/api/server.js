@@ -10725,6 +10725,14 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
+    // Gartner 90/10 Open-Weight Agentic Harness Router & M&A Perimeter Sovereignty (/v1/harness/gartner-90-10-router)
+    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/harness/gartner-90-10-router') {
+      const herjavec = require('../herjavec-closer-engine');
+      const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+      sendJson(res, 200, herjavec.evaluateGartnerOpenModelHarnessRouter(body || {}), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/.well-known/agent-skills/index.json' || pathname === '/.well-known/skills/index.json')) {
       const appOrigin = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai';
       sendJson(res, 200, buildSkillsShWellKnownDiscoveryIndex({ appOrigin }), {}, { headOnly: isHeadRequest });

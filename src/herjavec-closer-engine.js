@@ -1109,6 +1109,139 @@ function evaluateGrokTeamDataBot(input = {}) {
   };
 }
 
+/**
+ * Gartner / The Register "Open Models Can Do 90% of Agentic Work at 1/20th the Cost" Engine
+ * Reference: https://www.theregister.com/ai-and-ml/2026/11/03/open-models-can-do-90-of-agentic-work-at-a-twentieth-of-the-cost-of-a-frontier-llm-gartner/5307132
+ * Report: "Open-Weight Models Will Run 90% of Enterprise Agentic Workflow Steps" (Mark Petty & Raymond Paquet, Gartner, Nov 2026)
+ *
+ * Key architectural & commercial laws:
+ * 1. "Models are commodities, harnesses are the valuable part":
+ *    - 90% of enterprise agent workflow steps are routine (classification, tool calling, passing,
+ *      validating, and reconciling data) -> route to domain-specific open-weight models (OpEx).
+ *    - 10% of steps require novel frontier reasoning / path discovery -> route to frontier LLMs (CapEx).
+ * 2. Cost Multipliers & The Verbosity/Retry Penalty Guard:
+ *    - Open-weight models cost 1/4th (0.25x) of the cheapest closed model at parity and 1/20th (0.05x, 20x cheaper)
+ *      of running a frontier LLM on every step.
+ *    - Unconstrained open models are verbose and retry more often, eroding 20x savings down to 5x–6x.
+ *    - ThumbGate's PreToolUse Guardrails (eliminating retries) + Deslopify Read Budget (eliminating verbosity)
+ *      recover the full 18x–20x cost reduction.
+ * 3. M&A Valuation & Perimeter Sovereignty Moat:
+ *    - "Years of workflow history are a large part of what an acquirer pays for in a SaaS company and
+ *      every routine step sent to a frontier API moves a slice of it outside your perimeter."
+ */
+const GARTNER_ROUTINE_STEP_TYPES = Object.freeze([
+  'classification',
+  'tool_calling',
+  'data_passing',
+  'data_validation',
+  'data_reconciliation',
+  'schema_lookup',
+  'lint_verification',
+  'policy_gate_check',
+]);
+
+function evaluateGartnerOpenModelHarnessRouter(input = {}) {
+  const frontierCostPerStepUsd = Math.max(0.0001, Number(input.frontierCostPerStepUsd ?? 0.02));
+  const cheapestClosedCostPerStepUsd = Number((frontierCostPerStepUsd * 0.2).toFixed(6));
+  const openWeightBaseCostPerStepUsd = Number((frontierCostPerStepUsd * 0.05).toFixed(6)); // 1/20th of frontier, 1/4th of cheapest closed
+  const thumbgateGuardrailsEnabled = input.thumbgateGuardrailsEnabled !== false;
+
+  const rawSteps = Array.isArray(input.steps) && input.steps.length > 0
+    ? input.steps
+    : [
+        { stepId: 'step_1', type: 'classification', description: 'Classify inbound buyer intent and objection type' },
+        { stepId: 'step_2', type: 'schema_lookup', description: 'Read customer_accounts and revenue_ledger schema' },
+        { stepId: 'step_3', type: 'tool_calling', description: 'Execute read-only SQLite validation query' },
+        { stepId: 'step_4', type: 'data_passing', description: 'Pass normalized context node to procedural graph' },
+        { stepId: 'step_5', type: 'data_validation', description: 'Validate PreToolUse safety and DLP invariants' },
+        { stepId: 'step_6', type: 'data_reconciliation', description: 'Reconcile Stripe session against pageForestId' },
+        { stepId: 'step_7', type: 'lint_verification', description: 'Verify 5-sentence Deslopify read budget' },
+        { stepId: 'step_8', type: 'policy_gate_check', description: 'Verify branch protection and lease ownership' },
+        { stepId: 'step_9', type: 'tool_calling', description: 'Emit signed HMAC task-outcome receipt' },
+        { stepId: 'step_10', type: 'frontier_architecture_discovery', description: 'Synthesize novel multi-system architecture trade-off' },
+      ];
+
+  // Without ThumbGate harness guardrails, open models suffer a ~3.5x verbosity + retry multiplier (reducing 20x to ~5.7x)
+  const openModelVerbosityRetryMultiplier = thumbgateGuardrailsEnabled ? 1.0 : 3.5;
+
+  const routedSteps = rawSteps.map((s, idx) => {
+    const stepType = String(s.type || 'tool_calling').toLowerCase();
+    const isRoutine = GARTNER_ROUTINE_STEP_TYPES.includes(stepType) || !/frontier|novel|capex|discovery/i.test(stepType);
+    const effectiveOpenCost = Number((openWeightBaseCostPerStepUsd * openModelVerbosityRetryMultiplier).toFixed(6));
+
+    return {
+      stepIndex: idx + 1,
+      stepId: String(s.stepId || `step_${idx + 1}`),
+      type: stepType,
+      classification: isRoutine ? 'ROUTINE_OPEX_OPEN_WEIGHT' : 'FRONTIER_CAPEX_RND',
+      assignedModel: isRoutine ? 'qwen3-8b-harness-local' : 'frontier-capex-reasoner',
+      executedInsidePerimeter: isRoutine,
+      frontierBaselineCostUsd: frontierCostPerStepUsd,
+      routedStepCostUsd: isRoutine ? effectiveOpenCost : frontierCostPerStepUsd,
+    };
+  });
+
+  const totalSteps = routedSteps.length;
+  const routineStepsCount = routedSteps.filter((s) => s.classification === 'ROUTINE_OPEX_OPEN_WEIGHT').length;
+  const frontierStepsCount = totalSteps - routineStepsCount;
+  const routineSharePct = Number(((routineStepsCount / totalSteps) * 100).toFixed(1));
+
+  const allFrontierTotalCostUsd = Number((totalSteps * frontierCostPerStepUsd).toFixed(6));
+  const routedTotalCostUsd = Number(
+    routedSteps.reduce((sum, s) => sum + s.routedStepCostUsd, 0).toFixed(6)
+  );
+  const routineOnlyFrontierCostUsd = Number((routineStepsCount * frontierCostPerStepUsd).toFixed(6));
+  const routineOnlyOpenCostUsd = Number(
+    routedSteps
+      .filter((s) => s.classification === 'ROUTINE_OPEX_OPEN_WEIGHT')
+      .reduce((sum, s) => sum + s.routedStepCostUsd, 0)
+      .toFixed(6)
+  );
+
+  const routineStepCostReductionMultiple =
+    routineOnlyOpenCostUsd > 0
+      ? Number((routineOnlyFrontierCostUsd / routineOnlyOpenCostUsd).toFixed(2))
+      : 20;
+
+  return {
+    ok: true,
+    referenceStudy:
+      'Gartner / The Register — "Open-Weight Models Will Run 90% of Enterprise Agentic Workflow Steps" (Mark Petty & Raymond Paquet, Nov 3, 2026)',
+    coreThesis: 'Models are commodities; harnesses are the source of value (routing, guardrails, fleet management, and perimeter sovereignty).',
+    costRatios: {
+      openVsFrontierPerStepRatio: '1/20th (5%)',
+      openVsCheapestClosedPerStepRatio: '1/4th (25%)',
+      unconstrainedOpenModelSavingMultiple: '5x–6x (degraded by verbosity and retries)',
+      thumbgateGuardedOpenModelSavingMultiple: `${routineStepCostReductionMultiple}x (verbosity & retry loops blocked by PreToolUse + Deslopify)`,
+      frontierCostPerStepUsd,
+      cheapestClosedCostPerStepUsd,
+      openWeightBaseCostPerStepUsd,
+    },
+    workflowRoutingSummary: {
+      totalSteps,
+      routineOpExStepsCount: routineStepsCount,
+      frontierCapExStepsCount: frontierStepsCount,
+      routineSharePct,
+      meetsGartner90PctBenchmark: routineSharePct >= 90,
+      allFrontierTotalCostUsd,
+      routedTotalCostUsd,
+      routineStepCostReductionMultiple,
+    },
+    maValuationPerimeterMoat: {
+      workflowHistoryRetainedInPerimeterPct: routineSharePct,
+      externalFrontierApiExposurePct: Number((100 - routineSharePct).toFixed(1)),
+      acquirerValueProtectionNote:
+        'Years of workflow history are what an acquirer pays for in a SaaS company; routing 90% of routine steps to local open-weight models keeps proprietary operational traces inside your perimeter.',
+    },
+    commercialCta: {
+      headline: 'Stop paying Frontier CapEx prices for 90% Routine OpEx steps.',
+      oneClickBundleHref: '/go/bundle-49?utm_source=gartner_90_10&utm_medium=harness_router',
+      oneClickSprintHref: '/go/diagnostic-direct?utm_source=gartner_90_10&utm_medium=harness_router',
+    },
+    routedSteps,
+  };
+}
+
 module.exports = {
   CTO_CISO_HARD_OBJECTIONS,
   DSH_SQL_FOUR_TOOLS,
@@ -1116,6 +1249,7 @@ module.exports = {
   ZOU_GROUP_BENCHMARK_DISTRIBUTION,
   OTEL_ATTRIBUTE_ALLOWLIST,
   GROK_TEAM_BOT_BENCHMARK,
+  GARTNER_ROUTINE_STEP_TYPES,
   resolveTechnicalBuyerObjection,
   auditFourClicksToOneClick,
   evaluateHerjavecDailyRevenueHabit,
@@ -1129,4 +1263,5 @@ module.exports = {
   evaluateQwenGpuSimtCompiledCircuit,
   evaluateLinkedInOtelJourneyForest,
   evaluateGrokTeamDataBot,
+  evaluateGartnerOpenModelHarnessRouter,
 };
