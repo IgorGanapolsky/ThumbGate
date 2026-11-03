@@ -10,6 +10,7 @@ process.env.THUMBGATE_NO_RATE_LIMIT = '1';
 
 const { planIntent } = require('../scripts/intent-router');
 const {
+  assessOpenLoop,
   evaluateDelegation,
   startHandoff,
   completeHandoff,
@@ -240,4 +241,133 @@ test('completeHandoff updates delegation model and summary metrics', () => {
   const modelPath = path.join(tmpFeedbackDir, 'delegation-model.json');
   const model = JSON.parse(fs.readFileSync(modelPath, 'utf-8'));
   assert.ok(model.categories.delegation_global.alpha > 1);
+});
+
+function sourcedLoop(extra = {}) {
+  return {
+    task: 'Prepare the gate note before the review',
+    source: 'https://example.invalid/message/1',
+    next: 'Read the thread when it finishes.',
+    status: 'waiting',
+    ...extra,
+  };
+}
+
+test('an open loop keeps its source and does not treat a role name as a boundary', () => {
+  const result = assessOpenLoop(sourcedLoop({
+    due: '2026-11-09',
+    role: 'Inbox Manager',
+    briefing: 'One item is waiting on the review.',
+    action: 'record',
+  }));
+
+  assert.equal(result.allow, true);
+  assert.equal(result.reason, 'open_loop');
+  assert.equal(result.source, 'https://example.invalid/message/1');
+  assert.equal(result.due, '2026-11-09');
+  assert.equal(result.role, 'Inbox Manager');
+  assert.equal(result.briefing, 'One item is waiting on the review.');
+  assert.equal(result.boundary, false);
+  assert.equal(result.sent, false);
+  assert.equal(result.executed, false);
+  assert.equal(result.networkCall, false);
+});
+
+test('a named role is not a security boundary, and a duplicate loop is refused', () => {
+  const boundary = assessOpenLoop(sourcedLoop({ securityBoundary: true }));
+  assert.equal(boundary.allow, false);
+  assert.equal(boundary.reason, 'not_a_boundary');
+  assert.equal(boundary.boundary, false);
+
+  const separate = assessOpenLoop(sourcedLoop({ separateBoundary: true }));
+  assert.equal(separate.reason, 'not_a_boundary');
+
+  const duplicate = assessOpenLoop(sourcedLoop({ existing: true }));
+  assert.equal(duplicate.reason, 'duplicate');
+  assert.equal(duplicate.executed, false);
+});
+
+test('send, purchase, cancel, and account changes stay unexecuted', () => {
+  const unapproved = assessOpenLoop(sourcedLoop({
+    action: 'purchase',
+    approved: false,
+    message: 'buy-token-qa',
+  }));
+  assert.equal(unapproved.reason, 'needs_approval');
+  assert.equal(unapproved.purchased, false);
+  assert.equal(unapproved.executed, false);
+  assert.equal(JSON.stringify(unapproved).includes('buy-token-qa'), false);
+
+  for (const action of ['send', 'cancel', 'book', 'change_account', 'move_calendar']) {
+    const held = assessOpenLoop(sourcedLoop({ action }));
+    assert.equal(held.reason, 'needs_approval');
+    assert.equal(held.sent, false);
+    assert.equal(held.cancelled, false);
+    assert.equal(held.booked, false);
+    assert.equal(held.accountChanged, false);
+  }
+
+  const approved = assessOpenLoop(sourcedLoop({
+    action: 'send',
+    approved: true,
+    message: 'outbound-token-qa',
+  }));
+  assert.equal(approved.allow, true);
+  assert.equal(approved.reason, 'approved_not_executed');
+  assert.equal(approved.sent, false);
+  assert.equal(approved.executed, false);
+  assert.equal(JSON.stringify(approved).includes('outbound-token-qa'), false);
+
+  const handoff = assessOpenLoop(sourcedLoop({
+    handoff: { send: true },
+  }));
+  assert.equal(handoff.reason, 'needs_approval');
+  assert.equal(handoff.sent, false);
+});
+
+test('an open loop refuses a missing source, a second briefing, and another price', () => {
+  assert.equal(assessOpenLoop(sourcedLoop({ source: '' })).reason, 'missing_source');
+  assert.equal(assessOpenLoop(sourcedLoop({ source: 'memory' })).reason, 'missing_source');
+  assert.equal(assessOpenLoop(null).reason, 'not_a_record');
+  assert.equal(assessOpenLoop(sourcedLoop({ next: 'First.\nSecond.' })).reason, 'next_is_one_line');
+  assert.equal(assessOpenLoop(sourcedLoop({ due: 'next week' })).reason, 'bad_due');
+
+  const scorecard = assessOpenLoop(sourcedLoop({
+    briefing: ['Reply to one message.', 'Also compare three quotes.'],
+  }));
+  assert.equal(scorecard.reason, 'one_briefing');
+  assert.equal(JSON.stringify(scorecard).includes('three quotes'), false);
+
+  const bundle = assessOpenLoop(sourcedLoop({ next: 'Sell the $49 bundle.' }));
+  assert.equal(bundle.reason, 'forbidden_price');
+  assert.ok(bundle.prices.includes(49));
+
+  const both = assessOpenLoop(sourcedLoop({
+    next: 'Setup Sprint is $499 once, or the $49 bundle.',
+  }));
+  assert.equal(both.reason, 'forbidden_price');
+  assert.ok(both.prices.includes(499));
+  assert.ok(both.prices.includes(49));
+
+  const priced = assessOpenLoop(sourcedLoop({
+    next: 'Pro stays $19/month or $149/year. Setup Sprint is $499 once.',
+  }));
+  assert.equal(priced.allow, true);
+  assert.equal(priced.reason, 'open_loop');
+
+  const secret = 'ghp_abcdefghij';
+  const leaked = assessOpenLoop(sourcedLoop({ source: `https://example.invalid/${secret}` }));
+  assert.equal(leaked.reason, 'secret_present');
+  assert.equal(JSON.stringify(leaked).includes(secret), false);
+
+  const oneLine = assessOpenLoop(sourcedLoop({ briefing: ['One line for the review.'] }));
+  assert.equal(oneLine.allow, true);
+  assert.equal(oneLine.briefing, 'One line for the review.');
+
+  let nested = secret;
+  for (let depth = 0; depth < 8; depth += 1) nested = [nested];
+  const buried = assessOpenLoop(sourcedLoop({ briefing: [nested] }));
+  assert.equal(buried.allow, false);
+  assert.equal(buried.reason, 'briefing_not_text');
+  assert.equal(JSON.stringify(buried).includes(secret), false);
 });
