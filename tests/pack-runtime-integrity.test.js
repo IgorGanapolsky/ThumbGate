@@ -19,7 +19,7 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { execSync } = require('node:child_process');
+const { execSync, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -157,4 +157,15 @@ test('packed npm artifact keeps the advertised intake queue command executable',
     'node scripts/workflow-intake-queue.js'
   );
   assert.equal(packed.has('scripts/workflow-intake-queue.js'), true);
+});
+
+test('packed gate-check hook runs with documented verdicts from the extracted tarball', () => {
+  // Dynamic recurrence guard for thumbgate@1.39.0 (missing scripts/third-author-governance.js):
+  // packs, extracts, initializes in an isolated HOME, and asserts parsed gate-check verdicts.
+  // Catches any missing runtime dependency regardless of require() style — the static
+  // require-graph test above only follows require('./x') paths.
+  execFileSync(process.execPath, [path.join(REPO, 'scripts', 'pack-gate-closure-check.js')], {
+    stdio: 'pipe',
+    timeout: 120000,
+  });
 });
