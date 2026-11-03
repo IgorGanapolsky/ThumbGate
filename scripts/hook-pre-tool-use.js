@@ -511,6 +511,20 @@ function main() {
   const effectiveInput = resolveEffectiveInput(input.tool_input ?? input.toolInput ?? null);
   const economicAction = detectEconomicAction(toolName, effectiveInput);
 
+  try {
+    const { decideToolCall } = require('./focus-block');
+    const focusDecision = decideToolCall({
+      now: new Date().toISOString(),
+      toolName,
+      toolInput: effectiveInput,
+    });
+    if (focusDecision && focusDecision.decision === 'wait') {
+      return block(focusDecision.reason);
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   // Legacy model-token spend tracking remains advisory because a stale
   // budget-state.json once blocked every Bash/Edit/Write call, including the
   // repair path (self-lockout, 2026-07-07). Provider purchases and other
