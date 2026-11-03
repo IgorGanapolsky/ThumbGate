@@ -9708,6 +9708,112 @@ function evaluateGrokDataBotAndBroadStickyTeamBotsSteal(options = {}) {
   };
 }
 
+
+// ============================================================================
+// Gartner "Open-Weight Models Will Run 90% of Enterprise Agentic Workflow Steps"
+// (Mark Petty & Raymond Paquet, via The Register Nov 3, 2026)
+// https://www.theregister.com/ai-and-ml/2026/11/03/open-models-can-do-90-of-agentic-work-at-a-twentieth-of-the-cost-of-a-frontier-llm-gartner/5307132
+// - "Models are commodities, harnesses are the valuable part."
+// - 9 in 10 (90%) agent workflow steps are routine:
+//   (1) classification, (2) tool calling, (3) passing data, (4) validating data,
+//   (5) reconciling data.
+// - Cost multipliers:
+//   * 1/4th (0.25x) the cost of the cheapest closed model at parity score
+//   * 1/20th (0.05x) raw cost vs running a frontier LLM on every step
+//   * 5x–6x net task savings un-harnessed (due to open-model verbosity & retries),
+//     restored to 16.7x–20x when ThumbGate's compiled YAML procedural graph &
+//     JSON schema constraints suppress open-model verbosity and retry loops.
+// - M&A Valuation Perimeter:
+//   * "Years of workflow history are a large part of what an acquirer pays for
+//     in a SaaS company and every routine step sent to a frontier API moves a
+//     slice of it outside your perimeter. Open-weights preserve your control."
+// - CapEx vs OpEx Accounting Split:
+//   * Frontier LLM = CapEx (10% R&D, architecture, procedural graph compilation)
+//   * Open-Weight Model = OpEx (90% high-stability routine steps run millions/mo)
+// ============================================================================
+
+const GARTNER_ROUTINE_AGENTIC_STEP_TYPES = [
+  'classification',
+  'tool_calling',
+  'passing_data',
+  'validating_data',
+  'reconciling_data',
+];
+
+function evaluateGartnerOpenModels90PctHarnessMoatSteal(options = {}) {
+  const totalMonthlySteps = Number(options.totalMonthlySteps || 1000000);
+  const frontierCostPerStepUsd = Number(options.frontierCostPerStepUsd || 0.01);
+  const cheapestClosedCostPerStepUsd = frontierCostPerStepUsd * 0.20; // $0.0020
+  const openWeightRawCostPerStepUsd = frontierCostPerStepUsd * 0.05; // 1/20th = $0.0005
+
+  const routineStepShare = 0.90;
+  const frontierCapexStepShare = 0.10;
+  const routineSteps = Math.round(totalMonthlySteps * routineStepShare);
+  const frontierCapexSteps = totalMonthlySteps - routineSteps;
+
+  const allFrontierMonthlyCostUsd = Number((totalMonthlySteps * frontierCostPerStepUsd).toFixed(2));
+  const unharnessedOpenMultiplier = 1 / 5.5;
+  const unharnessedHybridCostUsd = Number(
+    (
+      frontierCapexSteps * frontierCostPerStepUsd +
+      routineSteps * (frontierCostPerStepUsd * unharnessedOpenMultiplier)
+    ).toFixed(2)
+  );
+  const thumbgateHarnessedHybridCostUsd = Number(
+    (
+      frontierCapexSteps * frontierCostPerStepUsd +
+      routineSteps * openWeightRawCostPerStepUsd
+    ).toFixed(2)
+  );
+
+  return {
+    ok: true,
+    sourceUrl: 'https://www.theregister.com/ai-and-ml/2026/11/03/open-models-can-do-90-of-agentic-work-at-a-twentieth-of-the-cost-of-a-frontier-llm-gartner/5307132',
+    gartnerReportTitle: 'Open-Weight Models Will Run 90% of Enterprise Agentic Workflow Steps',
+    analysts: ['Mark Petty (Senior Director, Gartner)', 'Raymond Paquet (Group VP, Gartner)'],
+    coreThesis: 'Models are commodities; harnesses that route work, impose strong guardrails, and manage agent fleets are the source of value.',
+    strategicPlanningAssumption2030: 'By 2030, 90% of enterprise operational agent workflow steps will execute on open-weight models.',
+    routineStepTaxonomy: GARTNER_ROUTINE_AGENTIC_STEP_TYPES,
+    stepDistribution: {
+      routineOpExSharePct: 90,
+      frontierCapExRnDSharePct: 10,
+      costRatioVsCheapestClosed: 0.25,
+      costRatioVsFrontierRaw: 0.05,
+      unharnessedTaskSavingsMultipleVsFrontier: 5.5,
+      harnessedRoutineSavingsMultipleVsFrontier: 20,
+    },
+    economicsSimulation: {
+      totalMonthlySteps,
+      routineSteps,
+      frontierCapexSteps,
+      allFrontierMonthlyCostUsd,
+      cheapestClosedPerStepUsd: cheapestClosedCostPerStepUsd,
+      openWeightPerStepUsd: openWeightRawCostPerStepUsd,
+      unharnessedHybridCostUsd,
+      thumbgateHarnessedHybridCostUsd,
+      monthlyDollarsSavedWithHarnessUsd: Number((allFrontierMonthlyCostUsd - thumbgateHarnessedHybridCostUsd).toFixed(2)),
+      savingsPctWithThumbGateHarness: Number(
+        (((allFrontierMonthlyCostUsd - thumbgateHarnessedHybridCostUsd) / allFrontierMonthlyCostUsd) * 100).toFixed(1)
+      ),
+    },
+    maValuationPerimeterMoat: {
+      zeroFrontierEgressForRoutineSteps: true,
+      workflowHistoryRetainedOnPremPct: 100,
+      rationale: 'Years of workflow history are what an acquirer pays for in a SaaS company; routing 90% of routine steps to local open-weight models keeps proprietary workflow telemetry inside the perimeter.',
+    },
+    monetizationPositioning: {
+      pitch: 'Stop paying Frontier LLM prices for 90% routine agent steps and leaking M&A workflow history outside your perimeter.',
+      links: {
+        proDirect19: '/go/pro-direct',
+        bundle49: '/go/bundle-49',
+        cloudIndie49: '/go/cloud-indie',
+        cloudStartup199: '/go/cloud-startup',
+        diagnostic499: '/go/diagnostic-499',
+      },
+    },
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -9899,6 +10005,8 @@ module.exports = {
   evaluateLinkedInOpenTelemetryJourneySteal,
   GROK_TEAM_BOT_ARCHETYPES,
   evaluateGrokDataBotAndBroadStickyTeamBotsSteal,
+  GARTNER_ROUTINE_AGENTIC_STEP_TYPES,
+  evaluateGartnerOpenModels90PctHarnessMoatSteal,
   buildThumbGateSaasDeployPlan,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,

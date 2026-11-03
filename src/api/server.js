@@ -409,6 +409,7 @@ const {
   evaluateQwenGpuCompiledSimtAndDeltaNetStateSteal,
   evaluateLinkedInOpenTelemetryJourneySteal,
   evaluateGrokDataBotAndBroadStickyTeamBotsSteal,
+  evaluateGartnerOpenModels90PctHarnessMoatSteal,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -10740,6 +10741,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       '/v1/cloud/qwengpu-simt/gate': evaluateQwenGpuCompiledSimtAndDeltaNetStateSteal,
       '/v1/cloud/linkedin-otel-journey/gate': evaluateLinkedInOpenTelemetryJourneySteal,
       '/v1/cloud/grok-data-bot/gate': evaluateGrokDataBotAndBroadStickyTeamBotsSteal,
+      '/v1/cloud/gartner-90pct-open-models-harness/gate': evaluateGartnerOpenModels90PctHarnessMoatSteal,
     };
     if (cloudEvalRoutes[pathname] && (isGetLikeRequest || req.method === 'POST')) {
       const body = req.method === 'POST' ? await parseJsonBody(req) : Object.fromEntries(parsed.searchParams.entries());
