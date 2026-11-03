@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ThumbGate Founder Admin — Customer &amp; Account Management</title>
+  <title>ThumbGate Admin — Customer &amp; Account Management</title>
   <meta name="robots" content="noindex,nofollow">
   <link rel="icon" type="image/svg+xml" href="/assets/brand/thumbgate-mark.svg">
   <style>
@@ -134,7 +134,7 @@
           <img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" width="28" height="28">
           <span>ThumbGate</span>
         </a>
-        <span class="badge-admin">🔒 Founder Admin Only</span>
+        <span class="badge-admin">🔒 Admin Only</span>
       </div>
       <div class="nav-links">
         <a href="/">Home</a>
@@ -149,28 +149,28 @@
   <main class="shell">
     <div id="adminStatusBanner"></div>
 
-    <!-- STRICT FOUNDER-ONLY LOGIN GATE (Visible by default; blocks all dashboard UI until authenticated) -->
+    <!-- STRICT ADMIN-ONLY LOGIN GATE (Visible by default; blocks all dashboard UI until authenticated) -->
     <div id="adminLoginGate" class="login-gate-wrap">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <span style="font-size:22px;">🔒</span>
-        <div style="font-weight:800;font-size:19px;">Founder Admin Login</div>
+        <div style="font-weight:800;font-size:19px;">Admin Login</div>
       </div>
       <p style="color:var(--muted);font-size:13px;margin:0 0 18px;">
-        Restricted exclusively to <strong>Igor Ganapolsky</strong> (<code>igor@igorganapolsky.com</code> / <code>iganapolsky@gmail.com</code>). Customer data and account management are hidden until verified.
+        Restricted exclusively to <strong>igor@igorganapolsky.com</strong>. Customer data and account management are hidden until verified.
       </p>
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div>
-          <label for="adminEmailInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Founder Email</label>
+          <label for="adminEmailInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Email</label>
           <input type="email" id="adminEmailInput" placeholder="igor@igorganapolsky.com" value="igor@igorganapolsky.com" style="width:100%;">
         </div>
         <div>
-          <label for="adminSecretInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Founder Password or Operator Key</label>
-          <input type="password" id="adminSecretInput" placeholder="Enter Founder Password or THUMBGATE_OPERATOR_KEY" style="width:100%;" onkeydown="if(event.key==='Enter'){window.tgAdminAuthenticate();}">
+          <label for="adminSecretInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Password</label>
+          <input type="password" id="adminSecretInput" placeholder="Enter your password" style="width:100%;" onkeydown="if(event.key==='Enter'){window.tgAdminAuthenticate();}">
         </div>
-        <button type="button" id="adminSignInBtn" class="btn-cyan" style="width:100%;font-size:13px;" onclick="window.tgAdminAuthenticate()">Sign In to Founder Admin →</button>
+        <button type="button" id="adminSignInBtn" class="btn-cyan" style="width:100%;font-size:13px;" onclick="window.tgAdminAuthenticate()">Sign In to Admin →</button>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">
-        All login attempts from non-founder emails are rejected with <code>403 Forbidden (founder_only_access)</code>.
+        All login attempts from other emails are rejected with <code>403 Forbidden</code>.
       </div>
     </div>
 
@@ -179,7 +179,7 @@
       <div class="row" style="justify-content:space-between;margin-bottom:16px;">
         <div>
           <h1>Customer &amp; Account Management (`https://thumbgate.ai/admin`)</h1>
-          <p class="sub" style="margin-bottom:0;">Authenticated as Founder Admin. Inspect registered accounts, Stripe subscribers, provisioned license keys, and active sessions.</p>
+          <p class="sub" style="margin-bottom:0;">Inspect registered accounts, Stripe subscribers, provisioned license keys, and active sessions.</p>
         </div>
         <div class="row">
           <button type="button" class="btn-amber" onclick="window.tgAdminPurgeUnverified()">Purge Unverified Legacy Sessions</button>
@@ -229,6 +229,45 @@
             <option value="admin">Admin</option>
           </select>
           <button type="button" class="btn-green" onclick="window.tgAdminCreateCustomer()">+ Create Account</button>
+        </div>
+      </div>
+
+      <!-- Grok Bot Jarvis Command Center + Data Bot / Deal Bot Live Telemetry -->
+      <div class="card" id="jarvisCommandCenterCard">
+        <div class="row" style="justify-content:space-between;margin-bottom:12px;">
+          <div>
+            <div style="font-weight:800;font-size:15px;">⚡ Command Center — 16 Systems Active · 5 Waiting On You</div>
+            <div style="font-size:12px;color:var(--muted);">Grok Bot Jarvis + Data Bot (85 users, 70% retention) + Deal Bot (80 users, 55% retention) + LinkedIn OTel <code>pageForestId</code></div>
+          </div>
+          <div class="row">
+            <button type="button" class="btn-amber" id="jarvisFocusModeBtn" onclick="window.tgToggleFocusMode()">🎯 Focus Mode: OFF</button>
+          </div>
+        </div>
+        <div id="jarvisWaitingQueue" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;">
+          <div style="background:rgba(15,23,42,0.75);border:1px solid var(--border);border-radius:10px;padding:12px;" data-waiting-id="skool_drop_1">
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px;">1. AI Money Lab Skool Drop #1 (94.4k members)</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Post free <code>.cursorrules</code> + Deslopify SOP &rarr; routes to <code>/go/playbook-999</code> ($9.99) &amp; <code>/go/bundle-49</code> ($49).</div>
+            <div class="row">
+              <a href="https://www.skool.com/ai-seo-with-julian-goldie-1553/about" target="_blank" rel="noopener" class="btn btn-green" style="text-decoration:none;font-size:11px;padding:5px 10px;" onclick="window.tgResolveWaitingItem('skool_drop_1','Approved')">Approve &amp; Open Skool</a>
+              <button type="button" class="btn-ghost" style="font-size:11px;padding:5px 10px;" onclick="window.tgResolveWaitingItem('skool_drop_1','Deferred')">Later</button>
+            </div>
+          </div>
+          <div style="background:rgba(15,23,42,0.75);border:1px solid var(--border);border-radius:10px;padding:12px;" data-waiting-id="data_bot_funnel">
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px;">2. Data Bot + Deal Bot Slack/MCP Recovery</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">12 Broad &amp; Sticky bots drive 44% of messages (60% Slack in-channel vs 12% isolated = 5x retention).</div>
+            <div class="row">
+              <a href="/go/bundle-49" target="_blank" rel="noopener" class="btn btn-primary" style="text-decoration:none;font-size:11px;padding:5px 10px;" onclick="window.tgResolveWaitingItem('data_bot_funnel','Approved')">Approve $49 Bundle Link</a>
+              <button type="button" class="btn-ghost" style="font-size:11px;padding:5px 10px;" onclick="window.tgResolveWaitingItem('data_bot_funnel','Deferred')">Later</button>
+            </div>
+          </div>
+          <div style="background:rgba(15,23,42,0.75);border:1px solid var(--border);border-radius:10px;padding:12px;" data-waiting-id="herjavec_chase_no">
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px;">3. Robert Herjavec "Chase the No" Enterprise Diagnostic</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Zero-egress 7-day Token Burn &amp; Agent Drift Audit &rarr; <code>/go/diagnostic-499</code> ($499) &rarr; <code>/go/cloud-startup</code> ($199/mo).</div>
+            <div class="row">
+              <a href="/go/diagnostic-499" target="_blank" rel="noopener" class="btn btn-green" style="text-decoration:none;font-size:11px;padding:5px 10px;" onclick="window.tgResolveWaitingItem('herjavec_chase_no','Approved')">Approve $499 Diagnostic</a>
+              <button type="button" class="btn-ghost" style="font-size:11px;padding:5px 10px;" onclick="window.tgResolveWaitingItem('herjavec_chase_no','Deferred')">Later</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -303,14 +342,14 @@
         } catch (e) {}
         allCustomers = [];
         setUnlockedState(false);
-        showBanner('Signed out of Founder Admin Console.', true);
+        showBanner('Signed out of Admin Console.', true);
       };
 
       window.tgAdminAuthenticate = async function () {
         var email = (document.getElementById('adminEmailInput').value || '').trim().toLowerCase();
         var secret = (document.getElementById('adminSecretInput').value || '').trim();
         if (!email || !secret) {
-          showBanner('Enter both your Founder Email and Founder Password / Operator Key.', false);
+          showBanner('Enter both your Email and Password.', false);
           return;
         }
 
@@ -328,7 +367,7 @@
         var loginData = await loginRes.json().catch(function () { return {}; });
         if (!loginRes.ok || !loginData || !loginData.ok) {
           setUnlockedState(false);
-          showBanner((loginData && loginData.message) || 'Access denied (403/401). Restricted exclusively to Igor Ganapolsky.', false);
+          showBanner((loginData && loginData.message) || 'Access denied (403/401). Restricted exclusively to igor@igorganapolsky.com.', false);
           return;
         }
 
@@ -358,11 +397,11 @@
         var data = await res.json().catch(function () { return {}; });
         if (!res.ok || !data || !data.ok) {
           setUnlockedState(false);
-          showBanner((data && data.message) || 'Founder Admin login required (401/403).', false);
+          showBanner((data && data.message) || 'Admin login required (401/403).', false);
           return;
         }
         setUnlockedState(true, 'igor@igorganapolsky.com');
-        showBanner('Authenticated as Founder Admin — ' + (data.summary.totalAccounts || 0) + ' total records loaded.', true);
+        showBanner('Authenticated as igor@igorganapolsky.com — ' + (data.summary.totalAccounts || 0) + ' total records loaded.', true);
         document.getElementById('kpiTotalAccounts').textContent = String(data.summary.totalAccounts || 0);
         document.getElementById('kpiRegisteredAccounts').textContent = String(data.summary.registeredAccounts || 0);
         document.getElementById('kpiActiveSessions').textContent = String(data.summary.activeSessions || 0);
@@ -415,7 +454,7 @@
         var token = getAdminToken();
         if (!token) {
           setUnlockedState(false);
-          showBanner('Sign in to Founder Admin first.', false);
+          showBanner('Sign in to Admin first.', false);
           return;
         }
         var payload = Object.assign({ action: action, email: email }, extra || {});
@@ -462,6 +501,17 @@
         await window.tgAdminAction('purge_unverified_sessions', '');
       };
 
+      var focusModeActive = false;
+      window.tgToggleFocusMode = function () {
+        focusModeActive = !focusModeActive;
+        var btn = document.getElementById('jarvisFocusModeBtn');
+        if (btn) btn.textContent = focusModeActive ? '🎯 Focus Mode: ON (Waiting Queue Only)' : '🎯 Focus Mode: OFF';
+      };
+      window.tgResolveWaitingItem = function (itemId, resolution) {
+        var el = document.querySelector('[data-waiting-id="' + itemId + '"]');
+        if (el) el.style.opacity = '0.45';
+        showBanner('Command Center item ' + itemId + ' marked ' + resolution + '.', true);
+      };
       if (getAdminToken()) {
         window.tgAdminLoadCustomers();
       } else {

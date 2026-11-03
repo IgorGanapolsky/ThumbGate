@@ -393,6 +393,22 @@ const {
   evaluateGitLabTenAiPromptsAndNurtureSteal,
   evaluateFiddlerOct2026NewsletterSteal,
   buildThumbGateSaasDeployPlan,
+  isFounderAdminEmail,
+  authenticateFounderAdmin,
+  evaluateEuAiActComplianceAndMonetizationGate,
+  evaluatePredictableGraphEngineeringSteal,
+  evaluateZacharyBlumenfeldGraphEngineeringSteal,
+  evaluateHowToDeslopifyYourAiSteal,
+  evaluateRobertHerjavecBillionDollarSalesEngine,
+  evaluateYouSpotProPayFirstAndSoloBrainSteal,
+  evaluateHkustHarnessSqlAndDshSqlSteal,
+  evaluateZouMollickLlmClaimsShelfLifeSteal,
+  evaluateSoftMtpKlGradientRecoverySteal,
+  evaluateJulianGoldieAiMoneyLabSkoolMonetizer,
+  evaluateJulianGoldieGrokBotJarvisCommandCenter,
+  evaluateQwenGpuCompiledSimtAndDeltaNetStateSteal,
+  evaluateLinkedInOpenTelemetryJourneySteal,
+  evaluateGrokDataBotAndBroadStickyTeamBotsSteal,
 } = require('../cloud-token-firewall');
 
 const CLOUD_PORTAL_PAGE_PATH = path.resolve(__dirname, '../../public/cloud.html');
@@ -7619,6 +7635,23 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (pathname === '/eu-ai-act' || pathname === '/eu-ai-act.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'eu-ai-act.html'), 'utf-8'),
+          extraTelemetry: { pageType: 'eu_ai_act' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'EU AI Act page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/install.md') {
       try {
         const installMdPath = path.join(PUBLIC_DIR, 'install.md');
@@ -10062,6 +10095,19 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       sendJson(res, updated.ok === false ? 400 : 200, updated);
       return;
     }
+    if (pathname === '/v1/compliance/eu-ai-act' && (isGetLikeRequest || req.method === 'POST')) {
+      const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+      const report = evaluateEuAiActComplianceAndMonetizationGate({
+        proposedPractice: body.proposedPractice || parsed.searchParams?.get('proposedPractice') || null,
+        annex3Domain: body.annex3Domain || parsed.searchParams?.get('annex3Domain') || null,
+        humanOversightPreToolUseGateEnabled:
+          body.humanOversightPreToolUseGateEnabled !== undefined
+            ? Boolean(body.humanOversightPreToolUseGateEnabled)
+            : parsed.searchParams?.get('humanOversightPreToolUseGateEnabled') !== 'false',
+      });
+      sendJson(res, 200, report, {}, { headOnly: isHeadRequest });
+      return;
+    }
     if (req.method === 'POST' && pathname === '/v1/billing/webhook/gumroad') {
       const body = await parseJsonBody(req);
       const saleId = String(body.sale_id || body.id || `gum_${Date.now()}`).trim();
@@ -10157,7 +10203,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const adminPagePath = path.join(PUBLIC_DIR, 'admin.html');
       const adminHtml = fs.existsSync(adminPagePath)
         ? fs.readFileSync(adminPagePath, 'utf8')
-        : '<h1>ThumbGate Founder Admin</h1>';
+        : '<h1>ThumbGate Admin</h1>';
       sendHtml(res, 200, adminHtml, {}, { headOnly: isHeadRequest });
       return;
     }
@@ -10169,8 +10215,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (!/^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(cleanEmail)) {
         sendJson(res, 403, {
           ok: false,
-          error: 'founder_only_access',
-          message: 'Access denied: https://thumbgate.ai/admin is restricted exclusively to Igor Ganapolsky (igor@igorganapolsky.com).',
+          error: 'admin_only_access',
+          message: 'Access denied: https://thumbgate.ai/admin is restricted exclusively to igor@igorganapolsky.com.',
         });
         return;
       }
@@ -10183,39 +10229,30 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         .map((v) => String(v || '').trim())
         .filter(Boolean);
 
-      const matchesServerToken = Boolean(secret && allowedTokens.includes(secret));
-      let authResult = null;
-      if (matchesServerToken) {
-        authResult = registerCustomerAccount({
-          email: cleanEmail,
-          password: secret,
-          name: 'Igor Ganapolsky (Founder Admin)',
-          tierId: 'enterprise',
-          provider: 'admin',
-        });
-      } else {
-        authResult = authenticateCustomerAccount({
-          email: cleanEmail,
-          password: secret,
-          apiKey: secret,
-        });
-      }
+      const authResult = authenticateFounderAdmin({
+        email: cleanEmail,
+        password: secret,
+        adminKey: secret,
+        allowedServerTokens: allowedTokens,
+      });
 
       if (!authResult || !authResult.ok) {
-        sendJson(res, 401, {
+        sendJson(res, authResult?.statusCode || 401, authResult || {
           ok: false,
           error: 'invalid_admin_credentials',
-          message: 'Invalid Founder Admin password or Operator/API key.',
+          message: 'Invalid Admin password.',
         });
         return;
       }
 
-      manageCustomerAccountAdmin({ action: 'purge_unverified_sessions' });
       sendJson(res, 200, {
         ok: true,
-        email: cleanEmail,
-        adminToken: matchesServerToken ? secret : authResult.ssoToken,
+        email: authResult.email,
+        role: authResult.role,
+        authVerification: authResult.authVerification,
+        adminToken: authResult.adminToken,
         ssoToken: authResult.ssoToken,
+        account: authResult.account,
       });
       return;
     }
@@ -10234,17 +10271,17 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const queryToken = String(parsed.searchParams.get('admin_token') || '').trim();
       const supplied = bearer || headerToken || queryToken;
       const ssoValidation = supplied ? validateSsoToken(supplied) : null;
-      const isVerifiedFounderSession = Boolean(
+      const isVerifiedAdminSession = Boolean(
         ssoValidation?.valid &&
           /^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(String(ssoValidation.email || '')) &&
-          (ssoValidation.provider === 'admin' || ssoValidation.session?.verifiedAccount === true || ssoValidation.session?.authVerification === 'admin_provisioned')
+          (ssoValidation.founderAdminVerified === true || ssoValidation.provider === 'admin' || ssoValidation.session?.verifiedAccount === true || ssoValidation.session?.authVerification === 'admin_provisioned')
       );
       const isValidAdminSecret = Boolean(supplied && allowedTokens.includes(supplied));
-      if (!isValidAdminSecret && !isVerifiedFounderSession) {
+      if (!isValidAdminSecret && !isVerifiedAdminSession) {
         sendJson(res, 401, {
           ok: false,
           error: 'admin_login_required',
-          message: 'Founder Admin login required. Sign in as igor@igorganapolsky.com with your Founder password or Operator/Admin Key.',
+          message: 'Admin login required. Sign in as igor@igorganapolsky.com with your password.',
         });
         return;
       }
@@ -10262,6 +10299,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           {
             ...legacyReport,
             ...overview,
+            summary: { ...(overview.summary || {}), ...(legacyReport.summary || {}) },
             adminEmail: ssoValidation?.email || 'igor@igorganapolsky.com',
           },
           {},
@@ -10283,15 +10321,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         sendJson(res, 200, { ok: true, action, email: cleanEmail, apiKey: newKey, account: accountUpdate.account });
         return;
       }
-      if (['create_account', 'upsert_account', 'purge_unverified_sessions', 'suspend', 'activate', 'set_tier', 'reset_password', 'attach_key', 'delete_account'].includes(action)) {
+      if (['upsert_account', 'purge_unverified_sessions', 'suspend', 'activate', 'set_tier', 'reset_password', 'attach_key', 'delete_account'].includes(action)) {
         const managed = manageCustomerAccountAdmin(body);
-        if (action === 'create_account' && managed.ok && body.email && typeof provisionApiKey === 'function') {
-          const cleanEmail = String(body.email).trim().toLowerCase();
-          const tier = String(body.tierId || 'pro').trim();
-          const newKey = provisionApiKey(cleanEmail, { tier });
-          upsertCustomerAccountFromCheckout({ email: cleanEmail, apiKey: newKey || '', tierId: tier });
-          managed.apiKey = newKey;
-        }
         sendJson(res, managed.statusCode || (managed.ok ? 200 : 400), managed);
         return;
       }
@@ -10377,6 +10408,19 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
     if (req.method === 'POST' && pathname === '/v1/cloud/auth/login') {
       const body = await parseJsonBody(req);
+      const cleanLoginEmail = String(body.email || '').trim().toLowerCase();
+      const loginSecret = String(body.password || body.apiKey || '').trim();
+      if (/^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(cleanLoginEmail) && loginSecret) {
+        if (matchesIgorAdminPassword(loginSecret)) {
+          const auth = authenticateFounderAdmin({
+            email: cleanLoginEmail,
+            password: loginSecret,
+            adminKey: loginSecret,
+          });
+          sendJson(res, 200, auth);
+          return;
+        }
+      }
       const keysStore = typeof loadKeyStore === 'function' ? loadKeyStore() : { keys: {} };
       const auth = authenticateCustomerAccount({
         email: body.email || '',
@@ -10405,6 +10449,35 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/eu-ai-act') {
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>ThumbGate — EU AI Act PreToolUse Gate &amp; Conformity Engine</title></head><body><h1>EU AI Act PreToolUse Gate &amp; Conformity Engine</h1><p><a href="/go/playbook-999">$9.99 Playbook</a> · <a href="/go/bundle-49?pack=eu-ai-act-article50-transparency-pack">$49 Bundle</a> · <a href="/go/pro-direct">Pro ($19/mo)</a> · <a href="/go/cloud-startup">Cloud Startup ($199/mo)</a> · <a href="/go/diagnostic-499">$499 Diagnostic</a></p></body></html>`;
+      sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (pathname === '/v1/compliance/eu-ai-act' && (isGetLikeRequest || req.method === 'POST')) {
+      const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+      const report = evaluateEuAiActComplianceAndMonetizationGate({
+        proposedPractice: body.proposedPractice || parsed.searchParams.get('proposedPractice') || '',
+        annex3Domain: body.annex3Domain || parsed.searchParams.get('annex3Domain') || '',
+        humanOversightPreToolUseGateEnabled:
+          body.humanOversightPreToolUseGateEnabled !== undefined
+            ? Boolean(body.humanOversightPreToolUseGateEnabled)
+            : parsed.searchParams.get('humanOversightPreToolUseGateEnabled') !== 'false',
+      });
+      sendJson(res, 200, report, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    if (pathname === '/v1/cloud/graph-engineering' && (isGetLikeRequest || req.method === 'POST')) {
+      const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+      const report = evaluatePredictableGraphEngineeringSteal({
+        skillId: body.skillId || parsed.searchParams.get('skillId') || 'thumbgate-policy-compliance-skill',
+        skillMarkdown: body.skillMarkdown || '',
+      });
+      sendJson(res, 200, report, {}, { headOnly: isHeadRequest });
+      return;
+    }
     if (isGetLikeRequest && pathname === '/v1/cloud/portal/session') {
       const session = getCloudCustomerPortalSession({
         apiKey: parsed.searchParams.get('apiKey') || extractBearerToken(req),
@@ -10664,6 +10737,19 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       '/v1/cloud/spotify-confidence/gate': evaluateSpotifyConfidenceFlagsAndShadowSteal,
       '/v1/cloud/gitlab-10-prompts/gate': evaluateGitLabTenAiPromptsAndNurtureSteal,
       '/v1/cloud/fiddler-oct2026/gate': evaluateFiddlerOct2026NewsletterSteal,
+      '/v1/cloud/zachary-blumenfeld-graph/gate': evaluateZacharyBlumenfeldGraphEngineeringSteal,
+      '/v1/cloud/deslopify-ai/gate': evaluateHowToDeslopifyYourAiSteal,
+      '/v1/cloud/herjavec-sales-engine/gate': evaluateRobertHerjavecBillionDollarSalesEngine,
+      '/v1/cloud/youspot-pro/gate': evaluateYouSpotProPayFirstAndSoloBrainSteal,
+      '/v1/cloud/hkust-harness-sql/gate': evaluateHkustHarnessSqlAndDshSqlSteal,
+      '/v1/cloud/llm-claims-shelf-life/gate': evaluateZouMollickLlmClaimsShelfLifeSteal,
+      '/v1/cloud/soft-mtp-kl-recovery/gate': evaluateSoftMtpKlGradientRecoverySteal,
+      '/v1/cloud/julian-goldie-skool/gate': evaluateJulianGoldieAiMoneyLabSkoolMonetizer,
+      '/v1/cloud/deslopify': evaluateHowToDeslopifyYourAiSteal,
+      '/v1/cloud/jarvis-command-center/gate': evaluateJulianGoldieGrokBotJarvisCommandCenter,
+      '/v1/cloud/qwengpu-simt/gate': evaluateQwenGpuCompiledSimtAndDeltaNetStateSteal,
+      '/v1/cloud/linkedin-otel-journey/gate': evaluateLinkedInOpenTelemetryJourneySteal,
+      '/v1/cloud/grok-data-bot/gate': evaluateGrokDataBotAndBroadStickyTeamBotsSteal,
     };
     if (cloudEvalRoutes[pathname] && (isGetLikeRequest || req.method === 'POST')) {
       const body = req.method === 'POST' ? await parseJsonBody(req) : Object.fromEntries(parsed.searchParams.entries());

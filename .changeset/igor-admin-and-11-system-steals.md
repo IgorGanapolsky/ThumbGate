@@ -1,0 +1,5 @@
+---
+"thumbgate": patch
+---
+
+Enforce Igor-only admin login (`iganapolsky@gmail.com`, zero "Founder" labels, `.invalid` probe purge) and ship 11 system steals: Zachary Blumenfeld Graph Engineering (`g_NgCLTibiM`), How to Deslopify Your AI (`QSZKZHeGZr4`), Robert Herjavec $50-to-$1B Sales Engine (`Sal2R5HYy1s`), YouSpot Pro Pay-First & Solo-Brain Engine (`youspot.com/lp/pro`), HKUST + DeepSeek HarnessSQL & DSH-SQL (`arXiv:2610.12274`), Stanford Zou Group + Ethan Mollick LLM Claims Shelf Life (`zou-group.github.io/llm-claims-shelf-life/`), MIT Jayden Teoh Soft-MTP KL Gradient Recovery (`arXiv:2610.38331`), Julian Goldie AI Money Lab Skool (`skool.com/ai-seo-with-julian-goldie-1553`) + Grok Bot Jarvis Command Center (`x.com/JulianGoldieSEO/status/2117519648505921952`), QwenGPU Compiled SIMT GPU & DeltaNet State (`marktechpost.com`), LinkedIn OpenTelemetry Member Journey `pageForestId` (`infoq.com/news/2026/11/linkedin-opentelemetry-journey/`), and Grok Bot Data Bot & Broad-and-Sticky Team Bots (`x.com/bot/status/2117349540168876334`).

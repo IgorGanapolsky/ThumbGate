@@ -161,6 +161,8 @@
     "public/third-party-notices.html",
     "public/whitepaper.html",
     "public/yt.html",
+    "public/eu-ai-act.html",
+    "scripts/deslopify-ai-cli.js",
     "scripts/a-plus-evidence-scorecard.js",
     "scripts/access-anomaly-detector.js",
     "scripts/action-receipts.js",

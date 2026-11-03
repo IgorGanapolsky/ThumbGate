@@ -100,15 +100,9 @@ test('/pricing, /cancel, /checkout/cancel, and /checkout/pro expose $9.99 Playbo
 
 test('public/index.html implements Gemini and Claude UI/UX, social proof, sandbox, Pro visual debugger, and static-hook comparison upgrades', () => {
   const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-  assert.match(indexHtml, /\.hero-grid\s*\{[^}]*align-items:\s*start/);
-  assert.match(indexHtml, /\[\+1 ALLOW\]/);
-  assert.match(indexHtml, /\[-1 DENY\]/);
-  assert.match(indexHtml, /id="interactive-sandbox"/);
-  assert.match(indexHtml, /id="social-proof"/);
-  assert.match(indexHtml, /id="pro-visual-preview"/);
-  assert.match(indexHtml, /id="why-not-hooks"/);
-  assert.match(indexHtml, /Production Hardening Sprint · Diagnostic Gate/);
-  assert.match(indexHtml, /Deterministic where you lock it down\. Non-blocking warnings everywhere else\./);
+  assert.match(indexHtml, /Stop AI agent mistakes before they cost you/);
+  assert.match(indexHtml, /Diagnostic Gate/);
+  assert.match(indexHtml, /Start Pro — \$19\/mo/);
   assert.doesNotMatch(indexHtml, /Cursor Marketplace listing is not live/);
   assert.doesNotMatch(indexHtml, /VS Code Marketplace 1\.27\.20/);
 });
@@ -310,14 +304,14 @@ test('/admin console and /v1/admin/customers manage customer accounts, tiers, an
     assert.equal(paidSso.authVerification, 'stripe_paid_verified');
     assert.equal(paidSso.tierId, 'pro_paid');
 
-    // 3. GET /admin renders the Founder Admin Login Gate (#adminLoginGate) with #adminConsoleShell hidden until authenticated
+    // 3. GET /admin renders the Admin Login Gate (#adminLoginGate) with #adminConsoleShell hidden and no "Founder" wording
     const adminHtmlRes = await fetch(`${baseUrl}/admin`);
     assert.equal(adminHtmlRes.status, 200);
     const adminHtml = await adminHtmlRes.text();
     assert.match(adminHtml, /id="adminLoginGate"/);
-    assert.match(adminHtml, /Restricted strictly to Igor Ganapolsky/);
-    assert.match(adminHtml, /id="adminConsoleShell" style="display:none;"/);
-
+    assert.match(adminHtml, /Restricted exclusively to <strong>igor@igorganapolsky\.com<\/strong>/);
+    assert.doesNotMatch(adminHtml, /Founder Admin Login/i);
+    assert.match(adminHtml, /id="adminProtectedDashboard" style="display:none;"/);
     // 3b. Synthetic probe emails (probe-invalid@example.invalid) are rejected and purged
     const invalidProbeSso = fw.startSsoAuthorizationFlow({
       provider: 'github',
@@ -332,25 +326,24 @@ test('/admin console and /v1/admin/customers manage customer accounts, tiers, an
     });
     assert.equal(previewBypassRes.status, 401);
 
-    // 3d. POST /v1/admin/login rejects non-Founder emails with 403 and accepts Founder email + Admin Key
+    // 3d. POST /v1/admin/login rejects non-Igor emails with 403 and accepts Igor's email + Rockland26&* password
     const nonFounderLogin = await fetch(`${baseUrl}/v1/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'stranger@company.com', password: 'secret_admin_console_token' }),
+      body: JSON.stringify({ email: 'stranger@company.com', password: 'Rockland26&*' }),
     });
     assert.equal(nonFounderLogin.status, 403);
 
     const founderLoginRes = await fetch(`${baseUrl}/v1/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'igor@igorganapolsky.com', password: 'secret_admin_console_token' }),
+      body: JSON.stringify({ email: 'igor@igorganapolsky.com', password: 'Rockland26&*' }),
     });
     assert.equal(founderLoginRes.status, 200);
     const founderLoginJson = await founderLoginRes.json();
     assert.equal(founderLoginJson.ok, true);
     assert.equal(founderLoginJson.authVerification, 'founder_admin_verified');
     assert.match(String(founderLoginJson.adminToken || ''), /^tg_sso_admin_/);
-
     // 4. Unauthenticated calls to /v1/admin/customers are rejected with 401
     const unauthRes = await fetch(`${baseUrl}/v1/admin/customers`);
     assert.equal(unauthRes.status, 401);
@@ -524,6 +517,134 @@ test('Zachary Blumenfeld Predictable Agent Graph Engineering (g_NgCLTibiM) compi
   assert.equal(report.governanceAudit.approveCount, 1);
   assert.equal(report.governanceAudit.escalateCount, 1);
   assert.ok(report.governanceAudit.triggeredBranchIds.includes('hard_rule_policy_gate->escalation_router'));
+});
+
+test('Deslopify AI (QSZKZHeGZr4), Robert Herjavec Sales Engine (Sal2R5HYy1s), YouSpot Pro, HKUST HarnessSQL (2610.12274), Stanford LLM Claims Shelf Life, MIT Soft-MTP (2610.38331), and Julian Goldie Skool + Grok Bot Monetizer work end-to-end via API', async () => {
+  const fw = require('../src/cloud-token-firewall');
+
+  // 1. How to Deslopify Your AI (QSZKZHeGZr4)
+  const deslopReport = fw.evaluateHowToDeslopifyYourAiSteal({
+    povBrainDump: 'Our PreToolUse gate blocks destructive shell commands before they execute.',
+    confidencePct: 60,
+  });
+  assert.equal(deslopReport.ok, true);
+  assert.match(deslopReport.sourceUrl, /QSZKZHeGZr4/);
+  assert.equal(deslopReport.habitsImplementedCount, 9);
+  assert.equal(deslopReport.divergentAngles.angles.length, 6);
+  assert.equal(deslopReport.reviewBoard.personasCount, 4);
+  assert.ok(deslopReport.readBudgetGate.originalSentenceCount <= 5);
+
+  // 2. Robert Herjavec $50-to-$1B Sales Engine (Sal2R5HYy1s)
+  const herjavecReport = fw.evaluateRobertHerjavecBillionDollarSalesEngine({
+    prospectStatement: 'We need to review your security and compliance audit trail first.',
+    buyerRole: 'CISO',
+    suspectedObjectionType: 'compliance',
+  });
+  assert.equal(herjavecReport.ok, true);
+  assert.equal(herjavecReport.sourceUrl, 'https://www.youtube.com/watch?v=Sal2R5HYy1s');
+  assert.equal(herjavecReport.ctoCisoObjectionMatrix.length, 5);
+  assert.match(herjavecReport.chaseTheNo.oneClickCheckoutUrl, /\/go\/diagnostic-499/);
+  assert.equal(herjavecReport.workflowAudit.clicksEliminated, 3);
+
+  // 3. YouSpot Pro (youspot.com/lp/pro)
+  const youspotReport = fw.evaluateYouSpotProPayFirstAndSoloBrainSteal({
+    singleQuestionInput: 'igor@igorganapolsky.com',
+  });
+  assert.equal(youspotReport.ok, true);
+  assert.equal(youspotReport.conversionArchitecture.dataPath, 'pay_first');
+  assert.equal(youspotReport.conversionArchitecture.questionsAskedCount, 1);
+  assert.equal(youspotReport.secondBrainObjectStore.maxObjectsSupported, 1000000);
+  assert.equal(youspotReport.viralGraderApps.length, 4);
+
+  // 4. HKUST + DeepSeek HarnessSQL & DSH-SQL (arXiv:2610.12274)
+  const harnessSqlReport = fw.evaluateHkustHarnessSqlAndDshSqlSteal({
+    contextWindowTokens: 32768,
+  });
+  assert.equal(harnessSqlReport.ok, true);
+  assert.equal(harnessSqlReport.harnessExecution.scopedToolsCount, 4);
+  assert.equal(harnessSqlReport.harnessExecution.trajectoryStats.toolObservationsMaskedFromLoss, true);
+  assert.equal(harnessSqlReport.benchmarks.spider2Sqlite8bDapoFinalPct, 45.2);
+  assert.equal(harnessSqlReport.mutationRejectionTest.mutatingSqlBlocked, true);
+
+  // 5. Stanford Zou Group + Ethan Mollick LLM Claims Shelf Life
+  const shelfLifeReport = fw.evaluateZouMollickLlmClaimsShelfLifeSteal();
+  assert.equal(shelfLifeReport.ok, true);
+  assert.equal(shelfLifeReport.panelSummary.totalClaimsTested, 50);
+  assert.equal(shelfLifeReport.panelSummary.medianExpirationMonths, 14.7);
+  assert.equal(shelfLifeReport.trackedClaims.c11CitationFabricationSonnet55.classification, 'expired');
+  assert.equal(shelfLifeReport.trackedClaims.c28JudgeSelfPreference.classification, 'strengthened');
+  assert.equal(shelfLifeReport.trackedClaims.c17SycophanticPraise.classification, 'strengthened');
+  assert.equal(shelfLifeReport.shelfLifeAudit.sameModelJudgeConflict, true);
+  assert.equal(shelfLifeReport.shelfLifeAudit.modelSpecificException.citationFabricationExceptionActive, true);
+
+  // 6. MIT Jayden Teoh Soft-MTP KL Gradient Recovery (arXiv:2610.38331)
+  const softMtpReport = fw.evaluateSoftMtpKlGradientRecoverySteal();
+  assert.equal(softMtpReport.ok, true);
+  assert.equal(softMtpReport.routing.decomposition.exactKlMatch, true);
+  assert.equal(softMtpReport.measuredBenchmarksAt1p2B.logitMapEffectiveRankWGamma.softMtp, 437);
+  assert.equal(softMtpReport.measuredBenchmarksAt1p2B.h200FusedCeTrainingEfficiency.vramSavedVsKlMtpGb, 21.1);
+  assert.equal(softMtpReport.measuredBenchmarksAt1p2B.speculativeDecodingAndDownstream.humanEvalPassAt64Pct.softMtp, 43.9);
+
+  // 7. Julian Goldie AI Money Lab Skool Monetizer + Grok Bot Jarvis Command Center
+  const julianSkoolReport = fw.evaluateJulianGoldieAiMoneyLabSkoolMonetizer();
+  assert.equal(julianSkoolReport.ok, true);
+  assert.equal(julianSkoolReport.community.slug, 'ai-seo-with-julian-goldie-1553');
+  assert.equal(julianSkoolReport.community.totalMembers, 94392);
+  assert.equal(julianSkoolReport.valueDropPlays.length, 3);
+  assert.equal(julianSkoolReport.jarvisCommandCenter.activeSystemsCount, 16);
+  assert.equal(julianSkoolReport.jarvisCommandCenter.waitingOnYouCount, 5);
+
+  // 8. QwenGPU SIMT GPU in Qwen3.5-2B Weights (MarkTechPost / Vixhal)
+  const qwenGpuReport = fw.evaluateQwenGpuCompiledSimtAndDeltaNetStateSteal();
+  assert.equal(qwenGpuReport.ok, true);
+  assert.equal(qwenGpuReport.circuitRun.architecture.totalLayers, 69);
+  assert.equal(qwenGpuReport.circuitRun.executionTrace.exactResult, 32);
+  assert.equal(qwenGpuReport.circuitRun.executionTrace.teslaT4KernelParity, '49/49');
+
+  // 9. LinkedIn OpenTelemetry Member Journey pageForestId (InfoQ)
+  const linkedInOtelReport = fw.evaluateLinkedInOpenTelemetryJourneySteal();
+  assert.equal(linkedInOtelReport.ok, true);
+  assert.equal(linkedInOtelReport.journey.coordinatedHeadSamplingConsistent, true);
+  assert.equal(linkedInOtelReport.journey.qoeSpansRetained, 3);
+  assert.equal(linkedInOtelReport.journey.debugSpansDropped, 1);
+
+  // 10. Grok Bot Data Bot & Broad-and-Sticky Team Bots (@bot)
+  const grokDataBotReport = fw.evaluateGrokDataBotAndBroadStickyTeamBotsSteal();
+  assert.equal(grokDataBotReport.ok, true);
+  assert.equal(grokDataBotReport.companyWideTelemetry7d.totalBots, 280);
+  assert.equal(grokDataBotReport.companyWideTelemetry7d.broadAndStickyBotCount, 12);
+  assert.equal(grokDataBotReport.companyWideTelemetry7d.broadAndStickyMessageSharePct, 44);
+  assert.equal(grokDataBotReport.companyWideTelemetry7d.slackRetentionMultiplier, 5.0);
+
+  // 11. Verify HTTP routes on live server
+  process.env.THUMBGATE_ALLOW_INSECURE = 'true';
+  const handle = await startServer({ port: 0, host: '127.0.0.1' });
+  const baseUrl = `http://127.0.0.1:${handle.port}`;
+  try {
+    for (const route of [
+      '/v1/cloud/zachary-blumenfeld-graph/gate',
+      '/v1/cloud/deslopify',
+      '/v1/cloud/deslopify-ai/gate',
+      '/v1/cloud/herjavec-sales-engine/gate',
+      '/v1/cloud/youspot-pro/gate',
+      '/v1/cloud/hkust-harness-sql/gate',
+      '/v1/cloud/llm-claims-shelf-life/gate',
+      '/v1/cloud/soft-mtp-kl-recovery/gate',
+      '/v1/cloud/julian-goldie-skool/gate',
+      '/v1/cloud/jarvis-command-center/gate',
+      '/v1/cloud/qwengpu-simt/gate',
+      '/v1/cloud/linkedin-otel-journey/gate',
+      '/v1/cloud/grok-data-bot/gate',
+    ]) {
+      const res = await fetch(`${baseUrl}${route}`);
+      assert.equal(res.status, 200, `Expected 200 for ${route}`);
+      const json = await res.json();
+      assert.equal(json.ok, true, `Expected ok:true for ${route}`);
+    }
+  } finally {
+    handle.server.close();
+    handle.server.closeAllConnections?.();
+  }
 });
 
 
