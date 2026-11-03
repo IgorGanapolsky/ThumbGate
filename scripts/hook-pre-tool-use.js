@@ -508,6 +508,21 @@ const {
 function main() {
   const input = readStdinSync() || {};
   const toolName = input.tool_name || input.toolName || process.env.CLAUDE_TOOL_NAME || '';
+
+  try {
+    const { decideDefectClaim } = require('./defect-watchdog');
+    const watchdogDecision = decideDefectClaim({
+      toolName,
+      toolInput: input.tool_input ?? input.toolInput ?? null,
+      actorId: process.env.THUMBGATE_SESSION_AGENT || '',
+    });
+    if (watchdogDecision && watchdogDecision.decision === 'deny') {
+      return block(watchdogDecision.reason);
+    }
+  } catch (err) {
+    failOpen(err);
+  }
+
   const effectiveInput = resolveEffectiveInput(input.tool_input ?? input.toolInput ?? null);
   const economicAction = detectEconomicAction(toolName, effectiveInput);
 
