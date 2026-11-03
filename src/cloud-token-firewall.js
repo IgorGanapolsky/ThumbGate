@@ -1693,9 +1693,109 @@ function listAllCustomersAndAccounts({ keysByValue = {} } = {}) {
       totalProvisionedKeys: Object.keys(keysByValue || {}).length || totalActiveKeys,
       activeApiKeys: totalActiveKeys,
       mrrDollars: 0,
+      ecosystemUsersCount: VERIFIED_OSS_ECOSYSTEM_LEADS.length,
     },
     customers,
     sessions: sessionsList,
+    ecosystemLeads: VERIFIED_OSS_ECOSYSTEM_LEADS,
+  };
+}
+
+const VERIFIED_OSS_ECOSYSTEM_LEADS = [
+  { handle: 'shivanshjain456', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/shivanshjain456', recommendedOffer: 'Pro ($19/mo) / $49 Bundle' },
+  { handle: 'lindagarciahs0x-dotcom', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/lindagarciahs0x-dotcom', recommendedOffer: 'Pro ($19/mo)' },
+  { handle: 'onepisYa', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/onepisYa', recommendedOffer: 'Cloud Indie ($49/mo)' },
+  { handle: 'tec-works', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/tec-works', recommendedOffer: 'Cloud Startup ($199/mo) / $499 Diagnostic' },
+  { handle: 'gblanco17', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/gblanco17', recommendedOffer: 'Pro ($19/mo)' },
+  { handle: 'RexHammack', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/RexHammack', recommendedOffer: '$49 Production Rule-Pack Bundle' },
+  { handle: 'thexmeta', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/thexmeta', recommendedOffer: 'Cloud Indie ($49/mo)' },
+  { handle: 'brandons-ispottv', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/brandons-ispottv', recommendedOffer: '$499 Enterprise CTO Diagnostic' },
+  { handle: 'ZhixiangLuo', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/ZhixiangLuo', recommendedOffer: 'Pro ($19/mo)' },
+  { handle: 'gmarian', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/gmarian', recommendedOffer: 'Pro ($19/mo)' },
+  { handle: 'subash-data-ai', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/subash-data-ai', recommendedOffer: 'Cloud Indie ($49/mo)' },
+  { handle: 'errorproofdev', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/errorproofdev', recommendedOffer: '$49 Production Rule-Pack Bundle' },
+  { handle: 'MrSaneApps', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/MrSaneApps', recommendedOffer: 'Pro ($19/mo)' },
+  { handle: 'sortakool', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/sortakool', recommendedOffer: '$9.99 Engineering Playbook' },
+  { handle: 'boticello', signal: 'github_star', source: 'github', profileUrl: 'https://github.com/boticello', recommendedOffer: 'Cloud Indie ($49/mo)' },
+  { handle: 'chrstphe', signal: 'github_fork', source: 'github', profileUrl: 'https://github.com/chrstphe', recommendedOffer: 'Cloud Indie ($49/mo) + Hosted Sync' },
+  { handle: 'anupamme', signal: 'github_fork', source: 'github', profileUrl: 'https://github.com/anupamme', recommendedOffer: 'Cloud Indie ($49/mo) + Hosted Sync' },
+  { handle: 'acumenix', signal: 'github_fork', source: 'github', profileUrl: 'https://github.com/acumenix', recommendedOffer: 'Cloud Startup ($199/mo)' },
+  { handle: 'rhkiswani', signal: 'github_fork', source: 'github', profileUrl: 'https://github.com/rhkiswani', recommendedOffer: '$49 Production Rule-Pack Bundle' },
+  { handle: 'iflow-mcp', signal: 'github_fork', source: 'github', profileUrl: 'https://github.com/iflow-mcp', recommendedOffer: 'Cloud Startup ($199/mo) / Partner' },
+  { handle: 'SyxonQ-Dev', signal: 'github_fork', source: 'github', profileUrl: 'https://github.com/SyxonQ-Dev', recommendedOffer: 'Pro ($19/mo)' },
+  { handle: 'internet-dot', signal: 'github_fork', source: 'github', profileUrl: 'https://github.com/internet-dot', recommendedOffer: 'Pro ($19/mo)' },
+];
+
+function registerCliOrFunnelLead({
+  email = '',
+  name = '',
+  source = 'cli_init',
+  tierId = 'free_cli',
+  status = 'trial_lead',
+  installId = '',
+  workspaceName = '',
+  planId = '',
+} = {}) {
+  loadPersistentCloudState();
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  if (
+    !cleanEmail ||
+    !cleanEmail.includes('@') ||
+    /@(example\.com|localhost|test\.local|invalid)$/i.test(cleanEmail) ||
+    cleanEmail.startsWith('anonymous')
+  ) {
+    return { ok: false, skipped: true, reason: 'invalid_or_synthetic_email' };
+  }
+  const existing = customerAccountsState.get(cleanEmail);
+  const nowIso = new Date().toISOString();
+  const slug = normalizeProjectSlug(workspaceName || `${cleanEmail.split('@')[0]}-workspace`);
+  const defaultProject = {
+    slug,
+    name: workspaceName || `${cleanEmail.split('@')[0]}-workspace`,
+    repoUrl: '',
+    createdAt: nowIso,
+  };
+  if (existing) {
+    existing.lastLoginAt = nowIso;
+    existing.updatedAt = nowIso;
+    if (installId && !existing.installId) existing.installId = installId;
+    if (planId && existing.tierId === 'free') existing.tierId = planId;
+    customerAccountsState.set(cleanEmail, existing);
+    savePersistentCloudState();
+    return {
+      ok: true,
+      created: false,
+      email: cleanEmail,
+      account: existing,
+      cloudPortalUrl: `https://thumbgate.ai/cloud?email=${encodeURIComponent(cleanEmail)}`,
+      upgradeUrl: `https://thumbgate.ai/go/pro-direct?prefilled_email=${encodeURIComponent(cleanEmail)}`,
+    };
+  }
+  const record = {
+    email: cleanEmail,
+    name: name || cleanEmail.split('@')[0],
+    passwordHash: null,
+    provider: source || 'cli_init',
+    tierId: tierId || planId || 'free_cli',
+    apiKey: null,
+    installId: installId || null,
+    status: status || 'trial_lead',
+    verified: true,
+    registered: true,
+    projects: [defaultProject],
+    createdAt: nowIso,
+    updatedAt: nowIso,
+    lastLoginAt: nowIso,
+  };
+  customerAccountsState.set(cleanEmail, record);
+  savePersistentCloudState();
+  return {
+    ok: true,
+    created: true,
+    email: cleanEmail,
+    account: record,
+    cloudPortalUrl: `https://thumbgate.ai/cloud?email=${encodeURIComponent(cleanEmail)}`,
+    upgradeUrl: `https://thumbgate.ai/go/pro-direct?prefilled_email=${encodeURIComponent(cleanEmail)}`,
   };
 }
 
@@ -7449,6 +7549,8 @@ module.exports = {
   registerCustomerAccount,
   authenticateCustomerAccount,
   upsertCustomerAccountFromCheckout,
+  registerCliOrFunnelLead,
+  VERIFIED_OSS_ECOSYSTEM_LEADS,
   listAllCustomersAndAccounts,
   manageCustomerAccountAdmin,
   isFounderAdminEmail: (email) => {

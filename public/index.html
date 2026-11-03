@@ -1897,6 +1897,38 @@ next      decision recorded before execution</pre>
       await tgHydrateHomeProjects();
     };
 
+    // Pre-checkout email forwarding & /v1/billing/capture-lead beacon so checkout clicks register in /admin
+    document.addEventListener('click', function (ev) {
+      var a = ev.target && ev.target.closest ? ev.target.closest('a[href*="/go/"], a[href*="buy.stripe.com"]') : null;
+      if (!a) return;
+      var email = '';
+      try {
+        email = (homeEmailInput && homeEmailInput.value.trim()) ||
+          localStorage.getItem('tg_cloud_sso_email') ||
+          localStorage.getItem('tg_enterprise_sso_email') ||
+          localStorage.getItem('tg_buyer_email') || '';
+      } catch (e) {}
+      if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        try {
+          var u = new URL(a.href, window.location.origin);
+          if (!u.searchParams.get('prefilled_email') && !u.searchParams.get('customer_email')) {
+            u.searchParams.set('prefilled_email', email);
+            a.href = u.pathname + u.search + u.hash;
+          }
+          var payload = JSON.stringify({
+            email: email,
+            tierId: u.pathname.replace(/^\/go\//, '') || 'pro_monthly',
+            source: 'homepage_checkout_click'
+          });
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon('/v1/billing/capture-lead', new Blob([payload], { type: 'application/json' }));
+          } else {
+            fetch('/v1/billing/capture-lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(function () {});
+          }
+        } catch (e) {}
+      }
+    }, true);
+
     window.tgSetHomeAuthMode('login', false);
     tgHydrateHomeProjects();
   })();

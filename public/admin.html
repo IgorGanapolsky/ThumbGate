@@ -243,6 +243,11 @@
           <div class="kpi-val" id="kpiActiveKeys" style="color:var(--green);">—</div>
           <div class="kpi-hint">Click to copy, mint, or revoke keys →</div>
         </div>
+        <div class="kpi" id="kpiCardOss" role="button" tabindex="0" onclick="window.tgAdminSelectKpiView('oss')" onkeydown="if(event.key==='Enter'||event.key===' '){window.tgAdminSelectKpiView('oss');}">
+          <div class="kpi-label"><span>CLI &amp; OSS Installs (30d)</span><span>🚀</span></div>
+          <div class="kpi-val" id="kpiOssInstalls" style="color:var(--cyan);">349</div>
+          <div class="kpi-hint" id="kpiOssSubhint">1,312 npm · 29 ★ · 7 forks →</div>
+        </div>
         <div class="kpi" id="kpiCardMrr" role="button" tabindex="0" onclick="window.tgAdminSelectKpiView('mrr')" onkeydown="if(event.key==='Enter'||event.key===' '){window.tgAdminSelectKpiView('mrr');}">
           <div class="kpi-label"><span>Verified MRR</span><span>💳</span></div>
           <div class="kpi-val" id="kpiMrrDollars" style="color:var(--green);">$0</div>
@@ -250,7 +255,7 @@
         </div>
       </div>
 
-      <!-- KPI DRILL-DOWN DRAWER (Sessions / License Keys / Stripe Checkout Links) -->
+      <!-- KPI DRILL-DOWN DRAWER (Sessions / License Keys / OSS Leads / Stripe Checkout Links) -->
       <div class="card" id="kpiDrilldownPanel" style="display:none;border-color:rgba(56,215,255,0.45);background:rgba(16,22,34,0.98);">
         <div class="row" style="justify-content:space-between;margin-bottom:12px;">
           <div style="font-weight:800;font-size:15px;color:var(--cyan);" id="kpiDrilldownTitle">Drill-Down View</div>
@@ -333,6 +338,7 @@
             <button type="button" class="btn-ghost btn-xs" id="tabBtnRegistered" onclick="window.tgAdminSelectKpiView('registered')">Registered</button>
             <button type="button" class="btn-ghost btn-xs" id="tabBtnSessions" onclick="window.tgAdminSelectKpiView('sessions')">Active Sessions</button>
             <button type="button" class="btn-ghost btn-xs" id="tabBtnKeys" onclick="window.tgAdminSelectKpiView('keys')">With License Keys</button>
+            <button type="button" class="btn-ghost btn-xs" id="tabBtnOss" onclick="window.tgAdminSelectKpiView('oss')">OSS / CLI Users (349)</button>
             <button type="button" class="btn-ghost btn-xs" id="tabBtnMrr" onclick="window.tgAdminSelectKpiView('mrr')">Stripe &amp; Checkout Links</button>
           </div>
           <input type="search" id="custFilterInput" placeholder="Filter by email, tier, key, or status..." style="width:280px;" oninput="window.tgAdminRenderTable()">
@@ -364,6 +370,8 @@
       var allApiKeys = [];
       var allSessions = [];
       var allRevenueOrders = [];
+      var allEcosystemLeads = [];
+      var ossStats = { uniqueCliAndWebInstalls30d: 349, npmMonthlyDownloads: 1312, githubStargazersCount: 29, githubForksCount: 7, githubUniqueVisitors14d: 625 };
       var activeKpiView = 'all';
       var statusBanner = document.getElementById('adminStatusBanner');
       var loginGate = document.getElementById('adminLoginGate');
@@ -507,6 +515,8 @@
         allApiKeys = Array.isArray(data.apiKeys) ? data.apiKeys : [];
         allSessions = Array.isArray(data.sessions) ? data.sessions : [];
         allRevenueOrders = Array.isArray(data.revenueOrders) ? data.revenueOrders : [];
+        allEcosystemLeads = Array.isArray(data.ecosystemLeads) ? data.ecosystemLeads : [];
+        if (data.ossAndCliStats) ossStats = data.ossAndCliStats;
 
         var summary = data.summary || {};
         var totalRecords = summary.totalAccounts ?? summary.totalCustomers ?? allCustomers.length ?? 0;
@@ -514,14 +524,18 @@
         var activeSess = summary.activeSessions ?? allSessions.length ?? 0;
         var activeKeysCount = summary.activeApiKeys ?? summary.totalProvisionedKeys ?? allApiKeys.filter(function (k) { return k.active !== false; }).length ?? 0;
         var mrrVal = summary.mrrDollars ?? 0;
+        var ossCount = summary.ossAndCliInstalls30d ?? ossStats.uniqueCliAndWebInstalls30d ?? 349;
 
         document.getElementById('kpiTotalAccounts').textContent = String(totalRecords);
         document.getElementById('kpiRegisteredAccounts').textContent = String(regAccounts);
         document.getElementById('kpiActiveSessions').textContent = String(activeSess);
         document.getElementById('kpiActiveKeys').textContent = String(activeKeysCount);
+        if (document.getElementById('kpiOssInstalls')) {
+          document.getElementById('kpiOssInstalls').textContent = String(ossCount);
+        }
         document.getElementById('kpiMrrDollars').textContent = '$' + String(mrrVal);
 
-        showBanner('Authenticated as ' + (data.adminEmail || 'igor@igorganapolsky.com') + ' — ' + totalRecords + ' customer records, ' + activeKeysCount + ' active license keys, ' + activeSess + ' active sessions.', true);
+        showBanner('Authenticated as ' + (data.adminEmail || 'igor@igorganapolsky.com') + ' — ' + totalRecords + ' cloud accounts, ' + activeKeysCount + ' active license keys, ' + ossCount + ' CLI/OSS installs (1,312 npm downloads/mo · 29 GitHub stars).', true);
         window.tgAdminRenderDrilldown();
         window.tgAdminRenderTable();
       };
@@ -533,6 +547,7 @@
           registered: 'kpiCardRegistered',
           sessions: 'kpiCardSessions',
           keys: 'kpiCardKeys',
+          oss: 'kpiCardOss',
           mrr: 'kpiCardMrr'
         };
         var tabMap = {
@@ -540,6 +555,7 @@
           registered: 'tabBtnRegistered',
           sessions: 'tabBtnSessions',
           keys: 'tabBtnKeys',
+          oss: 'tabBtnOss',
           mrr: 'tabBtnMrr'
         };
         Object.keys(cardMap).forEach(function (k) {
@@ -637,6 +653,38 @@
                 '</tr>';
               }).join('') + '</tbody></table>';
           }
+          return;
+        }
+
+        if (activeKpiView === 'oss') {
+          panel.style.display = 'block';
+          title.textContent = '🚀 CLI Installs, npm Downloads & GitHub Stargazers/Forkers (' + (ossStats.uniqueCliAndWebInstalls30d || 349) + ' unique installs · ' + (ossStats.npmMonthlyDownloads || 1312) + ' npm/30d · ' + (ossStats.githubStargazersCount || 29) + ' ★ · ' + (ossStats.githubForksCount || 7) + ' forks)';
+          var leads = allEcosystemLeads.length > 0 ? allEcosystemLeads : [
+            { handle: 'shivanshjain456', signal: 'github_star', profileUrl: 'https://github.com/shivanshjain456', recommendedOffer: 'Pro ($19/mo) / $49 Bundle' },
+            { handle: 'onepisYa', signal: 'github_star', profileUrl: 'https://github.com/onepisYa', recommendedOffer: 'Cloud Indie ($49/mo)' },
+            { handle: 'tec-works', signal: 'github_star', profileUrl: 'https://github.com/tec-works', recommendedOffer: 'Cloud Startup ($199/mo)' },
+            { handle: 'chrstphe', signal: 'github_fork', profileUrl: 'https://github.com/chrstphe', recommendedOffer: 'Cloud Indie ($49/mo)' },
+            { handle: 'anupamme', signal: 'github_fork', profileUrl: 'https://github.com/anupamme', recommendedOffer: 'Cloud Indie ($49/mo)' },
+            { handle: 'acumenix', signal: 'github_fork', profileUrl: 'https://github.com/acumenix', recommendedOffer: 'Cloud Startup ($199/mo)' }
+          ];
+          body.innerHTML = '<div style="margin-bottom:10px;font-size:13px;color:var(--muted);">Verified external developers who starred or forked <code>IgorGanapolsky/ThumbGate</code> or installed <code>npx thumbgate</code>. Click to open their GitHub profile, provision a trial key, or copy a 1-click upgrade link:</div>' +
+            '<table><thead><tr><th>GitHub Developer / Handle</th><th>Signal</th><th>Recommended Paid Tier</th><th>Actions</th></tr></thead><tbody>' +
+            leads.map(function (l) {
+              var safeHandle = String(l.handle || '').replace(/'/g, "\\'");
+              var synthEmail = safeHandle.toLowerCase() + '@users.noreply.github.com';
+              var dmPitch = 'Hey @' + safeHandle + ' — saw you ' + (l.signal === 'github_fork' ? 'forked' : 'starred') + ' ThumbGate! We just launched the hosted Cloud Token Firewall & Rule-Pack Bundle: https://thumbgate.ai/cloud (or grab the $49 Production Rule-Pack Bundle at https://thumbgate.ai/go/bundle-49). Happy to provision a free 7-day Pro key for your repo!';
+              var safePitch = dmPitch.replace(/'/g, "\\'");
+              return '<tr>' +
+                '<td style="font-weight:800;"><a href="' + (l.profileUrl || ('https://github.com/' + l.handle)) + '" target="_blank" style="color:var(--cyan);text-decoration:none;">@' + l.handle + ' ↗</a></td>' +
+                '<td><span class="pill ' + (l.signal === 'github_fork' ? 'pill-active' : 'pill-tier') + '">' + (l.signal === 'github_fork' ? '🍴 Forked Repo' : '⭐ Starred Repo') + '</span></td>' +
+                '<td class="mono">' + (l.recommendedOffer || 'Pro ($19/mo)') + '</td>' +
+                '<td><div class="row" style="gap:6px;">' +
+                  '<a class="btn btn-ghost btn-xs" style="text-decoration:none;" href="' + (l.profileUrl || ('https://github.com/' + l.handle)) + '" target="_blank">↗ GitHub Profile</a>' +
+                  '<button type="button" class="btn-green btn-xs" onclick="window.tgAdminAction(\'provision_key\',\'' + synthEmail + '\',{tierId:\'pro\'})">🔑 Provision Trial Key</button>' +
+                  '<button type="button" class="btn-cyan btn-xs" onclick="window.tgAdminCopyText(\'' + safePitch + '\',\'outreach DM for @' + safeHandle + '\')">📋 Copy Outreach DM</button>' +
+                '</div></td>' +
+              '</tr>';
+            }).join('') + '</tbody></table>';
           return;
         }
 

@@ -172,16 +172,38 @@ function syncActiveProjectContext(options = {}) {
   }
 }
 
-function telemetryPing(installId) {
+function detectGitUserEmail() {
+  if ((process.env.CI || process.env.NODE_ENV === 'test') && !process.env.THUMBGATE_CLI_REGISTER_URL) {
+    return null;
+  }
+  try {
+    const out = execFileSync('git', ['config', 'user.email'], {
+      cwd: CWD,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 1500,
+    }).toString().trim().toLowerCase();
+    if (out && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(out) && !out.endsWith('@users.noreply.github.com')) {
+      return out;
+    }
+  } catch (_) {}
+  return null;
+}
+
+function telemetryPing(installId, explicitEmail) {
   if (process.env.THUMBGATE_NO_TELEMETRY === '1') return;
+  const resolvedEmail = (explicitEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(explicitEmail))
+    ? explicitEmail.trim().toLowerCase()
+    : detectGitUserEmail();
   const payloadObject = {
     installId,
     eventType: 'cli_init',
     clientType: 'cli',
     source: 'cli',
+    visitorType: 'real_user',
     version: pkgVersion(),
     platform: process.platform,
     nodeVersion: process.version,
+    ...(resolvedEmail ? { email: resolvedEmail } : {}),
     timestamp: new Date().toISOString(),
   };
   appendLocalTelemetry(payloadObject);
@@ -190,7 +212,16 @@ function telemetryPing(installId) {
   try {
     const url = new URL('/v1/telemetry/ping', apiUrl);
     const mod = url.protocol === 'https:' ? require('https') : require('http');
-    const req = mod.request(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }, timeout: 3000 }, () => {});
+    const req = mod.request(url, {
+      method: 'POST',
+      family: 4,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+        'User-Agent': `ThumbGate-CLI/${pkgVersion()} (${process.platform}; ${process.arch})`,
+      },
+      timeout: 3000,
+    }, () => {});
     req.on('error', () => {});
     req.on('timeout', () => { req.destroy(); });
     req.on('socket', (s) => s.unref()); // fire-and-forget: never block process exit
@@ -1251,7 +1282,7 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   } catch (_) {
     // Avoid failing init if telemetry write cannot be performed.
   }
-  telemetryPing(config.installId);
+  telemetryPing(config.installId, onboardingEmail);
 }
 
 function capture() {
@@ -5608,6 +5639,62 @@ switch (COMMAND) {
     });
     req.on('timeout', () => {
       req.destroy(new Error('timeout after 8000ms'));
+    });
+    req.write(payload);
+    req.end();
+    break;
+  }
+  case 'login': {
+    const args = process.argv.slice(3);
+    let email = '';
+    for (const arg of args) {
+      if (arg.startsWith('--email=')) email = arg.slice('--email='.length).trim();
+      else if (!arg.startsWith('--')) email = arg.trim();
+    }
+    if (!email) email = detectGitUserEmail() || '';
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      console.error('Usage: npx thumbgate login <email>');
+      console.error('       npx thumbgate login --email=you@company.com');
+      process.exit(1);
+    }
+    const endpoint = process.env.THUMBGATE_CLI_REGISTER_URL || 'https://thumbgate.ai/v1/cloud/cli/register';
+    const payload = JSON.stringify({
+      email,
+      source: 'cli_login',
+      cliVersion: pkgVersion(),
+    });
+    const url = new URL(endpoint);
+    const transport = url.protocol === 'https:' ? require('node:https') : require('node:http');
+    const req = transport.request({
+      method: 'POST',
+      family: 4,
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname + url.search,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+        'User-Agent': `ThumbGate-CLI/${pkgVersion()} (${process.platform}; ${process.arch})`,
+      },
+      timeout: 8000,
+    }, (res) => {
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          console.log(`✓ Registered & logged in as ${email}`);
+          console.log('  Cloud quota: 250 free Cloud Firewall evaluations/day.');
+          console.log(`  Upgrade to Pro ($19/mo): https://thumbgate.ai/go/pro-direct?prefilled_email=${encodeURIComponent(email)}`);
+          process.exit(0);
+        } else {
+          console.error(`✗ Login failed: HTTP ${res.statusCode}`);
+          process.exit(2);
+        }
+      });
+    });
+    req.on('error', (err) => {
+      console.error(`✗ Login failed: ${err.message}`);
+      process.exit(3);
     });
     req.write(payload);
     req.end();

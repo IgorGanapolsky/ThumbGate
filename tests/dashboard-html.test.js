@@ -705,10 +705,50 @@ test('FinOps Phase 4 Intervention: Direct Cloud Indie/Startup alias slugs and Ca
     assert.match(cancelHtml, /id="buyer-email"/);
     assert.match(cancelHtml, /customerEmail:\s*buyerEmail/);
     assert.match(cancelHtml, /Start 7-Day Free Pro Trial/);
+
+    // Gap 1 & 2: POST /v1/cloud/cli/register and POST /v1/billing/capture-lead register leads in /admin
+    const cliRegRes = await fetch(`http://127.0.0.1:${port}/v1/cloud/cli/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'cli-builder@acme.dev',
+        installId: 'inst_test_999',
+        cliVersion: '2.10.2',
+        source: 'cli_init',
+      }),
+    });
+    assert.equal(cliRegRes.status, 200);
+    const cliRegJson = await cliRegRes.json();
+    assert.equal(cliRegJson.ok, true);
+    assert.equal(cliRegJson.account.email, 'cli-builder@acme.dev');
+
+    const leadRes = await fetch(`http://127.0.0.1:${port}/v1/billing/capture-lead`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'buyer-intent@enterprise.io',
+        tierId: 'pro_monthly',
+        source: 'homepage_checkout_click',
+      }),
+    });
+    assert.equal(leadRes.status, 200);
+    const leadJson = await leadRes.json();
+    assert.equal(leadJson.ok, true);
+    assert.equal(leadJson.lead.email, 'buyer-intent@enterprise.io');
+
+    // Gap 3: Admin HTML and /v1/admin/customers surface OSS & CLI installs + 22 verified GitHub stargazers/forkers
+    const firewall = require('../src/cloud-token-firewall');
+    assert.ok(Array.isArray(firewall.VERIFIED_OSS_ECOSYSTEM_LEADS));
+    assert.ok(firewall.VERIFIED_OSS_ECOSYSTEM_LEADS.length >= 22);
+    const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'admin.html'), 'utf8');
+    assert.match(adminHtml, /id="kpiCardOss"/);
+    assert.match(adminHtml, /id="tabBtnOss"/);
+    assert.match(adminHtml, /Copy Outreach DM/);
   } finally {
     if (prevInsecure === undefined) delete process.env.THUMBGATE_ALLOW_INSECURE;
     else process.env.THUMBGATE_ALLOW_INSECURE = prevInsecure;
     await new Promise((resolve) => srv.close(resolve));
   }
 });
+
 
