@@ -69,7 +69,7 @@ const BOT_PATTERNS = [
   /\bembedly\b/i,
   /\biframely\b/i,
   // Generic bot/crawler/spider markers (including compound names like ElevenlabsCrawler, SolvedEarthPriceBot)
-  /[a-z0-9_-]*(?:bot|crawler|spider)\b/i,
+  /(?:bot|crawler|spider)\b/i,
   /\bcrawl\b/i,
   /\brobot\b/i,
   /\bheadless(?:chrome|browser)?\b/i,

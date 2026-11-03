@@ -329,10 +329,8 @@ function repairEmbeddedQueryToken(value, targetRaw = {}) {
   const text = normalizeText(value, 512);
   if (!text) return null;
   const decoded = text
-    .replace(/\\u0026/gi, '&')
-    .replace(/%26/gi, '&')
+    .replace(/&amp;|\\u0026|%26/gi, '&')
     .replace(/%3d/gi, '=')
-    .replace(/&amp;/gi, '&')
     .replace(/\\+$/g, '');
   if (!decoded.includes('&') && !decoded.includes('=')) {
     return normalizeText(decoded);

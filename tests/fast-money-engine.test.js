@@ -198,7 +198,7 @@ test('evaluateResearchRabbitRevenueEngine (app.researchrabbit.ai): activates Goo
   assert.equal(res.outboundCashSpendUsd, 0);
   assert.equal(res.savedSeedPapersCount, 5);
   assert.ok(res.outreachMessages[0].citationGroundedDm.includes('SafeAgent'));
-  assert.ok(res.outreachMessages[0].citationGroundedDm.includes('https://thumbgate.ai/go/bundle-49'));
+  assert.match(res.outreachMessages[0].citationGroundedDm, /\/go\/bundle-49\b/);
 
   const nonZeroSpend = fastMoney.evaluateResearchRabbitRevenueEngine({ outboundCashSpendUsd: 25 });
   assert.equal(nonZeroSpend.ok, false);

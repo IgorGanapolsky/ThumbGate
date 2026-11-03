@@ -1182,7 +1182,7 @@ async function loadCustomerProjects() {
       sel.innerHTML = data.projects.map(function(p) {
         var selected = (p.slug === activeSlug) ? ' selected' : '';
         var countSuffix = (typeof p.totalFeedback === 'number') ? ' (' + p.totalFeedback + ' signals)' : '';
-        return '<option value="' + escHtml(p.slug) + '"' + selected + '>' + escHtml(p.name || p.slug) + countSuffix + '</option>';
+        return '<option value="' + escAttr(p.slug) + '"' + selected + '>' + escHtml(p.name || p.slug) + countSuffix + '</option>';
       }).join('');
     }
     if (data.email) {

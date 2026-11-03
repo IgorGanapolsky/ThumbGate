@@ -4844,7 +4844,8 @@ function evaluateWajoFoTrustAndTaskCompletionSteal({
   if (!verifyIssueOpenBeforeDrafting) {
     blockers.push('wajo_fo_missing_live_open_issue_verification');
   }
-  if (!Array.isArray(mcpServerEndpoints) || !mcpServerEndpoints.includes('https://mcp.api.wajo.ai/mcp') || !mcpServerEndpoints.includes('https://mcp.api.wajo.ai/fo')) {
+  const endpointSet = new Set(Array.isArray(mcpServerEndpoints) ? mcpServerEndpoints : []);
+  if (!endpointSet.has('https://mcp.api.wajo.ai/mcp') || !endpointSet.has('https://mcp.api.wajo.ai/fo')) {
     blockers.push('wajo_fo_mcp_endpoints_incomplete');
   }
   if (!scheduleOptimization || !scheduleOptimization.ok) {

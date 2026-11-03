@@ -2258,8 +2258,9 @@ function addDiagnosticRecs(diagnostics, output) {
 }
 
 function getSQLiteFallback(useSQLite, entries) {
-  const db = useSQLite ? getLessonDB() : null;
-  if (!db || entries.length > 0) return null;
+  if (!useSQLite || entries.length > 0) return null;
+  const db = getLessonDB();
+  if (!db) return null;
   try {
     const { getStatsFromDB } = require('./lesson-db');
     const sqliteStats = getStatsFromDB(db);
