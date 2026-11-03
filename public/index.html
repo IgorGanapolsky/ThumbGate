@@ -863,7 +863,7 @@
         <div class="trust-strip" aria-label="Where the gate runs">
           <span>7 CLIs · local gate</span>
         </div>
-        <p class="install-hint">Claude Code, Cursor, Codex.</p>
+        <p class="install-hint">Claude Code, Cursor, Codex, or similar agents.</p>
         <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
         <div class="offer-stack">
           <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
@@ -900,7 +900,7 @@
             <label for="buyer-email">Work email for receipt &amp; onboarding</label>
             <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
             <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="offers">Book the $499 setup</button>
-            <p class="checkout-note" style="margin-top:8px;"><a href="/go/diagnostic-direct?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=sprint_diagnostic_499&amp;cta_id=offers_diagnostic_direct_499&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_diagnostic_direct_499" style="color:var(--green);font-weight:750;">$499 Stripe</a> · <a href="/support" style="color:var(--cyan);font-weight:750;">Call</a></p>
+            <p class="checkout-note" style="margin-top:8px;"><a href="/go/diagnostic?utm_source=website&amp;utm_medium=homepage_offers&amp;utm_campaign=sprint_diagnostic_499&amp;cta_id=offers_diagnostic_direct_499&amp;cta_placement=offers" data-offer-link data-revenue-cta data-cta-id="offers_diagnostic_direct_499" style="color:var(--green);font-weight:750;">$499 Stripe</a> · <a href="/support" style="color:var(--cyan);font-weight:750;">Call</a></p>
             <ul class="offer-points">
               <li>60-minute working review for one workflow</li>
               <li>One configured local gate and its regression test</li>
@@ -1210,22 +1210,26 @@ next      decision recorded before execution</pre>
 
     function sendFirstPartyTelemetry(eventName, props) {
       if (privacySignalOptOut()) return;
+      const variantValue = typeof activeAbVariant !== 'undefined' ? activeAbVariant : undefined;
+      const params = (typeof urlParams !== 'undefined' && urlParams && typeof urlParams.get === 'function')
+        ? urlParams
+        : { get: function () { return null; } };
       const mergedProps = Object.assign({
-        campaignVariant: activeAbVariant,
-        utmSource: urlParams.get('utm_source') || undefined,
-        utmMedium: urlParams.get('utm_medium') || undefined,
-        utmCampaign: urlParams.get('utm_campaign') || undefined,
-        referredByVisitorId: urlParams.get('ref') || urlParams.get('referred_by') || undefined,
+        campaignVariant: variantValue,
+        utmSource: params.get('utm_source') || undefined,
+        utmMedium: params.get('utm_medium') || undefined,
+        utmCampaign: params.get('utm_campaign') || undefined,
+        referredByVisitorId: params.get('ref') || params.get('referred_by') || undefined,
       }, props || {});
       const payload = JSON.stringify({
         event: eventName,
         page: '/',
-        source: urlParams.get('utm_source') || 'homepage',
-        utmSource: urlParams.get('utm_source') || undefined,
-        utmMedium: urlParams.get('utm_medium') || undefined,
-        utmCampaign: urlParams.get('utm_campaign') || undefined,
-        campaignVariant: activeAbVariant,
-        referredByVisitorId: urlParams.get('ref') || urlParams.get('referred_by') || undefined,
+        source: params.get('utm_source') || 'homepage',
+        utmSource: params.get('utm_source') || undefined,
+        utmMedium: params.get('utm_medium') || undefined,
+        utmCampaign: params.get('utm_campaign') || undefined,
+        campaignVariant: variantValue,
+        referredByVisitorId: params.get('ref') || params.get('referred_by') || undefined,
         visitorId: serverVisitorId || undefined,
         sessionId: serverSessionId || undefined,
         acquisitionId: serverAcquisitionId || undefined,
