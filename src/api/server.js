@@ -3144,7 +3144,7 @@ p{color:#cbd5e1;margin:8px 0}form{margin:0}
 input[type=email]{width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid #374151;border-radius:8px;background:#111827;color:#fff;font-size:15px;margin:16px 0 0;outline:none}
 input[type=email]:focus{border-color:#22d3ee}input[type=email]::placeholder{color:#64748b}
 button.primary,a.primary{box-sizing:border-box;background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%}
-a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}
+a{display:block;text-decoration:none}a.secondary,button.secondary{box-sizing:border-box;display:block;width:100%;border:1px solid #374151;color:#cbd5e1;background:transparent;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px;cursor:pointer}
 .trust,.objection-box{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}
 .trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}
 .choice-note,.email-note,.objection-note{font-size:13px;color:#94a3b8;margin-top:10px}
@@ -3167,13 +3167,11 @@ ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
 <input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email" required>
 <p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
-<button type="submit" class="primary">Email a receipt, then pay →</button>
+<button type="submit" class="secondary">Email a receipt, then pay →</button>
 </form>
-<a class="secondary" data-i="cloud_indie_49" rel="nofollow" href="/go/cloud-indie?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=cloud_indie_49&amp;cta_id=cloud_indie_49&amp;cta_placement=checkout_interstitial">Cloud Indie (AWS Token Optimizer · 1M tokens/mo) — $49/mo →</a>
-<a class="secondary" data-i="cloud_startup_199" rel="nofollow" href="/go/cloud-startup?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=cloud_startup_199&amp;cta_id=cloud_startup_199&amp;cta_placement=checkout_interstitial">Cloud Startup (10M tokens/mo + Loop-Kill Webhooks) — $199/mo →</a>
-<a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Prefer one-time (no subscription)? Production Rule-Pack Kit — $49 →</a>
-<a class="secondary" data-i="pro_checkout_playbook_999" rel="nofollow" href="/go/playbook-999?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=playbook_999&amp;cta_id=pro_checkout_playbook_999&amp;cta_placement=checkout_interstitial">Just want the 2026 Agent FinOps &amp; Cost Playbook (One-Time)? — $9.99 →</a>
-<a class="secondary" data-i="pro_checkout_annual_149" rel="nofollow" href="/go/pro-annual?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_annual_149&amp;cta_id=pro_checkout_annual_149&amp;cta_placement=checkout_interstitial">Annual billing (save 35%)? ThumbGate Pro — $149/yr →</a>
+<p class="choice-note">If a monthly plan is not the buy, these are one-time.</p>
+<a class="secondary" data-i="pro_checkout_playbook_999" rel="nofollow" href="/go/playbook-999?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=playbook_999&amp;cta_id=pro_checkout_playbook_999&amp;cta_placement=checkout_interstitial">Buy the $9.99 playbook, once</a>
+<a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Buy the $49 bundle, once</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
 <p class="choice-note">Cancel anytime. 7-day refund, no questions.</p>
 <div class="objection-box" aria-label="Checkout feedback">
