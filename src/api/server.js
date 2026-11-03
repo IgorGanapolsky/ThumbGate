@@ -633,6 +633,7 @@ const TRACKED_LINK_QUERY_KEYS = new Set([
   'seat_count',
   'trial',
   'trial_days',
+  'trial_no_card',
   'landing_path',
   'referrer_host',
 ]);
@@ -2023,6 +2024,9 @@ function buildCheckoutAttributionMetadata(body, req, traceId) {
     ...(pickFirstText(rawMetadata.trialDays, rawMetadata.trial_days, body.trialDays, body.trial_days)
       ? { trialDays: pickFirstText(rawMetadata.trialDays, rawMetadata.trial_days, body.trialDays, body.trial_days) }
       : {}),
+    ...(pickFirstText(rawMetadata.trialNoCard, rawMetadata.trial_no_card, body.trialNoCard, body.trial_no_card)
+      ? { trialNoCard: pickFirstText(rawMetadata.trialNoCard, rawMetadata.trial_no_card, body.trialNoCard, body.trial_no_card) }
+      : {}),
   };
 }
 
@@ -3172,7 +3176,7 @@ ${hiddenInputs}
 <p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
 <button type="submit" class="secondary">Email a receipt, then pay →</button>
 </form>
-<a class="secondary" data-i="pro_checkout_trial_7d" rel="nofollow" href="/go/pro-direct?trial=1&amp;utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_trial_7d&amp;cta_id=pro_checkout_trial_7d&amp;cta_placement=checkout_interstitial">Try Pro free for 7 days ($0 today, then $19/mo) →</a>
+<a class="secondary" data-i="pro_checkout_trial_7d" rel="nofollow" href="/go/pro-direct?trial=1&amp;trial_no_card=1&amp;utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=pro_trial_7d&amp;cta_id=pro_checkout_trial_7d&amp;cta_placement=checkout_interstitial">Try Pro free for 7 days ($0 today, no card required) →</a>
 <a class="secondary" data-i="pro_checkout_bundle_49" rel="nofollow" href="/go/bundle-49?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=bundle_49&amp;cta_id=pro_checkout_bundle_49&amp;cta_placement=checkout_interstitial">Buy the $49 bundle, once — Production Rule-Pack Kit →</a>
 <a class="secondary" data-i="pro_checkout_playbook_999" rel="nofollow" href="/go/playbook-999?utm_source=website&amp;utm_medium=checkout_interstitial&amp;utm_campaign=playbook_999&amp;cta_id=pro_checkout_playbook_999&amp;cta_placement=checkout_interstitial">Buy the $9.99 playbook, once — 2026 Agent FinOps Playbook →</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
@@ -3343,6 +3347,7 @@ function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneySt
     seatCount,
     ...(pickFirstText(params.get('trial')) ? { trial: pickFirstText(params.get('trial')) } : {}),
     ...(pickFirstText(params.get('trial_days'), params.get('trialPeriodDays')) ? { trialDays: pickFirstText(params.get('trial_days'), params.get('trialPeriodDays')) } : {}),
+    ...(pickFirstText(params.get('trial_no_card'), params.get('trialNoCard')) ? { trialNoCard: pickFirstText(params.get('trial_no_card'), params.get('trialNoCard')) } : {}),
     metadata: {
       referrer: pickFirstText(params.get('referrer'), req.headers.referer, req.headers.referrer),
       landingPath: pickFirstText(params.get('landing_path'), '/'),
@@ -5341,14 +5346,14 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 function renderCheckoutCancelledPage(runtimeConfig) {
   const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
-  const trialUrl = escapeHtmlAttribute(new URL('/go/pro-direct?trial=1&utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=pro_trial_7d', runtimeConfig.appOrigin).toString());
+  const trialUrl = escapeHtmlAttribute(new URL('/go/pro-direct?trial=1&trial_no_card=1&utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=pro_trial_7d', runtimeConfig.appOrigin).toString());
   const playbookUrl = escapeHtmlAttribute(new URL('/go/playbook-999?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=playbook_999', runtimeConfig.appOrigin).toString());
   const bundle49Url = escapeHtmlAttribute(new URL('/go/bundle-49?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=bundle_49', runtimeConfig.appOrigin).toString());
   const diagnosticUrl = escapeHtmlAttribute(new URL('/diagnostic', runtimeConfig.appOrigin).toString());
   const workflowSprintUrl = escapeHtmlAttribute(new URL('/go/sprint', runtimeConfig.appOrigin).toString());
   const workflowSprintIntakeUrl = escapeHtmlAttribute(new URL('/#workflow-sprint-intake', runtimeConfig.appOrigin).toString());
   const recoveryOfferLinks = [
-    `<a href="${trialUrl}" data-recovery-offer="pro_trial_7d" data-offer-price="0">Start 7-Day Free Trial ($0 Today, then $19/mo)</a>`,
+    `<a href="${trialUrl}" data-recovery-offer="pro_trial_7d" data-offer-price="0">Start 7-Day Free Trial ($0 Today, No Card Required)</a>`,
     `<a href="${playbookUrl}" data-recovery-offer="playbook_999" data-offer-price="9.99">Buy $9.99 Playbook (One-Time, No Subscription)</a>`,
     `<a href="${bundle49Url}" data-recovery-offer="bundle_49" data-offer-price="49">Buy $49 Production Bundle (One-Time Expense)</a>`,
     `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,

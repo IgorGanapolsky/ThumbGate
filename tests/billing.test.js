@@ -537,6 +537,21 @@ describe('billing.js — funnel ledger', () => {
     });
 
     assert.deepEqual(customTrial.subscription_data, { trial_period_days: 14 });
+
+    const noCardTrial = billing._buildCheckoutSessionPayload({
+      successUrl: 'https://example.com/success',
+      cancelUrl: 'https://example.com/cancel',
+      checkoutMetadata: {
+        traceId: 'trace_checkout_payload_nocard_trial',
+        trial: '1',
+        trialNoCard: '1',
+      },
+    });
+    assert.equal(noCardTrial.payment_method_collection, 'if_required');
+    assert.deepEqual(noCardTrial.subscription_data, {
+      trial_period_days: 7,
+      trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
+    });
   });
 
   test('checkout session status preserves trace id for cross-service lookup', async () => {
