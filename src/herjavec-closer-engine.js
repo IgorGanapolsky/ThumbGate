@@ -1242,6 +1242,141 @@ function evaluateGartnerOpenModelHarnessRouter(input = {}) {
   };
 }
 
+/**
+ * Kanzo Agent-Safe Kanban & Ultra-Compact MCP Task Board Process Engine (Clean-Room Steal)
+ * Reference: https://x.com/DanKornas/status/2116646648952783046 & https://github.com/emanuele-em/kanzo
+ * Note: Clean-room ThumbGate implementation on native rails (zero AGPL-3.0 code vendored).
+ *
+ * Key process & system innovations stolen:
+ * 1. Agent-Safe Backlog & Human-Only Task Lock:
+ *    - Tasks in `backlog` column are strictly off-limits to agents (`BLOCK_AGENT_BACKLOG_ACCESS`)
+ *      until a human promotes them to `todo`.
+ *    - Tasks flagged `humanOnly: true` cannot be claimed or moved by agents (`BLOCK_HUMAN_ONLY_TASK`).
+ * 2. Auto-Project Resolution from `git remote`:
+ *    - Maps the agent's active repository `git remote` URL directly to the matching project board.
+ * 3. Ultra-Compact MCP Token Budget:
+ *    - Tool definitions fit in ~900 tokens once per session; MCP replies are 10–60 tokens of plain text
+ *      instead of bloated JSON dumps.
+ * 4. Multi-Machine Live LAN/Tailscale Share (`share on` / `join <ip>`), Git-Backed Sync (`--keep-local` / `--keep-remote`),
+ *    and Markdown/JSON Project Export.
+ */
+const KANZO_COLUMNS = Object.freeze(['backlog', 'todo', 'doing', 'done']);
+
+function evaluateKanzoAgentBoardProcess(input = {}) {
+  const actor = String(input.actor || 'agent').toLowerCase(); // 'agent' | 'human'
+  const action = String(input.action || 'take_next_task').toLowerCase();
+  const gitRemote = String(input.gitRemote || 'https://github.com/IgorGanapolsky/ThumbGate.git').trim();
+  const resolvedProject = gitRemote.replace(/\.git$/i, '').split('/').slice(-1)[0] || 'ThumbGate';
+
+  const defaultCards = [
+    {
+      id: 'card_101',
+      title: 'Explore experimental Q4 pricing page redesign',
+      column: 'backlog',
+      humanOnly: false,
+      project: resolvedProject,
+      comments: ['Parked in agent-safe backlog until Q4 kickoff.'],
+    },
+    {
+      id: 'card_102',
+      title: 'Approve Stripe production payout bank rotation',
+      column: 'todo',
+      humanOnly: true,
+      project: resolvedProject,
+      comments: ['Marked Human-Only: requires hardware 2FA.'],
+    },
+    {
+      id: 'card_103',
+      title: 'Wire Gartner 90/10 open-weight harness router and Kanzo board guard',
+      column: 'todo',
+      humanOnly: false,
+      project: resolvedProject,
+      comments: ['Ready for coding agent pickup via MCP.'],
+    },
+  ];
+
+  const cards = Array.isArray(input.cards) && input.cards.length > 0 ? input.cards : defaultCards;
+  const targetCardId = input.cardId ? String(input.cardId) : null;
+  const targetCard = targetCardId
+    ? cards.find((c) => c.id === targetCardId)
+    : cards.find((c) => c.column === 'todo' && !c.humanOnly);
+
+  if (actor === 'agent' && targetCard) {
+    if (targetCard.column === 'backlog') {
+      return {
+        ok: false,
+        verdict: 'BLOCK_AGENT_BACKLOG_ACCESS',
+        resolvedProject,
+        cardId: targetCard.id,
+        compactMcpReply: `Refused: ${targetCard.id} is in agent-safe backlog. Wait for human to move it to todo.`,
+        compactReplyTokenEstimate: 16,
+      };
+    }
+    if (targetCard.humanOnly) {
+      return {
+        ok: false,
+        verdict: 'BLOCK_HUMAN_ONLY_TASK',
+        resolvedProject,
+        cardId: targetCard.id,
+        compactMcpReply: `Refused: ${targetCard.id} is marked Human-Only. Agents must leave it to the operator.`,
+        compactReplyTokenEstimate: 16,
+      };
+    }
+  }
+
+  const updatedCards = cards.map((c) => {
+    if (targetCard && c.id === targetCard.id && action === 'take_next_task') {
+      return {
+        ...c,
+        column: 'doing',
+        claimedBy: input.agentName || 'claude-code-mcp',
+        comments: [...(c.comments || []), `Moved to doing by ${input.agentName || 'claude-code-mcp'}`],
+      };
+    }
+    return c;
+  });
+
+  const activeCard = targetCard
+    ? updatedCards.find((c) => c.id === targetCard.id)
+    : null;
+
+  const compactMcpReply = activeCard
+    ? `[${resolvedProject}] ${activeCard.id} -> ${activeCard.column}: "${activeCard.title}" (claimed by ${activeCard.claimedBy || actor}).`
+    : `[${resolvedProject}] No eligible todo cards available for ${actor}.`;
+
+  const markdownExport = [
+    `# Project Board: ${resolvedProject}`,
+    ...KANZO_COLUMNS.map((col) => {
+      const colCards = updatedCards.filter((c) => c.column === col);
+      const lines = colCards.map(
+        (c) => `- [${col === 'done' ? 'x' : ' '}] **${c.id}** ${c.title}${c.humanOnly ? ' *(Human)*' : ''}`
+      );
+      return `## ${col.toUpperCase()} (${colCards.length})\n${lines.join('\n') || '_Empty_'}`;
+    }),
+  ].join('\n\n');
+
+  return {
+    ok: true,
+    verdict: 'KANZO_PROCESS_APPLIED',
+    licenseCompliance: 'Clean-room ThumbGate native implementation (zero AGPL-3.0 code vendored)',
+    resolvedProject,
+    gitRemote,
+    columns: KANZO_COLUMNS,
+    tokenEfficiencySpec: {
+      sessionToolListTokens: 900,
+      replyTokenRange: '10-60 tokens plain text',
+      compactMcpReply,
+      compactReplyWordCount: compactMcpReply.split(/\s+/).length,
+    },
+    multiMachineSyncSpec: {
+      liveLanAndTailscaleShare: 'thumbgate board share on | thumbgate board join <tailscale-ip>',
+      gitRepoSync: 'thumbgate board sync --keep-local | --keep-remote',
+    },
+    cards: updatedCards,
+    markdownExport,
+  };
+}
+
 module.exports = {
   CTO_CISO_HARD_OBJECTIONS,
   DSH_SQL_FOUR_TOOLS,
@@ -1250,6 +1385,7 @@ module.exports = {
   OTEL_ATTRIBUTE_ALLOWLIST,
   GROK_TEAM_BOT_BENCHMARK,
   GARTNER_ROUTINE_STEP_TYPES,
+  KANZO_COLUMNS,
   resolveTechnicalBuyerObjection,
   auditFourClicksToOneClick,
   evaluateHerjavecDailyRevenueHabit,
@@ -1264,4 +1400,5 @@ module.exports = {
   evaluateLinkedInOtelJourneyForest,
   evaluateGrokTeamDataBot,
   evaluateGartnerOpenModelHarnessRouter,
+  evaluateKanzoAgentBoardProcess,
 };

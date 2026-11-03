@@ -600,6 +600,28 @@ test('Deslopify 9 Habits, Herjavec Closer, YouSpot Pro, HarnessSQL, Zou Group Sh
 
   const gartnerUnguarded = herjavec.evaluateGartnerOpenModelHarnessRouter({ thumbgateGuardrailsEnabled: false });
   assert.equal(gartnerUnguarded.workflowRoutingSummary.routineStepCostReductionMultiple, 5.71);
-});
 
+  // 12. Kanzo AI-Agent Kanban Process & Human-Only Guardrail Engine (backlog agent-safe zone, humanOnly lock, ~900 token tool spec)
+  const kanzoAllowed = herjavec.evaluateKanzoAgentBoardProcess({
+    actor: 'agent',
+    action: 'take_next_task',
+  });
+  assert.equal(kanzoAllowed.ok, true);
+  assert.equal(kanzoAllowed.verdict, 'KANZO_PROCESS_APPLIED');
+  assert.equal(kanzoAllowed.tokenEfficiencySpec.sessionToolListTokens, 900);
+
+  const kanzoBacklogBlocked = herjavec.evaluateKanzoAgentBoardProcess({
+    actor: 'agent',
+    cardId: 'card_101',
+  });
+  assert.equal(kanzoBacklogBlocked.ok, false);
+  assert.equal(kanzoBacklogBlocked.verdict, 'BLOCK_AGENT_BACKLOG_ACCESS');
+
+  const kanzoHumanOnlyBlocked = herjavec.evaluateKanzoAgentBoardProcess({
+    actor: 'agent',
+    cardId: 'card_102',
+  });
+  assert.equal(kanzoHumanOnlyBlocked.ok, false);
+  assert.equal(kanzoHumanOnlyBlocked.verdict, 'BLOCK_HUMAN_ONLY_TASK');
+});
 

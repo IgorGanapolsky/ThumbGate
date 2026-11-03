@@ -10733,6 +10733,14 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       return;
     }
 
+    // Kanzo AI-Agent Kanban Process & Human-Only Guardrail Engine (/v1/kanzo-board/process)
+    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/kanzo-board/process') {
+      const herjavec = require('../herjavec-closer-engine');
+      const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+      sendJson(res, 200, herjavec.evaluateKanzoAgentBoardProcess(body || {}), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/.well-known/agent-skills/index.json' || pathname === '/.well-known/skills/index.json')) {
       const appOrigin = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai';
       sendJson(res, 200, buildSkillsShWellKnownDiscoveryIndex({ appOrigin }), {}, { headOnly: isHeadRequest });
