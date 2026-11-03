@@ -645,8 +645,9 @@ test('Deslopify 9 Habits, Herjavec Closer, YouSpot Pro, HarnessSQL, Zou Group Sh
     firewall.evaluateDanKornasKanzoAgentKanbanSteal({ actor: 'agent', vendorAgplCode: true }).ok,
     false
   );
+});
 
-  // 13. FinOps Phase 4 Intervention: Direct Cloud Indie/Startup alias slugs + Cancel-page buyer-email recovery capture
+test('FinOps Phase 4 Intervention: Direct Cloud Indie/Startup alias slugs and Cancel-page buyer-email recovery capture work end-to-end', async () => {
   const serverMod = require('../src/api/server');
   assert.equal(serverMod.__test__.CHECKOUT_FEATURE_FLAGS.directCloudTierCheckoutEnabled, true);
   const srv = serverMod.createApiServer();
@@ -677,3 +678,4 @@ test('Deslopify 9 Habits, Herjavec Closer, YouSpot Pro, HarnessSQL, Zou Group Sh
     await new Promise((resolve) => srv.close(resolve));
   }
 });
+
