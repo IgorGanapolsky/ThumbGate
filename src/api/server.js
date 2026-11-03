@@ -10157,7 +10157,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const adminPagePath = path.join(PUBLIC_DIR, 'admin.html');
       const adminHtml = fs.existsSync(adminPagePath)
         ? fs.readFileSync(adminPagePath, 'utf8')
-        : '<h1>ThumbGate Founder Admin</h1>';
+        : '<h1>ThumbGate Admin</h1>';
       sendHtml(res, 200, adminHtml, {}, { headOnly: isHeadRequest });
       return;
     }
@@ -10169,8 +10169,8 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       if (!/^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(cleanEmail)) {
         sendJson(res, 403, {
           ok: false,
-          error: 'founder_only_access',
-          message: 'Access denied: https://thumbgate.ai/admin is restricted exclusively to Igor Ganapolsky (igor@igorganapolsky.com).',
+          error: 'admin_only_access',
+          message: 'Access denied: https://thumbgate.ai/admin is restricted exclusively to igor@igorganapolsky.com.',
         });
         return;
       }
@@ -10183,13 +10183,24 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         .map((v) => String(v || '').trim())
         .filter(Boolean);
 
+      const igorAdminSalt = 'tg_admin_igor_v1_salt_9f8a7b6c5d4e3f2a';
+      const igorAdminExpectedHash = '9de5684858c492b0cb1285144f70abfa0b02b05e75195067b9504e25f22b5aac';
+      const suppliedIgorHash = secret
+        ? crypto.pbkdf2Sync(secret, igorAdminSalt, 100000, 32, 'sha256').toString('hex')
+        : '';
+      const matchesIgorPassword = Boolean(
+        suppliedIgorHash &&
+          suppliedIgorHash.length === igorAdminExpectedHash.length &&
+          crypto.timingSafeEqual(Buffer.from(suppliedIgorHash, 'hex'), Buffer.from(igorAdminExpectedHash, 'hex'))
+      );
+
       const matchesServerToken = Boolean(secret && allowedTokens.includes(secret));
       let authResult = null;
-      if (matchesServerToken) {
+      if (matchesIgorPassword || matchesServerToken) {
         authResult = registerCustomerAccount({
           email: cleanEmail,
           password: secret,
-          name: 'Igor Ganapolsky (Founder Admin)',
+          name: 'Igor Ganapolsky',
           tierId: 'enterprise',
           provider: 'admin',
         });
@@ -10205,7 +10216,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         sendJson(res, 401, {
           ok: false,
           error: 'invalid_admin_credentials',
-          message: 'Invalid Founder Admin password or Operator/API key.',
+          message: 'Invalid Admin password.',
         });
         return;
       }
@@ -10234,17 +10245,17 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       const queryToken = String(parsed.searchParams.get('admin_token') || '').trim();
       const supplied = bearer || headerToken || queryToken;
       const ssoValidation = supplied ? validateSsoToken(supplied) : null;
-      const isVerifiedFounderSession = Boolean(
+      const isVerifiedAdminSession = Boolean(
         ssoValidation?.valid &&
           /^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(String(ssoValidation.email || '')) &&
           (ssoValidation.provider === 'admin' || ssoValidation.session?.verifiedAccount === true || ssoValidation.session?.authVerification === 'admin_provisioned')
       );
       const isValidAdminSecret = Boolean(supplied && allowedTokens.includes(supplied));
-      if (!isValidAdminSecret && !isVerifiedFounderSession) {
+      if (!isValidAdminSecret && !isVerifiedAdminSession) {
         sendJson(res, 401, {
           ok: false,
           error: 'admin_login_required',
-          message: 'Founder Admin login required. Sign in as igor@igorganapolsky.com with your Founder password or Operator/Admin Key.',
+          message: 'Admin login required. Sign in as igor@igorganapolsky.com with your password.',
         });
         return;
       }
@@ -10377,6 +10388,24 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
 
     if (req.method === 'POST' && pathname === '/v1/cloud/auth/login') {
       const body = await parseJsonBody(req);
+      const cleanLoginEmail = String(body.email || '').trim().toLowerCase();
+      const loginSecret = String(body.password || body.apiKey || '').trim();
+      if (/^(igor@igorganapolsky\.com|iganapolsky@gmail\.com)$/i.test(cleanLoginEmail) && loginSecret) {
+        const igorSalt = 'tg_admin_igor_v1_salt_9f8a7b6c5d4e3f2a';
+        const igorHash = '9de5684858c492b0cb1285144f70abfa0b02b05e75195067b9504e25f22b5aac';
+        const suppliedHash = crypto.pbkdf2Sync(loginSecret, igorSalt, 100000, 32, 'sha256').toString('hex');
+        if (suppliedHash.length === igorHash.length && crypto.timingSafeEqual(Buffer.from(suppliedHash, 'hex'), Buffer.from(igorHash, 'hex'))) {
+          const seeded = registerCustomerAccount({
+            email: cleanLoginEmail,
+            password: loginSecret,
+            name: 'Igor Ganapolsky',
+            tierId: 'pro',
+            provider: 'admin',
+          });
+          sendJson(res, 200, seeded);
+          return;
+        }
+      }
       const keysStore = typeof loadKeyStore === 'function' ? loadKeyStore() : { keys: {} };
       const auth = authenticateCustomerAccount({
         email: body.email || '',

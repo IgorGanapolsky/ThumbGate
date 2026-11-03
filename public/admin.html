@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ThumbGate Founder Admin — Customer &amp; Account Management</title>
+  <title>ThumbGate Admin — Customer &amp; Account Management</title>
   <meta name="robots" content="noindex,nofollow">
   <link rel="icon" type="image/svg+xml" href="/assets/brand/thumbgate-mark.svg">
   <style>
@@ -134,7 +134,7 @@
           <img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" width="28" height="28">
           <span>ThumbGate</span>
         </a>
-        <span class="badge-admin">🔒 Founder Admin Only</span>
+        <span class="badge-admin">🔒 Admin Only</span>
       </div>
       <div class="nav-links">
         <a href="/">Home</a>
@@ -149,28 +149,28 @@
   <main class="shell">
     <div id="adminStatusBanner"></div>
 
-    <!-- STRICT FOUNDER-ONLY LOGIN GATE (Visible by default; blocks all dashboard UI until authenticated) -->
+    <!-- STRICT ADMIN-ONLY LOGIN GATE (Visible by default; blocks all dashboard UI until authenticated) -->
     <div id="adminLoginGate" class="login-gate-wrap">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <span style="font-size:22px;">🔒</span>
-        <div style="font-weight:800;font-size:19px;">Founder Admin Login</div>
+        <div style="font-weight:800;font-size:19px;">Admin Login</div>
       </div>
       <p style="color:var(--muted);font-size:13px;margin:0 0 18px;">
-        Restricted exclusively to <strong>Igor Ganapolsky</strong> (<code>igor@igorganapolsky.com</code> / <code>iganapolsky@gmail.com</code>). Customer data and account management are hidden until verified.
+        Restricted exclusively to <strong>igor@igorganapolsky.com</strong>. Customer data and account management are hidden until verified.
       </p>
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div>
-          <label for="adminEmailInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Founder Email</label>
+          <label for="adminEmailInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Email</label>
           <input type="email" id="adminEmailInput" placeholder="igor@igorganapolsky.com" value="igor@igorganapolsky.com" style="width:100%;">
         </div>
         <div>
-          <label for="adminSecretInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Founder Password or Operator Key</label>
-          <input type="password" id="adminSecretInput" placeholder="Enter Founder Password or THUMBGATE_OPERATOR_KEY" style="width:100%;" onkeydown="if(event.key==='Enter'){window.tgAdminAuthenticate();}">
+          <label for="adminSecretInput" style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Password</label>
+          <input type="password" id="adminSecretInput" placeholder="Enter your password" style="width:100%;" onkeydown="if(event.key==='Enter'){window.tgAdminAuthenticate();}">
         </div>
-        <button type="button" id="adminSignInBtn" class="btn-cyan" style="width:100%;font-size:13px;" onclick="window.tgAdminAuthenticate()">Sign In to Founder Admin →</button>
+        <button type="button" id="adminSignInBtn" class="btn-cyan" style="width:100%;font-size:13px;" onclick="window.tgAdminAuthenticate()">Sign In to Admin →</button>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">
-        All login attempts from non-founder emails are rejected with <code>403 Forbidden (founder_only_access)</code>.
+        All login attempts from other emails are rejected with <code>403 Forbidden</code>.
       </div>
     </div>
 
@@ -179,7 +179,7 @@
       <div class="row" style="justify-content:space-between;margin-bottom:16px;">
         <div>
           <h1>Customer &amp; Account Management (`https://thumbgate.ai/admin`)</h1>
-          <p class="sub" style="margin-bottom:0;">Authenticated as Founder Admin. Inspect registered accounts, Stripe subscribers, provisioned license keys, and active sessions.</p>
+          <p class="sub" style="margin-bottom:0;">Inspect registered accounts, Stripe subscribers, provisioned license keys, and active sessions.</p>
         </div>
         <div class="row">
           <button type="button" class="btn-amber" onclick="window.tgAdminPurgeUnverified()">Purge Unverified Legacy Sessions</button>
@@ -303,14 +303,14 @@
         } catch (e) {}
         allCustomers = [];
         setUnlockedState(false);
-        showBanner('Signed out of Founder Admin Console.', true);
+        showBanner('Signed out of Admin Console.', true);
       };
 
       window.tgAdminAuthenticate = async function () {
         var email = (document.getElementById('adminEmailInput').value || '').trim().toLowerCase();
         var secret = (document.getElementById('adminSecretInput').value || '').trim();
         if (!email || !secret) {
-          showBanner('Enter both your Founder Email and Founder Password / Operator Key.', false);
+          showBanner('Enter both your Email and Password.', false);
           return;
         }
 
@@ -328,7 +328,7 @@
         var loginData = await loginRes.json().catch(function () { return {}; });
         if (!loginRes.ok || !loginData || !loginData.ok) {
           setUnlockedState(false);
-          showBanner((loginData && loginData.message) || 'Access denied (403/401). Restricted exclusively to Igor Ganapolsky.', false);
+          showBanner((loginData && loginData.message) || 'Access denied (403/401). Restricted exclusively to igor@igorganapolsky.com.', false);
           return;
         }
 
@@ -358,11 +358,11 @@
         var data = await res.json().catch(function () { return {}; });
         if (!res.ok || !data || !data.ok) {
           setUnlockedState(false);
-          showBanner((data && data.message) || 'Founder Admin login required (401/403).', false);
+          showBanner((data && data.message) || 'Admin login required (401/403).', false);
           return;
         }
         setUnlockedState(true, 'igor@igorganapolsky.com');
-        showBanner('Authenticated as Founder Admin — ' + (data.summary.totalAccounts || 0) + ' total records loaded.', true);
+        showBanner('Authenticated as igor@igorganapolsky.com — ' + (data.summary.totalAccounts || 0) + ' total records loaded.', true);
         document.getElementById('kpiTotalAccounts').textContent = String(data.summary.totalAccounts || 0);
         document.getElementById('kpiRegisteredAccounts').textContent = String(data.summary.registeredAccounts || 0);
         document.getElementById('kpiActiveSessions').textContent = String(data.summary.activeSessions || 0);
