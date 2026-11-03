@@ -645,5 +645,35 @@ test('Deslopify 9 Habits, Herjavec Closer, YouSpot Pro, HarnessSQL, Zou Group Sh
     firewall.evaluateDanKornasKanzoAgentKanbanSteal({ actor: 'agent', vendorAgplCode: true }).ok,
     false
   );
-});
 
+  // 13. FinOps Phase 4 Intervention: Direct Cloud Indie/Startup alias slugs + Cancel-page buyer-email recovery capture
+  const serverMod = require('../src/api/server');
+  assert.equal(serverMod.__test__.CHECKOUT_FEATURE_FLAGS.directCloudTierCheckoutEnabled, true);
+  const srv = serverMod.createApiServer();
+  await new Promise((resolve) => srv.listen(0, '127.0.0.1', resolve));
+  const port = srv.address().port;
+  try {
+    const indieRes = await fetch(`http://127.0.0.1:${port}/go/cloud-indie-49`, {
+      redirect: 'manual',
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 Chrome/130.0' },
+    });
+    assert.equal(indieRes.status, 302);
+    assert.match(indieRes.headers.get('location') || '', /plan_id=cloud_indie/);
+
+    const startupRes = await fetch(`http://127.0.0.1:${port}/go/cloud-startup-199`, {
+      redirect: 'manual',
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 Chrome/130.0' },
+    });
+    assert.equal(startupRes.status, 302);
+    assert.match(startupRes.headers.get('location') || '', /plan_id=cloud_startup/);
+
+    const cancelRes = await fetch(`http://127.0.0.1:${port}/checkout/cancel?customer_email=cto%40acme.io`);
+    assert.equal(cancelRes.status, 200);
+    const cancelHtml = await cancelRes.text();
+    assert.match(cancelHtml, /id="buyer-email"/);
+    assert.match(cancelHtml, /customerEmail:\s*buyerEmail/);
+    assert.match(cancelHtml, /Start 7-Day Free Pro Trial/);
+  } finally {
+    await new Promise((resolve) => srv.close(resolve));
+  }
+});

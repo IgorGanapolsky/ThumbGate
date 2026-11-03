@@ -486,6 +486,7 @@ function parseCheckoutFeatureFlags() {
     return {
       checkoutInterstitialVariant: String(parsed.checkout_interstitial_variant || 'default'),
       cancelPageDownsellEnabled: Boolean(parsed.cancel_page_downsell_enabled),
+      directCloudTierCheckoutEnabled: parsed.direct_cloud_tier_checkout_enabled !== false,
       stripePriceOverride: parsed.stripe_price_override ? String(parsed.stripe_price_override) : null,
       gumroadBundleOverride: parsed.gumroad_bundle_override ? String(parsed.gumroad_bundle_override) : null,
       gumroadPlaybookOverride: parsed.gumroad_playbook_override ? String(parsed.gumroad_playbook_override) : null,
@@ -495,6 +496,7 @@ function parseCheckoutFeatureFlags() {
     return {
       checkoutInterstitialVariant: 'default',
       cancelPageDownsellEnabled: false,
+      directCloudTierCheckoutEnabled: true,
       stripePriceOverride: null,
       gumroadBundleOverride: null,
       gumroadPlaybookOverride: null,
@@ -768,6 +770,7 @@ const TRACKED_LINK_TARGETS = Object.freeze({
   },
   'cloud-indie': {
     path: '/checkout/pro?plan_id=cloud_indie&billing_cycle=monthly',
+    botDeflectPath: '/checkout/pro?plan_id=cloud_indie&billing_cycle=monthly',
     ctaId: 'cloud_indie_49',
     ctaPlacement: 'cloud_saas',
     eventType: 'checkout_started',
@@ -779,9 +782,27 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       billing_cycle: 'monthly',
     },
     allowCustomerEmail: true,
+    prefillStripeEmail: true,
+  },
+  'cloud-indie-49': {
+    path: '/checkout/pro?plan_id=cloud_indie&billing_cycle=monthly',
+    botDeflectPath: '/checkout/pro?plan_id=cloud_indie&billing_cycle=monthly',
+    ctaId: 'cloud_indie_49',
+    ctaPlacement: 'cloud_saas',
+    eventType: 'checkout_started',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'cloud_saas',
+      utm_campaign: 'cloud_indie_49',
+      plan_id: 'cloud_indie',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+    prefillStripeEmail: true,
   },
   'cloud-startup': {
     path: '/checkout/pro?plan_id=cloud_startup&billing_cycle=monthly',
+    botDeflectPath: '/checkout/pro?plan_id=cloud_startup&billing_cycle=monthly',
     ctaId: 'cloud_startup_199',
     ctaPlacement: 'cloud_saas',
     eventType: 'checkout_started',
@@ -793,6 +814,23 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       billing_cycle: 'monthly',
     },
     allowCustomerEmail: true,
+    prefillStripeEmail: true,
+  },
+  'cloud-startup-199': {
+    path: '/checkout/pro?plan_id=cloud_startup&billing_cycle=monthly',
+    botDeflectPath: '/checkout/pro?plan_id=cloud_startup&billing_cycle=monthly',
+    ctaId: 'cloud_startup_199',
+    ctaPlacement: 'cloud_saas',
+    eventType: 'checkout_started',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'cloud_saas',
+      utm_campaign: 'cloud_startup_199',
+      plan_id: 'cloud_startup',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+    prefillStripeEmail: true,
   },
   // Operator Framework offers (/operator-framework). Same-origin hop keeps
   // buy.stripe.com out of public HTML; bots are deflected to the page.
@@ -3541,8 +3579,15 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
     res.end();
     return;
   }
+  const isDirectCloudSlug = CHECKOUT_FEATURE_FLAGS.directCloudTierCheckoutEnabled
+    && (
+      target.slug === 'cloud-indie'
+      || target.slug === 'cloud-indie-49'
+      || target.slug === 'cloud-startup'
+      || target.slug === 'cloud-startup-199'
+    );
   if (
-    (target.slug === 'pro-direct' || target.slug === 'pro-annual')
+    (target.slug === 'pro-direct' || target.slug === 'pro-annual' || isDirectCloudSlug)
     && process.env.STRIPE_SECRET_KEY
     && !process.env.NODE_TEST_CONTEXT
     && !isHeadRequest
@@ -3550,11 +3595,16 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
     try {
       const requestedCycle = String(parsed.searchParams.get('billing_cycle') || '').trim().toLowerCase();
       const billingCycle = target.slug === 'pro-annual' || requestedCycle === 'annual' ? 'annual' : 'monthly';
-      const requestedPlan = String(parsed.searchParams.get('plan_id') || '').trim().toLowerCase();
+      const slugDefaultPlan = (target.slug === 'cloud-indie' || target.slug === 'cloud-indie-49')
+        ? 'cloud_indie'
+        : (target.slug === 'cloud-startup' || target.slug === 'cloud-startup-199')
+          ? 'cloud_startup'
+          : 'pro';
+      const requestedPlan = String(parsed.searchParams.get('plan_id') || slugDefaultPlan).trim().toLowerCase();
       const customerEmail = normalizeCheckoutCustomerEmail(parsed.searchParams.get('customer_email')) || undefined;
       const traceId = createJourneyId('checkout');
       const bootstrapBody = buildCheckoutBootstrapBody(parsed, req, journeyState);
-      bootstrapBody.planId = ['pro', 'cloud_indie', 'cloud_startup', 'team'].includes(requestedPlan) ? requestedPlan : 'pro';
+      bootstrapBody.planId = ['pro', 'cloud_indie', 'cloud_startup', 'team'].includes(requestedPlan) ? requestedPlan : slugDefaultPlan;
       bootstrapBody.billingCycle = billingCycle;
       const analyticsMetadata = buildCheckoutAttributionMetadata(bootstrapBody, req, traceId);
       const sessionResult = await createCheckoutSession({
@@ -3567,6 +3617,20 @@ async function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHead
         appOrigin: hostedConfig.appOrigin,
       });
       if (sessionResult && sessionResult.url) {
+        const dynamicDestinationUrl = new URL(sessionResult.url);
+        const dynamicAttribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, dynamicDestinationUrl);
+        appendBestEffortTelemetry(
+          FEEDBACK_DIR,
+          {
+            ...dynamicAttribution,
+            traceId,
+            stripeSessionId: sessionResult.sessionId || null,
+            planId: bootstrapBody.planId,
+            billingCycle,
+          },
+          req.headers,
+          `tracked_link_redirect:${target.slug}`
+        );
         res.writeHead(302, {
           ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
           'Cache-Control': 'no-store',
@@ -5405,6 +5469,8 @@ function renderCheckoutCancelledPage(runtimeConfig) {
         <button type="button" data-reason="integration_unclear">Integration is unclear</button>
       </div>
       <div style="margin-top:16px;">
+        <label for="buyer-email">Where should we send your 14-day Pro recovery link or one-time receipt? (optional)</label>
+        <input type="email" id="buyer-email" placeholder="you@company.com" style="width:100%;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);padding:12px;font:inherit;margin:6px 0 12px;" />
         <label for="buyer-note">Anything specific?</label>
         <textarea id="buyer-note" placeholder="Optional detail: team size, workflow, blocker, competitor, or missing feature."></textarea>
       </div>
@@ -5420,12 +5486,17 @@ function renderCheckoutCancelledPage(runtimeConfig) {
       (function () {
         const params = new URLSearchParams(window.location.search);
         const statusEl = document.getElementById('status');
+        const emailEl = document.getElementById('buyer-email');
         const noteEl = document.getElementById('buyer-note');
         const retryLink = document.getElementById('retry-checkout');
         const workflowIntakeLink = document.getElementById('send-workflow-first');
         let selectedReason = null;
+        if (emailEl && (params.get('customer_email') || params.get('email'))) {
+          emailEl.value = params.get('customer_email') || params.get('email') || '';
+        }
 
         function sendTelemetry(eventType, extra) {
+          const buyerEmail = (emailEl && emailEl.value ? emailEl.value.trim() : '') || params.get('customer_email') || null;
           const payload = Object.assign({
             eventType: eventType,
             clientType: 'web',
@@ -5434,6 +5505,7 @@ function renderCheckoutCancelledPage(runtimeConfig) {
             visitorId: params.get('visitor_id'),
             sessionId: params.get('visitor_session_id') || params.get('session_id'),
             installId: params.get('install_id'),
+            customerEmail: buyerEmail,
             source: params.get('utm_source') || params.get('source') || 'website',
             utmSource: params.get('utm_source') || params.get('source') || 'website',
             utmMedium: params.get('utm_medium') || 'checkout_cancel',
