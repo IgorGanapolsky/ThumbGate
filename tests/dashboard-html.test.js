@@ -168,3 +168,60 @@ test('dashboard demo keeps paid and revenue placeholders evidence-safe', () => {
   assert.doesNotMatch(dashboard, /opportunity \$49\.00/);
   assert.doesNotMatch(dashboard, /Live demo data below\./);
 });
+
+test('dashboard canonicalizes raw Cloud Run .run.app URLs and renders Nov 2026 agent firewall demo', () => {
+  const dashboard = readDashboard();
+
+  assert.match(dashboard, /host\.endsWith\('\.run\.app'\)/);
+  assert.match(dashboard, /window\.location\.replace\('https:\/\/thumbgate\.ai'/);
+  assert.match(dashboard, /class="canonical-url-pill"/);
+  assert.match(dashboard, /id="statTokensSaved"/);
+  assert.match(dashboard, /renderFeedbackTrendChart\(\(data && data\.feedbackTimeSeries\) \|\| \{\}\)/);
+  assert.match(dashboard, /Blocked runaway agent retry loop burning 48K tokens\/min/);
+  assert.doesNotMatch(dashboard, /Jamie M\., Partner/);
+});
+
+test('dashboard and thumbgate.ai homepage provide SSO Login/Logout buttons and individual customer project workspaces without auto-demo', () => {
+  const dashboard = readDashboard();
+  const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const firewall = require('../src/cloud-token-firewall');
+
+  assert.match(dashboard, /id="navSsoLoginBtn"/);
+  assert.match(dashboard, /id="navSsoLogoutBtn"/);
+  assert.match(dashboard, /id="customerProjectsBar"/);
+  assert.match(dashboard, /id="customerProjectSelect"/);
+  assert.match(dashboard, /function signInWithSso\(provider\)/);
+  assert.match(dashboard, /function loadCustomerProjects\(\)/);
+  assert.match(dashboard, /function switchCustomerProject\(projectSlug\)/);
+  assert.match(dashboard, /function createCustomerProject\(\)/);
+  assert.match(dashboard, /never auto-load demo/);
+
+  assert.match(indexHtml, /id="homeSsoSignInBtn"/);
+  assert.match(indexHtml, /id="homeSsoLogoutBtn"/);
+  assert.match(indexHtml, /id="homeProjectSelect"/);
+  assert.match(indexHtml, /window\.tgHomeSsoLogin = async function/);
+  assert.match(indexHtml, /window\.tgCreateHomeProject = async function/);
+  assert.match(indexHtml, /window\.tgHomeLogout = async function/);
+
+  const authRes = firewall.initiateEnterpriseSso({
+    provider: 'google',
+    email: 'customer-sso@thumbgate.ai',
+    redirectUri: '/dashboard',
+  });
+  assert.equal(authRes.ok, true);
+  assert.ok(authRes.ssoToken.startsWith('tg_sso_'));
+
+  const valid = firewall.validateSsoToken(authRes.ssoToken);
+  assert.equal(valid.valid, true);
+  assert.equal(valid.email, 'customer-sso@thumbgate.ai');
+
+  const created = firewall.registerCustomerProject({
+    email: valid.email,
+    name: 'Checkout Service API',
+  });
+  assert.equal(created.ok, true);
+  assert.equal(created.project.slug, 'checkout-service-api');
+
+  const projects = firewall.listCustomerProjects(valid.email);
+  assert.ok(projects.some((p) => p.slug === 'checkout-service-api'));
+});
