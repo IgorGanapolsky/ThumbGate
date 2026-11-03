@@ -1425,7 +1425,7 @@
     "@google/genai": "2.32.0",
     "@lancedb/lancedb": "^0.41.0",
     "apache-arrow": "^18.1.0",
-    "better-sqlite3": "^13.0.3",
+    "better-sqlite3": "12.10.0",
     "dotenv": "^18.0.1",
     "js-yaml": "5.5.0",
     "playwright-core": "^1.59.1",
@@ -1463,4 +1463,4 @@
     "undici": "8.12.3"
   },
   "hotfix": "gate-check-bypass-2026-06-03"
-}
+  }
