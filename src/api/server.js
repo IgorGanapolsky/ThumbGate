@@ -5999,6 +5999,13 @@ function resolveKeyRole(key) {
   return null;
 }
 
+function resolveKeyMode(key) {
+  const k = String(key || '').trim();
+  if (k.startsWith('tg_live_')) return 'live';
+  if (k.startsWith('tg_test_')) return 'test';
+  return null;
+}
+
 /**
  * Admin-only guard for static THUMBGATE_API_KEY.
  * Billing keys are intentionally excluded from admin actions.
