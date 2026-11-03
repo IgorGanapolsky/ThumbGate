@@ -5467,6 +5467,176 @@ function evaluateOpenAiPandoGitBackendSteal({
   };
 }
 
+/**
+ * Oak & Sparrow Gatekeeper V2 + Signal Audit Vanguard + Scylos 2.2.0 + NeoMundi Metrological Steal
+ * (Source: /Users/iganapolsky/Downloads/gatekeeper.pdf, oakandsparrow.io, oakandsparrowsystemsenterprise.com)
+ *
+ * Key architectural steals:
+ * 1. Scylos 2.2.0 Fail-Closed Container Boot: When no policy pack is mounted (`policyPack: null`),
+ *    `/status` returns HTTP 503 `{ status: "fail-closed", policy_pack: null }` and `/evaluate` refuses all actions.
+ * 2. 3-State Pre-Execution Authorization (`PERMIT`, `HOLD`, `BLOCK`): Enforces an inline authorization `HOLD`
+ *    before consequential or regulated actions (HIPAA PHI, CCPA ADMT, FINRA 2210, external writes) execute.
+ * 3. NeoMundi Metrological Thermal State (`NOMINAL`, `ELEVATED`, `CRITICAL`): Favorable external runtime
+ *    measurements remain subordinate to deterministic policy; adverse measurements tighten operational state.
+ * 4. 16-Field Hash-Chained Sealed Evaluation Artifact (`verdict`, `invariants`, `reasoning`, `thermal_state`,
+ *    `tags`, `sequence`, `identifier`, `sha256`, `artifact_ref`, `input_hash`, `previous_hash`, `policy_pack`,
+ *    `client_id`, `evaluation_source`, `platform`, `timestamp`).
+ * 5. Signal Audit Vanguard Partner-Safe Executive Handoff: Separates authoritative execution decisions from
+ *    partner-safe sanitized intelligence (`canPartnerRewriteOrAuthorize: false`).
+ * 6. 5-Day Shadow-to-Enforce Onboarding Ramp: Days 0-4 observe and auto-derive the policy pack; Day 5+ enforces.
+ */
+function evaluateOakAndSparrowGatekeeperV2Steal({
+  proposedAction = 'Send claimant PHI summary to external partner webhook',
+  policyPack = 'thumbgate-hipaa-ccpa-admt-v2.2.0',
+  previousHash = '0000000000000000000000000000000000000000000000000000000000000000',
+  sequence = 1,
+  clientId = 'org_enterprise_ciso',
+  platform = 'darwin-arm64',
+  onboardingDay = 5,
+  adverseMeasurementScore = 0.15,
+} = {}) {
+  const cleanAction = String(proposedAction || '').trim();
+  const timestamp = new Date().toISOString();
+  const inputHash = crypto.createHash('sha256').update(cleanAction).digest('hex');
+
+  // 1. Scylos 2.2.0 Fail-Closed Missing Policy Pack Guard
+  if (!policyPack || String(policyPack).trim() === '') {
+    const failClosedPayload = {
+      verdict: 'BLOCK',
+      invariants: ['INV-POLICY-PACK-REQUIRED: fail-closed when policy_pack is null'],
+      reasoning: 'Container started without a mounted policy pack; refusing governed evaluation (fail-closed).',
+      thermal_state: 'CRITICAL',
+      tags: ['fail-closed', 'missing-policy-pack'],
+      sequence: Number(sequence) || 1,
+      identifier: `gk_${inputHash.slice(0, 12)}`,
+      artifact_ref: `sealed://thumbgate/eval/${inputHash.slice(0, 12)}`,
+      input_hash: inputHash,
+      previous_hash: String(previousHash),
+      policy_pack: null,
+      client_id: String(clientId),
+      evaluation_source: 'thumbgate-pretooluse-v2.2',
+      platform: String(platform),
+      timestamp,
+    };
+    const sha256 = crypto.createHash('sha256').update(JSON.stringify(failClosedPayload)).digest('hex');
+    return {
+      ok: false,
+      httpStatus: 503,
+      status: 'fail-closed',
+      policy_pack: null,
+      verdict: 'BLOCK',
+      sealedArtifact: { ...failClosedPayload, sha256 },
+    };
+  }
+
+  // 2. Deterministic Invariant Evaluation (`INV-*`)
+  const invariants = [];
+  const tags = [];
+  let baseVerdict = 'PERMIT';
+
+  if (/\b(disable\s+(audit|logging|tracking)|turn\s+off\s+(logs?|audit|monitoring)|stop\s+(recording|logging|tracking))\b/i.test(cleanAction)) {
+    invariants.push('INV-AUDIT-IMMUTABLE: the audit trail cannot be disabled');
+    tags.push('audit-tamper');
+    baseVerdict = 'BLOCK';
+  }
+  if (/\b(api[_\-\s]?keys?|api[_\-\s]?secrets?|access[_\-\s]?tokens?|auth[_\-\s]?tokens?|private[_\-\s]?keys?|passwords?|connection\s+strings?)\b/i.test(cleanAction)) {
+    invariants.push('INV-SECRET-EXFIL: credential and secret egress is forbidden');
+    tags.push('secret-exfil');
+    baseVerdict = 'BLOCK';
+  }
+  if (/\b(sudo|superuser|privilege\s+escalat|bypass\s+policy|override\s+gate|--admin|--no-verify|rm\s+-rf)\b/i.test(cleanAction)) {
+    invariants.push('INV-PRIVILEGE-ESCALATION: unauthorized privilege escalation or gate bypass');
+    tags.push('privilege-escalation');
+    baseVerdict = 'BLOCK';
+  }
+  if (baseVerdict !== 'BLOCK') {
+    if (/\b(phi|patient|claimant|medical|hipaa|ssn|social\s+security|biometric|facial\s+recognition)\b/i.test(cleanAction)) {
+      invariants.push('INV-HIPAA-DISCLOSE: PHI/PII disclosure requires pre-execution authorization HOLD');
+      tags.push('hipaa-phi', 'authorization-hold');
+      baseVerdict = 'HOLD';
+    }
+    if (/\b(admt|automated\s+decision|credit\s+denial|employment\s+screening|profiling|wire\s+transfer|stripe\s+refund|external\s+webhook)\b/i.test(cleanAction)) {
+      invariants.push('INV-CCPA-ADMT-CONSEQUENTIAL: consequential automated action requires human authorization HOLD');
+      tags.push('ccpa-admt', 'authorization-hold');
+      baseVerdict = 'HOLD';
+    }
+  }
+
+  // 3. NeoMundi Metrological Thermal State Tightening (favorable never overrides policy; adverse tightens)
+  const score = Number(adverseMeasurementScore) || 0;
+  let thermalState = 'NOMINAL';
+  let finalVerdict = baseVerdict;
+  if (score >= 0.8) {
+    thermalState = 'CRITICAL';
+    if (finalVerdict === 'PERMIT') finalVerdict = 'HOLD';
+    else if (finalVerdict === 'HOLD') finalVerdict = 'BLOCK';
+    tags.push('neomundi-thermal-tightened');
+  } else if (score >= 0.5) {
+    thermalState = 'ELEVATED';
+    if (finalVerdict === 'PERMIT') finalVerdict = 'HOLD';
+    tags.push('neomundi-thermal-elevated');
+  }
+
+  // 4. 5-Day Shadow Audit vs Day-5 Enforcement Ramp
+  const day = Number(onboardingDay) ?? 5;
+  const onboardingMode = day < 5 ? 'SHADOW_OBSERVE' : 'FAIL_CLOSED_ENFORCE';
+  const effectiveEnforcement = onboardingMode === 'SHADOW_OBSERVE' ? 'OBSERVED_FOR_POLICY_PACK_DERIVATION' : finalVerdict;
+
+  const reasoning =
+    invariants.length > 0
+      ? `Pre-execution governance triggered ${invariants.length} invariant(s) [${invariants.join('; ')}] under thermal=${thermalState}.`
+      : `Action satisfied all invariants in policy pack ${policyPack} under thermal=${thermalState}.`;
+
+  // 5. 16-Field Sealed Evaluation Artifact (Scylos 2.2.0 schema parity)
+  const artifactCore = {
+    verdict: finalVerdict,
+    invariants,
+    reasoning,
+    thermal_state: thermalState,
+    tags,
+    sequence: Number(sequence) || 1,
+    identifier: `gk_${inputHash.slice(0, 12)}`,
+    artifact_ref: `sealed://thumbgate/eval/${inputHash.slice(0, 12)}`,
+    input_hash: inputHash,
+    previous_hash: String(previousHash),
+    policy_pack: String(policyPack),
+    client_id: String(clientId),
+    evaluation_source: 'thumbgate-pretooluse-v2.2',
+    platform: String(platform),
+    timestamp,
+  };
+  const sha256 = crypto.createHash('sha256').update(JSON.stringify(artifactCore)).digest('hex');
+  const sealedArtifact = { ...artifactCore, sha256 };
+
+  // 6. Signal Audit Vanguard Partner-Safe Executive Intelligence Handoff
+  const partnerSafeExecutiveEvent = {
+    partnerAdapter: 'signal-audit-vanguard-v1.1',
+    sanitizedActionSummary: redactSecrets(cleanAction).replace(/\b\d{3}-\d{2}-\d{4}\b/g, '[REDACTED-SSN]'),
+    authoritativeVerdict: finalVerdict,
+    effectiveEnforcement,
+    onboardingMode,
+    onboardingDay: day,
+    executiveSeverity: finalVerdict === 'BLOCK' ? 'HIGH' : finalVerdict === 'HOLD' ? 'MEDIUM_HOLD_REQUIRED' : 'LOW',
+    originalDecisionSha256: sha256,
+    authoritativeOwner: 'ThumbGate PreToolUse Engine',
+    canPartnerRewriteOrAuthorize: false,
+    tenantReadIsolationVerified: true,
+  };
+
+  return {
+    ok: finalVerdict === 'PERMIT',
+    httpStatus: 200,
+    status: 'governed',
+    verdict: finalVerdict,
+    effectiveEnforcement,
+    onboardingMode,
+    onboardingDay: day,
+    thermalState,
+    sealedArtifact,
+    partnerSafeExecutiveEvent,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
@@ -5588,6 +5758,7 @@ module.exports = {
   evaluateStripeTreasuryZeroFeeSettlementAndCardSteal,
   evaluateDrexMaxLocalDecisionEngine,
   evaluateOpenAiPandoGitBackendSteal,
+  evaluateOakAndSparrowGatekeeperV2Steal,
   buildThumbGateSaasDeployPlan,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,

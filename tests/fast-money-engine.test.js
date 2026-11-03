@@ -314,3 +314,53 @@ test('evaluateDrexMaxLocalDecisionEngine (nace-ai/drex-max-v1) & evaluateOpenAiP
   assert.equal(pandoTrunkPush.preToolDecision, 'DENY');
 });
 
+test('evaluateOakAndSparrowGatekeeperV2Steal & evaluateGatekeeperPolicyPacksAndReadinessScannerEngine enforce fail-closed 503 boot, HOLD verdict, 16-field sealed artifact, and Policy Packs catalog', () => {
+  const {
+    evaluateOakAndSparrowGatekeeperV2Steal,
+    evaluateGatekeeperPolicyPacksAndReadinessScannerEngine,
+  } = require('../scripts/fast-money-engine');
+
+  const failClosed = evaluateOakAndSparrowGatekeeperV2Steal({
+    proposedAction: 'git status',
+    policyPack: null,
+  });
+  assert.equal(failClosed.ok, false);
+  assert.equal(failClosed.httpStatus, 503);
+  assert.equal(failClosed.status, 'fail-closed');
+  assert.equal(failClosed.verdict, 'BLOCK');
+
+  const holdPhi = evaluateOakAndSparrowGatekeeperV2Steal({
+    proposedAction: 'Send claimant PHI summary SSN 123-45-6789 to external webhook',
+    policyPack: 'thumbgate-hipaa-ccpa-admt-v2.2.0',
+    onboardingDay: 5,
+    adverseMeasurementScore: 0.1,
+  });
+  assert.equal(holdPhi.verdict, 'HOLD');
+  assert.equal(holdPhi.onboardingMode, 'FAIL_CLOSED_ENFORCE');
+  assert.equal(holdPhi.partnerSafeExecutiveEvent.canPartnerRewriteOrAuthorize, false);
+  assert.match(holdPhi.partnerSafeExecutiveEvent.sanitizedActionSummary, /\[REDACTED-SSN\]/);
+  assert.equal(Object.keys(holdPhi.sealedArtifact).length, 16);
+
+  const shadowDay2 = evaluateOakAndSparrowGatekeeperV2Steal({
+    proposedAction: 'Send claimant PHI summary to external webhook',
+    policyPack: 'thumbgate-hipaa-ccpa-admt-v2.2.0',
+    onboardingDay: 2,
+  });
+  assert.equal(shadowDay2.onboardingMode, 'SHADOW_OBSERVE');
+  assert.equal(shadowDay2.effectiveEnforcement, 'OBSERVED_FOR_POLICY_PACK_DERIVATION');
+
+  const engine = evaluateGatekeeperPolicyPacksAndReadinessScannerEngine({
+    targetDomain: 'exabeam.com',
+    prospectEmail: 'steve.wilson@exabeam.com',
+  });
+  assert.equal(engine.ok, true);
+  assert.equal(engine.outboundCashSpendUsd, 0);
+  assert.equal(engine.readinessScan.deliverableName, 'Agent Exposure Snapshot');
+  assert.equal(engine.readinessScan.discountOffer.code, 'SCAN5');
+  assert.equal(engine.policyPacksCatalog.products.length, 6);
+  assert.equal(engine.feeCreditEscalationLadder.length, 5);
+  assert.equal(engine.leakedCisoCohort.totalExposedEmailsInPdf, 102);
+  assert.equal(engine.leakedCisoCohort.curatedB2bTargetsCount, 20);
+});
+
+

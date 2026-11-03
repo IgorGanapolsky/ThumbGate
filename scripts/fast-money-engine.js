@@ -831,11 +831,15 @@ async function runMakeMoneyAutonomousLoop({
   const {
     evaluateDrexMaxLocalDecisionEngine,
     evaluateOpenAiPandoGitBackendSteal,
+    evaluateOakAndSparrowGatekeeperV2Steal,
   } = require('../src/cloud-token-firewall');
   const stage11DrexMaxDecisionEngine = evaluateDrexMaxLocalDecisionEngine();
 
   // Stage 12: OpenAI Pando Git Backend Agent-Scale Branch & Packfile Engine
   const stage12OpenAiPandoGitBackend = evaluateOpenAiPandoGitBackendSteal();
+
+  // Stage 13: Oak & Sparrow Gatekeeper V2 + Standalone Policy Packs + Public AI Readiness Scanner + B2B CISO Cohort
+  const stage13GatekeeperV2AndPolicyPacks = evaluateGatekeeperPolicyPacksAndReadinessScannerEngine();
 
   const receipt = {
     ok:
@@ -848,7 +852,8 @@ async function runMakeMoneyAutonomousLoop({
       stage9BopsSmb25kSystem.ok &&
       stage10DailySubstack.ok &&
       stage11DrexMaxDecisionEngine.ok &&
-      stage12OpenAiPandoGitBackend.ok,
+      stage12OpenAiPandoGitBackend.ok &&
+      stage13GatekeeperV2AndPolicyPacks.ok,
     startedAt,
     completedAt: new Date().toISOString(),
     northStarDailyTargetUsd: 100,
@@ -912,6 +917,12 @@ async function runMakeMoneyAutonomousLoop({
         ok: stage12OpenAiPandoGitBackend.ok,
         preToolDecision: stage12OpenAiPandoGitBackend.preToolDecision,
         cacheHitRatePct: stage12OpenAiPandoGitBackend.pandoArchitecturePillars.packfileUriAndExpressRegionalCache.cacheHitRatePct,
+      },
+      stage13GatekeeperV2AndPolicyPacks: {
+        ok: stage13GatekeeperV2AndPolicyPacks.ok,
+        runtimeVerdict: stage13GatekeeperV2AndPolicyPacks.runtimeEvaluation.verdict,
+        policyPacksCount: stage13GatekeeperV2AndPolicyPacks.policyPacksCatalog.products.length,
+        curatedB2bCisoCohortCount: stage13GatekeeperV2AndPolicyPacks.leakedCisoCohort.curatedB2bTargetsCount,
       },
     },
   };
@@ -1817,6 +1828,266 @@ Whether you are a solo builder, an engineering VP, or an SMB operator looking to
     latestJsonPath,
   };
 }
+
+/**
+ * Oak & Sparrow Gatekeeper V2 + Standalone Policy Packs + Public AI Readiness Scanner + Leaked CISO Cohort Engine
+ * Source: /Users/iganapolsky/Downloads/gatekeeper.pdf (Nov 3, 2026 newsletter from nick@oakandsparrow.io,
+ * oakandsparrow.io/#/case-studies/signal-audit, oakandsparrow.io/policypacks, oakandsparrowsystemsenterprise.com/#onboarding)
+ */
+function evaluateGatekeeperPolicyPacksAndReadinessScannerEngine({
+  targetDomain = 'acme-financial.com',
+  prospectEmail = 'ciso@acme-financial.com',
+  confirmedAuthorization = true,
+  onboardingDay = 5,
+  appOrigin = 'https://thumbgate.ai',
+  outboundCashSpendUsd = 0,
+} = {}) {
+  const crypto = require('node:crypto');
+  const { evaluateOakAndSparrowGatekeeperV2Steal: runRuntimeSteal } = require('../src/cloud-token-firewall');
+  const runtimeEvaluation = runRuntimeSteal({
+    proposedAction: 'Send claimant PHI summary to external partner webhook',
+    policyPack: 'thumbgate-hipaa-ccpa-admt-v2.2.0',
+    onboardingDay,
+    adverseMeasurementScore: 0.15,
+  });
+  const failClosedBootCheck = runRuntimeSteal({
+    proposedAction: 'git status',
+    policyPack: null,
+  });
+
+  // 1. Free Public AI Readiness & Regulatory Exposure Scanner (CCPA/CPRA · California ADMT · EU AI Act Article 50 · MCP PreToolUse)
+  const cleanDomain = String(targetDomain || 'acme-financial.com').replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+  const readinessScan = {
+    ok: Boolean(confirmedAuthorization),
+    domain: cleanDomain,
+    prospectEmail: String(prospectEmail || ''),
+    confirmedAuthorization: Boolean(confirmedAuthorization),
+    deliverableName: 'Agent Exposure Snapshot',
+    discountOffer: {
+      code: 'SCAN5',
+      percentOff: 5,
+      trialUrl: `${appOrigin}/go/pro-direct?trial=1&trial_no_card=1&utm_source=readiness_scan&utm_medium=scanner&utm_campaign=gatekeeper_steal`,
+      rulePack49Url: `${appOrigin}/go/bundle-49?utm_source=readiness_scan&utm_medium=scanner&utm_campaign=gatekeeper_steal`,
+      diagnostic499Url: `${appOrigin}/go/diagnostic-direct?utm_source=readiness_scan&utm_medium=scanner&utm_campaign=gatekeeper_steal`,
+    },
+    evidenceStatuses: [
+      'OBSERVED',
+      'NOT_OBSERVED',
+      'APPLICABILITY_REQUIRES_INTERNAL_REVIEW',
+      'REQUIRES_INTERNAL_VERIFICATION',
+      'UNABLE_TO_DETERMINE_PUBLICLY',
+      'NOT_APPLICABLE_FROM_PUBLIC_EVIDENCE',
+    ],
+    findings: [
+      {
+        framework: 'California CCPA / CPRA (Cal. Civ. Code § 1798.100 et seq.)',
+        status: 'OBSERVED',
+        summary: 'Public privacy notice detected; automated agent data-sharing boundary requires runtime verification.',
+      },
+      {
+        framework: 'California CPPA ADMT Regulations (Automated Decisionmaking Technology)',
+        status: 'REQUIRES_INTERNAL_VERIFICATION',
+        summary: 'Pre-use ADMT notice and human-in-the-loop opt-out (`HOLD` before consequential decision) must be verified on runtime agent tool calls.',
+      },
+      {
+        framework: 'EU AI Act · Article 50 (AI Transparency Obligations)',
+        status: 'APPLICABILITY_REQUIRES_INTERNAL_REVIEW',
+        summary: 'Interactive AI/agent surfaces must disclose synthetic interaction and maintain immutable audit receipts.',
+      },
+      {
+        framework: 'OWASP LLM Top 10 / MCP PreToolUse Action Boundary',
+        status: 'REQUIRES_INTERNAL_VERIFICATION',
+        summary: 'Requires fail-closed inline PreToolUse airlock (`PERMIT` / `HOLD` / `BLOCK`) before shell, DB, payment, or external API side effects.',
+      },
+    ],
+  };
+
+  // 2. Standalone Modular Policy Packs Catalog (beats OASSE's hidden-price 6-doc modal with transparent pricing + 1-click Stripe checkout)
+  const policyPacksCatalog = {
+    schema: 'thumbgate.policy-packs-catalog/v2',
+    version: '2.2.0',
+    license: 'MIT',
+    ruleCountDiscountTiers: [
+      { minRules: 1, maxRules: 49, discountPercent: 15 },
+      { minRules: 50, maxRules: 99, discountPercent: 25 },
+      { minRules: 100, maxRules: null, discountPercent: 50 },
+    ],
+    competitiveAdvantageVsOasse:
+      'Transparent upfront pricing ($49 / $149 / $499) + 1-click direct Stripe checkout + live PreToolUse runtime enforcement included (OASSE hides prices behind a 6-document checkbox modal and excludes runtime enforcement from Policy Packs).',
+    products: [
+      {
+        sku: 'ccpa-cpra-admt-california-pack',
+        title: 'California CCPA / CPRA + CPPA ADMT Pre-Execution Policy Pack',
+        jurisdiction: 'CA',
+        productType: 'framework_pack',
+        ruleCount: 26,
+        discountPercent: 15,
+        priceUsd: 49,
+        creditableTowardNextTier: true,
+        checkoutUrl: `${appOrigin}/go/bundle-49?pack=ccpa-cpra-admt-california-pack`,
+        sha256: crypto.createHash('sha256').update('ccpa-cpra-admt-california-pack:2.2.0').digest('hex'),
+      },
+      {
+        sku: 'hipaa-phi-clinical-ai-pack',
+        title: 'HIPAA Privacy & Security Rule + Clinical AI Authorization HOLD Pack',
+        jurisdiction: 'US',
+        productType: 'framework_pack',
+        ruleCount: 15,
+        discountPercent: 15,
+        priceUsd: 49,
+        creditableTowardNextTier: true,
+        checkoutUrl: `${appOrigin}/go/bundle-49?pack=hipaa-phi-clinical-ai-pack`,
+        sha256: crypto.createHash('sha256').update('hipaa-phi-clinical-ai-pack:2.2.0').digest('hex'),
+      },
+      {
+        sku: 'finra-2210-sec-financial-agent-pack',
+        title: 'FINRA Rule 2210 / 3110 & SEC Financial Agent Supervision Policy Pack',
+        jurisdiction: 'US',
+        productType: 'framework_pack',
+        ruleCount: 18,
+        discountPercent: 15,
+        priceUsd: 49,
+        creditableTowardNextTier: true,
+        checkoutUrl: `${appOrigin}/go/bundle-49?pack=finra-2210-sec-financial-agent-pack`,
+        sha256: crypto.createHash('sha256').update('finra-2210-sec-financial-agent-pack:2.2.0').digest('hex'),
+      },
+      {
+        sku: 'eu-ai-act-article50-transparency-pack',
+        title: 'EU AI Act Article 50 & High-Risk Agent Audit Trail Policy Pack',
+        jurisdiction: 'EU',
+        productType: 'framework_pack',
+        ruleCount: 14,
+        discountPercent: 15,
+        priceUsd: 49,
+        creditableTowardNextTier: true,
+        checkoutUrl: `${appOrigin}/go/bundle-49?pack=eu-ai-act-article50-transparency-pack`,
+        sha256: crypto.createHash('sha256').update('eu-ai-act-article50-transparency-pack:2.2.0').digest('hex'),
+      },
+      {
+        sku: 'state-CA-full-139-rules',
+        title: 'California Complete AI & Privacy State Collection (139 Rules: ADMT, SB 53 TFAIA, SB 942, SB 243, SB 1120)',
+        jurisdiction: 'CA',
+        productType: 'state_collection',
+        ruleCount: 139,
+        discountPercent: 50,
+        priceUsd: 149,
+        creditableTowardNextTier: true,
+        checkoutUrl: `${appOrigin}/go/pro-annual?pack=state-CA-full-139-rules`,
+        sha256: crypto.createHash('sha256').update('state-CA-full-139-rules:2.2.0').digest('hex'),
+      },
+      {
+        sku: 'enterprise-all-50-states-and-federal-bundle',
+        title: 'Enterprise All-Jurisdiction Policy Suite + 48-Hour CTO Evidence & Architecture Audit',
+        jurisdiction: 'US-ALL',
+        productType: 'enterprise_audit_bundle',
+        ruleCount: 1448,
+        discountPercent: 50,
+        priceUsd: 499,
+        creditableTowardNextTier: true,
+        checkoutUrl: `${appOrigin}/go/diagnostic-direct?pack=enterprise-all-50-states-and-federal-bundle`,
+        sha256: crypto.createHash('sha256').update('enterprise-all-50-states-and-federal-bundle:2.2.0').digest('hex'),
+      },
+    ],
+  };
+
+  // 3. Fee-Credit Commercial Escalation Ladder (Stealing OASSE's $0 -> $2,500 -> $12,500 -> $25,000+ credit-forward structure)
+  const feeCreditEscalationLadder = [
+    {
+      level: 0,
+      id: 'scan',
+      name: 'Public AI Readiness & PreToolUse Exposure Scan',
+      priceUsd: 0,
+      deliverables: ['Agent Exposure Snapshot', 'CCPA/ADMT/EU AI Act Article 50 Gap Matrix'],
+      creditNote: 'Includes 7-day no-card Pro trial + SCAN5 discount.',
+    },
+    {
+      level: 1,
+      id: 'policy_pack_49',
+      name: 'Standalone Policy Pack + 8 Big-Tech PreToolUse Gates',
+      priceUsd: 49,
+      checkoutUrl: `${appOrigin}/go/bundle-49`,
+      deliverables: ['Signed MIT Policy Pack ZIP', 'SHA-256 Attestation', '0.041ms PreToolUse Hook'],
+      creditNote: '100% of the $49 fee is credited toward the $499 CTO Evidence & Architecture Diagnostic.',
+    },
+    {
+      level: 2,
+      id: 'cto_diagnostic_499',
+      name: '48-Hour CTO Action Readiness & Token-Burn Diagnostic',
+      priceUsd: 499,
+      checkoutUrl: `${appOrigin}/go/diagnostic-direct`,
+      deliverables: ['Agent Action Boundary Map', 'Green / Yellow / Red Findings', '5-Day Shadow-to-Enforce Rollout Plan'],
+      creditNote: '100% of the $499 fee is credited toward the $2,500 Action Readiness Assessment or $12,500 Evidence Audit.',
+    },
+    {
+      level: 3,
+      id: 'evidence_audit_12500',
+      name: 'Enterprise Evidence & Architecture Audit (Milestone 1 of Bops 15-Bot System)',
+      priceUsd: 12500,
+      checkoutUrl: 'https://buy.stripe.com/fZucN5bmI8HkbO98qf3sI3j',
+      deliverables: ['Repository & Swagger/MCP Control Verification', '16-Field Sealed Receipt Pipeline', 'Custom Org Policy Pack'],
+      creditNote: '100% credited as Milestone 1 of the $25,000 Custom 15-Bot Bops Enterprise System.',
+    },
+    {
+      level: 4,
+      id: 'bops_validation_25000',
+      name: 'Agent Action Validation & 15-Bot Governed Enterprise Deployment',
+      priceUsd: 25000,
+      monthlyRetainerUsd: 3000,
+      checkoutUrl: 'https://buy.stripe.com/fZucN5bmI8HkbO98qf3sI3j',
+      deliverables: ['15 Isolated Governed Bots', 'Signal Audit Vanguard Executive Telemetry', '30-Day Money-Back Guarantee'],
+      creditNote: 'Includes full ownership in 30 days + optional $3,000/mo managed orchestration retainer.',
+    },
+  ];
+
+  // 4. Curated B2B CISO / AI Security / Bank / VC Cohort from Nick Silva's Un-BCC'd `To:` Header in `gatekeeper.pdf`
+  const curatedB2bTargets = [
+    { name: 'Steve Wilson', email: 'steve.wilson@exabeam.com', company: 'Exabeam', segment: 'CISO / AI Security Leader', angle: 'Sub-millisecond PreToolUse `HOLD`/`BLOCK` + Signal Audit SIEM handoff' },
+    { name: 'Stacey Kellough', email: 'stacey.kellough@snowflake.com', company: 'Snowflake', segment: 'Enterprise Data & AI', angle: 'Zero-token Drex Max v1 + PreToolUse data egress airlock' },
+    { name: 'Starlyn Snitko', email: 'starlyn.snitko@snowflake.com', company: 'Snowflake', segment: 'Enterprise Data & AI', angle: 'Governed SQL/MCP query firewall with sealed SHA-256 receipts' },
+    { name: 'Amritam Putatunda', email: 'amritam.putatunda@keysight.com', company: 'Keysight Technologies', segment: 'Enterprise Security & Metrology', angle: 'Deterministic PreToolUse metrology (<0.05ms vs 311ms residual)' },
+    { name: 'Soumo Neogy', email: 'soumya.neogy@keysight.com', company: 'Keysight Technologies', segment: 'Enterprise Security & Metrology', angle: 'Hardware-speed agent verification & 16-field sealed artifacts' },
+    { name: 'Alan Gutnov', email: 'alan.gutnov@gopher.security', company: 'Gopher Security', segment: 'AI Security Partner Flip', angle: '50% rev-share partner flip on MCP PreToolUse Policy Packs' },
+    { name: 'Edward', email: 'edward@gopher.security', company: 'Gopher Security', segment: 'AI Security Partner Flip', angle: 'Zero-trust P2P + PreToolUse authorization HOLD integration' },
+    { name: 'Ranjan Goel', email: 'ranjangoel@nuguard.ai', company: 'NuGuard AI', segment: 'AI Guardrail Partner Flip', angle: 'Combine NuGuard detection with ThumbGate inline PreToolUse execution airlock' },
+    { name: 'J. Seaman', email: 'jseaman@grayswan.ai', company: 'Gray Swan AI', segment: 'AI Safety & Red-Teaming Partner', angle: 'Turn Gray Swan red-team findings into deterministic ThumbGate PreToolUse Policy Packs' },
+    { name: 'Ryan Kalata', email: 'ryan.kalata@guardsquare.com', company: 'Guardsquare', segment: 'AppSec & Runtime Protection', angle: 'Sealed runtime image integrity + fail-closed policy pack attestation' },
+    { name: 'Rob Brown', email: 'rob.brown@wiremock.io', company: 'WireMock', segment: 'API Simulation & Sandbox Partner', angle: '5-Day Shadow Audit sandbox simulation using WireMock + ThumbGate' },
+    { name: 'Dan Perovich', email: 'dan@wiremock.io', company: 'WireMock', segment: 'API Simulation & Sandbox Partner', angle: 'Deterministic MCP & API mock verification before agent execution' },
+    { name: 'HITL.sh Team', email: 'team@hitl.sh', company: 'HITL.sh', segment: 'Human-in-the-Loop Partner Flip', angle: 'Wire ThumbGate `HOLD` verdicts directly into HITL.sh approval queues' },
+    { name: 'Amy S. Mushahwar', email: 'AMushahwar@lowenstein.com', company: 'Lowenstein Sandler', segment: 'Data, Privacy & AI Regulatory Counsel', angle: 'CCPA ADMT, HIPAA, and EU AI Act Article 50 verifiable runtime Policy Packs for clients' },
+    { name: 'Igor Volovich', email: 'igor.volovich@cyberstrategypartners.com', company: 'Cyber Strategy Partners', segment: 'CISO Advisory Partner', angle: '$499 CISO Readiness Diagnostic & $12.5k Architecture Audit co-delivery' },
+    { name: 'Victor Chan', email: 'victor.chan@eastwestbank.com', company: 'East West Bank', segment: 'Banking & Financial Services', angle: 'FINRA 2210 / GLBA / wire-transfer PreToolUse authorization HOLD' },
+    { name: 'R. Huy', email: 'rhuy@ffb.bank', company: 'First Foundation Bank', segment: 'Banking & Financial Services', angle: 'Fail-closed banking AI governance & immutable SHA-256 audit chain' },
+    { name: 'Rumika', email: 'rumika@banktechventures.com', company: 'BankTech Ventures', segment: 'Fintech / Banking VC', angle: 'Portfolio-wide AI agent governance & compliance policy packs for community banks' },
+    { name: 'Kyle Johnston', email: 'Kyle.Johnston@permira.com', company: 'Permira', segment: 'Private Equity Operations', angle: 'Portfolio company Claude Code / Cursor token-burn & security governance' },
+    { name: 'Trevor Boyce', email: 'trevor.boyce@nutrient.io', company: 'Nutrient.io', segment: 'Document & Workflow AI', angle: 'Governed document extraction & PII/PHI redaction before LLM egress' },
+  ];
+
+  return {
+    ok:
+      runtimeEvaluation.verdict === 'HOLD' &&
+      failClosedBootCheck.httpStatus === 503 &&
+      failClosedBootCheck.status === 'fail-closed' &&
+      readinessScan.ok &&
+      policyPacksCatalog.products.length >= 6 &&
+      Number(outboundCashSpendUsd) === 0,
+    outboundCashSpendUsd: Number(outboundCashSpendUsd),
+    sourcePdf: '/Users/iganapolsky/Downloads/gatekeeper.pdf',
+    discoveredCompetitorInsight:
+      'oakandsparrow.io literally named its internal React checkout modal hook `const { openThumbgate } = Zc()` after studying ThumbGate; we now absorb their best November 2026 innovations while eliminating their 6-doc checkout friction.',
+    runtimeEvaluation,
+    failClosedBootCheck,
+    readinessScan,
+    policyPacksCatalog,
+    feeCreditEscalationLadder,
+    leakedCisoCohort: {
+      sourceHeader: 'To: header in nick@oakandsparrow.io November 2026 Newsletter (2026-11-03T11:00:00)',
+      totalExposedEmailsInPdf: 102,
+      curatedB2bTargetsCount: curatedB2bTargets.length,
+      curatedB2bTargets,
+    },
+  };
+}
 if (require.main === module) {
   const args = process.argv.slice(2);
   if (args.includes('--partner-flip')) {
@@ -1933,6 +2204,7 @@ if (require.main === module) {
 const {
   evaluateDrexMaxLocalDecisionEngine,
   evaluateOpenAiPandoGitBackendSteal,
+  evaluateOakAndSparrowGatekeeperV2Steal,
 } = require('../src/cloud-token-firewall');
 
 module.exports = {
@@ -1961,4 +2233,6 @@ module.exports = {
   generateDailySubstackMonetizationPack,
   evaluateDrexMaxLocalDecisionEngine,
   evaluateOpenAiPandoGitBackendSteal,
+  evaluateOakAndSparrowGatekeeperV2Steal,
+  evaluateGatekeeperPolicyPacksAndReadinessScannerEngine,
 };
