@@ -549,7 +549,7 @@
           <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
           <span id="toggle-auth-drawer-label">Sign In (SSO)</span>
         </button>
-        <button type="button" class="btn-outline" id="portal-logout-btn" onclick="signOutPortal()" style="display:none;border-color:#ff6b6b;color:#ff6b6b;">Log Out</button>
+        <button type="button" class="btn-outline" id="portal-logout-btn" onclick="signOutPortal()" style="display:inline-flex;border-color:#ff6b6b;color:#ff6b6b;">Log Out</button>
         <a href="/deploy-plan" class="btn-outline" style="border-color:var(--green);color:var(--green);">Deploy Plan</a>
         <a href="/pricing" class="btn-outline">Pricing</a>
     </div>
@@ -660,7 +660,7 @@
           <span>Active Plan &amp; Monthly Quota</span>
           <svg class="icon-svg" style="color:var(--green);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
-        <div class="stat-plan-val" id="kpi-plan-name">Cloud Indie · $19/mo</div>
+        <div class="stat-plan-val" id="kpi-plan-name">Cloud Indie · $49/mo</div>
         <div>
           <div class="quota-track" aria-hidden="true"><div id="kpi-quota-bar" class="quota-fill" style="width:2%;"></div></div>
           <div class="stat-foot" id="kpi-quota-summary">0 / 1,000,000 tokens optimized</div>
@@ -884,12 +884,12 @@ npx skills add https://thumbgate.ai</pre>
       <div class="panel" style="margin-bottom:16px;">
         <div class="panel-header">
           <div>
-            <h2 class="panel-title">Current Plan: <span id="sub-current-plan" style="color:var(--green);">Cloud Indie · $19/mo</span></h2>
+            <h2 class="panel-title">Current Plan: <span id="sub-current-plan" style="color:var(--green);">Cloud Indie · $49/mo</span></h2>
             <p style="color:var(--muted);font-size:13px;margin:2px 0 0;" id="sub-quota-detail">Monthly optimization cap: 1,000,000 tokens/mo · Status: Active</p>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button type="button" class="btn-outline" onclick="switchTierInPortal('cloud_indie')">Switch to Cloud Indie ($19/mo)</button>
-            <button type="button" class="btn" onclick="switchTierInPortal('cloud_startup')">Upgrade to Cloud Startup</button>
+            <button type="button" class="btn-outline" onclick="switchTierInPortal('cloud_indie')">Switch to Cloud Indie ($49/mo)</button>
+            <button type="button" class="btn" onclick="switchTierInPortal('cloud_startup')">Upgrade to Cloud Startup ($199/mo)</button>
             <a class="btn-outline" href="/checkout/pro?manage=1">Stripe Billing Portal</a>
           </div>
         </div>
@@ -904,15 +904,15 @@ npx skills add https://thumbgate.ai</pre>
         </div>
         <div class="panel" style="border-color:rgba(56,215,255,0.45);">
           <div style="font-size:11px;font-weight:800;color:var(--cyan);text-transform:uppercase;">Cloud Indie</div>
-          <div style="font-size:26px;font-weight:800;margin:6px 0;">$19<span style="font-size:13px;color:var(--muted);">/month</span></div>
+          <div style="font-size:26px;font-weight:800;margin:6px 0;">$49<span style="font-size:13px;color:var(--muted);">/month</span></div>
           <p style="font-size:13px;color:var(--muted);">1M tokens optimized/mo, 59 Threat Pack rules, and -42% prompt compaction.</p>
-          <a class="btn" href="/go/cloud-indie" style="width:100%;">Select Cloud Indie — $19/mo</a>
+          <a class="btn" href="/go/cloud-indie" style="width:100%;">Select Cloud Indie — $49/mo</a>
         </div>
         <div class="panel" style="border-color:rgba(86,227,159,0.45);">
           <div style="font-size:11px;font-weight:800;color:var(--green);text-transform:uppercase;">Cloud Startup &amp; Team</div>
-          <div style="font-size:26px;font-weight:800;margin:6px 0;">Custom<span style="font-size:13px;color:var(--muted);">/team</span></div>
+          <div style="font-size:26px;font-weight:800;margin:6px 0;">$199<span style="font-size:13px;color:var(--muted);">/month</span></div>
           <p style="font-size:13px;color:var(--muted);">10M tokens/mo, IDE + GitHub Actions CI policy sync, 1-Click SSO, and real-time loop webhooks.</p>
-          <a class="btn btn-green" href="/go/cloud-startup" style="width:100%;">Select Cloud Startup</a>
+          <a class="btn btn-green" href="/go/cloud-startup" style="width:100%;">Select Cloud Startup — $199/mo</a>
         </div>
       </div>
     </section>
@@ -1051,7 +1051,7 @@ npx skills add https://thumbgate.ai</pre>
           <span class="kbd">Tab</span>
         </button>
         <button type="button" class="cmdk-item" onclick="toggleCommandPalette(false);switchPortalTab('subscription')">
-          <span>Manage Subscription &amp; Billing ($19/mo)</span>
+          <span>Manage Subscription &amp; Billing ($49 / $199)</span>
           <span class="kbd">Billing</span>
         </button>
         <button type="button" class="cmdk-item" onclick="toggleCommandPalette(false);switchPortalTab('dpo');generateSampleDpoPair()">
@@ -1071,7 +1071,7 @@ npx skills add https://thumbgate.ai</pre>
         .replace(/^ThumbGate\s+(?:Team\s*&\s*)?/i, '')
         .replace(/\s*\(\$?\d+(?:\.\d+)?\/mo\)/gi, '')
         .trim();
-      var price = Number(priceMonthlyUsd) || 19;
+      var price = Number(priceMonthlyUsd) || 49;
       return raw + ' · $' + price + '/mo';
     }
 
@@ -1134,21 +1134,30 @@ npx skills add https://thumbgate.ai</pre>
       }
     }
 
-    function showSsoToast(provider, email, token) {
+    function showSsoToast(provider, email, token, authVerification) {
       var banner = document.getElementById('sso-toast-banner');
       var titleEl = document.getElementById('sso-toast-title');
       var detailEl = document.getElementById('sso-toast-detail');
       if (!banner || !titleEl || !detailEl) return;
+      var isPreview = authVerification === 'email_workspace_preview';
       var pLabel = String(provider || 'SSO').toUpperCase();
       if (pLabel === 'APPLE') pLabel = 'Apple ID';
       else if (pLabel === 'GOOGLE') pLabel = 'Google Workspace';
       else if (pLabel === 'GITHUB') pLabel = 'GitHub';
-      titleEl.textContent = '✓ Signed in with ' + pLabel + ' SSO (' + email + ')';
-      detailEl.innerHTML = 'Provisioned token: <code>' + escapeHtml((token || '').slice(0, 22)) + '…</code>';
+      else if (pLabel === 'STRIPE') pLabel = 'Stripe Paid';
+      if (isPreview) {
+        titleEl.textContent = '🟡 Workspace Preview (No OAuth) — ' + email;
+        detailEl.innerHTML = 'Preview token: <code>' + escapeHtml((token || '').slice(0, 22)) + '…</code> · Complete checkout or configure OAuth to verify.';
+      } else {
+        titleEl.textContent = '✓ Signed in with ' + pLabel + ' (' + email + ')';
+        detailEl.innerHTML = 'Provisioned token: <code>' + escapeHtml((token || '').slice(0, 22)) + '…</code>';
+      }
       banner.classList.add('visible');
       var statusEl = document.getElementById('portal-status-msg');
       if (statusEl) {
-        statusEl.textContent = '✓ ' + pLabel + ' SSO active (' + email + ')';
+        statusEl.textContent = isPreview
+          ? '🟡 Workspace Preview (No OAuth) active (' + email + ')'
+          : '✓ ' + pLabel + ' active (' + email + ')';
       }
     }
 
@@ -1205,11 +1214,12 @@ npx skills add https://thumbgate.ai</pre>
             localStorage.setItem('tg_cloud_sso_token', data.ssoToken);
             localStorage.setItem('tg_cloud_sso_email', data.email);
             localStorage.setItem('tg_cloud_sso_provider', data.provider);
+            localStorage.setItem('tg_cloud_auth_verification', data.authVerification || 'email_workspace_preview');
           } catch (e) {}
           if (data.session) renderPortalSession(data.session);
           else loadPortalSession();
           toggleAuthDrawer(false);
-          showSsoToast(data.provider, data.email, data.ssoToken);
+          showSsoToast(data.provider, data.email, data.ssoToken, data.authVerification);
           try {
             window.history.replaceState(null, '', '/cloud?sso_provider=' + encodeURIComponent(data.provider) + '&email=' + encodeURIComponent(data.email));
           } catch (e) {}

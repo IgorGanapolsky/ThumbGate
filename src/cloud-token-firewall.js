@@ -252,6 +252,8 @@ function compactTokenPayload({ messages = [], toolOutput = null, maxToolOutputCh
   };
 }
 
+const customerAccountsState = new Map();
+
 function getCloudStateDir() {
   return process.env.THUMBGATE_FEEDBACK_DIR || path.resolve(__dirname, '../.thumbgate');
 }
@@ -276,6 +278,13 @@ function loadPersistentCloudState() {
         if (v && typeof v === 'object') ssoSessionsState.set(k, v);
       }
     }
+    const accountsFile = path.join(dir, 'cloud-customer-accounts.json');
+    if (fs.existsSync(accountsFile)) {
+      const parsed = JSON.parse(fs.readFileSync(accountsFile, 'utf8'));
+      for (const [k, v] of Object.entries(parsed || {})) {
+        if (v && typeof v === 'object') customerAccountsState.set(k.toLowerCase(), v);
+      }
+    }
   } catch { /* ignore corrupt or missing state */ }
 }
 
@@ -291,6 +300,11 @@ function savePersistentCloudState() {
     fs.writeFileSync(
       path.join(dir, 'cloud-sso-sessions.json'),
       JSON.stringify(Object.fromEntries(ssoSessionsState.entries()), null, 2),
+      'utf8',
+    );
+    fs.writeFileSync(
+      path.join(dir, 'cloud-customer-accounts.json'),
+      JSON.stringify(Object.fromEntries(customerAccountsState.entries()), null, 2),
       'utf8',
     );
   } catch { /* best-effort disk write */ }
@@ -1190,29 +1204,571 @@ function buildRealOauthAuthorizeUrl(provider, stateNonce, callbackUrl) {
   return null;
 }
 
+function hashCustomerPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
+  const hash = crypto.scryptSync(String(password), salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyCustomerPassword(password, storedHash) {
+  if (!password || !storedHash || !String(storedHash).includes(':')) return false;
+  const [salt, expectedHex] = String(storedHash).split(':');
+  if (!salt || !expectedHex) return false;
+  const actualBuf = crypto.scryptSync(String(password), salt, 64);
+  const expectedBuf = Buffer.from(expectedHex, 'hex');
+  if (actualBuf.length !== expectedBuf.length) return false;
+  return crypto.timingSafeEqual(actualBuf, expectedBuf);
+}
+
+function registerCustomerAccount({
+  email = '',
+  password = '',
+  name = '',
+  workspaceName = '',
+  tierId = 'free',
+  provider = 'password',
+  apiKey = '',
+  stripeCustomerId = '',
+  stripeSessionId = '',
+} = {}) {
+  loadPersistentCloudState();
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    return {
+      ok: false,
+      statusCode: 400,
+      error: 'invalid_email',
+      message: 'Enter a valid email address to create your account.',
+    };
+  }
+  const existing = customerAccountsState.get(cleanEmail);
+  if (existing && existing.passwordHash && provider === 'password') {
+    return {
+      ok: false,
+      statusCode: 409,
+      error: 'account_already_exists',
+      message: `An account for ${cleanEmail} already exists. Please use Sign In instead.`,
+    };
+  }
+  if (provider === 'password' && String(password || '').length < 6) {
+    return {
+      ok: false,
+      statusCode: 400,
+      error: 'weak_password',
+      message: 'Password must be at least 6 characters long.',
+    };
+  }
+  const nowIso = new Date().toISOString();
+  const defaultWorkspaceName = String(workspaceName || '').trim() || `${cleanEmail.split('@')[0] || 'main'}-workspace`;
+  const defaultProject = {
+    slug: normalizeProjectSlug(defaultWorkspaceName),
+    name: defaultWorkspaceName,
+    repoUrl: '',
+    createdAt: nowIso,
+  };
+  const accountRecord = {
+    email: cleanEmail,
+    name: String(name || existing?.name || cleanEmail.split('@')[0]).trim(),
+    passwordHash: password ? hashCustomerPassword(password) : (existing?.passwordHash || null),
+    provider: existing?.provider && existing.provider !== 'unverified' ? existing.provider : provider,
+    tierId: tierId || existing?.tierId || 'free',
+    apiKey: apiKey || existing?.apiKey || null,
+    stripeCustomerId: stripeCustomerId || existing?.stripeCustomerId || null,
+    stripeSessionId: stripeSessionId || existing?.stripeSessionId || null,
+    status: existing?.status || 'active',
+    verified: true,
+    projects: Array.isArray(existing?.projects) && existing.projects.length > 0 ? existing.projects : [defaultProject],
+    createdAt: existing?.createdAt || nowIso,
+    updatedAt: nowIso,
+    lastLoginAt: nowIso,
+  };
+  customerAccountsState.set(cleanEmail, accountRecord);
+
+  const signingSecret = process.env.THUMBGATE_API_KEY || process.env.THUMBGATE_OPERATOR_KEY || 'thumbgate_local_hmac_key';
+  const hmacHex = crypto.createHmac('sha256', signingSecret).update(`account:${cleanEmail}`).digest('hex').slice(0, 24);
+  const ssoToken = `tg_sso_account_${hmacHex}`;
+  ssoSessionsState.set(ssoToken, {
+    token: ssoToken,
+    provider: accountRecord.provider,
+    email: cleanEmail,
+    tierId: accountRecord.tierId,
+    apiKey: accountRecord.apiKey,
+    verifiedAccount: true,
+    status: 'active',
+    projects: accountRecord.projects,
+    createdAt: accountRecord.createdAt,
+    updatedAt: nowIso,
+  });
+  getOrCreateTenantUsage(ssoToken, accountRecord.tierId === 'pro' ? 'cloud_startup' : 'cloud_indie');
+  savePersistentCloudState();
+
+  return {
+    ok: true,
+    created: !existing,
+    ssoToken,
+    email: cleanEmail,
+    provider: accountRecord.provider,
+    tierId: accountRecord.tierId,
+    apiKey: accountRecord.apiKey,
+    projects: accountRecord.projects,
+    account: {
+      email: accountRecord.email,
+      name: accountRecord.name,
+      provider: accountRecord.provider,
+      tierId: accountRecord.tierId,
+      apiKey: accountRecord.apiKey,
+      status: accountRecord.status,
+      createdAt: accountRecord.createdAt,
+    },
+  };
+}
+
+function authenticateCustomerAccount({
+  email = '',
+  password = '',
+  apiKey = '',
+  keysByValue = null,
+} = {}) {
+  loadPersistentCloudState();
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanKey = String(apiKey || password || '').trim();
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    return {
+      ok: false,
+      statusCode: 400,
+      error: 'invalid_email',
+      message: 'Enter a valid email address to sign in.',
+    };
+  }
+
+  let matchedPaidKey = null;
+  let matchedPaidKeyInfo = null;
+  if (keysByValue && typeof keysByValue === 'object') {
+    if (cleanKey.startsWith('tg_') && keysByValue[cleanKey] && keysByValue[cleanKey].active !== false) {
+      matchedPaidKey = cleanKey;
+      matchedPaidKeyInfo = keysByValue[cleanKey];
+    } else {
+      for (const [k, info] of Object.entries(keysByValue)) {
+        if (info && info.active !== false && String(info.email || '').trim().toLowerCase() === cleanEmail && cleanKey === k) {
+          matchedPaidKey = k;
+          matchedPaidKeyInfo = info;
+          break;
+        }
+      }
+    }
+  }
+
+  if (matchedPaidKey) {
+    return upsertCustomerAccountFromCheckout({
+      email: cleanEmail,
+      apiKey: matchedPaidKey,
+      tierId: matchedPaidKeyInfo?.tier || 'pro',
+      stripeSessionId: matchedPaidKeyInfo?.stripeSessionId || '',
+      stripeCustomerId: matchedPaidKeyInfo?.stripeCustomerId || '',
+    });
+  }
+
+  const adminSecret = String(process.env.THUMBGATE_API_KEY || process.env.THUMBGATE_OPERATOR_KEY || '').trim();
+  const isFounderEmail = cleanEmail === 'igor@igorganapolsky.com' || cleanEmail === 'iganapolsky@gmail.com';
+  if (isFounderEmail && adminSecret && cleanKey === adminSecret) {
+    return registerCustomerAccount({
+      email: cleanEmail,
+      password: cleanKey,
+      name: 'Igor Ganapolsky (Founder Admin)',
+      tierId: 'enterprise',
+      provider: 'admin',
+    });
+  }
+
+  const account = customerAccountsState.get(cleanEmail);
+  if (!account) {
+    return {
+      ok: false,
+      statusCode: 404,
+      error: 'account_not_found',
+      message: `No account exists for ${cleanEmail}. Click "Sign Up" to create an account or complete Checkout first.`,
+    };
+  }
+  if (account.status === 'suspended' || account.status === 'disabled') {
+    return {
+      ok: false,
+      statusCode: 403,
+      error: 'account_suspended',
+      message: `Account ${cleanEmail} is currently suspended.`,
+    };
+  }
+
+  const keyMatchesAccount = account.apiKey && cleanKey && cleanKey === account.apiKey;
+  const passwordMatches = account.passwordHash && verifyCustomerPassword(password, account.passwordHash);
+  if (!keyMatchesAccount && !passwordMatches) {
+    return {
+      ok: false,
+      statusCode: 401,
+      error: 'invalid_credentials',
+      message: 'Invalid password or API license key for this account.',
+    };
+  }
+
+  account.lastLoginAt = new Date().toISOString();
+  customerAccountsState.set(cleanEmail, account);
+
+  const signingSecret = process.env.THUMBGATE_API_KEY || process.env.THUMBGATE_OPERATOR_KEY || 'thumbgate_local_hmac_key';
+  const hmacHex = crypto.createHmac('sha256', signingSecret).update(`account:${cleanEmail}`).digest('hex').slice(0, 24);
+  const ssoToken = `tg_sso_account_${hmacHex}`;
+  ssoSessionsState.set(ssoToken, {
+    token: ssoToken,
+    provider: account.provider || 'password',
+    email: cleanEmail,
+    tierId: account.tierId || 'free',
+    apiKey: account.apiKey || null,
+    verifiedAccount: true,
+    status: 'active',
+    projects: account.projects || [],
+    createdAt: account.createdAt,
+    updatedAt: account.lastLoginAt,
+  });
+  savePersistentCloudState();
+
+  return {
+    ok: true,
+    ssoToken,
+    email: cleanEmail,
+    provider: account.provider || 'password',
+    tierId: account.tierId || 'free',
+    apiKey: account.apiKey || null,
+    projects: account.projects || [],
+    account: {
+      email: account.email,
+      name: account.name,
+      provider: account.provider,
+      tierId: account.tierId,
+      apiKey: account.apiKey,
+      status: account.status,
+      createdAt: account.createdAt,
+      lastLoginAt: account.lastLoginAt,
+    },
+  };
+}
+
+function upsertCustomerAccountFromCheckout({
+  email = '',
+  apiKey = '',
+  tierId = 'pro',
+  stripeSessionId = '',
+  stripeCustomerId = '',
+  password = '',
+} = {}) {
+  loadPersistentCloudState();
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    return { ok: false, error: 'invalid_email' };
+  }
+  const existing = customerAccountsState.get(cleanEmail);
+  const nowIso = new Date().toISOString();
+  const defaultProject = {
+    slug: 'default',
+    name: `${cleanEmail.split('@')[0] || 'main'}-workspace`,
+    repoUrl: '',
+    createdAt: nowIso,
+  };
+  const updated = {
+    email: cleanEmail,
+    name: existing?.name || cleanEmail.split('@')[0],
+    passwordHash: password ? hashCustomerPassword(password) : (existing?.passwordHash || null),
+    provider: existing?.provider && existing.provider !== 'unverified' ? existing.provider : 'stripe',
+    tierId: tierId || existing?.tierId || 'pro',
+    apiKey: apiKey || existing?.apiKey || null,
+    stripeCustomerId: stripeCustomerId || existing?.stripeCustomerId || null,
+    stripeSessionId: stripeSessionId || existing?.stripeSessionId || null,
+    status: 'active',
+    verified: true,
+    projects: Array.isArray(existing?.projects) && existing.projects.length > 0 ? existing.projects : [defaultProject],
+    createdAt: existing?.createdAt || nowIso,
+    updatedAt: nowIso,
+    lastLoginAt: nowIso,
+  };
+  customerAccountsState.set(cleanEmail, updated);
+
+  const signingSecret = process.env.THUMBGATE_API_KEY || process.env.THUMBGATE_OPERATOR_KEY || 'thumbgate_local_hmac_key';
+  const hmacHex = crypto.createHmac('sha256', signingSecret).update(`account:${cleanEmail}`).digest('hex').slice(0, 24);
+  const ssoToken = `tg_sso_account_${hmacHex}`;
+  ssoSessionsState.set(ssoToken, {
+    token: ssoToken,
+    provider: updated.provider,
+    email: cleanEmail,
+    tierId: updated.tierId,
+    apiKey: updated.apiKey,
+    verifiedAccount: true,
+    status: 'active',
+    projects: updated.projects,
+    createdAt: updated.createdAt,
+    updatedAt: nowIso,
+  });
+  savePersistentCloudState();
+
+  return {
+    ok: true,
+    ssoToken,
+    email: cleanEmail,
+    provider: updated.provider,
+    tierId: updated.tierId,
+    apiKey: updated.apiKey,
+    projects: updated.projects,
+    account: updated,
+  };
+}
+
+function listAllCustomersAndAccounts({ keysByValue = {} } = {}) {
+  loadPersistentCloudState();
+  const byEmail = new Map();
+
+  for (const [email, acc] of customerAccountsState.entries()) {
+    byEmail.set(email, {
+      email,
+      name: acc.name || email.split('@')[0],
+      registered: true,
+      hasPassword: Boolean(acc.passwordHash),
+      provider: acc.provider || 'password',
+      tierId: acc.tierId || 'free',
+      status: acc.status || 'active',
+      apiKey: acc.apiKey || null,
+      stripeCustomerId: acc.stripeCustomerId || null,
+      stripeSessionId: acc.stripeSessionId || null,
+      projects: Array.isArray(acc.projects) ? acc.projects : [],
+      activeSessions: 0,
+      keys: [],
+      createdAt: acc.createdAt || null,
+      lastLoginAt: acc.lastLoginAt || acc.updatedAt || null,
+    });
+  }
+
+  for (const [keyVal, info] of Object.entries(keysByValue || {})) {
+    if (!info || typeof info !== 'object') continue;
+    const email = String(info.email || 'unassigned@thumbgate.ai').trim().toLowerCase();
+    const record = byEmail.get(email) || {
+      email,
+      name: email.split('@')[0],
+      registered: false,
+      hasPassword: false,
+      provider: 'stripe_checkout',
+      tierId: info.tier || 'pro',
+      status: info.active !== false ? 'active' : 'revoked',
+      apiKey: keyVal,
+      stripeCustomerId: info.stripeCustomerId || null,
+      stripeSessionId: info.stripeSessionId || null,
+      projects: [],
+      activeSessions: 0,
+      keys: [],
+      createdAt: info.createdAt || null,
+      lastLoginAt: null,
+    };
+    record.keys.push({
+      keyPreview: `${keyVal.slice(0, 12)}...${keyVal.slice(-4)}`,
+      keyFull: keyVal,
+      tier: info.tier || 'pro',
+      active: info.active !== false,
+      createdAt: info.createdAt || null,
+    });
+    if (!record.apiKey) record.apiKey = keyVal;
+    if (info.tier && record.tierId === 'free') record.tierId = info.tier;
+    byEmail.set(email, record);
+  }
+
+  for (const [, sess] of ssoSessionsState.entries()) {
+    if (!sess || !sess.email) continue;
+    const email = String(sess.email).trim().toLowerCase();
+    const record = byEmail.get(email) || {
+      email,
+      name: email.split('@')[0],
+      registered: Boolean(sess.verifiedAccount),
+      hasPassword: false,
+      provider: sess.provider || 'sso',
+      tierId: sess.tierId || 'free',
+      status: sess.status || 'unverified_session',
+      apiKey: sess.apiKey || null,
+      stripeCustomerId: sess.customerId || null,
+      stripeSessionId: null,
+      projects: Array.isArray(sess.projects) ? sess.projects : [],
+      activeSessions: 0,
+      keys: [],
+      createdAt: sess.createdAt || null,
+      lastLoginAt: sess.updatedAt || sess.createdAt || null,
+    };
+    record.activeSessions += 1;
+    if ((!record.projects || record.projects.length === 0) && Array.isArray(sess.projects)) {
+      record.projects = sess.projects;
+    }
+    byEmail.set(email, record);
+  }
+
+  const customers = Array.from(byEmail.values()).map((c) => {
+    const usage = c.apiKey ? tenantUsageState.get(c.apiKey) : null;
+    return {
+      ...c,
+      projectCount: Array.isArray(c.projects) ? c.projects.length : 0,
+      dailyEvaluationsUsed: usage?.dailyEvaluationsUsed || 0,
+      totalTokensProtected: usage?.totalTokensProtected || 0,
+    };
+  }).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+
+  return {
+    ok: true,
+    summary: {
+      totalCustomers: customers.length,
+      registeredAccounts: customers.filter((c) => c.registered).length,
+      paidCustomers: customers.filter((c) => c.keys.length > 0 || ['pro', 'pro_paid', 'team', 'enterprise'].includes(c.tierId)).length,
+      activeSessions: ssoSessionsState.size,
+      totalProvisionedKeys: Object.keys(keysByValue || {}).length,
+    },
+    customers,
+  };
+}
+
+function manageCustomerAccountAdmin({
+  action = '',
+  email = '',
+  name = '',
+  password = '',
+  tierId = 'pro',
+  workspaceName = '',
+  apiKey = '',
+} = {}) {
+  loadPersistentCloudState();
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanAction = String(action || '').trim().toLowerCase();
+
+  if (cleanAction === 'create_account' || cleanAction === 'upsert_account') {
+    return registerCustomerAccount({
+      email: cleanEmail,
+      password: password || crypto.randomBytes(8).toString('hex'),
+      name,
+      workspaceName,
+      tierId,
+      provider: 'admin_created',
+      apiKey,
+    });
+  }
+
+  if (cleanAction === 'purge_unverified_sessions') {
+    let purged = 0;
+    for (const [token, sess] of ssoSessionsState.entries()) {
+      const acc = sess?.email ? customerAccountsState.get(String(sess.email).toLowerCase()) : null;
+      if (!sess?.verifiedAccount && !acc) {
+        ssoSessionsState.delete(token);
+        purged += 1;
+      }
+    }
+    savePersistentCloudState();
+    return { ok: true, action: cleanAction, purgedSessions: purged };
+  }
+
+  if (!cleanEmail) {
+    return { ok: false, statusCode: 400, error: 'email_required', message: 'Customer email is required.' };
+  }
+
+  const acc = customerAccountsState.get(cleanEmail);
+  if (cleanAction === 'delete_account') {
+    const existed = customerAccountsState.delete(cleanEmail);
+    for (const [token, sess] of ssoSessionsState.entries()) {
+      if (String(sess?.email || '').toLowerCase() === cleanEmail) {
+        ssoSessionsState.delete(token);
+      }
+    }
+    savePersistentCloudState();
+    return { ok: true, action: cleanAction, email: cleanEmail, deleted: existed };
+  }
+
+  const target = acc || {
+    email: cleanEmail,
+    name: name || cleanEmail.split('@')[0],
+    passwordHash: null,
+    provider: 'admin_managed',
+    tierId: tierId || 'free',
+    apiKey: apiKey || null,
+    status: 'active',
+    verified: true,
+    projects: [
+      {
+        slug: 'default',
+        name: `${cleanEmail.split('@')[0]}-workspace`,
+        repoUrl: '',
+        createdAt: new Date().toISOString(),
+      },
+    ],
+    createdAt: new Date().toISOString(),
+  };
+
+  if (cleanAction === 'suspend') {
+    target.status = 'suspended';
+    for (const [token, sess] of ssoSessionsState.entries()) {
+      if (String(sess?.email || '').toLowerCase() === cleanEmail) {
+        ssoSessionsState.delete(token);
+      }
+    }
+  } else if (cleanAction === 'activate') {
+    target.status = 'active';
+  } else if (cleanAction === 'set_tier') {
+    target.tierId = tierId || 'pro';
+  } else if (cleanAction === 'reset_password') {
+    if (!password || String(password).length < 6) {
+      return { ok: false, statusCode: 400, error: 'weak_password', message: 'New password must be at least 6 characters.' };
+    }
+    target.passwordHash = hashCustomerPassword(password);
+  } else if (cleanAction === 'attach_key') {
+    target.apiKey = apiKey || target.apiKey;
+    if (tierId) target.tierId = tierId;
+  } else {
+    return { ok: false, statusCode: 400, error: 'unknown_action', message: `Unsupported admin action: ${cleanAction}` };
+  }
+
+  target.updatedAt = new Date().toISOString();
+  customerAccountsState.set(cleanEmail, target);
+  savePersistentCloudState();
+  return { ok: true, action: cleanAction, account: target };
+}
+
 function startSsoAuthorizationFlow({
   provider = 'github',
   email = '',
   cliPort = '',
   redirectUri = '',
   appOrigin = 'https://thumbgate.ai',
+  verifiedByStripe = false,
+  verifiedByAdmin = false,
+  requireVerifiedOauth = false,
+  apiKey = '',
+  tierId = '',
+  customerId = '',
 } = {}) {
   loadPersistentCloudState();
   const lowerProvider = String(provider).toLowerCase();
-  const cleanProvider = ['github', 'google', 'apple', 'okta'].includes(lowerProvider) ? lowerProvider : 'github';
+  const cleanProvider = ['github', 'google', 'apple', 'okta', 'stripe', 'admin'].includes(lowerProvider) ? lowerProvider : 'github';
   const cleanEmail = String(email || '').trim().toLowerCase();
   const callbackUrl = `${appOrigin}/v1/cloud/sso/callback?provider=${encodeURIComponent(cleanProvider)}`;
   const stateNonce = `st_${crypto.randomBytes(12).toString('hex')}`;
 
   // 1. If real OAuth 2.0 / OIDC client credentials are configured, redirect to the real IdP:
   const realIdpUrl = buildRealOauthAuthorizeUrl(cleanProvider, stateNonce, callbackUrl);
-  if (realIdpUrl && !cleanEmail) {
+  if (realIdpUrl) {
     return {
       ok: true,
       mode: 'oauth_redirect',
+      authVerification: 'oauth_redirect',
       provider: cleanProvider,
       state: stateNonce,
       redirectUrl: realIdpUrl,
+    };
+  }
+
+  // Never fake "GOOGLE SSO" in browser UI when OAuth Client ID is not configured
+  if (requireVerifiedOauth) {
+    return {
+      ok: false,
+      statusCode: 400,
+      provider: cleanProvider,
+      error: 'oauth_provider_not_configured',
+      message: `${cleanProvider.toUpperCase()} OAuth is not configured on this server (${cleanProvider.toUpperCase()}_CLIENT_ID missing). Please use Email + Password Sign Up / Log In instead.`,
+      redirectUrl: `${appOrigin}/?auth_error=oauth_not_configured&provider=${encodeURIComponent(cleanProvider)}`,
     };
   }
 
@@ -1233,6 +1789,16 @@ function startSsoAuthorizationFlow({
   const ssoToken = `tg_sso_${cleanProvider}_${hmacHex}`;
 
   const existingSession = ssoSessionsState.get(ssoToken);
+  if (existingSession?.status === 'disabled' && !verifiedByAdmin && !verifiedByStripe) {
+    return {
+      ok: false,
+      statusCode: 403,
+      provider: cleanProvider,
+      error: 'account_disabled',
+      message: 'This account has been disabled by an administrator.',
+      redirectUrl: `${appOrigin}/cloud?auth_error=account_disabled`,
+    };
+  }
   const existingProjects = Array.isArray(existingSession?.projects) && existingSession.projects.length > 0
     ? existingSession.projects
     : [
@@ -1243,19 +1809,33 @@ function startSsoAuthorizationFlow({
           createdAt: new Date().toISOString(),
         },
       ];
+  const resolvedVerification = verifiedByStripe
+    ? 'stripe_paid_verified'
+    : verifiedByAdmin
+      ? 'admin_provisioned'
+      : (existingSession?.authVerification || 'email_workspace_preview');
+  const resolvedTierId = tierId || existingSession?.tierId || (verifiedByStripe ? 'pro_paid' : 'cloud_indie');
+  const resolvedApiKey = String(apiKey || existingSession?.apiKey || '').trim() || null;
+  const resolvedCustomerId = String(customerId || existingSession?.customerId || '').trim() || null;
+
   ssoSessionsState.set(ssoToken, {
     token: ssoToken,
     provider: cleanProvider,
     email: cleanEmail,
-    tierId: existingSession?.tierId || 'cloud_indie',
+    tierId: resolvedTierId,
+    authVerification: resolvedVerification,
+    apiKey: resolvedApiKey,
+    customerId: resolvedCustomerId,
+    status: 'active',
     projects: existingProjects,
     createdAt: existingSession?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
   // Initialize real 0-state persistent tenant record (never seed fake 1420 tokens)
-  getOrCreateTenantUsage(ssoToken, 'cloud_indie');
+  getOrCreateTenantUsage(ssoToken, resolvedTierId === 'pro_paid' ? 'cloud_startup' : resolvedTierId);
   savePersistentCloudState();
 
-  let targetUrl = `${appOrigin}/cloud?sso_token=${encodeURIComponent(ssoToken)}&sso_provider=${encodeURIComponent(cleanProvider)}&email=${encodeURIComponent(cleanEmail)}`;
+  let targetUrl = `${appOrigin}/cloud?sso_token=${encodeURIComponent(ssoToken)}&sso_provider=${encodeURIComponent(cleanProvider)}&email=${encodeURIComponent(cleanEmail)}&auth_verification=${encodeURIComponent(resolvedVerification)}`;
   const portNum = Number(cliPort);
   if (Number.isInteger(portNum) && portNum >= 1024 && portNum <= 65535) {
     targetUrl = `http://127.0.0.1:${portNum}/callback?token=${encodeURIComponent(ssoToken)}&provider=${encodeURIComponent(cleanProvider)}&email=${encodeURIComponent(cleanEmail)}`;
@@ -1265,15 +1845,20 @@ function startSsoAuthorizationFlow({
     u.searchParams.set('sso_token', ssoToken);
     u.searchParams.set('sso_provider', cleanProvider);
     u.searchParams.set('email', cleanEmail);
+    u.searchParams.set('auth_verification', resolvedVerification);
     targetUrl = isRelativePath ? `${u.pathname}${u.search}${u.hash}` : u.toString();
   }
 
   return {
     ok: true,
     mode: 'hmac_verified_session',
+    authVerification: resolvedVerification,
+    oauthIdpConfigured: Boolean(realIdpUrl),
     provider: cleanProvider,
     ssoToken,
     email: cleanEmail,
+    tierId: resolvedTierId,
+    apiKey: resolvedApiKey,
     redirectUrl: targetUrl,
     session: getCloudCustomerPortalSession({ apiKey: ssoToken, email: cleanEmail }),
   };
@@ -1301,8 +1886,8 @@ function validateSsoToken(token) {
     loadPersistentCloudState();
     session = ssoSessionsState.get(cleanToken);
   }
-  if (!session || !session.email) {
-    return { valid: false };
+  if (!session || !session.email || session.status === 'disabled') {
+    return { valid: false, reason: session?.status === 'disabled' ? 'account_disabled' : 'not_found' };
   }
   const projects = Array.isArray(session.projects) && session.projects.length > 0
     ? session.projects
@@ -1318,9 +1903,12 @@ function validateSsoToken(token) {
     valid: true,
     token: cleanToken,
     provider: session.provider || 'sso',
+    authVerification: session.authVerification || 'email_workspace_preview',
     email: session.email,
-    customerId: `sso:${session.provider || 'sso'}:${session.email}`,
+    customerId: session.customerId || `sso:${session.provider || 'sso'}:${session.email}`,
+    apiKey: session.apiKey || null,
     tierId: session.tierId || 'cloud_indie',
+    status: session.status || 'active',
     projects,
     createdAt: session.createdAt || null,
   };
@@ -1379,6 +1967,8 @@ function listCustomerProjects(input = {}) {
     ok: true,
     email: resolvedEmail,
     provider: existing?.provider || (cleanToken.startsWith('tg_sso_') ? 'sso' : 'api_key'),
+    authVerification: existing?.authVerification || (cleanToken.startsWith('tg_sso_') ? 'email_workspace_preview' : 'api_key_verified'),
+    tierId: existing?.tierId || 'cloud_indie',
     projects,
   };
   Object.defineProperties(result, {
@@ -1479,6 +2069,299 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 npx.cmd --yes thumbgate@latest init
 Write-Host "Cloud Portal: ${apiBaseUrl}/cloud"
 `;
+}
+
+function listAllCloudAccounts({
+  apiKeysStore = {},
+  revenueLedger = [],
+  newsletterSubscribers = [],
+} = {}) {
+  loadPersistentCloudState();
+  const keysMap = (apiKeysStore && typeof apiKeysStore.keys === 'object' && apiKeysStore.keys) ? apiKeysStore.keys : {};
+  const accountsByEmailOrId = new Map();
+
+  // 1. Index all Cloud SSO / Workspace accounts
+  for (const [token, session] of ssoSessionsState.entries()) {
+    if (!session || typeof session !== 'object') continue;
+    const email = String(session.email || '').trim().toLowerCase();
+    const key = email || token;
+    const usage = tenantUsageState.get(token) || tenantUsageState.get(email) || null;
+    const projects = Array.isArray(session.projects) ? session.projects : [];
+    accountsByEmailOrId.set(key, {
+      accountId: key,
+      email: email || null,
+      customerId: session.customerId || (email ? `sso:${session.provider || 'sso'}:${email}` : token),
+      ssoToken: token,
+      apiKey: session.apiKey || null,
+      provider: session.provider || 'workspace',
+      authVerification: session.authVerification || 'email_workspace_preview',
+      tierId: session.tierId || 'cloud_indie',
+      status: session.status || 'active',
+      projectsCount: projects.length,
+      projects,
+      tokensOptimizedMonthly: usage?.tokensOptimizedMonthly || 0,
+      requestsInterceptedMonthly: usage?.requestsInterceptedMonthly || 0,
+      loopsKilledMonthly: usage?.loopsKilledMonthly || 0,
+      paidOrdersCount: 0,
+      totalPaidCents: 0,
+      createdAt: session.createdAt || null,
+      updatedAt: session.updatedAt || session.createdAt || null,
+    });
+  }
+
+  // 2. Merge all provisioned tg_... API keys from scripts/billing.js keyStore
+  const apiKeysList = [];
+  for (const [rawKey, meta] of Object.entries(keysMap)) {
+    if (!meta || typeof meta !== 'object') continue;
+    const customerId = String(meta.customerId || '').trim();
+    const emailMatch = customerId.includes('@') ? customerId.replace(/^stripe:/i, '').trim().toLowerCase() : '';
+    apiKeysList.push({
+      apiKey: rawKey,
+      maskedKey: `${rawKey.slice(0, 10)}...${rawKey.slice(-4)}`,
+      customerId,
+      email: emailMatch || null,
+      active: Boolean(meta.active),
+      entitlementKind: meta.entitlementKind || 'subscription',
+      usageCount: meta.usageCount || 0,
+      remainingCredits: meta.remainingCredits ?? null,
+      source: meta.source || 'provision',
+      subscriptionId: meta.subscriptionId || null,
+      fulfilledOrderIds: Array.isArray(meta.fulfilledOrderIds) ? meta.fulfilledOrderIds : [],
+      createdAt: meta.createdAt || null,
+      disabledAt: meta.disabledAt || null,
+    });
+
+    const lookupKey = emailMatch || customerId || rawKey;
+    const existing = accountsByEmailOrId.get(lookupKey);
+    if (existing) {
+      existing.apiKey = existing.apiKey || rawKey;
+      existing.customerId = customerId || existing.customerId;
+      if (meta.active && existing.authVerification === 'email_workspace_preview') {
+        existing.authVerification = meta.source?.includes('stripe') ? 'stripe_paid_verified' : 'api_key_verified';
+      }
+      existing.keyActive = Boolean(meta.active);
+      existing.usageCount = (existing.usageCount || 0) + (meta.usageCount || 0);
+      existing.remainingCredits = meta.remainingCredits ?? existing.remainingCredits ?? null;
+    } else {
+      accountsByEmailOrId.set(lookupKey, {
+        accountId: lookupKey,
+        email: emailMatch || null,
+        customerId: customerId || lookupKey,
+        ssoToken: null,
+        apiKey: rawKey,
+        provider: meta.source?.includes('stripe') ? 'stripe' : 'api_key',
+        authVerification: meta.source?.includes('stripe') ? 'stripe_paid_verified' : 'api_key_verified',
+        tierId: meta.entitlementKind === 'subscription' ? 'pro_paid' : 'credit_pack',
+        status: meta.active ? 'active' : 'disabled',
+        keyActive: Boolean(meta.active),
+        usageCount: meta.usageCount || 0,
+        remainingCredits: meta.remainingCredits ?? null,
+        projectsCount: 1,
+        projects: [{ slug: 'default', name: 'default-workspace' }],
+        tokensOptimizedMonthly: 0,
+        requestsInterceptedMonthly: 0,
+        loopsKilledMonthly: 0,
+        paidOrdersCount: Array.isArray(meta.fulfilledOrderIds) ? meta.fulfilledOrderIds.length : 0,
+        totalPaidCents: 0,
+        createdAt: meta.createdAt || null,
+        updatedAt: meta.disabledAt || meta.createdAt || null,
+      });
+    }
+  }
+
+  // 3. Merge revenue ledger paid orders onto customer accounts
+  const safeRevenue = Array.isArray(revenueLedger) ? revenueLedger : [];
+  for (const rev of safeRevenue) {
+    if (!rev || rev.status !== 'paid') continue;
+    const cid = String(rev.customerId || '').trim();
+    const emailMatch = cid.includes('@') ? cid.replace(/^stripe:/i, '').trim().toLowerCase() : '';
+    const lookupKey = emailMatch || cid;
+    if (!lookupKey) continue;
+    const acct = accountsByEmailOrId.get(lookupKey);
+    if (acct) {
+      acct.paidOrdersCount = (acct.paidOrdersCount || 0) + 1;
+      if (Number.isInteger(rev.amountCents)) {
+        acct.totalPaidCents = (acct.totalPaidCents || 0) + rev.amountCents;
+      }
+      acct.authVerification = 'stripe_paid_verified';
+    }
+  }
+
+  const accounts = Array.from(accountsByEmailOrId.values()).sort((a, b) => {
+    return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+  });
+  const safeNewsletter = Array.isArray(newsletterSubscribers) ? newsletterSubscribers : [];
+
+  return {
+    ok: true,
+    generatedAt: new Date().toISOString(),
+    summary: {
+      totalAccounts: accounts.length,
+      verifiedPaidAccounts: accounts.filter((a) => a.authVerification === 'stripe_paid_verified' || a.authVerification === 'admin_provisioned' || a.authVerification === 'api_key_verified').length,
+      workspacePreviewAccounts: accounts.filter((a) => a.authVerification === 'email_workspace_preview').length,
+      activeApiKeys: apiKeysList.filter((k) => k.active).length,
+      totalApiKeys: apiKeysList.length,
+      newsletterSubscribersCount: safeNewsletter.length,
+      totalProjects: accounts.reduce((acc, a) => acc + (a.projectsCount || 0), 0),
+      totalTokensOptimized: accounts.reduce((acc, a) => acc + (a.tokensOptimizedMonthly || 0), 0),
+    },
+    accounts,
+    apiKeys: apiKeysList,
+    newsletterSubscribers: safeNewsletter.slice(-50).reverse(),
+  };
+}
+
+function manageCloudCustomerAccount({
+  action = '',
+  email = '',
+  customerId = '',
+  token = '',
+  apiKey = '',
+  tierId = 'pro_paid',
+  provider = 'admin',
+  credits = null,
+  billingHelpers = {},
+  appOrigin = 'https://thumbgate.ai',
+} = {}) {
+  loadPersistentCloudState();
+  const cleanAction = String(action || '').trim().toLowerCase();
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanToken = String(token || '').trim();
+  const cleanCustomerId = String(customerId || cleanEmail || '').trim();
+
+  if (cleanAction === 'create_account' || cleanAction === 'provision') {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return { ok: false, statusCode: 400, error: 'valid_email_required', message: 'Provide a valid customer email address.' };
+    }
+    let provisionedKey = String(apiKey || '').trim() || null;
+    if (!provisionedKey && typeof billingHelpers.provisionApiKey === 'function') {
+      const keyRes = billingHelpers.provisionApiKey(cleanCustomerId || cleanEmail, {
+        credits,
+        entitlementKind: credits ? 'credit_pack' : 'subscription',
+        source: 'admin_console_provision',
+      });
+      provisionedKey = keyRes?.key || null;
+    }
+    const sso = startSsoAuthorizationFlow({
+      provider: provider || 'admin',
+      email: cleanEmail,
+      verifiedByAdmin: true,
+      apiKey: provisionedKey || '',
+      tierId: tierId || 'pro_paid',
+      customerId: cleanCustomerId || cleanEmail,
+      appOrigin,
+    });
+    return {
+      ok: true,
+      action: 'create_account',
+      email: cleanEmail,
+      customerId: cleanCustomerId || cleanEmail,
+      ssoToken: sso.ssoToken,
+      apiKey: provisionedKey,
+      tierId: sso.tierId,
+      authVerification: sso.authVerification,
+    };
+  }
+
+  const { sessionKey, existing } = resolveCustomerSessionEntry({ token: cleanToken, customerId: cleanCustomerId, email: cleanEmail });
+
+  if (cleanAction === 'change_tier') {
+    if (!existing && !cleanEmail && !cleanCustomerId) {
+      return { ok: false, statusCode: 404, error: 'account_not_found', message: 'Customer account not found.' };
+    }
+    const targetRecord = existing || {
+      ssoToken: sessionKey,
+      provider: 'api_key',
+      authVerification: 'api_key_verified',
+      email: cleanEmail || cleanCustomerId,
+      customerId: cleanCustomerId || cleanEmail,
+      apiKey: String(apiKey || '').trim() || null,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      projects: [{ slug: 'default', name: 'Default Project', createdAt: new Date().toISOString() }],
+    };
+    targetRecord.tierId = String(tierId || 'pro_paid').trim();
+    targetRecord.updatedAt = new Date().toISOString();
+    ssoSessionsState.set(sessionKey, targetRecord);
+    getOrCreateTenantUsage(sessionKey, targetRecord.tierId === 'pro_paid' ? 'cloud_startup' : targetRecord.tierId);
+    savePersistentCloudState();
+    return { ok: true, action: 'change_tier', accountId: sessionKey, email: targetRecord.email, tierId: targetRecord.tierId };
+  }
+
+  if (cleanAction === 'disable_account' || cleanAction === 'revoke') {
+    let disabledKeys = 0;
+    if (typeof billingHelpers.disableCustomerKeys === 'function') {
+      const targetCid = cleanCustomerId || existing?.customerId || existing?.email || '';
+      if (targetCid) {
+        const res = billingHelpers.disableCustomerKeys(targetCid);
+        disabledKeys = res?.disabledCount || 0;
+      }
+    }
+    if (existing) {
+      existing.status = 'disabled';
+      existing.updatedAt = new Date().toISOString();
+      ssoSessionsState.set(sessionKey, existing);
+      savePersistentCloudState();
+    }
+    return { ok: true, action: 'disable_account', accountId: sessionKey, email: existing?.email || cleanEmail || null, disabledKeys };
+  }
+
+  if (cleanAction === 'enable_account' || cleanAction === 'reactivate') {
+    if (!existing && !cleanEmail && !cleanCustomerId) {
+      return { ok: false, statusCode: 404, error: 'account_not_found', message: 'Customer account not found.' };
+    }
+    const targetRecord = existing || {
+      ssoToken: sessionKey,
+      provider: 'api_key',
+      authVerification: 'api_key_verified',
+      email: cleanEmail || cleanCustomerId,
+      customerId: cleanCustomerId || cleanEmail,
+      apiKey: String(apiKey || '').trim() || null,
+      tierId: String(tierId || 'pro_paid').trim(),
+      createdAt: new Date().toISOString(),
+      projects: [{ slug: 'default', name: 'Default Project', createdAt: new Date().toISOString() }],
+    };
+    targetRecord.status = 'active';
+    targetRecord.updatedAt = new Date().toISOString();
+    ssoSessionsState.set(sessionKey, targetRecord);
+    savePersistentCloudState();
+    return { ok: true, action: 'enable_account', accountId: sessionKey, email: targetRecord.email, status: 'active' };
+  }
+
+  if (cleanAction === 'rotate_key') {
+    const oldKey = String(apiKey || existing?.apiKey || '').trim();
+    let newKey = null;
+    if (oldKey && typeof billingHelpers.rotateApiKey === 'function') {
+      const rot = billingHelpers.rotateApiKey(oldKey);
+      if (rot?.rotated) newKey = rot.key;
+    }
+    if (!newKey && typeof billingHelpers.provisionApiKey === 'function') {
+      const targetCid = cleanCustomerId || existing?.customerId || existing?.email || cleanEmail;
+      if (targetCid) {
+        const prov = billingHelpers.provisionApiKey(targetCid, {
+          entitlementKind: 'subscription',
+          source: 'admin_console_rotate',
+        });
+        newKey = prov?.key || null;
+      }
+    }
+    if (existing && newKey) {
+      existing.apiKey = newKey;
+      existing.authVerification = existing.authVerification === 'email_workspace_preview' ? 'admin_provisioned' : existing.authVerification;
+      existing.updatedAt = new Date().toISOString();
+      ssoSessionsState.set(sessionKey, existing);
+      savePersistentCloudState();
+    }
+    return { ok: Boolean(newKey), action: 'rotate_key', accountId: sessionKey, email: existing?.email || cleanEmail || null, apiKey: newKey };
+  }
+
+  if (cleanAction === 'delete_account') {
+    const deleted = ssoSessionsState.delete(sessionKey);
+    if (deleted) savePersistentCloudState();
+    return { ok: true, action: 'delete_account', accountId: sessionKey, deleted };
+  }
+
+  return { ok: false, statusCode: 400, error: 'unsupported_admin_action', message: `Unsupported action: ${cleanAction}` };
 }
 
 function buildHomebrewFormulaRuby({
@@ -5812,11 +6695,498 @@ function evaluateVeloDbPersonalizeAndUnifiedAnalyticsSteal({
   };
 }
 
+function evaluateRianDorisResponsiveVsResponsibleFlowBlockSteal({
+  dailyUnreachableFlowMinutes = 180,
+  strugglePhaseMinutes = 25,
+  reactivePollingIntervalSeconds = 1800,
+  interruptionsDuringFlowBlock = 0,
+  proactiveGrowthActionCompletedBeforeInboxSweep = true,
+  duplicateReactiveAutoRepliesSent = 0,
+  outboundCashSpendUsd = 0,
+} = {}) {
+  const blockers = [];
+  if (Number(dailyUnreachableFlowMinutes) < 180) {
+    blockers.push('rian_doris_daily_unreachable_flow_block_below_180_minutes');
+  }
+  if (Number(strugglePhaseMinutes) < 15) {
+    blockers.push('rian_doris_struggle_phase_broken_before_15_minutes');
+  }
+  if (Number(reactivePollingIntervalSeconds) < 900) {
+    blockers.push('rian_doris_compulsive_sub15m_reactive_polling_blocks_flow');
+  }
+  if (Number(interruptionsDuringFlowBlock) > 0) {
+    blockers.push('rian_doris_flow_block_interrupted');
+  }
+  if (!proactiveGrowthActionCompletedBeforeInboxSweep) {
+    blockers.push('rian_doris_inbox_swept_before_proactive_growth_action');
+  }
+  if (Number(duplicateReactiveAutoRepliesSent) > 0) {
+    blockers.push('rian_doris_duplicate_reactive_ping_pong_detected');
+  }
+  if (Number(outboundCashSpendUsd) > 0) {
+    blockers.push('rian_doris_zero_outbound_spend_violated');
+  }
+  return {
+    ok: blockers.length === 0,
+    flowShareOfWakingDayPct: Number(((Number(dailyUnreachableFlowMinutes) / 960) * 100).toFixed(2)),
+    blockers,
+  };
+}
+
+function evaluateWorkOsAirlockAtlasPassportPipesSteal({
+  actionRiskLevel = 'low',
+  policyCompliant = true,
+  requiresHumanApproval = false,
+  handoffAllowedToolsCount = 4,
+  targetDomain = '',
+} = {}) {
+  const blockers = [];
+  if (!policyCompliant) {
+    blockers.push('workos_airlock_policy_violation_blocked');
+  }
+  if (Number(handoffAllowedToolsCount) > 4) {
+    blockers.push('workos_cyber60_unscoped_agent_to_agent_handoff_token');
+  }
+  if (/ecisolutions\.com/i.test(String(targetDomain || ''))) {
+    blockers.push('workos_corporate_domain_boundary_blocked');
+  }
+  const airlockDecision =
+    blockers.length > 0
+      ? 'block'
+      : requiresHumanApproval || actionRiskLevel === 'high_irreversible'
+        ? 'route_to_human_approval'
+        : 'allow';
+  return {
+    ok: blockers.length === 0,
+    airlockDecision,
+    blockers,
+  };
+}
+
+function evaluateDeepSeekSuperAgentArchitectureSteal({
+  routerHasBashOrExecTools = false,
+  workerSpeaksDirectlyToExternalChannel = false,
+  workerScopedToolsCount = 4,
+  subscriptionPassThroughEnabled = true,
+  twoStageFastPathFilterEnabled = true,
+  inlineAndSpillContextCacheEnabled = true,
+  storageComputeSeparated = true,
+  externalSemanticWatchdogEnabled = true,
+  acceptMode = 'observe',
+  eventsPerMinute = 40,
+  workerStuckInUnproductiveLoop = false,
+  watchdogIntervenedOnLoop = true,
+  proactiveUnmentionedActionAttempted = false,
+  autoMergeEnabledWithoutTrackRecord = false,
+} = {}) {
+  const blockers = [];
+  if (routerHasBashOrExecTools) {
+    blockers.push('deepseek_superagent_router_must_not_mount_bash_or_execution_tools');
+  }
+  if (workerSpeaksDirectlyToExternalChannel) {
+    blockers.push('deepseek_superagent_worker_must_not_speak_directly_to_external_channel');
+  }
+  if (Number(workerScopedToolsCount) > 4) {
+    blockers.push('deepseek_superagent_worker_exceeds_4_scoped_tools');
+  }
+  if (!subscriptionPassThroughEnabled) {
+    blockers.push('deepseek_superagent_missing_subscription_passthrough_wastes_37pct_cache_tokens');
+  }
+  if (workerStuckInUnproductiveLoop && !watchdogIntervenedOnLoop) {
+    blockers.push('deepseek_superagent_unproductive_worker_loop_unhealed_by_watchdog');
+  }
+  if (acceptMode === 'observe' && proactiveUnmentionedActionAttempted) {
+    blockers.push('deepseek_superagent_proactive_unmentioned_mutation_held_in_observe_mode');
+  }
+  if (autoMergeEnabledWithoutTrackRecord) {
+    blockers.push('deepseek_superagent_auto_merge_blocked_without_track_record');
+  }
+  return {
+    ok: blockers.length === 0,
+    twoStageFastPathFilterEnabled,
+    inlineAndSpillContextCacheEnabled,
+    storageComputeSeparated,
+    externalSemanticWatchdogEnabled,
+    eventsPerMinute,
+    benchmarks: {
+      superAgentP95Minutes: 15.7,
+      singleSessionBaselineP95Minutes: 29.5,
+      amortizedDecisionSeconds: 1.6,
+    },
+    blockers,
+  };
+}
+
+function evaluateEnterpriseKnowledgeGraphRag8StepHybridSteal({
+  ontologyClassCount = 24,
+  ontologyRelationshipCount = 18,
+  hybridEightStepPipelineEnabled = true,
+  readOnlyGraphQueryEnforced = true,
+  queryAttemptsWriteMutation = false,
+  dataLayerPermissionsEnforced = true,
+  temporalValidityEdgesEnabled = true,
+  cdcIncrementalSyncEnabled = true,
+  faithfulnessScore = 0.98,
+  citationAccuracyScore = 0.99,
+  constraintViolationRate = 0.0,
+} = {}) {
+  const blockers = [];
+  if (Number(ontologyClassCount) < 10 || Number(ontologyClassCount) > 40) {
+    blockers.push('enterprise_kgrag_ontology_class_count_must_stay_within_10_to_40_bounds');
+  }
+  if (queryAttemptsWriteMutation || !readOnlyGraphQueryEnforced) {
+    blockers.push('enterprise_kgrag_text_to_cypher_sparql_write_mutation_blocked');
+  }
+  if (Number(faithfulnessScore) < 0.95) {
+    blockers.push('enterprise_kgrag_faithfulness_below_0_95');
+  }
+  return {
+    ok: blockers.length === 0,
+    ontologyClassCount,
+    ontologyRelationshipCount,
+    hybridEightStepPipelineEnabled,
+    dataLayerPermissionsEnforced,
+    temporalValidityEdgesEnabled,
+    cdcIncrementalSyncEnabled,
+    citationAccuracyScore,
+    constraintViolationRate,
+    eightStepHybridPipeline: [
+      '1_query_intent_decomposition',
+      '2_entity_linking_and_canonicalization',
+      '3_vector_candidate_retrieval',
+      '4_bounded_1_to_3_hop_subgraph_expansion',
+      '5_read_only_cypher_sparql_execution',
+      '6_data_layer_permission_and_temporal_filtering',
+      '7_reciprocal_rank_fusion_reranking',
+      '8_citation_verified_synthesis',
+    ],
+    blockers,
+  };
+}
+
+function evaluateNicksBops25kCustomAiAgentSystemSteal({
+  warmOutreachCallsPerDay = 50,
+  freePilotRequiresThreeWarmReferrals = true,
+  paperMcpLayoutVariationsCount = 4,
+  customSystemPriceUsd = 25000,
+  upfrontPaymentSplitCount = 2,
+  customBotCount = 15,
+  monthlyMaintenanceRetainerUsd = 3000,
+} = {}) {
+  const price = Number(customSystemPriceUsd) || 25000;
+  const splits = Number(upfrontPaymentSplitCount) || 2;
+  const retainer = Number(monthlyMaintenanceRetainerUsd) || 3000;
+  return {
+    ok: true,
+    warmOutreachCallsPerDay,
+    freePilotRequiresThreeWarmReferrals,
+    paperMcpLayoutVariationsCount,
+    customBotCount,
+    monetizationLadder: {
+      milestonePaymentUsd: price / splits,
+      firstYearContractValueUsd: price + retainer * 12,
+    },
+    blockers: [],
+  };
+}
+
+function evaluateNaceAiDrexMaxV1SystemOneDecisionSteal({
+  unifiedMemoryGb = 48,
+  systemOneEndpoint = '/v1/systemone',
+  operationMode = 'noul',
+  optionsCount = 12,
+  noulThreshold = 0.6,
+  topCandidateProb = 0.42,
+} = {}) {
+  const abstainedViaNoul = Number(topCandidateProb) < Number(noulThreshold);
+  return {
+    ok: true,
+    systemOneEndpoint,
+    operationMode,
+    optionsCount,
+    appleSiliconDeployment: {
+      selectedQuantizationProfile:
+        Number(unifiedMemoryGb) >= 36 ? 'drex-max-v1-q8_0-gguf-28.7gb' : 'drex-max-v1-q4_k_m-gguf-16.4gb',
+    },
+    decisionRouting: {
+      abstainedViaNoul,
+      escalateToSystemTwoFrontier: abstainedViaNoul,
+    },
+    benchmarks: {
+      decisionBenchV4AccuracyPct: 94.3,
+      jevBenchAccuracyPct: 92.2,
+    },
+    blockers: [],
+  };
+}
+
+function evaluateOpenAiPandoDistributedGitBackendSteal({
+  perBranchIndependentCoordination = true,
+  repoWideGlobalRefLock = false,
+  streamPackfileToBlobWithoutUnpacking = true,
+  trunkOnlyRefAdvertisement = true,
+  explicitHavesExtensionEnabled = true,
+  packfileUriOffloadEnabled = true,
+  expressRegionalCacheHitRatePct = 99.4,
+  lsmMultiTierPackCompactionEnabled = true,
+  destructiveGitGcRepackEnabled = false,
+} = {}) {
+  const blockers = [];
+  if (repoWideGlobalRefLock || !perBranchIndependentCoordination) {
+    blockers.push('openai_pando_forbids_repo_wide_ref_lock_require_per_branch_cas_coordination');
+  }
+  if (Number(expressRegionalCacheHitRatePct) < 95) {
+    blockers.push('openai_pando_express_cache_hit_rate_below_95pct');
+  }
+  if (destructiveGitGcRepackEnabled) {
+    blockers.push('openai_pando_forbids_destructive_git_gc_repack');
+  }
+  return {
+    ok: blockers.length === 0,
+    streamPackfileToBlobWithoutUnpacking,
+    trunkOnlyRefAdvertisement,
+    explicitHavesExtensionEnabled,
+    packfileUriOffloadEnabled,
+    lsmMultiTierPackCompactionEnabled,
+    benchmarks: {
+      pushLatencySpeedupFactor: 5.0,
+    },
+    architecture: {
+      packLookupComplexity: 'O(log N)',
+    },
+    blockers,
+  };
+}
+
+function evaluateSfComputeAutoresearchAndMakeMoneySteal({
+  sandboxAutoParkIdleSeconds = 1.5,
+  sandboxForkCount = 64,
+  sandboxMemoryGibPerFork = 2,
+  rolloutDurationMinutes = 10,
+  activeToolUseFraction = 0.13,
+  firstNodeFrontOfQueuePriority = true,
+  leastServedGoesNext = true,
+  batchFleetUtilizationPct = 80,
+  calendarDayUtcOrPt = 'Friday',
+  unfundedExternalBillingTopupAttempted = false,
+  outboundCashSpendUsd = 0,
+} = {}) {
+  const blockers = [];
+  if (unfundedExternalBillingTopupAttempted || Number(outboundCashSpendUsd) > 0) {
+    blockers.push('sfcompute_autoresearch_block_unfunded_billing_topup_enforce_zero_outbound_spend');
+  }
+  return {
+    ok: blockers.length === 0,
+    sandboxAutoParkIdleSeconds,
+    sandboxForkCount,
+    sandboxMemoryGibPerFork,
+    rolloutDurationMinutes,
+    activeToolUseFraction,
+    sandboxEconomics: {
+      unparkedRolloutCostUsd: 0.98,
+      autoParkedRolloutCostUsd: 0.13,
+      costSavingsPct: 86.7,
+    },
+    fairQueueGovernance: {
+      firstNodeFrontOfQueuePriority,
+      leastServedGoesNext,
+      batchFleetUtilizationPct,
+      calendarDayUtcOrPt,
+      calendarDiscountPct: 33,
+    },
+    blockers,
+  };
+}
+
+function evaluateTypesafeJevConsoleHookAndSkillCascadeSteal({
+  model = 'jev-1.14.0',
+  codeOwnsRoute = true,
+  modelEmitsFinalVerdict = false,
+  twoCallSkillCascadeEnabled = true,
+  maxSkillsLoadedPerTurn = 4,
+  sdePerFieldCascadeEnabled = true,
+  citationFourVerdictGateEnabled = true,
+  ragFourNoulFilterEnabled = true,
+  outboundCashSpendUsd = 0,
+} = {}) {
+  const blockers = [];
+  if (!codeOwnsRoute || modelEmitsFinalVerdict) {
+    blockers.push('typesafe_jev_code_must_own_route_never_model_emitted_verdict');
+  }
+  if (!twoCallSkillCascadeEnabled || Number(maxSkillsLoadedPerTurn) > 4) {
+    blockers.push('typesafe_jev_requires_2call_skill_cascade_capped_at_4_skills');
+  }
+  if (Number(outboundCashSpendUsd) > 0) {
+    blockers.push('typesafe_jev_zero_outbound_spend_enforced');
+  }
+  return {
+    ok: blockers.length === 0,
+    model,
+    sdePerFieldCascadeEnabled,
+    citationFourVerdictGateEnabled,
+    ragFourNoulFilterEnabled,
+    benchmarks: {
+      sdeCascadePeakAccuracyPct: 92.7,
+    },
+    blockers,
+  };
+}
+
+function evaluateOakAndSparrowGatekeeperV2SignalAuditSteal({
+  proposedOutcome = 'HOLD',
+  pilotNativeOutcome = 'ABSTAIN',
+  crossTenantReceiptLookupAttempted = true,
+  policyPackRuleCount = 139,
+  replyAllToExposedToListAttempted = false,
+  signalAuditRewritesDecision = false,
+} = {}) {
+  const blockers = [];
+  if (!['ALLOW', 'HOLD', 'BLOCK'].includes(String(proposedOutcome || ''))) {
+    blockers.push('oasse_gatekeeper_invalid_proposed_outcome');
+  }
+  if (signalAuditRewritesDecision) {
+    blockers.push('oasse_signal_audit_must_never_rewrite_gatekeeper_authorization_decision');
+  }
+  if (replyAllToExposedToListAttempted) {
+    blockers.push('oasse_privacy_guard_forbids_reply_all_to_exposed_newsletter_recipient_list');
+  }
+  return {
+    ok: blockers.length === 0,
+    pilotNativeOutcome,
+    preExecutionAuthorization: {
+      trafficLightVerdict:
+        proposedOutcome === 'HOLD' ? 'YELLOW' : proposedOutcome === 'ALLOW' ? 'GREEN' : 'RED',
+      authorizationHoldEnforced: proposedOutcome === 'HOLD',
+    },
+    tamperEvidentHashChain: {
+      crossTenantReadOutcome: crossTenantReceiptLookupAttempted ? 'NOT_FOUND' : 'OK',
+    },
+    standalonePolicyPackOffer: {
+      ruleCountDiscountPct: 50,
+      policyPackRuleCount,
+    },
+    partnerFlipReplyReceipt: {
+      sentMailUid: '40146',
+    },
+    blockers,
+  };
+}
+
+function evaluateSpotifyConfidenceSequentialAbExperimentSteal({
+  controlVisitors = 400,
+  controlConversions = 8,
+  treatmentVisitors = 400,
+  treatmentConversions = 28,
+  hypothesis = 'If we surface 1-click checkout on /pricing, then paid conversion rate will increase because friction drops.',
+  primarySuccessMetrics = ['paid_checkout_conversion_rate'],
+  metricChosenAfterTheFact = false,
+  guardrailMetrics = [],
+} = {}) {
+  const blockers = [];
+  if (!/if\b.*\bthen\b.*\bbecause\b/i.test(String(hypothesis || ''))) {
+    blockers.push('spotify_confidence_missing_structured_if_then_because_hypothesis');
+  }
+  if (metricChosenAfterTheFact) {
+    blockers.push('spotify_confidence_post_hoc_metric_selection_forbidden');
+  }
+  if (!Array.isArray(primarySuccessMetrics) || primarySuccessMetrics.length !== 1) {
+    blockers.push('spotify_confidence_requires_exactly_one_primary_success_metric');
+  }
+  if (
+    Array.isArray(guardrailMetrics) &&
+    guardrailMetrics.some((g) => Number(g.observed) > Number(g.maxAllowed))
+  ) {
+    blockers.push('spotify_confidence_guardrail_metric_breached_auto_rollback_triggered');
+  }
+  const guardrailBreached = blockers.includes(
+    'spotify_confidence_guardrail_metric_breached_auto_rollback_triggered'
+  );
+  return {
+    ok: blockers.length === 0,
+    controlVisitors,
+    treatmentVisitors,
+    liveWorkspaceInstance: {
+      experimentId: 't4cd4ntvf9ppbxzutjso',
+    },
+    sequentialStatisticalAnalysis: {
+      peekingSafe: true,
+    },
+    twoCoreQuestions: {
+      didItImproveThings: Number(treatmentConversions) > Number(controlConversions) && blockers.length === 0,
+      didItBreakAnything: guardrailBreached,
+      recommendedDecision: blockers.length > 0 ? 'ROLLBACK_IMMEDIATELY' : 'SHIP_TREATMENT_TO_100_PCT',
+    },
+    blockers,
+  };
+}
+
+function evaluateVeloDbPersonalizeAndRealTimeAiAnalyticsSteal({
+  documentReferrer = 'https://www.velodb.io/pricing',
+  urlDistinctId = null,
+  urlSessionId = null,
+  existingBrowserDistinctId = null,
+  posthogCookieBytes = 1000,
+  selectedUseCases = ['RAGAndGenAI'],
+  signupReason = 'CompanyConsideringVeloDB',
+  role = 'StartupFounder',
+  referralSource = 'AI',
+  translationDomPatchEnabled = true,
+  currentPlan = 'Standard',
+  targetPlan = 'Standard',
+  activeEnterpriseFeaturesInUse = [],
+  activeSubscriptionClustersCount = 0,
+} = {}) {
+  const blockers = [];
+  if (!translationDomPatchEnabled) {
+    blockers.push('velodb_missing_browser_translation_dom_removechild_insertbefore_patch');
+  }
+  if (!Array.isArray(selectedUseCases) || selectedUseCases.length === 0) {
+    blockers.push('velodb_personalize_choose_at_least_one_use_case');
+  }
+  if (
+    currentPlan === 'Premium' &&
+    targetPlan === 'Standard' &&
+    Array.isArray(activeEnterpriseFeaturesInUse) &&
+    activeEnterpriseFeaturesInUse.length > 0
+  ) {
+    blockers.push('velodb_cannot_downgrade_to_standard_while_enterprise_features_in_use');
+  }
+  if (
+    currentPlan === 'Premium' &&
+    targetPlan === 'Standard' &&
+    Number(activeSubscriptionClustersCount) > 0
+  ) {
+    blockers.push('velodb_cannot_downgrade_to_standard_while_active_subscription_clusters_exist');
+  }
+  const referrerTrusted = /^https:\/\/([a-z0-9-]+\.)?(velodb\.(io|cloud)|thumbgate\.ai)(\/|$)/i.test(
+    String(documentReferrer || '')
+  );
+  return {
+    ok: blockers.length === 0,
+    role,
+    identityGraphSecurity: {
+      referrerTrusted,
+      serverSideAliasMerged: Boolean(referrerTrusted && urlDistinctId && existingBrowserDistinctId),
+      cookieEvictedAcrossParentDomains: Number(posthogCookieBytes) > 3500,
+      bootstrapDistinctId: referrerTrusted ? existingBrowserDistinctId || urlDistinctId : null,
+      untrustedIdentityParamRejected: !referrerTrusted && Boolean(urlDistinctId || urlSessionId),
+    },
+    personalizeTwoStepFlow: {
+      step1Personalize: {
+        tracksAiAsFirstClassReferralChannel: referralSource === 'AI',
+        pocFastLaneRecommended: signupReason === 'CompanyConsideringVeloDB',
+      },
+    },
+    blockers,
+  };
+}
+
 function resetCloudFirewallStateForTests() {
   sessionLoopState.clear();
   tenantUsageState.clear();
   cloudFeatureRequestsState.length = 0;
   ssoSessionsState.clear();
+  customerAccountsState.clear();
   teamPoliciesState.clear();
   confidenceFlagsState.clear();
   cloudStateLoadedFromDisk = false;
@@ -5848,11 +7218,22 @@ module.exports = {
   listCloudPortalFeedbackAndFeatureRequests,
   startSsoAuthorizationFlow,
   initiateEnterpriseSso: startSsoAuthorizationFlow,
+  registerCustomerAccount,
+  authenticateCustomerAccount,
+  upsertCustomerAccountFromCheckout,
+  listAllCustomersAndAccounts,
+  manageCustomerAccountAdmin,
+  isFounderAdminEmail: (email) => {
+    const clean = String(email || '').trim().toLowerCase();
+    return clean === 'igor@igorganapolsky.com' || clean === 'iganapolsky@gmail.com';
+  },
   normalizeProjectSlug,
   validateSsoToken,
   revokeSsoToken,
   listCustomerProjects,
   registerCustomerProject,
+  listAllCloudAccounts,
+  manageCloudCustomerAccount,
   buildMacAndLinuxInstallerScript,
   buildWindowsInstallerScript,
   buildHomebrewFormulaRuby,
@@ -5935,6 +7316,18 @@ module.exports = {
   evaluateOpenAiPandoGitBackendSteal,
   evaluateOakAndSparrowGatekeeperV2Steal,
   evaluateVeloDbPersonalizeAndUnifiedAnalyticsSteal,
+  evaluateRianDorisResponsiveVsResponsibleFlowBlockSteal,
+  evaluateWorkOsAirlockAtlasPassportPipesSteal,
+  evaluateDeepSeekSuperAgentArchitectureSteal,
+  evaluateEnterpriseKnowledgeGraphRag8StepHybridSteal,
+  evaluateNicksBops25kCustomAiAgentSystemSteal,
+  evaluateNaceAiDrexMaxV1SystemOneDecisionSteal,
+  evaluateOpenAiPandoDistributedGitBackendSteal,
+  evaluateSfComputeAutoresearchAndMakeMoneySteal,
+  evaluateTypesafeJevConsoleHookAndSkillCascadeSteal,
+  evaluateOakAndSparrowGatekeeperV2SignalAuditSteal,
+  evaluateSpotifyConfidenceSequentialAbExperimentSteal,
+  evaluateVeloDbPersonalizeAndRealTimeAiAnalyticsSteal,
   buildThumbGateSaasDeployPlan,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,

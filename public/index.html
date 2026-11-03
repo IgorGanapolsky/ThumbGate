@@ -773,8 +773,10 @@
         <a href="#proof">Proof</a>
         <a href="/cloud" data-cta-id="nav_cloud_dashboard" style="color:var(--cyan);font-weight:800;">Cloud Portal</a>
         <a href="/deploy-plan" data-cta-id="nav_deploy_plan" style="color:var(--green);font-weight:800;">Deploy Plan</a>
+        <a href="/admin" data-cta-id="nav_admin_console" style="color:var(--muted);font-weight:700;font-size:12px;">Admin</a>
         <span id="homeSsoBadge" style="display:none;font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--green);padding:5px 10px;border:1px solid rgba(86,227,159,0.35);border-radius:999px;background:rgba(86,227,159,0.08);"></span>
-        <button type="button" id="homeSsoSignInBtn" class="nav-auth-btn" onclick="if(window.tgToggleHomeSso){window.tgToggleHomeSso();}" style="display:inline-flex;align-items:center;min-height:38px;padding:8px 14px;border-radius:8px;border:1px solid var(--cyan);background:var(--cyan);color:#06121a;font:800 13px/1 inherit;text-decoration:none;line-height:22px;cursor:pointer;">🔐 Log In</button>
+        <button type="button" id="homeSsoSignUpBtn" class="nav-auth-btn" onclick="if(window.tgSetHomeAuthMode){window.tgSetHomeAuthMode('signup',true);}" style="display:inline-flex;align-items:center;min-height:38px;padding:8px 12px;border-radius:8px;border:1px solid var(--green);background:rgba(86,227,159,0.14);color:var(--green);font:800 13px/1 inherit;text-decoration:none;line-height:22px;cursor:pointer;">✨ Sign Up</button>
+        <button type="button" id="homeSsoSignInBtn" class="nav-auth-btn" onclick="if(window.tgSetHomeAuthMode){window.tgSetHomeAuthMode('login',true);}" style="display:inline-flex;align-items:center;min-height:38px;padding:8px 12px;border-radius:8px;border:1px solid var(--cyan);background:var(--cyan);color:#06121a;font:800 13px/1 inherit;text-decoration:none;line-height:22px;cursor:pointer;">🔐 Log In</button>
         <button type="button" id="homeSsoLogoutBtn" class="nav-auth-btn" onclick="window.tgHomeLogout()" style="display:none;align-items:center;min-height:38px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.5);background:rgba(255,107,107,0.1);color:#ff6b6b;font:800 13px/1 inherit;cursor:pointer;">Log Out</button>
         <a class="nav-buy" href="#install" data-cta-id="nav_install_free">Install free</a>
       </div>
@@ -782,13 +784,14 @@
     <div id="homeSsoBar" style="display:none;border-top:1px solid var(--line);background:rgba(12,17,26,0.98);padding:12px 0;">
       <div class="shell" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <div id="homeSsoLoginRow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;justify-content:space-between;">
-          <span id="homeSsoPrompt" style="font-size:13px;font-weight:700;color:var(--text);">SSO Sign In:</span>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <input type="email" id="homeSsoEmail" placeholder="work@company.com" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--cyan);background:#080b10;color:var(--text);font-size:13px;width:220px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgHomeSsoLogin('google');}" />
-            <button type="button" onclick="window.tgHomeSsoLogin('apple')" style="min-height:36px;padding:0 12px;border-radius:8px;border:0;background:#f8fafc;color:#080b10;font:800 12px/1 inherit;cursor:pointer;"> Apple</button>
-            <button type="button" onclick="window.tgHomeSsoLogin('google')" style="min-height:36px;padding:0 12px;border-radius:8px;border:0;background:var(--cyan);color:#041016;font:800 12px/1 inherit;cursor:pointer;">G Google</button>
-            <button type="button" onclick="window.tgHomeSsoLogin('github')" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">GitHub</button>
-            <button type="button" onclick="window.tgHomeSsoLogin('okta')" style="min-height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">Okta</button>
+          <span id="homeSsoPrompt" style="font-size:13px;font-weight:700;color:var(--text);"></span>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <input type="email" id="homeSsoEmail" placeholder="work@company.com" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--cyan);background:#080b10;color:var(--text);font-size:13px;width:185px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgSubmitHomeAuth();}" />
+            <input type="password" id="homeSsoPassword" placeholder="Password or API key" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#080b10;color:var(--text);font-size:13px;width:175px;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.tgSubmitHomeAuth();}" />
+            <button type="button" id="homeSsoSubmitBtn" onclick="window.tgSubmitHomeAuth()" style="min-height:36px;padding:0 12px;border-radius:8px;border:0;background:var(--cyan);color:#041016;font:800 12px/1 inherit;cursor:pointer;">Log In</button>
+            <button type="button" id="homeSsoModeToggleBtn" onclick="window.tgToggleAuthMode()" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--green);background:rgba(86,227,159,0.12);color:var(--green);font:800 12px/1 inherit;cursor:pointer;">Sign Up</button>
+            <button type="button" onclick="window.tgHomeSsoLogin('google')" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">Google</button>
+            <button type="button" onclick="window.tgHomeSsoLogin('github')" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:700 12px/1 inherit;cursor:pointer;">GitHub</button>
             <button type="button" onclick="window.tgToggleHomeSso(false)" aria-label="Close SSO sign-in bar" style="min-height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font:700 12px/1 inherit;cursor:pointer;">✕</button>
           </div>
         </div>
@@ -1613,12 +1616,62 @@ next      decision recorded before execution</pre>
     var homeBar = document.getElementById('homeSsoBar');
     var homeLoginRow = document.getElementById('homeSsoLoginRow');
     var homeProjectsRow = document.getElementById('homeProjectsRow');
+    var homeSignUpBtn = document.getElementById('homeSsoSignUpBtn');
     var homeSignInBtn = document.getElementById('homeSsoSignInBtn');
     var homeLogoutBtn = document.getElementById('homeSsoLogoutBtn');
     var homeBadge = document.getElementById('homeSsoBadge');
     var homeEmailInput = document.getElementById('homeSsoEmail');
+    var homePasswordInput = document.getElementById('homeSsoPassword');
+    var homeSubmitBtn = document.getElementById('homeSsoSubmitBtn');
+    var homeModeToggleBtn = document.getElementById('homeSsoModeToggleBtn');
     var homeProjectSelect = document.getElementById('homeProjectSelect');
     var homeOpenLink = document.getElementById('homeOpenProjectLink');
+    var currentHomeAuthMode = 'login';
+
+    try {
+      if (localStorage.getItem('tg_auth_schema_version') !== 'v2_verified_accounts') {
+        localStorage.removeItem('tg_cloud_sso_token');
+        localStorage.removeItem('tg_cloud_sso_email');
+        localStorage.removeItem('tg_cloud_sso_provider');
+        localStorage.removeItem('tg_enterprise_sso_token');
+        localStorage.removeItem('tg_enterprise_sso_email');
+        localStorage.removeItem('tg_enterprise_sso_provider');
+        localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
+      }
+    } catch (e) {}
+
+    window.tgSetHomeAuthMode = function (mode, openBar) {
+      currentHomeAuthMode = mode === 'signup' ? 'signup' : 'login';
+      var promptEl = document.getElementById('homeSsoPrompt');
+      if (currentHomeAuthMode === 'signup') {
+        if (promptEl) {
+          promptEl.style.color = 'var(--green)';
+          promptEl.textContent = '✨ Create Your Account (enter email + password ≥ 6 chars):';
+        }
+        if (homePasswordInput) homePasswordInput.placeholder = 'Create password (min 6 chars)';
+        if (homeSubmitBtn) {
+          homeSubmitBtn.textContent = '✨ Create Account';
+          homeSubmitBtn.style.background = 'var(--green)';
+        }
+        if (homeModeToggleBtn) homeModeToggleBtn.textContent = 'Have an account? Log In';
+      } else {
+        if (promptEl) {
+          promptEl.style.color = 'var(--text)';
+          promptEl.textContent = '🔐 Log In to your account (or click Sign Up):';
+        }
+        if (homePasswordInput) homePasswordInput.placeholder = 'Password or tg_live_... key';
+        if (homeSubmitBtn) {
+          homeSubmitBtn.textContent = 'Log In';
+          homeSubmitBtn.style.background = 'var(--cyan)';
+        }
+        if (homeModeToggleBtn) homeModeToggleBtn.textContent = 'Need an account? Sign Up';
+      }
+      if (openBar) window.tgToggleHomeSso(true);
+    };
+
+    window.tgToggleAuthMode = function () {
+      window.tgSetHomeAuthMode(currentHomeAuthMode === 'login' ? 'signup' : 'login', true);
+    };
 
     window.tgToggleHomeSso = function (forceOpen) {
       if (!homeBar) return;
@@ -1644,15 +1697,18 @@ next      decision recorded before execution</pre>
         var params = new URLSearchParams(window.location.search);
         if (params.get('sso_token')) {
           localStorage.setItem('tg_cloud_sso_token', params.get('sso_token'));
+          localStorage.setItem('tg_enterprise_sso_token', params.get('sso_token'));
+          localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
           if (params.get('email')) localStorage.setItem('tg_cloud_sso_email', params.get('email'));
           if (params.get('sso_provider')) localStorage.setItem('tg_cloud_sso_provider', params.get('sso_provider'));
         }
-        token = localStorage.getItem('tg_cloud_sso_token') || '';
-        email = localStorage.getItem('tg_cloud_sso_email') || '';
-        provider = localStorage.getItem('tg_cloud_sso_provider') || 'sso';
+        token = localStorage.getItem('tg_cloud_sso_token') || localStorage.getItem('tg_enterprise_sso_token') || '';
+        email = localStorage.getItem('tg_cloud_sso_email') || localStorage.getItem('tg_enterprise_sso_email') || '';
+        provider = localStorage.getItem('tg_cloud_sso_provider') || localStorage.getItem('tg_enterprise_sso_provider') || 'account';
       } catch (e) {}
       if (!token) {
         if (homeBar) homeBar.style.display = 'none';
+        if (homeSignUpBtn) homeSignUpBtn.style.display = 'inline-flex';
         if (homeSignInBtn) homeSignInBtn.style.display = 'inline-flex';
         if (homeLogoutBtn) homeLogoutBtn.style.display = 'none';
         if (homeBadge) homeBadge.style.display = 'none';
@@ -1665,10 +1721,11 @@ next      decision recorded before execution</pre>
         if (!res.ok) throw new Error('expired');
         var data = await res.json();
         var resolvedEmail = data.email || email || 'authenticated';
-        var resolvedProvider = String(data.provider || provider || 'sso').toUpperCase();
+        var resolvedProvider = String(data.provider || provider || 'account').toUpperCase();
         if (homeBar) homeBar.style.display = 'block';
         if (homeLoginRow) homeLoginRow.style.display = 'none';
         if (homeProjectsRow) homeProjectsRow.style.display = 'flex';
+        if (homeSignUpBtn) homeSignUpBtn.style.display = 'none';
         if (homeSignInBtn) homeSignInBtn.style.display = 'none';
         if (homeLogoutBtn) homeLogoutBtn.style.display = 'inline-flex';
         if (homeBadge) {
@@ -1676,7 +1733,7 @@ next      decision recorded before execution</pre>
           homeBadge.style.display = 'inline-flex';
         }
         var sessionTxt = document.getElementById('homeSsoSessionText');
-        if (sessionTxt) sessionTxt.textContent = '🟢 ' + resolvedProvider + ' SSO · ' + resolvedEmail;
+        if (sessionTxt) sessionTxt.textContent = '🟢 ' + resolvedProvider + ' ACCOUNT · ' + resolvedEmail;
         var projects = Array.isArray(data.projects) ? data.projects : [];
         var savedProj = '';
         try { savedProj = localStorage.getItem('tg_active_project') || ''; } catch (e) {}
@@ -1690,8 +1747,12 @@ next      decision recorded before execution</pre>
         }
         window.tgSwitchHomeProject(activeSlug);
       } catch (e) {
-        try { localStorage.removeItem('tg_cloud_sso_token'); } catch (_) {}
+        try {
+          localStorage.removeItem('tg_cloud_sso_token');
+          localStorage.removeItem('tg_enterprise_sso_token');
+        } catch (_) {}
         if (homeBar) homeBar.style.display = 'none';
+        if (homeSignUpBtn) homeSignUpBtn.style.display = 'inline-flex';
         if (homeSignInBtn) homeSignInBtn.style.display = 'inline-flex';
         if (homeLogoutBtn) homeLogoutBtn.style.display = 'none';
         if (homeBadge) homeBadge.style.display = 'none';
@@ -1700,28 +1761,73 @@ next      decision recorded before execution</pre>
       }
     }
 
-    window.tgHomeSsoLogin = async function (provider) {
+    window.tgSubmitHomeAuth = async function () {
       var email = (homeEmailInput && homeEmailInput.value.trim()) || '';
-      if (!email) {
-        try { email = localStorage.getItem('tg_cloud_sso_email') || ''; } catch (e) {}
-      }
+      var secret = (homePasswordInput && homePasswordInput.value.trim()) || '';
       var promptEl = document.getElementById('homeSsoPrompt');
-      if ((!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) && typeof window.prompt === 'function') {
-        var prompted = window.prompt('Sign in with ' + String(provider || 'SSO').toUpperCase() + ' SSO — enter your email:', email || '');
-        if (prompted && prompted.trim()) {
-          email = prompted.trim();
-          if (homeEmailInput) homeEmailInput.value = email;
-        }
-      }
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         if (homeEmailInput) homeEmailInput.focus();
         if (promptEl) {
           promptEl.style.color = '#ff6b6b';
-          promptEl.textContent = 'Enter your work email to sign in with ' + String(provider || 'SSO').toUpperCase() + ' SSO:';
+          promptEl.textContent = 'Enter a valid email address first.';
         }
         return;
       }
-      var res = await fetch('/v1/cloud/sso/authorize?provider=' + encodeURIComponent(provider) + '&email=' + encodeURIComponent(email) + '&redirect_uri=/&format=json', {
+      if (!secret) {
+        if (homePasswordInput) homePasswordInput.focus();
+        if (promptEl) {
+          promptEl.style.color = '#ff6b6b';
+          promptEl.textContent = currentHomeAuthMode === 'signup'
+            ? 'Enter a password (min 6 characters) to create your account.'
+            : 'Enter your account password or tg_live_... API key to log in.';
+        }
+        return;
+      }
+      var endpoint = currentHomeAuthMode === 'signup' ? '/v1/cloud/auth/signup' : '/v1/cloud/auth/login';
+      try {
+        var res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: secret, apiKey: secret }),
+        });
+        var data = await res.json();
+        if (!res.ok || !data.ok) {
+          if (promptEl) {
+            promptEl.style.color = '#ff6b6b';
+            promptEl.textContent = data.message || 'Authentication failed.';
+          }
+          if (data && data.error === 'account_not_found') {
+            currentHomeAuthMode = 'signup';
+            if (homeSubmitBtn) {
+              homeSubmitBtn.textContent = '✨ Create Account';
+              homeSubmitBtn.style.background = 'var(--green)';
+            }
+          }
+          return;
+        }
+        try {
+          localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
+          localStorage.setItem('tg_cloud_sso_token', data.ssoToken);
+          localStorage.setItem('tg_cloud_sso_email', data.email);
+          localStorage.setItem('tg_cloud_sso_provider', data.provider || 'password');
+          localStorage.setItem('tg_enterprise_sso_token', data.ssoToken);
+          localStorage.setItem('tg_enterprise_sso_email', data.email);
+          localStorage.setItem('tg_enterprise_sso_provider', data.provider || 'password');
+        } catch (e) {}
+        if (homePasswordInput) homePasswordInput.value = '';
+        await tgHydrateHomeProjects();
+      } catch (err) {
+        if (promptEl) {
+          promptEl.style.color = '#ff6b6b';
+          promptEl.textContent = 'Network error: ' + err.message;
+        }
+      }
+    };
+
+    window.tgHomeSsoLogin = async function (provider) {
+      var email = (homeEmailInput && homeEmailInput.value.trim()) || '';
+      var promptEl = document.getElementById('homeSsoPrompt');
+      var res = await fetch('/v1/cloud/sso/authorize?provider=' + encodeURIComponent(provider) + '&email=' + encodeURIComponent(email) + '&require_oauth=1&redirect_uri=/&format=json', {
         headers: { 'Accept': 'application/json' }
       });
       var data = await res.json();
@@ -1729,8 +1835,17 @@ next      decision recorded before execution</pre>
         window.location.href = data.redirectUrl;
         return;
       }
+      if (!res.ok || !data.ok) {
+        if (promptEl) {
+          promptEl.style.color = '#ff6b6b';
+          promptEl.textContent = data.message || (String(provider).toUpperCase() + ' OAuth requires email + password Sign Up / Log In.');
+        }
+        if (homePasswordInput) homePasswordInput.focus();
+        return;
+      }
       if (data && data.ok && data.ssoToken) {
         try {
+          localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
           localStorage.setItem('tg_cloud_sso_token', data.ssoToken);
           localStorage.setItem('tg_cloud_sso_email', data.email);
           localStorage.setItem('tg_cloud_sso_provider', data.provider);
@@ -1743,7 +1858,7 @@ next      decision recorded before execution</pre>
       var inp = document.getElementById('homeNewProjectInput');
       var name = (inp && inp.value.trim()) || '';
       var token = '';
-      try { token = localStorage.getItem('tg_cloud_sso_token') || ''; } catch (e) {}
+      try { token = localStorage.getItem('tg_cloud_sso_token') || localStorage.getItem('tg_enterprise_sso_token') || ''; } catch (e) {}
       if (!name || !token) return;
       var res = await fetch('/v1/projects', {
         method: 'POST',
@@ -1761,10 +1876,13 @@ next      decision recorded before execution</pre>
     window.tgHomeLogout = async function () {
       var token = '';
       try {
-        token = localStorage.getItem('tg_cloud_sso_token') || '';
+        token = localStorage.getItem('tg_cloud_sso_token') || localStorage.getItem('tg_enterprise_sso_token') || '';
         localStorage.removeItem('tg_cloud_sso_token');
         localStorage.removeItem('tg_cloud_sso_email');
         localStorage.removeItem('tg_cloud_sso_provider');
+        localStorage.removeItem('tg_enterprise_sso_token');
+        localStorage.removeItem('tg_enterprise_sso_email');
+        localStorage.removeItem('tg_enterprise_sso_provider');
       } catch (e) {}
       if (token) {
         fetch('/v1/cloud/sso/logout', {
@@ -1776,6 +1894,7 @@ next      decision recorded before execution</pre>
       await tgHydrateHomeProjects();
     };
 
+    window.tgSetHomeAuthMode('login', false);
     tgHydrateHomeProjects();
   })();
 </script>

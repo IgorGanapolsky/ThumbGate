@@ -187,7 +187,7 @@ test('dashboard and thumbgate.ai homepage provide SSO Login/Logout buttons and i
   const firewall = require('../src/cloud-token-firewall');
 
   assert.match(dashboard, /id="navSsoLoginBtn"/);
-  assert.match(dashboard, /id="navSsoLogoutBtn"/);
+  assert.match(dashboard, /id="navSsoLogoutBtn"[^>]*style="display:none;/);
   assert.match(dashboard, /id="customerProjectsBar"/);
   assert.match(dashboard, /id="customerProjectSelect"/);
   assert.match(dashboard, /function signInWithSso\(provider\)/);
@@ -196,14 +196,14 @@ test('dashboard and thumbgate.ai homepage provide SSO Login/Logout buttons and i
   assert.match(dashboard, /function createCustomerProject\(\)/);
   assert.match(dashboard, /never auto-load demo/);
 
-  assert.match(dashboard, /id="navSsoLogoutBtn"[^>]*style="display:none;/);
-  assert.match(indexHtml, /id="homeSsoSignInBtn"[^>]*style="display:inline-flex;/);
+  assert.match(indexHtml, /id="homeSsoSignInBtn"/);
   assert.match(indexHtml, /id="homeSsoLogoutBtn"[^>]*style="display:none;/);
-  assert.match(indexHtml, /id="homeSsoBar"[^>]*style="display:none;/);
+  assert.doesNotMatch(indexHtml, /Customer SSO Log In \/ Log Out/);
   assert.match(indexHtml, /id="homeProjectSelect"/);
   assert.match(indexHtml, /window\.tgHomeSsoLogin = async function/);
   assert.match(indexHtml, /window\.tgCreateHomeProject = async function/);
   assert.match(indexHtml, /window\.tgHomeLogout = async function/);
+
   const authRes = firewall.initiateEnterpriseSso({
     provider: 'google',
     email: 'customer-sso@thumbgate.ai',
@@ -226,4 +226,82 @@ test('dashboard and thumbgate.ai homepage provide SSO Login/Logout buttons and i
   const projects = firewall.listCustomerProjects(valid.email);
   assert.ok(projects.some((p) => p.slug === 'checkout-service-api'));
 });
+
+test('verified customer Sign Up, Log In credential checks, Checkout auto-account, OAuth enforcement, and /admin console work end-to-end', () => {
+  const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'admin.html'), 'utf8');
+  const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const firewall = require('../src/cloud-token-firewall');
+
+  assert.match(indexHtml, /id="homeSsoSignUpBtn"/);
+  assert.match(indexHtml, /href="\/admin"/);
+  assert.match(indexHtml, /v2_verified_accounts/);
+  assert.match(adminHtml, /ThumbGate.*Admin/);
+  assert.match(adminHtml, /\/v1\/admin\/customers/);
+
+  // 1. Unconfigured OAuth with requireVerifiedOauth must refuse instead of minting fake GOOGLE SSO
+  const unconfiguredOauth = firewall.startSsoAuthorizationFlow({
+    provider: 'google',
+    email: 'unregistered@igorganapolsky.com',
+    requireVerifiedOauth: true,
+  });
+  assert.equal(unconfiguredOauth.ok, false);
+  assert.equal(unconfiguredOauth.error, 'oauth_provider_not_configured');
+
+  // 2. Logging in with an email that has no registered account must return 404 account_not_found
+  const missingLogin = firewall.authenticateCustomerAccount({
+    email: `never-registered-${Date.now()}@example.com`,
+    password: 'Password123!',
+  });
+  assert.equal(missingLogin.ok, false);
+  assert.equal(missingLogin.statusCode, 404);
+  assert.equal(missingLogin.error, 'account_not_found');
+
+  // 3. Explicit Sign Up creates a password-protected account and returns session token
+  const testEmail = `signup-${Date.now()}@example.com`;
+  const signupRes = firewall.registerCustomerAccount({
+    email: testEmail,
+    password: 'StrongPassword99!',
+    name: 'Test Customer',
+    workspaceName: 'Acme Corp Prod',
+  });
+  assert.equal(signupRes.ok, true);
+  assert.equal(signupRes.account.email, testEmail);
+  assert.ok(signupRes.ssoToken.startsWith('tg_sso_'));
+
+  // 4. Wrong password fails with 401 invalid_credentials; right password succeeds
+  const badLogin = firewall.authenticateCustomerAccount({
+    email: testEmail,
+    password: 'WrongPassword!',
+  });
+  assert.equal(badLogin.ok, false);
+  assert.equal(badLogin.statusCode, 401);
+
+  const goodLogin = firewall.authenticateCustomerAccount({
+    email: testEmail,
+    password: 'StrongPassword99!',
+  });
+  assert.equal(goodLogin.ok, true);
+  assert.equal(goodLogin.account.email, testEmail);
+
+  // 5. Stripe Checkout auto-creates customer account and attaches license key
+  const buyerEmail = `buyer-${Date.now()}@example.com`;
+  const checkoutAcc = firewall.upsertCustomerAccountFromCheckout({
+    email: buyerEmail,
+    apiKey: 'tg_live_test_checkout_key_123456',
+    tierId: 'pro',
+    stripeSessionId: 'cs_test_123',
+    stripeCustomerId: 'cus_test_123',
+  });
+  assert.equal(checkoutAcc.ok, true);
+  assert.equal(checkoutAcc.account.tierId, 'pro');
+  assert.ok(checkoutAcc.ssoToken.startsWith('tg_sso_'));
+
+  // 6. Admin console lists all customers and supports account management
+  const adminOverview = firewall.listAllCustomersAndAccounts({ keysByValue: {} });
+  assert.equal(adminOverview.ok, true);
+  assert.ok(adminOverview.summary.totalCustomers >= 2);
+  assert.ok(adminOverview.customers.some((c) => c.email === testEmail));
+  assert.ok(adminOverview.customers.some((c) => c.email === buyerEmail));
+});
+
 
