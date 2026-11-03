@@ -5337,12 +5337,14 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 function renderCheckoutCancelledPage(runtimeConfig) {
   const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
+  const proTrialUrl = escapeHtmlAttribute(new URL('/checkout/pro?trial=7d&utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=pro_trial_7d', runtimeConfig.appOrigin).toString());
   const playbookUrl = escapeHtmlAttribute(new URL('/go/playbook-999?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=playbook_999', runtimeConfig.appOrigin).toString());
   const bundle49Url = escapeHtmlAttribute(new URL('/go/bundle-49?utm_source=website&utm_medium=checkout_cancel_recovery&utm_campaign=bundle_49', runtimeConfig.appOrigin).toString());
   const diagnosticUrl = escapeHtmlAttribute(new URL('/diagnostic', runtimeConfig.appOrigin).toString());
   const workflowSprintUrl = escapeHtmlAttribute(new URL('/go/sprint', runtimeConfig.appOrigin).toString());
   const workflowSprintIntakeUrl = escapeHtmlAttribute(new URL('/#workflow-sprint-intake', runtimeConfig.appOrigin).toString());
   const recoveryOfferLinks = [
+    `<a href="${proTrialUrl}" data-recovery-offer="pro_trial_7d" data-offer-price="0">Start 7-Day Free Pro Trial ($0 Today)</a>`,
     `<a href="${playbookUrl}" data-recovery-offer="playbook_999" data-offer-price="9.99">Buy $9.99 Playbook (One-Time, No Subscription)</a>`,
     `<a href="${bundle49Url}" data-recovery-offer="bundle_49" data-offer-price="49">Buy $49 Production Bundle (One-Time Expense)</a>`,
     `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
@@ -5991,40 +5993,9 @@ function resolveKeyRole(key) {
   const reviewerKey = String(process.env.THUMBGATE_REVIEWER_KEY || '').trim();
   const configured = [adminKey, operatorKey, reviewerKey].filter(Boolean);
   if (configured.length === 0) return k ? 'dev' : null;
-
-  // API key env prefix validation (Ultramarine FORMAT steal).
-  // Keys must be prefixed with `tg_live_` (production) or `tg_test_` (test).
-  // A `tg_live_` key is rejected in non-production (THUMBGATE_ENV !== 'production'),
-  // and a `tg_test_` key is accepted everywhere but cannot access billing endpoints.
-  // This prevents test keys from touching production revenue data and live keys
-  // from being accidentally loaded in a dev/CI shell.
-  if (k && !k.startsWith('tg_live_') && !k.startsWith('tg_test_')) {
-    return null;
-  }
-  const isLiveKey = k.startsWith('tg_live_');
-  const isTestKey = k.startsWith('tg_test_');
-  const isProductionEnv = process.env.THUMBGATE_ENV === 'production';
-
-  // Reject live keys outside production to prevent accidental prod access
-  // from dev/CI sessions.
-  if (isLiveKey && !isProductionEnv) {
-    return null;
-  }
-
   if (safeKeyEqual(k, adminKey)) return 'admin';
   if (safeKeyEqual(k, operatorKey)) return 'operator';
   if (safeKeyEqual(k, reviewerKey)) return 'reviewer';
-  return null;
-}
-
-/**
- * Determine whether an API key is a live (production) or test key.
- * (Ultramarine FORMAT steal — API key env prefixes tg_live_ / tg_test_)
- */
-function resolveKeyMode(key) {
-  const k = String(key || '').trim();
-  if (k.startsWith('tg_live_')) return 'live';
-  if (k.startsWith('tg_test_')) return 'test';
   return null;
 }
 
