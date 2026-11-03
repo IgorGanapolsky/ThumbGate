@@ -648,6 +648,8 @@ test('Deslopify 9 Habits, Herjavec Closer, YouSpot Pro, HarnessSQL, Zou Group Sh
 });
 
 test('FinOps Phase 4 Intervention: Direct Cloud Indie/Startup alias slugs and Cancel-page buyer-email recovery capture work end-to-end', async () => {
+  const prevInsecure = process.env.THUMBGATE_ALLOW_INSECURE;
+  process.env.THUMBGATE_ALLOW_INSECURE = 'true';
   const serverMod = require('../src/api/server');
   assert.equal(serverMod.__test__.CHECKOUT_FEATURE_FLAGS.directCloudTierCheckoutEnabled, true);
   const srv = serverMod.createApiServer();
@@ -675,6 +677,8 @@ test('FinOps Phase 4 Intervention: Direct Cloud Indie/Startup alias slugs and Ca
     assert.match(cancelHtml, /customerEmail:\s*buyerEmail/);
     assert.match(cancelHtml, /Start 7-Day Free Pro Trial/);
   } finally {
+    if (prevInsecure === undefined) delete process.env.THUMBGATE_ALLOW_INSECURE;
+    else process.env.THUMBGATE_ALLOW_INSECURE = prevInsecure;
     await new Promise((resolve) => srv.close(resolve));
   }
 });
