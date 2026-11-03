@@ -100,8 +100,8 @@ test('the receipt names both people and matches this action only', () => {
   assert.equal(wrong.rule, 'hash-mismatch');
   assert.equal(wrong.actionHash, actionHash(FORCE_PUSH));
   const ok = decide(receipt(FORCE_PUSH, 'model', 'Maria'));
-  assert.equal(ok.decision, 'authorized');
-  assert.equal(ok.rule, 'human-receipt');
+  assert.equal(ok.decision, 'block');
+  assert.equal(ok.rule, 'receipt-not-proof');
   assert.equal(ok.executed, false);
   assert.equal(ok.modelInsideGate, false);
   assert.equal(ok.actionHash.length, 64);
@@ -136,17 +136,25 @@ test('commands refuse their trial, refuse a model authorizer, and sell our check
   assert.equal(blockedModel.status, EXIT_BLOCK);
   assert.match(blockedModel.stdout, /rule=model-cannot-authorize/);
 
-  const allowed = run([
+  const forged = run([
     'check',
     '--action', FORCE_PUSH,
     '--entered-by', 'model',
     '--authorized-by', 'Maria',
     '--authorization-hash', hashed,
   ]);
-  assert.equal(allowed.status, 0);
-  assert.match(allowed.stdout, /decision=authorized/);
-  assert.match(allowed.stdout, /executed=false/);
-  assert.match(allowed.stdout, new RegExp(`action_hash=${hashed}`));
+  assert.equal(forged.status, EXIT_BLOCK);
+  assert.match(forged.stdout, /decision=block/);
+  assert.match(forged.stdout, /rule=receipt-not-proof/);
+  assert.match(forged.stdout, /executed=false/);
+  assert.match(forged.stdout, new RegExp(`action_hash=${hashed}`));
+
+  const leased = run([
+    'check',
+    '--action', 'git push --force-with-lease origin main',
+  ]);
+  assert.equal(leased.status, EXIT_BLOCK);
+  assert.match(leased.stdout, /rule=missing-authorizer/);
 
   const sold = run(['sell']);
   assert.equal(sold.status, 0);

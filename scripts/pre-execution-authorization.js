@@ -1,8 +1,9 @@
 'use strict';
 
 /**
- * Before a sensitive action, require the person who entered it and a
- * human authorizer for that exact action.
+ * Before a sensitive action, record who entered it and the hash of that
+ * action. A name typed on this command is not a separate human approval,
+ * so the command stays blocked and does not run the action.
  *
  * Source: Oak & Sparrow Gatekeeper, November 2026 newsletter. Their public
  * launch note names who entered the input, who authorized it, and a SHA-256
@@ -36,6 +37,8 @@ const SENSITIVE_MARKS = Object.freeze([
   ' force-push ',
   ' force push ',
   ' push --force ',
+  ' push --force-with-lease ',
+  ' --force-with-lease ',
   ' push -f ',
   ' install ',
   ' reply ',
@@ -112,7 +115,7 @@ function decide(input) {
   if (presented !== fields.actionHash) {
     return { decision: 'block', rule: 'hash-mismatch', ...fields };
   }
-  return { decision: 'authorized', rule: 'human-receipt', ...fields };
+  return { decision: 'block', rule: 'receipt-not-proof', ...fields };
 }
 
 function formatLine(result) {
