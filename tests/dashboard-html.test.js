@@ -307,4 +307,146 @@ test('verified customer Sign Up, Log In credential checks, Checkout auto-account
   assert.ok(adminOverview.customers.some((c) => c.email === buyerEmail));
 });
 
+test('Procedural Graph Engineering (Zachary Blumenfeld) 6-pillar workflow executes deterministically end-to-end', () => {
+  const os = require('node:os');
+  const { execFileSync } = require('node:child_process');
+  const {
+    NODE_TYPES,
+    ingestUnifiedContextNode,
+    discoverCanonicalPath,
+    compileSkillToGraphYaml,
+    executeProceduralGraph,
+    recommendModelDowngrade,
+    auditGraphGovernance,
+  } = require('../src/procedural-graph-engine');
 
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-proc-graph-'));
+  const graphFile = path.join(tmpDir, 'context-graph.json');
+
+  const ingest1 = ingestUnifiedContextNode(
+    {
+      shortTermTurn: {
+        sessionId: 'sess_loan_1',
+        role: 'user',
+        content: 'Evaluate policy compliance and checkout recovery for enterprise buyer',
+      },
+      longTermEntity: {
+        id: 'ent_policy_soc2',
+        entityType: 'compliance_policy',
+        name: 'SOC2 Pre-Tool Verification Policy',
+        systemOfRecord: 'snowflake',
+        attributes: { maxRiskScore: 0.7, requireIsolatedVerifier: true },
+      },
+      decisionTrace: {
+        id: 'trace_run_1_noisy',
+        taskType: 'policy_compliance',
+        outcome: 'PASS',
+        entityIds: ['ent_policy_soc2'],
+        steps: [
+          { action: 'query_snowflake_policy', tool: 'execute_sql_readonly' },
+          { action: 'query_snowflake_policy', tool: 'execute_sql_readonly' },
+          { action: 'validate_isolated_verifier', tool: 'run_verifier' },
+          { action: 'validate_isolated_verifier', tool: 'run_verifier' },
+          { action: 'route_approval_gate', tool: 'gate_router' },
+        ],
+      },
+    },
+    graphFile
+  );
+  assert.equal(ingest1.ok, true);
+
+  ingestUnifiedContextNode(
+    {
+      decisionTrace: {
+        id: 'trace_run_2_clean',
+        taskType: 'policy_compliance',
+        outcome: 'PASS',
+        entityIds: ['ent_policy_soc2'],
+        steps: [
+          { action: 'query_snowflake_policy', tool: 'execute_sql_readonly' },
+          { action: 'validate_isolated_verifier', tool: 'run_verifier' },
+          { action: 'route_approval_gate', tool: 'gate_router' },
+        ],
+      },
+    },
+    graphFile
+  );
+
+  const discovery = discoverCanonicalPath('policy_compliance', graphFile);
+  assert.equal(discovery.ok, true);
+  assert.equal(discovery.canonicalPath.stepCount, 3);
+
+  const sampleSkillMd = [
+    '---',
+    'name: enterprise-policy-gate',
+    'description: Deterministic compliance & risk gate',
+    '---',
+    '# Enterprise Policy Gate',
+    '1. Run hard-rule preflight script `bin/agent-loop --health --json` before any mutation.',
+    '2. Validate schema and test suite with `npm run verify:isolated`.',
+    '3. If risk score >= 0.7 or policy check fails, refuse and escalate to human reviewer.',
+    '4. Classify residual edge-case intent using calibrated rubric model.',
+  ].join('\n');
+
+  const compiled = compileSkillToGraphYaml(
+    {
+      skillMarkdown: sampleSkillMd,
+      skillPath: 'skills/enterprise-policy-gate/SKILL.md',
+      taskType: 'policy_compliance',
+    },
+    graphFile
+  );
+  assert.equal(compiled.ok, true);
+  assert.match(compiled.yaml, /schema_version: "1\.0"/);
+  assert.match(compiled.yaml, /recommended_execution_model: "claude-haiku-4-5"/);
+
+  const nodeTypes = compiled.compiledGraph.nodes.map((n) => n.type);
+  assert.ok(nodeTypes.includes(NODE_TYPES.HARD_RULE_SCRIPT));
+  assert.ok(nodeTypes.includes(NODE_TYPES.VALIDATION_LINT_LOOP));
+  assert.ok(nodeTypes.includes(NODE_TYPES.ESCALATION_ROUTER));
+
+  const downgrade = recommendModelDowngrade(compiled.compiledGraph.nodes);
+  assert.equal(downgrade.canDowngradeToSlm, true);
+  assert.equal(downgrade.recommendedExecutionModel, 'claude-haiku-4-5');
+
+  const passRun = executeProceduralGraph(
+    {
+      graphId: compiled.graphId,
+      context: { policyCompliant: true, riskScore: 0.15, validationPassed: true },
+      entityIds: ['ent_policy_soc2'],
+    },
+    graphFile
+  );
+  assert.equal(passRun.ok, true);
+  assert.equal(passRun.run.verdict, 'ALLOW');
+
+  const blockRun = executeProceduralGraph(
+    {
+      graphId: compiled.graphId,
+      context: { policyCompliant: false, riskScore: 0.92 },
+      entityIds: ['ent_policy_soc2'],
+    },
+    graphFile
+  );
+  assert.equal(blockRun.ok, true);
+  assert.equal(blockRun.run.verdict, 'BLOCK');
+
+  const audit = auditGraphGovernance({ graphId: compiled.graphId }, graphFile);
+  assert.equal(audit.ok, true);
+  assert.equal(audit.totalPersistedRuns, 2);
+
+  const cliOut = execFileSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'procedural-graph-cli.js'),
+      'audit',
+      '--graph-id',
+      compiled.graphId,
+      '--graph-store',
+      graphFile,
+      '--json',
+    ],
+    { encoding: 'utf8' }
+  );
+  assert.equal(JSON.parse(cliOut).ok, true);
+});
