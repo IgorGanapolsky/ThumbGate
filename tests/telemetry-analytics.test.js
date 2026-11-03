@@ -1108,4 +1108,21 @@ test('getTelemetryAnalytics sanitizes &amp; query strings, classifies linkedin/t
   assert.ok(analytics.abExperiments);
   assert.equal(analytics.abExperiments.recommendedWinner, 'show_hn_041ms');
   assert.ok(analytics.abExperiments.variants.show_hn_041ms.wilsonUpper95 > 0);
+
+  const targetRaw = {};
+  assert.equal(
+    repairEmbeddedQueryToken('github\\u0026utm_medium=readme\\u0026utm_campaign=readme_gpt', targetRaw),
+    'github',
+  );
+  assert.equal(targetRaw.utmMedium, 'readme');
+  assert.equal(targetRaw.utmCampaign, 'readme_gpt');
+
+  const analytics90d = getTelemetryAnalytics(tmpDir, {
+    window: '90d',
+    timeZone: 'UTC',
+    now: '2026-11-02T18:00:00.000Z',
+  });
+  assert.equal(analytics90d.window.window, '90d');
+  assert.equal(analytics90d.window.startLocalDate, '2026-08-05');
+  assert.equal(analytics90d.window.endLocalDate, '2026-11-02');
 });

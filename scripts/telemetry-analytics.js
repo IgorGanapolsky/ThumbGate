@@ -328,7 +328,12 @@ function inferTrafficChannel(raw = {}, referrerHost = null) {
 function repairEmbeddedQueryToken(value, targetRaw = {}) {
   const text = normalizeText(value, 512);
   if (!text) return null;
-  const decoded = text.replace(/&amp;/gi, '&').replace(/\\+$/g, '');
+  const decoded = text
+    .replace(/\\u0026/gi, '&')
+    .replace(/%26/gi, '&')
+    .replace(/%3d/gi, '=')
+    .replace(/&amp;/gi, '&')
+    .replace(/\\+$/g, '');
   if (!decoded.includes('&') && !decoded.includes('=')) {
     return normalizeText(decoded);
   }
@@ -1212,6 +1217,9 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         }
       } else if ((entry.eventType || entry.event) === 'pro_checkout_direct_stripe') {
         checkoutInterstitialProConfirms += 1;
+        if (entry.ctaPlacement === 'checkout_interstitial' || entry.utmMedium === 'checkout_interstitial') {
+          checkoutInterstitialClicks += 1;
+        }
       }
 
       if (isCheckoutStartEvent(entry.eventType || entry.event)) {
