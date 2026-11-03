@@ -450,3 +450,146 @@ test('Procedural Graph Engineering (Zachary Blumenfeld) 6-pillar workflow execut
   );
   assert.equal(JSON.parse(cliOut).ok, true);
 });
+
+test('Deslopify 9 Habits, Herjavec Closer, YouSpot Pro, HarnessSQL, Zou Group Shelf-Life, Soft-MTP, Skool/Jarvis HUD, qwenGPU, LinkedIn OTel, and Grok Data Bot execute deterministically', () => {
+  const deslopify = require('../src/deslopify-engine');
+  const herjavec = require('../src/herjavec-closer-engine');
+
+  // 1. Deslopify Pre-Execution POV Gate blocks empty prompt and passes voice brain-dump + confidence pushback
+  const blockedPov = deslopify.evaluatePreExecutionPovGate({ whatYouThink: 'short' });
+  assert.equal(blockedPov.ok, false);
+  assert.equal(blockedPov.verdict, 'BLOCK_MISSING_POV');
+
+  const allowedPov = deslopify.evaluatePreExecutionPovGate({
+    voiceTranscript:
+      'I think our onboarding drops off when technical buyers see 4 clicks before Stripe checkout, and I worry they bounce on pricing complexity.',
+    confidencePct: 60,
+  });
+  assert.equal(allowedPov.ok, true);
+  assert.equal(allowedPov.verdict, 'ALLOW_WITH_POV');
+  assert.equal(allowedPov.requiresPushback, true);
+  assert.ok(allowedPov.opposingSteelman.length >= 3);
+
+  // 2. Deslopify 6 Divergent Angles & 4-Persona Review Board & 5-Sentence Read Budget
+  const angles = deslopify.generateSixDivergentAngles('Enterprise PreToolUse Governance');
+  assert.equal(angles.angles.length, 6);
+  assert.ok(angles.angles.some((a) => a.id === 'angle_1_game_designer'));
+
+  const reviewBoard = deslopify.runFourPersonaReviewBoard(
+    'We shipped a 1ms PreToolUse firewall that cut repeat CI failures by 68% ($49 bundle).',
+    { maxSentences: 5 }
+  );
+  assert.equal(reviewBoard.personas.length, 4);
+  assert.equal(reviewBoard.verdict, 'SHIP_APPROVED');
+
+  const budgetPass = deslopify.enforceReadBudgetAndLabelGate(
+    'Sentence one sets context. Sentence two proves the metric. Sentence three shows the fix. Sentence four gives the link. Sentence five closes.',
+    { maxSentences: 5 }
+  );
+  assert.equal(budgetPass.ok, true);
+  assert.equal(budgetPass.verdict, 'PASS_READ_BUDGET');
+
+  const rawDump = deslopify.enforceReadBudgetAndLabelGate('Unedited dump. '.repeat(12), {
+    maxSentences: 5,
+    isRawAiResearchDump: true,
+  });
+  assert.equal(rawDump.verdict, 'LABELED_RAW_AI_DUMP');
+  assert.match(rawDump.outputText, /^\[AI-GENERATED RESEARCH DUMP — UNEDITED\]/);
+
+  // 3. Robert Herjavec Chase-the-No CTO/CISO Objection Closer & 4-Clicks-to-1-Click Audit
+  const procurementObj = herjavec.resolveTechnicalBuyerObjection({
+    buyerStatement: 'We cannot put a recurring monthly subscription on a corporate card without procurement review.',
+  });
+  assert.equal(procurementObj.ok, true);
+  assert.equal(procurementObj.matchedObjection.id, 'procurement_subscription_blocker');
+  assert.equal(procurementObj.matchedObjection.priceDollars, 49);
+
+  const clickAudit = herjavec.auditFourClicksToOneClick();
+  assert.equal(clickAudit.ok, true);
+  assert.equal(clickAudit.totalClicksEliminated, 12);
+
+  // 4. YouSpot Pro Solo-Builder Conversion & Promo Unlocks
+  const youspotPromo = herjavec.evaluateYouSpotProConversionPack({ promoCode: 'FOUNDER49' });
+  assert.equal(youspotPromo.ok, true);
+  assert.equal(youspotPromo.promoApplied, true);
+  assert.equal(youspotPromo.promoDetails.priceDollars, 49);
+
+  // 5. HKUST + DeepSeek HarnessSQL 4-Tool Read-Only Sandbox & Tool-Observation Loss Masking
+  const mutatingBlocked = herjavec.executeHarnessSqlFourToolStep({
+    tool: 'execute_query',
+    sql: 'DROP TABLE customer_accounts;',
+  });
+  assert.equal(mutatingBlocked.ok, false);
+  assert.equal(mutatingBlocked.verdict, 'BLOCK_MUTATING_SQL');
+
+  const selectAllowed = herjavec.executeHarnessSqlFourToolStep({
+    tool: 'execute_query',
+    sql: 'SELECT tier_id, COUNT(*) FROM customer_accounts GROUP BY tier_id;',
+  });
+  assert.equal(selectAllowed.ok, true);
+  assert.equal(selectAllowed.lossMaskForObservation, 0);
+
+  const exportedTrajectory = herjavec.exportHarnessTrajectoryWithObservationMasking([
+    { role: 'assistant', content: 'Let us inspect customer_accounts schema.' },
+    { role: 'tool', content: 'columns: email, role, tier_id' },
+    { role: 'assistant', content: 'SELECT COUNT(*) FROM customer_accounts;' },
+  ]);
+  assert.equal(exportedTrajectory.ok, true);
+  assert.equal(exportedTrajectory.trajectoryStats.trainedActionTurns, 2);
+  assert.equal(exportedTrajectory.trajectoryStats.maskedObservationTurns, 1);
+
+  // 6. Stanford Zou Group LLM Claims Shelf-Life & Prevention-Rule Pruner
+  const shelfLife = herjavec.evaluateLlmClaimShelfLife();
+  assert.equal(shelfLife.ok, true);
+  assert.equal(shelfLife.empiricalBaseline.totalDecayedPct, 78);
+  assert.ok(shelfLife.auditSummary.prunableRuleIds.includes('rule_cot_json_workaround_2024'));
+  assert.ok(shelfLife.auditSummary.hardGatePromotions.includes('rule_observation_loss_masking_rl'));
+
+  // 7. MIT Jayden Teoh Soft-MTP (arXiv:2610.38331) Exact KL Gradient Recovery
+  const softMtp = herjavec.evaluateSoftMtpGradientRouting({
+    sequenceLengthT: 2048,
+    numMtpHeadsK: 2,
+    lambdaMtp: 0.3,
+    modelScaleParamsM: 1200,
+  });
+  assert.equal(softMtp.ok, true);
+  assert.equal(softMtp.exactDecompositionVerification.exactRecoveryVerified, true);
+  assert.equal(softMtp.headRescalingFactors.length, 2);
+
+  // 8. Skool Julian Goldie AI Money Lab (94,392 members) Monetizer & Jarvis HUD (31 Bots, 1 Screen)
+  const skoolPack = herjavec.evaluateSkoolJulianGoldieMonetizer();
+  assert.equal(skoolPack.ok, true);
+  assert.equal(skoolPack.community.totalMembers, 94392);
+  assert.equal(skoolPack.readyToPostAssets.length, 3);
+
+  const jarvisHud = herjavec.evaluateJarvisHudDecisionQueue({
+    decisionId: 'dec_magnet_checkout_49',
+    action: 'APPROVE',
+  });
+  assert.equal(jarvisHud.ok, true);
+  assert.equal(jarvisHud.fleetSummary.totalBotsMonitored, 31);
+  assert.ok(jarvisHud.waitingOnYouQueue.some((d) => d.status === 'APPROVED_AND_DISPATCHED'));
+
+  // 9. qwenGPU 4-Lane SIMT Compiled Weight Circuit ([1, 2, 3] @ [4, 5, 6] === 32)
+  const qwenGpu = herjavec.evaluateQwenGpuSimtCompiledCircuit({
+    vectorA: [1, 2, 3, 0],
+    vectorB: [4, 5, 6, 0],
+  });
+  assert.equal(qwenGpu.ok, true);
+  assert.equal(qwenGpu.executionTrace.exactResult, 32);
+  assert.equal(qwenGpu.textTokenMutingGuard.teslaT4KernelParity, '49/49 exact');
+
+  // 10. LinkedIn OpenTelemetry pageForestId Tap-to-Backend Journey & Grok Team Data Bot
+  const otelForest = herjavec.evaluateLinkedInOtelJourneyForest({ appMovedToBackground: true });
+  assert.equal(otelForest.ok, true);
+  assert.equal(otelForest.coordinatedHeadSampling.debugVolumeShedPct, 90);
+  assert.equal(otelForest.coordinatedHeadSampling.redactedSensitiveAttributesCount, 1);
+  assert.equal(otelForest.revenueJourneyDiagnosis.dropOffDetected, true);
+
+  const dataBot = herjavec.evaluateGrokTeamDataBot({ persona: 'marketer' });
+  assert.equal(dataBot.ok, true);
+  assert.equal(dataBot.botHealthAudit.archetypeClassification, 'BROAD_AND_STICKY');
+  assert.equal(dataBot.botHealthAudit.meets60PctEmbeddedRule, true);
+});
+
+

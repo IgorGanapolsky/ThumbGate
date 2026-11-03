@@ -10600,6 +10600,131 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
       }
     }
 
+    // Deslopify AI Pre-Execution, Interception & Read-Budget Gate (/v1/deslopify/*)
+    if (pathname.startsWith('/v1/deslopify/')) {
+      const deslopify = require('../deslopify-engine');
+      if (req.method === 'POST' && pathname === '/v1/deslopify/pov-gate') {
+        const body = await parseJsonBody(req);
+        sendJson(res, 200, deslopify.evaluatePreExecutionPovGate(body || {}));
+        return;
+      }
+      if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/deslopify/angles') {
+        const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+        const topic = body.topic || parsed.searchParams.get('topic') || 'agent reliability';
+        sendJson(res, 200, deslopify.generateSixDivergentAngles(topic), {}, { headOnly: isHeadRequest });
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/v1/deslopify/review-board') {
+        const body = await parseJsonBody(req);
+        sendJson(res, 200, deslopify.runFourPersonaReviewBoard(body.text || '', body));
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/v1/deslopify/read-budget') {
+        const body = await parseJsonBody(req);
+        sendJson(res, 200, deslopify.enforceReadBudgetAndLabelGate(body.text || '', body));
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/v1/deslopify/taste-skill') {
+        const body = await parseJsonBody(req);
+        sendJson(res, 200, deslopify.compileTasteProfileSkill(body || {}));
+        return;
+      }
+    }
+
+    // Robert Herjavec "Chase the No" CTO/CISO Objection Closer & YouSpot Pro Conversion (/v1/sales/*)
+    if (pathname.startsWith('/v1/sales/')) {
+      const herjavec = require('../herjavec-closer-engine');
+      if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/sales/chase-the-no') {
+        const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+        const objectionId = body.objectionId || parsed.searchParams.get('objection') || '';
+        const buyerStatement = body.buyerStatement || parsed.searchParams.get('q') || '';
+        sendJson(res, 200, herjavec.resolveTechnicalBuyerObjection({ objectionId, buyerStatement }), {}, { headOnly: isHeadRequest });
+        return;
+      }
+      if (isGetLikeRequest && pathname === '/v1/sales/one-click-audit') {
+        sendJson(res, 200, herjavec.auditFourClicksToOneClick(), {}, { headOnly: isHeadRequest });
+        return;
+      }
+      if (isGetLikeRequest && pathname === '/v1/sales/daily-habits') {
+        sendJson(res, 200, herjavec.evaluateHerjavecDailyRevenueHabit(), {}, { headOnly: isHeadRequest });
+        return;
+      }
+      if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/sales/youspot-promo') {
+        const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+        const promoCode = body.promoCode || parsed.searchParams.get('code') || '';
+        sendJson(res, 200, herjavec.evaluateYouSpotProConversionPack({ promoCode }), {}, { headOnly: isHeadRequest });
+        return;
+      }
+      if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/sales/skool-julian-goldie') {
+        const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+        sendJson(res, 200, herjavec.evaluateSkoolJulianGoldieMonetizer(body || {}), {}, { headOnly: isHeadRequest });
+        return;
+      }
+      if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/sales/jarvis-hud') {
+        const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+        const command = body.command || parsed.searchParams.get('command') || "Jarvis, what's waiting on me?";
+        const focusMode = body.focusMode ?? (parsed.searchParams.get('focus') === '1');
+        sendJson(res, 200, herjavec.evaluateJarvisHudDecisionQueue({ ...body, command, focusMode }), {}, { headOnly: isHeadRequest });
+        return;
+      }
+    }
+
+    // HKUST + Microsoft + DeepSeek HarnessSQL (DSH-SQL) 4-Tool Read-Only Sandbox & Trajectory Exporter (/v1/harness-sql/*)
+    if (pathname.startsWith('/v1/harness-sql/')) {
+      const herjavec = require('../herjavec-closer-engine');
+      if (req.method === 'POST' && pathname === '/v1/harness-sql/step') {
+        const body = await parseJsonBody(req);
+        sendJson(res, 200, herjavec.executeHarnessSqlFourToolStep(body || {}));
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/v1/harness-sql/export-trajectory') {
+        const body = await parseJsonBody(req);
+        sendJson(res, 200, herjavec.exportHarnessTrajectoryWithObservationMasking(body.turns || []));
+        return;
+      }
+    }
+
+    // Stanford Zou Group LLM Claims Shelf-Life & Prevention-Rule Pruner (/v1/claims/shelf-life)
+    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/claims/shelf-life') {
+      const herjavec = require('../herjavec-closer-engine');
+      const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+      sendJson(res, 200, herjavec.evaluateLlmClaimShelfLife(body || {}), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    // MIT Jayden Teoh Soft-MTP (arXiv:2610.38331) KL Gradient-Recovery & Straight-Through Routing (/v1/soft-mtp/gradient-routing)
+    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/soft-mtp/gradient-routing') {
+      const herjavec = require('../herjavec-closer-engine');
+      const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+      sendJson(res, 200, herjavec.evaluateSoftMtpGradientRouting(body || {}), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    // qwenGPU 4-Lane SIMT DeltaNet Compiled Weight Circuit (/v1/qwengpu/simt-exec)
+    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/qwengpu/simt-exec') {
+      const herjavec = require('../herjavec-closer-engine');
+      const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+      sendJson(res, 200, herjavec.evaluateQwenGpuSimtCompiledCircuit(body || {}), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    // LinkedIn OpenTelemetry Tap-to-Backend Member Journey Forest (/v1/otel/journey-forest)
+    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/otel/journey-forest') {
+      const herjavec = require('../herjavec-closer-engine');
+      const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+      sendJson(res, 200, herjavec.evaluateLinkedInOtelJourneyForest(body || {}), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
+    // Grok Team Data Bot On-Demand Data Scientist & 60% Embedded Channel Audit (/v1/data-bot/analyze)
+    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/v1/data-bot/analyze') {
+      const herjavec = require('../herjavec-closer-engine');
+      const body = req.method === 'POST' ? await parseJsonBody(req) : {};
+      const persona = body.persona || parsed.searchParams.get('persona') || 'marketer';
+      sendJson(res, 200, herjavec.evaluateGrokTeamDataBot({ ...body, persona }), {}, { headOnly: isHeadRequest });
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/.well-known/agent-skills/index.json' || pathname === '/.well-known/skills/index.json')) {
       const appOrigin = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate.ai';
       sendJson(res, 200, buildSkillsShWellKnownDiscoveryIndex({ appOrigin }), {}, { headOnly: isHeadRequest });
