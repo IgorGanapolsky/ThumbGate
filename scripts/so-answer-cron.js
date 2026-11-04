@@ -21,17 +21,18 @@
  * Requires: THUMBGATE_SO_APP_KEY and THUMBGATE_SO_POSTING_ACCOUNT in env
  */
 
-const https = require('https');
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+const https = require('node:https');
+const { execSync } = require('node:child_process');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
-const DRAFTS_DIR = path.join(require('os').homedir(), 'Documents', 'AI-Agent-Sync', 'Email-Drafts');
-const HANDOFFS_DIR = path.join(require('os').homedir(), 'Documents', 'AI-Agent-Sync', 'Handoffs');
+const DRAFTS_DIR = path.join(os.homedir(), 'Documents', 'AI-Agent-Sync', 'Email-Drafts');
+const HANDOFFS_DIR = path.join(os.homedir(), 'Documents', 'AI-Agent-Sync', 'Handoffs');
 const TRACKER_FILE = path.join(HANDOFFS_DIR, 'so-answer-tracker.tsv');
 const ANTI_SLOP_SCRIPT = '/Users/iganapolsky/workspace/projects/secure-yolo/scripts/verify-human-paste-anti-slop.sh';
-
+const TRACKER_HEADER = '#timestamp\tquestion_id\ttitle\tslug\ttemplate\taction\tlink\n';
 const TARGET_TAGS = [
   'claude-code', 'cursor-ide', 'codex', 'ai-agent',
   'code-review', 'mcp', 'automation', 'anthropic-claude',
@@ -68,7 +69,8 @@ const ANSWER_TEMPLATES = {
 
 // ---- StackExchange API ----
 
-function soSearch(params) {
+function soSearch(params, options = {}) {
+  const httpGet = options.httpGet || https.get;
   return new Promise((resolve, reject) => {
     const qs = new URLSearchParams({
       order: 'desc',
@@ -78,7 +80,7 @@ function soSearch(params) {
       ...params
     }).toString();
 
-    const req = https.get(
+    const req = httpGet(
       `https://api.stackexchange.com/2.3/questions?${qs}`,
       {
         headers: {
@@ -89,7 +91,9 @@ function soSearch(params) {
       },
       (res) => {
         let data = '';
-        res.on('data', chunk => data += chunk);
+        res.on('data', chunk => {
+          data += chunk;
+        });
         res.on('end', () => {
           try {
             resolve(JSON.parse(data));
@@ -160,9 +164,21 @@ function getGateExamples() {
 
 // ---- Build answer body ----
 
+function slugifyTitle(title) {
+  const raw = String(title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  let start = 0;
+  let end = raw.length;
+  while (start < end && raw[start] === '-') {
+    start += 1;
+  }
+  while (end > start && raw[end - 1] === '-') {
+    end -= 1;
+  }
+  return raw.slice(start, end);
+}
+
 function buildAnswer(question, template, gateExamples) {
-  const slug = question.title.toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const slug = slugifyTitle(question.title);
 
   const body = `
 **Short answer:** ${getShortAnswer(question, template)}
@@ -256,10 +272,12 @@ function getMonetization(template) {
 
 // ---- Anti-slop verification ----
 
-function verifyAntiSlop(filePath) {
+function verifyAntiSlop(filePath, options = {}) {
+  const runExec = options.execSync || execSync;
+  const scriptPath = options.antiSlopScript || ANTI_SLOP_SCRIPT;
   try {
-    const output = execSync(
-      `bash ${ANTI_SLOP_SCRIPT} check --file "${filePath}" 2>&1`,
+    const output = runExec(
+      `bash ${scriptPath} check --file "${filePath}" 2>&1`,
       { encoding: 'utf8', timeout: 10000 }
     ).trim();
     return output.includes('ALLOW');
@@ -270,21 +288,87 @@ function verifyAntiSlop(filePath) {
 
 // ---- Main ----
 
-async function discoverAndStage() {
-  console.log('SO Answer Bot — starting daily discovery');
+async function fetchQuestionsForTag(tag, searchFn = soSearch) {
+  try {
+    const result = await searchFn({ tagged: tag, order: 'desc', sort: 'creation' });
+    const items = Array.isArray(result?.items) ? result.items : [];
+    console.log(`  [${tag}] ${items.length} questions`);
+    return items;
+  } catch (e) {
+    console.error(`  [${tag}] failed: ${e.message}`);
+    return [];
+  }
+}
 
-  const allQuestions = [];
-  for (const tag of TARGET_TAGS) {
-    try {
-      const result = await soSearch({ tagged: tag, order: 'desc', sort: 'creation' });
-      if (result.items) allQuestions.push(...result.items);
-      console.log(`  [${tag}] ${result.items?.length || 0} questions`);
-    } catch (e) {
-      console.error(`  [${tag}] failed: ${e.message}`);
-    }
+function dedupeQuestions(questions) {
+  return [...new Map((questions || []).map(q => [q.question_id, q])).values()];
+}
+
+function stageRankedQuestion(q, options = {}) {
+  const draftsDir = options.draftsDir || DRAFTS_DIR;
+  const gateExamples = options.gateExamples || getGateExamples();
+  const checkAntiSlop = options.verifyAntiSlop || verifyAntiSlop;
+  const template = selectTemplate(q.tags || []);
+  const { slug, body } = buildAnswer(q, template, gateExamples);
+
+  fs.mkdirSync(draftsDir, { recursive: true });
+  const draftFile = path.join(draftsDir, `so-answer-${q.question_id}-${slug}.md`);
+  fs.writeFileSync(draftFile, body);
+  console.log(`\n  Staged: Q#${q.question_id} — "${String(q.title || '').substring(0, 60)}..."`);
+  console.log(`  Template: ${template.name}`);
+  console.log(`  Draft: ${draftFile}`);
+
+  const antiSlopOk = checkAntiSlop(draftFile);
+  console.log(`  Anti-slop: ${antiSlopOk ? 'PASS ✅' : 'FAIL ❌'}`);
+
+  if (!antiSlopOk) {
+    fs.unlinkSync(draftFile);
+    console.log('  Rejected: anti-slop FAIL, file removed');
+    return null;
   }
 
-  const uniqueQuestions = [...new Map(allQuestions.map(q => [q.question_id, q])).values()];
+  return {
+    question_id: q.question_id,
+    title: q.title,
+    slug,
+    file: draftFile,
+    template: template.name,
+    link: `https://stackoverflow.com/questions/${q.question_id}`,
+    action: 'STAGED_FOR_REVIEW'
+  };
+}
+
+function appendTrackerEntry(entry, handoffsDir = HANDOFFS_DIR) {
+  if (!fs.existsSync(handoffsDir)) {
+    fs.mkdirSync(handoffsDir, { recursive: true });
+  }
+  const trackerPath = path.join(handoffsDir, 'so-answer-tracker.tsv');
+  try {
+    fs.writeFileSync(trackerPath, TRACKER_HEADER, { flag: 'wx' });
+  } catch (err) {
+    if (err.code !== 'EEXIST') throw err;
+  }
+  const line = [
+    new Date().toISOString(),
+    entry.question_id,
+    entry.title,
+    entry.slug,
+    entry.template,
+    entry.action,
+    entry.link
+  ].join('\t') + '\n';
+  fs.appendFileSync(trackerPath, line);
+  console.log(`\n  Tracked: ${entry.link}`);
+}
+
+async function discoverAndStage(options = {}) {
+  console.log('SO Answer Bot — starting daily discovery');
+  const tags = options.tags || TARGET_TAGS;
+  const searchFn = options.searchFn || soSearch;
+  const handoffsDir = options.handoffsDir || HANDOFFS_DIR;
+
+  const batches = await Promise.all(tags.map(tag => fetchQuestionsForTag(tag, searchFn)));
+  const uniqueQuestions = dedupeQuestions(batches.flat());
   const ranked = rankQuestions(uniqueQuestions);
   console.log(`\nTop ${ranked.length} questions after ranking:`);
 
@@ -292,58 +376,16 @@ async function discoverAndStage() {
   const staged = [];
 
   for (const q of ranked) {
-    const template = selectTemplate(q.tags || []);
-    const { slug, body } = buildAnswer(q, template, gateExamples);
-
-    const draftFile = path.join(DRAFTS_DIR, `so-answer-${q.question_id}-${slug}.md`);
-    fs.writeFileSync(draftFile, body);
-    console.log(`\n  Staged: Q#${q.question_id} — "${q.title.substring(0, 60)}..."`);
-    console.log(`  Template: ${template.name}`);
-    console.log(`  Draft: ${draftFile}`);
-
-    const antiSlopOk = verifyAntiSlop(draftFile);
-    console.log(`  Anti-slop: ${antiSlopOk ? 'PASS ✅' : 'FAIL ❌'}`);
-
-    if (antiSlopOk) {
-      staged.push({
-        question_id: q.question_id,
-        title: q.title,
-        slug,
-        file: draftFile,
-        template: template.name,
-        link: `https://stackoverflow.com/questions/${q.question_id}`,
-        action: 'STAGED_FOR_REVIEW'
-      });
-    } else {
-      fs.unlinkSync(draftFile);
-      console.log(`  Rejected: anti-slop FAIL, file removed`);
+    const entry = stageRankedQuestion(q, { ...options, gateExamples });
+    if (entry) {
+      staged.push(entry);
     }
   }
 
-  // Update tracker
   if (staged.length > 0) {
-    if (!fs.existsSync(HANDOFFS_DIR)) fs.mkdirSync(HANDOFFS_DIR, { recursive: true });
     for (const s of staged) {
-      const line = [
-        new Date().toISOString(),
-        s.question_id,
-        s.title,
-        s.slug,
-        s.template,
-        s.action,
-        s.link
-      ].join('\t') + '\n';
-      const trackerPath = path.join(HANDOFFS_DIR, 'so-answer-tracker.tsv');
-      // Only write header if file is new
-      try {
-        fs.writeFileSync(trackerPath, '#timestamp\tquestion_id\ttitle\tslug\ttemplate\taction\tlink\n', { flag: 'wx' });
-      } catch (err) {
-        if (err.code !== 'EEXIST') throw err;
-      }
-      fs.appendFileSync(trackerPath, line);
-      console.log(`\n  Tracked: ${s.link}`);
+      appendTrackerEntry(s, handoffsDir);
     }
-
     console.log(`\n${staged.length} answer(s) staged for human review.`);
     console.log('Run with --status to see the queue.');
   } else {
@@ -353,9 +395,10 @@ async function discoverAndStage() {
   return staged;
 }
 
-function showStatus() {
+function showStatus(options = {}) {
   console.log('=== SO Answer Staging Queue ===\n');
-  const trackerPath = path.join(HANDOFFS_DIR, 'so-answer-tracker.tsv');
+  const handoffsDir = options.handoffsDir || HANDOFFS_DIR;
+  const trackerPath = path.join(handoffsDir, 'so-answer-tracker.tsv');
   if (!fs.existsSync(trackerPath)) {
     console.log('No tracker file found. Queue is empty.');
     return;
@@ -366,8 +409,10 @@ function showStatus() {
     console.log('Queue is empty.');
     return;
   }
-  for (const line of lines.reverse()) {
-    const [ts, id, title, slug, template, action, link] = line.split('\t');
+  const orderedLines = [...lines];
+  orderedLines.reverse();
+  for (const line of orderedLines) {
+    const [, id, title, , template, action, link] = line.split('\t');
     if (action === 'STAGED_FOR_REVIEW') {
       console.log(`  📝 Q#${id} — ${title?.substring(0, 50)}`);
       console.log(`     ${link}`);
@@ -377,17 +422,15 @@ function showStatus() {
   }
 }
 
-async function main() {
-  const args = process.argv.slice(2);
-  if (args[0] === '--status') {
-    return showStatus();
+async function main(argv = process.argv.slice(2), options = {}) {
+  if (argv[0] === '--status') {
+    return showStatus(options);
   }
-  if (args[0] === '--post') {
+  if (argv[0] === '--post') {
     console.log('Posting not implemented in this version — use browser to post staged answers.');
     return;
   }
-  // Default: discover and stage
-  await discoverAndStage();
+  return discoverAndStage(options);
 }
 
 if (require.main === module) {
@@ -398,9 +441,26 @@ if (require.main === module) {
 }
 
 module.exports = {
-  getGateExamples,
+  ANSWER_TEMPLATES,
+  REPO_ROOT,
+  TAG_WEIGHTS,
+  TARGET_TAGS,
+  TRACKER_FILE,
+  appendTrackerEntry,
   buildAnswer,
+  dedupeQuestions,
   discoverAndStage,
-  showStatus,
+  fetchQuestionsForTag,
+  getGateExamples,
+  getMonetization,
+  getShortAnswer,
+  getTemplateBody,
   main,
+  rankQuestions,
+  selectTemplate,
+  showStatus,
+  slugifyTitle,
+  soSearch,
+  stageRankedQuestion,
+  verifyAntiSlop,
 };
