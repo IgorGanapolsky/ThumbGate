@@ -365,7 +365,16 @@ function evaluateInboxDeleteBeforeSynthesisFirewall({ commandText = '' } = {}) {
 }
 
 const SECRET_RE = /(?:sk_live_[A-Za-z0-9]+|AKIA[0-9A-Z]{16}|-----BEGIN (?:RSA |OPENSSH )?PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]+)/;
-const DESTRUCTIVE_RE = /\brm\s+-rf\s+\/(?:\s|$)|DROP\s+DATABASE\b|git\s+push\b[^\n]*--force\b[^\n]*\bmain\b|git\s+reset\s+--hard\b/i;
+const DESTRUCTIVE_PATTERNS = [
+  /\brm\s+-rf\s+\/(?:\s|$)/i,
+  /DROP\s+DATABASE\b/i,
+  /git\s+push\b[^\n]*--force\b[^\n]*\bmain\b/i,
+  /git\s+reset\s+--hard\b/i,
+];
+
+function isDestructiveCommand(text) {
+  return DESTRUCTIVE_PATTERNS.some((re) => re.test(text));
+}
 
 function payloadText(toolName, toolInput) {
   const command = toolInput && (toolInput.command || toolInput.cmd) ? String(toolInput.command || toolInput.cmd) : '';
@@ -385,7 +394,7 @@ function isFileEditTool(toolName) {
 function isTestOrFixtureFile(toolInput) {
   const filePath = String((toolInput && (toolInput.file_path || toolInput.path || toolInput.filePath)) || '').trim();
   if (!filePath) return false;
-  return /(?:^|\/)(?:tests?|__tests__|fixtures?)\/|\.(?:test|spec)\.[cm]?[jt]sx?$/i.test(filePath);
+  return /(?:^|\/)(?:tests?|__tests__|fixtures?)\//i.test(filePath) || /\.(?:test|spec)\.[cm]?[jt]sx?$/i.test(filePath);
 }
 
 function evaluateEmailStrategyPretool({ toolName = '', toolInput = {} } = {}) {
@@ -397,7 +406,7 @@ function evaluateEmailStrategyPretool({ toolName = '', toolInput = {} } = {}) {
   const testFile = isTestOrFixtureFile(toolInput);
   const commandSurface = fileEdit ? commandOnly : blob;
   const contentSurface = testFile ? commandOnly : blob;
-  const destructive = DESTRUCTIVE_RE.test(commandSurface);
+  const destructive = isDestructiveCommand(commandSurface);
   const productionDdl = /\b(ALTER|DROP|CREATE)\s+TABLE\b/i.test(commandSurface) && /\bprod(?:uction)?\b/i.test(commandSurface);
   const ephemeral = /ephemeral|preview branch/i.test(commandSurface);
   const escalation = /\bassume-role\b|\bprivilege escalation\b/i.test(commandSurface);

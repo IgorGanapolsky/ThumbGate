@@ -93,3 +93,34 @@ test('assume-role without a bound principal is denied', () => {
   assert.ok(verdict.blockers.includes('frontier_agent_privilege_escalation_blocked'));
   assert.ok(verdict.blockers.includes('missing_delegated_human_principal_binding'));
 });
+
+test('each destructive shell command is denied and a harmless one is not', () => {
+  const destructive = [
+    'rm -rf / ',
+    'git push origin --force main',
+    'git reset --hard HEAD~1',
+    'psql -c "DROP DATABASE app"',
+  ];
+  for (const command of destructive) {
+    const verdict = evaluateEmailStrategyPretool({ toolName: 'Bash', toolInput: { command } });
+    assert.equal(verdict.ok, false, command);
+    assert.ok(verdict.blockers.includes('genie4_world_model_irreversible_state_transition'), command);
+  }
+  const harmless = evaluateEmailStrategyPretool({ toolName: 'Bash', toolInput: { command: 'rm -rf ./build' } });
+  assert.equal(harmless.ok, true);
+});
+
+test('secrets inside a test or fixture file edit are not treated as leaked', () => {
+  for (const filePath of ['tests/a.js', 'src/__tests__/a.js', 'fixtures/x.json', 'src/a.test.ts', 'lib/b.spec.mjs']) {
+    const verdict = evaluateEmailStrategyPretool({
+      toolName: 'Write',
+      toolInput: { file_path: filePath, content: 'const k = "AKIA' + 'ABCDEFGHIJKLMNOP";' },
+    });
+    assert.equal(verdict.ok, true, filePath);
+  }
+  const real = evaluateEmailStrategyPretool({
+    toolName: 'Write',
+    toolInput: { file_path: 'src/config.js', content: 'const k = "AKIA' + 'ABCDEFGHIJKLMNOP";' },
+  });
+  assert.equal(real.ok, false);
+});
