@@ -497,7 +497,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
   // Browser analytics libraries conventionally wrap event properties in
   // `props`. Flatten that envelope while letting explicit top-level fields win.
   const raw = { ...nestedProps, ...envelope };
-  const cookies = parseTelemetryCookies(headers && (headers.cookie || headers.Cookie));
+  const cookies = parseTelemetryCookies(headers?.cookie || headers?.Cookie);
   const clientType = inferClientType(raw);
   const eventType = inferEventType(raw, clientType);
   const source = pickFirstText(raw.source, raw.utmSource, clientType === 'cli' ? 'cli' : 'direct');
@@ -648,7 +648,7 @@ const WINDOW_TELEMETRY_TAIL_BYTES = Object.freeze({
 function resolveBoundedTelemetryTailBytes(analyticsWindow, options = {}) {
   const explicit = Number(options.telemetryTailBytes);
   if (Number.isFinite(explicit) && explicit > 0) return explicit;
-  const windowKey = analyticsWindow && analyticsWindow.window;
+  const windowKey = analyticsWindow?.window;
   return WINDOW_TELEMETRY_TAIL_BYTES[windowKey] || DEFAULT_BOUNDED_TELEMETRY_TAIL_BYTES;
 }
 

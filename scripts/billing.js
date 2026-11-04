@@ -2506,12 +2506,11 @@ function getBusinessAnalytics(options = {}) {
     bySource: operatorGeneratedAcquisitionBySource,
   };
 
-  const telemetryWindowMeta = telemetry && telemetry.window ? telemetry.window : null;
+  const telemetryWindowMeta = telemetry?.window ?? null;
   const telemetryLogTruncated = Boolean(
-    (telemetryWindowMeta && telemetryWindowMeta.truncated) ||
-    (telemetry && telemetry.telemetrySource && telemetry.telemetrySource.truncated)
+    telemetryWindowMeta?.truncated || telemetry?.telemetrySource?.truncated
   );
-  const telemetryWindowComplete = telemetryWindowMeta && typeof telemetryWindowMeta.complete === 'boolean'
+  const telemetryWindowComplete = typeof telemetryWindowMeta?.complete === 'boolean'
     ? telemetryWindowMeta.complete
     : !telemetryLogTruncated;
 
