@@ -7678,5 +7678,6 @@ module.exports = {
   evaluateDanKornasKanzoAgentKanbanSteal,
   getOrCreateTenantUsage,
   resetCloudFirewallStateForTests,
+  wiredCliCapabilityScripts: ['scripts/deslopify-cli.js', 'scripts/demo-stract-gabriel.js'],
 };
 
