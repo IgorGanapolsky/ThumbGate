@@ -68,7 +68,7 @@ function calculateStats(options = {}) {
         totalBlocked = Math.max(totalBlocked, pBlocked);
       }
       if (Number.isFinite(persisted.distinctBlocks)) {
-        distinctBlocked = persisted.distinctBlocks;
+        distinctBlocked = Math.max(0, Math.trunc(persisted.distinctBlocks));
       } else {
         distinctBlocked = Math.max(0, totalBlocked - recurringBlocks);
       }
@@ -236,7 +236,7 @@ function formatStats(stats) {
   lines.push(`  Active gates: ${stats.totalGates} (${stats.manualGates} manual, ${stats.autoPromotedGates} auto-promoted)`);
   lines.push(`  Actions blocked: ${stats.totalBlocked}`);
   if (stats.recurringBlocks !== undefined && stats.recurringBlocks > 0) {
-    const fallback = Math.max(0, stats.totalBlocked - stats.recurringBlocks);
+    const fallback = toCount(Math.max(0, stats.totalBlocked - stats.recurringBlocks), 0);
     const distinct = toCount(stats.distinctBlocked, fallback);
     lines.push(`  Repeat blocks: ${stats.recurringBlocks} (${distinct} distinct first-time blocks)`);
   }

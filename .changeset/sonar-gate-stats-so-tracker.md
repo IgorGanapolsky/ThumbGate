@@ -2,4 +2,4 @@
 "thumbgate": patch
 ---
 
-fix(stats,cron): coerce persisted distinctBlocked to non-negative integer and fix tracker header creation
+gate stats normalise the distinct-blocked count before printing; so-answer-cron writes the tracker header again.

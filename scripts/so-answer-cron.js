@@ -284,7 +284,8 @@ async function discoverAndStage() {
     }
   }
 
-  const ranked = rankQuestions(allQuestions);
+  const uniqueQuestions = [...new Map(allQuestions.map(q => [q.question_id, q])).values()];
+  const ranked = rankQuestions(uniqueQuestions);
   console.log(`\nTop ${ranked.length} questions after ranking:`);
 
   const gateExamples = getGateExamples();
@@ -334,8 +335,10 @@ async function discoverAndStage() {
       ].join('\t') + '\n';
       const trackerPath = path.join(HANDOFFS_DIR, 'so-answer-tracker.tsv');
       // Only write header if file is new
-      if (!fs.existsSync(trackerPath)) {
-        fs.writeFileSync(trackerPath, '#timestamp\tquestion_id\ttitle\tslug\ttemplate\taction\tlink\n');
+      try {
+        fs.writeFileSync(trackerPath, '#timestamp\tquestion_id\ttitle\tslug\ttemplate\taction\tlink\n', { flag: 'wx' });
+      } catch (err) {
+        if (err.code !== 'EEXIST') throw err;
       }
       fs.appendFileSync(trackerPath, line);
       console.log(`\n  Tracked: ${s.link}`);
