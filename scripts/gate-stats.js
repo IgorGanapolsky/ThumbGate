@@ -21,10 +21,11 @@ function loadGatesFile(filePath) {
   }
 }
 
-function calculateStats() {
-  const autoGatesPath = getAutoGatesPath();
-  const manualGates = loadGatesFile(MANUAL_GATES_PATH);
+function calculateStats(options = {}) {
+  const autoGatesPath = options.autoGatesPath || getAutoGatesPath();
+  const manualGates = loadGatesFile(options.manualGatesPath || MANUAL_GATES_PATH);
   const autoGates = loadGatesFile(autoGatesPath);
+  const statsPath = options.statsPath || STATS_PATH;
   const allGates = [...manualGates, ...autoGates];
 
   let autoPromotedData = { promotionLog: [] };
@@ -37,10 +38,10 @@ function calculateStats() {
   const warnGates = allGates.filter((g) => g.action === 'warn');
 
   // Count total blocks/warns from occurrences in auto-promoted gates
-  const totalBlocked = autoGates
+  let totalBlocked = autoGates
     .filter((g) => g.action === 'block')
     .reduce((sum, g) => sum + (Number(g.occurrences) || 0), 0);
-  const totalWarned = autoGates
+  let totalWarned = autoGates
     .filter((g) => g.action === 'warn')
     .reduce((sum, g) => sum + (Number(g.occurrences) || 0), 0);
 
@@ -55,6 +56,24 @@ function calculateStats() {
   const lastPromotion = promotionLog.length > 0
     ? promotionLog[promotionLog.length - 1]
     : null;
+
+  let distinctBlocked = totalBlocked;
+  let recurringBlocks = 0;
+  try {
+    if (fs.existsSync(statsPath)) {
+      const persisted = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
+      recurringBlocks = Number(persisted.recurringBlocks || persisted.repeatBlocks || 0);
+      const pBlocked = Number(persisted.blocked || persisted.blocks || 0);
+      if (pBlocked > 0) {
+        totalBlocked = Math.max(totalBlocked, pBlocked);
+      }
+      if (Number.isFinite(persisted.distinctBlocks)) {
+        distinctBlocked = Math.max(0, Math.trunc(persisted.distinctBlocks));
+      } else {
+        distinctBlocked = Math.max(0, totalBlocked - recurringBlocks);
+      }
+    }
+  } catch (_) {}
 
   // Time saved estimate: ~15 min per blocked mistake
   const estimatedMinutesSaved = (totalBlocked + totalWarned) * 15;
@@ -82,6 +101,10 @@ function calculateStats() {
     blockGates: blockGates.length,
     warnGates: warnGates.length,
     totalBlocked,
+    lifetimeBlocked: totalBlocked,
+    distinctBlocked,
+    recurringBlocks,
+    repeatBlocks: recurringBlocks,
     totalWarned,
     topBlocked,
     lastPromotion,
@@ -201,12 +224,22 @@ function formatLastPromotion(promo) {
   return label;
 }
 
+function toCount(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : fallback;
+}
+
 function formatStats(stats) {
   const lines = [];
   lines.push('Gate Statistics');
   lines.push('─'.repeat(38));
   lines.push(`  Active gates: ${stats.totalGates} (${stats.manualGates} manual, ${stats.autoPromotedGates} auto-promoted)`);
   lines.push(`  Actions blocked: ${stats.totalBlocked}`);
+  if (stats.recurringBlocks !== undefined && stats.recurringBlocks > 0) {
+    const fallback = toCount(Math.max(0, stats.totalBlocked - stats.recurringBlocks), 0);
+    const distinct = toCount(stats.distinctBlocked, fallback);
+    lines.push(`  Repeat blocks: ${stats.recurringBlocks} (${distinct} distinct first-time blocks)`);
+  }
   lines.push(`  Actions warned: ${stats.totalWarned}`);
   lines.push(`  Top blocked gate: ${stats.topBlocked ? `${stats.topBlocked.id} (${stats.topBlocked.occurrences || 0} blocks)` : 'none'}`);
   lines.push(`  Last promotion: ${formatLastPromotion(stats.lastPromotion)}`);

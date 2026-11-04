@@ -505,6 +505,8 @@ function diagnoseFailure(options = {}) {
 function aggregateFailureDiagnostics(entries) {
   const result = {
     totalDiagnosed: 0,
+    diagnosticLogCount: 0,
+    feedbackDiagnosedCount: 0,
     categories: [],
     criticalFailureSteps: [],
     repeatedViolations: [],
@@ -512,12 +514,21 @@ function aggregateFailureDiagnostics(entries) {
   const categoryBuckets = new Map();
   const stepBuckets = new Map();
   const violationBuckets = new Map();
+  const seenIds = new Set();
 
   for (const entry of entries || []) {
     const diagnosis = entry && entry.diagnosis ? entry.diagnosis : null;
     if (!diagnosis || !diagnosis.rootCauseCategory) continue;
+    const entryId = entry && (entry.id || entry.feedbackId) ? String(entry.id || entry.feedbackId) : null;
+    if (entryId && seenIds.has(entryId)) continue;
+    if (entryId) seenIds.add(entryId);
 
     result.totalDiagnosed += 1;
+    if (entry && (entry.signal === 'positive' || entry.signal === 'negative' || String(entryId || '').startsWith('fb_'))) {
+      result.feedbackDiagnosedCount += 1;
+    } else {
+      result.diagnosticLogCount += 1;
+    }
     categoryBuckets.set(
       diagnosis.rootCauseCategory,
       (categoryBuckets.get(diagnosis.rootCauseCategory) || 0) + 1,
