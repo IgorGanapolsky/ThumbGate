@@ -601,6 +601,7 @@
     "medium:weekly:draft": "node scripts/medium-weekly.js --write",
     "medium:weekly:schedule": "node scripts/medium-weekly.js --schedule",
     "sales:pipeline": "node scripts/sales-pipeline.js",
+    "so:cron": "node scripts/so-answer-cron.js",
     "sales:reconcile-payment": "node scripts/provider-payment-reconciler.js",
     "social:poll": "node scripts/social-analytics/poll-all.js",
     "social:poll:github": "node scripts/social-analytics/pollers/github.js",

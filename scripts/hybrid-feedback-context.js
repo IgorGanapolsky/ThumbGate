@@ -262,7 +262,7 @@ const ENVELOPE_TOKENS = new Set([
   'sessionid', 'transcriptpath', 'hookeventname', 'permissionmode', 'promptid',
   'cwd', 'timestamp', 'metadata', 'payload', 'stdout', 'stderr',
   'users', 'workspace', 'thumbgate', 'igor',
-  'test', 'tests', 'spec', 'specs', 'page', 'pages', 'file', 'files', 'path', 'paths',
+  'test', 'tests', 'spec', 'specs', 'page', 'pages', 'path', 'paths',
   'code', 'line', 'lines', 'data', 'json', 'html', 'node', 'read', 'mock',
 ]);
 
