@@ -23,9 +23,10 @@
 
 <p align="center">
   <a href="#quick-start"><img src="https://img.shields.io/badge/⚡_Quick_Start-npx_thumbgate_init-22d3ee?style=for-the-badge" alt="Quick Start" /></a>
-  <a href="https://thumbgate.ai/#demo?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/🎬_Watch-90s_Demo-ff647c?style=for-the-badge" alt="Watch Demo" /></a>
-  <a href="https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/💬_Try-ThumbGate_GPT-56e39f?style=for-the-badge" alt="Try GPT" /></a>
-  <a href="https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/💼_Pro-$19/mo-ffd166?style=for-the-badge" alt="Pro Tier" /></a>
+  <a href="https://thumbgate.ai/cloud?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/☁️_Cloud_Firewall-Free_Dashboard-a78bfa?style=for-the-badge" alt="Cloud Firewall Dashboard" /></a>
+  <a href="https://thumbgate.ai/go/pro-direct?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/💼_Pro-$19/mo_(7d_Free)-ffd166?style=for-the-badge" alt="Pro Tier" /></a>
+  <a href="https://thumbgate.ai/go/bundle-49?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/📦_Rule--Pack_Bundle-$49-34d399?style=for-the-badge" alt="Production Rule-Pack Bundle" /></a>
+  <a href="https://thumbgate.ai/go/diagnostic-499?utm_source=github&utm_medium=readme"><img src="https://img.shields.io/badge/🩺_CTO_Diagnostic-$499-ff647c?style=for-the-badge" alt="7-Day CTO Token Burn & Drift Diagnostic" /></a>
 </p>
 
 ---

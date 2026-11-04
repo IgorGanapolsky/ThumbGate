@@ -10475,6 +10475,20 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
               }
             }
           }
+          if (Array.isArray(VERIFIED_OSS_ECOSYSTEM_LEADS)) {
+            for (const lead of VERIFIED_OSS_ECOSYSTEM_LEADS) {
+              if (lead?.email) {
+                registerCliOrFunnelLead({
+                  email: lead.email,
+                  name: lead.name || lead.handle,
+                  source: lead.signal || 'github_star',
+                  tierId: 'free_cli',
+                  status: lead.signal === 'github_fork' ? 'github_forker' : 'github_stargazer',
+                  workspaceName: `${lead.handle}-repo`,
+                });
+              }
+            }
+          }
         }
 
         const overview = listAllCustomersAndAccounts({ keysByValue: keysStore?.keys || {} });

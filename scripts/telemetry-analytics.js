@@ -635,7 +635,6 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     event: eventType,
     eventType,
     visitorType: pickFirstText(raw.visitorType),
-    customerEmail: pickFirstText(raw.customerEmail, raw.email, raw.buyerEmail, raw.userEmail),
     userAgent: pickFirstText(raw.userAgent, headers['user-agent'], headers['User-Agent']),
     installId: pickFirstText(raw.installId),
     visitorId: pickFirstText(raw.visitorId),

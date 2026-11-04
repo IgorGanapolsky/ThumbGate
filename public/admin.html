@@ -410,7 +410,14 @@
         }
       }
 
+      var inMemoryAdminBearer = '';
+
+      function escJs(v) {
+        return String(v || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      }
+
       function getAdminToken() {
+        if (inMemoryAdminBearer) return inMemoryAdminBearer;
         try {
           return sessionStorage.getItem('tg_admin_bearer') || localStorage.getItem('tg_admin_sso_token') || '';
         } catch (e) {
@@ -419,6 +426,7 @@
       }
 
       window.tgAdminLogout = function () {
+        inMemoryAdminBearer = '';
         try {
           sessionStorage.removeItem('tg_admin_bearer');
           localStorage.removeItem('tg_admin_sso_token');
@@ -455,15 +463,18 @@
           return;
         }
 
-        var activeToken = loginData.ssoToken || secret;
-        try {
-          sessionStorage.setItem('tg_admin_bearer', activeToken);
-          localStorage.setItem('tg_admin_sso_token', activeToken);
-          localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
-          localStorage.setItem('tg_cloud_sso_token', activeToken);
-          localStorage.setItem('tg_cloud_sso_email', loginData.email || email);
-          localStorage.setItem('tg_cloud_sso_provider', 'admin');
-        } catch (e) {}
+        var issuedSsoToken = String(loginData.ssoToken || '');
+        inMemoryAdminBearer = issuedSsoToken;
+        if (issuedSsoToken) {
+          try {
+            sessionStorage.setItem('tg_admin_bearer', issuedSsoToken);
+            localStorage.setItem('tg_admin_sso_token', issuedSsoToken);
+            localStorage.setItem('tg_auth_schema_version', 'v2_verified_accounts');
+            localStorage.setItem('tg_cloud_sso_token', issuedSsoToken);
+            localStorage.setItem('tg_cloud_sso_email', String(loginData.email || 'igor@igorganapolsky.com'));
+            localStorage.setItem('tg_cloud_sso_provider', 'admin');
+          } catch (e) {}
+        }
 
         document.getElementById('adminSecretInput').value = '';
         await window.tgAdminLoadCustomers();
@@ -600,8 +611,8 @@
           } else {
             body.innerHTML = '<table><thead><tr><th>Account Email</th><th>Auth Provider</th><th>Plan / Tier</th><th>Session Token</th><th>Last Activity</th><th>Actions</th></tr></thead><tbody>' +
               sessRows.map(function (s) {
-                var safeEmail = String(s.email || '').replace(/'/g, "\\'");
-                var safeToken = String(s.token || '').replace(/'/g, "\\'");
+                var safeEmail = escJs(s.email);
+                var safeToken = escJs(s.token);
                 return '<tr>' +
                   '<td style="font-weight:800;">' + (s.email || '—') + '</td>' +
                   '<td class="mono">' + (s.provider || 'sso') + '</td>' +
@@ -638,8 +649,8 @@
           } else {
             body.innerHTML = '<table><thead><tr><th>Customer Email</th><th>Tier</th><th>License Key</th><th>Status</th><th>Actions</th></tr></thead><tbody>' +
               flatKeys.map(function (k) {
-                var safeEmail = String(k.email || '').replace(/'/g, "\\'");
-                var safeKey = String(k.keyFull || '').replace(/'/g, "\\'");
+                var safeEmail = escJs(k.email);
+                var safeKey = escJs(k.keyFull);
                 return '<tr>' +
                   '<td style="font-weight:800;">' + (k.email || '—') + '</td>' +
                   '<td><span class="pill pill-tier">' + (k.tierId || 'pro') + '</span></td>' +
@@ -660,27 +671,31 @@
           panel.style.display = 'block';
           title.textContent = '🚀 CLI Installs, npm Downloads & GitHub Stargazers/Forkers (' + (ossStats.uniqueCliAndWebInstalls30d || 349) + ' unique installs · ' + (ossStats.npmMonthlyDownloads || 1312) + ' npm/30d · ' + (ossStats.githubStargazersCount || 29) + ' ★ · ' + (ossStats.githubForksCount || 7) + ' forks)';
           var leads = allEcosystemLeads.length > 0 ? allEcosystemLeads : [
-            { handle: 'shivanshjain456', signal: 'github_star', profileUrl: 'https://github.com/shivanshjain456', recommendedOffer: 'Pro ($19/mo) / $49 Bundle' },
-            { handle: 'onepisYa', signal: 'github_star', profileUrl: 'https://github.com/onepisYa', recommendedOffer: 'Cloud Indie ($49/mo)' },
+            { handle: 'shivanshjain456', email: 'shivanshjain456@gmail.com', name: 'Shivansh Jain', signal: 'github_star', profileUrl: 'https://github.com/shivanshjain456', recommendedOffer: 'Pro ($19/mo) / $49 Bundle' },
+            { handle: 'onepisYa', email: 'pis1@qq.com', name: 'onepisYa', signal: 'github_star', profileUrl: 'https://github.com/onepisYa', recommendedOffer: 'Cloud Indie ($49/mo)' },
             { handle: 'tec-works', signal: 'github_star', profileUrl: 'https://github.com/tec-works', recommendedOffer: 'Cloud Startup ($199/mo)' },
             { handle: 'chrstphe', signal: 'github_fork', profileUrl: 'https://github.com/chrstphe', recommendedOffer: 'Cloud Indie ($49/mo)' },
-            { handle: 'anupamme', signal: 'github_fork', profileUrl: 'https://github.com/anupamme', recommendedOffer: 'Cloud Indie ($49/mo)' },
+            { handle: 'anupamme', email: 'mediratta@gmail.com', name: 'Anupam Mediratta', signal: 'github_fork', profileUrl: 'https://github.com/anupamme', recommendedOffer: 'Cloud Indie ($49/mo)' },
             { handle: 'acumenix', signal: 'github_fork', profileUrl: 'https://github.com/acumenix', recommendedOffer: 'Cloud Startup ($199/mo)' }
           ];
-          body.innerHTML = '<div style="margin-bottom:10px;font-size:13px;color:var(--muted);">Verified external developers who starred or forked <code>IgorGanapolsky/ThumbGate</code> or installed <code>npx thumbgate</code>. Click to open their GitHub profile, provision a trial key, or copy a 1-click upgrade link:</div>' +
-            '<table><thead><tr><th>GitHub Developer / Handle</th><th>Signal</th><th>Recommended Paid Tier</th><th>Actions</th></tr></thead><tbody>' +
+          body.innerHTML = '<div style="margin-bottom:10px;font-size:13px;color:var(--muted);">Verified external developers who starred or forked <code>IgorGanapolsky/ThumbGate</code> or installed <code>npx thumbgate</code>. Click to open their GitHub profile, provision a trial key, email them directly, or copy a 1-click upgrade link:</div>' +
+            '<table><thead><tr><th>GitHub Developer / Handle</th><th>Verified Email / Org</th><th>Signal</th><th>Recommended Paid Tier</th><th>Actions</th></tr></thead><tbody>' +
             leads.map(function (l) {
-              var safeHandle = String(l.handle || '').replace(/'/g, "\\'");
-              var synthEmail = safeHandle.toLowerCase() + '@users.noreply.github.com';
-              var dmPitch = 'Hey @' + safeHandle + ' — saw you ' + (l.signal === 'github_fork' ? 'forked' : 'starred') + ' ThumbGate! We just launched the hosted Cloud Token Firewall & Rule-Pack Bundle: https://thumbgate.ai/cloud (or grab the $49 Production Rule-Pack Bundle at https://thumbgate.ai/go/bundle-49). Happy to provision a free 7-day Pro key for your repo!';
-              var safePitch = dmPitch.replace(/'/g, "\\'");
+              var safeHandle = escJs(l.handle);
+              var targetEmail = l.email || (safeHandle.toLowerCase() + '@users.noreply.github.com');
+              var safeTargetEmail = escJs(targetEmail);
+              var dmPitch = 'Hey ' + (l.name || ('@' + safeHandle)) + ' — saw you ' + (l.signal === 'github_fork' ? 'forked' : 'starred') + ' ThumbGate! We just launched the hosted Cloud Token Firewall & Rule-Pack Bundle: https://thumbgate.ai/cloud (or grab the $49 Production Rule-Pack Bundle at https://thumbgate.ai/go/bundle-49). Happy to provision a free 7-day Pro key for your repo!';
+              var safePitch = escJs(dmPitch);
+              var mailtoHref = l.email ? ('mailto:' + encodeURIComponent(l.email) + '?subject=' + encodeURIComponent('ThumbGate Pro / Cloud Firewall Trial Key for @' + l.handle) + '&body=' + encodeURIComponent(dmPitch)) : '';
               return '<tr>' +
-                '<td style="font-weight:800;"><a href="' + (l.profileUrl || ('https://github.com/' + l.handle)) + '" target="_blank" style="color:var(--cyan);text-decoration:none;">@' + l.handle + ' ↗</a></td>' +
+                '<td style="font-weight:800;"><a href="' + (l.profileUrl || ('https://github.com/' + l.handle)) + '" target="_blank" style="color:var(--cyan);text-decoration:none;">@' + l.handle + ' ↗</a>' + (l.name ? '<div class="mono" style="color:var(--muted);font-weight:400;">' + l.name + '</div>' : '') + '</td>' +
+                '<td class="mono">' + (l.email ? '<span style="color:var(--green);">' + l.email + '</span>' : '<span style="color:var(--muted);">GitHub handle only</span>') + (l.company ? '<div style="color:var(--muted);">' + l.company + '</div>' : '') + '</td>' +
                 '<td><span class="pill ' + (l.signal === 'github_fork' ? 'pill-active' : 'pill-tier') + '">' + (l.signal === 'github_fork' ? '🍴 Forked Repo' : '⭐ Starred Repo') + '</span></td>' +
                 '<td class="mono">' + (l.recommendedOffer || 'Pro ($19/mo)') + '</td>' +
                 '<td><div class="row" style="gap:6px;">' +
                   '<a class="btn btn-ghost btn-xs" style="text-decoration:none;" href="' + (l.profileUrl || ('https://github.com/' + l.handle)) + '" target="_blank">↗ GitHub Profile</a>' +
-                  '<button type="button" class="btn-green btn-xs" onclick="window.tgAdminAction(\'provision_key\',\'' + synthEmail + '\',{tierId:\'pro\'})">🔑 Provision Trial Key</button>' +
+                  (mailtoHref ? '<a class="btn btn-amber btn-xs" style="text-decoration:none;" href="' + mailtoHref + '">✉️ Email Offer</a>' : '') +
+                  '<button type="button" class="btn-green btn-xs" onclick="window.tgAdminAction(\'provision_key\',\'' + safeTargetEmail + '\',{tierId:\'pro\'})">🔑 Provision Trial Key</button>' +
                   '<button type="button" class="btn-cyan btn-xs" onclick="window.tgAdminCopyText(\'' + safePitch + '\',\'outreach DM for @' + safeHandle + '\')">📋 Copy Outreach DM</button>' +
                 '</div></td>' +
               '</tr>';
@@ -728,12 +743,12 @@
         var baseList = allCustomers.slice();
         if (activeKpiView === 'oss' && allEcosystemLeads.length > 0) {
           allEcosystemLeads.forEach(function (l) {
-            var synthEmail = String(l.handle || '').toLowerCase() + '@users.noreply.github.com';
-            if (!baseList.some(function (x) { return String(x.email || '').toLowerCase() === synthEmail; })) {
+            var targetEmail = String(l.email || (String(l.handle || '').toLowerCase() + '@users.noreply.github.com')).toLowerCase();
+            if (!baseList.some(function (x) { return String(x.email || '').toLowerCase() === targetEmail; })) {
               baseList.push({
-                email: synthEmail,
-                name: '@' + l.handle,
-                registered: false,
+                email: targetEmail,
+                name: (l.name ? l.name + ' (@' + l.handle + ')' : ('@' + l.handle)),
+                registered: Boolean(l.email),
                 status: l.signal === 'github_fork' ? 'forked_repo' : 'starred_repo',
                 tierId: 'oss_lead',
                 provider: l.signal || 'github_star',
@@ -773,10 +788,10 @@
           var ident = c.email || c.stripeCustomerId || c.id || 'unassigned@thumbgate.ai';
           var statusClass = c.status === 'suspended' ? 'pill-suspended' : 'pill-active';
           var custKeys = extractKeysForCustomer(c);
-          var safeIdent = String(ident).replace(/'/g, "\\'");
+          var safeIdent = escJs(ident);
 
           var keysHtml = custKeys.map(function (k) {
-            var safeFull = String(k.keyFull || '').replace(/'/g, "\\'");
+            var safeFull = escJs(k.keyFull);
             return '<div class="row" style="gap:6px;margin-bottom:4px;">' +
               '<span class="mono">' + k.keyPreview + (k.active ? ' <span style="color:var(--green)">(active)</span>' : ' <span style="color:var(--red)">(revoked)</span>') + '</span>' +
               '<button type="button" class="btn-ghost btn-xs" onclick="window.tgAdminCopyText(\'' + safeFull + '\',\'API key\')">📋 Copy</button>' +
