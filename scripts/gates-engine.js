@@ -4633,6 +4633,10 @@ function evaluateRepeatedMistakeGates(input = {}) {
 }
 
 function evaluateUnconditionalHardFloor(input = {}, options = {}) {
+  const { evaluateHerdrRoutingGate } = require('./herdr-routing-gate');
+  const herdrRouting = evaluateHerdrRoutingGate(input);
+  if (herdrRouting) return { hardFloor: herdrRouting, securityScan: null };
+
   const secretGuard = evaluateSecretGuard(input);
   if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
 
@@ -5713,6 +5717,7 @@ module.exports = {
   observeSwarmClaimResult,
   observeTeamsSendResult,
   evaluateRepeatedMistakeGates,
+  evaluateHerdrRoutingGate: require('./herdr-routing-gate').evaluateHerdrRoutingGate,
   setCrossReviewLookup,
   formatObserveStop,
   loadClaimGates,
