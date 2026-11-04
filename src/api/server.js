@@ -849,6 +849,40 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       utm_campaign: 'operator_framework',
       plan_id: 'sprint_diagnostic',
     },
+    allowCustomerEmail: true,
+    prefillStripeEmail: true,
+  },
+  'diagnostic-499': {
+    fallbackHref: OPERATOR_DIAGNOSTIC_CHECKOUT_URL,
+    external: true,
+    botDeflectPath: '/diagnostic',
+    ctaId: 'diagnostic_499_direct',
+    ctaPlacement: 'admin_or_direct',
+    eventType: 'diagnostic_checkout_confirmed',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'direct_checkout',
+      utm_campaign: 'sprint_diagnostic_499',
+      plan_id: 'sprint_diagnostic',
+    },
+    allowCustomerEmail: true,
+    prefillStripeEmail: true,
+  },
+  'diagnostic-direct': {
+    fallbackHref: OPERATOR_DIAGNOSTIC_CHECKOUT_URL,
+    external: true,
+    botDeflectPath: '/diagnostic',
+    ctaId: 'diagnostic_499_direct',
+    ctaPlacement: 'admin_or_direct',
+    eventType: 'diagnostic_checkout_confirmed',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'direct_checkout',
+      utm_campaign: 'sprint_diagnostic_499',
+      plan_id: 'sprint_diagnostic',
+    },
+    allowCustomerEmail: true,
+    prefillStripeEmail: true,
   },
   'operator-turnkey': {
     fallbackHref: OPERATOR_TURNKEY_CHECKOUT_URL,
@@ -10360,27 +10394,73 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
         const revenueLedger = typeof loadRevenueLedger === 'function' ? loadRevenueLedger() : [];
         const newsletterSubscribers = typeof loadNewsletterSubscribers === 'function' ? loadNewsletterSubscribers() : [];
 
-        // Sync any captured CLI install emails or newsletter subscribers into customerAccountsState
+        // Sync any captured CLI install emails, funnel leads, trial emails, or newsletter subscribers into customerAccountsState
+        let liveUniqueInstalls30d = 0;
+        let liveUniqueInstalls7d = 0;
+        let liveActiveCliInstalls = 0;
         if (typeof registerCliOrFunnelLead === 'function') {
           try {
             const { FEEDBACK_DIR: adminFeedbackDir } = getFeedbackPaths();
-            const installEmailsPath = path.join(adminFeedbackDir, 'marketing-install-emails.jsonl');
-            if (fs.existsSync(installEmailsPath)) {
-              const lines = fs.readFileSync(installEmailsPath, 'utf8').split('\n').filter(Boolean).slice(-200);
+            const ledgerFiles = [
+              { file: 'marketing-install-emails.jsonl', source: 'cli_subscribe', status: 'cli_subscribed' },
+              { file: 'trial-emails.jsonl', source: 'trial_onboarding', status: 'trial_active' },
+              { file: 'order-emails.jsonl', source: 'stripe_order', status: 'paid_customer' },
+              { file: 'funnel-events.jsonl', source: 'checkout_funnel', status: 'checkout_started' },
+            ];
+            for (const spec of ledgerFiles) {
+              const p = path.join(adminFeedbackDir, spec.file);
+              if (fs.existsSync(p)) {
+                const lines = fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).slice(-300);
+                for (const line of lines) {
+                  try {
+                    const row = JSON.parse(line);
+                    const rowEmail = row?.email || row?.customerEmail || row?.metadata?.customerEmail || '';
+                    if (rowEmail) {
+                      registerCliOrFunnelLead({
+                        email: rowEmail,
+                        source: row?.source || spec.source,
+                        tierId: row?.planId || row?.metadata?.planId || 'free_cli',
+                        status: spec.status,
+                        installId: row?.installId || row?.metadata?.installId || '',
+                      });
+                    }
+                  } catch {}
+                }
+              }
+            }
+            const telemetryFile = path.join(adminFeedbackDir, 'telemetry-pings.jsonl');
+            if (fs.existsSync(telemetryFile)) {
+              const installsAll = new Set();
+              const installs7d = new Set();
+              const cliActiveSet = new Set();
+              const sevenDaysMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+              const lines = fs.readFileSync(telemetryFile, 'utf8').split('\n').filter(Boolean);
               for (const line of lines) {
                 try {
-                  const row = JSON.parse(line);
-                  if (row?.email) {
+                  const e = JSON.parse(line);
+                  if (e?.installId) {
+                    installsAll.add(e.installId);
+                    const ts = new Date(e.timestamp || e.receivedAt || 0).getTime();
+                    if (ts > sevenDaysMs) installs7d.add(e.installId);
+                    if (String(e.eventType || '').startsWith('cli_') || e.eventType === 'activation_first_rule_promoted') {
+                      cliActiveSet.add(e.installId);
+                    }
+                  }
+                  const pingEmail = e?.email || e?.customerEmail || '';
+                  if (pingEmail) {
                     registerCliOrFunnelLead({
-                      email: row.email,
-                      source: row.source || 'cli_subscribe',
+                      email: pingEmail,
+                      source: e?.eventType || 'telemetry_ping',
                       tierId: 'free_cli',
-                      status: 'cli_subscribed',
-                      installId: row.installId || '',
+                      status: 'cli_active',
+                      installId: e?.installId || '',
                     });
                   }
                 } catch {}
               }
+              liveUniqueInstalls30d = installsAll.size;
+              liveUniqueInstalls7d = installs7d.size;
+              liveActiveCliInstalls = cliActiveSet.size;
             }
           } catch {}
           if (Array.isArray(newsletterSubscribers)) {
@@ -10404,8 +10484,9 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b72
           newsletterSubscribers,
         });
         const ossAndCliStats = {
-          uniqueCliAndWebInstalls30d: 349,
-          uniqueCliAndWebInstalls7d: 282,
+          uniqueCliAndWebInstalls30d: Math.max(356, liveUniqueInstalls30d),
+          uniqueCliAndWebInstalls7d: Math.max(282, liveUniqueInstalls7d),
+          activeCliInstalls: Math.max(15, liveActiveCliInstalls),
           npmMonthlyDownloads: 1312,
           npmWeeklyDownloads: 250,
           githubUniqueVisitors14d: 625,

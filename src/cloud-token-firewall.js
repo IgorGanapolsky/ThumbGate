@@ -1398,7 +1398,10 @@ function authenticateCustomerAccount({
     };
   }
 
-  const keyMatchesAccount = account.apiKey && cleanKey && cleanKey === account.apiKey;
+  const accountApiKeyStr = typeof account.apiKey === 'string'
+    ? account.apiKey
+    : (account.apiKey && typeof account.apiKey === 'object' ? String(account.apiKey.key || '') : '');
+  const keyMatchesAccount = Boolean(accountApiKeyStr && cleanKey && cleanKey === accountApiKeyStr);
   const passwordMatches = account.passwordHash && verifyCustomerPassword(password, account.passwordHash);
   if (!keyMatchesAccount && !passwordMatches) {
     return {
@@ -1755,6 +1758,19 @@ function registerCliOrFunnelLead({
     repoUrl: '',
     createdAt: nowIso,
   };
+  const toPublicLeadAccount = (acc) => ({
+    email: acc.email,
+    name: acc.name,
+    provider: acc.provider,
+    tierId: acc.tierId,
+    installId: acc.installId || null,
+    status: acc.status,
+    verified: Boolean(acc.verified),
+    registered: Boolean(acc.registered),
+    projects: Array.isArray(acc.projects) ? acc.projects : [],
+    createdAt: acc.createdAt,
+    updatedAt: acc.updatedAt,
+  });
   if (existing) {
     existing.lastLoginAt = nowIso;
     existing.updatedAt = nowIso;
@@ -1766,7 +1782,7 @@ function registerCliOrFunnelLead({
       ok: true,
       created: false,
       email: cleanEmail,
-      account: existing,
+      account: toPublicLeadAccount(existing),
       cloudPortalUrl: `https://thumbgate.ai/cloud?email=${encodeURIComponent(cleanEmail)}`,
       upgradeUrl: `https://thumbgate.ai/go/pro-direct?prefilled_email=${encodeURIComponent(cleanEmail)}`,
     };
@@ -1793,7 +1809,7 @@ function registerCliOrFunnelLead({
     ok: true,
     created: true,
     email: cleanEmail,
-    account: record,
+    account: toPublicLeadAccount(record),
     cloudPortalUrl: `https://thumbgate.ai/cloud?email=${encodeURIComponent(cleanEmail)}`,
     upgradeUrl: `https://thumbgate.ai/go/pro-direct?prefilled_email=${encodeURIComponent(cleanEmail)}`,
   };

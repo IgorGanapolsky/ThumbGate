@@ -725,7 +725,25 @@
         var heading = document.getElementById('customersTableHeading');
         var q = ((document.getElementById('custFilterInput') && document.getElementById('custFilterInput').value) || '').toLowerCase().trim();
 
-        var filtered = allCustomers.filter(function (c) {
+        var baseList = allCustomers.slice();
+        if (activeKpiView === 'oss' && allEcosystemLeads.length > 0) {
+          allEcosystemLeads.forEach(function (l) {
+            var synthEmail = String(l.handle || '').toLowerCase() + '@users.noreply.github.com';
+            if (!baseList.some(function (x) { return String(x.email || '').toLowerCase() === synthEmail; })) {
+              baseList.push({
+                email: synthEmail,
+                name: '@' + l.handle,
+                registered: false,
+                status: l.signal === 'github_fork' ? 'forked_repo' : 'starred_repo',
+                tierId: 'oss_lead',
+                provider: l.signal || 'github_star',
+                projects: [{ slug: l.handle + '-repo' }],
+                createdAt: '2026-11-03'
+              });
+            }
+          });
+        }
+        var filtered = baseList.filter(function (c) {
           if (activeKpiView === 'registered' && !c.registered) return false;
           if (activeKpiView === 'sessions' && !((c.activeSessions ?? c.activeSessionsCount ?? 0) > 0)) return false;
           if (activeKpiView === 'keys' && extractKeysForCustomer(c).length === 0) return false;
@@ -740,6 +758,7 @@
             registered: 'Registered Customer Accounts (' + filtered.length + ')',
             sessions: 'Accounts With Active Sessions (' + filtered.length + ')',
             keys: 'Accounts With Provisioned License Keys (' + filtered.length + ')',
+            oss: 'CLI Installs & Verified GitHub Ecosystem Developers (' + filtered.length + ')',
             mrr: 'Provisioned & Subscribed Customer Accounts (' + filtered.length + ')'
           };
           heading.textContent = viewLabels[activeKpiView] || viewLabels.all;

@@ -735,6 +735,16 @@ test('FinOps Phase 4 Intervention: Direct Cloud Indie/Startup alias slugs and Ca
     const leadJson = await leadRes.json();
     assert.equal(leadJson.ok, true);
     assert.equal(leadJson.lead.email, 'buyer-intent@enterprise.io');
+    assert.equal(leadJson.lead.passwordHash, undefined);
+    assert.equal(leadJson.lead.apiKey, undefined);
+
+    // Gap 3b: /go/diagnostic-499 redirects 302 directly to Stripe checkout
+    const diag499Res = await fetch(`http://127.0.0.1:${port}/go/diagnostic-499`, {
+      redirect: 'manual',
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 Chrome/130.0' },
+    });
+    assert.equal(diag499Res.status, 302);
+    assert.match(diag499Res.headers.get('location') || '', /buy\.stripe\.com|checkout\.stripe\.com/);
 
     // Gap 3: Admin HTML and /v1/admin/customers surface OSS & CLI installs + 22 verified GitHub stargazers/forkers
     const firewall = require('../src/cloud-token-firewall');
