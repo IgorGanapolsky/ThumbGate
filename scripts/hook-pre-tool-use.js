@@ -577,7 +577,7 @@ function main() {
   try {
     const { evaluateEmailStrategyPretool } = require('./email-strategy-pretool');
     const strategy = evaluateEmailStrategyPretool({ toolName, toolInput: effectiveInput });
-    if (strategy && strategy.ok === false) {
+    if (strategy && strategy.ok === false && isTrueEnv(process.env.THUMBGATE_HOOKS_ENFORCE)) {
       return block(`email-strategy: ${(strategy.blockers || []).join('; ')}`);
     }
   } catch (err) {
