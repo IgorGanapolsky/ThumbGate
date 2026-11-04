@@ -2506,6 +2506,15 @@ function getBusinessAnalytics(options = {}) {
     bySource: operatorGeneratedAcquisitionBySource,
   };
 
+  const telemetryWindowMeta = telemetry && telemetry.window ? telemetry.window : null;
+  const telemetryLogTruncated = Boolean(
+    (telemetryWindowMeta && telemetryWindowMeta.truncated) ||
+    (telemetry && telemetry.telemetrySource && telemetry.telemetrySource.truncated)
+  );
+  const telemetryWindowComplete = telemetryWindowMeta && typeof telemetryWindowMeta.complete === 'boolean'
+    ? telemetryWindowMeta.complete
+    : !telemetryLogTruncated;
+
   const dataQuality = {
     telemetryCoverage: Number(((
       (telemetry.visitors ? telemetry.visitors.visitorIdCoverageRate || 0 : 0) +
@@ -2515,11 +2524,17 @@ function getBusinessAnalytics(options = {}) {
     attributionCoverage: telemetry.visitors ? telemetry.visitors.attributionCoverageRate || 0 : 0,
     amountKnownCoverage: paidOrders.length ? safeRate(amountKnownOrders, paidOrders.length) : 0,
     unreconciledPaidEvents,
+    telemetryLogTruncated,
+    telemetryWindowComplete,
   };
 
   return {
     generatedAt: new Date().toISOString(),
-    window: serializeAnalyticsWindow(analyticsWindow),
+    window: {
+      ...serializeAnalyticsWindow(analyticsWindow),
+      truncated: telemetryLogTruncated,
+      complete: telemetryWindowComplete,
+    },
     coverage: {
       source: 'funnel_ledger+revenue_ledger+workflow_sprint_leads',
       tracksBookedRevenue: true,

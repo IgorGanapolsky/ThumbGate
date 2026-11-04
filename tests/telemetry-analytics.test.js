@@ -1103,3 +1103,36 @@ test('getTelemetryAnalytics applies daily windows and summarizes checkout succes
   assert.equal(analytics.ctas.paidConfirmationRate, 1);
   assert.equal(analytics.ctas.successPageViewRate, 1);
 });
+
+test('appendTelemetryEvent hydrates missing journey IDs from HttpOnly cookies and scales bounded window tail budgets', () => {
+  const { getTelemetrySummary } = require('../scripts/telemetry-analytics');
+  appendTelemetryEvent(
+    tmpDir,
+    {
+      eventType: 'checkout_start',
+      clientType: 'web',
+      source: 'linkedin',
+      utmSource: 'linkedin',
+      utmCampaign: 'nov4_substack_apology',
+      page: '/checkout/pro',
+    },
+    {
+      cookie: 'thumbgate_visitor_id=vis_cookie_1; thumbgate_session_id=sess_cookie_1; thumbgate_acquisition_id=acq_cookie_1',
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+    }
+  );
+
+  const summaryToday = getTelemetrySummary(tmpDir, { window: 'today' });
+  const summary7d = getTelemetrySummary(tmpDir, { window: '7d' });
+  const summary30d = getTelemetrySummary(tmpDir, { window: '30d' });
+  const summary90d = getTelemetrySummary(tmpDir, { window: '90d' });
+
+  assert.equal(summaryToday.web.visitorIdCoverageRate, 1);
+  assert.equal(summaryToday.web.sessionIdCoverageRate, 1);
+  assert.equal(summaryToday.web.acquisitionIdCoverageRate, 1);
+  assert.equal(summaryToday.telemetrySource.tailBytes, 8 * 1024 * 1024);
+  assert.equal(summary7d.telemetrySource.tailBytes, 16 * 1024 * 1024);
+  assert.equal(summary30d.telemetrySource.tailBytes, 32 * 1024 * 1024);
+  assert.equal(summary90d.telemetrySource.tailBytes, 64 * 1024 * 1024);
+});
+
