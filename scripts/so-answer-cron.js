@@ -333,7 +333,6 @@ async function discoverAndStage() {
         s.link
       ].join('\t') + '\n';
       const trackerPath = path.join(HANDOFFS_DIR, 'so-answer-tracker.tsv');
-      fs.appendFileSync(trackerPath, '#timestamp\tquestion_id\ttitle\tslug\ttemplate\taction\tlink\n'.replace(/#/, '') === '' ? '' : '');
       // Only write header if file is new
       if (!fs.existsSync(trackerPath)) {
         fs.writeFileSync(trackerPath, '#timestamp\tquestion_id\ttitle\tslug\ttemplate\taction\tlink\n');

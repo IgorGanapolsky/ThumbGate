@@ -452,3 +452,12 @@ test('calculateStats and formatStats: reports lifetime block count separately fr
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('formatStats: a non-numeric distinctBlocked falls back to the computed count', () => {
+  const base = {
+    totalGates: 1, manualGates: 1, autoPromotedGates: 0, totalBlocked: 10, recurringBlocks: 4,
+    totalWarned: 0, topBlocked: null, lastPromotion: null, estimatedHoursSaved: '0.0', gates: [],
+  };
+  assert.ok(formatStats({ ...base, distinctBlocked: '<script>' }).includes('(6 distinct first-time blocks)'));
+  assert.ok(formatStats({ ...base, distinctBlocked: 3.7 }).includes('(3 distinct first-time blocks)'));
+});

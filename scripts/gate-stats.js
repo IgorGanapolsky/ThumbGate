@@ -224,6 +224,11 @@ function formatLastPromotion(promo) {
   return label;
 }
 
+function toCount(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : fallback;
+}
+
 function formatStats(stats) {
   const lines = [];
   lines.push('Gate Statistics');
@@ -231,7 +236,8 @@ function formatStats(stats) {
   lines.push(`  Active gates: ${stats.totalGates} (${stats.manualGates} manual, ${stats.autoPromotedGates} auto-promoted)`);
   lines.push(`  Actions blocked: ${stats.totalBlocked}`);
   if (stats.recurringBlocks !== undefined && stats.recurringBlocks > 0) {
-    const distinct = stats.distinctBlocked !== undefined ? stats.distinctBlocked : Math.max(0, stats.totalBlocked - stats.recurringBlocks);
+    const fallback = Math.max(0, stats.totalBlocked - stats.recurringBlocks);
+    const distinct = toCount(stats.distinctBlocked, fallback);
     lines.push(`  Repeat blocks: ${stats.recurringBlocks} (${distinct} distinct first-time blocks)`);
   }
   lines.push(`  Actions warned: ${stats.totalWarned}`);
