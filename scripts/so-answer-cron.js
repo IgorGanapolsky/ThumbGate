@@ -152,15 +152,23 @@ function selectTemplate(tags) {
 // ---- Get real gate-check examples for the answer ----
 
 function getGateExamples() {
+  const os = require('os');
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-so-examples-'));
   try {
-    // Run the gate-check on representative patterns
+    const gateEnv = {
+      ...process.env,
+      NODE_TEST_CONTEXT: 'true',
+      THUMBGATE_FEEDBACK_DIR: tmpDir,
+      THUMBGATE_STATE_DIR: tmpDir,
+    };
+    // Run the gate-check on representative patterns in an isolated temp store
     const secretPayload = JSON.stringify({
       tool_name: 'Write',
       tool_input: { file_path: '/tmp/config.py', content: 'api_key=ghp_1234567890abcdefghijklmnopqrstuvwxyz' }
     });
     const secretResult = execSync(
       `echo '${secretPayload}' | npx thumbgate gate-check 2>/dev/null`,
-      { cwd: REPO_ROOT, encoding: 'utf8', timeout: 10000 }
+      { cwd: REPO_ROOT, encoding: 'utf8', timeout: 10000, env: gateEnv }
     ).trim();
 
     const rmPayload = JSON.stringify({
@@ -169,7 +177,7 @@ function getGateExamples() {
     });
     const rmResult = execSync(
       `echo '${rmPayload}' | npx thumbgate gate-check 2>/dev/null`,
-      { cwd: REPO_ROOT, encoding: 'utf8', timeout: 10000 }
+      { cwd: REPO_ROOT, encoding: 'utf8', timeout: 10000, env: gateEnv }
     ).trim();
 
     // Extract the human-readable parts
@@ -192,6 +200,12 @@ function getGateExamples() {
       hardBlock: '[GATE:secret-exfiltration] Blocked — GitHub personal access token detected',
       warning: '[ThumbGate] WARNING: rm -rf is destructive. Past mistake seen 9x.'
     };
+  } finally {
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      // Ignore temp cleanup errors
+    }
   }
 }
 

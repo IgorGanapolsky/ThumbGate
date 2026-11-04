@@ -76,13 +76,18 @@ test('managed gate promise is bounded and backed by the canonical checkout rail'
   assert.match(server, /SPRINT_DIAGNOSTIC_CHECKOUT_URL/);
 });
 
-test('public enforcement claims match the implemented default and strict boundaries', () => {
+test('public enforcement claims match the implemented default and strict boundaries', (t) => {
   const { spawnSync } = require('node:child_process');
-  // Pin enforcement mode so an operator shell with THUMBGATE_STRICT_ENFORCEMENT=1
+  const os = require('node:os');
+  // The fake token below is denied on purpose; keep that block out of the real feedback store.
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-landing-claims-'));
+  t.after(() => fs.rmSync(feedbackDir, { recursive: true, force: true }));
   // (common after never-spend hardening) cannot flip the default-mode assertion.
   const baseEnv = {
     ...process.env,
     THUMBGATE_STRICT_ENFORCEMENT: '',
+    NODE_TEST_CONTEXT: 'true',
+    THUMBGATE_FEEDBACK_DIR: feedbackDir,
   };
   const runGate = (command, env = {}) => {
     const result = spawnSync('node', ['bin/cli.js', 'gate-check'], {
@@ -101,6 +106,8 @@ test('public enforcement claims match the implemented default and strict boundar
   };
 
   assert.equal(runGate(`echo ghp_${'a'.repeat(36)}`), 'deny');
+  const isolatedLog = path.join(feedbackDir, 'diagnostic-log.jsonl');
+  assert.match(fs.readFileSync(isolatedLog, 'utf8'), /security:github_pat/);
   assert.equal(runGate('git push --force origin main'), 'allow');
   assert.equal(runGate('git push --force origin main', { THUMBGATE_STRICT_ENFORCEMENT: '1' }), 'deny');
   assert.match(HOME_HTML, /secret exfiltration[\s\S]*denied by default/i);
