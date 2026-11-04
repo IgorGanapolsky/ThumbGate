@@ -452,6 +452,41 @@ function parseTelemetryCookies(headerValue) {
   return cookies;
 }
 
+function inferCampaignVariant(raw = {}, cookies = {}, eventType = '') {
+  const explicit = pickFirstText(
+    raw.campaignVariant,
+    raw.variant,
+    cookies.thumbgate_campaign_variant,
+    cookies.tg_var
+  );
+  if (explicit) return explicit;
+  if (!isCheckoutStartEvent(eventType) && !isMarketingClickEvent(eventType)) {
+    return null;
+  }
+  const byOfferOrPlan = pickFirstText(
+    raw.offerCode,
+    raw.offer,
+    raw.coupon,
+    raw.planId,
+    raw.linkSlug,
+    raw.destinationSlug
+  );
+  if (byOfferOrPlan) return byOfferOrPlan.toLowerCase();
+  const campaign = pickFirstText(raw.utmCampaign, raw.campaign);
+  if (campaign && campaign.toLowerCase() !== 'organic') {
+    return campaign.toLowerCase();
+  }
+  const cta = pickFirstText(raw.ctaId);
+  if (cta) return cta.toLowerCase();
+  const pathText = (pickFirstText(raw.destinationPath, raw.page, raw.landingPath, raw.path) || '').toLowerCase();
+  if (pathText.includes('bundle-49') || pathText.includes('bundle_49')) return 'bundle_49';
+  if (pathText.includes('pro-direct') || pathText.includes('pro_direct')) return 'pro_direct';
+  if (pathText.includes('playbook')) return 'playbook_999';
+  if (pathText.includes('diagnostic')) return 'sprint_diagnostic_499';
+  if (pathText.includes('checkout/pro')) return 'pro_checkout';
+  return isCheckoutStartEvent(eventType) ? 'direct_checkout' : null;
+}
+
 function sanitizeTelemetryPayload(payload = {}, headers = {}) {
   const envelope = payload && typeof payload === 'object' ? payload : {};
   const nestedProps = envelope.props
@@ -471,6 +506,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
   const utmCampaign = pickFirstText(raw.utmCampaign, raw.campaign, clientType === 'web' ? 'organic' : null);
   const referrer = pickFirstText(raw.referrer, headers.referer, headers.referrer);
   const referrerHost = parseReferrerHost(referrer);
+  const campaignVariant = inferCampaignVariant(raw, cookies, eventType);
   const reasonCode = pickFirstText(
     raw.reasonCode,
     raw.reason,
@@ -522,7 +558,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     utmContent: pickFirstText(raw.utmContent),
     utmTerm: pickFirstText(raw.utmTerm),
     creator: pickFirstText(raw.creator, raw.creatorHandle, raw.creator_handle),
-    campaignVariant: pickFirstText(raw.campaignVariant, raw.variant),
+    campaignVariant,
     offerCode: pickFirstText(raw.offerCode, raw.offer, raw.coupon),
     community: pickFirstText(raw.community, raw.subreddit),
     postId: pickFirstText(raw.postId, raw.post_id),
@@ -530,7 +566,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     ctaId: pickFirstText(raw.ctaId),
     ctaPlacement: pickFirstText(raw.ctaPlacement),
     planId: pickFirstText(raw.planId),
-    segment: pickFirstText(raw.segment, raw.buyerSegment, raw.campaignVariant, raw.variant),
+    segment: pickFirstText(raw.segment, raw.buyerSegment, campaignVariant),
     experimentId: pickFirstText(raw.experimentId, raw.experiment, raw.utmCampaign),
     value: normalizeInteger(raw.value),
     currency: pickFirstText(raw.currency),

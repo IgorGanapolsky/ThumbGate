@@ -1104,7 +1104,7 @@ test('getTelemetryAnalytics applies daily windows and summarizes checkout succes
   assert.equal(analytics.ctas.successPageViewRate, 1);
 });
 
-test('appendTelemetryEvent hydrates missing journey IDs from HttpOnly cookies and scales bounded window tail budgets', () => {
+test('appendTelemetryEvent hydrates missing journey IDs and campaignVariant from HttpOnly cookies, UTM, or checkout path and scales bounded window tail budgets', () => {
   const { getTelemetrySummary } = require('../scripts/telemetry-analytics');
   appendTelemetryEvent(
     tmpDir,
@@ -1121,6 +1121,19 @@ test('appendTelemetryEvent hydrates missing journey IDs from HttpOnly cookies an
       'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
     }
   );
+  appendTelemetryEvent(
+    tmpDir,
+    {
+      eventType: 'checkout_start',
+      clientType: 'web',
+      source: 'direct',
+      page: '/go/bundle-49',
+    },
+    {
+      cookie: 'thumbgate_visitor_id=vis_cookie_2; thumbgate_session_id=sess_cookie_2; thumbgate_acquisition_id=acq_cookie_2',
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+    }
+  );
 
   const summaryToday = getTelemetrySummary(tmpDir, { window: 'today' });
   const summary7d = getTelemetrySummary(tmpDir, { window: '7d' });
@@ -1130,9 +1143,11 @@ test('appendTelemetryEvent hydrates missing journey IDs from HttpOnly cookies an
   assert.equal(summaryToday.web.visitorIdCoverageRate, 1);
   assert.equal(summaryToday.web.sessionIdCoverageRate, 1);
   assert.equal(summaryToday.web.acquisitionIdCoverageRate, 1);
+  assert.equal(summaryToday.marketing.checkoutStartsByCampaignVariant.nov4_substack_apology, 1);
+  assert.equal(summaryToday.marketing.checkoutStartsByCampaignVariant.bundle_49, 1);
+  assert.equal(summaryToday.marketing.checkoutStartsByCampaignVariant.unknown, undefined);
   assert.equal(summaryToday.telemetrySource.tailBytes, 8 * 1024 * 1024);
   assert.equal(summary7d.telemetrySource.tailBytes, 16 * 1024 * 1024);
   assert.equal(summary30d.telemetrySource.tailBytes, 32 * 1024 * 1024);
   assert.equal(summary90d.telemetrySource.tailBytes, 64 * 1024 * 1024);
 });
-
