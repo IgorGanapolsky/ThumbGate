@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -76,13 +77,18 @@ test('managed gate promise is bounded and backed by the canonical checkout rail'
   assert.match(server, /SPRINT_DIAGNOSTIC_CHECKOUT_URL/);
 });
 
-test('public enforcement claims match the implemented default and strict boundaries', () => {
+test('public enforcement claims match the implemented default and strict boundaries', (t) => {
   const { spawnSync } = require('node:child_process');
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'landing-claims-gate-'));
+  t.after(() => fs.rmSync(feedbackDir, { recursive: true, force: true }));
   // Pin enforcement mode so an operator shell with THUMBGATE_STRICT_ENFORCEMENT=1
   // (common after never-spend hardening) cannot flip the default-mode assertion.
   const baseEnv = {
     ...process.env,
     THUMBGATE_STRICT_ENFORCEMENT: '',
+    THUMBGATE_FEEDBACK_DIR: feedbackDir,
+    THUMBGATE_STATE_DIR: feedbackDir,
+    NODE_TEST_CONTEXT: 'true',
   };
   const runGate = (command, env = {}) => {
     const result = spawnSync('node', ['bin/cli.js', 'gate-check'], {
