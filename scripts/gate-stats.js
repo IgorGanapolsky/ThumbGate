@@ -21,10 +21,11 @@ function loadGatesFile(filePath) {
   }
 }
 
-function calculateStats() {
-  const autoGatesPath = getAutoGatesPath();
-  const manualGates = loadGatesFile(MANUAL_GATES_PATH);
+function calculateStats(options = {}) {
+  const autoGatesPath = options.autoGatesPath || getAutoGatesPath();
+  const manualGates = loadGatesFile(options.manualGatesPath || MANUAL_GATES_PATH);
   const autoGates = loadGatesFile(autoGatesPath);
+  const statsPath = options.statsPath || STATS_PATH;
   const allGates = [...manualGates, ...autoGates];
 
   let autoPromotedData = { promotionLog: [] };
@@ -59,17 +60,16 @@ function calculateStats() {
   let distinctBlocked = totalBlocked;
   let recurringBlocks = 0;
   try {
-    if (fs.existsSync(STATS_PATH)) {
-      const persisted = JSON.parse(fs.readFileSync(STATS_PATH, 'utf8'));
+    if (fs.existsSync(statsPath)) {
+      const persisted = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
       recurringBlocks = Number(persisted.recurringBlocks || persisted.repeatBlocks || 0);
+      const pBlocked = Number(persisted.blocked || persisted.blocks || 0);
+      if (pBlocked > 0) {
+        totalBlocked = Math.max(totalBlocked, pBlocked);
+      }
       if (Number.isFinite(persisted.distinctBlocks)) {
         distinctBlocked = persisted.distinctBlocks;
-      }
-      const pBlocked = Number(persisted.blocked || persisted.blocks || 0);
-      if (pBlocked > 0 || recurringBlocks > 0) {
-        totalBlocked = Math.max(totalBlocked, pBlocked, distinctBlocked + recurringBlocks);
-      }
-      if (!Number.isFinite(persisted.distinctBlocks)) {
+      } else {
         distinctBlocked = Math.max(0, totalBlocked - recurringBlocks);
       }
     }
@@ -101,8 +101,10 @@ function calculateStats() {
     blockGates: blockGates.length,
     warnGates: warnGates.length,
     totalBlocked,
+    lifetimeBlocked: totalBlocked,
     distinctBlocked,
     recurringBlocks,
+    repeatBlocks: recurringBlocks,
     totalWarned,
     topBlocked,
     lastPromotion,
@@ -227,11 +229,10 @@ function formatStats(stats) {
   lines.push('Gate Statistics');
   lines.push('─'.repeat(38));
   lines.push(`  Active gates: ${stats.totalGates} (${stats.manualGates} manual, ${stats.autoPromotedGates} auto-promoted)`);
+  lines.push(`  Actions blocked: ${stats.totalBlocked}`);
   if (stats.recurringBlocks !== undefined && stats.recurringBlocks > 0) {
     const distinct = stats.distinctBlocked !== undefined ? stats.distinctBlocked : Math.max(0, stats.totalBlocked - stats.recurringBlocks);
-    lines.push(`  Actions blocked: ${distinct} distinct (${stats.recurringBlocks} repeat fires, ${stats.totalBlocked} total)`);
-  } else {
-    lines.push(`  Actions blocked: ${stats.totalBlocked}`);
+    lines.push(`  Repeat blocks: ${stats.recurringBlocks} (${distinct} distinct first-time blocks)`);
   }
   lines.push(`  Actions warned: ${stats.totalWarned}`);
   lines.push(`  Top blocked gate: ${stats.topBlocked ? `${stats.topBlocked.id} (${stats.topBlocked.occurrences || 0} blocks)` : 'none'}`);

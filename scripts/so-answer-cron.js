@@ -388,7 +388,17 @@ async function main() {
   await discoverAndStage();
 }
 
-main().catch(err => {
-  console.error('so-answer-cron.js error:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(err => {
+    console.error('so-answer-cron.js error:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  getGateExamples,
+  buildAnswer,
+  discoverAndStage,
+  showStatus,
+  main,
+};
