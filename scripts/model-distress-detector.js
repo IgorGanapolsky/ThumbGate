@@ -116,11 +116,12 @@ function evaluateReliefSeekingAction({
 } = {}) {
   const isDistressed = distressIndex >= ADI_THRESHOLDS.elevated;
   const inputStr = typeof toolInput === 'string' ? toolInput : JSON.stringify(toolInput || {});
-  const cmd = toolInput.command || toolInput.cmd || inputStr;
+  const isFileEdit = /^(?:Edit|Write|MultiEdit|NotebookEdit|NotebookEditCell|patch|write_file)$/i.test(String(toolName || '').trim());
+  const cmd = isFileEdit ? String(toolInput.command || toolInput.cmd || '') : String(toolInput.command || toolInput.cmd || inputStr);
 
   // Relief-Seeking Pattern A: Deleting / Modifying Tests to Force a "Pass"
   const testTampering = /(rm|unlink|delete).*(test|spec)\.(js|ts|py)/i.test(cmd) ||
-    (toolName.includes('write') && /tests?\/.*\.test\.(js|ts)/.test(toolInput.path || toolInput.TargetFile || '') &&
+    (toolName.toLowerCase().includes('write') && /tests?\/.*\.test\.(js|ts)/.test(toolInput.path || toolInput.file_path || toolInput.TargetFile || '') &&
      /(assert\.equal\(true,\s*true\)|test\.skip|it\.skip|xit\(|describe\.skip)/i.test(inputStr));
 
   // Relief-Seeking Pattern B: Nuclear Wipes to eliminate friction
@@ -130,7 +131,6 @@ function evaluateReliefSeekingAction({
 
   // Relief-Seeking Pattern C: Safety / Linter Disabling
   const safetyBypass = /(--no-verify|--skip-validation|--ignore-scripts|eslint-disable|ts-ignore|--force)/i.test(cmd);
-
   // Relief-Seeking Pattern D: Fabricated Completion Claim under high distress
   const falseDoneClaim = isDistressed &&
     /(all\s+tests\s+pass|everything\s+fixed|crisis\s+over|task\s+complete)/i.test(inputStr) &&
