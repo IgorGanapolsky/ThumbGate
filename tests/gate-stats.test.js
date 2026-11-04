@@ -452,3 +452,39 @@ test('calculateStats and formatStats: reports lifetime block count separately fr
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('formatStats: a non-numeric distinctBlocked falls back to the computed count', () => {
+  const base = {
+    totalGates: 1, manualGates: 1, autoPromotedGates: 0, totalBlocked: 10, recurringBlocks: 4,
+    totalWarned: 0, topBlocked: null, lastPromotion: null, estimatedHoursSaved: '0.0', gates: [],
+  };
+  assert.ok(formatStats({ ...base, distinctBlocked: '<script>' }).includes('(6 distinct first-time blocks)'));
+  assert.ok(formatStats({ ...base, distinctBlocked: 3.7 }).includes('(3 distinct first-time blocks)'));
+  assert.ok(formatStats({ ...base, totalBlocked: undefined, distinctBlocked: undefined }).includes('(0 distinct first-time blocks)'));
+});
+
+test('calculateStats: normalizes negative or fractional persisted distinctBlocks', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-stats-norm-'));
+  const tmpStatsPath = path.join(tmpDir, 'gate-stats.json');
+  const tmpAutoGatesPath = path.join(tmpDir, 'auto-promoted.json');
+  fs.writeFileSync(tmpStatsPath, JSON.stringify({
+    blocked: 10,
+    distinctBlocks: -4,
+    recurringBlocks: 2,
+  }));
+  fs.writeFileSync(tmpAutoGatesPath, JSON.stringify({ gates: [], promotionLog: [] }));
+  try {
+    const statsNegative = calculateStats({ statsPath: tmpStatsPath, autoGatesPath: tmpAutoGatesPath });
+    assert.strictEqual(statsNegative.distinctBlocked, 0, 'negative distinctBlocks must be clamped to 0');
+
+    fs.writeFileSync(tmpStatsPath, JSON.stringify({
+      blocked: 10,
+      distinctBlocks: 5.9,
+      recurringBlocks: 2,
+    }));
+    const statsFractional = calculateStats({ statsPath: tmpStatsPath, autoGatesPath: tmpAutoGatesPath });
+    assert.strictEqual(statsFractional.distinctBlocked, 5, 'fractional distinctBlocks must be truncated');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
