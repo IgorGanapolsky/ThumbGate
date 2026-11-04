@@ -273,8 +273,8 @@
           <input type="password" id="newCustPassword" placeholder="Initial password (8+ chars)" style="width:200px;">
           <select id="newCustTier">
             <option value="pro">Pro ($19/mo)</option>
-            <option value="cloud_indie">Cloud Indie ($49/mo)</option>
-            <option value="cloud_startup">Cloud Startup ($199/mo)</option>
+            <option value="cloud_indie">Cloud Indie (USD 49)</option>
+            <option value="cloud_startup">Cloud Startup (USD 199)</option>
             <option value="enterprise">Enterprise ($499+)</option>
             <option value="free">Free Local</option>
           </select>
@@ -319,7 +319,7 @@
           </div>
           <div style="background:rgba(15,23,42,0.75);border:1px solid var(--line);border-radius:10px;padding:12px;" data-waiting-id="herjavec_chase_no">
             <div style="font-weight:700;font-size:13px;margin-bottom:4px;">3. Robert Herjavec "Chase the No" Enterprise Diagnostic</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Zero-egress 7-day Token Burn &amp; Agent Drift Audit &rarr; <code>/go/diagnostic-499</code> ($499) &rarr; <code>/go/cloud-startup</code> ($199/mo).</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Zero-egress 7-day Token Burn &amp; Agent Drift Audit &rarr; <code>/go/diagnostic-499</code> ($499) &rarr; <code>/go/cloud-startup</code> (USD 199).</div>
             <div class="row">
               <a href="/go/diagnostic-499" target="_blank" rel="noopener" class="btn btn-green btn-xs" style="text-decoration:none;" onclick="window.tgResolveWaitingItem('herjavec_chase_no','Approved')">Open $499 Diagnostic ↗</a>
               <button type="button" class="btn-ghost btn-xs" onclick="window.tgAdminCopyText('https://thumbgate.ai/go/diagnostic-499')">📋 Copy $499 Link</button>
@@ -672,11 +672,11 @@
           title.textContent = '🚀 CLI Installs, npm Downloads & GitHub Stargazers/Forkers (' + (ossStats.uniqueCliAndWebInstalls30d || 349) + ' unique installs · ' + (ossStats.npmMonthlyDownloads || 1312) + ' npm/30d · ' + (ossStats.githubStargazersCount || 29) + ' ★ · ' + (ossStats.githubForksCount || 7) + ' forks)';
           var leads = allEcosystemLeads.length > 0 ? allEcosystemLeads : [
             { handle: 'shivanshjain456', email: 'shivanshjain456@gmail.com', name: 'Shivansh Jain', signal: 'github_star', profileUrl: 'https://github.com/shivanshjain456', recommendedOffer: 'Pro ($19/mo) / $49 Bundle' },
-            { handle: 'onepisYa', email: 'pis1@qq.com', name: 'onepisYa', signal: 'github_star', profileUrl: 'https://github.com/onepisYa', recommendedOffer: 'Cloud Indie ($49/mo)' },
-            { handle: 'tec-works', signal: 'github_star', profileUrl: 'https://github.com/tec-works', recommendedOffer: 'Cloud Startup ($199/mo)' },
-            { handle: 'chrstphe', signal: 'github_fork', profileUrl: 'https://github.com/chrstphe', recommendedOffer: 'Cloud Indie ($49/mo)' },
-            { handle: 'anupamme', email: 'mediratta@gmail.com', name: 'Anupam Mediratta', signal: 'github_fork', profileUrl: 'https://github.com/anupamme', recommendedOffer: 'Cloud Indie ($49/mo)' },
-            { handle: 'acumenix', signal: 'github_fork', profileUrl: 'https://github.com/acumenix', recommendedOffer: 'Cloud Startup ($199/mo)' }
+            { handle: 'onepisYa', email: 'pis1@qq.com', name: 'onepisYa', signal: 'github_star', profileUrl: 'https://github.com/onepisYa', recommendedOffer: 'Cloud Indie (USD 49)' },
+            { handle: 'tec-works', signal: 'github_star', profileUrl: 'https://github.com/tec-works', recommendedOffer: 'Cloud Startup (USD 199)' },
+            { handle: 'chrstphe', signal: 'github_fork', profileUrl: 'https://github.com/chrstphe', recommendedOffer: 'Cloud Indie (USD 49)' },
+            { handle: 'anupamme', email: 'mediratta@gmail.com', name: 'Anupam Mediratta', signal: 'github_fork', profileUrl: 'https://github.com/anupamme', recommendedOffer: 'Cloud Indie (USD 49)' },
+            { handle: 'acumenix', signal: 'github_fork', profileUrl: 'https://github.com/acumenix', recommendedOffer: 'Cloud Startup (USD 199)' }
           ];
           body.innerHTML = '<div style="margin-bottom:10px;font-size:13px;color:var(--muted);">Verified external developers who starred or forked <code>IgorGanapolsky/ThumbGate</code> or installed <code>npx thumbgate</code>. Click to open their GitHub profile, provision a trial key, email them directly, or copy a 1-click upgrade link:</div>' +
             '<table><thead><tr><th>GitHub Developer / Handle</th><th>Verified Email / Org</th><th>Signal</th><th>Recommended Paid Tier</th><th>Actions</th></tr></thead><tbody>' +
@@ -708,8 +708,8 @@
           title.textContent = '💳 Verified MRR, Direct Stripe Checkout Links & Abandoned Recovery';
           var checkoutRoutes = [
             { label: 'ThumbGate Pro ($19/mo · 7-Day Free Trial)', path: '/go/pro-direct', price: '$19/mo' },
-            { label: 'Cloud Firewall Indie ($49/mo · 1-Click Direct Stripe)', path: '/go/cloud-indie', price: '$49/mo' },
-            { label: 'Cloud Firewall Startup ($199/mo · 1-Click Direct Stripe)', path: '/go/cloud-startup', price: '$199/mo' },
+            { label: 'Cloud Firewall Indie (USD 49 · 1-Click Direct Stripe)', path: '/go/cloud-indie', price: 'USD 49' },
+            { label: 'Cloud Firewall Startup (USD 199 · 1-Click Direct Stripe)', path: '/go/cloud-startup', price: 'USD 199' },
             { label: '7-Day CTO Token Burn & Drift Diagnostic ($499 One-Time)', path: '/go/diagnostic-499', price: '$499' },
             { label: 'Production Rule-Pack Bundle ($49 One-Time)', path: '/go/bundle-49', price: '$49' },
             { label: 'Engineering Playbook ($9.99 One-Time)', path: '/go/playbook-999', price: '$9.99' },
