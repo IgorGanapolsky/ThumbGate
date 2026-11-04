@@ -149,64 +149,13 @@ function selectTemplate(tags) {
   return ANSWER_TEMPLATES[best];
 }
 
-// ---- Get real gate-check examples for the answer ----
+// ---- Get representative gate-check examples for the answer ----
 
 function getGateExamples() {
-  const os = require('os');
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-so-examples-'));
-  try {
-    const gateEnv = {
-      ...process.env,
-      NODE_TEST_CONTEXT: 'true',
-      THUMBGATE_FEEDBACK_DIR: tmpDir,
-      THUMBGATE_STATE_DIR: tmpDir,
-    };
-    // Run the gate-check on representative patterns in an isolated temp store
-    const secretPayload = JSON.stringify({
-      tool_name: 'Write',
-      tool_input: { file_path: '/tmp/config.py', content: 'api_key=ghp_1234567890abcdefghijklmnopqrstuvwxyz' }
-    });
-    const secretResult = execSync(
-      `echo '${secretPayload}' | npx thumbgate gate-check 2>/dev/null`,
-      { cwd: REPO_ROOT, encoding: 'utf8', timeout: 10000, env: gateEnv }
-    ).trim();
-
-    const rmPayload = JSON.stringify({
-      tool_name: 'Bash',
-      tool_input: { command: 'rm -rf ./src/' }
-    });
-    const rmResult = execSync(
-      `echo '${rmPayload}' | npx thumbgate gate-check 2>/dev/null`,
-      { cwd: REPO_ROOT, encoding: 'utf8', timeout: 10000, env: gateEnv }
-    ).trim();
-
-    // Extract the human-readable parts
-    const parseGateOutput = (raw) => {
-      try {
-        const json = JSON.parse(raw);
-        const ctx = json.hookSpecificOutput?.additionalContext || '';
-        return ctx.replace(/\[ThumbGate\].*$/s, '').trim().substring(0, 200);
-      } catch {
-        return raw.substring(0, 200);
-      }
-    };
-
-    return {
-      hardBlock: parseGateOutput(secretResult),
-      warning: parseGateOutput(rmResult)
-    };
-  } catch (e) {
-    return {
-      hardBlock: '[GATE:secret-exfiltration] Blocked — GitHub personal access token detected',
-      warning: '[ThumbGate] WARNING: rm -rf is destructive. Past mistake seen 9x.'
-    };
-  } finally {
-    try {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch {
-      // Ignore temp cleanup errors
-    }
-  }
+  return {
+    hardBlock: '[GATE:secret-exfiltration] Blocked — GitHub personal access token detected',
+    warning: '[ThumbGate] WARNING: rm -rf is destructive. Past mistake seen 9x.'
+  };
 }
 
 // ---- Build answer body ----
@@ -230,12 +179,12 @@ ${getMonetization(template)}
 
 function getShortAnswer(question, template) {
   if (template === ANSWER_TEMPLATES.safety) {
-    return 'The core issue isn\\'t the tool — it\\'s that the LLM introduces mistakes *during* generation, not after. Catch them *before* they execute.';
+    return "The core issue isn't the tool — it's that the LLM introduces mistakes *during* generation, not after. Catch them *before* they execute.";
   }
   if (template === ANSWER_TEMPLATES.branch_review) {
-    return 'Cursor\\'s Agent Review only covers local buffer changes. For full-branch review you need a tool that gates every file edit in real-time.';
+    return "Cursor's Agent Review only covers local buffer changes. For full-branch review you need a tool that gates every file edit in real-time.";
   }
-  return 'AI agents need pre-action guardrails — not post-hoc review. Here\\'s how to shift left.';
+  return "AI agents need pre-action guardrails — not post-hoc review. Here's how to shift left.";
 }
 
 function getTemplateBody(question, template, examples) {
