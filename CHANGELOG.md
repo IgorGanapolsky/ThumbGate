@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.39.1
+
+### Patch Changes
+
+- Fix PreToolUse false-positive edit blocks, isolate SO cron gate examples from live telemetry, report lifetime blocks separately from repeat blocks in gate-stats, and reconcile failure diagnostic totals.
+- Add unified 3-tier agentic graph RAG, decisive DPO distiller, and Spotify Confidence MCP pre-action governance diode.
+- Add Zero-Cost Antigravity (`agy`) GitHub Issue Mailbox & Forensic Domain Alias Governance (`evaluateAntigravityZeroCostMailboxAndDomainGovernance`) and InfoWorld Anti-Pareto-Trap Model Routing Switchyard Guard (`evaluateModelRoutingParetoTrapGuard`).
+- Add cancellation recovery links and route dashboard and lessons Pro CTAs directly to Stripe checkout.
+- Show the $9.99 playbook and the $49 bundle on the Pro checkout page, next to the $19/mo Pay button. The receipt email stays required.
+- Count a human Pay hop to Stripe as one checkout click, and keep the receipt email as the quieter path on the Pro interstitial.
+- Keep a playbook in git, refuse zero-touch on the first cycle, and require a backup hash plus explicit approval before a structural self-edit.
+- Add Dream Mode memory consolidation engine (Anthropic Auto Dream inspired) and CUDA-inspired parallel gate batch evaluation. Dream Mode provides 4-phase memory consolidation (orientation → gather signal → consolidation → prune & index) with read-only safety boundary and dual-gate triggering (24h + 5 sessions). CUDA Gate Batch maps the CUDA thread/memory hierarchy (grid → blocks → threads, global/shared/thread-local memory) onto ThumbGate's PreToolUse gate pipeline for sub-0.5ms parallel evaluation with hot-cache acceleration.
+- feat: add EGM self-improvement hooks
+- fix(mcp): add email-triage MCP server
+- Ignore the non-required Entire Gates check when deciding whether a pull request can enter the Trunk queue.
+- Ask for a reason chip before a feedback note is sent, and keep the optional detail on that same note.
+- Deny an agent from claiming a change is non-breaking while it drops a column, public export, or config key, from dismissing a finding as a false positive with no comment, from naming the missing test cases and writing only the happy path, and from rerunning a failed pipeline without a cause.
+- Rename the $499 buyer offer to Setup Sprint, make Install free the only nav button, and move pricing out of the homepage hero.
+- Replace the homepage hero emoji with vector thumbs, and state on click that one thumbs-down promotes a warning.
+- Ask for last quarter's incidents, hours, and hourly cost on the pricing page, then point that product at the existing Pro or $499 checkout.
+- Deny a test edit that drops or skips an assertion, a test command forced green with `|| true`, and a retry of publish, login, checkout, reset, or clean.
+- Override glob and minimatch under c8's test-exclude to fixed versions so the npm audit step passes (GHSA-3g3m-2fjr-6pw4).
+- Run the quote and done-check on the spend hook, the pre-tool gate, and the task-outcome ledger. A worker cannot mark its own goal done, and the agent cash cap stays $0.
+- An open loop counts only with its task, original source, one next step, and a status. A second name is not a security boundary. Sending, buying, cancelling, booking, and account changes stay unexecuted.
+- Send homepage Pro clicks straight to the $19/mo Stripe checkout, make the email-wall skip link the first button, and name the Claude, Cursor, VS Code, Codex, Grok, and Hermes install paths.
+- Decide one org action against a single policy group before it runs: model catalog, usage limit, marketplace installs, trusted devices and networks, sensitive words, IM channels, and an exportable admin, user, or AI audit. Training use stays off unless the action is bring-your-own-key and the policy allows it. This does not buy seats, call Alibaba Cloud, or install DingTalk, WeCom, or Feishu.
+- Deny the next edit, commit, or push after swarm-claim.py exits 3, including a failed shell on PostToolUseFailure, and only for that session. Deny a second Teams send on the same point after the first send succeeds. Deny `az repos pr update` that publishes a draft before another person has reviewed.
+- Add Shreya Shankar & Tristan Handy (dbt Labs / Data Agent Bench) data-agent semantic layer, SQL pushdown, Criteria Drift row-by-row calibration, and AI SQL token-burn guardrails.
+- Deny an agent from publishing a tailnet node to the open web, opening Tailscale SSH, pasting a database password, or adding an accept grant that has no name and expiry.
+- Document Tencent Cloud CVM (SA5/SA9 in ap-hongkong & ap-singapore) + Tencent Hunyuan (Hy-Memory-30B-A3B) infrastructure and update LinkedIn profile URL.
+
 ## 1.39.0
 
 ### Minor Changes
