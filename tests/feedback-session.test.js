@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 
@@ -19,19 +22,36 @@ const {
 } = require('../scripts/feedback-session');
 
 // Clean up between tests
+let _tmpDir = null;
+let _prevFeedbackDir;
+let _prevLessonDbPath;
+
 beforeEach(() => {
+  _prevFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  _prevLessonDbPath = process.env.LESSON_DB_PATH;
+  _tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-fb-session-test-'));
+  process.env.THUMBGATE_FEEDBACK_DIR = _tmpDir;
+  process.env.LESSON_DB_PATH = path.join(_tmpDir, 'lessons.sqlite');
   // Clear all active sessions and their timeouts
   for (const [, session] of _activeSessions) {
-    if (session.timeoutHandle) clearTimeout(session.timeoutHandle);
+    clearTimeout(session.timeoutHandle);
   }
   _activeSessions.clear();
 });
 
 afterEach(() => {
   for (const [, session] of _activeSessions) {
-    if (session.timeoutHandle) clearTimeout(session.timeoutHandle);
+    clearTimeout(session.timeoutHandle);
   }
   _activeSessions.clear();
+  if (_prevFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+  else process.env.THUMBGATE_FEEDBACK_DIR = _prevFeedbackDir;
+  if (_prevLessonDbPath === undefined) delete process.env.LESSON_DB_PATH;
+  else process.env.LESSON_DB_PATH = _prevLessonDbPath;
+  if (_tmpDir) {
+    fs.rmSync(_tmpDir, { recursive: true, force: true });
+    _tmpDir = null;
+  }
 });
 
 describe('openSession', () => {

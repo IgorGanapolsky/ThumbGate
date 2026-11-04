@@ -422,3 +422,33 @@ test('formatStats: renders First-time fix rate line', () => {
   assert.ok(output.includes('First-time fix rate'), 'formatter must render the firstTimeFixRate line');
   assert.ok(output.includes('90.0%'));
 });
+
+test('calculateStats and formatStats: reports lifetime block count separately from repeat blocks without double-counting', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-stats-lifetime-'));
+  const tmpStatsPath = path.join(tmpDir, 'gate-stats.json');
+  const tmpAutoGatesPath = path.join(tmpDir, 'auto-promoted.json');
+  fs.writeFileSync(tmpStatsPath, JSON.stringify({
+    blocked: 97,
+    distinctBlocks: 47,
+    recurringBlocks: 95,
+    warned: 45,
+  }));
+  fs.writeFileSync(tmpAutoGatesPath, JSON.stringify({ gates: [], promotionLog: [] }));
+  try {
+    const stats = calculateStats({
+      statsPath: tmpStatsPath,
+      autoGatesPath: tmpAutoGatesPath,
+    });
+    assert.strictEqual(stats.totalBlocked, 97, 'totalBlocked must reflect lifetime blocks, not distinctBlocks + recurringBlocks');
+    assert.strictEqual(stats.lifetimeBlocked, 97);
+    assert.strictEqual(stats.recurringBlocks, 95);
+    assert.strictEqual(stats.repeatBlocks, 95);
+    assert.strictEqual(stats.distinctBlocked, 47);
+
+    const output = formatStats(stats);
+    assert.ok(output.includes('Actions blocked: 97'), 'must report lifetime block count');
+    assert.ok(output.includes('Repeat blocks: 95 (47 distinct first-time blocks)'), 'must report repeat blocks separately from lifetime block count');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
