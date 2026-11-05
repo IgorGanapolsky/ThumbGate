@@ -12,6 +12,7 @@
 </p>
 
 <p align="center">
+  <a href="https://www.nvidia.com/en-us/startups/"><img src="https://img.shields.io/badge/NVIDIA_Inception-Program_Member-76B900?logo=nvidia&logoColor=white" alt="NVIDIA Inception Program Member" /></a>
   <a href="https://mcptoplist.com/server/glama%2FIgorGanapolsky%2FThumbGate"><img src="https://mcptoplist.com/badge/glama%2FIgorGanapolsky%2FThumbGate.svg" alt="MCP Toplist" /></a>
   <a href="https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml"><img src="https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://www.npmjs.com/package/thumbgate"><img src="https://img.shields.io/npm/v/thumbgate" alt="npm version" /></a>
