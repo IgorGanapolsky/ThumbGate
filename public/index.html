@@ -828,24 +828,24 @@
           <aside class="free-card" id="free-tier" aria-label="ThumbGate Free MIT CLI">
             <div class="price"><strong>Free</strong><span>MIT · local CLI</span></div>
             <div style="margin:0 0 6px;font-size:20px;font-weight:800;">Free (MIT)</div>
-            <p><strong>Solo starter.</strong> Local pre-action gate in 30s.</p>
+            <p><strong>For one developer starting out.</strong> Local pre-action gate in 30 seconds.</p>
             <a class="button-free" href="#install" data-cta-id="offers_install_free">Install free — npx thumbgate init</a>
-            <p class="checkout-note">No account · 100% local</p>
+            <p class="checkout-note">No account · 100% local · MIT open source</p>
             <ul class="offer-points">
-              <li>&lt;0.5ms PreToolUse gate + starter rules</li>
-              <li>Default secret &amp; bypass hard deny</li>
-              <li>Local SQLite lessons + MIT ranker</li>
+              <li>&lt;0.5ms PreToolUse gate (Claude, Cursor, Codex, VS Code, Grok, Hermes)</li>
+              <li>Default secret exfiltration &amp; gate-bypass hard deny</li>
+              <li>Local SQLite lesson store + open-source ranking engine</li>
             </ul>
           </aside>
           <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
             <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
             <h2>Pro</h2>
-            <p><strong>For one developer.</strong> Unlimited gates, visual debugger, and thumb lessons.</p>
+            <p><strong>For one developer.</strong> Unlimited gates, a visual debugger, and the lessons from your thumbs.</p>
             <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="offers">Start Pro — $19/mo</a>
             <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
             <ul class="offer-points">
               <li>Unlimited gates + rule packs (Claude, Cursor, Git, AWS)</li>
-              <li>See which check fired and matched lesson</li>
+              <li>See which check fired, and find the lesson that matches the next action</li>
               <li>Export your thumbs as training data</li>
             </ul>
           </aside>
@@ -874,18 +874,34 @@
             </ul>
           </form>
         </div>
-        <table class="compare" aria-label="Free vs Pro vs Setup Sprint and Enterprise">
-          <caption>Free vs. Pro vs. Setup Sprint &amp; Enterprise</caption>
-          <thead>
-            <tr><th>Tier</th><th>Free (MIT)</th><th>Pro ($19/mo · $149/yr)</th><th>Setup Sprint ($499) / Enterprise</th></tr>
-          </thead>
-          <tbody>
-            <tr><th>Fit</th><td>Solo starter</td><td>Daily power dev</td><td>1 team workflow</td></tr>
-            <tr><th>Rules</th><td>Secret deny + starter gates</td><td>Unlimited gates + rule packs</td><td>Custom gate + regression test</td></tr>
-            <tr><th>Proof</th><td>CLI + SQLite</td><td>Debugger + export</td><td>2-day rollout proof</td></tr>
-            <tr><th>Scope</th><td>MIT open source</td><td>1 dev · cancel anytime</td><td>Refunded if unfit · Hosted org sync/SSO not generally available</td></tr>
-          </tbody>
-        </table>
+
+        <div id="feature-comparison" style="margin-top:32px;padding:24px;border:1px solid var(--line);border-radius:18px;background:rgba(17,23,34,0.88);overflow-x:auto;">
+          <table class="compare" style="margin-top:0;" aria-label="Feature comparison table: Free vs Pro vs Setup Sprint and Enterprise">
+            <caption style="font-size:18px;padding-bottom:14px;">Feature comparison: Free (MIT) vs. Pro ($19/mo · $149/yr) vs. Setup Sprint ($499) &amp; Enterprise</caption>
+            <thead>
+              <tr style="border-bottom:2px solid var(--line);">
+                <th style="width:31%;">Feature / Capability</th>
+                <th style="width:21%;">Free (MIT)<br><span style="font-weight:500;font-size:12px;color:var(--muted);">npx thumbgate init</span></th>
+                <th style="width:24%;color:var(--cyan);">Pro — $19/mo<br><span style="font-weight:500;font-size:12px;color:var(--muted);">or $149/yr · 1 developer</span></th>
+                <th style="width:24%;color:var(--green);">Setup Sprint — $499<br><span style="font-weight:500;font-size:12px;color:var(--muted);">one-time · 1 team workflow</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th>Local &lt;0.5ms PreToolUse hook (Claude, Cursor, Codex, Grok, Hermes)</th><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included + custom wired</strong></td></tr>
+              <tr><th>Default secret exfiltration &amp; gate-bypass hard deny</th><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td></tr>
+              <tr><th>Local SQLite lesson store &amp; thumbs feedback ranker</th><td><strong style="color:var(--green);">✓ Starter limits</strong></td><td><strong style="color:var(--cyan);">✓ Unlimited</strong></td><td><strong style="color:var(--green);">✓ Configured for workflow</strong></td></tr>
+              <tr><th>Active prevention gates &amp; custom rules</th><td>Starter local rules</td><td><strong style="color:var(--cyan);">✓ Unlimited active gates</strong></td><td><strong style="color:var(--green);">✓ 1 managed workflow gate</strong></td></tr>
+              <tr><th>Curated rule packs (Claude Code, Cursor, Git, AWS)</th><td>—</td><td><strong style="color:var(--cyan);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Tailored to 1 workflow</strong></td></tr>
+              <tr><th>Visual gate debugger (<code>npx thumbgate dashboard --open</code>)</th><td>CLI output</td><td><strong style="color:var(--cyan);">✓ Full visual debugger</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td></tr>
+              <tr><th>Cross-session hosted recall &amp; lesson match trace</th><td>Local only</td><td><strong style="color:var(--cyan);">✓ Included</strong></td><td>Local workflow scope</td></tr>
+              <tr><th>Export thumbs as training data (JSONL / DPO)</th><td>—</td><td><strong style="color:var(--cyan);">✓ Included</strong></td><td>—</td></tr>
+              <tr><th>60-minute live working review + failure map</th><td>—</td><td>—</td><td><strong style="color:var(--green);">✓ Included</strong></td></tr>
+              <tr><th>Custom regression test + 2-day rollout &amp; rollback proof</th><td>—</td><td>—</td><td><strong style="color:var(--green);">✓ Included (or refunded)</strong></td></tr>
+              <tr><th>Support &amp; onboarding</th><td>Community / GitHub</td><td>Priority email support</td><td><strong style="color:var(--green);">Done-with-you engineer</strong></td></tr>
+              <tr><th>Enterprise org-wide hosted sync, SSO/SAML &amp; SIEM audit log</th><td>—</td><td>—</td><td>Not generally available (custom scope after 1 workflow sprint)</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
