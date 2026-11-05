@@ -112,7 +112,7 @@
         "name": "What do I get for $499?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "One 60-minute working review for one repeated AI-agent workflow failure, one configured local gate for a supported workflow, its regression test, and a written rollout and rollback proof within two business days after access and the agreed materials are available."
+          "text": "A 60-minute working review for one repeated agent failure, one configured local gate, its regression test, and written rollout and rollback proof within two business days."
         }
       },
       {
@@ -120,7 +120,7 @@
         "name": "Does ThumbGate block every risky command by default?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn unless strict enforcement is enabled. The managed gate defines the right boundary for your workflow instead of pretending every warning is a firewall."
+          "text": "No. Secret exfiltration and gate bypasses are denied by default. Destructive actions warn unless strict mode is enabled."
         }
       },
       {
@@ -128,7 +128,7 @@
         "name": "Is this the enterprise option?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. The $499 Setup Sprint configures one supported workflow with you. Shared hosting, SSO, compliance packaging, an org-wide audit log, and multi-workflow rollout are not included and are not generally available."
+          "text": "No. The $499 Setup Sprint covers one supported local workflow. Shared hosting, SSO, an org-wide audit log, and multi-workflow rollout are not generally available."
         }
       },
       {
@@ -136,15 +136,15 @@
         "name": "Does self-improving mean ThumbGate retrains my model?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. ThumbGate does not change model weights and does not silently rewrite production policy. Self-improving under your control means explicit approvals and feedback teach the local control layer what to allow, block, or escalate next time: lessons are stored and re-ranked, repeated negative patterns can promote into gates, and stale auto-promoted gates expire."
+          "text": "No. ThumbGate never changes model weights or silently rewrites policy. Feedback updates local lessons, promotes repeated failures into gates, and expires stale gates."
         }
       },
       {
         "@type": "Question",
-        "name": "Is the self-improving logic a black box I have to trust blindly?",
+        "name": "How do Free, Pro, and Setup Sprint differ?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. The promotion, demotion, and lesson-ranking logic ships in the public npm bundle under an MIT license — run npm pack thumbgate and read it yourself. Your lessons live in a local SQLite file you own, not a server you can't query. Paid tiers add hosted sync, the dashboard, and adapter coverage, not access to intelligence withheld from the free install."
+          "text": "Free (MIT) runs the local gate and SQLite ranker via npx thumbgate init. Pro ($19/mo or $149/yr) adds unlimited gates, rule packs, visual debugger, and training export. Setup Sprint ($499) is a done-with-you gate and regression test for one workflow."
         }
       }
     ]
@@ -223,18 +223,35 @@
     }
     .nav-enterprise:hover { background: rgba(86, 227, 159, 0.14); color: var(--text) !important; }
     .offer-stack { display: grid; gap: 14px; }
-    #offers .offer-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-    .pro-card {
+    #offers .offer-stack { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+    .pro-card, .free-card {
       padding: 22px 24px;
       border: 1px solid rgba(56, 215, 255, 0.35);
       border-radius: 16px;
       background: linear-gradient(160deg, rgba(18, 28, 40, 0.98), rgba(12, 16, 24, 0.98));
     }
+    .free-card {
+      border-color: var(--line);
+      background: linear-gradient(160deg, rgba(17, 23, 34, 0.95), rgba(10, 14, 20, 0.95));
+    }
+    .free-card .price strong { color: var(--text); }
     .pro-card .price strong { color: var(--cyan); }
-    .pro-card h2 { margin: 0 0 6px; font-size: 20px; }
-    .pro-card > p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
-    .pro-card .button-pro { width: 100%; min-height: 48px; background: var(--cyan); color: #041016 !important; box-shadow: 0 12px 35px rgba(56, 215, 255, 0.18); }
-    .pro-card .checkout-note { margin: 10px 0 0 !important; color: var(--muted) !important; font-size: 12px; text-align: center; }
+    .pro-card h2, .free-card h2 { margin: 0 0 6px; font-size: 20px; }
+    .pro-card > p, .free-card > p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+    .pro-card .button-pro, .free-card .button-free { width: 100%; min-height: 48px; background: var(--cyan); color: #041016 !important; box-shadow: 0 12px 35px rgba(56, 215, 255, 0.18); }
+    .free-card .button-free {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      border: 1px solid rgba(56, 215, 255, 0.35);
+      background: rgba(56, 215, 255, 0.08);
+      color: var(--cyan) !important;
+      font-weight: 850 !important;
+      text-decoration: none;
+      box-shadow: none;
+    }
+    .pro-card .checkout-note, .free-card .checkout-note { margin: 10px 0 0 !important; color: var(--muted) !important; font-size: 12px; text-align: center; }
     .offer-points { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
     .offer-points li {
       position: relative;
@@ -808,15 +825,27 @@
         <p class="install-hint">Claude Code, Cursor, Codex, or similar agents.</p>
         <p class="install-hint" id="thumbgate-dashboard-command" style="margin-top:10px;">Dashboard: <code>npx thumbgate dashboard --open</code> · <code>/thumbgate-dashboard</code> · <code>thumbgate-dashboard</code> · <a href="/dashboard#insights">demo</a> · <a class="proof-link" href="#proof">strict-mode deny example ↓</a></p>
         <div class="offer-stack">
+          <aside class="free-card" id="free-tier" aria-label="ThumbGate Free MIT CLI">
+            <div class="price"><strong>Free</strong><span>MIT · local CLI</span></div>
+            <div style="margin:0 0 6px;font-size:20px;font-weight:800;">Free (MIT)</div>
+            <p><strong>Solo starter.</strong> Local pre-action gate in 30s.</p>
+            <a class="button-free" href="#install" data-cta-id="offers_install_free">Install free — npx thumbgate init</a>
+            <p class="checkout-note">No account · 100% local</p>
+            <ul class="offer-points">
+              <li>&lt;0.5ms PreToolUse gate + starter rules</li>
+              <li>Default secret &amp; bypass hard deny</li>
+              <li>Local SQLite lessons + MIT ranker</li>
+            </ul>
+          </aside>
           <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
             <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
             <h2>Pro</h2>
-            <p><strong>For one developer.</strong> Unlimited gates, a visual debugger, and the lessons from your thumbs.</p>
+            <p><strong>For one developer.</strong> Unlimited gates, visual debugger, and thumb lessons.</p>
             <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="offers">Start Pro — $19/mo</a>
             <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
             <ul class="offer-points">
               <li>Unlimited gates + rule packs (Claude, Cursor, Git, AWS)</li>
-              <li>See which check fired, and find the lesson that matches the next action</li>
+              <li>See which check fired and matched lesson</li>
               <li>Export your thumbs as training data</li>
             </ul>
           </aside>
@@ -845,6 +874,18 @@
             </ul>
           </form>
         </div>
+        <table class="compare" aria-label="Free vs Pro vs Setup Sprint and Enterprise">
+          <caption>Free vs. Pro vs. Setup Sprint &amp; Enterprise</caption>
+          <thead>
+            <tr><th>Tier</th><th>Free (MIT)</th><th>Pro ($19/mo · $149/yr)</th><th>Setup Sprint ($499) / Enterprise</th></tr>
+          </thead>
+          <tbody>
+            <tr><th>Fit</th><td>Solo starter</td><td>Daily power dev</td><td>1 team workflow</td></tr>
+            <tr><th>Rules</th><td>Secret deny + starter gates</td><td>Unlimited gates + rule packs</td><td>Custom gate + regression test</td></tr>
+            <tr><th>Proof</th><td>CLI + SQLite</td><td>Debugger + export</td><td>2-day rollout proof</td></tr>
+            <tr><th>Scope</th><td>MIT open source</td><td>1 dev · cancel anytime</td><td>Refunded if unfit · Hosted org sync/SSO not generally available</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -957,7 +998,7 @@
         <div class="deliverables">
           <article class="deliverable">
             <h3>Failure map</h3>
-            <p>The exact risky action, trigger, accountable owner, current safeguard, and missing proof.</p>
+            <p>The exact risky action, trigger, owner, current safeguard, and missing proof.</p>
           </article>
           <article class="deliverable">
             <h3>Configured gate</h3>
@@ -968,7 +1009,7 @@
             <p>The test, how to undo the gate, and the receipt.</p>
           </article>
         </div>
-        <div class="boundary"><strong>Boundary:</strong> the offer covers one supported local workflow. Multi-system implementation, legal or compliance certification, guaranteed savings, and hosted team features require separate scope. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
+        <div class="boundary"><strong>Boundary:</strong> covers one supported local workflow. Multi-system implementation, compliance certification, guaranteed savings, and hosted team features require separate scope. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
       </div>
     </section>
 
@@ -1022,23 +1063,23 @@ next      decision recorded before execution</pre>
         <div class="faq-list">
           <div class="faq-item open">
             <button class="faq-q" type="button" aria-expanded="true">What do I get for $499?</button>
-            <div class="faq-a">One 60-minute working review for one repeated AI-agent workflow failure, one configured local gate for a supported workflow, its regression test, and a written rollout and rollback proof within two business days after access and the agreed materials are available.</div>
+            <div class="faq-a">A 60-minute working review for one repeated agent failure, one configured local gate, its regression test, and written rollout and rollback proof within two business days.</div>
           </div>
           <div class="faq-item">
             <button class="faq-q" type="button" aria-expanded="false">Does ThumbGate block every risky command by default?</button>
-            <div class="faq-a">No. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn unless strict enforcement is enabled. The managed gate defines the right boundary for your workflow instead of pretending every warning is a firewall.</div>
+            <div class="faq-a">No. Secret exfiltration and gate bypasses are denied by default. Destructive actions warn unless strict mode is enabled.</div>
           </div>
           <div class="faq-item">
             <button class="faq-q" type="button" aria-expanded="false">Is this the enterprise option?</button>
-            <div class="faq-a">No. The $499 Setup Sprint configures one supported workflow with you. Shared hosting, SSO, compliance packaging, an org-wide audit log, and multi-workflow rollout are not included and are not generally available.</div>
+            <div class="faq-a">No. The $499 Setup Sprint covers one supported local workflow. Shared hosting, SSO, an org-wide audit log, and multi-workflow rollout are not generally available.</div>
           </div>
           <div class="faq-item">
             <button class="faq-q" type="button" aria-expanded="false">Does self-improving mean ThumbGate retrains my model?</button>
-            <div class="faq-a">No. ThumbGate does not change model weights and does not silently rewrite production policy. Self-improving under your control means explicit approvals and feedback teach the local control layer what to allow, block, or escalate next time: lessons are stored and re-ranked, repeated negative patterns can promote into gates, and stale auto-promoted gates expire.</div>
+            <div class="faq-a">No. ThumbGate never changes model weights or silently rewrites policy. Feedback updates local lessons, promotes repeated failures into gates, and expires stale gates.</div>
           </div>
           <div class="faq-item">
-            <button class="faq-q" type="button" aria-expanded="false">Is the self-improving logic a black box I have to trust blindly?</button>
-            <div class="faq-a">No. The promotion, demotion, and lesson-ranking logic ships in the public npm bundle under an MIT license — run <code>npm pack thumbgate</code> and read it yourself. Your lessons live in a local SQLite file you own, not a server you can't query. Paid tiers add hosted sync, the dashboard, and adapter coverage, not access to intelligence withheld from the free install.</div>
+            <button class="faq-q" type="button" aria-expanded="false">How do Free, Pro, and Setup Sprint differ?</button>
+            <div class="faq-a">Free (MIT) runs the local gate and SQLite ranker via npx thumbgate init. Pro ($19/mo or $149/yr) adds unlimited gates, rule packs, visual debugger, and training export. Setup Sprint ($499) is a done-with-you gate and regression test for one workflow.</div>
           </div>
         </div>
       </div>
