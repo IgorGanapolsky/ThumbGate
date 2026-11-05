@@ -14,6 +14,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { scoreFeedbackReward } = require('../scripts/feedback-quality');
+const { captureFeedback } = require('../scripts/feedback-loop');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 test('scoreFeedbackReward: rewards specific, evidence-backed corrections over vague ones', () => {
   const vague = scoreFeedbackReward({
@@ -70,4 +74,54 @@ test('scoreFeedbackReward: returns null when there is no corrective text', () =>
   assert.strictEqual(scoreFeedbackReward({ signal: 'negative' }), null);
   assert.strictEqual(scoreFeedbackReward({}), null);
   assert.strictEqual(scoreFeedbackReward({ signal: 'negative', whatToChange: '   ' }), null);
+});
+
+test('captureFeedback: gates promotion when deterministic reward score fails', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-fb-reward-test-'));
+  try {
+    const prevDir = process.env.THUMBGATE_FEEDBACK_DIR;
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+    try {
+      const result = captureFeedback({
+        signal: 'negative',
+        context: 'deployed the fix',
+        whatToChange: 'deployed the fix',
+      });
+      assert.strictEqual(result.promoted, false, 'deterministic block must NOT report promoted: true');
+      assert.strictEqual(result.accepted, false);
+      assert.strictEqual(result.status, 'rejected');
+      assert.ok(result.rewardScore, 'rewardScore should be attached');
+      assert.strictEqual(result.rewardScore.label, 'deterministic_block');
+    } finally {
+      if (prevDir) process.env.THUMBGATE_FEEDBACK_DIR = prevDir;
+      else delete process.env.THUMBGATE_FEEDBACK_DIR;
+    }
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('captureFeedback: enriches scope and fields on promoted memoryRecord', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-fb-scope-test-'));
+  try {
+    const prevDir = process.env.THUMBGATE_FEEDBACK_DIR;
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+    try {
+      const result = captureFeedback({
+        signal: 'positive',
+        context: 'section headers share one padding rule; check the live page at 400px after any republish',
+      });
+      assert.strictEqual(result.promoted, true);
+      assert.strictEqual(result.status, 'promoted');
+      assert.ok(result.memoryRecord);
+      assert.ok(result.memoryRecord.scope.projectId, 'projectId must not be null');
+      assert.ok(result.memoryRecord.whatWorked, 'whatWorked must be set on memoryRecord');
+      assert.ok(result.memoryRecord.rule, 'rule should be derived on memoryRecord');
+    } finally {
+      if (prevDir) process.env.THUMBGATE_FEEDBACK_DIR = prevDir;
+      else delete process.env.THUMBGATE_FEEDBACK_DIR;
+    }
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });

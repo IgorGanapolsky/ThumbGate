@@ -172,8 +172,9 @@ let _lessonDBPath = null;
 
 function resolveLessonDbPath() {
   if (process.env.LESSON_DB_PATH) return process.env.LESSON_DB_PATH;
-  if (process.env.THUMBGATE_FEEDBACK_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH) {
-    return path.join(getFeedbackPaths().FEEDBACK_DIR, 'lessons.sqlite');
+  const feedbackDir = getFeedbackPaths().FEEDBACK_DIR;
+  if (feedbackDir) {
+    return path.join(feedbackDir, 'lessons.sqlite');
   }
   return null;
 }
@@ -393,6 +394,10 @@ function normalizeAnalysisShape(analysis = {}) {
     byImportance: Array.isArray(analysis.byImportance) ? analysis.byImportance : [],
     recentLessons: Array.isArray(analysis.recentLessons) ? analysis.recentLessons : [],
     sessionCount: Number.isFinite(analysis.sessionCount) ? analysis.sessionCount : 0,
+    archivedSkills: analysis.archivedSkills || {},
+    skillsByProjectScope: analysis.skillsByProjectScope || { eci: {}, personal: {} },
+    projectScope: analysis.projectScope || 'all',
+    qualityMetrics: analysis.qualityMetrics || null,
     rawTotal: analysis.rawTotal ?? total,
     excludedTotal: analysis.excludedTotal ?? 0,
   };
@@ -1287,6 +1292,18 @@ function captureFeedback(params) {
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
   const signal = normalizeSignal(params.signal);
   if (!signal) {
+
+  // Record vote on lesson if lessonId or lessonKey is provided
+  const targetLessonId = params.lessonId || params.lessonKey;
+  let lessonVoteResult = null;
+  if (targetLessonId) {
+    try {
+      const { voteOnLesson } = require('./verified-lessons');
+      lessonVoteResult = voteOnLesson(targetLessonId, signal, { feedbackDir: FEEDBACK_DIR });
+    } catch (_voteErr) {
+      /* lesson voting is non-blocking */
+    }
+  }
     return {
       accepted: false,
       reason: `Invalid signal "${params.signal}". Use up/down or positive/negative.`,
@@ -1311,9 +1328,9 @@ function captureFeedback(params) {
   const context = shouldUseDistilledContext && distillation.inferredFields.context
     ? distillation.inferredFields.context
     : submittedContext;
-  const whatWentWrong = params.whatWentWrong || distillation.inferredFields.whatWentWrong || null;
-  const whatToChange = params.whatToChange || distillation.inferredFields.whatToChange || null;
-  const whatWorked = params.whatWorked || distillation.inferredFields.whatWorked || null;
+  let whatWentWrong = params.whatWentWrong || distillation.inferredFields.whatWentWrong || null;
+  let whatToChange = params.whatToChange || distillation.inferredFields.whatToChange || null;
+  let whatWorked = params.whatWorked || distillation.inferredFields.whatWorked || null;
   extractAndSetConstraints(context);
 
   const providedTags = Array.isArray(params.tags)
@@ -1335,12 +1352,24 @@ function captureFeedback(params) {
       if (windowSummary.tags) {
         tags.push(...windowSummary.tags.filter(t => !tags.includes(t)));
       }
-      if (!params.whatWentWrong && windowSummary.whatWentWrong) {
-        params.whatWentWrong = windowSummary.whatWentWrong;
+      if (!whatWentWrong && windowSummary.whatWentWrong) {
+        whatWentWrong = windowSummary.whatWentWrong;
       }
-      if (!params.whatWorked && windowSummary.whatWorked) {
-        params.whatWorked = windowSummary.whatWorked;
+      if (!whatWorked && windowSummary.whatWorked) {
+        whatWorked = windowSummary.whatWorked;
       }
+    }
+  }
+
+  // Auto-fill whatWorked / whatWentWrong / whatToChange from context when not explicitly passed
+  if (signal === 'positive' && !whatWorked && (context || inferredContext)) {
+    whatWorked = context || inferredContext;
+  } else if (signal === 'negative') {
+    if (!whatWentWrong && (context || inferredContext)) {
+      whatWentWrong = context || inferredContext;
+    }
+    if (!whatToChange && (context || inferredContext)) {
+      whatToChange = context || inferredContext;
     }
   }
 
@@ -1350,6 +1379,19 @@ function captureFeedback(params) {
     try {
       const { inferStructuredLesson } = require('./lesson-inference');
       structuredRule = inferStructuredLesson(params.conversationWindow, signal, inferredContext);
+    } catch (_err) { /* non-critical */ }
+  }
+
+  // Fallback: derive structured rule from actionable context if not already inferred
+  if (!structuredRule && (inferredContext || context || whatWorked || whatToChange)) {
+    try {
+      const { inferStructuredLesson } = require('./lesson-inference');
+      const ruleText = inferredContext || context || whatWorked || whatToChange;
+      const syntheticWindow = [
+        { role: 'user', content: signal === 'negative' ? `Constraint: ${ruleText}` : `Task requirement: ${ruleText}` },
+        { role: 'assistant', content: signal === 'negative' ? `Mistake: ${ruleText}` : `Confirmed solution: ${ruleText}` },
+      ];
+      structuredRule = inferStructuredLesson(syntheticWindow, signal, ruleText);
     } catch (_err) { /* non-critical */ }
   }
 
@@ -1410,7 +1452,19 @@ function captureFeedback(params) {
     signal,
     context,
     submittedContext,
-    scope: require('./memory-scope-readiness').normalizeScope(params),
+    scope: (() => {
+      const { normalizeScope, autoEnrichScope } = require('./memory-scope-readiness');
+      const baseScope = normalizeScope(params.scope || params);
+      return autoEnrichScope(baseScope, {
+        projectId: params.projectId || params.project,
+        entityId: params.entityId || params.userId,
+        processId: params.processId || params.agentId || params.agent_name,
+        sessionId: params.sessionId || params.session_id,
+        skill: params.skill,
+        lastAction,
+        relatedFeedbackId: params.relatedFeedbackId,
+      });
+    })(),
     relatedFeedbackId: params.relatedFeedbackId || null,
     lastAction,
     whatWentWrong,
@@ -1517,6 +1571,13 @@ function captureFeedback(params) {
     saveSummary(summary);
     appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
     emitAnonymousFeedbackPing(signal);
+    try {
+      const lessonDB = getLessonDB();
+      if (lessonDB) {
+        const { upsertLesson } = require('./lesson-db');
+        upsertLesson(lessonDB, feedbackEvent, null);
+      }
+    } catch { /* non-critical */ }
     try { appendRejectionLedger(feedbackEvent, action.reason); } catch { /* non-critical */ }
     try {
       appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(), { accepted: false });
@@ -1640,9 +1701,17 @@ function captureFeedback(params) {
     };
   }
 
+  const inferredRule = (structuredRule && (structuredRule.rule || structuredRule.directive || structuredRule.action))
+    || (reflection && reflection.proposedRule && reflection.proposedRule.rule)
+    || null;
+
   const memoryRecord = {
     id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     ...prepared.memory,
+    whatWorked: whatWorked || feedbackEvent.whatWorked || null,
+    whatWentWrong: whatWentWrong || feedbackEvent.whatWentWrong || null,
+    whatToChange: whatToChange || feedbackEvent.whatToChange || null,
+    rule: inferredRule,
     scope: feedbackEvent.scope,
     richContext: feedbackEvent.richContext || null,
     distillation: feedbackEvent.distillation || null,
@@ -1675,12 +1744,7 @@ function captureFeedback(params) {
       memoryRecord.bayesian = updateBelief(similarMemory.bayesian, likelihood);
       memoryRecord.revisedFromId = similarMemory.id;
       
-      const hasConcrete = Boolean(
-        memoryRecord.structuredRule
-        && memoryRecord.structuredRule.metadata
-        && memoryRecord.structuredRule.metadata.hasConcreteEntities
-      );
-      if (shouldPrune(memoryRecord.bayesian, { hasConcreteEntities: hasConcrete })) {
+      if (shouldPrune(memoryRecord.bayesian)) {
         memoryRecord.pruned = true;
         memoryRecord.pruneReason = 'high_entropy_contradiction';
       }
@@ -1704,6 +1768,36 @@ function captureFeedback(params) {
   // was added to help detect.
   const rewardScore = scoreFeedbackReward(feedbackEvent);
   if (rewardScore) feedbackEvent.rewardScore = rewardScore;
+
+  if (rewardScore && rewardScore.label === 'deterministic_block') {
+    summary.rejected += 1;
+    summary.lastUpdated = now;
+    saveSummary(summary);
+    appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
+    emitAnonymousFeedbackPing(signal);
+    try {
+      const lessonDB = getLessonDB();
+      if (lessonDB) {
+        const { upsertLesson } = require('./lesson-db');
+        upsertLesson(lessonDB, feedbackEvent, null);
+      }
+    } catch { /* non-critical */ }
+    try {
+      appendRejectionLedger(feedbackEvent, `Reward score blocked: ${rewardScore.failureMode ? rewardScore.failureMode.join(', ') : 'deterministic_block'}`);
+    } catch { /* non-critical */ }
+    return {
+      accepted: false,
+      captured: true,
+      promoted: false,
+      promotionAccepted: false,
+      signalLogged: true,
+      status: 'rejected',
+      reason: `Reward score blocked promotion: ${rewardScore.failureMode ? rewardScore.failureMode.join(', ') : 'deterministic_block'} (score ${rewardScore.score})`,
+      message: 'Feedback signal logged, but not promoted to reusable memory due to failing quality or safety score.',
+      feedbackEvent,
+      rewardScore,
+    };
+  }
 
   appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
   emitAnonymousFeedbackPing(signal);
@@ -2007,7 +2101,6 @@ function captureFeedback(params) {
         inferredLesson: memoryRecord ? memoryRecord.title : (feedbackEvent.context || '').slice(0, 200),
         confidence: memoryRecord ? 70 : 40,
         tags: feedbackEvent.tags || [],
-        feedbackDir: FEEDBACK_DIR,
         metadata: {
           reviewOrigin: feedbackEvent.reviewOrigin,
         },
@@ -2055,23 +2148,86 @@ function summarizeRubric(entry, summary) {
   }
 }
 
-function summarizeFeedbackEntries(entries) {
+const ARCHIVED_SKILLS = new Set([
+  'linear',
+  'linear-agents',
+  'strands',
+  'strands-harness-sentinel',
+  'aws-strands-harness-agent',
+  'ally',
+  'kha-scheduling-hub-ally',
+  'openclaw',
+  'ally-feedback-to-spec-sdd',
+  'ally-feedback-to-spec-sdd-steal',
+]);
+
+const ECI_SKILL_OR_TAG_RE = /^(?:jira|ado|nexus|psn|eci|teams|outlook|dist03|stockservice)\b/i;
+const ECI_CONTEXT_RE = /\b(?:DIST03-\d+|StockService|Eci\.Psn|Eci\.Obsidian|Azure\s+DevOps|Nexus\s+STS)\b/i;
+
+function inferEntryProjectScope(entry = {}) {
+  if (entry.scope && typeof entry.scope.projectScope === 'string') {
+    return entry.scope.projectScope.toLowerCase();
+  }
+  const skill = String(entry.skill || '').trim();
+  if (skill && ECI_SKILL_OR_TAG_RE.test(skill)) return 'eci';
+  const tags = Array.isArray(entry.tags) ? entry.tags : [];
+  if (tags.some((t) => ECI_SKILL_OR_TAG_RE.test(String(t || '')))) return 'eci';
+  const ctx = String(entry.context || '');
+  if (ECI_CONTEXT_RE.test(ctx)) return 'eci';
+  return 'personal';
+}
+
+const ARCHIVED_SKILL_RE = /(?:^|[-_])(?:linear|strands|ally|openclaw)(?:$|[-_])/i;
+
+function isArchivedSkillName(skill) {
+  if (!skill) return false;
+  const normalized = String(skill).trim().toLowerCase();
+  return ARCHIVED_SKILLS.has(normalized) || ARCHIVED_SKILL_RE.test(normalized);
+}
+
+function summarizeFeedbackEntries(entries, options = {}) {
   const summary = {
     skills: {},
+    archivedSkills: {},
+    skillsByProjectScope: { eci: {}, personal: {} },
     tags: {},
     criteria: {},
     samples: 0,
     blocked: 0,
     positive: 0,
     negative: 0,
+    autoCapturePositive: 0,
+    autoCaptureTotal: 0,
+    explicitHumanPositive: 0,
+    explicitHumanTotal: 0,
   };
 
   for (const entry of entries) {
     if (entry.signal === 'positive') summary.positive += 1;
     if (entry.signal === 'negative') summary.negative += 1;
 
-    incrementBucket(summary.skills, entry.skill, entry.signal);
-    for (const tag of entry.tags || []) {
+    const entryTags = Array.isArray(entry.tags) ? entry.tags : [];
+    const isAutoCapture = entryTags.includes('auto-capture') || entry.source === 'auto-capture';
+    if (isAutoCapture) {
+      summary.autoCaptureTotal += 1;
+      if (entry.signal === 'positive') summary.autoCapturePositive += 1;
+    } else if (entry.signal === 'positive' || entry.signal === 'negative') {
+      summary.explicitHumanTotal += 1;
+      if (entry.signal === 'positive') summary.explicitHumanPositive += 1;
+    }
+
+    if (entry.skill) {
+      if (isArchivedSkillName(entry.skill) && !options.includeArchivedSkills) {
+        incrementBucket(summary.archivedSkills, entry.skill, entry.signal);
+      } else {
+        incrementBucket(summary.skills, entry.skill, entry.signal);
+        const projScope = inferEntryProjectScope(entry);
+        const targetScope = projScope === 'eci' ? summary.skillsByProjectScope.eci : summary.skillsByProjectScope.personal;
+        incrementBucket(targetScope, entry.skill, entry.signal);
+      }
+    }
+    for (const tag of entryTags) {
+      if (isArchivedSkillName(tag) && !options.includeArchivedSkills) continue;
       incrementBucket(summary.tags, tag, entry.signal);
     }
     summarizeRubric(entry, summary);
@@ -2136,6 +2292,7 @@ function feedbackWindows(entries, positive, total) {
 
 function addSkillRecs(skills, output) {
   for (const [skill, stat] of Object.entries(skills)) {
+    if (isArchivedSkillName(skill)) continue;
     const negRate = stat.total > 0 ? stat.negative / stat.total : 0;
     if (stat.total < 3 || negRate < 0.5) continue;
     addRec(output, `IMPROVE skill '${skill}' (${stat.negative}/${stat.total} negative)`, {
@@ -2264,8 +2421,9 @@ function addDiagnosticRecs(diagnostics, output) {
 }
 
 function getSQLiteFallback(useSQLite, entries) {
-  const db = useSQLite ? getLessonDB() : null;
-  if (!db || entries.length > 0) return null;
+  if (!useSQLite || entries.length > 0) return null;
+  const db = getLessonDB();
+  if (!db) return null;
   try {
     const { getStatsFromDB } = require('./lesson-db');
     const sqliteStats = getStatsFromDB(db);
@@ -2289,24 +2447,40 @@ function analyzeFeedback(logPath, options = {}) {
       maxBytes: Number(options.maxBytes) > 0 ? Number(options.maxBytes) : 4 * 1024 * 1024,
     });
   const rawTotal = entries.length;
-  const isAutoHookOrSynthetic = (entry) => {
-    const tags = Array.isArray(entry?.tags) ? entry.tags : [];
-    const ctx = String(entry?.context || entry?.submittedContext || '');
-    return tags.includes('auto-hook') || ctx.startsWith('[unknown] Igor:');
-  };
-  const autoHookTotal = entries.filter(isAutoHookOrSynthetic).length;
   if (options.humanOnly) {
-    entries = entries.filter((entry) => (
-      normalizeReviewOrigin(entry.reviewOrigin) === 'human'
-      && (options.includeAutoHook === true || !isAutoHookOrSynthetic(entry))
-    ));
+    entries = entries.filter((entry) => {
+      const tags = Array.isArray(entry.tags) ? entry.tags : [];
+      const ctx = String(entry.context || '');
+      if (tags.includes('auto-hook') || tags.includes('unknown') || /^\[unknown\]/i.test(ctx)) {
+        return false;
+      }
+      return normalizeReviewOrigin(entry.reviewOrigin) === 'human';
+    });
   }
-  const fallback = getSQLiteFallback(useSQLite, entries);
+  const requestedProjectScope = options.projectScope ? String(options.projectScope).toLowerCase() : null;
+  if (requestedProjectScope && (requestedProjectScope === 'eci' || requestedProjectScope === 'personal')) {
+    entries = entries.filter((entry) => inferEntryProjectScope(entry) === requestedProjectScope);
+  }
+  const fallback = getSQLiteFallback(useSQLite && !requestedProjectScope, entries);
   if (fallback) return fallback;
 
   const diagnosticEntries = readDiagnosticEntries(path.join(feedbackDir, 'diagnostic-log.jsonl'));
-  const summary = summarizeFeedbackEntries(entries);
-  const { skills, tags, criteria, samples, blocked, positive, negative } = summary;
+  const summary = summarizeFeedbackEntries(entries, options);
+  const {
+    skills,
+    archivedSkills,
+    skillsByProjectScope,
+    tags,
+    criteria,
+    samples,
+    blocked,
+    positive,
+    negative,
+    autoCapturePositive,
+    autoCaptureTotal,
+    explicitHumanPositive,
+    explicitHumanTotal,
+  } = summary;
   const total = positive + negative;
   const approvalRate = roundedRate(positive, total);
   const recent = entries.slice(-20);
@@ -2323,6 +2497,72 @@ function analyzeFeedback(logPath, options = {}) {
   const delegation = addDelegationRecs(paths.FEEDBACK_DIR, recs);
   addDiagnosticRecs(diagnostics, recs);
 
+  let verifiedTasksTotal = 0;
+  let verifiedTasksWorking = 0;
+  try {
+    const outcomesPath = path.join(paths.FEEDBACK_DIR, 'task-outcome-receipts.jsonl');
+    const outcomes = readJSONL(outcomesPath, { maxLines: 5000 });
+    verifiedTasksTotal = outcomes.length;
+    verifiedTasksWorking = outcomes.filter((o) => o && (o.working === true || o.status === 'completed')).length;
+  } catch { /* optional */ }
+  const verifiedTaskCompletionRate = verifiedTasksTotal > 0
+    ? roundedRate(verifiedTasksWorking, verifiedTasksTotal)
+    : 1;
+  const autoCaptureApprovalRate = autoCaptureTotal > 0
+    ? roundedRate(autoCapturePositive, autoCaptureTotal)
+    : 0.8;
+  const explicitHumanApprovalRate = explicitHumanTotal > 0
+    ? roundedRate(explicitHumanPositive, explicitHumanTotal)
+    : approvalRate;
+  const implicitOutcomeRate = verifiedTasksTotal > 0
+    ? roundedRate(autoCapturePositive + verifiedTasksWorking, autoCaptureTotal + verifiedTasksTotal)
+    : autoCaptureApprovalRate;
+  const complaintBiasAdjustedRate = total > 0
+    ? Number((0.35 * explicitHumanApprovalRate + 0.65 * implicitOutcomeRate).toFixed(3))
+    : implicitOutcomeRate;
+  const delegatedVerifiedCount = delegation && Number.isFinite(delegation.acceptedCount)
+    ? delegation.acceptedCount
+    : 0;
+  const qualityMetrics = {
+    rawExplicitApprovalRate: approvalRate,
+    explicitHumanApprovalRate,
+    autoCaptureApprovalRate,
+    verifiedTaskCompletionRate,
+    verifiedTasksTotal,
+    verifiedTasksWorking,
+    delegatedVerifiedCount,
+    complaintBiasAdjustedRate,
+    note: 'Explicit thumbs are complaint-biased (users vote mainly on friction); complaintBiasAdjustedRate blends explicit thumbs (35%) with auto-capture & verified task outcomes (65%).',
+  };
+
+  let byDomain = [];
+  let byImportance = [];
+  let recentLessons = [];
+  let sessionCount = 0;
+  try {
+    const dbPath = path.join(paths.FEEDBACK_DIR, 'lessons.sqlite');
+    const db = useSQLite
+      ? getLessonDB()
+      : (fs.existsSync(dbPath) ? require('./lesson-db').initDB(dbPath) : null);
+    if (db) {
+      const { getStatsFromDB } = require('./lesson-db');
+      const sqliteStats = getStatsFromDB(db);
+      if (sqliteStats) {
+        byDomain = Array.isArray(sqliteStats.byDomain) ? sqliteStats.byDomain : [];
+        byImportance = Array.isArray(sqliteStats.byImportance) ? sqliteStats.byImportance : [];
+        recentLessons = Array.isArray(sqliteStats.recentLessons) ? sqliteStats.recentLessons : [];
+        sessionCount = Number.isFinite(sqliteStats.sessionCount) ? sqliteStats.sessionCount : 0;
+      }
+      if (!useSQLite && typeof db.close === 'function') db.close();
+    }
+  } catch { /* non-critical */ }
+  if (sessionCount === 0) {
+    try {
+      const sessionRows = readJSONL(path.join(paths.FEEDBACK_DIR, 'session-outcomes.jsonl'), { maxLines: 5000 });
+      sessionCount = sessionRows.length;
+    } catch { /* optional */ }
+  }
+
   return normalizeAnalysisShape({
     total,
     totalPositive: positive,
@@ -2332,6 +2572,14 @@ function analyzeFeedback(logPath, options = {}) {
     windows,
     trend,
     skills,
+    archivedSkills,
+    skillsByProjectScope,
+    projectScope: requestedProjectScope || 'all',
+    qualityMetrics,
+    byDomain,
+    byImportance,
+    recentLessons,
+    sessionCount,
     tags,
     rubric: {
       samples,
@@ -2346,6 +2594,93 @@ function analyzeFeedback(logPath, options = {}) {
     rawTotal,
     excludedTotal: rawTotal - entries.length,
   });
+}
+
+function summarizeCompactFeedbackStats(stats, options = {}) {
+  const resolvedStats = stats && typeof stats === 'object'
+    ? stats
+    : analyzeFeedback(options.logPath, options);
+  const maxChars = Number(options.maxChars) > 0 ? Number(options.maxChars) : 1900;
+  const feedbackDir = options.feedbackDir || getFeedbackPaths().FEEDBACK_DIR;
+
+  const topBlockedRules = [];
+  try {
+    const gateStatsPath = path.join(feedbackDir, 'gate-stats.json');
+    if (fs.existsSync(gateStatsPath)) {
+      const rawGateStats = JSON.parse(fs.readFileSync(gateStatsPath, 'utf8'));
+      const byGate = rawGateStats && typeof rawGateStats === 'object'
+        ? (rawGateStats.byGate && typeof rawGateStats.byGate === 'object' ? rawGateStats.byGate : rawGateStats)
+        : {};
+      const sortedGates = Object.entries(byGate)
+        .filter(([key, val]) => key !== 'stats' && val && typeof val === 'object' && Number(val.blocked || 0) > 0)
+        .map(([ruleId, val]) => ({
+          ruleId,
+          blocked: Number(val.blocked || 0),
+          warned: Number(val.warned || 0),
+          lastTriggered: val.lastTriggered || null,
+        }))
+        .sort((a, b) => b.blocked - a.blocked)
+        .slice(0, 5);
+      topBlockedRules.push(...sortedGates);
+    }
+  } catch { /* non-critical */ }
+
+  if (topBlockedRules.length < 5 && resolvedStats.rubric && Array.isArray(resolvedStats.rubric.failingCriteria)) {
+    for (const item of resolvedStats.rubric.failingCriteria) {
+      if (topBlockedRules.length >= 5) break;
+      if (!item || !item.criterion) continue;
+      topBlockedRules.push({
+        ruleId: `rubric:${item.criterion}`,
+        blocked: Number(item.count || item.failures || 0),
+        warned: 0,
+        lastTriggered: null,
+      });
+    }
+  }
+
+  if (topBlockedRules.length < 5 && Array.isArray(resolvedStats.byDomain)) {
+    for (const dom of resolvedStats.byDomain) {
+      if (topBlockedRules.length >= 5) break;
+      if (!dom || !dom.domain) continue;
+      topBlockedRules.push({
+        ruleId: `domain:${dom.domain}`,
+        blocked: Number(dom.count || 0),
+        warned: 0,
+        lastTriggered: null,
+      });
+    }
+  }
+
+  const rawRecs = Array.isArray(resolvedStats.recommendations)
+    ? resolvedStats.recommendations.slice(0, 3).map((rec) => String(rec).slice(0, 140))
+    : [];
+
+  const compact = {
+    compact: true,
+    total: Number(resolvedStats.total || 0),
+    totalPositive: Number(resolvedStats.totalPositive || 0),
+    totalNegative: Number(resolvedStats.totalNegative || 0),
+    approvalRate: Number(resolvedStats.approvalRate || 0),
+    recentRate: Number(resolvedStats.recentRate || 0),
+    trend: resolvedStats.trend || 'insufficient_data',
+    windows: resolvedStats.windows || {},
+    sessionCount: Number(resolvedStats.sessionCount || 0),
+    rubric: {
+      samples: Number(resolvedStats.rubric?.samples || 0),
+      blockedPromotions: Number(resolvedStats.rubric?.blockedPromotions || 0),
+    },
+    topBlockedRules: topBlockedRules.slice(0, 5),
+    recommendations: rawRecs,
+    hint: 'Pass verbose=true for full skill, tag, lesson, and diagnostic breakdowns.',
+  };
+
+  while (JSON.stringify(compact, null, 2).length > maxChars && compact.recommendations.length > 0) {
+    compact.recommendations.pop();
+  }
+  if (JSON.stringify(compact, null, 2).length > maxChars) {
+    delete compact.windows;
+  }
+  return compact;
 }
 
 function buildPreventionRules(minOccurrences = 2, options = {}) {
@@ -2602,7 +2937,14 @@ function feedbackSummary(recentN = 20, options = {}) {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths(options);
   let entries = readJSONL(FEEDBACK_LOG_PATH);
   if (options.humanOnly) {
-    entries = entries.filter((entry) => normalizeReviewOrigin(entry.reviewOrigin) === 'human');
+    entries = entries.filter((entry) => {
+      const tags = Array.isArray(entry.tags) ? entry.tags : [];
+      const ctx = String(entry.context || '');
+      if (tags.includes('auto-hook') || tags.includes('unknown') || /^\[unknown\]/i.test(ctx)) {
+        return false;
+      }
+      return normalizeReviewOrigin(entry.reviewOrigin) === 'human';
+    });
   }
   if (entries.length === 0) {
     return '## Feedback Summary\nNo feedback recorded yet.';
@@ -2817,68 +3159,6 @@ function compactMemories() {
   };
 }
 
-function retractFeedback({ id = '', matchText = '', feedbackDir = '' } = {}) {
-  const cleanId = String(id || '').trim();
-  const cleanMatch = String(matchText || '').trim().toLowerCase();
-  if (!cleanId && (!cleanMatch || cleanMatch.length < 4)) {
-    return { ok: false, error: 'Supply an id (fb_.../mem_...) or matchText (>=4 chars) to retract.' };
-  }
-  const defaultPaths = getFeedbackPaths();
-  const paths = feedbackDir ? buildFeedbackPathsFromDir(feedbackDir) : defaultPaths;
-  const removedFeedbackIds = [];
-  const removedMemoryIds = [];
-
-  if (fs.existsSync(paths.FEEDBACK_LOG_PATH)) {
-    const rawLines = fs.readFileSync(paths.FEEDBACK_LOG_PATH, 'utf8').split('\n').filter(Boolean);
-    const kept = [];
-    for (const line of rawLines) {
-      try {
-        const rec = JSON.parse(line);
-        const blob = `${rec.id || ''} ${rec.context || ''} ${rec.submittedContext || ''}`.toLowerCase();
-        if ((cleanId && rec.id === cleanId) || (cleanMatch && blob.includes(cleanMatch))) {
-          if (rec.id) removedFeedbackIds.push(rec.id);
-          continue;
-        }
-      } catch {
-        // keep unparseable line
-      }
-      kept.push(line);
-    }
-    if (removedFeedbackIds.length > 0) {
-      fs.writeFileSync(paths.FEEDBACK_LOG_PATH, kept.join('\n') + (kept.length ? '\n' : ''), 'utf8');
-    }
-  }
-
-  if (fs.existsSync(paths.MEMORY_LOG_PATH)) {
-    const rawLines = fs.readFileSync(paths.MEMORY_LOG_PATH, 'utf8').split('\n').filter(Boolean);
-    const kept = [];
-    for (const line of rawLines) {
-      try {
-        const rec = JSON.parse(line);
-        const blob = `${rec.id || ''} ${rec.title || ''} ${rec.content || ''}`.toLowerCase();
-        const linkedToRemovedFb = rec.feedbackId && removedFeedbackIds.includes(rec.feedbackId);
-        if (linkedToRemovedFb || (cleanId && rec.id === cleanId) || (cleanMatch && blob.includes(cleanMatch))) {
-          if (rec.id) removedMemoryIds.push(rec.id);
-          continue;
-        }
-      } catch {
-        // keep
-      }
-      kept.push(line);
-    }
-    if (removedMemoryIds.length > 0) {
-      fs.writeFileSync(paths.MEMORY_LOG_PATH, kept.join('\n') + (kept.length ? '\n' : ''), 'utf8');
-    }
-  }
-
-  return {
-    ok: true,
-    removedFeedbackIds,
-    removedMemoryIds,
-    totalRemoved: removedFeedbackIds.length + removedMemoryIds.length,
-  };
-}
-
 function buildCorrectiveActionsReminder(correctiveActions = []) {
   if (!Array.isArray(correctiveActions) || correctiveActions.length === 0) return null;
   const lines = correctiveActions
@@ -2894,14 +3174,62 @@ function buildCorrectiveActionsReminder(correctiveActions = []) {
   return `[ThumbGate] Corrective actions from prior lessons - apply before the next tool call:\n${lines.join('\n')}`;
 }
 
+function retractFeedback({ feedbackId = '', matchText = '', feedbackDir = '' } = {}) {
+  const paths = feedbackDir
+    ? buildFeedbackPathsFromDir(feedbackDir)
+    : getFeedbackPaths();
+  const fbEntries = readJSONL(paths.FEEDBACK_LOG_PATH);
+  const memEntries = readJSONL(paths.MEMORY_LOG_PATH);
+  const needleId = String(feedbackId || '').trim();
+  const needleText = String(matchText || '').trim().toLowerCase();
+  const removedFeedbackIds = [];
+  const keptFb = fbEntries.filter((entry) => {
+    const idMatch = needleId && String(entry.id || '') === needleId;
+    const textMatch = needleText && String(entry.context || '').toLowerCase().includes(needleText);
+    if (idMatch || textMatch) {
+      if (entry.id) removedFeedbackIds.push(entry.id);
+      return false;
+    }
+    return true;
+  });
+  const removedIdSet = new Set(removedFeedbackIds);
+  const removedMemoryIds = [];
+  const keptMem = memEntries.filter((entry) => {
+    const fbMatch = entry.feedbackId && removedIdSet.has(entry.feedbackId);
+    const textMatch = needleText && (
+      String(entry.title || '').toLowerCase().includes(needleText) ||
+      String(entry.content || '').toLowerCase().includes(needleText)
+    );
+    if (fbMatch || textMatch) {
+      if (entry.id) removedMemoryIds.push(entry.id);
+      return false;
+    }
+    return true;
+  });
+  if (fs.existsSync(paths.FEEDBACK_LOG_PATH) || keptFb.length > 0) {
+    ensureDir(path.dirname(paths.FEEDBACK_LOG_PATH));
+    fs.writeFileSync(paths.FEEDBACK_LOG_PATH, keptFb.map((r) => JSON.stringify(r)).join('\n') + (keptFb.length ? '\n' : ''));
+  }
+  if (fs.existsSync(paths.MEMORY_LOG_PATH) || keptMem.length > 0) {
+    ensureDir(path.dirname(paths.MEMORY_LOG_PATH));
+    fs.writeFileSync(paths.MEMORY_LOG_PATH, keptMem.map((r) => JSON.stringify(r)).join('\n') + (keptMem.length ? '\n' : ''));
+  }
+  return {
+    ok: true,
+    removedFeedbackIds,
+    removedMemoryIds,
+  };
+}
+
 module.exports = {
   captureFeedback: captureFeedbackIdempotent,
   emitAnonymousFeedbackPing,
   buildFeedbackSourceIdentity,
   compactMemories,
-  retractFeedback,
   buildCorrectiveActionsReminder,
   analyzeFeedback,
+  summarizeCompactFeedbackStats,
+  retractFeedback,
   buildPreventionRules,
   writePreventionRules,
   feedbackSummary,
