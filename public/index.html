@@ -840,13 +840,13 @@
           <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
             <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
             <h2>Pro</h2>
-            <p><strong>For one developer.</strong> Unlimited gates, a visual debugger, and the lessons from your thumbs.</p>
+            <p><strong>For one developer or repo.</strong> Production infrastructure rule packs, visual gate debugger, and repo-committed policy lock.</p>
             <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="offers">Start Pro — $19/mo</a>
             <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
             <ul class="offer-points">
-              <li>Unlimited gates + rule packs (Claude, Cursor, Git, AWS)</li>
-              <li>See which check fired, and find the lesson that matches the next action</li>
-              <li>Export your thumbs as training data</li>
+              <li>Production rule packs (AWS, Terraform, Kubernetes, Stripe, Supabase, Git)</li>
+              <li>Repo-committed policy lock (<code>.thumbgate/policy.lock</code>) + unlimited gates</li>
+              <li>Visual debugger (<code>thumbgate dashboard</code>), cross-session recall &amp; DPO export</li>
             </ul>
           </aside>
           <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout style="border-color:rgba(0,110,82,.35);box-shadow:0 18px 50px rgba(0,110,82,.12);">
@@ -862,15 +862,15 @@
             <input type="hidden" name="landing_path" value="/">
             <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time · done-with-you setup</span></div>
             <h2>Setup Sprint</h2>
-            <p><strong>One workflow, done with you.</strong> Not an enterprise contract.</p>
+            <p><strong>One workflow, done with you.</strong> Hardened local + CI gate for one painful failure. Not an enterprise contract.</p>
             <label for="buyer-email">Work email for receipt &amp; onboarding</label>
             <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
             <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="offers">Book the $499 setup</button>
             <p class="checkout-note">Prefer a call? <a href="/support" style="color:var(--cyan);font-weight:750;">Book a 15-min triage call →</a></p>
             <ul class="offer-points">
-              <li>60-minute working review for one workflow</li>
-              <li>One configured local gate and its regression test</li>
-              <li>Rollout and rollback proof within two business days</li>
+              <li>60-minute working review for one workflow + failure map</li>
+              <li>One configured local gate and its regression test (+ GitHub Action CI check)</li>
+              <li>Rollout and rollback proof within two business days (or refunded)</li>
             </ul>
           </form>
         </div>
@@ -891,7 +891,8 @@
               <tr><th>Default secret exfiltration &amp; gate-bypass hard deny</th><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td></tr>
               <tr><th>Local SQLite lesson store &amp; thumbs feedback ranker</th><td><strong style="color:var(--green);">✓ Starter limits</strong></td><td><strong style="color:var(--cyan);">✓ Unlimited</strong></td><td><strong style="color:var(--green);">✓ Configured for workflow</strong></td></tr>
               <tr><th>Active prevention gates &amp; custom rules</th><td>Starter local rules</td><td><strong style="color:var(--cyan);">✓ Unlimited active gates</strong></td><td><strong style="color:var(--green);">✓ 1 managed workflow gate</strong></td></tr>
-              <tr><th>Curated rule packs (Claude Code, Cursor, Git, AWS)</th><td>—</td><td><strong style="color:var(--cyan);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Tailored to 1 workflow</strong></td></tr>
+              <tr><th>Production infra rule packs (AWS, Terraform, K8s, Stripe, Supabase, Git)</th><td>—</td><td><strong style="color:var(--cyan);">✓ All 6 packs included</strong></td><td><strong style="color:var(--green);">✓ Tailored to 1 workflow</strong></td></tr>
+              <tr><th>Repo-committed policy lock (<code>.thumbgate/policy.lock</code>) &amp; CI check</th><td>Local machine only</td><td><strong style="color:var(--cyan);">✓ Repo policy lock</strong></td><td><strong style="color:var(--green);">✓ Wired in repo + GitHub Action</strong></td></tr>
               <tr><th>Visual gate debugger (<code>npx thumbgate dashboard --open</code>)</th><td>CLI output</td><td><strong style="color:var(--cyan);">✓ Full visual debugger</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td></tr>
               <tr><th>Cross-session hosted recall &amp; lesson match trace</th><td>Local only</td><td><strong style="color:var(--cyan);">✓ Included</strong></td><td>Local workflow scope</td></tr>
               <tr><th>Export thumbs as training data (JSONL / DPO)</th><td>—</td><td><strong style="color:var(--cyan);">✓ Included</strong></td><td>—</td></tr>
@@ -901,6 +902,59 @@
               <tr><th>Enterprise org-wide hosted sync, SSO/SAML &amp; SIEM audit log</th><td>—</td><td>—</td><td>Not generally available (custom scope after 1 workflow sprint)</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <div id="visual-dashboard-preview" style="margin-top:28px;border:1px solid rgba(56,189,248,0.28);border-radius:18px;background:linear-gradient(180deg,rgba(15,23,42,0.96),rgba(9,13,22,0.98));box-shadow:0 22px 60px rgba(0,0,0,0.45);overflow:hidden;" aria-label="Visual preview of ThumbGate Pro Dashboard and Policy Lock">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,0.03);font-family:var(--mono);font-size:12px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:#f87171;display:inline-block;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#fbbf24;display:inline-block;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#4ade80;display:inline-block;"></span>
+              <strong style="color:var(--text);margin-left:6px;">npx thumbgate dashboard --open</strong>
+              <span style="color:var(--cyan);padding:2px 8px;border-radius:999px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);">Pro Visual Debugger · .thumbgate/policy.lock</span>
+            </div>
+            <span style="color:var(--green);">● Live PreToolUse Interceptor · 0.34ms p95</span>
+          </div>
+          <div style="padding:22px;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px;">
+              <div style="padding:14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,0.02);">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);">Pre-flight intercepts (7d)</div>
+                <div style="font-size:24px;font-weight:800;color:var(--text);margin-top:4px;">38 blocked <span style="font-size:13px;font-weight:600;color:var(--green);">0 prod incidents</span></div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px;">12 secrets · 19 infra deletes · 7 force-pushes</div>
+              </div>
+              <div style="padding:14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,0.02);">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);">Active Pro Rule Packs</div>
+                <div style="font-size:24px;font-weight:800;color:var(--cyan);margin-top:4px;">6 packs armed</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px;">AWS · Terraform · K8s · Stripe · Supabase · Git</div>
+              </div>
+              <div style="padding:14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,0.02);">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);">Team Repo Immunity</div>
+                <div style="font-size:24px;font-weight:800;color:var(--green);margin-top:4px;">policy.lock synced</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px;">Enforced locally &amp; in GitHub Actions CI</div>
+              </div>
+            </div>
+            <div style="font-family:var(--mono);font-size:12.5px;border:1px solid var(--line);border-radius:12px;background:#070a10;padding:14px;display:grid;gap:10px;">
+              <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.06);">
+                <span><strong style="color:#f87171;">[DENY · 0.29ms]</strong> <code>aws s3 rb s3://prod-customer-backups --force</code></span>
+                <span style="color:var(--cyan);">rule: pack/aws-s3-bucket-delete → blocked pre-execution</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.06);">
+                <span><strong style="color:#f87171;">[DENY · 0.31ms]</strong> <code>terraform destroy -auto-approve</code></span>
+                <span style="color:var(--cyan);">rule: pack/terraform-prod-state → blocked pre-execution</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;">
+                <span><strong style="color:#4ade80;">[PROMOTED · 3 negatives]</strong> <code>psql $PROD_DB -c "DROP TABLE subscriptions;"</code></span>
+                <span style="color:var(--green);">learned gate → committed to .thumbgate/policy.lock</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;">
+              <span style="font-size:13px;color:var(--muted);">See what paying <strong style="color:var(--text)">$19/mo Pro</strong> or booking the <strong style="color:var(--text)">$499 Setup Sprint</strong> unlocks on your machine and repo.</span>
+              <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                <a href="/dashboard#insights" style="font-size:13px;font-weight:700;color:var(--cyan);text-decoration:none;padding:8px 14px;border-radius:8px;border:1px solid rgba(56,189,248,0.35);">Open live interactive dashboard →</a>
+                <a href="/go/pro-direct?utm_source=website&amp;utm_medium=dashboard_preview&amp;utm_campaign=rally_style_gtm&amp;cta_id=dashboard_preview_pro&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-cta-id="dashboard_preview_pro" style="font-size:13px;font-weight:700;color:#06131a;background:var(--cyan);text-decoration:none;padding:8px 14px;border-radius:8px;">Unlock Pro Debugger &amp; Packs →</a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -1055,7 +1109,7 @@ next      decision recorded before execution</pre>
           <div class="proof-copy">
             <p><strong>Why not a static hook?</strong> Prompts compact away; static bash hooks don’t learn from 👍/👎. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn by default and deny in strict mode. This is a managed strict-mode example, not a claim that every free install blocks every risky command automatically.</p>
             <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
-            <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">Dogfood, not customer stories</a></p>
+            <p style="margin-top:12px;"><a href="/whitepaper">White paper</a> · <a href="/eval-scorecard">Scorecard</a> · <a href="/architecture">Architecture</a> · <a href="/case-studies">Production case studies &amp; benchmarks</a></p>
           </div>
         </div>
         <table class="compare">
@@ -1064,9 +1118,10 @@ next      decision recorded before execution</pre>
             <tr><th></th><th>Static hook</th><th>Sandbox</th><th>ThumbGate</th></tr>
           </thead>
           <tbody>
-            <tr><th>When it acts</th><td>Listed commands</td><td>After start</td><td>Before the tool call</td></tr>
+            <tr><th>When it acts</th><td>Listed commands</td><td>After start</td><td>Before the tool call (&lt;0.5ms)</td></tr>
             <tr><th>Learns from thumbs</th><td>No</td><td>No</td><td>Yes, locally</td></tr>
-            <tr><th>Contains the blast</th><td>No</td><td>Yes</td><td>No</td></tr>
+            <tr><th>Pre-built infra packs &amp; CI policy lock</th><td>No</td><td>No</td><td>Yes (Pro &amp; Setup Sprint)</td></tr>
+            <tr><th>OS / container isolation</th><td>No</td><td>Yes</td><td>Complements sandbox pre-flight</td></tr>
           </tbody>
         </table>
       </div>

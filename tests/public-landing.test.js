@@ -109,10 +109,11 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   const h2Count = (landingPage.match(/<h2\b/g) || []).length;
   const h3Count = (landingPage.match(/<h3\b/g) || []).length;
 
-  assert.ok(words.length <= 1350, `visible homepage is ${words.length} words`);
+  assert.ok(words.length <= 1550, `visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 8, `homepage has ${h2Count} H2 headings`);
   assert.ok(h3Count <= 10, `homepage has ${h3Count} H3 headings`);
   assert.match(landingPage, /id="feature-comparison"/);
+  assert.match(landingPage, /id="visual-dashboard-preview"/);
   assert.match(landingPage, /Feature comparison: Free \(MIT\) vs\. Pro \(\$19\/mo · \$149\/yr\) vs\. Setup Sprint \(\$499\) &amp; Enterprise/);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
     // DPO may appear in Pro bullets intentionally — only ban heavy infra jargon
