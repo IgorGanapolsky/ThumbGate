@@ -32,10 +32,9 @@ function packedFileSet() {
   return new Set(files.map((f) => f.path.replace(/^package\//, '')));
 }
 
-// Entrypoints that npm-distributed users actually load. NOTE: scripts/hook-pre-tool-use.js
-// is this repo's DOGFOOD hook and is intentionally NOT shipped — distributed users invoke
-// the gate via `npx thumbgate gate-check` (bin/cli.js) and the MCP stdio server.
+// Entrypoints shipped for npm CLI, MCP and plugin hook consumers.
 const HOOK_ENTRYPOINTS = [
+  'scripts/hook-pre-tool-use.js',
   'bin/cli.js',
   'adapters/mcp/server-stdio.js',
   'scripts/sales-pipeline.js',

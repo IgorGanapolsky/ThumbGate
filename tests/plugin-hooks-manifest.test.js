@@ -135,3 +135,61 @@ test('every plugin hook command path is anchored to ${CLAUDE_PLUGIN_ROOT}', () =
     }
   }
 });
+
+// Regression guard for thumbgate@1.39.0: the shipped hooks/hooks.json wired
+// PreToolUse to ${CLAUDE_PLUGIN_ROOT}/scripts/hook-pre-tool-use.js, but that
+// file (and its local dependency scripts/budget-guard.js) was absent from
+// package.json:files, so the published tarball dropped it. Every plugin
+// install then errored on every PreToolUse event and enforcement failed open.
+// Declaring the wiring (tests above) is not enough; the referenced files must
+// actually ship.
+test('every hook command path referenced by the shipped hooks manifest is in the npm pack', () => {
+  const { execSync } = require('node:child_process');
+  const lifecycles = loadLifecycles();
+  const referenced = new Set();
+  for (const event of Object.keys(lifecycles)) {
+    for (const hook of collectHooks(lifecycles[event])) {
+      for (const arg of hook.args || []) {
+        if (typeof arg === 'string' && arg.startsWith('${CLAUDE_PLUGIN_ROOT}/')) {
+          referenced.add(arg.replace('${CLAUDE_PLUGIN_ROOT}/', '').replace(/^\.\//, ''));
+        }
+      }
+    }
+  }
+  assert.ok(referenced.size > 0, 'hooks manifest must reference at least one plugin file');
+
+  const raw = execSync('npm pack --dry-run --json', { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  const packed = new Set((JSON.parse(raw)[0].files || []).map((f) => f.path.replace(/^package\//, '')));
+
+  const missing = [...referenced].filter((rel) => !packed.has(rel));
+  assert.deepEqual(missing, [], `hook files referenced by hooks manifest must ship in the npm pack: ${missing.join(', ')}`);
+
+  // Local requires reachable from those hook entrypoints must also ship, or
+  // the hook crashes with MODULE_NOT_FOUND at tool-call time. Covers both
+  // require('./x') and require(path.join(pkgRoot, 'scripts', 'x')) forms.
+  const seen = new Set();
+  const unresolved = new Set();
+  const stack = [...referenced].map((rel) => path.join(root, rel));
+  const relRe = /require\(\s*['"](\.[^'"]+)['"]\s*\)/g;
+  const pkgRootRe = /require\(path\.join\(pkgRoot,\s*['"]scripts['"],\s*['"]([^'"]+)['"]\)\s*\)/g;
+  while (stack.length) {
+    const file = stack.pop();
+    const rel = path.relative(root, file);
+    if (seen.has(rel)) continue;
+    let src;
+    try { src = fs.readFileSync(file, 'utf8'); } catch { continue; }
+    seen.add(rel);
+    const push = (target) => {
+      for (const c of [target, `${target}.js`, path.join(target, 'index.js')]) {
+        if (fs.existsSync(c) && fs.statSync(c).isFile()) { stack.push(c); return; }
+      }
+      unresolved.add(path.relative(root, target));
+    };
+    let m;
+    while ((m = relRe.exec(src)) !== null) push(path.resolve(path.dirname(file), m[1]));
+    while ((m = pkgRootRe.exec(src)) !== null) push(path.join(root, 'scripts', m[1]));
+  }
+  assert.deepEqual([...unresolved], [], `hook local dependencies must exist on disk: ${[...unresolved].join(', ')}`);
+  const missingDeps = [...seen].filter((rel) => /\.(?:js|cjs|mjs|json)$/i.test(rel) && !packed.has(rel));
+  assert.deepEqual(missingDeps, [], `hook dependency closure must ship in the npm pack: ${missingDeps.join(', ')}`);
+});
