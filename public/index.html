@@ -1219,6 +1219,7 @@ next      decision recorded before execution</pre>
   <script>
     'use strict';
     const gaMeasurementId = '__GA_MEASUREMENT_ID__';
+    const posthogApiKey = '__POSTHOG_API_KEY__';
     const serverVisitorId = '__SERVER_VISITOR_ID__';
     const serverSessionId = '__SERVER_SESSION_ID__';
     const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
@@ -1227,6 +1228,19 @@ next      decision recorded before execution</pre>
     window.plausible = window.plausible || function () {
       (window.plausible.q = window.plausible.q || []).push(arguments);
     };
+
+    function isSyntheticTraffic() {
+      try {
+        const ua = String(navigator.userAgent || '');
+        const host = String(location.hostname || '');
+        return navigator.webdriver === true
+          || /HeadlessChrome|Playwright|Puppeteer|PhantomJS|Cypress|bot|crawler|spider/i.test(ua)
+          || host === 'localhost'
+          || host === '127.0.0.1';
+      } catch (_) {
+        return false;
+      }
+    }
 
     // Global Privacy Control / Do Not Track. CCPA-CPRA treats GPC as a valid
     // opt-out preference signal, so it must actually suppress the emit rather
@@ -1241,6 +1255,35 @@ next      decision recorded before execution</pre>
       }
     }
 
+    window.posthog = window.posthog || {
+      capture: function (eventName, props) {
+        if (privacySignalOptOut() || isSyntheticTraffic()) return;
+        if (!posthogApiKey || posthogApiKey.indexOf('__POSTHOG_') === 0) return;
+        const body = JSON.stringify({
+          api_key: posthogApiKey,
+          event: eventName,
+          distinct_id: serverVisitorId || 'anon_' + String(Date.now()),
+          properties: Object.assign({
+            $session_id: serverSessionId || undefined,
+            $current_url: location.href,
+            $pathname: location.pathname,
+            acquisition_id: serverAcquisitionId || undefined,
+            environment: 'production',
+            is_synthetic_test: false,
+          }, props || {}),
+        });
+        try {
+          fetch('/ingest/capture/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: body,
+            keepalive: true,
+          }).catch(function () {});
+        } catch (_) {}
+      }
+    };
+    window.posthog.capture('$pageview', { page: '/' });
+
     function sendFirstPartyTelemetry(eventName, props) {
       if (privacySignalOptOut()) return;
       const payload = JSON.stringify({
@@ -1250,6 +1293,7 @@ next      decision recorded before execution</pre>
         visitorId: serverVisitorId || undefined,
         sessionId: serverSessionId || undefined,
         acquisitionId: serverAcquisitionId || undefined,
+        isSyntheticTest: isSyntheticTraffic(),
         props: props || {},
       });
       try {

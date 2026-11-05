@@ -407,9 +407,26 @@
 
   <script>
     'use strict';
+    const posthogApiKey = '__POSTHOG_API_KEY__';
+    const serverVisitorId = '__SERVER_VISITOR_ID__';
+    const serverSessionId = '__SERVER_SESSION_ID__';
+
     window.plausible = window.plausible || function () {
       (window.plausible.q = window.plausible.q || []).push(arguments);
     };
+
+    function isSyntheticTraffic() {
+      try {
+        const ua = String(navigator.userAgent || '');
+        const host = String(location.hostname || '');
+        return navigator.webdriver === true
+          || /HeadlessChrome|Playwright|Puppeteer|PhantomJS|Cypress|bot|crawler|spider/i.test(ua)
+          || host === 'localhost'
+          || host === '127.0.0.1';
+      } catch (_) {
+        return false;
+      }
+    }
 
     function privacySignalOptOut() {
       try {
@@ -421,9 +438,45 @@
       }
     }
 
+    window.posthog = window.posthog || {
+      capture: function (eventName, props) {
+        if (privacySignalOptOut() || isSyntheticTraffic()) return;
+        if (!posthogApiKey || posthogApiKey.indexOf('__POSTHOG_') === 0) return;
+        const body = JSON.stringify({
+          api_key: posthogApiKey,
+          event: eventName,
+          distinct_id: serverVisitorId || 'anon_' + String(Date.now()),
+          properties: Object.assign({
+            $session_id: serverSessionId || undefined,
+            $current_url: location.href,
+            $pathname: location.pathname,
+            environment: 'production',
+            is_synthetic_test: false,
+          }, props || {}),
+        });
+        try {
+          fetch('/ingest/capture/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: body,
+            keepalive: true,
+          }).catch(function () {});
+        } catch (_) {}
+      }
+    };
+    window.posthog.capture('$pageview', { page: '/pricing' });
+
     function sendFirstPartyTelemetry(eventName, props) {
       if (privacySignalOptOut()) return;
-      const payload = JSON.stringify({ event: eventName, page: '/pricing', source: 'pricing', props: props || {} });
+      const payload = JSON.stringify({
+        event: eventName,
+        page: '/pricing',
+        source: 'pricing',
+        visitorId: serverVisitorId || undefined,
+        sessionId: serverSessionId || undefined,
+        isSyntheticTest: isSyntheticTraffic(),
+        props: props || {},
+      });
       try {
         if (navigator.sendBeacon) {
           navigator.sendBeacon('/v1/telemetry/ping', new Blob([payload], { type: 'application/json' }));

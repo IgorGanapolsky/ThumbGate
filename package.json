@@ -11,6 +11,8 @@
     "url": "https://github.com/IgorGanapolsky/ThumbGate/issues"
   },
   "main": "src/index.js",
+  "module": "src/index.mjs",
+  "types": "src/index.d.ts",
   "bin": {
     "thumbgate": "bin/cli.js",
     "thumbgate-dashboard": "bin/dashboard-cli.js",
