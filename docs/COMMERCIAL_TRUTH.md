@@ -1,7 +1,7 @@
 # Commercial Truth
 
 Status: current for packaging and runtime capabilities; live traction requires authenticated telemetry
-Updated: July 22, 2026
+Updated: November 5, 2026
 
 This document is the source of truth for product, pricing, traction, and proof claims in this repository.
 
@@ -9,8 +9,8 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 - The open-source `thumbgate` package is free and MIT licensed.
 - The local CLI is the adoption wedge; it is not the primary monetization story.
-- For the current 30-day conversion experiment, the only promoted public offer is the **Managed AI Agent Workflow Gate** at **$499 one-time** via the email-backed `/go/diagnostic-pay` POST on `/`, `/pricing`, and `/diagnostic`. It covers one 60-minute review for one supported local workflow, one configured gate, one regression test, and written rollout and rollback proof within two business days after access and agreed materials are available. If the failure cannot be reduced to a supported gate, the order is refunded instead of silently upsold.
-- **Pro at $19/mo or $149/yr** remains a supported legacy self-serve subscription and the `$1,500` Workflow Hardening Sprint remains an internal catalog/scoping rail, but neither is promoted on the homepage or pricing page during the single-offer experiment. Enterprise remains proposal-only after qualification.
+- For one-time done-with-you workflow implementation, the only promoted public offer is the **Managed AI Agent Workflow Gate** (**Setup Sprint**) at **$499 one-time** via the email-backed `/go/diagnostic-pay` POST on `/`, `/pricing`, and `/diagnostic`. It covers one 60-minute review for one supported local workflow, one configured gate, one regression test, and written rollout and rollback proof within two business days after access and agreed materials are available. If the failure cannot be reduced to a supported gate, the order is refunded instead of silently upsold.
+- **Pro at $19/mo or $149/yr** is the promoted self-serve subscription for individual developers and repositories on `/`, `/pricing`, `/compare`, and `README.md` (unlocking 6 production infrastructure rule packs, `.thumbgate/policy.lock`, the visual gate debugger, hosted recall, and DPO export). The `$1,500` Workflow Hardening Sprint remains an internal catalog/scoping rail and is not promoted on the homepage or pricing page. Enterprise remains proposal-only after qualification.
 - The `$499` managed workflow gate is the only currently promoted public one-time service offer. Legacy Stripe Payment Links must remain deactivated or undistributed; they are not current public acquisition offers.
 - Stripe revenue attribution never relies on a product name. `scripts/stripe-revenue-catalog.js` binds each reviewed offer to its exact price ID, product ID, integer amount, currency, cadence, and interval. The public `$499` checkout now uses the Stripe product name `Managed AI Agent Workflow Gate`; that product still has a separate active `$999` price, but its Payment Link is deactivated and it is not a current ThumbGate offer. `npm run stripe:catalog-audit` verifies the live prices, product/price active states, mode, and the exact Pro-monthly and managed-gate Payment Links without mutating Stripe. Catalog configuration is not payment evidence.
 - Active CLI receipts, paywall messages, SEO generators, email drafts, and social launch drafts must use first-party `thumbgate.ai` buyer paths. Raw Stripe or PayPal links are provider plumbing, not buyer-facing distribution assets. Retired kit catalogs are archived and cannot advertise their historical Payment Links as current offers.
@@ -44,10 +44,11 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ### Pro ($19/mo or $149/yr, hosted checkout on Railway)
 
-- Personal local dashboard
-- DPO export and advanced data exports
+- Personal local visual debugger (`npx thumbgate dashboard --open`)
+- 6 production infrastructure rule packs (`AWS`, `Terraform`, `Kubernetes`, `Stripe`, `Supabase`, `Git`) and repo-committed `.thumbgate/policy.lock`
+- Cross-session hosted recall, DPO export, and advanced data exports
 - Unlimited captures and custom checks with auto-promotion into prevention rules
-- **The standard lane for solo operators and independent developers.**
+- **The standard self-serve lane for solo operators, individual developers, and single repositories.**
 
 ### Enterprise services (qualified proposal only)
 

