@@ -183,6 +183,9 @@ function getExplicitFeedbackDir(options = {}) {
   if (env.THUMBGATE_FEEDBACK_DIR) {
     return env.THUMBGATE_FEEDBACK_DIR;
   }
+  if (env.RLHF_FEEDBACK_DIR) {
+    return env.RLHF_FEEDBACK_DIR;
+  }
   if (env.RAILWAY_VOLUME_MOUNT_PATH) {
     return path.join(env.RAILWAY_VOLUME_MOUNT_PATH, 'feedback');
   }

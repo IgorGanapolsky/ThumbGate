@@ -1090,10 +1090,14 @@ async function callToolInner(name, args) {
 
   switch (name) {
     case 'capture_feedback': {
+      const normalizedArgs = args && typeof args === 'object' ? { ...args } : {};
+      if (!normalizedArgs.signal && normalizedArgs.feedback) {
+        normalizedArgs.signal = normalizedArgs.feedback;
+      }
       // Outcome-paired lessons: enrich the feedback payload with the matching
       // action receipt (this action -> this outcome) before promotion. Returns
       // args unchanged when there is no matching receipt (non-breaking).
-      const pairedFeedback = pairFeedbackWithReceipt(args);
+      const pairedFeedback = pairFeedbackWithReceipt(normalizedArgs);
       return toCaptureFeedbackTextResult(captureFeedback({
         ...pairedFeedback,
         reviewOrigin: 'automated',

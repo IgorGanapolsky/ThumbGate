@@ -38,7 +38,7 @@ const INFERRED_TAG_RULES = [
   { tag: 'testing', keywords: ['test', 'testing', 'jest', 'coverage', 'verify', 'verification'] },
   { tag: 'security', keywords: ['security', 'secret', 'credential', 'token', 'auth'] },
   { tag: 'performance', keywords: ['perf', 'performance', 'latency', 'slow'] },
-  { tag: 'ui-components', keywords: ['ui', 'component', 'layout', 'style', 'figma'] },
+  { tag: 'ui-components', keywords: ['ui', 'component', 'layout', 'style', 'figma', 'css', 'header', 'padding', 'alignment', 'align', 'margin', 'container', 'spacing', 'navbar', 'footer'] },
   { tag: 'api-integration', keywords: ['api', 'endpoint', 'request', 'response', 'server'] },
   { tag: 'git-workflow', keywords: ['git', 'commit', 'branch', 'pr', 'pull request'] },
   { tag: 'documentation', keywords: ['doc', 'docs', 'readme'] },
@@ -146,13 +146,28 @@ function inferFallbackDomainTag(params = {}) {
 
   if (!text) return 'general';
 
+  let bestTag = 'general';
+  let bestHits = 0;
   for (const rule of INFERRED_TAG_RULES) {
-    if (rule.keywords.some((keyword) => text.includes(keyword))) {
-      return rule.tag;
+    const hits = rule.keywords.filter((keyword) => text.includes(keyword)).length;
+    if (hits > bestHits) {
+      bestHits = hits;
+      bestTag = rule.tag;
     }
   }
 
-  return 'general';
+  return bestTag;
+}
+
+function extractTags(text = '', existingTags = []) {
+  const norm = normalizeFeedbackText(String(text || ''));
+  const tags = new Set((existingTags || []).filter((t) => !GENERIC_TAGS.has(t)));
+  for (const rule of INFERRED_TAG_RULES) {
+    if (rule.keywords.some((kw) => norm.includes(kw))) {
+      tags.add(rule.tag);
+    }
+  }
+  return [...tags];
 }
 
 function resolveFeedbackAction(params) {
@@ -417,6 +432,7 @@ module.exports = {
   prepareForStorage,
   parseTimestamp,
   truncateAtWord,
+  extractTags,
   GENERIC_TAGS,
   MIN_CONTENT_LENGTH,
   MAX_TITLE_DESCRIPTION_LENGTH,

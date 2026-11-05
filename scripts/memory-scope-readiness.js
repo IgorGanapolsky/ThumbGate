@@ -155,6 +155,103 @@ function normalizeScope(input = {}) {
   return scope;
 }
 
+function inferProjectIdFromCwd(cwd = process.cwd()) {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const envProject = normalizeId(process.env.THUMBGATE_PROJECT_ID);
+  if (envProject) return envProject;
+  const startDir = typeof cwd === 'string' && cwd.trim() ? path.resolve(cwd.trim()) : process.cwd();
+  let dir = startDir;
+  for (let depth = 0; depth < 6; depth += 1) {
+    try {
+      const pkgPath = path.join(dir, 'package.json');
+      if (fs.existsSync(pkgPath)) {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+        const rawName = typeof pkg.name === 'string' ? pkg.name.replace(/^@[^/]+\//, '') : '';
+        const normalizedPkg = normalizeId(rawName);
+        if (normalizedPkg) return normalizedPkg;
+      }
+      const gitPath = path.join(dir, '.git');
+      if (fs.existsSync(gitPath)) {
+        const base = path.basename(dir).replace(/\.worktrees.*$/, '');
+        const normalizedGit = normalizeId(base);
+        if (normalizedGit) return normalizedGit;
+      }
+    } catch {
+      // Ignore unreadable parent directories and fall back to basename.
+    }
+    const parent = path.dirname(dir);
+    if (!parent || parent === dir) break;
+    dir = parent;
+  }
+  return normalizeId(path.basename(startDir)) || null;
+}
+
+function resolveCaptureScope(input = {}) {
+  const scope = normalizeScope(input);
+  if (!scope.projectId) {
+    const explicitCwd = input && typeof input === 'object'
+      ? (input.cwd || (input.scope && input.scope.cwd) || process.cwd())
+      : process.cwd();
+    scope.projectId = inferProjectIdFromCwd(explicitCwd);
+  }
+  if (!scope.tenantId) {
+    scope.tenantId = 'default';
+  }
+  return scope;
+}
+
+function evaluateMemoryScopeReadiness(options = {}) {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const feedbackDir = options.feedbackDir || process.env.THUMBGATE_FEEDBACK_DIR || process.env.RLHF_FEEDBACK_DIR || process.cwd();
+  const feedbackLog = path.join(feedbackDir, 'feedback-log.jsonl');
+  const memoryLog = path.join(feedbackDir, 'memory-log.jsonl');
+
+  let scopedFeedbackRecords = 0;
+  let totalFeedbackRecords = 0;
+
+  if (fs.existsSync(feedbackLog)) {
+    const lines = fs.readFileSync(feedbackLog, 'utf8').split('\n').filter(Boolean);
+    totalFeedbackRecords += lines.length;
+    for (const line of lines) {
+      try {
+        const parsed = JSON.parse(line);
+        if (parsed.scope && parsed.scope.projectId) {
+          scopedFeedbackRecords += 1;
+        }
+      } catch {}
+    }
+  }
+
+  let scopedMemoryRecords = 0;
+  let totalMemoryRecords = 0;
+  if (fs.existsSync(memoryLog)) {
+    const lines = fs.readFileSync(memoryLog, 'utf8').split('\n').filter(Boolean);
+    totalMemoryRecords += lines.length;
+    for (const line of lines) {
+      try {
+        const parsed = JSON.parse(line);
+        if (parsed.scope && parsed.scope.projectId) {
+          scopedMemoryRecords += 1;
+        }
+      } catch {}
+    }
+  }
+
+  return {
+    Project: {
+      scopedFeedbackRecords,
+      totalFeedbackRecords,
+      scopedMemoryRecords,
+      totalMemoryRecords,
+      ready: scopedFeedbackRecords > 0,
+    },
+    totalFeedbackRecords,
+    scopedFeedbackRecords,
+  };
+}
+
 function missingScopeFields(scope) {
   const normalized = normalizeScope(scope);
   return REQUIRED_SCOPE_FIELDS.filter((field) => !normalized[field]);
@@ -757,6 +854,9 @@ module.exports = {
   REQUIRED_SCOPE_FIELDS,
   DREAMING_MODES,
   CONTAINER_TAG_PATTERN,
+  inferProjectIdFromCwd,
+  resolveCaptureScope,
+  evaluateMemoryScopeReadiness,
   buildLessonProfile,
   buildMemoriStyleBenchmarkRecords,
   buildMemoryOsLayerReport,

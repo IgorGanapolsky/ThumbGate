@@ -206,12 +206,13 @@ const MEMORY_SCOPE_SCHEMA = {
 const TOOLS = [
   destructiveTool({
     name: 'capture_feedback',
-    description: 'Capture an up/down signal plus one line of why. Vague feedback is logged, then returned with a clarification prompt instead of memory promotion.',
+    description: 'Capture a thumbs up/down signal. Required: signal ("up" | "down") and context. Vague feedback is logged, then returned with a clarification prompt instead of memory promotion.',
     inputSchema: {
       type: 'object',
       required: ['signal'],
       properties: {
-        signal: { type: 'string', enum: ['up', 'down'] },
+        signal: { type: 'string', enum: ['up', 'down'], description: 'Required feedback signal ("up" or "down"). Must be provided on every call.' },
+        feedback: { type: 'string', enum: ['up', 'down'], description: 'Alias for `signal` ("up" or "down") accepted for caller compatibility.' },
         failureType: { type: 'string', enum: ['decision', 'execution'], description: 'Dual-signal: "decision" = wrong tool/action chosen, "execution" = right tool but bad parameters/output. Improves Thompson Sampling precision.' },
         context: { type: 'string', description: 'One-sentence reason describing what worked or failed' },
         relatedFeedbackId: { type: 'string', description: 'Optional prior feedback event to merge with later follow-up context.' },
@@ -2029,9 +2030,14 @@ const NORMALIZED_TOOLS = TOOLS.map((tool) => {
   return { ...tool, title, annotations };
 });
 
+function getToolDefinitions() {
+  return NORMALIZED_TOOLS;
+}
+
 module.exports = {
   TOOLS: NORMALIZED_TOOLS,
   WRITE_RISK_TIERS,
+  getToolDefinitions,
   humanizeTitle,
   inferThumbgateScope,
   inferWriteRiskTier,

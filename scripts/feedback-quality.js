@@ -185,8 +185,66 @@ function isGenericFeedbackText(value, signal) {
  * @returns {{score: number, label: string, scoringMode: string, dimensions: object, passed: boolean}|null}
  *   null when there is no corrective text worth scoring.
  */
+function deriveRuleFromContext(params = {}) {
+  if (typeof params === 'string') {
+    params = { context: params };
+  }
+  const signal = normalizeFeedbackSignal(params.signal || params.feedback);
+  const explicit = normalizeFeedbackText(
+    signal === 'positive'
+      ? (params.whatWorked || params.whatToChange)
+      : (params.whatToChange || params.whatWorked),
+  );
+  if (explicit && explicit.length <= 80 && !/^(?:never\s+fixed|when\s+fixing)\b/i.test(explicit)) {
+    return explicit;
+  }
+
+  const rawSource = String(
+    explicit
+    || (signal === 'positive'
+      ? (params.context || params.whatWentWrong || '')
+      : (params.whatWentWrong || params.context || ''))
+  ).trim();
+  if (!rawSource || isGenericFeedbackText(rawSource, signal)) return null;
+
+  let cleanedSource = rawSource
+    .replace(/^(?:never\s+fixed|fixed|note|issue|bug|avoid)\s*:\s*/i, '')
+    .replace(/^when\s+(?:fixing|updating|editing|building|testing|running)\s+[^,;:]+[,;:]\s*/i, '')
+    .replace(/^[-\s*•]+/, '')
+    .trim();
+
+  const directivePattern = /\b(always|never|must|do not|don't|avoid|re-read|reread|verify|check|inspect|compare|ensure|require|prefer|use|keep|run)\b/i;
+  let candidate = cleanedSource;
+  const match = directivePattern.exec(cleanedSource);
+  if (match) {
+    candidate = cleanedSource.slice(match.index).trim();
+  }
+
+  // Cut at explanatory conjunctions if overly long
+  const splitMatch = candidate.split(/\s+(?:because|otherwise|so that|in order to)\b/i);
+  if (splitMatch[0] && splitMatch[0].trim().length >= 8) {
+    candidate = splitMatch[0].trim();
+  }
+
+  candidate = candidate.replace(/[.]+$/, '').trim();
+  if (!candidate || candidate.length < 8) return null;
+
+  if (!directivePattern.test(candidate)) {
+    const prefix = signal === 'positive' ? 'Keep: ' : 'Avoid: ';
+    candidate = `${prefix}${candidate}`;
+  }
+
+  if (candidate.length > 80) {
+    const truncated = candidate.slice(0, 80);
+    const lastSpace = truncated.lastIndexOf(' ');
+    candidate = lastSpace > 40 ? truncated.slice(0, lastSpace) : truncated;
+  }
+
+  return candidate;
+}
+
 function scoreFeedbackReward(params = {}) {
-  const signal = normalizeFeedbackSignal(params.signal);
+  const signal = normalizeFeedbackSignal(params.signal || params.feedback);
   const prediction = normalizeFeedbackText(
     signal === 'positive'
       ? (params.whatWorked || params.context)
@@ -206,12 +264,24 @@ function scoreFeedbackReward(params = {}) {
   if (typeof buildCompositeReward !== 'function') return null;
 
   const reward = buildCompositeReward({ prediction });
+  const dimensions = reward.deterministic ? reward.deterministic.dimensions : {};
+  const failedChecks = Object.entries(dimensions)
+    .filter(([, dim]) => dim && dim.required && !dim.pass)
+    .map(([id, dim]) => ({
+      check: id,
+      metric: dim.metric || id,
+      required: true,
+      reason: dim.reason || `${id} failed observable checks.`,
+    }));
+  const passed = Boolean(reward.deterministic && reward.deterministic.passed);
   return {
     score: reward.score,
     label: reward.label,
     scoringMode: reward.scoringMode || 'deterministic_only',
-    dimensions: reward.deterministic ? reward.deterministic.dimensions : {},
-    passed: Boolean(reward.deterministic && reward.deterministic.passed),
+    dimensions,
+    passed,
+    failedCheck: failedChecks.length > 0 ? failedChecks[0].check : null,
+    failedChecks,
   };
 }
 
@@ -281,6 +351,7 @@ module.exports = {
   normalizeFeedbackSignal,
   normalizeFeedbackText,
   isGenericFeedbackText,
+  deriveRuleFromContext,
   assessFeedbackActionability,
   buildClarificationMessage,
   scoreFeedbackReward,

@@ -19,6 +19,7 @@ const {
 } = require('./feedback-schema');
 const {
   buildClarificationMessage,
+  deriveRuleFromContext,
   isGenericFeedbackText,
   normalizeFeedbackText,
   scoreFeedbackReward,
@@ -987,7 +988,7 @@ function inferDomain(tags, context) {
   if (tagSet.has('test') || tagSet.has('testing') || ctx.includes('test')) return 'testing';
   if (tagSet.has('security') || ctx.includes('secret')) return 'security';
   if (tagSet.has('perf') || tagSet.has('performance') || ctx.includes('performance')) return 'performance';
-  if (tagSet.has('ui') || tagSet.has('component') || ctx.includes('component')) return 'ui-components';
+  if (tagSet.has('ui') || tagSet.has('ui-components') || tagSet.has('component') || tagSet.has('css') || /\b(component|css|header|padding|alignment|layout|container|margin|spacing)\b/.test(ctx)) return 'ui-components';
   if (tagSet.has('api') || tagSet.has('endpoint') || ctx.includes('endpoint')) return 'api-integration';
   if (tagSet.has('git') || tagSet.has('commit') || ctx.includes('commit')) return 'git-workflow';
   if (tagSet.has('doc') || tagSet.has('readme') || ctx.includes('readme')) return 'documentation';
@@ -1282,14 +1283,15 @@ function inferLessonFromConversation(conversationWindow, signal) {
   };
 }
 
-function captureFeedback(params) {
+function captureFeedback(params = {}) {
   const _captureStart = Date.now();
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
-  const signal = normalizeSignal(params.signal);
+  const rawSignal = params.signal !== undefined ? params.signal : params.feedback;
+  const signal = normalizeSignal(rawSignal);
   if (!signal) {
     return {
       accepted: false,
-      reason: `Invalid signal "${params.signal}". Use up/down or positive/negative.`,
+      reason: `Invalid signal "${rawSignal}". Use up/down or positive/negative (field \`signal\` or alias \`feedback\`).`,
     };
   }
 
@@ -1312,8 +1314,8 @@ function captureFeedback(params) {
     ? distillation.inferredFields.context
     : submittedContext;
   const whatWentWrong = params.whatWentWrong || distillation.inferredFields.whatWentWrong || null;
-  const whatToChange = params.whatToChange || distillation.inferredFields.whatToChange || null;
-  const whatWorked = params.whatWorked || distillation.inferredFields.whatWorked || null;
+  let whatToChange = params.whatToChange || distillation.inferredFields.whatToChange || null;
+  let whatWorked = params.whatWorked || distillation.inferredFields.whatWorked || null;
   extractAndSetConstraints(context);
 
   const providedTags = Array.isArray(params.tags)
@@ -1344,6 +1346,21 @@ function captureFeedback(params) {
     }
   }
 
+  // Derive a short rule when whatWorked and whatToChange are both null
+  const derivedRule = (!whatWorked && !whatToChange)
+    ? deriveRuleFromContext({
+      signal,
+      context: inferredContext || context,
+      whatWentWrong,
+      whatWorked,
+      whatToChange,
+    })
+    : null;
+  if (derivedRule) {
+    if (signal === 'positive' && !whatWorked) whatWorked = derivedRule;
+    if (signal === 'negative' && !whatToChange) whatToChange = derivedRule;
+  }
+
   // Infer structured IF/THEN rule from conversation
   let structuredRule = null;
   if (Array.isArray(params.conversationWindow) && params.conversationWindow.length >= 2) {
@@ -1352,7 +1369,14 @@ function captureFeedback(params) {
       structuredRule = inferStructuredLesson(params.conversationWindow, signal, inferredContext);
     } catch (_err) { /* non-critical */ }
   }
-
+  if (!structuredRule && (derivedRule || whatToChange || whatWorked)) {
+    const ruleAction = whatToChange || whatWorked || derivedRule;
+    structuredRule = {
+      condition: signal === 'positive' ? 'When repeating this workflow' : 'Before repeating this action',
+      action: ruleAction,
+      derivedFrom: derivedRule ? 'context' : (signal === 'positive' ? 'whatWorked' : 'whatToChange'),
+    };
+  }
   // Reflector agent: auto-propose rules on negative feedback
   let reflection = null;
   if (signal === 'negative' && Array.isArray(params.conversationWindow) && params.conversationWindow.length >= 2) {
@@ -1410,12 +1434,14 @@ function captureFeedback(params) {
     signal,
     context,
     submittedContext,
-    scope: require('./memory-scope-readiness').normalizeScope(params),
+    scope: require('./memory-scope-readiness').resolveCaptureScope(params),
     relatedFeedbackId: params.relatedFeedbackId || null,
     lastAction,
     whatWentWrong,
     whatToChange,
     whatWorked,
+    derivedRule: derivedRule || null,
+    structuredRule: structuredRule || null,
     reasoning: params.reasoning || null,
     visualEvidence: params.visualEvidence || null,
     conversationWindow: Array.isArray(distillation.conversationWindow) && distillation.conversationWindow.length > 0 ? distillation.conversationWindow : null,
@@ -1699,7 +1725,33 @@ function captureFeedback(params) {
   // was added to help detect.
   const rewardScore = scoreFeedbackReward(feedbackEvent);
   if (rewardScore) feedbackEvent.rewardScore = rewardScore;
-
+  const rewardFailedChecks = rewardScore && rewardScore.passed === false
+    ? (rewardScore.failedChecks || [])
+    : [];
+  const rewardFailedCheck = rewardScore && rewardScore.passed === false
+    ? (rewardScore.failedCheck || (rewardFailedChecks[0] && rewardFailedChecks[0].check) || 'reward_rubric_failed')
+    : null;
+  if (params.strictRewardGate === true && rewardScore && rewardScore.passed === false) {
+    summary.rejected += 1;
+    summary.lastUpdated = now;
+    saveSummary(summary);
+    appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
+    emitAnonymousFeedbackPing(signal);
+    return {
+      accepted: false,
+      captured: true,
+      promoted: false,
+      promotionAccepted: false,
+      signalLogged: true,
+      status: 'reward_gate_blocked',
+      failedCheck: rewardFailedCheck,
+      failedChecks: rewardFailedChecks,
+      reason: `Reward score failed check: ${rewardFailedCheck}`,
+      message: `Signal logged, but promotion was blocked by failed reward check: ${rewardFailedCheck}.`,
+      feedbackEvent,
+      rewardScore,
+    };
+  }
   appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
   emitAnonymousFeedbackPing(signal);
 
@@ -1860,11 +1912,17 @@ function captureFeedback(params) {
     promoted: true,
     promotionAccepted: true,
     status: 'promoted',
-    message: 'Feedback promoted to reusable memory.',
+    message: rewardFailedCheck
+      ? `Feedback promoted to reusable memory (note: reward rubric check "${rewardFailedCheck}" did not pass).`
+      : 'Feedback promoted to reusable memory.',
     feedbackEvent,
     memoryRecord,
+    rewardScore: rewardScore || null,
+    ...(rewardFailedCheck && {
+      failedCheck: rewardFailedCheck,
+      failedChecks: rewardFailedChecks,
+    }),
     _captureMs,
-    ...(correctiveActions.length > 0 && { correctiveActions }),
     ...(correctiveActionsReminder && {
       systemReminder: correctiveActionsReminder,
       thumbgateSystemReminder: correctiveActionsReminder,
@@ -2333,6 +2391,13 @@ function analyzeFeedback(logPath, options = {}) {
   });
 }
 
+const PRE_PUBLISH_LIVE_READ_RULE = Object.freeze({
+  id: 'reread-live-before-publish-shared-artifact',
+  domain: 'shared-artifact-publishing',
+  rule: 'Re-read the live version before publishing a shared artifact',
+  rationale: 'Prevents overwriting concurrent session changes or regressing layout/padding across republishes.',
+});
+
 function buildPreventionRules(minOccurrences = 2, options = {}) {
   const resolvedMinOccurrences = Number.isFinite(minOccurrences)
     ? minOccurrences
@@ -2342,10 +2407,16 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
   const diagnosticEntries = readDiagnosticEntries(DIAGNOSTIC_LOG_PATH);
   if (memories.length === 0) {
     if (diagnosticEntries.length === 0) {
-      return '# Prevention Rules\n\nNo mistake memories recorded yet.';
+      return [
+        '# Prevention Rules',
+        '',
+        'No mistake memories recorded yet.',
+        '',
+        '## Built-in Pre-Publish Prevention Rules',
+        `- **[${PRE_PUBLISH_LIVE_READ_RULE.id}]** ${PRE_PUBLISH_LIVE_READ_RULE.rule}`,
+      ].join('\n');
     }
   }
-
   // Time-weighted decay: recent mistakes count more (#202)
   const decayHalfLifeDays = options.decayHalfLifeDays || 7;
   const lambda = Math.LN2 / decayHalfLifeDays;
@@ -2553,13 +2624,134 @@ function buildPreventionRules(minOccurrences = 2, options = {}) {
       lines.push(`- ${constraintId}: ${items.length} failures`);
     });
   }
-
   if (lines.length === 3) {
     lines.push('');
     lines.push(`No domain has reached the threshold (${resolvedMinOccurrences}) yet.`);
   }
 
+  lines.push('');
+  lines.push('## Built-in Pre-Publish Prevention Rules');
+  lines.push(`- **[${PRE_PUBLISH_LIVE_READ_RULE.id}]** ${PRE_PUBLISH_LIVE_READ_RULE.rule}`);
+
   return lines.join('\n');
+}
+
+function buildMonthlyFeedbackStats(options = {}) {
+  const paths = getFeedbackPaths();
+  const nowMs = options.now ? new Date(options.now).getTime() : Date.now();
+  const windowDays = Number.isFinite(options.windowDays) ? options.windowDays : 30;
+  const cutoffMs = nowMs - (windowDays * 24 * 60 * 60 * 1000);
+  const inWindow = (ts) => {
+    if (!ts) return true;
+    const parsed = Date.parse(ts);
+    return Number.isFinite(parsed) ? parsed >= cutoffMs && parsed <= nowMs : true;
+  };
+
+  const feedbackEntries = readJSONL(paths.FEEDBACK_LOG_PATH, { maxLines: 0 })
+    .filter((entry) => inWindow(entry.timestamp));
+  const allMemories = readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 0 });
+  const monthlyMemories = allMemories.filter((entry) => inWindow(entry.timestamp));
+
+  // 1. Lessons retrieved: check telemetry-pings.jsonl, audit-trail, or retrieval receipts
+  let lessonsRetrieved = 0;
+  const telemetryPath = path.join(paths.FEEDBACK_DIR, 'telemetry-pings.jsonl');
+  const telemetryEntries = readJSONL(telemetryPath, { maxLines: 0 }).filter((entry) => inWindow(entry.timestamp || entry.at));
+  for (const ping of telemetryEntries) {
+    const tool = String(ping.tool || ping.command || ping.event || '');
+    if (/(retrieve_lessons|search_lessons|recall|lessons)/i.test(tool)) {
+      const count = Number(ping.retrievedCount ?? ping.resultCount ?? ping.count ?? 1);
+      lessonsRetrieved += Number.isFinite(count) && count > 0 ? count : 1;
+    }
+  }
+  for (const memory of monthlyMemories) {
+    const hits = Number(memory.retrievalCount || memory.retrievedCount || 0);
+    if (Number.isFinite(hits) && hits > 0) lessonsRetrieved += hits;
+  }
+
+  // 2. Corrections that repeated after a lesson existed
+  let repeatedCorrectionsAfterLesson = 0;
+  const repeatedDomains = {};
+  for (const memory of allMemories) {
+    const occ = Number(memory.occurrences || 1);
+    if (occ > 1 && inWindow(memory.lastSeen || memory.updatedAt || memory.timestamp)) {
+      const repeats = occ - 1;
+      repeatedCorrectionsAfterLesson += repeats;
+      const domain = (memory.richContext && memory.richContext.domain)
+        || (Array.isArray(memory.tags) && memory.tags.find((t) => !GENERIC_TAGS.has(t)))
+        || 'general';
+      repeatedDomains[domain] = (repeatedDomains[domain] || 0) + repeats;
+    }
+  }
+  const earliestLessonByDomain = new Map();
+  for (const memory of allMemories) {
+    const ts = Date.parse(memory.createdAt || memory.timestamp || '');
+    if (!Number.isFinite(ts)) continue;
+    const domain = (memory.richContext && memory.richContext.domain)
+      || (Array.isArray(memory.tags) && memory.tags.find((t) => !GENERIC_TAGS.has(t)))
+        || 'general';
+    if (!earliestLessonByDomain.has(domain) || ts < earliestLessonByDomain.get(domain)) {
+      earliestLessonByDomain.set(domain, ts);
+    }
+  }
+  let postLessonNegativeEvents = 0;
+  for (const event of feedbackEntries) {
+    if (event.signal !== 'negative') continue;
+    const ts = Date.parse(event.timestamp || '');
+    const domain = (event.richContext && event.richContext.domain)
+      || inferDomain(event.tags, event.context);
+    const firstLessonTs = earliestLessonByDomain.get(domain);
+    if (Number.isFinite(ts) && Number.isFinite(firstLessonTs) && ts > firstLessonTs) {
+      postLessonNegativeEvents += 1;
+    }
+  }
+  const totalRepeatedCorrections = Math.max(repeatedCorrectionsAfterLesson, postLessonNegativeEvents);
+
+  // 3. Token cost of capture calls (~4 chars per token for payload + response)
+  let captureInputTokens = 0;
+  let captureOutputTokens = 0;
+  for (const event of feedbackEntries) {
+    const inputChars = [
+      event.signal,
+      event.context,
+      event.whatWentWrong,
+      event.whatToChange,
+      event.whatWorked,
+      JSON.stringify(event.tags || []),
+    ].filter(Boolean).join(' ').length;
+    const outputChars = 240;
+    captureInputTokens += Math.max(1, Math.ceil(inputChars / 4));
+    captureOutputTokens += Math.ceil(outputChars / 4);
+  }
+  const totalCaptureTokens = captureInputTokens + captureOutputTokens;
+
+  return {
+    windowDays,
+    generatedAt: new Date(nowMs).toISOString(),
+    captureCalls: feedbackEntries.length,
+    lessonsPromoted: monthlyMemories.length,
+    lessonsRetrieved,
+    repeatedCorrectionsAfterLesson: totalRepeatedCorrections,
+    repeatedDomains,
+    tokenCost: {
+      captureInputTokens,
+      captureOutputTokens,
+      totalCaptureTokens,
+      avgTokensPerCapture: feedbackEntries.length > 0
+        ? Math.round(totalCaptureTokens / feedbackEntries.length)
+        : 0,
+    },
+  };
+}
+
+function formatMonthlyFeedbackStats(stats = buildMonthlyFeedbackStats()) {
+  return [
+    `# Monthly Feedback Stats (${stats.windowDays}d)`,
+    `- Capture calls: ${stats.captureCalls}`,
+    `- Lessons promoted: ${stats.lessonsPromoted}`,
+    `- Lessons retrieved: ${stats.lessonsRetrieved}`,
+    `- Corrections repeated after lesson existed: ${stats.repeatedCorrectionsAfterLesson}`,
+    `- Capture token cost: ${stats.tokenCost.totalCaptureTokens} tokens (${stats.tokenCost.captureInputTokens} in / ${stats.tokenCost.captureOutputTokens} out, avg ${stats.tokenCost.avgTokensPerCapture}/call)`,
+  ].join('\n');
 }
 
 function writePreventionRules(filePath, minOccurrences = 2) {
@@ -2674,6 +2866,15 @@ function runCli() {
     console.log(feedbackSummary(Number(args.recent || 20), { humanOnly: true }));
     return;
   }
+  if (args.monthly || args['monthly-stats']) {
+    const monthly = buildMonthlyFeedbackStats({ windowDays: Number(args.days || 30) });
+    if (args.json) {
+      console.log(JSON.stringify(monthly, null, 2));
+    } else {
+      console.log(formatMonthlyFeedbackStats(monthly));
+    }
+    return;
+  }
 
   if (args.rules) {
     const result = writePreventionRules(args.output, Number(args.min || 2));
@@ -2686,6 +2887,7 @@ function runCli() {
   node scripts/feedback-loop.js --capture --signal=up --context="..." --rubric-scores='[{\"criterion\":\"correctness\",\"score\":4}]' --guardrails='{\"testsPassed\":true}'
   node scripts/feedback-loop.js --analyze
   node scripts/feedback-loop.js --summary --recent=20
+  node scripts/feedback-loop.js --monthly [--days=30] [--json]
   node scripts/feedback-loop.js --rules [--min=2] [--output=path]
   node scripts/feedback-loop.js --test`);
 }
@@ -2824,8 +3026,11 @@ module.exports = {
   compactMemories,
   buildCorrectiveActionsReminder,
   analyzeFeedback,
+  PRE_PUBLISH_LIVE_READ_RULE,
   buildPreventionRules,
   writePreventionRules,
+  buildMonthlyFeedbackStats,
+  formatMonthlyFeedbackStats,
   feedbackSummary,
   listEnforcementMatrix,
   readJSONL,

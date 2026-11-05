@@ -38,6 +38,18 @@
       "rollout": "Use for every workflow where proof matters more than speed."
     },
     {
+      "id": "reread-live-before-publish-shared-artifact",
+      "name": "Re-read the live version before publishing a shared artifact",
+      "category": "Verification",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "publish_shared_artifact_without_live_read",
+      "problem": "Prevents agents from republishing a shared page, doc, or artifact without first re-reading the live version.",
+      "roi": "Stops layout/header/padding regressions and avoids overwriting concurrent edits across sessions.",
+      "rollout": "Enable on every shared artifact, landing page, and doc publishing workflow."
+    },
+    {
       "id": "require-catalog-compose-only",
       "name": "Require catalog-compose-only agent UI",
       "category": "Agent Honesty",

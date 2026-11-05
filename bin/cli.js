@@ -1535,9 +1535,21 @@ function feedbackSelfTest() {
 function stats() {
   trackEvent('cli_stats', { command: 'stats' });
   const args = parseArgs(process.argv.slice(3));
-  const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  const {
+    analyzeFeedback,
+    buildMonthlyFeedbackStats,
+    formatMonthlyFeedbackStats,
+  } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  if (args.monthly || COMMAND === 'feedback:monthly' || COMMAND === 'monthly-stats') {
+    const monthly = buildMonthlyFeedbackStats({ windowDays: Number(args.days || 30) });
+    if (args.json) {
+      console.log(JSON.stringify(monthly, null, 2));
+    } else {
+      console.log(formatMonthlyFeedbackStats(monthly));
+    }
+    return;
+  }
   const data = analyzeFeedback(undefined, { humanOnly: true });
-
   // Gate enforcement stats — runtime intercepts + configured gates
   let gateData = { blocked: 0, warned: 0, passed: 0, byGate: {} };
   try { gateData = require(path.join(PKG_ROOT, 'scripts', 'gates-engine')).loadStats(); } catch {}
@@ -4574,6 +4586,8 @@ switch (COMMAND) {
     });
     break;
   case 'stats':
+  case 'feedback:monthly':
+  case 'monthly-stats':
     stats();
     upgradeNudge();
     break;
