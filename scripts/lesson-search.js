@@ -438,7 +438,7 @@ function buildLessonResult(memory, sourceFeedback, options = {}) {
 
   return {
     id: memory.id,
-    title: memory.title,
+    title: (function() { const isStale = memory.lastVerifiedAt && ((new Date((options.now || Date.now())).getTime() - new Date(memory.lastVerifiedAt).getTime()) / 86400000 > 30); return (isStale ? "[STALE] " : "") + memory.title; })(),
     category: memory.category,
     importance: memory.importance,
     tags: Array.isArray(memory.tags) ? memory.tags : [],
@@ -448,6 +448,26 @@ function buildLessonResult(memory, sourceFeedback, options = {}) {
     evidenceScore: Number(evidenceScore.toFixed(4)),
     priorScore: Number(priorScore.toFixed(4)),
     matchedTokens,
+    verificationStatus: memory.verificationStatus || (Number(memory.verificationCount || 0) > 0 ? 'verified' : 'unverified'),
+    verificationCount: Number(memory.verificationCount || 0),
+    verifications: Array.isArray(memory.verifications) ? memory.verifications : [],
+    lastVerifiedAt: memory.lastVerifiedAt || null,
+    badge: (function() {
+      const count = Number(memory.verificationCount || 0);
+      if (count <= 0 || !memory.lastVerifiedAt) return 'unverified';
+      return `verified ${count}x, last ${String(memory.lastVerifiedAt).split('T')[0]}`;
+    })(),
+    stale: (function() {
+      if (!memory.lastVerifiedAt) return false;
+      const t = new Date(memory.lastVerifiedAt).getTime();
+      if (!Number.isFinite(t)) return false;
+      const nowDate = (options.now instanceof Date ? options.now : new Date(options.now || Date.now())).getTime();
+      return (nowDate - t) / (1000 * 60 * 60 * 24) > 30;
+    })(),
+    upVotes: Number(memory.upVotes || 0),
+    downVotes: Number(memory.downVotes || 0),
+    netVotes: Number(memory.upVotes || 0) - Number(memory.downVotes || 0),
+    demoted: (memory.demoted === true) || (Number(memory.downVotes || 0) > Number(memory.upVotes || 0)),
     lesson: {
       summary: parsed.summary,
       content: memory.content,
@@ -487,6 +507,10 @@ function searchLessons(query = '', options = {}) {
   // Try SQLite FTS5 first — falls back to JSONL Jaccard if unavailable
   const sqliteResults = tryFts5Search(query, options);
   if (sqliteResults) return sqliteResults;
+
+  // Exact error lookup (Search before solving)
+  const { lookupLessonByError } = require('./verified-lessons');
+  const exactErrorMatch = lookupLessonByError(query, { feedbackDir: FEEDBACK_DIR, now: options.now });
 
   const allMemories = readJSONL(MEMORY_LOG_PATH);
   const memories = selectRetrievalMemories(allMemories, options);
@@ -537,6 +561,38 @@ function searchLessons(query = '', options = {}) {
     const tail  = results.slice(50);
     const reranked = rerankLessons(query, pool, { topK: pool.length });
     results = [...reranked, ...tail];
+  }
+
+  if (exactErrorMatch) {
+    const formattedExact = {
+      id: exactErrorMatch.id,
+      title: (exactErrorMatch.stale ? '[STALE] ' : '') + exactErrorMatch.title,
+      category: exactErrorMatch.category || 'error',
+      importance: exactErrorMatch.importance || 'high',
+      tags: exactErrorMatch.tags || [],
+      timestamp: exactErrorMatch.timestamp || null,
+      score: 1.0,
+      evidenceScore: 1.0,
+      verificationStatus: exactErrorMatch.verificationStatus,
+      verificationCount: exactErrorMatch.verificationCount,
+      verifications: exactErrorMatch.verifications,
+      lastVerifiedAt: exactErrorMatch.lastVerifiedAt,
+      badge: exactErrorMatch.badge,
+      stale: exactErrorMatch.stale,
+      upVotes: exactErrorMatch.upVotes,
+      downVotes: exactErrorMatch.downVotes,
+      netVotes: exactErrorMatch.netVotes,
+      lesson: {
+        summary: exactErrorMatch.title,
+        content: exactErrorMatch.content,
+        whatWentWrong: exactErrorMatch.errorPattern,
+        howToAvoid: exactErrorMatch.fix,
+      },
+      systemResponse: {
+        correctiveActions: [{ type: 'verified_fix', fix: exactErrorMatch.fix }],
+      },
+    };
+    results = [formattedExact, ...results.filter(r => r.id !== exactErrorMatch.id)];
   }
 
   return {

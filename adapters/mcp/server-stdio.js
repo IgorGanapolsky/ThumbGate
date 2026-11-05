@@ -1096,6 +1096,8 @@ async function callToolInner(name, args) {
       const pairedFeedback = pairFeedbackWithReceipt(args);
       return toCaptureFeedbackTextResult(captureFeedback({
         ...pairedFeedback,
+        lessonId: args.lessonId,
+        lessonKey: args.lessonKey,
         reviewOrigin: 'automated',
       }));
     }
@@ -1124,12 +1126,15 @@ async function callToolInner(name, args) {
           { maxResults: options.maxResults || 5 },
         ),
       }));
-      return toTextResult(await retrieveWithReranking(
+      const { lookupLessonByError } = require('../../scripts/verified-lessons');
+      const exactError = lookupLessonByError(args.actionContext || '');
+      let retrievalResults = await retrieveWithReranking(
         args.toolName,
         args.actionContext || '',
         {
           candidateCount: 20,
           maxResults: Number(args.maxResults || 5),
+          rankByVerifications: true,
           scope: args.scope,
           requireScope: args.requireScope === true,
           includeShared: args.includeShared !== false,
@@ -1137,7 +1142,22 @@ async function callToolInner(name, args) {
           queryRewrite: args.queryRewrite !== false,
           includeRetrievalMeta: args.includeRetrievalMeta === true,
         },
-      ));
+      );
+      if (exactError) {
+        const exactItem = {
+          id: exactError.id,
+          title: (exactError.stale ? '[STALE] ' : '') + exactError.title,
+          signal: 'negative',
+          content: exactError.content,
+          badge: exactError.badge,
+          stale: exactError.stale,
+          verificationCount: exactError.verificationCount,
+          lastVerifiedAt: exactError.lastVerifiedAt,
+          rule: { fix: exactError.fix },
+        };
+        retrievalResults = [exactItem, ...(Array.isArray(retrievalResults) ? retrievalResults.filter(r => r.id !== exactError.id) : [])];
+      }
+      return toTextResult(retrievalResults);
     }
     case 'ai_component_inventory': {
       const {
@@ -1432,6 +1452,16 @@ async function callToolInner(name, args) {
         { source: 'mcp', actor: args.actor || 'agent' },
       );
       const result = { satisfied: true, gate: gateName, ...entry };
+      if (args.lessonId || args.lessonKey || args.appliedLessons) {
+        try {
+          const { verifyLesson } = require("../../scripts/verified-lessons");
+          const lessons = Array.isArray(args.appliedLessons) ? args.appliedLessons : [args.lessonId || args.lessonKey];
+          const checkCmd = args.evidence || ("gate " + gateName + " satisfied");
+          for (const lid of lessons) {
+            if (lid) verifyLesson(lid, checkCmd);
+          }
+        } catch (_satErr) {}
+      }
       // Log structured reasoning to audit trail for learning
       if (args.structuredReasoning) {
         recordAuditEvent({
