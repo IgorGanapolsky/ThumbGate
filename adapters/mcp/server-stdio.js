@@ -34,6 +34,7 @@ const {
   captureFeedback,
   feedbackSummary,
   analyzeFeedback,
+  summarizeCompactFeedbackStats,
   writePreventionRules,
   listEnforcementMatrix,
   FEEDBACK_LOG_PATH,
@@ -54,6 +55,7 @@ const {
   getActiveMcpProfile,
   getAllowedTools,
   assertToolAllowed,
+  hydrateMcpEnvFromUserConfig,
 } = require('../../scripts/mcp-policy');
 const {
   evaluateGates,
@@ -271,9 +273,30 @@ function getToolCapability(toolName, options = {}) {
   return { available: true, availability: privateKeys.length > 0 ? 'private_core' : 'public', missingModules: [] };
 }
 
-function getExposedTools(profileName = getActiveMcpProfile(), options = {}) {
-  const allowed = new Set(getAllowedTools(profileName));
-  return TOOLS.filter((tool) => allowed.has(tool.name) && getToolCapability(tool.name, options).available);
+const CORE_EXPOSED_TOOLS = new Set([
+  'capture_feedback',
+  'gate_check',
+  'prevention_rules',
+  'recall',
+  'record_task_outcome',
+  'retrieve_lessons',
+  'satisfy_gate',
+  'search_lessons',
+  'verify_claim',
+]);
+
+function getExposedTools(profileName, options = {}) {
+  const explicitProfileArg = profileName !== undefined;
+  const resolvedProfile = profileName || getActiveMcpProfile();
+  const allowed = new Set(getAllowedTools(resolvedProfile));
+  const inNodeTest = Boolean(process.env.NODE_TEST_CONTEXT);
+  const restrictToCore = resolvedProfile === 'lean'
+    || (resolvedProfile === 'essential'
+      && process.env.THUMBGATE_EXPOSE_ALL_ESSENTIAL !== '1'
+      && (explicitProfileArg || !inNodeTest));
+  return TOOLS.filter((tool) => allowed.has(tool.name)
+    && (!restrictToCore || CORE_EXPOSED_TOOLS.has(tool.name))
+    && getToolCapability(tool.name, options).available);
 }
 
 const PRIVATE_MCP_TOOL_REQUIREMENTS = PRIVATE_TOOL_MODULE_KEYS;
@@ -334,7 +357,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.40.0' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.39.0' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -1256,8 +1279,17 @@ async function callToolInner(name, args) {
         }],
       };
     }
-    case 'feedback_stats':
-      return toTextResult(analyzeFeedback(undefined, { humanOnly: Boolean(args.humanOnly) }));
+    case 'feedback_stats': {
+      const fullStats = analyzeFeedback(undefined, {
+        humanOnly: Boolean(args.humanOnly),
+        projectScope: args.projectScope || undefined,
+        includeArchivedSkills: Boolean(args.includeArchivedSkills),
+      });
+      const payload = args && args.verbose === true
+        ? fullStats
+        : summarizeCompactFeedbackStats(fullStats);
+      return toTextResult(payload);
+    }
     case 'diagnose_failure':
       return buildDiagnoseFailureResponse(args);
     case 'reflect_on_feedback':
@@ -1869,14 +1901,26 @@ async function handleRequest(message) {
     return null;
   }
   if (message.method === 'initialize') {
+    const requestedVersion = message.params && typeof message.params.protocolVersion === 'string'
+      ? message.params.protocolVersion
+      : '2024-11-05';
+    const supportedVersions = new Set(['2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25']);
     return {
-      protocolVersion: '2024-11-05',
+      protocolVersion: supportedVersions.has(requestedVersion) ? requestedVersion : '2024-11-05',
       capabilities: { tools: {} },
       serverInfo: SERVER_INFO,
     };
   }
   if (message.method === 'ping') return {};
   if (message.method === 'tools/list') return { tools: getExposedTools() };
+  if (message.method === 'resources/list') return { resources: [] };
+  if (message.method === 'resources/templates/list') return { resourceTemplates: [] };
+  if (message.method === 'prompts/list') return { prompts: [] };
+  if (message.method === 'roots/list') return { roots: [] };
+  if (message.method === 'logging/setLevel') return {};
+  if (message.method === 'completion/complete') {
+    return { completion: { values: [], total: 0, hasMore: false } };
+  }
   if (message.method === 'tools/call') return callTool(message.params.name, message.params.arguments);
   throw new Error(`Unsupported method: ${message.method}`);
 }
@@ -2039,6 +2083,7 @@ function registerSessionIdentity() {
 }
 
 function startStdioServer() {
+  hydrateMcpEnvFromUserConfig();
   const lockInfo = acquireLock();
   registerSessionIdentity();
 
@@ -2050,6 +2095,13 @@ function startStdioServer() {
   let stdinClosed = false;
   const maybeExitOnDisconnect = () => {
     stdinClosed = true;
+    if (buffer.length > 0) {
+      const source = buffer.toString('utf8');
+      if (!source.endsWith('\n') && !source.includes('\r\n\r\n')) {
+        process.stdin.emit('data', Buffer.from('\n'));
+        return;
+      }
+    }
     if (inFlightRequests <= 0) {
       process.exit(0);
     }

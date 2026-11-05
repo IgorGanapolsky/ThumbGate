@@ -73,10 +73,11 @@ test('parseArgs rejects an unsafe user', () => {
   assert.throws(() => parseArgs(['--user', '../etc/passwd']), /Invalid --user/);
 });
 
-test('README and issue config do not teach badge farming', () => {
+test('README and issue config do not teach or lecture about badge farming', () => {
   const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
   assert.match(readme, /do not farm GitHub profile badges/i);
   assert.doesNotMatch(readme, /close an issue within 5 min/i);
+  assert.doesNotMatch(readme, /npm run github:achievements/i);
   const issueConfig = fs.readFileSync(
     path.join(ROOT, '.github', 'ISSUE_TEMPLATE', 'config.yml'),
     'utf8',

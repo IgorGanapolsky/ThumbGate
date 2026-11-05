@@ -109,21 +109,19 @@ test('parseArgs rejects an unsafe repo slug', () => {
   assert.throws(() => parseArgs(['--repo', '../etc/passwd']), /Invalid --repo/);
 });
 
-test('README surfaces live star and npm-download badges without hardcoded star counts', () => {
+test('README surfaces live star and npm-download badges and leads with 0.38ms DENY demo instead of star-farming lectures', () => {
   const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
   assert.match(readme, /img\.shields\.io\/github\/stars\/IgorGanapolsky\/ThumbGate/);
   assert.match(readme, /img\.shields\.io\/npm\/dw\/thumbgate/);
   assert.match(readme, /ThumbGate is the self-improving pre-action firewall/);
-  assert.match(readme, /stargazers\/history/);
   assert.doesNotMatch(readme, /\b26 stars\b/);
-  assert.match(readme, /Stars are not npm installs and not revenue/);
+  assert.doesNotMatch(readme, /Usage over star count/i);
+  assert.doesNotMatch(readme, /npm run stars:history/);
+  assert.match(readme, /⛔ DENY \(0\.4ms\)/);
+  assert.match(readme, /⛔ DENY \[TG-GIT-001\]/);
   assert.match(readme, /marketplace\/actions\/thumbgate-agent-governance/);
   assert.match(readme, /uses: IgorGanapolsky\/ThumbGate@v1/);
-  assert.match(readme, /Usage over star count/);
-  assert.match(readme, /No pitch deck is required/);
   assert.match(readme, /Who it's for/);
-  assert.match(readme, /not.*GitHub star package/i);
-  assert.match(readme, /not fake engagement/i);
   const coc = fs.readFileSync(path.join(ROOT, 'CODE_OF_CONDUCT.md'), 'utf8');
   assert.match(coc, /Contributor Covenant/);
   const issueConfig = fs.readFileSync(
