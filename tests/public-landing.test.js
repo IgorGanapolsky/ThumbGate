@@ -229,6 +229,8 @@ test('homepage preserves brand, version, repository, and deployment placeholders
   assert.match(landingPage, /<meta name="thumbgate-version" content="\d+\.\d+\.\d+">/);
   assert.match(landingPage, /MIT License · npm v\d+\.\d+\.\d+/);
   assert.match(landingPage, /https:\/\/github\.com\/IgorGanapolsky\/ThumbGate/);
+  assert.match(landingPage, /id="railway-affiliate-banner"/);
+  assert.match(landingPage, /https:\/\/railway\.com\?referralCode=qQ_5cO/);
   assert.match(landingPage, /__GOOGLE_SITE_VERIFICATION_META__/);
   assert.match(landingPage, /__GA_BOOTSTRAP__/);
   assert.doesNotMatch(landingPage, /Math\.random\(/);

@@ -853,6 +853,18 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       utm_campaign: 'github_marketplace_action',
     },
   },
+  railway: {
+    href: 'https://railway.com?referralCode=qQ_5cO',
+    external: true,
+    ctaId: 'go_railway_affiliate',
+    ctaPlacement: 'footer',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'thumbgate',
+      utm_medium: 'footer_affiliate',
+      utm_campaign: 'railway_referral',
+    },
+  },
 });
 
 // ---------------------------------------------------------------------------
