@@ -35,6 +35,7 @@ Everything merges through PRs under the configured branch protection and the `ma
 
 - **Rule:** Work in an isolated branch/worktree off `origin/main` (`feat/...`, `fix/...`, `chore/...`), include a `.changeset/<slug>.md` when touching release-relevant paths, resolve all review threads (`gh pr view --json reviewDecision,comments,reviewThreads`), and submit only terminal-green PRs via `npm run pr:manage` and `/trunk merge` (never raw `gh pr merge --auto` or `--no-verify`). Update memory and instructions together whenever a rule changes.
 - **Why:** Uncoordinated edits in shared checkouts wipe sibling agent work, and merging before terminal CI or thread resolution breaks `main` and blocks the Trunk queue.
+- **PR ownership:** The agent that opens a PR owns it until merged or closed the same day; open as draft, mark ready only after `npm test` passes locally, keep one topic per PR, and split PRs over 1,000 changed lines (excluding `package-lock.json` and generated files) using `gh stack` (https://github.blog/changelog/2026-10-06-stacked-pull-requests-generally-available/).
 
 ## Files You Must Not Commit
 
