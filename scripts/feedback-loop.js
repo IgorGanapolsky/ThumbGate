@@ -1282,15 +1282,27 @@ function inferLessonFromConversation(conversationWindow, signal) {
   };
 }
 
-function captureFeedback(params) {
+function captureFeedback(params, options = {}) {
   const _captureStart = Date.now();
-  const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
+  const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths(options);
   const signal = normalizeSignal(params.signal);
   if (!signal) {
     return {
       accepted: false,
       reason: `Invalid signal "${params.signal}". Use up/down or positive/negative.`,
     };
+  }
+
+  // Record vote on lesson if lessonId or lessonKey is provided
+  const targetLessonId = params.lessonId || params.lessonKey;
+  let lessonVoteResult = null;
+  if (targetLessonId) {
+    try {
+      const { voteOnLesson } = require('./verified-lessons');
+      lessonVoteResult = voteOnLesson(targetLessonId, signal, { feedbackDir: options.feedbackDir || FEEDBACK_DIR });
+    } catch (_voteErr) {
+      /* lesson voting is non-blocking */
+    }
   }
 
   const submittedContext = params.context || '';
@@ -1537,6 +1549,8 @@ function captureFeedback(params) {
     return {
       accepted: true,
       captured: true,
+      success: true,
+      lessonVote: lessonVoteResult,
       promoted: false,
       promotionAccepted: false,
       signalLogged: true,
@@ -1650,6 +1664,14 @@ function captureFeedback(params) {
     structuredRule: structuredRule || null,
     sourceFeedbackId: feedbackEvent.id,
     reviewOrigin: feedbackEvent.reviewOrigin,
+    verificationStatus: 'unverified',
+    verifications: [],
+    verificationCount: 0,
+    lastVerifiedAt: null,
+    upVotes: 0,
+    downVotes: 0,
+    netVotes: 0,
+    demoted: false,
     timestamp: now,
   };
 
@@ -2012,16 +2034,16 @@ function captureFeedback(params) {
   return result;
 }
 
-function captureFeedbackIdempotent(params = {}) {
-  const paths = getFeedbackPaths();
+function captureFeedbackIdempotent(params = {}, options = {}) {
+  const paths = getFeedbackPaths(options);
   const identity = normalizeFeedbackSourceIdentity(params.sourceEvent, params);
-  if (!identity) return captureFeedback(params);
+  if (!identity) return captureFeedback(params, options);
 
   const claim = acquireFeedbackEventClaim(identity, paths);
   if (!claim.owned) return claim.result;
 
   try {
-    const result = captureFeedback({ ...params, sourceEvent: identity });
+    const result = captureFeedback({ ...params, sourceEvent: identity }, options);
     finalizeFeedbackEventClaim(claim, result);
     return result;
   } catch (error) {
