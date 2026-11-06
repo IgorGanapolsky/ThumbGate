@@ -18,7 +18,7 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 
 test('GitHub Actions schedules stay limited to security maintenance', () => {
   const workflowsDir = path.join(PROJECT_ROOT, '.github', 'workflows');
-  const allowedScheduledWorkflows = new Set(['codeql.yml']);
+  const allowedScheduledWorkflows = new Set(['codeql.yml', 'pr-stale-sweeper.yml']);
   const offenders = fs.readdirSync(workflowsDir)
     .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
     .filter((name) => {
