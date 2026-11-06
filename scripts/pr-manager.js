@@ -482,8 +482,171 @@ async function managePrs(prNumber = '', runner = runGh, options = {}) {
   return { status: 'ok', prs: results };
 }
 
+const SWEEP_PR_FIELDS = 'number,state,isDraft,title,url,headRefName,updatedAt,createdAt,author,statusCheckRollup';
+const DEFAULT_RED_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_DRAFT_IDLE_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
+const REQUIRED_CHECK_SET = new Set(MERGE_QUALITY_CHECKS.requiredStatusCheckContexts || []);
+
+function isProtectedSweepBranch(pr = {}) {
+  const headRef = String(pr.headRefName || '').trim();
+  const authorLogin = String(pr.author?.login || '').trim().toLowerCase();
+  if (headRef.startsWith('dependabot/') || headRef.startsWith('trunk-merge/')) {
+    return true;
+  }
+  return authorLogin === 'dependabot[bot]' || authorLogin === 'app/dependabot' || authorLogin === 'dependabot';
+}
+
+function isRequiredCheckFailing(check = {}) {
+  const name = check.name || check.context || '';
+  if (!name || SELF_REFERENTIAL_CHECKS.has(name) || OPTIONAL_CHECKS.has(name)) {
+    return false;
+  }
+  if (REQUIRED_CHECK_SET.size > 0 && !REQUIRED_CHECK_SET.has(name)) {
+    return false;
+  }
+  const bucket = String(check.bucket || '').toLowerCase();
+  if (bucket) {
+    return FAILING_BUCKETS.has(bucket);
+  }
+  const conclusion = String(check.conclusion || check.state || '').toUpperCase();
+  return FAILING_CHECK_CONCLUSIONS.has(conclusion) || conclusion === 'ERROR';
+}
+
+function classifyStalePr(pr = {}, options = {}) {
+  const nowMs = Number.isFinite(options.nowMs) ? options.nowMs : Date.now();
+  const redMaxAgeMs = Number.isFinite(options.redMaxAgeMs) ? options.redMaxAgeMs : DEFAULT_RED_MAX_AGE_MS;
+  const draftIdleMaxAgeMs = Number.isFinite(options.draftIdleMaxAgeMs)
+    ? options.draftIdleMaxAgeMs
+    : DEFAULT_DRAFT_IDLE_MAX_AGE_MS;
+
+  if (isProtectedSweepBranch(pr)) {
+    return {
+      action: 'skip',
+      reason: 'protected_branch',
+      headRefName: pr.headRefName || '',
+    };
+  }
+
+  if (pr.isDraft) {
+    const updatedMs = Date.parse(pr.updatedAt || pr.createdAt || '');
+    if (Number.isFinite(updatedMs) && (nowMs - updatedMs) > draftIdleMaxAgeMs) {
+      const idleDays = Math.floor((nowMs - updatedMs) / (24 * 60 * 60 * 1000));
+      return {
+        action: 'close',
+        reason: 'draft_idle_over_3d',
+        idleDays,
+        comment: `Closing draft PR #${pr.number} after ${idleDays}d of inactivity (>3d draft idle threshold). Branch \`${pr.headRefName || 'unknown'}\` is preserved — re-open or open a fresh PR off \`origin/main\` when ready.`,
+      };
+    }
+    return { action: 'keep', reason: 'draft_active' };
+  }
+
+  const checks = Array.isArray(pr.statusCheckRollup) ? pr.statusCheckRollup : [];
+  const failingRequired = checks.filter((check) => isRequiredCheckFailing(check));
+  if (failingRequired.length > 0) {
+    const checkTimestamps = failingRequired
+      .map((check) => Date.parse(check.completedAt || check.startedAt || ''))
+      .filter((ts) => Number.isFinite(ts));
+    const fallbackMs = Date.parse(pr.updatedAt || pr.createdAt || '');
+    const redSinceMs = checkTimestamps.length > 0
+      ? Math.max(...checkTimestamps)
+      : fallbackMs;
+
+    if (Number.isFinite(redSinceMs) && (nowMs - redSinceMs) > redMaxAgeMs) {
+      const redHours = Math.floor((nowMs - redSinceMs) / (60 * 60 * 1000));
+      const failingNames = [...new Set(failingRequired.map((c) => c.name || c.context))];
+      return {
+        action: 'close',
+        reason: 'red_checks_over_24h',
+        redHours,
+        failingChecks: failingNames,
+        comment: `Closing non-draft PR #${pr.number} because required check(s) (${failingNames.join(', ')}) have been red for ${redHours}h (>24h threshold). Branch \`${pr.headRefName || 'unknown'}\` is preserved — fix locally (` + '`npm test`' + `) and re-open when green.`,
+      };
+    }
+  }
+
+  return { action: 'keep', reason: 'active' };
+}
+
+function sweepStalePrs(options = {}, runner = runGh) {
+  const dryRun = Boolean(options.dryRun);
+  const listResult = runner(['pr', 'list', '--state', 'open', '--limit', '100', '--json', SWEEP_PR_FIELDS]);
+  if (listResult.status !== 0) {
+    throw new Error(`Failed to list open PRs for sweep: ${formatGhError(listResult)}`);
+  }
+
+  const prs = JSON.parse(listResult.stdout || '[]');
+  const decisions = [];
+  let closedCount = 0;
+  let skippedCount = 0;
+  let keptCount = 0;
+
+  for (const pr of prs) {
+    const verdict = classifyStalePr(pr, options);
+    const record = {
+      number: pr.number,
+      title: pr.title || '',
+      headRefName: pr.headRefName || '',
+      isDraft: Boolean(pr.isDraft),
+      ...verdict,
+      applied: false,
+    };
+
+    if (verdict.action === 'skip') {
+      skippedCount += 1;
+    } else if (verdict.action === 'close') {
+      closedCount += 1;
+      if (!dryRun) {
+        const commentRes = runner(['pr', 'comment', String(pr.number), '--body', verdict.comment]);
+        if (commentRes.status !== 0) {
+          throw new Error(`Failed to comment on PR #${pr.number}: ${formatGhError(commentRes)}`);
+        }
+        // Never pass --delete-branch: branches are preserved by policy.
+        const closeRes = runner(['pr', 'close', String(pr.number)]);
+        if (closeRes.status !== 0) {
+          throw new Error(`Failed to close PR #${pr.number}: ${formatGhError(closeRes)}`);
+        }
+        record.applied = true;
+      }
+    } else {
+      keptCount += 1;
+    }
+
+    decisions.push(record);
+  }
+
+  return {
+    status: 'ok',
+    dryRun,
+    closedCount,
+    skippedCount,
+    keptCount,
+    decisions,
+  };
+}
+
 if (require.main === module) {
-  const prNum = process.argv[2];
+  const argv = process.argv.slice(2);
+  if (argv.includes('--sweep') || argv.includes('--sweep-stale')) {
+    try {
+      const summary = sweepStalePrs({
+        dryRun: argv.includes('--dry-run'),
+      });
+      if (argv.includes('--json')) {
+        console.log(JSON.stringify(summary, null, 2));
+      } else {
+        console.log(
+          `[PR Sweeper] dryRun=${summary.dryRun} closed=${summary.closedCount} skipped=${summary.skippedCount} kept=${summary.keptCount}`,
+        );
+      }
+      process.exit(0);
+    } catch (err) {
+      console.error(err.message);
+      process.exit(1);
+    }
+  }
+
+  const prNum = argv[0];
   managePrs(prNum).then(() => {
     process.exit(0);
   }).catch((err) => {
@@ -495,8 +658,11 @@ if (require.main === module) {
 module.exports = {
   assertSafeGhArgs,
   buildGhEnv,
+  classifyStalePr,
   getPrStatus,
   getPrChecks,
+  isProtectedSweepBranch,
+  isRequiredCheckFailing,
   listOpenPrs,
   isOpenPr,
   loadManagedPrs,
@@ -507,5 +673,6 @@ module.exports = {
   performMerge,
   managePrs,
   summarizeChecks,
+  sweepStalePrs,
   inspectRepositoryRulesets,
 };

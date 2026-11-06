@@ -1,0 +1,45 @@
+name: Daily Stale PR Sweeper
+
+on:
+  schedule:
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview stale PR closures without mutating GitHub state'
+        required: false
+        default: 'false'
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: pr-stale-sweeper
+  cancel-in-progress: false
+
+jobs:
+  sweep-stale-prs:
+    name: Sweep Stale PRs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '20'
+
+      - name: Run stale PR sweeper
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            node scripts/pr-manager.js --sweep-stale --dry-run --json
+          else
+            node scripts/pr-manager.js --sweep-stale --json
+          fi
