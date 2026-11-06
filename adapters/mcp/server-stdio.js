@@ -1134,7 +1134,6 @@ async function callToolInner(name, args) {
         {
           candidateCount: 20,
           maxResults: Number(args.maxResults || 5),
-          rankByVerifications: true,
           scope: args.scope,
           requireScope: args.requireScope === true,
           includeShared: args.includeShared !== false,
@@ -1143,7 +1142,7 @@ async function callToolInner(name, args) {
           includeRetrievalMeta: args.includeRetrievalMeta === true,
         },
       );
-      if (exactError) {
+      if (exactError && exactError.isSeeded) {
         const exactItem = {
           id: exactError.id,
           title: (exactError.stale ? '[STALE] ' : '') + exactError.title,

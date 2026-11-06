@@ -308,7 +308,7 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
   const selected = filterTopP(deduped, resolveTopP(options), { minKeep: options.minKeep });
 
   let finalPool = selected;
-  if (options.rankByVerifications === true) {
+  if (options.rankByVerifications === true || (options.rankByVerifications !== false && selected.some((item) => Number(item.verificationCount || 0) > 0))) {
     finalPool = [...selected].sort((a, b) => {
       const vcA = Number(a.verificationCount || 0);
       const vcB = Number(b.verificationCount || 0);

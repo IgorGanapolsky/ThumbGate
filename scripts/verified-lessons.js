@@ -205,6 +205,32 @@ function voteOnLesson(lessonId, signal, options = {}) {
   }, options);
 }
 
+function matchesErrorMemory(norm, cleanQuery) {
+  const errPattern = (norm.errorPattern || '').toLowerCase();
+  if (errPattern && cleanQuery.includes(errPattern)) return true;
+  if (cleanQuery.length < 8) return false;
+  const content = (norm.content || '').toLowerCase();
+  const title = (norm.title || '').toLowerCase();
+  return content.includes(cleanQuery) || title.includes(cleanQuery);
+}
+
+function findMemoryErrorMatch(cleanQuery, options = {}) {
+  const paths = getFeedbackPaths(options);
+  if (!fs.existsSync(paths.MEMORY_LOG_PATH)) return null;
+  const rawMemories = readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 500 });
+  for (const mem of rawMemories) {
+    const norm = normalizeVerificationFields(mem);
+    if (matchesErrorMemory(norm, cleanQuery)) {
+      return {
+        ...norm,
+        stale: isLessonStale(norm, options.now),
+        badge: formatVerificationBadge(norm),
+      };
+    }
+  }
+  return null;
+}
+
 /**
  * Exact error text lookup across seeded catalog + memory-log.jsonl
  */
@@ -213,7 +239,6 @@ function lookupLessonByError(errorText, options = {}) {
   const cleanQuery = errorText.trim().toLowerCase();
   if (!cleanQuery) return null;
 
-  // 1. Check seeded catalog first
   for (const seed of SEEDED_LESSONS) {
     const pattern = (seed.errorPattern || '').toLowerCase();
     if (pattern && (cleanQuery.includes(pattern) || pattern.includes(cleanQuery))) {
@@ -227,30 +252,7 @@ function lookupLessonByError(errorText, options = {}) {
     }
   }
 
-  // 2. Check memory-log.jsonl
-  const paths = getFeedbackPaths(options);
-  if (fs.existsSync(paths.MEMORY_LOG_PATH)) {
-    const rawMemories = readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 500 });
-    for (const mem of rawMemories) {
-      const norm = normalizeVerificationFields(mem);
-      const errPattern = (norm.errorPattern || '').toLowerCase();
-      const content = (norm.content || '').toLowerCase();
-      const title = (norm.title || '').toLowerCase();
-
-      const matched = (errPattern && cleanQuery.includes(errPattern))
-        || (cleanQuery.length >= 8 && (content.includes(cleanQuery) || title.includes(cleanQuery)));
-
-      if (matched) {
-        return {
-          ...norm,
-          stale: isLessonStale(norm, options.now),
-          badge: formatVerificationBadge(norm),
-        };
-      }
-    }
-  }
-
-  return null;
+  return findMemoryErrorMatch(cleanQuery, options);
 }
 
 module.exports = {

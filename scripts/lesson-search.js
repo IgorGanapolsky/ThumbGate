@@ -531,6 +531,8 @@ function searchLessons(query = '', options = {}) {
       query,
       ruleLimit: options.ruleLimit,
       gateLimit: options.gateLimit,
+      now: options.now,
+      feedbackDir: FEEDBACK_DIR,
     }));
 
   if (category) {
@@ -564,35 +566,44 @@ function searchLessons(query = '', options = {}) {
   }
 
   if (exactErrorMatch) {
-    const formattedExact = {
-      id: exactErrorMatch.id,
-      title: (exactErrorMatch.stale ? '[STALE] ' : '') + exactErrorMatch.title,
-      category: exactErrorMatch.category || 'error',
-      importance: exactErrorMatch.importance || 'high',
-      tags: exactErrorMatch.tags || [],
-      timestamp: exactErrorMatch.timestamp || null,
-      score: 1.0,
-      evidenceScore: 1.0,
-      verificationStatus: exactErrorMatch.verificationStatus,
-      verificationCount: exactErrorMatch.verificationCount,
-      verifications: exactErrorMatch.verifications,
-      lastVerifiedAt: exactErrorMatch.lastVerifiedAt,
-      badge: exactErrorMatch.badge,
-      stale: exactErrorMatch.stale,
-      upVotes: exactErrorMatch.upVotes,
-      downVotes: exactErrorMatch.downVotes,
-      netVotes: exactErrorMatch.netVotes,
-      lesson: {
-        summary: exactErrorMatch.title,
-        content: exactErrorMatch.content,
-        whatWentWrong: exactErrorMatch.errorPattern,
-        howToAvoid: exactErrorMatch.fix,
-      },
-      systemResponse: {
-        correctiveActions: [{ type: 'verified_fix', fix: exactErrorMatch.fix }],
-      },
-    };
-    results = [formattedExact, ...results.filter(r => r.id !== exactErrorMatch.id)];
+    const existingMatch = results.find((r) => r.id === exactErrorMatch.id);
+    if (existingMatch) {
+      results = [existingMatch, ...results.filter((r) => r.id !== exactErrorMatch.id)];
+    } else {
+      const formattedExact = {
+        id: exactErrorMatch.id,
+        title: (exactErrorMatch.stale ? '[STALE] ' : '') + exactErrorMatch.title,
+        category: exactErrorMatch.category || 'error',
+        importance: exactErrorMatch.importance || 'high',
+        tags: exactErrorMatch.tags || [],
+        timestamp: exactErrorMatch.timestamp || null,
+        score: 1.0,
+        evidenceScore: 1.0,
+        verificationStatus: exactErrorMatch.verificationStatus,
+        verificationCount: exactErrorMatch.verificationCount,
+        verifications: exactErrorMatch.verifications,
+        lastVerifiedAt: exactErrorMatch.lastVerifiedAt,
+        badge: exactErrorMatch.badge,
+        stale: exactErrorMatch.stale,
+        upVotes: exactErrorMatch.upVotes,
+        downVotes: exactErrorMatch.downVotes,
+        netVotes: exactErrorMatch.netVotes,
+        lesson: {
+          summary: exactErrorMatch.title,
+          content: exactErrorMatch.content,
+          whatWentWrong: exactErrorMatch.errorPattern,
+          howToAvoid: exactErrorMatch.fix,
+        },
+        systemResponse: {
+          promotedToMemory: true,
+          linkedPreventionRules: [],
+          linkedAutoGates: [],
+          harnessRecommendations: [],
+          correctiveActions: [{ type: 'verified_fix', source: 'verified_seed', text: exactErrorMatch.fix, fix: exactErrorMatch.fix }],
+        },
+      };
+      results = [formattedExact, ...results];
+    }
   }
 
   return {

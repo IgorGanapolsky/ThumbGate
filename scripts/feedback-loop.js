@@ -1284,7 +1284,7 @@ function inferLessonFromConversation(conversationWindow, signal) {
 
 function captureFeedback(params, options = {}) {
   const _captureStart = Date.now();
-  const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
+  const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths(options);
   const signal = normalizeSignal(params.signal);
   if (!signal) {
     return {
@@ -2034,16 +2034,16 @@ function captureFeedback(params, options = {}) {
   return result;
 }
 
-function captureFeedbackIdempotent(params = {}) {
-  const paths = getFeedbackPaths();
+function captureFeedbackIdempotent(params = {}, options = {}) {
+  const paths = getFeedbackPaths(options);
   const identity = normalizeFeedbackSourceIdentity(params.sourceEvent, params);
-  if (!identity) return captureFeedback(params);
+  if (!identity) return captureFeedback(params, options);
 
   const claim = acquireFeedbackEventClaim(identity, paths);
   if (!claim.owned) return claim.result;
 
   try {
-    const result = captureFeedback({ ...params, sourceEvent: identity });
+    const result = captureFeedback({ ...params, sourceEvent: identity }, options);
     finalizeFeedbackEventClaim(claim, result);
     return result;
   } catch (error) {
