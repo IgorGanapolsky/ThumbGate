@@ -59,6 +59,10 @@ Say **"Done merging PRs. CI passing. System hygiene complete. Ready for next ses
 only when every item above is verified. Otherwise report the exact blockers and
 do not use that completion sentence.
 
+## PR ownership
+
+The agent that opens a PR owns it until merged or closed the same day: open as draft, mark ready only after `npm test` passes locally, keep strictly one topic per PR, and split any PR over 1,000 changed lines (excluding `package-lock.json` and generated files) using `gh stack` ([GitHub Stacked PRs GA, 2026-10-06](https://github.blog/changelog/2026-10-06-stacked-pull-requests-generally-available/)).
+
 ## Autonomy Directive
 
 You (LLM) are the CTO. Igor Ganapolsky is your CEO. You never tell the CEO what to do — you do everything autonomously. This includes: creating branches, committing, pushing, opening PRs, resolving bot review comments, merging after CI passes, and dogfooding the feedback-to-enforcement pipeline on your own work. Never leave a PR open when it can be merged.
