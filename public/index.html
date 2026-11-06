@@ -358,7 +358,7 @@
     .checkout-card .button-primary { width: 100%; margin-top: 12px; min-height: 52px; }
     .checkout-note { margin: 12px 0 0 !important; color: var(--muted) !important; font-size: 12px; text-align: center; }
     .offer-points { display: grid; gap: 10px; margin: 22px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); list-style: none; }
-    .offer-points li { display: flex; gap: 10px; color: #c5ceda; font-size: 14px; }
+    .offer-points li { color: #c5ceda; font-size: 14px; }
     .offer-points li::before { content: "✓"; color: var(--green); font-weight: 900; }
     section { padding: 82px 0; }
     section + section { border-top: 1px solid rgba(39, 50, 70, 0.65); }
@@ -569,7 +569,10 @@
       .nav-links > a:not(.nav-buy):not(.nav-enterprise) { display: none; }
       .nav-links { gap: 10px; }
       .hero-grid, .proof-grid, #offers .offer-stack { grid-template-columns: 1fr; }
-      .compare { display: block; overflow-x: auto; }
+      .compare { display: block; overflow-x: auto; width: 100%; box-shadow: inset -28px 0 24px -24px rgba(4, 8, 16, 0.95); }
+      .compare caption { display: block; max-width: calc(100vw - 48px); text-align: left; }
+      .compare th, .compare td { min-width: 130px; }
+      .compare th:first-child, .compare td:first-child { min-width: 170px; }
       .loop, .deliverables { grid-template-columns: 1fr; }
       .loop-step:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -28px; transform: translateX(50%); }
     }
@@ -706,6 +709,13 @@
     .compare caption { caption-side: top; text-align: left; font-weight: 800; padding: 0 0 10px; color: var(--text); }
     .compare th, .compare td { border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; color: var(--muted); }
     .compare th { color: var(--text); font-weight: 800; }
+    .compare details.feat summary { cursor: pointer; list-style: none; }
+    .compare details.feat summary::after { content: " +"; color: var(--cyan); font-weight: 800; }
+    .compare details.feat[open] summary::after { content: " \2212"; color: var(--cyan); }
+    .compare details.feat summary::-webkit-details-marker { display: none; }
+    .compare .feat-detail { font-weight: 400; font-size: 13px; color: var(--muted); padding: 8px 0 2px; }
+    .compare .feat-detail p { margin: 0 0 6px; }
+
     .hero-note { margin: 12px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
     .diagram-caption {
       margin: 14px 0 0;
@@ -775,7 +785,7 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div class="hero-copy">
-          <div class="eyebrow">Pre-action firewall · &lt;0.5ms local · Not a prompt · Not a postmortem</div>
+          <div class="eyebrow">Pre-action firewall · Local · Not a prompt · Not a postmortem</div>
           <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
             <symbol id="thumb-glyph" viewBox="0 0 32 32">
               <path d="M14.4 3.8c.6-1.4 2.6-1.4 3.1.1L19.2 8h4.2a2.2 2.2 0 0 1 2.2 2.5l-1.1 8.4a2.2 2.2 0 0 1-2.2 1.9H12.4a1.7 1.7 0 0 1-1.7-1.7V11.6c0-.9.8-1.7 1.7-1.7h2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
@@ -836,7 +846,7 @@
             <a class="button-free" href="#install" data-cta-id="offers_install_free">Install free — npx thumbgate init</a>
             <p class="checkout-note">No account · 100% local · MIT open source</p>
             <ul class="offer-points">
-              <li>&lt;0.5ms PreToolUse gate (Claude, Cursor, Codex, VS Code, Grok, Hermes)</li>
+              <li>PreToolUse gate (Claude Code, Cursor, Codex, Gemini CLI)</li>
               <li>Default secret exfiltration &amp; gate-bypass hard deny</li>
               <li>Local SQLite lesson store + open-source ranking engine</li>
             </ul>
@@ -848,7 +858,7 @@
             <a class="button-pro" href="/go/pro-direct?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=offers&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="offers">Start Pro — $19/mo</a>
             <p class="checkout-note">Instant key · cancel anytime · free local evaluate stays free</p>
             <ul class="offer-points">
-              <li>Production rule packs (AWS, Terraform, Kubernetes, Stripe, Supabase, Git)</li>
+              <li>Production rule packs (Stripe, Railway, database migration, database safety)</li>
               <li>Repo-committed policy lock (<code>.thumbgate/policy.lock</code>) + unlimited gates</li>
               <li>Visual debugger (<code>thumbgate dashboard</code>), cross-session recall &amp; DPO export</li>
             </ul>
@@ -891,19 +901,19 @@
               </tr>
             </thead>
             <tbody>
-              <tr><th>Local &lt;0.5ms PreToolUse hook (Claude, Cursor, Codex, Grok, Hermes)</th><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included + custom wired</strong></td></tr>
-              <tr><th>Default secret exfiltration &amp; gate-bypass hard deny</th><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td></tr>
-              <tr><th>Local SQLite lesson store &amp; thumbs feedback ranker</th><td><strong style="color:var(--green);">✓ Starter limits</strong></td><td><strong style="color:var(--cyan);">✓ Unlimited</strong></td><td><strong style="color:var(--green);">✓ Configured for workflow</strong></td></tr>
-              <tr><th>Active prevention gates &amp; custom rules</th><td>Starter local rules</td><td><strong style="color:var(--cyan);">✓ Unlimited active gates</strong></td><td><strong style="color:var(--green);">✓ 1 managed workflow gate</strong></td></tr>
-              <tr><th>Production infra rule packs (AWS, Terraform, K8s, Stripe, Supabase, Git)</th><td>—</td><td><strong style="color:var(--cyan);">✓ All 6 packs included</strong></td><td><strong style="color:var(--green);">✓ Tailored to 1 workflow</strong></td></tr>
-              <tr><th>Repo-committed policy lock (<code>.thumbgate/policy.lock</code>) &amp; CI check</th><td>Local machine only</td><td><strong style="color:var(--cyan);">✓ Repo policy lock</strong></td><td><strong style="color:var(--green);">✓ Wired in repo + GitHub Action</strong></td></tr>
-              <tr><th>Visual gate debugger (<code>npx thumbgate dashboard --open</code>)</th><td>CLI output</td><td><strong style="color:var(--cyan);">✓ Full visual debugger</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td></tr>
-              <tr><th>Cross-session hosted recall &amp; lesson match trace</th><td>Local only</td><td><strong style="color:var(--cyan);">✓ Included</strong></td><td>Local workflow scope</td></tr>
-              <tr><th>Export thumbs as training data (JSONL / DPO)</th><td>—</td><td><strong style="color:var(--cyan);">✓ Included</strong></td><td>—</td></tr>
-              <tr><th>60-minute live working review + failure map</th><td>—</td><td>—</td><td><strong style="color:var(--green);">✓ Included</strong></td></tr>
-              <tr><th>Custom regression test + 2-day rollout &amp; rollback proof</th><td>—</td><td>—</td><td><strong style="color:var(--green);">✓ Included (or refunded)</strong></td></tr>
-              <tr><th>Support &amp; onboarding</th><td>Community / GitHub</td><td>Priority email support</td><td><strong style="color:var(--green);">Done-with-you engineer</strong></td></tr>
-              <tr><th>Enterprise org-wide hosted sync, SSO/SAML &amp; SIEM audit log</th><td>—</td><td>—</td><td>Not generally available (custom scope after 1 workflow sprint)</td></tr>
+              <tr><th><details class="feat"><summary>Local PreToolUse gate hook</summary><div class="feat-detail"><p><strong>Why it matters:</strong> Checks proposed tool calls against your policy before execution.</p><p><strong>Under the hood:</strong> Ships a gate-check engine (scripts/gates-engine.js) with hook adapters for Claude Code, Codex, and Gemini CLI; Cursor connects through MCP gate checks; Hermes uses manual setup. The hooks manifest reference to hook-pre-tool-use.js is not present in the published package; gate checks run through the CLI/MCP path.</p></div></details></th><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included + custom wired</strong></td></tr>
+              <tr><th><details class="feat"><summary>Default secret exfiltration &amp; gate-bypass hard deny</summary><div class="feat-detail"><p><strong>Why it matters:</strong> Designed to detect disguised or encoded exfiltration patterns in agent commands before they run.</p><p><strong>Under the hood:</strong> Normalized scanning for secrets and encoded variants ships in the gate engine (scripts/secret-scanner.js), deny-by-default for exfiltration patterns. The repo .mdc prompt rule is a development aid and is not part of the shipped package.</p></div></details></th><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td></tr>
+              <tr><th><details class="feat"><summary>Local SQLite lesson store &amp; thumbs feedback ranker</summary><div class="feat-detail"><p><strong>Why it matters:</strong> Your corrections are stored locally; matching feedback can be promoted into standing guards.</p><p><strong>Under the hood:</strong> Local lesson store with thumbs feedback ranking (scripts/lesson-db.js, scripts/feedback-loop.js). Free tier ships with 2 feedback captures/day, 10 total (scripts/rate-limiter.js).</p></div></details></th><td><strong style="color:var(--green);">✓ Starter limits</strong></td><td><strong style="color:var(--cyan);">✓ Unlimited</strong></td><td><strong style="color:var(--green);">✓ Configured for workflow</strong></td></tr>
+              <tr><th><details class="feat"><summary>Active prevention gates &amp; custom rules</summary><div class="feat-detail"><p><strong>Why it matters:</strong> Turn a one-time mistake into a standing guard for your repo.</p><p><strong>Under the hood:</strong> Free tier ships with up to 3 active auto-promoted prevention rules and 2 rule generations/day (scripts/rate-limiter.js). Pro: unlimited active gates and custom rules.</p></div></details></th><td>Starter local rules</td><td><strong style="color:var(--cyan);">✓ Unlimited active gates</strong></td><td><strong style="color:var(--green);">✓ 1 managed workflow gate</strong></td></tr>
+              <tr><th><details class="feat"><summary>Prevention rule packs (shipped registry)</summary><div class="feat-detail"><p><strong>Why it matters:</strong> Ready-made guards for the calls that can cost you money or data in production.</p><p><strong>Under the hood:</strong> Ships rule packs in the registry (scripts/skill-packs.js): Stripe integration, Railway deploy, database migration, and database-agent safety.</p></div></details></th><td>—</td><td><strong style="color:var(--cyan);">✓ Included</strong></td><td><strong style="color:var(--green);">✓ Tailored to 1 workflow</strong></td></tr>
+              <tr><th><details class="feat"><summary>Repo-committed policy lock (<code>.thumbgate/policy.lock</code>) &amp; CI check</summary><div class="feat-detail"><p><strong>Why it matters:</strong> The team shares the same guardrails because the policy lives in the repo, not on one laptop.</p><p><strong>Under the hood:</strong> The .thumbgate/policy.lock file is committed to your repo and enforced locally (scripts/file-ledger-lock.js). Setup Sprint additionally wires a GitHub Action CI check as a deliverable.</p></div></details></th><td>Local machine only</td><td><strong style="color:var(--cyan);">✓ Repo policy lock</strong></td><td><strong style="color:var(--green);">✓ Wired in repo + GitHub Action</strong></td></tr>
+              <tr><th><details class="feat"><summary>Visual gate debugger (<code>npx thumbgate dashboard --open</code>)</summary><div class="feat-detail"><p><strong>Why it matters:</strong> See what the gate decided and why, instead of reading raw hook logs.</p><p><strong>Under the hood:</strong> npx thumbgate dashboard --open opens the local visual debugger for gate decisions and stats (bin/dashboard-cli.js, scripts/dashboard.js).</p></div></details></th><td>CLI output</td><td><strong style="color:var(--cyan);">✓ Full visual debugger</strong></td><td><strong style="color:var(--green);">✓ Included</strong></td></tr>
+              <tr><th><details class="feat"><summary>Local recall &amp; lesson search</summary><div class="feat-detail"><p><strong>Why it matters:</strong> Lessons learned in one session are available in the next on your machine.</p><p><strong>Under the hood:</strong> The machine-wide local lesson store shares lessons across sessions on your machine; Pro adds recall and lesson search. Hosted team sync is not generally available.</p></div></details></th><td>Local only</td><td><strong style="color:var(--cyan);">✓ Included</strong></td><td>Local workflow scope</td></tr>
+              <tr><th><details class="feat"><summary>Export thumbs as training data (JSONL / DPO)</summary><div class="feat-detail"><p><strong>Why it matters:</strong> Turn your thumbs feedback into exportable training data you own.</p><p><strong>Under the hood:</strong> Pro can export feedback as JSONL in DPO format (scripts/export-dpo-pairs.js) when the export flag is enabled; it is advisory tooling, not a default-enforced pipeline.</p></div></details></th><td>—</td><td><strong style="color:var(--cyan);">✓ Included</strong></td><td>—</td></tr>
+              <tr><th><details class="feat"><summary>60-minute live working review + failure map</summary><div class="feat-detail"><p><strong>Why it matters:</strong> A working session on your real workflow, ending with a concrete failure map.</p><p><strong>Under the hood:</strong> Setup Sprint deliverable: a 60-minute working review of one workflow producing a failure map, then configured gates for that workflow.</p></div></details></th><td>—</td><td>—</td><td><strong style="color:var(--green);">✓ Included</strong></td></tr>
+              <tr><th><details class="feat"><summary>Custom regression test + 2-day rollout &amp; rollback proof</summary><div class="feat-detail"><p><strong>Why it matters:</strong> Evidence the guard works on your workflow before you rely on it, with a rollback path.</p><p><strong>Under the hood:</strong> Setup Sprint deliverable: a custom regression test plus rollout and rollback proof for the configured gate.</p></div></details></th><td>—</td><td>—</td><td><strong style="color:var(--green);">✓ Included (or refunded)</strong></td></tr>
+              <tr><th><details class="feat"><summary>Support &amp; onboarding</summary><div class="feat-detail"><p><strong>Why it matters:</strong> Help when a gate misfires or you need a new rule.</p><p><strong>Under the hood:</strong> Free: community/GitHub. Pro: email support per the current offer. Sprint: done-with-you engineer.</p></div></details></th><td>Community / GitHub</td><td>Email support</td><td><strong style="color:var(--green);">Done-with-you engineer</strong></td></tr>
+              <tr><th><details class="feat"><summary>Enterprise org-wide hosted sync, SSO/SAML &amp; SIEM audit log</summary><div class="feat-detail"><p><strong>Why it matters:</strong> Org-wide enforcement and audit for teams that need it - scoped, not off-the-shelf.</p><p><strong>Under the hood:</strong> Scoped after intake with no committed availability date: hosted org sync, SSO/SAML, and SIEM audit log are defined after one completed workflow sprint.</p></div></details></th><td>—</td><td>—</td><td>Not generally available (custom scope after 1 workflow sprint)</td></tr>
             </tbody>
           </table>
         </div>
@@ -917,7 +927,7 @@
               <strong style="color:var(--text);margin-left:6px;">npx thumbgate dashboard --open</strong>
               <span style="color:var(--cyan);padding:2px 8px;border-radius:999px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);">Pro Visual Debugger · .thumbgate/policy.lock</span>
             </div>
-            <span style="color:var(--green);">● Live PreToolUse Interceptor · 0.34ms p95</span>
+            <span style="color:var(--green);">● Illustrative example · not live telemetry</span>
           </div>
           <div style="padding:22px;">
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px;">
@@ -928,8 +938,8 @@
               </div>
               <div style="padding:14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,0.02);">
                 <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);">Active Pro Rule Packs</div>
-                <div style="font-size:24px;font-weight:800;color:var(--cyan);margin-top:4px;">6 packs armed</div>
-                <div style="font-size:12px;color:var(--muted);margin-top:2px;">AWS · Terraform · K8s · Stripe · Supabase · Git</div>
+                <div style="font-size:24px;font-weight:800;color:var(--cyan);margin-top:4px;">4 packs shipped</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px;">Stripe · Railway · DB migration · DB safety</div>
               </div>
               <div style="padding:14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,0.02);">
                 <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);">Team Repo Immunity</div>
@@ -1122,7 +1132,7 @@ next      decision recorded before execution</pre>
             <tr><th></th><th>Static hook</th><th>Sandbox</th><th>ThumbGate</th></tr>
           </thead>
           <tbody>
-            <tr><th>When it acts</th><td>Listed commands</td><td>After start</td><td>Before the tool call (&lt;0.5ms)</td></tr>
+            <tr><th>When it acts</th><td>Listed commands</td><td>After start</td><td>Before the tool call</td></tr>
             <tr><th>Learns from thumbs</th><td>No</td><td>No</td><td>Yes, locally</td></tr>
             <tr><th>Pre-built infra packs &amp; CI policy lock</th><td>No</td><td>No</td><td>Yes (Pro &amp; Setup Sprint)</td></tr>
             <tr><th>OS / container isolation</th><td>No</td><td>Yes</td><td>Complements sandbox pre-flight</td></tr>
