@@ -160,6 +160,30 @@ function recordTaskOutcome(input = {}, options = {}) {
   fs.mkdirSync(path.dirname(outcomesPath), { recursive: true });
   fs.appendFileSync(outcomesPath, `${JSON.stringify(receipt)}\n`, 'utf8');
   recordOutcomeTrace(receipt, options);
+
+  // If task outcome succeeded and verified, verify any applied lessons
+  try {
+    const isSuccess = receipt.status === 'completed' && receipt.verification?.passed === true;
+    const lessonsToVerify = Array.isArray(input.appliedLessons)
+      ? input.appliedLessons
+      : Array.isArray(input.lessonIds)
+        ? input.lessonIds
+        : Array.isArray(input.metadata?.appliedLessons)
+          ? input.metadata.appliedLessons
+          : [];
+    if (isSuccess && lessonsToVerify.length > 0) {
+      const { verifyLesson } = require('./verified-lessons');
+      const checkCmd = receipt.verification?.verifier
+        || receipt.verification?.method
+        || (receipt.verification?.evidence && receipt.verification.evidence[0])
+        || 'task outcome verification passed';
+      for (const lessonId of lessonsToVerify) {
+        verifyLesson(lessonId, checkCmd, options);
+      }
+    }
+  } catch (_verErr) {
+    /* lesson verification on task outcome is non-blocking */
+  }
   return { recorded: true, duplicate: false, receipt };
 }
 
