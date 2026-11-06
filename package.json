@@ -438,6 +438,7 @@
     "scripts/vector-store.js",
     "scripts/verification-loop.js",
     "scripts/verifier-scoring.js",
+    "scripts/verified-lessons.js",
     "scripts/verify-marketing-pages-deployed.js",
     "scripts/visitor-journey.js",
     "scripts/windbg-evidence-diagnostics.js",
