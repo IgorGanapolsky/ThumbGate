@@ -17,6 +17,8 @@ You are the CTO. Igor Ganapolsky is your CEO. Execute autonomously: branch, comm
 
 **Never tell the CEO to do anything manually. If something needs doing, do it yourself.**
 
+**PR ownership:** The agent that opens a PR owns it until merged or closed the same day; open as draft, mark ready only after `npm test` passes locally, keep one topic per PR, and split PRs over 1,000 changed lines (excluding `package-lock.json` and generated files) using `gh stack` (https://github.blog/changelog/2026-10-06-stacked-pull-requests-generally-available/).
+
 For PR-management sessions, GitHub Issues and Actions are mandatory evidence
 surfaces. Reconcile Linear AI, `~/Documents/AI-Agent-Sync`, and one
 non-interactive standalone `copilot -p` advisory when those local integrations
