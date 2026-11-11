@@ -406,3 +406,36 @@ test('summarizeRecentSegments splits sessions by site, CTA and entry route witho
   assert.equal(summary.intentSessions[0].successHost, 'deals.example.com');
   assert.ok(!JSON.stringify(summary).includes('buyer@example.org'));
 });
+
+test('maskEmail keeps only the first character and top-level domain', () => {
+  const { maskEmail } = require('../scripts/stripe-checkout-diagnostic');
+  assert.equal(maskEmail('jane.doe@gmail.com'), 'j***@g***.com');
+  assert.equal(maskEmail(''), null);
+  assert.equal(maskEmail('not-an-email'), null);
+});
+
+test('collectPaymentAttemptForensics reports link, product, PI error and masked buyer', async () => {
+  const { collectPaymentAttemptForensics } = require('../scripts/stripe-checkout-diagnostic');
+  const now = 2_000_000_000;
+  const stripe = {
+    checkout: { sessions: { listLineItems: async () => ({ data: [{ description: 'x', price: { id: 'price_1', product: { name: 'Deal Pack' } } }] }) } },
+    paymentIntents: {
+      retrieve: async () => ({
+        status: 'requires_payment_method',
+        payment_method_types: ['card'],
+        last_payment_error: { type: 'card_error', code: 'card_declined', decline_code: 'insufficient_funds', payment_method: { type: 'card' } },
+        latest_charge: { status: 'failed', outcome: { network_status: 'declined_by_network', reason: 'insufficient_funds', risk_level: 'normal' } },
+      }),
+    },
+  };
+  const rows = await collectPaymentAttemptForensics(stripe, [
+    { id: 'cs_1', created: now - 60, payment_intent: 'pi_1', payment_link: 'plink_1', amount_total: 300000, currency: 'usd', customer_details: { email: 'buyer@example.org', address: { country: 'US' } }, success_url: 'https://stripe.com/x', status: 'open' },
+    { id: 'cs_2', created: now - 60, payment_intent: null },
+  ], now);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].paymentLink, 'plink_1');
+  assert.deepEqual(rows[0].products, ['Deal Pack (price_1)']);
+  assert.equal(rows[0].piError, 'card_error / card_declined / insufficient_funds');
+  assert.equal(rows[0].maskedEmail, 'b***@e***.org');
+  assert.ok(!JSON.stringify(rows).includes('buyer@example.org'));
+});
