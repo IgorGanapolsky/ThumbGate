@@ -171,8 +171,8 @@ function parseAgentTurn(text) {
     } catch {
       return { kind: 'invalid', thought, error: 'call_not_json', turn };
     }
-    if (!call || !GRAPH_TOOLS.includes(call.tool)) {
-      return { kind: 'invalid', thought, error: `unknown_tool:${call && call.tool}`, turn };
+    if (!GRAPH_TOOLS.includes(call?.tool)) {
+      return { kind: 'invalid', thought, error: `unknown_tool:${call?.tool}`, turn };
     }
     return { kind: 'call', thought, tool: call.tool, input: String(call.input ?? ''), turn };
   }
@@ -221,6 +221,46 @@ function createNeo4jTools(driver, { database, vectorIndex = 'text_embeddings', e
   };
 }
 
+function errorMessage(error, limit) {
+  return String(error?.message || error).slice(0, limit);
+}
+
+const INVALID_TURN_HINT = 'Reply with <thought> plus exactly one <call>{"tool","input"}</call>, or <final_answer>/<halt>.';
+
+async function runCypherTool(turn, tools, state, maxRows) {
+  if (!state.schemaSeen) {
+    return { observation: { error: 'schema_first', hint: 'Call get_graph_schema before writing Cypher.' }, failed: true };
+  }
+  const guard = checkReadOnlyCypher(turn.input);
+  if (!guard.ok) return { observation: { error: 'rejected_query', reason: guard.reason }, failed: true };
+  try {
+    const rows = await tools.executeCypher(turn.input);
+    return { observation: { rows: rows.slice(0, maxRows), truncated: rows.length > maxRows }, failed: rows.length === 0 };
+  } catch (error) {
+    return { observation: { error: 'query_failed', message: errorMessage(error, 300) }, failed: true };
+  }
+}
+
+async function runSemanticSearchTool(turn, tools) {
+  try {
+    const hits = await tools.semanticSearch(turn.input);
+    return { observation: { hits }, failed: !hits?.length };
+  } catch (error) {
+    return { observation: { error: 'search_failed', message: errorMessage(error, 300) }, failed: true };
+  }
+}
+
+/** Execute one parsed non-terminal turn and report the observation plus whether it counts as a failed attempt. */
+async function observeTurn(turn, tools, state, maxRows) {
+  if (turn.kind === 'invalid') return { observation: { error: turn.error, hint: INVALID_TURN_HINT }, failed: true };
+  if (turn.tool === 'get_graph_schema') {
+    state.schemaSeen = true;
+    return { observation: await tools.getGraphSchema(), failed: false };
+  }
+  if (turn.tool === 'execute_cypher_query') return runCypherTool(turn, tools, state, maxRows);
+  return runSemanticSearchTool(turn, tools);
+}
+
 /**
  * Run the GraphRAG ReAct loop.
  * @param {string} userQuery
@@ -240,7 +280,7 @@ async function runGraphRagTraversal(userQuery, {
   const system = buildGraphTraversalSystemPrompt();
   const messages = [{ role: 'user', content: buildGraphTraversalUserPrompt(userQuery) }];
   const trace = [];
-  let schemaSeen = false;
+  const state = { schemaSeen: false };
   let failedAttempts = 0;
 
   for (let step = 1; step <= maxSteps; step += 1) {
@@ -256,51 +296,15 @@ async function runGraphRagTraversal(userQuery, {
       return { status: 'halted', answer: null, missingLink: turn.missingLink, steps: step, failedAttempts, trace };
     }
 
-    let observation;
-    let failed = false;
-    if (turn.kind === 'invalid') {
-      observation = { error: turn.error, hint: 'Reply with <thought> plus exactly one <call>{"tool","input"}</call>, or <final_answer>/<halt>.' };
-      failed = true;
-    } else if (turn.tool === 'get_graph_schema') {
-      observation = await tools.getGraphSchema();
-      schemaSeen = true;
-    } else if (turn.tool === 'execute_cypher_query') {
-      const guard = checkReadOnlyCypher(turn.input);
-      if (!schemaSeen) {
-        observation = { error: 'schema_first', hint: 'Call get_graph_schema before writing Cypher.' };
-        failed = true;
-      } else if (!guard.ok) {
-        observation = { error: 'rejected_query', reason: guard.reason };
-        failed = true;
-      } else {
-        try {
-          const rows = await tools.executeCypher(turn.input);
-          observation = { rows: rows.slice(0, maxRows), truncated: rows.length > maxRows };
-          failed = rows.length === 0;
-        } catch (error) {
-          observation = { error: 'query_failed', message: String(error && error.message || error).slice(0, 300) };
-          failed = true;
-        }
-      }
-    } else {
-      try {
-        const hits = await tools.semanticSearch(turn.input);
-        observation = { hits };
-        failed = !hits || hits.length === 0;
-      } catch (error) {
-        observation = { error: 'search_failed', message: String(error && error.message || error).slice(0, 300) };
-        failed = true;
-      }
-    }
-
-    trace[trace.length - 1].failed = failed;
+    const { observation, failed } = await observeTurn(turn, tools, state, maxRows);
+    trace.at(-1).failed = failed;
     if (failed) failedAttempts += 1;
     if (failedAttempts >= maxFailedAttempts) {
-      const lastCypher = [...trace].reverse().find((t) => t.tool === 'execute_cypher_query');
+      const lastCypher = trace.findLast((t) => t.tool === 'execute_cypher_query');
       return {
         status: 'halted',
         answer: null,
-        missingLink: `No valid path after ${failedAttempts} failed attempts. Last thought: ${turn.thought || 'n/a'}. Last query: ${lastCypher ? lastCypher.input : 'n/a'}`,
+        missingLink: `No valid path after ${failedAttempts} failed attempts. Last thought: ${turn.thought || 'n/a'}. Last query: ${lastCypher?.input ?? 'n/a'}`,
         steps: step,
         failedAttempts,
         trace,
@@ -465,15 +469,17 @@ async function routeWorkload(workload, {
     try {
       text = await callModel({ system, messages: [...messages], model, maxTokens: 512 });
     } catch (error) {
-      lastErrors = [`router_call_failed:${String(error && error.message || error).slice(0, 120)}`];
+      lastErrors = [`router_call_failed:${errorMessage(error, 120)}`];
       break;
     }
     const parsed = parseJsonObject(text);
     const check = validateRouterDecision(parsed);
     if (check.ok) return { ...clampDecision(parsed), source: 'llm' };
     lastErrors = parsed === null ? ['invalid_json'] : check.errors;
-    messages.push({ role: 'assistant', content: String(text || '') });
-    messages.push({ role: 'user', content: `Your output failed validation: ${lastErrors.join('; ')}. Return only the corrected JSON object.` });
+    messages.push(
+      { role: 'assistant', content: String(text || '') },
+      { role: 'user', content: `Your output failed validation: ${lastErrors.join('; ')}. Return only the corrected JSON object.` },
+    );
   }
   return {
     primary_expert: EXPERTS.CLAUDE,
@@ -507,7 +513,7 @@ async function dispatchWorkload(decision, workload, {
     });
     outputs.push({ expert: task.expert, model: modelFor(task.expert), output });
   }
-  return { decision, outputs, final: outputs[outputs.length - 1].output };
+  return { decision, outputs, final: outputs.at(-1).output };
 }
 
 // ===========================================================================
@@ -654,6 +660,43 @@ const MCP_TOOL_NAMES = Object.freeze(['graphrag_traverse', 'route_workload', 'tr
  * `useModel` is true. GraphRAG always needs a model and a Neo4j instance and
  * reports `unavailable` instead of throwing when either is missing.
  */
+function boundedMaxSteps(value) {
+  return Number.isInteger(value) ? Math.min(Math.max(value, 1), GRAPH_MAX_STEPS) : GRAPH_MAX_STEPS;
+}
+
+function runRouteTool(args, modelCaller) {
+  if (typeof args.workload !== 'string' || !args.workload) throw new Error('workload must be a non-empty string');
+  return routeWorkload(args.workload, { callModel: modelCaller });
+}
+
+function runTrimTool(args, modelCaller) {
+  if (typeof args.rawContext !== 'string') throw new Error('rawContext must be a string');
+  const tokenBudget = Number.isInteger(args.tokenBudget) && args.tokenBudget > 0 ? args.tokenBudget : undefined;
+  return trimContextJustInTime(args.rawContext, String(args.targetOperation || ''), { callModel: modelCaller, tokenBudget });
+}
+
+async function runGraphRagTool(args, { env, callModel, graphTools, requireDriver }) {
+  if (typeof args.query !== 'string' || !args.query.trim()) throw new Error('query must be a non-empty string');
+  let tools = graphTools;
+  let driver = null;
+  if (!tools) {
+    const built = createNeo4jToolsFromEnv(env, requireDriver ? { requireDriver } : undefined);
+    if (!built.tools) return { status: 'unavailable', reason: built.reason, answer: null, trace: [] };
+    ({ tools, driver } = built);
+  }
+  try {
+    return await runGraphRagTraversal(args.query, {
+      callModel: callModel || createLlmClientCaller(),
+      tools,
+      maxSteps: boundedMaxSteps(args.maxSteps),
+    });
+  } catch (error) {
+    return { status: 'unavailable', reason: errorMessage(error, 200), answer: null, trace: [] };
+  } finally {
+    if (driver) await driver.close();
+  }
+}
+
 async function handlePipelineTool(name, args = {}, {
   env = process.env,
   callModel,
@@ -661,39 +704,9 @@ async function handlePipelineTool(name, args = {}, {
   requireDriver,
 } = {}) {
   const modelCaller = callModel || (args.useModel ? createLlmClientCaller() : deterministicOnlyCaller());
-  if (name === 'route_workload') {
-    if (typeof args.workload !== 'string' || !args.workload) throw new Error('workload must be a non-empty string');
-    return routeWorkload(args.workload, { callModel: modelCaller });
-  }
-  if (name === 'trim_context') {
-    if (typeof args.rawContext !== 'string') throw new Error('rawContext must be a string');
-    return trimContextJustInTime(args.rawContext, String(args.targetOperation || ''), {
-      callModel: modelCaller,
-      tokenBudget: Number.isInteger(args.tokenBudget) && args.tokenBudget > 0 ? args.tokenBudget : undefined,
-    });
-  }
-  if (name === 'graphrag_traverse') {
-    if (typeof args.query !== 'string' || !args.query.trim()) throw new Error('query must be a non-empty string');
-    let tools = graphTools;
-    let driver = null;
-    if (!tools) {
-      const built = createNeo4jToolsFromEnv(env, requireDriver ? { requireDriver } : undefined);
-      if (!built.tools) return { status: 'unavailable', reason: built.reason, answer: null, trace: [] };
-      tools = built.tools;
-      driver = built.driver;
-    }
-    try {
-      return await runGraphRagTraversal(args.query, {
-        callModel: callModel || createLlmClientCaller(),
-        tools,
-        maxSteps: Number.isInteger(args.maxSteps) ? Math.min(Math.max(args.maxSteps, 1), GRAPH_MAX_STEPS) : GRAPH_MAX_STEPS,
-      });
-    } catch (error) {
-      return { status: 'unavailable', reason: String(error && error.message || error).slice(0, 200), answer: null, trace: [] };
-    } finally {
-      if (driver) await driver.close();
-    }
-  }
+  if (name === 'route_workload') return runRouteTool(args, modelCaller);
+  if (name === 'trim_context') return runTrimTool(args, modelCaller);
+  if (name === 'graphrag_traverse') return runGraphRagTool(args, { env, callModel, graphTools, requireDriver });
   throw new Error(`unknown_pipeline_tool:${name}`);
 }
 
