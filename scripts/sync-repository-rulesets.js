@@ -164,11 +164,18 @@ function diffContexts(actual, expected) {
 }
 
 function expectedStatusContexts(policy = RULESET_POLICY, mergeQuality = MERGE_QUALITY_CHECKS) {
-  const source = policy?.rules?.required_status_checks?.contexts_from;
+  const statusPolicy = policy?.rules?.required_status_checks || {};
+  const source = statusPolicy.contexts_from;
+  const additional = Array.isArray(statusPolicy.additional_contexts)
+    ? statusPolicy.additional_contexts
+    : [];
   if (source === 'merge-quality-checks') {
-    return normalizeContexts(mergeQuality.requiredStatusCheckContexts || []);
+    return normalizeContexts([
+      ...(mergeQuality.requiredStatusCheckContexts || []),
+      ...additional,
+    ]);
   }
-  return normalizeContexts(policy?.rules?.required_status_checks?.contexts || []);
+  return normalizeContexts([...(statusPolicy.contexts || []), ...additional]);
 }
 
 function buildExpectedRulesPayload(policy = RULESET_POLICY, mergeQuality = MERGE_QUALITY_CHECKS) {
