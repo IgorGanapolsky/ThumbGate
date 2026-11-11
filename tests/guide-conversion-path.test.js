@@ -14,14 +14,15 @@ test('guide keeps proof-backed conversion links close to the install path', () =
   assert.match(GUIDE_HTML, /Verification Evidence/);
 });
 
-test('guide explains when to use Pro versus the workflow hardening sprint', () => {
-  assert.match(GUIDE_HTML, /Workflow Hardening Sprint/i);
+test('guide explains when to use Pro versus the $499 Setup Sprint', () => {
+  assert.match(GUIDE_HTML, /\$499 Setup Sprint/);
   assert.match(GUIDE_HTML, /one workflow, one owner, and one repeated failure/i);
   assert.match(GUIDE_HTML, /Get Pro — \$19\/mo or \$149\/yr/);
   assert.match(GUIDE_HTML, /\/diagnostic\?utm_source=guide/);
-  assert.match(GUIDE_HTML, /Start \$499 diagnostic/);
-  assert.match(GUIDE_HTML, /\/go\/sprint\?utm_source=guide/);
-  assert.match(GUIDE_HTML, /Scope \$1500 sprint/);
+  assert.match(GUIDE_HTML, /Book the \$499 Setup Sprint/);
+  // Single-offer experiment (docs/COMMERCIAL_TRUTH.md): the $1,500 sprint is not promoted publicly.
+  assert.doesNotMatch(GUIDE_HTML, /\$1,?500/);
+  assert.doesNotMatch(GUIDE_HTML, /\/go\/sprint\?utm_source=guide/);
   assert.match(GUIDE_HTML, /Send workflow first/);
   assert.match(GUIDE_HTML, /#workflow-sprint-intake/);
   assert.doesNotMatch(GUIDE_HTML, /CHECKOUT_URL__|buy\.stripe\.com|paypal\.com\/ncp\/payment/);
