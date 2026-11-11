@@ -18,14 +18,6 @@ const {
   DEFAULT_READ_ONLY_TOOLS,
   DEFAULT_MUTATING_TOOLS,
 } = require('./integrations/ideabrowser-connector');
-const {
-  computeEmeansScalingLaws,
-  cosineAnnealStep,
-  runEmeansClustering,
-  compileEmeansCodebook,
-  decodeFromCodebook,
-  queryEmeansCodebook,
-} = require('./lesson-search');
 
 // The package entry point is the production surface for `thumbgate`.
 // The hosted-Hermes identity/lifecycle/approval gates are exported here so
@@ -34,12 +26,6 @@ const {
 // HermesPlatformProtocol for turn lifecycle + approvals, and through
 // HermesSyncPlane for the authorized-shape read path.
 module.exports = Object.assign({}, feedbackLoop, {
-  computeEmeansScalingLaws,
-  cosineAnnealStep,
-  runEmeansClustering,
-  compileEmeansCodebook,
-  decodeFromCodebook,
-  queryEmeansCodebook,
   HermesPlatformProtocol,
   HermesSyncPlane,
   ProtocolError,

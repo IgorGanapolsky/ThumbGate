@@ -77,10 +77,13 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
   assert.match(landingPage, /data-cta-id="nav_paid_login"[^>]*>Log in</);
   assert.match(landingPage, /id="paidLoginBar"/);
   assert.match(landingPage, /id="paidLoginKeyInput"/);
-  assert.match(landingPage, /\/v1\/cloud\/sso\/authorize\?provider=google/);
-  assert.match(landingPage, /\/v1\/cloud\/sso\/authorize\?provider=apple/);
-  assert.match(dashboardPage, /id="ssoGoogleBtn"/);
-  assert.match(dashboardPage, /id="ssoAppleBtn"/);
+  assert.match(landingPage, /id="paidLoginSubmitBtn"/);
+  assert.doesNotMatch(dashboardPage, /id="ssoGoogleBtn"/);
+  assert.doesNotMatch(dashboardPage, /id="ssoAppleBtn"/);
+  assert.doesNotMatch(dashboardPage, /Continue with Google SSO or Apple SSO/);
+  assert.match(dashboardPage, /id="apiKey"/);
+  assert.match(dashboardPage, /id="connectBtn"/);
+  assert.match(dashboardPage, /id="getProBtn"[^>]*href="https:\/\/thumbgate\.ai\/pricing"/);
   assert.match(landingPage, /window\.tgSubmitPaidLogin/);
   assert.match(landingPage, /\/v1\/auth\/session/);
   assert.match(dashboardPage, /\/v1\/auth\/session/);
@@ -93,11 +96,15 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     THUMBGATE_OPERATOR_KEY: process.env.THUMBGATE_OPERATOR_KEY,
     THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
   };
   process.env.THUMBGATE_API_KEY = 'tg_admin_test_secret_999';
   process.env.THUMBGATE_OPERATOR_KEY = 'tg_op_test_secret_888';
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   process.env.STRIPE_SECRET_KEY = '';
+  delete process.env.GOOGLE_CLIENT_ID;
+  delete process.env.APPLE_CLIENT_ID;
 
   const { startServer } = require('../src/api/server');
   const handle = await startServer({ port: 0, host: '127.0.0.1' });
@@ -107,6 +114,68 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     assert.equal(initialRes.status, 200);
     const initialBody = await initialRes.json();
     assert.equal(initialBody.authenticated, false);
+    assert.deepEqual(initialBody.ssoProviders, { google: false, apple: false });
+
+    // Unconfigured OAuth providers: buttons hidden on /dashboard and /, route returns 404 (never loopback 302 or cookie)
+    const unconfiguredDashRes = await fetch(`${origin}/dashboard`);
+    assert.equal(unconfiguredDashRes.status, 200);
+    const unconfiguredDashHtml = await unconfiguredDashRes.text();
+    assert.doesNotMatch(unconfiguredDashHtml, /ssoGoogleBtn|ssoAppleBtn/);
+    assert.match(unconfiguredDashHtml, /id="apiKey"/);
+    assert.match(unconfiguredDashHtml, /https:\/\/thumbgate\.ai\/pricing/);
+    const dashAuthLinks = [...unconfiguredDashHtml.matchAll(/href="(\/[^"]*(?:auth|sso|oauth|login)[^"]*)"/gi)].map((m) => m[1]);
+    for (const relHref of dashAuthLinks) {
+      const linkProbe = await fetch(`${origin}${relHref}`, { redirect: 'manual' });
+      const loc = linkProbe.headers.get('location') || '';
+      assert.doesNotMatch(loc, /^\/dashboard\b/, `dashboard auth link ${relHref} must not redirect back to /dashboard`);
+    }
+
+    const unconfiguredHomeRes = await fetch(`${origin}/`);
+    assert.equal(unconfiguredHomeRes.status, 200);
+    const unconfiguredHomeHtml = await unconfiguredHomeRes.text();
+    assert.doesNotMatch(unconfiguredHomeHtml, /googleCloudLoginLink|appleSsoLoginLink/);
+
+    for (const p of ['google', 'apple', 'unsupported']) {
+      const sso404 = await fetch(`${origin}/v1/cloud/sso/authorize?provider=${p}`, { redirect: 'manual' });
+      assert.equal(sso404.status, 404);
+      assert.equal(sso404.headers.get('location'), null);
+      assert.equal(sso404.headers.get('set-cookie'), null);
+    }
+
+    // Configured Google + Apple OAuth providers: buttons shown only for configured IDs and redirect to real IdPs
+    process.env.GOOGLE_CLIENT_ID = 'google-client-test.apps.googleusercontent.com';
+    const googleOnlyDashHtml = await (await fetch(`${origin}/dashboard`)).text();
+    assert.match(googleOnlyDashHtml, /id="ssoGoogleBtn"/);
+    assert.doesNotMatch(googleOnlyDashHtml, /id="ssoAppleBtn"/);
+    const googleOnlyHomeHtml = await (await fetch(`${origin}/`)).text();
+    assert.match(googleOnlyHomeHtml, /id="googleCloudLoginLink"/);
+    assert.doesNotMatch(googleOnlyHomeHtml, /id="appleSsoLoginLink"/);
+    const google302 = await fetch(`${origin}/v1/cloud/sso/authorize?provider=google`, { redirect: 'manual' });
+    assert.equal(google302.status, 302);
+    assert.match(google302.headers.get('location') || '', /^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
+    const googleJson = await (await fetch(`${origin}/v1/cloud/sso/authorize?provider=google&format=json`)).json();
+    assert.equal(googleJson.mode, 'oauth_redirect');
+    assert.equal((await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple`, { redirect: 'manual' })).status, 404);
+
+    process.env.APPLE_CLIENT_ID = 'ai.thumbgate.web.test';
+    const bothDashHtml = await (await fetch(`${origin}/dashboard`)).text();
+    assert.match(bothDashHtml, /id="ssoGoogleBtn"/);
+    assert.match(bothDashHtml, /id="ssoAppleBtn"/);
+    const bothHomeHtml = await (await fetch(`${origin}/`)).text();
+    assert.match(bothHomeHtml, /id="googleCloudLoginLink"/);
+    assert.match(bothHomeHtml, /id="appleSsoLoginLink"/);
+    for (const relHref of [...bothDashHtml.matchAll(/href="(\/[^"]*(?:auth|sso|oauth|login)[^"]*)"/gi)].map((m) => m[1])) {
+      const linkProbe = await fetch(`${origin}${relHref}`, { redirect: 'manual' });
+      const loc = linkProbe.headers.get('location') || '';
+      assert.doesNotMatch(loc, /^\/dashboard\b/, `configured dashboard auth link ${relHref} must not redirect back to /dashboard`);
+    }
+    const apple302 = await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple`, { redirect: 'manual' });
+    assert.equal(apple302.status, 302);
+    assert.match(apple302.headers.get('location') || '', /^https:\/\/appleid\.apple\.com\/auth\/authorize\?/);
+    const appleJson = await (await fetch(`${origin}/v1/cloud/sso/authorize?provider=apple&format=json`)).json();
+    assert.equal(appleJson.mode, 'oauth_redirect');
+    delete process.env.GOOGLE_CLIENT_ID;
+    delete process.env.APPLE_CLIENT_ID;
 
     const badJsonRes = await fetch(`${origin}/v1/auth/session`, {
       method: 'POST',

@@ -302,22 +302,18 @@
 
 <div class="auth-bar" id="authBar">
   <div class="container">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-      <div>
-        <span id="authTitle" style="font-size:14px;font-weight:600;">Sign in to your workspace</span>
-        <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Continue with Google SSO or Apple SSO, or launch locally with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>.</span>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <a class="btn" id="ssoGoogleBtn" href="/v1/cloud/sso/authorize?provider=google" style="padding:8px 14px;font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">G Continue with Google</a>
-        <a class="btn" id="ssoAppleBtn" href="/v1/cloud/sso/authorize?provider=apple" style="padding:8px 14px;font-size:12px;background:#f8fafc;color:#090d16;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px;"> Continue with Apple</a>
-        <button class="btn-outline" id="demoBtn" onclick="loadDemo()">Try Demo</button>
-        <button class="btn-outline" id="disconnectBtn" onclick="disconnectKey()" style="display:none; border-color:#f87171; color:#f87171;">Log Out</button>
-        <span class="auth-status" id="authStatus"></span>
-      </div>
+    <div style="margin-bottom:10px;">
+      <span id="authTitle" style="font-size:14px;font-weight:600;">Connect your API key</span>
+      <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Pro auto-connects locally when you launch with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>. Otherwise paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code> manually.</span>
     </div>
-    <div style="display:none;" aria-hidden="true">
-      <input type="hidden" class="auth-input" id="apiKey" value="" />
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <!-- __DASHBOARD_SSO_BUTTONS__ -->
+      <input type="password" class="auth-input" id="apiKey" placeholder="Paste your API key here (THUMBGATE_API_KEY or THUMBGATE_PRO_KEY)..." />
       <button class="btn" id="connectBtn" onclick="connect()">Connect</button>
+      <a class="btn-outline" id="getProBtn" href="https://thumbgate.ai/pricing" style="text-decoration:none;display:inline-flex;align-items:center;">Get Pro</a>
+      <button class="btn-outline" id="demoBtn" onclick="loadDemo()">Try Demo</button>
+      <button class="btn-outline" id="disconnectBtn" onclick="disconnectKey()" style="display:none; border-color:#f87171; color:#f87171;">Disconnect Key</button>
+      <span class="auth-status" id="authStatus"></span>
     </div>
   </div>
 </div>

@@ -3772,6 +3772,35 @@ function normalizePublicMarketingHtml(html, runtimeConfig, requestHost) {
   return output;
 }
 
+function getConfiguredSsoProviders(env = process.env) {
+  return {
+    google: Boolean(String((env && env.GOOGLE_CLIENT_ID) || '').trim()),
+    apple: Boolean(String((env && env.APPLE_CLIENT_ID) || '').trim()),
+  };
+}
+
+function buildDashboardSsoButtonsHtml(providers = getConfiguredSsoProviders()) {
+  const parts = [];
+  if (providers.google) {
+    parts.push('<a class="btn" id="ssoGoogleBtn" href="/v1/cloud/sso/authorize?provider=google" style="padding:8px 14px;font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">G Continue with Google</a>');
+  }
+  if (providers.apple) {
+    parts.push('<a class="btn" id="ssoAppleBtn" href="/v1/cloud/sso/authorize?provider=apple" style="padding:8px 14px;font-size:12px;background:#f8fafc;color:#090d16;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">\uF8FF Continue with Apple</a>');
+  }
+  return parts.join('\n      ');
+}
+
+function buildLandingSsoButtonsHtml(providers = getConfiguredSsoProviders()) {
+  const parts = [];
+  if (providers.google) {
+    parts.push('<a href="/v1/cloud/sso/authorize?provider=google" id="googleCloudLoginLink" style="display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border-radius:8px;border:1px solid rgba(56,215,255,0.45);background:rgba(56,215,255,0.1);color:var(--cyan);font:800 12px/1 inherit;text-decoration:none;">G Continue with Google</a>');
+  }
+  if (providers.apple) {
+    parts.push('<a href="/v1/cloud/sso/authorize?provider=apple" id="appleSsoLoginLink" style="display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border-radius:8px;border:1px solid #f8fafc;background:#f8fafc;color:#090d16;font:800 12px/1 inherit;text-decoration:none;">\uF8FF Continue with Apple</a>');
+  }
+  return parts.join('\n          ');
+}
+
 function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContext = {}) {
   const template = fs.readFileSync(templatePath, 'utf-8');
   const googleSiteVerificationMeta = runtimeConfig.googleSiteVerification
@@ -3818,6 +3847,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
     '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
+    '<!-- __LANDING_SSO_BUTTONS__ -->': buildLandingSsoButtonsHtml(getConfiguredSsoProviders()),
   });
   const normalized = normalizePublicMarketingHtml(rendered, runtimeConfig, pageContext.requestHost);
   if (!privacyOptOut) return normalized;
@@ -4025,6 +4055,7 @@ function loadDashboardPageHtml(req, expectedApiKey) {
   return fillTemplate(template, {
     '__DASHBOARD_BOOTSTRAP_KEY__': bootstrap.serializedBootstrapKey,
     '__DASHBOARD_BOOTSTRAP_ENABLED__': bootstrap.bootstrapActive ? 'true' : 'false',
+    '<!-- __DASHBOARD_SSO_BUTTONS__ -->': buildDashboardSsoButtonsHtml(getConfiguredSsoProviders()),
   });
 }
 
@@ -5723,6 +5754,7 @@ async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOper
       ok: true,
       authenticated: Boolean(tier),
       tier: tier || null,
+      ssoProviders: getConfiguredSsoProviders(),
       ssoProvider: sessionEntry?.ssoProvider || null,
       ssoEmail: sessionEntry?.ssoEmail || null,
     }, noStoreHeaders);
@@ -6798,61 +6830,42 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname === '/v1/cloud/sso/authorize') {
       const rawProvider = String(parsed.searchParams.get('provider') || 'google').trim().toLowerCase();
-      const provider = ['google', 'apple', 'github', 'okta'].includes(rawProvider) ? rawProvider : 'google';
-      const email = String(parsed.searchParams.get('email') || '').trim().toLowerCase();
+      const provider = ['google', 'apple'].includes(rawProvider) ? rawProvider : 'invalid';
       const appOrigin = hostedConfig.appOrigin || 'https://thumbgate.ai';
       const callbackUrl = `${appOrigin}/v1/cloud/sso/callback?provider=${encodeURIComponent(provider)}`;
       const stateNonce = `st_${crypto.randomBytes(12).toString('hex')}`;
-      if (provider === 'google' && process.env.GOOGLE_CLIENT_ID) {
-        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(process.env.GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(stateNonce)}`;
+      const googleClientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+      const appleClientId = String(process.env.APPLE_CLIENT_ID || '').trim();
+      if (provider === 'google' && googleClientId) {
+        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(googleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(stateNonce)}`;
         if (parsed.searchParams.get('format') === 'json') {
-          sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: googleAuthUrl });
+          sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: googleAuthUrl }, { 'Cache-Control': 'no-store' });
           return;
         }
         res.writeHead(302, { 'X-Content-Type-Options': 'nosniff', Location: googleAuthUrl, 'Cache-Control': 'no-store' });
         res.end();
         return;
       }
-      if (provider === 'apple' && process.env.APPLE_CLIENT_ID) {
-        const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.APPLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=name%20email&response_mode=form_post&state=${encodeURIComponent(stateNonce)}`;
+      if (provider === 'apple' && appleClientId) {
+        const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(appleClientId)}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=name%20email&response_mode=form_post&state=${encodeURIComponent(stateNonce)}`;
         if (parsed.searchParams.get('format') === 'json') {
-          sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: appleAuthUrl });
+          sendJson(res, 200, { ok: true, mode: 'oauth_redirect', provider, redirectUrl: appleAuthUrl }, { 'Cache-Control': 'no-store' });
           return;
         }
         res.writeHead(302, { 'X-Content-Type-Options': 'nosniff', Location: appleAuthUrl, 'Cache-Control': 'no-store' });
         res.end();
         return;
       }
-      const nowMs = Date.now();
-      prunePaidAuthSessions(nowMs);
-      const sessionToken = crypto.randomBytes(32).toString('hex');
-      const effectiveKey = expectedOperatorKey || expectedApiKey || `tg_sso_${provider}_${crypto.createHash('sha256').update(`${provider}:${email || 'sso'}`).digest('hex').slice(0, 24)}`;
-      paidAuthSessions.set(sessionToken, {
-        apiKey: effectiveKey,
-        ssoProvider: provider,
-        ssoEmail: email || null,
-        createdAt: nowMs,
-        expiresAt: nowMs + PAID_AUTH_SESSION_TTL_SECONDS * 1000,
-      });
-      const headers = {
-        'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'no-store',
-        'Set-Cookie': serializeCookie(PAID_AUTH_COOKIE_NAME, sessionToken, {
-          maxAge: PAID_AUTH_SESSION_TTL_SECONDS,
-          httpOnly: true,
-          sameSite: 'Lax',
-          secure: true,
-        }),
-      };
-      if (parsed.searchParams.get('format') === 'json') {
-        sendJson(res, 200, { ok: true, authenticated: true, tier: 'Pro', provider, email: email || null }, headers);
-        return;
-      }
-      res.writeHead(302, {
-        ...headers,
-        Location: `/dashboard?sso=${encodeURIComponent(provider)}`,
-      });
-      res.end();
+      sendJson(
+        res,
+        404,
+        {
+          ok: false,
+          error: 'sso_provider_not_configured',
+          provider: rawProvider || 'google',
+        },
+        { 'Cache-Control': 'no-store' },
+      );
       return;
     }
 
