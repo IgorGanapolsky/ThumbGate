@@ -93,3 +93,7 @@ Five planes on existing rails: datapacks (4-field scope), episodic memory, rubri
 
 Knowledge as operational infrastructure: pre-action freshness diodes, poison prevention (deprecated APIs, unsafe scripts), and non-docs surface federation. Never vendor Mintlify SaaS or build docsite generators. `node scripts/mintlify-knowledge-honesty.js --json` · skill `mintlify-knowledge-honesty-not-clone`.
 
+## ReAct GraphRAG queries go through gate_check
+
+When a Gemini agent runs a GraphRAG traversal, wrap its graph tools with `createGatedGraphTools` from `evals/graphrag-moe-jit/runner.js` (or use `runEvalCase`) instead of querying the graph directly. It drives the existing pipelines in `scripts/agentic-prompt-pipelines.js`: context is trimmed just in time, the Claude/Gemini router picks a stack, then the ReAct loop runs. Each Cypher query must pass the read-only deny check (no CREATE, MERGE, DELETE, SET, REMOVE, DROP, LOAD CSV, apoc or dbms calls), the schema-first check (every label and relationship appears in `get_graph_schema` output), and the stdio MCP `gate_check` tool. Only `allow` runs the query; `warn`, `block` and `error` count as a failed attempt, and the traversal halts after 3. Spec: `evals/graphrag-moe-jit/SPEC.md`. Test: `npm run test:graphrag-moe-jit-evals`.
+
