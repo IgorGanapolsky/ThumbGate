@@ -3399,11 +3399,22 @@ function sendText(res, statusCode, text, extraHeaders = {}, options = {}) {
   res.end(headOnly ? '' : text);
 }
 
+function extractOriginTrialTokens(html) {
+  if (typeof html !== 'string' || !html.includes('http-equiv="origin-trial"')) return [];
+  const matches = html.matchAll(/<meta\s+http-equiv="origin-trial"\s+content="([^"]+)"/gi);
+  return Array.from(matches, (m) => m[1].trim()).filter(Boolean);
+}
+
 function sendHtml(res, statusCode, html, extraHeaders = {}, options = {}) {
   const { headOnly = false } = options;
+  const originTrialTokens = extractOriginTrialTokens(html);
+  const originTrialHeader = originTrialTokens.length > 0
+    ? { 'Origin-Trial': originTrialTokens.join(', ') }
+    : {};
   res.writeHead(statusCode, {
     'Content-Type': 'text/html; charset=utf-8',
     'Content-Length': Buffer.byteLength(html),
+    ...originTrialHeader,
     ...extraHeaders,
   });
   res.end(headOnly ? '' : html);
