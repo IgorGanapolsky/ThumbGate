@@ -161,14 +161,24 @@ test('the server exposes a route for /js/webmcp.js', () => {
 // expires 2026-11-17); the base64 payload below is that token's readable JSON
 // tail. thumbgate.ai needs its own token — when issued it lands as a second
 // origin-trial meta on the same pages and this test's floor of one still holds.
-test('wired pages embed the WebMCP origin-trial meta token', () => {
+test('wired pages embed the renewed WebMCP origin-trial meta tokens and server emits Origin-Trial header', () => {
   for (const page of ['index.html', 'pricing.html']) {
     const body = fs.readFileSync(path.join(root, 'public', page), 'utf8');
-    const metaCount = body.split('http-equiv="origin-trial"').length - 1;
-    assert.ok(metaCount >= 1, `${page} must carry at least one origin-trial meta tag`);
-    assert.ok(
-      body.includes('eyJvcmlnaW4iOiJodHRwczovL3RodW1iZ2F0ZS5hcHA6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIs'),
-      `${page} must embed the registered thumbgate.app WebMCP token`
-    );
+    const matches = [...body.matchAll(/<meta\s+http-equiv="origin-trial"\s+content="([^"]+)"/gi)].map((m) => m[1]);
+    assert.ok(matches.length >= 2, `${page} must carry origin-trial meta tags for both thumbgate.app and www.thumbgate.app`);
+    const payloads = matches.map((tok) => {
+      const buf = Buffer.from(tok, 'base64');
+      const len = buf.readUInt32BE(65);
+      return JSON.parse(buf.subarray(69, 69 + len).toString('utf8'));
+    });
+    const origins = new Set(payloads.map((p) => p.origin));
+    assert.ok(origins.has('https://thumbgate.app:443'), `${page} must include https://thumbgate.app:443`);
+    assert.ok(origins.has('https://www.thumbgate.app:443'), `${page} must include https://www.thumbgate.app:443`);
+    for (const p of payloads) {
+      assert.equal(p.feature, 'WebMCP');
+      assert.ok(p.expiry > 1794873600, `${page} WebMCP token for ${p.origin} must be renewed past 2026-11-17`);
+    }
   }
+  const serverSource = fs.readFileSync(path.join(root, 'src', 'api', 'server.js'), 'utf8');
+  assert.ok(serverSource.includes("'Origin-Trial'"), 'server.js sendHtml must emit the Origin-Trial HTTP header');
 });

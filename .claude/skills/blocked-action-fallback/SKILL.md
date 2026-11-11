@@ -53,8 +53,10 @@ result) — that log is the evidence if you end up reporting a blocker.
    workflow whose purpose is to get around a control.
 5. **The operator's machine** — when the work genuinely needs local
    credentials, apps or files (Mac-only scripts, signed-in browsers, launchd
-   jobs), start a Remote Control session on the operator's device with clear
-   instructions, or use connected folder access.
+   jobs), queue it through `mac-dispatch` (a `ready-for-agent` issue or a row
+   in the existing herdr sheet), or start a Remote Control session / use
+   connected folder access when the thread has them. Never queue a REFUSED
+   action on the Mac.
 6. **Produce the artifact anyway** — if nothing can *send/publish* it, finish
    everything up to the send (final copy, filled placeholders, exact command)
    and save it where the next session/automation will pick it up.
@@ -79,6 +81,8 @@ business decision). State it once; don't repeat it every turn.
 - NEVER approve a PR, dismiss a review, add a ruleset bypass, use `--admin`, or
   use an owner token to satisfy a control. A blocked merge is a finding.
 - NEVER re-issue a denied tool call through a different tool or wording.
+- NEVER grant yourself permissions or bypass Claude Code's permission checks
+  (`safety-boundaries`).
 - NEVER invent facts to fill a placeholder (prices, user counts, testimonials).
 - ALWAYS write what you learned about a broken route into project memory /
   the lesson DB so the next session starts on the working route.

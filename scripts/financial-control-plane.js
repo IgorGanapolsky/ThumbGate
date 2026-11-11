@@ -83,6 +83,10 @@ const ECONOMIC_ACTION_PATTERNS = [
   /\badd\s+(?:a\s+)?payment\s+method\b/i,
   /\b(?:buy|purchase|subscribe|top-?up)\b/i,
   /\bcharge\s+(?:me\s+)?(?:\$|usd\s*)\d/i,
+  /\bpay\s+now\b/i,
+  /\bpay\s+(?:\$|usd\s*)\d/i,
+  /\b(?:complete|confirm|place|submit|authorize)\s+(?:your\s+|the\s+|my\s+)?(?:purchase|order|payment|checkout|transaction)\b/i,
+  /\b(?:proceed|continue)\s+to\s+checkout\b/i,
   /\bupgrade\b.{0,40}\b(?:pro|premium|business|enterprise)\b/i,
   /\b(?:activate|cancel|change|create|update|upgrade)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:plan|subscription|tier|seat)\b/i,
   /\b(?:activate|cancel|change|create|update|upgrade)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:checkout|payment\s+method)\b/i,
@@ -121,6 +125,9 @@ const ECONOMIC_URL_PATTERNS = [
   /(?:https?:\/\/)?(?:www\.)?billing\.stripe\.com\b/i,
   /(?:https?:\/\/)?(?:www\.)?app\.apollo\.io\b[^\s"'`]*?(?:plans|upgrade|billing|checkout|subscription)/i,
   /(?:https?:\/\/)?(?:www\.)?apollo\.io\b[^\s"'`]*?(?:plans|upgrade|billing|checkout|subscription)/i,
+  /(?:https?:\/\/)?api\.stripe\.com\/v\d+\/(?:charges|payment_intents|subscriptions|checkout\/sessions|invoices|refunds|payouts|transfers|topups)\b/i,
+  /(?:https?:\/\/)?api(?:-m)?\.(?:sandbox\.)?paypal\.com\/v\d+\/(?:checkout\/orders|payments|billing\/subscriptions|invoicing)\b/i,
+  /(?:https?:\/\/)?connect\.squareup(?:staging)?\.com\/v\d+\/(?:payments|orders|subscriptions|invoices|refunds)\b/i,
 ];
 
 const SCREEN_TOOL_PATTERN = /(?:browser|computer|playwright|puppeteer|selenium|click|tap|press)/i;
@@ -381,13 +388,25 @@ function detectEconomicAction(toolName, toolInput = {}) {
   const financialControl = objectValue(toolInput.financialControl || toolInput.financial_control);
   if (toolInput.economicAction === true || metadata.economicAction === true) return true;
   if (financialControl.requisitionId || financialControl.reservationId) return true;
-  // Native browser/computer-use locators do not reveal what a click will do.
-  // Treat them as economic until the exact screen mutation is independently
-  // approved; caller-supplied prose must never downgrade a blind click.
-  if (detectOpaqueScreenMutation(normalizedToolName, toolInput)) return true;
   const command = shellEconomicText(normalizedToolName, toolInput.command || toolInput.cmd);
-  const screenMutationProse = isDeclaredScreenMutation(normalizedToolName, toolInput)
-    ? [toolInput.goal, toolInput.description, toolInput.prompt, metadata.context]
+  const screenMutationTargets = isDeclaredScreenMutation(normalizedToolName, toolInput)
+    ? [
+      toolInput.element,
+      toolInput.label,
+      toolInput.text,
+      toolInput.name,
+      toolInput.title,
+      toolInput.value,
+      toolInput.button,
+      toolInput.control,
+      toolInput.selector,
+      toolInput.ariaLabel,
+      toolInput.aria_label,
+      toolInput.goal,
+      toolInput.description,
+      toolInput.prompt,
+      metadata.context,
+    ].map((value) => String(value || '').replace(/[_-]+/g, ' '))
     : [];
   // WebFetch / browser navigate often put the spend surface only in url/uri/href.
   const navigationTargets = [
@@ -397,32 +416,43 @@ function detectEconomicAction(toolName, toolInput = {}) {
     toolInput.link,
     toolInput.navigate,
     toolInput.target,
+    toolInput.pageUrl,
+    toolInput.page_url,
   ].map((value) => String(value || '')).join(' ');
   const combined = [
     normalizedToolName.replace(/[_-]+/g, ' '),
     command,
     toolInput.action,
     toolInput.operation,
+    toolInput.kind,
     navigationTargets,
-    ...screenMutationProse,
+    ...screenMutationTargets,
   ].map((value) => String(value || '')).join(' ');
   if (ECONOMIC_URL_PATTERNS.some((pattern) => pattern.test(combined))) return true;
   return ECONOMIC_ACTION_PATTERNS.some((pattern) => pattern.test(combined));
 }
 
 function isDeclaredScreenMutation(toolName, toolInput = {}) {
-  if (!SCREEN_TOOL_PATTERN.test(String(toolName || ''))) return false;
+  const normalizedToolName = String(toolName || '').trim();
+  if (!SCREEN_TOOL_PATTERN.test(normalizedToolName)) return false;
   const input = objectValue(toolInput);
-  const declaredOperation = [input.action, input.operation, input.type]
+  const declaredOperation = [input.action, input.operation, input.type, input.kind]
     .map((value) => String(value || ''))
     .join(' ');
-  return SCREEN_MUTATION_PATTERN.test(toolName) || SCREEN_MUTATION_PATTERN.test(declaredOperation);
+  const toolDeclaresMutation = SCREEN_MUTATION_PATTERN.test(normalizedToolName);
+  const declaredMutation = SCREEN_MUTATION_PATTERN.test(declaredOperation);
+  const toolDeclaresObservation = SCREEN_OBSERVATION_PATTERN.test(normalizedToolName);
+  const declaredObservation = SCREEN_OBSERVATION_PATTERN.test(declaredOperation);
+  if (toolDeclaresObservation || (!toolDeclaresMutation && !declaredMutation && declaredObservation)) {
+    return false;
+  }
+  return toolDeclaresMutation || declaredMutation;
 }
 
 function detectOpaqueScreenMutation(toolName, toolInput = {}) {
   const normalizedToolName = String(toolName || '').trim();
   const input = objectValue(toolInput);
-  const declaredOperation = [input.action, input.operation, input.type]
+  const declaredOperation = [input.action, input.operation, input.type, input.kind]
     .map((value) => String(value || ''))
     .join(' ');
   const toolDeclaresMutation = SCREEN_MUTATION_PATTERN.test(normalizedToolName);
@@ -448,23 +478,128 @@ function detectOpaqueScreenMutation(toolName, toolInput = {}) {
     || /(?:browser|computer|playwright|puppeteer|selenium)/i.test(normalizedToolName);
 }
 
+const NON_ECONOMIC_SHELL_EXECUTABLES = new Set([
+  'rg', 'grep', 'egrep', 'fgrep', 'git', 'cat', 'head', 'tail', 'less', 'more',
+  'echo', 'printf', 'herdr', 'sed', 'awk', 'jq', 'ls', 'find', 'wc', 'diff',
+  'stat', 'mdfind', 'true', 'false', 'cd', 'pwd',
+]);
+
+function splitShellSegmentsOutsideQuotes(command) {
+  const segments = [];
+  let current = '';
+  let quote = null;
+  for (let i = 0; i < command.length; i += 1) {
+    const ch = command[i];
+    if (quote) {
+      current += ch;
+      if (ch === '\\' && quote === '"' && i + 1 < command.length) {
+        i += 1;
+        current += command[i];
+      } else if (ch === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (ch === '\'' || ch === '"') {
+      quote = ch;
+      current += ch;
+      continue;
+    }
+    if (ch === '\\' && i + 1 < command.length) {
+      current += ch + command[i + 1];
+      i += 1;
+      continue;
+    }
+    if ((ch === '&' && command[i + 1] === '&') || (ch === '|' && command[i + 1] === '|')) {
+      segments.push(current);
+      current = '';
+      i += 1;
+      continue;
+    }
+    if (ch === ';' || ch === '\n' || ch === '|') {
+      segments.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  if (current) segments.push(current);
+  return segments;
+}
+
+function stripNonEconomicQuotedStrings(segment) {
+  let out = '';
+  let i = 0;
+  while (i < segment.length) {
+    const ch = segment[i];
+    if (ch !== '\'' && ch !== '"') {
+      if (ch === '\\' && i + 1 < segment.length) {
+        out += ch + segment[i + 1];
+        i += 2;
+      } else {
+        out += ch;
+        i += 1;
+      }
+      continue;
+    }
+    const quote = ch;
+    let j = i + 1;
+    while (j < segment.length) {
+      if (segment[j] === '\\' && quote === '"' && j + 1 < segment.length) {
+        j += 2;
+        continue;
+      }
+      if (segment[j] === quote) break;
+      j += 1;
+    }
+    if (j >= segment.length) {
+      out += segment.slice(i);
+      break;
+    }
+    const full = segment.slice(i, j + 1);
+    const inner = segment.slice(i + 1, j);
+    out += ECONOMIC_URL_PATTERNS.some((pattern) => pattern.test(inner)) ? full : ' ';
+    i = j + 1;
+  }
+  return out;
+}
+
+function extractSubshellCommand(clean) {
+  const flagMatch = /^[\w./-]+\s+-[a-z]*c\s+/i.exec(clean);
+  if (!flagMatch) return null;
+  const rest = clean.slice(flagMatch[0].length).trim();
+  if (rest.length >= 2 && (rest[0] === '\'' || rest[0] === '"') && rest.at(-1) === rest[0]) {
+    return rest.slice(1, -1);
+  }
+  return null;
+}
+
 function shellEconomicText(toolName, rawCommand) {
   if (!/^(?:bash|shell|terminal|execute_command|exec_command)$/i.test(toolName)) {
     return rawCommand;
   }
   const command = String(rawCommand || '');
-  return command
-    .split(/(?:&&|\|\||[;\n]|(?<!\|)\|(?!\|))/)
+  return splitShellSegmentsOutsideQuotes(command)
     .map((segment) => {
-      const clean = segment.trim().replace(/^(?:sudo\s+)?(?:env\s+)?(?:[A-Za-z_]\w*=[^\s]+\s+)*/, '');
+      let clean = segment.trim();
+      while (/^(?:sudo|env)\s+/.test(clean) || /^[A-Za-z_]\w*=[^\s]+\s+/.test(clean)) {
+        clean = clean.replace(/^(?:sudo|env)\s+/, '').replace(/^[A-Za-z_]\w*=[^\s]+\s+/, '');
+      }
+      if (!clean) return '';
       const executable = /^([\w./-]+)/.exec(clean)?.[1]?.split('/').at(-1)?.toLowerCase();
-      if (['rg', 'grep', 'git', 'cat', 'head', 'tail', 'less', 'more', 'echo', 'printf'].includes(executable)) {
+      if (!executable || NON_ECONOMIC_SHELL_EXECUTABLES.has(executable)) {
         return '';
       }
-      if (executable === 'gh' && /\b(?:issue|pr)\s+(?:create|view|list|status|edit|comment)\b/i.test(clean)) {
+      if (['bash', 'sh', 'zsh'].includes(executable)) {
+        const subshellCmd = extractSubshellCommand(clean);
+        if (subshellCmd !== null) {
+          return shellEconomicText('Bash', subshellCmd);
+        }
+      }
+      if (executable === 'gh' && /\b(?:issue|pr|release|run|workflow|repo|status|search)\b/i.test(clean)) {
         return '';
       }
-      return clean;
+      return stripNonEconomicQuotedStrings(clean);
     })
     .join(' ');
 }
