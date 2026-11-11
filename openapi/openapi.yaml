@@ -373,6 +373,8 @@ components:
           type: string
     BillingCheckoutRequest:
       type: object
+      required:
+        - customerEmail
       properties:
         successUrl:
           type: string
@@ -2026,7 +2028,7 @@ paths:
       operationId: createBillingCheckoutSession
       security: []
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
@@ -2034,6 +2036,8 @@ paths:
       responses:
         '200':
           description: Stripe checkout session created
+        '400':
+          description: customerEmail is missing or not a valid email address
   /v1/billing/usage:
     get:
       operationId: getBillingUsage
