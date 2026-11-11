@@ -18,9 +18,10 @@ test('visitor checkouts are not treated as automated', () => {
   assert.equal(billing.isAutomatedCheckoutRequest({}), false);
 });
 
-test('a probe never reaches Stripe with a live key', async () => {
+// Production runs on a restricted key (rk_live_); an sk_live_-only check let a probe through on 2026-11-11.
+for (const prefix of ['sk_live_', 'rk_live_']) test(`a probe never reaches Stripe with a ${prefix} key`, async () => {
   const savedKey = billing.CONFIG.STRIPE_SECRET_KEY;
-  billing.CONFIG.STRIPE_SECRET_KEY = 'sk_live_placeholder_not_a_real_key';
+  billing.CONFIG.STRIPE_SECRET_KEY = `${prefix}placeholder_not_a_real_key`;
   try {
     await assert.rejects(
       billing.createCheckoutSession({

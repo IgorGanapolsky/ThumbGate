@@ -2900,6 +2900,11 @@ function isAutomatedCheckoutRequest(metadata = {}) {
   return AUTOMATED_CHECKOUT_SOURCES.has(source) || installId.endsWith('_probe') || installId.startsWith('probe_');
 }
 
+// Secret (sk_live_) and restricted (rk_live_) keys are both live.
+function isLiveStripeKey(key) {
+  return /^(sk|rk)_live_/.test(String(key || ''));
+}
+
 async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, packId = null, metadata = {}, appOrigin } = {}) {
   const resolvedTraceId = traceId || metadata.traceId || createTraceId('checkout');
   const baseCheckoutMetadata = sanitizeMetadata({
@@ -2947,7 +2952,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     return { sessionId: localSessionId, url: null, localMode: true, traceId: resolvedTraceId, metadata: checkoutMetadata };
   }
 
-  if (isAutomatedCheckoutRequest(checkoutMetadata) && CONFIG.STRIPE_SECRET_KEY.startsWith('sk_live_')) {
+  if (isAutomatedCheckoutRequest(checkoutMetadata) && isLiveStripeKey(CONFIG.STRIPE_SECRET_KEY)) {
     throw new Error('Refusing to open a live Stripe Checkout session for a probe or test request. Use a test-mode key.');
   }
 
