@@ -115,6 +115,14 @@ function evaluatePrSize(entries = [], options = {}) {
   };
 }
 
+function parseMaxLines(raw) {
+  const value = String(raw ?? '').trim();
+  if (!/^\d+$/.test(value) || Number(value) <= 0) {
+    throw new Error(`--max-lines needs a positive whole number, got '${raw ?? ''}'`);
+  }
+  return Number(value);
+}
+
 function parseArgs(argv = process.argv.slice(2)) {
   const options = {
     base: process.env.PR_SIZE_BASE_REF || 'origin/main',
@@ -135,10 +143,10 @@ function parseArgs(argv = process.argv.slice(2)) {
       options.head = String(argv[++i]);
     } else if (arg.startsWith('--head=')) {
       options.head = arg.slice('--head='.length);
-    } else if (arg === '--max-lines' && argv[i + 1]) {
-      options.maxLines = Number.parseInt(argv[++i], 10);
+    } else if (arg === '--max-lines') {
+      options.maxLines = parseMaxLines(argv[++i]);
     } else if (arg.startsWith('--max-lines=')) {
-      options.maxLines = Number.parseInt(arg.slice('--max-lines='.length), 10);
+      options.maxLines = parseMaxLines(arg.slice('--max-lines='.length));
     }
   }
 

@@ -774,3 +774,13 @@ test('pr-size check passes under 1000 changed lines, excludes package-lock.json 
   assert.match(workflowRaw, /node scripts\/pr-size-check\.js/);
   assert.ok(expectedStatusContexts(realPolicy, realMergeQuality).includes('pr-size'));
 });
+
+test('pr-size-check rejects a missing or invalid --max-lines instead of silently using the default', () => {
+  const { parseArgs: parsePrSizeArgs } = require('../scripts/pr-size-check');
+  assert.equal(parsePrSizeArgs(['--max-lines', '1000']).maxLines, 1000);
+  assert.equal(parsePrSizeArgs(['--max-lines=250']).maxLines, 250);
+  assert.throws(() => parsePrSizeArgs(['--max-lines']), /positive whole number/);
+  assert.throws(() => parsePrSizeArgs(['--max-lines', 'abc']), /positive whole number/);
+  assert.throws(() => parsePrSizeArgs(['--max-lines=10x']), /positive whole number/);
+  assert.throws(() => parsePrSizeArgs(['--max-lines=0']), /positive whole number/);
+});
