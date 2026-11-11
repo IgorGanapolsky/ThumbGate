@@ -37,6 +37,17 @@ const { startServer } = require('../src/api/server');
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15';
 const BROWSER_ACCEPT = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
 
+// Node's fetch overwrites Sec-Fetch-* and Referer, so browser-navigation cases
+// use a raw HTTP request that sends headers exactly as given.
+function rawGet(url, headers) {
+  return new Promise((resolve, reject) => {
+    require('node:http').get(url, { headers }, (res) => {
+      res.resume();
+      resolve({ status: res.statusCode, location: res.headers.location || '' });
+    }).on('error', reject);
+  });
+}
+
 let handle;
 let origin = '';
 
@@ -585,15 +596,44 @@ describe('/checkout/pro bot guard', () => {
   });
 
   it('human /go/pro-direct redirects to live Stripe Payment Link', async () => {
-    const res = await fetch(`${origin}/go/pro-direct?utm_content=skip_form`, {
-      redirect: 'manual',
-      headers: {
-        'user-agent': BROWSER_UA,
-        accept: BROWSER_ACCEPT,
-      },
+    const res = await rawGet(`${origin}/go/pro-direct?utm_content=skip_form`, {
+      'user-agent': BROWSER_UA,
+      accept: BROWSER_ACCEPT,
+      'sec-fetch-mode': 'navigate',
+      'sec-fetch-dest': 'document',
     });
     assert.equal(res.status, 302);
-    const loc = res.headers.get('location') || '';
-    assert.match(loc, /buy\.stripe\.com\//);
+    assert.match(res.location, /buy\.stripe\.com\//);
+  });
+
+  it('browser-shaped /go/pro-direct without navigation headers is deflected (link scanners)', async () => {
+    const res = await fetch(`${origin}/go/pro-direct?utm_content=skip_form`, {
+      redirect: 'manual',
+      headers: { 'user-agent': BROWSER_UA, accept: BROWSER_ACCEPT },
+    });
+    assert.equal(res.status, 302);
+    const loc = new URL(res.headers.get('location') || '', origin);
+    assert.equal(loc.pathname, '/checkout/pro');
+  });
+
+  it('/go/pro-direct from our own page passes without Sec-Fetch (older browsers)', async () => {
+    const res = await rawGet(`${origin}/go/pro-direct?utm_content=skip_form`, {
+      'user-agent': BROWSER_UA,
+      accept: BROWSER_ACCEPT,
+      referer: new URL('/checkout/pro', origin).toString(),
+    });
+    assert.equal(res.status, 302);
+    assert.match(res.location, /buy\.stripe\.com\//);
+  });
+
+  it('/go/pro-direct loaded inside an iframe is deflected', async () => {
+    const res = await rawGet(`${origin}/go/pro-direct`, {
+      'user-agent': BROWSER_UA,
+      accept: BROWSER_ACCEPT,
+      'sec-fetch-mode': 'navigate',
+      'sec-fetch-dest': 'iframe',
+    });
+    assert.equal(res.status, 302);
+    assert.equal(new URL(res.location, origin).pathname, '/checkout/pro');
   });
 });
