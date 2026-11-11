@@ -77,14 +77,28 @@ function clearCwdCache() {
   }
 }
 
+const SEPARATORS = ['-', '_'];
+const SUFFIX_MARKERS = ['wt', 'poolside', 'branch'];
+
+// Linear-time suffix truncation (no regex backtracking — CodeQL js/polynomial-redos).
+function truncateAtMarker(value, marker) {
+  let cut = -1;
+  for (const pre of SEPARATORS) {
+    for (const post of SEPARATORS) {
+      const idx = value.indexOf(pre + marker + post);
+      if (idx !== -1 && (cut === -1 || idx < cut)) cut = idx;
+    }
+  }
+  return cut === -1 ? value : value.slice(0, cut);
+}
+
 function normalizeProjectName(name) {
   if (!name || typeof name !== 'string') return '';
   let cleaned = name.trim().toLowerCase();
   // Strip worktree and branch suffixes like -wt-..., .worktrees, etc.
-  cleaned = cleaned.replace(/[-_]wt[-_].*$/, '');
-  cleaned = cleaned.replace(/\.worktrees.*$/, '');
-  cleaned = cleaned.replace(/[-_]poolside[-_].*$/, '');
-  cleaned = cleaned.replace(/[-_]branch[-_].*$/, '');
+  for (const marker of SUFFIX_MARKERS) cleaned = truncateAtMarker(cleaned, marker);
+  const worktreesIdx = cleaned.indexOf('.worktrees');
+  if (worktreesIdx !== -1) cleaned = cleaned.slice(0, worktreesIdx);
   return cleaned;
 }
 
