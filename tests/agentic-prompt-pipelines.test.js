@@ -298,3 +298,53 @@ test('trimming falls back to the deterministic result on bad LLM output', async 
   const failed = await p.trimContextJustInTime(RAW, 'x', { callModel: async () => { throw new Error('down'); }, tokenBudget: 10 });
   assert.equal(failed.source, 'deterministic_fallback');
 });
+
+// ---------------------------------------------------------------- MCP tools
+
+test('pipeline tools are registered read-only and allowlisted', () => {
+  const { TOOLS } = require('../scripts/tool-registry');
+  const allowlists = require('../config/mcp-allowlists.json');
+  for (const name of p.MCP_TOOL_NAMES) {
+    const tool = TOOLS.find((t) => t.name === name);
+    assert.ok(tool, `${name} registered`);
+    assert.equal(tool.annotations.readOnlyHint, true);
+    assert.ok(allowlists.profiles.default.includes(name), `${name} in default profile`);
+  }
+  assert.ok(!allowlists.profiles.locked.includes('graphrag_traverse'));
+});
+
+test('route_workload and trim_context stay deterministic unless useModel is set', async () => {
+  const model = scriptedModel([]);
+  const code = await p.handlePipelineTool('route_workload', { workload: 'Refactor this function:\nfunction a() {}' }, { callModel: undefined });
+  assert.equal(code.source, 'rule');
+  const ambiguous = await p.handlePipelineTool('route_workload', { workload: 'plan our next quarter' });
+  assert.equal(ambiguous.source, 'fallback');
+  assert.match(ambiguous.errors[0], /model_disabled/);
+  const trimmed = await p.handlePipelineTool('trim_context', { rawContext: RAW, targetOperation: 'debug checkout timeout', tokenBudget: 5 });
+  assert.equal(trimmed.source, 'deterministic_fallback');
+  assert.match(trimmed.context, /trace_id=7f3a/);
+  assert.equal(model.calls.length, 0);
+  await assert.rejects(p.handlePipelineTool('route_workload', {}), /workload must be/);
+});
+
+test('graphrag_traverse reports unavailable without Neo4j and runs with injected tools', async () => {
+  const noEnv = await p.handlePipelineTool('graphrag_traverse', { query: 'q' }, { env: {} });
+  assert.equal(noEnv.status, 'unavailable');
+  assert.match(noEnv.reason, /NEO4J_URI/);
+  const noDriver = await p.handlePipelineTool('graphrag_traverse', { query: 'q' }, {
+    env: { NEO4J_URI: 'bolt://x' },
+    requireDriver: () => { throw new Error('MODULE_NOT_FOUND'); },
+  });
+  assert.match(noDriver.reason, /neo4j-driver is not installed/);
+  const ok = await p.handlePipelineTool('graphrag_traverse', { query: 'q', maxSteps: 3 }, {
+    graphTools: mockGraph(),
+    callModel: scriptedModel([call('get_graph_schema'), '<final_answer>done</final_answer>']),
+  });
+  assert.equal(ok.status, 'answered');
+  const down = await p.handlePipelineTool('graphrag_traverse', { query: 'q' }, {
+    graphTools: mockGraph(),
+    callModel: async () => { throw new Error('model_unavailable:claude-sonnet-5-5'); },
+  });
+  assert.equal(down.status, 'unavailable');
+  await assert.rejects(p.handlePipelineTool('nope', {}), /unknown_pipeline_tool/);
+});
