@@ -55,6 +55,12 @@ for non-draft PRs on `claude/*`, `codex/*`, `agent/*`, `fix/*`, `feat/*`,
 `chore/*` (or labelled `automerge`), it runs `node scripts/pr-manager.js <N>`
 after CI succeeds, which posts `/trunk merge` when the PR is clean.
 
+First check the workflow is on:
+`gh api repos/IgorGanapolsky/ThumbGate/actions/workflows/agent-automerge.yml --jq .state`.
+It was `disabled_manually` on 2026-11-11 (no runs since 2026-10-07). Someone
+turned it off on purpose (Actions-minutes control), so don't re-enable it
+yourself. Skip to route 3.
+
 Order of routes:
 1. Undraft and let `agent-automerge` fire on `ready_for_review` / CI completion.
 2. If it didn't fire, `gh workflow run agent-automerge.yml -f pr_number=<N>`.
