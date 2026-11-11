@@ -70,7 +70,7 @@ test('README keeps the business sprint-first while preserving the Pro side lane'
   assert.match(readme, /Workflow Hardening Sprint/i);
   assert.match(readme, /Paid path for individual operators/i);
   assert.match(readme, /self-serve side lane/i);
-  assert.match(readme, /https:\/\/thumbgate\.ai\/checkout\/pro\?utm_source=github&utm_medium=readme&utm_campaign=pro_page/);
+  assert.match(readme, /https:\/\/thumbgate\.ai\/go\/pro-direct\?utm_source=github&utm_medium=readme&utm_campaign=pro_page/);
   assert.doesNotMatch(readme, /https:\/\/usethumbgate\.com/i);
 });
 
@@ -97,8 +97,8 @@ test('README exposes prompt-shaped buyer questions with tracked guide links', ()
   assert.match(readme, /guides\/roo-code-alternative-cline\?utm_source=github&utm_medium=readme&utm_campaign=buyer_questions/);
   assert.match(readme, /https:\/\/thumbgate\.ai/);
   assert.doesNotMatch(readme, /https:\/\/usethumbgate\.com/i);
-  assert.match(readme, /\/\?utm_source=github&utm_medium=readme&utm_campaign=top_cta#workflow-sprint-intake/);
-  assert.match(readme, /\/\?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake/);
+  assert.match(readme, /\/go\/diagnostic\?utm_source=github&utm_medium=readme&utm_campaign=top_cta/);
+  assert.match(readme, /\/go\/diagnostic\?utm_source=github&utm_medium=readme&utm_campaign=team_rollout/);
   assert.match(readme, /First Dollar Playbook/i);
 });
 
