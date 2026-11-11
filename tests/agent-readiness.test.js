@@ -120,6 +120,39 @@ test('generateAgentReadinessReport aligns bootstrap and permission findings', ()
   fs.rmSync(projectRoot, { recursive: true, force: true });
 });
 
+test('generateAgentReadinessReport treats a host runtime as advisory, not a readiness failure', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-host-runtime-'));
+  for (const fileName of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
+    fs.writeFileSync(path.join(projectRoot, fileName), `# ${fileName}\n`);
+  }
+  fs.writeFileSync(path.join(projectRoot, '.mcp.json'), JSON.stringify({ mcpServers: {} }, null, 2));
+  fs.mkdirSync(path.join(projectRoot, '.thumbgate'), { recursive: true });
+  fs.writeFileSync(path.join(projectRoot, '.thumbgate', 'config.json'), JSON.stringify({ version: 1 }, null, 2));
+  fs.mkdirSync(path.join(projectRoot, '.claude'), { recursive: true });
+  fs.writeFileSync(path.join(projectRoot, '.claude', 'settings.json'), JSON.stringify({
+    hooks: {
+      PreToolUse: [{ hooks: [{ type: 'command', command: 'npx thumbgate gate-check' }] }],
+    },
+  }, null, 2));
+
+  const previous = { container: process.env.container, CONTAINER: process.env.CONTAINER };
+  delete process.env.container;
+  delete process.env.CONTAINER;
+  const report = generateAgentReadinessReport({ projectRoot, mcpProfile: 'default' });
+  for (const [key, value] of Object.entries(previous)) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+
+  assert.ok(!report.warnings.includes(report.runtime.recommendation));
+  if (!report.runtime.isolated) {
+    assert.ok(report.advisories.includes(report.runtime.recommendation));
+    assert.match(reportToText(report), /Advisories \(do not affect readiness\):/);
+  }
+  assert.equal(report.overallStatus, 'ready');
+  fs.rmSync(projectRoot, { recursive: true, force: true });
+});
+
 test('generateAgentReadinessReport needs attention without PreToolUse hook', () => {
   const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-no-pretool-'));
   for (const fileName of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
