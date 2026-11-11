@@ -7,6 +7,10 @@ const {
   getActiveMcpProfile,
   getAllowedTools,
 } = require('./mcp-policy');
+const {
+  evaluateProgressiveSignoff,
+  formatProgressiveSignoffSection,
+} = require('./progressive-signoff');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 
@@ -302,10 +306,9 @@ function summarizeGitScale(projectRoot) {
   }
 }
 
-function generateAgentReadinessReport({
-  projectRoot = PROJECT_ROOT,
-  mcpProfile = null,
-} = {}) {
+function generateAgentReadinessReport(options = {}) {
+  const projectRoot = options.projectRoot || PROJECT_ROOT;
+  const mcpProfile = options.mcpProfile || null;
   const runtime = detectRuntimeIsolation();
   const bootstrap = collectBootstrapFiles(projectRoot);
   const permissions = summarizePermissionTier(mcpProfile || getActiveMcpProfile());
@@ -313,6 +316,10 @@ function generateAgentReadinessReport({
 
   const preToolUseHookRegistered = detectPreToolUseHookRegistered(projectRoot);
   const gitScale = summarizeGitScale(projectRoot);
+  const progressiveSignoff = evaluateProgressiveSignoff({
+    projectRoot,
+    ...(options && options.progressiveSignoff ? options.progressiveSignoff : {}),
+  });
 
   const warnings = [];
   if (!runtime.isolated) warnings.push(runtime.recommendation);
@@ -343,6 +350,7 @@ function generateAgentReadinessReport({
     claimVerification,
     preToolUseHookRegistered,
     gitScale,
+    progressiveSignoff,
     articleAlignment: {
       runtimeIsolation: runtime.isolated,
       contextConditioning: bootstrap.ready,
@@ -382,6 +390,14 @@ function reportToText(report) {
     );
   }
 
+  if (report.progressiveSignoff && report.progressiveSignoff.recommendations && report.progressiveSignoff.recommendations.length > 0) {
+    const signoffSection = formatProgressiveSignoffSection(report.progressiveSignoff);
+    if (signoffSection) {
+      lines.push('');
+      lines.push(signoffSection);
+    }
+  }
+
   if (report.warnings.length > 0) {
     lines.push('');
     lines.push('Warnings:');
@@ -403,9 +419,12 @@ module.exports = {
   recommendationForClaimState,
   detectStopHookRegistered,
   detectPreToolUseHookRegistered,
-  generateAgentReadinessReport,
   summarizeGitScale,
+  evaluateProgressiveSignoff,
+  formatProgressiveSignoffSection,
+  generateAgentReadinessReport,
   reportToText,
+  findProjectRoot,
 };
 
 if (require.main === module) {
