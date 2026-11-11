@@ -2890,6 +2890,21 @@ function withKeyStoreLock(mutator) {
   }
 }
 
+// Probes, audits and health checks mark themselves with one of these. They must
+// never open live Checkout sessions: each one shows up as an abandoned checkout.
+const AUTOMATED_CHECKOUT_SOURCES = new Set(['internal_audit', 'probe', 'health_check', 'smoke_test']);
+
+function isAutomatedCheckoutRequest(metadata = {}) {
+  const source = String(metadata.source || metadata.utmSource || '').toLowerCase();
+  const installId = String(metadata.installId || '').toLowerCase();
+  return AUTOMATED_CHECKOUT_SOURCES.has(source) || installId.endsWith('_probe') || installId.startsWith('probe_');
+}
+
+// Secret (sk_live_) and restricted (rk_live_) keys are both live.
+function isLiveStripeKey(key) {
+  return /^(sk|rk)_live_/.test(String(key || ''));
+}
+
 async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, packId = null, metadata = {}, appOrigin } = {}) {
   const resolvedTraceId = traceId || metadata.traceId || createTraceId('checkout');
   const baseCheckoutMetadata = sanitizeMetadata({
@@ -2935,6 +2950,10 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
       metadata: { ...checkoutMetadata, packId: pack ? pack.id : null },
     });
     return { sessionId: localSessionId, url: null, localMode: true, traceId: resolvedTraceId, metadata: checkoutMetadata };
+  }
+
+  if (isAutomatedCheckoutRequest(checkoutMetadata) && isLiveStripeKey(CONFIG.STRIPE_SECRET_KEY)) {
+    throw new Error('Refusing to open a live Stripe Checkout session for a probe or test request. Use a test-mode key.');
   }
 
   const stripe = getStripeClient();
@@ -4248,7 +4267,7 @@ function handleGithubWebhook(event, provenance = {}) {
 }
 
 module.exports = {
-  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _buildTrialActivationEmail: buildTrialActivationEmail,
   _sendTrialActivationEmail: sendTrialActivationEmail,
