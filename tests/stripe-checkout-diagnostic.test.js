@@ -406,3 +406,80 @@ test('summarizeRecentSegments splits sessions by site, CTA and entry route witho
   assert.equal(summary.intentSessions[0].successHost, 'deals.example.com');
   assert.ok(!JSON.stringify(summary).includes('buyer@example.org'));
 });
+
+test('maskEmail keeps only the first character and top-level domain', () => {
+  const { maskEmail } = require('../scripts/stripe-checkout-diagnostic');
+  assert.equal(maskEmail('jane.doe@gmail.com'), 'j***@g***.com');
+  assert.equal(maskEmail(''), null);
+  assert.equal(maskEmail('not-an-email'), null);
+});
+
+test('collectPaymentAttemptForensics reports link, product, PI error and masked buyer', async () => {
+  const { collectPaymentAttemptForensics } = require('../scripts/stripe-checkout-diagnostic');
+  const now = 2_000_000_000;
+  const stripe = {
+    checkout: { sessions: { listLineItems: async () => ({ data: [{ description: 'x', price: { id: 'price_1', product: { name: 'Deal Pack' } } }] }) } },
+    paymentIntents: {
+      retrieve: async () => ({
+        status: 'requires_payment_method',
+        payment_method_types: ['card'],
+        last_payment_error: { type: 'card_error', code: 'card_declined', decline_code: 'insufficient_funds', payment_method: { type: 'card' } },
+        latest_charge: { status: 'failed', outcome: { network_status: 'declined_by_network', reason: 'insufficient_funds', risk_level: 'normal' } },
+      }),
+    },
+  };
+  const rows = await collectPaymentAttemptForensics(stripe, [
+    { id: 'cs_1', created: now - 60, payment_intent: 'pi_1', payment_link: 'plink_1', amount_total: 300000, currency: 'usd', customer_details: { email: 'buyer@example.org', address: { country: 'US' } }, success_url: 'https://stripe.com/x', status: 'open' },
+    { id: 'cs_2', created: now - 60, payment_intent: null },
+  ], now);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].paymentLink, 'plink_1');
+  assert.deepEqual(rows[0].products, ['Deal Pack (price_1)']);
+  assert.equal(rows[0].piError, 'card_error / card_declined / insufficient_funds');
+  assert.equal(rows[0].maskedEmail, 'b***@e***.org');
+  assert.ok(!JSON.stringify(rows).includes('buyer@example.org'));
+});
+
+test('payment-attempt forensics survive Stripe lookup failures and render in markdown', async () => {
+  const { collectPaymentAttemptForensics, renderMarkdown, maskEmail } = require('../scripts/stripe-checkout-diagnostic');
+  assert.equal(maskEmail('a@localhost'), 'a***@l***');
+  const now = 2_000_000_000;
+  const failing = {
+    checkout: { sessions: { listLineItems: async () => { throw new Error('boom'); } } },
+    paymentIntents: { retrieve: async () => { throw new Error('boom'); } },
+  };
+  const rows = await collectPaymentAttemptForensics(failing, [
+    { id: 'cs_9', created: now - 10, payment_intent: 'pi_9', payment_link: { id: 'plink_9' }, amount_total: null, success_url: 'not a url', status: 'expired' },
+  ], now);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].paymentLink, 'plink_9');
+  assert.equal(rows[0].piStatus, null);
+  assert.equal(rows[0].successHost, 'unknown');
+
+  const okStripe = {
+    checkout: { sessions: { listLineItems: async () => ({ data: [{ description: 'Pilot', price: { id: 'price_2', product: 'prod_2' } }] }) } },
+    paymentIntents: { retrieve: async () => ({ status: 'requires_action', payment_method_types: ['card'], last_payment_error: null, latest_charge: null }) },
+  };
+  const okRows = await collectPaymentAttemptForensics(okStripe, [
+    { id: 'cs_10', created: now - 10, payment_intent: 'pi_10', amount_total: 300000, currency: 'usd', status: 'open' },
+  ], now);
+  assert.deepEqual(okRows[0].products, ['Pilot (price_2)']);
+  assert.equal(okRows[0].paymentMethodType, 'card');
+
+  const md = renderMarkdown({
+    configured: true,
+    generatedAt: new Date(now * 1000).toISOString(),
+    sessionsExamined: 1,
+    paymentIntentsExamined: 1,
+    sessionBuckets: { byStatus: { open: 1 }, byPaymentStatus: { unpaid: 1 } },
+    paymentAttemptForensics: [...okRows, ...rows],
+    paymentIntentErrors: { intentsTotal: 1, intentsWithError: 0, byCode: {}, byDeclineCode: {}, byType: {} },
+    funnelDiagnosis: { primary: 'x', recommendation: 'y', completionRate: 0, paidRate: 0, expiredOrOpenRate: 1 },
+    account: { configured: false, gap: 'n/a' },
+    webhooks: { configured: false, gap: 'n/a' },
+    recentSessions: [],
+  });
+  assert.match(md, /Payment attempts in the last 30 days/);
+  assert.match(md, /plink_9/);
+  assert.match(md, /requires_action/);
+});
