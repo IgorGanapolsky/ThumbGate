@@ -540,31 +540,119 @@ async function routeWorkload(workload, {
   };
 }
 
-/** Execute a routing decision: Gemini sub-tasks first, their output feeds Claude sub-tasks. */
+// Cross-provider failover. A failed or schema-invalid expert call falls back
+// to the other provider (Claude <-> Gemini), never to the same provider, since
+// a second region of one provider often shares the outage. Fallback hops are
+// capped for the whole dispatch so a flapping provider can't loop on billing.
+const DEFAULT_FALLBACK_HOPS = 2;
+const MAX_FALLBACK_HOPS = 3;
+// Input-token ceilings used to decide whether the fallback expert can even
+// take the prompt. Conservative on purpose; override per call if needed.
+const EXPERT_CONTEXT_TOKENS = Object.freeze({ [EXPERTS.CLAUDE]: 200000, [EXPERTS.GEMINI]: 1000000 });
+
+function otherExpert(expert) {
+  return expert === EXPERTS.GEMINI ? EXPERTS.CLAUDE : EXPERTS.GEMINI;
+}
+
+function boundedFallbackHops(value) {
+  return Number.isInteger(value) ? Math.min(Math.max(value, 0), MAX_FALLBACK_HOPS) : DEFAULT_FALLBACK_HOPS;
+}
+
+/**
+ * Build an output validator that requires a JSON object with the given keys.
+ * Use it as `validateOutput` so an unparseable or incomplete reply is treated
+ * like a timeout and triggers the cross-provider fallback.
+ */
+function requireJsonObject(requiredKeys = []) {
+  return (output) => {
+    const parsed = parseJsonObject(output);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { ok: false, errors: ['invalid_json'] };
+    const missing = requiredKeys.filter((key) => !Object.hasOwn(parsed, key));
+    return missing.length ? { ok: false, errors: missing.map((key) => `missing_key:${key}`) } : { ok: true, errors: [] };
+  };
+}
+
+function normalizeValidation(result) {
+  if (result === true || result === undefined) return { ok: true, errors: [] };
+  if (result === false || result === null) return { ok: false, errors: ['validation_failed'] };
+  return { ok: result.ok === true, errors: Array.isArray(result.errors) ? result.errors : [] };
+}
+
+async function callExpertOnce(expert, task, content, { callModel, modelFor, validateOutput }) {
+  const model = modelFor(expert);
+  let output;
+  try {
+    output = await callModel({
+      system: `You are ${expert}. ${task.instruction}`,
+      messages: [{ role: 'user', content }],
+      model,
+      maxTokens: Math.min(task.max_tokens_allocated, EXPERT_MAX_TOKENS[expert]),
+    });
+  } catch (error) {
+    return { ok: false, attempt: { expert, model, error: `call_failed:${errorMessage(error, 160)}` } };
+  }
+  const check = validateOutput ? normalizeValidation(await validateOutput(output, task)) : { ok: true, errors: [] };
+  if (!check.ok) {
+    return { ok: false, attempt: { expert, model, error: `schema_invalid:${check.errors.join(';') || 'validation_failed'}` } };
+  }
+  return { ok: true, output, model, attempt: { expert, model, error: null } };
+}
+
+/**
+ * Execute a routing decision: Gemini sub-tasks first, their output feeds
+ * Claude sub-tasks. Each task falls back to the other provider when its call
+ * fails or `validateOutput` rejects the reply, within `maxFallbackHops`.
+ */
 async function dispatchWorkload(decision, workload, {
   callModel = createLlmClientCaller(),
   models = resolveModels(),
+  validateOutput = null,
+  maxFallbackHops = DEFAULT_FALLBACK_HOPS,
+  contextTokens = EXPERT_CONTEXT_TOKENS,
 } = {}) {
   const modelFor = (expert) => (expert === EXPERTS.GEMINI ? models.gemini : models.claude);
   const tasks = Array.isArray(decision.sub_tasks) && decision.sub_tasks.length
     ? [...decision.sub_tasks].sort((a, b) => (a.expert === EXPERTS.GEMINI ? 0 : 1) - (b.expert === EXPERTS.GEMINI ? 0 : 1))
     : [{ expert: decision.primary_expert, instruction: 'Complete the workload.', max_tokens_allocated: decision.max_tokens_allocated }];
 
+  let hopsLeft = boundedFallbackHops(maxFallbackHops);
   const outputs = [];
+  const attempts = [];
   for (const task of tasks) {
     const prior = outputs.length
       ? `\n\n<prior_expert_output>\n${outputs.map((o) => escapeClosingTag(o.output, 'prior_expert_output')).join('\n---\n')}\n</prior_expert_output>`
       : '';
+    const content = `<workload>\n${escapeClosingTag(workload, 'workload')}\n</workload>${prior}`;
+    const deps = { callModel, modelFor, validateOutput };
     // Sequential on purpose: each expert reads the previous expert's output.
-    const output = await callModel({ // NOSONAR
-      system: `You are ${task.expert}. ${task.instruction}`,
-      messages: [{ role: 'user', content: `<workload>\n${escapeClosingTag(workload, 'workload')}\n</workload>${prior}` }],
-      model: modelFor(task.expert),
-      maxTokens: task.max_tokens_allocated,
+    let result = await callExpertOnce(task.expert, task, content, deps); // NOSONAR
+    attempts.push(result.attempt);
+    let expert = task.expert;
+    while (!result.ok) {
+      const fallback = otherExpert(expert);
+      if (hopsLeft <= 0) {
+        const error = new Error(`dispatch_failed: ${task.expert} task exhausted ${boundedFallbackHops(maxFallbackHops)} fallback hop(s)`);
+        error.attempts = attempts;
+        throw error;
+      }
+      if (estimateTokens(content) > (contextTokens[fallback] || 0)) {
+        const error = new Error(`dispatch_failed: fallback to ${fallback} skipped, prompt exceeds its context`);
+        error.attempts = attempts;
+        throw error;
+      }
+      hopsLeft -= 1;
+      expert = fallback;
+      result = await callExpertOnce(expert, task, content, deps); // NOSONAR
+      attempts.push({ ...result.attempt, fallbackFrom: task.expert });
+    }
+    outputs.push({
+      expert,
+      model: result.model,
+      output: result.output,
+      ...(expert === task.expert ? {} : { fallbackFrom: task.expert }),
     });
-    outputs.push({ expert: task.expert, model: modelFor(task.expert), output });
   }
-  return { decision, outputs, final: outputs.at(-1).output };
+  return { decision, outputs, attempts, final: outputs.at(-1).output };
 }
 
 // ===========================================================================
@@ -797,6 +885,9 @@ module.exports = {
   validateRouterDecision,
   routeWorkload,
   dispatchWorkload,
+  requireJsonObject,
+  DEFAULT_FALLBACK_HOPS,
+  MAX_FALLBACK_HOPS,
   // Context trimming
   buildContextTrimSystemPrompt,
   buildContextTrimUserPrompt,
