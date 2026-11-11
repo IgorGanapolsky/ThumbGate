@@ -717,6 +717,19 @@ test('Deploy verification fails closed on authenticated production search and ex
   assert.match(workflow, /--retry-delay-ms=10000/);
 });
 
+// thumbgate.ai and thumbgate-production.up.railway.app are different Railway deployments that rebuild at
+// different times (seen 2026-11-11). Release checks must read the host customers use.
+test('release checks verify the customer-facing host, thumbgate.ai', () => {
+  const oldHost = 'thumbgate-production.up.railway.app';
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-verify.yml'), 'utf8');
+  const gate = fs.readFileSync(path.join(PROJECT_ROOT, 'CLAUDE.md'), 'utf8');
+  const marketing = fs.readFileSync(path.join(PROJECT_ROOT, 'scripts', 'verify-marketing-pages-deployed.js'), 'utf8');
+  assert.match(workflow, /PROD_URL: https:\/\/thumbgate\.ai\b/);
+  assert.ok(!workflow.includes(oldHost));
+  assert.match(gate, /PROD_URL\s+= https:\/\/thumbgate\.ai\b/);
+  assert.ok(!marketing.includes(oldHost));
+});
+
 test('Deploy verification workflow keeps embedded heredoc scripts valid YAML', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'verify-deploy-comment.yml'), 'utf8');
   const lines = workflow.split('\n');
