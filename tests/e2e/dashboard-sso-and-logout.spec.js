@@ -5,29 +5,14 @@ const path = require('node:path');
 const { test, expect } = require('@playwright/test');
 
 test.describe('/dashboard real-server login, redeploy persistence, Google SSO, and Log Out', () => {
-  let tmpDir;
-  let savedEnv;
-  let serverHandle;
-  let origin;
-  let serverTestHooks;
+  const ENV_KEYS = ['THUMBGATE_API_KEY', 'THUMBGATE_OPERATOR_KEY', 'THUMBGATE_FEEDBACK_DIR', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'APPLE_CLIENT_ID'];
+  let tmpDir, savedEnv, serverHandle, origin, serverTestHooks;
 
   test.beforeEach(async () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-e2e-sso-logout-'));
-    savedEnv = {
-      THUMBGATE_API_KEY: process.env.THUMBGATE_API_KEY,
-      THUMBGATE_OPERATOR_KEY: process.env.THUMBGATE_OPERATOR_KEY,
-      THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
-      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-      APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
-    };
-    process.env.THUMBGATE_API_KEY = 'tg_admin_e2e_key_9001';
-    process.env.THUMBGATE_OPERATOR_KEY = 'tg_op_e2e_key_9002';
-    process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
-    delete process.env.GOOGLE_CLIENT_ID;
-    delete process.env.GOOGLE_CLIENT_SECRET;
-    delete process.env.APPLE_CLIENT_ID;
-
+    savedEnv = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
+    Object.assign(process.env, { THUMBGATE_API_KEY: 'tg_admin_e2e_key_9001', THUMBGATE_OPERATOR_KEY: 'tg_op_e2e_key_9002', THUMBGATE_FEEDBACK_DIR: tmpDir });
+    ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'APPLE_CLIENT_ID'].forEach((k) => delete process.env[k]);
     const serverMod = require('../../src/api/server');
     serverTestHooks = serverMod.__test__;
     serverHandle = await serverMod.startServer({ port: 0, host: '127.0.0.1' });
@@ -36,13 +21,10 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
 
   test.afterEach(async () => {
     if (serverTestHooks) serverTestHooks.setGoogleOAuthFetchForTests(null);
-    if (serverHandle && serverHandle.server) {
-      await new Promise((resolve) => serverHandle.server.close(resolve));
-    }
+    if (serverHandle?.server) await new Promise((resolve) => serverHandle.server.close(resolve));
     if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
     for (const [k, v] of Object.entries(savedEnv || {})) {
-      if (v === undefined) delete process.env[k];
-      else process.env[k] = v;
+      if (v === undefined) delete process.env[k]; else process.env[k] = v;
     }
   });
 
@@ -95,45 +77,25 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
     process.env.GOOGLE_CLIENT_SECRET = 'pw-google-secret';
 
     const signEmailToken = (email, sub) => {
-      const nowSec = Math.floor(Date.now() / 1000);
-      const jwtHeader = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'pw-google-kid' })).toString('base64url');
-      const jwtPayload = Buffer.from(JSON.stringify({
-        iss: 'https://accounts.google.com',
-        aud: 'pw-google-client.apps.googleusercontent.com',
-        exp: nowSec + 600,
-        email,
-        email_verified: true,
-        sub,
-      })).toString('base64url');
-      const jwtSig = crypto.sign('RSA-SHA256', Buffer.from(`${jwtHeader}.${jwtPayload}`), privateKey).toString('base64url');
-      return `${jwtHeader}.${jwtPayload}.${jwtSig}`;
+      const h = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'pw-google-kid' })).toString('base64url');
+      const p = Buffer.from(JSON.stringify({ iss: 'https://accounts.google.com', aud: 'pw-google-client.apps.googleusercontent.com', exp: Math.floor(Date.now() / 1000) + 600, email, email_verified: true, sub })).toString('base64url');
+      return `${h}.${p}.${crypto.sign('RSA-SHA256', Buffer.from(`${h}.${p}`), privateKey).toString('base64url')}`;
     };
-
-    // Part 1: Unsubscribed Google user gets Free tier + Upgrade link to /pricing (never Pro)
     let activeToken = signEmailToken('newuser@example.com', 'google_free_pw_1');
-    serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
-      if (String(url) === 'https://oauth2.googleapis.com/token') {
-        return { ok: true, status: 200, json: async () => ({ access_token: 'ya29.pw', id_token: activeToken }) };
-      }
-      return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
-    });
-
-    const context = await browser.newContext({
-      extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.56' },
-    });
+    serverTestHooks.setGoogleOAuthFetchForTests(async (url) => (
+      String(url) === 'https://oauth2.googleapis.com/token'
+        ? { ok: true, status: 200, json: async () => ({ access_token: 'ya29.pw', id_token: activeToken }) }
+        : { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) }
+    ));
+    const context = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': '203.0.113.56' } });
     const page = await context.newPage();
     try {
       await page.route(/\/v1\/cloud\/sso\/authorize\b/, async (route) => {
         const upstream = await route.fetch({ maxRedirects: 0 });
         expect(upstream.status()).toBe(302);
-        const googleAuthLocation = upstream.headers().location || '';
-        expect(googleAuthLocation).toMatch(/^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
-        const state = new URL(googleAuthLocation).searchParams.get('state');
-        const cbUrl = `${origin}/v1/cloud/sso/callback?provider=google&code=pw_google_code_1&state=${encodeURIComponent(state)}`;
-        await route.fulfill({
-          status: 302,
-          headers: { Location: cbUrl },
-        });
+        const loc = upstream.headers().location || '';
+        expect(loc).toMatch(/^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
+        await route.fulfill({ status: 302, headers: { Location: `${origin}/v1/cloud/sso/callback?provider=google&code=pw_google_code_1&state=${encodeURIComponent(new URL(loc).searchParams.get('state'))}` } });
       });
 
       await page.goto(`${origin}/dashboard?noauto`);

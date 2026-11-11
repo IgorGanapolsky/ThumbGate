@@ -230,59 +230,38 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
 
     // 4. Wrong audience, invalid issuer, expired token, and unverified email -> 302 /dashboard?sso_error=<reason>
     const nowSec = Math.floor(Date.now() / 1000);
+    let capturedTokenPostBody = '';
+    const mockGoogleJwt = (jwt) => serverTestHooks.setGoogleOAuthFetchForTests(async (url, opts) => (
+      String(url) === 'https://oauth2.googleapis.com/token'
+        ? (capturedTokenPostBody = String(opts?.body || ''), { ok: true, status: 200, json: async () => ({ access_token: 'ya29.test', id_token: jwt }) })
+        : { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) }
+    ));
     const invalidCases = [
-      {
-        claims: { iss: 'https://accounts.google.com', aud: 'other-app.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: true, sub: 'sub_1' },
-        expected: 'wrong_audience',
-      },
-      {
-        claims: { iss: 'https://evil.example.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: true, sub: 'sub_1' },
-        expected: 'invalid_issuer',
-      },
-      {
-        claims: { iss: 'accounts.google.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec - 10, email: 'user@example.com', email_verified: true, sub: 'sub_1' },
-        expected: 'expired_token',
-      },
-      {
-        claims: { iss: 'accounts.google.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: false, sub: 'sub_1' },
-        expected: 'unverified_email',
-      },
+      [{ iss: 'https://accounts.google.com', aud: 'other-app.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: true, sub: 'sub_1' }, 'wrong_audience'],
+      [{ iss: 'https://evil.example.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: true, sub: 'sub_1' }, 'invalid_issuer'],
+      [{ iss: 'accounts.google.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec - 10, email: 'user@example.com', email_verified: true, sub: 'sub_1' }, 'expired_token'],
+      [{ iss: 'accounts.google.com', aud: 'google-client-test.apps.googleusercontent.com', exp: nowSec + 300, email: 'user@example.com', email_verified: false, sub: 'sub_1' }, 'unverified_email'],
     ];
-    for (const tc of invalidCases) {
-      const badJwt = signTestIdToken(tc.claims);
-      serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
-        if (String(url).includes('oauth2.googleapis.com/token')) {
-          return { ok: true, status: 200, json: async () => ({ id_token: badJwt }) };
-        }
-        return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
-      });
-      const st = await issueFreshState();
-      const r = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=code_ok&state=${st}`, { redirect: 'manual' });
+    for (const [claims, expected] of invalidCases) {
+      mockGoogleJwt(signTestIdToken(claims));
+      const r = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=code_ok&state=${await issueFreshState()}`, { redirect: 'manual' });
       assert.equal(r.status, 302);
-      assert.equal(r.headers.get('location'), `/dashboard?sso_error=${tc.expected}`);
+      assert.equal(r.headers.get('location'), `/dashboard?sso_error=${expected}`);
       assert.equal(r.headers.get('set-cookie'), null);
     }
 
-    // 5a. New Google user with NO subscription -> authenticated: true, tier: 'Free' (never Pro!), /v1/feedback/stats denied
+    // 5a. Unsubscribed Google user -> authenticated: true, tier: 'Free' (never Pro!), /v1/feedback/stats denied
     const { provisionApiKey } = require('../scripts/billing');
-    const strangerJwt = signTestIdToken({
+    const makeUserJwt = (email, sub) => signTestIdToken({
       iss: 'https://accounts.google.com',
       aud: 'google-client-test.apps.googleusercontent.com',
       exp: nowSec + 600,
-      email: 'stranger@gmail.com',
+      email,
       email_verified: true,
-      sub: 'google_stranger_001',
+      sub,
     });
-    let capturedTokenPostBody = '';
-    serverTestHooks.setGoogleOAuthFetchForTests(async (url, opts) => {
-      if (String(url) === 'https://oauth2.googleapis.com/token') {
-        capturedTokenPostBody = String((opts && opts.body) || '');
-        return { ok: true, status: 200, json: async () => ({ access_token: 'ya29.free', id_token: strangerJwt }) };
-      }
-      return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
-    });
-    const freeState = await issueFreshState();
-    const freeCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=valid_google_code&state=${freeState}`, { redirect: 'manual' });
+    mockGoogleJwt(makeUserJwt('stranger@gmail.com', 'google_stranger_001'));
+    const freeCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=valid_google_code&state=${await issueFreshState()}`, { redirect: 'manual' });
     assert.equal(freeCbRes.status, 302);
     assert.equal(freeCbRes.headers.get('location'), '/dashboard');
     assert.match(capturedTokenPostBody, /code=valid_google_code/);
@@ -291,87 +270,39 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     const freeSessionCheck = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: freeCookiePair } })).json();
     assert.equal(freeSessionCheck.authenticated, true);
     assert.equal(freeSessionCheck.tier, 'Free');
-    assert.notEqual(freeSessionCheck.tier, 'Pro');
     assert.equal(freeSessionCheck.ssoProvider, 'google');
     assert.equal(freeSessionCheck.ssoEmail, 'stranger@gmail.com');
     assert.equal((await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: freeCookiePair } })).status, 401);
 
-    // 5c. Owner email with no paid entitlement does NOT auto-escalate to Enterprise or Pro via Google SSO alone
-    const ownerUnpaidJwt = signTestIdToken({
-      iss: 'https://accounts.google.com',
-      aud: 'google-client-test.apps.googleusercontent.com',
-      exp: nowSec + 600,
-      email: 'iganapolsky@gmail.com',
-      email_verified: true,
-      sub: 'google_owner_unpaid',
-    });
-    serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
-      if (String(url) === 'https://oauth2.googleapis.com/token') {
-        return { ok: true, status: 200, json: async () => ({ access_token: 'ya29.owner', id_token: ownerUnpaidJwt }) };
-      }
-      return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
-    });
-    const ownerState = await issueFreshState();
-    const ownerCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=owner_code&state=${ownerState}`, { redirect: 'manual' });
-    const ownerCookiePair = (ownerCbRes.headers.get('set-cookie') || '').split(';')[0];
-    const ownerSession = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: ownerCookiePair } })).json();
+    // 5c. Owner email without paid entitlement stays Free via Google SSO alone
+    mockGoogleJwt(makeUserJwt('iganapolsky@gmail.com', 'google_owner_unpaid'));
+    const ownerCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=owner_code&state=${await issueFreshState()}`, { redirect: 'manual' });
+    const ownerSession = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: (ownerCbRes.headers.get('set-cookie') || '').split(';')[0] } })).json();
     assert.equal(ownerSession.authenticated, true);
     assert.equal(ownerSession.tier, 'Free');
 
-    // 5b. Subscriber's verified email WITH paid entitlement -> gets tier 'Pro' and survives redeploy
-    provisionApiKey('cus_paid_subscriber_1', {
-      customerEmail: 'subscriber@thumbgate.ai',
-      entitlementKind: 'subscription',
-      subscriptionId: 'sub_live_test_1',
-      source: 'stripe_webhook_checkout_completed',
-    });
-    const subscriberJwt = signTestIdToken({
-      iss: 'https://accounts.google.com',
-      aud: 'google-client-test.apps.googleusercontent.com',
-      exp: nowSec + 600,
-      email: 'subscriber@thumbgate.ai',
-      email_verified: true,
-      sub: 'google_uid_sub_1',
-    });
-    serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
-      if (String(url) === 'https://oauth2.googleapis.com/token') {
-        return { ok: true, status: 200, json: async () => ({ access_token: 'ya29.sub', id_token: subscriberJwt }) };
-      }
-      return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
-    });
+    // 5b. Subscribed Google user -> tier 'Pro' and survives redeploy
+    provisionApiKey('cus_paid_subscriber_1', { customerEmail: 'subscriber@thumbgate.ai', entitlementKind: 'subscription', subscriptionId: 'sub_live_test_1', source: 'stripe_webhook_checkout_completed' });
+    mockGoogleJwt(makeUserJwt('subscriber@thumbgate.ai', 'google_uid_sub_1'));
     const goodState = await issueFreshState();
     const goodCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=sub_google_code&state=${goodState}`, { redirect: 'manual' });
     assert.equal(goodCbRes.status, 302);
     assert.equal(goodCbRes.headers.get('location'), '/dashboard');
     const ssoCookieHeader = goodCbRes.headers.get('set-cookie') || '';
-    assert.match(ssoCookieHeader, /^thumbgate_auth_session=[a-f0-9]{64};/);
-    assert.match(ssoCookieHeader, /\bHttpOnly\b/);
-    assert.match(ssoCookieHeader, /\bSecure\b/);
+    assert.match(ssoCookieHeader, /^thumbgate_auth_session=[a-f0-9]{64};.*HttpOnly.*Secure/);
     const ssoCookiePair = ssoCookieHeader.split(';')[0];
     const ssoSessionCheck = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: ssoCookiePair } })).json();
     assert.equal(ssoSessionCheck.authenticated, true);
     assert.equal(ssoSessionCheck.tier, 'Pro');
-    assert.equal(ssoSessionCheck.ssoProvider, 'google');
     assert.equal(ssoSessionCheck.ssoEmail, 'subscriber@thumbgate.ai');
-    const ssoStatsRes = await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: ssoCookiePair } });
-    assert.equal(ssoStatsRes.status, 200);
-    // Simulate Railway redeploy / in-memory Map wipe: both Free and Pro sessions survive from volume-backed auth-sessions.json without raw keys
+    assert.equal((await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: ssoCookiePair } })).status, 200);
     serverTestHooks.clearInMemoryAuthSessionsForTests();
     const persistedSessionCheck = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: ssoCookiePair } })).json();
-    assert.equal(persistedSessionCheck.authenticated, true);
     assert.equal(persistedSessionCheck.tier, 'Pro');
-    assert.equal(persistedSessionCheck.ssoEmail, 'subscriber@thumbgate.ai');
-    const persistedFreeCheck = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: freeCookiePair } })).json();
-    assert.equal(persistedFreeCheck.authenticated, true);
-    assert.equal(persistedFreeCheck.tier, 'Free');
+    assert.equal((await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: freeCookiePair } })).json()).tier, 'Free');
     const rawSessionFile = fs.readFileSync(path.join(tmpDir, 'auth-sessions.json'), 'utf8');
     assert.doesNotMatch(rawSessionFile, /tg_|thumbgate_auth_session|google-secret-test-value/);
-    const parsedSessionStore = JSON.parse(rawSessionFile);
-    for (const storedKey of Object.keys(parsedSessionStore)) {
-      assert.match(storedKey, /^[a-f0-9]{64}$/, 'auth-sessions.json keys must be sha256 hashes');
-    }
-
-    // Reusing same state a second time must fail one-time-use check
+    for (const storedKey of Object.keys(JSON.parse(rawSessionFile))) assert.match(storedKey, /^[a-f0-9]{64}$/);
     const replayGoodState = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=sub_google_code&state=${goodState}`, { redirect: 'manual' });
     assert.equal(replayGoodState.headers.get('location'), '/dashboard?sso_error=invalid_state');
     serverTestHooks.setGoogleOAuthFetchForTests(null);

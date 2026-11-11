@@ -5760,31 +5760,25 @@ function consumeSsoPendingState(stateNonce, expectedProvider, nowMs = Date.now()
   return entry;
 }
 
+function ssoError(ssoReason, message) {
+  return Object.assign(new Error(message), { ssoReason });
+}
+
 function redirectSsoError(res, reason) {
   const raw = String(reason || '').trim().toLowerCase();
   const safeReason = /^[a-z0-9_]{1,48}$/.test(raw) ? raw : 'sso_failed';
-  res.writeHead(302, {
-    'X-Content-Type-Options': 'nosniff',
-    'Cache-Control': 'no-store',
-    Location: `/dashboard?sso_error=${safeReason}`,
-  });
+  res.writeHead(302, { 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store', Location: `/dashboard?sso_error=${safeReason}` });
   res.end();
 }
 
 async function loadGoogleJwks(nowMs = Date.now(), forceRefresh = false) {
-  if (!forceRefresh && googleJwksCache.expiresAt > nowMs && googleJwksCache.keys.length > 0) {
-    return googleJwksCache.keys;
-  }
+  if (!forceRefresh && googleJwksCache.expiresAt > nowMs && googleJwksCache.keys.length > 0) return googleJwksCache.keys;
   const jwksRes = await googleOAuthFetch(GOOGLE_OAUTH_JWKS_URL, {
     method: 'GET',
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(8000),
   });
-  if (!jwksRes || !jwksRes.ok) {
-    const err = new Error('Failed to load Google JWKS');
-    err.ssoReason = 'jwks_unavailable';
-    throw err;
-  }
+  if (!jwksRes || !jwksRes.ok) throw ssoError('jwks_unavailable', 'Failed to load Google JWKS');
   const body = await jwksRes.json();
   const keys = Array.isArray(body && body.keys) ? body.keys : [];
   googleJwksCache = { keys, expiresAt: nowMs + GOOGLE_JWKS_CACHE_TTL_MS };
@@ -5793,25 +5787,17 @@ async function loadGoogleJwks(nowMs = Date.now(), forceRefresh = false) {
 
 async function verifyGoogleIdToken(idToken, expectedClientId, nowMs = Date.now()) {
   const parts = String(idToken || '').split('.');
-  if (parts.length !== 3) {
-    const err = new Error('Malformed id_token');
-    err.ssoReason = 'invalid_id_token';
-    throw err;
-  }
+  if (parts.length !== 3) throw ssoError('invalid_id_token', 'Malformed id_token');
   let header;
   let payload;
   try {
     header = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
     payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
   } catch {
-    const err = new Error('Unparseable id_token');
-    err.ssoReason = 'invalid_id_token';
-    throw err;
+    throw ssoError('invalid_id_token', 'Unparseable id_token');
   }
   if (!header || header.alg !== 'RS256' || typeof header.kid !== 'string' || !header.kid) {
-    const err = new Error('Unsupported id_token header');
-    err.ssoReason = 'invalid_id_token';
-    throw err;
+    throw ssoError('invalid_id_token', 'Unsupported id_token header');
   }
   let keys = await loadGoogleJwks(nowMs, false);
   let jwk = keys.find((k) => k && k.kid === header.kid && k.kty === 'RSA');
@@ -5819,51 +5805,19 @@ async function verifyGoogleIdToken(idToken, expectedClientId, nowMs = Date.now()
     keys = await loadGoogleJwks(nowMs, true);
     jwk = keys.find((k) => k && k.kid === header.kid && k.kty === 'RSA');
   }
-  if (!jwk) {
-    const err = new Error('Signing key not found');
-    err.ssoReason = 'unknown_signing_key';
-    throw err;
-  }
+  if (!jwk) throw ssoError('unknown_signing_key', 'Signing key not found');
   const publicKey = crypto.createPublicKey({ key: jwk, format: 'jwk' });
-  const sigValid = crypto.verify(
-    'RSA-SHA256',
-    Buffer.from(`${parts[0]}.${parts[1]}`),
-    publicKey,
-    Buffer.from(parts[2], 'base64url'),
-  );
-  if (!sigValid) {
-    const err = new Error('Invalid id_token signature');
-    err.ssoReason = 'invalid_signature';
-    throw err;
-  }
-  const audMatches = payload && (
-    payload.aud === expectedClientId
-    || (Array.isArray(payload.aud) && payload.aud.includes(expectedClientId))
-  );
-  if (!audMatches) {
-    const err = new Error('id_token audience mismatch');
-    err.ssoReason = 'wrong_audience';
-    throw err;
-  }
-  if (!GOOGLE_VALID_ISSUERS.has(String(payload.iss || ''))) {
-    const err = new Error('id_token issuer mismatch');
-    err.ssoReason = 'invalid_issuer';
-    throw err;
-  }
+  const sigValid = crypto.verify('RSA-SHA256', Buffer.from(`${parts[0]}.${parts[1]}`), publicKey, Buffer.from(parts[2], 'base64url'));
+  if (!sigValid) throw ssoError('invalid_signature', 'Invalid id_token signature');
+  const audMatches = payload && (payload.aud === expectedClientId || (Array.isArray(payload.aud) && payload.aud.includes(expectedClientId)));
+  if (!audMatches) throw ssoError('wrong_audience', 'id_token audience mismatch');
+  if (!GOOGLE_VALID_ISSUERS.has(String(payload.iss || ''))) throw ssoError('invalid_issuer', 'id_token issuer mismatch');
   const expSec = Number(payload.exp);
-  if (!Number.isFinite(expSec) || expSec * 1000 <= nowMs) {
-    const err = new Error('id_token expired');
-    err.ssoReason = 'expired_token';
-    throw err;
-  }
+  if (!Number.isFinite(expSec) || expSec * 1000 <= nowMs) throw ssoError('expired_token', 'id_token expired');
   const email = String(payload.email || '').trim().toLowerCase();
   const sub = String(payload.sub || '').trim();
   const emailVerified = payload.email_verified === true || payload.email_verified === 'true';
-  if (!emailVerified || !email || !sub) {
-    const err = new Error('Email not verified');
-    err.ssoReason = 'unverified_email';
-    throw err;
-  }
+  if (!emailVerified || !email || !sub) throw ssoError('unverified_email', 'Email not verified');
   return { sub, email };
 }
 
@@ -5881,13 +5835,7 @@ function readPersistedAuthSessions(nowMs = Date.now()) {
     if (!fs.existsSync(storePath)) return {};
     const raw = JSON.parse(fs.readFileSync(storePath, 'utf8'));
     if (!raw || typeof raw !== 'object') return {};
-    const out = {};
-    for (const [tokenHash, entry] of Object.entries(raw)) {
-      if (entry && typeof entry === 'object' && Number(entry.expiresAt) > nowMs) {
-        out[tokenHash] = entry;
-      }
-    }
-    return out;
+    return Object.fromEntries(Object.entries(raw).filter(([, entry]) => entry && typeof entry === 'object' && Number(entry.expiresAt) > nowMs));
   } catch {
     return {};
   }
@@ -5900,9 +5848,7 @@ function writePersistedAuthSessions(records) {
     const tmpPath = `${storePath}.${process.pid}.${Date.now()}.tmp`;
     fs.writeFileSync(tmpPath, JSON.stringify(records), { mode: 0o600 });
     fs.renameSync(tmpPath, storePath);
-  } catch {
-    // Best-effort disk persistence; in-memory Map remains authoritative in-process.
-  }
+  } catch {}
 }
 
 function persistPaidAuthSession(sessionToken, entry, nowMs = Date.now()) {
@@ -5910,10 +5856,7 @@ function persistPaidAuthSession(sessionToken, entry, nowMs = Date.now()) {
   paidAuthSessions.set(sessionToken, entry);
   const persisted = readPersistedAuthSessions(nowMs);
   const hashes = Object.keys(persisted);
-  while (hashes.length >= PAID_AUTH_MAX_SESSIONS) {
-    const oldest = hashes.shift();
-    if (oldest) delete persisted[oldest];
-  }
+  while (hashes.length >= PAID_AUTH_MAX_SESSIONS) delete persisted[hashes.shift()];
   persisted[hashSessionToken(sessionToken)] = {
     subjectType: entry.subjectType || 'customer',
     customerId: entry.customerId || null,
@@ -5950,7 +5893,6 @@ function prunePaidAuthSessions(nowMs) {
     paidAuthSessions.delete(oldestKey);
   }
 }
-
 function getPaidAuthSessionEntry(sessionToken, expectedApiKey = getExpectedApiKey(), expectedOperatorKey = getExpectedOperatorKey()) {
   if (!sessionToken) return null;
   const nowMs = Date.now();
