@@ -127,6 +127,7 @@
     "scripts/admin-override.js",
     "scripts/agent-action-inventory.js",
     "scripts/agent-audit-trace.js",
+    "scripts/agentic-prompt-pipelines.js",
     "scripts/agent-design-governance.js",
     "scripts/agent-egress-policy.js",
     "scripts/allowlist-bridge-honesty.js",

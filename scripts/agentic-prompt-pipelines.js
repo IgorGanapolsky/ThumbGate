@@ -622,6 +622,81 @@ async function trimContextJustInTime(rawContext, targetOperation, {
   return result;
 }
 
+// ===========================================================================
+// MCP tool handlers
+// ===========================================================================
+
+/** A caller that refuses, so the pipelines take their deterministic path. */
+function deterministicOnlyCaller() {
+  return async () => { throw new Error('model_disabled: pass useModel=true to allow an LLM call'); };
+}
+
+/**
+ * Build Neo4j READ tools from env (NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD,
+ * optional NEO4J_DATABASE). neo4j-driver is an optional dependency.
+ */
+function createNeo4jToolsFromEnv(env = process.env, { requireDriver = require } = {}) {
+  if (!env.NEO4J_URI) return { tools: null, reason: 'NEO4J_URI is not set' };
+  let neo4j;
+  try {
+    neo4j = requireDriver('neo4j-driver');
+  } catch {
+    return { tools: null, reason: 'neo4j-driver is not installed (npm install neo4j-driver)' };
+  }
+  const driver = neo4j.driver(env.NEO4J_URI, neo4j.auth.basic(env.NEO4J_USERNAME || 'neo4j', env.NEO4J_PASSWORD || ''));
+  return { tools: createNeo4jTools(driver, { database: env.NEO4J_DATABASE || undefined }), driver, reason: null };
+}
+
+const MCP_TOOL_NAMES = Object.freeze(['graphrag_traverse', 'route_workload', 'trim_context']);
+
+/**
+ * Run one of the pipeline MCP tools. Route and trim are deterministic unless
+ * `useModel` is true. GraphRAG always needs a model and a Neo4j instance and
+ * reports `unavailable` instead of throwing when either is missing.
+ */
+async function handlePipelineTool(name, args = {}, {
+  env = process.env,
+  callModel,
+  graphTools,
+  requireDriver,
+} = {}) {
+  const modelCaller = callModel || (args.useModel ? createLlmClientCaller() : deterministicOnlyCaller());
+  if (name === 'route_workload') {
+    if (typeof args.workload !== 'string' || !args.workload) throw new Error('workload must be a non-empty string');
+    return routeWorkload(args.workload, { callModel: modelCaller });
+  }
+  if (name === 'trim_context') {
+    if (typeof args.rawContext !== 'string') throw new Error('rawContext must be a string');
+    return trimContextJustInTime(args.rawContext, String(args.targetOperation || ''), {
+      callModel: modelCaller,
+      tokenBudget: Number.isInteger(args.tokenBudget) && args.tokenBudget > 0 ? args.tokenBudget : undefined,
+    });
+  }
+  if (name === 'graphrag_traverse') {
+    if (typeof args.query !== 'string' || !args.query.trim()) throw new Error('query must be a non-empty string');
+    let tools = graphTools;
+    let driver = null;
+    if (!tools) {
+      const built = createNeo4jToolsFromEnv(env, requireDriver ? { requireDriver } : undefined);
+      if (!built.tools) return { status: 'unavailable', reason: built.reason, answer: null, trace: [] };
+      tools = built.tools;
+      driver = built.driver;
+    }
+    try {
+      return await runGraphRagTraversal(args.query, {
+        callModel: callModel || createLlmClientCaller(),
+        tools,
+        maxSteps: Number.isInteger(args.maxSteps) ? Math.min(Math.max(args.maxSteps, 1), GRAPH_MAX_STEPS) : GRAPH_MAX_STEPS,
+      });
+    } catch (error) {
+      return { status: 'unavailable', reason: String(error && error.message || error).slice(0, 200), answer: null, trace: [] };
+    } finally {
+      if (driver) await driver.close();
+    }
+  }
+  throw new Error(`unknown_pipeline_tool:${name}`);
+}
+
 module.exports = {
   MODEL_DEFAULTS,
   resolveModels,
@@ -650,4 +725,8 @@ module.exports = {
   findAnchorLines,
   prefilterContext,
   trimContextJustInTime,
+  // MCP
+  MCP_TOOL_NAMES,
+  createNeo4jToolsFromEnv,
+  handlePipelineTool,
 };
