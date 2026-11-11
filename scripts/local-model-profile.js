@@ -101,6 +101,17 @@ const LONG_CONTEXT_TAGS = new Set([
   'xmemory',
 ]);
 
+const SERIOUS_PRIMARY_ROLES = new Set([
+  'normal',
+  'thinking',
+  'critique',
+  'coding',
+  'tool-use',
+  'tool_use',
+  'security-audit',
+  'security_audit',
+]);
+
 function parseNumber(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -260,13 +271,17 @@ function recommendInferenceBackend(task = {}, env = process.env) {
     };
   }
 
-  return {
+  const baseResult = {
     backend,
     workloadClass,
     recommendationClass: 'baseline',
     route: privacyRoute === 'local' ? 'local' : backend.providerMode,
     reason: 'baseline workload does not need sparse-attention optimization.',
   };
+  if (task.decodeModel && typeof task.decodeModel === 'object') {
+    baseResult.decodeRooflineAudit = evaluateLocalDecodeRooflineAndQuantization(task.decodeModel, env);
+  }
+  return baseResult;
 }
 
 function resolveFeedbackDir(explicitDir) {
@@ -369,6 +384,136 @@ function resolveModelRole(role, env) {
   return { role: normalized, model, provider, envKey };
 }
 
+
+function resolveWorkingSetCeilingGb(options, hardware) {
+  if (Number.isFinite(Number(options.workingSetCeilingGb)) && Number(options.workingSetCeilingGb) > 0) {
+    return Number(options.workingSetCeilingGb);
+  }
+  const totalMemoryGb = Number.isFinite(Number(options.totalMemoryGb))
+    ? Number(options.totalMemoryGb)
+    : hardware.ramGb;
+  const isAppleMetal = hardware.platform === 'darwin' && hardware.arch === 'arm64';
+  const ratio = isAppleMetal ? 0.75 : 0.85;
+  return Number((totalMemoryGb * ratio).toFixed(2));
+}
+
+function classifyDecodeRooflineRegime(memTimeSec, computeTimeSec) {
+  if (memTimeSec <= computeTimeSec * 0.85) return 'compute_bound';
+  if (memTimeSec <= computeTimeSec * 1.25) return 'sweet_spot_bandwidth_edge';
+  return 'memory_bandwidth_bound';
+}
+
+/**
+ * Audits local model fit, hybrid-attention KV cache growth, decode Roofline regime,
+ * and variable-bitrate TCQ / e-means codebook precision policy (@shinboson + apple-silicon-llm).
+ */
+function evaluateLocalDecodeRooflineAndQuantization(options = {}, env = process.env) {
+  const hardware = detectHardware(env);
+  const role = normalizeSlug(options.role || 'coding', 'coding');
+  const modelParamB = Math.max(0.1, Number(options.modelParamB ?? 4));
+  const activeParamB = Math.max(0.1, Math.min(modelParamB, Number(options.activeParamB ?? modelParamB)));
+  const bitsPerWeight = Math.max(1.0, Number(options.bitsPerWeight ?? 4.0));
+  const quantizationScheme = normalizeSlug(options.quantizationScheme || 'mlx-affine', 'mlx-affine');
+  const kvCacheBits = Math.max(2, Math.floor(Number(options.kvCacheBits ?? 8)));
+  const contextTokens = Math.max(256, Math.floor(Number(options.contextTokens ?? 16384)));
+  const totalLayers = Math.max(1, Math.floor(Number(options.totalLayers ?? 36)));
+  const fullAttentionInterval = Math.max(1, Math.floor(Number(options.fullAttentionInterval ?? 1)));
+  const fullAttentionLayers = Math.max(
+    1,
+    Math.min(
+      totalLayers,
+      Math.floor(Number(options.fullAttentionLayers ?? Math.ceil(totalLayers / fullAttentionInterval))),
+    ),
+  );
+  const numKeyValueHeads = Math.max(1, Math.floor(Number(options.numKeyValueHeads ?? 8)));
+  const headDim = Math.max(16, Math.floor(Number(options.headDim ?? 128)));
+  const activationBufferGb = Math.max(0.25, Number(options.activationBufferGb ?? 1.5));
+  const workingSetCeilingGb = resolveWorkingSetCeilingGb(options, hardware);
+
+  // Decimal GB consistency (apple-silicon-llm Trap 3) + hybrid fullAttentionLayers (Trap 2)
+  const weightsGb = Number(((modelParamB * 1e9 * (bitsPerWeight / 8)) / 1e9).toFixed(3));
+  const kvBytesPerToken = 2 * fullAttentionLayers * numKeyValueHeads * headDim * (kvCacheBits / 8);
+  const kvCacheGb = Number(((kvBytesPerToken * contextTokens) / 1e9).toFixed(3));
+  const totalRequiredGb = Number((weightsGb + kvCacheGb + activationBufferGb).toFixed(3));
+  const fitsWorkingSet = totalRequiredGb <= workingSetCeilingGb;
+
+  // Roofline decode model (@shinboson 2120499242342985821 & 2120573306554204336)
+  const isVariableTcqEmeans = quantizationScheme.includes('tcq') || quantizationScheme.includes('emeans');
+  const memoryBandwidthGbPerSec = Math.max(20, Number(options.memoryBandwidthGbPerSec ?? 307));
+  const peakComputeTflops = Math.max(1, Number(options.peakComputeTflops ?? 20));
+  const effectiveDecodeTflops = Math.max(
+    0.5,
+    Number(options.effectiveDecodeTflops ?? (peakComputeTflops * 0.22)),
+  );
+  const dequantOpsPerParam = isVariableTcqEmeans
+    ? 6
+    : (bitsPerWeight < 16 ? 1 : 0);
+  const opsPerActiveParam = 2 + dequantOpsPerParam;
+  const memTimeSec = weightsGb / memoryBandwidthGbPerSec;
+  const computeTimeSec = (opsPerActiveParam * activeParamB * 1e9) / (effectiveDecodeTflops * 1e12);
+  const stepTimeSec = Math.max(memTimeSec, computeTimeSec);
+  const estimatedTokensPerSec = Number((1 / stepTimeSec).toFixed(1));
+  const ridgeModelSizeGb = Number((memoryBandwidthGbPerSec * computeTimeSec).toFixed(3));
+  const rooflineRegime = classifyDecodeRooflineRegime(memTimeSec, computeTimeSec);
+
+  const isSpeculativeDrafter = role === 'speculative-drafter';
+  const isConstrainedEdge = workingSetCeilingGb < 16 && Boolean(options.allowConstrainedEdgeSub4Bit);
+
+  let verdict = 'PASS_LOCAL_QUALITY_FIT';
+  let allowed = true;
+  let reason = 'Model fits Metal/GPU working-set ceiling at >= 4-bit serious-work precision with >= 8-bit KV cache.';
+
+  if (kvCacheBits < 8) {
+    allowed = false;
+    verdict = 'FAIL_4BIT_KV_ALIGNMENT_COLLAPSE';
+    reason = `KV cache precision ${kvCacheBits}-bit < 8-bit floor; packed 4-bit KV causes alignment/refusal collapse.`;
+  } else if (!fitsWorkingSet) {
+    allowed = false;
+    verdict = 'FAIL_EXCEEDS_WORKING_SET_CEILING';
+    reason = `Required ${totalRequiredGb} GB (weights ${weightsGb} GB + KV ${kvCacheGb} GB + activations ${activationBufferGb} GB) exceeds ${workingSetCeilingGb} GB ceiling; block CPU offload.`;
+  } else if (bitsPerWeight < 4.0) {
+    if (isSpeculativeDrafter && bitsPerWeight >= 2.0 && isVariableTcqEmeans) {
+      allowed = true;
+      verdict = 'PASS_TCQ_LOSSLESS_SPECULATIVE_DRAFTER';
+      reason = `Sub-4-bit variable-bitrate e-means TCQ (${bitsPerWeight} bpw, ${weightsGb} GB, ${rooflineRegime}) allowed as speculative drafter: target-model rejection sampling preserves 100% lossless quality.`;
+    } else if (isConstrainedEdge && !SERIOUS_PRIMARY_ROLES.has(role)) {
+      allowed = true;
+      verdict = 'PASS_CONSTRAINED_EDGE_SUB4BIT';
+      reason = `Sub-4-bit (${bitsPerWeight} bpw) allowed on <16 GB constrained edge hardware for non-critical role '${role}'.`;
+    } else {
+      allowed = false;
+      verdict = 'FAIL_SUB_4BIT_PRIMARY_QUALITY_FLOOR';
+      reason = `Primary role '${role}' on ${workingSetCeilingGb} GB ceiling requires >= 4.0 bpw (~97% quality floor); ${bitsPerWeight} bpw trades away quality when memory is not scarce.`;
+    }
+  }
+
+  return {
+    allowed,
+    verdict,
+    reason,
+    role,
+    quantizationScheme,
+    memoryBudget: {
+      workingSetCeilingGb,
+      weightsGb,
+      kvCacheGb,
+      activationBufferGb,
+      totalRequiredGb,
+      fitsWorkingSet,
+      totalLayers,
+      fullAttentionLayers,
+      kvOverestimationFactorAvoided: Number((totalLayers / fullAttentionLayers).toFixed(2)),
+    },
+    roofline: {
+      rooflineRegime,
+      memoryBandwidthGbPerSec,
+      peakComputeTflops,
+      ridgeModelSizeGb,
+      estimatedTokensPerSec,
+      bandwidthBottlenecked: rooflineRegime === 'memory_bandwidth_bound',
+    },
+  };
+}
 function buildModelFitReport(options = {}) {
   const resolved = options.resolved || resolveEmbeddingProfile(options.env);
   const selected = resolved.selectedProfile;
@@ -419,6 +564,7 @@ module.exports = {
   getModelFitReportPath,
   isLongContextTask,
   recommendInferenceBackend,
+  evaluateLocalDecodeRooflineAndQuantization,
   resolveFeedbackDir,
 };
 

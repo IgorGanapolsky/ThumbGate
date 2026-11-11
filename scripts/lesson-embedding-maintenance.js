@@ -9,6 +9,10 @@ const {
   lessonText,
   hashText,
   readCache,
+  getSidecarPath,
+  compileEmeansCodebookSidecar,
+  writeEmeansSidecar,
+  loadDecodedSidecar,
 } = require('./lesson-embedding-index');
 const {
   selectRetrievalMemories,
@@ -24,6 +28,46 @@ function loadLessonCorpus(feedbackDir) {
     readJSONL(memoryPath, { maxLines: MAX_RETRIEVAL_MEMORY_LINES }),
   );
   return { lessons, memoryPath };
+}
+
+function evaluateSidecarStatus(cachePath, sidecarPath, lessons, exactIdSet) {
+  const rawExists = fs.existsSync(cachePath);
+  const sidecarExists = fs.existsSync(sidecarPath);
+  const rawBytes = rawExists ? fs.statSync(cachePath).size : 0;
+  const sidecarBytes = sidecarExists ? fs.statSync(sidecarPath).size : 0;
+  const decoded = sidecarExists ? loadDecodedSidecar(sidecarPath) : null;
+  let inSync = Boolean(decoded && exactIdSet && decoded.ids.length === lessons.length);
+  if (inSync) {
+    for (const lesson of lessons) {
+      const idx = decoded.indexById.get(lesson.id);
+      if (idx === undefined || decoded.hashes[idx] !== hashText(lessonText(lesson))) {
+        inSync = false;
+        break;
+      }
+    }
+  }
+  return {
+    present: sidecarExists && Boolean(decoded),
+    inSync,
+    sidecarPath,
+    rawBytes,
+    sidecarBytes,
+    compressionRatio: sidecarBytes > 0 && rawBytes > 0 ? Number((rawBytes / sidecarBytes).toFixed(2)) : null,
+    avgBitsPerWeight: decoded ? decoded.avgBitsPerWeight : null,
+  };
+}
+
+function compileLessonCodebookSidecar(options = {}) {
+  const feedbackDir = options.feedbackDir || process.env.THUMBGATE_FEEDBACK_DIR;
+  const { memoryPath } = loadLessonCorpus(feedbackDir);
+  const baseDir = feedbackDir || path.dirname(memoryPath);
+  const cacheFile = options.cacheFile || 'lesson-embeddings.json';
+  const cachePath = path.join(baseDir, cacheFile);
+  const sidecarPath = getSidecarPath(baseDir, cacheFile);
+  const cache = readCache(cachePath);
+  const compiled = compileEmeansCodebookSidecar(cache, options);
+  const written = writeEmeansSidecar(sidecarPath, compiled);
+  return { written, sidecarPath, compiled: Boolean(compiled) };
 }
 
 function evaluateEmbeddingIndexDrift(options = {}) {
@@ -85,6 +129,11 @@ function evaluateEmbeddingIndexDrift(options = {}) {
       && (!requireExact || exactIdSet)
       ? 'healthy'
       : 'unhealthy';
+  const sidecarPath = getSidecarPath(
+    feedbackDir || path.dirname(memoryPath),
+    options.cacheFile || 'lesson-embeddings.json',
+  );
+  const codebookSidecar = evaluateSidecarStatus(cachePath, sidecarPath, lessons, exactIdSet);
   return {
     ok: status !== 'unhealthy',
     status,
@@ -105,6 +154,7 @@ function evaluateEmbeddingIndexDrift(options = {}) {
     dimensions,
     memoryPath,
     cachePath,
+    codebookSidecar,
   };
 }
 
@@ -117,14 +167,19 @@ async function backfillLessonEmbeddings(options = {}) {
     error.code = 'THUMBGATE_SEMANTIC_PROVIDER_UNAVAILABLE';
     throw error;
   }
-  const { lessons } = loadLessonCorpus(feedbackDir);
+  const { lessons, memoryPath } = loadLessonCorpus(feedbackDir);
   if (lessons.length > 0) {
     await semanticRank('ThumbGate lesson embedding backfill health query', lessons, {
       feedbackDir,
       embedder: options.embedder,
       embedderId: options.embedderId,
       cacheFile: options.cacheFile,
+      useCodebookSidecar: false,
     });
+    const baseDir = feedbackDir || path.dirname(memoryPath);
+    const cacheFile = options.cacheFile || 'lesson-embeddings.json';
+    const cache = readCache(path.join(baseDir, cacheFile));
+    writeEmeansSidecar(getSidecarPath(baseDir, cacheFile), compileEmeansCodebookSidecar(cache, options));
   }
   return evaluateEmbeddingIndexDrift({
     ...options,
@@ -132,13 +187,13 @@ async function backfillLessonEmbeddings(options = {}) {
     embedder: options.embedder,
   });
 }
-
 function parseArgs(argv) {
-  const args = { json: false, backfill: false, requireSemantic: false };
+  const args = { json: false, backfill: false, requireSemantic: false, compileCodebook: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--json') args.json = true;
     else if (arg === '--backfill') args.backfill = true;
+    else if (arg === '--compile-codebook') args.compileCodebook = true;
     else if (arg === '--require-semantic') args.requireSemantic = true;
     else if (arg === '--feedback-dir') args.feedbackDir = argv[++index];
     else if (arg === '--min-coverage') args.minCoverage = Number(argv[++index]);
@@ -150,9 +205,18 @@ async function runCli() {
   const options = parseArgs(process.argv.slice(2));
   let report;
   try {
-    report = options.backfill
-      ? await backfillLessonEmbeddings(options)
-      : evaluateEmbeddingIndexDrift(options);
+    if (options.backfill) {
+      report = await backfillLessonEmbeddings(options);
+    } else {
+      if (options.compileCodebook) {
+        compileLessonCodebookSidecar(options);
+      }
+      report = evaluateEmbeddingIndexDrift(options);
+      if (report.status === 'healthy' && !report.codebookSidecar.inSync) {
+        compileLessonCodebookSidecar(options);
+        report = evaluateEmbeddingIndexDrift(options);
+      }
+    }
   } catch (error) {
     report = { ok: false, status: 'error', error: error.message, code: error.code || 'ERROR' };
   }
@@ -173,5 +237,6 @@ module.exports = {
   loadLessonCorpus,
   evaluateEmbeddingIndexDrift,
   backfillLessonEmbeddings,
+  compileLessonCodebookSidecar,
   parseArgs,
 };
