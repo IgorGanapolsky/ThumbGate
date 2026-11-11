@@ -263,29 +263,86 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
       assert.equal(r.headers.get('set-cookie'), null);
     }
 
-    // 5. Happy path with stubbed Google token & JWKS calls -> mints HttpOnly cookie, redirects to /dashboard, authenticates /v1/auth/session + /v1/feedback/stats
-    const validJwt = signTestIdToken({
+    // 5a. New Google user with NO subscription -> authenticated: true, tier: 'Free' (never Pro!), /v1/feedback/stats denied
+    const { provisionApiKey } = require('../scripts/billing');
+    const strangerJwt = signTestIdToken({
       iss: 'https://accounts.google.com',
       aud: 'google-client-test.apps.googleusercontent.com',
       exp: nowSec + 600,
-      email: 'founder@thumbgate.ai',
+      email: 'stranger@gmail.com',
       email_verified: true,
-      sub: 'google_uid_12345',
+      sub: 'google_stranger_001',
     });
     let capturedTokenPostBody = '';
     serverTestHooks.setGoogleOAuthFetchForTests(async (url, opts) => {
       if (String(url) === 'https://oauth2.googleapis.com/token') {
         capturedTokenPostBody = String((opts && opts.body) || '');
-        return { ok: true, status: 200, json: async () => ({ access_token: 'ya29.stub', id_token: validJwt }) };
+        return { ok: true, status: 200, json: async () => ({ access_token: 'ya29.free', id_token: strangerJwt }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
+    });
+    const freeState = await issueFreshState();
+    const freeCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=valid_google_code&state=${freeState}`, { redirect: 'manual' });
+    assert.equal(freeCbRes.status, 302);
+    assert.equal(freeCbRes.headers.get('location'), '/dashboard');
+    assert.match(capturedTokenPostBody, /code=valid_google_code/);
+    assert.match(capturedTokenPostBody, /client_secret=google-secret-test-value/);
+    const freeCookiePair = (freeCbRes.headers.get('set-cookie') || '').split(';')[0];
+    const freeSessionCheck = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: freeCookiePair } })).json();
+    assert.equal(freeSessionCheck.authenticated, true);
+    assert.equal(freeSessionCheck.tier, 'Free');
+    assert.notEqual(freeSessionCheck.tier, 'Pro');
+    assert.equal(freeSessionCheck.ssoProvider, 'google');
+    assert.equal(freeSessionCheck.ssoEmail, 'stranger@gmail.com');
+    assert.equal((await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: freeCookiePair } })).status, 401);
+
+    // 5c. Owner email with no paid entitlement does NOT auto-escalate to Enterprise or Pro via Google SSO alone
+    const ownerUnpaidJwt = signTestIdToken({
+      iss: 'https://accounts.google.com',
+      aud: 'google-client-test.apps.googleusercontent.com',
+      exp: nowSec + 600,
+      email: 'iganapolsky@gmail.com',
+      email_verified: true,
+      sub: 'google_owner_unpaid',
+    });
+    serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
+      if (String(url) === 'https://oauth2.googleapis.com/token') {
+        return { ok: true, status: 200, json: async () => ({ access_token: 'ya29.owner', id_token: ownerUnpaidJwt }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
+    });
+    const ownerState = await issueFreshState();
+    const ownerCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=owner_code&state=${ownerState}`, { redirect: 'manual' });
+    const ownerCookiePair = (ownerCbRes.headers.get('set-cookie') || '').split(';')[0];
+    const ownerSession = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: ownerCookiePair } })).json();
+    assert.equal(ownerSession.authenticated, true);
+    assert.equal(ownerSession.tier, 'Free');
+
+    // 5b. Subscriber's verified email WITH paid entitlement -> gets tier 'Pro' and survives redeploy
+    provisionApiKey('cus_paid_subscriber_1', {
+      customerEmail: 'subscriber@thumbgate.ai',
+      entitlementKind: 'subscription',
+      subscriptionId: 'sub_live_test_1',
+      source: 'stripe_webhook_checkout_completed',
+    });
+    const subscriberJwt = signTestIdToken({
+      iss: 'https://accounts.google.com',
+      aud: 'google-client-test.apps.googleusercontent.com',
+      exp: nowSec + 600,
+      email: 'subscriber@thumbgate.ai',
+      email_verified: true,
+      sub: 'google_uid_sub_1',
+    });
+    serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
+      if (String(url) === 'https://oauth2.googleapis.com/token') {
+        return { ok: true, status: 200, json: async () => ({ access_token: 'ya29.sub', id_token: subscriberJwt }) };
       }
       return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
     });
     const goodState = await issueFreshState();
-    const goodCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=valid_google_code&state=${goodState}`, { redirect: 'manual' });
+    const goodCbRes = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=sub_google_code&state=${goodState}`, { redirect: 'manual' });
     assert.equal(goodCbRes.status, 302);
     assert.equal(goodCbRes.headers.get('location'), '/dashboard');
-    assert.match(capturedTokenPostBody, /code=valid_google_code/);
-    assert.match(capturedTokenPostBody, /client_secret=google-secret-test-value/);
     const ssoCookieHeader = goodCbRes.headers.get('set-cookie') || '';
     assert.match(ssoCookieHeader, /^thumbgate_auth_session=[a-f0-9]{64};/);
     assert.match(ssoCookieHeader, /\bHttpOnly\b/);
@@ -295,25 +352,31 @@ test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an 
     assert.equal(ssoSessionCheck.authenticated, true);
     assert.equal(ssoSessionCheck.tier, 'Pro');
     assert.equal(ssoSessionCheck.ssoProvider, 'google');
-    assert.equal(ssoSessionCheck.ssoEmail, 'founder@thumbgate.ai');
+    assert.equal(ssoSessionCheck.ssoEmail, 'subscriber@thumbgate.ai');
     const ssoStatsRes = await fetch(`${origin}/v1/feedback/stats`, { headers: { cookie: ssoCookiePair } });
     assert.equal(ssoStatsRes.status, 200);
-    // Simulate Railway redeploy / in-memory Map wipe: session must survive from persisted disk store without clear-text keys
+    // Simulate Railway redeploy / in-memory Map wipe: both Free and Pro sessions survive from volume-backed auth-sessions.json without raw keys
     serverTestHooks.clearInMemoryAuthSessionsForTests();
     const persistedSessionCheck = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: ssoCookiePair } })).json();
     assert.equal(persistedSessionCheck.authenticated, true);
-    assert.equal(persistedSessionCheck.ssoProvider, 'google');
-    assert.equal(persistedSessionCheck.ssoEmail, 'founder@thumbgate.ai');
+    assert.equal(persistedSessionCheck.tier, 'Pro');
+    assert.equal(persistedSessionCheck.ssoEmail, 'subscriber@thumbgate.ai');
+    const persistedFreeCheck = await (await fetch(`${origin}/v1/auth/session`, { headers: { cookie: freeCookiePair } })).json();
+    assert.equal(persistedFreeCheck.authenticated, true);
+    assert.equal(persistedFreeCheck.tier, 'Free');
     const rawSessionFile = fs.readFileSync(path.join(tmpDir, 'auth-sessions.json'), 'utf8');
     assert.doesNotMatch(rawSessionFile, /tg_|thumbgate_auth_session|google-secret-test-value/);
+    const parsedSessionStore = JSON.parse(rawSessionFile);
+    for (const storedKey of Object.keys(parsedSessionStore)) {
+      assert.match(storedKey, /^[a-f0-9]{64}$/, 'auth-sessions.json keys must be sha256 hashes');
+    }
 
     // Reusing same state a second time must fail one-time-use check
-    const replayGoodState = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=valid_google_code&state=${goodState}`, { redirect: 'manual' });
+    const replayGoodState = await fetch(`${origin}/v1/cloud/sso/callback?provider=google&code=sub_google_code&state=${goodState}`, { redirect: 'manual' });
     assert.equal(replayGoodState.headers.get('location'), '/dashboard?sso_error=invalid_state');
     serverTestHooks.setGoogleOAuthFetchForTests(null);
     delete process.env.GOOGLE_CLIENT_ID;
     delete process.env.GOOGLE_CLIENT_SECRET;
-
     const badJsonRes = await fetch(`${origin}/v1/auth/session`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

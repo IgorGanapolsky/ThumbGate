@@ -1059,7 +1059,23 @@ async function connect(options) {
   var input = document.getElementById('apiKey');
   API_KEY = String(opts.key || input.value || '').trim();
   if (!API_KEY && !opts.cookieSession) return;
-  
+  if (opts.cookieSession && opts.tier === 'Free') {
+    HAS_COOKIE_SESSION = true;
+    input.value = '';
+    input.disabled = false;
+    const freeStatus = document.getElementById('authStatus');
+    freeStatus.className = 'auth-status ok';
+    freeStatus.textContent = '✓ Free tier';
+    document.getElementById('disconnectBtn').style.display = 'inline-block';
+    const proBtn = document.getElementById('getProBtn');
+    if (proBtn) proBtn.textContent = 'Upgrade to Pro';
+    const freeTitle = document.getElementById('authTitle');
+    if (freeTitle) freeTitle.textContent = opts.ssoEmail ? `Signed in (${opts.ssoEmail}) · Free tier` : 'Signed in · Free tier';
+    const freeHelp = document.getElementById('authHelp');
+    if (freeHelp) freeHelp.innerHTML = 'No paid subscription found for this email. <a href="https://thumbgate.ai/pricing" style="color:var(--cyan);font-weight:600;">Upgrade to Pro ($19/mo)</a> or paste a <code style="font-family:var(--mono);font-size:12px;">THUMBGATE_API_KEY</code> below.';
+    document.getElementById('dashboardContent').style.display = 'none';
+    return;
+  }
   var isEnterprise = opts.tier === 'Enterprise' || API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
   var tierName = isEnterprise ? 'Enterprise' : 'Pro';
 

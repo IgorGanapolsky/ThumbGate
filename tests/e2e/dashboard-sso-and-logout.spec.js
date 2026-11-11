@@ -87,28 +87,33 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
     }
   });
 
-  test('Google Sign-In button -> stubbed OAuth callback -> connected -> reload -> Log Out -> Disconnected -> reload signed out', async ({ browser }) => {
+  test('Google Sign-In gives Free tier + Upgrade link to unsubscribed users and Pro + persistence + Log Out to subscribers', async ({ browser }) => {
+    const { provisionApiKey } = require('../../scripts/billing');
     const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
     const publicJwk = { ...publicKey.export({ format: 'jwk' }), kid: 'pw-google-kid', alg: 'RS256', use: 'sig' };
     process.env.GOOGLE_CLIENT_ID = 'pw-google-client.apps.googleusercontent.com';
     process.env.GOOGLE_CLIENT_SECRET = 'pw-google-secret';
 
-    const nowSec = Math.floor(Date.now() / 1000);
-    const jwtHeader = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'pw-google-kid' })).toString('base64url');
-    const jwtPayload = Buffer.from(JSON.stringify({
-      iss: 'https://accounts.google.com',
-      aud: 'pw-google-client.apps.googleusercontent.com',
-      exp: nowSec + 600,
-      email: 'igor@thumbgate.ai',
-      email_verified: true,
-      sub: 'google_pw_uid_77',
-    })).toString('base64url');
-    const jwtSig = crypto.sign('RSA-SHA256', Buffer.from(`${jwtHeader}.${jwtPayload}`), privateKey).toString('base64url');
-    const signedIdToken = `${jwtHeader}.${jwtPayload}.${jwtSig}`;
+    const signEmailToken = (email, sub) => {
+      const nowSec = Math.floor(Date.now() / 1000);
+      const jwtHeader = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'pw-google-kid' })).toString('base64url');
+      const jwtPayload = Buffer.from(JSON.stringify({
+        iss: 'https://accounts.google.com',
+        aud: 'pw-google-client.apps.googleusercontent.com',
+        exp: nowSec + 600,
+        email,
+        email_verified: true,
+        sub,
+      })).toString('base64url');
+      const jwtSig = crypto.sign('RSA-SHA256', Buffer.from(`${jwtHeader}.${jwtPayload}`), privateKey).toString('base64url');
+      return `${jwtHeader}.${jwtPayload}.${jwtSig}`;
+    };
 
+    // Part 1: Unsubscribed Google user gets Free tier + Upgrade link to /pricing (never Pro)
+    let activeToken = signEmailToken('newuser@example.com', 'google_free_pw_1');
     serverTestHooks.setGoogleOAuthFetchForTests(async (url) => {
       if (String(url) === 'https://oauth2.googleapis.com/token') {
-        return { ok: true, status: 200, json: async () => ({ access_token: 'ya29.pw', id_token: signedIdToken }) };
+        return { ok: true, status: 200, json: async () => ({ access_token: 'ya29.pw', id_token: activeToken }) };
       }
       return { ok: true, status: 200, json: async () => ({ keys: [publicJwk] }) };
     });
@@ -118,7 +123,6 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
     });
     const page = await context.newPage();
     try {
-      // Exercise real /v1/cloud/sso/authorize (maxRedirects: 0), verify 302 to accounts.google.com, and bounce browser to real /v1/cloud/sso/callback
       await page.route(/\/v1\/cloud\/sso\/authorize\b/, async (route) => {
         const upstream = await route.fetch({ maxRedirects: 0 });
         expect(upstream.status()).toBe(302);
@@ -140,15 +144,40 @@ test.describe('/dashboard real-server login, redeploy persistence, Google SSO, a
         page.waitForURL(`${origin}/dashboard`),
         page.locator('#ssoGoogleBtn').click(),
       ]);
+      await expect(page.locator('#authStatus')).toHaveText('✓ Free tier');
+      await expect(page.locator('#authTitle')).toHaveText('Signed in (newuser@example.com) · Free tier');
+      await expect(page.locator('#getProBtn')).toHaveText('Upgrade to Pro');
+      await expect(page.locator('#getProBtn')).toHaveAttribute('href', 'https://thumbgate.ai/pricing');
+      await expect(page.locator('#dashboardContent')).toBeHidden();
+
+      await Promise.all([
+        page.waitForURL(/\/dashboard\?noauto=1$/),
+        page.locator('#disconnectBtn').click(),
+      ]);
+      await expect(page.locator('#authStatus')).toHaveText('Disconnected');
+
+      // Part 2: Subscribed Google user gets Pro, survives redeploy, and logs out cleanly
+      provisionApiKey('cus_pw_paid_1', {
+        customerEmail: 'subscriber@thumbgate.ai',
+        entitlementKind: 'subscription',
+        subscriptionId: 'sub_pw_1',
+        source: 'stripe_webhook_checkout_completed',
+      });
+      activeToken = signEmailToken('subscriber@thumbgate.ai', 'google_sub_pw_2');
+
+      await Promise.all([
+        page.waitForURL(`${origin}/dashboard`),
+        page.locator('#ssoGoogleBtn').click(),
+      ]);
       await expect(page.locator('#authStatus')).toHaveText('✓ Connected');
-      await expect(page.locator('#authTitle')).toHaveText('Signed in (igor@thumbgate.ai)');
+      await expect(page.locator('#authTitle')).toHaveText('Signed in (subscriber@thumbgate.ai)');
       await expect(page.locator('#dashboardContent')).toBeVisible();
 
-      // Reload across simulated redeploy: still signed in with Google
+      // Reload across simulated redeploy: still signed in with Pro
       serverTestHooks.clearInMemoryAuthSessionsForTests();
       await page.reload();
       await expect(page.locator('#authStatus')).toHaveText('✓ Connected');
-      await expect(page.locator('#authTitle')).toHaveText('Signed in (igor@thumbgate.ai)');
+      await expect(page.locator('#authTitle')).toHaveText('Signed in (subscriber@thumbgate.ai)');
       await expect(page.locator('#dashboardContent')).toBeVisible();
 
       // Click Log Out -> /dashboard?noauto=1 Disconnected -> reload still signed out

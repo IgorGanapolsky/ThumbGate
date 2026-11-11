@@ -137,6 +137,7 @@ const {
   createCheckoutSession,
   getCheckoutSessionStatus,
   provisionApiKey,
+  resolvePaidEntitlementForEmail,
   validateApiKey,
   recordUsage,
   rotateApiKey,
@@ -5958,19 +5959,19 @@ function getPaidAuthSessionEntry(sessionToken, expectedApiKey = getExpectedApiKe
   const persisted = readPersistedAuthSessions(nowMs);
   const record = persisted[hashSessionToken(sessionToken)];
   if (!record || record.expiresAt <= nowMs) return null;
-  let apiKey = '';
-  if (record.subjectType === 'admin') {
-    apiKey = expectedApiKey || '';
-  } else if (record.subjectType === 'operator') {
-    apiKey = expectedOperatorKey || '';
-  } else if (record.subjectType === 'customer' && record.customerId) {
-    const provisioned = provisionApiKey(record.customerId, { source: record.ssoProvider || 'session_restore' });
-    apiKey = (provisioned && provisioned.key) || '';
-  } else if (record.subjectType === 'dev_enterprise') {
-    apiKey = 'tg_op_dev_session';
-  } else if (record.subjectType === 'dev_pro') {
-    apiKey = 'tg_dev_session';
+  if (record.subjectType === 'sso_free') {
+    const hydratedFree = { ...record, apiKey: '' };
+    paidAuthSessions.set(sessionToken, hydratedFree);
+    return hydratedFree;
   }
+  const restores = {
+    admin: () => expectedApiKey || '',
+    operator: () => expectedOperatorKey || '',
+    customer: () => (record.customerId ? (provisionApiKey(record.customerId, { source: record.ssoProvider || 'session_restore' })?.key || '') : ''),
+    dev_enterprise: () => 'tg_op_dev_session',
+    dev_pro: () => 'tg_dev_session',
+  };
+  const apiKey = restores[record.subjectType] ? restores[record.subjectType]() : '';
   if (!apiKey) return null;
   const hydrated = { ...record, apiKey };
   paidAuthSessions.set(sessionToken, hydrated);
@@ -6003,7 +6004,8 @@ async function handlePaidAuthSessionRoute(req, res, expectedApiKey, expectedOper
   if (req.method === 'GET') {
     const cookies = parseCookies(req && req.headers ? req.headers.cookie : '');
     const sessionEntry = getPaidAuthSessionEntry(cookies[PAID_AUTH_COOKIE_NAME], expectedApiKey, expectedOperatorKey);
-    const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey);
+    const tier = resolvePaidSessionTier(extractApiKey(req), expectedApiKey, expectedOperatorKey)
+      || (sessionEntry && sessionEntry.subjectType === 'sso_free' ? 'Free' : null);
     sendJson(res, 200, {
       ok: true,
       authenticated: Boolean(tier),
@@ -7196,17 +7198,14 @@ async function addContext(){
           return;
         }
         const claims = await verifyGoogleIdToken(idToken, googleClientId);
-        const provisioned = provisionApiKey(`google_sso:${claims.sub}`, { source: 'google_sso' });
-        if (!provisioned || !provisioned.key) {
-          redirectSsoError(res, 'account_revoked');
-          return;
-        }
+        const entitlement = await resolvePaidEntitlementForEmail(claims.email);
+        const hasPaidKey = Boolean(entitlement && entitlement.entitled && entitlement.apiKey);
         const nowMs = Date.now();
         const sessionToken = crypto.randomBytes(32).toString('hex');
         persistPaidAuthSession(sessionToken, {
-          apiKey: provisioned.key,
-          subjectType: 'customer',
-          customerId: `google_sso:${claims.sub}`,
+          apiKey: hasPaidKey ? entitlement.apiKey : '',
+          subjectType: hasPaidKey ? 'customer' : 'sso_free',
+          customerId: hasPaidKey ? entitlement.customerId : null,
           ssoProvider: 'google',
           ssoEmail: claims.email,
           createdAt: nowMs,
