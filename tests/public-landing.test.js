@@ -71,6 +71,105 @@ test('homepage exposes Pro $19/mo and the $499 Setup Sprint', () => {
   assert.match(landingPage, /See the \$499 setup/);
 });
 
+test('homepage navbar exposes paid-user Log in drawer and exchanges keys for an HttpOnly session cookie without browser storage', async () => {
+  const os = require('node:os');
+  const dashboardPage = fs.readFileSync(path.join(__dirname, '..', 'public', 'dashboard.html'), 'utf8');
+  assert.match(landingPage, /data-cta-id="nav_paid_login"[^>]*>Log in</);
+  assert.match(landingPage, /id="paidLoginBar"/);
+  assert.match(landingPage, /id="paidLoginKeyInput"/);
+  assert.match(landingPage, /window\.tgSubmitPaidLogin/);
+  assert.match(landingPage, /\/v1\/auth\/session/);
+  assert.match(dashboardPage, /\/v1\/auth\/session/);
+  assert.doesNotMatch(landingPage, /tg_paid_api_key|localStorage\.setItem|sessionStorage\.setItem/);
+  assert.doesNotMatch(dashboardPage, /tg_paid_api_key|localStorage\.setItem\(['"]tg_paid|sessionStorage\.setItem\(['"]tg_paid/);
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-paid-auth-session-'));
+  const savedEnv = {
+    THUMBGATE_API_KEY: process.env.THUMBGATE_API_KEY,
+    THUMBGATE_OPERATOR_KEY: process.env.THUMBGATE_OPERATOR_KEY,
+    THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+  };
+  process.env.THUMBGATE_API_KEY = 'tg_admin_test_secret_999';
+  process.env.THUMBGATE_OPERATOR_KEY = 'tg_op_test_secret_888';
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.STRIPE_SECRET_KEY = '';
+
+  const { startServer } = require('../src/api/server');
+  const handle = await startServer({ port: 0, host: '127.0.0.1' });
+  const origin = `http://127.0.0.1:${handle.port}`;
+  try {
+    const initialRes = await fetch(`${origin}/v1/auth/session`);
+    assert.equal(initialRes.status, 200);
+    const initialBody = await initialRes.json();
+    assert.equal(initialBody.authenticated, false);
+
+    const badJsonRes = await fetch(`${origin}/v1/auth/session`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{bad',
+    });
+    assert.equal(badJsonRes.status, 400);
+
+    const methodNotAllowedRes = await fetch(`${origin}/v1/auth/session`, { method: 'PUT' });
+    assert.equal(methodNotAllowedRes.status, 405);
+
+    const invalidRes = await fetch(`${origin}/v1/auth/session`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ apiKey: 'wrong_key' }),
+    });
+    assert.equal(invalidRes.status, 401);
+    assert.equal(invalidRes.headers.get('set-cookie'), null);
+
+    const loginRes = await fetch(`${origin}/v1/auth/session`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ apiKey: 'tg_op_test_secret_888' }),
+    });
+    assert.equal(loginRes.status, 200);
+    const setCookie = loginRes.headers.get('set-cookie') || '';
+    assert.match(setCookie, /^thumbgate_auth_session=[a-f0-9]{64};/);
+    assert.match(setCookie, /\bHttpOnly\b/);
+    assert.match(setCookie, /\bSecure\b/);
+    assert.match(setCookie, /\bSameSite=Lax\b/);
+    assert.ok(!setCookie.includes('tg_op_test_secret_888'), 'raw key must never appear in Set-Cookie');
+
+    const cookiePair = setCookie.split(';')[0];
+    const checkRes = await fetch(`${origin}/v1/auth/session`, {
+      headers: { cookie: cookiePair },
+    });
+    assert.equal(checkRes.status, 200);
+    const checkBody = await checkRes.json();
+    assert.equal(checkBody.authenticated, true);
+    assert.equal(checkBody.tier, 'Enterprise');
+
+    const statsRes = await fetch(`${origin}/v1/feedback/stats`, {
+      headers: { cookie: cookiePair },
+    });
+    assert.equal(statsRes.status, 200);
+
+    const logoutRes = await fetch(`${origin}/v1/auth/session`, {
+      method: 'DELETE',
+      headers: { cookie: cookiePair },
+    });
+    assert.equal(logoutRes.status, 200);
+    assert.match(logoutRes.headers.get('set-cookie') || '', /\bMax-Age=0\b/);
+
+    const afterLogoutRes = await fetch(`${origin}/v1/feedback/stats`, {
+      headers: { cookie: cookiePair },
+    });
+    assert.equal(afterLogoutRes.status, 401);
+  } finally {
+    await new Promise((resolve) => handle.server.close(resolve));
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    for (const [k, v] of Object.entries(savedEnv)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+});
+
 test('visible text filtering consumes the complete script and style end tags', () => {
   const html = '<body>shown<script>hidden</script\t\n data-test>after<style>hidden</style extra>done</body>';
   assert.equal(visibleBodyText(html), 'shown after done');

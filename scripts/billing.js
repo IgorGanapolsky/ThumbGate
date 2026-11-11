@@ -513,7 +513,9 @@ function buildSubscriptionPriceData(checkoutSelection, appOrigin) {
       name: isTeam ? 'ThumbGate Team' : 'ThumbGate Pro',
       description: isTeam
         ? 'Shared Pre-Action Checks, team governance, and workflow hardening for AI coding agents.'
-        : 'Local dashboard, DPO export, and Pre-Action Checks for AI coding agents.',
+        : annual
+          ? 'Annual Pro (save $79/yr): unlimited learned gates, multi-hop recall, visual debugger, DPO export, and instant Pro API key. 7-day refund.'
+          : 'Unlimited learned gates (removes 3-rule free cap), multi-hop recall, visual debugger, DPO export, and instant Pro API key. Cancel anytime · 7-day refund.',
       appOrigin,
       planId: isTeam ? 'team' : 'pro',
     }),
@@ -2890,6 +2892,21 @@ function withKeyStoreLock(mutator) {
   }
 }
 
+// Probes, audits and health checks mark themselves with one of these. They must
+// never open live Checkout sessions: each one shows up as an abandoned checkout.
+const AUTOMATED_CHECKOUT_SOURCES = new Set(['internal_audit', 'probe', 'health_check', 'smoke_test']);
+
+function isAutomatedCheckoutRequest(metadata = {}) {
+  const source = String(metadata.source || metadata.utmSource || '').toLowerCase();
+  const installId = String(metadata.installId || '').toLowerCase();
+  return AUTOMATED_CHECKOUT_SOURCES.has(source) || installId.endsWith('_probe') || installId.startsWith('probe_');
+}
+
+// Secret (sk_live_) and restricted (rk_live_) keys are both live.
+function isLiveStripeKey(key) {
+  return /^(sk|rk)_live_/.test(String(key || ''));
+}
+
 async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, packId = null, metadata = {}, appOrigin } = {}) {
   const resolvedTraceId = traceId || metadata.traceId || createTraceId('checkout');
   const baseCheckoutMetadata = sanitizeMetadata({
@@ -2937,6 +2954,10 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     return { sessionId: localSessionId, url: null, localMode: true, traceId: resolvedTraceId, metadata: checkoutMetadata };
   }
 
+  if (isAutomatedCheckoutRequest(checkoutMetadata) && isLiveStripeKey(CONFIG.STRIPE_SECRET_KEY)) {
+    throw new Error('Refusing to open a live Stripe Checkout session for a probe or test request. Use a test-mode key.');
+  }
+
   const stripe = getStripeClient();
 
   if (!packId) {
@@ -2951,17 +2972,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     packId,
     appOrigin,
   });
-  let session;
-  try {
-    session = await stripe.checkout.sessions.create(sessionPayload);
-  } catch (err) {
-    if (!sessionPayload.branding_settings || !String(err && err.message).includes('branding_settings')) {
-      throw err;
-    }
-    const fallbackPayload = { ...sessionPayload };
-    delete fallbackPayload.branding_settings;
-    session = await stripe.checkout.sessions.create(fallbackPayload);
-  }
+  const session = await createSessionDroppingRejectedOptionals(stripe, sessionPayload);
 
   appendFunnelEvent({
     stage: 'acquisition',
@@ -2972,6 +2983,23 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
     metadata: { ...checkoutMetadata, packId },
   });
   return { sessionId: session.id, url: session.url, localMode: false, traceId: resolvedTraceId, metadata: checkoutMetadata };
+}
+
+// Optional fields Stripe can refuse for account-level reasons (branding not set
+// up; Checkout promotional-consent terms not yet accepted in the Dashboard).
+// Dropping one must never block a buyer from reaching checkout.
+const OPTIONAL_CHECKOUT_FIELDS = ['branding_settings', 'consent_collection'];
+
+async function createSessionDroppingRejectedOptionals(stripe, payload) {
+  try {
+    return await stripe.checkout.sessions.create(payload);
+  } catch (err) {
+    const message = String(err?.message || '');
+    const rejected = OPTIONAL_CHECKOUT_FIELDS.find((field) => field in payload && message.includes(field));
+    if (!rejected) throw err;
+    const { [rejected]: _dropped, ...rest } = payload;
+    return createSessionDroppingRejectedOptionals(stripe, rest);
+  }
 }
 
 function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, checkoutMetadata, packId = null, appOrigin } = {}) {
@@ -3022,6 +3050,9 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
     line_items: lineItems,
     allow_promotion_codes: true,
     after_expiration: { recovery: { enabled: true, allow_promotion_codes: true } },
+    // Stripe only emails an abandoned-cart recovery link to buyers who gave
+    // promotional consent; without this, recovery above never reaches anyone.
+    consent_collection: { promotions: 'auto' },
     branding_settings: buildCheckoutBrandingSettings(appOrigin),
     metadata: serializeStripeMetadata({
       ...checkoutMetadata,
@@ -4248,8 +4279,9 @@ function handleGithubWebhook(event, provenance = {}) {
 }
 
 module.exports = {
-  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, isAutomatedCheckoutRequest, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
+  _createSessionDroppingRejectedOptionals: createSessionDroppingRejectedOptionals,
   _buildTrialActivationEmail: buildTrialActivationEmail,
   _sendTrialActivationEmail: sendTrialActivationEmail,
   _isDiagnosticCheckoutSession: isDiagnosticCheckoutSession,

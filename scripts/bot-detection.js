@@ -165,6 +165,27 @@ function isProbablyBot(headers) {
   return classifyRequester(headers).isBot;
 }
 
+/**
+ * Stricter check for links that open a checkout page on GET. Link unfurlers and
+ * email security scanners send browser-shaped User-Agent and Accept headers but
+ * no Sec-Fetch-* navigation headers, so they pass classifyRequester and leave
+ * expired sessions nobody saw. Browsers send Sec-Fetch-Mode: navigate on a link
+ * click; older browsers without Sec-Fetch pass when the Referer is our own site.
+ */
+function isHumanCheckoutNavigation(headers = {}, appOrigin = '') {
+  const mode = normalizeHeader(headers['sec-fetch-mode']).toLowerCase();
+  const dest = normalizeHeader(headers['sec-fetch-dest']).toLowerCase();
+  if (mode === 'navigate' && (!dest || dest === 'document')) return true;
+  if (mode) return false;
+  const referer = normalizeHeader(headers.referer || headers.referrer);
+  if (!referer || !appOrigin) return false;
+  try {
+    return new URL(referer).host === new URL(appOrigin).host;
+  } catch {
+    return false;
+  }
+}
+
 // --- Visitor classification (analytics filtering) ---------------------------
 // Classifies telemetry/analytics traffic as bot / owner / real_user.
 // Owner traffic is identified via the THUMBGATE_OWNER_EMAILS env var
@@ -215,6 +236,7 @@ function botFilterMiddleware(req, res, next) {
 module.exports = {
   classifyRequester,
   isProbablyBot,
+  isHumanCheckoutNavigation,
   classifyVisitor,
   shouldExcludeFromAnalytics,
   botFilterMiddleware,

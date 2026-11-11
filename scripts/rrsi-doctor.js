@@ -39,6 +39,7 @@ const {
   pruneStructuralRedundancy,
 } = require('./rrsi-regularizer');
 const { getExperimentPaths, loadExperiments } = require('./experiment-tracker');
+const { runMcKinseyAiCodingAudit } = require('../src/mckinsey-top-company-ai-coding');
 
 const RAIL_MAP = Object.freeze([
   {
@@ -2416,8 +2417,125 @@ function evaluateModelRoutingParetoTrapGuard(options = {}) {
   };
 }
 
+// Elephant spec + Goldfish review sanctuary loop, with the McKinsey operating model audit.
+const BANNED_SYCOPHANTIC_REGEX = /\b(?:brilliant|spot-on|you're a genius|you thought of everything|i apologize|forgive me)\b/i;
+
+function evaluateElephantGoldfishAutonomousSanctuaryLoop({
+  goalStatement = '',
+  humanInterruptionsCount = 0,
+  lookAwayDurationHours = 24,
+  noCodeBeforeSpecEnforced = true,
+  agentOutputText = '',
+  specSections = {
+    problem: true,
+    technicalPlan: true,
+    alternativesRejected: true,
+    enumeratedFiles: ['scripts/rrsi-doctor.js'],
+  },
+  goldfishHasZeroConversationHistory = true,
+  goldfishComprehensionPassed = true,
+  goldfishCriticConvergedToNits = true,
+  goldfishImplementationReadinessPassed = true,
+  meanCodeReviewPassed = true,
+  peanutsAndHayLeavesToRootOrder = true,
+  sizeofDocsBytes = 4096,
+  sizeofCodeBytes = 65536,
+  astSpecDriftCount = 0,
+  syncedToRepoObsidianAndVault = true,
+  promotedMistakesToPreventionRules = true,
+  mckinsey = {},
+} = {}) {
+  const blockers = [];
+  // McKinsey operating model: 1-2 day loops, P90 golden examples, tight skill set,
+  // sideways WCAG/DLP rules, token ROI and $0 outbound spend. Finding codes become blockers.
+  const mckinseyAudit = runMcKinseyAiCodingAudit(mckinsey && typeof mckinsey === 'object' ? mckinsey : {});
+  for (const verdict of [
+    mckinseyAudit.specVerdict,
+    mckinseyAudit.podVerdict,
+    mckinseyAudit.contextVerdict,
+    mckinseyAudit.sidewaysVerdict,
+    mckinseyAudit.roiVerdict,
+  ]) {
+    for (const finding of verdict.findings) blockers.push(finding.code);
+  }
+  if (!String(goalStatement || '').trim()) {
+    blockers.push('missing_goal_statement_for_autonomous_loop');
+  }
+  if (Number(humanInterruptionsCount) > 0) {
+    blockers.push('family_sanctuary_violation_never_interrupt_igor_with_babysitting_questions');
+  }
+  if (!Number.isFinite(Number(lookAwayDurationHours)) || Number(lookAwayDurationHours) < 8) {
+    blockers.push('look_away_duration_too_short_agent_must_run_unattended');
+  }
+  if (!noCodeBeforeSpecEnforced) {
+    blockers.push('no_code_rule_violated_elephant_spec_required_before_implementation');
+  }
+  if (BANNED_SYCOPHANTIC_REGEX.test(String(agentOutputText || ''))) {
+    blockers.push('sycophantic_spiral_or_banned_apology_detected_challenge_assumptions_instead');
+  }
+  const sec = specSections && typeof specSections === 'object' ? specSections : {};
+  if (
+    !sec.problem ||
+    !sec.technicalPlan ||
+    !sec.alternativesRejected ||
+    !Array.isArray(sec.enumeratedFiles) ||
+    sec.enumeratedFiles.length === 0
+  ) {
+    blockers.push('incomplete_4_section_elephant_spec_requires_problem_plan_alternatives_and_file_list');
+  }
+  if (!goldfishHasZeroConversationHistory) {
+    blockers.push('goldfish_review_in_same_session_invalid_requires_amnesiac_subagent_context');
+  }
+  if (!goldfishComprehensionPassed) {
+    blockers.push('goldfish_comprehension_serialization_test_failed_patch_the_doc_not_the_chat');
+  }
+  if (!goldfishCriticConvergedToNits) {
+    blockers.push('goldfish_adversarial_critic_not_converged_to_nits');
+  }
+  if (!goldfishImplementationReadinessPassed) {
+    blockers.push('goldfish_implementation_readiness_failed_missing_first_pass_details');
+  }
+  if (!meanCodeReviewPassed) {
+    blockers.push('mean_code_review_failed_tear_it_to_shreds_before_claiming_done');
+  }
+  if (!peanutsAndHayLeavesToRootOrder) {
+    blockers.push('peanuts_and_hay_bootstrap_must_roll_up_leaves_to_root');
+  }
+  if (!(Number(sizeofDocsBytes) > 0 && Number(sizeofDocsBytes) < Number(sizeofCodeBytes))) {
+    blockers.push('sizeof_docs_must_be_strictly_smaller_compression_of_sizeof_code');
+  }
+  if (Number(astSpecDriftCount) > 0) {
+    blockers.push('egm_drift_report_detected_spec_to_code_divergence');
+  }
+  if (!syncedToRepoObsidianAndVault || !promotedMistakesToPreventionRules) {
+    blockers.push('must_sync_peanuts_and_hay_to_repo_obsidian_and_promote_prevention_rules');
+  }
+
+  return {
+    allowed: blockers.length === 0,
+    familySanctuaryProtected: Number(humanInterruptionsCount) === 0,
+    lookAwayDurationHours: Number(lookAwayDurationHours) || 0,
+    compressionRatioCodeToDocs:
+      Number(sizeofDocsBytes) > 0 ? Number((Number(sizeofCodeBytes) / Number(sizeofDocsBytes)).toFixed(2)) : 0,
+    goldfishStagesPassed: [
+      goldfishComprehensionPassed && 'comprehension',
+      goldfishCriticConvergedToNits && 'critic_converged_to_nits',
+      goldfishImplementationReadinessPassed && 'implementation_readiness',
+      meanCodeReviewPassed && 'mean_code_review',
+    ].filter(Boolean),
+    mckinseyAudit,
+    blockers,
+  };
+}
+
 function runCli(argv = process.argv.slice(2)) {
   const args = parseCliArgs(argv);
+  if (args['egm-sanctuary']) {
+    const input = typeof args.input === 'string' ? JSON.parse(fs.readFileSync(args.input, 'utf8')) : {};
+    const report = evaluateElephantGoldfishAutonomousSanctuaryLoop(input);
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.allowed ? 0 : 1;
+  }
   if (args['sdd-visualizer']) {
     const report = runSddHarnessStagePipeline({ mode: args.mode || 'happy_path', stage: args.stage || 1 });
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
@@ -2455,7 +2573,7 @@ function runCli(argv = process.argv.slice(2)) {
 
 if (require.main === module) {
   const args = process.argv.slice(2);
-  if (args.includes('--granite-switch') || args.includes('--ml-intern') || args.includes('--pytorchcon-2026') || args.includes('--llmd-1-0') || args.includes('--nvidia-akf') || args.includes('--sdd-visualizer')) {
+  if (args.includes('--granite-switch') || args.includes('--ml-intern') || args.includes('--pytorchcon-2026') || args.includes('--llmd-1-0') || args.includes('--nvidia-akf') || args.includes('--sdd-visualizer') || args.includes('--egm-sanctuary')) {
     process.exit(runCli(args));
   }
   const jsonMode = args.includes('--json');
@@ -2502,6 +2620,8 @@ if (require.main === module) {
 
 module.exports = {
   RAIL_MAP,
+  BANNED_SYCOPHANTIC_REGEX,
+  evaluateElephantGoldfishAutonomousSanctuaryLoop,
   auditRRSI,
   GRANITE_SWITCH_SOURCE_URL,
   GRANITE_SWITCH_GATE_ID,

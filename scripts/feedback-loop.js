@@ -270,7 +270,8 @@ function updateStatuslineWithLesson({ accepted, signal, memoryId, feedbackId, le
     fs.writeFileSync(cachePath, JSON.stringify(cache));
     try {
       const { refreshStatuslineCache } = require('./hook-thumbgate-cache-updater');
-      refreshStatuslineCache(analyzeFeedback(), cachePath);
+      // Human-only: the status bar shows the owner's own thumbs, not agent captures.
+      refreshStatuslineCache(analyzeFeedback(undefined, { humanOnly: true }), cachePath);
     } catch {
       /* keep lesson refresh best-effort */
     }

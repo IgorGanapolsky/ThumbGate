@@ -81,12 +81,20 @@ test('pricing page links to the operator framework', async () => {
 
 test('operator offer routes redirect humans to the live Stripe Payment Links', async () => {
   for (const [route, stripeUrl] of Object.entries(OFFER_ROUTES)) {
-    const res = await fetch(`${origin}${route}`, {
-      redirect: 'manual',
-      headers: { 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36' },
+    // Raw request: Node's fetch overwrites Sec-Fetch-Mode, which this route checks.
+    const routeUrl = new URL(route, origin);
+    const res = await new Promise((resolve, reject) => {
+      require('node:http').get(routeUrl, {
+        headers: {
+          'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36',
+          accept: 'text/html,*/*;q=0.8',
+          'sec-fetch-mode': 'navigate',
+          'sec-fetch-dest': 'document',
+        },
+      }, (r) => { r.resume(); resolve({ status: r.statusCode, location: r.headers.location }); }).on('error', reject);
     });
     assert.equal(res.status, 302, `${route} must redirect`);
-    const location = new URL(res.headers.get('location'));
+    const location = new URL(res.location);
     assert.equal(location.origin + location.pathname, stripeUrl, `${route} must land on ${stripeUrl}`);
   }
 });
