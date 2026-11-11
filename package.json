@@ -743,7 +743,7 @@
     "test:rule-validator": "node --test tests/rule-validator.test.js",
     "test:session-health": "node --test tests/session-health-sensor.test.js",
     "test:session-episodes": "node --test tests/session-episode-store.test.js",
-    "test:spec-gate": "node --test tests/spec-gate.test.js",
+    "test:spec-gate": "node --test tests/spec-gate.test.js tests/spec-template.test.js",
     "test:dashboard-insights": "node --test tests/dashboard-insights.test.js",
     "test:telemetry-tracked-link-slug": "node --test tests/telemetry-tracked-link-slug.test.js",
     "test:prompt-eval": "node --test tests/prompt-eval.test.js tests/verified-agent-outcomes.test.js tests/task-outcome-api.test.js",
