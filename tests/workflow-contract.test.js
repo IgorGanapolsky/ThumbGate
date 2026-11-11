@@ -63,3 +63,22 @@ test('pull request template includes required proof sections', () => {
     assert.match(templateText, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   });
 });
+
+test('Claude Code Review workflow runs once on ready_for_review and skips trunk-merge/* and dependabot', () => {
+  const raw = readText(path.join('.github', 'workflows', 'claude-code-review.yml'));
+
+  assert.match(raw, /pull_request:\s*\n\s*types:\s*\[ready_for_review\]/);
+  assert.doesNotMatch(raw, /types:\s*\[[^\]]*synchronize[^\]]*\]/);
+  assert.match(raw, /!startsWith\(github\.head_ref,\s*'trunk-merge\/'\)/);
+  assert.match(raw, /!github\.event\.pull_request\.draft/);
+  assert.match(raw, /dependabot\[bot\]/);
+});
+
+test('.coderabbit.yaml disables CodeRabbit auto-review noise', () => {
+  const raw = readText('.coderabbit.yaml');
+
+  assert.match(raw, /auto_review:\s*\n\s*enabled:\s*false/);
+  assert.match(raw, /drafts:\s*false/);
+  assert.match(raw, /high_level_summary:\s*false/);
+  assert.match(raw, /auto_reply:\s*false/);
+});
