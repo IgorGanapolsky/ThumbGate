@@ -7,7 +7,6 @@ const os = require('node:os');
 const path = require('node:path');
 
 const d = require('../scripts/mac-dispatch-loop');
-
 function tmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'mac-dispatch-'));
 }

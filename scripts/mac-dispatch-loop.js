@@ -506,10 +506,12 @@ function main(argv = process.argv.slice(2)) {
     const results = tick(ctx);
     return results.some((r) => r.action === 'error') ? 1 : 0;
   }
-  for (;;) {
+  // `touch ~/.thumbgate-dispatch/stop` ends --watch after the current tick.
+  while (!fs.existsSync(path.join(config.stateDir, 'stop'))) {
     try { tick(ctx); } catch (err) { ctx.log(`tick failed: ${err.message}`); }
     ctx.sleep(config.intervalSeconds * 1000);
   }
+  return 0;
 }
 
 if (require.main === module) {
